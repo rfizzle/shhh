@@ -201,11 +201,10 @@ func (m Model) updateReview(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m.closeReview()
 	}
 	m.review.Height = m.viewportHeight()
-	done, result := m.review.Update(msg)
+	done, staged := m.review.Update(msg)
 	if !done {
 		return m, nil
 	}
-	staged, _ := result.(components.ReviewResult)
 	files := reviewStagedPaths(m.review, staged)
 	turn := m.reviewTurnN
 	updated, cmd := m.closeReview()

@@ -117,7 +117,7 @@ func (q QueueStrip) header(width int) string {
 	if q.Note != "" {
 		head += sty.Dim.Render("  ·  ") + sty.Info.Render(q.Note)
 	}
-	return queueIndent + clip(head, max(width-len(queueIndent), 0))
+	return queueIndent + Clip(head, max(width-len(queueIndent), 0))
 }
 
 // render lays one item: the pointer column, its number in the round, the
@@ -134,7 +134,7 @@ func (item QueueItem) render(width int, current bool) string {
 
 	// Indent, pointer, number, one gap column, then the right-hand block.
 	room := width - len(queueIndent) - 2 - len(number) - 2 - lipgloss.Width(right)
-	label := clip(item.Label, max(room, 0))
+	label := Clip(item.Label, max(room, 0))
 	style := sty.Dim
 	if current {
 		style = sty.Body

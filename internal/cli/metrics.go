@@ -474,41 +474,17 @@ func metricsLatency(ms *float64) string {
 	return latencyText(ms)
 }
 
-// metricsModel hosts the surface. It carries no state of its own beyond the
-// terminal's size: the screen has one key and nothing to change.
-type metricsModel struct {
-	width  int
-	screen components.MetricsScreen
-}
-
-func newMetricsModel(screen components.MetricsScreen) metricsModel {
-	return metricsModel{width: defaultMetricsWidth, screen: screen}
-}
-
-func (m metricsModel) Init() tea.Cmd { return nil }
-
-func (m metricsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		m.width, m.screen.MaxLines = msg.Width, msg.Height
-		return m, nil
-	case tea.KeyPressMsg:
-		if done, _ := m.screen.Update(msg); done {
-			return m, tea.Quit
-		}
-	}
-	return m, nil
-}
-
-// View is the frame: the metrics screen, on the alt screen it takes over.
-func (m metricsModel) View() tea.View {
-	v := tea.NewView(m.screen.View(m.width))
-	v.AltScreen = true
-	return v
-}
-
+// runMetricsScreen puts the reading on the alt screen. There is no state to
+// carry: the screen has one key and nothing to change, so the only answer it
+// has is that it is finished.
 func runMetricsScreen(screen components.MetricsScreen) error {
-	_, err := newProgram(newMetricsModel(screen)).Run()
+	quit := func(done bool, _ struct{}) tea.Cmd {
+		if done {
+			return tea.Quit
+		}
+		return nil
+	}
+	_, err := newProgram(newScreenModel(&screen, defaultMetricsWidth, quit)).Run()
 	return err
 }
 

@@ -1492,7 +1492,6 @@ type doctorModel struct {
 	probes  []doctorProbe
 	started time.Time
 	at      int
-	width   int
 
 	// findings are the answers behind the rows the screen is drawing. The
 	// screen is handed only what it renders, and an action is not renderable
@@ -1523,8 +1522,8 @@ type doctorAppliedMsg struct {
 	err   error
 }
 
-func newDoctorModel(cfg config.Config, probes []doctorProbe) doctorModel {
-	m := doctorModel{cfg: cfg, probes: probes, width: defaultDoctorWidth}
+func newDoctorModel(cfg config.Config, probes []doctorProbe) *doctorModel {
+	m := &doctorModel{cfg: cfg, probes: probes}
 	m.findings = make([]doctorFinding, len(m.probes))
 	m.screen.Checks = make([]components.DoctorCheck, len(m.probes))
 	for i, probe := range m.probes {
@@ -1583,12 +1582,13 @@ func doctorQueuedSubject(name string) string {
 	return name
 }
 
-func (m doctorModel) Init() tea.Cmd {
+// begin starts the first probe and the one tick source.
+func (m *doctorModel) begin() tea.Cmd {
 	return tea.Batch(m.runNext(), doctorTick())
 }
 
 // runNext starts the check at the cursor, or nothing when the run is done.
-func (m doctorModel) runNext() tea.Cmd {
+func (m *doctorModel) runNext() tea.Cmd {
 	if m.at >= len(m.probes) {
 		return nil
 	}
@@ -1608,21 +1608,33 @@ func doctorTick() tea.Cmd {
 	})
 }
 
-func (m doctorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		m.width, m.screen.MaxLines = msg.Width, msg.Height
-		return m, nil
+// answer carries out what a key asked for. A key that asked for something
+// does not also close the screen: the whole point of `[c]` and `[r]` is that
+// the report is still there afterwards.
+func (m *doctorModel) answer(done bool, result components.DoctorResult) tea.Cmd {
+	m.screen.Notice = ""
+	if result.Command != nil {
+		return m.apply(*result.Command)
+	}
+	if done {
+		return tea.Quit
+	}
+	return nil
+}
 
+// other is the run's own traffic: a probe finishing, the spinner's tick, and
+// what an applied action did.
+func (m *doctorModel) other(msg tea.Msg) tea.Cmd {
+	switch msg := msg.(type) {
 	case doctorTickMsg:
 		if !m.screen.Running {
 			// The spinner stops when the run does; a frame still turning over
 			// a finished run would say the screen is doing something.
-			return m, nil
+			return nil
 		}
 		m.screen.Frame++
 		m.screen.Elapsed = doctorElapsed(time.Since(m.started))
-		return m, doctorTick()
+		return doctorTick()
 
 	case doctorAppliedMsg:
 		return m.applied(msg)
@@ -1634,22 +1646,12 @@ func (m doctorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.screen.Elapsed = doctorElapsed(time.Since(m.started))
 		if m.at >= len(m.probes) {
 			m.screen.Running = false
-			return m, nil
+			return nil
 		}
 		m.markRunning(m.at)
-		return m, m.runNext()
-
-	case tea.KeyPressMsg:
-		m.screen.Notice = ""
-		done, result := m.screen.Update(msg)
-		if command, ok := result.(components.DoctorCommand); ok {
-			return m.apply(command)
-		}
-		if done {
-			return m, tea.Quit
-		}
+		return m.runNext()
 	}
-	return m, nil
+	return nil
 }
 
 // markRunning turns the queued row at the cursor into the running one. It is
@@ -1664,7 +1666,7 @@ func (m *doctorModel) markRunning(at int) {
 // apply carries out one command. `[c]` copies the report the surface is
 // showing; `[r]` puts every row back to queued and starts again, so a fix
 // applied in another terminal can be checked without leaving this one.
-func (m doctorModel) apply(command components.DoctorCommand) (tea.Model, tea.Cmd) {
+func (m *doctorModel) apply(command components.DoctorCommand) tea.Cmd {
 	switch command.Act {
 	case components.DoctorCopy:
 		if res := clipboard.Copy(m.report()); !res.OK {
@@ -1672,10 +1674,9 @@ func (m doctorModel) apply(command components.DoctorCommand) (tea.Model, tea.Cmd
 		} else {
 			m.screen.Notice = "copied the report to the clipboard"
 		}
-		return m, nil
+		return nil
 	case components.DoctorRerun:
-		fresh := m.rerun()
-		return fresh, tea.Batch(fresh.runNext(), doctorTick())
+		return m.rerun()
 	case components.DoctorApply:
 		// The screen has already asked, so by the time this arrives the
 		// answer was yes. It is run off the update loop because a migration
@@ -1683,61 +1684,56 @@ func (m doctorModel) apply(command components.DoctorCommand) (tea.Model, tea.Cmd
 		// would read as a hang.
 		apply := m.findings[command.At].Apply
 		if apply == nil {
-			return m, nil
+			return nil
 		}
 		m.screen.Notice = "applying…"
-		return m, func() tea.Msg {
+		return func() tea.Msg {
 			lines, err := apply()
 			return doctorAppliedMsg{lines: lines, err: err}
 		}
 	}
-	return m, nil
+	return nil
 }
 
 // applied reports what an action did and re-runs every check, because the
 // answer to "did that work" is the report itself and not a line at the foot
 // of a stale one. The notice survives the re-run: it is the record of what
 // changed, and the rows that are about to redraw will not say it again.
-func (m doctorModel) applied(msg doctorAppliedMsg) (tea.Model, tea.Cmd) {
-	fresh := m.rerun()
+func (m *doctorModel) applied(msg doctorAppliedMsg) tea.Cmd {
+	cmd := m.rerun()
 	switch {
 	case msg.err != nil && len(msg.lines) == 0:
-		fresh.screen.Notice = "nothing changed: " + msg.err.Error()
+		m.screen.Notice = "nothing changed: " + msg.err.Error()
 	case msg.err != nil:
-		fresh.screen.Notice = countOf(len(msg.lines), "change made", "changes made") +
+		m.screen.Notice = countOf(len(msg.lines), "change made", "changes made") +
 			", then it stopped: " + msg.err.Error()
 	default:
-		fresh.screen.Notice = countOf(len(msg.lines), "change made", "changes made")
+		m.screen.Notice = countOf(len(msg.lines), "change made", "changes made")
 	}
-	return fresh, tea.Batch(fresh.runNext(), doctorTick())
+	return cmd
 }
 
-// rerun is the screen put back to queued and started again — what `[r]` does,
-// and what an applied action does after it, so the report the reader is left
-// looking at is a reading of the machine as it is now.
-func (m doctorModel) rerun() doctorModel {
-	fresh := newDoctorModel(m.cfg, m.probes)
-	fresh.width, fresh.screen.MaxLines = m.width, m.screen.MaxLines
-	fresh.screen.Title, fresh.nouns = m.screen.Title, m.nouns
-	fresh.started = time.Now()
-	fresh.markRunning(0)
-	return fresh
+// rerun puts every row back to queued and starts the checks again — what
+// `[r]` does, and what an applied action does after it, so the report the
+// reader is left looking at is a reading of the machine as it is now. What
+// the terminal and the calling command settled stays: the row budget, the
+// screen's title and the nouns its report counts in are not findings.
+func (m *doctorModel) rerun() tea.Cmd {
+	rows, title, nouns := m.screen.MaxLines, m.screen.Title, m.nouns
+	*m = *newDoctorModel(m.cfg, m.probes)
+	m.screen.MaxLines, m.screen.Title, m.nouns = rows, title, nouns
+	m.started = time.Now()
+	m.markRunning(0)
+	return m.begin()
 }
 
 // report is the run as text under the screen's own title.
-func (m doctorModel) report() string {
+func (m *doctorModel) report() string {
 	title, one, many := "shhh doctor", "check", "checks"
 	if m.screen.Title != "" {
 		title, one, many = m.screen.Title, m.nouns[0], m.nouns[1]
 	}
 	return doctorReportOf(title, one, many, m.screen.Checks).String()
-}
-
-// View is the frame: the doctor screen, on the alt screen it takes over.
-func (m doctorModel) View() tea.View {
-	v := tea.NewView(m.screen.View(m.width))
-	v.AltScreen = true
-	return v
 }
 
 // doctorElapsed is the header's running clock: tenths while a run is short
@@ -1760,6 +1756,8 @@ func runDoctorScreenTitled(cfg config.Config, probes []doctorProbe, title string
 	m.screen.Title, m.nouns = title, nouns
 	m.started = time.Now()
 	m.markRunning(0)
-	_, err := newProgram(m).Run()
+	host := newScreenModel(&m.screen, defaultDoctorWidth, m.answer)
+	host.begin, host.other = m.begin, m.other
+	_, err := newProgram(host).Run()
 	return err
 }

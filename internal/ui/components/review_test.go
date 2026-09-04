@@ -93,8 +93,8 @@ func TestReview_EnterReportsTheStagedSelection(t *testing.T) {
 	if !done {
 		t.Fatal("enter with a staged selection should finish the surface")
 	}
-	r, ok := result.(ReviewResult)
-	if !ok || r.Canceled {
+	r := result
+	if r.Canceled {
 		t.Fatalf("enter should report a selection, got %#v", result)
 	}
 	if r.Files() != 2 {
@@ -112,8 +112,8 @@ func TestReview_EscLeavesWithNothingChosen(t *testing.T) {
 	v := reviewFixture()
 	v.Update(key("A"))
 	done, result := v.Update(key("esc"))
-	r, ok := result.(ReviewResult)
-	if !done || !ok || !r.Canceled {
+	r := result
+	if !done || !r.Canceled {
 		t.Fatalf("esc should finish the surface with a cancel, got done=%v %#v", done, result)
 	}
 	if len(r.Staged) != 0 {
@@ -256,7 +256,7 @@ func TestReview_ReadOnlyOffersNoStaging(t *testing.T) {
 		t.Fatalf("a read-only review offers nothing to apply:\n%s", out)
 	}
 	done, result := v.Update(key("enter"))
-	if r, ok := result.(ReviewResult); !done || !ok || !r.Canceled {
+	if !done || !result.Canceled {
 		t.Fatalf("enter in a read-only review should just leave, got done=%v %#v", done, result)
 	}
 }

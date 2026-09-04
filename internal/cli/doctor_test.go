@@ -718,8 +718,7 @@ func TestDoctorModel_WalksTheChecksOneAtATime(t *testing.T) {
 		t.Fatal("the first check did not start running")
 	}
 
-	next, cmd := m.Update(doctorDoneMsg{at: 0, finding: doctorBinary("0.9.4", "linux", "amd64", ""), took: 0})
-	m = next.(doctorModel)
+	cmd := m.other(doctorDoneMsg{at: 0, finding: doctorBinary("0.9.4", "linux", "amd64", ""), took: 0})
 	if cmd == nil {
 		t.Fatal("the run stopped after the first check answered")
 	}
@@ -747,14 +746,13 @@ func TestDoctorModel_TheLastAnswerStopsTheRun(t *testing.T) {
 	m := newDoctorModel(config.Config{}, containmentProbes())
 	m.markRunning(0)
 	for at := range containmentProbes() {
-		next, _ := m.Update(doctorDoneMsg{at: at,
+		m.other(doctorDoneMsg{at: at,
 			finding: doctorSandbox(sandbox.Availability{OK: true, Mechanism: "bwrap"}, "workspace", "linux")})
-		m = next.(doctorModel)
 	}
 	if m.screen.Running {
 		t.Fatal("the run is still going after every check answered")
 	}
-	if _, cmd := m.Update(doctorTickMsg(time.Now())); cmd != nil {
+	if cmd := m.other(doctorTickMsg(time.Now())); cmd != nil {
 		t.Fatal("the spinner is still ticking over a finished run")
 	}
 }
@@ -764,22 +762,20 @@ func TestDoctorModel_TheLastAnswerStopsTheRun(t *testing.T) {
 func TestDoctorModel_RerunStartsOver(t *testing.T) {
 	m := newDoctorModel(config.Config{}, containmentProbes())
 	m.markRunning(0)
-	next, _ := m.Update(doctorDoneMsg{at: 0,
+	m.other(doctorDoneMsg{at: 0,
 		finding: doctorSandbox(sandbox.Availability{OK: true, Mechanism: "bwrap"}, "workspace", "linux")})
-	next, _ = next.(doctorModel).Update(doctorDoneMsg{at: 1,
+	m.other(doctorDoneMsg{at: 1,
 		finding: doctorEngine(sandbox.Engine{Detail: "none"}, "", nil, 0)})
-	m = next.(doctorModel)
 
-	again, cmd := m.apply(components.DoctorCommand{Act: components.DoctorRerun})
-	fresh := again.(doctorModel)
+	cmd := m.apply(components.DoctorCommand{Act: components.DoctorRerun})
 	if cmd == nil {
 		t.Fatal("[r] asked for nothing")
 	}
-	if !fresh.screen.Running || fresh.screen.Checks[1].State != components.DoctorQueued {
-		t.Fatalf("[r] did not start over: %+v", fresh.screen.Checks)
+	if !m.screen.Running || m.screen.Checks[1].State != components.DoctorQueued {
+		t.Fatalf("[r] did not start over: %+v", m.screen.Checks)
 	}
-	if fresh.screen.Checks[0].State != components.DoctorRunning {
-		t.Fatalf("[r] did not start the first check: %+v", fresh.screen.Checks[0])
+	if m.screen.Checks[0].State != components.DoctorRunning {
+		t.Fatalf("[r] did not start the first check: %+v", m.screen.Checks[0])
 	}
 }
 
@@ -863,20 +859,16 @@ func TestDoctorModel_AppliedSaysWhatChangedAndRerunsTheChecks(t *testing.T) {
 	m := newDoctorModel(config.Config{}, []doctorProbe{{name: "binary", run: probeBinary}})
 	m.screen.Checks[0].State = components.DoctorPassed
 
-	next, cmd := m.applied(doctorAppliedMsg{lines: []string{"moved a to b", "moved c to d"}})
-	fresh, ok := next.(doctorModel)
-	if !ok {
-		t.Fatalf("applied returned %T", next)
+	cmd := m.applied(doctorAppliedMsg{lines: []string{"moved a to b", "moved c to d"}})
+	if !strings.Contains(m.screen.Notice, "2 changes made") {
+		t.Fatalf("the notice does not say what changed: %q", m.screen.Notice)
 	}
-	if !strings.Contains(fresh.screen.Notice, "2 changes made") {
-		t.Fatalf("the notice does not say what changed: %q", fresh.screen.Notice)
-	}
-	if !fresh.screen.Running || cmd == nil {
+	if !m.screen.Running || cmd == nil {
 		t.Fatal("the checks were not started again after the change")
 	}
 
-	stopped, _ := m.applied(doctorAppliedMsg{lines: []string{"moved a to b"}, err: errors.New("no room")})
-	notice := stopped.(doctorModel).screen.Notice
+	m.applied(doctorAppliedMsg{lines: []string{"moved a to b"}, err: errors.New("no room")})
+	notice := m.screen.Notice
 	if !strings.Contains(notice, "1 change made") || !strings.Contains(notice, "no room") {
 		t.Fatalf("a partial run does not say how far it got: %q", notice)
 	}

@@ -92,11 +92,14 @@ type ConfigChange struct {
 	Reset bool
 }
 
-// ConfigResult is how the screen closed: `[w]` confirmed, or nothing was
-// written. Canceled and Write are never both true — `[esc]` discards.
+// ConfigResult is what a key answered with: how the screen closed — `[w]`
+// confirmed, or nothing was written, and Canceled and Write are never both
+// true because `[esc]` discards — and the edit a key made with the screen
+// still up. nil is a key that changed no setting.
 type ConfigResult struct {
 	Write    bool
 	Canceled bool
+	Change   *ConfigChange
 }
 
 // ConfigScreen is `shhh config`: a takeover surface, full width, no inspector
@@ -148,7 +151,7 @@ func MaskSecret(s string) string {
 // Update is the screen's whole keyboard. The open sub-surface answers first —
 // a picker, a field, a masked entry or the write confirm owns the letters
 // while it is up (invariant 5) — and the settings list answers otherwise.
-func (c *ConfigScreen) Update(msg tea.KeyPressMsg) (done bool, result any) {
+func (c *ConfigScreen) Update(msg tea.KeyPressMsg) (done bool, result ConfigResult) {
 	c.sync()
 	switch {
 	case c.confirm != nil:
@@ -163,18 +166,18 @@ func (c *ConfigScreen) Update(msg tea.KeyPressMsg) (done bool, result any) {
 	return c.updateMenu(msg)
 }
 
-func (c *ConfigScreen) updateMenu(msg tea.KeyPressMsg) (bool, any) {
+func (c *ConfigScreen) updateMenu(msg tea.KeyPressMsg) (bool, ConfigResult) {
 	pressed := msg.String()
 	switch {
 	case pressed == "up":
 		c.move(-1)
-		return false, nil
+		return false, ConfigResult{}
 	case pressed == "down":
 		c.move(1)
-		return false, nil
+		return false, ConfigResult{}
 	case keys.Is(pressed, keys.Screen.Take):
 		c.open()
-		return false, nil
+		return false, ConfigResult{}
 	case keys.Is(pressed, keys.Select.Cancel):
 		// esc leaves and changes nothing, which on this screen is literal: nothing
 		// has reached the file yet, so discarding the staged edits is what "change
@@ -189,7 +192,7 @@ func (c *ConfigScreen) updateMenu(msg tea.KeyPressMsg) (bool, any) {
 		if c.menu.QueryChanged() {
 			c.refilter()
 		}
-		return false, nil
+		return false, ConfigResult{}
 	}
 	switch {
 	case pressed == "k":
@@ -204,7 +207,7 @@ func (c *ConfigScreen) updateMenu(msg tea.KeyPressMsg) (bool, any) {
 		c.keys = !c.keys
 	case keys.Is(pressed, keys.Screen.Reset):
 		if row := c.current(); row != nil {
-			return false, ConfigChange{Key: row.Key, Reset: true}
+			return false, ConfigResult{Change: &ConfigChange{Key: row.Key, Reset: true}}
 		}
 	case keys.Is(pressed, keys.Screen.Write):
 		if c.Changed > 0 {
@@ -212,7 +215,7 @@ func (c *ConfigScreen) updateMenu(msg tea.KeyPressMsg) (bool, any) {
 				"Write %s to %s?", plural(c.Changed, "change"), c.Path))}
 		}
 	}
-	return false, nil
+	return false, ConfigResult{}
 }
 
 // open is what `[enter]` does to the row under the pointer: a picker for a
@@ -247,24 +250,24 @@ func (c *ConfigScreen) open() {
 	}
 }
 
-func (c *ConfigScreen) updatePicker(msg tea.KeyPressMsg) (bool, any) {
+func (c *ConfigScreen) updatePicker(msg tea.KeyPressMsg) (bool, ConfigResult) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Select.Cancel):
 		// esc keeps the current value — it is the one key on this screen that is
 		// guaranteed to change nothing.
 		c.picker = nil
-		return false, nil
+		return false, ConfigResult{}
 	case keys.Is(pressed, keys.Screen.Take):
 		opts := c.picker.Options
 		if len(opts) == 0 {
-			return false, nil
+			return false, ConfigResult{}
 		}
 		chosen := opts[min(max(c.picker.Focus, 0), len(opts)-1)]
 		c.picker = nil
 		if row := c.rowAt(c.editRow); row != nil {
-			return false, ConfigChange{Key: row.Key, Value: chosen.Label}
+			return false, ConfigResult{Change: &ConfigChange{Key: row.Key, Value: chosen.Label}}
 		}
-		return false, nil
+		return false, ConfigResult{}
 	}
 	if c.picker.Filtering {
 		switch msg.String() {
@@ -278,7 +281,7 @@ func (c *ConfigScreen) updatePicker(msg tea.KeyPressMsg) (bool, any) {
 				c.refilterPicker()
 			}
 		}
-		return false, nil
+		return false, ConfigResult{}
 	}
 	switch pressed := msg.String(); {
 	case pressed == "up", pressed == "k":
@@ -288,94 +291,83 @@ func (c *ConfigScreen) updatePicker(msg tea.KeyPressMsg) (bool, any) {
 	case keys.Is(pressed, keys.Screen.Filter):
 		c.picker.Filtering = true
 	}
-	return false, nil
+	return false, ConfigResult{}
 }
 
-func (c *ConfigScreen) updateEdit(msg tea.KeyPressMsg) (bool, any) {
+func (c *ConfigScreen) updateEdit(msg tea.KeyPressMsg) (bool, ConfigResult) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Select.Cancel):
 		c.edit = nil
-		return false, nil
+		return false, ConfigResult{}
 	case keys.Is(pressed, keys.Screen.Take):
 		value := strings.TrimSpace(string(c.edit.value))
 		c.edit = nil
 		if row := c.rowAt(c.editRow); row != nil {
-			return false, ConfigChange{Key: row.Key, Value: value}
+			return false, ConfigResult{Change: &ConfigChange{Key: row.Key, Value: value}}
 		}
-		return false, nil
+		return false, ConfigResult{}
 	}
 	c.edit.update(msg)
-	return false, nil
+	return false, ConfigResult{}
 }
 
-func (c *ConfigScreen) updateSecret(msg tea.KeyPressMsg) (bool, any) {
+func (c *ConfigScreen) updateSecret(msg tea.KeyPressMsg) (bool, ConfigResult) {
 	done, result := c.secret.Update(msg)
 	if !done {
-		return false, nil
+		return false, ConfigResult{}
 	}
 	value, _ := result.(string)
 	c.secret = nil
 	// The masked entry resolves to "" on esc, which leaves the key that was
 	// already there in place — esc never destroys.
 	if value == "" {
-		return false, nil
+		return false, ConfigResult{}
 	}
 	if row := c.rowAt(c.editRow); row != nil {
-		return false, ConfigChange{Key: row.Key, Value: value}
+		return false, ConfigResult{Change: &ConfigChange{Key: row.Key, Value: value}}
 	}
-	return false, nil
+	return false, ConfigResult{}
 }
 
-func (c *ConfigScreen) updateConfirm(msg tea.KeyPressMsg) (bool, any) {
+func (c *ConfigScreen) updateConfirm(msg tea.KeyPressMsg) (bool, ConfigResult) {
 	done, result := c.confirm.Update(msg)
 	if !done {
-		return false, nil
+		return false, ConfigResult{}
 	}
 	c.confirm = nil
 	if yes, _ := result.(bool); yes {
 		return true, ConfigResult{Write: true}
 	}
-	return false, nil
+	return false, ConfigResult{}
 }
 
-// View renders the screen: the start-screen header and its rule, the settings
-// list with whatever is open under the row being changed, and one hint line
-// at the foot.
+// SetSize gives the screen the terminal's rectangle. It lays itself out from
+// the width it is rendered at, so only the height is kept.
+func (c *ConfigScreen) SetSize(_, height int) { c.MaxLines = height }
+
+// View renders the screen: the shared chrome, with the settings list in the
+// rows it leaves and whatever is open spliced in under the row being changed.
 func (c *ConfigScreen) View(width int) string {
 	if width <= 0 {
 		return ""
 	}
 	c.sync()
-	foot := c.footRows(width)
 	inline := c.inlineRows(width)
-	head := []string{c.headerRow(width), reviewRule(width), ""}
 	// The settings' own filter row is pinned above the list the way it is on
 	// every card, so what it spends comes off the list's budget before the
 	// window is drawn.
+	var head []string
 	for _, row := range c.menu.queryRows(cardWidthFor(width - menuIndent)) {
 		head = append(head, indentBy(row, menuIndent, width))
 	}
-
-	pinned := len(head) + 1 + len(foot)
-	if c.Notice != "" {
-		pinned++
-	}
-	rows := append(head, c.bodyRows(width, c.budget(pinned+len(inline)), inline)...)
-	rows = append(rows, "")
-	rows = append(rows, foot...)
-	if c.Notice != "" {
-		rows = append(rows, sty.Dim.Render(clip(c.Notice, width)))
-	}
-	return strings.Join(rows, "\n")
-}
-
-// budget is how many rows the settings list may spend: the screen's height
-// less everything pinned around it. An unbounded screen windows nothing.
-func (c *ConfigScreen) budget(pinned int) int {
-	if c.MaxLines <= 0 {
-		return 0
-	}
-	return max(c.MaxLines-pinned, 1)
+	return ScreenChrome{
+		Header:   c.header(),
+		Head:     head,
+		Foot:     c.footer(width).Rows(width),
+		Notice:   c.Notice,
+		MaxLines: c.MaxLines,
+		Reserve:  len(inline),
+	}.View(width, func(budget int) []string { return c.bodyRows(width, budget, inline) })
 }
 
 // bodyRows is the settings list with the open sub-surface spliced in under
@@ -442,51 +434,31 @@ func (c *ConfigScreen) pickerBudget(pinned int) int {
 	return max(pickerRows-pinned, 1)
 }
 
-// headerRow is the start-screen header: the command, its subject, what is
-// standing against the file, and the two keys every one of these screens
-// offers. The right-hand keys drop before the subject does — they annotate
-// the line, and an annotation goes first.
-func (c *ConfigScreen) headerRow(width int) string {
-	left := brightStyle().Render("shhh config")
+// header names the command, which file it is over, and what is standing
+// against that file. The path goes before the count of unwritten changes: a
+// change that has not reached the file yet is the one thing on this row a
+// reader cannot afford to lose sight of.
+func (c *ConfigScreen) header() ScreenHeader {
+	h := ScreenHeader{Left: []RailSegment{screenTitle("shhh config")}, Keys: screenHeaderKeys()}
 	if c.Path != "" {
-		left += sty.Dim.Render(" · " + c.Path)
+		h.Left = append(h.Left, screenField(c.Path))
 	}
 	if c.Changed > 0 {
-		left += sty.Accent.Render(" · " + plural(c.Changed, "change") + " unwritten")
+		h.Left = append(h.Left, RailSegment{
+			Text: sty.Accent.Render(" · " + plural(c.Changed, "change") + " unwritten"),
+			Drop: RailVital,
+		})
 	}
-	right := sty.Dim.Render(screenHeaderKeys())
-	if pad := width - lipgloss.Width(left) - lipgloss.Width(right); pad >= 2 {
-		return left + strings.Repeat(" ", pad) + right
-	}
-	return clip(left, width)
+	return h
 }
 
-// footRows are the keys the screen offers and the field that annotates them.
-// The field drops first; the offers never truncate, they wrap (invariant 4).
-func (c *ConfigScreen) footRows(width int) []string {
+// footer is the keys the screen offers and the field that annotates them.
+func (c *ConfigScreen) footer(width int) KeyFooter {
+	f := KeyFooter{Offers: c.offers(), Register: c.keyList(), Showing: c.keys, Field: c.footField()}
 	if c.confirm != nil {
-		return []string{clip(c.confirm.View(width), width)}
+		f.Taken = c.confirm.View(width)
 	}
-	if c.keys {
-		rows := make([]string, 0, len(c.keyList())+1)
-		for _, offer := range c.keyList() {
-			rows = append(rows, clip(keyOffers([]KeyOffer{offer}), width))
-		}
-		return append(rows, clip(keyOffers([]KeyOffer{hideKeysOffer()}), width))
-	}
-	rows := wrapOffers(c.offers(), width)
-	if len(rows) == 0 {
-		return rows
-	}
-	field := c.footField()
-	if field == "" {
-		return rows
-	}
-	painted := sty.Dim.Render(field)
-	if pad := width - lipgloss.Width(rows[0]) - lipgloss.Width(painted); pad >= 2 {
-		rows[0] += strings.Repeat(" ", pad) + painted
-	}
-	return rows
+	return f
 }
 
 // offers is the key row for whichever surface holds the keyboard.
@@ -744,5 +716,5 @@ func indentBy(row string, n, width int) string {
 	if lipgloss.Width(row) == 0 {
 		return ""
 	}
-	return clip(strings.Repeat(" ", n)+row, width)
+	return Clip(strings.Repeat(" ", n)+row, width)
 }

@@ -85,7 +85,7 @@ func (c *PlanCard) View(width int) string {
 	// render whole rather than through a window.
 	tail := c.tailRows(width, inner, sel.optionRows(width, true, 0, len(c.Options)))
 	rows := c.bodyRows(inner, c.bodyBudget(len(tail)))
-	return renderChromeCard(cardChrome{title: c.Title, chips: c.chips()}, append(rows, tail...), width)
+	return Card{Title: c.Title, Chips: c.chips()}.Render(append(rows, tail...), width)
 }
 
 // chips is the step count on the title rail, which is the one thing about the
@@ -151,7 +151,7 @@ func (c *PlanCard) bodyRows(inner, budget int) []string {
 	// is reserved for that count.
 	for i, g := range groups {
 		if len(rows)+len(g) > budget-1 {
-			return append(rows, sty.Hint.Render(clip(remainder(len(c.Steps)-i, len(rows) > 0), inner)))
+			return append(rows, sty.Hint.Render(Clip(remainder(len(c.Steps)-i, len(rows) > 0), inner)))
 		}
 		rows = append(rows, g...)
 	}
@@ -179,7 +179,7 @@ func boundProse(prose []string, inner, budget int) []string {
 	}
 	var rows []string
 	for _, line := range prose {
-		rows = append(rows, sty.Body.Render(clip(line, inner)))
+		rows = append(rows, sty.Body.Render(Clip(line, inner)))
 	}
 	if truncated {
 		rows = append(rows, sty.Hint.Render("…"))
@@ -198,9 +198,9 @@ func (s PlanStep) rows(inner int) []string {
 			head += strings.Repeat(" ", gap) + kind
 		}
 	}
-	rows := []string{clip(head, inner)}
+	rows := []string{Clip(head, inner)}
 	if s.Detail != "" {
-		rows = append(rows, sty.Dimmer.Render(clip("  "+s.Detail, inner)))
+		rows = append(rows, sty.Dimmer.Render(Clip("  "+s.Detail, inner)))
 	}
 	return rows
 }
@@ -223,5 +223,5 @@ func (c *PlanCard) summaryRow(inner int) string {
 			line += sty.Dimmer.Render(detail)
 		}
 	}
-	return clip(line, inner)
+	return Clip(line, inner)
 }

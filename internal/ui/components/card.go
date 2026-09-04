@@ -19,9 +19,12 @@ const minCardWidth = 12
 // line instead of truncating (AGENTS.md).
 const narrowWidth = 60
 
-// clip truncates s to the given display width, ANSI-aware, ending with … when
-// anything was dropped.
-func clip(s string, width int) string {
+// Clip truncates s to the given display width, ANSI-aware, ending with … when
+// anything was dropped. It measures display cells rather than bytes or runes,
+// which is why a surface outside this package reaches for it rather than
+// writing its own: a slice by rune cuts a wide glyph in half and a slice by
+// byte cuts an escape sequence in half.
+func Clip(s string, width int) string {
 	if width <= 0 {
 		return ""
 	}
@@ -41,32 +44,32 @@ func clip(s string, width int) string {
 // sees them.
 const cardRule = "\x00rule"
 
-// cardChrome is a card's frame beyond its rows: the title, the chips that
-// ride the top border right-aligned, and the border colour. A zero value is
-// the plain gray frame every other card has always had.
-type cardChrome struct {
-	title string
-	// chips sit at the right end of the top border, joined by ─ separators.
+// Card is a card's frame beyond its rows: the title, the chips that ride the
+// top border right-aligned, and the border colour. A zero value is the plain
+// gray frame every other card has always had.
+type Card struct {
+	Title string
+	// Chips sit at the right end of the top border, joined by ─ separators.
 	// They drop from the front as the terminal narrows, so the last chip —
 	// the one that leads the decision — is the one that survives.
-	chips []string
-	// style colours the border; nil is the default gray.
-	style *lipgloss.Style
+	Chips []string
+	// Style colours the border; nil is the default gray.
+	Style *lipgloss.Style
 }
 
-// renderCard frames rows in a box with the title in the top border
-// (docs/interface/surfaces.md#the-approval-card). Rows are clipped and padded
-// to the inner width.
-func renderCard(title string, rows []string, width int) string {
-	return renderChromeCard(cardChrome{title: title}, rows, width)
-}
+// Inner is the width a card's rows are laid out in at the given total width:
+// the frame takes four columns and the rows get the rest. Callers wrap and
+// measure against this rather than against the total, which is why it is a
+// method and not four columns subtracted in eight places.
+func (c Card) Inner(width int) int { return max(width-cardFrameWidth, 1) }
 
-// renderChromeCard is renderCard with the top border's chips and the border
-// colour under the caller's control.
-func renderChromeCard(c cardChrome, rows []string, width int) string {
+// Render frames rows in the card: the title in the top border, the chips at
+// its right end (docs/interface/surfaces.md#the-approval-card). Rows are
+// clipped and padded to the inner width.
+func (c Card) Render(rows []string, width int) string {
 	border := sty.Border
-	if c.style != nil {
-		border = *c.style
+	if c.Style != nil {
+		border = *c.Style
 	}
 	if width < minCardWidth {
 		return strings.Join(dropRules(rows), "\n")
@@ -80,7 +83,7 @@ func renderChromeCard(c cardChrome, rows []string, width int) string {
 			b.WriteString("\n" + border.Render("├"+strings.Repeat("─", max(0, width-2))+"┤"))
 			continue
 		}
-		row = clip(row, inner)
+		row = Clip(row, inner)
 		pad := strings.Repeat(" ", max(0, inner-lipgloss.Width(row)))
 		b.WriteString("\n" + border.Render("│") + " " + row + pad + " " + border.Render("│"))
 	}
@@ -92,9 +95,9 @@ func renderChromeCard(c cardChrome, rows []string, width int) string {
 // right, and the rule between them. Chips are dropped from the front until
 // what is left fits beside the title; a title that still does not fit is
 // clipped, which is the one thing that never happens to a chip.
-func cardTop(c cardChrome, width int) string {
-	left := "┌─ " + c.title + " "
-	chips := c.chips
+func cardTop(c Card, width int) string {
+	left := "┌─ " + c.Title + " "
+	chips := c.Chips
 	for {
 		right := chipRun(chips)
 		if lipgloss.Width(left)+lipgloss.Width(right)+1 <= width-1 {
@@ -106,7 +109,7 @@ func cardTop(c cardChrome, width int) string {
 		}
 		chips = chips[1:]
 	}
-	left = clip(left, width-1)
+	left = Clip(left, width-1)
 	return left + strings.Repeat("─", max(0, width-1-lipgloss.Width(left))) + "┐"
 }
 
@@ -135,21 +138,6 @@ func dropRules(rows []string) []string {
 	return out
 }
 
-// hintRows renders key-hint segments: joined with · on one line when the
-// width allows, stacked one per line on narrow terminals rather than
-// truncated.
-func hintRows(segments []string, width int) []string {
-	joined := strings.Join(segments, " · ")
-	if width >= narrowWidth || lipgloss.Width(joined) <= width-cardFrameWidth {
-		return []string{sty.Hint.Render(joined)}
-	}
-	rows := make([]string, 0, len(segments))
-	for _, s := range segments {
-		rows = append(rows, sty.Hint.Render(s))
-	}
-	return rows
-}
-
 // notYetLiveWords is what a key row says about itself while the surface
 // offering it does not hold the keyboard. It is words rather than a border
 // colour because invariant 1 does not stop applying to the state of a key.
@@ -165,15 +153,15 @@ const notYetLiveWords = "not live yet"
 // one that cannot be pressed at all (the palette's ⊘), so the two never render
 // alike: this one is waiting for the keyboard, that one is refused.
 func notYetLiveRows(keys, handover string, width int) []string {
-	inner := max(width-cardFrameWidth, 1)
-	keys = clip(keys, inner)
+	inner := Card{}.Inner(width)
+	keys = Clip(keys, inner)
 	rows := make([]string, 0, 3)
 	// The words sit on the key row itself where the terminal carries them,
 	// so the state is read in the same glance as the keys it describes.
 	if pad := inner - lipgloss.Width(keys) - lipgloss.Width(notYetLiveWords); pad >= 2 {
 		rows = append(rows, sty.Dimmer.Render(keys)+strings.Repeat(" ", pad)+sty.Dim.Render(notYetLiveWords))
 	} else {
-		rows = append(rows, sty.Dimmer.Render(keys), sty.Dim.Render(clip(notYetLiveWords, inner)))
+		rows = append(rows, sty.Dimmer.Render(keys), sty.Dim.Render(Clip(notYetLiveWords, inner)))
 	}
 	if handover != "" {
 		rows = append(rows, handoverRow(handover, inner))
@@ -192,12 +180,12 @@ const graceWords = "keys live in a moment"
 // glance (invariant 1: the dimming never carries the meaning alone) — with
 // no handover row, because the card already holds the keyboard.
 func graceRows(keys string, width int) []string {
-	inner := max(width-cardFrameWidth, 1)
-	keys = clip(keys, inner)
+	inner := Card{}.Inner(width)
+	keys = Clip(keys, inner)
 	if pad := inner - lipgloss.Width(keys) - lipgloss.Width(graceWords); pad >= 2 {
 		return []string{sty.Dimmer.Render(keys) + strings.Repeat(" ", pad) + sty.Dim.Render(graceWords)}
 	}
-	return []string{sty.Dimmer.Render(keys), sty.Dim.Render(clip(graceWords, inner))}
+	return []string{sty.Dimmer.Render(keys), sty.Dim.Render(Clip(graceWords, inner))}
 }
 
 // handoverRow is the one live key on a not-yet-live surface. Its wording is
@@ -207,7 +195,7 @@ func handoverRow(key string, inner int) string {
 	head := sty.Info.Render("["+key+"]") + sty.Body.Render(" answer it")
 	tail := sty.Dim.Render(" — until then these letters go into your draft")
 	if lipgloss.Width(head)+lipgloss.Width(tail) > inner {
-		return clip(head, inner)
+		return Clip(head, inner)
 	}
 	return head + tail
 }

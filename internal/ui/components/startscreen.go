@@ -92,18 +92,18 @@ func (s StartScreen) View(width int) string {
 	if len(s.Suggestions) > 0 {
 		rows = append(rows, "")
 		if s.Lead != "" {
-			rows = append(rows, sty.Dim.Render(clip(s.Lead, width)))
+			rows = append(rows, sty.Dim.Render(Clip(s.Lead, width)))
 		}
 		rows = append(rows, s.suggestionRows(width)...)
 	}
 	if s.Hint != "" {
-		rows = append(rows, "", sty.Hint.Render(clip(s.Hint, width)))
+		rows = append(rows, "", sty.Hint.Render(Clip(s.Hint, width)))
 	}
 	if s.Nav != "" {
 		if s.Hint == "" {
 			rows = append(rows, "")
 		}
-		rows = append(rows, sty.Hint.Render(clip(s.Nav, width)))
+		rows = append(rows, sty.Hint.Render(Clip(s.Nav, width)))
 	}
 	return strings.Join(rows, "\n")
 }
@@ -116,7 +116,7 @@ func (s StartScreen) factLine(width int) string {
 	for {
 		line := joinFacts(facts)
 		if len(facts) <= 1 || lipgloss.Width(line) <= width {
-			return clip(line, width)
+			return Clip(line, width)
 		}
 		facts = facts[:len(facts)-1]
 	}
@@ -151,14 +151,14 @@ func (s StartScreen) noteRows(width int) []string {
 	for _, n := range s.Notes {
 		head := sty.Dim.Render(padRight(n.Label, label)) + "  " + sty.Body.Render(n.Value)
 		if n.Detail == "" {
-			rows = append(rows, clip(head, width))
+			rows = append(rows, Clip(head, width))
 			continue
 		}
 		if full := head + sty.Dim.Render(" — "+n.Detail); lipgloss.Width(full) <= width {
 			rows = append(rows, full)
 			continue
 		}
-		rows = append(rows, clip(head, width), clip(indent+sty.Dim.Render(n.Detail), width))
+		rows = append(rows, Clip(head, width), Clip(indent+sty.Dim.Render(n.Detail), width))
 	}
 	return rows
 }
@@ -184,7 +184,7 @@ func (s StartScreen) suggestionRows(width int) []string {
 			continue
 		}
 		rows = append(rows, s.row(focused, head, "", width),
-			clip(strings.Repeat(" ", suggestionGutter+2)+sty.Dim.Render(sg.Detail), width))
+			Clip(strings.Repeat(" ", suggestionGutter+2)+sty.Dim.Render(sg.Detail), width))
 	}
 	return rows
 }
@@ -198,14 +198,14 @@ func (s StartScreen) row(focused bool, head, detail string, width int) string {
 		if detail != "" {
 			line += " — " + detail
 		}
-		return sty.FocusRow.Render(clip(line, width))
+		return sty.FocusRow.Render(Clip(line, width))
 	}
 	glyph, title, _ := strings.Cut(strings.TrimLeft(head, " "), " ")
 	line := strings.Repeat(" ", suggestionGutter) + sty.Accent.Render(glyph) + " " + sty.Body.Render(title)
 	if detail != "" {
 		line += sty.Dim.Render(" — " + detail)
 	}
-	return clip(line, width)
+	return Clip(line, width)
 }
 
 // FocusAfter moves the pointer by delta and returns the new index, bounded to

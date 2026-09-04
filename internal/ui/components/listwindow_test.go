@@ -150,7 +150,7 @@ func TestMultiSelectWindow_SelectionSurvivesScrolling(t *testing.T) {
 	if !done {
 		t.Fatalf("enter should apply the two ticked rows")
 	}
-	if got := result.(MultiSelectResult).Indices; len(got) != 2 || got[0] != 0 || got[1] != 1 {
+	if got := result.Indices; len(got) != 2 || got[0] != 0 || got[1] != 1 {
 		t.Fatalf("applying should take the rows that were ticked before the scroll, got %v", got)
 	}
 }

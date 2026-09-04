@@ -25,7 +25,6 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
-	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -88,7 +87,14 @@ type RateAnswer struct {
 
 // RateResult is how the screen closed: because the reader stopped, or because
 // there was nothing left to ask about.
-type RateResult struct{ Stopped bool }
+type RateResult struct {
+	Stopped bool
+	// Answer is what the reader said about the card that was showing. It
+	// arrives with the screen still up on all but the last card, which is
+	// what lets a run of entries be answered without a key between them.
+	// nil is a key that answered nothing.
+	Answer *RateAnswer
+}
 
 // RateScreen is `shhh rate`: a takeover surface, full width, no inspector
 // rail, owning the keyboard for as long as it is up.
@@ -111,12 +117,12 @@ type RateScreen struct {
 
 // Update is the screen's whole keyboard: three answers, the register, and the
 // way out.
-func (r *RateScreen) Update(msg tea.KeyPressMsg) (done bool, result any) {
+func (r *RateScreen) Update(msg tea.KeyPressMsg) (done bool, result RateResult) {
 	pressed := msg.String()
 	switch {
 	case keys.Is(pressed, keys.Screen.List):
 		r.keys = !r.keys
-		return false, nil
+		return false, RateResult{}
 	case keys.Is(pressed, keys.Screen.Quit):
 		return true, RateResult{Stopped: true}
 	}
@@ -125,7 +131,7 @@ func (r *RateScreen) Update(msg tea.KeyPressMsg) (done bool, result any) {
 	// only key this card has, which is what the row it draws says.
 	row := r.current()
 	if row == nil {
-		return false, nil
+		return false, RateResult{}
 	}
 	var act RateAct
 	switch {
@@ -136,14 +142,14 @@ func (r *RateScreen) Update(msg tea.KeyPressMsg) (done bool, result any) {
 	case keys.Is(pressed, keys.Screen.Skip):
 		act = RateSkipped
 	default:
-		return false, nil
+		return false, RateResult{}
 	}
 	// The card is answered and gone in the same keystroke: the answer is
 	// carried back for the host to write, and the screen is already showing
 	// the next question. A run of entries is answered without a key between
 	// them, which is the whole reason this surface is a screen and not a list.
 	r.Focus++
-	return r.Focus >= len(r.Rows), RateAnswer{Act: act, ID: row.ID}
+	return r.Focus >= len(r.Rows), RateResult{Answer: &RateAnswer{Act: act, ID: row.ID}}
 }
 
 // current is the row the card is over, or nil once every one has been
@@ -155,55 +161,32 @@ func (r *RateScreen) current() *RateRow {
 	return &r.Rows[r.Focus]
 }
 
-// View renders the screen: the start-screen header and its rule, one card,
-// and the key row at the foot.
+// SetSize gives the screen the terminal's rectangle. It lays itself out from
+// the width it is rendered at, so only the height is kept.
+func (r *RateScreen) SetSize(_, height int) { r.MaxLines = height }
+
+// View renders the screen: the shared chrome, with one card in the rows it
+// leaves.
 func (r *RateScreen) View(width int) string {
 	if width <= 0 {
 		return ""
 	}
-	foot := r.footRows(width)
-	head := []string{r.headerRow(width), reviewRule(width), ""}
-
-	pinned := len(head) + 1 + len(foot)
-	if r.Notice != "" {
-		pinned++
-	}
-	rows := append(head, r.cardRows(width, r.budget(pinned))...)
-	rows = append(rows, "")
-	rows = append(rows, foot...)
-	if r.Notice != "" {
-		rows = append(rows, sty.Dim.Render(clip(r.Notice, width)))
-	}
-	return strings.Join(rows, "\n")
+	return ScreenChrome{
+		Header:   r.header(),
+		Foot:     r.footer().Rows(width),
+		Notice:   r.Notice,
+		MaxLines: r.MaxLines,
+	}.View(width, func(budget int) []string { return r.cardRows(width, budget) })
 }
 
-// budget is how many rows the card may spend: the screen's height less
-// everything pinned around it. An unbounded screen folds nothing.
-func (r *RateScreen) budget(pinned int) int {
-	if r.MaxLines <= 0 {
-		return 0
-	}
-	return max(r.MaxLines-pinned, 1)
-}
-
-// headerRow is the start-screen header: the command, how far through the
-// entries the reader is, and the two keys every one of these screens offers.
-//
-// These keys drop before the count does on a terminal too narrow for both,
-// which is the history browser's trade rather than the doctor's. The two are
-// not in disagreement: doctor and metrics keep `[q]` because dropping it would
-// leave a takeover with no stated way out (invariant 5), and this screen has a
-// foot key row that states the way out whatever the header does.
-func (r *RateScreen) headerRow(width int) string {
-	left := brightStyle().Render("shhh rate")
+// header names the command and says how far through the entries the reader
+// is.
+func (r *RateScreen) header() ScreenHeader {
+	h := ScreenHeader{Left: []RailSegment{screenTitle("shhh rate")}, Keys: screenHeaderKeys()}
 	if subject := r.subject(); subject != "" {
-		left += sty.Dim.Render(" · " + subject)
+		h.Left = append(h.Left, screenField(subject))
 	}
-	right := sty.Dim.Render(screenHeaderKeys())
-	if pad := width - lipgloss.Width(left) - lipgloss.Width(right); pad >= 2 {
-		return left + strings.Repeat(" ", pad) + right
-	}
-	return clip(left, width)
+	return h
 }
 
 // subject is `3 of 7`: which card is up and how many there were. It counts
@@ -225,9 +208,9 @@ func (r *RateScreen) subject() string {
 func (r *RateScreen) cardRows(width, budget int) []string {
 	row := r.current()
 	if row == nil {
-		return []string{sty.Dim.Render(clip("every one of them has been asked about", width))}
+		return []string{sty.Dim.Render(Clip("every one of them has been asked about", width))}
 	}
-	inner := max(width-cardFrameWidth, 1)
+	inner := Card{}.Inner(width)
 	body := wrapSpans([]styledSpan{{row.Prompt, sty.Body}}, inner)
 	body = append(body, "")
 	body = append(body, gridRows(ActivityRow{
@@ -242,20 +225,12 @@ func (r *RateScreen) cardRows(width, budget int) []string {
 		}
 		body = truncRows(body, budget-2, inner)
 	}
-	return strings.Split(renderCard(row.When, body, width), "\n")
+	return strings.Split(Card{Title: row.When}.Render(body, width), "\n")
 }
 
-// footRows are the keys the screen offers, or the whole register behind
-// `[?]`. Nothing here truncates: the offers wrap (invariant 4).
-func (r *RateScreen) footRows(width int) []string {
-	if r.keys {
-		rows := make([]string, 0, len(r.keyList())+1)
-		for _, offer := range r.keyList() {
-			rows = append(rows, clip(keyOffers([]KeyOffer{offer}), width))
-		}
-		return append(rows, clip(keyOffers([]KeyOffer{hideKeysOffer()}), width))
-	}
-	return wrapOffers(r.offers(), width)
+// footer is the keys the screen offers, or the whole register behind `[?]`.
+func (r *RateScreen) footer() KeyFooter {
+	return KeyFooter{Offers: r.offers(), Register: r.keyList(), Showing: r.keys}
 }
 
 // offers is the key row. Once the last card has been answered the three

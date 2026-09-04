@@ -26,7 +26,7 @@ func (c *Confirm) Update(msg tea.KeyPressMsg) (done bool, result any) {
 }
 
 func (c *Confirm) View(width int) string {
-	return clip(c.Prompt+"  "+sty.Headline.Render(confirmKeys()), width)
+	return Clip(c.Prompt+"  "+sty.Headline.Render(confirmKeys()), width)
 }
 
 // confirmKeys is the answer set every confirm in the product draws: the two

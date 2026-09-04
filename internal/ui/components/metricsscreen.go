@@ -132,60 +132,43 @@ type MetricsScreen struct {
 // nothing to choose and nothing to change, so there is no key list to open
 // either — a `[?]` over a single key would be a row explaining the row above
 // it.
-func (m *MetricsScreen) Update(msg tea.KeyPressMsg) (done bool, result any) {
+func (m *MetricsScreen) Update(msg tea.KeyPressMsg) (done bool, result struct{}) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Screen.Quit):
-		return true, nil
+		return true, struct{}{}
 	}
-	return false, nil
+	return false, struct{}{}
 }
 
-// View renders the screen: the start-screen header and its rule, the model
-// table, and the meter blocks under it.
+// SetSize gives the screen the terminal's rectangle. It lays itself out from
+// the width it is rendered at, so only the height is kept.
+func (m *MetricsScreen) SetSize(_, height int) { m.MaxLines = height }
+
+// View renders the screen: the shared chrome, with the model table and the
+// meter blocks in the rows it leaves. There is no footer — the screen has one
+// key and it is in the header.
 func (m *MetricsScreen) View(width int) string {
 	if width <= 0 {
 		return ""
 	}
-	head := []string{m.headerRow(width), reviewRule(width), ""}
-	rows := append(head, m.bodyRows(width, m.budget(len(head)))...)
-	return strings.Join(rows, "\n")
+	return ScreenChrome{Header: m.header(), MaxLines: m.MaxLines}.
+		View(width, func(budget int) []string { return m.bodyRows(width, budget) })
 }
 
-// budget is how many rows the body may spend: the screen's height less the
-// header and its rule. An unbounded screen drops nothing.
-func (m *MetricsScreen) budget(pinned int) int {
-	if m.MaxLines <= 0 {
-		return 0
+// header names the command and what it is over, with the total spend beside
+// the one key the screen has. The spend sits with the key rather than in the
+// subject because it is the answer the reader came for, and this is where the
+// eye already goes for the state of a surface.
+func (m *MetricsScreen) header() ScreenHeader {
+	h := ScreenHeader{
+		Left:  []RailSegment{screenTitle("shhh metrics")},
+		Keys:  keys.Bracket(keys.Screen.Quit) + " " + keys.Words(keys.Screen.Quit),
+		Tally: sty.Body.Render(m.Spend),
 	}
-	return max(m.MaxLines-pinned, 1)
-}
-
-// headerRow is the start-screen header: the command, what it is over, the
-// total spend and the one key the screen has. The spend sits with the key
-// rather than in the subject because it is the answer the reader came for,
-// and the metrics screen puts it where the eye already goes for the state of
-// a surface.
-//
-// It is the subject that gives ground here, not the right-hand pair — the
-// other two supporting screens clip the left and let their keys go, because
-// both have a foot key row to fall back on. This one has neither a foot row
-// nor a second key, so dropping `[q]` would leave a takeover surface with no
-// stated way out of it (invariant 5).
-func (m *MetricsScreen) headerRow(width int) string {
-	quit := keys.Bracket(keys.Screen.Quit) + " " + keys.Words(keys.Screen.Quit)
-	right := sty.Dim.Render(quit)
-	if m.Spend != "" {
-		right = sty.Body.Render(m.Spend) + sty.Dim.Render(" · "+quit)
+	if m.Subject != "" {
+		h.Left = append(h.Left, screenField(m.Subject))
 	}
-	left := brightStyle().Render("shhh metrics")
-	room := width - lipgloss.Width(right) - 2
-	if m.Subject != "" && room > lipgloss.Width(left) {
-		left = clip(left+sty.Dim.Render(" · "+m.Subject), room)
-	}
-	if pad := width - lipgloss.Width(left) - lipgloss.Width(right); pad >= 2 {
-		return left + strings.Repeat(" ", pad) + right
-	}
-	return clip(right, width)
+	return h
 }
 
 // bodyRows is the table and the blocks under it, trimmed to the budget. The
@@ -242,7 +225,7 @@ func (m *MetricsScreen) droppedRow(dropped, width int) string {
 	for _, block := range m.Blocks[len(m.Blocks)-dropped:] {
 		titles = append(titles, block.Title)
 	}
-	return sty.Dim.Render(clip(
+	return sty.Dim.Render(Clip(
 		fmt.Sprintf("↓ %d more · %s", dropped, strings.Join(titles, " · ")), width))
 }
 
@@ -450,7 +433,7 @@ func titleRow(block MetricsBlock, width int) string {
 	if pad := width - lipgloss.Width(left) - lipgloss.Width(right); pad >= 2 && block.Field != "" {
 		return left + strings.Repeat(" ", pad) + right
 	}
-	return clip(left, width)
+	return Clip(left, width)
 }
 
 // barGeometry is the column every bar in a block starts its meter after, and
@@ -478,15 +461,15 @@ func (m *MetricsScreen) barGeometry(block MetricsBlock, width int) (label int, n
 // never does.
 func barRow(bar MetricsBar, label int, notes bool, width int) string {
 	meter := Meter{Pct: bar.Pct, Cells: MeterCellsRail, Tone: bar.Tone, Text: bar.Text}
-	left := sty.Dim.Render(padRight(clip(bar.Label, label), label)) + "  " + meter.View()
+	left := sty.Dim.Render(padRight(Clip(bar.Label, label), label)) + "  " + meter.View()
 	if bar.Note == "" || !notes {
-		return clip(left, width)
+		return Clip(left, width)
 	}
 	note := bar.NoteTone.style().Render(bar.Note)
 	if pad := width - lipgloss.Width(left) - lipgloss.Width(note); pad >= 2 {
 		return left + strings.Repeat(" ", pad) + note
 	}
-	return clip(left, width)
+	return Clip(left, width)
 }
 
 // flatten runs the sections together into the rows they render to.

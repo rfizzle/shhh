@@ -46,7 +46,7 @@ func NewNoteSelect(title string, options []SelectOption) *NoteSelect {
 	return &NoteSelect{Select: Select{Title: title, Options: options}, Note: ta}
 }
 
-func (s *NoteSelect) Update(msg tea.KeyPressMsg) (done bool, result any) {
+func (s *NoteSelect) Update(msg tea.KeyPressMsg) (done bool, result NoteSelectResult) {
 	s.noteMissing = false
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Select.Note):
@@ -56,13 +56,13 @@ func (s *NoteSelect) Update(msg tea.KeyPressMsg) (done bool, result any) {
 		} else {
 			s.Note.Blur()
 		}
-		return false, nil
+		return false, NoteSelectResult{}
 	case keys.Is(pressed, keys.Select.Take):
 		idx := s.Select.Focus
 		note := strings.TrimSpace(s.Note.Value())
 		if idx < len(s.Select.Options) && s.Select.Options[idx].RequireNote && note == "" {
 			s.noteMissing = true
-			return false, nil
+			return false, NoteSelectResult{}
 		}
 		return true, NoteSelectResult{Index: idx, Note: note}
 	case keys.Is(pressed, keys.Select.Cancel):
@@ -70,7 +70,7 @@ func (s *NoteSelect) Update(msg tea.KeyPressMsg) (done bool, result any) {
 	}
 	if s.FocusNote {
 		s.Note, _ = s.Note.Update(msg)
-		return false, nil
+		return false, NoteSelectResult{}
 	}
 	// List focus with the query line open: the query line is the surface, so
 	// everything but movement is text — the same reading the plain card makes
@@ -85,7 +85,7 @@ func (s *NoteSelect) Update(msg tea.KeyPressMsg) (done bool, result any) {
 		default:
 			s.Select.editQuery(msg)
 		}
-		return false, nil
+		return false, NoteSelectResult{}
 	}
 	// List focus: reuse the single-select movement; its enter/esc/digit paths
 	// are unreachable here (handled above), except digits, which should type
@@ -104,7 +104,7 @@ func (s *NoteSelect) Update(msg tea.KeyPressMsg) (done bool, result any) {
 			s.Select.Focus = s.Select.selectableIndex(n)
 		}
 	}
-	return false, nil
+	return false, NoteSelectResult{}
 }
 
 func (s *NoteSelect) View(width int) string {
@@ -125,14 +125,14 @@ func (s *NoteSelect) View(width int) string {
 		if text == "" {
 			text = "(none)"
 		}
-		noteView = sty.Dimmer.Render(clip(text, max(inner-2, 8)))
+		noteView = sty.Dimmer.Render(Clip(text, max(inner-2, 8)))
 	}
 	// The note field and the hints are pinned under the list, so what they
 	// spend comes off the list's budget before its window is drawn —
 	// otherwise a long list pushes the note itself off the card.
-	tail := []string{labelStyle.Render(clip("┄ "+noteLabel, inner))}
+	tail := []string{labelStyle.Render(Clip("┄ "+noteLabel, inner))}
 	for _, l := range strings.Split(noteView, "\n") {
-		tail = append(tail, clip("  "+l, inner))
+		tail = append(tail, Clip("  "+l, inner))
 	}
 	// The note field's own key leads, because it is the one this card has
 	// that the plain selector does not.
@@ -154,5 +154,5 @@ func (s *NoteSelect) View(width int) string {
 	rows = append(head, rows...)
 	rows = append(rows, tail...)
 	rows = boundRows(rows, s.Select.MaxLines)
-	return renderChromeCard(cardChrome{title: s.Select.Title, chips: s.Select.chips(shown)}, rows, width)
+	return Card{Title: s.Select.Title, Chips: s.Select.chips(shown)}.Render(rows, width)
 }

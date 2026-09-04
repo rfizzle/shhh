@@ -396,11 +396,10 @@ func (m Model) updatePasteDrop(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.leaveSurface()
 		return m, nil
 	}
-	done, result := m.pasteDrop.Update(msg)
+	done, res := m.pasteDrop.Update(msg)
 	if !done {
 		return m, nil
 	}
-	res := result.(components.MultiSelectResult)
 	m.pasteDrop = nil
 	m.leaveSurface()
 	m.syncViewport()

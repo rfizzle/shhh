@@ -134,7 +134,7 @@ func TestSelectFilter_ClearAndLeave(t *testing.T) {
 
 	s = filtered("mini")
 	done, result := s.Update(key("esc"))
-	if !done || !result.(SelectResult).Canceled {
+	if !done || !result.Canceled {
 		t.Fatalf("esc should leave the picker changing nothing, got %v %v", done, result)
 	}
 }
@@ -163,7 +163,7 @@ func TestSelectFilter_ClearingAnEmptyQueryClosesTheRow(t *testing.T) {
 	}
 
 	done, result := s.Update(key("d"))
-	if !done || !result.(SelectResult).Alt {
+	if !done || !result.Alt {
 		t.Fatalf("the letter should be a key again, got %v %v", done, result)
 	}
 }
@@ -254,7 +254,7 @@ func TestSelectFilter_NoMatchIsARowNotAnEmptyPane(t *testing.T) {
 	}
 	// esc still changes nothing.
 	done, result := s.Update(key("esc"))
-	if !done || !result.(SelectResult).Canceled {
+	if !done || !result.Canceled {
 		t.Fatalf("esc should still leave without changing anything, got %v %v", done, result)
 	}
 }

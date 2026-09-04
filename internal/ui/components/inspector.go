@@ -707,7 +707,7 @@ func (r InspectorRail) summaryBlock(width int) (railBlock, bool) {
 	lines := wrapPlain(s.Text, width-inspectorIndent)
 	if len(lines) > summaryLines {
 		lines = lines[:summaryLines]
-		lines[summaryLines-1] = clip(lines[summaryLines-1], width-inspectorIndent-1) + "…"
+		lines[summaryLines-1] = Clip(lines[summaryLines-1], width-inspectorIndent-1) + "…"
 	}
 	for i, line := range lines {
 		// The first line is pinned: a block truncated to its heading would
@@ -1390,7 +1390,7 @@ func railRow(left, right string, width, indent int) string {
 	if right != "" {
 		room-- // at least one space between the fields
 	}
-	left = clip(left, max(room, 0))
+	left = Clip(left, max(room, 0))
 	gap := width - indent - lipgloss.Width(left) - lipgloss.Width(right)
 	return strings.Repeat(" ", indent) + left + strings.Repeat(" ", max(gap, 0)) + right
 }

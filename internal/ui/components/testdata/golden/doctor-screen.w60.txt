@@ -90,7 +90,7 @@ shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
 [↑↓] move · [c] copy the report · [r] run the checks again
 
 · still going · what has answered, one running, the rest queued
-shhh doctor · 10 checks · ▸ run…  0.3s · [?] keys · [q] quit
+shhh doctor · ▸ running           0.3s · [?] keys · [q] quit
 ────────────────────────────────────────────────────────────
 
    ✓ binary  shhh 0.9.4 · darwin/arm64 · ~/.local…  ok
@@ -250,7 +250,7 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
 ␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m run the checks again␛[m
 
 · still going · what has answered, one running, the rest queued
-␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m␛[38;5;241m · ␛[m␛[38;5;205m▸ run…␛[m  ␛[38;5;245m0.3s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
+␛[1;97mshhh doctor␛[m␛[38;5;241m · ␛[m␛[38;5;205m▸ running␛[m           ␛[38;5;245m0.3s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
    ␛[92m✓␛[m binary  ␛[38;5;252mshhh 0.9.4␛[m␛[38;5;241m · darwin/arm64 · ~/.local…␛[m  ␛[38;5;241mok␛[m

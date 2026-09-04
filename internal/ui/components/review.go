@@ -156,10 +156,14 @@ type ReviewView struct {
 	wide bool
 }
 
+// SetSize gives the surface the terminal's rectangle. It lays itself out
+// from the width it is rendered at, so only the height is kept.
+func (v *ReviewView) SetSize(_, height int) { v.Height = height }
+
 // Update handles keys while review has the screen. done reports that the
 // surface is finished, with a ReviewResult saying what was staged or that it
 // was cancelled.
-func (v *ReviewView) Update(msg tea.KeyPressMsg) (done bool, result any) {
+func (v *ReviewView) Update(msg tea.KeyPressMsg) (done bool, result ReviewResult) {
 	v.notice = ""
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Review.Back):
@@ -194,11 +198,11 @@ func (v *ReviewView) Update(msg tea.KeyPressMsg) (done bool, result any) {
 			v.notice = "nothing staged — " + keys.Shown(keys.Review.StageHunk) +
 				" stages a hunk, " + keys.Shown(keys.Review.StageFile) + " a file, " +
 				keys.Shown(keys.Review.StageAll) + " everything"
-			return false, nil
+			return false, ReviewResult{}
 		}
 		return true, ReviewResult{Staged: staged}
 	}
-	return false, nil
+	return false, ReviewResult{}
 }
 
 // current is the focused file, or nil when there is nothing to review.
@@ -377,7 +381,7 @@ func (v *ReviewView) stackedBody(width, rows int) []string {
 		pane = reviewMinPane
 		list = truncRows(list, avail-pane-1, width)
 	}
-	body := append(list, reviewRule(width))
+	body := append(list, screenRule(width))
 	body = append(body, v.paneRows(width, pane)...)
 	return append(body, pinned...)
 }
@@ -390,7 +394,7 @@ func truncRows(rows []string, limit, width int) []string {
 	}
 	keep := max(limit-1, 1)
 	return append(rows[:keep:keep],
-		sty.Hint.Render(clip(fmt.Sprintf("… (+%d more rows)", len(rows)-keep), width)))
+		sty.Hint.Render(Clip(fmt.Sprintf("… (+%d more rows)", len(rows)-keep), width)))
 }
 
 // joinReviewPanes lays the list and the pane side by side, padding the list
@@ -419,9 +423,9 @@ func joinReviewPanes(list, pane []string, listWidth, rows int) []string {
 func reviewLine(text, note string, width int) string {
 	noteW := lipgloss.Width(note)
 	if noteW == 0 || width-noteW-1 < reviewMinStatement {
-		return clip(text, width)
+		return Clip(text, width)
 	}
-	text = clip(text, width-noteW-1)
+	text = Clip(text, width-noteW-1)
 	return padRight(text, width-noteW) + note
 }
 
@@ -438,9 +442,6 @@ func stageBox(staged, total int) string {
 	}
 }
 
-// reviewRule is the horizontal rule the list is divided by.
-func reviewRule(width int) string { return sty.Dim.Render(strings.Repeat("─", max(width, 0))) }
-
 // listRows is the whole left pane: the file list, the verdict and the shield
 // note, in that order.
 func (v *ReviewView) listRows(width int) []string {
@@ -454,7 +455,7 @@ func (v *ReviewView) headRows(width int) []string {
 	if v.Title != "" {
 		head += sty.Dim.Render(" " + v.Title)
 	}
-	return []string{reviewLine(head, v.stagedLabel(), width), reviewRule(width)}
+	return []string{reviewLine(head, v.stagedLabel(), width), screenRule(width)}
 }
 
 // fileRows are the files themselves: the staging box, the mutation glyph,
@@ -549,9 +550,9 @@ func (v *ReviewView) verdictRows(width int) []string {
 	if vd.Failed {
 		glyph, verdict = sty.Del.Render("✗"), " failing"
 	}
-	rows := []string{reviewRule(width), clip(glyph+" "+sty.Body.Render(vd.Label+verdict), width)}
+	rows := []string{screenRule(width), Clip(glyph+" "+sty.Body.Render(vd.Label+verdict), width)}
 	for _, d := range vd.Detail {
-		rows = append(rows, "  "+sty.Dimmer.Render(clip(d, max(width-2, 0))))
+		rows = append(rows, "  "+sty.Dimmer.Render(Clip(d, max(width-2, 0))))
 	}
 	return rows
 }
@@ -562,9 +563,9 @@ func (v *ReviewView) shieldRows(width int) []string {
 	if v.Shield == "" {
 		return nil
 	}
-	rows := []string{reviewRule(width), clip(sty.Shield.Render("⛨ "+v.Shield), width)}
+	rows := []string{screenRule(width), Clip(sty.Shield.Render("⛨ "+v.Shield), width)}
 	if v.ShieldDetail != "" {
-		rows = append(rows, "  "+sty.Dim.Render(clip(v.ShieldDetail, max(width-2, 0))))
+		rows = append(rows, "  "+sty.Dim.Render(Clip(v.ShieldDetail, max(width-2, 0))))
 	}
 	return rows
 }
@@ -611,7 +612,7 @@ func (v *ReviewView) paneRows(width, rows int) []string {
 	body, focus := v.hunkRows(*f, width)
 	v.Offset = clampOffset(scrollTo(v.Offset, focus, max(rows-1, 1)), len(body), max(rows-1, 1))
 	end := min(v.Offset+max(rows-1, 1), len(body))
-	return append([]string{clip(head, width)}, body[v.Offset:end]...)
+	return append([]string{Clip(head, width)}, body[v.Offset:end]...)
 }
 
 // fileStageLabel says how much of the focused file is staged, in words as
@@ -672,7 +673,7 @@ func (v *ReviewView) hunkHeader(f ReviewFile, i int, h diff.Hunk, width int) str
 	} else {
 		lead += " "
 	}
-	return lead + sty.Hunk.Render(clip(h.Header(), max(width-lipgloss.Width(lead), 0)))
+	return lead + sty.Hunk.Render(Clip(h.Header(), max(width-lipgloss.Width(lead), 0)))
 }
 
 // scrollTo keeps the focused row inside a window of the given height,
@@ -685,40 +686,6 @@ func scrollTo(offset, focus, height int) int {
 		return focus - height + 1
 	}
 	return offset
-}
-
-// wrapOffers lays the key offers out in as few rows as the width allows.
-// They are what the surface can do, so none of them is truncated away; a
-// narrow terminal gets more rows instead of fewer offers.
-func wrapOffers(offers []TurnKey, width int) []string {
-	return wrapOffersIn(offers, width, true)
-}
-
-// wrapOffersIn is the same, in whichever treatment the keyboard puts the run
-// in. A takeover surface holds the keyboard by definition and always
-// passes true; only a transcript row has the other state.
-func wrapOffersIn(offers []TurnKey, width int, live bool) []string {
-	paint := keyOffers
-	if !live {
-		paint = inertOffers
-	}
-	var rows []string
-	line := []TurnKey{}
-	flush := func() {
-		if len(line) > 0 {
-			rows = append(rows, paint(line))
-			line = nil
-		}
-	}
-	for _, o := range offers {
-		next := append(append([]TurnKey{}, line...), o)
-		if len(line) > 0 && lipgloss.Width(paint(next)) > width {
-			flush()
-		}
-		line = append(line, o)
-	}
-	flush()
-	return rows
 }
 
 // footerRows are the keys the surface offers, plus any notice a key left
@@ -741,9 +708,9 @@ func (v *ReviewView) footerRows(width int) []string {
 	}
 	offers = append(offers, keyOfferAs(keys.Review.Back, "leave, change nothing"))
 
-	rows := wrapOffers(offers, width)
+	rows := packOffers(offers, width)
 	if v.notice != "" {
-		rows = append(rows, sty.Warn.Render(clip(v.notice, width)))
+		rows = append(rows, sty.Warn.Render(Clip(v.notice, width)))
 	}
 	return rows
 }

@@ -237,10 +237,10 @@ type ContextResult struct {
 // Update is the surface's keyboard. It moves the cursor, folds and unfolds,
 // swaps the key row for the register, and leaves — and it changes nothing
 // about the session, which is why there is no key here that asks a question.
-func (c *ContextScreen) Update(msg tea.KeyPressMsg) (done bool, result any) {
+func (c *ContextScreen) Update(msg tea.KeyPressMsg) (done bool, result ContextResult) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Context.Back):
-		return true, nil
+		return true, ContextResult{}
 	case keys.Is(pressed, keys.Context.List):
 		c.ShowKeys = !c.ShowKeys
 		return false, ContextResult{Cursor: c.Cursor, Keys: true}
@@ -249,12 +249,12 @@ func (c *ContextScreen) Update(msg tea.KeyPressMsg) (done bool, result any) {
 		return false, ContextResult{Cursor: c.Cursor}
 	case keys.Is(pressed, keys.Context.Expand):
 		if len(c.Groups) == 0 {
-			return false, nil
+			return false, ContextResult{}
 		}
 		c.Groups[c.cursor()].Open = !c.Groups[c.cursor()].Open
 		return false, ContextResult{Cursor: c.Cursor, Toggle: true}
 	}
-	return false, nil
+	return false, ContextResult{}
 }
 
 // move walks the cursor over the groups. It stops at both ends rather than
@@ -281,49 +281,33 @@ func (c ContextScreen) cursor() int {
 	return min(max(c.Cursor, 0), len(c.Groups)-1)
 }
 
-// View renders the surface: the header and its rule, the two panels, and the
-// folds under them.
+// SetSize gives the surface the terminal's rectangle. It lays itself out from
+// the width it is rendered at, so only the height is kept.
+func (c *ContextScreen) SetSize(_, height int) { c.MaxLines = height }
+
+// View renders the surface: the shared chrome, with the two panels and the
+// folds under them in the rows it leaves.
 func (c *ContextScreen) View(width int) string {
 	if width <= 0 {
 		return ""
 	}
-	head := []string{c.headerRow(width), reviewRule(width), ""}
-	rows := append(head, c.bodyRows(width, c.budget(len(head)))...)
-	return strings.Join(rows, "\n")
+	return ScreenChrome{Header: c.header(), MaxLines: c.MaxLines}.
+		View(width, func(budget int) []string { return c.bodyRows(width, budget) })
 }
 
-// budget is how many rows the body may spend: the screen's height less the
-// header and its rule. An unbounded screen drops nothing.
-func (c *ContextScreen) budget(pinned int) int {
-	if c.MaxLines <= 0 {
-		return 0
+// header names the surface and what it is a reading of, with the occupancy
+// beside the keys because it is the answer the reader came for, and this is
+// where the eye already goes for the state of a surface.
+func (c *ContextScreen) header() ScreenHeader {
+	h := ScreenHeader{
+		Left:  []RailSegment{screenTitle("/context")},
+		Keys:  c.headerKeys(),
+		Tally: c.pctStyle().Render(c.Tokens),
 	}
-	return max(c.MaxLines-pinned, 1)
-}
-
-// headerRow names the surface, what it is a reading of, and the way out. The
-// occupancy goes on the right beside the keys because it is the answer the
-// reader came for, and this is where the eye already goes for the state of a
-// surface.
-func (c *ContextScreen) headerRow(width int) string {
-	right := sty.Dim.Render(c.headerKeys())
-	if c.Tokens != "" {
-		right = c.pctStyle().Render(c.Tokens) + sty.Dim.Render(" · "+c.headerKeys())
-	}
-	name := brightStyle().Render("/context")
-	left := name
 	if c.Window != "" {
-		left += sty.Dim.Render(" · this session · " + c.Window + " window")
+		h.Left = append(h.Left, screenField("this session · "+c.Window+" window"))
 	}
-	// The subject drops whole rather than clipping mid-word: `/context · thi…`
-	// says less than `/context` does and costs the same three columns.
-	if room := width - lipgloss.Width(right) - 2; lipgloss.Width(left) > room {
-		left = clip(name, max(room, 0))
-	}
-	if pad := width - lipgloss.Width(left) - lipgloss.Width(right); pad >= 2 {
-		return left + strings.Repeat(" ", pad) + right
-	}
-	return clip(right, width)
+	return h
 }
 
 // headerKeys is the pair the header ends with: the key that shows the whole
@@ -372,12 +356,12 @@ func (c *ContextScreen) panelRows(width int) []string {
 		if i < len(legend) && lipgloss.Width(legend[i]) > 0 {
 			row += strings.Repeat(" ", contextGridGap) + legend[i]
 		}
-		rows = append(rows, clip(row, width))
+		rows = append(rows, Clip(row, width))
 	}
 	// A legend longer than the grid is deep keeps its remaining rows under
 	// the grid rather than losing them; the grid's own height is fixed.
 	for i := len(grid); i < len(legend); i++ {
-		rows = append(rows, clip(pad+strings.Repeat(" ", MeterCellsRail+contextGridGap)+legend[i], width))
+		rows = append(rows, Clip(pad+strings.Repeat(" ", MeterCellsRail+contextGridGap)+legend[i], width))
 	}
 	return rows
 }
@@ -395,7 +379,7 @@ func (c *ContextScreen) stackedRows(grid, legend []string, width int) []string {
 	pad := strings.Repeat(" ", contextIndent)
 	rows := make([]string, 0, len(grid)+len(legend)+2)
 	for _, cells := range grid {
-		rows = append(rows, clip(pad+cells, width))
+		rows = append(rows, Clip(pad+cells, width))
 	}
 	rows = append(rows, "")
 	for _, line := range legend {
@@ -403,7 +387,7 @@ func (c *ContextScreen) stackedRows(grid, legend []string, width int) []string {
 			rows = append(rows, "")
 			continue
 		}
-		rows = append(rows, clip(pad+line, width))
+		rows = append(rows, Clip(pad+line, width))
 	}
 	return rows
 }
@@ -562,7 +546,7 @@ func (c *ContextScreen) foldRows(width int) []string {
 			rows = append(rows, c.itemRow(item, width))
 		}
 		if g.More != "" {
-			rows = append(rows, clip(strings.Repeat(" ", contextItemIndent)+sty.Dim.Render(g.More), width))
+			rows = append(rows, Clip(strings.Repeat(" ", contextItemIndent)+sty.Dim.Render(g.More), width))
 		}
 	}
 	return rows
@@ -584,12 +568,12 @@ func (c *ContextScreen) groupRow(g ContextGroup, lit bool, width int) string {
 	}
 	body := sty.Dim.Render(glyph+" ") + sty.Body.Render(g.Label) + sty.Dim.Render(" · "+g.Summary)
 	if !lit {
-		return clip(pad+pointer+body, width)
+		return Clip(pad+pointer+body, width)
 	}
 	key := keys.Bracket(keys.Context.Expand) + " " + foldVerb(g.Open)
 	room := width - contextIndent - 2
 	line := padRight(body, max(room-lipgloss.Width(key)-1, 0)) + key
-	return clip(pad+pointer+LitRow(line, 0, max(room, 0)), width)
+	return Clip(pad+pointer+LitRow(line, 0, max(room, 0)), width)
 }
 
 // foldVerb is what the key on the lit row promises. The binding's own words
@@ -608,27 +592,27 @@ func foldVerb(open bool) string {
 // crossed no threshold anybody set.
 func (c *ContextScreen) itemRow(item ContextItem, width int) string {
 	pad := strings.Repeat(" ", contextItemIndent)
-	label := sty.Body.Render(padRight(clip(item.Label, contextLabelWidth), contextLabelWidth))
+	label := sty.Body.Render(padRight(Clip(item.Label, contextLabelWidth), contextLabelWidth))
 	numbers := sty.Body.Render(padLeft(item.Tokens, contextTokensWidth)) +
 		sty.Dim.Render(padLeft(item.Pct, contextPctWidth))
 	bar := Meter{Pct: item.Share, Cells: MeterCellsRail, Tone: MeterCategory}.Bar()
 	// The bar is the first thing to go when the terminal cannot hold the
 	// row: a number that has lost its bar is still a number.
 	if contextItemIndent+contextLabelWidth+MeterCellsRail+contextTokensWidth+contextPctWidth > width {
-		return clip(pad+label+numbers, width)
+		return Clip(pad+label+numbers, width)
 	}
-	return clip(pad+label+bar+numbers, width)
+	return Clip(pad+label+bar+numbers, width)
 }
 
 // keyRows is the foot of the screen: the compact key row, or the whole
 // register in its place once `?` has been pressed.
 func (c *ContextScreen) keyRows(width int) []string {
 	if !c.ShowKeys {
-		return []string{clip(sty.Dim.Render(contextKeyRow(width)), width)}
+		return []string{Clip(sty.Dim.Render(contextKeyRow(width)), width)}
 	}
 	rows := make([]string, 0, len(keys.Context.All()))
 	for _, b := range keys.Context.All() {
-		rows = append(rows, clip(sty.Dim.Render("  "+offer(b)), width))
+		rows = append(rows, Clip(sty.Dim.Render("  "+offer(b)), width))
 	}
 	return rows
 }

@@ -176,7 +176,7 @@ func FitRail(segs []RailSegment, sep string, width int) string {
 		}
 		joined := strings.Join(parts, sep)
 		if lipgloss.Width(joined) <= width || len(kept) <= 1 {
-			return clip(joined, width)
+			return Clip(joined, width)
 		}
 		worstIdx, worst := 0, -1
 		for i, s := range kept {
@@ -232,6 +232,6 @@ func (c Cockpit) View(width int) string {
 			segments = segments[:len(segments)-1]
 			continue
 		}
-		return clip(left, width)
+		return Clip(left, width)
 	}
 }

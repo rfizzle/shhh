@@ -97,7 +97,7 @@ type FanoutBlock struct {
 	Elapsed string
 	// Keys are the offers the block makes while a child is waiting on you.
 	// They render once, under the lanes, and wrap rather than clip on a
-	// narrow terminal (wrapOffers).
+	// narrow terminal (packOffers).
 	Keys []TurnKey
 }
 
@@ -346,7 +346,7 @@ func (b FanoutBlock) View(width int) string {
 		lines = append(lines, l.View(width))
 	}
 	if _, blocked, _, _ := b.counts(); blocked > 0 {
-		for _, keys := range wrapOffers(b.Keys, max(width-detailIndent, 1)) {
+		for _, keys := range packOffers(b.Keys, max(width-detailIndent, 1)) {
 			lines = append(lines, detailLine(keys, width))
 		}
 	}

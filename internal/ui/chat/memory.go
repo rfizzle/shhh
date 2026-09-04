@@ -104,11 +104,10 @@ func (m *Model) openMemoryAsk(req *approvalRequest) {
 // Saving resolves the remember call with the saved entry as its result;
 // anything else declines it.
 func (m Model) updateMemoryAsk(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	done, result := m.memoryAsk.Update(msg)
+	done, res := m.memoryAsk.Update(msg)
 	if !done {
 		return m, nil
 	}
-	res := result.(components.NoteSelectResult)
 	m.memoryAsk = nil
 	if res.Canceled || (res.Index != 0 && res.Index != 1) {
 		return m.declineApproval()

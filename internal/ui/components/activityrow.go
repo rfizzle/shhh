@@ -255,7 +255,7 @@ func (r ActivityRow) glyph() string {
 // the signal that the verb table is stale. Recovery rows share it, which is
 // what puts `model` in the same column as `read`.
 func verbField(verb string) string {
-	v := clip(verb, verbWidth)
+	v := Clip(verb, verbWidth)
 	return v + strings.Repeat(" ", verbWidth-lipgloss.Width(v))
 }
 
@@ -283,7 +283,7 @@ func (r ActivityRow) outcomeField() string {
 // reserved even when blank so outcomes line up down the transcript; the
 // trailing blank is trimmed off the rendered line.
 func durationField(d string) string {
-	d = clip(d, durWidth)
+	d = Clip(d, durWidth)
 	pad := durWidth - lipgloss.Width(d)
 	if pad < 0 {
 		pad = 0
@@ -314,7 +314,7 @@ func gridLineWith(lead, target string, paint func(string) string, outcome, durat
 	if outW > 0 {
 		sep = 2
 	}
-	target = clip(target, width-leadWidth-durWidth-outW-sep)
+	target = Clip(target, width-leadWidth-durWidth-outW-sep)
 	pad := width - leadWidth - lipgloss.Width(target) - outW - durWidth
 	if pad < sep {
 		pad = sep
@@ -355,7 +355,7 @@ func (r ActivityRow) View(width int) string {
 			// (docs/interface/principles.md#fold-never-hide); reading mode's
 			// [enter] on the row is how the rest is reached.
 			lines = append(lines, strings.Repeat(" ", detailIndent)+
-				sty.Dim.Render(clip(countedTail(dropped), max(width-detailIndent, 1))))
+				sty.Dim.Render(Clip(countedTail(dropped), max(width-detailIndent, 1))))
 		}
 	}
 	return strings.Join(lines, "\n")
@@ -386,9 +386,9 @@ func indented(s string, indent, width int) string {
 	if painted, ok := repaint(s, Palette.Dimmer); ok {
 		// A re-painted line already carries the ground, run by run; a second
 		// wrapper around it would only spend bytes the first reset throws away.
-		return pad + clip(painted, inner)
+		return pad + Clip(painted, inner)
 	}
-	return pad + sty.Dimmer.Render(clip(s, inner))
+	return pad + sty.Dimmer.Render(Clip(s, inner))
 }
 
 // GroupExpandKey is what a folded group row says opens it. It is drawn in the

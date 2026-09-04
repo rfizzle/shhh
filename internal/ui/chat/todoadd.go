@@ -159,11 +159,10 @@ func todoProposalMeta(p todo.Proposal) string {
 
 // answerTodoPropose routes keys while the proposals card shows.
 func (m *Model) answerTodoPropose(msg tea.KeyPressMsg) (bool, overlayAction) {
-	done, result := m.todoPropose.Update(msg)
+	done, res := m.todoPropose.Update(msg)
 	if !done {
 		return false, overlayAction{}
 	}
-	res := result.(components.MultiSelectResult)
 	proposals, sprint := m.todoProposals, m.todoSprintPlan
 	// The row a blocked run left is claimed here whatever the answer was: a
 	// card the reader declined wrote nothing to name on it, and leaving the

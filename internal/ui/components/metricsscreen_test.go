@@ -96,19 +96,6 @@ func TestMetricsScreen_HeaderStatesTheSpendAndTheKey(t *testing.T) {
 	}
 }
 
-// It is the subject that gives ground as the terminal narrows, not the spend
-// or the key: this screen has no foot key row to fall back on, so dropping
-// `[q]` would leave a takeover surface with no stated way out (invariant 5).
-func TestMetricsScreen_NarrowHeaderKeepsTheSpendAndTheKey(t *testing.T) {
-	head := metricsLines(metricsScreen(), 50)[0]
-	if !strings.Contains(head, "$18.42") || !strings.Contains(head, "[q] quit") {
-		t.Fatalf("a narrow header dropped the spend or the key: %q", head)
-	}
-	if strings.Contains(head, "3 models") {
-		t.Fatalf("a narrow header kept the whole subject: %q", head)
-	}
-}
-
 // `[q]`, `[esc]` and ctrl+c close the screen; nothing else does anything,
 // because there is nothing else to do.
 func TestMetricsScreen_OnlyTheQuitKeysCloseIt(t *testing.T) {

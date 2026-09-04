@@ -284,7 +284,7 @@ func buildOverlays() map[state]*mode {
 				if m.fullDiff == nil {
 					return nil
 				}
-				m.fullDiff.Height = height
+				m.fullDiff.SetSize(width, height)
 				return strings.Split(m.fullDiff.View(width), "\n")
 			},
 			hint: (Model).renderDiffFullHint,
@@ -298,7 +298,7 @@ func buildOverlays() map[state]*mode {
 				if m.fullOutput == nil {
 					return nil
 				}
-				m.fullOutput.Height = height
+				m.fullOutput.SetSize(width, height)
 				return strings.Split(m.fullOutput.View(width), "\n")
 			},
 			hint: (Model).renderOutputFullHint,
@@ -312,7 +312,7 @@ func buildOverlays() map[state]*mode {
 				if m.preview == nil {
 					return nil
 				}
-				m.preview.Height = height
+				m.preview.SetSize(width, height)
 				return strings.Split(m.preview.View(width), "\n")
 			},
 			hint:   (Model).renderPreviewHint,
@@ -325,7 +325,7 @@ func buildOverlays() map[state]*mode {
 				if m.review == nil {
 					return nil
 				}
-				m.review.Height = height
+				m.review.SetSize(width, height)
 				return strings.Split(m.review.View(width), "\n")
 			},
 			hint: (Model).renderReviewHint,
@@ -339,7 +339,7 @@ func buildOverlays() map[state]*mode {
 				if m.context == nil {
 					return nil
 				}
-				m.context.MaxLines = height
+				m.context.SetSize(width, height)
 				return strings.Split(m.context.View(width), "\n")
 			},
 			hint:   (Model).renderContextHint,

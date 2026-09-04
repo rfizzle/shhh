@@ -78,10 +78,14 @@ type AttachmentView struct {
 	Height int
 }
 
+// SetSize gives the card the terminal's rectangle. It lays itself out from
+// the width it is rendered at, so only the height is kept.
+func (p *AttachmentView) SetSize(_, height int) { p.Height = height }
+
 // View draws the card.
 func (p AttachmentView) View(width int) string {
 	rows := p.body(width-cardFrameWidth, p.Height-viewChrome)
-	return renderChromeCard(cardChrome{title: p.Name, chips: p.captions()}, rows, width)
+	return Card{Title: p.Name, Chips: p.captions()}.Render(rows, width)
 }
 
 // captions are the top border's chips, in the order they are given up as the
@@ -128,7 +132,7 @@ func (p AttachmentView) body(width, height int) []string {
 	case len(p.Placement) > 0:
 		return centre(p.Placement, width, height)
 	case p.Note != "":
-		return centre([]string{sty.Dim.Render(clip(p.Note, width))}, width, height)
+		return centre([]string{sty.Dim.Render(Clip(p.Note, width))}, width, height)
 	case p.Image == nil && len(p.Text) > 0:
 		return p.text(width, height)
 	case p.Image == nil:
@@ -179,13 +183,13 @@ func (p AttachmentView) text(width, height int) []string {
 		// One row and more than one line: the count is the honest thing to
 		// spend it on, because a single line of a log says nothing and the
 		// number says the card is not the whole file.
-		return []string{sty.Dim.Render(clip(moreLines(len(p.Text)), width))}
+		return []string{sty.Dim.Render(Clip(moreLines(len(p.Text)), width))}
 	}
 	lines := make([]string, 0, height)
 	for _, line := range p.Text[:shown] {
 		lines = append(lines, p.line(line, width))
 	}
-	return append(lines, sty.Dim.Render(clip(moreLines(len(p.Text)-shown), width)))
+	return append(lines, sty.Dim.Render(Clip(moreLines(len(p.Text)-shown), width)))
 }
 
 // line draws one row of the text body.
@@ -199,9 +203,9 @@ func (p AttachmentView) text(width, height int) []string {
 func (p AttachmentView) line(s string, width int) string {
 	if painted, ok := repaint(s, Palette.Body); ok {
 		// A re-painted line already carries the ground, run by run.
-		return clip(painted, width)
+		return Clip(painted, width)
 	}
-	return sty.Body.Render(clip(s, width))
+	return sty.Body.Render(Clip(s, width))
 }
 
 // moreLines is the foot of a clipped text body: what it swallowed, counted.

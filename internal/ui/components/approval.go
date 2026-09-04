@@ -310,7 +310,7 @@ func (c *ApprovalCard) View(width int) string {
 	if c.Uncontained {
 		style = sty.Del
 	}
-	return renderChromeCard(cardChrome{title: title, chips: c.chips(), style: &style}, rows, width)
+	return Card{Title: title, Chips: c.chips(), Style: &style}.Render(rows, width)
 }
 
 // buildRows lays the card out as its two halves: the body — headline,
@@ -327,7 +327,7 @@ func (c *ApprovalCard) buildRows(width int) (body, hints []string) {
 	// The generic variant's one-liner belongs with the headline it qualifies,
 	// above the blast-radius block rather than below it.
 	if c.Variant == ApprovalGeneric && c.Summary != "" && c.Summary != c.Headline {
-		body = append(body, sty.Dim.Render(clip(c.Summary, inner)))
+		body = append(body, sty.Dim.Render(Clip(c.Summary, inner)))
 	}
 	if len(c.Fields) > 0 {
 		if len(body) > 1 {
@@ -373,7 +373,7 @@ func (c *ApprovalCard) visibleBody(hintRows int) int {
 // becomes `… N more lines · shift+↓`, the first `… N lines above · shift+↑`
 // once scrolled, and a row running past the right edge ends in ›.
 func (c *ApprovalCard) windowBody(body []string, hintRows int, width int) []string {
-	inner := max(width-cardFrameWidth, 1)
+	inner := Card{}.Inner(width)
 	body = panRows(body, max(c.PanOffset, 0), inner)
 	visible := c.visibleBody(hintRows)
 	if visible < 0 || len(body) <= visible {
@@ -382,13 +382,13 @@ func (c *ApprovalCard) windowBody(body []string, hintRows int, width int) []stri
 	off := clampOffset(c.BodyOffset, len(body), visible)
 	win := append([]string(nil), body[off:off+visible]...)
 	if below := len(body) - (off + visible); below > 0 {
-		win[len(win)-1] = sty.Dim.Render(clip(c.tailLabel(countedTail(below+1),
+		win[len(win)-1] = sty.Dim.Render(Clip(c.tailLabel(countedTail(below+1),
 			keys.Shown(keys.Decision.ScrollDown)), inner))
 	}
 	if off > 0 {
 		label := c.tailLabel(fmt.Sprintf("… %s above", plural(off+1, "line")),
 			keys.Shown(keys.Decision.ScrollUp))
-		win[0] = sty.Dim.Render(clip(label, inner))
+		win[0] = sty.Dim.Render(Clip(label, inner))
 	}
 	return win
 }
@@ -435,7 +435,7 @@ func (c *ApprovalCard) ScrollBounds(width int) (maxBody, maxPan int) {
 	if visible := c.visibleBody(len(hints)); visible > 0 && len(body) > visible {
 		maxBody = len(body) - visible
 	}
-	inner := max(width-cardFrameWidth, 1)
+	inner := Card{}.Inner(width)
 	for _, r := range body {
 		if w := lipgloss.Width(r); w > inner {
 			maxPan = max(maxPan, w-inner)
@@ -455,10 +455,10 @@ func (c *ApprovalCard) hintRowsFor(width, inner int) []string {
 	if c.HeldOnArrival && c.Grace {
 		rows := graceRows(c.Question+" "+c.keys(), width)
 		if rest := c.arrivalRest(); rest != "" {
-			rows = append(rows, sty.Dim.Render(clip(rest, inner)))
+			rows = append(rows, sty.Dim.Render(Clip(rest, inner)))
 		}
 		if c.Return != "" {
-			rows = append(rows, sty.Dim.Render(clip(c.Return, inner)))
+			rows = append(rows, sty.Dim.Render(Clip(c.Return, inner)))
 		}
 		return rows
 	}
@@ -496,19 +496,19 @@ func (c *ApprovalCard) hintRowsFor(width, inner int) []string {
 		// They travel together on one row rather than one row each: they
 		// qualify the same key line, and a card is bounded to 40% of the
 		// screen — rows spent here are rows the transcript gives up.
-		hints = append([]string{hints[0], sty.Hint.Render(clip(qualRow, inner))}, hints[1:]...)
+		hints = append([]string{hints[0], sty.Hint.Render(Clip(qualRow, inner))}, hints[1:]...)
 	}
 	// [A] gets a row of its own rather than a place in the joined run: the
 	// count is the whole offer, and on an 80-column terminal a joined run is
 	// exactly where it would be clipped away.
 	if c.Batch && c.BatchHint != "" && !c.HeldOnArrival {
-		hints = append(hints, sty.Hint.Render(clip(c.BatchHint, inner)))
+		hints = append(hints, sty.Hint.Render(Clip(c.BatchHint, inner)))
 	}
 	if c.Footnote != "" {
-		hints = append(hints, sty.Dim.Render(clip(c.Footnote, inner)))
+		hints = append(hints, sty.Dim.Render(Clip(c.Footnote, inner)))
 	}
 	if c.Return != "" {
-		hints = append(hints, sty.Dim.Render(clip(c.Return, inner)))
+		hints = append(hints, sty.Dim.Render(Clip(c.Return, inner)))
 	}
 	return hints
 }

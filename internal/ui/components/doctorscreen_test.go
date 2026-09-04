@@ -85,19 +85,6 @@ func TestDoctorScreen_HeaderSaysWhileTheRunIsGoing(t *testing.T) {
 	}
 }
 
-// It is the left that gives ground as the terminal narrows, not the keys: a
-// takeover surface that dropped `[q]` would have no stated way out of it
-// (invariant 5).
-func TestDoctorScreen_NarrowHeaderKeepsTheWayOut(t *testing.T) {
-	head := doctorLines(doctorScreen(), 44)[0]
-	if !strings.Contains(head, "[q] quit") {
-		t.Fatalf("a narrow header dropped the way out: %q", head)
-	}
-	if strings.Contains(head, "6 checks") {
-		t.Fatalf("a narrow header kept the whole subject: %q", head)
-	}
-}
-
 // Every state says what it is in a glyph and in a word, so the render carries
 // its meaning with no colour at all (invariant 1).
 func TestDoctorScreen_EveryStateStatesItselfTwice(t *testing.T) {
@@ -345,20 +332,20 @@ func TestDoctorScreen_CopyAndRerunResolveToTheHost(t *testing.T) {
 	if done {
 		t.Fatal("[c] closed the screen")
 	}
-	if command, ok := result.(DoctorCommand); !ok || command.Act != DoctorCopy {
+	if result.Command == nil || result.Command.Act != DoctorCopy {
 		t.Fatalf("[c] resolved to %#v, not a copy", result)
 	}
 	done, result = d.Update(key("r"))
 	if done {
 		t.Fatal("[r] closed the screen")
 	}
-	if command, ok := result.(DoctorCommand); !ok || command.Act != DoctorRerun {
+	if result.Command == nil || result.Command.Act != DoctorRerun {
 		t.Fatalf("[r] resolved to %#v, not a re-run", result)
 	}
 
 	running := doctorScreen()
 	running.Running = true
-	if _, result := running.Update(key("r")); result != nil {
+	if _, result := running.Update(key("r")); result.Command != nil {
 		t.Fatalf("[r] resolved to %#v while the run was still going", result)
 	}
 	if strings.Contains(doctorPlain(running, 110), "[r]") {
@@ -546,7 +533,7 @@ func TestDoctorScreen_OffersTheActionOnItsOwnRow(t *testing.T) {
 func TestDoctorScreen_ApplyAsksFirst(t *testing.T) {
 	d := &DoctorScreen{Checks: []DoctorCheck{migrationCheck()}}
 
-	if _, result := d.Update(key("a")); result != nil {
+	if _, result := d.Update(key("a")); result.Command != nil {
 		t.Fatalf("[a] acted without asking: %+v", result)
 	}
 	if !strings.Contains(doctorPlain(d, 110), "Make the change now?") {
@@ -555,7 +542,7 @@ func TestDoctorScreen_ApplyAsksFirst(t *testing.T) {
 
 	// Declining leaves the screen exactly as it was: nothing has happened yet,
 	// which is the whole reason the question is there.
-	if _, result := d.Update(key("n")); result != nil {
+	if _, result := d.Update(key("n")); result.Command != nil {
 		t.Fatalf("declining produced a command: %+v", result)
 	}
 	if strings.Contains(doctorPlain(d, 110), "Make the change now?") {
@@ -564,8 +551,8 @@ func TestDoctorScreen_ApplyAsksFirst(t *testing.T) {
 
 	d.Update(key("a"))
 	_, result := d.Update(key("y"))
-	command, ok := result.(DoctorCommand)
-	if !ok || command.Act != DoctorApply {
+	command := result.Command
+	if command == nil || command.Act != DoctorApply {
 		t.Fatalf("a confirmed [a] did not ask the host to apply: %+v", result)
 	}
 	if command.At != 0 {

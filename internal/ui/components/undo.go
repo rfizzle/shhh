@@ -101,16 +101,16 @@ func (c UndoConfirm) driftRows(width int) []string {
 	if c.touches() > 0 {
 		head += " — left alone"
 	}
-	rows := []string{clip(sty.Warn.Render(head), width)}
+	rows := []string{Clip(sty.Warn.Render(head), width)}
 	named := c.Drifted
 	if len(named) > undoDriftNames {
 		named = named[:undoDriftNames]
 	}
 	for _, p := range named {
-		rows = append(rows, clip("    "+sty.Dim.Render(p), width))
+		rows = append(rows, Clip("    "+sty.Dim.Render(p), width))
 	}
 	if rest := len(c.Drifted) - len(named); rest > 0 {
-		rows = append(rows, clip("    "+sty.Dim.Render(fmt.Sprintf("and %d more", rest)), width))
+		rows = append(rows, Clip("    "+sty.Dim.Render(fmt.Sprintf("and %d more", rest)), width))
 	}
 	return rows
 }
@@ -126,8 +126,8 @@ func (c UndoConfirm) headRows(width int) []string {
 		return []string{full}
 	}
 	return []string{
-		clip(sty.Body.Render(question)+"  "+keys, width),
-		clip(sty.Dim.Render(c.effect()), width),
+		Clip(sty.Body.Render(question)+"  "+keys, width),
+		Clip(sty.Dim.Render(c.effect()), width),
 	}
 }
 

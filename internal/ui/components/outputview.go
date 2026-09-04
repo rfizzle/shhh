@@ -77,6 +77,10 @@ func (v *OutputView) Update(msg tea.KeyPressMsg) OutputResult {
 // lives in View, which knows the width the body wraps at; a press past the
 // end is pulled back on the next frame, so it still costs one press to
 // recover.
+// SetSize gives the view the terminal's rectangle. It lays itself out from
+// the width it is rendered at, so only the height is kept.
+func (v *OutputView) SetSize(_, height int) { v.Height = height }
+
 func (v *OutputView) Scroll(delta int) {
 	v.Offset = max(v.Offset+delta, 0)
 }
@@ -90,7 +94,7 @@ func (v *OutputView) bodyHeight() int {
 // View renders header, visible body and footer at the given width.
 func (v *OutputView) View(width int) string {
 	stats := plural(len(v.Lines), "line")
-	header := padRight(clip(" "+v.Title, max(0, width-lipgloss.Width(stats))),
+	header := padRight(Clip(" "+v.Title, max(0, width-lipgloss.Width(stats))),
 		max(0, width-lipgloss.Width(stats))) + sty.Dim.Render(stats)
 	footer := sty.Hint.Render("output · " + strings.Join([]string{
 		offer(keys.Output.Scroll), offer(keys.Output.PageUp), offer(keys.Output.PageDown),
@@ -107,10 +111,10 @@ func (v *OutputView) View(width int) string {
 		// The one door foreign bytes come through here, exactly as a detail
 		// body's: re-painted into the palette before they are measured.
 		if painted, ok := repaint(l, Palette.Dimmer); ok {
-			out = append(out, clip(painted, width))
+			out = append(out, Clip(painted, width))
 			continue
 		}
-		out = append(out, sty.Dimmer.Render(clip(l, width)))
+		out = append(out, sty.Dimmer.Render(Clip(l, width)))
 	}
 	for len(out) < rows+1 {
 		out = append(out, "")

@@ -362,7 +362,6 @@ type rateModel struct {
 	items   []rateItem
 	rated   int
 	skipped int
-	width   int
 
 	screen components.RateScreen
 }
@@ -373,43 +372,26 @@ type rateModel struct {
 // every width, so it has no wide layout to guess at.
 const defaultRateWidth = 110
 
-func newRateModel(db rateStore, items []rateItem, now time.Time) rateModel {
-	m := rateModel{db: db, items: items}
+func newRateModel(db rateStore, items []rateItem, now time.Time) *rateModel {
+	m := &rateModel{db: db, items: items}
 	rows := make([]components.RateRow, 0, len(items))
 	for _, item := range items {
 		rows = append(rows, item.card(now))
 	}
 	m.screen.Rows = rows
-	m.width = defaultRateWidth
 	return m
 }
 
-func (m rateModel) Init() tea.Cmd { return nil }
-
-func (m rateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		m.width, m.screen.MaxLines = msg.Width, msg.Height
-		return m, nil
-	case tea.KeyPressMsg:
-		m.screen.Notice = ""
-		done, result := m.screen.Update(msg)
-		if answer, ok := result.(components.RateAnswer); ok {
-			m.apply(answer)
-		}
-		if !done {
-			return m, nil
-		}
-		return m, tea.Quit
+// answer writes down what the reader said about the card that was showing.
+func (m *rateModel) answer(done bool, result components.RateResult) tea.Cmd {
+	m.screen.Notice = ""
+	if result.Answer != nil {
+		m.apply(*result.Answer)
 	}
-	return m, nil
-}
-
-// View is the frame: the rating screen, on the alt screen it takes over.
-func (m rateModel) View() tea.View {
-	v := tea.NewView(m.screen.View(m.width))
-	v.AltScreen = true
-	return v
+	if !done {
+		return nil
+	}
+	return tea.Quit
 }
 
 // apply writes one answer down. A write that fails leaves the entry unrated
@@ -438,7 +420,7 @@ func (m *rateModel) apply(answer components.RateAnswer) {
 // much of the list the reader never got to. A run that was stopped says how
 // much is left, because that is the number that decides whether it is worth
 // running again.
-func (m rateModel) tally() string {
+func (m *rateModel) tally() string {
 	return rateTally(m.rated, m.skipped, len(m.items)-m.rated-m.skipped)
 }
 
@@ -454,15 +436,15 @@ func rateTally(rated, skipped, left int) string {
 }
 
 func runRateScreen(db rateStore, out io.Writer, items []rateItem, now time.Time) error {
-	final, err := newProgram(newRateModel(db, items, now)).Run()
-	if err != nil {
+	m := newRateModel(db, items, now)
+	if _, err := newProgram(newScreenModel(&m.screen, defaultRateWidth, m.answer)).Run(); err != nil {
 		return err
 	}
 	// The program has given the terminal back by now, so the tally is left in
 	// the scrollback the way every other listing leaves its own. It carries the
 	// title because the alt screen took everything above it with it; the line
 	// walk's tally is bare, because there the title is still on the screen.
-	return report.Fprint(out, report.Report{Title: "shhh rate", Tally: final.(rateModel).tally()})
+	return report.Fprint(out, report.Report{Title: "shhh rate", Tally: m.tally()})
 }
 
 // rateByLine is the same walk for a stdin that is not a terminal: each entry

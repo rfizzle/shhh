@@ -195,21 +195,21 @@ func (s *Select) geometry() listGeometry {
 	}
 }
 
-func (s *Select) Update(msg tea.KeyPressMsg) (done bool, result any) {
+func (s *Select) Update(msg tea.KeyPressMsg) (done bool, result SelectResult) {
 	s.normalizeFocus()
 	pressed := msg.String()
 	switch {
 	case pressed == "up":
 		s.move(-1)
-		return false, nil
+		return false, SelectResult{}
 	case pressed == "down":
 		s.move(1)
-		return false, nil
+		return false, SelectResult{}
 	case keys.Is(pressed, keys.Select.Take):
 		// A card that matched nothing has nothing for enter to take, and a
 		// key that cannot act does not act (invariant 5).
 		if s.selectable() == 0 {
-			return false, nil
+			return false, SelectResult{}
 		}
 		return true, SelectResult{Index: s.Focus}
 	case keys.Is(pressed, keys.Select.Cancel):
@@ -230,10 +230,10 @@ func (s *Select) Update(msg tea.KeyPressMsg) (done bool, result any) {
 		// with the row already open.
 		if keys.Is(pressed, keys.Select.ClearQ) && s.Query == "" {
 			s.Filtering = false
-			return false, nil
+			return false, SelectResult{}
 		}
 		s.editQuery(msg)
-		return false, nil
+		return false, SelectResult{}
 	}
 	// The second reading of the focused option, checked before the digits so
 	// a card whose alt key is a digit is still coherent. Like enter it needs
@@ -265,7 +265,7 @@ func (s *Select) Update(msg tea.KeyPressMsg) (done bool, result any) {
 			return true, SelectResult{Index: s.Focus}
 		}
 	}
-	return false, nil
+	return false, SelectResult{}
 }
 
 // editQuery applies one keystroke to the open query line: ctrl+u clears it,
@@ -313,7 +313,7 @@ func (s *Select) View(width int) string {
 	rows := append(head, body...)
 	rows = append(rows, tail...)
 	rows = boundRows(rows, s.MaxLines)
-	return renderChromeCard(cardChrome{title: s.Title, chips: s.chips(shown)}, rows, width)
+	return Card{Title: s.Title, Chips: s.chips(shown)}.Render(rows, width)
 }
 
 // hintSegments is the card's key row, and the order it gives things up in.
@@ -385,7 +385,7 @@ func (s *Select) hintSegments(width int) []string {
 		take = words(keys.Select.Take, s.enterLabel())
 		alt = s.AltKey + " " + s.AltLabel
 	}
-	inner := max(width-cardFrameWidth, 1)
+	inner := Card{}.Inner(width)
 	actions := make([]string, 0, len(s.Actions))
 	for _, b := range s.Actions {
 		actions = append(actions, offer(b))
@@ -435,7 +435,7 @@ func (s *Select) queryRows(width int) []string {
 	if !s.Filtering {
 		return nil
 	}
-	inner := max(width-cardFrameWidth, 1)
+	inner := Card{}.Inner(width)
 	typed := sty.Info.Render(queryPrompt) + sty.QueryText.Render(s.Query+s.cursorCell())
 	if s.Query == "" && s.QueryHint != "" {
 		// A row that has just been opened by a key says what the key was for.
@@ -444,13 +444,13 @@ func (s *Select) queryRows(width int) []string {
 		typed += sty.Dim.Render(" " + s.QueryHint)
 	}
 	if s.Total <= 0 {
-		return []string{clip(typed, inner)}
+		return []string{Clip(typed, inner)}
 	}
 	count := sty.Dim.Render(fmt.Sprintf("%d of %d match", s.selectable(), s.Total))
 	if pad := inner - lipgloss.Width(typed) - lipgloss.Width(count); pad >= 2 {
 		return []string{typed + strings.Repeat(" ", pad) + count}
 	}
-	return []string{clip(typed, inner), clip(count, inner)}
+	return []string{Clip(typed, inner), Clip(count, inner)}
 }
 
 // SetVirtualCursor says whether the card paints its own cursor on the filter
@@ -484,7 +484,7 @@ func (s *Select) Cursor(width int) *tea.Cursor {
 	if !s.Filtering || !s.hostCursor {
 		return nil
 	}
-	inner := max(width-cardFrameWidth, 1)
+	inner := Card{}.Inner(width)
 	x := max(min(lipgloss.Width(queryPrompt+s.Query), inner-1), 0)
 	if width < minCardWidth {
 		// Below the frame the rows are drawn bare, so the filter row is the
@@ -588,7 +588,7 @@ func (s *Select) optionRows(width int, numbered bool, lo, hi int) []string {
 				// it. It read dim until the config screen wanted the
 				// SESSION / WORKSPACE rails and found the rails it already had painted as
 				// chrome.
-				rows = append(rows, sty.Headline.Render(clip(opt.Label, inner)))
+				rows = append(rows, sty.Headline.Render(Clip(opt.Label, inner)))
 			}
 			continue
 		}
@@ -598,7 +598,7 @@ func (s *Select) optionRows(width int, numbered bool, lo, hi int) []string {
 		}
 		rows = append(rows, s.optionRow(opt, n, i == s.Focus, g, inner))
 		if s.FocusDesc && i == s.Focus && opt.Desc != "" {
-			rows = append(rows, sty.Dim.Render(clip("    "+opt.Desc, inner)))
+			rows = append(rows, sty.Dim.Render(Clip("    "+opt.Desc, inner)))
 		}
 	}
 	return rows
@@ -652,12 +652,12 @@ func (s *Select) optionRow(opt SelectOption, n int, focused bool, g optionGrid, 
 		avail -= lipgloss.Width(meta) + 2
 	}
 	if opt.Value != "" && avail >= minValueWidth+2 {
-		value = clip(opt.Value, avail-2)
+		value = Clip(opt.Value, avail-2)
 		avail -= lipgloss.Width(value) + 2
 	}
 	gap := descGap(value)
 	if !s.FocusDesc && opt.Desc != "" && avail >= minDescWidth {
-		desc = clip(opt.Desc, avail-len(gap))
+		desc = Clip(opt.Desc, avail-len(gap))
 	}
 
 	// The focused row is painted whole: it is already bold, so a matched run
@@ -674,7 +674,7 @@ func (s *Select) optionRow(opt SelectOption, n int, focused bool, g optionGrid, 
 		if meta != "" {
 			row = padRight(row, inner-lipgloss.Width(meta)) + meta
 		}
-		return sty.FocusRow.Render(clip(row, inner))
+		return sty.FocusRow.Render(Clip(row, inner))
 	}
 
 	body := emphasizeMatch(label, s.Query)
@@ -704,7 +704,7 @@ func (s *Select) optionRow(opt SelectOption, n int, focused bool, g optionGrid, 
 	if lipgloss.Width(meta) > 0 {
 		row = padRight(row, inner-lipgloss.Width(meta)) + meta
 	}
-	return clip(row, inner)
+	return Clip(row, inner)
 }
 
 // emphasizeMatch bolds the run of the label the query names. Bold and
@@ -785,10 +785,10 @@ func (s *Select) visibleRowsFocus(width, budget int, numbered bool) ([]string, i
 // names the nearest thing that does exist — which the caller supplies,
 // because the caller is what matched.
 func (s *Select) noMatchRows(width int) []string {
-	inner := max(width-cardFrameWidth, 1)
-	rows := []string{sty.Dim.Render(clip("  "+fmt.Sprintf("no match for %q", s.Query), inner))}
+	inner := Card{}.Inner(width)
+	rows := []string{sty.Dim.Render(Clip("  "+fmt.Sprintf("no match for %q", s.Query), inner))}
 	if s.Closest != "" {
-		rows = append(rows, sty.Dim.Render(clip("  closest is "+s.Closest, inner)))
+		rows = append(rows, sty.Dim.Render(Clip("  closest is "+s.Closest, inner)))
 	}
 	return rows
 }

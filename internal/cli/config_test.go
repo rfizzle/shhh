@@ -173,11 +173,10 @@ func TestConfigModel_AnUnknownKeyIsReported(t *testing.T) {
 func TestConfigModel_EscWritesNothing(t *testing.T) {
 	m := newConfigModel(config.Config{}, config.Project{})
 	m.apply(components.ConfigChange{Key: "behavior.shell", Value: "/bin/zsh"})
-	next, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
-	if cmd == nil {
+	if cmd := m.answer(m.screen.Update(tea.KeyPressMsg{Code: tea.KeyEscape})); cmd == nil {
 		t.Fatal("esc quits")
 	}
-	if next.(configModel).saved {
+	if m.saved {
 		t.Fatal("esc discards rather than writing")
 	}
 }

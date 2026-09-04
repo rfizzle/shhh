@@ -109,7 +109,7 @@ func AttachmentChips(chips []AttachmentChip, width int) string {
 			break
 		}
 	}
-	return clip(row, width)
+	return Clip(row, width)
 }
 
 // joinChips lays a run of already-rendered chips on one row.
@@ -138,7 +138,7 @@ func chipTail(hidden int) string {
 // dim beside it. The counts read like every other count on the rails; the
 // name is the content, and is the only part drawn as such.
 func (c AttachmentChip) render() string {
-	s := sty.Body.Render(c.Kind.mark() + " " + clip(c.Name, chipNameWidth))
+	s := sty.Body.Render(c.Kind.mark() + " " + Clip(c.Name, chipNameWidth))
 	if c.Size != "" {
 		s += sty.Dim.Render(" " + c.Size)
 	}

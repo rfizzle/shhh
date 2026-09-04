@@ -37,7 +37,7 @@ func rateScreen() *RateScreen {
 func rateView(r *RateScreen, width int) string { return ansi.Strip(r.View(width)) }
 
 // rateAnswer presses one key and reports what the screen made of it.
-func rateAnswer(t *testing.T, r *RateScreen, pressed string) (bool, any) {
+func rateAnswer(t *testing.T, r *RateScreen, pressed string) (bool, RateResult) {
 	t.Helper()
 	return r.Update(key(pressed))
 }
@@ -55,9 +55,9 @@ func TestRateScreen_AnswerCarriesTheEntryAndMovesOn(t *testing.T) {
 		if done {
 			t.Errorf("%q closed the screen with two entries still to ask about", tc.pressed)
 		}
-		got, ok := result.(RateAnswer)
-		if !ok {
-			t.Fatalf("%q resolved to %T, not an answer", tc.pressed, result)
+		got := result.Answer
+		if got == nil {
+			t.Fatalf("%q resolved to nothing, not an answer", tc.pressed)
 		}
 		if got.Act != tc.want || got.ID != "1" {
 			t.Errorf("%q resolved to %+v, want %v on entry 1", tc.pressed, got, tc.want)
@@ -107,8 +107,8 @@ func TestRateScreen_TheLastAnswerClosesTheScreen(t *testing.T) {
 	if !done {
 		t.Error("the screen stayed up with nothing left to ask about")
 	}
-	got, ok := result.(RateAnswer)
-	if !ok || got.ID != "3" || got.Act != RateSkipped {
+	got := result.Answer
+	if got == nil || got.ID != "3" || got.Act != RateSkipped {
 		t.Errorf("the last answer came back as %#v", result)
 	}
 }
@@ -123,7 +123,7 @@ func TestRateScreen_EscStopsWithoutAnswering(t *testing.T) {
 		if !done {
 			t.Errorf("%q did not stop", pressed)
 		}
-		if got, ok := result.(RateResult); !ok || !got.Stopped {
+		if !result.Stopped {
 			t.Errorf("%q resolved to %#v, not a stop", pressed, result)
 		}
 		if r.Focus != 1 {
@@ -150,7 +150,7 @@ func TestRateScreen_TheAnswersStopBeingOfferedWhenThereIsNothingToAnswer(t *test
 	// card, so a stray letter or an arrow key leaves it standing.
 	for _, pressed := range []string{"y", "n", "s", "down", "enter"} {
 		done, result := rateAnswer(t, r, pressed)
-		if done || result != nil {
+		if done || result != (RateResult{}) {
 			t.Errorf("%q acted on a card with nothing left to answer: done=%v result=%#v",
 				pressed, done, result)
 		}

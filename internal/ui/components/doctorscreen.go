@@ -150,6 +150,14 @@ type DoctorCommand struct {
 	At int
 }
 
+// DoctorResult is what a key on the screen answered with. Every key that
+// asks for something asks for it with the screen still up, and quitting
+// carries nothing back, so the whole result is the act — and nil is a key
+// that asked for none.
+type DoctorResult struct {
+	Command *DoctorCommand
+}
+
 // DoctorScreen is `shhh doctor`: a takeover surface, full width, no inspector
 // rail, owning the keyboard for as long as it is up.
 type DoctorScreen struct {
@@ -201,7 +209,7 @@ type DoctorScreen struct {
 // this surface holds the keyboard for as long as it is up, and there is no
 // draft under it for a bare letter to belong to
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
-func (d *DoctorScreen) Update(msg tea.KeyPressMsg) (done bool, result any) {
+func (d *DoctorScreen) Update(msg tea.KeyPressMsg) (done bool, result DoctorResult) {
 	d.sync()
 	if d.confirm != nil {
 		return d.updateConfirm(msg)
@@ -225,96 +233,79 @@ func (d *DoctorScreen) Update(msg tea.KeyPressMsg) (done bool, result any) {
 			d.confirm = &Confirm{Prompt: sty.Body.Render(d.Checks[d.Focus].ActionPrompt)}
 		}
 	case keys.Is(pressed, keys.Screen.Copy):
-		return false, DoctorCommand{Act: DoctorCopy}
+		return false, DoctorResult{Command: &DoctorCommand{Act: DoctorCopy}}
 	case keys.Is(pressed, keys.Screen.Again):
 		if !d.Running {
-			return false, DoctorCommand{Act: DoctorRerun}
+			return false, DoctorResult{Command: &DoctorCommand{Act: DoctorRerun}}
 		}
 	case keys.Is(pressed, keys.Screen.List):
 		d.keys = !d.keys
 	case keys.Is(pressed, keys.Screen.Quit):
-		return true, nil
+		return true, DoctorResult{}
 	}
-	return false, nil
+	return false, DoctorResult{}
 }
 
 // updateConfirm is the keyboard while the question is up. A decline puts the
 // screen back exactly as it was — nothing has happened yet, which is the whole
 // reason the question is there.
-func (d *DoctorScreen) updateConfirm(msg tea.KeyPressMsg) (bool, any) {
+func (d *DoctorScreen) updateConfirm(msg tea.KeyPressMsg) (bool, DoctorResult) {
 	done, result := d.confirm.Update(msg)
 	if !done {
-		return false, nil
+		return false, DoctorResult{}
 	}
 	d.confirm = nil
 	if yes, _ := result.(bool); yes {
-		return false, DoctorCommand{Act: DoctorApply, At: d.asking}
+		return false, DoctorResult{Command: &DoctorCommand{Act: DoctorApply, At: d.asking}}
 	}
-	return false, nil
+	return false, DoctorResult{}
 }
 
-// View renders the screen: the start-screen header and its rule, the checks,
-// and the summary row at the foot.
+// SetSize gives the screen the terminal's rectangle. It lays itself out from
+// the width it is rendered at, so only the height is kept.
+func (d *DoctorScreen) SetSize(_, height int) { d.MaxLines = height }
+
+// View renders the screen: the shared chrome, with the checks in the rows it
+// leaves and the summary row at the foot.
 func (d *DoctorScreen) View(width int) string {
 	if width <= 0 {
 		return ""
 	}
 	d.sync()
-	foot := d.footRows(width)
-	head := []string{d.headerRow(width), reviewRule(width), ""}
-
-	pinned := len(head) + 1 + len(foot)
-	if d.Notice != "" {
-		pinned++
-	}
-	rows := append(head, d.bodyRows(width, d.budget(pinned))...)
-	rows = append(rows, "")
-	rows = append(rows, foot...)
-	if d.Notice != "" {
-		rows = append(rows, sty.Dim.Render(clip(d.Notice, width)))
-	}
-	return strings.Join(rows, "\n")
+	return ScreenChrome{
+		Header:   d.header(),
+		Foot:     d.footer(width).Rows(width),
+		Notice:   d.Notice,
+		MaxLines: d.MaxLines,
+	}.View(width, func(budget int) []string { return d.bodyRows(width, budget) })
 }
 
-// budget is how many rows the checks may spend: the screen's height less
-// everything pinned around them. An unbounded screen drops nothing.
-func (d *DoctorScreen) budget(pinned int) int {
-	if d.MaxLines <= 0 {
-		return 0
-	}
-	return max(d.MaxLines-pinned, 1)
-}
-
-// headerRow is the start-screen header: the command, how many checks it is
-// over and whether they are still going, then the elapsed time and the two
-// keys every screen offers.
-func (d *DoctorScreen) headerRow(width int) string {
+// header names the command, says how many checks it is over and whether they
+// are still going, and puts the elapsed time beside the keys — the elapsed
+// time goes there because it is what says the run is still moving.
+func (d *DoctorScreen) header() ScreenHeader {
 	title := d.Title
 	if title == "" {
 		title = "shhh doctor"
 	}
-	left := brightStyle().Render(title)
+	h := ScreenHeader{
+		Left:  []RailSegment{screenTitle(title)},
+		Keys:  screenHeaderKeys(),
+		Tally: sty.Dimmer.Render(d.Elapsed),
+	}
 	if n := len(d.Checks); n > 0 {
-		left += sty.Dim.Render(" · " + countChecks(n))
+		h.Left = append(h.Left, screenField(countChecks(n)))
 	}
 	if d.Running {
-		left += sty.Dim.Render(" · ") + sty.SpinText.Render(d.spinGlyph()+" running")
+		// The count goes before this does: how many checks there are is
+		// something a narrow terminal can do without, and that the run has not
+		// finished is not.
+		h.Left = append(h.Left, RailSegment{
+			Text: sty.Dim.Render(" · ") + sty.SpinText.Render(d.spinGlyph()+" running"),
+			Drop: RailNormal,
+		})
 	}
-	right := sty.Dim.Render(screenHeaderKeys())
-	if d.Elapsed != "" {
-		right = sty.Dimmer.Render(d.Elapsed) + sty.Dim.Render(" · [?] keys · [q] quit")
-	}
-	// It is the left that gives ground, not the keys: a takeover surface that
-	// dropped `[q]` would be one with no stated way out of it (invariant 5), and
-	// the elapsed time goes with the keys because it is what says the run is
-	// still moving. The same trade the metrics header makes.
-	if room := width - lipgloss.Width(right) - 2; room > 0 {
-		left = clip(left, room)
-	}
-	if pad := width - lipgloss.Width(left) - lipgloss.Width(right); pad >= 2 {
-		return left + strings.Repeat(" ", pad) + right
-	}
-	return clip(right, width)
+	return h
 }
 
 // spinGlyph is the header's frame, or `▸` for a host that is not ticking —
@@ -396,7 +387,7 @@ func (d *DoctorScreen) droppedRow(kept []int, width int) string {
 			names = append(names, check.Name)
 		}
 	}
-	return sty.Dim.Render(clip(
+	return sty.Dim.Render(Clip(
 		fmt.Sprintf("↓ %d more · %s", len(names), strings.Join(names, " · ")), width))
 }
 
@@ -412,7 +403,7 @@ func (d *DoctorScreen) checkRows(i, width int) []string {
 	if check.hasFix() && d.fix[i] {
 		for _, line := range check.Fix {
 			rows = append(rows, indentBy(sty.Body.Render(
-				clip(line, max(width-doctorFixIndent, 1))), doctorFixIndent, width))
+				Clip(line, max(width-doctorFixIndent, 1))), doctorFixIndent, width))
 		}
 	}
 	if row := d.fixKeyRow(i, width); row != "" {
@@ -533,34 +524,17 @@ func (c DoctorCheck) outcomeField() string {
 	return sty.Dim.Render(c.Outcome)
 }
 
-// footRows are the summary and the keys beside it. The doctor screen puts the
-// counts on the line and the key in the right-hand field, which is the
-// reverse of the other three supporting screens: on a diagnostic the thing to
-// read is what the run found, and `[c]` is the annotation.
-func (d *DoctorScreen) footRows(width int) []string {
+// footer is the summary and the keys beside it. The doctor screen leads with
+// the counts and lets the keys annotate them, which is the reverse of the
+// other supporting screens: on a diagnostic the thing to read is what the run
+// found, and `[c]` is the annotation.
+func (d *DoctorScreen) footer(width int) KeyFooter {
+	f := KeyFooter{Offers: d.offers(), Register: d.keyList(), Showing: d.keys,
+		Lead: indentBy(d.summaryRow(), ptrWidth, width)}
 	if d.confirm != nil {
-		return []string{clip(d.confirm.View(width), width)}
+		f.Taken = d.confirm.View(width)
 	}
-	if d.keys {
-		rows := make([]string, 0, len(d.keyList())+1)
-		for _, offer := range d.keyList() {
-			rows = append(rows, clip(keyOffers([]TurnKey{offer}), width))
-		}
-		return append(rows, clip(keyOffers([]TurnKey{hideKeysOffer()}), width))
-	}
-	summary := indentBy(d.summaryRow(), ptrWidth, width)
-	offers := d.offers()
-	if len(offers) == 0 {
-		return []string{summary}
-	}
-	// The keys annotate the summary where both fit, and take a row of their own
-	// where they do not. Nothing on a key row is ever truncated to make room
-	// (invariant 4).
-	keys := keyOffers(offers)
-	if pad := width - lipgloss.Width(summary) - lipgloss.Width(keys); pad >= 2 {
-		return []string{summary + strings.Repeat(" ", pad) + keys}
-	}
-	return append([]string{summary}, wrapOffers(offers, width)...)
+	return f
 }
 
 // summaryRow counts every outcome, including the checks still running, and

@@ -190,7 +190,7 @@ func closeLine(lead, text, note string, width int) string {
 	if noteW := lipgloss.Width(note); noteW > 0 && leftW+closeMinNoteGap+noteW <= width {
 		return left + strings.Repeat(" ", width-leftW-noteW) + note
 	}
-	return strings.TrimRight(clip(left, width), " ")
+	return strings.TrimRight(Clip(left, width), " ")
 }
 
 // View renders the close block at the given width, one line per row.

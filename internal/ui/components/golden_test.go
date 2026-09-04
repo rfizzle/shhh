@@ -2084,3 +2084,51 @@ func TestGolden_ProfileScreen(t *testing.T) {
 		}
 	})
 }
+
+// screenFamilyWidths are the two the family is captured at: the narrowest
+// terminal the chrome has to keep a stated way out on, and the widest, where
+// every field of every header is showing at once.
+var screenFamilyWidths = []int{60, 130}
+
+// TestGolden_ScreenFamily captures the seven take-over screens' chrome side
+// by side. Each of them has its own golden already; this one exists because
+// the thing that drifted was never visible in any single screen's capture —
+// it was the seven of them disagreeing about which half of the header gives
+// ground, and that is only readable with all seven in one file at the same
+// two widths.
+func TestGolden_ScreenFamily(t *testing.T) {
+	captureGolden(t, "screen-family", "the take-over screens through one chrome", screenFamilyWidths,
+		func(width int) []golden.Panel {
+			context := goldenContextScreen()
+			profile := NewProfileScreen("/agents new")
+			profile.Subject = "a coding agent · reviewer tester"
+			profile.MaxLines = 12
+			profile.AskBrief("What should this agent do?", "or start from one of these", nil)
+			return []golden.Panel{
+				{Label: "doctor · the count on the left, the clock and the keys on the right",
+					View: (&DoctorScreen{
+						Checks: goldenDoctorChecks(), Elapsed: "1.4s", MaxLines: 12,
+					}).View(width)},
+				{Label: "metrics · the spend rides with the one key the screen has",
+					View: (&MetricsScreen{
+						Subject: "last 30 days · 251 requests · 4 models", Spend: "$18.42",
+						Models: goldenMetricsModels(), MaxLines: 12,
+					}).View(width)},
+				{Label: "config · the file, and what is standing against it",
+					View: (&ConfigScreen{
+						Path: "~/.config/shhh/config.toml", Rows: goldenConfigRows(),
+						Changed: 2, MaxLines: 12,
+					}).View(width)},
+				{Label: "history · the subject, and a foot key row that states the way out",
+					View: (&HistoryScreen{
+						Rows: goldenHistoryRows(), Subject: "6 entries · 2 run", MaxLines: 12,
+					}).View(width)},
+				{Label: "rate · the same header over one card",
+					View: (&RateScreen{Rows: goldenRateRows(), MaxLines: 12}).View(width)},
+				{Label: "context · the occupancy is the tally beside the keys",
+					View: func() string { context.MaxLines = 12; return context.View(width) }()},
+				{Label: "the profile drafter · the way out is the whole right-hand run",
+					View: profile.View(width)},
+			}
+		})
+}

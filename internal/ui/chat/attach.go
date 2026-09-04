@@ -463,9 +463,8 @@ func (m Model) updateAgentList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if m.agentList.Focus >= len(rows) {
 		m.agentList.Focus = max(len(rows)-1, 0)
 	}
-	done, result := m.agentList.Update(msg)
-	res, ok := result.(components.AgentListResult)
-	if !ok {
+	done, res := m.agentList.Update(msg)
+	if res.Action == components.AgentNone {
 		return m, nil
 	}
 	if done && res.Action == components.AgentDraft {

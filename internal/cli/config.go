@@ -30,19 +30,18 @@ func newConfigCmd() *cobra.Command {
 			"without opening the screen.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg := ConfigFrom(cmd.Context())
-			p := newProgram(newConfigModel(cfg, ProjectConfigFrom(cmd.Context())))
-			finalModel, err := p.Run()
-			if err != nil {
+			m := newConfigModel(cfg, ProjectConfigFrom(cmd.Context()))
+			host := newScreenModel(&m.screen, defaultConfigWidth, m.answer)
+			if _, err := newProgram(host).Run(); err != nil {
 				return err
 			}
-			result := finalModel.(configModel)
-			if result.err != nil {
-				return result.err
+			if m.err != nil {
+				return m.err
 			}
-			if result.saved {
+			if m.saved {
 				wrote := report.Done("wrote", config.WritePath())
-				if result.note != "" {
-					wrote.Body = []string{result.note}
+				if m.note != "" {
+					wrote.Body = []string{m.note}
 				}
 				_ = report.Fprintln(cmd.OutOrStderr(), wrote)
 			}
@@ -284,9 +283,8 @@ type configModel struct {
 	// note is what the checkout's file had to say about the keys just
 	// written, kept until the screen has closed: the screen quits on the
 	// write, so there is no row left to put it on.
-	note  string
-	err   error
-	width int
+	note string
+	err  error
 	// staged is the value each edited key was given, as typed or picked,
 	// which is what the write needs: a row's read is the screen's rendering
 	// of the value and is not what goes in the file.
@@ -299,49 +297,32 @@ type configModel struct {
 // said how wide it is — the working width the artboard is drawn at.
 const defaultConfigWidth = 110
 
-func newConfigModel(cfg config.Config, proj config.Project) configModel {
-	m := configModel{base: cfg, cfg: cfg, proj: proj, width: defaultConfigWidth, staged: map[string]string{}}
+func newConfigModel(cfg config.Config, proj config.Project) *configModel {
+	m := &configModel{base: cfg, cfg: cfg, proj: proj, staged: map[string]string{}}
 	m.screen.Path = shortPath(config.WritePath())
 	m.refresh()
 	return m
 }
 
-func (m configModel) Init() tea.Cmd { return nil }
-
-func (m configModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		m.width, m.screen.MaxLines = msg.Width, msg.Height
-		return m, nil
-	case tea.KeyPressMsg:
-		m.screen.Notice = ""
-		done, result := m.screen.Update(msg)
-		if change, ok := result.(components.ConfigChange); ok {
-			m.apply(change)
-		}
-		if !done {
-			return m, nil
-		}
-		if r, ok := result.(components.ConfigResult); ok && r.Write {
-			note, err := writeConfigEdits(m.proj, config.WritePath(), m.edits()...)
-			if err != nil {
-				m.err = err
-			} else {
-				m.saved, m.note = true, note
-			}
-		}
-		return m, tea.Quit
+// answer stages the edit a key made and, on the write the screen closes with,
+// puts the staged keys in the file.
+func (m *configModel) answer(done bool, result components.ConfigResult) tea.Cmd {
+	m.screen.Notice = ""
+	if result.Change != nil {
+		m.apply(*result.Change)
 	}
-	return m, nil
-}
-
-// View is the frame: the config screen, on the alt screen it takes over. In
-// v2 that state is a field on the view rather than an option the host passes
-// to NewProgram.
-func (m configModel) View() tea.View {
-	v := tea.NewView(m.screen.View(m.width))
-	v.AltScreen = true
-	return v
+	if !done {
+		return nil
+	}
+	if result.Write {
+		note, err := writeConfigEdits(m.proj, config.WritePath(), m.edits()...)
+		if err != nil {
+			m.err = err
+		} else {
+			m.saved, m.note = true, note
+		}
+	}
+	return tea.Quit
 }
 
 // apply stages one edit and rebuilds the rows, so the screen redraws from the

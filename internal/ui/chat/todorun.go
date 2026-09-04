@@ -750,11 +750,10 @@ func orDash(s string) string {
 
 // updateTodoPause routes keys while the pause card shows.
 func (m Model) updateTodoPause(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	done, result := m.todoRunner.pause.Update(msg)
+	done, res := m.todoRunner.pause.Update(msg)
 	if !done {
 		return m, nil
 	}
-	res := result.(components.NoteSelectResult)
 	m.todoRunner.pause = nil
 	m.leaveSurface()
 	m.syncViewport()

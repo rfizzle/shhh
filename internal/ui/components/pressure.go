@@ -137,13 +137,13 @@ func (c PressureCard) View(width int) string {
 		// rows, not fewer answers, and the one that would clip here is the
 		// one that keeps going.
 		rows = append(rows, cardRule)
-		rows = append(rows, wrapOffers(c.Keys, width-cardFrameWidth)...)
+		rows = append(rows, packOffers(c.Keys, width-cardFrameWidth)...)
 	}
-	return renderChromeCard(cardChrome{
-		title: pressureTitle,
-		chips: []string{c.chip()},
-		style: &style,
-	}, rows, width)
+	return Card{
+		Title: pressureTitle,
+		Chips: []string{c.chip()},
+		Style: &style,
+	}.Render(rows, width)
 }
 
 // chip is the occupancy on the title rail: the percentage, then the two

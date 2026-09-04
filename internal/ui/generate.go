@@ -754,11 +754,10 @@ func (m GenerateModel) updatePick(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if !ok || m.pick == nil {
 		return m, nil
 	}
-	done, result := m.pick.Update(key)
+	done, sel := m.pick.Update(key)
 	if !done {
 		return m, nil
 	}
-	sel := result.(components.SelectResult)
 	m.pick = nil
 	if sel.Canceled || sel.Index < 0 || sel.Index >= len(m.choices) {
 		m.phase = phaseAction

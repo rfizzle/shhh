@@ -416,6 +416,16 @@ The chat TUI (`internal/ui/chat/model.go`) distinguishes between **turn states**
 
 The register is built on first use rather than at initialisation, and so are the slash-command tables in `complete.go` and `command.go`: a row names the session's own methods, and reading the session eventually asks which mode has the screen, which the compiler reads as an initialisation cycle in a package-level table.
 
+### The take-over screens
+
+Seven surfaces take the whole terminal — doctor, metrics, config, history, rate, the context reading and the profile drafter ([`docs/interface/surfaces.md#the-supporting-screens`](docs/interface/surfaces.md#the-supporting-screens)). **They share one chrome, in `internal/ui/components/chrome.go`, and a screen supplies its parts rather than drawing its own skeleton.** `ScreenChrome` is the header, the rule, the body's row budget and the footer; `ScreenHeader` is the row itself; `KeyFooter` is the key row and what annotates it. What a screen still owns is what is a fact about that screen: its title, what it is counting, which keys it offers, and what its body draws in the rows it is left.
+
+What will bite you: **the header's two halves are fitted in the opposite order from the one that reads naturally.** The keys are laid out first and the left-hand rail into what is left of the row, so the reading a screen is counting is dropped before its stated way out is. Fitting the left first is the bug this replaced — three of the seven did it, each self-consistent, and no single screen's test could see it. The family's drop order is asserted once in `chrome_test.go` and captured once in the `screen-family` goldens at 60 and 130 columns, which is the only place all seven are side by side.
+
+A left-hand field carries the ` · ` that joins it to the field in front of it. That is why a dropped field cannot leave a dangling separator behind — and why the fields can be coloured separately, which a spinner, a percentage and a warning about unwritten changes all need.
+
+A screen's height reaches it through `Sized.SetSize`, and its keys answer with a typed result rather than `any` (`Keyed[R]`). `internal/cli/screen.go` hosts all five commands' screens with one `screenModel[R]`: the command's own state stays in its own type, behind a pointer the `answer` function closes over, because a Bubble Tea model is a value and every one of these commands has something to say after the screen has closed.
+
 ### CLI reports
 
 Every non-interactive listing is one shape, built in `internal/cli/report`

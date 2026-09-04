@@ -26,7 +26,7 @@ func TestSelect_MoveAndConfirm(t *testing.T) {
 		t.Fatalf("k should move focus up, got %d", s.Focus)
 	}
 	done, result := s.Update(key("enter"))
-	if !done || result.(SelectResult).Index != 1 {
+	if !done || result.Index != 1 {
 		t.Fatalf("enter should select the focused option, got %v %v", done, result)
 	}
 }
@@ -34,7 +34,7 @@ func TestSelect_MoveAndConfirm(t *testing.T) {
 func TestSelect_DigitJumpAndCancel(t *testing.T) {
 	s := &Select{Options: planOptions()}
 	done, result := s.Update(key("3"))
-	if !done || result.(SelectResult).Index != 2 {
+	if !done || result.Index != 2 {
 		t.Fatalf("number keys should select immediately, got %v %v", done, result)
 	}
 	s = &Select{Options: planOptions()}
@@ -42,7 +42,7 @@ func TestSelect_DigitJumpAndCancel(t *testing.T) {
 		t.Fatal("out-of-range digits should do nothing")
 	}
 	done, result = s.Update(key("esc"))
-	if !done || !result.(SelectResult).Canceled {
+	if !done || !result.Canceled {
 		t.Fatalf("esc should cancel, got %v %v", done, result)
 	}
 }
@@ -70,7 +70,7 @@ func TestMultiSelect_ToggleAllAndApply(t *testing.T) {
 	if !done {
 		t.Fatal("enter with selections should apply")
 	}
-	got := result.(MultiSelectResult).Indices
+	got := result.Indices
 	if len(got) != 2 || got[0] != 0 || got[1] != 1 {
 		t.Fatalf("expected indices [0 1], got %v", got)
 	}
@@ -95,7 +95,7 @@ func TestMultiSelect_AllNoneAndZeroSelection(t *testing.T) {
 		t.Fatal("zero-selection enter should show a notice")
 	}
 	done, result := s.Update(key("esc"))
-	if !done || !result.(MultiSelectResult).Canceled {
+	if !done || !result.Canceled {
 		t.Fatal("esc should cancel the multi-select")
 	}
 }
@@ -125,7 +125,7 @@ func TestNoteSelect_ConfirmWithNote(t *testing.T) {
 		s.Update(key(string(r)))
 	}
 	done, result := s.Update(key("enter"))
-	res := result.(NoteSelectResult)
+	res := result
 	if !done || res.Index != 0 || res.Note != "only for Go" {
 		t.Fatalf("enter should confirm selection and note together, got %+v", res)
 	}
@@ -143,7 +143,7 @@ func TestNoteSelect_RequireNoteBlocksEmpty(t *testing.T) {
 		t.Fatal("the note hint should turn into a note-required warning")
 	}
 	done, result := s.Update(key("esc"))
-	if !done || !result.(NoteSelectResult).Canceled {
+	if !done || !result.Canceled {
 		t.Fatal("esc should still cancel")
 	}
 }
@@ -236,7 +236,7 @@ func TestSelect_DigitJumpCountsOnlySelectableRows(t *testing.T) {
 	if !done {
 		t.Fatal("a numbered list should still jump")
 	}
-	if got := result.(SelectResult).Index; got != 4 {
+	if got := result.Index; got != 4 {
 		t.Fatalf("the third selectable row is index 4, got %d", got)
 	}
 }

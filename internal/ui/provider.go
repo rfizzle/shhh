@@ -176,11 +176,10 @@ func (m ProviderSetup) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m.finish()
 
 	case stepPickProvider:
-		done, result := m.pick.Update(msg)
+		done, res := m.pick.Update(msg)
 		if !done {
 			return m, nil
 		}
-		res, _ := result.(components.SelectResult)
 		if res.Canceled || res.Index < 0 || res.Index >= len(m.providers) {
 			m.step = stepCard
 			return m, nil

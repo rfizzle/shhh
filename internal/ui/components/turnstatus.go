@@ -134,7 +134,7 @@ func (s TurnStatus) View(width int) string {
 	for drop := TurnDropNone; ; drop++ {
 		out := s.render(drop)
 		if lipgloss.Width(out) <= width || drop >= TurnDropElapsed {
-			return clip(out, width)
+			return Clip(out, width)
 		}
 	}
 }

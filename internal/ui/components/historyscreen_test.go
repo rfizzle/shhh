@@ -291,8 +291,8 @@ func TestHistoryScreen_EnterRunsTheEntryUnderThePointer(t *testing.T) {
 	if !done {
 		t.Fatal("enter did not close the screen")
 	}
-	got, ok := result.(HistoryResult)
-	if !ok || !got.Run {
+	got := result
+	if !got.Run {
 		t.Fatalf("want a run result, got %#v", result)
 	}
 	if got.ID != "2" || got.Command != "du -ah . | sort -rh | head -10" {
@@ -309,8 +309,8 @@ func TestHistoryScreen_LeavingRunsNothing(t *testing.T) {
 	for _, k := range []string{"esc", "q", "ctrl+c"} {
 		h := historyScreen()
 		done, result := h.Update(key(k))
-		got, ok := result.(HistoryResult)
-		if !done || !ok || !got.Canceled || got.Run {
+		got := result
+		if !done || !got.Canceled || got.Run {
 			t.Fatalf("%s should leave running nothing, got done=%v %#v", k, done, result)
 		}
 	}
@@ -329,8 +329,8 @@ func TestHistoryScreen_CopyAndSaveResolveWithoutClosing(t *testing.T) {
 		if done {
 			t.Fatalf("[%s] closed the screen", tc.key)
 		}
-		got, ok := result.(HistoryCommand)
-		if !ok || got.Act != tc.act || got.ID != "2" {
+		got := result.Do
+		if got == nil || got.Act != tc.act || got.ID != "2" {
 			t.Fatalf("[%s] resolved %#v", tc.key, result)
 		}
 	}
@@ -341,7 +341,7 @@ func TestHistoryScreen_CopyAndSaveResolveWithoutClosing(t *testing.T) {
 func TestHistoryScreen_DeleteAsksFirst(t *testing.T) {
 	h := historyScreen()
 	done, result := h.Update(key("x"))
-	if done || result != nil {
+	if done || result != (HistoryResult{}) {
 		t.Fatalf("x resolved a delete without asking: done=%v %#v", done, result)
 	}
 	out := plainView(h, 130)
@@ -353,7 +353,7 @@ func TestHistoryScreen_DeleteAsksFirst(t *testing.T) {
 	}
 
 	// n changes nothing.
-	if _, result := h.Update(key("n")); result != nil {
+	if _, result := h.Update(key("n")); result != (HistoryResult{}) {
 		t.Fatalf("declining resolved %#v", result)
 	}
 	if strings.Contains(plainView(h, 130), "Delete the entry") {
@@ -362,8 +362,8 @@ func TestHistoryScreen_DeleteAsksFirst(t *testing.T) {
 
 	h.Update(key("x"))
 	done, result = h.Update(key("y"))
-	got, ok := result.(HistoryCommand)
-	if done || !ok || got.Act != HistoryDelete || got.ID != "1" {
+	got := result.Do
+	if done || got == nil || got.Act != HistoryDelete || got.ID != "1" {
 		t.Fatalf("confirming resolved done=%v %#v", done, result)
 	}
 }
@@ -377,7 +377,7 @@ func TestHistoryScreen_ConfirmHoldsTheKeyboard(t *testing.T) {
 	if strings.Contains(out, "[c] copy it") {
 		t.Fatalf("the row keys are still offered under the confirm:\n%s", out)
 	}
-	if _, result := h.Update(key("c")); result != nil {
+	if _, result := h.Update(key("c")); result != (HistoryResult{}) {
 		t.Fatalf("c acted while the confirm held the keyboard: %#v", result)
 	}
 }
@@ -458,7 +458,7 @@ func TestHistoryScreen_EmptyRenders(t *testing.T) {
 	if strings.Contains(out, "[enter] re-run it") {
 		t.Fatalf("a key with nothing to act on is still offered:\n%s", out)
 	}
-	if done, result := h.Update(key("enter")); done || result != nil {
+	if done, result := h.Update(key("enter")); done || result != (HistoryResult{}) {
 		t.Fatalf("enter acted on an empty list: done=%v %#v", done, result)
 	}
 }

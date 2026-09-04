@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
 func press(t *testing.T, m Model, s string) Model {
@@ -191,5 +192,24 @@ func TestBrowse_AnItemWithNoRefusalIsTaken(t *testing.T) {
 	m = press(t, m, "enter")
 	if m.Result == nil || m.Result.Item.ID != "beta" {
 		t.Fatalf("the unrefused row should open, got %+v", m.Result)
+	}
+}
+
+// The detail pane is the card every other detail in the product is drawn in,
+// and its body is measured against the frame rather than past it.
+func TestBrowse_TheDetailIsDrawnInTheSharedFrame(t *testing.T) {
+	long := strings.Repeat("x", 200)
+	m := New([]Item{{ID: "alpha", Title: "alpha", Detail: "Name:     alpha\n" + long}}, nil)
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 60, Height: 24})
+	m = press(t, updated.(Model), "enter")
+
+	lines := strings.Split(m.screen(), "\n")
+	if !strings.HasPrefix(lines[0], "┌─ alpha ") {
+		t.Fatalf("the title is not in the frame's top border: %q", lines[0])
+	}
+	for _, line := range lines {
+		if lipgloss.Width(line) > 60 {
+			t.Fatalf("a row ran past the terminal: %q", line)
+		}
 	}
 }

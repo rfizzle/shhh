@@ -131,6 +131,10 @@ type HistoryResult struct {
 	ID       string
 	Command  string
 	Canceled bool
+	// Do is the housekeeping a key asked for with the screen still up — a
+	// copy, a save, a delete already past its confirm. nil is a key that
+	// asked for none.
+	Do *HistoryCommand
 }
 
 // HistoryScreen is `shhh history`: a takeover surface, full width, no
@@ -158,7 +162,7 @@ type HistoryScreen struct {
 
 // Update is the screen's whole keyboard. The confirm answers first while it
 // is up — it holds the keyboard, and `y` is not a letter to it (invariant 5).
-func (h *HistoryScreen) Update(msg tea.KeyPressMsg) (done bool, result any) {
+func (h *HistoryScreen) Update(msg tea.KeyPressMsg) (done bool, result HistoryResult) {
 	h.sync()
 	if h.confirm != nil {
 		return h.updateConfirm(msg)
@@ -167,17 +171,17 @@ func (h *HistoryScreen) Update(msg tea.KeyPressMsg) (done bool, result any) {
 	switch {
 	case pressed == "up":
 		h.move(-1)
-		return false, nil
+		return false, HistoryResult{}
 	case pressed == "down":
 		h.move(1)
-		return false, nil
+		return false, HistoryResult{}
 	case keys.Is(pressed, keys.Screen.Rerun):
 		// The one key that leaves the screen with something to do. A list the
 		// filter emptied has nothing for it to take (invariant 5).
 		if row := h.current(); row != nil {
 			return true, HistoryResult{Run: true, ID: row.ID, Command: row.Command}
 		}
-		return false, nil
+		return false, HistoryResult{}
 	case keys.Is(pressed, keys.Select.Cancel):
 		return true, HistoryResult{Canceled: true}
 	}
@@ -189,13 +193,13 @@ func (h *HistoryScreen) Update(msg tea.KeyPressMsg) (done bool, result any) {
 	if h.list.Filtering {
 		if keys.Is(pressed, keys.Screen.ClearQ) && h.list.Query == "" {
 			h.list.Filtering = false
-			return false, nil
+			return false, HistoryResult{}
 		}
 		h.list.editQuery(msg)
 		if h.list.QueryChanged() {
 			h.refilter()
 		}
-		return false, nil
+		return false, HistoryResult{}
 	}
 	switch {
 	case pressed == "k":
@@ -210,11 +214,11 @@ func (h *HistoryScreen) Update(msg tea.KeyPressMsg) (done bool, result any) {
 		h.keys = !h.keys
 	case keys.Is(pressed, keys.Screen.Copy):
 		if row := h.current(); row != nil {
-			return false, HistoryCommand{Act: HistoryCopy, ID: row.ID}
+			return false, HistoryResult{Do: &HistoryCommand{Act: HistoryCopy, ID: row.ID}}
 		}
 	case keys.Is(pressed, keys.Screen.Snippet):
 		if row := h.current(); row != nil {
-			return false, HistoryCommand{Act: HistorySave, ID: row.ID}
+			return false, HistoryResult{Do: &HistoryCommand{Act: HistorySave, ID: row.ID}}
 		}
 	case keys.Is(pressed, keys.Screen.Delete):
 		// The one key here that destroys something asks first, and the prompt names
@@ -224,7 +228,7 @@ func (h *HistoryScreen) Update(msg tea.KeyPressMsg) (done bool, result any) {
 				"Delete the entry for " + quoted(row.Prompt) + "?")}
 		}
 	}
-	return false, nil
+	return false, HistoryResult{}
 }
 
 // SetQuery opens the filter row with a query already in it, for a host that
@@ -237,50 +241,37 @@ func (h *HistoryScreen) SetQuery(query string) {
 	h.refilter()
 }
 
-func (h *HistoryScreen) updateConfirm(msg tea.KeyPressMsg) (bool, any) {
+func (h *HistoryScreen) updateConfirm(msg tea.KeyPressMsg) (bool, HistoryResult) {
 	done, result := h.confirm.Update(msg)
 	if !done {
-		return false, nil
+		return false, HistoryResult{}
 	}
 	h.confirm = nil
 	if yes, _ := result.(bool); yes {
 		if row := h.current(); row != nil {
-			return false, HistoryCommand{Act: HistoryDelete, ID: row.ID}
+			return false, HistoryResult{Do: &HistoryCommand{Act: HistoryDelete, ID: row.ID}}
 		}
 	}
-	return false, nil
+	return false, HistoryResult{}
 }
 
-// View renders the screen: the start-screen header and its rule, the two
-// panes, and one hint line at the foot.
+// SetSize gives the screen the terminal's rectangle. It lays itself out from
+// the width it is rendered at, so only the height is kept.
+func (h *HistoryScreen) SetSize(_, height int) { h.MaxLines = height }
+
+// View renders the screen: the shared chrome, with the two panes in the rows
+// it leaves.
 func (h *HistoryScreen) View(width int) string {
 	if width <= 0 {
 		return ""
 	}
 	h.sync()
-	foot := h.footRows(width)
-	head := []string{h.headerRow(width), reviewRule(width), ""}
-
-	pinned := len(head) + 1 + len(foot)
-	if h.Notice != "" {
-		pinned++
-	}
-	rows := append(head, h.paneRows(width, h.budget(pinned))...)
-	rows = append(rows, "")
-	rows = append(rows, foot...)
-	if h.Notice != "" {
-		rows = append(rows, sty.Dim.Render(clip(h.Notice, width)))
-	}
-	return strings.Join(rows, "\n")
-}
-
-// budget is how many rows the panes may spend: the screen's height less
-// everything pinned around them. An unbounded screen windows nothing.
-func (h *HistoryScreen) budget(pinned int) int {
-	if h.MaxLines <= 0 {
-		return 0
-	}
-	return max(h.MaxLines-pinned, 1)
+	return ScreenChrome{
+		Header:   h.header(),
+		Foot:     h.footer(width).Rows(width),
+		Notice:   h.Notice,
+		MaxLines: h.MaxLines,
+	}.View(width, func(budget int) []string { return h.paneRows(width, budget) })
 }
 
 // paneRows is the body: the search and the preview side by side where the
@@ -307,7 +298,7 @@ func (h *HistoryScreen) paneRows(width, budget int) []string {
 func (h *HistoryScreen) stackedRows(width, budget int) []string {
 	pane := h.previewRows(width)
 	if budget <= 0 {
-		return append(append(h.listRows(width, 0), reviewRule(width)), pane...)
+		return append(append(h.listRows(width, 0), screenRule(width)), pane...)
 	}
 	// The rule between the panes costs a row.
 	avail := budget - 1
@@ -318,7 +309,7 @@ func (h *HistoryScreen) stackedRows(width, budget int) []string {
 	}
 	keep := min(len(pane), max(avail/2, historyMinPreview))
 	rows := h.listRows(width, avail-keep)
-	rows = append(rows, reviewRule(width))
+	rows = append(rows, screenRule(width))
 	return append(rows, truncRows(pane, keep, width)...)
 }
 
@@ -330,7 +321,7 @@ func (h *HistoryScreen) listRows(width, budget int) []string {
 	h.clipLabels(width)
 	head := h.list.queryRows(cardWidthFor(width))
 	if len(head) > 0 {
-		head = append(head, reviewRule(width))
+		head = append(head, screenRule(width))
 	}
 	tail := h.hiddenRows(width)
 	body, _ := h.list.visibleRows(cardWidthFor(width), listBudget(budget, len(head)+len(tail)), false)
@@ -360,7 +351,7 @@ func (h *HistoryScreen) clipLabels(width int) {
 	// the prompt; below that the grid's own drop order takes over.
 	label := max(width-room, minHistoryLabel)
 	for i, opt := range h.list.Options {
-		h.list.Options[i].Label = clip(opt.Label, label)
+		h.list.Options[i].Label = Clip(opt.Label, label)
 	}
 }
 
@@ -387,7 +378,7 @@ func (h *HistoryScreen) hiddenRows(width int) []string {
 	}
 	row := sty.Dim.Render(entries(hidden)+" hidden by the filter · ") +
 		sty.Info.Render("[ctrl+u]") + sty.Dim.Render(" clear it")
-	return []string{reviewRule(width), clip(row, width)}
+	return []string{screenRule(width), Clip(row, width)}
 }
 
 // previewRows is the right pane: the entry the pointer is on, in the grammar
@@ -400,7 +391,7 @@ func (h *HistoryScreen) hiddenRows(width int) []string {
 func (h *HistoryScreen) previewRows(width int) []string {
 	row := h.current()
 	if row == nil {
-		return []string{sty.Dim.Render(clip("no entry selected", width))}
+		return []string{sty.Dim.Render(Clip("no entry selected", width))}
 	}
 	rows := []string{h.previewTitle(*row, width)}
 	if row.Prompt != "" {
@@ -411,7 +402,7 @@ func (h *HistoryScreen) previewRows(width int) []string {
 	rows = append(rows, "")
 	rows = append(rows, h.commandRows(*row, width)...)
 	if row.Counts != "" {
-		rows = append(rows, "  "+sty.Dimmer.Render(clip(row.Counts, max(width-2, 1))))
+		rows = append(rows, "  "+sty.Dimmer.Render(Clip(row.Counts, max(width-2, 1))))
 	}
 	return rows
 }
@@ -430,7 +421,7 @@ func (h *HistoryScreen) previewTitle(row HistoryRow, width int) string {
 	if pad := width - lipgloss.Width(left) - lipgloss.Width(right); pad >= 2 && right != "" {
 		return left + strings.Repeat(" ", pad) + right
 	}
-	return clip(left, width)
+	return Clip(left, width)
 }
 
 // commandRows is the entry's command on the grid. It is the thing `[enter]`
@@ -446,7 +437,7 @@ func (h *HistoryScreen) commandRows(row HistoryRow, width int) []string {
 // row is for.
 func commandGridRows(command, outcome, duration string, state ActivityState, width int) []string {
 	if strings.TrimSpace(command) == "" {
-		return []string{sty.Dim.Render(clip("  no command was recorded", width))}
+		return []string{sty.Dim.Render(Clip("  no command was recorded", width))}
 	}
 	return gridRows(ActivityRow{
 		Kind: ActivityCommand, State: state, Verb: "run",
@@ -518,44 +509,25 @@ func wrapPlain(text string, width int) []string {
 	return lines
 }
 
-// headerRow is the start-screen header: the command, what it is over, and the
-// two keys every one of these screens offers. The right-hand keys drop before
-// the subject does — they annotate the line, and an annotation goes first.
-func (h *HistoryScreen) headerRow(width int) string {
-	left := brightStyle().Render("shhh history")
+// header names the command and what it is over.
+func (h *HistoryScreen) header() ScreenHeader {
+	head := ScreenHeader{Left: []RailSegment{screenTitle("shhh history")}, Keys: screenHeaderKeys()}
 	if h.Subject != "" {
-		left += sty.Dim.Render(" · " + h.Subject)
+		head.Left = append(head.Left, screenField(h.Subject))
 	}
-	right := sty.Dim.Render(screenHeaderKeys())
-	if pad := width - lipgloss.Width(left) - lipgloss.Width(right); pad >= 2 {
-		return left + strings.Repeat(" ", pad) + right
-	}
-	return clip(left, width)
+	return head
 }
 
-// footRows are the keys the screen offers and the field that annotates them.
-// The field drops first; the offers never truncate, they wrap (invariant 4).
-func (h *HistoryScreen) footRows(width int) []string {
-	if h.confirm != nil {
-		return []string{clip(h.confirm.View(width), width)}
-	}
-	if h.keys {
-		rows := make([]string, 0, len(h.keyList())+1)
-		for _, offer := range h.keyList() {
-			rows = append(rows, clip(keyOffers([]KeyOffer{offer}), width))
-		}
-		return append(rows, clip(keyOffers([]KeyOffer{hideKeysOffer()}), width))
-	}
+// footer is the keys the screen offers and the field that annotates them.
+// Which keys those are depends on the field, so it is read once here.
+func (h *HistoryScreen) footer(width int) KeyFooter {
 	field := h.footField()
-	rows := wrapOffers(h.offers(width, field), width)
-	if len(rows) == 0 || field == "" {
-		return rows
+	f := KeyFooter{Offers: h.offers(width, field), Register: h.keyList(),
+		Showing: h.keys, Field: field}
+	if h.confirm != nil {
+		f.Taken = h.confirm.View(width)
 	}
-	painted := sty.Dim.Render(field)
-	if pad := width - lipgloss.Width(rows[0]) - lipgloss.Width(painted); pad >= 2 {
-		rows[0] += strings.Repeat(" ", pad) + painted
-	}
-	return rows
+	return f
 }
 
 // fits reports whether a run of offers leaves room beside it for the field
@@ -828,7 +800,7 @@ func quoted(s string) string {
 	if s == "" {
 		return "this entry"
 	}
-	return `"` + clip(s, shown) + `"`
+	return `"` + Clip(s, shown) + `"`
 }
 
 // entries counts entries, which "entry" plus an s does not.

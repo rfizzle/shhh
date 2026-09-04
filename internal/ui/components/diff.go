@@ -85,6 +85,12 @@ type DiffView struct {
 // viewer was dismissed (esc from the collapsed or expanded form); result is
 // always nil. Esc from full screen steps back to the expanded view — esc
 // never destroys.
+// SetSize gives the viewer the terminal's rectangle. It lays itself out from
+// the width it is rendered at, so only the height is kept — and the height it
+// keeps is the full-screen budget rather than the bound on the inline body,
+// which is the other number this type carries.
+func (d *DiffView) SetSize(_, height int) { d.Height = height }
+
 func (d *DiffView) Update(msg tea.KeyPressMsg) (done bool, result any) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Reading.Expand):
@@ -167,7 +173,7 @@ func (d *DiffView) RowView(width int) string {
 	right := sty.Dim.Render(d.statsLabel()) + "   " + sty.Hint.Render(GroupExpandKey)
 	gap := width - lipgloss.Width(left) - lipgloss.Width(right)
 	if gap < 2 {
-		return clip(left+"  "+right, width)
+		return Clip(left+"  "+right, width)
 	}
 	return left + strings.Repeat(" ", gap) + right
 }
@@ -199,7 +205,7 @@ func UnifiedLines(hunks []diff.Hunk, width int, opts UnifiedOpts) []string {
 	}
 	var rows []string
 	for _, h := range hunks {
-		rows = append(rows, sty.Hunk.Render(clip(h.Header(), width)))
+		rows = append(rows, sty.Hunk.Render(Clip(h.Header(), width)))
 		for _, l := range h.Lines {
 			rows = append(rows, renderUnifiedLine(l, width, numWidth, opts))
 		}
@@ -265,7 +271,7 @@ func renderUnifiedLine(l diff.Line, width, numWidth int, opts UnifiedOpts) strin
 	}
 
 	if span == nil {
-		return style.Render(clip(prefix+text, width))
+		return style.Render(Clip(prefix+text, width))
 	}
 
 	// Clip on the raw runes first, then apply the emphasis span within the
@@ -436,7 +442,7 @@ func (d *DiffView) fullBody(width int) []string {
 	for _, sec := range d.sections() {
 		if sec.path != "" {
 			adds, dels := diff.Stats(sec.hunks)
-			rows = append(rows, clip(sty.Accent.Render("─ "+sec.path)+"  "+sty.Dim.Render(fmt.Sprintf("+%d −%d", adds, dels)), width))
+			rows = append(rows, Clip(sty.Accent.Render("─ "+sec.path)+"  "+sty.Dim.Render(fmt.Sprintf("+%d −%d", adds, dels)), width))
 		}
 		switch {
 		case sec.binary:
@@ -590,7 +596,7 @@ func sideBySideHunks(hunks []diff.Hunk, width int) []string {
 	divider := sty.Dim.Render(" │ ")
 	var out []string
 	for _, h := range hunks {
-		out = append(out, sty.Hunk.Render(clip(h.Header(), width)))
+		out = append(out, sty.Hunk.Render(Clip(h.Header(), width)))
 		for _, row := range pairHunkRows(h) {
 			out = append(out, padRight(sideCell(row.old, pane, true), pane)+divider+sideCell(row.new, pane, false))
 		}
@@ -615,7 +621,7 @@ func sideCell(l *diff.Line, width int, oldSide bool) string {
 		style = sty.Del
 	}
 	text := fmt.Sprintf("%4d  %s", no, strings.ReplaceAll(l.Text, "\t", "    "))
-	return style.Render(clip(text, width))
+	return style.Render(Clip(text, width))
 }
 
 // Scroll moves the full-screen body by delta rows, clamped to its bounds. It

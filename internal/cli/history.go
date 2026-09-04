@@ -274,7 +274,6 @@ type historyModel struct {
 	db      *storage.DB
 	entries []storage.HistoryEntry
 	now     time.Time
-	width   int
 	err     error
 	result  components.HistoryResult
 
@@ -285,8 +284,8 @@ type historyModel struct {
 // said how wide it is — the working width the artboard is drawn at.
 const defaultHistoryWidth = 130
 
-func newHistoryModel(db *storage.DB, entries []storage.HistoryEntry, query string, now time.Time) historyModel {
-	m := historyModel{db: db, entries: entries, now: now, width: defaultHistoryWidth}
+func newHistoryModel(db *storage.DB, entries []storage.HistoryEntry, query string, now time.Time) *historyModel {
+	m := &historyModel{db: db, entries: entries, now: now}
 	if query != "" {
 		m.screen.SetQuery(query)
 	}
@@ -294,35 +293,18 @@ func newHistoryModel(db *storage.DB, entries []storage.HistoryEntry, query strin
 	return m
 }
 
-func (m historyModel) Init() tea.Cmd { return nil }
-
-func (m historyModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		m.width, m.screen.MaxLines = msg.Width, msg.Height
-		return m, nil
-	case tea.KeyPressMsg:
-		m.screen.Notice = ""
-		done, result := m.screen.Update(msg)
-		if command, ok := result.(components.HistoryCommand); ok {
-			m.apply(command)
-		}
-		if !done {
-			return m, nil
-		}
-		if r, ok := result.(components.HistoryResult); ok {
-			m.result = r
-		}
-		return m, tea.Quit
+// answer carries out the housekeeping a key asked for and keeps what the
+// screen closed with, which is read once the terminal has been given back.
+func (m *historyModel) answer(done bool, result components.HistoryResult) tea.Cmd {
+	m.screen.Notice = ""
+	if result.Do != nil {
+		m.apply(*result.Do)
 	}
-	return m, nil
-}
-
-// View is the frame: the history screen, on the alt screen it takes over.
-func (m historyModel) View() tea.View {
-	v := tea.NewView(m.screen.View(m.width))
-	v.AltScreen = true
-	return v
+	if !done {
+		return nil
+	}
+	m.result = result
+	return tea.Quit
 }
 
 // apply carries out one command against the store and rebuilds the rows, so
@@ -535,14 +517,10 @@ func countOf(n int, one, many string) string {
 func oneLineText(s string) string { return strings.Join(strings.Fields(s), " ") }
 
 func runHistoryBrowser(db *storage.DB, entries []storage.HistoryEntry, query string) error {
-	model := newHistoryModel(db, entries, query, time.Now())
-	p := newProgram(model)
-	out, err := p.Run()
-	if err != nil {
+	m := newHistoryModel(db, entries, query, time.Now())
+	if _, err := newProgram(newScreenModel(&m.screen, defaultHistoryWidth, m.answer)).Run(); err != nil {
 		return err
 	}
-
-	m := out.(historyModel)
 	if m.err != nil {
 		return m.err
 	}

@@ -313,7 +313,7 @@ func (p *ProfileScreen) resetField() {
 }
 
 // Update routes one keystroke to the step that is up.
-func (p *ProfileScreen) Update(msg tea.KeyPressMsg) (done bool, result any) {
+func (p *ProfileScreen) Update(msg tea.KeyPressMsg) (done bool, result ProfileResult) {
 	switch p.Step {
 	case ProfileBrief:
 		return p.updateBrief(msg)
@@ -327,7 +327,7 @@ func (p *ProfileScreen) Update(msg tea.KeyPressMsg) (done bool, result any) {
 		if keys.Is(msg.String(), keys.Profile.Back) {
 			return true, ProfileResult{Action: ProfileAbort}
 		}
-		return false, nil
+		return false, ProfileResult{}
 	default:
 		return p.updateDraft(msg)
 	}
@@ -336,7 +336,7 @@ func (p *ProfileScreen) Update(msg tea.KeyPressMsg) (done bool, result any) {
 // updateBrief answers the first step: the field has the keyboard, the
 // starting points are under it, and ↑↓ is what moves between them. The
 // arrows and not j/k, because everything else on this step is text.
-func (p *ProfileScreen) updateBrief(msg tea.KeyPressMsg) (bool, any) {
+func (p *ProfileScreen) updateBrief(msg tea.KeyPressMsg) (bool, ProfileResult) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Profile.Back):
 		return true, ProfileResult{Action: ProfileBack}
@@ -347,23 +347,23 @@ func (p *ProfileScreen) updateBrief(msg tea.KeyPressMsg) (bool, any) {
 		if text := p.taken(); text != "" {
 			return true, ProfileResult{Action: ProfileTake, Text: text}
 		}
-		return false, nil
+		return false, ProfileResult{}
 	case pressed == "up":
 		p.moveFocus(-1)
-		return false, nil
+		return false, ProfileResult{}
 	case pressed == "down":
 		p.moveFocus(1)
-		return false, nil
+		return false, ProfileResult{}
 	}
 	if p.focus < 0 {
 		p.field, _ = p.field.Update(msg)
 	}
-	return false, nil
+	return false, ProfileResult{}
 }
 
 // updateQuestion answers one of the drafter's questions. There is nothing to
 // pick here, so every key that is not the answer or the way back is text.
-func (p *ProfileScreen) updateQuestion(msg tea.KeyPressMsg) (bool, any) {
+func (p *ProfileScreen) updateQuestion(msg tea.KeyPressMsg) (bool, ProfileResult) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Profile.Back):
 		return true, ProfileResult{Action: ProfileBack}
@@ -374,30 +374,29 @@ func (p *ProfileScreen) updateQuestion(msg tea.KeyPressMsg) (bool, any) {
 		return true, ProfileResult{Action: ProfileTake, Text: strings.TrimSpace(p.field.Value())}
 	}
 	p.field, _ = p.field.Update(msg)
-	return false, nil
+	return false, ProfileResult{}
 }
 
 // updateDraft answers the card at the end: the profile scrolls under the
 // decision, and the decision is the note-selector every other card of this
 // shape uses.
-func (p *ProfileScreen) updateDraft(msg tea.KeyPressMsg) (bool, any) {
+func (p *ProfileScreen) updateDraft(msg tea.KeyPressMsg) (bool, ProfileResult) {
 	if p.decide == nil {
 		return true, ProfileResult{Action: ProfileDiscard}
 	}
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Profile.ScrollUp):
 		p.scroll = max(p.scroll-1, 0)
-		return false, nil
+		return false, ProfileResult{}
 	case keys.Is(pressed, keys.Profile.ScrollDown):
 		p.scroll = min(p.scroll+1, max(len(p.promptLines)-profilePromptRows, 0))
-		return false, nil
+		return false, ProfileResult{}
 	}
-	done, result := p.decide.Update(msg)
+	done, res := p.decide.Update(msg)
 	if !done {
-		return false, nil
+		return false, ProfileResult{}
 	}
-	res, ok := result.(NoteSelectResult)
-	if !ok || res.Canceled {
+	if res.Canceled {
 		return true, ProfileResult{Action: ProfileDiscard}
 	}
 	switch {
@@ -434,7 +433,12 @@ func (p *ProfileScreen) moveFocus(delta int) {
 	}
 }
 
-// View renders the surface at the given width.
+// SetSize gives the surface the terminal's rectangle. It lays itself out from
+// the width it is rendered at, so only the height is kept.
+func (p *ProfileScreen) SetSize(_, height int) { p.MaxLines = height }
+
+// View renders the surface at the given width: the shared chrome with the
+// step rail pinned under its rule, and the flow in the rows it leaves.
 func (p *ProfileScreen) View(width int) string {
 	if width <= 0 {
 		return ""
@@ -443,37 +447,23 @@ func (p *ProfileScreen) View(width int) string {
 	// is is a fact of the render, and a host that guessed it would be the
 	// reason a line ends in an ellipsis on a terminal wide enough to hold it.
 	p.promptLines = wrapBlock(p.Draft.Prompt, width-profileIndent-2)
-	head := []string{p.headerRow(width), reviewRule(width), "", p.railRow(width), ""}
-	rows := append(head, p.bodyRows(width, p.budget(len(head)))...)
-	return strings.Join(rows, "\n")
+	return ScreenChrome{
+		Header:   p.header(),
+		Head:     []string{p.railRow(width), ""},
+		MaxLines: p.MaxLines,
+	}.View(width, func(budget int) []string { return p.bodyRows(width, budget) })
 }
 
-// budget is what the body may spend: the surface's height less the header and
-// the rail. An unbounded surface drops nothing.
-func (p *ProfileScreen) budget(pinned int) int {
-	if p.MaxLines <= 0 {
-		return 0
+// header names the surface, what it is drafting into, and the way out.
+func (p *ProfileScreen) header() ScreenHeader {
+	h := ScreenHeader{
+		Left: []RailSegment{screenTitle(p.Name)},
+		Keys: words(keys.Profile.Back, p.wayOutWords()),
 	}
-	return max(p.MaxLines-pinned, 1)
-}
-
-// headerRow names the surface, what it is drafting into, and the way out —
-// the shape every takeover's header has.
-func (p *ProfileScreen) headerRow(width int) string {
-	right := sty.Dim.Render(words(keys.Profile.Back, p.wayOutWords()))
-	left := brightStyle().Render(p.Name)
 	if p.Subject != "" {
-		left += sty.Dim.Render(" · " + p.Subject)
+		h.Left = append(h.Left, screenField(p.Subject))
 	}
-	// The subject drops whole rather than clipping mid-word, for the reason
-	// the context surface's does: half a clause says less than none.
-	if room := width - lipgloss.Width(right) - 2; lipgloss.Width(left) > room {
-		left = clip(brightStyle().Render(p.Name), max(room, 0))
-	}
-	if pad := width - lipgloss.Width(left) - lipgloss.Width(right); pad >= 2 {
-		return left + strings.Repeat(" ", pad) + right
-	}
-	return clip(left, width)
+	return h
 }
 
 // wayOutWords is what esc does from where the flow is standing. A takeover
@@ -519,7 +509,7 @@ func (p *ProfileScreen) railRow(width int) string {
 			parts = append(parts, sty.Dimmer.Render("· "+name))
 		}
 	}
-	return clip(strings.Repeat(" ", profileIndent)+strings.Join(parts, sty.Dimmer.Render("   ")), width)
+	return Clip(strings.Repeat(" ", profileIndent)+strings.Join(parts, sty.Dimmer.Render("   ")), width)
 }
 
 // railStep is which of the rail's three the surface is on. The wait belongs
@@ -569,7 +559,7 @@ func (p *ProfileScreen) briefRows(width int) []string {
 	if len(p.Starts) > 0 {
 		rows = append(rows, "")
 		if p.Lead != "" {
-			rows = append(rows, clip(indent(sty.Dim.Render(p.Lead)), width))
+			rows = append(rows, Clip(indent(sty.Dim.Render(p.Lead)), width))
 		}
 		rows = append(rows, p.startRows(width)...)
 	}
@@ -602,14 +592,14 @@ func (p *ProfileScreen) questionRows(width int) []string {
 			answer = "no preference"
 		}
 		rows = append(rows,
-			clip(indent(sty.Dim.Render("✓ "+qa.Question)), width),
-			clip(indent(sty.Dimmer.Render("  "+answer)), width))
+			Clip(indent(sty.Dim.Render("✓ "+qa.Question)), width),
+			Clip(indent(sty.Dimmer.Render("  "+answer)), width))
 	}
 	if len(rows) > 0 {
 		rows = append(rows, "")
 	}
 	if p.Of > 0 {
-		rows = append(rows, clip(indent(sty.Dim.Render(fmt.Sprintf("question %d of %d", p.At, p.Of))), width))
+		rows = append(rows, Clip(indent(sty.Dim.Render(fmt.Sprintf("question %d of %d", p.At, p.Of))), width))
 	}
 	rows = append(rows, p.askRows(width)...)
 	rows = append(rows, p.fieldRows(width)...)
@@ -632,7 +622,7 @@ func (p *ProfileScreen) workingRows(width int) []string {
 	if p.Elapsed != "" {
 		label.Suffix = sty.Dim.Render("  " + p.Elapsed)
 	}
-	return []string{clip(indent(label.View()), width), ""}
+	return []string{Clip(indent(label.View()), width), ""}
 }
 
 // hintFor is the step's key row. Nothing on a key row is ever truncated
@@ -656,7 +646,7 @@ func (p *ProfileScreen) hintFor(width int) []string {
 	}
 	rows := hintRows(segments, width-profileIndent)
 	for i, row := range rows {
-		rows[i] = clip(indent(row), width)
+		rows[i] = Clip(indent(row), width)
 	}
 	return rows
 }
@@ -682,13 +672,13 @@ func (p *ProfileScreen) draftRows(width, budget int) []string {
 	facts := p.factRows(width)
 	pane, why := profilePromptRows, p.Draft.Why != ""
 	above := func() []string {
-		rows := []string{clip(indent(sty.Body.Render(p.Draft.headline())), width), ""}
+		rows := []string{Clip(indent(sty.Body.Render(p.Draft.headline())), width), ""}
 		rows = append(rows, facts...)
 		if why {
-			rows = append(rows, "", clip(indent(sty.Dim.Render("why  ")+sty.Status.Render(p.Draft.Why)), width))
+			rows = append(rows, "", Clip(indent(sty.Dim.Render("why  ")+sty.Status.Render(p.Draft.Why)), width))
 		}
 		if p.Warning != "" {
-			rows = append(rows, "", clip(indent(sty.Warn.Render("⚠ "+p.Warning)), width))
+			rows = append(rows, "", Clip(indent(sty.Warn.Render("⚠ "+p.Warning)), width))
 		}
 		if pane >= 0 {
 			rows = append(rows, "")
@@ -756,7 +746,7 @@ func (p *ProfileScreen) factRows(width int) []string {
 				row = full
 			}
 		}
-		rows = append(rows, clip(row, width))
+		rows = append(rows, Clip(row, width))
 	}
 	return rows
 }
@@ -766,16 +756,16 @@ func (p *ProfileScreen) factRows(width int) []string {
 func (p *ProfileScreen) promptRows(width, pane int) []string {
 	head := indent(sty.Dim.Render("┄ the profile"))
 	if len(p.promptLines) == 0 || pane <= 0 {
-		return []string{clip(head, width)}
+		return []string{Clip(head, width)}
 	}
 	p.scroll = min(p.scroll, max(len(p.promptLines)-pane, 0))
 	end := min(p.scroll+pane, len(p.promptLines))
-	rows := []string{clip(head, width)}
+	rows := []string{Clip(head, width)}
 	for _, line := range p.promptLines[p.scroll:end] {
-		rows = append(rows, clip(indent("  "+sty.Status.Render(line)), width))
+		rows = append(rows, Clip(indent("  "+sty.Status.Render(line)), width))
 	}
 	if rest := len(p.promptLines) - end; rest > 0 {
-		rows = append(rows, clip(indent("  "+sty.Dim.Render(fmt.Sprintf("⋮ %s · %s",
+		rows = append(rows, Clip(indent("  "+sty.Dim.Render(fmt.Sprintf("⋮ %s · %s",
 			plural(rest, "more line"), words(keys.Profile.ScrollDown, "read on")))), width))
 	}
 	return rows
@@ -789,7 +779,7 @@ func (p *ProfileScreen) askRows(width int) []string {
 	}
 	var rows []string
 	for _, line := range wrapBlock(p.Ask, width-profileIndent) {
-		rows = append(rows, clip(indent(sty.Body.Render(line)), width))
+		rows = append(rows, Clip(indent(sty.Body.Render(line)), width))
 	}
 	return append(rows, "")
 }
@@ -808,11 +798,11 @@ func (p *ProfileScreen) fieldRows(width int) []string {
 		if text == "" {
 			text = "(nothing typed)"
 		}
-		view = sty.Dimmer.Render(clip(text, inner))
+		view = sty.Dimmer.Render(Clip(text, inner))
 	}
-	rows := []string{clip(indent(sty.Dim.Render("┄ "+p.FieldLabel)), width)}
+	rows := []string{Clip(indent(sty.Dim.Render("┄ "+p.FieldLabel)), width)}
 	for _, line := range strings.Split(view, "\n") {
-		rows = append(rows, clip(indent("  "+line), width))
+		rows = append(rows, Clip(indent("  "+line), width))
 	}
 	return rows
 }
@@ -823,10 +813,10 @@ func (p *ProfileScreen) startRows(width int) []string {
 	rows := make([]string, 0, len(p.Starts))
 	for i, start := range p.Starts {
 		if i == p.focus {
-			rows = append(rows, clip(sty.FocusPointer.Render("❯ ")+sty.FocusRow.Render(clip(start, max(width-2, 1))), width))
+			rows = append(rows, Clip(sty.FocusPointer.Render("❯ ")+sty.FocusRow.Render(Clip(start, max(width-2, 1))), width))
 			continue
 		}
-		rows = append(rows, clip("  "+sty.Status.Render(start), width))
+		rows = append(rows, Clip("  "+sty.Status.Render(start), width))
 	}
 	return rows
 }

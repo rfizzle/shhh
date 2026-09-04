@@ -190,7 +190,7 @@ func (r RecoveryRow) keyLines(width int) []string {
 	if one := r.keyLine(); lipgloss.Width(one) <= width {
 		return []string{one}
 	}
-	rows := wrapOffersIn(r.Keys, width, !r.KeysWaiting)
+	rows := packOffersIn(r.Keys, width, !r.KeysWaiting)
 	// The key that hands the keyboard over keeps a line of its own rather
 	// than wrapping in among the keys it makes live: it is the only offer on
 	// a row that does not hold the keyboard, and it reads as one.
@@ -207,7 +207,7 @@ func (r RecoveryRow) keyLines(width int) []string {
 // clips it to the surface. Every line under a recovery row sits here, so the
 // row and whatever renders live beneath it stay in one column.
 func detailLine(s string, width int) string {
-	return strings.Repeat(" ", detailIndent) + clip(s, max(width-detailIndent, 1))
+	return strings.Repeat(" ", detailIndent) + Clip(s, max(width-detailIndent, 1))
 }
 
 // RetryWait is the live block a stalled failure row grows while a bounded
@@ -342,10 +342,10 @@ func (c ProviderCard) View(width int) string {
 	// session, and the border says so the way a gated mode does
 	// (ui_kits/cockpit/Edges.html in the shhh Design System project).
 	border := sty.Accent
-	return renderChromeCard(cardChrome{
-		title: "No model provider configured",
-		style: &border,
-	}, rows, width)
+	return Card{
+		Title: "No model provider configured",
+		Style: &border,
+	}.Render(rows, width)
 }
 
 // lookedIn is the card's first line, counting the places rather than naming
@@ -451,8 +451,8 @@ func (s SecretPrompt) View(width int) string {
 	entry := sty.Dim.Render("▸ ") + sty.Accent.Render(mask) + sty.FocusRow.Render(" ")
 	offers := keyOffers([]KeyOffer{keyOffer(keys.Wait.UseKey), keyOffer(keys.Wait.KeepKey)})
 	return strings.Join([]string{
-		clip(head, width),
-		clip(entry, width),
-		clip(offers, width),
+		Clip(head, width),
+		Clip(entry, width),
+		Clip(offers, width),
 	}, "\n")
 }

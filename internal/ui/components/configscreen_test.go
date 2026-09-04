@@ -75,7 +75,7 @@ func TestConfigScreen_EscKeepsTheCurrentValue(t *testing.T) {
 	c.Update(key("enter"))
 	c.Update(key("down"))
 	done, result := c.Update(key("esc"))
-	if done || result != nil {
+	if done || result != (ConfigResult{}) {
 		t.Fatalf("esc on a picker closes the picker, not the screen: done=%v result=%#v", done, result)
 	}
 	if strings.Contains(c.View(110), "manual") {
@@ -90,9 +90,9 @@ func TestConfigScreen_TakingAnOptionResolvesTheChange(t *testing.T) {
 	c.Update(key("enter"))
 	c.Update(key("down"))
 	_, result := c.Update(key("enter"))
-	change, ok := result.(ConfigChange)
-	if !ok {
-		t.Fatalf("enter resolves a ConfigChange, got %#v", result)
+	change := result.Change
+	if change == nil {
+		t.Fatalf("enter resolves a change, got %#v", result)
 	}
 	if change.Key != "behavior.default_mode" || change.Value != "auto" {
 		t.Fatalf("the change names the key and the chosen option: %#v", change)
@@ -111,8 +111,8 @@ func TestConfigScreen_FieldEditsResolveWhatWasTyped(t *testing.T) {
 		t.Fatalf("the field echoes what is typed in the query row's grammar:\n%s", view)
 	}
 	_, result := c.Update(key("enter"))
-	change, ok := result.(ConfigChange)
-	if !ok || change.Key != "behavior.max_tool_rounds" || change.Value != "40" {
+	change := result.Change
+	if change == nil || change.Key != "behavior.max_tool_rounds" || change.Value != "40" {
 		t.Fatalf("enter resolves the typed value: %#v", result)
 	}
 }
@@ -132,8 +132,8 @@ func TestConfigScreen_SecretIsNeverEchoed(t *testing.T) {
 		t.Fatalf("the entry masks what was typed:\n%s", view)
 	}
 	_, result := c.Update(key("enter"))
-	change, ok := result.(ConfigChange)
-	if !ok || change.Value != "sk-live-secret" {
+	change := result.Change
+	if change == nil || change.Value != "sk-live-secret" {
 		t.Fatalf("the key still reaches the host: %#v", result)
 	}
 }
@@ -189,8 +189,7 @@ func TestConfigScreen_WriteConfirms(t *testing.T) {
 
 	c.Update(key("w"))
 	done, result = c.Update(key("y"))
-	out, ok := result.(ConfigResult)
-	if !done || !ok || !out.Write {
+	if !done || !result.Write {
 		t.Fatalf("y writes: done=%v result=%#v", done, result)
 	}
 }
@@ -203,8 +202,7 @@ func TestConfigScreen_LeavingWritesNothing(t *testing.T) {
 		c := configFixture()
 		c.Changed = 3
 		done, result := c.Update(key(k))
-		out, ok := result.(ConfigResult)
-		if !done || !ok || out.Write || !out.Canceled {
+		if !done || result.Write || !result.Canceled {
 			t.Fatalf("%s leaves writing nothing: done=%v result=%#v", k, done, result)
 		}
 	}
@@ -264,8 +262,8 @@ func TestConfigScreen_SourceStatesWhereTheValueCameFrom(t *testing.T) {
 func TestConfigScreen_ResetIsOneRow(t *testing.T) {
 	c := configFixture()
 	_, result := c.Update(key("r"))
-	change, ok := result.(ConfigChange)
-	if !ok || !change.Reset || change.Key != "behavior.default_mode" {
+	change := result.Change
+	if change == nil || !change.Reset || change.Key != "behavior.default_mode" {
 		t.Fatalf("r resets the row under the pointer: %#v", result)
 	}
 }

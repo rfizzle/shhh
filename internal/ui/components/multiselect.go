@@ -54,7 +54,7 @@ func (s *MultiSelect) count() int {
 	return n
 }
 
-func (s *MultiSelect) Update(msg tea.KeyPressMsg) (done bool, result any) {
+func (s *MultiSelect) Update(msg tea.KeyPressMsg) (done bool, result MultiSelectResult) {
 	s.notice = ""
 	switch pressed := msg.String(); {
 	case pressed == "up", pressed == "k":
@@ -79,7 +79,7 @@ func (s *MultiSelect) Update(msg tea.KeyPressMsg) (done bool, result any) {
 		if s.count() == 0 {
 			s.notice = "nothing selected — " + keys.Shown(keys.Select.Toggle) +
 				" toggles, " + keys.Shown(keys.Select.Cancel) + " cancels"
-			return false, nil
+			return false, MultiSelectResult{}
 		}
 		var idx []int
 		for i, c := range s.Checked {
@@ -91,7 +91,7 @@ func (s *MultiSelect) Update(msg tea.KeyPressMsg) (done bool, result any) {
 	case keys.Is(pressed, keys.Select.Cancel):
 		return true, MultiSelectResult{Canceled: true}
 	}
-	return false, nil
+	return false, MultiSelectResult{}
 }
 
 func (s *MultiSelect) View(width int) string {
@@ -101,7 +101,7 @@ func (s *MultiSelect) View(width int) string {
 	// window is drawn.
 	var tail []string
 	if s.notice != "" {
-		tail = append(tail, sty.Warn.Render(clip(s.notice, inner)))
+		tail = append(tail, sty.Warn.Render(Clip(s.notice, inner)))
 	}
 	hint := strings.Join([]string{
 		offer(keys.Select.Toggle),
@@ -112,7 +112,7 @@ func (s *MultiSelect) View(width int) string {
 	tail = append(tail, hintRows([]string{hint}, width)...)
 	rows := append(s.visibleRows(width, bodyBudget(s.MaxLines, len(tail))), tail...)
 	rows = boundRows(rows, s.MaxLines)
-	return renderCard(s.Title, rows, width)
+	return Card{Title: s.Title}.Render(rows, width)
 }
 
 // visibleRows renders the checkbox list windowed to a body budget, with the
@@ -158,9 +158,9 @@ func (s *MultiSelect) optionRow(i, inner int) string {
 	if opt.Meta != "" && body-lipgloss.Width(row) >= lipgloss.Width(opt.Meta)+2 {
 		row = padRight(row, body-lipgloss.Width(opt.Meta)) + opt.MetaTone.style().Render(opt.Meta)
 	}
-	row = clip(row, max(body, 0))
+	row = Clip(row, max(body, 0))
 	if i == s.Focus {
-		return sty.FocusRow.Render(clip("❯ ", inner)) + row
+		return sty.FocusRow.Render(Clip("❯ ", inner)) + row
 	}
 	return "  " + row
 }

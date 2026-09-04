@@ -408,32 +408,35 @@ func (m Model) footer() []string {
 	return nil
 }
 
+// viewDetail is the item in the frame every other detail in the product is
+// drawn in: the title in the top border, the body inside it, and the actions
+// under it. It was a title, a rule, the body and another rule — the card's
+// own shape, drawn by hand and one column narrower.
 func (m Model) viewDetail() string {
 	if len(m.filtered) == 0 {
 		return "No item selected."
 	}
 
 	item := m.items[m.filtered[m.cursor]]
-	var b strings.Builder
+	card := components.Card{Title: item.Title}
+	inner := card.Inner(m.width)
 
-	b.WriteString(sty.DetailTitle.Render(item.Title) + "\n")
-	b.WriteString(divider(m.width) + "\n")
-
-	detailHeight := m.height - 5
+	// The card's two border rows and the action row under it come off the
+	// body's budget before it is cut.
+	detailHeight := max(m.height-5, 1)
 	if m.notice != "" {
 		detailHeight--
 	}
-	if detailHeight < 1 {
-		detailHeight = 1
+	rows := strings.Split(item.Detail, "\n")
+	if len(rows) > detailHeight {
+		rows = rows[:detailHeight]
 	}
-	detail := item.Detail
-	lines := strings.Split(detail, "\n")
-	if len(lines) > detailHeight {
-		lines = lines[:detailHeight]
+	for i, row := range rows {
+		rows[i] = sty.DetailBody.Render(components.Clip(row, inner))
 	}
-	b.WriteString(sty.DetailBody.Render(strings.Join(lines, "\n")) + "\n")
 
-	b.WriteString(divider(m.width) + "\n")
+	var b strings.Builder
+	b.WriteString(card.Render(rows, m.width) + "\n")
 	b.WriteString(m.renderActions() + "\n")
 	// The refusal a key just met, on the pane the key was pressed on. It
 	// lasts until the next key, like the list's own notice.
@@ -462,15 +465,15 @@ func (m Model) formatListItem(item Item, maxWidth int) string {
 	title := item.Title
 	preview := item.Preview
 	if preview == "" {
-		return truncate(title, maxWidth)
+		return components.Clip(title, maxWidth)
 	}
 	titleWidth := lipgloss.Width(title)
 	sep := "  "
 	remaining := maxWidth - titleWidth - lipgloss.Width(sep)
 	if remaining <= 0 {
-		return truncate(title, maxWidth)
+		return components.Clip(title, maxWidth)
 	}
-	return title + sep + sty.Preview.Render(truncate(preview, remaining))
+	return title + sep + sty.Preview.Render(components.Clip(preview, remaining))
 }
 
 func (m Model) visibleRange(height int) (int, int) {
@@ -508,26 +511,6 @@ func (m *Model) applyFilter() {
 	if m.cursor >= len(m.filtered) {
 		m.cursor = max(0, len(m.filtered)-1)
 	}
-}
-
-func truncate(s string, maxWidth int) string {
-	if maxWidth <= 0 {
-		return ""
-	}
-	if lipgloss.Width(s) <= maxWidth {
-		return s
-	}
-	if maxWidth <= 1 {
-		return "…"
-	}
-	runes := []rune(s)
-	for i := len(runes) - 1; i >= 0; i-- {
-		candidate := string(runes[:i]) + "…"
-		if lipgloss.Width(candidate) <= maxWidth {
-			return candidate
-		}
-	}
-	return "…"
 }
 
 func divider(width int) string {

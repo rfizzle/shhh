@@ -34,7 +34,7 @@ func TestProfileScreen_BriefTakesTheFieldOrAStartingPoint(t *testing.T) {
 	p := briefScreen()
 	typeRunes(p, "something for tests")
 	done, result := p.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
-	if !done || result.(ProfileResult).Text != "something for tests" {
+	if !done || result.Text != "something for tests" {
 		t.Fatalf("enter should take what was typed: %+v", result)
 	}
 
@@ -43,7 +43,7 @@ func TestProfileScreen_BriefTakesTheFieldOrAStartingPoint(t *testing.T) {
 	p.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 	p.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 	done, result = p.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
-	if !done || result.(ProfileResult).Text != profileStarts()[1] {
+	if !done || result.Text != profileStarts()[1] {
 		t.Fatalf("enter on a starting point should take it: %+v", result)
 	}
 	// And up from the top row hands the keyboard back to the field.
@@ -51,7 +51,7 @@ func TestProfileScreen_BriefTakesTheFieldOrAStartingPoint(t *testing.T) {
 	p.Update(tea.KeyPressMsg{Code: tea.KeyUp})
 	p.Update(tea.KeyPressMsg{Code: tea.KeyUp})
 	done, result = p.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
-	if !done || result.(ProfileResult).Text != "ignored" {
+	if !done || result.Text != "ignored" {
 		t.Fatalf("up should return to the field: %+v", result)
 	}
 }
@@ -71,7 +71,7 @@ func TestProfileScreen_EmptyAnswerIsAnAnswer(t *testing.T) {
 	p := NewProfileScreen("/agents new")
 	p.AskQuestion("Which package?", 1, 2)
 	done, result := p.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
-	if !done || result.(ProfileResult).Action != ProfileTake || result.(ProfileResult).Text != "" {
+	if !done || result.Action != ProfileTake || result.Text != "" {
 		t.Fatalf("enter should take the empty answer: %+v", result)
 	}
 }
@@ -92,7 +92,7 @@ func TestProfileScreen_RailAndTheWait(t *testing.T) {
 	if !strings.Contains(view, "drafting") || !strings.Contains(view, "stop drafting") {
 		t.Fatalf("the wait should say what it waits for and how to stop:\n%s", view)
 	}
-	if done, result := p.Update(tea.KeyPressMsg{Code: tea.KeyEscape}); !done || result.(ProfileResult).Action != ProfileAbort {
+	if done, result := p.Update(tea.KeyPressMsg{Code: tea.KeyEscape}); !done || result.Action != ProfileAbort {
 		t.Fatalf("esc should stop the drafting: %+v", result)
 	}
 	p.AskQuestion("Which package?", 1, 2)
@@ -151,7 +151,7 @@ func TestProfileScreen_DecisionRows(t *testing.T) {
 			p.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 		}
 		done, result := p.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
-		res := result.(ProfileResult)
+		res := result
 		if !done || res.Action != tc.action || res.Index != tc.index {
 			t.Fatalf("%d downs: %+v", tc.downs, res)
 		}
@@ -168,7 +168,7 @@ func TestProfileScreen_DecisionRows(t *testing.T) {
 	p.Update(tea.KeyPressMsg{Code: tea.KeyTab})
 	typeRunes(p, "table driven")
 	done, result := p.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
-	res := result.(ProfileResult)
+	res := result
 	if !done || res.Action != ProfileRefine || res.Text != "table driven" {
 		t.Fatalf("refine = %+v", res)
 	}

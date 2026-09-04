@@ -12,7 +12,6 @@ import (
 // reaches it too.
 type Styles struct {
 	ListTitle      lipgloss.Style
-	DetailTitle    lipgloss.Style
 	DetailBody     lipgloss.Style
 	Cursor         lipgloss.Style
 	SelectedItem   lipgloss.Style
@@ -38,7 +37,6 @@ func applyPalette() { sty = newStyles(components.Palette) }
 func newStyles(p components.ColorTokens) Styles {
 	return Styles{
 		ListTitle:      lipgloss.NewStyle().Bold(true).Foreground(p.Bright.Color()),
-		DetailTitle:    lipgloss.NewStyle().Bold(true).Foreground(p.Bright.Color()),
 		DetailBody:     lipgloss.NewStyle().Foreground(p.Body.Color()),
 		Cursor:         lipgloss.NewStyle().Foreground(p.Spin.Color()),
 		SelectedItem:   lipgloss.NewStyle().Bold(true).Foreground(p.Bright.Color()),

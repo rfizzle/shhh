@@ -67,13 +67,18 @@ type AgentRow struct {
 type AgentAction int
 
 const (
-	AgentAttach AgentAction = iota // enter — attach to the agent's surface
-	AgentCancel                    // x — cancel its current turn
-	AgentKill                      // X — kill the agent
-	AgentAnswer                    // a — answer its pending approval in place
-	AgentRetry                     // r — run a failed agent again on its task
-	AgentDraft                     // enter on the offer row — draft a profile
-	AgentBack                      // esc — dismiss the list
+	// AgentNone is the zero value, and it leads the list so that a key the
+	// surface answered without asking the host for anything cannot be read as
+	// the first action in it. The result is a value rather than an interface,
+	// so there is no nil left to mean this.
+	AgentNone   AgentAction = iota
+	AgentAttach             // enter — attach to the agent's surface
+	AgentCancel             // x — cancel its current turn
+	AgentKill               // X — kill the agent
+	AgentAnswer             // a — answer its pending approval in place
+	AgentRetry              // r — run a failed agent again on its task
+	AgentDraft              // enter on the offer row — draft a profile
+	AgentBack               // esc — dismiss the list
 )
 
 // AgentListResult is the agent-list Update result.
@@ -136,7 +141,7 @@ func (l *AgentList) focused() AgentRow {
 // action and comes back); attach and esc dismiss it. [a] and [r] are silent
 // on a row that does not offer them rather than reporting a failure the row
 // already predicted.
-func (l *AgentList) Update(msg tea.KeyPressMsg) (done bool, result any) {
+func (l *AgentList) Update(msg tea.KeyPressMsg) (done bool, result AgentListResult) {
 	switch pressed := msg.String(); {
 	case pressed == "up", pressed == "k":
 		if l.Focus > 0 {
@@ -175,7 +180,7 @@ func (l *AgentList) Update(msg tea.KeyPressMsg) (done bool, result any) {
 	case keys.Is(pressed, keys.Agent.Back):
 		return true, AgentListResult{Action: AgentBack, Index: -1}
 	}
-	return false, nil
+	return false, AgentListResult{}
 }
 
 // stateGlyph pairs every state with a glyph so monochrome terminals stay
@@ -226,14 +231,14 @@ func (r AgentRow) render(inner int, focused bool) []string {
 	right := r.rightField()
 	left := r.stateGlyph() + " " + r.Name
 	if r.Task != "" {
-		left += "  " + sty.Dimmer.Render(clip(r.Task, max(inner/3, 8)))
+		left += "  " + sty.Dimmer.Render(Clip(r.Task, max(inner/3, 8)))
 	}
 	gap := inner - 2 - lipgloss.Width(left) - lipgloss.Width(right)
 	row := left
 	if gap >= 2 {
 		row += strings.Repeat(" ", gap) + right
 	} else {
-		row = clip(left, max(inner-2-lipgloss.Width(right)-2, 0)) + "  " + right
+		row = Clip(left, max(inner-2-lipgloss.Width(right)-2, 0)) + "  " + right
 	}
 	if focused {
 		row = sty.FocusRow.Render("❯") + " " + row
@@ -338,9 +343,9 @@ func (l *AgentList) View(width int) string {
 	rows = append(rows, l.visibleRows(width, bodyBudget(l.MaxLines, len(hints)+len(rows)), scrolling)...)
 	rows = append(rows, hints...)
 	rows = boundRows(rows, l.MaxLines)
-	chrome := cardChrome{title: "Agents"}
+	card := Card{Title: "Agents"}
 	if tally := l.tally(); tally != "" {
-		chrome.chips = []string{tally}
+		card.Chips = []string{tally}
 	}
-	return renderChromeCard(chrome, rows, width)
+	return card.Render(rows, width)
 }

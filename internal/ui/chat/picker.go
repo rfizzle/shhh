@@ -205,7 +205,7 @@ func (m Model) updatePick(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if model, cmd, handled := m.updateChatOps(msg); handled {
 		return model, cmd
 	}
-	done, result := m.picker.Update(msg)
+	done, sel := m.picker.Update(msg)
 	if m.picker.QueryChanged() {
 		m.refilterPicker()
 		m.syncViewport()
@@ -214,7 +214,6 @@ func (m Model) updatePick(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if !done {
 		return m, nil
 	}
-	sel := result.(components.SelectResult)
 	apply, index := m.pickerApply, m.pickerIndex
 	m.closePicker()
 	if sel.Canceled {

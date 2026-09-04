@@ -108,24 +108,24 @@ func TestAgentList_ViewAndKeys(t *testing.T) {
 	if l.Focus != 2 {
 		t.Fatalf("j should move focus, got %d", l.Focus)
 	}
-	if done, result := l.Update(key("x")); done || result.(AgentListResult).Action != AgentCancel {
+	if done, result := l.Update(key("x")); done || result.Action != AgentCancel {
 		t.Fatal("x should request cancel and keep the list open")
 	}
-	if done, result := l.Update(key("X")); done || result.(AgentListResult).Action != AgentKill {
+	if done, result := l.Update(key("X")); done || result.Action != AgentKill {
 		t.Fatal("X should request kill and keep the list open")
 	}
 	done, result := l.Update(key("enter"))
-	if !done || result.(AgentListResult) != (AgentListResult{Action: AgentAttach, Index: 2}) {
+	if !done || result != (AgentListResult{Action: AgentAttach, Index: 2}) {
 		t.Fatalf("enter should attach to the focused agent, got %v", result)
 	}
 	done, result = l.Update(key("esc"))
-	if !done || result.(AgentListResult).Action != AgentBack {
+	if !done || result.Action != AgentBack {
 		t.Fatal("esc should dismiss the list")
 	}
 }
 
 func TestRenderCard_FrameAndClip(t *testing.T) {
-	card := renderCard("Title", []string{"row one", strings.Repeat("x", 200)}, 40)
+	card := Card{Title: "Title"}.Render([]string{"row one", strings.Repeat("x", 200)}, 40)
 	lines := strings.Split(card, "\n")
 	if len(lines) != 4 {
 		t.Fatalf("expected top, two rows, bottom; got %d lines", len(lines))

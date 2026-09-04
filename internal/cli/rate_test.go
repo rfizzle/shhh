@@ -83,12 +83,11 @@ func renderReport(t *testing.T, r report.Report) string {
 	return r.Render(110)
 }
 
-// press drives the host the way the program would, through the model's own
-// Update.
-func press(m rateModel, pressed ...string) rateModel {
+// press drives the host the way the program would: the screen answers the
+// key, and the host is handed what it answered with.
+func press(m *rateModel, pressed ...string) *rateModel {
 	for _, p := range pressed {
-		next, _ := m.Update(rateKey(p))
-		m = next.(rateModel)
+		m.answer(m.screen.Update(rateKey(p)))
 	}
 	return m
 }
@@ -179,14 +178,14 @@ func TestRateModel_TheLastAnswerEndsTheRun(t *testing.T) {
 	db := &fakeRatings{}
 	m := newRateModel(db, rateWalk()[:2], goldenNow)
 	m = press(m, "y")
-	next, cmd := m.Update(rateKey("y"))
+	cmd := m.answer(m.screen.Update(rateKey("y")))
 	if cmd == nil {
 		t.Fatal("answering the last entry did not end the run")
 	}
 	if _, quit := cmd().(tea.QuitMsg); !quit {
 		t.Errorf("the last answer produced %T, not a quit", cmd())
 	}
-	if got := next.(rateModel).tally(); got != "rated 2" {
+	if got := m.tally(); got != "rated 2" {
 		t.Errorf("a run that answered everything tallies %q", got)
 	}
 }
@@ -195,14 +194,15 @@ func TestRateModel_TheLastAnswerEndsTheRun(t *testing.T) {
 // rather than pretending the rest were answered.
 func TestRateModel_EscEndsTheRunWithWhatIsLeft(t *testing.T) {
 	m := newRateModel(&fakeRatings{}, rateWalk(), goldenNow)
-	next, cmd := press(m, "y").Update(rateKey("esc"))
+	press(m, "y")
+	cmd := m.answer(m.screen.Update(rateKey("esc")))
 	if cmd == nil {
 		t.Fatal("esc did not end the run")
 	}
 	if _, quit := cmd().(tea.QuitMsg); !quit {
 		t.Errorf("esc produced %T, not a quit", cmd())
 	}
-	if got := next.(rateModel).tally(); got != "rated 1 · 5 left" {
+	if got := m.tally(); got != "rated 1 · 5 left" {
 		t.Errorf("stopping tallied %q", got)
 	}
 }
