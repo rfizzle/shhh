@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -896,5 +897,275 @@ func TestLiveSibling_ReadsAnotherProcessInThisCheckout(t *testing.T) {
 	}
 	if _, ok := liveSibling(db); !ok {
 		t.Fatal("another running session in this checkout was not seen")
+	}
+}
+
+// writeObserveCohort writes one cohort's worth of sessions: each stamped
+// with the same prompt hash, each closing turns that took the same number of
+// rounds and raising one steer per turn.
+func writeObserveCohort(t *testing.T, db *storage.DB, hash string, sessions, turns int, rounds int64, outcome string) {
+	t.Helper()
+	for i := 0; i < sessions; i++ {
+		id, err := db.StartAgentSession("chat", "openai", "gpt-test")
+		if err != nil {
+			t.Fatalf("start session: %v", err)
+		}
+		if err := db.StampAgentSession(id, storage.AgentProvenance{PromptHash: hash}); err != nil {
+			t.Fatalf("stamp session: %v", err)
+		}
+		for turn := 1; turn <= turns; turn++ {
+			for _, e := range []storage.AgentEvent{
+				{Kind: storage.AgentEventSignal, Outcome: observe.SignalSteer, Turn: int64(turn)},
+				{Kind: storage.AgentEventTurn, Outcome: observe.TurnDone, Turn: int64(turn), Round: rounds},
+			} {
+				if err := db.RecordAgentEvent(id, e); err != nil {
+					t.Fatalf("record event: %v", err)
+				}
+			}
+		}
+		if err := db.EndAgentSession(id, outcome); err != nil {
+			t.Fatalf("end session: %v", err)
+		}
+	}
+}
+
+func observeCompareTestDB(t *testing.T) *storage.DB {
+	t.Helper()
+	db, err := storage.OpenPath(filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+	return db
+}
+
+// The flag reaches the store, and the two cohorts come back with rates of
+// their own rather than one reading of the whole window.
+func TestObserveCompare_SplitsTheWindowIntoTwoCohorts(t *testing.T) {
+	db := observeCompareTestDB(t)
+	writeObserveCohort(t, db, "aaa", 11, 2, 8, observe.SessionCompleted)
+	writeObserveCohort(t, db, "bbb", 12, 2, 4, observe.SessionCompleted)
+
+	data, err := readObserveCompare(db, "30d", "prompt_hash", time.Now().Add(-time.Hour))
+	if err != nil {
+		t.Fatalf("compare: %v", err)
+	}
+	if data.Earlier == nil || data.Later == nil {
+		t.Fatalf("expected two cohorts, got %+v", data)
+	}
+	if !data.Comparable {
+		t.Fatalf("two cohorts of eleven and twelve should be comparable: %+v", data)
+	}
+	sizes := map[string]int{data.Earlier.Value: data.Earlier.Sessions, data.Later.Value: data.Later.Sessions}
+	if sizes["aaa"] != 11 || sizes["bbb"] != 12 {
+		t.Fatalf("cohorts are the wrong size: %+v", sizes)
+	}
+	rounds, ok := findObserveChange(data.Changes, "rounds per turn", observe.TurnDone)
+	if !ok {
+		t.Fatalf("no rounds row for a done turn: %+v", data.Changes)
+	}
+	pair := map[float64]bool{rounds.Before: true, rounds.After: true}
+	if !pair[8] || !pair[4] {
+		t.Fatalf("rounds per turn did not follow the cohort: %+v", rounds)
+	}
+	// Every session steered once a turn on both sides, so the rate is the
+	// figure that is unchanged even though the counts differ.
+	steer, ok := findObserveChange(data.Changes, "steering", observe.SignalSteer)
+	if !ok || steer.Before != 1 || steer.After != 1 {
+		t.Fatalf("steers per turn should be one on both sides: %+v", steer)
+	}
+}
+
+// A cohort under the threshold prints its count and no rate at all.
+func TestObserveCompare_ACohortTooSmallPrintsNoRate(t *testing.T) {
+	db := observeCompareTestDB(t)
+	writeObserveCohort(t, db, "aaa", compareMinSessions-1, 2, 8, observe.SessionCompleted)
+	writeObserveCohort(t, db, "bbb", compareMinSessions+4, 2, 4, observe.SessionCompleted)
+
+	data, err := readObserveCompare(db, "30d", "prompt_hash", time.Now().Add(-time.Hour))
+	if err != nil {
+		t.Fatalf("compare: %v", err)
+	}
+	if data.Comparable || len(data.Changes) != 0 {
+		t.Fatalf("a cohort of %d should not be compared: %+v", compareMinSessions-1, data)
+	}
+	body := observeCompareReport(data).Render(80)
+	if !strings.Contains(body, "too few sessions") {
+		t.Fatalf("the report does not say why it refused:\n%s", body)
+	}
+	if strings.Contains(body, "→") {
+		t.Fatalf("the report drew a rate over a cohort it refused:\n%s", body)
+	}
+	if !strings.Contains(body, countOf(compareMinSessions-1, "session", "sessions")) {
+		t.Fatalf("the count the refusal is about is missing:\n%s", body)
+	}
+}
+
+// Rounds per turn is grouped by how the turn came out, and every row carries
+// the share of turns that came out that way. A cohort that got shorter turns
+// by failing more of them must not read as an improvement.
+func TestObserveCompare_RoundsAreComparedAtEqualOutcome(t *testing.T) {
+	earlier := observeCohortOf("aaa", 12, []storage.AgentTurnOutcome{
+		{Outcome: observe.TurnDone, Count: 40, AvgRounds: 5},
+		{Outcome: observe.TurnFailed, Count: 4, AvgRounds: 9},
+	})
+	later := observeCohortOf("bbb", 12, []storage.AgentTurnOutcome{
+		{Outcome: observe.TurnDone, Count: 20, AvgRounds: 5},
+		{Outcome: observe.TurnFailed, Count: 20, AvgRounds: 2},
+	})
+	data := observeCompared(observeCompareData{Window: "30d", Split: "prompt_hash", Sessions: 24,
+		Earlier: earlier, Later: later, MinSessions: compareMinSessions})
+
+	for _, outcome := range []string{observe.TurnDone, observe.TurnFailed} {
+		c, ok := findObserveChange(data.Changes, "rounds per turn", outcome)
+		if !ok {
+			t.Fatalf("no rounds row for %s: %+v", outcome, data.Changes)
+		}
+		if c.Beside == nil {
+			t.Fatalf("%s carries no share of turns beside its rounds: %+v", outcome, c)
+		}
+	}
+	done, _ := findObserveChange(data.Changes, "rounds per turn", observe.TurnDone)
+	if done.Delta != 0 {
+		t.Fatalf("a turn that came out the same took the same rounds: %+v", done)
+	}
+	failed, _ := findObserveChange(data.Changes, "rounds per turn", observe.TurnFailed)
+	if failed.Beside.Delta <= 0 {
+		t.Fatalf("the share of failing turns rose and the row does not say so: %+v", failed.Beside)
+	}
+	body := observeCompareReport(data).Render(80)
+	if !strings.Contains(body, "of turns") {
+		t.Fatalf("the qualification is not on the screen:\n%s", body)
+	}
+}
+
+// The export carries the figures the report draws, row for row.
+func TestObserveCompare_JSONCarriesWhatTheReportShows(t *testing.T) {
+	data := goldenObserveCompare()
+	body, err := json.Marshal(data)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	var decoded struct {
+		Split       string `json:"split"`
+		Comparable  bool   `json:"comparable"`
+		MinSessions int    `json:"min_sessions"`
+		Earlier     struct {
+			Value    string `json:"value"`
+			Sessions int    `json:"sessions"`
+			Turns    int    `json:"turns"`
+		} `json:"earlier"`
+		Changes []struct {
+			Section string   `json:"section"`
+			Name    string   `json:"name"`
+			Unit    string   `json:"unit"`
+			Before  float64  `json:"before"`
+			After   float64  `json:"after"`
+			Delta   float64  `json:"delta"`
+			Change  *float64 `json:"change"`
+			Beside  *struct {
+				Before float64 `json:"before"`
+				After  float64 `json:"after"`
+			} `json:"beside"`
+		} `json:"changes"`
+	}
+	if err := json.Unmarshal(body, &decoded); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if !decoded.Comparable || decoded.Split != data.Split || decoded.MinSessions != compareMinSessions {
+		t.Fatalf("the comparison's own terms did not survive the export: %s", body)
+	}
+	if decoded.Earlier.Sessions != data.Earlier.Sessions || decoded.Earlier.Turns != int(data.Earlier.turns()) {
+		t.Fatalf("the denominators did not survive the export: %s", body)
+	}
+	if len(decoded.Changes) != len(data.Changes) {
+		t.Fatalf("exported %d changes, the screen draws %d", len(decoded.Changes), len(data.Changes))
+	}
+
+	rendered := observeCompareReport(data)
+	rows := 0
+	for _, s := range rendered.Sections {
+		if s.Header != "COHORTS" {
+			rows += len(s.Rows)
+		}
+	}
+	if rows != len(decoded.Changes) {
+		t.Fatalf("the report draws %d rows and the export carries %d figures", rows, len(decoded.Changes))
+	}
+	for i, want := range data.Changes {
+		got := decoded.Changes[i]
+		if got.Section != want.Section || got.Name != want.Name || got.Unit != want.Unit {
+			t.Errorf("change %d is a different row: %+v against %+v", i, got, want)
+		}
+		if got.Before != want.Before || got.After != want.After || got.Delta != want.Delta {
+			t.Errorf("change %d carries different figures: %+v against %+v", i, got, want)
+		}
+		if (got.Change == nil) != (want.Change == nil) {
+			t.Errorf("change %d disagrees about whether there is a ratio: %+v", i, got)
+		}
+		if (got.Beside == nil) != (want.Beside == nil) {
+			t.Errorf("change %d disagrees about its qualification: %+v", i, got)
+		}
+	}
+}
+
+// A window whose sessions all ran under one value is an empty state. Drawing
+// the second cohort as absent would report every rate as having appeared or
+// vanished entirely, which is a hundred-percent change from nothing.
+func TestObserveCompare_OneValueIsTheEmptyState(t *testing.T) {
+	db := observeCompareTestDB(t)
+	writeObserveCohort(t, db, "aaa", 12, 2, 8, observe.SessionCompleted)
+
+	data, err := readObserveCompare(db, "30d", "prompt_hash", time.Now().Add(-time.Hour))
+	if err != nil {
+		t.Fatalf("compare: %v", err)
+	}
+	if data.Earlier != nil || data.Later != nil || len(data.Changes) != 0 {
+		t.Fatalf("one value is not two cohorts: %+v", data)
+	}
+	body := observeCompareReport(data).Render(80)
+	if !strings.Contains(body, "only one prompt_hash") {
+		t.Fatalf("the empty state does not say what is missing:\n%s", body)
+	}
+	for _, forbidden := range []string{"→", "100%", "pts"} {
+		if strings.Contains(body, forbidden) {
+			t.Fatalf("the empty state drew a change (%q):\n%s", forbidden, body)
+		}
+	}
+}
+
+// A key the store will not group on is answered with the list, not with an
+// empty screen that reads like a window with nothing in it.
+func TestObserveSplitKey_RefusesWhatTheStoreWillNotGroupOn(t *testing.T) {
+	if err := observeSplitKey("prompt_hash"); err != nil {
+		t.Fatalf("prompt_hash should be a split key: %v", err)
+	}
+	for _, key := range []string{"", "prompthash", "rating"} {
+		err := observeSplitKey(key)
+		if err == nil {
+			t.Fatalf("%q should be refused", key)
+		}
+		if !strings.Contains(err.Error(), "config_hash") {
+			t.Errorf("the refusal of %q does not list the keys: %v", key, err)
+		}
+	}
+}
+
+// findObserveChange picks one row out of a comparison by where it is drawn.
+func findObserveChange(changes []observeChange, section, name string) (observeChange, bool) {
+	for _, c := range changes {
+		if c.Section == section && c.Name == name {
+			return c, true
+		}
+	}
+	return observeChange{}, false
+}
+
+// observeCohortOf is a cohort with nothing recorded but its turns.
+func observeCohortOf(value string, sessions int, turns []storage.AgentTurnOutcome) *observeCohortData {
+	return &observeCohortData{
+		AgentCohort: storage.AgentCohort{Value: value, Sessions: sessions,
+			First: goldenNow.AddDate(0, 0, -20), Last: goldenNow},
+		Reading: storage.AgentCohortReading{Turns: turns},
 	}
 }

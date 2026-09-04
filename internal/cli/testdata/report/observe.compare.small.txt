@@ -1,0 +1,11 @@
+  shhh observe compare — prompt_hash · 20 sessions · last 30d
+
+  COHORTS
+
+  · earlier  9f2a1c04bb7e · Aug 10 – Aug 21 · 58 turns  [6 sessions]
+  · later    0b13ee42aa90 · Aug 22 – Aug 31 · 72 turns  [14 sessions]
+
+  ⊘ too few sessions to compare  [earlier · 6 sessions]
+      10 is the fewest a rate is read from: under that, one unusual sitting
+      moves a rate further than the change being measured would
+        shhh observe compare --window 90d

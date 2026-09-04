@@ -412,6 +412,184 @@ func (db *DB) RecordAgentEvent(sessionID int64, e AgentEvent) error {
 	return err
 }
 
+// observeEventWindow and observeSessionWindow are the dashboard's scopes:
+// every event, or every session, since the cutoff.
+//
+// Every aggregate below takes its scope rather than writing one, because the
+// comparison has to draw the same readings the dashboard does. Two copies of
+// a GROUP BY that were meant to agree are two copies that will not: the one
+// nobody edited goes on answering the old question, and a comparison that
+// measures something the dashboard does not draw is worse than no comparison,
+// since nothing on either screen says they disagree.
+const (
+	observeEventWindow   = `created_at >= ?`
+	observeSessionWindow = `started_at >= ?`
+)
+
+// observeEventCohort and observeSessionCohort narrow those to the sessions
+// that ran under one value of a split column.
+//
+// The column is written into the SQL rather than bound as a parameter, which
+// is not something a placeholder can do — so it comes from agentSplitColumn
+// and from nowhere else, and a key that is not on that list never reaches a
+// query. The value beside it is bound normally.
+//
+// Events are scoped by the session that wrote them and not by their own
+// timestamp as well: no event predates the session it belongs to, so the
+// session's window already bounds them, and a second cutoff would only
+// differ by cutting the tail off a session that started inside the window
+// and ran past its edge.
+func observeEventCohort(column string) string {
+	return `session_id IN (SELECT id FROM agent_sessions WHERE started_at >= ? AND ` + column + ` = ?)`
+}
+
+func observeSessionCohort(column string) string {
+	return `started_at >= ? AND ` + column + ` = ?`
+}
+
+// agentSplitColumns are the columns a window's sessions may be split into
+// cohorts on: the provenance a session is stamped with, and the tuning
+// values stamped beside it. Splitting on anything else is refused rather
+// than passed through, because the name is SQL rather than data.
+//
+// Every key is spelled the way its column is, so the person typing one is
+// naming the thing the record actually holds.
+var agentSplitColumns = []string{
+	"prompt_hash", "config_hash", "version", "model",
+	"mode", "reasoning", "max_rounds",
+	"summary_model", "summary_interval", "summary_enabled",
+	"classifier_model", "sandbox_profile",
+}
+
+// AgentSplitKeys lists what a comparison can split on, for the flag that
+// takes one and the error a mistyped one gets.
+func AgentSplitKeys() []string {
+	return append([]string(nil), agentSplitColumns...)
+}
+
+// agentSplitColumn resolves a key to its column, reporting whether it is one
+// this store will split on.
+func agentSplitColumn(key string) (string, bool) {
+	for _, c := range agentSplitColumns {
+		if c == key {
+			return c, true
+		}
+	}
+	return "", false
+}
+
+// AgentCohort is one group of the window's sessions: those that ran under
+// one value of the split column, with the session-level totals over them.
+//
+// Sessions is the denominator every rate drawn from this cohort is over, and
+// it is why a cohort carries its own count rather than being handed one: two
+// cohorts either side of a change are never the same size, and a count read
+// off the wrong side turns a difference in how much work went through into a
+// difference in how the work went.
+type AgentCohort struct {
+	// Value is the column's own text. A numeric or boolean setting reads as
+	// the number SQLite stores it as, since the cohort is named by what the
+	// record holds rather than by how a screen would word it.
+	Value     string
+	Sessions  int
+	TokensIn  int64
+	TokensOut int64
+	Cost      float64
+	// First and Last are when the cohort's earliest and latest sessions
+	// started, which is what says which side of a change it is on.
+	First time.Time
+	Last  time.Time
+}
+
+// AgentCohorts groups the window's sessions by one stamped column, largest
+// cohort first. Sessions the column is empty or NULL for are left out: a row
+// written before the column existed ran under a value nobody recorded, and
+// putting them all in one bucket would compare a cohort against the history
+// of the store.
+func (db *DB) AgentCohorts(since time.Time, key string) ([]AgentCohort, error) {
+	column, ok := agentSplitColumn(key)
+	if !ok {
+		return nil, fmt.Errorf("cannot split sessions on %q", key)
+	}
+	rows, err := db.sql.Query(fmt.Sprintf(
+		`SELECT CAST(%[1]s AS TEXT), COUNT(*),
+		        COALESCE(SUM(tokens_in), 0), COALESCE(SUM(tokens_out), 0), COALESCE(SUM(est_cost), 0),
+		        MIN(started_at), MAX(started_at)
+		 FROM agent_sessions
+		 WHERE started_at >= ? AND %[1]s IS NOT NULL AND %[1]s != ''
+		 GROUP BY %[1]s ORDER BY COUNT(*) DESC, MIN(started_at)`, column), observeCutoff(since))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []AgentCohort
+	for rows.Next() {
+		var (
+			c           AgentCohort
+			first, last string
+		)
+		if err := rows.Scan(&c.Value, &c.Sessions, &c.TokensIn, &c.TokensOut, &c.Cost, &first, &last); err != nil {
+			return nil, err
+		}
+		c.First, _ = time.Parse(observeTimeFormat, first)
+		c.Last, _ = time.Parse(observeTimeFormat, last)
+		out = append(out, c)
+	}
+	return out, rows.Err()
+}
+
+// AgentCohortReading is every aggregate the dashboard draws, taken over one
+// cohort instead of over the whole window. It is the same set of readings in
+// the same shapes, so a figure on the comparison and the same figure on the
+// dashboard are the same query with a narrower scope.
+type AgentCohortReading struct {
+	Turns      []AgentTurnOutcome
+	Tools      []AgentToolUsage
+	ToolErrors []AgentToolErrorCount
+	Decisions  []AgentDecisionCount
+	Signals    []AgentSignalCount
+	Gates      []AgentGateVerdict
+	Outcomes   []AgentSessionOutcome
+}
+
+// ReadAgentCohort runs those aggregates for one value of the split column.
+func (db *DB) ReadAgentCohort(since time.Time, key, value string) (AgentCohortReading, error) {
+	column, ok := agentSplitColumn(key)
+	if !ok {
+		return AgentCohortReading{}, fmt.Errorf("cannot split sessions on %q", key)
+	}
+	var (
+		r        AgentCohortReading
+		err      error
+		cutoff   = observeCutoff(since)
+		events   = observeEventCohort(column)
+		sessions = observeSessionCohort(column)
+	)
+	if r.Turns, err = db.agentTurns(events, cutoff, value); err != nil {
+		return AgentCohortReading{}, fmt.Errorf("query cohort turns: %w", err)
+	}
+	if r.Tools, err = db.agentToolMix(events, cutoff, value); err != nil {
+		return AgentCohortReading{}, fmt.Errorf("query cohort tool mix: %w", err)
+	}
+	if r.ToolErrors, err = db.agentToolErrors(events, cutoff, value); err != nil {
+		return AgentCohortReading{}, fmt.Errorf("query cohort tool errors: %w", err)
+	}
+	if r.Decisions, err = db.agentDecisions(events, cutoff, value); err != nil {
+		return AgentCohortReading{}, fmt.Errorf("query cohort decisions: %w", err)
+	}
+	if r.Signals, err = db.agentSignals(events, cutoff, value); err != nil {
+		return AgentCohortReading{}, fmt.Errorf("query cohort signals: %w", err)
+	}
+	if r.Gates, err = db.agentGateVerdicts(events, cutoff, value); err != nil {
+		return AgentCohortReading{}, fmt.Errorf("query cohort gate verdicts: %w", err)
+	}
+	if r.Outcomes, err = db.agentSessionOutcomes(sessions, cutoff, value); err != nil {
+		return AgentCohortReading{}, fmt.Errorf("query cohort outcomes: %w", err)
+	}
+	return r, nil
+}
+
 type AgentDayUsage struct {
 	Day       string
 	Sessions  int
@@ -484,14 +662,19 @@ type AgentToolUsage struct {
 	ErrorRate     float64
 }
 
+const agentToolMixQuery = `SELECT tool, COUNT(*), AVG(duration_ms),
+		        AVG(CASE WHEN outcome = 'error' THEN 1.0 ELSE 0.0 END)
+		 FROM agent_events WHERE kind = ? AND %s
+		 GROUP BY tool ORDER BY COUNT(*) DESC`
+
 // AgentToolMix aggregates tool events by tool name since the cutoff,
 // most-called first.
 func (db *DB) AgentToolMix(since time.Time) ([]AgentToolUsage, error) {
-	rows, err := db.sql.Query(
-		`SELECT tool, COUNT(*), AVG(duration_ms),
-		        AVG(CASE WHEN outcome = 'error' THEN 1.0 ELSE 0.0 END)
-		 FROM agent_events WHERE kind = ? AND created_at >= ?
-		 GROUP BY tool ORDER BY COUNT(*) DESC`, AgentEventTool, observeCutoff(since))
+	return db.agentToolMix(observeEventWindow, observeCutoff(since))
+}
+
+func (db *DB) agentToolMix(scope string, args ...any) ([]AgentToolUsage, error) {
+	rows, err := db.sql.Query(fmt.Sprintf(agentToolMixQuery, scope), append([]any{AgentEventTool}, args...)...)
 	if err != nil {
 		return nil, err
 	}
@@ -521,10 +704,15 @@ type AgentToolErrorCount struct {
 // fails on scope is a policy problem, and the error rate alone cannot say
 // which.
 func (db *DB) AgentToolErrors(since time.Time) ([]AgentToolErrorCount, error) {
-	rows, err := db.sql.Query(
-		`SELECT tool, reason, COUNT(*)
-		 FROM agent_events WHERE kind = ? AND outcome = 'error' AND created_at >= ?
-		 GROUP BY tool, reason ORDER BY COUNT(*) DESC`, AgentEventTool, observeCutoff(since))
+	return db.agentToolErrors(observeEventWindow, observeCutoff(since))
+}
+
+const agentToolErrorsQuery = `SELECT tool, reason, COUNT(*)
+		 FROM agent_events WHERE kind = ? AND outcome = 'error' AND %s
+		 GROUP BY tool, reason ORDER BY COUNT(*) DESC`
+
+func (db *DB) agentToolErrors(scope string, args ...any) ([]AgentToolErrorCount, error) {
+	rows, err := db.sql.Query(fmt.Sprintf(agentToolErrorsQuery, scope), append([]any{AgentEventTool}, args...)...)
 	if err != nil {
 		return nil, err
 	}
@@ -550,10 +738,15 @@ type AgentDecisionCount struct {
 // AgentDecisions aggregates mode-decision events (allow/deny/ask + reason
 // code) since the cutoff, most-frequent first.
 func (db *DB) AgentDecisions(since time.Time) ([]AgentDecisionCount, error) {
-	rows, err := db.sql.Query(
-		`SELECT outcome, reason, COUNT(*)
-		 FROM agent_events WHERE kind = ? AND created_at >= ?
-		 GROUP BY outcome, reason ORDER BY COUNT(*) DESC`, AgentEventDecision, observeCutoff(since))
+	return db.agentDecisions(observeEventWindow, observeCutoff(since))
+}
+
+const agentDecisionsQuery = `SELECT outcome, reason, COUNT(*)
+		 FROM agent_events WHERE kind = ? AND %s
+		 GROUP BY outcome, reason ORDER BY COUNT(*) DESC`
+
+func (db *DB) agentDecisions(scope string, args ...any) ([]AgentDecisionCount, error) {
+	rows, err := db.sql.Query(fmt.Sprintf(agentDecisionsQuery, scope), append([]any{AgentEventDecision}, args...)...)
 	if err != nil {
 		return nil, err
 	}
@@ -583,10 +776,15 @@ type AgentTurnOutcome struct {
 // most-frequent first. Rounds per turn is the efficiency number: a prompt
 // change that helps shows up here as fewer rounds for the same outcome.
 func (db *DB) AgentTurns(since time.Time) ([]AgentTurnOutcome, error) {
-	rows, err := db.sql.Query(
-		`SELECT outcome, COUNT(*), AVG(round), MAX(round), AVG(duration_ms)
-		 FROM agent_events WHERE kind = ? AND created_at >= ?
-		 GROUP BY outcome ORDER BY COUNT(*) DESC`, AgentEventTurn, observeCutoff(since))
+	return db.agentTurns(observeEventWindow, observeCutoff(since))
+}
+
+const agentTurnsQuery = `SELECT outcome, COUNT(*), AVG(round), MAX(round), AVG(duration_ms)
+		 FROM agent_events WHERE kind = ? AND %s
+		 GROUP BY outcome ORDER BY COUNT(*) DESC`
+
+func (db *DB) agentTurns(scope string, args ...any) ([]AgentTurnOutcome, error) {
+	rows, err := db.sql.Query(fmt.Sprintf(agentTurnsQuery, scope), append([]any{AgentEventTurn}, args...)...)
 	if err != nil {
 		return nil, err
 	}
@@ -615,10 +813,15 @@ type AgentSignalCount struct {
 // the summarizer reads the session as off target, how often the repeat
 // detector fires, how often a turn hits its round cap.
 func (db *DB) AgentSignals(since time.Time) ([]AgentSignalCount, error) {
-	rows, err := db.sql.Query(
-		`SELECT outcome, reason, COUNT(*)
-		 FROM agent_events WHERE kind = ? AND created_at >= ?
-		 GROUP BY outcome, reason ORDER BY COUNT(*) DESC`, AgentEventSignal, observeCutoff(since))
+	return db.agentSignals(observeEventWindow, observeCutoff(since))
+}
+
+const agentSignalsQuery = `SELECT outcome, reason, COUNT(*)
+		 FROM agent_events WHERE kind = ? AND %s
+		 GROUP BY outcome, reason ORDER BY COUNT(*) DESC`
+
+func (db *DB) agentSignals(scope string, args ...any) ([]AgentSignalCount, error) {
+	rows, err := db.sql.Query(fmt.Sprintf(agentSignalsQuery, scope), append([]any{AgentEventSignal}, args...)...)
 	if err != nil {
 		return nil, err
 	}
@@ -653,10 +856,15 @@ type AgentGateVerdict struct {
 // ever wrote one, and their spelling is fixed by history rather than by what
 // this build happens to write.
 func (db *DB) AgentGateVerdicts(since time.Time) ([]AgentGateVerdict, error) {
-	rows, err := db.sql.Query(
-		`SELECT tool, reason, COUNT(*)
-		 FROM agent_events WHERE kind = ? AND outcome = 'gate' AND created_at >= ?
-		 GROUP BY tool, reason ORDER BY tool, COUNT(*) DESC`, AgentEventSignal, observeCutoff(since))
+	return db.agentGateVerdicts(observeEventWindow, observeCutoff(since))
+}
+
+const agentGateVerdictsQuery = `SELECT tool, reason, COUNT(*)
+		 FROM agent_events WHERE kind = ? AND outcome = 'gate' AND %s
+		 GROUP BY tool, reason ORDER BY tool, COUNT(*) DESC`
+
+func (db *DB) agentGateVerdicts(scope string, args ...any) ([]AgentGateVerdict, error) {
+	rows, err := db.sql.Query(fmt.Sprintf(agentGateVerdictsQuery, scope), append([]any{AgentEventSignal}, args...)...)
 	if err != nil {
 		return nil, err
 	}
@@ -686,10 +894,15 @@ type AgentSessionOutcome struct {
 // abandoned, because "the record cannot say" and "nothing was finished" are
 // different answers and only one of them is about the work.
 func (db *DB) AgentSessionOutcomes(since time.Time) ([]AgentSessionOutcome, error) {
-	rows, err := db.sql.Query(
-		`SELECT COALESCE(NULLIF(outcome, ''), 'unknown'), COUNT(*)
-		 FROM agent_sessions WHERE started_at >= ?
-		 GROUP BY 1 ORDER BY COUNT(*) DESC`, observeCutoff(since))
+	return db.agentSessionOutcomes(observeSessionWindow, observeCutoff(since))
+}
+
+const agentSessionOutcomesQuery = `SELECT COALESCE(NULLIF(outcome, ''), 'unknown'), COUNT(*)
+		 FROM agent_sessions WHERE %s
+		 GROUP BY 1 ORDER BY COUNT(*) DESC`
+
+func (db *DB) agentSessionOutcomes(scope string, args ...any) ([]AgentSessionOutcome, error) {
+	rows, err := db.sql.Query(fmt.Sprintf(agentSessionOutcomesQuery, scope), args...)
 	if err != nil {
 		return nil, err
 	}

@@ -861,3 +861,140 @@ func TestBeatAgentSession_KeepsTheRowInsideTheWindow(t *testing.T) {
 		t.Fatal("the row is still stale after a beat")
 	}
 }
+
+// Every key the store offers splits the window, including the settings whose
+// columns hold numbers and booleans rather than text: a key that is offered
+// and cannot group is a comparison nobody can run.
+func TestAgentCohorts_SplitEveryKeyTheStoreOffers(t *testing.T) {
+	db := openTestDB(t)
+
+	stamp := func(model string, p AgentProvenance) {
+		id, err := db.StartAgentSession("chat", "openai", model)
+		if err != nil {
+			t.Fatalf("start session: %v", err)
+		}
+		if err := db.StampAgentSession(id, p); err != nil {
+			t.Fatalf("stamp session: %v", err)
+		}
+	}
+	stamp("gpt-a", AgentProvenance{Version: "v1", PromptHash: "aaa", Settings: AgentSettings{
+		Mode: "manual", Reasoning: "low", MaxRounds: 10,
+		SummaryModel: "sum-a", SummaryInterval: 5, SummaryEnabled: false,
+		ClassifierModel: "cls-a", SandboxProfile: "workspace", ConfigHash: "h1"}})
+	stamp("gpt-b", AgentProvenance{Version: "v2", PromptHash: "bbb", Settings: AgentSettings{
+		Mode: "auto", Reasoning: "high", MaxRounds: 40,
+		SummaryModel: "sum-b", SummaryInterval: 20, SummaryEnabled: true,
+		ClassifierModel: "cls-b", SandboxProfile: "readonly", ConfigHash: "h2"}})
+
+	since := time.Now().Add(-time.Hour)
+	for _, key := range AgentSplitKeys() {
+		cohorts, err := db.AgentCohorts(since, key)
+		if err != nil {
+			t.Fatalf("split on %s: %v", key, err)
+		}
+		if len(cohorts) != 2 {
+			t.Errorf("split on %s gave %d cohorts, want 2: %+v", key, len(cohorts), cohorts)
+			continue
+		}
+		if cohorts[0].Value == cohorts[1].Value {
+			t.Errorf("split on %s gave one value twice: %q", key, cohorts[0].Value)
+		}
+		for _, c := range cohorts {
+			if c.Sessions != 1 || c.First.IsZero() || c.Last.IsZero() {
+				t.Errorf("split on %s: unexpected cohort %+v", key, c)
+			}
+		}
+	}
+	if _, err := db.AgentCohorts(since, "started_at); DROP TABLE agent_sessions --"); err == nil {
+		t.Fatal("a key the store does not offer should be refused rather than run")
+	}
+}
+
+// A session with nothing stamped in the column is in no cohort. It ran under
+// a value nobody recorded, and one bucket of every such row would compare a
+// cohort against the history of the store.
+func TestAgentCohorts_AnUnstampedSessionIsInNoCohort(t *testing.T) {
+	db := openTestDB(t)
+	if _, err := db.StartAgentSession("chat", "openai", "gpt-test"); err != nil {
+		t.Fatalf("start session: %v", err)
+	}
+	cohorts, err := db.AgentCohorts(time.Now().Add(-time.Hour), "prompt_hash")
+	if err != nil {
+		t.Fatalf("cohorts: %v", err)
+	}
+	if len(cohorts) != 0 {
+		t.Fatalf("expected no cohorts, got %+v", cohorts)
+	}
+}
+
+// Every aggregate a cohort reads is scoped to that cohort's own sessions.
+// The whole comparison rests on it: a reading that leaked the other side's
+// events would report the window twice and call it a change of nothing.
+func TestReadAgentCohort_ScopesEveryAggregateToItsOwnSessions(t *testing.T) {
+	db := openTestDB(t)
+
+	write := func(hash, tool, turnOutcome, signal, verdict, outcome string, rounds int64) {
+		id, err := db.StartAgentSession("chat", "openai", "gpt-test")
+		if err != nil {
+			t.Fatalf("start session: %v", err)
+		}
+		if err := db.StampAgentSession(id, AgentProvenance{PromptHash: hash}); err != nil {
+			t.Fatalf("stamp session: %v", err)
+		}
+		for _, e := range []AgentEvent{
+			{Kind: AgentEventTool, Tool: tool, Outcome: "error", Reason: "exit-status", Turn: 1, Round: 1},
+			{Kind: AgentEventDecision, Outcome: "deny", Reason: "plan-mode", Turn: 1, Round: 1},
+			{Kind: AgentEventSignal, Outcome: signal, Reason: "on-target", Turn: 1, Round: 1},
+			{Kind: AgentEventSignal, Tool: "default", Outcome: "gate", Reason: verdict},
+			{Kind: AgentEventTurn, Outcome: turnOutcome, Turn: 1, Round: rounds},
+		} {
+			if err := db.RecordAgentEvent(id, e); err != nil {
+				t.Fatalf("record event: %v", err)
+			}
+		}
+		if err := db.EndAgentSession(id, outcome); err != nil {
+			t.Fatalf("end session: %v", err)
+		}
+	}
+	write("aaa", "read_file", "done", "summary", "pass", "completed", 4)
+	write("bbb", "execute_command", "failed", "repeat-notice", "fail", "abandoned", 9)
+
+	reading, err := db.ReadAgentCohort(time.Now().Add(-time.Hour), "prompt_hash", "aaa")
+	if err != nil {
+		t.Fatalf("read cohort: %v", err)
+	}
+	for _, c := range []struct {
+		name, got, want string
+	}{
+		{"turns", reading.Turns[0].Outcome, "done"},
+		{"tools", reading.Tools[0].Tool, "read_file"},
+		{"tool errors", reading.ToolErrors[0].Tool, "read_file"},
+		{"decisions", reading.Decisions[0].Reason, "plan-mode"},
+		{"gate verdicts", reading.Gates[0].Verdict, "pass"},
+		{"outcomes", reading.Outcomes[0].Outcome, "completed"},
+	} {
+		if c.got != c.want {
+			t.Errorf("%s: cohort aaa read %q, want %q", c.name, c.got, c.want)
+		}
+	}
+	for _, n := range []int{len(reading.Turns), len(reading.Tools), len(reading.ToolErrors),
+		len(reading.Decisions), len(reading.Gates), len(reading.Outcomes)} {
+		if n != 1 {
+			t.Fatalf("an aggregate returned %d rows; the other cohort's events leaked in: %+v", n, reading)
+		}
+	}
+	// The signal aggregate carries the gate beside the rest, exactly as the
+	// dashboard's does; it is the renderer that keeps them apart. What must
+	// not be here is the other cohort's signal.
+	for _, sig := range reading.Signals {
+		if sig.Signal == "repeat-notice" {
+			t.Errorf("cohort aaa read the other cohort's signal: %+v", reading.Signals)
+		}
+	}
+	if len(reading.Signals) != 2 {
+		t.Errorf("expected the summary and the gate, got %+v", reading.Signals)
+	}
+	if reading.Turns[0].AvgRounds != 4 {
+		t.Errorf("rounds per turn is %v, want 4", reading.Turns[0].AvgRounds)
+	}
+}

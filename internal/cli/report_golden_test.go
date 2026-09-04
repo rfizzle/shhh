@@ -86,6 +86,9 @@ func TestReportGoldens(t *testing.T) {
 		{"observe", observeReport(goldenObserve()).Render(80)},
 		{"observe.w110", observeReport(goldenObserve()).Render(110)},
 		{"observe.empty", observeReport(observeData{Window: "30d"}).Render(80)},
+		{"observe.compare", observeCompareReport(goldenObserveCompare()).Render(80)},
+		{"observe.compare.small", observeCompareReport(goldenObserveCompareSmall()).Render(80)},
+		{"observe.compare.empty", observeCompareReport(goldenObserveCompareEmpty()).Render(80)},
 		{"observe.session", observeSessionReport(goldenObserveSession()).Render(80)},
 		{"observe.session.empty", observeSessionReport(goldenObserveSessionRow(), nil).Render(80)},
 		{"rate", rateReport(rateWalk(), rateScopeOf(false, false), goldenNow).Render(80)},
@@ -113,6 +116,7 @@ func TestReportGoldens_FitTheirWidth(t *testing.T) {
 		{"rate", 80, rateReport(rateWalk(), rateScopeOf(false, false), goldenNow).Render(80)},
 		{"config.list", 80, goldenConfigList().Render(80)},
 		{"config.list.w60", 60, goldenConfigList().Render(60)},
+		{"observe.compare", 80, observeCompareReport(goldenObserveCompare()).Render(80)},
 	} {
 		for _, line := range strings.Split(c.body, "\n") {
 			if len([]rune(line)) > c.width {
@@ -370,4 +374,133 @@ func goldenConfigGet() report.Report {
 		}
 	}
 	return report.Report{}
+}
+
+// goldenObserveCompare is two cohorts either side of a prompt edit, both
+// large enough to read: the later one takes stock more often and is broken
+// into by its user less, finishes more of its sessions, and costs less for
+// each one it finishes.
+func goldenObserveCompare() observeCompareData {
+	fast, mid, slow := 38.0, 260.0, 2100.0
+	earlier := &observeCohortData{
+		AgentCohort: storage.AgentCohort{
+			Value: "9f2a1c04bb7e", Sessions: 11,
+			TokensIn: 402000, TokensOut: 96000, Cost: 5.12,
+			First: goldenNow.AddDate(0, 0, -21), Last: goldenNow.AddDate(0, 0, -10),
+		},
+		Reading: storage.AgentCohortReading{
+			Turns: []storage.AgentTurnOutcome{
+				{Outcome: "done", Count: 48, AvgRounds: 4.6, MaxRounds: 22, AvgDurationMs: &slow},
+				{Outcome: "cap-paused", Count: 6, AvgRounds: 40, MaxRounds: 40},
+				{Outcome: "failed", Count: 4, AvgRounds: 6.5, MaxRounds: 12},
+			},
+			Tools: []storage.AgentToolUsage{
+				{Tool: "read_file", Count: 180, AvgDurationMs: &fast},
+				{Tool: "execute_command", Count: 62, AvgDurationMs: &slow, ErrorRate: 0.145},
+				{Tool: "edit_file", Count: 40, AvgDurationMs: &mid, ErrorRate: 0.05},
+			},
+			ToolErrors: []storage.AgentToolErrorCount{
+				{Tool: "execute_command", Class: "exit-status", Count: 7},
+				{Tool: "execute_command", Class: "timeout", Count: 2},
+				{Tool: "edit_file", Class: "bad-args", Count: 2},
+			},
+			Decisions: []storage.AgentDecisionCount{
+				{Decision: "allow", Reason: "mode-accept-edits", Count: 96},
+				{Decision: "ask", Reason: "safety", Count: 14},
+				{Decision: "deny", Count: 5},
+			},
+			Signals: []storage.AgentSignalCount{
+				{Signal: "summary", Reason: "on-target", Count: 40},
+				{Signal: "intervened", Reason: "steer", Count: 12},
+				{Signal: "steered", Count: 9},
+				{Signal: "intervened", Reason: "check-in", Count: 7},
+				{Signal: "repeat-notice", Reason: "execute_command", Count: 5},
+			},
+			Gates: []storage.AgentGateVerdict{
+				{Suite: "default", Verdict: "pass", Count: 6},
+				{Suite: "default", Verdict: "fail", Count: 3},
+			},
+			Outcomes: []storage.AgentSessionOutcome{
+				{Outcome: "completed", Count: 7},
+				{Outcome: "abandoned", Count: 3},
+				{Outcome: "error", Count: 1},
+			},
+		},
+	}
+	later := &observeCohortData{
+		AgentCohort: storage.AgentCohort{
+			Value: "0b13ee42aa90", Sessions: 14,
+			TokensIn: 470000, TokensOut: 104000, Cost: 5.60,
+			First: goldenNow.AddDate(0, 0, -9), Last: goldenNow,
+		},
+		Reading: storage.AgentCohortReading{
+			Turns: []storage.AgentTurnOutcome{
+				{Outcome: "done", Count: 66, AvgRounds: 3.9, MaxRounds: 18, AvgDurationMs: &slow},
+				{Outcome: "cap-paused", Count: 3, AvgRounds: 40, MaxRounds: 40},
+				{Outcome: "failed", Count: 3, AvgRounds: 5.8, MaxRounds: 11},
+			},
+			Tools: []storage.AgentToolUsage{
+				{Tool: "read_file", Count: 210, AvgDurationMs: &fast},
+				{Tool: "execute_command", Count: 60, AvgDurationMs: &slow, ErrorRate: 0.1},
+				{Tool: "edit_file", Count: 52, AvgDurationMs: &mid, ErrorRate: 0.038},
+			},
+			ToolErrors: []storage.AgentToolErrorCount{
+				{Tool: "execute_command", Class: "exit-status", Count: 5},
+				{Tool: "edit_file", Class: "bad-args", Count: 2},
+				{Tool: "execute_command", Class: "timeout", Count: 1},
+			},
+			Decisions: []storage.AgentDecisionCount{
+				{Decision: "allow", Reason: "mode-accept-edits", Count: 120},
+				{Decision: "ask", Reason: "safety", Count: 10},
+				{Decision: "deny", Count: 3},
+			},
+			Signals: []storage.AgentSignalCount{
+				{Signal: "summary", Reason: "on-target", Count: 52},
+				{Signal: "intervened", Reason: "steer", Count: 18},
+				{Signal: "intervened", Reason: "check-in", Count: 9},
+				{Signal: "steered", Count: 5},
+				{Signal: "repeat-notice", Reason: "execute_command", Count: 2},
+				// A signal the earlier cohort never raised: drawn, and with
+				// no ratio, because there is nothing to divide by.
+				{Signal: "tree-moved", Reason: "head", Count: 1},
+			},
+			Gates: []storage.AgentGateVerdict{
+				{Suite: "default", Verdict: "pass", Count: 10},
+				{Suite: "default", Verdict: "fail", Count: 2},
+			},
+			Outcomes: []storage.AgentSessionOutcome{
+				{Outcome: "completed", Count: 11},
+				{Outcome: "abandoned", Count: 2},
+				{Outcome: "unknown", Count: 1},
+			},
+		},
+	}
+	return observeCompared(observeCompareData{
+		Window: "30d", Split: "prompt_hash", Sessions: 27,
+		Earlier: earlier, Later: later,
+		Others:      []string{"7cd0a1b2ff31"},
+		MinSessions: compareMinSessions,
+	})
+}
+
+// goldenObserveCompareSmall is the same window with one cohort too small to
+// read: it prints both counts and no rate at all.
+func goldenObserveCompareSmall() observeCompareData {
+	data := goldenObserveCompare()
+	small := *data.Earlier
+	small.Sessions = 6
+	data.Earlier, data.Others = &small, nil
+	data.Sessions = 20
+	return observeCompared(observeCompareData{
+		Window: data.Window, Split: data.Split, Sessions: data.Sessions,
+		Earlier: data.Earlier, Later: data.Later, MinSessions: compareMinSessions,
+	})
+}
+
+// goldenObserveCompareEmpty is a window whose sessions all ran under one
+// value: an empty state, and not every rate at a hundred percent.
+func goldenObserveCompareEmpty() observeCompareData {
+	return observeCompared(observeCompareData{
+		Window: "30d", Split: "prompt_hash", Sessions: 11, MinSessions: compareMinSessions,
+	})
 }

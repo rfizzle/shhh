@@ -470,6 +470,48 @@ a sample to read one by one, and a percentage over six of them would lend
 an authority the number has not got — the same reason the record refuses a
 ratio over a cohort too small to divide.
 
+### A comparison is two cohorts as rates
+
+Everything above this is collection. The comparison is where the collection
+becomes a decision: split a window's sessions on something the record
+stamped — the prompt fingerprint, the config fingerprint, the build, the
+model, or any of the settings a session ran under — and the two largest
+groups are drawn side by side, with the direction and the size of every
+change between them.
+
+**Rates rather than counts, because two cohorts are never the same size.** A
+week either side of an edit is not a controlled experiment: one may hold
+twice the sessions, and every count would then read as a change that is only
+a change in how much work went through. Everything is per turn, per call or
+per session, and the session counts sit in the header, where they are the
+denominators rather than findings.
+
+**A cohort too small to read prints its count and no rate.** The threshold is
+arithmetic rather than statistics: at ten sessions one unusual sitting is a
+tenth of the answer, and at six, two of them going the same way produce a
+forty-percent difference out of nothing at all. A row that prints such a
+difference invites acting on it, and nothing about a percentage says it was
+made of two sessions. Refusing the comparison is the whole treatment — a
+caveat printed beside a number loses to the number.
+
+**Rounds per turn is compared at equal outcome, and the qualification is the
+metric.** A change that made turns shorter by making them fail is an
+improvement on the unqualified figure and a regression on the real one, so
+the rows are grouped by how the turn came out first, and each carries the
+share of turns that came out that way beside its rounds.
+
+**It does not attempt significance.** This is a local store of a few hundred
+sessions. The rates, the denominators and the direction are the whole answer,
+and a p-value over a sample this shape would lend the screen an authority it
+has not got. No row draws a tick or a cross either: fewer rounds is an
+improvement unless the turns got shorter by failing, and more interruptions
+is a regression unless they are what stopped the person having to break in.
+
+A window whose sessions all ran under one value is an empty state rather than
+every rate having appeared or vanished at once, and the JSON carries the same
+figures the screen draws, from the same list, so the two cannot come to
+disagree.
+
 ## Where it all lives
 
 One local embedded database file, on your machine, in the platform's

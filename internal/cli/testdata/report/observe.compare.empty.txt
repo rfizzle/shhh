@@ -1,0 +1,3 @@
+  shhh observe compare — prompt_hash · 11 sessions · last 30d
+
+  ⊘ only one prompt_hash in the last 30d · shhh observe compare --window 90d

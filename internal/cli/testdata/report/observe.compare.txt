@@ -1,0 +1,62 @@
+  shhh observe compare — prompt_hash · 27 sessions · last 30d
+
+  COHORTS
+
+  · earlier  9f2a1c04bb7e · Aug 10 – Aug 21 · 58 turns  [11 sessions]
+  · later    0b13ee42aa90 · Aug 22 – Aug 31 · 72 turns  [14 sessions]
+
+  STEERING
+
+  · intervened  0.21 → 0.25 per turn · steer  [+21%]
+  · intervened  0.12 → 0.12 per turn · check-in  [+4%]
+  · steered     0.16 → 0.07 per turn  [-55%]
+
+  ROUNDS PER TURN
+
+  · done        4.6 → 3.9 rounds · 83% → 92% of turns (+9 pts)  [-15%]
+  · cap-paused  40.0 → 40.0 rounds · 10% → 4% of turns (-6 pts)  [unchanged]
+  · failed      6.5 → 5.8 rounds · 7% → 4% of turns (-3 pts)  [-11%]
+
+  TOOL ERRORS
+
+  · exit-status  2.5% → 1.6% of calls  [-0.9 pts]
+  · bad-args     0.7% → 0.6% of calls  [-0.1 pts]
+  · timeout      0.7% → 0.3% of calls  [-0.4 pts]
+
+  GATE
+
+  · default  67% → 83% passed  [+17 pts]
+
+  COST
+
+  · cost    $0.47 → $0.40 per session  [-14%]
+  · cost    $0.73 → $0.51 per completed session  [-30%]
+  · tokens  8.6k → 8.0k per turn  [-7%]
+
+  TOOLS
+
+  · read_file        3.10 → 2.92 per turn  [-6%]
+  · execute_command  1.07 → 0.83 per turn · 14% → 10% failed (-4 pts)  [-22%]
+  · edit_file        0.69 → 0.72 per turn · 5% → 4% failed (-1 pts)  [+5%]
+
+  DECISIONS
+
+  · allowed  1.66 → 1.67 per turn · auto · mode-accept-edits  [+1%]
+  · asked    0.24 → 0.14 per turn · auto · safety  [-42%]
+  · denied   0.09 → 0.04 per turn · you  [-52%]
+
+  SIGNALS
+
+  · summary        0.69 → 0.72 per turn · on-target  [+5%]
+  · repeat-notice  0.09 → 0.03 per turn · execute_command  [-68%]
+  · tree-moved     0.00 → 0.01 per turn · head  [none before]
+
+  OUTCOMES
+
+  · completed  64% → 79% of sessions  [+15 pts]
+  · abandoned  27% → 14% of sessions  [-13 pts]
+  · unknown    0% → 7% of sessions  [+7 pts]
+  · error      9% → 0% of sessions  [-9 pts]
+
+  ⊘ 1 other value in the window: 7cd0a1b2ff31
+  · rates over the denominators above; no significance is claimed
