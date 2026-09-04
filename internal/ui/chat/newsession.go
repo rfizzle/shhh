@@ -53,6 +53,7 @@ func (m *Model) startNewSession() (note string, save tea.Cmd) {
 	m.dropTodoExtract()
 	m.dropTodoDraft()
 	m.dropTodoGroom()
+	m.dropTodoPlan()
 	m.dropPersona()
 	// A run in progress keeps its checkpoint and the new session is told how
 	// to pick it up. The checkpoint was written to survive exactly this: the

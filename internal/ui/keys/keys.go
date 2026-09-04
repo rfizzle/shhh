@@ -483,6 +483,7 @@ var Backlog = BacklogKeys{
 type SprintKeys struct {
 	Move   Binding
 	Toggle Binding
+	Left   Binding
 	Goal   Binding
 	Take   Binding
 	Cancel Binding
@@ -490,7 +491,7 @@ type SprintKeys struct {
 
 // All is the card's keys in the order it offers them.
 func (k SprintKeys) All() []Binding {
-	return []Binding{k.Move, k.Toggle, k.Goal, k.Take, k.Cancel}
+	return []Binding{k.Move, k.Toggle, k.Left, k.Goal, k.Take, k.Cancel}
 }
 
 var Sprint = SprintKeys{
@@ -499,6 +500,10 @@ var Sprint = SprintKeys{
 	// only record of what was proposed: a row that left the card could not
 	// be put back, and the reader would have to plan again to see it.
 	Toggle: bind("space", "drop it, or put it back", " ", "space"),
+	// The left-out list is folded rather than absent: the words behind a
+	// recommendation are what makes it arguable, and a proposal that showed
+	// only what it took could not be argued with.
+	Left:   bind("o", "what was left out, and why", "o"),
 	Goal:   bind("g", "write what the set is for", "g"),
 	Take:   bind("enter", "write the sprint", "enter"),
 	Cancel: bind("esc", "write nothing", "esc"),

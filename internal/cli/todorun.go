@@ -722,6 +722,7 @@ func (d *todoDriver) finish(st *run.State, it todo.Item) {
 		report := st.Report
 		if len(st.Files) > 0 && !st.NoCommit {
 			report += "\nCommitted: " + strings.Join(st.Files, ", ") + "\n"
+			report += todo.CommitLine(project.Head(d.root), st.Message)
 		}
 		to, err := todo.Archive(d.root, st.Slug, report)
 		if err != nil {

@@ -1893,21 +1893,16 @@ func TestGolden_SprintBoard(t *testing.T) {
 		}
 		plan := &BacklogScreen{
 			Rows: goldenBacklogRows(), Done: goldenBacklogDone(), MaxLines: 24,
-			Plan: &SprintPlan{
-				Budget: "S=2 M=1",
-				Goal:   "No goal written yet.",
-				Rows: []SprintPlanRow{
-					{Slug: "prose-renderer", Title: "One renderer for every piece of prose", Note: "medium · S · unblocks 2"},
-					{Slug: "drop-loses-the-file", Title: "Dropping an item says what it loses", Note: "low · - "},
-					{Slug: "screen-over-items", Title: "A screen over the whole backlog", Note: "high · L"},
-				},
-			},
+			Plan: goldenSprintPlan(),
 		}
 		droppedRow := *plan
 		dropped := &BacklogScreen{Rows: droppedRow.Rows, Done: droppedRow.Done, MaxLines: 24,
-			Plan: &SprintPlan{Budget: "S=2 M=1", Goal: plan.Plan.Goal, Rows: append([]SprintPlanRow(nil), plan.Plan.Rows...)}}
+			Plan: goldenSprintPlan()}
 		dropped.Update(key("j"))
 		dropped.Update(key(" "))
+		left := &BacklogScreen{Rows: droppedRow.Rows, Done: droppedRow.Done, MaxLines: 24,
+			Plan: goldenSprintPlan()}
+		left.Update(key("o"))
 		return []golden.Panel{
 			{Label: "the set being worked · the goal, the meter, and the stage of the one in flight",
 				View: goldenSprintScreen(goldenSprintBoard()).View(width)},
@@ -1919,8 +1914,33 @@ func TestGolden_SprintBoard(t *testing.T) {
 				View: plan.View(width)},
 			{Label: "a row dropped · it keeps its place and loses its tick",
 				View: dropped.View(width)},
+			{Label: "what was left out · folded under the set until the key opens it",
+				View: left.View(width)},
 		}
 	})
+}
+
+// goldenSprintPlan is the proposal as a reading answers it: a set in the
+// order it would be worked with a line behind each item, and the candidates
+// it left out with the word for each. It is built fresh per panel because
+// the screen holds it by pointer and a key pressed for one panel would
+// otherwise be pressed for the ones already captured.
+func goldenSprintPlan() *SprintPlan {
+	return &SprintPlan{
+		Budget:  "S=2 M=1",
+		Goal:    "Make every piece of prose on screen come out of one renderer.",
+		Release: "Reads as a minor release.",
+		Rows: []SprintPlanRow{
+			{Slug: "prose-renderer", Title: "One renderer for every piece of prose", Note: "the other two both draw prose, and neither can until this one exists"},
+			{Slug: "drop-loses-the-file", Title: "Dropping an item says what it loses", Note: "same package, and its notice is prose nothing renders today"},
+			{Slug: "screen-over-items", Title: "A screen over the whole backlog", Note: "the surface the first two are for; it lands last"},
+		},
+		Left: []SprintPlanOut{
+			{Slug: "sprint-file", Title: "A sprint is a file that names its items", Why: "waits"},
+			{Slug: "rewrite-the-store", Title: "One store for every surface", Why: "too big"},
+			{Slug: "mcp-forwarders", Title: "Forwarders carry the credential", Why: "unrelated"},
+		},
+	}
 }
 
 // TestGolden_BacklogScreen captures the backlog as a surface: the list on

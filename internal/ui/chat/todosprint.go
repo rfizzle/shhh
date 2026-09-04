@@ -23,16 +23,41 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/reports"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/todo/run"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
-// startTodoSprintPlan proposes a sprint. The proposal is the ready list in
-// backlog order under the budget: a filter, not a recommendation, so what
-// it offers is something the reader can recompute from the item headers
-// rather than a judgement they have to take on trust.
+// sprintPlanRequest is a plan that has been asked for and not yet read: the
+// budget it was asked for under. It is a request rather than a flag because
+// the reading may be several turns away — the candidates are read against
+// the tree first — and the budget has to survive them.
+type sprintPlanRequest struct {
+	budget todo.SprintBudget
+}
+
+// todoPlanState is a planning turn while it is going: what it was asked
+// for, the candidates it was asked about, and where in the transcript it
+// began, so the answer is read off the turn that asked for it.
+type todoPlanState struct {
+	going      bool
+	budget     todo.SprintBudget
+	candidates []todo.Item
+	turn, mark int
+	// prevMode is the session's mode before the turn, restored at the end
+	// the way a run and a reading restore it.
+	prevMode string
+}
+
+// startTodoSprintPlan proposes a sprint. The proposal is a reading rather
+// than a sort: the candidates are read against the tree, then grouped by
+// what makes a set coherent — a dependency chain, a shared package, a theme
+// the titles share, a bug and the story that closes its cause — and every
+// candidate left out is named with the word for why.
+// See docs/capabilities/todo.md#a-sprint-is-what-ships-together.
 func (m Model) startTodoSprintPlan(args []string) (tea.Model, tea.Cmd) {
 	s := m.todoStore
 	if s == nil {
@@ -48,31 +73,206 @@ func (m Model) startTodoSprintPlan(args []string) (tea.Model, tea.Cmd) {
 	if m.todoExtracting {
 		return m.systemNotice("Still reading the session for items — the proposals card opens when it is done, and /todo sprint plan works after it.")
 	}
+	if note, held := m.planHeld(); held {
+		return m.systemNotice(note)
+	}
 	budget, err := parseSprintPlanArgs(args)
 	if err != nil {
 		return m.systemNotice("Usage: /todo sprint plan [--size S=n,M=n,L=n] — " + err.Error())
 	}
-	proposed := s.ProposeSprint(budget)
-	if len(proposed) == 0 {
-		if budget != nil {
-			return m.systemNotice("No ready item fits that budget. /todo sprint plan with no budget offers the whole ready list.")
-		}
+	candidates := s.Ready()
+	if len(candidates) == 0 {
 		return m.systemNotice("Nothing is ready, so there is no set to propose. /todo shows what each item waits on.")
 	}
-	plan := &components.SprintPlan{
-		Budget: sprintBudgetWords(budget),
-		Goal:   todo.GoalPlaceholder,
-		Rows:   make([]components.SprintPlanRow, len(proposed)),
+	if !budget.Fits(candidates) {
+		return m.systemNotice("No ready item fits that budget. /todo sprint plan with no budget reads the whole ready list.")
 	}
-	for i, it := range proposed {
-		plan.Rows[i] = components.SprintPlanRow{
-			Slug: it.Slug, Title: it.Title, Note: sprintPlanNote(s, it),
+	// The candidates are read against the tree before they are grouped. A
+	// recommendation over items that state what the code did last month
+	// recommends the wrong week, and the readings are also what tell the
+	// planner an item is already done or has grown — so it reads them
+	// rather than reading the tree twice.
+	if unread := m.planReadingsNeeded(candidates); len(unread) > 0 {
+		m.todoGroomer = todoGroomState{
+			queue: unread, prevMode: m.policy.mode.String(), stale: m.todoGroomer.stale,
+			planAfter: &sprintPlanRequest{budget: budget},
 		}
+		next, _ := m.systemNotice(fmt.Sprintf("Reading %s against the tree first; the proposal comes after the readings.", plural(len(unread), "item")))
+		return next.(Model).groomNext()
+	}
+	return m.startSprintPlanTurn(budget)
+}
+
+// planHeld is why a plan cannot start now. The reading is a turn, and the
+// rules a run and a grooming pass keep about turn boundaries are this one's
+// for the same reason: a turn started under another turn is not this one's
+// to grade.
+func (m Model) planHeld() (string, bool) {
+	switch {
+	case m.todoPlanner.going:
+		return "A sprint is already being planned; the card opens when the turn is over.", true
+	case m.todoGroomer.going():
+		return fmt.Sprintf("A backlog item is being read against the tree (%s); the plan waits for the reading.", m.todoGroomer.slug), true
+	case m.todoRunner.state != nil && !m.todoRunner.state.Over():
+		st := m.todoRunner.state
+		return fmt.Sprintf("A run is going (%s · %s); /todo stop ends it, and planning reads the files that run is working from.", st.Slug, st.Stage), true
+	case m.turnState() != stateInput || m.working():
+		return "A plan starts from an idle session; this turn has to finish first.", true
+	}
+	return "", false
+}
+
+// planReadingsNeeded is which candidates the planner has no reading of that
+// still stands: one nobody has read, one read before the person last edited
+// it, and one whose reading has fallen far enough behind the tree that the
+// surfaces already say so.
+func (m Model) planReadingsNeeded(candidates []todo.Item) []string {
+	var out []string
+	for _, it := range candidates {
+		if _, ok := todo.LoadReading(m.todos.Root, it.Slug); ok && m.groomStaleNote(it.Slug) == "" {
+			continue
+		}
+		out = append(out, it.Slug)
+	}
+	return out
+}
+
+// startSprintPlanTurn sends the planning turn. It runs in plan mode, like
+// the reading before it: the whole pass changes nothing until the card is
+// taken.
+func (m Model) startSprintPlanTurn(budget todo.SprintBudget) (tea.Model, tea.Cmd) {
+	m.reloadTodos()
+	s := m.todoStore
+	candidates := s.Ready()
+	if len(candidates) == 0 {
+		return m.systemNotice("Nothing is ready, so there is no set to propose. /todo shows what each item waits on.")
+	}
+	m.todoPlanner = todoPlanState{
+		going: true, budget: budget, candidates: candidates,
+		turn: int(m.turnCount) + 1, mark: len(m.transcript), prevMode: m.policy.mode.String(),
+	}
+	m.applyMode(agent.ModePlan)
+	return m.sendUserMessageAs(s.PlanPrompt(candidates, budget.String()), "plan the sprint")
+}
+
+// todoPlanAfter is the turn-end hook, read the way the runner's and the
+// reading's are: a planning turn ending is a transition, and no one handler
+// could be trusted to send it.
+func (m Model) todoPlanAfter(prev Model) (Model, tea.Cmd) {
+	p := m.todoPlanner
+	if !p.going || !prev.working() || m.working() {
+		return m, nil
+	}
+	if m.turnState() != stateInput || m.pausedAtRoundLimit() || m.heldAtBoundary() {
+		return m, nil
+	}
+	if int(m.turnCount) != p.turn {
+		// The turn that ended is not the plan's — a compaction, a skill,
+		// something a command started. Grading an answer that is not its
+		// own would propose a set nobody asked for.
+		next, cmd := m.endSprintPlan("The planning turn was displaced by another message.")
+		return next.(Model), cmd
+	}
+	plan := todo.ParsePlan(m.planAnswer(), p.candidates, p.budget)
+	if len(plan.Items) == 0 {
+		next, cmd := m.endSprintPlan("The reading proposed no set that could be read as items; nothing was written.")
+		return next.(Model), cmd
+	}
+	next, cmd := m.openPlanCard(plan)
+	return next.(Model), cmd
+}
+
+// planAnswer is the assistant's last message since the planning turn began.
+func (m Model) planAnswer() string {
+	for i := len(m.transcript) - 1; i >= m.todoPlanner.mark && i >= 0; i-- {
+		if e := m.transcript[i]; e.kind == entryAssistant {
+			return e.text
+		}
+	}
+	return ""
+}
+
+// endSprintPlan closes the planning turn and puts the mode back.
+func (m Model) endSprintPlan(why string) (tea.Model, tea.Cmd) {
+	if prev, err := agent.ParseMode(m.todoPlanner.prevMode); err == nil {
+		m.applyMode(prev)
+	}
+	m.todoPlanner = todoPlanState{}
+	return m.systemNotice(why)
+}
+
+// openPlanCard puts the reading up as the proposal to answer, and records
+// that a set of that size was recommended. The record holds what was
+// recommended beside what was accepted and what shipped, which is the one
+// way to tell a planner that reads the backlog from one that agrees with
+// whoever is holding the keyboard.
+func (m Model) openPlanCard(plan todo.Plan) (tea.Model, tea.Cmd) {
+	if prev, err := agent.ParseMode(m.todoPlanner.prevMode); err == nil {
+		m.applyMode(prev)
+	}
+	budget := m.todoPlanner.budget
+	titles := map[string]string{}
+	for _, it := range m.todoPlanner.candidates {
+		titles[it.Slug] = it.Title
+	}
+	m.todoPlanner = todoPlanState{}
+	m.signal(observe.SignalTodo, observe.PlanReason(len(plan.Items)))
+	card := &components.SprintPlan{
+		Budget:  sprintBudgetWords(budget),
+		Goal:    sprintCardGoal(plan),
+		Release: plan.ReleaseLine(),
+		Rows:    make([]components.SprintPlanRow, len(plan.Items)),
+	}
+	for i, it := range plan.Items {
+		card.Rows[i] = components.SprintPlanRow{Slug: it.Slug, Title: titles[it.Slug], Note: it.Why}
+	}
+	for _, l := range plan.Left {
+		card.Left = append(card.Left, components.SprintPlanOut{
+			Slug: l.Slug, Title: titles[l.Slug], Why: string(l.Why),
+		})
 	}
 	// The proposal is drawn on the tab it is about, so the reader answering
 	// it is looking at the board they are about to fill rather than at a
 	// card floating over a transcript.
-	return m.openWithPlan(plan)
+	return m.openWithPlan(card)
+}
+
+// sprintCardGoal is the sentence the card offers: the one the reading
+// wrote, or the placeholder where it wrote none.
+func sprintCardGoal(plan todo.Plan) string {
+	if goal := strings.TrimSpace(plan.Goal); goal != "" {
+		return goal
+	}
+	return todo.GoalPlaceholder
+}
+
+// sprintFileGoal is what the accepted card writes into the sprint file: the
+// sentence, then the release line under it. The two are held apart on the
+// card so that rewriting the sentence does not throw the reading's
+// judgement away with it, and they are joined only here.
+//
+// A goal nobody has written takes no release line: the placeholder is what
+// "nobody has said what this set is for" reads as, and a judgement about a
+// set nobody has described would be the only sentence in the file.
+func sprintFileGoal(p *components.SprintPlan) string {
+	goal := strings.TrimSpace(p.Goal)
+	if goal == "" || goal == sprintGoalPlaceholder || p.Release == "" {
+		return goal
+	}
+	return goal + "\n\n" + p.Release
+}
+
+// dropTodoPlan retires a planning turn in flight, so a card cannot come up
+// for a conversation that is gone — and the mode goes back with it, the way
+// a reading let go of at the boundary puts it back.
+func (m *Model) dropTodoPlan() {
+	if !m.todoPlanner.going {
+		return
+	}
+	if prev, err := agent.ParseMode(m.todoPlanner.prevMode); err == nil {
+		m.applyMode(prev)
+	}
+	m.todoPlanner = todoPlanState{}
 }
 
 // openWithPlan puts the screen up with the proposal on its sprint tab. The
@@ -104,19 +304,13 @@ func (m Model) sprintGoalCommand(goal string) (tea.Model, tea.Cmd) {
 }
 
 // sprintBudgetWords is what the plan card's header says the proposal was
-// filtered to. A proposal whose filter is not stated reads as a
-// recommendation, and this one is a filter over the ready list.
+// bounded by. The set is a judgement, and the budget is the one part of it
+// the reader can check without reading the items.
 func sprintBudgetWords(budget todo.SprintBudget) string {
 	if len(budget) == 0 {
 		return "everything ready"
 	}
-	var parts []string
-	for _, size := range []todo.Size{todo.SizeS, todo.SizeM, todo.SizeL} {
-		if n, ok := budget[size]; ok {
-			parts = append(parts, fmt.Sprintf("%s=%d", size, n))
-		}
-	}
-	return strings.Join(parts, " ")
+	return budget.String()
 }
 
 // parseSprintPlanArgs reads what follows `/todo sprint plan`. An unknown
@@ -140,23 +334,6 @@ func parseSprintPlanArgs(args []string) (todo.SprintBudget, error) {
 		}
 	}
 	return todo.ParseSprintBudget(spec)
-}
-
-// sprintPlanNote is the card row's reason: why this item is in the set, in
-// the facts a filter has. Its priority and size are what put it where it is
-// in the order and what the budget spent on it, and what it unblocks is what
-// makes taking it now worth more than taking it later.
-//
-// It is the filter's own account rather than a sentence asked of a model.
-// The proposal is deliberately something the reader can recompute from the
-// item headers, and a reason nobody can check would turn it into a
-// recommendation — which is the one thing this set is not.
-func sprintPlanNote(s *todo.Store, it todo.Item) string {
-	meta := string(it.Priority) + " · " + sizeOrDash(it.Size)
-	if n := s.Unblocks(it.Slug); n > 0 {
-		meta += fmt.Sprintf(" · unblocks %d", n)
-	}
-	return meta
 }
 
 // writeSprintPlan writes the accepted set as the sprint file, in the order
@@ -504,6 +681,13 @@ func sprintReportDoc(sp *todo.Sprint, entries []todo.SprintEntry, turns int, cos
 			Columns: []string{"item", "state", "what it produced"}, Rows: rows,
 		})
 	}
+	// The notes are the page's second block because they are what the page
+	// is opened for: after a set closes the person's next act is a tag, and
+	// what a tag message wants is this list, not the table above it or the
+	// reports below.
+	doc.Blocks = append(doc.Blocks, reports.Block{
+		Type: reports.BlockProse, Heading: "Notes", Text: todo.SprintNotes(sp, entries),
+	})
 	// The table's cell is one line because a cell is, and a run's report
 	// names its commit in prose further down — so the reports go on the
 	// page whole as well. It is one block rather than one per item: a set

@@ -529,7 +529,7 @@ func (m Model) todoScreenAct(cmd components.BacklogCommand) (tea.Model, tea.Cmd)
 		m.shutTodoScreen()
 		return m.startTodoGroom([]string{cmd.Slug})
 	case components.BacklogSprintTake:
-		note := m.writeSprintPlan(cmd.Slugs, m.backlog.Plan.Goal)
+		note := m.writeSprintPlan(cmd.Slugs, sprintFileGoal(m.backlog.Plan))
 		m.backlog.Plan, m.sprintPlan = nil, nil
 		m.reloadTodos()
 		m.backlog.Notice = firstLine(note)

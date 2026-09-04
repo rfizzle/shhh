@@ -336,17 +336,18 @@ order put it.
 When there is an artboard, these four decisions are what it has to reconcile
 with, and where the two differ the artboard wins.
 
-## The sprint plan's rows carry the filter's reason, not a model's
+## The sprint plan's card carries a reading, and folds what it left out
 
-The design and the story both describe a one-line reason per proposed item
-written by the model. The proposal is a filter over the ready list in backlog
-order — nothing is read and nothing is judged — and that is what makes it
-something a reader can recompute from the item headers rather than a
-recommendation they have to take on trust. A sentence nobody can check on
-every row would quietly turn one into the other.
+The design draws the proposal as a list of items with a reason on each row
+and nothing else. The proposal is a reading of the ready items — grouped by
+what makes a set ship as one change — so every row's reason is a sentence a
+model wrote, and the card has a second half the design has no room for: the
+candidates the reading did not take, each with one word for why.
 
-So the row's reason is the facts the filter has: the priority and size that
-put the item where it is in the order and spent the budget on it, and how
-many items are waiting on it. If a graded judgement is wanted later it is a
-different feature with a different promise, and it should say on the card
-that a model wrote it.
+That list is folded under the set behind its own key rather than drawn
+beside it. What the reader is answering is the set; what was left out is the
+evidence behind the answer, and a recommendation that showed only what it
+took could not be argued with — which is the whole of what a reading is for.
+Folded, the row states how many went and which words they took, so the count
+is never the only thing on screen
+([fold, never hide](principles.md#fold-never-hide)).

@@ -76,7 +76,8 @@ type SprintBoard struct {
 // SprintPlanRow is one proposed item on the plan card.
 type SprintPlanRow struct {
 	Slug, Title string
-	// Note is the one line saying why this item is in the set.
+	// Note is the one line saying why this item is in the set, as the
+	// reading behind the proposal wrote it.
 	Note string
 	// Dropped is a row the reader took out. It stays on the card rather
 	// than leaving it: the card is the only record of what was proposed,
@@ -84,20 +85,37 @@ type SprintPlanRow struct {
 	Dropped bool
 }
 
+// SprintPlanOut is one candidate the reading left out of the set, with the
+// word for why. The word is the host's — this package draws it.
+type SprintPlanOut struct {
+	Slug, Title, Why string
+}
+
 // SprintPlan is the proposal on the tab: the set the session offers, in the
 // order it would be written, with the reason each item is in it. Nothing
 // here is on disk — the file is written by the key that takes the card, and
 // by nothing else.
 type SprintPlan struct {
-	// Budget is what the header says the proposal was filtered to, in the
+	// Budget is what the header says the proposal was bounded by, in the
 	// host's words. A proposal the reader cannot see the shape of is one
 	// they have to take on trust.
 	Budget string
-	// Goal is the goal the sprint would be written with.
-	Goal string
+	// Goal is the sentence the sprint would be written with, and Release
+	// the line saying what kind of release the set reads as. They are two
+	// fields because the goal is the person's to rewrite and the release
+	// line is the reading's judgement: editing one must not take the other
+	// with it.
+	Goal, Release string
 	// Rows are the proposed items in the order they would be written.
 	Rows []SprintPlanRow
+	// Left are the candidates the reading did not take. They are folded
+	// under the set rather than listed beside it: what the reader is
+	// answering is the set, and what was left out is the evidence behind
+	// the answer (docs/interface/principles.md#fold-never-hide).
+	Left []SprintPlanOut
 
+	// open reports the left-out list is unfolded.
+	open bool
 	// list is the shared pointer and window (list.go).
 	list  List[int]
 	focus int
@@ -144,6 +162,8 @@ func (b *BacklogScreen) updatePlan(pressed string) (bool, BacklogResult) {
 		if p.focus < len(p.Rows) {
 			p.Rows[p.focus].Dropped = !p.Rows[p.focus].Dropped
 		}
+	case keys.Is(pressed, keys.Sprint.Left) && len(p.Left) > 0:
+		p.open = !p.open
 	case keys.Is(pressed, keys.Sprint.Goal):
 		return false, BacklogResult{Do: &BacklogCommand{Act: BacklogSprintGoal}}
 	case keys.Is(pressed, keys.Sprint.Take):
@@ -174,10 +194,11 @@ func sprintMoveDelta(pressed string) int {
 	return 1
 }
 
-// planRows is the plan card: the budget it was filtered to, the goal it
-// would be written with, and the proposed items with the reason each is in
-// the set. It is drawn as the card it is rather than as a pane, because
-// what it is asking for is one answer about the whole set.
+// planRows is the plan card: the budget it was bounded by, the goal it would
+// be written with, the proposed items with the line saying why each is in
+// the set, and under them what the reading left out. It is drawn as the
+// card it is rather than as a pane, because what it is asking for is one
+// answer about the whole set.
 func (b *BacklogScreen) planRows(width, budget int) []string {
 	p := b.Plan
 	p.sync()
@@ -186,16 +207,79 @@ func (b *BacklogScreen) planRows(width, budget int) []string {
 	if goal := strings.TrimSpace(p.Goal); goal != "" {
 		rows = append(rows, wrapDim(goal, width)...)
 	}
+	if line := strings.TrimSpace(p.Release); line != "" {
+		rows = append(rows, wrapDim(line, width)...)
+	}
 	rows = append(rows, "")
+	// The left-out list is laid out first because the set gives ground to
+	// it: the set's own rows window and say how many went, and these do
+	// not — a fold that scrolled off would be a fold with no way back.
+	tail := p.leftRows(width)
 	// 0 is unbounded to the list below, so a bounded card that has spent
 	// its whole budget on the head still asks for one row: a card with no
 	// row on it cannot be answered, and the marker under it says how many
-	// went.
+	// went. An unfolded list longer than the card gives ground the same
+	// way, because the set is what the reader is answering.
 	body := 0
 	if budget > 0 {
-		body = max(budget-len(rows), 1)
+		tail = truncRows(tail, budget-len(rows)-1, width)
+		body = max(budget-len(rows)-len(tail), 1)
 	}
-	return append(rows, p.rows(width, body)...)
+	return append(append(rows, p.rows(width, body)...), tail...)
+}
+
+// leftRows is what the card says about the candidates the reading did not
+// take: the count and the words while it is folded, one row each when it is
+// open. A proposal with nothing left out draws neither — every candidate
+// was taken, and there is no list to offer.
+func (p *SprintPlan) leftRows(width int) []string {
+	if len(p.Left) == 0 {
+		return nil
+	}
+	if !p.open {
+		head := fmt.Sprintf("%s left out · %s", plural(len(p.Left), "item"), leftWords(p.Left))
+		return []string{"", sty.Dim.Render(Clip(head, width)) + " " + sty.Info.Render(keys.Bracket(keys.Sprint.Left))}
+	}
+	out := []string{"", sty.Dim.Render(Clip(plural(len(p.Left), "item")+" left out", width)) +
+		" " + sty.Info.Render(keys.Bracket(keys.Sprint.Left))}
+	word := leftWordWidth(p.Left)
+	for _, l := range p.Left {
+		rest := strings.TrimSpace(l.Slug + "  " + l.Title)
+		out = append(out, sty.Dim.Render(Clip(fmt.Sprintf("  %-*s  %s", word, l.Why, rest), width)))
+	}
+	return out
+}
+
+// leftWords is how many of the left-out items took each word, in the order
+// the host gave them. It is the folded row's whole account, so it names the
+// words rather than only the count: "four left out" says a reading dropped
+// four items and not what it dropped them for.
+func leftWords(left []SprintPlanOut) string {
+	var order []string
+	count := map[string]int{}
+	for _, l := range left {
+		if count[l.Why] == 0 {
+			order = append(order, l.Why)
+		}
+		count[l.Why]++
+	}
+	parts := make([]string, 0, len(order))
+	for _, w := range order {
+		parts = append(parts, fmt.Sprintf("%d %s", count[w], w))
+	}
+	return strings.Join(parts, ", ")
+}
+
+// leftWordWidth is the column the words line up in: the longest one this
+// proposal actually used. It is measured off the rows rather than off a
+// vocabulary, because this package draws the words it is handed and holds
+// no list of which ones there are.
+func leftWordWidth(left []SprintPlanOut) int {
+	n := 0
+	for _, l := range left {
+		n = max(n, len(l.Why))
+	}
+	return n
 }
 
 // rows is the proposal's own list, windowed. A dropped row keeps its place
@@ -290,12 +374,17 @@ func (b *BacklogScreen) boardRows(width int) []string {
 // sprintOffers is the key row while the plan card holds the keyboard. The
 // screen's own offers are not among them: a key that cannot act is not an
 // offer (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
-func sprintOffers() []KeyOffer {
-	return []KeyOffer{
+func sprintOffers(p *SprintPlan) []KeyOffer {
+	out := []KeyOffer{
 		keyOffer(keys.Sprint.Move),
 		keyOffer(keys.Sprint.Toggle),
+	}
+	if p != nil && len(p.Left) > 0 {
+		out = append(out, keyOffer(keys.Sprint.Left))
+	}
+	return append(out,
 		keyOffer(keys.Sprint.Goal),
 		keyOffer(keys.Sprint.Take),
 		keyOffer(keys.Sprint.Cancel),
-	}
+	)
 }

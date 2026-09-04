@@ -270,6 +270,16 @@ func GroomReason(accepted int) string {
 	return "groom " + strconv.Itoa(accepted)
 }
 
+// PlanReason is SignalTodo's reason for a sprint the session recommended:
+// the word for the reading, and how many items it put in the set. The size
+// is in the reason so the record holds what was recommended beside what was
+// accepted and what shipped — which is the one way to tell a planner that
+// reads the backlog from one that agrees with whoever is holding the
+// keyboard.
+func PlanReason(items int) string {
+	return "plan " + strconv.Itoa(items)
+}
+
 // Event kinds for the stream a run with nobody in front of it writes while
 // it works. They are declared here, beside the codes those events carry,
 // because the stream and the record are meant to be one vocabulary: a script

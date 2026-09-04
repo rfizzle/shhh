@@ -3,11 +3,14 @@ package chat
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/reports"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/todo/run"
@@ -44,36 +47,50 @@ func sprintModel(t *testing.T, sprint string) (Model, string) {
 	return todoModel(t, root), root
 }
 
-func TestSprintPlan_ProposesTheReadyListUnderTheBudget(t *testing.T) {
+// planned puts the card up from a planning answer, without the turn that
+// would have produced it: what the card is answering is the reading, and
+// standing up a provider to reach it would test neither.
+func planned(m Model, answer string, budget todo.SprintBudget) Model {
+	candidates := m.todoStore.Ready()
+	m.todoPlanner = todoPlanState{going: true, budget: budget, candidates: candidates}
+	next, _ := m.openPlanCard(todo.ParsePlan(answer, candidates, budget))
+	return next.(Model)
+}
+
+// planAnswerForFixture is a reading over sprintModel's backlog: three of the
+// four ready items, out of backlog order, with a line each and the rest left
+// out with a word.
+const planAnswerForFixture = "goal: Make the cache trustworthy.\n" +
+	"release: minor\n" +
+	"item: c-third\nwhy: it is the cause the next one closes\n" +
+	"item: a-high\nwhy: the same package, and it lands on top of the first\n" +
+	"out: b-second unrelated\n" +
+	"out: d-fourth too big\n"
+
+func TestSprintPlan_CardIsTheReadingsSetInItsOwnOrder(t *testing.T) {
 	m, root := sprintModel(t, "")
-	m.input.SetValue("/todo sprint plan --size S=2,M=1")
-	updated, _ := m.submitInput()
-	next := updated.(Model)
+	next := planned(m, planAnswerForFixture, nil)
 	if next.state != stateBacklog || next.backlog == nil || next.backlog.Plan == nil {
 		t.Fatalf("state = %v; the plan opens the sprint tab", next.state)
 	}
-	if got := strings.Join(planSlugs(next), ","); got != "a-high,b-second,c-third" {
-		t.Fatalf("proposal = %v, want two S and one M in backlog order", got)
+	// The order is the reading's, not the backlog's: what ships together is
+	// a judgement about sequence, which is the whole of what it adds.
+	if got := strings.Join(planSlugs(next), ","); got != "c-third,a-high" {
+		t.Fatalf("proposal = %v, want the reading's own order", got)
 	}
-	for i, r := range next.backlog.Plan.Rows {
-		if r.Dropped {
-			t.Fatalf("row %d starts dropped", i)
-		}
-	}
-	// Each row states why it is in the set, in the facts a filter has.
-	if note := next.backlog.Plan.Rows[0].Note; note != "high · S · unblocks 1" {
-		t.Fatalf("first row's reason = %q", note)
-	}
-	if r := next.backlog.Plan.Rows[0]; r.Slug != "a-high" || r.Title != "High one" {
+	if r := next.backlog.Plan.Rows[0]; r.Slug != "c-third" || r.Title != "Third" ||
+		r.Note != "it is the cause the next one closes" || r.Dropped {
 		t.Fatalf("first row = %+v", r)
 	}
-	// The budget is in the header, because a proposal whose filter is not
-	// stated reads as a recommendation.
-	if view := ansi.Strip(next.backlog.View(110)); !strings.Contains(view, "S=2 M=1") {
-		t.Fatalf("the header never states the budget:\n%s", view)
+	// And what it left out is on the card with the word for why.
+	if got := next.backlog.Plan.Left; len(got) != 2 ||
+		got[0].Slug != "b-second" || got[0].Why != string(todo.OmitUnrelated) ||
+		got[1].Why != string(todo.OmitTooBig) {
+		t.Fatalf("left out = %+v", got)
 	}
 
-	// Trimming the set writes exactly what was left, in order.
+	// Trimming the set writes exactly what was left, in order, with the
+	// reading's goal — and the reasoning lines stay off the file.
 	dropped, _ := next.updateTodoScreen(key('j'))
 	dropped2, _ := dropped.(Model).updateTodoScreen(key(' '))
 	final, _ := dropped2.(Model).updateTodoScreen(tea.KeyPressMsg{Code: tea.KeyEnter})
@@ -85,19 +102,136 @@ func TestSprintPlan_ProposesTheReadyListUnderTheBudget(t *testing.T) {
 	if err != nil || sp == nil {
 		t.Fatalf("sprint = %v %v", sp, err)
 	}
-	if strings.Join(sp.Slugs, ",") != "a-high,c-third" || sp.Status != todo.SprintOpen {
+	if strings.Join(sp.Slugs, ",") != "c-third" || sp.Status != todo.SprintOpen {
 		t.Fatalf("written sprint = %+v", sp)
+	}
+	if !strings.Contains(sp.Goal, "Make the cache trustworthy.") ||
+		!strings.Contains(sp.Goal, "Reads as a minor release.") {
+		t.Fatalf("written goal = %q", sp.Goal)
+	}
+	if strings.Contains(sp.Goal, "the cause the next one closes") {
+		t.Fatalf("a reasoning line was written into the file: %q", sp.Goal)
 	}
 	if !strings.Contains(done.transcript[len(done.transcript)-1].text, "Wrote "+sp.Name) {
 		t.Fatalf("note = %q", done.transcript[len(done.transcript)-1].text)
 	}
 }
 
-func TestSprintPlan_WithNoBudgetIsTheWholeReadyList(t *testing.T) {
+// The whole path with no card faked: the readings stand, the planning turn
+// goes out, its answer comes back, and the proposal is on the tab with the
+// record saying what was recommended.
+func TestSprintPlan_TurnAnswersWithTheSetAndTheRecordSaysSo(t *testing.T) {
+	var signals []string
+	m, root := sprintModel(t, "")
+	m = m.WithObserver(observe.Observer{Signal: func(_ observe.Pos, code, reason string) {
+		signals = append(signals, code+":"+reason)
+	}})
+	m.policy.mode = agent.ModeManual
+	for _, slug := range []string{"a-high", "b-second", "c-third", "d-fourth"} {
+		if err := todo.SaveReading(root, todo.Reading{Slug: slug}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	m.input.SetValue("/todo sprint plan")
+	updated, _ := m.submitInput()
+	m = updated.(Model)
+	if !m.working() || m.policy.mode != agent.ModePlan || !m.todoPlanner.going {
+		t.Fatalf("the planning turn should be in flight in plan mode: mode=%s working=%t", m.policy.mode, m.working())
+	}
+	m = answer(t, m, planAnswerForFixture)
+	if m.backlog == nil || m.backlog.Plan == nil {
+		t.Fatal("the turn ended without a proposal")
+	}
+	if got := strings.Join(planSlugs(m), ","); got != "c-third,a-high" {
+		t.Fatalf("proposal = %q", got)
+	}
+	// A planning turn is not a plan to approve: what is put to the reader
+	// is the card, not the plan-mode prompt.
+	if m.turnState() == statePlanApprove {
+		t.Fatal("the planning turn was put up for plan approval")
+	}
+	if m.policy.mode != agent.ModeManual {
+		t.Errorf("the mode was not restored: %s", m.policy.mode)
+	}
+	// The record holds what was recommended and how big it was, so it can
+	// be compared against what was accepted and what shipped.
+	want := observe.SignalTodo + ":" + observe.PlanReason(2)
+	if !slices.Contains(signals, want) {
+		t.Errorf("signals = %v, want one of them %q", signals, want)
+	}
+}
+
+// An answer in no shape the reader can act on is said out loud rather than
+// drawn as a proposal of nothing.
+func TestSprintPlan_AnswerInNoShapeWritesNothing(t *testing.T) {
+	m, root := sprintModel(t, "")
+	for _, slug := range []string{"a-high", "b-second", "c-third", "d-fourth"} {
+		if err := todo.SaveReading(root, todo.Reading{Slug: slug}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	started, _ := m.startTodoSprintPlan(nil)
+	m = answer(t, started.(Model), "I had a look and they all seem fine to me.")
+	if m.backlog != nil && m.backlog.Plan != nil {
+		t.Fatal("prose was drawn as a proposal")
+	}
+	if last := m.transcript[len(m.transcript)-1].text; !strings.Contains(last, "no set that could be read as items") {
+		t.Fatalf("note = %q", last)
+	}
+	if _, err := os.Stat(todo.SprintPath(root)); !os.IsNotExist(err) {
+		t.Fatal("an unreadable answer wrote the sprint file")
+	}
+}
+
+// The budget is in the header, because it is the one part of a judgement
+// the reader can check without reading the items.
+func TestSprintPlan_HeaderStatesTheBudget(t *testing.T) {
+	m, _ := sprintModel(t, "")
+	budget, err := todo.ParseSprintBudget("S=2,M=1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	next := planned(m, planAnswerForFixture, budget)
+	if view := ansi.Strip(next.backlog.View(110)); !strings.Contains(view, "S=2 M=1") {
+		t.Fatalf("the header never states the budget:\n%s", view)
+	}
+}
+
+// A recommendation over items that state what the code did last month
+// recommends the wrong week, so the candidates are read against the tree
+// before they are grouped — and the plan the pass was started for survives
+// the readings.
+func TestSprintPlan_ReadsTheCandidatesBeforeItGroupsThem(t *testing.T) {
 	m, _ := sprintModel(t, "")
 	updated, _ := m.startTodoSprintPlan(nil)
-	if got := strings.Join(planSlugs(updated.(Model)), ","); got != "a-high,b-second,c-third,d-fourth" {
-		t.Fatalf("proposal = %q", got)
+	next := updated.(Model)
+	if !next.todoGroomer.going() || next.todoGroomer.planAfter == nil {
+		t.Fatalf("groomer = %+v", next.todoGroomer)
+	}
+	if got := len(next.todoGroomer.queue) + 1; got != 4 {
+		t.Fatalf("%d items queued for reading, want every ready one", got)
+	}
+	if last := next.transcript[len(next.transcript)-2].text; !strings.Contains(last, "against the tree first") {
+		t.Fatalf("notice = %q", last)
+	}
+}
+
+// An item whose reading still stands is not read again: the planner takes
+// the reading the person accepted rather than paying for it twice.
+func TestSprintPlan_SkipsTheReadingsThatStand(t *testing.T) {
+	m, root := sprintModel(t, "")
+	for _, slug := range []string{"a-high", "b-second", "c-third", "d-fourth"} {
+		if err := todo.SaveReading(root, todo.Reading{Slug: slug}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	updated, _ := m.startTodoSprintPlan(nil)
+	next := updated.(Model)
+	if next.todoGroomer.going() {
+		t.Fatalf("a groomed backlog was read again: %+v", next.todoGroomer)
+	}
+	if !next.todoPlanner.going || len(next.todoPlanner.candidates) != 4 {
+		t.Fatalf("planner = %+v", next.todoPlanner)
 	}
 }
 
@@ -117,6 +251,9 @@ func TestSprintPlan_RefusalsWriteNothing(t *testing.T) {
 	if last := updated.(Model).transcript[len(updated.(Model).transcript)-1].text; !strings.Contains(last, "No ready item fits that budget") {
 		t.Fatalf("budget nothing fits = %q", last)
 	}
+	if updated.(Model).todoGroomer.going() {
+		t.Fatal("a refused plan started reading the backlog anyway")
+	}
 	if sp, _ := todo.LoadSprint(root); sp == nil || strings.Join(sp.Slugs, ",") != "a-high" {
 		t.Fatal("a refusal changed the sprint on disk")
 	}
@@ -124,8 +261,7 @@ func TestSprintPlan_RefusalsWriteNothing(t *testing.T) {
 
 func TestSprintPlan_CancelWritesNothing(t *testing.T) {
 	m, root := sprintModel(t, "")
-	updated, _ := m.startTodoSprintPlan(nil)
-	final, _ := updated.(Model).updateTodoScreen(tea.KeyPressMsg{Code: tea.KeyEscape})
+	final, _ := planned(m, planAnswerForFixture, nil).updateTodoScreen(tea.KeyPressMsg{Code: tea.KeyEscape})
 	done := final.(Model)
 	if !strings.Contains(done.transcript[len(done.transcript)-1].text, "no sprint was planned") {
 		t.Fatalf("cancel note = %q", done.transcript[len(done.transcript)-1].text)
@@ -270,8 +406,7 @@ func TestSprintCommand_ReadsMidTurnAndItsVerbsDoNot(t *testing.T) {
 // still be filed in the archive when it closes.
 func TestSprintPlan_NamesTheSecondSprintOfADayApart(t *testing.T) {
 	m, root := sprintModel(t, "")
-	first, _ := m.startTodoSprintPlan(nil)
-	m = first.(Model)
+	m = planned(m, planAnswerForFixture, nil)
 	final, _ := m.updateTodoScreen(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = final.(Model)
 	sp, err := todo.LoadSprint(root)
@@ -284,8 +419,7 @@ func TestSprintPlan_NamesTheSecondSprintOfADayApart(t *testing.T) {
 	}
 	m.reloadTodos()
 
-	second, _ := m.startTodoSprintPlan(nil)
-	m = second.(Model)
+	m = planned(m, planAnswerForFixture, nil)
 	final, _ = m.updateTodoScreen(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = final.(Model)
 	again, err := todo.LoadSprint(root)
@@ -317,8 +451,7 @@ func planSlugs(m Model) []string {
 // to write the sprint's slugs against the proposals card's rows.
 func TestSprintPlan_AndProposalsAnswerTheirOwnLists(t *testing.T) {
 	m, root := sprintModel(t, "")
-	planned, _ := m.startTodoSprintPlan(nil)
-	m = planned.(Model)
+	m = planned(m, planAnswerForFixture, nil)
 	if m.todoProposals != nil {
 		t.Fatal("the plan left proposals behind")
 	}
@@ -458,8 +591,17 @@ func TestSprintReport_IsAPageOfTheSameBlocks(t *testing.T) {
 	for _, b := range doc.Blocks {
 		kinds = append(kinds, b.Type)
 	}
-	if strings.Join(kinds, ",") != "prose,stats,table,prose,prose" {
+	if strings.Join(kinds, ",") != "prose,stats,table,prose,prose,prose" {
 		t.Fatalf("blocks = %v", kinds)
+	}
+	// The notes are the block the page is opened for: the set's goal, what
+	// each item that landed built, and what it deferred.
+	notes := doc.Blocks[3]
+	if notes.Heading != "Notes" || !strings.Contains(notes.Text, "Make it fast.") ||
+		!strings.Contains(notes.Text, "High one (a-high) — Added the lifetime.") ||
+		!strings.Contains(notes.Text, "Deferred:") ||
+		!strings.Contains(notes.Text, "(f-blocked) — blocked, back in the backlog") {
+		t.Fatalf("notes = %q", notes.Text)
 	}
 	table := doc.Blocks[2]
 	if len(table.Rows) != 2 || table.Rows[0][0] != "a-high" || table.Rows[0][2] != "Added the lifetime." {
@@ -467,11 +609,11 @@ func TestSprintReport_IsAPageOfTheSameBlocks(t *testing.T) {
 	}
 	// The report goes on the page whole as well as one line into the cell,
 	// because a run names its commit in the prose of it.
-	if !strings.Contains(doc.Blocks[3].Text, "a-high — Added the lifetime.") {
-		t.Fatalf("what each item produced = %q", doc.Blocks[3].Text)
+	if !strings.Contains(doc.Blocks[4].Text, "a-high — Added the lifetime.") {
+		t.Fatalf("what each item produced = %q", doc.Blocks[4].Text)
 	}
-	if !strings.Contains(doc.Blocks[4].Text, "The API is not decided.") {
-		t.Fatalf("what stopped = %q", doc.Blocks[4].Text)
+	if !strings.Contains(doc.Blocks[5].Text, "The API is not decided.") {
+		t.Fatalf("what stopped = %q", doc.Blocks[5].Text)
 	}
 	// It is a page and not only a document: what the reader opens has to
 	// carry the goal, the items and the evidence through the renderer.
@@ -527,8 +669,7 @@ func TestSprintClose_PublishesThePageAndTheBoardOffersIt(t *testing.T) {
 // card is taken.
 func TestSprintPlan_GoalGoesOnTheProposal(t *testing.T) {
 	m, root := sprintModel(t, "")
-	opened, _ := m.startTodoSprintPlan(nil)
-	m = opened.(Model)
+	m = planned(m, planAnswerForFixture, nil)
 	asked, _ := m.updateTodoScreen(key('g'))
 	m = asked.(Model)
 	if m.input.Value() != sprintGoalPrefix {
@@ -548,7 +689,9 @@ func TestSprintPlan_GoalGoesOnTheProposal(t *testing.T) {
 	if err != nil || sp == nil {
 		t.Fatalf("sprint = %v %v", sp, err)
 	}
-	if sp.Goal != "Make the cache trustworthy." {
+	// The sentence is the person's and the release line is the reading's
+	// judgement about the set: rewriting one does not throw the other away.
+	if sp.Goal != "Make the cache trustworthy.\n\nReads as a minor release." {
 		t.Fatalf("written goal = %q", sp.Goal)
 	}
 	if taken.(Model).sprintPlan != nil {

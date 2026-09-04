@@ -85,15 +85,12 @@ stated on the row, rather than started or silently dropped. The order is the
 file's, in full, which keeps the promise that order is nothing the reader
 cannot recompute — here, by reading the file.
 
-The set is proposed and never imposed. Asking for a plan offers the ready
-items in backlog order, under a budget stated by size if you give one, as a
+The set is proposed and never imposed. Asking for a plan offers a set as a
 card on the sprint's own board: everything kept, you drop what you do not
-want, you say what the set is for, and only then is the file written. Size is
-the budget's unit because size is what a run gates on — three large items is
-a different week from nine small ones. Each row carries the reason it is in
-the set — its priority and size, and how many items are waiting on it — which
-are facts the filter has rather than a judgement you would have to take on
-trust.
+want, you say what the set is for, and only then is the file written. A
+budget stated by size bounds what the proposal may hold, and size is its unit
+because size is what a run gates on — three large items is a different week
+from nine small ones.
 
 The goal earns its place by being read. It rides in every item's research
 stage, so a run knows what the set around it is for; a session with no
@@ -111,17 +108,69 @@ with the state of each slug placed against the backlog.
 
 When the last item is archived — by a run or by hand — the sprint stops
 being a plan and becomes a record: it moves into the archive under its name
-with each item's report copied in under its slug. Closing one early does the
-same and lists what was left undone. An item dropped from the backlog
-outright is accounted for on the sprint's rows rather than quietly forgotten,
-because a set that shrank without saying so is a set nobody can read
-afterwards.
+with the set's notes at the top and each item's report copied in under its
+slug. Closing one early does the same and carries what was left as deferred.
+An item dropped from the backlog outright is accounted for on the sprint's
+rows rather than quietly forgotten, because a set that shrank without saying
+so is a set nobody can read afterwards.
 
-A closed sprint also writes a page: the goal, every item with what it
-produced, what stopped the rest, and the turns and spend the set took
+A closed sprint also writes a page: the goal, the notes, every item with what
+it produced, what stopped the rest, and the turns and spend the set took
 ([`reports`](reports.md#a-page-shhh-writes-for-you)). The archived file is the
 record and the page is the readable form of it — the one a person hands to
 somebody who was not there.
+
+## A sprint is what ships together
+
+A set is right when what ships together reads as one change. That is not
+something priority and dependencies can decide: they order work, and
+coherence is about what the work has in common. So the proposal is a
+*reading* of the ready items rather than a sort of them.
+
+**What the reading does.** It reads each candidate against the code, then
+groups: a dependency chain that lands together, items that touch the same
+packages, a theme the titles share, a bug and the story that closes its
+cause. It answers with the set in the order it should be worked, one line
+per item saying what puts it in that set, a sentence saying what the set is
+for, and every candidate it left out with one word for why — `waits`, `too
+big`, `unrelated` or `stale`. The words are a closed set, because a reason
+free to be a sentence becomes one, and a left-out list of paragraphs is a
+list nobody reads. What was left out is folded under the set on the card:
+what a recommendation did not take is half of what makes it arguable.
+
+**Reading comes first.** The candidates are read against the tree before
+they are grouped, which is the same reading
+[an item gets before it is worked](#an-item-is-checked-before-it-is-worked):
+a recommendation over items that state what the code did last month
+recommends the wrong week. An item whose reading still stands is not read
+again — the planner takes the reading you accepted rather than paying for it
+twice.
+
+**The proposal says what kind of release the set reads as** — `patch` for a
+set of bug fixes, `minor` when a story is in it — because that is the
+question you answer when you tag. It is one line of the goal and never a
+field: shhh names no version and makes no tag.
+
+**Only the goal is written.** The sentence goes into the sprint file, with
+that release line under it. On the card the two are separate rows, so
+rewriting the sentence with `/todo sprint goal` keeps the release line
+rather than throwing it away. The reasoning lines stay on the card and never
+reach the file — the file is yours, and a sentence a model wrote about an
+item is shhh's reading of it, not a decision you made.
+
+**What a closed sprint leaves is notes you can paste.** Each item that
+landed with its title, what was built and the commit that carries it, and
+anything the set did not finish listed as deferred and back in the backlog
+unchanged. They are written into the archived sprint file and onto the
+report page, in one flat block, because the next act after a set closes is a
+tag and a tag message is plain text. Making the tag stays yours: a tool that
+offered to make one is a tool that will one day make the wrong one.
+
+From outside the session `shhh todo sprint plan` prints the same reading,
+and `--json` hands it over whole for a script that wants the recommendation.
+Neither writes anything — not the sprint file, and not a reading of any
+item. Choosing what a week is spent on is a decision, and the set is taken on
+the card in a session.
 
 ## Where the backlog lives
 

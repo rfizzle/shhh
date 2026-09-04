@@ -1138,7 +1138,7 @@ func (b *BacklogScreen) whyInert() string {
 // key that cannot act is not an offer (invariant 5).
 func (b *BacklogScreen) offers() []KeyOffer {
 	if b.planning() {
-		return sprintOffers()
+		return sprintOffers(b.Plan)
 	}
 	if b.filtering {
 		return []KeyOffer{
@@ -1256,7 +1256,7 @@ func (b *BacklogScreen) narrowOffer() KeyOffer {
 // register.
 func (b *BacklogScreen) keyList() []KeyOffer {
 	if b.planning() {
-		return sprintOffers()
+		return sprintOffers(b.Plan)
 	}
 	out := []KeyOffer{
 		keyOfferAs(keys.Backlog.Move, "move between items"),

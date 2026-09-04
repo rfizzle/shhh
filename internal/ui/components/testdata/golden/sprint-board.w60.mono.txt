@@ -82,13 +82,18 @@ back…  3 of 3 items kept · [?] keys · [q] back to the prompt
 ────────────────────────────────────────────────────────────
 
 nothing is written until [enter]
-No goal written yet.
+Make every piece of prose on screen come out of one
+renderer.
+Reads as a minor release.
 
 ❯ [x] prose-renderer  One renderer for every piece of prose…
   [x] drop-loses-the-file  Dropping an item says what it lo…
   [x] screen-over-items  A screen over the whole backlog  ·…
 
+3 items left out · 1 waits, 1 too big, 1 unrelated [o]
+
 [↑↓/jk] move · [space] drop it, or put it back
+[o] what was left out, and why
 [g] write what the set is for · [enter] write the sprint
 [esc] write nothing
 
@@ -97,13 +102,41 @@ back…  2 of 3 items kept · [?] keys · [q] back to the prompt
 ────────────────────────────────────────────────────────────
 
 nothing is written until [enter]
-No goal written yet.
+Make every piece of prose on screen come out of one
+renderer.
+Reads as a minor release.
 
   [x] prose-renderer  One renderer for every piece of prose…
 ❯ [ ] drop-loses-the-file  Dropping an item says what it lo…
   [x] screen-over-items  A screen over the whole backlog  ·…
 
+3 items left out · 1 waits, 1 too big, 1 unrelated [o]
+
 [↑↓/jk] move · [space] drop it, or put it back
+[o] what was left out, and why
+[g] write what the set is for · [enter] write the sprint
+[esc] write nothing
+
+· what was left out · folded under the set until the key opens it
+back…  3 of 3 items kept · [?] keys · [q] back to the prompt
+────────────────────────────────────────────────────────────
+
+nothing is written until [enter]
+Make every piece of prose on screen come out of one
+renderer.
+Reads as a minor release.
+
+❯ [x] prose-renderer  One renderer for every piece of prose…
+  [x] drop-loses-the-file  Dropping an item says what it lo…
+  [x] screen-over-items  A screen over the whole backlog  ·…
+
+3 items left out [o]
+  waits      sprint-file  A sprint is a file that names its…
+  too big    rewrite-the-store  One store for every surface
+  unrelated  mcp-forwarders  Forwarders carry the credential
+
+[↑↓/jk] move · [space] drop it, or put it back
+[o] what was left out, and why
 [g] write what the set is for · [enter] write the sprint
 [esc] write nothing
 
@@ -180,13 +213,18 @@ No goal written yet.
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;244mnothing is written until ␛[m␛[38;5;254m[enter]␛[m
-␛[38;5;244mNo goal written yet.␛[m
+␛[38;5;244mMake every piece of prose on screen come out of one␛[m
+␛[38;5;244mrenderer.␛[m
+␛[38;5;244mReads as a minor release.␛[m
 
 ␛[38;5;254m❯ ␛[m␛[38;5;254m[x]␛[m ␛[1;38;5;254mprose-renderer␛[m␛[38;5;244m  One renderer for every piece of prose…␛[m
   ␛[38;5;254m[x]␛[m ␛[1;38;5;254mdrop-loses-the-file␛[m␛[38;5;244m  Dropping an item says what it lo…␛[m
   ␛[38;5;254m[x]␛[m ␛[1;38;5;254mscreen-over-items␛[m␛[38;5;244m  A screen over the whole backlog  ·…␛[m
 
+␛[38;5;244m3 items left out · 1 waits, 1 too big, 1 unrelated␛[m ␛[38;5;254m[o]␛[m
+
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[space]␛[m␛[38;5;244m drop it, or put it back␛[m
+␛[38;5;254m[o]␛[m␛[38;5;244m what was left out, and why␛[m
 ␛[38;5;254m[g]␛[m␛[38;5;244m write what the set is for␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m write the sprint␛[m
 ␛[38;5;254m[esc]␛[m␛[38;5;244m write nothing␛[m
 
@@ -195,12 +233,40 @@ No goal written yet.
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;244mnothing is written until ␛[m␛[38;5;254m[enter]␛[m
-␛[38;5;244mNo goal written yet.␛[m
+␛[38;5;244mMake every piece of prose on screen come out of one␛[m
+␛[38;5;244mrenderer.␛[m
+␛[38;5;244mReads as a minor release.␛[m
 
   ␛[38;5;254m[x]␛[m ␛[1;38;5;254mprose-renderer␛[m␛[38;5;244m  One renderer for every piece of prose…␛[m
 ␛[38;5;254m❯ ␛[m␛[38;5;244m[ ]␛[m ␛[38;5;244mdrop-loses-the-file␛[m␛[38;5;244m  Dropping an item says what it lo…␛[m
   ␛[38;5;254m[x]␛[m ␛[1;38;5;254mscreen-over-items␛[m␛[38;5;244m  A screen over the whole backlog  ·…␛[m
 
+␛[38;5;244m3 items left out · 1 waits, 1 too big, 1 unrelated␛[m ␛[38;5;254m[o]␛[m
+
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[space]␛[m␛[38;5;244m drop it, or put it back␛[m
+␛[38;5;254m[o]␛[m␛[38;5;244m what was left out, and why␛[m
+␛[38;5;254m[g]␛[m␛[38;5;244m write what the set is for␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m write the sprint␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m write nothing␛[m
+
+· what was left out · folded under the set until the key opens it
+␛[1;38;5;254mback…␛[m  ␛[38;5;244m3 of 3 items kept␛[m␛[38;5;244m · [?] keys · [q] back to the prompt␛[m
+␛[38;5;244m────────────────────────────────────────────────────────────␛[m
+
+␛[38;5;244mnothing is written until ␛[m␛[38;5;254m[enter]␛[m
+␛[38;5;244mMake every piece of prose on screen come out of one␛[m
+␛[38;5;244mrenderer.␛[m
+␛[38;5;244mReads as a minor release.␛[m
+
+␛[38;5;254m❯ ␛[m␛[38;5;254m[x]␛[m ␛[1;38;5;254mprose-renderer␛[m␛[38;5;244m  One renderer for every piece of prose…␛[m
+  ␛[38;5;254m[x]␛[m ␛[1;38;5;254mdrop-loses-the-file␛[m␛[38;5;244m  Dropping an item says what it lo…␛[m
+  ␛[38;5;254m[x]␛[m ␛[1;38;5;254mscreen-over-items␛[m␛[38;5;244m  A screen over the whole backlog  ·…␛[m
+
+␛[38;5;244m3 items left out␛[m ␛[38;5;254m[o]␛[m
+␛[38;5;244m  waits      sprint-file  A sprint is a file that names its…␛[m
+␛[38;5;244m  too big    rewrite-the-store  One store for every surface␛[m
+␛[38;5;244m  unrelated  mcp-forwarders  Forwarders carry the credential␛[m
+
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[space]␛[m␛[38;5;244m drop it, or put it back␛[m
+␛[38;5;254m[o]␛[m␛[38;5;244m what was left out, and why␛[m
 ␛[38;5;254m[g]␛[m␛[38;5;244m write what the set is for␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m write the sprint␛[m
 ␛[38;5;254m[esc]␛[m␛[38;5;244m write nothing␛[m

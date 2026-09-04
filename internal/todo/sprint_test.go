@@ -166,28 +166,6 @@ func TestStoreLoad_TheSprintIsNotReadAsAnItem(t *testing.T) {
 	}
 }
 
-func TestProposeSprint_IsTheReadyListUnderTheBudget(t *testing.T) {
-	root := t.TempDir()
-	dir := Dir(root)
-	write(t, dir, "a-small.md", "---\ntitle: A\npriority: high\nsize: S\n---\n")
-	write(t, dir, "b-medium.md", "---\ntitle: B\npriority: high\nsize: M\n---\n")
-	write(t, dir, "c-small.md", "---\ntitle: C\npriority: medium\nsize: S\n---\n")
-	write(t, dir, "d-medium.md", "---\ntitle: D\npriority: medium\nsize: M\n---\n")
-	write(t, dir, "e-small.md", "---\ntitle: E\npriority: low\nsize: S\n---\n")
-	s := Load(root)
-
-	budget, err := ParseSprintBudget("S=2,M=1")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got := itemSlugs(s.ProposeSprint(budget)); got != "a-small b-medium c-small" {
-		t.Fatalf("proposal = %q, want two S and one M in backlog order", got)
-	}
-	if got := itemSlugs(s.ProposeSprint(nil)); got != "a-small b-medium c-small d-medium e-small" {
-		t.Fatalf("proposal with no budget = %q, want the whole ready list", got)
-	}
-}
-
 func TestParseSprintBudget_RefusesWhatItCannotSpend(t *testing.T) {
 	for _, spec := range []string{"S", "XL=1", "S=x", "S=-1"} {
 		if _, err := ParseSprintBudget(spec); err == nil {
@@ -334,9 +312,9 @@ func TestCloseSprint_EarlyListsWhatWasLeft(t *testing.T) {
 		t.Fatal(err)
 	}
 	text := string(data)
-	if !strings.Contains(text, "## Left undone") ||
-		!strings.Contains(text, "- cache-ttl (ready)") ||
-		!strings.Contains(text, "- cache-metrics (ready)") {
+	if !strings.Contains(text, "Deferred:") ||
+		!strings.Contains(text, "(cache-ttl) — ready, back in the backlog") ||
+		!strings.Contains(text, "(cache-metrics) — ready, back in the backlog") {
 		t.Errorf("an early close has to list what was left:\n%s", text)
 	}
 }

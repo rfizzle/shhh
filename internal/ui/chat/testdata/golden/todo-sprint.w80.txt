@@ -10,85 +10,103 @@
 # it for the colour assignments. Trailing spaces are significant in both.
 
 ── layout ──────────────────────────────────────────────────
-· under a budget · one small and one medium, in backlog order
+· the set · a line per item, and what was left out folded under it
 backlog · planning         2 of 2 items kept · [?] keys · [q] back to the prompt
 ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
 
 nothing is written until [enter]
-No goal written yet. `/todo sprint goal <text>` says what this set is for.
+Make the cache expire what it should and say what it did.
+Reads as a minor release.
 
-❯ [x] cache-invalidate  Invalidate on write  ·  high · M
-  [x] cache-ttl  Give the cache a lifetime  ·  high · S · unblocks 1
+❯ [x] cache-ttl  Give the cache a lifetime  ·  nothing else can be measured unt…
+  [x] cache-invalidate  Invalidate on write  ·  the same package, and it is the…
 
-[↑↓/jk] move · [space] drop it, or put it back · [g] write what the set is for
-[enter] write the sprint · [esc] write nothing
+2 items left out · 1 unrelated, 1 too big [o]
 
-· with no budget · the whole ready list
-backlog · planning         2 of 3 items kept · [?] keys · [q] back to the prompt
+[↑↓/jk] move · [space] drop it, or put it back · [o] what was left out, and why
+[g] write what the set is for · [enter] write the sprint · [esc] write nothing
+
+· what was left out · the word beside each candidate the reading did not take
+backlog · planning         2 of 2 items kept · [?] keys · [q] back to the prompt
 ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
 
 nothing is written until [enter]
-No goal written yet. `/todo sprint goal <text>` says what this set is for.
+Make the cache expire what it should and say what it did.
+Reads as a minor release.
 
-  [x] cache-invalidate  Invalidate on write  ·  high · M
-❯ [ ] cache-ttl  Give the cache a lifetime  ·  high · S · unblocks 1
-  [x] cache-warm  Warm the cache on start  ·  low · M
+❯ [x] cache-ttl  Give the cache a lifetime  ·  nothing else can be measured unt…
+  [x] cache-invalidate  Invalidate on write  ·  the same package, and it is the…
 
-[↑↓/jk] move · [space] drop it, or put it back · [g] write what the set is for
-[enter] write the sprint · [esc] write nothing
+2 items left out [o]
+  unrelated  cache-warm  Warm the cache on start
+  too big    cache-audit  An audit trail for every eviction
+
+[↑↓/jk] move · [space] drop it, or put it back · [o] what was left out, and why
+[g] write what the set is for · [enter] write the sprint · [esc] write nothing
 
 · a row dropped · it keeps its place and loses its tick
-backlog · planning         2 of 3 items kept · [?] keys · [q] back to the prompt
+backlog · planning         1 of 2 items kept · [?] keys · [q] back to the prompt
 ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
 
 nothing is written until [enter]
-No goal written yet. `/todo sprint goal <text>` says what this set is for.
+Make the cache expire what it should and say what it did.
+Reads as a minor release.
 
-  [x] cache-invalidate  Invalidate on write  ·  high · M
-❯ [ ] cache-ttl  Give the cache a lifetime  ·  high · S · unblocks 1
-  [x] cache-warm  Warm the cache on start  ·  low · M
+  [x] cache-ttl  Give the cache a lifetime  ·  nothing else can be measured unt…
+❯ [ ] cache-invalidate  Invalidate on write  ·  the same package, and it is the…
 
-[↑↓/jk] move · [space] drop it, or put it back · [g] write what the set is for
-[enter] write the sprint · [esc] write nothing
+2 items left out · 1 unrelated, 1 too big [o]
+
+[↑↓/jk] move · [space] drop it, or put it back · [o] what was left out, and why
+[g] write what the set is for · [enter] write the sprint · [esc] write nothing
 
 ── ansi ────────────────────────────────────────────────────
-· under a budget · one small and one medium, in backlog order
+· the set · a line per item, and what was left out folded under it
 ␛[1;97mbacklog␛[m␛[38;5;241m · planning␛[m         ␛[38;5;241m2 of 2 items kept␛[m␛[38;5;241m · [?] keys · [q] back to the prompt␛[m
 ␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
 
 ␛[38;5;241mnothing is written until ␛[m␛[94m[enter]␛[m
-␛[38;5;241mNo goal written yet. `/todo sprint goal <text>` says what this set is for.␛[m
+␛[38;5;241mMake the cache expire what it should and say what it did.␛[m
+␛[38;5;241mReads as a minor release.␛[m
 
-␛[94m❯ ␛[m␛[92m[x]␛[m ␛[1;97mcache-invalidate␛[m␛[38;5;241m  Invalidate on write  ·  high · M␛[m
-  ␛[92m[x]␛[m ␛[1;97mcache-ttl␛[m␛[38;5;241m  Give the cache a lifetime  ·  high · S · unblocks 1␛[m
+␛[94m❯ ␛[m␛[92m[x]␛[m ␛[1;97mcache-ttl␛[m␛[38;5;241m  Give the cache a lifetime  ·  nothing else can be measured unt…␛[m
+  ␛[92m[x]␛[m ␛[1;97mcache-invalidate␛[m␛[38;5;241m  Invalidate on write  ·  the same package, and it is the…␛[m
 
-␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[space]␛[m␛[38;5;241m drop it, or put it back␛[m␛[38;5;241m · ␛[m␛[94m[g]␛[m␛[38;5;241m write what the set is for␛[m
-␛[94m[enter]␛[m␛[38;5;241m write the sprint␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m write nothing␛[m
+␛[38;5;241m2 items left out · 1 unrelated, 1 too big␛[m ␛[94m[o]␛[m
 
-· with no budget · the whole ready list
-␛[1;97mbacklog␛[m␛[38;5;241m · planning␛[m         ␛[38;5;241m2 of 3 items kept␛[m␛[38;5;241m · [?] keys · [q] back to the prompt␛[m
+␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[space]␛[m␛[38;5;241m drop it, or put it back␛[m␛[38;5;241m · ␛[m␛[94m[o]␛[m␛[38;5;241m what was left out, and why␛[m
+␛[94m[g]␛[m␛[38;5;241m write what the set is for␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m write the sprint␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m write nothing␛[m
+
+· what was left out · the word beside each candidate the reading did not take
+␛[1;97mbacklog␛[m␛[38;5;241m · planning␛[m         ␛[38;5;241m2 of 2 items kept␛[m␛[38;5;241m · [?] keys · [q] back to the prompt␛[m
 ␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
 
 ␛[38;5;241mnothing is written until ␛[m␛[94m[enter]␛[m
-␛[38;5;241mNo goal written yet. `/todo sprint goal <text>` says what this set is for.␛[m
+␛[38;5;241mMake the cache expire what it should and say what it did.␛[m
+␛[38;5;241mReads as a minor release.␛[m
 
-  ␛[92m[x]␛[m ␛[1;97mcache-invalidate␛[m␛[38;5;241m  Invalidate on write  ·  high · M␛[m
-␛[94m❯ ␛[m␛[38;5;241m[ ]␛[m ␛[38;5;241mcache-ttl␛[m␛[38;5;241m  Give the cache a lifetime  ·  high · S · unblocks 1␛[m
-  ␛[92m[x]␛[m ␛[1;97mcache-warm␛[m␛[38;5;241m  Warm the cache on start  ·  low · M␛[m
+␛[94m❯ ␛[m␛[92m[x]␛[m ␛[1;97mcache-ttl␛[m␛[38;5;241m  Give the cache a lifetime  ·  nothing else can be measured unt…␛[m
+  ␛[92m[x]␛[m ␛[1;97mcache-invalidate␛[m␛[38;5;241m  Invalidate on write  ·  the same package, and it is the…␛[m
 
-␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[space]␛[m␛[38;5;241m drop it, or put it back␛[m␛[38;5;241m · ␛[m␛[94m[g]␛[m␛[38;5;241m write what the set is for␛[m
-␛[94m[enter]␛[m␛[38;5;241m write the sprint␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m write nothing␛[m
+␛[38;5;241m2 items left out␛[m ␛[94m[o]␛[m
+␛[38;5;241m  unrelated  cache-warm  Warm the cache on start␛[m
+␛[38;5;241m  too big    cache-audit  An audit trail for every eviction␛[m
+
+␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[space]␛[m␛[38;5;241m drop it, or put it back␛[m␛[38;5;241m · ␛[m␛[94m[o]␛[m␛[38;5;241m what was left out, and why␛[m
+␛[94m[g]␛[m␛[38;5;241m write what the set is for␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m write the sprint␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m write nothing␛[m
 
 · a row dropped · it keeps its place and loses its tick
-␛[1;97mbacklog␛[m␛[38;5;241m · planning␛[m         ␛[38;5;241m2 of 3 items kept␛[m␛[38;5;241m · [?] keys · [q] back to the prompt␛[m
+␛[1;97mbacklog␛[m␛[38;5;241m · planning␛[m         ␛[38;5;241m1 of 2 items kept␛[m␛[38;5;241m · [?] keys · [q] back to the prompt␛[m
 ␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
 
 ␛[38;5;241mnothing is written until ␛[m␛[94m[enter]␛[m
-␛[38;5;241mNo goal written yet. `/todo sprint goal <text>` says what this set is for.␛[m
+␛[38;5;241mMake the cache expire what it should and say what it did.␛[m
+␛[38;5;241mReads as a minor release.␛[m
 
-  ␛[92m[x]␛[m ␛[1;97mcache-invalidate␛[m␛[38;5;241m  Invalidate on write  ·  high · M␛[m
-␛[94m❯ ␛[m␛[38;5;241m[ ]␛[m ␛[38;5;241mcache-ttl␛[m␛[38;5;241m  Give the cache a lifetime  ·  high · S · unblocks 1␛[m
-  ␛[92m[x]␛[m ␛[1;97mcache-warm␛[m␛[38;5;241m  Warm the cache on start  ·  low · M␛[m
+  ␛[92m[x]␛[m ␛[1;97mcache-ttl␛[m␛[38;5;241m  Give the cache a lifetime  ·  nothing else can be measured unt…␛[m
+␛[94m❯ ␛[m␛[38;5;241m[ ]␛[m ␛[38;5;241mcache-invalidate␛[m␛[38;5;241m  Invalidate on write  ·  the same package, and it is the…␛[m
 
-␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[space]␛[m␛[38;5;241m drop it, or put it back␛[m␛[38;5;241m · ␛[m␛[94m[g]␛[m␛[38;5;241m write what the set is for␛[m
-␛[94m[enter]␛[m␛[38;5;241m write the sprint␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m write nothing␛[m
+␛[38;5;241m2 items left out · 1 unrelated, 1 too big␛[m ␛[94m[o]␛[m
+
+␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[space]␛[m␛[38;5;241m drop it, or put it back␛[m␛[38;5;241m · ␛[m␛[94m[o]␛[m␛[38;5;241m what was left out, and why␛[m
+␛[94m[g]␛[m␛[38;5;241m write what the set is for␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m write the sprint␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m write nothing␛[m

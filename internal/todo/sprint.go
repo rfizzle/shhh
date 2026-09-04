@@ -531,6 +531,35 @@ func (s *Store) SprintFinished() bool {
 // sprint of three L items is a different week from one of nine S ones.
 type SprintBudget map[Size]int
 
+// String is the budget as every surface states it, and empty for no budget
+// at all. A proposal states the budget it was bounded by, so a person
+// reading a set can see the shape of the question it answered.
+func (b SprintBudget) String() string {
+	var parts []string
+	for _, size := range []Size{SizeS, SizeM, SizeL} {
+		if n, ok := b[size]; ok {
+			parts = append(parts, fmt.Sprintf("%s=%d", size, n))
+		}
+	}
+	return strings.Join(parts, " ")
+}
+
+// Fits reports the budget could admit at least one of the items. A budget
+// naming only sizes the ready list does not hold admits nothing, and a
+// reading spent discovering that is a turn spent on an answer the item
+// headers already gave.
+func (b SprintBudget) Fits(items []Item) bool {
+	if len(b) == 0 {
+		return len(items) > 0
+	}
+	for _, it := range items {
+		if b[it.Size] > 0 {
+			return true
+		}
+	}
+	return false
+}
+
 // ParseSprintBudget reads `S=2,M=1,L=0`. A size the spec does not name gets
 // no allowance, so a stated budget is the whole of what it admits — an
 // ungraded item has no size to spend and is left out until it is graded.
@@ -562,33 +591,6 @@ func ParseSprintBudget(spec string) (SprintBudget, error) {
 		b[size] = n
 	}
 	return b, nil
-}
-
-// ProposeSprint is the ready list in backlog order under a budget: a
-// filter, not a recommendation. Nothing is read and nothing is judged —
-// the order is the backlog's own, which a reader can recompute from the
-// headers, and the budget only says when to stop.
-func (s *Store) ProposeSprint(budget SprintBudget) []Item {
-	if s == nil {
-		return nil
-	}
-	ready := s.readyAll()
-	if budget == nil {
-		return ready
-	}
-	left := SprintBudget{}
-	for size, n := range budget {
-		left[size] = n
-	}
-	var out []Item
-	for _, it := range ready {
-		if left[it.Size] <= 0 {
-			continue
-		}
-		left[it.Size]--
-		out = append(out, it)
-	}
-	return out
 }
 
 // Unblocks counts the active items whose dependencies name this slug. It
@@ -637,7 +639,7 @@ func CloseSprint(root string) (string, error) {
 	if err := SprintSetStatus(sp.Path, SprintClosed); err != nil {
 		return "", err
 	}
-	if err := Append(sp.Path, sprintClosingBlock(s.SprintEntries())); err != nil {
+	if err := Append(sp.Path, sprintClosingBlock(sp, s.SprintEntries())); err != nil {
 		return "", err
 	}
 	if err := os.Rename(sp.Path, to); err != nil {
@@ -659,9 +661,10 @@ func CloseSprintIfDone(root string) (string, error) {
 }
 
 // sprintClosingBlock is what is appended to the sprint on its way to the
-// archive: each item's report under its slug, then what was left undone.
-func sprintClosingBlock(entries []SprintEntry) string {
+// archive: the notes, then each item's report under its slug.
+func sprintClosingBlock(sp *Sprint, entries []SprintEntry) string {
 	var b strings.Builder
+	b.WriteString("## Notes\n" + SprintNotes(sp, entries) + "\n\n")
 	b.WriteString("## Reports\n")
 	for _, e := range entries {
 		b.WriteString("\n### " + e.Slug + "\n")
@@ -678,24 +681,152 @@ func sprintClosingBlock(entries []SprintEntry) string {
 			}
 		}
 	}
-	var left []string
+	return b.String()
+}
+
+// SprintNotes is the closed set as release notes: what it was for, every
+// item that landed with what was built and the commit that carries it, and
+// what was left as deferred.
+//
+// It is one flat block of plain text because that is what it is for. The
+// person's next act after a set closes is a tag, and a tag message is plain
+// text they paste; shhh's part ends at the paste. Naming a version and
+// making the tag stay theirs — a tool that offered to make one is a tool
+// that will one day make the wrong one.
+// See docs/capabilities/todo.md#a-sprint-is-what-ships-together.
+func SprintNotes(sp *Sprint, entries []SprintEntry) string {
+	var parts []string
+	// The goal leads, even where the surface around the notes already
+	// states it. The notes are pasted whole into a message that will be
+	// read somewhere else entirely, and a list of items with nothing saying
+	// what they were for is the half of a release note nobody can use.
+	if sp != nil {
+		if goal := strings.TrimSpace(sp.Goal); goal != "" && goal != GoalPlaceholder {
+			parts = append(parts, goal)
+		}
+	}
+	var b strings.Builder
+	for _, e := range entries {
+		if e.State != SprintItemDone {
+			continue
+		}
+		b.WriteString("- " + sprintNoteLine(e) + "\n")
+	}
+	if b.Len() > 0 {
+		parts = append(parts, strings.TrimRight(b.String(), "\n"))
+	}
+	b.Reset()
+	// An item the set did not finish is named as deferred rather than left
+	// off: it went back to the backlog untouched, and notes that listed
+	// only what landed would read as a set that planned exactly what it
+	// shipped.
+	var deferred []SprintEntry
 	for _, e := range entries {
 		if !e.Done() {
-			left = append(left, e.Slug+" ("+string(e.State)+")")
+			deferred = append(deferred, e)
 		}
 	}
-	if len(left) > 0 {
-		b.WriteString("\n## Left undone\n")
-		for _, l := range left {
-			b.WriteString("- " + l + "\n")
+	if len(deferred) > 0 {
+		b.WriteString("Deferred:\n")
+		for _, e := range deferred {
+			title := e.Item.Title
+			if title == "" {
+				title = e.Slug
+			}
+			fmt.Fprintf(&b, "- %s (%s) — %s, back in the backlog\n", title, e.Slug, e.State)
 		}
+		parts = append(parts, strings.TrimRight(b.String(), "\n"))
 	}
-	return b.String()
+	if len(parts) == 0 {
+		return "The set finished nothing and left nothing."
+	}
+	return strings.Join(parts, "\n\n")
+}
+
+// sprintNoteLine is one landed item as the notes state it: its title, what
+// the run said it built, and the commit that carries it.
+func sprintNoteLine(e SprintEntry) string {
+	line := e.Slug
+	if e.Item.Title != "" {
+		line = e.Item.Title + " (" + e.Slug + ")"
+	}
+	if built := ItemSummary(e.Item); built != "" {
+		line += " — " + built
+	}
+	if commit := ItemCommit(e.Item); commit != "" {
+		line += " (" + commit + ")"
+	}
+	return line
 }
 
 // ItemReport is the `## Report` section of an item's body, or "" when it
 // has none — an item archived by hand rather than by a run.
 func ItemReport(it Item) string { return itemSection(it.Body, "## Report") }
+
+// The lines a report carries that are read back rather than only read: what
+// the run summarised the work as, and the commit it made.
+const (
+	summaryPrefix = "Summary:"
+	commitPrefix  = "Commit:"
+)
+
+// CommitLine is the line an archived item carries naming the commit its run
+// made, and "" for a run that made none.
+//
+// It is written when the item is archived rather than asked of git later,
+// because whether the backlog directory is committed at all is the
+// project's decision: in a checkout that ignores `.shhh` there is no
+// history to ask which commit carried an item, and the set's notes still
+// have to name one.
+func CommitLine(head, message string) string {
+	subject := firstLine(message)
+	if subject == "" {
+		return ""
+	}
+	if head = shortHead(strings.TrimSpace(head)); head != "" {
+		subject = head + " " + subject
+	}
+	return commitPrefix + " " + subject + "\n"
+}
+
+// ItemSummary is what an item's report says was built: the labelled line a
+// run writes, or the report's first line for one a person wrote by hand.
+// The fallback is there because the archive holds both, and notes that
+// named only what a run produced would leave a hand-finished item as a
+// title with nothing after it.
+func ItemSummary(it Item) string {
+	if summary := reportField(it, summaryPrefix); summary != "" {
+		return summary
+	}
+	return firstLine(ItemReport(it))
+}
+
+// ItemCommit is the commit an archived item names, and "" for one that
+// names none — archived by hand, or a run asked for without a commit.
+func ItemCommit(it Item) string { return reportField(it, commitPrefix) }
+
+// reportField is the value of one labelled line of an item's report. The
+// report is prose a person may have edited, so a label it does not hold is
+// "" rather than an error.
+func reportField(it Item, prefix string) string {
+	for _, l := range strings.Split(ItemReport(it), "\n") {
+		if rest, ok := strings.CutPrefix(strings.TrimSpace(l), prefix); ok {
+			return strings.TrimSpace(rest)
+		}
+	}
+	return ""
+}
+
+// firstLine is the first non-empty line of a block, which for a commit
+// message is its subject.
+func firstLine(s string) string {
+	for _, l := range strings.Split(s, "\n") {
+		if l = strings.TrimSpace(l); l != "" {
+			return l
+		}
+	}
+	return ""
+}
 
 // ItemBlock is the `## Blocked` section: what stopped the item, in the
 // run's own evidence. A sprint that stopped names it beside the item that

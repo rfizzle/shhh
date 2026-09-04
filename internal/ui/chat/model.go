@@ -686,6 +686,8 @@ type Model struct {
 	// reading is showing on (todogroom.go).
 	todoGroomer todoGroomState
 	todoGroom   *components.MultiSelect
+	// todoPlanner is the sprint planning turn in flight (todosprint.go).
+	todoPlanner todoPlanState
 	memoryAsk   *components.NoteSelect
 	// secrets backs /secret and the scrub on the agent.
 	secrets Secrets
@@ -1358,6 +1360,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	mm = groomed
 	if card != nil {
 		cmd = tea.Batch(cmd, card)
+	}
+	// And the proposal a planning turn leaves (todosprint.go), which is the
+	// same transition again for a turn that was a reading of the ready list.
+	planned, proposal := mm.todoPlanAfter(m)
+	mm = planned
+	if proposal != nil {
+		cmd = tea.Batch(cmd, proposal)
 	}
 	return mm, cmd
 }

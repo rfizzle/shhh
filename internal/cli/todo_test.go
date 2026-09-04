@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"os"
@@ -559,5 +560,62 @@ func TestTodoGroomTargets(t *testing.T) {
 	}
 	if _, err := todoGroomTargets(s, "", false); err == nil {
 		t.Error("naming nothing should be refused")
+	}
+}
+
+// The proposal is the set with the line behind each item, the goal and the
+// kind of release, and the candidates it left out with the word for each —
+// and it writes nothing at all: not the sprint file, and not a reading.
+func TestTodoSprintPlan_IsTheWholeRecommendationAndWritesNothing(t *testing.T) {
+	root := todoFixture(t)
+	const answer = "goal: Finish the first thing and the one that waits on it.\n" +
+		"release: minor\n" +
+		"item: first\nwhy: everything else in the backlog waits on it\n" +
+		"out: third unrelated\n"
+	d, _ := headlessDriver(t, root, func(step run.Step) string {
+		if !strings.Contains(step.Prompt, "SPRINT PLANNING") {
+			t.Errorf("the planning turn was sent something else:\n%s", step.Prompt)
+		}
+		return answer
+	})
+	s := todo.Load(root)
+	plan, err := todoSprintPlanRead(context.Background(), d, s, s.Ready(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// `third` is blocked, so it is not a candidate and the line naming it
+	// is dropped rather than proposed.
+	if strings.Join(plan.Slugs(), ",") != "first" || len(plan.Left) != 0 {
+		t.Fatalf("plan = %+v", plan)
+	}
+	out := todoSprintPlanReport(s, plan).String()
+	for _, want := range []string{
+		"Finish the first thing and the one that waits on it.",
+		"Reads as a minor release.",
+		"first", "everything else in the backlog waits on it",
+		"nothing written",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %q in:\n%s", want, out)
+		}
+	}
+	if _, err := os.Stat(todo.SprintPath(root)); !os.IsNotExist(err) {
+		t.Error("the reading wrote a sprint file")
+	}
+	if _, ok := todo.LoadReading(root, "first"); ok {
+		t.Error("the reading wrote a grooming down")
+	}
+}
+
+// A budget naming only sizes the ready list does not hold admits nothing,
+// and the item headers already say so: no turn is spent finding out.
+func TestTodoSprintPlan_RefusesABudgetNothingFits(t *testing.T) {
+	root := todoFixture(t)
+	budget, err := todo.ParseSprintBudget("L=2")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if budget.Fits(todo.Load(root).Ready()) {
+		t.Fatal("a backlog of small items fits a budget of large ones")
 	}
 }

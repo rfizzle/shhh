@@ -64,26 +64,54 @@ backlog · planning · S=2 M=1                                                 3
 ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
 
 nothing is written until [enter]
-No goal written yet.
+Make every piece of prose on screen come out of one renderer.
+Reads as a minor release.
 
-❯ [x] prose-renderer  One renderer for every piece of prose  ·  medium · S · unblocks 2
-  [x] drop-loses-the-file  Dropping an item says what it loses  ·  low · -
-  [x] screen-over-items  A screen over the whole backlog  ·  high · L
+❯ [x] prose-renderer  One renderer for every piece of prose  ·  the other two both draw prose, and neither can until this one exi…
+  [x] drop-loses-the-file  Dropping an item says what it loses  ·  same package, and its notice is prose nothing renders today
+  [x] screen-over-items  A screen over the whole backlog  ·  the surface the first two are for; it lands last
 
-[↑↓/jk] move · [space] drop it, or put it back · [g] write what the set is for · [enter] write the sprint · [esc] write nothing
+3 items left out · 1 waits, 1 too big, 1 unrelated [o]
+
+[↑↓/jk] move · [space] drop it, or put it back · [o] what was left out, and why · [g] write what the set is for
+[enter] write the sprint · [esc] write nothing
 
 · a row dropped · it keeps its place and loses its tick
 backlog · planning · S=2 M=1                                                 2 of 3 items kept · [?] keys · [q] back to the prompt
 ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
 
 nothing is written until [enter]
-No goal written yet.
+Make every piece of prose on screen come out of one renderer.
+Reads as a minor release.
 
-  [x] prose-renderer  One renderer for every piece of prose  ·  medium · S · unblocks 2
-❯ [ ] drop-loses-the-file  Dropping an item says what it loses  ·  low · -
-  [x] screen-over-items  A screen over the whole backlog  ·  high · L
+  [x] prose-renderer  One renderer for every piece of prose  ·  the other two both draw prose, and neither can until this one exi…
+❯ [ ] drop-loses-the-file  Dropping an item says what it loses  ·  same package, and its notice is prose nothing renders today
+  [x] screen-over-items  A screen over the whole backlog  ·  the surface the first two are for; it lands last
 
-[↑↓/jk] move · [space] drop it, or put it back · [g] write what the set is for · [enter] write the sprint · [esc] write nothing
+3 items left out · 1 waits, 1 too big, 1 unrelated [o]
+
+[↑↓/jk] move · [space] drop it, or put it back · [o] what was left out, and why · [g] write what the set is for
+[enter] write the sprint · [esc] write nothing
+
+· what was left out · folded under the set until the key opens it
+backlog · planning · S=2 M=1                                                 3 of 3 items kept · [?] keys · [q] back to the prompt
+╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+
+nothing is written until [enter]
+Make every piece of prose on screen come out of one renderer.
+Reads as a minor release.
+
+❯ [x] prose-renderer  One renderer for every piece of prose  ·  the other two both draw prose, and neither can until this one exi…
+  [x] drop-loses-the-file  Dropping an item says what it loses  ·  same package, and its notice is prose nothing renders today
+  [x] screen-over-items  A screen over the whole backlog  ·  the surface the first two are for; it lands last
+
+3 items left out [o]
+  waits      sprint-file  A sprint is a file that names its items
+  too big    rewrite-the-store  One store for every surface
+  unrelated  mcp-forwarders  Forwarders carry the credential
+
+[↑↓/jk] move · [space] drop it, or put it back · [o] what was left out, and why · [g] write what the set is for
+[enter] write the sprint · [esc] write nothing
 
 ── ansi ────────────────────────────────────────────────────
 · the set being worked · the goal, the meter, and the stage of the one in flight
@@ -140,23 +168,51 @@ No goal written yet.
 ␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
 
 ␛[38;5;241mnothing is written until ␛[m␛[94m[enter]␛[m
-␛[38;5;241mNo goal written yet.␛[m
+␛[38;5;241mMake every piece of prose on screen come out of one renderer.␛[m
+␛[38;5;241mReads as a minor release.␛[m
 
-␛[94m❯ ␛[m␛[92m[x]␛[m ␛[1;97mprose-renderer␛[m␛[38;5;241m  One renderer for every piece of prose  ·  medium · S · unblocks 2␛[m
-  ␛[92m[x]␛[m ␛[1;97mdrop-loses-the-file␛[m␛[38;5;241m  Dropping an item says what it loses  ·  low · -␛[m
-  ␛[92m[x]␛[m ␛[1;97mscreen-over-items␛[m␛[38;5;241m  A screen over the whole backlog  ·  high · L␛[m
+␛[94m❯ ␛[m␛[92m[x]␛[m ␛[1;97mprose-renderer␛[m␛[38;5;241m  One renderer for every piece of prose  ·  the other two both draw prose, and neither can until this one exi…␛[m
+  ␛[92m[x]␛[m ␛[1;97mdrop-loses-the-file␛[m␛[38;5;241m  Dropping an item says what it loses  ·  same package, and its notice is prose nothing renders today␛[m
+  ␛[92m[x]␛[m ␛[1;97mscreen-over-items␛[m␛[38;5;241m  A screen over the whole backlog  ·  the surface the first two are for; it lands last␛[m
 
-␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[space]␛[m␛[38;5;241m drop it, or put it back␛[m␛[38;5;241m · ␛[m␛[94m[g]␛[m␛[38;5;241m write what the set is for␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m write the sprint␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m write nothing␛[m
+␛[38;5;241m3 items left out · 1 waits, 1 too big, 1 unrelated␛[m ␛[94m[o]␛[m
+
+␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[space]␛[m␛[38;5;241m drop it, or put it back␛[m␛[38;5;241m · ␛[m␛[94m[o]␛[m␛[38;5;241m what was left out, and why␛[m␛[38;5;241m · ␛[m␛[94m[g]␛[m␛[38;5;241m write what the set is for␛[m
+␛[94m[enter]␛[m␛[38;5;241m write the sprint␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m write nothing␛[m
 
 · a row dropped · it keeps its place and loses its tick
 ␛[1;97mbacklog␛[m␛[38;5;241m · planning␛[m␛[38;5;241m · S=2 M=1␛[m                                                 ␛[38;5;241m2 of 3 items kept␛[m␛[38;5;241m · [?] keys · [q] back to the prompt␛[m
 ␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
 
 ␛[38;5;241mnothing is written until ␛[m␛[94m[enter]␛[m
-␛[38;5;241mNo goal written yet.␛[m
+␛[38;5;241mMake every piece of prose on screen come out of one renderer.␛[m
+␛[38;5;241mReads as a minor release.␛[m
 
-  ␛[92m[x]␛[m ␛[1;97mprose-renderer␛[m␛[38;5;241m  One renderer for every piece of prose  ·  medium · S · unblocks 2␛[m
-␛[94m❯ ␛[m␛[38;5;241m[ ]␛[m ␛[38;5;241mdrop-loses-the-file␛[m␛[38;5;241m  Dropping an item says what it loses  ·  low · -␛[m
-  ␛[92m[x]␛[m ␛[1;97mscreen-over-items␛[m␛[38;5;241m  A screen over the whole backlog  ·  high · L␛[m
+  ␛[92m[x]␛[m ␛[1;97mprose-renderer␛[m␛[38;5;241m  One renderer for every piece of prose  ·  the other two both draw prose, and neither can until this one exi…␛[m
+␛[94m❯ ␛[m␛[38;5;241m[ ]␛[m ␛[38;5;241mdrop-loses-the-file␛[m␛[38;5;241m  Dropping an item says what it loses  ·  same package, and its notice is prose nothing renders today␛[m
+  ␛[92m[x]␛[m ␛[1;97mscreen-over-items␛[m␛[38;5;241m  A screen over the whole backlog  ·  the surface the first two are for; it lands last␛[m
 
-␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[space]␛[m␛[38;5;241m drop it, or put it back␛[m␛[38;5;241m · ␛[m␛[94m[g]␛[m␛[38;5;241m write what the set is for␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m write the sprint␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m write nothing␛[m
+␛[38;5;241m3 items left out · 1 waits, 1 too big, 1 unrelated␛[m ␛[94m[o]␛[m
+
+␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[space]␛[m␛[38;5;241m drop it, or put it back␛[m␛[38;5;241m · ␛[m␛[94m[o]␛[m␛[38;5;241m what was left out, and why␛[m␛[38;5;241m · ␛[m␛[94m[g]␛[m␛[38;5;241m write what the set is for␛[m
+␛[94m[enter]␛[m␛[38;5;241m write the sprint␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m write nothing␛[m
+
+· what was left out · folded under the set until the key opens it
+␛[1;97mbacklog␛[m␛[38;5;241m · planning␛[m␛[38;5;241m · S=2 M=1␛[m                                                 ␛[38;5;241m3 of 3 items kept␛[m␛[38;5;241m · [?] keys · [q] back to the prompt␛[m
+␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+
+␛[38;5;241mnothing is written until ␛[m␛[94m[enter]␛[m
+␛[38;5;241mMake every piece of prose on screen come out of one renderer.␛[m
+␛[38;5;241mReads as a minor release.␛[m
+
+␛[94m❯ ␛[m␛[92m[x]␛[m ␛[1;97mprose-renderer␛[m␛[38;5;241m  One renderer for every piece of prose  ·  the other two both draw prose, and neither can until this one exi…␛[m
+  ␛[92m[x]␛[m ␛[1;97mdrop-loses-the-file␛[m␛[38;5;241m  Dropping an item says what it loses  ·  same package, and its notice is prose nothing renders today␛[m
+  ␛[92m[x]␛[m ␛[1;97mscreen-over-items␛[m␛[38;5;241m  A screen over the whole backlog  ·  the surface the first two are for; it lands last␛[m
+
+␛[38;5;241m3 items left out␛[m ␛[94m[o]␛[m
+␛[38;5;241m  waits      sprint-file  A sprint is a file that names its items␛[m
+␛[38;5;241m  too big    rewrite-the-store  One store for every surface␛[m
+␛[38;5;241m  unrelated  mcp-forwarders  Forwarders carry the credential␛[m
+
+␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[space]␛[m␛[38;5;241m drop it, or put it back␛[m␛[38;5;241m · ␛[m␛[94m[o]␛[m␛[38;5;241m what was left out, and why␛[m␛[38;5;241m · ␛[m␛[94m[g]␛[m␛[38;5;241m write what the set is for␛[m
+␛[94m[enter]␛[m␛[38;5;241m write the sprint␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m write nothing␛[m

@@ -343,6 +343,9 @@ func (m Model) todoRunHoldsInput() (string, bool) {
 	if m.todoGroomer.going() {
 		return fmt.Sprintf("a backlog item is being read against the tree (%s) — the card opens when the turn is over; commands still work", m.todoGroomer.slug), true
 	}
+	if m.todoPlanner.going {
+		return "a sprint is being planned — the proposal opens when the turn is over; commands still work", true
+	}
 	if m.todoRunner.state == nil || m.todoRunner.state.Over() {
 		return "", false
 	}
@@ -600,6 +603,7 @@ func (m Model) todoRunDone() (tea.Model, tea.Cmd) {
 	report := st.Report
 	if len(st.Files) > 0 && !st.NoCommit {
 		report += "\nCommitted: " + strings.Join(st.Files, ", ") + "\n"
+		report += todo.CommitLine(project.Head(m.todos.Root), st.Message)
 	}
 	to, err := todo.Archive(m.todos.Root, st.Slug, report)
 	note := todoRunDoneNote(st, to) + m.closeFinishedSprint()

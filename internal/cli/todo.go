@@ -418,7 +418,129 @@ func newTodoSprintCmd() *cobra.Command {
 		},
 	}
 	todoJSONFlag(cmd, &asJSON, "the sprint")
+	cmd.AddCommand(newTodoSprintPlanCmd())
 	return cmd
+}
+
+// newTodoSprintPlanCmd is the reading behind a sprint with nobody watching.
+// It spends one read-only turn over the ready items and prints the set it
+// recommends, the line behind each item, the goal and what it left out.
+//
+// It writes nothing — not the sprint file, and not a reading of any item.
+// That is the whole difference between this and `/todo sprint plan`: what a
+// set costs is a week of somebody's work, and choosing one is a decision.
+// A script wants the recommendation, which is what it gets.
+// See docs/capabilities/todo.md#a-sprint-is-what-ships-together.
+func newTodoSprintPlanCmd() *cobra.Command {
+	var asJSON bool
+	var size string
+	cmd := &cobra.Command{
+		Use:   "plan",
+		Short: "Recommend the set of items that should go next, and say why",
+		Long: "Read the ready items and recommend the set that belongs together: the items in " +
+			"the order they should be worked with one line each, a goal for the set, what kind " +
+			"of release it reads as, and every candidate it left out with the word for why. " +
+			"Nothing is written; the set is accepted on the card `/todo sprint plan` puts up " +
+			"in a session.",
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return todoSprintPlanHeadless(cmd, size, asJSON)
+		},
+	}
+	cmd.Flags().StringVar(&size, "size", "", "the budget the set has to fit, as S=n,M=n,L=n")
+	// Not todoJSONFlag: that one promises the store's warnings with the
+	// listing, and a proposal is a reading rather than a listing — it
+	// carries reasons, not diagnostics.
+	cmd.Flags().BoolVar(&asJSON, "json", false, "emit the proposal as JSON")
+	return cmd
+}
+
+// todoSprintPlanHeadless spends the one turn and reads its answer against
+// the candidates it was asked about.
+func todoSprintPlanHeadless(cmd *cobra.Command, spec string, asJSON bool) error {
+	budget, err := todo.ParseSprintBudget(spec)
+	if err != nil {
+		return err
+	}
+	root := todo.Root(todoCwd())
+	s := todo.Load(root)
+	if s.Sprint.Open() {
+		return fmt.Errorf("%s is still open — one sprint at a time; `shhh todo sprint` shows it", s.Sprint.Name)
+	}
+	candidates := s.Ready()
+	if len(candidates) == 0 {
+		return fmt.Errorf("nothing is ready, so there is no set to propose")
+	}
+	if !budget.Fits(candidates) {
+		return fmt.Errorf("no ready item fits %s; without --size the whole ready list is read", budget)
+	}
+	// The driver is built with no commit to make: planning changes nothing,
+	// so the refusal a run gives outside a repository is not this command's
+	// to give.
+	d, err := newTodoDriver(cmd.OutOrStdout(), root, ConfigFrom(cmd.Context()), true)
+	if err != nil {
+		return err
+	}
+	plan, err := todoSprintPlanRead(cmd.Context(), d, s, candidates, budget)
+	if err != nil {
+		return err
+	}
+	if asJSON {
+		return writeJSON(cmd, plan)
+	}
+	return report.Fprint(cmd.OutOrStdout(), todoSprintPlanReport(s, plan))
+}
+
+// todoSprintPlanRead spends the one turn and reads its answer against the
+// candidates it was asked about.
+func todoSprintPlanRead(ctx context.Context, d *todoDriver, s *todo.Store, candidates []todo.Item, budget todo.SprintBudget) (todo.Plan, error) {
+	// The step names no stage: planning a set is not a stage of working
+	// one, and nothing here is gated, checkpointed or continued.
+	turn, err := d.turn(ctx, time.Time{}, run.Step{
+		Action: run.ActionPrompt, Mode: run.ModePlan,
+		Prompt: s.PlanPrompt(candidates, budget.String()), Shown: "plan the sprint",
+	})
+	if err != nil {
+		return todo.Plan{}, err
+	}
+	return todo.ParsePlan(turn.text, candidates, budget), nil
+}
+
+// todoSprintPlanReport is one proposal printed: the set in the order it
+// would be worked with the line behind each item, then the candidates it
+// left out with the word. The left-out rows are rows and not a footnote —
+// what a recommendation left out is half of what makes it arguable.
+func todoSprintPlanReport(s *todo.Store, plan todo.Plan) report.Report {
+	rows := make([]report.Row, 0, len(plan.Items)+len(plan.Left))
+	for _, it := range plan.Items {
+		item, _ := s.Find(it.Slug)
+		rows = append(rows, report.Row{
+			State: report.Queue, Name: it.Slug,
+			Subject: clipRunes(item.Title, 72), Outcome: it.Why,
+		})
+	}
+	for _, l := range plan.Left {
+		item, _ := s.Find(l.Slug)
+		rows = append(rows, report.Row{
+			State: report.Skip, Name: l.Slug,
+			Subject: clipRunes(item.Title, 72), Outcome: string(l.Why),
+		})
+	}
+	rep := report.Report{
+		Title:    "shhh todo sprint plan",
+		Subject:  fmt.Sprintf("%d in the set · %d left out", len(plan.Items), len(plan.Left)),
+		Sections: []report.Section{{Rows: rows}},
+		Tally:    "nothing written; `/todo sprint plan` takes the set in a session",
+	}
+	if goal := plan.GoalText(); goal != "" {
+		rep.Sections = append([]report.Section{{Header: "GOAL", Body: goal}}, rep.Sections...)
+	}
+	if len(rows) == 0 {
+		rep.Sections[len(rep.Sections)-1].Rows = []report.Row{
+			report.Empty("the reading proposed no set that could be read as items", "try it again"),
+		}
+	}
+	return rep
 }
 
 func newTodoShowCmd() *cobra.Command {

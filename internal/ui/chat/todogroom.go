@@ -54,6 +54,10 @@ type todoGroomState struct {
 	// lines and items are what the pass has accepted so far, for the
 	// sentence it leaves behind when it stops.
 	lines, items int
+	// planAfter is the sprint planning this pass was started for, and nil
+	// for a pass the person asked for on its own. Planning reads its
+	// candidates against the tree first, and that reading is this pass.
+	planAfter *sprintPlanRequest
 	// stale is how far behind each item's accepted reading has fallen,
 	// taken when the backlog is reloaded rather than per frame: it asks the
 	// repository a question per groomed item, and the rail is drawn on
@@ -162,6 +166,14 @@ func (m Model) endTodoGroom(why string) (tea.Model, tea.Cmd) {
 		}
 		fmt.Fprintf(&b, "Accepted %s across %s.", plural(g.lines, "line"), plural(g.items, "item"))
 	}
+	// A pass that was the first half of a plan hands over to the second.
+	// Cancelling one card is an answer about that item's corrections and
+	// not about the plan, so it carries on; the paths that clear the
+	// request are the ones where nothing about the pass can be trusted.
+	if g.planAfter != nil {
+		next, _ := m.systemNotice(b.String())
+		return next.(Model).startSprintPlanTurn(g.planAfter.budget)
+	}
 	if b.Len() == 0 {
 		return m, nil
 	}
@@ -183,11 +195,13 @@ func (m Model) todoGroomAfter(prev Model) (Model, tea.Cmd) {
 		// The turn that ended is not the reading's — a compaction, a skill,
 		// something a command started. Nothing about the item is wrong, so
 		// the pass stops rather than grading an answer that is not its own.
+		m.todoGroomer.planAfter = nil
 		next, cmd := m.endTodoGroom("The reading's turn was displaced by another message.")
 		return next.(Model), cmd
 	}
 	reading, err := todo.Groom(g.item, m.groomAnswer())
 	if err != nil {
+		m.todoGroomer.planAfter = nil
 		next, cmd := m.endTodoGroom("Could not read " + g.slug + " — " + err.Error() + ".")
 		return next.(Model), cmd
 	}

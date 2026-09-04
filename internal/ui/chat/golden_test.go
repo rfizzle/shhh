@@ -1372,9 +1372,9 @@ func TestGolden_ItemDraft(t *testing.T) {
 }
 
 // TestGolden_TodoSprint captures the surface the sprint is chosen on: the
-// proposal on the backlog screen's sprint tab, the ready items under a size
-// budget, each row saying in the facts a filter has why it is in the set —
-// its priority, its size, and how many items are waiting on it.
+// proposal on the backlog screen's sprint tab, each row carrying the line
+// the reading wrote about why that item is in the set, and under them the
+// candidates it left out with the word for each.
 //
 // The card is the half of the sprint that is this surface's. The view
 // `/todo sprint` prints is a report, rendered where every other textual
@@ -1393,6 +1393,7 @@ func TestGolden_TodoSprint(t *testing.T) {
 			"cache-invalidate.md": "---\ntitle: Invalidate on write\npriority: high\nsize: M\n---\n",
 			"cache-metrics.md":    "---\ntitle: Count the hits and the misses\npriority: medium\nsize: S\ndepends_on: [cache-ttl]\n---\n",
 			"cache-warm.md":       "---\ntitle: Warm the cache on start\npriority: low\nsize: M\n---\n",
+			"cache-audit.md":      "---\ntitle: An audit trail for every eviction\npriority: low\nsize: L\n---\n",
 		} {
 			if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
 				t.Fatal(err)
@@ -1401,15 +1402,36 @@ func TestGolden_TodoSprint(t *testing.T) {
 		m := frameModel(t, width, 40)
 		m = m.WithTodos(Todos{Root: root, Manage: func([]string) string { return "" },
 			Detail: func(*todo.Store, todo.Item) string { return "" }})
-		budgeted, _ := m.startTodoSprintPlan([]string{"--size", "S=1,M=1"})
-		whole, _ := m.startTodoSprintPlan(nil)
-		dropped, _ := whole.(Model).updateTodoScreen(key('j'))
+		// The card is opened from a reading, because that is the only way a
+		// card comes up: the answer below is a planning turn's, read by the
+		// same parser the session reads one with.
+		answer := "goal: Make the cache expire what it should and say what it did.\n" +
+			"release: minor\n" +
+			"item: cache-ttl\n" +
+			"why: nothing else can be measured until entries expire on a clock somebody set\n" +
+			"item: cache-invalidate\n" +
+			"why: the same package, and it is the other half of what makes a stale entry impossible\n" +
+			"out: cache-warm unrelated\n" +
+			"out: cache-audit too big\n"
+		planned := func() Model {
+			p := m
+			p.todoPlanner = todoPlanState{going: true, candidates: p.todoStore.Ready()}
+			card, _ := p.openPlanCard(todo.ParsePlan(answer, p.todoStore.Ready(), nil))
+			return card.(Model)
+		}
+		// Each panel plans again: the card is a pointer the screen holds, so
+		// a key pressed for one panel would otherwise be pressed for the
+		// panels already captured above it.
+		foldedView := planned().backlogPane(width, 24)
+		open, _ := planned().updateTodoScreen(key('o'))
+		openView := open.(Model).backlogPane(width, 24)
+		dropped, _ := planned().updateTodoScreen(key('j'))
 		dropped, _ = dropped.(Model).updateTodoScreen(key(' '))
 		return []golden.Panel{
-			{Label: "under a budget · one small and one medium, in backlog order",
-				View: budgeted.(Model).backlogPane(width, 24)},
-			{Label: "with no budget · the whole ready list",
-				View: whole.(Model).backlogPane(width, 24)},
+			{Label: "the set · a line per item, and what was left out folded under it",
+				View: foldedView},
+			{Label: "what was left out · the word beside each candidate the reading did not take",
+				View: openView},
 			{Label: "a row dropped · it keeps its place and loses its tick",
 				View: dropped.(Model).backlogPane(width, 24)},
 		}

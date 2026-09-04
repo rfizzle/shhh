@@ -868,13 +868,17 @@ first row on the other side saying which item comes next, because everything
 else that boundary carried is gone by design.
 
 Planning is the same tab before there is a file. The proposal is drawn here
-as a card that holds the keyboard: the budget it was filtered to is in the
-header, each row carries the reason it is in the set, and nothing is written
-until the card is taken. The reason is the filter's own account — the
-priority and size that put it where it is, and how many items are waiting on
-it — rather than a sentence asked of a model: the proposal is deliberately
-something a reader can recompute from the item headers, and a reason nobody
-can check would turn a filter into a recommendation.
+as a card that holds the keyboard: the budget it was bounded by is in the
+header, the goal sits above the set with the line saying what kind of
+release it reads as under it, each row carries the line saying why that item
+is in the set, and nothing is written until the card is taken. The goal and
+the release line are two rows because they have two authors — the sentence
+is the reader's to rewrite and the line under it is the reading's judgement,
+and editing one must not take the other with it. Under the set, folded behind its
+own key, the candidates the reading left out with one word each — what a
+recommendation did not take is half of what makes it arguable, and the folded
+row states how many went and which words they took so the count is never the
+only thing on screen.
 
 The card keeps `j/k`, which is the one pair the list under it had to give up.
 While a card holds the keyboard nothing else is listening, so no filter
@@ -885,8 +889,9 @@ nothing scopes the ready list to nothing, and it is the one file here nobody
 can work out of.
 
 When a sprint closes, its report is a page rather than a paragraph — the
-goal, every item with what it produced, what stopped the rest, and the turns
-and spend the set took ([reports](../capabilities/reports.md#what-a-report-is)).
+goal, the notes the set leaves, every item with what it produced, what
+stopped the rest, and the turns and spend the set took
+([reports](../capabilities/reports.md#what-a-report-is)).
 The board's last row offers the link, whole, the way an activity row offers a
 published report: the file is renamed into the archive the moment it closes,
 and that row is the only place the link survives it.
