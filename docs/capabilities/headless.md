@@ -61,6 +61,21 @@ command, found another way and finished did the work; reporting that as a
 refusal would teach every script to ignore the code. A denial still standing
 when the model stops is the one that ended the turn.
 
+## What a signal does to a run
+
+A run is one turn, and the first interrupt or termination signal it is sent
+stops that turn rather than the process. The stream it was reading is dropped,
+the conversation is closed off well-formed and saved to its slot, the record
+says the turn was cancelled, and the status is `3` — the same shape of ending
+every other way a run can stop already has, instead of a process that
+disappeared with a signal status and nothing written down. What it had done up
+to the interruption is in the slot, so `--continue` carries it on.
+
+The second signal kills the run where it stands, as it always did. One grace
+is what an interrupt is worth here: the loop stops at checkpoints, and a run
+stuck somewhere between two of them has to answer to being told rather than
+asked.
+
 ## Three shapes for the same run
 
 `--output` says what the run writes on stdout. Tool activity, waits and

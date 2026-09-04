@@ -20,8 +20,11 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"syscall"
 	"testing"
 	"time"
+
+	"github.com/rfizzle/shhh/internal/observe"
 )
 
 // shhhBinary is the command these tests run, and shhhBuildErr is why there is
@@ -72,6 +75,11 @@ type reply struct {
 	tool   string
 	args   map[string]string
 	status int
+	// hold writes the text and then leaves the stream open until the client
+	// gives up on it. It is a model that has started answering and not
+	// finished, which is the state a run has to be in for anything from
+	// outside to interrupt a turn rather than a wait.
+	hold bool
 }
 
 // fakeProvider is the endpoint the binary is pointed at. It speaks the
@@ -82,10 +90,14 @@ type reply struct {
 type fakeProvider struct {
 	srv    *httptest.Server
 	script []reply
+	// holding says a held stream is open and the run is inside it. It is
+	// buffered and written to without waiting, so an answer nobody is
+	// listening for costs the request nothing.
+	holding chan struct{}
 
 	mu    sync.Mutex
 	round int
-	asked []string
+	asked [][]string
 }
 
 func startFakeProvider(t *testing.T, script ...reply) *fakeProvider {
@@ -93,7 +105,7 @@ func startFakeProvider(t *testing.T, script ...reply) *fakeProvider {
 	if len(script) == 0 {
 		t.Fatal("a fake provider with no script answers nothing")
 	}
-	f := &fakeProvider{script: script}
+	f := &fakeProvider{script: script, holding: make(chan struct{}, 1)}
 	f.srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		step := f.next(r)
 		if step.status != 0 {
@@ -103,16 +115,38 @@ func startFakeProvider(t *testing.T, script ...reply) *fakeProvider {
 			return
 		}
 		w.Header().Set("Content-Type", "text/event-stream")
+		if step.hold {
+			f.holdOpen(w, r, step)
+			return
+		}
 		writeReply(w, step)
 	}))
 	t.Cleanup(f.srv.Close)
 	return f
 }
 
+// holdOpen writes the opening words of a reply and then keeps the stream open
+// until the run drops it. A held request is the one place a turn waits long
+// enough to be interrupted on purpose; the alternative — signalling a run at
+// whatever point it happens to have reached — is a test that passes on a fast
+// machine and reports a killed process on a slow one.
+func (f *fakeProvider) holdOpen(w http.ResponseWriter, r *http.Request, step reply) {
+	send := sseSender(w)
+	send(sseChunk{Choices: []sseChoice{{Delta: sseDelta{Content: step.text}}}})
+	select {
+	case f.holding <- struct{}{}:
+	default:
+		// Nobody waiting to hear it, or somebody already told. Either way
+		// the request goes on holding the stream, which is what it is for.
+	}
+	<-r.Context().Done()
+}
+
 // next records what the run asked for and hands back the answer for this
-// round. The prompt is the assertion the stdin shapes are made against: an
-// argument, a pipe and both compose one message, and the request is the only
-// place that says which one arrived.
+// round. Every user message of the request is kept, in order: the last of
+// them is what this round was asked, and the ones in front of it are what the
+// conversation carried into it — which is the only place a resumed run can be
+// seen from.
 func (f *fakeProvider) next(r *http.Request) reply {
 	var body struct {
 		Messages []struct {
@@ -120,7 +154,7 @@ func (f *fakeProvider) next(r *http.Request) reply {
 			Content json.RawMessage `json:"content"`
 		} `json:"messages"`
 	}
-	asked := ""
+	var asked []string
 	if err := json.NewDecoder(r.Body).Decode(&body); err == nil {
 		for _, m := range body.Messages {
 			if m.Role != "user" {
@@ -130,7 +164,7 @@ func (f *fakeProvider) next(r *http.Request) reply {
 			if json.Unmarshal(m.Content, &text) != nil {
 				text = string(m.Content)
 			}
-			asked = text
+			asked = append(asked, text)
 		}
 	}
 	f.mu.Lock()
@@ -141,7 +175,9 @@ func (f *fakeProvider) next(r *http.Request) reply {
 	return step
 }
 
-// firstPrompt is the user message of the run's opening request.
+// firstPrompt is the user message of the run's opening request: an argument,
+// a pipe and both compose one message, and the request is the only place that
+// says which one arrived.
 func (f *fakeProvider) firstPrompt(t *testing.T) string {
 	t.Helper()
 	f.mu.Lock()
@@ -149,7 +185,22 @@ func (f *fakeProvider) firstPrompt(t *testing.T) string {
 	if len(f.asked) == 0 {
 		t.Fatal("the run never reached the provider")
 	}
-	return f.asked[0]
+	first := f.asked[0]
+	if len(first) == 0 {
+		t.Fatal("the run's opening request asked nothing")
+	}
+	return first[len(first)-1]
+}
+
+// lastRequest is every user message of the most recent request, oldest first.
+func (f *fakeProvider) lastRequest(t *testing.T) []string {
+	t.Helper()
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if len(f.asked) == 0 {
+		t.Fatal("the run never reached the provider")
+	}
+	return f.asked[len(f.asked)-1]
 }
 
 // The chunk shape the dialect streams, cut down to the fields the client
@@ -190,8 +241,11 @@ type (
 	}
 )
 
-func writeReply(w http.ResponseWriter, step reply) {
-	send := func(c sseChunk) {
+// sseSender writes one chunk and flushes it, which is what makes a reply
+// arrive in pieces rather than all at once when the handler returns — the
+// difference a run that is interrupted mid-stream depends on.
+func sseSender(w http.ResponseWriter) func(sseChunk) {
+	return func(c sseChunk) {
 		c.ID, c.Object, c.Model = "fake", "chat.completion.chunk", "fake-model"
 		b, _ := json.Marshal(c)
 		fmt.Fprintf(w, "data: %s\n\n", b)
@@ -199,6 +253,10 @@ func writeReply(w http.ResponseWriter, step reply) {
 			f.Flush()
 		}
 	}
+}
+
+func writeReply(w http.ResponseWriter, step reply) {
+	send := sseSender(w)
 	if step.tool != "" {
 		args, _ := json.Marshal(step.args)
 		send(sseChunk{Choices: []sseChoice{{Delta: sseDelta{ToolCalls: []sseCall{{
@@ -260,6 +318,19 @@ func (s printSession) env() []string {
 	)
 }
 
+// command is the binary as this session runs it: the directory it works in,
+// the environment pointing it at the fake endpoint and at a home of its own,
+// and the two streams every case here asserts against.
+func (s printSession) command(ctx context.Context, stdin string, args ...string) (*exec.Cmd, *strings.Builder, *strings.Builder) {
+	cmd := exec.CommandContext(ctx, shhhBinary, args...)
+	cmd.Dir = s.dir
+	cmd.Env = s.env()
+	cmd.Stdin = strings.NewReader(stdin)
+	var out, errs strings.Builder
+	cmd.Stdout, cmd.Stderr = &out, &errs
+	return cmd, &out, &errs
+}
+
 // run drives the binary and hands back exactly what whatever ran it would
 // have: the two streams and the status.
 func (s printSession) run(t *testing.T, stdin string, args ...string) (stdout, stderr string, code int) {
@@ -269,16 +340,45 @@ func (s printSession) run(t *testing.T, stdin string, args ...string) (stdout, s
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, shhhBinary, args...)
-	cmd.Dir = s.dir
-	cmd.Env = s.env()
-	cmd.Stdin = strings.NewReader(stdin)
-	var out, errs strings.Builder
-	cmd.Stdout, cmd.Stderr = &out, &errs
-	err := cmd.Run()
+	cmd, out, errs := s.command(ctx, stdin, args...)
+	return finished(t, cmd, cmd.Run(), out, errs)
+}
+
+// signalDuring drives the binary until the endpoint is holding its stream
+// open, sends the process a signal, and hands back what it left behind. It is
+// the one ending the cases below cannot reach any other way: an interrupt
+// comes from outside the process, and nothing inside it stands in for one.
+func (s printSession) signalDuring(t *testing.T, f *fakeProvider, sig os.Signal, args ...string) (stdout, stderr string, code int) {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	cmd, out, errs := s.command(ctx, "", args...)
+	if err := cmd.Start(); err != nil {
+		t.Fatalf("starting %v: %v", args, err)
+	}
+	select {
+	case <-f.holding:
+	case <-ctx.Done():
+		_ = cmd.Process.Kill()
+		_ = cmd.Wait()
+		t.Fatalf("the run never opened a stream to interrupt\nstderr: %s", errs.String())
+	}
+	if err := cmd.Process.Signal(sig); err != nil {
+		t.Fatalf("signalling the run: %v", err)
+	}
+	return finished(t, cmd, cmd.Wait(), out, errs)
+}
+
+// finished reads the two streams and the status off a process that is over,
+// however it ended. A status is a status whether the run chose it or the
+// operating system did: exec reports a run killed by a signal as -1, which is
+// exactly the answer this whole surface exists to stop a script getting.
+func finished(t *testing.T, cmd *exec.Cmd, err error, out, errs *strings.Builder) (stdout, stderr string, code int) {
+	t.Helper()
 	var exited *exec.ExitError
 	if err != nil && !errors.As(err, &exited) {
-		t.Fatalf("running %v: %v\n%s", args, err, errs.String())
+		t.Fatalf("running %v: %v\n%s", cmd.Args, err, errs.String())
 	}
 	return out.String(), errs.String(), cmd.ProcessState.ExitCode()
 }
@@ -297,11 +397,11 @@ func (s printSession) trust(t *testing.T) {
 // of the projection behind it. Each case also has to say what happened, so a
 // code that is right for the wrong reason still fails.
 //
-// 3 — the run was interrupted — is not among them, because no signal reaches
-// the turn: the headless path installs no handler and nothing calls the
-// loop's interrupt, so a SIGINT kills the process and what a script reads is
-// the signal rather than a status. Asserting that answer here would settle
-// the gap in place instead of leaving it visible.
+// A case with a signal is driven differently and for the same reason the
+// others are driven at all: an interrupt is something done to the process
+// from outside, so it is sent to the process. The endpoint holds its stream
+// open until the signal has landed, which is what makes the case about where
+// a signal reaches the turn rather than about how fast the machine is.
 func TestPrintRun_EveryStatusTheContractNames(t *testing.T) {
 	for _, tc := range []struct {
 		name   string
@@ -309,6 +409,7 @@ func TestPrintRun_EveryStatusTheContractNames(t *testing.T) {
 		args   []string
 		stdin  string
 		setUp  func(t *testing.T, s printSession)
+		signal os.Signal
 		code   int
 		says   string
 	}{{
@@ -362,6 +463,20 @@ func TestPrintRun_EveryStatusTheContractNames(t *testing.T) {
 		args: []string{"code", "-p", "run something"},
 		code: 6,
 		says: "a tool call was refused",
+	}, {
+		name:   "a run somebody interrupted while it was working",
+		script: []reply{{text: "thinking about it", hold: true}},
+		args:   []string{"code", "-p", "take your time"},
+		signal: os.Interrupt,
+		code:   3,
+		says:   "turn interrupted",
+	}, {
+		name:   "a run something else told to stop",
+		script: []reply{{text: "thinking about it", hold: true}},
+		args:   []string{"code", "-p", "take your time"},
+		signal: syscall.SIGTERM,
+		code:   3,
+		says:   "turn interrupted",
 	}} {
 		t.Run(tc.name, func(t *testing.T) {
 			f := startFakeProvider(t, tc.script...)
@@ -369,7 +484,13 @@ func TestPrintRun_EveryStatusTheContractNames(t *testing.T) {
 			if tc.setUp != nil {
 				tc.setUp(t, s)
 			}
-			out, errs, code := s.run(t, tc.stdin, tc.args...)
+			var out, errs string
+			var code int
+			if tc.signal != nil {
+				out, errs, code = s.signalDuring(t, f, tc.signal, tc.args...)
+			} else {
+				out, errs, code = s.run(t, tc.stdin, tc.args...)
+			}
 			if code != tc.code {
 				t.Fatalf("the run exited %d, want %d\nstdout: %s\nstderr: %s", code, tc.code, out, errs)
 			}
@@ -378,6 +499,75 @@ func TestPrintRun_EveryStatusTheContractNames(t *testing.T) {
 			}
 		})
 	}
+}
+
+// What an interrupted run leaves behind, which is the whole difference
+// between a turn that was stopped and a process that vanished. The status is
+// what a script branches on, but the two things that make the status worth
+// anything are here: the record says how the turn ended, and the conversation
+// is in a slot the next run carries on from.
+func TestPrintRun_AnInterruptedRunIsWrittenDownAndContinuable(t *testing.T) {
+	f := startFakeProvider(t,
+		reply{text: "starting on it", hold: true},
+		reply{text: "and here is the rest"})
+	s := newPrintSession(t, f)
+
+	_, errs, code := s.signalDuring(t, f, os.Interrupt, "code", "-p", "the interrupted question")
+	if code != exitInterrupted {
+		t.Fatalf("the interrupted run exited %d, want %d\nstderr: %s", code, exitInterrupted, errs)
+	}
+	session, turns := s.lastRecord(t)
+	if session != observe.SessionInterrupted {
+		t.Errorf("the record closed the session as %q, want %q", session, observe.SessionInterrupted)
+	}
+	if len(turns) != 1 || turns[0] != observe.TurnCancelled {
+		t.Errorf("the record's turns are %q, want one %q", turns, observe.TurnCancelled)
+	}
+
+	if _, errs, code := s.run(t, "", "code", "-p", "--continue", "and now?"); code != 0 {
+		t.Fatalf("continuing the interrupted run exited %d\nstderr: %s", code, errs)
+	}
+	carried := f.lastRequest(t)
+	if len(carried) == 0 || carried[len(carried)-1] != "and now?" {
+		t.Fatalf("the continued run asked %q, want the new prompt last", carried)
+	}
+	if !strings.Contains(strings.Join(carried, "\n"), "the interrupted question") {
+		t.Errorf("the continued run carried %q, want the interrupted turn with it", carried)
+	}
+}
+
+// lastRecord is how the store says the most recent run came out: the
+// session's own ending and the outcome of every turn it closed. It is read
+// back through the binary's own export, because that is the reading somebody
+// tuning against the record actually has.
+func (s printSession) lastRecord(t *testing.T) (session string, turns []string) {
+	t.Helper()
+	out, errs, code := s.run(t, "", "observe", "export")
+	if code != 0 {
+		t.Fatalf("`shhh observe export` exited %d\nstderr: %s", code, errs)
+	}
+	var export struct {
+		Sessions []struct {
+			Outcome string `json:"outcome"`
+			Events  []struct {
+				Kind    string `json:"kind"`
+				Outcome string `json:"outcome"`
+			} `json:"events"`
+		} `json:"sessions"`
+	}
+	if err := json.Unmarshal([]byte(out), &export); err != nil {
+		t.Fatalf("reading the export: %v\n%s", err, out)
+	}
+	if len(export.Sessions) == 0 {
+		t.Fatal("the run recorded no session at all")
+	}
+	last := export.Sessions[len(export.Sessions)-1]
+	for _, ev := range last.Events {
+		if ev.Kind == "turn" {
+			turns = append(turns, ev.Outcome)
+		}
+	}
+	return last.Outcome, turns
 }
 
 // A run that finished writes its answer on stdout and nothing else, because

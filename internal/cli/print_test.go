@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -1392,5 +1393,67 @@ func TestHeadlessTree_StaysOffWhereTheConfigSaysSo(t *testing.T) {
 	cfg.Behavior.TreeCheck = &off
 	if c := headlessTree(cfg, readSibling(nil), &writtenByCalls{}); c != nil {
 		t.Fatalf("got %+v, want no reading at all", c)
+	}
+}
+
+// The handler is the run's, and the run's alone. A signal that arrives after
+// it comes down has to reach whatever was watching the signal before the run
+// — the default disposition in a real process — because that is what kills a
+// run somebody has told twice.
+//
+// The test keeps a registration of its own for the whole of it, so the
+// signals it sends itself are delivered to a channel rather than ending the
+// test binary, and so the handler going down cannot take the process with it.
+func TestInterruptOnSignal_TheHandlerLivesForTheRunOnly(t *testing.T) {
+	held := make(chan os.Signal, 2)
+	signal.Notify(held, os.Interrupt)
+	defer signal.Stop(held)
+
+	interrupted := make(chan struct{}, 2)
+	stop := interruptOnSignal(func() { interrupted <- struct{}{} })
+	raise(t, os.Interrupt)
+	select {
+	case <-interrupted:
+	case <-time.After(10 * time.Second):
+		t.Fatal("a signal during the run never reached the turn's interrupt")
+	}
+	awaitSignal(t, held)
+
+	// Once the teardown has returned there is no watcher left, so the second
+	// signal below cannot reach the turn however long anything waits for it.
+	// Waiting for the test's own channel is what says the signal was
+	// delivered at all, which is what makes the silence below mean something.
+	stop()
+	raise(t, os.Interrupt)
+	awaitSignal(t, held)
+	select {
+	case <-interrupted:
+		t.Fatal("a signal after the run interrupted a turn that had already ended")
+	default:
+	}
+}
+
+// awaitSignal waits for the test's own registration to be handed the signal
+// the test sent itself.
+func awaitSignal(t *testing.T, held <-chan os.Signal) {
+	t.Helper()
+	select {
+	case <-held:
+	case <-time.After(10 * time.Second):
+		t.Fatal("the signal the test sent itself was never delivered")
+	}
+}
+
+// raise sends the test process a signal, which is the only way to exercise a
+// handler: a channel written to by hand would test the goroutine and not the
+// registration that feeds it.
+func raise(t *testing.T, sig os.Signal) {
+	t.Helper()
+	p, err := os.FindProcess(os.Getpid())
+	if err != nil {
+		t.Fatalf("finding this process to signal it: %v", err)
+	}
+	if err := p.Signal(sig); err != nil {
+		t.Fatalf("signalling this process: %v", err)
 	}
 }

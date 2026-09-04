@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/signal"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/mattn/go-isatty"
@@ -886,7 +888,14 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		h.OnText = obs.text
 	}
 
+	// A signal reaching this run stops the turn, and the handler is up for
+	// exactly as long as there is a turn to stop: once the loop has returned,
+	// the save and the record below are as killable as they were before this
+	// existed.
+	// See docs/capabilities/headless.md#what-a-signal-does-to-a-run.
+	stopSignals := interruptOnSignal(h.Interrupt)
 	final, err := h.Run(initialPrompt)
+	stopSignals()
 	runErr = err
 	// Whatever ended it, the conversation is left where the next `shhh chat
 	// --continue` will find it, and the record is told which slot that is —
@@ -933,6 +942,49 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		return nil
 	}
 	return exitError{code: code, err: out}
+}
+
+// interruptOnSignal turns the first interrupt or termination signal the run
+// is sent into an interrupt for its turn, and hands back the teardown that
+// takes the handler down again.
+//
+// Without one the process dies where it stood: nothing says how the turn
+// ended, there is no conversation to continue from, and whatever ran the
+// command reads a signal status where the contract promises a code. With one
+// the loop stops at its next checkpoint and the run ends the way its other
+// endings end — saved, recorded, and reported as a status.
+//
+// The handler is one grace and not a mode, which is why it comes down as the
+// first signal is taken and before the loop is told anything: the second
+// signal has to reach the default disposition and kill the process, because
+// killing it is all that is left for a run stuck somewhere no checkpoint
+// runs. Stopping the channel is what restores that disposition — the runtime
+// hands a signal back to the operating system once the last channel watching
+// it is gone — and a reset would hand back every other registration in the
+// process along with this one.
+//
+// The teardown waits for the watcher to be gone rather than only asking it to
+// stop, so a caller that has returned from it knows nothing is left that
+// could interrupt the turn after it.
+// See docs/capabilities/headless.md#what-a-signal-does-to-a-run.
+func interruptOnSignal(interrupt func()) (stop func()) {
+	ch := make(chan os.Signal, 1)
+	signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
+	done, gone := make(chan struct{}), make(chan struct{})
+	go func() {
+		defer close(gone)
+		select {
+		case <-ch:
+			signal.Stop(ch)
+			interrupt()
+		case <-done:
+			signal.Stop(ch)
+		}
+	}()
+	return sync.OnceFunc(func() {
+		close(done)
+		<-gone
+	})
 }
 
 // headlessCompactor is the window-recovery step for an unattended run: the
