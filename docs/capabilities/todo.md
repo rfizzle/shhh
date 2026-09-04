@@ -509,9 +509,10 @@ which reads *already done* is proposed for archiving, with the evidence as
 its report — proposed and never carried out, because an item finished by work
 nobody filed under it is exactly the case where somebody has to agree that it
 was the same work. And a run started later is handed the reading you accepted
-rather than taking it again: its research step is told the item was read on
-a given commit and corrected, so it plans the work instead of re-deriving
-what you already settled.
+rather than taking it again: its research step is told the item was read and
+corrected — on the day the stamp carries, and at the commit as well where
+commits are the distance — so it plans the work instead of re-deriving what
+you already settled.
 
 From outside the session, the same reading is a command that prints the
 verdicts and writes nothing at all — not the corrections and not the stamp.

@@ -142,7 +142,7 @@ func TestTodoGroom_AcceptingWritesTheNamedLinesAndTheStamp(t *testing.T) {
 		t.Error("the header was not stamped")
 	}
 	// The stamp is what makes the reading one a run can be handed.
-	if block := todo.GroomingBlock(root, "cache-ttl"); !strings.Contains(block, "moved") {
+	if block := todo.GroomingBlock(root, it); !strings.Contains(block, "moved") {
 		t.Errorf("the accepted reading was not written down: %q", block)
 	}
 	// The record says how many of the proposed lines were accepted, which is
@@ -170,7 +170,11 @@ func TestTodoGroom_EscWritesNothing(t *testing.T) {
 	if string(data) != groomItem {
 		t.Errorf("esc wrote something:\n%s", data)
 	}
-	if todo.GroomingBlock(root, "cache-ttl") != "" {
+	it, ok := todo.Load(todo.BuiltinCode(), root).Find("cache-ttl")
+	if !ok {
+		t.Fatal("the item is gone")
+	}
+	if todo.GroomingBlock(root, it) != "" {
 		t.Error("a declined reading was written down")
 	}
 }

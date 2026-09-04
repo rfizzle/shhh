@@ -378,7 +378,7 @@ func (d *todoDriver) begin(it todo.Item, inSprint bool) (*run.State, run.Step) {
 	opt := run.Options{
 		NoCommit: d.noCommit, Repo: d.repo, Sprint: d.sprintGoal(),
 		CloseGate: d.closeGate, InSprint: inSprint,
-		Groomed:  todo.GroomingBlock(d.root, it.Slug),
+		Groomed:  todo.GroomingBlock(d.root, it),
 		Wordings: d.wordings,
 		Pipeline: d.pipeline,
 	}

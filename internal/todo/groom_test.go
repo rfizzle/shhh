@@ -344,15 +344,49 @@ func TestGroom_TheResearchBlockIsDroppedOnceTheItemMovesPastIt(t *testing.T) {
 	if err := SaveReading(root, r); err != nil {
 		t.Fatal(err)
 	}
-	block := GroomingBlock(root, it.Slug)
+	block := GroomingBlock(root, it)
 	if !strings.Contains(block, "1a2b3c4") || !strings.Contains(block, "moved in 9f2a11c") {
 		t.Errorf("block = %q", block)
 	}
 	// An edit to the item after the reading makes the reading the older
 	// account, and the older account is not what a stage is told.
 	touch(t, it.Path, time.Now().Add(time.Minute))
-	if block := GroomingBlock(root, it.Slug); block != "" {
+	if block := GroomingBlock(root, it); block != "" {
 		t.Errorf("a reading older than the file was still handed over: %q", block)
+	}
+}
+
+// The block a step is handed says what the stamp says: a commit where the
+// profile counts commits, and the day alone where it counts days. A step
+// told a commit the header deliberately left out would be told a fact
+// nothing else about the item states.
+func TestGroom_TheBlockNamesTheCommitOnlyWhereTheProfileCountsThem(t *testing.T) {
+	root := t.TempDir()
+	it := groomedItem(t, Dir(root))
+	r := Reading{Slug: it.Slug, Head: "1a2b3c4d", Read: time.Now(), Findings: []Finding{
+		{Verdict: VerdictMoved, Claim: "store.go:88", Now: "reader.go:120"},
+	}}
+	if err := SaveReading(root, r); err != nil {
+		t.Fatal(err)
+	}
+	if block := GroomingBlock(root, it); !strings.Contains(block, "at commit 1a2b3c4") {
+		t.Errorf("under commits the block names the head: %q", block)
+	}
+	byDay := it
+	byDay.Profile = byDays(7)
+	block := GroomingBlock(root, byDay)
+	if strings.Contains(block, "commit") {
+		t.Errorf("under days the block names a commit: %q", block)
+	}
+	if want := r.Read.Format(stampDate); !strings.Contains(block, want) {
+		t.Errorf("block = %q, want the day %s in it", block, want)
+	}
+	// A profile that measures nothing keeps the commit, for the reason the
+	// stamp keeps it: it is where the reading was taken.
+	quiet := it
+	quiet.Profile.Stale = Staleness{}
+	if block := GroomingBlock(root, quiet); !strings.Contains(block, "at commit 1a2b3c4") {
+		t.Errorf("with no measure the block dropped the head: %q", block)
 	}
 }
 

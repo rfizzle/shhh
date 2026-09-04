@@ -184,7 +184,7 @@ func (m Model) beginTodoRun(arg string, noCommit, inSprint bool) (tea.Model, tea
 		// A reading the person accepted and has not edited past is what the
 		// run's first step is told instead of taking the same reading again
 		// several steps before it is needed.
-		Groomed:  todo.GroomingBlock(m.todos.Root, it.Slug),
+		Groomed:  todo.GroomingBlock(m.todos.Root, it),
 		Wordings: m.todos.Wordings,
 		Pipeline: m.todos.Pipeline,
 		// A write-up is read in the session's shared notebook, so a finish

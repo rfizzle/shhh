@@ -215,20 +215,28 @@ func (r Reading) Report() string {
 	return strings.TrimRight(b.String(), "\n")
 }
 
-// Stamp is the value the header's groomed line carries, in whichever
-// distance the profile measures staleness by: the date the reading was
-// taken, and the commit it was taken against where commits are what count.
+// namesHead reports that the commit the reading was taken against is worth
+// stating, which is the one rule the header's stamp and the block a run's
+// first step is handed both follow — a stamp that leaves the commit out and
+// a block that names it anyway tell the step a fact the item does not carry.
 //
 // Under commits the head is the load-bearing half — how far the tree has
 // moved since the reading is what a repository can compute, where a date
 // only says how long the person waited. Under days it is the other way
-// about, and a commit in the header would be a fact nothing reads. A profile
-// that measures nothing keeps the commit anyway: it is where the reading was
-// taken, and a project that starts counting commits later wants the readings
-// it already has to be countable.
+// about, and a commit would be a fact nothing reads. A profile that measures
+// nothing keeps the commit anyway: it is where the reading was taken, and a
+// project that starts counting commits later wants the readings it already
+// has to be countable.
+func (r Reading) namesHead(p Profile) bool {
+	return r.Head != "" && p.Stale.Measure != MeasureDays
+}
+
+// Stamp is the value the header's groomed line carries, in whichever
+// distance the profile measures staleness by: the date the reading was
+// taken, and the commit it was taken against where commits are what count.
 func (r Reading) Stamp(p Profile) string {
 	date := r.Read.Format(stampDate)
-	if p.Stale.Measure == MeasureDays || r.Head == "" {
+	if !r.namesHead(p) {
 		return date
 	}
 	return date + " @ " + shortHead(r.Head)
@@ -716,14 +724,20 @@ func DiscardReading(root, slug string) {
 // empty where there is none that still stands. It says what was read and
 // what the person accepted, so a stage that would otherwise read the item
 // against the tree again knows that reading has been done and when.
-func GroomingBlock(root, slug string) string {
-	r, ok := LoadReading(root, slug)
+//
+// It takes the item rather than its name because what the block may say is
+// the profile's, and the item carries the profile it was read under: the
+// commit is named where the header's stamp names it and left out where the
+// stamp leaves it out, so the step is never told a commit the item does not
+// state.
+func GroomingBlock(root string, it Item) string {
+	r, ok := LoadReading(root, it.Slug)
 	if !ok {
 		return ""
 	}
 	var b strings.Builder
-	fmt.Fprintf(&b, "GROOMING — this item was read against the tree on %s", r.Read.Format("2006-01-02"))
-	if r.Head != "" {
+	fmt.Fprintf(&b, "GROOMING — this item was read against the tree on %s", r.Read.Format(stampDate))
+	if r.namesHead(it.Profile) {
 		fmt.Fprintf(&b, " at commit %s", shortHead(r.Head))
 	}
 	b.WriteString(", and the corrections below were accepted into the file you have. Do not read the item against the tree again; take it as it stands and plan the work.\n")
