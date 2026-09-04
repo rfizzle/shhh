@@ -108,8 +108,8 @@ type Setting struct {
 	// the listing prints whether it is set rather than what it is.
 	Secret bool
 	// Env is the environment variable that outranks both files for this key,
-	// and Flag the command-line flag that outranks all three. Five keys have
-	// a rank above the files and the rest are a file or the default
+	// and Flag the command-line flag that outranks all three. A handful of
+	// keys have a rank above the files and the rest are a file or the default
 	// (docs/capabilities/configuration.md#two-files-one-resolution-order).
 	Env  string
 	Flag string
@@ -269,6 +269,10 @@ var settings = []Setting{
 	},
 
 	{
+		Key: "sandbox.require", Kind: KindBool, Default: "off",
+		Flag: "--require-sandbox",
+		Desc: "Refuse an assistant command where no containment mechanism is in force, rather than running it unconfined.",
+	}, {
 		Key: "sandbox.profile", Kind: KindEnum, Default: "workspace",
 		Values: []string{"workspace", "workspace-netless"},
 		Desc:   "What a contained command may reach: the workspace with the network untouched, or the same with the network closed.",

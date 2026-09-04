@@ -53,6 +53,24 @@ func SetEnvMask(mask func(name string) bool) {
 	sessionMu.Unlock()
 }
 
+// SessionEnvNames names the session's own pairs, in the order SetSessionEnv
+// was given them. It is what the containment allowlist asks for: a variable
+// the person declared as a secret crosses into a contained command because
+// they declared it, and this is the list of what they declared; nothing
+// reads the shape of a name.
+// See docs/capabilities/containment.md#a-contained-command-carries-almost-no-environment.
+func SessionEnvNames() []string {
+	sessionMu.RLock()
+	defer sessionMu.RUnlock()
+	names := make([]string, 0, len(sessionEnv))
+	for _, pair := range sessionEnv {
+		if name, _, ok := strings.Cut(pair, "="); ok {
+			names = append(names, name)
+		}
+	}
+	return names
+}
+
 // Environ is the inherited environment, masked, plus the session's pairs —
 // or nil when there is neither a mask nor a pair, which leaves exec.Cmd to
 // inherit exactly as before.

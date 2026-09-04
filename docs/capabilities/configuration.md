@@ -447,6 +447,7 @@ knows it; the profiles under `[agents]` are one key per role, which the
 
 | Key | Takes | Default | What it decides |
 |---|---|---|---|
+| `require` | true/false | `off` | Refuse an assistant command where no containment mechanism is in force, rather than running it unconfined. `--require-sandbox` is read ahead of the file. |
 | `profile` | word: `workspace`, `workspace-netless` | `workspace` | What a contained command may reach: the workspace with the network untouched, or the same with the network closed. |
 | `deny_extra` | list | (the built-in deny mask alone) | Paths added to the built-in deny mask; a contained command sees them as empty. |
 | `write_extra` | list | (the workspace, scratch and the toolchain caches) | Paths writable inside containment, beside the workspace. |

@@ -249,6 +249,13 @@ type WebConfig struct {
 // config and state dirs) is deliberately not configurable — it cannot be
 // disabled, only extended.
 type SandboxConfig struct {
+	// Require refuses an assistant command outright on a host where no
+	// mechanism is in force, instead of running it unconfined. It is off by
+	// default because a machine with no bubblewrap is still a machine
+	// somebody has to work on; turning it on is how running bare stops being
+	// the answer nobody chose.
+	// See docs/capabilities/containment.md#containment-can-be-required.
+	Require bool `toml:"require"`
 	// Profile is "workspace" (network preserved, the default) or
 	// "workspace-netless".
 	Profile string `toml:"profile"`

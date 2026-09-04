@@ -42,6 +42,66 @@ troubleshooting something unrelated, by a script, by a session that argued
 persuasively. The protection is only worth having if it cannot be turned off,
 so it cannot be.
 
+## A contained command carries almost no environment
+
+The mask decides what a command can read. It cannot decide what the command
+was told, and what it was told used to be everything: the whole environment
+the session was started from, crossing into containment untouched.
+
+That is worse than it sounds. `SSH_AUTH_SOCK` is the address of an agent
+holding keys the mask has just made unreadable — and an agent will sign for
+anything that can reach its socket, so a private key hidden on the filesystem
+is still a private key in use. The same is true of every token a shell profile
+exports for convenience.
+
+So the environment is rebuilt rather than filtered. A contained command gets
+where to find programs, whose home this is, what language to speak, the
+caches that are already writable, and the session's own secrets — the ones
+somebody named, which is the whole of how a value gets on the list. Nothing
+else travels, including variables shhh has never heard of, which is the class
+the leak came from.
+
+**A list of what may cross, never a list of what may not.** A mask has to
+know the name of the thing it is stopping, and the next tool to invent a
+credential variable will not be on it.
+
+Dropping the address is most of the answer and not all of it, because a path
+is a convention as much as an address: the agent's socket is masked as well,
+so a command that guessed where to look finds nothing there.
+
+Where the mechanism has namespaces to give, they go with it, for the same
+reason and at no cost: on Linux a contained command gets its own process, IPC
+and hostname namespaces, so it cannot see, signal or talk to the rest of the
+machine. None of this needs anything configured and none of it can be turned
+off.
+
+## Containment can be required
+
+Where no mechanism is available, an approved command runs as you, and every
+surface says so. That is honest, and honesty is not the same as a decision:
+nobody chose it, it is just what the host turned out to be.
+
+The requirement is how it becomes a choice. With it, a session on a host with
+no mechanism refuses the assistant's commands outright rather than running
+them bare, and the refusal carries what `shhh doctor` would have said about
+installing one — the same wording, because being told twice in two spellings
+is two things to keep true.
+
+**The refusal is the model's to read, and no card is drawn for it.** A card
+exists to put a decision to a person, and there is no decision left when the
+answer is the same whichever key they press. What the model gets back is why
+it could not run and what would fix it, which is the one thing it can act on.
+
+**A sub-agent's commands are refused too.** A child has no card to draw and
+nobody in front of it to draw one for, which makes it the path a requirement
+that stopped at the session would be walked around by — one fan-out and the
+work is running bare again.
+
+**A command you typed is never refused by it.** `/run` and `!` are yours, they
+are never contained, and a requirement about the assistant's commands has
+nothing to say about them. The requirement is off by default: a machine with
+no bubblewrap is still a machine somebody has to work on.
+
 ## A cancelled command takes its children with it
 
 Every captured command is a shell, and the work is that shell's children.

@@ -59,6 +59,16 @@ type Policy struct {
 	// toolchain-cache paths stay writable so builds and test runners keep
 	// working.
 	ReadOnlyWorkspace bool
+	// Env is the NAME=value set the contained command's environment is
+	// drawn from before the allowlist narrows it — the session's own, which
+	// carries the values the vault added and this package has no way to
+	// learn. Empty draws from this process's environment.
+	Env []string
+	// SecretNames are the variables the person declared as this session's
+	// secrets. They join the allowlist because declaring one is asking for
+	// it to reach the command; nothing about the shape of a name is
+	// consulted, only what the vault was told.
+	SecretNames []string
 }
 
 // Availability reports whether a containment mechanism can wrap commands on
@@ -136,7 +146,11 @@ type spec struct {
 	write     []string // writable grants, in mount order
 	denyDirs  []string // existing directories to mask (read as empty)
 	denyFiles []string // existing regular files to mask (read as empty)
-	network   bool
+	env       []string // the whole environment the command gets, allowlisted
+	// agentSocket is the ssh agent's socket, masked rather than left
+	// reachable; empty when this host has no agent.
+	agentSocket string
+	network     bool
 }
 
 // DenyPaths is the deny mask that cannot be disabled, for the callers that
@@ -183,12 +197,87 @@ func defaultWritePaths() []string {
 	return out
 }
 
+// envAllowlist is every variable name a contained command keeps. The
+// environment is an allowlist rather than a mask because it is the one part
+// of a command's world that names things nobody enumerated: a mask has to
+// know what to drop, and what leaked before this existed was a variable
+// shhh had never heard of. SSH_AUTH_SOCK is the reason it is worth the
+// inconvenience — a contained command that inherits it is holding a signing
+// oracle, and no file mask can take that back.
+//
+// What is on it is what a build needs to be a build: where to find programs,
+// whose home this is, what language to speak, and the caches that are
+// already writable grants. Anything else a command needs, the person adds
+// as a session secret, which is the same act of naming it.
+// See docs/capabilities/containment.md#a-contained-command-carries-almost-no-environment.
+var envAllowlist = []string{
+	"PATH", "HOME", "LANG", "TERM",
+	"TMPDIR", "XDG_CACHE_HOME",
+	"GOPATH", "GOCACHE", "GOMODCACHE",
+}
+
+// containedEnv applies the allowlist to env, keeping the pairs in the order
+// they arrived so a later NAME=value still wins over an earlier one — which
+// is what the session's own pairs rely on, appended as they are after the
+// inherited environment.
+func containedEnv(env, secrets []string) []string {
+	if env == nil {
+		env = os.Environ()
+	}
+	allow := make(map[string]bool, len(envAllowlist)+len(secrets))
+	for _, name := range envAllowlist {
+		allow[name] = true
+	}
+	for _, name := range secrets {
+		allow[name] = true
+	}
+	at := make(map[string]int, len(allow))
+	var out []string
+	for _, pair := range env {
+		name, _, ok := strings.Cut(pair, "=")
+		if !ok || !allow[name] {
+			continue
+		}
+		if i, dup := at[name]; dup {
+			out[i] = pair
+			continue
+		}
+		at[name] = len(out)
+		out = append(out, pair)
+	}
+	return out
+}
+
+// agentSocketPath is where this host's ssh agent listens, or "" when it has
+// none. Dropping the variable is most of the answer, but the path is a
+// convention as much as an address, so the socket itself is masked too.
+//
+// A path nothing is listening on answers "" as well, for the same reason the
+// deny mask only masks what exists: a mount needs somewhere to land, and the
+// mechanisms fail the whole wrap rather than skip a mask they cannot make —
+// so an address left over from a dead agent would stop every command in the
+// session instead of hiding a socket that is not there.
+func agentSocketPath() string {
+	path := os.Getenv("SSH_AUTH_SOCK")
+	if path == "" {
+		return ""
+	}
+	// Resolved like every other path here: a link that pointed the mask
+	// somewhere the mechanism spells differently would be a mask that misses,
+	// and resolving is also how a path that is not there answers nothing.
+	resolved, err := resolvePath(path)
+	if err != nil {
+		return ""
+	}
+	return resolved
+}
+
 // resolvePolicy turns a Policy into a mountable spec. Every path has its
 // symlinks resolved before grant/mask decisions so a link cannot smuggle a
 // masked path into a grant; a configuration that cannot be masked faithfully
 // is refused.
 func resolvePolicy(p Policy) (spec, error) {
-	s := spec{shell: shellPath()}
+	s := spec{shell: shellPath(), env: containedEnv(p.Env, p.SecretNames), agentSocket: agentSocketPath()}
 
 	switch p.Profile {
 	case "", ProfileWorkspace:

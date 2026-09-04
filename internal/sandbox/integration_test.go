@@ -170,3 +170,74 @@ func capture(t *testing.T, name string, args ...string) (string, error) {
 	out, err := exec.CommandContext(ctx, name, args...).CombinedOutput()
 	return string(out), err
 }
+
+// The other claim put to the kernel rather than to the argv builder: a
+// contained command's environment is the allowlist and nothing else. A leaked
+// SSH_AUTH_SOCK is a signing oracle — the mask can take the private key off
+// the filesystem and the agent will still sign with it — so what is asserted
+// is that the address is not there, next to the control that shows it would
+// have been.
+//
+// One test per mechanism for the same reason the deny-mask pair is: a skip
+// worth reading by name beats a platform that quietly exercised nothing.
+func TestBubblewrapGivesAContainedCommandOnlyTheAllowedEnvironment(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skipf("bubblewrap is the Linux mechanism and this host is %s", runtime.GOOS)
+	}
+	avail := detectBwrap()
+	if !avail.OK {
+		t.Skipf("no bubblewrap containment here: %s", avail.Detail)
+	}
+	refuseTheInheritedEnvironment(t, avail)
+}
+
+func TestSeatbeltGivesAContainedCommandOnlyTheAllowedEnvironment(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skipf("Seatbelt is the macOS mechanism and this host is %s", runtime.GOOS)
+	}
+	avail := detectSeatbelt()
+	if !avail.OK {
+		t.Skipf("no Seatbelt containment here: %s", avail.Detail)
+	}
+	refuseTheInheritedEnvironment(t, avail)
+}
+
+func refuseTheInheritedEnvironment(t *testing.T, avail Availability) {
+	t.Helper()
+	testHome(t)
+	// A real socket, so the mask over it has somewhere to land and the run
+	// proves both halves: the address is gone and the wrap still starts.
+	sock := writeSocketPath(t)
+	t.Setenv("SSH_AUTH_SOCK", sock)
+	t.Setenv("SHHH_IT_UNNAMED", "inherited")
+	policy, ws := workspacePolicy(t)
+	policy.Cwd = ws
+	policy.Env = append(os.Environ(), "SHHH_IT_DECLARED=named")
+	policy.SecretNames = []string{"SHHH_IT_DECLARED"}
+	const command = "echo sock=[$SSH_AUTH_SOCK] unnamed=[$SHHH_IT_UNNAMED] declared=[$SHHH_IT_DECLARED] path=[$PATH]"
+
+	if out, err := capture(t, shellPath(), "-c", command); err != nil || !strings.Contains(out, "sock=["+sock+"]") {
+		t.Fatalf("the uncontained control must carry the agent address, or this proves nothing: %v: %s", err, out)
+	}
+
+	argv, err := Wrap(avail, policy, command)
+	if err != nil {
+		t.Fatalf("Wrap under %s: %v", avail.Mechanism, err)
+	}
+	out, err := capture(t, argv[0], argv[1:]...)
+	if err != nil {
+		t.Fatalf("the contained echo should run under %s: %v: %s", avail.Mechanism, err, out)
+	}
+	if !strings.Contains(out, "sock=[]") {
+		t.Errorf("the agent socket crossed into containment under %s:\n%s", avail.Mechanism, out)
+	}
+	if !strings.Contains(out, "unnamed=[]") {
+		t.Errorf("a variable nobody named crossed into containment under %s:\n%s", avail.Mechanism, out)
+	}
+	if !strings.Contains(out, "declared=[named]") {
+		t.Errorf("a declared secret must still reach the command under %s:\n%s", avail.Mechanism, out)
+	}
+	if strings.Contains(out, "path=[]") {
+		t.Errorf("a command with no PATH cannot find a program under %s:\n%s", avail.Mechanism, out)
+	}
+}

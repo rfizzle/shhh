@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime"
+	"strings"
 	"time"
 
 	"github.com/rfizzle/shhh/internal/cli/report"
@@ -37,6 +39,16 @@ func sandboxPolicy(cfg config.Config, scopeDirs ...string) (sandbox.Policy, erro
 		Profile:    profile,
 		DenyExtra:  cfg.Sandbox.DenyExtra,
 		WriteExtra: write,
+		// The environment goes in with the paths, from the one place that
+		// builds a policy, because every command path resolves through here:
+		// a sub-agent's command, the quality gate's check and a process
+		// start would each otherwise decide separately what a contained
+		// command may carry, which is how they come to disagree. What a
+		// command gets is the session's own set — the vault's values
+		// included — narrowed by the sandbox's allowlist, and the vault's
+		// names are on that allowlist because the person named them.
+		Env:         runner.Environ(),
+		SecretNames: runner.SessionEnvNames(),
 	}, nil
 }
 
@@ -54,6 +66,40 @@ func sandboxPolicy(cfg config.Config, scopeDirs ...string) (sandbox.Policy, erro
 // act on it rather than accumulated in a file two sessions share.
 func logUnconfined(profile sandbox.Profile) {
 	logs.Logger().Warn("commands run unconfined", "profile", string(profile))
+}
+
+// withRequiredContainment folds --require-sandbox into the resolved config,
+// which is where every command path reads it afterwards: the session's own,
+// a sub-agent's, and the headless approver's. It is the config rather than a
+// value passed down because they are three different builders, and a flag
+// carried to two of them is a flag the third silently ignores.
+//
+// The flag can only turn the setting on. There is no spelling of it that
+// takes containment away, because a machine where nothing wraps a command is
+// not a decision a command line should be able to make quietly.
+func withRequiredContainment(cfg config.Config, flag bool) config.Config {
+	cfg.Sandbox.Require = cfg.Sandbox.Require || flag
+	return cfg
+}
+
+// uncontainedRefusal is what a session that requires containment answers an
+// assistant command with on a host that has none: why nothing is containing
+// it, and the doctor's own fix for this platform. It is the doctor's wording
+// rather than a second one because the reader is being told to go and install
+// something, and two spellings of that instruction are two things to keep
+// true.
+//
+// It reads as a tool result because that is where it lands: the model is the
+// one that asked, and it can say what it was going to do instead.
+// See docs/capabilities/containment.md#containment-can-be-required.
+func uncontainedRefusal(avail sandbox.Availability) string {
+	var b strings.Builder
+	b.WriteString("error: this session requires containment and no mechanism is in force: ")
+	b.WriteString(avail.Detail)
+	for _, line := range doctorSandbox(avail, "", runtime.GOOS).Fix {
+		b.WriteString("\n  " + line)
+	}
+	return b.String()
 }
 
 // buildContainment assembles the containment setup agent sessions run
@@ -91,11 +137,14 @@ func buildContainment(cfg config.Config, sc *scope.Scope, sup *process.Superviso
 		// the approval card says so rather than reporting the profile's
 		// answer, which is not in force.
 		c.Network = true
+		if cfg.Sandbox.Require {
+			c.Refusal = uncontainedRefusal(avail)
+		}
 		logUnconfined(policy.Profile)
 		return c, nil
 	}
 	c.Status = fmt.Sprintf("contained: %s (%s profile)", avail.Mechanism, policy.Profile)
-	c.Mechanism, c.Profile = avail.Mechanism, string(policy.Profile)
+	c.Mechanism, c.Profile, c.Required = avail.Mechanism, string(policy.Profile), cfg.Sandbox.Require
 	c.Network = policy.Profile != sandbox.ProfileWorkspaceNetless
 	wrap := func(command string) ([]string, error) {
 		p, err := policyNow()

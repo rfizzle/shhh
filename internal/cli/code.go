@@ -39,6 +39,7 @@ func newCodeCmd() *cobra.Command {
 	var popts printOpts
 	var addDirs []string
 	var secretFlags []string
+	var requireSandbox bool
 
 	cmd := &cobra.Command{
 		Use:   "code [prompt]",
@@ -67,25 +68,26 @@ func newCodeCmd() *cobra.Command {
 				return fmt.Errorf("--resume needs a chat to open: pass --resume=<name>, or --resume on its own to pick one")
 			}
 			session := chatSession{
-				title:        "shhh code",
-				kind:         "code",
-				buildPrompt:  prompt.BuildAgent,
-				toolDefs:     tools.DefinitionsFull(),
-				flags:        &flags,
-				continueLast: continueLast,
-				resumePick:   resumeChat == resumeFromPicker,
-				resumeName:   resumeNamed(resumeChat),
-				web:          openWebTools(ConfigFrom(cmd.Context())),
-				lsp:          openLSP(ConfigFrom(cmd.Context())),
-				structural:   structural.Detect(),
-				gate:         true,
-				processes:    true,
-				maxRounds:    popts.maxRounds,
-				maxRoundsSet: popts.maxRoundsSet,
-				addDirs:      addDirs,
-				skills:       loadSkills(),
-				secretFlags:  secretFlags,
-				mcp:          true,
+				title:          "shhh code",
+				kind:           "code",
+				buildPrompt:    prompt.BuildAgent,
+				toolDefs:       tools.DefinitionsFull(),
+				flags:          &flags,
+				continueLast:   continueLast,
+				resumePick:     resumeChat == resumeFromPicker,
+				resumeName:     resumeNamed(resumeChat),
+				web:            openWebTools(ConfigFrom(cmd.Context())),
+				lsp:            openLSP(ConfigFrom(cmd.Context())),
+				structural:     structural.Detect(),
+				gate:           true,
+				processes:      true,
+				maxRounds:      popts.maxRounds,
+				maxRoundsSet:   popts.maxRoundsSet,
+				addDirs:        addDirs,
+				skills:         loadSkills(),
+				secretFlags:    secretFlags,
+				mcp:            true,
+				requireSandbox: requireSandbox,
 			}
 			if headless {
 				return runPrintSession(cmd, args, session, popts)
@@ -112,6 +114,7 @@ func newCodeCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&popts.yes, "yes", false, "with --print, auto-approve file edits and commands (safety-flagged commands stay denied)")
 	cmd.Flags().StringArrayVar(&popts.allow, "allow", nil, "with --print, auto-approve commands matching this prefix (repeatable; extends the config allowlist)")
 	cmd.Flags().BoolVar(&popts.sandbox, "sandbox", false, "run approved commands inside a disposable container sandbox; needs a configured digest-pinned image (implies --print)")
+	cmd.Flags().BoolVar(&requireSandbox, "require-sandbox", false, "refuse the assistant's commands outright where no containment mechanism is in force, rather than running them unconfined")
 	cmd.Flags().IntVar(&popts.maxRounds, "max-rounds", 0, "cap consecutive tool-call rounds per turn (0 removes the cap, for a run left unattended; default: behavior.max_tool_rounds)")
 
 	addDirFlag(cmd, &addDirs)

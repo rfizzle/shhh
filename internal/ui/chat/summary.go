@@ -460,6 +460,12 @@ func (m *Model) statusCommand() (string, tea.Cmd) {
 	if sources := m.toolSourceStatus(); sources != "" {
 		text += "\n\n" + sources
 	}
+	// What the session's commands run under, for the same reason: a
+	// terminal with no room for the rail has no room for the card's chip
+	// either, and the answer is the same one (containment.go).
+	if contained := m.containmentStatus(); contained != "" {
+		text += "\n\n" + contained
+	}
 	// And what the checkout was not allowed to put here, for the same
 	// reason: a session is not only what it has, it is also what it is
 	// missing and why (trust.go).

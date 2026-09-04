@@ -46,6 +46,7 @@ func Report(avail Availability, p Policy, running int) string {
 	}
 
 	fmt.Fprintf(&b, "  writable:  %s\n", pathList(s.write))
+	fmt.Fprintf(&b, "  variables: %s\n", envList(s.env))
 	masked := append(append([]string{}, s.denyDirs...), s.denyFiles...)
 	if len(masked) == 0 {
 		b.WriteString("  masked:    (none of the deny-mask paths exist)\n")
@@ -73,6 +74,21 @@ func plural(n int) string {
 		return "1 process"
 	}
 	return fmt.Sprintf("%d processes", n)
+}
+
+// envList names the variables a contained command carries, without their
+// values: the report is read out loud and pasted into issues, and the point
+// of the allowlist is which names crossed rather than what they said.
+func envList(env []string) string {
+	if len(env) == 0 {
+		return "(none)"
+	}
+	names := make([]string, 0, len(env))
+	for _, pair := range env {
+		name, _, _ := strings.Cut(pair, "=")
+		names = append(names, name)
+	}
+	return strings.Join(names, " ")
 }
 
 func pathList(paths []string) string {

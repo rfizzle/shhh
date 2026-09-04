@@ -646,6 +646,11 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// sandboxProfile is the profile the run's commands are actually under,
 	// for the record: empty when nothing contains them.
 	sandboxProfile := ""
+	// containRefusal is the answer every command gets when this run requires
+	// containment and the host has none. A headless run is where the
+	// requirement earns itself: there is nobody watching to notice the
+	// ⚠ UNCONTAINED on a card nobody drew.
+	containRefusal := ""
 	if opts.sandbox {
 		srun, cleanup, err := startSandbox(cmd.Context(), cfg, session.vault.Names())
 		if err != nil {
@@ -690,6 +695,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 			run = containment.Run
 			sandboxProfile = containment.Profile
 		}
+		containRefusal = containment.Refusal
 	}
 	run = scrubRunner(session.vault, run)
 	// The ceiling matters most here. A session has a reader who can cancel a
@@ -792,7 +798,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// and is remembered on its way past: a denial still standing when the
 	// model stops is what says this run was refused rather than finished.
 	verdict := &lastVerdict{}
-	resolve := headlessApprover(cmd.Context(), opts, allowlist, run, red, verdict.wrap(obs.decision),
+	resolve := headlessApprover(cmd.Context(), opts, allowlist, run, containRefusal, red, verdict.wrap(obs.decision),
 		session.web, procSup, lspMutationHook(session.lsp), sc, session.mcpTools)
 	// A headless run has no changeset, so what it wrote is read off the
 	// calls that wrote it. Two readers want that list — the tree check, as
@@ -1191,7 +1197,11 @@ func headlessGate(name string) bool {
 // human to confirm them in a headless run. Approved results run through the
 // reduction pipeline (red is nil-safe) like every other tool result. Each
 // verdict is reported to record (nil-safe) as a content-free decision event.
-func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, run func(context.Context, string) (string, int), red *evidence.Reducer, record func(decision, reason string), webTools *web.Toolset, procSup *process.Supervisor, mutationHook chat.MutationHook, sc *scope.Scope, mcpTools *mcp.Toolset) func(provider.ToolCall) string {
+//
+// containRefusal, when set, is the answer every command gets before policy is
+// consulted at all: a run told to require containment on a host with none has
+// nothing left to decide.
+func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, run func(context.Context, string) (string, int), containRefusal string, red *evidence.Reducer, record func(decision, reason string), webTools *web.Toolset, procSup *process.Supervisor, mutationHook chat.MutationHook, sc *scope.Scope, mcpTools *mcp.Toolset) func(provider.ToolCall) string {
 	note := func(decision, reason string) {
 		if record != nil {
 			record(decision, reason)
@@ -1222,6 +1232,9 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, r
 		// commands are always denied headless; --yes or an allowlist match
 		// opts in.
 		if procSup != nil && tc.Name == process.ToolName {
+			if containRefusal != "" {
+				return containRefusal
+			}
 			_, command, err := process.StartSummary(json.RawMessage(tc.Arguments))
 			if err != nil {
 				return "error: " + err.Error()
@@ -1253,6 +1266,12 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, r
 			return "error: process start not approved: headless mode denies commands by default (run with --yes or --allow)"
 		}
 		if tc.Name == tools.ExecCommandName {
+			// Refused before the approval it would otherwise be given: a run
+			// that requires containment has nothing to approve where none is
+			// in force, and the refusal is the result the model reads.
+			if containRefusal != "" {
+				return containRefusal
+			}
 			var args struct {
 				Command string `json:"command"`
 			}

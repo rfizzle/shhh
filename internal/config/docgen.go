@@ -76,14 +76,18 @@ func quoteDefault(d string) string {
 	return "`" + d + "`"
 }
 
-// decides is the last column: the sentence, and for the five keys with a rank
-// above the file, what outranks it. A reader looking up why a value is not in
-// force is looking at this row.
+// decides is the last column: the sentence, and for the keys with a rank above
+// the file, what outranks it. A reader looking up why a value is not in force
+// is looking at this row, so every combination that names something has a
+// branch — a key with a flag and no variable is still a key the command line
+// answers for, and a row that left that out would send the reader to the file.
 func decides(s Setting) string {
 	out := s.Desc
 	switch {
 	case s.Flag != "" && s.Env != "":
 		out += fmt.Sprintf(" `%s` and `%s` are read ahead of the file.", s.Flag, s.Env)
+	case s.Flag != "":
+		out += fmt.Sprintf(" `%s` is read ahead of the file.", s.Flag)
 	case s.Env != "":
 		out += fmt.Sprintf(" `%s` is read ahead of the file.", s.Env)
 	}

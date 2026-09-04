@@ -24,10 +24,69 @@ type Containment struct {
 	Profile   string
 	Network   bool
 	Detail    string
+	// Required says the session was told to contain the assistant's
+	// commands rather than to prefer it, which is what the chip reports: a
+	// mechanism that is in force and a mechanism that had to be are
+	// different facts about the same session.
+	Required bool
+	// Refusal is why no assistant command may run at all — a session that
+	// requires containment on a host with none. Non-empty is answered
+	// before the card is drawn: there is nothing to decide, so the model
+	// gets this as the call's result and the reader is not asked to approve
+	// something that cannot happen.
+	// See docs/capabilities/containment.md#containment-can-be-required.
+	Refusal string
 	// Manage handles the /sandbox subcommands (doctor, list, status,
 	// destroy, prune) for container sandboxes and returns the text to
 	// show. Nil means container sandbox management is not wired up.
 	Manage func(args []string) string
+}
+
+// containmentRefusal is the refusal an action gets before it is drawn, or ""
+// when this session runs it. It is asked of the actions that run a command —
+// execute_command and a process start, which is the whole of what the
+// requirement is about; /run carries no request here and is never refused.
+func (m Model) containmentRefusal(req *approvalRequest) string {
+	if m.containment.Refusal == "" || req == nil || req.command == "" {
+		return ""
+	}
+	return m.containment.Refusal
+}
+
+// containmentStatus is the containment line `/status` prints: what is
+// containing the assistant's commands, in the words the card's chip uses, or
+// that nothing is and why. A session with no containment wiring says nothing
+// rather than claiming either state.
+func (m Model) containmentStatus() string {
+	if m.containment.Status == "" {
+		return ""
+	}
+	if m.containment.Mechanism == "" {
+		if m.containment.Refusal != "" {
+			// The session was told to require one, so "unconfined" is not
+			// the whole answer: nothing of the assistant's is going to run.
+			return "Containment\nrequired, and none is in force — the assistant's commands are refused\n" +
+				uncontainedDetail(m.containment.Detail)
+		}
+		return "Containment\nunconfined — " + uncontainedDetail(m.containment.Detail)
+	}
+	return "Containment\n" + m.containmentWords(m.containment.Mechanism)
+}
+
+// containmentWords is the mechanism and the profile in one clause, with the
+// requirement in front of it where there is one. It is one function so the
+// chip on a card and the line `/status` prints cannot come to disagree — and
+// it takes the mechanism rather than reading it, because a card names the
+// path that will run its own action rather than the one beside it.
+func (m Model) containmentWords(mechanism string) string {
+	words := mechanism
+	if m.containment.Required {
+		words = "required · " + words
+	}
+	if m.containment.Profile != "" {
+		words += " · " + m.containment.Profile
+	}
+	return words
 }
 
 // WithContainment wires the containment setup into the session.

@@ -189,11 +189,7 @@ func (m Model) containmentChip(mechanism string) (chip string, uncontained bool)
 	if mechanism == "" {
 		return "", true
 	}
-	chip = "⛨ " + mechanism
-	if m.containment.Profile != "" {
-		chip += " · " + m.containment.Profile
-	}
-	return chip, false
+	return "⛨ " + m.containmentWords(mechanism), false
 }
 
 // uncontainedDetail explains the missing mechanism, falling back to a plain

@@ -532,7 +532,8 @@ func childCommandRunner(cfg config.Config, dir string, sc *scope.Scope) func(con
 
 func childCommandRunnerUnbounded(cfg config.Config, dir string, sc *scope.Scope) func(context.Context, string) (string, int) {
 	if _, err := sandboxPolicy(cfg); err == nil {
-		if avail := sandbox.Detect(); avail.OK {
+		avail := sandbox.Detect()
+		if avail.OK {
 			return func(ctx context.Context, command string) (string, int) {
 				// The policy is rebuilt per command so a directory the parent
 				// added mid-session is writable in the child too.
@@ -548,6 +549,15 @@ func childCommandRunnerUnbounded(cfg config.Config, dir string, sc *scope.Scope)
 				}
 				return runner.RunCaptureArgvIn(ctx, dir, command, argv)
 			}
+		}
+		// A child's command is the assistant's, and a child is the one place
+		// with no card to refuse on and nobody to refuse to: a session that
+		// requires containment has to refuse here as well, or the
+		// requirement is one a fan-out walks around.
+		// See docs/capabilities/containment.md#containment-can-be-required.
+		if cfg.Sandbox.Require {
+			refusal := uncontainedRefusal(avail)
+			return func(context.Context, string) (string, int) { return refusal, -1 }
 		}
 	}
 	return func(ctx context.Context, command string) (string, int) {

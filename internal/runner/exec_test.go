@@ -282,3 +282,19 @@ func TestEnvMask_OffInheritsEverything(t *testing.T) {
 		t.Fatalf("out=%q code=%d", out, code)
 	}
 }
+
+// Containment rebuilds a command's environment from an allowlist, and what
+// puts the session's own values on it is that somebody declared them. This is
+// the list of what was declared, which is the only thing the allowlist reads —
+// never the shape of a name.
+func TestSessionEnvNames_AreTheDeclaredOnesInOrder(t *testing.T) {
+	if names := SessionEnvNames(); len(names) != 0 {
+		t.Fatalf("a session that declared nothing names nothing, got %v", names)
+	}
+	SetSessionEnv([]string{"DEPLOY_KEY=one", "REGISTRY_HOST=two"})
+	t.Cleanup(func() { SetSessionEnv(nil) })
+	got := SessionEnvNames()
+	if len(got) != 2 || got[0] != "DEPLOY_KEY" || got[1] != "REGISTRY_HOST" {
+		t.Fatalf("names = %v, want the declared pairs in order", got)
+	}
+}

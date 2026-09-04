@@ -101,6 +101,10 @@ type chatSession struct {
 	// registers neither the tool nor the prompt section. Both `shhh chat`
 	// and `shhh code`, headless included: activation is a read.
 	skills *skill.Catalog
+	// requireSandbox is --require-sandbox: the flag half of sandbox.require,
+	// which it can only turn on. A session that requires containment and has
+	// none refuses the assistant's commands rather than running them bare.
+	requireSandbox bool
 	// secretFlags are the --secret specs; vault is what they and
 	// secrets.env resolved to, opened by openSecrets before anything that
 	// runs a command. Both `shhh chat` and `shhh code`, headless included.
@@ -339,7 +343,11 @@ func (s chatSession) systemPrompt(configExtra string) (text string, projectToken
 }
 
 func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledger) (*sessionEnv, error) {
-	cfg := ConfigFrom(cmd.Context())
+	// --require-sandbox is folded in here rather than where containment is
+	// built, because it is not only containment that reads it: a sub-agent's
+	// command path asks the config too, and a flag that reached one builder
+	// would be a flag the other silently ignored (sandbox.go).
+	cfg := withRequiredContainment(ConfigFrom(cmd.Context()), session.requireSandbox)
 
 	// What the checkout was not allowed to put into this session, said once
 	// before it starts. Both the interactive and the headless session come

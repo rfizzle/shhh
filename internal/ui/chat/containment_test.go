@@ -250,3 +250,130 @@ func TestSandboxSlashCommandDispatchesToManager(t *testing.T) {
 		t.Errorf("manager should have been called 6 times, got %d", len(got))
 	}
 }
+
+// A session told to require containment on a host that has none refuses the
+// assistant's commands, and refuses them before the card: there is nothing to
+// decide when the answer is the same whichever key the reader presses, and
+// the model is the one that has to read what happened.
+func TestRequiredContainmentRefusesWithoutACard(t *testing.T) {
+	const refusal = "error: this session requires containment and no mechanism is in force: " +
+		"bubblewrap (bwrap) not found on PATH\n  sudo apt install bubblewrap"
+	var bare []string
+	m := New([]provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "run it"},
+	}, mockStream).
+		WithRunner(func(ctx context.Context, cmd string) (string, int) {
+			bare = append(bare, cmd)
+			return "bare", 0
+		}).
+		WithContainment(Containment{
+			Status:  "unconfined — bubblewrap (bwrap) not found on PATH",
+			Detail:  "bubblewrap (bwrap) not found on PATH",
+			Network: true,
+			Refusal: refusal,
+		})
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 120, Height: 30})
+	m = updated.(Model)
+	m.state = stateStreaming
+
+	updated, _ = m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"echo hi"}`},
+	}})
+	m = updated.(Model)
+
+	if m.state == stateConfirmRun {
+		t.Fatalf("a refused command must not draw a card:\n%s", m.View().Content)
+	}
+	if len(bare) != 0 {
+		t.Fatalf("nothing may run: %v", bare)
+	}
+	var result string
+	for _, msg := range m.Messages() {
+		if msg.Role == provider.RoleTool {
+			result = msg.Content
+		}
+	}
+	if !strings.Contains(result, "requires containment") {
+		t.Fatalf("the model should read the refusal as the call's result, got %q", result)
+	}
+	// And the fix for this host rides with it: the reader is the one who can
+	// act on it, and the doctor is where that wording lives.
+	if !strings.Contains(result, "sudo apt install bubblewrap") {
+		t.Fatalf("the refusal should carry the doctor's fix, got %q", result)
+	}
+	// And "unconfined" is not the whole answer where a requirement stands:
+	// nothing of the assistant's is going to run at all.
+	if text, _ := m.statusCommand(); !strings.Contains(text, "the assistant's commands are refused") {
+		t.Fatalf("/status should say the commands are refused:\n%s", text)
+	}
+}
+
+// A required session that has its mechanism says so where it is read: the
+// chip on the card, and the same clause in `/status` for a terminal with no
+// room for a card's title rail.
+func TestRequiredContainmentSaysSoOnTheChipAndInStatus(t *testing.T) {
+	var bare, contained []string
+	m := containedModel(t, &bare, &contained, "contained: bwrap (workspace profile)")
+	c := m.containment
+	c.Required = true
+	m = m.WithContainment(c)
+	m = runExecApproval(t, m)
+
+	if view := m.View().Content; !strings.Contains(view, "required · bwrap") {
+		t.Fatalf("the chip should say the containment was required:\n%s", view)
+	}
+	text, _ := m.statusCommand()
+	if !strings.Contains(text, "required · bwrap") {
+		t.Fatalf("/status should say the same:\n%s", text)
+	}
+}
+
+// Without the knob the chip is the mechanism alone, and a session with no
+// containment wiring claims neither state.
+func TestContainmentStatusWithoutTheKnob(t *testing.T) {
+	var bare, contained []string
+	m := containedModel(t, &bare, &contained, "contained: bwrap (workspace profile)")
+	text, _ := m.statusCommand()
+	if strings.Contains(text, "required") {
+		t.Fatalf("/status must not claim a requirement nobody made:\n%s", text)
+	}
+	if !strings.Contains(text, "bwrap · workspace") {
+		t.Fatalf("/status should name the mechanism and the profile:\n%s", text)
+	}
+
+	empty := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream)
+	if text, _ := empty.statusCommand(); strings.Contains(text, "Containment") {
+		t.Fatalf("a session with no containment wiring says nothing:\n%s", text)
+	}
+}
+
+// /run is the user's own command: the requirement is about the assistant's,
+// and a session that refuses those still runs this one.
+func TestRequiredContainmentNeverRefusesTheUsersOwnCommand(t *testing.T) {
+	var bare []string
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
+		WithRunner(func(ctx context.Context, cmd string) (string, int) {
+			bare = append(bare, cmd)
+			return "bare", 0
+		}).
+		WithContainment(Containment{
+			Status:  "unconfined — bubblewrap (bwrap) not found on PATH",
+			Detail:  "bubblewrap (bwrap) not found on PATH",
+			Network: true,
+			Refusal: "error: this session requires containment and no mechanism is in force",
+		})
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 120, Height: 30})
+	m = updated.(Model)
+	m.state = stateConfirmRun
+	m.pendingRun = "echo mine"
+	m.pendingApproval = nil
+	m = handover(t, m)
+
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
+	m = updated.(Model)
+	drainCmdDone(t, m, cmd)
+	if len(bare) != 1 || bare[0] != "echo mine" {
+		t.Fatalf("/run is never contained and never refused, got %v", bare)
+	}
+}

@@ -254,6 +254,24 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 		m.viewport.GotoBottom()
 		return m.advanceApprovalQueue()
 	}
+	// A session that requires containment answers a command here, before
+	// anything is drawn: the card exists to put a decision to the reader, and
+	// there is no decision left when the answer is the same whichever key
+	// they press. The model reads the refusal as the call's result, which is
+	// where it can act on it.
+	if refusal := m.containmentRefusal(req); refusal != "" {
+		m.agent.ResolveApproval(refusal)
+		m.appendEntry(entry{
+			kind: entrySystem,
+			text: "Refused — nothing is containing commands in this session: " + req.summary,
+			// The expansion is what the model was told, verbatim, including
+			// the fix for this host: the reader is the one who can act on it.
+			toolResult: refusal,
+		})
+		m.viewport.SetLines(m.renderHistoryLines())
+		m.viewport.GotoBottom()
+		return m.advanceApprovalQueue()
+	}
 	m.pendingApproval = req
 	if req.kind == approvalExec {
 		m.pendingRun = req.command
