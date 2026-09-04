@@ -1179,6 +1179,47 @@ func TestGolden_StartScreen(t *testing.T) {
 	})
 }
 
+// TestGolden_StartFace captures the face the first-contact screen wears at
+// each width and on either side of the height at which it can afford three
+// rows: the wordmark with the working label's own birth mark trailing off it,
+// and the one-row name in the texture the short pane gets instead.
+//
+// The mono pair is the point of capturing it at all. The face carries no fact
+// the screen does not state under it, so a palette with two greys to spend
+// declines the whole of it — and the mono sheets are where that is visible
+// rather than asserted.
+func TestGolden_StartFace(t *testing.T) {
+	captureGolden(t, "start-face", "the start screen's face", goldenWidths, func(width int) []golden.Panel {
+		screen := func(height int) string {
+			return StartScreen{
+				Height: height,
+				Facts: []StartFact{
+					{Text: "~/src/shhh", Lead: true},
+					{Text: "go 1.24"},
+					{Text: "git main"},
+					{Text: "3 files changed", Tone: ToneOpen},
+					{Text: "41 packages"},
+				},
+				Notes: []StartNote{
+					{Label: "context", Value: "AGENTS.md", Detail: "in the system prompt"},
+					{Label: "gate", Value: "default", Detail: "vet, test · runs without asking"},
+				},
+				Lead: "Some things worth doing first:",
+				Suggestions: []StartSuggestion{
+					{Glyph: "▸", Title: "pick up (last session)", Detail: "7 turns · $0.42 · 4m ago"},
+					{Glyph: "⚙", Title: "explain what changed in the working tree",
+						Detail: "reads only, no writes"},
+				},
+				Hint: "[↑↓] choose · [enter] start · or just type what you want",
+			}.View(width)
+		}
+		return []golden.Panel{
+			{Label: "a pane with rows to spare for a face", View: screen(startFaceHeight)},
+			{Label: "a pane one row short of that", View: screen(startFaceHeight - 1)},
+		}
+	})
+}
+
 // TestGolden_ExitBanner captures the bookend of the first-contact screen
 // : the lines the terminal keeps once the alt screen has taken
 // the session away. The four states are the ones the host can hand it — a

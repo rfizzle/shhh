@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · priced steps · the first option focused
-┌─ Plan · make the round limit recoverable ─────── 4 steps ┐
+┌─ Plan · make the round limit recoverable ╱╱╱╱╱╱─ 4 steps ┐
 │ 1 Locate the round accounting                  read only │
 │   internal/agent/loop.go · internal/agent/round.go       │
 │ 2 Add a RoundsExhausted sentinel        ✎ creates 1 file │
@@ -33,7 +33,7 @@
 └──────────────────────────────────────────────────────────┘
 
 · focus moved · only the focused option explains itself
-┌─ Plan · make the round limit recoverable ─────── 4 steps ┐
+┌─ Plan · make the round limit recoverable ╱╱╱╱╱╱─ 4 steps ┐
 │ 1 Locate the round accounting                  read only │
 │   internal/agent/loop.go · internal/agent/round.go       │
 │ 2 Add a RoundsExhausted sentinel        ✎ creates 1 file │
@@ -55,7 +55,7 @@
 └──────────────────────────────────────────────────────────┘
 
 · a radius worth reading twice
-┌─ Plan · make the round limit recoverable ─────── 4 steps ┐
+┌─ Plan · make the round limit recoverable ╱╱╱╱╱╱─ 4 steps ┐
 │ 1 Locate the round accounting                  read only │
 │   internal/agent/loop.go · internal/agent/round.go       │
 │ 2 Add a RoundsExhausted sentinel        ✎ creates 1 file │
@@ -77,7 +77,7 @@
 └──────────────────────────────────────────────────────────┘
 
 · bounded · the steps it cannot fit are counted
-┌─ Plan · make the round limit recoverable ─────── 4 steps ┐
+┌─ Plan · make the round limit recoverable ╱╱╱╱╱╱─ 4 steps ┐
 │ 1 Locate the round accounting                  read only │
 │   internal/agent/loop.go · internal/agent/round.go       │
 │ 2 Add a RoundsExhausted sentinel        ✎ creates 1 file │
@@ -96,7 +96,7 @@
 └──────────────────────────────────────────────────────────┘
 
 · too short for a single step · says so rather than counting more than none
-┌─ Plan · make the round limit recoverable ─────── 4 steps ┐
+┌─ Plan · make the round limit recoverable ╱╱╱╱╱╱─ 4 steps ┐
 │ … 4 steps, no room to show them                          │
 │                                                          │
 │ 3 files touched · no deletes · no network · reversible   │
@@ -111,7 +111,7 @@
 └──────────────────────────────────────────────────────────┘
 
 · no structure · prose with the same options below it
-┌─ Plan ready ─────────────────────────────────────────────┐
+┌─ Plan ready ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱┐
 │ I'd add a sentinel error to the agent package and retur… │
 │ the round loop, then handle it in the chat model so the… │
 │ offered more rounds instead of the turn simply stopping. │
@@ -127,7 +127,7 @@
 
 ── ansi ────────────────────────────────────────────────────
 · priced steps · the first option focused
-␛[38;5;241m┌─ Plan · make the round limit recoverable ─────── 4 steps ┐␛[m
+␛[38;5;241m┌─ Plan · make the round limit recoverable ␛[m␛[38;5;241m╱╱╱╱╱╱␛[m␛[38;5;241m─ 4 steps ┐␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m1 ␛[m␛[38;5;252mLocate the round accounting␛[m                  ␛[92mread only␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;245m  internal/agent/loop.go · internal/agent/round.go␛[m       ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m2 ␛[m␛[38;5;252mAdd a RoundsExhausted sentinel␛[m        ␛[38;5;252m✎ creates 1 file␛[m ␛[38;5;241m│␛[m
@@ -149,7 +149,7 @@
 ␛[38;5;241m└──────────────────────────────────────────────────────────┘␛[m
 
 · focus moved · only the focused option explains itself
-␛[38;5;241m┌─ Plan · make the round limit recoverable ─────── 4 steps ┐␛[m
+␛[38;5;241m┌─ Plan · make the round limit recoverable ␛[m␛[38;5;241m╱╱╱╱╱╱␛[m␛[38;5;241m─ 4 steps ┐␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m1 ␛[m␛[38;5;252mLocate the round accounting␛[m                  ␛[92mread only␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;245m  internal/agent/loop.go · internal/agent/round.go␛[m       ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m2 ␛[m␛[38;5;252mAdd a RoundsExhausted sentinel␛[m        ␛[38;5;252m✎ creates 1 file␛[m ␛[38;5;241m│␛[m
@@ -171,7 +171,7 @@
 ␛[38;5;241m└──────────────────────────────────────────────────────────┘␛[m
 
 · a radius worth reading twice
-␛[38;5;241m┌─ Plan · make the round limit recoverable ─────── 4 steps ┐␛[m
+␛[38;5;241m┌─ Plan · make the round limit recoverable ␛[m␛[38;5;241m╱╱╱╱╱╱␛[m␛[38;5;241m─ 4 steps ┐␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m1 ␛[m␛[38;5;252mLocate the round accounting␛[m                  ␛[92mread only␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;245m  internal/agent/loop.go · internal/agent/round.go␛[m       ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m2 ␛[m␛[38;5;252mAdd a RoundsExhausted sentinel␛[m        ␛[38;5;252m✎ creates 1 file␛[m ␛[38;5;241m│␛[m
@@ -193,7 +193,7 @@
 ␛[38;5;241m└──────────────────────────────────────────────────────────┘␛[m
 
 · bounded · the steps it cannot fit are counted
-␛[38;5;241m┌─ Plan · make the round limit recoverable ─────── 4 steps ┐␛[m
+␛[38;5;241m┌─ Plan · make the round limit recoverable ␛[m␛[38;5;241m╱╱╱╱╱╱␛[m␛[38;5;241m─ 4 steps ┐␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m1 ␛[m␛[38;5;252mLocate the round accounting␛[m                  ␛[92mread only␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;245m  internal/agent/loop.go · internal/agent/round.go␛[m       ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m2 ␛[m␛[38;5;252mAdd a RoundsExhausted sentinel␛[m        ␛[38;5;252m✎ creates 1 file␛[m ␛[38;5;241m│␛[m
@@ -212,7 +212,7 @@
 ␛[38;5;241m└──────────────────────────────────────────────────────────┘␛[m
 
 · too short for a single step · says so rather than counting more than none
-␛[38;5;241m┌─ Plan · make the round limit recoverable ─────── 4 steps ┐␛[m
+␛[38;5;241m┌─ Plan · make the round limit recoverable ␛[m␛[38;5;241m╱╱╱╱╱╱␛[m␛[38;5;241m─ 4 steps ┐␛[m
 ␛[38;5;241m│␛[m ␛[3;38;5;241m… 4 steps, no room to show them␛[m                          ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m                                                          ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;252m3 files touched␛[m␛[38;5;241m · ␛[m␛[92mno deletes␛[m␛[38;5;241m · ␛[m␛[92mno network␛[m␛[38;5;241m · ␛[m␛[92mreversible␛[m   ␛[38;5;241m│␛[m
@@ -227,7 +227,7 @@
 ␛[38;5;241m└──────────────────────────────────────────────────────────┘␛[m
 
 · no structure · prose with the same options below it
-␛[38;5;241m┌─ Plan ready ─────────────────────────────────────────────┐␛[m
+␛[38;5;241m┌─ Plan ready ␛[m␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m␛[38;5;241m┐␛[m
 ␛[38;5;241m│␛[m ␛[38;5;252mI'd add a sentinel error to the agent package and retur…␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;252mthe round loop, then handle it in the chat model so the…␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;252moffered more rounds instead of the turn simply stopping.␛[m ␛[38;5;241m│␛[m

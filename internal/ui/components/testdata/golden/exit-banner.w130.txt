@@ -15,24 +15,34 @@ session  (last session) · 12 turns
 spent    $0.42
 resume   shhh code --continue
 
+that is everything the screen was holding
+
 · unpriced · tokens, never a made-up zero
 session  (last session) · 12 turns
 spent    ~48.1k tok
 resume   shhh code --continue
 
+that is everything the screen was holding
+
 · nothing spent · the row goes rather than reading $0.00
 session  (last session) · 1 turn
 resume   shhh code --continue
+
+that is everything the screen was holding
 
 · a long name · the count drops before the name clips
 session  refactor-the-round-accounting-and-its-checkpoints · 12 turns
 spent    $0.42
 resume   shhh code --continue
 
+that is everything the screen was holding
+
 · nothing could be saved · no slot named, no command offered
 session  12 turns
 spent    $0.42
 resume   not saved · chat persistence was unavailable
+
+that is everything the screen was holding
 
 ── ansi ────────────────────────────────────────────────────
 · the ordinary exit · the slot, the sitting, the way back
@@ -40,21 +50,31 @@ resume   not saved · chat persistence was unavailable
 ␛[38;5;241mspent  ␛[m  ␛[38;5;252m$0.42␛[m
 ␛[38;5;241mresume ␛[m  ␛[1;97mshhh code --continue␛[m
 
+␛[38;5;241mthat is everything the screen was holding␛[m
+
 · unpriced · tokens, never a made-up zero
 ␛[38;5;241msession␛[m  ␛[38;5;252m(last session) · 12 turns␛[m
 ␛[38;5;241mspent  ␛[m  ␛[38;5;252m~48.1k tok␛[m
 ␛[38;5;241mresume ␛[m  ␛[1;97mshhh code --continue␛[m
 
+␛[38;5;241mthat is everything the screen was holding␛[m
+
 · nothing spent · the row goes rather than reading $0.00
 ␛[38;5;241msession␛[m  ␛[38;5;252m(last session) · 1 turn␛[m
 ␛[38;5;241mresume ␛[m  ␛[1;97mshhh code --continue␛[m
+
+␛[38;5;241mthat is everything the screen was holding␛[m
 
 · a long name · the count drops before the name clips
 ␛[38;5;241msession␛[m  ␛[38;5;252mrefactor-the-round-accounting-and-its-checkpoints · 12 turns␛[m
 ␛[38;5;241mspent  ␛[m  ␛[38;5;252m$0.42␛[m
 ␛[38;5;241mresume ␛[m  ␛[1;97mshhh code --continue␛[m
 
+␛[38;5;241mthat is everything the screen was holding␛[m
+
 · nothing could be saved · no slot named, no command offered
 ␛[38;5;241msession␛[m  ␛[38;5;252m12 turns␛[m
 ␛[38;5;241mspent  ␛[m  ␛[38;5;252m$0.42␛[m
 ␛[38;5;241mresume ␛[m  ␛[38;5;241mnot saved · chat persistence was unavailable␛[m
+
+␛[38;5;241mthat is everything the screen was holding␛[m

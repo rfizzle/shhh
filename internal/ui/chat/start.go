@@ -164,6 +164,10 @@ func (m Model) renderStartScreen(width int) string {
 		// navigation line, whose keys are still live.
 		screen.Suggestions, screen.Lead, screen.Hint = nil, "", ""
 	}
+	// The pane's rows, not the terminal's: the screen wears a face only where
+	// there are rows to spare after the offers, and the offers are laid out
+	// inside this pane rather than inside the window around it.
+	screen.Height = m.viewportHeight()
 	return screen.View(width)
 }
 

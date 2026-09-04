@@ -12,9 +12,9 @@
 ── layout ──────────────────────────────────────────────────
 · the question · what was asked, what came back, and what it exited
 shhh rate · 1 of 5                       [?] keys · [q] quit
-────────────────────────────────────────────────────────────
+╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
 
-┌─ 4m ago ─────────────────────────────────────────────────┐
+┌─ 4m ago ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱┐
 │ delete every log file older than a week                  │
 │                                                          │
 │   ▎$ run     find . -name '*.log' -mtime    exit 0       │
@@ -25,9 +25,9 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
 
 · answered · the next card already, and this one never ran at all
 shhh rate · 2 of 5                       [?] keys · [q] quit
-────────────────────────────────────────────────────────────
+╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
 
-┌─ yesterday ──────────────────────────────────────────────┐
+┌─ yesterday ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱┐
 │ show the ten biggest files here                          │
 │                                                          │
 │   ▎$ run     du -ah . | sort -rh | head     copied       │
@@ -38,9 +38,9 @@ shhh rate · 2 of 5                       [?] keys · [q] quit
 
 · a long command · continued under its own row, never clipped away
 shhh rate · 4 of 5                       [?] keys · [q] quit
-────────────────────────────────────────────────────────────
+╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
 
-┌─ mon ────────────────────────────────────────────────────┐
+┌─ mon ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱┐
 │ find every reference to ErrRoundLimit under internal and │
 │ sort them                                                │
 │                                                          │
@@ -54,9 +54,9 @@ shhh rate · 4 of 5                       [?] keys · [q] quit
 
 · a session · the same card over an agent run, and no rail on a good one
 shhh rate · 5 of 5                       [?] keys · [q] quit
-────────────────────────────────────────────────────────────
+╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
 
-┌─ mon ────────────────────────────────────────────────────┐
+┌─ mon ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱┐
 │ get the observe dashboard to show the gate pass rate     │
 │                                                          │
 │    ◇ agent   2026-09-01T18-02 · chat ·   completed       │
@@ -67,9 +67,9 @@ shhh rate · 5 of 5                       [?] keys · [q] quit
 
 · a session that was given up on · the rail and the glyph every broken row takes
 shhh rate · 5 of 5                       [?] keys · [q] quit
-────────────────────────────────────────────────────────────
+╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
 
-┌─ mon ────────────────────────────────────────────────────┐
+┌─ mon ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱┐
 │ get the observe dashboard to show the gate pass rate     │
 │                                                          │
 │   ▎⊘ agent   2026-09-01T18-02 · chat ·   abandoned       │
@@ -80,9 +80,9 @@ shhh rate · 5 of 5                       [?] keys · [q] quit
 
 · a short terminal · the card folds behind a counted tail
 shhh rate · 4 of 5                       [?] keys · [q] quit
-────────────────────────────────────────────────────────────
+╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
 
-┌─ mon ────────────────────────────────────────────────────┐
+┌─ mon ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱┐
 │ find every reference to ErrRoundLimit under internal and │
 │ sort them                                                │
 │ … (+5 more rows)                                         │
@@ -92,9 +92,9 @@ shhh rate · 4 of 5                       [?] keys · [q] quit
 
 · a write that failed · the notice, and the entry left unrated
 shhh rate · 3 of 5                       [?] keys · [q] quit
-────────────────────────────────────────────────────────────
+╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
 
-┌─ tue ────────────────────────────────────────────────────┐
+┌─ tue ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱┐
 │ rebase onto main and force push                          │
 │                                                          │
 │   ▎✗ run     git rebase main && git push  exit 128       │
@@ -106,7 +106,7 @@ rate: database is locked
 
 · nothing left to answer · the three answers are gone from the row
 shhh rate · 5 asked                      [?] keys · [q] quit
-────────────────────────────────────────────────────────────
+╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
 
 every one of them has been asked about
 
@@ -114,9 +114,9 @@ every one of them has been asked about
 
 · [?] · every key the screen has
 shhh rate · 1 of 5                       [?] keys · [q] quit
-────────────────────────────────────────────────────────────
+╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
 
-┌─ 4m ago ─────────────────────────────────────────────────┐
+┌─ 4m ago ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱┐
 │ delete every log file older than a week                  │
 │                                                          │
 │   ▎$ run     find . -name '*.log' -mtime    exit 0       │
@@ -133,9 +133,9 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
 ── ansi ────────────────────────────────────────────────────
 · the question · what was asked, what came back, and what it exited
 ␛[1;97mshhh rate␛[m␛[38;5;241m · 1 of 5␛[m                       ␛[38;5;241m[?] keys · [q] quit␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
+␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
 
-␛[38;5;241m┌─ 4m ago ─────────────────────────────────────────────────┐␛[m
+␛[38;5;241m┌─ 4m ago ␛[m␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m␛[38;5;241m┐␛[m
 ␛[38;5;241m│␛[m ␛[38;5;252mdelete every log file older than a week␛[m                  ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m                                                          ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m run     ␛[38;5;241mfind . -name '*.log' -mtime␛[m    ␛[38;5;241mexit 0␛[m       ␛[38;5;241m│␛[m
@@ -146,9 +146,9 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
 
 · answered · the next card already, and this one never ran at all
 ␛[1;97mshhh rate␛[m␛[38;5;241m · 2 of 5␛[m                       ␛[38;5;241m[?] keys · [q] quit␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
+␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
 
-␛[38;5;241m┌─ yesterday ──────────────────────────────────────────────┐␛[m
+␛[38;5;241m┌─ yesterday ␛[m␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m␛[38;5;241m┐␛[m
 ␛[38;5;241m│␛[m ␛[38;5;252mshow the ten biggest files here␛[m                          ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m                                                          ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m run     ␛[38;5;241mdu -ah . | sort -rh | head␛[m     ␛[38;5;241mcopied␛[m       ␛[38;5;241m│␛[m
@@ -159,9 +159,9 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
 
 · a long command · continued under its own row, never clipped away
 ␛[1;97mshhh rate␛[m␛[38;5;241m · 4 of 5␛[m                       ␛[38;5;241m[?] keys · [q] quit␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
+␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
 
-␛[38;5;241m┌─ mon ────────────────────────────────────────────────────┐␛[m
+␛[38;5;241m┌─ mon ␛[m␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m␛[38;5;241m┐␛[m
 ␛[38;5;241m│␛[m ␛[38;5;252mfind every reference to ErrRoundLimit under internal and␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;252msort them␛[m                                                ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m                                                          ␛[38;5;241m│␛[m
@@ -175,9 +175,9 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
 
 · a session · the same card over an agent run, and no rail on a good one
 ␛[1;97mshhh rate␛[m␛[38;5;241m · 5 of 5␛[m                       ␛[38;5;241m[?] keys · [q] quit␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
+␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
 
-␛[38;5;241m┌─ mon ────────────────────────────────────────────────────┐␛[m
+␛[38;5;241m┌─ mon ␛[m␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m␛[38;5;241m┐␛[m
 ␛[38;5;241m│␛[m ␛[38;5;252mget the observe dashboard to show the gate pass rate␛[m     ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m                                                          ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m    ␛[94m◇␛[m agent   ␛[38;5;241m2026-09-01T18-02 · chat ·␛[m   ␛[38;5;241mcompleted␛[m       ␛[38;5;241m│␛[m
@@ -188,9 +188,9 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
 
 · a session that was given up on · the rail and the glyph every broken row takes
 ␛[1;97mshhh rate␛[m␛[38;5;241m · 5 of 5␛[m                       ␛[38;5;241m[?] keys · [q] quit␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
+␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
 
-␛[38;5;241m┌─ mon ────────────────────────────────────────────────────┐␛[m
+␛[38;5;241m┌─ mon ␛[m␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m␛[38;5;241m┐␛[m
 ␛[38;5;241m│␛[m ␛[38;5;252mget the observe dashboard to show the gate pass rate␛[m     ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m                                                          ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;214m▎␛[m␛[38;5;241m⊘␛[m agent   ␛[38;5;241m2026-09-01T18-02 · chat ·␛[m   ␛[38;5;241mabandoned␛[m       ␛[38;5;241m│␛[m
@@ -201,9 +201,9 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
 
 · a short terminal · the card folds behind a counted tail
 ␛[1;97mshhh rate␛[m␛[38;5;241m · 4 of 5␛[m                       ␛[38;5;241m[?] keys · [q] quit␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
+␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
 
-␛[38;5;241m┌─ mon ────────────────────────────────────────────────────┐␛[m
+␛[38;5;241m┌─ mon ␛[m␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m␛[38;5;241m┐␛[m
 ␛[38;5;241m│␛[m ␛[38;5;252mfind every reference to ErrRoundLimit under internal and␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;252msort them␛[m                                                ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[3;38;5;241m… (+5 more rows)␛[m                                         ␛[38;5;241m│␛[m
@@ -213,9 +213,9 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
 
 · a write that failed · the notice, and the entry left unrated
 ␛[1;97mshhh rate␛[m␛[38;5;241m · 3 of 5␛[m                       ␛[38;5;241m[?] keys · [q] quit␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
+␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
 
-␛[38;5;241m┌─ tue ────────────────────────────────────────────────────┐␛[m
+␛[38;5;241m┌─ tue ␛[m␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m␛[38;5;241m┐␛[m
 ␛[38;5;241m│␛[m ␛[38;5;252mrebase onto main and force push␛[m                          ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m                                                          ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[91m▎␛[m␛[91m✗␛[m run     ␛[38;5;241mgit rebase main && git push␛[m  ␛[91mexit 128␛[m       ␛[38;5;241m│␛[m
@@ -227,7 +227,7 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
 
 · nothing left to answer · the three answers are gone from the row
 ␛[1;97mshhh rate␛[m␛[38;5;241m · 5 asked␛[m                      ␛[38;5;241m[?] keys · [q] quit␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
+␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
 
 ␛[38;5;241mevery one of them has been asked about␛[m
 
@@ -235,9 +235,9 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
 
 · [?] · every key the screen has
 ␛[1;97mshhh rate␛[m␛[38;5;241m · 1 of 5␛[m                       ␛[38;5;241m[?] keys · [q] quit␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
+␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
 
-␛[38;5;241m┌─ 4m ago ─────────────────────────────────────────────────┐␛[m
+␛[38;5;241m┌─ 4m ago ␛[m␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m␛[38;5;241m┐␛[m
 ␛[38;5;241m│␛[m ␛[38;5;252mdelete every log file older than a week␛[m                  ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m                                                          ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m run     ␛[38;5;241mfind . -name '*.log' -mtime␛[m    ␛[38;5;241mexit 0␛[m       ␛[38;5;241m│␛[m

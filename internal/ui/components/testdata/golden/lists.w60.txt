@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · the head · the price rides the row, the unusable row says why
-┌─ Switch model ───────────────── 24 available · 7 showing ┐
+┌─ Switch model ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱─ 24 available · 7 showing ┐
 │ ❯  1. gpt-5.2            current default     $1.25 / $10 │
 │    2. gpt-5.2-mini                            $0.25 / $2 │
 │    3. gpt-5.1                                            │
@@ -24,7 +24,7 @@
 └──────────────────────────────────────────────────────────┘
 
 · the filter just opened · the row names what the key was for
-┌─ Switch model ───────────────── 24 available · 6 showing ┐
+┌─ Switch model ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱─ 24 available · 6 showing ┐
 │ ▸ █ type to filter                        24 of 24 match │
 │ ❯  1. gpt-5.2            current default     $1.25 / $10 │
 │    2. gpt-5.2-mini                            $0.25 / $2 │
@@ -37,7 +37,7 @@
 └──────────────────────────────────────────────────────────┘
 
 · mid-list from above · the option sits at the foot of the window
-┌─ Switch model ───────────────── 24 available · 6 showing ┐
+┌─ Switch model ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱─ 24 available · 6 showing ┐
 │ ↑ 7 more                                                 │
 │    8. claude-sonnet-4.5                         $3 / $15 │
 │    9. claude-haiku-4.5   fastest                 $1 / $5 │
@@ -50,7 +50,7 @@
 └──────────────────────────────────────────────────────────┘
 
 · the same option from below · it sits at the head instead
-┌─ Switch model ───────────────── 24 available · 6 showing ┐
+┌─ Switch model ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱─ 24 available · 6 showing ┐
 │ ↑ 12 more                                                │
 │ ❯ 13. ⊘ deepseek-r2      no tool use     not usable here │
 │   14. deepseek-v4                                        │
@@ -63,7 +63,7 @@
 └──────────────────────────────────────────────────────────┘
 
 · the tail · nothing is hidden below it
-┌─ Switch model ───────────────── 24 available · 7 showing ┐
+┌─ Switch model ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱─ 24 available · 7 showing ┐
 │ ↑ 17 more                                                │
 │   18. mistral-large-3                                    │
 │   19. phi-5-mini                                         │
@@ -76,7 +76,7 @@
 └──────────────────────────────────────────────────────────┘
 
 · filtered · the run is bold, the row states both counts
-┌─ Switch model ───────────────────────────── 24 available ┐
+┌─ Switch model ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱─ 24 available ┐
 │ ▸ mini█                                    6 of 24 match │
 │ ❯ 1. gpt-5.2-mini                             $0.25 / $2 │
 │   2. gpt-5.1-mini                                        │
@@ -88,7 +88,7 @@
 └──────────────────────────────────────────────────────────┘
 
 · no match · a row, not an empty pane
-┌─ Switch model ───────────────────────────── 24 available ┐
+┌─ Switch model ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱─ 24 available ┐
 │ ▸ sonnet-5█                                0 of 24 match │
 │   no match for "sonnet-5"                                │
 │   closest is claude-sonnet-4.6                           │
@@ -97,7 +97,7 @@
 
 ── ansi ────────────────────────────────────────────────────
 · the head · the price rides the row, the unusable row says why
-␛[38;5;241m┌─ Switch model ───────────────── 24 available · 7 showing ┐␛[m
+␛[38;5;241m┌─ Switch model ␛[m␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m␛[38;5;241m─ 24 available · 7 showing ┐␛[m
 ␛[38;5;241m│␛[m ␛[1;48;5;62m❯  1. gpt-5.2            current default     $1.25 / $10␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m    2. gpt-5.2-mini                            ␛[38;5;252m$0.25 / $2␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m    3. gpt-5.1                                            ␛[38;5;241m│␛[m
@@ -110,7 +110,7 @@
 ␛[38;5;241m└──────────────────────────────────────────────────────────┘␛[m
 
 · the filter just opened · the row names what the key was for
-␛[38;5;241m┌─ Switch model ───────────────── 24 available · 6 showing ┐␛[m
+␛[38;5;241m┌─ Switch model ␛[m␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m␛[38;5;241m─ 24 available · 6 showing ┐␛[m
 ␛[38;5;241m│␛[m ␛[94m▸ ␛[m␛[97m█␛[m␛[38;5;241m type to filter␛[m                        ␛[38;5;241m24 of 24 match␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[1;48;5;62m❯  1. gpt-5.2            current default     $1.25 / $10␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m    2. gpt-5.2-mini                            ␛[38;5;252m$0.25 / $2␛[m ␛[38;5;241m│␛[m
@@ -123,7 +123,7 @@
 ␛[38;5;241m└──────────────────────────────────────────────────────────┘␛[m
 
 · mid-list from above · the option sits at the foot of the window
-␛[38;5;241m┌─ Switch model ───────────────── 24 available · 6 showing ┐␛[m
+␛[38;5;241m┌─ Switch model ␛[m␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m␛[38;5;241m─ 24 available · 6 showing ┐␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m↑ 7 more␛[m                                                 ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m    8. claude-sonnet-4.5                         ␛[38;5;252m$3 / $15␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m    9. claude-haiku-4.5   ␛[38;5;241mfastest␛[m                 ␛[38;5;252m$1 / $5␛[m ␛[38;5;241m│␛[m
@@ -136,7 +136,7 @@
 ␛[38;5;241m└──────────────────────────────────────────────────────────┘␛[m
 
 · the same option from below · it sits at the head instead
-␛[38;5;241m┌─ Switch model ───────────────── 24 available · 6 showing ┐␛[m
+␛[38;5;241m┌─ Switch model ␛[m␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m␛[38;5;241m─ 24 available · 6 showing ┐␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m↑ 12 more␛[m                                                ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[1;48;5;62m❯ 13. ⊘ deepseek-r2      no tool use     not usable here␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   14. deepseek-v4                                        ␛[38;5;241m│␛[m
@@ -149,7 +149,7 @@
 ␛[38;5;241m└──────────────────────────────────────────────────────────┘␛[m
 
 · the tail · nothing is hidden below it
-␛[38;5;241m┌─ Switch model ───────────────── 24 available · 7 showing ┐␛[m
+␛[38;5;241m┌─ Switch model ␛[m␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m␛[38;5;241m─ 24 available · 7 showing ┐␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m↑ 17 more␛[m                                                ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   18. mistral-large-3                                    ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   19. phi-5-mini                                         ␛[38;5;241m│␛[m
@@ -162,7 +162,7 @@
 ␛[38;5;241m└──────────────────────────────────────────────────────────┘␛[m
 
 · filtered · the run is bold, the row states both counts
-␛[38;5;241m┌─ Switch model ───────────────────────────── 24 available ┐␛[m
+␛[38;5;241m┌─ Switch model ␛[m␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m␛[38;5;241m─ 24 available ┐␛[m
 ␛[38;5;241m│␛[m ␛[94m▸ ␛[m␛[97mmini█␛[m                                    ␛[38;5;241m6 of 24 match␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[1;48;5;62m❯ 1. gpt-5.2-mini                             $0.25 / $2␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   2. gpt-5.1-␛[1mmini␛[m                                        ␛[38;5;241m│␛[m
@@ -174,7 +174,7 @@
 ␛[38;5;241m└──────────────────────────────────────────────────────────┘␛[m
 
 · no match · a row, not an empty pane
-␛[38;5;241m┌─ Switch model ───────────────────────────── 24 available ┐␛[m
+␛[38;5;241m┌─ Switch model ␛[m␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m␛[38;5;241m─ 24 available ┐␛[m
 ␛[38;5;241m│␛[m ␛[94m▸ ␛[m␛[97msonnet-5█␛[m                                ␛[38;5;241m0 of 24 match␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m  no match for "sonnet-5"␛[m                                ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m  closest is claude-sonnet-4.6␛[m                           ␛[38;5;241m│␛[m

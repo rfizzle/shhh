@@ -12,7 +12,7 @@
 ── layout ──────────────────────────────────────────────────
 · the surface · the table, the spend split, and the ratios under it
 shhh metrics · last 30 days · 251 requests · 4 models                                        $18.42 · [q] quit
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
 
   MODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT   P95  TOK · 7d
   gpt-5.2                 184   2.9M   318k  $12.80  640ms  1.4s  ▃▄▄▅▆▅█
@@ -37,7 +37,7 @@ shhh metrics · last 30 days · 251 requests · 4 models                        
 
 · nothing priced · the split is over tokens and says so
 shhh metrics · last 30 days · 251 requests · 4 models                                                 [q] quit
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
 
   MODEL              REQUESTS  ↑ TOK  ↓ TOK  SPEND   TTFT   P95  TOK · 7d
   gpt-5.2                 184   2.9M   318k      —  640ms  1.4s  ▃▄▄▅▆▅█
@@ -62,7 +62,7 @@ shhh metrics · last 30 days · 251 requests · 4 models                        
 
 · a short terminal · what fits is drawn, what went is named
 shhh metrics · last 30 days · 251 requests · 4 models                                        $18.42 · [q] quit
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
 
   MODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT   P95  TOK · 7d
   gpt-5.2                 184   2.9M   318k  $12.80  640ms  1.4s  ▃▄▄▅▆▅█
@@ -79,7 +79,7 @@ shhh metrics · last 30 days · 251 requests · 4 models                        
 
 · a shorter one · the table windows last and says what it holds back
 shhh metrics · last 30 days · 251 requests · 4 models                                        $18.42 · [q] quit
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
 
   MODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT   P95  TOK · 7d
   gpt-5.2                 184   2.9M   318k  $12.80  640ms  1.4s  ▃▄▄▅▆▅█
@@ -88,7 +88,7 @@ shhh metrics · last 30 days · 251 requests · 4 models                        
 
 · nothing recorded · a heading over nothing says so
 shhh metrics · all time · 0 requests · 0 models                                                       [q] quit
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
 
   MODEL  REQUESTS  ↑ TOK  ↓ TOK  SPEND  TTFT  P95  TOK · 7d
   no models to show
@@ -96,7 +96,7 @@ shhh metrics · all time · 0 requests · 0 models                              
 ── ansi ────────────────────────────────────────────────────
 · the surface · the table, the spend split, and the ratios under it
 ␛[1;97mshhh metrics␛[m␛[38;5;241m · last 30 days · 251 requests · 4 models␛[m                                        ␛[38;5;252m$18.42␛[m␛[38;5;241m · [q] quit␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
 
   ␛[1;94mMODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT   P95  TOK · 7d␛[m
   ␛[38;5;252mgpt-5.2                 184   2.9M   318k  $12.80  640ms  1.4s␛[m  ␛[38;5;245m▃▄▄▅▆▅█␛[m
@@ -121,7 +121,7 @@ shhh metrics · all time · 0 requests · 0 models                              
 
 · nothing priced · the split is over tokens and says so
 ␛[1;97mshhh metrics␛[m␛[38;5;241m · last 30 days · 251 requests · 4 models␛[m                                                 ␛[38;5;241m[q] quit␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
 
   ␛[1;94mMODEL              REQUESTS  ↑ TOK  ↓ TOK  SPEND   TTFT   P95  TOK · 7d␛[m
   ␛[38;5;252mgpt-5.2                 184   2.9M   318k      —  640ms  1.4s␛[m  ␛[38;5;245m▃▄▄▅▆▅█␛[m
@@ -146,7 +146,7 @@ shhh metrics · all time · 0 requests · 0 models                              
 
 · a short terminal · what fits is drawn, what went is named
 ␛[1;97mshhh metrics␛[m␛[38;5;241m · last 30 days · 251 requests · 4 models␛[m                                        ␛[38;5;252m$18.42␛[m␛[38;5;241m · [q] quit␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
 
   ␛[1;94mMODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT   P95  TOK · 7d␛[m
   ␛[38;5;252mgpt-5.2                 184   2.9M   318k  $12.80  640ms  1.4s␛[m  ␛[38;5;245m▃▄▄▅▆▅█␛[m
@@ -163,7 +163,7 @@ shhh metrics · all time · 0 requests · 0 models                              
 
 · a shorter one · the table windows last and says what it holds back
 ␛[1;97mshhh metrics␛[m␛[38;5;241m · last 30 days · 251 requests · 4 models␛[m                                        ␛[38;5;252m$18.42␛[m␛[38;5;241m · [q] quit␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
 
   ␛[1;94mMODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT   P95  TOK · 7d␛[m
   ␛[38;5;252mgpt-5.2                 184   2.9M   318k  $12.80  640ms  1.4s␛[m  ␛[38;5;245m▃▄▄▅▆▅█␛[m
@@ -172,7 +172,7 @@ shhh metrics · all time · 0 requests · 0 models                              
 
 · nothing recorded · a heading over nothing says so
 ␛[1;97mshhh metrics␛[m␛[38;5;241m · all time · 0 requests · 0 models␛[m                                                       ␛[38;5;241m[q] quit␛[m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
 
   ␛[1;94mMODEL  REQUESTS  ↑ TOK  ↓ TOK  SPEND  TTFT  P95  TOK · 7d␛[m
   ␛[38;5;241mno models to show␛[m

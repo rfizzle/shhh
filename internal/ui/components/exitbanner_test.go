@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/charmbracelet/colorprofile"
 	"github.com/charmbracelet/x/ansi"
 )
 
@@ -41,6 +42,9 @@ func TestExitBanner_NothingSaidPrintsNothing(t *testing.T) {
 // The three rows and what each carries: the slot and its size, what the
 // sitting cost, and the command that reopens it.
 func TestExitBanner_SaysWhatTheScreenTookWithIt(t *testing.T) {
+	// A redirected stream, which is what a test binary writes to anyway: the
+	// grid on its own, with no parting line under it.
+	withColorProfile(t, colorprofile.NoTTY)
 	got := plainBanner(fullBanner(), 80)
 	want := "session  (last session) · 12 turns\n" +
 		"spent    $0.42\n" +
@@ -142,5 +146,30 @@ func TestExitBanner_TitleRidesBesideTheSlotAndDropsBeforeIt(t *testing.T) {
 	}
 	if got := b.sessionLine(24); got != "2026-08-31 14:02:11" {
 		t.Fatalf("the title drops before the slot, got %q", got)
+	}
+}
+
+// The parting line is for a person, so it is drawn only where there is one to
+// read it. A redirected stream is a capture or a script, and a line of voice
+// in a capture is a line the next reader parses past to reach the facts.
+func TestExitBanner_ThePartingLineIsForSomebodyWatching(t *testing.T) {
+	withColorProfile(t, colorprofile.NoTTY)
+	if got := plainBanner(fullBanner(), 80); strings.Contains(got, partingWords) {
+		t.Fatalf("a redirected stream should get the facts alone, got %q", got)
+	}
+
+	withColorProfile(t, colorprofile.ANSI256)
+	got := plainBanner(fullBanner(), 80)
+	rows := strings.Split(got, "\n")
+	if n := len(rows); n != 5 || rows[3] != "" || rows[4] != partingWords {
+		t.Fatalf("the parting line should be the last row, under a blank: %q", got)
+	}
+
+	// It is words, so a terminal with no colour keeps every one of them.
+	was := Mono()
+	t.Cleanup(func() { SetMono(was) })
+	SetMono(true)
+	if mono := plainBanner(fullBanner(), 80); mono != got {
+		t.Fatalf("mono banner =\n%q\nwant\n%q", mono, got)
 	}
 }

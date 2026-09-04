@@ -69,6 +69,11 @@ type StartScreen struct {
 	// work with a half-written draft in the box, which is the whole point of
 	// them.
 	Nav string
+	// Height is how many rows the pane this is drawn in has, which decides
+	// how much of a face the screen wears. Zero is a host that has not said —
+	// a bare model, a test — and it gets the screen with no face at all
+	// rather than a guess about a terminal nobody measured.
+	Height int
 }
 
 // suggestionGutter is the two columns the ❯ pointer occupies. Focus is a
@@ -81,7 +86,7 @@ func (s StartScreen) View(width int) string {
 	if width <= 0 {
 		return ""
 	}
-	var rows []string
+	rows := s.faceRows(width)
 	if line := s.factLine(width); line != "" {
 		rows = append(rows, line)
 	}
@@ -107,6 +112,136 @@ func (s StartScreen) View(width int) string {
 	}
 	return strings.Join(rows, "\n")
 }
+
+// The product's name as this screen wears it
+// (docs/interface/surfaces.md#the-start-screen). The letters are drawn from
+// the half blocks rather than from a font, because a font is a dependency and
+// four letters are three rows of table:
+//
+//	▄▀▀▀ █    █    █
+//	 ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄
+//	▄▄▄▀ █  █ █  █ █  █
+//
+// The rows are one string each rather than a per-letter table for the same
+// reason the anim's frames are prerendered: there is one word to draw and it
+// never changes, so a letterform table would be machinery in front of a
+// constant.
+var startWordmark = [3]string{
+	"▄▀▀▀ █    █    █",
+	" ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄",
+	"▄▄▄▀ █  █ █  █ █  █",
+}
+
+// startWordmarkWidth is what the widest of those rows measures. A pane
+// narrower than the name plus a column of air gets the one-row face instead.
+// It is read off the rows rather than written down beside them, because a
+// letterform edited by one cell and a number left at nineteen is a wordmark
+// that clips itself on exactly one terminal width — and it is the widest of
+// the three rather than whichever one is widest today, for the same reason.
+var startWordmarkWidth = widestRow(startWordmark[:])
+
+// widestRow is the display width of the longest of the rows.
+func widestRow(rows []string) int {
+	widest := 0
+	for _, row := range rows {
+		widest = max(widest, lipgloss.Width(row))
+	}
+	return widest
+}
+
+// startTrailGaps are the columns between the birth marks that carry the
+// wordmark off its own right edge, in order. The mark is the one the working
+// label stands an unarrived cell in for, so the name reads as still arriving
+// — the same claim the entrance makes, made once, on the screen a session
+// opens with.
+//
+// The trail thins in spacing rather than in shade because there is no second
+// dim to thin it with: the palette holds one, and a thinning drawn in a
+// colour the table does not name is a colour the mono swap cannot answer for.
+var startTrailGaps = []int{1, 1, 2, 3, 5}
+
+// startFaceHeight is the shortest pane the three-row wordmark is drawn in.
+// The screen's own rows run from twelve on a wide terminal to around eighteen
+// once the notes and the offers wrap their details onto lines of their own,
+// and the face costs four more; twenty-four is the first height that holds
+// the widest of those with the face above it and a row still to spare. Under
+// it those four rows come out of the offers, which are the reason the screen
+// exists, so the name goes in one row of the texture instead — which costs
+// two.
+const startFaceHeight = 24
+
+// faceRows is the product's face and the blank under it, or nothing.
+//
+// Nothing is what a monochrome terminal gets. The face carries no fact — the
+// fact line under it is where the reader is going — so it is decoration, and
+// decoration is the first thing a palette with two greys to spend gives up
+// (docs/interface/principles.md#colour-never-carries-meaning-alone). The
+// terminals that ask for that palette by name, NO_COLOR and TERM=dumb, are
+// also the ones least likely to draw half blocks at all.
+func (s StartScreen) faceRows(width int) []string {
+	if s.Height <= 0 || Mono() {
+		return nil
+	}
+	if s.Height >= startFaceHeight && width >= startWordmarkWidth+1 {
+		return append(wordmarkRows(width), "")
+	}
+	if row := nameRule(width); row != "" {
+		return []string{row, ""}
+	}
+	return nil
+}
+
+// wordmarkRows draws the name in bright with the trail behind its middle row.
+func wordmarkRows(width int) []string {
+	rows := make([]string, 0, len(startWordmark))
+	for i, row := range startWordmark {
+		painted := brightStyle().Render(row)
+		if i == 1 {
+			if trail := startTrail(width - lipgloss.Width(row)); trail != "" {
+				painted += sty.Dim.Render(trail)
+			}
+		}
+		rows = append(rows, Clip(painted, width))
+	}
+	return rows
+}
+
+// startTrail is the run of birth marks, as much of it as the room allows. A
+// mark whose gap does not fit is not drawn at all: a trail that ends in a
+// clipped space is a trail that ends in nothing visible.
+func startTrail(room int) string {
+	var b strings.Builder
+	for _, gap := range startTrailGaps {
+		if room < gap+1 {
+			break
+		}
+		b.WriteString(strings.Repeat(" ", gap) + animBirthMark)
+		room -= gap + 1
+	}
+	return b.String()
+}
+
+// nameRule is the one-row face: the name sitting in the texture, in the
+// grammar a card's top edge puts its title in, so the short screen and the
+// tall one are the same product rather than two.
+func nameRule(width int) string {
+	// Two columns of texture, a space either side of the name, and whatever
+	// the row has left after them. Under three columns left there is no rule
+	// behind the name, only a glyph or two trailing it, which reads as a
+	// stray character rather than as chrome — so the row is not drawn at all
+	// and the screen opens on its facts, the way it does with no face.
+	fill := width - 4 - lipgloss.Width(startName)
+	if fill < 3 {
+		return ""
+	}
+	return sty.Dim.Render(textureFill(2)) + " " + brightStyle().Render(startName) +
+		" " + sty.Dim.Render(textureFill(fill))
+}
+
+// startName is what the product calls itself. It is here rather than borrowed
+// from the binary's own name because a renamed executable is still shhh, and
+// a face that reads `./shhh-linux-amd64` is not a face.
+const startName = "shhh"
 
 // factLine renders the header clauses joined with ·, dropping clauses from
 // the right until the line fits. The path is never dropped: a header that

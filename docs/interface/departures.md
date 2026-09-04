@@ -161,3 +161,35 @@ being told it is the same kind. Column widths are the design system's to
 settle, and the artboard is the place to settle them; until the two are read
 side by side this is a row drawn from the grammar its neighbours keep rather
 than a disagreement with the artboard about any of them.
+
+## The chrome's empty runs are a diagonal texture
+
+The design draws a screen's title rule and a card's top edge as flat lines,
+which is what they were. Two families that share no material read as two
+products, and the shade that would otherwise be spent making them look
+related is the shade a monochrome terminal has already spent.
+
+So the run that carries nothing — the rule under a header, the part of a top
+edge between the title and the chips — is filled with a diagonal instead. It
+is one glyph and no colour, which is the point: the alternative that gives
+the same read is a gradient, and a gradient is a run of colours no token
+names.
+
+The glyph is a choice the artboards have not made, and it belongs to them as
+soon as there is one to make it in. Until then this is a material picked to
+be checkable in two greys rather than a disagreement about any drawing.
+
+## The product's face is three rows of half blocks
+
+There is no wordmark artboard. The start screen is the one surface with rows
+to spare and the only place the product is looked at rather than read, so it
+is where the name is drawn: three rows of the half-block set, with the mark
+the working label stands an unarrived cell in for trailing off the end of it.
+
+Two rules were decided here that an artboard would otherwise decide. The
+letterforms are drawn from the drawing kit rather than from a font, because a
+font is a dependency and four letters are three lines of table. And the face
+is spent out of the pane's rows rather than the window's, so a short pane gets
+the name in one row of the texture and a monochrome terminal gets neither —
+the face states nothing the line under it does not, and what states nothing is
+what a palette with two greys gives up first.

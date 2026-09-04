@@ -11,6 +11,10 @@
 
 ── layout ──────────────────────────────────────────────────
 · first contact · a dirty checkout with a session to pick up
+▄▀▀▀ █    █    █
+ ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄ · ·  ·   ·     ·
+▄▄▄▀ █  █ █  █ █  █
+
 ~/src/shhh · go 1.24 · git main · 3 files changed · 41 packages
 
 context  AGENTS.md — in the system prompt
@@ -25,6 +29,10 @@ Some things worth doing first:
 [pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse
 
 · the pointer on the offer that costs an approval
+▄▀▀▀ █    █    █
+ ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄ · ·  ·   ·     ·
+▄▄▄▀ █  █ █  █ █  █
+
 ~/src/shhh · go 1.24 · git main · 3 files changed · 41 packages
 
 context  AGENTS.md — in the system prompt
@@ -39,6 +47,10 @@ Some things worth doing first:
 [pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse
 
 · clean tree · nothing saved, no gate, no project context
+▄▀▀▀ █    █    █
+ ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄ · ·  ·   ·     ·
+▄▄▄▀ █  █ █  █ █  █
+
 ~/src/shhh · go 1.24 · git main · clean tree · 41 packages
 
 context  nothing read — no .shhh/project.md, AGENTS.md or CLAUDE.md
@@ -53,6 +65,10 @@ Some things worth doing first:
 [pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse
 
 · outside a repository · the package count is a floor
+▄▀▀▀ █    █    █
+ ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄ · ·  ·   ·     ·
+▄▄▄▀ █  █ █  █ █  █
+
 ~/src/shhh · go 1.24 · not a git repository · 41+ packages
 
 context  AGENTS.md — in the system prompt
@@ -67,6 +83,10 @@ Some things worth doing first:
 [pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse
 
 · nothing read · the third offer writes the file that would be
+▄▀▀▀ █    █    █
+ ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄ · ·  ·   ·     ·
+▄▄▄▀ █  █ █  █ █  █
+
 ~/src/shhh · go 1.24 · git main · 3 files changed · 41 packages
 
 context  nothing read — no .shhh/project.md, AGENTS.md or CLAUDE.md
@@ -81,6 +101,10 @@ Some things worth doing first:
 [pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse
 
 · somebody else is in this checkout too
+▄▀▀▀ █    █    █
+ ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄ · ·  ·   ·     ·
+▄▄▄▀ █  █ █  █ █  █
+
 ~/src/shhh · another session open here since 10:32 · go 1.24 · git main · 3 files changed · 41 packages
 
 context  AGENTS.md — in the system prompt
@@ -95,6 +119,10 @@ Some things worth doing first:
 [pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse
 
 · a checkout nobody has answered for · what it is holding back
+▄▀▀▀ █    █    █
+ ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄ · ·  ·   ·     ·
+▄▄▄▀ █  █ █  █ █  █
+
 ~/src/shhh · go 1.24 · git main · 3 files changed · 41 packages
 
 context  AGENTS.md — in the system prompt
@@ -110,6 +138,10 @@ Some things worth doing first:
 [pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse
 
 · typing dismissed the list · the facts stay
+▄▀▀▀ █    █    █
+ ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄ · ·  ·   ·     ·
+▄▄▄▀ █  █ █  █ █  █
+
 ~/src/shhh · go 1.24 · git main · 3 files changed · 41 packages
 
 context  AGENTS.md — in the system prompt
@@ -119,6 +151,10 @@ gate     default — vet, test · runs without asking
 
 ── ansi ────────────────────────────────────────────────────
 · first contact · a dirty checkout with a session to pick up
+␛[1;97m▄▀▀▀ █    █    █␛[m
+␛[1;97m ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄␛[m␛[38;5;241m · ·  ·   ·     ·␛[m
+␛[1;97m▄▄▄▀ █  █ █  █ █  █␛[m
+
 ␛[1;97m~/src/shhh␛[m␛[38;5;241m · ␛[m␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;252mgit main␛[m␛[38;5;241m · ␛[m␛[38;5;214m3 files changed␛[m␛[38;5;241m · ␛[m␛[38;5;252m41 packages␛[m
 
 ␛[38;5;241mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
@@ -133,6 +169,10 @@ gate     default — vet, test · runs without asking
 ␛[3;38;5;241m[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse␛[m
 
 · the pointer on the offer that costs an approval
+␛[1;97m▄▀▀▀ █    █    █␛[m
+␛[1;97m ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄␛[m␛[38;5;241m · ·  ·   ·     ·␛[m
+␛[1;97m▄▄▄▀ █  █ █  █ █  █␛[m
+
 ␛[1;97m~/src/shhh␛[m␛[38;5;241m · ␛[m␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;252mgit main␛[m␛[38;5;241m · ␛[m␛[38;5;214m3 files changed␛[m␛[38;5;241m · ␛[m␛[38;5;252m41 packages␛[m
 
 ␛[38;5;241mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
@@ -147,6 +187,10 @@ gate     default — vet, test · runs without asking
 ␛[3;38;5;241m[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse␛[m
 
 · clean tree · nothing saved, no gate, no project context
+␛[1;97m▄▀▀▀ █    █    █␛[m
+␛[1;97m ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄␛[m␛[38;5;241m · ·  ·   ·     ·␛[m
+␛[1;97m▄▄▄▀ █  █ █  █ █  █␛[m
+
 ␛[1;97m~/src/shhh␛[m␛[38;5;241m · ␛[m␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;252mgit main␛[m␛[38;5;241m · ␛[m␛[92mclean tree␛[m␛[38;5;241m · ␛[m␛[38;5;252m41 packages␛[m
 
 ␛[38;5;241mcontext␛[m  ␛[38;5;252mnothing read␛[m␛[38;5;241m — no .shhh/project.md, AGENTS.md or CLAUDE.md␛[m
@@ -161,6 +205,10 @@ gate     default — vet, test · runs without asking
 ␛[3;38;5;241m[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse␛[m
 
 · outside a repository · the package count is a floor
+␛[1;97m▄▀▀▀ █    █    █␛[m
+␛[1;97m ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄␛[m␛[38;5;241m · ·  ·   ·     ·␛[m
+␛[1;97m▄▄▄▀ █  █ █  █ █  █␛[m
+
 ␛[1;97m~/src/shhh␛[m␛[38;5;241m · ␛[m␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;214mnot a git repository␛[m␛[38;5;241m · ␛[m␛[38;5;252m41+ packages␛[m
 
 ␛[38;5;241mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
@@ -175,6 +223,10 @@ gate     default — vet, test · runs without asking
 ␛[3;38;5;241m[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse␛[m
 
 · nothing read · the third offer writes the file that would be
+␛[1;97m▄▀▀▀ █    █    █␛[m
+␛[1;97m ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄␛[m␛[38;5;241m · ·  ·   ·     ·␛[m
+␛[1;97m▄▄▄▀ █  █ █  █ █  █␛[m
+
 ␛[1;97m~/src/shhh␛[m␛[38;5;241m · ␛[m␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;252mgit main␛[m␛[38;5;241m · ␛[m␛[38;5;214m3 files changed␛[m␛[38;5;241m · ␛[m␛[38;5;252m41 packages␛[m
 
 ␛[38;5;241mcontext␛[m  ␛[38;5;252mnothing read␛[m␛[38;5;241m — no .shhh/project.md, AGENTS.md or CLAUDE.md␛[m
@@ -189,6 +241,10 @@ gate     default — vet, test · runs without asking
 ␛[3;38;5;241m[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse␛[m
 
 · somebody else is in this checkout too
+␛[1;97m▄▀▀▀ █    █    █␛[m
+␛[1;97m ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄␛[m␛[38;5;241m · ·  ·   ·     ·␛[m
+␛[1;97m▄▄▄▀ █  █ █  █ █  █␛[m
+
 ␛[1;97m~/src/shhh␛[m␛[38;5;241m · ␛[m␛[38;5;214manother session open here since 10:32␛[m␛[38;5;241m · ␛[m␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;252mgit main␛[m␛[38;5;241m · ␛[m␛[38;5;214m3 files changed␛[m␛[38;5;241m · ␛[m␛[38;5;252m41 packages␛[m
 
 ␛[38;5;241mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
@@ -203,6 +259,10 @@ gate     default — vet, test · runs without asking
 ␛[3;38;5;241m[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse␛[m
 
 · a checkout nobody has answered for · what it is holding back
+␛[1;97m▄▀▀▀ █    █    █␛[m
+␛[1;97m ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄␛[m␛[38;5;241m · ·  ·   ·     ·␛[m
+␛[1;97m▄▄▄▀ █  █ █  █ █  █␛[m
+
 ␛[1;97m~/src/shhh␛[m␛[38;5;241m · ␛[m␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;252mgit main␛[m␛[38;5;241m · ␛[m␛[38;5;214m3 files changed␛[m␛[38;5;241m · ␛[m␛[38;5;252m41 packages␛[m
 
 ␛[38;5;241mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
@@ -218,6 +278,10 @@ gate     default — vet, test · runs without asking
 ␛[3;38;5;241m[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse␛[m
 
 · typing dismissed the list · the facts stay
+␛[1;97m▄▀▀▀ █    █    █␛[m
+␛[1;97m ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄␛[m␛[38;5;241m · ·  ·   ·     ·␛[m
+␛[1;97m▄▄▄▀ █  █ █  █ █  █␛[m
+
 ␛[1;97m~/src/shhh␛[m␛[38;5;241m · ␛[m␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;252mgit main␛[m␛[38;5;241m · ␛[m␛[38;5;214m3 files changed␛[m␛[38;5;241m · ␛[m␛[38;5;252m41 packages␛[m
 
 ␛[38;5;241mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m

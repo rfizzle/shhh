@@ -578,6 +578,12 @@ blast radius cannot be determined, the card says so rather than reporting a
 confident nothing. What the containment profile allows is reported from what
 is actually in force, not from what was configured.
 
+The card's border carries how much the decision on it weighs, and the run of
+its top edge between the title and the chips carries nothing — so that run is
+drawn as chrome, in the texture and the tone a screen's rule is drawn in,
+while the corners, the title's lead-in and the chips keep the weight. The
+frame still says what it said; the empty part of it stops pretending to.
+
 A card can outgrow the panel it is allowed, and what does not fit is
 never merely clipped. The body scrolls in place behind counted tails — the
 last visible line says how many more rows there are and names the key that
@@ -710,6 +716,17 @@ available afterwards: what was refused was being asked, not the file.
 Typing anything dismisses the offers and keeps the facts, because the input
 owns every ordinary key the moment there is a draft.
 
+This is the one screen with room for the product to have a face, and the only
+one that gets one. Where the pane has the rows, the name is drawn in three of
+them out of the half blocks, with the same mark the working label stands an
+unarrived cell in for trailing off the end of it — so the first thing on
+screen is the entrance every turn after it will make, made once. Where the
+pane does not, the name goes in a single row of the texture instead, because
+four rows taken from the offers are four taken from the reason the screen
+exists. A monochrome terminal gets neither. The face states nothing the line
+under it does not, which makes it decoration, and decoration is the first
+thing a palette with two greys to spend gives up.
+
 ### The supporting screens
 
 Configuration, history, metrics, doctor and rating are each re-cut from parts
@@ -738,6 +755,22 @@ the move is mechanical, and the alternative to offering it here is a fallback
 that never ends. So the row that found it offers to make it, and puts the same
 confirm in front of it that the settings screen puts in front of a write
 (docs/capabilities/configuration.md#a-migration-is-a-doctor-check).
+
+The rule under a screen's header is drawn as a diagonal texture rather than as
+a flat line, and it is the same texture that fills a card's top edge. That is
+the only thing these two families have in common that they did not already
+have, and it is enough: a card and a screen read as one product instead of as
+two widgets in the same binary. It is a texture and not a gradient for the
+reason the working label's sweep is two rungs and not a blend — a gradient is
+a run of colours no token names, and a colour the table does not hold is one
+the monochrome swap cannot answer for. The texture costs one glyph, no colour,
+and it is decoration, so a monochrome terminal declines it and gets back the
+flat rule it always had.
+
+A rule inside a surface is not an edge and stays flat: the pane divider, the
+line between a list and the output under it, the card's own divider above its
+keys. The texture says where a surface stops, and a rule between two halves of
+one surface would be saying the opposite.
 
 ### The profile drafter
 
@@ -932,6 +965,14 @@ The exit banner exists because a session on the alternate screen leaves
 nothing behind. What it drew is gone in one frame, and with it the answer to
 which conversation that was, what it cost, and whether any of it was written
 down. The banner is what the terminal keeps.
+
+It ends on one line of voice, and that line is the last row rather than the
+first: a banner that opens on something saying nothing is a banner a reader
+learns to skip, and everything they came for is above it. The line is drawn
+only where a person is watching. A redirected stream is a capture or a script,
+and there the facts are the whole of what was wanted — a line of voice in a
+capture is one more line to parse past. A terminal with no colour still gets
+it, because it is words.
 
 ### What the tab says
 

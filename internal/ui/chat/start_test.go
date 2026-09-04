@@ -410,3 +410,25 @@ func TestStartScreen_TheSiblingClauseOutlivesTheNarrowHeader(t *testing.T) {
 		t.Fatalf("the clause should sit right behind the path, got %+v", facts)
 	}
 }
+
+// The face is sized by the transcript pane rather than by the window, because
+// the offers it would be taking rows from are laid out in the pane. A window
+// tall enough for the wordmark and a pane that is not is exactly the case a
+// window-sized breakpoint gets wrong.
+func TestStartScreen_TheFaceIsSizedByThePaneNotTheWindow(t *testing.T) {
+	tall := startText(startModel(t, startFixture()))
+	if !strings.Contains(tall, "▄▀▀▀") {
+		t.Fatalf("a tall window should wear the wordmark:\n%s", tall)
+	}
+
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
+		WithStartScreen(startFixture())
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 110, Height: 18})
+	short := startText(updated.(Model))
+	if strings.Contains(short, "▄▀▀▀") {
+		t.Fatalf("a short pane has no rows to spend on three of them:\n%s", short)
+	}
+	if !strings.Contains(short, "shhh ╱") {
+		t.Fatalf("the short pane should still say whose screen it is:\n%s", short)
+	}
+}

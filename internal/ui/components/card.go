@@ -77,7 +77,7 @@ func (c Card) Render(rows []string, width int) string {
 	inner := width - cardFrameWidth
 
 	var b strings.Builder
-	b.WriteString(border.Render(cardTop(c, width)))
+	b.WriteString(cardTop(c, border, width))
 	for _, row := range rows {
 		if row == cardRule {
 			b.WriteString("\n" + border.Render("├"+strings.Repeat("─", max(0, width-2))+"┤"))
@@ -92,17 +92,17 @@ func (c Card) Render(rows []string, width int) string {
 }
 
 // cardTop draws the top border: the title on the left, the chips on the
-// right, and the rule between them. Chips are dropped from the front until
+// right, and the texture between them. Chips are dropped from the front until
 // what is left fits beside the title; a title that still does not fit is
 // clipped, which is the one thing that never happens to a chip.
-func cardTop(c Card, width int) string {
+func cardTop(c Card, border lipgloss.Style, width int) string {
 	left := "┌─ " + c.Title + " "
 	chips := c.Chips
 	for {
 		right := chipRun(chips)
 		if lipgloss.Width(left)+lipgloss.Width(right)+1 <= width-1 {
 			fill := max(0, width-1-lipgloss.Width(left)-lipgloss.Width(right))
-			return left + strings.Repeat("─", fill) + right + "┐"
+			return paintCardTop(border, left, fill, right+"┐")
 		}
 		if len(chips) == 0 {
 			break
@@ -110,7 +110,29 @@ func cardTop(c Card, width int) string {
 		chips = chips[1:]
 	}
 	left = Clip(left, width-1)
-	return left + strings.Repeat("─", max(0, width-1-lipgloss.Width(left))) + "┐"
+	return paintCardTop(border, left, max(0, width-1-lipgloss.Width(left)), "┐")
+}
+
+// paintCardTop paints the three parts of the top edge. The fill is drawn in
+// the one chrome tone whatever the frame's own colour is: a card's border
+// carries how much the decision on it weighs, and the run between the title
+// and the chips carries nothing, so the weight stays on the parts that mean
+// something — the corners, the title's lead-in and the chips. That is also
+// what makes this edge and a screen's title rule the same material at the
+// same tone, rather than the same shape in two colours
+// (docs/interface/surfaces.md#the-approval-card).
+//
+// Under mono there is no second tone to hold, so the whole row goes through
+// the frame's own style in one call — which is the row the frame drew before
+// there was a texture, byte for byte. An edge with no room left for a fill
+// takes that call too: a style renders a pair of escapes around an empty
+// string, and three runs where there is nothing between the title and the
+// corner is two of those for nothing.
+func paintCardTop(border lipgloss.Style, left string, fill int, right string) string {
+	if Mono() || fill <= 0 {
+		return border.Render(left + textureFill(fill) + right)
+	}
+	return border.Render(left) + sty.Dim.Render(textureFill(fill)) + border.Render(right)
 }
 
 // chipRun renders the chips as they sit in the border: each between ─ and a

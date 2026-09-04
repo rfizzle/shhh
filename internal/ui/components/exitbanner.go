@@ -14,14 +14,17 @@ package components
 // screen: that screen offers `pick up (last session) — 7 turns ·
 // $0.42`, and this is where that offer comes from.
 //
-// There is no wordmark and no parting line. A banner whose first two lines
-// say nothing is a banner a reader learns to skip, and the one line here that
-// has to be read is a command.
+// There is no wordmark, and nothing that says nothing goes above the facts. A
+// banner whose first two lines say nothing is a banner a reader learns to
+// skip, and the one line here that has to be read is a command. The parting
+// line is the last row for that reason: a reader who skips it loses nothing,
+// because there is nothing behind it.
 
 import (
 	"strings"
 
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/colorprofile"
 )
 
 // ExitBanner is what the terminal keeps once the alt screen has gone.
@@ -90,7 +93,35 @@ func (b ExitBanner) View(width int) string {
 	case b.Resume != "":
 		rows = append(rows, b.row("resume", b.Resume, brightStyle()))
 	}
+	if line := partingLine(width); line != "" {
+		rows = append(rows, "", line)
+	}
 	return strings.Join(rows, "\n")
+}
+
+// partingWords are the banner's last row: what the surface just took away,
+// said once, so the three rows above it read as the answer to a question
+// rather than as a receipt printed at nobody
+// (docs/interface/surfaces.md#outside-the-tui).
+const partingWords = "that is everything the screen was holding"
+
+// partingLine draws the parting row, and only where somebody is watching.
+//
+// Nobody is watching a redirected stream: what reads the banner then is a
+// script or a scrollback capture, and a line of voice in a capture is a line
+// the next reader has to parse past to reach the facts. The question is put
+// to the colour profile because that is what already answers it — the profile
+// is settled against stdout, and a stream with no terminal behind it is the
+// one thing it reports before it reports any colour at all.
+//
+// A terminal with a person and no colour still gets the line: it is words,
+// and words are what a monochrome terminal keeps
+// (docs/interface/principles.md#colour-never-carries-meaning-alone).
+func partingLine(width int) string {
+	if Profile() <= colorprofile.NoTTY {
+		return ""
+	}
+	return sty.Dim.Render(Clip(partingWords, width))
 }
 
 // row lays one labelled line out: the label dim in its column, the value in

@@ -50,8 +50,48 @@ type Keyed[R any] interface {
 	Update(msg tea.KeyPressMsg) (done bool, result R)
 }
 
-// screenRule is the horizontal rule a screen and its panes are divided by.
-func screenRule(width int) string { return sty.Dim.Render(strings.Repeat("─", max(width, 0))) }
+// textureMark is what an empty run of chrome is filled with: a diagonal
+// rather than a flat rule, so a screen's title rule and a card's top edge are
+// the same material and read as one product rather than as two borrowed
+// widgets (docs/interface/surfaces.md#the-supporting-screens).
+//
+// It is a texture and not a gradient for the reason the working label's sweep
+// is two rungs and not a blend: a gradient is a run of colours the palette
+// does not name, and a token the table does not hold is a token the mono swap
+// cannot answer for and the mono goldens cannot check. A diagonal costs one
+// glyph and no colour at all.
+const textureMark = "╱"
+
+// plainMark is the flat rule the texture collapses to. The diagonal is
+// decoration — it says nothing the rule does not — so a palette with two greys
+// to spend declines it exactly the way it declines the sweep's crest, and the
+// row it leaves behind is the rule that was always there
+// (docs/interface/principles.md#colour-never-carries-meaning-alone).
+const plainMark = "─"
+
+// textureFill is width columns of whichever of the two the palette is
+// carrying. A caller paints it; this decides only the material.
+func textureFill(width int) string {
+	if width <= 0 {
+		return ""
+	}
+	if Mono() {
+		return strings.Repeat(plainMark, width)
+	}
+	return strings.Repeat(textureMark, width)
+}
+
+// screenRule is the horizontal rule a screen's panes and sections are divided
+// by. It stays flat: the texture marks where a surface *ends*, and a rule
+// between two halves of one surface would be saying the opposite.
+func screenRule(width int) string { return sty.Dim.Render(strings.Repeat(plainMark, max(width, 0))) }
+
+// titleRule is the rule under a screen's header — the edge of the surface
+// rather than a division inside it, which is why it is the one drawn in the
+// texture. A card's top edge is the same row on a smaller frame, and drawing
+// the two in the same material is the whole of what makes them one product
+// (docs/interface/surfaces.md#the-supporting-screens).
+func titleRule(width int) string { return sty.Dim.Render(textureFill(max(width, 0))) }
 
 // screenTitle is a header's first field: the surface's own name, in the one
 // treatment that is never dropped. It is clipped instead, and only once
@@ -152,7 +192,7 @@ type ScreenChrome struct {
 // View assembles the screen. body is called once with the rows left for it,
 // which is the screen's height less everything pinned around it.
 func (c ScreenChrome) View(width int, body func(budget int) []string) string {
-	head := append([]string{c.Header.Row(width), screenRule(width), ""}, c.Head...)
+	head := append([]string{c.Header.Row(width), titleRule(width), ""}, c.Head...)
 
 	pinned := len(head) + c.Reserve
 	if len(c.Foot) > 0 {

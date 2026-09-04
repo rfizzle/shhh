@@ -12,7 +12,7 @@
 ── layout ──────────────────────────────────────────────────
 · doctor · the count on the left, the clock and the keys on the right
 shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
-────────────────────────────────────────────────────────────
+╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
 
 ❯  ✗ model   anthropic · claude-opus-5 · no k…  no key
     no session will start until a key is found — every one …
@@ -24,7 +24,7 @@ shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
 
 · metrics · the spend rides with the one key the screen has
 shhh metrics                               $18.42 · [q] quit
-────────────────────────────────────────────────────────────
+╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
 
   MODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT
   gpt-5.2                 184   2.9M   318k  $12.80  640ms
@@ -34,7 +34,7 @@ shhh metrics                               $18.42 · [q] quit
 
 · config · the file, and what is standing against it
 shhh config · 2 changes unwritten        [?] keys · [q] quit
-────────────────────────────────────────────────────────────
+╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
 
   SESSION
   ❯ permission mode    ⏵⏵ auto — edits apply; allowli…  user
@@ -48,7 +48,7 @@ shhh config · 2 changes unwritten        [?] keys · [q] quit
 
 · history · the subject, and a foot key row that states the way out
 shhh history · 6 entries · 2 run         [?] keys · [q] quit
-────────────────────────────────────────────────────────────
+╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
 
 ❯ $ delete every log file older than a week  exit 0     1.4s
   $ show the ten biggest files in this dire…  copied    0.9s
@@ -62,9 +62,9 @@ shhh history · 6 entries · 2 run         [?] keys · [q] quit
 
 · rate · the same header over one card
 shhh rate · 1 of 5                       [?] keys · [q] quit
-────────────────────────────────────────────────────────────
+╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
 
-┌─ 4m ago ─────────────────────────────────────────────────┐
+┌─ 4m ago ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱┐
 │ delete every log file older than a week                  │
 │                                                          │
 │   ▎$ run     find . -name '*.log' -mtime    exit 0       │
@@ -75,7 +75,7 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
 
 · context · the occupancy is the tally beside the keys
 /context         ~312.4k · [?] keys · [q] back to the prompt
-────────────────────────────────────────────────────────────
+╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
 
   ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰
   ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰
@@ -89,7 +89,7 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
 
 · the profile drafter · the way out is the whole right-hand run
 /agents new · a coding agent · reviewer tester     esc leave
-────────────────────────────────────────────────────────────
+╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
 
   ● brief   · questions   · draft
 
@@ -104,7 +104,7 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
 ── ansi ────────────────────────────────────────────────────
 · doctor · the count on the left, the clock and the keys on the right
 ␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m           ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
+␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
 
 ␛[94m❯␛[m  ␛[91m✗␛[m model   ␛[38;5;252manthropic␛[m␛[38;5;241m · claude-opus-5 · no k…␛[m  ␛[91mno key␛[m
     ␛[38;5;245mno session will start until a key is found — every one …␛[m
@@ -116,7 +116,7 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
 
 · metrics · the spend rides with the one key the screen has
 ␛[1;97mshhh metrics␛[m                               ␛[38;5;252m$18.42␛[m␛[38;5;241m · [q] quit␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
+␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
 
   ␛[1;94mMODEL              REQUESTS  ↑ TOK  ↓ TOK   SPEND   TTFT␛[m
   ␛[38;5;252mgpt-5.2                 184   2.9M   318k  $12.80  640ms␛[m
@@ -126,7 +126,7 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
 
 · config · the file, and what is standing against it
 ␛[1;97mshhh config␛[m␛[38;5;214m · 2 changes unwritten␛[m        ␛[38;5;241m[?] keys · [q] quit␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
+␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
 
   ␛[1;94mSESSION␛[m
   ␛[1;48;5;62m❯ permission mode    ⏵⏵ auto — edits apply; allowli…  user␛[m
@@ -140,7 +140,7 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
 
 · history · the subject, and a foot key row that states the way out
 ␛[1;97mshhh history␛[m␛[38;5;241m · 6 entries · 2 run␛[m         ␛[38;5;241m[?] keys · [q] quit␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
+␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
 
 ␛[1;48;5;62m❯ $ delete every log file older than a week  exit 0     1.4s␛[m
   $ show the ten biggest files in this dire…  ␛[92mcopied␛[m    ␛[38;5;252m0.9s␛[m
@@ -154,9 +154,9 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
 
 · rate · the same header over one card
 ␛[1;97mshhh rate␛[m␛[38;5;241m · 1 of 5␛[m                       ␛[38;5;241m[?] keys · [q] quit␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
+␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
 
-␛[38;5;241m┌─ 4m ago ─────────────────────────────────────────────────┐␛[m
+␛[38;5;241m┌─ 4m ago ␛[m␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m␛[38;5;241m┐␛[m
 ␛[38;5;241m│␛[m ␛[38;5;252mdelete every log file older than a week␛[m                  ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m                                                          ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m run     ␛[38;5;241mfind . -name '*.log' -mtime␛[m    ␛[38;5;241mexit 0␛[m       ␛[38;5;241m│␛[m
@@ -167,7 +167,7 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
 
 · context · the occupancy is the tally beside the keys
 ␛[1;97m/context␛[m         ␛[92m~312.4k␛[m␛[38;5;241m · [?] keys · [q] back to the prompt␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
+␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
 
   ␛[38;5;243m▰␛[m␛[94m▰␛[m␛[38;5;214m▰▰▰␛[m␛[38;5;252m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m
   ␛[38;5;252m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m
@@ -181,7 +181,7 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
 
 · the profile drafter · the way out is the whole right-hand run
 ␛[1;97m/agents new␛[m␛[38;5;241m · a coding agent · reviewer tester␛[m     ␛[38;5;241mesc leave␛[m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[m
+␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
 
   ␛[94m● brief␛[m␛[38;5;245m   ␛[m␛[38;5;245m· questions␛[m␛[38;5;245m   ␛[m␛[38;5;245m· draft␛[m
 
