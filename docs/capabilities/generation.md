@@ -114,6 +114,15 @@ time at all. Where an answer arrives without one — a model that ignored the
 format, a reply cut short — it is asked for separately, which is the request
 the full breakdown makes anyway.
 
+It is also what a saved snippet is filed under. Naming a command bought a
+third request — a summary in under ten words, asked for while the save stood
+still — and the line already on screen says the same thing about the same
+command, so the save writes that down and is over. A save with nothing to
+reuse still asks, and that is the same two cases: silent mode, which draws no
+line, and an answer that never carried one. The stored phrase is folded onto
+the row the listing gives it and cut to fit, because a sentence written to be
+read under a command is longer than a column.
+
 ## The first token waits for the request and nothing else
 
 Nothing local sits between typing the prompt and the request going out. The

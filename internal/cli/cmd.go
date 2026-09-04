@@ -498,7 +498,7 @@ func newCmdCmd() *cobra.Command {
 						fmt.Fprintf(os.Stderr, "Error saving snippet: %v\n", err)
 					} else {
 						fmt.Fprintf(os.Stderr, "Saved snippet %q.\n", result.SaveName)
-						if desc := generateDescription(cmd.Context(), p, result.Command); desc != "" {
+						if desc := snippetDescription(cmd.Context(), p, result.Command, result.Explanation); desc != "" {
 							_ = db.UpdateSnippetDescription(result.SaveName, desc)
 							fmt.Fprintf(os.Stderr, "Description: %s\n", desc)
 						}
@@ -513,9 +513,10 @@ func newCmdCmd() *cobra.Command {
 				}
 			}
 
-			// Saving a snippet writes a description, and writing it is
-			// another request. It lands after the row above, so the row is
-			// revised rather than left understating the interaction.
+			// Saving a snippet writes a description, and a save with no
+			// sentence to reuse buys it with a request of its own. It lands
+			// after the row above, so the row is revised rather than left
+			// understating the interaction.
 			if db != nil && requestID != 0 {
 				total := ledger.Total()
 				_ = db.UpdateRequestTokens(requestID, ledgerTokens(total.In), ledgerTokens(total.Out))

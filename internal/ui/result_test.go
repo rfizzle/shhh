@@ -649,6 +649,33 @@ func TestResult_TheSentenceReachesTheCaller(t *testing.T) {
 	}
 }
 
+// Naming a command to keep it is where the sentence is worth most: the
+// caller files the snippet under it, and the alternative is a summarising
+// request the save would have to stand still for.
+func TestResult_SavingCarriesTheSentenceAlreadyOnScreen(t *testing.T) {
+	asked := 0
+	m := drainStream(NewGenerateModel(makeEvents(bundled), noopCancel, nil, nil, refuseExplain(&asked), ""), 2)
+
+	m = press(t, m, "s")
+	if m.Phase() != phaseSave {
+		t.Fatalf("[s] did not ask for a name: phase %v", m.Phase())
+	}
+	for _, r := range "listing" {
+		m = press(t, m, string(r))
+	}
+
+	res := press(t, m, "enter").Result()
+	if res.Action != ActionSave || res.SaveName != "listing" {
+		t.Fatalf("the save came back as %v named %q", res.Action, res.SaveName)
+	}
+	if res.Explanation != bundledSentence {
+		t.Errorf("the save carries %q", res.Explanation)
+	}
+	if asked != 0 {
+		t.Errorf("saving asked for an explanation %d times", asked)
+	}
+}
+
 func TestResult_ChoosingAnAlternativeDropsTheSentenceAboutTheOther(t *testing.T) {
 	asked := 0
 	explain := func(command string, long bool) (<-chan provider.StreamEvent, context.CancelFunc, error) {
