@@ -1,0 +1,56 @@
+# shhh settings.
+#
+# Every setting is here, commented out at its default with the sentence that
+# says what it decides above it. Uncomment a line to change one; a key left
+# commented is a key nothing sets, which is not the same as a key written
+# down at its zero.
+#
+# Two tables are not written here, because each has a command of its own:
+# the MCP servers and the hooks.
+
+[provider]
+
+# Which provider a request goes to: a built-in one, or a gateway profile from
+# `shhh providers`.
+# --provider on the command line, then SHHH_PROVIDER in the environment,
+# outrank this.
+#default = "openai"
+
+# The model a session runs on.
+# The default is the provider's own default.
+# --model on the command line, then SHHH_MODEL in the environment, outrank
+# this.
+#model = ""
+
+# The provider key itself, which puts a copy of it in every copy of this file;
+# `api_key_env` is the form to prefer.
+# The default is from the environment.
+# --api-key on the command line, then SHHH_API_KEY in the environment, outrank
+# this.
+#api_key = ""
+
+# The environment variable the provider key is read from at start, so the file
+# names the key instead of holding it. It is read ahead of `api_key`.
+# The default is the provider's own variable.
+#api_key_env = ""
+
+# Where the provider's API is, for a gateway or a self-hosted endpoint.
+# The default is the provider's own.
+# SHHH_BASE_URL in the environment outranks this.
+#base_url = ""
+
+# What the provider is called on screen, for a gateway that fronts several.
+# The default is the provider's own.
+#name = ""
+
+# How hard the model thinks before it answers; the level is fitted to each
+# model, so a rung it lacks lowers to the one it has.
+# --reasoning on the command line, then SHHH_REASONING in the environment,
+# outrank this.
+#reasoning = "medium"
+
+# How long the opening a session repeats every round stays cached between
+# rounds.
+#cache_ttl = "1h"
+
+

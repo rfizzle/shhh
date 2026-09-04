@@ -1,0 +1,7 @@
+  shhh config init — /home/dev/.config/shhh
+
+  ✓ wrote /home/dev/.config/shhh/config.toml · 102 settings, each commented out
+        uncomment a line to change one; above each key is what it decides
+  ✓ wrote /home/dev/.config/shhh/prompts/ · 11 wordings, each the built-in text
+        edit one and it is what a session is told; delete it and the built-in
+        words are back

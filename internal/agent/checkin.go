@@ -22,7 +22,10 @@ package agent
 // stopped asking anything new.
 // See docs/capabilities/coding-agent.md#a-long-turn-is-asked-what-it-has-got.
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+)
 
 // DefaultCheckInInterval is how many tool rounds pass before a session is
 // asked to take stock. It sits well under DefaultMaxToolRounds because the cap
@@ -100,14 +103,29 @@ func (a *Agent) checkInInterval() int {
 // differently: one reports to the person in front of it, the other has a
 // final report that is its whole deliverable.
 func CheckInPrompt(used int, whenFinished string) string {
-	return fmt.Sprintf(`You have used %d tool rounds. This is a routine check-in, not a stop — nothing has gone wrong and nothing is running out.
+	return buildCheckIn(strconv.Itoa(used), whenFinished)
+}
+
+// CheckInWording is the built-in check-in with its substitutions left
+// standing, which is the same text a file replacing it would hold. It is
+// what a scaffold writes to start from, and what a wording is compared
+// against to decide whether it replaced anything.
+func CheckInWording() string {
+	return buildCheckIn(PlaceholderRounds, PlaceholderFinished)
+}
+
+// buildCheckIn assembles the wording from parts that are already text, so
+// the prompt a session sends and the wording a file starts from are one
+// sentence rather than two that can drift.
+func buildCheckIn(rounds, whenFinished string) string {
+	return fmt.Sprintf(`You have used %s tool rounds. This is a routine check-in, not a stop — nothing has gone wrong and nothing is running out.
 
 Briefly take stock:
 - what you have established or changed so far
 - what is still left to do
 - what you are doing next
 
-Then carry on with the task. If you already know enough to act, stop looking and start work — more reading is not more progress. %s`, used, whenFinished)
+Then carry on with the task. If you already know enough to act, stop looking and start work — more reading is not more progress. %s`, rounds, whenFinished)
 }
 
 // FinishedInSession and FinishedAsSubAgent are the closing lines for the two

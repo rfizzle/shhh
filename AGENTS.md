@@ -356,11 +356,28 @@ session, a headless run and every child of either read one set;
 settings state it, where the session keeps it, which substitutions it takes —
 walked by `loadPrompts` and by `readWordings` behind the doctor's `prompts`
 row, so a key one of them can reach and the other cannot does not happen.
-`promptSource` is the per-key resolution: a file at
+`promptSource` is the per-key resolution, most specific first: a file at
 `.shhh/prompts/<key>.md` in a **trusted** checkout (`projectPrompts`, and
-`project.PromptsDir` is a trust resource) beats whatever the settings named,
-and the whole `[prompts]` table is in `config.projectRefusals`, so a checkout
-says it in files and never in keys. The reasons are in
+`project.PromptsDir` is a trust resource), then whatever the settings named,
+then `<key>.md` under `userPromptsDir` beside the settings file. The whole
+`[prompts]` table is in `config.projectRefusals`, so a checkout says it in
+files and never in keys, and `projectWordings` is the list the start screen
+names. A key naming a file that is not there still stops the session rather
+than falling through to the directory below.
+
+`wording.builtin` is the text each carries when nothing replaced it —
+`agent.SteerWording` and its three siblings, and `run.BuiltinWordings` for
+the backlog runner's seven. Two callers need it and neither can be told it
+by the file: `configInit` (`internal/cli/configinit.go`) writes them out as
+the scaffold's prompt files, and `fingerprintOf` skips a wording that equals
+one, whitespace aside, so scaffolding the built-in words divides no cohort.
+`config.Scaffold` (`internal/config/scaffold.go`) is the settings half of
+that command, rendered from the same table the reference section is, and
+`Setting.Literal` is the default as the *file* would write it for the keys
+whose `Default` is a sentence — `2 MiB` against `2097152` — which a test
+requires of every such key.
+
+The reasons are in
 [`docs/capabilities/configuration.md#the-mechanism-is-code-its-wording-is-configuration`](docs/capabilities/configuration.md#the-mechanism-is-code-its-wording-is-configuration)
 and, for the backlog runner's seven,
 [`docs/capabilities/todo.md#the-stage-prompts-are-yours-to-edit`](docs/capabilities/todo.md#the-stage-prompts-are-yours-to-edit).

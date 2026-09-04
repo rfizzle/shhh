@@ -432,3 +432,21 @@ func TestStartScreen_TheFaceIsSizedByThePaneNotTheWindow(t *testing.T) {
 		t.Fatalf("the short pane should still say whose screen it is:\n%s", short)
 	}
 }
+
+// A wording the checkout supplied is words the reader never wrote, so the
+// screen names them beside the settings file for the same reason.
+func TestStartScreen_NamesTheWordingsTheCheckoutSupplied(t *testing.T) {
+	info := startFixture()
+	info.Wordings = []string{"steer", "todo_review"}
+	view := startText(startModel(t, info))
+	for _, want := range []string{"wordings", project.PromptsDir, "steer, todo_review"} {
+		if !strings.Contains(view, want) {
+			t.Errorf("the screen does not say %q:\n%s", want, view)
+		}
+	}
+	// A session running the built-in words says nothing: a row that is on
+	// every screen is a row nobody reads.
+	if plain := startText(startModel(t, startFixture())); strings.Contains(plain, "wordings") {
+		t.Errorf("a session that replaced no wording still has the row:\n%s", plain)
+	}
+}

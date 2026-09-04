@@ -40,6 +40,16 @@ func SteerPrompt(target, reason string) string {
 	return buildSteer(clampRunes(strings.TrimSpace(target), DefaultSteerTargetChars), reason)
 }
 
+// SteerWording is the built-in message with its substitutions left standing,
+// which is the same text a file replacing it would hold. It is what a
+// scaffold writes to start from, and what a wording is compared against to
+// decide whether it replaced anything: a file holding exactly this asks the
+// model for exactly what the built-in asks, and a record that split the
+// sessions either side of it would be reporting a change nobody made.
+func SteerWording() string {
+	return buildSteer(PlaceholderTarget, PlaceholderReason)
+}
+
 // buildSteer assembles the built-in wording from a target that has already
 // been bounded, so the bound is the surface's setting and the sentences are
 // this function's.

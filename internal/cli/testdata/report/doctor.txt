@@ -1,4 +1,4 @@
-  shhh doctor — 4 checks
+  shhh doctor — 5 checks
 
   ✓ binary    shhh 0.9.4 · linux/amd64  [ok]
   ✓ otel      http://localhost:4318 · content-free  [ok]
@@ -6,5 +6,9 @@
       commands run with your own permissions, in your own filesystem
         sudo apt install bubblewrap
   ⊘ engine    no container engine  [not checked]
+  ✓ prompts   3 wordings · steer · summary · todo_commit  [ok]
+        steer — .shhh/prompts/steer.md
+        summary — config prompts.summary
+        todo_commit — ~/.config/shhh/prompts/todo_commit.md
 
-  1 failed · 2 passed · 1 not checked
+  1 failed · 3 passed · 1 not checked

@@ -73,6 +73,11 @@ type StartInfo struct {
 	Project project.Info
 	Gate    StartGate
 	Recent  StartRecent
+	// Wordings are the keys this checkout supplied a wording for, in the
+	// order the settings state them. They are on the screen for the reason
+	// the checkout's settings file is: a session running words the reader
+	// never wrote is one they cannot account for from their own files.
+	Wordings []string
 	// Trust is what this checkout was not allowed to put into the session.
 	// It is on the screen because it is the difference between a session
 	// that is small and one that is small for a reason, and it backs
@@ -323,6 +328,15 @@ func startNotes(info StartInfo) []components.StartNote {
 		notes = append(notes, components.StartNote{
 			Label: "settings", Value: file,
 			Detail: "this checkout's own, over yours",
+		})
+	}
+	// And the wordings it handed the machinery, which are the same fact
+	// about a different file: the settings say what a session does and these
+	// say what it is told, and neither is in the reader's own files.
+	if len(info.Wordings) > 0 {
+		notes = append(notes, components.StartNote{
+			Label: "wordings", Value: project.PromptsDir + "/",
+			Detail: "this checkout's own, over yours · " + strings.Join(info.Wordings, ", "),
 		})
 	}
 	// Last, and only when there is something to say. A trusted checkout

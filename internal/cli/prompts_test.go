@@ -318,3 +318,83 @@ func TestStageWordings_FoldIntoTheFingerprint(t *testing.T) {
 		t.Fatal("which stage holds the text is part of what was sent")
 	}
 }
+
+// The three ranks, in order. A checkout's file beats a key, a key beats the
+// directory beside the settings, and the directory beside the settings beats
+// the built-in words — which is what makes a file's presence the override
+// with nothing pointing at it.
+func TestPromptSource_MostSpecificFileWins(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", dir)
+	t.Setenv("HOME", dir)
+	mine := filepath.Join(dir, "shhh", "prompts")
+	must(t, os.MkdirAll(mine, 0o700))
+	must(t, os.WriteFile(filepath.Join(mine, "steer.md"), []byte("beside my settings"), 0o600))
+
+	checkout := t.TempDir()
+	must(t, os.WriteFile(filepath.Join(checkout, "steer.md"), []byte("the checkout's own"), 0o600))
+	named := writeWording(t, "steer.md", "the key's own")
+
+	for _, tc := range []struct {
+		name       string
+		configured string
+		project    string
+		want       string
+	}{
+		{"the directory beside the settings", "", "", "beside my settings"},
+		{"a key beats it", named, "", "the key's own"},
+		{"the checkout beats both", named, checkout, "the checkout's own"},
+		{"the checkout beats the directory too", "", checkout, "the checkout's own"},
+	} {
+		got, err := loadPrompts(config.PromptsConfig{Steer: tc.configured}, tc.project)
+		if err != nil {
+			t.Fatalf("%s: %v", tc.name, err)
+		}
+		if got.steer != tc.want {
+			t.Errorf("%s: steer = %q, want %q", tc.name, got.steer, tc.want)
+		}
+	}
+}
+
+// The directory beside the settings is read the way every other rank is: an
+// empty file there is the same failure as an empty one anywhere, named by the
+// path so the reader knows which of the three to go to.
+func TestPromptSource_AnEmptyFileBesideTheSettingsIsFatal(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", dir)
+	t.Setenv("HOME", dir)
+	mine := filepath.Join(dir, "shhh", "prompts")
+	must(t, os.MkdirAll(mine, 0o700))
+	path := filepath.Join(mine, "summary.md")
+	must(t, os.WriteFile(path, []byte("  \n"), 0o600))
+
+	_, err := loadPrompts(config.PromptsConfig{}, "")
+	if err == nil {
+		t.Fatal("an empty wording beside the settings started the session")
+	}
+	if msg := err.Error(); !strings.Contains(msg, path) || !strings.Contains(msg, "delete it") {
+		t.Fatalf("the refusal does not name the file and the way back: %s", msg)
+	}
+}
+
+// A key naming a file that is not there is an answer, and a wrong one. It
+// must not fall through to the directory below: a person who wrote a path
+// and got the wording from beside their settings would have no way to see
+// the typo, and the record would say they were running theirs.
+func TestPromptSource_AKeyNamingAMissingFileDoesNotFallThrough(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", dir)
+	t.Setenv("HOME", dir)
+	mine := filepath.Join(dir, "shhh", "prompts")
+	must(t, os.MkdirAll(mine, 0o700))
+	must(t, os.WriteFile(filepath.Join(mine, "steer.md"), []byte("beside my settings"), 0o600))
+
+	missing := filepath.Join(t.TempDir(), "typo.md")
+	_, err := loadPrompts(config.PromptsConfig{Steer: missing}, "")
+	if err == nil {
+		t.Fatal("a key naming a file that is not there fell through to the directory below")
+	}
+	if msg := err.Error(); !strings.Contains(msg, missing) || !strings.Contains(msg, "prompts.steer") {
+		t.Fatalf("the refusal does not name the key and the path it named: %s", msg)
+	}
+}

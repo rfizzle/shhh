@@ -155,6 +155,30 @@ Some things worth doing first:
 [↑↓] choose · [enter] start · or just type what you wa…
 [pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · […
 
+· the checkout brought its own settings and its own wordings
+▄▀▀▀ █    █    █
+ ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄ · ·  ·   ·     ·
+▄▄▄▀ █  █ █  █ █  █
+
+~/src/shhh · go 1.24 · git main · 3 files changed
+
+context   AGENTS.md — in the system prompt
+gate      default — vet, test · runs without asking
+settings  .shhh/config.toml
+          this checkout's own, over yours
+wordings  .shhh/prompts/
+          this checkout's own, over yours · steer, tod…
+
+Some things worth doing first:
+❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago
+  ⚙ explain what changed in the working tree
+    reads only, no writes
+  ⚙ run the default quality gate and triage what fails
+    one approval, then it reports back
+
+[↑↓] choose · [enter] start · or just type what you wa…
+[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · […
+
 · typing dismissed the list · the facts stay
 ▄▀▀▀ █    █    █
  ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄ · ·  ·   ·     ·
@@ -308,6 +332,30 @@ gate     default — vet, test · runs without asking
   ␛[38;5;214m⚙␛[m ␛[38;5;252mexplain what changed in the working tree␛[m
     ␛[38;5;241mreads only, no writes␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun go test ./... and triage the failures␛[m
+    ␛[38;5;241mone approval, then it reports back␛[m
+
+␛[3;38;5;241m[↑↓] choose · [enter] start · or just type what you wa…␛[m
+␛[3;38;5;241m[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · […␛[m
+
+· the checkout brought its own settings and its own wordings
+␛[1;97m▄▀▀▀ █    █    █␛[m
+␛[1;97m ▀▀▄ █▀▀▄ █▀▀▄ █▀▀▄␛[m␛[38;5;241m · ·  ·   ·     ·␛[m
+␛[1;97m▄▄▄▀ █  █ █  █ █  █␛[m
+
+␛[1;97m~/src/shhh␛[m␛[38;5;241m · ␛[m␛[38;5;252mgo 1.24␛[m␛[38;5;241m · ␛[m␛[38;5;252mgit main␛[m␛[38;5;241m · ␛[m␛[38;5;214m3 files changed␛[m
+
+␛[38;5;241mcontext ␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
+␛[38;5;241mgate    ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;241m — vet, test · runs without asking␛[m
+␛[38;5;241msettings␛[m  ␛[38;5;252m.shhh/config.toml␛[m
+          ␛[38;5;241mthis checkout's own, over yours␛[m
+␛[38;5;241mwordings␛[m  ␛[38;5;252m.shhh/prompts/␛[m
+          ␛[38;5;241mthis checkout's own, over yours · steer, tod…␛[m
+
+␛[38;5;241mSome things worth doing first:␛[m
+␛[1;48;5;62m❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago␛[m
+  ␛[38;5;214m⚙␛[m ␛[38;5;252mexplain what changed in the working tree␛[m
+    ␛[38;5;241mreads only, no writes␛[m
+  ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m
     ␛[38;5;241mone approval, then it reports back␛[m
 
 ␛[3;38;5;241m[↑↓] choose · [enter] start · or just type what you wa…␛[m

@@ -96,6 +96,11 @@ type ClassifierConfig struct {
 	Prompt string
 }
 
+// ClassifierWording is the built-in instruction, which is the text a file
+// replacing it would hold. It is what a scaffold writes to start from, and
+// what a wording is compared against to decide whether it replaced anything.
+func ClassifierWording() string { return classifierPrompt }
+
 // prompt is the instruction in force.
 func (c ClassifierConfig) prompt() string {
 	if c.Prompt != "" {

@@ -1290,6 +1290,12 @@ func probePrompts(_ context.Context, cfg config.Config) doctorFinding {
 // doctorPrompts is that reading. Replacing nothing is the ordinary case and
 // not a fault, so a machine running the built-in prose reads as empty rather
 // than as missing something.
+//
+// Every wording gets a line naming the file it came from, whether or not it
+// read: three directories can hold a `steer.md` and only one of them is in
+// force, so "which file am I actually running" is the question this row is
+// opened with — and a wording that has gone missing is found here rather
+// than at the next session that refuses to start.
 func doctorPrompts(rows []wordingRow) doctorFinding {
 	if len(rows) == 0 {
 		return doctorFinding{
@@ -1298,24 +1304,29 @@ func doctorPrompts(rows []wordingRow) doctorFinding {
 		}
 	}
 	names := make([]string, 0, len(rows))
-	var unreadable []string
+	lines := make([]string, 0, len(rows))
+	unreadable := 0
 	for _, r := range rows {
 		names = append(names, r.key)
 		if r.err != nil {
-			unreadable = append(unreadable, r.err.Error())
+			unreadable++
+			lines = append(lines, r.err.Error())
+			continue
 		}
+		lines = append(lines, r.key+" — "+r.from)
 	}
 	f := doctorFinding{
-		Subject: countOf(len(rows), "wording", "wordings"),
-		Detail:  strings.Join(names, " · "),
-		Outcome: "ok",
+		Subject:  countOf(len(rows), "wording", "wordings"),
+		Detail:   strings.Join(names, " · "),
+		Outcome:  "ok",
+		Fix:      lines,
+		FixLabel: "show which file each came from",
 	}
-	if len(unreadable) > 0 {
+	if unreadable > 0 {
 		f.Outcome = "unreadable"
 		f.State = components.DoctorFailed
-		f.Consequence = countOf(len(unreadable), "wording", "wordings") + " cannot be read, and no session starts until that is settled"
-		f.Fix = unreadable
-		f.FixLabel = fmt.Sprintf("show the %s", countOf(len(f.Fix), "reason", "reasons"))
+		f.Consequence = countOf(unreadable, "wording", "wordings") + " cannot be read, and no session starts until that is settled"
+		f.FixLabel = fmt.Sprintf("show the %s", countOf(len(f.Fix), "line", "lines"))
 	}
 	return f
 }

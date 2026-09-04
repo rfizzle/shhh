@@ -496,15 +496,22 @@ reach, a project in a language the standards sentence was not written for
 reads it as noise, and a team with its own review checklist has to fork the
 program to use it.
 
-So the words come out of the program and into files. Seven keys under
-`[prompts]` — `todo_research`, `todo_implement`, `todo_review`,
-`todo_review_task`, `todo_remediate`, `todo_commit`, and `todo_standards` for
-the one sentence the stages that change the tree all carry — each name a file
-whose contents replace that stage's instruction. A key nothing sets keeps the
-built-in words, and a file that cannot be read stops the session with the
-path and the reason, exactly as the steer's does: a run on the built-in words
-while the person believes it is running theirs is the failure the whole
-arrangement exists to prevent.
+So the words come out of the program and into files. Seven wordings —
+`todo_research`, `todo_implement`, `todo_review`, `todo_review_task`,
+`todo_remediate`, `todo_commit`, and `todo_standards` for the one sentence
+the stages that change the tree all carry — each live in a file named for
+them, and that file's contents replace that stage's instruction. A file whose
+presence is the override is the whole convention: the checkout's own
+`.shhh/prompts/` first, then a `[prompts]` key where one names a path, then a
+`prompts/` directory beside your settings
+([where](configuration.md#the-mechanism-is-code-its-wording-is-configuration)).
+`shhh config init` writes that last directory with the built-in words already
+in it, which is where editing one starts.
+
+A wording nothing replaced keeps the built-in words, and a file that cannot
+be read stops the session with the path and the reason, exactly as the
+steer's does: a run on the built-in words while the person believes it is
+running theirs is the failure the whole arrangement exists to prevent.
 
 **A checkout says it in files rather than keys.** A project's wordings live
 at `.shhh/prompts/todo_<stage>.md`, and inside that checkout they beat the

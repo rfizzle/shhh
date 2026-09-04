@@ -209,6 +209,12 @@ func (c SummaryConfig) CooldownIntervals() int {
 	return DefaultCooldownIntervals
 }
 
+// SummaryWording is the built-in reading instruction, which is the text a
+// file replacing it would hold. It is what a scaffold writes to start from,
+// and what a wording is compared against to decide whether it replaced
+// anything.
+func SummaryWording() string { return summaryPrompt }
+
 // prompt is the reading instruction in force.
 func (c SummaryConfig) prompt() string {
 	if c.Prompt != "" {

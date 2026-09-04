@@ -98,6 +98,15 @@ type Setting struct {
 	// own comment says why the setting is shaped the way it is, which is a
 	// different question and belongs beside the field.
 	Desc string
+	// Literal is the default in the words `config set` takes it in, for the
+	// keys whose Default is a sentence rather than a value: `2 MiB` is what
+	// a reader needs and `2097152` is what the file needs, and reading the
+	// number back out of the sentence would make `2 MiB` mean two bytes the
+	// first time anybody wrote a unit down. It is empty where Default is
+	// already a value a person could type, and where the default is no
+	// value at all — the parenthesised ones, which the scaffold writes as
+	// the key's own empty shape.
+	Literal string
 	// Signed says a negative is an answer this key has a meaning for — no
 	// round cap, no command timeout, an interval that never widens. Without
 	// it a negative is refused rather than stored, because everywhere else it
@@ -199,7 +208,7 @@ var settings = []Setting{
 		Key: "behavior.shell", Kind: KindString, Default: "(your login shell)",
 		Desc: "The shell commands are run through.",
 	}, {
-		Key: "behavior.context_max_tokens", Kind: KindInt, Default: "8000 tokens",
+		Key: "behavior.context_max_tokens", Kind: KindInt, Default: "8000 tokens", Literal: "8000",
 		Desc: "The token budget for the shell context a generated command is written against.",
 	}, {
 		Key: "behavior.max_tool_rounds", Kind: KindInt, Signed: true, Default: "150",
@@ -236,7 +245,7 @@ var settings = []Setting{
 		Values: []string{"manual", "accept-edits", "auto", "plan"},
 		Desc:   "The permission mode a session starts in.",
 	}, {
-		Key: "behavior.mode_cycle", Kind: KindList, Default: "manual, accept-edits, auto, plan",
+		Key: "behavior.mode_cycle", Kind: KindList, Default: "manual, accept-edits, auto, plan", Literal: "manual, accept-edits, auto, plan",
 		Values: []string{"manual", "accept-edits", "auto", "plan"},
 		Desc:   "The order the mode key walks the permission modes in.",
 	}, {
@@ -261,13 +270,13 @@ var settings = []Setting{
 		Key: "behavior.memory_max_tokens", Kind: KindInt, Default: "1200",
 		Desc: "The token budget for the injected memory block.",
 	}, {
-		Key: "behavior.check_in_interval_rounds", Kind: KindInt, Signed: true, Default: "40 rounds",
+		Key: "behavior.check_in_interval_rounds", Kind: KindInt, Signed: true, Default: "40 rounds", Literal: "40",
 		Desc: "How many tool rounds pass before a turn is asked to take stock.",
 	}, {
-		Key: "behavior.check_in_max_doublings", Kind: KindInt, Signed: true, Default: "2 doublings",
+		Key: "behavior.check_in_max_doublings", Kind: KindInt, Signed: true, Default: "2 doublings", Literal: "2",
 		Desc: "How far that interval widens over one turn; a negative fixes it, so a long turn is asked at the same rate throughout.",
 	}, {
-		Key: "behavior.provider_retries", Kind: KindInt, Default: "3 attempts",
+		Key: "behavior.provider_retries", Kind: KindInt, Default: "3 attempts", Literal: "3",
 		Desc: "How many times one stall — a rate limit, an overloaded provider, a connection that died before a token — is asked again before the failure stands; zero is a machine that would rather see the failure than sit out a wait.",
 	},
 
@@ -317,7 +326,7 @@ var settings = []Setting{
 		Key: "web.allow_private", Kind: KindBool, Default: "off",
 		Desc: "Let a fetch reach private, loopback, link-local and CGNAT addresses, and lift the 80/443 port list; cloud metadata stays blocked either way.",
 	}, {
-		Key: "web.fetch_max_bytes", Kind: KindInt, Default: "2 MiB",
+		Key: "web.fetch_max_bytes", Kind: KindInt, Default: "2 MiB", Literal: "2097152",
 		Desc: "The download ceiling on one fetch.",
 	}, {
 		Key: "web.fetch_timeout_seconds", Kind: KindInt, Default: "30",
@@ -365,10 +374,10 @@ var settings = []Setting{
 		Key: "appearance.window_title", Kind: KindBool, Default: "on",
 		Desc: "Name the terminal's own tab after the session.",
 	}, {
-		Key: "appearance.paste_lines", Kind: KindInt, Signed: true, Default: "10 lines",
+		Key: "appearance.paste_lines", Kind: KindInt, Signed: true, Default: "10 lines", Literal: "10",
 		Desc: "The height past which a paste is staged as an attachment instead of typed into the draft; a negative turns that half of the test off.",
 	}, {
-		Key: "appearance.paste_columns", Kind: KindInt, Signed: true, Default: "1000 columns",
+		Key: "appearance.paste_columns", Kind: KindInt, Signed: true, Default: "1000 columns", Literal: "1000",
 		Desc: "The width past which a paste is staged as an attachment; a negative turns that half of the test off.",
 	}, {
 		Key: "appearance.rail_width", Kind: KindString, Default: "auto",
@@ -376,7 +385,7 @@ var settings = []Setting{
 	},
 
 	{
-		Key: "history.retention_days", Kind: KindInt, Default: "90 days",
+		Key: "history.retention_days", Kind: KindInt, Default: "90 days", Literal: "90",
 		Desc: "How long a recorded session is kept before startup prunes it.",
 	},
 
@@ -386,12 +395,12 @@ var settings = []Setting{
 	},
 
 	{
-		Key: "reports.retention_days", Kind: KindInt, Default: "90 days",
+		Key: "reports.retention_days", Kind: KindInt, Default: "90 days", Literal: "90",
 		Desc: "How long a generated report page is kept.",
 	},
 
 	{
-		Key: "observe.retention_days", Kind: KindInt, Default: "180 days",
+		Key: "observe.retention_days", Kind: KindInt, Default: "180 days", Literal: "180",
 		Desc: "How long a session's record and its events are kept before startup prunes them; longer than history's window because a comparison reads back across a change made a quarter ago.",
 	},
 
@@ -436,13 +445,13 @@ var settings = []Setting{
 		Key: "summary.subagents", Kind: KindBool, Default: "off",
 		Desc: "Take readings in each spawned child; a fan-out of six is six more readings per interval.",
 	}, {
-		Key: "summary.intervene_cooldown_intervals", Kind: KindInt, Signed: true, Default: "2 readings",
+		Key: "summary.intervene_cooldown_intervals", Kind: KindInt, Signed: true, Default: "2 readings", Literal: "2",
 		Desc: "How many reading intervals pass between two verdict-driven interventions.",
 	}, {
-		Key: "summary.steer_target_chars", Kind: KindInt, Signed: true, Default: "400 characters",
+		Key: "summary.steer_target_chars", Kind: KindInt, Signed: true, Default: "400 characters", Literal: "400",
 		Desc: "How much of the instruction a steer quotes back to a drifting turn; a negative quotes it whole.",
 	}, {
-		Key: "summary.title", Kind: KindBool, Default: "on when a summary model is set, off otherwise",
+		Key: "summary.title", Kind: KindBool, Default: "on when a summary model is set, off otherwise", Literal: "true",
 		Desc: "Ask the summary model to name an unnamed session after its first turn, for the saved-chat listings.",
 	},
 
@@ -464,10 +473,10 @@ var settings = []Setting{
 
 	{
 		Key: "prompts.steer", Kind: KindPath, Default: "(the built-in wording)",
-		Desc: "A file whose contents replace the message a drifting turn is given.",
+		Desc: "A file whose contents replace the message a drifting turn is given; it may place `{{target}}` and `{{reason}}`.",
 	}, {
 		Key: "prompts.check_in", Kind: KindPath, Default: "(the built-in wording)",
-		Desc: "A file whose contents replace the message a turn that has reached its interval is given.",
+		Desc: "A file whose contents replace the message a turn that has reached its interval is given; it may place `{{rounds}}` and `{{finished}}`.",
 	}, {
 		Key: "prompts.summary", Kind: KindPath, Default: "(the built-in wording)",
 		Desc: "A file whose contents replace the reading instruction the summarizing model is sent.",
@@ -509,7 +518,7 @@ var settings = []Setting{
 		Key: "todo.commit", Kind: KindBool, Default: "on",
 		Desc: "End a backlog run in a commit; off leaves the change in the working tree, which is the answer for a directory that is not a repository.",
 	}, {
-		Key: "todo.item_timeout_minutes", Kind: KindInt, Default: "0 (no cap)",
+		Key: "todo.item_timeout_minutes", Kind: KindInt, Default: "0 (no cap)", Literal: "0",
 		Desc: "How long one item of a sprint may take before it is blocked and the sprint stops; zero leaves it uncapped.",
 	}, {
 		Key: "todo.groom_stale_commits", Kind: KindInt, Default: "50",

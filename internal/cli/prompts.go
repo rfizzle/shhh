@@ -8,12 +8,18 @@ package cli
 // with a file, so tuning what a session is told costs an edit and a restart
 // rather than a build (docs/capabilities/configuration.md#the-mechanism-is-code-its-wording-is-configuration).
 //
-// A checkout says the same thing by convention instead of by key: a file at
-// `.shhh/prompts/<key>.md` in a trusted checkout is that wording, and it
-// beats the user's file for that project. It is a convention rather than a
-// key because a checkout may not point the settings at a path — a path named
-// in a checkout is a path in every clone of it, anywhere on the machine —
-// and because a wording that travels with the repository has to live in it
+// Most of it is convention rather than a key. A file at `<key>.md` under a
+// prompts directory is that wording: the trusted checkout's own directory
+// first, then a `[prompts]` key where one names a path, then the person's
+// own directory beside their settings. A file that is there is the
+// override, and nothing has to point at it — which is what lets `shhh
+// config init` write a directory somebody edits without also editing
+// config.toml. The keys stay for the case they were built for: one wording,
+// somewhere else.
+//
+// A checkout gets no key at all, only the convention: a path named in a
+// checkout is a path in every clone of it, anywhere on the machine, and a
+// wording that travels with the repository has to live in it
 // (docs/capabilities/todo.md#the-stage-prompts-are-yours-to-edit).
 //
 // It is one door, opened where a session is built, because every surface
@@ -63,11 +69,11 @@ type sessionPrompts struct {
 func loadPrompts(c config.PromptsConfig, projectDir string) (sessionPrompts, error) {
 	var out sessionPrompts
 	for _, w := range wordingKeys {
-		path, named, undo := promptSource(w.key, w.named(c), projectDir)
-		if path == "" {
+		from := promptSource(w.key, w.named(c), projectDir)
+		if from.path == "" {
 			continue
 		}
-		text, err := readWording(path, named, undo, w.validate)
+		text, err := readWording(from, w.validate)
 		if err != nil {
 			return sessionPrompts{}, err
 		}
@@ -77,11 +83,9 @@ func loadPrompts(c config.PromptsConfig, projectDir string) (sessionPrompts, err
 }
 
 // readWording is one file read and judged, with the sentence a reader acts
-// on when it will not do. undo is what puts the built-in wording back, which
-// differs by where the file was named: a key is removed and a checkout's file
-// is deleted, and a reader told to do the other one is being sent to edit a
-// file that has nothing to do with it.
-func readWording(path, named, undo string, validate func(string) error) (string, error) {
+// on when it will not do.
+func readWording(from promptFile, validate func(string) error) (string, error) {
+	path, named, undo := from.path, from.named, from.undo
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return "", fmt.Errorf("%s: %w", named, err)
@@ -104,9 +108,16 @@ func readWording(path, named, undo string, validate func(string) error) (string,
 // prompts directory, where the settings state it, where the session keeps it,
 // and which substitutions it takes.
 type wording struct {
-	key      string
-	named    func(config.PromptsConfig) string
-	into     func(*sessionPrompts) *string
+	key   string
+	named func(config.PromptsConfig) string
+	into  func(*sessionPrompts) *string
+	// builtin is the text this wording carries when nothing replaced it. It
+	// is here because two surfaces need it and neither can be told it by the
+	// file: the scaffold writes it out to start from, and the fingerprint
+	// compares a file against it — a file holding exactly the built-in text
+	// asks the model for exactly what the built-in asks, and splitting the
+	// record over it would report a change nobody made.
+	builtin  func() string
 	validate func(string) error
 }
 
@@ -117,34 +128,53 @@ type wording struct {
 // whose failure nobody sees until a session will not start.
 var wordingKeys = []wording{
 	{"steer", func(c config.PromptsConfig) string { return c.Steer },
-		func(p *sessionPrompts) *string { return &p.steer }, agent.ValidateSteer},
+		func(p *sessionPrompts) *string { return &p.steer },
+		agent.SteerWording, agent.ValidateSteer},
 	{"check_in", func(c config.PromptsConfig) string { return c.CheckIn },
-		func(p *sessionPrompts) *string { return &p.checkIn }, agent.ValidateCheckIn},
+		func(p *sessionPrompts) *string { return &p.checkIn },
+		agent.CheckInWording, agent.ValidateCheckIn},
 	{"summary", func(c config.PromptsConfig) string { return c.Summary },
-		func(p *sessionPrompts) *string { return &p.summary }, agent.ValidateVerbatim},
+		func(p *sessionPrompts) *string { return &p.summary },
+		agent.SummaryWording, agent.ValidateVerbatim},
 	{"classifier", func(c config.PromptsConfig) string { return c.Classifier },
-		func(p *sessionPrompts) *string { return &p.classifier }, agent.ValidateVerbatim},
+		func(p *sessionPrompts) *string { return &p.classifier },
+		agent.ClassifierWording, agent.ValidateVerbatim},
 	{"todo_standards", func(c config.PromptsConfig) string { return c.TodoStandards },
-		func(p *sessionPrompts) *string { return &p.todo.Standards }, agent.ValidateVerbatim},
+		func(p *sessionPrompts) *string { return &p.todo.Standards },
+		func() string { return builtinStages.Standards }, agent.ValidateVerbatim},
 	{"todo_research", func(c config.PromptsConfig) string { return c.TodoResearch },
-		func(p *sessionPrompts) *string { return &p.todo.Research }, agent.ValidateTodoResearch},
+		func(p *sessionPrompts) *string { return &p.todo.Research },
+		func() string { return builtinStages.Research }, agent.ValidateTodoResearch},
 	{"todo_implement", func(c config.PromptsConfig) string { return c.TodoImplement },
-		func(p *sessionPrompts) *string { return &p.todo.Implement }, agent.ValidateTodoImplement},
+		func(p *sessionPrompts) *string { return &p.todo.Implement },
+		func() string { return builtinStages.Implement }, agent.ValidateTodoImplement},
 	{"todo_review", func(c config.PromptsConfig) string { return c.TodoReview },
-		func(p *sessionPrompts) *string { return &p.todo.Review }, agent.ValidateTodoReview},
+		func(p *sessionPrompts) *string { return &p.todo.Review },
+		func() string { return builtinStages.Review }, agent.ValidateTodoReview},
 	{"todo_review_task", func(c config.PromptsConfig) string { return c.TodoReviewTask },
-		func(p *sessionPrompts) *string { return &p.todo.ReviewTask }, agent.ValidateTodoReview},
+		func(p *sessionPrompts) *string { return &p.todo.ReviewTask },
+		func() string { return builtinStages.ReviewTask }, agent.ValidateTodoReview},
 	{"todo_remediate", func(c config.PromptsConfig) string { return c.TodoRemediate },
-		func(p *sessionPrompts) *string { return &p.todo.Remediate }, agent.ValidateTodoRemediate},
+		func(p *sessionPrompts) *string { return &p.todo.Remediate },
+		func() string { return builtinStages.Remediate }, agent.ValidateTodoRemediate},
 	{"todo_commit", func(c config.PromptsConfig) string { return c.TodoCommit },
-		func(p *sessionPrompts) *string { return &p.todo.Commit }, agent.ValidateTodoCommit},
+		func(p *sessionPrompts) *string { return &p.todo.Commit },
+		func() string { return builtinStages.Commit }, agent.ValidateTodoCommit},
 }
 
+// builtinStages is the backlog runner's own set, read once. It is a value
+// rather than a call per wording because the seven are one set and pairing a
+// stage with another stage's text is exactly the mistake a list of eleven
+// entries invites.
+var builtinStages = run.BuiltinWordings()
+
 // wordingRow is one wording a file replaced, as a surface that reports on
-// them finds it: the key, and the reason it will not load if it will not.
+// them finds it: the key, where it was read from, and the reason it will not
+// load if it will not.
 type wordingRow struct {
-	key string
-	err error
+	key  string
+	from string
+	err  error
 }
 
 // readWordings reads every wording in force and keeps going past a failure,
@@ -154,35 +184,82 @@ type wordingRow struct {
 func readWordings(c config.PromptsConfig, projectDir string) []wordingRow {
 	var rows []wordingRow
 	for _, w := range wordingKeys {
-		path, named, undo := promptSource(w.key, w.named(c), projectDir)
-		if path == "" {
+		from := promptSource(w.key, w.named(c), projectDir)
+		if from.path == "" {
 			continue
 		}
-		_, err := readWording(path, named, undo, w.validate)
-		rows = append(rows, wordingRow{key: w.key, err: err})
+		_, err := readWording(from, w.validate)
+		rows = append(rows, wordingRow{key: w.key, from: from.named, err: err})
 	}
 	return rows
 }
 
-// promptSource is the file one wording is read from, and the words an error
-// about it names it by: the checkout's own file where there is one, and
-// otherwise whatever the settings pointed at.
+// projectWordings is the keys this checkout's own directory supplied, in the
+// settings table's order. A session running words the reader did not write
+// is one they cannot account for from their own files, so the start screen
+// names them the way it names the checkout's settings file.
+func projectWordings(c config.PromptsConfig, projectDir string) []string {
+	if projectDir == "" {
+		return nil
+	}
+	var out []string
+	for _, w := range wordingKeys {
+		if promptSource(w.key, w.named(c), projectDir).project {
+			out = append(out, w.key)
+		}
+	}
+	return out
+}
+
+// promptFile is where one wording is read from: the file itself, the words
+// an error about it names it by, and what puts the built-in wording back —
+// which differs by where the file was found. A key is removed and a file
+// found by convention is deleted, and a reader told to do the other one is
+// being sent to edit a file that has nothing to do with it.
+type promptFile struct {
+	path  string
+	named string
+	undo  string
+	// project marks a wording this checkout handed the session rather than
+	// one the person keeps. It is the difference the start screen states.
+	project bool
+}
+
+// promptSource is the file one wording is read from, most specific first:
+// the checkout's own directory, then whatever the settings pointed at, then
+// the person's own directory beside their settings. A file that is there is
+// the override and nothing has to name it.
 //
 // The checkout wins for the reason its settings do — what is true of a
 // repository travels with the repository — and it cannot take a wording
 // away: a checkout with no file for a key leaves the person's answer
-// standing, so the two files are read per wording rather than per set.
-func promptSource(key, configured, projectDir string) (path, named, undo string) {
+// standing, so the directories are read per wording rather than per set.
+//
+// A key that names a file which is not there is still an answer, and a wrong
+// one: it stops the session with the path rather than quietly falling
+// through to the directory below, because a person who wrote a path and got
+// the wording under it would have no way to see the typo.
+func promptSource(key, configured, projectDir string) promptFile {
 	if projectDir != "" {
-		p := filepath.Join(projectDir, key+".md")
-		if info, err := os.Stat(p); err == nil && !info.IsDir() {
-			return p, project.PromptsDir + "/" + key + ".md", "delete it"
+		if p := filepath.Join(projectDir, key+".md"); isPromptFile(p) {
+			return promptFile{p, project.PromptsDir + "/" + key + ".md", "delete it", true}
 		}
 	}
-	if configured == "" {
-		return "", "", ""
+	if configured != "" {
+		return promptFile{promptPath(configured), "config prompts." + key, "remove the key", false}
 	}
-	return promptPath(configured), "config prompts." + key, "remove the key"
+	if p := filepath.Join(userPromptsDir(), key+".md"); isPromptFile(p) {
+		return promptFile{p, shortPath(p), "delete it", false}
+	}
+	return promptFile{}
+}
+
+// isPromptFile reports whether a wording is actually there. A directory of
+// that name is not a wording, and reading one would fail with an error about
+// a directory rather than about a wording nobody wrote.
+func isPromptFile(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && !info.IsDir()
 }
 
 // projectPrompts is where this checkout keeps its wordings, and "" where
@@ -196,6 +273,17 @@ func projectPrompts() string {
 	}
 	return filepath.Join(t.Root, filepath.FromSlash(project.PromptsDir))
 }
+
+// userPromptsDir is where a person's own wordings live: a directory beside
+// the settings file, so everything they wrote for shhh sits in one place and
+// a wording travels with the settings rather than with whichever directory a
+// session was opened in.
+func userPromptsDir() string {
+	return filepath.Join(filepath.Dir(config.WritePath()), promptsDirName)
+}
+
+// promptsDirName is what that directory is called, in both scopes.
+const promptsDirName = "prompts"
 
 // promptPath resolves a configured path against the directory the config
 // file itself lives in, so a wording kept beside the file travels with it
@@ -230,23 +318,23 @@ func steering(cfg config.Config, prompts sessionPrompts) agent.Steering {
 // has to divide the record the same way. A session that overrode nothing
 // contributes nothing and hashes exactly as it did before, so this does not
 // move the population it is meant to divide.
+//
+// A file holding the built-in text contributes nothing either, which is what
+// makes a scaffold safe to write: the whole point of one is a directory of
+// the built-in wordings to start editing from, and a scaffold that put every
+// session after it in a different cohort from every session before it would
+// divide the record on a change nobody made.
 func (p sessionPrompts) fingerprintOf(sysPrompt string) string {
-	for _, part := range []struct{ name, text string }{
-		{"steer", p.steer},
-		{"check_in", p.checkIn},
-		{"summary", p.summary},
-		{"classifier", p.classifier},
-		{"todo_standards", p.todo.Standards},
-		{"todo_research", p.todo.Research},
-		{"todo_implement", p.todo.Implement},
-		{"todo_review", p.todo.Review},
-		{"todo_review_task", p.todo.ReviewTask},
-		{"todo_remediate", p.todo.Remediate},
-		{"todo_commit", p.todo.Commit},
-	} {
-		if part.text != "" {
-			sysPrompt += "\n\x00" + part.name + "\x00" + part.text
+	for _, w := range wordingKeys {
+		text := *w.into(&p)
+		// Compared with the surrounding whitespace off, because that is
+		// what an editor adds when it saves a scaffolded file and it is not
+		// a change to what the model is asked. A newline at the end of a
+		// file must not put a session in a cohort of its own.
+		if text == "" || strings.TrimSpace(text) == strings.TrimSpace(w.builtin()) {
+			continue
 		}
+		sysPrompt += "\n\x00" + w.key + "\x00" + text
 	}
 	return sysPrompt
 }

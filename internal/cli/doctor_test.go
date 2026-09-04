@@ -985,22 +985,32 @@ func TestDoctorPrompts(t *testing.T) {
 		t.Fatalf("a machine on the built-in prose is reported as a fault: %+v", none)
 	}
 
-	ok := doctorPrompts([]wordingRow{{key: "steer"}, {key: "todo_review"}})
+	ok := doctorPrompts([]wordingRow{
+		{key: "steer", from: ".shhh/prompts/steer.md"},
+		{key: "todo_review", from: "~/.config/shhh/prompts/todo_review.md"},
+	})
 	if ok.Outcome != "ok" || !strings.Contains(ok.Subject, "2 wordings") {
 		t.Fatalf("the row does not count what it read: %+v", ok)
 	}
 	if !strings.Contains(ok.Detail, "steer") || !strings.Contains(ok.Detail, "todo_review") {
 		t.Fatalf("the row does not name the keys: %q", ok.Detail)
 	}
+	// Which of the three directories won is the question this row is opened
+	// with, so every wording names the file it was read from.
+	if len(ok.Fix) != 2 ||
+		!strings.Contains(ok.Fix[0], ".shhh/prompts/steer.md") ||
+		!strings.Contains(ok.Fix[1], "~/.config/shhh/prompts/todo_review.md") {
+		t.Fatalf("the row does not say where each wording came from: %+v", ok.Fix)
+	}
 
 	bad := doctorPrompts([]wordingRow{
-		{key: "steer"},
+		{key: "steer", from: ".shhh/prompts/steer.md"},
 		{key: "todo_commit", err: errors.New("config prompts.todo_commit: /w/commit.md: no such file")},
 	})
 	if bad.State != components.DoctorFailed || bad.Consequence == "" {
 		t.Fatalf("an unreadable wording did not fail the row: %+v", bad)
 	}
-	if len(bad.Fix) != 1 || !strings.Contains(bad.Fix[0], "/w/commit.md") {
+	if len(bad.Fix) != 2 || !strings.Contains(bad.Fix[1], "/w/commit.md") {
 		t.Fatalf("the row does not carry the reason: %+v", bad.Fix)
 	}
 }

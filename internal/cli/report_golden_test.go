@@ -97,6 +97,8 @@ func TestReportGoldens(t *testing.T) {
 		{"config.list", goldenConfigList().Render(80)},
 		{"config.list.w60", goldenConfigList().Render(60)},
 		{"config.get", goldenConfigGet().Render(80)},
+		{"config.init", goldenConfigInit().Render(80)},
+		{"config.scaffold", goldenScaffoldOpening()},
 	} {
 		t.Run(c.name, func(t *testing.T) { assertReportGolden(t, c.name, c.body) })
 	}
@@ -136,6 +138,15 @@ func goldenChecks() []components.DoctorCheck {
 			Fix:         []string{"sudo apt install bubblewrap"}},
 		{Name: "engine", Subject: "no container engine", Outcome: "not checked",
 			State: components.DoctorSkipped},
+		// The wordings row, built from the reading itself rather than typed
+		// out: which of the three directories won is what the row is opened
+		// with, so the fixture has to be able to go wrong the way the row
+		// can.
+		doctorCheck("prompts", doctorPrompts([]wordingRow{
+			{key: "steer", from: ".shhh/prompts/steer.md"},
+			{key: "summary", from: "config prompts.summary"},
+			{key: "todo_commit", from: "~/.config/shhh/prompts/todo_commit.md"},
+		}), 0),
 	}
 }
 
@@ -386,6 +397,28 @@ func goldenConfigGet() report.Report {
 		}
 	}
 	return report.Report{}
+}
+
+// goldenConfigInit is what the command answers with after it writes: the two
+// things it made and what each of them holds.
+func goldenConfigInit() report.Report {
+	return initPlan{
+		settings: "/home/dev/.config/shhh/config.toml",
+		prompts:  "/home/dev/.config/shhh/prompts",
+		files:    make([]initFile, len(wordingKeys)),
+	}.wrote()
+}
+
+// goldenScaffoldOpening is the head of the file that command writes: what it
+// says about itself and the first table, which is where a reader finds out
+// what the shape of the rest is. The whole file is a hundred keys and the
+// opening is what has to read well.
+func goldenScaffoldOpening() string {
+	text := config.Scaffold(config.Config{}, false)
+	if at := strings.Index(text, "\n[behavior]"); at > 0 {
+		return text[:at+1]
+	}
+	return text
 }
 
 // goldenObserveCompare is two cohorts either side of a prompt edit, both

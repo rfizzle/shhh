@@ -95,7 +95,7 @@ func TestStartGate_BrokenConfigIsReportedRatherThanSwallowed(t *testing.T) {
 
 func TestBuildStartInfo_SurveysWithoutAGateOrADatabase(t *testing.T) {
 	// Neither source is required: the screen still states the project.
-	info := buildStartInfo(project.Survey(""), nil, false, chat.Trust{}, config.Project{})
+	info := buildStartInfo(project.Survey(""), nil, false, chat.Trust{}, config.Project{}, nil)
 	if info.Project.Dir == "" {
 		t.Fatal("the survey should always name the directory it ran in")
 	}
@@ -117,7 +117,7 @@ func TestBuildStartInfo_CarriesTheMostRecentSavedSession(t *testing.T) {
 		t.Fatalf("save: %v", err)
 	}
 
-	info := buildStartInfo(project.Survey(""), db, false, chat.Trust{}, config.Project{})
+	info := buildStartInfo(project.Survey(""), db, false, chat.Trust{}, config.Project{}, nil)
 	if !info.Recent.Present || info.Recent.Name != "loop refactor" {
 		t.Fatalf("recent = %+v", info.Recent)
 	}
@@ -137,7 +137,7 @@ func TestBuildStartInfo_OffersTheNewestSlotNobodyElseHolds(t *testing.T) {
 	time.Sleep(2 * time.Millisecond)
 	heldChat(t, db, "someone else's")
 
-	info := buildStartInfo(project.Survey(""), db, false, chat.Trust{}, config.Project{})
+	info := buildStartInfo(project.Survey(""), db, false, chat.Trust{}, config.Project{}, nil)
 	if !info.Recent.Present || info.Recent.Name != "loop refactor" {
 		t.Fatalf("recent = %+v, want the newest slot nobody else holds", info.Recent)
 	}
@@ -276,13 +276,13 @@ func TestReadSibling_HandsTheTreeReadingTheLiveHalf(t *testing.T) {
 func TestBuildStartInfo_CarriesTheCheckoutsSettingsFile(t *testing.T) {
 	proj := config.Project{Path: "/repo/.shhh/config.toml", Display: ".shhh/config.toml",
 		Keys: []string{"behavior.default_mode"}}
-	info := buildStartInfo(project.Survey(""), nil, false, chat.Trust{}, proj)
+	info := buildStartInfo(project.Survey(""), nil, false, chat.Trust{}, proj, nil)
 	if info.Project.ConfigFile != ".shhh/config.toml" {
 		t.Fatalf("the checkout's settings file is not on the survey: %q", info.Project.ConfigFile)
 	}
 	// Nothing to say where the checkout has no file of its own, which is
 	// almost every repository.
-	bare := buildStartInfo(project.Survey(""), nil, false, chat.Trust{}, config.Project{})
+	bare := buildStartInfo(project.Survey(""), nil, false, chat.Trust{}, config.Project{}, nil)
 	if bare.Project.ConfigFile != "" {
 		t.Fatalf("a checkout with no settings file named one: %q", bare.Project.ConfigFile)
 	}

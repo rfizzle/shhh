@@ -289,8 +289,8 @@ than accuses are decisions about the product, and they stay in the program.
 How many rounds pass, how far the interval widens, how much of the
 instruction is quoted back, and the sentences themselves are none of those
 things, and they are exactly what someone tuning a session has to be able to
-change. So they come out: four numbers as keys, and the wordings as files the
-configuration names. The same line divides a backlog run: what each stage is
+change. So they come out: four numbers as keys, and the wordings as files.
+The same line divides a backlog run: what each stage is
 for is a wording and how its answer is read back is not, so the stage
 instructions are files too and the marker lines the run parses are appended
 after whatever the file said
@@ -315,15 +315,50 @@ way. Nothing has an empty wording to send, so a file a truncated write left
 with nothing in it would silently mean "not configured" — the built-in words
 back in place, and a record that says the session overrode nothing.
 
-**A checkout says it in files rather than keys.** `[prompts]` is one of the
-few tables a repository's own settings may not set — it points at a file
+**A wording is a file whose presence is the override.** A file named for the
+wording, in a prompts directory, is that wording — nothing has to point at
+it. Three directories can hold one and the most specific wins: the trusted
+checkout's own `.shhh/prompts/`, then a path a `[prompts]` key names, then a
+`prompts/` directory beside your settings file. A key that names a file which
+is not there is still an answer and a wrong one, so it stops the session with
+the path rather than quietly falling through to the directory below.
+
+The convention came after the keys and mostly replaced them. With four
+wordings and no directory for them, a key naming a path was the right shape;
+with eleven and a checkout scope, a file that is the override is what agent
+profiles and skills already do, and it is what lets one command write a
+directory somebody edits without also editing the settings. The keys stay for
+the case they were built for: one wording, kept somewhere else.
+
+**A checkout gets the convention and no key at all.** `[prompts]` is one of
+the few tables a repository's own settings may not set — it points at a file
 anywhere on the machine, and a path in a checkout is a path in every clone of
 it. What a repository does instead is put the wording where the wording
-belongs: a file at `.shhh/prompts/<key>.md` is that wording for that
-checkout, and inside it that file beats the person's own, per key, so a
-project that replaces one leaves the rest of the person's answers standing.
-It is behind the checkout's trust answer, like everything else a clone asks a
-session to load.
+belongs, in its own `.shhh/prompts/`, and inside that checkout those files
+beat the person's own, per key, so a project that replaces one leaves the
+rest of the person's answers standing. They are behind the checkout's trust
+answer, like everything else a clone asks a session to load, and the start
+screen names the ones it handed over.
+
+**One command writes the file you would have written.** `shhh config init`
+creates a settings file holding every key, commented out at its default with
+the sentence that says what it decides above it, and a `prompts/` directory
+holding every wording as a file already carrying the built-in text. Editing a
+prompt is then opening a file, rather than finding the built-in prose in the
+program and a key to point at it. `--project` writes the checkout's pair
+instead, with the keys a checkout may not decide left out.
+
+It is the one deliberate write-everything act, and it is not the flattening
+the targeted rewrite exists to prevent: a commented default is not a value in
+the file. It also never writes over anything. A file already there — the
+settings, or one wording — stops the whole command, which names what is in
+the way and offers `--stdout`: the same scaffold printed with your own values
+filled in uncommented, so expanding a three-line file is a print and a paste
+and never a rewrite behind you.
+
+The placeholders a wording takes are named in the comment above its key in
+the settings file and never in the wording's own file, because that file is
+sent to the model as written.
 
 **A wording is part of what a session was sent, so it is part of the
 fingerprint.** The record already fingerprints the system prompt as it went
@@ -332,6 +367,12 @@ is sent to the same model in the same session by the same mechanism, and an
 override that did not divide the record the same way would be a dial with no
 instrument on it. A session that overrode nothing fingerprints exactly as it
 did before, so turning the ability on divides nothing by itself.
+
+A file holding the built-in text divides nothing either. It asks the model
+for exactly what the built-in asks, and a scaffold that put every session
+after it in a different group from every session before it would be dividing
+the record on a change nobody made. Whitespace around the edges of the file
+does not count, because that is what an editor adds when it saves one.
 
 **The substitutions are checked before anything runs on them.** A wording is
 prose with a few values dropped into it — the rounds that have gone, the
@@ -459,6 +500,11 @@ Two tables are not here because a key is the wrong shape for them.
 `[mcp.servers]` is a definition per server and `shhh mcp` is the surface that
 knows it; the profiles under `[agents]` are one key per role, which the
 `[agents]` table below states as the shape it is.
+
+The same declaration is what `shhh config init` writes out as a file: every
+key here, commented out at its default, with its sentence above it. It is the
+answer to reading a table of a hundred keys and wondering which of them your
+own file could hold.
 
 <!-- BEGIN generated settings reference — written by `make docs` from the settings table; edit the table, not this. -->
 
@@ -627,8 +673,8 @@ knows it; the profiles under `[agents]` are one key per role, which the
 
 | Key | Takes | Default | What it decides |
 |---|---|---|---|
-| `steer` | path | (the built-in wording) | A file whose contents replace the message a drifting turn is given. |
-| `check_in` | path | (the built-in wording) | A file whose contents replace the message a turn that has reached its interval is given. |
+| `steer` | path | (the built-in wording) | A file whose contents replace the message a drifting turn is given; it may place `{{target}}` and `{{reason}}`. |
+| `check_in` | path | (the built-in wording) | A file whose contents replace the message a turn that has reached its interval is given; it may place `{{rounds}}` and `{{finished}}`. |
 | `summary` | path | (the built-in wording) | A file whose contents replace the reading instruction the summarizing model is sent. |
 | `classifier` | path | (the built-in wording) | A file whose contents replace the instruction auto mode's permission classifier is sent. |
 | `todo_standards` | path | (the built-in wording) | A file whose contents replace the sentence every stage of a backlog run that changes the tree carries. |
