@@ -63,7 +63,11 @@ func loadAgentProfiles(projectScoped bool) (*agentProfiles, error) {
 		defs map[string]config.AgentDefinition
 		err  error
 	)
-	if projectScoped {
+	// An untrusted checkout keeps its own profiles to itself. A profile
+	// carries a permission set, a tool allowlist and a prompt, so a clone
+	// that could add one would be a clone choosing what a spawned agent may
+	// do (docs/capabilities/subagents.md#a-profile-is-a-file).
+	if projectScoped && projectTrust().Allows() {
 		cwd, wdErr := os.Getwd()
 		if wdErr != nil {
 			cwd = "."

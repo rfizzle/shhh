@@ -18,6 +18,14 @@ import (
 // check output lands in the evidence store when one is open, scrubbed of
 // the session's secrets on the way in.
 func openQualityGate(cfg config.Config, red *evidence.Reducer, sc *scope.Scope) *quality.Runner {
+	// The suites are command text out of a file that arrived with the
+	// clone, and the tool runs them without an approval. So an untrusted
+	// checkout gets no runner and no quality_gate tool at all, rather than a
+	// tool that refuses when the model calls it: a registered tool is a
+	// promise, and the withheld list is where this is reported.
+	if !projectTrust().Allows() {
+		return nil
+	}
 	ws, err := os.Getwd()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "warning: quality gate unavailable: %v\n", err)

@@ -202,6 +202,26 @@ var migrations = []string{
 	// reconciled away.
 	`ALTER TABLE agent_sessions ADD COLUMN pid INTEGER NOT NULL DEFAULT 0;
 	ALTER TABLE agent_sessions ADD COLUMN heartbeat TEXT NOT NULL DEFAULT '';`,
+
+	// Trust is the checkout's, not one server's. A repository names skills,
+	// agent profiles, quality suites, hooks and servers, and all of them run
+	// as whoever cloned it, so one answer per root replaces the per-server
+	// one (docs/capabilities/approvals-and-safety.md#a-checkout-declares-what-it-runs).
+	//
+	// The old rows are carried so a checkout somebody already answered for
+	// is still on record. Their fingerprints are not the new one — that
+	// covered a single definition and this covers everything the checkout
+	// declares — so the first session in such a checkout reads it as edited
+	// and asks once. Widening a person's answer without asking would grant
+	// trust over four kinds of thing they were never shown.
+	`CREATE TABLE IF NOT EXISTS project_trust (
+		root        TEXT NOT NULL PRIMARY KEY,
+		fingerprint TEXT NOT NULL,
+		trusted_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+	);
+	INSERT OR IGNORE INTO project_trust (root, fingerprint, trusted_at)
+		SELECT root, MIN(fingerprint), MIN(trusted_at) FROM mcp_trust GROUP BY root;
+	DROP TABLE mcp_trust;`,
 }
 
 // migrate brings the store up to the current schema, one step per

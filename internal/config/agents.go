@@ -225,7 +225,10 @@ func AgentDirs() []string {
 // dir itself outside a repository. It is searched before the config
 // directories, so a project can carry the personas its work needs and
 // shadow a global one of the same name. Nothing assumes the directory is
-// committed. See docs/capabilities/subagents.md#a-profile-is-a-file.
+// committed, and the caller reads it only in a checkout the person has
+// trusted: a profile carries a permission set and a tool allowlist, so a
+// clone that could add one would be a clone deciding what a spawned agent
+// may do. See docs/capabilities/subagents.md#a-profile-is-a-file.
 func ProjectAgentDir(dir string) string {
 	abs, err := filepath.Abs(dir)
 	if err != nil {

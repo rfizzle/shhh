@@ -15,9 +15,13 @@ import (
 )
 
 // ConfigRelPath is where a workspace's quality config lives, relative to the
-// workspace root. The file is trusted — the user authors it — and it is the
-// only source of command text: the model can request a suite by name but can
-// never supply an executable or arguments.
+// workspace root. The file is the only source of command text: the model can
+// request a suite by name but can never supply an executable or arguments.
+//
+// "Trusted" is a fact about the checkout and not about the file. A clone's
+// suites are command lines that run without an approval, so the caller does
+// not build a runner at all until the person has answered for the checkout
+// (docs/capabilities/approvals-and-safety.md#a-checkout-declares-what-it-runs).
 const ConfigRelPath = ".shhh/quality.json"
 
 // DefaultSuite is the suite a run uses when no name is given.

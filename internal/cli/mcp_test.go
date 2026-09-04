@@ -43,8 +43,8 @@ func TestMCPFindingReadsEachStatus(t *testing.T) {
 		outcome string
 		fix     string
 	}{
-		{mcp.Report{Definition: def, Status: mcp.StatusUntrusted}, components.DoctorWarned, "untrusted", "shhh mcp trust gh"},
-		{mcp.Report{Definition: def, Status: mcp.StatusChanged}, components.DoctorWarned, "changed", "shhh mcp trust gh"},
+		{mcp.Report{Definition: def, Status: mcp.StatusUntrusted}, components.DoctorWarned, "untrusted", "shhh doctor trust"},
+		{mcp.Report{Definition: def, Status: mcp.StatusChanged}, components.DoctorWarned, "changed", "shhh doctor trust"},
 		{mcp.Report{Definition: def, Status: mcp.StatusFailed, Error: "server gh: connect: boom"}, components.DoctorFailed, "failed", "boom"},
 		{mcp.Report{Definition: def, Status: mcp.StatusMissingEnv, Missing: []string{"TOKEN"}}, components.DoctorWarned, "unset: TOKEN", "export TOKEN=..."},
 		{mcp.Report{Definition: def, Status: mcp.StatusDisabled}, components.DoctorSkipped, "disabled", "\"disabled\": false"},
@@ -112,9 +112,22 @@ func TestMCPListingSaysWhatEachServerBecame(t *testing.T) {
 		{Definition: mcp.Definition{Name: "proj", Scope: mcp.ScopeProject, Transport: mcp.TransportStdio, Command: "npx"}, Status: mcp.StatusUntrusted},
 	}}
 	got := mcpListing(ts, &mcp.Catalog{Diagnostics: []string{"/repo/.mcp.json: server Bad Name: bad"}}, "/repo")
-	for _, want := range []string{"⚠ keyed", "unset: X_TOKEN", "export X_TOKEN=...", "⚠ proj", "shhh mcp trust proj", "Bad Name", "0 servers connected"} {
+	for _, want := range []string{"⚠ keyed", "unset: X_TOKEN", "export X_TOKEN=...", "⚠ proj", "shhh doctor trust", "Bad Name", "0 servers connected"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("listing lacks %q:\n%s", want, got)
+		}
+	}
+}
+
+// Trusting one server by name is gone: the answer is the checkout's, and a
+// command that pretended otherwise would either lie about what it did or
+// grant four other kinds of thing under a server's name.
+func TestMCPManagerSendsTrustToTheOnePlaceItIsAnswered(t *testing.T) {
+	manage := mcpManager(nil, &mcp.Catalog{})
+	for _, args := range [][]string{{"trust", "proj"}, {"distrust", "proj"}, {"trust"}} {
+		out := manage(args)
+		if !strings.Contains(out, "/trust") || !strings.Contains(out, "checkout") {
+			t.Errorf("/mcp %v = %q", args, out)
 		}
 	}
 }

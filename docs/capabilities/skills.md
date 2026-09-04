@@ -43,6 +43,13 @@ in a monorepo can carry skills of its own. A user's skills live in the same
 three names beside the config file and in the home directory, and apply to
 every project.
 
+The project half of that search is not read at all until the checkout has
+been trusted, once, as a whole
+([`approvals-and-safety.md`](approvals-and-safety.md#a-checkout-declares-what-it-runs)).
+A user's own skills are read either way, and the start screen names what was
+withheld — a session quietly missing the skills a repository ships is one
+whose behaviour nobody can account for.
+
 A project skill shadows a user skill of the same name. That is the
 precedence every other harness applies, and it is what a user means when
 they copy a shared skill into a checkout and change it.
@@ -73,8 +80,9 @@ file in a checkout, and a file in a checkout is not a place a permission can
 come from — the same clone that brings a skill could bring one that approves
 the command it was written to run. What runs without asking is decided by
 the mode, the grants and the allowlist, all of which the user set, and by
-nothing a repository can add to. See
-[`approvals-and-safety.md`](approvals-and-safety.md).
+nothing a repository can add to. The checkout's skills are not even read
+until the user has answered for the checkout. See
+[`approvals-and-safety.md`](approvals-and-safety.md#a-checkout-declares-what-it-runs).
 
 Loading a skill is itself a read. The instructions enter the conversation
 without approval, the way a file the model opened would, and anything they

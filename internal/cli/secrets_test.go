@@ -10,6 +10,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/evidence"
+	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/secret"
 )
 
@@ -94,6 +95,10 @@ func TestOpenQualityGate_TakesTheScrubOpenedAfterIt(t *testing.T) {
 		t.Fatal(err)
 	}
 	red := evidence.NewReducer(store)
+	// The gate exists only in a checkout the person has answered for; what
+	// this case is about is what the runner does with a check's output once
+	// it does exist.
+	withProjectTrust(t, project.Trust{Root: "/repo", Granted: true})
 	gate := openQualityGate(config.Config{}, red, nil)
 	if gate == nil {
 		t.Fatal("a gate is expected wherever the working directory resolves")

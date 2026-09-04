@@ -460,6 +460,12 @@ func (m *Model) statusCommand() (string, tea.Cmd) {
 	if sources := m.toolSourceStatus(); sources != "" {
 		text += "\n\n" + sources
 	}
+	// And what the checkout was not allowed to put here, for the same
+	// reason: a session is not only what it has, it is also what it is
+	// missing and why (trust.go).
+	if withheld := m.trustStatus(); withheld != "" {
+		text += "\n\n" + withheld
+	}
 	return text, cmd
 }
 

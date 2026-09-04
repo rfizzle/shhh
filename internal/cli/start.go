@@ -83,9 +83,9 @@ func withSibling(c *agent.TreeCheck, sib sessionSibling) *agent.TreeCheck {
 // The survey is handed in rather than taken here because the model's prompt
 // block is built from the same answer, and the tree walk behind it is not
 // worth doing twice.
-func buildStartInfo(survey project.Info, db *storage.DB, gateEnabled bool) chat.StartInfo {
+func buildStartInfo(survey project.Info, db *storage.DB, gateEnabled bool, trust chat.Trust) chat.StartInfo {
 	wd := survey.Dir
-	info := chat.StartInfo{Project: survey}
+	info := chat.StartInfo{Project: survey, Trust: trust}
 	if gateEnabled {
 		info.Gate = startGate(wd)
 	}

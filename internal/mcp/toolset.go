@@ -48,19 +48,27 @@ type Report struct {
 	Took    time.Duration
 }
 
-// Trust answers whether a project server may start. It is a store the
-// session owns; nothing in a checkout can answer it.
-type Trust interface {
-	// Trusted returns the fingerprint the server was trusted at, if any.
-	Trusted(root, name string) (fingerprint string, ok bool)
+// ProjectTrust is the person's answer about the checkout a project server
+// was defined in: whether what it declares may load at all, and whether an
+// answer they gave was overtaken by an edit. It is a value the session reads
+// from its own store before the first dial; nothing in a checkout can set
+// it, and the zero value — nobody asked — starts nothing.
+//
+// A server is not trusted by name any more. Every kind of thing a checkout
+// can name runs as whoever cloned it, so the question is asked once about
+// the checkout rather than five times about five files
+// (docs/capabilities/mcp.md#a-checkout-cannot-start-a-process).
+type ProjectTrust struct {
+	// Granted is trust recorded at the checkout as it stands now.
+	Granted bool
+	// Changed is trust recorded at a different state of it.
+	Changed bool
 }
 
 // Options shape a connect.
 type Options struct {
-	// Root is the repository root project servers are trusted under.
-	Root string
-	// Trust decides project servers; nil trusts none.
-	Trust Trust
+	// Project decides project-scope servers; the zero value admits none.
+	Project ProjectTrust
 	// ReadOnlyOnly admits only servers the person marked read-only — the
 	// conversation's rule, since a chat has nothing to ask with
 	// (docs/capabilities/mcp.md#what-a-conversation-may-reach).
@@ -144,15 +152,11 @@ func admit(def Definition, opts Options) (Status, []string) {
 		return StatusExcluded, nil
 	}
 	if def.Scope == ScopeProject {
-		if opts.Trust == nil {
-			return StatusUntrusted, nil
-		}
-		fp, ok := opts.Trust.Trusted(opts.Root, def.Name)
 		switch {
-		case !ok:
-			return StatusUntrusted, nil
-		case fp != def.Fingerprint():
+		case opts.Project.Changed:
 			return StatusChanged, nil
+		case !opts.Project.Granted:
+			return StatusUntrusted, nil
 		}
 	}
 	if _, missing := def.Expand(opts.Lookup); len(missing) > 0 {

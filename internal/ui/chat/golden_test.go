@@ -582,6 +582,13 @@ func TestGolden_StartScreen(t *testing.T) {
 			{Label: "somebody else is in this checkout too", View: build(func(i *StartInfo) {
 				i.Project.Sibling = startSibling
 			})},
+			{Label: "a checkout nobody has answered for · what it is holding back", View: build(func(i *StartInfo) {
+				// The gate is one of the withheld kinds, so nothing loaded
+				// it and the offer that costs an approval falls back to the
+				// toolchain's own tests, exactly as it does with no gate.
+				i.Gate = StartGate{Path: ".shhh/quality.json"}
+				i.Trust = Trust{Withheld: []string{"skills", "agent profiles", "quality suites"}}
+			})},
 			{Label: "typing dismissed the list · the facts stay", View: typed()},
 		}
 	})

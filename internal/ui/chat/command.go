@@ -261,6 +261,13 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 		// the model, say so in the transcript.
 		return m.systemNotice(m.uiCommand(parts))
 
+	case name == "/trust":
+		// The one answer that decides whether the checkout's skills, agent
+		// profiles, quality suites and servers load at all. Like trusting a
+		// server, it lands in the next session: the prompt naming the skills
+		// and the toolset holding the gate were built when this one started.
+		return m.systemNotice(m.trustCommand(parts[1:]))
+
 	case text == scaffoldCommandName:
 		// The scaffolding card: what it would write, before it writes it.
 		return m.scaffoldCommand()

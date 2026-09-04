@@ -78,8 +78,8 @@ func newDoctorCmd() *cobra.Command {
 	cmd := doctorCommand("doctor", "Check this machine's shhh setup",
 		"Run every setup check — the binary, the config file, any migration this machine still owes, the "+
 			"provider and its key, the local store, command containment, container sandboxes, the workspace, "+
-			"the tools on PATH, durable memory, and whether a newer shhh exists — and report each as a "+
-			"pass/fail row with the fix on the row that failed.",
+			"what this checkout may make a session load, the tools on PATH, durable memory, and whether a newer "+
+			"shhh exists — and report each as a pass/fail row with the fix on the row that failed.",
 		doctorProbes())
 	cmd.Annotations = map[string]string{ownsConfigError: "yes"}
 	// `--migrate` is the same offer the surface makes with `[a]`, for a
@@ -88,7 +88,41 @@ func newDoctorCmd() *cobra.Command {
 	// migrate` command because there is only ever one place to find out that
 	// a migration is due, and it is this one.
 	migrateFlag(cmd)
+	// The offer on the trust row, for a terminal that is not one. It is
+	// under the doctor because the doctor is where the withheld list is
+	// reported, and an answer given somewhere the question is not asked is
+	// an answer given blind.
+	cmd.AddCommand(&cobra.Command{
+		Use:   "trust",
+		Short: "Let this checkout's skills, agent profiles, quality suites and servers load",
+		Long: "Record that the checkout you are standing in may put what it declares into a session: its skills, " +
+			"agent profiles, quality suites, hooks and MCP servers. They run as you. The answer covers the checkout " +
+			"as it stands, so an edit to any of those files asks again.",
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error { return runSetTrust(cmd, true) },
+	})
+	cmd.AddCommand(&cobra.Command{
+		Use:   "distrust",
+		Short: "Withdraw that",
+		Args:  cobra.NoArgs,
+		RunE:  func(cmd *cobra.Command, args []string) error { return runSetTrust(cmd, false) },
+	})
 	return cmd
+}
+
+// runSetTrust records or withdraws this checkout's answer and prints it.
+func runSetTrust(cmd *cobra.Command, trust bool) error {
+	db, err := openStore()
+	if err != nil {
+		return fmt.Errorf("the local store is unavailable, so trust cannot be recorded: %w", err)
+	}
+	defer db.Close()
+	note, err := setProjectTrust(db, projectTrust(), trust)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintln(cmd.OutOrStdout(), note)
+	return nil
 }
 
 // migrateFlag adds `--migrate` to a doctor command: carry out every pending
@@ -233,6 +267,7 @@ func doctorProbes() []doctorProbe {
 		{name: "engine", run: probeEngine},
 		{name: "git", run: probeGit},
 		{name: "project", run: probeProject},
+		{name: "trust", run: probeTrust},
 		{name: "tools", run: probeTools},
 		{name: "memory", run: probeMemory},
 		{name: "update", run: probeUpdate},
@@ -1456,6 +1491,8 @@ func doctorQueuedSubject(name string) string {
 		return "the workspace, and whether an edit can be undone"
 	case "project":
 		return "the instruction files a session here reads"
+	case "trust":
+		return "what this checkout may make a session load"
 	case "tools":
 		return "the tools and language servers on PATH"
 	case "memory":

@@ -7,9 +7,6 @@
 package mcp
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"os"
 	"regexp"
@@ -150,25 +147,6 @@ func (d Definition) Target() string {
 		return strings.Join(append([]string{d.Command}, d.Args...), " ")
 	}
 	return d.URL
-}
-
-// Fingerprint identifies what the definition would do: transport, argv,
-// environment, URL and headers, with environment references left as
-// written so a rotated token does not read as a changed server. A project
-// server is trusted by fingerprint, so an edit to the file asks again
-// (docs/capabilities/mcp.md#a-checkout-cannot-start-a-process).
-func (d Definition) Fingerprint() string {
-	canon := struct {
-		Transport Transport         `json:"transport"`
-		Command   string            `json:"command,omitempty"`
-		Args      []string          `json:"args,omitempty"`
-		Env       map[string]string `json:"env,omitempty"`
-		URL       string            `json:"url,omitempty"`
-		Headers   map[string]string `json:"headers,omitempty"`
-	}{d.Transport, d.Command, d.Args, d.Env, d.URL, d.Headers}
-	b, _ := json.Marshal(canon) // sorted keys, deterministic
-	sum := sha256.Sum256(b)
-	return hex.EncodeToString(sum[:8])
 }
 
 var envRefRE = regexp.MustCompile(`\$\{([A-Za-z_][A-Za-z0-9_]*)\}`)

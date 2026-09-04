@@ -20,12 +20,17 @@ import (
 // can see. Nil when there are none, so callers register nothing — a skill
 // tool with an empty enum, or a Skills section with no skills, is a promise
 // the model would try to keep.
+//
+// An untrusted checkout contributes none of its own: the user's skills are
+// still there, and the withheld list on the start screen says what was left
+// out rather than letting a session look as though the repository had
+// written nothing.
 func loadSkills() *skill.Catalog {
 	cwd, err := os.Getwd()
 	if err != nil {
 		cwd = "."
 	}
-	c := skill.Discover(skill.Roots(cwd, config.SkillDirs()))
+	c := skill.Discover(skill.Roots(cwd, config.SkillDirs(), projectTrust().Allows()))
 	if c.Len() == 0 && len(c.Diagnostics) == 0 {
 		return nil
 	}
@@ -51,7 +56,7 @@ func skillsReport(c *skill.Catalog) report.Report {
 		// row would give them half of it.
 		empty := report.Empty("no skills found", "a skill is a directory holding a SKILL.md")
 		empty.Body = []string{
-			"in the project: .shhh/skills, .agents/skills, .claude/skills",
+			"in the project, once you trust the checkout: .shhh/skills, .agents/skills, .claude/skills",
 			"for you: " + strings.Join(config.SkillDirs(), ", ") + ", ~/.agents/skills, ~/.claude/skills",
 		}
 		r.Sections = append(r.Sections, report.Section{Rows: []report.Row{empty}})

@@ -130,6 +130,7 @@ var slashCommands = []slashCommand{
 	{name: "/stats", desc: "Context occupancy and session spend"},
 	{name: "/step", desc: "Open the in-flight step's detail (again closes it)"},
 	{name: "/status", desc: "Where the session is, and whether it is still on target"},
+	{name: "/trust", desc: "Let this checkout's skills, agent profiles and quality suites load (\"off\" withdraws it)"},
 	{name: "/ui", args: "verbosity <low|normal|high> | mono <on|off>", desc: "Activity feed density and monochrome mode",
 		argSpecs: []argSpec{
 			{options: []argOption{

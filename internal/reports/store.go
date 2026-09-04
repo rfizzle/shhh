@@ -30,7 +30,7 @@ var idRe = regexp.MustCompile(`^rp-[0-9a-f]{16}$`)
 // Meta describes one stored report.
 type Meta struct {
 	Title   string    `json:"title"`
-	Project string    `json:"project"` // absolute project root, the same key mcp trust uses
+	Project string    `json:"project"` // absolute project root, the same key project trust uses
 	Origin  string    `json:"origin"`  // the command the session ran under: chat, code, print
 	Created time.Time `json:"created"`
 	Size    int64     `json:"size"`

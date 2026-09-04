@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · nothing typed yet
-┌─ Palette ──────────────────────────────────────────────────── 24 results ┐
+┌─ Palette ──────────────────────────────────────────────────── 25 results ┐
 │ ▸                                                                        │
 │ COMMANDS                                                                 │
 │ ❯ /help                   Show commands, keys, and the approval policy   │
@@ -24,7 +24,7 @@
 │ FILES                                                                    │
 │   internal/agent/loop.go  modified 4m ago                                │
 │   README.md               modified 2h ago                                │
-│ … 15 more — keep typing                                                  │
+│ … 16 more — keep typing                                                  │
 │ enter run · tab complete · ↑↓ move · esc dismiss                         │
 └──────────────────────────────────────────────────────────────────────────┘
 
@@ -38,7 +38,7 @@
 
 ── ansi ────────────────────────────────────────────────────
 · nothing typed yet
-␛[38;5;244m┌─ Palette ──────────────────────────────────────────────────── 24 results ┐␛[m
+␛[38;5;244m┌─ Palette ──────────────────────────────────────────────────── 25 results ┐␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m▸ ␛[m␛[38;5;254m ␛[m                                                                      ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[1;38;5;254mCOMMANDS␛[m                                                                 ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[1;48;5;237m❯ /help                   Show commands, keys, and the approval policy␛[m   ␛[38;5;244m│␛[m
@@ -51,7 +51,7 @@
 ␛[38;5;244m│␛[m ␛[1;38;5;254mFILES␛[m                                                                    ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   internal/agent/loop.go  ␛[38;5;244mmodified 4m ago␛[m                                ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   README.md               ␛[38;5;244mmodified 2h ago␛[m                                ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[1;38;5;254m… 15 more — keep typing␛[m                                                  ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[1;38;5;254m… 16 more — keep typing␛[m                                                  ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[3;38;5;244menter run · tab complete · ↑↓ move · esc dismiss␛[m                         ␛[38;5;244m│␛[m
 ␛[38;5;244m└──────────────────────────────────────────────────────────────────────────┘␛[m
 

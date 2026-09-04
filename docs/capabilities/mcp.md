@@ -67,17 +67,23 @@ server's words rather than shhh's.
 ## A checkout cannot start a process
 
 A server definition in a project file is an instruction to run a command on
-the person's machine, and it arrived with a clone. So a project server is
-not started until the person has trusted it: by name, at the definition it
-has now. The listing shows it as waiting, says why, and offers the trust on
-the row. An edit to the definition — a different command, a different URL —
-asks again, because what was trusted was the definition, not the name.
+the person's machine, and it arrived with a clone. So a project server is not
+started until the person has trusted the checkout it came with. The listing
+shows it as waiting, says why, and offers the answer on the row; an edit to
+any file the checkout declares — a different command here, a new skill next
+door — asks again, because what was trusted was the checkout as it stood.
 
-The answer is kept outside the checkout, in the local store, because a file
-in the checkout is the thing being decided about. Trust granted in a session
-takes effect in the next one: the prompt that names the servers was built
-when the session started, and a server that joined without being named
-would be one the model does not know how to use.
+One answer rather than one per server, because a definition file is not the
+only thing in a repository that runs as the person who cloned it: the skills,
+the agent profiles and the quality suites do too, and being asked five times
+about one clone teaches nobody anything the first question did not. What
+that answer covers, where it is kept, and why the instruction files are
+outside it are in
+[`approvals-and-safety.md`](approvals-and-safety.md#a-checkout-declares-what-it-runs).
+
+Trust granted in a session takes effect in the next one: the prompt that
+names the servers was built when the session started, and a server that
+joined without being named would be one the model does not know how to use.
 
 ## A server cannot vouch for itself
 

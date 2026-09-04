@@ -76,7 +76,17 @@ func UserRoots(native []string) []Root {
 
 // Roots is the full search order for a session: project first, so a
 // checkout's skill shadows a user one of the same name.
-func Roots(cwd string, native []string) []Root {
+//
+// projectTrusted is the person's answer about this checkout, and without it
+// the project scope is not searched at all. A skill is instructions the
+// model follows and files it reads on the strength of them, and a clone
+// arrived with whatever it says; the answer is a parameter rather than
+// something this package reads, because nothing inside a checkout may
+// decide it (docs/capabilities/skills.md#a-skill-cannot-grant-itself-anything).
+func Roots(cwd string, native []string, projectTrusted bool) []Root {
+	if !projectTrusted {
+		return UserRoots(native)
+	}
 	return append(ProjectRoots(cwd), UserRoots(native)...)
 }
 

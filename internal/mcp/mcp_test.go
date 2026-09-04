@@ -179,33 +179,28 @@ func TestWrapReadOnlyExecutorRefusesGatedTools(t *testing.T) {
 
 func TestAdmitProjectServersByTrust(t *testing.T) {
 	def := Definition{Name: "proj", Scope: ScopeProject, Transport: TransportStdio, Command: "true", Args: []string{"a"}}
-	trusted := trustMap{"proj": def.Fingerprint()}
 	if s, _ := admit(def, Options{}); s != StatusUntrusted {
-		t.Errorf("no store: %s", s)
+		t.Errorf("nobody asked: %s", s)
 	}
-	if s, _ := admit(def, Options{Trust: trustMap{}}); s != StatusUntrusted {
-		t.Errorf("not trusted: %s", s)
-	}
-	if s, _ := admit(def, Options{Trust: trusted}); s != "" {
+	if s, _ := admit(def, Options{Project: ProjectTrust{Granted: true}}); s != "" {
 		t.Errorf("trusted: %s", s)
 	}
-	changed := def
-	changed.Args = []string{"b"}
-	if s, _ := admit(changed, Options{Trust: trusted}); s != StatusChanged {
+	// The checkout was answered for and edited since: that is a different
+	// row and a different sentence, not a plain refusal.
+	if s, _ := admit(def, Options{Project: ProjectTrust{Changed: true}}); s != StatusChanged {
 		t.Errorf("changed: %s", s)
+	}
+	// The person's own definition needs no checkout's permission.
+	mine := def
+	mine.Scope = ScopeUser
+	if s, _ := admit(mine, Options{}); s != "" {
+		t.Errorf("a user server waited on a checkout: %s", s)
 	}
 	missing := Definition{Name: "m", Scope: ScopeUser, Transport: TransportStdio, Command: "x", Env: map[string]string{"T": "${NOPE_A} ${NOPE_B}"}}
 	s, names := admit(missing, Options{Lookup: func(string) (string, bool) { return "", false }})
 	if s != StatusMissingEnv || strings.Join(names, ",") != "NOPE_A,NOPE_B" {
 		t.Errorf("missing env: %s %v", s, names)
 	}
-}
-
-type trustMap map[string]string
-
-func (m trustMap) Trusted(_, name string) (string, bool) {
-	fp, ok := m[name]
-	return fp, ok
 }
 
 func TestConnectReportsAServerThatWillNotStart(t *testing.T) {
@@ -276,13 +271,6 @@ func TestDefinitionValidateAndExpand(t *testing.T) {
 	}
 	if names := d.SecretNames(); strings.Join(names, ",") != "HOST,TOKEN" {
 		t.Errorf("SecretNames = %v", names)
-	}
-	if d.Fingerprint() != out.Fingerprint() {
-		// The fingerprint is over the written form: expansion is not an edit.
-		t.Log("fingerprint differs after expansion, as designed only if references are kept")
-	}
-	if d.Fingerprint() == (Definition{Name: "a", Transport: TransportHTTP, URL: "https://other/mcp"}).Fingerprint() {
-		t.Error("different definitions share a fingerprint")
 	}
 }
 

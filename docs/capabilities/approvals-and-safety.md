@@ -161,11 +161,47 @@ turns those settings off for its own calls, which matters more here than
 anywhere else in the tool set: this is the one tool that runs unattended, in
 every mode, with nobody asked first.
 
+## A checkout declares what it runs
+
+A clone arrives with more than code. It can name skills for the model to
+activate, agent profiles carrying their own permission sets, quality suites
+with command text in them, hooks, and MCP servers to start — and every one of
+those runs as whoever cloned it. None of them load until you have said so.
+
+It is one answer about the whole checkout, given once: `shhh doctor trust`,
+`[a]` on the doctor's trust row, or `/trust` in a session. It covers
+`.shhh/skills`, `.agents/skills`, `.claude/skills`, `.shhh/agents`,
+`.shhh/quality.json`, `.shhh/hooks.json`, `.shhh/mcp.json` and `.mcp.json`,
+and what is recorded is those files as they stand — so editing any of them,
+or writing one that was not there, asks again. The answer is kept outside the
+checkout, in the local store, because a file in the checkout is the thing
+being decided about.
+
+Withholding is a diagnostic and never an error. The session starts; it starts
+smaller, and it says so — on the start screen, in `/status`, in a line before
+a headless run begins, and as a row in `shhh doctor` with the offer on it.
+Nothing but a person grants it: no permission mode reaches it, and the
+classifier is never asked.
+
+The instruction files are deliberately outside this set. `AGENTS.md`,
+`CLAUDE.md` and `.shhh/project.md` are read whether or not the checkout is
+trusted, because prose can only ask. The line between the two sets is what a
+file can do on its own: instructions are a request the model may decline,
+where a suite is a command line that runs.
+
+Trust granted inside a session takes effect in the next one. The prompt
+naming the skills and the toolset holding the gate were both built when the
+session started, and something that joined without being named would be
+something the model does not know it has.
+
 ## Quality gates run what you wrote
 
 A session can run a named suite of checks, and the check commands come from a
 file in the workspace that *you* author. The model can ask for a suite by
-name; it can never supply an executable or arguments.
+name; it can never supply an executable or arguments. The file is read only
+in a checkout you have trusted — it is the sharpest case of the section
+above, because it is command text that runs without an approval — so in a
+fresh clone the gate is not registered at all until you say so.
 
 Every result is fingerprinted against the tree it ran over, so a passing
 verdict can never silently vouch for code it did not see. The fingerprint

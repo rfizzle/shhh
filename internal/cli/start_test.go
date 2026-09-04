@@ -10,6 +10,7 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/rfizzle/shhh/internal/ui/chat"
 )
 
 // testChatMessages is one saved exchange: one user turn, one reply.
@@ -92,7 +93,7 @@ func TestStartGate_BrokenConfigIsReportedRatherThanSwallowed(t *testing.T) {
 
 func TestBuildStartInfo_SurveysWithoutAGateOrADatabase(t *testing.T) {
 	// Neither source is required: the screen still states the project.
-	info := buildStartInfo(project.Survey(""), nil, false)
+	info := buildStartInfo(project.Survey(""), nil, false, chat.Trust{})
 	if info.Project.Dir == "" {
 		t.Fatal("the survey should always name the directory it ran in")
 	}
@@ -114,7 +115,7 @@ func TestBuildStartInfo_CarriesTheMostRecentSavedSession(t *testing.T) {
 		t.Fatalf("save: %v", err)
 	}
 
-	info := buildStartInfo(project.Survey(""), db, false)
+	info := buildStartInfo(project.Survey(""), db, false, chat.Trust{})
 	if !info.Recent.Present || info.Recent.Name != "loop refactor" {
 		t.Fatalf("recent = %+v", info.Recent)
 	}

@@ -11,7 +11,6 @@ package cli
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -69,18 +68,7 @@ func loadMCPCatalog(cfg config.Config) *mcp.Catalog {
 	return mcp.Discover(cwd, mcpDefinitions(cfg), dirs)
 }
 
-// mcpTrust is the trust store over the local database. A nil database
-// trusts nothing, which is the safe reading of "cannot tell".
-type mcpTrust struct{ db *storage.DB }
-
-func (t mcpTrust) Trusted(root, name string) (string, bool) {
-	if t.db == nil {
-		return "", false
-	}
-	return t.db.MCPTrusted(root, name)
-}
-
-// mcpRoot is the repository root project servers are trusted under.
+// mcpRoot is the repository root a project server is defined under.
 func mcpRoot() string {
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -89,10 +77,17 @@ func mcpRoot() string {
 	return mcp.ProjectRoot(cwd)
 }
 
-// mcpOptions are a session's connect options: the trust store, the root,
-// and the timeout the config sets.
-func mcpOptions(cfg config.Config, db *storage.DB, readOnlyOnly bool) mcp.Options {
-	opts := mcp.Options{Root: mcpRoot(), Trust: mcpTrust{db}, ReadOnlyOnly: readOnlyOnly}
+// mcpOptions are a session's connect options: the checkout's standing, and
+// the timeout the config sets. The trust is the whole checkout's rather than
+// this server's, so a definition file the person has not read is one answer
+// away from starting and not one per server
+// (docs/capabilities/mcp.md#a-checkout-cannot-start-a-process).
+func mcpOptions(cfg config.Config, readOnlyOnly bool) mcp.Options {
+	t := projectTrust()
+	opts := mcp.Options{
+		Project:      mcp.ProjectTrust{Granted: t.Allows(), Changed: t.Changed},
+		ReadOnlyOnly: readOnlyOnly,
+	}
 	if cfg.MCP.StartupTimeoutSeconds > 0 {
 		opts.Timeout = time.Duration(cfg.MCP.StartupTimeoutSeconds) * time.Second
 	}
@@ -102,7 +97,7 @@ func mcpOptions(cfg config.Config, db *storage.DB, readOnlyOnly bool) mcp.Option
 // openMCP connects a session's servers. Nil when nothing is defined or the
 // section is disabled, so the session registers nothing and the prompt
 // says nothing — a toolset with no tools is not a thing to describe.
-func openMCP(ctx context.Context, cfg config.Config, db *storage.DB, readOnlyOnly bool) (*mcp.Toolset, *mcp.Catalog) {
+func openMCP(ctx context.Context, cfg config.Config, readOnlyOnly bool) (*mcp.Toolset, *mcp.Catalog) {
 	if cfg.MCP.Disabled {
 		return nil, nil
 	}
@@ -111,7 +106,7 @@ func openMCP(ctx context.Context, cfg config.Config, db *storage.DB, readOnlyOnl
 		return nil, nil
 	}
 	mcp.SetVersion(version)
-	return mcp.Connect(ctx, cat, mcpOptions(cfg, db, readOnlyOnly)), cat
+	return mcp.Connect(ctx, cat, mcpOptions(cfg, readOnlyOnly)), cat
 }
 
 // mcpStartupNotes are the lines a session prints before it starts: every
@@ -205,9 +200,9 @@ func mcpConsequence(r mcp.Report) string {
 	case mcp.StatusDisabled:
 		return "its tools are not in any session until it is enabled"
 	case mcp.StatusUntrusted:
-		return "a project server does not start until you trust it"
+		return "a project server does not start until you trust the checkout"
 	case mcp.StatusChanged:
-		return "its definition changed since you trusted it, so it did not start"
+		return "the checkout changed since you trusted it, so it did not start"
 	case mcp.StatusMissingEnv:
 		return "its tools are not in this session until the variable is set"
 	case mcp.StatusExcluded:
@@ -230,7 +225,7 @@ func mcpFix(r mcp.Report, root string) []string {
 		}
 		return []string{"in " + d.Source + ": set \"disabled\": false"}
 	case mcp.StatusUntrusted, mcp.StatusChanged:
-		return []string{"shhh mcp show " + d.Name + "   # what it is, before you trust it", "shhh mcp trust " + d.Name + "   # or [a] on this row"}
+		return []string{"shhh mcp show " + d.Name + "   # what it is, before you trust the checkout", "shhh doctor trust   # or [a] on this row"}
 	case mcp.StatusMissingEnv:
 		var lines []string
 		for _, name := range r.Missing {
@@ -341,11 +336,11 @@ func mcpState(s mcp.Status) components.DoctorState {
 	return components.DoctorWarned
 }
 
-// mcpManager backs /mcp in a session: the listing, and trust for a project
-// server, which takes effect in the next session — the prompt that names
-// the servers was built when this one started
-// (docs/capabilities/mcp.md#a-checkout-cannot-start-a-process).
-func mcpManager(ts *mcp.Toolset, cat *mcp.Catalog, db *storage.DB) func(args []string) string {
+// mcpManager backs /mcp in a session: the listing, and a pointer to the one
+// place trust is answered now. A server is no longer trusted by name — the
+// checkout is — so `/mcp trust <name>` would either lie about what it did or
+// grant four other kinds of thing under a server's name.
+func mcpManager(ts *mcp.Toolset, cat *mcp.Catalog) func(args []string) string {
 	root := mcpRoot()
 	return func(args []string) string {
 		if len(args) == 0 {
@@ -353,48 +348,10 @@ func mcpManager(ts *mcp.Toolset, cat *mcp.Catalog, db *storage.DB) func(args []s
 		}
 		switch args[0] {
 		case "trust", "distrust":
-			if len(args) != 2 {
-				return "Usage: /mcp " + args[0] + " <name>"
-			}
-			note, err := mcpSetTrust(db, cat, root, args[1], args[0] == "trust")
-			if err != nil {
-				return err.Error()
-			}
-			return note + " It takes effect in the next session."
+			return "Trust is the checkout's, not one server's: /trust answers for its servers, skills, agent profiles and quality suites together."
 		}
-		return "Usage: /mcp [trust <name>|distrust <name>]"
+		return "Usage: /mcp"
 	}
-}
-
-// mcpSetTrust records or withdraws trust for a project server.
-func mcpSetTrust(db *storage.DB, cat *mcp.Catalog, root, name string, trust bool) (string, error) {
-	if db == nil {
-		return "", errors.New("the local store is unavailable, so trust cannot be recorded")
-	}
-	d, ok := cat.Find(name)
-	if !ok {
-		return "", fmt.Errorf("no server named %q; `shhh mcp` lists them", name)
-	}
-	if d.Scope != mcp.ScopeProject {
-		return "", fmt.Errorf("%s is your own definition, not a project's; only a project server needs trusting", name)
-	}
-	if root == "" {
-		return "", errors.New("not inside a repository")
-	}
-	if !trust {
-		had, err := db.DistrustMCP(root, name)
-		if err != nil {
-			return "", err
-		}
-		if !had {
-			return name + " was not trusted.", nil
-		}
-		return name + " is no longer trusted: it will not start.", nil
-	}
-	if err := db.TrustMCP(root, name, d.Fingerprint()); err != nil {
-		return "", err
-	}
-	return name + " is trusted at its current definition (" + d.Target() + "); an edit to " + d.Source + " asks again.", nil
 }
 
 // mcpProbes is `shhh mcp` as doctor probes: one per server, each a connect
@@ -411,7 +368,7 @@ func mcpProbes(ctx context.Context, cat *mcp.Catalog, db *storage.DB, cfg config
 	dial := func(def mcp.Definition) <-chan mcp.Report {
 		ch := make(chan mcp.Report, 1)
 		go func() {
-			ts := mcp.Connect(ctx, &mcp.Catalog{Servers: []mcp.Definition{def}}, mcpOptions(cfg, db, false))
+			ts := mcp.Connect(ctx, &mcp.Catalog{Servers: []mcp.Definition{def}}, mcpOptions(cfg, false))
 			ts.Close()
 			ch <- ts.Reports[0]
 		}()
@@ -471,10 +428,12 @@ func mcpFinding(r mcp.Report, root string, db *storage.DB) doctorFinding {
 		f.FixLabel = fmt.Sprintf("show the %s", countOf(len(f.Fix), "line", "lines"))
 	}
 	if (r.Status == mcp.StatusUntrusted || r.Status == mcp.StatusChanged) && db != nil && root != "" {
-		f.Action = "trust " + d.Name
-		f.ActionPrompt = "Trust " + d.Name + " to start from " + d.Source + "? It runs " + d.Target() + " as you."
+		t := projectTrust()
+		f.Action = "trust this checkout"
+		f.ActionPrompt = "Trust " + shortPath(t.Root) + "? " + d.Name + " starts from " + d.Source +
+			" and runs " + d.Target() + " as you, along with everything else the checkout declares."
 		f.Apply = func() ([]string, error) {
-			note, err := mcpSetTrust(db, &mcp.Catalog{Servers: []mcp.Definition{d}}, root, d.Name, true)
+			note, err := setProjectTrust(db, t, true)
 			if err != nil {
 				return nil, err
 			}
@@ -492,7 +451,7 @@ func newMCPCmd() *cobra.Command {
 		Long: "Read every MCP server definition visible from the current directory — your config file, mcp.json beside it, " +
 			"and the project's .shhh/mcp.json or .mcp.json — connect each one, and report it as a row: what it reaches, " +
 			"how many tools it offers, and, for one that did not connect, why and what would fix it. " +
-			"A project server does not start until you trust it; [a] on its row, or `shhh mcp trust <name>`, does that.",
+			"A project server does not start until you trust the checkout it came with; [a] on its row, or `shhh doctor trust`, does that.",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg := ConfigFrom(cmd.Context())
@@ -538,25 +497,13 @@ func newMCPCmd() *cobra.Command {
 				defer db.Close()
 			}
 			mcp.SetVersion(version)
-			ts := mcp.Connect(cmd.Context(), &mcp.Catalog{Servers: []mcp.Definition{d}}, mcpOptions(cfg, db, false))
+			ts := mcp.Connect(cmd.Context(), &mcp.Catalog{Servers: []mcp.Definition{d}}, mcpOptions(cfg, false))
 			defer ts.Close()
 			fmt.Fprintln(cmd.OutOrStdout(), mcpShow(ts.Reports[0], mcpRoot()))
 			return nil
 		},
 	})
 
-	cmd.AddCommand(&cobra.Command{
-		Use:   "trust <name>",
-		Short: "Let a project server start, at its current definition",
-		Args:  cobra.ExactArgs(1),
-		RunE:  func(cmd *cobra.Command, args []string) error { return mcpTrustCmd(cmd, args[0], true) },
-	})
-	cmd.AddCommand(&cobra.Command{
-		Use:   "distrust <name>",
-		Short: "Withdraw that",
-		Args:  cobra.ExactArgs(1),
-		RunE:  func(cmd *cobra.Command, args []string) error { return mcpTrustCmd(cmd, args[0], false) },
-	})
 	cmd.AddCommand(newMCPAddCmd())
 	cmd.AddCommand(&cobra.Command{
 		Use:   "remove <name>",
@@ -578,21 +525,6 @@ func newMCPCmd() *cobra.Command {
 		},
 	})
 	return cmd
-}
-
-func mcpTrustCmd(cmd *cobra.Command, name string, trust bool) error {
-	cfg := ConfigFrom(cmd.Context())
-	db, err := openStore()
-	if err != nil {
-		return fmt.Errorf("the local store is unavailable, so trust cannot be recorded: %w", err)
-	}
-	defer db.Close()
-	note, err := mcpSetTrust(db, loadMCPCatalog(cfg), mcpRoot(), name, trust)
-	if err != nil {
-		return err
-	}
-	fmt.Fprintln(cmd.OutOrStdout(), note)
-	return nil
 }
 
 // mcpShow is `shhh mcp show <name>`: the definition as written, secrets by
@@ -811,8 +743,12 @@ func mcpGatedPreview(ts *mcp.Toolset, name string, args json.RawMessage) (chat.G
 // one function for the interactive and the headless session because the
 // two differ in exactly one word — whether only read-only servers join —
 // and a second copy of the rest would drift.
-func (s *chatSession) attachMCP(ctx context.Context, db *storage.DB, readOnlyOnly bool) func() {
-	s.mcpTools, s.mcpCatalog = openMCP(ctx, ConfigFrom(ctx), db, readOnlyOnly)
+//
+// The store is taken and not used by the connect any more: whether a
+// project server may start is the checkout's answer, read once for the
+// process (trust.go), rather than a row this call goes and looks up.
+func (s *chatSession) attachMCP(ctx context.Context, _ *storage.DB, readOnlyOnly bool) func() {
+	s.mcpTools, s.mcpCatalog = openMCP(ctx, ConfigFrom(ctx), readOnlyOnly)
 	if s.mcpTools == nil {
 		return func() {}
 	}

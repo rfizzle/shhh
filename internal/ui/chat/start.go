@@ -66,6 +66,11 @@ type StartInfo struct {
 	Project project.Info
 	Gate    StartGate
 	Recent  StartRecent
+	// Trust is what this checkout was not allowed to put into the session.
+	// It is on the screen because it is the difference between a session
+	// that is small and one that is small for a reason, and it backs
+	// /status and /trust for the same reading (trust.go).
+	Trust Trust
 	// Now fixes the clock the "4m ago" clause is measured against; the zero
 	// value means time.Now, which is what the product uses and the tests do
 	// not.
@@ -283,6 +288,11 @@ func startNotes(info StartInfo) []components.StartNote {
 
 	gate := components.StartNote{Label: "gate", Value: "not configured", Detail: info.Gate.Path}
 	switch {
+	// A withheld gate is not an absent one, and saying "not configured"
+	// about a checkout that configured one and was not trusted to run it
+	// would send the reader to write a file that is already there.
+	case info.Trust.withholds(project.KindGate):
+		gate.Value, gate.Detail = info.Trust.word(), "this checkout is not trusted to run its own checks"
 	case info.Gate.Err != "":
 		gate.Value, gate.Detail = "unreadable", info.Gate.Err
 	case info.Gate.Configured():
@@ -293,7 +303,17 @@ func startNotes(info StartInfo) []components.StartNote {
 		}
 		gate.Detail = detail + " · runs without asking"
 	}
-	return append(notes, context, gate)
+	notes = append(notes, context, gate)
+	// Last, and only when there is something to say. A trusted checkout
+	// says nothing here: a row that reads "trusted" on every session is a
+	// row nobody reads by the third one.
+	if info.Trust.withholding() {
+		notes = append(notes, components.StartNote{
+			Label: "trust", Value: info.Trust.word(),
+			Detail: strings.Join(info.Trust.Withheld, ", ") + " · /trust loads them",
+		})
+	}
+	return notes
 }
 
 // startSuggestions is the three offers, paired with the input line each one

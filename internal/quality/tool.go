@@ -9,10 +9,11 @@ import (
 )
 
 // ToolName is the model-facing quality-gate tool. It runs on the auto-run
-// path without approval: the model can only name a suite from the trusted
-// config — every executable and argument comes from the user's
-// .shhh/quality.json — and checks run read-only, contained when a mechanism
-// is available.
+// path without approval: the model can only name a suite from the config —
+// every executable and argument comes from the user's .shhh/quality.json —
+// and checks run read-only, contained when a mechanism is available. It is
+// registered only where the person has trusted the checkout that file came
+// with (docs/capabilities/approvals-and-safety.md#a-checkout-declares-what-it-runs).
 const ToolName = "quality_gate"
 
 // ToolDefinition is the quality_gate tool registered for agent sessions.

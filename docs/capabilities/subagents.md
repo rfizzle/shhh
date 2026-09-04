@@ -156,9 +156,13 @@ the repository, is read only by coding sessions, and shadows a global
 profile of the same name — or the config directory's `agents/`, which every
 session has. A chat persona is the person's, not any project's, so chat
 reads and writes only the global directory. A project's directory is never
-assumed to be committed. A drafted profile is spawnable in the session that
-drafted it — a persona you made for this conversation should not need a
-restart to join it.
+assumed to be committed, and it is not read at all until the checkout has
+been trusted: a profile carries a permission set, a tool allowlist and a
+prompt, so a clone that could add one would be a clone deciding what a
+spawned agent may do
+([`approvals-and-safety.md`](approvals-and-safety.md#a-checkout-declares-what-it-runs)).
+A drafted profile is spawnable in the session that drafted it — a persona you
+made for this conversation should not need a restart to join it.
 
 The drafting happens on [a surface of its
 own](../interface/surfaces.md#the-profile-drafter), because a conversation
