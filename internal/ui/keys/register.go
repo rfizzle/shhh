@@ -136,6 +136,18 @@ func Surfaces() []Surface {
 			Bindings: Backlog.All(),
 		},
 		{
+			// The sprint plan card, on that screen's sprint tab. It is a
+			// surface of its own rather than a mode of the screen because
+			// it answers every keystroke while it is up: the list under it
+			// is drawn and not live, which is what lets the card keep the
+			// pair the screen had to break.
+			Name:     "the sprint plan card",
+			Section:  "docs/interface/surfaces.md#the-sprint-board",
+			Position: Takeover,
+			Reached:  "/todo sprint plan",
+			Bindings: Sprint.All(),
+		},
+		{
 			Name:     "a transcript row's own offers",
 			Section:  "docs/interface/surfaces.md#the-turns-close, docs/interface/surfaces.md#the-recovery-row, docs/interface/surfaces.md#the-backlog-runs-row",
 			Position: Beside,

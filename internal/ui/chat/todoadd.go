@@ -146,11 +146,6 @@ func (m Model) openTodoProposals(proposals []todo.Proposal, what string) (tea.Mo
 	// the reading's answers and then edited back.
 	card.Actions = []string{keys.Shown(keys.Backlog.Edit) + " its header"}
 	m.todoPropose = card
-	// The sprint plan shares this card. Whichever opens it owns both
-	// fields, because the answer is read from whichever is set — a reading
-	// that landed over a sprint plan would otherwise write the sprint's
-	// slugs against this card's rows.
-	m.todoSprintPlan = nil
 	m.enterSurface(stateTodoPropose)
 	m.syncViewport()
 	return m, nil
@@ -169,10 +164,8 @@ func todoProposalMeta(p todo.Proposal) string {
 // answerTodoPropose routes keys while the proposals card shows.
 func (m *Model) answerTodoPropose(msg tea.KeyPressMsg) (bool, overlayAction) {
 	// The focused proposal's header, on the card the draft uses. It is the
-	// one key here that does not answer this card, and it is offered only
-	// over proposals: a sprint plan's rows are items that already have
-	// headers.
-	if keys.Is(msg.String(), keys.Backlog.Edit) && m.todoSprintPlan == nil &&
+	// one key here that does not answer this card.
+	if keys.Is(msg.String(), keys.Backlog.Edit) &&
 		m.todoPropose.Focus < len(m.todoProposals) {
 		m.openTodoDraft(m.todoProposals[m.todoPropose.Focus], m.todoPropose.Focus)
 		return false, overlayAction{}
@@ -181,7 +174,7 @@ func (m *Model) answerTodoPropose(msg tea.KeyPressMsg) (bool, overlayAction) {
 	if !done {
 		return false, overlayAction{}
 	}
-	proposals, sprint := m.todoProposals, m.todoSprintPlan
+	proposals := m.todoProposals
 	// The row a blocked run left is claimed here whatever the answer was: a
 	// card the reader declined wrote nothing to name on it, and leaving the
 	// claim standing would put the next card's first item on a run that
@@ -189,15 +182,9 @@ func (m *Model) answerTodoPropose(msg tea.KeyPressMsg) (bool, overlayAction) {
 	followUp := m.todoRunner.followUpRow
 	m.todoPropose = nil
 	m.todoProposals = nil
-	m.todoSprintPlan = nil
 	m.todoRunner.followUpRow = 0
-	switch {
-	case res.Canceled && sprint != nil:
-		return true, overlayAction{close: true, note: "Nothing written; no sprint was planned."}
-	case res.Canceled:
+	if res.Canceled {
 		return true, overlayAction{close: true, note: "Nothing written; the proposals are dropped."}
-	case sprint != nil:
-		return true, overlayAction{close: true, note: m.writeSprintPlan(sprint, res.Indices)}
 	}
 	note, written := m.writeProposals(proposals, res.Indices)
 	if len(written) > 0 {

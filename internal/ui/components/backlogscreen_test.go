@@ -250,8 +250,8 @@ func TestBacklogScreen_ArchiveTab(t *testing.T) {
 	b := goldenBacklogScreen()
 	pressAll(b, "s")
 	b.Update(key("tab"))
-	if !b.archive || b.status != 0 {
-		t.Fatalf("the tab should carry no status filter, archive=%v status=%d", b.archive, b.status)
+	if !b.archived() || b.status != 0 {
+		t.Fatalf("the tab should carry no status filter, archive=%v status=%d", b.archived(), b.status)
 	}
 	view := ansi.Strip(b.View(110))
 	for _, want := range []string{"backlog · done", "2 items", "the one place a key is written down", "[o] put it back in the backlog"} {

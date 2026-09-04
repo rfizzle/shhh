@@ -55,6 +55,19 @@ const (
 	minBacklogTitle = 12
 )
 
+// The tabs, in the order the tab key steps through them: the backlog, the
+// sprint that scopes it where there is one, and the archive. The sprint sits
+// between them because that is where it sits in the work — a subset of the
+// backlog on its way to the archive — and a tab that moved depending on
+// whether a sprint was open would be a key whose destination the reader has
+// to guess.
+const (
+	backlogTabItems = iota
+	backlogTabSprint
+	backlogTabDone
+	backlogTabs
+)
+
 // The filter cycles, in the order their keys step through them. Each opens
 // on the empty stop, which is "every one of them", so a cycle comes back
 // round to no filter rather than trapping the reader inside one.
@@ -126,6 +139,10 @@ type BacklogRow struct {
 	// InSprint reports that the open sprint names this item, which is what
 	// `[S]` would add or drop.
 	InSprint bool
+	// Note replaces the row's computed state field with the host's own
+	// words. The sprint tab fills it, because where a slug stands in a set
+	// is a reading the host made and not one this row can compute.
+	Note string
 	// Warnings are what was odd about the file without stopping it loading —
 	// a size off the scale, a dependency on a slug nothing holds.
 	Warnings []string
@@ -159,6 +176,16 @@ const (
 	// BacklogGroom is `[g]`: the item read against the tree as it stands.
 	// Like a run it spends a turn, so the host closes the screen for it.
 	BacklogGroom
+	// BacklogSprintTake is the plan card's `[enter]`: write the sprint from
+	// the slugs still in the set, in the order they are drawn.
+	BacklogSprintTake
+	// BacklogSprintGoal is the plan card's `[g]`: say what the set is for.
+	// The goal is a sentence and the card has nowhere to type one, so the
+	// host takes the keyboard back with the question already asked.
+	BacklogSprintGoal
+	// BacklogSprintCancel is the plan card's `[esc]`: nothing is written
+	// and the proposal is dropped.
+	BacklogSprintCancel
 )
 
 // BacklogCommand is one act the host carries out. Three of them take the
@@ -169,6 +196,10 @@ const (
 type BacklogCommand struct {
 	Act  BacklogAct
 	Slug string
+	// Slugs is the set an act names rather than the one row it stands on.
+	// Only the plan card fills it, because it is the only key here whose
+	// answer is about a set.
+	Slugs []string
 }
 
 // BacklogResult is how a key was answered: the screen closed, or an act for
@@ -191,6 +222,14 @@ type BacklogScreen struct {
 	// working without one. `[S]` is offered only while there is a set to add
 	// to.
 	Sprint string
+	// Board is the sprint tab. nil is a project with no sprint, and the tab
+	// is absent rather than empty: a tab that opens on "there is no sprint"
+	// is a place the reader learns to stop pressing.
+	Board *SprintBoard
+	// Plan is the proposal being answered. While it is set the sprint tab
+	// draws the card instead of the board and the card holds the keyboard,
+	// so none of the screen's own letters is live under it.
+	Plan *SprintPlan
 	// ReadOnly is a turn in flight. The screen still reads — that is the
 	// whole reason it can be opened during one — but every key that would
 	// change a file goes inert, because the model may be working from those
@@ -216,10 +255,10 @@ type BacklogScreen struct {
 	// keystroke.
 	Notice string
 
-	// archive is the done tab; focus is the pointer per tab, so switching
-	// back and forth keeps both places.
-	archive bool
-	focus   [2]int
+	// tab is which of the three the screen is on and focus the pointer per
+	// tab, so moving between them keeps every place.
+	tab   int
+	focus [backlogTabs]int
 	// query and filtering are the text filter; the three indices are the
 	// cycles' stops and ready is the toggle.
 	query     string
@@ -257,6 +296,12 @@ func (b *BacklogScreen) Update(msg tea.KeyPressMsg) (done bool, result BacklogRe
 		return b.updateConfirm(msg)
 	}
 	pressed := msg.String()
+	// The plan card answers every keystroke while it is up, including the
+	// way out: a card that is asking for one answer and a screen underneath
+	// it that closes on `q` would lose the proposal to a letter.
+	if b.planning() {
+		return b.updatePlan(pressed)
+	}
 	// With the query line open the query line is the surface, so every
 	// selector letter is a letter — the reading every list in the product
 	// makes. ctrl+u clears it, and clearing a filter that is already empty
@@ -293,7 +338,7 @@ func (b *BacklogScreen) readKey(pressed string) bool {
 		b.swapTab()
 	case keys.Is(pressed, keys.Backlog.Filter):
 		b.filtering = true
-	case keys.Is(pressed, keys.Backlog.Status) && !b.archive:
+	case keys.Is(pressed, keys.Backlog.Status) && !b.archived():
 		b.status = (b.status + 1) % len(backlogStatuses)
 		b.refilter()
 	case keys.Is(pressed, keys.Backlog.Priority):
@@ -302,7 +347,7 @@ func (b *BacklogScreen) readKey(pressed string) bool {
 	case keys.Is(pressed, keys.Backlog.Kind):
 		b.kind = (b.kind + 1) % len(backlogKinds)
 		b.refilter()
-	case keys.Is(pressed, keys.Backlog.Ready) && !b.archive:
+	case keys.Is(pressed, keys.Backlog.Ready) && !b.archived():
 		b.ready = !b.ready
 		b.refilter()
 	case keys.Is(pressed, keys.Backlog.Depends):
@@ -347,22 +392,22 @@ func (b *BacklogScreen) stateKey(pressed string) (bool, BacklogResult) {
 		}
 	case keys.Is(pressed, keys.Backlog.Edit):
 		return false, b.act(BacklogEdit, row.Slug)
-	case keys.Is(pressed, keys.Backlog.Run) && !b.archive:
+	case keys.Is(pressed, keys.Backlog.Run) && !b.archived():
 		return false, b.act(BacklogRun, row.Slug)
 	case keys.Is(pressed, keys.Backlog.Reopen):
 		return false, b.act(BacklogReopen, row.Slug)
-	case keys.Is(pressed, keys.Backlog.Block) && !b.archive:
+	case keys.Is(pressed, keys.Backlog.Block) && !b.archived():
 		b.ask(BacklogBlock, row.Slug, "Block "+row.Slug+"?")
-	case keys.Is(pressed, keys.Backlog.Archive) && !b.archive:
+	case keys.Is(pressed, keys.Backlog.Archive) && !b.archived():
 		b.ask(BacklogArchive, row.Slug, "Archive "+row.Slug+"?")
-	case keys.Is(pressed, keys.Backlog.Drop) && !b.archive:
+	case keys.Is(pressed, keys.Backlog.Drop) && !b.archived():
 		// The one key here that loses information says so in the question,
 		// because the answer to "archive or drop" depends entirely on which
 		// of the two this is.
 		b.ask(BacklogDrop, row.Slug, "Drop "+row.Slug+"? The file is deleted, not archived.")
-	case keys.Is(pressed, keys.Backlog.Groom) && !b.archive:
+	case keys.Is(pressed, keys.Backlog.Groom) && !b.archived():
 		return false, b.act(BacklogGroom, row.Slug)
-	case keys.Is(pressed, keys.Backlog.Sprint) && b.Sprint != "" && !b.archive:
+	case keys.Is(pressed, keys.Backlog.Sprint) && b.Sprint != "" && !b.archived():
 		if row.InSprint {
 			return false, b.act(BacklogSprintDrop, row.Slug)
 		}
@@ -472,15 +517,23 @@ func pageDelta(pressed string) int {
 	return 1
 }
 
-// swapTab moves between the backlog and the archive. The status and ready
-// filters go with it: every archived item has the same status, so a status
-// filter carried into the archive would empty a list the reader had just
-// asked to see.
+// swapTab steps to the next tab there is. The sprint tab is skipped where
+// the project has no sprint, so the key never lands on a tab with nothing
+// on it.
+//
+// The status and ready filters come off on the archive: every archived item
+// has the same status, so a status filter carried in there would empty a
+// list the reader had just asked to see.
 func (b *BacklogScreen) swapTab() {
-	b.archive = !b.archive
+	for range backlogTabs {
+		b.tab = (b.tab + 1) % backlogTabs
+		if b.tab != backlogTabSprint || b.sprintTab() {
+			break
+		}
+	}
 	b.reading, b.pager.Offset = false, 0
 	b.confirm, b.pending = nil, nil
-	if b.archive {
+	if b.archived() {
 		b.status, b.ready = 0, false
 	}
 	// The pointer is kept per tab rather than reset, so coming back lands
@@ -509,7 +562,7 @@ func (b *BacklogScreen) jumpToDependency() {
 		if !b.showing(i) {
 			b.clearFilters()
 		}
-		b.focus[b.tab()] = i
+		b.focus[b.tab] = i
 		b.reading, b.pager.Offset = false, 0
 		b.sync()
 		return
@@ -546,13 +599,24 @@ func (b *BacklogScreen) View(width int) string {
 // how much of the list that is.
 func (b *BacklogScreen) header() ScreenHeader {
 	h := ScreenHeader{Left: []RailSegment{screenTitle("backlog")}, Keys: b.headerKeys()}
-	if b.archive {
+	switch {
+	case b.archived():
 		h.Left = append(h.Left, screenField("done"))
+	case b.planning():
+		// The budget is in the header because it is the whole account of
+		// why these items and not others: a proposal whose filter is not
+		// stated is a recommendation, and this is not one.
+		h.Left = append(h.Left, screenField("planning"))
+		if b.Plan.Budget != "" {
+			h.Left = append(h.Left, screenField(b.Plan.Budget))
+		}
+	case b.sprinting() && b.Board != nil:
+		h.Left = append(h.Left, screenField("sprint"), screenField(b.Board.Name))
 	}
-	if words := b.filterWords(); words != "" {
+	if words := b.filterWords(); words != "" && !b.planning() {
 		h.Left = append(h.Left, screenField(words))
 	}
-	if b.Sprint != "" && !b.archive {
+	if b.Sprint != "" && b.tab == backlogTabItems {
 		h.Left = append(h.Left, screenField(b.Sprint))
 	}
 	h.Tally = sty.Dim.Render(b.count())
@@ -598,6 +662,9 @@ func (b *BacklogScreen) filterWords() string {
 // are. It states both, because "6 items" on a filtered list is a reading of
 // a list that is not the backlog.
 func (b *BacklogScreen) count() string {
+	if b.planning() {
+		return fmt.Sprintf("%d of %s kept", len(b.Plan.Kept()), plural(len(b.Plan.Rows), "item"))
+	}
 	total := len(b.rows())
 	if len(b.shown) == total {
 		return plural(total, "item")
@@ -605,19 +672,24 @@ func (b *BacklogScreen) count() string {
 	return fmt.Sprintf("%d of %s", len(b.shown), plural(total, "item"))
 }
 
-// paneRows is the body: the list and the item side by side where the
-// terminal can carry two columns, and stacked where it cannot. The body
-// never sits beside a list too narrow to read — a pane of prose two columns
-// wide is a pane that says nothing.
+// paneRows is the body, which of the three tabs is up decides what: a
+// proposal has the surface to itself, a sprint puts its head over the two
+// panes, and everything else is the two panes alone.
 func (b *BacklogScreen) paneRows(width, budget int) []string {
-	if b.reading {
-		// The reader asked for the body, so the body gets the whole surface
-		// and the list steps out of the way.
-		return b.readingRows(width, budget)
+	if b.planning() {
+		// The proposal is one question about a set, so it has the surface
+		// to itself: a list of the backlog beside it would be answering a
+		// question nobody asked while one is open.
+		return b.planRows(width, budget)
 	}
-	if width < backlogStackWidth {
-		return b.stackedRows(width, budget)
+	if b.sprinting() {
+		return b.sprintRows(width, budget)
 	}
+	return b.panes(width, budget)
+}
+
+// splitRows is the wide layout: the list on the left and the item beside it.
+func (b *BacklogScreen) splitRows(width, budget int) []string {
 	listWidth := min(max(width*2/5, backlogListMin), backlogListMax)
 	paneWidth := max(width-listWidth-lipgloss.Width(reviewDivider), 8)
 	list := b.listRows(listWidth, budget)
@@ -631,6 +703,44 @@ func (b *BacklogScreen) paneRows(width, budget int) []string {
 		rows = min(rows, budget)
 	}
 	return joinReviewPanes(list, pane, listWidth, rows)
+}
+
+// sprintRows is the sprint tab: the board's head, then the two panes over
+// the set's own items. The head is pinned rather than scrolled with the
+// list — what the set is for and how far through it is are the two facts
+// the tab exists to state, and a head that scrolled away would leave a
+// list of slugs indistinguishable from the backlog's.
+func (b *BacklogScreen) sprintRows(width, budget int) []string {
+	head := b.boardRows(width)
+	if len(head) > 0 {
+		head = append(head, screenRule(width))
+	}
+	if budget <= 0 {
+		return append(head, b.panes(width, 0)...)
+	}
+	// A head taller than the tab leaves no list at all, so it gives ground
+	// first: the rows under it are the set, and a board with no set on it
+	// is a paragraph.
+	if len(head) >= budget-backlogMinBody {
+		head = truncRows(head, max(budget-backlogMinBody, 1), width)
+	}
+	return append(head, b.panes(width, budget-len(head))...)
+}
+
+// panes is the two-column body every tab shares: the list beside the item
+// where the terminal carries two columns, stacked where it cannot. The body
+// never sits beside a list too narrow to read — a pane of prose two columns
+// wide is a pane that says nothing.
+func (b *BacklogScreen) panes(width, budget int) []string {
+	if b.reading {
+		// The reader asked for the body, so the body gets the whole surface
+		// and the list steps out of the way.
+		return b.readingRows(width, budget)
+	}
+	if width < backlogStackWidth {
+		return b.stackedRows(width, budget)
+	}
+	return b.splitRows(width, budget)
 }
 
 // stackedRows is the narrow layout: the list above, the item below, nothing
@@ -754,8 +864,19 @@ func (b *BacklogScreen) windowRows(width, budget int) []string {
 // the key that ends it; the archive's is a statement of fact and offers
 // nothing, because nothing here can archive an item that does not exist.
 func (b *BacklogScreen) emptyWords() string {
-	if b.archive {
+	switch {
+	case b.archived():
 		return "nothing archived yet"
+	case b.sprinting() && b.Board != nil && b.Board.Closed:
+		// A closed sprint is a record and its items are back in the
+		// backlog's own tabs. Offering a verb that adds one to a set
+		// nothing can be added to would be a key that cannot act.
+		return "this sprint is closed; its items are in the backlog and the archive"
+	case b.sprinting():
+		// The set is empty rather than the backlog, and the file is where
+		// that is fixed: the sprint's own list is the one thing on this
+		// screen no key here writes.
+		return "the sprint names no items · /todo sprint add <slug> puts one in"
 	}
 	return "no items yet · " + keys.Bracket(keys.Backlog.New) + " starts one"
 }
@@ -838,6 +959,13 @@ func (b *BacklogScreen) grade(row BacklogRow) string {
 // waiting on rather than only that it is waiting: the slug is the reason,
 // and `[w]` goes to it.
 func (b *BacklogScreen) stateWords(row BacklogRow) string {
+	// A row the host gave its own words to says those. It is how the sprint
+	// tab draws where a slug stands in the set — finished, waiting, dropped
+	// out of the backlog, or the stage the one in flight is at — which is a
+	// different reading from the item's status in the backlog.
+	if row.Note != "" {
+		return row.Note
+	}
 	switch row.State {
 	case BacklogUnreadable:
 		return "will not load"
@@ -929,7 +1057,7 @@ func (b *BacklogScreen) bodyRows(row BacklogRow, width int) []string {
 		}
 		return []string{sty.Dim.Render(Clip("nothing written under the header yet", width))}
 	}
-	key := fmt.Sprintf("%s\x00%t\x00%d\x00%t", row.Slug, b.archive, width, Mono())
+	key := fmt.Sprintf("%s\x00%d\x00%d\x00%t", row.Slug, b.tab, width, Mono())
 	if key != b.bodyKey {
 		// A markdown body is parsed rather than formatted, and the screen
 		// redraws on every keystroke, so the render is kept until the row,
@@ -1009,6 +1137,9 @@ func (b *BacklogScreen) whyInert() string {
 // query line is open the row keys are letters, so they are not offered: a
 // key that cannot act is not an offer (invariant 5).
 func (b *BacklogScreen) offers() []KeyOffer {
+	if b.planning() {
+		return sprintOffers()
+	}
 	if b.filtering {
 		return []KeyOffer{
 			keyOffer(keys.Backlog.Move),
@@ -1037,8 +1168,13 @@ func (b *BacklogScreen) offers() []KeyOffer {
 // tabOffer names the tab the key would go to rather than the tab it is on,
 // because a key is named for what it does.
 func (b *BacklogScreen) tabOffer() KeyOffer {
-	if b.archive {
+	switch {
+	case b.archived():
 		return keyOfferAs(keys.Backlog.Tab, "the backlog")
+	case b.sprinting():
+		return keyOfferAs(keys.Backlog.Tab, "what shipped")
+	case b.sprintTab():
+		return keyOfferAs(keys.Backlog.Tab, "the sprint")
 	}
 	return keyOfferAs(keys.Backlog.Tab, "what shipped")
 }
@@ -1059,7 +1195,7 @@ func (b *BacklogScreen) stateOffers() []KeyOffer {
 		// None of the verbs is a line edit this file's header could take;
 		// the way to act on it is the editor.
 		out = []KeyOffer{keyOfferAs(keys.Backlog.Edit, "fix the header")}
-	case b.archive:
+	case b.archived():
 		out = []KeyOffer{
 			keyOfferAs(keys.Backlog.Reopen, "put it back in the backlog"),
 			keyOffer(keys.Backlog.Edit),
@@ -1105,7 +1241,7 @@ func (b *BacklogScreen) sprintOffer(row BacklogRow) KeyOffer {
 // and a key that cannot act is not an offer (invariant 5).
 func (b *BacklogScreen) narrowOffer() KeyOffer {
 	shown := []string{keys.Shown(keys.Backlog.Priority), keys.Shown(keys.Backlog.Kind)}
-	if !b.archive {
+	if !b.archived() {
 		shown = []string{
 			keys.Shown(keys.Backlog.Status), keys.Shown(keys.Backlog.Priority),
 			keys.Shown(keys.Backlog.Kind), keys.Shown(keys.Backlog.Ready),
@@ -1114,8 +1250,14 @@ func (b *BacklogScreen) narrowOffer() KeyOffer {
 	return KeyOffer{Key: "[" + strings.Join(shown, "/") + "]", Label: "narrow it"}
 }
 
-// keyList is every key the screen has, for `[?]`.
+// keyList is every key the screen has, for `[?]`. While the plan card holds
+// the keyboard it is the card's keys and only those: a register listing keys
+// the surface in front of the reader does not answer is worse than no
+// register.
 func (b *BacklogScreen) keyList() []KeyOffer {
+	if b.planning() {
+		return sprintOffers()
+	}
 	out := []KeyOffer{
 		keyOfferAs(keys.Backlog.Move, "move between items"),
 		keyOfferAs(keys.Backlog.Read, "read the body in the pane"),
@@ -1142,18 +1284,25 @@ func (b *BacklogScreen) keyList() []KeyOffer {
 	return append(out, keyOfferAs(keys.Backlog.Back, "back to the prompt"))
 }
 
-// tab is which of the two pointers is the current one.
-func (b *BacklogScreen) tab() int {
-	if b.archive {
-		return 1
-	}
-	return 0
-}
+// archived, sprinting and planning are which tab the screen is on and
+// whether the proposal is what that tab is showing.
+func (b *BacklogScreen) archived() bool  { return b.tab == backlogTabDone }
+func (b *BacklogScreen) sprinting() bool { return b.tab == backlogTabSprint }
+func (b *BacklogScreen) planning() bool  { return b.Plan != nil }
+
+// sprintTab reports that there is a sprint tab to step onto: a board to
+// draw, or a proposal to answer.
+func (b *BacklogScreen) sprintTab() bool { return b.Board != nil || b.Plan != nil }
 
 // rows is the tab's own items.
 func (b *BacklogScreen) rows() []BacklogRow {
-	if b.archive {
+	switch {
+	case b.archived():
 		return b.Done
+	case b.sprinting() && b.Board != nil:
+		return b.Board.Rows
+	case b.sprinting():
+		return nil
 	}
 	return b.Rows
 }
@@ -1162,9 +1311,18 @@ func (b *BacklogScreen) rows() []BacklogRow {
 // every View because the host replaces the rows after each command, and the
 // pointer and the filter have to survive that.
 func (b *BacklogScreen) sync() {
+	// A proposal opens the tab it is drawn on, and a sprint that closed
+	// under the reader steps them back to the backlog rather than leaving
+	// them on a tab that is no longer there.
+	switch {
+	case b.planning():
+		b.tab = backlogTabSprint
+	case b.sprinting() && !b.sprintTab():
+		b.tab = backlogTabItems
+	}
 	b.shown = b.match()
 	b.list.Items = b.shown
-	b.list.Focus = b.optIndex(b.focus[b.tab()])
+	b.list.Focus = b.optIndex(b.focus[b.tab])
 	b.list.Normalize()
 }
 
@@ -1211,7 +1369,7 @@ func (b *BacklogScreen) refilter() {
 	b.confirm, b.pending = nil, nil
 	b.reading, b.pager.Offset = false, 0
 	if shown := b.match(); len(shown) > 0 {
-		b.focus[b.tab()] = shown[0]
+		b.focus[b.tab] = shown[0]
 	}
 	b.sync()
 }
@@ -1223,7 +1381,7 @@ func (b *BacklogScreen) move(delta int) {
 		return
 	}
 	b.list.Move(delta)
-	b.focus[b.tab()] = b.shown[min(max(b.list.Focus, 0), len(b.shown)-1)]
+	b.focus[b.tab] = b.shown[min(max(b.list.Focus, 0), len(b.shown)-1)]
 	b.confirm, b.pending = nil, nil
 }
 
@@ -1231,7 +1389,7 @@ func (b *BacklogScreen) move(delta int) {
 func (b *BacklogScreen) current() *BacklogRow {
 	rows := b.rows()
 	for _, i := range b.shown {
-		if i == b.focus[b.tab()] {
+		if i == b.focus[b.tab] {
 			return &rows[i]
 		}
 	}

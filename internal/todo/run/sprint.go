@@ -72,6 +72,13 @@ type Sprint struct {
 	// than from the command that is no longer on screen.
 	NoCommit bool   `json:"no_commit,omitempty"`
 	PrevMode string `json:"prev_mode,omitempty"`
+	// Turns and Cost are what the set has spent so far. They are added up
+	// here rather than read back from a ledger because a sprint crosses a
+	// session boundary between every two items and the ledger is reset at
+	// each one — the running total has to outlive the sessions it was spent
+	// in, and this file is the only thing that does.
+	Turns int     `json:"turns,omitempty"`
+	Cost  float64 `json:"cost,omitempty"`
 	// Ended is one of the words above once the sprint is over, and Reason
 	// the evidence behind it.
 	Ended  string `json:"ended,omitempty"`
@@ -157,16 +164,44 @@ func (s *Sprint) Next(store *todo.Store) (todo.Item, bool) {
 		s.end(SprintCapped, fmt.Sprintf("%s attempted, which is the cap the sprint was asked for", plural(len(s.Attempts), "item")))
 		return todo.Item{}, false
 	}
-	for _, it := range store.Ready() {
-		if s.attempted(it.Slug) {
-			continue
-		}
-		s.Current, s.ItemStarted = it.Slug, time.Now()
-		s.Attempts = append(s.Attempts, it.Slug)
-		return it, true
+	it, ok := s.Peek(store)
+	if !ok {
+		s.end(SprintEmpty, "nothing is ready: every open item waits on another, or the backlog is empty")
+		return todo.Item{}, false
 	}
-	s.end(SprintEmpty, "nothing is ready: every open item waits on another, or the backlog is empty")
+	s.Current, s.ItemStarted = it.Slug, time.Now()
+	s.Attempts = append(s.Attempts, it.Slug)
+	return it, true
+}
+
+// Peek is the item Next would take, without taking it. Two surfaces say
+// which item comes next before it is started — the board, and the first row
+// on the far side of a session boundary — and neither of them may consume
+// the choice, so choosing is here and taking is what Next adds to it.
+//
+// It answers false wherever Next would end the sprint, so a caller asking
+// "what is next" and getting nothing has the same answer the loop is about
+// to reach, without the ending being recorded twice.
+func (s *Sprint) Peek(store *todo.Store) (todo.Item, bool) {
+	if s.Over() || (s.Max > 0 && len(s.Attempts) >= s.Max) {
+		return todo.Item{}, false
+	}
+	for _, it := range store.Ready() {
+		if !s.attempted(it.Slug) {
+			return it, true
+		}
+	}
 	return todo.Item{}, false
+}
+
+// Spent adds one item's cost to the set's running total. It is called at the
+// session boundary, where what the item cost is still readable and about to
+// be reset.
+func (s *Sprint) Spent(turns int, cost float64) {
+	s.Turns += max(turns, 0)
+	if cost > 0 {
+		s.Cost += cost
+	}
 }
 
 // Resume is the item a sprint picked up in a new process goes back to: the

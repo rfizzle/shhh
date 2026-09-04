@@ -1372,15 +1372,15 @@ func TestGolden_ItemDraft(t *testing.T) {
 }
 
 // TestGolden_TodoSprint captures the surface the sprint is chosen on: the
-// ready items under a size budget, everything checked, with each row saying
-// in the facts a filter has why it is in the set — its priority, its size,
-// and how many items are waiting on it.
+// proposal on the backlog screen's sprint tab, the ready items under a size
+// budget, each row saying in the facts a filter has why it is in the set —
+// its priority, its size, and how many items are waiting on it.
 //
 // The card is the half of the sprint that is this surface's. The view
 // `/todo sprint` prints is a report, rendered where every other textual
 // answer to a backlog command is rendered and pinned by that package's own
-// tests; what is captured here is what a report cannot be — a card, at the
-// two widths it lays itself out across.
+// tests; what is captured here is what a report cannot be — a proposal on
+// the tab it is about, at the two widths it lays itself out across.
 func TestGolden_TodoSprint(t *testing.T) {
 	captureGolden(t, "todo-sprint", "the sprint plan card", []int{80, 110}, func(width int) []golden.Panel {
 		root := t.TempDir()
@@ -1403,11 +1403,15 @@ func TestGolden_TodoSprint(t *testing.T) {
 			Detail: func(*todo.Store, todo.Item) string { return "" }})
 		budgeted, _ := m.startTodoSprintPlan([]string{"--size", "S=1,M=1"})
 		whole, _ := m.startTodoSprintPlan(nil)
+		dropped, _ := whole.(Model).updateTodoScreen(key('j'))
+		dropped, _ = dropped.(Model).updateTodoScreen(key(' '))
 		return []golden.Panel{
 			{Label: "under a budget · one small and one medium, in backlog order",
-				View: budgeted.(Model).panelView()},
+				View: budgeted.(Model).backlogPane(width, 24)},
 			{Label: "with no budget · the whole ready list",
-				View: whole.(Model).panelView()},
+				View: whole.(Model).backlogPane(width, 24)},
+			{Label: "a row dropped · it keeps its place and loses its tick",
+				View: dropped.(Model).backlogPane(width, 24)},
 		}
 	})
 }

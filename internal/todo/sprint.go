@@ -695,11 +695,21 @@ func sprintClosingBlock(entries []SprintEntry) string {
 
 // ItemReport is the `## Report` section of an item's body, or "" when it
 // has none — an item archived by hand rather than by a run.
-func ItemReport(it Item) string {
-	lines := strings.Split(it.Body, "\n")
+func ItemReport(it Item) string { return itemSection(it.Body, "## Report") }
+
+// ItemBlock is the `## Blocked` section: what stopped the item, in the
+// run's own evidence. A sprint that stopped names it beside the item that
+// wrote it, because "blocked" on its own is a state and not a reason.
+func ItemBlock(it Item) string { return itemSection(it.Body, "## Blocked") }
+
+// itemSection is one `## `-headed section of a body, to the next heading of
+// the same level or the end. It is a reader over prose a person may have
+// edited, so a heading it cannot find is "" rather than an error.
+func itemSection(body, heading string) string {
+	lines := strings.Split(body, "\n")
 	start := -1
 	for i, l := range lines {
-		if strings.EqualFold(strings.TrimSpace(l), "## Report") {
+		if strings.EqualFold(strings.TrimSpace(l), heading) {
 			start = i + 1
 			break
 		}

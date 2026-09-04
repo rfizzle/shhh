@@ -953,6 +953,10 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			NoCommit:    !cfg.TodoCommitEnabled(),
 			ItemTimeout: cfg.TodoItemTimeout(),
 			GroomStale:  cfg.TodoGroomStale(),
+			// A closed sprint's report is a page, and it goes through the
+			// same publisher the model's own pages do — one report store,
+			// one server, one retention rule, whoever asked for the page.
+			PublishReport: sprintReportPublisher(ts.reports),
 		})
 	}
 	if mem != nil {

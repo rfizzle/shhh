@@ -198,3 +198,15 @@ func reportsJSON(entries []reports.Entry) []reportJSON {
 	}
 	return out
 }
+
+// sprintReportPublisher is the door a session's own page goes through, or
+// nil where this session has no report store. It is a function rather than
+// the publisher itself because the surface that writes the page must not be
+// able to reach the rest of the publisher: what it may do is publish one
+// document, and everything else on that type belongs to the tool.
+func sprintReportPublisher(p *reports.Publisher) func(reports.Document) (string, error) {
+	if p == nil {
+		return nil
+	}
+	return p.Publish
+}

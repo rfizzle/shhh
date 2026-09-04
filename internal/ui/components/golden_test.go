@@ -1828,6 +1828,101 @@ func goldenBacklogScreen() *BacklogScreen {
 	}
 }
 
+// goldenSprintRows is the sprint's set as the tab draws it: one item
+// finished, the one in flight with its stage in the state field, one
+// waiting on a dependency, one ready, and a slug the backlog no longer
+// holds — the five readings a set can produce, on one sheet.
+func goldenSprintRows() []BacklogRow {
+	rows := goldenBacklogRows()
+	return []BacklogRow{
+		{Slug: "keys-are-declared-once", Title: "Every key is declared once",
+			Kind: "chore", Priority: "high", Status: "done", Size: "M",
+			State: BacklogArchived, Note: "done", InSprint: true,
+			Fields: []string{"chore", "high", "size M", "done", "written 2026-08-20"},
+			Body:   "Sixty-eight literals came out of twenty files.\n"},
+		withNote(rows[0], "implement"),
+		withNote(rows[1], "waits on rail-todo-block +1"),
+		withNote(rows[2], "ready"),
+		{Slug: "cache-warm", State: BacklogBlocked, Note: "dropped from the backlog",
+			Body: "The backlog no longer holds this item, and the sprint still names it.\n"},
+	}
+}
+
+// withNote is one backlog row with the sprint's own reading of it in the
+// state field.
+func withNote(row BacklogRow, note string) BacklogRow {
+	row.Note, row.InSprint = note, true
+	return row
+}
+
+// goldenSprintScreen is the backlog screen standing on its sprint tab.
+func goldenSprintScreen(board *SprintBoard) *BacklogScreen {
+	b := &BacklogScreen{
+		Rows: goldenBacklogRows(), Done: goldenBacklogDone(),
+		Sprint: "the cockpit sprint", Board: board, MaxLines: 24,
+	}
+	b.Update(key("tab"))
+	return b
+}
+
+// goldenSprintBoard is the set being worked: a goal, four of its items to
+// go, the spend so far, and the item the sprint takes next.
+func goldenSprintBoard() *SprintBoard {
+	return &SprintBoard{
+		Name: "the cockpit sprint",
+		Goal: "Put the backlog, the run and the sprint on screen, so watching a night's work is a glance rather than a scroll.",
+		Done: 1, Total: 4, Spend: "9 turns · $1.42", Next: "prose-renderer",
+		Rows: goldenSprintRows(),
+	}
+}
+
+// TestGolden_SprintBoard captures the sprint as a tab of the backlog
+// screen: the goal and the progress meter over the set's own items, the
+// block that stopped it, the page a closed one leaves, and the proposal
+// that is drawn here before there is a file at all.
+func TestGolden_SprintBoard(t *testing.T) {
+	captureGolden(t, "sprint-board", "the sprint board", goldenWidths, func(width int) []golden.Panel {
+		blocked := goldenSprintBoard()
+		blocked.Stopped = "sprint-file blocked — waiting on a decision about where the file lives"
+		blocked.Next = ""
+		blocked.Rows[2].Note = "blocked"
+		blocked.Rows[2].State = BacklogBlocked
+		closed := &SprintBoard{
+			Name: "the cockpit sprint", Goal: goldenSprintBoard().Goal, Closed: true,
+			Report: "http://127.0.0.1:8731/r/rp-4c1d90ab77e25f30",
+		}
+		plan := &BacklogScreen{
+			Rows: goldenBacklogRows(), Done: goldenBacklogDone(), MaxLines: 24,
+			Plan: &SprintPlan{
+				Budget: "S=2 M=1",
+				Goal:   "No goal written yet.",
+				Rows: []SprintPlanRow{
+					{Slug: "prose-renderer", Title: "One renderer for every piece of prose", Note: "medium · S · unblocks 2"},
+					{Slug: "drop-loses-the-file", Title: "Dropping an item says what it loses", Note: "low · - "},
+					{Slug: "screen-over-items", Title: "A screen over the whole backlog", Note: "high · L"},
+				},
+			},
+		}
+		droppedRow := *plan
+		dropped := &BacklogScreen{Rows: droppedRow.Rows, Done: droppedRow.Done, MaxLines: 24,
+			Plan: &SprintPlan{Budget: "S=2 M=1", Goal: plan.Plan.Goal, Rows: append([]SprintPlanRow(nil), plan.Plan.Rows...)}}
+		dropped.Update(key("j"))
+		dropped.Update(key(" "))
+		return []golden.Panel{
+			{Label: "the set being worked · the goal, the meter, and the stage of the one in flight",
+				View: goldenSprintScreen(goldenSprintBoard()).View(width)},
+			{Label: "stopped on a block · the block on the board with the item that wrote it",
+				View: goldenSprintScreen(blocked).View(width)},
+			{Label: "closed · the record, with the page it wrote as the last row",
+				View: goldenSprintScreen(closed).View(width)},
+			{Label: "planning · the proposal with the budget in the header",
+				View: plan.View(width)},
+			{Label: "a row dropped · it keeps its place and loses its tick",
+				View: dropped.View(width)},
+		}
+	})
+}
+
 // TestGolden_BacklogScreen captures the backlog as a surface: the list on
 // the left and the item's own prose on the right, the fold under the pane
 // width, the filters stating themselves in the header, the confirm in front

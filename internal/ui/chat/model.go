@@ -670,7 +670,6 @@ type Model struct {
 	todoRunner        todoRunState
 	todoPropose       *components.MultiSelect
 	todoProposals     []todo.Proposal
-	todoSprintPlan    []string
 	todoExtracting    bool
 	todoExtractRun    int
 	todoExtractCancel context.CancelFunc
@@ -1013,6 +1012,15 @@ type Model struct {
 	// reader is on are what the surface is: a screen re-derived from the
 	// store on every keystroke would forget all three.
 	backlog *components.BacklogScreen
+	// sprintPlan is the proposal being answered. It lives on the session
+	// rather than on the screen because the key that writes its goal hands
+	// the keyboard back to the input, and a proposal that died with the
+	// surface would be one the reader has to plan again to get back.
+	sprintPlan *components.SprintPlan
+	// sprintClosed is the sprint this session closed, kept so the board can
+	// go on offering its report page: the file is renamed into the archive
+	// the moment it closes, and nothing else in the session remembers it.
+	sprintClosed *closedSprint
 	// contextOpen is which of the surface's folds the reader had open when
 	// they last left it, by label. It outlives the screen because the screen
 	// is rebuilt from the accounting on every opening.

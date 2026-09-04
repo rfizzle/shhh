@@ -159,6 +159,7 @@ func TestEveryDeclaredBindingIsOnASurface(t *testing.T) {
 		{"Find", Find.All()},
 		{"Context", Context.All()},
 		{"Backlog", Backlog.All()},
+		{"Sprint", Sprint.All()},
 		{"Row", []Binding{Row.Review, Row.Undo, Row.Retry, Row.Continue, Row.Key,
 			Row.Provider, Row.Rounds, Row.Uncap}},
 		{"Decision", []Binding{Decision.Allow, Decision.Deny, Decision.Refuse,

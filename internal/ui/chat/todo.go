@@ -20,6 +20,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/reports"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/todo/run"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -36,6 +37,12 @@ type Todos struct {
 	Manage func(args []string) string
 	// Detail renders one item for the transcript.
 	Detail func(*todo.Store, todo.Item) string
+	// PublishReport writes a page the session built itself and answers with
+	// its URL. It is what a closed sprint's report goes through. Nil is a
+	// session with no report store — the close still happens and says so,
+	// because the record of the set is the archived file and the page is
+	// the readable form of it.
+	PublishReport func(reports.Document) (string, error)
 	// Extractor reads the session into proposed items behind a bare
 	// /todo add. Nil, or disabled, leaves only the by-hand form.
 	Extractor *todo.Extractor
@@ -224,6 +231,17 @@ func (m Model) todoCommand(parts []string) (tea.Model, tea.Cmd) {
 	// manager below, so a script gets the same words.
 	if len(parts) >= 3 && parts[1] == "sprint" && parts[2] == "plan" {
 		return m.startTodoSprintPlan(parts[3:])
+	}
+	// Closing goes through the manager like every other sprint verb; what
+	// the session adds afterwards is the report page, which needs a
+	// publisher a script has not got.
+	if len(parts) == 3 && parts[1] == "sprint" && parts[2] == "close" {
+		return m.closeSprintCommand()
+	}
+	// A goal written while a proposal is in flight goes on the proposal:
+	// there is no sprint file to edit until the card is taken.
+	if len(parts) >= 3 && parts[1] == "sprint" && parts[2] == "goal" && m.sprintPlan != nil {
+		return m.sprintGoalCommand(strings.Join(parts[3:], " "))
 	}
 	if len(parts) >= 2 && parts[1] == "run" {
 		opt, ok := parseTodoRunArgs(parts[2:])
@@ -433,7 +451,7 @@ func (m Model) openTodoScreen() (tea.Model, tea.Cmd) {
 	if !m.todosEnabled() {
 		return m.systemNotice("The backlog is unavailable in this session.")
 	}
-	m.backlog = &components.BacklogScreen{Prose: todoProse}
+	m.backlog = &components.BacklogScreen{Prose: todoProse, Plan: m.sprintPlan}
 	m.reloadTodos()
 	m.enterSurface(stateBacklog)
 	return m, nil
@@ -507,6 +525,22 @@ func (m Model) todoScreenAct(cmd components.BacklogCommand) (tea.Model, tea.Cmd)
 		// spends a turn, and its card is in the panel this screen covers.
 		m.shutTodoScreen()
 		return m.startTodoGroom([]string{cmd.Slug})
+	case components.BacklogSprintTake:
+		note := m.writeSprintPlan(cmd.Slugs, m.backlog.Plan.Goal)
+		m.backlog.Plan, m.sprintPlan = nil, nil
+		m.reloadTodos()
+		m.backlog.Notice = firstLine(note)
+		return m.systemNotice(note)
+	case components.BacklogSprintCancel:
+		m.backlog.Plan, m.sprintPlan = nil, nil
+		m.refreshTodoScreen()
+		return m.systemNotice("Nothing written; no sprint was planned.")
+	case components.BacklogSprintGoal:
+		// A goal is a sentence and the card has nowhere to type one, so the
+		// key hands the keyboard back with the command already in the box —
+		// the same handover the new-item key makes.
+		m.shutTodoScreen()
+		return m.composeSprintGoal()
 	}
 	note := m.todoScreenVerb(cmd)
 	m.reloadTodos()
@@ -590,6 +624,7 @@ func (m Model) refreshTodoScreen() {
 	s := m.todoStore
 	m.backlog.Rows = m.todoScreenRows(s, false)
 	m.backlog.Done = m.todoScreenRows(s, true)
+	m.backlog.Board = m.sprintBoard()
 	m.backlog.Sprint = ""
 	if s != nil && s.Sprint.Open() {
 		m.backlog.Sprint = s.Sprint.Name

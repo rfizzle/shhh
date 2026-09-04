@@ -86,15 +86,28 @@ file's, in full, which keeps the promise that order is nothing the reader
 cannot recompute — here, by reading the file.
 
 The set is proposed and never imposed. Asking for a plan offers the ready
-items in backlog order, under a budget stated by size if you give one, on
-the same card a session's proposed items arrive on: everything checked, you
-uncheck what you do not want, and only then is the file written. Size is the
-budget's unit because size is what a run gates on — three large items is a
-different week from nine small ones.
+items in backlog order, under a budget stated by size if you give one, as a
+card on the sprint's own board: everything kept, you drop what you do not
+want, you say what the set is for, and only then is the file written. Size is
+the budget's unit because size is what a run gates on — three large items is
+a different week from nine small ones. Each row carries the reason it is in
+the set — its priority and size, and how many items are waiting on it — which
+are facts the filter has rather than a judgement you would have to take on
+trust.
 
 The goal earns its place by being read. It rides in every item's research
 stage, so a run knows what the set around it is for; a session with no
 sprint sends nothing rather than sending an empty heading.
+
+**The set is watched on a board.** The sprint is a tab of the backlog screen
+([`the sprint board`](../interface/surfaces.md#the-sprint-board)): the goal at
+the top, a meter of what is finished over what the backlog still holds, what
+the set has cost so far, and its slugs in the file's order with where each
+one stands — the one being worked saying which stage it is at. A set that
+stopped on a block shows the block and the item that wrote it, because a
+sprint stops on the first one and attempts nothing after it. From outside the
+session the same board prints as a listing, and `--json` carries the file back
+with the state of each slug placed against the backlog.
 
 When the last item is archived — by a run or by hand — the sprint stops
 being a plan and becomes a record: it moves into the archive under its name
@@ -103,6 +116,12 @@ same and lists what was left undone. An item dropped from the backlog
 outright is accounted for on the sprint's rows rather than quietly forgotten,
 because a set that shrank without saying so is a set nobody can read
 afterwards.
+
+A closed sprint also writes a page: the goal, every item with what it
+produced, what stopped the rest, and the turns and spend the set took
+([`reports`](reports.md#a-page-shhh-writes-for-you)). The archived file is the
+record and the page is the readable form of it — the one a person hands to
+somebody who was not there.
 
 ## Where the backlog lives
 

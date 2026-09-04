@@ -44,6 +44,23 @@ where the categories mean nothing — and the stylesheet carries a ramp for
 exactly that, deliberately duller than the state hues so that series three
 never reads as success.
 
+## A page shhh writes for you
+
+Every page above is one the model chose to build. A sprint's report is the
+first that shhh builds itself: when a set of work closes, the goal, the items
+with what each produced, what stopped the rest and what the set cost go onto
+a page, and the board offers the link
+([`the sprint board`](../interface/surfaces.md#the-sprint-board)).
+
+It is the same blocks — a stat band, a table, prose — because a second
+vocabulary for pages shhh writes would be a second design to keep in step
+with the first, and nothing about who asked for a page changes what a page
+is. Two things do change. Nothing here came off a tool call, so there is no
+freehand markup to validate: the whole document is typed blocks the product
+built. And it does not open a browser. A page written while you were away
+must not steal the window you are in; the link is on the board and in the
+line that says the sprint closed.
+
 ## A report outlives its session
 
 A report you cannot come back to is a screenshot you forgot to take. Reports

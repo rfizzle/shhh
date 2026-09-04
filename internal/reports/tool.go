@@ -85,6 +85,24 @@ func NewPublisher(store *Store, origin, root string, open bool) *Publisher {
 // Close stops the publisher's server.
 func (p *Publisher) Close() error { return p.server.Close() }
 
+// Publish stores one document shhh built itself and answers with its URL.
+//
+// It is the door for a page written for the person rather than by the model:
+// nothing here came off a tool call, so there is no freehand to freeze and
+// no browser to pop — a page the session wrote while the reader was away
+// must not steal the window they are in. Everything else is the tool's own
+// path, because a page's trust boundary cannot depend on who asked for it.
+func (p *Publisher) Publish(doc Document) (string, error) {
+	if err := doc.Validate(); err != nil {
+		return "", err
+	}
+	id, err := p.store.Put(doc, Meta{Title: doc.Title, Project: p.root, Origin: p.origin})
+	if err != nil {
+		return "", err
+	}
+	return p.server.URL(id)
+}
+
 // ExecuteTool publishes one report and answers with its URL on the first
 // line — the line the TUI row and the model's own answer both lift.
 func (p *Publisher) ExecuteTool(args json.RawMessage) (string, error) {

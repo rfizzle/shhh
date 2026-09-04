@@ -297,3 +297,56 @@ about to be dropped is worse than no room for it at all.
 
 When there is an artboard, these four decisions are what it has to reconcile
 with, and where the two differ the artboard wins.
+
+## The sprint board's layout was decided in the binary
+
+There is no artboard for it, and one is owed. Most of the tab needed no
+decision — the two panes, the windowed list, the header, the rule and the key
+row are the backlog screen's, drawn already, and the progress meter is the
+step meter with the set's own noun. Four things it could not take from
+anywhere, and they were decided here:
+
+**The head is pinned above both panes, and it gives ground first.** What the
+set is for and how far through it is are the two facts the tab exists to
+state, so they do not scroll with the list. But a head taller than the tab
+would leave no set on screen at all, and a board with no set on it is a
+paragraph — so when the terminal is short the head is what clips, down to the
+rows the list needs.
+
+**The row's state field is the set's reading, not the item's.** Everywhere
+else on this screen a row states where an item stands in the backlog. Here it
+states where the slug stands in the *set*: the one being worked says which
+stage it is at, a slug the backlog no longer holds says so, and the two are
+different sentences about the same file. A row that said "in progress" on a
+board would answer the question the board was opened to ask with the word it
+already had.
+
+**The plan is a card on the tab, not a card over the transcript.** Choosing
+the set and watching it are the same two questions about the same thing, and
+a proposal drawn somewhere else would be a second place a sprint is looked
+at. The card holds the keyboard while it is up, so the tab's own list is
+drawn and not live — which is what lets the card keep `j/k`, the one pair
+this screen had to break.
+
+**A dropped row keeps its place.** The alternative was removing it, and the
+card is the only record of what was proposed: a row that left could not be put
+back without planning again. So the box empties and the row stays where the
+order put it.
+
+When there is an artboard, these four decisions are what it has to reconcile
+with, and where the two differ the artboard wins.
+
+## The sprint plan's rows carry the filter's reason, not a model's
+
+The design and the story both describe a one-line reason per proposed item
+written by the model. The proposal is a filter over the ready list in backlog
+order — nothing is read and nothing is judged — and that is what makes it
+something a reader can recompute from the item headers rather than a
+recommendation they have to take on trust. A sentence nobody can check on
+every row would quietly turn one into the other.
+
+So the row's reason is the facts the filter has: the priority and size that
+put the item where it is in the order and spent the budget on it, and how
+many items are waiting on it. If a graded judgement is wanted later it is a
+different feature with a different promise, and it should say on the card
+that a model wrote it.

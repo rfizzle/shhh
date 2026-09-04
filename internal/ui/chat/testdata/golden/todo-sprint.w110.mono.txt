@@ -11,32 +11,84 @@
 
 ── layout ──────────────────────────────────────────────────
 · under a budget · one small and one medium, in backlog order
-┌─ 2 ready items for the sprint, in backlog order — space toggles, a all or none, enter writes the sprin…┐
-│ ❯ [x] cache-invalidate · Invalidate on write                                                  high · M │
-│   [x] cache-ttl · Give the cache a lifetime                                      high · S · unblocks 1 │
-│ space toggle · a all/none · enter apply (2) · esc cancel                                               │
-└────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+backlog · planning · S=1 M=1                             2 of 2 items kept · [?] keys · [q] back to the prompt
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+nothing is written until [enter]
+No goal written yet. `/todo sprint goal <text>` says what this set is for.
+
+❯ [x] cache-invalidate  Invalidate on write  ·  high · M
+  [x] cache-ttl  Give the cache a lifetime  ·  high · S · unblocks 1
+
+[↑↓/jk] move · [space] drop it, or put it back · [g] write what the set is for · [enter] write the sprint
+[esc] write nothing
 
 · with no budget · the whole ready list
-┌─ 3 ready items for the sprint, in backlog order — space toggles, a all or none, enter writes the sprin…┐
-│ ❯ [x] cache-invalidate · Invalidate on write                                                  high · M │
-│   [x] cache-ttl · Give the cache a lifetime                                      high · S · unblocks 1 │
-│   [x] cache-warm · Warm the cache on start                                                     low · M │
-│ space toggle · a all/none · enter apply (3) · esc cancel                                               │
-└────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+backlog · planning · everything ready                    2 of 3 items kept · [?] keys · [q] back to the prompt
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+nothing is written until [enter]
+No goal written yet. `/todo sprint goal <text>` says what this set is for.
+
+  [x] cache-invalidate  Invalidate on write  ·  high · M
+❯ [ ] cache-ttl  Give the cache a lifetime  ·  high · S · unblocks 1
+  [x] cache-warm  Warm the cache on start  ·  low · M
+
+[↑↓/jk] move · [space] drop it, or put it back · [g] write what the set is for · [enter] write the sprint
+[esc] write nothing
+
+· a row dropped · it keeps its place and loses its tick
+backlog · planning · everything ready                    2 of 3 items kept · [?] keys · [q] back to the prompt
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+nothing is written until [enter]
+No goal written yet. `/todo sprint goal <text>` says what this set is for.
+
+  [x] cache-invalidate  Invalidate on write  ·  high · M
+❯ [ ] cache-ttl  Give the cache a lifetime  ·  high · S · unblocks 1
+  [x] cache-warm  Warm the cache on start  ·  low · M
+
+[↑↓/jk] move · [space] drop it, or put it back · [g] write what the set is for · [enter] write the sprint
+[esc] write nothing
 
 ── ansi ────────────────────────────────────────────────────
 · under a budget · one small and one medium, in backlog order
-␛[38;5;244m┌─ 2 ready items for the sprint, in backlog order — space toggles, a all or none, enter writes the sprin…┐␛[m
-␛[38;5;244m│␛[m ␛[1;48;5;237m❯ ␛[m␛[38;5;254m[x]␛[m cache-invalidate · Invalidate on write                                                  ␛[38;5;254mhigh · M␛[m ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m   ␛[38;5;254m[x]␛[m cache-ttl · Give the cache a lifetime                                      ␛[38;5;254mhigh · S · unblocks 1␛[m ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[3;38;5;244mspace toggle · a all/none · enter apply (2) · esc cancel␛[m                                               ␛[38;5;244m│␛[m
-␛[38;5;244m└────────────────────────────────────────────────────────────────────────────────────────────────────────┘␛[m
+␛[1;38;5;254mbacklog␛[m␛[38;5;244m · planning␛[m␛[38;5;244m · S=1 M=1␛[m                             ␛[38;5;244m2 of 2 items kept␛[m␛[38;5;244m · [?] keys · [q] back to the prompt␛[m
+␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+
+␛[38;5;244mnothing is written until ␛[m␛[38;5;254m[enter]␛[m
+␛[38;5;244mNo goal written yet. `/todo sprint goal <text>` says what this set is for.␛[m
+
+␛[38;5;254m❯ ␛[m␛[38;5;254m[x]␛[m ␛[1;38;5;254mcache-invalidate␛[m␛[38;5;244m  Invalidate on write  ·  high · M␛[m
+  ␛[38;5;254m[x]␛[m ␛[1;38;5;254mcache-ttl␛[m␛[38;5;244m  Give the cache a lifetime  ·  high · S · unblocks 1␛[m
+
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[space]␛[m␛[38;5;244m drop it, or put it back␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m␛[38;5;244m write what the set is for␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m write the sprint␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m write nothing␛[m
 
 · with no budget · the whole ready list
-␛[38;5;244m┌─ 3 ready items for the sprint, in backlog order — space toggles, a all or none, enter writes the sprin…┐␛[m
-␛[38;5;244m│␛[m ␛[1;48;5;237m❯ ␛[m␛[38;5;254m[x]␛[m cache-invalidate · Invalidate on write                                                  ␛[38;5;254mhigh · M␛[m ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m   ␛[38;5;254m[x]␛[m cache-ttl · Give the cache a lifetime                                      ␛[38;5;254mhigh · S · unblocks 1␛[m ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m   ␛[38;5;254m[x]␛[m cache-warm · Warm the cache on start                                                     ␛[38;5;254mlow · M␛[m ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[3;38;5;244mspace toggle · a all/none · enter apply (3) · esc cancel␛[m                                               ␛[38;5;244m│␛[m
-␛[38;5;244m└────────────────────────────────────────────────────────────────────────────────────────────────────────┘␛[m
+␛[1;38;5;254mbacklog␛[m␛[38;5;244m · planning␛[m␛[38;5;244m · everything ready␛[m                    ␛[38;5;244m2 of 3 items kept␛[m␛[38;5;244m · [?] keys · [q] back to the prompt␛[m
+␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+
+␛[38;5;244mnothing is written until ␛[m␛[38;5;254m[enter]␛[m
+␛[38;5;244mNo goal written yet. `/todo sprint goal <text>` says what this set is for.␛[m
+
+  ␛[38;5;254m[x]␛[m ␛[1;38;5;254mcache-invalidate␛[m␛[38;5;244m  Invalidate on write  ·  high · M␛[m
+␛[38;5;254m❯ ␛[m␛[38;5;244m[ ]␛[m ␛[38;5;244mcache-ttl␛[m␛[38;5;244m  Give the cache a lifetime  ·  high · S · unblocks 1␛[m
+  ␛[38;5;254m[x]␛[m ␛[1;38;5;254mcache-warm␛[m␛[38;5;244m  Warm the cache on start  ·  low · M␛[m
+
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[space]␛[m␛[38;5;244m drop it, or put it back␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m␛[38;5;244m write what the set is for␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m write the sprint␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m write nothing␛[m
+
+· a row dropped · it keeps its place and loses its tick
+␛[1;38;5;254mbacklog␛[m␛[38;5;244m · planning␛[m␛[38;5;244m · everything ready␛[m                    ␛[38;5;244m2 of 3 items kept␛[m␛[38;5;244m · [?] keys · [q] back to the prompt␛[m
+␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+
+␛[38;5;244mnothing is written until ␛[m␛[38;5;254m[enter]␛[m
+␛[38;5;244mNo goal written yet. `/todo sprint goal <text>` says what this set is for.␛[m
+
+  ␛[38;5;254m[x]␛[m ␛[1;38;5;254mcache-invalidate␛[m␛[38;5;244m  Invalidate on write  ·  high · M␛[m
+␛[38;5;254m❯ ␛[m␛[38;5;244m[ ]␛[m ␛[38;5;244mcache-ttl␛[m␛[38;5;244m  Give the cache a lifetime  ·  high · S · unblocks 1␛[m
+  ␛[38;5;254m[x]␛[m ␛[1;38;5;254mcache-warm␛[m␛[38;5;244m  Warm the cache on start  ·  low · M␛[m
+
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[space]␛[m␛[38;5;244m drop it, or put it back␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m␛[38;5;244m write what the set is for␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m write the sprint␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m write nothing␛[m

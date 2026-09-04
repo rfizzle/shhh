@@ -471,6 +471,39 @@ var Backlog = BacklogKeys{
 	Back: bind("q", "back to the prompt", "q", "esc", "ctrl+c"),
 }
 
+// SprintKeys are the sprint plan card's, on the backlog screen's sprint tab.
+//
+// The card holds the keyboard for as long as it is up, so none of the
+// screen's own row letters is live under it — which is what frees `j/k`
+// here on the one screen whose list moves on the arrows alone, and what
+// lets `g` mean the goal here and the grooming key one tab over. A card
+// that is answered and gone is the shortest-lived surface in the register,
+// and it is a surface for exactly that reason: while it is up it is the
+// only thing listening.
+type SprintKeys struct {
+	Move   Binding
+	Toggle Binding
+	Goal   Binding
+	Take   Binding
+	Cancel Binding
+}
+
+// All is the card's keys in the order it offers them.
+func (k SprintKeys) All() []Binding {
+	return []Binding{k.Move, k.Toggle, k.Goal, k.Take, k.Cancel}
+}
+
+var Sprint = SprintKeys{
+	Move: bind("↑↓/jk", "move", "up", "down", "j", "k"),
+	// Dropping is a toggle rather than a removal because the row is the
+	// only record of what was proposed: a row that left the card could not
+	// be put back, and the reader would have to plan again to see it.
+	Toggle: bind("space", "drop it, or put it back", " ", "space"),
+	Goal:   bind("g", "write what the set is for", "g"),
+	Take:   bind("enter", "write the sprint", "enter"),
+	Cancel: bind("esc", "write nothing", "esc"),
+}
+
 // RowKeys are the offers a transcript row carries. They are the register's
 // awkward corner and its own subject: passive entries whose keys are answered
 // by reading mode standing on the row, which is why the input keeps every one

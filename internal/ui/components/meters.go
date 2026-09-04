@@ -127,6 +127,21 @@ func StepMeter(step, steps, cells int, running bool) (Meter, bool) {
 	return m, true
 }
 
+// SprintMeter is the sprint board's progress: how many of a set's items are
+// finished, out of the ones the backlog still holds. It is the step meter's
+// bar under the set's own noun — a sprint's items are not stages of one
+// thing, and "step 3 of 7" would read as a run rather than as a week. It
+// returns ok=false for a set with nothing in it, because a bar drawn against
+// a total of nothing is a bar that says a sprint is finished.
+func SprintMeter(done, total, cells int) (Meter, bool) {
+	m, ok := StepMeter(done, total, cells, false)
+	if !ok {
+		return Meter{}, false
+	}
+	m.Text = fmt.Sprintf("%d of %d done", min(max(done, 0), total), total)
+	return m, true
+}
+
 // AgentMeter is a lane's progress meter — five cells, always info, and only
 // when the child declared a step count. A lane without one gets the
 // Spinner, because a bar drawn against a denominator nobody supplied is a

@@ -374,6 +374,46 @@ func TestTodoJSON_SprintVerb(t *testing.T) {
 	}
 }
 
+// The board a second terminal reads is the board the tab draws: --json
+// carries the file back — its name, its goal and its slugs in order — with
+// the state each slug is in placed against the backlog.
+func TestTodoJSON_SprintRoundTripsTheFile(t *testing.T) {
+	root := sprintFixture(t)
+	s := todo.Load(root)
+	data, err := json.Marshal(todoJSON(s, todoSprintItems(s)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var doc struct {
+		Sprint *struct {
+			Name, Status, Goal, Path string
+			Done, Total              int
+			Open                     bool
+			Items                    []struct{ Slug, State string }
+		}
+	}
+	if err := json.Unmarshal(data, &doc); err != nil {
+		t.Fatal(err)
+	}
+	sp := doc.Sprint
+	if sp == nil {
+		t.Fatal("--json carried no sprint")
+	}
+	if sp.Name != s.Sprint.Name || sp.Goal != s.Sprint.Goal || sp.Path != s.Sprint.Path {
+		t.Errorf("the file did not round-trip: %+v", sp)
+	}
+	if !sp.Open || sp.Status != string(todo.SprintOpen) || sp.Done != 0 || sp.Total != 2 {
+		t.Errorf("state = %+v", sp)
+	}
+	var order []string
+	for _, it := range sp.Items {
+		order = append(order, it.Slug+"="+it.State)
+	}
+	if strings.Join(order, ",") != "first=ready,second=waiting,vanished=dropped" {
+		t.Errorf("slugs and states = %v", order)
+	}
+}
+
 // A run in flight is the one reason a verb refuses an item that is otherwise
 // there and active, and the refusal names the session because that is where
 // the run can be stopped.

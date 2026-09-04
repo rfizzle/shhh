@@ -99,6 +99,13 @@ func (m Model) windowTitle() string {
 	if name == "" {
 		name = defaultTitle
 	}
+	// A sprint takes the name's place while it is working. The session's
+	// own name is the same in every window a sprint runs through — it makes
+	// one per item — so what tells the reader anything is how far through
+	// the set it is and which item it is on (todosprint.go).
+	if sprint := m.sprintTitle(); sprint != "" {
+		name = sprint
+	}
 	if m.windowDir != "" {
 		name += " · " + m.windowDir
 	}

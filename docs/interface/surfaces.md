@@ -841,6 +841,56 @@ second, so the keys that would edit one go grey with the sentence saying why
 above them, rather than accepting the press and refusing it afterwards
 ([invariant 5](principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard)).
 
+### The sprint board
+
+A sprint is a set of items in a stated order under a goal, and it was
+readable only as a listing. The command prints it, the rail carries its name
+and its count, and neither of them says where the set stands. The two
+questions actually asked of a sprint — what is this set for, and how far
+through it are we — are board questions, so the answer is a third tab of the
+screen the backlog already has rather than a fourth place items are drawn.
+
+Above the two panes the tab pins a head: the goal as written, a progress
+meter of what is finished over what the backlog still holds, and what the set
+has cost so far. Under it the set's own slugs in the file's order, each
+carrying where it stands *in the set* rather than its status in the backlog —
+the one being worked says which stage it is at, because a slug that only says
+"in progress" tells you a sprint is going and not whether it is moving. A
+slug the backlog no longer holds is a row saying so; it leaves the ratio
+rather than counting as finished, because a set that reported work as done
+because its item was deleted would be the one number here nobody could trust.
+
+A set that stopped says what stopped it. A sprint stops on the first block
+and attempts nothing after it, so the block and the item that wrote it belong
+on the board and not only in the transcript of the session that hit it. And a
+sprint that crosses a session boundary — it makes one per item — leaves a
+first row on the other side saying which item comes next, because everything
+else that boundary carried is gone by design.
+
+Planning is the same tab before there is a file. The proposal is drawn here
+as a card that holds the keyboard: the budget it was filtered to is in the
+header, each row carries the reason it is in the set, and nothing is written
+until the card is taken. The reason is the filter's own account — the
+priority and size that put it where it is, and how many items are waiting on
+it — rather than a sentence asked of a model: the proposal is deliberately
+something a reader can recompute from the item headers, and a reason nobody
+can check would turn a filter into a recommendation.
+
+The card keeps `j/k`, which is the one pair the list under it had to give up.
+While a card holds the keyboard nothing else is listening, so no filter
+letter is competing for the keystroke
+([invariant 5](principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard)).
+Taking an empty set is refused rather than written: a sprint that names
+nothing scopes the ready list to nothing, and it is the one file here nobody
+can work out of.
+
+When a sprint closes, its report is a page rather than a paragraph — the
+goal, every item with what it produced, what stopped the rest, and the turns
+and spend the set took ([reports](../capabilities/reports.md#what-a-report-is)).
+The board's last row offers the link, whole, the way an activity row offers a
+published report: the file is renamed into the archive the moment it closes,
+and that row is the only place the link survives it.
+
 ### The profile drafter
 
 Drafting a profile is a conversation with a shape — a brief, at most three
@@ -1068,6 +1118,11 @@ because it makes the notification's promise without words: shhh getting your
 attention while you are looking somewhere else. Someone who turned the summons
 off did not mean *but keep the light on*.
 
+A sprint takes the name's place while it is working, and says how far
+through the set it is and which item it is on. A sprint makes a session per
+item, so the session's own name is the same in every window it runs through;
+what tells the reader anything is the count and the slug.
+
 A terminal that said in advance it is a dumb one is told neither. That is a
 different fact from a capability query that came back empty, and it is the
 terminal's own word rather than an inference.
@@ -1092,6 +1147,12 @@ ignored on a guess.
 What it says is what the screen it is calling you back to says, word for word.
 A summons that describes the screen in different words is one you have to
 reconcile when you arrive.
+
+A turn spent inside a sprint says which item it was spent on and how far the
+set has got, and an item that reached the end is named as *finished* rather
+than as being at a stage. A reader who left a sprint running and came back to
+one line about a turn would have to go and look up which of thirty items it
+was.
 
 There is deliberately no native notification backend. The machine running shhh
 is not always the machine you are sitting at: over SSH a native notification is

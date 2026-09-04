@@ -1885,6 +1885,10 @@ func (m Model) advanceSprint(done string) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	sp.Finished(done)
+	// What the item cost is added to the set's total here, on the last line
+	// before the boundary resets the ledger it is read from: the checkpoint
+	// is the only thing that outlives the session it was spent in.
+	sp.Spent(int(m.turnCount), m.sessionSpend().Cost)
 	if err := sp.Save(m.todos.Root); err != nil {
 		sp.Stop()
 		model, _ := m.systemNotice("The sprint's checkpoint could not be written — " + err.Error())
@@ -1894,9 +1898,25 @@ func (m Model) advanceSprint(done string) (tea.Model, tea.Cmd) {
 	// definition of what a session ending and another beginning resets
 	// (model.go).
 	note, save := m.startNewSession()
+	// The new session's first row says which item comes next. Everything
+	// else the boundary carried is gone by design, so a reader who comes
+	// back to a fresh transcript would otherwise have to open the board to
+	// find out what the sprint is about to work.
+	note += sprintNextNote(sp, m.todoStore)
 	model, _ := m.systemNotice(note)
 	next, cmd := model.(Model).sprintNext(sp)
 	return next, tea.Batch(save, cmd)
+}
+
+// sprintNextNote is the line the first row on the far side of a session
+// boundary carries: which item the sprint takes next, or that there is none
+// left. It reads the choice rather than making it, so the row and the run
+// that follows it cannot name different items.
+func sprintNextNote(sp *run.Sprint, store *todo.Store) string {
+	if next, ok := sp.Peek(store); ok {
+		return "\nNext in the sprint: " + next.Slug + " · " + next.Title
+	}
+	return "\nNothing is left that the sprint can start; it ends here."
 }
 
 // endTodoSprint retires the sprint: the mode the session was in before it
@@ -1961,7 +1981,13 @@ func (m Model) sprintCloseWords() string {
 	if !st.Sprinting() {
 		return ""
 	}
+	// An item that reached done is named as finished rather than as being
+	// at a stage called done: the reader being called back is asking which
+	// item ended, and "done" as a stage word reads as one more step.
 	words := st.Slug + " · " + string(st.Stage)
+	if st.Stage == run.StageDone {
+		words = "finished " + st.Slug
+	}
 	if sp, live := run.Live(m.todos.Root); live {
 		words += " · sprint " + sp.Count()
 	}
