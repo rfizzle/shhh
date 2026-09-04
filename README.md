@@ -136,6 +136,11 @@ profiles.
   project-specific instructions.
 - **Skills:** load reusable task guidance from project or user skill directories.
 - **MCP:** connect tools supplied by Model Context Protocol servers.
+- **Hooks:** run your own command before or after a tool, when a turn closes
+  and when a session starts — a formatter after every edit, a refusal on a
+  path, a notification when a long run stops. Entries live in the `[hooks]`
+  table or in a trusted checkout's `.shhh/hooks.json`; a hook can refuse a
+  call or rewrite its arguments and can never turn a read into a write.
 - **Secrets:** make environment values available to commands without exposing
   their values to the model.
 - **Sub-agents:** delegate scoped research or isolated implementation work.

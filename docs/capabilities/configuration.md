@@ -619,6 +619,13 @@ knows it; the profiles under `[agents]` are one key per role, which the
 | `summary` | path | (the built-in wording) | A file whose contents replace the reading instruction the summarizing model is sent. |
 | `classifier` | path | (the built-in wording) | A file whose contents replace the instruction auto mode's permission classifier is sent. |
 
+**`[hooks]`**
+
+| Key | Takes | Default | What it decides |
+|---|---|---|---|
+| `disabled` | true/false | `off` | Fire no hook at any seam, whatever the files define. |
+| `timeout_seconds` | number | `30` | The longest any hook may take, and the cap on a hook's own timeout; it can be raised no higher than the command timeout, and there is no way to turn it off. |
+
 **`[todo]`**
 
 | Key | Takes | Default | What it decides |

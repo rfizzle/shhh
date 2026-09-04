@@ -23,6 +23,7 @@ import (
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/evidence"
+	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/lsp"
 	"github.com/rfizzle/shhh/internal/mcp"
@@ -730,12 +731,41 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		}
 	}
 
+	// The person's own commands at this session's seams (hooks.go). They are
+	// assembled here, after the containment, because what the session contains
+	// its commands with is what it contains a hook with: a hook is a command
+	// the session runs, and one that ran on the host while the assistant's ran
+	// in a container would be the hole the containment was turned on to close.
+	hookCwd, _ := os.Getwd()
+	hooked := hookSet(cfg)
+	hooks := buildHooks(cfg, hooked, containment.Wrap, hookCwd)
+	for _, note := range hookNotes(hooked) {
+		_ = report.Fprintln(os.Stderr, report.Row{State: report.Warn, Subject: "hooks: " + note})
+	}
+	// A session opening is the first seam, and the one place where adding to
+	// what the model has been told is still free. The prompt is already built
+	// — it had to be, for the provider to be resolved — so what the hook says
+	// is joined to it here, and to the extra the next `/new` will build one
+	// from, so both conversations are told the same thing.
+	start := hooks.SessionStart(cmd.Context())
+	for _, note := range start.Notes {
+		_ = report.Fprintln(os.Stderr, report.Row{State: report.Warn, Subject: "hooks: " + note})
+	}
+	if start.Context != "" {
+		session.promptExtra = prompt.CombineExtra(session.promptExtra, start.Context)
+		env.sysPrompt = prompt.CombineExtra(env.sysPrompt, start.Context)
+		if len(env.messages) > 0 && env.messages[0].Role == provider.RoleSystem {
+			env.messages[0].Content = env.sysPrompt
+		}
+	}
+
 	executor := ts.executor(session)
 
 	// Session observability: content-free events (usage, tool calls,
 	// mode decisions) are recorded to storage; failure just disables recording.
 	recorder := startObserveRecorder(db, session.kind, env.prov.Name(), env.modelName, prices)
 	defer recorder.end()
+	hooks.SetSession(hookSession(recorder.sessionID()))
 	// The starting mode is stamped here, as a setting, rather than left to
 	// the mode-change signal: that signal fires only on a change, so a
 	// session that ran start to finish in the configured default would
@@ -889,8 +919,12 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			Keep: red.Keep,
 		})
 	}
-	if session.lsp != nil {
-		model = model.WithMutationHook(lspMutationHook(session.lsp))
+	// The mutation seam: the language server's diagnostics, then the
+	// post-tool hooks. It is one field and two things want it, because a
+	// write and an edit reach no executor and this is where they can be seen
+	// (hooks.go).
+	if mutation := chainMutation(lspMutationHook(session.lsp), hookPostMutation(hooks)); mutation != nil {
+		model = model.WithMutationHook(mutation)
 	}
 	if gate != nil {
 		model = model.WithGate(chat.Gate{Manage: gateManager(gate), Run: gate.Run})
@@ -998,6 +1032,9 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	if len(gatedPreviews) > 0 {
 		model = model.WithGatedTools(gatedPreviews)
 	}
+	// Last, because the tool seams ask the model which calls it gates and
+	// every registration above is part of that answer (chat/hooks.go).
+	model = model.WithHooks(hooks, executor)
 
 	if session.wantsResume() {
 		reopened, err := session.resumeChat(db)
@@ -1106,6 +1143,13 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// one that comes back is the one that was running.
 	if m, ok := final.(chat.Model); ok {
 		printExitBanner(m.ExitBanner(resume))
+	}
+	// The last seam: the session stopping. It fires here rather than inside
+	// the program because there is no screen left to hold it up, and because
+	// every way out of a session — the quit chord, an error, the last turn —
+	// has already come back through this one return.
+	for _, note := range hooks.Stop(cmd.Context(), hook.Pos{}, "").Notes {
+		_ = report.Fprintln(os.Stderr, report.Row{State: report.Warn, Subject: "hooks: " + note})
 	}
 	return nil
 }

@@ -15,6 +15,7 @@ import (
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/digest"
+	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/process"
@@ -86,6 +87,14 @@ type approvalRequest struct {
 	auto bool
 	// memoryDraft is the proposed entry for approvalMemory.
 	memoryDraft memory.Draft
+	// mustAsk is a hook in front of this call having asked for it, or having
+	// failed on a call there is somebody to ask about. It out-ranks the batch
+	// approval, the mode and the classifier, all of which answer the question
+	// the hook has just declined to (hooks.go).
+	mustAsk bool
+	// hookContext is what a hook in front of this call wanted the model to
+	// read. It leads the result, where every other notice goes.
+	hookContext string
 }
 
 // approvedToolDoneMsg carries the executor result of an approved non-exec
@@ -289,6 +298,23 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 		m.viewport.GotoBottom()
 		return m.advanceApprovalQueue()
 	}
+	// And the person's own commands, at the seam in front of the decision.
+	// They run off the UI goroutine like the classifier and for the same
+	// reason: a hook is a command, and a card that froze while one ran would
+	// be the session stopping for something nobody is watching.
+	if m.hooks.Has(hook.PreTool, req.call.Name) {
+		return m.startPreToolHook(req)
+	}
+	return m.armApprovalDecision(req)
+}
+
+// armApprovalDecision is everything the queue does once the standing answers
+// have had their say: the card's own reading of the call, then the decision.
+// It is its own function because the hook seam above is asynchronous, and the
+// answer that comes back has to re-enter the queue exactly where it left —
+// not at the top, where the containment refusal and the deny list would be
+// asked a second time about a call they have already passed.
+func (m Model) armApprovalDecision(req *approvalRequest) (tea.Model, tea.Cmd) {
 	m.pendingApproval = req
 	if req.kind == approvalExec {
 		m.pendingRun = req.command
@@ -308,6 +334,15 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 	if req.kind == approvalMemory && m.policy.mode != agent.ModePlan {
 		m.recordDecision(observe.DecisionAsk, observe.ReasonMemory)
 		m.openMemoryAsk(req)
+		m.armConfirm(req)
+		return m, nil
+	}
+	// A hook that asked is a card and nothing else. It sits above the batch
+	// approval for the reason the deny list sits above it: an answer given
+	// earlier to a different call is not an answer to this one, and a hook
+	// that wanted this call seen is asking for exactly that.
+	if req.mustAsk {
+		m.recordDecision(observe.DecisionAsk, observe.ReasonHook)
 		m.armConfirm(req)
 		return m, nil
 	}
@@ -358,6 +393,68 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 	m.recordDecision(observe.DecisionAsk, observe.AskReason(m.approvalAction(req)))
 	m.armConfirm(req)
 	return m, nil
+}
+
+// startPreToolHook runs the hooks in front of a gated call in the
+// background; what they came to arrives as preToolHookMsg.
+//
+// The state is the one a running command wears, because that is what this is:
+// the session is holding a decision while a command of the person's own runs.
+func (m Model) startPreToolHook(req *approvalRequest) (tea.Model, tea.Cmd) {
+	m.setTurnState(stateRunningCmd)
+	m.syncViewport()
+	hooks := m.hooks
+	runID := m.agent.RunID()
+	at := m.hookPos()
+	call := hook.Call{ID: req.call.ID, Name: req.call.Name, Arguments: req.call.Arguments}
+	return m, func() tea.Msg {
+		return preToolHookMsg{runID: runID, req: req,
+			verdict: hooks.PreTool(context.Background(), at, call, true)}
+	}
+}
+
+// finishPreToolHook applies what the hooks said to the pending decision: a
+// refusal is the rule-denial row, a rewrite rebuilds the card from the
+// arguments that will actually run, and everything else carries on to the
+// decision that was always going to be made.
+func (m Model) finishPreToolHook(msg preToolHookMsg) (tea.Model, tea.Cmd) {
+	req, v := msg.req, msg.verdict
+	m.hookNotes(v)
+	if v.Denied() {
+		m.recordDecision(observe.DecisionDeny, observe.ReasonHook)
+		m.lastDenial = req.summary + " — " + hookWhy(v.Reason)
+		// Surfaces on the notice rail until the next user turn.
+		m.denialNotice = req.summary
+		m.agent.ResolveApproval(hook.DeniedResult(v.Reason))
+		m.appendEntry(deniedEntry(req, decidedByAuto, hook.DenyRule(v.Reason), 0))
+		m.viewport.SetLines(m.renderHistoryLines())
+		m.viewport.GotoBottom()
+		return m.advanceApprovalQueue()
+	}
+	if v.Input != nil {
+		// The card is built again from the arguments that will run, so what
+		// the reader is shown is what will happen and not what was asked
+		// for. A rewrite the preview cannot read is the call skipped with
+		// the error, exactly as invalid arguments from the model are.
+		call := req.call
+		call.Arguments = string(v.Input)
+		rebuilt, err := m.buildApprovalRequest(call)
+		if err != nil {
+			m.agent.ResolveApproval("error: " + err.Error())
+			m.appendEntry(m.skippedCallEntry(err))
+			m.viewport.SetLines(m.renderHistoryLines())
+			m.viewport.GotoBottom()
+			return m.advanceApprovalQueue()
+		}
+		req = rebuilt
+	}
+	// Both are the hooks' to set and nothing else's: a request reaches this
+	// function straight from the queue, so there is nothing here to carry
+	// over from.
+	req.mustAsk, req.hookContext = v.Asked(), v.Context
+	m.viewport.SetLines(m.renderHistoryLines())
+	m.viewport.GotoBottom()
+	return m.armApprovalDecision(req)
 }
 
 // startClassifierCheck sends the pending approval to the auto-mode permission
@@ -519,26 +616,32 @@ func (m Model) executeApprovedTool() (tea.Model, tea.Cmd) {
 	_, registered := m.gatedTools[call.Name]
 	mutating := !registered && tools.IsMutating(call.Name)
 	reduce := m.evidence.Reduce
-	hook := m.mutationHook
+	mutated := m.mutationHook
 	// The changeset record is taken around the call, on this goroutine: the
 	// file as it is now, then the file the call leaves behind. Both
 	// reads happen next to the write, so a file that changed underneath the
 	// approval preview is recorded as it really was, not as it was previewed.
 	record := m.changeRecorder()
+	// What a hook in front of this call wanted the model to read leads the
+	// result, where every other notice goes (hooks.go).
+	lead := m.pendingApproval.hookContext
 	return m, func() tea.Msg {
 		var result string
 		before := record.before()
 		start := time.Now()
 		if mutating {
 			result = agent.ExecuteWith(tools.ExecuteMutating, call)
-			if hook != nil {
-				result = hook(call.Name, json.RawMessage(call.Arguments), result)
+			if mutated != nil {
+				result = mutated(call.Name, json.RawMessage(call.Arguments), result)
 			}
 			if reduce != nil {
 				result = reduce(call.Name, result)
 			}
 		} else {
 			result = a.ExecuteCall(call)
+		}
+		if lead != "" {
+			result = lead + "\n" + result
 		}
 		evicted := record.after(before)
 		return approvedToolDoneMsg{runID: runID, result: result, duration: time.Since(start), evicted: evicted}

@@ -44,6 +44,7 @@ import (
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/config"
+	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/lsp"
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/migrate"
@@ -270,6 +271,7 @@ func doctorProbes() []doctorProbe {
 		{name: "git", run: probeGit},
 		{name: "project", run: probeProject},
 		{name: "trust", run: probeTrust},
+		{name: "hooks", run: probeHooks},
 		{name: "tools", run: probeTools},
 		{name: "memory", run: probeMemory},
 		{name: "update", run: probeUpdate},
@@ -1231,6 +1233,49 @@ func doctorGit(state doctorGitState) doctorFinding {
 	return f
 }
 
+// probeHooks is the doctor's reading of the person's own commands at the
+// session's seams. It reads the same two files a session reads and through
+// the same loader, so a hook the doctor lists is a hook a session fires.
+func probeHooks(_ context.Context, cfg config.Config) doctorFinding {
+	if cfg.Hooks.Disabled {
+		return doctorFinding{
+			Subject: "hooks are off", Detail: "hooks.disabled",
+			Outcome: "off", State: components.DoctorSkipped,
+		}
+	}
+	return doctorHooks(hookSet(cfg), cfg.HookCeiling())
+}
+
+// doctorHooks is that reading. Hooks are the person's own commands, so
+// nothing here is a fault: a checkout with none is not missing anything, and
+// an entry that would not load is a warning naming it rather than a failure,
+// because the session started and started without it.
+func doctorHooks(set *hook.Set, ceiling time.Duration) doctorFinding {
+	notes := set.Notes()
+	if set.Len() == 0 && len(notes) == 0 {
+		return doctorFinding{
+			Subject: "no hooks", Detail: strings.Join(hook.Events(), " · "),
+			Outcome: "empty", State: components.DoctorSkipped,
+		}
+	}
+	f := doctorFinding{
+		Subject: countOf(set.Len(), "hook", "hooks"),
+		Detail:  strings.Join(set.Events(), " · "),
+		Outcome: "ok",
+	}
+	if ceiling > 0 {
+		f.Detail += " · " + ceiling.String() + " each"
+	}
+	if len(notes) > 0 {
+		f.Outcome = "unreadable"
+		f.State = components.DoctorSkipped
+		f.Consequence = countOf(len(notes), "entry", "entries") + " did not load and will not fire"
+		f.Fix = notes
+		f.FixLabel = fmt.Sprintf("show the %s", countOf(len(f.Fix), "line", "lines"))
+	}
+	return f
+}
+
 func probeTools(context.Context, config.Config) doctorFinding {
 	var found, missing []string
 	for _, tool := range structural.ToolBinaries() {
@@ -1572,6 +1617,8 @@ func doctorQueuedSubject(name string) string {
 		return "the instruction files a session here reads"
 	case "trust":
 		return "what this checkout may make a session load"
+	case "hooks":
+		return "your own commands at the session's seams"
 	case "tools":
 		return "the tools and language servers on PATH"
 	case "memory":

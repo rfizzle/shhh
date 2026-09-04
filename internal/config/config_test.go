@@ -1218,3 +1218,33 @@ func TestChatsRetention_OffUntilTheFileNamesAWindow(t *testing.T) {
 		t.Errorf("a reset leaves %d days, want no window", got)
 	}
 }
+
+// A hook is bounded short by default and may be raised no higher than the
+// command ceiling: something is waiting on the other side of every seam one
+// sits on, and nothing the session runs may outlast the ceiling on a command.
+func TestHookCeiling_DefaultsShortAndNeverOutlastsACommand(t *testing.T) {
+	for _, c := range []struct {
+		name    string
+		hook    int
+		command int
+		want    time.Duration
+	}{
+		{"unset", 0, 0, DefaultHookCeiling},
+		{"unset under a short command ceiling", 0, 5, 5 * time.Second},
+		{"raised", 120, 0, 120 * time.Second},
+		{"raised past the command ceiling", 900, 60, 60 * time.Second},
+		{"lowered", 5, 0, 5 * time.Second},
+		// There is no way to turn it off: a command with no ceiling is a dev
+		// server somebody can see, and a hook with no ceiling is a seam that
+		// never answers.
+		{"asked for none", -1, 0, DefaultHookCeiling},
+		{"asked for none under an uncapped command", -1, -1, DefaultHookCeiling},
+	} {
+		var cfg Config
+		cfg.Hooks.TimeoutSeconds = c.hook
+		cfg.Behavior.CommandTimeoutSeconds = c.command
+		if got := cfg.HookCeiling(); got != c.want {
+			t.Errorf("%s: HookCeiling() = %v, want %v", c.name, got, c.want)
+		}
+	}
+}

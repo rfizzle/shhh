@@ -472,6 +472,14 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		m.viewport.GotoBottom()
 		return answered(m.advanceApprovalQueue())
 
+	case preToolHookMsg:
+		// The hooks in front of a gated call have answered; the queue picks
+		// up where it left off (approval.go).
+		if msg.runID != m.agent.RunID() || msg.req == nil {
+			return m, nil, true
+		}
+		return answered(m.finishPreToolHook(msg))
+
 	case classifierDoneMsg:
 		if msg.runID != m.agent.RunID() || m.turnState() != stateClassifying || m.pendingApproval == nil {
 			return m, nil, true

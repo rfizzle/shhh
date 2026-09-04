@@ -171,6 +171,7 @@ func buildContainment(cfg config.Config, sc *scope.Scope, sup *process.Superviso
 			},
 		})
 	}
+	c.Wrap = wrap
 	c.Run = func(ctx context.Context, command string) (string, int) {
 		argv, err := wrap(command)
 		if err != nil {

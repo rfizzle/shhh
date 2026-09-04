@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
+	"github.com/rfizzle/shhh/internal/hook"
 )
 
 type Config struct {
@@ -32,6 +33,25 @@ type Config struct {
 	MCP        MCPConfig        `toml:"mcp"`
 	Prompts    PromptsConfig    `toml:"prompts"`
 	Todo       TodoConfig       `toml:"todo"`
+	Hooks      HooksConfig      `toml:"hooks"`
+}
+
+// HooksConfig is the user's own hooks: their own commands at the seams a
+// session already has. The entries are a table each, keyed by a name the
+// person picks, so a diagnostic and the doctor row can say which one — and so
+// an entry copied into a checkout's own hooks file keeps the name it had
+// (docs/capabilities/hooks.md#where-a-hook-is-written).
+type HooksConfig struct {
+	// Disabled fires nothing, whatever the files define. It is the answer for
+	// a session where a hook is misbehaving and the person wants the session
+	// rather than the hook.
+	Disabled bool `toml:"disabled"`
+	// TimeoutSeconds is the longest any hook may take, and the cap on a
+	// hook's own timeout. Zero takes the session's command ceiling, which is
+	// what a hook is: a command the session runs with nobody watching it.
+	TimeoutSeconds int `toml:"timeout_seconds"`
+	// Entries are the hooks themselves, keyed by name.
+	Entries map[string]hook.Entry `toml:"entries"`
 }
 
 // TodoConfig is what a backlog run does when it is not told otherwise.
@@ -581,6 +601,12 @@ const (
 	DefaultMemoryMaxTokens  = 1200
 )
 
+// DefaultHookCeiling bounds one hook. It is short because every seam a hook
+// sits on has something waiting on the other side of it, and a hook is a
+// formatter or a path check rather than a build.
+// See docs/capabilities/hooks.md#a-hook-that-runs-too-long-has-failed.
+const DefaultHookCeiling = 30 * time.Second
+
 // DefaultCommandTimeout bounds one assistant-run command.
 //
 // It is a backstop, not a policy, and the number is chosen so it never
@@ -609,6 +635,31 @@ func (c Config) CommandTimeout() time.Duration {
 	default:
 		return DefaultCommandTimeout
 	}
+}
+
+// HookCeiling is the longest any hook may take, and the cap on a hook's own
+// timeout.
+//
+// Unset is DefaultHookCeiling and not the command ceiling, because something
+// is waiting on the other side of every seam a hook sits on — a turn closing
+// waits on the goroutine drawing the screen — and ten minutes there is a
+// session that has stopped. What it may be raised to is the command ceiling:
+// a hook is a command the session runs, and nothing the session runs may
+// outlast that.
+//
+// There is deliberately no way to turn it off, which is the one place a hook
+// is bounded more tightly than a command. A command with no ceiling is a dev
+// server somebody started on purpose and can see; a hook with no ceiling is a
+// seam that never answers, and every seam has something waiting on it.
+func (c Config) HookCeiling() time.Duration {
+	ceiling := DefaultHookCeiling
+	if n := c.Hooks.TimeoutSeconds; n > 0 {
+		ceiling = time.Duration(n) * time.Second
+	}
+	if command := c.CommandTimeout(); command > 0 && command < ceiling {
+		return command
+	}
+	return ceiling
 }
 
 // ReadOnlyAutoEnabled reports whether the built-in inspection allowlist

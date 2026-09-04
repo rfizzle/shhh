@@ -18,6 +18,7 @@ import (
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/evidence"
+	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/mcp"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/observe"
@@ -643,6 +644,9 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// the run and approved commands exec inside it; if the sandbox cannot be
 	// created and verified, the run fails instead of downgrading.
 	run := runner.RunCapture
+	// hookWrap is what contains a hook, which is what contains a command:
+	// filled in below beside the runner it belongs to (hooks.go).
+	var hookWrap func(string) ([]string, error)
 	// sandboxProfile is the profile the run's commands are actually under,
 	// for the record: empty when nothing contains them.
 	sandboxProfile := ""
@@ -696,12 +700,44 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 			sandboxProfile = containment.Profile
 		}
 		containRefusal = containment.Refusal
+		hookWrap = containment.Wrap
 	}
 	run = scrubRunner(session.vault, run)
 	// The ceiling matters most here. A session has a reader who can cancel a
 	// command that is never going to finish; a headless run has nobody, and
 	// the executor it is holding is held until something outside kills it.
 	run = boundedRunner(run, cfg.CommandTimeout())
+
+	// The person's own commands at this run's seams (hooks.go), assembled
+	// after the containment because what contains this run's commands is what
+	// contains its hooks. A `--sandbox` run has none: a hook cannot follow the
+	// commands into the disposable container, and running it on the host
+	// instead would put the person's own command line outside the strongest
+	// containment this run has — the same answer, for the same reason, a
+	// process start gets.
+	// See docs/capabilities/containment.md#a-started-process-is-contained-too.
+	hookCwd, _ := os.Getwd()
+	var hooks *hook.Runner
+	hooked := hookSet(cfg)
+	for _, note := range hookNotes(hooked) {
+		fmt.Fprintf(os.Stderr, "» hooks: %s\n", note)
+	}
+	if opts.sandbox && hooked.Len() > 0 {
+		fmt.Fprintln(os.Stderr, "» hooks: none run in a --sandbox run; a hook cannot follow the commands into the container")
+	} else {
+		hooks = buildHooks(cfg, hooked, hookWrap, hookCwd)
+	}
+	// The first seam. The prompt is already built — it had to be, for the
+	// provider to be resolved — so what a session-start hook says is joined to
+	// it here rather than folded in before it.
+	hookStart := hooks.SessionStart(cmd.Context())
+	hookNoteLine(hookStart)
+	if hookStart.Context != "" {
+		env.sysPrompt = prompt.CombineExtra(env.sysPrompt, hookStart.Context)
+		if len(env.messages) > 0 && env.messages[0].Role == provider.RoleSystem {
+			env.messages[0].Content = env.sysPrompt
+		}
+	}
 
 	// The conversation this run carries on, and the slot it will be left in.
 	// The claim happens here rather than at the save so that two runs started
@@ -731,7 +767,15 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// tool the chain can dispatch and the result the model will actually
 	// read. A headless run needs it most: there is nobody watching to notice
 	// the same search going round for the third time.
-	a.SetExecutor(agent.NewRepeatDetector().WrapExecutor(ts.executor(session)))
+	// The tool seams go outside it, so a hook behind a call reads the result
+	// the model will actually read — the repeat detector's notice included
+	// (hooks.go).
+	var gate func(provider.ToolCall) bool
+	a.SetExecutor(agent.ToolExecutor(hooks.WrapExecutor(hookPos(a.Rounds),
+		func(name string, args json.RawMessage) bool {
+			return gate(provider.ToolCall{Name: name, Arguments: string(args)})
+		},
+		hook.Executor(agent.NewRepeatDetector().WrapExecutor(ts.executor(session))))))
 	a.SetMaxRounds(opts.rounds(cfg))
 
 	// Session observability: headless runs record the same
@@ -740,6 +784,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// timestamp is enough for durations.
 	recorder := startObserveRecorder(db, "print", env.prov.Name(), env.modelName, prices)
 	defer recorder.end()
+	hooks.SetSession(hookSession(recorder.sessionID()))
 	// No mode and no classifier: a headless run answers approvals with
 	// --yes and --allow, and the record says so by leaving both empty
 	// rather than borrowing the mode a session would have started in.
@@ -774,7 +819,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	var usage provider.Usage
 	webTools := session.web
 	mcpTools := session.mcpTools
-	gate := func(tc provider.ToolCall) bool {
+	gate = func(tc provider.ToolCall) bool {
 		if webTools != nil && tc.Name == web.FetchToolName {
 			return true
 		}
@@ -799,7 +844,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// model stops is what says this run was refused rather than finished.
 	verdict := &lastVerdict{}
 	resolve := headlessApprover(cmd.Context(), opts, allowlist, cfg.Behavior.CommandDenylist, run, containRefusal, red, verdict.wrap(obs.decision),
-		session.web, procSup, lspMutationHook(session.lsp), sc, session.mcpTools)
+		session.web, procSup, chainMutation(lspMutationHook(session.lsp), hookPostMutation(hooks)), sc, session.mcpTools)
 	// A headless run has no changeset, so what it wrote is read off the
 	// calls that wrote it. Two readers want that list — the tree check, as
 	// the subtrahend for what somebody else changed, and the close run, to
@@ -807,6 +852,10 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// kept whether or not the tree check is on.
 	own := &writtenByCalls{}
 	resolve = own.wrap(resolve)
+	// The hooks go outside the reader of what this run wrote, so a call a
+	// hook refused is not counted as one and a call it rewrote is counted as
+	// the call that ran.
+	resolve = hookApprover(hooks, hookPos(a.Rounds), verdict.wrap(obs.decision), resolve)
 	if c := headlessTree(cfg, session.sibling, own); c != nil {
 		a.SetTreeCheck(*c)
 	}
@@ -939,6 +988,11 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		// there is no error to report and one is stated here.
 		out = errHeadlessRefused
 	}
+	// The turn closing and the run stopping, in that order, because that is
+	// the order they happen in: an unattended run is one turn, and the seam
+	// that ends it is not the seam that ends the process.
+	hookNoteLine(hooks.TurnClose(cmd.Context(), hookPos(a.Rounds)(), final))
+	hookNoteLine(hooks.Stop(cmd.Context(), hookPos(a.Rounds)(), final))
 	outcome := headlessTurnOutcome(runErr)
 	code := headlessExitCode(outcome, gateErr != nil, refused)
 	switch opts.output {

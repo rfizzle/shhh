@@ -40,6 +40,15 @@ type Containment struct {
 	// destroy, prune) for container sandboxes and returns the text to
 	// show. Nil means container sandbox management is not wired up.
 	Manage func(args []string) string
+	// Wrap is the argv one command line runs as under this session's
+	// containment, for the callers that have to build the process
+	// themselves — a hook, which is a command with a payload on its stdin
+	// and no way through the runner that captures one. Nil is a session
+	// running its commands bare, and such a caller then runs bare too: it is
+	// contained exactly as much as the assistant's own commands are, which
+	// is the whole rule.
+	// See docs/capabilities/hooks.md#a-hook-is-a-command-like-any-other.
+	Wrap func(command string) ([]string, error)
 }
 
 // containmentRefusal is the refusal an action gets before it is drawn, or ""

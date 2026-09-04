@@ -21,12 +21,14 @@ var contextFilenames = []string{filepath.Join(".shhh", "project.md"), "AGENTS.md
 
 // StateDir is the checkout's shhh directory, ContextFile the context file
 // inside it — where `shhh init --project` writes and what a session reads
-// first — and ConfigFile the settings a checkout keeps beside them, all
-// relative to the checkout.
+// first — ConfigFile the settings a checkout keeps beside them, and HooksFile
+// the commands it asks a session to run at its own seams, all relative to the
+// checkout.
 const (
 	StateDir    = ".shhh"
 	ContextFile = ".shhh/project.md"
 	ConfigFile  = ".shhh/config.toml"
+	HooksFile   = ".shhh/hooks.json"
 )
 
 // Root is the directory a checkout's shhh state belongs to: the enclosing

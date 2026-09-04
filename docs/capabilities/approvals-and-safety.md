@@ -151,8 +151,10 @@ to describe those would say less than the expression it replaced.
 confusable with "it failed". The reader's next action depends on which one it
 was — change your mind, or change your configuration — so collapsing them
 destroys the only information they needed. A rule denial says which rule, and
-the key on the row asks for the longer answer: the deny list, plan mode, or a
-path no grant can reach are three different things to go and change.
+the key on the row asks for the longer answer: the deny list, plan mode, a
+path no grant can reach, or one of your own hooks
+([`hooks.md`](hooks.md#a-hooks-deny-is-a-rule-denial)) are four different
+things to go and change.
 
 A denial is recorded as an act, and carries the mutation rail, because the
 point of that rail is finding the moments that mattered.
@@ -271,8 +273,9 @@ every mode, with nobody asked first.
 
 A clone arrives with more than code. It can name skills for the model to
 activate, agent profiles carrying their own permission sets, quality suites
-with command text in them, hooks, MCP servers to start, and settings that say
-which commands run without asking — and every one of those runs as whoever
+with command text in them, hooks to run at the session's own seams
+([`hooks.md`](hooks.md#where-a-hook-is-written)), MCP servers to start, and
+settings that say which commands run without asking — and every one of those runs as whoever
 cloned it. None of them load until you have said so.
 
 It is one answer about the whole checkout, given once: `shhh doctor trust`,
@@ -332,6 +335,8 @@ at the close of the turn that was counting on it.
 
 ## Related
 
+- [`hooks.md`](hooks.md) — your own commands at the same seams, and what one
+  may and may not decide
 - [`containment.md`](containment.md) — what stops a command that was approved
 - [`../architecture.md`](../architecture.md) — why the tiers are structural
 - [`../interface/surfaces.md`](../interface/surfaces.md) — the approval card

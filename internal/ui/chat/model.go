@@ -14,6 +14,7 @@ import (
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/digest"
+	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/observe"
@@ -245,6 +246,16 @@ type modelListMsg struct {
 type classifierDoneMsg struct {
 	runID   int
 	verdict agent.ClassifierVerdict
+}
+
+// preToolHookMsg carries what the hooks in front of a gated call came to.
+// The request rides on the message rather than on the model because the
+// hooks may have rewritten its arguments, and the card is built again from
+// what will actually run (approval.go).
+type preToolHookMsg struct {
+	runID   int
+	req     *approvalRequest
+	verdict hook.Verdict
 }
 
 type entryKind int
@@ -665,6 +676,9 @@ type Model struct {
 	// mcp is the session's MCP servers: which tools are theirs, which run
 	// as reads, and the /mcp listing.
 	mcp MCP
+	// hooks are the person's own commands at the session's seams; nil is a
+	// session with none, which every seam is safe under (hooks.go).
+	hooks *hook.Runner
 	// compacting marks an in-flight /compact request: the streamed
 	// response is a summary handled by finishCompact, not conversation text.
 	compacting bool

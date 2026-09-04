@@ -122,7 +122,13 @@ const (
 	// of the mode's, because what a reader does about it is edit a list and
 	// not change a mode, and a rate that mixed the two would answer neither
 	// question.
-	ReasonDenylist       = "denylist"
+	ReasonDenylist = "denylist"
+	// A call one of the person's own hooks answered — refused outright, or
+	// handed back to them because the hook asked or failed. It is its own
+	// code for the same reason the deny list's is: what a reader does about
+	// it is edit a hook, and a rate that mixed it with a mode would answer
+	// neither question.
+	ReasonHook           = "hook"
 	ReasonPlanMode       = "plan-mode"
 	ReasonPlanInspection = "plan-inspection"
 	// AskReason's, for a call the policy hands to a person.

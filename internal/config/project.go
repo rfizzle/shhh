@@ -115,6 +115,7 @@ var projectRefusals = []projectRefusal{
 	{"secrets.env", "it declares which of your environment variables a session may spend, which is about the machine rather than the tree"},
 	{"sandbox", "it decides what a contained command may reach, which is the containment itself"},
 	{"mcp.servers", "a server is a program to start, and a checkout names its servers in " + project.StateDir + "/mcp.json instead"},
+	{"hooks.entries", "a hook is a command to run, and a checkout names its hooks in " + project.StateDir + "/hooks.json instead"},
 	{"prompts", "it points at a file anywhere on the machine and replaces what a session is told"},
 }
 

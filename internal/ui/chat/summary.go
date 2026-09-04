@@ -466,6 +466,12 @@ func (m *Model) statusCommand() (string, tea.Cmd) {
 	if contained := m.containmentStatus(); contained != "" {
 		text += "\n\n" + contained
 	}
+	// And the person's own commands at the session's seams, for the same
+	// reason again: a hook is a thing this session does that the one beside
+	// it does not (hooks.go).
+	if hooks := m.hooksStatus(); hooks != "" {
+		text += "\n\n" + hooks
+	}
 	// And what the checkout was not allowed to put here, for the same
 	// reason: a session is not only what it has, it is also what it is
 	// missing and why (trust.go).

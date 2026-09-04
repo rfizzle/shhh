@@ -477,6 +477,14 @@ var settings = []Setting{
 	},
 
 	{
+		Key: "hooks.disabled", Kind: KindBool, Default: "off",
+		Desc: "Fire no hook at any seam, whatever the files define.",
+	}, {
+		Key: "hooks.timeout_seconds", Kind: KindInt, Default: "30",
+		Desc: "The longest any hook may take, and the cap on a hook's own timeout; it can be raised no higher than the command timeout, and there is no way to turn it off.",
+	},
+
+	{
 		Key: "todo.commit", Kind: KindBool, Default: "on",
 		Desc: "End a backlog run in a commit; off leaves the change in the working tree, which is the answer for a directory that is not a repository.",
 	}, {

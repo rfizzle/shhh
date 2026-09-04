@@ -57,7 +57,7 @@ var resources = []resource{
 	{KindSkills, []string{".shhh/skills", ".agents/skills", ".claude/skills"}},
 	{KindAgents, []string{".shhh/agents"}},
 	{KindGate, []string{".shhh/quality.json"}},
-	{KindHooks, []string{".shhh/hooks.json"}},
+	{KindHooks, []string{HooksFile}},
 	{KindServers, []string{".shhh/mcp.json", ".mcp.json"}},
 	{KindSettings, []string{ConfigFile}},
 }

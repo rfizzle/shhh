@@ -12,6 +12,7 @@ package chat
 // history, and the files from the changeset store.
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -44,6 +45,21 @@ func (m *Model) appendTurnClose() {
 		return
 	}
 	m.appendEntry(entry{kind: entryTurnClose, turn: m.turnCount, close: m.turnCloseData()})
+	// The person's own commands at the turn's end, fired here because this is
+	// where the turn's accounting is closed and there is exactly one of these
+	// per turn.
+	//
+	// It is the one seam that runs on the goroutine drawing the screen, and
+	// deliberately, which is the opposite of what the pre-tool seam does. A
+	// gated call is a decision somebody is looking at, so a hook that held it
+	// would be the card frozen; this is a turn ending, and a hook that ran
+	// after the turn had already gone back to the input would be a
+	// `turn_close` hook that closes nothing — its note would land in the next
+	// turn, and a run that stopped in between would never fire it at all.
+	// What keeps this from stopping the session is the ceiling, which is why
+	// a hook's is short and cannot be turned off
+	// (docs/capabilities/hooks.md#a-hook-that-runs-too-long-has-failed).
+	m.hookNotes(m.hooks.TurnClose(context.Background(), m.hookPos(), m.lastAssistantText()))
 }
 
 // turnCloseData assembles the close block from what the session already

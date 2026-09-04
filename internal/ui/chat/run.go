@@ -14,6 +14,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -200,6 +201,17 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 		runFn = m.containment.Run
 		tailFn = m.containment.TailRun
 	}
+	// An assistant command is a call like any other to the seams either side
+	// of it: what a hook in front of it wanted the model to read leads the
+	// output, and the hooks behind it are told what the command produced
+	// (hooks.go). A `/run` the reader typed is not the assistant's call and
+	// fires neither.
+	hooks := m.hooks
+	hookLead, hookAt := "", m.hookPos()
+	hookCall := hook.Call{Name: tools.ExecCommandName, Arguments: command}
+	if assistant && m.pendingApproval != nil {
+		hookLead = m.pendingApproval.hookContext
+	}
 	return m, func() tea.Msg {
 		start := time.Now()
 		var out string
@@ -209,6 +221,12 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 			out, code = tailFn(ctx, command, tail.Set)
 		} else {
 			out, code = runFn(ctx, command)
+		}
+		if assistant {
+			if hookLead != "" {
+				out = hookLead + "\n" + out
+			}
+			out = hooks.PostTool(context.Background(), hookAt, hookCall, out, execOutcome(code)).Lead(out)
 		}
 		// What the ceiling did to a command that reached it — stopped it, or
 		// handed it to the process supervisor because it was still
