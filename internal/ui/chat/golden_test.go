@@ -957,6 +957,69 @@ func TestGolden_ReadingMode(t *testing.T) {
 	})
 }
 
+// TestGolden_TranscriptSearch captures the way into the transcript search at
+// the two widths reading mode is captured at: the query row where the mode's
+// key bar was, with the pane marking what the query found, and the same
+// search kept — the row closed, the pointer's occurrence reversed among the
+// underlined ones, and the pair that walks them on the bar.
+//
+// It is the pane rather than the rendered transcript, because the marks are
+// painted on the window and not on the lines the render produced, and the
+// rail is above it because the count the reader steps by is up there.
+func TestGolden_TranscriptSearch(t *testing.T) {
+	captureGolden(t, "transcript-search", "the transcript search", []int{80, 130}, func(width int) []golden.Panel {
+		// One path said four times over, which is what a reader searches a
+		// transcript for: where was this file touched.
+		reads := []entry{{kind: entryUser, text: "where does the round limit come from"}}
+		for i, path := range []string{
+			"internal/agent/loop.go", "internal/agent/tools.go",
+			"internal/agent/loop.go", "internal/provider/retry.go",
+			"internal/agent/loop.go",
+		} {
+			reads = append(reads, entry{kind: entryTool, toolName: "read_file",
+				toolArgs:   fmt.Sprintf(`{"path":%q}`, path),
+				toolResult: "a\nb", duration: time.Duration(200+i*10) * time.Millisecond})
+		}
+		search := func(keep bool) string {
+			m := frameModel(t, width, 24)
+			m.transcript = reads
+			m.invalidateRenderCache()
+			next, _ := m.enterFocusMode()
+			rm := next.(Model)
+			for _, msg := range []tea.KeyPressMsg{slashKey, {Code: 'l', Text: "l"},
+				{Code: 'o', Text: "o"}, {Code: 'o', Text: "o"}, {Code: 'p', Text: "p"},
+				{Code: '.', Text: "."}, {Code: 'g', Text: "g"}, {Code: 'o', Text: "o"}} {
+				next, _ = rm.updateFocus(msg)
+				rm = next.(Model)
+			}
+			if keep {
+				// Enter closes the row; the pair then walks what it found.
+				for _, msg := range []tea.KeyPressMsg{{Code: tea.KeyEnter}, nextMatchKey} {
+					next, _ = rm.updateFocus(msg)
+					rm = next.(Model)
+				}
+			}
+			// A short pane, so a golden a reader checks by looking for marks
+			// is not mostly the blank rows under them.
+			rm.viewport.SetHeight(10)
+			rm.viewport.GotoTop()
+			return searchSurface(rm)
+		}
+		return []golden.Panel{
+			{Label: "the query row where the key bar was · every hit underlined", View: search(false)},
+			{Label: "kept · the pointer reversed, [n/N] on the bar", View: search(true)},
+		}
+	})
+}
+
+// searchSurface is readingSurface through the pane: the marks a search leaves
+// are painted on the window the transcript is read through, so a capture of
+// the rendered lines would show the search finding nothing.
+func searchSurface(m Model) string {
+	return m.readingRail(m.contentWidth()) + "\n" + m.transcriptBody() + "\n" +
+		dividerStyle(m.contentWidth()) + "\n" + m.panelView()
+}
+
 // readingSurface is the rail, the transcript and the bottom panel together —
 // the whole of what says which pane holds the keyboard.
 func readingSurface(m Model) string {

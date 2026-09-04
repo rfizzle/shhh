@@ -329,7 +329,8 @@ the draft keeps the keyboard and every letter it has
 expand/collapse (enter), y copies the row under the cursor —
 a command as $ cmd over its output, an edit as its unified
 diff, a message as markdown source, a folded group member by
-member — pgup/pgdn page, ? lists every key the mode has,
+member — / searches the transcript and n/N walk what it
+found, pgup/pgdn page, ? lists every key the mode has,
 esc or typing returns to the prompt
 (enter on an edit row cycles collapsed → expanded → full-screen
  diff, and on a command or read row the same three depths over

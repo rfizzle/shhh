@@ -738,3 +738,191 @@ func TestSearch_TheReadingRailReportsThePosition(t *testing.T) {
 		t.Fatalf("clearing the search puts the rail back, got %q want %q", got, before)
 	}
 }
+
+// slashKey, nextMatchKey and prevMatchKey are the three keystrokes the way in
+// is made of, spelled the way a terminal delivers them: a shifted letter
+// arrives as the letter it produces, not as the unshifted one plus a
+// modifier.
+var (
+	slashKey     = tea.KeyPressMsg{Code: '/', Text: "/"}
+	nextMatchKey = tea.KeyPressMsg{Code: 'n', Text: "n"}
+	prevMatchKey = tea.KeyPressMsg{Code: 'N', Text: "N"}
+)
+
+// readingSearch opens reading mode with a query typed into it and not yet
+// closed — the state the query row is in while it is being written.
+func readingSearch(t *testing.T, query string) Model {
+	t.Helper()
+	m := proseModel(t)
+	m, _ = pressKey(t, m, readingChord())
+	if m.state != stateFocus {
+		t.Fatalf("the chord should open reading mode, state %v", m.state)
+	}
+	m, _ = pressKey(t, m, slashKey)
+	if !m.viewport.SearchOpen() {
+		t.Fatal("[/] should open the query row")
+	}
+	return typeChars(t, m, query)
+}
+
+// The way in, end to end: the key opens the query, typing finds, enter hands
+// the mode's letters back, and the pair walks the occurrences.
+func TestSearch_TheKeyOpensTheQueryAndSteps(t *testing.T) {
+	m := readingSearch(t, "parser")
+	if got := m.viewport.SearchQuery(); got != "parser" {
+		t.Fatalf("the query row holds what was typed, got %q", got)
+	}
+	at, total := m.viewport.MatchPosition()
+	if total == 0 {
+		t.Fatal("the word is in this transcript a dozen times")
+	}
+	if got, want := m.readingLabel(), fmt.Sprintf("READING · %d/%d", at, total); got != want {
+		t.Fatalf("rail = %q, want %q", got, want)
+	}
+
+	// Enter closes the row and leaves the search standing, which is what puts
+	// the mode's own letters back in the reader's hands.
+	m, _ = pressKey(t, m, enter)
+	if m.viewport.SearchOpen() {
+		t.Fatal("enter should close the query row")
+	}
+	if !m.viewport.Searching() {
+		t.Fatal("enter keeps the search: that is the difference between it and esc")
+	}
+	if m.state != stateFocus {
+		t.Fatalf("closing the row leaves reading mode standing, state %v", m.state)
+	}
+
+	m, _ = pressKey(t, m, nextMatchKey)
+	if got, _ := m.viewport.MatchPosition(); got != at%total+1 {
+		t.Fatalf("[n] should step to the next occurrence, got %d from %d of %d", got, at, total)
+	}
+	m, _ = pressKey(t, m, prevMatchKey)
+	if got, _ := m.viewport.MatchPosition(); got != at {
+		t.Fatalf("[N] should step back, got %d want %d", got, at)
+	}
+}
+
+// While the row is open every letter is text, which is what makes it a
+// surface of its own: the mode's own keys would otherwise eat the query.
+func TestSearch_TheQueryRowKeepsEveryLetter(t *testing.T) {
+	m := readingSearch(t, "jq")
+	if m.state != stateFocus {
+		t.Fatalf("[q] in the query is a letter, not the way out; state %v", m.state)
+	}
+	if got := m.viewport.SearchQuery(); got != "jq" {
+		t.Fatalf("query = %q, want the letters as typed", got)
+	}
+	if got := m.input.Value(); got != "" {
+		t.Fatalf("nothing typed into the query reaches the draft, got %q", got)
+	}
+	m, _ = pressKey(t, m, tea.KeyPressMsg{Code: tea.KeyBackspace})
+	if got := m.viewport.SearchQuery(); got != "j" {
+		t.Fatalf("backspace takes the last character back, got %q", got)
+	}
+}
+
+// Esc on the query row is the safe answer one level in: the query, the marks
+// and the count on the rail go together, and the mode is still there.
+func TestSearch_EscOnTheRowClearsTheSearchAndKeepsTheMode(t *testing.T) {
+	m := proseModel(t)
+	m, _ = pressKey(t, m, readingChord())
+	before := m.readingLabel()
+
+	m, _ = pressKey(t, m, slashKey)
+	m = typeChars(t, m, "parser")
+	m, _ = pressKey(t, m, escK)
+
+	if m.viewport.SearchOpen() || m.viewport.Searching() {
+		t.Fatal("esc clears the query and the row with it")
+	}
+	if m.state != stateFocus {
+		t.Fatalf("esc on the row leaves reading mode standing, state %v", m.state)
+	}
+	if got := m.searchNotice(); got != "" {
+		t.Fatalf("the rail's position goes with the query, got %q", got)
+	}
+	if got := m.readingLabel(); got != before {
+		t.Fatalf("rail = %q, want it back as it was (%q)", got, before)
+	}
+}
+
+// The marks are painted on the pane the ordinary feed uses too, so a search
+// cannot outlive the mode whose keys are the only way to clear it.
+func TestSearch_LeavingReadingModeClearsIt(t *testing.T) {
+	m := readingSearch(t, "parser")
+	m, _ = pressKey(t, m, enter)
+	if !m.viewport.Searching() {
+		t.Fatal("the search should be standing")
+	}
+	m, _ = pressKey(t, m, tea.KeyPressMsg{Code: 'q', Text: "q"})
+	if m.state == stateFocus {
+		t.Fatal("[q] should leave reading mode")
+	}
+	if m.viewport.Searching() {
+		t.Fatal("a query left standing would underline lines nothing on screen can clear")
+	}
+}
+
+// With nothing found the pair are letters like any other and belong in the
+// draft — an offer with nothing behind it is worse than no offer.
+func TestSearch_TheStepKeysAreLettersWithNoSearch(t *testing.T) {
+	m := proseModel(t)
+	m, _ = pressKey(t, m, readingChord())
+	m, _ = pressKey(t, m, nextMatchKey)
+	if m.state == stateFocus {
+		t.Fatal("[n] with no search should hand the keyboard back")
+	}
+	if got := m.input.Value(); got != "n" {
+		t.Fatalf("the letter should land in the draft, got %q", got)
+	}
+}
+
+// The row is typed into, so the terminal's own cursor stands on it: a query
+// row with no cursor would say nothing about where the next character goes.
+func TestSearch_TheQueryRowCarriesTheCursor(t *testing.T) {
+	m := readingSearch(t, "par")
+	rows := m.focusHintLines()
+	if len(rows) == 0 || !strings.Contains(ansi.Strip(rows[0]), "search: par") {
+		t.Fatalf("the query row should be where the key bar was, got %q", rows)
+	}
+	cur := m.readingSearchCursor(m.contentWidth())
+	if cur == nil {
+		t.Fatal("the open query row places the cursor")
+	}
+	// After the query, on the panel's first row, which is what the next
+	// keystroke extends.
+	if cur.X != len("search: par") || cur.Y != 0 {
+		t.Fatalf("cursor at %d,%d, want %d,0", cur.X, cur.Y, len("search: par"))
+	}
+	m, _ = pressKey(t, m, enter)
+	if m.readingSearchCursor(m.contentWidth()) != nil {
+		t.Fatal("a mode that is read rather than written places no cursor")
+	}
+}
+
+// A key the row has no meaning for is swallowed rather than closing it: a
+// reader half way through typing a path has not asked to leave, and a stray
+// chord that dropped their query would cost more than it saved.
+func TestSearch_TheQueryRowSwallowsAKeyItCannotUse(t *testing.T) {
+	m := readingSearch(t, "parser")
+	at, total := m.viewport.MatchPosition()
+
+	for _, msg := range []tea.KeyPressMsg{
+		{Code: tea.KeyUp}, {Code: tea.KeyTab}, {Code: 'g', Mod: tea.ModCtrl},
+	} {
+		m, _ = pressKey(t, m, msg)
+		if !m.viewport.SearchOpen() {
+			t.Fatalf("%v should leave the row open", msg)
+		}
+		if got := m.viewport.SearchQuery(); got != "parser" {
+			t.Fatalf("%v changed the query to %q", msg, got)
+		}
+		if now, n := m.viewport.MatchPosition(); now != at || n != total {
+			t.Fatalf("%v moved the pointer to %d of %d", msg, now, n)
+		}
+	}
+	if got := m.input.Value(); got != "" {
+		t.Fatalf("nothing reached the draft, got %q", got)
+	}
+}

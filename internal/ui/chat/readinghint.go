@@ -84,6 +84,14 @@ func (m Model) readingModeKeys() []hintSeg {
 	if m.focusedCopyable() {
 		segs = append(segs, seg(keys.Reading.Copy))
 	}
+	// [/] stands whether or not a search is open: it opens the query row, or
+	// reopens it on the query already in it. The step pair joins it only once
+	// there is something to step through, the way [-] joins once a row is
+	// open.
+	segs = append(segs, seg(keys.Reading.Search))
+	if m.viewport.Searching() {
+		segs = append(segs, seg(keys.Reading.Match))
+	}
 	// The register's own key sits between the row's offers and the way out:
 	// it is the last thing a reader reaches for and the first the bar sheds.
 	segs = append(segs, seg(keys.Reading.List))
@@ -152,6 +160,21 @@ func withoutSeg(segs []hintSeg, key string) []hintSeg {
 // find in `?`, shed before the mode's own movement and exits.
 func dropCopyKey(segs []hintSeg) []hintSeg {
 	return withoutSeg(segs, keys.Shown(keys.Reading.Copy))
+}
+
+// dropSearchKey goes before the copy, because the two are different kinds of
+// offer: [y] acts on the row the reader is already standing on, and [/] opens
+// a surface they have not asked for yet. What is on screen wins the column.
+func dropSearchKey(segs []hintSeg) []hintSeg {
+	return withoutSeg(segs, keys.Shown(keys.Reading.Search))
+}
+
+// dropMatchKey is the last of the search's, and it outlasts both: the pair is
+// only on the bar while a search is live, and the key that walks what the
+// reader is already reading is worth more than the key that would start
+// another one.
+func dropMatchKey(segs []hintSeg) []hintSeg {
+	return withoutSeg(segs, keys.Shown(keys.Reading.Match))
 }
 
 // dropExpandKey is the last: [enter] leaves whole rather than clipping.
@@ -356,11 +379,14 @@ func stackSegs(segs []hintSeg, rail string, width, budget int) []string {
 func (m Model) readingKeyLine(width int) string {
 	full := m.readingModeKeys()
 	// The settled order: [?] goes first, then [q] gives up its words, then
-	// [y], then [enter] goes whole.
+	// [/], then [y], then [n/N], then [enter] goes whole.
 	noList := dropKeyListKey(full)
 	short := shortenBackKey(noList)
-	noCopy := dropCopyKey(short)
-	forms := [][]hintSeg{full, noList, short, noCopy, dropExpandKey(noCopy)}
+	noSearch := dropSearchKey(short)
+	noCopy := dropCopyKey(noSearch)
+	noMatch := dropMatchKey(noCopy)
+	forms := [][]hintSeg{full, noList, short, noSearch, noCopy, noMatch,
+		dropExpandKey(noMatch)}
 	positions := m.readingPositionFields()
 	for _, form := range forms {
 		left := joinSegs(form)

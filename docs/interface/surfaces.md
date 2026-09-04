@@ -191,6 +191,23 @@ Half-page keys move the cursor through a long transcript at a pace that keeps
 context — half the pane per press, with the cursor following the pane rather
 than staying lit on a row nobody can see.
 
+The transcript can also be searched. The slash every pager opens a query with
+opens one here: a single row where the key bar was, typed into from the first
+keystroke, with the terminal's own cursor on it and the count of what has been
+found beside it. The pane follows the query as it is typed, every occurrence is
+marked and the one the reader is on is marked differently — structurally in
+both cases, so the two read apart in mono. The mode's rail carries the position
+in place of the row count, because both answer "where am I in this" and while
+a query is up the occurrence is what the next key moves.
+
+Enter closes the row and leaves the search standing, which is what hands the
+mode's own letters back: a row being typed into keeps every letter as text, so
+the pair that steps between occurrences is only live once the row is closed.
+Esc on the row clears the query, the marks and the count together and leaves
+the mode where it was. Leaving the mode clears them too — the marks are
+painted on the pane the ordinary feed reads through, and the keys that walk
+them are this mode's.
+
 ### The input frame
 
 Where you type, and where the session's vitals live. Its borders carry

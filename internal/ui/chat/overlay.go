@@ -261,7 +261,11 @@ func buildOverlays() map[state]*mode {
 			// into the mode's key register, and the panel pays for it out of the
 			// transcript the way every other panel does.
 			lines: panelRows((Model).focusHintLines),
-			keys:  (Model).updateFocus,
+			// The one row of this mode that is typed into rather than read is
+			// the transcript search's query, so the cursor is placed on it
+			// and nowhere else (navigate.go).
+			cursor: (Model).readingSearchCursor,
+			keys:   (Model).updateFocus,
 		},
 		statePressure: {
 			place:   placePanel,

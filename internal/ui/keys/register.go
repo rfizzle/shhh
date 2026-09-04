@@ -106,6 +106,18 @@ func Surfaces() []Surface {
 			Bindings: Reading.All(),
 		},
 		{
+			// Reading mode with its query row open, which is a row of its
+			// own here for the reason the selector's is: a surface being
+			// typed into keeps every letter as text, so none of the mode's
+			// bare letters are live while it is up and the two keys that are
+			// not letters are the whole of what it answers.
+			Name:     "the transcript search",
+			Section:  "docs/interface/surfaces.md#reading-mode",
+			Position: Takeover,
+			Reached:  Bracket(Reading.Search) + " in reading mode",
+			Bindings: Find.All(),
+		},
+		{
 			Name:     "the context surface",
 			Section:  "docs/interface/surfaces.md#the-context-surface",
 			Position: Takeover,

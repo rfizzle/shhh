@@ -269,6 +269,8 @@ type ReadingKeys struct {
 	Expand   Binding
 	Collapse Binding
 	Copy     Binding
+	Search   Binding
+	Match    Binding
 	Half     Binding
 	PageUp   Binding
 	PageDown Binding
@@ -279,7 +281,8 @@ type ReadingKeys struct {
 // All is reading mode's keys in the order it offers them, which is the order
 // `?` lists them in.
 func (k ReadingKeys) All() []Binding {
-	return []Binding{k.Move, k.Expand, k.Collapse, k.Copy, k.Half, k.PageUp, k.PageDown, k.List, k.Back}
+	return []Binding{k.Move, k.Expand, k.Collapse, k.Copy, k.Search, k.Match,
+		k.Half, k.PageUp, k.PageDown, k.List, k.Back}
 }
 
 var Reading = ReadingKeys{
@@ -289,6 +292,16 @@ var Reading = ReadingKeys{
 	// Copy is [y] rather than [c], because c is "continue from here" on a
 	// dropped stream's row (RowKeys) and a key is declared once.
 	Copy: bind("y", "copy the row", "y"),
+	// Search is the slash every pager in the terminal opens a query with, and
+	// it is free here for the reason the bare letters are: nothing else on
+	// this surface is listening. On the input it is the palette's other door,
+	// which is a different surface and so a different key.
+	Search: bind("/", "search", "/"),
+	// Match walks what the query found, and like Move it is one binding both
+	// ways with the dispatch reading which half was pressed. It is offered
+	// only while a search is live: with nothing found, n and N are letters
+	// and belong to the draft.
+	Match: bind("n/N", "match", "n", "N"),
 	// Half is the pager pair u/d: half the viewport, so the reader keeps
 	// context while moving quickly. Like Move it is one binding both ways,
 	// and the dispatch reads which half was pressed. On a turn-close row
@@ -306,6 +319,29 @@ var Reading = ReadingKeys{
 	// a reader who forgot which pane they were in loses a mode, not a
 	// sentence.
 	Back: bind("q", "back to the prompt", "q", "esc", "ctrl+c"),
+}
+
+// FindKeys are the transcript search's query row — what reading mode's bar
+// becomes while `[/]` is open. It is typed into, so every letter is text
+// there and the mode's own letters are not live: the two keys below are the
+// only ones the row has, which is why it is a surface of its own rather than
+// two more bindings on the mode underneath it.
+type FindKeys struct {
+	Keep  Binding
+	Clear Binding
+}
+
+// All is the query row's keys in the order it offers them.
+func (k FindKeys) All() []Binding { return []Binding{k.Keep, k.Clear} }
+
+var Find = FindKeys{
+	// Enter closes the row and leaves the search standing, which is what
+	// hands n and N back: they are letters while the row is open.
+	Keep: bind("enter", "keep the search", "enter"),
+	// The safe answer, one level in: the query, the marks and the count on
+	// the rail go together, and the mode the reader was in is still there
+	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
+	Clear: bind("esc", "clear it", "esc", "ctrl+c"),
 }
 
 // ContextKeys are the occupancy surface's own. It is a takeover in the chat

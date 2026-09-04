@@ -129,7 +129,7 @@ func register(t *testing.T) []keyedSurface {
 		},
 		{
 			name: "reading mode's own keys and its per-row offers",
-			keys: []string{"j", "k", "q", "-"},
+			keys: []string{"j", "k", "q", "-", "/", "n", "N"},
 			open: func(t *testing.T) Model { return typeChars(t, focusModel(t), draftLead) },
 		},
 		{

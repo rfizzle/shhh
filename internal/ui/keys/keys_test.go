@@ -156,6 +156,7 @@ func TestEveryDeclaredBindingIsOnASurface(t *testing.T) {
 			Draft.Cancel, Draft.Quit}},
 		{"Search", []Binding{Search.Older, Search.Keep, Search.Cancel}},
 		{"Reading", Reading.All()},
+		{"Find", Find.All()},
 		{"Context", Context.All()},
 		{"Row", []Binding{Row.Review, Row.Undo, Row.Retry, Row.Continue, Row.Key,
 			Row.Provider, Row.Rounds, Row.Uncap}},
@@ -267,12 +268,13 @@ func TestMapCycleChordsHaveOneHome(t *testing.T) {
 }
 
 // TestReadingRowKeysHaveOneHome pins reading mode's bare letters the way the
-// realigned chords are pinned: the copy and half-page bindings belong to
-// reading mode and to no other surface. The keystrokes themselves have other
-// lives — [y] answers a card, [d] marks a selector's default — but those are
-// other surfaces' bindings; these two may not quietly grow a second home.
+// realigned chords are pinned: the copy, half-page and search bindings belong
+// to reading mode and to no other surface. The keystrokes themselves have
+// other lives — [y] answers a card, [d] marks a selector's default, [/] opens
+// a filter and [n] steps a hunk — but those are other surfaces' bindings;
+// these four may not quietly grow a second home.
 func TestReadingRowKeysHaveOneHome(t *testing.T) {
-	for _, b := range []Binding{Reading.Copy, Reading.Half} {
+	for _, b := range []Binding{Reading.Copy, Reading.Half, Reading.Search, Reading.Match} {
 		sig := strings.Join(b.Keys(), ",") + "|" + Shown(b) + "|" + Words(b)
 		var homes []string
 		for _, s := range all() {

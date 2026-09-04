@@ -34,6 +34,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // wheelLines is how far one wheel notch moves the transcript. It matches the
@@ -237,6 +238,83 @@ func (m Model) searchNotice() string {
 		return "no match"
 	}
 	return fmt.Sprintf("%d/%d", at, total)
+}
+
+// setSearchQuery is one edit of the query row. The search is incremental —
+// every keystroke is a new question, answered before the next one is asked —
+// because a query that only ran on enter would make the reader spell a path
+// out blind.
+//
+// The pane is brought to what the new query found, and the follow is read
+// back after that rather than before: the jump is a scroll like any other and
+// pauses the follow-the-live-end the same way.
+func (m *Model) setSearchQuery(query string) {
+	m.searchTranscript(query)
+	m.viewport.RevealMatch()
+	m.atBottom = m.viewport.AtBottom()
+}
+
+// typeSearch puts a character into the query.
+func (m *Model) typeSearch(text string) {
+	m.setSearchQuery(m.viewport.SearchQuery() + text)
+}
+
+// backspaceSearch takes the last character back, by runes rather than bytes:
+// a query is prose and a path, and deleting half of a multi-byte character
+// would leave the pane matching against something nobody typed.
+func (m *Model) backspaceSearch() {
+	q := []rune(m.viewport.SearchQuery())
+	if len(q) == 0 {
+		return
+	}
+	m.setSearchQuery(string(q[:len(q)-1]))
+}
+
+// transcriptSearchHead is the query row up to the end of what has been typed:
+// the label and the query. The cursor stands at the end of it, so its width
+// is measured here rather than written down a second time.
+func (m Model) transcriptSearchHead() string {
+	return sty.Search.Label.Render("search") +
+		sty.Search.State.Render(": ") + sty.Search.Query.Render(m.viewport.SearchQuery())
+}
+
+// transcriptSearchLines are the query row and its two keys, which is what
+// reading mode's key bar becomes while the row is open. The mode's own keys
+// are not on it: every letter is going into the query, so offering them would
+// be offering what the surface cannot honour.
+//
+// It is the input history search's row in a second place, deliberately — both
+// are a query stating itself on one line with its count, and drawing them
+// differently would say they were different kinds of thing.
+func (m Model) transcriptSearchLines(width int) []string {
+	state := "type to search"
+	if m.viewport.Searching() {
+		at, total := m.viewport.MatchPosition()
+		state = fmt.Sprintf("%d of %d", at, total)
+		if total == 0 {
+			state = "no match"
+		}
+	}
+	row := m.transcriptSearchHead() + sty.Search.State.Render(" · "+state)
+	hint := strings.Join([]string{
+		keys.Shown(keys.Find.Keep) + " " + keys.Words(keys.Find.Keep),
+		keys.Shown(keys.Find.Clear) + " " + keys.Words(keys.Find.Clear),
+	}, " · ")
+	return []string{clipRow(row, width), sty.Search.Hint.Render(clipRow(hint, width))}
+}
+
+// readingSearchCursor is where the terminal's cursor stands in reading mode's
+// panel: after the query, which is what the next keystroke extends. With the
+// row closed the mode is read rather than written and places none, and the
+// terminal hides its cursor over it (the register's cursor column,
+// overlay.go).
+func (m Model) readingSearchCursor(width int) *tea.Cursor {
+	if !m.viewport.SearchOpen() {
+		return nil
+	}
+	// The row itself is clipped to the panel's width, so the cursor stops
+	// where the row does rather than standing past its end.
+	return tea.NewCursor(min(lipgloss.Width(m.transcriptSearchHead()), max(width-1, 0)), 0)
 }
 
 // paneTakenOver reports that something other than the transcript is drawing

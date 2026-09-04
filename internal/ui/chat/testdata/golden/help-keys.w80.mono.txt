@@ -87,7 +87,8 @@ Keys:
                  expand/collapse (enter), y copies the row under the cursor —   
                  a command as $ cmd over its output, an edit as its unified     
                  diff, a message as markdown source, a folded group member by   
-                 member — pgup/pgdn page, ? lists every key the mode has,       
+                 member — / searches the transcript and n/N walk what it        
+                 found, pgup/pgdn page, ? lists every key the mode has,         
                  esc or typing returns to the prompt                            
                  (enter on an edit row cycles collapsed → expanded → full-screen
                   diff, and on a command or read row the same three depths over 
@@ -235,7 +236,8 @@ Keys:
 ␛[3;38;5;244m                 expand/collapse (enter), y copies the row under the cursor —␛[m   
 ␛[3;38;5;244m                 a command as $ cmd over its output, an edit as its unified␛[m     
 ␛[3;38;5;244m                 diff, a message as markdown source, a folded group member by␛[m   
-␛[3;38;5;244m                 member — pgup/pgdn page, ? lists every key the mode has,␛[m       
+␛[3;38;5;244m                 member — / searches the transcript and n/N walk what it␛[m        
+␛[3;38;5;244m                 found, pgup/pgdn page, ? lists every key the mode has,␛[m         
 ␛[3;38;5;244m                 esc or typing returns to the prompt␛[m                            
 ␛[3;38;5;244m                 (enter on an edit row cycles collapsed → expanded → full-screen␛[m
 ␛[3;38;5;244m                  diff, and on a command or read row the same three depths over␛[m 

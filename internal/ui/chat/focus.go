@@ -146,6 +146,13 @@ func (m Model) enterFocusMode() (tea.Model, tea.Cmd) {
 // updateFocus handles keys while focus mode is active. Esc never destroys:
 // it only returns to the input, keeping any expansion state.
 func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	// The query row reads every key first, which is what makes typing search
+	// rather than move the cursor. It is the same rule the reverse search
+	// over the draft follows (historysearch.go), and for the same reason: a
+	// row being typed into is a surface of its own while it is up.
+	if m.viewport.SearchOpen() {
+		return m.updateSearchQuery(msg)
+	}
 	// The copy caption stands until the next key: whatever the reader does
 	// next, they have moved on from the copy it describes.
 	if !keys.Match(msg, keys.Reading.Copy) {
@@ -154,6 +161,21 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Reading.Back):
 		return m.exitFocusMode()
+	case keys.Is(pressed, keys.Reading.Search):
+		return m.openSearchQuery()
+	case keys.Is(pressed, keys.Reading.Match):
+		// The step pair walks what the query found. With no search live they
+		// are letters like any other and belong in the draft — offering them
+		// there would be an offer with nothing behind it.
+		if !m.viewport.Searching() {
+			return m.returnToInput(msg)
+		}
+		if pressed == "N" {
+			m.searchStep(-1)
+		} else {
+			m.searchStep(1)
+		}
+		return m, nil
 	case keys.Is(pressed, keys.Reading.Move):
 		// One binding, both directions: the bar offers `j/k` as a pair and
 		// the dispatch reads which half was pressed, so the four keystrokes
@@ -296,6 +318,69 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// updateSearchQuery answers a key while the query row is open. Typing and
+// backspace are the query; the two keys that are not letters end the row, one
+// keeping what was found and one clearing it.
+//
+// A key that is neither — an arrow, a chord the mode has no use for — is
+// swallowed rather than closing the row: a reader half way through typing a
+// path has not asked to leave, and a stray chord that dropped their query
+// would cost more than it saved.
+func (m Model) updateSearchQuery(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	switch {
+	case keys.Match(msg, keys.Find.Clear):
+		m.clearSearch()
+	case keys.Match(msg, keys.Find.Keep):
+		m.closeSearchQuery()
+	case msg.Code == tea.KeyBackspace:
+		m.backspaceSearch()
+	case typedRune(msg):
+		m.typeSearch(msg.Text)
+	}
+	return m, nil
+}
+
+// openSearchQuery puts the query row where the key bar was. The panel grows
+// by a row, so the transcript pays for it and gives it back the way it does
+// for the key register — and the occurrence the reader was on is brought back
+// into the shorter pane rather than left behind it.
+func (m Model) openSearchQuery() (tea.Model, tea.Cmd) {
+	m.viewport.OpenSearch()
+	m.resizeAroundSearchRow()
+	return m, nil
+}
+
+// closeSearchQuery is [enter]: the row goes and the search stands, which is
+// what puts the mode's own letters back in the reader's hands.
+func (m *Model) closeSearchQuery() {
+	m.viewport.KeepSearch()
+	m.resizeAroundSearchRow()
+}
+
+// clearSearch is the safe answer on the row: the query, the marks and the
+// count on the rail go together, and the mode the reader was in is still
+// there.
+func (m *Model) clearSearch() {
+	m.viewport.ClearSearch()
+	m.resizeAroundSearchRow()
+}
+
+// resizeAroundSearchRow re-lays the surface after the query row appeared or
+// went. The transcript is redrawn without being pulled back to the row
+// cursor: the reader is standing on an occurrence the search took them to,
+// and scrolling to the cursor would take it away from them.
+//
+// The order is load-bearing and the reveal has to be last. A pane whose
+// height changed follows its content to the end (syncViewport), so opening
+// the row over a search would drop the reader at the live tail with the
+// occurrence they were reading somewhere above it.
+func (m *Model) resizeAroundSearchRow() {
+	m.syncViewport()
+	m.redrawFocusContent()
+	m.viewport.RevealMatch()
+	m.atBottom = m.viewport.AtBottom()
+}
+
 // focusedClose returns the turn-close entry the cursor is on, if it is on
 // one. The close rows live in the session's own transcript, so an attached
 // child's feed never offers them.
@@ -318,6 +403,11 @@ func (m Model) exitFocusMode() (tea.Model, tea.Cmd) {
 	// The copy caption goes with it — it captions a mode that is ending.
 	m.readingKeyList = false
 	m.readingCopied = ""
+	// So does the search. Its marks are painted on the pane the feed uses
+	// too, and the keys that walk them are this mode's: a query left standing
+	// would underline lines in a transcript with nothing on screen offering
+	// to clear them.
+	m.viewport.ClearSearch()
 	m.leaveSurface()
 	m.invalidateRenderCache()
 	m.syncViewport()
@@ -373,6 +463,14 @@ func (m *Model) snapFocusIntoView(dir int) {
 	// The cursor moved (or the rows under the highlight did), so the gutter
 	// is re-rendered — without refreshFocusView's scroll-to-cursor, which
 	// would undo the jump for a block taller than what is left of the pane.
+	m.redrawFocusContent()
+}
+
+// redrawFocusContent re-renders the transcript with the selection gutter and
+// leaves the pane where it is. It is what a change that is not the cursor's
+// needs — a half-page jump, a query row opening — because pulling the pane
+// back to the cursor would undo the movement the reader asked for.
+func (m *Model) redrawFocusContent() {
 	content, _, _ := m.renderFocusHistory()
 	m.viewport.SetContent(content)
 }
@@ -498,6 +596,12 @@ func gutterPrefix(block string, selected bool, width int) string {
 // panel the layout paid for.
 func (m Model) focusHintLines() []string {
 	width := m.contentWidth()
+	// The query row takes the bar's place while it is open, and takes the
+	// row's own offers with it: every letter is going into the query, so
+	// nothing else on the surface can be honoured while it is up.
+	if m.viewport.SearchOpen() {
+		return m.transcriptSearchLines(width)
+	}
 	if m.readingKeyList {
 		return m.readingKeyListLines(width, m.maxConfirmPanelHeight())
 	}

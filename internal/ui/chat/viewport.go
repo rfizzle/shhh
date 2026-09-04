@@ -96,6 +96,16 @@ type viewport struct {
 	// an index into matches rather than a line, so next and previous walk the
 	// occurrences and not the rows they happen to share.
 	at int
+	// typed is the query as the reader typed it — what the query row draws —
+	// and typing says that row is open and taking every key.
+	//
+	// Both are here rather than on the surface that draws the row because a
+	// search is one thing: the text, the occurrences and the pointer have to
+	// agree on every frame of a streaming turn, and a session holding the
+	// text while the pane held the marks would be two records of one search
+	// with nothing keeping them in step.
+	typed  string
+	typing bool
 }
 
 // match is one occurrence: the line it is on and the display cells it covers.
@@ -149,7 +159,15 @@ func (v *viewport) SetLines(lines []string) {
 //
 // An empty query clears the search, which is what leaving it does.
 func (v *viewport) Search(query string) int {
-	v.query = strings.ToLower(query)
+	folded := strings.ToLower(query)
+	if folded != v.query {
+		// A different query is a different set of occurrences, so the pointer
+		// starts again rather than keeping an index it was numbered against.
+		// Re-finding the same query is the other case, and that one keeps it:
+		// the reader has not moved, the lines under them have.
+		v.at = -1
+	}
+	v.typed, v.query = query, folded
 	v.find()
 	return len(v.matches)
 }
@@ -157,6 +175,38 @@ func (v *viewport) Search(query string) int {
 // Searching reports whether a search is open, which is what tells a caller
 // that next and previous have somewhere to go.
 func (v viewport) Searching() bool { return v.query != "" }
+
+// OpenSearch opens the query row, keeping whatever is already in it: the key
+// that opens a live search is how the reader edits that query rather than
+// starting a second one.
+func (v *viewport) OpenSearch() { v.typing = true }
+
+// SearchOpen reports that the query row is taking keys, which is what makes
+// every letter text rather than one of the surface's own.
+func (v viewport) SearchOpen() bool { return v.typing }
+
+// SearchQuery is the query as it was typed. The folded copy is what the lines
+// are matched against, and is not what a reader is shown back.
+func (v viewport) SearchQuery() string { return v.typed }
+
+// KeepSearch closes the row and leaves the search standing.
+func (v *viewport) KeepSearch() { v.typing = false }
+
+// ClearSearch drops the query, the marks and the row together — one act,
+// because a mark with no query behind it is a highlight nothing can clear.
+func (v *viewport) ClearSearch() {
+	v.typing = false
+	v.Search("")
+}
+
+// RevealMatch brings the occurrence the pointer is on back into the pane. It
+// is what a pane that changed height under a live search needs: the panel
+// grew, the match the reader was reading did not move, and the window did.
+func (v *viewport) RevealMatch() {
+	if v.at >= 0 && v.at < len(v.matches) {
+		v.reveal(v.matches[v.at].line)
+	}
+}
 
 // MatchPosition is which occurrence the pointer is on, 1-based, and how many
 // there are. Zero of zero is a query that found nothing.
