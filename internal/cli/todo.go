@@ -478,6 +478,9 @@ func newTodoSprintPlanCmd() *cobra.Command {
 // todoSprintPlanHeadless spends the one turn and reads its answer against
 // the candidates it was asked about.
 func todoSprintPlanHeadless(cmd *cobra.Command, spec string, asJSON bool) error {
+	if !todoProfile().Plans() {
+		return fmt.Errorf("the %s profile does not plan sets: it says nothing about what makes its items belong together, so there is no proposal to read", todoProfile().Name)
+	}
 	budget, err := todo.ParseSprintBudget(todoProfile(), spec)
 	if err != nil {
 		return err
@@ -524,7 +527,7 @@ func todoSprintPlanRead(ctx context.Context, d *todoDriver, s *todo.Store, candi
 	if err != nil {
 		return todo.Plan{}, err
 	}
-	return todo.ParsePlan(turn.text, candidates, budget), nil
+	return todo.ParsePlan(s.Profile, turn.text, candidates, budget), nil
 }
 
 // todoSprintPlanReport is one proposal printed: the set in the order it
@@ -965,6 +968,9 @@ func newTodoGroomCmd() *cobra.Command {
 
 // todoGroomHeadless resolves what to read and reads it, one turn per item.
 func todoGroomHeadless(cmd *cobra.Command, slug string, all bool) error {
+	if !todoProfile().Grooms() {
+		return fmt.Errorf("the %s profile does not groom: it says nothing about what one of its items claims, so there is nothing to read one against", todoProfile().Name)
+	}
 	if all && slug != "" {
 		return fmt.Errorf("--all reads the whole backlog, so it does not take an item as well")
 	}
@@ -1016,7 +1022,7 @@ func todoGroomTargets(s *todo.Store, slug string, all bool) ([]todo.Item, error)
 func todoGroomRead(ctx context.Context, d *todoDriver, it todo.Item) (todo.Reading, error) {
 	turn, err := d.turn(ctx, time.Time{}, run.Step{
 		Action: run.ActionPrompt, Stage: run.StageGroom, Mode: run.ModePlan,
-		Prompt: run.GroomPrompt(it), Shown: "groom " + it.Slug,
+		Prompt: run.GroomPrompt(todoPipeline(), it), Shown: "groom " + it.Slug,
 	})
 	if err != nil {
 		return todo.Reading{}, err

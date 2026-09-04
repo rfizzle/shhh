@@ -80,6 +80,24 @@ func groom(t *testing.T, m Model, command, answerText string) Model {
 	return answer(t, m, answerText)
 }
 
+// A profile that says nothing about what one of its items claims has no
+// grooming pass, and the verb says so rather than sending another kind of
+// work's questions.
+func TestTodoGroom_AProfileThatDoesNotGroomRefusesTheVerb(t *testing.T) {
+	m, _ := groomModel(t, map[string]string{"cache-ttl.md": groomItem})
+	quiet := todo.BuiltinCode()
+	quiet.Name, quiet.Groom = "checklist", ""
+	m.todos.Profile = quiet
+	next, _ := m.startTodoGroom([]string{"cache-ttl"})
+	if started := next.(Model); started.working() || started.state == stateTodoGroom {
+		t.Fatalf("a profile with no grooming started a reading: state = %d", started.state)
+	}
+	got := next.(Model)
+	if last := got.transcript[len(got.transcript)-1].text; !strings.Contains(last, "checklist profile does not groom") {
+		t.Errorf("the refusal says %q", last)
+	}
+}
+
 func TestTodoGroom_TheCardIsTheProposedLinesAndTheStamp(t *testing.T) {
 	m, _ := groomModel(t, map[string]string{"cache-ttl.md": groomItem})
 	m = groom(t, m, "/todo groom cache-ttl", groomAnswer)
@@ -201,6 +219,13 @@ func TestTodoGroom_StaleIsDrawnOnlyForAnItemThatWasRead(t *testing.T) {
 	row := m.todoScreenRow(m.todoStore, m.todoStore.Items[0])
 	if len(row.Warnings) != 1 || !strings.Contains(row.Warnings[0], "62 commits ago") {
 		t.Errorf("warnings = %v", row.Warnings)
+	}
+	// The note names the distance as well as the number, because a backlog
+	// measured in days and one measured in commits both say 62 and only one
+	// of them is two months.
+	m.todos.Profile.Stale = todo.Staleness{Measure: todo.MeasureDays, Threshold: 30}
+	if row := m.todoScreenRow(m.todoStore, m.todoStore.Items[0]); !strings.Contains(row.Warnings[0], "62 days ago") {
+		t.Errorf("under a days profile the warning says %v", row.Warnings)
 	}
 	m.todoGroomer.stale = nil
 	if rail := m.inspectorTodo(); rail.Rows[0].Stale {

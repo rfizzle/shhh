@@ -20,6 +20,21 @@ import (
 // prose — because what comes of a reading is a diff, and a diff needs a fact
 // per line. See docs/capabilities/todo.md#an-item-is-checked-before-it-is-worked.
 
+// builtinCodeGrooming is what a checkout of code has a reading check: every
+// reference the item makes into the tree, and every sentence it states about
+// what the tree does. It is the `code` profile's wording, shipped as a file
+// in its directory as well, and it is here because the profile a project
+// gets before it has named one is this package's own value.
+//
+// The substitution is spelled out rather than shared with the runner that
+// places it, the way every other wording spells it: a wording is prose with
+// a hole in it, and a file cannot import a constant.
+const builtinCodeGrooming = `This is a GROOMING pass over one backlog item: read the code, change nothing, and say whether the item is still true.
+
+{{item}}
+
+Take every claim the item makes and check it against the tree as it stands: every ` + "`path:line`" + `, every function, flag, config key or command it names, every sentence about what happens today, every entry in ` + "`depends_on`" + `, every acceptance criterion, and the size it is graded at. Read the files; do not answer from the item alone.`
+
 // Verdict is one reading of one claim an item makes. The set is closed:
 // "this may need updating" is not a verdict, it is a sentence that can be
 // said about everything, and a reading that can say it will.
@@ -200,20 +215,29 @@ func (r Reading) Report() string {
 	return strings.TrimRight(b.String(), "\n")
 }
 
-// Stamp is the value the header's groomed line carries: the date the reading
-// was taken and the commit it was taken against.
+// Stamp is the value the header's groomed line carries, in whichever
+// distance the profile measures staleness by: the date the reading was
+// taken, and the commit it was taken against where commits are what count.
 //
-// The head is the load-bearing half. Staleness is how many commits the tree
-// has taken since the reading, which the repository can compute; a date says
-// how long the person waited, which is a different question and not the one
-// a run needs answered.
-func (r Reading) Stamp() string {
-	date := r.Read.Format("2006-01-02")
-	if r.Head == "" {
+// Under commits the head is the load-bearing half — how far the tree has
+// moved since the reading is what a repository can compute, where a date
+// only says how long the person waited. Under days it is the other way
+// about, and a commit in the header would be a fact nothing reads. A profile
+// that measures nothing keeps the commit anyway: it is where the reading was
+// taken, and a project that starts counting commits later wants the readings
+// it already has to be countable.
+func (r Reading) Stamp(p Profile) string {
+	date := r.Read.Format(stampDate)
+	if p.Stale.Measure == MeasureDays || r.Head == "" {
 		return date
 	}
 	return date + " @ " + shortHead(r.Head)
 }
+
+// stampDate is how the groomed line writes a day. It is the one format the
+// stamp is written and read back in, so a header written by an accepted
+// reading is one the staleness count can date.
+const stampDate = "2006-01-02"
 
 // shortHead is a commit as a header line states it.
 func shortHead(head string) string {
@@ -532,10 +556,27 @@ func GroomedHead(it Item) string {
 	return strings.TrimSpace(head)
 }
 
-// DefaultStaleCommits is how far behind a reading may fall before the
-// surfaces say so. Fifty is a few days of a busy checkout and a month of a
-// quiet one, which is the point: it counts the tree's movement rather than
-// the calendar's.
+// GroomedDay is the day an item was last groomed, and false for one that
+// never was. The stamp's date is its first field whichever distance the
+// profile measures, so a project that changed measures still dates the
+// readings it already has.
+func GroomedDay(it Item) (time.Time, bool) {
+	date, _, _ := strings.Cut(it.Groomed, "@")
+	// Read where it was written: the stamp is the day the person's own clock
+	// was on, so a reading taken this evening must not be a day old in the
+	// morning of a machine three hours west.
+	day, err := time.ParseInLocation(stampDate, strings.TrimSpace(date), time.Local)
+	if err != nil {
+		return time.Time{}, false
+	}
+	return day, true
+}
+
+// DefaultStaleCommits is how far behind a reading may fall on a checkout of
+// code before the surfaces say so. Fifty is a few days of a busy checkout
+// and a month of a quiet one, which is the point: it counts the tree's
+// movement rather than the calendar's. It is the `code` profile's number,
+// and another profile states its own.
 const DefaultStaleCommits = 50
 
 // Behind is how many commits the tree has taken since head, and whether the
@@ -558,28 +599,55 @@ func Behind(root, head string) (int, bool) {
 	return n, true
 }
 
+// Since is how far an item's reading has fallen behind, in the distance the
+// profile measures, and whether the question could be answered at all. Under
+// commits it is a question for the repository, which cannot answer outside
+// one, without a git binary, or about a commit this checkout does not hold.
+// Under days it is a question for the calendar, which always can.
+func Since(root string, p Profile, it Item) (int, bool) {
+	switch p.Stale.Measure {
+	case MeasureDays:
+		day, ok := GroomedDay(it)
+		if !ok {
+			return 0, false
+		}
+		// Whole days between two midnights, so a reading stamped today is
+		// nought days old whatever the hour and one stamped yesterday is
+		// one. The half day absorbs a clock that went forward or back in
+		// between, which would otherwise lose or invent a day.
+		now := time.Now()
+		today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+		return int((today.Sub(day) + 12*time.Hour) / (24 * time.Hour)), true
+	case MeasureCommits:
+		return Behind(root, GroomedHead(it))
+	}
+	return 0, false
+}
+
 // Stale is how far behind each groomed item's reading has fallen, for the
 // items that are further behind than the threshold allows. An item nobody
 // has groomed is absent from the map: absence is not staleness, and a
 // backlog that warned about every item nobody had read yet would be a
 // backlog of warnings.
 //
-// A threshold of zero takes the default; a negative one turns the reading
-// off, which is the answer for a project that grooms by hand.
-func Stale(root string, items []Item, threshold int) map[string]int {
+// The threshold is the profile's, because how fast a backlog goes stale is a
+// fact about the work. An override of zero leaves it alone; a positive one
+// replaces it, and a negative one turns the reading off, which is the answer
+// for a project that grooms by hand.
+func Stale(root string, p Profile, items []Item, override int) map[string]int {
+	threshold := p.Stale.Threshold
 	switch {
-	case threshold < 0:
+	case override < 0:
 		return nil
-	case threshold == 0:
-		threshold = DefaultStaleCommits
+	case override > 0:
+		threshold = override
+	}
+	if p.Stale.Measure == "" || threshold <= 0 {
+		return nil
 	}
 	var out map[string]int
 	for _, it := range items {
-		head := GroomedHead(it)
-		if head == "" {
-			continue
-		}
-		n, ok := Behind(root, head)
+		n, ok := Since(root, p, it)
 		if !ok || n <= threshold {
 			continue
 		}

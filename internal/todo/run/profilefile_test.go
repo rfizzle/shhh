@@ -122,6 +122,45 @@ func TestBuiltinProfile_CodeIsWhatTheGoValuesSay(t *testing.T) {
 	}
 }
 
+// The two readings a backlog takes of itself are the profile's, and a
+// profile that ships neither has neither verb. Where one is shipped it is
+// what the reading is told to check, and the answer's shape is never the
+// file's.
+func TestBuiltinProfiles_TheReadingsAreTheProfilesOwn(t *testing.T) {
+	want := map[string]struct {
+		grooms, plans bool
+		stale         todo.Staleness
+		releases      int
+	}{
+		"code":      {true, true, todo.Staleness{Measure: todo.MeasureCommits, Threshold: 50}, 2},
+		"research":  {true, true, todo.Staleness{Measure: todo.MeasureDays, Threshold: 90}, 0},
+		"ops":       {true, true, todo.Staleness{Measure: todo.MeasureDays, Threshold: 14}, 0},
+		"notes":     {true, false, todo.Staleness{}, 0},
+		"checklist": {false, false, todo.Staleness{}, 0},
+	}
+	for _, name := range BuiltinProfiles() {
+		words, _, err := BuiltinProfile(name)
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		w := want[name]
+		if words.Grooms() != w.grooms || words.Plans() != w.plans {
+			t.Errorf("%s: grooms %v plans %v", name, words.Grooms(), words.Plans())
+		}
+		if words.Stale != w.stale {
+			t.Errorf("%s: stale = %+v", name, words.Stale)
+		}
+		if len(words.Releases) != w.releases {
+			t.Errorf("%s: %d release words", name, len(words.Releases))
+		}
+		// A wording the profile ships places the item where it wants it, the
+		// way every step wording does; the shape comes after it either way.
+		if w.grooms && !strings.Contains(words.Groom, PlaceholderItem) {
+			t.Errorf("%s: the grooming wording places no item block", name)
+		}
+	}
+}
+
 // A profile with no run is a profile, not an unfinished file: it names no
 // wording, so there is nothing to scaffold and nothing to replace.
 func TestLoadProfile_AProfileMayStateNoRun(t *testing.T) {
@@ -220,6 +259,28 @@ func TestLoadProfile_RefusesWhatTheRunnerCannotCarryOut(t *testing.T) {
 		name:  "a pattern that would reserve nothing",
 		table: strings.Replace(oneStep, `noun = "note"`, "noun = \"note\"\nslug_refuse = \"[\"", 1),
 		says:  "will not compile",
+	}, {
+		name:  "a step that takes a reading's key",
+		table: strings.Replace(oneStep, `name = "write"`, `name = "groom"`, 1),
+		says:  "which is where this profile says how its backlog is read",
+	}, {
+		// A step is instructed from the key it names where it names one, so
+		// the collision is with the key and not with the step's own word.
+		name:  "a step instructed from a reading's file under another name",
+		table: strings.Replace(oneStep, `name = "write"`, "name = \"write\"\nwording = \"plan\"", 1),
+		says:  "which is where this profile says how its backlog is read",
+	}, {
+		name:  "a staleness measured in nothing the runner counts",
+		table: oneStep + "\n[stale]\nmeasure = \"moons\"\nthreshold = 3\n",
+		says:  "a reading falls behind in commits or days",
+	}, {
+		name:  "a staleness with no threshold",
+		table: oneStep + "\n[stale]\nmeasure = \"days\"\n",
+		says:  "every reading it ever takes is already stale",
+	}, {
+		name:  "a release word with nothing saying what it means",
+		table: oneStep + "\n[[release]]\nname = \"patch\"\n",
+		says:  "with nothing saying what it means",
 	}, {
 		name:  "a run with no finish",
 		table: strings.Replace(oneStep, "\n[[step]]\nname = \"file\"\nkind = \"finish\"\nfinish = \"archive\"\n", "", 1),

@@ -34,7 +34,7 @@ func TestParsePlan_ReadsTheSetItsReasonsAndWhatItLeftOut(t *testing.T) {
 		"why: the same package, and it is what a lifetime is for\n" +
 		"out: cache-metrics unrelated\n" +
 		"out: prose-renderer stale\n"
-	p := ParsePlan(answer, s.Ready(), nil)
+	p := ParsePlan(BuiltinCode(), answer, s.Ready(), nil)
 	if got := strings.Join(p.Slugs(), ","); got != "cache-ttl,cache-evict" {
 		t.Fatalf("set = %q", got)
 	}
@@ -60,13 +60,13 @@ func TestParsePlan_ReadsTheSetItsReasonsAndWhatItLeftOut(t *testing.T) {
 // question and the reason the word is asked for at all.
 func TestParsePlan_TakesTheReleaseWordItWasGiven(t *testing.T) {
 	s := Load(BuiltinCode(), planRoot(t))
-	p := ParsePlan("release: patch\nitem: cache-metrics\nwhy: it is the only bug open\n", s.Ready(), nil)
+	p := ParsePlan(BuiltinCode(), "release: patch\nitem: cache-metrics\nwhy: it is the only bug open\n", s.Ready(), nil)
 	if p.Release != ReleasePatch || p.GoalText() != "Reads as a patch release." {
 		t.Fatalf("plan = %+v, goal = %q", p, p.GoalText())
 	}
 	// A word off the scale is no word at all: the goal states nothing
 	// rather than a release kind nobody said.
-	off := ParsePlan("release: major\nitem: cache-metrics\nwhy: because\n", s.Ready(), nil)
+	off := ParsePlan(BuiltinCode(), "release: major\nitem: cache-metrics\nwhy: because\n", s.Ready(), nil)
 	if off.Release != "" {
 		t.Fatalf("release = %q, want nothing for a word off the scale", off.Release)
 	}
@@ -77,7 +77,7 @@ func TestParsePlan_TakesTheReleaseWordItWasGiven(t *testing.T) {
 // line would be a sprint naming work that is not ready or not there at all.
 func TestParsePlan_DropsWhatIsNotACandidate(t *testing.T) {
 	s := Load(BuiltinCode(), planRoot(t))
-	p := ParsePlan("item: cache-ttl\nwhy: it is ready\n"+
+	p := ParsePlan(BuiltinCode(), "item: cache-ttl\nwhy: it is ready\n"+
 		"item: cache-nothing\nwhy: invented\n"+
 		"item: cache-ttl\nwhy: twice\n"+
 		"out: nowhere waits\n"+
@@ -95,7 +95,7 @@ func TestParsePlan_DropsWhatIsNotACandidate(t *testing.T) {
 // the person never sees.
 func TestParsePlan_TakesTheSlugOutOfALineThatSaysMore(t *testing.T) {
 	s := Load(BuiltinCode(), planRoot(t))
-	p := ParsePlan("item: `cache-ttl` — Give the cache a lifetime\nwhy: it comes first\n"+
+	p := ParsePlan(BuiltinCode(), "item: `cache-ttl` — Give the cache a lifetime\nwhy: it comes first\n"+
 		"out: cache-metrics — unrelated\n", s.Ready(), nil)
 	if got := strings.Join(p.Slugs(), ","); got != "cache-ttl" {
 		t.Fatalf("set = %q", got)
@@ -113,7 +113,7 @@ func TestParsePlan_MovesWhatTheBudgetCannotHoldOutOfTheSet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p := ParsePlan("item: cache-ttl\nwhy: first\n"+
+	p := ParsePlan(BuiltinCode(), "item: cache-ttl\nwhy: first\n"+
 		"item: cache-metrics\nwhy: second small one\n"+
 		"item: cache-evict\nwhy: the medium\n", s.Ready(), budget)
 	if got := strings.Join(p.Slugs(), ","); got != "cache-ttl,cache-evict" {
@@ -173,6 +173,57 @@ func TestPlanPrompt_CarriesTheFactsAndTheReadings(t *testing.T) {
 	// everything would be stating one that is not there.
 	if strings.Contains(s.PlanPrompt(s.Ready(), ""), "BUDGET:") {
 		t.Error("an unbounded plan states a budget")
+	}
+}
+
+// readingProfile is a backlog of questions rather than of code: its own
+// grade, its own words about what makes a set, and no release words at all.
+func readingProfile() Profile {
+	return Profile{
+		Name: "research", Noun: "question",
+		Fields: []Field{
+			{Name: "kind", Values: []Value{{Name: "question"}, {Name: "reading"}}, Default: "question"},
+			PriorityField(),
+			{Name: "depth", Values: []Value{{Name: "quick", Glyph: "Q"}, {Name: "deep", Glyph: "D"}}},
+		},
+		Grade: "depth",
+		Plan:  "PLANNING a reading list: recommend the questions to answer next.",
+	}
+}
+
+// What makes a set coherent is the profile's, and the release words are the
+// code profile's alone. A backlog whose work is not released is never
+// offered the line, and a word it never offered is not read back off an
+// answer that volunteered one — so a research sprint's goal is a sentence
+// and not `minor`.
+func TestPlanPrompt_TheProfileSaysWhatMakesASetAndWhetherThereIsARelease(t *testing.T) {
+	p := readingProfile()
+	root := t.TempDir()
+	write(t, Dir(root), "why-tabs.md", "---\ntitle: Why tabs\nkind: reading\npriority: high\ndepth: deep\n---\n")
+	s := Load(p, root)
+	prompt := s.PlanPrompt(s.Ready(), "")
+	for _, want := range []string{
+		"PLANNING a reading list",
+		// The candidates block prints the profile's fields and names the
+		// grade, so a deep reading is described as one to the planner.
+		"reading · priority high · depth deep",
+		"waits, too big, unrelated, stale",
+	} {
+		if !strings.Contains(prompt, want) {
+			t.Errorf("the prompt never says %q:\n%s", want, prompt)
+		}
+	}
+	for _, never := range []string{"release:", "patch", "minor", "ships together"} {
+		if strings.Contains(prompt, never) {
+			t.Errorf("the prompt offers %q to a backlog that has no releases:\n%s", never, prompt)
+		}
+	}
+	plan := ParsePlan(p, "goal: settle how the sources define it\nrelease: minor\nitem: why-tabs\nwhy: it is the only one open\n", s.Ready(), nil)
+	if plan.Release != "" || plan.ReleaseLine() != "" {
+		t.Fatalf("a release word nobody offered was read back: %+v", plan)
+	}
+	if plan.GoalText() != "settle how the sources define it" {
+		t.Fatalf("goal = %q", plan.GoalText())
 	}
 }
 

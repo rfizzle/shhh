@@ -40,6 +40,13 @@ const (
 	// ProfileWordings is the directory inside a profile that holds one file
 	// per wording key, named the way the settings name it.
 	ProfileWordings = "prompts"
+	// WordingGroom and WordingPlan are the two readings a backlog takes of
+	// itself rather than of one run: one item against what it claims, and
+	// the ready list against what belongs together. Both are optional — a
+	// profile that ships neither has neither verb — and both are named here
+	// rather than by a step, so a step may not take either key.
+	WordingGroom = "groom"
+	WordingPlan  = "plan"
 )
 
 // profileFile is the table as TOML states it. Every field is a string or a
@@ -47,12 +54,27 @@ const (
 // its own types below, so that a misspelt one is refused with the closed set
 // it missed rather than silently read as a zero value.
 type profileFile struct {
-	Name       string      `toml:"name"`
-	Noun       string      `toml:"noun"`
-	Grade      string      `toml:"grade"`
-	SlugRefuse string      `toml:"slug_refuse"`
-	Field      []fieldFile `toml:"field"`
-	Step       []stepFile  `toml:"step"`
+	Name       string        `toml:"name"`
+	Noun       string        `toml:"noun"`
+	Grade      string        `toml:"grade"`
+	SlugRefuse string        `toml:"slug_refuse"`
+	Stale      staleFile     `toml:"stale"`
+	Field      []fieldFile   `toml:"field"`
+	Release    []releaseFile `toml:"release"`
+	Step       []stepFile    `toml:"step"`
+}
+
+// staleFile is how far a reading may fall behind before the surfaces say so:
+// the distance it is counted in, and how much of it is too much.
+type staleFile struct {
+	Measure   string `toml:"measure"`
+	Threshold int    `toml:"threshold"`
+}
+
+// releaseFile is one word a proposed set may say about what it releases.
+type releaseFile struct {
+	Name  string `toml:"name"`
+	Gloss string `toml:"gloss"`
 }
 
 // fieldFile is one header field: the key it is written under and the words it
@@ -142,7 +164,32 @@ func readProfile(fsys fs.FS, show func(rel string) string) (todo.Profile, Pipeli
 	if err := readWordings(fsys, show, &pipeline); err != nil {
 		return todo.Profile{}, Pipeline{}, err
 	}
+	if err := readReadings(fsys, show, &words); err != nil {
+		return todo.Profile{}, Pipeline{}, err
+	}
 	return words, pipeline, nil
+}
+
+// readReadings puts the two wordings a backlog is read by on the profile.
+// Both are optional, and a profile that ships neither has neither verb —
+// which is the honest answer for a list nobody reads against anything, and
+// better than a grooming pass that asked a reading list about `path:line`.
+func readReadings(fsys fs.FS, show func(rel string) string, words *todo.Profile) error {
+	for _, r := range []struct {
+		key  string
+		into *string
+	}{{WordingGroom, &words.Groom}, {WordingPlan, &words.Plan}} {
+		rel := ProfileWordings + "/" + r.key + ".md"
+		text, err := fs.ReadFile(fsys, rel)
+		if errors.Is(err, fs.ErrNotExist) {
+			continue
+		}
+		if err != nil {
+			return fmt.Errorf("%s: %w", show(rel), err)
+		}
+		*r.into = strings.TrimSuffix(string(text), "\n")
+	}
+	return nil
 }
 
 // source is the file a refusal names, with the text it can find a line in.
@@ -228,7 +275,52 @@ func (f profileFile) profile(src source) (todo.Profile, error) {
 		return todo.Profile{}, src.at("slug_refuse",
 			"profile %q reserves slugs matching a pattern that will not compile, so it would reserve none: %v", p.Name, err)
 	}
+	stale, err := f.Stale.staleness(src, p.Name)
+	if err != nil {
+		return todo.Profile{}, err
+	}
+	p.Stale = stale
+	for _, rf := range f.Release {
+		switch {
+		case rf.Name == "":
+			return todo.Profile{}, src.at("[[release]]", "profile %q has a release word with no name", p.Name)
+		case rf.Gloss == "":
+			return todo.Profile{}, src.at(rf.Name,
+				"profile %q offers the release word %q with nothing saying what it means, and the reading has to choose between them", p.Name, rf.Name)
+		}
+		p.Releases = append(p.Releases, todo.ReleaseWord{Name: rf.Name, Gloss: rf.Gloss})
+	}
 	return p, nil
+}
+
+// staleness is the distance a reading is measured by, and the zero value for
+// a profile that says nothing about readings falling behind. A measure with
+// no threshold is refused rather than read as zero: zero is the distance
+// every reading has already fallen, so the profile would call its whole
+// backlog stale the moment anything was groomed.
+func (sf staleFile) staleness(src source, profile string) (todo.Staleness, error) {
+	if sf.Measure == "" && sf.Threshold == 0 {
+		return todo.Staleness{}, nil
+	}
+	m := todo.Measure(sf.Measure)
+	if !m.Known() {
+		return todo.Staleness{}, src.at("measure",
+			"profile %q measures staleness in %q, and a reading falls behind in %s", profile, sf.Measure, measureWords())
+	}
+	if sf.Threshold <= 0 {
+		return todo.Staleness{}, src.at("threshold",
+			"profile %q counts staleness in %s and says how many at %d; below one, every reading it ever takes is already stale", profile, m, sf.Threshold)
+	}
+	return todo.Staleness{Measure: m, Threshold: sf.Threshold}, nil
+}
+
+// measureWords is the closed set on one line, for the refusal.
+func measureWords() string {
+	out := make([]string, 0, len(todo.Measures()))
+	for _, m := range todo.Measures() {
+		out = append(out, string(m))
+	}
+	return strings.Join(out, " or ")
 }
 
 // field is one header field, with priority read as the placement it is.
@@ -307,6 +399,14 @@ func (sf stepFile) step(src source, words todo.Profile) (PipelineStep, error) {
 	}
 	if !ps.Kind.Known() {
 		return PipelineStep{}, at("step %q is of no kind this runner has (%s)", sf.Name, strings.Join(kindWords(), ", "))
+	}
+	// The two readings a backlog takes of itself are instructed from the
+	// same directory the steps are, so their keys are not a step's to take.
+	// A step that took one would be instructed by the reading's file and the
+	// reading by nothing, and both would read as if they had their own.
+	if key := ps.Key(); key == WordingGroom || key == WordingPlan {
+		return PipelineStep{}, at("step %q is instructed from %s.md, which is where this profile says how its backlog is read; name the step or its wording something else",
+			sf.Name, key)
 	}
 	// A step that says nothing about the tree does not touch it, which is
 	// the answer for the kinds that send no turn at all — a command, a gate

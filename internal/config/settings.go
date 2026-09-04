@@ -524,8 +524,8 @@ var settings = []Setting{
 		Key: "todo.item_timeout_minutes", Kind: KindInt, Default: "0 (no cap)", Literal: "0",
 		Desc: "How long one item of a sprint may take before it is blocked and the sprint stops; zero leaves it uncapped.",
 	}, {
-		Key: "todo.groom_stale_commits", Kind: KindInt, Default: "50",
-		Desc: "How many commits the tree may take after an item was read against it before the backlog says the reading has fallen behind; a negative number turns the warning off.",
+		Key: "todo.groom_stale_commits", Kind: KindInt, Default: "the profile's own", Literal: "0",
+		Desc: "How far an item's last reading may fall behind — in whatever the profile measures staleness by — before the backlog says so; unset keeps the profile's own threshold, and a negative number turns the warning off.",
 	},
 }
 

@@ -242,20 +242,66 @@ func TestGroom_AVerdictOffTheSetIsDropped(t *testing.T) {
 	}
 }
 
-// The stamp names the commit, because staleness is measured in commits.
-func TestGroom_TheStampCarriesTheShortHead(t *testing.T) {
+// The stamp carries what the profile measures staleness by: a commit where
+// the tree is what has moved, and the date alone where the calendar is. A
+// commit written under a profile that counts days would be a fact nothing
+// ever reads back.
+func TestGroom_TheStampCarriesWhatTheProfileMeasures(t *testing.T) {
 	r := Reading{Head: "1a2b3c4d5e6f", Read: time.Date(2026, 9, 4, 0, 0, 0, 0, time.UTC)}
-	if got := r.Stamp(); got != "2026-09-04 @ 1a2b3c4" {
+	if got := r.Stamp(BuiltinCode()); got != "2026-09-04 @ 1a2b3c4" {
 		t.Errorf("stamp = %q", got)
 	}
-	if got := (Reading{Read: r.Read}).Stamp(); got != "2026-09-04" {
+	if got := (Reading{Read: r.Read}).Stamp(BuiltinCode()); got != "2026-09-04" {
 		t.Errorf("stamp without a head = %q", got)
+	}
+	if got := r.Stamp(byDays(7)); got != "2026-09-04" {
+		t.Errorf("stamp under days = %q", got)
 	}
 	if head := GroomedHead(Item{Groomed: "2026-09-04 @ 1a2b3c4"}); head != "1a2b3c4" {
 		t.Errorf("head = %q", head)
 	}
 	if head := GroomedHead(Item{}); head != "" {
 		t.Errorf("an item nobody groomed has no head, got %q", head)
+	}
+	day, ok := GroomedDay(Item{Groomed: "2026-09-04 @ 1a2b3c4"})
+	if !ok || !day.Equal(time.Date(2026, 9, 4, 0, 0, 0, 0, time.Local)) {
+		t.Errorf("day = %v %v", day, ok)
+	}
+	if _, ok := GroomedDay(Item{}); ok {
+		t.Error("an item nobody groomed has a day")
+	}
+}
+
+// byDays is a profile that dates its readings rather than counting commits
+// against them, which is what a backlog with no tree under it has.
+func byDays(threshold int) Profile {
+	p := BuiltinCode()
+	p.Stale = Staleness{Measure: MeasureDays, Threshold: threshold}
+	return p
+}
+
+// A backlog with no tree under it is stale on the calendar, and the count it
+// draws is days rather than commits. Nothing asks the repository, which is
+// the point: there may not be one.
+func TestGroom_ADaysProfileDrawsTheCalendarDistance(t *testing.T) {
+	items := []Item{
+		{Slug: "old", Groomed: time.Now().AddDate(0, 0, -10).Format(stampDate)},
+		{Slug: "fresh", Groomed: time.Now().AddDate(0, 0, -2).Format(stampDate)},
+		{Slug: "never"},
+	}
+	stale := Stale(t.TempDir(), byDays(7), items, 0)
+	if len(stale) != 1 || stale["old"] != 10 {
+		t.Fatalf("stale = %v", stale)
+	}
+	if stale := Stale(t.TempDir(), byDays(10), items, 0); len(stale) != 0 {
+		t.Errorf("at the threshold: %v", stale)
+	}
+	// A profile that says nothing about readings falling behind says nothing
+	// about any item, however old the stamp on it is.
+	quiet := BuiltinCode()
+	quiet.Stale = Staleness{}
+	if stale := Stale(t.TempDir(), quiet, items, 0); len(stale) != 0 {
+		t.Errorf("a profile with no measure: %v", stale)
 	}
 }
 
@@ -268,14 +314,21 @@ func TestGroom_StaleDrawsPastTheThresholdAndNotBelow(t *testing.T) {
 		{Slug: "read", Groomed: "2026-09-04 @ " + head},
 		{Slug: "never"},
 	}
-	if stale := Stale(root, items, 4); len(stale) != 0 {
+	code := BuiltinCode()
+	if stale := Stale(root, code, items, 4); len(stale) != 0 {
 		t.Errorf("at the threshold: %v", stale)
 	}
-	if stale := Stale(root, items, 3); stale["read"] != 4 || len(stale) != 1 {
+	if stale := Stale(root, code, items, 3); stale["read"] != 4 || len(stale) != 1 {
 		t.Errorf("past the threshold: %v", stale)
 	}
-	if stale := Stale(root, items, -1); len(stale) != 0 {
+	if stale := Stale(root, code, items, -1); len(stale) != 0 {
 		t.Errorf("turned off: %v", stale)
+	}
+	// With nothing overriding it the profile's own threshold is what counts,
+	// which is what a project that never set the key gets.
+	code.Stale.Threshold = 3
+	if stale := Stale(root, code, items, 0); stale["read"] != 4 {
+		t.Errorf("the profile's own threshold: %v", stale)
 	}
 }
 

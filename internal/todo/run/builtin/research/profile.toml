@@ -8,6 +8,13 @@ name = "research"
 noun = "question"
 grade = "depth"
 
+# A reading goes out of date on the calendar rather than on a tree: three
+# months is long enough for a paper to have been superseded and for the
+# question itself to have moved.
+[stale]
+measure = "days"
+threshold = 90
+
 [[field]]
 name = "kind"
 default = "question"

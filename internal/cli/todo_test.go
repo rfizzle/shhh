@@ -11,6 +11,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/todo/run"
+	"github.com/spf13/cobra"
 )
 
 func todoFixture(t *testing.T) string {
@@ -542,6 +543,35 @@ func TestTodoGroomReport_NamesAnItemTheTreeHasFinished(t *testing.T) {
 	out := todoGroomReport(it, r).String()
 	if !strings.Contains(out, "shhh todo done first") {
 		t.Errorf("no archive proposal in:\n%s", out)
+	}
+}
+
+// holdingProfile states this process's answer about the backlog's profile,
+// so a test about a verb does not have to write a directory to imply one.
+func holdingProfile(t *testing.T, words todo.Profile) {
+	t.Helper()
+	withoutHeldProfile(t)
+	held := backlogProfile{words: words, pipeline: run.BuiltinCode(), from: builtinProfileFrom}
+	profileHeld.mu.Lock()
+	profileHeld.read = &held
+	profileHeld.mu.Unlock()
+}
+
+// A profile that says nothing about what one of its items claims has no
+// reading of one, and a profile that says nothing about what makes a set has
+// no proposal. Both verbs refuse before they spend a turn, and name the
+// profile they are refusing for.
+func TestTodo_AProfileWithoutTheReadingRefusesTheVerb(t *testing.T) {
+	quiet := todo.BuiltinCode()
+	quiet.Name, quiet.Groom, quiet.Plan = "checklist", "", ""
+	holdingProfile(t, quiet)
+	err := todoGroomHeadless(&cobra.Command{}, "first", false)
+	if err == nil || !strings.Contains(err.Error(), "checklist profile does not groom") {
+		t.Fatalf("grooming refused with %v", err)
+	}
+	err = todoSprintPlanHeadless(&cobra.Command{}, "", false)
+	if err == nil || !strings.Contains(err.Error(), "checklist profile does not plan sets") {
+		t.Fatalf("planning refused with %v", err)
 	}
 }
 

@@ -47,13 +47,30 @@ func sprintModel(t *testing.T, sprint string) (Model, string) {
 	return todoModel(t, root), root
 }
 
+// A profile that says nothing about what makes its items belong together
+// has no proposal to offer, and the verb says so before it spends a turn.
+func TestTodoSprintPlan_AProfileThatDoesNotPlanRefusesTheVerb(t *testing.T) {
+	m, _ := sprintModel(t, "")
+	quiet := todo.BuiltinCode()
+	quiet.Name, quiet.Plan = "notes", ""
+	m.todos.Profile = quiet
+	next, _ := m.startTodoSprintPlan(nil)
+	got := next.(Model)
+	if got.todoPlanner.going || got.working() {
+		t.Fatal("a profile with no planning started a proposal")
+	}
+	if last := got.transcript[len(got.transcript)-1].text; !strings.Contains(last, "notes profile does not plan sets") {
+		t.Errorf("the refusal says %q", last)
+	}
+}
+
 // planned puts the card up from a planning answer, without the turn that
 // would have produced it: what the card is answering is the reading, and
 // standing up a provider to reach it would test neither.
 func planned(m Model, answer string, budget todo.SprintBudget) Model {
 	candidates := m.todoStore.Ready()
 	m.todoPlanner = todoPlanState{going: true, budget: budget, candidates: candidates}
-	next, _ := m.openPlanCard(todo.ParsePlan(answer, candidates, budget))
+	next, _ := m.openPlanCard(todo.ParsePlan(m.todos.Profile, answer, candidates, budget))
 	return next.(Model)
 }
 

@@ -312,9 +312,9 @@ func (a promptArgs) blockText(name string) string {
 	return ""
 }
 
-// GroomPrompt is the reading of one item against the tree as it stands: every
-// claim the item makes graded from a closed set, with one line of evidence
-// under each. It is the reading step's own moved to before the run — which is
+// GroomPrompt is the reading of one item against what it claims: every claim
+// the item makes graded from a closed set, with one line of evidence under
+// each. It is the reading step's own moved to before the run — which is
 // where a stale item is worth finding, rather than three steps in on a plan
 // built against the wrong file.
 //
@@ -323,28 +323,22 @@ func (a promptArgs) blockText(name string) string {
 // line. The verdict words are the backlog's own closed set, so the prompt
 // that asks for them and the reader that parses them cannot drift apart.
 //
-// It carries the built-in standards sentence and takes no wording of its
-// own: a grooming pass is not a step of a run — no run ever enters it — and
-// the wordings a project replaces are the run's.
+// What counts as a claim is the profile's, and so is the standards sentence
+// under it: a checkout of code has every `path:line` checked against the
+// tree, and a reading list has every source checked for still being there.
+// The shape comes from here whatever the profile said, for the reason every
+// step's answer shape does.
 // See docs/capabilities/todo.md#an-item-is-checked-before-it-is-worked.
-func GroomPrompt(it todo.Item) string {
-	var b strings.Builder
-	b.WriteString("This is a GROOMING pass over one backlog item: read the code, change nothing, and say whether the item is still true.\n\n")
-	b.WriteString(itemBlock(it))
-	b.WriteString("\n" + builtinStandards + "\n\n")
-	b.WriteString(`Take every claim the item makes and check it against the tree as it stands: every ` + "`path:line`" + `, every function, flag, config key or command it names, every sentence about what happens today, every entry in ` + "`depends_on`" + `, every acceptance criterion, and the size it is graded at. Read the files; do not answer from the item alone.
-
-Answer with one block per claim and nothing else between the blocks:
+func GroomPrompt(p Pipeline, it todo.Item) string {
+	shape := `Answer with one block per claim and nothing else between the blocks:
 
 claim: <the item's line, copied exactly as the file has it>
 verdict: <exactly one of: ` + verdictWords() + `>
 now: <the line as it should read — omit it for holds and unknown, and leave it empty to say the line should go>
-evidence: <one line: the path, the symbol or the commit that shows it>
-
-`)
-	b.WriteString(verdictKey())
-	b.WriteString("\n\nThe evidence line is the only free text you may write. Do not add a summary, and do not raise a claim the item does not make: a reading that can say \"this may need updating\" will say it about everything, which is why the verdicts are a closed set.")
-	return b.String()
+evidence: <one line: the path, the symbol or the commit that shows it>`
+	return stepPrompt(it.Profile.Groom, []block{{PlaceholderItem, itemBlock(it)}},
+		p.standards(), shape, verdictKey(),
+		"The evidence line is the only free text you may write. Do not add a summary, and do not raise a claim the item does not make: a reading that can say \"this may need updating\" will say it about everything, which is why the verdicts are a closed set.")
 }
 
 // verdictWords is the closed set on one line, for the prompt's verdict line.

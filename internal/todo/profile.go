@@ -44,6 +44,69 @@ type Profile struct {
 	// not of every backlog, and a rule written into the grammar refuses it
 	// in projects that have never heard of it.
 	SlugRefuse string
+	// Groom is what a reading of one item is told to check, and empty for a
+	// profile whose items are not read against anything. The shape the
+	// answer comes back in is the code's — a verdict per claim from a
+	// closed set — and what counts as a claim is the project's: a `path:line`
+	// on a checkout of code, a source that may have moved on a reading list.
+	// See docs/capabilities/todo.md#an-item-is-checked-before-it-is-worked.
+	Groom string
+	// Plan is what makes a set of these items one set, and empty for a
+	// profile whose work does not ship together. The answer's shape is the
+	// code's for the same reason the grooming answer's is; what belongs
+	// with what is not.
+	// See docs/capabilities/todo.md#a-sprint-is-what-ships-together.
+	Plan string
+	// Stale is how far a reading may fall behind before the surfaces say so,
+	// and the zero value for a profile that never says it. How fast a
+	// backlog goes stale is a fact about the work: a commit count is the
+	// right distance for a tree and no distance at all for a reading list,
+	// and a date is the reverse.
+	Stale Staleness
+	// Releases are the words a proposed set may say about what kind of
+	// release it reads as, and none for a profile whose work is not
+	// released — where the goal is a sentence and nothing else.
+	Releases []ReleaseWord
+}
+
+// Measure is how the distance between a reading and now is counted.
+type Measure string
+
+const (
+	// MeasureCommits counts the commits the tree has taken since the
+	// reading, which is what makes an item about code stale.
+	MeasureCommits Measure = "commits"
+	// MeasureDays counts the days since the reading was taken, which is
+	// what makes an item about anything else stale.
+	MeasureDays Measure = "days"
+)
+
+// Measures is the closed set, in the order a refusal lists it.
+func Measures() []Measure { return []Measure{MeasureCommits, MeasureDays} }
+
+// Known reports the word being one of the set.
+func (m Measure) Known() bool {
+	for _, known := range Measures() {
+		if known == m {
+			return true
+		}
+	}
+	return false
+}
+
+// Staleness is how far behind a reading may fall before it is worth saying
+// so: the distance it is measured in, and how much of it is too much.
+type Staleness struct {
+	Measure   Measure
+	Threshold int
+}
+
+// ReleaseWord is one word a proposed set may say about what kind of release
+// it reads as, with the line saying what it means for the reading that has
+// to choose between them.
+type ReleaseWord struct {
+	Name  string
+	Gloss string
 }
 
 // Field is one header field: the key it is written under, the words it may
@@ -114,8 +177,24 @@ func BuiltinCode() Profile {
 			}},
 		},
 		Grade: "size",
+		Groom: builtinCodeGrooming,
+		Plan:  builtinCodePlanning,
+		Stale: Staleness{Measure: MeasureCommits, Threshold: DefaultStaleCommits},
+		Releases: []ReleaseWord{
+			{Name: string(ReleasePatch), Gloss: "every item in the set is a bug fix"},
+			{Name: string(ReleaseMinor), Gloss: "a story is in it"},
+		},
 	}
 }
+
+// Grooms reports the profile having a reading of one item against what it
+// claims. A profile that states none has no grooming verb at all, rather
+// than one that sends another kind of work's questions.
+func (p Profile) Grooms() bool { return p.Groom != "" }
+
+// Plans reports the profile having a reading of the ready list for what
+// belongs together.
+func (p Profile) Plans() bool { return p.Plan != "" }
 
 // Reserved is the compiled rule, nil for a profile that reserves nothing,
 // and an error for a pattern that will not compile. Whatever reads a profile

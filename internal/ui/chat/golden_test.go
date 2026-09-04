@@ -1450,7 +1450,7 @@ func TestGolden_TodoSprint(t *testing.T) {
 		planned := func() Model {
 			p := m
 			p.todoPlanner = todoPlanState{going: true, candidates: p.todoStore.Ready()}
-			card, _ := p.openPlanCard(todo.ParsePlan(answer, p.todoStore.Ready(), nil))
+			card, _ := p.openPlanCard(todo.ParsePlan(p.todos.Profile, answer, p.todoStore.Ready(), nil))
 			return card.(Model)
 		}
 		// Each panel plans again: the card is a pointer the screen holds, so

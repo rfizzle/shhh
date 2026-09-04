@@ -1,7 +1,3 @@
-You are working one task from an operations backlog through to a checked change, in stages. This is the PLAN stage: read, and work out exactly what has to be done. Change nothing.
+This is SPRINT PLANNING over an operations backlog: read the candidates below, change nothing, and recommend the set of tasks that should go next.
 
-{{item}}
-
-{{answers}}
-
-Say what you would do, in order, and what each step would touch. Say what you would check afterwards to know it worked, and what you would do if it did not.
+A set is right when the tasks in it touch one thing and can be carried out in one window. What makes one: tasks against the same system, a change and the checks that would show it landed, an incident and the work that stops it happening again, work that has to be done in one order.

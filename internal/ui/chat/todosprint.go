@@ -63,6 +63,9 @@ func (m Model) startTodoSprintPlan(args []string) (tea.Model, tea.Cmd) {
 	if s == nil {
 		return m.systemNotice("The backlog is unavailable in this session.")
 	}
+	if !m.todos.Profile.Plans() {
+		return m.systemNotice(fmt.Sprintf("The %s profile does not plan sets: it says nothing about what makes its items belong together, so a proposal would be a reading of nothing.", m.todos.Profile.Name))
+	}
 	if s.Sprint.Open() {
 		return m.systemNotice(fmt.Sprintf("%s is still open — one sprint at a time. /todo sprint shows it; /todo sprint close ends it.", s.Sprint.Name))
 	}
@@ -91,8 +94,11 @@ func (m Model) startTodoSprintPlan(args []string) (tea.Model, tea.Cmd) {
 	// recommendation over items that state what the code did last month
 	// recommends the wrong week, and the readings are also what tell the
 	// planner an item is already done or has grown — so it reads them
-	// rather than reading the tree twice.
-	if unread := m.planReadingsNeeded(candidates); len(unread) > 0 {
+	// rather than reading the tree twice. A profile that plans its sets
+	// without reading its items goes straight to the proposal: there is no
+	// reading to take, and queueing one would send a turn with nothing in
+	// it to instruct the turn.
+	if unread := m.planReadingsNeeded(candidates); m.todos.Profile.Grooms() && len(unread) > 0 {
 		m.todoGroomer = todoGroomState{
 			queue: unread, prevMode: m.policy.mode.String(), stale: m.todoGroomer.stale,
 			planAfter: &sprintPlanRequest{budget: budget},
@@ -173,7 +179,7 @@ func (m Model) todoPlanAfter(prev Model) (Model, tea.Cmd) {
 		next, cmd := m.endSprintPlan("The planning turn was displaced by another message.")
 		return next.(Model), cmd
 	}
-	plan := todo.ParsePlan(m.planAnswer(), p.candidates, p.budget)
+	plan := todo.ParsePlan(m.todos.Profile, m.planAnswer(), p.candidates, p.budget)
 	if len(plan.Items) == 0 {
 		next, cmd := m.endSprintPlan("The reading proposed no set that could be read as items; nothing was written.")
 		return next.(Model), cmd

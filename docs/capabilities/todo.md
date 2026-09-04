@@ -172,6 +172,20 @@ set of bug fixes, `minor` when a story is in it — because that is the
 question you answer when you tag. It is one line of the goal and never a
 field: shhh names no version and makes no tag.
 
+**What makes a set is the profile's; the shape of the proposal is not.** The
+four things the reading groups by — a dependency chain, a shared package, a
+theme, a bug and the story that closes its cause — are what the `code`
+profile calls coherence, and they are a file in that profile's directory
+([above](#a-profile-says-what-the-work-is)). A reading list groups a question
+with the sources that would settle it; an operations backlog groups the work
+that can be done in one window. The release words are the `code` profile's
+too, and a profile that states none is never offered the line — so a set of
+readings has a goal that is a sentence and nothing under it. The goal, the
+line per item, the closed words for what was left out and the budget the set
+has to fit stay the program's, because that is the shape the card is built
+from and the sprint file is written from. A profile that says nothing about
+what belongs together has no proposal, and asking for one says so.
+
 **Only the goal is written.** The sentence goes into the sprint file, with
 that release line under it. On the card the two are separate rows, so
 rewriting the sentence with `/todo sprint goal` keeps the release line
@@ -239,7 +253,7 @@ S, M or L, worked by research, implement, verify, review, remediate and
 commit. `research` is a backlog of questions, readings, interviews and
 syntheses, graded quick or deep, worked by scope, gather, review and a
 write-up — no verify, no commit. `ops` is tasks, incidents and changes,
-ungraded, worked by plan, act and a command that checks the change landed.
+ungraded, worked by scope, act and a command that checks the change landed.
 `notes` is one turn that writes the note down. `checklist` has no run at all:
 asking for one says so and offers the verb that files the item, because what
 an item on a checklist needs is a person doing it.
@@ -284,6 +298,15 @@ step whose file is not in the directory stops the load rather than falling
 back to shhh's own words, because a run that sent the code profile's
 implement wording to a reading step would be telling the model to build
 something.
+
+Two of the wordings are not a step's. `groom.md` is what a reading of one
+item is told to check ([below](#an-item-is-checked-before-it-is-worked)) and
+`plan.md` is what makes a set of them one set
+([above](#a-sprint-is-what-ships-together)); both are optional, a profile
+that ships neither has neither verb, and no step may take either name. The
+profile also says how far a reading may fall behind before the surfaces say
+so — in commits or in days, with the number — and which words a proposed set
+may use for the kind of release it reads as.
 
 A session names the profile beside the root whenever it is not `code`, the
 backlog counts in the profile's own noun, and `shhh doctor` says which
@@ -410,6 +433,18 @@ verdict from a closed set: it *holds*, it *moved* and here is where to, it
 *changed* and here is what happens now, it is *gone*, it is *already done*,
 or it is *unknown*.
 
+**What is checked is the profile's; how it is answered is not.** The list in
+the paragraph above is what the `code` profile asks for, and it is a file in
+that profile's directory ([above](#a-profile-says-what-the-work-is)). A
+reading list asks instead whether each source is still there and still says
+what the item says it says, whether the question has already been answered
+somewhere else, and whether it has grown or narrowed; an operations backlog
+asks whether the task still applies at all. The verdicts, the markers and the
+diff they become stay the program's, because a diff needs a fact per line
+whatever the work is, and a claim that a paper exists is *gone* in the same
+sense a function is. A profile that says nothing to check has no reading at
+all, and asking for one says so.
+
 **The set is closed, and the only free text is one line of evidence under
 each verdict.** That is not tidiness. What comes of a reading is a diff, and
 a diff needs a fact per line: "moved, and it is in this file now" is a fact
@@ -432,14 +467,19 @@ groomer that made that claim into the item on its own would be the session
 writing the backlog rather than working it. A reading that could not be
 declined would also be one nobody could disagree with.
 
-**The header records the reading as a commit, not a date.** An accepted
-reading stamps the item with when it was taken and the commit it was taken
-against, and the surfaces that list items say when a reading has fallen more
-than a set number of commits behind — with the count, in the tone a warning
-takes. The commit is the load-bearing half: staleness is how far the tree has
-moved since the reading, which the repository can compute, where a date only
-says how long you waited. An item nobody has read this way says nothing at
-all, because absence is not staleness.
+**The header records the reading in whatever distance the profile measures.**
+An accepted reading stamps the item with when it was taken, and the surfaces
+that list items say when it has fallen further behind than the profile allows
+— with the count and the distance it is counted in, in the tone a warning
+takes. On a checkout of code the distance is commits and the stamp carries
+the commit as well as the day: staleness there is how far the tree has moved,
+which the repository can compute, where a date only says how long you waited.
+Where the work has no tree under it, it is the other way about, the stamp is
+the day alone, and a commit in the header would be a fact nothing reads. How
+fast a backlog goes stale is a fact about the work, so the threshold is the
+profile's too, and the setting overrides it rather than stating it. An item
+nobody has read this way says nothing at all, because absence is not
+staleness.
 
 Two things follow from the verdicts. An item every acceptance criterion of
 which reads *already done* is proposed for archiving, with the evidence as

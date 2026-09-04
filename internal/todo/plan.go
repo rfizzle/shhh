@@ -16,6 +16,14 @@ import (
 // and every candidate it left out with a word for why.
 // See docs/capabilities/todo.md#a-sprint-is-what-ships-together.
 
+// builtinCodePlanning is what makes a set of code items one set: the shapes
+// a checkout's work comes in. It is the `code` profile's wording, shipped as
+// a file in its directory as well, and it is here because the profile a
+// project gets before it has named one is this package's own value.
+const builtinCodePlanning = `This is SPRINT PLANNING over a project backlog: read the candidates below, change nothing, and recommend the set of items that should go next.
+
+A set is right when what ships together reads as one change. What makes one: a dependency chain that lands together, items that touch the same packages, a theme the titles share, a bug and the story that closes its cause.`
+
 // Omission is why a ready candidate was left out of the proposed set. The
 // set is closed for the reason the grooming verdicts are: a reason free to
 // be a sentence is a reason that will be one, and a left-out list of
@@ -72,15 +80,14 @@ const (
 	ReleaseMinor Release = "minor"
 )
 
-// Releases is the closed set, in the order the prompt offers it.
-func Releases() []Release { return []Release{ReleasePatch, ReleaseMinor} }
-
-// releaseOf reads one of the words, and reports whether it is one.
-func releaseOf(s string) (Release, bool) {
-	s = strings.ToLower(strings.TrimSpace(s))
-	for _, r := range Releases() {
-		if string(r) == s {
-			return r, true
+// releaseOf reads one of the profile's release words, and reports whether it
+// is one. A profile that states none takes no release line at all, so a
+// backlog whose work is not released writes a goal and nothing under it.
+func releaseOf(p Profile, s string) (Release, bool) {
+	s = strings.TrimSpace(s)
+	for _, r := range p.Releases {
+		if strings.EqualFold(r.Name, s) {
+			return Release(r.Name), true
 		}
 	}
 	return "", false
@@ -163,32 +170,53 @@ func (p Plan) GoalText() string {
 // answer with a different one.
 // See docs/capabilities/todo.md#a-sprint-is-what-ships-together.
 func (s *Store) PlanPrompt(candidates []Item, budget string) string {
-	var b strings.Builder
-	b.WriteString("This is SPRINT PLANNING over a project backlog: read the candidates below, change nothing, and recommend the set of items that should go next.\n\n")
-	b.WriteString("A set is right when what ships together reads as one change. What makes one: a dependency chain that lands together, items that touch the same packages, a theme the titles share, a bug and the story that closes its cause.\n\n")
-	b.WriteString("CANDIDATES — every item that is ready, in backlog order:\n")
+	var list strings.Builder
+	list.WriteString("CANDIDATES — every item that is ready, in backlog order:\n")
 	for _, it := range candidates {
-		b.WriteString(s.planCandidate(it))
+		list.WriteString(s.planCandidate(it))
 	}
+	budgetLine := ""
 	if budget != "" {
-		fmt.Fprintf(&b, "\nBUDGET: %s. The set you recommend has to fit inside it.\n", budget)
+		budgetLine = fmt.Sprintf("BUDGET: %s. The set you recommend has to fit inside it.", budget)
 	}
-	b.WriteString("\nRead the item files named above and the parts of the tree they touch. Where an item carries a reading, that reading is beside it and was accepted by the person: take the item as it stands rather than reading it against the tree again.\n\n")
-	b.WriteString(`Answer in exactly this shape and nothing else:
+	return joinPrompt(s.Profile.Plan, list.String(), budgetLine,
+		"Read the item files named above and the parts of the tree they touch. Where an item carries a reading, that reading is beside it and was accepted by the person: take the item as it stands rather than reading it against the tree again.",
+		planShape(s.Profile), planKey(s.Profile),
+		"Recommend nothing you cannot write a line about: a set is a reading somebody has to be able to argue with, and an item with no reason beside it is one they cannot.")
+}
+
+// planShape is the answer the reading has to come back in. It is the code's
+// whatever the profile said, for the reason every step's answer shape is:
+// the set is written to a file and worked, and a shape the parser cannot
+// read is a proposal nobody can accept. The release line is the one part a
+// profile decides, by having release words at all.
+func planShape(p Profile) string {
+	release := ""
+	if len(p.Releases) > 0 {
+		release = "release: <exactly one of: " + releaseWords(p) + ">\n"
+	}
+	return `Answer in exactly this shape and nothing else:
 
 goal: <one sentence saying what this set is for>
-release: <exactly one of: ` + releaseWords() + `>
-item: <slug>
+` + release + `item: <slug>
 why: <one line: what puts this item in this set>
 
 — one ` + "`item:`/`why:`" + ` pair per item you recommend, in the order they should be worked — then one line per candidate you left out:
 
-out: <slug> <exactly one of: ` + omissionWords() + `>
+out: <slug> <exactly one of: ` + omissionWords() + `>`
+}
 
-`)
-	b.WriteString(planKey())
-	b.WriteString("\n\nRecommend nothing you cannot write a line about: a set is a reading somebody has to be able to argue with, and an item with no reason beside it is one they cannot.")
-	return b.String()
+// joinPrompt runs the pieces of a prompt together with a blank line between
+// them, leaving out the ones this backlog has nothing for — a profile with
+// no release words, a reading asked for under no budget.
+func joinPrompt(parts ...string) string {
+	kept := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if p = strings.TrimSpace(p); p != "" {
+			kept = append(kept, p)
+		}
+	}
+	return strings.Join(kept, "\n\n")
 }
 
 // planCandidate is one candidate as the prompt states it: what the header
@@ -207,7 +235,7 @@ func (s *Store) planCandidate(it Item) string {
 	fmt.Fprintf(&b, "  %s\n", strings.Join(facts, " · "))
 	fmt.Fprintf(&b, "  file: %s\n", it.Path)
 	if r, ok := LoadReading(s.Root, it.Slug); ok {
-		fmt.Fprintf(&b, "  read %s · %s\n", r.Stamp(), readingCounts(r))
+		fmt.Fprintf(&b, "  read %s · %s\n", r.Stamp(s.Profile), readingCounts(r))
 	} else {
 		b.WriteString("  not read against the tree\n")
 	}
@@ -266,10 +294,10 @@ func orDash(s string) string {
 // releaseWords and omissionWords put each closed set on one line for the
 // prompt, built from the set rather than written out so a word added to the
 // vocabulary is one the prompt offers without anybody remembering to.
-func releaseWords() string {
-	words := make([]string, 0, len(Releases()))
-	for _, r := range Releases() {
-		words = append(words, string(r))
+func releaseWords(p Profile) string {
+	words := make([]string, 0, len(p.Releases))
+	for _, r := range p.Releases {
+		words = append(words, r.Name)
 	}
 	return strings.Join(words, ", ")
 }
@@ -285,10 +313,17 @@ func omissionWords() string {
 // planKey is what each word means. The wording is here rather than beside
 // the constants because it is an instruction to a model, and the constants
 // are a vocabulary the code shares with a card and a file.
-func planKey() string {
+func planKey(p Profile) string {
+	release := ""
+	if len(p.Releases) > 0 {
+		glosses := make([]string, 0, len(p.Releases))
+		for _, r := range p.Releases {
+			glosses = append(glosses, r.Name+": "+r.Gloss)
+		}
+		release = "- " + strings.Join(glosses, ". ") + ".\n"
+	}
 	return `What the words mean:
-- patch: every item in the set is a bug fix. minor: a story is in it.
-- waits: it depends on work that is not in this set.
+` + release + `- waits: it depends on work that is not in this set.
 - too big: the budget has no room for it.
 - unrelated: it belongs to different work, and shipping it here would make the set read as two changes.
 - stale: what it says about the code is no longer true, so it has to be read again before it is worked.`
@@ -312,18 +347,18 @@ const (
 // not there at all. The same rule takes an item the budget has no room for
 // out of the set and into the left-out list as `too big`, because a budget
 // the answer may overrun is not a budget.
-func ParsePlan(answer string, candidates []Item, budget SprintBudget) Plan {
+func ParsePlan(p Profile, answer string, candidates []Item, budget SprintBudget) Plan {
 	grade := map[string]string{}
 	for _, it := range candidates {
 		grade[it.Slug] = it.Grade()
 	}
-	var p Plan
+	var plan Plan
 	seen := map[string]bool{}
 	var cur *PlanItem
 	flush := func() {
 		if cur != nil && !seen[cur.Slug] {
 			seen[cur.Slug] = true
-			p.Items = append(p.Items, *cur)
+			plan.Items = append(plan.Items, *cur)
 		}
 		cur = nil
 	}
@@ -334,11 +369,11 @@ func ParsePlan(answer string, candidates []Item, budget SprintBudget) Plan {
 		switch {
 		case hasMarker(line, goalMarker):
 			flush()
-			p.Goal = value(line, goalMarker)
+			plan.Goal = value(line, goalMarker)
 		case hasMarker(line, releaseMarker):
 			flush()
-			if r, ok := releaseOf(value(line, releaseMarker)); ok {
-				p.Release = r
+			if r, ok := releaseOf(p, value(line, releaseMarker)); ok {
+				plan.Release = r
 			}
 		case hasMarker(line, itemMarker):
 			flush()
@@ -353,12 +388,12 @@ func ParsePlan(answer string, candidates []Item, budget SprintBudget) Plan {
 			flush()
 			if slug, why, ok := parseOmission(value(line, outMarker), grade); ok && !seen[slug] {
 				seen[slug] = true
-				p.Left = append(p.Left, PlanOmission{Slug: slug, Why: why})
+				plan.Left = append(plan.Left, PlanOmission{Slug: slug, Why: why})
 			}
 		}
 	}
 	flush()
-	return p.underBudget(budget, grade)
+	return plan.underBudget(budget, grade)
 }
 
 // known reports the slug is one of the candidates, including an ungraded

@@ -10,6 +10,13 @@
 name = "ops"
 noun = "task"
 
+# What dates an operational reading is the calendar: a fortnight is long
+# enough for a host to have been replaced and a runbook to have been
+# rewritten, and the tree these items are about is not this checkout.
+[stale]
+measure = "days"
+threshold = 14
+
 [[field]]
 name = "kind"
 default = "task"
@@ -23,7 +30,7 @@ values = [
 name = "priority"
 
 [[step]]
-name = "plan"
+name = "scope"
 kind = "turn"
 mode = "read"
 standards = true
@@ -36,7 +43,7 @@ reads = ["plan", "questions"]
 [[step]]
 name = "pause"
 kind = "gate"
-under = "plan"
+under = "scope"
 pause = ["questions"]
 
 [[step]]

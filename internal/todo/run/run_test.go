@@ -634,7 +634,7 @@ func TestHeldBy(t *testing.T) {
 // The grooming prompt names the item, offers the closed verdict set and no
 // other word, and asks for the shape the reader parses.
 func TestRun_TheGroomingPromptOffersTheClosedSet(t *testing.T) {
-	p := GroomPrompt(item("M"))
+	p := GroomPrompt(BuiltinCode(), item("M"))
 	if !strings.Contains(p, "GROOMING") || !strings.Contains(p, "BACKLOG ITEM x") {
 		t.Fatalf("prompt = %q", p)
 	}
@@ -647,6 +647,28 @@ func TestRun_TheGroomingPromptOffersTheClosedSet(t *testing.T) {
 		if !strings.Contains(p, marker) {
 			t.Errorf("prompt does not name the %q line", marker)
 		}
+	}
+}
+
+// What a reading is told to check is the profile's and the only part that
+// is: a checkout of code is asked about its tree, a reading list about its
+// sources, and both answer in the same verdicts to the same markers.
+func TestRun_TheGroomingPromptChecksWhatTheProfileNames(t *testing.T) {
+	code := GroomPrompt(BuiltinCode(), item("M"))
+	if !strings.Contains(code, "every `path:line`") {
+		t.Fatalf("the code profile's own questions are not in its prompt:\n%s", code)
+	}
+	it := item("M")
+	it.Profile.Name = "research"
+	it.Profile.Groom = "Check every source the question names is still there.\n\n{{item}}"
+	other := GroomPrompt(BuiltinCode(), it)
+	switch {
+	case !strings.Contains(other, "Check every source the question names"):
+		t.Errorf("the profile's own questions are not asked:\n%s", other)
+	case strings.Contains(other, "every `path:line`"):
+		t.Errorf("another profile's questions were asked:\n%s", other)
+	case !strings.Contains(other, "BACKLOG ITEM x") || !strings.Contains(other, "verdict:"):
+		t.Errorf("the item and the answer shape are the runner's:\n%s", other)
 	}
 }
 
@@ -739,10 +761,10 @@ func TestWordings_StandardsIsSharedByTheStagesThatChangeTheTree(t *testing.T) {
 			t.Errorf("a stage kept the built-in standards sentence:\n%s", got)
 		}
 	}
-	// The grooming pass is not a stage of a run and takes no wording of its
-	// own, so it states the built-in sentence whatever a run was configured
-	// with.
-	if groom := GroomPrompt(it); strings.Contains(groom, "MY STANDARDS") {
+	// The grooming pass is not a stage of a run, so a file that replaced a
+	// stage's wording does not reach it: its instruction and its standards
+	// sentence are the profile's, and this run's replacements are the run's.
+	if groom := GroomPrompt(BuiltinCode(), it); strings.Contains(groom, "MY STANDARDS") {
 		t.Errorf("the grooming pass took a run's wording:\n%s", groom)
 	}
 }

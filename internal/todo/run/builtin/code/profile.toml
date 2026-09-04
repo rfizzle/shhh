@@ -11,6 +11,13 @@ name = "code"
 noun = "item"
 grade = "size"
 
+# A reading of an item is a reading against the tree, so what dates it is
+# the tree moving rather than the calendar. Fifty commits is a few days of a
+# busy checkout and a month of a quiet one.
+[stale]
+measure = "commits"
+threshold = 50
+
 [[field]]
 name = "kind"
 default = "story"
@@ -36,6 +43,17 @@ values = [
   { name = "M", gloss = "an afternoon, a few files, some judgement", glyph = "M" },
   { name = "L", gloss = "days, many files, or design decisions still open", glyph = "L" },
 ]
+
+# What kind of release a proposed set reads as. shhh names no version and
+# makes no tag; this is one line of the sprint's goal, and it is here because
+# a backlog whose work is not released has no such line to write.
+[[release]]
+name = "patch"
+gloss = "every item in the set is a bug fix"
+
+[[release]]
+name = "minor"
+gloss = "a story is in it"
 
 [[step]]
 name = "research"

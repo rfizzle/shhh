@@ -75,6 +75,9 @@ func (m Model) startTodoGroom(args []string) (tea.Model, tea.Cmd) {
 	if !m.todosEnabled() {
 		return m.systemNotice("The backlog is unavailable in this session.")
 	}
+	if !m.todos.Profile.Grooms() {
+		return m.systemNotice(fmt.Sprintf("The %s profile does not groom: it says nothing about what one of its items claims, so there is nothing to read one against.", m.todos.Profile.Name))
+	}
 	if m.todoGroomer.going() {
 		return m.systemNotice(fmt.Sprintf("Already reading %s; the card opens when the turn is over.", m.todoGroomer.slug))
 	}
@@ -140,7 +143,7 @@ func (m Model) groomNext() (tea.Model, tea.Cmd) {
 		g.turn = int(m.turnCount) + 1
 		g.mark = len(m.transcript)
 		m.applyMode(agent.ModePlan)
-		return m.sendUserMessageAs(run.GroomPrompt(it), "groom "+slug)
+		return m.sendUserMessageAs(run.GroomPrompt(m.todos.Pipeline, it), "groom "+slug)
 	}
 	return m.endTodoGroom("")
 }
@@ -308,7 +311,7 @@ func todoGroomRow(f todo.Finding) string {
 // written only when the person accepts" a fact about the card.
 func todoGroomStampRow(before todo.Item, r todo.Reading) string {
 	return components.DimText(groomField("the reading")) +
-		components.LineChange(groomedLine(before), groomedLine(todo.Item{Groomed: r.Stamp()}))
+		components.LineChange(groomedLine(before), groomedLine(todo.Item{Groomed: r.Stamp(before.Profile)}))
 }
 
 // groomField is the row's left column, wide enough for the longest word in
@@ -399,7 +402,7 @@ func (m *Model) writeGrooming(r todo.Reading, accepted []int) string {
 		case i >= 0 && i < len(changes):
 			take = append(take, changes[i])
 		case i == len(changes):
-			stamp = r.Stamp()
+			stamp = r.Stamp(m.todos.Profile)
 		}
 	}
 	it := m.todoGroomer.item
@@ -491,7 +494,7 @@ func (m *Model) refreshGroomStale() {
 		m.todoGroomer.stale = nil
 		return
 	}
-	m.todoGroomer.stale = todo.Stale(m.todos.Root, m.todoStore.Items, m.todos.GroomStale)
+	m.todoGroomer.stale = todo.Stale(m.todos.Root, m.todos.Profile, m.todoStore.Items, m.todos.GroomStale)
 }
 
 // groomStaleNote is what a surface says about an item whose reading has
@@ -502,5 +505,8 @@ func (m Model) groomStaleNote(slug string) string {
 	if !ok {
 		return ""
 	}
-	return fmt.Sprintf("groomed %d commits ago", n)
+	// The distance is named because the number means nothing without it: a
+	// backlog measured in days and one measured in commits both say "50",
+	// and only one of them is a week.
+	return fmt.Sprintf("groomed %d %s ago", n, m.todos.Profile.Stale.Measure)
 }
