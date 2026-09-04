@@ -261,3 +261,107 @@ func TestSelect_DimOptionCarriesItsGlyph(t *testing.T) {
 		t.Fatalf("an unavailable option says so in a glyph, not only in a colour:\n%s", view)
 	}
 }
+
+// A row that carries its own answers is a field: the key that toggles a
+// checkbox elsewhere steps it, wrapping, and the card is never left.
+func TestSelect_FieldRowsCycleInPlace(t *testing.T) {
+	s := &Select{Unnumbered: true, Options: []SelectOption{
+		{Label: "kind", Value: "story", Values: []string{"story", "bug", "chore"}},
+		{Label: "size", Value: "M", Values: []string{"S", "M", "L"}},
+		{Label: "waits on", Value: "nothing"},
+	}}
+	if done, _ := s.Update(key(" ")); done {
+		t.Fatal("changing a field should not finish the card")
+	}
+	if s.Options[0].Value != "bug" {
+		t.Fatalf("kind = %q", s.Options[0].Value)
+	}
+	s.Update(key(" "))
+	s.Update(key(" "))
+	if s.Options[0].Value != "story" {
+		t.Fatalf("the scale should wrap, got %q", s.Options[0].Value)
+	}
+	// A row with no answers of its own is not one this key lands on.
+	s.Focus = 2
+	s.Update(key(" "))
+	if s.Options[2].Value != "nothing" {
+		t.Fatalf("a plain row changed: %q", s.Options[2].Value)
+	}
+	// And the key is offered, so it is discoverable.
+	if view := s.View(60); !strings.Contains(view, "change it") {
+		t.Fatalf("the key row should offer the field key:\n%s", view)
+	}
+}
+
+// A value the card was handed that is not on the row's scale — a header field
+// off its scale, as a file may well carry — steps back onto it.
+func TestSelect_AnOffScaleValueCyclesOntoTheScale(t *testing.T) {
+	s := &Select{Options: []SelectOption{{Label: "priority", Value: "urgent",
+		Values: []string{"high", "medium", "low"}}}}
+	s.Update(key(" "))
+	if s.Options[0].Value != "high" {
+		t.Fatalf("value = %q", s.Options[0].Value)
+	}
+}
+
+// The reading under the options folds before the options do, and says how
+// much it folded.
+func TestSelect_ProseFoldsUnderTheOptions(t *testing.T) {
+	s := &Select{Options: []SelectOption{{Label: "kind", Value: "story", Values: []string{"story"}}},
+		Body: []string{"one", "two", "three", "four", "five", "six"}}
+	whole := s.View(60)
+	if !strings.Contains(whole, "six") {
+		t.Fatalf("an unbounded card should draw the whole reading:\n%s", whole)
+	}
+	s.MaxLines = 7
+	folded := s.View(60)
+	switch {
+	case !strings.Contains(folded, "kind"):
+		t.Fatalf("the options are what a key lands on and must stay:\n%s", folded)
+	case !strings.Contains(folded, "one"):
+		t.Fatalf("the reading should not fold to nothing:\n%s", folded)
+	case strings.Contains(folded, "six"):
+		t.Fatalf("the reading should have folded:\n%s", folded)
+	case !strings.Contains(folded, "↓"):
+		t.Fatalf("a fold should say how much it hid:\n%s", folded)
+	}
+}
+
+// The warning is pinned above the key row, so it cannot scroll away.
+func TestSelect_WarningIsPinned(t *testing.T) {
+	s := &Select{MaxLines: 8, Options: planOptions(),
+		Warning: "nothing in the backlog is named cache-ttl"}
+	view := s.View(60)
+	if !strings.Contains(view, "named cache-ttl") {
+		t.Fatalf("the warning should be on the card:\n%s", view)
+	}
+}
+
+// Checking nothing is an answer on a card that is setting a list, and the
+// slip it always was on one that is choosing what to do with one.
+func TestMultiSelect_AllowNoneTakesAnEmptyAnswer(t *testing.T) {
+	s := NewMultiSelect("dependencies", planOptions())
+	done, res := s.Update(key("enter"))
+	if done || res.Indices != nil {
+		t.Fatal("a card choosing what to do with a list refuses an empty answer")
+	}
+	s.AllowNone = true
+	done, res = s.Update(key("enter"))
+	if !done || len(res.Indices) != 0 || res.Canceled {
+		t.Fatalf("an empty answer should be taken: %v %+v", done, res)
+	}
+}
+
+// The host's own key on the focused row is offered on the key row, worded by
+// the host, and never dropped.
+func TestMultiSelect_HostActionsAreOffered(t *testing.T) {
+	s := NewMultiSelect("proposals", planOptions())
+	s.Actions = []string{"e its header"}
+	view := s.View(70)
+	if !strings.Contains(view, "e its header") {
+		t.Fatalf("the action should be on the key row:\n%s", view)
+	}
+	if !strings.Contains(view, "apply (0)") {
+		t.Fatalf("the count the card always carried should still be there:\n%s", view)
+	}
+}

@@ -150,6 +150,26 @@ tools were called, never a tool's own output, so a page the session
 fetched or a test's stdout cannot write an item into the project's list
 of what to do next.
 
+The same door opens from a sentence. Say what the work is in one line and a
+model drafts the single item it describes — the title, what sort of work it
+is, how soon, how big, the story, the criteria, the tests and what it waits
+on — onto the same card, which writes nothing until you accept it. A drafted
+dependency that names nothing in the backlog is a warning on the card and is
+left off the file, because a dependency on nothing would hold the item back
+forever.
+
+The card is also where a header stops needing an editor. An item's header is
+a closed set of answers, so each one is a row you step through in place —
+what sort of work, how soon, how big — and what it waits on opens the backlog
+itself, so a dependency is a slug that exists rather than a name somebody
+typed. The proposals a session reads out of itself are set the same way,
+which is how an extracted item lands graded and connected instead of on its
+defaults. The sections under the header are prose and stay prose: one key
+hands the whole item to your own editor, exactly as editing a written item
+does, and whatever the file holds when the editor exits is the draft. Nothing
+reaches the backlog directory until the card is accepted, and the item that
+lands names the session that wrote it.
+
 ## The backlog is in view, and the file is still the item
 
 A session shows the backlog three ways, and each answers a different

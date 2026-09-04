@@ -200,3 +200,69 @@ func TestExtractSchema_ClosesAndRequiresEverything(t *testing.T) {
 	}
 	walk(shape, "")
 }
+
+const draftJSON = `{"items": [
+	{"title": "Give the cache a lifetime", "kind": "Story", "priority": "high", "size": "s",
+	 "story": "As a user, I want entries to expire so that stale answers stop being served.",
+	 "acceptance_criteria": ["An entry past its lifetime is a miss"], "tasks": ["read the setting"],
+	 "tests": ["go test ./internal/cache"], "notes": ["the default is an hour"], "depends_on": ["cache-store"]},
+	{"title": "A second item nobody asked for", "kind": "chore"}
+]}`
+
+func TestDraft_OneItemFromASentence(t *testing.T) {
+	fp := &fakeProvider{events: []provider.StreamEvent{{ToolCalls: []provider.ToolCall{{Name: ExtractToolName, Arguments: draftJSON}}}}}
+	d := NewDrafter(fp, ExtractConfig{Model: "m"})
+	r := d.Draft(context.Background(), DraftRequest{
+		Sentence: "the cache never expires anything",
+		Existing: []string{"cache-store — Store the entries"},
+	})
+	if r.Failed {
+		t.Fatalf("result = %+v", r)
+	}
+	// The prompt asks for one item and only one is kept: a model that
+	// answered with two answered a question nobody asked.
+	if len(r.Proposals) != 1 {
+		t.Fatalf("proposals = %d, want 1", len(r.Proposals))
+	}
+	p := r.Proposals[0]
+	if p.Kind != "story" || p.Size != "S" || p.DependsOn[0] != "cache-store" {
+		t.Errorf("normalised proposal = %+v", p)
+	}
+	if !strings.Contains(fp.prompt, "UNTRUSTED REQUEST") ||
+		!strings.Contains(fp.prompt, "the cache never expires anything") ||
+		!strings.Contains(fp.prompt, "cache-store — Store the entries") {
+		t.Errorf("request = %q", fp.prompt)
+	}
+	// The sentence travels as data in the user turn; the instruction is the
+	// system message and says nothing about this request.
+	if strings.Contains(fp.system, "the cache never expires anything") {
+		t.Errorf("the sentence reached the instruction channel: %q", fp.system)
+	}
+}
+
+func TestDraft_NothingToDraftFrom(t *testing.T) {
+	fp := &fakeProvider{}
+	d := NewDrafter(fp, ExtractConfig{Model: "m"})
+	r := d.Draft(context.Background(), DraftRequest{Sentence: "   "})
+	if !r.Failed || !strings.Contains(r.Err, "nothing to draft") {
+		t.Fatalf("result = %+v", r)
+	}
+	if fp.got.Model != "" {
+		t.Error("an empty sentence still reached the provider")
+	}
+}
+
+func TestDraft_DisabledAndEmptyAnswer(t *testing.T) {
+	var off *Drafter
+	if off.Enabled() {
+		t.Error("a nil drafter reports enabled")
+	}
+	if r := off.Draft(context.Background(), DraftRequest{Sentence: "x"}); !r.Failed {
+		t.Error("a nil drafter drafted something")
+	}
+	fp := &fakeProvider{events: []provider.StreamEvent{{Token: "sorry, no."}}}
+	d := NewDrafter(fp, ExtractConfig{Model: "m"})
+	if r := d.Draft(context.Background(), DraftRequest{Sentence: "x"}); !r.Failed || !strings.Contains(r.Err, "proposed nothing") {
+		t.Errorf("result = %+v", r)
+	}
+}

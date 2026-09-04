@@ -2,6 +2,7 @@ package components
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -42,6 +43,14 @@ type SelectOption struct {
 	Meta        string
 	MetaTone    FieldTone
 	RequireNote bool
+	// Values are the answers this row can hold, and Value is which of them
+	// it holds now. A row that carries them is a field rather than a choice:
+	// the key that toggles a checkbox elsewhere steps this row's answer to
+	// the next one, in place, and the card is never left. It is how a header
+	// is set without a form and without an editor — kind, priority, size —
+	// and a row that sets none behaves exactly as it did before this field
+	// existed.
+	Values []string
 	// Header marks a row that labels the run of options beneath it rather than
 	// offering one — the palette's COMMANDS / SESSIONS / FILES rails (
 	// docs/interface/surfaces.md#the-palette). Focus steps over it, it is never
@@ -92,6 +101,12 @@ type Select struct {
 	// Hint replaces the default key-hint line for a surface whose keys are
 	// not the default ones.
 	Hint string
+	// HintKeys is the same replacement given as its segments, for a surface
+	// whose row is long enough that a narrow terminal has to stack it rather
+	// than clip it: nothing on a key row is ever truncated
+	// (docs/interface/principles.md#fold-never-hide). Hint is the pre-joined
+	// form, kept for the rows short enough that it never came up.
+	HintKeys []string
 	// AltKey is a second way to take the focused option, and AltLabel is what
 	// it buys. They are for a card whose choice has two readings — /model's
 	// "this session" and "and from now on" — where an option that quietly
@@ -127,6 +142,18 @@ type Select struct {
 	// typed into it. A row opened by a key names what it is for; a surface
 	// that is a query line from the start (the palette) does not need telling.
 	QueryHint string
+
+	// Body is a reading pinned under the options, in rows the caller has
+	// already rendered — the prose of the thing the options are about. It is
+	// the last thing the card spends height on and the first it folds: the
+	// options are what a key can land on, and a card that dropped those to
+	// keep the reading would be a card that cannot be answered.
+	Body []string
+	// Warning is the one line a card states above its key row when something
+	// about the answer it is holding will not survive being taken — a
+	// dependency that names nothing, a value off its scale. Pinned like the
+	// hints, because a warning that scrolls away is a warning nobody made.
+	Warning string
 
 	// Filterable offers / on the key row and lets it open the query line.
 	// Past a dozen entries walking is the slow way, so every picker
@@ -251,6 +278,8 @@ func (s *Select) Update(msg tea.KeyPressMsg) (done bool, result SelectResult) {
 		return true, SelectResult{Index: s.Focus, Alt: true}
 	}
 	switch {
+	case keys.Is(pressed, keys.Select.Toggle):
+		s.cycle(1)
 	case keys.Is(pressed, keys.Select.Filter):
 		if s.Filterable {
 			s.Filtering = true
@@ -275,6 +304,39 @@ func (s *Select) Update(msg tea.KeyPressMsg) (done bool, result SelectResult) {
 		}
 	}
 	return false, SelectResult{}
+}
+
+// cycle steps the focused row's own answer to the next of the answers it
+// carries, wrapping at the end. A row that carries none is not a row this key
+// can land on, and nothing happens — which is what keeps the key free on
+// every card whose rows are choices rather than fields.
+//
+// A value that is not one of the row's own — a header field off its scale, as
+// a file may well carry — steps to the first, which is how an off-scale value
+// is got back onto the scale without a second key for it.
+func (s *Select) cycle(delta int) bool {
+	if s.Focus < 0 || s.Focus >= len(s.Options) {
+		return false
+	}
+	opt := &s.Options[s.Focus]
+	if len(opt.Values) == 0 {
+		return false
+	}
+	n := len(opt.Values)
+	at := slices.Index(opt.Values, opt.Value)
+	opt.Value = opt.Values[((at+delta)%n+n)%n]
+	return true
+}
+
+// cycles reports whether any row is a field, which is what puts the key that
+// changes one on the key row.
+func (s *Select) cycles() bool {
+	for _, opt := range s.Options {
+		if len(opt.Values) > 0 {
+			return true
+		}
+	}
+	return false
 }
 
 // editQuery applies one keystroke to the open query line: ctrl+u clears it,
@@ -313,16 +375,72 @@ func typedRunes(msg tea.KeyPressMsg) string { return msg.Text }
 
 func (s *Select) View(width int) string {
 	s.normalizeFocus()
-	// The query line and the key hints are pinned: the list scrolls under
-	// them, so what the card spends on them comes off the list's budget
-	// before the window is drawn.
+	// The query line, the warning and the key hints are pinned: the list
+	// scrolls under them, so what the card spends on them comes off the
+	// list's budget before the window is drawn.
 	head := s.queryRows(width)
-	tail := hintRows(s.hintSegments(width), width)
-	body, shown := s.visibleRows(width, s.bodyBudget(len(head)+len(tail)), !s.Unnumbered)
+	tail := append(s.warningRows(width), hintRows(s.hintSegments(width), width)...)
+	budget := s.bodyBudget(len(head) + len(tail))
+	// The reading under the options is what the options are about, so the
+	// options keep their rows and the reading folds. It keeps a row wherever
+	// the card has one to spare, down to the marker alone: a reading that
+	// vanished leaves a frame around four fields, which says nothing about
+	// what the fields are for.
+	options := budget
+	if len(s.Body) > 0 && budget > 1 {
+		options = max(budget-minProseRows, 1)
+	}
+	body, shown := s.visibleRows(width, options, !s.Unnumbered)
+	prose := -1
+	if budget > 0 {
+		prose = max(budget-len(body), 0)
+	}
 	rows := append(head, body...)
+	rows = append(rows, s.proseRows(width, prose)...)
 	rows = append(rows, tail...)
 	rows = boundRows(rows, s.MaxLines)
 	return Card{Title: s.Title, Chips: s.chips(shown)}.Render(rows, width)
+}
+
+// minProseRows is the least the reading under the options is worth keeping:
+// a row of it and the marker saying how much was folded. Below that the card
+// is too short to be showing prose at all, and the whole budget goes to the
+// options.
+const minProseRows = 2
+
+// warningRows is the pinned warning, or nothing. It wraps rather than clips:
+// a warning is a sentence, and half a sentence about what will not survive
+// being taken is worse than no room for it at all.
+func (s *Select) warningRows(width int) []string {
+	if s.Warning == "" {
+		return nil
+	}
+	return wrapWarn(s.Warning, Card{}.Inner(width))
+}
+
+// proseRows is the reading under the options, folded to the rows it was
+// given with the count of what was folded — the same marker the lists use, so
+// a reader who has learned one has learned the other. A negative budget is a
+// card with no height bound, which is what a test or a self-sizing surface
+// gets.
+func (s *Select) proseRows(width, budget int) []string {
+	if len(s.Body) == 0 || budget == 0 {
+		return nil
+	}
+	inner := Card{}.Inner(width)
+	if budget < 0 || len(s.Body) <= budget {
+		rows := make([]string, 0, len(s.Body))
+		for _, l := range s.Body {
+			rows = append(rows, Clip(l, inner))
+		}
+		return rows
+	}
+	keep := max(budget-1, 0)
+	rows := make([]string, 0, budget)
+	for _, l := range s.Body[:keep] {
+		rows = append(rows, Clip(l, inner))
+	}
+	return append(rows, ListOverflowRow("↓", len(s.Body)-keep, "", inner))
 }
 
 // hintSegments is the card's key row, and the order it gives things up in.
@@ -353,6 +471,9 @@ func (s *Select) hasRowKeys() bool {
 }
 
 func (s *Select) hintSegments(width int) []string {
+	if len(s.HintKeys) > 0 {
+		return s.HintKeys
+	}
 	if s.Hint != "" {
 		return []string{s.Hint}
 	}
@@ -377,6 +498,13 @@ func (s *Select) hintSegments(width int) []string {
 			back, offer(keys.Select.Cancel)}
 	}
 	move := offer(keys.Select.MoveJK)
+	// A card whose rows are fields offers the key that changes one. It is an
+	// offer and never dropped: on such a card it is the only key that does
+	// anything to what the card is holding.
+	change := ""
+	if s.cycles() {
+		change = words(keys.Select.Toggle, "change it")
+	}
 	jump, filter := fmt.Sprintf("1–%d jump", s.selectable()), ""
 	if s.Unnumbered {
 		// No numbers to offer means no j/k either, on a list typed into.
@@ -400,9 +528,9 @@ func (s *Select) hintSegments(width int) []string {
 		actions = append(actions, offer(b))
 	}
 	rungs := [][]string{
-		rung([]string{move, take, alt}, actions, []string{jump, filter, offer(keys.Select.Cancel)}),
-		rung([]string{move, take, alt}, actions, []string{filter, offer(keys.Select.Cancel)}),
-		rung([]string{offer(keys.Select.Move), take, alt}, actions, []string{filter, offer(keys.Select.Cancel)}),
+		rung([]string{move, change, take, alt}, actions, []string{jump, filter, offer(keys.Select.Cancel)}),
+		rung([]string{move, change, take, alt}, actions, []string{filter, offer(keys.Select.Cancel)}),
+		rung([]string{offer(keys.Select.Move), change, take, alt}, actions, []string{filter, offer(keys.Select.Cancel)}),
 	}
 	for _, rung := range rungs {
 		segs := presentSegments(rung)

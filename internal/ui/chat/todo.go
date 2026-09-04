@@ -19,6 +19,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/todo/run"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -38,6 +39,9 @@ type Todos struct {
 	// Extractor reads the session into proposed items behind a bare
 	// /todo add. Nil, or disabled, leaves only the by-hand form.
 	Extractor *todo.Extractor
+	// Drafter turns the sentence after /todo new into one proposed item.
+	// Nil, or disabled, leaves only the by-hand form.
+	Drafter *todo.Drafter
 	// NoCommit is the project's standing answer to whether a run ends in a
 	// commit, from the config. The zero value is a commit, which is what
 	// the setting's own default is: a host that says nothing gets the
@@ -191,6 +195,9 @@ func (m Model) todoCommand(parts []string) (tea.Model, tea.Cmd) {
 	if len(parts) == 2 && parts[1] == "add" {
 		return m.startTodoExtract()
 	}
+	if len(parts) >= 2 && parts[1] == "new" {
+		return m.startTodoDraft(strings.Join(parts[2:], " "))
+	}
 	// Planning is the one sprint verb the session takes rather than the
 	// manager: it proposes a set and writes nothing until the card is
 	// accepted. Every other sprint verb is textual and goes through the
@@ -229,7 +236,7 @@ func (m Model) todoCommand(parts []string) (tea.Model, tea.Cmd) {
 // after it that are refused rather than the word itself.
 func todoWrites(args []string) bool {
 	switch args[0] {
-	case "edit", "add", "block", "open", "done", "drop", "run", "stop":
+	case "edit", "add", "new", "block", "open", "done", "drop", "run", "stop":
 		return true
 	case "sprint":
 		return len(args) > 1
@@ -354,6 +361,7 @@ func (m Model) todoEditorFinished(msg todoEditorDoneMsg) (tea.Model, tea.Cmd) {
 	if err != nil {
 		return m.systemNotice(fmt.Sprintf("%s does not load as an item now — %v. It stays on disk; fix the header and it comes back.", filepath.Base(msg.path), err))
 	}
+	m.signal(observe.SignalTodo, observe.TodoEdit)
 	note := fmt.Sprintf("Saved %s: %s (%s, %s", it.Slug, it.Title, it.Priority, it.Status)
 	if it.Size != "" {
 		note += ", " + string(it.Size)
@@ -467,7 +475,7 @@ func (m Model) todoScreenAct(cmd components.BacklogCommand) (tea.Model, tea.Cmd)
 		return m.startTodoRun(cmd.Slug, m.todos.NoCommit)
 	case components.BacklogNew:
 		m.shutTodoScreen()
-		return m.startTodoExtract()
+		return m.composeTodoNew()
 	}
 	note := m.todoScreenVerb(cmd)
 	m.reloadTodos()
@@ -480,6 +488,22 @@ func (m Model) todoScreenAct(cmd components.BacklogCommand) (tea.Model, tea.Cmd)
 	// the session, or closing the surface loses it.
 	m.backlog.Notice = firstLine(note)
 	return m.systemNotice(note)
+}
+
+// composeTodoNew is what `n` leaves behind: the command in the draft box with
+// the cursor after it, waiting for the sentence. A draft is made from a
+// sentence and the screen has nowhere to type one, so the key hands the
+// keyboard back with the question already asked rather than opening a card
+// with nothing in it. A draft already in the box is not thrown away for it.
+func (m Model) composeTodoNew() (tea.Model, tea.Cmd) {
+	if strings.TrimSpace(m.input.Value()) != "" {
+		return m.systemNotice("There is a draft in the input; " + todoNewUsage + " once it is sent or cleared.")
+	}
+	m.input.SetValue(todoNewPrefix)
+	m.input.MoveToEnd()
+	m.syncCompletions()
+	m.syncViewport()
+	return m, nil
 }
 
 // todoScreenVerb is the act as the verb it is. Every one of them goes

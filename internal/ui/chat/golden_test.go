@@ -1335,6 +1335,42 @@ func TestGolden_ResumedRow(t *testing.T) {
 	})
 }
 
+// TestGolden_ItemDraft captures the card an item is written on without
+// leaving the session: the header as rows a key steps in place, the slug the
+// title will become on the title rail, the body rendered by the renderer the
+// transcript uses, and — pinned above the key row, where it cannot scroll
+// away — the warning about a dependency that names nothing.
+//
+// The second panel is the same card with the dependency row opened. The
+// picker is the backlog itself, which is what makes a dependency a slug that
+// exists rather than a name somebody typed.
+func TestGolden_ItemDraft(t *testing.T) {
+	captureGolden(t, "item-draft", "the item draft card", goldenWidths, func(width int) []golden.Panel {
+		root := todoTestRoot(t)
+		m := frameModel(t, width, 40)
+		m.sessionName = "2026-09-04 09:00:00"
+		m = m.WithTodos(Todos{Root: root, Manage: func([]string) string { return "" },
+			Detail: func(*todo.Store, todo.Item) string { return "" }})
+		proposals, ok := todo.ParseProposals(draftFixture)
+		if !ok {
+			t.Fatal("the fixture should parse as a proposal")
+		}
+		m.openTodoDraft(proposals[0], -1)
+		drafted := m.panelView()
+		opened := m
+		for _, k := range []tea.KeyPressMsg{keyDown, keyDown, keyDown, keySpace} {
+			updated, _ := opened.Update(k)
+			opened = updated.(Model)
+		}
+		return []golden.Panel{
+			{Label: "as it was drafted · the header on rows, the reading under them",
+				View: drafted},
+			{Label: "the dependency row opened on the backlog",
+				View: opened.panelView()},
+		}
+	})
+}
+
 // TestGolden_TodoSprint captures the surface the sprint is chosen on: the
 // ready items under a size budget, everything checked, with each row saying
 // in the facts a filter has why it is in the set — its priority, its size,

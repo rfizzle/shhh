@@ -260,3 +260,40 @@ prose in a column too narrow to read a sentence in.
 
 When there is an artboard, these four decisions are what it has to reconcile
 with, and where the two differ the artboard wins.
+
+## The item draft card's layout was decided in the binary
+
+There is no artboard for it. Most of the card needed no decision — the frame,
+the title rail and its chip, the pointer, the windowed rows and the counted
+overflow marker are the selector's, drawn already. Four things it could not
+take from anywhere, and they were decided here:
+
+**A header field is a row, and the checkbox key steps it.** The alternative
+was a key per field, and the register has no letters left that mean "kind" or
+"size" on a card that also has to offer the editor and the writing. A row that
+carries its own answers reads as a field, the pointer already lands on it, and
+the key that toggles a checkbox where a row has two answers steps a scale
+where it has three. A value the model gave that is off the scale steps back
+onto it rather than needing a key of its own.
+
+**What it waits on is a row that opens a list, not a scale.** Dependencies
+are the backlog rather than a closed set, so the same key opens the backlog on
+that row. Checking nothing there is an answer — it is how dependencies are
+cleared — where on every other multi-select an empty answer is the slip it
+looks like.
+
+**The reading folds before the rows do.** The body is drawn under the header
+in the renderer the transcript uses, and the card is bounded by the panel. The
+rows a key can land on are kept and the prose folds with the count of what it
+hid, because a card that dropped its rows to keep its reading cannot be
+answered. It keeps a row wherever the card has one to spare, down to the
+marker alone: a reading that vanished leaves a frame around four fields, which
+says nothing about what the fields are for.
+
+**The warning is pinned above the key row and wraps.** What will not survive
+being taken — a dependency naming nothing — is stated where it cannot scroll
+away, and it wraps rather than clips, because half a sentence about what is
+about to be dropped is worse than no room for it at all.
+
+When there is an artboard, these four decisions are what it has to reconcile
+with, and where the two differ the artboard wins.

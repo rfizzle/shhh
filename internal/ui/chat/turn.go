@@ -552,6 +552,12 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 	case todoProposalsMsg:
 		return answered(m.finishTodoExtract(msg))
 
+	case todoDraftMsg:
+		return answered(m.finishTodoDraft(msg))
+
+	case todoDraftEditorDoneMsg:
+		return answered(m.todoDraftEditorFinished(msg))
+
 	case todoVerifyMsg:
 		return answered(m.finishTodoVerify(msg))
 

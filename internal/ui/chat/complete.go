@@ -274,7 +274,7 @@ func buildSlashCommands() []slashCommand {
 			argSpecs: []argSpec{{dynamic: agentArgs, fuzzy: true}}},
 		{name: "/detach", desc: "Back to the orchestrator (also esc)",
 			enabled: func(m *Model) bool { return m.subagents != nil && m.attachedTo != "" }},
-		{name: "/todo", args: "[show|edit|add|block|open|done|drop|run|sprint|status|stop]", desc: "The project's backlog (bare /todo opens the screen)",
+		{name: "/todo", args: "[show|edit|new|add|block|open|done|drop|run|sprint|status|stop]", desc: "The project's backlog (bare /todo opens the screen)",
 			enabled: func(m *Model) bool { return m.todosEnabled() },
 			argSpecs: []argSpec{
 				{options: []argOption{

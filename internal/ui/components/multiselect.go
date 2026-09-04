@@ -32,7 +32,23 @@ type MultiSelect struct {
 	Checked  []bool
 	Focus    int
 	MaxLines int
-	notice   string
+	// AllowNone makes an empty answer an answer. A card that is choosing
+	// what to do with a list — which proposals to write, which hunks to
+	// stage — has nothing to do with none of them, so confirming with
+	// nothing checked is a slip and gets the notice. A card that is *setting*
+	// a list is the other case: clearing an item's dependencies is exactly
+	// what checking nothing means, and refusing it would leave no way to say
+	// it.
+	AllowNone bool
+	// Actions are keys the host answers on the focused row beyond checking
+	// it — the proposals card's way into one proposal's header. They are
+	// offered on the key row already worded, unlike the single-select's,
+	// because a key that means one thing where it is declared can mean a
+	// near thing here and the row has to say which: the same `e` opens an
+	// item's file in the editor on the backlog screen and one proposal's
+	// header on this card. They are offers and are never dropped.
+	Actions []string
+	notice  string
 	// list is the shared pointer and window (list.go). A multi-select owns
 	// its own Focus, which is why it did not come along when the movement and
 	// the window went to the selector.
@@ -88,7 +104,7 @@ func (s *MultiSelect) Update(msg tea.KeyPressMsg) (done bool, result MultiSelect
 			s.Checked[i] = !all
 		}
 	case keys.Is(pressed, keys.Select.Take):
-		if s.count() == 0 {
+		if s.count() == 0 && !s.AllowNone {
 			s.notice = "nothing selected — " + keys.Shown(keys.Select.Toggle) +
 				" toggles, " + keys.Shown(keys.Select.Cancel) + " cancels"
 			return false, MultiSelectResult{}
@@ -115,12 +131,15 @@ func (s *MultiSelect) View(width int) string {
 	if s.notice != "" {
 		tail = append(tail, sty.Warn.Render(Clip(s.notice, inner)))
 	}
-	hint := strings.Join([]string{
+	segs := []string{
 		offer(keys.Select.Toggle),
 		words(keys.Select.All, "all/none"),
+	}
+	segs = append(segs, s.Actions...)
+	segs = append(segs,
 		words(keys.Select.Take, fmt.Sprintf("apply (%d)", s.count())),
-		offer(keys.Select.Cancel),
-	}, " · ")
+		offer(keys.Select.Cancel))
+	hint := strings.Join(segs, " · ")
 	tail = append(tail, hintRows([]string{hint}, width)...)
 	rows := append(s.visibleRows(width, bodyBudget(s.MaxLines, len(tail))), tail...)
 	rows = boundRows(rows, s.MaxLines)

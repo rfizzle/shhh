@@ -25,6 +25,7 @@ func TestOverlayPlacements(t *testing.T) {
 
 		statePick:        placePanel,
 		stateTodoPropose: placePanel,
+		stateTodoDraft:   placePanel,
 		statePasteDrop:   placePanel,
 		stateScaffold:    placePanel,
 		stateTodoPause:   placePanel,

@@ -236,11 +236,29 @@ const (
 	SignalRun = "run"
 	// SignalSkill: the user activated a skill by command. Reason: its name.
 	SignalSkill = "skill"
+	// SignalTodo: the backlog gained or changed an item. Reason: how, from
+	// the three below. It is separate from SignalRun, which is the runner
+	// working an item that already exists: a rate over how a backlog grows
+	// and a rate over how it is worked are different questions, and folding
+	// them together would put every stage of every run in the numerator of
+	// the first.
+	SignalTodo = "todo"
 	// SignalGate: a quality-gate run finished. Reason: its verdict, from
 	// GateVerdict. It reaches the record through Observer.Gate rather than
 	// Observer.Signal, because it names a subject — the suite — as well as
 	// a qualifier.
 	SignalGate = "gate"
+)
+
+// Reasons for SignalTodo: how the backlog grew or changed. Drafting from a
+// sentence and reading a session into items are told apart because they are
+// different acts with different costs — one is a person naming work, the
+// other is a session proposing it — and an editor's pass over an item that
+// already exists is neither.
+const (
+	TodoNew  = "new"
+	TodoAdd  = "add"
+	TodoEdit = "edit"
 )
 
 // Event kinds for the stream a run with nobody in front of it writes while

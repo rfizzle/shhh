@@ -213,6 +213,12 @@ func buildOverlays() map[state]*mode {
 			lines:   panelRows((Model).todoProposeLines),
 			answer:  (*Model).answerTodoPropose,
 		},
+		stateTodoDraft: {
+			place:   placePanel,
+			borrows: true,
+			lines:   panelRows((Model).todoDraftLines),
+			answer:  (*Model).answerTodoDraft,
+		},
 		statePasteDrop: {
 			place:   placePanel,
 			borrows: true,

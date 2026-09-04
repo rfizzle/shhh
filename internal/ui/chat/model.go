@@ -154,6 +154,11 @@ const (
 	// turn, and the keys that would change a file are inert while it is
 	// (todo.go).
 	stateBacklog
+	// stateTodoDraft: one proposed backlog item is on a card — its header
+	// fields as rows a key changes in place, its body rendered under them,
+	// and enter writing the file (todoadd.go). It is opened by /todo new and
+	// from the proposals card, where it sets one proposal's header.
+	stateTodoDraft
 )
 
 const inputHeight = 3
@@ -665,7 +670,16 @@ type Model struct {
 	todoExtracting    bool
 	todoExtractRun    int
 	todoExtractCancel context.CancelFunc
-	memoryAsk         *components.NoteSelect
+	// todoDraft is the open draft card; todoDraftRun numbers draftings so a
+	// late one is dropped the way a late reading is. They are the drafting's
+	// own rather than the reading's because /clear retires a reading — the
+	// conversation it read is gone — and says nothing about a sentence
+	// somebody typed.
+	todoDraft     *todoDraft
+	todoDrafting  bool
+	todoDraftRun  int
+	todoDraftStop context.CancelFunc
+	memoryAsk     *components.NoteSelect
 	// secrets backs /secret and the scrub on the agent.
 	secrets Secrets
 	// skills is the session's skill catalog, behind /skills, /skill and
