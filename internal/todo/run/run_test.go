@@ -352,8 +352,8 @@ func TestPrompts_GitStepsAreConditionalOnARepository(t *testing.T) {
 		build func(repo bool) string
 		want  string
 	}{
-		{"review", func(repo bool) string { return reviewPrompt(it, planText, repo) }, "`git diff`"},
-		{"commit", func(repo bool) string { return commitPrompt(it, planText, repo) }, "git log -10"},
+		{"review", func(repo bool) string { return reviewPrompt(it, planText, repo, Wordings{}) }, "`git diff`"},
+		{"commit", func(repo bool) string { return commitPrompt(it, repo, Wordings{}) }, "git log -10"},
 	} {
 		if got := c.build(true); !strings.Contains(got, c.want) {
 			t.Errorf("%s in a repository should still ask for %s:\n%s", c.name, c.want, got)
@@ -674,5 +674,219 @@ func TestRun_ResearchSaysNothingWithoutAGrooming(t *testing.T) {
 	s := Start(it, "sess", "manual", 1, Options{Repo: true})
 	if first := s.First(it, ""); strings.Contains(first.Prompt, "GROOMING") {
 		t.Fatalf("research prompt = %q", first.Prompt)
+	}
+}
+
+// Every stage takes its wording from the set the run was started with, and a
+// stage nothing replaced keeps the built-in words.
+func TestWordings_EachStageTakesItsOwnAndOnlyItsOwn(t *testing.T) {
+	it := item(todo.SizeM)
+	w := Wordings{
+		Research:   "MY RESEARCH",
+		Implement:  "MY IMPLEMENT",
+		Review:     "MY REVIEW",
+		ReviewTask: "MY REVIEW TASK",
+		Remediate:  "MY REMEDIATE",
+		Commit:     "MY COMMIT",
+		Standards:  "MY STANDARDS",
+	}
+	for _, tc := range []struct {
+		name    string
+		built   func(w Wordings) string
+		mine    string
+		builtin string
+	}{
+		{"research", func(w Wordings) string { return researchPrompt(it, "", "", "", w) }, "MY RESEARCH", "RESEARCH stage"},
+		{"implement", func(w Wordings) string { return implementPrompt(it, planText, "", w) }, "MY IMPLEMENT", "IMPLEMENT stage"},
+		{"review", func(w Wordings) string { return reviewPrompt(it, planText, true, w) }, "MY REVIEW", "REVIEW stage"},
+		{"review task", func(w Wordings) string { return reviewTask(it, planText, "diff", true, w) }, "MY REVIEW TASK", "Review this change against"},
+		{"remediate", func(w Wordings) string { return remediatePrompt(it, "a finding", w) }, "MY REMEDIATE", "REMEDIATE stage"},
+		{"commit", func(w Wordings) string { return commitPrompt(it, true, w) }, "MY COMMIT", "COMMIT stage"},
+	} {
+		got := tc.built(w)
+		if !strings.Contains(got, tc.mine) || strings.Contains(got, tc.builtin) {
+			t.Errorf("%s did not take its wording:\n%s", tc.name, got)
+		}
+		if !strings.Contains(got, "BACKLOG ITEM x") {
+			t.Errorf("%s dropped the item block:\n%s", tc.name, got)
+		}
+		if unset := tc.built(Wordings{}); !strings.Contains(unset, tc.builtin) || strings.Contains(unset, tc.mine) {
+			t.Errorf("%s with nothing set did not keep the built-in words:\n%s", tc.name, unset)
+		}
+	}
+}
+
+// The standards sentence is one wording shared by the stages that change the
+// tree, and the stages that only read do not carry it either way.
+func TestWordings_StandardsIsSharedByTheStagesThatChangeTheTree(t *testing.T) {
+	it := item(todo.SizeM)
+	w := Wordings{Standards: "MY STANDARDS"}
+	for _, got := range []string{
+		researchPrompt(it, "", "", "", w),
+		implementPrompt(it, planText, "", w),
+		remediatePrompt(it, "a finding", w),
+		laneTask(it, planText, Lane{Name: "one", Paths: []string{"a.go"}, Task: "build a"}, "", w),
+		integratePrompt(it, planText, []Lane{{Name: "one", Paths: []string{"a.go"}}}, "", w),
+	} {
+		if !strings.Contains(got, "MY STANDARDS") || strings.Contains(got, "Read AGENTS.md") {
+			t.Errorf("a stage kept the built-in standards sentence:\n%s", got)
+		}
+	}
+	// The grooming pass is not a stage of a run and takes no wording of its
+	// own, so it states the built-in sentence whatever a run was configured
+	// with.
+	if groom := GroomPrompt(it); strings.Contains(groom, "MY STANDARDS") {
+		t.Errorf("the grooming pass took a run's wording:\n%s", groom)
+	}
+}
+
+// A wording that says nothing about the answer still produces a prompt that
+// asks for it, and the answer that shape asks for is one Observe reads.
+func TestWordings_TheAnswerShapeIsAppendedWhateverTheWordingSays(t *testing.T) {
+	it := item(todo.SizeM)
+	w := Wordings{
+		Research:  "Read the code. Say nothing else.",
+		Implement: "Write the code.",
+		Review:    "Read the change.",
+		Remediate: "Fix it.",
+		Commit:    "Say what you did.",
+	}
+	s := Start(it, "sess", "manual", 1, Options{Repo: true, Wordings: w})
+	first := s.First(it, "")
+	for _, want := range []string{"size: S|M|L", "questions: none", "blocked: <why>"} {
+		if !strings.Contains(first.Prompt, want) {
+			t.Fatalf("the research shape lost %q:\n%s", want, first.Prompt)
+		}
+	}
+	step := s.Observe(it, planText)
+	if step.Stage != StageImplement || s.Size != todo.SizeS {
+		t.Fatalf("the answer to a replaced wording was not read: %+v", step)
+	}
+	if !strings.Contains(step.Prompt, "Do not commit; the runner commits") {
+		t.Fatalf("the implement shape was edited out:\n%s", step.Prompt)
+	}
+	s.Observe(it, "Changed a.go.")
+	review := s.VerifyResult(it, true, "")
+	if review.Stage != StageReview || !strings.Contains(review.Prompt, "verdict: clean") {
+		t.Fatalf("the review shape was edited out: %+v", review)
+	}
+	if commit := s.Observe(it, "verdict: clean"); commit.Stage != StageCommit || !strings.Contains(commit.Prompt, "COMMIT:") {
+		t.Fatalf("the commit shape was edited out: %+v", commit)
+	}
+}
+
+// A wording that names a block places it; one that does not takes it after
+// the instruction, in the order the built-in has them.
+func TestWordings_PlaceholdersArePlacedWhereNamedAndAppendedWhereNot(t *testing.T) {
+	it := item(todo.SizeM)
+	named := implementPrompt(it, planText, "ANSWERS HERE", Wordings{
+		Implement: "before\n\n" + PlaceholderPlan + "\n\nbetween\n\n" + PlaceholderItem + "\n\nafter",
+	})
+	if at := strings.Index(named, "APPROVED PLAN"); at < 0 || at > strings.Index(named, "BACKLOG ITEM x") {
+		t.Fatalf("a named block was not placed where the wording put it:\n%s", named)
+	}
+	if !strings.Contains(named, "between") || !strings.Contains(named, "ANSWERS HERE") {
+		t.Fatalf("an unnamed block was dropped:\n%s", named)
+	}
+	unnamed := implementPrompt(it, planText, "ANSWERS HERE", Wordings{Implement: "just the instruction"})
+	item, plan := strings.Index(unnamed, "BACKLOG ITEM x"), strings.Index(unnamed, "APPROVED PLAN")
+	if item < 0 || plan < item || strings.Index(unnamed, "ANSWERS HERE") < plan {
+		t.Fatalf("the unnamed blocks are not in the built-in order:\n%s", unnamed)
+	}
+	if strings.Contains(unnamed, PlaceholderItem) {
+		t.Fatalf("a substitution reached the model as text:\n%s", unnamed)
+	}
+	// A stage with nothing for a block sends no empty space where it would
+	// have been, named or not.
+	empty := remediatePrompt(it, "", Wordings{Remediate: "fix it\n\n" + PlaceholderFindings + "\n\nnow"})
+	if strings.Contains(empty, "\n\n\n") {
+		t.Fatalf("an empty block left a hole:\n%q", empty)
+	}
+}
+
+// The digest is what a record says the wordings by, and it moves with an
+// edit to any one of them.
+func TestWordings_DigestMovesWithAnEdit(t *testing.T) {
+	if (Wordings{}).Digest() != "" {
+		t.Fatal("a run that replaced nothing must digest to nothing")
+	}
+	one := Wordings{Research: "as written"}
+	if one.Digest() != (Wordings{Research: "as written"}).Digest() {
+		t.Fatal("the same set must digest the same")
+	}
+	if one.Digest() == (Wordings{Research: "as edited"}).Digest() {
+		t.Fatal("an edit must move the digest")
+	}
+	// Two wordings that swap texts are two different sets, not one.
+	if (Wordings{Review: "as written"}).Digest() == one.Digest() {
+		t.Fatal("which wording holds the text is part of the set")
+	}
+}
+
+// A run picked up after the files moved says so on the row, because a run
+// whose stages were asked different things is not one run's worth of work.
+func TestWordings_AContinuedRunSaysTheWordsMoved(t *testing.T) {
+	it := item(todo.SizeM)
+	s := Start(it, "sess", "manual", 1, Options{Repo: true, Wordings: Wordings{Research: "as written"}})
+	if step := s.Continue(it); strings.Contains(step.Shown, "wordings changed") {
+		t.Fatalf("an unedited set must say nothing: %q", step.Shown)
+	}
+	s.Wordings = Wordings{Research: "as edited"}
+	step := s.Continue(it)
+	if !strings.Contains(step.Shown, "wordings changed") {
+		t.Fatalf("a continued run must say the words moved: %q", step.Shown)
+	}
+	if !strings.Contains(step.Prompt, "as edited") {
+		t.Fatalf("a continued run must send the words as they now are:\n%s", step.Prompt)
+	}
+	if again := s.Continue(it); strings.Contains(again.Shown, "wordings changed") {
+		t.Fatalf("the run says it once, not at every stage: %q", again.Shown)
+	}
+}
+
+// A substitution written mid-sentence stays mid-sentence. The spacing around
+// it is the file's, and a builder that broke the sentence into paragraphs
+// around the block would be editing the wording rather than filling it in.
+func TestWordings_AnInlinePlaceholderKeepsItsSentence(t *testing.T) {
+	it := item(todo.SizeM)
+	got := remediatePrompt(it, "off by one", Wordings{
+		Remediate: "Please fix " + PlaceholderFindings + " carefully.",
+	})
+	if !strings.HasPrefix(got, "Please fix off by one carefully.") {
+		t.Fatalf("an inline substitution was reflowed:\n%q", got)
+	}
+	// One a wording named twice is placed twice, because a file that wrote
+	// it twice meant it twice.
+	twice := remediatePrompt(it, "off by one", Wordings{
+		Remediate: PlaceholderFindings + " — and again: " + PlaceholderFindings,
+	})
+	if strings.Count(twice, "off by one") != 2 {
+		t.Fatalf("a repeated substitution was placed once:\n%q", twice)
+	}
+}
+
+// The built-in wordings place their own blocks, so every stage shows the
+// model what it is about to be told about before it is told about it. A
+// project's file that names no substitution gets its blocks after the
+// instruction instead, which is the only order a builder can choose for
+// prose it did not write.
+func TestWordings_TheBuiltInStagesShowTheBlocksBeforeTheInstructions(t *testing.T) {
+	it := item(todo.SizeM)
+	for _, tc := range []struct {
+		name         string
+		built        string
+		block, after string
+	}{
+		{"research", researchPrompt(it, "", "", "", Wordings{}), "BACKLOG ITEM x", "Work out exactly how"},
+		{"implement", implementPrompt(it, planText, "", Wordings{}), "APPROVED PLAN", "Touch only what the plan names"},
+		{"review", reviewPrompt(it, planText, true, Wordings{}), "APPROVED PLAN", "Check, in this order"},
+		{"review task", reviewTask(it, planText, "@@ diff @@", true, Wordings{}), "THE CHANGE", "Read every file the diff touches"},
+		{"remediate", remediatePrompt(it, "off by one", Wordings{}), "off by one", "Do not commit."},
+		{"commit", commitPrompt(it, true, Wordings{}), "BACKLOG ITEM x", "git log -10"},
+	} {
+		block, after := strings.Index(tc.built, tc.block), strings.Index(tc.built, tc.after)
+		if block < 0 || after < 0 || block > after {
+			t.Errorf("%s puts %q at %d and %q at %d:\n%s", tc.name, tc.block, block, tc.after, after, tc.built)
+		}
 	}
 }

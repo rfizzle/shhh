@@ -13,7 +13,11 @@ package project
 // Instruction files are deliberately not in this set. AGENTS.md and its
 // siblings are prose: the worst a checkout can do with them is ask, and a
 // session that would not read the file it was pointed at is a session with
-// no project context at all.
+// no project context at all. A wording under .shhh/prompts is in the set for
+// the other half of that same line: it is not a file the model chooses to
+// read, it is what shhh itself says at a stage that changes the tree without
+// asking, and a checkout that could rewrite that could take the standards
+// sentence out of every run in every clone.
 
 import (
 	"crypto/sha256"
@@ -39,6 +43,7 @@ const (
 	KindHooks    Kind = "hooks"
 	KindServers  Kind = "MCP servers"
 	KindSettings Kind = "settings"
+	KindPrompts  Kind = "wordings"
 )
 
 // resource is one kind and the paths, relative to the root, it is read from.
@@ -60,6 +65,7 @@ var resources = []resource{
 	{KindHooks, []string{HooksFile}},
 	{KindServers, []string{".shhh/mcp.json", ".mcp.json"}},
 	{KindSettings, []string{ConfigFile}},
+	{KindPrompts, []string{PromptsDir}},
 }
 
 // Store is where the answer is kept: outside the checkout, because a file in

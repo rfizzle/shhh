@@ -284,6 +284,15 @@ type State struct {
 	// and dropped by a run picked up in a later session — a verdict is
 	// about the tree it ran over, and a tree left overnight is not that one.
 	Checked bool `json:"checked,omitempty"`
+
+	// Wordings are the stage instructions this run sends. They are not in
+	// the checkpoint: they are files on disk, and a run continued a day
+	// later is continued by a session that has read them as they now stand.
+	// What the checkpoint keeps is WordingsAt, the digest of the set the run
+	// started under, so a run picked up after an edit can say the words
+	// moved rather than carry on as though they had not.
+	Wordings   Wordings `json:"-"`
+	WordingsAt string   `json:"wordings_at,omitempty"`
 }
 
 // Options are the answers the person gave when they asked for the run, as
@@ -307,6 +316,9 @@ type Options struct {
 	// research stage states it. Empty is a run whose item nobody has read
 	// that way, or one whose reading the person has since edited past.
 	Groomed string
+	// Wordings are the stage instructions the session read for this
+	// checkout, and the zero value is the built-in set.
+	Wordings Wordings
 }
 
 // Start begins a run on an item.
@@ -323,6 +335,10 @@ func Start(it todo.Item, session, prevMode string, turn int, opt Options) *State
 		CloseGate: opt.CloseGate,
 		InSprint:  opt.InSprint,
 		Groomed:   opt.Groomed,
+		// The set is carried and its digest recorded, so a run continued
+		// after the files moved can say so.
+		Wordings:   opt.Wordings,
+		WordingsAt: opt.Wordings.Digest(),
 	}
 }
 
@@ -396,7 +412,24 @@ func HeldBy(root, slug string) (Hold, bool) {
 // up in a new session: the stage starts over — its prompt is sent again,
 // its verify re-run — because the transcript that was mid-stage is gone
 // and a stage is the smallest unit that can be judged.
+//
+// It also says when the stage wordings moved. The rest of a run is
+// continued as it was — the plan, the rounds spent, the paths — and the
+// words are the one part that cannot be, because they are files the session
+// re-reads. A stage answered under one instruction and its next stage sent
+// under another is a run whose halves were asked different things, and the
+// row is where a reader finds that out.
 func (s *State) Continue(it todo.Item) Step {
+	step := s.continueStage(it)
+	if now := s.Wordings.Digest(); now != s.WordingsAt {
+		s.WordingsAt = now
+		step.Shown += " — the stage wordings changed since this run started"
+	}
+	return step
+}
+
+// continueStage is that re-entry, stage by stage.
+func (s *State) continueStage(it todo.Item) Step {
 	switch s.Stage {
 	case StageResearch:
 		// A checkpoint saved at the pause re-shows the card: the plan is
@@ -406,7 +439,7 @@ func (s *State) Continue(it todo.Item) Step {
 			return s.pause(s.Paused)
 		}
 		return Step{Action: ActionPrompt, Stage: StageResearch, Mode: ModePlan,
-			Prompt: researchPrompt(it, s.Sprint, s.Groomed, answersBlock(s.Answers)), Shown: s.label("research (continued)")}
+			Prompt: researchPrompt(it, s.Sprint, s.Groomed, answersBlock(s.Answers), s.Wordings), Shown: s.label("research (continued)")}
 	case StageSplit:
 		return s.split(it)
 	case StageFanOut:
@@ -418,10 +451,10 @@ func (s *State) Continue(it todo.Item) Step {
 			return s.integrate(it)
 		}
 		return Step{Action: ActionPrompt, Stage: StageImplement, Mode: ModeAuto,
-			Prompt: implementPrompt(it, s.Plan, answersBlock(s.Answers)), Shown: s.label("implement (continued)")}
+			Prompt: implementPrompt(it, s.Plan, answersBlock(s.Answers), s.Wordings), Shown: s.label("implement (continued)")}
 	case StageRemediate:
 		return Step{Action: ActionPrompt, Stage: StageRemediate, Mode: ModeAuto,
-			Prompt: remediatePrompt(it, s.Findings), Shown: s.label("remediate (continued)")}
+			Prompt: remediatePrompt(it, s.Findings, s.Wordings), Shown: s.label("remediate (continued)")}
 	case StageVerify:
 		// A checkpoint from before Tests existed decodes with none; the
 		// gate still runs, and "nothing to verify" is said when there is
@@ -442,7 +475,7 @@ func (s *State) Continue(it todo.Item) Step {
 		}
 		s.Message, s.Report = "", ""
 		return Step{Action: ActionPrompt, Stage: StageCommit, Mode: ModePlan,
-			Prompt: commitPrompt(it, s.Plan, s.Repo), Shown: s.label("commit (continued)")}
+			Prompt: commitPrompt(it, s.Repo, s.Wordings), Shown: s.label("commit (continued)")}
 	}
 	return s.block("the checkpoint names a stage that cannot be continued: " + string(s.Stage))
 }
@@ -475,7 +508,7 @@ func (s *State) Over() bool { return s.Stage == StageDone || s.Stage == StageBlo
 func (s *State) First(it todo.Item, context string) Step {
 	s.Stage = StageResearch
 	return Step{Action: ActionPrompt, Stage: StageResearch, Mode: ModePlan,
-		Prompt: researchPrompt(it, s.Sprint, s.Groomed, context), Shown: s.label("research")}
+		Prompt: researchPrompt(it, s.Sprint, s.Groomed, context, s.Wordings), Shown: s.label("research")}
 }
 
 // Observe reads the model's answer to the current stage and returns the
@@ -572,7 +605,7 @@ func (s *State) implement(it todo.Item) Step {
 	s.Paused = ""
 	s.Stage = StageImplement
 	return Step{Action: ActionPrompt, Stage: StageImplement, Mode: ModeAuto,
-		Prompt: implementPrompt(it, s.Plan, answersBlock(s.Answers)), Shown: s.label("implement")}
+		Prompt: implementPrompt(it, s.Plan, answersBlock(s.Answers), s.Wordings), Shown: s.label("implement")}
 }
 
 // Resume is the person taking the plan as it stands.
@@ -590,7 +623,7 @@ func (s *State) Replan(it todo.Item, note string) Step {
 	s.Answers = append(s.Answers, note)
 	s.Stage = StageResearch
 	return Step{Action: ActionPrompt, Stage: StageResearch, Mode: ModePlan,
-		Prompt: researchPrompt(it, s.Sprint, s.Groomed, answersBlock(s.Answers)), Shown: s.label("research again")}
+		Prompt: researchPrompt(it, s.Sprint, s.Groomed, answersBlock(s.Answers), s.Wordings), Shown: s.label("research again")}
 }
 
 func answersBlock(answers []string) string {
@@ -633,7 +666,7 @@ func (s *State) review(it todo.Item) Step {
 	if s.Size == todo.SizeS {
 		s.Reviewer = ""
 		return Step{Action: ActionPrompt, Stage: StageReview, Mode: ModePlan,
-			Prompt: reviewPrompt(it, s.Plan, s.Repo), Shown: s.label("review")}
+			Prompt: reviewPrompt(it, s.Plan, s.Repo, s.Wordings), Shown: s.label("review")}
 	}
 	s.Reviews++
 	s.Reviewer = fmt.Sprintf("todo-review-%s-%d", s.Slug, s.Reviews)
@@ -644,7 +677,7 @@ func (s *State) review(it todo.Item) Step {
 // change as the front-end read it, since the child has no commands to
 // read the change with itself.
 func (s *State) ReviewTask(it todo.Item, diff string) string {
-	return reviewTask(it, s.Plan, diff, s.Repo)
+	return reviewTask(it, s.Plan, diff, s.Repo, s.Wordings)
 }
 
 // SelfReview is the fallback when no reviewer child can be had — the
@@ -652,7 +685,7 @@ func (s *State) ReviewTask(it todo.Item, diff string) string {
 func (s *State) SelfReview(it todo.Item) Step {
 	s.Reviewer = ""
 	return Step{Action: ActionPrompt, Stage: StageReview, Mode: ModePlan,
-		Prompt: reviewPrompt(it, s.Plan, s.Repo), Shown: s.label("review (no reviewer agent; reviewing in this session)")}
+		Prompt: reviewPrompt(it, s.Plan, s.Repo, s.Wordings), Shown: s.label("review (no reviewer agent; reviewing in this session)")}
 }
 
 // ReviewResult is the reviewer child's final text.
@@ -675,7 +708,7 @@ func (s *State) afterReview(it todo.Item, text string) Step {
 		}
 		s.Stage = StageCommit
 		return Step{Action: ActionPrompt, Stage: StageCommit, Mode: ModePlan,
-			Prompt: commitPrompt(it, s.Plan, s.Repo), Shown: s.label("commit")}
+			Prompt: commitPrompt(it, s.Repo, s.Wordings), Shown: s.label("commit")}
 	case "findings":
 		return s.remediate(it, "Review findings:\n"+findings)
 	}
@@ -691,7 +724,7 @@ func (s *State) remediate(it todo.Item, findings string) Step {
 	s.Round++
 	s.Stage = StageRemediate
 	return Step{Action: ActionPrompt, Stage: StageRemediate, Mode: ModeAuto,
-		Prompt: remediatePrompt(it, findings), Shown: s.label(fmt.Sprintf("remediate %d/%d", s.Round, Rounds(s.Size)))}
+		Prompt: remediatePrompt(it, findings, s.Wordings), Shown: s.label(fmt.Sprintf("remediate %d/%d", s.Round, Rounds(s.Size)))}
 }
 
 // afterCommit reads the commit message and the report.

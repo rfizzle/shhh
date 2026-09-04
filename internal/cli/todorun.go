@@ -184,6 +184,10 @@ type todoDriver struct {
 	// baseline from before the sprint would hand every one of those files to
 	// the next item as its own.
 	dirty map[string]bool
+	// wordings are the stage instructions this checkout runs, read once
+	// here for the same reason a session reads them at startup: a run whose
+	// wording could not be read must not begin on the built-in one.
+	wordings run.Wordings
 	// turn spends one stage as one session and answers with what that
 	// session produced, or with why there was no answer. It is a field
 	// because the loop around it is the part worth testing and a test that
@@ -210,12 +214,17 @@ func newTodoDriver(out io.Writer, root string, cfg config.Config, noCommit bool)
 	if err != nil {
 		return nil, fmt.Errorf("cannot find the shhh binary a stage runs as: %w", err)
 	}
+	prompts, err := loadPrompts(cfg.Prompts, projectPrompts())
+	if err != nil {
+		return nil, err
+	}
 	d := &todoDriver{
 		root: root, bin: bin, out: out,
 		session:     "todo-run-" + time.Now().UTC().Format("20060102-150405"),
 		itemTimeout: cfg.TodoItemTimeout(),
 		noCommit:    noCommit || !cfg.TodoCommitEnabled(),
 		repo:        project.InRepo(root),
+		wordings:    prompts.todo,
 	}
 	// The suites are command text out of a file that arrived with the clone
 	// and the runner spends no approval on them, so an untrusted checkout
@@ -337,14 +346,15 @@ func (d *todoDriver) begin(it todo.Item, inSprint bool) (*run.State, run.Step) {
 	opt := run.Options{
 		NoCommit: d.noCommit, Repo: d.repo, Sprint: d.sprintGoal(),
 		CloseGate: d.closeGate, InSprint: inSprint,
-		Groomed: todo.GroomingBlock(d.root, it.Slug),
+		Groomed:  todo.GroomingBlock(d.root, it.Slug),
+		Wordings: d.wordings,
 	}
 	if it.Status == todo.StatusInProgress {
 		if st, err := run.Load(d.root, it.Slug); err == nil && !st.Over() {
 			st.Session, st.Reviewer = d.session, ""
 			st.NoCommit, st.Repo, st.Sprint = opt.NoCommit, opt.Repo, opt.Sprint
 			st.CloseGate, st.InSprint = opt.CloseGate, opt.InSprint
-			st.Groomed = opt.Groomed
+			st.Groomed, st.Wordings = opt.Groomed, opt.Wordings
 			return st, st.Continue(it)
 		}
 		// An item left in progress by something that wrote no checkpoint is

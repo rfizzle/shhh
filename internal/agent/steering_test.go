@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"errors"
 	"strings"
 	"testing"
 )
@@ -169,5 +170,54 @@ func TestSummaryConfig_CooldownIntervals(t *testing.T) {
 	}
 	if got := (SummaryConfig{InterveneCooldownIntervals: 5}).CooldownIntervals(); got != 5 {
 		t.Errorf("configured cooldown = %d, want 5", got)
+	}
+}
+
+// A backlog run's stage wordings take the blocks their stage carries and no
+// others, so a file that names a substitution the stage cannot fill is
+// refused before a run is built on it.
+func TestValidateTodoStages(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		validate func(string) error
+		takes    []string
+		refuses  []string
+	}{
+		{"research", ValidateTodoResearch,
+			[]string{PlaceholderItem, PlaceholderAnswers},
+			[]string{PlaceholderPlan, PlaceholderFindings, PlaceholderDiff}},
+		{"implement", ValidateTodoImplement,
+			[]string{PlaceholderItem, PlaceholderPlan, PlaceholderAnswers},
+			[]string{PlaceholderFindings, PlaceholderDiff}},
+		{"review", ValidateTodoReview,
+			[]string{PlaceholderItem, PlaceholderPlan, PlaceholderDiff},
+			[]string{PlaceholderAnswers, PlaceholderFindings}},
+		{"remediate", ValidateTodoRemediate,
+			[]string{PlaceholderItem, PlaceholderFindings},
+			[]string{PlaceholderPlan, PlaceholderAnswers, PlaceholderDiff}},
+		{"commit", ValidateTodoCommit,
+			[]string{PlaceholderItem},
+			[]string{PlaceholderPlan, PlaceholderAnswers, PlaceholderFindings, PlaceholderDiff}},
+	} {
+		for _, takes := range tc.takes {
+			if err := tc.validate("wording " + takes); err != nil {
+				t.Errorf("%s refused %s, which it takes: %v", tc.name, takes, err)
+			}
+		}
+		for _, refuses := range tc.refuses {
+			err := tc.validate("wording " + refuses)
+			var bad *PlaceholderError
+			if !errors.As(err, &bad) || bad.Found != refuses {
+				t.Errorf("%s accepted %s, which it cannot fill: %v", tc.name, refuses, err)
+			}
+		}
+		if err := tc.validate("wording {{nonsense}}"); err == nil {
+			t.Errorf("%s accepted a substitution that does not exist", tc.name)
+		}
+	}
+	// The standards sentence is sent as written, so any substitution in it
+	// is a mistake.
+	if err := ValidateVerbatim("standards " + PlaceholderItem); err == nil {
+		t.Fatal("the standards sentence must refuse a substitution")
 	}
 }

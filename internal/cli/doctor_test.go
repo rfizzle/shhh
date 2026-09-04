@@ -975,3 +975,55 @@ func TestProbeOtel_ReadsTheConfiguredEndpoint(t *testing.T) {
 		t.Fatalf("the probe did not read the endpoint: %+v", f)
 	}
 }
+
+// The doctor reads every wording a file replaced, because an unreadable one
+// is the config failure that stops a session from starting at all. Replacing
+// nothing is the ordinary case, not a fault.
+func TestDoctorPrompts(t *testing.T) {
+	none := doctorPrompts(nil)
+	if none.State != components.DoctorSkipped || none.Outcome != "empty" {
+		t.Fatalf("a machine on the built-in prose is reported as a fault: %+v", none)
+	}
+
+	ok := doctorPrompts([]wordingRow{{key: "steer"}, {key: "todo_review"}})
+	if ok.Outcome != "ok" || !strings.Contains(ok.Subject, "2 wordings") {
+		t.Fatalf("the row does not count what it read: %+v", ok)
+	}
+	if !strings.Contains(ok.Detail, "steer") || !strings.Contains(ok.Detail, "todo_review") {
+		t.Fatalf("the row does not name the keys: %q", ok.Detail)
+	}
+
+	bad := doctorPrompts([]wordingRow{
+		{key: "steer"},
+		{key: "todo_commit", err: errors.New("config prompts.todo_commit: /w/commit.md: no such file")},
+	})
+	if bad.State != components.DoctorFailed || bad.Consequence == "" {
+		t.Fatalf("an unreadable wording did not fail the row: %+v", bad)
+	}
+	if len(bad.Fix) != 1 || !strings.Contains(bad.Fix[0], "/w/commit.md") {
+		t.Fatalf("the row does not carry the reason: %+v", bad.Fix)
+	}
+}
+
+// The reading behind that row reads each file and keeps going past a
+// failure, so a person fixing their files is told about all of them at once.
+func TestReadWordings_NamesEveryFileItCouldNotRead(t *testing.T) {
+	dir := t.TempDir()
+	rows := readWordings(config.PromptsConfig{
+		TodoResearch: writeWording(t, "research.md", "read it"),
+		TodoCommit:   filepath.Join(dir, "not-there.md"),
+		TodoReview:   writeWording(t, "review.md", ""),
+	}, "")
+	if len(rows) != 3 {
+		t.Fatalf("rows = %+v, want one per configured wording", rows)
+	}
+	failed := 0
+	for _, r := range rows {
+		if r.err != nil {
+			failed++
+		}
+	}
+	if failed != 2 {
+		t.Fatalf("the reading stopped early: %+v", rows)
+	}
+}

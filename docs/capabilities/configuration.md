@@ -289,8 +289,12 @@ than accuses are decisions about the product, and they stay in the program.
 How many rounds pass, how far the interval widens, how much of the
 instruction is quoted back, and the sentences themselves are none of those
 things, and they are exactly what someone tuning a session has to be able to
-change. So they come out: four numbers as keys, and four wordings as files
-the configuration names.
+change. So they come out: four numbers as keys, and the wordings as files the
+configuration names. The same line divides a backlog run: what each stage is
+for is a wording and how its answer is read back is not, so the stage
+instructions are files too and the marker lines the run parses are appended
+after whatever the file said
+([`todo.md`](todo.md#the-stage-prompts-are-yours-to-edit)).
 
 The line is drawn there because of what it costs to be wrong on either side.
 A wording in the program can only be changed by a build, and a change nobody
@@ -311,6 +315,16 @@ way. Nothing has an empty wording to send, so a file a truncated write left
 with nothing in it would silently mean "not configured" — the built-in words
 back in place, and a record that says the session overrode nothing.
 
+**A checkout says it in files rather than keys.** `[prompts]` is one of the
+few tables a repository's own settings may not set — it points at a file
+anywhere on the machine, and a path in a checkout is a path in every clone of
+it. What a repository does instead is put the wording where the wording
+belongs: a file at `.shhh/prompts/<key>.md` is that wording for that
+checkout, and inside it that file beats the person's own, per key, so a
+project that replaces one leaves the rest of the person's answers standing.
+It is behind the checkout's trust answer, like everything else a clone asks a
+session to load.
+
 **A wording is part of what a session was sent, so it is part of the
 fingerprint.** The record already fingerprints the system prompt as it went
 out, which is what puts sessions on either side of an edit to it. A steer file
@@ -325,9 +339,8 @@ instruction to quote back — and a misspelled one is invisible: it reaches the
 model as literal punctuation, the value it stood for never arrives, and the
 wording still reads like a wording. So a file naming a substitution that does
 not exist is refused the way an unreadable one is, and so is one naming a
-substitution that belongs to a different wording. Two of the four are sent
-exactly as written and take none at all, which makes any of them a mistake
-there.
+substitution that belongs to a different wording. Some are sent exactly as
+written and take none at all, which makes any of them a mistake there.
 
 ## A failure is written down
 
@@ -618,6 +631,13 @@ knows it; the profiles under `[agents]` are one key per role, which the
 | `check_in` | path | (the built-in wording) | A file whose contents replace the message a turn that has reached its interval is given. |
 | `summary` | path | (the built-in wording) | A file whose contents replace the reading instruction the summarizing model is sent. |
 | `classifier` | path | (the built-in wording) | A file whose contents replace the instruction auto mode's permission classifier is sent. |
+| `todo_standards` | path | (the built-in wording) | A file whose contents replace the sentence every stage of a backlog run that changes the tree carries. |
+| `todo_research` | path | (the built-in wording) | A file whose contents replace what a backlog run's research stage is told; it may place `{{item}}` and `{{answers}}`. |
+| `todo_implement` | path | (the built-in wording) | A file whose contents replace what a backlog run's implement stage is told; it may place `{{item}}`, `{{plan}}` and `{{answers}}`. |
+| `todo_review` | path | (the built-in wording) | A file whose contents replace what a backlog run's review stage is told; it may place `{{item}}`, `{{plan}}` and `{{diff}}`. |
+| `todo_review_task` | path | (the built-in wording) | A file whose contents replace what the reviewer sub-agent is asked; it may place `{{item}}`, `{{plan}}` and `{{diff}}`. |
+| `todo_remediate` | path | (the built-in wording) | A file whose contents replace what a backlog run's remediate stage is told; it may place `{{item}}` and `{{findings}}`. |
+| `todo_commit` | path | (the built-in wording) | A file whose contents replace what a backlog run's commit stage is told; it may place `{{item}}`. |
 
 **`[hooks]`**
 

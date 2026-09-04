@@ -111,6 +111,37 @@ type PromptsConfig struct {
 	// sent. The proposed call is appended after it, and takes no
 	// placeholders.
 	Classifier string `toml:"classifier,omitempty"`
+
+	// The backlog runner's stage instructions. Each names a file that
+	// replaces what one stage of a run tells the model; the blocks the run
+	// hands the model and the answer shape it reads back are the runner's
+	// and are placed and appended whatever the file says
+	// (docs/capabilities/todo.md#the-stage-prompts-are-yours-to-edit).
+	//
+	// TodoStandards is a key of its own rather than a line inside each of
+	// the others because it is one sentence shared by every stage that
+	// changes the tree, and it is the line a project most often has to
+	// change: a monorepo's own conventions, a language the sentence does
+	// not fit.
+	TodoStandards string `toml:"todo_standards,omitempty"`
+	// TodoResearch may name `{{item}}` and `{{answers}}`.
+	TodoResearch string `toml:"todo_research,omitempty"`
+	// TodoImplement may name `{{item}}`, `{{plan}}` and `{{answers}}`.
+	TodoImplement string `toml:"todo_implement,omitempty"`
+	// TodoReview may name `{{item}}`, `{{plan}}` and `{{diff}}`, which for
+	// the stage that reads the change itself is the instruction that finds
+	// it.
+	TodoReview string `toml:"todo_review,omitempty"`
+	// TodoReviewTask is the reviewer child's, and may name the same three;
+	// `{{diff}}` there is the change itself, since the child has no
+	// commands to go and read it with.
+	TodoReviewTask string `toml:"todo_review_task,omitempty"`
+	// TodoRemediate may name `{{item}}` and `{{findings}}`.
+	TodoRemediate string `toml:"todo_remediate,omitempty"`
+	// TodoCommit may name `{{item}}`. The sentence about the repository's
+	// own commit style follows it whatever the file says, because whether
+	// there is a history to read one out of is a fact about the machine.
+	TodoCommit string `toml:"todo_commit,omitempty"`
 }
 
 // MCPConfig is the user's MCP servers and how they are started. shhh

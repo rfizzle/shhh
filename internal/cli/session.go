@@ -396,7 +396,7 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 
 	// Before anything is built on them: a named wording that cannot be read
 	// stops the session here rather than letting it run on the built-in one.
-	prompts, err := loadPrompts(cfg.Prompts)
+	prompts, err := loadPrompts(cfg.Prompts, projectPrompts())
 	if err != nil {
 		return nil, err
 	}
@@ -957,6 +957,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			// same publisher the model's own pages do — one report store,
 			// one server, one retention rule, whoever asked for the page.
 			PublishReport: sprintReportPublisher(ts.reports),
+			Wordings:      env.prompts.todo,
 		})
 	}
 	if mem != nil {

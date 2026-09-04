@@ -219,6 +219,13 @@ func TestConfigRows_SteeringKeysStateTheirDefaults(t *testing.T) {
 		"prompts.check_in":                     "(the built-in wording)",
 		"prompts.summary":                      "(the built-in wording)",
 		"prompts.classifier":                   "(the built-in wording)",
+		"prompts.todo_standards":               "(the built-in wording)",
+		"prompts.todo_research":                "(the built-in wording)",
+		"prompts.todo_implement":               "(the built-in wording)",
+		"prompts.todo_review":                  "(the built-in wording)",
+		"prompts.todo_review_task":             "(the built-in wording)",
+		"prompts.todo_remediate":               "(the built-in wording)",
+		"prompts.todo_commit":                  "(the built-in wording)",
 	} {
 		row := rowFor(rows, key)
 		if row.Value != want || row.Source != "default" {

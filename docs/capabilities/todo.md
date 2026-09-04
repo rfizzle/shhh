@@ -438,6 +438,73 @@ stops the item rather than being graded — the sprint is where this matters
 most, because a half answer taken for a whole one is the kind of mistake
 nobody is there to catch.
 
+## The stage prompts are yours to edit
+
+Each stage of a run tells the model what that stage is for, and the words are
+shhh's. They are the general answer, which is the wrong answer often enough
+to matter: a monorepo has conventions a sentence about AGENTS.md does not
+reach, a project in a language the standards sentence was not written for
+reads it as noise, and a team with its own review checklist has to fork the
+program to use it.
+
+So the words come out of the program and into files. Seven keys under
+`[prompts]` — `todo_research`, `todo_implement`, `todo_review`,
+`todo_review_task`, `todo_remediate`, `todo_commit`, and `todo_standards` for
+the one sentence the stages that change the tree all carry — each name a file
+whose contents replace that stage's instruction. A key nothing sets keeps the
+built-in words, and a file that cannot be read stops the session with the
+path and the reason, exactly as the steer's does: a run on the built-in words
+while the person believes it is running theirs is the failure the whole
+arrangement exists to prevent.
+
+**A checkout says it in files rather than keys.** A project's wordings live
+at `.shhh/prompts/todo_<stage>.md`, and inside that checkout they beat the
+person's own. They are files by convention because `[prompts]` is one of
+the tables a checkout's own settings may not set — a path written in a
+checkout is a path in every clone of it, anywhere on the machine — and
+because a wording written for this repository should travel with it. Like every other file a
+checkout asks a session to load, they are behind its trust answer: a wording
+is not prose the model chooses to read, it is what shhh itself says at a
+stage that changes the tree without asking, and a clone that could rewrite it
+could take the standards sentence out of every run.
+
+**The file is the instruction and nothing else.** The item, the plan, the
+answers from a pause, the findings from a review and the change are blocks
+the run hands the model. A file may name `{{item}}`, `{{plan}}`,
+`{{answers}}`, `{{findings}}` or `{{diff}}` and put one exactly where it
+wants it, mid-sentence included; a block it does not name is taken after the
+instruction, in the order the built-in has them. `{{diff}}` is what changed:
+the diff itself for the reviewer sub-agent, which has no commands to go and
+look, and for the review stage the instruction that finds it. A substitution
+a stage cannot fill — the findings in a research prompt, the change in a
+commit prompt — is refused when the file is read, because a mistyped one
+reaches the model as literal punctuation and the wording still looks like a
+wording.
+
+A few sentences are never the file's: whether there is a repository to read a
+diff or a house commit style out of is a fact about the machine, so those
+follow the instruction whatever it said. The built-in wordings place their own
+blocks, which is why a stage nothing replaced reads as it always has.
+
+**The answer shape is not yours to edit.** The `size:`, `questions:`,
+`blocked:`, `verdict:` and `COMMIT:`/`REPORT:` lines are how the run reads a
+stage's answer back, and they are appended after whatever the file said. A
+wording that stopped asking for `size:` would make every research turn look
+like a block; the gate would not fail, it would quietly stop being a gate. The
+mechanism stays in the program and the wording comes out of it, which is the
+same line drawn for the steer and the check-in
+([`configuration.md`](configuration.md#the-mechanism-is-code-its-wording-is-configuration)).
+
+The wordings are part of what a session sent, so they fold into the session's
+`prompt_hash` and divide the record the way an edited steer does. A run picked
+up from a checkpoint reads them as they now stand — they are files, and the
+session that continues the run has read the files — and where they moved
+since the run started, the run's row says so, because a run whose stages were
+asked different things is not one run's worth of work.
+
+The grooming pass is not a stage of a run and takes none of these: it states
+the built-in standards sentence whatever a run was configured with.
+
 ## A large item is built in lanes
 
 A large item is the one size the session does not build itself. After the

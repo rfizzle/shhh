@@ -1577,3 +1577,42 @@ func TestTodoRun_ADroppedStageTurnPausesAtTheCheckpoint(t *testing.T) {
 		t.Fatalf("the row should say why and how to pick it up, got %q", note)
 	}
 }
+
+// The wordings the session read reach the run, so a stage sends what the
+// project's file says rather than the built-in words.
+func TestTodoRun_TheSessionsWordingsReachTheRun(t *testing.T) {
+	m, root := runModel(t)
+	m.todos.Wordings = run.Wordings{Research: "READ IT MY WAY"}
+	m = m.WithTodos(m.todos)
+	updated, _ := m.startTodoRun("do-it", false)
+	m = updated.(Model)
+	if m.todoRunner.state == nil {
+		t.Fatal("the run did not start")
+	}
+	if m.todoRunner.state.Wordings.Research != "READ IT MY WAY" {
+		t.Fatalf("the run's wordings = %+v", m.todoRunner.state.Wordings)
+	}
+
+	// A run continued from a checkpoint takes the wordings this session
+	// read: the checkpoint holds none, because they are files on disk and a
+	// session that starts reads them as they now stand.
+	if err := m.todoRunner.state.Save(root); err != nil {
+		t.Fatal(err)
+	}
+	m2 := frameModel(t, 130, 40)
+	m2.changes = changeset.New(1 << 20)
+	m2.policy.mode = agent.ModeManual
+	m2 = m2.WithTodos(Todos{
+		Root: root, Manage: func([]string) string { return "" },
+		Detail:   func(*todo.Store, todo.Item) string { return "" },
+		Wordings: run.Wordings{Research: "READ IT ANOTHER WAY"},
+	})
+	updated, _ = m2.startTodoRun("do-it", false)
+	m2 = updated.(Model)
+	if m2.todoRunner.state == nil || m2.todoRunner.state.Stage != run.StageResearch {
+		t.Fatalf("the run did not continue from the checkpoint: %+v", m2.todoRunner.state)
+	}
+	if m2.todoRunner.state.Wordings.Research != "READ IT ANOTHER WAY" {
+		t.Fatalf("a continued run did not take this session's wordings: %+v", m2.todoRunner.state.Wordings)
+	}
+}

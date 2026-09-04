@@ -155,6 +155,7 @@ func (m Model) beginTodoRun(arg string, noCommit, inSprint bool) (tea.Model, tea
 			st.NoCommit, st.Repo, st.Sprint = noCommit, repo, m.sprintGoal()
 			st.InSprint = inSprint
 			st.Groomed = todo.GroomingBlock(m.todos.Root, it.Slug)
+			st.Wordings = m.todos.Wordings
 			m.todoRunner.state = st
 			m.todoRunner.item = it
 			m.openTodoRunRow()
@@ -172,7 +173,8 @@ func (m Model) beginTodoRun(arg string, noCommit, inSprint bool) (tea.Model, tea
 			// A reading the person accepted and has not edited past is
 			// what the research stage is told instead of taking the same
 			// reading again three stages before it is needed.
-			Groomed: todo.GroomingBlock(m.todos.Root, it.Slug)})
+			Groomed:  todo.GroomingBlock(m.todos.Root, it.Slug),
+			Wordings: m.todos.Wordings})
 	m.todoRunner.item = it
 	m.openTodoRunRow()
 	m.reloadTodos()

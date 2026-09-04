@@ -64,6 +64,9 @@ type Todos struct {
 	// behind. The zero value is the setting's own default, which is what a
 	// host that says nothing gets; a negative one turns the warning off.
 	GroomStale int
+	// Wordings are the stage instructions a run sends, as the host read
+	// them. The zero value is the built-in set.
+	Wordings run.Wordings
 }
 
 // WithTodos enables /todo and the TODO block.

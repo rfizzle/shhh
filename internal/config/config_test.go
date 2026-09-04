@@ -662,10 +662,17 @@ func TestSet_SteeringConfig(t *testing.T) {
 	}
 
 	for key, into := range map[string]*string{
-		"prompts.steer":      &cfg.Prompts.Steer,
-		"prompts.check_in":   &cfg.Prompts.CheckIn,
-		"prompts.summary":    &cfg.Prompts.Summary,
-		"prompts.classifier": &cfg.Prompts.Classifier,
+		"prompts.steer":            &cfg.Prompts.Steer,
+		"prompts.check_in":         &cfg.Prompts.CheckIn,
+		"prompts.summary":          &cfg.Prompts.Summary,
+		"prompts.classifier":       &cfg.Prompts.Classifier,
+		"prompts.todo_standards":   &cfg.Prompts.TodoStandards,
+		"prompts.todo_research":    &cfg.Prompts.TodoResearch,
+		"prompts.todo_implement":   &cfg.Prompts.TodoImplement,
+		"prompts.todo_review":      &cfg.Prompts.TodoReview,
+		"prompts.todo_review_task": &cfg.Prompts.TodoReviewTask,
+		"prompts.todo_remediate":   &cfg.Prompts.TodoRemediate,
+		"prompts.todo_commit":      &cfg.Prompts.TodoCommit,
 	} {
 		if err := Set(&cfg, key, "/wordings/"+key); err != nil {
 			t.Fatalf("%s: unexpected error: %v", key, err)
@@ -695,6 +702,13 @@ steer = "steer.md"
 check_in = "checkin.md"
 summary = "summary.md"
 classifier = "classifier.md"
+todo_standards = "standards.md"
+todo_research = "research.md"
+todo_implement = "implement.md"
+todo_review = "review.md"
+todo_review_task = "review_task.md"
+todo_remediate = "remediate.md"
+todo_commit = "commit.md"
 `), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -708,7 +722,12 @@ classifier = "classifier.md"
 	if cfg.Summary.InterveneCooldownIntervals != 3 || cfg.Summary.SteerTargetChars != 120 {
 		t.Errorf("steer keys = %d/%d", cfg.Summary.InterveneCooldownIntervals, cfg.Summary.SteerTargetChars)
 	}
-	want := PromptsConfig{Steer: "steer.md", CheckIn: "checkin.md", Summary: "summary.md", Classifier: "classifier.md"}
+	want := PromptsConfig{
+		Steer: "steer.md", CheckIn: "checkin.md", Summary: "summary.md", Classifier: "classifier.md",
+		TodoStandards: "standards.md", TodoResearch: "research.md", TodoImplement: "implement.md",
+		TodoReview: "review.md", TodoReviewTask: "review_task.md", TodoRemediate: "remediate.md",
+		TodoCommit: "commit.md",
+	}
 	if cfg.Prompts != want {
 		t.Errorf("prompts = %+v, want %+v", cfg.Prompts, want)
 	}

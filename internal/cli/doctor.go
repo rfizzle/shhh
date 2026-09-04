@@ -272,6 +272,7 @@ func doctorProbes() []doctorProbe {
 		{name: "project", run: probeProject},
 		{name: "trust", run: probeTrust},
 		{name: "hooks", run: probeHooks},
+		{name: "prompts", run: probePrompts},
 		{name: "tools", run: probeTools},
 		{name: "memory", run: probeMemory},
 		{name: "update", run: probeUpdate},
@@ -1276,6 +1277,49 @@ func doctorHooks(set *hook.Set, ceiling time.Duration) doctorFinding {
 	return f
 }
 
+// probePrompts reads every wording a file replaced, from the settings and
+// from the checkout's own prompts directory.
+//
+// It is a check of its own because an unreadable wording is the one config
+// failure that stops a session from starting at all, and a reader who has
+// just written the path is exactly who is looking here.
+func probePrompts(_ context.Context, cfg config.Config) doctorFinding {
+	return doctorPrompts(readWordings(cfg.Prompts, projectPrompts()))
+}
+
+// doctorPrompts is that reading. Replacing nothing is the ordinary case and
+// not a fault, so a machine running the built-in prose reads as empty rather
+// than as missing something.
+func doctorPrompts(rows []wordingRow) doctorFinding {
+	if len(rows) == 0 {
+		return doctorFinding{
+			Subject: "no wordings replaced", Detail: "the built-in prose",
+			Outcome: "empty", State: components.DoctorSkipped,
+		}
+	}
+	names := make([]string, 0, len(rows))
+	var unreadable []string
+	for _, r := range rows {
+		names = append(names, r.key)
+		if r.err != nil {
+			unreadable = append(unreadable, r.err.Error())
+		}
+	}
+	f := doctorFinding{
+		Subject: countOf(len(rows), "wording", "wordings"),
+		Detail:  strings.Join(names, " · "),
+		Outcome: "ok",
+	}
+	if len(unreadable) > 0 {
+		f.Outcome = "unreadable"
+		f.State = components.DoctorFailed
+		f.Consequence = countOf(len(unreadable), "wording", "wordings") + " cannot be read, and no session starts until that is settled"
+		f.Fix = unreadable
+		f.FixLabel = fmt.Sprintf("show the %s", countOf(len(f.Fix), "reason", "reasons"))
+	}
+	return f
+}
+
 func probeTools(context.Context, config.Config) doctorFinding {
 	var found, missing []string
 	for _, tool := range structural.ToolBinaries() {
@@ -1619,6 +1663,8 @@ func doctorQueuedSubject(name string) string {
 		return "what this checkout may make a session load"
 	case "hooks":
 		return "your own commands at the session's seams"
+	case "prompts":
+		return "the wordings a file replaced"
 	case "tools":
 		return "the tools and language servers on PATH"
 	case "memory":

@@ -29,22 +29,68 @@ const (
 	PlaceholderReason   = "{{reason}}"
 )
 
-// What each wording may use. They are three functions rather than one taking
-// a list because pairing a wording with the wrong list is itself a way to be
-// silently wrong, and there is no reason a caller should have to get it
-// right.
+// The substitutions a backlog run's stage wordings may name: the blocks the
+// run hands the model, which it places itself where the wording does not.
+// They are spelled here and in the runner that builds the prompts, because
+// this package validates a file before a session runs on it and the runner
+// must not have to import the agent loop to assemble a string; a test holds
+// the two sets together.
+const (
+	PlaceholderItem     = "{{item}}"
+	PlaceholderPlan     = "{{plan}}"
+	PlaceholderAnswers  = "{{answers}}"
+	PlaceholderFindings = "{{findings}}"
+	PlaceholderDiff     = "{{diff}}"
+)
+
+// What each wording may use. They are a function apiece rather than one
+// taking a list because pairing a wording with the wrong list is itself a
+// way to be silently wrong, and there is no reason a caller should have to
+// get it right.
 var (
-	checkInPlaceholders = []string{PlaceholderRounds, PlaceholderFinished}
-	steerPlaceholders   = []string{PlaceholderTarget, PlaceholderReason}
+	checkInPlaceholders   = []string{PlaceholderRounds, PlaceholderFinished}
+	steerPlaceholders     = []string{PlaceholderTarget, PlaceholderReason}
+	researchPlaceholders  = []string{PlaceholderItem, PlaceholderAnswers}
+	implementPlaceholders = []string{PlaceholderItem, PlaceholderPlan, PlaceholderAnswers}
+	reviewPlaceholders    = []string{PlaceholderItem, PlaceholderPlan, PlaceholderDiff}
+	remediatePlaceholders = []string{PlaceholderItem, PlaceholderFindings}
+	commitPlaceholders    = []string{PlaceholderItem}
 )
 
 // ValidateCheckIn and ValidateSteer report the first substitution a wording
-// names that it does not take. ValidateVerbatim is for the two wordings that
-// are sent as written — the reading instruction and the classifier's — where
-// any substitution at all is a mistake.
+// names that it does not take. ValidateVerbatim is for the wordings that are
+// sent as written — the reading instruction, the classifier's, and the
+// standards sentence a run's stages share — where any substitution at all is
+// a mistake.
 func ValidateCheckIn(text string) error  { return validatePlaceholders(text, checkInPlaceholders) }
 func ValidateSteer(text string) error    { return validatePlaceholders(text, steerPlaceholders) }
 func ValidateVerbatim(text string) error { return validatePlaceholders(text, nil) }
+
+// The same reading for a backlog run's stages. The review stage and the
+// reviewer child's task take the same three: `{{diff}}` is what changed for
+// both, handed to the child that cannot go and look and, for the stage that
+// can, the instruction that finds it. The commit stage takes only the item —
+// the sentence about a repository's commit style is not the change, and
+// naming it `{{diff}}` would give one substitution two meanings in one run.
+func ValidateTodoResearch(text string) error {
+	return validatePlaceholders(text, researchPlaceholders)
+}
+
+func ValidateTodoImplement(text string) error {
+	return validatePlaceholders(text, implementPlaceholders)
+}
+
+func ValidateTodoReview(text string) error {
+	return validatePlaceholders(text, reviewPlaceholders)
+}
+
+func ValidateTodoRemediate(text string) error {
+	return validatePlaceholders(text, remediatePlaceholders)
+}
+
+func ValidateTodoCommit(text string) error {
+	return validatePlaceholders(text, commitPlaceholders)
+}
 
 // placeholderPattern matches anything written as a placeholder, so a
 // mistyped one is caught as one rather than read as prose.
