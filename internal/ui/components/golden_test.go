@@ -1767,6 +1767,139 @@ func TestGolden_HistoryScreen(t *testing.T) {
 	})
 }
 
+// goldenBacklogRows is the fixture backlog: an item being worked, one
+// waiting on two others, one ready, one blocked, one ungraded, and a file
+// that will not parse — so the six row shapes are on one sheet.
+func goldenBacklogRows() []BacklogRow {
+	return []BacklogRow{
+		{Slug: "rail-todo-block", Title: "The backlog block on the inspector rail",
+			Kind: "story", Priority: "high", Status: "in progress", Size: "M",
+			State: BacklogRunning, Blocks: []string{"screen-over-items"}, InSprint: true,
+			Fields: []string{"story", "high", "size M", "in progress", "written 2026-08-28"},
+			Body:   "**As a** reader, **I want** the queue beside the turn.\n\n## Acceptance criteria\n\n- [x] four rows and a count\n- [ ] the running item first\n"},
+		{Slug: "screen-over-items", Title: "A screen over the whole backlog, with the body beside the list",
+			Kind: "story", Priority: "high", Status: "open", Size: "L",
+			State: BacklogWaiting, Waits: []string{"rail-todo-block", "prose-renderer"},
+			Fields: []string{"story", "high", "size L", "open", "written 2026-08-30"},
+			Body:   "## Acceptance criteria\n\n- [ ] the list on the left\n- [ ] the body on the right\n"},
+		{Slug: "prose-renderer", Title: "One renderer for every piece of prose",
+			Kind: "chore", Priority: "medium", Status: "open", Size: "S",
+			State:  BacklogReady,
+			Fields: []string{"chore", "medium", "size S", "open", "written 2026-08-31"},
+			Body:   "The transcript and the item body draw the same headings.\n"},
+		{Slug: "sprint-file", Title: "The sprint is a file that names its items",
+			Kind: "story", Priority: "medium", Status: "blocked", Size: "M",
+			State: BacklogBlocked, InSprint: true,
+			Fields: []string{"story", "medium", "size M", "blocked", "written 2026-09-01"},
+			Body:   "## Blocked\n\nWaiting on a decision about where the file lives.\n"},
+		{Slug: "drop-loses-the-file", Title: "Dropping an item says what it loses",
+			Kind: "bug", Priority: "low", Status: "open", Size: "",
+			State:  BacklogReady,
+			Fields: []string{"bug", "low", "ungraded", "open"},
+			Body:   "The verb deletes the file and the sentence should say so.\n"},
+		{Slug: "half-written", Path: ".shhh/todo/half-written.md",
+			State: BacklogUnreadable, Reason: "no title in the header"},
+	}
+}
+
+// goldenBacklogDone is the archive: one item with a report and one archived
+// by hand, which has none.
+func goldenBacklogDone() []BacklogRow {
+	return []BacklogRow{
+		{Slug: "keys-are-declared-once", Title: "Every key is declared once",
+			Kind: "chore", Priority: "high", Status: "done", Size: "M",
+			State:  BacklogArchived,
+			Fields: []string{"chore", "high", "size M", "done", "written 2026-08-20"},
+			Body:   "Sixty-eight literals came out of twenty files; the register is the one place a key is written down.\n"},
+		{Slug: "windowed-list", Title: "One windowed list under five cards",
+			Kind: "chore", Priority: "medium", Status: "done", Size: "S",
+			State:  BacklogArchived,
+			Fields: []string{"chore", "medium", "size S", "done", "written 2026-08-24", "no report"}},
+	}
+}
+
+// goldenBacklogScreen is the screen over that fixture. It supplies no prose
+// renderer, so the pane draws the file's own lines: the renderer the session
+// wires lives above this package.
+func goldenBacklogScreen() *BacklogScreen {
+	return &BacklogScreen{
+		Rows: goldenBacklogRows(), Done: goldenBacklogDone(),
+		Sprint: "the cockpit sprint", MaxLines: 22,
+	}
+}
+
+// TestGolden_BacklogScreen captures the backlog as a surface: the list on
+// the left and the item's own prose on the right, the fold under the pane
+// width, the filters stating themselves in the header, the confirm in front
+// of the key that deletes a file, and the state keys grey while a turn is
+// running.
+func TestGolden_BacklogScreen(t *testing.T) {
+	captureGolden(t, "backlog-screen", "the backlog screen", goldenWidths, func(width int) []golden.Panel {
+		screen := func(mut func(*BacklogScreen)) *BacklogScreen {
+			b := goldenBacklogScreen()
+			if mut != nil {
+				mut(b)
+			}
+			return b
+		}
+		typed := func(b *BacklogScreen, text string) {
+			for _, r := range text {
+				b.Update(tea.KeyPressMsg{Code: r, Text: string(r)})
+			}
+		}
+		return []golden.Panel{
+			{Label: "the list · slug, grade, state and title, with the item beside it", View: screen(nil).View(width)},
+			{Label: "a waiting item · both ends of the edge on its header row", View: func() string {
+				b := screen(nil)
+				b.Update(key("down"))
+				return b.View(width)
+			}()},
+			{Label: "a file that will not parse · a row in warning tone, the reason as its body", View: func() string {
+				b := screen(nil)
+				for range 5 {
+					b.Update(key("down"))
+				}
+				return b.View(width)
+			}()},
+			{Label: "[/] · the query row, with the header saying what it left", View: func() string {
+				b := screen(nil)
+				b.Update(key("/"))
+				typed(b, "sprint")
+				return b.View(width)
+			}()},
+			{Label: "[s] · the status filter in words, and what it hid under the list", View: func() string {
+				b := screen(nil)
+				typed(b, "s")
+				return b.View(width)
+			}()},
+			{Label: "[enter] · the body with the surface to itself", View: func() string {
+				b := screen(nil)
+				b.Update(key("enter"))
+				return b.View(width)
+			}()},
+			{Label: "[tab] · the archive, each item's report as its body", View: func() string {
+				b := screen(nil)
+				b.Update(key("tab"))
+				return b.View(width)
+			}()},
+			{Label: "[x] · the one confirm that names what it loses", View: func() string {
+				b := screen(nil)
+				typed(b, "x")
+				return b.View(width)
+			}()},
+			{Label: "a turn is running · the keys that change a file are grey, and the row says why", View: screen(func(b *BacklogScreen) {
+				b.ReadOnly = true
+				b.Why = "the turn is running; these change the files it may be working from"
+			}).View(width)},
+			{Label: "[?] · every key the screen has", View: func() string {
+				b := screen(nil)
+				typed(b, "?")
+				return b.View(width)
+			}()},
+		}
+	})
+}
+
 // metricsWidths are the three the metrics surface is drawn at: the narrowest
 // terminal it still lines its columns up in, the working width, and the width
 // the `Tools` artboard draws it at.

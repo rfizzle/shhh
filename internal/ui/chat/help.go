@@ -346,6 +346,17 @@ its turn, X kills it; attached, typing steers the agent,
 shift+tab sets its mode (clamped), esc detaches`,
 	},
 	{
+		binds: []keys.Binding{keys.Draft.Backlog},
+		text: `The backlog screen: the project's items on the left and the one
+under the pointer on the right, / and s/p/k/r narrow the list,
+enter reads the body, e edits the file, R runs it, b/o/d/x
+block, reopen, archive and drop it, tab shows what shipped,
+? lists every key it has, esc returns
+(bare /todo opens the same screen; it opens over a running
+ turn, and the keys that would change a file are grey while
+ one is going, because the model may be reading them)`,
+	},
+	{
 		binds: []keys.Binding{keys.Draft.NextAgent, keys.Draft.PrevAgent},
 		sep:   " ",
 		text: `Move the keyboard one session along the inspector rail's

@@ -150,7 +150,7 @@ func TestEveryDeclaredBindingIsOnASurface(t *testing.T) {
 			Draft.Complete, Draft.Palette, Draft.Reasoning, Draft.Mode,
 			Draft.HistoryPrev, Draft.HistoryNext, Draft.HistorySearch,
 			Draft.ScrollUp, Draft.ScrollDown, Draft.PageUp, Draft.PageDown, Draft.Reading,
-			Draft.Agents, Draft.NextAgent, Draft.PrevAgent,
+			Draft.Agents, Draft.Backlog, Draft.NextAgent, Draft.PrevAgent,
 			Draft.Mouse, Draft.KeyList, Draft.Suspend, Draft.Redraw,
 			Draft.Answer, Draft.Clear,
 			Draft.Cancel, Draft.Quit}},
@@ -158,6 +158,7 @@ func TestEveryDeclaredBindingIsOnASurface(t *testing.T) {
 		{"Reading", Reading.All()},
 		{"Find", Find.All()},
 		{"Context", Context.All()},
+		{"Backlog", Backlog.All()},
 		{"Row", []Binding{Row.Review, Row.Undo, Row.Retry, Row.Continue, Row.Key,
 			Row.Provider, Row.Rounds, Row.Uncap}},
 		{"Decision", []Binding{Decision.Allow, Decision.Deny, Decision.Refuse,
@@ -286,6 +287,43 @@ func TestReadingRowKeysHaveOneHome(t *testing.T) {
 		}
 		if len(homes) != 1 || homes[0] != "reading mode" {
 			t.Errorf("%q is bound on %v, want reading mode alone", Shown(b), homes)
+		}
+	}
+}
+
+// TestBacklogChordHasOneHome pins the chord the backlog screen was given the
+// way the realigned chords are pinned. The register is the only thing that
+// can say a chord is free, and "free" has to keep meaning that: a second
+// home for this one is a surface answering the keyboard's own door with
+// something else, on a keystroke no sentence can produce and nobody would
+// think to check.
+func TestBacklogChordHasOneHome(t *testing.T) {
+	var homes []string
+	for _, s := range all() {
+		for _, b := range s.Bindings {
+			for _, k := range b.Keys() {
+				if k == "ctrl+f" {
+					homes = append(homes, s.Name)
+				}
+			}
+		}
+	}
+	if len(homes) != 1 || homes[0] != "the input" {
+		t.Errorf("ctrl+f is bound on %v, want the input alone", homes)
+	}
+}
+
+// The backlog screen is the one list in the product whose pointer does not
+// move on j/k, and the reason is that four letters select on it. This holds
+// the two apart: a movement binding that grew `k` back would answer the
+// kind filter's keystroke as well, and the first case in the switch would
+// silently win.
+func TestBacklogMovementLeavesTheFilterLetters(t *testing.T) {
+	for _, b := range []Binding{Backlog.Status, Backlog.Priority, Backlog.Kind, Backlog.Ready} {
+		for _, k := range b.Keys() {
+			if Is(k, Backlog.Move) {
+				t.Errorf("%q is both %q and the pointer's movement", k, Words(b))
+			}
 		}
 	}
 }

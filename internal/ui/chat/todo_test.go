@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/todo"
@@ -81,20 +82,23 @@ func TestInspectorTodo_NoBacklogNoBlock(t *testing.T) {
 	}
 }
 
-func TestTodoCommand_PickerAndSubcommands(t *testing.T) {
+func TestTodoCommand_ScreenAndSubcommands(t *testing.T) {
 	m := todoModel(t, todoTestRoot(t))
 	m.input.SetValue("/todo")
 	updated, _ := m.submitInput()
 	next := updated.(Model)
-	if next.picker == nil || next.state != statePick {
-		t.Fatal("bare /todo should open the picker")
+	if next.backlog == nil || next.state != stateBacklog {
+		t.Fatal("bare /todo should open the backlog screen")
 	}
-	if len(next.pickerAll) != 5 || next.pickerAll[0].Label != "a-high" || next.pickerAll[1].Value != "waits on a-high, c-blocked" {
-		t.Fatalf("picker rows = %+v", next.pickerAll)
+	if len(next.backlog.Rows) != 5 || next.backlog.Rows[0].Slug != "a-high" {
+		t.Fatalf("screen rows = %+v", next.backlog.Rows)
 	}
-	note, _ := next.pickerApply(&next, 3, false)
-	if note != "detail d-ready" {
-		t.Fatalf("enter should show the item, got %q", note)
+	if got := next.backlog.Rows[1]; got.Slug != "b-waits" ||
+		strings.Join(got.Waits, ",") != "a-high,c-blocked" {
+		t.Fatalf("the waiting row should name both dependencies, got %+v", got)
+	}
+	if got := next.backlog.Rows[0].Blocks; strings.Join(got, ",") != "b-waits" {
+		t.Fatalf("a-high should say b-waits is waiting on it, got %v", got)
 	}
 
 	m.input.SetValue("/todo block d-ready why")
@@ -105,12 +109,131 @@ func TestTodoCommand_PickerAndSubcommands(t *testing.T) {
 		t.Fatalf("subcommand note = %+v", last)
 	}
 
+	// An empty backlog still opens the screen: it is the surface that says
+	// there is nothing here and offers the key that starts something.
 	empty := todoModel(t, t.TempDir())
 	empty.input.SetValue("/todo")
 	updated, _ = empty.submitInput()
 	next = updated.(Model)
-	if next.picker != nil || next.transcript[len(next.transcript)-1].text != "managed " {
-		t.Fatal("bare /todo with nothing to pick should fall through to the listing")
+	if next.backlog == nil || len(next.backlog.Rows) != 0 {
+		t.Fatalf("an empty backlog should open an empty screen, got %+v", next.backlog)
+	}
+}
+
+// The chord is the other door, and it opens over a running turn: reading the
+// backlog while the model works from it is exactly when the question gets
+// asked. What the screen refuses there is the keys that change a file.
+func TestTodoScreen_ChordOpensAndAWorkingTurnMakesItReadOnly(t *testing.T) {
+	m := todoModel(t, todoTestRoot(t))
+	m.setTurnState(stateStreaming)
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'f', Mod: tea.ModCtrl})
+	next := updated.(Model)
+	if next.state != stateBacklog || next.backlog == nil {
+		t.Fatalf("the chord should open the screen, state=%d", next.state)
+	}
+	if !next.backlog.ReadOnly {
+		t.Fatal("the screen should open read-only over a working turn")
+	}
+	view := ansi.Strip(next.backlog.View(130))
+	if !strings.Contains(view, todoScreenWhy) {
+		t.Fatalf("the footer should say why the keys are inert:\n%s", view)
+	}
+	// The state key is inert rather than refused after the fact.
+	before := len(next.transcript)
+	after, _ := next.updateTodoScreen(key('x'))
+	if got := after.(Model); len(got.transcript) != before || got.backlog == nil {
+		t.Fatal("a state key over a working turn should do nothing at all")
+	}
+}
+
+// Every act on the screen goes through the handler the typed verb goes
+// through, so the two cannot come to mean different things.
+func TestTodoScreen_KeysGoThroughTheSameVerbs(t *testing.T) {
+	m := todoModel(t, todoTestRoot(t))
+	opened, _ := m.openTodoScreen()
+	next := opened.(Model)
+	for _, tc := range []struct {
+		key  rune
+		want string
+	}{
+		{'b', "managed block a-high"},
+		{'d', "managed done a-high"},
+		{'x', "managed drop a-high"},
+	} {
+		after, _ := next.updateTodoScreen(key(tc.key))
+		m2 := after.(Model)
+		if m2.backlog.Notice != "" {
+			t.Fatalf("%c should ask before it acts, notice = %q", tc.key, m2.backlog.Notice)
+		}
+		answered, _ := m2.updateTodoScreen(key('y'))
+		m3 := answered.(Model)
+		if got := m3.transcript[len(m3.transcript)-1].text; got != tc.want {
+			t.Fatalf("%c wrote %q, want %q", tc.key, got, tc.want)
+		}
+	}
+}
+
+// The archive is the other tab, its bodies are the reports, and an item can
+// come back out of it.
+func TestTodoScreen_DoneTabShowsTheReportAndReopens(t *testing.T) {
+	root := todoTestRoot(t)
+	done := filepath.Join(todo.Dir(root), todo.DoneSubdir, "z-shipped.md")
+	if err := os.WriteFile(done, []byte("---\ntitle: Shipped\nstatus: done\n---\n\n## Acceptance criteria\n- [x] one\n\n## Report\nwhat actually happened\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	m := todoModel(t, root)
+	opened, _ := m.openTodoScreen()
+	next := opened.(Model)
+	if len(next.backlog.Done) != 1 || next.backlog.Done[0].Body != "what actually happened" {
+		t.Fatalf("the done tab should carry the report, got %+v", next.backlog.Done)
+	}
+	after, _ := next.updateTodoScreen(tea.KeyPressMsg{Code: tea.KeyTab})
+	reopened, _ := after.(Model).updateTodoScreen(key('o'))
+	m3 := reopened.(Model)
+	if _, err := os.Stat(done); !os.IsNotExist(err) {
+		t.Fatalf("the archived file should have moved, stat err = %v", err)
+	}
+	it, ok := m3.todoStore.Find("z-shipped")
+	if !ok || it.Archived || it.Status != todo.StatusOpen {
+		t.Fatalf("the item should be back in the backlog and open, got %+v", it)
+	}
+}
+
+// A file that will not parse is a row with the reason as its body. The
+// listing used to say so in a footnote and the picker not at all, which is
+// how a broken header reads as an item somebody deleted.
+func TestTodoScreen_UnreadableFileIsARow(t *testing.T) {
+	root := todoTestRoot(t)
+	if err := os.WriteFile(filepath.Join(todo.Dir(root), "f-broken.md"), []byte("no header at all\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	m := todoModel(t, root)
+	opened, _ := m.openTodoScreen()
+	next := opened.(Model)
+	var broken *components.BacklogRow
+	for i, row := range next.backlog.Rows {
+		if row.Slug == "f-broken" {
+			broken = &next.backlog.Rows[i]
+		}
+	}
+	if broken == nil || broken.State != components.BacklogUnreadable || broken.Reason == "" {
+		t.Fatalf("the broken file should be a row with a reason, got %+v", broken)
+	}
+}
+
+// The body goes through the renderer the transcript lays an answer out with,
+// so a heading in an item is drawn rather than left as its marks.
+func TestTodoScreen_BodyGoesThroughTheProseRenderer(t *testing.T) {
+	root := todoTestRoot(t)
+	if err := os.WriteFile(filepath.Join(todo.Dir(root), "a-high.md"),
+		[]byte("---\ntitle: High one\npriority: high\nsize: M\n---\n\n## Acceptance criteria\n\n- one thing\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	m := todoModel(t, root)
+	opened, _ := m.openTodoScreen()
+	view := ansi.Strip(opened.(Model).backlog.View(130))
+	if strings.Contains(view, "## Acceptance") || !strings.Contains(view, "Acceptance criteria") {
+		t.Fatalf("the body should be rendered rather than shown as marks:\n%s", view)
 	}
 }
 

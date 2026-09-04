@@ -789,6 +789,58 @@ line between a list and the output under it, the card's own divider above its
 keys. The texture says where a surface stops, and a rule between two halves of
 one surface would be saying the opposite.
 
+### The backlog screen
+
+The backlog is a directory of files, and it was readable two ways, each
+answering a different question. The block on the rail shows the first few
+items, which answers *what is next*. The command prints the whole listing,
+which answers *what is in here* and then, for anything beyond reading, asks
+for a name typed back — a name the reader has just read off their own screen.
+
+So the backlog is also a surface: the items on the left in the order they
+would be worked, the one under the pointer on the right as the file it is,
+and the keys that would otherwise be composed as verbs. Nothing here is new.
+It is the same two panes, the same windowed list, the same header and rule
+and key row as every other screen in this section.
+
+The row carries what decides the order and nothing else: the name, the
+priority and size as two letters, and where the item stands — ready, waiting
+on something, in progress, blocked. The title takes whatever is left and
+clips, because the pane beside the list carries it in full. Under the width
+that carries two columns the pane folds under the list rather than beside it:
+prose two columns wide is prose nobody reads.
+
+Both ends of a dependency are drawn. The row says what an item is waiting on,
+which a listing has always said; the pane says what is waiting on *it*, which
+nothing has ever said and which is what decides whether finishing it is worth
+anything. One key walks the edge.
+
+A file that will not parse is a row in warning tone with the reason as its
+body, and it survives every filter that asks a question it has no header to
+answer. It is the one row that must never go missing: an item that vanished
+from the list reads as work somebody finished.
+
+There is a second tab for the archive, and what an archived item shows is the
+report of what was actually done rather than the criteria that were the
+question. That is the whole reason it is worth having: what shipped and how
+is read in the same place it was planned. An item can come back out of the
+archive from there, which is the one act on this screen that no typed verb
+has.
+
+The rule the supporting screens share holds here: nothing changes without a
+card. Blocking, archiving and dropping each ask first, and the one that
+deletes a file says that is what it does. What the screen removes is the
+composing, not the asking. And every act goes through the same handler the
+typed verb goes through, so a refusal on the screen is the refusal the
+command gives.
+
+It can be opened in the middle of a turn, because *what is in the backlog* is
+a question a running turn provokes rather than one it answers. What it cannot
+do then is change a file: the model may be working from these files this
+second, so the keys that would edit one go grey with the sentence saying why
+above them, rather than accepting the press and refusing it afterwards
+([invariant 5](principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard)).
+
 ### The profile drafter
 
 Drafting a profile is a conversation with a shape — a brief, at most three

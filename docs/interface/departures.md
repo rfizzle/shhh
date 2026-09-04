@@ -225,3 +225,32 @@ the pairing is worth offering, and it is the one table where the five tokens
 that normally defer to the terminal's own theme do not: a named palette that
 handed its green back to whatever the user's config says would not be that
 palette.
+
+## The backlog screen's layout was decided in the binary
+
+There is no artboard for it. The screen is the supporting screens' own shape
+over backlog items, so most of it needed no decision — the header and its
+rule, the two panes and the divider, the key row, the windowed list and the
+counted overflow markers were all drawn already. Four things it could not
+take from anywhere, and they were decided here:
+
+**The row's field order, and which field gives ground.** The name and the two
+grade letters are kept, the state clips, and the title goes first. The pane
+beside the list carries the title in full, so losing it there is a fold; the
+state is why the list is on screen at all.
+
+**The pointer moves on the arrows alone.** Every other list in the product
+moves on `↑↓` and `j/k`. Four letters select on this screen — status,
+priority, kind and ready-only — and one of them is `k`. A key is answered
+once, so the pair is broken here and nowhere else.
+
+**Both ends of a dependency.** What an item waits on is on the row, and what
+waits on it is on the pane's header line. The design system has no drawing of
+the second, because no surface has ever shown it.
+
+**Where the two panes stop fitting.** The fold is at the history browser's
+own threshold, arrived at the same way: below it the pane beside the list is
+prose in a column too narrow to read a sentence in.
+
+When there is an artboard, these four decisions are what it has to reconcile
+with, and where the two differ the artboard wins.

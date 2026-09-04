@@ -147,6 +147,12 @@ const (
 	// staged chips — checked ones are dropped on enter, esc drops none. The
 	// one-chip case asks through the inline confirm instead.
 	statePasteDrop
+	// stateBacklog: the backlog screen is up — the project's items on the
+	// left and the one under the pointer on the right. A takeover: full
+	// width, the rail hidden, esc returns. It can be opened over a running
+	// turn, and the keys that would change a file are inert while it is
+	// (todo.go).
+	stateBacklog
 )
 
 const inputHeight = 3
@@ -966,6 +972,11 @@ type Model struct {
 	// machine turned out to have (prompt.Toolbox).
 	context  *components.ContextScreen
 	toolDefs []ToolTokens
+	// backlog is the backlog screen while it is up. It is kept rather than
+	// rebuilt per frame because the pointer, the filters and the tab the
+	// reader is on are what the surface is: a screen re-derived from the
+	// store on every keystroke would forget all three.
+	backlog *components.BacklogScreen
 	// contextOpen is which of the surface's folds the reader had open when
 	// they last left it, by label. It outlives the screen because the screen
 	// is rebuilt from the accounting on every opening.

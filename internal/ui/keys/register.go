@@ -82,7 +82,8 @@ func Surfaces() []Surface {
 				Draft.Pause,
 				Draft.HistoryPrev, Draft.HistoryNext, Draft.HistorySearch,
 				Draft.ScrollUp, Draft.ScrollDown, Draft.PageUp, Draft.PageDown,
-				Draft.Reading, Draft.Agents, Draft.NextAgent, Draft.PrevAgent,
+				Draft.Reading, Draft.Agents, Draft.Backlog,
+				Draft.NextAgent, Draft.PrevAgent,
 				Draft.Mouse, Draft.KeyList,
 				Draft.Suspend, Draft.Redraw,
 				Draft.Answer, Draft.Clear, Draft.Cancel, Draft.Quit,
@@ -123,6 +124,16 @@ func Surfaces() []Surface {
 			Position: Takeover,
 			Reached:  "/context",
 			Bindings: Context.All(),
+		},
+		{
+			// The backlog as a screen rather than as a command that prints:
+			// the list on the left and the item's own prose on the right,
+			// with the keys that would otherwise be typed as verbs.
+			Name:     "the backlog screen",
+			Section:  "docs/interface/surfaces.md#the-backlog-screen",
+			Position: Takeover,
+			Reached:  Shown(Draft.Backlog) + ", or /todo",
+			Bindings: Backlog.All(),
 		},
 		{
 			Name:     "a transcript row's own offers",

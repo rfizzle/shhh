@@ -131,6 +131,13 @@ type DraftKeys struct {
 
 	Reading Binding
 	Agents  Binding
+	// Backlog opens the project's backlog as a screen. There is no
+	// mnemonic in the chord and there was none left to find: every letter
+	// the word suggests is spent — b is the agent manager, t is the
+	// reasoning level — so this is simply the chord the register still had
+	// free among the ones every terminal delivers. The door people will
+	// use is /todo; this is the one for hands already on the keyboard.
+	Backlog Binding
 	// NextAgent and PrevAgent walk the rail's session map — the orchestrator
 	// and every child, in spawn order — moving the keyboard one session along
 	// without opening the manager. The manager is where a child is answered,
@@ -198,6 +205,7 @@ var Draft = DraftKeys{
 
 	Reading: bind("ctrl+o", "reading mode", "ctrl+o"),
 	Agents:  bind("ctrl+b", "the agent manager", "ctrl+b"),
+	Backlog: bind("ctrl+f", "the backlog screen", "ctrl+f"),
 
 	// The brackets are next and previous in the shape the key caps already
 	// have, and they are free twice over: nothing else in the register
@@ -368,6 +376,91 @@ var Context = ContextKeys{
 	Expand: bind("enter", "expand or fold", "enter"),
 	List:   bind("?", "keys", "?"),
 	Back:   bind("q", "back to the prompt", "q", "esc", "ctrl+c"),
+}
+
+// BacklogKeys are the backlog screen's own. It is a takeover in the chat
+// like the context surface, so its way out goes back to the prompt rather
+// than quitting.
+//
+// It is the one list in the product that does not move on j/k, and the
+// reason is on the row beside it: `k` cycles the kind filter here. Four
+// letters select on this screen — status, priority, kind, ready — and a
+// screen where one of them also moved the pointer would answer a keystroke
+// twice, which is the thing the register exists to make impossible. So the
+// pointer moves on the arrows alone, and every list that has no filter
+// letters keeps the pair.
+type BacklogKeys struct {
+	Move Binding
+	Read Binding
+	Page Binding
+	Tab  Binding
+
+	Filter   Binding
+	ClearQ   Binding
+	Status   Binding
+	Priority Binding
+	Kind     Binding
+	Ready    Binding
+
+	Depends Binding
+	Edit    Binding
+	Run     Binding
+	Block   Binding
+	Reopen  Binding
+	Archive Binding
+	Drop    Binding
+	New     Binding
+	Sprint  Binding
+
+	List Binding
+	Back Binding
+}
+
+// All is the screen's keys in the order it offers them, which is the order
+// `?` lists them in.
+func (k BacklogKeys) All() []Binding {
+	return []Binding{
+		k.Move, k.Read, k.Page, k.Tab,
+		k.Filter, k.ClearQ, k.Status, k.Priority, k.Kind, k.Ready,
+		k.Depends, k.Edit, k.Run, k.Block, k.Reopen, k.Archive, k.Drop,
+		k.New, k.Sprint, k.List, k.Back,
+	}
+}
+
+var Backlog = BacklogKeys{
+	Move: bind("↑↓", "move", "up", "down"),
+	Read: bind("enter", "read the body", "enter"),
+	Page: bind("pgup/pgdn", "page the body", "pgup", "pgdown"),
+	Tab:  bind("tab", "the backlog or the archive", "tab"),
+
+	Filter: bind("/", "filter by text", "/"),
+	ClearQ: bind("ctrl+u", "clear the filter", "ctrl+u"),
+	Status: bind("s", "cycle the status filter", "s"),
+	// Priority and Kind are the two words a header field uses for what an
+	// item is: how soon and what sort. They are separate filters because
+	// they answer separate questions — "what is urgent" and "what is
+	// broken" — and a reader asking the second one is not asking the first.
+	Priority: bind("p", "cycle the priority filter", "p"),
+	Kind:     bind("k", "cycle the kind filter", "k"),
+	Ready:    bind("r", "only what can be started now", "r"),
+
+	Depends: bind("w", "jump to what it waits on", "w"),
+	Edit:    bind("e", "open it in $EDITOR", "e"),
+	// Running an item is the one key here that starts work rather than
+	// recording it, and it is the shifted letter for that reason: the row
+	// under the pointer moves as the list is filtered, and a run started by
+	// a mistyped lowercase letter is minutes of the model's work on the
+	// wrong item.
+	Run:     bind("R", "run it", "R"),
+	Block:   bind("b", "block it", "b"),
+	Reopen:  bind("o", "reopen it", "o"),
+	Archive: bind("d", "archive it", "d"),
+	Drop:    bind("x", "drop it, deleting the file", "x"),
+	New:     bind("n", "a new item", "n"),
+	Sprint:  bind("S", "add it to the sprint, or drop it from one", "S"),
+
+	List: bind("?", "keys", "?"),
+	Back: bind("q", "back to the prompt", "q", "esc", "ctrl+c"),
 }
 
 // RowKeys are the offers a transcript row carries. They are the register's

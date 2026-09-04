@@ -152,13 +152,27 @@ of what to do next.
 
 ## The backlog is in view, and the file is still the item
 
-A session shows the backlog two ways. In the inspector rail, a block lists
-the first few active items in working order with what each waits on, so
-"what is next" is on screen beside "where are we". From the input, one
-command lists everything, picks an item to read, starts a new item from a
-sentence, or changes one item's state — blocked, reopened, archived — and
-says what it did. It can also drop an item outright; that is the one verb
-here that loses information, and it says so when it has.
+A session shows the backlog three ways, and each answers a different
+question. In the inspector rail, a block lists the first few active items in
+working order with what each waits on, so "what is next" is on screen beside
+"where are we". From the input, one command lists everything, picks an item
+to read, starts a new item from a sentence, or changes one item's state —
+blocked, reopened, archived — and says what it did. It can also drop an item
+outright; that is the one verb here that loses information, and it says so
+when it has.
+
+The third is a screen, and it is the answer to "what is in here", which the
+listing could only half answer: it named every item and then asked for one
+of those names to be typed back before it would do anything to it. The
+screen shows every item with the one under the pointer beside it, filters by
+text and by each of the header's own fields, and puts the keys where the
+names were — a state change is a keystroke on the row rather than a slug
+copied back into a command. What shipped is a second tab,
+where each archived item's body is the report of what was done rather than
+the criteria that were the question, and an item can come back out of the
+archive from there. Nothing on it changes a file without asking first, and
+while a turn is running the keys that would change one are not live at all —
+the model may be working from those files.
 
 None of that replaces the file. Editing an item means opening the file,
 and the session hands it to your own editor rather than offering a form:

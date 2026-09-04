@@ -241,6 +241,14 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 		if m.subagents != nil {
 			return answered(m.openAgentList())
 		}
+	case keys.Is(pressed, keys.Draft.Backlog):
+		// The backlog screen. It reads the project rather than the
+		// session, so it opens over a running turn as well as an idle
+		// one — and a session with no backlog wired keeps the key's
+		// textarea meaning (character forward).
+		if m.todosEnabled() {
+			return answered(m.openTodoScreen())
+		}
 	case keys.Is(pressed, keys.Draft.NextAgent):
 		// One step along the rail's session map, which is where the map
 		// is walked from: opening the manager to move between two

@@ -22,8 +22,31 @@ type Store struct {
 	Done []Item
 	// Sprint is the set being worked, when the backlog holds a sprint
 	// file. An open one scopes Ready and Next to its slugs, in its order.
-	Sprint      *Sprint
+	Sprint *Sprint
+	// Unreadable are the files in the backlog that would not parse as
+	// items. They are kept as entries rather than counted because the
+	// alternative is a file that is on disk and on no list: a surface that
+	// drops the row says the item is gone, and the person goes looking for
+	// a deletion that never happened.
+	Unreadable []Unreadable
+	// Diagnostics are the same failures as sentences, plus anything wrong
+	// with the sprint file, for a listing that prints rather than draws.
 	Diagnostics []string
+}
+
+// Unreadable is one file in the backlog directory that could not be read as
+// an item.
+type Unreadable struct {
+	// Slug is the file's base name without .md — the name the item would
+	// have had, and the name another item's depends_on would use for it.
+	Slug string
+	// Path is where the file is, so the reason can be acted on.
+	Path string
+	// Reason is why it would not load, in the parser's own words.
+	Reason string
+	// Archived reports it was found in the done archive rather than in the
+	// active backlog.
+	Archived bool
 }
 
 // Load reads the backlog under root. A root with no backlog directory is an
@@ -32,6 +55,9 @@ func Load(root string) *Store {
 	s := &Store{Root: root, Dir: Dir(root)}
 	s.Items = s.readDir(s.Dir, false)
 	s.Done = s.readDir(filepath.Join(s.Dir, DoneSubdir), true)
+	for _, u := range s.Unreadable {
+		s.Diagnostics = append(s.Diagnostics, fmt.Sprintf("%s: skipped: %s", u.Path, u.Reason))
+	}
 	// A sprint file that will not parse is a diagnostic and no sprint, so
 	// the ready list falls back to the whole backlog rather than to an
 	// empty one: a broken file must not look like a finished sprint.
@@ -72,7 +98,12 @@ func (s *Store) readDir(dir string, archived bool) []Item {
 		path := filepath.Join(dir, e.Name())
 		it, err := LoadFile(path)
 		if err != nil {
-			s.Diagnostics = append(s.Diagnostics, fmt.Sprintf("%s: skipped: %v", path, err))
+			s.Unreadable = append(s.Unreadable, Unreadable{
+				Slug:     strings.TrimSuffix(e.Name(), ".md"),
+				Path:     path,
+				Reason:   err.Error(),
+				Archived: archived,
+			})
 			continue
 		}
 		it.Archived = archived
@@ -316,6 +347,41 @@ func Archive(root, slug, report string) (string, error) {
 		return "", err
 	}
 	if err := Append(from, report); err != nil {
+		return "", err
+	}
+	if err := os.Rename(from, to); err != nil {
+		return "", err
+	}
+	return to, nil
+}
+
+// Reopen takes an archived item back into the active backlog and marks it
+// open. It is the way back from the archive for work that turned out not to
+// be finished.
+//
+// The body is left exactly as it was, report and all. What a run wrote about
+// the work is a record of what happened, and an item coming back is a
+// statement about what is still to do rather than a correction of that: a
+// reopen that deleted the report would lose the one account of why the item
+// was thought done. See docs/capabilities/todo.md#done-is-archived-not-deleted.
+func Reopen(root, slug string) (string, error) {
+	if err := ValidSlug(slug); err != nil {
+		return "", err
+	}
+	dir := Dir(root)
+	from := filepath.Join(dir, DoneSubdir, slug+".md")
+	if _, err := os.Stat(from); err != nil {
+		return "", fmt.Errorf("no archived item %q", slug)
+	}
+	// Everything that could refuse the move is checked before the file is
+	// touched, the way archiving checks: a refusal must leave an archived
+	// item that is still archived rather than one marked open in the
+	// archive, where nothing lists it and nothing can act on it.
+	to := filepath.Join(dir, slug+".md")
+	if _, err := os.Stat(to); err == nil {
+		return "", fmt.Errorf("%s already exists", to)
+	}
+	if err := SetStatus(from, StatusOpen); err != nil {
 		return "", err
 	}
 	if err := os.Rename(from, to); err != nil {

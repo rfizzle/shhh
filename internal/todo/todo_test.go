@@ -381,3 +381,86 @@ func TestLess_UndatedSortsAfterDated(t *testing.T) {
 		t.Error("Less is not irreflexive")
 	}
 }
+
+// A file that will not parse is kept as an entry rather than only counted in
+// a sentence: a surface that dropped the row would say the item is gone, and
+// the file is still there.
+func TestStore_KeepsWhatWouldNotParse(t *testing.T) {
+	root := t.TempDir()
+	dir := Dir(root)
+	write(t, dir, "good-one.md", "---\ntitle: Fine\n---\n")
+	write(t, dir, "half-written.md", "no header at all\n")
+	write(t, filepath.Join(dir, DoneSubdir), "old-mess.md", "---\nkind: story\n---\n")
+
+	s := Load(root)
+	if s.Len() != 1 || len(s.Done) != 0 {
+		t.Fatalf("store read %d active and %d done", s.Len(), len(s.Done))
+	}
+	if len(s.Unreadable) != 2 {
+		t.Fatalf("unreadable = %+v", s.Unreadable)
+	}
+	active, archived := s.Unreadable[0], s.Unreadable[1]
+	if active.Slug != "half-written" || active.Archived || active.Reason == "" {
+		t.Errorf("the active one = %+v", active)
+	}
+	if archived.Slug != "old-mess" || !archived.Archived {
+		t.Errorf("the archived one = %+v", archived)
+	}
+	// The listing still says the same thing it always said.
+	if len(s.Diagnostics) != 2 || !strings.Contains(s.Diagnostics[0], "half-written.md: skipped:") {
+		t.Errorf("diagnostics = %q", s.Diagnostics)
+	}
+}
+
+// Reopening is the way back out of the archive, and it keeps the report:
+// what a run wrote about the work is the account of why it was thought done,
+// and an item coming back says nothing about that.
+func TestReopen_BringsAnArchivedItemBackWithItsReport(t *testing.T) {
+	root := t.TempDir()
+	if _, err := Create(root, Item{Slug: "first-thing", Title: "First", Body: "## Notes\nx"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Archive(root, "first-thing", "## Report\ndone it"); err != nil {
+		t.Fatal(err)
+	}
+	to, err := Reopen(root, "first-thing")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if to != filepath.Join(Dir(root), "first-thing.md") {
+		t.Errorf("reopened to %q", to)
+	}
+	data, _ := os.ReadFile(to)
+	if !strings.Contains(string(data), "status: open") || !strings.Contains(string(data), "## Report\ndone it") {
+		t.Errorf("reopened file = %q", data)
+	}
+	s := Load(root)
+	if s.Len() != 1 || len(s.Done) != 0 {
+		t.Errorf("store after reopen: %d active, %d done", s.Len(), len(s.Done))
+	}
+	if _, err := Reopen(root, "first-thing"); err == nil {
+		t.Error("reopening an item that is not archived succeeded")
+	}
+}
+
+// The move is checked before the file is touched, so a refusal leaves an
+// archived item that is still archived rather than one marked open where
+// nothing lists it.
+func TestReopen_RefusesBeforeTouchingTheItem(t *testing.T) {
+	root := t.TempDir()
+	if _, err := Create(root, Item{Slug: "same-name", Title: "First"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Archive(root, "same-name", ""); err != nil {
+		t.Fatal(err)
+	}
+	// A new active item takes the name the archived one would come back to.
+	write(t, Dir(root), "same-name.md", "---\ntitle: Second\n---\n")
+	if _, err := Reopen(root, "same-name"); err == nil {
+		t.Fatal("reopening onto an existing file succeeded")
+	}
+	archived, err := LoadFile(filepath.Join(Dir(root), DoneSubdir, "same-name.md"))
+	if err != nil || archived.Status != StatusDone {
+		t.Errorf("the archived item was changed by a refusal: %+v (%v)", archived, err)
+	}
+}

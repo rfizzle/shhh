@@ -349,6 +349,18 @@ func buildOverlays() map[state]*mode {
 			hint:   (Model).renderContextHint,
 			answer: (*Model).answerContext,
 		},
+		stateBacklog: {
+			place:   placePane,
+			borrows: true,
+			lines: func(m Model, width, height int) []string {
+				if m.backlog == nil {
+					return nil
+				}
+				return strings.Split(m.backlogPane(width, height), "\n")
+			},
+			hint: (Model).renderTodoScreenHint,
+			keys: (Model).updateTodoScreen,
+		},
 		statePersona: {
 			place:   placePane,
 			borrows: true,

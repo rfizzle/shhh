@@ -39,6 +39,7 @@ func TestOverlayPlacements(t *testing.T) {
 		statePreview:    placePane,
 		stateReview:     placePane,
 		stateContext:    placePane,
+		stateBacklog:    placePane,
 		statePersona:    placePane,
 
 		stateRetryWait: placeNone,

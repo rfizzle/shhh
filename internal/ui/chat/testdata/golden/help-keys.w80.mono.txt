@@ -99,6 +99,14 @@ Keys:
   ctrl+b         Agent manager: enter attaches to an agent's session, x cancels 
                  its turn, X kills it; attached, typing steers the agent,       
                  shift+tab sets its mode (clamped), esc detaches                
+  ctrl+f         The backlog screen: the project's items on the left and the one
+                 under the pointer on the right, / and s/p/k/r narrow the list, 
+                 enter reads the body, e edits the file, R runs it, b/o/d/x     
+                 block, reopen, archive and drop it, tab shows what shipped,    
+                 ? lists every key it has, esc returns                          
+                 (bare /todo opens the same screen; it opens over a running     
+                  turn, and the keys that would change a file are grey while    
+                  one is going, because the model may be reading them)          
   alt+] alt+[    Move the keyboard one session along the inspector rail's       
                  AGENTS map — the orchestrator and every agent it started, in   
                  the order they were started, wrapping at both ends. The rail   
@@ -248,6 +256,14 @@ Keys:
 ␛[3;38;5;244m  ctrl+b         Agent manager: enter attaches to an agent's session, x cancels␛[m 
 ␛[3;38;5;244m                 its turn, X kills it; attached, typing steers the agent,␛[m       
 ␛[3;38;5;244m                 shift+tab sets its mode (clamped), esc detaches␛[m                
+␛[3;38;5;244m  ctrl+f         The backlog screen: the project's items on the left and the one␛[m
+␛[3;38;5;244m                 under the pointer on the right, / and s/p/k/r narrow the list,␛[m 
+␛[3;38;5;244m                 enter reads the body, e edits the file, R runs it, b/o/d/x␛[m     
+␛[3;38;5;244m                 block, reopen, archive and drop it, tab shows what shipped,␛[m    
+␛[3;38;5;244m                 ? lists every key it has, esc returns␛[m                          
+␛[3;38;5;244m                 (bare /todo opens the same screen; it opens over a running␛[m     
+␛[3;38;5;244m                  turn, and the keys that would change a file are grey while␛[m    
+␛[3;38;5;244m                  one is going, because the model may be reading them)␛[m          
 ␛[3;38;5;244m  alt+] alt+[    Move the keyboard one session along the inspector rail's␛[m       
 ␛[3;38;5;244m                 AGENTS map — the orchestrator and every agent it started, in␛[m   
 ␛[3;38;5;244m                 the order they were started, wrapping at both ends. The rail␛[m   

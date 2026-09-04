@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -21,6 +22,8 @@ import (
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/todo/run"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
+	"github.com/rfizzle/shhh/internal/ui/markdown"
 )
 
 // Todos wires the backlog into the chat TUI. The zero value disables it.
@@ -66,6 +69,10 @@ func (m *Model) reloadTodos() {
 		return
 	}
 	m.todoStore = todo.Load(m.todos.Root)
+	// The screen is drawn from this store, so it is rebuilt wherever the
+	// store is: a run archiving an item under a reader who is looking at the
+	// list would otherwise leave the row it archived on screen.
+	m.refreshTodoScreen()
 }
 
 // todoRailRows is how many backlog rows the block shows before it says how
@@ -172,9 +179,7 @@ func (m Model) todoCommand(parts []string) (tea.Model, tea.Cmd) {
 		return m.systemNotice("The backlog is unavailable in this session.")
 	}
 	if len(parts) == 1 {
-		if picked, cmd, ok := m.openTodoPick(); ok {
-			return picked, cmd
-		}
+		return m.openTodoScreen()
 	}
 	if len(parts) >= 2 && parts[1] == "status" {
 		return m.todoRunStatus()
@@ -307,46 +312,6 @@ func parseTodoRunArgs(args []string) (todoRunArgs, bool) {
 	return out, true
 }
 
-// openTodoPick opens the backlog picker: every active item in working order,
-// with its state where the picker draws a value. Enter shows the item in
-// the transcript. It reports false with nothing to pick, so bare /todo
-// falls through to the listing and its "no backlog" sentence.
-func (m Model) openTodoPick() (tea.Model, tea.Cmd, bool) {
-	s := m.todoStore
-	if s == nil || s.Len() == 0 {
-		return m, nil, false
-	}
-	items := s.Items
-	opts := make([]components.SelectOption, len(items))
-	for i, it := range items {
-		size := string(it.Size)
-		if size == "" {
-			size = "-"
-		}
-		opts[i] = components.SelectOption{
-			Label: it.Slug,
-			Value: todoPickState(s, it),
-			Desc:  fmt.Sprintf("%s · %s · %s", it.Priority, size, it.Title),
-		}
-	}
-	model, cmd := m.openSearchPicker("Backlog — enter shows an item; /todo edit <slug> opens it", opts, 0, func(m *Model, idx int) (string, tea.Cmd) {
-		return m.todos.Detail(s, items[idx]), nil
-	})
-	return model, cmd, true
-}
-
-// todoPickState is the picker row's value column: the status, or for an
-// open item whether it is ready and what it waits on.
-func todoPickState(s *todo.Store, it todo.Item) string {
-	if it.Status != todo.StatusOpen {
-		return string(it.Status)
-	}
-	if waiting := s.Waiting(it); len(waiting) > 0 {
-		return "waits on " + strings.Join(waiting, ", ")
-	}
-	return "ready"
-}
-
 // todoEditorDoneMsg is the editor's exit from an item file. Unlike the
 // draft's editor, the file is the item itself and is never removed.
 type todoEditorDoneMsg struct {
@@ -411,4 +376,295 @@ func todoSlugArgs(m *Model) []argOption {
 		out = append(out, argOption{it.Slug, it.Title})
 	}
 	return out
+}
+
+// The backlog screen: bare /todo and the chord open it, and the keys on it
+// resolve to acts this host carries out against the files
+// (docs/interface/surfaces.md#the-backlog-screen). It is the same store
+// every other surface here reads, re-read after anything that could have
+// changed a file, because the backlog is files and not a copy of them.
+
+// todoScreenWhy is what the screen's footer says while a turn is running.
+// It is the refusal `/todo` gives in words, drawn as inert keys instead of
+// waiting to be pressed and then refused: a key that looked live and was not
+// is the thing invariant 5 exists to stop
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+const todoScreenWhy = "the turn is running; these change the files it may be working from"
+
+// openTodoScreen puts the backlog up as a takeover. It can be opened during
+// a turn: reading the backlog while the model works from it is exactly when
+// the question gets asked, and the keys that would change a file are inert
+// until the turn is over.
+func (m Model) openTodoScreen() (tea.Model, tea.Cmd) {
+	if !m.todosEnabled() {
+		return m.systemNotice("The backlog is unavailable in this session.")
+	}
+	m.backlog = &components.BacklogScreen{Prose: todoProse}
+	m.reloadTodos()
+	m.enterSurface(stateBacklog)
+	return m, nil
+}
+
+// todoProse lays an item's sections out through the renderer the transcript
+// lays an answer out with, fences and all. An item's body is prose somebody
+// wrote, so a heading in an item and a heading in an answer are the same
+// heading; a second renderer here would be a second design system.
+func todoProse(src string, width int) []string {
+	return markdown.Blocks(src, mdOptions(width))
+}
+
+// backlogPane renders the screen into the rectangle the pane left it.
+//
+// The turn's state is read here rather than at the opening because a turn can
+// start while the screen is up — a queued follow-up going out, a child
+// finishing — and the keys have to go grey the moment it does. Reading it per
+// frame is a field on the session; the rows are not, and they are rebuilt
+// only when something changed a file.
+func (m Model) backlogPane(width, height int) string {
+	m.backlog.ReadOnly = m.working()
+	m.backlog.SetSize(width, height)
+	return m.backlog.View(width)
+}
+
+// updateTodoScreen routes a key while the screen is up and carries out what
+// it asked for.
+func (m Model) updateTodoScreen(key tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	if m.backlog == nil {
+		m.shutTodoScreen()
+		return m, nil
+	}
+	m.backlog.ReadOnly = m.working()
+	done, result := m.backlog.Update(key)
+	if done {
+		m.shutTodoScreen()
+		return m, nil
+	}
+	if result.Do == nil {
+		return m, nil
+	}
+	return m.todoScreenAct(*result.Do)
+}
+
+// shutTodoScreen takes the screen down and hands the keyboard back to the
+// turn, which may have moved on while the surface was up.
+func (m *Model) shutTodoScreen() {
+	m.backlog = nil
+	m.leaveSurface()
+	m.syncViewport()
+}
+
+// todoScreenAct carries out one of the screen's acts. Three of them leave
+// with the screen: the editor takes the terminal, a run takes the session,
+// and a new item is a card in the panel the screen is covering. The rest
+// change one file and the screen stays up over fresh rows.
+func (m Model) todoScreenAct(cmd components.BacklogCommand) (tea.Model, tea.Cmd) {
+	switch cmd.Act {
+	case components.BacklogEdit:
+		m.shutTodoScreen()
+		return m.openTodoEditor(cmd.Slug)
+	case components.BacklogRun:
+		m.shutTodoScreen()
+		return m.startTodoRun(cmd.Slug, m.todos.NoCommit)
+	case components.BacklogNew:
+		m.shutTodoScreen()
+		return m.startTodoExtract()
+	}
+	note := m.todoScreenVerb(cmd)
+	m.reloadTodos()
+	if m.backlog == nil {
+		return m.systemNotice(note)
+	}
+	// The screen says what happened in one line and the transcript keeps the
+	// whole answer, which is the answer the same verb typed into the input
+	// would have left: a change made from a surface must be in the record of
+	// the session, or closing the surface loses it.
+	m.backlog.Notice = firstLine(note)
+	return m.systemNotice(note)
+}
+
+// todoScreenVerb is the act as the verb it is. Every one of them goes
+// through the same handler `/todo` and `shhh todo` go through, so a refusal
+// on this screen is the refusal those give and a confirmation is their
+// sentence — two implementations of "archive an item" would be two answers
+// to what archiving is.
+func (m Model) todoScreenVerb(cmd components.BacklogCommand) string {
+	switch cmd.Act {
+	case components.BacklogBlock:
+		return m.todos.Manage([]string{"block", cmd.Slug})
+	case components.BacklogArchive:
+		return m.todos.Manage([]string{"done", cmd.Slug})
+	case components.BacklogDrop:
+		return m.todos.Manage([]string{"drop", cmd.Slug})
+	case components.BacklogSprintAdd:
+		return m.todos.Manage([]string{"sprint", "add", cmd.Slug})
+	case components.BacklogSprintDrop:
+		return m.todos.Manage([]string{"sprint", "drop", cmd.Slug})
+	case components.BacklogReopen:
+		return m.todoReopen(cmd.Slug)
+	}
+	return ""
+}
+
+// todoReopen is the one act with two meanings, because the done tab put a
+// second kind of row under the same key: an active item that was blocked
+// goes back to open through the verb, and an archived one comes back out of
+// the archive, which is a move no verb has.
+//
+// The move needs no check against a run holding the item. A run works an
+// active item and archives it at the end, so an item in the archive is one
+// no run still has in flight.
+func (m Model) todoReopen(slug string) string {
+	if it, ok := m.todoStore.Find(slug); ok && it.Archived {
+		to, err := todo.Reopen(m.todos.Root, slug)
+		if err != nil {
+			return "Error: " + err.Error()
+		}
+		return fmt.Sprintf("Reopened %s; the file is back in the backlog at %s.", slug, to)
+	}
+	return m.todos.Manage([]string{"open", slug})
+}
+
+// refreshTodoScreen rebuilds the screen's rows from the store. It is called
+// after every act rather than rebuilding the screen, because the pointer,
+// the filters and the tab the reader is on have to survive a change to one
+// file.
+func (m Model) refreshTodoScreen() {
+	if m.backlog == nil {
+		return
+	}
+	s := m.todoStore
+	m.backlog.Rows = todoScreenRows(s, false)
+	m.backlog.Done = todoScreenRows(s, true)
+	m.backlog.Sprint = ""
+	if s != nil && s.Sprint.Open() {
+		m.backlog.Sprint = s.Sprint.Name
+	}
+	m.backlog.ReadOnly = m.working()
+	m.backlog.Why = todoScreenWhy
+}
+
+// todoScreenRows is one tab's rows: the active backlog in its working order,
+// or the archive. The files that would not parse go on the end of whichever
+// directory they were found in — a row rather than a gap, because the file
+// is still there and a list that dropped it would say the work is gone.
+func todoScreenRows(s *todo.Store, archived bool) []components.BacklogRow {
+	if s == nil {
+		return nil
+	}
+	items := s.Items
+	if archived {
+		items = s.Done
+	}
+	rows := make([]components.BacklogRow, 0, len(items))
+	for _, it := range items {
+		rows = append(rows, todoScreenRow(s, it))
+	}
+	for _, u := range s.Unreadable {
+		if u.Archived != archived {
+			continue
+		}
+		rows = append(rows, components.BacklogRow{
+			Slug: u.Slug, Path: u.Path, Reason: u.Reason,
+			State: components.BacklogUnreadable,
+		})
+	}
+	return rows
+}
+
+// todoScreenRow is one item as the screen draws it: the header's fields in
+// the interface's own words, both ends of every dependency edge it is on,
+// and the prose under it.
+func todoScreenRow(s *todo.Store, it todo.Item) components.BacklogRow {
+	row := components.BacklogRow{
+		Slug: it.Slug, Path: it.Path, Title: it.Title,
+		Kind: string(it.Kind), Priority: string(it.Priority),
+		Status: todoStatusWords(it.Status), Size: string(it.Size),
+		State: todoScreenState(s, it), Body: it.Body,
+		Waits: s.Waiting(it), Blocks: todoBlockedBy(s, it.Slug),
+		Warnings: it.Warnings,
+	}
+	row.Fields = todoScreenFields(it, row.Status)
+	if it.Archived {
+		// The archive's body is the report, because what the done tab is for
+		// is reading what shipped and how — the criteria were the question,
+		// and the report is the answer. An item archived by hand has none,
+		// and its own body is the honest thing to show instead.
+		if report := todo.ItemReport(it); report != "" {
+			row.Body = report
+		} else {
+			row.Fields = append(row.Fields, "no report")
+		}
+	}
+	row.InSprint = s.Sprint.Open() && slices.Contains(s.Sprint.Slugs, it.Slug)
+	return row
+}
+
+// todoScreenFields is the compact row above an item's body: what sort of
+// work it is, how soon, how big, where it stands and when it was written.
+// The file has them one per line, which is right for a file; beside a list
+// they are a row.
+func todoScreenFields(it todo.Item, status string) []string {
+	fields := []string{}
+	if it.Kind != "" {
+		fields = append(fields, string(it.Kind))
+	}
+	fields = append(fields, string(it.Priority))
+	if it.Size != "" {
+		fields = append(fields, "size "+string(it.Size))
+	} else {
+		fields = append(fields, "ungraded")
+	}
+	fields = append(fields, status)
+	if it.Created != "" {
+		fields = append(fields, "written "+it.Created)
+	}
+	return fields
+}
+
+// todoStatusWords is a status as the interface says it. The file spells the
+// working state with a hyphen because it is a value in a header; a screen
+// that filtered on "in-progress" would be showing the reader the file format
+// rather than the state.
+func todoStatusWords(s todo.Status) string {
+	if s == todo.StatusInProgress {
+		return "in progress"
+	}
+	return string(s)
+}
+
+// todoScreenState is which glyph and which state field a row gets.
+func todoScreenState(s *todo.Store, it todo.Item) components.BacklogState {
+	if it.Archived {
+		return components.BacklogArchived
+	}
+	switch it.Status {
+	case todo.StatusBlocked:
+		return components.BacklogBlocked
+	case todo.StatusInProgress:
+		return components.BacklogRunning
+	}
+	if len(s.Waiting(it)) > 0 {
+		return components.BacklogWaiting
+	}
+	return components.BacklogReady
+}
+
+// todoBlockedBy names the active items whose dependencies name this slug. It
+// is the other end of the edge the listing has always shown one end of, and
+// it is what decides whether finishing this item is worth anything.
+func todoBlockedBy(s *todo.Store, slug string) []string {
+	var out []string
+	for _, it := range s.Items {
+		if slices.Contains(it.DependsOn, slug) {
+			out = append(out, it.Slug)
+		}
+	}
+	return out
+}
+
+// renderTodoScreenHint fills the input area while the backlog has the
+// screen. The surface's own footer carries the keys; this says what is up.
+func (m Model) renderTodoScreenHint() string {
+	return sty.SystemMsg.Render("backlog · "+keys.Bracket(keys.Backlog.Back)+" "+
+		keys.Words(keys.Backlog.Back)) + strings.Repeat("\n", inputHeight-1)
 }
