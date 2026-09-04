@@ -5,6 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"hash/fnv"
+	"io"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/rfizzle/shhh/internal/provider"
@@ -92,7 +96,7 @@ func (db *DB) claimChatSlot(name string) (string, error) {
 			return "", fmt.Errorf("claim slot: %w", err)
 		}
 		if rows, _ := res.RowsAffected(); rows > 0 {
-			db.chatSeq[claimed] = -1
+			db.chatWrote[claimed] = chatWrite{seq: -1, digest: chatDigest(nil)}
 			return claimed, nil
 		}
 	}
@@ -107,11 +111,11 @@ func (db *DB) claimChatSlot(name string) (string, error) {
 func (db *DB) ReleaseChatSlot(name string) error {
 	db.chatMu.Lock()
 	defer db.chatMu.Unlock()
-	seq, mine := db.chatSeq[name]
-	if !mine || seq >= 0 {
+	wrote, mine := db.chatWrote[name]
+	if !mine || wrote.seq >= 0 {
 		return nil
 	}
-	delete(db.chatSeq, name)
+	delete(db.chatWrote, name)
 
 	_, err := db.sql.Exec(
 		`DELETE FROM chat_sessions WHERE name = ?
@@ -122,11 +126,61 @@ func (db *DB) ReleaseChatSlot(name string) error {
 	return err
 }
 
-// rememberChat records the highest seq this process has in a slot.
-func (db *DB) rememberChat(name string, seq int) {
+// chatWrite is what this process last put in a slot, or last read out of it:
+// how far the messages went, and a fingerprint of them.
+//
+// The seq alone is what tells this session's rows from a stranger's. The
+// digest is what tells a save that continues the conversation from one that
+// rewrites it — a rewind or a compaction leaves a slot with a different
+// conversation in it, and one of those can be the same length as what it
+// replaced, so a save judged by its length alone would append onto messages
+// nobody is having any more.
+type chatWrite struct {
+	seq    int
+	digest uint64
+}
+
+// chatDigest fingerprints a conversation over exactly the fields a row keeps,
+// so that what comes back out of the store digests to what went in. What is
+// not kept is left out: the reasoning a turn did is not stored, and an
+// attachment's bytes are counted rather than read, because a message whose
+// image changed under an unchanged sentence is not a thing that happens and
+// hashing a screenshot on every autosave is.
+//
+// Hashing the conversation on each save is work, but it is memory-speed work
+// standing in for the disk-speed work it replaces: rewriting the same bytes
+// into the store, which is what every autosave used to do.
+func chatDigest(messages []provider.Message) uint64 {
+	h := fnv.New64a()
+	field := func(s string) {
+		_, _ = io.WriteString(h, s)
+		_, _ = h.Write([]byte{0})
+	}
+	for _, msg := range messages {
+		field(string(msg.Role))
+		field(msg.Content)
+		field(msg.ToolCallID)
+		for _, tc := range msg.ToolCalls {
+			field(tc.ID)
+			field(tc.Name)
+			field(tc.Arguments)
+			field(tc.Signature)
+		}
+		for _, a := range msg.Attachments {
+			field(string(a.Kind))
+			field(a.Name)
+			field(a.MediaType)
+			field(strconv.Itoa(len(a.Data)))
+		}
+	}
+	return h.Sum64()
+}
+
+// rememberChat records what this process now has in a slot.
+func (db *DB) rememberChat(name string, messages []provider.Message) {
 	db.chatMu.Lock()
 	defer db.chatMu.Unlock()
-	db.chatSeq[name] = seq
+	db.chatWrote[name] = chatWrite{seq: len(messages) - 1, digest: chatDigest(messages)}
 }
 
 // forgetChat drops what this process knew about a slot, for a name that is
@@ -134,7 +188,7 @@ func (db *DB) rememberChat(name string, seq int) {
 func (db *DB) forgetChat(name string) {
 	db.chatMu.Lock()
 	defer db.chatMu.Unlock()
-	delete(db.chatSeq, name)
+	delete(db.chatWrote, name)
 }
 
 // AutosaveChat writes a session's conversation to the slot it holds, or, when
@@ -216,7 +270,7 @@ func (db *DB) saveChat(name string, messages []provider.Message, mark bool, hold
 	if err := tx.Commit(); err != nil {
 		return err
 	}
-	db.chatSeq[name] = len(messages) - 1
+	db.chatWrote[name] = chatWrite{seq: len(messages) - 1, digest: chatDigest(messages)}
 	return nil
 }
 
@@ -270,31 +324,48 @@ func (db *DB) SaveChatBranch(parentName, branchName string, messages []provider.
 	if err := tx.Commit(); err != nil {
 		return err
 	}
-	db.chatSeq[branchName] = len(messages) - 1
+	db.chatWrote[branchName] = chatWrite{seq: len(messages) - 1, digest: chatDigest(messages)}
 	return nil
 }
 
-// saveChatTx upserts one session's messages inside tx, preserving any
-// existing parent link, and returns the session id.
+// saveChatTx puts one session's messages in the slot inside tx, preserving
+// any existing parent link, and returns the session id.
 //
-// The messages already in the slot are replaced, so a slot that has grown
-// past what this process wrote to it is refused instead: those rows are
-// another session's conversation and the delete would be the last anyone saw
-// of it. A slot nothing here has touched is written as it always was — a
-// name the person typed is theirs to overwrite.
+// **A save writes the messages the slot does not have yet.** A conversation
+// grows a turn at a time and never changes what is behind it, so a save that
+// replaced every row wrote the whole conversation back to disk to record one
+// sentence — the most work at the moment there was least to do, and it got
+// worse the longer the sitting went on
+// (docs/capabilities/sessions-and-memory.md#a-save-writes-the-turn-not-the-conversation).
+//
+// The exception is the conversation that did change behind itself: a rewind
+// drops the tail, a compaction puts a summary where the opening used to be.
+// Those are rewritten whole, and what tells them apart from a continuation is
+// the fingerprint of what this process last left in the slot — the length
+// alone would not, because a conversation can be rewritten into one exactly
+// as long as the one it replaced.
+//
+// A slot that has grown past what this process wrote to it is refused rather
+// than either: those rows are another session's conversation and writing over
+// them would be the last anyone saw of it. A slot nothing here has touched is
+// written as it always was — a name the person typed is theirs to overwrite.
+//
+// The test for a stranger is that the slot differs from what this process
+// left there, not that it grew: a session that rewound or compacted leaves
+// fewer messages than it once wrote, and a slot judged only by its length
+// would be emptied over the shorter conversation somebody else had just put
+// in it.
 //
 // What was written is remembered by the caller once the commit lands, never
-// here: a seq recorded for a transaction that then rolled back would claim
+// here: a mark recorded for a transaction that then rolled back would claim
 // rows nobody wrote, and the next save would take that as licence to replace
 // whatever is really in the slot. The caller holds chatMu across both.
-//
-// The test is that the slot differs from what this process left there, not
-// that it grew: a session that rewound or compacted leaves fewer messages
-// than it once wrote, and a slot judged only by its length would be emptied
-// over the shorter conversation somebody else had just put in it.
 func (db *DB) saveChatTx(tx *sql.Tx, name string, messages []provider.Message) (int64, error) {
 	var sessionID int64
 	now := time.Now().UTC().Format(time.RFC3339Nano)
+	// from is the first message this save has to write. A slot being made
+	// holds nothing, so it is all of them.
+	from := 0
 
 	err := tx.QueryRow(`SELECT id FROM chat_sessions WHERE name = ?`, name).Scan(&sessionID)
 	if err == sql.ErrNoRows {
@@ -313,18 +384,22 @@ func (db *DB) saveChatTx(tx *sql.Tx, name string, messages []provider.Message) (
 		if err != nil {
 			return 0, err
 		}
-		if mine, seen := db.chatSeq[name]; seen && stored != mine {
+		mine, seen := db.chatWrote[name]
+		if seen && stored != mine.seq {
 			return 0, ChatSlotConflictError{Name: name}
 		}
 		if _, err := tx.Exec(`UPDATE chat_sessions SET updated_at = ? WHERE id = ?`, now, sessionID); err != nil {
 			return 0, fmt.Errorf("update session: %w", err)
 		}
-		if _, err := tx.Exec(`DELETE FROM chat_messages WHERE session_id = ?`, sessionID); err != nil {
+		if seen && stored < len(messages) && chatDigest(messages[:stored+1]) == mine.digest {
+			from = stored + 1
+		} else if _, err := tx.Exec(`DELETE FROM chat_messages WHERE session_id = ?`, sessionID); err != nil {
 			return 0, fmt.Errorf("clear messages: %w", err)
 		}
 	}
 
-	for i, msg := range messages {
+	for i := from; i < len(messages); i++ {
+		msg := messages[i]
 		var toolCallsJSON *string
 		if len(msg.ToolCalls) > 0 {
 			b, err := json.Marshal(msg.ToolCalls)
@@ -423,7 +498,7 @@ func (db *DB) LoadChat(name string) ([]provider.Message, error) {
 	// What was read is what this process has in the slot: a resumed session
 	// autosaves over the conversation it just loaded, and must be able to
 	// tell that from another session's messages arriving underneath it.
-	db.rememberChat(name, len(messages)-1)
+	db.rememberChat(name, messages)
 	return messages, nil
 }
 
@@ -468,6 +543,122 @@ func (db *DB) ListChats() ([]ChatListEntry, error) {
 		entries = append(entries, e)
 	}
 	return entries, rows.Err()
+}
+
+// SearchChats is every saved conversation carrying what was typed, newest
+// first — matched on the words in its messages and on the words in the title
+// a reading gave it.
+//
+// Both halves are needed and neither is enough. A conversation is remembered
+// by something that was said in it far more often than by the timestamp it
+// was filed under, which is what the message half is for; and a conversation
+// that holds no messages at all still has a title, which is the only thing
+// there is to find it by.
+// See docs/capabilities/sessions-and-memory.md#finding-a-conversation-again.
+//
+// **Each word narrows the answer, and each is looked for in the whole
+// conversation rather than in one message of it.** A person searching for two
+// words is describing a conversation they remember, not a sentence somebody
+// said — the two halves of "the retry flake" are as likely to be a question
+// and its answer as one line. So the index is asked once per word and the
+// answers are intersected on the session, which is also what lets one word
+// come from the title and the next from the transcript.
+//
+// A query with no word in it matches nothing rather than everything: a search
+// that answered with the whole store would look like a search that worked.
+func (db *DB) SearchChats(query string) ([]ChatListEntry, error) {
+	terms := matchTerms(query)
+	if len(terms) == 0 {
+		return nil, nil
+	}
+	// A compound SELECT has no precedence to lean on — every operator in one
+	// binds as tightly as the next — so each word's two sources are wrapped
+	// in a FROM before the words are intersected.
+	perWord := make([]string, 0, len(terms))
+	args := make([]any, 0, len(terms)*2)
+	for _, term := range terms {
+		perWord = append(perWord, `SELECT id FROM (
+		         SELECT said.session_id AS id FROM chat_message_search
+		           JOIN chat_messages said ON said.id = chat_message_search.rowid
+		          WHERE chat_message_search MATCH ?
+		         UNION
+		         SELECT rowid AS id FROM chat_title_search WHERE chat_title_search MATCH ?
+		     )`)
+		args = append(args, term, term)
+	}
+
+	// Read before the listing's cursor is open and best-effort, for the two
+	// reasons ListChats reads it that way.
+	live, _ := db.liveChatSlots(time.Now())
+	rows, err := db.sql.Query(
+		`SELECT s.name, s.title, s.updated_at,
+		        COUNT(CASE WHEN m.role = 'user' THEN 1 END) AS turns
+		 FROM chat_sessions s
+		 LEFT JOIN chat_messages m ON m.session_id = s.id
+		 WHERE s.id IN (`+strings.Join(perWord, " INTERSECT ")+`)
+		 GROUP BY s.id
+		 ORDER BY s.updated_at DESC`, args...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var entries []ChatListEntry
+	for rows.Next() {
+		var (
+			e         ChatListEntry
+			updatedAt string
+		)
+		if err := rows.Scan(&e.Name, &e.Title, &updatedAt, &e.Turns); err != nil {
+			return nil, err
+		}
+		e.UpdatedAt, _ = time.Parse(time.RFC3339Nano, updatedAt)
+		e.Live = live[e.Name]
+		entries = append(entries, e)
+	}
+	return entries, rows.Err()
+}
+
+// PruneOldChats deletes every saved conversation nothing has written to for
+// longer than retentionDays, and reports how many sessions went. Zero days is
+// off, which is what an unset setting means: a conversation is a person's
+// work and the product does not throw one away on a window nobody chose
+// (docs/capabilities/sessions-and-memory.md#a-conversation-is-kept-for-a-window).
+//
+// **A family goes or stays together.** A branch is a tail of the conversation
+// it forked from, the way deleting one by hand already treats it, so the
+// window is put to the whole family and answered by its newest member. Judged
+// one row at a time it would cut either way and both ways are wrong: an old
+// root would take a branch somebody used this morning, and an old branch left
+// behind would be a conversation under a name nobody typed.
+func (db *DB) PruneOldChats(retentionDays int) (int64, error) {
+	if retentionDays <= 0 {
+		return 0, nil
+	}
+	// Under the same lock the saves take: the map of what this process has
+	// in each slot is read against the rows, and a delete landing between
+	// those two would leave a save writing against a slot that no longer
+	// exists.
+	db.chatMu.Lock()
+	defer db.chatMu.Unlock()
+
+	res, err := db.sql.Exec(
+		`WITH RECURSIVE family(id, root) AS (
+		     SELECT id, id FROM chat_sessions WHERE parent_id IS NULL
+		     UNION ALL
+		     SELECT s.id, f.root FROM chat_sessions s JOIN family f ON s.parent_id = f.id
+		 )
+		 DELETE FROM chat_sessions WHERE id IN (
+		     SELECT id FROM family WHERE root IN (
+		         SELECT f.root FROM family f JOIN chat_sessions s ON s.id = f.id
+		         GROUP BY f.root HAVING MAX(s.updated_at) < ?
+		     )
+		 )`, retentionCutoff(time.Now(), retentionDays))
+	if err != nil {
+		return 0, fmt.Errorf("prune chats: %w", err)
+	}
+	return res.RowsAffected()
 }
 
 // ChatBranch is one session in a branch family: the root plus every branch
@@ -665,9 +856,9 @@ func (db *DB) RenameChat(oldName, newName string) error {
 	// in it goes with it; a save to the new name is still its own.
 	db.chatMu.Lock()
 	defer db.chatMu.Unlock()
-	if seq, mine := db.chatSeq[oldName]; mine {
-		delete(db.chatSeq, oldName)
-		db.chatSeq[newName] = seq
+	if wrote, mine := db.chatWrote[oldName]; mine {
+		delete(db.chatWrote, oldName)
+		db.chatWrote[newName] = wrote
 	}
 	return nil
 }

@@ -135,6 +135,9 @@ func identityIndex(n int) []int {
 // out of, and the nearest option there is when nothing matched at all.
 func (m *Model) refilterPicker() {
 	matches, index := pickerMatches(m.pickerAll, m.picker.Query)
+	// The saved-chat card looks past the names as well, and folds what the
+	// store found into the same list (chats.go).
+	matches, index = m.withChatMatches(matches, index)
 	m.picker.Options = matches
 	m.pickerIndex = index
 	m.picker.Closest = ""

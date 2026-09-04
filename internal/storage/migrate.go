@@ -222,6 +222,80 @@ var migrations = []string{
 	INSERT OR IGNORE INTO project_trust (root, fingerprint, trusted_at)
 		SELECT root, MIN(fingerprint), MIN(trusted_at) FROM mcp_trust GROUP BY root;
 	DROP TABLE mcp_trust;`,
+
+	// A full-text index over everything anything is ever searched for: what
+	// was said in a conversation, what a conversation was called, and the
+	// prompt and the command a request was recorded under. Searching
+	// used to be a wildcarded LIKE, which reads every row in the table and
+	// gets slower in exactly the store a long-running user has
+	// (docs/capabilities/sessions-and-memory.md#finding-a-conversation-again).
+	//
+	// Each index is external-content — the terms live here and the text
+	// stays in the table it came from — so nothing is stored twice, and
+	// triggers keep the two in step. A message appended to a conversation
+	// costs the one index row it earns; a message deleted takes its row with
+	// it, which is why the delete trigger names the old text: an
+	// external-content index cannot look up a row that has already gone.
+	//
+	// The rebuild at the end of each is the backfill for a store that
+	// already holds conversations, and it is the only time the whole table
+	// is read.
+	//
+	// Two of the update triggers name the columns they watch, because the
+	// rows they sit on are updated for other reasons: every autosave stamps
+	// a session's time, and a command's exit code and rating are written
+	// after the fact. Re-indexing a title or a prompt that did not change
+	// would be work done on the busiest path in the store for no answer.
+	`CREATE VIRTUAL TABLE chat_message_search USING fts5(
+		content, content='chat_messages', content_rowid='id', tokenize='unicode61'
+	);
+	CREATE TRIGGER chat_messages_search_insert AFTER INSERT ON chat_messages BEGIN
+		INSERT INTO chat_message_search (rowid, content) VALUES (new.id, new.content);
+	END;
+	CREATE TRIGGER chat_messages_search_delete AFTER DELETE ON chat_messages BEGIN
+		INSERT INTO chat_message_search (chat_message_search, rowid, content)
+			VALUES ('delete', old.id, old.content);
+	END;
+	CREATE TRIGGER chat_messages_search_update AFTER UPDATE ON chat_messages BEGIN
+		INSERT INTO chat_message_search (chat_message_search, rowid, content)
+			VALUES ('delete', old.id, old.content);
+		INSERT INTO chat_message_search (rowid, content) VALUES (new.id, new.content);
+	END;
+	INSERT INTO chat_message_search (chat_message_search) VALUES ('rebuild');
+
+	CREATE VIRTUAL TABLE chat_title_search USING fts5(
+		title, content='chat_sessions', content_rowid='id', tokenize='unicode61'
+	);
+	CREATE TRIGGER chat_sessions_search_insert AFTER INSERT ON chat_sessions BEGIN
+		INSERT INTO chat_title_search (rowid, title) VALUES (new.id, new.title);
+	END;
+	CREATE TRIGGER chat_sessions_search_delete AFTER DELETE ON chat_sessions BEGIN
+		INSERT INTO chat_title_search (chat_title_search, rowid, title)
+			VALUES ('delete', old.id, old.title);
+	END;
+	CREATE TRIGGER chat_sessions_search_update AFTER UPDATE OF title ON chat_sessions BEGIN
+		INSERT INTO chat_title_search (chat_title_search, rowid, title)
+			VALUES ('delete', old.id, old.title);
+		INSERT INTO chat_title_search (rowid, title) VALUES (new.id, new.title);
+	END;
+	INSERT INTO chat_title_search (chat_title_search) VALUES ('rebuild');
+
+	CREATE VIRTUAL TABLE request_search USING fts5(
+		prompt, command, content='requests', content_rowid='id', tokenize='unicode61'
+	);
+	CREATE TRIGGER requests_search_insert AFTER INSERT ON requests BEGIN
+		INSERT INTO request_search (rowid, prompt, command) VALUES (new.id, new.prompt, new.command);
+	END;
+	CREATE TRIGGER requests_search_delete AFTER DELETE ON requests BEGIN
+		INSERT INTO request_search (request_search, rowid, prompt, command)
+			VALUES ('delete', old.id, old.prompt, old.command);
+	END;
+	CREATE TRIGGER requests_search_update AFTER UPDATE OF prompt, command ON requests BEGIN
+		INSERT INTO request_search (request_search, rowid, prompt, command)
+			VALUES ('delete', old.id, old.prompt, old.command);
+		INSERT INTO request_search (rowid, prompt, command) VALUES (new.id, new.prompt, new.command);
+	END;
+	INSERT INTO request_search (request_search) VALUES ('rebuild');`,
 }
 
 // migrate brings the store up to the current schema, one step per

@@ -1181,3 +1181,40 @@ func TestOtelEndpoint_OffUntilTheFileNamesOne(t *testing.T) {
 		t.Fatalf("the listing reads back %q (set=%v)", text, set)
 	}
 }
+
+// A saved conversation is the work, not the residue a session leaves behind,
+// so its window is the one here with no default standing behind it. A reader
+// who set history.retention_days and found their conversations going with the
+// commands would have lost something nobody offered to take.
+func TestChatsRetention_OffUntilTheFileNamesAWindow(t *testing.T) {
+	var cfg Config
+	if got := cfg.EffectiveChatsRetentionDays(); got != 0 {
+		t.Errorf("an unset chats.retention_days is %d days, want no window at all", got)
+	}
+	cfg.History.RetentionDays = 7
+	cfg.Observe.RetentionDays = 30
+	if got := cfg.EffectiveChatsRetentionDays(); got != 0 {
+		t.Errorf("another table's window moved the conversations' to %d days", got)
+	}
+
+	path := filepath.Join(t.TempDir(), "config.toml")
+	if err := Write(path, Edit{Key: "chats.retention_days", Value: "180"}); err != nil {
+		t.Fatal(err)
+	}
+	loaded, err := LoadFrom(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := loaded.EffectiveChatsRetentionDays(); got != 180 {
+		t.Errorf("after the write, chats.retention_days is %d days, want 180", got)
+	}
+	if err := Write(path, Edit{Key: "chats.retention_days", Value: ""}); err != nil {
+		t.Fatal(err)
+	}
+	if loaded, err = LoadFrom(path); err != nil {
+		t.Fatal(err)
+	}
+	if got := loaded.EffectiveChatsRetentionDays(); got != 0 {
+		t.Errorf("a reset leaves %d days, want no window", got)
+	}
+}

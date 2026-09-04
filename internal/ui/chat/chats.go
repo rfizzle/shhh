@@ -61,6 +61,13 @@ const protectedPhrase = "the chat you are in"
 // (docs/capabilities/sessions-and-memory.md#a-session-knows-it-is-not-alone).
 const livePhrase = "open in another session"
 
+// bodyMatchPhrase is why a row nothing in its name matched is on the list: the
+// words were found in the conversation itself. The card bolds the run it
+// matched in a label, so a row it cannot bold anything in would otherwise be
+// a row the reader cannot account for
+// (docs/interface/surfaces.md#selectors).
+const bodyMatchPhrase = "found in the conversation"
+
 // chatPickActions are the housekeeping keys the picker offers.
 var chatPickActions = []keys.Binding{keys.Select.Delete, keys.Select.Rename}
 
@@ -131,8 +138,64 @@ func (m Model) openChatPick() (tea.Model, tea.Cmd, bool) {
 	})
 	mm := model.(Model)
 	mm.picker.Actions = chatPickActions
+	mm.picker.QueryHint = "type to find a name or a word said in one"
 	mm.chats = chatOps{active: true, entries: entries}
 	return mm, cmd, true
+}
+
+// withChatMatches adds the conversations the store found to what the card's
+// own name filter matched, and is the identity everywhere but the saved-chat
+// picker.
+//
+// A conversation is remembered by something that was said in it far more
+// often than by the name it was filed under — which, for a session nobody
+// named, is a timestamp
+// (docs/capabilities/sessions-and-memory.md#finding-a-conversation-again). So
+// the query goes to the store as well as to the labels, and the two answers
+// are one list in the order the catalog is already in: a reader who typed a
+// name expects it where it always was, and the rest below it.
+func (m Model) withChatMatches(matches []components.SelectOption, index []int) ([]components.SelectOption, []int) {
+	if !m.chats.active || m.db == nil || m.picker == nil {
+		return matches, index
+	}
+	found, err := m.db.SearchChats(m.picker.Query)
+	if err != nil || len(found) == 0 {
+		return matches, index
+	}
+	byName := make(map[string]bool, len(found))
+	for _, e := range found {
+		byName[e.Name] = true
+	}
+	named := make(map[int]bool, len(index))
+	for _, i := range index {
+		named[i] = true
+	}
+	var (
+		opts []components.SelectOption
+		out  []int
+	)
+	for i, e := range m.chats.entries {
+		if i >= len(m.pickerAll) {
+			break
+		}
+		opt := m.pickerAll[i]
+		switch {
+		case named[i]:
+			// The name matched, and the card will bold the run it matched.
+		case byName[e.Name]:
+			// A row the name filter did not reach says what did reach it,
+			// unless the row already carries a reason it cannot be opened —
+			// that one is the more important of the two.
+			if opt.Meta == "" {
+				opt.Meta = bodyMatchPhrase
+			}
+		default:
+			continue
+		}
+		opts = append(opts, opt)
+		out = append(out, i)
+	}
+	return opts, out
 }
 
 // chatPickLines is what the picker draws under the card: the armed confirm,

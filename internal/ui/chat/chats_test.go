@@ -402,3 +402,78 @@ func shownFile(t *testing.T) func() error {
 		return err
 	}
 }
+
+// searchablePicker opens the saved-chat picker over two conversations whose
+// names give nothing away — the shape a session nobody named has, where the
+// name is the moment it began — and whose bodies do.
+func searchablePicker(t *testing.T) Model {
+	t.Helper()
+	db := rewindTestDB(t)
+	for name, said := range map[string]string{
+		"2026-09-04 09:15": "why does the retry flake",
+		"2026-09-04 11:02": "how do I bump the version",
+	} {
+		if err := db.SaveChat(name, []provider.Message{
+			{Role: provider.RoleUser, Content: said},
+			{Role: provider.RoleAssistant, Content: "one moment"},
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := db.SetChatTitle("2026-09-04 11:02", "Release chore"); err != nil {
+		t.Fatal(err)
+	}
+	return sendText(t, readyModel(t).WithDB(db), "/chats")
+}
+
+func TestChatPick_FindsAChatByAWordSaidInIt(t *testing.T) {
+	m := searchablePicker(t)
+	if len(m.picker.Options) != 2 {
+		t.Fatalf("both chats should be listed, got %v", m.picker.Options)
+	}
+
+	m = press(t, m, "/")
+	m = runes(t, m, "retry")
+
+	if len(m.picker.Options) != 1 {
+		t.Fatalf("one conversation says \"retry\", the card is showing %v", m.picker.Options)
+	}
+	if m.picker.Options[0].Label != "2026-09-04 09:15" {
+		t.Fatalf("the wrong conversation matched: %+v", m.picker.Options[0])
+	}
+	// A row no name matched says what did, since the card has nothing in the
+	// label to bold.
+	if m.picker.Options[0].Meta != bodyMatchPhrase {
+		t.Fatalf("the row should say why it is here, got %q", m.picker.Options[0].Meta)
+	}
+	// And the choice still reaches the apply as the chat it names: the row
+	// the card answers with is one of the matches, and the apply was written
+	// against the list the picker opened over.
+	if idx := m.pickerIndex[0]; m.chats.entries[idx].Name != "2026-09-04 09:15" {
+		t.Fatalf("the filtered row should map back to its chat, got %q", m.chats.entries[idx].Name)
+	}
+	if m = press(t, m, "enter"); m.sessionName != "2026-09-04 09:15" {
+		t.Fatalf("taking the row should open that conversation, the session is %q", m.sessionName)
+	}
+}
+
+func TestChatPick_FindsAChatByItsTitle(t *testing.T) {
+	m := press(t, searchablePicker(t), "/")
+	m = runes(t, m, "chore")
+
+	if len(m.picker.Options) != 1 || m.picker.Options[0].Label != "2026-09-04 11:02" {
+		t.Fatalf("the title should have found the chat, got %v", m.picker.Options)
+	}
+}
+
+func TestChatPick_KeepsTheNameFilterWhenItMatches(t *testing.T) {
+	m := press(t, searchablePicker(t), "/")
+	m = runes(t, m, "09:15")
+
+	if len(m.picker.Options) != 1 || m.picker.Options[0].Label != "2026-09-04 09:15" {
+		t.Fatalf("a name should still filter by name, got %v", m.picker.Options)
+	}
+	if m.picker.Options[0].Meta != "" {
+		t.Fatalf("a row the name matched needs no explanation, got %q", m.picker.Options[0].Meta)
+	}
+}

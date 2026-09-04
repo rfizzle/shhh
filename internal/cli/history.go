@@ -60,7 +60,7 @@ func newHistoryCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&search, "search", "s", "", "filter by prompt or command text")
+	cmd.Flags().StringVarP(&search, "search", "s", "", "keep the entries whose prompt or command carries these words")
 	cmd.Flags().IntVarP(&limit, "limit", "n", 50, "max entries to show")
 	cmd.Flags().BoolVar(&table, "table", false, "show table view instead of interactive browser")
 

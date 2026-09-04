@@ -134,6 +134,7 @@ func NewRootCmd() *cobra.Command {
 			// Both windows ride the first store a command opens (store.go)
 			// rather than a connection of their own from here.
 			setHistoryRetention(cfg.EffectiveRetentionDays())
+			setChatsRetention(cfg.EffectiveChatsRetentionDays())
 			setObserveRetention(cfg.EffectiveObserveRetentionDays())
 			// And the collector, for the same reason and in the same place:
 			// a recorder is opened by four surfaces that resolve their own

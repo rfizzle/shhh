@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -151,6 +152,33 @@ func newChatsCmd() *cobra.Command {
 	}
 	del.Flags().BoolVarP(&yes, "yes", "y", false, "delete without asking")
 
+	var searchJSON bool
+	search := &cobra.Command{
+		Use:   "search <words>",
+		Short: "Find a saved chat by a word in its conversation or its title",
+		Args:  cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			db, err := openStore()
+			if err != nil {
+				return fmt.Errorf("open database: %w", err)
+			}
+			defer db.Close()
+			// The words are joined rather than taken one at a time, so
+			// `shhh chats search the failing test` reads as the sentence it
+			// looks like; the store narrows on each of them.
+			query := strings.Join(args, " ")
+			entries, err := db.SearchChats(query)
+			if err != nil {
+				return err
+			}
+			if searchJSON {
+				return writeJSON(cmd, chatRows(entries))
+			}
+			return report.Fprint(cmd.OutOrStdout(), chatsSearchReport(entries, query, time.Now()))
+		},
+	}
+	search.Flags().BoolVar(&searchJSON, "json", false, "emit the matches as a JSON array")
+
 	rename := &cobra.Command{
 		Use:   "rename <old> <new>",
 		Short: "Rename a saved chat, keeping its branches",
@@ -172,7 +200,7 @@ func newChatsCmd() *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(list, show, del, rename)
+	cmd.AddCommand(list, show, search, del, rename)
 	return cmd
 }
 
@@ -248,6 +276,21 @@ func chatsReport(entries []storage.ChatListEntry, now time.Time) report.Report {
 		rows = append(rows, row)
 	}
 	r.Sections = []report.Section{{Rows: rows}}
+	return r
+}
+
+// chatsSearchReport is the same listing narrowed by a search: the query is in
+// the subject, so a reader scrolled past the command still knows what these
+// rows are the answer to, and an empty answer names the query rather than
+// saying nothing is saved — one of those is a search that found nothing and
+// the other is a store that holds nothing.
+func chatsSearchReport(entries []storage.ChatListEntry, query string, now time.Time) report.Report {
+	if len(entries) == 0 {
+		r := report.Report{Title: "shhh chats", Subject: fmt.Sprintf("nothing matching %q", query)}
+		return emptyInto(r, "no chat matching "+strconv.Quote(query), "shhh chats list")
+	}
+	r := chatsReport(entries, now)
+	r.Subject = fmt.Sprintf("%d matching %q", len(entries), query)
 	return r
 }
 

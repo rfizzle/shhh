@@ -706,6 +706,7 @@ var configLabels = map[string]string{
 	"appearance.paste_columns":             "paste staged wider than",
 	"appearance.rail_width":                "inspector rail width",
 	"history.retention_days":               "history retention",
+	"chats.retention_days":                 "saved chat retention",
 	"reports.retention_days":               "report retention",
 	"observe.retention_days":               "record retention",
 	"prompts.steer":                        "steer wording",

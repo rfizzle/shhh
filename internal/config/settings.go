@@ -377,6 +377,11 @@ var settings = []Setting{
 	},
 
 	{
+		Key: "chats.retention_days", Kind: KindInt, Default: "(off — a saved chat is kept until you delete it)",
+		Desc: "How long a saved conversation nobody has written to is kept before startup prunes it, with a chat's branches going when it does; unset keeps every conversation.",
+	},
+
+	{
 		Key: "reports.retention_days", Kind: KindInt, Default: "90 days",
 		Desc: "How long a generated report page is kept.",
 	},

@@ -473,6 +473,21 @@ func TestListHistory(t *testing.T) {
 	if filtered[0].Command != "lsof -i :8080" {
 		t.Fatalf("unexpected command: %q", filtered[0].Command)
 	}
+
+	// A half-typed word still finds the row, which is what a person typing
+	// into a search box has.
+	if prefix, _ := db.ListHistory(HistoryFilter{Search: "por", Limit: 10}); len(prefix) != 1 {
+		t.Fatalf("a prefix should find the entry, got %d", len(prefix))
+	}
+	// Each further word narrows: both of these are in the one entry.
+	if both, _ := db.ListHistory(HistoryFilter{Search: "find port", Limit: 10}); len(both) != 1 {
+		t.Fatalf("two words should still find the one entry, got %d", len(both))
+	}
+	// And a query with no word in it finds nothing rather than everything: an
+	// answer holding the whole table would read as a search that worked.
+	if none, err := db.ListHistory(HistoryFilter{Search: "  -  ", Limit: 10}); err != nil || len(none) != 0 {
+		t.Fatalf("a query with no word should find nothing, got %d, %v", len(none), err)
+	}
 }
 
 func TestSaveAndListSnippets(t *testing.T) {
@@ -1666,5 +1681,438 @@ func TestMostRecentChat_OffersASlotWhoseSessionIsGone(t *testing.T) {
 	}
 	if recent.Name != "newest" || recent.Held != "" {
 		t.Fatalf("got %q (held %q), want the slot a dead session left", recent.Name, recent.Held)
+	}
+}
+
+// chatMessageIDs is the row ids of a slot's messages in order. It is what
+// tells an append from a rewrite: a rewrite gives every message a new row.
+func chatMessageIDs(t *testing.T, db *DB, name string) []int64 {
+	t.Helper()
+	rows, err := db.sql.Query(
+		`SELECT m.id FROM chat_messages m
+		   JOIN chat_sessions s ON s.id = m.session_id
+		  WHERE s.name = ? ORDER BY m.seq`, name)
+	if err != nil {
+		t.Fatalf("read message ids: %v", err)
+	}
+	defer rows.Close()
+	var ids []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			t.Fatalf("scan id: %v", err)
+		}
+		ids = append(ids, id)
+	}
+	return ids
+}
+
+func TestAutosaveChat_WritesOnlyTheMessagesTheSlotDoesNotHave(t *testing.T) {
+	db := openTestDB(t)
+
+	msgs := []provider.Message{
+		{Role: provider.RoleUser, Content: "why does it flake"},
+		{Role: provider.RoleAssistant, Content: "it races the timer"},
+	}
+	if _, err := db.AutosaveChat("slot", "fresh", msgs, nil); err != nil {
+		t.Fatalf("first save: %v", err)
+	}
+	before := chatMessageIDs(t, db, "slot")
+
+	msgs = append(msgs, provider.Message{Role: provider.RoleUser, Content: "so what fixes it"})
+	if _, err := db.AutosaveChat("slot", "fresh", msgs, nil); err != nil {
+		t.Fatalf("second save: %v", err)
+	}
+	after := chatMessageIDs(t, db, "slot")
+
+	if len(after) != len(before)+1 {
+		t.Fatalf("the slot should hold one more message, got %d after %d", len(after), len(before))
+	}
+	for i, id := range before {
+		if after[i] != id {
+			t.Fatalf("message %d was rewritten: row %d became row %d", i, id, after[i])
+		}
+	}
+	if after[len(before)] <= before[len(before)-1] {
+		t.Fatalf("the new message should be a new row, got %v after %v", after, before)
+	}
+}
+
+func TestAutosaveChat_WritesNothingWhenTheConversationHasNotMoved(t *testing.T) {
+	db := openTestDB(t)
+
+	msgs := []provider.Message{{Role: provider.RoleUser, Content: "still thinking"}}
+	if _, err := db.AutosaveChat("slot", "fresh", msgs, nil); err != nil {
+		t.Fatalf("first save: %v", err)
+	}
+	before := chatMessageIDs(t, db, "slot")
+	if _, err := db.AutosaveChat("slot", "fresh", msgs, nil); err != nil {
+		t.Fatalf("second save: %v", err)
+	}
+	if after := chatMessageIDs(t, db, "slot"); len(after) != len(before) || after[0] != before[0] {
+		t.Fatalf("a save with nothing new should write nothing, got %v after %v", after, before)
+	}
+}
+
+func TestAutosaveChat_RewritesWhenTheConversationChangedBehindItself(t *testing.T) {
+	db := openTestDB(t)
+
+	msgs := []provider.Message{
+		{Role: provider.RoleUser, Content: "first ask"},
+		{Role: provider.RoleAssistant, Content: "first answer"},
+		{Role: provider.RoleUser, Content: "second ask"},
+	}
+	if _, err := db.AutosaveChat("slot", "fresh", msgs, nil); err != nil {
+		t.Fatalf("first save: %v", err)
+	}
+	// A second conversation saved after it, so the store's next row id is
+	// past the slot's own: without it a rewrite would hand the same ids back
+	// and there would be nothing here to read.
+	if err := db.SaveChat("other", msgs); err != nil {
+		t.Fatalf("save other: %v", err)
+	}
+	before := chatMessageIDs(t, db, "slot")
+
+	// A compaction: the opening is replaced by a summary and the tail kept,
+	// so the slot ends up exactly as long as it was with a different
+	// conversation in it. Judged by its length alone this would be taken for
+	// a save with nothing new.
+	compacted := []provider.Message{
+		{Role: provider.RoleUser, Content: "summary of the opening"},
+		{Role: provider.RoleAssistant, Content: "first answer"},
+		{Role: provider.RoleUser, Content: "second ask"},
+	}
+	if _, err := db.AutosaveChat("slot", "fresh", compacted, nil); err != nil {
+		t.Fatalf("second save: %v", err)
+	}
+	if after := chatMessageIDs(t, db, "slot"); after[0] == before[0] {
+		t.Fatal("a conversation rewritten behind itself should be written whole")
+	}
+	got, err := db.LoadChat("slot")
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	if len(got) != 3 || got[0].Content != "summary of the opening" {
+		t.Fatalf("the slot should hold the compacted conversation, got %+v", got)
+	}
+}
+
+func TestAutosaveChat_RewritesAfterARewind(t *testing.T) {
+	db := openTestDB(t)
+
+	msgs := []provider.Message{
+		{Role: provider.RoleUser, Content: "first ask"},
+		{Role: provider.RoleAssistant, Content: "first answer"},
+		{Role: provider.RoleUser, Content: "second ask"},
+	}
+	if _, err := db.AutosaveChat("slot", "fresh", msgs, nil); err != nil {
+		t.Fatalf("first save: %v", err)
+	}
+	if _, err := db.AutosaveChat("slot", "fresh", msgs[:1], nil); err != nil {
+		t.Fatalf("rewound save: %v", err)
+	}
+	got, err := db.LoadChat("slot")
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	if len(got) != 1 || got[0].Content != "first ask" {
+		t.Fatalf("the rewind should have left one message, got %+v", got)
+	}
+	// And the slot goes on appending from where the rewind left it.
+	if _, err := db.AutosaveChat("slot", "fresh",
+		append(msgs[:1:1], provider.Message{Role: provider.RoleAssistant, Content: "another answer"}), nil); err != nil {
+		t.Fatalf("save after rewind: %v", err)
+	}
+	if got, _ := db.LoadChat("slot"); len(got) != 2 || got[1].Content != "another answer" {
+		t.Fatalf("the conversation should carry on from the rewind, got %+v", got)
+	}
+}
+
+func TestSearchChats_FindsAWordSaidInTheConversation(t *testing.T) {
+	db := openTestDB(t)
+
+	if err := db.SaveChat("alpha", []provider.Message{
+		{Role: provider.RoleUser, Content: "why does the retry flake"},
+		{Role: provider.RoleAssistant, Content: "it races the timer"},
+	}); err != nil {
+		t.Fatalf("save alpha: %v", err)
+	}
+	if err := db.SaveChat("beta", []provider.Message{
+		{Role: provider.RoleUser, Content: "how do I bump the version"},
+	}); err != nil {
+		t.Fatalf("save beta: %v", err)
+	}
+
+	found, err := db.SearchChats("timer")
+	if err != nil {
+		t.Fatalf("search: %v", err)
+	}
+	if len(found) != 1 || found[0].Name != "alpha" {
+		t.Fatalf("a word said in alpha should find alpha, got %+v", found)
+	}
+	// The words narrow rather than widen: both of these are in alpha alone.
+	if found, _ := db.SearchChats("retry timer"); len(found) != 1 || found[0].Name != "alpha" {
+		t.Fatalf("two words should still find alpha, got %+v", found)
+	}
+	// A half-typed word finds it too, which is what a picker needs.
+	if found, _ := db.SearchChats("tim"); len(found) != 1 || found[0].Name != "alpha" {
+		t.Fatalf("a prefix should find alpha, got %+v", found)
+	}
+	if found, _ := db.SearchChats("nothing said here"); len(found) != 0 {
+		t.Fatalf("a query nothing carries should find nothing, got %+v", found)
+	}
+	if found, _ := db.SearchChats("   "); len(found) != 0 {
+		t.Fatalf("a query with no word in it should find nothing, got %+v", found)
+	}
+}
+
+func TestSearchChats_FindsAChatWithNoMessagesByItsTitle(t *testing.T) {
+	db := openTestDB(t)
+
+	if _, err := db.ClaimChatSlot("2026-09-04 11:02"); err != nil {
+		t.Fatalf("claim: %v", err)
+	}
+	if err := db.SetChatTitle("2026-09-04 11:02", "The flaky retry test"); err != nil {
+		t.Fatalf("title: %v", err)
+	}
+
+	found, err := db.SearchChats("flaky")
+	if err != nil {
+		t.Fatalf("search: %v", err)
+	}
+	if len(found) != 1 || found[0].Name != "2026-09-04 11:02" {
+		t.Fatalf("a title should find a chat holding no messages, got %+v", found)
+	}
+	if found[0].Turns != 0 {
+		t.Fatalf("it holds no turns, got %d", found[0].Turns)
+	}
+}
+
+func TestSearchChats_ForgetsAConversationThatWasDeleted(t *testing.T) {
+	db := openTestDB(t)
+
+	if err := db.SaveChat("alpha", []provider.Message{
+		{Role: provider.RoleUser, Content: "why does the retry flake"},
+	}); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+	if err := db.DeleteChat("alpha"); err != nil {
+		t.Fatalf("delete: %v", err)
+	}
+	if found, _ := db.SearchChats("retry"); len(found) != 0 {
+		t.Fatalf("a deleted conversation should not be findable, got %+v", found)
+	}
+	// And its words leave the index with it, rather than sitting there
+	// pointing at rows that have gone.
+	var left int
+	if err := db.sql.QueryRow(
+		`SELECT COUNT(*) FROM chat_message_search WHERE chat_message_search MATCH 'retry'`).Scan(&left); err != nil {
+		t.Fatalf("count index rows: %v", err)
+	}
+	if left != 0 {
+		t.Fatalf("the index should have let the words go, %d left", left)
+	}
+}
+
+func TestPruneOldChats_TakesAFamilyPastTheWindow(t *testing.T) {
+	db := openTestDB(t)
+
+	msgs := []provider.Message{{Role: provider.RoleUser, Content: "an old question"}}
+	for _, name := range []string{"old", "old@turn1", "recent"} {
+		if err := db.SaveChat(name, msgs); err != nil {
+			t.Fatalf("save %s: %v", name, err)
+		}
+	}
+	if err := db.SaveChatBranch("old", "old@turn1", msgs); err != nil {
+		t.Fatalf("branch: %v", err)
+	}
+	long := time.Now().UTC().AddDate(0, 0, -400).Format(time.RFC3339Nano)
+	if _, err := db.sql.Exec(
+		`UPDATE chat_sessions SET updated_at = ? WHERE name IN ('old', 'old@turn1')`, long); err != nil {
+		t.Fatalf("age the family: %v", err)
+	}
+
+	gone, err := db.PruneOldChats(90)
+	if err != nil {
+		t.Fatalf("prune: %v", err)
+	}
+	if gone != 2 {
+		t.Fatalf("the whole family should go, got %d", gone)
+	}
+	if _, err := db.LoadChat("old"); err == nil {
+		t.Fatal("the old chat should be gone")
+	}
+	if _, err := db.LoadChat("old@turn1"); err == nil {
+		t.Fatal("its branch should be gone with it")
+	}
+	if _, err := db.LoadChat("recent"); err != nil {
+		t.Fatalf("the recent chat should be untouched, got %v", err)
+	}
+}
+
+func TestPruneOldChats_KeepsAFamilyWithABranchInsideTheWindow(t *testing.T) {
+	db := openTestDB(t)
+
+	msgs := []provider.Message{{Role: provider.RoleUser, Content: "an old question"}}
+	if err := db.SaveChat("root", msgs); err != nil {
+		t.Fatalf("save root: %v", err)
+	}
+	if err := db.SaveChatBranch("root", "root@turn1", msgs); err != nil {
+		t.Fatalf("branch: %v", err)
+	}
+	long := time.Now().UTC().AddDate(0, 0, -400).Format(time.RFC3339Nano)
+	if _, err := db.sql.Exec(`UPDATE chat_sessions SET updated_at = ? WHERE name = 'root'`, long); err != nil {
+		t.Fatalf("age the root: %v", err)
+	}
+
+	gone, err := db.PruneOldChats(90)
+	if err != nil {
+		t.Fatalf("prune: %v", err)
+	}
+	if gone != 0 {
+		t.Fatalf("a family somebody is still working in should stay, %d went", gone)
+	}
+	if _, err := db.LoadChat("root"); err != nil {
+		t.Fatalf("the root should stay with its branch, got %v", err)
+	}
+}
+
+func TestPruneOldChats_OffUntilAWindowIsSet(t *testing.T) {
+	db := openTestDB(t)
+
+	if err := db.SaveChat("ancient", []provider.Message{{Role: provider.RoleUser, Content: "hello"}}); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+	long := time.Now().UTC().AddDate(-5, 0, 0).Format(time.RFC3339Nano)
+	if _, err := db.sql.Exec(`UPDATE chat_sessions SET updated_at = ?`, long); err != nil {
+		t.Fatalf("age it: %v", err)
+	}
+	if gone, err := db.PruneOldChats(0); err != nil || gone != 0 {
+		t.Fatalf("no window means nothing goes, got %d, %v", gone, err)
+	}
+	if _, err := db.LoadChat("ancient"); err != nil {
+		t.Fatalf("the conversation should still be there, got %v", err)
+	}
+}
+
+// The full-text indexes write bookkeeping rows of their own the moment a
+// store is created, and a store that has never been used has to keep reading
+// as one: what turns on this is whether the migration off an older data
+// directory offers to replace the file at the destination or refuses to touch
+// it as a conflict.
+func TestRecorded_AStoreNobodyHasUsedHoldsNothing(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "fresh.db")
+	db, err := OpenPath(path)
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	db.Close()
+
+	held, err := Recorded(path)
+	if err != nil {
+		t.Fatalf("recorded: %v", err)
+	}
+	if held {
+		t.Fatal("a store nobody has written to should hold nothing")
+	}
+
+	db, err = OpenPath(path)
+	if err != nil {
+		t.Fatalf("reopen: %v", err)
+	}
+	if err := db.SaveChat("something", []provider.Message{{Role: provider.RoleUser, Content: "hello"}}); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+	db.Close()
+	if held, err = Recorded(path); err != nil || !held {
+		t.Fatalf("a store with a conversation in it holds something, got %v, %v", held, err)
+	}
+}
+
+// A name the person typed is theirs to overwrite, and the index has to follow
+// the overwrite: a slot this process has never seen is written whole even
+// when the messages would have extended it, and the words it replaced go.
+func TestSaveChat_OverwritesASlotThisProcessHasNeverSeen(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "test.db")
+	first, err := OpenPath(path)
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	if err := first.SaveChat("notes", []provider.Message{
+		{Role: provider.RoleUser, Content: "kubernetes"},
+		{Role: provider.RoleUser, Content: "shared"},
+	}); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+	first.Close()
+
+	second, err := OpenPath(path)
+	if err != nil {
+		t.Fatalf("reopen: %v", err)
+	}
+	defer second.Close()
+	if err := second.SaveChat("notes", []provider.Message{
+		{Role: provider.RoleUser, Content: "postgres"},
+		{Role: provider.RoleUser, Content: "shared"},
+		{Role: provider.RoleUser, Content: "and one more"},
+	}); err != nil {
+		t.Fatalf("overwrite: %v", err)
+	}
+
+	got, err := second.LoadChat("notes")
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	if len(got) != 3 || got[0].Content != "postgres" {
+		t.Fatalf("the slot should hold what was written over it, got %+v", got)
+	}
+	if found, _ := second.SearchChats("kubernetes"); len(found) != 0 {
+		t.Fatalf("a message written over should have left the index, got %+v", found)
+	}
+	if found, _ := second.SearchChats("postgres"); len(found) != 1 {
+		t.Fatalf("what replaced it should be findable, got %+v", found)
+	}
+}
+
+// The family is the whole tree and not one generation of it, and what a prune
+// takes it takes completely: the messages go, and their words leave the index
+// rather than sitting in it pointing at rows that have gone.
+func TestPruneOldChats_TakesTheWholeTreeAndItsWords(t *testing.T) {
+	db := openTestDB(t)
+
+	msgs := []provider.Message{{Role: provider.RoleUser, Content: "kubernetes"}}
+	for _, name := range []string{"root", "root@turn1", "root@turn1@turn3"} {
+		if err := db.SaveChat(name, msgs); err != nil {
+			t.Fatalf("save %s: %v", name, err)
+		}
+	}
+	if err := db.SaveChatBranch("root", "root@turn1", msgs); err != nil {
+		t.Fatalf("branch: %v", err)
+	}
+	if err := db.SaveChatBranch("root@turn1", "root@turn1@turn3", msgs); err != nil {
+		t.Fatalf("branch of a branch: %v", err)
+	}
+	long := time.Now().UTC().AddDate(0, 0, -400).Format(time.RFC3339Nano)
+	if _, err := db.sql.Exec(`UPDATE chat_sessions SET updated_at = ?`, long); err != nil {
+		t.Fatalf("age the tree: %v", err)
+	}
+
+	gone, err := db.PruneOldChats(90)
+	if err != nil {
+		t.Fatalf("prune: %v", err)
+	}
+	if gone != 3 {
+		t.Fatalf("the branch of a branch should go too, %d went", gone)
+	}
+	var messages, indexed int
+	if err := db.sql.QueryRow(`SELECT COUNT(*) FROM chat_messages`).Scan(&messages); err != nil {
+		t.Fatalf("count messages: %v", err)
+	}
+	if err := db.sql.QueryRow(
+		`SELECT COUNT(*) FROM chat_message_search WHERE chat_message_search MATCH 'kubernetes'`).Scan(&indexed); err != nil {
+		t.Fatalf("count index rows: %v", err)
+	}
+	if messages != 0 || indexed != 0 {
+		t.Fatalf("%d messages and %d index rows outlived the conversations they belong to", messages, indexed)
 	}
 }

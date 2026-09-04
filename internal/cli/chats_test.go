@@ -60,7 +60,7 @@ func TestChats_HelpSucceeds(t *testing.T) {
 	if err != nil {
 		t.Fatalf("shhh chats --help: %v", err)
 	}
-	for _, want := range []string{"list", "show", "delete", "rename", "browser"} {
+	for _, want := range []string{"list", "show", "search", "delete", "rename", "browser"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("help should mention %q, got:\n%s", want, out)
 		}
@@ -201,5 +201,62 @@ func TestChats_ListMarksASlotARunningSessionHolds(t *testing.T) {
 	}
 	if got := chatRows(entries); !got[0].Live || got[1].Live {
 		t.Errorf("the JSON should carry the same mark, got %+v", got)
+	}
+}
+
+func TestChats_SearchFindsAWordSaidInTheConversation(t *testing.T) {
+	chatsDB(t)
+
+	out, err := runChats(t, "", "search", "races")
+	if err != nil {
+		t.Fatalf("search: %v", err)
+	}
+	if !strings.Contains(out, `matching "races"`) {
+		t.Fatalf("the report should name the query, got:\n%s", out)
+	}
+	if !strings.Contains(out, "alpha") || strings.Contains(out, "beta") {
+		t.Fatalf("only the chats carrying the word should be listed, got:\n%s", out)
+	}
+
+	// The title is searched beside the transcript, and a chat is found by
+	// either.
+	if out, err := runChats(t, "", "search", "flaky"); err != nil || !strings.Contains(out, "alpha") {
+		t.Fatalf("a title word should find the chat, got %v:\n%s", err, out)
+	}
+}
+
+func TestChats_SearchWithNoMatchNamesTheQuery(t *testing.T) {
+	chatsDB(t)
+
+	out, err := runChats(t, "", "search", "kubernetes")
+	if err != nil {
+		t.Fatalf("search: %v", err)
+	}
+	if !strings.Contains(out, `nothing matching "kubernetes"`) {
+		t.Fatalf("an empty answer should name the query, got:\n%s", out)
+	}
+	if !strings.Contains(out, "shhh chats list") {
+		t.Fatalf("it should offer the way out, got:\n%s", out)
+	}
+}
+
+func TestChats_SearchJSON(t *testing.T) {
+	chatsDB(t)
+
+	out, err := runChats(t, "", "search", "races", "--json")
+	if err != nil {
+		t.Fatalf("search --json: %v", err)
+	}
+	var rows []chatRow
+	if err := json.Unmarshal([]byte(out), &rows); err != nil {
+		t.Fatalf("the JSON should round-trip: %v\n%s", err, out)
+	}
+	if len(rows) == 0 {
+		t.Fatalf("the search should have matched something, got:\n%s", out)
+	}
+	for _, r := range rows {
+		if r.Name != "alpha" && r.Name != "alpha@turn2" {
+			t.Fatalf("unexpected match %q", r.Name)
+		}
 	}
 }

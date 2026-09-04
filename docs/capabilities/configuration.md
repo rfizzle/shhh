@@ -502,6 +502,12 @@ knows it; the profiles under `[agents]` are one key per role, which the
 |---|---|---|---|
 | `retention_days` | number | 90 days | How long a recorded session is kept before startup prunes it. |
 
+**`[chats]`**
+
+| Key | Takes | Default | What it decides |
+|---|---|---|---|
+| `retention_days` | number | (off — a saved chat is kept until you delete it) | How long a saved conversation nobody has written to is kept before startup prunes it, with a chat's branches going when it does; unset keeps every conversation. |
+
 **`[reports]`**
 
 | Key | Takes | Default | What it decides |

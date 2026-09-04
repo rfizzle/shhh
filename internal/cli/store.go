@@ -7,13 +7,14 @@ import (
 )
 
 // openStore is how every command opens the store. It is storage.Open plus
-// the two retention windows: old request rows and recorded sessions past
-// their window are deleted once per process, on the first connection a
-// command opens, in the background on that same connection. The root used to
-// open a connection of its own for the purge beside the command's, which was
-// a second opener on every invocation for a job that needs none — the pool
-// serialises this one behind whatever the command is doing, and a command
-// that never touches the store leaves the purge to the next one that does.
+// the retention windows: old request rows, saved conversations and recorded
+// sessions past their window are deleted once per process, on the first
+// connection a command opens, in the background on that same connection. The
+// root used to open a connection of its own for the purge beside the
+// command's, which was a second opener on every invocation for a job that
+// needs none — the pool serialises this one behind whatever the command is
+// doing, and a command that never touches the store leaves the purge to the
+// next one that does.
 func openStore() (*storage.DB, error) {
 	db, err := storage.Open()
 	if err != nil {
@@ -23,18 +24,25 @@ func openStore() (*storage.DB, error) {
 	return db, nil
 }
 
-// purge is the once-per-process guard and the two retentions the root read
-// from the config; zero days on either means the root has not run (a test)
-// and that table is left alone.
+// purge is the once-per-process guard and the retentions the root read from
+// the config; zero days on any of them means the table is left alone —
+// because the root has not run (a test), or, for saved chats, because nobody
+// has asked for a window at all.
 var purge struct {
 	once        sync.Once
 	days        int
+	chatDays    int
 	observeDays int
 }
 
 // setHistoryRetention is the root's half: the retention window, read once
 // the config has loaded.
 func setHistoryRetention(days int) { purge.days = days }
+
+// setChatsRetention is the same for the saved conversations, which have no
+// window until somebody writes one down
+// (docs/capabilities/sessions-and-memory.md#a-conversation-is-kept-for-a-window).
+func setChatsRetention(days int) { purge.chatDays = days }
 
 // setObserveRetention is the same for the session record, which has a window
 // of its own and a longer one.
@@ -49,14 +57,17 @@ func setObserveRetention(days int) { purge.observeDays = days }
 // other anyway, and running them in a fixed order keeps a slow prune from
 // arriving in the middle of whatever the command is doing twice over.
 func pruneStoreOnce(db *storage.DB) {
-	if purge.days <= 0 && purge.observeDays <= 0 {
+	if purge.days <= 0 && purge.chatDays <= 0 && purge.observeDays <= 0 {
 		return
 	}
 	purge.once.Do(func() {
-		days, observeDays := purge.days, purge.observeDays
+		days, chatDays, observeDays := purge.days, purge.chatDays, purge.observeDays
 		go func() {
 			if days > 0 {
 				_, _ = db.PurgeOldHistory(days)
+			}
+			if chatDays > 0 {
+				_, _ = db.PruneOldChats(chatDays)
 			}
 			if observeDays > 0 {
 				_, _ = db.PruneAgentObservability(observeDays)

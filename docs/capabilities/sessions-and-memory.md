@@ -222,6 +222,79 @@ line — a refusal that left the conversation unsaved would protect one
 transcript by losing another. Two sessions on one project are a thing people
 do on purpose; neither of them may quietly cost the other its work.
 
+### A save writes the turn, not the conversation
+
+A conversation is autosaved as it goes, and for a long time each of those
+saves put the whole thing back: every message deleted and written again so
+that the last sentence would be on record. That is the most work at the moment
+there is least to do, and it grows with the sitting — the two-hundredth turn of
+an afternoon rewrote two hundred turns to record one.
+
+So a save writes what the slot does not have yet. A conversation grows at the
+end and leaves what is behind it alone, which is what makes an append the
+honest description of nearly every save there is.
+
+Nearly every, not every: a rewind drops the tail, and a compaction puts a
+summary where the opening used to be. Those did change what was behind, and
+they are written whole. What tells them apart from an ordinary turn is a
+fingerprint of what the session last left in the slot, rather than a count of
+it — a conversation can be rewritten into one exactly as long as the one it
+replaced, and a save that trusted the count would append onto messages nobody
+is having any more.
+
+### A conversation is kept for a window
+
+`chats.retention_days` prunes saved conversations at startup the way history,
+report pages and the session record are pruned: a conversation nothing has
+written to for longer than the window goes, and the branches hanging off it go
+with it.
+
+**It is off until you set it, and that is the one window here that is.** The
+other three hold residue — the commands a session generated, the pages it
+produced, the figures it recorded — and residue kept forever is a store that
+only grows. A conversation is not residue. It is the work, and it is the half
+of this store a person would actually miss; a product that quietly deleted it
+on a ninety-day default nobody chose would be a product you could not leave
+running.
+
+**What the default should be, before there is one.** Ninety days is the wrong
+answer for a conversation, because the useful ones are the ones you come back
+to a year later and the ones you never open again cost a few kilobytes.
+Anything time-based is measuring the wrong thing: a conversation stops being
+worth keeping when it stops being worth reading, and the store knows a proxy
+for that — a conversation of one turn that nobody resumed. So the argument for
+a default, when one is made, is a shape rather than a duration, and until that
+case is made the key is off and the honest behaviour is to keep everything.
+
+**A family goes or stays together.** The window is put to the whole branch
+family and answered by its newest member, because a branch is a tail of the
+conversation it forked from — which is already how deleting one by hand
+treats it. Judged a row at a time it would cut both ways and both are wrong:
+an old root would take a branch somebody worked on this morning, and an old
+branch left behind would be a conversation under a name nobody typed.
+
+### Finding a conversation again
+
+Saved chats are searched by what was said in them. The picker inside a
+session and `shhh chats search` put the same question to the store: the words
+in the messages, and the words in the title a reading gave the session. A
+session nobody named is called by the moment it began, so its name is a
+timestamp — searching the names alone would only ever find the conversations
+somebody had already thought to label.
+
+Both halves are needed. A conversation that holds no messages yet still has a
+title, and that title is the only thing there is to find it by. Each further
+word narrows the answer, and each is looked for anywhere in the conversation
+rather than in one message of it: two words a person remembers are as likely
+to be a question and its answer as one line.
+
+Command history is searched the same way, over an index of its own, and so
+the same rule applies to both: **the search knows words, and it takes them as
+prefixes.** Typing `fail` finds `failing`; typing `ail` finds neither. That is
+the trade for a search that does not get slower every month the store is used
+— the alternative reads every row in the table, which is fine on the first day
+and is not what a person searching a year of history has.
+
 ### Housekeeping
 
 A saved chat can be renamed and deleted where it is listed — the picker

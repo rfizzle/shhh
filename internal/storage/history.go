@@ -36,6 +36,14 @@ type HistoryFilter struct {
 	Limit  int
 }
 
+// ListHistory is the newest entries, filtered by the words in Search.
+//
+// The filter is put to the full-text index rather than to every row: a
+// wildcarded LIKE reads the whole table, so the search a person runs to find
+// the command they typed last month got slower every month they kept using
+// the tool (docs/capabilities/sessions-and-memory.md#finding-a-conversation-again).
+// What that costs is the match in the middle of a word — the index knows
+// words, and matchQuery asks for each one as a prefix.
 func (db *DB) ListHistory(f HistoryFilter) ([]HistoryEntry, error) {
 	limit := f.Limit
 	if limit <= 0 {
@@ -46,13 +54,16 @@ func (db *DB) ListHistory(f HistoryFilter) ([]HistoryEntry, error) {
 	var err error
 
 	if f.Search != "" {
-		query := `SELECT id, created_at, provider, model, prompt, command, action,
-		                 duration_ms, exit_code, tokens_in, tokens_out, success
-		          FROM requests
-		          WHERE prompt LIKE ? OR command LIKE ?
-		          ORDER BY created_at DESC LIMIT ?`
-		pattern := "%" + f.Search + "%"
-		rows, qErr := db.sql.Query(query, pattern, pattern, limit)
+		match, ok := matchQuery(f.Search)
+		if !ok {
+			return nil, nil
+		}
+		query := `SELECT r.id, r.created_at, r.provider, r.model, r.prompt, r.command, r.action,
+		                 r.duration_ms, r.exit_code, r.tokens_in, r.tokens_out, r.success
+		          FROM requests r JOIN request_search ON request_search.rowid = r.id
+		          WHERE request_search MATCH ?
+		          ORDER BY r.created_at DESC LIMIT ?`
+		rows, qErr := db.sql.Query(query, match, limit)
 		if qErr != nil {
 			return nil, qErr
 		}
@@ -79,8 +90,8 @@ func (db *DB) DeleteHistoryEntry(id int64) error {
 }
 
 func (db *DB) PurgeOldHistory(retentionDays int) (int64, error) {
-	cutoff := time.Now().UTC().AddDate(0, 0, -retentionDays).Format(time.RFC3339Nano)
-	res, err := db.sql.Exec(`DELETE FROM requests WHERE created_at < ?`, cutoff)
+	res, err := db.sql.Exec(`DELETE FROM requests WHERE created_at < ?`,
+		retentionCutoff(time.Now(), retentionDays))
 	if err != nil {
 		return 0, err
 	}

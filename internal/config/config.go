@@ -22,6 +22,7 @@ type Config struct {
 	LSP        LSPConfig        `toml:"lsp"`
 	Appearance AppearanceConfig `toml:"appearance"`
 	History    HistoryConfig    `toml:"history"`
+	Chats      ChatsConfig      `toml:"chats"`
 	Reports    ReportsConfig    `toml:"reports"`
 	Observe    ObserveConfig    `toml:"observe"`
 	Otel       OtelConfig       `toml:"otel"`
@@ -507,6 +508,18 @@ type HistoryConfig struct {
 	RetentionDays int `toml:"retention_days"`
 }
 
+// ChatsConfig governs the saved conversations. It is the one window in the
+// product that is off until somebody sets it: history, reports and the
+// session record are residue a session leaves behind, and a conversation is
+// the work itself.
+// See docs/capabilities/sessions-and-memory.md#a-conversation-is-kept-for-a-window.
+type ChatsConfig struct {
+	// RetentionDays is how long a conversation nobody has written to is
+	// kept. Zero — the unset value — keeps every one of them forever, which
+	// is what the product did before there was a key here.
+	RetentionDays int `toml:"retention_days"`
+}
+
 // ReportsConfig governs the report store. Reports share history's default
 // retention because both answer the same question — how long a session's
 // residue stays useful — and a page someone reopens next Tuesday is exactly
@@ -709,6 +722,13 @@ func (c Config) EffectiveRetentionDays() int {
 		return c.History.RetentionDays
 	}
 	return DefaultRetentionDays
+}
+
+// EffectiveChatsRetentionDays is the saved-conversation window, and zero is
+// the answer when nobody has set one. There is no default standing behind it,
+// unlike every other window here: see ChatsConfig.
+func (c Config) EffectiveChatsRetentionDays() int {
+	return c.Chats.RetentionDays
 }
 
 func (c Config) EffectiveReportsRetentionDays() int {
