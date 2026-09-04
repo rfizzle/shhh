@@ -622,6 +622,7 @@ A `TestMain` in each golden-using package calls `golden.Run(m)` which **deletes 
 - No external test dependencies (no testify); tests use stdlib `testing`
 - SQLite storage tests use `OpenPath` with a temp file or `:memory:`
 - The LSP package has integration tests that spawn real language servers
+- `internal/cli` builds the binary once in its `TestMain` (into a `bin` directory under the temp home, since the temp home itself is the config directory) and drives `shhh code -p` against a fake provider over `httptest`; the fake must speak the openai-compatible dialect the built binary is configured for. The suite stays cacheable, so `make ci` must not pass `-count=1`
 
 **Never change the working directory in a test.** `cmd/go` records every
 chdir target as one of the test's inputs, and a `t.TempDir()` path is new on
