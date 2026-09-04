@@ -144,6 +144,11 @@ race: ## Run tests with race detector
 	@echo "${MAGENTA}Running tests with race detector...${RESET}"
 	@$(GOTEST) -v -race $(PROJECT_PACKAGES)
 
+# The test run stays cacheable on purpose: -v and -failfast are both flags
+# `go test` will still match a cached result against, and nothing here adds
+# -count=1. It reads like a detail and is not — the CLI suite links the binary
+# its print-mode tests drive, so a run that cannot be cached re-links it and
+# re-runs every package against a tree nothing has touched.
 ci: cross ## Run tests and lint for CI
 	@echo "${MAGENTA}Checking documentation citations...${RESET}"
 	@python3 scripts/check-docs.py

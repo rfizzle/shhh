@@ -627,13 +627,15 @@ func TestRunning_CountsWhatIsStillAlive(t *testing.T) {
 
 // The claim this whole seam makes, against the real mechanism: the deny mask
 // that keeps a command out of the user's keys keeps a started process out of
-// them too. It skips where bubblewrap is unavailable — most machines are not
-// Linux with unprivileged user namespaces — and the uncontained supervisor
-// beside it is the control that would catch a wrap that quietly did nothing.
+// them too. It runs under whichever mechanism the host has — the claim is not
+// bubblewrap's, and a macOS runner that exercised none of it would look
+// exactly like one that did — and skips by name where there is none. The
+// uncontained supervisor beside it is the control that would catch a wrap
+// that quietly did nothing.
 func TestStart_ContainedProcessCannotReadTheDenyMask(t *testing.T) {
 	avail := sandbox.Detect()
-	if !avail.OK || avail.Mechanism != "bwrap" {
-		t.Skipf("no bubblewrap containment here: %s", avail.Detail)
+	if !avail.OK {
+		t.Skipf("no containment mechanism here: %s", avail.Detail)
 	}
 	home := t.TempDir()
 	t.Setenv("HOME", home)

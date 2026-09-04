@@ -18,6 +18,28 @@ jobs:
         with:
           go-version-file: go.mod
 
+      # The containment tests run the real mechanism and skip where there is
+      # none, so a runner without bubblewrap reports a green suite that never
+      # put the deny mask to the kernel — the failure this whole gate exists
+      # to catch would pass here unnoticed. Linux is where bubblewrap is the
+      # mechanism; Seatbelt's half of the same claim runs in the job below.
+      #
+      # Installing the binary is not enough and the last line is why. shhh
+      # probes an actual sandbox rather than trusting the binary is there,
+      # because a kernel can have the one without the other — Ubuntu confines
+      # unprivileged user namespaces through AppArmor, and a runner with that
+      # switch on installs bubblewrap successfully and then cannot create a
+      # namespace with it. Running the probe here turns that into a red job
+      # instead of a green one full of skips.
+      - name: Install bubblewrap
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bubblewrap
+          if sysctl -n kernel.apparmor_restrict_unprivileged_userns >/dev/null 2>&1; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          fi
+          bwrap --unshare-user --ro-bind / / true
+
       # Install only, never run: `make ci` runs golangci-lint itself, so the
       # gate here is the same one a developer runs locally. golangci-lint-action
       # has no install-only mode — whatever it is given ends up appended to
@@ -28,3 +50,23 @@ jobs:
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
       - run: make ci
+
+  # Seatbelt is macOS's mechanism and lives at a fixed path, so nothing on a
+  # Linux runner can stand in for it: the containment tests there skip it by
+  # name. This job is the only place that claim is put to an actual kernel,
+  # and it is the two packages that make it rather than the whole suite —
+  # everything else is platform-independent and already ran above.
+  containment-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      # The same reason the Linux job runs the probe: a mechanism that is not
+      # there is a skip, and a suite of skips is green.
+      - run: test -x /usr/bin/sandbox-exec
+
+      - run: go test -v ./internal/sandbox ./internal/process
