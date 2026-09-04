@@ -12,6 +12,7 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/shell"
 	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/rfizzle/shhh/internal/ui/browse"
 )
 
 // endpointProvider is a provider whose endpoint reports the context length it
@@ -249,5 +250,43 @@ func TestResumeChat_ContinueRefusesASlotSomebodyElseHolds(t *testing.T) {
 	}
 	if got.slot != "newest" {
 		t.Fatalf("slot = %q, want the one that was named", got.slot)
+	}
+}
+
+// One mark, two pickers. The picker `shhh code --resume` shows marks a slot
+// another running session is autosaving into and refuses to open it, in the
+// words the picker inside a session says, while the row stays a row that can
+// be read, renamed or deleted. A slot nobody holds opens as it always did.
+func TestChatBrowseItems_ASlotSomebodyElseHoldsRefusesToOpen(t *testing.T) {
+	db := resumeStore(t)
+	if err := db.SaveChat("mine", []provider.Message{
+		{Role: provider.RoleUser, Content: "ours"}}); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+	heldChat(t, db, "theirs")
+
+	entries, err := db.ListChats()
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	rows := map[string]browse.Item{}
+	for _, item := range chatBrowseItems(db, entries) {
+		rows[item.ID] = item
+	}
+	if len(rows) != 2 {
+		t.Fatalf("both slots are listed, got %d", len(rows))
+	}
+
+	held := rows["theirs"]
+	if !strings.Contains(held.Preview, "open in another session") {
+		t.Fatalf("preview = %q, want the mark", held.Preview)
+	}
+	if !strings.Contains(held.Refused, `"theirs"`) ||
+		!strings.Contains(held.Refused, "open in another session") ||
+		!strings.Contains(held.Refused, "still being written there") {
+		t.Fatalf("refused = %q, want the words the picker inside a session says", held.Refused)
+	}
+	if free := rows["mine"]; free.Refused != "" || strings.Contains(free.Preview, "another session") {
+		t.Fatalf("a slot nobody holds opens, got %+v", free)
 	}
 }

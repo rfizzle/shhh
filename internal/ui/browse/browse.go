@@ -26,6 +26,14 @@ type Item struct {
 	// (docs/interface/surfaces.md#the-inline-confirm). Empty when nothing
 	// else goes.
 	Deleting string
+	// Refused is why an action cannot be taken on this item, in the words
+	// the list says back when one is pressed. A refused item is listed,
+	// filtered, read, renamed and deleted like any other — fold, never
+	// hide (docs/interface/principles.md#fold-never-hide) — and the only
+	// thing it refuses is being chosen. The host writes the sentence, so
+	// the list needs to know nothing about what it is listing. Empty is an
+	// item that can be taken.
+	Refused string
 }
 
 // Ops are the housekeeping a host lets the list do to an item. A nil func
@@ -280,29 +288,35 @@ func (m Model) updateDetail(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			m.action = len(m.actions) - 1
 		}
 	case keys.Is(pressed, keys.Browse.Take):
-		if len(m.actions) > 0 && len(m.filtered) > 0 {
-			item := m.items[m.filtered[m.cursor]]
-			m.Result = &ResultAction{
-				Action: m.actions[m.action].Label,
-				Item:   item,
-			}
-			return m, tea.Quit
+		if len(m.actions) > 0 {
+			return m.take(m.actions[m.action].Label)
 		}
 	default:
 		for _, a := range m.actions {
 			if msg.String() == a.Shortcut {
-				if len(m.filtered) > 0 {
-					item := m.items[m.filtered[m.cursor]]
-					m.Result = &ResultAction{
-						Action: a.Label,
-						Item:   item,
-					}
-					return m, tea.Quit
-				}
+				return m.take(a.Label)
 			}
 		}
 	}
 	return m, nil
+}
+
+// take answers an action pressed on the item under the pointer. An item the
+// host marked refused says so where it stands instead of ending the list:
+// the reader is on a row they can still rename or delete, and quitting to
+// report the refusal would take the row off the screen along with every
+// other one they came to see.
+func (m Model) take(label string) (tea.Model, tea.Cmd) {
+	if len(m.filtered) == 0 {
+		return m, nil
+	}
+	item := m.items[m.filtered[m.cursor]]
+	if item.Refused != "" {
+		m.notice = item.Refused
+		return m, nil
+	}
+	m.Result = &ResultAction{Action: label, Item: item}
+	return m, tea.Quit
 }
 
 // View is the frame: the screen the browser paints, and the one terminal
@@ -406,6 +420,9 @@ func (m Model) viewDetail() string {
 	b.WriteString(divider(m.width) + "\n")
 
 	detailHeight := m.height - 5
+	if m.notice != "" {
+		detailHeight--
+	}
 	if detailHeight < 1 {
 		detailHeight = 1
 	}
@@ -418,6 +435,11 @@ func (m Model) viewDetail() string {
 
 	b.WriteString(divider(m.width) + "\n")
 	b.WriteString(m.renderActions() + "\n")
+	// The refusal a key just met, on the pane the key was pressed on. It
+	// lasts until the next key, like the list's own notice.
+	if m.notice != "" {
+		b.WriteString(sty.Hint.Render(m.notice) + "\n")
+	}
 
 	return b.String()
 }

@@ -1077,6 +1077,16 @@ func printExitBanner(b components.ExitBanner) {
 	}
 }
 
+// livePhrase is why a slot another running session is autosaving into
+// cannot be opened: the conversation in it is still being written, and that
+// session's next save takes the slot straight back from whoever loaded it.
+// One mark, one sentence, and every door that draws the mark says it. A
+// picker that marks a row and opens it anyway makes the mark mean two
+// things in two places, and the reader who trusted it is the one who loses
+// the conversation.
+// See docs/capabilities/sessions-and-memory.md#a-session-knows-it-is-not-alone.
+const livePhrase = "open in another session"
+
 // chatBrowseItems is the saved chats as the browser lists them: the name,
 // its title and size beside it, and what deleting it would take along.
 func chatBrowseItems(db *storage.DB, entries []storage.ChatListEntry) []browse.Item {
@@ -1091,12 +1101,19 @@ func chatBrowseItems(db *storage.DB, entries []storage.ChatListEntry) []browse.I
 			detail = fmt.Sprintf("Name:     %s\nTitle:    %s\nTurns:    %d\nUpdated:  %s",
 				e.Name, e.Title, e.Turns, e.UpdatedAt.Local().Format("2006-01-02 15:04:05"))
 		}
+		refused := ""
 		if e.Live {
-			// Resumable, and worth knowing before you do: the other
-			// session's next autosave takes the slot back.
-			preview += " · open in another session"
+			// The row keeps its place. Reading it, renaming it and
+			// deleting it are all still the reader's to do; the one thing
+			// it will not do is open, because the other session's next
+			// autosave takes the slot back and the conversation loaded
+			// here goes with it. Naming the slot is still the way in, and
+			// that is the flag's business rather than this list's.
+			preview += " · " + livePhrase
+			refused = fmt.Sprintf(
+				"%q is %s — its conversation is still being written there.", e.Name, livePhrase)
 		}
-		items[i] = browse.Item{ID: e.Name, Title: e.Name, Preview: preview, Detail: detail}
+		items[i] = browse.Item{ID: e.Name, Title: e.Name, Preview: preview, Detail: detail, Refused: refused}
 		if n, err := db.CountChatBranches(e.Name); err == nil && n > 0 {
 			items[i].Deleting = "and its " + branchCount(n)
 		}
@@ -1218,7 +1235,7 @@ func (s chatSession) resumeChat(db *storage.DB) (reopenedChat, error) {
 		// it, which is the rule the branch above already follows.
 		if recent.Held != "" {
 			return reopenedChat{}, fmt.Errorf(
-				"%q is open in another session; resume it by name to open it anyway", recent.Held)
+				"%q is %s; resume it by name to open it anyway", recent.Held, livePhrase)
 		}
 		if ok {
 			name = recent.Name

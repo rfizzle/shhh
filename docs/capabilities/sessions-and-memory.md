@@ -179,19 +179,23 @@ carries, which is also what keeps the reading clear of the record's one rule:
 it stores no paths.
 
 The last place it shows is the saved conversations. A slot a running session
-is still autosaving into is marked wherever conversations are listed, and the
-picker will not open it — loading a conversation somebody else is still
-adding to only gets it taken back by their next save. Offering to pick up
-where you left off steps past such a slot to the newest one nobody else
-holds, and the row it draws says in a word that it did — an offer that
-quietly changed which conversation it was making would read as the last one
-having lost the turns that are in fact still being added to it somewhere
-else. Asking for the last session by flag does not: an instruction answered
-with a different conversation is the worse failure of the two — worst where
-nobody is watching — so the slot is named and refused instead, and the name
-is the way through, since a conversation asked for by name opens whoever
-holds it. A slot whose session is gone is offered like any other, since the
-record of that session was closed at this one's start.
+is still autosaving into is marked wherever conversations are listed, and no
+picker will open it — the one inside a session and the one in front of one
+alike, since loading a conversation somebody else is still adding to only
+gets it taken back by their next save. The refusal happens where the row
+stands rather than closing the list under it, and it is the only thing the
+row refuses: reading it, renaming it and deleting it stay where they were,
+and asking for the slot by name still opens it, which is the way in for
+somebody who means to take it anyway. Offering to pick up where you left off
+steps past such a slot to the newest one nobody else holds, and the row it
+draws says in a word that it did — an offer that quietly changed which
+conversation it was making would read as the last one having lost the turns
+that are in fact still being added to it somewhere else. Asking for the last
+session by flag does not: an instruction answered with a different
+conversation is the worse failure of the two — worst where nobody is
+watching — so the slot is named and refused instead, with the name the way
+through as before. A slot whose session is gone is offered like any other,
+since the record of that session was closed at this one's start.
 
 ### A slot belongs to one session
 

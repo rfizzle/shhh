@@ -150,3 +150,46 @@ func TestBrowse_HintsNameOnlyTheKeysOffered(t *testing.T) {
 		t.Fatalf("a list with ops offers them, got:\n%s", screen)
 	}
 }
+
+// A row the host refused answers where it stands. Ending the list to report
+// the refusal would take away the row the reader is on, along with every
+// other one, which is the opposite of what a refusal that leaves the item
+// alone is for.
+func TestBrowse_ARefusedItemSaysSoAndKeepsTheList(t *testing.T) {
+	store := &fakeStore{}
+	m := store.model()
+	m.items[0].Refused = `"alpha" is open in another session — its conversation is still being written there.`
+
+	m = press(t, m, "enter")
+	m = press(t, m, "enter")
+	if m.Result != nil {
+		t.Fatalf("a refused row must not be taken, got %+v", m.Result)
+	}
+	if screen := m.screen(); !strings.Contains(screen, "still being written there") {
+		t.Fatalf("the refusal should be on the pane it was met on, got:\n%s", screen)
+	}
+	if m = press(t, m, "o"); m.Result != nil {
+		t.Fatalf("the action's own key is refused too, got %+v", m.Result)
+	}
+
+	// The row is still a row: the housekeeping keys reach it from the list.
+	m = press(t, m, "esc")
+	m = press(t, m, "x")
+	m = press(t, m, "y")
+	if len(store.deleted) != 1 || store.deleted[0] != "alpha" {
+		t.Fatalf("a refused row can still be deleted, got %v", store.deleted)
+	}
+}
+
+// The refusal is per item, not a mode: the row beside it opens.
+func TestBrowse_AnItemWithNoRefusalIsTaken(t *testing.T) {
+	m := (&fakeStore{}).model()
+	m.items[0].Refused = "not this one"
+
+	m = press(t, m, "j")
+	m = press(t, m, "enter")
+	m = press(t, m, "enter")
+	if m.Result == nil || m.Result.Item.ID != "beta" {
+		t.Fatalf("the unrefused row should open, got %+v", m.Result)
+	}
+}

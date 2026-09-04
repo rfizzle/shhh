@@ -243,7 +243,7 @@ func chatsReport(entries []storage.ChatListEntry, now time.Time) report.Report {
 			Detail:  joinDetail(countOf(e.Turns, "turn", "turns"), historyAgo(e.UpdatedAt, now)),
 		}
 		if e.Live {
-			row.State, row.Outcome = report.Warn, "open in another session"
+			row.State, row.Outcome = report.Warn, livePhrase
 		}
 		rows = append(rows, row)
 	}
