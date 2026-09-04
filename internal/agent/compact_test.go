@@ -379,3 +379,23 @@ func TestCompactorEstimateCountsToolsAndTheCorrection(t *testing.T) {
 		t.Fatalf("estimate = %d after a larger report, want more than %d", got, raw)
 	}
 }
+
+func TestRecoverRewritesTheSystemPromptWhenAskedTo(t *testing.T) {
+	var reqs []recordedRequest
+	a := New(filledWithProse(), recordingStream(t, &reqs,
+		doneRound("the conversation so far, summarised"),
+		doneRound("done"),
+	))
+	h := &Headless{
+		Agent: a,
+		Compact: &Compactor{Model: "test-model", Window: testWindow,
+			Workspace: func(system string) string { return strings.Replace(system, "sys", "sys, read again", 1) }},
+	}
+	if _, err := h.Run("carry on"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	msgs := a.Messages()
+	if len(msgs) == 0 || msgs[0].Role != provider.RoleSystem || msgs[0].Content != "sys, read again" {
+		t.Fatalf("system prompt was not rewritten after the compaction: %+v", msgs[0])
+	}
+}

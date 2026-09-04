@@ -227,6 +227,13 @@ type Compactor struct {
 	// configuration named for summaries. Nil sends it on the conversation's
 	// own stream, which is the only door a surface running one model has.
 	Stream StreamFunc
+	// Workspace, when set, rewrites the system prompt once the conversation
+	// has been rebuilt, so an unattended run goes on from the checkout as it
+	// is now rather than as it was at launch, the way the session's own
+	// compaction does. Nil keeps the launch prompt, which is right for a
+	// child whose prompt names the worktree it stands in.
+	// See docs/capabilities/coding-agent.md#the-agent-knows-where-and-when-it-is-standing.
+	Workspace func(system string) string
 
 	cal Calibration
 	// asked records that a summary was already requested on this crossing. A
@@ -320,6 +327,7 @@ func (c *Compactor) Recover(a *Agent, ask CompactAsk) CompactNotice {
 	}
 	kept := a.CompactKeep(c.keepBudget(), c.cal)
 	a.Compact(summary, kept)
+	c.rewriteSystem(a)
 	n.Compacted, n.Kept = true, CompactKeptTurns(kept)
 	n.AfterPct = percentOfWindow(c.Estimate(a.Messages()), c.Window)
 	n.Notice = compactNoticeText(n)
@@ -363,4 +371,25 @@ func compactNoticeText(n CompactNotice) string {
 			n.BeforePct, n.Elided, plural(n.Elided, "result"), n.AfterPct)
 	}
 	return ""
+}
+
+// rewriteSystem hands the system prompt to the workspace rewriter and puts
+// the result back through the agent's own door, copied first: the
+// conversation is the agent's to hold, and a write through the slice it
+// handed back is one nothing in the agent can see.
+func (c *Compactor) rewriteSystem(a *Agent) {
+	if c.Workspace == nil {
+		return
+	}
+	msgs := a.Messages()
+	if len(msgs) == 0 || msgs[0].Role != provider.RoleSystem {
+		return
+	}
+	rebuilt := c.Workspace(msgs[0].Content)
+	if rebuilt == msgs[0].Content {
+		return
+	}
+	updated := append([]provider.Message(nil), msgs...)
+	updated[0].Content = rebuilt
+	a.SetMessages(updated)
 }

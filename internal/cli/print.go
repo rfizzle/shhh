@@ -1024,6 +1024,11 @@ func headlessCompactor(ctx context.Context, cfg config.Config, env *sessionEnv, 
 		return nil
 	}
 	c := &agent.Compactor{Model: env.modelName, Window: window}
+	// A rebuilt conversation opens on the checkout as it is now, the same
+	// reading the session takes after its own compaction.
+	c.Workspace = func(system string) string {
+		return project.ReplaceBlock(system, env.workspaceBlock())
+	}
 	// The definitions are on every request and are not in the conversation,
 	// so a run that left them out of the estimate would think it had a
 	// toolset's worth of room it does not have.
