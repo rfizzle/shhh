@@ -20,6 +20,7 @@ import (
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/web"
 )
@@ -853,5 +854,119 @@ func TestCodeCmdResumeSpellings(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// passingSuites is a config whose named suites both come back clean.
+const passingSuites = `{"on_close": "fast", "suites": {
+	"default": {"checks": [{"name": "c", "exe": "sh", "args": ["-c", "true"]}]},
+	"fast": {"checks": [{"name": "c", "exe": "sh", "args": ["-c", "true"]}]}}}`
+
+func TestOnCloseGate_ReadsTheSuiteAndTheBudget(t *testing.T) {
+	ws := t.TempDir()
+	writeQualityConfig(t, ws, passingSuites)
+	suite, retries, ok := onCloseGate(&quality.Runner{Workspace: ws})
+	if !ok || suite != "fast" || retries != quality.DefaultCloseRetries {
+		t.Fatalf("onCloseGate = %q, %d, %v", suite, retries, ok)
+	}
+}
+
+func TestOnCloseGate_IsACleanNoOpWithoutAUsableConfig(t *testing.T) {
+	missing := t.TempDir()
+	if _, _, ok := onCloseGate(&quality.Runner{Workspace: missing}); ok {
+		t.Error("a workspace with no config asked for an on-close run")
+	}
+	broken := t.TempDir()
+	writeQualityConfig(t, broken, `{"suites": {`)
+	if _, _, ok := onCloseGate(&quality.Runner{Workspace: broken}); ok {
+		t.Error("a broken config asked for an on-close run")
+	}
+	named := t.TempDir()
+	writeQualityConfig(t, named, `{"suites": {"fast": {"checks": [{"name": "c", "exe": "sh", "args": ["-c", "true"]}]}}}`)
+	if _, _, ok := onCloseGate(&quality.Runner{Workspace: named}); ok {
+		t.Error("a config that names no on_close suite asked for a run")
+	}
+	if _, _, ok := onCloseGate(nil); ok {
+		t.Error("a session with no gate asked for a run")
+	}
+}
+
+func TestHeadlessCloseGate_RunsNothingForAChangesetWithNoWorkInIt(t *testing.T) {
+	ws := t.TempDir()
+	writeQualityConfig(t, ws, passingSuites)
+	for _, tc := range []struct {
+		name  string
+		paths []string
+	}{
+		{"nothing written", nil},
+		{"the state directory only", []string{filepath.Join(".shhh", "todo", "x.md")}},
+	} {
+		g := &headlessCloseGate{
+			ctx: context.Background(), gate: &quality.Runner{Workspace: ws},
+			suite: "fast", retries: 1, written: func() []string { return tc.paths },
+		}
+		if fb := g.close("done"); fb != "" {
+			t.Errorf("%s: handed back %q", tc.name, fb)
+		}
+		if g.last != nil {
+			t.Errorf("%s: ran the suite anyway", tc.name)
+		}
+		if err := g.err(); err != nil {
+			t.Errorf("%s: err = %v, want nil", tc.name, err)
+		}
+	}
+}
+
+func TestHeadlessCloseGate_HandsBackAFailureUntilTheBudgetIsSpent(t *testing.T) {
+	ws := t.TempDir()
+	writeQualityConfig(t, ws, `{"on_close": "fast", "suites": {
+		"fast": {"checks": [{"name": "c", "exe": "sh", "args": ["-c", "exit 3"]}]}}}`)
+	g := &headlessCloseGate{
+		ctx: context.Background(), gate: &quality.Runner{Workspace: ws},
+		suite: "fast", retries: 1, written: func() []string { return []string{"a.go"} },
+	}
+	first := g.close("done")
+	if !strings.Contains(first, "FAIL") {
+		t.Fatalf("first hand-back = %q, want the runner's own text", first)
+	}
+	if sum, ok := quality.Summarize(first); !ok || sum.Suite != "fast" {
+		t.Fatalf("the hand-back is not a formatted result: %q", first)
+	}
+	if second := g.close("done"); second != "" {
+		t.Errorf("second hand-back = %q, want none once the budget is spent", second)
+	}
+	err := g.err()
+	if err == nil || !strings.Contains(err.Error(), "fail") {
+		t.Fatalf("err = %v, want a failing verdict", err)
+	}
+}
+
+func TestHeadlessCloseGate_APassEndsTheTurnAndTheExitCode(t *testing.T) {
+	ws := t.TempDir()
+	writeQualityConfig(t, ws, passingSuites)
+	g := &headlessCloseGate{
+		ctx: context.Background(), gate: &quality.Runner{Workspace: ws},
+		suite: "fast", retries: 1, written: func() []string { return []string{"a.go"} },
+	}
+	if fb := g.close("done"); fb != "" {
+		t.Errorf("a pass handed back %q", fb)
+	}
+	if err := g.err(); err != nil {
+		t.Errorf("err = %v, want nil after a pass", err)
+	}
+}
+
+func TestHeadlessCloseGate_BlockedIsNeverAPass(t *testing.T) {
+	ws := t.TempDir()
+	writeQualityConfig(t, ws, `{"on_close": "fast", "suites": {
+		"fast": {"checks": [{"name": "c", "exe": "definitely-not-on-this-path"}]}}}`)
+	g := &headlessCloseGate{
+		ctx: context.Background(), gate: &quality.Runner{Workspace: ws},
+		suite: "fast", retries: 0, written: func() []string { return []string{"a.go"} },
+	}
+	g.close("done")
+	err := g.err()
+	if err == nil || !strings.Contains(err.Error(), string(quality.VerdictBlocked)) {
+		t.Fatalf("err = %v, want blocked", err)
 	}
 }

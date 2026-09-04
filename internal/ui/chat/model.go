@@ -133,6 +133,12 @@ const (
 	// surface — but nothing is streaming and the input is not live, so the
 	// wait owns the keyboard for the two keys it offers.
 	stateRetryWait
+	// stateCloseGate: the turn's work is done and the repository's own
+	// checks are running over it. It is a stage of the turn and not a
+	// surface — the turn's accounting is still open, because the verdict
+	// belongs on the close row and a failing one may still earn the turn
+	// another round (gate.go).
+	stateCloseGate
 	// stateContext: the context surface is up — the window drawn as a
 	// wrapped meter, the categories beside it, and the tool breakdowns
 	// folded under both. A takeover: full width, the rail hidden, esc
@@ -625,6 +631,10 @@ type Model struct {
 	mutationHook MutationHook
 	// gate backs the /gate quality-gate command.
 	gate Gate
+	// closeGate is the run a turn makes as it closes: whether this session
+	// honours the workspace's on_close suite, and where the current turn's
+	// run has got to (gate.go).
+	closeGate closeGateRun
 	// processes backs /ps and process-start approval gating.
 	processes Processes
 	// memory backs /memory and the remember-tool confirm flow;
@@ -1548,6 +1558,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if read := mm.titleCloseCmd(m); read != nil {
 		cmd = tea.Batch(cmd, read)
 	}
+	// And the repository's own checks over what the turn wrote (gate.go).
+	// The turn has reached its close and is waiting on the verdict, which
+	// is a state the transition above put it in and nothing else will start
+	// the run from.
+	if run := mm.closeGateCmd(); run != nil {
+		cmd = tea.Batch(cmd, run)
+	}
 	// And the backlog runner's next stage (todorun.go), for the same
 	// reason again: a stage's turn ending is a transition.
 	// The hook hands back the model whether or not it acted — a pause acts
@@ -1931,7 +1948,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				return m, nil
 			}
-			if m.state == stateStreaming {
+			if m.state == stateStreaming || m.state == stateCloseGate {
 				// The first press arms the cancel and the rails say so;
 				// only a second within the window abandons the turn
 				// (docs/interface/surfaces.md#the-input-frame). The
@@ -2544,6 +2561,11 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.noteSlotMove(msg)
 		return m, nil
 
+	case closeGateMsg:
+		// The turn has been waiting on this: its close row is not drawn yet,
+		// and a failing verdict may still earn it another round (gate.go).
+		return m.finishCloseGate(msg)
+
 	case summaryDoneMsg:
 		// A reading never routes anything: it changes what the rail draws and
 		// what the transcript holds, and nothing else, which is why it has no
@@ -2885,6 +2907,8 @@ func (m Model) liveTail(width int) string {
 		return m.runningCommandRow(width)
 	case stateClassifying:
 		return m.spinner.View() + " Checking permission…"
+	case stateCloseGate:
+		return m.closeGateBlock()
 	case stateRetryWait:
 		if m.retry == nil {
 			return ""
@@ -3454,6 +3478,10 @@ func (m *Model) cancelStreaming() {
 	if m.cancel != nil {
 		m.cancel()
 	}
+	// Before anything else, because this is what stops the close from being
+	// drawn while a suite is still running: the row it leaves is what the
+	// close block reads its verdict off (gate.go).
+	m.cancelCloseGate()
 	if m.todoRun != nil && !m.todoRun.Over() {
 		m.todoRunCancelled = true
 	}
@@ -3510,6 +3538,16 @@ func (m *Model) injectSteering() bool {
 // the current turn has ended: it injects them and opens the next stream.
 // Returns nil when nothing was queued.
 func (m *Model) dispatchSteering() tea.Cmd {
+	// A turn that went to its checks rather than to the input is not over,
+	// and what was typed at it belongs after the verdict rather than to a
+	// turn of its own: sending it here would take the turn away from the run
+	// it is waiting on, and the checks that turn owes would never happen.
+	// settleCloseGate asks again once the close has been drawn, and
+	// resumeToolLoop injects it where a hand-back continues the turn
+	// (gate.go).
+	if m.turnState() == stateCloseGate {
+		return nil
+	}
 	if !m.injectSteering() {
 		return nil
 	}
@@ -4095,6 +4133,9 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		if m.gate.Manage == nil {
 			return true, "The quality gate is unavailable in this session."
 		}
+		if handled, note := m.gateToggle(parts[1:]); handled {
+			return true, note
+		}
 		return true, m.gate.Manage(parts[1:])
 
 	case "/ps":
@@ -4338,7 +4379,7 @@ func helpText() string {
                  scope); drop <path> takes it back
   /sandbox       Containment status and container sandboxes (doctor|scope|list|status|destroy <id>|prune)
   /evidence      Tool-output evidence store: reduction stats and size (purge to clear)
-  /gate          Quality gate: run [suite] starts the project's checks in the background, result shows the verdict
+  /gate          Quality gate: run [suite] starts the project's checks in the background, result shows the verdict, on|off runs them as a turn closes
   /ps            List the long-running processes this session owns (process tool)
   /memory        Durable memories: list (default) · add [global] [kind] <text> ·
                  edit <id> (opens the entry in your editor) · forget <id>

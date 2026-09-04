@@ -561,6 +561,31 @@ the model chooses a name from it and never supplies a command.
 Every verdict is fingerprinted against the tree it ran over, so it cannot
 vouch for code it did not see.
 
+Asking is not the same as checking, and where nobody is watching the
+difference is the whole of it. An unattended run ends when the model says it
+is finished, and "it said so" is the only signal a script downstream of it
+has. So the config may name a suite to run as a turn closes: a turn that
+changed something runs it after its last tool call, the verdict joins the
+transcript as the same row a gate call leaves, and the turn's close reports
+it. A failing verdict is handed back the way a tool result is, once by
+default, and the turn goes on under the round budget it already had — a
+turn that could not finish inside its budget is not given more of one for
+having failed a check. Whatever the last verdict was, the close says so: a
+turn never ends on a failure nobody was shown. An unattended run also states
+it in its exit code, so a script that never reads a word of the output still
+learns that the checks did not pass.
+
+It runs by itself only where nobody is watching — an unattended run, and each
+stage of a backlog run that leaves changed code behind. A session with
+somebody in front of it turns it on by hand, because five small edits would
+otherwise become five waits for a suite, and the reader waiting through them
+would have seen the breakage anyway. A turn that changed nothing, or changed
+only shhh's own state directory, runs nothing and says nothing about it: no
+suite has an opinion about a checkpoint file. Neither does a workspace whose
+config is missing or will not parse — the gate is optional, and a fault
+reported at the close of every turn is reported to whoever is least placed to
+fix it.
+
 ## Related
 
 - [`subagents.md`](subagents.md) — handing work to children

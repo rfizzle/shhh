@@ -938,3 +938,51 @@ func TestRun_NothingBeforeTheSuiteResolvesIsTrusted(t *testing.T) {
 		t.Fatal("a run over an unreadable config must not be trusted")
 	}
 }
+
+func TestLoadConfig_AcceptsAnOnCloseSuite(t *testing.T) {
+	ws := t.TempDir()
+	writeConfig(t, ws, `{"on_close": "fast", "suites": {
+		"default": {"checks": [{"name": "c", "exe": "sh", "args": ["-c", "true"]}]},
+		"fast": {"checks": [{"name": "c", "exe": "sh", "args": ["-c", "true"]}]}}}`)
+	cfg, err := LoadConfig(ws)
+	if err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+	if cfg.OnClose != "fast" {
+		t.Errorf("OnClose = %q, want fast", cfg.OnClose)
+	}
+	if got := cfg.CloseRetries(); got != DefaultCloseRetries {
+		t.Errorf("CloseRetries() = %d, want %d", got, DefaultCloseRetries)
+	}
+}
+
+func TestLoadConfig_RejectsAnOnCloseSuiteThatIsNotDefined(t *testing.T) {
+	ws := t.TempDir()
+	writeConfig(t, ws, `{"on_close": "quick", "suites": {
+		"fast": {"checks": [{"name": "c", "exe": "sh", "args": ["-c", "true"]}]}}}`)
+	_, err := LoadConfig(ws)
+	if err == nil {
+		t.Fatal("want an error naming the missing suite")
+	}
+	// Both halves: the name that was asked for and the names that exist.
+	if !strings.Contains(err.Error(), `"quick"`) || !strings.Contains(err.Error(), "fast") {
+		t.Errorf("error names both? %v", err)
+	}
+}
+
+func TestConfig_CloseRetriesTakesZeroAsAnAnswer(t *testing.T) {
+	ws := t.TempDir()
+	writeConfig(t, ws, `{"on_close": "fast", "on_close_retries": 0, "suites": {
+		"fast": {"checks": [{"name": "c", "exe": "sh", "args": ["-c", "true"]}]}}}`)
+	cfg, err := LoadConfig(ws)
+	if err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+	if got := cfg.CloseRetries(); got != 0 {
+		t.Errorf("CloseRetries() = %d, want 0", got)
+	}
+	neg := -3
+	if got := (Config{OnCloseRetries: &neg}).CloseRetries(); got != 0 {
+		t.Errorf("a negative budget reads as %d, want 0", got)
+	}
+}

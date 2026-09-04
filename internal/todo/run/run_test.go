@@ -440,3 +440,65 @@ func TestRun_ResearchCarriesTheSprintGoal(t *testing.T) {
 		t.Fatalf("a session with no sprint sent a sprint heading:\n%s", step.Prompt)
 	}
 }
+
+func TestClosesWithGate_IsTheImplementStageAndNoOther(t *testing.T) {
+	it := item(todo.SizeM)
+	s := Start(it, "", "", 0, Options{Repo: true, CloseGate: true})
+	if s.ClosesWithGate() {
+		t.Error("research closes with the gate")
+	}
+	s.First(it, "")
+	if step := s.Observe(it, planText); step.Stage != StageImplement {
+		t.Fatalf("stage = %s, want implement", step.Stage)
+	}
+	if !s.ClosesWithGate() {
+		t.Error("implement does not close with the gate")
+	}
+	s.Observe(it, "Changed a.go.")
+	if s.Stage != StageVerify || s.ClosesWithGate() {
+		t.Errorf("verify closes with the gate (stage %s)", s.Stage)
+	}
+	var none *State
+	if none.ClosesWithGate() {
+		t.Error("no run at all closes with the gate")
+	}
+}
+
+func TestClosesWithGate_IsOffWhereTheWorkspaceNamesNoSuite(t *testing.T) {
+	it := item(todo.SizeM)
+	s := Start(it, "", "", 0, Options{Repo: true})
+	s.First(it, "")
+	s.Observe(it, planText)
+	if s.ClosesWithGate() {
+		t.Error("implement closes with a gate the workspace never asked for")
+	}
+}
+
+func TestChecks_CarriesOnlyAPassAndIsSpentByTheVerify(t *testing.T) {
+	it := item(todo.SizeM)
+	s := Start(it, "", "", 0, Options{Repo: true, CloseGate: true})
+	s.Checks(false)
+	if s.Checked {
+		t.Error("a failing verdict was carried to the verify stage")
+	}
+	s.Checks(true)
+	if !s.Checked {
+		t.Fatal("a passing verdict was not carried")
+	}
+	s.VerifyResult(it, true, "")
+	if s.Checked {
+		t.Error("the verdict outlived the verify it was for")
+	}
+}
+
+func TestContinue_DropsAVerdictReachedInAnotherSitting(t *testing.T) {
+	it := item(todo.SizeM)
+	s := Start(it, "", "", 0, Options{Repo: true, CloseGate: true})
+	s.Stage, s.Checked, s.Plan = StageVerify, true, planText
+	if step := s.Continue(it); step.Action != ActionVerify {
+		t.Fatalf("continue at verify = %+v", step)
+	}
+	if s.Checked {
+		t.Error("a continued run took a verdict from the session before it")
+	}
+}

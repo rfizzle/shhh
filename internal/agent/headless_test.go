@@ -753,3 +753,77 @@ func TestHeadlessRun_NoHoldNoWait(t *testing.T) {
 		t.Fatalf("run = %q, %v", final, err)
 	}
 }
+
+func TestHeadlessRun_OnCloseFeedsTheVerdictBackAsAnotherRound(t *testing.T) {
+	a := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}},
+		scriptedStream(t, doneRound("done"), doneRound("fixed it")))
+	asked := 0
+	h := &Headless{Agent: a, OnClose: func(final string) string {
+		asked++
+		if asked == 1 {
+			if final != "done" {
+				t.Errorf("close saw final = %q, want %q", final, "done")
+			}
+			return "Quality gate \"fast\": FAIL"
+		}
+		return ""
+	}}
+
+	final, err := h.Run("go")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if final != "fixed it" {
+		t.Fatalf("final = %q, want the answer after the hand-back", final)
+	}
+	if asked != 2 {
+		t.Fatalf("close asked %d times, want 2", asked)
+	}
+	msgs := a.Messages()
+	var fed bool
+	for i, m := range msgs {
+		if m.Role == provider.RoleUser && strings.Contains(m.Content, "FAIL") {
+			fed = true
+			// The answer it is a reply to comes first.
+			if i == 0 || msgs[i-1].Role != provider.RoleAssistant || msgs[i-1].Content != "done" {
+				t.Errorf("the verdict does not follow the answer it is about: %+v", msgs[i-1])
+			}
+		}
+	}
+	if !fed {
+		t.Error("the verdict never reached the conversation")
+	}
+}
+
+func TestHeadlessRun_OnCloseEndsTheTurnWhenItHandsBackNothing(t *testing.T) {
+	a := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}},
+		scriptedStream(t, doneRound("done")))
+	h := &Headless{Agent: a, OnClose: func(string) string { return "" }}
+	final, err := h.Run("go")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if final != "done" {
+		t.Fatalf("final = %q, want done", final)
+	}
+}
+
+func TestHeadlessRun_OnCloseIsNotAskedOfAnInterruptedTurn(t *testing.T) {
+	a := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, nil)
+	h := &Headless{Agent: a, OnClose: func(string) string {
+		t.Error("an interrupted turn asked for its checks")
+		return "again"
+	}}
+	a.stream = func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		h.Interrupt()
+		ch := make(chan provider.StreamEvent, 2)
+		ch <- provider.StreamEvent{Token: "half"}
+		ch <- provider.StreamEvent{Done: true}
+		close(ch)
+		_, cancel := context.WithCancel(context.Background())
+		return ch, cancel, nil
+	}
+	if _, err := h.Run("go"); !errors.Is(err, ErrInterrupted) {
+		t.Fatalf("err = %v, want ErrInterrupted", err)
+	}
+}

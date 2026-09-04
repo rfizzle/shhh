@@ -177,6 +177,16 @@ changed content than the fingerprint will read is reported stale on
 principle rather than guessed at. A gate that reports on stale state is worse
 than no gate.
 
+The suite can also be told to run on its own, as a turn closes over work it
+changed. That changes nothing about what a check may do — the commands are
+still only the ones in your file, still run read-only and contained where a
+mechanism is available — and it changes nothing about the session's
+permission mode either: a session that checks its own work may do exactly
+what one that does not may do. What it changes is who asked. The name is one
+key in the same trusted file, so turning it on is an edit to a file you own,
+and a name that matches no suite is refused when the file is read rather than
+at the close of the turn that was counting on it.
+
 ## Related
 
 - [`containment.md`](containment.md) — what stops a command that was approved

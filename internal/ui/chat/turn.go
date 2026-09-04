@@ -1,6 +1,10 @@
 package chat
 
-import "time"
+import (
+	"time"
+
+	"github.com/rfizzle/shhh/internal/ui/components"
+)
 
 // Turn state and surfaces.
 //
@@ -42,6 +46,21 @@ func (m Model) turnState() state {
 // screen instead of closing it: a turn that finishes (or asks for approval)
 // while the user is reading a diff waits for them to come back.
 func (m *Model) setTurnState(s state) {
+	// A turn is not over while the checks it owes are still to run. The
+	// verdict belongs on the close row, so the turn goes to the gate rather
+	// than to the input and comes back here when the verdict is in
+	// (gate.go). It is decided ahead of everything below because what
+	// follows is the end of a turn, and this turn has not reached one.
+	//
+	// Only a turn that ran to its own end: a cancelled or broken one left
+	// the work halfway, and a verdict about half an edit is a verdict about
+	// nothing. A turn parked at its round ceiling has not ended either — its
+	// checkpoint row is already on screen and the checks are owed to the
+	// round that finishes it, the way the close row is.
+	if s == stateInput && m.working() && !m.turnStarted.IsZero() && !m.heldAtBoundary() &&
+		!m.pausedAtRoundLimit() && m.turnOutcome == components.TurnDone && m.closeGateOwed() {
+		s = stateCloseGate
+	}
 	// Every arrival at a decision, and every departure from one, passes
 	// through here — so this is where the keyboard is decided. A card can
 	// never inherit the gate the last one was given, and one
@@ -148,7 +167,7 @@ func (m Model) answerIsArriving() bool {
 // conversation alone.
 func (m Model) working() bool {
 	switch m.turnState() {
-	case stateStreaming, stateRunningCmd, stateClassifying, stateRetryWait:
+	case stateStreaming, stateRunningCmd, stateClassifying, stateRetryWait, stateCloseGate:
 		// A turn waiting out a retry is still a turn in flight: it
 		// has not closed, its accounting is open, and the next thing it does
 		// is the request it was already making.
@@ -170,7 +189,7 @@ func (m Model) inputLive() bool {
 		return true
 	}
 	switch m.state {
-	case stateInput, stateStreaming, stateRunningCmd, stateClassifying:
+	case stateInput, stateStreaming, stateRunningCmd, stateClassifying, stateCloseGate:
 		return true
 	}
 	return false

@@ -209,6 +209,16 @@ type State struct {
 	// than read at each stage so a run continued after the sprint file
 	// changed still says what the work was started for.
 	Sprint string `json:"sprint,omitempty"`
+	// CloseGate reports that the workspace names a suite for a turn's
+	// close, which for a run means the implement stage checks itself
+	// before it hands the tree on.
+	CloseGate bool `json:"close_gate,omitempty"`
+	// Checked reports a passing verdict already reached over the tree the
+	// implement stage left, which the verify stage takes instead of running
+	// the same suite again. It is spent by the verify it was recorded for,
+	// and dropped by a run picked up in a later session — a verdict is
+	// about the tree it ran over, and a tree left overnight is not that one.
+	Checked bool `json:"checked,omitempty"`
 }
 
 // Options are the answers the person gave when they asked for the run, as
@@ -220,6 +230,11 @@ type Options struct {
 	Repo bool
 	// Sprint is the goal paragraph of the open sprint, empty without one.
 	Sprint string
+	// CloseGate reports that the workspace names an on-close suite, so the
+	// implement stage's own close runs the checks and the verify stage
+	// takes that verdict rather than paying for the same suite twice over
+	// a tree that has not moved between them.
+	CloseGate bool
 }
 
 // Start begins a run on an item.
@@ -229,8 +244,11 @@ func Start(it todo.Item, session, prevMode string, turn int, opt Options) *State
 		Slug: it.Slug, Session: session, Started: now, Updated: now,
 		Stage: StageResearch, Turn: turn, PrevMode: prevMode,
 		SizeBefore: it.Size, Size: it.Size,
-		Tests:    TestCommands(it.Body),
-		NoCommit: opt.NoCommit, Repo: opt.Repo, Sprint: opt.Sprint,
+		Tests:     TestCommands(it.Body),
+		NoCommit:  opt.NoCommit,
+		Repo:      opt.Repo,
+		Sprint:    opt.Sprint,
+		CloseGate: opt.CloseGate,
 	}
 }
 
@@ -301,7 +319,10 @@ func (s *State) Continue(it todo.Item) Step {
 	case StageVerify:
 		// A checkpoint from before Tests existed decodes with none; the
 		// gate still runs, and "nothing to verify" is said when there is
-		// neither.
+		// neither. Any verdict the checkpoint carried is dropped: it was
+		// reached in another sitting, and what happened to the tree between
+		// the two is not something a checkpoint can know.
+		s.Checked = false
 		return s.verify()
 	case StageReview:
 		return s.review(it)
@@ -319,6 +340,23 @@ func (s *State) Continue(it todo.Item) Step {
 	}
 	return s.block("the checkpoint names a stage that cannot be continued: " + string(s.Stage))
 }
+
+// ClosesWithGate reports whether the turn the run is in the middle of should
+// run the workspace's checks as it closes. It is the implement stage and no
+// other: that is the one stage that leaves changed code behind for a later
+// stage to judge, and the stages after it read the tree without writing to
+// it. Research and the split write nothing; review and commit run read-only
+// so that nothing can change between the verdict and the commit.
+func (s *State) ClosesWithGate() bool {
+	return s != nil && s.CloseGate && s.Stage == StageImplement
+}
+
+// Checks records what such a close reached, so the verify stage can take a
+// pass instead of running the same suite over a tree that has not moved
+// between them. Only a pass carries: a turn shown a failure was given rounds
+// to fix what it found, so the tree it finally left is not the one the
+// failing verdict was about.
+func (s *State) Checks(passed bool) { s.Checked = passed }
 
 // Over reports whether the run has reached an end state.
 func (s *State) Over() bool { return s.Stage == StageDone || s.Stage == StageBlocked }
@@ -462,6 +500,9 @@ func (s *State) verify() Step {
 // VerifyResult is the front-end reporting the verify outcome. Failure spends a
 // remediation round; passing goes to review.
 func (s *State) VerifyResult(it todo.Item, ok bool, output string) Step {
+	// The verdict the implement stage's close reached is spent here. The
+	// next verify follows a remediation turn, over a tree that moved.
+	s.Checked = false
 	if ok {
 		s.Verified = true
 		return s.review(it)

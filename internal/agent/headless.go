@@ -73,6 +73,20 @@ type Headless struct {
 	// See docs/capabilities/coding-agent.md#a-turn-can-be-held-between-rounds.
 	Hold func() <-chan struct{}
 
+	// OnClose, when set, is asked at the one moment a turn's work is
+	// finished: the model has answered without calling a tool, its answer is
+	// in the conversation, and nothing has been asked of it since. It
+	// returns the text to hand back for another round, or "" to let the turn
+	// end. It is the seam an unattended run's definition of done is made
+	// executable through — the checks run here, and their verdict is the
+	// text that comes back.
+	//
+	// It is a hook rather than a call after Run because the difference is
+	// the whole point: a verdict read after the loop has returned can only
+	// be reported, and one read here can still be answered.
+	// See docs/capabilities/coding-agent.md#it-can-check-itself.
+	OnClose func(final string) string
+
 	// Summary, when set, takes periodic readings of the run and hands their
 	// verdicts to the intervention policy — a steer for a run that has left
 	// its instruction, an early check-in for one that has what it needs
@@ -206,6 +220,17 @@ func (h *Headless) Run(prompt string) (string, error) {
 			if text != "" {
 				h.Agent.Append(provider.Message{Role: provider.RoleAssistant, Content: text})
 			}
+			// The answer is in the conversation before the close is asked
+			// anything, so a hand-back reads as a reply to what was just
+			// said rather than as an interruption of it.
+			if fb := h.closeFeedback(text); fb != "" {
+				h.Agent.Append(provider.Message{Role: provider.RoleUser, Content: fb})
+				// The round counter is untouched: the turn goes on under
+				// the ceiling it was already under, because a turn that
+				// could not finish inside its budget must not be handed a
+				// fresh one for having failed a check.
+				continue
+			}
 			return text, nil
 		}
 
@@ -304,6 +329,17 @@ func (h *Headless) Run(prompt string) (string, error) {
 			}
 		}
 	}
+}
+
+// closeFeedback asks the close hook what the turn still owes. An interrupted
+// run is asked nothing: the checks would be reporting on a tree the run was
+// stopped halfway through changing, and the answer would be handed to a
+// conversation that is about to be fenced off anyway.
+func (h *Headless) closeFeedback(final string) string {
+	if h.OnClose == nil || h.wasInterrupted() {
+		return ""
+	}
+	return h.OnClose(final)
 }
 
 // deliverTree appends the tree notice this boundary owes, if any, and shows

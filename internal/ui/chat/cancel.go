@@ -99,7 +99,7 @@ func (m *Model) disarm() { m.armed = armedPress{kind: armNone, seq: m.armed.seq}
 // rather than promising a cancel with nothing to cancel.
 func (m Model) armedNotice() string {
 	switch {
-	case m.armed.open(armCancel) && (m.turnState() == stateStreaming || m.heldAtBoundary()):
+	case m.armed.open(armCancel) && (m.turnState() == stateStreaming || m.turnState() == stateCloseGate || m.heldAtBoundary()):
 		return m.armed.key + " again cancels the turn"
 	case m.armed.open(armQuit) && !m.working():
 		return "press again to quit"
@@ -125,6 +125,9 @@ func (m *Model) quitNow() tea.Cmd {
 	if m.cancel != nil {
 		m.cancel()
 	}
+	// A suite is a subprocess and minutes of one; a session that is leaving
+	// must not go on spending a build on the way out (gate.go).
+	m.cancelCloseGate()
 	if m.runCancel != nil {
 		m.runCancel()
 	}

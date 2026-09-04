@@ -1,5 +1,6 @@
 {
   "max_parallel": 4,
+  "on_close": "fast",
   "suites": {
     "default": {
       "timeout_seconds": 600,

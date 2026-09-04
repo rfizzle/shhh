@@ -379,6 +379,9 @@ func (m Model) orchestratorRow() components.AgentRow {
 		// draws this row as running. Without a word of its own it would be a
 		// spinner beside "ready", which is the one reading that is wrong.
 		status = "waiting to retry…"
+	case stateCloseGate:
+		// And so is a turn whose work is finished and whose checks are not.
+		status = "running the checks…"
 	case stateConfirmRun, statePlanApprove:
 		status = "waiting on you"
 	}

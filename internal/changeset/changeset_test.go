@@ -559,3 +559,41 @@ func TestSessionFiles_HeldUntilAWriteMakesItWrong(t *testing.T) {
 		t.Fatalf("a write clears what was held: %+v", after)
 	}
 }
+
+func TestTurn_CheckableIgnoresTheStateDirectory(t *testing.T) {
+	s := New(0)
+	s.Add(1, rec(".shhh/todo/do-it.md", "", "done\n"))
+	s.Add(1, rec("/repo/.shhh/plans/p.md", "", "plan\n"))
+	turn, _ := s.Turn(1)
+	if turn.Checkable() {
+		t.Error("a turn that only wrote under the state directory is checkable")
+	}
+	s.Add(1, rec("main.go", "", "package main\n"))
+	turn, _ = s.Turn(1)
+	if !turn.Checkable() {
+		t.Error("a turn that wrote source is not checkable")
+	}
+}
+
+func TestTurn_CheckableIsFalseForATurnThatChangedNothing(t *testing.T) {
+	if (Turn{}).Checkable() {
+		t.Error("an empty turn is checkable")
+	}
+}
+
+func TestAnyCheckable(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		paths []string
+		want  bool
+	}{
+		{"nothing", nil, false},
+		{"state directory only", []string{".shhh/todo/x.md", ".shhh/plans/y.md"}, false},
+		{"one source file", []string{".shhh/todo/x.md", "internal/a/a.go"}, true},
+		{"a directory merely named for it", []string{"docs/shhh/a.md"}, true},
+	} {
+		if got := AnyCheckable(tc.paths); got != tc.want {
+			t.Errorf("%s: AnyCheckable(%v) = %v, want %v", tc.name, tc.paths, got, tc.want)
+		}
+	}
+}

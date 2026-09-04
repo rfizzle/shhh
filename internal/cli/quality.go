@@ -69,8 +69,35 @@ func recordGateVerdicts(gate *quality.Runner, rec *observeRecorder) {
 	gate.Observe = observe.GateHook(rec.observer())
 }
 
+// onCloseGate is the workspace's on-close setting, read fresh off the
+// trusted config the way a run reads it: the suite to run as a turn closes
+// over work it changed, and how many failing verdicts are handed back before
+// the turn ends whatever the last one was.
+//
+// A workspace with no config, or one that will not parse, is not an error
+// here. The gate is optional — this repository ran without the tool at all
+// until the file was added — and a surface that announced a broken config at
+// every turn close would be reporting it to whoever is least able to fix it:
+// nobody is watching an unattended run. It stays a clean no-op, and the
+// broken file is reported where it is asked for, by the run that blocks on
+// it.
+func onCloseGate(r *quality.Runner) (suite string, retries int, ok bool) {
+	if r == nil {
+		return "", 0, false
+	}
+	cfg, err := quality.LoadConfig(r.Workspace)
+	if err != nil || cfg.OnClose == "" {
+		return "", 0, false
+	}
+	return cfg.OnClose, cfg.CloseRetries(), true
+}
+
 // gateManager backs the /gate slash command: "run [suite]" starts a suite in
-// the background, "result" reports the latest verdict with staleness.
+// the background, "result" reports the latest verdict with staleness. The
+// on-close toggle is answered by the session before the command reaches
+// here, because what it switches is the session's own state and this runner
+// has none; the usage line still names it, since a usage line that lists
+// three of a command's four verbs is worse than none.
 func gateManager(r *quality.Runner) func(args []string) string {
 	return func(args []string) string {
 		switch {
@@ -83,6 +110,6 @@ func gateManager(r *quality.Runner) func(args []string) string {
 		case len(args) == 1 && args[0] == "result":
 			return r.Status()
 		}
-		return "Usage: /gate run [suite] | /gate result"
+		return "Usage: /gate run [suite] | /gate result | /gate on | /gate off"
 	}
 }

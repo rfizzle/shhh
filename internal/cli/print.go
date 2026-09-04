@@ -13,6 +13,7 @@ import (
 
 	"github.com/mattn/go-isatty"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/mcp"
@@ -641,11 +642,14 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	resolve := headlessApprover(cmd.Context(), opts, allowlist, run, red, obs.decision,
 		session.web, procSup, lspMutationHook(session.lsp), sc, session.mcpTools)
 	// A headless run has no changeset, so what it wrote is read off the
-	// calls that wrote it.
+	// calls that wrote it. Two readers want that list — the tree check, as
+	// the subtrahend for what somebody else changed, and the close run, to
+	// know whether this turn changed anything worth checking — so it is
+	// kept whether or not the tree check is on.
+	own := &writtenByCalls{}
+	resolve = own.wrap(resolve)
 	if c := treeCheck(cfg); c != nil {
-		own := &writtenByCalls{}
 		c.Own = own.paths
-		resolve = own.wrap(resolve)
 		a.SetTreeCheck(*c)
 	}
 	h := &agent.Headless{
@@ -704,6 +708,19 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		},
 	}
 	h.SetRetryLimit(cfg.Behavior.ProviderRetries)
+	// The checks run at the close of an unattended turn without being asked
+	// for, because this is the surface where "the model said it was done" is
+	// otherwise the only signal there is: nobody read the answer, and
+	// nothing between the last edit and the exit code has an opinion about
+	// whether the tree still builds.
+	var closing *headlessCloseGate
+	if suite, retries, ok := onCloseGate(qgate); ok {
+		closing = &headlessCloseGate{
+			ctx: cmd.Context(), gate: qgate, suite: suite, retries: retries,
+			written: own.paths,
+		}
+		h.OnClose = closing.close
+	}
 	if !opts.json {
 		h.OnText = func(text string) { fmt.Fprint(os.Stdout, text) }
 	}
@@ -719,12 +736,90 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	if !opts.json && final != "" && !strings.HasSuffix(final, "\n") {
 		fmt.Fprintln(os.Stdout)
 	}
+	// The loop ended the way it ended; whether the code it left behind
+	// passes is a second answer, and the exit code is where an unattended
+	// run states it. The turn's own outcome above is untouched by it: the
+	// turn finished, and a failing suite is the gate's row in the record
+	// rather than a turn that broke.
+	out := runErr
+	if out == nil {
+		out = closing.err()
+	}
 	if opts.json {
-		if err := writeJSONTranscript(os.Stdout, a.Messages(), final, usage, runErr); err != nil {
+		if err := writeJSONTranscript(os.Stdout, a.Messages(), final, usage, out); err != nil {
 			return err
 		}
 	}
-	return runErr
+	return out
+}
+
+// headlessCloseGate is the on-close gate run for an unattended turn: the
+// suite the workspace names, run once the model has stopped calling tools,
+// with a failing verdict handed back for another round while the config's
+// budget of hand-backs lasts.
+//
+// It is a value with a life of its own because the count has to survive the
+// hook being called again: the hand-back continues the same turn, and a
+// counter reset each time it is asked would let a run that never passes
+// alternate between the model and the suite until the round cap stopped it.
+type headlessCloseGate struct {
+	ctx     context.Context
+	gate    *quality.Runner
+	suite   string
+	retries int
+	// written is what the run's mutating calls wrote, the unattended
+	// stand-in for a session's changeset.
+	written func() []string
+
+	fed  int
+	last *quality.Result
+}
+
+// close is the agent.Headless.OnClose hook.
+func (g *headlessCloseGate) close(string) string {
+	// A turn that wrote nothing, or wrote only under shhh's own state
+	// directory, has nothing a suite could have an opinion about
+	// (changeset.AnyCheckable). It runs nothing and says nothing.
+	if !changeset.AnyCheckable(g.written()) {
+		return ""
+	}
+	res, err := g.gate.Run(g.ctx, g.suite)
+	if err != nil {
+		// The only error Run reports is a run already in flight, which here
+		// means a suite the model asked for itself is still going. Its
+		// verdict is the one the turn is about to be judged on anyway.
+		return ""
+	}
+	g.last = res
+	text := res.Format(quality.TakeFingerprint(g.gate.Workspace))
+	// The verdict goes to stderr beside the run's other activity rather than
+	// into the answer on stdout, which belongs to whatever is reading it.
+	fmt.Fprintf(os.Stderr, "» %s\n", text)
+	if res.Verdict != quality.VerdictFail && res.Verdict != quality.VerdictBlocked {
+		return ""
+	}
+	if g.fed >= g.retries {
+		return ""
+	}
+	g.fed++
+	// The same text the tool returns, and nothing else: a run told about a
+	// failure in words the model has never seen from the gate would be
+	// learning a second vocabulary for the same event.
+	return text
+}
+
+// err is what the last verdict says about the exit code. A pass, a
+// cancellation and a turn that never ran the suite are all nil: cancelled is
+// the run being stopped, which the interrupt already answers for.
+func (g *headlessCloseGate) err() error {
+	if g == nil || g.last == nil {
+		return nil
+	}
+	switch g.last.Verdict {
+	case quality.VerdictFail, quality.VerdictBlocked:
+		return fmt.Errorf("quality gate %q: %s", g.last.Suite, g.last.Verdict)
+	}
+	return nil
 }
 
 // headlessTurnOutcome is how a headless run's single turn ended, in the

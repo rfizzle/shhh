@@ -140,6 +140,9 @@ profiles.
   their values to the model.
 - **Sub-agents:** delegate scoped research or isolated implementation work.
 - **Quality gates:** run trusted repository checks and retain their results.
+  Suites live in `.shhh/quality.json`; an `"on_close"` key there names the one
+  a turn runs as it closes over files it changed, which `shhh code -p` and the
+  backlog runner honour by default and `/gate on` switches on in a session.
 - **Context window:** `/context` shows where the window went and how much of
   the last request came back from the provider's cache. Past 80% full a
   session elides its oldest tool results down to 60%, and `/compact` replaces

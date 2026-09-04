@@ -18,11 +18,14 @@ package changeset
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/rfizzle/shhh/internal/diff"
+	"github.com/rfizzle/shhh/internal/project"
 )
 
 // MainAgent attributes a record to the session's own agent, as opposed to a
@@ -225,6 +228,49 @@ func (t Turn) ModeChange() string {
 		return ""
 	}
 	return t.Records[0].ModeChange()
+}
+
+// Checkable reports whether the turn changed anything the repository's own
+// checks could have an opinion about.
+//
+// A turn whose every write landed under the state directory changed shhh's
+// own bookkeeping — a plan, a backlog item, a run's checkpoint — and no
+// suite in any workspace has a verdict about those. Running one anyway
+// spends a build and a test suite of an unattended run's wall clock to be
+// told again exactly what the run before it was told. A turn that changed
+// nothing at all is the same answer for the simpler reason.
+func (t Turn) Checkable() bool {
+	for _, r := range t.Records {
+		if checkable(r.Path) {
+			return true
+		}
+	}
+	return false
+}
+
+// AnyCheckable is the same question asked of a bare list of paths, for the
+// surfaces that keep no changeset and read what they wrote off the calls
+// that wrote it.
+func AnyCheckable(paths []string) bool {
+	for _, p := range paths {
+		if checkable(p) {
+			return true
+		}
+	}
+	return false
+}
+
+// checkable reads the whole path rather than its prefix, because the same
+// file arrives here spelled both ways: a tool that was given a relative path
+// records one, and a patch applied from a child's worktree records the
+// absolute path it landed at.
+func checkable(path string) bool {
+	for _, seg := range strings.Split(filepath.ToSlash(path), "/") {
+		if seg == project.StateDir {
+			return false
+		}
+	}
+	return path != ""
 }
 
 // snapshot copies the turn so a reader cannot see a later Add mutate it.

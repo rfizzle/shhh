@@ -31,6 +31,7 @@ import (
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/todo"
@@ -1363,6 +1364,59 @@ func TestGolden_MultiEditCard(t *testing.T) {
 		m.pendingApproval.title = m.pendingApproval.verb + " " + m.pendingApproval.path
 		return []golden.Panel{
 			{Label: "one card · three places in one file", View: strings.Join(m.confirmLines(), "\n")},
+		}
+	})
+}
+
+// TestGolden_OnCloseGate captures how a turn that checked itself closes: the
+// gate row the run left, and the close block reading its verdict off that row
+// rather than off anything the run kept to itself.
+//
+// Both verdicts are captured because the failing one is the whole point of
+// the mechanism — a turn never closes with a hidden failure — and because the
+// two rows differ in more than a colour: the failing check contributes its
+// output excerpt, which is what makes the block a different height.
+func TestGolden_OnCloseGate(t *testing.T) {
+	captureGolden(t, "on-close-gate", "the close of a turn that ran its own checks", []int{60, 80, 110}, func(width int) []golden.Panel {
+		rows := func(res *quality.Result) string {
+			m := frameModel(t, width, 40)
+			m.appendCloseGateRow(res.Suite, res.Format(res.Fingerprint))
+			m.appendEntry(entry{kind: entryTurnClose, turn: 1, close: &components.TurnClose{
+				State: components.TurnDone, Steps: 2, Tools: 5,
+				Elapsed: "41.3s", Spend: "$0.12", Note: "round 4/25",
+				Changes: &components.TurnChanges{
+					Files: 2, Added: 31, Removed: 7,
+					Keys: []components.TurnKey{{Key: "[v]", Label: "review"}, {Key: "[u]", Label: "undo turn"}},
+					Note: "all tracked in git",
+				},
+				// Read off the row above, the way the live close reads it.
+				Checks: turnChecksRow(m.transcript),
+			}})
+			m.invalidateRenderCache()
+			return m.renderHistory()
+		}
+		fp := quality.Fingerprint{}
+		contained := "landlock (workspace read-only)"
+		passed := &quality.Result{
+			Suite: "fast", Verdict: quality.VerdictPass, Trusted: true,
+			Contained: contained, Fingerprint: fp, Duration: 1700 * time.Millisecond,
+			Checks: []quality.CheckResult{
+				{Name: "vet", Command: "go vet ./...", Duration: 1300 * time.Millisecond},
+				{Name: "docs", Command: "python3 scripts/check-docs.py", Duration: 400 * time.Millisecond},
+			},
+		}
+		failed := &quality.Result{
+			Suite: "fast", Verdict: quality.VerdictFail, Trusted: true,
+			Contained: contained, Fingerprint: fp, Duration: 2100 * time.Millisecond,
+			Checks: []quality.CheckResult{
+				{Name: "vet", Command: "go vet ./...", ExitCode: 1, Duration: 1600 * time.Millisecond,
+					Output: "internal/agent/loop.go:214:2: declared and not used: rounds"},
+				{Name: "docs", Command: "python3 scripts/check-docs.py", Duration: 400 * time.Millisecond},
+			},
+		}
+		return []golden.Panel{
+			{Label: "the suite passed, and the turn closes on it", View: rows(passed)},
+			{Label: "the suite failed after its last hand-back", View: rows(failed)},
 		}
 	})
 }

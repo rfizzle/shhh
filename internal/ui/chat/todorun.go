@@ -141,7 +141,8 @@ func (m Model) startTodoRun(arg string, noCommit bool) (tea.Model, tea.Cmd) {
 		return m.systemNotice("Could not mark the item in progress: " + err.Error())
 	}
 	m.todoRun = run.Start(it, m.sessionName, m.mode.String(), int(m.turnCount)+1,
-		run.Options{NoCommit: noCommit, Repo: repo, Sprint: m.sprintGoal()})
+		run.Options{NoCommit: noCommit, Repo: repo, Sprint: m.sprintGoal(),
+			CloseGate: m.workspaceClosesGate()})
 	m.todoRunItem = it
 	m.reloadTodos()
 	return m.todoRunStep(m.todoRun.First(it, ""))
@@ -264,6 +265,10 @@ func (m Model) todoVerifyCmd() tea.Cmd {
 	slug := m.todoRunItem.Slug
 	tests := m.todoRun.Tests
 	gate := m.gate.Run
+	// A run whose implement stage closed on a passing gate carries that
+	// verdict here rather than paying for the suite twice over a tree that
+	// did not move between the two (run.State.Checks).
+	checked := m.todoRun.Checked
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), verifyTimeout)
 		defer cancel()
@@ -276,7 +281,7 @@ func (m Model) todoVerifyCmd() tea.Cmd {
 				ok = false
 			}
 		}
-		if gate != nil {
+		if gate != nil && !checked {
 			res, err := gate(ctx, "")
 			switch {
 			case err != nil:
@@ -288,6 +293,12 @@ func (m Model) todoVerifyCmd() tea.Cmd {
 			default:
 				fmt.Fprintf(&b, "quality gate %q: pass\n", res.Suite)
 			}
+		}
+		if checked {
+			// The implement stage's own close already ran the suite over
+			// this tree and it passed; nothing has changed since, so a
+			// second run would spend a build to reach the same verdict.
+			b.WriteString("quality gate: passed as the implement turn closed\n")
 		}
 		if len(tests) == 0 && gate == nil {
 			b.WriteString("nothing to verify: the item lists no tests and the project has no quality gate\n")
