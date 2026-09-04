@@ -1420,3 +1420,140 @@ func TestGolden_OnCloseGate(t *testing.T) {
 		}
 	})
 }
+
+// goldenRunItem is the item every run-row capture is a run of.
+func goldenRunItem(size todo.Size) todo.Item {
+	return todo.Item{
+		Slug: "cache-ttl", Title: "Give the cache a lifetime",
+		Priority: todo.PriorityHigh, Size: size,
+		Body: "## Tests\n- go test ./internal/cache\n",
+	}
+}
+
+// goldenRunPlan is a research answer at a size: the shape the runner parses,
+// with the numbered plan the row draws as the research stage's answer.
+func goldenRunPlan(size todo.Size, questions string) string {
+	if questions == "" {
+		questions = "none"
+	}
+	return "## Plan\n\n1. Read the cache's own tests\n   files: internal/cache/cache_test.go\n\n" +
+		"2. Give an entry a deadline\n   files: internal/cache/cache.go\n\n" +
+		"size: " + string(size) + "\nquestions: " + questions + "\n"
+}
+
+// goldenRun starts a run with the clock pinned, so the duration field is the
+// same string on every machine, and hands it back with its item.
+func goldenRun(size todo.Size) (todo.Item, *run.State) {
+	it := goldenRunItem(size)
+	st := run.Start(it, "2026-09-04 10:00:00", "manual", 1, run.Options{Repo: true})
+	st.Started = time.Date(2026, 9, 4, 10, 0, 0, 0, time.UTC)
+	return it, st
+}
+
+// goldenRunRow renders a row after driving its run through build, which is
+// the real machine every time: a fixture that set the stages by hand would
+// capture a row nothing can produce.
+func goldenRunRow(t *testing.T, width int, expanded bool, build func(it todo.Item, st *run.State, r *todoRunRow)) string {
+	t.Helper()
+	it, st := goldenRun(todo.SizeM)
+	r := newTodoRunRow(st)
+	build(it, st, r)
+	// Pinned last: the machine stamps Updated on every save, and the row's
+	// span is measured between the two ends the checkpoint carries.
+	st.Updated = st.Started.Add(4*time.Minute + 12*time.Second)
+	m := frameModel(t, width, 40)
+	m.appendEntry(entry{kind: entryTodoRun, todorun: r, expanded: expanded})
+	m.invalidateRenderCache()
+	return m.renderHistory()
+}
+
+// drive runs the machine and tells the row about every step, which is what
+// the session does on every transition.
+func driveRun(r *todoRunRow, steps ...run.Step) {
+	for _, step := range steps {
+		r.observe(step)
+	}
+}
+
+// TestGolden_TodoRunRow captures the run the transcript draws in place of the
+// scatter of notices a run used to be: a small one researching and then
+// building, a medium one spending a remediation round, one reviewed,
+// committed and opened to its answers, a large one built in three lanes, the
+// pause, the block with the follow-up it wrote — and a run picked up from a
+// checkpoint, which is the one that must not draw a tick on a stage it never
+// watched. A run that remediated and then finished is captured too: the
+// rounds it spent stay on the row after the stage is ticked, and what that
+// reads like beside an all-green strip is the point of the sheet.
+func TestGolden_TodoRunRow(t *testing.T) {
+	captureGolden(t, "todo-run-row", "a backlog run drawn as it goes", goldenWidths, func(width int) []golden.Panel {
+		return []golden.Panel{
+			{Label: "a small run, researching", View: goldenRunRow(t, width, false,
+				func(it todo.Item, st *run.State, r *todoRunRow) {
+					driveRun(r, st.First(it, ""))
+				})},
+			{Label: "the same run building what research planned", View: goldenRunRow(t, width, false,
+				func(it todo.Item, st *run.State, r *todoRunRow) {
+					driveRun(r, st.First(it, ""), st.Observe(it, goldenRunPlan(todo.SizeS, "")))
+				})},
+			{Label: "a medium run spending a remediation round on a failed verify", View: goldenRunRow(t, width, false,
+				func(it todo.Item, st *run.State, r *todoRunRow) {
+					driveRun(r, st.First(it, ""), st.Observe(it, goldenRunPlan(todo.SizeM, "")),
+						st.Observe(it, "Gave an entry a deadline."),
+						st.VerifyResult(it, false, "--- FAIL: TestExpiry (0.01s)"))
+				})},
+			{Label: "reviewed, committed and done, opened to its answers", View: goldenRunRow(t, width, true,
+				func(it todo.Item, st *run.State, r *todoRunRow) {
+					driveRun(r, st.First(it, ""), st.Observe(it, goldenRunPlan(todo.SizeM, "")),
+						st.Observe(it, "Gave an entry a deadline."),
+						st.VerifyResult(it, true, "ok  internal/cache  0.4s"),
+						st.ReviewResult(it, "verdict: clean"),
+						st.Observe(it, "COMMIT:\nfeat(cache): give an entry a deadline\nREPORT:\nSummary: entries now expire.\n"),
+						st.Committed([]string{"internal/cache/cache.go", "internal/cache/cache_test.go"}))
+				})},
+			{Label: "the same run after the round it spent · what it cost stays on the row", View: goldenRunRow(t, width, false,
+				func(it todo.Item, st *run.State, r *todoRunRow) {
+					driveRun(r, st.First(it, ""), st.Observe(it, goldenRunPlan(todo.SizeM, "")),
+						st.Observe(it, "Gave an entry a deadline."),
+						st.VerifyResult(it, false, "--- FAIL: TestExpiry (0.01s)"),
+						st.Observe(it, "Fixed the expiry."),
+						st.VerifyResult(it, true, "ok  internal/cache  0.4s"),
+						st.ReviewResult(it, "verdict: clean"),
+						st.Observe(it, "COMMIT:\nfeat(cache): give an entry a deadline\nREPORT:\nSummary: entries now expire.\n"),
+						st.Committed([]string{"internal/cache/cache.go"}))
+				})},
+			{Label: "a large run in three lanes, one landed", View: goldenRunRow(t, width, false,
+				func(it todo.Item, st *run.State, r *todoRunRow) {
+					driveRun(r, st.First(it, ""), st.Observe(it, goldenRunPlan(todo.SizeL, "")))
+					// The pause a large item always takes, then the split's
+					// own answer, which is what names the lanes.
+					driveRun(r, st.Resume(it), st.Observe(it, goldenLanes))
+					st.LanePatched(st.Lanes[0].Agent)
+				})},
+			{Label: "paused on a question research could not settle", View: goldenRunRow(t, width, false,
+				func(it todo.Item, st *run.State, r *todoRunRow) {
+					driveRun(r, st.First(it, ""),
+						st.Observe(it, goldenRunPlan(todo.SizeM, "\n- should a stale read serve or block?")))
+				})},
+			{Label: "blocked, with the follow-up it wrote and the key that reopens it", View: goldenRunRow(t, width, false,
+				func(it todo.Item, st *run.State, r *todoRunRow) {
+					driveRun(r, st.First(it, ""), st.Observe(it, "I had a look but there is no plan here.\n"))
+					r.followUp = "cache-ttl-plan"
+				})},
+			{Label: "picked up from a checkpoint · the stages it skipped are restored, not passed",
+				View: goldenRunRow(t, width, false, func(it todo.Item, st *run.State, r *todoRunRow) {
+					st.Stage, st.Plan = run.StageVerify, goldenRunPlan(todo.SizeM, "")
+					st.Steps = []string{"Read the cache's own tests", "Give an entry a deadline"}
+					// The row is opened on the checkpoint, which is what the
+					// session does before it continues a run.
+					*r = *newTodoRunRow(st)
+					driveRun(r, st.Continue(it))
+				})},
+		}
+	})
+}
+
+// goldenLanes is a split answer in the shape the runner parses: three lanes
+// with disjoint paths.
+const goldenLanes = "LANE: store\npaths: internal/cache/cache.go\ntask: give an entry a deadline\n\n" +
+	"LANE: tests\npaths: internal/cache/cache_test.go\ntask: cover the expiry\n\n" +
+	"LANE: bench\npaths: internal/cache/bench_test.go\ntask: measure the eviction\n"

@@ -83,7 +83,7 @@ func (m Model) inspectorTodo() *components.InspectorTodo {
 		Hint:    todoHintRail,
 	}
 	t.Sprint, t.SprintDone, t.SprintTotal = m.inspectorSprint()
-	for _, it := range s.Items {
+	for _, it := range todoRailOrder(s.Items, m.todoRun) {
 		if len(t.Rows) == todoRailRows {
 			t.More++
 			continue
@@ -91,6 +91,27 @@ func (m Model) inspectorTodo() *components.InspectorTodo {
 		t.Rows = append(t.Rows, todoRow(s, it, m.todoRun))
 	}
 	return t
+}
+
+// todoRailOrder is the backlog in working order with the item a run is
+// working moved to the front. The block shows four rows of a backlog that
+// may hold forty, and the one item the session is actually building is the
+// one row it must never be the "… 36 more" that swallowed. Everything else
+// keeps the store's order, so the list under it is still the queue.
+func todoRailOrder(items []todo.Item, running *run.State) []todo.Item {
+	if running == nil || running.Over() {
+		return items
+	}
+	out := make([]todo.Item, 0, len(items))
+	var rest []todo.Item
+	for _, it := range items {
+		if it.Slug == running.Slug {
+			out = append(out, it)
+			continue
+		}
+		rest = append(rest, it)
+	}
+	return append(out, rest...)
 }
 
 // todoRow is one item as the rail draws it.
@@ -115,6 +136,7 @@ func todoRow(s *todo.Store, it todo.Item, running *run.State) components.Inspect
 			if running.Round > 0 {
 				row.Note += fmt.Sprintf(" %d/%d", running.Round, run.Rounds(running.Size))
 			}
+			row.LanesDone, row.LanesTotal = laneProgress(running)
 		}
 	default:
 		if waiting := s.Waiting(it); len(waiting) > 0 {
@@ -141,7 +163,7 @@ func (m Model) todoCommand(parts []string) (tea.Model, tea.Cmd) {
 		}
 	}
 	if len(parts) >= 2 && parts[1] == "status" {
-		return m.systemNotice(m.todoRunStatus())
+		return m.todoRunStatus()
 	}
 	if len(parts) >= 2 && m.working() && todoWrites(parts[1:]) {
 		return m.systemNotice("Not while the turn is running: /todo " + strings.Join(todoWriteVerb(parts[1:]), " ") +

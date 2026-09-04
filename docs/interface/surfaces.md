@@ -121,6 +121,36 @@ promise about what can be undone; that promise is the approval card's job.
 Any turn can be put back, and putting one back is itself recorded as a change
 that can be reviewed and put back in turn.
 
+### The backlog run's row
+
+A run of the backlog works one item through five stages over as many turns as
+it takes, and it used to arrive as a scatter of one-line notices: a stage
+started, a verify passed, a lane landed, a wall of report at the end. The
+reader put the run back together by scrolling. It is one row instead — a run
+is a step of steps, and a step is what the transcript already has a shape for.
+
+The row is appended when the run starts and redrawn wherever it stands. Under
+it the stages run left to right, each with a glyph and its own word: ticked
+where the run passed, live where it is now, plain where it has not been yet,
+and marked where it stopped. A run picked up from a checkpoint draws the
+stages it did not watch as restored rather than as passed, and says so in
+words, because a tick is a claim to have seen something happen.
+
+What a stage cannot say in one word is said under the strip, named for the
+stage it belongs to: how many of a large item's lanes have landed, which
+remediation round is being spent of how many there are, and the word the
+review answered with. Opened, the row gives the answers themselves — the
+plan, the questions, the lanes and their paths, the findings, the report and
+the files. The run's report is the row's final state rather than a paragraph
+pasted into the transcript, so what shipped folds like everything else.
+
+The words on the row are the words the record keys the run's transitions on.
+There is one vocabulary and both readers of it draw from the same place, so a
+row and a record cannot describe the same transition differently.
+
+A run that blocked carries one offer: the item it stopped on goes back to
+open, from the row that says why it stopped.
+
 ### The recovery row
 
 Most of a tool's reputation is made in its failures. Every one of them is an

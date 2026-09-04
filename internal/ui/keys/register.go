@@ -114,12 +114,12 @@ func Surfaces() []Surface {
 		},
 		{
 			Name:     "a transcript row's own offers",
-			Section:  "docs/interface/surfaces.md#the-turns-close, docs/interface/surfaces.md#the-recovery-row",
+			Section:  "docs/interface/surfaces.md#the-turns-close, docs/interface/surfaces.md#the-recovery-row, docs/interface/surfaces.md#the-backlog-runs-row",
 			Position: Beside,
 			Reached:  Shown(Draft.Reading) + ", then the cursor on the row",
 			Bindings: []Binding{
 				Row.Review, Row.Undo, Row.Retry, Row.Continue,
-				Row.Key, Row.Provider, Row.Rounds, Row.Uncap,
+				Row.Key, Row.Provider, Row.Rounds, Row.Uncap, Row.Reopen,
 			},
 		},
 		{

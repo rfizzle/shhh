@@ -1052,3 +1052,36 @@ func TestInspectorRail_LinesAreTheRowsText(t *testing.T) {
 		}
 	}
 }
+
+// TestInspectorTodo_RunningRowDrawsItsLanes: an item being built in lanes
+// says how many of them have landed, in the meter a fan-out's own lanes are
+// drawn with — and beside the words, never instead of them, because a bar is
+// a shape and not a number. An item nothing is fanning out draws no meter,
+// which is the rule about denominators nobody supplied.
+func TestInspectorTodo_RunningRowDrawsItsLanes(t *testing.T) {
+	rows := []InspectorTodoRow{
+		{Slug: "cache-ttl", Priority: "H", Size: "L", State: TodoRunning,
+			Note: "implement", LanesDone: 2, LanesTotal: 3},
+		{Slug: "cache-warm", Priority: "M", Size: "S", State: TodoReady},
+	}
+	r := InspectorRail{Todo: &InspectorTodo{Open: 2, Rows: rows}}
+	lines := r.Lines(InspectorWidth, 0)
+	var running, ready string
+	for _, line := range lines {
+		switch plain := stripANSI(line); {
+		case strings.Contains(plain, "cache-ttl"):
+			running = plain
+		case strings.Contains(plain, "cache-warm"):
+			ready = plain
+		}
+	}
+	if !strings.Contains(running, "implement") {
+		t.Fatalf("the stage is the column's own words: %q", running)
+	}
+	if !strings.Contains(running, "2/3") || !strings.Contains(running, "▰") {
+		t.Fatalf("the running row should carry the lane meter and its count: %q", running)
+	}
+	if strings.Contains(ready, "▰") || strings.Contains(ready, "▱") {
+		t.Fatalf("an item with no lanes draws no meter: %q", ready)
+	}
+}

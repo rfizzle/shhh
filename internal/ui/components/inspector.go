@@ -235,6 +235,12 @@ type InspectorTodoRow struct {
 	// Note is the right-hand column: what the row waits on, or the stage a
 	// running one is at. Blank for a ready row, which has nothing to add.
 	Note string
+	// LanesDone and LanesTotal are a running item's fan-out: how many of the
+	// writers' patches have landed, out of how many lanes it was divided
+	// into. A total of zero draws no meter, because an item built in one turn
+	// has no lanes to measure and a bar against a denominator nobody supplied
+	// is a number the interface invented.
+	LanesDone, LanesTotal int
 }
 
 // InspectorTodo is the TODO block: what the project still owes, so "what
@@ -873,11 +879,7 @@ func (r InspectorRail) todoBlock(width int) (railBlock, bool) {
 	for _, row := range t.Rows {
 		glyph, style := todoRowTone(row.State)
 		left := glyph + " " + sty.Dim.Render(row.Priority+" "+row.Size) + " " + style.Render(row.Slug)
-		note := ""
-		if row.Note != "" {
-			note = sty.Dim.Render(row.Note)
-		}
-		b.add(railRow(left, note, width, inspectorIndent))
+		b.add(railRow(left, row.note(), width, inspectorIndent))
 	}
 	if t.More > 0 {
 		b.add(indentRow(sty.Dim.Render(fmt.Sprintf("… %d more", t.More)), width))
@@ -886,6 +888,26 @@ func (r InspectorRail) todoBlock(width int) (railBlock, bool) {
 		b.add(indentRow(sty.Hint.Render(t.Hint), width))
 	}
 	return b, true
+}
+
+// note is the row's right-hand column: the stage or the wait in words, and —
+// for an item being built in lanes — the meter that says how many of them
+// have landed. The words come first because they are what the column is for;
+// the meter is the count the words cannot carry.
+func (r InspectorTodoRow) note() string {
+	note := ""
+	if r.Note != "" {
+		note = sty.Dim.Render(r.Note)
+	}
+	m, ok := AgentMeter(r.LanesDone, r.LanesTotal)
+	if !ok {
+		return note
+	}
+	m.Text = fmt.Sprintf("%d/%d", r.LanesDone, r.LanesTotal)
+	if note == "" {
+		return m.View()
+	}
+	return note + " " + m.View()
 }
 
 // todoRowTone is a backlog row's glyph and the weight its slug carries. The

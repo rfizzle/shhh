@@ -223,10 +223,12 @@ func TestTodoRun_Guards(t *testing.T) {
 	if note := updated.(Model).transcript[len(updated.(Model).transcript)-1].text; !strings.Contains(note, "Not while the turn is running") {
 		t.Fatalf("second run mid-turn: %q", note)
 	}
+	// Mid-run, status is the run's row opened rather than a sentence about
+	// it; the row's own test covers what it says.
 	m.input.SetValue("/todo status")
 	updated, _ = m.submitInput()
-	if note := updated.(Model).transcript[len(updated.(Model).transcript)-1].text; !strings.Contains(note, "do-it · research") {
-		t.Fatalf("status mid-run: %q", note)
+	if next := updated.(Model); next.state != stateFocus || lastTodoRunRow(next.transcript) < 0 {
+		t.Fatalf("status mid-run should open the row: state=%d", next.state)
 	}
 	block := m.inspectorTodo()
 	if block == nil || block.Rows[0].Note != "research" {
@@ -403,9 +405,14 @@ func TestTodoRun_PauseCardGoAheadReplanStop(t *testing.T) {
 	if m.state != stateTodoPause || m.todoPause == nil || m.todoRun.Paused == "" {
 		t.Fatalf("an L plan should pause: state=%d", m.state)
 	}
-	lines := strings.Join(m.todoPauseLines(), "\n")
-	if !strings.Contains(lines, "size L (was M)") || !strings.Contains(lines, "? keep the flag?") || !strings.Contains(lines, "Go ahead") {
-		t.Fatalf("pause card = %q", lines)
+	lines := stripANSI(strings.Join(m.todoPauseLines(), "\n"))
+	// The size against the item's, the plan as a checklist and the question
+	// research could not settle, all above the answers: the choice is made
+	// with the facts in view rather than with a scroll back.
+	for _, want := range []string{"size L (was M)", "1 step", "○ 1. a", "? keep the flag?", "Go ahead"} {
+		if !strings.Contains(lines, want) {
+			t.Fatalf("the pause card does not carry %q:\n%s", want, lines)
+		}
 	}
 	if m.inspectorHidden() != true {
 		t.Fatal("the pause takes the panel like the other cards")

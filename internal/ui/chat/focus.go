@@ -25,7 +25,7 @@ import (
 // press that does nothing.
 func expandable(e entry) bool {
 	return e.kind == entryTool || e.kind == entryCommand || e.kind == entryDiff ||
-		e.kind == entryThink || e.kind == entrySummary ||
+		e.kind == entryThink || e.kind == entrySummary || e.kind == entryTodoRun ||
 		(e.kind == entrySystem && len(outputLines(e)) > 0)
 }
 
@@ -225,6 +225,14 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// the scroll to wherever it was standing.
 		m.halfPageFocus(pressed)
 		return m, nil
+	case keys.Is(pressed, keys.Row.Reopen):
+		// A blocked run's own offer: the item goes back to open from the row
+		// that says why it stopped. Handled here rather than globally, so
+		// the input keeps the letter for typing.
+		if next, cmd, claimed := m.todoRunReopen(m.focusIdx); claimed {
+			return next, cmd
+		}
+		return m.returnToInput(msg)
 	case keys.Is(pressed, keys.Row.Retry, keys.Row.Continue, keys.Row.Key, keys.Row.Provider):
 		// A provider failure's own offers, and a dropped
 		// stream's. Like the changeset row's, they are handled here

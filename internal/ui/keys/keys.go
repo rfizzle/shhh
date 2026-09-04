@@ -360,6 +360,14 @@ type RowKeys struct {
 	// key, which is what Shown carries.
 	Rounds Binding
 	Uncap  Binding
+
+	// Reopen is `[o]` on the row a backlog run blocked on: the item it
+	// blocked goes back to open, which is the one act a reader who has just
+	// read the block wants and would otherwise have to compose a command
+	// for. It is `o` because that is the word — the textual form is
+	// `/todo open` — and because every other letter on a transcript row is
+	// already spent.
+	Reopen Binding
 }
 
 var Row = RowKeys{
@@ -373,6 +381,8 @@ var Row = RowKeys{
 
 	Rounds: bind("+", "more rounds", "+"),
 	Uncap:  bind("!", "let it run", "!"),
+
+	Reopen: bind("o", "reopen the item", "o"),
 }
 
 // DecisionKeys are the approval card's, the `/run` confirm's, the plan

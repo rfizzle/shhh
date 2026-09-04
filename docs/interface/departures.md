@@ -146,3 +146,18 @@ the rows below are the whole backlog or the eight things chosen for this week
 sits above the items, states the set's name and how many of them are done, and
 is absent altogether where no set is open, so a backlog worked without one
 looks exactly as the artboard draws it.
+
+## The backlog run's row is drawn with the step's grammar
+
+The RunRow artboard states the row's own layout. What the binary draws is the
+step header's grammar instead — the same fold state, the same lead columns,
+the same faint rule, the same right-aligned duration field — with the stages
+under it as a strip and each stage's own note under that.
+
+The reason is the neighbours. A run's row sits in a transcript of steps, and
+a run *is* a step of steps: a second header shape a column out of alignment
+would read as a different kind of thing at exactly the moment the reader is
+being told it is the same kind. Column widths are the design system's to
+settle, and the artboard is the place to settle them; until the two are read
+side by side this is a row drawn from the grammar its neighbours keep rather
+than a disagreement with the artboard about any of them.

@@ -276,6 +276,11 @@ const (
 	// this is where a longer one can be read whole, and where the readings
 	// before it are still on record.
 	entrySummary
+	// entryTodoRun: the backlog run, one row for the whole of it, updated in
+	// place as the run moves through its stages (todorun.go). It holds a
+	// handle on the run's own state rather than a copy of it, the way the
+	// fan-out block holds a batch number.
+	entryTodoRun
 )
 
 // entry is one transcript item, stored raw so the history can be re-rendered
@@ -325,6 +330,10 @@ type entry struct {
 	// not stored: they are read off the supervisor at render time, which is
 	// what keeps them live and what lets the block re-render at any width.
 	fanout *fanoutBatch
+	// todorun is the run behind an entryTodoRun row. A pointer for the same
+	// reason: the row draws the machine's own state at render time, so it
+	// moves as the run moves and re-renders at any width.
+	todorun *todoRunRow
 	// deniedBy names who refused the call — decidedByYou for a decline at the
 	// card, decidedByAuto for a rule — and renders the row as ⊘ rather than ✗
 	// (docs/interface/principles.md#closed-vocabularies). Empty when
@@ -657,6 +666,14 @@ type Model struct {
 	// answer.
 	todoRunTurn      int
 	todoRunCancelled bool
+	// todoFollowUpRow is 1 + the transcript index of the run row a blocked
+	// run left, while its follow-up proposal is still on the card.
+	todoFollowUpRow int
+	// todoRunRowIdx is 1 + the transcript index of the run's row, or 0 with
+	// no run drawn. The row is addressed by index rather than held as a
+	// pointer because transcript indices are what focus mode, the render
+	// cache and reading mode all address entries by.
+	todoRunRowIdx int
 	// todoPause is the open pause card while a run waits on the person.
 	todoPause         *components.NoteSelect
 	todoPropose       *components.MultiSelect
@@ -3588,9 +3605,10 @@ func (m *Model) appendEntry(e entry) {
 func (m *Model) resetTranscript() {
 	m.transcript = nil
 	// The index a fan-out would have converted points into a transcript that
-	// no longer exists, and so does the round's think row.
+	// no longer exists, and so does the round's think row and the run's row.
 	m.spawnRow = 0
 	m.thinkIdx = 0
+	m.todoRunRowIdx, m.todoFollowUpRow = 0, 0
 	// The checklist is read off the transcript, so a transcript that is gone
 	// takes the approved plan with it rather than pointing at entries that no
 	// longer exist.
@@ -3697,6 +3715,11 @@ func (m Model) renderEntryDetail(e entry, width int, keysLive, stepDetail bool) 
 			return ""
 		}
 		return block.View(width) + "\n"
+	case entryTodoRun:
+		if e.todorun == nil {
+			return ""
+		}
+		return m.todoRunRowView(e, width, keysLive) + "\n"
 	case entryDiff:
 		if e.diff == nil {
 			return ""
@@ -3747,7 +3770,7 @@ func (m Model) systemRow(e entry, width int) string {
 // lines — rather than as a row in the compact activity feed.
 func entryIsBlock(e entry) bool {
 	switch e.kind {
-	case entryUser, entryAssistant, entryDiff, entryTurnClose, entryFanout:
+	case entryUser, entryAssistant, entryDiff, entryTurnClose, entryFanout, entryTodoRun:
 		return true
 	case entrySystem, entryError:
 		return strings.Contains(strings.TrimSpace(e.text), "\n")
@@ -3924,7 +3947,9 @@ func (m *Model) renderHistoryRawLines() []string {
 	// steps trail it, and they change as the run reaches them.
 	// A live fan-out is the one entry that keeps changing without a row
 	// landing in it, so its block cannot be frozen either.
-	freeze := min(lastLiveBlock(blocks), m.liveFanoutBlock(blocks))
+	// A run's row is the other one: it redraws from the machine's state on
+	// every transition, and a transition lands no row of its own.
+	freeze := min(lastLiveBlock(blocks), m.liveFanoutBlock(blocks), m.liveTodoRunBlock(blocks))
 	// Back to the settled lines and no further: what the frozen blocks wrote
 	// stays written, and only the tail after them is built again.
 	m.cached.rewind()

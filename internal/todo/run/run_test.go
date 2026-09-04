@@ -502,3 +502,82 @@ func TestContinue_DropsAVerdictReachedInAnotherSitting(t *testing.T) {
 		t.Error("a continued run took a verdict from the session before it")
 	}
 }
+
+// The words a run's record is keyed on and the words a surface draws it with
+// are one vocabulary. Every stage a run passes through is a word some step
+// can be named, and every step names itself with either its stage or its
+// action and nothing else — so a row drawn from one and a record written from
+// the other cannot describe the same transition differently.
+func TestStepNameIsTheStageForATurnAndTheActionOtherwise(t *testing.T) {
+	for _, c := range []struct {
+		step Step
+		want string
+	}{
+		{Step{Action: ActionPrompt, Stage: StageResearch}, "research"},
+		{Step{Action: ActionPrompt, Stage: StageImplement}, "implement"},
+		{Step{Action: ActionPrompt, Stage: StageRemediate}, "remediate"},
+		{Step{Action: ActionPrompt, Stage: StageCommit}, "commit"},
+		{Step{Action: ActionVerify, Stage: StageVerify}, "verify"},
+		{Step{Action: ActionReview, Stage: StageReview}, "review"},
+		{Step{Action: ActionFanOut, Stage: StageFanOut}, "fan-out"},
+		{Step{Action: ActionCommit, Stage: StageCommit}, "commit"},
+		{Step{Action: ActionPause, Stage: StageResearch}, "pause"},
+		{Step{Action: ActionWait, Stage: StageFanOut}, "wait"},
+		{Step{Action: ActionDone, Stage: StageDone}, "done"},
+		{Step{Action: ActionBlocked, Stage: StageBlocked}, "blocked"},
+	} {
+		if got := c.step.Name(); got != c.want {
+			t.Errorf("Step{%v, %s}.Name() = %q, want %q", c.step.Action, c.step.Stage, got, c.want)
+		}
+	}
+}
+
+// The strip is the stages in the order a run takes them, each of them a word
+// a step can be named, and each of them placed. A stage the strip drew that
+// no step could name would be a word only the row knows.
+func TestStripStagesArePlacedAndNameable(t *testing.T) {
+	strip := Strip()
+	if len(strip) != 5 {
+		t.Fatalf("the strip is the five stages a run passes through, got %v", strip)
+	}
+	for i, stage := range strip {
+		if got := Place(stage); got != i {
+			t.Errorf("Place(%s) = %d, want %d", stage, got, i)
+		}
+		if got := (Step{Action: ActionPrompt, Stage: stage}).Name(); got != string(stage) {
+			t.Errorf("no step names %s: got %q", stage, got)
+		}
+	}
+	// The stages a run only sometimes takes report the strip stage they
+	// belong to, and the ends of a run sit nowhere in it.
+	for stage, want := range map[Stage]int{
+		StageSplit: 1, StageFanOut: 1, StageRemediate: 1,
+		StageDone: -1, StageBlocked: -1, Stage("nonsense"): -1,
+	} {
+		if got := Place(stage); got != want {
+			t.Errorf("Place(%s) = %d, want %d", stage, got, want)
+		}
+	}
+}
+
+// A review's verdict is on the checkpoint, because it is the review's whole
+// answer and a run picked up in another session has no other way to know it.
+func TestReviewVerdictIsRecorded(t *testing.T) {
+	it := todo.Item{Slug: "x", Size: todo.SizeS}
+	s := Start(it, "sess", "manual", 1, Options{})
+	s.Plan = "## Plan\n\n1. a\n"
+	s.review(it)
+	if step := s.ReviewResult(it, "verdict: findings\n- the flag is never read"); step.Stage != StageRemediate {
+		t.Fatalf("findings should remediate, got %s", step.Stage)
+	}
+	if s.Verdict != "findings" {
+		t.Errorf("verdict = %q, want findings", s.Verdict)
+	}
+	s.review(it)
+	if step := s.ReviewResult(it, "verdict: clean"); step.Stage != StageCommit {
+		t.Fatalf("clean should commit, got %s", step.Stage)
+	}
+	if s.Verdict != "clean" {
+		t.Errorf("verdict = %q, want clean", s.Verdict)
+	}
+}

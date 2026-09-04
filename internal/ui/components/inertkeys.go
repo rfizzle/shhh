@@ -96,3 +96,11 @@ func keyRunNarrow(keys []TurnKey, waiting bool, handover string) string {
 	}
 	return handoverOffer(handover, handoverWord)
 }
+
+// KeyRun is that run for a row drawn outside this package. The step outline
+// and the backlog run's row live in internal/ui/chat because they group
+// history rather than render a widget (AGENTS.md), and invariant 5 is not a
+// rule a surface gets to keep a second copy of.
+func KeyRun(keys []TurnKey, waiting bool, handover string) string {
+	return keyRun(keys, waiting, handover)
+}

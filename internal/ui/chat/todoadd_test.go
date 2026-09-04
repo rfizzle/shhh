@@ -205,7 +205,7 @@ func TestWriteProposals_DuplicateTitlesAndHostileFields(t *testing.T) {
 	if !ok || len(ps) != 3 {
 		t.Fatalf("fixture: %v %d", ok, len(ps))
 	}
-	note := m.writeProposals(ps, []int{0, 1, 2})
+	note, _ := m.writeProposals(ps, []int{0, 1, 2})
 	if !strings.HasPrefix(note, "Wrote 3 backlog items") {
 		t.Fatalf("note = %q", note)
 	}

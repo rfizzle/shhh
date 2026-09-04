@@ -169,9 +169,15 @@ func (m Model) updateTodoPropose(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	}
 	res := result.(components.MultiSelectResult)
 	proposals, sprint := m.todoProposals, m.todoSprintPlan
+	// The row a blocked run left is claimed here whatever the answer was: a
+	// card the reader declined wrote nothing to name on it, and leaving the
+	// claim standing would put the next card's first item on a run that
+	// never asked for it.
+	followUp := m.todoFollowUpRow
 	m.todoPropose = nil
 	m.todoProposals = nil
 	m.todoSprintPlan = nil
+	m.todoFollowUpRow = 0
 	m.leaveSurface()
 	m.syncViewport()
 	if res.Canceled {
@@ -183,7 +189,9 @@ func (m Model) updateTodoPropose(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if sprint != nil {
 		return m.systemNotice(m.writeSprintPlan(sprint, res.Indices))
 	}
-	return m.systemNotice(m.writeProposals(proposals, res.Indices))
+	note, written := m.writeProposals(proposals, res.Indices)
+	m.nameFollowUpOnRun(followUp, written)
+	return m.systemNotice(note)
 }
 
 // writeProposals writes the accepted proposals as items and says what it
@@ -192,7 +200,10 @@ func (m Model) updateTodoPropose(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 // and anything else — a dropped proposal, a name nothing matches — is
 // removed and named, because a dependency on nothing would hold the item
 // back forever.
-func (m *Model) writeProposals(proposals []todo.Proposal, accepted []int) string {
+// It also reports the slugs it wrote, in the order it wrote them, because a
+// caller that offered the proposals for a reason — a blocked run's follow-up
+// — has to be able to name what came of them.
+func (m *Model) writeProposals(proposals []todo.Proposal, accepted []int) (string, []string) {
 	s := m.todoStore
 	taken := map[string]bool{}
 	if s != nil {
@@ -228,6 +239,7 @@ func (m *Model) writeProposals(proposals []todo.Proposal, accepted []int) string
 	created := time.Now().Format("2006-01-02")
 	var b strings.Builder
 	var dropped []string
+	var slugs []string
 	written := 0
 	for _, a := range chosen {
 		var deps []string
@@ -247,6 +259,7 @@ func (m *Model) writeProposals(proposals []todo.Proposal, accepted []int) string
 			fmt.Fprintf(&b, "\ncould not write %s: %v", a.slug, err)
 			continue
 		}
+		slugs = append(slugs, a.slug)
 		written++
 		fmt.Fprintf(&b, "\n  %s  %s · %s · %s", a.slug, it.Priority, sizeOrDash(it.Size), it.Title)
 	}
@@ -262,7 +275,22 @@ func (m *Model) writeProposals(proposals []todo.Proposal, accepted []int) string
 	if written > 0 {
 		out += "\n/todo edit <slug> opens one to refine it."
 	}
-	return out
+	return out, slugs
+}
+
+// nameFollowUpOnRun puts the follow-up a blocked run offered onto the row at
+// idx, which is the row that blocked, so the block and what was written about it are read in one
+// place rather than as two rows a scroll apart. Only the first written slug
+// is named: a block offers one proposal, and the reader who added others to
+// the card was adding items, not answering the block.
+func (m *Model) nameFollowUpOnRun(idx int, written []string) {
+	if idx <= 0 || idx > len(m.transcript) || len(written) == 0 {
+		return
+	}
+	if r := m.transcript[idx-1].todorun; r != nil {
+		r.followUp = written[0]
+		m.invalidateRenderCache()
+	}
 }
 
 func has(s *todo.Store, slug string) bool {

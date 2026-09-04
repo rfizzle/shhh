@@ -104,6 +104,36 @@ func (a Action) String() string {
 	return "unknown"
 }
 
+// Strip is the run's stages in the order a run passes through them, and the
+// order any surface drawing a run has to draw them in. The stages a run only
+// sometimes takes are not in it: the split and the fan-out are how a large
+// item implements, and a remediation round is the implement stage happening
+// again, so each of them is said under the stage it belongs to. A strip whose
+// length depended on what happened could not be read at a glance, which is
+// the whole of what a strip is for.
+func Strip() []Stage {
+	return []Stage{StageResearch, StageImplement, StageVerify, StageReview, StageCommit}
+}
+
+// Place is where a stage sits in Strip, and -1 for one that sits nowhere in
+// it — an ended run, and the stage a checkpoint could not name. The
+// sometimes-stages report the strip stage they belong to.
+func Place(s Stage) int {
+	switch s {
+	case StageResearch:
+		return 0
+	case StageSplit, StageFanOut, StageImplement, StageRemediate:
+		return 1
+	case StageVerify:
+		return 2
+	case StageReview:
+		return 3
+	case StageCommit:
+		return 4
+	}
+	return -1
+}
+
 // Mode is the permission mode a prompt is sent in.
 type Mode string
 
@@ -121,6 +151,20 @@ type Step struct {
 	// Shown is the one-line label the transcript shows in place of the
 	// prompt, so a stage reads as a stage rather than as a wall of text.
 	Shown string
+}
+
+// Name is the one word for what a step is, and the only vocabulary either
+// the record or a surface may use for it: the stage where the step is a turn
+// in one, and the action everywhere else. Both readings used to exist — the
+// record keyed every model turn on "prompt", which says which of the actions
+// was taken and not which of the stages took it — and a row drawn from one
+// while the record was written from the other could disagree about the same
+// transition.
+func (s Step) Name() string {
+	if s.Action == ActionPrompt {
+		return string(s.Stage)
+	}
+	return s.Action.String()
 }
 
 // Rounds is how many remediation rounds a size gets before the run blocks.
@@ -159,6 +203,12 @@ type State struct {
 	// Findings is what the last review or verify turned up, for the
 	// remediation prompt and, at the end, for the evidence.
 	Findings string `json:"findings"`
+	// Verdict is the word the last review answered with, kept because it is
+	// the review's whole answer and because the surfaces that draw a run
+	// must not have to infer it from which stage came next — an inference
+	// that is wrong for a run picked up from a checkpoint, where no surface
+	// saw the stage change at all.
+	Verdict string `json:"verdict,omitempty"`
 	// Verified reports the last verify passed; a review only runs on a
 	// verified tree.
 	Verified bool `json:"verified"`
@@ -557,6 +607,7 @@ func (s *State) ReviewResult(it todo.Item, text string) Step {
 // afterReview reads the verdict line.
 func (s *State) afterReview(it todo.Item, text string) Step {
 	verdict, findings := verdictLine(text)
+	s.Verdict = verdict
 	switch verdict {
 	case "clean":
 		if s.NoCommit {
