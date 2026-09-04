@@ -173,45 +173,45 @@ func TestSummaryConfig_CooldownIntervals(t *testing.T) {
 	}
 }
 
-// A backlog run's stage wordings take the blocks their stage carries and no
-// others, so a file that names a substitution the stage cannot fill is
-// refused before a run is built on it.
-func TestValidateTodoStages(t *testing.T) {
+// A backlog run's step wordings take the blocks their step carries and no
+// others, so a file that names a substitution the step cannot fill is
+// refused before a run is built on it. Which blocks a step carries is the
+// runner's to say; this is the reading it is put to.
+func TestValidateBlocks(t *testing.T) {
 	for _, tc := range []struct {
-		name     string
-		validate func(string) error
-		takes    []string
-		refuses  []string
+		name    string
+		takes   []string
+		refuses []string
 	}{
-		{"research", ValidateTodoResearch,
+		{"research",
 			[]string{PlaceholderItem, PlaceholderAnswers},
 			[]string{PlaceholderPlan, PlaceholderFindings, PlaceholderDiff}},
-		{"implement", ValidateTodoImplement,
+		{"implement",
 			[]string{PlaceholderItem, PlaceholderPlan, PlaceholderAnswers},
 			[]string{PlaceholderFindings, PlaceholderDiff}},
-		{"review", ValidateTodoReview,
+		{"review",
 			[]string{PlaceholderItem, PlaceholderPlan, PlaceholderDiff},
 			[]string{PlaceholderAnswers, PlaceholderFindings}},
-		{"remediate", ValidateTodoRemediate,
+		{"remediate",
 			[]string{PlaceholderItem, PlaceholderFindings},
 			[]string{PlaceholderPlan, PlaceholderAnswers, PlaceholderDiff}},
-		{"commit", ValidateTodoCommit,
+		{"commit",
 			[]string{PlaceholderItem},
 			[]string{PlaceholderPlan, PlaceholderAnswers, PlaceholderFindings, PlaceholderDiff}},
 	} {
 		for _, takes := range tc.takes {
-			if err := tc.validate("wording " + takes); err != nil {
+			if err := ValidateBlocks("wording "+takes, tc.takes); err != nil {
 				t.Errorf("%s refused %s, which it takes: %v", tc.name, takes, err)
 			}
 		}
 		for _, refuses := range tc.refuses {
-			err := tc.validate("wording " + refuses)
+			err := ValidateBlocks("wording "+refuses, tc.takes)
 			var bad *PlaceholderError
 			if !errors.As(err, &bad) || bad.Found != refuses {
 				t.Errorf("%s accepted %s, which it cannot fill: %v", tc.name, refuses, err)
 			}
 		}
-		if err := tc.validate("wording {{nonsense}}"); err == nil {
+		if err := ValidateBlocks("wording {{nonsense}}", tc.takes); err == nil {
 			t.Errorf("%s accepted a substitution that does not exist", tc.name)
 		}
 	}

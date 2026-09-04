@@ -34,6 +34,12 @@ import (
 // each reader so that the next release has one place to resolve it in.
 func todoProfile() todo.Profile { return todo.BuiltinCode() }
 
+// todoPipeline is the steps a run of that backlog takes. It is asked for
+// beside the vocabulary and for the same reason: the two are halves of one
+// answer about what the work is, and the release that lets a project name its
+// own has one place to resolve both in.
+func todoPipeline() run.Pipeline { return run.BuiltinCode() }
+
 // loadTodos reads the backlog of the checkout dir is in.
 func loadTodos(dir string) *todo.Store {
 	return todo.Load(todoProfile(), todo.Root(dir))

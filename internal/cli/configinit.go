@@ -120,7 +120,7 @@ func configInit(toProject bool, dir string) (initPlan, error) {
 	}
 	// The wordings are written in the order the settings state them, so the
 	// directory listing and the `[prompts]` table read the same way down.
-	for _, w := range wordingKeys {
+	for _, w := range wordingKeys() {
 		plan.files = append(plan.files, initFile{w.key, filepath.Join(plan.prompts, w.key+".md"), w.builtin()})
 	}
 	if _, err := os.Stat(plan.settings); err == nil {

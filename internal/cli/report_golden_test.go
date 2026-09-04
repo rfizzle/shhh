@@ -405,7 +405,7 @@ func goldenConfigInit() report.Report {
 	return initPlan{
 		settings: "/home/dev/.config/shhh/config.toml",
 		prompts:  "/home/dev/.config/shhh/prompts",
-		files:    make([]initFile, len(wordingKeys)),
+		files:    make([]initFile, len(wordingKeys())),
 	}.wrote()
 }
 

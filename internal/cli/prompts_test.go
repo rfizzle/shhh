@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"maps"
 	"os"
 	"path/filepath"
 	"strings"
@@ -30,7 +31,7 @@ func TestLoadPrompts_UnsetReadsNothing(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got != (sessionPrompts{}) {
+	if got.steer != "" || got.checkIn != "" || got.summary != "" || got.classifier != "" || len(got.todo) != 0 {
 		t.Fatalf("an empty block must read nothing, got %+v", got)
 	}
 }
@@ -52,7 +53,8 @@ func TestLoadPrompts_ReadsEachWording(t *testing.T) {
 		summary:    "read it",
 		classifier: "decide it",
 	}
-	if got != want {
+	if got.steer != want.steer || got.checkIn != want.checkIn ||
+		got.summary != want.summary || got.classifier != want.classifier {
 		t.Fatalf("wordings:\ngot  %+v\nwant %+v", got, want)
 	}
 }
@@ -204,12 +206,12 @@ func TestLoadPrompts_ReadsTheStageWordings(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := run.Wordings{
-		Standards: "our standards",
-		Research:  "read " + agent.PlaceholderItem,
-		Commit:    "commit it",
+		"standards": "our standards",
+		"research":  "read " + agent.PlaceholderItem,
+		"commit":    "commit it",
 	}
-	if got.todo != want {
-		t.Fatalf("stage wordings = %+v, want %+v", got.todo, want)
+	if !maps.Equal(got.todo, want) {
+		t.Fatalf("step wordings = %+v, want %+v", got.todo, want)
 	}
 }
 
@@ -247,23 +249,23 @@ func TestLoadPrompts_ACheckoutsFileBeatsTheUserFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if inside.todo.Research != "the checkout's own" {
-		t.Fatalf("inside the checkout the project's file must win, got %q", inside.todo.Research)
+	if inside.todo["research"] != "the checkout's own" {
+		t.Fatalf("inside the checkout the project's file must win, got %q", inside.todo["research"])
 	}
 	outside, err := loadPrompts(config.PromptsConfig{TodoResearch: mine}, "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if outside.todo.Research != "mine" {
-		t.Fatalf("outside it the person's file must stand, got %q", outside.todo.Research)
+	if outside.todo["research"] != "mine" {
+		t.Fatalf("outside it the person's file must stand, got %q", outside.todo["research"])
 	}
 	// A checkout with no file for a key takes nothing away.
 	kept, err := loadPrompts(config.PromptsConfig{TodoCommit: writeWording(t, "commit.md", "mine too")}, dir)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if kept.todo.Commit != "mine too" {
-		t.Fatalf("a checkout that says nothing about a key must leave it alone, got %q", kept.todo.Commit)
+	if kept.todo["commit"] != "mine too" {
+		t.Fatalf("a checkout that says nothing about a key must leave it alone, got %q", kept.todo["commit"])
 	}
 }
 
@@ -305,15 +307,15 @@ func TestStagePlaceholdersAreOneVocabulary(t *testing.T) {
 // the way a steer file does.
 func TestStageWordings_FoldIntoTheFingerprint(t *testing.T) {
 	const sys = "system prompt"
-	one := sessionPrompts{todo: run.Wordings{Research: "as written"}}
+	one := sessionPrompts{todo: run.Wordings{"research": "as written"}}
 	if fingerprint(one.fingerprintOf(sys)) == fingerprint(sys) {
 		t.Fatal("a replaced stage wording must divide the record")
 	}
-	edited := sessionPrompts{todo: run.Wordings{Research: "as edited"}}
+	edited := sessionPrompts{todo: run.Wordings{"research": "as edited"}}
 	if fingerprint(edited.fingerprintOf(sys)) == fingerprint(one.fingerprintOf(sys)) {
 		t.Fatal("an edit to a stage wording must divide it again")
 	}
-	swapped := sessionPrompts{todo: run.Wordings{Commit: "as written"}}
+	swapped := sessionPrompts{todo: run.Wordings{"commit": "as written"}}
 	if fingerprint(swapped.fingerprintOf(sys)) == fingerprint(one.fingerprintOf(sys)) {
 		t.Fatal("which stage holds the text is part of what was sent")
 	}

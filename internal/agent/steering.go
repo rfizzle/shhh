@@ -43,18 +43,13 @@ const (
 	PlaceholderDiff     = "{{diff}}"
 )
 
-// What each wording may use. They are a function apiece rather than one
-// taking a list because pairing a wording with the wrong list is itself a
-// way to be silently wrong, and there is no reason a caller should have to
-// get it right.
+// What each of this package's own wordings may use. They are a function
+// apiece rather than one taking a list because pairing a wording with the
+// wrong list is itself a way to be silently wrong, and there is no reason a
+// caller should have to get it right.
 var (
-	checkInPlaceholders   = []string{PlaceholderRounds, PlaceholderFinished}
-	steerPlaceholders     = []string{PlaceholderTarget, PlaceholderReason}
-	researchPlaceholders  = []string{PlaceholderItem, PlaceholderAnswers}
-	implementPlaceholders = []string{PlaceholderItem, PlaceholderPlan, PlaceholderAnswers}
-	reviewPlaceholders    = []string{PlaceholderItem, PlaceholderPlan, PlaceholderDiff}
-	remediatePlaceholders = []string{PlaceholderItem, PlaceholderFindings}
-	commitPlaceholders    = []string{PlaceholderItem}
+	checkInPlaceholders = []string{PlaceholderRounds, PlaceholderFinished}
+	steerPlaceholders   = []string{PlaceholderTarget, PlaceholderReason}
 )
 
 // ValidateCheckIn and ValidateSteer report the first substitution a wording
@@ -66,30 +61,12 @@ func ValidateCheckIn(text string) error  { return validatePlaceholders(text, che
 func ValidateSteer(text string) error    { return validatePlaceholders(text, steerPlaceholders) }
 func ValidateVerbatim(text string) error { return validatePlaceholders(text, nil) }
 
-// The same reading for a backlog run's stages. The review stage and the
-// reviewer child's task take the same three: `{{diff}}` is what changed for
-// both, handed to the child that cannot go and look and, for the stage that
-// can, the instruction that finds it. The commit stage takes only the item —
-// the sentence about a repository's commit style is not the change, and
-// naming it `{{diff}}` would give one substitution two meanings in one run.
-func ValidateTodoResearch(text string) error {
-	return validatePlaceholders(text, researchPlaceholders)
-}
-
-func ValidateTodoImplement(text string) error {
-	return validatePlaceholders(text, implementPlaceholders)
-}
-
-func ValidateTodoReview(text string) error {
-	return validatePlaceholders(text, reviewPlaceholders)
-}
-
-func ValidateTodoRemediate(text string) error {
-	return validatePlaceholders(text, remediatePlaceholders)
-}
-
-func ValidateTodoCommit(text string) error {
-	return validatePlaceholders(text, commitPlaceholders)
+// ValidateBlocks is the same reading for a wording whose substitutions the
+// caller states: a backlog run's steps are the profile's, so which blocks
+// each of them carries is something only the runner knows, and a list of
+// functions here would be a second copy of a set that has moved.
+func ValidateBlocks(text string, allowed []string) error {
+	return validatePlaceholders(text, allowed)
 }
 
 // placeholderPattern matches anything written as a placeholder, so a

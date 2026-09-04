@@ -290,11 +290,14 @@ How many rounds pass, how far the interval widens, how much of the
 instruction is quoted back, and the sentences themselves are none of those
 things, and they are exactly what someone tuning a session has to be able to
 change. So they come out: four numbers as keys, and the wordings as files.
-The same line divides a backlog run: what each stage is
-for is a wording and how its answer is read back is not, so the stage
+The same line divides a backlog run: what each step is
+for is a wording and how its answer is read back is not, so the step
 instructions are files too and the marker lines the run parses are appended
 after whatever the file said
-([`todo.md`](todo.md#the-stage-prompts-are-yours-to-edit)).
+([`todo.md`](todo.md#the-stage-prompts-are-yours-to-edit)). The keys below are
+the steps of the run a checkout of code gets; a project whose run has steps of
+its own has a wording per step of its own, found by convention under a prompts
+directory rather than by a key here.
 
 The line is drawn there because of what it costs to be wrong on either side.
 A wording in the program can only be changed by a build, and a change nobody
@@ -677,13 +680,13 @@ own file could hold.
 | `check_in` | path | (the built-in wording) | A file whose contents replace the message a turn that has reached its interval is given; it may place `{{rounds}}` and `{{finished}}`. |
 | `summary` | path | (the built-in wording) | A file whose contents replace the reading instruction the summarizing model is sent. |
 | `classifier` | path | (the built-in wording) | A file whose contents replace the instruction auto mode's permission classifier is sent. |
-| `todo_standards` | path | (the built-in wording) | A file whose contents replace the sentence every stage of a backlog run that changes the tree carries. |
-| `todo_research` | path | (the built-in wording) | A file whose contents replace what a backlog run's research stage is told; it may place `{{item}}` and `{{answers}}`. |
-| `todo_implement` | path | (the built-in wording) | A file whose contents replace what a backlog run's implement stage is told; it may place `{{item}}`, `{{plan}}` and `{{answers}}`. |
-| `todo_review` | path | (the built-in wording) | A file whose contents replace what a backlog run's review stage is told; it may place `{{item}}`, `{{plan}}` and `{{diff}}`. |
+| `todo_standards` | path | (the built-in wording) | A file whose contents replace the sentence every step of a backlog run that changes the tree carries. |
+| `todo_research` | path | (the built-in wording) | A file whose contents replace what a backlog run's research step is told; it may place `{{item}}` and `{{answers}}`. |
+| `todo_implement` | path | (the built-in wording) | A file whose contents replace what a backlog run's implement step is told; it may place `{{item}}`, `{{plan}}` and `{{answers}}`. |
+| `todo_review` | path | (the built-in wording) | A file whose contents replace what a backlog run's review step is told; it may place `{{item}}`, `{{plan}}` and `{{diff}}`. |
 | `todo_review_task` | path | (the built-in wording) | A file whose contents replace what the reviewer sub-agent is asked; it may place `{{item}}`, `{{plan}}` and `{{diff}}`. |
-| `todo_remediate` | path | (the built-in wording) | A file whose contents replace what a backlog run's remediate stage is told; it may place `{{item}}` and `{{findings}}`. |
-| `todo_commit` | path | (the built-in wording) | A file whose contents replace what a backlog run's commit stage is told; it may place `{{item}}`. |
+| `todo_remediate` | path | (the built-in wording) | A file whose contents replace what a backlog run's remediate step is told; it may place `{{item}}` and `{{findings}}`. |
+| `todo_commit` | path | (the built-in wording) | A file whose contents replace what a backlog run's commit step is told; it may place `{{item}}`. |
 
 **`[hooks]`**
 

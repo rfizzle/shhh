@@ -113,14 +113,14 @@ because size is what a run gates on — three large items is a different week
 from nine small ones.
 
 The goal earns its place by being read. It rides in every item's research
-stage, so a run knows what the set around it is for; a session with no
+step, so a run knows what the set around it is for; a session with no
 sprint sends nothing rather than sending an empty heading.
 
 **The set is watched on a board.** The sprint is a tab of the backlog screen
 ([`the sprint board`](../interface/surfaces.md#the-sprint-board)): the goal at
 the top, a meter of what is finished over what the backlog still holds, what
 the set has cost so far, and its slugs in the file's order with where each
-one stands — the one being worked saying which stage it is at. A set that
+one stands — the one being worked saying which step it is at. A set that
 stopped on a block shows the block and the item that wrote it, because a
 sprint stops on the first one and attempts nothing after it. From outside the
 session the same board prints as a listing, and `--json` carries the file back
@@ -313,9 +313,9 @@ the fields alone would treat the item as ungraded and never learn there is a
 line there to fix.
 
 A verb that changes an item refuses while a run has that item in flight, and
-names the session the run is in. Every stage of a run states the item as the
-file stands when the stage begins, so blocking or archiving one underneath a
-run changes what its next stage is working from — and the run says nothing
+names the session the run is in. Every step of a run states the item as the
+file stands when the step begins, so blocking or archiving one underneath a
+run changes what its next step is working from — and the run says nothing
 about it, because it reads the file rather than watching it. The session in
 the refusal is where that run can be stopped, and until it is, the item is
 being worked in two places at once.
@@ -325,7 +325,7 @@ being worked in two places at once.
 An item written weeks ago is a description of a tree that has since moved.
 It names files that were split, functions that were renamed, flags that went,
 and it states what the code does today in the present tense of a day that has
-passed. A run finds all of that out three stages in, on a plan built against
+passed. A run finds all of that out three steps in, on a plan built against
 the wrong file — and that is the best case, because the alternative is a
 plan that is wrong and looks right.
 
@@ -374,7 +374,7 @@ which reads *already done* is proposed for archiving, with the evidence as
 its report — proposed and never carried out, because an item finished by work
 nobody filed under it is exactly the case where somebody has to agree that it
 was the same work. And a run started later is handed the reading you accepted
-rather than taking it again: its research stage is told the item was read on
+rather than taking it again: its research step is told the item was read on
 a given commit and corrected, so it plans the work instead of re-deriving
 what you already settled.
 
@@ -385,53 +385,92 @@ decision, and decisions are made where somebody is looking.
 
 ## A run is turns with gates between them
 
-An item can be worked by the session itself: research, implement, verify,
-review, commit, archive. Each stage is one turn of the conversation with a
-prompt that says what the stage is for and the exact shape of the answer
-it wants, and between the turns the decision of what happens next is made
-by code reading that answer — never by the model deciding which stage it
-is in. That is what makes the run deterministic: the same answers produce
-the same path every time, and the gates cannot be talked past.
+An item can be worked by the session itself, in steps. Each step is one thing
+the run does, and between two of them the decision of what happens next is
+made by code reading the last one's answer — never by the model deciding
+which step it is in. That is what makes a run deterministic: the same answers
+produce the same path every time, and the gates cannot be talked past.
+
+**Which steps a run has is the profile's; what a step is made of is not.**
+There are six kinds of step and the program owns all six:
+
+- a **turn**, one message of the conversation in a reading or a writing mode,
+  which always says whether it could not do the work and says the grade and
+  any open questions where the step asks for them;
+- an **agent**, a sub-agent that reads the work it did not do and answers
+  clean or with findings, falling back to a turn of the session's own where
+  there is no supervisor to spawn one from;
+- a **fan-out**, writer children over paths they each declare, with the turn
+  that makes their work fit together after;
+- a **command**, which runs the item's own checks and the project's, or one
+  the step names, with no model in it at all: the exit status is the verdict;
+- a **gate**, which stops and asks you;
+- a **finish**, which is where a run ends — in a commit, in an archive, in a
+  note, in a command, or in the `stop` hook a project has armed.
+
+A profile composes those kinds and cannot invent one. Each kind carries its
+own answer shape — the marker lines the program reads back — and its own
+reading of them, and both arrive after whatever the step's instruction said. A
+step that could write its own answer shape could write one the program cannot
+parse, and a step the program cannot read is a step it cannot gate; that is
+the same line the [wordings](#the-stage-prompts-are-yours-to-edit) draw, one
+level up. A profile is checked when it is read, too: a run with no finish
+could never end, a gate after a step that writes would ask you about a tree
+that has already moved, a division into lanes with no turn to integrate them
+would hand on work nobody read as one piece, and a commit in a run whose steps
+never write would carry somebody else's work or refuse every time.
+
+The run a checkout of code gets is the one shhh ships, and its steps are named
+`research`, `pause`, `split`, `fan-out`, `implement`, `verify`, `review`,
+`remediate` and `commit`: research the item and plan the change, pause on what
+research found, build it — in lanes where the work is graded largest — verify,
+review, remediate what either turned up, and commit. The rest of this section
+is that run, which is the worked example the kinds were drawn from.
 
 Research happens in the read-only mode, and its answer is the plan in the
-same shape a plan is always asked for, plus a size and any open question.
-The size is re-graded from what the research found, and the number of fix
-rounds the run gets is set by that size, not by the item.
+same shape a plan is always asked for, plus the grade and any open question.
+The grade is re-graded from what research found, and the number of fix
+rounds the run gets is set by that grade, not by the item. A backlog graded
+some other way is spent against its own scale rather than translated into this
+one: the run reads where a grade sits on the profile's scale and never the
+word, so a two-grade backlog gets the smallest grade's ceremony and the
+largest's without the runner knowing either word.
 
-Whether the run then pauses is decided by the size. A small item never
-pauses — and an open question on one ends the run rather than being
-guessed at, because a runner that answers a product question for you is
-not running your backlog, it is writing it. A medium item pauses when
-research left a question or graded it up. A large item always pauses
-before anything is built, because that is the moment spend and blast
-radius are decided. The pause shows the plan, the questions and the size,
-and takes one of three answers: go ahead, with a note if there is one to
-give; re-plan with a note that answers or steers, so research runs again
-with it in front; or stop. A note goes onto the item's record either way
-and in front of the model for the stage it was written for. A run never
-silently gets bigger.
+Whether the run then pauses is the gate's rule at that grade, from a closed
+set: never, on questions, on questions or an upgrade, or always from a named
+grade up. In the code run the smallest grade never pauses — and an open
+question on one ends the run rather than being guessed at, because a runner
+that answers a product question for you is not running your backlog, it is
+writing it. The middle grade pauses when research left a question or graded
+it up. The largest always pauses before anything is built, because that is the
+moment spend and blast radius are decided. The pause shows the plan, the
+questions and the grade, and takes one of three answers: go ahead, with a note
+if there is one to give; re-plan with a note that answers or steers, so
+research runs again with it in front; or stop. A note goes onto the item's
+record either way and in front of the model for the step it was written for. A
+run never silently gets bigger.
 
-Verification is the item's own tests and the project's checks, run by
-shhh rather than described by the model. The tests are the ones the item
-listed when the run started: the run tells the model to tick the item's
-boxes as it works, and a command the model wrote into the file during the
-run is not one shhh will run unasked. A failure spends a fix round;
-when the rounds are spent the run stops with the failure as evidence. A
-review reads the change as a critic and answers clean or with findings,
-and findings spend a round the same way. A small item reviews itself in
-the session's own turn; anything larger is read by a reviewer child that
-did not write it — a second opinion is only one if it comes from
-somewhere else — and where no child can be had the session reviews and
-the record says so.
+Verification is a command step: the item's own tests and the project's checks,
+run by shhh rather than described by the model, with nothing that loads a
+model anywhere in it. The tests are the ones the item listed when the run
+started: the run tells the model to tick the item's boxes as it works, and a
+command the model wrote into the file during the run is not one shhh will run
+unasked. A failure spends a fix round; when the rounds are spent the run stops
+with the failure as evidence. The review reads the change as a critic and
+answers clean or with findings, and findings spend a round the same way. The
+smallest grade reviews itself in the session's own turn; anything larger is
+read by a reviewer child that did not write it — a second opinion is only one
+if it comes from somewhere else — and where no child can be had the session
+reviews and the record says so.
 
 The run works in the mode that asks only when the classifier cannot
 decide, whatever mode the session was in, and puts the session's mode
 back afterwards. The review and the commit message are written in the
 read-only mode, so nothing can change between the verification that
 passed and the commit. While a run is going the input takes commands
-only: a sentence typed mid-stage would steer the model out of its stage,
-and one typed between stages would start work the run would then commit
-as its own. Stopping the run is a command, and cancelling a stage's turn
+only: a sentence typed mid-step would steer the model out of its step,
+and one typed between steps would start work the run would then commit
+as its own. Stopping the run is a command, and cancelling a step's turn
 is the same as stopping it. A backlog runner that asked at every edit would be a
 session with extra steps; one that never asked would be one you could not
 steer. The classifier failing closed is the steering.
@@ -443,24 +482,36 @@ committing a stranger. The message is written by the model in the
 repository's own style, read from its history, and the report the model
 writes goes onto the item as it is archived.
 
-**A run assumes a repository, and says so before it starts.** Done is a
-commit, and three of the stages read the change out of git, so a directory
-with no repository is checked for before the research stage rather than
-discovered at the end. The refusal is one sentence naming what is missing
-and the two ways of asking for the run anyway, because a run that did every
-stage's work and only then found it had nowhere to put the result has spent
-those turns for an item it leaves half-finished — and what it said at that
-point was about an index the directory does not have.
+**What a run needs, it asks for before it starts — step by step.** A step
+that writes needs a session that tracks what it changed; a division into lanes
+needs a supervisor as well; a command step needs somewhere to run a command;
+and a commit finish needs a repository. Each is checked against the steps this
+run actually has, before the first turn, and the refusal names what the step
+wanted and the way through it. It is per step and not per session because "this
+session does not track changes" is the right sentence for a step that writes
+and the wrong one for a run that never writes: a read-only session can work a
+backlog of readings, and nothing about the session it could not use is asked.
+A step that only sometimes runs asks for nothing up front — the division into
+lanes happens at one grade and falls back to the session's own turn where it
+cannot happen at all.
+
+The reason the question is asked at the start rather than at the step is that
+every step before it spends a turn: a run that did all of them and only then
+found it had nowhere to put the result has spent them for an item it leaves
+half-finished — and what it said at that point was about an index the
+directory does not have.
 
 **A run without a commit is the other definition of done.** Asked for with
-a flag, or set as the project's answer, a run ends after the verification
-and the review: the item is archived with a report that says the work was
-not committed and names the paths it is in, and the row that closes the run
-says the same. That is what a directory with no repository takes, and what
-a project whose commits are made elsewhere takes everywhere. It is never
-the fallback for a run that asked for a commit and could not have one:
-becoming a no-commit run on its own would change what done means without
-being asked, and leave an item marked done that did not land.
+a flag, or set as the project's answer, the run's finish becomes the archive:
+the item is archived with a report that says the work was not committed and
+names the paths it is in, and the row that closes the run says the same. It is
+one step changed and not a step removed, which is also what a profile whose
+work does not land in a repository states for itself. That is what a directory
+with no repository takes, and what a project whose commits are made elsewhere
+takes everywhere. It is never the fallback for a run that asked for a commit
+and could not have one: becoming a no-commit run on its own would change what
+done means without being asked, and leave an item marked done that did not
+land.
 
 A run that stops — a question, spent rounds, a commit that cannot be made
 — leaves the item blocked with the evidence written on it and the work so
@@ -472,11 +523,11 @@ the blocked item be archived once the rest lands.
 
 A run survives its session. Every transition is written to a checkpoint
 beside the backlog, and an item found in progress with one is continued
-from the stage it was at — the stage starts over, because a stage is the
+from the step it was at — the step starts over, because a step is the
 smallest thing that can be judged and the conversation that was mid-way
 through it is gone, but the plan, the answers and the rounds spent are
-kept, and so is the work of the stages before it. A turn that gets in
-ahead of a stage — a compaction, a skill being loaded — pauses the run
+kept, and so is the work of the steps before it. A turn that gets in
+ahead of a step — a compaction, a skill being loaded — pauses the run
 the same way rather than failing the item: nothing about the item is
 wrong, only the conversation moved. Starting a new conversation does not
 end the run either: the checkpoint was written to survive exactly that, so
@@ -485,14 +536,23 @@ command that picks it up. Stopping the run is the one explicit end, and
 that is the one that puts the item back to open with the tree as the run
 left it.
 
-**A stage's answer has to be a whole one.** Every gate in the run reads what
+**A run whose steps have changed under it is refused rather than resumed.**
+The checkpoint records the shape the run began under, and a project that has
+since named a different profile is asking for a different run: the plan was
+made for steps that no longer exist, and half a run of one shape joined to
+half of another is not one run's worth of work. The item goes back to open and
+a run can start over under the new steps. The wordings are the softer case of
+the same fact — they are files a continuing session re-reads, so a run picked
+up after one moved carries on and the row says the words changed.
+
+**A step's answer has to be a whole one.** Every gate in the run reads what
 a turn said, and a reply the model did not finish reads exactly like one it
 did: the sentence simply stops. So the run asks how the turn ended before it
 reads what the turn produced. A reply cut off at the model's output ceiling
 is finished first — the run sends the same instruction the session offers
-behind a key, once per stage, and grades the two halves as the one answer
-they are. A second ceiling in the same stage stops the item with that as its
-evidence, because a stage free to ask for one more paragraph every time it
+behind a key, once per step, and grades the two halves as the one answer
+they are. A second ceiling in the same step stops the item with that as its
+evidence, because a step free to ask for one more paragraph every time it
 filled a budget would be under no ceiling at all, and because half a review
 graded as a whole one is exactly the mistake the gates exist to prevent. A
 reply the wire dropped is not finished by the run at all: what was kept is
@@ -500,27 +560,32 @@ half a sentence, whether it is worth keeping is a judgement, and the run has
 no standing to make one — so it pauses at its checkpoint the way a displaced
 turn does, and the row says which of the two happened.
 
-An unattended run is held to the same reading. Each stage there is a process
-of its own that finishes its own cut-off reply once and says in its
-transcript when it could not, and a stage whose answer came back cut anyway
-stops the item rather than being graded — the sprint is where this matters
+An unattended run is held to the same reading. Each step that spends a turn
+there is a process of its own that finishes its own cut-off reply once and
+says in its transcript when it could not, and a step whose answer came back
+cut anyway stops the item rather than being graded — the sprint is where this matters
 most, because a half answer taken for a whole one is the kind of mistake
 nobody is there to catch.
 
 ## The stage prompts are yours to edit
 
-Each stage of a run tells the model what that stage is for, and the words are
+Each step of a run tells the model what that step is for, and the words are
 shhh's. They are the general answer, which is the wrong answer often enough
 to matter: a monorepo has conventions a sentence about AGENTS.md does not
 reach, a project in a language the standards sentence was not written for
 reads it as noise, and a team with its own review checklist has to fork the
 program to use it.
 
-So the words come out of the program and into files. Seven wordings —
-`todo_research`, `todo_implement`, `todo_review`, `todo_review_task`,
-`todo_remediate`, `todo_commit`, and `todo_standards` for the one sentence
-the stages that change the tree all carry — each live in a file named for
-them, and that file's contents replace that stage's instruction. A file whose
+So the words come out of the program and into files. There is one wording per
+step of the run, named `todo_` and the step's own name, plus `todo_standards`
+for the one sentence the steps that change the tree all carry and
+`todo_<step>_task` for the task a step hands to a sub-agent. The run a
+checkout of code gets has seven of them — `todo_research`, `todo_implement`,
+`todo_review`, `todo_review_task`, `todo_remediate`, `todo_commit` and
+`todo_standards` — and a project whose run has other steps has a key per step
+of its own, because the keys are read off the run rather than out of a table.
+Each lives in a file named for it, and that file's contents replace that
+step's instruction. A file whose
 presence is the override is the whole convention: the checkout's own
 `.shhh/prompts/` first, then a `[prompts]` key where one names a path, then a
 `prompts/` directory beside your settings
@@ -534,14 +599,14 @@ steer's does: a run on the built-in words while the person believes it is
 running theirs is the failure the whole arrangement exists to prevent.
 
 **A checkout says it in files rather than keys.** A project's wordings live
-at `.shhh/prompts/todo_<stage>.md`, and inside that checkout they beat the
+at `.shhh/prompts/todo_<step>.md`, and inside that checkout they beat the
 person's own. They are files by convention because `[prompts]` is one of
 the tables a checkout's own settings may not set — a path written in a
 checkout is a path in every clone of it, anywhere on the machine — and
 because a wording written for this repository should travel with it. Like every other file a
 checkout asks a session to load, they are behind its trust answer: a wording
 is not prose the model chooses to read, it is what shhh itself says at a
-stage that changes the tree without asking, and a clone that could rewrite it
+step that changes the tree without asking, and a clone that could rewrite it
 could take the standards sentence out of every run.
 
 **The file is the instruction and nothing else.** The item, the plan, the
@@ -551,8 +616,8 @@ the run hands the model. A file may name `{{item}}`, `{{plan}}`,
 wants it, mid-sentence included; a block it does not name is taken after the
 instruction, in the order the built-in has them. `{{diff}}` is what changed:
 the diff itself for the reviewer sub-agent, which has no commands to go and
-look, and for the review stage the instruction that finds it. A substitution
-a stage cannot fill — the findings in a research prompt, the change in a
+look, and for the review step the instruction that finds it. A substitution
+a step cannot fill — the findings in a research prompt, the change in a
 commit prompt — is refused when the file is read, because a mistyped one
 reaches the model as literal punctuation and the wording still looks like a
 wording.
@@ -560,25 +625,27 @@ wording.
 A few sentences are never the file's: whether there is a repository to read a
 diff or a house commit style out of is a fact about the machine, so those
 follow the instruction whatever it said. The built-in wordings place their own
-blocks, which is why a stage nothing replaced reads as it always has.
+blocks, which is why a step nothing replaced reads as it always has.
 
-**The answer shape is not yours to edit.** The `size:`, `questions:`,
+**The answer shape is not yours to edit.** The grade line, `questions:`,
 `blocked:`, `verdict:` and `COMMIT:`/`REPORT:` lines are how the run reads a
-stage's answer back, and they are appended after whatever the file said. A
-wording that stopped asking for `size:` would make every research turn look
-like a block; the gate would not fail, it would quietly stop being a gate. The
-mechanism stays in the program and the wording comes out of it, which is the
-same line drawn for the steer and the check-in
+step's answer back, and they are appended after whatever the file said. The
+shape is built from the step's kind and from what the step says it reads, so
+the grade line asks for the profile's own field and its own words rather than
+anybody's constants. A wording that stopped asking for the grade would make
+every research turn look like a block; the gate would not fail, it would
+quietly stop being a gate. The mechanism stays in the program and the wording
+comes out of it, which is the same line drawn for the steer and the check-in
 ([`configuration.md`](configuration.md#the-mechanism-is-code-its-wording-is-configuration)).
 
 The wordings are part of what a session sent, so they fold into the session's
 `prompt_hash` and divide the record the way an edited steer does. A run picked
 up from a checkpoint reads them as they now stand — they are files, and the
 session that continues the run has read the files — and where they moved
-since the run started, the run's row says so, because a run whose stages were
+since the run started, the run's row says so, because a run whose steps were
 asked different things is not one run's worth of work.
 
-The grooming pass is not a stage of a run and takes none of these: it states
+The grooming pass is not a step of a run and takes none of these: it states
 the built-in standards sentence whatever a run was configured with.
 
 ## A large item is built in lanes
@@ -633,7 +700,7 @@ session ends and another begins, exactly as it would if you had quit and
 launched again: the record closes and a new one opens, the prompt is built
 again from the checkout as it now stands, and the next item starts from
 nothing. The previous item's conversation is cost and noise to the next
-one, and the checkpoint already carries everything a stage needs. It also
+one, and the checkpoint already carries everything a step needs. It also
 means the record has one session per item rather than one for the night,
 which is what makes anything computed over it — spend, rounds, how often a
 run finishes — a figure about an item.
@@ -657,28 +724,28 @@ wall leave the same quiet screen.
 
 **One attempt per item.** The remediation rounds inside a run are the
 retry; a second run over an item the first could not finish is a second
-chance at the same failure. An item whose implement stage left the tree
+chance at the same failure. An item whose implement step left the tree
 exactly as it found it is a block for the same reason: there is nothing to
 review and nothing to commit, and another round over the same plan would
 produce the same nothing. A cap on how long one item may take is available
-and off by default, read at the boundary between two stages so that it ends
+and off by default, read at the boundary between two steps so that it ends
 an item rather than cutting a turn in half and leaving a tree nothing has
 read.
 
 The sprint keeps a checkpoint of its own beside the items', so a sprint
 that dies with its process is picked up by the same command in a fresh one:
-it names the item it was on, and that item's checkpoint names the stage.
-Stopping it keeps that item's checkpoint too — the stages already done are
+it names the item it was on, and that item's checkpoint names the step.
+Stopping it keeps that item's checkpoint too — the steps already done are
 in the tree, and the stop was aimed at the loop.
 
-From a script it is the same machine with the screen taken away. Each stage
-is one `shhh code --print` in the checkout, and what the stage produced is
-read out of that transcript whatever status the process left. The gates
-that would ask a person cannot: a run that reaches the pause stops with the
-questions written on the item rather than guessing an answer, and a review
-that would have gone to a second agent is taken in the session, which is
-what a session with no supervisor already does. The exit status is the
-run's own ending ([`headless.md`](headless.md#the-exit-code-is-the-contract)).
+From a script it is the same machine with the screen taken away. Each step
+that spends a turn is one `shhh code --print` in the checkout, and what the
+step produced is read out of that transcript whatever status the process
+left. The gates that would ask a person cannot: a run that reaches the pause
+stops with the questions written on the item rather than guessing an answer,
+and a review that would have gone to a second agent is taken in the session,
+which is what a session with no supervisor already does. The exit status is
+the run's own ending ([`headless.md`](headless.md#the-exit-code-is-the-contract)).
 
 ## Done is archived, not deleted
 

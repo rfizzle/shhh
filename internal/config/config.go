@@ -144,6 +144,32 @@ type PromptsConfig struct {
 	TodoCommit string `toml:"todo_commit,omitempty"`
 }
 
+// Todo is the file a key names for one of a run's step wordings, and empty
+// for a step no key here has. The keys are the built-in run's step names; a
+// run whose steps a project states for itself has more of them than a
+// settings file has fields for, and those are found by convention under a
+// prompts directory — which is how a wording is found in the ordinary case
+// either way (docs/capabilities/todo.md#the-stage-prompts-are-yours-to-edit).
+func (p PromptsConfig) Todo(key string) string {
+	switch key {
+	case "standards":
+		return p.TodoStandards
+	case "research":
+		return p.TodoResearch
+	case "implement":
+		return p.TodoImplement
+	case "review":
+		return p.TodoReview
+	case "review_task":
+		return p.TodoReviewTask
+	case "remediate":
+		return p.TodoRemediate
+	case "commit":
+		return p.TodoCommit
+	}
+	return ""
+}
+
 // MCPConfig is the user's MCP servers and how they are started. shhh
 // speaks the protocol only: a server is a command or a URL, and whatever
 // authorisation a remote one wants is the job of the forwarder the user put

@@ -1,16 +1,22 @@
 package chat
 
-// The backlog runner in the session: /todo run works one item through
-// research, implement, verify, review, commit and archive, one turn per
-// stage, with the gates decided by internal/todo/run rather than by the
-// model. The session side is thin on purpose: it sends the prompt a stage
-// hands it, notices when the turn ends, reads the answer back, and does the
-// two things a model must not — run the verification and make the commit.
+// The backlog runner in the session: /todo run works one item through the
+// steps the profile states, with the gates decided by internal/todo/run
+// rather than by the model. The session side is thin on purpose: it sends
+// the prompt a step hands it, notices when the turn ends, reads the answer
+// back, and does the two things a model must not — run the verification and
+// make the commit.
 // See docs/capabilities/todo.md#a-run-is-turns-with-gates-between-them.
 //
-// A run always works in auto mode, whatever the session was in, and puts
-// the session's mode back when it ends. The reader steers only where the
-// classifier fails closed and asks, or where the run blocks and says why.
+// Nothing here names the steps. Which ones a run has is the profile's, so
+// what this file asks about a run is the *kind* of step it stands at — does
+// it await a turn, a command, a child — and never which of five words the
+// stage happens to be. A driver that switched on the words would work only
+// for the one profile whose words they are.
+//
+// A step that writes runs in auto mode, whatever the session was in, and the
+// session's mode is put back when the run ends. The reader steers only where
+// the classifier fails closed and asks, or where the run blocks and says why.
 //
 // The run is one row in the transcript, appended when it starts and redrawn
 // on every transition (docs/interface/surfaces.md#the-backlog-runs-row). It
@@ -74,10 +80,45 @@ const verifyTimeout = 15 * time.Minute
 // todoNoRepoNotice is what a run that would end in a commit is refused with
 // outside a repository. It names the directory, what is missing and the two
 // ways of asking for the run anyway, in one sentence, because the refusal
-// has to arrive before the research turn and a reader stopped at the start
-// of something they wanted is owed the way through it.
+// has to arrive before the first turn and a reader stopped at the start of
+// something they wanted is owed the way through it.
 func todoNoRepoNotice(root, slug string) string {
 	return fmt.Sprintf("%s is not in a git repository and a run ends in a commit — /todo run %s --no-commit runs it without one, or todo.commit = false makes that the default.", root, slug)
+}
+
+// todoNoRepoSprintNotice is the same for a whole set, where there is no one
+// item to name.
+func todoNoRepoSprintNotice(root string) string {
+	return fmt.Sprintf("%s is not in a git repository and a run ends in a commit — /todo run --all --no-commit works the set without commits, or todo.commit = false makes that the default.", root)
+}
+
+// todoRunCan is what this session is able to do, which is what the run's
+// steps are put to before the first of them is taken.
+func (m Model) todoRunCan(repo bool) run.Can {
+	return run.Can{
+		Changeset:  m.changes != nil,
+		Supervisor: m.subagents != nil,
+		// A session always has somewhere to run a command; whether the
+		// project names any is the command step's own business.
+		Runner: true,
+		Repo:   repo,
+	}
+}
+
+// todoRunRefusal is the sentence a session is turned away with. What the step
+// wanted decides it, because each need has its own way through and only this
+// surface knows what to offer: a repository has a flag and a setting behind
+// it, and the rest are facts about the session that nothing here can change.
+// slug is empty for a refusal about a whole set.
+func (m Model) todoRunRefusal(ref run.Refusal, slug string) string {
+	if ref.Need == run.NeedRepo {
+		root := project.Abbreviate(m.todos.Root)
+		if slug == "" {
+			return todoNoRepoSprintNotice(root)
+		}
+		return todoNoRepoNotice(root, slug)
+	}
+	return "This backlog's run cannot start here: " + ref.Why + "."
 }
 
 // startTodoRun begins a run on an item. It refuses a second run, an item
@@ -127,15 +168,23 @@ func (m Model) beginTodoRun(arg string, noCommit, inSprint bool) (tea.Model, tea
 	if it.Status == todo.StatusBlocked {
 		return m.systemNotice(fmt.Sprintf("%s is blocked; /todo open %s reopens it once the block is settled.", it.Slug, it.Slug))
 	}
-	if m.changes == nil {
-		return m.systemNotice("This session does not track changes, so a run could not know what to commit.")
-	}
 	if m.turnState() != stateInput {
 		return m.systemNotice("Answer the open decision first; a run starts from an idle session.")
 	}
 	repo := project.InRepo(m.todos.Root)
-	if !noCommit && !repo {
-		return m.systemNotice(todoNoRepoNotice(project.Abbreviate(m.todos.Root), it.Slug))
+	opt := run.Options{NoCommit: noCommit, Repo: repo, Sprint: m.sprintGoal(),
+		CloseGate: m.workspaceClosesGate(), InSprint: inSprint,
+		// A reading the person accepted and has not edited past is what the
+		// run's first step is told instead of taking the same reading again
+		// several steps before it is needed.
+		Groomed:  todo.GroomingBlock(m.todos.Root, it.Slug),
+		Wordings: m.todos.Wordings,
+		Pipeline: m.todos.Pipeline}
+	// What this session must be able to do is what the run's steps ask for,
+	// step by step: a pipeline that never writes wants no changeset and one
+	// that never commits wants no repository.
+	if ref, refused := opt.Steps().Refuse(m.todoRunCan(repo)); refused {
+		return m.systemNotice(m.todoRunRefusal(ref, it.Slug))
 	}
 	// An item left in progress with a checkpoint is a run that died with
 	// its session. It continues from the stage it was at rather than
@@ -152,10 +201,10 @@ func (m Model) beginTodoRun(arg string, noCommit, inSprint bool) (tea.Model, tea
 			// same way the session and the mode do: continuing a run is
 			// asking for it again, and the repository may not be the one
 			// the run started in.
-			st.NoCommit, st.Repo, st.Sprint = noCommit, repo, m.sprintGoal()
+			st.NoCommit, st.Repo, st.Sprint = noCommit, repo, opt.Sprint
 			st.InSprint = inSprint
-			st.Groomed = todo.GroomingBlock(m.todos.Root, it.Slug)
-			st.Wordings = m.todos.Wordings
+			st.Groomed = opt.Groomed
+			st.Wordings, st.Pipeline = opt.Wordings, opt.Steps()
 			m.todoRunner.state = st
 			m.todoRunner.item = it
 			m.openTodoRunRow()
@@ -167,14 +216,7 @@ func (m Model) beginTodoRun(arg string, noCommit, inSprint bool) (tea.Model, tea
 	if err := todo.SetStatus(it.Path, todo.StatusInProgress); err != nil {
 		return m.systemNotice("Could not mark the item in progress: " + err.Error())
 	}
-	m.todoRunner.state = run.Start(it, m.sessionName, m.policy.mode.String(), int(m.turnCount)+1,
-		run.Options{NoCommit: noCommit, Repo: repo, Sprint: m.sprintGoal(),
-			CloseGate: m.workspaceClosesGate(), InSprint: inSprint,
-			// A reading the person accepted and has not edited past is
-			// what the research stage is told instead of taking the same
-			// reading again three stages before it is needed.
-			Groomed:  todo.GroomingBlock(m.todos.Root, it.Slug),
-			Wordings: m.todos.Wordings})
+	m.todoRunner.state = run.Start(it, m.sessionName, m.policy.mode.String(), int(m.turnCount)+1, opt)
 	m.todoRunner.item = it
 	m.openTodoRunRow()
 	m.reloadTodos()
@@ -211,7 +253,7 @@ func (m Model) todoRunStep(step run.Step) (tea.Model, tea.Cmd) {
 	case run.ActionVerify:
 		// The row already says the run is verifying; what a notice would add
 		// is the output, and that arrives with the verdict.
-		return m, m.todoVerifyCmd()
+		return m, m.todoVerifyCmd(step.Command)
 	case run.ActionPause:
 		return m.openTodoPause(step)
 	case run.ActionReview:
@@ -246,13 +288,15 @@ func (m Model) todoRunAfter(prev Model) (Model, tea.Cmd) {
 	if m.turnState() != stateInput || m.pausedAtRoundLimit() || m.heldAtBoundary() {
 		return m, nil
 	}
-	switch st.Stage {
-	case run.StageResearch, run.StageSplit, run.StageImplement, run.StageRemediate, run.StageReview, run.StageCommit:
-	default:
+	// Which steps a run has is the profile's; which of them a turn's answer
+	// belongs to is the kind's, so the session asks the kind rather than
+	// naming stages it would have to be told about again.
+	kind, known := st.StepKind()
+	if !known || !st.AwaitsTurn() {
 		return m, nil
 	}
-	if st.Stage == run.StageCommit && st.Message != "" {
-		// The commit turn was already read; the commit itself is in flight.
+	if kind == run.KindFinish && st.Message != "" {
+		// The finish turn was already read; the commit itself is in flight.
 		return m, nil
 	}
 	if int(m.turnCount) != m.todoRunner.turn {
@@ -378,11 +422,18 @@ func (m Model) todoStageAnswer() string {
 // ones the item held when the run started, before any model turn could
 // have edited the file — the model is told to tick boxes in it, and a
 // command it wrote itself must not be one shhh runs unasked.
-func (m Model) todoVerifyCmd() tea.Cmd {
+func (m Model) todoVerifyCmd(named string) tea.Cmd {
 	root := m.todos.Root
 	slug := m.todoRunner.item.Slug
 	tests := m.todoRunner.state.Tests
 	gate := m.gate.Run
+	if named != "" {
+		// A step that names its own command runs that and nothing else: the
+		// project said what checking this work means, and the item's own
+		// tests and the workspace's suite are the answer for the step that
+		// did not.
+		tests, gate = []string{named}, nil
+	}
 	// A run whose implement stage closed on a passing gate carries that
 	// verdict here rather than paying for the suite twice over a tree that
 	// did not move between the two (run.State.Checks).
@@ -436,7 +487,10 @@ func tail(s string, lines int) string {
 // finishTodoVerify applies the verify outcome.
 func (m Model) finishTodoVerify(msg todoVerifyMsg) (tea.Model, tea.Cmd) {
 	st := m.todoRunner.state
-	if st == nil || st.Over() || msg.slug != st.Slug || st.Stage != run.StageVerify {
+	if st == nil || st.Over() || msg.slug != st.Slug {
+		return m, nil
+	}
+	if !st.AwaitsCommand() {
 		return m, nil
 	}
 	label := "passed"
@@ -486,73 +540,30 @@ func (m Model) todoRunPaths() []string {
 	return out
 }
 
-// todoCommitCmd stages the run's paths by name and commits with the
-// message the commit turn wrote. It refuses a tree that already has staged
-// changes it did not make: a commit that carries a stranger cannot be
-// reverted, cited or read as a unit.
+// todoCommitCmd makes the run's commit, which is the run package's to make:
+// the same staging, the same refusals and the same message file the
+// unattended runner uses, so the one act of a run that cannot be taken back
+// cannot mean two things depending on who asked for it.
 func (m Model) todoCommitCmd() tea.Cmd {
 	root := m.todos.Root
 	slug := m.todoRunner.state.Slug
 	message := m.todoRunner.state.Message
 	paths := m.todoRunPaths()
+	without := fmt.Sprintf("/todo run %s --no-commit runs it without one, or todo.commit = false makes that the default", slug)
 	return func() tea.Msg {
-		if len(paths) == 0 {
-			return todoCommitMsg{slug: slug, err: fmt.Errorf("the run changed no files under the repository")}
-		}
-		// Four different failures came back as one sentence about the
-		// person's index, and three of them were not about it. `--quiet`
-		// exits 1 for a difference, and that is the only exit this check
-		// may read as staged changes: telling someone outside a repository
-		// that their index holds changes sends them looking for an index
-		// that does not exist.
-		//
-		// The repository itself is read off the filesystem rather than out
-		// of an exit code, because git's own code for it moves: it was 128,
-		// the refusal, and is 129 on git 2.51, where `--cached` is a usage
-		// error against the `--no-index` fallback the missing repository
-		// leaves behind. The directory either holds a repository or it does
-		// not, and that answer is the same on every version.
-		out, code := git(root, "diff", "--cached", "--quiet")
-		switch {
-		case code == 0:
-		case code == 1:
-			return todoCommitMsg{slug: slug, err: fmt.Errorf("the index already holds staged changes this run did not make; commit or unstage them first\n%s", out)}
-		case code == gitNotInstalled:
-			return todoCommitMsg{slug: slug, err: fmt.Errorf("git is not on the path, so no commit can be made; install it, or run the item with /todo run --no-commit")}
-		case !project.InRepo(root):
-			return todoCommitMsg{slug: slug, err: fmt.Errorf("%s is not a git repository, so there is nothing to commit into; /todo run --no-commit, or todo.commit = false, runs an item without one", root)}
-		default:
-			return todoCommitMsg{slug: slug, err: fmt.Errorf("git diff --cached exited %d: %s", code, out)}
-		}
-		if out, code := git(root, append([]string{"add", "--"}, paths...)...); code != 0 {
-			return todoCommitMsg{slug: slug, err: fmt.Errorf("git add: %s", out)}
-		}
-		f, err := os.CreateTemp("", "shhh-todo-commit-*.txt")
-		if err != nil {
-			return todoCommitMsg{slug: slug, err: err}
-		}
-		defer func() { _ = os.Remove(f.Name()) }()
-		if _, err := f.WriteString(message + "\n"); err != nil {
-			f.Close()
-			return todoCommitMsg{slug: slug, err: err}
-		}
-		f.Close()
-		if out, code := git(root, "commit", "-F", f.Name()); code != 0 {
-			return todoCommitMsg{slug: slug, err: fmt.Errorf("git commit: %s", out)}
-		}
-		return todoCommitMsg{slug: slug, files: paths}
+		files, err := run.Commit(root, paths, message, without)
+		return todoCommitMsg{slug: slug, files: files, err: err}
 	}
 }
 
-// gitNotInstalled is the shell's exit code for a command that could not be
-// run, which is what this package reports for a git that is not there.
+// gitNotInstalled is the shell's own code for a command that never started,
+// which is what this reports for a git that is not there rather than some
+// real exit code a caller might read a meaning out of.
 const gitNotInstalled = 127
 
 // git runs one git command in root and reports its output and its exit code.
-// A command that never started is 127, the shell's own answer for it: the
-// alternative is reporting some real exit code for a git that was never
-// there, and every caller that reads a code by name would then read the
-// wrong sentence out of it.
+// It is the reading side only — the diff a reviewer child is handed; the
+// commit a run makes is the run package's (run.Commit).
 func git(root string, args ...string) (string, int) {
 	cmd := exec.Command("git", append([]string{"-C", root}, args...)...)
 	cmd.Env = runner.Environ()
@@ -573,7 +584,10 @@ func git(root string, args ...string) (string, int) {
 // finishTodoCommit applies the commit outcome.
 func (m Model) finishTodoCommit(msg todoCommitMsg) (tea.Model, tea.Cmd) {
 	st := m.todoRunner.state
-	if st == nil || st.Over() || msg.slug != st.Slug || st.Stage != run.StageCommit {
+	if st == nil || st.Over() || msg.slug != st.Slug {
+		return m, nil
+	}
+	if kind, ok := st.StepKind(); !ok || kind != run.KindFinish {
 		return m, nil
 	}
 	if msg.err != nil {
@@ -600,20 +614,12 @@ func todoRunDoneNote(st *run.State, to string) string {
 // todoRunDone archives the item with its report and ends the run.
 func (m Model) todoRunDone() (tea.Model, tea.Cmd) {
 	st := m.todoRunner.state
-	report := st.Report
-	if len(st.Files) > 0 && !st.NoCommit {
-		report += "\nCommitted: " + strings.Join(st.Files, ", ") + "\n"
-		report += todo.CommitLine(project.Head(m.todos.Root), st.Message)
-	}
-	to, err := todo.Archive(m.todos.Root, st.Slug, report)
+	to, err := run.File(m.todos.Root, st, m.todoRunner.item)
 	note := todoRunDoneNote(st, to) + m.closeFinishedSprint()
 	if err != nil {
-		// The work is finished; the item must not stay in progress with its
-		// report only on screen. It goes back to open with the report on
-		// it, and the note says what to do.
-		it := m.todoRunner.item
-		_ = todo.SetStatus(it.Path, todo.StatusOpen)
-		_ = todo.Append(it.Path, report)
+		// The work is finished and the run package has already put the item
+		// back to open with the report on it; what is left is telling the
+		// reader what to do about it.
 		did := "committed " + plural(len(st.Files), "file")
 		if st.NoCommit {
 			did = fmt.Sprintf("made no commit and left %s in the working tree", plural(len(st.Files), "file"))
@@ -1252,8 +1258,8 @@ type todoRunRow struct {
 // rather than as passed.
 func newTodoRunRow(st *run.State) *todoRunRow {
 	r := &todoRunRow{st: st, marks: map[run.Stage]runMark{}}
-	for i, stage := range run.Strip() {
-		if i < run.Place(st.Stage) {
+	for i, stage := range st.Shape().Strip() {
+		if i < st.Shape().Place(st.Stage) {
 			r.marks[stage] = runRestored
 		}
 	}
@@ -1267,14 +1273,14 @@ func (r *todoRunRow) observe(step run.Step) {
 	if r == nil {
 		return
 	}
-	place := run.Place(step.Stage)
+	place := r.st.Shape().Place(step.Stage)
 	if place < 0 {
 		// An ended run: the strip keeps what it has, and the end state below
 		// settles the stage the run stopped in.
 		r.settle(step)
 		return
 	}
-	for i, stage := range run.Strip() {
+	for i, stage := range r.st.Shape().Strip() {
 		switch {
 		case i > place:
 			// A run that went back — a remediation round returns to
@@ -1441,8 +1447,9 @@ func (r *todoRunRow) headerLine(width int, folded bool) string {
 // the record keys the transition on, so the row and the record cannot
 // disagree about what happened (run.Step.Name).
 func (r *todoRunRow) stripSegments() []string {
-	segs := make([]string, 0, len(run.Strip()))
-	for _, stage := range run.Strip() {
+	strip := r.st.Shape().Strip()
+	segs := make([]string, 0, len(strip))
+	for _, stage := range strip {
 		mark := r.marks[stage]
 		style := sty.Step.Dim
 		switch mark {
@@ -1540,7 +1547,7 @@ type runRowLine struct {
 // round is in flight when none is.
 func (r *todoRunRow) rounds() string {
 	n, of := r.st.Round, r.st.Rounds()
-	if r.st.Stage == run.StageRemediate {
+	if r.st.Remediating() {
 		return fmt.Sprintf("round %d/%d", n, of)
 	}
 	return fmt.Sprintf("%d/%d rounds spent", n, of)
@@ -1551,7 +1558,7 @@ func (r *todoRunRow) rounds() string {
 // what it is instead (invariant 1).
 func (r *todoRunRow) restoredStages() []string {
 	var out []string
-	for _, stage := range run.Strip() {
+	for _, stage := range r.st.Shape().Strip() {
 		if r.marks[stage] == runRestored {
 			out = append(out, string(stage))
 		}
@@ -1809,13 +1816,14 @@ func (m Model) startTodoSprint(opt todoRunArgs) (tea.Model, tea.Cmd) {
 	if m.todoStore == nil {
 		return m.systemNotice("No backlog to run from.")
 	}
-	if m.changes == nil {
-		return m.systemNotice("This session does not track changes, so a run could not know what to commit.")
-	}
 	if m.turnState() != stateInput {
 		return m.systemNotice("Answer the open decision first; a sprint starts from an idle session.")
 	}
 	noCommit := opt.noCommit || m.todos.NoCommit
+	steps := run.Options{NoCommit: noCommit, Pipeline: m.todos.Pipeline}.Steps()
+	if ref, refused := steps.Refuse(m.todoRunCan(project.InRepo(m.todos.Root))); refused {
+		return m.systemNotice(m.todoRunRefusal(ref, ""))
+	}
 	if sp, live := run.Live(m.todos.Root); live {
 		// The invocation's answers stand over the checkpoint's, the same way
 		// a continued run's do: asking for the sprint again is asking for it

@@ -36,7 +36,7 @@ func TestConfigInit_WritesTheSettingsAndTheWordings(t *testing.T) {
 	}
 
 	dir := filepath.Join(filepath.Dir(path), "prompts")
-	for _, w := range wordingKeys {
+	for _, w := range wordingKeys() {
 		body, err := os.ReadFile(filepath.Join(dir, w.key+".md"))
 		if err != nil {
 			t.Fatalf("%s: %v", w.key, err)
@@ -62,7 +62,7 @@ func TestConfigInit_ASessionAfterItHashesAsOneBefore(t *testing.T) {
 	must(t, err)
 
 	// The wordings are read, so the session is running the files.
-	if after.steer == "" || after.todo.Commit == "" {
+	if after.steer == "" || after.todo["commit"] == "" {
 		t.Fatalf("the scaffolded wordings were not read back: %+v", after)
 	}
 	if fingerprint(after.fingerprintOf(sys)) != fingerprint(before.fingerprintOf(sys)) {

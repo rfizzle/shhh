@@ -68,7 +68,7 @@ type sessionPrompts struct {
 // here, where the person who wrote the path is still watching.
 func loadPrompts(c config.PromptsConfig, projectDir string) (sessionPrompts, error) {
 	var out sessionPrompts
-	for _, w := range wordingKeys {
+	for _, w := range wordingKeys() {
 		from := promptSource(w.key, w.named(c), projectDir)
 		if from.path == "" {
 			continue
@@ -77,7 +77,7 @@ func loadPrompts(c config.PromptsConfig, projectDir string) (sessionPrompts, err
 		if err != nil {
 			return sessionPrompts{}, err
 		}
-		*w.into(&out) = text
+		w.set(&out, text)
 	}
 	return out, nil
 }
@@ -110,7 +110,12 @@ func readWording(from promptFile, validate func(string) error) (string, error) {
 type wording struct {
 	key   string
 	named func(config.PromptsConfig) string
-	into  func(*sessionPrompts) *string
+	// set puts the file's text where the session keeps it, and get reads it
+	// back. They are a pair of functions rather than a pointer because the
+	// run's wordings are a map keyed by step name — a run's steps are the
+	// profile's, so there is no field per step to take the address of.
+	set func(*sessionPrompts, string)
+	get func(sessionPrompts) string
 	// builtin is the text this wording carries when nothing replaced it. It
 	// is here because two surfaces need it and neither can be told it by the
 	// file: the scaffold writes it out to start from, and the fingerprint
@@ -121,52 +126,66 @@ type wording struct {
 	validate func(string) error
 }
 
-// wordingKeys is every wording a file can replace, in the order the settings
-// table declares them. It is a list rather than a switch because two surfaces
-// walk it — the loader that reads them and the doctor's row that says whether
-// they can be read — and a key visible to one and not the other is a key
-// whose failure nobody sees until a session will not start.
-var wordingKeys = []wording{
-	{"steer", func(c config.PromptsConfig) string { return c.Steer },
-		func(p *sessionPrompts) *string { return &p.steer },
-		agent.SteerWording, agent.ValidateSteer},
-	{"check_in", func(c config.PromptsConfig) string { return c.CheckIn },
-		func(p *sessionPrompts) *string { return &p.checkIn },
-		agent.CheckInWording, agent.ValidateCheckIn},
-	{"summary", func(c config.PromptsConfig) string { return c.Summary },
-		func(p *sessionPrompts) *string { return &p.summary },
-		agent.SummaryWording, agent.ValidateVerbatim},
-	{"classifier", func(c config.PromptsConfig) string { return c.Classifier },
-		func(p *sessionPrompts) *string { return &p.classifier },
-		agent.ClassifierWording, agent.ValidateVerbatim},
-	{"todo_standards", func(c config.PromptsConfig) string { return c.TodoStandards },
-		func(p *sessionPrompts) *string { return &p.todo.Standards },
-		func() string { return builtinStages.Standards }, agent.ValidateVerbatim},
-	{"todo_research", func(c config.PromptsConfig) string { return c.TodoResearch },
-		func(p *sessionPrompts) *string { return &p.todo.Research },
-		func() string { return builtinStages.Research }, agent.ValidateTodoResearch},
-	{"todo_implement", func(c config.PromptsConfig) string { return c.TodoImplement },
-		func(p *sessionPrompts) *string { return &p.todo.Implement },
-		func() string { return builtinStages.Implement }, agent.ValidateTodoImplement},
-	{"todo_review", func(c config.PromptsConfig) string { return c.TodoReview },
-		func(p *sessionPrompts) *string { return &p.todo.Review },
-		func() string { return builtinStages.Review }, agent.ValidateTodoReview},
-	{"todo_review_task", func(c config.PromptsConfig) string { return c.TodoReviewTask },
-		func(p *sessionPrompts) *string { return &p.todo.ReviewTask },
-		func() string { return builtinStages.ReviewTask }, agent.ValidateTodoReview},
-	{"todo_remediate", func(c config.PromptsConfig) string { return c.TodoRemediate },
-		func(p *sessionPrompts) *string { return &p.todo.Remediate },
-		func() string { return builtinStages.Remediate }, agent.ValidateTodoRemediate},
-	{"todo_commit", func(c config.PromptsConfig) string { return c.TodoCommit },
-		func(p *sessionPrompts) *string { return &p.todo.Commit },
-		func() string { return builtinStages.Commit }, agent.ValidateTodoCommit},
+// wordingKeys is every wording a file can replace: this package's four, then
+// one per step of the backlog run, named `todo_<step>`. The run's half comes
+// from the pipeline rather than from a table written out here, because which
+// steps a run has is the profile's to say and a table would be a second
+// answer that drifts from it — a step whose wording nothing could replace,
+// or a key pointing at a step that no longer exists.
+//
+// It is a list rather than a switch because three surfaces walk it — the
+// loader that reads the wordings, the doctor's row that says whether they can
+// be read, and the fingerprint that divides the record over them — and a key
+// visible to one and not the others is a key whose failure nobody sees until
+// a session will not start.
+func wordingKeys() []wording {
+	out := []wording{
+		{"steer", func(c config.PromptsConfig) string { return c.Steer },
+			setSteer, func(p sessionPrompts) string { return p.steer },
+			agent.SteerWording, agent.ValidateSteer},
+		{"check_in", func(c config.PromptsConfig) string { return c.CheckIn },
+			setCheckIn, func(p sessionPrompts) string { return p.checkIn },
+			agent.CheckInWording, agent.ValidateCheckIn},
+		{"summary", func(c config.PromptsConfig) string { return c.Summary },
+			setSummary, func(p sessionPrompts) string { return p.summary },
+			agent.SummaryWording, agent.ValidateVerbatim},
+		{"classifier", func(c config.PromptsConfig) string { return c.Classifier },
+			setClassifier, func(p sessionPrompts) string { return p.classifier },
+			agent.ClassifierWording, agent.ValidateVerbatim},
+	}
+	pipeline := todoPipeline()
+	builtins := pipeline.Builtins()
+	for _, key := range pipeline.WordingKeys() {
+		// Every step takes exactly the blocks it declares it carries, and
+		// the shared standards sentence declares none — it is sent as
+		// written, so any substitution in it is a mistake.
+		blocks := pipeline.BlocksFor(key)
+		out = append(out, wording{
+			key:      "todo_" + key,
+			named:    func(c config.PromptsConfig) string { return c.Todo(key) },
+			set:      func(p *sessionPrompts, text string) { p.setTodo(key, text) },
+			get:      func(p sessionPrompts) string { return p.todo[key] },
+			builtin:  func() string { return builtins[key] },
+			validate: func(text string) error { return agent.ValidateBlocks(text, blocks) },
+		})
+	}
+	return out
 }
 
-// builtinStages is the backlog runner's own set, read once. It is a value
-// rather than a call per wording because the seven are one set and pairing a
-// stage with another stage's text is exactly the mistake a list of eleven
-// entries invites.
-var builtinStages = run.BuiltinWordings()
+func setSteer(p *sessionPrompts, text string)      { p.steer = text }
+func setCheckIn(p *sessionPrompts, text string)    { p.checkIn = text }
+func setSummary(p *sessionPrompts, text string)    { p.summary = text }
+func setClassifier(p *sessionPrompts, text string) { p.classifier = text }
+
+// setTodo keeps one step's wording, minting the set on the first one: a
+// session that replaced nothing carries none at all, which is what makes its
+// digest empty and its record the same as every other unconfigured run's.
+func (p *sessionPrompts) setTodo(key, text string) {
+	if p.todo == nil {
+		p.todo = run.Wordings{}
+	}
+	p.todo[key] = text
+}
 
 // wordingRow is one wording a file replaced, as a surface that reports on
 // them finds it: the key, where it was read from, and the reason it will not
@@ -183,7 +202,7 @@ type wordingRow struct {
 // of them named at once.
 func readWordings(c config.PromptsConfig, projectDir string) []wordingRow {
 	var rows []wordingRow
-	for _, w := range wordingKeys {
+	for _, w := range wordingKeys() {
 		from := promptSource(w.key, w.named(c), projectDir)
 		if from.path == "" {
 			continue
@@ -203,7 +222,7 @@ func projectWordings(c config.PromptsConfig, projectDir string) []string {
 		return nil
 	}
 	var out []string
-	for _, w := range wordingKeys {
+	for _, w := range wordingKeys() {
 		if promptSource(w.key, w.named(c), projectDir).project {
 			out = append(out, w.key)
 		}
@@ -325,8 +344,8 @@ func steering(cfg config.Config, prompts sessionPrompts) agent.Steering {
 // session after it in a different cohort from every session before it would
 // divide the record on a change nobody made.
 func (p sessionPrompts) fingerprintOf(sysPrompt string) string {
-	for _, w := range wordingKeys {
-		text := *w.into(&p)
+	for _, w := range wordingKeys() {
+		text := w.get(p)
 		// Compared with the surrounding whitespace off, because that is
 		// what an editor adds when it saves a scaffolded file and it is not
 		// a change to what the model is asked. A newline at the end of a

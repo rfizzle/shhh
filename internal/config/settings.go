@@ -485,25 +485,25 @@ var settings = []Setting{
 		Desc: "A file whose contents replace the instruction auto mode's permission classifier is sent.",
 	}, {
 		Key: "prompts.todo_standards", Kind: KindPath, Default: "(the built-in wording)",
-		Desc: "A file whose contents replace the sentence every stage of a backlog run that changes the tree carries.",
+		Desc: "A file whose contents replace the sentence every step of a backlog run that changes the tree carries.",
 	}, {
 		Key: "prompts.todo_research", Kind: KindPath, Default: "(the built-in wording)",
-		Desc: "A file whose contents replace what a backlog run's research stage is told; it may place `{{item}}` and `{{answers}}`.",
+		Desc: "A file whose contents replace what a backlog run's research step is told; it may place `{{item}}` and `{{answers}}`.",
 	}, {
 		Key: "prompts.todo_implement", Kind: KindPath, Default: "(the built-in wording)",
-		Desc: "A file whose contents replace what a backlog run's implement stage is told; it may place `{{item}}`, `{{plan}}` and `{{answers}}`.",
+		Desc: "A file whose contents replace what a backlog run's implement step is told; it may place `{{item}}`, `{{plan}}` and `{{answers}}`.",
 	}, {
 		Key: "prompts.todo_review", Kind: KindPath, Default: "(the built-in wording)",
-		Desc: "A file whose contents replace what a backlog run's review stage is told; it may place `{{item}}`, `{{plan}}` and `{{diff}}`.",
+		Desc: "A file whose contents replace what a backlog run's review step is told; it may place `{{item}}`, `{{plan}}` and `{{diff}}`.",
 	}, {
 		Key: "prompts.todo_review_task", Kind: KindPath, Default: "(the built-in wording)",
 		Desc: "A file whose contents replace what the reviewer sub-agent is asked; it may place `{{item}}`, `{{plan}}` and `{{diff}}`.",
 	}, {
 		Key: "prompts.todo_remediate", Kind: KindPath, Default: "(the built-in wording)",
-		Desc: "A file whose contents replace what a backlog run's remediate stage is told; it may place `{{item}}` and `{{findings}}`.",
+		Desc: "A file whose contents replace what a backlog run's remediate step is told; it may place `{{item}}` and `{{findings}}`.",
 	}, {
 		Key: "prompts.todo_commit", Kind: KindPath, Default: "(the built-in wording)",
-		Desc: "A file whose contents replace what a backlog run's commit stage is told; it may place `{{item}}`.",
+		Desc: "A file whose contents replace what a backlog run's commit step is told; it may place `{{item}}`.",
 	},
 
 	{

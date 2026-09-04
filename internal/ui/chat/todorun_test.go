@@ -248,12 +248,12 @@ func TestTodoVerifyCmd_RunsSnapshotAndReportsFailure(t *testing.T) {
 	m, root := runModel(t)
 	m.todoRunner.state = &run.State{Slug: "do-it", Tests: []string{"true", "exit 3"}}
 	m.todoRunner.item = todo.Item{Slug: "do-it", Body: "## Tests\n- echo MODEL-WROTE-THIS\n"}
-	msg := m.todoVerifyCmd()().(todoVerifyMsg)
+	msg := m.todoVerifyCmd("")().(todoVerifyMsg)
 	if msg.ok || !strings.Contains(msg.output, "$ exit 3 → exit 3") || strings.Contains(msg.output, "MODEL-WROTE-THIS") {
 		t.Fatalf("verify = %+v", msg)
 	}
 	m.todoRunner.state = &run.State{Slug: "do-it"}
-	msg = m.todoVerifyCmd()().(todoVerifyMsg)
+	msg = m.todoVerifyCmd("")().(todoVerifyMsg)
 	if !msg.ok || !strings.Contains(msg.output, "nothing to verify") {
 		t.Fatalf("empty verify = %+v", msg)
 	}
@@ -1582,14 +1582,14 @@ func TestTodoRun_ADroppedStageTurnPausesAtTheCheckpoint(t *testing.T) {
 // project's file says rather than the built-in words.
 func TestTodoRun_TheSessionsWordingsReachTheRun(t *testing.T) {
 	m, root := runModel(t)
-	m.todos.Wordings = run.Wordings{Research: "READ IT MY WAY"}
+	m.todos.Wordings = run.Wordings{"research": "READ IT MY WAY"}
 	m = m.WithTodos(m.todos)
 	updated, _ := m.startTodoRun("do-it", false)
 	m = updated.(Model)
 	if m.todoRunner.state == nil {
 		t.Fatal("the run did not start")
 	}
-	if m.todoRunner.state.Wordings.Research != "READ IT MY WAY" {
+	if m.todoRunner.state.Wordings["research"] != "READ IT MY WAY" {
 		t.Fatalf("the run's wordings = %+v", m.todoRunner.state.Wordings)
 	}
 
@@ -1605,14 +1605,14 @@ func TestTodoRun_TheSessionsWordingsReachTheRun(t *testing.T) {
 	m2 = m2.WithTodos(Todos{
 		Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "" },
 		Detail:   func(*todo.Store, todo.Item) string { return "" },
-		Wordings: run.Wordings{Research: "READ IT ANOTHER WAY"},
+		Wordings: run.Wordings{"research": "READ IT ANOTHER WAY"},
 	})
 	updated, _ = m2.startTodoRun("do-it", false)
 	m2 = updated.(Model)
 	if m2.todoRunner.state == nil || m2.todoRunner.state.Stage != run.StageResearch {
 		t.Fatalf("the run did not continue from the checkpoint: %+v", m2.todoRunner.state)
 	}
-	if m2.todoRunner.state.Wordings.Research != "READ IT ANOTHER WAY" {
+	if m2.todoRunner.state.Wordings["research"] != "READ IT ANOTHER WAY" {
 		t.Fatalf("a continued run did not take this session's wordings: %+v", m2.todoRunner.state.Wordings)
 	}
 }

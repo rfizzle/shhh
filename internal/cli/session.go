@@ -965,6 +965,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			// one server, one retention rule, whoever asked for the page.
 			PublishReport: sprintReportPublisher(ts.reports),
 			Wordings:      env.prompts.todo,
+			Pipeline:      todoPipeline(),
 		})
 	}
 	if mem != nil {

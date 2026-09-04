@@ -72,6 +72,10 @@ type Todos struct {
 	// because a screen that made up its own words would draw a backlog
 	// nobody wrote.
 	Profile todo.Profile
+	// Pipeline is the steps a run of that backlog takes, resolved by the
+	// host beside the vocabulary. The empty pipeline is the built-in one,
+	// the way the empty wordings are the built-in set.
+	Pipeline run.Pipeline
 }
 
 // WithTodos enables /todo and the TODO block.

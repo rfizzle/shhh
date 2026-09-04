@@ -4,14 +4,15 @@ package cli
 // state machine the session drives, driven from a command instead, one item
 // at a time and one session per item.
 //
-// The session is a process. Every stage a run takes is a turn, and a turn
-// here is one `shhh code --print` in the checkout — the shape the eval runner
-// already uses, for the same reason: what a stage produced is read out of the
-// transcript whatever the process's exit status, because a stage that ran out
+// The session is a process. Every step that spends a turn spends it as one
+// `shhh code --print` in the checkout — the shape the eval runner already
+// uses, for the same reason: what a step produced is read out of the
+// transcript whatever the process's exit status, because a step that ran out
 // of rounds still did work and the machine judges it on its answer. Nothing
-// carries between two stages except the checkpoint, which is what the
-// checkpoint has always been for: every stage prompt states the item, the
-// plan and the findings it needs, so a stage is startable from nothing.
+// carries between two steps except the checkpoint, which is what the
+// checkpoint has always been for: every step prompt states the item, the plan
+// and the findings it needs, so a step is startable from nothing. A command
+// step spends no turn at all and starts no process that loads a model.
 //
 // The two things a model must not do, it does not do here either. shhh runs
 // the verification and shhh makes the commit.
@@ -105,8 +106,15 @@ func todoRunHeadless(cmd *cobra.Command, slug string, flags todoRunFlags) error 
 	if err != nil {
 		return err
 	}
-	if !d.noCommit && !d.repo {
-		return fmt.Errorf("%s is not in a git repository and a run ends in a commit — --no-commit runs it without one, or todo.commit = false makes that the default", d.root)
+	// What this process must be able to do is what the run's steps ask for,
+	// step by step: a pipeline that never commits wants no repository, and a
+	// division into lanes is the one step an unattended run falls back from
+	// rather than refuses.
+	if ref, refused := d.steps().Refuse(d.can()); refused {
+		if ref.Need == run.NeedRepo {
+			return fmt.Errorf("%s is not in a git repository and a run ends in a commit — --no-commit runs it without one, or todo.commit = false makes that the default", d.root)
+		}
+		return errors.New(ref.Why)
 	}
 	if flags.all {
 		return exitOf(d.sprint(cmd.Context(), flags.max))
@@ -184,10 +192,12 @@ type todoDriver struct {
 	// baseline from before the sprint would hand every one of those files to
 	// the next item as its own.
 	dirty map[string]bool
-	// wordings are the stage instructions this checkout runs, read once
-	// here for the same reason a session reads them at startup: a run whose
+	// wordings are the step instructions this checkout runs, read once here
+	// for the same reason a session reads them at startup: a run whose
 	// wording could not be read must not begin on the built-in one.
 	wordings run.Wordings
+	// pipeline is the steps a run of this backlog takes.
+	pipeline run.Pipeline
 	// turn spends one stage as one session and answers with what that
 	// session produced, or with why there was no answer. It is a field
 	// because the loop around it is the part worth testing and a test that
@@ -225,6 +235,7 @@ func newTodoDriver(out io.Writer, root string, cfg config.Config, noCommit bool)
 		noCommit:    noCommit || !cfg.TodoCommitEnabled(),
 		repo:        project.InRepo(root),
 		wordings:    prompts.todo,
+		pipeline:    todoPipeline(),
 	}
 	// The suites are command text out of a file that arrived with the clone
 	// and the runner spends no approval on them, so an untrusted checkout
@@ -235,6 +246,21 @@ func newTodoDriver(out io.Writer, root string, cfg config.Config, noCommit bool)
 	}
 	d.turn = d.ask
 	return d, nil
+}
+
+// steps is the pipeline a run in this checkout takes, with the finish the
+// invocation asked for.
+func (d *todoDriver) steps() run.Pipeline {
+	return run.Options{NoCommit: d.noCommit, Pipeline: d.pipeline}.Steps()
+}
+
+// can is what this process is able to do, which is what the run's steps are
+// put to before the first of them is taken. There is no supervisor outside a
+// session, which is why a division into lanes falls back to the whole plan
+// rather than refusing the run: a step that only sometimes happens, and has
+// somewhere to fall back to, asks for nothing up front.
+func (d *todoDriver) can() run.Can {
+	return run.Can{Changeset: true, Supervisor: false, Runner: true, Repo: d.repo}
 }
 
 // sprint works the ready list one item at a time, each in a session of its
@@ -348,6 +374,7 @@ func (d *todoDriver) begin(it todo.Item, inSprint bool) (*run.State, run.Step) {
 		CloseGate: d.closeGate, InSprint: inSprint,
 		Groomed:  todo.GroomingBlock(d.root, it.Slug),
 		Wordings: d.wordings,
+		Pipeline: d.pipeline,
 	}
 	if it.Status == todo.StatusInProgress {
 		if st, err := run.Load(d.root, it.Slug); err == nil && !st.Over() {
@@ -400,7 +427,7 @@ func (d *todoDriver) carry(ctx context.Context, deadline time.Time, st *run.Stat
 		}
 		return st.Observe(it, t.text)
 	case run.ActionVerify:
-		ok, output := d.verify(ctx, st)
+		ok, output := d.verify(ctx, st, step.Command)
 		fmt.Fprintln(d.out, output)
 		return st.VerifyResult(it, ok, output)
 	case run.ActionPause:
@@ -460,6 +487,10 @@ func (d *todoDriver) say(st *run.State, step run.Step) {
 // is a whole one, because the status cannot: a turn that ended at the model's
 // output ceiling ended the way turns end.
 func (d *todoDriver) ask(ctx context.Context, deadline time.Time, step run.Step) (todoTurn, error) {
+	// The step's mode is what chooses the process. Both are `shhh code
+	// --print` today, because that is the only unattended surface there is;
+	// a step that only reads wants the read-only conversation instead, and
+	// this is where it will be chosen once that surface can be printed to.
 	args := []string{"code", "--print", "--output", "json"}
 	if step.Mode == run.ModeAuto {
 		args = append(args, "--yes")
@@ -531,11 +562,19 @@ func errString(err error) string {
 // are the ones the item held when the run started, before any stage could
 // have edited the file: the run tells the model to tick the item's boxes as
 // it works, and a command it wrote there is not one shhh runs unasked.
-func (d *todoDriver) verify(ctx context.Context, st *run.State) (bool, string) {
+func (d *todoDriver) verify(ctx context.Context, st *run.State, named string) (bool, string) {
 	ctx, cancel := context.WithTimeout(ctx, todoVerifyTimeout)
 	defer cancel()
 	var b strings.Builder
 	ok := true
+	// A step that names its own command runs that and nothing else: the
+	// project said what checking this work means, and the item's own tests
+	// and the workspace's suite are the answer for the step that did not.
+	if named != "" {
+		out, code := runner.RunCaptureIn(ctx, d.root, named)
+		fmt.Fprintf(&b, "$ %s → exit %d\n%s\n", named, code, todoTail(out, 40))
+		return code == 0, strings.TrimRight(b.String(), "\n")
+	}
 	for _, cmd := range st.Tests {
 		out, code := runner.RunCaptureIn(ctx, d.root, cmd)
 		fmt.Fprintf(&b, "$ %s → exit %d\n%s\n", cmd, code, todoTail(out, 40))
@@ -573,46 +612,13 @@ func todoTail(s string, lines int) string {
 	return strings.Join(parts, "\n")
 }
 
-// commit stages the run's paths by name and commits with the message the
-// commit stage wrote. It refuses a tree that already has staged changes it
-// did not make: a commit carrying a stranger cannot be reverted, cited or
-// read as a unit.
+// commit makes the run's commit, which is the run package's to make: the
+// same staging, the same refusals and the same message file the session
+// uses, so the one act of a run that cannot be taken back cannot mean two
+// things depending on who asked for it.
 func (d *todoDriver) commit(st *run.State) ([]string, error) {
-	paths := st.Paths
-	if len(paths) == 0 {
-		return nil, fmt.Errorf("the run changed no files under the repository")
-	}
-	// `--quiet` exits 1 for a staged difference, and that is the only exit
-	// this may read as one: git's code for a missing repository moved
-	// between versions, so whether there is one is read off the filesystem
-	// instead, where the answer does not move.
-	if out, code := todoGit(d.root, "diff", "--cached", "--quiet"); code != 0 {
-		switch {
-		case code == 1:
-			return nil, fmt.Errorf("the index already holds staged changes this run did not make; commit or unstage them first\n%s", out)
-		case !project.InRepo(d.root):
-			return nil, fmt.Errorf("%s is not a git repository, so there is nothing to commit into; --no-commit runs an item without one", d.root)
-		default:
-			return nil, fmt.Errorf("git diff --cached exited %d: %s", code, out)
-		}
-	}
-	if out, code := todoGit(d.root, append([]string{"add", "--"}, paths...)...); code != 0 {
-		return nil, fmt.Errorf("git add: %s", out)
-	}
-	f, err := os.CreateTemp("", "shhh-todo-commit-*.txt")
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = os.Remove(f.Name()) }()
-	if _, err := f.WriteString(st.Message + "\n"); err != nil {
-		f.Close()
-		return nil, err
-	}
-	f.Close()
-	if out, code := todoGit(d.root, "commit", "-F", f.Name()); code != 0 {
-		return nil, fmt.Errorf("git commit: %s", out)
-	}
-	return paths, nil
+	return run.Commit(d.root, st.Paths, st.Message,
+		"--no-commit runs an item without one, or todo.commit = false makes that the default")
 }
 
 // paths is what the run may stage: everything under the root that changed
@@ -719,18 +725,11 @@ func todoGitLines(root string, args ...string) (string, int) {
 // the checkpoint goes, because a run that ended has nothing to continue.
 func (d *todoDriver) finish(st *run.State, it todo.Item) {
 	if st.Stage == run.StageDone {
-		report := st.Report
-		if len(st.Files) > 0 && !st.NoCommit {
-			report += "\nCommitted: " + strings.Join(st.Files, ", ") + "\n"
-			report += todo.CommitLine(project.Head(d.root), st.Message)
-		}
-		to, err := todo.Archive(d.root, st.Slug, report)
+		to, err := run.File(d.root, st, it)
 		if err != nil {
-			// The work is finished and the item must not stay in progress
-			// with its report nowhere: it goes back to open with the report
-			// on it, and the line says what is left to do.
-			_ = todo.SetStatus(it.Path, todo.StatusOpen)
-			_ = todo.Append(it.Path, report)
+			// The work is finished and the run package has already put the
+			// item back to open with the report on it; what is left is
+			// saying so where somebody reading the log will find it.
 			fmt.Fprintf(d.out, "✓ todo run %s finished, but the item could not be archived — %v. The report is on the item and it is open.\n", st.Slug, err)
 		} else {
 			fmt.Fprintln(d.out, todoRunDoneLine(st, to))

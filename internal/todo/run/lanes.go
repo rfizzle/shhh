@@ -251,12 +251,12 @@ func (s *State) LiveAgents() []string {
 
 // split is the turn that divides the plan. It is read-only: the answer is
 // a division of work, not work.
-func (s *State) split(it todo.Item) Step {
+func (s *State) split(it todo.Item, ps PipelineStep) Step {
 	s.Paused = ""
-	s.Stage = StageSplit
+	s.Stage = ps.Stage()
 	s.Lanes = nil
-	return Step{Action: ActionPrompt, Stage: StageSplit, Mode: ModePlan,
-		Prompt: splitPrompt(it, s.Plan, answersBlock(s.Answers)), Shown: s.label("split into lanes")}
+	return Step{Action: ActionPrompt, Stage: ps.Stage(), Mode: ps.Access.Mode(),
+		Prompt: splitPrompt(it, s.Plan, answersBlock(s.Answers)), Shown: s.label(ps.Name + " into lanes")}
 }
 
 // afterSplit reads the lanes. An answer the run cannot spawn from — no
@@ -272,16 +272,24 @@ func (s *State) afterSplit(it todo.Item, text string) Step {
 		return s.implementWhole(it, "the plan does not divide")
 	}
 	s.Lanes = lanes
-	return s.fanOut()
+	ps, ok := s.Shape().Next(s.Profile, string(s.Stage), s.rank())
+	if !ok || ps.Kind != KindFanOut {
+		return s.implementWhole(it, "nothing in this run spawns the lanes")
+	}
+	return s.fanOut(ps)
 }
 
 // implementWhole is the large item built by the session's own turn, which
 // is what a medium one always is.
 func (s *State) implementWhole(it todo.Item, why string) Step {
 	s.Lanes = nil
-	s.Stage = StageImplement
-	return Step{Action: ActionPrompt, Stage: StageImplement, Mode: ModeAuto,
-		Prompt: implementPrompt(it, s.Plan, answersBlock(s.Answers), s.Wordings), Shown: s.label("implement (" + why + ")")}
+	ps, ok := s.Shape().Integrate(string(s.Stage))
+	if !ok {
+		return s.block("nothing in this run builds what the division was for")
+	}
+	s.Stage = ps.Stage()
+	return Step{Action: ActionPrompt, Stage: ps.Stage(), Mode: ps.Access.Mode(),
+		Prompt: s.prompt(it, ps, answersBlock(s.Answers)), Shown: s.label(ps.Name + " (" + why + ")")}
 }
 
 // NoLanes is the front-end reporting it cannot fan out — no supervisor, a
@@ -291,8 +299,8 @@ func (s *State) NoLanes(it todo.Item, why string) Step { return s.implementWhole
 // fanOut names a writer per lane not yet landed and hands the spawning to
 // the front-end. Names carry the round so a lane spawned again after a
 // dead session never reuses a name the supervisor still holds.
-func (s *State) fanOut() Step {
-	s.Stage = StageFanOut
+func (s *State) fanOut(ps PipelineStep) Step {
+	s.Stage = ps.Stage()
 	s.Fanouts++
 	for i := range s.Lanes {
 		if s.Lanes[i].Done {
@@ -301,7 +309,8 @@ func (s *State) fanOut() Step {
 		}
 		s.Lanes[i].Agent = fmt.Sprintf("tw%d-%s", s.Fanouts, s.Lanes[i].Name)
 	}
-	return Step{Action: ActionFanOut, Stage: StageFanOut, Mode: ModeAuto, Shown: s.label(fmt.Sprintf("fan-out %d: %s", s.Fanouts, strings.Join(s.laneNames(false), ", ")))}
+	return Step{Action: ActionFanOut, Stage: ps.Stage(), Mode: ps.Access.Mode(),
+		Shown: s.label(fmt.Sprintf("%s %d: %s", ps.Name, s.Fanouts, strings.Join(s.laneNames(false), ", ")))}
 }
 
 func (s *State) laneNames(all bool) []string {
@@ -350,9 +359,13 @@ func (s *State) LaneDone(it todo.Item, agent string, finished bool, report strin
 	}
 	l.Agent = ""
 	if !s.lanesReported() {
-		return Step{Action: ActionWait, Stage: StageFanOut, Shown: s.label("lane " + l.Name + " landed; waiting on " + strings.Join(s.laneNames(false), ", "))}
+		return Step{Action: ActionWait, Stage: s.Stage, Shown: s.label("lane " + l.Name + " landed; waiting on " + strings.Join(s.laneNames(false), ", "))}
 	}
-	return s.integrate(it)
+	next, ok := s.Shape().Integrate(string(s.Stage))
+	if !ok {
+		return s.block("nothing in this run integrates what the lanes built")
+	}
+	return s.integrate(it, next)
 }
 
 // LaneFailed is the front-end ending a lane on its own evidence — a patch
@@ -366,10 +379,10 @@ func (s *State) LaneFailed(agent, why string) Step {
 }
 
 // integrate is the session's own turn after every lane landed: make the
-// lanes fit, tick the item, and hand the tree to verify.
-func (s *State) integrate(it todo.Item) Step {
-	s.Stage = StageImplement
-	return Step{Action: ActionPrompt, Stage: StageImplement, Mode: ModeAuto,
+// lanes fit, tick the item, and hand the tree to the step after.
+func (s *State) integrate(it todo.Item, ps PipelineStep) Step {
+	s.Stage = ps.Stage()
+	return Step{Action: ActionPrompt, Stage: ps.Stage(), Mode: ps.Access.Mode(),
 		Prompt: integratePrompt(it, s.Plan, s.Lanes, answersBlock(s.Answers), s.Wordings), Shown: s.label("integrate the lanes")}
 }
 

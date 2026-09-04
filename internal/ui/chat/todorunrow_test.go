@@ -56,10 +56,10 @@ func stripWords(r *todoRunRow) []string {
 func TestTodoRunRow_StageWordsAreTheRecordsWords(t *testing.T) {
 	st := run.Start(todo.Item{Slug: "do-it", Profile: todo.BuiltinCode(), Fields: map[string]string{"size": "M"}}, "s", "manual", 1, run.Options{})
 	got := stripWords(newTodoRunRow(st))
-	if len(got) != len(run.Strip()) {
-		t.Fatalf("the strip draws %d stages, the machine has %d: %v", len(got), len(run.Strip()), got)
+	if len(got) != len(run.BuiltinCode().Strip()) {
+		t.Fatalf("the strip draws %d stages, the machine has %d: %v", len(got), len(run.BuiltinCode().Strip()), got)
 	}
-	for i, stage := range run.Strip() {
+	for i, stage := range run.BuiltinCode().Strip() {
 		want := run.Step{Action: run.ActionPrompt, Stage: stage}.Name()
 		if got[i] != want {
 			t.Errorf("strip word %d = %q, the record says %q", i, got[i], want)
@@ -101,7 +101,7 @@ func TestTodoRunRow_DrawnFromStartToDone(t *testing.T) {
 	if lastTodoRunRow(m.transcript) < 0 {
 		t.Fatal("the row outlives the run it drew")
 	}
-	for _, stage := range run.Strip() {
+	for _, stage := range run.BuiltinCode().Strip() {
 		if r.marks[stage] != runPassed {
 			t.Errorf("%s should be ticked on a finished run: %v", stage, r.marks)
 		}
