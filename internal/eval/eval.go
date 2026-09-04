@@ -16,6 +16,10 @@
 // The numbers beside the verdict are what turn a pass into a comparison. A
 // change that keeps every case passing and doubles the rounds is a
 // regression, and it is invisible to anything that only counts passes.
+//
+// The calls a session makes beside the coding loop leave no workspace behind
+// to check, so they get the second shape in table.go: a labelled table, an
+// answer from a closed set, and a comparison rather than a judgement.
 // See docs/capabilities/evals.md.
 package eval
 
@@ -25,11 +29,18 @@ import (
 )
 
 // Case is one task: a workspace to do it in, a sentence asking for it, and
-// the command that decides whether it was done.
+// the command that decides whether it was done — or, where Kind says so, a
+// labelled table put to one of the calls a session makes beside the coding
+// loop (table.go).
 type Case struct {
 	// Name identifies the case in a report and on the command line. It
 	// defaults to the directory the case was loaded from.
 	Name string
+	// Kind is what this case measures. The fields below that speak of a
+	// workspace are KindWorkspace's; Rows is what the other kinds are scored
+	// against, and they have no workspace, no prompt and no check.
+	Kind Kind
+	Rows []Row
 	// Dir is the case directory, and Workspace the fixture inside it that is
 	// copied for each attempt. A case never runs in its own directory: a run
 	// edits files, and a case that graded the second attempt against the
@@ -61,22 +72,48 @@ type Attempt struct {
 	CheckOutput string
 	// Rounds is how many tool-call rounds the turn took, and Calls how many
 	// tools it asked for across them. Both are read from the transcript, so
-	// they measure the work rather than the account of it.
+	// they measure the work rather than the account of it. A table attempt
+	// leaves both zero: it is one request per row and no loop at all, and a
+	// row count reported as rounds would be compared against a coding turn's.
 	Rounds int
 	Calls  int
 	// TokensIn and TokensOut are the session's usage; Cost is what the price
-	// table made of it, and Priced whether the table knew the model.
+	// table made of it, and Priced whether the table knew the model. A table
+	// attempt sums them across its rows and is priced the same way, so a
+	// model or ceiling change reads as a cost change here too and not only as
+	// a score change.
 	TokensIn  int
 	TokensOut int
 	Cost      float64
 	Priced    bool
 	Elapsed   time.Duration
+	// Score is a table attempt's row-by-row outcome, and nil for a workspace
+	// attempt. Passed above is its hard verdict: every row answered, and
+	// every answer one its row accepts.
+	Score *Score
 }
 
 // Result is every attempt at one case.
 type Result struct {
 	Case     Case
 	Attempts []Attempt
+}
+
+// Score is every attempt's rows together, which is what a table case's row in
+// the report is read from: the rates are what the case is for, and a rate off
+// one attempt of twenty rows is a rate off twenty samples whichever way the
+// repeat count is set.
+func (r Result) Score() (Score, bool) {
+	if !r.Case.Kind.IsTable() {
+		return Score{}, false
+	}
+	merged := Score{Kind: r.Case.Kind}
+	for _, a := range r.Attempts {
+		if a.Score != nil {
+			merged.Answers = append(merged.Answers, a.Score.Answers...)
+		}
+	}
+	return merged, len(merged.Answers) > 0
 }
 
 // Passes is how many attempts the check accepted.

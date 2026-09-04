@@ -12,6 +12,12 @@ package eval
 // What it does not do is grade the transcript. The verdict is the case's own
 // check command, run in the workspace the session left behind; the transcript
 // is read only for what it costs to say something was done.
+//
+// A table case goes the other way, and for the same reason: an auxiliary call
+// assembles its own instruction and its own bounds inside this process, with
+// nothing from the project or the machine in them, so running a binary to
+// reach it would add a session's assembly to a measurement that is not about
+// a session. The request that goes out is the one a session would send.
 
 import (
 	"context"
@@ -24,6 +30,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // Options is how a run is parameterised. The zero value runs each case once,
@@ -44,8 +52,14 @@ type Options struct {
 	// Price prices one attempt's usage. Nil leaves every attempt unpriced,
 	// which is honest rather than zero.
 	Price func(model string, in, out int) (float64, bool)
-	// Model names what is being measured, for the report's title.
+	// Model names what is being measured, for the report's title, and is the
+	// model a table case's call is made on.
 	Model string
+	// Provider is what a table case asks. A workspace case never uses it —
+	// that one runs the binary, which resolves its own — but an auxiliary
+	// call is not a session and has no binary to run, so the harness makes it
+	// itself and needs somewhere to send it.
+	Provider provider.Provider
 	// Progress, when set, is called as each attempt finishes, so a run that
 	// takes minutes says something while it does.
 	Progress func(c Case, attempt int, a Attempt)
@@ -96,7 +110,7 @@ func (t transcript) rounds() (rounds, calls int) {
 // the machine instead of about the change.
 func Run(ctx context.Context, cases []Case, opts Options) (Summary, error) {
 	bin := opts.Binary
-	if bin == "" {
+	if bin == "" && needsBinary(cases) {
 		self, err := os.Executable()
 		if err != nil {
 			return Summary{}, fmt.Errorf("cannot find the binary to measure: %w", err)
@@ -124,9 +138,24 @@ func Run(ctx context.Context, cases []Case, opts Options) (Summary, error) {
 	return sum, nil
 }
 
+// needsBinary reports whether anything in the suite runs a session. A suite
+// of table cases only makes requests, and must not refuse to start because
+// the harness could not name its own executable.
+func needsBinary(cases []Case) bool {
+	for _, c := range cases {
+		if !c.Kind.IsTable() {
+			return true
+		}
+	}
+	return false
+}
+
 // attempt runs one case once. Every failure is a result rather than an error:
 // one case that cannot run must not end a suite that is measuring twelve.
 func attempt(ctx context.Context, bin string, c Case, opts Options) Attempt {
+	if c.Kind.IsTable() {
+		return tableAttempt(ctx, c, opts)
+	}
 	start := time.Now()
 	a := Attempt{}
 
@@ -178,6 +207,58 @@ func attempt(ctx context.Context, bin string, c Case, opts Options) Attempt {
 	}
 
 	a.Passed, a.CheckOutput = check(ctx, dir, c.Check)
+	a.Elapsed = time.Since(start)
+	return a
+}
+
+// tableAttempt puts every row of a table case to the real call once.
+//
+// Rows go one at a time, like cases: the point of the pass is the rate, not
+// the wall clock, and twenty concurrent requests to the same endpoint measure
+// the rate limit rather than the model. The attempt's ceiling bounds the whole
+// pass; each row is bounded again, and much sooner, by the timeout the call
+// itself runs under in a session.
+func tableAttempt(ctx context.Context, c Case, opts Options) Attempt {
+	start := time.Now()
+	a := Attempt{Score: &Score{Kind: c.Kind}}
+
+	if opts.Provider == nil {
+		a.Err = fmt.Errorf("no provider to ask: a %s case is a request, not a session", c.Kind)
+		a.Elapsed = time.Since(start)
+		return a
+	}
+
+	runCtx := ctx
+	if opts.Timeout > 0 {
+		var cancel context.CancelFunc
+		runCtx, cancel = context.WithTimeout(ctx, opts.Timeout)
+		defer cancel()
+	}
+
+	for _, row := range c.Rows {
+		if runCtx.Err() != nil {
+			break
+		}
+		ans := askRow(runCtx, opts.Provider, opts.Model, c.Kind, row)
+		a.Score.Answers = append(a.Score.Answers, ans)
+		a.TokensIn += ans.Usage.PromptTokens
+		a.TokensOut += ans.Usage.CompletionTokens
+	}
+	if opts.Price != nil {
+		a.Cost, a.Priced = opts.Price(opts.Model, a.TokensIn, a.TokensOut)
+	}
+
+	// A pass that was cut short measured a prefix of the table, and a rate
+	// over a prefix is not the rate. It is the same reading as a session that
+	// never finished: a machine to fix, not a score to report.
+	switch {
+	case errors.Is(runCtx.Err(), context.DeadlineExceeded):
+		a.Err = fmt.Errorf("the table did not finish inside %s", opts.Timeout)
+	case ctx.Err() != nil:
+		a.Err = ctx.Err()
+	default:
+		a.Passed = a.Score.Wrong() == 0 && a.Score.Unanswered() == 0
+	}
 	a.Elapsed = time.Since(start)
 	return a
 }

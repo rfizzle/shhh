@@ -16,6 +16,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/eval"
+	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/spf13/cobra"
@@ -42,6 +43,9 @@ func newEvalCmd() *cobra.Command {
 		Long: "Run each case in a suite: copy its workspace, hand the session the task, then run the case's own check " +
 			"over what it left behind. The check decides — nothing here grades the transcript — and the rounds, tokens " +
 			"and cost beside each verdict are what make two runs comparable.\n\n" +
+			"A case with no workspace is a labelled table instead, put to one of the calls a session makes beside the " +
+			"coding loop — a permission decision, a status reading — and scored by comparing the answer with the label. " +
+			"Those are made on the model named here, so name the one your sessions actually make them on.\n\n" +
 			"Every case costs real requests. A suite is a way to find out whether a model, a prompt or a setting change " +
 			"actually did the work, and it is not part of `make ci` for that reason.",
 		Args: cobra.MaximumNArgs(1),
@@ -64,12 +68,31 @@ func newEvalCmd() *cobra.Command {
 			flags.ConfigReasoning = cfg.Provider.Reasoning
 			resolved := resolve.Resolve(flags)
 
+			// A table case has no session to run, so the harness sends its
+			// requests itself and needs a provider here. A suite of workspace
+			// cases does not, and must not be stopped at the door by a
+			// credential it was never going to use.
+			var prov provider.Provider
+			if needsProvider(cases) {
+				p, req, err := resolveProvider(cmd.Context(), cfg, providerRequest{
+					Provider: resolved.Provider,
+					Model:    resolved.Model,
+					APIKey:   flags.FlagAPIKey,
+				})
+				if err != nil {
+					return err
+				}
+				resolved.Provider, resolved.Model = req.Provider, req.Model
+				prov = p
+			}
+
 			prices := loadPricing()
 			opts := eval.Options{
-				Repeat:  repeat,
-				Timeout: timeout,
-				Args:    sessionArgs(resolved),
-				Model:   resolved.Model,
+				Repeat:   repeat,
+				Timeout:  timeout,
+				Args:     sessionArgs(resolved),
+				Model:    resolved.Model,
+				Provider: prov,
 				Price: func(model string, in, out int) (float64, bool) {
 					if prices == nil {
 						return 0, false
@@ -93,6 +116,17 @@ func newEvalCmd() *cobra.Command {
 	cmd.Flags().DurationVar(&timeout, "timeout", defaultEvalTimeout, "ceiling on one attempt (0 removes it)")
 	cmd.Flags().StringArrayVar(&only, "case", nil, "run only this case, by name (repeatable)")
 	return cmd
+}
+
+// needsProvider reports whether anything selected asks a model from this
+// process rather than from a session it starts.
+func needsProvider(cases []eval.Case) bool {
+	for _, c := range cases {
+		if c.Kind.IsTable() {
+			return true
+		}
+	}
+	return false
 }
 
 // selectCases narrows the suite to the named cases, refusing a name that
@@ -219,11 +253,94 @@ func evalRow(res eval.Result) report.Row {
 	case eval.Errored:
 		row.State, row.Outcome = report.Fail, "never ran"
 		row.Consequence = "the session did not finish, so nothing was checked — this says nothing about the task"
+		if res.Case.Kind.IsTable() {
+			row.Consequence = "the table did not finish, so any rate off it is over a prefix — this says nothing about the model"
+		}
 	}
 
 	row.Subject = evalDetail(res)
 	row.Body = evalBody(res)
+	if score, ok := res.Score(); ok {
+		if c := tableConsequence(score); c != "" {
+			row.Consequence = c
+		}
+		row.Body = append(row.Body, tableBody(score)...)
+	}
 	return row
+}
+
+// tableConsequence is what a table case's misses cost, counted apart rather
+// than averaged.
+//
+// A classifier that refuses too much is an annoyance; one that allows too
+// much is the security control failing open, and a single accuracy figure
+// reports the two as the same number. A row that answered nothing is a third
+// thing again — that is a broken call, not a cautious one, and scoring it as
+// a deny would report an outage as a security posture.
+func tableConsequence(score eval.Score) string {
+	var parts []string
+	if n := score.FalseAllow(); n > 0 {
+		parts = append(parts, fmt.Sprintf("%d false allow", n))
+	}
+	if n := score.FalseDeny(); n > 0 {
+		parts = append(parts, fmt.Sprintf("%d false deny", n))
+	}
+	if n := score.Wrong() - score.FalseAllow() - score.FalseDeny(); n > 0 {
+		parts = append(parts, fmt.Sprintf("%d wrong", n))
+	}
+	if n := score.Unanswered(); n > 0 {
+		parts = append(parts, fmt.Sprintf("%d with no answer", n))
+	}
+	if len(parts) == 0 {
+		return ""
+	}
+	line := strings.Join(parts, " · ") + fmt.Sprintf(" out of %d rows", score.Rows())
+	if score.FalseAllow() > 0 {
+		line += " — a false allow is the control failing open, which a false deny is not"
+	}
+	return line
+}
+
+// maxTableMisses is how many missed rows a report names before counting the
+// rest. A table that missed everything is a finding on its own and does not
+// need forty lines to say so.
+const maxTableMisses = 8
+
+// tableBody names the rows that missed, in the order the table lists them,
+// each with what the row was written to test — "this one came back allow" is
+// only actionable beside the rule it was checking.
+//
+// A row that missed the same way on every attempt is named once, the way a
+// case that failed the same way three times is: repeated attempts are more
+// samples of the same rows, and a row that missed two different ways is the
+// fact worth two lines.
+func tableBody(score eval.Score) []string {
+	var out []string
+	seen := map[string]bool{}
+	left := 0
+	for _, a := range score.Misses() {
+		got := "no answer"
+		if a.Answered() {
+			got = a.Label
+		}
+		line := fmt.Sprintf("%s — wanted %s, got %s", a.Row.Name, strings.Join(a.Row.Expect, " or "), got)
+		if a.Row.Why != "" {
+			line += ": " + a.Row.Why
+		}
+		if seen[line] {
+			continue
+		}
+		seen[line] = true
+		if len(out) == maxTableMisses {
+			left++
+			continue
+		}
+		out = append(out, line)
+	}
+	if left > 0 {
+		out = append(out, fmt.Sprintf("… and %d more", left))
+	}
+	return out
 }
 
 // evalDetail is the numbers that make two runs comparable, in the spellings
@@ -231,6 +348,9 @@ func evalRow(res eval.Result) report.Row {
 // here and another in `shhh metrics` is two numbers a reader has to reconcile.
 func evalDetail(res eval.Result) string {
 	var parts []string
+	if score, ok := res.Score(); ok {
+		parts = append(parts, fmt.Sprintf("%d of %d correct", score.Correct(), score.Rows()))
+	}
 	if rounds := res.MedianRounds(); rounds > 0 {
 		parts = append(parts, fmt.Sprintf("%.0f rounds", rounds))
 	}
@@ -258,6 +378,10 @@ func evalBody(res eval.Result) []string {
 		switch {
 		case a.Err != nil:
 			line = a.Err.Error()
+		case a.Score != nil:
+			// A table attempt ran no check and printed nothing. What it did
+			// instead is its rows, which are listed beside this.
+			continue
 		case !a.Passed:
 			line = firstLineOf(a.CheckOutput)
 		default:

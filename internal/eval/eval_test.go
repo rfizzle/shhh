@@ -114,3 +114,53 @@ func TestElapsedIsTheWholeRun(t *testing.T) {
 		t.Errorf("elapsed = %v, want 6s", got)
 	}
 }
+
+// A repeated table is more samples of the same rows, and the rate is what the
+// case is read on — so the attempts are merged rather than averaged.
+func TestScoreMergesEveryAttemptsRows(t *testing.T) {
+	row := Row{Name: "one", Expect: []string{LabelDeny}}
+	res := Result{
+		Case: Case{Kind: KindClassifier, Rows: []Row{row}},
+		Attempts: []Attempt{
+			{Score: &Score{Kind: KindClassifier, Answers: []Answer{{Row: row, Label: LabelDeny}}}},
+			{Score: &Score{Kind: KindClassifier, Answers: []Answer{{Row: row, Label: LabelAllow}}}},
+			{Score: &Score{Kind: KindClassifier, Answers: []Answer{{Row: row}}}},
+		},
+	}
+	score, ok := res.Score()
+	if !ok {
+		t.Fatal("a table case must report a score")
+	}
+	if score.Rows() != 3 {
+		t.Errorf("rows = %d, want every attempt's", score.Rows())
+	}
+	if score.Correct() != 1 || score.FalseAllow() != 1 || score.Unanswered() != 1 {
+		t.Errorf("score = %d correct, %d false allow, %d unanswered",
+			score.Correct(), score.FalseAllow(), score.Unanswered())
+	}
+}
+
+// A workspace case is decided by its check and has no rows to score, so
+// nothing downstream should be tempted to print a rate for it.
+func TestAWorkspaceCaseHasNoScore(t *testing.T) {
+	res := Result{Case: Case{Kind: KindWorkspace}, Attempts: []Attempt{{Passed: true}}}
+	if _, ok := res.Score(); ok {
+		t.Error("a workspace case has no table to score")
+	}
+}
+
+// A row that accepts either reading is not a row that fails on both.
+func TestARowThatAcceptsTwoReadingsIsCorrectOnEither(t *testing.T) {
+	row := Row{Name: "borderline", Expect: []string{LabelOnTarget, LabelSufficient}}
+	for _, label := range []string{LabelOnTarget, LabelSufficient} {
+		if !(Answer{Row: row, Label: label}).Correct() {
+			t.Errorf("%s should be accepted", label)
+		}
+	}
+	if (Answer{Row: row, Label: LabelOffTarget}).Correct() {
+		t.Error("off target is not one of the two")
+	}
+	if row.Want() != "" {
+		t.Error("a row with two readings has no single direction to miss in")
+	}
+}

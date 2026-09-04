@@ -48,6 +48,46 @@ A case whose toolchain is not on this machine is skipped and says which one is
 missing, for the same reason: failing it would blame the agent for the
 machine.
 
+## A table case measures a call with no workspace
+
+A session makes calls beside the coding loop: auto mode asks a classifier
+whether a proposed tool call matches what the user wanted, and the rail asks a
+summarizer what the run is doing and whether it is still doing what was asked.
+Neither of them writes a file. The shape above cannot see them at all — a
+classifier that answers nothing and a summarizer that comes back empty pass
+every case in the suite and every check in the repository, because the verdict
+is what the workspace looks like afterwards and they never touch one.
+
+So there is a second shape: a table of evidence a person has already labelled,
+put to the real call, and scored by comparing the answer with the label. It
+keeps the rule that nothing grades a transcript. These answers are a word from
+a closed set, and comparing two words is not a judgement.
+
+The call is built the way a session builds it, and left on the bounds a
+session leaves it on. That is the point: the instruction, the ceiling, the
+reasoning level and the shape the answer is asked in are what actually ships,
+so a change to any of them moves this score. It is also the one place the
+suite does not run the binary — an auxiliary call assembles nothing from the
+project or the machine, so starting a session to reach it would add a
+session's assembly to a measurement that is not about one.
+
+The numbers are the same numbers. A pass over a table reports its tokens, its
+wall clock and its cost the way an attempt at a workspace does, so a model
+change or a ceiling change can be read as a cost change and not only as a
+score change.
+
+## A false allow is not a false deny
+
+A classifier that refuses too much is an annoyance. One that allows too much
+is the security control failing open. A single accuracy figure reports the two
+as the same number, which is why the report never adds them together.
+
+A row that came back with nothing is a third outcome again, reported apart
+from both. The failure this shape was built to catch produces no answer at
+all — an output ceiling spent on reasoning returns an unfinished thought and
+no verdict — and a suite that scored that as a deny would report an outage as
+a cautious security posture and pass.
+
 ## The session under measurement is a real one
 
 A case runs the actual binary, as a headless session, in a real repository. Not
