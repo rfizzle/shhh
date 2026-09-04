@@ -50,7 +50,8 @@ func TestSlashStats_Handled(t *testing.T) {
 }
 
 func TestHelp_ListsStats(t *testing.T) {
-	if !strings.Contains(helpText(), "/stats") {
+	m := frameModel(t, 80, 30)
+	if !strings.Contains(helpText(&m), "/stats") {
 		t.Fatal("help should list /stats")
 	}
 }

@@ -42,7 +42,8 @@ func TestGate_SlashCommandUnavailable(t *testing.T) {
 }
 
 func TestGate_HelpMentionsCommand(t *testing.T) {
-	if !strings.Contains(helpText(), "/gate") {
+	m := gatedModel(t, nil, nil).WithGate(Gate{Manage: func([]string) string { return "" }})
+	if !strings.Contains(helpText(&m), "/gate") {
 		t.Fatal("/help must list /gate")
 	}
 }
@@ -368,7 +369,8 @@ func TestCloseGate_UsageAndCompletionOfferTheToggle(t *testing.T) {
 			t.Errorf("/gate completion does not offer %q", want)
 		}
 	}
-	if !strings.Contains(helpText(), "on|off") {
+	m := gatedModel(t, nil, nil).WithGate(Gate{Manage: func([]string) string { return "" }})
+	if !strings.Contains(helpText(&m), "on|off") {
 		t.Error("/help does not name the toggle")
 	}
 }

@@ -443,7 +443,7 @@ func buildSlashHandlers() map[string]slashHandler {
 }
 
 func slashHelp(m *Model, _ []string) string {
-	return helpText() + "\n\n" + m.policyHelp()
+	return helpText(m) + "\n\n" + m.policyHelp()
 }
 
 func slashModel(m *Model, parts []string) string {

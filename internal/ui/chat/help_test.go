@@ -19,11 +19,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 func TestHelpNamesEveryDraftKey(t *testing.T) {
-	help := strings.ToLower(helpText())
+	m := frameModel(t, 80, 30)
+	help := strings.ToLower(helpText(&m))
 	section := help[strings.Index(help, "keys:"):]
 	if section == "" {
 		t.Fatal("/help has no key section")
@@ -62,7 +64,8 @@ func TestHelpNamesThePalettesOtherDoor(t *testing.T) {
 // The reading-mode register is reachable from the draft too, because `?` is a
 // letter there and /help is the door a reader with a live draft has.
 func TestHelpNamesTheKeyRegister(t *testing.T) {
-	if !strings.Contains(helpText(), keys.Shown(keys.Reading.List)+" lists every key") {
+	m := frameModel(t, 80, 30)
+	if !strings.Contains(helpText(&m), keys.Shown(keys.Reading.List)+" lists every key") {
 		t.Errorf("/help does not say what %q opens in reading mode", keys.Shown(keys.Reading.List))
 	}
 }
@@ -108,6 +111,82 @@ func TestHelpKeyColumnsComeFromTheRegister(t *testing.T) {
 			if !strings.Contains(helpKeysText(), "\n  "+col+" ") {
 				t.Errorf("the rendered list has no row headed %q", col)
 			}
+		}
+	}
+}
+
+// The rows are the registry's, filtered by what this session has wired. That
+// is the whole of the fix: the help, the completion menu and the answer to a
+// typed command were three readings of one question, and only the help was
+// taken from a list of its own — which is how a conversation offered `/todo`
+// and then said `/todo` was not part of the session.
+func TestHelp_ListsExactlyTheCommandsThisSessionHas(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		build func(t *testing.T) Model
+	}{
+		{"a coding session", func(t *testing.T) Model { return frameModel(t, 80, 40) }},
+		{"a conversation", func(t *testing.T) Model { return frameModel(t, 80, 40).WithConversation() }},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			m := tc.build(t)
+			rows := map[string]bool{}
+			for _, line := range strings.Split(helpText(&m), "\n") {
+				head, _, ok := strings.Cut(strings.TrimPrefix(line, "  "), " ")
+				if ok && strings.HasPrefix(head, "/") && strings.HasPrefix(line, "  /") {
+					rows[head] = true
+				}
+			}
+			for _, c := range slashCommands() {
+				has := c.enabled == nil || c.enabled(&m)
+				if has && !rows[c.name] {
+					t.Errorf("%s is offered here and has no row in /help", c.name)
+				}
+				if !has && rows[c.name] {
+					t.Errorf("%s has a row in /help and is not offered here", c.name)
+				}
+				delete(rows, c.name)
+			}
+			for name := range rows {
+				t.Errorf("/help lists %s, which is not a command", name)
+			}
+		})
+	}
+}
+
+// Every command in the registry has a paragraph. One added without gets an
+// empty row rather than a missing one, which is the failure a reader cannot
+// see and a test can.
+func TestHelp_EveryCommandHasAParagraph(t *testing.T) {
+	named := map[string]bool{}
+	for _, c := range slashCommands() {
+		if strings.TrimSpace(helpCommands[c.name]) == "" {
+			t.Errorf("%s has no paragraph in /help", c.name)
+		}
+		named[c.name] = true
+	}
+	for name := range helpCommands {
+		if !named[name] {
+			t.Errorf("/help keeps a paragraph for %s, which is not a command", name)
+		}
+	}
+}
+
+// The conversation's list is the coding session's minus what it does not
+// have, and the backlog is on both.
+func TestHelp_AConversationOffersTheBacklogAndNotTheChangeset(t *testing.T) {
+	root := todoTestRoot(t)
+	m := frameModel(t, 80, 40).WithConversation().WithTodos(Todos{
+		Profile: todo.BuiltinCode(), Root: root,
+		Manage: func([]string) string { return "" },
+		Detail: func(*todo.Store, todo.Item) string { return "" }})
+	help := helpText(&m)
+	if !strings.Contains(help, "\n  /todo ") && !strings.Contains(help, "\n  /todo  ") {
+		t.Errorf("a conversation with a backlog should have a /todo row:\n%s", help)
+	}
+	for _, gone := range []string{"\n  /diff", "\n  /review", "\n  /undo", "\n  /plan", "\n  /sandbox"} {
+		if strings.Contains(help, gone) {
+			t.Errorf("a conversation has no %q row", strings.TrimSpace(gone))
 		}
 	}
 }

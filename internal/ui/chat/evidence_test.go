@@ -90,7 +90,8 @@ func TestEvidence_SlashCommandUnavailable(t *testing.T) {
 }
 
 func TestEvidence_HelpMentionsCommand(t *testing.T) {
-	if !strings.Contains(helpText(), "/evidence") {
+	m := gatedModel(t, nil, nil).WithEvidence(Evidence{Manage: func([]string) string { return "" }})
+	if !strings.Contains(helpText(&m), "/evidence") {
 		t.Fatal("/help must list /evidence")
 	}
 }

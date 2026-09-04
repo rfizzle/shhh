@@ -27,6 +27,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/diff"
+	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/persona"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/project"
@@ -363,6 +364,35 @@ func TestGolden_HelpKeys(t *testing.T) {
 		m = mm.(Model)
 		return []golden.Panel{
 			{Label: "? on an empty draft", View: m.renderHistory()},
+		}
+	})
+}
+
+// TestGolden_HelpChat pins the command list a conversation is given, beside
+// the one a coding session is. The two are one rendering of one registry now,
+// and the sheet is where a reader sees that the difference between them is
+// what the session has wired and nothing else — a row for every command that
+// can be typed here, and none for one that would answer that it is not part
+// of this session.
+//
+// One width, because the rows wrap like any system row and the words are what
+// is under test.
+func TestGolden_HelpChat(t *testing.T) {
+	captureGolden(t, "help-chat", "the /help command list in each session", []int{80}, func(width int) []golden.Panel {
+		root := t.TempDir()
+		if err := os.MkdirAll(todo.Dir(root), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		backlog := Todos{Profile: todo.BuiltinCode(), Root: root,
+			Manage: func([]string) string { return "" },
+			Detail: func(*todo.Store, todo.Item) string { return "" }}
+		build := func(m Model) string {
+			m = m.WithTodos(backlog).WithNotebook(notebook.New(nil))
+			return strings.Join(strings.Split(helpText(&m), "\n\nKeys:")[:1], "")
+		}
+		return []golden.Panel{
+			{Label: "a conversation", View: build(frameModel(t, width, 40).WithConversation())},
+			{Label: "a coding session", View: build(frameModel(t, width, 40))},
 		}
 	})
 }

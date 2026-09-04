@@ -992,7 +992,10 @@ func TestCancelDuringToolRun_IgnoresStaleResults(t *testing.T) {
 	}
 }
 
-func TestSlashHelp_ListsCommands(t *testing.T) {
+// /help lists what this session can do and not what shhh can do. A session
+// with nowhere to save has no /save row, and the reader is not sent to a
+// command that would answer that it is unavailable.
+func TestSlashHelp_ListsWhatThisSessionCanDo(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream)
 
@@ -1000,9 +1003,27 @@ func TestSlashHelp_ListsCommands(t *testing.T) {
 	if !handled {
 		t.Fatal("/help should be handled")
 	}
-	for _, want := range []string{"/save", "/load", "/chats", "/clear", "/exit"} {
+	for _, want := range []string{"/clear", "/exit"} {
 		if !strings.Contains(result, want) {
 			t.Errorf("help should mention %s", want)
+		}
+	}
+	for _, gone := range []string{"\n  /save", "\n  /load", "\n  /chats"} {
+		if strings.Contains(result, gone) {
+			t.Errorf("a session with no store should not offer %s", strings.TrimSpace(gone))
+		}
+	}
+
+	db, err := storage.OpenPath(t.TempDir() + "/test.db")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	saved := New(msgs, mockStream).WithDB(db)
+	_, stored := saved.handleSlashCommand("/help")
+	for _, want := range []string{"\n  /save", "\n  /load", "\n  /chats"} {
+		if !strings.Contains(stored, want) {
+			t.Errorf("a session with a store should offer %s", strings.TrimSpace(want))
 		}
 	}
 }

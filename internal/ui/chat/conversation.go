@@ -50,8 +50,9 @@ func (m *Model) codingSurfaces() bool { return !m.conversation }
 
 // unavailableCommand reports a command the session knows but has not
 // wired — a coding surface asked for in a conversation. The completion menu
-// already hides it; this is the answer when it is typed anyway, so the line
-// is not sent to the model as a question.
+// and /help both leave it out, since all three read the same table; this is
+// the answer when it is typed anyway, so the line is not sent to the model as
+// a question.
 func (m *Model) unavailableCommand(name string) bool {
 	if m.codingSurfaces() {
 		// The coding agent's commands answer for themselves when their

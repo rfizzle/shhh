@@ -238,7 +238,8 @@ func TestScaffold_CommandIsOfferedInTheRegistryAndTheHelp(t *testing.T) {
 	if !found {
 		t.Errorf("%s is not in the command registry, so the palette cannot offer it", scaffoldCommandName)
 	}
-	if !strings.Contains(helpText(), scaffoldCommandName) {
+	m := scaffoldModel(t, new(string), new(bool))
+	if !strings.Contains(helpText(&m), scaffoldCommandName) {
 		t.Errorf("/help does not list %s", scaffoldCommandName)
 	}
 }

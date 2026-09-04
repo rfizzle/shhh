@@ -318,7 +318,8 @@ func TestSlashUI_VerbositySetting(t *testing.T) {
 }
 
 func TestHelp_ListsUICommand(t *testing.T) {
-	if !strings.Contains(helpText(), "/ui") {
+	m := frameModel(t, 80, 30)
+	if !strings.Contains(helpText(&m), "/ui") {
 		t.Fatal("/help must list /ui")
 	}
 }

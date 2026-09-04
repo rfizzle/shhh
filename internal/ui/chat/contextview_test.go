@@ -249,7 +249,8 @@ func TestContext_IsOfferedInTheRegistryAndTheHelp(t *testing.T) {
 	if !found {
 		t.Error("/context is not in the command registry, so the palette cannot offer it")
 	}
-	if !strings.Contains(helpText(), "/context") {
+	m := frameModel(t, 80, 30)
+	if !strings.Contains(helpText(&m), "/context") {
 		t.Error("/help does not list /context")
 	}
 }

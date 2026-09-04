@@ -2,12 +2,14 @@ package chat
 
 // /help and the `?` key list.
 //
-// The command list is prose: what each command is for, in the words the
-// product uses for it. The key list is not — a key is declared once in the
-// register (internal/ui/keys), and a help text that spelled one out again
-// was a second place for it to be wrong. So the rows below name bindings and
-// the spellings come from the register, which is how a rebind moves the help
-// with the handler.
+// Neither list is written out here. A command is declared once in the
+// registry (complete.go) and a key once in the register
+// (internal/ui/keys), and a help text that spelled either out again was a
+// second place for it to be wrong — which is how a conversation came to
+// offer a command it would then refuse. So the rows below carry the prose
+// and nothing else: which commands this session has comes from the registry,
+// and how a key is spelled comes from the register, so a command that is not
+// wired and a rebind both move the help with the handler.
 //
 // What the register cannot hold is the paragraph beside a key: its own words
 // are a phrase for a one-line hint, and this list is where a reader who
@@ -23,109 +25,196 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
-func helpText() string {
-	return strings.TrimSpace(`Commands:
-  /help          Show this help
-  /clear         End this session and start another (also /new)
-  /paste [path]  Attach the clipboard — a screenshot, or files copied in a
-                 file manager — to your next message; /paste <path> attaches
-                 a file by name, /paste show <name> opens a staged image or
-                 paste full-pane, /paste drop <name> takes one back out and
-                 /paste clear drops what is staged (Ctrl+V)
-  /copy [code]   Copy the last response (or just its code blocks)
-  /run [n]       Run a code block from the last response (with confirmation)
-  /model [name]  Switch the model (bare /model opens an interactive picker)
-  /model default [name]   Show or persist the default model for new sessions
-  /model agents [name]    Show or persist the model sub-agents run on
-                 ("inherit" follows the session model)
-  /permissions   What runs without asking, and the permission mode that
-                 frames it (also /perms; was /mode)
-                 [name]   manual, accept-edits, auto or plan; bare opens a picker
-                 why      the latest auto-mode denial's reason
-                 grants   what this session has stopped asking about
-                 allow <commands|edits>   grant a whole category
-                 revoke [commands|edits]  take the grants back
-  /reasoning     How much thinking the model does before it answers:
-                 off (the default), low, medium or high — ctrl+t cycles them
-                 [level]           set it for this session (also /think)
-                 default [level]   show or persist the level new sessions
-                                   start on (provider.reasoning)
-  /context       The window as a meter, by category, with the tools itemised
-  /stats         Context occupancy breakdown and cumulative session spend
-  /step          Open the in-flight step's detail: every row in it shows its
-                 output body, bounded; run it again to close (/ui verbosity
-                 high is the same thing for every step at once)
-  /ui            Activity feed density, pane layout, monochrome and mouse:
-                 /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse <on|off>
-                 (low hides counts, med collapses rows, high expands rows;
-                  mouse is on by default so the wheel scrolls the transcript,
-                  click-drag selects it, and clicks open rows or answer keys.
-                  Off hands selection back to the terminal. Ctrl+X flips it and saves it)
-                 terminal  what this terminal answered when shhh asked what
-                           it can do: inline images, desktop notifications,
-                           focus events, cell size
-  /add-dir       The working scope: which directories this session may write
-                 to. Bare lists it; <path> adds one (contained commands can
-                 write there, and edits there stop asking about leaving the
-                 scope); drop <path> takes it back
-  /sandbox       Containment status and container sandboxes (doctor|scope|list|status|destroy <id>|prune)
-  /evidence      Tool-output evidence store: reduction stats and size (purge to clear)
-  /gate          Quality gate: run [suite] starts the project's checks in the background, result shows the verdict, on|off runs them as a turn closes
-  /ps            List the long-running processes this session owns (process tool)
-  /memory        Durable memories: list (default) · add [global] [kind] <text> ·
-                 edit <id> (opens the entry in your editor) · forget <id>
-  /todo          The project's backlog (.shhh/todo): bare opens a picker · show|edit <slug> ·
-                 add (reads this session into proposed items you accept or drop) ·
-                 add <text> · block <slug> [why] · open|done|drop <slug> ·
-                 run [slug|--next] works an item through to a commit in auto mode ·
-                 status · stop
-  /init          Scaffold this project's .shhh/ context file — the card lists
-                 what it would write, and nothing is written until you say so.
-                 The start screen offers it in a checkout that has no .shhh
-  /skills        The skills this session loaded (SKILL.md directories), and
-                 why any did not
-  /skill <name> [task]
-                 Activate a skill now: its instructions go to the model with
-                 your task, as the model would load them itself. /<name>
-                 does the same for a skill whose name is not a command
-  /agents        Agent manager: attach, steer, cancel, kill sub-agents (also ctrl+b)
-  /agents new [brief]
-                 Draft an agent profile from a sentence with the model's help:
-                 answer its questions if it has any, then keep, refine or
-                 discard the draft on a card. Bare offers starting points
-  /attach [name] Attach to an agent's session and steer it (bare /attach lists)
-  /detach        Back to your own session (also Esc while attached)
-  /plan          The approved plan as a checklist, with anything that has
-                 departed from it · save [name] writes the last plan/response
-                 to .shhh/plans/ · drop forgets an approved plan
-  /diff [path]   Show what this session changed, full screen, or one file's —
-                 read from the session's own changeset, so it works outside a
-                 git repository
-  /review [turn] Review what a turn changed: file list, hunks, staging per
-                 hunk (bare reviews the last turn that changed anything).
-                 Also [v] on a turn's changeset row. Nothing is applied.
-  /undo [turn]   Put back what a turn changed, from the session's own records
-                 (not git). Asks first, names anything that changed since,
-                 and is itself recorded as a turn. Also [u] on the row.
-  /compact       Continue from a summary plus the most recent turns
-  /rewind [n]    Rewind to before a user turn (bare /rewind picks interactively);
-                 the abandoned tail is kept as a branch. Conversation only —
-                 files on disk are not restored.
-  /branches [n]  Switch this session's branches (bare /branches opens a picker)
-  /save [name]   Save this chat
-  /load [name]   Load a saved chat (bare /load opens a picker)
-  /chats         Saved chats — opens the same picker; enter loads, [x]
-                 deletes (asks first), [r] renames
-  /exit          Quit (also /quit, /q)
+// helpText is the command list this session actually has: one row per
+// command the registry offers here, in the registry's order, with the
+// paragraph this file keeps beside it.
+//
+// The rows used to be one static string. That is how a conversation came to
+// print a `/todo` row and then answer that `/todo` was not part of the
+// session: the completion menu and the answer to a typed command were both
+// asked what this session had wired, and the help was the only one of the
+// three that was not. A reader who cannot type what the help offers has been
+// told the wrong thing about the session they are in.
+//
+// A command that needs the turn to be finished is still listed. It drops out
+// of the completion menu for the duration, because the menu is a thing you
+// press; the help is what the session can do, not what it can do this second.
+func helpText(m *Model) string {
+	var b strings.Builder
+	b.WriteString("Commands:")
+	for _, c := range slashCommands() {
+		if c.enabled != nil && !c.enabled(m) {
+			continue
+		}
+		head := helpHead(c)
+		for i, line := range strings.Split(helpCommands[c.name], "\n") {
+			if i > 0 {
+				head = ""
+			}
+			b.WriteString("\n  " + head +
+				strings.Repeat(" ", max(1, helpHeadWidth-utf8.RuneCountInString(head))) + line)
+		}
+	}
+	b.WriteString("\n\n" + helpMidTurn(m))
+	return b.String() + "\n\n" + helpKeysText()
+}
 
-Commands run while the agent is working — including while sub-agents are in
+// helpHeadWidth is the command column, and helpHead the row's entry in it:
+// the name with its argument hint where the two fit, and the name alone where
+// they do not — a command with more forms than fit in a column has them in
+// its paragraph, where there is room to say what each one is for.
+const helpHeadWidth = 15
+
+func helpHead(c slashCommand) string {
+	if c.args != "" && len(c.name)+1+len(c.args) < helpHeadWidth {
+		return c.name + " " + c.args
+	}
+	return c.name
+}
+
+// helpMidTurn is the paragraph under the list. It is here rather than on any
+// one row because it is about the list as a whole: what happens if you type a
+// command while the agent is still working.
+//
+// The exceptions are named off the registry rather than written out, because
+// a list of them that had to be kept in step by hand would be the same defect
+// this whole file is fixing one level down.
+func helpMidTurn(m *Model) string {
+	var names []string
+	for _, c := range slashCommands() {
+		if c.idleOnly == "" || (c.enabled != nil && !c.enabled(m)) {
+			continue
+		}
+		names = append(names, c.name)
+	}
+	return `Commands run while the agent is working — including while sub-agents are in
 flight, which is the only time they exist. The exceptions are the ones that
-rewrite or replace the running conversation (/compact, /rewind, /branches,
-/load, /chats, /model, /run); they say so and wait for the turn. /clear asks
-instead: ending the session over a turn that is not over cancels it, which is
-a question rather than a wait.
+rewrite the running conversation, or write into the tree the turn is working
+in (` + strings.Join(names, ", ") + `); they say so and wait for the turn.
+/clear asks instead: ending the session over a turn that is not over cancels
+it, which is a question rather than a wait.`
+}
 
-`) + "\n\n" + helpKeysText()
+// helpCommands is what each command's row says, by the name the registry
+// gives it. The registry decides which rows a session has; this decides what
+// each one is for, at the length a reader who could not find something needs
+// — which is longer than the line the completion menu shares with a name.
+//
+// A test holds the two together as sets, so a command added to the registry
+// with nothing here draws an empty row rather than quietly shipping one.
+var helpCommands = map[string]string{
+	"/help":  `Show this help`,
+	"/clear": `End this session and start another (also /new)`,
+	"/paste": `Attach the clipboard — a screenshot, or files copied in a
+file manager — to your next message; /paste <path> attaches
+a file by name, /paste show <name> opens a staged image or
+paste full-pane, /paste drop <name> takes one back out and
+/paste clear drops what is staged (Ctrl+V)`,
+	"/copy": `Copy the last response (or just its code blocks)`,
+	"/run":  `Run a code block from the last response (with confirmation)`,
+	"/model": `Switch the model (bare /model opens an interactive picker)
+default [name]   show or persist the default model for new
+                 sessions
+agents [name]    show or persist the model sub-agents run on
+                 ("inherit" follows the session model)`,
+	"/permissions": `What runs without asking, and the permission mode that
+frames it (also /perms; was /mode)
+[name]   manual, accept-edits, auto or plan; bare opens a picker
+why      the latest auto-mode denial's reason
+grants   what this session has stopped asking about
+allow <commands|edits>   grant a whole category
+revoke [commands|edits]  take the grants back`,
+	"/reasoning": `How much thinking the model does before it answers: off (the
+default), low, medium, high, xhigh or max — ctrl+t cycles them
+[level]           set it for this session (also /think)
+default [level]   show or persist the level new sessions
+                  start on (provider.reasoning)`,
+	"/context": `The window as a meter, by category, with the tools itemised`,
+	"/stats":   `Context occupancy breakdown and cumulative session spend`,
+	"/step": `Open the in-flight step's detail: every row in it shows its
+output body, bounded; run it again to close (/ui verbosity
+high is the same thing for every step at once)`,
+	"/status": `Where this session is: what it is working on, what it has
+spent, and whether the last few turns are still on the
+target you set it`,
+	"/trust": `Let this checkout's own skills, agent profiles, wordings and
+quality suites load. A clone can carry instructions, so
+nothing of a checkout's runs until you say so; "off"
+withdraws it and the next session starts without them`,
+	"/ui": `Activity feed density, pane layout, monochrome and mouse:
+/ui verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse <on|off>
+(low hides counts, med collapses rows, high expands rows;
+ mouse is on by default so the wheel scrolls the transcript,
+ click-drag selects it, and clicks open rows or answer keys.
+ Off hands selection back to the terminal. Ctrl+X flips it and saves it)
+terminal  what this terminal answered when shhh asked what
+          it can do: inline images, desktop notifications,
+          focus events, cell size`,
+	"/add-dir": `The working scope: which directories this session may write
+to. Bare lists it; <path> adds one (contained commands can
+write there, and edits there stop asking about leaving the
+scope); drop <path> takes it back`,
+	"/sandbox":  `Containment status and container sandboxes (doctor|scope|list|status|destroy <id>|prune)`,
+	"/evidence": `Tool-output evidence store: reduction stats and size (purge to clear)`,
+	"/gate":     `Quality gate: run [suite] starts the project's checks in the background, result shows the verdict, on|off runs them as a turn closes`,
+	"/ps":       `List the long-running processes this session owns (process tool)`,
+	scaffoldCommandName: `Scaffold this project's .shhh/ context file — the card lists
+what it would write, and nothing is written until you say so.
+The start screen offers it in a checkout that has no .shhh`,
+	"/skills": `The skills this session loaded (SKILL.md directories), and
+why any did not`,
+	"/mcp": `The MCP servers this session connected, and why any did not.
+trust <name> lets a server this checkout declares start from
+the next session on; distrust <name> withdraws that`,
+	"/skill": `Activate a skill now: /skill <name> [task] sends its
+instructions to the model with your task, as the model would
+load them itself. /<name> does the same for a skill whose
+name is not a command`,
+	"/secret": `Values a command may use and the model never sees: list names
+them, set NAME takes one from your environment (or NAME=value
+declares it outright), forget NAME drops it. What a command
+prints is scrubbed of them before it reaches the transcript`,
+	"/notes": `The session's shared notebook — what the agents wrote for
+each other, and what a backlog run wrote up. drop <n> removes
+one, clear empties it`,
+	"/memory": `Durable memories: list (default) · add [global] [kind] <text> ·
+edit <id> (opens the entry in your editor) · forget <id>`,
+	"/agents": `Agent manager: attach, steer, cancel, kill sub-agents (also ctrl+b)
+new [brief]      draft an agent profile from a sentence with
+                 the model's help: answer its questions if it
+                 has any, then keep, refine or discard the
+                 draft on a card. Bare offers starting points`,
+	"/attach": `Attach to an agent's session and steer it (bare /attach lists)`,
+	"/detach": `Back to your own session (also Esc while attached)`,
+	"/todo": `The project's backlog: bare opens a picker · show|edit <slug> ·
+add (reads this session into proposed items you accept or drop) ·
+add <text> · block <slug> [why] · open|done|drop <slug> ·
+new <text> · groom <slug> (reads an item against the tree and
+proposes the corrections) · run [slug|--next] works an item
+through its profile's run · sprint · status · stop`,
+	"/plan": `The approved plan as a checklist, with anything that has
+departed from it · save [name] writes the last plan/response
+to .shhh/plans/ · drop forgets an approved plan`,
+	"/diff": `Show what this session changed, full screen, or one file's —
+read from the session's own changeset, so it works outside a
+git repository`,
+	"/review": `Review what a turn changed: file list, hunks, staging per
+hunk (bare reviews the last turn that changed anything).
+Also [v] on a turn's changeset row. Nothing is applied.`,
+	"/undo": `Put back what a turn changed, from the session's own records
+(not git). Asks first, names anything that changed since,
+and is itself recorded as a turn. Also [u] on the row.`,
+	"/compact": `Continue from a summary plus the most recent turns`,
+	"/rewind": `Rewind to before a user turn (bare /rewind picks interactively);
+the abandoned tail is kept as a branch. Conversation only —
+files on disk are not restored.`,
+	"/branches": `Switch this session's branches: [n] by number, [name] by
+name, bare opens a picker`,
+	"/save": `Save this chat`,
+	"/load": `Load a saved chat (bare /load opens a picker)`,
+	"/chats": `Saved chats — opens the same picker; enter loads, [x]
+deletes (asks first), [r] renames`,
+	"/exit": `Quit (also /quit, /q)`,
 }
 
 // helpKeysText is /help's key section on its own: what `?` on an empty draft
