@@ -110,6 +110,35 @@ and comes back with nothing in it. That is why the calls around the turn ask
 for a level outright rather than leaving it unsaid, and why their ceilings are
 sized for a thought and an answer together.
 
+## Thinking goes back to the model that did it
+
+The reasoning behind a tool call happens before the call, and the round that
+reads the result is a different request. So the thinking has to travel, and
+every dialect that produces any is handed its own back untouched — unread,
+unedited, in whatever form it arrived in.
+
+Two of them insist. Anthropic's dialect refuses a follow-up whose assistant
+turn asked for a tool and dropped the signed thinking behind it, and Gemini's
+thought signature rides the call itself and means the same thing. The third,
+the Responses API, accepts the request either way, which is what makes it the
+one worth stating: nothing fails, the model simply works out again what it had
+already worked out, once per round, and the cost is paid in tokens and in the
+quality of a long turn rather than in an error.
+
+It is also the only one that has to be asked. That API can keep a response's
+reasoning on its own server, and shhh keeps nothing there — the whole
+conversation goes out every turn, so retention would buy nothing and would
+leave a copy of the session on somebody else's disk. The request asks for the
+thinking to come back sealed instead, and sends the sealed item out again
+ahead of the calls it explains. A round that comes back without one is sent
+none: an unsealed item is a pointer into a response nobody kept, and naming it
+is a refused request in place of a round that would merely have thought twice.
+
+Asking and sending back are one decision. A model that is not being asked to
+think is sent no thinking either — a conversation that crossed a switch to
+such a model still carries the thinking of the rounds before it, and handing
+that over would describe an item the model never wrote and cannot take.
+
 ## A bounded call runs on the small model
 
 The permission classifier, the session summary and the title it shares are

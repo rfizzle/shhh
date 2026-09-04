@@ -11,6 +11,11 @@ package provider
 // of a call the model has written while it is writing it. They are addressed
 // by the item they belong to, and the id a tool result is answered with is on
 // the item event that opened it, so the two are paired here.
+//
+// Reasoning items are read the same way and for a different reason: they are
+// the model's own thinking, and this API is the only one shhh speaks that
+// hands it back as a blob to be given back untouched rather than as anything
+// a reader could use.
 
 import (
 	"bufio"
@@ -63,6 +68,11 @@ type responseOutputItem struct {
 	CallID    string `json:"call_id"`
 	Name      string `json:"name"`
 	Arguments string `json:"arguments"`
+	// EncryptedContent is a reasoning item's thinking, sealed. A response
+	// the endpoint stores keeps its reasoning server-side and this field is
+	// empty; shhh stores none, so it asks for the sealed form by name and
+	// this is what comes back.
+	EncryptedContent string `json:"encrypted_content"`
 }
 
 type responseUsage struct {
@@ -100,6 +110,11 @@ func streamResponses(body io.ReadCloser, classify func(error) error) <-chan Stre
 		// that never opens the item sends no fragments anybody can place,
 		// and reports no progress rather than progress under a wrong id.
 		itemCalls := map[string]string{}
+		// Reasoning items seen on item events, the same fallback the calls
+		// have, deduplicated by item id because a stream is free to name an
+		// item on more than one event.
+		var reasoning []ReasoningBlock
+		reasoningSeen := map[string]bool{}
 
 		for scanner.Scan() {
 			payload, ok := sseData(scanner.Text())
@@ -135,6 +150,10 @@ func streamResponses(body io.ReadCloser, classify func(error) error) <-chan Stre
 					}
 					seen[call.ID] = call
 				}
+				if block, ok := reasoningFrom(ev.Item); ok && !reasoningSeen[block.Signature] {
+					reasoningSeen[block.Signature] = true
+					reasoning = append(reasoning, block)
+				}
 
 			case eventCompleted, eventIncomplete:
 				if ev.Response.Usage != nil {
@@ -148,24 +167,29 @@ func streamResponses(body io.ReadCloser, classify func(error) error) <-chan Stre
 				if len(calls) == 0 {
 					calls = orderedCalls(seen, order)
 				}
-				ch <- StreamEvent{ToolCalls: calls, Usage: usage, Done: true}
+				blocks := reasoningFromOutput(ev.Response.Output)
+				if len(blocks) == 0 {
+					blocks = reasoning
+				}
+				ch <- StreamEvent{ToolCalls: calls, Reasoning: blocks, Usage: usage, Done: true}
 				return
 
 			case eventFailed, eventError:
 				// The items that finished travel with the failure, so a
-				// dropped stream can be continued.
-				ch <- StreamEvent{ToolCalls: CompletedToolCalls(orderedCalls(seen, order)), Err: classify(responseFailure(ev)), Done: true}
+				// dropped stream can be continued — the thinking behind them
+				// included, since continuing is what sends them again.
+				ch <- StreamEvent{ToolCalls: CompletedToolCalls(orderedCalls(seen, order)), Reasoning: reasoning, Err: classify(responseFailure(ev)), Done: true}
 				return
 			}
 		}
 
 		if err := scanner.Err(); err != nil {
-			ch <- StreamEvent{ToolCalls: CompletedToolCalls(orderedCalls(seen, order)), Err: classify(err), Done: true}
+			ch <- StreamEvent{ToolCalls: CompletedToolCalls(orderedCalls(seen, order)), Reasoning: reasoning, Err: classify(err), Done: true}
 			return
 		}
 		// The stream ended without a terminal event: finish with whatever it
 		// did deliver rather than dropping a completed turn.
-		ch <- StreamEvent{ToolCalls: orderedCalls(seen, order), Usage: usage, Done: true}
+		ch <- StreamEvent{ToolCalls: orderedCalls(seen, order), Reasoning: reasoning, Usage: usage, Done: true}
 	}()
 	return ch
 }
@@ -189,6 +213,33 @@ func toolCallFrom(item *responseOutputItem) (ToolCall, bool) {
 		return ToolCall{}, false
 	}
 	return ToolCall{ID: item.CallID, Name: item.Name, Arguments: item.Arguments}, true
+}
+
+// reasoningFrom reads a reasoning item. There is nothing readable on one:
+// shhh asks for no summary, so the block carries the item's id and its sealed
+// thinking and no text at all.
+//
+// An item with no sealed thinking is not one that can be replayed. It is an
+// identifier for a response the endpoint was told not to keep, and sending it
+// back names an item the server has never heard of — a refused request in
+// place of a round that would merely have thought again.
+func reasoningFrom(item *responseOutputItem) (ReasoningBlock, bool) {
+	if item == nil || item.Type != "reasoning" || item.ID == "" || item.EncryptedContent == "" {
+		return ReasoningBlock{}, false
+	}
+	return ReasoningBlock{Signature: item.ID, Redacted: item.EncryptedContent}, true
+}
+
+// reasoningFromOutput reads the finished response's reasoning items, in the
+// order the model produced them.
+func reasoningFromOutput(output []responseOutputItem) []ReasoningBlock {
+	var blocks []ReasoningBlock
+	for i := range output {
+		if block, ok := reasoningFrom(&output[i]); ok {
+			blocks = append(blocks, block)
+		}
+	}
+	return blocks
 }
 
 // toolCallsFromOutput reads the finished response's output list, which holds

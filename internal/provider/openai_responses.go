@@ -28,6 +28,10 @@ const (
 	// cheapResponsesModel is the same nano rung the chat-completions
 	// provider names; this API serves it too.
 	cheapResponsesModel = "gpt-5.4-nano"
+	// includeEncryptedReasoning asks for the round's thinking to come back
+	// sealed. It is the only way to get it from a request that stores
+	// nothing, and the whole of what makes reasoning replayable here.
+	includeEncryptedReasoning = "reasoning.encrypted_content"
 )
 
 // OpenAIResponses speaks the Responses API over a plain HTTP client, so a
@@ -95,6 +99,10 @@ type responsesRequest struct {
 	ToolChoice   string          `json:"tool_choice,omitempty"`
 	Temperature  *float64        `json:"temperature,omitempty"`
 	MaxOutput    int             `json:"max_output_tokens,omitempty"`
+	// Include names the parts of the answer that are otherwise left out. It
+	// travels with the reasoning object and for the same reason: a model
+	// with no reasoning to seal is a model that rejects being asked for it.
+	Include []string `json:"include,omitempty"`
 	// Reasoning is sent only when the session asked for a level:
 	// the Responses API serves non-reasoning models too, and they reject it.
 	Reasoning *responsesReasoning `json:"reasoning,omitempty"`
@@ -128,13 +136,23 @@ type responsesReasoning struct {
 // responseItem is one element of the flat input list: a message, a call the
 // assistant made, or the output that call produced.
 type responseItem struct {
-	Type      string            `json:"type"`
+	Type string `json:"type"`
+	// ID is the item's own id, which only a replayed reasoning item carries:
+	// the API asks for such an item back as it was handed over, and the id is
+	// part of it.
+	ID        string            `json:"id,omitempty"`
 	Role      string            `json:"role,omitempty"`
 	Content   []responseContent `json:"content,omitempty"`
 	CallID    string            `json:"call_id,omitempty"`
 	Name      string            `json:"name,omitempty"`
 	Arguments string            `json:"arguments,omitempty"`
 	Output    string            `json:"output,omitempty"`
+	// Summary and EncryptedContent are a reasoning item's two halves. shhh
+	// asks for no summary, so the readable half goes back as the empty list
+	// the item's shape still requires, and the sealed half goes back as it
+	// arrived.
+	Summary          json.RawMessage `json:"summary,omitempty"`
+	EncryptedContent string          `json:"encrypted_content,omitempty"`
 }
 
 type responseContent struct {
@@ -164,14 +182,25 @@ func (o *OpenAIResponses) StreamCompletion(ctx context.Context, messages []Messa
 	if opts.Model != "" {
 		model = opts.Model
 	}
-	input, instructions := toResponseItems(messages)
+	// Fitted to the model: a rung it lacks becomes the highest it has, and
+	// a model with no reasoning gets no field.
+	effort := opts.Effort.Fit(CapabilitiesFor(model)).OpenAIEffort()
+	// Asking for the sealed thinking and sending it back are one decision. A
+	// request that did not ask has nothing sealed to send, and a model with
+	// no reasoning refuses a reasoning item outright — which is what a
+	// history carried across a switch to such a model would hand it.
+	input, instructions := toResponseItems(messages, effort != "")
 	req := responsesRequest{
 		Model:        model,
 		Input:        input,
 		Instructions: instructions,
 		Stream:       true,
 		// shhh sends the whole conversation every turn, so there is nothing
-		// to gain from server-side retention.
+		// to gain from server-side retention — with one exception, and it is
+		// why the request asks for the sealed reasoning below. The model's
+		// own thinking is the one part of a round the harness cannot rebuild
+		// from its own history, so what retention would have kept has to come
+		// back on the response instead and go out again on the next request.
 		Store:       false,
 		Temperature: opts.Temperature,
 		MaxOutput:   opts.MaxTokens,
@@ -190,10 +219,9 @@ func (o *OpenAIResponses) StreamCompletion(ctx context.Context, messages []Messa
 		req.Tools = toResponsesTools(opts.Tools)
 		req.ToolChoice = opts.ToolChoice
 	}
-	// Fitted to the model: a rung it lacks becomes the highest it has, and
-	// a model with no reasoning gets no field.
-	if effort := opts.Effort.Fit(CapabilitiesFor(req.Model)).OpenAIEffort(); effort != "" {
+	if effort != "" {
 		req.Reasoning = &responsesReasoning{Effort: effort}
+		req.Include = []string{includeEncryptedReasoning}
 	}
 	body, err := json.Marshal(req)
 	if err != nil {
@@ -223,7 +251,10 @@ func (o *OpenAIResponses) StreamCompletion(ctx context.Context, messages []Messa
 
 // toResponseItems flattens shhh's messages into the Responses input list,
 // lifting the system prompt into `instructions` where the API expects it.
-func toResponseItems(messages []Message) ([]responseItem, string) {
+// replayReasoning says whether the assistant turns' thinking goes back with
+// them, which is the caller's judgement because it depends on the model
+// rather than on the conversation.
+func toResponseItems(messages []Message, replayReasoning bool) ([]responseItem, string) {
 	var items []responseItem
 	var instructions []string
 	for _, m := range messages {
@@ -243,6 +274,26 @@ func toResponseItems(messages []Message) ([]responseItem, string) {
 				Content: content,
 			})
 		case RoleAssistant:
+			// Thinking leads the turn, in the order and the form it arrived.
+			// Nothing here refuses a request that dropped it, which is what
+			// makes it easy to drop: the model derives the plan behind its
+			// own calls again, every round, from the tool results alone.
+			// See docs/capabilities/providers.md#thinking-goes-back-to-the-model-that-did-it.
+			for _, r := range m.Reasoning {
+				// Both halves or nothing. A block missing either is one
+				// another dialect produced — a session that changed provider
+				// mid-conversation carries its old thinking with it — and
+				// sending it describes an item this endpoint never issued.
+				if !replayReasoning || r.Signature == "" || r.Redacted == "" {
+					continue
+				}
+				items = append(items, responseItem{
+					Type:             "reasoning",
+					ID:               r.Signature,
+					Summary:          json.RawMessage("[]"),
+					EncryptedContent: r.Redacted,
+				})
+			}
 			if m.Content != "" {
 				items = append(items, responseItem{
 					Type:    "message",

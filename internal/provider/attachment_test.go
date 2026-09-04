@@ -108,7 +108,7 @@ func TestToResponseItems_ImageAndDocumentParts(t *testing.T) {
 		Role:        RoleUser,
 		Content:     "read this",
 		Attachments: []Attachment{testPNG, pdf},
-	}})
+	}}, false)
 	if len(items) != 1 || len(items[0].Content) != 3 {
 		t.Fatalf("got %#v", items)
 	}

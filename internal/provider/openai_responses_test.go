@@ -407,3 +407,207 @@ func TestOpenAIResponses_SchemaGoesUnderTheTextFormat(t *testing.T) {
 		t.Errorf("the tool path must be untouched, got %+v / %q", withTools.Tools, withTools.ToolChoice)
 	}
 }
+
+// This dialect stores nothing at shhh's request, so a round's thinking only
+// survives if it is asked for sealed and handed straight back.
+func TestOpenAIResponses_CapturesTheSealedReasoning(t *testing.T) {
+	var got responsesRequest
+	srv := responsesServer(t, []string{
+		`data: {"type":"response.output_item.done","item":{"type":"reasoning","id":"rs_1","encrypted_content":"sealed-1"}}`,
+		`data: {"type":"response.output_item.done","item":{"type":"function_call","id":"fc_1","call_id":"call_1","name":"bash","arguments":"{}"}}`,
+		`data: {"type":"response.completed","response":{"status":"completed","output":[` +
+			`{"type":"reasoning","id":"rs_1","encrypted_content":"sealed-1"},` +
+			`{"type":"reasoning","id":"rs_2"},` +
+			`{"type":"function_call","call_id":"call_1","name":"bash","arguments":"{}"}]}}`,
+	}, &got)
+
+	p := newTestResponses(srv.URL, "gpt-5.6-terra")
+	ch, err := p.StreamCompletion(context.Background(), []Message{{Role: RoleUser, Content: "hi"}},
+		CompletionOpts{Effort: EffortHigh})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	var blocks []ReasoningBlock
+	for ev := range ch {
+		if ev.Err != nil {
+			t.Fatalf("unexpected stream error: %v", ev.Err)
+		}
+		if len(ev.Reasoning) > 0 {
+			blocks = ev.Reasoning
+		}
+	}
+
+	// Sealing has to be asked for by name; without it the item comes back as
+	// an id addressing a response nothing kept.
+	if len(got.Include) != 1 || got.Include[0] != includeEncryptedReasoning {
+		t.Fatalf("expected the sealed reasoning to be asked for, got %v", got.Include)
+	}
+	// rs_2 arrived unsealed and is not replayable, so it is not carried.
+	if len(blocks) != 1 {
+		t.Fatalf("expected one replayable block, got %+v", blocks)
+	}
+	if blocks[0].Signature != "rs_1" || blocks[0].Redacted != "sealed-1" || blocks[0].Text != "" {
+		t.Fatalf("unexpected block: %+v", blocks[0])
+	}
+}
+
+// A stream that broke hands back what it did deliver so the round can be
+// continued, and what it delivered includes the thinking behind the calls.
+func TestOpenAIResponses_KeepsReasoningThroughADrop(t *testing.T) {
+	// The item is named twice on purpose: one item is one block however many
+	// events mention it.
+	items := []string{
+		`data: {"type":"response.output_item.done","item":{"type":"reasoning","id":"rs_1","encrypted_content":"sealed-1"}}`,
+		`data: {"type":"response.output_item.done","item":{"type":"reasoning","id":"rs_1","encrypted_content":"sealed-1"}}`,
+	}
+	for name, events := range map[string][]string{
+		"no terminal event": items,
+		"a failure":         append(append([]string{}, items...), `data: {"type":"response.failed","response":{"status":"failed","error":{"message":"upstream closed"}}}`),
+	} {
+		t.Run(name, func(t *testing.T) {
+			p := newTestResponses(responsesServer(t, events, nil).URL, "gpt-5.6-terra")
+			ch, err := p.StreamCompletion(context.Background(), []Message{{Role: RoleUser, Content: "hi"}},
+				CompletionOpts{Effort: EffortHigh})
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			var blocks []ReasoningBlock
+			for ev := range ch {
+				if len(ev.Reasoning) > 0 {
+					blocks = ev.Reasoning
+				}
+			}
+			if len(blocks) != 1 || blocks[0].Signature != "rs_1" || blocks[0].Redacted != "sealed-1" {
+				t.Fatalf("expected the one block the stream delivered, got %+v", blocks)
+			}
+		})
+	}
+}
+
+func TestOpenAIResponses_ReplaysReasoningAheadOfItsCalls(t *testing.T) {
+	var got responsesRequest
+	srv := responsesServer(t, []string{
+		`data: {"type":"response.completed","response":{"status":"completed","output":[]}}`,
+	}, &got)
+
+	p := newTestResponses(srv.URL, "gpt-5.6-terra")
+	ch, err := p.StreamCompletion(context.Background(), []Message{
+		{Role: RoleUser, Content: "list files"},
+		{
+			Role:    RoleAssistant,
+			Content: "on it",
+			Reasoning: []ReasoningBlock{
+				{Signature: "rs_1", Redacted: "sealed-1"},
+				// The signed-text form another dialect produces: nothing
+				// here can take it back, so it must not go out.
+				{Signature: "sig", Text: "thinking out loud"},
+			},
+			ToolCalls: []ToolCall{{ID: "call_1", Name: "bash", Arguments: `{"cmd":"ls"}`}},
+		},
+		{Role: RoleTool, ToolCallID: "call_1", Content: "go.mod"},
+	}, CompletionOpts{Effort: EffortHigh})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, _, _, err := collect(t, ch); err != nil {
+		t.Fatalf("unexpected stream error: %v", err)
+	}
+
+	var types []string
+	for _, item := range got.Input {
+		types = append(types, item.Type)
+	}
+	want := []string{"message", "reasoning", "message", "function_call", "function_call_output"}
+	if strings.Join(types, ",") != strings.Join(want, ",") {
+		t.Fatalf("thinking leads the turn it explains: got %v, want %v", types, want)
+	}
+	item := got.Input[1]
+	if item.ID != "rs_1" || item.EncryptedContent != "sealed-1" {
+		t.Fatalf("the item goes back as it arrived, got %+v", item)
+	}
+	// The readable half is empty and still required.
+	if string(item.Summary) != "[]" {
+		t.Fatalf("expected an empty summary, got %q", string(item.Summary))
+	}
+}
+
+// A session that switched to a model with no reasoning still carries the
+// thinking of the rounds before the switch. It must not go out: the model
+// that would receive it never issued it and does not take the item.
+func TestOpenAIResponses_SendsNoReasoningToAModelWithout(t *testing.T) {
+	var got responsesRequest
+	srv := responsesServer(t, []string{
+		`data: {"type":"response.completed","response":{"status":"completed","output":[]}}`,
+	}, &got)
+
+	p := newTestResponses(srv.URL, "gpt-4.1")
+	ch, err := p.StreamCompletion(context.Background(), []Message{
+		{Role: RoleUser, Content: "list files"},
+		{
+			Role:      RoleAssistant,
+			Reasoning: []ReasoningBlock{{Signature: "rs_1", Redacted: "sealed-1"}},
+			ToolCalls: []ToolCall{{ID: "call_1", Name: "bash", Arguments: `{"cmd":"ls"}`}},
+		},
+		{Role: RoleTool, ToolCallID: "call_1", Content: "go.mod"},
+	}, CompletionOpts{Effort: EffortHigh})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, _, _, err := collect(t, ch); err != nil {
+		t.Fatalf("unexpected stream error: %v", err)
+	}
+
+	if got.Reasoning != nil || got.Include != nil {
+		t.Fatalf("this model is asked to think about nothing: %+v / %v", got.Reasoning, got.Include)
+	}
+	for _, item := range got.Input {
+		if item.Type == "reasoning" {
+			t.Fatalf("a reasoning item reached a model without reasoning: %+v", item)
+		}
+	}
+}
+
+// A model with nothing to replay — a non-reasoning one, or a conversation
+// resumed from a store written before any of this — is sent the request it
+// was sent before.
+func TestOpenAIResponses_SendsNothingExtraWithoutReasoning(t *testing.T) {
+	var got map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.Header().Set("Content-Type", "text/event-stream")
+		fmt.Fprint(w, "data: {\"type\":\"response.completed\",\"response\":{\"status\":\"completed\"}}\n\n")
+	}))
+	defer srv.Close()
+
+	p := newTestResponses(srv.URL, "gpt-4.1")
+	ch, err := p.StreamCompletion(context.Background(), []Message{
+		{Role: RoleUser, Content: "list files"},
+		{Role: RoleAssistant, ToolCalls: []ToolCall{{ID: "call_1", Name: "bash", Arguments: `{"cmd":"ls"}`}}},
+		{Role: RoleTool, ToolCallID: "call_1", Content: "go.mod"},
+	}, CompletionOpts{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, _, _, err := collect(t, ch); err != nil {
+		t.Fatalf("unexpected stream error: %v", err)
+	}
+
+	if _, present := got["include"]; present {
+		t.Fatalf("a model that seals no thinking must not be asked for any, got %v", got["include"])
+	}
+	input, _ := got["input"].([]any)
+	if len(input) != 3 {
+		t.Fatalf("expected the three items of the old shape, got %v", input)
+	}
+	for _, raw := range input {
+		item, _ := raw.(map[string]any)
+		if item["type"] == "reasoning" {
+			t.Fatalf("nothing to replay, yet a reasoning item went out: %v", item)
+		}
+		for _, key := range []string{"id", "summary", "encrypted_content"} {
+			if _, present := item[key]; present {
+				t.Fatalf("%q should be omitted on a %v item, got %v", key, item["type"], item[key])
+			}
+		}
+	}
+}
