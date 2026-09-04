@@ -160,6 +160,12 @@ func (a *Anthropic) StreamCompletion(ctx context.Context, messages []Message, op
 
 		stream := a.client.Messages.NewStreaming(ctx, params)
 		accumulated := anthropic.Message{}
+		// The argument fragments as they arrived, per content-block index.
+		// The SDK's own accumulation cannot answer the one question a
+		// truncated reply asks of it — see anthropicWholeCalls — so the
+		// bytes are kept here as well, and read only when the model stopped
+		// at its ceiling.
+		fragments := map[int64]string{}
 		for stream.Next() {
 			event := stream.Current()
 			if err := accumulated.Accumulate(event); err != nil {
@@ -183,6 +189,7 @@ func (a *Anthropic) StreamCompletion(ctx context.Context, messages []Message, op
 					// this dialect names a block once, when it starts, and
 					// every fragment after that carries only the JSON.
 					if id := anthropicBlockID(accumulated, delta.Index); id != "" && d.PartialJSON != "" {
+						fragments[delta.Index] += d.PartialJSON
 						ch <- StreamEvent{ToolCallDelta: &ToolCallDelta{ID: id, Arguments: d.PartialJSON}}
 					}
 				case anthropic.ThinkingDelta:
@@ -226,15 +233,75 @@ func (a *Anthropic) StreamCompletion(ctx context.Context, messages []Message, op
 			CacheCreationTokens: created,
 		}
 
+		stop := anthropicStop(accumulated.StopReason)
+		calls := anthropicToolCalls(accumulated)
+		if stop == StopLength {
+			// A reply cut at the ceiling may have stopped in the middle of
+			// writing a call, and this dialect needs its own reading of what
+			// survived that.
+			calls = anthropicWholeCalls(accumulated, fragments)
+		}
 		ch <- StreamEvent{
-			ToolCalls: anthropicToolCalls(accumulated),
+			ToolCalls: calls,
 			Reasoning: anthropicReasoning(accumulated),
 			Usage:     usage,
+			Stop:      stop,
 			Done:      true,
 		}
 	}()
 
 	return ch, nil
+}
+
+// anthropicStop maps this dialect's stop reason onto shhh's closed set. The
+// three it names that the set does not — a stop sequence, a paused turn, a
+// conversation past the model's window — are endings nothing above acts on
+// differently; the last of them arrives as a classified failure rather than
+// as a reply on every path that can reach it.
+//
+// The empty reason is a stream that ended before the delta carrying it, which
+// is every stream that broke — and those come back as failures, not as this.
+func anthropicStop(reason anthropic.StopReason) StopReason {
+	switch reason {
+	case anthropic.StopReasonEndTurn, "":
+		return StopEnd
+	case anthropic.StopReasonToolUse:
+		return StopTool
+	case anthropic.StopReasonMaxTokens:
+		return StopLength
+	case anthropic.StopReasonRefusal:
+		return StopRefusal
+	default:
+		return StopOther
+	}
+}
+
+// anthropicWholeCalls is the tool calls a reply cut off at the model's output
+// ceiling may still be acted on: the ones whose arguments the model finished
+// writing.
+//
+// It cannot be CompletedToolCalls, and that is the trap. This SDK folds a
+// cut-off argument string away as it accumulates — a block whose JSON never
+// closed comes back with `{}` for its input, which is a valid JSON object and
+// indistinguishable from a call that genuinely takes no arguments. Handed
+// that, the filter every other dialect uses passes a `write_file` with no
+// path as a request the model made. So the fragments are judged as they
+// arrived instead: a block that received argument bytes that do not parse is
+// a call the ceiling landed inside of, and it is dropped.
+// See docs/capabilities/providers.md#a-reply-says-why-it-stopped.
+func anthropicWholeCalls(accumulated anthropic.Message, fragments map[int64]string) []ToolCall {
+	var calls []ToolCall
+	for i, block := range accumulated.Content {
+		tu, ok := block.AsAny().(anthropic.ToolUseBlock)
+		if !ok {
+			continue
+		}
+		if frag, sent := fragments[int64(i)]; sent && !wholeArguments(frag) {
+			continue
+		}
+		calls = append(calls, ToolCall{ID: tu.ID, Name: tu.Name, Arguments: tu.JSON.Input.Raw()})
+	}
+	return CompletedToolCalls(calls)
 }
 
 // anthropicToolCalls reads the tool-use blocks out of the accumulated

@@ -10,6 +10,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/anthropics/anthropic-sdk-go"
 )
 
 func TestNewAnthropic_RequiresKey(t *testing.T) {
@@ -748,5 +750,79 @@ func TestAnthropic_SchemaRidesTheOutputConfigBesideTheEffort(t *testing.T) {
 	}
 	if _, ok := body["tools"]; !ok {
 		t.Error("the tool path must be untouched")
+	}
+}
+
+func TestAnthropicStop_MapsEveryReasonTheDialectNames(t *testing.T) {
+	cases := []struct {
+		reason anthropic.StopReason
+		want   StopReason
+	}{
+		{anthropic.StopReasonEndTurn, StopEnd},
+		{anthropic.StopReasonToolUse, StopTool},
+		{anthropic.StopReasonMaxTokens, StopLength},
+		{anthropic.StopReasonRefusal, StopRefusal},
+		{anthropic.StopReasonStopSequence, StopOther},
+		{anthropic.StopReasonPauseTurn, StopOther},
+		{anthropic.StopReasonModelContextWindowExceeded, StopOther},
+		// A reason this dialect has not invented yet, and a stream that
+		// ended before the delta that carries one.
+		{anthropic.StopReason("something_new"), StopOther},
+		{"", StopEnd},
+	}
+	for _, tc := range cases {
+		if got := anthropicStop(tc.reason); got != tc.want {
+			t.Errorf("anthropicStop(%q) = %q, want %q", tc.reason, got, tc.want)
+		}
+	}
+}
+
+func TestAnthropic_CeilingKeepsTheTextAndDropsTheUnfinishedCall(t *testing.T) {
+	srv := anthropicSSEServer(t, func(w http.ResponseWriter) {
+		sseEvent(w, "message_start", `{"type":"message_start","message":{"id":"msg_1","type":"message","role":"assistant","content":[],"model":"claude-opus-5","stop_reason":null,"usage":{"input_tokens":12,"output_tokens":1}}}`)
+		sseEvent(w, "content_block_start", `{"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}`)
+		sseEvent(w, "content_block_delta", `{"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"I will rewrite the file"}}`)
+		sseEvent(w, "content_block_stop", `{"type":"content_block_stop","index":0}`)
+		// One call the model finished writing.
+		sseEvent(w, "content_block_start", `{"type":"content_block_start","index":1,"content_block":{"type":"tool_use","id":"call_1","name":"read_file","input":{}}}`)
+		sseEvent(w, "content_block_delta", `{"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":"{\"path\":\"a.go\"}"}}`)
+		sseEvent(w, "content_block_stop", `{"type":"content_block_stop","index":1}`)
+		// And one the ceiling landed inside of: the block opened, the
+		// arguments never closed.
+		sseEvent(w, "content_block_start", `{"type":"content_block_start","index":2,"content_block":{"type":"tool_use","id":"call_2","name":"write_file","input":{}}}`)
+		sseEvent(w, "content_block_delta", `{"type":"content_block_delta","index":2,"delta":{"type":"input_json_delta","partial_json":"{\"path\":\"a.go\",\"content\":\"package"}}`)
+		sseEvent(w, "content_block_stop", `{"type":"content_block_stop","index":2}`)
+		sseEvent(w, "message_delta", `{"type":"message_delta","delta":{"stop_reason":"max_tokens","stop_sequence":null},"usage":{"output_tokens":4096}}`)
+		sseEvent(w, "message_stop", `{"type":"message_stop"}`)
+	})
+	defer srv.Close()
+
+	p, err := NewAnthropic(ResolveOpts{APIKey: "sk-test", BaseURL: srv.URL})
+	if err != nil {
+		t.Fatal(err)
+	}
+	events, err := p.StreamCompletion(context.Background(), []Message{{Role: RoleUser, Content: "rewrite it"}}, CompletionOpts{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var text string
+	var final StreamEvent
+	for ev := range events {
+		text += ev.Token
+		if ev.Err != nil {
+			t.Fatalf("stream error: %v", ev.Err)
+		}
+		if ev.Done {
+			final = ev
+		}
+	}
+	if text != "I will rewrite the file" {
+		t.Errorf("the words the model wrote are kept, got %q", text)
+	}
+	if final.Stop != StopLength {
+		t.Errorf("stop = %q, want %q", final.Stop, StopLength)
+	}
+	if len(final.ToolCalls) != 1 || final.ToolCalls[0].ID != "call_1" {
+		t.Errorf("the finished call survives and half a JSON object does not, got %+v", final.ToolCalls)
 	}
 }

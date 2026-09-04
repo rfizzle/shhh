@@ -188,7 +188,14 @@ type tokenMsg struct {
 	// that arrived in the same batch, so it isn't lost when tokens are drained.
 	final tea.Msg
 }
-type doneMsg struct{ usage *provider.Usage }
+type doneMsg struct {
+	usage *provider.Usage
+	// stop is why the model stopped writing. It matters here for one value:
+	// a reply cut off at the output ceiling is half an answer, and the
+	// session offers to have it finished rather than filing it as the whole
+	// one (resume.go).
+	stop provider.StopReason
+}
 
 // streamErrMsg carries a failed stream back to the session. calls are the
 // tool calls the model had *finished* writing before the wire broke, which is
@@ -209,6 +216,10 @@ type toolCallsMsg struct {
 	calls     []provider.ToolCall
 	usage     *provider.Usage
 	reasoning []provider.ReasoningBlock
+	// stop is why the model stopped writing. A round of calls that ended at
+	// the output ceiling has lost whatever the model had not finished
+	// writing, and the round runs what survived under a notice saying so.
+	stop provider.StopReason
 }
 type toolResultsMsg struct {
 	runID   int
@@ -257,7 +268,10 @@ const (
 	//. It is a row, not a modal, because it is part of the turn.
 	entryFailure
 	// entryStreamDrop: a reply that stopped halfway, rendered as the `stream`
-	// recovery row and holding the partial it offers to continue from.
+	// recovery row and holding the partial it offers to continue from. Both
+	// ways a reply stops halfway draw it — a wire that broke and a model that
+	// filled its output budget — because what is on offer is the same offer
+	// (resume.go).
 	entryStreamDrop
 	// entryRoundPause: a turn that stopped at its tool-round ceiling,
 	// rendered as the `rounds` recovery row. It stands in for
@@ -2408,7 +2422,22 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.finishCompact()
 		}
 		hadText := m.streaming != ""
+		text := m.streaming
 		m.finishStreaming()
+		// A reply that stopped at the output ceiling is not the model's whole
+		// answer, and nothing that follows a finished turn should treat it as
+		// one: no plan to approve, no queued follow-up sent against half an
+		// answer. What it gets instead is the offer to have it finished
+		// (resume.go).
+		if msg.stop == provider.StopLength {
+			if hadText {
+				return m.truncatedReply(text)
+			}
+			// The budget went entirely on a call the ceiling then cut, so
+			// there is no sentence to offer to finish — only the fact that
+			// the turn is ending on nothing rather than on an answer.
+			m.truncatedRound()
+		}
 		// A steering message queued while the model was responding becomes the
 		// next user turn immediately.
 		if cmd := m.dispatchSteering(); cmd != nil {
@@ -2460,6 +2489,15 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// This is the announcement a step is titled by, so it is where an
 			// approved plan's step list joins the transcript.
 			m.appendEntry(m.stampStep(entry{kind: entryAssistant, text: m.streaming}))
+		}
+		if msg.stop == provider.StopLength {
+			// The round asked for tools and ran out of budget while it was
+			// still writing them. The calls that were finished are whole and
+			// run as usual; the one the ceiling landed inside of never
+			// reaches here (internal/provider/partial.go), and this is the
+			// line that says so rather than letting a round quietly lose one.
+			// It goes under the announcement, which is where it happened.
+			m.truncatedRound()
 		}
 		m.streaming = ""
 		m.events = nil
@@ -3418,10 +3456,10 @@ func terminalMsg(ev provider.StreamEvent) tea.Msg {
 		return streamErrMsg{err: ev.Err, calls: ev.ToolCalls, reasoning: ev.Reasoning}
 	}
 	if len(ev.ToolCalls) > 0 {
-		return toolCallsMsg{calls: ev.ToolCalls, usage: ev.Usage, reasoning: ev.Reasoning}
+		return toolCallsMsg{calls: ev.ToolCalls, usage: ev.Usage, reasoning: ev.Reasoning, stop: ev.Stop}
 	}
 	if ev.Done {
-		return doneMsg{usage: ev.Usage}
+		return doneMsg{usage: ev.Usage, stop: ev.Stop}
 	}
 	return nil
 }

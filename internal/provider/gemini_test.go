@@ -550,3 +550,36 @@ func TestApplyGeminiRequestShape(t *testing.T) {
 		t.Errorf("mode = %v", config.ToolConfig.FunctionCallingConfig.Mode)
 	}
 }
+
+func TestGeminiStop_MapsEveryReasonTheDialectNames(t *testing.T) {
+	cases := []struct {
+		reason genai.FinishReason
+		want   StopReason
+	}{
+		{genai.FinishReasonStop, StopEnd},
+		{genai.FinishReasonUnspecified, StopEnd},
+		{genai.FinishReasonMaxTokens, StopLength},
+		// Every way this dialect says the model declined, including the
+		// per-modality copies it grew for images.
+		{genai.FinishReasonSafety, StopRefusal},
+		{genai.FinishReasonRecitation, StopRefusal},
+		{genai.FinishReasonBlocklist, StopRefusal},
+		{genai.FinishReasonProhibitedContent, StopRefusal},
+		{genai.FinishReasonSPII, StopRefusal},
+		{genai.FinishReasonImageSafety, StopRefusal},
+		{genai.FinishReasonImageProhibitedContent, StopRefusal},
+		{genai.FinishReasonImageRecitation, StopRefusal},
+		// Endings nothing above acts on differently, and a candidate that
+		// has not finished and so names none.
+		{genai.FinishReasonMalformedFunctionCall, StopOther},
+		{genai.FinishReasonLanguage, StopOther},
+		{genai.FinishReasonOther, StopOther},
+		{genai.FinishReason("SOMETHING_NEW"), StopOther},
+		{"", StopEnd},
+	}
+	for _, tc := range cases {
+		if got := geminiStop(tc.reason); got != tc.want {
+			t.Errorf("geminiStop(%q) = %q, want %q", tc.reason, got, tc.want)
+		}
+	}
+}

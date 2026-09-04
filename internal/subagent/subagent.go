@@ -1804,6 +1804,14 @@ func (s *Supervisor) run(c *child) {
 			}
 			s.emitUpdate(c)
 		},
+		// A child that reached the model's output ceiling says so on its
+		// lane, which is the only place anyone is looking: an answer that
+		// came back in two halves, or a round that lost a call it had not
+		// finished writing, is a different reading from a clean one.
+		OnContinue: func(notice string) {
+			c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: notice})
+			s.emitUpdate(c)
+		},
 		OnIntervene: func(iv agent.Intervention) {
 			c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: iv.Notice})
 			signal(observe.SignalIntervene, iv.Kind.Signal())

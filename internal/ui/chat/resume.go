@@ -79,6 +79,14 @@ type streamResume struct {
 	// because continuing from a partial the conversation has already moved
 	// past would send the model its own reply twice.
 	spent bool
+	// truncated marks a reply the model stopped writing because it filled
+	// its output budget rather than because the wire broke. The offer is the
+	// same and what stands behind it is not: a truncated reply is a real
+	// answer that is not finished, so it is already in the conversation and
+	// already on screen, and continuing it appends the instruction alone.
+	// Sending the words back a second time would put the model's own reply
+	// in the transcript twice and ask it to write past a copy.
+	truncated bool
 }
 
 // retryWait is one bounded wait between a failed request and the next one.
@@ -159,6 +167,45 @@ func (m Model) dropStream(f *provider.Failure, partial string, calls []provider.
 	return m.endBrokenTurn()
 }
 
+// truncatedReply records a reply the model stopped writing at its output
+// ceiling. The answer is real as far as it goes, so it has already joined the
+// conversation and the transcript the way any finished reply does; this is
+// the row under it that says the sentence is not over and offers to have it
+// finished.
+//
+// It is not a failure and draws no failure row. Nothing was lost, no request
+// broke, and the turn is over in the ordinary way — what is unusual is only
+// that the model was interrupted by arithmetic rather than by its own
+// judgement, and that is a thing to say rather than a thing to recover from.
+func (m Model) truncatedReply(text string) (tea.Model, tea.Cmd) {
+	m.appendEntry(entry{kind: entryStreamDrop, duration: m.turnElapsed(), resume: &streamResume{
+		text:      text,
+		tokens:    agent.EstimateTokens(text),
+		truncated: true,
+	}})
+	// What was typed while the model was answering was typed against an
+	// answer that is not finished, so neither half of the queue is sent:
+	// steering comes back to the input the way a broken turn returns it, and
+	// the follow-up queue is held (followup.go). Sending either would take
+	// the conversation past the offer standing on this row, and the offer
+	// would then be a key that appends the model's own half reply to a
+	// conversation that had moved on.
+	m.restoreSteering()
+	m.holdFollowUps()
+	m.viewport.SetLines(m.renderHistoryLines())
+	m.viewport.GotoBottom()
+	return m, m.autosaveCmd()
+}
+
+// truncatedRound is the notice a round of tool calls that hit the ceiling
+// draws. The calls that survived are dispatched as usual and the round goes
+// on — a model that gets its results back can write what it did not reach —
+// so there is nothing here to offer, only the fact that whatever it had not
+// finished writing was dropped rather than sent on as half a request.
+func (m *Model) truncatedRound() {
+	m.appendEntry(entry{kind: entrySystem, text: agent.TruncatedRoundNotice})
+}
+
 // endBrokenTurn is the tail every failure path shares: the stream is let go,
 // the turn closes as failed, and anything typed while it ran comes back to
 // the input rather than disappearing with it.
@@ -189,6 +236,21 @@ func (m Model) dropRow(e entry) components.RecoveryRow {
 	if res == nil {
 		return components.RecoveryRow{}
 	}
+	if res.truncated {
+		// No detail body and no count of what was kept: the reply is an
+		// entry of its own directly above this row, whole, so a tail of it
+		// here would be the same words printed twice.
+		return components.RecoveryRow{
+			State:     components.RecoveryStalled,
+			Verb:      components.VerbStream,
+			Subject:   "cut at the output ceiling",
+			Qualifier: res.qualifier(),
+			Outcome:   "partial",
+			Duration:  turnDuration(e.duration),
+			Keys:      m.dropKeys(res),
+			Note:      "the reply is in the conversation",
+		}
+	}
 	return components.RecoveryRow{
 		State:     components.RecoveryStalled,
 		Verb:      components.VerbStream,
@@ -207,7 +269,14 @@ func (m Model) dropRow(e entry) components.RecoveryRow {
 // count comes from the same len/4 arithmetic as the context accounting, not
 // from a provider that never got to report usage for a request it dropped.
 func (r streamResume) qualifier() string {
-	q := "~" + formatTokenCount(r.tokens) + " tokens kept"
+	kept := " tokens kept"
+	if r.truncated {
+		// Nothing was kept from a truncated reply, because nothing was lost:
+		// what the model wrote is what it wrote, and the count is how far it
+		// got before the budget ran out.
+		kept = " tokens written"
+	}
+	q := "~" + formatTokenCount(r.tokens) + kept
 	switch n := len(r.calls); {
 	case n == 1:
 		q += " · 1 tool call"
@@ -247,10 +316,19 @@ func (m Model) dropKeys(res *streamResume) []components.KeyOffer {
 	if res.spent {
 		return nil
 	}
-	return []components.KeyOffer{
+	offers := []components.KeyOffer{
 		{Key: keys.Bracket(keys.Row.Continue), Label: keys.Words(keys.Row.Continue)},
-		{Key: keys.Bracket(keys.Row.Retry), Label: "ask again from scratch"},
 	}
+	if res.truncated {
+		// Asking again is not on offer here. The reply is in the
+		// conversation, so a fresh request would ask the same question with
+		// the model's own half-answer already standing under it — which is
+		// not the question that was asked the first time.
+		return offers
+	}
+	return append(offers, components.KeyOffer{
+		Key: keys.Bracket(keys.Row.Retry), Label: "ask again from scratch",
+	})
 }
 
 // focusedDrop returns the stream-drop row the focus cursor is on, if it is on
@@ -279,6 +357,17 @@ func (m Model) dropKey(key string) (tea.Model, tea.Cmd, bool) {
 		next, cmd := m.continueStream(e.resume)
 		return next, cmd, true
 	case keys.Shown(keys.Row.Retry):
+		if e.resume.truncated {
+			// The row does not offer this key and does not claim it either.
+			// retryTurn asks the same question again on the strength of a
+			// request that never reached the conversation — and a truncated
+			// reply did reach it, so the fresh request would go out with the
+			// model's own half answer standing under the question and
+			// nothing telling it what to do about that. A key that is not
+			// drawn must not still be live: `r` reaches here from the focus
+			// cursor whether it was hinted or not.
+			return m, nil, false
+		}
 		e.resume.spent = true
 		m.invalidateRenderCache()
 		next, cmd := m.retryTurn()
@@ -327,9 +416,18 @@ func (m Model) continueStream(res *streamResume) (tea.Model, tea.Cmd) {
 		return m.advanceApprovalQueue()
 	}
 
-	m.agent.Append(provider.Message{Role: provider.RoleAssistant, Content: res.text})
-	m.appendEntry(m.stampStep(entry{kind: entryAssistant, text: res.text}))
-	m.agent.Append(provider.Message{Role: provider.RoleUser, Content: continuePrompt})
+	prompt := continuePrompt
+	if res.truncated {
+		// The reply is already the last assistant message: it was a real
+		// answer that stopped early, so it joined the conversation when the
+		// turn closed. Appending it again would hand the model two copies of
+		// its own words and ask it to write past the second.
+		prompt = agent.ContinueAfterCeiling
+	} else {
+		m.agent.Append(provider.Message{Role: provider.RoleAssistant, Content: res.text})
+		m.appendEntry(m.stampStep(entry{kind: entryAssistant, text: res.text}))
+	}
+	m.agent.Append(provider.Message{Role: provider.RoleUser, Content: prompt})
 	m.appendEntry(entry{kind: entrySystem, text: "Continuing from the partial reply."})
 	m.trimForRequest()
 	m.syncViewport()
@@ -342,6 +440,11 @@ func (m Model) continueStream(res *streamResume) (tea.Model, tea.Cmd) {
 // into a resumable one. Without it the model is handed its own unfinished
 // sentence and asked nothing; with it the instruction is explicit, and the
 // message list stays a well-formed alternation of roles for every dialect.
+//
+// The other way a reply stops short — the model's own output budget — has a
+// sentence of its own, and it lives in internal/agent because an unattended
+// run sends it by itself. A copy here would be a second answer to what the
+// model is being asked for.
 const continuePrompt = "Your previous reply was cut off by a connection failure. Continue it from exactly where it stopped — do not repeat what you already wrote."
 
 // startRetryWait puts the turn on a bounded, visible wait. Attempts count

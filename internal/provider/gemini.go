@@ -84,6 +84,7 @@ func (g *Gemini) StreamCompletion(ctx context.Context, messages []Message, opts 
 		var toolCalls []ToolCall
 		var reasoning []ReasoningBlock
 		var usage *Usage
+		var stop StopReason
 		for resp, err := range g.client.Models.GenerateContentStream(ctx, model, contents, config) {
 			if err != nil {
 				// The function calls already delivered travel with the
@@ -108,6 +109,11 @@ func (g *Gemini) StreamCompletion(ctx context.Context, messages []Message, opts 
 			}
 			if len(resp.Candidates) > 0 {
 				candidate := resp.Candidates[0]
+				// The reason rides the candidate and is empty until the last
+				// chunk of it, so the latest non-empty one is the answer.
+				if candidate.FinishReason != "" {
+					stop = geminiStop(candidate.FinishReason)
+				}
 				if candidate.Content != nil {
 					for _, part := range candidate.Content.Parts {
 						switch {
@@ -150,10 +156,41 @@ func (g *Gemini) StreamCompletion(ctx context.Context, messages []Message, opts 
 				}
 			}
 		}
-		ch <- StreamEvent{ToolCalls: toolCalls, Reasoning: reasoning, Usage: usage, Done: true}
+		if stop == StopLength {
+			// A call the ceiling landed inside of is dropped, the same as on
+			// every other dialect. This one delivers a call whole or not at
+			// all, so what a truncated round loses here is the part the API
+			// never sent rather than half a JSON object — the filter is the
+			// same one anyway, because "what survives a cut reply" must not
+			// have four answers.
+			toolCalls = CompletedToolCalls(toolCalls)
+		}
+		ch <- StreamEvent{ToolCalls: toolCalls, Reasoning: reasoning, Usage: usage, Stop: stopForCalls(stop, toolCalls), Done: true}
 	}()
 
 	return ch, nil
+}
+
+// geminiStop maps this dialect's finish reason onto shhh's closed set. It
+// names more blocked endings than anything else shhh speaks — safety,
+// recitation, protected identifiers, a per-modality copy of each — and they
+// are one thing to a caller: the model declined. The rest, including a call
+// the API could not parse and a language it would not answer in, are endings
+// nothing above acts on differently.
+func geminiStop(reason genai.FinishReason) StopReason {
+	switch reason {
+	case genai.FinishReasonStop, genai.FinishReasonUnspecified, "":
+		return StopEnd
+	case genai.FinishReasonMaxTokens:
+		return StopLength
+	case genai.FinishReasonSafety, genai.FinishReasonRecitation,
+		genai.FinishReasonBlocklist, genai.FinishReasonProhibitedContent,
+		genai.FinishReasonSPII, genai.FinishReasonImageSafety,
+		genai.FinishReasonImageProhibitedContent, genai.FinishReasonImageRecitation:
+		return StopRefusal
+	default:
+		return StopOther
+	}
 }
 
 // geminiCallSeq numbers the ids we invent for function calls the API sent

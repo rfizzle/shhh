@@ -20,15 +20,12 @@ func streamOpenAIToolCalls(stream *openai.ChatCompletionStream, classify func(er
 		defer stream.Close()
 		toolArgs := map[int]*toolCallAccumulator{}
 		var usage *Usage
+		var stop StopReason
 
 		for {
 			resp, err := stream.Recv()
 			if errors.Is(err, io.EOF) {
-				if len(toolArgs) > 0 {
-					ch <- StreamEvent{ToolCalls: buildToolCalls(toolArgs), Usage: usage, Done: true}
-				} else {
-					ch <- StreamEvent{Usage: usage, Done: true}
-				}
+				ch <- terminalOpenAIEvent(toolArgs, usage, stop)
 				return
 			}
 			if err != nil {
@@ -89,13 +86,58 @@ func streamOpenAIToolCalls(stream *openai.ChatCompletionStream, classify func(er
 				}
 			}
 
-			if choice.FinishReason == "tool_calls" {
-				ch <- StreamEvent{ToolCalls: buildToolCalls(toolArgs), Usage: usage, Done: true}
+			// The reason is empty on every chunk but the last of a choice.
+			// A ceiling reached mid-call is reported here as "length" and
+			// never as "tool_calls", which is why the stop is read before
+			// the tool-call ending rather than derived from it.
+			if choice.FinishReason != "" {
+				stop = openAIStop(string(choice.FinishReason))
+			}
+			if stop == StopTool {
+				ch <- terminalOpenAIEvent(toolArgs, usage, stop)
 				return
 			}
 		}
 	}()
 	return ch
+}
+
+// terminalOpenAIEvent is the event that ends the stream, whichever of the two
+// endings got here: the finish reason the model sent, or the body running out
+// under it. A ceiling reached mid-call keeps only the calls that are whole —
+// half a JSON object would reach a tool as malformed input and be answered as
+// though the model had asked for something.
+func terminalOpenAIEvent(toolArgs map[int]*toolCallAccumulator, usage *Usage, stop StopReason) StreamEvent {
+	calls := buildToolCalls(toolArgs)
+	if stop == StopLength {
+		calls = CompletedToolCalls(calls)
+	}
+	if len(calls) == 0 {
+		// buildToolCalls returns an empty non-nil slice for an empty map, and
+		// a terminal event carrying one is a round with tool calls to every
+		// reader that only checks the length.
+		calls = nil
+	}
+	return StreamEvent{ToolCalls: calls, Usage: usage, Stop: stop, Done: true}
+}
+
+// openAIStop maps this dialect's finish reason onto shhh's closed set. The
+// legacy `function_call` spelling is here because a gateway speaking an older
+// revision of this API still sends it, and a round of tools read as a
+// finished answer would close the turn owing results.
+func openAIStop(reason string) StopReason {
+	switch reason {
+	case "stop", "":
+		return StopEnd
+	case "tool_calls", "function_call":
+		return StopTool
+	case "length":
+		return StopLength
+	case "content_filter":
+		return StopRefusal
+	default:
+		return StopOther
+	}
 }
 
 // buildToolCalls assembles the accumulated deltas in index order. It is

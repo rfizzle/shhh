@@ -611,3 +611,87 @@ func TestOpenAI_SchemaReplacesTheToolsWhereTheModelTakesOne(t *testing.T) {
 		t.Errorf("the tool path must be untouched, got tools=%v choice=%v", body["tools"], body["tool_choice"])
 	}
 }
+
+func TestOpenAIStop_MapsEveryReasonTheDialectNames(t *testing.T) {
+	cases := []struct {
+		reason string
+		want   StopReason
+	}{
+		{"stop", StopEnd},
+		{"tool_calls", StopTool},
+		// The spelling an older revision of this API used, and one a gateway
+		// speaking it still sends.
+		{"function_call", StopTool},
+		{"length", StopLength},
+		{"content_filter", StopRefusal},
+		// A reason this dialect has not invented yet, and a chunk that
+		// carries none because the choice has not ended.
+		{"eos", StopOther},
+		{"", StopEnd},
+	}
+	for _, tc := range cases {
+		if got := openAIStop(tc.reason); got != tc.want {
+			t.Errorf("openAIStop(%q) = %q, want %q", tc.reason, got, tc.want)
+		}
+	}
+}
+
+func TestOpenAI_CeilingKeepsTheTextAndDropsTheUnfinishedCall(t *testing.T) {
+	idx0, idx1 := 0, 1
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		flusher, _ := w.(http.Flusher)
+		send := func(c openai.ChatCompletionStreamResponse) {
+			data, _ := json.Marshal(c)
+			fmt.Fprintf(w, "data: %s\n\n", data)
+			flusher.Flush()
+		}
+		send(openai.ChatCompletionStreamResponse{Choices: []openai.ChatCompletionStreamChoice{
+			{Delta: openai.ChatCompletionStreamChoiceDelta{Content: "I will read both"}},
+		}})
+		// One call the model finished writing, and one the ceiling landed
+		// inside of.
+		send(openai.ChatCompletionStreamResponse{Choices: []openai.ChatCompletionStreamChoice{
+			{Delta: openai.ChatCompletionStreamChoiceDelta{ToolCalls: []openai.ToolCall{
+				{Index: &idx0, ID: "call_1", Function: openai.FunctionCall{Name: "read_file", Arguments: `{"path":"a.go"}`}},
+			}}},
+		}})
+		send(openai.ChatCompletionStreamResponse{Choices: []openai.ChatCompletionStreamChoice{
+			{Delta: openai.ChatCompletionStreamChoiceDelta{ToolCalls: []openai.ToolCall{
+				{Index: &idx1, ID: "call_2", Function: openai.FunctionCall{Name: "write_file", Arguments: `{"path":"b.go","content":"pack`}},
+			}}},
+		}})
+		send(openai.ChatCompletionStreamResponse{Choices: []openai.ChatCompletionStreamChoice{
+			{FinishReason: "length"},
+		}})
+		fmt.Fprint(w, "data: [DONE]\n\n")
+		flusher.Flush()
+	}))
+	defer srv.Close()
+
+	p := newTestOpenAI(srv.URL+"/v1", "gpt-4o")
+	ch, err := p.StreamCompletion(context.Background(), []Message{{Role: RoleUser, Content: "read both"}}, CompletionOpts{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var text string
+	var final StreamEvent
+	for ev := range ch {
+		if ev.Err != nil {
+			t.Fatalf("stream error: %v", ev.Err)
+		}
+		text += ev.Token
+		if ev.Done {
+			final = ev
+		}
+	}
+	if text != "I will read both" {
+		t.Errorf("the words the model wrote are kept, got %q", text)
+	}
+	if final.Stop != StopLength {
+		t.Errorf("stop = %q, want %q", final.Stop, StopLength)
+	}
+	if len(final.ToolCalls) != 1 || final.ToolCalls[0].ID != "call_1" {
+		t.Errorf("the finished call survives and half a JSON object does not, got %+v", final.ToolCalls)
+	}
+}

@@ -345,6 +345,60 @@ nothing with the session's other requests and is read from scratch — paying
 for the whole opening again to avoid one retry. The tools stay; only the
 permission changes.
 
+## A reply says why it stopped
+
+Every dialect reports why the model stopped writing, and for a long time
+shhh read none of them. Four of those reasons are worth telling apart and
+the rest are not, so the four are named — the reply is finished, it is owed
+tool results, it was cut off at the model's output ceiling, or the model
+declined to give it — and everything else a dialect names is one word for
+"something the harness does not act on differently". Five values, closed, in
+shhh's own vocabulary rather than four vendors' overlapping ones.
+
+The ceiling is the one that changes what happens. A reply cut off at it is
+not the model's answer, it is the first half of one, and nothing downstream
+can tell the difference from a look at the words: the sentence simply ends.
+So a session says so, and offers to have it finished. The reply is a real
+answer as far as it goes, so it joins the conversation and the transcript
+like any other, and the row under it is the same offer a dropped stream gets
+— the same key, the same shape — with the one difference that a truncated
+reply cannot be asked for again from the top, because the model's own half
+answer is already standing under the question. Continuing sends the
+instruction alone.
+
+**Where nobody is watching, the run continues it by itself, once.** A
+scripted run and a sub-agent have nobody to ask, and a half sentence returned
+as the run's result is the worst way to end: it looks like an answer to
+everything downstream of it. So the run appends the instruction and asks
+again, once per round, and lets the second attempt stand whatever it is — a
+turn free to ask for one more paragraph every time it filled a budget would
+have no ceiling at all in the one place nobody is there to notice. A round
+that ran tools starts fresh, because what the bound exists to stop is a turn
+spent finishing one answer, not a long turn.
+
+**The silent case is the tool call**, and it is why this is worth doing at
+all. A reply that stops in the middle of writing a call leaves half a JSON
+object. Half an object is not a request — it reaches the tool as malformed
+input and gets answered as though the model had asked for something — so the
+unfinished call is dropped and the calls the model did finish still run. What
+changed is that the drop is now said out loud on every surface: before, the
+round simply had one fewer call in it, the model waited for a result that was
+never coming, and the turn closed as if it had answered.
+
+One dialect makes that drop harder than it sounds. Its SDK launders a cut-off
+argument string as it accumulates — a call whose JSON never closed comes back
+with an empty object for its input, which is valid JSON and indistinguishable
+from a call that genuinely takes no arguments. Handed that, the filter the
+other dialects use would pass a file write with no path as a request the
+model made, so on that dialect the argument fragments are judged as they
+arrived instead of as they were accumulated. Another dialect never sends a
+call in pieces at all: what it delivers is whole by construction, and a
+ceiling costs it only the part that was never sent.
+
+None of this adds a ceiling. A session asks for no output limit and still
+does; what it gained is knowing when it hit the one the provider applies
+anyway.
+
 ## Tool arguments arrive as fragments
 
 A round that ends in a tool call spends most of itself writing that call. The

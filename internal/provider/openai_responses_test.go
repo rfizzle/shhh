@@ -611,3 +611,73 @@ func TestOpenAIResponses_SendsNothingExtraWithoutReasoning(t *testing.T) {
 		}
 	}
 }
+
+func TestResponsesStop_MapsEveryEndingTheDialectNames(t *testing.T) {
+	incomplete := func(reason string) responseEvent {
+		var ev responseEvent
+		ev.Type = eventIncomplete
+		ev.Response.Status = "incomplete"
+		if reason != "" {
+			ev.Response.IncompleteDetails = &responseIncomplete{Reason: reason}
+		}
+		return ev
+	}
+	completed := func() responseEvent {
+		var ev responseEvent
+		ev.Type = eventCompleted
+		ev.Response.Status = "completed"
+		return ev
+	}
+	cases := []struct {
+		name string
+		ev   responseEvent
+		want StopReason
+	}{
+		{"completed", completed(), StopEnd},
+		{"out of output budget", incomplete("max_output_tokens"), StopLength},
+		{"filtered", incomplete("content_filter"), StopRefusal},
+		// Unfinished, and the API would not say why: not an answer, and not
+		// a truncation anything can continue from either.
+		{"unexplained", incomplete(""), StopOther},
+		{"a reason this API has not invented yet", incomplete("something_new"), StopOther},
+	}
+	for _, tc := range cases {
+		if got := responsesStop(tc.ev); got != tc.want {
+			t.Errorf("%s: responsesStop = %q, want %q", tc.name, got, tc.want)
+		}
+	}
+}
+
+func TestResponses_CeilingKeepsTheTextAndDropsTheUnfinishedCall(t *testing.T) {
+	events := []string{
+		`data: {"type":"response.output_text.delta","delta":"I will read both"}`,
+		`data: {"type":"response.output_item.done","item":{"type":"function_call","id":"item_1","call_id":"call_1","name":"read_file","arguments":"{\"path\":\"a.go\"}"}}`,
+		`data: {"type":"response.output_item.done","item":{"type":"function_call","id":"item_2","call_id":"call_2","name":"write_file","arguments":"{\"path\":\"b.go\",\"content\":\"pack"}}`,
+		`data: {"type":"response.incomplete","response":{"status":"incomplete","incomplete_details":{"reason":"max_output_tokens"},"output":[],"usage":{"input_tokens":10,"output_tokens":4096}}}`,
+	}
+	p := newTestResponses(responsesServer(t, events, nil).URL, "gpt-5")
+	ch, err := p.StreamCompletion(context.Background(), []Message{{Role: RoleUser, Content: "read both"}}, CompletionOpts{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var text string
+	var final StreamEvent
+	for ev := range ch {
+		if ev.Err != nil {
+			t.Fatalf("stream error: %v", ev.Err)
+		}
+		text += ev.Token
+		if ev.Done {
+			final = ev
+		}
+	}
+	if text != "I will read both" {
+		t.Errorf("the words the model wrote are kept, got %q", text)
+	}
+	if final.Stop != StopLength {
+		t.Errorf("stop = %q, want %q", final.Stop, StopLength)
+	}
+	if len(final.ToolCalls) != 1 || final.ToolCalls[0].ID != "call_1" {
+		t.Errorf("the finished call survives and half a JSON object does not, got %+v", final.ToolCalls)
+	}
+}

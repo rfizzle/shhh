@@ -478,3 +478,174 @@ func TestRetryWait_IsOnTheRecord(t *testing.T) {
 		t.Fatalf("expected one retry signal naming its class, got %+v", signals)
 	}
 }
+
+// A reply the model stopped writing at its output ceiling. Nothing broke, so
+// there is no failure row and no wait — what there is instead is a real
+// answer that is not finished, and the offer to have it finished.
+func TestCeilingStop_KeepsTheReplyAndOffersToFinishIt(t *testing.T) {
+	m := streamed(resumeModel(t), "The first half of the answer")
+	updated, _ := m.Update(doneMsg{stop: provider.StopLength})
+	next := updated.(Model)
+
+	for _, e := range next.transcript {
+		if e.kind == entryFailure {
+			t.Error("a ceiling is not a failure and draws no failure row")
+		}
+	}
+	// The answer itself is in the conversation, once, and on screen as the
+	// model's own turn.
+	msgs := next.agent.Messages()
+	last := msgs[len(msgs)-1]
+	if last.Role != provider.RoleAssistant || last.Content != "The first half of the answer" {
+		t.Fatalf("the reply should be the last message, got %+v", last)
+	}
+	e := dropEntry(t, next)
+	if !e.resume.truncated {
+		t.Fatal("the row should know why the reply stopped")
+	}
+	view := stripANSI(next.dropRow(e).View(110))
+	for _, want := range []string{
+		"stream", "cut at the output ceiling", "tokens written", "partial",
+		"[c]", "continue from here", "the reply is in the conversation",
+	} {
+		if !strings.Contains(view, want) {
+			t.Errorf("the row should say %q, got:\n%s", want, view)
+		}
+	}
+	// Asking again from scratch is not on offer: the reply is already
+	// standing under the question.
+	if strings.Contains(view, "ask again from scratch") {
+		t.Errorf("a truncated reply cannot be re-asked from the top:\n%s", view)
+	}
+	if next.turnState() != stateInput {
+		t.Errorf("state = %v, want the input back", next.turnState())
+	}
+}
+
+// What was typed while the model was answering was typed against an answer
+// that is not finished, so it comes back to the input rather than being sent
+// past the offer standing on the row.
+func TestCeilingStop_SteeringComesBackToTheInput(t *testing.T) {
+	m := streamed(resumeModel(t), "The first half of the answer")
+	m.steering = []string{"and check the parser"}
+	updated, _ := m.Update(doneMsg{stop: provider.StopLength})
+	next := updated.(Model)
+
+	if len(next.steering) != 0 {
+		t.Errorf("the queue should be drained, got %v", next.steering)
+	}
+	if got := next.input.Value(); !strings.Contains(got, "and check the parser") {
+		t.Errorf("the typed message should be back in the input, got %q", got)
+	}
+	if next.turnState() != stateInput {
+		t.Errorf("state = %v, want the input back rather than a second request", next.turnState())
+	}
+}
+
+func TestCeilingStop_ContinueAsksForTheRestWithoutRepeatingIt(t *testing.T) {
+	m := streamed(resumeModel(t), "The first half of the answer")
+	updated, _ := m.Update(doneMsg{stop: provider.StopLength})
+	next := updated.(Model)
+
+	before := len(next.agent.Messages())
+	next.focusIdx = indexOfKind(t, next, entryStreamDrop)
+	resumed, cmd, claimed := next.dropKey(keys.Shown(keys.Row.Continue))
+	if !claimed {
+		t.Fatal("[c] should be claimed by the focused row")
+	}
+	if cmd == nil {
+		t.Fatal("continuing should ask the model")
+	}
+	after := resumed.(Model)
+	msgs := after.agent.Messages()
+	// One message, not two: the reply joined the conversation when the turn
+	// closed, and sending it again would hand the model two copies of its
+	// own words.
+	if len(msgs) != before+1 {
+		t.Fatalf("continuing a truncated reply adds the instruction alone, got %d new", len(msgs)-before)
+	}
+	if last := msgs[len(msgs)-1]; last.Role != provider.RoleUser || last.Content != agent.ContinueAfterCeiling {
+		t.Fatalf("the instruction should name the ceiling, got %+v", last)
+	}
+	var assistants int
+	for _, msg := range msgs {
+		if msg.Role == provider.RoleAssistant && msg.Content == "The first half of the answer" {
+			assistants++
+		}
+	}
+	if assistants != 1 {
+		t.Errorf("the reply should be in the conversation once, found %d copies", assistants)
+	}
+}
+
+// A round of tool calls that ended at the ceiling runs what survived and says
+// what it lost. There is nothing to offer here — the results come back and
+// the model writes on — only the fact that a call it had not finished
+// writing was dropped rather than dispatched as half a request.
+func TestCeilingStop_ARoundThatLostACallSaysSo(t *testing.T) {
+	m := streamed(resumeModel(t), "reading the file first")
+	calls := []provider.ToolCall{{ID: "call_1", Name: "read_file", Arguments: `{"path":"a.go"}`}}
+	updated, _ := m.Update(toolCallsMsg{calls: calls, stop: provider.StopLength})
+	next := updated.(Model)
+
+	var said bool
+	for _, e := range next.transcript {
+		if e.kind == entrySystem && e.text == agent.TruncatedRoundNotice {
+			said = true
+		}
+		if e.kind == entryStreamDrop {
+			t.Error("a round that goes on has nothing to offer and draws no offer")
+		}
+	}
+	if !said {
+		t.Error("a round that lost a call should say so in the transcript")
+	}
+}
+
+// The same case in the session: nothing written, the round's only call cut
+// away, and a turn that would otherwise end on silence.
+func TestCeilingStop_AnEmptyTruncatedReplySaysWhyTheTurnEnded(t *testing.T) {
+	m := streamed(resumeModel(t), "")
+	updated, _ := m.Update(doneMsg{stop: provider.StopLength})
+	next := updated.(Model)
+
+	var said bool
+	for _, e := range next.transcript {
+		if e.kind == entrySystem && e.text == agent.TruncatedRoundNotice {
+			said = true
+		}
+		if e.kind == entryStreamDrop {
+			t.Error("there is no half sentence to offer to finish")
+		}
+	}
+	if !said {
+		t.Error("a turn that ends on nothing should say why")
+	}
+}
+
+// The key the row does not draw is the key it does not answer. `r` reaches
+// the focused row from the cursor whether or not it was hinted, and asking
+// the question again over a conversation that already ends in the model's own
+// half answer is the one thing a truncated reply must not do.
+func TestCeilingStop_RetryIsNotLiveOnATruncatedRow(t *testing.T) {
+	m := streamed(resumeModel(t), "The first half of the answer")
+	updated, _ := m.Update(doneMsg{stop: provider.StopLength})
+	next := updated.(Model)
+
+	before := len(next.agent.Messages())
+	next.focusIdx = indexOfKind(t, next, entryStreamDrop)
+	after, cmd, claimed := next.dropKey(keys.Shown(keys.Row.Retry))
+	if claimed {
+		t.Fatal("a key the row does not offer must not be claimed by it")
+	}
+	if cmd != nil {
+		t.Fatal("nothing should have been asked of the model")
+	}
+	rest := after.(Model)
+	if len(rest.agent.Messages()) != before {
+		t.Errorf("the conversation should be untouched, gained %d", len(rest.agent.Messages())-before)
+	}
+	if dropEntry(t, rest).resume.spent {
+		t.Error("the continue offer should still stand")
+	}
+}

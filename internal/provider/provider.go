@@ -116,13 +116,93 @@ type StreamEvent struct {
 	// only the calls that are whole (partial.go).
 	// See docs/capabilities/providers.md#tool-arguments-arrive-as-fragments.
 	ToolCallDelta *ToolCallDelta
+	// Stop is why the model stopped writing, on the terminal event and
+	// nowhere else. The empty value is a stream that ended without saying —
+	// a gateway that dropped the field, an event the parser never reached —
+	// and it reads as StopEnd everywhere, because that is what every reader
+	// assumed before there was a field at all.
+	// See docs/capabilities/providers.md#a-reply-says-why-it-stopped.
+	Stop StopReason
+}
+
+// StopReason is why a response ended, in shhh's own words rather than any
+// dialect's. It is a closed set of five: the four endings a caller acts on
+// differently and one for everything else.
+//
+// The set is small on purpose. Each dialect names more reasons than this —
+// stop sequences, recitation, malformed calls, a paused turn — and a harness
+// that tracked all of them would be tracking four vocabularies that agree on
+// nothing. What a caller does about an ending is what earns it a name here:
+// a reply that is finished, one that is owed tool results, one that was cut
+// off mid-sentence and can be continued, and one the model declined to give.
+// See docs/capabilities/providers.md#a-reply-says-why-it-stopped.
+type StopReason string
+
+const (
+	// StopEnd is a reply the model finished, and the zero value with it: a
+	// stream that never said why it ended is read as one that ended, which
+	// is what every caller assumed before the field existed. A dialect that
+	// drops the field on a truncated reply is the one thing that costs, and
+	// no dialect shhh speaks does — they all report the ceiling by name.
+	StopEnd StopReason = ""
+	// StopTool is a reply that ended by asking for tools, and is owed their
+	// results before the model can go on.
+	StopTool StopReason = "tool"
+	// StopLength is a reply cut off at the model's output ceiling. The words
+	// are real and the sentence is not finished: continuing it is a different
+	// act from asking the question again.
+	StopLength StopReason = "length"
+	// StopRefusal is a reply the model declined to give. Continuing it asks
+	// for the same refusal a second time.
+	StopRefusal StopReason = "refusal"
+	// StopOther is an ending a dialect named and this set does not — a stop
+	// sequence, a recitation block, a call the API could not parse. It is a
+	// case of its own so that an unknown ending is a value a reader can see
+	// rather than a silent StopEnd.
+	StopOther StopReason = "other"
+)
+
+// String names the zero value, which is the one member of the set with no
+// word of its own on the wire. Every %s and %q of a stop reason goes through
+// it, so a message about one never reads as an empty string.
+func (s StopReason) String() string {
+	if s == StopEnd {
+		return "end"
+	}
+	return string(s)
+}
+
+// stopForCalls names the ending two of the four dialects have no word for.
+// They finish a round of tool calls on the same status they finish an answer
+// on — "stop", "completed" — so the calls are the only thing that says the
+// round is owed results, and a reader of the closed set would otherwise see
+// `end` from those two where it sees `tool` from the other two.
+//
+// It never overrides a reason the dialect did name. A round cut at the
+// ceiling stays `length` however many calls survived it, because what a
+// caller does about that is the thing this whole set exists to tell it.
+func stopForCalls(stop StopReason, calls []ToolCall) StopReason {
+	if stop == StopEnd && len(calls) > 0 {
+		return StopTool
+	}
+	return stop
 }
 
 type CompletionOpts struct {
 	Model       string
 	Temperature *float64
-	MaxTokens   int
-	Tools       []Tool
+	// MaxTokens caps the reply. Zero sends no cap, which is what a session
+	// and an unattended run both do: the reply is as long as the model makes
+	// it, and the provider's own ceiling is the only one there is. The
+	// bounded readings — a title, a classification, a summary — set one,
+	// because a paragraph where a word was asked for is a defect.
+	//
+	// One dialect requires the field, so its converter supplies a default
+	// rather than omitting it. A reply that reaches whichever ceiling
+	// applied comes back with StopLength, which is what makes an unset cap
+	// safe: nothing has to know the number to notice it was hit.
+	MaxTokens int
+	Tools     []Tool
 	// ToolChoice is what the request says about calling a tool:
 	// ToolChoiceAuto leaves it to the model, ToolChoiceNone describes the
 	// tools and forbids calling one. The empty string sends no field, which

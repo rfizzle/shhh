@@ -26,6 +26,10 @@ type streamStep struct {
 	// fail, when set, is returned instead of a stream, so a test can put a
 	// child in front of a provider that never answered.
 	fail *provider.Failure
+	// stop is why the step's reply ended, for a test that needs an ending
+	// other than the ordinary one. The zero value is a reply the model
+	// finished, which is what every step that says nothing means.
+	stop provider.StopReason
 }
 
 // scriptedEnv builds an EnvFactory whose children replay steps in order. The
@@ -64,9 +68,9 @@ func (s *scriptedEnv) factory() EnvFactory {
 				ch <- provider.StreamEvent{Token: step.text}
 			}
 			if len(step.calls) > 0 {
-				ch <- provider.StreamEvent{ToolCalls: step.calls, Usage: step.usage}
+				ch <- provider.StreamEvent{ToolCalls: step.calls, Usage: step.usage, Stop: step.stop}
 			} else {
-				ch <- provider.StreamEvent{Done: true, Usage: step.usage}
+				ch <- provider.StreamEvent{Done: true, Usage: step.usage, Stop: step.stop}
 			}
 			close(ch)
 			_, cancel := context.WithCancel(context.Background())
@@ -1321,4 +1325,33 @@ func currentHold(sup *Supervisor) chan struct{} {
 	sup.mu.Lock()
 	defer sup.mu.Unlock()
 	return sup.held
+}
+
+// A child whose reply was cut at the model's output ceiling asks for the rest
+// by itself, and says on its lane that it did: an answer assembled out of two
+// halves is a different reading from one that arrived whole, and the lane is
+// the only place anyone is looking.
+func TestChildFinishesAReplyCutAtTheCeiling(t *testing.T) {
+	env := &scriptedEnv{steps: []streamStep{
+		{text: "the first half of the answer", stop: provider.StopLength},
+		{text: " and the second."},
+	}}
+	sup := newTestSupervisor(t, env)
+
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"explain it"}`)
+	report := execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
+	if !strings.Contains(report, "and the second") {
+		t.Fatalf("the child should have finished its answer: %s", report)
+	}
+
+	var said bool
+	for _, e := range sup.Transcript("researcher-1") {
+		if e.Kind == EntrySystem && strings.Contains(e.Text, "output ceiling") {
+			said = true
+		}
+	}
+	if !said {
+		t.Fatalf("a child that answered in two halves said nothing on its lane: %+v",
+			sup.Transcript("researcher-1"))
+	}
 }

@@ -78,6 +78,9 @@ func TestStream_AnthropicReportsArgumentFragmentsInOrder(t *testing.T) {
 	if len(final.ToolCalls) != 1 || final.ToolCalls[0].Name != "write_file" || final.ToolCalls[0].Arguments != `{"path":"main.go"}` {
 		t.Errorf("the terminal event lost the finished call: %+v", final.ToolCalls)
 	}
+	if final.Stop != StopTool {
+		t.Errorf("a round that ended in a call stopped for tools, got %q", final.Stop)
+	}
 }
 
 func TestStream_OpenAIReportsArgumentFragmentsInOrder(t *testing.T) {
@@ -118,6 +121,9 @@ func TestStream_OpenAIReportsArgumentFragmentsInOrder(t *testing.T) {
 	if len(final.ToolCalls) != 1 || final.ToolCalls[0].Arguments != `{"path":"main.go"}` {
 		t.Errorf("the terminal event lost the finished call: %+v", final.ToolCalls)
 	}
+	if final.Stop != StopTool {
+		t.Errorf("a round that ended in a call stopped for tools, got %q", final.Stop)
+	}
 }
 
 func TestStream_OpenAIResponsesReportsArgumentFragmentsInOrder(t *testing.T) {
@@ -141,6 +147,9 @@ func TestStream_OpenAIResponsesReportsArgumentFragmentsInOrder(t *testing.T) {
 	})
 	if len(final.ToolCalls) != 1 || final.ToolCalls[0].ID != "call_abc" {
 		t.Errorf("the terminal event lost the finished call: %+v", final.ToolCalls)
+	}
+	if final.Stop != StopTool {
+		t.Errorf("a round that ended in a call stopped for tools, got %q", final.Stop)
 	}
 }
 
@@ -200,6 +209,9 @@ func TestStream_GeminiReportsTheWholeCallAsOneFragment(t *testing.T) {
 	if len(final.ToolCalls) != 1 || final.ToolCalls[0].Name != "write_file" {
 		t.Errorf("the terminal event lost the finished call: %+v", final.ToolCalls)
 	}
+	if final.Stop != StopTool {
+		t.Errorf("a round that ended in a call stopped for tools, got %q", final.Stop)
+	}
 }
 
 // The boundary a broken stream is read at is unchanged by the fragments: what
@@ -252,5 +264,57 @@ func TestStream_ABrokenStreamKeepsOnlyTheCallsThatAreWhole(t *testing.T) {
 	}
 	if len(final.ToolCalls) != 1 || final.ToolCalls[0].ID != "call_done" {
 		t.Errorf("expected only the finished call to survive, got %+v", final.ToolCalls)
+	}
+}
+
+// This dialect delivers a function call whole or not at all, so a round it
+// cut at the ceiling has no half-written call in it: what it did send is
+// dispatchable and the ceiling is reported beside it. The other two things
+// the reply is checked for are the ones every dialect owes — the words the
+// model wrote survive, and the ending is named.
+func TestStream_GeminiCeilingNamesTheEndingAndKeepsWhatArrivedWhole(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		flusher, _ := w.(http.Flusher)
+		fmt.Fprint(w, `data: {"candidates":[{"content":{"parts":[{"text":"I will write it"}]}}]}`+"\n\n")
+		flusher.Flush()
+		fmt.Fprint(w, `data: {"candidates":[{"finishReason":"MAX_TOKENS","content":{"parts":[{"functionCall":{"id":"call_abc","name":"write_file","args":{"path":"main.go"}}}]}}]}`+"\n\n")
+		flusher.Flush()
+	}))
+	defer srv.Close()
+
+	client, err := genai.NewClient(context.Background(), &genai.ClientConfig{
+		APIKey:      "test-key",
+		Backend:     genai.BackendGeminiAPI,
+		HTTPOptions: genai.HTTPOptions{BaseURL: srv.URL},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	g := &Gemini{client: client, model: "gemini-2.5-flash", classify: newClassifier("gemini", "SHHH_API_KEY", "test-key")}
+
+	ch, err := g.StreamCompletion(context.Background(), []Message{{Role: RoleUser, Content: "write main.go"}}, CompletionOpts{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var text string
+	var final StreamEvent
+	for ev := range ch {
+		if ev.Err != nil {
+			t.Fatalf("stream error: %v", ev.Err)
+		}
+		text += ev.Token
+		if ev.Done {
+			final = ev
+		}
+	}
+	if text != "I will write it" {
+		t.Errorf("the words the model wrote are kept, got %q", text)
+	}
+	if final.Stop != StopLength {
+		t.Errorf("stop = %q, want %q", final.Stop, StopLength)
+	}
+	if len(final.ToolCalls) != 1 || final.ToolCalls[0].ID != "call_abc" {
+		t.Errorf("a call this dialect delivered whole is still a call, got %+v", final.ToolCalls)
 	}
 }

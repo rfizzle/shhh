@@ -128,6 +128,14 @@ type Headless struct {
 	// See docs/capabilities/coding-agent.md#the-window-recovers-where-nobody-is-watching.
 	Compact *Compactor
 
+	// OnContinue, when set, is told when the run answered a reply the model
+	// stopped writing at its output ceiling by asking it to carry on. An
+	// answer that arrived in two halves is a different reading from one that
+	// arrived whole, and a surface that showed the first half has to say
+	// that more is coming rather than let it read as the end.
+	// See docs/capabilities/providers.md#a-reply-says-why-it-stopped.
+	OnContinue func(notice string)
+
 	// OnCompact, when set, is told what each recovery step did, so a
 	// scripted run can say it on stderr and a child can say it on its lane.
 	// It is told about a compaction that failed as well as one that worked:
@@ -197,6 +205,12 @@ func (h *Headless) Run(prompt string) (string, error) {
 	// so the instruction is read against the tree as it is.
 	h.deliverTree(true)
 	h.Agent.StartTurn(prompt)
+	// Whether this round has already asked the model to finish a reply the
+	// output ceiling cut short. One per round, and a round that ran tools
+	// clears it: the bound is what keeps a model that answers at length from
+	// spending a whole turn being asked for one more paragraph, and there is
+	// nobody here to notice that it is.
+	continued := false
 	for {
 		// The window is recovered here and nowhere else. This is a round
 		// boundary — no stream is open and no call is owed a result — and it
@@ -206,7 +220,7 @@ func (h *Headless) Run(prompt string) (string, error) {
 		// before its first round, so the check belongs ahead of the request
 		// rather than behind the round.
 		h.recoverContext()
-		text, calls, err := h.streamOnce()
+		text, calls, stop, err := h.streamOnce()
 		if err != nil {
 			notice, ok := h.retry.Next(err)
 			if !ok {
@@ -247,6 +261,28 @@ func (h *Headless) Run(prompt string) (string, error) {
 			if text != "" {
 				h.Agent.Append(provider.Message{Role: provider.RoleAssistant, Content: text})
 			}
+			// A reply the model stopped writing because it filled its output
+			// budget is not an answer, it is the first half of one — and
+			// nothing downstream of an unattended run can tell the
+			// difference, which is how half a sentence becomes the run's
+			// result. A session hands the choice to the person in front of
+			// it; here there is nobody to ask, so the run asks the model to
+			// carry on, once, and lets the second attempt stand whatever it
+			// is. Twice would be a turn with no ceiling at all.
+			if stop == provider.StopLength && text != "" && !continued {
+				continued = true
+				h.Agent.Append(provider.Message{Role: provider.RoleUser, Content: ContinueAfterCeiling})
+				h.notifyContinue(continueNotice)
+				continue
+			}
+			if stop == provider.StopLength && text == "" {
+				// The budget went entirely on a call the ceiling then cut,
+				// so the reply is empty and there is no sentence to
+				// continue. Saying so is all there is to do, and it is the
+				// whole of what was missing here: the turn used to end at
+				// this line as though the model had answered.
+				h.notifyContinue(TruncatedRoundNotice)
+			}
 			// The answer is in the conversation before the close is asked
 			// anything, so a hand-back reads as a reply to what was just
 			// said rather than as an interruption of it.
@@ -259,6 +295,19 @@ func (h *Headless) Run(prompt string) (string, error) {
 				continue
 			}
 			return text, nil
+		}
+
+		// A round that ran tools is a fresh round, and its own reply gets its
+		// own continuation: what the bound exists to stop is a turn spent
+		// asking for the rest of one answer, not a long turn.
+		continued = false
+		if stop == provider.StopLength {
+			// The round asked for tools and ran out of budget while it was
+			// still writing them. What survived is whole and runs as usual;
+			// the call the ceiling landed inside of was dropped before it
+			// got here (internal/provider/partial.go), and a run whose round
+			// silently lost one has no way to say so afterwards.
+			h.notifyContinue(TruncatedRoundNotice)
 		}
 
 		auto, _ := h.Agent.BeginToolRound(text, calls, h.Gate)
@@ -431,6 +480,40 @@ func (h *Headless) askSummary(msgs []provider.Message, choice string) (string, e
 	return text.String(), nil
 }
 
+// ContinueAfterCeiling is the one sentence that turns a reply cut off at the
+// model's output ceiling into a resumable one. It names the ceiling rather
+// than a failure because the model can act on the difference: nothing broke,
+// the budget ran out, and the way to finish inside another one is to be
+// briefer rather than to start again.
+//
+// It lives here because both surfaces send it. A session offers it behind a
+// key and a run sends it by itself, and a second copy of the sentence would
+// be a second answer to what the model is being asked for.
+const ContinueAfterCeiling = "Your previous reply stopped because it reached the maximum output length. Continue it from exactly where it stopped — do not repeat what you already wrote, and keep what is left brief enough to finish."
+
+// The two things a surface says about a ceiling a round reached. Neither is a
+// failure: one is the run finishing an answer that stopped mid-sentence, the
+// other is a round losing a call the model had not finished writing.
+//
+// The second is exported because the session says it too, in its own
+// transcript, about the same event on the same round tail. Two spellings of
+// one fact is how a reader ends up thinking they are two facts.
+const (
+	continueNotice = "The reply reached the model's output ceiling; asking it to finish."
+	// TruncatedRoundNotice is what every surface says when a round of tool
+	// calls ended at the ceiling: what the model finished writing runs, and
+	// what it did not was dropped before anything could dispatch it.
+	TruncatedRoundNotice = "The reply reached the model's output ceiling; anything it had not finished writing was dropped."
+)
+
+// notifyContinue tells the front-end what the ceiling cost this round, when
+// there is one listening.
+func (h *Headless) notifyContinue(notice string) {
+	if h.OnContinue != nil {
+		h.OnContinue(notice)
+	}
+}
+
 // closeFeedback asks the close hook what the turn still owes. An interrupted
 // run is asked nothing: the checks would be reporting on a tree the run was
 // stopped halfway through changing, and the answer would be handed to a
@@ -456,18 +539,19 @@ func (h *Headless) deliverTree(turnStart bool) {
 }
 
 // streamOnce opens one completion stream over the current conversation and
-// consumes it, returning the assistant text and any tool calls that ended the
-// stream. Like the TUI's terminalMsg, a tool-call event ends the stream.
-func (h *Headless) streamOnce() (string, []provider.ToolCall, error) {
+// consumes it, returning the assistant text, any tool calls that ended the
+// stream, and why the model stopped writing. Like the TUI's terminalMsg, a
+// tool-call event ends the stream.
+func (h *Headless) streamOnce() (string, []provider.ToolCall, provider.StopReason, error) {
 	events, cancel, err := h.Agent.Stream(h.Agent.RequestMessages())
 	if err != nil {
-		return "", nil, err
+		return "", nil, provider.StopEnd, err
 	}
 	h.mu.Lock()
 	if h.interrupted {
 		h.mu.Unlock()
 		cancel()
-		return "", nil, nil
+		return "", nil, provider.StopEnd, nil
 	}
 	h.streamCancel = cancel
 	h.mu.Unlock()
@@ -483,13 +567,13 @@ func (h *Headless) streamOnce() (string, []provider.ToolCall, error) {
 		if ev.Err != nil {
 			if h.wasInterrupted() {
 				// The abort we caused is not a real stream failure.
-				return text.String(), nil, nil
+				return text.String(), nil, provider.StopEnd, nil
 			}
 			// The words written before the wire broke come back with the
 			// error. Nothing appends them to the conversation — a partial
 			// reply is not an answer — but a caller that has already shown
 			// them needs to know they were shown.
-			return text.String(), nil, ev.Err
+			return text.String(), nil, provider.StopEnd, ev.Err
 		}
 		if ev.Token != "" {
 			text.WriteString(ev.Token)
@@ -511,17 +595,17 @@ func (h *Headless) streamOnce() (string, []provider.ToolCall, error) {
 			// The thinking behind the calls travels with them into the round
 			// that records them.
 			h.Agent.CarryReasoning(ev.Reasoning)
-			return text.String(), ev.ToolCalls, nil
+			return text.String(), ev.ToolCalls, ev.Stop, nil
 		}
 		if ev.Done {
 			// A response that asked for no tools has nowhere to carry its
 			// thinking, and a latch left set would attach it to a later
 			// round's calls.
 			h.Agent.CarryReasoning(nil)
-			break
+			return text.String(), nil, ev.Stop, nil
 		}
 	}
-	return text.String(), nil, nil
+	return text.String(), nil, provider.StopEnd, nil
 }
 
 func (h *Headless) resolveGated(tc provider.ToolCall) string {

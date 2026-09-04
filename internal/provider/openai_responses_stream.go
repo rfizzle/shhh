@@ -53,6 +53,11 @@ type responseEvent struct {
 		Usage  *responseUsage       `json:"usage"`
 		Status string               `json:"status"`
 		Error  *responseError       `json:"error"`
+		// IncompleteDetails is why a response came back unfinished, and it
+		// is the only place this API says so: the status is "incomplete"
+		// whether the model filled its output budget or the endpoint
+		// stopped it, and the two are not the same ending.
+		IncompleteDetails *responseIncomplete `json:"incomplete_details"`
 	} `json:"response"`
 	Item    *responseOutputItem `json:"item"`
 	Message string              `json:"message"`
@@ -81,6 +86,10 @@ type responseUsage struct {
 	InputTokensDetails struct {
 		CachedTokens int `json:"cached_tokens"`
 	} `json:"input_tokens_details"`
+}
+
+type responseIncomplete struct {
+	Reason string `json:"reason"`
 }
 
 type responseError struct {
@@ -171,7 +180,17 @@ func streamResponses(body io.ReadCloser, classify func(error) error) <-chan Stre
 				if len(blocks) == 0 {
 					blocks = reasoning
 				}
-				ch <- StreamEvent{ToolCalls: calls, Reasoning: blocks, Usage: usage, Done: true}
+				stop := responsesStop(ev)
+				if stop == StopLength {
+					// A ceiling reached mid-call keeps only the calls that
+					// are whole. This API sends a call's finished arguments
+					// on the item that closes it, so a call the ceiling
+					// landed inside of usually never arrives at all — but
+					// the terminal output list is written from whatever the
+					// model produced, half an argument string included.
+					calls = CompletedToolCalls(calls)
+				}
+				ch <- StreamEvent{ToolCalls: calls, Reasoning: blocks, Usage: usage, Stop: stopForCalls(stop, calls), Done: true}
 				return
 
 			case eventFailed, eventError:
@@ -188,10 +207,37 @@ func streamResponses(body io.ReadCloser, classify func(error) error) <-chan Stre
 			return
 		}
 		// The stream ended without a terminal event: finish with whatever it
-		// did deliver rather than dropping a completed turn.
-		ch <- StreamEvent{ToolCalls: orderedCalls(seen, order), Reasoning: reasoning, Usage: usage, Done: true}
+		// did deliver rather than dropping a completed turn. There was no
+		// status to read a reason off, so the calls are all there is to name
+		// the ending by.
+		trailing := orderedCalls(seen, order)
+		ch <- StreamEvent{ToolCalls: trailing, Reasoning: reasoning, Usage: usage, Stop: stopForCalls(StopEnd, trailing), Done: true}
 	}()
 	return ch
+}
+
+// responsesStop maps a terminal response event onto shhh's closed set. A
+// completed response ended; an incomplete one says why in a field of its own,
+// and the one reason that is not a refusal is the output budget.
+func responsesStop(ev responseEvent) StopReason {
+	if ev.Type != eventIncomplete && ev.Response.Status != "incomplete" {
+		return StopEnd
+	}
+	reason := ""
+	if ev.Response.IncompleteDetails != nil {
+		reason = ev.Response.IncompleteDetails.Reason
+	}
+	switch reason {
+	case "max_output_tokens":
+		return StopLength
+	case "content_filter":
+		return StopRefusal
+	default:
+		// An unfinished response the API would not say more about. It is not
+		// a finished answer and it is not a truncation anything can continue
+		// from, so it is neither.
+		return StopOther
+	}
 }
 
 // sseData returns the JSON payload of a `data:` line. Event-name lines,

@@ -827,3 +827,145 @@ func TestHeadlessRun_OnCloseIsNotAskedOfAnInterruptedTurn(t *testing.T) {
 		t.Fatalf("err = %v, want ErrInterrupted", err)
 	}
 }
+
+// lengthRound is a reply the model stopped writing at its output ceiling.
+func lengthRound(text string) []provider.StreamEvent {
+	return []provider.StreamEvent{{Token: text}, {Done: true, Stop: provider.StopLength}}
+}
+
+func TestHeadlessRun_ContinuesAReplyCutAtTheCeiling(t *testing.T) {
+	a := New(nil, scriptedStream(t,
+		lengthRound("The first half of the answer"),
+		doneRound(" and the second."),
+	))
+	var notices []string
+	h := &Headless{Agent: a, OnContinue: func(n string) { notices = append(notices, n) }}
+
+	final, err := h.Run("explain it")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if final != " and the second." {
+		t.Fatalf("final = %q", final)
+	}
+	if len(notices) != 1 {
+		t.Fatalf("the run should say once that it asked for the rest, got %v", notices)
+	}
+	msgs := a.Messages()
+	// The half that was written, then the instruction that asks for the
+	// rest, then the rest: the conversation reads as a reply in two parts
+	// and never as one that was asked for twice.
+	if len(msgs) < 3 {
+		t.Fatalf("messages = %+v", msgs)
+	}
+	cut, ask := msgs[len(msgs)-3], msgs[len(msgs)-2]
+	if cut.Role != provider.RoleAssistant || cut.Content != "The first half of the answer" {
+		t.Fatalf("the half that was written should be in the conversation, got %+v", cut)
+	}
+	if ask.Role != provider.RoleUser || ask.Content != ContinueAfterCeiling {
+		t.Fatalf("the continuation should be asked for as a user message, got %+v", ask)
+	}
+}
+
+func TestHeadlessRun_ContinuesOnceARound(t *testing.T) {
+	a := New(nil, scriptedStream(t,
+		lengthRound("first"),
+		lengthRound("second"),
+	))
+	var notices int
+	h := &Headless{Agent: a, OnContinue: func(string) { notices++ }}
+
+	final, err := h.Run("explain it")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// The second attempt stands whatever it is: a turn that could ask for
+	// one more paragraph every time would have no ceiling at all where
+	// nobody is watching.
+	if final != "second" {
+		t.Fatalf("final = %q, want the second attempt to stand", final)
+	}
+	if notices != 1 {
+		t.Fatalf("one continuation per round, got %d", notices)
+	}
+}
+
+func TestHeadlessRun_AToolRoundEarnsItsOwnContinuation(t *testing.T) {
+	a := New(nil, scriptedStream(t,
+		lengthRound("first"),
+		[]provider.StreamEvent{{ToolCalls: []provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}, Stop: provider.StopTool}},
+		lengthRound("after the tools"),
+		doneRound("done"),
+	))
+	a.SetExecutor(func(string, json.RawMessage) (string, error) { return "contents", nil })
+	var notices int
+	h := &Headless{Agent: a, OnContinue: func(string) { notices++ }}
+
+	final, err := h.Run("do it")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if final != "done" {
+		t.Fatalf("final = %q", final)
+	}
+	if notices != 2 {
+		t.Fatalf("a round that ran tools starts a fresh round, got %d continuations", notices)
+	}
+}
+
+func TestHeadlessRun_ACeilingInsideAToolRoundIsSaidOutLoud(t *testing.T) {
+	a := New(nil, scriptedStream(t,
+		// The call that survived the ceiling; the one the model was still
+		// writing never reached here (internal/provider/partial.go).
+		[]provider.StreamEvent{{
+			ToolCalls: []provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}},
+			Stop:      provider.StopLength,
+		}},
+		doneRound("done"),
+	))
+	a.SetExecutor(func(string, json.RawMessage) (string, error) { return "contents", nil })
+	var notices []string
+	h := &Headless{Agent: a, OnContinue: func(n string) { notices = append(notices, n) }}
+
+	final, err := h.Run("do it")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if final != "done" {
+		t.Fatalf("final = %q", final)
+	}
+	if len(notices) != 1 || notices[0] != TruncatedRoundNotice {
+		t.Fatalf("a round that lost a call says so, got %v", notices)
+	}
+	// The call that was whole still ran: what the ceiling cost is the part
+	// that was not finished, and nothing else.
+	var results int
+	for _, m := range a.Messages() {
+		if m.Role == provider.RoleTool {
+			results++
+		}
+	}
+	if results != 1 {
+		t.Fatalf("the finished call should have run, got %d tool results", results)
+	}
+}
+
+// The silent case: the model spent its whole budget writing a call the
+// ceiling then cut, so the reply is empty and the call never arrives. The
+// turn used to end here as though the model had answered.
+func TestHeadlessRun_AnEmptyTruncatedReplyIsNotSilent(t *testing.T) {
+	a := New(nil, scriptedStream(t, []provider.StreamEvent{{Done: true, Stop: provider.StopLength}}))
+	var notices []string
+	h := &Headless{Agent: a, OnContinue: func(n string) { notices = append(notices, n) }}
+
+	final, err := h.Run("rewrite it")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if final != "" {
+		t.Fatalf("final = %q", final)
+	}
+	if len(notices) != 1 || notices[0] != TruncatedRoundNotice {
+		t.Fatalf("a turn that ends on nothing should say why, got %v", notices)
+	}
+}
