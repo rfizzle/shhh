@@ -333,15 +333,16 @@ session, a headless run and every child of either read one set;
 
 ### Context management
 
-Two mechanisms in two places. The message surgery is
+Two mechanisms in one place. The message surgery is
 `agent.TrimOldToolResults` (`internal/agent/context.go`): it elides the oldest
 tool results between index 0 and the last user message, and never the current
 turn, user or assistant text, or a result the `KeepResults` predicate claims.
-The figures are the chat model's, because the window belongs to whichever
-model the session is on — `trimThresholdPercent` (80) is where a trim starts
-and `trimLowWaterPercent` (60, the same line the ctx indicator warns at) is
-where it stops, both in `internal/ui/chat/context.go` beside the `/compact`
-flow.
+The figures are there too — `agent.TrimThresholdPercent` (80) is where
+recovery starts, `agent.TrimLowWaterPercent` (60, the same line the ctx
+indicator warns at) is where a trim stops — and `internal/ui/chat/context.go`
+aliases them for the surface that colours by them. They are not the screen's,
+because a session that acted at one share of its window and an unattended run
+that acted at another would be one promise with two meanings.
 
 The gap between those two numbers is the design, not slack. Rewriting any
 message invalidates the provider's cached prefix from that message on
@@ -376,6 +377,32 @@ caller trims against a corrected figure and shrinking that by raw estimates
 would stop the loop late. What a figure is — a report, an estimate, a
 corrected estimate — is one phrasing in `contextBreakdown.source`, on
 `/context` and `/stats` as the source line and on the rail beside the count.
+
+**Compaction is a step a driver calls, not something the loop asks for**
+([`docs/capabilities/coding-agent.md#the-window-recovers-where-nobody-is-watching`](docs/capabilities/coding-agent.md#the-window-recovers-where-nobody-is-watching)).
+`internal/agent/compact.go` holds all of it: the instruction, the summary
+request (`Agent.CompactRequest`, sent under `provider.ToolChoiceNone`), the
+verbatim tail (`Agent.CompactKeep`, cut at a user message so the rebuilt list
+is well-formed on every dialect), the rebuild (`Agent.Compact`), and
+`agent.Compactor`, which is the policy — the window, the toolset's cost, where
+the summary is asked, and the calibration. `Compactor.Recover` trims first and
+asks for a summary only where the trim could not clear the line, at most once
+per crossing. `Agent.Compact` deliberately does **not** reset the round
+counter; `finishCompact` does, because there the request was the user's own.
+
+`Headless.Compact` is where an unattended run installs one, and the step runs
+at the head of each round — ahead of the request, so the first request of a
+turn resumed onto a full conversation is covered too. `Headless.askSummary`
+registers its cancel where the stream's goes, so an interrupt aborts a
+compaction the way it aborts a round. `headlessCompactor`
+(`internal/cli/print.go`) resolves the window from the pricing table then the
+model family and returns **nil** when neither can say; `childCompactor`
+(`internal/subagent/subagent.go`) does the same from the child's model name
+alone, since a child holds one stream and never sees its own tool
+definitions. A configured `summary.model` takes the request only when its
+window is at least the conversation's. Both surfaces report through
+`Headless.OnCompact`: stderr and the record for a `-p` run, a transcript row
+and a lane update for a child.
 
 ### Provider Interface
 

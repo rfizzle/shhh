@@ -116,6 +116,25 @@ type Headless struct {
 	// See docs/capabilities/coding-agent.md#an-unattended-run-runs-the-same-loop.
 	OnRetry func(n RetryNotice)
 
+	// Compact, when set, is the window-recovery step this run takes at each
+	// round boundary: old tool results elided first, and the conversation
+	// replaced by a summary of itself where eliding cannot clear the line.
+	// Nil leaves a long run to meet its window the way it always did, which
+	// is at it.
+	//
+	// It is a field on the runner rather than something the loop reaches for
+	// because the loop is passive: it is a step a driver installs, and a
+	// driver that installs none gets a run that never asks for a summary.
+	// See docs/capabilities/coding-agent.md#the-window-recovers-where-nobody-is-watching.
+	Compact *Compactor
+
+	// OnCompact, when set, is told what each recovery step did, so a
+	// scripted run can say it on stderr and a child can say it on its lane.
+	// It is told about a compaction that failed as well as one that worked:
+	// a run heading for a window it could not recover is the one thing here
+	// worth reading.
+	OnCompact func(n CompactNotice)
+
 	// retry is the bound across the whole turn, not across one request: three
 	// rate limits in a row are three attempts and not three fresh chances
 	// (retry.go).
@@ -179,6 +198,14 @@ func (h *Headless) Run(prompt string) (string, error) {
 	h.deliverTree(true)
 	h.Agent.StartTurn(prompt)
 	for {
+		// The window is recovered here and nowhere else. This is a round
+		// boundary — no stream is open and no call is owed a result — and it
+		// is the boundary in front of a request, which is the only one that
+		// can keep a request from being the one that does not fit. A turn
+		// resumed onto a conversation that was already full crosses the line
+		// before its first round, so the check belongs ahead of the request
+		// rather than behind the round.
+		h.recoverContext()
 		text, calls, err := h.streamOnce()
 		if err != nil {
 			notice, ok := h.retry.Next(err)
@@ -331,6 +358,79 @@ func (h *Headless) Run(prompt string) (string, error) {
 	}
 }
 
+// recoverContext takes the run's window-recovery step and reports what it
+// did. A step with nothing to do says nothing: the ordinary round boundary is
+// one where the conversation is nowhere near its window.
+func (h *Headless) recoverContext() {
+	if h.Compact == nil || h.wasInterrupted() {
+		return
+	}
+	n := h.Compact.Recover(h.Agent, h.askSummary)
+	if n.Notice == "" || h.OnCompact == nil {
+		return
+	}
+	h.OnCompact(n)
+}
+
+// askSummary opens one summary request and reads it back as prose. Like the
+// retry and the hold it registers its cancel where the stream's goes, so an
+// Interrupt aborts it rather than leaving a killed run waiting out a request
+// nobody will read.
+//
+// Usage is reported the way a turn's own is: the request is a real request
+// against a real budget, and a run whose spend jumped without a line to
+// explain it is a bill nobody can account for. It teaches the estimator
+// nothing, though, unlike a turn's — this request may have gone to another
+// model, and a ratio measured on one tokenizer and applied to another is a
+// correction that is confidently wrong.
+func (h *Headless) askSummary(msgs []provider.Message, choice string) (string, error) {
+	events, cancel, err := h.Compact.open(h.Agent, msgs, choice)
+	if err != nil {
+		return "", err
+	}
+	h.mu.Lock()
+	if h.interrupted {
+		h.mu.Unlock()
+		cancel()
+		return "", ErrInterrupted
+	}
+	h.streamCancel = cancel
+	h.mu.Unlock()
+	defer func() {
+		h.mu.Lock()
+		h.streamCancel = nil
+		h.mu.Unlock()
+		cancel()
+	}()
+
+	var text strings.Builder
+	for ev := range events {
+		if ev.Err != nil {
+			if h.wasInterrupted() {
+				// The abort we caused is not a compaction that failed, and
+				// saying it was would leave a killed run's last word a
+				// complaint about something nobody asked for.
+				return "", ErrInterrupted
+			}
+			return "", ev.Err
+		}
+		text.WriteString(ev.Token)
+		if ev.Usage != nil && h.OnUsage != nil {
+			h.OnUsage(ev.Usage)
+		}
+		if len(ev.ToolCalls) > 0 {
+			return "", errCompactToolCall
+		}
+		if ev.Done {
+			break
+		}
+	}
+	if h.wasInterrupted() {
+		return "", ErrInterrupted
+	}
+	return text.String(), nil
+}
+
 // closeFeedback asks the close hook what the turn still owes. An interrupted
 // run is asked nothing: the checks would be reporting on a tree the run was
 // stopped halfway through changing, and the answer would be handed to a
@@ -397,8 +497,15 @@ func (h *Headless) streamOnce() (string, []provider.ToolCall, error) {
 				h.OnText(ev.Token)
 			}
 		}
-		if ev.Usage != nil && h.OnUsage != nil {
-			h.OnUsage(ev.Usage)
+		if ev.Usage != nil {
+			// What the prompt actually came to, measured against what this
+			// run estimated for the same messages. It is folded in here
+			// because here is the one moment the two describe the same
+			// conversation: the response has not joined it yet.
+			h.Compact.Observe(int64(ev.Usage.PromptTokens), h.Agent.Messages())
+			if h.OnUsage != nil {
+				h.OnUsage(ev.Usage)
+			}
 		}
 		if len(ev.ToolCalls) > 0 {
 			// The thinking behind the calls travels with them into the round

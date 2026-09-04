@@ -19,6 +19,7 @@ import (
 	"github.com/rfizzle/shhh/internal/mcp"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
@@ -140,6 +141,21 @@ func (h headlessObserver) intervene(iv agent.Intervention) {
 // tree records the run being told the tree moved under it.
 func (h headlessObserver) tree(n agent.TreeNotice) {
 	h.rec.signal(h.pos(), observe.SignalTree, n.Signal())
+}
+
+// compact records what a window-recovery step did. Both halves are recorded
+// and each under its own code: a trim spends the provider's cached prefix and
+// a compaction spends a request and the conversation, and a rate that added
+// them together could not tell a run that shaved itself once from one that
+// threw its history away.
+func (h headlessObserver) compact(n agent.CompactNotice) {
+	at := h.pos()
+	if n.Elided > 0 {
+		h.rec.signal(at, observe.SignalTrim, observe.TrimReason(n.Elided, n.BeforePct, n.AfterPct))
+	}
+	if n.Compacted {
+		h.rec.signal(at, observe.SignalCompact, observe.CompactPressure)
+	}
 }
 
 // retry records one wait the run sat out after a request the provider never
@@ -654,14 +670,24 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	}
 	h := &agent.Headless{
 		Agent:   a,
+		Compact: headlessCompactor(cmd.Context(), cfg, env, ledger, prices, session.toolDefs),
 		Summary: summaryRun,
 		OnIntervene: func(iv agent.Intervention) {
 			fmt.Fprintf(os.Stderr, "» %s\n", iv.Notice)
 			obs.intervene(iv)
 		},
 		OnSummary: obs.summary,
-		Gate:      gate,
-		Resolve:   resolve,
+		// A run nobody is reading still says when its conversation was
+		// recycled, on the same stream as its other activity: an answer that
+		// arrived after a compaction was written by a model that had been
+		// handed a summary of what it did, and a reader comparing two runs
+		// has to be able to see which of them that was.
+		OnCompact: func(n agent.CompactNotice) {
+			fmt.Fprintf(os.Stderr, "» %s\n", n.Notice)
+			obs.compact(n)
+		},
+		Gate:    gate,
+		Resolve: resolve,
 		OnTree: func(n agent.TreeNotice) {
 			fmt.Fprintf(os.Stderr, "» %s\n", n.Notice)
 			obs.tree(n)
@@ -751,6 +777,88 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		}
 	}
 	return out
+}
+
+// headlessCompactor is the window-recovery step for an unattended run: the
+// window it measures its conversation against, what the toolset costs on
+// every request, and where a summary is asked for when eliding old tool
+// results can no longer make room.
+//
+// The window is the pricing table's answer and the model family's behind it,
+// and no step at all when neither can say. Recovering against a guessed
+// window would throw a conversation away that had most of its room left,
+// while doing nothing is exactly what a long run did before this existed —
+// the cheaper mistake by a wide margin. The endpoint's own answer is
+// deliberately not asked for: a session takes it in the background across
+// many turns, and a one-shot run would race the query rather than read it.
+func headlessCompactor(ctx context.Context, cfg config.Config, env *sessionEnv, ledger *meter.Ledger, prices *pricing.Table, defs []provider.Tool) *agent.Compactor {
+	var window int64
+	if prices != nil {
+		window, _ = prices.ContextWindow(env.modelName)
+	}
+	if window <= 0 {
+		window, _ = provider.ContextWindowFor(env.modelName)
+	}
+	if window <= 0 {
+		return nil
+	}
+	c := &agent.Compactor{Model: env.modelName, Window: window}
+	// The definitions are on every request and are not in the conversation,
+	// so a run that left them out of the estimate would think it had a
+	// toolset's worth of room it does not have.
+	for _, t := range toolDefTokens(defs) {
+		c.ToolTokens += t.Tokens
+	}
+	// A summary is a bounded piece of prose about a conversation, so it goes
+	// to the model a configuration named for one where it named one. Never to
+	// a model with a smaller window than the conversation it is being handed,
+	// though, and never to one nothing can vouch for the window of: the
+	// moment a compaction is asked for is the moment that conversation is
+	// nearly a window's worth, so a smaller model would refuse the request at
+	// precisely the point there is no room to fail.
+	if name := strings.TrimSpace(cfg.Summary.Model); name != "" && name != env.modelName {
+		if w, ok := summaryModelWindow(prices, name); ok && w >= window {
+			c.Stream = summaryModelStream(ctx, env, ledger, defs, name)
+		}
+	}
+	return c
+}
+
+// summaryModelWindow is what anything can say about a model that is not the
+// one the conversation is on.
+func summaryModelWindow(prices *pricing.Table, model string) (int64, bool) {
+	if prices != nil {
+		if w, ok := prices.ContextWindow(model); ok {
+			return w, true
+		}
+	}
+	return provider.ContextWindowFor(model)
+}
+
+// summaryModelStream sends one request on another model of the same provider,
+// billed as the summary work it is. It carries the conversation's own tool
+// definitions and the caller's tool choice, because what makes a summary
+// request safe is the choice forbidding a call and not the tools being
+// missing from the request.
+func summaryModelStream(ctx context.Context, env *sessionEnv, ledger *meter.Ledger, defs []provider.Tool, model string) agent.StreamFunc {
+	return func(msgs []provider.Message, choice string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		reqCtx, cancel := context.WithCancel(ctx)
+		events, err := ledger.For(env.prov, meter.SourceSummary).StreamCompletion(reqCtx, msgs, provider.CompletionOpts{
+			Model:      model,
+			Tools:      defs,
+			ToolChoice: choice,
+			// A shallow thought over a conversation that is already written.
+			// The judgement asked for is what mattered in it, not what to do
+			// next, and a deep one here is paid for out of the budget the run
+			// is trying to get back under.
+			Effort: provider.EffortLow,
+		})
+		if err != nil {
+			cancel()
+			return nil, nil, err
+		}
+		return events, cancel, nil
+	}
 }
 
 // headlessCloseGate is the on-close gate run for an unattended turn: the

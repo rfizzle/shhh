@@ -231,6 +231,25 @@ type Env struct {
 	Retries *int
 }
 
+// childCompactor is a child's window-recovery step, or nothing where the
+// window cannot be established. Only the model's name is available to work it
+// out from — a child holds one stream, bound to one model and one role-scoped
+// toolset, and never sees the definitions themselves — so a name no family
+// answers for leaves the child running exactly as it did before, which is the
+// cheaper of the two mistakes: recovering against a guessed window would
+// throw away the work of a child that had most of its room left.
+//
+// The summary is asked of the child's own model for the same reason. The one
+// door a child has out is its stream, and a request on another model would
+// have to be built somewhere that knows what the child's tools are.
+func childCompactor(model string) *agent.Compactor {
+	window, ok := provider.ContextWindowFor(model)
+	if !ok {
+		return nil
+	}
+	return &agent.Compactor{Model: model, Window: window}
+}
+
 // roundCap is the cap a child's agent is running under as the record spells
 // it: the number, or 0 for none. MaxRounds alone cannot say the second,
 // because it answers with the default for an uncapped agent.
@@ -1636,11 +1655,26 @@ func (s *Supervisor) run(c *child) {
 		}
 	}
 	h := &agent.Headless{
-		Agent: c.agent,
+		Agent:   c.agent,
+		Compact: childCompactor(c.model),
 		// A child is as unwatched as a headless run, and its task is the
 		// instruction every reading is judged against. Nil unless
 		// summary.subagents is on.
 		Summary: agent.NewSummaryRun(c.env.Summarizer, agent.NewRecorder(0), c.task),
+		// A child that recycled its conversation says so on its lane, which
+		// is the only place anyone is looking: a child whose answer came out
+		// of a summary of its own work is a different reading from one that
+		// still had every result in front of it.
+		OnCompact: func(n agent.CompactNotice) {
+			c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: n.Notice})
+			if n.Elided > 0 {
+				signal(observe.SignalTrim, observe.TrimReason(n.Elided, n.BeforePct, n.AfterPct))
+			}
+			if n.Compacted {
+				signal(observe.SignalCompact, observe.CompactPressure)
+			}
+			s.emitUpdate(c)
+		},
 		OnIntervene: func(iv agent.Intervention) {
 			c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: iv.Notice})
 			signal(observe.SignalIntervene, iv.Kind.Signal())

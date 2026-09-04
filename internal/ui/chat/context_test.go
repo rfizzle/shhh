@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -310,7 +311,7 @@ func TestCompact_RestartsFromSummary(t *testing.T) {
 
 	m = driveCompact(t, m)
 
-	if len(gotReq) != 4 || gotReq[3].Content != compactInstruction {
+	if len(gotReq) != 4 || gotReq[3].Content != agent.CompactInstruction {
 		t.Fatalf("summarize request should be conversation + instruction, got %d messages", len(gotReq))
 	}
 	if len(m.Messages()) != 2 {

@@ -169,6 +169,18 @@ const (
 	// TrimReason builds — how many, and where the context estimate stood
 	// either side of the elision.
 	SignalTrim = "context-trimmed"
+	// SignalCompact: the conversation was replaced by a summary of itself
+	// and the last turns verbatim. Reason: "asked" (a person compacted it) or
+	// "pressure" (the window crossed its line where nobody was watching).
+	//
+	// The two are one event and one code because they do the same thing to a
+	// conversation, and two codes would need adding up before anyone could
+	// ask how often a session's history is being thrown away. They are told
+	// apart by the qualifier because who asked is the whole question a rate
+	// over them is for: an automatic compaction is the mechanism working, and
+	// a run of asked ones is a window somebody keeps having to rescue by
+	// hand.
+	SignalCompact = "compacted"
 	// SignalSummary: the summarizer read the session. Reason is the
 	// reading's state, from SummaryCode. Every reading is recorded, not just
 	// the drifting ones — a drift rate needs its denominator.
@@ -218,6 +230,18 @@ const (
 	// Observer.Signal, because it names a subject — the suite — as well as
 	// a qualifier.
 	SignalGate = "gate"
+)
+
+// Compaction reasons for SignalCompact: who asked for it. A trim
+// is not one of them — eliding old tool results is SignalTrim, and it is a
+// different event with a different cost.
+const (
+	// CompactAsked: a person compacted the conversation, by command or by
+	// answering the card the window pressure raises.
+	CompactAsked = "asked"
+	// CompactPressure: the window crossed its line in a run with nobody in
+	// front of it, and a trim could not bring it back.
+	CompactPressure = "pressure"
 )
 
 // Gate verdicts for Observer.Gate. The gate's own four, which are already a

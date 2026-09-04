@@ -1,9 +1,13 @@
 package agent
 
-// Message-list hygiene for context management: trimming old tool
-// results is conversation surgery, so it lives with the message list. The
-// thresholds and the /compact flow stay with the front-end, which knows the
-// model's context window and drives the summarization stream.
+// Message-list hygiene for context management: trimming old tool results is
+// conversation surgery, so it lives with the message list, and so do the
+// shares of the window that say when it is due. What the surface keeps is the
+// window itself — which model this conversation is on, and what that model
+// can hold — because that is the one part of the question a message list
+// cannot answer about itself. Replacing a conversation that a trim could not
+// rescue is compact.go, in this package, called by whichever driver reached
+// the round boundary.
 
 import (
 	"fmt"
@@ -11,6 +15,33 @@ import (
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/provider"
+)
+
+// How full the window may get, as shares of it. They live here rather than
+// with the surface that draws them because they are what every surface
+// measures against: a line crossed at one figure in a session and at another
+// where nobody is watching is two behaviours wearing one name.
+const (
+	// TrimThresholdPercent of the context window is where recovery starts.
+	// Old tool results are elided first, and where eliding cannot clear the
+	// line the conversation is replaced by a summary of itself.
+	TrimThresholdPercent = 80
+	// WarnThresholdPercent is "filling up, but not yet a problem".
+	WarnThresholdPercent = 60
+	// TrimLowWaterPercent is where a trim stops. It is the warn line rather
+	// than a figure of its own because that is already the place this
+	// product calls "filling up but not yet a problem", and a trim has no
+	// reason to invent a second one.
+	//
+	// It is far below the trigger on purpose. A trim that stopped as soon as
+	// it was under the threshold would clear the line by a few hundred
+	// tokens, cross it again a round later, and pay the price of a trim
+	// again — and that price is the whole prompt prefix the provider was
+	// caching, because eliding a message invalidates the cache from that
+	// message on. Stopping here spends one invalidation on a fifth of the
+	// window of headroom.
+	// See docs/capabilities/providers.md#the-prompt-prefix-is-paid-for-once.
+	TrimLowWaterPercent = WarnThresholdPercent
 )
 
 // ElidedResult replaces a trimmed tool result whose original nothing kept.

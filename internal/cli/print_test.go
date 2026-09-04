@@ -970,3 +970,56 @@ func TestHeadlessCloseGate_BlockedIsNeverAPass(t *testing.T) {
 		t.Fatalf("err = %v, want blocked", err)
 	}
 }
+
+// The unattended run's window-recovery step is built from what anything can
+// say about the model it runs on, and from nothing at all where nothing can
+// say: a step against a guessed window would throw away a conversation that
+// had most of its room left.
+func TestHeadlessCompactor_NeedsAWindowSomethingCanName(t *testing.T) {
+	defs := []provider.Tool{{Name: "read_file", Description: "read a file"}}
+
+	c := headlessCompactor(t.Context(), config.Config{}, &sessionEnv{modelName: "llama-3.1"}, nil, nil, defs)
+	if c == nil {
+		t.Fatal("no step for a model whose window the family table publishes")
+	}
+	if c.Window != 128_000 || c.Model != "llama-3.1" {
+		t.Fatalf("step built with window %d for %q", c.Window, c.Model)
+	}
+	// The definitions are on every request and in no message, so a run that
+	// left them out would think it had a toolset's worth of room it has not.
+	if c.ToolTokens <= 0 {
+		t.Fatal("the toolset costs the estimate nothing")
+	}
+	if c.Stream != nil {
+		t.Fatal("a summary was routed off the conversation's model with none configured")
+	}
+
+	if c := headlessCompactor(t.Context(), config.Config{}, &sessionEnv{modelName: "a-private-build"}, nil, nil, defs); c != nil {
+		t.Fatalf("a step was built against a window nothing could name: %+v", c)
+	}
+}
+
+// A configured summary model takes the request, but never one whose window
+// is smaller than the conversation it is being handed: the moment a
+// compaction is asked for is the moment there is no room to fail.
+func TestHeadlessCompactor_SummaryModelMustFitTheConversation(t *testing.T) {
+	env := &sessionEnv{modelName: "llama-3.1"}
+
+	roomy := config.Config{}
+	roomy.Summary.Model = "gemma-4"
+	if c := headlessCompactor(t.Context(), roomy, env, nil, nil, nil); c == nil || c.Stream == nil {
+		t.Fatalf("the configured summary model did not take the request: %+v", c)
+	}
+
+	cramped := config.Config{}
+	cramped.Summary.Model = "phi"
+	if c := headlessCompactor(t.Context(), cramped, env, nil, nil, nil); c == nil || c.Stream != nil {
+		t.Fatalf("a summary model too small to read the request took it: %+v", c)
+	}
+
+	unknown := config.Config{}
+	unknown.Summary.Model = "a-private-build"
+	if c := headlessCompactor(t.Context(), unknown, env, nil, nil, nil); c == nil || c.Stream != nil {
+		t.Fatalf("a summary model nothing can vouch for took the request: %+v", c)
+	}
+}

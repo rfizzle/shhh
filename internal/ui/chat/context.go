@@ -23,55 +23,29 @@ import (
 // is what is left for a private fine-tune under a name of its own.
 const DefaultContextWindow = 32768
 
+// Where this surface colours and acts on occupancy. The figures are the
+// loop's, not this screen's: a session that trimmed at one share of its
+// window and an unattended run that compacted at another would be one
+// promise with two meanings.
 const (
-	// trimThresholdPercent of the context window is where trimming starts
-	// and where the status bar ctx indicator turns alert-colored.
-	trimThresholdPercent = 80
+	// trimThresholdPercent is where trimming starts and where the status bar
+	// ctx indicator turns alert-colored.
+	trimThresholdPercent = agent.TrimThresholdPercent
 	// warnThresholdPercent is where the ctx indicator turns warning-colored.
-	warnThresholdPercent = 60
-	// trimLowWaterPercent is where a trim stops. It is the warn line rather
-	// than a figure of its own because that is already the place this
-	// interface calls "filling up but not yet a problem", and a trim has no
-	// reason to invent a second one.
-	//
-	// It is far below the trigger on purpose. A trim that stopped as soon as
-	// it was under the threshold would clear the line by a few hundred
-	// tokens, cross it again a round later, and pay the price of a trim
-	// again — and that price is the whole prompt prefix the provider was
-	// caching, because eliding a message invalidates the cache from that
-	// message on. Stopping here spends one invalidation on a fifth of the
-	// window of headroom.
-	// See docs/capabilities/providers.md#the-prompt-prefix-is-paid-for-once.
-	trimLowWaterPercent = warnThresholdPercent
+	warnThresholdPercent = agent.WarnThresholdPercent
+	// trimLowWaterPercent is where a trim stops.
+	trimLowWaterPercent = agent.TrimLowWaterPercent
 )
 
 // elidedResult replaces a trimmed tool result the evidence store could not
 // take; one it could take carries the id that pages the original back.
 const elidedResult = agent.ElidedResult
 
-// What a compaction keeps besides the summary. The pressure card
-// promises the most recent turns survive it, so they have to: a summary is a
-// description of a conversation, and the turn you are in the middle of is the
-// one place a description is not good enough.
-const (
-	// compactKeepTurns is how many of the most recent user turns are carried
-	// through verbatim.
-	compactKeepTurns = 2
-	// compactKeepPercent bounds what those turns may occupy of the window. A
-	// single turn that read half the repository is not a tail, and keeping it
-	// would compact the conversation into the same corner it started in.
-	compactKeepPercent = 15
-	// compactSummaryEstimate is the allowance the recovery prediction makes
-	// for the summary that has not been written yet. It is the one term of
-	// the prediction nobody can know in advance, which is why the card says
-	// "about".
-	compactSummaryEstimate = 1000
-)
-
-// compactInstruction is sent as the final user message of a /compact request.
-const compactInstruction = "Summarize this conversation so it can be continued from the summary alone. " +
-	"Capture the user's goals, key facts and decisions, work completed, current state, and open tasks. " +
-	"Reply with only the summary text."
+// compactSummaryEstimate is the allowance the card's recovery prediction
+// makes for the summary that has not been written yet. It is the one term of
+// the prediction nobody can know in advance, which is why the card says
+// "about".
+const compactSummaryEstimate = 1000
 
 func estimateMessageTokens(msgs []provider.Message) int64 {
 	return agent.EstimateMessageTokens(msgs)
@@ -189,19 +163,9 @@ func (m Model) startCompact() (tea.Model, tea.Cmd) {
 	m.appendEntry(entry{kind: entrySystem, text: "Compacting conversation…"})
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
-	msgs := append(m.agent.RequestMessages(), provider.Message{Role: provider.RoleUser, Content: compactInstruction})
-	// A summary is prose, and the request says so rather than asking nicely
-	// and hoping: the instruction just appended sits under a whole session's
-	// worth of tool results, and a model reading it as one more turn answers
-	// with the tool call the turn was about to make.
-	//
-	// The tools stay on the request. They are the head of the prefix the
-	// provider caches — in front of the system prompt, in the one dialect
-	// that is told about the prefix at all — so a request that dropped them
-	// to prevent a tool call would rebuild the whole head to save a retry,
-	// and the marks that name that head would have nothing to point at.
-	// See docs/capabilities/providers.md#the-prompt-prefix-is-paid-for-once.
-	return m, m.requestStreamFor(msgs, provider.ToolChoiceNone)
+	// The request the shared step builds, under the choice it asks for: what
+	// a compaction sends is one thing whichever surface asked for it.
+	return m, m.requestStreamFor(m.agent.CompactRequest(), provider.ToolChoiceNone)
 }
 
 // finishCompact restarts the message list from the streamed summary: system
@@ -233,14 +197,12 @@ func (m Model) finishCompact() (tea.Model, tea.Cmd) {
 	kept := m.compactKeep()
 	run, carried := m.planRun, m.planChecklist()
 
-	rebuilt := make([]provider.Message, 0, 2+len(kept))
-	if msgs := m.agent.Messages(); len(msgs) > 0 && msgs[0].Role == provider.RoleSystem {
-		rebuilt = append(rebuilt, msgs[0])
-	}
-	rebuilt = append(rebuilt, provider.Message{Role: provider.RoleUser, Content: compactContextMessage(summary)})
-	rebuilt = append(rebuilt, kept...)
-	m.agent.SetMessages(rebuilt)
+	m.agent.Compact(summary, kept)
+	// The counter the shared step leaves alone. Here the compaction is the
+	// user's own request, and a request typed by the person in front of the
+	// session is exactly what a fresh round budget is for.
 	m.resetRounds()
+	m.signal(observe.SignalCompact, observe.CompactAsked)
 	// Nothing has been reported about the rebuilt conversation yet.
 	m.contextTokens = 0
 	// The burn series described the conversation that was just discarded.
@@ -248,7 +210,7 @@ func (m Model) finishCompact() (tea.Model, tea.Cmd) {
 	m.resetTranscript()
 	// Pre-compaction checkpoints point into the discarded conversation;
 	// rebuild them from what remains.
-	m.checkpoints = checkpointsFromMessages(rebuilt)
+	m.checkpoints = checkpointsFromMessages(m.agent.Messages())
 	m.appendEntry(entry{kind: entrySystem, text: compactedNotice(len(kept) > 0, m.keptTurnCount(kept))})
 	m.appendEntry(entry{kind: entryAssistant, text: summary})
 	// The turns the model kept are the turns the screen keeps: a transcript
@@ -280,54 +242,16 @@ func compactedNotice(kept bool, turns int) string {
 		plural(turns, "turn"))
 }
 
-// compactKeep is the tail of the conversation a compaction carries through
-// verbatim: whole turns, most recent first, bounded by compactKeepTurns and
-// by compactKeepPercent of the window.
-//
-// The boundary is always a user message, which is what keeps the result
-// well-formed — a tail that started inside a tool round would open with
-// results for calls the model could no longer see it had made. A tail that
-// would be the whole conversation is no tail at all: there would be nothing
-// left for the summary to have summarized.
+// compactKeep is the tail a compaction carries through verbatim, under this
+// session's window and its own correction factor. The card reads it too, to
+// promise what compacting would keep before anything has been compacted.
 func (m Model) compactKeep() []provider.Message {
-	msgs := m.agent.Messages()
-	first := 0
-	if len(msgs) > 0 && msgs[0].Role == provider.RoleSystem {
-		first = 1
-	}
-	var starts []int
-	for i := first; i < len(msgs); i++ {
-		if msgs[i].Role == provider.RoleUser {
-			starts = append(starts, i)
-		}
-	}
-	budget := m.contextWindow() * compactKeepPercent / 100
-	at := -1
-	for n := 1; n <= compactKeepTurns && n <= len(starts); n++ {
-		start := starts[len(starts)-n]
-		if start <= first {
-			break
-		}
-		if estimateMessageTokens(msgs[start:]) > budget {
-			break
-		}
-		at = start
-	}
-	if at < 0 {
-		return nil
-	}
-	return append([]provider.Message(nil), msgs[at:]...)
+	return m.agent.CompactKeep(m.contextWindow()*agent.CompactKeepPercent/100, m.calibration)
 }
 
 // keptTurnCount counts the user messages in a kept tail — the turns it is.
 func (m Model) keptTurnCount(kept []provider.Message) int {
-	n := 0
-	for _, msg := range kept {
-		if msg.Role == provider.RoleUser {
-			n++
-		}
-	}
-	return n
+	return agent.CompactKeptTurns(kept)
 }
 
 // abortCompact abandons a compaction that answered with tool calls, leaving
@@ -349,14 +273,13 @@ func (m Model) abortCompact() (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// compactContextPrefix opens that message. It is a constant because input
-// recall reads it: a resumed session seeds its history from the user-role
-// messages it loads, and this is one of the three that nobody typed
-// (recall.go).
-const compactContextPrefix = "Summary of the conversation so far (earlier messages were compacted):"
+// compactContextPrefix opens that message. Input recall reads it: a resumed
+// session seeds its history from the user-role messages it loads, and this is
+// one of the three that nobody typed (recall.go).
+const compactContextPrefix = agent.CompactSummaryPrefix
 
 // compactContextMessage is the user-role message that carries the summary
 // into the restarted conversation.
 func compactContextMessage(summary string) string {
-	return compactContextPrefix + "\n\n" + summary
+	return agent.CompactSummaryMessage(summary)
 }

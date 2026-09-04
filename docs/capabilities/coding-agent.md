@@ -418,6 +418,60 @@ written is handed back with the wait rather than dropped quietly, because a
 run that has already printed half a sentence has to close it off before the
 answer that replaces it starts.
 
+## The window recovers where nobody is watching
+
+A long run fills its context window, and what happened next used to depend
+entirely on whether somebody was there. A session says so out loud: the rails
+change colour, a card states where the window went and offers to compact the
+conversation, and you decide. A scripted run and a sub-agent have no card and
+nobody to show one to, so they ran at the line until a request would not fit
+and ended on it — at the worst moment there is, because everything the run had
+worked out was still only in the conversation it had just lost.
+
+The same line now has the same two answers everywhere. **Eliding old tool
+output is the first one**, because it is the cheap one: what it costs is the
+prompt prefix the provider was caching, and the conversation itself survives
+intact. **Replacing the conversation with a summary of itself is the second**,
+and it happens only where the first could not clear the line — a run whose
+window is full of prose, or one already elided to the bone, has nothing left
+to give and the summary is the only thing that recovers it. What survives a
+compaction is the same everywhere too: the system prompt, the summary, and the
+most recent turns word for word, bounded so that one enormous turn cannot be
+the whole of what is kept.
+
+It happens between rounds and never inside one. At a round boundary no request
+is open and no tool call is waiting for its result, so the conversation can be
+cut where a turn ends rather than in the middle of one — a tail that began
+inside a round would open with results for calls the model can no longer see
+it made, which is a request the provider refuses rather than a summary that is
+merely lossy.
+
+Three things keep it from making matters worse. The request that asks for the
+summary forbids the model calling a tool, because it is asking for prose from
+a conversation that is nothing but tool calls and would otherwise get one
+more. A summary that does not arrive is not asked for again until the window
+has fallen back under the line and crossed it afresh: the request carries the
+whole conversation, and asking once a round is the most expensive way there is
+to keep failing. And a model whose window nothing can vouch for gets no
+compaction at all — recovering against a guessed window would throw away the
+work of a run that had most of its room left, which is a far worse mistake
+than the one this replaced.
+
+Where a scripted run is on a workspace that names a model for summaries, the
+summary is asked of that one, since this is a bounded piece of prose about a
+conversation rather than more of the work. Never of one with a smaller window
+than the conversation being handed to it, though: the moment a compaction is
+called for is the moment there is no room to fail. A sub-agent asks its own
+model whatever the workspace says, because the single stream it was built with
+is the only way out it has.
+
+Whichever surface recovers, the event is on the record, and a trim and a
+compaction are recorded apart — one costs a cached prefix, the other costs a
+request and the history. A sub-agent that compacts says so on its lane, where
+the parent can see it: an answer that came out of a summary of the child's own
+work is a different reading from one that still had every result in front of
+it.
+
 ## Steps are a reading of the turn, not a protocol
 
 A forty-tool turn is unreadable as forty rows, so consecutive calls group

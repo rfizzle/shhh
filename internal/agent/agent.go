@@ -244,13 +244,7 @@ func (a *Agent) Stream(msgs []provider.Message) (<-chan provider.StreamEvent, co
 // StreamWithChoice is Stream under an explicit tool choice, for a request
 // that wants prose out of a session whose tools are still on the wire.
 func (a *Agent) StreamWithChoice(msgs []provider.Message, choice string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
-	if a.scrub != nil {
-		msgs = append([]provider.Message(nil), msgs...)
-		for i := range msgs {
-			msgs[i] = a.scrub(msgs[i])
-		}
-	}
-	return a.stream(msgs, choice)
+	return a.streamOn(a.stream, msgs, choice)
 }
 
 // RunID identifies the current turn's asynchronous work; results stamped

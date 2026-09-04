@@ -109,6 +109,25 @@ func TestTrimReason_CountsTrimsOfTheSameShapeTogether(t *testing.T) {
 	}
 }
 
+// A compaction is one code with two qualifiers, and the qualifiers are what
+// answer the question a rate over them is asked for: whether a window is
+// being recovered by the mechanism or by somebody having to do it by hand. A
+// trim is a different code, because it costs a cached prefix where a
+// compaction costs a request and the conversation.
+func TestCompactReasonsAreDistinctFromEachOtherAndFromATrim(t *testing.T) {
+	if CompactAsked == CompactPressure {
+		t.Fatal("a compaction somebody asked for reads as one nobody did")
+	}
+	if SignalCompact == SignalTrim {
+		t.Fatalf("a compaction and a trim share the code %q", SignalCompact)
+	}
+	for _, code := range []string{SignalCompact, CompactAsked, CompactPressure} {
+		if code == "" {
+			t.Fatal("an empty code reads as a row nobody can explain")
+		}
+	}
+}
+
 // Every unattended surface reports a reading with this, so the four states
 // have to keep the four spellings a stored rate is grouped by.
 func TestSummaryCode(t *testing.T) {
