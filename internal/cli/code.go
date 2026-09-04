@@ -51,7 +51,15 @@ func newCodeCmd() *cobra.Command {
 			// unattended, which is the one thing the in-session [+] and [!]
 			// cannot do — they are keys, and nobody is there to press them.
 			popts.maxRoundsSet = cmd.Flags().Changed("max-rounds")
-			headless := printMode || popts.json || popts.sandbox
+			// What the run will write, from the two spellings that say it.
+			// It is settled here rather than inside the run so that a value
+			// nothing can honour is refused before a provider is resolved.
+			output, err := resolveOutput(popts.output, popts.json)
+			if err != nil {
+				return err
+			}
+			popts.output = output
+			headless := printMode || popts.json || popts.sandbox || cmd.Flags().Changed("output")
 			if popts.maxRoundsSet && popts.maxRounds < 0 {
 				return fmt.Errorf("--max-rounds cannot be negative (0 removes the cap)")
 			}
@@ -99,7 +107,8 @@ func newCodeCmd() *cobra.Command {
 	cmd.Flags().Lookup("resume").NoOptDefVal = resumeFromPicker
 	addModelFlags(cmd, &flags)
 	cmd.Flags().BoolVarP(&printMode, "print", "p", false, "run headless: stream the response to stdout and exit (no TUI)")
-	cmd.Flags().BoolVar(&popts.json, "json", false, "with --print, emit a structured JSON transcript instead of streaming text (implies --print)")
+	cmd.Flags().BoolVar(&popts.json, "json", false, "with --print, emit a structured JSON transcript instead of streaming text (implies --print; the same as --output json)")
+	cmd.Flags().StringVar(&popts.output, "output", "", "with --print, what the run writes: text (the answer as it is written), json (the transcript at the end) or jsonl (one event per line while it runs) (implies --print)")
 	cmd.Flags().BoolVar(&popts.yes, "yes", false, "with --print, auto-approve file edits and commands (safety-flagged commands stay denied)")
 	cmd.Flags().StringArrayVar(&popts.allow, "allow", nil, "with --print, auto-approve commands matching this prefix (repeatable; extends the config allowlist)")
 	cmd.Flags().BoolVar(&popts.sandbox, "sandbox", false, "run approved commands inside a disposable container sandbox; needs a configured digest-pinned image (implies --print)")

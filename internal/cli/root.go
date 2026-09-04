@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"runtime"
@@ -33,6 +34,26 @@ var version = "dev"
 // to stop.
 func Execute(ctx context.Context) error {
 	return execute(ctx, NewRootCmd())
+}
+
+// ExitCode is the status the process leaves behind for whatever ran it. A run
+// with nobody in front of it states what happened in it, from a closed set
+// (docs/capabilities/headless.md#the-exit-code-is-the-contract); everything
+// else exits 1, because a command that could not run is one fact however it
+// failed and a script that branched on the difference would be branching on
+// an accident.
+//
+// It is a function here rather than a switch in main because the codes are
+// the command tree's to define: main knows only that a failure has a number.
+func ExitCode(err error) int {
+	if err == nil {
+		return 0
+	}
+	var coded exitError
+	if errors.As(err, &coded) {
+		return coded.code
+	}
+	return 1
 }
 
 // execute is the dressing applied to a tree, split from building the real one

@@ -35,7 +35,6 @@ import (
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
-	"github.com/rfizzle/shhh/internal/reports"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/secret"
@@ -538,38 +537,19 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		return err
 	}
 
-	// Tool-output reduction: bulky tool results are reduced before
-	// the model sees them, with the originals retrievable via the evidence
-	// tool. No store means no reduction and no evidence tool.
-	red := openEvidence()
-	if red != nil {
-		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), evidence.ToolDefinition())
+	// Everything a session and an unattended run both register, on the
+	// conditions they both register it under: the reducer, the web tools, the
+	// language server, the structural tools, the quality gate, the process
+	// supervisor, the report publisher and the vault (toolset.go). A session
+	// pops a browser for a page the model published, because somebody is here
+	// to read it.
+	ts, err := buildToolset(cmd, &session, session.kind, toolsetOpts{scope: sc, browser: true})
+	if err != nil {
+		return err
 	}
-	// Guarded web tools: web_fetch (approval-gated as an external
-	// action) and, when a search key is configured, web_search.
-	if session.web != nil {
-		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), session.web.Definitions()...)
-	}
-	// LSP integration: definition/references tools when a language
-	// server was detected; servers start lazily and shut down with the session.
-	if session.lsp != nil {
-		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), session.lsp.Definitions()...)
-		defer session.lsp.Close()
-	}
-	// Structural code tools: fd, ast-grep, sd, tokei, jaq — read-only
-	// wrappers, each registered only when its binary is on PATH.
-	if session.structural != nil {
-		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), session.structural.Definitions()...)
-	}
-	// Quality gate: the model can run the project's own checks by
-	// suite name; command text only ever comes from trusted config.
-	var gate *quality.Runner
-	if session.gate {
-		gate = openQualityGate(ConfigFrom(cmd.Context()), red, sc)
-	}
-	if gate != nil {
-		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), quality.ToolDefinition())
-	}
+	defer ts.close()
+	red, gate, procSup := ts.evidence, ts.gate, ts.proc
+
 	// Sub-agent orchestration: spawn_agent (approval-gated) and
 	// agent_report join the toolset; the supervisor itself is built once the
 	// provider is resolved.
@@ -589,29 +569,6 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			agents = agents.readers()
 		}
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), subagent.Definitions(agents.profiles)...)
-	}
-	// Long-running process supervisor: the process tool (start goes
-	// through the approval queue like any command) plus /ps; Close terminates
-	// every owned process tree when the session ends, however it ends.
-	var procSup *process.Supervisor
-	if session.processes {
-		procSup = openProcessSupervisor(red)
-	}
-	if procSup != nil {
-		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), process.Definition())
-		defer procSup.Close()
-	}
-	// Report pages: the model can publish an answer that is a page rather
-	// than a paragraph as a local graphical view. The tool writes only shhh's
-	// own report store and serves on loopback, so it rides the auto-run path
-	// like evidence and the quality gate; no store means no report tool.
-	pub := openReportsPublisher(ConfigFrom(cmd.Context()), session.kind, true)
-	if pub != nil {
-		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), reports.ToolDefinition())
-		defer pub.Close()
-	}
-	if err := session.openSecrets(cmd, red, procSup); err != nil {
-		return err
 	}
 
 	db, err := openStore()
@@ -661,12 +618,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), notebook.Definitions()...)
 	}
 
-	// Skills: the catalog's names and descriptions join the prompt and
-	// the activation tool joins the toolset, only when something loaded.
-	if session.skills.Len() > 0 {
-		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), skill.ToolDefinition(session.skills))
-		session.promptExtra = prompt.CombineExtra(session.promptExtra, skill.PromptBlock(session.skills))
-	}
+	registerSkills(&session)
 
 	// The model is told where the work is, so an out-of-scope path is
 	// a question it asks rather than a call the user refuses.
@@ -741,44 +693,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		}
 	}
 
-	baseExecutor := agent.ToolExecutor(tools.Execute)
-	if session.web != nil {
-		baseExecutor = session.web.WrapExecutor(tools.Execute)
-	}
-	if session.lsp != nil {
-		baseExecutor = session.lsp.WrapExecutor(baseExecutor)
-	}
-	if session.structural != nil {
-		baseExecutor = session.structural.WrapExecutor(baseExecutor)
-	}
-	if session.mcpTools != nil {
-		baseExecutor = session.mcpTools.WrapExecutor(baseExecutor)
-	}
-	if gate != nil {
-		baseExecutor = gate.WrapExecutor(baseExecutor)
-	}
-	if procSup != nil {
-		baseExecutor = procSup.WrapExecutor(baseExecutor)
-	}
-	if pub != nil {
-		baseExecutor = pub.WrapExecutor(baseExecutor)
-	}
-	if session.skills.Len() > 0 {
-		baseExecutor = session.skills.WrapExecutor(baseExecutor)
-	}
-	if session.notebook != nil {
-		baseExecutor = session.notebook.WrapExecutor("assistant", baseExecutor)
-	}
-	executor := baseExecutor
-	if red != nil {
-		executor = red.WrapExecutor(baseExecutor)
-	}
-	// Secrets are scrubbed inside the reducer, before it stores anything, so
-	// what the evidence store keeps and what the model reads are the same
-	// text. This wrap stays outside it as the second door rather than the
-	// mechanism: it is what catches a tool's error, a result the reducer
-	// exempts from reduction, and the evidence tool's own paged output.
-	executor = session.vault.WrapExecutor(executor)
+	executor := ts.executor(session)
 
 	// Session observability: content-free events (usage, tool calls,
 	// mode decisions) are recorded to storage; failure just disables recording.

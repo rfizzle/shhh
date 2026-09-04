@@ -642,6 +642,8 @@ fix it.
 
 ## Related
 
+- [`headless.md`](headless.md) — running it from a script: the exit codes and
+  the event stream
 - [`subagents.md`](subagents.md) — handing work to children
 - [`approvals-and-safety.md`](approvals-and-safety.md) — what it may do
 - [`../architecture.md`](../architecture.md) — why the loop is passive

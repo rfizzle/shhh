@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -168,7 +169,7 @@ func TestWriteJSONTranscript(t *testing.T) {
 		{Role: provider.RoleAssistant, Content: "done"},
 	}
 	var sb strings.Builder
-	if err := writeJSONTranscript(&sb, msgs, "done", provider.Usage{PromptTokens: 10, CompletionTokens: 5}, nil); err != nil {
+	if err := writeJSONTranscript(&sb, msgs, "done", provider.Usage{PromptTokens: 10, CompletionTokens: 5, CachedTokens: 7}, nil); err != nil {
 		t.Fatalf("writeJSONTranscript: %v", err)
 	}
 
@@ -179,7 +180,10 @@ func TestWriteJSONTranscript(t *testing.T) {
 	if !got.Success || got.Final != "done" || got.Error != "" {
 		t.Fatalf("unexpected outcome fields: %+v", got)
 	}
-	if got.Usage.PromptTokens != 10 || got.Usage.CompletionTokens != 5 {
+	// The cached share of the prompt is stated rather than folded away: it is
+	// billed at a fraction of the rest, and a script pricing a night of runs
+	// cannot recover it from the other two figures.
+	if got.Usage.PromptTokens != 10 || got.Usage.CompletionTokens != 5 || got.Usage.CachedTokens != 7 {
 		t.Fatalf("unexpected usage: %+v", got.Usage)
 	}
 	if len(got.Messages) != len(msgs) {
@@ -406,12 +410,12 @@ func TestHeadlessObserver_EventShapes(t *testing.T) {
 	obs := headlessObserver{rec: rec, rounds: func() int { return rounds }}
 
 	rounds = 1
-	obs.toolResult("read_file", 5*time.Millisecond, "the file")
+	obs.toolResult(toolResultOf("read_file", 5*time.Millisecond, "the file"))
 	rounds = 2
-	obs.toolResult("read_file", time.Millisecond, "error: open x: no such file or directory")
+	obs.toolResult(toolResultOf("read_file", time.Millisecond, "error: open x: no such file or directory"))
 	obs.decision(observe.DecisionDeny, "headless-default")
 	rounds = 3
-	obs.toolResult("search", time.Millisecond, "[repeat: this exact search call has now run 3 times]")
+	obs.toolResult(toolResultOf("search", time.Millisecond, "[repeat: this exact search call has now run 3 times]"))
 	obs.summary(agent.SummaryVerdict{State: agent.SummaryOffTarget})
 	obs.intervene(agent.Intervention{Kind: agent.InterveneSteer})
 	obs.retry(agent.RetryNotice{Failure: &provider.Failure{Class: provider.ClassOverloaded}, Attempt: 1, Max: agent.MaxRetryAttempts})
@@ -1022,4 +1026,280 @@ func TestHeadlessCompactor_SummaryModelMustFitTheConversation(t *testing.T) {
 	if c := headlessCompactor(t.Context(), unknown, env, nil, nil, nil); c == nil || c.Stream != nil {
 		t.Fatalf("a summary model nothing can vouch for took the request: %+v", c)
 	}
+}
+
+// toolResultOf is one executed call as the loop hands it to the front-end:
+// the call it answers, what came back, and how long it took.
+func toolResultOf(tool string, d time.Duration, result string) agent.ToolResult {
+	return agent.ToolResult{
+		Call:     provider.ToolCall{ID: "call-" + tool, Name: tool},
+		Result:   result,
+		Duration: d,
+	}
+}
+
+// --json is the older spelling and goes on meaning what it meant. Naming both
+// spellings and disagreeing is refused rather than resolved, because either
+// answer is somebody's script reading the wrong stream.
+func TestResolveOutput(t *testing.T) {
+	for _, c := range []struct {
+		name  string
+		named string
+		alias bool
+		want  string
+	}{
+		{"nothing given streams the answer", "", false, outputText},
+		{"--json is --output json", "", true, outputJSON},
+		{"--output json outright", outputJSON, false, outputJSON},
+		{"--output json beside its own alias", outputJSON, true, outputJSON},
+		{"--output jsonl", outputJSONL, false, outputJSONL},
+		{"--output text outright", outputText, false, outputText},
+	} {
+		got, err := resolveOutput(c.named, c.alias)
+		if err != nil || got != c.want {
+			t.Errorf("%s: resolveOutput(%q, %v) = %q, %v; want %q", c.name, c.named, c.alias, got, err, c.want)
+		}
+	}
+	if _, err := resolveOutput(outputJSONL, true); err == nil {
+		t.Error("--json beside --output jsonl resolved to something instead of a usage error")
+	}
+	if _, err := resolveOutput("yaml", false); err == nil {
+		t.Error("a shape nothing writes was accepted")
+	}
+}
+
+func TestCodeCmdOutputRefusesAShapeItCannotWrite(t *testing.T) {
+	cmd := newCodeCmd()
+	cmd.SetArgs([]string{"--output", "yaml", "do a thing"})
+	cmd.SetOut(io.Discard)
+	cmd.SetErr(io.Discard)
+	err := cmd.Execute()
+	if err == nil || !strings.Contains(err.Error(), "jsonl") {
+		t.Fatalf("err = %v, want one naming the shapes a run can write", err)
+	}
+}
+
+// Every code in the closed set, from the same inputs the run projects it
+// from: the outcome its turn was recorded under, the gate's last verdict and
+// whether the policy's last word was a refusal.
+func TestHeadlessExitCode(t *testing.T) {
+	for _, c := range []struct {
+		name       string
+		err        error
+		gateFailed bool
+		refused    bool
+		want       int
+	}{
+		{"a finished turn", nil, false, false, exitDone},
+		{"the round cap", fmt.Errorf("%w after 40 rounds", agent.ErrRoundCap), false, false, exitRoundCap},
+		{"an interrupt", agent.ErrInterrupted, false, false, exitInterrupted},
+		{"a provider that stopped answering", fmt.Errorf("overloaded"), false, false, exitProvider},
+		{"a failing suite", nil, true, false, exitGate},
+		{"a refusal that ended the turn", nil, false, true, exitRefused},
+		// The two readings only apply to a turn that finished. A run that was
+		// interrupted mid-edit says it was interrupted, whatever the suite
+		// went on to think of the half-written tree.
+		{"an interrupt outranks the suite", agent.ErrInterrupted, true, true, exitInterrupted},
+		{"the cap outranks a refusal", agent.ErrRoundCap, false, true, exitRoundCap},
+		// A verdict about the tree as it now stands is the more actionable of
+		// the two facts a finished turn can carry.
+		{"the suite outranks a refusal", nil, true, true, exitGate},
+	} {
+		got := headlessExitCode(headlessTurnOutcome(c.err), c.gateFailed, c.refused)
+		if got != c.want {
+			t.Errorf("%s: exit = %d, want %d", c.name, got, c.want)
+		}
+	}
+}
+
+// The code has to survive the whole return path — the command tree, the
+// dressing that prints the error, main — or the closed set is a set nothing
+// outside the process can read.
+func TestExitCodeCarriesTheCodeOutToTheProcess(t *testing.T) {
+	if got := ExitCode(nil); got != 0 {
+		t.Errorf("no error exits %d, want 0", got)
+	}
+	// Anything that is not an unattended run's ending is a 1: a command that
+	// could not run is one fact, however it failed.
+	if got := ExitCode(errors.New("config: no such file")); got != 1 {
+		t.Errorf("an ordinary failure exits %d, want 1", got)
+	}
+	err := error(exitError{code: exitRoundCap, err: fmt.Errorf("%w after 40 rounds", agent.ErrRoundCap)})
+	if got := ExitCode(fmt.Errorf("running the command: %w", err)); got != exitRoundCap {
+		t.Errorf("a wrapped coded error exits %d, want %d", got, exitRoundCap)
+	}
+	// The reason is still readable through it, which is what the stderr line
+	// a person reads is built from.
+	if !errors.Is(err, agent.ErrRoundCap) {
+		t.Error("the code hid what happened")
+	}
+}
+
+// A denial the run went on from is not the run being refused. The verdict
+// that matters is the one still standing when the model stopped.
+func TestLastVerdictIsTheOneThatEndedTheTurn(t *testing.T) {
+	var seen []string
+	l := &lastVerdict{}
+	note := l.wrap(func(decision, reason string) { seen = append(seen, decision+"/"+reason) })
+
+	if l.refused() {
+		t.Error("a run that was never asked anything reports a refusal")
+	}
+	note(observe.DecisionDeny, observe.ReasonHeadlessDefault)
+	if !l.refused() {
+		t.Error("a standing denial is not reported")
+	}
+	note(observe.DecisionAllow, observe.ReasonHeadlessYes)
+	if l.refused() {
+		t.Error("a denial the run went on from is still reported as the ending")
+	}
+	// Every verdict still reaches the record on its way past; remembering one
+	// is not a second place a decision has to be reported to.
+	want := []string{
+		observe.DecisionDeny + "/" + observe.ReasonHeadlessDefault,
+		observe.DecisionAllow + "/" + observe.ReasonHeadlessYes,
+	}
+	if strings.Join(seen, ",") != strings.Join(want, ",") {
+		t.Errorf("the record was told %v, want %v", seen, want)
+	}
+}
+
+// scriptedStream answers each request with the next round of a script, which
+// is the whole of what a provider is to the loop.
+func scriptedStream(rounds ...[]provider.StreamEvent) agent.StreamFunc {
+	round := 0
+	return func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		ch := make(chan provider.StreamEvent, 8)
+		var events []provider.StreamEvent
+		if round < len(rounds) {
+			events = rounds[round]
+		}
+		round++
+		go func() {
+			defer close(ch)
+			for _, ev := range events {
+				ch <- ev
+			}
+		}()
+		return ch, func() {}, nil
+	}
+}
+
+// replayJSONL rebuilds the conversation from the stream, the way a consumer
+// that watched the run would have to. Text arrives in pieces and the calls of
+// a round arrive before any of their results, so an assistant message is
+// closed off by the first result that answers it, or by the close line.
+func replayJSONL(t *testing.T, lines string) []jsonMessage {
+	t.Helper()
+	var out []jsonMessage
+	var text strings.Builder
+	var calls []jsonToolCall
+	flush := func() {
+		if text.Len() == 0 && len(calls) == 0 {
+			return
+		}
+		out = append(out, jsonMessage{Role: string(provider.RoleAssistant), Content: text.String(), ToolCalls: calls})
+		text.Reset()
+		calls = nil
+	}
+	for _, line := range strings.Split(strings.TrimSpace(lines), "\n") {
+		var ev jsonEvent
+		if err := json.Unmarshal([]byte(line), &ev); err != nil {
+			t.Fatalf("stream line is not JSON: %v (%q)", err, line)
+		}
+		switch ev.Kind {
+		case observe.EventText:
+			text.WriteString(ev.Text)
+		case observe.EventToolCall:
+			calls = append(calls, jsonToolCall{ID: ev.ID, Name: ev.Tool, Arguments: ev.Arguments})
+		case observe.EventToolResult:
+			flush()
+			out = append(out, jsonMessage{Role: string(provider.RoleTool), Content: ev.Result, ToolCallID: ev.ID})
+		case observe.EventClose:
+			flush()
+		}
+	}
+	return out
+}
+
+// The stream and the transcript are two readings of one run, so what a
+// consumer watching the events builds has to be what the transcript states at
+// the end. Anything less and a script has to read both.
+func TestJSONLStreamReplaysToTheTranscript(t *testing.T) {
+	call := provider.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}
+	a := agent.New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, scriptedStream(
+		[]provider.StreamEvent{
+			{Token: "look"},
+			{Token: "ing"},
+			{Usage: &provider.Usage{PromptTokens: 10, CompletionTokens: 2, CachedTokens: 8}},
+			{ToolCalls: []provider.ToolCall{call}},
+		},
+		[]provider.StreamEvent{{Token: "done"}, {Done: true}},
+	))
+	a.SetExecutor(func(string, json.RawMessage) (string, error) { return "contents", nil })
+
+	var lines strings.Builder
+	events := newJSONLStream(&lines)
+	obs := headlessObserver{rounds: a.Rounds, stream: events}
+	h := &agent.Headless{
+		Agent:        a,
+		Gate:         func(provider.ToolCall) bool { return false },
+		OnText:       obs.text,
+		OnToolCall:   func(tc provider.ToolCall) { obs.call(tc) },
+		OnToolResult: obs.toolResult,
+		OnUsage:      func(u *provider.Usage) { obs.usage(*u) },
+	}
+
+	final, err := h.Run("read x")
+	if err != nil || final != "done" {
+		t.Fatalf("run = %q, %v", final, err)
+	}
+	events.closed(obs.pos(), headlessTurnOutcome(err), headlessExitCode(headlessTurnOutcome(err), false, false),
+		final, provider.Usage{PromptTokens: 10, CompletionTokens: 2, CachedTokens: 8}, nil)
+
+	// The prompt and the system message are what the run opened on, not
+	// something it did; the stream carries the turn.
+	want := jsonMessages(a.Messages())[2:]
+	got := replayJSONL(t, lines.String())
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("replayed conversation\n got %+v\nwant %+v", got, want)
+	}
+
+	// Every code field on the stream is one of the record's own words, and
+	// the close line is the last of them.
+	var kinds []string
+	var closing jsonEvent
+	for _, line := range strings.Split(strings.TrimSpace(lines.String()), "\n") {
+		var ev jsonEvent
+		if err := json.Unmarshal([]byte(line), &ev); err != nil {
+			t.Fatalf("stream line is not JSON: %v", err)
+		}
+		kinds = append(kinds, ev.Kind)
+		closing = ev
+	}
+	wantKinds := []string{observe.EventText, observe.EventText, observe.EventUsage,
+		observe.EventToolCall, observe.EventToolResult, observe.EventText, observe.EventClose}
+	if strings.Join(kinds, ",") != strings.Join(wantKinds, ",") {
+		t.Errorf("event kinds = %v, want %v", kinds, wantKinds)
+	}
+	if closing.Outcome != observe.TurnDone || closing.Exit == nil || *closing.Exit != exitDone {
+		t.Errorf("close line = %+v, want the record's outcome and the exit code beside it", closing)
+	}
+	if closing.Usage == nil || closing.Usage.CachedTokens != 8 {
+		t.Errorf("close usage = %+v, want the cached share stated", closing.Usage)
+	}
+}
+
+// A run that asked for no stream writes none, and every call on the way there
+// is a clean no-op rather than a nil dereference on the surface with nobody
+// watching it happen.
+func TestJSONLStreamIsAQuietNoOpWhenNobodyAskedForOne(t *testing.T) {
+	obs := headlessObserver{rounds: func() int { return 1 }}
+	obs.text("hello")
+	obs.call(provider.ToolCall{ID: "c1", Name: "read_file"})
+	obs.toolResult(toolResultOf("read_file", time.Millisecond, "contents"))
+	obs.decision(observe.DecisionDeny, observe.ReasonHeadlessDefault)
+	obs.usage(provider.Usage{PromptTokens: 1})
+	obs.signal(observe.SignalRetry, "overloaded")
+	obs.stream.closed(obs.pos(), observe.TurnDone, exitDone, "done", provider.Usage{}, nil)
 }

@@ -232,6 +232,41 @@ const (
 	SignalGate = "gate"
 )
 
+// Event kinds for the stream a run with nobody in front of it writes while
+// it works. They are declared here, beside the codes those events carry,
+// because the stream and the record are meant to be one vocabulary: a script
+// that learns `deny` from a decision line is reading the same word the table
+// keeps, so a reader of one already knows the other.
+// See docs/capabilities/headless.md#the-stream-is-the-record-as-it-happens.
+//
+// They are finer than the four kinds the store's own rows are made of, and
+// deliberately so. The table holds what a run did, so a call and its result
+// are one row; the stream carries what it is doing, where they are two
+// events with the wait between them — which is the whole reason to read a
+// stream rather than the transcript at the end.
+const (
+	// EventText: a piece of the answer, as it was written.
+	EventText = "text"
+	// EventToolCall: a call the model asked for, before it ran or was
+	// resolved.
+	EventToolCall = "tool-call"
+	// EventToolResult: what one call came back with, under the outcome and
+	// class ToolOutcome reads off it.
+	EventToolResult = "tool-result"
+	// EventDecision: one approval verdict, in the Decision and Reason codes
+	// above.
+	EventDecision = "decision"
+	// EventSignal: one of the loop's own safeguards firing, in the Signal
+	// codes above and their qualifiers.
+	EventSignal = "signal"
+	// EventUsage: what the run has spent so far, as Observer.Usage reports
+	// it.
+	EventUsage = "usage"
+	// EventClose: the turn ending, carrying the turn outcome above. It is the
+	// last line of every stream and the only one that is always written.
+	EventClose = "close"
+)
+
 // Compaction reasons for SignalCompact: who asked for it. A trim
 // is not one of them — eliding old tool results is SignalTrim, and it is a
 // different event with a different cost.

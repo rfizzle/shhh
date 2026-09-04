@@ -26,7 +26,6 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/radius"
-	"github.com/rfizzle/shhh/internal/reports"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/safety"
 	"github.com/rfizzle/shhh/internal/sandbox"
@@ -40,11 +39,145 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// The shapes an unattended run writes its work in. text is the default and
+// the oldest: the answer on stdout as it is written, the activity on stderr.
+// json is the whole transcript once the run is over, and jsonl is one event
+// per line while it happens, in the record's own vocabulary.
+// See docs/capabilities/headless.md#three-shapes-for-the-same-run.
+const (
+	outputText  = "text"
+	outputJSON  = "json"
+	outputJSONL = "jsonl"
+)
+
+// resolveOutput settles what the run will write from the two spellings that
+// say it. `--json` is the older one and stays an alias for `--output json`:
+// scripts were written against it, and it means today exactly what it meant.
+//
+// Naming both and disagreeing is a usage error rather than a silent winner,
+// because either answer would be somebody's script quietly reading the wrong
+// stream.
+func resolveOutput(named string, jsonAlias bool) (string, error) {
+	switch named {
+	case "":
+		if jsonAlias {
+			return outputJSON, nil
+		}
+		return outputText, nil
+	case outputText, outputJSON, outputJSONL:
+		if jsonAlias && named != outputJSON {
+			return "", fmt.Errorf("--json is --output %s and this run also asked for --output %s: pass one of them", outputJSON, named)
+		}
+		return named, nil
+	}
+	return "", fmt.Errorf("--output %q: one of %s, %s or %s", named, outputText, outputJSON, outputJSONL)
+}
+
+// The closed set of exit codes an unattended run leaves behind. They are a
+// contract a script is written against: a code means one thing and goes on
+// meaning it, so a round cap, an interrupt and a provider outage are three
+// different facts to whatever called shhh.
+//
+// 1 is deliberately not among them. It is what every command exits with when
+// it could not run at all — a flag that will not parse, a config that will not
+// load, a provider that cannot be resolved — and a run that never started is
+// a different fact from a turn that ended badly.
+// See docs/capabilities/headless.md#the-exit-code-is-the-contract.
+const (
+	exitDone        = 0
+	exitRoundCap    = 2
+	exitInterrupted = 3
+	exitProvider    = 4
+	exitGate        = 5
+	exitRefused     = 6
+)
+
+// errHeadlessRefused is the exit-6 run stated in words, for the stderr line
+// and the JSON error field. A status on its own says a call was refused; this
+// says what to do about it.
+var errHeadlessRefused = errors.New("a tool call was refused: this run denies edits, commands and external actions unless --yes or --allow says otherwise")
+
+// headlessExitCode projects the exit code from the outcome the turn was
+// recorded under, which is what keeps the two from ever disagreeing: the
+// record's column and the process's status are read off one value.
+//
+// Two readings sit on top of it and both belong to a turn that finished — a
+// suite that failed after the model had stopped, and a call the policy
+// refused as the last word before the turn ended. Neither is a turn that
+// broke, which is why neither has an outcome of its own to be projected from.
+//
+// The gate is taken first of the two. It is a verdict about the tree as it
+// now stands, which is the more actionable of the two facts, and a refusal
+// that mattered usually leaves nothing behind for a suite to have an opinion
+// about.
+func headlessExitCode(outcome string, gateFailed, refused bool) int {
+	switch outcome {
+	case observe.TurnCapPaused:
+		return exitRoundCap
+	case observe.TurnCancelled:
+		return exitInterrupted
+	case observe.TurnFailed:
+		return exitProvider
+	}
+	switch {
+	case gateFailed:
+		return exitGate
+	case refused:
+		return exitRefused
+	}
+	return exitDone
+}
+
+// exitError carries one of those codes out through cobra to the process,
+// which is the only way a code can survive the return path: the command tree
+// returns an error, the dressing prints it, and main is where the process
+// exits (root.go).
+type exitError struct {
+	code int
+	err  error
+}
+
+func (e exitError) Error() string { return e.err.Error() }
+func (e exitError) Unwrap() error { return e.err }
+
+// lastVerdict is the policy's most recent answer, which is what says whether
+// a refusal is why the turn ended.
+//
+// The last one and not any one. A run that was denied a command, found
+// another way and finished was not refused — it did the work — and reporting
+// it as refused would teach a script to ignore the code. A denial that is
+// still standing when the model stops is the one that ended the turn.
+type lastVerdict struct {
+	mu   sync.Mutex
+	code string
+}
+
+// wrap is the reporter the approver is handed: every verdict reaches the
+// record through next and is remembered here on its way past, so there is no
+// second place a decision has to be reported to and could be forgotten.
+func (l *lastVerdict) wrap(next func(decision, reason string)) func(string, string) {
+	return func(decision, reason string) {
+		l.mu.Lock()
+		l.code = decision
+		l.mu.Unlock()
+		next(decision, reason)
+	}
+}
+
+func (l *lastVerdict) refused() bool {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.code == observe.DecisionDeny
+}
+
 // printOpts are the approval and output flags for headless print mode
 // . The default is maximally safe: every approval-gated tool call is
 // denied; --yes and --allow opt in explicitly.
 type printOpts struct {
+	// json is the --json alias as the flag parsed it; output is what it and
+	// --output resolved to, and the only one the run itself reads.
 	json    bool
+	output  string
 	yes     bool
 	allow   []string
 	sandbox bool
@@ -96,6 +229,12 @@ type headlessObserver struct {
 	// than the agent itself because that is the whole of what a position
 	// needs from it.
 	rounds func() int
+	// stream is the event stream the run was asked for, or nil where it was
+	// not. It hangs here rather than beside the hooks so that what is written
+	// to it and what is written to the record leave from one place: an event
+	// that reaches the table and not the stream is how the two vocabularies
+	// come apart, and nothing fails when they do.
+	stream *jsonlStream
 }
 
 // pos is where the run is now. A headless run is one turn by construction —
@@ -105,16 +244,40 @@ func (h headlessObserver) pos() observe.Pos {
 	return observe.Pos{Turn: 1, Round: int64(h.rounds())}
 }
 
+// signal records one of the loop's own safeguards firing, and puts it on the
+// stream under the same code. Every signal below goes through here, so a code
+// cannot reach one and not the other.
+func (h headlessObserver) signal(code, reason string) {
+	at := h.pos()
+	h.rec.signal(at, code, reason)
+	h.stream.signal(at, code, reason)
+}
+
+// text is one piece of the answer as it was written. It reaches the stream
+// and not the record: what the model said is content, and the record is
+// content-free by construction.
+func (h headlessObserver) text(s string) {
+	h.stream.text(h.pos(), s)
+}
+
+// call is one call the model asked for, before it ran or was resolved. The
+// record keeps a call and its result as one row, written when the result
+// lands; the stream carries them as two, because between them is the wait
+// that is the reason to read a stream at all.
+func (h headlessObserver) call(tc provider.ToolCall) {
+	h.stream.call(h.pos(), tc)
+}
+
 // toolResult records one executed call from its result text: the outcome
 // and, for a failure, its class — and the repeat detector's notice where the
 // result carries one, since being told it is circling is a thing that
 // happened to the run and not a property of the call.
-func (h headlessObserver) toolResult(tool string, duration time.Duration, result string) {
-	outcome, class := observe.ToolOutcome(result)
-	at := h.pos()
-	h.rec.toolCallAt(at, tool, duration, outcome, class)
-	if agent.IsRepeatNotice(result) {
-		h.rec.signal(at, observe.SignalRepeat, tool)
+func (h headlessObserver) toolResult(r agent.ToolResult) {
+	outcome, class := observe.ToolOutcome(r.Result)
+	h.rec.toolCallAt(h.pos(), r.Call.Name, r.Duration, outcome, class)
+	h.stream.result(h.pos(), r, outcome, class)
+	if agent.IsRepeatNotice(r.Result) {
+		h.signal(observe.SignalRepeat, r.Call.Name)
 	}
 }
 
@@ -122,25 +285,34 @@ func (h headlessObserver) toolResult(tool string, duration time.Duration, result
 // run resolves every one of them from policy rather than from a person, so
 // this is the only place its approval rate can come from.
 func (h headlessObserver) decision(decision, reason string) {
-	h.rec.decisionAt(h.pos(), decision, reason)
+	at := h.pos()
+	h.rec.decisionAt(at, decision, reason)
+	h.stream.decision(at, decision, reason)
+}
+
+// usage is what the run has spent so far. The record takes it priced; the
+// stream carries the tokens, cached ones included, because a script totalling
+// a night of runs is doing the pricing itself.
+func (h headlessObserver) usage(u provider.Usage) {
+	h.stream.usage(h.pos(), u)
 }
 
 // summary records a reading. Every reading lands here and not only the ones
 // that go on to interrupt the turn: a drift rate is a fraction, and this is
 // its denominator.
 func (h headlessObserver) summary(v agent.SummaryVerdict) {
-	h.rec.signal(h.pos(), observe.SignalSummary, observe.SummaryCode(v.State))
+	h.signal(observe.SignalSummary, observe.SummaryCode(v.State))
 }
 
 // intervene records the run interrupting its own turn to ask it to take
 // stock.
 func (h headlessObserver) intervene(iv agent.Intervention) {
-	h.rec.signal(h.pos(), observe.SignalIntervene, iv.Kind.Signal())
+	h.signal(observe.SignalIntervene, iv.Kind.Signal())
 }
 
 // tree records the run being told the tree moved under it.
 func (h headlessObserver) tree(n agent.TreeNotice) {
-	h.rec.signal(h.pos(), observe.SignalTree, n.Signal())
+	h.signal(observe.SignalTree, n.Signal())
 }
 
 // compact records what a window-recovery step did. Both halves are recorded
@@ -149,12 +321,11 @@ func (h headlessObserver) tree(n agent.TreeNotice) {
 // them together could not tell a run that shaved itself once from one that
 // threw its history away.
 func (h headlessObserver) compact(n agent.CompactNotice) {
-	at := h.pos()
 	if n.Elided > 0 {
-		h.rec.signal(at, observe.SignalTrim, observe.TrimReason(n.Elided, n.BeforePct, n.AfterPct))
+		h.signal(observe.SignalTrim, observe.TrimReason(n.Elided, n.BeforePct, n.AfterPct))
 	}
 	if n.Compacted {
-		h.rec.signal(at, observe.SignalCompact, observe.CompactPressure)
+		h.signal(observe.SignalCompact, observe.CompactPressure)
 	}
 }
 
@@ -162,7 +333,7 @@ func (h headlessObserver) compact(n agent.CompactNotice) {
 // answered. It is recorded per attempt, so a population of unattended runs
 // can be asked how much of its wall clock was a provider's and not its own.
 func (h headlessObserver) retry(n agent.RetryNotice) {
-	h.rec.signal(h.pos(), observe.SignalRetry, n.Signal())
+	h.signal(observe.SignalRetry, n.Signal())
 }
 
 // writtenByCalls is the paths a headless run's mutating calls wrote: the
@@ -348,9 +519,11 @@ func (c *headlessChat) save(msgs []provider.Message) {
 }
 
 // runPrintSession runs the agent loop to completion without the TUI:
-// assistant text streams to stdout, tool activity to stderr, and --json
-// replaces the streamed text with a structured transcript on stdout. The
-// returned error drives the process exit code.
+// assistant text streams to stdout, tool activity to stderr, and --output
+// replaces the streamed text with a transcript at the end or an event stream
+// while it happens. What it returns carries the exit code the run leaves
+// behind, which is a projection of the outcome its turn was recorded under.
+// See docs/capabilities/headless.md#the-exit-code-is-the-contract.
 func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opts printOpts) error {
 	if err := headlessFlagCheck(session); err != nil {
 		return err
@@ -364,69 +537,18 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		return err
 	}
 
-	// Tool-output reduction, mirroring the interactive session: bulky
-	// results are reduced with the originals retrievable via the evidence
-	// tool.
-	red := openEvidence()
-	if red != nil {
-		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), evidence.ToolDefinition())
-	}
-	// Guarded web tools, mirroring the interactive session; web_fetch
-	// stays approval-gated, which headless resolves via --yes.
-	if session.web != nil {
-		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), session.web.Definitions()...)
-	}
-	// LSP integration, mirroring the interactive session: navigation
-	// tools when a server was detected, after-edit diagnostics on approved
-	// edits, shutdown with the run.
-	if session.lsp != nil {
-		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), session.lsp.Definitions()...)
-		defer session.lsp.Close()
-	}
-	// Structural code tools, mirroring the interactive session:
-	// read-only wrappers, each registered only when its binary is on PATH.
-	if session.structural != nil {
-		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), session.structural.Definitions()...)
-	}
-	// Quality gate, mirroring the interactive session: auto-run — the
-	// model only ever names a suite from the trusted config.
-	var qgate *quality.Runner
-	if session.gate {
-		qgate = openQualityGate(ConfigFrom(cmd.Context()), red, sc)
-	}
-	if qgate != nil {
-		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), quality.ToolDefinition())
-	}
-	// Long-running process supervisor, mirroring the interactive
-	// session: start stays approval-gated (resolved via --yes/--allow), and
-	// Close terminates every owned process tree when the run ends.
-	var procSup *process.Supervisor
-	if session.processes {
-		procSup = openProcessSupervisor(red)
-	}
-	if err := session.openSecrets(cmd, red, procSup); err != nil {
+	// The same registration the interactive session runs, on the same
+	// conditions (toolset.go) — one definition rather than a copy here that
+	// agrees with it on the day it is written. What differs is the browser: a
+	// run with nobody in front of it never pops one, because nobody is
+	// guaranteed to be at the desktop and the URL reaches the transcript
+	// either way.
+	ts, err := buildToolset(cmd, &session, "print", toolsetOpts{scope: sc})
+	if err != nil {
 		return err
 	}
-	if procSup != nil {
-		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), process.Definition())
-		defer procSup.Close()
-	}
-	// Report pages, mirroring the interactive session — except that a
-	// headless run never pops a browser: nobody is guaranteed to be at the
-	// desktop, and the URL reaches the transcript either way.
-	pub := openReportsPublisher(ConfigFrom(cmd.Context()), "print", false)
-	if pub != nil {
-		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), reports.ToolDefinition())
-		defer pub.Close()
-	}
-
-	// Skills, mirroring the interactive session: the catalog in the
-	// prompt, the activation tool in the toolset, both only when something
-	// loaded. Activation is a read, so headless needs no approval for it.
-	if session.skills.Len() > 0 {
-		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), skill.ToolDefinition(session.skills))
-		session.promptExtra = prompt.CombineExtra(session.promptExtra, skill.PromptBlock(session.skills))
-	}
+	defer ts.close()
+	red, qgate, procSup := ts.evidence, ts.gate, ts.proc
 
 	// The local store is opened here rather than with the recorder below
 	// because trust for a project MCP server is read from it.
@@ -440,6 +562,8 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	if session.mcp {
 		defer session.attachMCP(cmd.Context(), db, false)()
 	}
+
+	registerSkills(&session)
 
 	// The model is told where the work is; a headless run cannot be
 	// asked for a directory mid-flight, so knowing the boundary is the
@@ -566,41 +690,11 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	if session.skills.Len() > 0 {
 		a.KeepResults(skill.IsContent)
 	}
-	baseExecutor := agent.ToolExecutor(tools.Execute)
-	if session.web != nil {
-		baseExecutor = session.web.WrapExecutor(tools.Execute)
-	}
-	if session.lsp != nil {
-		baseExecutor = session.lsp.WrapExecutor(baseExecutor)
-	}
-	if session.structural != nil {
-		baseExecutor = session.structural.WrapExecutor(baseExecutor)
-	}
-	if session.mcpTools != nil {
-		baseExecutor = session.mcpTools.WrapExecutor(baseExecutor)
-	}
-	if qgate != nil {
-		baseExecutor = qgate.WrapExecutor(baseExecutor)
-	}
-	if procSup != nil {
-		baseExecutor = procSup.WrapExecutor(baseExecutor)
-	}
-	if pub != nil {
-		baseExecutor = pub.WrapExecutor(baseExecutor)
-	}
-	if session.skills.Len() > 0 {
-		baseExecutor = session.skills.WrapExecutor(baseExecutor)
-	}
-	executor := baseExecutor
-	if red != nil {
-		executor = red.WrapExecutor(baseExecutor)
-	}
-	// The reducer scrubs before it stores; this wrap is the second door on
-	// what the model reads, not the one that keeps the store clean.
-	executor = session.vault.WrapExecutor(executor)
-	// Repeat detection. A headless run needs it most: there is nobody
-	// watching to notice the same search going round for the third time.
-	a.SetExecutor(agent.NewRepeatDetector().WrapExecutor(executor))
+	// Repeat detection goes on outside the shared chain, so it sees every
+	// tool the chain can dispatch and the result the model will actually
+	// read. A headless run needs it most: there is nobody watching to notice
+	// the same search going round for the third time.
+	a.SetExecutor(agent.NewRepeatDetector().WrapExecutor(ts.executor(session)))
 	a.SetMaxRounds(opts.rounds(cfg))
 
 	// Session observability: headless runs record the same
@@ -623,7 +717,15 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// with nobody in front of it is the one whose verdict the record most
 	// needs, because there was no one there to read it on the way past.
 	recordGateVerdicts(qgate, recorder)
-	obs := headlessObserver{rec: recorder, rounds: a.Rounds}
+	// The stream, where one was asked for. It is opened here rather than at
+	// the first event so that a consumer that read nothing still sees the
+	// close line, and it is nil for every other shape, which every write to
+	// it is safe under.
+	var events *jsonlStream
+	if opts.output == outputJSONL {
+		events = newJSONLStream(os.Stdout)
+	}
+	obs := headlessObserver{rec: recorder, rounds: a.Rounds, stream: events}
 	// A headless run is one turn; it closes here with the rounds it took,
 	// the same event an interactive turn ends with.
 	var runErr error
@@ -655,7 +757,11 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	summaryRun := agent.NewSummaryRun(
 		newSummarizer(cfg, env, ledger, cfg.HeadlessSummaryEnabled()),
 		agent.NewRecorder(0), initialPrompt)
-	resolve := headlessApprover(cmd.Context(), opts, allowlist, run, red, obs.decision,
+	// Every verdict reaches the record and the stream through the observer,
+	// and is remembered on its way past: a denial still standing when the
+	// model stops is what says this run was refused rather than finished.
+	verdict := &lastVerdict{}
+	resolve := headlessApprover(cmd.Context(), opts, allowlist, run, red, verdict.wrap(obs.decision),
 		session.web, procSup, lspMutationHook(session.lsp), sc, session.mcpTools)
 	// A headless run has no changeset, so what it wrote is read off the
 	// calls that wrote it. Two readers want that list — the tree check, as
@@ -694,6 +800,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		},
 		OnToolCall: func(tc provider.ToolCall) {
 			fmt.Fprintf(os.Stderr, "» %s %s\n", tc.Name, clipActivityLine(tc.Arguments))
+			obs.call(tc)
 		},
 		OnToolResult: func(r agent.ToolResult) {
 			if outcome, _ := observe.ToolOutcome(r.Result); outcome == observe.OutcomeError {
@@ -703,7 +810,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 				// directly above it.
 				fmt.Fprintf(os.Stderr, "  ↳ %s: %s\n", r.Call.Name, clipActivityLine(r.Result))
 			}
-			obs.toolResult(r.Call.Name, r.Duration, r.Result)
+			obs.toolResult(r)
 		},
 		// The wait goes to stderr beside the run's other activity, because a
 		// script that reads stdout for the answer is not the reader this line
@@ -731,6 +838,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 				CachedTokens:     int(t.Cached),
 			}
 			recorder.usagePriced(1, t.In, t.Out, t.Cost, t.Priced)
+			obs.usage(usage)
 		},
 	}
 	h.SetRetryLimit(cfg.Behavior.ProviderRetries)
@@ -747,8 +855,14 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		}
 		h.OnClose = closing.close
 	}
-	if !opts.json {
+	// Where the answer goes as it is written: stdout for a person or a
+	// `$(...)`, the stream for a consumer reading events, and nowhere at all
+	// for the transcript shape, which states the whole answer at the end.
+	switch opts.output {
+	case outputText:
 		h.OnText = func(text string) { fmt.Fprint(os.Stdout, text) }
+	case outputJSONL:
+		h.OnText = obs.text
 	}
 
 	final, err := h.Run(initialPrompt)
@@ -759,7 +873,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// and it is not known until the save has settled where the words went.
 	saved.save(a.Messages())
 	recorder.link(saved.slot)
-	if !opts.json && final != "" && !strings.HasSuffix(final, "\n") {
+	if opts.output == outputText && final != "" && !strings.HasSuffix(final, "\n") {
 		fmt.Fprintln(os.Stdout)
 	}
 	// The loop ended the way it ended; whether the code it left behind
@@ -767,16 +881,37 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// run states it. The turn's own outcome above is untouched by it: the
 	// turn finished, and a failing suite is the gate's row in the record
 	// rather than a turn that broke.
+	gateErr := closing.err()
+	refused := verdict.refused()
 	out := runErr
-	if out == nil {
-		out = closing.err()
+	switch {
+	case out != nil:
+		// The loop's own ending stands, and the two readings below belong to
+		// a turn that got as far as finishing.
+	case gateErr != nil:
+		out = gateErr
+	case refused:
+		// A run whose last word from the policy was a refusal did not do what
+		// it was asked, and its status has to say so — but nothing failed, so
+		// there is no error to report and one is stated here.
+		out = errHeadlessRefused
 	}
-	if opts.json {
+	outcome := headlessTurnOutcome(runErr)
+	code := headlessExitCode(outcome, gateErr != nil, refused)
+	switch opts.output {
+	case outputJSON:
 		if err := writeJSONTranscript(os.Stdout, a.Messages(), final, usage, out); err != nil {
 			return err
 		}
+	case outputJSONL:
+		events.closed(obs.pos(), outcome, code, final, usage, out)
 	}
-	return out
+	// Nothing to report and nothing to report it as: every code above zero
+	// has an error behind it, which is what carries it out to the process.
+	if out == nil {
+		return nil
+	}
+	return exitError{code: code, err: out}
 }
 
 // headlessCompactor is the window-recovery step for an unattended run: the
@@ -1113,9 +1248,26 @@ type jsonTranscript struct {
 	Messages []jsonMessage `json:"messages"`
 }
 
+// jsonUsage is what the run cost, as every JSON shape reports it. The cached
+// tokens are part of the prompt total and stated separately because they are
+// billed at a fraction of it: a script totalling a night of runs against a
+// price list cannot work out what it spent from the other two figures, and
+// the run already knows.
+// See docs/capabilities/providers.md#the-prompt-prefix-is-paid-for-once.
 type jsonUsage struct {
 	PromptTokens     int `json:"prompt_tokens"`
 	CompletionTokens int `json:"completion_tokens"`
+	CachedTokens     int `json:"cached_tokens"`
+}
+
+// usageOf is the one reading of a run's totals into the shape both the
+// transcript and the stream state them in.
+func usageOf(u provider.Usage) jsonUsage {
+	return jsonUsage{
+		PromptTokens:     u.PromptTokens,
+		CompletionTokens: u.CompletionTokens,
+		CachedTokens:     u.CachedTokens,
+	}
 }
 
 // jsonMessage is one message as every JSON transcript emits it: the role and
@@ -1159,7 +1311,7 @@ func writeJSONTranscript(w io.Writer, msgs []provider.Message, final string, usa
 	t := jsonTranscript{
 		Success:  runErr == nil,
 		Final:    final,
-		Usage:    jsonUsage{PromptTokens: usage.PromptTokens, CompletionTokens: usage.CompletionTokens},
+		Usage:    usageOf(usage),
 		Messages: jsonMessages(msgs),
 	}
 	if runErr != nil {
@@ -1168,4 +1320,137 @@ func writeJSONTranscript(w io.Writer, msgs []provider.Message, final string, usa
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
 	return enc.Encode(t)
+}
+
+// jsonlStream is what `--output jsonl` writes: one JSON object per line as
+// the run happens, in the vocabulary internal/observe already fixes for the
+// record. A reader of one shape therefore already knows the other, and a hook
+// written against the record's codes matches the stream's without a second
+// table to learn.
+//
+// The lines are the event and nothing else — no wrapping, no indentation, no
+// trailing summary — because the thing reading them is a loop over a pipe
+// that has to be able to act on a line before the run is over.
+// See docs/capabilities/headless.md#the-stream-is-the-record-as-it-happens.
+type jsonlStream struct {
+	// mu is around the encoder rather than around each caller. Everything
+	// reaches it on the run's own goroutine today, and interleaved halves of
+	// two objects would be a corrupt stream that nothing reports — the
+	// cheapest possible insurance against the round that dispatches its
+	// callbacks the way it already dispatches its calls.
+	mu  sync.Mutex
+	enc *json.Encoder
+}
+
+func newJSONLStream(w io.Writer) *jsonlStream {
+	return &jsonlStream{enc: json.NewEncoder(w)}
+}
+
+// jsonEvent is one line of that stream. Every field that names a kind, an
+// outcome, a decision, a reason or a signal holds a constant from
+// internal/observe and never text this run composed: a script matches on
+// them, and a code it has to parse prose out of is not a code.
+type jsonEvent struct {
+	Kind  string `json:"kind"`
+	Turn  int64  `json:"turn"`
+	Round int64  `json:"round"`
+
+	Text       string `json:"text,omitempty"`
+	ID         string `json:"id,omitempty"`
+	Tool       string `json:"tool,omitempty"`
+	Arguments  string `json:"arguments,omitempty"`
+	Result     string `json:"result,omitempty"`
+	Outcome    string `json:"outcome,omitempty"`
+	Class      string `json:"class,omitempty"`
+	DurationMS int64  `json:"duration_ms,omitempty"`
+	Decision   string `json:"decision,omitempty"`
+	Code       string `json:"code,omitempty"`
+	Reason     string `json:"reason,omitempty"`
+
+	Usage *jsonUsage `json:"usage,omitempty"`
+	// Exit and Final belong to the close line alone. Exit is a pointer so
+	// that the code the run is about to exit with is stated even when it is
+	// zero, which is the one value a reader most needs to see written down.
+	Exit  *int   `json:"exit,omitempty"`
+	Final string `json:"final,omitempty"`
+	Error string `json:"error,omitempty"`
+}
+
+// write puts one event on the stream. A nil stream is the run that asked for
+// another shape, and writes nothing.
+func (s *jsonlStream) write(ev jsonEvent) {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	// A stream nobody is reading any more — a consumer that stopped at the
+	// first line it wanted — is not a reason to end the run: the record and
+	// the exit code are still owed.
+	_ = s.enc.Encode(ev)
+}
+
+func (s *jsonlStream) text(at observe.Pos, text string) {
+	if s == nil || text == "" {
+		return
+	}
+	s.write(jsonEvent{Kind: observe.EventText, Turn: at.Turn, Round: at.Round, Text: text})
+}
+
+func (s *jsonlStream) call(at observe.Pos, tc provider.ToolCall) {
+	if s == nil {
+		return
+	}
+	s.write(jsonEvent{Kind: observe.EventToolCall, Turn: at.Turn, Round: at.Round,
+		ID: tc.ID, Tool: tc.Name, Arguments: tc.Arguments})
+}
+
+func (s *jsonlStream) result(at observe.Pos, r agent.ToolResult, outcome, class string) {
+	if s == nil {
+		return
+	}
+	s.write(jsonEvent{Kind: observe.EventToolResult, Turn: at.Turn, Round: at.Round,
+		ID: r.Call.ID, Tool: r.Call.Name, Result: r.Result,
+		Outcome: outcome, Class: class, DurationMS: r.Duration.Milliseconds()})
+}
+
+func (s *jsonlStream) decision(at observe.Pos, decision, reason string) {
+	if s == nil {
+		return
+	}
+	s.write(jsonEvent{Kind: observe.EventDecision, Turn: at.Turn, Round: at.Round,
+		Decision: decision, Reason: reason})
+}
+
+func (s *jsonlStream) signal(at observe.Pos, code, reason string) {
+	if s == nil {
+		return
+	}
+	s.write(jsonEvent{Kind: observe.EventSignal, Turn: at.Turn, Round: at.Round,
+		Code: code, Reason: reason})
+}
+
+func (s *jsonlStream) usage(at observe.Pos, u provider.Usage) {
+	if s == nil {
+		return
+	}
+	priced := usageOf(u)
+	s.write(jsonEvent{Kind: observe.EventUsage, Turn: at.Turn, Round: at.Round, Usage: &priced})
+}
+
+// closed is the last line of every stream: how the turn ended, in the same
+// word the record keeps, the exit code projected from it, the answer, and
+// what the run spent getting there. A consumer that reads only this line has
+// everything the exit status says and the answer besides.
+func (s *jsonlStream) closed(at observe.Pos, outcome string, code int, final string, u provider.Usage, err error) {
+	if s == nil {
+		return
+	}
+	priced := usageOf(u)
+	ev := jsonEvent{Kind: observe.EventClose, Turn: at.Turn, Round: at.Round,
+		Outcome: outcome, Exit: &code, Final: final, Usage: &priced}
+	if err != nil {
+		ev.Error = err.Error()
+	}
+	s.write(ev)
 }

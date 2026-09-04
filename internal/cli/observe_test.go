@@ -306,8 +306,8 @@ func recordEverySurface(t *testing.T, db *storage.DB) map[string]int64 {
 	head := startObserveRecorder(db, "print", "anthropic", "test-model", nil)
 	head.stamp("the agent prompt", 3, "/repo", storage.AgentSettings{})
 	obs := headlessObserver{rec: head, rounds: func() int { return 2 }}
-	obs.toolResult("execute_command", time.Millisecond,
-		"error: command not approved: headless mode denies commands by default")
+	obs.toolResult(toolResultOf("execute_command", time.Millisecond,
+		"error: command not approved: headless mode denies commands by default"))
 	obs.decision(observe.DecisionDeny, "headless-default")
 	obs.intervene(agent.Intervention{Kind: agent.InterveneCheckIn})
 	head.turn(1, 2, time.Second, observe.TurnFailed)
