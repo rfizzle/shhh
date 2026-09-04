@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 )
 
 const (
@@ -84,6 +85,12 @@ type Info struct {
 	// project from two.
 	Root        string
 	RootDisplay string
+	// Sibling is when another session already open in this checkout started,
+	// and zero when there is none. It is the one thing here the survey
+	// cannot find out for itself — nothing in the filesystem says who else
+	// is working in a directory — so it is filled in by whoever can ask,
+	// and every reader of the survey states the same answer.
+	Sibling time.Time
 }
 
 // Survey gathers everything the start screen states about dir. It never

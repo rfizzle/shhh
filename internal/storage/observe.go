@@ -14,12 +14,32 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
 const observeTimeFormat = "2006-01-02T15:04:05.000Z"
+
+// agentHeartbeatWindow is how long a session's row may go unrefreshed before
+// its process id stops being taken as evidence that the session is running.
+//
+// The id is the liveness check; the window only bounds the one way that
+// check can lie, which is a dead session's id being reused by something
+// else. It is deliberately generous, because the opposite failure is the one
+// that matters here: a second session sitting at its start screen while
+// somebody works in the first refreshes nothing for as long as it is idle,
+// and a short window would hide exactly the session this reading exists to
+// reveal. Nothing stays stale for long either way — the next session's start
+// closes every row whose process is gone.
+const agentHeartbeatWindow = 12 * time.Hour
+
+// pidRunning answers whether a process is still there. It is a variable
+// because "a process that is definitely gone" has no portable spelling a
+// test can write down — an id that is free on this machine is in use on the
+// next, and each platform disagrees about which ids are even possible.
+var pidRunning = pidAlive
 
 // Agent event kinds.
 const (
@@ -111,10 +131,16 @@ type AgentSettings struct {
 
 // StartAgentSession opens a session row and returns its id. kind is the entry
 // point ("chat", "code", "print").
+//
+// The row is stamped with this process's id and a first heartbeat, which is
+// what later lets another session tell a sitting that is still going from
+// one that was killed with its end time never written
+// (docs/capabilities/sessions-and-memory.md#a-session-knows-it-is-not-alone).
 func (db *DB) StartAgentSession(kind, provider, model string) (int64, error) {
 	res, err := db.sql.Exec(
-		`INSERT INTO agent_sessions (kind, provider, model) VALUES (?, ?, ?)`,
-		kind, provider, model,
+		`INSERT INTO agent_sessions (kind, provider, model, pid, heartbeat)
+		 VALUES (?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'))`,
+		kind, provider, model, os.Getpid(),
 	)
 	if err != nil {
 		return 0, err
@@ -130,8 +156,9 @@ func (db *DB) StartChildAgentSession(parentID int64, kind, provider, model strin
 		return db.StartAgentSession(kind, provider, model)
 	}
 	res, err := db.sql.Exec(
-		`INSERT INTO agent_sessions (kind, provider, model, parent_id) VALUES (?, ?, ?, ?)`,
-		kind, provider, model, parentID,
+		`INSERT INTO agent_sessions (kind, provider, model, parent_id, pid, heartbeat)
+		 VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'))`,
+		kind, provider, model, parentID, os.Getpid(),
 	)
 	if err != nil {
 		return 0, err
@@ -210,6 +237,162 @@ func (db *DB) EndAgentSession(id int64, outcome string) error {
 		outcome, id,
 	)
 	return err
+}
+
+// BeatAgentSession says the session is still there. It is called at every
+// turn boundary, which is the coarsest beat that still tracks a person
+// working: a session between turns is a session somebody is reading.
+//
+// It writes to whichever row the recorder holds now, so a conversation that
+// ended and opened another inside one process keeps the beat on the row that
+// is actually open rather than on the one it left behind.
+func (db *DB) BeatAgentSession(id int64) error {
+	_, err := db.sql.Exec(
+		`UPDATE agent_sessions SET heartbeat = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?`, id,
+	)
+	return err
+}
+
+// LiveSession is another sitting open in this checkout right now, described
+// by the only thing a notice needs: when it started.
+type LiveSession struct {
+	Since time.Time
+}
+
+// LiveSibling reports another session open in the checkout that project
+// fingerprints, and when it started. The oldest one wins, because the fact
+// being reported is that somebody else is here and not how many.
+//
+// A sibling is another *process*: a row this process opened — the one it is
+// in, or the one a new conversation left behind — is never its own sibling,
+// and neither is a sub-agent, whose row hangs off a parent and shares its
+// id. What is left is a row with the same fingerprint, no end time, a
+// heartbeat inside the window and a process that answers.
+// See docs/capabilities/sessions-and-memory.md#a-session-knows-it-is-not-alone.
+func (db *DB) LiveSibling(project string, now time.Time) (LiveSession, bool, error) {
+	if project == "" {
+		// No fingerprint is not "every checkout" — it is "we do not know
+		// which checkout", and matching on it would report a session in
+		// somebody else's directory as a sibling here.
+		return LiveSession{}, false, nil
+	}
+	rows, err := db.sql.Query(
+		`SELECT started_at, pid FROM agent_sessions
+		 WHERE project = ? AND ended_at IS NULL AND parent_id IS NULL
+		   AND pid > 0 AND pid != ? AND heartbeat >= ?
+		 ORDER BY started_at`,
+		project, os.Getpid(), heartbeatCutoff(now),
+	)
+	if err != nil {
+		return LiveSession{}, false, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var (
+			startedAt string
+			pid       int
+		)
+		if err := rows.Scan(&startedAt, &pid); err != nil {
+			return LiveSession{}, false, err
+		}
+		if !pidRunning(pid) {
+			continue
+		}
+		since, _ := time.Parse(observeTimeFormat, startedAt)
+		return LiveSession{Since: since}, true, rows.Err()
+	}
+	return LiveSession{}, false, rows.Err()
+}
+
+// CloseCrashedAgentSessions ends every open row whose process is gone and
+// returns how many it closed, the way sandbox ownership records are
+// reconciled against the engine at startup: the record outlives the thing it
+// describes, so something has to bring the two back in line.
+//
+// It leaves the outcome alone. A killed session's last turn already said how
+// the work was going, and a row that never closed a turn reads as unknown,
+// which is the honest answer about a process nobody heard from again.
+//
+// Rows with no recorded id are left open. They were written by a build that
+// recorded none, and closing a row because it cannot vouch for itself would
+// rewrite history the reader can still see.
+func (db *DB) CloseCrashedAgentSessions() (int, error) {
+	rows, err := db.sql.Query(
+		`SELECT id, pid FROM agent_sessions WHERE ended_at IS NULL AND pid > 0 AND pid != ?`,
+		os.Getpid(),
+	)
+	if err != nil {
+		return 0, err
+	}
+	var dead []int64
+	for rows.Next() {
+		var (
+			id  int64
+			pid int
+		)
+		if err := rows.Scan(&id, &pid); err != nil {
+			rows.Close()
+			return 0, err
+		}
+		if !pidRunning(pid) {
+			dead = append(dead, id)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return 0, err
+	}
+	// The rows are read out before anything is written: the store runs on
+	// one connection, so an update issued while the cursor is open waits on
+	// a cursor that is waiting on it.
+	rows.Close()
+	closed := 0
+	for _, id := range dead {
+		if err := db.EndAgentSession(id, ""); err != nil {
+			return closed, err
+		}
+		closed++
+	}
+	return closed, nil
+}
+
+// liveChatSlots is the set of saved-conversation names another running
+// session is writing to. A slot in it is one an autosave in another process
+// is about to overwrite, which is why nothing offers to open it.
+func (db *DB) liveChatSlots(now time.Time) (map[string]bool, error) {
+	rows, err := db.sql.Query(
+		`SELECT chat_session, pid FROM agent_sessions
+		 WHERE chat_session != '' AND ended_at IS NULL
+		   AND pid > 0 AND pid != ? AND heartbeat >= ?`,
+		os.Getpid(), heartbeatCutoff(now),
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	live := map[string]bool{}
+	for rows.Next() {
+		var (
+			name string
+			pid  int
+		)
+		if err := rows.Scan(&name, &pid); err != nil {
+			return nil, err
+		}
+		if pidRunning(pid) {
+			live[name] = true
+		}
+	}
+	return live, rows.Err()
+}
+
+// heartbeatCutoff is the oldest beat still trusted, in the column's own
+// layout so the comparison is the string one SQLite makes. now is the
+// caller's clock and has to be a real one: a zero time would put the cutoff
+// two thousand years before any row was written, and every stale row in the
+// store would pass the check the window exists to apply.
+func heartbeatCutoff(now time.Time) string {
+	return now.UTC().Add(-agentHeartbeatWindow).Format(observeTimeFormat)
 }
 
 // RecordAgentEvent appends one content-free event to a session. For tool

@@ -55,6 +55,12 @@ type chatOps struct {
 // protectedPhrase is why the session's own row cannot be acted on.
 const protectedPhrase = "the chat you are in"
 
+// livePhrase is why a slot another running session holds cannot be opened
+// from here: the conversation in it is still being written, and the next
+// autosave over there takes the slot back
+// (docs/capabilities/sessions-and-memory.md#a-session-knows-it-is-not-alone).
+const livePhrase = "open in another session"
+
 // chatPickActions are the housekeeping keys the picker offers.
 var chatPickActions = []keys.Binding{keys.Select.Delete, keys.Select.Rename}
 
@@ -69,18 +75,23 @@ func chatDesc(e storage.ChatListEntry) string {
 	return desc
 }
 
-// chatPickOptions builds the picker's rows. The session's own slot is the
-// unavailable row: it is still listed — fold, never hide — and its meta
-// field says why nothing can be done to it.
+// chatPickOptions builds the picker's rows. Two kinds of row cannot be
+// opened, and both are still listed — fold, never hide — with a meta field
+// saying why: the session's own slot, and a slot another running session is
+// autosaving into, which that session's next save would take straight back.
 func (m Model) chatPickOptions(entries []storage.ChatListEntry) ([]components.SelectOption, int) {
 	opts := make([]components.SelectOption, len(entries))
 	focus := 0
 	for i, e := range entries {
 		opts[i] = components.SelectOption{Label: e.Name, Desc: chatDesc(e)}
-		if e.Name == m.sessionName {
+		switch {
+		case e.Name == m.sessionName:
 			opts[i].Dim = true
 			opts[i].Meta = protectedPhrase
 			focus = i
+		case e.Live:
+			opts[i].Dim = true
+			opts[i].Meta = livePhrase
 		}
 	}
 	return opts, focus
@@ -109,11 +120,14 @@ func (m Model) openChatPick() (tea.Model, tea.Cmd, bool) {
 		if idx < 0 || idx >= len(m.chats.entries) {
 			return ""
 		}
-		name := m.chats.entries[idx].Name
-		if name == m.sessionName {
-			return fmt.Sprintf("%q is %s.", name, protectedPhrase)
+		e := m.chats.entries[idx]
+		if e.Name == m.sessionName {
+			return fmt.Sprintf("%q is %s.", e.Name, protectedPhrase)
 		}
-		return m.loadChatByName(name)
+		if e.Live {
+			return fmt.Sprintf("%q is %s — its conversation is still being written there.", e.Name, livePhrase)
+		}
+		return m.loadChatByName(e.Name)
 	})
 	mm := model.(Model)
 	mm.picker.Actions = chatPickActions

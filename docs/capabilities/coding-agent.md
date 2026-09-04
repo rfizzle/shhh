@@ -538,6 +538,12 @@ Git does not know, and a guess presented as a fact is exactly what the model
 would act on — reverting a colleague's work as an accident, or explaining its
 own as somebody else's.
 
+There is one exception, and it is not a guess. Where the record says another
+session has this checkout open right now, the block ends by saying so. That
+is a fact about who is here rather than a claim about what they did, and it
+is the difference between a change with no author and a change with somebody
+to ask.
+
 The reading costs one status call per boundary, and a checkout where that
 call is slow keeps only the turn boundary, where the wait is against a person
 typing rather than a model answering. It can be turned off. What it does not

@@ -25,6 +25,11 @@ type ChatListEntry struct {
 	Title     string
 	UpdatedAt time.Time
 	Turns     int
+	// Live marks a slot another running session is writing to. Opening one
+	// means reading a conversation that is still being added to elsewhere,
+	// and the next autosave over there takes the slot back
+	// (docs/capabilities/sessions-and-memory.md#a-session-knows-it-is-not-alone).
+	Live bool
 }
 
 // ChatExistsError is what a rename into a name already in use returns. It is
@@ -426,7 +431,16 @@ func (db *DB) LoadChat(name string) ([]provider.Message, error) {
 // messages is not one of them: a session claims its slot when it starts and
 // may never write to it, and a listing that offered those would put an empty
 // conversation at the top of `--continue` for as long as a session sits idle.
+//
+// Each entry says whether another running session has the slot, which is the
+// one thing a reader cannot see from the row itself: a name and a timestamp
+// look the same whether the conversation is finished or still being written.
 func (db *DB) ListChats() ([]ChatListEntry, error) {
+	// Read before the listing's cursor is open: the store runs on one
+	// connection, so a second query issued mid-walk would wait on it. And
+	// read best-effort — a mark that could not be taken costs the mark, not
+	// the listing, which is the answer the caller actually asked for.
+	live, _ := db.liveChatSlots(time.Now())
 	rows, err := db.sql.Query(
 		`SELECT s.name, s.title, s.updated_at,
 		        COUNT(CASE WHEN m.role = 'user' THEN 1 END) as turns
@@ -450,6 +464,7 @@ func (db *DB) ListChats() ([]ChatListEntry, error) {
 			return nil, err
 		}
 		e.UpdatedAt, _ = time.Parse(time.RFC3339Nano, updatedAt)
+		e.Live = live[e.Name]
 		entries = append(entries, e)
 	}
 	return entries, rows.Err()

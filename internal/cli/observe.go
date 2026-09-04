@@ -52,6 +52,13 @@ func startObserveRecorder(db *storage.DB, kind, provider, model string, prices *
 	if db == nil {
 		return nil
 	}
+	// Every start reconciles first: a session that was killed outright never
+	// wrote its end time, and a row left open reads to the next session as
+	// somebody still working in this checkout. Best effort and quiet, the way
+	// sandbox ownership records are reaped — a store that will not answer is
+	// never a reason to refuse to start
+	// (docs/capabilities/sessions-and-memory.md#a-session-knows-it-is-not-alone).
+	_, _ = db.CloseCrashedAgentSessions()
 	id, err := db.StartAgentSession(kind, provider, model)
 	if err != nil {
 		return nil
@@ -208,6 +215,27 @@ func projectFingerprintRoot() string {
 	return todo.Root(cwd)
 }
 
+// liveSibling reports another session already open in this checkout, and
+// when it started. One reading answers for every surface that says so — the
+// start screen's fact, the workspace block's line, the tree reading's last
+// clause — because three readings of the same question are three chances to
+// disagree about whether anybody else is here.
+//
+// A store that will not answer costs the fact and nothing else: two sessions
+// in one checkout is a decision the person made, and nothing here refuses to
+// start over it.
+// See docs/capabilities/sessions-and-memory.md#a-session-knows-it-is-not-alone.
+func liveSibling(db *storage.DB) (time.Time, bool) {
+	if db == nil {
+		return time.Time{}, false
+	}
+	sib, ok, err := db.LiveSibling(fingerprint(projectFingerprintRoot()), time.Now())
+	if err != nil || !ok {
+		return time.Time{}, false
+	}
+	return sib.Since, true
+}
+
 // fingerprint is a short stable hash of a string, or empty for empty input.
 func fingerprint(s string) string {
 	if s == "" {
@@ -296,6 +324,12 @@ func (r *observeRecorder) turn(turn, rounds int64, duration time.Duration, outco
 	if r == nil {
 		return
 	}
+	// The heartbeat rides the turn close rather than being called from each
+	// front-end's own boundary: this callback is the one every surface
+	// already reports a finished turn through, so there is one site to keep
+	// pointing at the row the recorder holds now — which a new conversation
+	// inside the same process replaces.
+	_ = r.db.BeatAgentSession(r.id)
 	ms := duration.Milliseconds()
 	_ = r.db.RecordAgentEvent(r.id, storage.AgentEvent{
 		Kind: storage.AgentEventTurn, Outcome: outcome, DurationMs: &ms, Turn: turn, Round: rounds,

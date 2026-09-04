@@ -197,6 +197,17 @@ func startFacts(p project.Info) []components.StartFact {
 	}
 	facts := []components.StartFact{{Text: dir, Lead: true}}
 
+	// Second, right behind the path. The header drops clauses from the right
+	// when the line will not fit, and this is the clause that changes how
+	// every other one should be read: the branch, the dirty count and the
+	// tree are partly somebody else's now.
+	if !p.Sibling.IsZero() {
+		facts = append(facts, components.StartFact{
+			Text: "another session open here since " + p.Sibling.Local().Format(project.SiblingClock),
+			Tone: components.ToneOpen,
+		})
+	}
+
 	if p.Language != "" {
 		lang := p.Language
 		if p.Toolchain != "" {

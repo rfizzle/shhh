@@ -303,7 +303,7 @@ func TestTree_ParseStatusV2(t *testing.T) {
 func TestTree_DiffOnSnapshotsBuiltByHand(t *testing.T) {
 	last := TreeSnapshot{Head: "1111111aaaa", Branch: "main", Status: map[string]string{"a": ".M", "gone": "??"}}
 	now := TreeSnapshot{Head: "2222222bbbb", Branch: "main", Status: map[string]string{"a": "M.", "new": "??", "mine": "??"}}
-	n, ok := diffTree(last, now, map[string]bool{"mine": true}, 0)
+	n, ok := diffTree(last, now, map[string]bool{"mine": true}, 0, nil)
 	if !ok {
 		t.Fatal("expected a notice")
 	}
@@ -313,7 +313,7 @@ func TestTree_DiffOnSnapshotsBuiltByHand(t *testing.T) {
 	if n.Signal() != "both" {
 		t.Errorf("signal = %q", n.Signal())
 	}
-	if _, ok := diffTree(now, now, nil, 0); ok {
+	if _, ok := diffTree(now, now, nil, 0, nil); ok {
 		t.Error("identical snapshots owe nothing")
 	}
 }
@@ -331,5 +331,50 @@ func TestTree_BeginToolRoundCountsCommands(t *testing.T) {
 	a.BeginToolRound("", calls, nil)
 	if a.tree.commands != 2 {
 		t.Errorf("commands = %d, want 2", a.tree.commands)
+	}
+}
+
+// The block says who most likely moved the tree when there is somebody to
+// name, and never which conversation they are having.
+func TestTree_BlockNamesTheOtherSessionInThisCheckout(t *testing.T) {
+	last := TreeSnapshot{Head: "1111111aaaa", Branch: "main", Status: map[string]string{}}
+	now := TreeSnapshot{Head: "1111111aaaa", Branch: "main", Status: map[string]string{"a": ".M"}}
+
+	alone, ok := diffTree(last, now, nil, 0, func() bool { return false })
+	if !ok {
+		t.Fatal("expected a notice")
+	}
+	if strings.Contains(alone.Message, "another session") {
+		t.Errorf("nobody else is here to name:\n%s", alone.Message)
+	}
+
+	shared, ok := diffTree(last, now, nil, 0, func() bool { return true })
+	if !ok {
+		t.Fatal("expected a notice")
+	}
+	// The clause is the whole of the difference, which is how this says
+	// nothing else about the other session came with it: not its
+	// conversation, not the slot it is writing, not what it is doing.
+	want := strings.TrimSuffix(alone.Message, ".") + " — another session is open in this checkout."
+	if shared.Message != want {
+		t.Errorf("message:\n%s\nwant:\n%s", shared.Message, want)
+	}
+
+	// The same clause after a command of the session's own, where the block
+	// attributes nothing: it still says who else is here to ask.
+	afterCommand, _ := diffTree(last, now, nil, 1, func() bool { return true })
+	if !strings.HasSuffix(afterCommand.Message, "another session is open in this checkout.") {
+		t.Errorf("the clause is owed on both wordings:\n%s", afterCommand.Message)
+	}
+}
+
+// Nil is the honest answer for a surface with nothing to ask, and it costs
+// the clause rather than the block.
+func TestTree_NoSiblingReadingCostsOnlyTheClause(t *testing.T) {
+	last := TreeSnapshot{Head: "1111111aaaa", Branch: "main", Status: map[string]string{}}
+	now := TreeSnapshot{Head: "1111111aaaa", Branch: "main", Status: map[string]string{"a": ".M"}}
+	n, ok := diffTree(last, now, nil, 0, nil)
+	if !ok || !strings.HasSuffix(n.Message, "do not revert or explain them.") {
+		t.Errorf("message:\n%s", n.Message)
 	}
 }

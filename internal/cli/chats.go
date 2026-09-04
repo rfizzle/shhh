@@ -21,12 +21,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// chatRow is one saved chat as `shhh chats list --json` emits it.
+// chatRow is one saved chat as `shhh chats list --json` emits it. Live marks
+// a slot a running session still holds — the one thing a script picking a
+// chat off this list has to know before it opens one.
 type chatRow struct {
 	Name      string    `json:"name"`
 	Title     string    `json:"title,omitempty"`
 	Turns     int       `json:"turns"`
 	UpdatedAt time.Time `json:"updated_at"`
+	Live      bool      `json:"live,omitempty"`
 }
 
 func newChatsCmd() *cobra.Command {
@@ -213,13 +216,19 @@ func confirmDelete(cmd *cobra.Command, name string, branches int) (bool, error) 
 func chatRows(entries []storage.ChatListEntry) []chatRow {
 	rows := make([]chatRow, 0, len(entries))
 	for _, e := range entries {
-		rows = append(rows, chatRow{Name: e.Name, Title: e.Title, Turns: e.Turns, UpdatedAt: e.UpdatedAt})
+		rows = append(rows, chatRow{Name: e.Name, Title: e.Title, Turns: e.Turns,
+			UpdatedAt: e.UpdatedAt, Live: e.Live})
 	}
 	return rows
 }
 
 // chatsReport is the listing as text: one row per chat, the title where a
 // session has been given one and the name alone where it has not.
+//
+// A slot a running session still holds is warned rather than listed flat:
+// the row is readable and resumable like any other, and resuming it means
+// opening a conversation somebody else is still adding to. The outcome field
+// carries the reason because it is the field that never clips.
 func chatsReport(entries []storage.ChatListEntry, now time.Time) report.Report {
 	r := report.Report{Title: "shhh chats", Subject: countOf(len(entries), "chat", "chats")}
 	if len(entries) == 0 {
@@ -227,12 +236,16 @@ func chatsReport(entries []storage.ChatListEntry, now time.Time) report.Report {
 	}
 	rows := make([]report.Row, 0, len(entries))
 	for _, e := range entries {
-		rows = append(rows, report.Row{
+		row := report.Row{
 			State:   report.Pass,
 			Name:    e.Name,
 			Subject: e.Title,
 			Detail:  joinDetail(countOf(e.Turns, "turn", "turns"), historyAgo(e.UpdatedAt, now)),
-		})
+		}
+		if e.Live {
+			row.State, row.Outcome = report.Warn, "open in another session"
+		}
+		rows = append(rows, row)
 	}
 	r.Sections = []report.Section{{Rows: rows}}
 	return r

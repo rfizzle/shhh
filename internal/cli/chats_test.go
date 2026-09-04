@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 )
@@ -179,5 +181,25 @@ func must(t *testing.T, err error) {
 	t.Helper()
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+// A listing that does not say which conversation is still being written
+// offers a resume that will be overwritten the moment the other session
+// saves again.
+func TestChats_ListMarksASlotARunningSessionHolds(t *testing.T) {
+	entries := []storage.ChatListEntry{
+		{Name: "alpha", Turns: 3, UpdatedAt: time.Now(), Live: true},
+		{Name: "beta", Turns: 1, UpdatedAt: time.Now()},
+	}
+	rows := chatsReport(entries, time.Now()).Sections[0].Rows
+	if rows[0].State != report.Warn || rows[0].Outcome != "open in another session" {
+		t.Errorf("the live row should be warned and say why, got %+v", rows[0])
+	}
+	if rows[1].State != report.Pass || rows[1].Outcome != "" {
+		t.Errorf("a slot nobody holds is an ordinary row, got %+v", rows[1])
+	}
+	if got := chatRows(entries); !got[0].Live || got[1].Live {
+		t.Errorf("the JSON should carry the same mark, got %+v", got)
 	}
 }

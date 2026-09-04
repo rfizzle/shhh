@@ -16,6 +16,11 @@ import (
 // is a fact of the test rather than a race with the wall clock.
 var startNow = time.Date(2026, 8, 26, 11, 0, 0, 0, time.UTC)
 
+// startSibling is when the other session in the fixtures opened. It is
+// anchored to the local zone because the clause states a wall clock, and a
+// fixture in UTC would read as a different hour on every machine.
+var startSibling = time.Date(2026, 8, 26, 10, 32, 0, 0, time.Local)
+
 // startFixture is a dirty Go checkout with a gate, a project context file and
 // a session to pick up — the case the start screen is drawn from.
 func startFixture() StartInfo {
@@ -358,4 +363,30 @@ func countOffers(view string) int {
 		}
 	}
 	return n
+}
+
+// The one clause that changes how every other one on the line should be
+// read: the branch, the dirty count and the tree are partly somebody else's.
+func TestStartScreen_SaysWhenAnotherSessionIsOpenHere(t *testing.T) {
+	info := startFixture()
+	info.Project.Sibling = startSibling
+	view := startText(startModel(t, info))
+	if !strings.Contains(view, "another session open here since 10:32") {
+		t.Fatalf("the screen never says somebody else is here:\n%s", view)
+	}
+
+	if view := startText(startModel(t, startFixture())); strings.Contains(view, "another session") {
+		t.Fatalf("a session alone in a checkout has no sibling to name:\n%s", view)
+	}
+}
+
+// The header drops clauses from the right, so the clause that survives a
+// narrow terminal has to be this one rather than the package count.
+func TestStartScreen_TheSiblingClauseOutlivesTheNarrowHeader(t *testing.T) {
+	info := startFixture()
+	info.Project.Sibling = startSibling
+	facts := startFacts(info.Project)
+	if len(facts) < 2 || !strings.Contains(facts[1].Text, "another session open here") {
+		t.Fatalf("the clause should sit right behind the path, got %+v", facts)
+	}
 }

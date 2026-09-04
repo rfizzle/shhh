@@ -578,6 +578,9 @@ func TestGolden_StartScreen(t *testing.T) {
 						Write: func() (string, error) { return project.ContextFile, nil }})
 				return m.renderHistory()
 			}()},
+			{Label: "somebody else is in this checkout too", View: build(func(i *StartInfo) {
+				i.Project.Sibling = startSibling
+			})},
 			{Label: "typing dismissed the list · the facts stay", View: typed()},
 		}
 	})

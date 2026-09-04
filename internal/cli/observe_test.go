@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -801,5 +802,99 @@ func TestObserveSessionReport_RatingSitsBesideTheOutcome(t *testing.T) {
 		if strings.Index(got, "outcome:") > strings.Index(got, tc.want) {
 			t.Errorf("the rating is drawn before the outcome it checks:\n%s", got)
 		}
+	}
+}
+
+// heartbeatOf reads the beat a row was last stamped with.
+func heartbeatOf(t *testing.T, db *storage.DB, id int64) string {
+	t.Helper()
+	var beat string
+	if err := db.SQL().QueryRow(`SELECT heartbeat FROM agent_sessions WHERE id = ?`, id).Scan(&beat); err != nil {
+		t.Fatalf("read heartbeat: %v", err)
+	}
+	return beat
+}
+
+// The beat follows the row the recorder holds now. A conversation that ends
+// and opens another inside one process would otherwise keep vouching for the
+// row it left behind, and the row it is actually writing would go stale
+// while somebody sat working in it.
+func TestObserveRecorder_HeartbeatFollowsTheRowTheTurnBelongsTo(t *testing.T) {
+	db, err := storage.OpenPath(filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	defer db.Close()
+
+	rec := startObserveRecorder(db, "code", "openai", "gpt-test", nil)
+	first := rec.id
+	// A row is beaten when it opens, so the test moves it back to see the
+	// turn move it forward again rather than racing the millisecond clock.
+	if _, err := db.SQL().Exec(`UPDATE agent_sessions SET heartbeat = '2020-01-01T00:00:00.000Z' WHERE id = ?`, first); err != nil {
+		t.Fatalf("age the row: %v", err)
+	}
+	rec.turn(1, 2, time.Second, observe.TurnDone)
+	if beat := heartbeatOf(t, db, first); beat == "2020-01-01T00:00:00.000Z" {
+		t.Fatal("the turn close left the row's heartbeat where it was")
+	}
+
+	if !rec.restart() {
+		t.Fatal("restart failed")
+	}
+	second := rec.id
+	if second == first {
+		t.Fatal("restart kept the same row")
+	}
+	stale := heartbeatOf(t, db, first)
+	if _, err := db.SQL().Exec(`UPDATE agent_sessions SET heartbeat = '2020-01-01T00:00:00.000Z' WHERE id = ?`, second); err != nil {
+		t.Fatalf("age the new row: %v", err)
+	}
+	rec.turn(1, 1, time.Second, observe.TurnDone)
+	if beat := heartbeatOf(t, db, second); beat == "2020-01-01T00:00:00.000Z" {
+		t.Fatal("the turn close beat no row after the boundary")
+	}
+	if beat := heartbeatOf(t, db, first); beat != stale {
+		t.Fatal("the closed row was beaten after the boundary")
+	}
+}
+
+// The reading every surface states comes from one place, and it is about
+// another process rather than this one.
+func TestLiveSibling_ReadsAnotherProcessInThisCheckout(t *testing.T) {
+	db, err := storage.OpenPath(filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	defer db.Close()
+
+	if _, ok := liveSibling(db); ok {
+		t.Fatal("an empty store reported a sibling")
+	}
+	if _, ok := liveSibling(nil); ok {
+		t.Fatal("no store reported a sibling")
+	}
+
+	// This session's own row is not a sibling, however it is stamped.
+	own := startObserveRecorder(db, "code", "openai", "gpt-test", nil)
+	own.stamp("prompt", 0, projectFingerprintRoot(), storage.AgentSettings{})
+	if _, ok := liveSibling(db); ok {
+		t.Fatal("this process's own row reported as a sibling")
+	}
+
+	// A row belonging to a process that is running and is not this one is.
+	// The parent is the one such process a test can name portably.
+	other, err := db.StartAgentSession("code", "openai", "gpt-test")
+	if err != nil {
+		t.Fatalf("start: %v", err)
+	}
+	if err := db.StampAgentSession(other, storage.AgentProvenance{
+		Project: fingerprint(projectFingerprintRoot())}); err != nil {
+		t.Fatalf("stamp: %v", err)
+	}
+	if _, err := db.SQL().Exec(`UPDATE agent_sessions SET pid = ? WHERE id = ?`, os.Getppid(), other); err != nil {
+		t.Fatalf("place: %v", err)
+	}
+	if _, ok := liveSibling(db); !ok {
+		t.Fatal("another running session in this checkout was not seen")
 	}
 }

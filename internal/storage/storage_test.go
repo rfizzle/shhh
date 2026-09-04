@@ -1552,3 +1552,46 @@ func TestSaveChat_RefusesASlotThatShrankUnderIt(t *testing.T) {
 		t.Fatalf("the other session's conversation should be intact, got %d (err=%v)", len(kept), err)
 	}
 }
+
+func TestListChats_MarksASlotARunningSessionStillHolds(t *testing.T) {
+	db := openTestDB(t)
+	liveOnly(t, 4242)
+
+	for _, name := range []string{"busy", "finished"} {
+		if _, err := db.ClaimChatSlot(name); err != nil {
+			t.Fatalf("claim %s: %v", name, err)
+		}
+		if err := db.SaveChat(name, []provider.Message{{Role: provider.RoleUser, Content: "hello"}}); err != nil {
+			t.Fatalf("save %s: %v", name, err)
+		}
+	}
+
+	// One session in another process is writing "busy"; another wrote
+	// "finished" and has since ended.
+	busy := openSessionIn(t, db, "checkout-a", 4242, time.Now())
+	ended := openSessionIn(t, db, "checkout-a", 4343, time.Now())
+	if err := db.LinkAgentSession(busy, "busy"); err != nil {
+		t.Fatalf("link busy: %v", err)
+	}
+	if err := db.LinkAgentSession(ended, "finished"); err != nil {
+		t.Fatalf("link finished: %v", err)
+	}
+	if err := db.EndAgentSession(ended, ""); err != nil {
+		t.Fatalf("end: %v", err)
+	}
+
+	entries, err := db.ListChats()
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	live := map[string]bool{}
+	for _, e := range entries {
+		live[e.Name] = e.Live
+	}
+	if !live["busy"] {
+		t.Error("the slot a running session holds is not marked live")
+	}
+	if live["finished"] {
+		t.Error("a slot whose session ended is marked live")
+	}
+}

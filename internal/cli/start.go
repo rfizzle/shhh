@@ -5,15 +5,76 @@ package cli
 // project survey, the quality-gate configuration in effect, and the most
 // recent saved session. Nothing on that screen is computed again while it is
 // on the terminal.
+//
+// One thing gathered here is not only the screen's. Whether another session
+// already has this checkout open is stated on the screen, in the system
+// prompt and in the tree notice, so the question is pointed at the store
+// once and handed to all three. The screen and the prompt then share a
+// single answer, read while the survey they are both written from is taken;
+// the tree notice asks again each time it has something to attribute,
+// because it speaks turn after turn and the answer changes underneath it.
 
 import (
 	"os"
+	"time"
 
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/chat"
 )
+
+// sessionSibling is the session's way of asking whether another one already
+// has this checkout open. It is a question rather than an answer, because
+// the answer keeps changing: the second session is usually opened after the
+// first, and both the prompt and the tree notice are written after that.
+//
+// The zero value answers no, which is what a session with no store to ask
+// can honestly say, and what stops nothing from starting.
+type sessionSibling struct {
+	read func() (time.Time, bool)
+}
+
+// readSibling points the question at the session's own store.
+func readSibling(db *storage.DB) sessionSibling {
+	if db == nil {
+		return sessionSibling{}
+	}
+	return sessionSibling{read: func() (time.Time, bool) { return liveSibling(db) }}
+}
+
+// since is when the other session started, and the zero time when there is
+// none. It is asked again every time the system prompt is built, launch and
+// session boundary alike: a new conversation opens on the checkout as it
+// stands now, and somebody may have arrived while the last one was running.
+func (s sessionSibling) since() time.Time {
+	if s.read == nil {
+		return time.Time{}
+	}
+	at, _ := s.read()
+	return at
+}
+
+// live is the same question where only the yes or no is wanted.
+func (s sessionSibling) live() bool {
+	if s.read == nil {
+		return false
+	}
+	_, ok := s.read()
+	return ok
+}
+
+// withSibling hands the tree reading the question, so the block that says
+// the tree moved can name the likeliest author. Neither a reading that is
+// off nor a session with nothing to ask gains a clause.
+func withSibling(c *agent.TreeCheck, sib sessionSibling) *agent.TreeCheck {
+	if c == nil || sib.read == nil {
+		return c
+	}
+	c.Sibling = sib.live
+	return c
+}
 
 // buildStartInfo assembles the start screen from the survey the session
 // already took. Every source is optional: a missing gate config or an

@@ -110,6 +110,11 @@ type chatSession struct {
 	// promptExtra is appended to the system prompt after config and project
 	// context (e.g. the recalled-memory block).
 	promptExtra string
+	// sibling asks whether another session already has this checkout open.
+	// It is pointed at the store as soon as one is open, because the system
+	// prompt, the start screen and the tree reading all state the answer and
+	// must state the same one.
+	sibling sessionSibling
 	// memoryOmitted is how many memories the recall budget left out of
 	// promptExtra, carried here because recall runs before the chat model is
 	// built and the rail is the only party that says so.
@@ -317,6 +322,10 @@ func (s chatSession) systemPrompt(configExtra string) (text string, projectToken
 	// It shells out to git and walks the tree, so the two readers share the
 	// answer rather than each asking.
 	survey = project.Survey("")
+	// The one thing the survey cannot see for itself. It rides on the survey
+	// so the workspace block and the start screen, which are both written
+	// from it, cannot state two different answers.
+	survey.Sibling = s.sibling.since()
 	block := project.InstructionBlock(instructions, prompt.InstructionBudget)
 	extra := prompt.CombineExtra(configExtra, block, project.PromptBlock(survey), s.promptExtra)
 	return s.buildPrompt(info, extra), agent.EstimateTokens(block), survey
@@ -596,6 +605,9 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	if db != nil {
 		defer db.Close()
 	}
+	// Pointed at the store before the prompt and the screen are built from
+	// it, because both of them state whether anybody else is here.
+	session.sibling = readSibling(db)
 
 	// MCP servers: every definition the catalog holds is connected at
 	// once, and the tools of the ones that answered join the toolset. A
@@ -882,7 +894,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			WithReadOnlyCommands(cfg.Behavior.ReadOnlyCommands, !cfg.ReadOnlyAutoEnabled()).
 			WithGitSnapshots(gitSnapshot).
 			WithChangeset(changes, changeset.NewTracker(".")).
-			WithTreeCheck(treeCheck(cfg)).
+			WithTreeCheck(withSibling(treeCheck(cfg), session.sibling)).
 			// First contact: the empty session's start screen, surveyed
 			// once here rather than assembled per frame.
 			WithStartScreen(buildStartInfo(env.survey, db, gate != nil)).
@@ -1146,6 +1158,11 @@ func chatBrowseItems(db *storage.DB, entries []storage.ChatListEntry) []browse.I
 			preview = e.Title + " · " + preview
 			detail = fmt.Sprintf("Name:     %s\nTitle:    %s\nTurns:    %d\nUpdated:  %s",
 				e.Name, e.Title, e.Turns, e.UpdatedAt.Local().Format("2006-01-02 15:04:05"))
+		}
+		if e.Live {
+			// Resumable, and worth knowing before you do: the other
+			// session's next autosave takes the slot back.
+			preview += " · open in another session"
 		}
 		items[i] = browse.Item{ID: e.Name, Title: e.Name, Preview: preview, Detail: detail}
 		if n, err := db.CountChatBranches(e.Name); err == nil && n > 0 {

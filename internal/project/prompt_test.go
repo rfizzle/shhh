@@ -3,6 +3,7 @@ package project
 import (
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestPromptBlockNamesTheLanguageAndItsToolchain(t *testing.T) {
@@ -73,5 +74,25 @@ func TestPromptBlockStatesNoPath(t *testing.T) {
 	got := PromptBlock(Info{Dir: "/tmp/somewhere", Display: "~/somewhere", Language: "go", Repo: true, Branch: "main"})
 	if strings.Contains(got, "/tmp/somewhere") || strings.Contains(got, "~/somewhere") {
 		t.Errorf("the block must not restate the working directory:\n%s", got)
+	}
+}
+
+// A change nobody in the transcript made has an author, and the model that
+// is told so asks instead of reverting.
+func TestPromptBlockNamesTheOtherSessionInThisCheckout(t *testing.T) {
+	since := time.Date(2026, 9, 4, 10, 32, 0, 0, time.Local)
+	got := PromptBlock(Info{Dir: "/work", Repo: true, Branch: "master", Sibling: since})
+	if !strings.Contains(got, "Another session has been open in this checkout since 10:32") {
+		t.Errorf("the other session and when it opened should be stated:\n%s", got)
+	}
+	if !strings.Contains(got, "ask before you revert") {
+		t.Errorf("naming the session is only useful with what to do about it:\n%s", got)
+	}
+}
+
+func TestPromptBlockSaysNothingWhenNobodyElseIsHere(t *testing.T) {
+	got := PromptBlock(Info{Dir: "/work", Repo: true, Branch: "master"})
+	if strings.Contains(got, "Another session") {
+		t.Errorf("a session alone in a checkout has no sibling to name:\n%s", got)
 	}
 }

@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"os"
 	"testing"
 	"time"
 
@@ -689,4 +690,174 @@ func ratingWord(r *bool) string {
 		return "up"
 	}
 	return "down"
+}
+
+// liveOnly makes the liveness check answer for a fixed set of ids, which is
+// how a test writes down "this process is gone" without needing an id that
+// is free on every machine.
+func liveOnly(t *testing.T, pids ...int) {
+	t.Helper()
+	set := map[int]bool{}
+	for _, pid := range pids {
+		set[pid] = true
+	}
+	prev := pidRunning
+	pidRunning = func(pid int) bool { return set[pid] }
+	t.Cleanup(func() { pidRunning = prev })
+}
+
+// openSessionIn writes a row as another process would have left it: running
+// in the checkout project fingerprints, under pid, last heard from at beat.
+func openSessionIn(t *testing.T, db *DB, project string, pid int, beat time.Time) int64 {
+	t.Helper()
+	id, err := db.StartAgentSession("code", "openai", "gpt-test")
+	if err != nil {
+		t.Fatalf("start session: %v", err)
+	}
+	if err := db.StampAgentSession(id, AgentProvenance{Project: project}); err != nil {
+		t.Fatalf("stamp session: %v", err)
+	}
+	if _, err := db.SQL().Exec(`UPDATE agent_sessions SET pid = ?, heartbeat = ? WHERE id = ?`,
+		pid, beat.UTC().Format(observeTimeFormat), id); err != nil {
+		t.Fatalf("place session: %v", err)
+	}
+	return id
+}
+
+func TestLiveSibling_SeesTheOtherSessionInThisCheckoutAndNotOneElsewhere(t *testing.T) {
+	db := openTestDB(t)
+	now := time.Now()
+	liveOnly(t, 4242, 4343)
+
+	here := now.Add(-20 * time.Minute)
+	openSessionIn(t, db, "checkout-a", 4242, now)
+	openSessionIn(t, db, "checkout-b", 4343, now)
+	// The row is placed after the stamp, so the start time is this instant;
+	// what the assertion needs is only that the right row was chosen.
+	if _, err := db.SQL().Exec(`UPDATE agent_sessions SET started_at = ? WHERE pid = 4242`,
+		here.UTC().Format(observeTimeFormat)); err != nil {
+		t.Fatalf("age the sibling: %v", err)
+	}
+
+	sib, ok, err := db.LiveSibling("checkout-a", now)
+	if err != nil || !ok {
+		t.Fatalf("LiveSibling in checkout-a = %v, %v, want a sibling", ok, err)
+	}
+	if got := sib.Since.UTC().Truncate(time.Second); !got.Equal(here.UTC().Truncate(time.Second)) {
+		t.Fatalf("sibling started at %s, want %s", got, here.UTC().Truncate(time.Second))
+	}
+	if _, ok, err := db.LiveSibling("checkout-c", now); ok || err != nil {
+		t.Fatalf("LiveSibling in a checkout nobody is in = %v, %v, want none", ok, err)
+	}
+}
+
+func TestLiveSibling_IgnoresThisProcessItsChildrenAndWhatIsGone(t *testing.T) {
+	db := openTestDB(t)
+	now := time.Now()
+	liveOnly(t, os.Getpid(), 4242, 4343)
+
+	// This process's own row, and the row a new conversation in it left
+	// behind: neither is another session.
+	own, err := db.StartAgentSession("code", "openai", "gpt-test")
+	if err != nil {
+		t.Fatalf("start own session: %v", err)
+	}
+	if err := db.StampAgentSession(own, AgentProvenance{Project: "checkout-a"}); err != nil {
+		t.Fatalf("stamp own session: %v", err)
+	}
+	if _, ok, _ := db.LiveSibling("checkout-a", now); ok {
+		t.Fatal("this process's own row reported as a sibling")
+	}
+
+	// A sub-agent runs inside somebody's process and is never a session of
+	// its own to be alone with.
+	child, err := db.StartChildAgentSession(own, "writer", "openai", "gpt-test")
+	if err != nil {
+		t.Fatalf("start child: %v", err)
+	}
+	if err := db.StampAgentSession(child, AgentProvenance{Project: "checkout-a"}); err != nil {
+		t.Fatalf("stamp child: %v", err)
+	}
+	if _, err := db.SQL().Exec(`UPDATE agent_sessions SET pid = 4242 WHERE id = ?`, child); err != nil {
+		t.Fatalf("place child: %v", err)
+	}
+	if _, ok, _ := db.LiveSibling("checkout-a", now); ok {
+		t.Fatal("a sub-agent's row reported as a sibling")
+	}
+
+	// A row whose heartbeat is older than the window: the id may be a
+	// stranger's by now, so it vouches for nothing.
+	openSessionIn(t, db, "checkout-a", 4343, now.Add(-2*agentHeartbeatWindow))
+	if _, ok, _ := db.LiveSibling("checkout-a", now); ok {
+		t.Fatal("a row nobody has heard from since the window reported as a sibling")
+	}
+
+	// And one whose process is simply gone.
+	openSessionIn(t, db, "checkout-a", 9999, now)
+	if _, ok, _ := db.LiveSibling("checkout-a", now); ok {
+		t.Fatal("a row whose process is gone reported as a sibling")
+	}
+}
+
+func TestLiveSibling_AnUnknownCheckoutMatchesNothing(t *testing.T) {
+	db := openTestDB(t)
+	liveOnly(t, 4242)
+	openSessionIn(t, db, "", 4242, time.Now())
+	if _, ok, err := db.LiveSibling("", time.Now()); ok || err != nil {
+		t.Fatalf("LiveSibling with no fingerprint = %v, %v, want none", ok, err)
+	}
+}
+
+func TestCloseCrashedAgentSessions_ClosesTheGoneAndLeavesTheRest(t *testing.T) {
+	db := openTestDB(t)
+	now := time.Now()
+	liveOnly(t, 4242)
+
+	live := openSessionIn(t, db, "checkout-a", 4242, now)
+	crashed := openSessionIn(t, db, "checkout-a", 9999, now)
+	// A row from a build that recorded no id cannot vouch for itself, and
+	// closing it would be rewriting a history the reader can still see.
+	unknown := openSessionIn(t, db, "checkout-a", 0, now)
+
+	closed, err := db.CloseCrashedAgentSessions()
+	if err != nil {
+		t.Fatalf("reconcile: %v", err)
+	}
+	if closed != 1 {
+		t.Fatalf("closed %d rows, want 1", closed)
+	}
+	for _, tc := range []struct {
+		id   int64
+		name string
+		want bool
+	}{
+		{live, "the live session", false},
+		{crashed, "the crashed session", true},
+		{unknown, "the session with no recorded id", false},
+	} {
+		var ended *string
+		if err := db.SQL().QueryRow(`SELECT ended_at FROM agent_sessions WHERE id = ?`, tc.id).Scan(&ended); err != nil {
+			t.Fatalf("read %s: %v", tc.name, err)
+		}
+		if got := ended != nil; got != tc.want {
+			t.Fatalf("%s closed = %v, want %v", tc.name, got, tc.want)
+		}
+	}
+}
+
+func TestBeatAgentSession_KeepsTheRowInsideTheWindow(t *testing.T) {
+	db := openTestDB(t)
+	now := time.Now()
+	liveOnly(t, 4242)
+
+	id := openSessionIn(t, db, "checkout-a", 4242, now.Add(-2*agentHeartbeatWindow))
+	if _, ok, _ := db.LiveSibling("checkout-a", now); ok {
+		t.Fatal("a stale row reported as a sibling before the beat")
+	}
+	if err := db.BeatAgentSession(id); err != nil {
+		t.Fatalf("beat: %v", err)
+	}
+	if _, ok, _ := db.LiveSibling("checkout-a", now); !ok {
+		t.Fatal("the row is still stale after a beat")
+	}
 }

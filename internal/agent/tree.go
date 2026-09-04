@@ -71,6 +71,12 @@ type TreeCheck struct {
 	IsCommand func(name string) bool
 	Budget    time.Duration
 	Log       func(msg string)
+	// Sibling, when set, reports whether another session is open in this
+	// checkout right now. It is asked at each notice rather than once at the
+	// start: the other session usually opens after this one, and the notice
+	// it would explain is the one that comes after that. Nil answers no,
+	// which is the honest answer for a surface with nothing to ask.
+	Sibling func() bool
 }
 
 // TreeSnapshot is the tree at one moment: the commit, the branch, and every
@@ -203,7 +209,7 @@ func (a *Agent) NextTreeNotice(turnStart bool) (TreeNotice, bool) {
 	last := t.last
 	t.last, t.commands = now, 0
 
-	n, ok := diffTree(last, now, own, commands)
+	n, ok := diffTree(last, now, own, commands, t.cfg.Sibling)
 	return n, ok
 }
 
@@ -230,8 +236,10 @@ func (t *treeState) ownPaths() map[string]bool {
 }
 
 // diffTree is the comparison itself, separated from the git calls so it can
-// be tested on snapshots built by hand.
-func diffTree(last, now TreeSnapshot, own map[string]bool, commands int) (TreeNotice, bool) {
+// be tested on snapshots built by hand. sibling may be nil and is asked only
+// once there is something to report — it is a store read, and a boundary
+// where nothing moved has nothing to attribute to anybody.
+func diffTree(last, now TreeSnapshot, own map[string]bool, commands int, sibling func() bool) (TreeNotice, bool) {
 	var changed []string
 	for p, st := range now.Status {
 		if last.Status[p] != st {
@@ -276,10 +284,19 @@ func diffTree(last, now TreeSnapshot, own map[string]bool, commands int) (TreeNo
 	b.WriteString("[tree: " + strings.Join(parts, " · ") + "]\n")
 	if commands > 0 {
 		b.WriteString("A command of yours ran since the tree was last read, so some of this may be its doing; " +
-			"whatever it did not do is somebody else's. Re-read a file before editing it, and do not revert or explain changes you did not make.")
+			"whatever it did not do is somebody else's. Re-read a file before editing it, and do not revert or explain changes you did not make")
 	} else {
-		b.WriteString("This session did not make these changes. Re-read a file before editing it, and do not revert or explain them.")
+		b.WriteString("This session did not make these changes. Re-read a file before editing it, and do not revert or explain them")
 	}
+	// The likely author, where there is one to name. It goes last because it
+	// is the answer to the question the sentence before it raises, and it
+	// names no transcript and no slot: which conversation the other session
+	// is having is its own, and this one is being told only that somebody is
+	// there to ask.
+	if sibling != nil && sibling() {
+		b.WriteString(" — another session is open in this checkout")
+	}
+	b.WriteString(".")
 	n.Message = b.String()
 
 	var row []string

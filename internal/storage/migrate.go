@@ -182,6 +182,26 @@ var migrations = []string{
 	// (docs/capabilities/sessions-and-memory.md#a-resumed-session-sees-the-tree-as-it-is).
 	`ALTER TABLE chat_sessions ADD COLUMN summary TEXT NOT NULL DEFAULT '';
 	ALTER TABLE chat_sessions ADD COLUMN head TEXT NOT NULL DEFAULT '';`,
+
+	// What tells a session that is still running from one that crashed with
+	// its end time never written. An open row — ended_at null — has always
+	// meant both, so nothing could say whether another session had this
+	// checkout open right now
+	// (docs/capabilities/sessions-and-memory.md#a-session-knows-it-is-not-alone).
+	//
+	// The process id answers it and the heartbeat guards the id: ids are
+	// reused, so a row whose process died without closing it would otherwise
+	// be vouched for by whatever inherited its number. The checkout is
+	// matched on the project fingerprint the row already carries, because
+	// this table is content-free by construction and a workspace path is a
+	// path.
+	//
+	// Both default to the values that mean "nothing was recorded", so a row
+	// written before this reads as a session nobody can vouch for rather
+	// than as a live one: an unknown pid never makes a sibling and is never
+	// reconciled away.
+	`ALTER TABLE agent_sessions ADD COLUMN pid INTEGER NOT NULL DEFAULT 0;
+	ALTER TABLE agent_sessions ADD COLUMN heartbeat TEXT NOT NULL DEFAULT '';`,
 }
 
 // migrate brings the store up to the current schema, one step per

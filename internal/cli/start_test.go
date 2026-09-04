@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
@@ -209,5 +210,37 @@ func TestBuildScaffold_MakesNoOfferItCannotRemember(t *testing.T) {
 	}
 	if s.Write == nil {
 		t.Fatal("/init should still work without a store")
+	}
+}
+
+// One reading, in the two shapes the surfaces need it, and neither of them
+// stops a session from starting when there is no store to ask.
+func TestReadSibling_WithoutAStoreNobodyElseIsHere(t *testing.T) {
+	sib := readSibling(nil)
+	if !sib.since().IsZero() || sib.live() {
+		t.Fatal("no store should answer with nothing")
+	}
+	if withSibling(nil, sib) != nil {
+		t.Fatal("a tree reading that is off stays off")
+	}
+	c := withSibling(&agent.TreeCheck{Dir: "."}, sib)
+	if c.Sibling != nil {
+		t.Fatal("a reading with no store should hand the tree no answer to ask for")
+	}
+}
+
+func TestReadSibling_HandsTheTreeReadingTheLiveHalf(t *testing.T) {
+	db, err := storage.OpenPath(filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	defer db.Close()
+
+	c := withSibling(&agent.TreeCheck{Dir: "."}, readSibling(db))
+	if c.Sibling == nil {
+		t.Fatal("the tree reading was handed no way to ask")
+	}
+	if c.Sibling() {
+		t.Fatal("an empty store answered that somebody else is here")
 	}
 }

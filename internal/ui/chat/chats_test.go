@@ -307,3 +307,36 @@ func TestGolden_ChatPicker(t *testing.T) {
 		}
 	})
 }
+
+// A slot another running session is autosaving into is still listed — fold,
+// never hide — and enter on it says why rather than loading a conversation
+// the other session's next save would take straight back.
+func TestChatPick_ASlotAnotherSessionHoldsIsNotOffered(t *testing.T) {
+	m := chatPickModel(t, "alpha", "beta")
+	m = sendText(t, m, "/chats")
+	at := time.Date(2026, 9, 4, 9, 4, 0, 0, time.Local)
+	entries := []storage.ChatListEntry{
+		{Name: "alpha", Turns: 1, UpdatedAt: at, Live: true},
+		{Name: "beta", Turns: 1, UpdatedAt: at},
+	}
+	opts, focus := m.chatPickOptions(entries)
+	if !opts[0].Dim || opts[0].Meta != livePhrase {
+		t.Fatalf("the live row should be folded and say why, got %+v", opts[0])
+	}
+	if opts[1].Dim || opts[1].Meta != "" {
+		t.Fatalf("a slot nobody holds should be an ordinary row, got %+v", opts[1])
+	}
+
+	m.chats.entries = entries
+	m.pickerAll, m.picker.Options, m.picker.Total = opts, opts, len(opts)
+	m.picker.Focus = focus
+	m.pickerIndex = identityIndex(len(opts))
+	m = press(t, m, "enter")
+	view := ansi.Strip(m.renderHistory())
+	if !strings.Contains(view, livePhrase) {
+		t.Fatalf("choosing a live slot should say why it was not opened:\n%s", view)
+	}
+	if strings.Contains(view, "Loaded") {
+		t.Fatalf("the live slot was loaded anyway:\n%s", view)
+	}
+}

@@ -142,6 +142,44 @@ checkpoint was written to survive exactly this: the run is let go of with the
 item still in progress, and the new conversation opens with the command that
 continues it.
 
+### A session knows it is not alone
+
+Two sessions in one checkout is a decision somebody made, and nothing refuses
+to start over it. What used to be missing is that neither of them knew. One
+would find a change in its own diff that it could not remember making and set
+about explaining or reverting it, and the other would offer to open the
+conversation the first was still writing.
+
+So both say so. Where another session already has this checkout open, the
+start screen carries one more clause on its header line — *another session
+open here since 10:32* — the model's workspace block says the same and adds
+that changes it did not make are most likely that session's work, and the
+block reporting that the tree moved ends by naming the likeliest author. None
+of them names the other session's conversation: what it is doing is its own,
+and this one needs only to know that somebody is there to ask.
+
+The record is what answers the question. A session's row has always said when
+it started and when it ended, and an unfinished row has always meant two
+different things — still running, or killed with its ending never written.
+The process id tells those apart, and a beat written at every turn boundary
+guards the id, since ids are reused and a dead session's number can come to
+belong to something else. A row whose process is gone is closed at the next
+session's start, the way an abandoned sandbox container is reaped: the record
+outlives the thing it describes, so something has to bring the two back in
+line.
+
+Nothing is written into the checkout to make this work. A lock or a lease
+file would have to live in the project's own directory, which people commit,
+and a lease in a committed directory is a merge conflict waiting for a bad
+afternoon. The checkout is matched on the fingerprint the row already
+carries, which is also what keeps the reading clear of the record's one rule:
+it stores no paths.
+
+The last place it shows is the saved conversations. A slot a running session
+is still autosaving into is marked wherever conversations are listed, and the
+picker will not open it — loading a conversation somebody else is still
+adding to only gets it taken back by their next save.
+
 ### A slot belongs to one session
 
 A session that was never named is called by the moment it began, and for a

@@ -61,11 +61,29 @@ func PromptBlock(info Info) string {
 			dirtyPaths(info.Dirty)))
 	}
 
+	if !info.Sibling.IsZero() {
+		// The tree can move for a reason no diff explains, and a model
+		// meeting a change it cannot remember making sets about explaining
+		// or reverting it. Naming the other session before that happens
+		// turns the reflex into a question. Nothing about it is named but
+		// the hour it started: what it is doing is its own business, and
+		// this session only needs to know that somebody is there.
+		lines = append(lines, fmt.Sprintf(
+			"- Another session has been open in this checkout since %s. Changes you did not make are most likely its work: ask before you revert, re-fix or explain them.",
+			info.Sibling.Local().Format(SiblingClock)))
+	}
+
 	if len(lines) == 0 {
 		return ""
 	}
 	return "# Workspace\n" + strings.Join(lines, "\n")
 }
+
+// SiblingClock is how the other session's start time is written wherever it
+// is named. The hour and the minute and nothing else: the question a reader
+// has is "before or after I started", which a clock answers and a date does
+// not.
+const SiblingClock = "15:04"
 
 // dirtyPaths is n uncommitted paths, in words.
 func dirtyPaths(n int) string {

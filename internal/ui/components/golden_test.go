@@ -1165,6 +1165,12 @@ func TestGolden_StartScreen(t *testing.T) {
 						Detail: "one approval, then it reports back"},
 				}
 			})},
+			{Label: "somebody else is in this checkout too", View: screen(func(s *StartScreen) {
+				// Second, and the header drops from the right, so this panel
+				// is also what shows the package count going before it does.
+				s.Facts = append([]StartFact{s.Facts[0],
+					{Text: "another session open here since 10:32", Tone: ToneOpen}}, s.Facts[1:]...)
+			})},
 			{Label: "typing dismissed the list · the facts stay", View: screen(func(s *StartScreen) {
 				s.Suggestions, s.Lead, s.Hint = nil, "", ""
 			})},
