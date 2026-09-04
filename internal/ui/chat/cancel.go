@@ -30,6 +30,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // armKind is what an open window would do on its second press.
@@ -134,7 +135,33 @@ func (m *Model) quitNow() tea.Cmd {
 	if m.classifierCancel != nil {
 		m.classifierCancel()
 	}
+	// The model list is a request to the provider that a leaving session has
+	// nothing left to do with, and it is the one surface that can be holding
+	// one (picker.go).
+	if m.modelListCancel != nil {
+		m.modelListCancel()
+		m.modelListCancel = nil
+	}
 	return m.quitCmd()
+}
+
+// surfaceKey routes a key to the surface holding the keyboard, answering the
+// quit chord ahead of it. Every takeover surface answers that chord the same
+// way — leave the session, not the surface — so it is answered once here
+// rather than at the top of each surface's own key handler, where the copies
+// drifted into cancelling different halves of what was still running.
+//
+// It does not arm. The two-press arming belongs to the draft, where a stray
+// chord is a typo in a sentence; a reader who pressed it over a card was
+// looking at the card and meant it. Two branches of the ladder are not routed
+// through here: the quit confirm, because that surface is the question the
+// chord asks, and the context screen, which has never answered it.
+func (m Model) surfaceKey(msg tea.KeyPressMsg, to func(tea.KeyPressMsg) (tea.Model, tea.Cmd)) (tea.Model, tea.Cmd) {
+	if keys.Match(msg, keys.Draft.Quit) {
+		cmd := m.quitNow()
+		return m, cmd
+	}
+	return to(msg)
 }
 
 // openQuitConfirm asks before quitting over a live turn: what the quit
@@ -218,14 +245,4 @@ func (m Model) quitConfirmLines() []string {
 		return nil
 	}
 	return strings.Split(m.quitAsk.View(m.contentWidth()), "\n")
-}
-
-// renderQuitConfirm pads the confirm to the bottom panel's height.
-func (m Model) renderQuitConfirm() string {
-	lines := m.quitConfirmLines()
-	h := m.bottomPanelHeight()
-	for len(lines) < h {
-		lines = append(lines, "")
-	}
-	return strings.Join(lines[:h], "\n")
 }

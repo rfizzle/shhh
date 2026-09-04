@@ -190,10 +190,6 @@ func closestOption(all []components.SelectOption, query string) string {
 
 // updatePick routes keys while a picker is showing.
 func (m Model) updatePick(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	if keys.Match(msg, keys.Draft.Quit) {
-		m.quitting = true
-		return m, m.quitCmd()
-	}
 	// The palette is this surface with a query on it: same card, same panel
 	// accounting, but every key that is not movement or dispatch is text
 	// (palette.go).
@@ -246,16 +242,6 @@ func (m Model) pickerLines() []string {
 	}
 	lines := strings.Split(m.picker.View(m.contentWidth()), "\n")
 	return append(lines, m.chatPickLines()...)
-}
-
-// renderPick renders the picker padded to the bottom panel height.
-func (m Model) renderPick() string {
-	lines := m.pickerLines()
-	h := m.bottomPanelHeight()
-	for len(lines) < h {
-		lines = append(lines, "")
-	}
-	return strings.Join(lines[:h], "\n")
 }
 
 // modelPickChoices is the /model picker's option list: the curated catalog
@@ -313,13 +299,6 @@ func (m Model) startModelPick() (tea.Model, tea.Cmd) {
 // ctrl+c) abandons the query and returns to the input.
 func (m Model) updateModelList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch pressed := msg.String(); {
-	case keys.Is(pressed, keys.Draft.Quit):
-		m.quitting = true
-		if m.modelListCancel != nil {
-			m.modelListCancel()
-			m.modelListCancel = nil
-		}
-		return m, m.quitCmd()
 	case keys.Is(pressed, keys.Select.Cancel):
 		if m.modelListCancel != nil {
 			m.modelListCancel()

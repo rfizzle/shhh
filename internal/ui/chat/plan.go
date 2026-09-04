@@ -100,9 +100,6 @@ func (m Model) updatePlanApprove(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case keys.Is(pressed, keys.Select.Cancel):
 		// Esc never destroys: dismissing the prompt keeps planning.
 		return m.keepPlanning()
-	case keys.Is(pressed, keys.Draft.Quit):
-		m.quitting = true
-		return m, m.quitCmd()
 	}
 	return m, nil
 }
@@ -369,17 +366,6 @@ func (m Model) planApproveLines() []string {
 // and the draft it is holding while it does.
 func (m Model) planPanelLines() []string {
 	return m.dressDecision(m.planApproveLines(), m.contentWidth())
-}
-
-// renderPlanApprove renders the plan-approval card padded to the bottom
-// panel height.
-func (m Model) renderPlanApprove() string {
-	lines := m.planPanelLines()
-	h := m.bottomPanelHeight()
-	for len(lines) < h {
-		lines = append(lines, "")
-	}
-	return strings.Join(lines[:h], "\n")
 }
 
 // savePlan writes the plan text to .shhh/plans/<name>.md under root (an empty

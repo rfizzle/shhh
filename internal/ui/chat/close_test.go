@@ -287,8 +287,8 @@ func TestTurnClose_ReachableFromFocusMode(t *testing.T) {
 		t.Fatalf("focus should land on the close rows, but idx %d is kind %v",
 			m.focusIdx, m.transcript[m.focusIdx].kind)
 	}
-	if !strings.Contains(ansi.Strip(m.renderFocusHint()), "[v] review") {
-		t.Fatalf("the hint should offer what the row offers, got %q", ansi.Strip(m.renderFocusHint()))
+	if !strings.Contains(ansi.Strip(m.panelView()), "[v] review") {
+		t.Fatalf("the hint should offer what the row offers, got %q", ansi.Strip(m.panelView()))
 	}
 
 	// [v] opens review mode over the turn's changeset; the surface
@@ -313,7 +313,7 @@ func TestTurnClose_ReachableFromFocusMode(t *testing.T) {
 	if undo.undoReturn != stateFocus {
 		t.Fatalf("esc should come back to the row that offered it, got %v", undo.undoReturn)
 	}
-	if prompt := ansi.Strip(undo.renderUndoConfirm()); !strings.Contains(prompt, "Undo turn 1?") {
+	if prompt := ansi.Strip(undo.panelView()); !strings.Contains(prompt, "Undo turn 1?") {
 		t.Fatalf("the confirm should name the turn, got %q", prompt)
 	}
 }

@@ -257,3 +257,81 @@ func TestLayout_RailSettingIsHeldToTheLadder(t *testing.T) {
 		}
 	}
 }
+
+func TestPadPanel(t *testing.T) {
+	for _, c := range []struct {
+		name  string
+		lines []string
+		h     int
+		want  string
+	}{
+		{"short pads to the rows it was given", []string{"a"}, 3, "a\n\n"},
+		{"exact is left alone", []string{"a", "b"}, 2, "a\nb"},
+		{"overflow is cut at the last row", []string{"a", "b", "c"}, 2, "a\nb"},
+		{"no rows draws nothing", []string{"a"}, 0, ""},
+		{"no lines still fills the rows", nil, 2, "\n"},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			if got := padPanel(c.lines, c.h); got != c.want {
+				t.Errorf("padPanel(%q, %d) = %q, want %q", c.lines, c.h, got, c.want)
+			}
+		})
+	}
+}
+
+// padPanel must not write into the caller's slice: the panel's rows are the
+// same slice the surface that drew them still holds, and a pad that reached
+// into its spare capacity would leave blank rows in it.
+func TestPadPanelLeavesTheCallersLinesAlone(t *testing.T) {
+	spare := []string{"a", "still here", "and here", "and here"}
+	lines := spare[:1]
+	if got := padPanel(lines, 3); got != "a\n\n" {
+		t.Fatalf("padPanel padded to %q", got)
+	}
+	if spare[1] != "still here" || spare[2] != "and here" {
+		t.Errorf("padPanel wrote through the caller's slice: %q", spare)
+	}
+}
+
+// One paint renders the bottom panel once. The surface that owns the panel
+// decides how many rows the vertical split takes off the transcript, so the
+// split renders it — and the draw used to render it a second time to paint
+// the same rows.
+func TestFrameRendersTheBottomPanelOnce(t *testing.T) {
+	for _, c := range []struct {
+		name  string
+		model func(testing.TB) Model
+	}{
+		{"the draft box holds the panel", func(t testing.TB) Model { return frameModel(t, 110, 34) }},
+		{"a picker holds the panel", pickerModel},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			m := c.model(t)
+			renders := 0
+			testHookRenderPanel = func() { renders++ }
+			t.Cleanup(func() { testHookRenderPanel = nil })
+
+			if _ = m.View(); renders != 1 {
+				t.Fatalf("a frame rendered the bottom panel %d times, want 1", renders)
+			}
+			renders = 0
+			if _ = m.View(); renders != 1 {
+				t.Fatalf("the next frame rendered it %d times, want 1", renders)
+			}
+		})
+	}
+}
+
+// And the frame is one paint's, not the model's: a model that painted once
+// resolves the panel again for the next paint rather than showing the rows it
+// drew last time.
+func TestFrameIsNotHeldPastThePaint(t *testing.T) {
+	m := frameModel(t, 110, 34)
+	if m.framed != nil {
+		t.Fatal("a model that has not painted holds no frame")
+	}
+	_ = m.View()
+	if m.framed != nil {
+		t.Fatal("the frame outlived the paint it was built for")
+	}
+}

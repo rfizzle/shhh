@@ -148,9 +148,6 @@ func (m Model) updateDiffFull(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	}
 	m.fullDiff.Height = m.viewportHeight()
 	switch pressed := msg.String(); {
-	case keys.Is(pressed, keys.Draft.Quit):
-		m.quitting = true
-		return m, m.quitCmd()
 	case keys.Is(pressed, keys.Diff.Leave):
 		m.fullDiff.Mode = components.DiffExpanded
 	default:

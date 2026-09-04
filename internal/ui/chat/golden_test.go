@@ -609,7 +609,7 @@ func TestGolden_ScaffoldCard(t *testing.T) {
 		})
 		next, _ := m.scaffoldCommand()
 		return []golden.Panel{
-			{Label: "nothing written yet", View: next.(Model).renderScaffold()},
+			{Label: "nothing written yet", View: next.(Model).panelView()},
 		}
 	})
 }
@@ -964,7 +964,7 @@ func readingSurface(m Model) string {
 	body := m.renderHistory()
 	if m.state == stateFocus {
 		body, _, _ = m.renderFocusHistory()
-		return rail + "\n" + body + "\n" + dividerStyle(m.contentWidth()) + "\n" + m.renderFocusHint()
+		return rail + "\n" + body + "\n" + dividerStyle(m.contentWidth()) + "\n" + m.panelView()
 	}
 	return rail + "\n" + body + "\n" + promptSurface(m)
 }
@@ -1306,9 +1306,9 @@ func TestGolden_TodoSprint(t *testing.T) {
 		whole, _ := m.startTodoSprintPlan(nil)
 		return []golden.Panel{
 			{Label: "under a budget · one small and one medium, in backlog order",
-				View: budgeted.(Model).renderTodoPropose()},
+				View: budgeted.(Model).panelView()},
 			{Label: "with no budget · the whole ready list",
-				View: whole.(Model).renderTodoPropose()},
+				View: whole.(Model).panelView()},
 		}
 	})
 }

@@ -651,10 +651,6 @@ func orDash(s string) string {
 
 // updateTodoPause routes keys while the pause card shows.
 func (m Model) updateTodoPause(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	if keys.Match(msg, keys.Draft.Quit) {
-		m.quitting = true
-		return m, m.quitCmd()
-	}
 	done, result := m.todoPause.Update(msg)
 	if !done {
 		return m, nil
@@ -848,16 +844,6 @@ func todoFollowUp(it todo.Item, st *run.State) todo.Proposal {
 		Notes:     []string{"Blocked because: " + strings.ReplaceAll(st.Blocked, "\n", " ")},
 		DependsOn: []string{it.Slug},
 	}
-}
-
-// renderTodoPause renders the pause card padded to the bottom panel.
-func (m Model) renderTodoPause() string {
-	lines := m.todoPauseLines()
-	h := m.bottomPanelHeight()
-	for len(lines) < h {
-		lines = append(lines, "")
-	}
-	return strings.Join(lines[:h], "\n")
 }
 
 // endTodoRun restores the session's mode and retires the checkpoint.

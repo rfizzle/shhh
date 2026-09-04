@@ -29,7 +29,6 @@ package chat
 import (
 	"strings"
 
-	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 )
 
@@ -178,7 +177,7 @@ func (v viewport) View() string {
 	if v.width == 0 || v.height == 0 {
 		return ""
 	}
-	return lipgloss.NewStyle().
+	return sty.Viewport.
 		Width(v.width).
 		Height(v.height).
 		Render(strings.Join(v.visibleLines(), "\n"))

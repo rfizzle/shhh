@@ -26,6 +26,7 @@ package chat
 // from being a cycle.
 
 import (
+	"slices"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -39,6 +40,77 @@ import (
 // the divider and the status bar, or — when the command-center frame is
 // showing — the two border rails that stand in for them.
 const bottomChromeHeight = dividerHeight + statusBarHeight
+
+// frame is one paint's resolved surface: the columns, the vertical split, and
+// the blocks whose own size decides that split — the bottom panel, the live
+// tail, the ungated card and the rails above the prompt box. Each is resolved
+// the first time the paint asks for it and read from here every time after,
+// so a frame renders each of them once.
+//
+// The bottom panel is why this exists. Its rows are what the vertical split
+// takes off the transcript, so the split has to render it to learn them, and
+// the draw then rendered it a second time to paint it. Nothing about the
+// panel changes between those two renders, and at a dozen frames a second
+// through a stream the second one is the surface's largest avoidable cost.
+//
+// A frame is alive for exactly one paint. Model.framed is nil everywhere
+// else, which is what makes every reader below correct outside a paint too:
+// with no frame to read, it resolves its own answer as it always did.
+//
+// Every slot is a pointer because nil has to mean "not resolved yet" and not
+// "resolved to nothing": a notice rail with nothing to say and a card that is
+// not showing both resolve to no lines, and re-rendering them on every reader
+// is exactly what this is here to stop.
+type frame struct {
+	cols      *paneColumns
+	surf      *surfaceLayout
+	panel     *panelBody
+	tail      *tailBlock
+	rails     *[]string
+	interrupt *[]string
+	mode      *frameLayout
+}
+
+// tailBlock is the live tail rendered once, with the width it was rendered
+// at: the row count and the draw ask for the same width, and a memo that
+// answered a different one would draw a block that had been wrapped for
+// somewhere else.
+type tailBlock struct {
+	width int
+	view  string
+}
+
+// panelBody is the bottom panel resolved: the rows the surface that owns it
+// drew, and how many rows the vertical split gives them. Lines is nil when
+// the draft box owns the panel — the box renders itself and its rows are its
+// own.
+type panelBody struct {
+	lines  []string
+	height int
+}
+
+// view fits the panel's rows to the rows it was given.
+func (p panelBody) view() string { return padPanel(p.lines, p.height) }
+
+// padPanel fits a block of rendered lines to an exact row count: a short
+// block is padded with blank rows so the panel keeps its shape, and one that
+// overran the rows it was given is cut at the last of them rather than
+// pushing the frame off the bottom of the terminal.
+//
+// The padding is clipped off the caller's slice rather than appended to it,
+// because the rows it is handed are the frame's own copy of the panel and
+// anything else that asks for the panel gets the same slice back. An append
+// into their spare capacity would blank rows the next reader is about to
+// draw.
+func padPanel(lines []string, height int) string {
+	if height <= 0 {
+		return ""
+	}
+	if n := len(lines); n < height {
+		lines = append(slices.Clip(lines), make([]string, height-n)...)
+	}
+	return strings.Join(lines[:height], "\n")
+}
 
 // paneColumns is the horizontal half of the model: which columns each pane
 // owns, at this terminal width, with the two-pane split already decided.
@@ -70,6 +142,18 @@ type paneColumns struct {
 // reader on the surface go through it without asking a question that needs a
 // width to answer.
 func (m Model) columns() paneColumns {
+	if m.framed == nil {
+		return m.resolveColumns()
+	}
+	if m.framed.cols == nil {
+		cols := m.resolveColumns()
+		m.framed.cols = &cols
+	}
+	return *m.framed.cols
+}
+
+// resolveColumns is the split itself, taken once per frame.
+func (m Model) resolveColumns() paneColumns {
 	// A terminal is never negative, and the arithmetic this replaces could
 	// hand one out: `m.width - 4` at three columns is -1, which the first
 	// strings.Repeat downstream would have panicked on.
@@ -162,6 +246,18 @@ func (s surfaceLayout) in(rows, cols uv.Rectangle) uv.Rectangle {
 // transcript that shrank by construction rather than by an accounting entry
 // somebody has to remember to make.
 func (m Model) surface() surfaceLayout {
+	if m.framed == nil {
+		return m.resolveSurface()
+	}
+	if m.framed.surf == nil {
+		s := m.resolveSurface()
+		m.framed.surf = &s
+	}
+	return *m.framed.surf
+}
+
+// resolveSurface is the arrangement itself, taken once per frame.
+func (m Model) resolveSurface() surfaceLayout {
 	s := surfaceLayout{paneColumns: m.columns()}
 
 	layout.Vertical(

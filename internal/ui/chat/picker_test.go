@@ -180,7 +180,7 @@ func TestPick_LongCatalogScrollsWithTheFocus(t *testing.T) {
 		t.Fatal("bare /model should open the picker")
 	}
 	for i := 0; i < len(names); i++ {
-		panel := m.renderPick()
+		panel := m.panelView()
 		// The numbering column is right-aligned, so option 9's
 		// label starts where option 10's does.
 		want := fmt.Sprintf("%2d. model-%02d", i+1, i+1)

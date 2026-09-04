@@ -113,9 +113,6 @@ func (m Model) scaffoldCard() *components.ApprovalCard {
 // back out of a screen the reader opened (keys.Decision.Refuse).
 func (m Model) updateScaffold(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch {
-	case keys.Match(msg, keys.Draft.Quit):
-		m.quitting = true
-		return m, m.quitCmd()
 	case keys.Match(msg, keys.Select.Cancel):
 		m.leaveSurface()
 		m.syncViewport()
@@ -160,15 +157,4 @@ func (m Model) writeScaffold() (tea.Model, tea.Cmd) {
 // scaffoldLines renders the card, one row per line.
 func (m Model) scaffoldLines() []string {
 	return strings.Split(m.scaffoldCard().View(m.contentWidth()), "\n")
-}
-
-// renderScaffold pads the card to the bottom panel height, like every other
-// surface that borrows it.
-func (m Model) renderScaffold() string {
-	lines := m.scaffoldLines()
-	h := m.bottomPanelHeight()
-	for len(lines) < h {
-		lines = append(lines, "")
-	}
-	return strings.Join(lines[:h], "\n")
 }

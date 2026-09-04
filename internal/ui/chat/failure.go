@@ -351,10 +351,6 @@ func (m Model) updateKeyEntry(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if m.keyAsk == nil {
 		return m.closeKeyEntry("")
 	}
-	if keys.Match(msg, keys.Draft.Quit) {
-		m.quitting = true
-		return m, m.quitCmd()
-	}
 	done, result := m.keyAsk.Update(msg)
 	if !done {
 		m.syncViewport()
@@ -385,16 +381,6 @@ func (m Model) keyEntryLines() []string {
 		return nil
 	}
 	return strings.Split(m.keyAsk.View(m.contentWidth()), "\n")
-}
-
-// renderKeyEntry pads the prompt to the bottom panel's height.
-func (m Model) renderKeyEntry() string {
-	lines := m.keyEntryLines()
-	h := m.bottomPanelHeight()
-	for len(lines) < h {
-		lines = append(lines, "")
-	}
-	return strings.Join(lines[:h], "\n")
 }
 
 // lastFour is the tail of a secret, the only part of one that is ever shown.

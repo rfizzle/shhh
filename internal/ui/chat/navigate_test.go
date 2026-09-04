@@ -322,7 +322,7 @@ func TestReadingMode_ProseRowsTakeTheCursor(t *testing.T) {
 	if m.focusIdx < 0 || es[m.focusIdx].kind != entryAssistant {
 		t.Fatalf("the cursor should land on the last assistant message, got %d", m.focusIdx)
 	}
-	hint := ansi.Strip(m.renderFocusHint())
+	hint := ansi.Strip(m.panelView())
 	if strings.Contains(hint, "["+keys.Shown(keys.Reading.Expand)+"]") {
 		t.Fatalf("a message row expands nothing, so [enter] is not an offer, got %q", hint)
 	}

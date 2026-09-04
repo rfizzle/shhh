@@ -102,7 +102,16 @@ func newFrameStyles(p components.ColorTokens) frameStyles {
 	}
 }
 
-func (m Model) frameLayout() frameLayout { return frameLayoutFor(m.contentWidth()) }
+func (m Model) frameLayout() frameLayout {
+	if m.framed == nil {
+		return frameLayoutFor(m.contentWidth())
+	}
+	if m.framed.mode == nil {
+		mode := frameLayoutFor(m.contentWidth())
+		m.framed.mode = &mode
+	}
+	return *m.framed.mode
+}
 
 // frameShowing reports whether the framed input is the current bottom panel.
 func (m Model) frameShowing() bool {
@@ -133,6 +142,19 @@ func (m Model) frameShowing() bool {
 // the session talking, the status row is what the session amounts to, and the
 // staged rail belongs to the sentence being typed.
 func (m Model) framePreRails() []string {
+	if m.framed == nil {
+		return m.resolveFramePreRails()
+	}
+	if m.framed.rails == nil {
+		rails := m.resolveFramePreRails()
+		m.framed.rails = &rails
+	}
+	return *m.framed.rails
+}
+
+// resolveFramePreRails renders the three rails. The row budget counts them
+// and the draw prints them, so a frame renders them once.
+func (m Model) resolveFramePreRails() []string {
 	return []string{m.noticeLine(), m.statusRow(), m.stagedRail()}
 }
 

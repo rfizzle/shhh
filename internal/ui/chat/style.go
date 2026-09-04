@@ -25,6 +25,15 @@ type Styles struct {
 	Tool       lipgloss.Style
 	ToolArgs   lipgloss.Style
 	StatusBar  lipgloss.Style
+	// Divider is the faint rule under the header and above the bottom
+	// panel; the width is the caller's, the colour is the palette's.
+	Divider lipgloss.Style
+	// Viewport is the transcript pane's own box, given its width and height
+	// at the moment it renders so every row is the same length
+	// (viewport.go). It carries no token yet and is here anyway: it is the
+	// pane's style, and a pane that gains a ground has one place to gain it
+	// rather than a NewStyle() call in the middle of a render.
+	Viewport lipgloss.Style
 	// Permission-mode segment (docs/interface/surfaces.md#the-input-frame):
 	// permissive vs gated modes (the orchestrator's bar renders through
 	// components.Cockpit; these back the child-scoped bar).
@@ -100,6 +109,8 @@ func newStyles(p components.ColorTokens) Styles {
 		Tool:       lipgloss.NewStyle().Foreground(p.Accent.Color()),
 		ToolArgs:   lipgloss.NewStyle().Foreground(p.Dim.Color()),
 		StatusBar:  lipgloss.NewStyle().Foreground(p.Status.Color()),
+		Divider:    lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		Viewport:   lipgloss.NewStyle(),
 
 		ModePermissive: lipgloss.NewStyle().Foreground(p.Add.Color()),
 		ModeGated:      lipgloss.NewStyle().Foreground(p.Accent.Color()),

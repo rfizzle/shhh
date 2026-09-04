@@ -19,7 +19,6 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"
-	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // GitSnapshot is the workspace's git state at a checkpoint: HEAD plus a
@@ -99,10 +98,6 @@ func (m Model) openRewindPick() (tea.Model, tea.Cmd) {
 
 // updateRewindPick routes keys while the /rewind picker is showing.
 func (m Model) updateRewindPick(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	if keys.Match(msg, keys.Draft.Quit) {
-		m.quitting = true
-		return m, m.quitCmd()
-	}
 	done, result := m.rewindSelect.Update(msg)
 	if !done {
 		return m, nil
@@ -302,15 +297,4 @@ func (m Model) rewindPickLines() []string {
 		return nil
 	}
 	return strings.Split(m.rewindSelect.View(m.contentWidth()), "\n")
-}
-
-// renderRewindPick renders the /rewind picker padded to the bottom panel
-// height.
-func (m Model) renderRewindPick() string {
-	lines := m.rewindPickLines()
-	h := m.bottomPanelHeight()
-	for len(lines) < h {
-		lines = append(lines, "")
-	}
-	return strings.Join(lines[:h], "\n")
 }

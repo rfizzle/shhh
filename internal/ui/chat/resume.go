@@ -455,9 +455,6 @@ func (m Model) cancelRetryWait() (tea.Model, tea.Cmd) {
 // an input that is not listening.
 func (m Model) updateRetryWait(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch pressed := msg.String(); {
-	case keys.Is(pressed, keys.Draft.Quit):
-		m.quitting = true
-		return m, m.quitCmd()
 	case keys.Is(pressed, keys.Select.Cancel):
 		return m.cancelRetryWait()
 	case keys.Is(pressed, keys.Wait.Fallback):

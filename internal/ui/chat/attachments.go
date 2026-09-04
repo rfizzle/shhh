@@ -379,10 +379,6 @@ func (m Model) openPasteDrop() (tea.Model, tea.Cmd) {
 // updatePasteDrop routes keys while the drop selector or its one-chip
 // confirm is up.
 func (m Model) updatePasteDrop(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	if keys.Match(msg, keys.Draft.Quit) {
-		m.quitting = true
-		return m, m.quitCmd()
-	}
 	if c := m.pasteDropConfirm; c != nil {
 		done, result := c.Update(msg)
 		if !done {
@@ -447,16 +443,6 @@ func (m Model) pasteDropLines() []string {
 		return nil
 	}
 	return strings.Split(m.pasteDrop.View(m.contentWidth()), "\n")
-}
-
-// renderPasteDrop pads the surface to the bottom panel's height.
-func (m Model) renderPasteDrop() string {
-	lines := m.pasteDropLines()
-	h := m.bottomPanelHeight()
-	for len(lines) < h {
-		lines = append(lines, "")
-	}
-	return strings.Join(lines[:h], "\n")
 }
 
 // pastedFileAttachment reports the file a bracketed paste was pointing at,

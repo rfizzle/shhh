@@ -20,7 +20,6 @@ import (
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
-	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // viewState is one surface's saved scroll position.
@@ -431,31 +430,10 @@ func (m Model) agentListLines() []string {
 	return lines
 }
 
-// renderAgentList pads the list to the bottom panel height.
-func (m Model) renderAgentList() string {
-	lines := m.agentListLines()
-	h := m.bottomPanelHeight()
-	for len(lines) < h {
-		lines = append(lines, "")
-	}
-	return strings.Join(lines[:h], "\n")
-}
-
 // updateAgentList routes keys while the agent list is open: enter attaches,
 // x cancels the focused agent's turn, X arms the inline kill confirm, esc
 // dismisses the list.
 func (m Model) updateAgentList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	if keys.Match(msg, keys.Draft.Quit) {
-		m.quitting = true
-		m.cancelSubagents()
-		if m.cancel != nil {
-			m.cancel()
-		}
-		if m.runCancel != nil {
-			m.runCancel()
-		}
-		return m, m.quitCmd()
-	}
 	// An answer in progress owns the keys: the card is over the list, and
 	// answering it (either way) hands the list back.
 	if ask := m.listAnswerAsk(); ask != nil {
@@ -593,17 +571,6 @@ func (m Model) listAnswerCard(ask *subagent.Ask) *components.ApprovalCard {
 // resolves the request and returns to the list; esc/n declines, because a
 // routed request is never silently dropped.
 func (m Model) updateListAnswer(msg tea.KeyPressMsg, ask *subagent.Ask) (tea.Model, tea.Cmd) {
-	if keys.Match(msg, keys.Draft.Quit) {
-		m.quitting = true
-		m.cancelSubagents()
-		if m.cancel != nil {
-			m.cancel()
-		}
-		if m.runCancel != nil {
-			m.runCancel()
-		}
-		return m, m.quitCmd()
-	}
 	done, result := m.listAnswerCard(ask).Update(msg)
 	if !done {
 		return m, nil

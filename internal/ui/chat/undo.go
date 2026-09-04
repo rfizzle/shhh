@@ -22,7 +22,6 @@ import (
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/ui/components"
-	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // undoCommand handles `/undo [turn]`: bare undoes the most recent turn that
@@ -95,10 +94,6 @@ func driftedIn(plan changeset.UndoPlan, removes bool) int {
 func (m Model) updateUndoConfirm(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if m.undoAsk == nil {
 		return m.closeUndoConfirm()
-	}
-	if keys.Match(msg, keys.Draft.Quit) {
-		m.quitting = true
-		return m, m.quitCmd()
 	}
 	done, result := m.undoAsk.Update(msg)
 	if !done {
@@ -211,14 +206,4 @@ func (m Model) undoConfirmLines() []string {
 		return nil
 	}
 	return strings.Split(m.undoAsk.View(m.contentWidth()), "\n")
-}
-
-// renderUndoConfirm pads the confirm to the bottom panel's height.
-func (m Model) renderUndoConfirm() string {
-	lines := m.undoConfirmLines()
-	h := m.bottomPanelHeight()
-	for len(lines) < h {
-		lines = append(lines, "")
-	}
-	return strings.Join(lines[:h], "\n")
 }

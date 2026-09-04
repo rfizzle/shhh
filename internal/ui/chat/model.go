@@ -1044,6 +1044,14 @@ type Model struct {
 	// cannot be let go of, and dropHold is what says so.
 	hold      *turnHold
 	holdAsked bool
+	// framed is the frame being painted, and is non-nil for exactly the
+	// length of one paint (layout.go). Everything a paint measures — the
+	// column split, the bottom panel, the live tail — is drawn from it as
+	// well as measured from it, so each is resolved once instead of once per
+	// reader. It is set on paint's own copy of the model and on nothing that
+	// outlives the paint; a nil frame is every other caller, which resolves
+	// its own answer as before.
+	framed *frame
 }
 
 func New(initialMessages []provider.Message, stream StreamFunc) Model {
@@ -1822,13 +1830,13 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.closeHistorySearch(true)
 		}
 		if m.state == stateDiffFull {
-			return m.updateDiffFull(msg)
+			return m.surfaceKey(msg, m.updateDiffFull)
 		}
 		if m.state == stateOutputFull {
-			return m.updateOutputFull(msg)
+			return m.surfaceKey(msg, m.updateOutputFull)
 		}
 		if m.state == statePreview {
-			return m.updatePreview(msg)
+			return m.surfaceKey(msg, m.updatePreview)
 		}
 		// The handover means one thing in both states a decision can be in:
 		// give the card the whole keyboard. From ungated it is the mid-sentence
@@ -1861,50 +1869,50 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m.ungateDecision()
 			}
 			if m.state == stateConfirmRun {
-				return m.updateConfirmRun(msg)
+				return m.surfaceKey(msg, m.updateConfirmRun)
 			}
 			if m.state == statePlanApprove {
-				return m.updatePlanApprove(msg)
+				return m.surfaceKey(msg, m.updatePlanApprove)
 			}
 		}
 		if m.state == stateRewindPick {
-			return m.updateRewindPick(msg)
+			return m.surfaceKey(msg, m.updateRewindPick)
 		}
 		if m.state == statePick {
-			return m.updatePick(msg)
+			return m.surfaceKey(msg, m.updatePick)
 		}
 		if m.state == stateTodoPropose {
-			return m.updateTodoPropose(msg)
+			return m.surfaceKey(msg, m.updateTodoPropose)
 		}
 		if m.state == statePasteDrop {
-			return m.updatePasteDrop(msg)
+			return m.surfaceKey(msg, m.updatePasteDrop)
 		}
 		if m.state == stateScaffold {
-			return m.updateScaffold(msg)
+			return m.surfaceKey(msg, m.updateScaffold)
 		}
 		if m.state == statePersona {
-			return m.updatePersona(msg)
+			return m.surfaceKey(msg, m.updatePersona)
 		}
 		if m.state == stateTodoPause {
-			return m.updateTodoPause(msg)
+			return m.surfaceKey(msg, m.updateTodoPause)
 		}
 		if m.state == stateModelList {
-			return m.updateModelList(msg)
+			return m.surfaceKey(msg, m.updateModelList)
 		}
 		if m.state == stateReview {
-			return m.updateReview(msg)
+			return m.surfaceKey(msg, m.updateReview)
 		}
 		if m.state == stateUndoConfirm {
-			return m.updateUndoConfirm(msg)
+			return m.surfaceKey(msg, m.updateUndoConfirm)
 		}
 		if m.state == stateQuitConfirm {
 			return m.updateQuitConfirm(msg)
 		}
 		if m.state == stateKeyEntry {
-			return m.updateKeyEntry(msg)
+			return m.surfaceKey(msg, m.updateKeyEntry)
 		}
 		if m.state == statePressure {
-			return m.updatePressure(msg)
+			return m.surfaceKey(msg, m.updatePressure)
 		}
 		if m.state == stateContext {
 			return m.updateContext(msg)
@@ -1913,21 +1921,23 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// prompt does: nothing is streaming, the input is not live, and the
 		// wait offers two keys that both end it.
 		if m.state == stateRetryWait {
-			return m.updateRetryWait(msg)
+			return m.surfaceKey(msg, m.updateRetryWait)
 		}
 		if m.state == stateFocus {
-			return m.updateFocus(msg)
+			return m.surfaceKey(msg, m.updateFocus)
 		}
 		// The agent manager list takes over the bottom panel and keys.
 		if m.agentList != nil {
-			return m.updateAgentList(msg)
+			return m.surfaceKey(msg, m.updateAgentList)
 		}
 		// A child agent's routed approval takes over the bottom panel;
 		// it defers to the parent's own prompts above. Like every other
 		// decision that arrives unbidden it is inert until the handover gives
 		// it the keyboard, which is why the check is on decisionHeld.
 		if ask := m.activeChildAsk(); ask != nil && m.decisionHeld {
-			return m.updateChildAsk(msg, ask)
+			return m.surfaceKey(msg, func(key tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+				return m.updateChildAsk(key, ask)
+			})
 		}
 		switch pressed := msg.String(); {
 		case keys.Is(pressed, keys.Draft.Quit):
@@ -2800,6 +2810,9 @@ func (m Model) paint(cur *cursorSink) string {
 		return "Initializing…"
 	}
 
+	// One frame's geometry and one render of each block whose size decides
+	// it (layout.go). Everything below reads what this resolved.
+	m.framed = &frame{}
 	s := m.surface()
 	scr := uv.NewScreenBuffer(max(m.width, 0), max(m.height, 0))
 	draw := func(view string, area uv.Rectangle) { drawIn(scr, view, area) }
@@ -2897,6 +2910,17 @@ func (m Model) paneView(area uv.Rectangle) string {
 // Attached, the child's session fills the pane and its liveness shows in the
 // child-scoped status bar, not a parent spinner.
 func (m Model) liveTail(width int) string {
+	if m.framed == nil {
+		return m.resolveLiveTail(width)
+	}
+	if m.framed.tail == nil || m.framed.tail.width != width {
+		m.framed.tail = &tailBlock{width: width, view: m.resolveLiveTail(width)}
+	}
+	return m.framed.tail.view
+}
+
+// resolveLiveTail is the block itself, rendered once per frame.
+func (m Model) resolveLiveTail(width int) string {
 	if m.attachedTo != "" {
 		return ""
 	}
@@ -2996,66 +3020,48 @@ func (m Model) takeoverCursor(width int) *tea.Cursor {
 	return nil
 }
 
-// takeoverPanel is the bottom panel when the frame is not showing: the
-// divider and status bar, and under them the input or the surface that
-// replaced it.
+// takeoverPanel is the bottom of the surface when the prompt frame is not
+// showing: the divider, the status bar, and under them whichever surface has
+// the panel's rows — already rendered, because the vertical split had to
+// render it to know how many rows to give it (layout.go).
 func (m Model) takeoverPanel(width int) string {
+	// One resolve, not one per read: a paint has the frame's, and a caller
+	// with no frame — a test rendering this panel on its own — would
+	// otherwise render the surface twice to ask it two questions.
+	p := m.panel()
+	body := p.view()
+	if p.lines == nil {
+		// Nothing took the panel over, so the draft box is what is under the
+		// status bar and it renders itself.
+		body = m.draftPanel()
+	}
+	return dividerStyle(width) + "\n" + m.renderStatusBar(width) + "\n" + body
+}
+
+// draftPanel is the panel nothing has taken over: the draft box with the
+// slash-command menu under it, or the one-line hint a full-screen surface
+// leaves in the box's place while it holds the keyboard.
+func (m Model) draftPanel() string {
+	switch m.state {
+	case statePersona:
+		return m.renderPersonaHint()
+	case stateDiffFull:
+		return m.renderDiffFullHint()
+	case stateOutputFull:
+		return m.renderOutputFullHint()
+	case statePreview:
+		return m.renderPreviewHint()
+	case stateReview:
+		return m.renderReviewHint()
+	case stateContext:
+		return m.renderContextHint()
+	}
 	inputView := m.input.View()
-	// The slash-command completion menu renders under the input;
-	// the takeover surfaces below replace it wholesale.
+	// The slash-command completion menu renders under the input.
 	if m.completionActive() && m.attachedTo == "" && m.agentList == nil && m.activeChildAsk() == nil {
 		inputView += "\n" + strings.Join(m.completionMenuLines(), "\n")
 	}
-	switch m.state {
-	case stateConfirmRun:
-		inputView = m.renderConfirm()
-	case statePlanApprove:
-		inputView = m.renderPlanApprove()
-	case stateRewindPick:
-		inputView = m.renderRewindPick()
-	case statePick:
-		inputView = m.renderPick()
-	case stateTodoPropose:
-		inputView = m.renderTodoPropose()
-	case statePasteDrop:
-		inputView = m.renderPasteDrop()
-	case stateScaffold:
-		inputView = m.renderScaffold()
-	case statePersona:
-		inputView = m.renderPersonaHint()
-	case stateTodoPause:
-		inputView = m.renderTodoPause()
-	case stateFocus:
-		inputView = m.renderFocusHint()
-	case stateDiffFull:
-		inputView = m.renderDiffFullHint()
-	case stateOutputFull:
-		inputView = m.renderOutputFullHint()
-	case statePreview:
-		inputView = m.renderPreviewHint()
-	case stateReview:
-		inputView = m.renderReviewHint()
-	case stateUndoConfirm:
-		inputView = m.renderUndoConfirm()
-	case stateQuitConfirm:
-		inputView = m.renderQuitConfirm()
-	case stateKeyEntry:
-		inputView = m.renderKeyEntry()
-	case statePressure:
-		inputView = m.renderPressure()
-	case stateContext:
-		inputView = m.renderContextHint()
-	}
-	// The agent manager list takes the bottom panel while open.
-	if m.agentList != nil {
-		inputView = m.renderAgentList()
-	}
-	// A child agent's routed approval takes over the bottom panel when the
-	// parent's own prompts aren't using it.
-	if ask := m.activeChildAsk(); ask != nil {
-		inputView = m.renderChildAsk(ask)
-	}
-	return dividerStyle(width) + "\n" + m.renderStatusBar(width) + "\n" + inputView
+	return inputView
 }
 
 // startRun resolves which code block from the last response to execute.
@@ -3092,10 +3098,6 @@ func (m *Model) startRun(parts []string) (result string, entersConfirm bool) {
 // ; the card's y/n/esc semantics match the original prompt, and [a]
 // is offered only where a session grant is allowed.
 func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	if keys.Match(msg, keys.Draft.Quit) {
-		m.quitting = true
-		return m, m.quitCmd()
-	}
 	// A memory proposal confirms through its own prompt, not the card.
 	if m.memoryAsk != nil {
 		return m.updateMemoryAsk(msg)
@@ -4036,10 +4038,10 @@ func (m Model) wordWrap(text string, width int) string {
 	return strings.TrimRight(result.String(), "\n")
 }
 
+// dividerStyle is the faint rule that opens the bottom panel and closes the
+// header.
 func dividerStyle(width int) string {
-	return lipgloss.NewStyle().
-		Foreground(components.Palette.Dim.Color()).
-		Render(strings.Repeat("─", width))
+	return sty.Divider.Render(strings.Repeat("─", width))
 }
 
 func (m *Model) handleSlashCommand(text string) (handled bool, result string) {

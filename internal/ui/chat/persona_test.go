@@ -331,7 +331,7 @@ func TestPersona_TheManagerOpensOnASessionWithNoAgents(t *testing.T) {
 	if len(rows) != 2 || rows[0].Name != "orchestrator" || rows[1].State != components.AgentOffer {
 		t.Fatalf("an empty session should list itself and the offer: %+v", rows)
 	}
-	view := m.renderAgentList()
+	view := m.panelView()
 	for _, want := range []string{"orchestrator", "draft a new profile", "/agents new"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("the manager lacks %q:\n%s", want, view)

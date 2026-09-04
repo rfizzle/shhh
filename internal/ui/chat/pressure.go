@@ -27,7 +27,6 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
-	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // armPressureCard opens the card when the turn that just closed left the
@@ -234,10 +233,6 @@ func (m Model) updatePressure(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if m.pressure == nil {
 		return m.closePressure()
 	}
-	if keys.Match(msg, keys.Draft.Quit) {
-		m.quitting = true
-		return m, m.quitCmd()
-	}
 	done, result := m.pressure.Update(msg)
 	if !done {
 		return m, nil
@@ -286,14 +281,4 @@ func (m Model) pressureLines() []string {
 		return nil
 	}
 	return strings.Split(m.pressure.View(m.contentWidth()), "\n")
-}
-
-// renderPressure pads the card to the bottom panel's height.
-func (m Model) renderPressure() string {
-	lines := m.pressureLines()
-	h := m.bottomPanelHeight()
-	for len(lines) < h {
-		lines = append(lines, "")
-	}
-	return strings.Join(lines[:h], "\n")
 }

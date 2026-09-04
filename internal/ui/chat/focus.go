@@ -152,9 +152,6 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.readingCopied = ""
 	}
 	switch pressed := msg.String(); {
-	case keys.Is(pressed, keys.Draft.Quit):
-		m.quitting = true
-		return m, m.quitCmd()
 	case keys.Is(pressed, keys.Reading.Back):
 		return m.exitFocusMode()
 	case keys.Is(pressed, keys.Reading.Move):
@@ -492,18 +489,6 @@ func gutterPrefix(block string, selected bool, width int) string {
 		} else {
 			lines[i] = "  " + l
 		}
-	}
-	return strings.Join(lines, "\n")
-}
-
-// renderFocusHint replaces the input frame while reading mode holds the
-// keyboard. It is the other half of the reading rail: the
-// rail says which pane has the keyboard, this says what the keyboard does
-// there. Its two lines are assembled in readinghint.go.
-func (m Model) renderFocusHint() string {
-	lines := m.focusHintLines()
-	for len(lines) < inputHeight {
-		lines = append(lines, "")
 	}
 	return strings.Join(lines, "\n")
 }

@@ -73,7 +73,7 @@ func TestUndo_RestoresWhatTheTurnWrote(t *testing.T) {
 	if m.state != stateUndoConfirm || m.undoAsk == nil {
 		t.Fatalf("/undo should ask before it writes, got state %v", m.state)
 	}
-	prompt := ansi.Strip(m.renderUndoConfirm())
+	prompt := ansi.Strip(m.panelView())
 	if !strings.Contains(prompt, "Undo turn 1?") || !strings.Contains(prompt, "deletes 1 file") {
 		t.Fatalf("the confirm should state what it would do, got %q", prompt)
 	}
@@ -149,7 +149,7 @@ func TestUndo_DriftIsSkippedAndReported(t *testing.T) {
 	}
 
 	m = sendText(t, m, "/undo")
-	prompt := ansi.Strip(m.renderUndoConfirm())
+	prompt := ansi.Strip(m.panelView())
 	if !strings.Contains(prompt, "1 file changed since the turn") {
 		t.Fatalf("the confirm should state the drift, got %q", prompt)
 	}

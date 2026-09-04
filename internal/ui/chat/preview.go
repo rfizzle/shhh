@@ -152,10 +152,6 @@ func (m *Model) placePicture() tea.Cmd {
 // esc never destroys, and the file the reader just looked at is still staged
 // when they get back to their draft (invariant 3).
 func (m Model) updatePreview(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	if keys.Match(msg, keys.Draft.Quit) {
-		m.quitting = true
-		return m, m.quitCmd()
-	}
 	if keys.Match(msg, keys.Preview.Back) || keys.Match(msg, keys.Preview.Leave) {
 		return m.closePreview()
 	}

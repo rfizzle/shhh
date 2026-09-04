@@ -178,6 +178,42 @@ func TestQuit_OverALiveTurnAsksFirst(t *testing.T) {
 	}
 }
 
+// A takeover surface leaves the session on the chord rather than leaving the
+// surface, and it does not arm: one press is the answer, because a reader who
+// pressed it over a card was looking at the card and meant it.
+func TestQuit_ASurfaceLeavesOnOnePress(t *testing.T) {
+	m := readyModel(t)
+	m.input.SetValue("/mode")
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = updated.(Model)
+	if m.state != statePick {
+		t.Fatalf("/mode should open the picker, got state %d", m.state)
+	}
+
+	m, cmd := pressKey(t, m, ctrlD)
+	if !m.quitting || cmd == nil {
+		t.Fatal("one ctrl+d over a picker must quit")
+	}
+}
+
+// The quit confirm is the exception, because that surface is the question the
+// chord asks: pressing it again must not answer it.
+func TestQuit_TheConfirmIsNotLeftOnTheChord(t *testing.T) {
+	m := streamingCancelModel(t)
+
+	m, _ = pressKey(t, m, ctrlD)
+	if m.state != stateQuitConfirm {
+		t.Fatalf("ctrl+d over a live turn must open the confirm, got state %d", m.state)
+	}
+	m, cmd := pressKey(t, m, ctrlD)
+	if m.quitting || cmd != nil {
+		t.Fatal("the chord must not answer the confirm it opened")
+	}
+	if m.state != stateQuitConfirm {
+		t.Fatalf("the confirm must still be asking, got state %d", m.state)
+	}
+}
+
 func TestQuit_IdleTakesTwoPresses(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream)

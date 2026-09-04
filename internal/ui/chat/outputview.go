@@ -14,7 +14,6 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/ui/components"
-	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // noOutputEntry marks a view that came from no transcript row — the command
@@ -71,10 +70,6 @@ func (m Model) updateOutputFull(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m.closeOutputFull()
 	}
 	m.fullOutput.Height = m.viewportHeight()
-	if keys.Match(msg, keys.Draft.Quit) {
-		m.quitting = true
-		return m, m.quitCmd()
-	}
 	switch m.fullOutput.Update(msg) {
 	case components.OutputBack:
 		return m.closeOutputFull()

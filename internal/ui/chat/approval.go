@@ -795,23 +795,54 @@ func (m Model) confirmPanelLines() []string {
 	return m.dressDecision(m.confirmLines(), m.contentWidth())
 }
 
-// renderConfirm renders the confirm prompt padded to the bottom panel height.
-func (m Model) renderConfirm() string {
-	lines := m.confirmPanelLines()
-	h := m.bottomPanelHeight()
-	for len(lines) < h {
-		lines = append(lines, "")
+// panel is the bottom panel this frame is showing, resolved once (layout.go):
+// the rows the surface that owns the panel drew, and how many rows the
+// vertical split gives them. The two used to be separate answers — one switch
+// rendering a surface to count its rows, another rendering it again to draw
+// it — so every takeover surface was rendered twice per frame.
+func (m Model) panel() panelBody {
+	if m.framed == nil {
+		return m.resolvePanel()
 	}
-	return strings.Join(lines[:h], "\n")
+	if m.framed.panel == nil {
+		p := m.resolvePanel()
+		m.framed.panel = &p
+	}
+	return *m.framed.panel
 }
+
+// panelView is the panel's rows fitted to the rows they were given: what the
+// bottom of the surface draws when the draft box is not what is showing.
+func (m Model) panelView() string { return m.panel().view() }
 
 // bottomPanelHeight is how many rows the bottom panel currently occupies; the
 // confirm and plan-approval prompts may grow beyond the input's fixed height.
-func (m Model) bottomPanelHeight() int {
+func (m Model) bottomPanelHeight() int { return m.panel().height }
+
+// resolvePanel renders whichever surface owns the bottom panel and sizes it.
+func (m Model) resolvePanel() panelBody {
+	if testHookRenderPanel != nil {
+		testHookRenderPanel()
+	}
+	// The agent manager and a routed child ask cover whatever surface the
+	// state was showing, so they are rendered here once and both the row
+	// count and the draw read the same rows. Neither can cover the prompt
+	// frame — the frame yields the panel to them — so a frame that is
+	// showing renders neither.
+	showingFrame := m.frameShowing()
+	var cover []string
+	if !showingFrame {
+		if m.agentList != nil {
+			cover = m.agentListLines()
+		} else if ask := m.activeChildAsk(); ask != nil {
+			cover = m.childAskPanelLines(ask)
+		}
+	}
+
 	var lines []string
 	bound := m.maxConfirmPanelHeight()
 	st := m.state
-	if m.decisionUngated() && m.frameShowing() {
+	if m.decisionUngated() && showingFrame {
 		// The card rides above the frame rather than filling the panel
 		//, so the panel is the input's and interruptHeight is what
 		// pays for the card.
@@ -854,19 +885,25 @@ func (m Model) bottomPanelHeight() int {
 		lines, bound = m.pressureLines(), m.planPanelBound()
 	default:
 		if m.agentList != nil {
-			lines = m.agentListLines()
+			lines = cover
 		} else if ask := m.activeChildAsk(); ask != nil && !m.decisionUngated() {
-			lines = m.childAskPanelLines(ask)
+			lines = cover
 		} else if m.historySearching() {
 			// The history search extends the input area the way the menu does.
-			return min(m.input.Height()+len(m.historySearchLines()), m.maxConfirmPanelHeight())
+			return panelBody{lines: cover, height: min(m.input.Height()+len(m.historySearchLines()), m.maxConfirmPanelHeight())}
 		} else if m.completionActive() && m.attachedTo == "" {
 			// The completion menu extends the input area.
-			return min(m.input.Height()+len(m.completionMenuLines()), m.maxConfirmPanelHeight())
+			return panelBody{lines: cover, height: min(m.input.Height()+len(m.completionMenuLines()), m.maxConfirmPanelHeight())}
 		}
 	}
+	// The cover takes the rows whatever was under it was given: it replaces
+	// the panel's content and never its accounting.
+	body := lines
+	if cover != nil {
+		body = cover
+	}
 	if n := len(lines); n > inputHeight {
-		return min(n, bound)
+		return panelBody{lines: body, height: min(n, bound)}
 	}
 	if lines == nil {
 		switch m.state {
@@ -874,15 +911,22 @@ func (m Model) bottomPanelHeight() int {
 			// The full-screen surfaces replace the input with a one-line
 			// hint; a grown draft comes back with the input, and paying its
 			// rows here would blank most of the panel under the hint.
-			return inputHeight
+			return panelBody{lines: cover, height: inputHeight}
 		}
 		// The bare draft box: its height follows its content (frame.go,
 		// syncInputHeight), so the panel reads the box rather than the
 		// three-row constant.
-		return m.input.Height()
+		return panelBody{lines: cover, height: m.input.Height()}
 	}
-	return inputHeight
+	return panelBody{lines: body, height: inputHeight}
 }
+
+// testHookRenderPanel, when non-nil, observes every render of the bottom
+// panel. It exists to hold the property this function's memo buys: a frame
+// resolves the panel once, and a second render in one paint is the frame
+// having been bypassed — which nothing else on the surface can see, because
+// both renders produce the same rows.
+var testHookRenderPanel func()
 
 // maxConfirmPanelHeight bounds how far the confirm panel may grow into the
 // viewport (docs/interface/principles.md#the-grammar: at most 40% of terminal

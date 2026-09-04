@@ -484,6 +484,19 @@ func (m Model) draftCursor() int {
 
 // interruptLines is the decision card riding above a live frame, ungated.
 func (m Model) interruptLines() []string {
+	if m.framed == nil {
+		return m.resolveInterruptLines()
+	}
+	if m.framed.interrupt == nil {
+		lines := m.resolveInterruptLines()
+		m.framed.interrupt = &lines
+	}
+	return *m.framed.interrupt
+}
+
+// resolveInterruptLines renders the card. Its rows are counted by the frame's
+// row budget and printed by the draw, so a frame renders it once.
+func (m Model) resolveInterruptLines() []string {
 	switch m.state {
 	case stateConfirmRun:
 		return m.confirmLines()

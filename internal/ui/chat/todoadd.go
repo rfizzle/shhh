@@ -159,10 +159,6 @@ func todoProposalMeta(p todo.Proposal) string {
 
 // updateTodoPropose routes keys while the proposals card shows.
 func (m Model) updateTodoPropose(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	if keys.Match(msg, keys.Draft.Quit) {
-		m.quitting = true
-		return m, m.quitCmd()
-	}
 	done, result := m.todoPropose.Update(msg)
 	if !done {
 		return m, nil
@@ -329,14 +325,4 @@ func (m Model) todoProposeLines() []string {
 		return nil
 	}
 	return strings.Split(m.todoPropose.View(m.contentWidth()), "\n")
-}
-
-// renderTodoPropose renders the card padded to the bottom panel height.
-func (m Model) renderTodoPropose() string {
-	lines := m.todoProposeLines()
-	h := m.bottomPanelHeight()
-	for len(lines) < h {
-		lines = append(lines, "")
-	}
-	return strings.Join(lines[:h], "\n")
 }

@@ -2,6 +2,7 @@ package chat
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -17,7 +18,7 @@ import (
 
 // frameModel is a ready model with usage, pricing, and a model name so every
 // cockpit segment has something to show.
-func frameModel(t *testing.T, width, height int) Model {
+func frameModel(t testing.TB, width, height int) Model {
 	t.Helper()
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
 	table := pricing.NewTable(map[string]pricing.ModelPricing{
@@ -703,5 +704,64 @@ func TestDraftBoxGrowthKeepsTheScrollPosition(t *testing.T) {
 	pinned = updated.(Model)
 	if !pinned.viewport.AtBottom() {
 		t.Fatal("a pane pinned to the live end must stay pinned through the height change")
+	}
+}
+
+// pickerModel is a ready model with the model picker holding the bottom
+// panel — a takeover surface, which is what the vertical split used to render
+// to count and then render again to draw.
+func pickerModel(t testing.TB) Model {
+	t.Helper()
+	names := make([]string, 20)
+	for i := range names {
+		names[i] = fmt.Sprintf("model-%02d", i+1)
+	}
+	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	m := New(msgs, mockStream).
+		WithModelSwitcher(func(string) {}).
+		WithPricing(nil, "model-01").
+		WithModelOptions(names)
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 130, Height: 40})
+	m = updated.(Model)
+	m.input.SetValue("/model")
+	next, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = next.(Model)
+	if m.state != statePick {
+		t.Fatalf("the picker should hold the panel, got state %d", m.state)
+	}
+	return m
+}
+
+// BenchmarkPickerFrame paints one frame with a picker holding the panel.
+func BenchmarkPickerFrame(b *testing.B) {
+	m := pickerModel(b)
+	b.ReportAllocs()
+	for b.Loop() {
+		_ = m.View()
+	}
+}
+
+// BenchmarkStreamingFrame paints one streaming frame at the widest layout —
+// the frame the surface repaints on every spinner tick.
+func BenchmarkStreamingFrame(b *testing.B) {
+	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	table := pricing.NewTable(map[string]pricing.ModelPricing{
+		"gpt-4o": {InputCostPerToken: 0.00001, OutputCostPerToken: 0.00001},
+	})
+	m := New(msgs, mockStream).WithPricing(table, "gpt-4o")
+	m.accumulateUsage(&provider.Usage{PromptTokens: 41200, CompletionTokens: 9800})
+	for i := range 60 {
+		m.appendEntry(entry{kind: entryUser, text: "ask number " + strings.Repeat("x", i%17)})
+		m.appendEntry(entry{kind: entryAssistant, text: strings.Repeat("answer body ", 12)})
+	}
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 130, Height: 40})
+	sm := updated.(Model)
+	sm.setTurnState(stateStreaming)
+	sm.streaming = strings.Repeat("streamed token ", 20)
+	sm.viewport.SetLines(sm.renderHistoryLines())
+	sm.viewport.GotoBottom()
+	b.ReportAllocs()
+	for b.Loop() {
+		_ = sm.View()
 	}
 }

@@ -169,17 +169,6 @@ func (m Model) activeChildAsk() *subagent.Ask {
 // Detached, [g] jumps into the agent's attached view instead of answering
 // (docs/interface/surfaces.md#the-agent-manager).
 func (m Model) updateChildAsk(msg tea.KeyPressMsg, ask *subagent.Ask) (tea.Model, tea.Cmd) {
-	if keys.Match(msg, keys.Draft.Quit) {
-		m.quitting = true
-		m.cancelSubagents()
-		if m.cancel != nil {
-			m.cancel()
-		}
-		if m.runCancel != nil {
-			m.runCancel()
-		}
-		return m, m.quitCmd()
-	}
 	// [g] is a bare letter, so it belongs to the card only while the card was
 	// handed the keyboard. One holding it by arrival claims nothing but its
 	// answers, and "go ahead, but…" is a sentence.
@@ -286,17 +275,6 @@ func (m Model) childAskLines(ask *subagent.Ask) []string {
 // keyboard's owner and the draft it is holding while it does.
 func (m Model) childAskPanelLines(ask *subagent.Ask) []string {
 	return m.dressDecision(m.childAskLines(ask), m.contentWidth())
-}
-
-// renderChildAsk pads the card to the bottom panel height, like the parent's
-// own confirm prompt.
-func (m Model) renderChildAsk(ask *subagent.Ask) string {
-	lines := m.childAskPanelLines(ask)
-	h := m.bottomPanelHeight()
-	for len(lines) < h {
-		lines = append(lines, "")
-	}
-	return strings.Join(lines[:h], "\n")
 }
 
 // cancelSubagents cancels the whole child tree (Ctrl+C / quit semantics,

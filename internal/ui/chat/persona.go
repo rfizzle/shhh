@@ -360,10 +360,6 @@ func (m Model) updatePersona(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if m.personaScreen == nil || m.persona == nil {
 		return m.closePersona("No profile drafted.")
 	}
-	if keys.Match(msg, keys.Draft.Quit) {
-		m.quitting = true
-		return m, m.quitCmd()
-	}
 	done, result := m.personaScreen.Update(msg)
 	if !done {
 		m.syncViewport()
