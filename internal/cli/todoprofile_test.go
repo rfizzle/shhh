@@ -226,3 +226,32 @@ func TestBacklogProfile_EveryReaderGetsTheOneAnswer(t *testing.T) {
 		t.Fatalf("the readers disagree: %q %q", todoProfile().Noun, todoPipeline().Name)
 	}
 }
+
+// Where a backlog goes when the working directory is part of no project.
+// See docs/capabilities/todo.md#where-the-backlog-lives.
+func TestBacklogElsewhere_ResolvesTheRootTheSettingsName(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", dir)
+	t.Setenv("HOME", filepath.Join(dir, "home"))
+
+	bare := backlogElsewhere(config.Config{})
+	if want := filepath.Join(dir, "shhh", "todo", "backlog"); bare.Global != want {
+		t.Errorf("the global backlog is %s, want %s", bare.Global, want)
+	}
+	if bare.Setting != "" {
+		t.Errorf("settings that say nothing name no root, got %s", bare.Setting)
+	}
+
+	// A place on the person's machine is written the way they write one.
+	home := backlogElsewhere(config.Config{Todo: config.TodoConfig{Root: filepath.Join("~", "notes")}})
+	if want := filepath.Join(dir, "home", "notes"); home.Setting != want {
+		t.Errorf("a ~ path resolves to %s, want %s", home.Setting, want)
+	}
+
+	// A relative one is resolved against the settings file, not against
+	// whichever directory the session was opened in.
+	rel := backlogElsewhere(config.Config{Todo: config.TodoConfig{Root: "notes"}})
+	if want := filepath.Join(dir, "shhh", "notes"); rel.Setting != want {
+		t.Errorf("a relative path resolves to %s, want %s", rel.Setting, want)
+	}
+}

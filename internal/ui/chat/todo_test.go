@@ -379,3 +379,49 @@ func TestTodoRow_DrawsTheProfilesGradeGlyph(t *testing.T) {
 		t.Errorf("an ungraded row = %+v", row)
 	}
 }
+
+// A session standing outside every project reads a backlog that is not under
+// the directory it was opened in, and it says so once — on the first /todo,
+// and not again. See docs/capabilities/todo.md#where-the-backlog-lives.
+func TestTodoCommand_NamesTheRootWhenItIsNotThisProjects(t *testing.T) {
+	elsewhere := todoTestRoot(t)
+	bare := t.TempDir()
+	m := todoModel(t, elsewhere).WithWorkspace(bare)
+
+	m.input.SetValue("/todo show a-high")
+	updated, _ := m.submitInput()
+	m = updated.(Model)
+	said := false
+	for _, e := range m.transcript {
+		if strings.Contains(e.text, "part of no project, so the backlog is the one at") {
+			said = true
+		}
+	}
+	if !said {
+		t.Fatal("the first /todo should name the root it read")
+	}
+
+	before := len(m.transcript)
+	m.input.SetValue("/todo show a-high")
+	updated, _ = m.submitInput()
+	m = updated.(Model)
+	for _, e := range m.transcript[before:] {
+		if strings.Contains(e.text, "part of no project") {
+			t.Fatal("the root is named once, not on every command")
+		}
+	}
+}
+
+// A session inside the project its backlog belongs to says nothing: the
+// header already names the directory.
+func TestTodoCommand_SaysNothingWhenTheBacklogIsThisProjects(t *testing.T) {
+	root := todoTestRoot(t)
+	m := todoModel(t, root).WithWorkspace(root)
+	m.input.SetValue("/todo show a-high")
+	updated, _ := m.submitInput()
+	for _, e := range updated.(Model).transcript {
+		if strings.Contains(e.text, "part of no project") {
+			t.Fatal("a session in its own project names no root")
+		}
+	}
+}

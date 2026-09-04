@@ -117,6 +117,7 @@ var projectRefusals = []projectRefusal{
 	{"mcp.servers", "a server is a program to start, and a checkout names its servers in " + project.StateDir + "/mcp.json instead"},
 	{"hooks.entries", "a hook is a command to run, and a checkout names its hooks in " + project.StateDir + "/hooks.json instead"},
 	{"prompts", "it points at a file anywhere on the machine and replaces what a session is told"},
+	{"todo.root", "it names a directory on the machine, and a session standing in this checkout reads this checkout's backlog whatever it says"},
 }
 
 // RefusedInProject is the reason a checkout may not set a key, and "" for

@@ -20,6 +20,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/reports"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/todo/run"
@@ -86,7 +87,15 @@ func (m Model) WithTodos(t Todos) Model {
 }
 
 // todosEnabled reports whether this session has a backlog wired.
-func (m *Model) todosEnabled() bool { return m.todos.Manage != nil && m.codingSurfaces() }
+//
+// It asks nothing about the coding surfaces. A backlog is not a coding
+// surface: one file per item, a status, a ready rule and an archive are the
+// same whatever the work is, and a conversation that keeps a reading list
+// wants the screen and the card as much as a checkout does. Whether a
+// particular run may start here is a question about that run's steps, asked
+// of them one at a time when one is asked for (todorun.go).
+// See docs/capabilities/chat.md#the-backlog-is-here-too.
+func (m *Model) todosEnabled() bool { return m.todos.Manage != nil }
 
 // reloadTodos re-reads the backlog from disk. It is cheap — a directory
 // listing and a handful of small files — and it is called only on events,
@@ -232,6 +241,37 @@ func (m Model) todoCommand(parts []string) (tea.Model, tea.Cmd) {
 	if !m.todosEnabled() {
 		return m.systemNotice("The backlog is unavailable in this session.")
 	}
+	// A session standing outside every project reads a backlog that is not
+	// under the directory it was opened in, and it says so the first time
+	// the backlog is asked for. A list whose location the reader cannot
+	// account for is a list they cannot trust they are adding to.
+	if note := m.namedTodoRoot(); note != "" {
+		model, _ := m.systemNotice(note)
+		return model.(Model).todoCommandFor(parts)
+	}
+	return m.todoCommandFor(parts)
+}
+
+// namedTodoRoot is that sentence, said once per session and only where the
+// backlog belongs to no project this directory is in.
+// See docs/capabilities/todo.md#where-the-backlog-lives.
+func (m *Model) namedTodoRoot() string {
+	// A host that never said where the session stands has not said the
+	// backlog is somewhere else either, and answering from the process's
+	// own directory would name a root nobody chose.
+	if m.todoRootSaid || m.todos.Root == "" || m.workspace == "" {
+		return ""
+	}
+	m.todoRootSaid = true
+	if root, found := project.RootFound(m.workspace); found && root == m.todos.Root {
+		return ""
+	}
+	return "This directory is part of no project, so the backlog is the one at " +
+		project.Abbreviate(m.todos.Root) + "."
+}
+
+// todoCommandFor is the verb itself.
+func (m Model) todoCommandFor(parts []string) (tea.Model, tea.Cmd) {
 	if len(parts) == 1 {
 		return m.openTodoScreen()
 	}

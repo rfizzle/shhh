@@ -114,10 +114,38 @@ Notes are not memory (`sessions-and-memory.md`): memory is durable, general,
 and confirmed by the person before it is kept; a note is working state, and
 its lifetime is the conversation's.
 
+## The backlog is here too
+
+The backlog is not a coding surface. One file per item, four statuses, ready
+as dependencies archived, a sprint and an archive say nothing about code, and
+a conversation that keeps a reading list wants the screen, the card and the
+rail as much as a checkout does. So `/todo` is here, on the same list a
+coding session in the same project reads
+([`todo.md`](todo.md#where-the-backlog-lives)).
+
+What a conversation cannot do is asked of the run it is asked for, step by
+step, before the first turn is spent. A run whose steps read, hand work to a
+colleague and end in a write-up needs nothing this session lacks, and it
+goes. A run with a step that changes the tree, runs a command, or ends in a
+commit is refused, and the refusal names the step and what it wanted rather
+than saying the backlog is unavailable — which is what "chat changes
+nothing" means when it is said about one particular piece of work.
+
+A run that ends in the write-up puts it in the notebook, signed by the run
+and titled with the item, and the archived item says where it went. That is
+the ending worth spending a turn on here: a report nobody in the session can
+read is a report the code could have written itself.
+
+A step that hands work to a colleague may name one of them. Where the
+session has a persona by that name it is the one spawned; where it does not
+— every coding session — the step falls back to the role that would have
+read the work anyway, so the same backlog is workable from both.
+
 ## Related
 
 - [`coding-agent.md`](coding-agent.md) — the other session, and why it is a
   different thing
+- [`todo.md`](todo.md) — the backlog both sessions share
 - [`subagents.md`](subagents.md) — profiles, and what a child inherits
 - [`sessions-and-memory.md`](sessions-and-memory.md) — resuming, and what
   memory is that notes are not

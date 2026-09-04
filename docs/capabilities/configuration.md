@@ -699,6 +699,7 @@ own file could hold.
 
 | Key | Takes | Default | What it decides |
 |---|---|---|---|
+| `root` | path | (the project you are in, else the global backlog) | Where the backlog lives when the working directory is part of no project; a session inside a project always reads that project's backlog. |
 | `profile` | text | `code` | The profile this project's backlog is written in and worked under: what an item is called, which fields it carries, and which steps a run takes; it is looked for in this checkout, then beside your settings, then among the ones built in. |
 | `commit` | true/false | `on` | End a backlog run in a commit; off leaves the change in the working tree, which is the answer for a directory that is not a repository. |
 | `item_timeout_minutes` | number | 0 (no cap) | How long one item of a sprint may take before it is blocked and the sprint stops; zero leaves it uncapped. |

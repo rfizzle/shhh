@@ -1793,3 +1793,41 @@ func TestGolden_TodoGroom(t *testing.T) {
 		}
 	})
 }
+
+// TestGolden_ChatTodo captures the backlog where it had not been drawn: a
+// conversation. The two panels are the two places `/todo` shows up before it
+// is typed — the completion menu, which is the answer to "what can I ask for
+// here", and the rail's block, which is the answer to "what is on the list"
+// — because the disagreement this fixes was between exactly those and the
+// session's answer when the command was typed anyway.
+//
+// Two widths: the menu's description column and the rail's rows are what
+// give ground as the surface narrows.
+func TestGolden_ChatTodo(t *testing.T) {
+	captureGolden(t, "chat-todo", "the backlog in a conversation", []int{80, 110}, func(width int) []golden.Panel {
+		root := t.TempDir()
+		dir := todo.Dir(root)
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		for name, content := range map[string]string{
+			"cache-ttl.md":     "---\ntitle: Give the cache a lifetime\npriority: high\nsize: S\n---\n",
+			"cache-metrics.md": "---\ntitle: Count the hits and the misses\npriority: medium\nsize: M\n---\n",
+			"cache-warm.md":    "---\ntitle: Warm the cache on start\npriority: low\nsize: M\nstatus: blocked\n---\n",
+		} {
+			if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
+				t.Fatal(err)
+			}
+		}
+		m := frameModel(t, width, 40).WithConversation()
+		m = m.WithTodos(Todos{Profile: todo.BuiltinCode(), Root: root,
+			Manage: func([]string) string { return "" },
+			Detail: func(*todo.Store, todo.Item) string { return "" }})
+		return []golden.Panel{
+			{Label: "the completion offers /todo in a conversation",
+				View: strings.Join(typeChars(t, m, "/todo").completionMenuLines(), "\n")},
+			{Label: "the backlog block on the inspector rail",
+				View: strings.Join(m.inspectorData().Lines(components.InspectorWidth, 0), "\n")},
+		}
+	})
+}

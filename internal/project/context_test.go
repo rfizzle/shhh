@@ -156,20 +156,61 @@ func TestRoot_WithoutARepositoryFindsTheStateDirectory(t *testing.T) {
 	}
 }
 
-// A repository still wins: the state directory is the answer only when the
-// walk finds no .git at all, so nothing about an existing checkout moves.
-func TestRoot_ARepositoryBeatsAStateDirectory(t *testing.T) {
+// A state directory nearer the leaf wins over the repository around it. The
+// shhh directory is the marker somebody put there to say where shhh's state
+// goes; the repository is a fact about the code, and it is the right
+// boundary only for the parts of shhh that are about code — which ask
+// InRepo, and still get their answer.
+func TestRoot_AStateDirectoryBeatsTheRepositoryAroundIt(t *testing.T) {
 	base := t.TempDir()
 	repo := filepath.Join(base, "repo")
 	sub := filepath.Join(repo, "pkg")
 	mustMkdir(t, filepath.Join(repo, ".git"))
 	mustMkdir(t, filepath.Join(sub, StateDir))
 
-	if got := Root(sub); got != repo {
-		t.Errorf("Root(%s) = %s, want the repository %s", sub, got, repo)
+	if got := Root(sub); got != sub {
+		t.Errorf("Root(%s) = %s, want the state directory %s", sub, got, sub)
+	}
+	if got := Root(repo); got != repo {
+		t.Errorf("Root(%s) = %s, want the repository %s", repo, got, repo)
 	}
 	if !InRepo(sub) {
 		t.Error("a directory under a .git is in a repository")
+	}
+}
+
+// A shhh directory above the repository root is not this project's: it
+// belongs to whatever encloses the checkout, and a clone dropped inside
+// somebody's own shhh-managed directory would otherwise take that
+// directory's backlog.
+func TestRoot_AStateDirectoryAboveTheRepositoryIsNotRead(t *testing.T) {
+	base := t.TempDir()
+	outer := filepath.Join(base, "outer")
+	repo := filepath.Join(outer, "repo")
+	sub := filepath.Join(repo, "pkg")
+	mustMkdir(t, filepath.Join(outer, StateDir))
+	mustMkdir(t, filepath.Join(repo, ".git"))
+	mustMkdir(t, sub)
+
+	if got := Root(sub); got != repo {
+		t.Errorf("Root(%s) = %s, want the repository %s", sub, got, repo)
+	}
+}
+
+// RootFound says whether anything in the tree marked the boundary. A
+// directory with neither marker is a guess, and a caller that must not guess
+// — the backlog looking for somewhere else to be — reads that half.
+func TestRootFound_SaysWhetherAnythingMarkedTheBoundary(t *testing.T) {
+	base := t.TempDir()
+	bare := filepath.Join(base, "bare")
+	mustMkdir(t, bare)
+	if root, found := RootFound(bare); found || root != bare {
+		t.Errorf("RootFound(%s) = %s, %v; want the directory itself and not found", bare, root, found)
+	}
+	marked := filepath.Join(base, "marked")
+	mustMkdir(t, filepath.Join(marked, StateDir))
+	if root, found := RootFound(marked); !found || root != marked {
+		t.Errorf("RootFound(%s) = %s, %v; want the state directory and found", marked, root, found)
 	}
 }
 

@@ -107,6 +107,38 @@ func File(root string, s *State, it todo.Item) (string, error) {
 	return to, nil
 }
 
+// NoteWriter puts one write-up in the session's shared notebook and answers
+// with how a reader names it there. It is a function rather than the store
+// because a run knows it has somewhere to be read and nothing more; which
+// notebook, and whether there is one at all, is the session's.
+type NoteWriter func(author, title, body string) (string, error)
+
+// NoteAuthor signs what a run writes in the notebook. Every note carries the
+// agent that wrote it so a reader can weigh it, and a run is not one of the
+// session's colleagues: it is the machine, working an item the person put on
+// the backlog. See docs/capabilities/chat.md#what-they-share.
+const NoteAuthor = "todo run"
+
+// FileNote is File for the finish whose record is the write-up: the report
+// goes into the session's notebook first, and the item is archived with a
+// line saying where it went. A later reader of the archive can then find the
+// writing itself, rather than only the fact that there was some.
+//
+// A notebook that will not take it is not a failure of the work. The report
+// still goes onto the item, which is the record that outlives the session,
+// and the line says what could not be done instead of where to look.
+func FileNote(root string, s *State, it todo.Item, write NoteWriter) (string, error) {
+	if write != nil && strings.TrimSpace(s.Report) != "" {
+		ref, err := write(NoteAuthor, s.Slug, s.Report)
+		if err != nil {
+			s.Report += "\nThe write-up is not in the session notebook: " + err.Error() + "\n"
+		} else {
+			s.Report += "\nWritten up in the session notebook as " + ref + ".\n"
+		}
+	}
+	return File(root, s, it)
+}
+
 // git runs one git command in root and reports its output and its exit code.
 func git(root string, args ...string) (string, int) {
 	cmd := exec.Command("git", append([]string{"-C", root}, args...)...)

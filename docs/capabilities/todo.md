@@ -209,16 +209,39 @@ the card in a session.
 
 ## Where the backlog lives
 
-The backlog is a directory inside the checkout's shhh directory at the
-repository root. Every session opened anywhere under that root sees the
-same list.
+The backlog is a directory inside the project's shhh directory. Every
+session opened anywhere under that project sees the same list.
 
-Where there is no repository the backlog belongs to the nearest directory
-above that already holds a shhh directory, and to the working directory
-only when there is none. Otherwise two terminals opened at different depths
-of one project would key on two directories and see two different backlogs,
-with nothing on screen to say why; a session names the root it chose
-whenever it is not the directory it was started in.
+Which directory the project is has one order, read top to bottom:
+
+1. **The nearest shhh directory.** It is the one marker somebody put there
+   to say where shhh's state goes, so it is read first. A repository whose
+   services each keep their own is as many projects as it has of those.
+2. **The repository around it.** A checkout with no shhh directory yet keys
+   on its root, so the first item written lands where the rest of the
+   checkout will find it.
+3. **The root the settings name.** A directory that is part of neither takes
+   whatever `todo.root` says.
+4. **The global backlog**, beside the settings themselves, when the settings
+   say nothing. A conversation opened in a home directory has a reading list
+   rather than nothing.
+
+The first two are the project, and nothing below them can override one: a
+setting that could move the backlog out of a checkout would give two
+terminals in one checkout two different lists. The last two exist because a
+reading list is not kept in a checkout, and a session that keeps one is often
+opened nowhere in particular.
+
+A shhh directory above a repository root is not read: it belongs to whatever
+encloses the checkout, and a clone dropped inside somebody's own
+shhh-managed directory would otherwise take that directory's backlog. A
+session names the root it chose whenever it is not the directory it was
+started in, on the start screen and on the first `/todo`.
+
+The global backlog is its own directory rather than a shhh directory inside
+one. Nothing but the backlog is kept there, and a state directory under the
+configuration directory would be shhh keeping project state for a project
+that is its own settings.
 
 Whether the directory is committed is the project's decision, not shhh's.
 Some teams want the backlog in history beside the code it describes; some
@@ -606,6 +629,21 @@ backlog of readings, and nothing about the session it could not use is asked.
 A step that only sometimes runs asks for nothing up front — the division into
 lanes happens at one grade and falls back to the session's own turn where it
 cannot happen at all.
+
+That is what makes the backlog workable from a conversation as well as from
+the coding agent ([`chat.md`](chat.md#the-backlog-is-here-too)). A
+conversation can take a step that reads, a step that hands the work to one of
+its colleagues, a gate, and a finish that archives or writes the work up. It
+cannot take a step that changes the tree, a step whose verdict is a command's
+exit status, or a finish that commits, and it says which of them it was
+turned away by rather than saying it has no backlog.
+
+**A run may end in the write-up.** Where the session keeps a shared notebook,
+a `note` finish spends a turn on the report and puts it there — signed by the
+run, titled with the item's name — and the archived item says where it went.
+Where there is no notebook the run archives instead: a turn spent asking for
+a write-up nobody in the session can read produces what the code already
+knows.
 
 The reason the question is asked at the start rather than at the step is that
 every step before it spends a turn: a run that did all of them and only then

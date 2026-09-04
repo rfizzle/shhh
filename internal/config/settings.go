@@ -515,6 +515,9 @@ var settings = []Setting{
 	},
 
 	{
+		Key: "todo.root", Kind: KindPath, Default: "(the project you are in, else the global backlog)",
+		Desc: "Where the backlog lives when the working directory is part of no project; a session inside a project always reads that project's backlog.",
+	}, {
 		Key: "todo.profile", Kind: KindString, Default: "code",
 		Desc: "The profile this project's backlog is written in and worked under: what an item is called, which fields it carries, and which steps a run takes; it is looked for in this checkout, then beside your settings, then among the ones built in.",
 	}, {

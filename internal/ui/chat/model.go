@@ -967,6 +967,11 @@ type Model struct {
 	// whether the screen has been spent — a session that has said something
 	// to the model is not new again just because /clear emptied it.
 	start *StartInfo
+	// todoRootSaid records that this session has already named the root its
+	// backlog was keyed on, which it does once and only where that root is
+	// not this directory's project (todo.go).
+	todoRootSaid bool
+
 	// conversation marks `shhh chat`; notebook is its shared notebook.
 	conversation bool
 	notebook     *notebook.Store

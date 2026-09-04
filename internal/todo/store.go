@@ -231,11 +231,14 @@ const ignoreFile = RunSubdir + "/\n"
 // because creating a directory beside it is impossible and replacing it
 // would lose the context it holds.
 func ensureDir(root string) (string, error) {
-	state := filepath.Join(root, StateDir)
-	if st, err := os.Stat(state); err == nil && !st.IsDir() {
-		return "", fmt.Errorf("%s is a file from an older layout; run `shhh doctor` to move it", state)
-	}
 	dir := Dir(root)
+	// The global backlog is its own directory and keeps no state directory,
+	// so there is no older layout of it to refuse.
+	if state := filepath.Join(root, StateDir); dir != root {
+		if st, err := os.Stat(state); err == nil && !st.IsDir() {
+			return "", fmt.Errorf("%s is a file from an older layout; run `shhh doctor` to move it", state)
+		}
+	}
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return "", err
 	}

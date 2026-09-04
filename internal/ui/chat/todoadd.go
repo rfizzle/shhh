@@ -80,7 +80,8 @@ func (m *Model) dropTodoExtract() {
 
 // todoExtractRequest is the digest: what was said on each side, the tool
 // rows the summarizer already treats as content-free, the changeset in
-// words, and the backlog as it stands. No tool output, no file contents.
+// words, and what already stands — the backlog, and the notes this session's
+// agents wrote for each other. No tool output, no file contents.
 func (m Model) todoExtractRequest() todo.ExtractRequest {
 	req := todo.ExtractRequest{
 		Activity: m.summaryActivity(),
@@ -98,11 +99,7 @@ func (m Model) todoExtractRequest() todo.ExtractRequest {
 			req.Assistant = append(req.Assistant, text)
 		}
 	}
-	if s := m.todoStore; s != nil {
-		for _, it := range s.Items {
-			req.Existing = append(req.Existing, it.Slug+" — "+it.Title)
-		}
-	}
+	req.Existing = m.todoDraftExisting()
 	return req
 }
 
@@ -608,16 +605,24 @@ func (m Model) startTodoDraft(sentence string) (tea.Model, tea.Cmd) {
 	}
 }
 
-// todoDraftExisting is the backlog as the drafting is told it, "slug — title"
-// per line, so a dependency the draft names is a slug that is there.
+// todoDraftExisting is what already stands, as a reading and a drafting are
+// both told it: the backlog "slug — title" per line, so a dependency the
+// answer names is a slug that is there, and the session's notes after it.
 func (m Model) todoDraftExisting() []string {
-	s := m.todoStore
-	if s == nil {
-		return nil
+	var out []string
+	if s := m.todoStore; s != nil {
+		for _, it := range s.Items {
+			out = append(out, it.Slug+" — "+it.Title)
+		}
 	}
-	out := make([]string, 0, len(s.Items))
-	for _, it := range s.Items {
-		out = append(out, it.Slug+" — "+it.Title)
+	// The notebook is what this session already wrote down, and an item
+	// proposing work a note has already recorded is the same repetition the
+	// backlog is given to avoid. It is titles only, for the same reason the
+	// backlog is: what a note says is the session's working state, and the
+	// reading needs to know it exists rather than what is in it.
+	// See docs/capabilities/chat.md#what-they-share.
+	for _, n := range m.notebook.List() {
+		out = append(out, "note "+n.Title)
 	}
 	return out
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/profile"
+	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/update"
 	"github.com/spf13/cobra"
@@ -118,6 +119,13 @@ func NewRootCmd() *cobra.Command {
 			if perr := backlogProfileFor(cfg).err; perr != nil && cmd.Annotations[ownsConfigError] == "" {
 				return perr
 			}
+
+			// And where the backlog goes when the working directory is part
+			// of no project, for the same reason: a conversation opened in a
+			// home directory has a reading list rather than nothing, and
+			// every surface that opens a backlog asks todo.Root for it
+			// (todoroot.go).
+			todo.Hold(backlogElsewhere(cfg))
 
 			// Gateway profiles register as providers before anything
 			// resolves one, so `--provider <name>` and provider.default work

@@ -98,6 +98,14 @@ type PipelineStep struct {
 	// Solo is the grade whose rank reads its own work rather than handing it
 	// to a child, for an agent step. Zero hands every grade to a child.
 	Solo int
+	// Persona is the agent profile an agent step's child reads as, and
+	// empty for a step whose reader is whichever role the surface would
+	// spawn anyway. A persona is an agent profile like any other, so naming
+	// one where a role would go is the whole of it: a session that has a
+	// profile by that name spawns that one, and a session that does not
+	// falls back to the role, which is what a coding session does.
+	// See docs/capabilities/chat.md#colleagues-not-workers.
+	Persona string
 	// Finish is how a finish step ends the run.
 	Finish Finish
 	// Command is the command a command step runs, and empty for the step
@@ -244,6 +252,33 @@ func (p Pipeline) Integrate(after string) (PipelineStep, bool) {
 	return PipelineStep{}, false
 }
 
+// Writes reports the pipeline changing the tree at all. It is what decides
+// whether there is a change for a reading to be about and whether a commit
+// would have anything to carry: a run of readings leaves the tree where it
+// found it, and a surface that asked what it changed would get the empty
+// answer and read it as a run that did nothing.
+func (p Pipeline) Writes() bool {
+	for _, ps := range p.Steps {
+		if ps.Access == Write || ps.Kind == KindFanOut {
+			return true
+		}
+	}
+	return false
+}
+
+// Ending is how this pipeline ends: the first finish step, which is the one
+// a run walking the steps in order reaches. It is false for a pipeline with
+// no finish at all, which the validator refuses, so only one nobody
+// validated has none.
+func (p Pipeline) Ending() (Finish, bool) {
+	for _, ps := range p.Steps {
+		if ps.Kind == KindFinish {
+			return ps.Finish, true
+		}
+	}
+	return "", false
+}
+
 // Commits reports the pipeline ending in a commit, which is what decides
 // whether a run needs a repository before it spends a turn.
 func (p Pipeline) Commits() bool {
@@ -379,9 +414,9 @@ func (p Pipeline) Digest() string {
 	h := sha256.New()
 	fmt.Fprintf(h, "%s\x00", p.Name)
 	for _, ps := range p.Steps {
-		fmt.Fprintf(h, "%s\x00%s\x00%s\x00%s\x00%s\x00%d\x00%s\x00%s\x00%d\x00%v\x00%v\x00",
+		fmt.Fprintf(h, "%s\x00%s\x00%s\x00%s\x00%s\x00%d\x00%s\x00%s\x00%d\x00%s\x00%v\x00%v\x00",
 			ps.Name, ps.Kind, ps.Access, ps.Finish, ps.Command, ps.Reads,
-			ps.Back, ps.Under, ps.Solo, ps.Pause, ps.Rounds)
+			ps.Back, ps.Under, ps.Solo, ps.Persona, ps.Pause, ps.Rounds)
 	}
 	return hex.EncodeToString(h.Sum(nil)[:8])
 }
@@ -513,7 +548,6 @@ func (p Pipeline) Validate() error {
 	}
 	seen := map[string]bool{}
 	remediation := ""
-	writes := false
 	for _, ps := range p.Steps {
 		if ps.Name == "" {
 			return fmt.Errorf("pipeline %q: a step has no name", p.Name)
@@ -524,12 +558,6 @@ func (p Pipeline) Validate() error {
 		seen[ps.Name] = true
 		if !ps.Kind.Known() {
 			return fmt.Errorf("pipeline %q: step %q is of no kind this runner has (%s)", p.Name, ps.Name, strings.Join(kindWords(), ", "))
-		}
-		if ps.Access == Write {
-			writes = true
-		}
-		if ps.Kind == KindFanOut {
-			writes = true
 		}
 		for _, rule := range ps.Pause {
 			if !rule.Known() {
@@ -554,6 +582,9 @@ func (p Pipeline) Validate() error {
 				return fmt.Errorf("pipeline %q: step %q is said under %q, which is itself said under another step", p.Name, ps.Name, ps.Under)
 			}
 		}
+		if ps.Persona != "" && ps.Kind != KindAgent {
+			return fmt.Errorf("pipeline %q: step %q names the persona %q and is not a sub-agent step, so there is nobody for the persona to be", p.Name, ps.Name, ps.Persona)
+		}
 		if ps.Kind == KindFinish && !ps.Finish.Known() {
 			return fmt.Errorf("pipeline %q: step %q ends the run in a way this runner has no answer for (%q)", p.Name, ps.Name, ps.Finish)
 		}
@@ -564,7 +595,7 @@ func (p Pipeline) Validate() error {
 	if err := p.validateFanOut(); err != nil {
 		return err
 	}
-	return p.validateFinish(writes)
+	return p.validateFinish()
 }
 
 // validateGates refuses a gate after a step that writes. A gate is where the
@@ -610,8 +641,8 @@ func (p Pipeline) validateFanOut() error {
 // validateFinish refuses a commit in a pipeline whose turns never write.
 // Nothing would have changed, so the commit would either carry somebody
 // else's work or refuse at the end of every run.
-func (p Pipeline) validateFinish(writes bool) error {
-	if writes {
+func (p Pipeline) validateFinish() error {
+	if p.Writes() {
 		return nil
 	}
 	for _, ps := range p.Steps {

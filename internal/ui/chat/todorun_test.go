@@ -15,6 +15,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
+	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/todo"
@@ -1642,5 +1643,212 @@ func TestTodoRun_TheSessionsWordingsReachTheRun(t *testing.T) {
 	}
 	if m2.todoRunner.state.Wordings["research"] != "READ IT ANOTHER WAY" {
 		t.Fatalf("a continued run did not take this session's wordings: %+v", m2.todoRunner.state.Wordings)
+	}
+}
+
+// The backlog in a conversation.
+//
+// A conversation changes nothing (docs/capabilities/chat.md#chat-changes-nothing),
+// and until now that was read as "no backlog". It is not: one file per item,
+// a status, a ready rule and an archive say nothing about code. What a
+// conversation cannot do is asked of the steps of the run it is asked for,
+// one at a time, before the first turn is spent.
+
+// readingPipeline is a run of readings: a turn that scopes, somebody who did
+// not do the reading reading it back, and the write-up as the ending. Nothing
+// in it changes the tree, runs a command or commits.
+func readingPipeline() run.Pipeline {
+	return run.Pipeline{Name: "reading", Steps: []run.PipelineStep{
+		{Name: "scope", Kind: run.KindTurn, Access: run.Read,
+			Reads: run.ReadsPlan | run.ReadsQuestions, Blocks: []string{"item"}},
+		{Name: "review", Kind: run.KindAgent, Access: run.Read, Persona: "editor",
+			Blocks: []string{"item", "plan", "diff"}},
+		{Name: "file", Kind: run.KindFinish, Access: run.Read, Finish: run.FinishNote,
+			Blocks: []string{"item"}},
+	}}
+}
+
+// conversationModel is a read-only session with a backlog and a notebook: no
+// changeset, no supervisor, no command runner, and a root that is not a
+// repository.
+func conversationModel(t *testing.T, pipeline run.Pipeline) (Model, string) {
+	t.Helper()
+	root := t.TempDir()
+	dir := todo.Dir(root)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "do-it.md"), []byte("---\ntitle: Do it\n---\n## Tests\n- true\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	m := frameModel(t, 130, 40).WithConversation().WithNotebook(notebook.New(nil))
+	m.policy.mode = agent.ModeManual
+	m = m.WithTodos(Todos{Profile: todo.BuiltinCode(), Root: root, Pipeline: pipeline,
+		Manage: func([]string) string { return "" },
+		Detail: func(*todo.Store, todo.Item) string { return "" }})
+	return m, root
+}
+
+// A run whose steps only read reaches done in a conversation, and its report
+// is in the notebook rather than only in the archive — which is the whole
+// reason that ending spends a turn producing one.
+func TestTodoRun_AReadingRunsInAConversation(t *testing.T) {
+	m, root := conversationModel(t, readingPipeline())
+	if !m.todosEnabled() {
+		t.Fatal("a conversation with a backlog wired has one")
+	}
+	m.input.SetValue("/todo run do-it")
+	updated, _ := m.submitInput()
+	m = updated.(Model)
+	if m.todoRunner.state == nil || m.todoRunner.state.Stage != "scope" {
+		t.Fatalf("the run should be scoping: %+v", m.todoRunner.state)
+	}
+	m = answer(t, m, "## Plan: read it\n\n1. Read the paper\n   files: none\n   action: read\n\nquestions: none\n")
+	if m.todoRunner.state.Stage != "review" {
+		t.Fatalf("the reading should be read back: %s", m.todoRunner.state.Stage)
+	}
+	m = answer(t, m, "verdict: clean")
+	if m.todoRunner.state.Stage != "file" {
+		t.Fatalf("the write-up should follow a clean reading: %s", m.todoRunner.state.Stage)
+	}
+	m = answer(t, m, "REPORT:\n## Report\nSummary: read the paper and wrote it up")
+	if m.todoRunner.state != nil {
+		t.Fatalf("the run should be over: %+v", m.todoRunner.state)
+	}
+	notes := m.notebook.List()
+	if len(notes) != 1 || notes[0].Title != "do-it" || notes[0].Author != run.NoteAuthor ||
+		!strings.Contains(notes[0].Body, "read the paper") {
+		t.Fatalf("the write-up should be in the notebook: %+v", notes)
+	}
+	done, ok := todo.Load(todo.BuiltinCode(), root).Find("do-it")
+	if !ok || !done.Archived || !strings.Contains(done.Body, "Written up in the session notebook as n") {
+		t.Fatalf("the archived item should say where the write-up went: %+v", done)
+	}
+	if !strings.Contains(m.transcript[len(m.transcript)-1].text, "the report is in the session notebook") {
+		t.Fatalf("the close should say where the report is: %q", m.transcript[len(m.transcript)-1].text)
+	}
+}
+
+// The same session refuses a run that would change the tree, before the first
+// turn is spent, and says which step wanted what.
+func TestTodoRun_AWriteStepIsRefusedInAConversation(t *testing.T) {
+	m, root := conversationModel(t, run.BuiltinCode())
+	m.input.SetValue("/todo run do-it")
+	updated, _ := m.submitInput()
+	m = updated.(Model)
+	if m.todoRunner.state != nil {
+		t.Fatalf("nothing should have started: %+v", m.todoRunner.state)
+	}
+	last := m.transcript[len(m.transcript)-1].text
+	if !strings.Contains(last, "the implement step changes the tree and this session does not track changes") {
+		t.Fatalf("the refusal should name the step and what it wanted: %q", last)
+	}
+	if it, _ := todo.Load(todo.BuiltinCode(), root).Find("do-it"); it.Status == todo.StatusInProgress {
+		t.Fatal("a refused run leaves the item alone")
+	}
+}
+
+// An agent step may name a persona, and a session that has an agent profile
+// by that name spawns it. One that does not — every coding session — falls
+// back to the role that reads changes there.
+func TestTodoRun_APersonaStepFallsBackToTheRole(t *testing.T) {
+	m, _ := conversationModel(t, readingPipeline())
+	st := run.Start(todo.Item{Slug: "do-it", Profile: todo.BuiltinCode()}, "s", "manual", 1,
+		run.Options{Pipeline: readingPipeline(), Notebook: true})
+	st.Stage = "review"
+	if got := m.todoReviewRole(st); got != string(subagent.RoleReviewer) {
+		t.Errorf("with no supervisor the step falls back to the role, got %q", got)
+	}
+	m.subagents = subagent.New(context.Background(), subagent.Options{
+		Root: t.TempDir(), Profiles: subagent.Profiles{"editor": {Name: "editor"}}})
+	if got := m.todoReviewRole(st); got != "editor" {
+		t.Errorf("a session with the persona spawns it, got %q", got)
+	}
+	m.subagents = subagent.New(context.Background(), subagent.Options{
+		Root: t.TempDir(), Profiles: subagent.Profiles{}})
+	if got := m.todoReviewRole(st); got != string(subagent.RoleReviewer) {
+		t.Errorf("a session without it falls back to the role, got %q", got)
+	}
+}
+
+// finishReading drives the item in flight from its scoping turn to the
+// write-up that archives it.
+func finishReading(t *testing.T, m Model, slug string) Model {
+	t.Helper()
+	if m.todoRunner.state == nil || m.todoRunner.state.Slug != slug {
+		t.Fatalf("expected a run on %s, got %+v", slug, m.todoRunner.state)
+	}
+	m = answer(t, m, "## Plan: read it\n\n1. Read\n   files: none\n   action: read\n\nquestions: none\n")
+	m = answer(t, m, "verdict: clean")
+	return answer(t, m, "REPORT:\n## Report\nSummary: read "+slug+".")
+}
+
+// A sprint crosses the session boundary in a conversation the way it does in
+// a coding session: one item per session, the next one already going on the
+// far side of it.
+func TestTodoSprint_CrossesTheBoundaryInAConversation(t *testing.T) {
+	m, root := conversationModel(t, readingPipeline())
+	must(t, os.WriteFile(filepath.Join(todo.Dir(root), "zz-later.md"),
+		[]byte("---\ntitle: Later\n---\n"), 0o644))
+	m.reloadTodos()
+
+	m.input.SetValue("/todo run --all")
+	updated, _ := m.submitInput()
+	m = updated.(Model)
+	if m.todoRunner.state == nil || !m.todoRunner.state.InSprint || m.todoRunner.state.Slug != "do-it" {
+		t.Fatalf("the sprint should have started the first ready item: %+v", m.todoRunner.state)
+	}
+
+	m = finishReading(t, m, "do-it")
+
+	if m.todoRunner.state == nil || m.todoRunner.state.Slug != "zz-later" || !m.todoRunner.state.InSprint {
+		t.Fatalf("the sprint should have crossed into the next item: %+v", m.todoRunner.state)
+	}
+	if m.todoRunner.state.Turn != 1 {
+		t.Fatalf("the next item runs in a session of its own, from turn 1: turn %d", m.todoRunner.state.Turn)
+	}
+	sp, live := run.Live(root)
+	if !live || len(sp.Done) != 1 || sp.Done[0] != "do-it" || sp.Current != "zz-later" {
+		t.Fatalf("the sprint should have recorded the first item: %+v", sp)
+	}
+
+	m = finishReading(t, m, "zz-later")
+	if m.todoRunner.state != nil {
+		t.Fatalf("the sprint should be over: %+v", m.todoRunner.state)
+	}
+	if len(m.notebook.List()) != 2 {
+		t.Fatalf("each reading leaves its write-up in the notebook: %+v", m.notebook.List())
+	}
+}
+
+// A report is a document and a note is a paragraph, so a long write-up is
+// cut to the notebook's bound with a line pointing at the archived item,
+// which carries the whole of it. Refusing it would leave the finish unable
+// to write the note it exists to write.
+func TestTodoRun_ALongWriteUpIsCutRatherThanRefused(t *testing.T) {
+	m, root := conversationModel(t, readingPipeline())
+	m.input.SetValue("/todo run do-it")
+	updated, _ := m.submitInput()
+	m = updated.(Model)
+	m = answer(t, m, "## Plan: read it\n\n1. Read\n   files: none\n   action: read\n\nquestions: none\n")
+	m = answer(t, m, "verdict: clean")
+
+	long := strings.Repeat("Summary: a paragraph of what the reading found.\n", 200)
+	m = answer(t, m, "REPORT:\n## Report\n"+long)
+
+	notes := m.notebook.List()
+	if len(notes) != 1 {
+		t.Fatalf("the write-up should be in the notebook: %+v", notes)
+	}
+	if len(notes[0].Body) > notebook.MaxBodyLen {
+		t.Fatalf("the note is %d chars, over the notebook's bound", len(notes[0].Body))
+	}
+	if !strings.HasSuffix(notes[0].Body, "the archived item carries the whole report.") {
+		t.Fatalf("a cut note should say where the whole of it is:\n%s", notes[0].Body)
+	}
+	done, ok := todo.Load(todo.BuiltinCode(), root).Find("do-it")
+	if !ok || !strings.Contains(done.Body, "Written up in the session notebook as n") ||
+		strings.Count(done.Body, "Summary: a paragraph") != 200 {
+		t.Fatal("the archived item should carry the whole report and say where the note is")
 	}
 }

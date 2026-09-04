@@ -48,6 +48,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/diff"
+	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/quality"
@@ -96,11 +97,17 @@ func todoNoRepoSprintNotice(root string) string {
 // steps are put to before the first of them is taken.
 func (m Model) todoRunCan(repo bool) run.Can {
 	return run.Can{
-		Changeset:  m.changes != nil,
+		// A conversation keeps a changeset the way it keeps a transcript,
+		// and it stays empty for the same reason there is no editor: nothing
+		// in the session can change a file, so a step that would has no
+		// record to make and nothing for a later step to read back.
+		Changeset:  m.changes != nil && m.codingSurfaces(),
 		Supervisor: m.subagents != nil,
-		// A session always has somewhere to run a command; whether the
+		// A conversation registered no command tool at all, and no key
+		// reaches one, so a step whose verdict is an exit status has no way
+		// to get one here. In a session that can run commands, whether the
 		// project names any is the command step's own business.
-		Runner: true,
+		Runner: m.codingSurfaces(),
 		Repo:   repo,
 	}
 }
@@ -614,6 +621,12 @@ func (m Model) finishTodoCommit(msg todoCommitMsg) (tea.Model, tea.Cmd) {
 // files instead, which is the only place the change now is.
 func todoRunDoneNote(st *run.State, to string) string {
 	files := plural(len(st.Files), "file")
+	// A run whose product is the write-up says where the write-up is.
+	// Counting the files it never set out to change would say nothing about
+	// what it did, and "0 files in the working tree" reads as a failure.
+	if ending, ok := st.Pipeline.Ending(); ok && ending == run.FinishNote {
+		return fmt.Sprintf("✓ todo run %s done — the report is in the session notebook, and the item is archived to %s.", st.Slug, to)
+	}
 	if st.NoCommit {
 		return fmt.Sprintf("✓ todo run %s done — not committed; %s in the working tree, and the item is archived to %s.", st.Slug, files, to)
 	}
@@ -623,7 +636,7 @@ func todoRunDoneNote(st *run.State, to string) string {
 // todoRunDone archives the item with its report and ends the run.
 func (m Model) todoRunDone() (tea.Model, tea.Cmd) {
 	st := m.todoRunner.state
-	to, err := run.File(m.todos.Root, st, m.todoRunner.item)
+	to, err := m.fileTodoRun(st)
 	note := todoRunDoneNote(st, to) + m.closeFinishedSprint()
 	if err != nil {
 		// The work is finished and the run package has already put the item
@@ -645,6 +658,51 @@ func (m Model) todoRunDone() (tea.Model, tea.Cmd) {
 		return model.(Model).advanceSprint(slug)
 	}
 	return model, nil
+}
+
+// fileTodoRun archives the finished item with its report, through the
+// notebook where the run's ending is the write-up. A run that ends in a note
+// has the write-up read in the session rather than only in the archive,
+// which is the whole reason it spent a turn producing one.
+func (m Model) fileTodoRun(st *run.State) (string, error) {
+	if ending, ok := st.Pipeline.Ending(); ok && ending == run.FinishNote && m.notebook != nil {
+		return run.FileNote(m.todos.Root, st, m.todoRunner.item, m.writeRunNote)
+	}
+	return run.File(m.todos.Root, st, m.todoRunner.item)
+}
+
+// writeRunNote puts a run's write-up in the session's notebook and answers
+// with the number /notes lists it under.
+func (m Model) writeRunNote(author, title, body string) (string, error) {
+	n, _, err := m.notebook.Write(author, title, runNoteBody(body))
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("n%d", n.ID), nil
+}
+
+// runNoteBody is a report as a note: whole where it fits, and cut to the
+// notebook's bound with a line saying so where it does not.
+//
+// A note is a paragraph by design — every agent in the session is handed the
+// whole notebook in one block, so a store that could hold a document would
+// spend a context window on one run's leavings. A report in the shape the
+// finish asks for is a document: a summary, the decisions, a row per file,
+// the deviations and the follow-ups. Refusing it would leave the finish
+// saying it could not write the note it exists to write, so it is cut here
+// instead, and the line points at the archived item, which carries the whole
+// of it either way. See docs/capabilities/chat.md#what-they-share.
+func runNoteBody(report string) string {
+	body := strings.TrimSpace(report)
+	if len(body) <= notebook.MaxBodyLen {
+		return body
+	}
+	const cut = "\n\n… cut to fit a note; the archived item carries the whole report."
+	body = body[:notebook.MaxBodyLen-len(cut)]
+	if i := strings.LastIndexByte(body, '\n'); i > 0 {
+		body = body[:i]
+	}
+	return strings.ToValidUTF8(strings.TrimRight(body, "\n "), "") + cut
 }
 
 // todoRunBlocked ends the run with its evidence on the item. The work
@@ -811,20 +869,24 @@ func (m Model) updateTodoPause(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	return m.todoRunStep(st.Resume(it))
 }
 
-// startTodoReview hands the change to a reviewer child. The child cannot
-// run commands, so the diff is read here and put in its task, bounded.
-// With no supervisor, or a spawn the supervisor refuses, the orchestrator
-// reviews in its own turn and the step label says so.
+// startTodoReview hands the work to a reading child. The child cannot run
+// commands, so the change is read here and put in its task, bounded. With no
+// supervisor, or a spawn the supervisor refuses, the orchestrator reads in
+// its own turn and the step label says so.
 func (m Model) startTodoReview() (tea.Model, tea.Cmd) {
 	st, it := m.todoRunner.state, m.todoRunner.item
-	if len(m.todoRunPaths()) == 0 {
+	// A pipeline that changes the tree and changed nothing has produced
+	// nothing to read, which is a run that went wrong rather than one with
+	// a clean review. A pipeline whose steps only read has no change to
+	// point at by design, and the reader is given the item and the answers.
+	if st.Pipeline.Writes() && len(m.todoRunPaths()) == 0 {
 		return m.todoRunStep(st.Block("the run changed no files under the repository, so there is nothing to review"))
 	}
 	if m.subagents == nil {
 		return m.todoRunStep(st.SelfReview(it))
 	}
 	args, _ := json.Marshal(map[string]any{
-		"role": string(subagent.RoleReviewer),
+		"role": m.todoReviewRole(st),
 		"name": st.Reviewer,
 		"task": st.ReviewTask(it, tail(m.todoRunDiff(), 600)),
 	})
@@ -834,6 +896,26 @@ func (m Model) startTodoReview() (tea.Model, tea.Cmd) {
 	}
 	_ = st.Save(m.todos.Root)
 	return m.systemNotice(fmt.Sprintf("▸ todo run %s · review by %s", st.Slug, st.Reviewer))
+}
+
+// todoReviewRole is the agent profile the reading child takes: the persona
+// the step names where this session has one by that name, and the reviewer
+// role otherwise.
+//
+// A persona is an agent profile and so is a role, so naming one where the
+// other would go is the whole of it. The fallback is what makes a profile
+// portable: the same pipeline worked in a coding session, which has no
+// personas, is read by the role that reads changes there.
+// See docs/capabilities/chat.md#colleagues-not-workers.
+func (m Model) todoReviewRole(st *run.State) string {
+	ps, ok := st.Pipeline.At(st.Stage)
+	if !ok || ps.Persona == "" || m.subagents == nil {
+		return string(subagent.RoleReviewer)
+	}
+	if _, has := m.subagents.Profiles()[subagent.Role(ps.Persona)]; !has {
+		return string(subagent.RoleReviewer)
+	}
+	return ps.Persona
 }
 
 // todoRunDiff is the run's change as the changeset recorded it — before

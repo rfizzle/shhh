@@ -23,6 +23,14 @@ owner: me
 - [ ] A block appears
 `
 
+// mkdir makes a directory the fixtures need to exist.
+func mkdir(t *testing.T, dir string) {
+	t.Helper()
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func write(t *testing.T, dir, name, content string) string {
 	t.Helper()
 	if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -500,5 +508,78 @@ func TestSlugs_TheProjectsOwnRuleIsTheOnlyOneThatRefuses(t *testing.T) {
 	broken.SlugRefuse = "([a-z"
 	if err := broken.RefuseSlug("q-101"); err != nil {
 		t.Errorf("a broken pattern refused something: %v", err)
+	}
+}
+
+// Where the backlog lives, in the order Root reads it: the nearest shhh
+// directory, then the repository around it, then the root a settings file
+// named, then the global list.
+// See docs/capabilities/todo.md#where-the-backlog-lives.
+func TestRoot_ReadsTheProjectFirstAndTheGlobalListLast(t *testing.T) {
+	elsewhere := t.TempDir()
+	global := filepath.Join(elsewhere, "global")
+	named := filepath.Join(elsewhere, "named")
+	Hold(Elsewhere{Setting: named, Global: global})
+	t.Cleanup(func() { Hold(Elsewhere{}) })
+
+	// A checkout with both markers keys on its shhh directory, so the
+	// settings and the global list never come into it.
+	checkout := t.TempDir()
+	mkdir(t, filepath.Join(checkout, ".git"))
+	mkdir(t, filepath.Join(checkout, StateDir))
+	if got := Root(checkout); got != checkout {
+		t.Errorf("Root(a checkout) = %s, want %s", got, checkout)
+	}
+
+	// A repository with no shhh directory keys on the repository.
+	repo := t.TempDir()
+	mkdir(t, filepath.Join(repo, ".git"))
+	if got := Root(repo); got != repo {
+		t.Errorf("Root(a repository) = %s, want %s", got, repo)
+	}
+
+	// A directory that is part of no project takes the settings' root, and
+	// the global list when the settings say nothing.
+	bare := t.TempDir()
+	if got := Root(bare); got != named {
+		t.Errorf("Root(a bare directory) = %s, want the configured root %s", got, named)
+	}
+	Hold(Elsewhere{Global: global})
+	if got := Root(bare); got != global {
+		t.Errorf("Root(a bare directory) = %s, want the global backlog %s", got, global)
+	}
+
+	// The global backlog is its own directory rather than a state directory
+	// inside one: nothing but the backlog is kept there.
+	if got := Dir(global); got != global {
+		t.Errorf("Dir(the global backlog) = %s, want %s", got, global)
+	}
+	if got := Dir(checkout); got != filepath.Join(checkout, StateDir, Subdir) {
+		t.Errorf("Dir(a checkout) = %s", got)
+	}
+}
+
+// A session that never read a settings file gets the answer Root always
+// gave: the working directory.
+func TestRoot_WithNothingHeldIsTheDirectory(t *testing.T) {
+	Hold(Elsewhere{})
+	bare := t.TempDir()
+	if got := Root(bare); got != bare {
+		t.Errorf("Root(%s) = %s", bare, got)
+	}
+}
+
+// An item written into the global backlog lands in that directory, not in a
+// shhh directory under it.
+func TestCreate_WritesIntoTheGlobalBacklog(t *testing.T) {
+	global := filepath.Join(t.TempDir(), "backlog")
+	Hold(Elsewhere{Global: global})
+	t.Cleanup(func() { Hold(Elsewhere{}) })
+	path, err := Create(BuiltinCode(), global, Item{Slug: "read-the-paper", Title: "Read the paper"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := filepath.Join(global, "read-the-paper.md"); path != want {
+		t.Errorf("the item went to %s, want %s", path, want)
 	}
 }

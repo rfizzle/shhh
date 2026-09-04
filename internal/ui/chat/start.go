@@ -92,6 +92,12 @@ type StartInfo struct {
 	// steps a run takes are all different here, and a reader who does not
 	// know which profile is in force cannot account for any of them.
 	Profile StartProfile
+	// Backlog is the root the backlog was keyed on where that is not this
+	// directory's project — a session standing outside every project, which
+	// reads the root a settings file named or the global list. Empty is the
+	// ordinary session, whose backlog is the project's and needs no line of
+	// its own. See docs/capabilities/todo.md#where-the-backlog-lives.
+	Backlog string
 	// Trust is what this checkout was not allowed to put into the session.
 	// It is on the screen because it is the difference between a session
 	// that is small and one that is small for a reason, and it backs
@@ -302,6 +308,15 @@ func startNotes(info StartInfo) []components.StartNote {
 	if root := info.Project.RootDisplay; root != "" && root != info.Project.Display {
 		notes = append(notes, components.StartNote{Label: "root", Value: root,
 			Detail: "the backlog and this project's state are kept here"})
+	}
+	// A directory that is part of no project has no root to name, and its
+	// backlog is somewhere else entirely — the one a settings file named, or
+	// the global list. That is worth its own line: a list whose location the
+	// reader cannot account for is a list they cannot trust they are adding
+	// to.
+	if root := info.Backlog; root != "" {
+		notes = append(notes, components.StartNote{Label: "backlog", Value: root,
+			Detail: "this directory is part of no project, so the list is kept here"})
 	}
 	// And what that backlog is: the profile decides what an item is called,
 	// which fields it carries and which steps a run of it takes, so a

@@ -151,7 +151,7 @@ func TestProfile_ExtractionSpeaksTheProfile(t *testing.T) {
 	if strings.Contains(schema, "size") {
 		t.Errorf("the schema still names a field the profile does not declare:\n%s", schema)
 	}
-	prompt := extractPrompt(research())
+	prompt := extractPrompt(research(), CodingSession)
 	for _, want := range []string{
 		"- kind: question or reading.\n",
 		"- priority: high, medium or low, from what the conversation implied.\n",

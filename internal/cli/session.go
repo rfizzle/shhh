@@ -939,24 +939,37 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	if session.skills != nil {
 		model = model.WithSkills(session.skills, skillsListing)
 	}
-	if cwd != "" && !session.conversation {
+	// The backlog is wired into both sessions. It is not a coding surface:
+	// one file per item, a status, a ready rule and an archive say nothing
+	// about code, and a conversation that keeps a reading list wants them.
+	// What a conversation cannot do is asked of a run's own steps when one
+	// is asked for, one step at a time (internal/todo/run/pipeline.go).
+	// See docs/capabilities/chat.md#the-backlog-is-here-too.
+	if cwd != "" {
 		root := todo.Root(cwd)
 		// The vocabulary the backlog is written in is resolved once, for the
 		// process, and handed to every reader of it rather than reached for:
 		// which words an item carries is the project's answer, so there is
 		// no default to fall back on (todoprofile.go).
 		profile := todoProfile()
+		// What the reading is a reading of, in the words the person would
+		// use for it. A prompt that called a conversation a coding session
+		// would be asking the model to read something that did not happen.
+		reading := todo.ExtractConfig{Model: env.modelName, Session: todo.CodingSession}
+		if session.conversation {
+			reading.Session = todo.Conversation
+		}
 		model = model.WithTodos(chat.Todos{
 			Root: root, Manage: todoManager(root), Detail: todoDetail,
 			Profile: profile,
 			// The session's own model reads the session: extraction is a
 			// judgement about the whole conversation, not a status line, and
 			// the cheap summary model is the wrong price point for it.
-			Extractor: todo.NewExtractor(ledger.For(env.prov, meter.SourceBacklog), todo.ExtractConfig{Model: env.modelName}, profile),
+			Extractor: todo.NewExtractor(ledger.For(env.prov, meter.SourceBacklog), reading, profile),
 			// Drafting an item from a sentence is the same judgement in one
 			// paragraph rather than over a whole session, so it goes to the
 			// same model and is metered against the same source.
-			Drafter:     todo.NewDrafter(ledger.For(env.prov, meter.SourceBacklog), todo.ExtractConfig{Model: env.modelName}, profile),
+			Drafter:     todo.NewDrafter(ledger.For(env.prov, meter.SourceBacklog), reading, profile),
 			NoCommit:    !cfg.TodoCommitEnabled(),
 			ItemTimeout: cfg.TodoItemTimeout(),
 			GroomStale:  cfg.TodoGroomStale(),

@@ -450,3 +450,20 @@ func TestStartScreen_NamesTheWordingsTheCheckoutSupplied(t *testing.T) {
 		t.Errorf("a session that replaced no wording still has the row:\n%s", plain)
 	}
 }
+
+// A session opened in a directory that is part of no project reads a backlog
+// that is somewhere else, and the screen says where. A list whose location
+// the reader cannot account for is a list they cannot trust they are adding
+// to. See docs/capabilities/todo.md#where-the-backlog-lives.
+func TestStartScreen_NamesTheBacklogWhenItIsNotThisProjects(t *testing.T) {
+	info := startFixture()
+	if strings.Contains(startText(startModel(t, info)), "backlog") {
+		t.Fatal("a project whose backlog is its own says nothing here")
+	}
+	info.Backlog = "~/.config/shhh/todo/backlog"
+	view := startText(startModel(t, info))
+	if !strings.Contains(view, "~/.config/shhh/todo/backlog") ||
+		!strings.Contains(view, "part of no project") {
+		t.Fatalf("the screen should name the backlog and why it is there:\n%s", view)
+	}
+}

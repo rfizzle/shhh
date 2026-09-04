@@ -23,6 +23,7 @@ import (
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/ui/chat"
 )
 
@@ -97,6 +98,12 @@ func buildStartInfo(survey project.Info, db *storage.DB, gateEnabled bool, trust
 	// reads by the third one (todoprofile.go).
 	if p := backlogProfileIs(); p.name() != defaultProfileName {
 		info.Profile = chat.StartProfile{Name: p.name(), From: p.from}
+	}
+	// And where the backlog is, where it is not this directory's project:
+	// the root `todo.root` named, or the global list a session outside every
+	// project falls back to (todoroot.go).
+	if root := todo.Root(wd); root != survey.Root {
+		info.Backlog = project.Abbreviate(root)
 	}
 	if gateEnabled {
 		info.Gate = startGate(wd)

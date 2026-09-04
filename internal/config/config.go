@@ -56,6 +56,19 @@ type HooksConfig struct {
 
 // TodoConfig is what a backlog run does when it is not told otherwise.
 type TodoConfig struct {
+	// Root is the directory a backlog lives under when the working
+	// directory is part of no project — no shhh directory above it and no
+	// repository around it. It is only ever the last word before the global
+	// backlog: a session standing inside a project reads that project's
+	// backlog, because a setting that could move the backlog out of a
+	// checkout would give two terminals in one checkout two different lists.
+	//
+	// It is a path rather than a name because it is a place on this machine
+	// and not a thing shhh ships, and it is a user setting rather than a
+	// checkout's: a checkout that stated it would be stating where a backlog
+	// goes for everyone who clones it.
+	// See docs/capabilities/todo.md#where-the-backlog-lives.
+	Root string `toml:"root"`
 	// Profile names the profile this project's backlog is written in and
 	// worked under — what an item is called, which fields it carries, and
 	// which steps a run of it takes. Unset is the profile a checkout of code

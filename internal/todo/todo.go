@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/rfizzle/shhh/internal/project"
 )
@@ -97,14 +98,80 @@ type Unknown struct {
 	Key, Value string
 }
 
-// Root is the directory the backlog is keyed on: the enclosing repository
-// root, else the directory itself. Every session under one checkout shares
-// one backlog, which is what makes it the project's rather than a
-// session's. See docs/capabilities/todo.md#where-the-backlog-lives.
-func Root(dir string) string { return project.Root(dir) }
+// Root is the directory the backlog is keyed on: the project the working
+// directory is part of — the nearest shhh directory, else the enclosing
+// repository — and where nothing in the tree marks one, the root a settings
+// file named, else the global backlog every session falls back to. Every
+// session under one project shares one backlog, which is what makes it the
+// project's rather than a session's.
+//
+// The last two answers are why a conversation opened in a home directory has
+// a backlog at all. A reading list is not kept in a checkout, and the order
+// gives one to a session that is standing outside every project without ever
+// overruling a project that is right there.
+// See docs/capabilities/todo.md#where-the-backlog-lives.
+func Root(dir string) string {
+	if root, found := project.RootFound(dir); found {
+		return root
+	}
+	elsewhere := heldRoots()
+	switch {
+	case elsewhere.Setting != "":
+		return elsewhere.Setting
+	case elsewhere.Global != "":
+		return elsewhere.Global
+	}
+	return project.Root(dir)
+}
 
 // Dir is the backlog directory under a root.
-func Dir(root string) string { return filepath.Join(root, StateDir, Subdir) }
+//
+// The global backlog is its own directory rather than a state directory
+// inside one. Nothing but the backlog is kept there, and a `.shhh` under the
+// configuration directory would be shhh keeping project state for a project
+// that is its own settings.
+func Dir(root string) string {
+	if global := heldRoots().Global; global != "" && root == global {
+		return root
+	}
+	return filepath.Join(root, StateDir, Subdir)
+}
+
+// Elsewhere is where a backlog lives when nothing in the working directory's
+// tree marks a project: the root a settings file names, and the global
+// backlog under the configuration directory.
+type Elsewhere struct {
+	// Setting is the directory `todo.root` names, already expanded, and
+	// empty where the settings say nothing.
+	Setting string
+	// Global is the backlog every session outside a project shares, and
+	// empty for a caller that never read a settings file — which leaves
+	// Root answering with the working directory, the way it always did.
+	Global string
+}
+
+// held is Elsewhere for this process. It is held rather than passed to Root
+// because every surface that opens a backlog asks Root for it, while only
+// the command tree's entry point reads a settings file.
+var held struct {
+	mu sync.Mutex
+	is Elsewhere
+}
+
+// Hold states the two roots Root falls back to. It is called once, where the
+// settings are read for the whole command tree.
+func Hold(e Elsewhere) {
+	held.mu.Lock()
+	defer held.mu.Unlock()
+	held.is = e
+}
+
+// heldRoots is what this process was told.
+func heldRoots() Elsewhere {
+	held.mu.Lock()
+	defer held.mu.Unlock()
+	return held.is
+}
 
 // slugPattern is what a slug may look like. Lowercase letters, digits and
 // single hyphens, never at an end: a name that is safe as a filename on

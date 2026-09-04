@@ -41,39 +41,49 @@ const (
 	TodoProfileDir = ".shhh/todo/profile"
 )
 
-// Root is the directory a checkout's shhh state belongs to: the enclosing
-// repository root; without one, the nearest ancestor that already holds a
-// shhh directory; and the directory itself when there is neither. Everything
-// keyed on "this project" — the backlog, an offer already refused — is
-// keyed on it, which is what makes those the project's rather than a
-// session's.
+// Root is the directory a checkout's shhh state belongs to: the nearest
+// ancestor that already holds a shhh directory; without one, the enclosing
+// repository root; and the directory itself when there is neither.
+// Everything keyed on "this project" — the backlog, an offer already
+// refused — is keyed on it, which is what makes those the project's rather
+// than a session's.
 //
-// The middle answer is what a project with no repository needs. Falling
-// straight to the directory means two terminals opened two levels apart in
-// one project key their state on two different directories, and the symptom
-// is a backlog that is empty in one of them and full in the other, with
-// nothing on screen to say why.
+// The shhh directory comes first because it is the one marker somebody put
+// there to say where shhh's state goes. A repository is a fact about the
+// code, and it is the right boundary only for the parts of shhh that are
+// about code — a run that ends in a commit asks InRepo for that answer
+// directly. A monorepo whose services each keep their own shhh directory
+// has as many projects as it has of those, and reading the repository root
+// over them would give every service one backlog.
+//
+// The last answer is what a directory with neither marker gets, and it is a
+// guess rather than a boundary: a caller that must not guess asks RootFound.
 func Root(dir string) string {
-	abs, err := filepath.Abs(dir)
-	if err != nil {
-		return dir
-	}
-	root, _ := projectRoot(abs)
+	root, _ := RootFound(dir)
 	return root
 }
 
-// projectRoot is Root's answer with the half some callers need beside it:
-// whether anything in the tree actually marked the boundary, or whether the
+// RootFound is Root with the half some callers need beside it: whether
+// anything in the tree actually marked the boundary, or whether the
 // directory itself was assumed for want of a marker. A caller that treats
 // the assumed answer as a found one reads the enclosing directory as though
 // it were part of this project.
+func RootFound(dir string) (root string, found bool) {
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		return dir, false
+	}
+	return projectRoot(abs)
+}
+
+// projectRoot is RootFound over an absolute path.
 func projectRoot(abs string) (root string, discovered bool) {
 	repo, state := nearest(abs)
 	switch {
-	case repo != "":
-		return repo, true
 	case state != "":
 		return state, true
+	case repo != "":
+		return repo, true
 	}
 	return abs, false
 }
@@ -92,9 +102,10 @@ func InRepo(dir string) bool {
 
 // nearest walks up from abs, itself included, for the closest ancestor
 // holding .git and the closest holding the shhh state directory. A .git
-// entry ends the walk, so a repository is never overruled by a state
-// directory nearer the leaf: the two are found together only because the
-// second answer is worth nothing until the first has come back empty.
+// entry ends the walk, so a shhh directory above a repository root is never
+// read as this project's: it belongs to whatever encloses the checkout, and
+// a clone dropped inside somebody's own shhh-managed directory would
+// otherwise take that directory's backlog.
 //
 // The state directory must be a directory. A checkout still holding the old
 // single-file .shhh is a doctor migration, and reading it as a root would

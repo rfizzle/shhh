@@ -305,3 +305,24 @@ func TestExtractSchema_TheCodeProfileRendersTheSchemaThatWas(t *testing.T) {
 		t.Errorf("the schema moved:\ngot:\n%s\n\nwant:\n%s", got, codeSchema)
 	}
 }
+
+// A reading taken in a conversation says so. A conversation did not work on
+// the project, and a prompt that said it did would be asking the model to
+// read something that did not happen.
+// See docs/capabilities/chat.md#chat-changes-nothing.
+func TestExtract_TheReadingNamesTheSessionItRead(t *testing.T) {
+	coding := extractPrompt(BuiltinCode(), CodingSession)
+	chat := extractPrompt(BuiltinCode(), Conversation)
+	if coding != extractPrompt(BuiltinCode(), "") {
+		t.Error("a caller that says nothing reads a coding session")
+	}
+	if !strings.Contains(coding, "You turn a coding session into backlog items") ||
+		!strings.Contains(coding, "Propose the work the session settled on") {
+		t.Errorf("the coding session's wording moved:\n%s", coding)
+	}
+	if !strings.Contains(chat, "You turn this conversation into backlog items") ||
+		!strings.Contains(chat, "Propose the work this conversation settled on") ||
+		strings.Contains(chat, "coding session") {
+		t.Errorf("the conversation's wording should not call it a coding session:\n%s", chat)
+	}
+}
