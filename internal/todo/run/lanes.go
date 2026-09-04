@@ -29,9 +29,12 @@ type Lane struct {
 	// Task is the lane's own instructions, as the orchestrator wrote them.
 	Task string `json:"task"`
 	// Agent is the writer child building the lane in the current round;
-	// empty before the fan-out and after the lane lands.
+	// empty before the fan-out and once the lane's writer has reported.
 	Agent string `json:"agent,omitempty"`
-	// Done reports the lane's patch landed on the tree.
+	// Done reports the lane's patch landed on the tree. A landed lane is
+	// not yet a finished one: the patch reaches the run while the writer
+	// that wrote it is still ending its turn, and what the writer says
+	// about the lane arrives after.
 	Done bool `json:"done"`
 	// Report is the writer's final message, bounded, for the integration
 	// turn and the record.
@@ -196,6 +199,25 @@ func (s *State) AllLanesDone() bool {
 	return len(s.Lanes) > 0
 }
 
+// reported is a lane the run is finished with: its patch is on the tree
+// and its writer has handed back what it did.
+func (l Lane) reported() bool { return l.Done && l.Agent == "" }
+
+// lanesReported reports every lane is whole. It is not AllLanesDone: a
+// patch lands one event before the writer that wrote it finishes, so the
+// last lane to land is not always the last lane to report, and a run that
+// moved on the landing would take the integration turn with one lane's
+// account of itself still in flight — a lane with no findings, in a
+// prompt that says the findings are how the lanes get wired together.
+func (s *State) lanesReported() bool {
+	for _, l := range s.Lanes {
+		if !l.reported() {
+			return false
+		}
+	}
+	return len(s.Lanes) > 0
+}
+
 // LaneByAgent finds the lane a child is building.
 func (s *State) LaneByAgent(name string) (*Lane, bool) {
 	if name == "" {
@@ -210,14 +232,17 @@ func (s *State) LaneByAgent(name string) (*Lane, bool) {
 }
 
 // LiveAgents names the children the run has in flight: the reviewer and
-// every lane still being built. Ending the run kills them.
+// every lane whose writer has not reported. A lane whose patch already
+// landed is one of them — the writer that sent it is still ending its
+// turn, and the run is waiting on what it has to say — so ending the run
+// kills it rather than leaving it running on a run that is over.
 func (s *State) LiveAgents() []string {
 	var out []string
 	if s.Reviewer != "" {
 		out = append(out, s.Reviewer)
 	}
 	for _, l := range s.Lanes {
-		if l.Agent != "" && !l.Done {
+		if l.Agent != "" {
 			out = append(out, l.Agent)
 		}
 	}
@@ -282,7 +307,7 @@ func (s *State) fanOut() Step {
 func (s *State) laneNames(all bool) []string {
 	var out []string
 	for _, l := range s.Lanes {
-		if all || !l.Done {
+		if all || !l.reported() {
 			out = append(out, l.Name)
 		}
 	}
@@ -308,8 +333,9 @@ func (s *State) LanePatched(agent string) {
 // LaneDone is the front-end reporting a writer finished. A writer that did
 // not finish, or finished without its patch landing, blocks the run with
 // the lane named: the other lanes' work is in the tree, and the record
-// says which part is missing. The last lane landing starts the
-// integration turn.
+// says which part is missing. The last writer to report starts the
+// integration turn — not the last patch to land, which is a different
+// lane whenever the two events cross.
 func (s *State) LaneDone(it todo.Item, agent string, finished bool, report string) Step {
 	l, ok := s.LaneByAgent(agent)
 	if !ok {
@@ -323,7 +349,7 @@ func (s *State) LaneDone(it todo.Item, agent string, finished bool, report strin
 		return s.block(fmt.Sprintf("writer %s (lane %s) finished but its patch did not land: %s", agent, l.Name, firstLineOf(report)))
 	}
 	l.Agent = ""
-	if !s.AllLanesDone() {
+	if !s.lanesReported() {
 		return Step{Action: ActionWait, Stage: StageFanOut, Shown: s.label("lane " + l.Name + " landed; waiting on " + strings.Join(s.laneNames(false), ", "))}
 	}
 	return s.integrate(it)

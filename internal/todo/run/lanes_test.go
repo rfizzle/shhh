@@ -128,6 +128,37 @@ func TestRun_LargeFansOutThenIntegrates(t *testing.T) {
 	}
 }
 
+// Both patches land before either writer reports, which is the ordinary
+// order under load: a patch is applied while the writer that wrote it is
+// still ending its turn. The lane that lands last is then not the lane
+// that reports last, and integrating on the landing would take the turn
+// with one lane's account of itself still on its way.
+func TestRun_IntegratesOnTheLastReportNotTheLastPatch(t *testing.T) {
+	s, it := largeAtSplit(t)
+	s.Observe(it, lanesText)
+	s.LanePatched("tw1-rail")
+	s.LanePatched("tw1-command")
+
+	step := s.LaneDone(it, "tw1-command", true, "Wired the command.")
+	if step.Action != ActionWait || s.Stage != StageFanOut {
+		t.Fatalf("every patch landed is not every lane reported: %+v", step)
+	}
+	if !strings.Contains(step.Shown, "waiting on rail") {
+		t.Fatalf("the wait should name the lane still owed: %q", step.Shown)
+	}
+	if live := s.LiveAgents(); len(live) != 1 || live[0] != "tw1-rail" {
+		t.Fatalf("a writer the run waits on is a writer stopping the run kills: %v", live)
+	}
+
+	step = s.LaneDone(it, "tw1-rail", true, "Built the rail.\nWire X in the chat.")
+	if step.Action != ActionPrompt || step.Stage != StageImplement {
+		t.Fatalf("the last report should integrate: %+v", step)
+	}
+	if !strings.Contains(step.Prompt, "Wire X in the chat.") {
+		t.Errorf("the waited-for report should be in the integrate prompt: %q", step.Prompt)
+	}
+}
+
 func TestRun_LaneFailuresBlockWithTheLaneNamed(t *testing.T) {
 	s, it := largeAtSplit(t)
 	s.Observe(it, lanesText)

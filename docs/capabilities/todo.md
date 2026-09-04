@@ -347,12 +347,19 @@ other lanes' work in the tree and the missing one named. A command a
 writer's classifier cannot decide goes to the person the way every child's
 does; that is the steering a fan-out keeps.
 
-When the last lane lands, the session takes one turn of its own in the
-working mode to make the lanes fit — wire what the reports say needs
-wiring, tick the item's boxes, which no lane could — and hands the tree to
-verification. From there a large item is a medium one: the same checks,
-the same reviewer child, the same rounds. A run continued in a new session
-at its fan-out spawns only the lanes that had not landed, under new names.
+A lane is not finished when its patch lands. The patch reaches the session
+while the writer that wrote it is still ending its turn, and the account
+of what it built — the thing the integration turn wires from — arrives
+after; on a loaded machine the last lane to land is routinely not the last
+lane to report. So the run waits for every lane's account of itself rather
+than for the last patch. When it has them all, the session takes one turn
+of its own in the working mode to make the lanes fit — wire what the
+reports say needs wiring, tick the item's boxes, which no lane could — and
+hands the tree to verification. From there a large item is a medium one:
+the same checks, the same reviewer child, the same rounds. A run continued
+in a new session at its fan-out spawns only the lanes that had not landed,
+under new names, and one that landed without its report being kept is read
+from the tree rather than waited on.
 
 ## A sprint is runs with a session between them
 

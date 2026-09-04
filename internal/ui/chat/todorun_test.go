@@ -916,6 +916,66 @@ func TestTodoRun_LargeItemLanesLandAndIntegrate(t *testing.T) {
 	}
 }
 
+// laneNamed finds one of the run's lanes by the name the split gave it.
+func laneNamed(t *testing.T, m Model, name string) run.Lane {
+	t.Helper()
+	for _, l := range m.todoRunner.state.Lanes {
+		if l.Name == name {
+			return l
+		}
+	}
+	t.Fatalf("no lane %s in %+v", name, m.todoRunner.state)
+	return run.Lane{}
+}
+
+// A lane's patch reaches the session one event ahead of the writer that
+// wrote it, so the last patch to land and the last writer to report are
+// routinely different lanes. Holding one writer's done event back until
+// the other lane has reported makes that crossing happen on purpose: the
+// run has to wait for the report it was promised rather than take the
+// integration turn with a lane that has nothing to say.
+func TestTodoRun_LargeItemLanesIntegrateOnReportsNotPatches(t *testing.T) {
+	m, sup := largeRunModel(t, writingEnv("package a\n\nvar changed = true\n"))
+	var held []subagent.Event
+	crossed := func(m Model) bool {
+		return m.todoRunner.state != nil && laneNamed(t, m, "alpha").Done && laneNamed(t, m, "beta").Agent == ""
+	}
+	deadline := time.After(10 * time.Second)
+	for !crossed(m) {
+		select {
+		case ev := <-sup.Events():
+			if ev.Kind == subagent.EventDone && ev.Status.Name == "tw1-alpha" {
+				held = append(held, ev)
+				continue
+			}
+			updated, _ := m.handleSubagentEvent(ev)
+			m = updated.(Model)
+		case <-deadline:
+			t.Fatalf("timed out; run = %+v", m.todoRunner.state)
+		}
+	}
+	if m.todoRunner.state.Stage != run.StageFanOut {
+		t.Fatalf("a landed patch is not a finished lane: %+v", m.todoRunner.state)
+	}
+
+	for _, ev := range held {
+		updated, _ := m.handleSubagentEvent(ev)
+		m = updated.(Model)
+	}
+	m = pumpSubagents(t, m, sup, func(m Model) bool {
+		return m.todoRunner.state == nil || m.todoRunner.state.Stage != run.StageFanOut
+	})
+	if m.todoRunner.state == nil || m.todoRunner.state.Stage != run.StageImplement || !m.working() {
+		t.Fatalf("the held report should start the integration turn: %+v", m.todoRunner.state)
+	}
+	if got := laneNamed(t, m, "alpha").Report; got != "Wrote a.go. Wire it up." {
+		t.Errorf("the lane should carry the writer's report, not the event's detail line: %q", got)
+	}
+	if msgs := m.agent.Messages(); !strings.Contains(msgs[len(msgs)-1].Content, "Wrote a.go. Wire it up.") {
+		t.Error("the integration prompt should carry the waited-for report")
+	}
+}
+
 func TestTodoRun_WriterWithoutAPatchBlocksTheRun(t *testing.T) {
 	m, sup := largeRunModel(t, reportingEnv("I looked and changed nothing."))
 	m = pumpSubagents(t, m, sup, func(m Model) bool { return m.todoRunner.state == nil })
