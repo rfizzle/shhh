@@ -263,9 +263,12 @@ through it is gone, but the plan, the answers and the rounds spent are
 kept, and so is the work of the stages before it. A turn that gets in
 ahead of a stage — a compaction, a skill being loaded — pauses the run
 the same way rather than failing the item: nothing about the item is
-wrong, only the conversation moved. Clearing the conversation is the one
-thing a run does not survive: it is an explicit end, and the item goes
-back to open with the tree as the run left it.
+wrong, only the conversation moved. Starting a new conversation does not
+end the run either: the checkpoint was written to survive exactly that, so
+the item stays in progress and the new conversation's first row names the
+command that picks it up. Stopping the run is the one explicit end, and
+that is the one that puts the item back to open with the tree as the run
+left it.
 
 ## A large item is built in lanes
 
@@ -298,6 +301,66 @@ wiring, tick the item's boxes, which no lane could — and hands the tree to
 verification. From there a large item is a medium one: the same checks,
 the same reviewer child, the same rounds. A run continued in a new session
 at its fan-out spawns only the lanes that had not landed, under new names.
+
+## A sprint is runs with a session between them
+
+One item is a run. The whole ready list is a sprint: `/todo run --all` in a
+session, `shhh todo run --all` from a script, working the items one at a
+time — the sprint file's set in its order where the backlog holds one, the
+whole ready list where it does not — until nothing is ready, until the cap
+is reached, or until an item blocks.
+
+**Each item gets a session of its own.** When one item is archived the
+session ends and another begins, exactly as it would if you had quit and
+launched again: the record closes and a new one opens, the prompt is built
+again from the checkout as it now stands, and the next item starts from
+nothing. The previous item's conversation is cost and noise to the next
+one, and the checkpoint already carries everything a stage needs. It also
+means the record has one session per item rather than one for the night,
+which is what makes anything computed over it — spend, rounds, how often a
+run finishes — a figure about an item.
+
+**Done is the runner's own ending and never something the model printed.**
+An item counts as finished when the machine reached done, which is after
+the verification passed, the review came back clean, a real commit landed
+and the item was archived with its report. Where the project names checks
+for a turn's close, those run too: a sprint is unattended by definition, so
+it honours them without being asked, where a session you are watching
+leaves that switch off. An item counts as blocked when the machine reached
+blocked. There is no sentence the model can write that ends an item either
+way.
+
+**It stops on the first block.** A blocked item has a follow-up written for
+it, and what comes next in the list may be resting on the work that did not
+land, so nothing further is attempted. The four endings are named rather
+than implied — nothing ready, the cap reached, an item blocked, or you
+stopped it — because a sprint that ran out of work and a sprint that hit a
+wall leave the same quiet screen.
+
+**One attempt per item.** The remediation rounds inside a run are the
+retry; a second run over an item the first could not finish is a second
+chance at the same failure. An item whose implement stage left the tree
+exactly as it found it is a block for the same reason: there is nothing to
+review and nothing to commit, and another round over the same plan would
+produce the same nothing. A cap on how long one item may take is available
+and off by default, read at the boundary between two stages so that it ends
+an item rather than cutting a turn in half and leaving a tree nothing has
+read.
+
+The sprint keeps a checkpoint of its own beside the items', so a sprint
+that dies with its process is picked up by the same command in a fresh one:
+it names the item it was on, and that item's checkpoint names the stage.
+Stopping it keeps that item's checkpoint too — the stages already done are
+in the tree, and the stop was aimed at the loop.
+
+From a script it is the same machine with the screen taken away. Each stage
+is one `shhh code --print` in the checkout, and what the stage produced is
+read out of that transcript whatever status the process left. The gates
+that would ask a person cannot: a run that reaches the pause stops with the
+questions written on the item rather than guessing an answer, and a review
+that would have gone to a second agent is taken in the session, which is
+what a session with no supervisor already does. The exit status is the
+run's own ending ([`headless.md`](headless.md#the-exit-code-is-the-contract)).
 
 ## Done is archived, not deleted
 

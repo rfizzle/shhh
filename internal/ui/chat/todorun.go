@@ -91,6 +91,14 @@ func todoNoRepoNotice(root, slug string) string {
 // of them and then found it had nowhere to put the result has spent them
 // for an item it leaves in progress.
 func (m Model) startTodoRun(arg string, noCommit bool) (tea.Model, tea.Cmd) {
+	return m.beginTodoRun(arg, noCommit, false)
+}
+
+// beginTodoRun is that with the one thing the command cannot say: whether the
+// sprint took this item or a person named it. It is on the run rather than
+// beside it because the surfaces that read it — the gate a stage closes on,
+// the words a notification uses — are handed the run and nothing else.
+func (m Model) beginTodoRun(arg string, noCommit, inSprint bool) (tea.Model, tea.Cmd) {
 	// The flag is one run's answer and the setting is the standing one, so
 	// either is enough. There is no flag the other way: a person who set
 	// the project to make no commits and wants one on this item can make
@@ -145,6 +153,7 @@ func (m Model) startTodoRun(arg string, noCommit bool) (tea.Model, tea.Cmd) {
 			// asking for it again, and the repository may not be the one
 			// the run started in.
 			st.NoCommit, st.Repo, st.Sprint = noCommit, repo, m.sprintGoal()
+			st.InSprint = inSprint
 			m.todoRun = st
 			m.todoRunItem = it
 			m.openTodoRunRow()
@@ -158,7 +167,7 @@ func (m Model) startTodoRun(arg string, noCommit bool) (tea.Model, tea.Cmd) {
 	}
 	m.todoRun = run.Start(it, m.sessionName, m.mode.String(), int(m.turnCount)+1,
 		run.Options{NoCommit: noCommit, Repo: repo, Sprint: m.sprintGoal(),
-			CloseGate: m.workspaceClosesGate()})
+			CloseGate: m.workspaceClosesGate(), InSprint: inSprint})
 	m.todoRunItem = it
 	m.openTodoRunRow()
 	m.reloadTodos()
@@ -168,6 +177,9 @@ func (m Model) startTodoRun(arg string, noCommit bool) (tea.Model, tea.Cmd) {
 // todoRunStep carries out one step the machine handed back.
 func (m Model) todoRunStep(step run.Step) (tea.Model, tea.Cmd) {
 	st := m.todoRun
+	if capped, ok := m.sprintCap(step); ok {
+		step = capped
+	}
 	st.Paths = m.todoRunPaths()
 	if err := st.Save(m.todos.Root); err != nil {
 		m.appendEntry(entry{kind: entrySystem, text: "The run's checkpoint could not be written — " + err.Error()})
@@ -521,11 +533,16 @@ func (m Model) todoRunDone() (tea.Model, tea.Cmd) {
 		}
 		note = fmt.Sprintf("✓ todo run %s %s, but the item could not be archived — %v. The report is on the item and it is open; /todo done %s archives it once that is settled.", st.Slug, did, err, st.Slug)
 	}
+	sprinting, slug := st.Sprinting(), st.Slug
 	m.endTodoRun()
 	// The report is the row's final state and opens from it; a copy of it
 	// under the notice would be the same paragraphs twice, once where they
 	// can be folded and once where they cannot.
-	return m.systemNotice(note)
+	model, _ := m.systemNotice(note)
+	if sprinting {
+		return model.(Model).advanceSprint(slug)
+	}
+	return model, nil
 }
 
 // todoRunBlocked ends the run with its evidence on the item. The work
@@ -551,6 +568,18 @@ func (m Model) todoRunBlocked() (tea.Model, tea.Cmd) {
 	}
 	note += fmt.Sprintf("\nThe evidence is on the item; /todo open %s reopens it when it is settled.", it.Slug)
 	model, _ := m.systemNotice(note)
+	// A sprint stops here and does not go on to the next ready item: the
+	// blocked item is about to be offered a follow-up, and what comes after
+	// it in the backlog may be resting on the work that did not land. The
+	// end is said before the follow-up card opens, because the card takes
+	// the screen and a sentence behind it is a sentence nobody read.
+	if st.Sprinting() {
+		if sp, live := run.Live(m.todos.Root); live {
+			sp.Blocks(it.Slug, st.Blocked)
+			ended, _ := model.(Model).endTodoSprint(sp)
+			model = ended
+		}
+	}
 	// What is left is offered as a follow-up item, after this one; accepting
 	// it is what lets the blocked item be archived once the rest lands.
 	return model.(Model).openTodoProposals([]todo.Proposal{todoFollowUp(it, st)}, "a follow-up for "+it.Slug)
@@ -914,6 +943,23 @@ func todoRunKeptNote(it todo.Item, st *run.State, why string) string {
 // open, and whatever was changed stays in the tree.
 func (m Model) stopTodoRun() (tea.Model, tea.Cmd) {
 	st := m.todoRun
+	// A sprint ends at its checkpoint rather than by abandoning the item in
+	// flight: the stages already done are in the tree, and the sprint is the
+	// one caller that started the item without being asked about it, so
+	// throwing its work away on a stop nobody aimed at that item would be
+	// the surprise.
+	if sp, live := run.Live(m.todos.Root); live {
+		kept := ""
+		if st != nil && !st.Over() {
+			kept = m.keepTodoRun("the sprint was stopped")
+		}
+		sp.Stop()
+		next, _ := m.endTodoSprint(sp)
+		if kept == "" {
+			return next, nil
+		}
+		return next.(Model).systemNotice(kept)
+	}
 	if st == nil || st.Over() {
 		return m.systemNotice("No run is going.")
 	}
@@ -933,6 +979,13 @@ func (m Model) stopTodoRun() (tea.Model, tea.Cmd) {
 // row's, and a key is inert until its surface holds the keyboard
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 func (m Model) todoRunStatus() (tea.Model, tea.Cmd) {
+	// The sprint is not on the row: a row is one run, and how far through the
+	// set that run is belongs to the loop above it. It is said first, so the
+	// row the answer opens on is still the last thing on screen.
+	if sp, live := run.Live(m.todos.Root); live {
+		model, _ := m.systemNotice("▸ " + sp.Summary())
+		m = model.(Model)
+	}
 	idx := lastTodoRunRow(m.transcript)
 	if idx < 0 {
 		return m.systemNotice("No run is going. /todo run [slug|--next] starts one.")
@@ -1637,4 +1690,200 @@ func (m Model) todoRunReopen(idx int) (tea.Model, tea.Cmd, bool) {
 	m.reloadTodos()
 	next, cmd := m.systemNotice(fmt.Sprintf("%s is open again; /todo run %s starts it over.", slug, slug))
 	return next, cmd, true
+}
+
+// A sprint is the same runner over more than one item: `/todo run --all`
+// works the ready list — the sprint file's set where the backlog holds one —
+// starting each item in a session of its own, and stops when the list is
+// empty, when the cap is reached, or on the first block.
+//
+// What makes it a sprint rather than a loop is that nothing about an item's
+// end is inferred from what the model said. An item is finished when the
+// machine reached done, which is after a real commit and an archive with a
+// report; an item is blocked when the machine reached blocked. The sprint
+// reads those two transitions and nothing else.
+// See docs/capabilities/todo.md#a-sprint-is-runs-with-a-session-between-them.
+
+// startTodoSprint is `/todo run --all`. A sprint left behind by a process
+// that died is continued rather than replaced: its checkpoint names the item
+// it was on, and that item's own checkpoint names the stage.
+func (m Model) startTodoSprint(opt todoRunArgs) (tea.Model, tea.Cmd) {
+	if m.todoRun != nil && !m.todoRun.Over() {
+		return m.systemNotice(fmt.Sprintf("A run is already going: %s. /todo status shows it; /todo stop ends it.", m.todoRun.Summary()))
+	}
+	if m.todoStore == nil {
+		return m.systemNotice("No backlog to run from.")
+	}
+	if m.changes == nil {
+		return m.systemNotice("This session does not track changes, so a run could not know what to commit.")
+	}
+	if m.turnState() != stateInput {
+		return m.systemNotice("Answer the open decision first; a sprint starts from an idle session.")
+	}
+	noCommit := opt.noCommit || m.todos.NoCommit
+	if sp, live := run.Live(m.todos.Root); live {
+		// The invocation's answers stand over the checkpoint's, the same way
+		// a continued run's do: asking for the sprint again is asking for it
+		// under the answers given now, and the session it is picked up in is
+		// this one.
+		sp.Session, sp.PrevMode, sp.NoCommit = m.sessionName, m.mode.String(), noCommit
+		if opt.max > 0 {
+			sp.Max = opt.max
+		}
+		model, _ := m.systemNotice("Continuing the sprint from its checkpoint — " + sp.Summary() + ".")
+		next := model.(Model)
+		if slug, ok := sp.Resume(); ok {
+			if err := sp.Save(next.todos.Root); err != nil {
+				return next.systemNotice("The sprint's checkpoint could not be written — " + err.Error())
+			}
+			return next.sprintRun(sp, slug)
+		}
+		return next.sprintNext(sp)
+	}
+	sp := run.StartSprint(m.sessionName, m.mode.String(), opt.max, noCommit)
+	m.signal(observe.SignalRun, "sprint")
+	model, _ := m.systemNotice(todoSprintStartNote(sp, len(m.todoStore.Ready())))
+	return model.(Model).sprintNext(sp)
+}
+
+// todoSprintStartNote says what the sprint is about to work and how it ends,
+// because `--all` over a backlog is the one command here whose scope the
+// person cannot see from the command they typed.
+func todoSprintStartNote(sp *run.Sprint, ready int) string {
+	scope := plural(ready, "item") + " ready"
+	if sp.Max > 0 {
+		scope += fmt.Sprintf(", at most %d of them", sp.Max)
+	}
+	note := "Sprint started — " + scope + ", one item per session. /todo stop ends it."
+	if sp.NoCommit {
+		note += " No run in it makes a commit."
+	}
+	return note
+}
+
+// sprintNext starts the sprint's next item, or ends the sprint when there is
+// none.
+func (m Model) sprintNext(sp *run.Sprint) (tea.Model, tea.Cmd) {
+	it, ok := sp.Next(m.todoStore)
+	if !ok {
+		return m.endTodoSprint(sp)
+	}
+	if err := sp.Save(m.todos.Root); err != nil {
+		sp.Stop()
+		model, _ := m.systemNotice("The sprint's checkpoint could not be written — " + err.Error())
+		return model.(Model).endTodoSprint(sp)
+	}
+	return m.sprintRun(sp, it.Slug)
+}
+
+// sprintRun starts one item under the sprint. A run the session refuses —
+// an item another surface put in an impossible state between the two
+// readings — ends the sprint rather than leaving a checkpoint nothing is
+// driving and a command that refuses the same way every time it is retried.
+func (m Model) sprintRun(sp *run.Sprint, slug string) (tea.Model, tea.Cmd) {
+	next, cmd := m.beginTodoRun(slug, sp.NoCommit, true)
+	started := next.(Model)
+	if started.todoRun == nil || started.todoRun.Over() {
+		sp.Blocks(slug, "the run could not be started; the notice above says why")
+		ended, _ := started.endTodoSprint(sp)
+		return ended, cmd
+	}
+	return started, cmd
+}
+
+// advanceSprint is the step between two items: the finished one is recorded,
+// the session boundary is crossed, and the next item's run starts in the
+// conversation on the other side.
+//
+// The boundary is the point of the loop. The previous item's conversation is
+// cost and noise to the next one — the checkpoint already carries everything
+// a stage needs — and a session per item is also what makes the record one
+// row per item rather than one row for the night.
+func (m Model) advanceSprint(done string) (tea.Model, tea.Cmd) {
+	sp, live := run.Live(m.todos.Root)
+	if !live {
+		return m, nil
+	}
+	sp.Finished(done)
+	if err := sp.Save(m.todos.Root); err != nil {
+		sp.Stop()
+		model, _ := m.systemNotice("The sprint's checkpoint could not be written — " + err.Error())
+		return model.(Model).endTodoSprint(sp)
+	}
+	// The same boundary /new crosses, through the same function: one
+	// definition of what a session ending and another beginning resets
+	// (model.go).
+	note, save := m.startNewSession()
+	model, _ := m.systemNotice(note)
+	next, cmd := model.(Model).sprintNext(sp)
+	return next, tea.Batch(save, cmd)
+}
+
+// endTodoSprint retires the sprint: the mode the session was in before it
+// goes back, the checkpoint is removed, and the row says which of the closed
+// reasons stopped it.
+//
+// The checkpoint goes rather than being kept with its ending in it. A sprint
+// that has stopped has nothing left to continue — the item it stopped on
+// keeps its own checkpoint, and the note names the command that picks that
+// one up — and a file left behind saying "ended" is a file the next `--all`
+// has to decide about.
+func (m Model) endTodoSprint(sp *run.Sprint) (tea.Model, tea.Cmd) {
+	if sp.Ended == "" {
+		sp.Stop()
+	}
+	run.DiscardSprint(m.todos.Root)
+	if prev, err := agent.ParseMode(sp.PrevMode); err == nil {
+		m.applyMode(prev)
+	}
+	m.signal(observe.SignalRun, "sprint-"+sp.Ended)
+	return m.systemNotice(todoSprintEndNote(sp))
+}
+
+// todoSprintEndNote is what a finished sprint says: how much it got through,
+// and which of the four endings it was. The word matters more than the
+// sentence — a sprint that ran out of ready items and one that stopped on a
+// block leave the same quiet screen, and only one of them is finished.
+func todoSprintEndNote(sp *run.Sprint) string {
+	note := fmt.Sprintf("Sprint over — %s · %s: %s", sp.Count(), sp.Ended, sp.Reason)
+	if sp.Ended == run.SprintBlocked {
+		note += "\nNothing further was attempted: a sprint stops on the first block, because what comes next may rest on the work that did not land."
+	}
+	return note
+}
+
+// sprintCap is the sprint's wall-clock cap on one item, read at the boundary
+// between two stages rather than by a clock of its own. A stage is the
+// smallest thing the runner can judge, so it is also the smallest thing the
+// cap can end: cutting a turn in half would leave a tree nothing has read.
+func (m Model) sprintCap(step run.Step) (run.Step, bool) {
+	st := m.todoRun
+	if m.todos.ItemTimeout <= 0 || !st.Sprinting() || st.Over() {
+		return step, false
+	}
+	switch step.Action {
+	case run.ActionBlocked, run.ActionDone:
+		return step, false
+	}
+	sp, live := run.Live(m.todos.Root)
+	if !live || !sp.Expired(m.todos.ItemTimeout) {
+		return step, false
+	}
+	return st.Block(run.TimedOut(m.todos.ItemTimeout)), true
+}
+
+// sprintCloseWords name the item a sprint's turn was spent on and how far the
+// sprint has got, for the notification a finished turn raises. A reader who
+// left a sprint running and came back to one line about a turn would have to
+// go and look up which of thirty items it was.
+func (m Model) sprintCloseWords() string {
+	st := m.todoRun
+	if !st.Sprinting() {
+		return ""
+	}
+	words := st.Slug + " · " + string(st.Stage)
+	if sp, live := run.Live(m.todos.Root); live {
+		words += " · sprint " + sp.Count()
+	}
+	return words
 }

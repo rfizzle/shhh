@@ -134,7 +134,14 @@ func (m Model) turnCloseWords() (title, body string) {
 	if p := m.roundPause; m.pausedAtRoundLimit() && p != nil {
 		return "Turn stopped at its round limit", fmt.Sprintf("%d of %d rounds used · %s", p.used, p.limit, p.detail())
 	}
-	return "Turn " + lowerFirst(m.turnOutcome.Word()), m.turnCloseData().Summary()
+	summary := m.turnCloseData().Summary()
+	// A sprint's turn is one stage of one item of a set, and the reader who
+	// left it running is owed which — the close block's own account of a turn
+	// is the same three facts whichever item it was spent on.
+	if sprint := m.sprintCloseWords(); sprint != "" {
+		summary = sprint + " · " + summary
+	}
+	return "Turn " + lowerFirst(m.turnOutcome.Word()), summary
 }
 
 // lowerFirst is the close block's state word joined onto "Turn". The block

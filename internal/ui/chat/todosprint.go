@@ -157,27 +157,18 @@ func (m *Model) writeSprintPlan(slugs []string, accepted []int) string {
 	return b.String()
 }
 
-// sprintGoalPlaceholder is the goal a freshly planned sprint carries until
-// somebody writes one. It is a sentence rather than an empty paragraph so
-// the file reads as unfinished instead of as a sprint with no purpose, and
-// nothing sends it to a model: an unwritten goal is not carried into an
-// item's research prompt.
-const sprintGoalPlaceholder = "No goal written yet. `/todo sprint goal <text>` says what this set is for."
+// sprintGoalPlaceholder is the goal a freshly planned sprint is written with;
+// the file itself defines what it means (todo.GoalPlaceholder).
+const sprintGoalPlaceholder = todo.GoalPlaceholder
 
 // sprintGoal is what a run carries into its research stage: the open
-// sprint's goal, or nothing at all. The placeholder counts as nothing —
-// telling a model the goal has not been written is worse than telling it
-// there is no sprint, because it invites the model to invent one.
+// sprint's goal, or nothing at all.
 func (m Model) sprintGoal() string {
 	s := m.todoStore
-	if s == nil || !s.Sprint.Open() {
+	if s == nil {
 		return ""
 	}
-	goal := strings.TrimSpace(s.Sprint.Goal)
-	if goal == sprintGoalPlaceholder {
-		return ""
-	}
-	return goal
+	return s.Sprint.Purpose()
 }
 
 // freeSprintName is the first name in the date's series the archive does

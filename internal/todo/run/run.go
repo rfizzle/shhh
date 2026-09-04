@@ -263,6 +263,10 @@ type State struct {
 	// close, which for a run means the implement stage checks itself
 	// before it hands the tree on.
 	CloseGate bool `json:"close_gate,omitempty"`
+	// InSprint reports an item the sprint took rather than one a person
+	// asked for by name. Nobody is reading a sprint, which is what the
+	// surfaces that only sometimes ask for a reader's attention read it for.
+	InSprint bool `json:"in_sprint,omitempty"`
 	// Checked reports a passing verdict already reached over the tree the
 	// implement stage left, which the verify stage takes instead of running
 	// the same suite again. It is spent by the verify it was recorded for,
@@ -285,6 +289,9 @@ type Options struct {
 	// takes that verdict rather than paying for the same suite twice over
 	// a tree that has not moved between them.
 	CloseGate bool
+	// InSprint reports a run the sprint started rather than one a person
+	// asked for.
+	InSprint bool
 }
 
 // Start begins a run on an item.
@@ -299,6 +306,7 @@ func Start(it todo.Item, session, prevMode string, turn int, opt Options) *State
 		Repo:      opt.Repo,
 		Sprint:    opt.Sprint,
 		CloseGate: opt.CloseGate,
+		InSprint:  opt.InSprint,
 	}
 }
 
@@ -400,6 +408,10 @@ func (s *State) Continue(it todo.Item) Step {
 func (s *State) ClosesWithGate() bool {
 	return s != nil && s.CloseGate && s.Stage == StageImplement
 }
+
+// Sprinting reports a run the sprint is driving, safely on the nil state the
+// surfaces asking hold between runs.
+func (s *State) Sprinting() bool { return s != nil && s.InSprint }
 
 // Checks records what such a close reached, so the verify stage can take a
 // pass instead of running the same suite over a tree that has not moved

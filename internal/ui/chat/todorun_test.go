@@ -1070,23 +1070,34 @@ func TestTodoRun_NoCommitArchivesAndSaysSo(t *testing.T) {
 // after the typo, which is the answer the flag was there to avoid.
 func TestParseTodoRunArgs(t *testing.T) {
 	for _, c := range []struct {
-		args     []string
-		arg      string
-		noCommit bool
-		ok       bool
+		args []string
+		want todoRunArgs
+		ok   bool
 	}{
-		{nil, "", false, true},
-		{[]string{"do-it"}, "do-it", false, true},
-		{[]string{"--next"}, "--next", false, true},
-		{[]string{"--no-commit"}, "", true, true},
-		{[]string{"do-it", "--no-commit"}, "do-it", true, true},
-		{[]string{"--no-commit", "do-it"}, "do-it", true, true},
-		{[]string{"--no-commmit"}, "", false, false},
-		{[]string{"do-it", "and-this"}, "", false, false},
+		{nil, todoRunArgs{}, true},
+		{[]string{"do-it"}, todoRunArgs{arg: "do-it"}, true},
+		{[]string{"--next"}, todoRunArgs{arg: "--next"}, true},
+		{[]string{"--no-commit"}, todoRunArgs{noCommit: true}, true},
+		{[]string{"do-it", "--no-commit"}, todoRunArgs{arg: "do-it", noCommit: true}, true},
+		{[]string{"--no-commit", "do-it"}, todoRunArgs{arg: "do-it", noCommit: true}, true},
+		{[]string{"--all"}, todoRunArgs{all: true}, true},
+		{[]string{"--all", "--max", "2"}, todoRunArgs{all: true, max: 2}, true},
+		{[]string{"--all", "--max=2", "--no-commit"}, todoRunArgs{all: true, max: 2, noCommit: true}, true},
+		{[]string{"--no-commmit"}, todoRunArgs{}, false},
+		{[]string{"do-it", "and-this"}, todoRunArgs{}, false},
+		// A sprint takes its items from the ready list; naming one beside it
+		// is two requests in one command, and a cap on how many items are
+		// worked says nothing about a single item.
+		{[]string{"--all", "do-it"}, todoRunArgs{}, false},
+		{[]string{"--all", "--next"}, todoRunArgs{}, false},
+		{[]string{"--max", "2"}, todoRunArgs{}, false},
+		{[]string{"--all", "--max"}, todoRunArgs{}, false},
+		{[]string{"--all", "--max", "0"}, todoRunArgs{}, false},
+		{[]string{"--all", "--max", "two"}, todoRunArgs{}, false},
 	} {
-		arg, noCommit, ok := parseTodoRunArgs(c.args)
-		if arg != c.arg || noCommit != c.noCommit || ok != c.ok {
-			t.Errorf("parseTodoRunArgs(%v) = %q/%v/%v, want %q/%v/%v", c.args, arg, noCommit, ok, c.arg, c.noCommit, c.ok)
+		got, ok := parseTodoRunArgs(c.args)
+		if got != c.want || ok != c.ok {
+			t.Errorf("parseTodoRunArgs(%v) = %+v/%v, want %+v/%v", c.args, got, ok, c.want, c.ok)
 		}
 	}
 }
@@ -1116,5 +1127,297 @@ func TestTodoCommitCmd_EachGitExitDrawsItsOwnSentence(t *testing.T) {
 	msg := m.todoCommitCmd()().(todoCommitMsg)
 	if msg.err == nil || !strings.Contains(msg.err.Error(), "git is not on the path") {
 		t.Errorf("without git the commit should say so: %v", msg.err)
+	}
+}
+
+// sprintRunModel is runModel with a second ready item, so `--all` has a set
+// to work rather than one item and an ending.
+func sprintRunModel(t *testing.T) (Model, string) {
+	t.Helper()
+	m, root := runModel(t)
+	body := []byte("---\ntitle: Later\nsize: S\n---\n## Tests\n- true\n")
+	must(t, os.WriteFile(filepath.Join(todo.Dir(root), "zz-later.md"), body, 0o644))
+	m.reloadTodos()
+	return m, root
+}
+
+// finishSprintItem drives the item in flight from its research turn to the
+// commit that archives it, which is the only ending the sprint counts as
+// done.
+func finishSprintItem(t *testing.T, m Model, root, slug string) Model {
+	t.Helper()
+	if m.todoRun == nil || m.todoRun.Slug != slug {
+		t.Fatalf("expected a run on %s, got %+v", slug, m.todoRun)
+	}
+	m = answer(t, m, runPlan)
+	m.changes.Add(int64(m.todoRun.Turn), changeset.Record{
+		Path: filepath.Join(root, slug+".go"), Before: "a", After: "b", BeforeExists: true, AfterExists: true,
+	})
+	m = answer(t, m, "Changed "+slug+".go.")
+	updated, _ := m.Update(todoVerifyMsg{slug: slug, ok: true, output: "$ true → exit 0"})
+	m = answer(t, updated.(Model), "verdict: clean")
+	m = answer(t, m, "COMMIT: Do "+slug+"\n\nBecause.\n\nREPORT: ## Report\nSummary: done.")
+	updated, _ = m.Update(todoCommitMsg{slug: slug, files: []string{slug + ".go"}})
+	return updated.(Model)
+}
+
+// The sprint is the whole story: two items, one session each, both archived,
+// and the mode the session started in when it is over.
+func TestTodoSprint_WorksTheReadyListOneItemPerSession(t *testing.T) {
+	m, root := sprintRunModel(t)
+	m.input.SetValue("/todo run --all")
+	updated, _ := m.submitInput()
+	m = updated.(Model)
+	if m.todoRun == nil || !m.todoRun.InSprint || m.todoRun.Slug != "do-it" {
+		t.Fatalf("the sprint should have started the first ready item: %+v", m.todoRun)
+	}
+	sp, live := run.Live(root)
+	if !live || sp.Current != "do-it" {
+		t.Fatalf("the sprint's checkpoint should name the item it is on: %+v", sp)
+	}
+
+	m = finishSprintItem(t, m, root, "do-it")
+
+	// The boundary: turns are numbered from one again, the transcript is the
+	// new session's, and the next item is already going in it.
+	if m.todoRun == nil || m.todoRun.Slug != "zz-later" || !m.todoRun.InSprint {
+		t.Fatalf("the sprint should have crossed into the next item: %+v", m.todoRun)
+	}
+	if m.todoRun.Turn != 1 {
+		t.Fatalf("the next item runs in a session of its own, from turn 1: turn %d", m.todoRun.Turn)
+	}
+	sp, live = run.Live(root)
+	if !live || len(sp.Done) != 1 || sp.Done[0] != "do-it" || sp.Current != "zz-later" {
+		t.Fatalf("the sprint should have recorded the first item: %+v", sp)
+	}
+
+	m = finishSprintItem(t, m, root, "zz-later")
+
+	if m.todoRun != nil {
+		t.Fatalf("the sprint should be over: %+v", m.todoRun)
+	}
+	if _, live := run.Live(root); live {
+		t.Fatal("a sprint that ran out of ready items leaves no checkpoint")
+	}
+	if m.mode != agent.ModeManual {
+		t.Fatalf("the starting mode should be back: %s", m.mode)
+	}
+	store := todo.Load(root)
+	for _, slug := range []string{"do-it", "zz-later"} {
+		if it, ok := store.Find(slug); !ok || !it.Archived {
+			t.Fatalf("%s should be archived: %+v", slug, it)
+		}
+	}
+	if note := m.transcript[len(m.transcript)-1].text; !strings.Contains(note, "Sprint over") || !strings.Contains(note, "empty") {
+		t.Fatalf("the sprint's end should say which ending it was: %q", note)
+	}
+}
+
+// A block stops the sprint where it is: the item that blocked keeps its
+// evidence, and the one behind it is not touched.
+func TestTodoSprint_StopsOnTheFirstBlock(t *testing.T) {
+	m, root := sprintRunModel(t)
+	m.input.SetValue("/todo run --all")
+	updated, _ := m.submitInput()
+	m = updated.(Model)
+	m = answer(t, m, "## Plan: x\n\n1. a\n\nsize: S\nquestions:\n- keep the flag?\n")
+
+	if m.todoRun != nil || m.mode != agent.ModeManual {
+		t.Fatalf("the block should have ended the run and restored the mode: %+v", m.todoRun)
+	}
+	if _, live := run.Live(root); live {
+		t.Fatal("a sprint that stopped on a block leaves no checkpoint")
+	}
+	store := todo.Load(root)
+	if it, _ := store.Find("do-it"); it.Status != todo.StatusBlocked {
+		t.Fatalf("the blocked item keeps its status: %s", it.Status)
+	}
+	if it, _ := store.Find("zz-later"); it.Status != todo.StatusOpen {
+		t.Fatalf("nothing further is attempted: zz-later is %s", it.Status)
+	}
+	said := false
+	for _, e := range m.transcript {
+		if strings.Contains(e.text, "Sprint over") && strings.Contains(e.text, "stops on the first block") {
+			said = true
+		}
+	}
+	if !said {
+		t.Fatal("the sprint's end should say it stopped on the block")
+	}
+}
+
+// --max is a bound on how many items a sprint starts, not on the backlog.
+func TestTodoSprint_MaxRunsOneAndStops(t *testing.T) {
+	m, root := sprintRunModel(t)
+	m.input.SetValue("/todo run --all --max 1")
+	updated, _ := m.submitInput()
+	m = finishSprintItem(t, updated.(Model), root, "do-it")
+
+	if m.todoRun != nil {
+		t.Fatalf("the cap should have ended the sprint: %+v", m.todoRun)
+	}
+	store := todo.Load(root)
+	if it, _ := store.Find("zz-later"); it.Archived || it.Status != todo.StatusOpen {
+		t.Fatalf("the backlog should still hold zz-later, open: %+v", it)
+	}
+	if note := m.transcript[len(m.transcript)-1].text; !strings.Contains(note, "capped") {
+		t.Fatalf("the end should name the cap: %q", note)
+	}
+}
+
+// A sprint that died with its process is picked up by the same command: its
+// checkpoint names the item, and the item's checkpoint names the stage.
+func TestTodoSprint_ResumesFromItsCheckpoint(t *testing.T) {
+	m, root := sprintRunModel(t)
+	m.input.SetValue("/todo run --all")
+	updated, _ := m.submitInput()
+	m = updated.(Model)
+	m = answer(t, m, runPlan)
+	m = answer(t, m, "Changed a.go.")
+	if m.todoRun.Stage != run.StageVerify {
+		t.Fatalf("stage = %s", m.todoRun.Stage)
+	}
+
+	// The session ends with the run part-way through, the way /new ends one.
+	m.startNewSession()
+	if _, live := run.Live(root); !live {
+		t.Fatal("the sprint's checkpoint should survive the session")
+	}
+
+	m.input.SetValue("/todo run --all")
+	updated, _ = m.submitInput()
+	m = updated.(Model)
+	if m.todoRun == nil || m.todoRun.Slug != "do-it" || m.todoRun.Stage != run.StageVerify {
+		t.Fatalf("the sprint should have continued the item it was on: %+v", m.todoRun)
+	}
+	if !m.todoRun.InSprint {
+		t.Fatal("the continued run is still the sprint's")
+	}
+}
+
+// /todo stop over a sprint keeps the item's checkpoint: the stages already
+// done are in the tree, and the stop was aimed at the loop.
+func TestTodoSprint_StopKeepsTheItemsCheckpoint(t *testing.T) {
+	m, root := sprintRunModel(t)
+	m.input.SetValue("/todo run --all")
+	updated, _ := m.submitInput()
+	m = updated.(Model)
+	m = answer(t, m, runPlan)
+	m = answer(t, m, "Changed a.go.")
+
+	m.input.SetValue("/todo stop")
+	updated, _ = m.submitInput()
+	m = updated.(Model)
+
+	if m.todoRun != nil || m.mode != agent.ModeManual {
+		t.Fatalf("the sprint should be over and the mode back: %+v", m.todoRun)
+	}
+	if _, live := run.Live(root); live {
+		t.Fatal("a stopped sprint leaves no checkpoint")
+	}
+	if st, err := run.Load(root, "do-it"); err != nil || st.Over() {
+		t.Fatalf("the item's own checkpoint should be kept: %v", err)
+	}
+	if it, _ := todo.Load(root).Find("do-it"); it.Status != todo.StatusInProgress {
+		t.Fatalf("the item stays in progress with its checkpoint: %s", it.Status)
+	}
+	if note := m.transcript[len(m.transcript)-1].text; !strings.Contains(note, "/todo run do-it") {
+		t.Fatalf("the note should name the command that continues the item: %q", note)
+	}
+}
+
+// The cap is read at the boundary between two stages, which is the smallest
+// thing the runner can end.
+func TestTodoSprint_ItemTimeoutBlocksTheItem(t *testing.T) {
+	m, root := sprintRunModel(t)
+	m.todos.ItemTimeout = time.Minute
+	m.input.SetValue("/todo run --all")
+	updated, _ := m.submitInput()
+	m = updated.(Model)
+
+	sp, live := run.Live(root)
+	if !live {
+		t.Fatal("no sprint")
+	}
+	sp.ItemStarted = time.Now().Add(-time.Hour)
+	must(t, sp.Save(root))
+
+	m = answer(t, m, runPlan)
+	if m.todoRun != nil {
+		t.Fatalf("the cap should have blocked the item: %+v", m.todoRun)
+	}
+	it, _ := todo.Load(root).Find("do-it")
+	if it.Status != todo.StatusBlocked || !strings.Contains(it.Body, "ran past the cap") {
+		t.Fatalf("the evidence should name the cap: %+v", it)
+	}
+}
+
+// The rail says which item the sprint is on and what stage it is at, so a
+// reader who is not watching the transcript can see it moving.
+func TestTodoSprint_RailNamesTheCurrentItem(t *testing.T) {
+	m, _ := sprintRunModel(t)
+	m.input.SetValue("/todo run --all")
+	updated, _ := m.submitInput()
+	m = updated.(Model)
+	block := m.inspectorTodo()
+	if block == nil || block.SprintItem != "do-it" || block.SprintStage != "research" {
+		t.Fatalf("the rail should name the sprint's item and stage: %+v", block)
+	}
+	m.todoRun = nil
+	if block := m.inspectorTodo(); block.SprintItem != "" {
+		t.Fatalf("with no run there is no current item: %+v", block)
+	}
+}
+
+// A sprint is unattended by definition, so it honours the workspace's
+// on-close suite without the reader having turned it on.
+func TestTodoSprint_ArmsTheCloseGate(t *testing.T) {
+	m, _ := sprintRunModel(t)
+	if m.closeGateArmed() {
+		t.Fatal("an interactive session leaves the gate off")
+	}
+	m.todoRun = &run.State{Slug: "do-it", InSprint: true, Stage: run.StageResearch}
+	if !m.closeGateArmed() {
+		t.Fatal("a sprint's run arms the gate at every stage")
+	}
+}
+
+// The notification a finished turn raises names the item and how far the
+// sprint has got, because a reader who left one running has thirty items to
+// choose from when they come back.
+func TestTodoSprint_TurnCloseWordsNameTheItem(t *testing.T) {
+	m, root := sprintRunModel(t)
+	m.input.SetValue("/todo run --all")
+	updated, _ := m.submitInput()
+	m = updated.(Model)
+	_, body := m.turnCloseWords()
+	if !strings.Contains(body, "do-it") || !strings.Contains(body, "research") || !strings.Contains(body, "sprint 0 items done") {
+		t.Fatalf("turn-close words = %q", body)
+	}
+	run.DiscardSprint(root)
+	m.todoRun = nil
+	if _, body := m.turnCloseWords(); strings.Contains(body, "sprint") {
+		t.Fatalf("a session with no sprint says nothing about one: %q", body)
+	}
+}
+
+// /todo status over a sprint says where the loop is above the row the run is
+// drawn on.
+func TestTodoSprint_StatusNamesTheSprint(t *testing.T) {
+	m, _ := sprintRunModel(t)
+	m.input.SetValue("/todo run --all")
+	updated, _ := m.submitInput()
+	m = updated.(Model)
+	m.input.SetValue("/todo status")
+	updated, _ = m.submitInput()
+	next := updated.(Model)
+	said := false
+	for _, e := range next.transcript {
+		if strings.Contains(e.text, "sprint · 0 items done") && strings.Contains(e.text, "on do-it") {
+			said = true
+		}
+	}
+	if !said || next.state != stateFocus {
+		t.Fatalf("status should say where the sprint is and open the row: state=%d", next.state)
 	}
 }

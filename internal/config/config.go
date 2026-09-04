@@ -43,6 +43,16 @@ type TodoConfig struct {
 	// elsewhere. See
 	// docs/capabilities/todo.md#a-run-is-turns-with-gates-between-them.
 	Commit *bool `toml:"commit"`
+	// ItemTimeoutMinutes bounds how long one item of a sprint may take
+	// before the sprint gives up on it. Zero is no cap, which is the
+	// default: the cap ends a run whose work is already in the tree, and
+	// how long is too long for an item is a fact about the project's
+	// checks and its provider rather than about shhh. It is read at the
+	// boundary between two of the run's stages, so it bounds the item
+	// rather than cutting a turn in half and leaving a tree nothing has
+	// read.
+	// See docs/capabilities/todo.md#a-sprint-is-runs-with-a-session-between-them.
+	ItemTimeoutMinutes int `toml:"item_timeout_minutes"`
 }
 
 // PromptsConfig names files whose contents replace shhh's own wordings. The
@@ -733,6 +743,15 @@ func (c Config) ProviderDisplayName() string {
 // a commit, so only a file that says false turns it off.
 func (c *Config) TodoCommitEnabled() bool {
 	return c.Todo.Commit == nil || *c.Todo.Commit
+}
+
+// TodoItemTimeout is the wall-clock cap a sprint holds one item to, and zero
+// where the project set none.
+func (c *Config) TodoItemTimeout() time.Duration {
+	if c.Todo.ItemTimeoutMinutes <= 0 {
+		return 0
+	}
+	return time.Duration(c.Todo.ItemTimeoutMinutes) * time.Minute
 }
 
 // ProviderCacheTTL returns the configured lifetime of the repeated opening.

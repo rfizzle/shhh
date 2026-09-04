@@ -71,6 +71,28 @@ type Sprint struct {
 // disk is a record, and the whole ready list applies again.
 func (sp *Sprint) Open() bool { return sp != nil && sp.Status == SprintOpen }
 
+// GoalPlaceholder is the goal a freshly planned sprint carries until
+// somebody writes one. It is a sentence rather than an empty paragraph so
+// the file reads as unfinished instead of as a sprint with no purpose, and
+// nothing sends it to a model: an unwritten goal is not carried into an
+// item's research prompt.
+const GoalPlaceholder = "No goal written yet. `/todo sprint goal <text>` says what this set is for."
+
+// Purpose is what a run carries into its research stage: the open sprint's
+// goal, or nothing at all. The placeholder counts as nothing — telling a
+// model the goal has not been written is worse than telling it there is no
+// sprint, because it invites the model to invent one.
+func (sp *Sprint) Purpose() string {
+	if !sp.Open() {
+		return ""
+	}
+	goal := strings.TrimSpace(sp.Goal)
+	if goal == GoalPlaceholder {
+		return ""
+	}
+	return goal
+}
+
 // SprintPath is where the active sprint lives under a root.
 func SprintPath(root string) string { return filepath.Join(Dir(root), SprintFile) }
 

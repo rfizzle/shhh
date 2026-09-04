@@ -13,7 +13,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/todo"
@@ -38,6 +40,11 @@ type Todos struct {
 	// the setting's own default is: a host that says nothing gets the
 	// runner's definition of done rather than the quieter one.
 	NoCommit bool
+	// ItemTimeout is how long one item of a sprint may take before the
+	// sprint gives up on it. The zero value is no cap, which is the
+	// setting's default: a cap that fires throws a run away, and what it
+	// should be is a fact about the project rather than about shhh.
+	ItemTimeout time.Duration
 }
 
 // WithTodos enables /todo and the TODO block.
@@ -83,6 +90,13 @@ func (m Model) inspectorTodo() *components.InspectorTodo {
 		Hint:    todoHintRail,
 	}
 	t.Sprint, t.SprintDone, t.SprintTotal = m.inspectorSprint()
+	// A sprint is working one item at a time and the block is where a reader
+	// who is not watching the transcript finds out which. The stage comes
+	// with it because a slug on its own says a sprint is going and not
+	// whether it is moving.
+	if st := m.todoRun; st.Sprinting() {
+		t.SprintItem, t.SprintStage = st.Slug, string(st.Stage)
+	}
 	for _, it := range todoRailOrder(s.Items, m.todoRun) {
 		if len(t.Rows) == todoRailRows {
 			t.More++
@@ -180,11 +194,14 @@ func (m Model) todoCommand(parts []string) (tea.Model, tea.Cmd) {
 		return m.startTodoSprintPlan(parts[3:])
 	}
 	if len(parts) >= 2 && parts[1] == "run" {
-		arg, noCommit, ok := parseTodoRunArgs(parts[2:])
+		opt, ok := parseTodoRunArgs(parts[2:])
 		if !ok {
-			return m.systemNotice("Usage: /todo run [<slug>|--next] [--no-commit]")
+			return m.systemNotice(todoRunUsage)
 		}
-		return m.startTodoRun(arg, noCommit)
+		if opt.all {
+			return m.startTodoSprint(opt)
+		}
+		return m.startTodoRun(opt.arg, opt.noCommit)
 	}
 	if len(parts) == 2 && parts[1] == "stop" {
 		return m.stopTodoRun()
@@ -224,25 +241,70 @@ func todoWriteVerb(args []string) []string {
 	return args[:1]
 }
 
-// parseTodoRunArgs reads what follows `/todo run`: an optional item and the
-// one flag the command takes. A word it does not know is refused rather
-// than taken as the slug, because `/todo run --no-commmit` would otherwise
-// start a committing run on an item named after the typo — which is the
-// answer the person was trying to avoid.
-func parseTodoRunArgs(args []string) (arg string, noCommit, ok bool) {
-	for _, a := range args {
+// todoRunUsage is the one place the command's shape is written, so the
+// refusal and the help cannot come to describe different commands.
+const todoRunUsage = "Usage: /todo run [<slug>|--next|--all] [--no-commit] [--max <n>]"
+
+// todoRunArgs is what follows `/todo run`: which item, and the answers the
+// person gave about how it is worked.
+type todoRunArgs struct {
+	// arg is the slug, `--next`, or empty for the next ready item.
+	arg string
+	// noCommit ends each run after the review with the change in the tree.
+	noCommit bool
+	// all is the sprint: item after item, each in a session of its own.
+	all bool
+	// max bounds how many items the sprint starts, 0 for as many as are
+	// ready.
+	max int
+}
+
+// parseTodoRunArgs reads what follows `/todo run`. A word it does not know is
+// refused rather than taken as the slug, because `/todo run --no-commmit`
+// would otherwise start a committing run on an item named after the typo —
+// which is the answer the person was trying to avoid.
+func parseTodoRunArgs(args []string) (todoRunArgs, bool) {
+	var out todoRunArgs
+	for i := 0; i < len(args); i++ {
+		a := args[i]
 		switch {
 		case a == "--no-commit":
-			noCommit = true
+			out.noCommit = true
+		case a == "--all":
+			out.all = true
+		case a == "--max" || strings.HasPrefix(a, "--max="):
+			value := strings.TrimPrefix(a, "--max=")
+			if value == "--max" {
+				i++
+				if i >= len(args) {
+					return todoRunArgs{}, false
+				}
+				value = args[i]
+			}
+			n, err := strconv.Atoi(value)
+			if err != nil || n < 1 {
+				return todoRunArgs{}, false
+			}
+			out.max = n
 		case strings.HasPrefix(a, "-") && a != "--next":
-			return "", false, false
-		case arg == "":
-			arg = a
+			return todoRunArgs{}, false
+		case out.arg == "":
+			out.arg = a
 		default:
-			return "", false, false
+			return todoRunArgs{}, false
 		}
 	}
-	return arg, noCommit, true
+	// A sprint takes its items from the ready list, so naming one alongside
+	// it — or asking for the next one as well — is two different requests in
+	// one command; and a cap on how many items are worked says nothing about
+	// a run of a single item.
+	if out.all && out.arg != "" {
+		return todoRunArgs{}, false
+	}
+	if out.max > 0 && !out.all {
+		return todoRunArgs{}, false
+	}
+	return out, true
 }
 
 // openTodoPick opens the backlog picker: every active item in working order,

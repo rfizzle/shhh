@@ -73,8 +73,16 @@ type closeGateMsg struct {
 // being asked: nobody is reading it, its next stage commits, and a stage
 // that hands a broken tree to a commit turn is the failure this exists to
 // stop.
+//
+// A sprint is armed for every stage of every item in it, and not only for the
+// one stage that writes. A sprint is unattended by definition — that is what
+// asking for one says — so the toggle a person leaves off for a session they
+// are watching is on here without being asked for. In practice it is the
+// implement stage that runs the suite either way, because the stages around
+// it change nothing for a suite to have an opinion about; what this settles
+// is which of the two sessions has to say so.
 func (m Model) closeGateArmed() bool {
-	return m.closeGate.on || m.todoRun.ClosesWithGate()
+	return m.closeGate.on || m.todoRun.Sprinting() || m.todoRun.ClosesWithGate()
 }
 
 // closeGateSuite is the suite a close should run and how many failing

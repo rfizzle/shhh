@@ -864,6 +864,7 @@ func TestGolden_InspectorRail(t *testing.T) {
 			Todo: &InspectorTodo{
 				Open: 5, Blocked: 1,
 				Sprint: "rail-and-runner", SprintDone: 2, SprintTotal: 6,
+				SprintItem: "rail-todo-block", SprintStage: "review",
 				Rows: []InspectorTodoRow{
 					{Slug: "rail-todo-block", Priority: "H", Size: "M", State: TodoRunning, Note: "review 1/2"},
 					{Slug: "add-todo-runner", Priority: "H", Size: "L", State: TodoWaiting, Note: "needs rail-todo-block"},

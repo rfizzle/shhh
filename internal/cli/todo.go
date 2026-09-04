@@ -262,6 +262,7 @@ func newTodoCmd() *cobra.Command {
 			return report.Fprint(cmd.OutOrStdout(), todoSprintReport(loadTodos(todoCwd())))
 		},
 	})
+	cmd.AddCommand(newTodoRunCmd())
 	cmd.AddCommand(&cobra.Command{
 		Use:   "show <slug>",
 		Short: "Show one backlog item, header and body",

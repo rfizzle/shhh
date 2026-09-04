@@ -458,6 +458,9 @@ var settings = []Setting{
 	{
 		Key: "todo.commit", Kind: KindBool, Default: "on",
 		Desc: "End a backlog run in a commit; off leaves the change in the working tree, which is the answer for a directory that is not a repository.",
+	}, {
+		Key: "todo.item_timeout_minutes", Kind: KindInt, Default: "0 (no cap)",
+		Desc: "How long one item of a sprint may take before it is blocked and the sprint stops; zero leaves it uncapped.",
 	},
 }
 

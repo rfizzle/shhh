@@ -31,6 +31,13 @@ meaning it, and a script can branch on it without reading a word of output.
 | `4` | The provider stopped answering | The waits are already built in — this is what is left after them. Retry later; nothing about the request was wrong |
 | `5` | The checks failed | The turn finished and the suite it closes on did not pass. The tree changed; look at it before you ship it |
 | `6` | A call was refused | Policy denied the last approval the run asked for, so it did not do what it was asked. Re-run with `--yes`, or with `--allow` for the command shapes you meant to permit |
+| `7` | A backlog item blocked | `shhh todo run` only. The item was worked as far as it could go and stopped with the evidence written on it; the work so far is in the tree, uncommitted. Read the item, settle what it names, and reopen it |
+
+The last row is the backlog runner's, and it is one more code in this set
+rather than a set of its own. A blocked item is not a turn that broke — every
+turn in it ended the way turns end — and it is not a failing suite or a
+refusal either. It is the runner's own terminal state, which is the one fact
+none of the codes above can carry.
 
 **The code is a projection, not a second table.** The record already keeps how
 every turn ended, from its own closed set, and the exit status is read off
@@ -123,8 +130,37 @@ A flag the run cannot honour is a usage error rather than a silent no-op.
 of it can neither draw one nor be answered — so it says so, instead of
 starting from nothing while claiming to have resumed.
 
+## The backlog, worked without you
+
+`shhh todo run` is the other unattended shape: not one question answered, but
+one backlog item taken from research through to a commit — or the whole ready
+list, one item at a time, with `--all`.
+
+It is the same machine the session drives and it drives it the same way, with
+the screen taken away. Each stage of a run is one `shhh code --print` in the
+checkout, so a stage is a session and an item is a handful of them; nothing
+carries between two stages except the item's checkpoint, which is what the
+checkpoint has always been for. What a stage produced is read out of its
+transcript whatever status that process left, because a stage that ran out of
+rounds still did work and the machine judges a stage on its answer.
+
+Two of the gates cannot be taken here. The pause asks a person, and there is
+nobody to ask, so a run that reaches it stops with the questions written on
+the item rather than guessing; and a review that would have gone to a second
+agent is taken in the session instead, which is what a session with no
+supervisor already does. Everything else is unchanged — shhh runs the
+verification, shhh makes the commit, and only paths the run itself changed are
+staged.
+
+The status is the run's own ending: `0` for an item that finished, `7` for one
+that blocked. A sprint stops on the first block, so `7` from `--all` means the
+list was not finished and the item that stopped it says why. A sprint that
+dies with its process leaves a checkpoint, and the same command picks it up
+([`todo.md`](todo.md#a-sprint-is-runs-with-a-session-between-them)).
+
 ## Related
 
+- [`todo.md`](todo.md) — the backlog itself, and what a run does with an item
 - [`coding-agent.md`](coding-agent.md) — the loop behind it, the round cap,
   and the checks it closes on
 - [`sessions-and-memory.md`](sessions-and-memory.md) — the slot a run leaves

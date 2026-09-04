@@ -864,8 +864,9 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			// The session's own model reads the session: extraction is a
 			// judgement about the whole conversation, not a status line, and
 			// the cheap summary model is the wrong price point for it.
-			Extractor: todo.NewExtractor(ledger.For(env.prov, meter.SourceBacklog), todo.ExtractConfig{Model: env.modelName}),
-			NoCommit:  !cfg.TodoCommitEnabled(),
+			Extractor:   todo.NewExtractor(ledger.For(env.prov, meter.SourceBacklog), todo.ExtractConfig{Model: env.modelName}),
+			NoCommit:    !cfg.TodoCommitEnabled(),
+			ItemTimeout: cfg.TodoItemTimeout(),
 		})
 	}
 	if mem != nil {

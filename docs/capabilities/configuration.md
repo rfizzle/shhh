@@ -506,6 +506,7 @@ knows it; the profiles under `[agents]` are one key per role, which the
 | Key | Takes | Default | What it decides |
 |---|---|---|---|
 | `commit` | true/false | `on` | End a backlog run in a commit; off leaves the change in the working tree, which is the answer for a directory that is not a repository. |
+| `item_timeout_minutes` | number | 0 (no cap) | How long one item of a sprint may take before it is blocked and the sprint stops; zero leaves it uncapped. |
 
 <!-- END generated settings reference -->
 

@@ -258,6 +258,11 @@ type InspectorTodo struct {
 	// a backlog worked without one has no set to state.
 	Sprint                  string
 	SprintDone, SprintTotal int
+	// SprintItem is the slug a sprint is working now and SprintStage the
+	// stage that item's run is in. Both empty draws no row: a backlog read
+	// while nothing is being worked has no current item to name, and a
+	// sprint's whole claim is that it is moving through the set on its own.
+	SprintItem, SprintStage string
 	Rows                    []InspectorTodoRow
 	// More is how many active items Rows left out.
 	More int
@@ -875,6 +880,14 @@ func (r InspectorRail) todoBlock(width int) (railBlock, bool) {
 	if t.Sprint != "" {
 		b.add(railRow(sty.Dim.Render("sprint")+" "+sty.Body.Render(t.Sprint),
 			sty.Dim.Render(fmt.Sprintf("%d of %d", t.SprintDone, t.SprintTotal)), width, inspectorIndent))
+	}
+	// And which of them is being worked, on its own row under the set. It is
+	// said here as well as on the item's own row because the list below shows
+	// four of a backlog that may hold forty, and where a sprint is up to is
+	// the one fact that must not depend on the current item having fitted.
+	if t.SprintItem != "" {
+		b.add(railRow(sty.Dim.Render("on")+" "+sty.Body.Render(t.SprintItem),
+			sty.Dim.Render(t.SprintStage), width, inspectorIndent))
 	}
 	for _, row := range t.Rows {
 		glyph, style := todoRowTone(row.State)
