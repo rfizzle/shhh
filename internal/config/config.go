@@ -882,3 +882,21 @@ func Paths() []string {
 	}
 	return out
 }
+
+// KeymapPaths returns the keybinding file's paths in the same search order,
+// one beside each config file: the layout that holds config.toml holds
+// everything the user wrote for shhh, the way the agent profiles and the
+// skills directories already sit there.
+//
+// It is a file of its own rather than a table in config.toml, and it is the
+// user's alone — a checkout does not layer one. A repository that could move
+// a key would be a repository deciding what the keys under someone's hands
+// do, which is a worse trade than the one project settings already make.
+// See docs/capabilities/configuration.md#the-keymap-file.
+func KeymapPaths() []string {
+	var out []string
+	for _, p := range Paths() {
+		out = append(out, filepath.Join(filepath.Dir(p), "keybindings.toml"))
+	}
+	return out
+}

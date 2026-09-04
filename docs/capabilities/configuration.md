@@ -383,6 +383,51 @@ and what it buys — one layout on every platform, and the containment deny
 mask, which is why an approved command cannot read the log any more than it
 can read the database beside it.
 
+## The keymap file
+
+Keys move in a file of their own, `keybindings.toml`, beside `config.toml` and
+the agents and skills directories. It is not a section of the config: a
+setting is a value the program reads while it is running, and a keybinding is
+read once before anything draws, because the hint that offers a key and the
+handler that answers it are one declaration and they have to move together.
+
+A file names a key by where it lives in the keyboard shhh ships — the surface
+group, then the act — and gives the keystrokes it should answer to, one as
+text or several as a list. Nothing else is in it. The words beside a key stay
+the program's, because a key that moved is still the same act, and which
+surface a key belongs to is not a thing a file gets to decide.
+
+It is the user's file and a checkout does not layer one, unlike the settings
+above. A repository that could move a key would be a repository deciding what
+the keys under someone's hands do, which is a worse trade than project
+settings already make.
+
+**A file is applied whole or refused whole.** Half a file is a keyboard nobody
+has ever seen, and the person holding it would be debugging against a document
+describing neither their file nor the default. A refusal says what it refused
+and the keyboard shhh ships runs instead — out loud, rather than swallowed: a
+session quietly running neither keyboard is the failure this guards against.
+
+Two things a file cannot do.
+
+**It cannot leave one surface answering a keystroke with two acts.** That is
+the rule the register of keyed surfaces exists to make checkable
+([why](../interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard)),
+and a file that broke it would raise nothing at the keyboard — it would
+produce whichever act the code happened to check first, on one screen and not
+the one beside it. The refusal names the surface, the keystroke and both acts.
+
+**It cannot put a destructive act on a movement key.** Ending a process,
+deleting a saved chat, forcing an undo past its confirm: these are the keys a
+reader must not reach by reflex, which is why the agent manager kills on a
+capital and gave up the lower-case letter to do it
+([the departure](../interface/departures.md#the-agent-manager-kills-on-a-capital)).
+A file that took the letter back would undo that decision from outside the
+program, where no review sees it.
+
+Modal editing is not this. A file moves keys inside the keyboard that already
+exists; it does not add a mode with a keyboard of its own.
+
 ## Every setting
 
 Every key is declared once, and this table is that declaration printed. The

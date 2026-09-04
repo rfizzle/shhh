@@ -26,9 +26,12 @@
 //	  answered by the same handler, meaning something more specific in each
 //	  place. The binding fixes the key and the words a surface has no better
 //	  ones for; a surface with better ones keeps them (see Words).
-//	- It is not a rebinding layer. Nothing here reads config yet. The shape
-//	  is the one that would make rebinding a config change rather than a
-//	  code change, and that is as far as the register goes.
+//	- It is not itself the rebinding layer. A file can move a key, and
+//	  keymap.go is what reads one: it rewrites these declarations once,
+//	  before anything draws, so a moved key is still one declaration and a
+//	  hint and its handler still cannot disagree. This file holds the
+//	  keyboard shhh ships and the words for it — nothing in it branches on
+//	  what a file said, and nothing outside keymap.go reads a file at all.
 package keys
 
 import (

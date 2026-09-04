@@ -86,7 +86,16 @@ screen and neither names the keyboard's owner *in words*, the screen is
 under-specified.
 
 Every key in the product is declared once, in a single register, so a hint and
-its handler cannot disagree. A pointer is exempt — clicking a row opens it the
+its handler cannot disagree. Declaring it once is also what lets it move: a
+[keymap file](../capabilities/configuration.md#the-keymap-file) rewrites the
+declaration before anything draws, so a moved key is offered and answered in
+the same place it always was. What the file may not do is break the rule the
+register exists to hold — one surface, one keystroke, one act — or put an act
+that ends something under a key a reader presses to move. A file that did
+either is refused whole, because a keyboard half-moved is one no document
+describes.
+
+A pointer is exempt — clicking a row opens it the
 way Enter would, without taking the keyboard from anyone. It opens it by a
 different route, because the two inputs have different things to spend: the
 key has one row under its cursor and reaches a row's depths by being pressed

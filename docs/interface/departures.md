@@ -100,6 +100,12 @@ product, including this one, and a movement key that also kills a process is
 the worst kind of false offer. Cancelling and killing are the same letter in
 two cases, and the pair reads as one escalation.
 
+The rule outlives this surface. A
+[keymap file](../capabilities/configuration.md#the-keymap-file) can move keys,
+and it is refused where it would put a destructive act — killing, deleting,
+forcing an undo past its confirm — under a key that moves the cursor. A
+decision taken here to keep a reflex safe is not one a file gets to reverse.
+
 ## The scroll gutter is a dashed track under a block thumb
 
 The design gives the gutter the same rule the frame and the pane divider draw,
