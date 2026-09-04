@@ -448,6 +448,41 @@ func TestSelection_CopiesNoStyling(t *testing.T) {
 	}
 }
 
+// The drag copies the way the copy key does: the terminal is offered the
+// text before any tool on this machine, which over ssh is the difference
+// between the reader's clipboard and a server nobody is sitting at. The
+// write leaves with nothing on PATH to do it.
+func TestSelection_TheTerminalTakesItWithNoToolOnPath(t *testing.T) {
+	c := &clip{}
+	m := selectModel(t, c, entry{kind: entryUser, text: "a question about the parser"})
+	m.copyFn = func(string) clipboard.Result {
+		t.Error("the terminal takes the copy before any tool is looked for")
+		return clipboard.Result{Warning: "no clipboard tool found"}
+	}
+	m.caps.Clipboard = true
+	line := lineOf(t, m, "a question about the parser")
+
+	x0, y0 := at(t, m, line, 0)
+	updated, _ := m.Update(mousePress(x0, y0))
+	m = updated.(Model)
+	x1, y1 := at(t, m, line, endOf(m, line))
+	updated, _ = m.Update(mouseMotion(x1, y1))
+	m = updated.(Model)
+	updated, cmd := m.Update(mouseRelease(x1, y1))
+	m = updated.(Model)
+
+	want, ok := clipboard.OSC52("a question about the parser")
+	if !ok {
+		t.Fatal("the row should fit one clipboard write")
+	}
+	if got := notifyRaw(t, cmd); got != want {
+		t.Errorf("wrote %q, want %q", got, want)
+	}
+	if m.selNotice == "" {
+		t.Fatal("a copy that went should caption the notice rail")
+	}
+}
+
 // --- edge auto-scroll -----------------------------------------------------
 
 // tallModel is a transcript several viewport-heights long.

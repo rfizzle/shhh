@@ -26,12 +26,11 @@ import (
 // nothing to copy hands the letter back to the draft, the way [-] does with
 // nothing open.
 //
-// It is the one copy that can offer the terminal's own clipboard (copyText),
-// because it is the one that can hand a command back for the write. /copy
-// and the drag selection reach the same tools through the same copyFn, but
-// a slash command answers with a string and a selection with a model, so
-// neither has anywhere to put the sequence; over ssh those two still copy to
-// the machine nobody is sitting at.
+// The copy is the shared one (copyText): the terminal is offered the text
+// before any tool on this machine, which is the copy that survives ssh.
+// /copy and the drag selection take the same path, so all three reach the
+// clipboard the reader is sitting at and all three fall back to the same
+// tools where the terminal will not take a write.
 func (m Model) copyFocusedRow(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	es := *m.entries()
 	text, what := m.rowCopyText(es, m.focusIdx)
@@ -42,11 +41,8 @@ func (m Model) copyFocusedRow(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	// selection's already go: a missing clipboard tool is a fact about the
 	// machine the reader has to act on, not a caption.
 	res, write := m.copyText(text)
-	switch {
-	case res.Warning != "":
-		return m.focusNotice(res.Warning)
-	case !res.OK:
-		return m.focusNotice("Copying is not available in this session.")
+	if note := copyFailure(res); note != "" {
+		return m.focusNotice(note)
 	}
 	n := strings.Count(text, "\n") + 1
 	noun := "lines"

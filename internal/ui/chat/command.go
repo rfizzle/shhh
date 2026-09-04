@@ -208,6 +208,12 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 		next, cmd := m.systemNotice(note)
 		return next, tea.Batch(cmd, read)
 
+	case name == "/copy":
+		// The last response onto the clipboard. Answered here rather than
+		// in the handler table below because the copy may be a write the
+		// terminal takes, and a row of that table has nowhere to put one.
+		return m.copyCommand(parts)
+
 	case text == "/compact":
 		return m.startCompact()
 
@@ -430,7 +436,6 @@ func buildSlashHandlers() map[string]slashHandler {
 		"/plan":        slashPlan,
 		"/rewind":      slashRewind,
 		"/branches":    slashBranches,
-		"/copy":        slashCopy,
 		"/save":        slashSave,
 		"/load":        slashLoad,
 		"/chats":       slashChats,
@@ -653,25 +658,34 @@ func slashBranches(m *Model, parts []string) string {
 	return m.switchBranch(branches, strings.Join(parts[1:], " "))
 }
 
-func slashCopy(m *Model, parts []string) string {
+// copyCommand is /copy: the last response onto the clipboard, or with
+// `code`, only the code blocks in it.
+//
+// The terminal is offered the text before any tool on this machine
+// (copyText), which is what carries the copy back over ssh to the reader
+// instead of leaving it on the server they are connected to. So the answer
+// is a clipboard write as well as a line for the transcript, which is more
+// than a row of the handler table can hand back.
+func (m Model) copyCommand(parts []string) (tea.Model, tea.Cmd) {
 	text := m.lastAssistantText()
 	if text == "" {
-		return "Nothing to copy yet."
+		return m.systemNotice("Nothing to copy yet.")
 	}
 	what := "response"
 	if len(parts) > 1 && parts[1] == "code" {
 		blocks := extractCodeBlocks(text)
 		if len(blocks) == 0 {
-			return "No code blocks in the last response."
+			return m.systemNotice("No code blocks in the last response.")
 		}
 		text = strings.Join(blocks, "\n")
 		what = "code"
 	}
-	cr := m.copyFn(text)
-	if cr.Warning != "" {
-		return cr.Warning
+	res, write := m.copyText(text)
+	if note := copyFailure(res); note != "" {
+		return m.systemNotice(note)
 	}
-	return "Copied last " + what + " to clipboard."
+	next, cmd := m.systemNotice("Copied last " + what + " to clipboard.")
+	return next, tea.Batch(cmd, write)
 }
 
 func slashSave(m *Model, parts []string) string {

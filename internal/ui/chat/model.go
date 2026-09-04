@@ -1210,7 +1210,9 @@ func (m Model) conversationTurns() int {
 
 func (m Model) Messages() []provider.Message { return m.agent.Messages() }
 
-// copyText puts text on a clipboard and says which one took it.
+// copyText puts text on a clipboard and says which one took it. Every copy
+// the session offers goes through here — the copy key, /copy and the drag
+// selection — so which clipboard a copy reaches is decided in one place.
 //
 // The terminal is asked first: it is the copy that crosses an ssh
 // connection, because the write is answered by the terminal the reader is
@@ -1230,6 +1232,22 @@ func (m Model) copyText(text string) (clipboard.Result, tea.Cmd) {
 		return clipboard.Result{}, nil
 	}
 	return m.copyFn(text), nil
+}
+
+// copyFailure is what to tell the reader about a copy that did not go, and
+// "" for one that did: one fact about the machine deserves one wording,
+// wherever each of the three copies renders it.
+func copyFailure(res clipboard.Result) string {
+	switch {
+	case res.Warning != "":
+		return res.Warning
+	case !res.OK:
+		// No terminal took the write and there is no tool runner to fall
+		// back to: a front end built without one, which is a different
+		// thing from a machine that is missing the program.
+		return "Copying is not available in this session."
+	}
+	return ""
 }
 
 func (m Model) Init() tea.Cmd {

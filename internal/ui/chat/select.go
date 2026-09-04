@@ -322,7 +322,9 @@ func (m Model) releaseSelection(x, y int) (tea.Model, tea.Cmd) {
 }
 
 // copySelection puts the selected text on the clipboard and says what
-// happened.
+// happened. The terminal is asked before any tool on this machine
+// (model.go), so a selection dragged over ssh lands on the clipboard the
+// reader is sitting at.
 //
 // The two outcomes report in different places on purpose. A success is worth
 // one transient line and nothing more, so it goes on the notice rail,
@@ -344,17 +346,15 @@ func (m Model) copySelection() (tea.Model, tea.Cmd) {
 		m.refreshTranscript()
 		return m, nil
 	}
-	if m.copyFn == nil {
+	res, write := m.copyText(text)
+	if note := copyFailure(res); note != "" {
 		m.selNotice = ""
-		return m.systemNotice("Copying is not available in this session.")
-	}
-	res := m.copyFn(text)
-	if res.Warning != "" {
-		m.selNotice = ""
-		return m.systemNotice(res.Warning)
+		return m.systemNotice(note)
 	}
 	m.selNotice = copiedNotice(text)
-	return m, nil
+	// The caption stands as soon as the write leaves, because a write to the
+	// terminal draws no reply to wait for.
+	return m, write
 }
 
 // copiedNotice sizes the copy in the units the reader was working in — rows
