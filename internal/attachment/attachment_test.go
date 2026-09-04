@@ -39,6 +39,34 @@ func TestSniff_ClassifiesByBytesNotExtension(t *testing.T) {
 	}
 }
 
+func TestSniff_AudioKeepsTheNameItsFormatIsListedUnder(t *testing.T) {
+	// The sniffing rules name a RIFF/WAVE file `audio/wave` and an Ogg
+	// stream `application/ogg`; no vendor's list of accepted formats has
+	// either on it, so what is carried is the name the lists do use.
+	for _, tc := range []struct {
+		name  string
+		data  []byte
+		media string
+	}{
+		{"clip.wav", []byte("RIFF\x00\x00\x00\x00WAVE"), "audio/wav"},
+		{"call.ogg", []byte("OggS\x00"), "audio/ogg"},
+		{"memo.mp3", []byte("ID3\x04\x00\x00"), "audio/mpeg"},
+		{"take.aiff", []byte("FORM\x00\x00\x00\x00AIFF"), "audio/aiff"},
+	} {
+		kind, mt, err := Sniff(tc.name, tc.data)
+		if err != nil {
+			t.Fatalf("sniff %s: %v", tc.name, err)
+		}
+		if kind != provider.AttachmentAudio || mt != tc.media {
+			t.Fatalf("%s got %s/%s, want audio/%s", tc.name, kind, mt, tc.media)
+		}
+	}
+	// A name is not evidence: renaming a binary does not make it a recording.
+	if _, _, err := Sniff("memo.mp3", []byte("\x7fELF\x02\x01\x01\x00\x00\x00")); err == nil {
+		t.Fatal("an extension alone should not carry bytes inline")
+	}
+}
+
 func TestSniff_RefusesBytesItCannotCarry(t *testing.T) {
 	// An ELF header: binary, not an image, not text.
 	if _, _, err := Sniff("a.out", []byte("\x7fELF\x02\x01\x01\x00\x00\x00")); err == nil {

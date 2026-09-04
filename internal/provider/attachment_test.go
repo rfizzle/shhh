@@ -20,6 +20,30 @@ var testNotes = Attachment{
 	Data:      []byte("# heading\n"),
 }
 
+// The recordings the sniffer can produce, one per format the dialects
+// disagree about: an MP3 both OpenAI dialects name, a WAV they name under a
+// media type the sniffing rules do not use, and an Ogg only Gemini takes.
+var (
+	testMP3 = Attachment{
+		Kind:      AttachmentAudio,
+		Name:      "memo.mp3",
+		MediaType: "audio/mpeg",
+		Data:      []byte("ID3\x04"),
+	}
+	testWAV = Attachment{
+		Kind:      AttachmentAudio,
+		Name:      "clip.wav",
+		MediaType: "audio/wav",
+		Data:      []byte("RIFF\x00\x00\x00\x00WAVE"),
+	}
+	testOGG = Attachment{
+		Kind:      AttachmentAudio,
+		Name:      "call.ogg",
+		MediaType: "audio/ogg",
+		Data:      []byte("OggS\x00"),
+	}
+)
+
 func TestAttachment_DataURL(t *testing.T) {
 	if got, want := testPNG.DataURL(), "data:image/png;base64,iVBORw=="; got != want {
 		t.Fatalf("DataURL = %q, want %q", got, want)
@@ -152,5 +176,131 @@ func TestToGeminiContents_InlineBlobLeads(t *testing.T) {
 func TestAttachmentBytes(t *testing.T) {
 	if got := AttachmentBytes([]Attachment{testPNG, testNotes}); got != len(testPNG.Data)+len(testNotes.Data) {
 		t.Fatalf("AttachmentBytes = %d", got)
+	}
+}
+
+func TestAudioMediaType_RenamesWhatTheSnifferAnswers(t *testing.T) {
+	// The two the sniffing rules and the vendors' lists disagree about.
+	if got, ok := AudioMediaType("audio/wave"); !ok || got != "audio/wav" {
+		t.Fatalf("audio/wave = %q, %v", got, ok)
+	}
+	if got, ok := AudioMediaType("application/ogg"); !ok || got != "audio/ogg" {
+		t.Fatalf("application/ogg = %q, %v", got, ok)
+	}
+	// And the two they agree about.
+	for _, mt := range []string{"audio/mpeg", "audio/aiff"} {
+		if got, ok := AudioMediaType(mt); !ok || got != mt {
+			t.Fatalf("%s = %q, %v", mt, got, ok)
+		}
+	}
+	// A score is not a recording, and neither is a picture.
+	for _, mt := range []string{"audio/midi", "image/png", "application/octet-stream"} {
+		if got, ok := AudioMediaType(mt); ok {
+			t.Fatalf("%s carried as %q", mt, got)
+		}
+	}
+}
+
+func TestToGeminiContents_AudioRidesAsAnInlineBlob(t *testing.T) {
+	contents, _ := toGeminiContents([]Message{{
+		Role:        RoleUser,
+		Content:     "what is said here?",
+		Attachments: []Attachment{testMP3, testOGG},
+	}})
+	if len(contents) != 1 || len(contents[0].Parts) != 3 {
+		t.Fatalf("got %#v", contents)
+	}
+	// Gemini's own list spells MP3 differently from every other surface.
+	mp3 := contents[0].Parts[0].InlineData
+	if mp3 == nil || mp3.MIMEType != "audio/mp3" || string(mp3.Data) != string(testMP3.Data) {
+		t.Fatalf("mp3 blob = %#v", mp3)
+	}
+	ogg := contents[0].Parts[1].InlineData
+	if ogg == nil || ogg.MIMEType != "audio/ogg" {
+		t.Fatalf("ogg blob = %#v", ogg)
+	}
+	if contents[0].Parts[2].Text != "what is said here?" {
+		t.Fatal("the sentence should come last")
+	}
+}
+
+func TestToGeminiContents_AFormatItsListOmitsGoesAsText(t *testing.T) {
+	flac := Attachment{Kind: AttachmentAudio, Name: "take.flac", MediaType: "audio/flac", Data: []byte("fLaC")}
+	contents, _ := toGeminiContents([]Message{{Role: RoleUser, Attachments: []Attachment{flac}}})
+	part := contents[0].Parts[0]
+	if part.InlineData != nil {
+		t.Fatalf("a format the list omits should not go inline: %#v", part.InlineData)
+	}
+	if !strings.Contains(part.Text, "could not be sent") || !strings.Contains(part.Text, "take.flac") {
+		t.Fatalf("fallback part = %q", part.Text)
+	}
+}
+
+func TestToResponseItems_AudioIsBareBase64AndAFormatToken(t *testing.T) {
+	items, _ := toResponseItems([]Message{{
+		Role:        RoleUser,
+		Content:     "transcribe this",
+		Attachments: []Attachment{testMP3, testWAV},
+	}}, false)
+	if len(items) != 1 || len(items[0].Content) != 3 {
+		t.Fatalf("got %#v", items)
+	}
+	mp3 := items[0].Content[0]
+	if mp3.Type != "input_audio" || mp3.InputAudio == nil {
+		t.Fatalf("mp3 part = %#v", mp3)
+	}
+	// Bare base64, not the data URL an image rides on.
+	if mp3.InputAudio.Data != testMP3.Base64() || mp3.InputAudio.Format != "mp3" {
+		t.Fatalf("mp3 audio = %#v", mp3.InputAudio)
+	}
+	if strings.HasPrefix(mp3.InputAudio.Data, "data:") {
+		t.Fatal("the audio part takes base64 without a data URL prefix")
+	}
+	if wav := items[0].Content[1]; wav.InputAudio == nil || wav.InputAudio.Format != "wav" {
+		t.Fatalf("wav part = %#v", wav)
+	}
+	if items[0].Content[2].Type != "input_text" {
+		t.Fatalf("text part = %#v", items[0].Content[2])
+	}
+	// The nested object must stay out of every other part's JSON.
+	b, err := json.Marshal(items[0].Content[2])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(b), "input_audio") {
+		t.Fatalf("text part carries an empty audio object: %s", b)
+	}
+}
+
+func TestToResponseItems_AFormatTheAudioPartOmitsGoesAsText(t *testing.T) {
+	items, _ := toResponseItems([]Message{{Role: RoleUser, Attachments: []Attachment{testOGG}}}, false)
+	part := items[0].Content[0]
+	if part.Type != "input_text" || part.InputAudio != nil {
+		t.Fatalf("ogg part = %#v", part)
+	}
+	if !strings.Contains(part.Text, "could not be sent") || !strings.Contains(part.Text, "call.ogg") {
+		t.Fatalf("fallback part = %q", part.Text)
+	}
+}
+
+func TestAudioDegradesOnTheDialectsWithNoPartForIt(t *testing.T) {
+	// Chat completions: the endpoint takes a recording and the client this
+	// dialect goes through has no field for one, so the note is what rides.
+	parts := toOpenAIMessages([]Message{{
+		Role:        RoleUser,
+		Content:     "listen",
+		Attachments: []Attachment{testMP3},
+	}})[0].MultiContent
+	if len(parts) != 2 || parts[0].ImageURL != nil {
+		t.Fatalf("got %#v", parts)
+	}
+	if !strings.Contains(parts[0].Text, "could not be sent") || !strings.Contains(parts[0].Text, "memo.mp3") {
+		t.Fatalf("fallback part = %q", parts[0].Text)
+	}
+	// The Messages API takes no recording at all.
+	_, out := toAnthropicMessages([]Message{{Role: RoleUser, Attachments: []Attachment{testMP3}}})
+	block := out[0].Content[0]
+	if block.OfText == nil || !strings.Contains(block.OfText.Text, "could not be sent") {
+		t.Fatalf("anthropic block = %#v", block)
 	}
 }

@@ -134,7 +134,8 @@ func FromBytes(name string, data []byte) (provider.Attachment, error) {
 
 // Sniff decides what a set of bytes is. The extension is consulted only to
 // sharpen a media type the content sniffer already agrees with — bytes win,
-// so a .png that is really a JPEG is sent as one.
+// so a .png that is really a JPEG is sent as one, and a recording renamed to
+// .wav is refused rather than sent under a format it is not in.
 func Sniff(name string, data []byte) (provider.AttachmentKind, string, error) {
 	detected := http.DetectContentType(data)
 	if i := strings.IndexByte(detected, ';'); i >= 0 {
@@ -146,12 +147,17 @@ func Sniff(name string, data []byte) (provider.AttachmentKind, string, error) {
 	case "application/pdf":
 		return provider.AttachmentDocument, detected, nil
 	}
+	// A recording keeps the name the vendors' format lists give it, which is
+	// not always the one the sniffing rules answer with.
+	if mediaType, ok := provider.AudioMediaType(detected); ok {
+		return provider.AttachmentAudio, mediaType, nil
+	}
 	// DetectContentType calls anything textish text/plain; source files are
 	// the common case here, so the extension names them more usefully.
 	if utf8.Valid(data) && !hasNUL(data) {
 		return provider.AttachmentText, textMediaType(name), nil
 	}
-	return "", "", fmt.Errorf("%s is %s — shhh attaches images, PDFs, and text files",
+	return "", "", fmt.Errorf("%s is %s — shhh attaches images, PDFs, audio, and text files",
 		name, detected)
 }
 

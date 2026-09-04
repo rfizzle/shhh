@@ -1,7 +1,7 @@
 package chat
 
-// Attachments: images and files staged for the next message. The
-// an attachment shows as a chip carrying its mark, its name and its size —
+// Attachments: pictures, recordings and files staged for the next message. An
+// attachment shows as a chip carrying its mark, its name and its size —
 // and, where it is text, how far it runs — on the frame's staged rail while
 // it waits and on the user's own transcript row once it has gone. Nothing
 // here draws the bytes: `/paste show` is the one surface that does, opened by
@@ -14,8 +14,9 @@ package chat
 // screenshot or the files a file manager copied — and falls back to pasting
 // text into the draft when the clipboard holds only text, so the chord never
 // stops doing what it used to. A path dragged into the terminal arrives as a
-// bracketed paste and is attached when it points at an image or a document,
-// because that is what dragging one in means. A paste of text too big to
+// bracketed paste and is attached when it points at anything but a text file
+// — a screenshot, a PDF, a voice memo — because that is what dragging one of
+// those in means. A paste of text too big to
 // compose around is staged as a file of its own rather than typed. `/paste`
 // is the explicit form, and the only one that can name a file the clipboard
 // never touched.
@@ -256,12 +257,16 @@ func (m Model) attachmentChips() []components.AttachmentChip {
 
 // chipKind maps what the sniffer decided onto the mark the strip draws. The
 // two vocabularies stay separate on purpose: one is how a provider carries
-// the bytes, the other is a glyph in a closed set.
+// the bytes, the other is a glyph in a closed set — which is why a recording
+// takes the document mark rather than a fourth glyph. Both are one artifact
+// the model takes whole and neither has lines to count, and the other reading
+// available, the text mark, promises a body in the prompt that a recording
+// has not got.
 func chipKind(k provider.AttachmentKind) components.ChipKind {
 	switch k {
 	case provider.AttachmentImage:
 		return components.ChipImage
-	case provider.AttachmentDocument:
+	case provider.AttachmentDocument, provider.AttachmentAudio:
 		return components.ChipDocument
 	}
 	return components.ChipText
@@ -456,9 +461,9 @@ func (m Model) renderPasteDrop() string {
 
 // pastedFileAttachment reports the file a bracketed paste was pointing at,
 // when attaching it is the only sensible reading of the paste. A dragged-in
-// screenshot is that; a pasted path to a source file is not — the agent
-// reads those with a tool, and swallowing the text would take away the only
-// way to write one into a sentence.
+// screenshot or voice memo is that; a pasted path to a source file is not —
+// the agent reads those with a tool, and swallowing the text would take away
+// the only way to write one into a sentence.
 // It runs on the event loop — a paste is a keystroke — so it only peeks at
 // the file's first bytes; the read that attaches it happens in a command.
 func pastedFileAttachment(pasted string) (string, bool) {

@@ -9,6 +9,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 var pngHeader = append([]byte("\x89PNG\r\n\x1a\n"), make([]byte, 32)...)
@@ -221,12 +222,22 @@ type errTooBig struct{}
 
 func (errTooBig) Error() string { return "shot.png is too big" }
 
-// A dragged-in image attaches; a pasted path to a source file stays text,
-// because that is the only way to write one into a sentence.
-func TestPastedFileAttachment_OnlyClaimsImagesAndDocuments(t *testing.T) {
+// A dragged-in image or recording attaches; a pasted path to a source file
+// stays text, because that is the only way to write one into a sentence.
+func TestPastedFileAttachment_ClaimsEverythingButText(t *testing.T) {
 	png := writePNG(t, "shot.png")
 	if got, ok := pastedFileAttachment(png); !ok || got != png {
 		t.Fatalf("pastedFileAttachment(%q) = %q, %v", png, got, ok)
+	}
+
+	// A voice memo dragged in is the same gesture. It is peeked at on the
+	// event loop, so what decides it is the header and not the extension.
+	memo := filepath.Join(t.TempDir(), "memo.mp3")
+	if err := os.WriteFile(memo, []byte("ID3\x04\x00\x00\x00\x00\x00\x00"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if got, ok := pastedFileAttachment(memo); !ok || got != memo {
+		t.Fatalf("pastedFileAttachment(%q) = %q, %v", memo, got, ok)
 	}
 
 	src := filepath.Join(t.TempDir(), "main.go")
@@ -494,6 +505,22 @@ func TestAttachmentChips_TextCarriesItsHeightAndNothingElseDoes(t *testing.T) {
 	}
 	if chips[1].Lines != 0 {
 		t.Fatalf("a picture has no lines to report, got %d", chips[1].Lines)
+	}
+}
+
+// The mark set is closed at three, so a recording shares the document mark:
+// both are one artifact the model takes whole, and neither has a height.
+func TestAttachmentChips_ARecordingTakesTheDocumentMark(t *testing.T) {
+	m := frameModel(t, 100, 40)
+	m.attachments = []provider.Attachment{
+		{Kind: provider.AttachmentAudio, Name: "memo.mp3", MediaType: "audio/mpeg", Data: []byte("ID3\x04")},
+	}
+	chips := m.attachmentChips()
+	if chips[0].Kind != components.ChipDocument {
+		t.Fatalf("the recording chip is marked %v, want the document mark", chips[0].Kind)
+	}
+	if chips[0].Lines != 0 {
+		t.Fatalf("a recording has no lines to report, got %d", chips[0].Lines)
 	}
 }
 

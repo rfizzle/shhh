@@ -159,10 +159,21 @@ type responseContent struct {
 	Type string `json:"type"`
 	Text string `json:"text,omitempty"`
 	// The attachment forms: an inline image is a data URL, an inline
-	// document is a filename plus the same data URL under another name.
-	ImageURL string `json:"image_url,omitempty"`
-	Filename string `json:"filename,omitempty"`
-	FileData string `json:"file_data,omitempty"`
+	// document is a filename plus the same data URL under another name, and
+	// an inline recording is a nested object of its own.
+	ImageURL   string              `json:"image_url,omitempty"`
+	Filename   string              `json:"filename,omitempty"`
+	FileData   string              `json:"file_data,omitempty"`
+	InputAudio *responseInputAudio `json:"input_audio,omitempty"`
+}
+
+// responseInputAudio is an inline recording. It is the one attachment form on
+// this API that is not a data URL: the bytes go in bare base64 with no
+// `data:` prefix and no media type in front of them, and the format is named
+// beside them as a bare token — `mp3`, not `audio/mpeg`.
+type responseInputAudio struct {
+	Data   string `json:"data"`
+	Format string `json:"format"`
 }
 
 // responsesTool is a function tool. The Responses API flattens what chat
@@ -323,8 +334,9 @@ func toResponseItems(messages []Message, replayReasoning bool) ([]responseItem, 
 }
 
 // responsesAttachmentContent renders attachments as Responses input parts.
-// This API takes both an image and a document inline, so only text
-// attachments use the shared text form.
+// This API takes an image, a document and a recording inline, so text
+// attachments use the shared text form — and so does a recording in either of
+// the formats the audio part does not name.
 func responsesAttachmentContent(atts []Attachment) []responseContent {
 	var out []responseContent
 	for _, a := range atts {
@@ -337,11 +349,37 @@ func responsesAttachmentContent(atts []Attachment) []responseContent {
 				Filename: a.Name,
 				FileData: a.DataURL(),
 			})
+		case AttachmentAudio:
+			if format, ok := openAIAudioFormat(a.MediaType); ok {
+				out = append(out, responseContent{
+					Type:       "input_audio",
+					InputAudio: &responseInputAudio{Data: a.Base64(), Format: format},
+				})
+			} else {
+				out = append(out, responseContent{Type: "input_text", Text: a.AsText()})
+			}
 		default:
 			out = append(out, responseContent{Type: "input_text", Text: a.AsText()})
 		}
 	}
 	return out
+}
+
+// openAIAudioFormat is the token OpenAI's inline audio part names a format
+// by, and whether the format is one of the two that part takes: MP3 and WAV.
+// An AIFF or an Ogg goes as the fallback note instead. The field is an
+// enumeration, so a third value is a 400 on the whole request rather than a
+// part the model quietly skips, and a turn lost to a voice memo is worse than
+// a voice memo the model is told about in words.
+// See docs/capabilities/chat.md#what-can-ride-with-a-message.
+func openAIAudioFormat(mediaType string) (string, bool) {
+	switch mediaType {
+	case "audio/mpeg":
+		return "mp3", true
+	case "audio/wav":
+		return "wav", true
+	}
+	return "", false
 }
 
 func toResponsesTools(tools []Tool) []responsesTool {

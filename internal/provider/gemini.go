@@ -338,7 +338,9 @@ func geminiResponseParts(atts []Attachment) []*genai.FunctionResponsePart {
 }
 
 // geminiAttachmentParts carries a user message's attachments as inline data.
-// Gemini takes images and PDFs as blobs; text attachments stay text.
+// Gemini takes images, PDFs and recordings as blobs, all three in the same
+// part; text attachments stay text, and so does a recording in a format the
+// model's list does not name.
 func geminiAttachmentParts(atts []Attachment) []*genai.Part {
 	var parts []*genai.Part
 	for _, a := range atts {
@@ -347,11 +349,41 @@ func geminiAttachmentParts(atts []Attachment) []*genai.Part {
 			parts = append(parts, &genai.Part{
 				InlineData: &genai.Blob{Data: a.Data, MIMEType: a.MediaType},
 			})
+		case AttachmentAudio:
+			if mimeType, ok := geminiAudioMIME(a.MediaType); ok {
+				parts = append(parts, &genai.Part{
+					InlineData: &genai.Blob{Data: a.Data, MIMEType: mimeType},
+				})
+			} else {
+				parts = append(parts, &genai.Part{Text: a.AsText()})
+			}
 		default:
 			parts = append(parts, &genai.Part{Text: a.AsText()})
 		}
 	}
 	return parts
+}
+
+// geminiAudioMIME is the name Gemini's list of accepted audio formats gives
+// one, and whether the format is on that list at all — WAV, MP3, AIFF and Ogg
+// are. A format that is not goes as the fallback note: an inline blob under a
+// media type the model does not take fails the whole request, and losing the
+// turn is a worse answer than losing one part of the message.
+//
+// The list is not the IANA register. MP3 is `audio/mp3` there, where the
+// register, the chip, the fallback note and both OpenAI dialects call it
+// `audio/mpeg`. Translating in the converter rather than at the sniffer keeps
+// the name a reader is shown the name the format actually has, and keeps one
+// vendor's spelling out of the type every other vendor is handed.
+// See docs/capabilities/chat.md#what-can-ride-with-a-message.
+func geminiAudioMIME(mediaType string) (string, bool) {
+	switch mediaType {
+	case "audio/mpeg":
+		return "audio/mp3", true
+	case "audio/wav", "audio/aiff", "audio/ogg":
+		return mediaType, true
+	}
+	return "", false
 }
 
 func toGeminiTools(tools []Tool) []*genai.Tool {

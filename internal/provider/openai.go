@@ -173,6 +173,14 @@ func toOpenAIMessages(msgs []Message) []openai.ChatCompletionMessage {
 // Chat completions can take an image but not a document, so a PDF degrades to
 // the shared text note rather than disappearing.
 //
+// A recording degrades for a different reason. The endpoint takes one, in a
+// part naming a bare base64 body and a format token, but the client shhh
+// sends this dialect through has no field to put it in — its content part
+// carries a text string and an image URL and nothing else — so spelling the
+// part would mean marshalling the request and reading its stream by hand.
+// The Responses API is the OpenAI path that carries a recording, and a
+// session pointed at this one is told in words what it is not being sent.
+//
 // A tool result is text here whatever it carries. This dialect's tool message
 // is a string and rejects a parts array, so a reader that found an image
 // leaves this provider the notice it wrote — the whole request would fail

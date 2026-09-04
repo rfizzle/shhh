@@ -42,6 +42,46 @@ and the meter that says what it cost. The input frame, the inspector rail
 and the keys are the same ones the coding agent uses, so a person who knows
 one knows the other; they simply carry fewer blocks.
 
+## What can ride with a message
+
+A message carries more than a sentence. A screenshot, a PDF, a text file and a
+recording — a voice memo, a clip off a call — all arrive by the same three
+doors, the clipboard, a path dragged into the terminal, or a name typed at the
+paste command, and all four are held to the same two ceilings: one per file
+and one per message. The ceiling is not a judgement about which kind is
+heaviest. It is where the refusal can still name the file, which is the last
+place it can be made cheaply — past it the provider refuses instead, and that
+costs the whole turn rather than the one part that was too big.
+
+What happens to the bytes after that is not the same for all four, and the
+difference is not shhh's to smooth over. Every provider takes a picture.
+Three of them read a PDF. Two accept a recording, and each of those two takes
+a shorter list of audio formats than it takes of pictures — and not the same
+shorter list. So an attachment is held as bytes and a media type rather
+than as any one provider's block, and the session stays free to change model
+mid-conversation without the attachments already in the history becoming
+unsendable.
+
+Where a provider has no part for what is attached, the model is told in words:
+one line naming the file, what it is and how big it is, standing where the
+bytes would have gone. Dropping it silently is the alternative, and it leaves
+the model answering a question about a file it was never shown and had no way
+to know existed. A recording in a format the provider's own list does not name
+is degraded the same way rather than sent and refused, for the same reason the
+size ceiling sits here: a refusal shhh can predict is worth more than a turn
+spent finding out.
+
+The vendors disagree about names as well as about formats — the same format is
+spelled one way in one list and another way in the next, and neither always
+matches the name a byte sniffer answers with. shhh keeps one name per format,
+the standard one, because that is the name the chip above the draft and the
+fallback line both show; translating to a vendor's spelling is the last thing
+that happens on the way out.
+
+A recording has no preview. The surface that opens a staged attachment full
+pane draws what can be looked at — a picture, a body of text — and says so
+rather than opening onto a note about bytes it cannot render.
+
 ## Colleagues, not workers
 
 A chat session can delegate to sub-agents, and the roles it may spawn are
