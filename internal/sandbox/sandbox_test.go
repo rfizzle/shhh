@@ -305,6 +305,12 @@ func TestScopeDirectoriesBecomeWriteGrants(t *testing.T) {
 	policy, ws := workspacePolicy(t)
 	added := mkdir(t, filepath.Join(t.TempDir(), "config"))
 	policy.WriteExtra = []string{added}
+	// The grant is the resolved spelling, and a scratch directory sits behind
+	// a symlink on macOS.
+	added, err := resolvePath(added)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	s, err := resolvePolicy(policy)
 	if err != nil {

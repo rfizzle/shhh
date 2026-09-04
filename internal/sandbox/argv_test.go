@@ -2,6 +2,7 @@ package sandbox
 
 import (
 	"net"
+	"os"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -13,7 +14,17 @@ import (
 // on, so a made-up one would assert nothing.
 func writeSocketPath(t *testing.T) string {
 	t.Helper()
-	path := filepath.Join(t.TempDir(), "agent.sock")
+	// A unix socket path is capped at about a hundred bytes, and a scratch
+	// directory named after the test runs past that on macOS, where the
+	// three tests that need one would then skip and the Seatbelt half of
+	// the mask would never be put to a kernel. A short scratch directory
+	// under the same temp root keeps them running.
+	dir, err := os.MkdirTemp("", "shhh-sock-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(dir) })
+	path := filepath.Join(dir, "agent.sock")
 	l, err := net.Listen("unix", path)
 	if err != nil {
 		t.Skipf("no unix socket here: %v", err)
