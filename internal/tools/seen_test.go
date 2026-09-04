@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // readWholeFile puts the file through read_file the way a session would, so a
@@ -345,5 +347,48 @@ func TestNoteUnknownRefusesTheFirstChangeAndReportsNothing(t *testing.T) {
 	readWholeFile(t, path)
 	if _, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: path, OldText: "beta", NewText: "gamma"})); err != nil {
 		t.Fatalf("a re-read is what the refusal asked for: %v", err)
+	}
+}
+
+// A restored transcript carries the calls it made and not what they read.
+// Every file it says it read is recorded as one whose content nobody can
+// vouch for, so the first change to one is refused rather than applied to a
+// picture that may be hours old.
+func TestNoteRestoredReadsRecordsEveryAnsweredRead(t *testing.T) {
+	ForgetAll()
+	dir := t.TempDir()
+	read := seed(t, dir, "read.go", "alpha\nbeta\n")
+	cut := seed(t, dir, "cut.go", "alpha\nbeta\n")
+	never := seed(t, dir, "never.go", "alpha\nbeta\n")
+
+	NoteRestoredReads([]provider.Message{
+		{Role: provider.RoleUser, Content: "have a look"},
+		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{
+			{ID: "1", Name: ReadFileName, Arguments: `{"path":"` + read + `"}`},
+			// Answered by nothing: the round was cut short and the file was
+			// never put in front of the model.
+			{ID: "2", Name: ReadFileName, Arguments: `{"path":"` + cut + `"}`},
+			{ID: "3", Name: ExecCommandName, Arguments: `{"command":"ls"}`},
+			{ID: "4", Name: ReadFileName, Arguments: `not json`},
+		}},
+		{Role: provider.RoleTool, ToolCallID: "1", Content: "1\talpha"},
+		{Role: provider.RoleTool, ToolCallID: "3", Content: "read.go"},
+	})
+
+	edit := func(path string) error {
+		_, err := PreviewMutation(EditFileName,
+			editArgs(t, editFileArgs{Path: path, OldText: "beta", NewText: "gamma"}))
+		return err
+	}
+	var stale StaleError
+	if err := edit(read); !errors.As(err, &stale) {
+		t.Fatalf("a file the transcript read is refused until it is read again, got %T: %v", err, err)
+	}
+	// The other three were never shown, so the ordinary rule stands: a
+	// quoted snippet that matches exactly is its own evidence.
+	for name, path := range map[string]string{"a call nothing answered": cut, "a file nothing read": never} {
+		if err := edit(path); err != nil {
+			t.Errorf("%s should not be refused: %v", name, err)
+		}
 	}
 }

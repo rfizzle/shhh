@@ -32,12 +32,15 @@ package tools
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
 	"sync"
 	"time"
+
+	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // seenFile is one file as a tool last showed it: the fingerprint of the whole
@@ -217,6 +220,47 @@ func NoteUnknown(path string) {
 	seenMu.Lock()
 	defer seenMu.Unlock()
 	seen[seenKey(path)] = seenFile{}
+}
+
+// NoteRestoredReads records every file a conversation taken back out of the
+// store says it read as one whose content is unknown.
+//
+// It lives here rather than at either door because both doors restore the
+// same thing. A session reopened from the command line and a saved chat
+// loaded over the one on screen both put a transcript in front of the model
+// that names its readings and holds none of them, and a rule written twice is
+// a rule that ends up meaning two things: the load door emptied the record
+// and stopped, so the first edit to a file the loaded chat had read went
+// through on the strength of its old_text alone.
+//
+// Only a call something answered counts: a call whose result never made it
+// into the transcript is a round that was cut short, and its file was never
+// put in front of the model. Paths are recorded as the old conversation
+// spelled them, which for a relative path means against this process's
+// directory — a conversation restored somewhere else is describing another
+// checkout, and a record filed there is one nothing will ask about.
+// See docs/capabilities/approvals-and-safety.md#a-file-is-changed-from-what-was-read.
+func NoteRestoredReads(msgs []provider.Message) {
+	answered := map[string]bool{}
+	for _, m := range msgs {
+		if m.Role == provider.RoleTool && m.ToolCallID != "" {
+			answered[m.ToolCallID] = true
+		}
+	}
+	for _, m := range msgs {
+		for _, call := range m.ToolCalls {
+			if call.Name != ReadFileName || !answered[call.ID] {
+				continue
+			}
+			var args struct {
+				Path string `json:"path"`
+			}
+			if err := json.Unmarshal([]byte(call.Arguments), &args); err != nil || args.Path == "" {
+				continue
+			}
+			NoteUnknown(args.Path)
+		}
+	}
 }
 
 // SeenChanged names every file the model has been shown whose content is no

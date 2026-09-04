@@ -226,9 +226,12 @@ held, and they have had however long the conversation was closed to move. So
 reopening one records each of those files as read-with-unknown-content: the
 first change to one is refused and costs a round, against an edit applied to a
 picture nobody can vouch for. A file the transcript never read keeps the
-ordinary rule, because a quoted snippet is its own evidence. Starting a new
-conversation, or loading a different one, empties the record instead —
-neither conversation read what the other did.
+ordinary rule, because a quoted snippet is its own evidence. This is what
+reopening means at either door — a session resumed from the command line and a
+saved conversation loaded over the one on screen. Loading empties the record
+first, because what the conversation being replaced was shown is no evidence
+about the one arriving. Starting a new conversation empties it and stops
+there: a conversation that has said nothing yet has read nothing.
 
 ## A closed verb set is what makes a read a read
 

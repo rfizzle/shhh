@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -368,6 +369,52 @@ func TestChatLoad_ADifferentConversationEmptiesWhatWasShown(t *testing.T) {
 	m.loadChatByName("alpha")
 	if err := changed(); err != nil {
 		t.Fatalf("another conversation's readings are not this one's: %v", err)
+	}
+}
+
+// A conversation loaded over this one names the files it read and holds none
+// of them. They come back as readings nobody can vouch for rather than as
+// nothing at all, or the first edit to one lands on a picture that may be
+// days old on the strength of its old_text alone.
+func TestChatLoad_TheLoadedConversationsReadingsComeBackUnknown(t *testing.T) {
+	tools.ForgetAll()
+	t.Cleanup(tools.ForgetAll)
+	dir := t.TempDir()
+	read := filepath.Join(dir, "read.go")
+	never := filepath.Join(dir, "never.go")
+	for _, path := range []string{read, never} {
+		if err := os.WriteFile(path, []byte("alpha\nbeta\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	db := rewindTestDB(t)
+	if err := db.SaveChat("alpha", []provider.Message{
+		{Role: provider.RoleUser, Content: "have a look"},
+		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{
+			{ID: "1", Name: tools.ReadFileName, Arguments: `{"path":"` + read + `"}`},
+		}},
+		{Role: provider.RoleTool, ToolCallID: "1", Content: "1\talpha"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	m := readyModel(t).WithDB(db)
+	m.sessionName = "2026-01-01 00:00:00"
+	m.loadChatByName("alpha")
+
+	edit := func(path string) error {
+		_, err := tools.PreviewMutation(tools.EditFileName,
+			[]byte(`{"path":"`+path+`","old_text":"beta","new_text":"gamma"}`))
+		return err
+	}
+	var stale tools.StaleError
+	if err := edit(read); !errors.As(err, &stale) {
+		t.Fatalf("a file the loaded chat read is refused until it is read again, got %T: %v", err, err)
+	}
+	// A path it never read keeps the ordinary rule: the quoted text is its
+	// own evidence.
+	if err := edit(never); err != nil {
+		t.Errorf("a file the loaded chat never read is not stale: %v", err)
 	}
 }
 

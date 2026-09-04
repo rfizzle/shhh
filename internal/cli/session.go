@@ -1307,44 +1307,8 @@ func (s chatSession) resumeChat(db *storage.DB) (reopenedChat, error) {
 			Subject: "no previous session", Detail: "starting fresh"})
 		return reopenedChat{}, nil
 	}
-	noteRestoredReads(messages)
+	tools.NoteRestoredReads(messages)
 	return reopenedChat{slot: name, messages: messages}, nil
-}
-
-// noteRestoredReads records every file the reopened conversation read as one
-// whose current content is unknown. The transcript says which files were
-// read; nothing here says what they held, and they have had however long the
-// conversation was closed to move. So the first change to one is refused and
-// the model reads it again: a round spent, against an edit written from a
-// picture nobody can vouch for (tools/seen.go).
-//
-// Only a call something answered counts: a call whose result never made it
-// into the transcript is a round that was cut short, and its file was never
-// put in front of the model. Paths are recorded as the old conversation
-// spelled them, which for a relative path means against this process's
-// directory — a resumed conversation opened somewhere else is describing
-// another checkout, and a record filed there is one nothing will ask about.
-func noteRestoredReads(msgs []provider.Message) {
-	answered := map[string]bool{}
-	for _, m := range msgs {
-		if m.Role == provider.RoleTool && m.ToolCallID != "" {
-			answered[m.ToolCallID] = true
-		}
-	}
-	for _, m := range msgs {
-		for _, call := range m.ToolCalls {
-			if call.Name != tools.ReadFileName || !answered[call.ID] {
-				continue
-			}
-			var args struct {
-				Path string `json:"path"`
-			}
-			if err := json.Unmarshal([]byte(call.Arguments), &args); err != nil || args.Path == "" {
-				continue
-			}
-			tools.NoteUnknown(args.Path)
-		}
-	}
 }
 
 // pickSavedChat shows the saved-chat picker and returns the chosen session

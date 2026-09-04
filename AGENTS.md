@@ -283,9 +283,14 @@ comes from the record of what the model has been shown: `tools.SeenChanged`,
 reached through the `ReadChanged` hook and wired once in `treeCheck`
 (`internal/cli/session.go`) because the record is one per process rather than
 one per front-end. The record itself is `internal/tools/seen.go` — a read
-writes to it, a mutation is checked against it, `NoteUnknown` fills it from a
-restored transcript that says what was read and not what it held, and
-`ForgetAll` empties it whenever one conversation gives way to another.
+writes to it, a mutation is checked against it, `NoteUnknown` fills it with a
+reading nobody can vouch for, and `ForgetAll` empties it whenever one
+conversation gives way to another. `NoteRestoredReads` is the pair of those
+for a transcript that says what was read and not what it held, and it lives
+beside the record rather than at either door because both doors restore the
+same thing: `resumeChat` (`internal/cli/session.go`) for a session reopened
+from the command line, `loadChatByName` (`internal/ui/chat/model.go`) for a
+saved conversation loaded over the one on screen.
 `treeState.reported` is what keeps a stale reading from being named at every
 round until the model goes back to it. Why it exists and what it does not see:
 [`docs/capabilities/coding-agent.md#the-tree-can-move-under-a-session`](docs/capabilities/coding-agent.md#the-tree-can-move-under-a-session).

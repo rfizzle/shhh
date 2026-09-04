@@ -12,7 +12,6 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/shell"
 	"github.com/rfizzle/shhh/internal/storage"
-	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/browse"
 )
 
@@ -289,54 +288,5 @@ func TestChatBrowseItems_ASlotSomebodyElseHoldsRefusesToOpen(t *testing.T) {
 	}
 	if free := rows["mine"]; free.Refused != "" || strings.Contains(free.Preview, "another session") {
 		t.Fatalf("a slot nobody holds opens, got %+v", free)
-	}
-}
-
-// A conversation comes back carrying the calls it made and not what they
-// read. Every file it says it read is recorded as one whose content nobody
-// can vouch for, so the first change to one is refused rather than applied to
-// a picture that may be hours old.
-func TestRestoredReadsAreRecordedWithNothingKnownAboutTheirContent(t *testing.T) {
-	tools.ForgetAll()
-	t.Cleanup(tools.ForgetAll)
-	dir := t.TempDir()
-	read := filepath.Join(dir, "read.go")
-	cut := filepath.Join(dir, "cut.go")
-	never := filepath.Join(dir, "never.go")
-	for _, p := range []string{read, cut, never} {
-		if err := os.WriteFile(p, []byte("alpha\nbeta\n"), 0o644); err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	noteRestoredReads([]provider.Message{
-		{Role: provider.RoleUser, Content: "have a look"},
-		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{
-			{ID: "1", Name: tools.ReadFileName, Arguments: `{"path":"` + read + `"}`},
-			// Answered by nothing: the round was cut short and the file was
-			// never put in front of the model.
-			{ID: "2", Name: tools.ReadFileName, Arguments: `{"path":"` + cut + `"}`},
-			{ID: "3", Name: tools.ExecCommandName, Arguments: `{"command":"ls"}`},
-			{ID: "4", Name: tools.ReadFileName, Arguments: `not json`},
-		}},
-		{Role: provider.RoleTool, ToolCallID: "1", Content: "1\talpha"},
-		{Role: provider.RoleTool, ToolCallID: "3", Content: "read.go"},
-	})
-
-	edit := func(path string) error {
-		_, err := tools.PreviewMutation(tools.EditFileName,
-			[]byte(`{"path":"`+path+`","old_text":"beta","new_text":"gamma"}`))
-		return err
-	}
-	var stale tools.StaleError
-	if err := edit(read); !errors.As(err, &stale) {
-		t.Fatalf("a file the transcript read is refused until it is read again, got %T: %v", err, err)
-	}
-	// The other three were never shown, so the ordinary rule stands: a
-	// quoted snippet that matches exactly is its own evidence.
-	for name, path := range map[string]string{"a call nothing answered": cut, "a file nothing read": never} {
-		if err := edit(path); err != nil {
-			t.Errorf("%s should not be refused: %v", name, err)
-		}
 	}
 }

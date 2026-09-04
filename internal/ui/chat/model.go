@@ -1458,11 +1458,15 @@ func (m *Model) loadChatByName(name string) string {
 	}
 	// What the model was shown belongs to the conversation it was shown in.
 	// Another conversation read other files, so its record would let a full
-	// overwrite through on a reading this one never made (tools/seen.go).
-	// Loading the slot this session is already writing is not that: it is the
-	// same conversation, and it read exactly what the record says.
+	// overwrite through on a reading this one never made; and what the loaded
+	// one read is named by a transcript that holds none of it, so those files
+	// take its place as readings nobody can vouch for and the first change to
+	// one is refused until it is read again (tools/seen.go). Loading the slot
+	// this session is already writing is neither: it is the same
+	// conversation, and it read exactly what the record says.
 	if name != m.sessionName {
 		tools.ForgetAll()
+		tools.NoteRestoredReads(msgs)
 	}
 	m.resumeConversation(name, msgs)
 	// The loaded conversation brought its own system prompt, written in a
