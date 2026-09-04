@@ -144,16 +144,16 @@ func TestRewind_BarePicker_EscKeepsConversation(t *testing.T) {
 	m = completeExchange(t, m, "second", "two")
 
 	m = sendText(t, m, "/rewind")
-	if m.state != stateRewindPick || m.rewindSelect == nil {
+	if m.state != statePick || m.picker == nil {
 		t.Fatal("bare /rewind should open the picker")
 	}
-	if len(m.rewindSelect.Options) != 2 {
-		t.Fatalf("picker should list every checkpoint, got %d", len(m.rewindSelect.Options))
+	if len(m.picker.Options) != 2 {
+		t.Fatalf("picker should list every checkpoint, got %d", len(m.picker.Options))
 	}
 
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
-	if m.state != stateInput || m.rewindSelect != nil {
+	if m.state != stateInput || m.picker != nil {
 		t.Fatal("esc should dismiss the picker")
 	}
 	if len(m.Messages()) != 5 {

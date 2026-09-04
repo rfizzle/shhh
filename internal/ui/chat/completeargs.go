@@ -65,7 +65,7 @@ func staticArgs(opts ...argOption) []argSpec {
 // lookupCommand finds the registry row for a typed command name (or alias)
 // that this session actually has wired.
 func lookupCommand(m *Model, name string) (slashCommand, bool) {
-	for _, c := range slashCommands {
+	for _, c := range slashCommands() {
 		if c.enabled != nil && !c.enabled(m) {
 			continue
 		}
@@ -116,15 +116,15 @@ func (m *Model) argCandidates(cmd string, pos int, spec argSpec) []argOption {
 	if spec.dynamic == nil {
 		return spec.options
 	}
-	if m.argCacheFor != cmd || m.argCache == nil {
-		m.argCache = make(map[int][]argOption)
-		m.argCacheFor = cmd
+	if m.complete.argCacheFor != cmd || m.complete.argCache == nil {
+		m.complete.argCache = make(map[int][]argOption)
+		m.complete.argCacheFor = cmd
 	}
-	if opts, ok := m.argCache[pos]; ok {
+	if opts, ok := m.complete.argCache[pos]; ok {
 		return opts
 	}
 	opts := spec.dynamic(m)
-	m.argCache[pos] = opts
+	m.complete.argCache[pos] = opts
 	return opts
 }
 
@@ -291,14 +291,14 @@ func railArgs(m *Model) []argOption {
 // modeArgs offers the session's mode cycle plus /permissions' own
 // subcommands.
 func modeArgs(m *Model) []argOption {
-	cycle := m.modeCycle
+	cycle := m.policy.cycle
 	if len(cycle) == 0 {
 		cycle = agent.DefaultCycle()
 	}
 	out := make([]argOption, 0, len(cycle)+1)
 	for _, mode := range cycle {
 		desc := mode.Describe()
-		if mode == m.mode {
+		if mode == m.policy.mode {
 			desc = "current — " + desc
 		}
 		out = append(out, argOption{value: mode.String(), desc: desc})

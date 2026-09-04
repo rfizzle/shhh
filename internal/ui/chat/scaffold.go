@@ -111,47 +111,41 @@ func (m Model) scaffoldCard() *components.ApprovalCard {
 // card's own Update: that maps esc and ctrl+c onto the decline, which is
 // right for a card nobody asked for and wrong here, where esc is the way
 // back out of a screen the reader opened (keys.Decision.Refuse).
-func (m Model) updateScaffold(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+func (m *Model) answerScaffold(msg tea.KeyPressMsg) (bool, overlayAction) {
 	switch {
 	case keys.Match(msg, keys.Select.Cancel):
-		m.leaveSurface()
-		m.syncViewport()
-		return m, nil
+		return true, overlayAction{close: true}
 	case keys.Match(msg, keys.Decision.Refuse):
-		m.leaveSurface()
-		m.syncViewport()
-		return m.declineScaffold()
+		return true, overlayAction{close: true, note: m.declineScaffold()}
 	case keys.Match(msg, keys.Decision.Allow):
-		m.leaveSurface()
-		m.syncViewport()
-		return m.writeScaffold()
+		return true, overlayAction{close: true, note: m.writeScaffold()}
 	}
-	return m, nil
+	return false, overlayAction{}
 }
 
 // declineScaffold answers the offer for good. The refusal is recorded before
 // it is reported, and a store that would not take it says so: the reader has
 // been told the offer will not come back.
-func (m Model) declineScaffold() (tea.Model, tea.Cmd) {
+func (m *Model) declineScaffold() string {
 	m.scaffold.Offer = false
 	if m.scaffold.Decline != nil {
 		if err := m.scaffold.Decline(); err != nil {
-			return m.systemNotice("Nothing written. The refusal could not be remembered: " + err.Error())
+			return "Nothing written. The refusal could not be remembered: " + err.Error()
 		}
 	}
-	return m.systemNotice("Nothing written. This checkout will not be offered again; " +
-		scaffoldCommandName + " asks any time.")
+	return "Nothing written. This checkout will not be offered again; " +
+		scaffoldCommandName + " asks any time."
 }
 
 // writeScaffold takes the offer.
-func (m Model) writeScaffold() (tea.Model, tea.Cmd) {
+func (m *Model) writeScaffold() string {
 	path, err := m.scaffold.Write()
 	if err != nil {
-		return m.systemNotice("Could not scaffold this project: " + err.Error())
+		return "Could not scaffold this project: " + err.Error()
 	}
 	m.scaffold.Offer = false
-	return m.systemNotice("Wrote " + path + ". Describe this project's tooling and conventions in it; " +
-		"it is read into the system prompt from the next session on.")
+	return "Wrote " + path + ". Describe this project's tooling and conventions in it; " +
+		"it is read into the system prompt from the next session on."
 }
 
 // scaffoldLines renders the card, one row per line.

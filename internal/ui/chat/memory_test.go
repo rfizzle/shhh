@@ -42,7 +42,7 @@ func memoryModel(t *testing.T, mode agent.Mode) (Model, *[]savedMemory) {
 		})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
-	m.mode = mode
+	m.policy.mode = mode
 	m.state = stateStreaming
 	return m, &saves
 }

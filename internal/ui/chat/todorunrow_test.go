@@ -95,7 +95,7 @@ func TestTodoRunRow_DrawnFromStartToDone(t *testing.T) {
 	updated, _ = m.Update(todoCommitMsg{slug: "do-it", files: []string{"a.go"}})
 	m = updated.(Model)
 
-	if m.todoRun != nil {
+	if m.todoRunner.state != nil {
 		t.Fatal("the run should be over")
 	}
 	if lastTodoRunRow(m.transcript) < 0 {
@@ -312,7 +312,7 @@ func TestInspectorTodo_RunningItemFirstWithItsLanes(t *testing.T) {
 	m.input.SetValue("/todo run do-it")
 	updated, _ := m.submitInput()
 	m = updated.(Model)
-	m.todoRun.Lanes = []run.Lane{{Name: "a", Done: true}, {Name: "b"}, {Name: "c"}}
+	m.todoRunner.state.Lanes = []run.Lane{{Name: "a", Done: true}, {Name: "b"}, {Name: "c"}}
 
 	block := m.inspectorTodo()
 	if block == nil || block.Rows[0].Slug != "do-it" {

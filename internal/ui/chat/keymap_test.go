@@ -117,7 +117,7 @@ func TestRewind_DoubleEscOnAnEmptyIdleDraftOpensThePicker(t *testing.T) {
 		t.Fatal("a single esc opened a surface")
 	}
 	m, _ = pressKey(t, m, escK)
-	if m.state != stateRewindPick {
+	if m.state != statePick {
 		t.Fatal("esc esc on an empty idle draft did not open the rewind picker")
 	}
 
@@ -138,7 +138,7 @@ func TestRewind_TheGestureWindowExpires(t *testing.T) {
 	m, _ = pressKey(t, m, escK)
 	m.armed.deadline = time.Now().Add(-time.Millisecond)
 	m, _ = pressKey(t, m, escK)
-	if m.state == stateRewindPick {
+	if m.state == statePick {
 		t.Fatal("a second esc after the window shut still opened the picker")
 	}
 }
@@ -153,7 +153,7 @@ func TestRewind_EscWithADraftClearsItFirst(t *testing.T) {
 	}
 	m, _ = pressKey(t, m, escK)
 	m, _ = pressKey(t, m, escK)
-	if m.state != stateRewindPick {
+	if m.state != statePick {
 		t.Fatal("the two presses after the clearing one did not open the picker")
 	}
 }
@@ -171,7 +171,7 @@ func TestRewind_AttachedEscDetachesAndNeverOpensThePicker(t *testing.T) {
 		t.Fatal("esc while attached must detach a level")
 	}
 	m, _ = pressKey(t, m, escK)
-	if m.state == stateRewindPick {
+	if m.state == statePick {
 		t.Fatal("the esc that detached counted toward the rewind gesture")
 	}
 }
@@ -180,7 +180,7 @@ func TestRewind_NeverWhileATurnStreams(t *testing.T) {
 	m := streamingCancelModel(t)
 	m, _ = pressKey(t, m, escK)
 	m, _ = pressKey(t, m, escK)
-	if m.state == stateRewindPick {
+	if m.state == statePick {
 		t.Fatal("esc esc while streaming opened rewind; rewinding is idle-only")
 	}
 }

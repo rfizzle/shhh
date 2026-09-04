@@ -157,11 +157,11 @@ func todoProposalMeta(p todo.Proposal) string {
 	return meta
 }
 
-// updateTodoPropose routes keys while the proposals card shows.
-func (m Model) updateTodoPropose(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+// answerTodoPropose routes keys while the proposals card shows.
+func (m *Model) answerTodoPropose(msg tea.KeyPressMsg) (bool, overlayAction) {
 	done, result := m.todoPropose.Update(msg)
 	if !done {
-		return m, nil
+		return false, overlayAction{}
 	}
 	res := result.(components.MultiSelectResult)
 	proposals, sprint := m.todoProposals, m.todoSprintPlan
@@ -169,25 +169,22 @@ func (m Model) updateTodoPropose(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	// card the reader declined wrote nothing to name on it, and leaving the
 	// claim standing would put the next card's first item on a run that
 	// never asked for it.
-	followUp := m.todoFollowUpRow
+	followUp := m.todoRunner.followUpRow
 	m.todoPropose = nil
 	m.todoProposals = nil
 	m.todoSprintPlan = nil
-	m.todoFollowUpRow = 0
-	m.leaveSurface()
-	m.syncViewport()
-	if res.Canceled {
-		if sprint != nil {
-			return m.systemNotice("Nothing written; no sprint was planned.")
-		}
-		return m.systemNotice("Nothing written; the proposals are dropped.")
-	}
-	if sprint != nil {
-		return m.systemNotice(m.writeSprintPlan(sprint, res.Indices))
+	m.todoRunner.followUpRow = 0
+	switch {
+	case res.Canceled && sprint != nil:
+		return true, overlayAction{close: true, note: "Nothing written; no sprint was planned."}
+	case res.Canceled:
+		return true, overlayAction{close: true, note: "Nothing written; the proposals are dropped."}
+	case sprint != nil:
+		return true, overlayAction{close: true, note: m.writeSprintPlan(sprint, res.Indices)}
 	}
 	note, written := m.writeProposals(proposals, res.Indices)
 	m.nameFollowUpOnRun(followUp, written)
-	return m.systemNotice(note)
+	return true, overlayAction{close: true, note: note}
 }
 
 // writeProposals writes the accepted proposals as items and says what it

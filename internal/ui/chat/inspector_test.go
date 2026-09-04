@@ -163,7 +163,6 @@ func TestTwoPane_HiddenByTakeoverSurfaces(t *testing.T) {
 		{"approval card", stateConfirmRun},
 		{"plan approval", statePlanApprove},
 		{"picker", statePick},
-		{"rewind picker", stateRewindPick},
 		{"full-screen diff", stateDiffFull},
 		{"model list", stateModelList},
 	} {

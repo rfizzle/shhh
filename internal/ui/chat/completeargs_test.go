@@ -13,8 +13,8 @@ import (
 
 // completionNames is the menu's rows, in order.
 func completionNames(m Model) []string {
-	names := make([]string, len(m.completions))
-	for i, c := range m.completions {
+	names := make([]string, len(m.complete.items))
+	for i, c := range m.complete.items {
 		names[i] = c.name
 	}
 	return names
@@ -23,9 +23,9 @@ func completionNames(m Model) []string {
 // withTestCommand installs an extra registry row for one test.
 func withTestCommand(t *testing.T, c slashCommand) {
 	t.Helper()
-	old := slashCommands
-	slashCommands = append(append([]slashCommand{}, old...), c)
-	t.Cleanup(func() { slashCommands = old })
+	old := slashCommands()
+	slashTable = append(append([]slashCommand{}, old...), c)
+	t.Cleanup(func() { slashTable = old })
 }
 
 func TestArgCompletion_StaticSubcommands(t *testing.T) {
@@ -117,7 +117,7 @@ func TestArgCompletion_UnavailableCommandOffersNothing(t *testing.T) {
 
 func TestArgCompletion_ModeCycle(t *testing.T) {
 	m := readyModel(t)
-	m.modeCycle = []agent.Mode{agent.ModeManual, agent.ModeAcceptEdits, agent.ModeAuto}
+	m.policy.cycle = []agent.Mode{agent.ModeManual, agent.ModeAcceptEdits, agent.ModeAuto}
 	m = typeChars(t, m, "/permissions a")
 
 	// The a-prefixed modes, and the a-prefixed subcommand beside them: the
@@ -148,8 +148,8 @@ func TestArgCompletion_CheckpointNumbers(t *testing.T) {
 	if len(got) != 2 || got[0] != "2" || got[1] != "1" {
 		t.Fatalf("expected checkpoint numbers latest first, got %v", got)
 	}
-	if m.completions[0].desc != "second question" {
-		t.Fatalf("expected the turn preview as the description, got %q", m.completions[0].desc)
+	if m.complete.items[0].desc != "second question" {
+		t.Fatalf("expected the turn preview as the description, got %q", m.complete.items[0].desc)
 	}
 }
 
@@ -195,8 +195,8 @@ func TestArgCompletion_BranchNames(t *testing.T) {
 	if got := completionNames(m); len(got) != 1 || got[0] != "main" {
 		t.Fatalf("expected the branch family, got %v", got)
 	}
-	if !strings.HasPrefix(m.completions[0].desc, "current") {
-		t.Fatalf("the current branch should say so, got %q", m.completions[0].desc)
+	if !strings.HasPrefix(m.complete.items[0].desc, "current") {
+		t.Fatalf("the current branch should say so, got %q", m.complete.items[0].desc)
 	}
 }
 
@@ -280,7 +280,7 @@ func TestArgCompletion_EnterOnAnUnfilteredMenuRunsTheLine(t *testing.T) {
 	if m.input.Value() != "/model " {
 		t.Fatalf("tab should complete the command name, got %q", m.input.Value())
 	}
-	if !m.completionActive() || !m.completeArg {
+	if !m.completionActive() || !m.complete.arg {
 		t.Fatal("the argument menu should be open over the catalog")
 	}
 
@@ -393,7 +393,7 @@ func TestArgCompletion_SessionFiles(t *testing.T) {
 	if len(got) != 2 || got[0] != "internal/agent/loop.go" || got[1] != "internal/ui/chat/model.go" {
 		t.Fatalf("expected the session's files in the rail's order, got %v", got)
 	}
-	if desc := menu.completions[0].desc; !strings.Contains(desc, "+1 −0") {
+	if desc := menu.complete.items[0].desc; !strings.Contains(desc, "+1 −0") {
 		t.Fatalf("expected what the file cost as the description, got %q", desc)
 	}
 
@@ -417,10 +417,10 @@ func TestArgCompletion_SessionFilesOfferAModeOnlyChange(t *testing.T) {
 	if len(got) != 1 || got[0] != "scripts/build.sh" {
 		t.Fatalf("expected the file the session chmod'd, got %v", got)
 	}
-	if desc := menu.completions[0].desc; !strings.Contains(desc, "mode 0644 → 0755") {
+	if desc := menu.complete.items[0].desc; !strings.Contains(desc, "mode 0644 → 0755") {
 		t.Fatalf("expected the mode as the description, got %q", desc)
 	}
-	if desc := menu.completions[0].desc; strings.Contains(desc, "+0 −0") {
+	if desc := menu.complete.items[0].desc; strings.Contains(desc, "+0 −0") {
 		t.Fatalf("nothing counted this change, got %q", desc)
 	}
 }

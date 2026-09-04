@@ -207,7 +207,7 @@ func TestBatch_ApprovesEveryMemberWithoutAskingAgain(t *testing.T) {
 	m = updated.(Model)
 	// The batch is not a session grant: it answers these three and nothing
 	// the model asks for later.
-	if m.allowAllCommands {
+	if m.policy.allCommands {
 		t.Fatal("[A] must not promote the category to a session grant")
 	}
 	for i := 0; i < 3; i++ {
@@ -317,7 +317,7 @@ func TestBatch_KeyIsAbsentWithoutAQueue(t *testing.T) {
 	}
 	updated, _ = m.Update(keyA())
 	m = updated.(Model)
-	if len(m.commandGrants) == 0 {
+	if len(m.policy.commands) == 0 {
 		t.Fatal("[A] without a batch should still take the session grant")
 	}
 }

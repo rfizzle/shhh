@@ -412,6 +412,10 @@ All providers implement `StreamCompletion(ctx, messages, opts) (<-chan StreamEve
 
 The chat TUI (`internal/ui/chat/model.go`) distinguishes between **turn states** (what the session's work is doing) and **surface states** (what borrows the screen). A surface can overlay while a turn keeps running underneath. This split is why `turnState()` / `setTurnState()` exist separately from `Model.state`.
 
+**A surface is one row of the register in `internal/ui/chat/overlay.go`, not an entry in six lists.** The row says where the mode draws (the bottom panel, the transcript pane, or floating above the frame until the handover), whether it borrows the screen from the turn, how tall it may grow, what it leaves where the draft box was, and what it does with a key — and `isSurface`, the key route in `keyroute.go`, `resolvePanel`, `paneView`, `draftPanel` and `clickableTranscript` all read it. Adding a mode is that row plus the mode's own file; a mode missing from one of those readers is not a compile error, it is a surface that draws and cannot be typed into, so `overlay_test.go` holds the rows to each other. Two modes ride over whatever the state is (`coverOverlay`: the agent manager and a child's routed ask) and one rides inside the approval card (`askOverlay`: the memory prompt), because none of the three is a state the session can be in.
+
+The register is built on first use rather than at initialisation, and so are the slash-command tables in `complete.go` and `command.go`: a row names the session's own methods, and reading the session eventually asks which mode has the screen, which the compiler reads as an initialisation cycle in a package-level table.
+
 ### CLI reports
 
 Every non-interactive listing is one shape, built in `internal/cli/report`

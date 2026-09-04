@@ -208,7 +208,7 @@ func (m Model) frameAccentStyle() lipgloss.Style {
 	if m.turnState() == stateClassifying {
 		return sty.Frame.AccentChecking
 	}
-	mode := m.mode
+	mode := m.policy.mode
 	if m.attachedTo != "" && m.subagents != nil {
 		if cm, ok := m.subagents.AgentMode(m.attachedTo); ok {
 			mode = cm

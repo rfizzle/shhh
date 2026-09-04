@@ -98,7 +98,8 @@ func (m Model) clickAt(x, y int) (tea.Model, tea.Cmd) {
 // clickableTranscript reports whether the pane under the pointer is a
 // transcript whose rows can be opened.
 //
-// It is selectableSurface's list with one difference, and the difference is
+// It is every mode the register places over the pane (overlay.go) and nothing
+// else, which is one difference from selectableSurface, and the difference is
 // the point: reading mode is excluded from selection because the transcript
 // is drawn there through a cursor gutter nobody wants on their clipboard, and
 // a row click copies nothing — the row is the target and the gutter is not
@@ -107,8 +108,7 @@ func (m Model) clickableTranscript() bool {
 	if !m.ready || m.attachedTo != "" {
 		return false
 	}
-	switch m.state {
-	case stateDiffFull, stateOutputFull, statePreview, stateReview, stateContext, statePersona:
+	if o := overlayFor(m.state); o != nil && o.place == placePane {
 		return false
 	}
 	return true

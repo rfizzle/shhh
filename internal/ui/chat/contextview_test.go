@@ -241,7 +241,7 @@ func TestContext_WindowSizeReadsAsItIsSold(t *testing.T) {
 // the three ways every command is: typed, completed, and listed.
 func TestContext_IsOfferedInTheRegistryAndTheHelp(t *testing.T) {
 	found := false
-	for _, c := range slashCommands {
+	for _, c := range slashCommands() {
 		if c.name == "/context" {
 			found = true
 		}

@@ -92,7 +92,7 @@ func TestTodoCommand_PickerAndSubcommands(t *testing.T) {
 	if len(next.pickerAll) != 5 || next.pickerAll[0].Label != "a-high" || next.pickerAll[1].Value != "waits on a-high, c-blocked" {
 		t.Fatalf("picker rows = %+v", next.pickerAll)
 	}
-	note := next.pickerApply(&next, 3, false)
+	note, _ := next.pickerApply(&next, 3, false)
 	if note != "detail d-ready" {
 		t.Fatalf("enter should show the item, got %q", note)
 	}

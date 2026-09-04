@@ -27,7 +27,7 @@ type subagentEventMsg struct{ ev subagent.Event }
 func (m Model) WithSubagents(sup *subagent.Supervisor) Model {
 	m.subagents = sup
 	m.childViews = map[string]*childView{}
-	sup.SetParentMode(m.mode)
+	sup.SetParentMode(m.policy.mode)
 	sup.SetParentGrants(m.grants())
 	return m
 }
@@ -44,10 +44,10 @@ func (m *Model) syncChildGrants() {
 // applyMode changes the session's permission mode, keeping the sub-agent
 // ceiling in sync (children are never more permissive than the parent).
 func (m *Model) applyMode(mode agent.Mode) {
-	if mode != m.mode {
+	if mode != m.policy.mode {
 		m.signal(observe.SignalMode, mode.String())
 	}
-	m.mode = mode
+	m.policy.mode = mode
 	if m.subagents != nil {
 		m.subagents.SetParentMode(mode)
 	}

@@ -151,21 +151,19 @@ func (m *Model) placePicture() tea.Cmd {
 // the same thing said twice, and neither of which touches the staging area:
 // esc never destroys, and the file the reader just looked at is still staged
 // when they get back to their draft (invariant 3).
-func (m Model) updatePreview(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	if keys.Match(msg, keys.Preview.Back) || keys.Match(msg, keys.Preview.Leave) {
-		return m.closePreview()
+func (m *Model) answerPreview(msg tea.KeyPressMsg) (bool, overlayAction) {
+	if !keys.Match(msg, keys.Preview.Back) && !keys.Match(msg, keys.Preview.Leave) {
+		return false, overlayAction{}
 	}
-	return m, nil
+	return true, m.closePreview()
 }
 
 // closePreview hands the pane back and releases whatever the terminal was
 // holding for it.
-func (m Model) closePreview() (tea.Model, tea.Cmd) {
+func (m *Model) closePreview() overlayAction {
 	cmd := m.caps.Delete()
 	m.preview = nil
-	m.leaveSurface()
-	m.syncViewport()
-	return m, cmd
+	return overlayAction{close: true, run: cmd}
 }
 
 // renderPreviewHint fills the input area while the preview shows. It names

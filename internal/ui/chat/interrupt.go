@@ -324,13 +324,13 @@ func (m Model) ungateDecision() (tea.Model, tea.Cmd) {
 // routeDecision hands a key to whichever decision surface is on screen. It is
 // only reached once the surface holds the keyboard.
 func (m Model) routeDecision(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	// The register holds what each card does with a key (overlay.go); the
+	// chord and the click come to it without the quit chord in front,
+	// because both are already an answer to the card rather than a key that
+	// might have been meant for something else.
 	switch m.state {
-	case stateConfirmRun:
-		return m.updateConfirmRun(msg)
-	case statePlanApprove:
-		return m.updatePlanApprove(msg)
-	case stateScaffold:
-		return m.updateScaffold(msg)
+	case stateConfirmRun, statePlanApprove, stateScaffold:
+		return m.applyOverlay(overlayFor(m.state), msg)
 	}
 	if ask := m.activeChildAsk(); ask != nil {
 		return m.updateChildAsk(msg, ask)

@@ -49,8 +49,8 @@ func (m Model) WithModelOptions(names []string) Model {
 // The row starts closed, which is the reading a fixed set of answers wants:
 // its rows are numbered, and its letters are keys.
 func (m Model) openPicker(title string, opts []components.SelectOption, focus int, apply func(*Model, int) string) (tea.Model, tea.Cmd) {
-	return m.openPickerWith(title, opts, focus, pickerAlt{}, false, func(m *Model, idx int, _ bool) string {
-		return apply(m, idx)
+	return m.openPickerWith(title, opts, focus, pickerAlt{}, false, func(m *Model, idx int, _ bool) (string, tea.Cmd) {
+		return apply(m, idx), nil
 	})
 }
 
@@ -60,8 +60,12 @@ func (m Model) openPicker(title string, opts []components.SelectOption, focus in
 // open when the card arrives, so that first keystroke searches rather than
 // being spent opening the row it would have gone into.
 // See docs/interface/surfaces.md#selectors.
-func (m Model) openSearchPicker(title string, opts []components.SelectOption, focus int, apply func(*Model, int) string) (tea.Model, tea.Cmd) {
-	return m.openPickerWith(title, opts, focus, pickerAlt{}, true, func(m *Model, idx int, _ bool) string {
+// Its apply answers with a command as well as a note: a choice that rewrites
+// the conversation — the rewind is the one — owes the autosave that follows
+// it, and a picker whose apply could only answer with words would leave every
+// caller to remember the save on its behalf.
+func (m Model) openSearchPicker(title string, opts []components.SelectOption, focus int, apply func(*Model, int) (string, tea.Cmd)) (tea.Model, tea.Cmd) {
+	return m.openPickerWith(title, opts, focus, pickerAlt{}, true, func(m *Model, idx int, _ bool) (string, tea.Cmd) {
 		return apply(m, idx)
 	})
 }
@@ -79,7 +83,7 @@ type pickerAlt struct {
 // openPickerWith is openPicker for a card whose choice has two readings;
 // apply is told which key took it. search opens the query row with the card
 // (openSearchPicker).
-func (m Model) openPickerWith(title string, opts []components.SelectOption, focus int, alt pickerAlt, search bool, apply func(*Model, int, bool) string) (tea.Model, tea.Cmd) {
+func (m Model) openPickerWith(title string, opts []components.SelectOption, focus int, alt pickerAlt, search bool, apply func(*Model, int, bool) (string, tea.Cmd)) (tea.Model, tea.Cmd) {
 	m.picker = &components.Select{
 		Title:      title,
 		Options:    opts,
@@ -226,13 +230,14 @@ func (m Model) updatePick(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	// An apply that hands the session to another surface — the /run picker
 	// into the confirm prompt — returns no note and keeps the state
 	// it set instead of stateInput.
-	if note := apply(&m, sel.Index, sel.Alt); note != "" {
+	note, cmd := apply(&m, sel.Index, sel.Alt)
+	if note != "" {
 		m.appendEntry(entry{kind: entrySystem, text: note})
 	}
 	m.syncViewport()
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
-	return m, nil
+	return m, cmd
 }
 
 // pickerLines is the rendered picker, one row per line.
@@ -295,20 +300,17 @@ func (m Model) startModelPick() (tea.Model, tea.Cmd) {
 	}
 }
 
-// updateModelList routes keys while the model list is in flight: esc (or
-// ctrl+c) abandons the query and returns to the input.
-func (m Model) updateModelList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	switch pressed := msg.String(); {
-	case keys.Is(pressed, keys.Select.Cancel):
-		if m.modelListCancel != nil {
-			m.modelListCancel()
-			m.modelListCancel = nil
-		}
-		m.leaveSurface()
-		m.syncViewport()
-		return m, nil
+// answerModelList routes keys while the model list is in flight: esc (or
+// ctrl+c) abandons the query, and the host puts the screen back.
+func (m *Model) answerModelList(msg tea.KeyPressMsg) (bool, overlayAction) {
+	if !keys.Match(msg, keys.Select.Cancel) {
+		return false, overlayAction{}
 	}
-	return m, nil
+	if m.modelListCancel != nil {
+		m.modelListCancel()
+		m.modelListCancel = nil
+	}
+	return true, overlayAction{close: true}
 }
 
 // finishModelList opens the picker over the discovered models. A failed or
@@ -375,7 +377,7 @@ func (m Model) openModelPick() (tea.Model, tea.Cmd) {
 	if m.writeConfig == nil {
 		alt = pickerAlt{}
 	}
-	return m.openPickerWith("Switch model", opts, focus, alt, true, func(m *Model, idx int, makeDefault bool) string {
+	return m.openPickerWith("Switch model", opts, focus, alt, true, func(m *Model, idx int, makeDefault bool) (string, tea.Cmd) {
 		name := choices[idx]
 		switched := name != m.modelName
 		if switched {
@@ -384,10 +386,10 @@ func (m Model) openModelPick() (tea.Model, tea.Cmd) {
 		}
 		if !makeDefault {
 			if !switched {
-				return fmt.Sprintf("Already using %s.", name)
+				return fmt.Sprintf("Already using %s.", name), nil
 			}
 			return fmt.Sprintf("Switched to %s for this session. In the picker, [%s] then [%s] makes a choice the default.",
-				name, keys.Shown(keys.Select.ClearQ), keys.Shown(keys.Select.Alt))
+				name, keys.Shown(keys.Select.ClearQ), keys.Shown(keys.Select.Alt)), nil
 		}
 		// setModelDefault owns the writing and everything true about it —
 		// the failure wording, and the warning when something outranks the
@@ -395,16 +397,16 @@ func (m Model) openModelPick() (tea.Model, tea.Cmd) {
 		// disagree.
 		saved := m.setModelDefault("default", []string{name})
 		if !switched {
-			return saved
+			return saved, nil
 		}
-		return fmt.Sprintf("Switched to %s. %s", name, saved)
+		return fmt.Sprintf("Switched to %s. %s", name, saved), nil
 	})
 }
 
 // openModePick opens the interactive /permissions picker over the session's
 // mode cycle, focused on the active mode.
 func (m Model) openModePick() (tea.Model, tea.Cmd) {
-	cycle := m.modeCycle
+	cycle := m.policy.cycle
 	if len(cycle) == 0 {
 		cycle = agent.DefaultCycle()
 	}
@@ -412,7 +414,7 @@ func (m Model) openModePick() (tea.Model, tea.Cmd) {
 	focus := 0
 	for i, mode := range cycle {
 		label := mode.String()
-		if mode == m.mode {
+		if mode == m.policy.mode {
 			label += "  (current)"
 			focus = i
 		}
@@ -497,8 +499,8 @@ func (m Model) openBranchPick() (tea.Model, tea.Cmd, bool) {
 		return m, nil, false
 	}
 	opts, focus := m.branchPickOptions(branches)
-	model, cmd := m.openSearchPicker("Switch branch", opts, focus, func(m *Model, idx int) string {
-		return m.switchToBranch(branches[idx].Name)
+	model, cmd := m.openSearchPicker("Switch branch", opts, focus, func(m *Model, idx int) (string, tea.Cmd) {
+		return m.switchToBranch(branches[idx].Name), nil
 	})
 	return model, cmd, true
 }

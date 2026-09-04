@@ -31,8 +31,8 @@ func TestCompletion_OpensOnSlashPrefix(t *testing.T) {
 	if !m.completionActive() {
 		t.Fatal("typing /mo should open the completion menu")
 	}
-	names := make([]string, len(m.completions))
-	for i, c := range m.completions {
+	names := make([]string, len(m.complete.items))
+	for i, c := range m.complete.items {
 		names[i] = c.name
 	}
 	joined := strings.Join(names, " ")
@@ -68,7 +68,7 @@ func TestCompletion_ExactMatchRanksFirst(t *testing.T) {
 	if !m.completionActive() {
 		t.Fatal("typing /permissions should keep the menu open")
 	}
-	if got := m.completions[m.completeIdx].name; got != "/permissions" {
+	if got := m.complete.items[m.complete.idx].name; got != "/permissions" {
 		t.Fatalf("exact match /permissions should be focused, got %s", got)
 	}
 }
@@ -81,19 +81,19 @@ func TestCompletion_TheOldNameStillNamesTheCommand(t *testing.T) {
 	if !m.completionActive() {
 		t.Fatal("typing the old name should keep the menu open")
 	}
-	if got := m.completions[m.completeIdx].name; got != "/permissions" {
+	if got := m.complete.items[m.complete.idx].name; got != "/permissions" {
 		t.Fatalf("/mode should focus the command it renamed to, got %s", got)
 	}
 }
 
 func TestCompletion_ArrowsMoveFocus(t *testing.T) {
 	m := typeChars(t, readyModel(t), "/mo")
-	first := m.completions[0].name
+	first := m.complete.items[0].name
 
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 	m = updated.(Model)
-	if m.completeIdx != 1 {
-		t.Fatalf("down should move focus to 1, got %d", m.completeIdx)
+	if m.complete.idx != 1 {
+		t.Fatalf("down should move focus to 1, got %d", m.complete.idx)
 	}
 	if m.input.Value() != "/mo" {
 		t.Fatalf("moving focus should not touch the input, got %q", m.input.Value())
@@ -101,8 +101,8 @@ func TestCompletion_ArrowsMoveFocus(t *testing.T) {
 
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyUp})
 	m = updated.(Model)
-	if m.completeIdx != 0 || m.completions[0].name != first {
-		t.Fatalf("up should move focus back to 0, got %d", m.completeIdx)
+	if m.complete.idx != 0 || m.complete.items[0].name != first {
+		t.Fatalf("up should move focus back to 0, got %d", m.complete.idx)
 	}
 }
 
@@ -168,7 +168,7 @@ func TestCompletion_HidesUnavailableCommands(t *testing.T) {
 	if !m.completionActive() {
 		t.Fatal("typing /sa should open the menu")
 	}
-	for _, c := range m.completions {
+	for _, c := range m.complete.items {
 		if c.name == "/save" {
 			t.Fatal("/save should be hidden without chat persistence")
 		}
@@ -180,8 +180,8 @@ func TestCompletion_AliasMatches(t *testing.T) {
 	if !m.completionActive() {
 		t.Fatal("typing /q should match the /exit aliases")
 	}
-	if m.completions[m.completeIdx].name != "/exit" {
-		t.Fatalf("alias /q should surface /exit, got %s", m.completions[m.completeIdx].name)
+	if m.complete.items[m.complete.idx].name != "/exit" {
+		t.Fatalf("alias /q should surface /exit, got %s", m.complete.items[m.complete.idx].name)
 	}
 }
 

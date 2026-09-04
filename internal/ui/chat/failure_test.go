@@ -221,14 +221,14 @@ func TestKeyEntry_AppliesTheKeyAndNeverShowsIt(t *testing.T) {
 		t.Fatalf("[e] should open the key prompt, state = %v", next.state)
 	}
 	for _, r := range "sk-secret-1234" {
-		updated, _ := next.updateKeyEntry(keyPress(r))
+		updated, _ := next.routeOverlay(overlayFor(stateKeyEntry), keyPress(r))
 		next = updated.(Model)
 	}
 	view := strings.Join(next.keyEntryLines(), "\n")
 	if strings.Contains(stripANSI(view), "secret") {
 		t.Errorf("the prompt must never echo the key, got:\n%s", stripANSI(view))
 	}
-	done, _ := next.updateKeyEntry(tea.KeyPressMsg{Code: tea.KeyEnter})
+	done, _ := next.routeOverlay(overlayFor(stateKeyEntry), tea.KeyPressMsg{Code: tea.KeyEnter})
 	final := done.(Model)
 	if applied != "sk-secret-1234" {
 		t.Errorf("the key reached the session as %q", applied)
@@ -254,8 +254,8 @@ func TestKeyEntry_EscKeepsTheOldKey(t *testing.T) {
 	}
 	opened, _ := m.openKeyEntry(&provider.Failure{Class: provider.ClassAuth})
 	next := opened.(Model)
-	updated, _ := next.updateKeyEntry(keyPress('x'))
-	updated, _ = updated.(Model).updateKeyEntry(tea.KeyPressMsg{Code: tea.KeyEscape})
+	updated, _ := next.routeOverlay(overlayFor(stateKeyEntry), keyPress('x'))
+	updated, _ = updated.(Model).routeOverlay(overlayFor(stateKeyEntry), tea.KeyPressMsg{Code: tea.KeyEscape})
 	final := updated.(Model)
 	if applied {
 		t.Error("esc declines; it must not replace the key")

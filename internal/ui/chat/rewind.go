@@ -71,6 +71,14 @@ func checkpointsFromMessages(msgs []provider.Message) []checkpoint {
 
 // openRewindPick opens the interactive /rewind picker over the recorded
 // checkpoints, latest first.
+//
+// It is a card of the selector family and not one of its own: a list of turns
+// is a catalog, and the first thing a reader looking for one does is name
+// what they were doing — so it opens with the query row the family's search
+// cards open with, and the terminal's own cursor sits on it
+// (docs/interface/surfaces.md#selectors). Its own Select was the same card
+// with none of that: no filter, no cursor, and a second key handler and a
+// second render to keep in step with the family's.
 func (m Model) openRewindPick() (tea.Model, tea.Cmd) {
 	if len(m.checkpoints) == 0 {
 		m.appendEntry(entry{kind: entrySystem, text: "No checkpoints to rewind to yet."})
@@ -86,36 +94,16 @@ func (m Model) openRewindPick() (tea.Model, tea.Cmd) {
 			Desc:  m.checkpointGitDesc(cp),
 		})
 	}
-	m.rewindSelect = &components.Select{
-		Title:    "Rewind to before which turn? (the abandoned tail is kept as a branch)",
-		Options:  opts,
-		MaxLines: m.maxConfirmPanelHeight(),
-	}
-	m.enterSurface(stateRewindPick)
-	m.syncViewport()
-	return m, nil
-}
-
-// updateRewindPick routes keys while the /rewind picker is showing.
-func (m Model) updateRewindPick(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	done, result := m.rewindSelect.Update(msg)
-	if !done {
-		return m, nil
-	}
-	sel := result.(components.SelectResult)
-	turn := len(m.checkpoints) - sel.Index // options are latest-first
-	m.rewindSelect = nil
-	m.leaveSurface()
-	if sel.Canceled {
-		m.syncViewport()
-		return m, nil
-	}
-	note := m.rewindToTurn(turn)
-	m.appendEntry(entry{kind: entrySystem, text: note})
-	m.syncViewport()
-	m.viewport.SetLines(m.renderHistoryLines())
-	m.viewport.GotoBottom()
-	return m, m.autosaveCmd()
+	return m.openSearchPicker("Rewind to before which turn? (the abandoned tail is kept as a branch)",
+		opts, 0, func(m *Model, idx int) (string, tea.Cmd) {
+			// The options are latest-first, so the row is counted back from
+			// the end rather than into it.
+			turn := len(m.checkpoints) - idx
+			// The conversation this session would be reopened on has just
+			// changed shape, so the slot is written before anything else can
+			// be added to it.
+			return m.rewindToTurn(turn), m.autosaveCmd()
+		})
 }
 
 // rewindToTurn truncates the conversation back to just before turn n
@@ -289,12 +277,4 @@ func (m *Model) switchToBranch(target string) string {
 	m.contextTokens = 0
 	m.resetRounds()
 	return fmt.Sprintf("Switched to branch %q (%d messages).", target, len(msgs))
-}
-
-// rewindPickLines is the rendered /rewind picker, one row per line.
-func (m Model) rewindPickLines() []string {
-	if m.rewindSelect == nil {
-		return nil
-	}
-	return strings.Split(m.rewindSelect.View(m.contentWidth()), "\n")
 }

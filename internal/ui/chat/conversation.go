@@ -59,7 +59,7 @@ func (m *Model) unavailableCommand(name string) bool {
 		// surfaces a conversation deliberately does not have.
 		return false
 	}
-	for _, c := range slashCommands {
+	for _, c := range slashCommands() {
 		if c.enabled == nil || c.enabled(m) {
 			continue
 		}

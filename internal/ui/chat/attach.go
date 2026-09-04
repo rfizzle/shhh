@@ -711,7 +711,7 @@ func (m Model) cycleAttachedMode() (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	ceiling := m.subagents.ParentMode()
-	cycle := m.modeCycle
+	cycle := m.policy.cycle
 	if len(cycle) == 0 {
 		cycle = agent.DefaultCycle()
 	}
@@ -808,7 +808,7 @@ func (m Model) childModeStatus(name string) string {
 		return "No agent named " + name + "."
 	}
 	ceiling := m.subagents.ParentMode()
-	cycle := m.modeCycle
+	cycle := m.policy.cycle
 	if len(cycle) == 0 {
 		cycle = agent.DefaultCycle()
 	}

@@ -122,7 +122,7 @@ func TestChangeset_RecordCarriesTheModeTheFileHad(t *testing.T) {
 func TestChangeset_AutoApprovedEditRecordsHowItWasApplied(t *testing.T) {
 	var ran []string
 	m := execModel(t, &ran)
-	m.mode = agent.ModeAcceptEdits
+	m.policy.mode = agent.ModeAcceptEdits
 	m.turnCount = 2
 	path := filepath.Join(t.TempDir(), "a.txt")
 	m = applyWrite(t, m, path, "one\n", "")

@@ -34,11 +34,11 @@ func TestMention_AtOpensTheMenuRanked(t *testing.T) {
 	m.input.SetValue("@mod")
 	m.syncCompletions()
 
-	if !m.completionActive() || !m.completeFiles {
+	if !m.completionActive() || !m.complete.files {
 		t.Fatal("@ should open the file-mention menu")
 	}
 	var names []string
-	for _, c := range m.completions {
+	for _, c := range m.complete.items {
 		names = append(names, c.name)
 	}
 	if len(names) != 2 || names[0] != "internal/ui/chat/model.go" || names[1] != "go.mod" {
@@ -179,7 +179,7 @@ func TestMention_WalkRunsOncePerDraft(t *testing.T) {
 	}
 	m.input.SetValue("plain text")
 	m.syncCompletions()
-	if m.mentionCache != nil {
+	if m.complete.mentionCache != nil {
 		t.Fatal("a draft that stopped being a mention should drop the cache")
 	}
 }

@@ -54,7 +54,7 @@ func classifierModel(t *testing.T, ran *[]string, p provider.Provider) Model {
 		WithLedger(ledger).
 		WithClassifier(agent.NewClassifier(ledger.For(p, meter.SourceClassifier),
 			agent.ClassifierConfig{Model: "judge"}))
-	m.mode = agent.ModeAuto
+	m.policy.mode = agent.ModeAuto
 	return m
 }
 

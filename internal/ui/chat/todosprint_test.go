@@ -69,7 +69,7 @@ func TestSprintPlan_ProposesTheReadyListUnderTheBudget(t *testing.T) {
 
 	// Trimming the set writes exactly what was left checked, in order.
 	next.todoPropose.Checked[1] = false
-	final, _ := next.updateTodoPropose(tea.KeyPressMsg{Code: tea.KeyEnter})
+	final, _ := next.routeOverlay(overlayFor(stateTodoPropose), tea.KeyPressMsg{Code: tea.KeyEnter})
 	done := final.(Model)
 	if done.state == stateTodoPropose {
 		t.Fatal("enter should close the card")
@@ -118,7 +118,7 @@ func TestSprintPlan_RefusalsWriteNothing(t *testing.T) {
 func TestSprintPlan_CancelWritesNothing(t *testing.T) {
 	m, root := sprintModel(t, "")
 	updated, _ := m.startTodoSprintPlan(nil)
-	final, _ := updated.(Model).updateTodoPropose(tea.KeyPressMsg{Code: tea.KeyEscape})
+	final, _ := updated.(Model).routeOverlay(overlayFor(stateTodoPropose), tea.KeyPressMsg{Code: tea.KeyEscape})
 	done := final.(Model)
 	if !strings.Contains(done.transcript[len(done.transcript)-1].text, "no sprint was planned") {
 		t.Fatalf("cancel note = %q", done.transcript[len(done.transcript)-1].text)
@@ -197,8 +197,8 @@ func TestTodoRun_CarriesTheSprintGoal(t *testing.T) {
 	m.input.SetValue("/todo run do-it")
 	updated, _ := m.submitInput()
 	next := updated.(Model)
-	if next.todoRun == nil || next.todoRun.Sprint != "Make the cache trustworthy." {
-		t.Fatalf("run = %+v", next.todoRun)
+	if next.todoRunner.state == nil || next.todoRunner.state.Sprint != "Make the cache trustworthy." {
+		t.Fatalf("run = %+v", next.todoRunner.state)
 	}
 }
 
@@ -212,10 +212,10 @@ func TestTodoRunDone_ClosesAFinishedSprint(t *testing.T) {
 	}
 	m.reloadTodos()
 	it, _ := m.todoStore.Find("do-it")
-	m.todoRunItem = it
-	m.todoRun = run.Start(it, "sess", "manual", 1, run.Options{NoCommit: true})
-	m.todoRun.Report = "## Report\nSummary: done.\n"
-	m.todoRun.Stage = run.StageDone
+	m.todoRunner.item = it
+	m.todoRunner.state = run.Start(it, "sess", "manual", 1, run.Options{NoCommit: true})
+	m.todoRunner.state.Report = "## Report\nSummary: done.\n"
+	m.todoRunner.state.Stage = run.StageDone
 	updated, _ := m.todoRunDone()
 	last := updated.(Model).transcript[len(updated.(Model).transcript)-1].text
 	if !strings.Contains(last, "last item in the sprint") {
@@ -255,7 +255,7 @@ func TestSprintPlan_NamesTheSecondSprintOfADayApart(t *testing.T) {
 	m, root := sprintModel(t, "")
 	first, _ := m.startTodoSprintPlan(nil)
 	m = first.(Model)
-	final, _ := m.updateTodoPropose(tea.KeyPressMsg{Code: tea.KeyEnter})
+	final, _ := m.routeOverlay(overlayFor(stateTodoPropose), tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = final.(Model)
 	sp, err := todo.LoadSprint(root)
 	if err != nil || sp == nil {
@@ -269,7 +269,7 @@ func TestSprintPlan_NamesTheSecondSprintOfADayApart(t *testing.T) {
 
 	second, _ := m.startTodoSprintPlan(nil)
 	m = second.(Model)
-	final, _ = m.updateTodoPropose(tea.KeyPressMsg{Code: tea.KeyEnter})
+	final, _ = m.routeOverlay(overlayFor(stateTodoPropose), tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = final.(Model)
 	again, err := todo.LoadSprint(root)
 	if err != nil || again == nil {
@@ -298,7 +298,7 @@ func TestSprintPlan_AndProposalsNeverHoldTheCardTogether(t *testing.T) {
 	if m.todoSprintPlan != nil {
 		t.Fatal("a reading landed over the plan and kept its slugs")
 	}
-	final, _ := m.updateTodoPropose(tea.KeyPressMsg{Code: tea.KeyEnter})
+	final, _ := m.routeOverlay(overlayFor(stateTodoPropose), tea.KeyPressMsg{Code: tea.KeyEnter})
 	if _, err := os.Stat(todo.SprintPath(root)); !os.IsNotExist(err) {
 		t.Fatal("accepting the proposals card wrote a sprint")
 	}

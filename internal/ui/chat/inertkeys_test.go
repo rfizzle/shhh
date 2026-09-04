@@ -263,7 +263,6 @@ func TestInertKeys_EveryTakeoverHoldsTheKeyboardExclusively(t *testing.T) {
 		{"reading mode", stateFocus},
 		{"the full-screen diff", stateDiffFull},
 		{"review mode", stateReview},
-		{"the rewind picker", stateRewindPick},
 		{"the selector family", statePick},
 		{"the model picker", stateModelList},
 		{"the undo confirm", stateUndoConfirm},

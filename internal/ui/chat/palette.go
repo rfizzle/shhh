@@ -277,7 +277,7 @@ func (m Model) paletteCandidates() []paletteEntry {
 func (m Model) paletteCommandEntries() []paletteEntry {
 	working := m.working()
 	var rows []slashCommand
-	for _, c := range slashCommands {
+	for _, c := range slashCommands() {
 		if c.enabled != nil && !c.enabled(&m) {
 			continue
 		}

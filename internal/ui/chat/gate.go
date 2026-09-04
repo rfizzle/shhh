@@ -82,7 +82,7 @@ type closeGateMsg struct {
 // it change nothing for a suite to have an opinion about; what this settles
 // is which of the two sessions has to say so.
 func (m Model) closeGateArmed() bool {
-	return m.closeGate.on || m.todoRun.Sprinting() || m.todoRun.ClosesWithGate()
+	return m.closeGate.on || m.todoRunner.state.Sprinting() || m.todoRunner.state.ClosesWithGate()
 }
 
 // closeGateSuite is the suite a close should run and how many failing
@@ -206,9 +206,9 @@ func (m Model) finishCloseGate(msg closeGateMsg) (tea.Model, tea.Cmd) {
 	// (run.State.Checks). The reading is the formatted result's own, so
 	// what counts as a pass is the one definition every surface uses — a
 	// stale pass among them, which is not one.
-	if m.todoRun.ClosesWithGate() {
+	if m.todoRunner.state.ClosesWithGate() {
 		sum, ok := quality.Summarize(text)
-		m.todoRun.Checks(ok && sum.OK())
+		m.todoRunner.state.Checks(ok && sum.OK())
 	}
 	failed := msg.res.Verdict == quality.VerdictFail || msg.res.Verdict == quality.VerdictBlocked
 	if failed && m.closeGate.fed < retries {

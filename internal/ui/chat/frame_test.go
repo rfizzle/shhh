@@ -405,7 +405,7 @@ func TestFrame_ModeGlyphNeverDependsOnColorAlone(t *testing.T) {
 	if !strings.Contains(stripANSI(m.View().Content), "⏸") {
 		t.Fatal("gated mode must keep its textual glyph in the vitals rail")
 	}
-	m.mode = agent.ModeAuto
+	m.policy.mode = agent.ModeAuto
 	if !strings.Contains(stripANSI(m.View().Content), "⏵⏵") {
 		t.Fatal("permissive mode must keep its textual glyph in the vitals rail")
 	}

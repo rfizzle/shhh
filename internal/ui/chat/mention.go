@@ -26,12 +26,12 @@ import (
 // once per open menu (the rule for dynamic sources) and is cached until
 // the menu closes.
 func (m *Model) mentionMatches(token string) []completionItem {
-	if m.mentionCache == nil {
-		m.mentionCache = m.paletteFileEntries()
+	if m.complete.mentionCache == nil {
+		m.complete.mentionCache = m.paletteFileEntries()
 	}
 	tok := strings.ToLower(token)
 	var exact, basePre, baseSub, pathSub, subseq []completionItem
-	for _, e := range m.mentionCache {
+	for _, e := range m.complete.mentionCache {
 		p := strings.ToLower(e.text)
 		base := p
 		if i := strings.LastIndex(p, "/"); i >= 0 {
@@ -64,7 +64,7 @@ func (m *Model) mentionMatches(token string) []completionItem {
 // only when it is an image. Both tab and enter land here: a mention menu
 // has nothing to run, so the two keys mean the one thing.
 func (m Model) insertMention() (tea.Model, tea.Cmd) {
-	item := m.completions[m.completeIdx]
+	item := m.complete.items[m.complete.idx]
 	m.acceptCompletion()
 	m.syncViewport()
 	// The peek reads first bytes only, the way a dragged-in path's does;

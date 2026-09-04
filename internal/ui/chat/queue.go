@@ -241,7 +241,7 @@ func (m *Model) takeBatchApproval(req *approvalRequest) bool {
 	}
 	delete(m.batchApproved, req.call.ID)
 	act := m.approvalAction(req)
-	return m.mode != agent.ModePlan && !act.SafetyFlagged && len(act.OutOfScope) == 0
+	return m.policy.mode != agent.ModePlan && !act.SafetyFlagged && len(act.OutOfScope) == 0
 }
 
 // armConfirm shows the confirm prompt for the pending decision, resolving the

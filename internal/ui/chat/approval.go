@@ -270,7 +270,7 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 	// confirmation: no mode, session grant, or classifier can wave one
 	// through. Plan mode falls through to the policy below, which refuses the
 	// write like any other.
-	if req.kind == approvalMemory && m.mode != agent.ModePlan {
+	if req.kind == approvalMemory && m.policy.mode != agent.ModePlan {
 		m.recordDecision(observe.DecisionAsk, observe.ReasonMemory)
 		m.openMemoryAsk(req)
 		m.armConfirm(req)
@@ -316,7 +316,7 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 	}
 	// In auto mode the classifier judges what the static policy would
 	// ask about — except safety-flagged actions, which always prompt the human.
-	if act := m.approvalAction(req); m.mode == agent.ModeAuto && m.classifier != nil &&
+	if act := m.approvalAction(req); m.policy.mode == agent.ModeAuto && m.classifier != nil &&
 		!act.SafetyFlagged && !act.ScopeSensitive {
 		return m.startClassifierCheck(req)
 	}
@@ -781,8 +781,8 @@ func (m Model) confirmLines() []string {
 	width := m.contentWidth()
 	// The queue strip sits above whichever surface is asking.
 	strip := m.pendingQueue.View(width)
-	if m.memoryAsk != nil {
-		return append(strip, m.memoryAskLines()...)
+	if o := m.askOverlay(); o != nil {
+		return append(strip, o.Lines(m, width, 0)...)
 	}
 	return append(strip, strings.Split(m.approvalCard().View(width), "\n")...)
 }
@@ -825,76 +825,40 @@ func (m Model) resolvePanel() panelBody {
 		testHookRenderPanel()
 	}
 	// The agent manager and a routed child ask cover whatever surface the
-	// state was showing, so they are rendered here once and both the row
-	// count and the draw read the same rows. Neither can cover the prompt
-	// frame — the frame yields the panel to them — so a frame that is
-	// showing renders neither.
+	// state was showing (coverOverlay, overlay.go), so they are rendered here
+	// once and both the row count and the draw read the same rows. Neither
+	// can cover the prompt frame — the frame yields the panel to them — so a
+	// frame that is showing renders neither.
 	showingFrame := m.frameShowing()
 	var cover []string
 	if !showingFrame {
-		if m.agentList != nil {
-			cover = m.agentListLines()
-		} else if ask := m.activeChildAsk(); ask != nil {
-			cover = m.childAskPanelLines(ask)
+		if c := m.coverOverlay(); c != nil {
+			cover = c.Lines(m, m.contentWidth(), 0)
 		}
 	}
 
 	var lines []string
 	bound := m.maxConfirmPanelHeight()
-	st := m.state
+	// The register says which mode owns the panel and how tall it may grow.
+	// A decision still waiting on the handover owns none of it: it rides
+	// above the frame rather than filling the panel — the placement the
+	// register calls floating — so the panel is the input's and
+	// interruptHeight is what pays for the card.
+	o := m.panelOverlay()
 	if m.decisionUngated() && showingFrame {
-		// The card rides above the frame rather than filling the panel
-		//, so the panel is the input's and interruptHeight is what
-		// pays for the card.
-		st = stateInput
+		o = nil
 	}
-	switch st {
-	case stateConfirmRun:
-		lines, bound = m.confirmPanelLines(), m.confirmPanelBound()
-	case statePlanApprove:
-		lines, bound = m.planPanelLines(), m.planPanelBound()+m.gatedExtraRows()
-	case stateRewindPick:
-		lines = m.rewindPickLines()
-	case statePick:
-		lines = m.pickerLines()
-	case stateTodoPropose:
-		lines = m.todoProposeLines()
-	case statePasteDrop:
-		lines = m.pasteDropLines()
-	case stateScaffold:
-		// A decision whose keys were cut off by the panel bound is not one,
-		// so the card gets the plan card's headroom the way the pressure
-		// card does (scaffold.go).
-		lines, bound = m.scaffoldLines(), m.planPanelBound()
-	case stateTodoPause:
-		lines = m.todoPauseLines()
-	case stateUndoConfirm:
-		lines = m.undoConfirmLines()
-	case stateQuitConfirm:
-		lines = m.quitConfirmLines()
-	case stateKeyEntry:
-		lines = m.keyEntryLines()
-	case stateFocus:
-		// The reading bar is normally the input's three rows; `[?]` grows it
-		// into the mode's key register, and the panel pays for
-		// it out of the transcript the way every other panel does.
-		lines = m.focusHintLines()
-	case statePressure:
-		// The card is a decision, and a decision whose action bar was cut off
-		// by the panel bound is not one: it gets the plan card's headroom.
-		lines, bound = m.pressureLines(), m.planPanelBound()
-	default:
-		if m.agentList != nil {
-			lines = cover
-		} else if ask := m.activeChildAsk(); ask != nil && !m.decisionUngated() {
-			lines = cover
-		} else if m.historySearching() {
-			// The history search extends the input area the way the menu does.
-			return panelBody{lines: cover, height: min(m.input.Height()+len(m.historySearchLines()), m.maxConfirmPanelHeight())}
-		} else if m.completionActive() && m.attachedTo == "" {
-			// The completion menu extends the input area.
-			return panelBody{lines: cover, height: min(m.input.Height()+len(m.completionMenuLines()), m.maxConfirmPanelHeight())}
-		}
+	switch {
+	case o != nil:
+		lines, bound = o.Lines(m, m.contentWidth(), 0), o.Bound(m)
+	case m.panelCovered():
+		lines = cover
+	case m.historySearching():
+		// The history search extends the input area the way the menu does.
+		return panelBody{lines: cover, height: min(m.input.Height()+len(m.historySearchLines()), m.maxConfirmPanelHeight())}
+	case m.completionActive() && m.attachedTo == "":
+		// The completion menu extends the input area.
+		return panelBody{lines: cover, height: min(m.input.Height()+len(m.completionMenuLines()), m.maxConfirmPanelHeight())}
 	}
 	// The cover takes the rows whatever was under it was given: it replaces
 	// the panel's content and never its accounting.
@@ -906,11 +870,10 @@ func (m Model) resolvePanel() panelBody {
 		return panelBody{lines: body, height: min(n, bound)}
 	}
 	if lines == nil {
-		switch m.state {
-		case stateDiffFull, stateOutputFull, statePreview, stateReview, stateContext, statePersona:
-			// The full-screen surfaces replace the input with a one-line
-			// hint; a grown draft comes back with the input, and paying its
-			// rows here would blank most of the panel under the hint.
+		if o := overlayFor(m.state); o != nil && o.place == placePane {
+			// A pane overlay replaces the input with a one-line hint; a grown
+			// draft comes back with the input, and paying its rows here would
+			// blank most of the panel under the hint.
 			return panelBody{lines: cover, height: inputHeight}
 		}
 		// The bare draft box: its height follows its content (frame.go,

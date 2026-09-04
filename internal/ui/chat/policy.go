@@ -27,7 +27,7 @@ import (
 // whose leading words match an entry run without an approval prompt, unless
 // safety-flagged.
 func (m Model) WithCommandAllowlist(list []string) Model {
-	m.commandAllowlist = list
+	m.policy.allowlist = list
 	return m
 }
 
@@ -39,7 +39,7 @@ func (m Model) WithCommandAllowlist(list []string) Model {
 // cancels it is the ceiling.
 // See docs/capabilities/containment.md#a-command-that-will-not-finish-is-not-waited-on-forever.
 func (m Model) WithCommandTimeout(d time.Duration) Model {
-	m.commandTimeout = d
+	m.policy.timeout = d
 	return m
 }
 
@@ -47,17 +47,17 @@ func (m Model) WithCommandTimeout(d time.Duration) Model {
 // entries beyond the built-in list, and whether the built-in list auto-runs
 // at all (behavior.read_only_commands / behavior.read_only_auto).
 func (m Model) WithReadOnlyCommands(extra []string, disabled bool) Model {
-	m.readOnlyExtra = extra
-	m.readOnlyDisabled = disabled
+	m.policy.readOnlyExtra = extra
+	m.policy.readOnlyDisabled = disabled
 	return m
 }
 
 // WithApprovalMode sets the session's starting permission mode and the
 // Shift+Tab cycle order; an empty cycle keeps the default order.
 func (m Model) WithApprovalMode(mode agent.Mode, cycle []agent.Mode) Model {
-	m.mode = mode
+	m.policy.mode = mode
 	if len(cycle) > 0 {
-		m.modeCycle = cycle
+		m.policy.cycle = cycle
 	}
 	return m
 }
@@ -68,13 +68,13 @@ func (m Model) WithApprovalMode(mode agent.Mode, cycle []agent.Mode) Model {
 // — and the only difference is that one of them can be revoked.
 func (m Model) modePolicy() agent.ModePolicy {
 	return agent.ModePolicy{
-		Mode:             m.mode,
-		AllowEdits:       m.allowAllEdits,
-		AllowCommands:    m.allowAllCommands,
-		EditDirs:         m.editDirGrants,
+		Mode:             m.policy.mode,
+		AllowEdits:       m.policy.allEdits,
+		AllowCommands:    m.policy.allCommands,
+		EditDirs:         m.policy.editDirs,
 		CommandAllowlist: m.allowlist(),
-		ReadOnlyExtra:    m.readOnlyExtra,
-		ReadOnlyDisabled: m.readOnlyDisabled,
+		ReadOnlyExtra:    m.policy.readOnlyExtra,
+		ReadOnlyDisabled: m.policy.readOnlyDisabled,
 	}
 }
 
@@ -82,21 +82,21 @@ func (m Model) modePolicy() agent.ModePolicy {
 // order. It allocates only where the session has added something, so the
 // common case hands the config slice straight through.
 func (m Model) allowlist() []string {
-	if len(m.commandGrants) == 0 {
-		return m.commandAllowlist
+	if len(m.policy.commands) == 0 {
+		return m.policy.allowlist
 	}
-	out := make([]string, 0, len(m.commandAllowlist)+len(m.commandGrants))
-	return append(append(out, m.commandAllowlist...), m.commandGrants...)
+	out := make([]string, 0, len(m.policy.allowlist)+len(m.policy.commands))
+	return append(append(out, m.policy.allowlist...), m.policy.commands...)
 }
 
 // grants is the session's four grants as one value, for the surfaces that
 // carry all of them: the sub-agent supervisor and /permissions revoke.
 func (m Model) grants() agent.Grants {
 	return agent.Grants{
-		AllEdits:    m.allowAllEdits,
-		AllCommands: m.allowAllCommands,
-		EditDirs:    m.editDirGrants,
-		Commands:    m.commandGrants,
+		AllEdits:    m.policy.allEdits,
+		AllCommands: m.policy.allCommands,
+		EditDirs:    m.policy.editDirs,
+		Commands:    m.policy.commands,
 	}
 }
 
@@ -111,7 +111,7 @@ func (m *Model) grantCommand(command string) string {
 		return ""
 	}
 	if !agent.AllowlistMatches(m.allowlist(), prefix) {
-		m.commandGrants = append(m.commandGrants, prefix)
+		m.policy.commands = append(m.policy.commands, prefix)
 	}
 	return prefix
 }
@@ -124,8 +124,8 @@ func (m *Model) grantEditDir(path string) string {
 	if dir == "" {
 		return ""
 	}
-	if !agent.PathUnder(m.editDirGrants, filepath.Join(dir, "x")) {
-		m.editDirGrants = append(m.editDirGrants, dir)
+	if !agent.PathUnder(m.policy.editDirs, filepath.Join(dir, "x")) {
+		m.policy.editDirs = append(m.policy.editDirs, dir)
 	}
 	return dir
 }
@@ -135,18 +135,18 @@ func (m *Model) grantEditDir(path string) string {
 // this session's to take back.
 func (m *Model) revokeGrants() []string {
 	var gone []string
-	if m.allowAllEdits {
+	if m.policy.allEdits {
 		gone = append(gone, "every edit")
 	}
-	if m.allowAllCommands {
+	if m.policy.allCommands {
 		gone = append(gone, "every command")
 	}
-	for _, d := range m.editDirGrants {
+	for _, d := range m.policy.editDirs {
 		gone = append(gone, "edits in "+displayDir(d))
 	}
-	gone = append(gone, quoteAll(m.commandGrants)...)
-	m.allowAllEdits, m.allowAllCommands = false, false
-	m.editDirGrants, m.commandGrants = nil, nil
+	gone = append(gone, quoteAll(m.policy.commands)...)
+	m.policy.allEdits, m.policy.allCommands = false, false
+	m.policy.editDirs, m.policy.commands = nil, nil
 	return gone
 }
 
@@ -273,7 +273,7 @@ func (m Model) policyDecision(req *approvalRequest) (agent.Decision, string) {
 // modeStatus describes the active mode and cycle for /permissions with no
 // argument.
 func (m Model) modeStatus() string {
-	cycle := m.modeCycle
+	cycle := m.policy.cycle
 	if len(cycle) == 0 {
 		cycle = agent.DefaultCycle()
 	}
@@ -282,7 +282,7 @@ func (m Model) modeStatus() string {
 		names[i] = mode.String()
 	}
 	var sb strings.Builder
-	fmt.Fprintf(&sb, "Mode: %s — %s.\n", m.mode, m.mode.Describe())
+	fmt.Fprintf(&sb, "Mode: %s — %s.\n", m.policy.mode, m.policy.mode.Describe())
 	sb.WriteString("Cycle (Shift+Tab): " + strings.Join(names, " → ") + "\n")
 	sb.WriteString("Set with /permissions <manual|accept-edits|auto|plan>; /permissions why shows the latest auto-mode denial.\n")
 	sb.WriteString("/permissions grants lists what this session has stopped asking about; /permissions revoke takes it back.")
@@ -294,21 +294,21 @@ func (m Model) modeStatus() string {
 func (m Model) policyLabel() string {
 	var parts []string
 	switch {
-	case m.allowAllEdits:
+	case m.policy.allEdits:
 		parts = append(parts, "edits")
-	case len(m.editDirGrants) > 0:
+	case len(m.policy.editDirs) > 0:
 		// A scoped grant counts what it covers rather than claiming the
 		// category: "edits" and "2 dirs" are different states, and the chip
 		// is the only place the difference is visible at a glance.
-		parts = append(parts, plural(len(m.editDirGrants), "dir"))
+		parts = append(parts, plural(len(m.policy.editDirs), "dir"))
 	}
 	switch {
-	case m.allowAllCommands:
+	case m.policy.allCommands:
 		parts = append(parts, "cmds")
-	case len(m.commandGrants) > 0:
-		parts = append(parts, plural(len(m.commandGrants), "cmd"))
+	case len(m.policy.commands) > 0:
+		parts = append(parts, plural(len(m.policy.commands), "cmd"))
 	}
-	if len(m.commandAllowlist) > 0 {
+	if len(m.policy.allowlist) > 0 {
 		parts = append(parts, "allowlist")
 	}
 	if len(parts) == 0 {
@@ -327,19 +327,19 @@ func (m Model) policyHelp() string {
 	}
 	var sb strings.Builder
 	sb.WriteString("Approval policy:\n")
-	fmt.Fprintf(&sb, "  mode:      %s (%s)\n", m.mode, m.mode.Describe())
-	sb.WriteString("  edits:     " + status(m.allowAllEdits) + scopeSuffix(len(m.editDirGrants), "directory", "directories") + "\n")
-	sb.WriteString("  commands:  " + status(m.allowAllCommands) + scopeSuffix(len(m.commandGrants), "command shape", "command shapes") + "\n")
-	if n := len(m.commandAllowlist); n > 0 {
+	fmt.Fprintf(&sb, "  mode:      %s (%s)\n", m.policy.mode, m.policy.mode.Describe())
+	sb.WriteString("  edits:     " + status(m.policy.allEdits) + scopeSuffix(len(m.policy.editDirs), "directory", "directories") + "\n")
+	sb.WriteString("  commands:  " + status(m.policy.allCommands) + scopeSuffix(len(m.policy.commands), "command shape", "command shapes") + "\n")
+	if n := len(m.policy.allowlist); n > 0 {
 		fmt.Fprintf(&sb, "  allowlist: %d command pattern(s) from config auto-approve\n", n)
 	}
 	if m.grants().Any() {
 		sb.WriteString("  /permissions grants names them; /permissions revoke takes them back.\n")
 	}
-	if m.readOnlyDisabled {
+	if m.policy.readOnlyDisabled {
 		sb.WriteString("  read-only: prompts (behavior.read_only_auto = false)\n")
 	} else {
-		fmt.Fprintf(&sb, "  read-only: %d inspection command(s) run without asking", len(agent.ReadOnlyCommands())+len(m.readOnlyExtra))
+		fmt.Fprintf(&sb, "  read-only: %d inspection command(s) run without asking", len(agent.ReadOnlyCommands())+len(m.policy.readOnlyExtra))
 		sb.WriteString(" (ls, cat, grep, git status, …)\n")
 	}
 	if n := len(m.scopeDirs()); n > 0 {
@@ -386,7 +386,7 @@ func allowlistMatches(allowlist []string, command string) bool {
 // the same act.
 func (m Model) grantStatus() string {
 	g := m.grants()
-	if !g.Any() && len(m.commandAllowlist) == 0 && len(m.scopeDirs()) == 0 {
+	if !g.Any() && len(m.policy.allowlist) == 0 && len(m.scopeDirs()) == 0 {
 		return "Nothing is granted — every gated call asks.\n" +
 			"[a] on a confirm prompt grants the one shape of call it is showing; /permissions allow <commands|edits> grants the category."
 	}
@@ -410,7 +410,7 @@ func (m Model) grantStatus() string {
 	for _, d := range m.scopeDirs() {
 		sb.WriteString("  scope      " + displayDir(d) + " — in the working scope (/add-dir drop takes it back)\n")
 	}
-	if n := len(m.commandAllowlist); n > 0 {
+	if n := len(m.policy.allowlist); n > 0 {
 		fmt.Fprintf(&sb, "  config     %d command pattern(s) from behavior.command_allowlist — not this session's to revoke\n", n)
 	}
 	if g.Any() {
@@ -429,17 +429,17 @@ func (m *Model) allowCommand(args []string) string {
 	}
 	switch args[0] {
 	case "commands", "cmds":
-		if m.allowAllCommands {
+		if m.policy.allCommands {
 			return "Commands already run without asking. /permissions revoke commands takes it back."
 		}
-		m.allowAllCommands = true
+		m.policy.allCommands = true
 		m.syncChildGrants()
 		return "Every command will now run without asking, except the safety-flagged ones, which always ask.\n/permissions revoke commands takes it back."
 	case "edits":
-		if m.allowAllEdits {
+		if m.policy.allEdits {
 			return "Edits already apply without asking. /permissions revoke edits takes it back."
 		}
-		m.allowAllEdits = true
+		m.policy.allEdits = true
 		m.syncChildGrants()
 		return "Every edit will now apply without asking, anywhere in the workspace.\n/permissions revoke edits takes it back."
 	}
@@ -463,19 +463,19 @@ func (m *Model) revokeCommand(args []string) string {
 	case "all":
 		gone = m.revokeGrants()
 	case "edits":
-		if m.allowAllEdits {
+		if m.policy.allEdits {
 			gone = append(gone, "every edit")
 		}
-		for _, d := range m.editDirGrants {
+		for _, d := range m.policy.editDirs {
 			gone = append(gone, "edits in "+displayDir(d))
 		}
-		m.allowAllEdits, m.editDirGrants = false, nil
+		m.policy.allEdits, m.policy.editDirs = false, nil
 	case "commands", "cmds":
-		if m.allowAllCommands {
+		if m.policy.allCommands {
 			gone = append(gone, "every command")
 		}
-		gone = append(gone, quoteAll(m.commandGrants)...)
-		m.allowAllCommands, m.commandGrants = false, nil
+		gone = append(gone, quoteAll(m.policy.commands)...)
+		m.policy.allCommands, m.policy.commands = false, nil
 	default:
 		return "Usage: /permissions revoke [edits|commands]"
 	}
@@ -484,4 +484,36 @@ func (m *Model) revokeCommand(args []string) string {
 		return "Nothing was granted; everything already asks."
 	}
 	return "Revoked, and asking again: " + strings.Join(gone, ", ") + "."
+}
+
+// policyState is what the session has stopped asking about, and the mode that
+// frames it. allowlist comes from config; everything below it is what [a] and
+// /permissions allow have granted this session. The zero value is manual mode
+// with nothing granted, which is the default: everything prompts.
+//
+// It is one struct because a grant is only ever read against the mode it was
+// made under — a directory edits are allowed in says nothing on its own — and
+// because /permissions revoke has to be able to clear the whole of it.
+type policyState struct {
+	mode      agent.Mode
+	cycle     []agent.Mode
+	allowlist []string
+	// timeout bounds one assistant-run command; zero means no ceiling.
+	timeout time.Duration
+	// The blanket grants: every edit, every command, until revoked. They are
+	// what /permissions allow sets, and nothing else — [a] used to set them,
+	// which made one keystroke on one `go test` the last time the session
+	// asked about anything.
+	allEdits    bool
+	allCommands bool
+	// The scoped grants [a] records instead: directories edits are allowed
+	// under, and allowlist entries in agent.GrantPrefix's shape. /permissions
+	// revoke clears all four, which is the way back that a session grant
+	// never had.
+	editDirs []string
+	commands []string
+	// Read-only inspection commands auto-run in every mode; config can
+	// extend the built-in list or turn it off entirely.
+	readOnlyExtra    []string
+	readOnlyDisabled bool
 }

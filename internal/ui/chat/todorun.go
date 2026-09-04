@@ -105,8 +105,8 @@ func (m Model) beginTodoRun(arg string, noCommit, inSprint bool) (tea.Model, tea
 	// it themselves, and the run that made one against the setting would
 	// be the surprise worth avoiding.
 	noCommit = noCommit || m.todos.NoCommit
-	if m.todoRun != nil && !m.todoRun.Over() {
-		return m.systemNotice(fmt.Sprintf("A run is already going: %s. /todo status shows it; /todo stop ends it.", m.todoRun.Summary()))
+	if m.todoRunner.state != nil && !m.todoRunner.state.Over() {
+		return m.systemNotice(fmt.Sprintf("A run is already going: %s. /todo status shows it; /todo stop ends it.", m.todoRunner.state.Summary()))
 	}
 	s := m.todoStore
 	if s == nil {
@@ -145,7 +145,7 @@ func (m Model) beginTodoRun(arg string, noCommit, inSprint bool) (tea.Model, tea
 		if st, err := run.Load(m.todos.Root, it.Slug); err == nil && !st.Over() {
 			from := st.Session
 			st.Session = m.sessionName
-			st.PrevMode = m.mode.String()
+			st.PrevMode = m.policy.mode.String()
 			st.Turn = int(m.turnCount) + 1
 			st.Reviewer = ""
 			// The invocation's answer stands over the checkpoint's, the
@@ -154,8 +154,8 @@ func (m Model) beginTodoRun(arg string, noCommit, inSprint bool) (tea.Model, tea
 			// the run started in.
 			st.NoCommit, st.Repo, st.Sprint = noCommit, repo, m.sprintGoal()
 			st.InSprint = inSprint
-			m.todoRun = st
-			m.todoRunItem = it
+			m.todoRunner.state = st
+			m.todoRunner.item = it
 			m.openTodoRunRow()
 			model, _ := m.systemNotice(fmt.Sprintf("Continuing the run on %s from its %s stage (checkpoint from session %s).", it.Slug, st.Stage, orDash(from)))
 			return model.(Model).todoRunStep(st.Continue(it))
@@ -165,18 +165,18 @@ func (m Model) beginTodoRun(arg string, noCommit, inSprint bool) (tea.Model, tea
 	if err := todo.SetStatus(it.Path, todo.StatusInProgress); err != nil {
 		return m.systemNotice("Could not mark the item in progress: " + err.Error())
 	}
-	m.todoRun = run.Start(it, m.sessionName, m.mode.String(), int(m.turnCount)+1,
+	m.todoRunner.state = run.Start(it, m.sessionName, m.policy.mode.String(), int(m.turnCount)+1,
 		run.Options{NoCommit: noCommit, Repo: repo, Sprint: m.sprintGoal(),
 			CloseGate: m.workspaceClosesGate(), InSprint: inSprint})
-	m.todoRunItem = it
+	m.todoRunner.item = it
 	m.openTodoRunRow()
 	m.reloadTodos()
-	return m.todoRunStep(m.todoRun.First(it, ""))
+	return m.todoRunStep(m.todoRunner.state.First(it, ""))
 }
 
 // todoRunStep carries out one step the machine handed back.
 func (m Model) todoRunStep(step run.Step) (tea.Model, tea.Cmd) {
-	st := m.todoRun
+	st := m.todoRunner.state
 	if capped, ok := m.sprintCap(step); ok {
 		step = capped
 	}
@@ -195,8 +195,8 @@ func (m Model) todoRunStep(step run.Step) (tea.Model, tea.Cmd) {
 			mode = agent.ModePlan
 		}
 		m.applyMode(mode)
-		m.todoRunMark = len(m.transcript)
-		m.todoRunTurn = int(m.turnCount) + 1
+		m.todoRunner.mark = len(m.transcript)
+		m.todoRunner.turn = int(m.turnCount) + 1
 		return m.sendUserMessageAs(step.Prompt, step.Shown)
 	case run.ActionVerify:
 		// The row already says the run is verifying; what a notice would add
@@ -229,7 +229,7 @@ func (m Model) todoRunStep(step run.Step) (tea.Model, tea.Cmd) {
 // It waits out a round-limit pause, a hold and a decision card — those are
 // the reader's — and reads the answer only when the turn is truly over.
 func (m Model) todoRunAfter(prev Model) (Model, tea.Cmd) {
-	st := m.todoRun
+	st := m.todoRunner.state
 	if st == nil || st.Over() || !prev.working() || m.working() {
 		return m, nil
 	}
@@ -245,7 +245,7 @@ func (m Model) todoRunAfter(prev Model) (Model, tea.Cmd) {
 		// The commit turn was already read; the commit itself is in flight.
 		return m, nil
 	}
-	if int(m.turnCount) != m.todoRunTurn {
+	if int(m.turnCount) != m.todoRunner.turn {
 		// The turn that ended is not the stage's — a compaction, a skill
 		// activation, something a command started. Its answer is not the
 		// stage's answer and the stage cannot be judged, but nothing about
@@ -255,14 +255,14 @@ func (m Model) todoRunAfter(prev Model) (Model, tea.Cmd) {
 		next, cmd := m.stopTodoRunKeeping(fmt.Sprintf("the %s turn was displaced by another message", st.Stage))
 		return next.(Model), cmd
 	}
-	if m.todoRunCancelled {
+	if m.todoRunner.cancelled {
 		// The cancel chord ended the stage turn with a partial answer. A
 		// cancel is the reader stopping the run, not evidence to grade.
-		m.todoRunCancelled = false
+		m.todoRunner.cancelled = false
 		next, cmd := m.stopTodoRun()
 		return next.(Model), cmd
 	}
-	next, cmd := m.todoRunStep(st.Observe(m.todoRunItem, m.todoStageAnswer()))
+	next, cmd := m.todoRunStep(st.Observe(m.todoRunner.item, m.todoStageAnswer()))
 	return next.(Model), cmd
 }
 
@@ -271,15 +271,15 @@ func (m Model) todoRunAfter(prev Model) (Model, tea.Cmd) {
 // stage, and text typed between stages would start a turn whose edits the
 // run would then commit as its own.
 func (m Model) todoRunHoldsInput() (string, bool) {
-	if m.todoRun == nil || m.todoRun.Over() {
+	if m.todoRunner.state == nil || m.todoRunner.state.Over() {
 		return "", false
 	}
-	return fmt.Sprintf("a backlog run is going (%s · %s) — /todo stop ends it, /todo status shows it; commands still work", m.todoRun.Slug, m.todoRun.Stage), true
+	return fmt.Sprintf("a backlog run is going (%s · %s) — /todo stop ends it, /todo status shows it; commands still work", m.todoRunner.state.Slug, m.todoRunner.state.Stage), true
 }
 
 // todoStageAnswer is the assistant's last message since the stage began.
 func (m Model) todoStageAnswer() string {
-	for i := len(m.transcript) - 1; i >= m.todoRunMark && i >= 0; i-- {
+	for i := len(m.transcript) - 1; i >= m.todoRunner.mark && i >= 0; i-- {
 		if m.transcript[i].kind == entryAssistant {
 			return m.transcript[i].text
 		}
@@ -294,13 +294,13 @@ func (m Model) todoStageAnswer() string {
 // command it wrote itself must not be one shhh runs unasked.
 func (m Model) todoVerifyCmd() tea.Cmd {
 	root := m.todos.Root
-	slug := m.todoRunItem.Slug
-	tests := m.todoRun.Tests
+	slug := m.todoRunner.item.Slug
+	tests := m.todoRunner.state.Tests
 	gate := m.gate.Run
 	// A run whose implement stage closed on a passing gate carries that
 	// verdict here rather than paying for the suite twice over a tree that
 	// did not move between the two (run.State.Checks).
-	checked := m.todoRun.Checked
+	checked := m.todoRunner.state.Checked
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), verifyTimeout)
 		defer cancel()
@@ -349,7 +349,7 @@ func tail(s string, lines int) string {
 
 // finishTodoVerify applies the verify outcome.
 func (m Model) finishTodoVerify(msg todoVerifyMsg) (tea.Model, tea.Cmd) {
-	st := m.todoRun
+	st := m.todoRunner.state
 	if st == nil || st.Over() || msg.slug != st.Slug || st.Stage != run.StageVerify {
 		return m, nil
 	}
@@ -358,7 +358,7 @@ func (m Model) finishTodoVerify(msg todoVerifyMsg) (tea.Model, tea.Cmd) {
 		label = "failed"
 	}
 	model, _ := m.systemNotice(fmt.Sprintf("▸ todo run %s · verify %s\n%s", st.Slug, label, msg.output))
-	return model.(Model).todoRunStep(st.VerifyResult(m.todoRunItem, msg.ok, msg.output))
+	return model.(Model).todoRunStep(st.VerifyResult(m.todoRunner.item, msg.ok, msg.output))
 }
 
 // todoRunPaths is what the run may stage: every path the changeset saw
@@ -371,8 +371,8 @@ func (m Model) todoRunPaths() []string {
 	var out []string
 	// What earlier sessions of this run changed comes from the checkpoint;
 	// this session's own records are added to it.
-	if m.todoRun != nil {
-		for _, rel := range m.todoRun.Paths {
+	if m.todoRunner.state != nil {
+		for _, rel := range m.todoRunner.state.Paths {
 			if !seen[rel] {
 				seen[rel] = true
 				out = append(out, rel)
@@ -380,7 +380,7 @@ func (m Model) todoRunPaths() []string {
 		}
 	}
 	for _, t := range m.changes.Turns() {
-		if int(t.N) < m.todoRun.Turn {
+		if int(t.N) < m.todoRunner.state.Turn {
 			continue
 		}
 		for _, r := range t.Records {
@@ -406,8 +406,8 @@ func (m Model) todoRunPaths() []string {
 // reverted, cited or read as a unit.
 func (m Model) todoCommitCmd() tea.Cmd {
 	root := m.todos.Root
-	slug := m.todoRun.Slug
-	message := m.todoRun.Message
+	slug := m.todoRunner.state.Slug
+	message := m.todoRunner.state.Message
 	paths := m.todoRunPaths()
 	return func() tea.Msg {
 		if len(paths) == 0 {
@@ -486,7 +486,7 @@ func git(root string, args ...string) (string, int) {
 
 // finishTodoCommit applies the commit outcome.
 func (m Model) finishTodoCommit(msg todoCommitMsg) (tea.Model, tea.Cmd) {
-	st := m.todoRun
+	st := m.todoRunner.state
 	if st == nil || st.Over() || msg.slug != st.Slug || st.Stage != run.StageCommit {
 		return m, nil
 	}
@@ -513,7 +513,7 @@ func todoRunDoneNote(st *run.State, to string) string {
 
 // todoRunDone archives the item with its report and ends the run.
 func (m Model) todoRunDone() (tea.Model, tea.Cmd) {
-	st := m.todoRun
+	st := m.todoRunner.state
 	report := st.Report
 	if len(st.Files) > 0 && !st.NoCommit {
 		report += "\nCommitted: " + strings.Join(st.Files, ", ") + "\n"
@@ -524,7 +524,7 @@ func (m Model) todoRunDone() (tea.Model, tea.Cmd) {
 		// The work is finished; the item must not stay in progress with its
 		// report only on screen. It goes back to open with the report on
 		// it, and the note says what to do.
-		it := m.todoRunItem
+		it := m.todoRunner.item
 		_ = todo.SetStatus(it.Path, todo.StatusOpen)
 		_ = todo.Append(it.Path, report)
 		did := "committed " + plural(len(st.Files), "file")
@@ -548,20 +548,20 @@ func (m Model) todoRunDone() (tea.Model, tea.Cmd) {
 // todoRunBlocked ends the run with its evidence on the item. The work
 // already done stays in the tree, uncommitted, and the note says so.
 func (m Model) todoRunBlocked() (tea.Model, tea.Cmd) {
-	st := m.todoRun
-	it := m.todoRunItem
+	st := m.todoRunner.state
+	it := m.todoRunner.item
 	_ = todo.SetStatus(it.Path, todo.StatusBlocked)
 	_ = todo.Append(it.Path, fmt.Sprintf("## Blocked\n%s\n\n_run in session %s, stage %s, %s_", st.Blocked, st.Session, st.Stage, time.Now().Format("2006-01-02 15:04")))
 	paths := []string{}
 	if m.changes != nil {
 		paths = m.todoRunPaths()
 	}
-	blockedRow := m.todoRunRowIdx
+	blockedRow := m.todoRunner.rowIdx
 	m.endTodoRun()
 	// The proposal card that follows writes the follow-up item; the row that
 	// blocked is where it belongs, so the reader finds the block and what
 	// was written about it in one place.
-	m.todoFollowUpRow = blockedRow
+	m.todoRunner.followUpRow = blockedRow
 	note := fmt.Sprintf("✗ todo run %s blocked — %s", it.Slug, st.Blocked)
 	if len(paths) > 0 {
 		note += "\nWork so far stays in the tree, uncommitted: " + strings.Join(paths, ", ")
@@ -589,7 +589,7 @@ func (m Model) todoRunBlocked() (tea.Model, tea.Cmd) {
 // the size, the plan, and three answers — go ahead, re-plan with a note,
 // or stop. It borrows the bottom panel the way the memory prompt does.
 func (m Model) openTodoPause(step run.Step) (tea.Model, tea.Cmd) {
-	st := m.todoRun
+	st := m.todoRunner.state
 	// The plan is on the card as a checklist and on the run's row as the
 	// research stage's answer. It used to be pasted into the transcript here
 	// as well, which put the same paragraphs in a third place — the one
@@ -601,7 +601,7 @@ func (m Model) openTodoPause(step run.Step) (tea.Model, tea.Cmd) {
 	}
 	ns := components.NewNoteSelect("Run paused — "+st.Paused, opts)
 	ns.Select.MaxLines = m.maxConfirmPanelHeight() - 1
-	m.todoPause = ns
+	m.todoRunner.pause = ns
 	m.enterSurface(stateTodoPause)
 	m.syncViewport()
 	m.viewport.SetLines(m.renderHistoryLines())
@@ -620,10 +620,10 @@ func (m Model) openTodoPause(step run.Step) (tea.Model, tea.Cmd) {
 // counted, which is what every other fold in the product does
 // (docs/interface/principles.md#fold-never-hide).
 func (m Model) todoPauseLines() []string {
-	if m.todoPause == nil || m.todoRun == nil {
+	if m.todoRunner.pause == nil || m.todoRunner.state == nil {
 		return nil
 	}
-	st := m.todoRun
+	st := m.todoRunner.state
 	width := m.contentWidth()
 	var lines []string
 	head := fmt.Sprintf("%s · size %s", st.Slug, orDash(string(st.Size)))
@@ -634,7 +634,7 @@ func (m Model) todoPauseLines() []string {
 		head += fmt.Sprintf(" · %s", plural(len(st.Steps), "step"))
 	}
 	lines = append(lines, sty.User.Render(head))
-	card := strings.Split(m.todoPause.View(width), "\n")
+	card := strings.Split(m.todoRunner.pause.View(width), "\n")
 	// What the plan may take: the panel less the head, the questions, the
 	// lanes and the selector itself.
 	room := m.maxConfirmPanelHeight() - len(lines) - len(card) - len(st.Questions) - len(st.Lanes)
@@ -680,15 +680,15 @@ func orDash(s string) string {
 
 // updateTodoPause routes keys while the pause card shows.
 func (m Model) updateTodoPause(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	done, result := m.todoPause.Update(msg)
+	done, result := m.todoRunner.pause.Update(msg)
 	if !done {
 		return m, nil
 	}
 	res := result.(components.NoteSelectResult)
-	m.todoPause = nil
+	m.todoRunner.pause = nil
 	m.leaveSurface()
 	m.syncViewport()
-	st, it := m.todoRun, m.todoRunItem
+	st, it := m.todoRunner.state, m.todoRunner.item
 	if st == nil {
 		return m, nil
 	}
@@ -715,7 +715,7 @@ func (m Model) updateTodoPause(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 // With no supervisor, or a spawn the supervisor refuses, the orchestrator
 // reviews in its own turn and the step label says so.
 func (m Model) startTodoReview() (tea.Model, tea.Cmd) {
-	st, it := m.todoRun, m.todoRunItem
+	st, it := m.todoRunner.state, m.todoRunner.item
 	if len(m.todoRunPaths()) == 0 {
 		return m.todoRunStep(st.Block("the run changed no files under the repository, so there is nothing to review"))
 	}
@@ -746,7 +746,7 @@ func (m Model) todoRunDiff() string {
 	// the tree stands in, with an untracked file shown whole.
 	recorded := map[string]bool{}
 	for _, t := range m.changes.Turns() {
-		if int(t.N) < m.todoRun.Turn {
+		if int(t.N) < m.todoRunner.state.Turn {
 			continue
 		}
 		for _, r := range t.Records {
@@ -755,7 +755,7 @@ func (m Model) todoRunDiff() string {
 			}
 		}
 	}
-	for _, rel := range m.todoRun.Paths {
+	for _, rel := range m.todoRunner.state.Paths {
 		if recorded[rel] || seen[rel] {
 			continue
 		}
@@ -771,7 +771,7 @@ func (m Model) todoRunDiff() string {
 		}
 	}
 	for _, t := range m.changes.Turns() {
-		if int(t.N) < m.todoRun.Turn {
+		if int(t.N) < m.todoRunner.state.Turn {
 			continue
 		}
 		for _, r := range t.Records {
@@ -831,7 +831,7 @@ func runRelPath(root, p string) string {
 // of rounds — has no answer, and the run blocks on that rather than on
 // whatever the placeholder for a failed child happens to say.
 func (m Model) todoReviewDone(status subagent.Status) (tea.Model, tea.Cmd, bool) {
-	st := m.todoRun
+	st := m.todoRunner.state
 	if st == nil || st.Over() || st.Reviewer == "" || status.Name != st.Reviewer {
 		return m, nil, false
 	}
@@ -840,7 +840,7 @@ func (m Model) todoReviewDone(status subagent.Status) (tea.Model, tea.Cmd, bool)
 		next, cmd := m.todoRunStep(st.Block(fmt.Sprintf("the reviewer %s did not finish: %s", st.Reviewer, status.Detail)))
 		return next, cmd, true
 	}
-	next, cmd := m.todoRunStep(st.ReviewResult(m.todoRunItem, report))
+	next, cmd := m.todoRunStep(st.ReviewResult(m.todoRunner.item, report))
 	return next, cmd, true
 }
 
@@ -877,7 +877,7 @@ func todoFollowUp(it todo.Item, st *run.State) todo.Proposal {
 
 // endTodoRun restores the session's mode and retires the checkpoint.
 func (m *Model) endTodoRun() {
-	st := m.todoRun
+	st := m.todoRunner.state
 	if st == nil {
 		return
 	}
@@ -891,11 +891,11 @@ func (m *Model) endTodoRun() {
 	// The row keeps the state it ended on and is not the next run's; the
 	// state itself is no longer written to, so the row is frozen by the run
 	// being over rather than by a copy being taken.
-	m.todoRunRowIdx = 0
-	m.todoRun = nil
-	m.todoRunItem = todo.Item{}
-	if m.todoPause != nil {
-		m.todoPause = nil
+	m.todoRunner.rowIdx = 0
+	m.todoRunner.state = nil
+	m.todoRunner.item = todo.Item{}
+	if m.todoRunner.pause != nil {
+		m.todoRunner.pause = nil
 		m.leaveSurface()
 	}
 	m.reloadTodos()
@@ -914,7 +914,7 @@ func (m Model) stopTodoRunKeeping(why string) (tea.Model, tea.Cmd) {
 // the new one's transcript rather than to the transcript being dropped
 // (model.go).
 func (m *Model) keepTodoRun(why string) string {
-	st, it := m.todoRun, m.todoRunItem
+	st, it := m.todoRunner.state, m.todoRunner.item
 	if prev, err := agent.ParseMode(st.PrevMode); err == nil {
 		m.applyMode(prev)
 	}
@@ -927,8 +927,8 @@ func (m *Model) keepTodoRun(why string) string {
 	_ = st.Save(m.todos.Root)
 	m.signal(observe.SignalRun, "kept")
 	m.closeTodoRunRow("kept")
-	m.todoRun = nil
-	m.todoRunItem = todo.Item{}
+	m.todoRunner.state = nil
+	m.todoRunner.item = todo.Item{}
 	m.reloadTodos()
 	return todoRunKeptNote(it, st, why)
 }
@@ -942,7 +942,7 @@ func todoRunKeptNote(it todo.Item, st *run.State, why string) string {
 // stopTodoRun is /todo stop: the run is abandoned, the item goes back to
 // open, and whatever was changed stays in the tree.
 func (m Model) stopTodoRun() (tea.Model, tea.Cmd) {
-	st := m.todoRun
+	st := m.todoRunner.state
 	// A sprint ends at its checkpoint rather than by abandoning the item in
 	// flight: the stages already done are in the tree, and the sprint is the
 	// one caller that started the item without being asked about it, so
@@ -963,7 +963,7 @@ func (m Model) stopTodoRun() (tea.Model, tea.Cmd) {
 	if st == nil || st.Over() {
 		return m.systemNotice("No run is going.")
 	}
-	it := m.todoRunItem
+	it := m.todoRunner.item
 	_ = todo.SetStatus(it.Path, todo.StatusOpen)
 	m.signal(observe.SignalRun, "stopped")
 	m.closeTodoRunRow("stopped")
@@ -1032,7 +1032,7 @@ func (m *Model) killTodoAgents(st *run.State) {
 // item: the session builds it whole and the step label says why.
 // See docs/capabilities/todo.md#a-large-item-is-built-in-lanes.
 func (m Model) startTodoFanOut() (tea.Model, tea.Cmd) {
-	st, it := m.todoRun, m.todoRunItem
+	st, it := m.todoRunner.state, m.todoRunner.item
 	if m.subagents == nil {
 		return m.todoRunStep(st.NoLanes(it, "no agent supervisor; building in this session"))
 	}
@@ -1076,7 +1076,7 @@ func (m Model) startTodoFanOut() (tea.Model, tea.Cmd) {
 // writer asks — a command the classifier could not decide — goes to the
 // person the way every child's ask does: that is the steering.
 func (m Model) todoLaneAsk(ask *subagent.Ask) (tea.Model, tea.Cmd, bool) {
-	st := m.todoRun
+	st := m.todoRunner.state
 	if st == nil || st.Over() || ask == nil || ask.Kind != subagent.AskPatch {
 		return m, nil, false
 	}
@@ -1097,7 +1097,7 @@ func (m Model) todoLaneAsk(ask *subagent.Ask) (tea.Model, tea.Cmd, bool) {
 
 // todoLanePatched is a writer's patch landing on the tree.
 func (m Model) todoLanePatched(p *subagent.PatchApplied) {
-	if st := m.todoRun; st != nil && !st.Over() && p != nil {
+	if st := m.todoRunner.state; st != nil && !st.Over() && p != nil {
 		st.LanePatched(p.Agent)
 		_ = st.Save(m.todos.Root)
 	}
@@ -1107,7 +1107,7 @@ func (m Model) todoLanePatched(p *subagent.PatchApplied) {
 // and, when it is the last, the integration turn starts. A writer that
 // did not finish blocks the run the way a failed reviewer does.
 func (m Model) todoWriterDone(status subagent.Status) (tea.Model, tea.Cmd, bool) {
-	st := m.todoRun
+	st := m.todoRunner.state
 	if st == nil || st.Over() {
 		return m, nil, false
 	}
@@ -1118,7 +1118,7 @@ func (m Model) todoWriterDone(status subagent.Status) (tea.Model, tea.Cmd, bool)
 	if !ok || state != subagent.StateDone {
 		report = status.Detail
 	}
-	next, cmd := m.todoRunStep(st.LaneDone(m.todoRunItem, status.Name, ok && state == subagent.StateDone, report))
+	next, cmd := m.todoRunStep(st.LaneDone(m.todoRunner.item, status.Name, ok && state == subagent.StateDone, report))
 	return next, cmd, true
 }
 
@@ -1619,16 +1619,16 @@ func (m Model) todoRunRowView(e entry, width int, keysLive bool) string {
 // and gets a second row, because the first one is in a transcript this
 // session no longer has.
 func (m *Model) openTodoRunRow() {
-	m.appendEntry(entry{kind: entryTodoRun, todorun: newTodoRunRow(m.todoRun)})
-	m.todoRunRowIdx = len(m.transcript)
+	m.appendEntry(entry{kind: entryTodoRun, todorun: newTodoRunRow(m.todoRunner.state)})
+	m.todoRunner.rowIdx = len(m.transcript)
 }
 
 // todoRunRowEntry is the run's row, or nil where no run is drawn.
 func (m Model) todoRunRowEntry() *todoRunRow {
-	if m.todoRunRowIdx <= 0 || m.todoRunRowIdx > len(m.transcript) {
+	if m.todoRunner.rowIdx <= 0 || m.todoRunner.rowIdx > len(m.transcript) {
 		return nil
 	}
-	return m.transcript[m.todoRunRowIdx-1].todorun
+	return m.transcript[m.todoRunner.rowIdx-1].todorun
 }
 
 // observeTodoRunRow tells the row a transition happened. The row is redrawn
@@ -1650,7 +1650,7 @@ func (m *Model) closeTodoRunRow(how string) {
 		r.closed = how
 		m.invalidateRenderCache()
 	}
-	m.todoRunRowIdx = 0
+	m.todoRunner.rowIdx = 0
 }
 
 // todoRunRowIndexOf finds the transcript index of a run row, or -1.
@@ -1674,7 +1674,7 @@ func (m Model) todoRunReopen(idx int) (tea.Model, tea.Cmd, bool) {
 		return m, nil, false
 	}
 	slug := r.st.Slug
-	if m.todoRun != nil && !m.todoRun.Over() && m.todoRun.Slug == slug {
+	if m.todoRunner.state != nil && !m.todoRunner.state.Over() && m.todoRunner.state.Slug == slug {
 		next, cmd := m.systemNotice(fmt.Sprintf("%s is being run again; /todo stop ends that run first.", slug))
 		return next, cmd, true
 	}
@@ -1708,8 +1708,8 @@ func (m Model) todoRunReopen(idx int) (tea.Model, tea.Cmd, bool) {
 // that died is continued rather than replaced: its checkpoint names the item
 // it was on, and that item's own checkpoint names the stage.
 func (m Model) startTodoSprint(opt todoRunArgs) (tea.Model, tea.Cmd) {
-	if m.todoRun != nil && !m.todoRun.Over() {
-		return m.systemNotice(fmt.Sprintf("A run is already going: %s. /todo status shows it; /todo stop ends it.", m.todoRun.Summary()))
+	if m.todoRunner.state != nil && !m.todoRunner.state.Over() {
+		return m.systemNotice(fmt.Sprintf("A run is already going: %s. /todo status shows it; /todo stop ends it.", m.todoRunner.state.Summary()))
 	}
 	if m.todoStore == nil {
 		return m.systemNotice("No backlog to run from.")
@@ -1726,7 +1726,7 @@ func (m Model) startTodoSprint(opt todoRunArgs) (tea.Model, tea.Cmd) {
 		// a continued run's do: asking for the sprint again is asking for it
 		// under the answers given now, and the session it is picked up in is
 		// this one.
-		sp.Session, sp.PrevMode, sp.NoCommit = m.sessionName, m.mode.String(), noCommit
+		sp.Session, sp.PrevMode, sp.NoCommit = m.sessionName, m.policy.mode.String(), noCommit
 		if opt.max > 0 {
 			sp.Max = opt.max
 		}
@@ -1740,7 +1740,7 @@ func (m Model) startTodoSprint(opt todoRunArgs) (tea.Model, tea.Cmd) {
 		}
 		return next.sprintNext(sp)
 	}
-	sp := run.StartSprint(m.sessionName, m.mode.String(), opt.max, noCommit)
+	sp := run.StartSprint(m.sessionName, m.policy.mode.String(), opt.max, noCommit)
 	m.signal(observe.SignalRun, "sprint")
 	model, _ := m.systemNotice(todoSprintStartNote(sp, len(m.todoStore.Ready())))
 	return model.(Model).sprintNext(sp)
@@ -1783,7 +1783,7 @@ func (m Model) sprintNext(sp *run.Sprint) (tea.Model, tea.Cmd) {
 func (m Model) sprintRun(sp *run.Sprint, slug string) (tea.Model, tea.Cmd) {
 	next, cmd := m.beginTodoRun(slug, sp.NoCommit, true)
 	started := next.(Model)
-	if started.todoRun == nil || started.todoRun.Over() {
+	if started.todoRunner.state == nil || started.todoRunner.state.Over() {
 		sp.Blocks(slug, "the run could not be started; the notice above says why")
 		ended, _ := started.endTodoSprint(sp)
 		return ended, cmd
@@ -1857,7 +1857,7 @@ func todoSprintEndNote(sp *run.Sprint) string {
 // smallest thing the runner can judge, so it is also the smallest thing the
 // cap can end: cutting a turn in half would leave a tree nothing has read.
 func (m Model) sprintCap(step run.Step) (run.Step, bool) {
-	st := m.todoRun
+	st := m.todoRunner.state
 	if m.todos.ItemTimeout <= 0 || !st.Sprinting() || st.Over() {
 		return step, false
 	}
@@ -1877,7 +1877,7 @@ func (m Model) sprintCap(step run.Step) (run.Step, bool) {
 // left a sprint running and came back to one line about a turn would have to
 // go and look up which of thirty items it was.
 func (m Model) sprintCloseWords() string {
-	st := m.todoRun
+	st := m.todoRunner.state
 	if !st.Sprinting() {
 		return ""
 	}
@@ -1886,4 +1886,32 @@ func (m Model) sprintCloseWords() string {
 		words += " · sprint " + sp.Count()
 	}
 	return words
+}
+
+// todoRunState is the backlog run in progress. It is one struct because the
+// stage, the item and the row it is drawn on are read together at every step
+// of the run, and because a run ends by being cleared whole — a stage left
+// behind by a partial reset is a run that keeps answering turns nobody
+// started.
+type todoRunState struct {
+	// state is the run itself, item the backlog item it works, and mark
+	// where in the transcript the current stage began.
+	state *run.State
+	item  todo.Item
+	mark  int
+	// turn is the session turn the current stage sent, so a turn that ended
+	// without being the stage's is told apart; cancelled marks a stage turn
+	// ended by the cancel chord rather than by an answer.
+	turn      int
+	cancelled bool
+	// followUpRow is 1 + the transcript index of the run row a blocked run
+	// left, while its follow-up proposal is still on the card.
+	followUpRow int
+	// rowIdx is 1 + the transcript index of the run's row, or 0 with no run
+	// drawn. The row is addressed by index rather than held as a pointer
+	// because transcript indices are what focus mode, the render cache and
+	// reading mode all address entries by.
+	rowIdx int
+	// pause is the open pause card while a run waits on the person.
+	pause *components.NoteSelect
 }

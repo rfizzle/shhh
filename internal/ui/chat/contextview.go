@@ -68,22 +68,22 @@ func (m Model) openContext() (tea.Model, tea.Cmd) {
 }
 
 // updateContext routes keys while the surface is up.
-func (m Model) updateContext(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+func (m *Model) answerContext(msg tea.KeyPressMsg) (bool, overlayAction) {
 	if m.context == nil {
-		return m.closeContext()
+		return true, m.closeContext()
 	}
 	done, _ := m.context.Update(msg)
 	if !done {
-		return m, nil
+		return false, overlayAction{}
 	}
-	return m.closeContext()
+	return true, m.closeContext()
 }
 
 // closeContext hands the screen back to the turn, which may have moved on
 // while the surface was up. The folds the reader opened are remembered on the
 // way out, because the surface itself is rebuilt from the accounting the next
 // time it is asked for.
-func (m Model) closeContext() (tea.Model, tea.Cmd) {
+func (m *Model) closeContext() overlayAction {
 	if m.context != nil {
 		m.contextOpen = map[string]bool{}
 		for _, g := range m.context.Groups {
@@ -91,9 +91,7 @@ func (m Model) closeContext() (tea.Model, tea.Cmd) {
 		}
 	}
 	m.context = nil
-	m.leaveSurface()
-	m.syncViewport()
-	return m, nil
+	return overlayAction{close: true}
 }
 
 // contextLines renders the surface, one row per line.

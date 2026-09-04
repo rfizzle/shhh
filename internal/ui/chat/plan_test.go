@@ -25,7 +25,7 @@ func planModel(t *testing.T, stream StreamFunc) Model {
 	m := New(msgs, stream)
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
-	m.mode = agent.ModePlan
+	m.policy.mode = agent.ModePlan
 	m.state = stateStreaming
 	m.streaming = "1. edit a.go\n2. run tests"
 	return m
@@ -85,7 +85,7 @@ func TestPlan_EmptyResponseSkipsPrompt(t *testing.T) {
 
 func TestPlan_NonPlanModeSkipsPrompt(t *testing.T) {
 	m := planModel(t, mockStream)
-	m.mode = agent.ModeManual
+	m.policy.mode = agent.ModeManual
 	updated, _ := m.Update(doneMsg{})
 	m = updated.(Model)
 	if m.state != stateInput {
@@ -101,7 +101,7 @@ func TestPlan_SteeringTakesPrecedenceOverPrompt(t *testing.T) {
 	if m.state != stateStreaming {
 		t.Fatalf("queued steering should continue planning, got state %d", m.state)
 	}
-	if m.mode != agent.ModePlan {
+	if m.policy.mode != agent.ModePlan {
 		t.Fatal("steering must not leave plan mode")
 	}
 }
@@ -115,8 +115,8 @@ func TestPlan_ApproveExecutesInChosenMode(t *testing.T) {
 	m = handover(t, m)
 	updated, cmd := m.Update(tea.KeyPressMsg{Code: '1', Text: "1"})
 	m = updated.(Model)
-	if m.mode != agent.ModeAcceptEdits {
-		t.Fatalf("option 1 should switch to accept-edits, got %v", m.mode)
+	if m.policy.mode != agent.ModeAcceptEdits {
+		t.Fatalf("option 1 should switch to accept-edits, got %v", m.policy.mode)
 	}
 	if m.state != stateStreaming {
 		t.Fatalf("approval should continue straight into execution, got state %d", m.state)
@@ -169,8 +169,8 @@ func TestPlan_ApproveOtherModes(t *testing.T) {
 		m = handover(t, m)
 		updated, _ = m.Update(tea.KeyPressMsg{Code: c.key, Text: string(c.key)})
 		m = updated.(Model)
-		if m.mode != c.want || m.state != stateStreaming {
-			t.Errorf("option %c: mode %v state %d, want mode %v streaming", c.key, m.mode, m.state, c.want)
+		if m.policy.mode != c.want || m.state != stateStreaming {
+			t.Errorf("option %c: mode %v state %d, want mode %v streaming", c.key, m.policy.mode, m.state, c.want)
 		}
 	}
 }
@@ -186,7 +186,7 @@ func TestPlan_KeepPlanningReturnsToInput(t *testing.T) {
 	if m.state != stateInput {
 		t.Fatalf("esc should dismiss to keep planning, got state %d", m.state)
 	}
-	if m.mode != agent.ModePlan {
+	if m.policy.mode != agent.ModePlan {
 		t.Fatal("keep planning must stay in plan mode")
 	}
 	found := false
@@ -208,8 +208,8 @@ func TestPlan_RejectStaysInPlanMode(t *testing.T) {
 	m = handover(t, m)
 	updated, _ = m.Update(tea.KeyPressMsg{Code: '5', Text: "5"})
 	m = updated.(Model)
-	if m.state != stateInput || m.mode != agent.ModePlan {
-		t.Fatalf("reject should return to input in plan mode, got state %d mode %v", m.state, m.mode)
+	if m.state != stateInput || m.policy.mode != agent.ModePlan {
+		t.Fatalf("reject should return to input in plan mode, got state %d mode %v", m.state, m.policy.mode)
 	}
 	found := false
 	for _, e := range m.transcript {
@@ -250,8 +250,8 @@ func TestPlan_NavigationAndEnterSelect(t *testing.T) {
 	}
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
-	if m.mode != agent.ModeManual || m.state != stateStreaming {
-		t.Fatalf("enter should select the focused option (manual execution), got mode %v state %d", m.mode, m.state)
+	if m.policy.mode != agent.ModeManual || m.state != stateStreaming {
+		t.Fatalf("enter should select the focused option (manual execution), got mode %v state %d", m.policy.mode, m.state)
 	}
 }
 
@@ -261,7 +261,7 @@ func TestPlan_RequestStreamInjectsInstructions(t *testing.T) {
 	m := New(msgs, recordingStream(&captured))
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
-	m.mode = agent.ModePlan
+	m.policy.mode = agent.ModePlan
 
 	updated, cmd := m.sendUserMessage("plan the change")
 	m = updated.(Model)
@@ -278,7 +278,7 @@ func TestPlan_RequestStreamInjectsInstructions(t *testing.T) {
 func TestPlan_InspectionCommandRunsWithoutPrompt(t *testing.T) {
 	var ran []string
 	m := execModel(t, &ran)
-	m.mode = agent.ModePlan
+	m.policy.mode = agent.ModePlan
 
 	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
 		{ID: "call_i", Name: "execute_command", Arguments: `{"command":"git status"}`},

@@ -15,6 +15,7 @@ package chat
 import (
 	"fmt"
 	"strings"
+	"sync"
 
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
@@ -50,7 +51,7 @@ type slashCommand struct {
 
 // idleOnlyReason reports why a command cannot run mid-turn, if it cannot.
 func idleOnlyReason(name string) (string, bool) {
-	for _, c := range slashCommands {
+	for _, c := range slashCommands() {
 		if c.idleOnly == "" {
 			continue
 		}
@@ -77,226 +78,244 @@ type completionItem struct {
 	space bool
 }
 
+var (
+	slashOnce  sync.Once
+	slashTable []slashCommand
+)
+
 // slashCommands is the completion registry, in menu order. Descriptions are
 // deliberately shorter than /help's — they share a row with the name.
-var slashCommands = []slashCommand{
-	{name: "/help", desc: "Show commands, keys, and the approval policy"},
-	// Not idleOnly, though it replaces the conversation: a turn that is not
-	// over is exactly when ending the session is worth asking about, so the
-	// command stays offered mid-turn and answers with the confirm quitting
-	// draws (cancel.go).
-	{name: "/clear", aliases: []string{"/new"}, desc: "Start a new session"},
-	{name: "/paste", args: "[path|show <name>|drop [name]|clear]", desc: "Attach the clipboard, or a file, to your next message",
-		key: keys.Shown(keys.Draft.Attach),
-		argSpecs: []argSpec{
-			{options: []argOption{
-				{"show", "Look at a staged image"},
-				{"drop", "Take one attachment back out"},
-				{"clear", "Drop what is staged"},
+//
+// It is built on first use rather than at initialisation because a row's
+// argument list is resolved against the session — the width it is drawn at,
+// the attachments it offers — and the session asks the overlay register which
+// mode owns the screen (overlay.go), which reads a table built the same way.
+// A package-level registry closes that loop into an initialisation cycle.
+func slashCommands() []slashCommand {
+	slashOnce.Do(func() { slashTable = buildSlashCommands() })
+	return slashTable
+}
+
+func buildSlashCommands() []slashCommand {
+	return []slashCommand{
+		{name: "/help", desc: "Show commands, keys, and the approval policy"},
+		// Not idleOnly, though it replaces the conversation: a turn that is not
+		// over is exactly when ending the session is worth asking about, so the
+		// command stays offered mid-turn and answers with the confirm quitting
+		// draws (cancel.go).
+		{name: "/clear", aliases: []string{"/new"}, desc: "Start a new session"},
+		{name: "/paste", args: "[path|show <name>|drop [name]|clear]", desc: "Attach the clipboard, or a file, to your next message",
+			key: keys.Shown(keys.Draft.Attach),
+			argSpecs: []argSpec{
+				{options: []argOption{
+					{"show", "Look at a staged image"},
+					{"drop", "Take one attachment back out"},
+					{"clear", "Drop what is staged"},
+				}},
+				{after: []string{"drop"}, dynamic: attachmentDropArgs},
+				{after: []string{"show"}, dynamic: attachmentShowArgs},
 			}},
-			{after: []string{"drop"}, dynamic: attachmentDropArgs},
-			{after: []string{"show"}, dynamic: attachmentShowArgs},
-		}},
-	{name: "/copy", args: "[code]", desc: "Copy the last response (or just its code blocks)",
-		argSpecs: staticArgs(argOption{"code", "Only the code blocks"})},
-	{name: "/run", args: "[n]", desc: "Run a code block from the last response",
-		enabled:  func(m *Model) bool { return m.runFn != nil },
-		idleOnly: "it runs a command in this session"},
-	{name: "/model", args: "[name]", desc: "Switch the model (bare /model opens a picker)",
-		argSpecs: []argSpec{{dynamic: modelArgs, fuzzy: true}},
-		idleOnly: "it switches the model the running turn is using"},
-	{name: "/permissions", args: "[name|grants|allow|revoke|why]", desc: "What runs without asking, and the mode that frames it",
-		aliases: []string{"/perms", "/mode"},
-		key:     keys.Shown(keys.Draft.Mode),
-		argSpecs: []argSpec{
-			{dynamic: modeArgs},
-			{after: []string{"allow"}, options: []argOption{
-				{"commands", "Every command runs without asking"},
-				{"edits", "Every edit applies without asking"},
+		{name: "/copy", args: "[code]", desc: "Copy the last response (or just its code blocks)",
+			argSpecs: staticArgs(argOption{"code", "Only the code blocks"})},
+		{name: "/run", args: "[n]", desc: "Run a code block from the last response",
+			enabled:  func(m *Model) bool { return m.runFn != nil },
+			idleOnly: "it runs a command in this session"},
+		{name: "/model", args: "[name]", desc: "Switch the model (bare /model opens a picker)",
+			argSpecs: []argSpec{{dynamic: modelArgs, fuzzy: true}},
+			idleOnly: "it switches the model the running turn is using"},
+		{name: "/permissions", args: "[name|grants|allow|revoke|why]", desc: "What runs without asking, and the mode that frames it",
+			aliases: []string{"/perms", "/mode"},
+			key:     keys.Shown(keys.Draft.Mode),
+			argSpecs: []argSpec{
+				{dynamic: modeArgs},
+				{after: []string{"allow"}, options: []argOption{
+					{"commands", "Every command runs without asking"},
+					{"edits", "Every edit applies without asking"},
+				}},
+				{after: []string{"revoke"}, options: []argOption{
+					{"edits", "Only the edit grants"},
+					{"commands", "Only the command grants"},
+				}},
 			}},
-			{after: []string{"revoke"}, options: []argOption{
-				{"edits", "Only the edit grants"},
-				{"commands", "Only the command grants"},
+		{name: "/reasoning", args: "[off|low|medium|high|xhigh|max|default]", desc: "How much the model thinks before it answers",
+			aliases: []string{"/think"},
+			key:     keys.Shown(keys.Draft.Reasoning),
+			argSpecs: []argSpec{
+				{dynamic: reasoningArgs},
+				{after: []string{"default"}, options: reasoningLevelArgs()},
 			}},
-		}},
-	{name: "/reasoning", args: "[off|low|medium|high|xhigh|max|default]", desc: "How much the model thinks before it answers",
-		aliases: []string{"/think"},
-		key:     keys.Shown(keys.Draft.Reasoning),
-		argSpecs: []argSpec{
-			{dynamic: reasoningArgs},
-			{after: []string{"default"}, options: reasoningLevelArgs()},
-		}},
-	{name: "/context", desc: "The window as a meter, itemised down to the tool"},
-	{name: "/stats", desc: "Context occupancy and session spend"},
-	{name: "/step", desc: "Open the in-flight step's detail (again closes it)"},
-	{name: "/status", desc: "Where the session is, and whether it is still on target"},
-	{name: "/trust", desc: "Let this checkout's skills, agent profiles and quality suites load (\"off\" withdraws it)"},
-	{name: "/ui", args: "verbosity <low|normal|high> | mono <on|off>", desc: "Activity feed density and monochrome mode",
-		argSpecs: []argSpec{
-			{options: []argOption{
-				{"verbosity", "Activity feed density"},
-				{"mono", "Strip every surface to two greys"},
-				{"mouse", "Whether shhh or the terminal owns the mouse"},
-				{"notify", "Say so when a turn stops and you are elsewhere"},
-				{"title", "Name an unnamed session after its first turn"},
-				{"window", "Name the terminal's own tab after this session"},
-				{"rail", "How many columns the inspector rail takes"},
-				{"terminal", "What this terminal can do"},
+		{name: "/context", desc: "The window as a meter, itemised down to the tool"},
+		{name: "/stats", desc: "Context occupancy and session spend"},
+		{name: "/step", desc: "Open the in-flight step's detail (again closes it)"},
+		{name: "/status", desc: "Where the session is, and whether it is still on target"},
+		{name: "/trust", desc: "Let this checkout's skills, agent profiles and quality suites load (\"off\" withdraws it)"},
+		{name: "/ui", args: "verbosity <low|normal|high> | mono <on|off>", desc: "Activity feed density and monochrome mode",
+			argSpecs: []argSpec{
+				{options: []argOption{
+					{"verbosity", "Activity feed density"},
+					{"mono", "Strip every surface to two greys"},
+					{"mouse", "Whether shhh or the terminal owns the mouse"},
+					{"notify", "Say so when a turn stops and you are elsewhere"},
+					{"title", "Name an unnamed session after its first turn"},
+					{"window", "Name the terminal's own tab after this session"},
+					{"rail", "How many columns the inspector rail takes"},
+					{"terminal", "What this terminal can do"},
+				}},
+				{after: []string{"verbosity"}, options: []argOption{
+					{"low", "Step headers only"},
+					{"normal", "Read-only calls folded"},
+					{"high", "Every row expanded"},
+				}},
+				{after: []string{"mono"}, options: []argOption{
+					{"on", "Two greys — glyphs and words carry every state"},
+					{"off", "The full palette"},
+				}},
+				{after: []string{"mouse"}, options: []argOption{
+					{"on", "The wheel scrolls, click-drag selects, a click opens a row"},
+					{"off", "The terminal keeps its own click-drag selection"},
+				}},
+				{after: []string{"notify"}, options: []argOption{
+					{"on", "One notification when a turn stops and the window is not in front"},
+					{"off", "A turn that stops while you are elsewhere waits silently"},
+				}},
+				{after: []string{"title"}, options: []argOption{
+					{"on", "The summary model names the session after its first turn"},
+					{"off", "Sessions keep the timestamp they were opened at"},
+				}},
+				{after: []string{"window"}, options: []argOption{
+					{"on", "The tab says the command, the directory, and ⏸ while a decision waits"},
+					{"off", "The tab keeps whatever your terminal puts there"},
+				}},
+				{after: []string{"rail"}, dynamic: railArgs},
 			}},
-			{after: []string{"verbosity"}, options: []argOption{
-				{"low", "Step headers only"},
-				{"normal", "Read-only calls folded"},
-				{"high", "Every row expanded"},
+		{name: "/add-dir", args: "[<path>|drop <path>]", desc: "The directories this session may work in",
+			enabled: func(m *Model) bool { return m.scope != nil },
+			argSpecs: []argSpec{
+				{options: []argOption{{"drop", "Take a directory back out of the scope"}}},
+				{after: []string{"drop"}, dynamic: scopeDropArgs},
 			}},
-			{after: []string{"mono"}, options: []argOption{
-				{"on", "Two greys — glyphs and words carry every state"},
-				{"off", "The full palette"},
+		{name: "/sandbox", args: "[doctor|scope|list|status|destroy|prune]", desc: "Containment status and container sandboxes",
+			enabled: func(m *Model) bool { return m.codingSurfaces() },
+			argSpecs: staticArgs(
+				argOption{"doctor", "Report containment support"},
+				argOption{"scope", "The directories commands may write to"},
+				argOption{"list", "List container sandboxes"},
+				argOption{"status", "This session's sandbox"},
+				argOption{"destroy", "Destroy a sandbox by id"},
+				argOption{"prune", "Remove stopped sandboxes"},
+			)},
+		{name: "/evidence", args: "[purge]", desc: "Tool-output evidence store",
+			enabled:  func(m *Model) bool { return m.evidence.Manage != nil },
+			argSpecs: staticArgs(argOption{"purge", "Delete stored tool output"})},
+		{name: "/gate", args: "[run|result|on|off]", desc: "Run the project's quality gate",
+			enabled: func(m *Model) bool { return m.gate.Manage != nil },
+			argSpecs: staticArgs(
+				argOption{"run", "Run the gate suites"},
+				argOption{"result", "Show the last result"},
+				argOption{"on", "Run the suite as a turn that changed files closes"},
+				argOption{"off", "Stop running it at a turn's close"},
+			)},
+		{name: "/ps", desc: "List session-owned long-running processes",
+			enabled: func(m *Model) bool { return m.processes.Manage != nil }},
+		{name: scaffoldCommandName, desc: "Scaffold this project's .shhh/ context file (asks first)",
+			enabled:  func(m *Model) bool { return m.scaffold.Write != nil },
+			idleOnly: "it writes a file into the checkout"},
+		{name: "/skills", desc: "The skills this session loaded, and why any did not"},
+		{name: "/mcp", args: "[trust <name>|distrust <name>]", desc: "The MCP servers this session connected, and why any did not",
+			argSpecs: staticArgs(
+				argOption{"trust", "Let a project server start from the next session on"},
+				argOption{"distrust", "Withdraw that"},
+			)},
+		{name: "/skill", args: "<name> [task]", desc: "Activate a skill now, with your task after it",
+			enabled:  func(m *Model) bool { return m.skills.Len() > 0 },
+			argSpecs: []argSpec{{dynamic: skillArgs}}},
+		{name: "/secret", args: "[list|set|forget]", desc: "Values commands can use and the model never sees",
+			enabled: func(m *Model) bool { return m.secrets.Manage != nil },
+			argSpecs: staticArgs(
+				argOption{"list", "Name the session's secrets"},
+				argOption{"set", "Declare one: NAME from the environment, or NAME=value"},
+				argOption{"forget", "Drop one by name"},
+			)},
+		{name: "/notes", args: "[drop <n>|clear]", desc: "The session's shared notebook: what the agents wrote for each other",
+			enabled: func(m *Model) bool { return m.notebook != nil },
+			argSpecs: staticArgs(
+				argOption{"drop", "Remove one note by number"},
+				argOption{"clear", "Empty the notebook"},
+			)},
+		{name: "/memory", args: "[list|add|edit|forget]", desc: "Durable memories",
+			enabled: func(m *Model) bool { return m.memory.Manage != nil },
+			argSpecs: staticArgs(
+				argOption{"list", "Show stored memories"},
+				argOption{"add", "Remember something"},
+				argOption{"edit", "Reword a memory by id, in your editor"},
+				argOption{"forget", "Drop a memory by id"},
+			)},
+		{name: "/agents", args: "[new [brief]]", desc: "Agent manager; new drafts a profile from a sentence",
+			key: keys.Shown(keys.Draft.Agents),
+			// The manager opens on a session that can spawn agents or draft a
+			// profile for one. Drafting alone is enough: the list is where the
+			// offer to draft lives (attach.go).
+			enabled:  func(m *Model) bool { return m.subagents != nil || m.personas.Enabled },
+			argSpecs: staticArgs(argOption{"new", "Draft an agent profile with the model's help"})},
+		{name: "/attach", args: "[name]", desc: "Attach to an agent's session and steer it",
+			enabled:  func(m *Model) bool { return m.subagents != nil },
+			argSpecs: []argSpec{{dynamic: agentArgs, fuzzy: true}}},
+		{name: "/detach", desc: "Back to the orchestrator (also esc)",
+			enabled: func(m *Model) bool { return m.subagents != nil && m.attachedTo != "" }},
+		{name: "/todo", args: "[show|edit|add|block|open|done|drop|run|sprint|status|stop]", desc: "The project's backlog (bare /todo picks an item)",
+			enabled: func(m *Model) bool { return m.todosEnabled() },
+			argSpecs: []argSpec{
+				{options: []argOption{
+					{"show", "Print an item"},
+					{"edit", "Open an item in your editor"},
+					{"add", "Read this session into items, or add one from a sentence"},
+					{"block", "Mark an item blocked, with why"},
+					{"open", "Reopen a blocked item"},
+					{"done", "Archive an item"},
+					{"drop", "Delete an item outright"},
+					{"run", "Work an item through to a commit (bare run takes the next ready one)"},
+					{"sprint", "The set being worked: bare shows it, plan proposes one"},
+					{"status", "Where the run is"},
+					{"stop", "Abandon the run; the item goes back to open"},
+				}},
+				{after: []string{"show", "edit", "block", "open", "done", "drop", "run"}, dynamic: todoSlugArgs, fuzzy: true},
 			}},
-			{after: []string{"mouse"}, options: []argOption{
-				{"on", "The wheel scrolls, click-drag selects, a click opens a row"},
-				{"off", "The terminal keeps its own click-drag selection"},
-			}},
-			{after: []string{"notify"}, options: []argOption{
-				{"on", "One notification when a turn stops and the window is not in front"},
-				{"off", "A turn that stops while you are elsewhere waits silently"},
-			}},
-			{after: []string{"title"}, options: []argOption{
-				{"on", "The summary model names the session after its first turn"},
-				{"off", "Sessions keep the timestamp they were opened at"},
-			}},
-			{after: []string{"window"}, options: []argOption{
-				{"on", "The tab says the command, the directory, and ⏸ while a decision waits"},
-				{"off", "The tab keeps whatever your terminal puts there"},
-			}},
-			{after: []string{"rail"}, dynamic: railArgs},
-		}},
-	{name: "/add-dir", args: "[<path>|drop <path>]", desc: "The directories this session may work in",
-		enabled: func(m *Model) bool { return m.scope != nil },
-		argSpecs: []argSpec{
-			{options: []argOption{{"drop", "Take a directory back out of the scope"}}},
-			{after: []string{"drop"}, dynamic: scopeDropArgs},
-		}},
-	{name: "/sandbox", args: "[doctor|scope|list|status|destroy|prune]", desc: "Containment status and container sandboxes",
-		enabled: func(m *Model) bool { return m.codingSurfaces() },
-		argSpecs: staticArgs(
-			argOption{"doctor", "Report containment support"},
-			argOption{"scope", "The directories commands may write to"},
-			argOption{"list", "List container sandboxes"},
-			argOption{"status", "This session's sandbox"},
-			argOption{"destroy", "Destroy a sandbox by id"},
-			argOption{"prune", "Remove stopped sandboxes"},
-		)},
-	{name: "/evidence", args: "[purge]", desc: "Tool-output evidence store",
-		enabled:  func(m *Model) bool { return m.evidence.Manage != nil },
-		argSpecs: staticArgs(argOption{"purge", "Delete stored tool output"})},
-	{name: "/gate", args: "[run|result|on|off]", desc: "Run the project's quality gate",
-		enabled: func(m *Model) bool { return m.gate.Manage != nil },
-		argSpecs: staticArgs(
-			argOption{"run", "Run the gate suites"},
-			argOption{"result", "Show the last result"},
-			argOption{"on", "Run the suite as a turn that changed files closes"},
-			argOption{"off", "Stop running it at a turn's close"},
-		)},
-	{name: "/ps", desc: "List session-owned long-running processes",
-		enabled: func(m *Model) bool { return m.processes.Manage != nil }},
-	{name: scaffoldCommandName, desc: "Scaffold this project's .shhh/ context file (asks first)",
-		enabled:  func(m *Model) bool { return m.scaffold.Write != nil },
-		idleOnly: "it writes a file into the checkout"},
-	{name: "/skills", desc: "The skills this session loaded, and why any did not"},
-	{name: "/mcp", args: "[trust <name>|distrust <name>]", desc: "The MCP servers this session connected, and why any did not",
-		argSpecs: staticArgs(
-			argOption{"trust", "Let a project server start from the next session on"},
-			argOption{"distrust", "Withdraw that"},
-		)},
-	{name: "/skill", args: "<name> [task]", desc: "Activate a skill now, with your task after it",
-		enabled:  func(m *Model) bool { return m.skills.Len() > 0 },
-		argSpecs: []argSpec{{dynamic: skillArgs}}},
-	{name: "/secret", args: "[list|set|forget]", desc: "Values commands can use and the model never sees",
-		enabled: func(m *Model) bool { return m.secrets.Manage != nil },
-		argSpecs: staticArgs(
-			argOption{"list", "Name the session's secrets"},
-			argOption{"set", "Declare one: NAME from the environment, or NAME=value"},
-			argOption{"forget", "Drop one by name"},
-		)},
-	{name: "/notes", args: "[drop <n>|clear]", desc: "The session's shared notebook: what the agents wrote for each other",
-		enabled: func(m *Model) bool { return m.notebook != nil },
-		argSpecs: staticArgs(
-			argOption{"drop", "Remove one note by number"},
-			argOption{"clear", "Empty the notebook"},
-		)},
-	{name: "/memory", args: "[list|add|edit|forget]", desc: "Durable memories",
-		enabled: func(m *Model) bool { return m.memory.Manage != nil },
-		argSpecs: staticArgs(
-			argOption{"list", "Show stored memories"},
-			argOption{"add", "Remember something"},
-			argOption{"edit", "Reword a memory by id, in your editor"},
-			argOption{"forget", "Drop a memory by id"},
-		)},
-	{name: "/agents", args: "[new [brief]]", desc: "Agent manager; new drafts a profile from a sentence",
-		key: keys.Shown(keys.Draft.Agents),
-		// The manager opens on a session that can spawn agents or draft a
-		// profile for one. Drafting alone is enough: the list is where the
-		// offer to draft lives (attach.go).
-		enabled:  func(m *Model) bool { return m.subagents != nil || m.personas.Enabled },
-		argSpecs: staticArgs(argOption{"new", "Draft an agent profile with the model's help"})},
-	{name: "/attach", args: "[name]", desc: "Attach to an agent's session and steer it",
-		enabled:  func(m *Model) bool { return m.subagents != nil },
-		argSpecs: []argSpec{{dynamic: agentArgs, fuzzy: true}}},
-	{name: "/detach", desc: "Back to the orchestrator (also esc)",
-		enabled: func(m *Model) bool { return m.subagents != nil && m.attachedTo != "" }},
-	{name: "/todo", args: "[show|edit|add|block|open|done|drop|run|sprint|status|stop]", desc: "The project's backlog (bare /todo picks an item)",
-		enabled: func(m *Model) bool { return m.todosEnabled() },
-		argSpecs: []argSpec{
-			{options: []argOption{
-				{"show", "Print an item"},
-				{"edit", "Open an item in your editor"},
-				{"add", "Read this session into items, or add one from a sentence"},
-				{"block", "Mark an item blocked, with why"},
-				{"open", "Reopen a blocked item"},
-				{"done", "Archive an item"},
-				{"drop", "Delete an item outright"},
-				{"run", "Work an item through to a commit (bare run takes the next ready one)"},
-				{"sprint", "The set being worked: bare shows it, plan proposes one"},
-				{"status", "Where the run is"},
-				{"stop", "Abandon the run; the item goes back to open"},
-			}},
-			{after: []string{"show", "edit", "block", "open", "done", "drop", "run"}, dynamic: todoSlugArgs, fuzzy: true},
-		}},
-	{name: "/plan", args: "[save|drop]", desc: "The approved plan as a checklist, with anything that has departed from it",
-		enabled: func(m *Model) bool { return m.codingSurfaces() },
-		argSpecs: staticArgs(
-			argOption{"save", "Write the last plan/response to .shhh/plans/"},
-			argOption{"drop", "Forget the approved plan; steps go back to inferred"},
-		)},
-	{name: "/diff", args: "[path]", desc: "Cumulative session diff, full screen — bare, or one file's",
-		enabled:  func(m *Model) bool { return m.changes != nil && m.codingSurfaces() },
-		argSpecs: []argSpec{{dynamic: sessionFileArgs, fuzzy: true}}},
-	{name: "/review", args: "[turn]", desc: "Review what a turn changed — files, hunks, staging",
-		enabled:  func(m *Model) bool { return m.changes != nil && m.codingSurfaces() },
-		argSpecs: []argSpec{{dynamic: reviewTurnArgs}}},
-	{name: "/undo", args: "[turn]", desc: "Put back what a turn changed (asks first)",
-		enabled:  func(m *Model) bool { return m.changes != nil && m.codingSurfaces() },
-		argSpecs: []argSpec{{dynamic: reviewTurnArgs}},
-		idleOnly: "it writes files the running turn may be editing"},
-	{name: "/compact", desc: "Continue from a summary plus the most recent turns",
-		idleOnly: "it rewrites the conversation into a summary"},
-	{name: "/rewind", args: "[n]", desc: "Rewind to before a user turn (bare /rewind picks)",
-		argSpecs: []argSpec{{dynamic: checkpointArgs}},
-		idleOnly: "it rewinds the conversation"},
-	{name: "/branches", args: "[n|name]", desc: "Switch this session's branches (bare /branches picks)",
-		enabled:  func(m *Model) bool { return m.db != nil },
-		argSpecs: []argSpec{{dynamic: branchArgs, fuzzy: true}},
-		idleOnly: "it switches the conversation to another branch"},
-	{name: "/save", args: "[name]", desc: "Save this chat",
-		enabled: func(m *Model) bool { return m.db != nil }},
-	{name: "/load", args: "[name]", desc: "Load a saved chat (bare /load picks)",
-		enabled:  func(m *Model) bool { return m.db != nil },
-		argSpecs: []argSpec{{dynamic: chatArgs, fuzzy: true}},
-		idleOnly: "it replaces the conversation"},
-	{name: "/chats", desc: "Saved chats — enter loads, x deletes, r renames",
-		enabled:  func(m *Model) bool { return m.db != nil },
-		idleOnly: "it opens the picker that replaces the conversation"},
-	{name: "/exit", aliases: []string{"/quit", "/q"}, desc: "Quit (also /quit, /q)", key: keys.Shown(keys.Draft.Quit)},
+		{name: "/plan", args: "[save|drop]", desc: "The approved plan as a checklist, with anything that has departed from it",
+			enabled: func(m *Model) bool { return m.codingSurfaces() },
+			argSpecs: staticArgs(
+				argOption{"save", "Write the last plan/response to .shhh/plans/"},
+				argOption{"drop", "Forget the approved plan; steps go back to inferred"},
+			)},
+		{name: "/diff", args: "[path]", desc: "Cumulative session diff, full screen — bare, or one file's",
+			enabled:  func(m *Model) bool { return m.changes != nil && m.codingSurfaces() },
+			argSpecs: []argSpec{{dynamic: sessionFileArgs, fuzzy: true}}},
+		{name: "/review", args: "[turn]", desc: "Review what a turn changed — files, hunks, staging",
+			enabled:  func(m *Model) bool { return m.changes != nil && m.codingSurfaces() },
+			argSpecs: []argSpec{{dynamic: reviewTurnArgs}}},
+		{name: "/undo", args: "[turn]", desc: "Put back what a turn changed (asks first)",
+			enabled:  func(m *Model) bool { return m.changes != nil && m.codingSurfaces() },
+			argSpecs: []argSpec{{dynamic: reviewTurnArgs}},
+			idleOnly: "it writes files the running turn may be editing"},
+		{name: "/compact", desc: "Continue from a summary plus the most recent turns",
+			idleOnly: "it rewrites the conversation into a summary"},
+		{name: "/rewind", args: "[n]", desc: "Rewind to before a user turn (bare /rewind picks)",
+			argSpecs: []argSpec{{dynamic: checkpointArgs}},
+			idleOnly: "it rewinds the conversation"},
+		{name: "/branches", args: "[n|name]", desc: "Switch this session's branches (bare /branches picks)",
+			enabled:  func(m *Model) bool { return m.db != nil },
+			argSpecs: []argSpec{{dynamic: branchArgs, fuzzy: true}},
+			idleOnly: "it switches the conversation to another branch"},
+		{name: "/save", args: "[name]", desc: "Save this chat",
+			enabled: func(m *Model) bool { return m.db != nil }},
+		{name: "/load", args: "[name]", desc: "Load a saved chat (bare /load picks)",
+			enabled:  func(m *Model) bool { return m.db != nil },
+			argSpecs: []argSpec{{dynamic: chatArgs, fuzzy: true}},
+			idleOnly: "it replaces the conversation"},
+		{name: "/chats", desc: "Saved chats — enter loads, x deletes, r renames",
+			enabled:  func(m *Model) bool { return m.db != nil },
+			idleOnly: "it opens the picker that replaces the conversation"},
+		{name: "/exit", aliases: []string{"/quit", "/q"}, desc: "Quit (also /quit, /q)", key: keys.Shown(keys.Draft.Quit)},
+	}
 }
 
 // maxCompletionRows caps how many commands the menu shows at once; longer
@@ -354,19 +373,19 @@ func (c slashCommand) namesExactly(token string) bool {
 // the input value.
 func (m *Model) syncCompletions() {
 	val := m.input.Value()
-	if m.completeDismissedFor != "" && val != m.completeDismissedFor {
-		m.completeDismissedFor = ""
+	if m.complete.dismissedFor != "" && val != m.complete.dismissedFor {
+		m.complete.dismissedFor = ""
 	}
 	if !m.inputLive() || m.attachedTo != "" || m.agentList != nil || m.activeChildAsk() != nil ||
-		strings.ContainsAny(val, "\t\n") || val == m.completeDismissedFor {
+		strings.ContainsAny(val, "\t\n") || val == m.complete.dismissedFor {
 		m.clearCompletions()
-		m.mentionCache = nil
+		m.complete.mentionCache = nil
 		return
 	}
 
 	var prev string
-	if m.completeIdx < len(m.completions) {
-		prev = m.completions[m.completeIdx].name
+	if m.complete.idx < len(m.complete.items) {
+		prev = m.complete.items[m.complete.idx].name
 	}
 
 	prior, token, start, end := tokenAtCursor(val, m.inputCursor())
@@ -391,7 +410,7 @@ func (m *Model) syncCompletions() {
 		files = true
 	default:
 		m.clearCompletions()
-		m.mentionCache = nil
+		m.complete.mentionCache = nil
 		return
 	}
 	// The mention cache outlives an empty match list on purpose: the walk
@@ -399,31 +418,31 @@ func (m *Model) syncCompletions() {
 	// still that draft mid-edit. It is dropped above, where the draft stops
 	// being one — never per keystroke.
 	if !files {
-		m.mentionCache = nil
+		m.complete.mentionCache = nil
 	}
 	if len(matches) == 0 {
 		m.clearCompletions()
 		return
 	}
 
-	m.completions = matches
-	m.completeFor = val
-	m.completeArg = len(prior) > 0 && !files
-	m.completeFiles = files
-	m.completeStart = start
-	m.completeEnd = end
-	m.completeIdx = 0
-	m.completeToken = token
+	m.complete.items = matches
+	m.complete.forInput = val
+	m.complete.arg = len(prior) > 0 && !files
+	m.complete.files = files
+	m.complete.start = start
+	m.complete.end = end
+	m.complete.idx = 0
+	m.complete.token = token
 	// A keystroke is a new menu, whatever the last one was pointed at: what
 	// ↑↓ said about a list the reader has since retyped is not an answer
 	// about this one.
-	m.completeMoved = false
+	m.complete.moved = false
 	// Keep the arrowed-to row focused across keystrokes — unless the typed
 	// text now names a candidate exactly, which always wins the focus.
 	if !exactlyNamed(m, token) {
 		for i, c := range matches {
 			if c.name == prev {
-				m.completeIdx = i
+				m.complete.idx = i
 				break
 			}
 		}
@@ -444,7 +463,7 @@ func exactlyNamed(m *Model, token string) bool {
 // memory has named a command exactly, whatever the menu calls it.
 func (m *Model) commandMatches(token string) []completionItem {
 	var matches []completionItem
-	for _, c := range slashCommands {
+	for _, c := range slashCommands() {
 		if c.enabled != nil && !c.enabled(m) {
 			continue
 		}
@@ -493,14 +512,14 @@ func (m *Model) argumentMatches(prior []string, token string) []completionItem {
 // clearCompletions hides the menu and drops the dynamic-source cache, so the
 // next menu re-reads branch and chat names rather than showing stale ones.
 func (m *Model) clearCompletions() {
-	m.completions = nil
-	m.completeFor = ""
-	m.completeArg = false
-	m.completeFiles = false
-	m.completeToken = ""
-	m.completeMoved = false
-	m.argCache = nil
-	m.argCacheFor = ""
+	m.complete.items = nil
+	m.complete.forInput = ""
+	m.complete.arg = false
+	m.complete.files = false
+	m.complete.token = ""
+	m.complete.moved = false
+	m.complete.argCache = nil
+	m.complete.argCacheFor = ""
 }
 
 // completionRunsInput reports whether enter belongs to the line rather than
@@ -513,31 +532,31 @@ func (m *Model) clearCompletions() {
 //
 // See docs/interface/surfaces.md#the-completion-menu.
 func (m Model) completionRunsInput() bool {
-	return m.completeArg && !m.completeFiles && m.completeToken == "" && !m.completeMoved
+	return m.complete.arg && !m.complete.files && m.complete.token == "" && !m.complete.moved
 }
 
 // completionActive reports whether the menu applies to the input right now; a
 // stale menu (the input changed through a path that skipped syncCompletions,
 // e.g. a reset) deactivates itself because completeFor no longer matches.
 func (m Model) completionActive() bool {
-	return m.inputLive() && len(m.completions) > 0 &&
-		m.completeFor != "" && m.completeFor == m.input.Value()
+	return m.inputLive() && len(m.complete.items) > 0 &&
+		m.complete.forInput != "" && m.complete.forInput == m.input.Value()
 }
 
 // dismissCompletions hides the menu until the input text changes again (esc).
 func (m *Model) dismissCompletions() {
-	dismissed := m.completeFor
+	dismissed := m.complete.forInput
 	m.clearCompletions()
-	m.completeDismissedFor = dismissed
+	m.complete.dismissedFor = dismissed
 }
 
 // acceptCompletion writes the focused candidate into the input (tab),
 // replacing only the token under the cursor. Candidates that can be
 // followed by more text get a trailing space so the user can keep typing.
 func (m *Model) acceptCompletion() {
-	c := m.completions[m.completeIdx]
+	c := m.complete.items[m.complete.idx]
 	r := []rune(m.input.Value())
-	start, end := m.completeStart, min(m.completeEnd, len(r))
+	start, end := m.complete.start, min(m.complete.end, len(r))
 	text := c.name
 	cursor := start + len([]rune(text))
 	if c.space {
@@ -568,14 +587,14 @@ func (m Model) completionMenuLines() []string {
 	if showHint {
 		budget--
 	}
-	visible := min(len(m.completions), maxCompletionRows, budget)
+	visible := min(len(m.complete.items), maxCompletionRows, budget)
 	start := 0
-	if m.completeIdx >= visible {
-		start = m.completeIdx - visible + 1
+	if m.complete.idx >= visible {
+		start = m.complete.idx - visible + 1
 	}
 
 	nameW := 0
-	for _, c := range m.completions[start : start+visible] {
+	for _, c := range m.complete.items[start : start+visible] {
 		if w := lipgloss.Width(plainCommandLabel(c)); w > nameW {
 			nameW = w
 		}
@@ -583,11 +602,11 @@ func (m Model) completionMenuLines() []string {
 
 	lines := make([]string, 0, visible+1)
 	for i := start; i < start+visible; i++ {
-		c := m.completions[i]
+		c := m.complete.items[i]
 		plain := plainCommandLabel(c)
 		pad := strings.Repeat(" ", max(nameW-lipgloss.Width(plain), 0))
 		var row string
-		if i == m.completeIdx {
+		if i == m.complete.idx {
 			row = sty.Complete.Focus.Render(clipRow("❯ "+plain+pad+"  "+c.desc, width))
 		} else {
 			label := c.name
@@ -607,15 +626,15 @@ func (m Model) completionMenuLines() []string {
 		// Enter runs the line as it stands here, so the row says which line
 		// that is: a reader who tab-completed "/model" is about to get the
 		// picker, not the first row under the cursor.
-		hint = "tab complete · enter run " + strings.TrimSpace(m.completeFor) +
+		hint = "tab complete · enter run " + strings.TrimSpace(m.complete.forInput) +
 			" · ↑↓ pick · esc dismiss"
 	}
-	if m.completeFiles {
+	if m.complete.files {
 		// A file row is inserted, never run: the sentence goes on.
 		hint = "tab/enter insert · ↑↓ move · esc dismiss"
 	}
-	if len(m.completions) > visible {
-		hint = fmt.Sprintf("%d/%d · %s", m.completeIdx+1, len(m.completions), hint)
+	if len(m.complete.items) > visible {
+		hint = fmt.Sprintf("%d/%d · %s", m.complete.idx+1, len(m.complete.items), hint)
 	}
 	return append(lines, sty.Complete.Hint.Render(clipRow(hint, width)))
 }
@@ -637,4 +656,44 @@ func clipRow(s string, width int) string {
 		return s
 	}
 	return ansi.Truncate(s, width, "…")
+}
+
+// completionState is the open completion menu. It is one struct rather than
+// thirteen fields on the session because every one of them is only ever read
+// with the others: a candidate list means nothing without the input value it
+// was built for, and a focused row means nothing without the span it would be
+// written into.
+type completionState struct {
+	// items is the filtered candidate list for the input value forInput. A
+	// mismatch means the list is stale, so the menu is hidden rather than
+	// drawn against a draft it no longer describes.
+	items    []completionItem
+	forInput string
+	// idx is the focused row, and dismissedFor is the input value esc
+	// dismissed the menu for — typing anything else re-opens it.
+	idx          int
+	dismissedFor string
+	// start and end are the span of the token being completed, as rune
+	// offsets into the input, and arg says the focused row is an argument
+	// value rather than a command name.
+	start int
+	end   int
+	arg   bool
+	// token is what has been typed of the token being completed, and moved
+	// says ↑↓ has pointed at a row. Together they are how enter tells a menu
+	// that is a list of what could follow from one that is a choice already
+	// narrowed — see completionRunsInput.
+	token string
+	moved bool
+	// files says the menu is the @ file mention's (mention.go): enter
+	// inserts the focused path rather than running anything, and
+	// mentionCache holds the file walk for the life of the @ draft — it
+	// survives a token that matches nothing, so the walk never runs per
+	// keystroke.
+	files        bool
+	mentionCache []paletteEntry
+	// argCache holds a command's dynamic argument sources (branch names,
+	// saved chats) so they are read once per menu rather than per keystroke.
+	argCache    map[int][]argOption
+	argCacheFor string
 }

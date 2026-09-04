@@ -121,7 +121,7 @@ func TestPolicy_ChainedCommandNotAutoApproved(t *testing.T) {
 func TestPolicy_FlaggedCommandAlwaysPrompts(t *testing.T) {
 	var ran []string
 	m := execModel(t, &ran).WithCommandAllowlist([]string{"git"})
-	m.allowAllCommands = true
+	m.policy.allCommands = true
 
 	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
 		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"git reset --hard"}`},
@@ -171,10 +171,10 @@ func TestPolicy_AlwaysAllowCommandsViaKey(t *testing.T) {
 	// of the same shape — `echo`, not everything.
 	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
 	m = updated.(Model)
-	if m.allowAllCommands {
+	if m.policy.allCommands {
 		t.Fatal("'a' must not hand out a blanket grant; that is /permissions allow")
 	}
-	if got := m.commandGrants; len(got) != 1 || got[0] != "go build" {
+	if got := m.policy.commands; len(got) != 1 || got[0] != "go build" {
 		t.Fatalf("'a' should have granted the command's leading words, got %v", got)
 	}
 	updated, cmd = m.Update(driveCmdDone(t, cmd))
@@ -214,10 +214,10 @@ func TestPolicy_AlwaysAllowEditsViaKey(t *testing.T) {
 
 	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
 	m = updated.(Model)
-	if m.allowAllEdits {
+	if m.policy.allEdits {
 		t.Fatal("'a' must not hand out a blanket grant; that is /permissions allow")
 	}
-	if got := m.editDirGrants; len(got) != 1 || got[0] != dir {
+	if got := m.policy.editDirs; len(got) != 1 || got[0] != dir {
 		t.Fatalf("'a' should have granted the edited file's directory, got %v", got)
 	}
 	var done approvedToolDoneMsg
@@ -262,8 +262,8 @@ func TestPolicy_GenericGatedToolAlwaysPrompts(t *testing.T) {
 			return GatedPreview{Summary: "do the thing"}, nil
 		},
 	})
-	m.allowAllEdits = true
-	m.allowAllCommands = true
+	m.policy.allEdits = true
+	m.policy.allCommands = true
 
 	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
 		{ID: "call_g", Name: "my_tool", Arguments: `{}`},
@@ -281,7 +281,7 @@ func TestPolicy_GenericGatedToolAlwaysPrompts(t *testing.T) {
 func TestMode_AcceptEditsAutoAppliesEditsButPromptsCommands(t *testing.T) {
 	var ran []string
 	m := execModel(t, &ran)
-	m.mode = agent.ModeAcceptEdits
+	m.policy.mode = agent.ModeAcceptEdits
 	path := filepath.Join(t.TempDir(), "a.txt")
 
 	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
@@ -329,7 +329,7 @@ func TestMode_AcceptEditsAutoAppliesEditsButPromptsCommands(t *testing.T) {
 func TestMode_AutoAllowsEditsAndAllowlistedCommands(t *testing.T) {
 	var ran []string
 	m := execModel(t, &ran).WithCommandAllowlist([]string{"echo"})
-	m.mode = agent.ModeAuto
+	m.policy.mode = agent.ModeAuto
 
 	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
 		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"echo hi"}`},
@@ -358,8 +358,8 @@ func TestMode_AutoAllowsEditsAndAllowlistedCommands(t *testing.T) {
 func TestMode_AutoFlaggedCommandStillPrompts(t *testing.T) {
 	var ran []string
 	m := execModel(t, &ran).WithCommandAllowlist([]string{"git"})
-	m.mode = agent.ModeAuto
-	m.allowAllCommands = true
+	m.policy.mode = agent.ModeAuto
+	m.policy.allCommands = true
 
 	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
 		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"git reset --hard"}`},
@@ -373,9 +373,9 @@ func TestMode_AutoFlaggedCommandStillPrompts(t *testing.T) {
 func TestMode_PlanRefusesGatedCalls(t *testing.T) {
 	var ran []string
 	m := execModel(t, &ran).WithCommandAllowlist([]string{"echo"})
-	m.mode = agent.ModePlan
-	m.allowAllEdits = true
-	m.allowAllCommands = true
+	m.policy.mode = agent.ModePlan
+	m.policy.allEdits = true
+	m.policy.allCommands = true
 	path := filepath.Join(t.TempDir(), "a.txt")
 
 	updated, restream := m.Update(toolCallsMsg{calls: []provider.ToolCall{
@@ -422,7 +422,7 @@ func TestMode_PlanRefusesGatedCalls(t *testing.T) {
 
 func TestMode_ReadOnlyToolsBypassApprovalInPlanMode(t *testing.T) {
 	m := gatedModel(t, nil, nil)
-	m.mode = agent.ModePlan
+	m.policy.mode = agent.ModePlan
 	for _, name := range []string{"read_file", "list_directory", "search", "glob"} {
 		if m.requiresApproval(provider.ToolCall{Name: name}) {
 			t.Errorf("read-only tool %s must never be approval-gated", name)
@@ -440,7 +440,7 @@ func TestMode_GitToolIsReadOnlyInEveryMode(t *testing.T) {
 	}
 	for _, mode := range []agent.Mode{agent.ModeManual, agent.ModeAcceptEdits, agent.ModeAuto, agent.ModePlan} {
 		m := gatedModel(t, nil, nil)
-		m.mode = mode
+		m.policy.mode = mode
 		if m.requiresApproval(call) {
 			t.Errorf("git must never be approval-gated, and is in %s", mode)
 		}
@@ -459,8 +459,8 @@ func TestMode_ShiftTabCyclesAndStatusBarShowsMode(t *testing.T) {
 
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift})
 	m = updated.(Model)
-	if m.mode != agent.ModeAcceptEdits {
-		t.Fatalf("shift+tab should cycle manual → accept-edits, got %v", m.mode)
+	if m.policy.mode != agent.ModeAcceptEdits {
+		t.Fatalf("shift+tab should cycle manual → accept-edits, got %v", m.policy.mode)
 	}
 	if !strings.Contains(m.renderStatusBar(80), "⏵⏵ accept edits") {
 		t.Fatalf("status bar should show the permissive mode, got %q", m.renderStatusBar(80))
@@ -470,13 +470,13 @@ func TestMode_ShiftTabCyclesAndStatusBarShowsMode(t *testing.T) {
 	m = m.WithApprovalMode(agent.ModeManual, []agent.Mode{agent.ModeManual, agent.ModePlan})
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift})
 	m = updated.(Model)
-	if m.mode != agent.ModePlan {
-		t.Fatalf("configured cycle should go manual → plan, got %v", m.mode)
+	if m.policy.mode != agent.ModePlan {
+		t.Fatalf("configured cycle should go manual → plan, got %v", m.policy.mode)
 	}
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift})
 	m = updated.(Model)
-	if m.mode != agent.ModeManual {
-		t.Fatalf("configured cycle should wrap plan → manual, got %v", m.mode)
+	if m.policy.mode != agent.ModeManual {
+		t.Fatalf("configured cycle should wrap plan → manual, got %v", m.policy.mode)
 	}
 }
 
@@ -492,15 +492,15 @@ func TestMode_SlashModeShowsAndSets(t *testing.T) {
 	if !handled || !strings.Contains(result, "Mode set to auto") {
 		t.Fatalf("/mode auto should set the mode, got %q", result)
 	}
-	if m.mode != agent.ModeAuto {
-		t.Fatalf("mode should be auto after /mode auto, got %v", m.mode)
+	if m.policy.mode != agent.ModeAuto {
+		t.Fatalf("mode should be auto after /mode auto, got %v", m.policy.mode)
 	}
 
 	_, bad := m.handleSlashCommand("/mode yolo")
 	if !strings.Contains(bad, "unknown mode") {
 		t.Fatalf("/mode with an unknown name should error, got %q", bad)
 	}
-	if m.mode != agent.ModeAuto {
+	if m.policy.mode != agent.ModeAuto {
 		t.Fatal("an invalid /mode must not change the mode")
 	}
 
@@ -520,7 +520,7 @@ func TestPolicy_StatusBarAndHelpReflectPolicy(t *testing.T) {
 		t.Fatalf("/help should describe the default ask-everything policy, got:\n%s", help)
 	}
 
-	m.allowAllEdits = true
+	m.policy.allEdits = true
 	m = m.WithCommandAllowlist([]string{"git status"})
 	if !strings.Contains(m.renderStatusBar(80), "auto: edits+allowlist") {
 		t.Fatalf("status bar should show the active policy, got %q", m.renderStatusBar(80))
@@ -535,7 +535,7 @@ func TestPolicy_StatusBarAndHelpReflectPolicy(t *testing.T) {
 func TestReadOnlyCommandRunsWithoutPrompt(t *testing.T) {
 	var ran []string
 	m := execModel(t, &ran)
-	m.mode = agent.ModeManual
+	m.policy.mode = agent.ModeManual
 	m.state = stateStreaming
 
 	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
@@ -564,7 +564,7 @@ func TestReadOnlyCommandRunsWithoutPrompt(t *testing.T) {
 func TestReadOnlyAutoDisabledPrompts(t *testing.T) {
 	var ran []string
 	m := execModel(t, &ran).WithReadOnlyCommands(nil, true)
-	m.mode = agent.ModeManual
+	m.policy.mode = agent.ModeManual
 	m.state = stateStreaming
 
 	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
@@ -678,9 +678,9 @@ func TestGrant_RevokeTakesThemBack(t *testing.T) {
 	if got := m.allowCommand([]string{"commands"}); !strings.Contains(got, "without asking") {
 		t.Fatalf("/permissions allow commands should grant them, said %q", got)
 	}
-	m.commandGrants = append(m.commandGrants, "go build")
-	m.editDirGrants = append(m.editDirGrants, "internal/ui")
-	if !m.allowAllCommands {
+	m.policy.commands = append(m.policy.commands, "go build")
+	m.policy.editDirs = append(m.policy.editDirs, "internal/ui")
+	if !m.policy.allCommands {
 		t.Fatal("the blanket command grant should be on")
 	}
 
@@ -698,28 +698,28 @@ func TestGrant_RevokeTakesThemBack(t *testing.T) {
 	if m.grants().Any() {
 		t.Fatalf("revoke should leave nothing granted, got %+v", m.grants())
 	}
-	if got := m.modePolicy(); got.AllowCommands || len(got.EditDirs) > 0 || len(got.CommandAllowlist) != len(m.commandAllowlist) {
+	if got := m.modePolicy(); got.AllowCommands || len(got.EditDirs) > 0 || len(got.CommandAllowlist) != len(m.policy.allowlist) {
 		t.Fatalf("the policy should be back to asking, got %+v", got)
 	}
 }
 
 func TestGrant_RevokeOneCategoryLeavesTheOther(t *testing.T) {
 	m := readyModel(t)
-	m.commandGrants = []string{"go build"}
-	m.editDirGrants = []string{"internal/ui"}
+	m.policy.commands = []string{"go build"}
+	m.policy.editDirs = []string{"internal/ui"}
 
 	m.revokeCommand([]string{"edits"})
-	if len(m.editDirGrants) != 0 {
+	if len(m.policy.editDirs) != 0 {
 		t.Fatal("the edit grants should be gone")
 	}
-	if len(m.commandGrants) != 1 {
-		t.Fatalf("the command grants should be untouched, got %v", m.commandGrants)
+	if len(m.policy.commands) != 1 {
+		t.Fatalf("the command grants should be untouched, got %v", m.policy.commands)
 	}
 }
 
 func TestGrant_ConfigsAllowlistIsNotTheSessionsToRevoke(t *testing.T) {
 	m := readyModel(t).WithCommandAllowlist([]string{"make"})
-	m.commandGrants = []string{"go build"}
+	m.policy.commands = []string{"go build"}
 
 	m.revokeCommand(nil)
 	if got := m.allowlist(); len(got) != 1 || got[0] != "make" {

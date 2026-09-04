@@ -116,7 +116,7 @@ func TestProcessTool_StartHonorsCommandAllowlist(t *testing.T) {
 
 func TestProcessTool_SafetyFlaggedStartAlwaysAsks(t *testing.T) {
 	m := processModel(t, nil)
-	m.allowAllCommands = true // even a blanket session grant must not skip this
+	m.policy.allCommands = true // even a blanket session grant must not skip this
 
 	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{startCall("call_p", "wipe", "rm -rf /tmp/x")}})
 	m = updated.(Model)
@@ -131,7 +131,7 @@ func TestProcessTool_SafetyFlaggedStartAlwaysAsks(t *testing.T) {
 
 func TestProcessTool_PlanModeRefusesStart(t *testing.T) {
 	m := processModel(t, nil)
-	m.mode = agent.ModePlan
+	m.policy.mode = agent.ModePlan
 
 	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{startCall("call_p", "web", "npm run dev")}})
 	m = updated.(Model)

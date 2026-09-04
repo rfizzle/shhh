@@ -44,8 +44,8 @@ func TestLiveCommand_ModeChangeWhileWorking(t *testing.T) {
 	m := workingModel(t)
 	m = sendText(t, m, "/mode accept-edits")
 
-	if m.mode.String() != "accept-edits" {
-		t.Fatalf("mode should change mid-turn (Shift+Tab already does), got %s", m.mode)
+	if m.policy.mode.String() != "accept-edits" {
+		t.Fatalf("mode should change mid-turn (Shift+Tab already does), got %s", m.policy.mode)
 	}
 	if m.state != stateStreaming {
 		t.Fatalf("turn state disturbed, got %d", m.state)
@@ -90,8 +90,8 @@ func TestCompletionMenu_OpensWhileWorking(t *testing.T) {
 	if !m.completionActive() {
 		t.Fatal("the completion menu should open while the agent works")
 	}
-	if m.completions[0].name != "/stats" {
-		t.Fatalf("expected /stats first, got %q", m.completions[0].name)
+	if m.complete.items[0].name != "/stats" {
+		t.Fatalf("expected /stats first, got %q", m.complete.items[0].name)
 	}
 }
 
@@ -99,9 +99,9 @@ func TestCompletionMenu_HidesIdleOnlyCommandsWhileWorking(t *testing.T) {
 	m := workingModel(t)
 	m.input.SetValue("/c")
 	m.syncCompletions()
-	for _, c := range m.completions {
+	for _, c := range m.complete.items {
 		if c.name == "/compact" {
-			t.Fatalf("%s cannot run mid-turn, so it should not be offered: %+v", c.name, m.completions)
+			t.Fatalf("%s cannot run mid-turn, so it should not be offered: %+v", c.name, m.complete.items)
 		}
 	}
 
@@ -110,7 +110,7 @@ func TestCompletionMenu_HidesIdleOnlyCommandsWhileWorking(t *testing.T) {
 	m.input.SetValue("/c")
 	m.syncCompletions()
 	var names []string
-	for _, c := range m.completions {
+	for _, c := range m.complete.items {
 		names = append(names, c.name)
 	}
 	if !containsString(names, "/compact") {

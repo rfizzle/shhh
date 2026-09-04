@@ -66,3 +66,48 @@ func TestHelpNamesTheKeyRegister(t *testing.T) {
 		t.Errorf("/help does not say what %q opens in reading mode", keys.Shown(keys.Reading.List))
 	}
 }
+
+// The key list is rendered from the register, so the two cannot say different
+// things about a key's spelling. What they can still disagree about is
+// coverage: a binding added to the register with no row here would simply not
+// be in the list, and a row naming a binding the register has dropped would
+// draw an empty column. So the rows and the register are held to each other
+// as sets.
+func TestHelpKeyRowsCoverTheRegister(t *testing.T) {
+	named := map[string]bool{}
+	for _, r := range helpKeyRows {
+		for _, b := range r.binds {
+			shown := keys.Shown(b)
+			if named[shown] {
+				t.Errorf("%q has two rows in the key list", shown)
+			}
+			named[shown] = true
+		}
+	}
+	for _, b := range keys.Surfaces()[0].Bindings {
+		if !named[keys.Shown(b)] {
+			t.Errorf("the key list has no row for %q (%s)", keys.Shown(b), keys.Words(b))
+		}
+		delete(named, keys.Shown(b))
+	}
+	for shown := range named {
+		t.Errorf("the key list names %q, which the input frame does not offer", shown)
+	}
+}
+
+// And the rendered list spells each key the way the register does. A row that
+// spells its own column does so because the list reads it differently from a
+// one-line hint — the recall arrows are the only pair that does — so that is
+// the one thing the check allows, and only where the row said so.
+func TestHelpKeyColumnsComeFromTheRegister(t *testing.T) {
+	for _, r := range helpKeyRows {
+		if r.key != "" || len(r.binds) == 0 {
+			continue
+		}
+		for _, col := range r.column() {
+			if !strings.Contains(helpKeysText(), "\n  "+col+" ") {
+				t.Errorf("the rendered list has no row headed %q", col)
+			}
+		}
+	}
+}

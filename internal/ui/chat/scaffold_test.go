@@ -230,7 +230,7 @@ func TestScaffold_UnwiredSessionSaysSoRatherThanOpeningACard(t *testing.T) {
 // completed, and listed.
 func TestScaffold_CommandIsOfferedInTheRegistryAndTheHelp(t *testing.T) {
 	found := false
-	for _, c := range slashCommands {
+	for _, c := range slashCommands() {
 		if c.name == scaffoldCommandName {
 			found = true
 		}

@@ -352,7 +352,7 @@ func TestCloseGate_ToggleSaysSoWhenTheWorkspaceNamesNoSuite(t *testing.T) {
 func TestCloseGate_UsageAndCompletionOfferTheToggle(t *testing.T) {
 	for _, want := range []string{"on", "off"} {
 		found := false
-		for _, c := range slashCommands {
+		for _, c := range slashCommands() {
 			if c.name != "/gate" {
 				continue
 			}

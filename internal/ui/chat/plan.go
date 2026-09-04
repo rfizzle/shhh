@@ -565,7 +565,7 @@ func planProgress(steps []components.InspectorPlanStep) int {
 func (m Model) planStatus() string {
 	run := m.planRun
 	if run == nil {
-		if m.mode == agent.ModePlan {
+		if m.policy.mode == agent.ModePlan {
 			return "No plan approved yet — the card offers the checklist once one is.\n" + planUsage
 		}
 		return "No approved plan is running.\n" + planUsage

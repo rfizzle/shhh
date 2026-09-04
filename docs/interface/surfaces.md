@@ -635,9 +635,10 @@ A card is either a list of answers or a search, and it says which by how it
 arrives. A fixed set of answers — the permission modes, the providers, a
 handful of code blocks — comes up as a list: its rows are numbered, a digit
 takes one outright, and a bare letter can be a key. A card that opens over a
-catalog — the models, the branches, the backlog — comes up as a search, with
-the query row already open, because past a dozen entries walking is the slow
-way and naming what you are after is the fastest way in. Spending that first
+catalog — the models, the branches, the backlog, the turns a rewind can go
+back to — comes up as a search, with the query row already open, because past
+a dozen entries walking is the slow way and naming what you are after is the
+fastest way in. Spending that first
 keystroke on opening the row it would have gone into is the card asking to be
 asked. The saved chats are the one catalog that still opens as a list: its
 rows carry the keys that delete and rename, and those keys are what the reader

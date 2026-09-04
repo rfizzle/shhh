@@ -94,15 +94,15 @@ func (m Model) inspectorTodo() *components.InspectorTodo {
 	// who is not watching the transcript finds out which. The stage comes
 	// with it because a slug on its own says a sprint is going and not
 	// whether it is moving.
-	if st := m.todoRun; st.Sprinting() {
+	if st := m.todoRunner.state; st.Sprinting() {
 		t.SprintItem, t.SprintStage = st.Slug, string(st.Stage)
 	}
-	for _, it := range todoRailOrder(s.Items, m.todoRun) {
+	for _, it := range todoRailOrder(s.Items, m.todoRunner.state) {
 		if len(t.Rows) == todoRailRows {
 			t.More++
 			continue
 		}
-		t.Rows = append(t.Rows, todoRow(s, it, m.todoRun))
+		t.Rows = append(t.Rows, todoRow(s, it, m.todoRunner.state))
 	}
 	return t
 }
@@ -329,8 +329,8 @@ func (m Model) openTodoPick() (tea.Model, tea.Cmd, bool) {
 			Desc:  fmt.Sprintf("%s · %s · %s", it.Priority, size, it.Title),
 		}
 	}
-	model, cmd := m.openSearchPicker("Backlog — enter shows an item; /todo edit <slug> opens it", opts, 0, func(m *Model, idx int) string {
-		return m.todos.Detail(s, items[idx])
+	model, cmd := m.openSearchPicker("Backlog — enter shows an item; /todo edit <slug> opens it", opts, 0, func(m *Model, idx int) (string, tea.Cmd) {
+		return m.todos.Detail(s, items[idx]), nil
 	})
 	return model, cmd, true
 }

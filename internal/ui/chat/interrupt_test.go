@@ -454,7 +454,7 @@ func TestArrival_TheKeysASentenceCouldHaveMeantWaitForTheHandover(t *testing.T) 
 
 	updated, _ := m.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
 	m = updated.(Model)
-	if m.allowAllEdits || len(m.editDirGrants) > 0 {
+	if m.policy.allEdits || len(m.policy.editDirs) > 0 {
 		t.Fatal("[a] must not grant anything on a card the reader never took")
 	}
 	if got := m.input.Value(); got != "a" {

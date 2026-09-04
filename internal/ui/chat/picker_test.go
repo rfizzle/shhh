@@ -123,8 +123,8 @@ func TestModePick_BareModeOpensPickerAndApplies(t *testing.T) {
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
-	if m.mode != agent.ModeAcceptEdits {
-		t.Fatalf("expected accept-edits, got %v", m.mode)
+	if m.policy.mode != agent.ModeAcceptEdits {
+		t.Fatalf("expected accept-edits, got %v", m.policy.mode)
 	}
 	last := m.transcript[len(m.transcript)-1]
 	if !strings.Contains(last.text, "Mode set to accept-edits") {
@@ -1189,7 +1189,7 @@ func TestModePick_OpensAsAListOfAnswers(t *testing.T) {
 	if m.picker != nil {
 		t.Fatal("a digit should have taken an answer outright")
 	}
-	if want := agent.DefaultCycle()[1]; m.mode != want {
-		t.Fatalf("the digit should have taken %s, mode is %s", want, m.mode)
+	if want := agent.DefaultCycle()[1]; m.policy.mode != want {
+		t.Fatalf("the digit should have taken %s, mode is %s", want, m.policy.mode)
 	}
 }

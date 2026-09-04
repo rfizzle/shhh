@@ -347,32 +347,31 @@ func (m Model) openKeyEntry(f *provider.Failure) (tea.Model, tea.Cmd) {
 
 // updateKeyEntry routes keys while the prompt is up. Esc declines and writes
 // nothing — the old key stays exactly where it was.
-func (m Model) updateKeyEntry(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+func (m *Model) answerKeyEntry(msg tea.KeyPressMsg) (bool, overlayAction) {
 	if m.keyAsk == nil {
-		return m.closeKeyEntry("")
+		return true, m.closeKeyEntry("")
 	}
 	done, result := m.keyAsk.Update(msg)
 	if !done {
 		m.syncViewport()
-		return m, nil
+		return false, overlayAction{}
 	}
 	secret, _ := result.(string)
-	return m.closeKeyEntry(secret)
+	return true, m.closeKeyEntry(secret)
 }
 
 // closeKeyEntry hands the screen back and applies the key, if one was given.
 // The notice names the key by its last four characters and never by more.
-func (m Model) closeKeyEntry(secret string) (tea.Model, tea.Cmd) {
+func (m *Model) closeKeyEntry(secret string) overlayAction {
 	m.keyAsk = nil
-	m.leaveSurface()
-	m.syncViewport()
 	if strings.TrimSpace(secret) == "" {
-		return m.systemNotice("Key unchanged.")
+		return overlayAction{close: true, note: "Key unchanged."}
 	}
 	if err := m.replaceKeyFn(secret); err != nil {
-		return m.systemNotice("That key was not accepted: " + err.Error())
+		return overlayAction{close: true, note: "That key was not accepted: " + err.Error()}
 	}
-	return m.systemNotice("Key ···" + lastFour(secret) + " is in use for this session. Ask again to try it, or /config set provider.api_key to keep it.")
+	return overlayAction{close: true, note: "Key ···" + lastFour(secret) +
+		" is in use for this session. Ask again to try it, or /config set provider.api_key to keep it."}
 }
 
 // keyEntryLines renders the prompt for the bottom panel.
