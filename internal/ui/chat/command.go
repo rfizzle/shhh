@@ -59,6 +59,12 @@ func (m Model) submitInput() (tea.Model, tea.Cmd) {
 		m.recordInput(text)
 	}
 	m.input.Reset()
+	// A submitted line is where a server's re-listing is taken: the reader
+	// is between turns here, or steering one, and either way the toolset
+	// applies nothing while a round's calls are out. What it moves is what
+	// this surface reads live — the commands a server publishes; what the
+	// model was told is the session's (mcp.go).
+	m.refreshMCP()
 	if name := commandName(text); name != "" {
 		return m.runCommand(text, name)
 	}
@@ -298,6 +304,14 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 		if picked, cmd, ok := m.openBranchPick(); ok {
 			return picked, cmd
 		}
+	}
+	// A connected server's prompts are commands of this session
+	// (mcp.go). The name is namespaced by the server it came from, so
+	// nothing in the registry can collide with one, and the lookup is
+	// before the skills' because a prompt name is exact where a skill's is
+	// a bare word.
+	if p, ok := m.mcpPrompt(name); ok {
+		return m.runMCPPrompt(p, parts[1:])
 	}
 	// A skill's own name works as a command — /documentation — the way
 	// the other harnesses spell it, but only where no real command has the

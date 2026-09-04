@@ -983,6 +983,9 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			ReadOnly: mcpTools.ReadOnly,
 			Manage:   mcpManager(mcpTools, session.mcpCatalog),
 			Sources:  mcpToolSources(mcpTools),
+			Prompts:  mcpTools.Prompts,
+			Render:   mcpTools.Render,
+			Refresh:  mcpTools.Refresh,
 		})
 	}
 	if len(gatedPreviews) > 0 {

@@ -494,7 +494,10 @@ func (m *Model) commandMatches(token string) []completionItem {
 			matches = append(matches, item)
 		}
 	}
-	return matches
+	// A connected server's prompts are commands too (mcp.go), and they
+	// come last: what the session promises to answer outranks what a
+	// server happens to publish today.
+	return append(matches, m.mcpCommandMatches(token)...)
 }
 
 // argumentMatches are the candidates for the argument under the cursor:

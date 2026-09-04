@@ -63,7 +63,11 @@ func staticArgs(opts ...argOption) []argSpec {
 }
 
 // lookupCommand finds the registry row for a typed command name (or alias)
-// that this session actually has wired.
+// that this session actually has wired, or the row a connected server's
+// prompt stands in as. The two go through one function so that argument
+// completion, the exact-match focus rule and the idle-only check all see a
+// prompt as the command it is, rather than each learning about servers
+// separately (mcp.go).
 func lookupCommand(m *Model, name string) (slashCommand, bool) {
 	for _, c := range slashCommands() {
 		if c.enabled != nil && !c.enabled(m) {
@@ -77,6 +81,9 @@ func lookupCommand(m *Model, name string) (slashCommand, bool) {
 				return c, true
 			}
 		}
+	}
+	if p, ok := m.mcpPrompt(name); ok {
+		return mcpPromptCommand(p), true
 	}
 	return slashCommand{}, false
 }

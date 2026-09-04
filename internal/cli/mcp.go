@@ -137,7 +137,7 @@ func mcpStartupNotes(ts *mcp.Toolset, cat *mcp.Catalog) []string {
 func mcpOutcome(r mcp.Report) string {
 	switch r.Status {
 	case mcp.StatusConnected:
-		return countOf(len(r.Server.Tools), "tool", "tools")
+		return mcpOffering(r.Server)
 	case mcp.StatusFailed:
 		return "failed"
 	case mcp.StatusDisabled:
@@ -152,6 +152,21 @@ func mcpOutcome(r mcp.Report) string {
 		return "not read-only"
 	}
 	return string(r.Status)
+}
+
+// mcpOffering is what a connected server brought, in the outcome column's
+// one line: its tools, and the prompts and resources beside them when it has
+// any. A server with no tools and three prompts reads as empty without
+// this, which is the failure the field exists to prevent.
+func mcpOffering(s *mcp.Server) string {
+	parts := []string{countOf(len(s.Tools), "tool", "tools")}
+	if n := len(s.Prompts); n > 0 {
+		parts = append(parts, countOf(n, "prompt", "prompts"))
+	}
+	if n := len(s.Resources); n > 0 {
+		parts = append(parts, countOf(n, "resource", "resources"))
+	}
+	return strings.Join(parts, ", ")
 }
 
 // mcpToolSources is the session's servers as the chat surface names them:
@@ -286,6 +301,12 @@ func mcpListingReport(ts *mcp.Toolset, cat *mcp.Catalog, root string) report.Rep
 
 	servers := report.Section{Header: "SERVERS", NameWidth: doctorNameWidth}
 	tools := report.Section{Header: "TOOLS"}
+	// Prompts and resources are sections of their own rather than more rows
+	// under TOOLS: they are reached differently — one is typed, one is read
+	// — and a reader scanning for what they can type should not have to
+	// filter a tool list to find it.
+	prompts := report.Section{Header: "PROMPTS"}
+	resources := report.Section{Header: "RESOURCES"}
 	connected := 0
 	for _, rep := range ts.Reports {
 		row := report.Row{
@@ -304,7 +325,7 @@ func mcpListingReport(ts *mcp.Toolset, cat *mcp.Catalog, root string) report.Rep
 			continue
 		}
 		connected++
-		row.Detail = countOf(len(rep.Server.Tools), "tool", "tools")
+		row.Detail = mcpOffering(rep.Server)
 		servers.Rows = append(servers.Rows, row)
 		for _, t := range rep.Server.Tools {
 			tool := report.Row{State: report.Pass, Name: rep.Definition.Name, Subject: t.Name}
@@ -313,15 +334,39 @@ func mcpListingReport(ts *mcp.Toolset, cat *mcp.Catalog, root string) report.Rep
 			}
 			tools.Rows = append(tools.Rows, tool)
 		}
+		for _, p := range rep.Server.Prompts {
+			prompts.Rows = append(prompts.Rows, report.Row{
+				State: report.Pass, Name: rep.Definition.Name,
+				Subject: "/" + p.Name, Detail: mcpPromptDetail(p),
+			})
+		}
+		for _, res := range rep.Server.Resources {
+			resources.Rows = append(resources.Rows, report.Row{
+				State: report.Pass, Name: rep.Definition.Name,
+				Subject: res.URI, Detail: firstLine(res.Description),
+			})
+		}
 	}
 	r.Subject = countOf(len(ts.Reports), "server", "servers")
 	r.Sections = []report.Section{servers}
-	if len(tools.Rows) > 0 {
-		r.Sections = append(r.Sections, tools)
+	for _, section := range []report.Section{tools, prompts, resources} {
+		if len(section.Rows) > 0 {
+			r.Sections = append(r.Sections, section)
+		}
 	}
 	r.Tally = countOf(connected, "server", "servers") + " connected; a server marked read-only " +
 		"runs without asking, every other server's calls ask like a command"
 	return r
+}
+
+// mcpPromptDetail is what a prompt's row says beside its command: how it is
+// typed, or — for a prompt that takes nothing, where there is no usage to
+// print — what it is for.
+func mcpPromptDetail(p mcp.Prompt) string {
+	if usage := p.Usage(); usage != "" {
+		return usage
+	}
+	return p.Description
 }
 
 func mcpState(s mcp.Status) components.DoctorState {
@@ -404,13 +449,9 @@ func mcpFinding(r mcp.Report, root string, db *storage.DB) doctorFinding {
 		Consequence: mcpConsequence(r),
 	}
 	if r.Status == mcp.StatusConnected {
-		names := make([]string, 0, len(r.Server.Tools))
-		for _, t := range r.Server.Tools {
-			names = append(names, t.Remote)
-		}
-		if len(names) > 0 {
-			f.Fix = []string{strings.Join(names, ", ")}
-			f.FixLabel = "list the tools"
+		if lines := mcpOffered(r.Server); len(lines) > 0 {
+			f.Fix = lines
+			f.FixLabel = "list what it offers"
 		}
 		if title := r.Server.Info.Name; title != "" && !strings.EqualFold(title, d.Name) {
 			f.Detail += " · " + title
@@ -441,6 +482,36 @@ func mcpFinding(r mcp.Report, root string, db *storage.DB) doctorFinding {
 		}
 	}
 	return f
+}
+
+// mcpOffered is what one connected server holds, as the lines a fix key
+// reveals: the tools by their remote names, the prompts as the commands
+// they became, and the resources by uri. Three labelled lines rather than
+// one run-on list, because the three are reached three different ways.
+func mcpOffered(s *mcp.Server) []string {
+	var lines []string
+	if len(s.Tools) > 0 {
+		names := make([]string, 0, len(s.Tools))
+		for _, t := range s.Tools {
+			names = append(names, t.Remote)
+		}
+		lines = append(lines, "tools: "+strings.Join(names, ", "))
+	}
+	if len(s.Prompts) > 0 {
+		names := make([]string, 0, len(s.Prompts))
+		for _, p := range s.Prompts {
+			names = append(names, "/"+p.Name)
+		}
+		lines = append(lines, "prompts: "+strings.Join(names, ", "))
+	}
+	if len(s.Resources) > 0 {
+		names := make([]string, 0, len(s.Resources))
+		for _, r := range s.Resources {
+			names = append(names, r.URI)
+		}
+		lines = append(lines, "resources: "+strings.Join(names, ", "))
+	}
+	return lines
 }
 
 func newMCPCmd() *cobra.Command {
@@ -594,8 +665,32 @@ func mcpShow(r mcp.Report, root string) string {
 	}
 	if len(tools.Rows) > 0 {
 		out.Sections = append(out.Sections, tools)
-		out.Tally = countOf(len(s.Tools), "tool", "tools")
 	}
+	if len(s.Prompts) > 0 {
+		prompts := report.Section{Header: "PROMPTS"}
+		for _, p := range s.Prompts {
+			// The command is the subject because it is the thing the reader
+			// will type; the arguments are the dim half beside it.
+			row := report.Row{State: report.Pass, Name: "/" + p.Name, Subject: mcpPromptDetail(p)}
+			if p.Description != "" && len(p.Arguments) > 0 {
+				row.Body = []string{clipRunes(strings.ReplaceAll(p.Description, "\n", " "), 200)}
+			}
+			prompts.Rows = append(prompts.Rows, row)
+		}
+		out.Sections = append(out.Sections, prompts)
+	}
+	if len(s.Resources) > 0 {
+		resources := report.Section{Header: "RESOURCES"}
+		for _, r := range s.Resources {
+			row := report.Row{State: report.Pass, Name: r.URI, Subject: r.Title, Outcome: r.MIMEType}
+			if r.Description != "" {
+				row.Body = []string{clipRunes(strings.ReplaceAll(r.Description, "\n", " "), 200)}
+			}
+			resources.Rows = append(resources.Rows, row)
+		}
+		out.Sections = append(out.Sections, resources)
+	}
+	out.Tally = mcpOffering(s)
 	return out.String()
 }
 

@@ -163,3 +163,34 @@ func TestMCPStartupNotesNameOnlyWhatDidNotConnect(t *testing.T) {
 		t.Errorf("notes = %v", notes)
 	}
 }
+
+// A server offers three lists and the listing shows all three: a server with
+// no tools and three prompts reads as empty otherwise, which is the failure
+// the outcome column exists to prevent.
+func TestMCPListingAndShowNamePromptsAndResources(t *testing.T) {
+	server := &mcp.Server{
+		Tools: []mcp.Tool{{Name: "docs__search", Remote: "search"}},
+		Prompts: []mcp.Prompt{
+			{Name: "docs:brief", Remote: "brief", Server: "docs", Description: "Two voices."},
+			{Name: "docs:review", Remote: "review", Server: "docs", Description: "Review a change.",
+				Arguments: []mcp.PromptArgument{{Name: "ref", Required: true}, {Name: "depth"}}},
+		},
+		Resources: []mcp.Resource{{URI: "docs://guide", Title: "guide", Description: "The guide.", MIMEType: "text/markdown"}},
+	}
+	rep := mcp.Report{
+		Definition: mcp.Definition{Name: "docs", Scope: mcp.ScopeUser, Transport: mcp.TransportStdio, Command: "docs-mcp"},
+		Status:     mcp.StatusConnected, Server: server,
+	}
+	listing := mcpListing(&mcp.Toolset{Reports: []mcp.Report{rep}}, nil, "")
+	for _, want := range []string{"1 tool, 2 prompts, 1 resource", "PROMPTS", "/docs:review", "ref= [depth=]", "RESOURCES", "docs://guide"} {
+		if !strings.Contains(listing, want) {
+			t.Errorf("the listing lacks %q:\n%s", want, listing)
+		}
+	}
+	shown := mcpShow(rep, "")
+	for _, want := range []string{"PROMPTS", "/docs:brief", "Two voices.", "RESOURCES", "docs://guide", "text/markdown"} {
+		if !strings.Contains(shown, want) {
+			t.Errorf("`shhh mcp show` lacks %q:\n%s", want, shown)
+		}
+	}
+}

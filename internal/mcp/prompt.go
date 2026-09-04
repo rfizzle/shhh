@@ -13,7 +13,13 @@ import (
 // Every tool's own description already reaches the model through its
 // schema, so the block is one line per server plus whatever the server
 // asked to have said — its instructions are the one thing a schema cannot
-// carry.
+// carry — and, under it, the resources the server publishes, which is the
+// one part of the catalog no tool schema can hold, since a uri is data and a
+// schema is a shape.
+//
+// A server's prompts are deliberately absent. A prompt is a command the
+// person types, and telling the model about one would offer it something
+// it has no way to invoke (docs/capabilities/mcp.md#a-prompt-is-a-command).
 func PromptBlock(ts *Toolset) string {
 	return promptBlock(ts.Servers())
 }
@@ -38,6 +44,19 @@ func promptBlock(servers []*Server) string {
 	b.WriteString("# MCP servers\n")
 	b.WriteString("Tools named `<server>" + Separator + "<tool>` come from MCP servers the user connected. ")
 	b.WriteString("A server marked read-only runs without asking; every other server's tools need the user's answer before they run, like a command.\n")
+	resources := false
+	for _, s := range servers {
+		if len(s.Resources) > 0 {
+			resources = true
+		}
+	}
+	if resources {
+		// The catalog of URIs is here rather than in the tool's schema
+		// because the schema describes the call's shape and the uris are
+		// the data it is made with; the block is where the model is told
+		// facts about this session.
+		b.WriteString("`" + ResourceToolName + "` reads any resource listed below, by uri. Reading one changes nothing and never asks.\n")
+	}
 	for _, s := range servers {
 		def := s.Definition
 		fmt.Fprintf(&b, "- %s — %s", def.Name, countTools(len(s.Tools)))
@@ -54,8 +73,27 @@ func promptBlock(servers []*Server) string {
 				b.WriteString("  > " + line + "\n")
 			}
 		}
+		for _, r := range s.Resources {
+			b.WriteString("  resource " + r.URI)
+			if detail := resourceDetail(r); detail != "" {
+				b.WriteString(" — " + detail)
+			}
+			b.WriteString("\n")
+		}
 	}
 	return strings.TrimRight(b.String(), "\n")
+}
+
+// resourceDetail is the one line a resource earns beside its uri: what it
+// is, in the server's words, or failing that what it is called.
+func resourceDetail(r Resource) string {
+	if r.Description != "" {
+		return strings.ReplaceAll(r.Description, "\n", " ")
+	}
+	if r.Title != "" {
+		return r.Title
+	}
+	return ""
 }
 
 // serverTitle is what the server calls itself when that adds something

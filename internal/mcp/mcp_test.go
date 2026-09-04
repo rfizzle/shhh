@@ -14,9 +14,9 @@ import (
 )
 
 // The test binary doubles as a stdio MCP server: run with the environment
-// variable set, it serves two tools over its own stdin and stdout, which is
-// exactly what a definition naming os.Args[0] spawns. No fixture binary to
-// build, no network.
+// variable set, it serves two tools, two prompts and a resource over its own
+// stdin and stdout, which is exactly what a definition naming os.Args[0]
+// spawns. No fixture binary to build, no network.
 const serverEnv = "SHHH_MCP_TEST_SERVER"
 
 func TestMain(m *testing.M) {
@@ -51,6 +51,54 @@ func runTestServer() {
 	}, func(_ context.Context, _ *sdk.CallToolRequest, in echoIn) (*sdk.CallToolResult, any, error) {
 		return &sdk.CallToolResult{IsError: true, Content: []sdk.Content{&sdk.TextContent{Text: "nope: " + in.Text}}}, nil, nil
 	})
+	// A tool that changes the server's own lists, so a test can make a real
+	// list-changed notification arrive rather than simulating one.
+	sdk.AddTool(server, &sdk.Tool{
+		Name:        "grow",
+		Description: "Publish one more prompt.",
+	}, func(_ context.Context, _ *sdk.CallToolRequest, _ echoIn) (*sdk.CallToolResult, any, error) {
+		server.AddPrompt(&sdk.Prompt{Name: "later", Description: "Added after the session opened."},
+			func(context.Context, *sdk.GetPromptRequest) (*sdk.GetPromptResult, error) {
+				return &sdk.GetPromptResult{Messages: []*sdk.PromptMessage{
+					{Role: "user", Content: &sdk.TextContent{Text: "later"}},
+				}}, nil
+			})
+		return &sdk.CallToolResult{Content: []sdk.Content{&sdk.TextContent{Text: "grown"}}}, nil, nil
+	})
+	server.AddPrompt(&sdk.Prompt{
+		Name:        "review",
+		Description: "Review a change.",
+		Arguments:   []*sdk.PromptArgument{{Name: "ref", Description: "What to review.", Required: true}},
+	}, func(_ context.Context, req *sdk.GetPromptRequest) (*sdk.GetPromptResult, error) {
+		return &sdk.GetPromptResult{Messages: []*sdk.PromptMessage{
+			{Role: "user", Content: &sdk.TextContent{Text: "Review " + req.Params.Arguments["ref"] + "."}},
+		}}, nil
+	})
+	server.AddPrompt(&sdk.Prompt{
+		Name:        "brief",
+		Description: "Two voices.",
+	}, func(context.Context, *sdk.GetPromptRequest) (*sdk.GetPromptResult, error) {
+		return &sdk.GetPromptResult{Messages: []*sdk.PromptMessage{
+			{Role: "user", Content: &sdk.TextContent{Text: "what changed?"}},
+			{Role: "assistant", Content: &sdk.TextContent{Text: "nothing yet"}},
+		}}, nil
+	})
+	server.AddResource(&sdk.Resource{
+		URI: "docs://guide", Name: "guide", Description: "The guide.", MIMEType: "text/markdown",
+	}, func(_ context.Context, req *sdk.ReadResourceRequest) (*sdk.ReadResourceResult, error) {
+		return &sdk.ReadResourceResult{Contents: []*sdk.ResourceContents{
+			{URI: req.Params.URI, MIMEType: "text/markdown", Text: "the guide, at " + req.Params.URI},
+		}}, nil
+	})
+	// A resource template, so a uri the listing never named still reaches
+	// the server: that is what the scheme rule exists to make possible.
+	server.AddResourceTemplate(&sdk.ResourceTemplate{
+		URITemplate: "docs://{name}", Name: "page", MIMEType: "application/octet-stream",
+	}, func(_ context.Context, req *sdk.ReadResourceRequest) (*sdk.ReadResourceResult, error) {
+		return &sdk.ReadResourceResult{Contents: []*sdk.ResourceContents{
+			{URI: req.Params.URI, MIMEType: "application/octet-stream", Blob: make([]byte, 2048)},
+		}}, nil
+	})
 	if err := server.Run(context.Background(), &sdk.StdioTransport{}); err != nil {
 		os.Exit(1)
 	}
@@ -83,8 +131,8 @@ func TestDialListsAndCallsTools(t *testing.T) {
 	if s.Instructions != "Call echo with anything." {
 		t.Errorf("instructions = %q", s.Instructions)
 	}
-	if len(s.Tools) != 2 {
-		t.Fatalf("tools = %d, want 2", len(s.Tools))
+	if len(s.Tools) != 3 {
+		t.Fatalf("tools = %d, want 3", len(s.Tools))
 	}
 	echo := s.Tools[0]
 	if echo.Name != "echo__echo" || echo.Remote != "echo" || !echo.ReadOnlyHint {
@@ -105,6 +153,55 @@ func TestDialListsAndCallsTools(t *testing.T) {
 	_, err = s.Call(ctx, s.Tools[1], json.RawMessage(`{"text":"x"}`))
 	if err == nil || !strings.Contains(err.Error(), "nope: x") {
 		t.Errorf("tool error = %v, want the server's text", err)
+	}
+}
+
+// A server offers three lists and the client reads all three: the prompts
+// become commands of the session, the resources become uris the one resource
+// tool reads.
+func TestDialListsPromptsAndResources(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	s, err := Dial(ctx, testDefinition(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+
+	if len(s.Prompts) != 2 {
+		t.Fatalf("prompts = %+v, want two", s.Prompts)
+	}
+	brief, review := s.Prompts[0], s.Prompts[1]
+	if brief.Name != "echo:brief" || review.Name != "echo:review" || review.Server != "echo" {
+		t.Fatalf("prompt names = %q %q", brief.Name, review.Name)
+	}
+	if len(review.Arguments) != 1 || review.Arguments[0].Name != "ref" || !review.Arguments[0].Required {
+		t.Fatalf("review arguments = %+v", review.Arguments)
+	}
+	if len(s.Resources) != 1 || s.Resources[0].URI != "docs://guide" || s.Resources[0].MIMEType != "text/markdown" {
+		t.Fatalf("resources = %+v", s.Resources)
+	}
+
+	// A prompt whose messages are all the person's is prose; one that
+	// scripts both sides is labelled, because run together unmarked the two
+	// halves read as one contradictory sentence.
+	out, err := s.Render(ctx, review, map[string]string{"ref": "the patch"})
+	if err != nil || out != "Review the patch." {
+		t.Fatalf("render = %q, %v", out, err)
+	}
+	out, err = s.Render(ctx, brief, nil)
+	if err != nil || out != "user: what changed?\n\nassistant: nothing yet" {
+		t.Fatalf("two-voice render = %q, %v", out, err)
+	}
+
+	if out, err = s.Read(ctx, "docs://guide"); err != nil || out != "the guide, at docs://guide" {
+		t.Fatalf("read = %q, %v", out, err)
+	}
+	// Bytes the model cannot read come back as the notice a binary gets
+	// everywhere else here, never as a page of base64.
+	out, err = s.Read(ctx, "docs://opaque")
+	if err != nil || out != "[resource omitted: docs://opaque, application/octet-stream, 2.0 kB]" {
+		t.Fatalf("binary read = %q, %v", out, err)
 	}
 }
 
@@ -129,7 +226,9 @@ func TestConnectBuildsTheToolsetAndReports(t *testing.T) {
 			t.Errorf("%s: status %s, want %s (%s)", r.Definition.Name, r.Status, want[r.Definition.Name], r.Error)
 		}
 	}
-	if ts.Len() != 2 || !ts.Has("echo__echo") || !ts.ReadOnly("echo__fail") {
+	// Three tools of the server's own, plus the one tool every server's
+	// resources are read through.
+	if ts.Len() != 4 || !ts.Has("echo__echo") || !ts.ReadOnly("echo__fail") {
 		t.Errorf("toolset = %v", ts.Definitions())
 	}
 	if got := ts.Gated(); len(got) != 0 {
@@ -151,7 +250,8 @@ func TestConnectBuildsTheToolsetAndReports(t *testing.T) {
 		t.Errorf("preview = %+v, %v", p, err)
 	}
 	block := PromptBlock(ts)
-	for _, want := range []string{"# MCP servers", "- echo — 2 tools, read-only (echo-server 1.2.3)", "> Call echo with anything."} {
+	for _, want := range []string{"# MCP servers", "- echo — 3 tools, read-only (echo-server 1.2.3)", "> Call echo with anything.",
+		"resource docs://guide — The guide.", "`" + ResourceToolName + "` reads any resource listed below"} {
 		if !strings.Contains(block, want) {
 			t.Errorf("prompt block lacks %q:\n%s", want, block)
 		}
@@ -165,7 +265,7 @@ func TestWrapReadOnlyExecutorRefusesGatedTools(t *testing.T) {
 	def.ReadOnly = false
 	ts := Connect(context.Background(), &Catalog{Servers: []Definition{def}}, Options{})
 	defer ts.Close()
-	if ts.Len() != 2 || len(ts.ReadOnlyDefinitions()) != 0 {
+	if ts.Len() != 4 || len(ts.ReadOnlyDefinitions()) != 0 {
 		t.Fatalf("toolset = %d tools, %d read-only", ts.Len(), len(ts.ReadOnlyDefinitions()))
 	}
 	next := func(name string, _ json.RawMessage) (string, error) { return "next:" + name, nil }
@@ -221,8 +321,9 @@ func TestToolNames(t *testing.T) {
 		{"get_issue", "gh__get_issue"},
 		{"get issue", "gh__get_issue_2"},
 		{"search/code", "gh__search_code"},
-		{strings.Repeat("x", 80), "gh__" + strings.Repeat("x", 60)},
-		{strings.Repeat("x", 81), "gh__" + strings.Repeat("x", 58) + "_2"},
+		{strings.Repeat("x", 70), "gh__" + strings.Repeat("x", 60)},
+		{strings.Repeat("x", 80), "gh__" + strings.Repeat("x", 58) + "_2"},
+		{strings.Repeat("x", 81), "gh__" + strings.Repeat("x", 58) + "_3"},
 	}
 	for _, c := range cases {
 		if got := ToolName("gh", c.remote, taken); got != c.want {
@@ -419,5 +520,208 @@ func TestDial_ACancelledDialWritesNothing(t *testing.T) {
 	if _, err := os.Stat(path); !os.IsNotExist(err) {
 		body, _ := os.ReadFile(path)
 		t.Errorf("a cancelled dial wrote a log line: %v, %s", err, body)
+	}
+}
+
+// A resource read is a read whatever the server is. The person's read-only
+// mark answers "may this server act without asking"; reading is not acting,
+// so the resource tool is never in the gated set and never draws a card.
+func TestResourcesAreReadsOnAServerNobodyMarkedReadOnly(t *testing.T) {
+	def := testDefinition(t)
+	def.ReadOnly = false
+	ts := Connect(context.Background(), &Catalog{Servers: []Definition{def}}, Options{})
+	defer ts.Close()
+
+	if !ts.Has(ResourceToolName) || !ts.ReadOnly(ResourceToolName) {
+		t.Fatalf("the resource tool is gated on a server nobody marked read-only")
+	}
+	for _, name := range ts.Gated() {
+		if name == ResourceToolName {
+			t.Fatalf("the resource tool is in the gated set: %v", ts.Gated())
+		}
+	}
+	if len(ts.Gated()) != 3 {
+		t.Fatalf("gated = %v, want the server's own three tools", ts.Gated())
+	}
+	out, err := ts.Execute(ResourceToolName, json.RawMessage(`{"uri":"docs://guide"}`))
+	if err != nil || out != "the guide, at docs://guide" {
+		t.Fatalf("resource read = %q, %v", out, err)
+	}
+	// A child was handed the read-only servers and nothing else, so the same
+	// uri through its chain is refused rather than read.
+	next := func(name string, _ json.RawMessage) (string, error) { return "next:" + name, nil }
+	_, err = ts.WrapReadOnlyExecutor(next)(ResourceToolName, json.RawMessage(`{"uri":"docs://guide"}`))
+	if err == nil || !strings.Contains(err.Error(), "not marked read-only") {
+		t.Fatalf("a child read a resource off a server it was not handed: %v", err)
+	}
+	if len(ts.ReadOnlyDefinitions()) != 0 {
+		t.Fatalf("a child was offered %v", ts.ReadOnlyDefinitions())
+	}
+}
+
+// A uri no server listed still reaches the server that established its
+// scheme — which is what a resource template is for — and one that matches
+// nothing is an error naming where the catalog is, not a silent empty read.
+func TestResourceUriResolvesByListingThenByScheme(t *testing.T) {
+	ts := Connect(context.Background(), &Catalog{Servers: []Definition{testDefinition(t)}}, Options{})
+	defer ts.Close()
+
+	out, err := ts.Execute(ResourceToolName, json.RawMessage(`{"uri":"docs://opaque"}`))
+	if err != nil || !strings.Contains(out, "[resource omitted: docs://opaque") {
+		t.Fatalf("templated uri = %q, %v", out, err)
+	}
+	if _, err := ts.Execute(ResourceToolName, json.RawMessage(`{"uri":"tickets://7"}`)); err == nil ||
+		!strings.Contains(err.Error(), "no connected server publishes") {
+		t.Fatalf("an unknown scheme = %v", err)
+	}
+	if _, err := ts.Execute(ResourceToolName, json.RawMessage(`{"uri":"  "}`)); err == nil ||
+		!strings.Contains(err.Error(), "needs a uri") {
+		t.Fatalf("an empty uri = %v", err)
+	}
+}
+
+// The model is told what it can read and not what the person can type: a
+// prompt is a command with no way for the model to invoke it, so naming one
+// in the prompt block would cost a round to find that out.
+func TestPromptBlockNamesResourcesAndNotPrompts(t *testing.T) {
+	ts := Connect(context.Background(), &Catalog{Servers: []Definition{testDefinition(t)}}, Options{})
+	defer ts.Close()
+	block := PromptBlock(ts)
+	if !strings.Contains(block, "docs://guide") {
+		t.Fatalf("the block does not name the resources:\n%s", block)
+	}
+	for _, name := range []string{"echo:review", "echo:brief"} {
+		if strings.Contains(block, name) {
+			t.Fatalf("the block offers the model a command it cannot type:\n%s", block)
+		}
+	}
+}
+
+// The session reaches a prompt by the command name it answers to, and an
+// unknown one is a refusal the person can read rather than an empty turn.
+func TestToolsetRendersAPromptByItsCommandName(t *testing.T) {
+	ts := Connect(context.Background(), &Catalog{Servers: []Definition{testDefinition(t)}}, Options{})
+	defer ts.Close()
+
+	names := make([]string, 0, 2)
+	for _, p := range ts.Prompts() {
+		names = append(names, p.Name)
+	}
+	if strings.Join(names, " ") != "echo:brief echo:review" {
+		t.Fatalf("prompts = %v", names)
+	}
+	out, err := ts.Render(context.Background(), "echo:review", map[string]string{"ref": "HEAD"})
+	if err != nil || out != "Review HEAD." {
+		t.Fatalf("render = %q, %v", out, err)
+	}
+	if _, err := ts.Render(context.Background(), "echo:nope", nil); err == nil ||
+		!strings.Contains(err.Error(), "no prompt named") {
+		t.Fatalf("unknown prompt = %v", err)
+	}
+}
+
+// A server that says its lists changed is re-listed in the background, and
+// the new catalog is taken at a round boundary. Taking it mid-round would
+// move what a call's result is an answer to.
+func TestListChangedIsTakenAtTheBoundaryAndNotMidRound(t *testing.T) {
+	ts := Connect(context.Background(), &Catalog{Servers: []Definition{testDefinition(t)}}, Options{})
+	defer ts.Close()
+
+	if _, err := ts.Execute("echo__grow", json.RawMessage(`{"text":"x"}`)); err != nil {
+		t.Fatal(err)
+	}
+	server := ts.Servers()[0]
+	deadline := time.Now().Add(10 * time.Second)
+	for {
+		server.mu.Lock()
+		arrived := server.pending != nil
+		server.mu.Unlock()
+		if arrived {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("the server's list-changed notification never produced a re-listing")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	// A call is out: the catalog stays where it was, whatever has arrived.
+	ts.mu.Lock()
+	ts.inflight++
+	ts.mu.Unlock()
+	if ts.Refresh() {
+		t.Fatal("the catalog moved under a round's own calls")
+	}
+	if len(ts.Prompts()) != 2 {
+		t.Fatalf("prompts moved mid-round: %+v", ts.Prompts())
+	}
+
+	// The round is over: this is the boundary, and the swap happens here.
+	ts.end()
+	if !ts.Refresh() {
+		t.Fatal("the re-listing was never taken")
+	}
+	names := make([]string, 0, 3)
+	for _, p := range ts.Prompts() {
+		names = append(names, p.Name)
+	}
+	if strings.Join(names, " ") != "echo:brief echo:later echo:review" {
+		t.Fatalf("prompts after the boundary = %v", names)
+	}
+	if ts.Refresh() {
+		t.Fatal("a second refresh with nothing pending reported a change")
+	}
+}
+
+// A prompt's command name obeys the tool name's length rule. The cap is the
+// provider's, but one vocabulary is easier to be right about than two, and a
+// command that does not fit a menu row is no more usable than a tool name a
+// provider refuses.
+func TestPromptNamesObeyTheToolNameRule(t *testing.T) {
+	taken := map[string]bool{}
+	cases := []struct{ remote, want string }{
+		{"review", "gh:review"},
+		{"review", "gh:review_2"},
+		{"write a plan", "gh:write_a_plan"},
+		{strings.Repeat("x", 70), "gh:" + strings.Repeat("x", 61)},
+	}
+	for _, c := range cases {
+		got := PromptName("gh", c.remote, taken)
+		if got != c.want {
+			t.Errorf("PromptName(%q) = %q, want %q", c.remote, got, c.want)
+		}
+		if len(got) > MaxToolNameLength {
+			t.Errorf("%q is longer than %d", got, MaxToolNameLength)
+		}
+	}
+}
+
+// Every session that defines no server, and every surface that asks a
+// toolset a question before one exists, goes through these: a session with
+// no MCP at all must not be a session that panics on the first keystroke.
+func TestAToolsetWithNoServersAnswersEverything(t *testing.T) {
+	ts := Connect(context.Background(), nil, Options{})
+	if ts.Has(ResourceToolName) || ts.ReadOnly(ResourceToolName) || ts.Len() != 0 {
+		t.Error("an empty toolset claims a resource tool")
+	}
+	if ts.Refresh() {
+		t.Error("an empty toolset reported a change")
+	}
+	if _, err := ts.Execute(ResourceToolName, json.RawMessage(`{"uri":"x://y"}`)); err == nil {
+		t.Error("an empty toolset read a resource")
+	}
+	if _, err := ts.Render(context.Background(), "a:b", nil); err == nil {
+		t.Error("an empty toolset rendered a prompt")
+	}
+	if len(ts.Prompts()) != 0 || len(ts.ReadOnlyDefinitions()) != 0 || len(ts.Gated()) != 0 {
+		t.Error("an empty toolset offers something")
+	}
+
+	var none *Toolset
+	if none.Has("x") || none.ReadOnly("x") || none.Refresh() || len(none.Prompts()) != 0 {
+		t.Error("a nil toolset offers something")
+	}
+	if _, err := none.Render(context.Background(), "a:b", nil); err == nil {
+		t.Error("a nil toolset rendered a prompt")
 	}
 }

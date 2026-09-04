@@ -18,7 +18,16 @@ writing a tool per service.
 
 A server is a command to spawn or a URL to reach. shhh starts the command
 and talks over its pipes, or sends requests to the URL with the headers it
-was told to send. That is the whole of what it does.
+was told to send. That is the whole of what it does, and it says all of the
+protocol a client can be asked for: a server offers tools, prompts and
+resources, and taking only the tools would leave the person pasting by hand
+what the server was willing to write, and the model guessing at a document
+the server was willing to hand over.
+
+What it does not offer back is anything the server asks *of* it. Roots,
+sampling and elicitation are requests to the client, shhh answers none of
+them, and a handshake that advertised one would invite a request it would
+drop.
 
 What it deliberately does not do is authorise. A remote server that wants a
 login — a browser redirect, a token exchange, a refresh — gets it from the
@@ -100,6 +109,62 @@ file cannot mark its own server read-only; the word is ignored there and the
 listing says so. This is the skills rule again — nothing in a repository can
 pre-approve anything — applied to the one place a repository could try.
 
+## A prompt is a command
+
+A server's prompts are the file-defined commands shhh does not have. Each
+one is `/<server>:<prompt>` in a session: typing it asks the server to fill
+the prompt in and starts a turn on what comes back, exactly as if the person
+had typed the text themselves. The arguments the prompt declares complete
+from the menu the way every other command's do, written `name=value`,
+because the protocol describes an argument by name and prose rather than by
+a schema and there is nothing else to offer.
+
+A prompt is the person's turn and not the model's call, which is why it is
+a command and not a tool, and why nothing about it is gated: they typed the
+command, and the turn it starts is theirs. The transcript shows the command
+they typed rather than the page the server wrote, the way an activated
+skill's row does. It is also why the model is not told the prompts exist —
+offering it something it has no way to invoke would cost a round to find
+that out.
+
+## A resource is a read
+
+A server's resources are documents it will hand over: a file, a ticket, a
+page of an index. One tool reads all of them — `mcp_resource`, a URI in and
+the content out — and it runs the way `read_file` runs, without a card, in
+every mode.
+
+That is a decision about what a read is, not a concession to a server. A
+resource read returns what the server holds and changes nothing, so it is a
+read on the same terms a file read is; a server's annotation cannot promote
+it, and the resources of a server the person did *not* mark read-only are
+still reads, because the read-only mark answers "may this server act without
+asking", and reading is not acting. Bytes that are not text come back as the
+one-line notice a binary gets everywhere else here, saying what was left out
+and how big it was.
+
+There is one tool rather than one per server because a URI already says
+where it lives, and because a tool per server would put the read behind
+whichever tier that server's calls sit in — which is the thing this section
+says it is not.
+
+## A server may change what it offers
+
+A server can say its lists have changed, and shhh listens: the new catalog
+is fetched in the background and swapped in at a round boundary. Never
+mid-round — a catalog that moved between a call and its result would change
+what the result was an answer to.
+
+What the swap reaches is everything read at the moment it is used: the
+commands the person can type, the listings, and where a uri is looked up.
+What it does not reach is anything the model was *told* — the tools it was
+offered and the block naming the resources both went into the request when
+the session opened, and neither can be taken back mid-session. So a prompt a
+server adds is typable on the next line, and a resource it adds is the
+model's from the next session. That is the same rule trust follows: a
+session works with what it started with, and the next one starts with the
+rest.
+
 ## A call is a command unless you said otherwise
 
 A tool on a server the person did not mark read-only needs an answer before
@@ -123,6 +188,11 @@ servers and nothing else — the rule that already gives children the skills
 catalog and the notebook, because a read is a read whatever the child's
 tier.
 
+That "nothing else" covers resources too. A resource read is a read, so a
+child gets the tool; what it reaches through it is the read-only servers,
+because the boundary a child was given is a set of servers and not a set of
+verbs, and a URI learned from its task text must not be the way around it.
+
 ## A server that did not answer is a row
 
 Every server is connected when the session starts, all of them at once,
@@ -138,7 +208,9 @@ The same listing is a command of its own, re-cut from the doctor screen:
 one row per server, the transport as the verb, what it reaches, how many
 tools it offers, and, for one that did not connect, the reason and the fix
 on the row — including the offer to trust a project server that is waiting
-on the person.
+on the person. Asking about one server alone prints what it said about
+itself and everything it offers: its tools, its prompts as the commands they
+became, and its resources by uri.
 
 ## Related
 
