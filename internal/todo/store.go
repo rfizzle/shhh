@@ -255,6 +255,14 @@ func Create(p Profile, root string, it Item) (string, error) {
 	if err := ValidSlug(it.Slug); err != nil {
 		return "", err
 	}
+	// A name the project reserves is refused here and nowhere else: this is
+	// the one place an item's slug is chosen, and every other verb takes a
+	// slug a file already has. A sprint's name borrows the same grammar and
+	// is not put to the rule — it names a set rather than a piece of work,
+	// and it is the profile's items the profile speaks for.
+	if err := p.RefuseSlug(it.Slug); err != nil {
+		return "", err
+	}
 	if strings.TrimSpace(it.Title) == "" {
 		return "", fmt.Errorf("an item needs a title")
 	}

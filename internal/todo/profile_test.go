@@ -15,6 +15,7 @@ import (
 // package that only ever sees one vocabulary has not been given one.
 func research() Profile {
 	return Profile{
+		Name: "research",
 		Noun: "question",
 		Fields: []Field{
 			{Name: "kind", Values: []Value{

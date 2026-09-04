@@ -14,10 +14,17 @@ package todo
 //
 // See docs/capabilities/todo.md#an-item-is-a-file-you-can-edit.
 
-import "strings"
+import (
+	"fmt"
+	"regexp"
+	"strings"
+)
 
 // Profile is one backlog's vocabulary.
 type Profile struct {
+	// Name is what the profile is called, which is what a refusal made in
+	// its terms says it came from.
+	Name string
 	// Noun is what one item is called, singular — "item", "story",
 	// "question", "task". Every tally and every empty state says it.
 	Noun string
@@ -30,6 +37,13 @@ type Profile struct {
 	// the profile's own because what a run spends on is the project's to
 	// define; the order the ready list is in is not (PriorityField).
 	Grade string
+	// SlugRefuse is a pattern a new item's slug may not match, and unset on
+	// every profile shipped. It is here rather than in the slug grammar
+	// because a name a project reserves — an identifier its planning uses
+	// elsewhere, a prefix its tooling reads — is a rule of that project and
+	// not of every backlog, and a rule written into the grammar refuses it
+	// in projects that have never heard of it.
+	SlugRefuse string
 }
 
 // Field is one header field: the key it is written under, the words it may
@@ -86,6 +100,7 @@ func PriorityField() Field {
 // worth. It is the only profile this release ships.
 func BuiltinCode() Profile {
 	return Profile{
+		Name: "code",
 		Noun: "item",
 		Fields: []Field{
 			{Name: "kind", Values: []Value{
@@ -100,6 +115,30 @@ func BuiltinCode() Profile {
 		},
 		Grade: "size",
 	}
+}
+
+// RefuseSlug reports the profile refusing a name for a new item, and nil
+// where it has no rule or the name is not one it reserves. Only a slug
+// being chosen is put to it — an item already on disk keeps whatever name
+// it has, since a refusal that stranded a file would lose the work rather
+// than rename it.
+//
+// A pattern that will not compile refuses nothing, because refusing every
+// name would leave a project unable to write an item at all. Nothing says
+// so out loud yet, and that is a debt rather than a design: this is the
+// only place the pattern is read, so whatever first reads a profile out of
+// a file owes the person a refusal at load naming the pattern and the line
+// it is on — a typed regex that silently stops reserving anything is the
+// failure this note exists to stop somebody shipping.
+func (p Profile) RefuseSlug(slug string) error {
+	if p.SlugRefuse == "" {
+		return nil
+	}
+	re, err := regexp.Compile(p.SlugRefuse)
+	if err != nil || !re.MatchString(slug) {
+		return nil
+	}
+	return fmt.Errorf("slug %q is a name the %s profile reserves; name the work instead", slug, p.Name)
 }
 
 // Field returns the field with the name.

@@ -111,12 +111,6 @@ func Dir(root string) string { return filepath.Join(root, StateDir, Subdir) }
 // every platform and needs no quoting on a command line.
 var slugPattern = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
 
-// storyPattern is the shape a planning identifier takes elsewhere — a
-// letter, a hyphen, three digits. A slug must never look like one: a
-// backlog item named that way reads, to a person, as a reference to a plan
-// the code must not make, and the point of a slug is to name the work.
-var storyPattern = regexp.MustCompile(`^[a-z]-\d{3}$`)
-
 // MaxSlugLen keeps a slug readable in a dependency list and a rail row.
 const MaxSlugLen = 48
 
@@ -129,8 +123,6 @@ func ValidSlug(s string) error {
 		return fmt.Errorf("slug %q is longer than %d characters", s, MaxSlugLen)
 	case !slugPattern.MatchString(s):
 		return fmt.Errorf("slug %q must be lowercase letters, digits and single hyphens", s)
-	case storyPattern.MatchString(s):
-		return fmt.Errorf("slug %q looks like a planning identifier; name the work instead", s)
 	}
 	return nil
 }
@@ -161,7 +153,7 @@ func Slugify(text string) string {
 			s = s[:i]
 		}
 	}
-	if s == "" || storyPattern.MatchString(s) {
+	if s == "" {
 		return "item"
 	}
 	return s

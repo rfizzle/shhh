@@ -54,7 +54,11 @@ Two rules keep that trustworthy:
 The file's name is the item's identity — a short slug, lowercase, hyphens —
 and it is what one item names when it depends on another. A slug is chosen
 once and does not change; renaming one is a deliberate act that rewrites
-every dependency that used it.
+every dependency that used it. That grammar is the whole rule. A project
+that reserves a shape of its own — an identifier its planning already uses,
+a prefix its tooling reads — says so in its profile, and the refusal names
+the profile it came from, so the rule travels with the project rather than
+with the tool.
 
 ## Ready means the dependencies are done
 

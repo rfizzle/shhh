@@ -97,12 +97,12 @@ func TestParse_LenientWhereUsableStrictWhereNot(t *testing.T) {
 }
 
 func TestSlugs(t *testing.T) {
-	for _, s := range []string{"a", "add-todo-runner", "v2-api", "x-1234"} {
+	for _, s := range []string{"a", "add-todo-runner", "v2-api", "x-1234", "q-101", "x-060"} {
 		if err := ValidSlug(s); err != nil {
 			t.Errorf("ValidSlug(%q) = %v", s, err)
 		}
 	}
-	for _, s := range []string{"", "Add-Runner", "a--b", "-a", "a-", "x-060", "a_b", strings.Repeat("a", 49)} {
+	for _, s := range []string{"", "Add-Runner", "a--b", "-a", "a-", "a_b", strings.Repeat("a", 49)} {
 		if ValidSlug(s) == nil {
 			t.Errorf("ValidSlug(%q) accepted", s)
 		}
@@ -111,7 +111,8 @@ func TestSlugs(t *testing.T) {
 		"Show open items in the rail!": "show-open-items-in-the-rail",
 		"  Über  cool_thing  ":         "ber-cool-thing",
 		"":                             "item",
-		"x-060":                        "item",
+		"Q-101 fix":                    "q-101-fix",
+		"x-060":                        "x-060",
 		strings.Repeat("word ", 20):    "word-word-word-word-word-word-word-word-word",
 	}
 	for in, want := range cases {
@@ -463,5 +464,41 @@ func TestReopen_RefusesBeforeTouchingTheItem(t *testing.T) {
 	archived, err := LoadFile(BuiltinCode(), filepath.Join(Dir(root), DoneSubdir, "same-name.md"))
 	if err != nil || archived.Status != StatusDone {
 		t.Errorf("the archived item was changed by a refusal: %+v (%v)", archived, err)
+	}
+}
+
+// A name that looks like an identifier some other project plans with is a
+// slug like any other. The one rule that can refuse a name is the
+// project's own, stated on its profile, and it says where it came from —
+// so a person who did not write it can find out what did.
+func TestSlugs_TheProjectsOwnRuleIsTheOnlyOneThatRefuses(t *testing.T) {
+	root := t.TempDir()
+	it := Item{Slug: "q-101", Title: "Name the work"}
+	if _, err := Create(BuiltinCode(), root, it); err != nil {
+		t.Fatalf("the built-in profile refused %q: %v", it.Slug, err)
+	}
+	reserved := BuiltinCode()
+	reserved.SlugRefuse = `^[a-z]-\d{3}$`
+	err := reserved.RefuseSlug("q-101")
+	if err == nil {
+		t.Fatal("a profile that reserves the shape should refuse it")
+	}
+	if !strings.Contains(err.Error(), "code profile") || !strings.Contains(err.Error(), "q-101") {
+		t.Errorf("the refusal = %q", err)
+	}
+	if err := reserved.RefuseSlug("name-the-work"); err != nil {
+		t.Errorf("a name it does not reserve = %v", err)
+	}
+	// The rule is asked where a slug is chosen, so the file is never
+	// written under a name the project reserves.
+	if _, err := Create(reserved, t.TempDir(), it); err == nil {
+		t.Error("writing an item under a reserved name should be refused")
+	}
+	// A pattern nothing can compile refuses nothing: a project that could
+	// write one and then write no items at all would be stuck.
+	broken := BuiltinCode()
+	broken.SlugRefuse = "([a-z"
+	if err := broken.RefuseSlug("q-101"); err != nil {
+		t.Errorf("a broken pattern refused something: %v", err)
 	}
 }
