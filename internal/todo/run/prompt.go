@@ -41,12 +41,19 @@ func sprintBlock(goal string) string {
 	return "SPRINT — what the set of items this one belongs to is for:\n" + goal + "\n"
 }
 
-func researchPrompt(it todo.Item, sprint, context string) string {
+func researchPrompt(it todo.Item, sprint, groomed, context string) string {
 	var b strings.Builder
 	b.WriteString("You are working one backlog item through to a commit, in stages. This is the RESEARCH stage: read, do not change anything.\n\n")
 	b.WriteString(itemBlock(it))
 	if block := sprintBlock(sprint); block != "" {
 		b.WriteString("\n" + block)
+	}
+	// A reading the person already accepted rides here and nowhere else.
+	// Checking the item against the tree is the first thing this stage
+	// would do, and doing it again over an item that was corrected an hour
+	// ago spends a turn to reach the answer the person already agreed to.
+	if groomed = strings.TrimSpace(groomed); groomed != "" {
+		b.WriteString("\n" + groomed + "\n")
 	}
 	if context != "" {
 		b.WriteString("\n" + context + "\n")
@@ -166,4 +173,60 @@ Decisions: <bullets — what was decided, the alternative, why>
 Deviations from plan: <none, or bullets>
 Follow-ups: <none, or bullets of work this item leaves open>`)
 	return b.String()
+}
+
+// GroomPrompt is the reading of one item against the tree as it stands: every
+// claim the item makes graded from a closed set, with one line of evidence
+// under each. It is the research stage's own reading moved to before the run
+// — which is where a stale item is worth finding, rather than three stages
+// in on a plan built against the wrong file.
+//
+// The answer is markers rather than prose because what comes of it is a diff
+// of single lines the person accepts one by one, and a diff needs a fact per
+// line. The verdict words are the backlog's own closed set, so the prompt
+// that asks for them and the reader that parses them cannot drift apart.
+// See docs/capabilities/todo.md#an-item-is-checked-before-it-is-worked.
+func GroomPrompt(it todo.Item) string {
+	var b strings.Builder
+	b.WriteString("This is a GROOMING pass over one backlog item: read the code, change nothing, and say whether the item is still true.\n\n")
+	b.WriteString(itemBlock(it))
+	b.WriteString("\n" + standards + "\n\n")
+	b.WriteString(`Take every claim the item makes and check it against the tree as it stands: every ` + "`path:line`" + `, every function, flag, config key or command it names, every sentence about what happens today, every entry in ` + "`depends_on`" + `, every acceptance criterion, and the size it is graded at. Read the files; do not answer from the item alone.
+
+Answer with one block per claim and nothing else between the blocks:
+
+claim: <the item's line, copied exactly as the file has it>
+verdict: <exactly one of: ` + verdictWords() + `>
+now: <the line as it should read — omit it for holds and unknown, and leave it empty to say the line should go>
+evidence: <one line: the path, the symbol or the commit that shows it>
+
+`)
+	b.WriteString(verdictKey())
+	b.WriteString("\n\nThe evidence line is the only free text you may write. Do not add a summary, and do not raise a claim the item does not make: a reading that can say \"this may need updating\" will say it about everything, which is why the verdicts are a closed set.")
+	return b.String()
+}
+
+// verdictWords is the closed set on one line, for the prompt's verdict line.
+// It is built from the set rather than written out, so a verdict added to
+// the vocabulary is one the prompt offers without anybody remembering to.
+func verdictWords() string {
+	words := make([]string, 0, len(todo.Verdicts()))
+	for _, v := range todo.Verdicts() {
+		words = append(words, string(v))
+	}
+	return strings.Join(words, ", ")
+}
+
+// verdictKey is what each verdict means, in the order the set is declared.
+// The wording is here rather than beside the constants because it is an
+// instruction to a model, and the constants are a vocabulary the code shares
+// with a header line and a card.
+func verdictKey() string {
+	return `What the verdicts mean:
+- holds: the tree still bears the claim out.
+- moved: what it names is still there, under another name or in another file. ` + "`now:`" + ` is the line pointing at where it is.
+- changed: what it says happens today is not what happens today. ` + "`now:`" + ` restates it.
+- gone: what it names is not in the tree at all.
+- already done: an acceptance criterion the tree already satisfies. ` + "`now:`" + ` is the criterion ticked, naming the commit that did it.
+- unknown: you could not settle it from the code. Say so rather than guessing; a guess written into the item is worse than the line it replaced.`
 }

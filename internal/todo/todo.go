@@ -84,7 +84,12 @@ type Item struct {
 	DependsOn []string
 	Created   string
 	Session   string
-	Extra     []Field
+	// Groomed is when the item was last read against the tree and the
+	// commit it was read against, written only where the person accepted
+	// the reading. Empty is an item nobody has read that way, which is not
+	// the same as one whose reading has gone stale.
+	Groomed string
+	Extra   []Field
 
 	// Body is everything after the header, exactly as written.
 	Body string

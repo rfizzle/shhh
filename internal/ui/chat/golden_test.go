@@ -1663,3 +1663,72 @@ func TestGolden_TodoRunRow(t *testing.T) {
 const goldenLanes = "LANE: store\npaths: internal/cache/cache.go\ntask: give an entry a deadline\n\n" +
 	"LANE: tests\npaths: internal/cache/cache_test.go\ntask: cover the expiry\n\n" +
 	"LANE: bench\npaths: internal/cache/bench_test.go\ntask: measure the eviction\n"
+
+// TestGolden_TodoGroom pins the card a reading of one item against the tree
+// leaves. What the sheet is for is the row: a diff of one line, the text it
+// replaces struck through beside it, the evidence dim behind that, and the
+// verdict right-aligned — one row per correction, because the unit being
+// decided on here is a line and not a hunk. Every verdict that proposes an
+// edit is on it, plus the header's own stamp as the last row, which is what
+// makes an accepted reading one accepted line rather than a side effect.
+//
+// Two widths: the row's three fields are what give ground as the card
+// narrows, and 80 is where the evidence starts to go.
+func TestGolden_TodoGroom(t *testing.T) {
+	captureGolden(t, "todo-groom", "the grooming card", []int{80, 130}, func(width int) []golden.Panel {
+		root := t.TempDir()
+		dir := todo.Dir(root)
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		const item = "---\ntitle: Give the cache a lifetime\npriority: high\nsize: M\ndepends_on: [cache-store]\n---\n\n" +
+			"## Acceptance criteria\n" +
+			"- [ ] internal/cache/store.go:88 takes the lifetime from the config\n" +
+			"- [ ] The reader drops an entry past its age\n" +
+			"- [ ] A hit past the deadline counts as a miss\n\n" +
+			"## Notes\nToday the reader serves a stale entry rather than refusing.\n"
+		path := filepath.Join(dir, "cache-ttl.md")
+		if err := os.WriteFile(path, []byte(item), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		it, err := todo.LoadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		const answer = "claim: - [ ] internal/cache/store.go:88 takes the lifetime from the config\n" +
+			"verdict: moved\n" +
+			"now: - [ ] internal/cache/reader.go:120 takes the lifetime from the config\n" +
+			"evidence: the constructor moved to reader.go in 9f2a11c\n\n" +
+			"claim: Today the reader serves a stale entry rather than refusing.\n" +
+			"verdict: changed\n" +
+			"now: Today the reader refuses a stale entry.\n" +
+			"evidence: reader.go:52 returns ErrStale\n\n" +
+			"claim: - [ ] The reader drops an entry past its age\n" +
+			"verdict: already done\n" +
+			"now: - [x] The reader drops an entry past its age (2f9c0aa)\n" +
+			"evidence: reader.go:44 checks the age, added in 2f9c0aa\n\n" +
+			"claim: depends_on: [cache-store]\n" +
+			"verdict: gone\n" +
+			"evidence: cache-store is in neither the backlog nor its archive\n\n" +
+			"claim: - [ ] A hit past the deadline counts as a miss\n" +
+			"verdict: holds\n" +
+			"evidence: nothing in the tree counts one either way yet\n\n" +
+			"claim: size: M\n" +
+			"verdict: unknown\n" +
+			"evidence: the config reader is generated and this checkout does not build it\n"
+		r, err := todo.Groom(it, answer)
+		if err != nil {
+			t.Fatal(err)
+		}
+		r.Head, r.Read = "1a2b3c4d5e6f", time.Date(2026, 9, 4, 0, 0, 0, 0, time.UTC)
+		m := frameModel(t, width, 40)
+		m = m.WithTodos(Todos{Root: root, Manage: func([]string) string { return "" },
+			Detail: func(*todo.Store, todo.Item) string { return "" }})
+		m.todoGroomer.item = it
+		card, _ := m.openTodoGroomCard(r)
+		return []golden.Panel{
+			{Label: "four corrections and the stamp · moved, changed, already done, gone",
+				View: card.(Model).panelView()},
+		}
+	})
+}

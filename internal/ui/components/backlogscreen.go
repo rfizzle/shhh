@@ -156,6 +156,9 @@ const (
 	// which reads the row it is standing on to decide which it is.
 	BacklogSprintAdd
 	BacklogSprintDrop
+	// BacklogGroom is `[g]`: the item read against the tree as it stands.
+	// Like a run it spends a turn, so the host closes the screen for it.
+	BacklogGroom
 )
 
 // BacklogCommand is one act the host carries out. Three of them take the
@@ -357,6 +360,8 @@ func (b *BacklogScreen) stateKey(pressed string) (bool, BacklogResult) {
 		// because the answer to "archive or drop" depends entirely on which
 		// of the two this is.
 		b.ask(BacklogDrop, row.Slug, "Drop "+row.Slug+"? The file is deleted, not archived.")
+	case keys.Is(pressed, keys.Backlog.Groom) && !b.archive:
+		return false, b.act(BacklogGroom, row.Slug)
 	case keys.Is(pressed, keys.Backlog.Sprint) && b.Sprint != "" && !b.archive:
 		if row.InSprint {
 			return false, b.act(BacklogSprintDrop, row.Slug)
@@ -1060,7 +1065,7 @@ func (b *BacklogScreen) stateOffers() []KeyOffer {
 			keyOffer(keys.Backlog.Edit),
 		}
 	default:
-		out = []KeyOffer{keyOffer(keys.Backlog.Edit), keyOffer(keys.Backlog.Run)}
+		out = []KeyOffer{keyOffer(keys.Backlog.Edit), keyOffer(keys.Backlog.Run), keyOffer(keys.Backlog.Groom)}
 		if row.State == BacklogBlocked {
 			out = append(out, keyOffer(keys.Backlog.Reopen))
 		} else {

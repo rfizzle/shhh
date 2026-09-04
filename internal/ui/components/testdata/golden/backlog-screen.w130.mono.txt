@@ -28,8 +28,8 @@ backlog · the cockpit sprint                                                   
                                                      │ - [ ] the running item first
 
 [↑↓] move · [enter] read the body · [/] filter by text · [s/p/k/r] narrow it · [tab] what shipped · [e] open it in $EDITOR
-[R] run it · [b] block it · [d] archive it · [x] drop it, deleting the file · [S] drop it from the cockpit sprint · [n] a new item
-[q] back to the prompt
+[R] run it · [g] read it against the tree · [b] block it · [d] archive it · [x] drop it, deleting the file
+[S] drop it from the cockpit sprint · [n] a new item · [q] back to the prompt
 
 · a waiting item · both ends of the edge on its header row
 backlog · the cockpit sprint                                                           6 items · [?] keys · [q] back to the prompt
@@ -47,8 +47,8 @@ backlog · the cockpit sprint                                                   
                                                      │ - [ ] the body on the right
 
 [↑↓] move · [enter] read the body · [/] filter by text · [s/p/k/r] narrow it · [tab] what shipped · [e] open it in $EDITOR
-[R] run it · [b] block it · [d] archive it · [x] drop it, deleting the file · [S] add it to the cockpit sprint · [n] a new item
-[q] back to the prompt
+[R] run it · [g] read it against the tree · [b] block it · [d] archive it · [x] drop it, deleting the file
+[S] add it to the cockpit sprint · [n] a new item · [q] back to the prompt
 
 · a file that will not parse · a row in warning tone, the reason as its body
 backlog · the cockpit sprint                                                           6 items · [?] keys · [q] back to the prompt
@@ -95,8 +95,8 @@ backlog · open · the cockpit sprint                                           
                                                      │ - [ ] the body on the right
 
 [↑↓] move · [enter] read the body · [/] filter by text · [s/p/k/r] narrow it · [tab] what shipped · [e] open it in $EDITOR
-[R] run it · [b] block it · [d] archive it · [x] drop it, deleting the file · [S] add it to the cockpit sprint · [n] a new item
-[q] back to the prompt
+[R] run it · [g] read it against the tree · [b] block it · [d] archive it · [x] drop it, deleting the file
+[S] add it to the cockpit sprint · [n] a new item · [q] back to the prompt
 
 · [enter] · the body with the surface to itself
 backlog · the cockpit sprint                                                           6 items · [?] keys · [q] back to the prompt
@@ -170,8 +170,8 @@ backlog · the cockpit sprint                                                   
 
 [↑↓] move · [enter] read the body · [/] filter by text · [s/p/k/r] narrow it · [tab] what shipped · [q] back to the prompt
 the turn is running; these change the files it may be working from
-[e] open it in $EDITOR · [R] run it · [b] block it · [d] archive it · [x] drop it, deleting the file
-[S] drop it from the cockpit sprint · [n] a new item
+[e] open it in $EDITOR · [R] run it · [g] read it against the tree · [b] block it · [d] archive it
+[x] drop it, deleting the file · [S] drop it from the cockpit sprint · [n] a new item
 
 · [?] · every key the screen has
 backlog · the cockpit sprint                                                  6 items · [?] hide the keys · [q] back to the prompt
@@ -220,8 +220,8 @@ backlog · the cockpit sprint                                                  6
                                                     ␛[38;5;244m │ ␛[m␛[38;5;244m- [ ] the running item first␛[m
 
 ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read the body␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter by text␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s/p/k/r]␛[m␛[38;5;244m narrow it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m what shipped␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m open it in $EDITOR␛[m
-␛[38;5;254m[R]␛[m␛[38;5;244m run it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[b]␛[m␛[38;5;244m block it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m archive it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m drop it, deleting the file␛[m␛[38;5;244m · ␛[m␛[38;5;254m[S]␛[m␛[38;5;244m drop it from the cockpit sprint␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m a new item␛[m
-␛[38;5;254m[q]␛[m␛[38;5;244m back to the prompt␛[m
+␛[38;5;254m[R]␛[m␛[38;5;244m run it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m␛[38;5;244m read it against the tree␛[m␛[38;5;244m · ␛[m␛[38;5;254m[b]␛[m␛[38;5;244m block it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m archive it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m drop it, deleting the file␛[m
+␛[38;5;254m[S]␛[m␛[38;5;244m drop it from the cockpit sprint␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m a new item␛[m␛[38;5;244m · ␛[m␛[38;5;254m[q]␛[m␛[38;5;244m back to the prompt␛[m
 
 · a waiting item · both ends of the edge on its header row
 ␛[1;38;5;254mbacklog␛[m␛[38;5;244m · the cockpit sprint␛[m                                                           ␛[38;5;244m6 items␛[m␛[38;5;244m · [?] keys · [q] back to the prompt␛[m
@@ -239,8 +239,8 @@ backlog · the cockpit sprint                                                  6
                                                     ␛[38;5;244m │ ␛[m␛[38;5;244m- [ ] the body on the right␛[m
 
 ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read the body␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter by text␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s/p/k/r]␛[m␛[38;5;244m narrow it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m what shipped␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m open it in $EDITOR␛[m
-␛[38;5;254m[R]␛[m␛[38;5;244m run it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[b]␛[m␛[38;5;244m block it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m archive it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m drop it, deleting the file␛[m␛[38;5;244m · ␛[m␛[38;5;254m[S]␛[m␛[38;5;244m add it to the cockpit sprint␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m a new item␛[m
-␛[38;5;254m[q]␛[m␛[38;5;244m back to the prompt␛[m
+␛[38;5;254m[R]␛[m␛[38;5;244m run it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m␛[38;5;244m read it against the tree␛[m␛[38;5;244m · ␛[m␛[38;5;254m[b]␛[m␛[38;5;244m block it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m archive it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m drop it, deleting the file␛[m
+␛[38;5;254m[S]␛[m␛[38;5;244m add it to the cockpit sprint␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m a new item␛[m␛[38;5;244m · ␛[m␛[38;5;254m[q]␛[m␛[38;5;244m back to the prompt␛[m
 
 · a file that will not parse · a row in warning tone, the reason as its body
 ␛[1;38;5;254mbacklog␛[m␛[38;5;244m · the cockpit sprint␛[m                                                           ␛[38;5;244m6 items␛[m␛[38;5;244m · [?] keys · [q] back to the prompt␛[m
@@ -287,8 +287,8 @@ backlog · the cockpit sprint                                                  6
                                                     ␛[38;5;244m │ ␛[m␛[38;5;244m- [ ] the body on the right␛[m
 
 ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read the body␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter by text␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s/p/k/r]␛[m␛[38;5;244m narrow it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m what shipped␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m open it in $EDITOR␛[m
-␛[38;5;254m[R]␛[m␛[38;5;244m run it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[b]␛[m␛[38;5;244m block it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m archive it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m drop it, deleting the file␛[m␛[38;5;244m · ␛[m␛[38;5;254m[S]␛[m␛[38;5;244m add it to the cockpit sprint␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m a new item␛[m
-␛[38;5;254m[q]␛[m␛[38;5;244m back to the prompt␛[m
+␛[38;5;254m[R]␛[m␛[38;5;244m run it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m␛[38;5;244m read it against the tree␛[m␛[38;5;244m · ␛[m␛[38;5;254m[b]␛[m␛[38;5;244m block it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[d]␛[m␛[38;5;244m archive it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m drop it, deleting the file␛[m
+␛[38;5;254m[S]␛[m␛[38;5;244m add it to the cockpit sprint␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m a new item␛[m␛[38;5;244m · ␛[m␛[38;5;254m[q]␛[m␛[38;5;244m back to the prompt␛[m
 
 · [enter] · the body with the surface to itself
 ␛[1;38;5;254mbacklog␛[m␛[38;5;244m · the cockpit sprint␛[m                                                           ␛[38;5;244m6 items␛[m␛[38;5;244m · [?] keys · [q] back to the prompt␛[m
@@ -362,8 +362,8 @@ backlog · the cockpit sprint                                                  6
 
 ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read the body␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter by text␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s/p/k/r]␛[m␛[38;5;244m narrow it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m what shipped␛[m␛[38;5;244m · ␛[m␛[38;5;254m[q]␛[m␛[38;5;244m back to the prompt␛[m
 ␛[38;5;244mthe turn is running; these change the files it may be working from␛[m
-␛[38;5;244m[e]␛[m␛[38;5;244m open it in $EDITOR␛[m␛[38;5;244m · ␛[m␛[38;5;244m[R]␛[m␛[38;5;244m run it␛[m␛[38;5;244m · ␛[m␛[38;5;244m[b]␛[m␛[38;5;244m block it␛[m␛[38;5;244m · ␛[m␛[38;5;244m[d]␛[m␛[38;5;244m archive it␛[m␛[38;5;244m · ␛[m␛[38;5;244m[x]␛[m␛[38;5;244m drop it, deleting the file␛[m
-␛[38;5;244m[S]␛[m␛[38;5;244m drop it from the cockpit sprint␛[m␛[38;5;244m · ␛[m␛[38;5;244m[n]␛[m␛[38;5;244m a new item␛[m
+␛[38;5;244m[e]␛[m␛[38;5;244m open it in $EDITOR␛[m␛[38;5;244m · ␛[m␛[38;5;244m[R]␛[m␛[38;5;244m run it␛[m␛[38;5;244m · ␛[m␛[38;5;244m[g]␛[m␛[38;5;244m read it against the tree␛[m␛[38;5;244m · ␛[m␛[38;5;244m[b]␛[m␛[38;5;244m block it␛[m␛[38;5;244m · ␛[m␛[38;5;244m[d]␛[m␛[38;5;244m archive it␛[m
+␛[38;5;244m[x]␛[m␛[38;5;244m drop it, deleting the file␛[m␛[38;5;244m · ␛[m␛[38;5;244m[S]␛[m␛[38;5;244m drop it from the cockpit sprint␛[m␛[38;5;244m · ␛[m␛[38;5;244m[n]␛[m␛[38;5;244m a new item␛[m
 
 · [?] · every key the screen has
 ␛[1;38;5;254mbacklog␛[m␛[38;5;244m · the cockpit sprint␛[m                                                  ␛[38;5;244m6 items␛[m␛[38;5;244m · [?] hide the keys · [q] back to the prompt␛[m

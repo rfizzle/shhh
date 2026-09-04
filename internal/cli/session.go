@@ -952,6 +952,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			Drafter:     todo.NewDrafter(ledger.For(env.prov, meter.SourceBacklog), todo.ExtractConfig{Model: env.modelName}),
 			NoCommit:    !cfg.TodoCommitEnabled(),
 			ItemTimeout: cfg.TodoItemTimeout(),
+			GroomStale:  cfg.TodoGroomStale(),
 		})
 	}
 	if mem != nil {

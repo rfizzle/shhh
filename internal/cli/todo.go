@@ -13,6 +13,7 @@ package cli
 // See docs/capabilities/todo.md#from-outside-the-session.
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -21,6 +22,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/cli/report"
+	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/todo/run"
 	"github.com/rfizzle/shhh/internal/ui/markdown"
@@ -365,6 +367,7 @@ func newTodoCmd() *cobra.Command {
 			todoNext),
 		newTodoSprintCmd(),
 		newTodoRunCmd(),
+		newTodoGroomCmd(),
 		newTodoShowCmd(),
 	)
 	cmd.AddCommand(newTodoStateCmds()...)
@@ -768,3 +771,161 @@ const todoTemplate = `**As a** …, **I want** … **so that** ….
 
 ## Notes
 `
+
+// newTodoGroomCmd is the reading of an item against the tree with nobody
+// watching. It spends one read-only turn per item and prints the verdicts;
+// it writes nothing at all — not the corrections, and not the header's
+// stamp.
+//
+// That is the whole difference between this and `/todo groom`, and it is
+// deliberate. The verdicts that matter are claims about what the code does
+// today, and accepting one is a decision; a command that wrote them would be
+// the runner writing the backlog rather than working it. What a script wants
+// from a grooming is the reading, which is what it gets.
+// See docs/capabilities/todo.md#an-item-is-checked-before-it-is-worked.
+func newTodoGroomCmd() *cobra.Command {
+	var all bool
+	cmd := &cobra.Command{
+		Use:   "groom [<slug>]",
+		Short: "Read a backlog item against the code as it stands now",
+		Long: "Read one backlog item — or every active item with --all — against the tree, and " +
+			"print a verdict for each claim it makes: whether it holds, where a reference has " +
+			"moved to, what has changed, what is gone, which acceptance criteria the tree already " +
+			"satisfies, and what could not be settled. Nothing is written; the corrections are " +
+			"accepted on the card `/todo groom` puts up in a session.",
+		Args:              cobra.MaximumNArgs(1),
+		ValidArgsFunction: todoSlugs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			slug := ""
+			if len(args) == 1 {
+				slug = args[0]
+			}
+			return todoGroomHeadless(cmd, slug, all)
+		},
+	}
+	cmd.Flags().BoolVar(&all, "all", false, "read every active item, in backlog order")
+	return cmd
+}
+
+// todoGroomHeadless resolves what to read and reads it, one turn per item.
+func todoGroomHeadless(cmd *cobra.Command, slug string, all bool) error {
+	if all && slug != "" {
+		return fmt.Errorf("--all reads the whole backlog, so it does not take an item as well")
+	}
+	root := todo.Root(todoCwd())
+	store := todo.Load(root)
+	items, err := todoGroomTargets(store, slug, all)
+	if err != nil {
+		return err
+	}
+	// The driver is built with no commit to make: grooming changes nothing,
+	// so the refusal a run gives outside a repository is not this command's
+	// to give.
+	d, err := newTodoDriver(cmd.OutOrStdout(), root, ConfigFrom(cmd.Context()), true)
+	if err != nil {
+		return err
+	}
+	out := cmd.OutOrStdout()
+	for _, it := range items {
+		r, err := todoGroomRead(cmd.Context(), d, it)
+		if err != nil {
+			return err
+		}
+		if err := report.Fprint(out, todoGroomReport(it, r)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// todoGroomTargets is which items the command reads.
+func todoGroomTargets(s *todo.Store, slug string, all bool) ([]todo.Item, error) {
+	if all {
+		if len(s.Items) == 0 {
+			return nil, fmt.Errorf("the backlog has no active items to read")
+		}
+		return s.Items, nil
+	}
+	if slug == "" {
+		return nil, fmt.Errorf("name an item to read, or --all for every active one")
+	}
+	it, ok := activeItem(s, slug)
+	if !ok {
+		return nil, todoNotFound{"active backlog item", slug}
+	}
+	return []todo.Item{it}, nil
+}
+
+// todoGroomRead spends the one turn and reads its answer against the file.
+func todoGroomRead(ctx context.Context, d *todoDriver, it todo.Item) (todo.Reading, error) {
+	turn, err := d.turn(ctx, time.Time{}, run.Step{
+		Action: run.ActionPrompt, Stage: run.StageGroom, Mode: run.ModePlan,
+		Prompt: run.GroomPrompt(it), Shown: "groom " + it.Slug,
+	})
+	if err != nil {
+		return todo.Reading{}, err
+	}
+	r, err := todo.Groom(it, turn.text)
+	if err != nil {
+		return todo.Reading{}, err
+	}
+	r.Head = project.Head(d.root)
+	return r, nil
+}
+
+// todoGroomReport is one reading printed: a row per claim, in the order the
+// item states them, with the line the verdict would write under it. The
+// verdicts that propose nothing are rows too — "everything else holds" is
+// the half of a reading a person most wants to be able to trust, and a
+// report that listed only the corrections could not say it.
+func todoGroomReport(it todo.Item, r todo.Reading) report.Report {
+	rows := make([]report.Row, 0, len(r.Findings))
+	for _, f := range r.Findings {
+		row := report.Row{
+			State: todoGroomState(f.Verdict), Name: string(f.Verdict),
+			Subject: strings.TrimSpace(f.Claim), Detail: f.Evidence,
+		}
+		if f.Edits() {
+			row.Body = []string{orDashLine(f.Now)}
+		}
+		rows = append(rows, row)
+	}
+	rep := report.Report{
+		Title:    "shhh todo groom " + it.Slug,
+		Subject:  fmt.Sprintf("%d read · %d proposed", len(r.Findings), len(r.Changes())),
+		Sections: []report.Section{{Rows: rows}},
+		Tally:    "nothing written; `/todo groom " + it.Slug + "` accepts the corrections in a session",
+	}
+	if len(r.Findings) == 0 {
+		rep.Sections[0].Rows = []report.Row{report.Empty("the reading answered in no shape that could be read as verdicts", "try it again")}
+	}
+	if r.Finished() {
+		rep.Notes = append(rep.Notes, report.Note{State: report.Warn,
+			Text: "every acceptance criterion reads already done; `shhh todo done " + it.Slug + "` archives it"})
+	}
+	return rep
+}
+
+// todoGroomState is the mark a verdict prints under. A claim that no longer
+// holds is a warning rather than a failure: the item is wrong, and an item
+// being wrong is what this command is for finding.
+func todoGroomState(v todo.Verdict) report.State {
+	switch v {
+	case todo.VerdictHolds:
+		return report.Pass
+	case todo.VerdictUnknown:
+		return report.Skip
+	case todo.VerdictDone:
+		return report.Queue
+	}
+	return report.Warn
+}
+
+// orDashLine is the line a verdict would write, and the word for one that
+// would write none because the line goes.
+func orDashLine(now string) string {
+	if strings.TrimSpace(now) == "" {
+		return "(the line goes)"
+	}
+	return strings.TrimSpace(now)
+}

@@ -18,11 +18,13 @@ const (
 	keyDependsOn = "depends_on"
 	keyCreated   = "created"
 	keySession   = "session"
+	keyGroomed   = "groomed"
 )
 
 var knownKeys = map[string]bool{
 	keyTitle: true, keyKind: true, keyPriority: true, keySize: true,
 	keyStatus: true, keyDependsOn: true, keyCreated: true, keySession: true,
+	keyGroomed: true,
 }
 
 // LoadFile reads one item file.
@@ -80,6 +82,8 @@ func Parse(path, content string) (Item, error) {
 			it.Created = l.value
 		case keySession:
 			it.Session = l.value
+		case keyGroomed:
+			it.Groomed = l.value
 		default:
 			it.Extra = append(it.Extra, Field{Key: l.key, Value: l.value})
 		}
@@ -151,6 +155,9 @@ func Render(it Item) string {
 	}
 	if it.Session != "" {
 		h.set(keySession, it.Session)
+	}
+	if it.Groomed != "" {
+		h.set(keyGroomed, it.Groomed)
 	}
 	for _, f := range it.Extra {
 		if !knownKeys[f.Key] {

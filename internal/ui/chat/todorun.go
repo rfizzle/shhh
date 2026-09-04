@@ -154,6 +154,7 @@ func (m Model) beginTodoRun(arg string, noCommit, inSprint bool) (tea.Model, tea
 			// the run started in.
 			st.NoCommit, st.Repo, st.Sprint = noCommit, repo, m.sprintGoal()
 			st.InSprint = inSprint
+			st.Groomed = todo.GroomingBlock(m.todos.Root, it.Slug)
 			m.todoRunner.state = st
 			m.todoRunner.item = it
 			m.openTodoRunRow()
@@ -167,7 +168,11 @@ func (m Model) beginTodoRun(arg string, noCommit, inSprint bool) (tea.Model, tea
 	}
 	m.todoRunner.state = run.Start(it, m.sessionName, m.policy.mode.String(), int(m.turnCount)+1,
 		run.Options{NoCommit: noCommit, Repo: repo, Sprint: m.sprintGoal(),
-			CloseGate: m.workspaceClosesGate(), InSprint: inSprint})
+			CloseGate: m.workspaceClosesGate(), InSprint: inSprint,
+			// A reading the person accepted and has not edited past is
+			// what the research stage is told instead of taking the same
+			// reading again three stages before it is needed.
+			Groomed: todo.GroomingBlock(m.todos.Root, it.Slug)})
 	m.todoRunner.item = it
 	m.openTodoRunRow()
 	m.reloadTodos()
@@ -330,6 +335,12 @@ func (m Model) todoRunUnfinished(res *streamResume) (Model, tea.Cmd) {
 // stage, and text typed between stages would start a turn whose edits the
 // run would then commit as its own.
 func (m Model) todoRunHoldsInput() (string, bool) {
+	// A grooming reading is a turn of the same kind and is held for the
+	// same reason: text typed into it steers the reading, and text typed
+	// between two of them starts a turn the pass would then read as one.
+	if m.todoGroomer.going() {
+		return fmt.Sprintf("a backlog item is being read against the tree (%s) — the card opens when the turn is over; commands still work", m.todoGroomer.slug), true
+	}
 	if m.todoRunner.state == nil || m.todoRunner.state.Over() {
 		return "", false
 	}

@@ -305,8 +305,10 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		}
 		// A completed planning response gets the plan-approval prompt —
 		// unless a backlog run is what asked for the plan, in which case
-		// the runner reads it and there is nothing to approve by hand.
-		if m.policy.mode == agent.ModePlan && hadText && m.todoRunner.state == nil {
+		// the runner reads it and there is nothing to approve by hand. A
+		// grooming reading is the same: it is a plan-mode turn whose answer
+		// is verdicts, and what is put to the reader is its card.
+		if m.policy.mode == agent.ModePlan && hadText && m.todoRunner.state == nil && !m.todoGroomer.going() {
 			m.setTurnState(statePlanApprove)
 			m.armPlan()
 			m.syncViewport()

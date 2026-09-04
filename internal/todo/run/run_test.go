@@ -625,3 +625,54 @@ func TestHeldBy(t *testing.T) {
 		t.Error("the sprint holds an item it is not on")
 	}
 }
+
+// The grooming prompt names the item, offers the closed verdict set and no
+// other word, and asks for the shape the reader parses.
+func TestRun_TheGroomingPromptOffersTheClosedSet(t *testing.T) {
+	p := GroomPrompt(item(todo.SizeM))
+	if !strings.Contains(p, "GROOMING") || !strings.Contains(p, "BACKLOG ITEM x") {
+		t.Fatalf("prompt = %q", p)
+	}
+	for _, v := range todo.Verdicts() {
+		if !strings.Contains(p, string(v)) {
+			t.Errorf("prompt does not offer %q", v)
+		}
+	}
+	for _, marker := range []string{"claim:", "verdict:", "now:", "evidence:"} {
+		if !strings.Contains(p, marker) {
+			t.Errorf("prompt does not name the %q line", marker)
+		}
+	}
+}
+
+// A reading the person accepted rides in the research stage and nowhere
+// else: repeating it at every stage would spend tokens restating what only
+// the plan is built from.
+func TestRun_ResearchCarriesTheAcceptedGrooming(t *testing.T) {
+	it := item(todo.SizeM)
+	const block = "GROOMING — this item was read against the tree on 2026-09-04"
+	s := Start(it, "sess", "manual", 1, Options{Repo: true, Groomed: block})
+	if first := s.First(it, ""); !strings.Contains(first.Prompt, block) {
+		t.Fatalf("research prompt = %q", first.Prompt)
+	}
+	step := s.Observe(it, planText)
+	if strings.Contains(step.Prompt, block) {
+		t.Errorf("the implement prompt restated the reading: %q", step.Prompt)
+	}
+	// A run continued from a checkpoint taken at the research stage states
+	// the reading it was started with, which is the reason the block is in
+	// the checkpoint at all.
+	kept := Start(it, "sess", "manual", 1, Options{Repo: true, Groomed: block})
+	if again := kept.Continue(it); !strings.Contains(again.Prompt, block) {
+		t.Errorf("continued research = %q", again.Prompt)
+	}
+}
+
+// A run with no accepted reading says nothing about one.
+func TestRun_ResearchSaysNothingWithoutAGrooming(t *testing.T) {
+	it := item(todo.SizeM)
+	s := Start(it, "sess", "manual", 1, Options{Repo: true})
+	if first := s.First(it, ""); strings.Contains(first.Prompt, "GROOMING") {
+		t.Fatalf("research prompt = %q", first.Prompt)
+	}
+}

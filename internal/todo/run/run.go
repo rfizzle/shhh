@@ -48,6 +48,11 @@ const (
 	StageDone Stage = "done"
 	// StageBlocked is a run that stopped with evidence.
 	StageBlocked Stage = "blocked"
+	// StageGroom is an item read against the tree. It is not a stage of a
+	// run — it happens before one and no run ever enters it, which is why
+	// Place puts it nowhere in the strip — but it is a turn the same
+	// machinery spends, and every turn a backlog takes is named here.
+	StageGroom Stage = "groom"
 )
 
 // Action is what the front-end does next.
@@ -267,6 +272,12 @@ type State struct {
 	// asked for by name. Nobody is reading a sprint, which is what the
 	// surfaces that only sometimes ask for a reader's attention read it for.
 	InSprint bool `json:"in_sprint,omitempty"`
+	// Groomed is the reading of this item against the tree that the person
+	// accepted, as the research stage states it, and empty where there is
+	// none that still stands. It is in the checkpoint for the reason the
+	// sprint's goal is: a run continued a day later must state the reading
+	// the run was started with rather than whatever is on disk by then.
+	Groomed string `json:"groomed,omitempty"`
 	// Checked reports a passing verdict already reached over the tree the
 	// implement stage left, which the verify stage takes instead of running
 	// the same suite again. It is spent by the verify it was recorded for,
@@ -292,6 +303,10 @@ type Options struct {
 	// InSprint reports a run the sprint started rather than one a person
 	// asked for.
 	InSprint bool
+	// Groomed is the accepted reading of the item against the tree, as the
+	// research stage states it. Empty is a run whose item nobody has read
+	// that way, or one whose reading the person has since edited past.
+	Groomed string
 }
 
 // Start begins a run on an item.
@@ -307,6 +322,7 @@ func Start(it todo.Item, session, prevMode string, turn int, opt Options) *State
 		Sprint:    opt.Sprint,
 		CloseGate: opt.CloseGate,
 		InSprint:  opt.InSprint,
+		Groomed:   opt.Groomed,
 	}
 }
 
@@ -390,7 +406,7 @@ func (s *State) Continue(it todo.Item) Step {
 			return s.pause(s.Paused)
 		}
 		return Step{Action: ActionPrompt, Stage: StageResearch, Mode: ModePlan,
-			Prompt: researchPrompt(it, s.Sprint, answersBlock(s.Answers)), Shown: s.label("research (continued)")}
+			Prompt: researchPrompt(it, s.Sprint, s.Groomed, answersBlock(s.Answers)), Shown: s.label("research (continued)")}
 	case StageSplit:
 		return s.split(it)
 	case StageFanOut:
@@ -459,7 +475,7 @@ func (s *State) Over() bool { return s.Stage == StageDone || s.Stage == StageBlo
 func (s *State) First(it todo.Item, context string) Step {
 	s.Stage = StageResearch
 	return Step{Action: ActionPrompt, Stage: StageResearch, Mode: ModePlan,
-		Prompt: researchPrompt(it, s.Sprint, context), Shown: s.label("research")}
+		Prompt: researchPrompt(it, s.Sprint, s.Groomed, context), Shown: s.label("research")}
 }
 
 // Observe reads the model's answer to the current stage and returns the
@@ -574,7 +590,7 @@ func (s *State) Replan(it todo.Item, note string) Step {
 	s.Answers = append(s.Answers, note)
 	s.Stage = StageResearch
 	return Step{Action: ActionPrompt, Stage: StageResearch, Mode: ModePlan,
-		Prompt: researchPrompt(it, s.Sprint, answersBlock(s.Answers)), Shown: s.label("research again")}
+		Prompt: researchPrompt(it, s.Sprint, s.Groomed, answersBlock(s.Answers)), Shown: s.label("research again")}
 }
 
 func answersBlock(answers []string) string {

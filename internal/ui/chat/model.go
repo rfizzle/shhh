@@ -159,6 +159,10 @@ const (
 	// and enter writing the file (todoadd.go). It is opened by /todo new and
 	// from the proposals card, where it sets one proposal's header.
 	stateTodoDraft
+	// stateTodoGroom: the card a reading of one backlog item against the
+	// tree leaves — its verdicts as a diff of single lines, checked ones
+	// written on enter and nothing written on esc (todogroom.go).
+	stateTodoGroom
 )
 
 const inputHeight = 3
@@ -679,7 +683,11 @@ type Model struct {
 	todoDrafting  bool
 	todoDraftRun  int
 	todoDraftStop context.CancelFunc
-	memoryAsk     *components.NoteSelect
+	// todoGroomer is the grooming pass in flight and todoGroom the card its
+	// reading is showing on (todogroom.go).
+	todoGroomer todoGroomState
+	todoGroom   *components.MultiSelect
+	memoryAsk   *components.NoteSelect
 	// secrets backs /secret and the scrub on the agent.
 	secrets Secrets
 	// skills is the session's skill catalog, behind /skills, /skill and
@@ -1316,6 +1324,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	mm = after
 	if step != nil {
 		cmd = tea.Batch(cmd, step)
+	}
+	// And the card a grooming reading leaves (todogroom.go), which is the
+	// same transition read for a turn that was a reading rather than a
+	// stage.
+	groomed, card := mm.todoGroomAfter(m)
+	mm = groomed
+	if card != nil {
+		cmd = tea.Batch(cmd, card)
 	}
 	return mm, cmd
 }

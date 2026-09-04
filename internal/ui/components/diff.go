@@ -623,3 +623,36 @@ func (d *DiffView) Scroll(delta int) {
 	}
 	d.scrollTo(d.Offset + delta)
 }
+
+// LineChange renders one line's change as a single row: the line as it would
+// read, and the line it replaces struck through beside it.
+//
+// It is the diff a proposal makes when the unit being decided on is a line
+// rather than a hunk — a backlog item corrected against the tree, where each
+// correction is accepted or declined on its own. Two rows would be the
+// unified form, and a checkbox against two rows is a checkbox against
+// neither; the strike is what lets the old text stay legible on the row the
+// new text is offered on.
+func LineChange(before, after string) string {
+	before, after = strings.TrimSpace(before), strings.TrimSpace(after)
+	switch {
+	case after == "":
+		return strikeStyle().Render(before)
+	case before == "":
+		return sty.Add.Render(after)
+	}
+	return sty.Add.Render(after) + sty.Dim.Render("  ← ") + strikeStyle().Render(before)
+}
+
+// strikeStyle is how a line being replaced is drawn: struck through and
+// dim, so it reads as the text that was there rather than as text to read.
+func strikeStyle() lipgloss.Style { return sty.Dim.Strikethrough(true) }
+
+// DimText is body text at chrome weight, for a caller outside this package
+// that is composing a row out of parts and has one of them to recede.
+func DimText(s string) string { return sty.Dim.Render(s) }
+
+// Toned renders one part of such a row in the tone a card field is read at.
+// It is the same closed vocabulary a selector's own fields use, so a caller
+// composing a row by hand cannot invent a fifth weight.
+func Toned(t FieldTone, s string) string { return t.style().Render(s) }

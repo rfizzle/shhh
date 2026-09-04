@@ -458,3 +458,66 @@ func TestTodoItemReport_WithoutTheBody(t *testing.T) {
 		t.Errorf("the body is in the report the renderer draws under:\n%s", out)
 	}
 }
+
+// Every claim is a row, the corrections carry the line they would write, and
+// the report says what it did not do: a script gets the reading and nothing
+// is written by it.
+func TestTodoGroomReport_IsTheWholeReadingAndWritesNothing(t *testing.T) {
+	root := t.TempDir()
+	dir := todo.Dir(root)
+	must(t, os.MkdirAll(dir, 0o755))
+	const item = "---\ntitle: First thing\npriority: high\nsize: S\n---\n\n" +
+		"## Acceptance criteria\n- [ ] internal/cache/store.go:88 reads the config\n- [ ] The reader drops a stale entry\n"
+	path := filepath.Join(dir, "first.md")
+	must(t, os.WriteFile(path, []byte(item), 0o644))
+	it, err := todo.LoadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r, err := todo.Groom(it, "claim: - [ ] internal/cache/store.go:88 reads the config\n"+
+		"verdict: moved\nnow: - [ ] internal/cache/reader.go:120 reads the config\nevidence: moved in 9f2a11c\n\n"+
+		"claim: - [ ] The reader drops a stale entry\nverdict: holds\nevidence: reader.go:44 still does it\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := todoGroomReport(it, r).String()
+	for _, want := range []string{"moved", "holds", "reader.go:120", "moved in 9f2a11c", "nothing written"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %q in:\n%s", want, out)
+		}
+	}
+	if data, err := os.ReadFile(path); err != nil || string(data) != item {
+		t.Errorf("the reading wrote to the file:\n%s", data)
+	}
+}
+
+// An item every criterion of which the tree already satisfies is named as
+// one to archive, and never archived by the command.
+func TestTodoGroomReport_NamesAnItemTheTreeHasFinished(t *testing.T) {
+	it := todo.Item{Slug: "first", Title: "First thing"}
+	r := todo.Reading{Slug: "first", Findings: []todo.Finding{
+		{Verdict: todo.VerdictDone, Claim: "- [ ] it works", Criterion: true, Evidence: "cache.go:12 does it"},
+	}}
+	out := todoGroomReport(it, r).String()
+	if !strings.Contains(out, "shhh todo done first") {
+		t.Errorf("no archive proposal in:\n%s", out)
+	}
+}
+
+func TestTodoGroomTargets(t *testing.T) {
+	s := todo.Load(todoFixture(t))
+	all, err := todoGroomTargets(s, "", true)
+	if err != nil || len(all) != len(s.Items) {
+		t.Fatalf("--all = %d items, %v", len(all), err)
+	}
+	one, err := todoGroomTargets(s, "first", false)
+	if err != nil || len(one) != 1 || one[0].Slug != "first" {
+		t.Fatalf("one = %+v, %v", one, err)
+	}
+	if _, err := todoGroomTargets(s, "gone", false); err == nil {
+		t.Error("an archived item is not one to read against the tree")
+	}
+	if _, err := todoGroomTargets(s, "", false); err == nil {
+		t.Error("naming nothing should be refused")
+	}
+}

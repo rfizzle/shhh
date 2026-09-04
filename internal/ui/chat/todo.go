@@ -52,6 +52,11 @@ type Todos struct {
 	// setting's default: a cap that fires throws a run away, and what it
 	// should be is a fact about the project rather than about shhh.
 	ItemTimeout time.Duration
+	// GroomStale is how many commits the tree may take after an item was
+	// read against it before the surfaces say the reading has fallen
+	// behind. The zero value is the setting's own default, which is what a
+	// host that says nothing gets; a negative one turns the warning off.
+	GroomStale int
 }
 
 // WithTodos enables /todo and the TODO block.
@@ -73,6 +78,10 @@ func (m *Model) reloadTodos() {
 		return
 	}
 	m.todoStore = todo.Load(m.todos.Root)
+	// How far behind each item's last reading has fallen is a question for
+	// the repository, so it is asked here — where the backlog is read —
+	// rather than by the surfaces that draw it every frame (todogroom.go).
+	m.refreshGroomStale()
 	// The screen is drawn from this store, so it is rebuilt wherever the
 	// store is: a run archiving an item under a reader who is looking at the
 	// list would otherwise leave the row it archived on screen.
@@ -113,7 +122,7 @@ func (m Model) inspectorTodo() *components.InspectorTodo {
 			t.More++
 			continue
 		}
-		t.Rows = append(t.Rows, todoRow(s, it, m.todoRunner.state))
+		t.Rows = append(t.Rows, m.todoStaleRow(todoRow(s, it, m.todoRunner.state)))
 	}
 	return t
 }
@@ -174,6 +183,17 @@ func todoRow(s *todo.Store, it todo.Item, running *run.State) components.Inspect
 	return row
 }
 
+// todoStaleRow adds what a rail row says about a reading that has fallen
+// behind the tree. It is a separate pass over the row because the note it
+// writes is about the item's prose rather than about its state, and the
+// state is what every other field on the row is a reading of.
+func (m Model) todoStaleRow(row components.InspectorTodoRow) components.InspectorTodoRow {
+	if note := m.groomStaleNote(row.Slug); note != "" && row.Note == "" {
+		row.Note, row.Stale = note, true
+	}
+	return row
+}
+
 // todoCommand is /todo from the input. Bare /todo opens the picker where
 // there is something to pick; edit hands an item to the editor; everything
 // else is textual and reloads the store afterwards, because it may have
@@ -218,6 +238,12 @@ func (m Model) todoCommand(parts []string) (tea.Model, tea.Cmd) {
 	if len(parts) == 2 && parts[1] == "stop" {
 		return m.stopTodoRun()
 	}
+	// Grooming is the second verb the session takes rather than the
+	// manager, for the reason planning is: it spends a turn and proposes,
+	// and nothing is written until the card is accepted.
+	if len(parts) >= 2 && parts[1] == "groom" {
+		return m.startTodoGroom(parts[2:])
+	}
 	if len(parts) >= 2 && parts[1] == "edit" {
 		if len(parts) != 3 {
 			return m.systemNotice("Usage: /todo edit <slug>")
@@ -236,7 +262,7 @@ func (m Model) todoCommand(parts []string) (tea.Model, tea.Cmd) {
 // after it that are refused rather than the word itself.
 func todoWrites(args []string) bool {
 	switch args[0] {
-	case "edit", "add", "new", "block", "open", "done", "drop", "run", "stop":
+	case "edit", "add", "new", "block", "open", "done", "drop", "run", "stop", "groom":
 		return true
 	case "sprint":
 		return len(args) > 1
@@ -476,6 +502,11 @@ func (m Model) todoScreenAct(cmd components.BacklogCommand) (tea.Model, tea.Cmd)
 	case components.BacklogNew:
 		m.shutTodoScreen()
 		return m.composeTodoNew()
+	case components.BacklogGroom:
+		// Grooming leaves with the screen for the reason a run does: it
+		// spends a turn, and its card is in the panel this screen covers.
+		m.shutTodoScreen()
+		return m.startTodoGroom([]string{cmd.Slug})
 	}
 	note := m.todoScreenVerb(cmd)
 	m.reloadTodos()
@@ -557,8 +588,8 @@ func (m Model) refreshTodoScreen() {
 		return
 	}
 	s := m.todoStore
-	m.backlog.Rows = todoScreenRows(s, false)
-	m.backlog.Done = todoScreenRows(s, true)
+	m.backlog.Rows = m.todoScreenRows(s, false)
+	m.backlog.Done = m.todoScreenRows(s, true)
 	m.backlog.Sprint = ""
 	if s != nil && s.Sprint.Open() {
 		m.backlog.Sprint = s.Sprint.Name
@@ -571,7 +602,7 @@ func (m Model) refreshTodoScreen() {
 // or the archive. The files that would not parse go on the end of whichever
 // directory they were found in — a row rather than a gap, because the file
 // is still there and a list that dropped it would say the work is gone.
-func todoScreenRows(s *todo.Store, archived bool) []components.BacklogRow {
+func (m Model) todoScreenRows(s *todo.Store, archived bool) []components.BacklogRow {
 	if s == nil {
 		return nil
 	}
@@ -581,7 +612,7 @@ func todoScreenRows(s *todo.Store, archived bool) []components.BacklogRow {
 	}
 	rows := make([]components.BacklogRow, 0, len(items))
 	for _, it := range items {
-		rows = append(rows, todoScreenRow(s, it))
+		rows = append(rows, m.todoScreenRow(s, it))
 	}
 	for _, u := range s.Unreadable {
 		if u.Archived != archived {
@@ -598,7 +629,7 @@ func todoScreenRows(s *todo.Store, archived bool) []components.BacklogRow {
 // todoScreenRow is one item as the screen draws it: the header's fields in
 // the interface's own words, both ends of every dependency edge it is on,
 // and the prose under it.
-func todoScreenRow(s *todo.Store, it todo.Item) components.BacklogRow {
+func (m Model) todoScreenRow(s *todo.Store, it todo.Item) components.BacklogRow {
 	row := components.BacklogRow{
 		Slug: it.Slug, Path: it.Path, Title: it.Title,
 		Kind: string(it.Kind), Priority: string(it.Priority),
@@ -606,6 +637,13 @@ func todoScreenRow(s *todo.Store, it todo.Item) components.BacklogRow {
 		State: todoScreenState(s, it), Body: it.Body,
 		Waits: s.Waiting(it), Blocks: todoBlockedBy(s, it.Slug),
 		Warnings: it.Warnings,
+	}
+	// A reading the tree has left behind is exactly what a warning is for
+	// on this screen — something odd about the file that does not stop it
+	// loading — and it says how far behind, because "stale" without a count
+	// is a word nobody can act on.
+	if note := m.groomStaleNote(it.Slug); note != "" {
+		row.Warnings = append(row.Warnings, note+"; "+keys.Bracket(keys.Backlog.Groom)+" reads it against the tree again")
 	}
 	row.Fields = todoScreenFields(it, row.Status)
 	if it.Archived {

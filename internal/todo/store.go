@@ -352,6 +352,9 @@ func Archive(root, slug, report string) (string, error) {
 	if err := os.Rename(from, to); err != nil {
 		return "", err
 	}
+	// The item is done, so the reading of it against the tree is scratch
+	// about work that no longer exists (groom.go).
+	DiscardReading(root, slug)
 	return to, nil
 }
 
@@ -420,5 +423,10 @@ func Remove(root, slug string) error {
 	if _, err := os.Stat(path); err != nil {
 		return fmt.Errorf("no active item %q", slug)
 	}
-	return os.Remove(path)
+	if err := os.Remove(path); err != nil {
+		return err
+	}
+	// The file is gone and so is anything read about it (groom.go).
+	DiscardReading(root, slug)
+	return nil
 }

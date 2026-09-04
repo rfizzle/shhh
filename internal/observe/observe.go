@@ -236,8 +236,8 @@ const (
 	SignalRun = "run"
 	// SignalSkill: the user activated a skill by command. Reason: its name.
 	SignalSkill = "skill"
-	// SignalTodo: the backlog gained or changed an item. Reason: how, from
-	// the three below. It is separate from SignalRun, which is the runner
+	// SignalTodo: the backlog gained or changed an item, or was read
+	// against the tree. Reason: how, from the words and helpers below. It is separate from SignalRun, which is the runner
 	// working an item that already exists: a rate over how a backlog grows
 	// and a rate over how it is worked are different questions, and folding
 	// them together would put every stage of every run in the numerator of
@@ -260,6 +260,15 @@ const (
 	TodoAdd  = "add"
 	TodoEdit = "edit"
 )
+
+// GroomReason is SignalTodo's reason for an item read against the tree: the
+// word for the reading, and how many of its proposed lines the person
+// accepted. The count is in the reason because the question the record
+// answers is how often the backlog was wrong and by how much, which a bare
+// "the backlog was groomed" cannot.
+func GroomReason(accepted int) string {
+	return "groom " + strconv.Itoa(accepted)
+}
 
 // Event kinds for the stream a run with nobody in front of it writes while
 // it works. They are declared here, beside the codes those events carry,

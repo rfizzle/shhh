@@ -414,6 +414,7 @@ type BacklogKeys struct {
 	Drop    Binding
 	New     Binding
 	Sprint  Binding
+	Groom   Binding
 
 	List Binding
 	Back Binding
@@ -426,7 +427,7 @@ func (k BacklogKeys) All() []Binding {
 		k.Move, k.Read, k.Page, k.Tab,
 		k.Filter, k.ClearQ, k.Status, k.Priority, k.Kind, k.Ready,
 		k.Depends, k.Edit, k.Run, k.Block, k.Reopen, k.Archive, k.Drop,
-		k.New, k.Sprint, k.List, k.Back,
+		k.New, k.Sprint, k.Groom, k.List, k.Back,
 	}
 }
 
@@ -461,6 +462,10 @@ var Backlog = BacklogKeys{
 	Drop:    bind("x", "drop it, deleting the file", "x"),
 	New:     bind("n", "a new item", "n"),
 	Sprint:  bind("S", "add it to the sprint, or drop it from one", "S"),
+	// Grooming reads rather than writes, which is why it keeps the
+	// unshifted letter a run gave up: the worst a mistyped `g` costs is one
+	// read-only turn, and nothing it finds reaches the file without a card.
+	Groom: bind("g", "read it against the tree", "g"),
 
 	List: bind("?", "keys", "?"),
 	Back: bind("q", "back to the prompt", "q", "esc", "ctrl+c"),

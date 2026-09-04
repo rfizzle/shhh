@@ -232,6 +232,69 @@ about it, because it reads the file rather than watching it. The session in
 the refusal is where that run can be stopped, and until it is, the item is
 being worked in two places at once.
 
+## An item is checked before it is worked
+
+An item written weeks ago is a description of a tree that has since moved.
+It names files that were split, functions that were renamed, flags that went,
+and it states what the code does today in the present tense of a day that has
+passed. A run finds all of that out three stages in, on a plan built against
+the wrong file — and that is the best case, because the alternative is a
+plan that is wrong and looks right.
+
+So an item can be read against the code as it stands, before anything starts.
+The reading is one read-only turn per item. It takes every claim the item
+makes — each path and line, each function, flag, config key and command it
+names, each sentence about what happens today, each dependency, each
+acceptance criterion and the size it is graded at — and answers with a
+verdict from a closed set: it *holds*, it *moved* and here is where to, it
+*changed* and here is what happens now, it is *gone*, it is *already done*,
+or it is *unknown*.
+
+**The set is closed, and the only free text is one line of evidence under
+each verdict.** That is not tidiness. What comes of a reading is a diff, and
+a diff needs a fact per line: "moved, and it is in this file now" is a fact
+you can accept or decline, and "this item may need updating" is a sentence
+that can be said about everything — so a reading that is allowed to say it
+will say it about everything, and the reading stops being worth taking.
+
+**You accept it, line by line.** The verdicts come back as a proposed edit
+shown as a diff: a reference rewritten to where it now points, a "today"
+sentence restated with the old one struck through beside it, a criterion the
+tree already satisfies ticked with the commit that did it, a dependency that
+is already finished taken out, a size re-graded with the reason. Enter writes
+the lines you checked; esc writes nothing. Every accepted change is one line,
+and prose the reading did not name is not reflowed, reordered or rewritten —
+the same rule every other write to an item follows.
+
+The reason it is yours to accept is the run's own rule. Rewriting a `path:line`
+is mechanical, but restating what the code does today is a claim, and a
+groomer that made that claim into the item on its own would be the session
+writing the backlog rather than working it. A reading that could not be
+declined would also be one nobody could disagree with.
+
+**The header records the reading as a commit, not a date.** An accepted
+reading stamps the item with when it was taken and the commit it was taken
+against, and the surfaces that list items say when a reading has fallen more
+than a set number of commits behind — with the count, in the tone a warning
+takes. The commit is the load-bearing half: staleness is how far the tree has
+moved since the reading, which the repository can compute, where a date only
+says how long you waited. An item nobody has read this way says nothing at
+all, because absence is not staleness.
+
+Two things follow from the verdicts. An item every acceptance criterion of
+which reads *already done* is proposed for archiving, with the evidence as
+its report — proposed and never carried out, because an item finished by work
+nobody filed under it is exactly the case where somebody has to agree that it
+was the same work. And a run started later is handed the reading you accepted
+rather than taking it again: its research stage is told the item was read on
+a given commit and corrected, so it plans the work instead of re-deriving
+what you already settled.
+
+From outside the session, the same reading is a command that prints the
+verdicts and writes nothing at all — not the corrections and not the stamp.
+What a script wants out of a grooming is the reading; accepting it is a
+decision, and decisions are made where somebody is looking.
+
 ## A run is turns with gates between them
 
 An item can be worked by the session itself: research, implement, verify,

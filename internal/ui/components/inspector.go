@@ -241,6 +241,11 @@ type InspectorTodoRow struct {
 	// has no lanes to measure and a bar against a denominator nobody supplied
 	// is a number the interface invented.
 	LanesDone, LanesTotal int
+	// Stale marks a row whose note is about the item having fallen behind
+	// the tree rather than about where it stands. It is drawn in warning
+	// tone: every other note on this block is a statement of where the work
+	// is, and this one is a statement that the work may be described wrong.
+	Stale bool
 }
 
 // InspectorTodo is the TODO block: what the project still owes, so "what
@@ -911,6 +916,9 @@ func (r InspectorTodoRow) note() string {
 	note := ""
 	if r.Note != "" {
 		note = sty.Dim.Render(r.Note)
+		if r.Stale {
+			note = sty.Warn.Render(r.Note)
+		}
 	}
 	m, ok := AgentMeter(r.LanesDone, r.LanesTotal)
 	if !ok {

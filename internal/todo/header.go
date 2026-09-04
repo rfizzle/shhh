@@ -94,6 +94,19 @@ func (h *header) set(key, value string) bool {
 	return true
 }
 
+// remove drops the first field with the key and reports whether one went.
+// The line goes rather than being blanked: a header field set to nothing is
+// still a field, and every reader would go on carrying it.
+func (h *header) remove(key string) bool {
+	for i, l := range h.lines {
+		if l.field && l.key == key {
+			h.lines = append(h.lines[:i], h.lines[i+1:]...)
+			return true
+		}
+	}
+	return false
+}
+
 // quote wraps a value that would otherwise read back differently: one that
 // contains what looks like a comment, starts with a quote or a bracket, or
 // has space at an end. A title like "Fix #12 in the parser" is the common

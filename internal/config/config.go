@@ -75,6 +75,15 @@ type TodoConfig struct {
 	// read.
 	// See docs/capabilities/todo.md#a-sprint-is-runs-with-a-session-between-them.
 	ItemTimeoutMinutes int `toml:"item_timeout_minutes"`
+	// GroomStaleCommits is how many commits the tree may take after an item
+	// was last read against it before the surfaces say the reading has
+	// fallen behind. Zero — the unset value — takes the backlog's own
+	// default; a negative number turns the warning off, for a project that
+	// keeps its backlog current by hand. It counts commits
+	// rather than days because what makes an item stale is the tree moving
+	// under it, and a quiet month moves nothing.
+	// See docs/capabilities/todo.md#an-item-is-checked-before-it-is-worked.
+	GroomStaleCommits int `toml:"groom_stale_commits"`
 }
 
 // PromptsConfig names files whose contents replace shhh's own wordings. The
@@ -865,6 +874,12 @@ func (c *Config) TodoItemTimeout() time.Duration {
 	}
 	return time.Duration(c.Todo.ItemTimeoutMinutes) * time.Minute
 }
+
+// TodoGroomStale is how far behind a grooming may fall before the backlog
+// surfaces say so. Zero is passed on as zero rather than resolved here: the
+// number the default stands for is the backlog's own, and a copy of it in
+// this package would be a second answer to what "stale" means.
+func (c *Config) TodoGroomStale() int { return c.Todo.GroomStaleCommits }
 
 // ProviderCacheTTL returns the configured lifetime of the repeated opening.
 func (c Config) ProviderCacheTTL() string {

@@ -337,12 +337,14 @@ func (d *todoDriver) begin(it todo.Item, inSprint bool) (*run.State, run.Step) {
 	opt := run.Options{
 		NoCommit: d.noCommit, Repo: d.repo, Sprint: d.sprintGoal(),
 		CloseGate: d.closeGate, InSprint: inSprint,
+		Groomed: todo.GroomingBlock(d.root, it.Slug),
 	}
 	if it.Status == todo.StatusInProgress {
 		if st, err := run.Load(d.root, it.Slug); err == nil && !st.Over() {
 			st.Session, st.Reviewer = d.session, ""
 			st.NoCommit, st.Repo, st.Sprint = opt.NoCommit, opt.Repo, opt.Sprint
 			st.CloseGate, st.InSprint = opt.CloseGate, opt.InSprint
+			st.Groomed = opt.Groomed
 			return st, st.Continue(it)
 		}
 		// An item left in progress by something that wrote no checkpoint is
