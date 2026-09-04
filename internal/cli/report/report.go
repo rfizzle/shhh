@@ -488,12 +488,22 @@ var plain = theme{
 	tally:       same,
 }
 
+// Mono reports that a stream gets no colour at all: a pipe, TERM=dumb,
+// NO_COLOR. It is exported because a command that prints prose lays that
+// prose out with the markdown renderer rather than with this package, and
+// the two have to reach the same answer about the destination — prose
+// rendered in colour beside a report rendered plain is one screen written
+// in two voices.
+func Mono(w io.Writer) bool {
+	return components.DetectProfile(w, os.Environ()) <= colorprofile.ASCII
+}
+
 // themeFor decides how a stream is written to. Anything at or below ASCII —
 // a pipe, TERM=dumb, NO_COLOR — is written plain rather than downsampled,
 // because downsampling keeps bold and leaves a reset escape behind, and the
 // bytes a script reads should be the bytes a reader reads.
 func themeFor(w io.Writer) theme {
-	if components.DetectProfile(w, os.Environ()) <= colorprofile.ASCII {
+	if Mono(w) {
 		return plain
 	}
 	return painted()

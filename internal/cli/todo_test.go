@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"encoding/json"
 	"io"
 	"os"
 	"path/filepath"
@@ -8,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/shhh/internal/todo"
+	"github.com/rfizzle/shhh/internal/todo/run"
 )
 
 func todoFixture(t *testing.T) string {
@@ -268,5 +270,191 @@ func TestTodoManager_SprintVerbsRefuseAClosedSprint(t *testing.T) {
 	}
 	if out := manage([]string{"sprint", "close"}); !strings.Contains(out, "closed caching") {
 		t.Errorf("close = %q", out)
+	}
+}
+
+func TestTodoSetReport_Ready(t *testing.T) {
+	s := todo.Load(todoFixture(t))
+	out := todoSetReport(s, "shhh todo ready", s.Ready()).String()
+	for _, want := range []string{"shhh todo ready — 1 item", "· first  First thing · high · S  [ready]"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("ready lacks %q:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "second") {
+		t.Errorf("a waiting item is in the ready list:\n%s", out)
+	}
+}
+
+// Nothing ready and no backlog at all are different answers, and each names
+// the way out of its own situation.
+func TestTodoSetReport_NothingReady(t *testing.T) {
+	s := todo.Load(t.TempDir())
+	out := todoSetReport(s, "shhh todo next", todoNext(s)).String()
+	if !strings.Contains(out, "⊘ nothing is ready") {
+		t.Errorf("empty next = %q", out)
+	}
+	if strings.Contains(out, "no backlog here") {
+		t.Errorf("next answered the listing's empty state:\n%s", out)
+	}
+}
+
+func TestTodoNext(t *testing.T) {
+	s := todo.Load(todoFixture(t))
+	next := todoNext(s)
+	if len(next) != 1 || next[0].Slug != "first" {
+		t.Fatalf("next = %+v", next)
+	}
+}
+
+// The JSON is the store as the screen shows it: the item's own fields, what
+// the row's last column says, and the warnings — a script that saw only the
+// fields would treat a file with a broken size line as ungraded and never
+// learn the line is there.
+func TestTodoJSON(t *testing.T) {
+	root := sprintFixture(t)
+	must(t, os.WriteFile(filepath.Join(todo.Dir(root), "fourth.md"),
+		[]byte("---\ntitle: Fourth\nsize: XL\n---\n"), 0o644))
+	s := todo.Load(root)
+
+	data, err := json.Marshal(todoJSON(s, s.Items))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var doc todoDoc
+	if err := json.Unmarshal(data, &doc); err != nil {
+		t.Fatalf("the answer does not parse: %v\n%s", err, data)
+	}
+	if doc.Root != root || doc.Dir != todo.Dir(root) {
+		t.Errorf("root = %q, dir = %q", doc.Root, doc.Dir)
+	}
+	if len(doc.Items) != s.Len() {
+		t.Fatalf("%d items for a store of %d", len(doc.Items), s.Len())
+	}
+	byslug := map[string]todoItemDoc{}
+	for _, it := range doc.Items {
+		byslug[it.Slug] = it
+	}
+	if first := byslug["first"]; !first.Ready || first.State != "ready" || first.Size != "S" || first.Title != "First thing" {
+		t.Errorf("first = %+v", first)
+	}
+	if second := byslug["second"]; second.Ready || second.State != "waits on first" ||
+		strings.Join(second.Waiting, ",") != "first" || strings.Join(second.DependsOn, ",") != "first,gone" {
+		t.Errorf("second = %+v", second)
+	}
+	if fourth := byslug["fourth"]; len(fourth.Warnings) != 1 || !strings.Contains(fourth.Warnings[0], "unknown size") {
+		t.Errorf("fourth = %+v; the screen's warning has to be in the data", fourth)
+	}
+	if len(doc.Diagnostics) != 1 || !strings.Contains(doc.Diagnostics[0], "bad.md") {
+		t.Errorf("diagnostics = %v", doc.Diagnostics)
+	}
+	if doc.Sprint == nil || doc.Sprint.Name != "caching" || !doc.Sprint.Open || doc.Sprint.Total != 2 {
+		t.Fatalf("sprint = %+v", doc.Sprint)
+	}
+	var states []string
+	for _, e := range doc.Sprint.Items {
+		states = append(states, e.Slug+"="+e.State)
+	}
+	if strings.Join(states, " ") != "first=ready second=waiting vanished=dropped" {
+		t.Errorf("sprint entries = %v", states)
+	}
+}
+
+// The sprint verb answers about the sprint: its slugs, in the file's order,
+// and not the rest of the backlog.
+func TestTodoJSON_SprintVerb(t *testing.T) {
+	s := todo.Load(sprintFixture(t))
+	doc := todoJSON(s, todoSprintItems(s))
+	var slugs []string
+	for _, it := range doc.Items {
+		slugs = append(slugs, it.Slug)
+	}
+	if strings.Join(slugs, ",") != "first,second" {
+		t.Errorf("sprint items = %v", slugs)
+	}
+}
+
+// A run in flight is the one reason a verb refuses an item that is otherwise
+// there and active, and the refusal names the session because that is where
+// the run can be stopped.
+func TestTodoVerb_RefusesAHeldItem(t *testing.T) {
+	root := todoFixture(t)
+	st := run.Start(todo.Item{Slug: "first"}, "todo-run-19700101-000000", "", 0, run.Options{})
+	st.Stage = run.StageImplement
+	must(t, st.Save(root))
+
+	for _, args := range [][]string{{"block", "first"}, {"open", "first"}, {"done", "first"}, {"drop", "first"}} {
+		out, err := todoVerb(root, args)
+		if err == nil {
+			t.Fatalf("%v changed a held item: %q", args, out)
+		}
+		for _, want := range []string{"first", "todo-run-19700101-000000", "implement"} {
+			if !strings.Contains(err.Error(), want) {
+				t.Errorf("%v refusal lacks %q: %v", args, want, err)
+			}
+		}
+	}
+	// The session says it in its own words, and a script gets the sentence
+	// in the exit status instead.
+	if out := todoManager(root)([]string{"drop", "first"}); !strings.Contains(out, "Error: ") ||
+		!strings.Contains(out, "todo-run-19700101-000000") {
+		t.Errorf("session refusal = %q", out)
+	}
+	if _, err := os.Stat(filepath.Join(todo.Dir(root), "first.md")); err != nil {
+		t.Errorf("the held item was dropped anyway: %v", err)
+	}
+
+	// A run that ended holds nothing, and the verb goes through.
+	run.Discard(root, "first")
+	if _, err := todoVerb(root, []string{"block", "first"}); err != nil {
+		t.Errorf("block after the run ended: %v", err)
+	}
+}
+
+// A sprint records the item it has taken before that item has a checkpoint,
+// and the gap is exactly where a second terminal would find it unheld.
+func TestTodoVerb_RefusesAnItemTheSprintHolds(t *testing.T) {
+	root := todoFixture(t)
+	sp := run.StartSprint("todo-run-19700101-000000", "", 0, false)
+	sp.Current = "first"
+	must(t, sp.Save(root))
+
+	_, err := todoVerb(root, []string{"done", "first"})
+	if err == nil || !strings.Contains(err.Error(), "sprint") || !strings.Contains(err.Error(), "todo-run-19700101-000000") {
+		t.Fatalf("err = %v", err)
+	}
+	if _, err := todoVerb(root, []string{"done", "third"}); err != nil {
+		t.Errorf("an item the sprint is not on was refused: %v", err)
+	}
+}
+
+// Redirected, `show` is the file: a script asked for the item, and a
+// rendering of prose is not one.
+func TestTodoShow_PipedIsTheFile(t *testing.T) {
+	root := todoFixture(t)
+	var out strings.Builder
+	if err := todoShow(&out, root, "first"); err != nil {
+		t.Fatal(err)
+	}
+	want, err := os.ReadFile(filepath.Join(todo.Dir(root), "first.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out.String() != string(want) {
+		t.Errorf("show = %q, want the file %q", out.String(), want)
+	}
+}
+
+// The header report is the same one the transcript draws, minus the body the
+// terminal path lays out itself.
+func TestTodoItemReport_WithoutTheBody(t *testing.T) {
+	s := todo.Load(todoFixture(t))
+	it, _ := s.Find("first")
+	out := todoItemReport(s, it, false).String()
+	if !strings.Contains(out, "status:    ready") {
+		t.Errorf("header lacks the status:\n%s", out)
+	}
+	if strings.Contains(out, "## Notes") {
+		t.Errorf("the body is in the report the renderer draws under:\n%s", out)
 	}
 }

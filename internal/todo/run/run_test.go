@@ -581,3 +581,47 @@ func TestReviewVerdictIsRecorded(t *testing.T) {
 		t.Errorf("verdict = %q, want clean", s.Verdict)
 	}
 }
+
+// A checkpoint that is not over is what makes an item held, and the surfaces
+// that would change it under a run read it here. Both files are checked
+// because a sprint records the item it has taken before that item has a
+// checkpoint of its own.
+func TestHeldBy(t *testing.T) {
+	root := t.TempDir()
+	if _, held := HeldBy(root, "x"); held {
+		t.Error("an item with no checkpoint reads as held")
+	}
+
+	s := Start(item(todo.SizeS), "sess-a", "", 0, Options{})
+	s.Stage = StageImplement
+	if err := s.Save(root); err != nil {
+		t.Fatal(err)
+	}
+	h, held := HeldBy(root, "x")
+	if !held || h.Session != "sess-a" || h.Stage != StageImplement || h.Sprint {
+		t.Fatalf("hold = %+v, held = %v", h, held)
+	}
+
+	// A run that ended holds nothing: its item is archived or blocked, and
+	// what happens to it next is the person's to decide.
+	s.Stage = StageDone
+	if err := s.Save(root); err != nil {
+		t.Fatal(err)
+	}
+	if _, held := HeldBy(root, "x"); held {
+		t.Error("a finished run still holds its item")
+	}
+
+	Discard(root, "x")
+	sp := StartSprint("sess-b", "", 0, false)
+	sp.Current = "x"
+	if err := sp.Save(root); err != nil {
+		t.Fatal(err)
+	}
+	if h, held := HeldBy(root, "x"); !held || h.Session != "sess-b" || !h.Sprint {
+		t.Fatalf("sprint hold = %+v, held = %v", h, held)
+	}
+	if _, held := HeldBy(root, "y"); held {
+		t.Error("the sprint holds an item it is not on")
+	}
+}

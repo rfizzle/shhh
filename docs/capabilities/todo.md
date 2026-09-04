@@ -168,6 +168,36 @@ file now reads as — including why it no longer loads, if that is what the
 edit did — so a broken header is a sentence on screen, not an item that
 quietly disappeared.
 
+## From outside the session
+
+The same backlog answers a second terminal, a script and a CI job. One
+command lists it, two more narrow it to what can be started now and to the
+single item a run would take next, one prints an item, one shows the sprint,
+one works an item, and blocking, reopening, archiving and dropping are each a
+verb of their own. They are the session's verbs with a command wrapped round
+them rather than a second implementation: one refusal, one confirmation, and
+one answer to what archiving an item means.
+
+Two things follow the destination rather than the verb. Showing an item lays
+its prose out for somebody reading it on a terminal, and hands back the file
+itself when the output is redirected — what a script asked for is the item,
+and a rendering of prose is not one, so what it gets is a file the backlog
+would load again. And the listing verbs will answer in JSON: the header
+fields, whether each item is ready and what it is waiting on, the sprint
+scoping the set, the files that would not load, and the warnings. The
+warnings are the part worth stating. A file with a size line off the scale
+still loads and still shows that line as a warning on screen, and a reader of
+the fields alone would treat the item as ungraded and never learn there is a
+line there to fix.
+
+A verb that changes an item refuses while a run has that item in flight, and
+names the session the run is in. Every stage of a run states the item as the
+file stands when the stage begins, so blocking or archiving one underneath a
+run changes what its next stage is working from — and the run says nothing
+about it, because it reads the file rather than watching it. The session in
+the refusal is where that run can be stopped, and until it is, the item is
+being worked in two places at once.
+
 ## A run is turns with gates between them
 
 An item can be worked by the session itself: research, implement, verify,

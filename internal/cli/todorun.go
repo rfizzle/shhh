@@ -68,7 +68,8 @@ func newTodoRunCmd() *cobra.Command {
 			"in a session of its own. With --all, work the ready list one item at a time — the " +
 			"sprint file's set where the backlog holds one — stopping when nothing is ready, when " +
 			"--max is reached, or on the first item that blocks.",
-		Args: cobra.MaximumNArgs(1),
+		Args:              cobra.MaximumNArgs(1),
+		ValidArgsFunction: todoSlugs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			slug := ""
 			if len(args) == 1 {

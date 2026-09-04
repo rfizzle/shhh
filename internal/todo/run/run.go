@@ -344,6 +344,38 @@ func Load(root, slug string) (*State, error) {
 // Discard removes a checkpoint; a run that ended has nothing to continue.
 func Discard(root, slug string) { _ = os.Remove(path(root, slug)) }
 
+// Hold is a run that has an item in flight, as its checkpoint states it.
+type Hold struct {
+	// Session is the run's session, which is what a refusal names: the
+	// person is being told where the other half of the work is, and the
+	// session is the only handle they have on it.
+	Session string
+	// Stage is where that run stopped, empty for an item a sprint has taken
+	// and not started.
+	Stage Stage
+	// Sprint reports the hold coming from the loop's checkpoint rather than
+	// the item's own, which is a different thing to end.
+	Sprint bool
+}
+
+// HeldBy is the run working an item, and false when none is. Whoever changes
+// an item under a live run changes what its next stage starts from — every
+// stage prompt states the item as it stands — and the run would go on
+// against a file that no longer says what it was started for.
+//
+// Both checkpoints are read. A sprint records the item it has taken before
+// that item's own checkpoint exists, and the gap between the two writes is
+// exactly where a second terminal would find the item unheld.
+func HeldBy(root, slug string) (Hold, bool) {
+	if st, err := Load(root, slug); err == nil && !st.Over() {
+		return Hold{Session: st.Session, Stage: st.Stage}, true
+	}
+	if sp, live := Live(root); live && sp.Current == slug {
+		return Hold{Session: sp.Session, Sprint: true}, true
+	}
+	return Hold{}, false
+}
+
 // Continue re-enters the stage a checkpoint was saved at, for a run picked
 // up in a new session: the stage starts over — its prompt is sent again,
 // its verify re-run — because the transcript that was mid-stage is gone

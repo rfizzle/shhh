@@ -2,7 +2,11 @@ package cli
 
 import (
 	"bytes"
+	"io"
+	"strings"
 	"testing"
+
+	"github.com/spf13/cobra"
 )
 
 func TestCompletion_Bash(t *testing.T) {
@@ -70,5 +74,25 @@ func TestCompletion_NoArgs(t *testing.T) {
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error when no shell argument provided")
+	}
+}
+
+// The backlog's verbs are the command tree's own, so completion knows them
+// the moment they are registered rather than from a second list that would
+// drift. What is asked here is what the generated scripts ask the binary.
+func TestCompletion_TodoVerbs(t *testing.T) {
+	cmd := NewRootCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(io.Discard)
+	cmd.SetArgs([]string{cobra.ShellCompRequestCmd, "todo", ""})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	for _, verb := range []string{"ready", "next", "block", "open", "done", "drop", "sprint", "run", "show"} {
+		if !strings.Contains(out.String(), verb+"\t") {
+			t.Errorf("completion does not offer %q:\n%s", verb, out.String())
+		}
 	}
 }

@@ -23,7 +23,7 @@
     rate [--flags]                     Rate past commands and sessions
     reports [command] [--flags]        List the report pages sessions built
     snippets [command] [--flags]       Manage saved command snippets
-    todo [command]                     List the project's backlog
+    todo [command] [--flags]           List the project's backlog
          
   SETUP  
          
