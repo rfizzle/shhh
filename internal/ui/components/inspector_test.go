@@ -862,9 +862,9 @@ func TestInspectorRail_EveryWidthInTheRangeFits(t *testing.T) {
 // instead of the width it was given.
 func TestInspectorRail_FoldMarkerSpansTheRail(t *testing.T) {
 	r := InspectorRail{Todo: &InspectorTodo{Open: 9, Rows: []InspectorTodoRow{
-		{Slug: "rail-width", Priority: "H", Size: "M", State: TodoReady},
-		{Slug: "rail-setting", Priority: "M", Size: "S", State: TodoReady},
-		{Slug: "rail-goldens", Priority: "L", Size: "S", State: TodoReady},
+		{Slug: "rail-width", Priority: "H", Grade: "M", State: TodoReady},
+		{Slug: "rail-setting", Priority: "M", Grade: "S", State: TodoReady},
+		{Slug: "rail-goldens", Priority: "L", Grade: "S", State: TodoReady},
 	}}}
 	const width = InspectorMaxWidth
 	lines := r.Lines(width, 3)
@@ -1060,9 +1060,9 @@ func TestInspectorRail_LinesAreTheRowsText(t *testing.T) {
 // which is the rule about denominators nobody supplied.
 func TestInspectorTodo_RunningRowDrawsItsLanes(t *testing.T) {
 	rows := []InspectorTodoRow{
-		{Slug: "cache-ttl", Priority: "H", Size: "L", State: TodoRunning,
+		{Slug: "cache-ttl", Priority: "H", Grade: "L", State: TodoRunning,
 			Note: "implement", LanesDone: 2, LanesTotal: 3},
-		{Slug: "cache-warm", Priority: "M", Size: "S", State: TodoReady},
+		{Slug: "cache-warm", Priority: "M", Grade: "S", State: TodoReady},
 	}
 	r := InspectorRail{Todo: &InspectorTodo{Open: 2, Rows: rows}}
 	lines := r.Lines(InspectorWidth, 0)

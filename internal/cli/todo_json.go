@@ -7,7 +7,7 @@ package cli
 // waiting on, and whether a run has it in flight.
 //
 // The warnings are in it for the same reason they are on the screen. A file
-// with an unreadable size line still loads, and a script that saw only the
+// with an unreadable grade line still loads, and a script that saw only the
 // fields would go on treating it as ungraded without ever learning that the
 // line is there and wrong.
 
@@ -35,22 +35,26 @@ type todoDoc struct {
 // started — the two differ, and a script keying on the wrong one would start
 // an item whose dependencies are outstanding.
 type todoItemDoc struct {
-	Slug      string       `json:"slug"`
-	Title     string       `json:"title"`
-	Kind      string       `json:"kind,omitempty"`
-	Priority  string       `json:"priority"`
-	Size      string       `json:"size,omitempty"`
-	Status    string       `json:"status"`
-	State     string       `json:"state"`
-	Ready     bool         `json:"ready"`
-	Waiting   []string     `json:"waiting,omitempty"`
-	DependsOn []string     `json:"depends_on,omitempty"`
-	Created   string       `json:"created,omitempty"`
-	Session   string       `json:"session,omitempty"`
-	Held      *todoHeldDoc `json:"held,omitempty"`
-	Archived  bool         `json:"archived,omitempty"`
-	Path      string       `json:"path"`
-	Warnings  []string     `json:"warnings,omitempty"`
+	Slug  string `json:"slug"`
+	Title string `json:"title"`
+	// Fields are the header fields the project's vocabulary declares, by
+	// name — a map rather than keys of their own, because which fields
+	// there are is the project's to say and a script that keyed on `size`
+	// would be reading a word another backlog does not use. Priority is
+	// beside them rather than in them: every backlog is ordered by it.
+	Fields    map[string]string `json:"fields,omitempty"`
+	Priority  string            `json:"priority"`
+	Status    string            `json:"status"`
+	State     string            `json:"state"`
+	Ready     bool              `json:"ready"`
+	Waiting   []string          `json:"waiting,omitempty"`
+	DependsOn []string          `json:"depends_on,omitempty"`
+	Created   string            `json:"created,omitempty"`
+	Session   string            `json:"session,omitempty"`
+	Held      *todoHeldDoc      `json:"held,omitempty"`
+	Archived  bool              `json:"archived,omitempty"`
+	Path      string            `json:"path"`
+	Warnings  []string          `json:"warnings,omitempty"`
 }
 
 // todoHeldDoc is the run that has the item, from its checkpoint. A script
@@ -108,9 +112,9 @@ func todoJSON(s *todo.Store, items []todo.Item) todoDoc {
 
 func todoItemJSON(s *todo.Store, it todo.Item, ready bool) todoItemDoc {
 	doc := todoItemDoc{
-		Slug: it.Slug, Title: it.Title, Kind: string(it.Kind),
-		Priority: string(it.Priority), Size: string(it.Size),
-		Status: string(it.Status), State: todoState(s, it), Ready: ready,
+		Slug: it.Slug, Title: it.Title, Fields: it.Fields,
+		Priority: string(it.Priority),
+		Status:   string(it.Status), State: todoState(s, it), Ready: ready,
 		Waiting: s.Waiting(it), DependsOn: it.DependsOn,
 		Created: it.Created, Session: it.Session,
 		Archived: it.Archived, Path: it.Path, Warnings: it.Warnings,

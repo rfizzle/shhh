@@ -16,6 +16,10 @@ import (
 type Store struct {
 	Root string
 	Dir  string
+	// Profile is the vocabulary every item in it was read under, kept so a
+	// surface handed the store does not have to be handed the profile
+	// beside it.
+	Profile Profile
 	// Items are the active items — every status but done — in Less order.
 	Items []Item
 	// Done is the archive, in slug order.
@@ -51,8 +55,8 @@ type Unreadable struct {
 
 // Load reads the backlog under root. A root with no backlog directory is an
 // empty store, not an error.
-func Load(root string) *Store {
-	s := &Store{Root: root, Dir: Dir(root)}
+func Load(p Profile, root string) *Store {
+	s := &Store{Root: root, Dir: Dir(root), Profile: p}
 	s.Items = s.readDir(s.Dir, false)
 	s.Done = s.readDir(filepath.Join(s.Dir, DoneSubdir), true)
 	for _, u := range s.Unreadable {
@@ -96,7 +100,7 @@ func (s *Store) readDir(dir string, archived bool) []Item {
 			continue
 		}
 		path := filepath.Join(dir, e.Name())
-		it, err := LoadFile(path)
+		it, err := LoadFile(s.Profile, path)
 		if err != nil {
 			s.Unreadable = append(s.Unreadable, Unreadable{
 				Slug:     strings.TrimSuffix(e.Name(), ".md"),
@@ -247,7 +251,7 @@ func ensureDir(root string) (string, error) {
 // Create writes a new item and returns its path. The slug must be valid
 // and unused, active or archived: an archived slug is still what other
 // items' dependencies name.
-func Create(root string, it Item) (string, error) {
+func Create(p Profile, root string, it Item) (string, error) {
 	if err := ValidSlug(it.Slug); err != nil {
 		return "", err
 	}
@@ -270,7 +274,7 @@ func Create(root string, it Item) (string, error) {
 			return "", fmt.Errorf("%s already exists", p)
 		}
 	}
-	if err := os.WriteFile(path, []byte(Render(it)), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(Render(p, it)), 0o644); err != nil {
 		return "", err
 	}
 	return path, nil
@@ -282,9 +286,10 @@ func SetStatus(path string, status Status) error {
 	return editHeader(path, func(h *header) bool { return h.set(keyStatus, string(status)) })
 }
 
-// SetSize changes the size line of an item file and nothing else.
-func SetSize(path string, size Size) error {
-	return editHeader(path, func(h *header) bool { return h.set(keySize, string(size)) })
+// SetField changes one of the profile's header fields in an item file and
+// nothing else.
+func SetField(path, name, value string) error {
+	return editHeader(path, func(h *header) bool { return h.set(name, value) })
 }
 
 // editHeader rewrites the header block of a file through edit, leaving the

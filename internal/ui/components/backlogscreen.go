@@ -68,14 +68,50 @@ const (
 	backlogTabs
 )
 
-// The filter cycles, in the order their keys step through them. Each opens
-// on the empty stop, which is "every one of them", so a cycle comes back
-// round to no filter rather than trapping the reader inside one.
-var (
-	backlogStatuses   = []string{"", "open", "in progress", "blocked"}
-	backlogPriorities = []string{"", "high", "medium", "low"}
-	backlogKinds      = []string{"", "story", "bug", "chore"}
-)
+// The status cycle, in the order its key steps through it. It opens on the
+// empty stop, which is "every one of them", so a cycle comes back round to
+// no filter rather than trapping the reader inside one. The header fields
+// cycle the same way over the words the host declared for them.
+var backlogStatuses = []string{"", "open", "in progress", "blocked"}
+
+// BacklogField is one of the header fields an item carries, as the screen
+// filters and letters it. Which fields there are and what each may say is
+// the host's reading of the project, like every other word on a row.
+type BacklogField struct {
+	// Name is the header key. The footer names it beside the word a filter
+	// stopped on, because "story" alone does not say what it narrowed.
+	Name string
+	// Values are the words the field may say, in the order the cycle steps
+	// through them.
+	Values []BacklogValue
+}
+
+// BacklogValue is one word a field may say and the letter a row draws it
+// as. An empty glyph is a word no row letters, and a field whose words all
+// carry none is a field the row leaves to the pane beside it.
+type BacklogValue struct {
+	Word, Glyph string
+}
+
+// stop is one position of a field cycle: which field and which of its
+// words, with the zero value meaning no filter at all.
+type stop struct {
+	field, word string
+}
+
+// fieldStops is the flattened cycle the field-filter key steps through:
+// every word of every field, in the order the fields were declared, behind
+// one empty stop. One key rather than one key per field, because a profile
+// may declare four fields and there are not four letters left.
+func fieldStops(fields []BacklogField) []stop {
+	stops := []stop{{}}
+	for _, f := range fields {
+		for _, v := range f.Values {
+			stops = append(stops, stop{field: f.Name, word: v.Word})
+		}
+	}
+	return stops
+}
 
 // BacklogState is what a row's glyph and its state field say about an item.
 type BacklogState int
@@ -112,11 +148,14 @@ type BacklogRow struct {
 	// Title is the sentence the header names it with. It is the field the
 	// row gives up first, because the pane beside the list carries it whole.
 	Title string
-	// Kind, Priority and Status are the header's own words. The row draws
-	// the first letter of the priority; the filters match the words.
-	Kind, Priority, Status string
-	// Size is the grade — S, M or L — or empty for one nobody has graded.
-	Size string
+	// Priority and Status are the two words this screen reads whatever the
+	// project's vocabulary is: what orders the list, and where the item is
+	// in its life.
+	Priority, Status string
+	// Values are the item's own header fields by name — what sort of work
+	// it is, how big — which the field filters match and the row letters.
+	// A field the file left unset is absent rather than empty.
+	Values map[string]string
 	// State picks the glyph and the state field.
 	State BacklogState
 	// Waits are the dependencies not done yet, in the order the header named
@@ -218,6 +257,15 @@ type BacklogScreen struct {
 	// the host read them.
 	Rows []BacklogRow
 	Done []BacklogRow
+	// Priority is the field that orders the list. It has a key of its own
+	// because every backlog has it and it is what the list is sorted by,
+	// so it is the one filter a reader reaches for without reading the
+	// footer first.
+	Priority BacklogField
+	// Fields are the rest of the header's fields, in the order the project
+	// declares them: what the field-filter key cycles, and what a row
+	// letters after the priority.
+	Fields []BacklogField
 	// Sprint is the open sprint's name, or empty where the project is
 	// working without one. `[S]` is offered only while there is a set to add
 	// to.
@@ -265,7 +313,7 @@ type BacklogScreen struct {
 	filtering bool
 	status    int
 	priority  int
-	kind      int
+	field     int
 	ready     bool
 	// reading is the body holding the keys, scrolled through pager.
 	reading bool
@@ -342,10 +390,10 @@ func (b *BacklogScreen) readKey(pressed string) bool {
 		b.status = (b.status + 1) % len(backlogStatuses)
 		b.refilter()
 	case keys.Is(pressed, keys.Backlog.Priority):
-		b.priority = (b.priority + 1) % len(backlogPriorities)
+		b.priority = (b.priority + 1) % len(b.priorityStops())
 		b.refilter()
 	case keys.Is(pressed, keys.Backlog.Kind):
-		b.kind = (b.kind + 1) % len(backlogKinds)
+		b.field = (b.field + 1) % len(fieldStops(b.Fields))
 		b.refilter()
 	case keys.Is(pressed, keys.Backlog.Ready) && !b.archived():
 		b.ready = !b.ready
@@ -573,7 +621,7 @@ func (b *BacklogScreen) jumpToDependency() {
 // clearFilters puts every filter back to showing everything.
 func (b *BacklogScreen) clearFilters() {
 	b.query, b.filtering = "", false
-	b.status, b.priority, b.kind, b.ready = 0, 0, 0, false
+	b.status, b.priority, b.field, b.ready = 0, 0, 0, false
 }
 
 // SetSize gives the screen the terminal's rectangle. It lays itself out from
@@ -646,11 +694,11 @@ func (b *BacklogScreen) filterWords() string {
 	if s := backlogStatuses[b.status]; s != "" {
 		parts = append(parts, s)
 	}
-	if p := backlogPriorities[b.priority]; p != "" {
+	if p := b.priorityStop(); p != "" {
 		parts = append(parts, p+" priority")
 	}
-	if k := backlogKinds[b.kind]; k != "" {
-		parts = append(parts, k+"s")
+	if f := b.fieldStop(); f.field != "" {
+		parts = append(parts, f.field+" "+f.word)
 	}
 	if b.ready {
 		parts = append(parts, "ready")
@@ -933,26 +981,76 @@ func (b *BacklogScreen) rowTone(row BacklogRow) (string, lipgloss.Style) {
 	return todoRowTone(TodoReady)
 }
 
-// grade is the two letters that decide the order and the ceremony: the
-// priority's initial and the size. An ungraded item draws a hyphen rather
-// than a blank, because a blank column reads as a field that is missing from
-// the row and this one is missing from the file.
+// grade is the letters that decide the order and the ceremony: the
+// priority's, then one for each field the project gave letters to. A field
+// the file left unset draws a hyphen rather than a blank, because a blank
+// column reads as a field missing from the row and this one is missing from
+// the file.
 func (b *BacklogScreen) grade(row BacklogRow) string {
 	if row.State == BacklogUnreadable {
 		// A file that would not parse has no header to read a grade off,
-		// and two hyphens where the letters go would be this screen
-		// claiming it did.
+		// and hyphens where the letters go would be this screen claiming
+		// it did.
 		return ""
 	}
-	p := "-"
-	if row.Priority != "" {
-		p = strings.ToUpper(row.Priority[:1])
+	out := b.Priority.glyph(row.Priority)
+	for _, f := range b.Fields {
+		if f.lettered() {
+			out += f.glyph(row.Values[f.Name])
+		}
 	}
-	size := row.Size
-	if size == "" {
-		size = "-"
+	return out
+}
+
+// glyph is the one letter the field draws a word as, and a hyphen for a
+// word it does not hold — which is what an unset field and a misspelt one
+// both are.
+func (f BacklogField) glyph(word string) string {
+	for _, v := range f.Values {
+		if v.Word == word && v.Glyph != "" {
+			return v.Glyph
+		}
 	}
-	return p + size
+	return "-"
+}
+
+// lettered reports the field carrying letters at all.
+func (f BacklogField) lettered() bool {
+	for _, v := range f.Values {
+		if v.Glyph != "" {
+			return true
+		}
+	}
+	return false
+}
+
+// priorityStops is the priority cycle: its words behind the empty stop.
+func (b *BacklogScreen) priorityStops() []string {
+	stops := make([]string, 0, len(b.Priority.Values)+1)
+	stops = append(stops, "")
+	for _, v := range b.Priority.Values {
+		stops = append(stops, v.Word)
+	}
+	return stops
+}
+
+// priorityStop is the word the priority cycle is standing on, and "" for
+// the stop that shows everything.
+func (b *BacklogScreen) priorityStop() string {
+	stops := b.priorityStops()
+	if b.priority >= len(stops) {
+		return ""
+	}
+	return stops[b.priority]
+}
+
+// fieldStop is where the field cycle is standing.
+func (b *BacklogScreen) fieldStop() stop {
+	stops := fieldStops(b.Fields)
+	if b.field >= len(stops) {
+		return stop{}
+	}
+	return stops[b.field]
 }
 
 // stateWords is the row's state field. A waiting item states what it is
@@ -1240,12 +1338,18 @@ func (b *BacklogScreen) sprintOffer(row BacklogRow) KeyOffer {
 // none of them is ready, so those two keys would narrow a list to nothing —
 // and a key that cannot act is not an offer (invariant 5).
 func (b *BacklogScreen) narrowOffer() KeyOffer {
-	shown := []string{keys.Shown(keys.Backlog.Priority), keys.Shown(keys.Backlog.Kind)}
+	shown := []string{keys.Shown(keys.Backlog.Priority)}
 	if !b.archived() {
-		shown = []string{
-			keys.Shown(keys.Backlog.Status), keys.Shown(keys.Backlog.Priority),
-			keys.Shown(keys.Backlog.Kind), keys.Shown(keys.Backlog.Ready),
-		}
+		shown = []string{keys.Shown(keys.Backlog.Status), keys.Shown(keys.Backlog.Priority)}
+	}
+	// A project whose items carry nothing but a priority has no field
+	// cycle, and a key that cannot narrow anything is not an offer
+	// (invariant 5).
+	if len(b.Fields) > 0 {
+		shown = append(shown, keys.Shown(keys.Backlog.Kind))
+	}
+	if !b.archived() {
+		shown = append(shown, keys.Shown(keys.Backlog.Ready))
 	}
 	return KeyOffer{Key: "[" + strings.Join(shown, "/") + "]", Label: "narrow it"}
 }
@@ -1267,7 +1371,11 @@ func (b *BacklogScreen) keyList() []KeyOffer {
 		keyOfferAs(keys.Backlog.ClearQ, "clear the filter; clear it again to close it"),
 		keyOfferAs(keys.Backlog.Status, "cycle the status filter"),
 		keyOfferAs(keys.Backlog.Priority, "cycle the priority filter"),
-		keyOfferAs(keys.Backlog.Kind, "cycle the kind filter"),
+	}
+	if len(b.Fields) > 0 {
+		out = append(out, keyOfferAs(keys.Backlog.Kind, "cycle the next field filter"))
+	}
+	out = append(out, []KeyOffer{
 		keyOfferAs(keys.Backlog.Ready, "only what can be started now"),
 		keyOfferAs(keys.Backlog.Depends, "jump to what this one waits on"),
 		keyOfferAs(keys.Backlog.Edit, "open the file in your editor"),
@@ -1277,7 +1385,7 @@ func (b *BacklogScreen) keyList() []KeyOffer {
 		keyOfferAs(keys.Backlog.Archive, "archive it, after confirming it"),
 		keyOfferAs(keys.Backlog.Drop, "delete the file, after confirming it"),
 		keyOfferAs(keys.Backlog.New, "start a new item"),
-	}
+	}...)
 	if b.Sprint != "" {
 		out = append(out, keyOfferAs(keys.Backlog.Sprint, "add it to "+b.Sprint+", or drop it"))
 	}
@@ -1353,10 +1461,10 @@ func (b *BacklogScreen) matches(row BacklogRow) bool {
 	if s := backlogStatuses[b.status]; s != "" && s != row.Status {
 		return false
 	}
-	if p := backlogPriorities[b.priority]; p != "" && p != row.Priority {
+	if p := b.priorityStop(); p != "" && p != row.Priority {
 		return false
 	}
-	if k := backlogKinds[b.kind]; k != "" && k != row.Kind {
+	if f := b.fieldStop(); f.field != "" && f.word != row.Values[f.field] {
 		return false
 	}
 	return !b.ready || row.State == BacklogReady

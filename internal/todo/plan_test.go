@@ -25,7 +25,7 @@ func planRoot(t *testing.T) string {
 // kind of release it reads as, and every candidate it left out with one of
 // the words.
 func TestParsePlan_ReadsTheSetItsReasonsAndWhatItLeftOut(t *testing.T) {
-	s := Load(planRoot(t))
+	s := Load(BuiltinCode(), planRoot(t))
 	answer := "goal: Make an entry's lifetime mean something.\n" +
 		"release: minor\n" +
 		"item: cache-ttl\n" +
@@ -59,7 +59,7 @@ func TestParsePlan_ReadsTheSetItsReasonsAndWhatItLeftOut(t *testing.T) {
 // A set of bugs reads as a patch, which is a different answer to the same
 // question and the reason the word is asked for at all.
 func TestParsePlan_TakesTheReleaseWordItWasGiven(t *testing.T) {
-	s := Load(planRoot(t))
+	s := Load(BuiltinCode(), planRoot(t))
 	p := ParsePlan("release: patch\nitem: cache-metrics\nwhy: it is the only bug open\n", s.Ready(), nil)
 	if p.Release != ReleasePatch || p.GoalText() != "Reads as a patch release." {
 		t.Fatalf("plan = %+v, goal = %q", p, p.GoalText())
@@ -76,7 +76,7 @@ func TestParsePlan_TakesTheReleaseWordItWasGiven(t *testing.T) {
 // the set is written to a file and worked, and an item invented by a misread
 // line would be a sprint naming work that is not ready or not there at all.
 func TestParsePlan_DropsWhatIsNotACandidate(t *testing.T) {
-	s := Load(planRoot(t))
+	s := Load(BuiltinCode(), planRoot(t))
 	p := ParsePlan("item: cache-ttl\nwhy: it is ready\n"+
 		"item: cache-nothing\nwhy: invented\n"+
 		"item: cache-ttl\nwhy: twice\n"+
@@ -94,7 +94,7 @@ func TestParsePlan_DropsWhatIsNotACandidate(t *testing.T) {
 // enough to matter, and an item dropped for what followed its slug is one
 // the person never sees.
 func TestParsePlan_TakesTheSlugOutOfALineThatSaysMore(t *testing.T) {
-	s := Load(planRoot(t))
+	s := Load(BuiltinCode(), planRoot(t))
 	p := ParsePlan("item: `cache-ttl` — Give the cache a lifetime\nwhy: it comes first\n"+
 		"out: cache-metrics — unrelated\n", s.Ready(), nil)
 	if got := strings.Join(p.Slugs(), ","); got != "cache-ttl" {
@@ -108,8 +108,8 @@ func TestParsePlan_TakesTheSlugOutOfALineThatSaysMore(t *testing.T) {
 // A budget the answer overran is still a budget: what does not fit goes to
 // the left-out list rather than into the set.
 func TestParsePlan_MovesWhatTheBudgetCannotHoldOutOfTheSet(t *testing.T) {
-	s := Load(planRoot(t))
-	budget, err := ParseSprintBudget("S=1,M=1")
+	s := Load(BuiltinCode(), planRoot(t))
+	budget, err := ParseSprintBudget(BuiltinCode(), "S=1,M=1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -127,12 +127,12 @@ func TestParsePlan_MovesWhatTheBudgetCannotHoldOutOfTheSet(t *testing.T) {
 // A budget naming only sizes the ready list does not hold admits nothing,
 // which the item headers already say: no turn is worth spending on it.
 func TestSprintBudgetFits(t *testing.T) {
-	s := Load(planRoot(t))
-	small, _ := ParseSprintBudget("S=1")
+	s := Load(BuiltinCode(), planRoot(t))
+	small, _ := ParseSprintBudget(BuiltinCode(), "S=1")
 	if !small.Fits(s.Ready()) {
 		t.Error("a backlog with small items does not fit S=1")
 	}
-	none, _ := ParseSprintBudget("L=0")
+	none, _ := ParseSprintBudget(BuiltinCode(), "L=0")
 	if none.Fits(s.Ready()) {
 		t.Error("a budget with no allowance admits something")
 	}
@@ -153,8 +153,8 @@ func TestPlanPrompt_CarriesTheFactsAndTheReadings(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	s := Load(root)
-	budget, _ := ParseSprintBudget("S=1,M=1")
+	s := Load(BuiltinCode(), root)
+	budget, _ := ParseSprintBudget(BuiltinCode(), "S=1,M=1")
 	prompt := s.PlanPrompt(s.Ready(), budget.String())
 	for _, want := range []string{
 		"cache-ttl — Give the cache a lifetime",
@@ -187,7 +187,7 @@ func TestSprintNotes_NameWhatLandedAndItsCommit(t *testing.T) {
 	if _, err := Archive(root, "cache-ttl", report); err != nil {
 		t.Fatal(err)
 	}
-	s := Load(root)
+	s := Load(BuiltinCode(), root)
 	notes := SprintNotes(s.Sprint, s.SprintEntries())
 	for _, want := range []string{
 		"Make an entry's lifetime mean something.",
@@ -201,10 +201,10 @@ func TestSprintNotes_NameWhatLandedAndItsCommit(t *testing.T) {
 	}
 	// The deferred item goes back to the backlog untouched: closing a
 	// sprint early is a decision about the set, not about its items.
-	if _, err := CloseSprint(root); err != nil {
+	if _, err := CloseSprint(BuiltinCode(), root); err != nil {
 		t.Fatal(err)
 	}
-	after := Load(root)
+	after := Load(BuiltinCode(), root)
 	it, ok := after.Find("cache-evict")
 	if !ok || it.Archived || it.Status != StatusOpen {
 		t.Fatalf("the deferred item = %+v", it)

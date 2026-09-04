@@ -48,9 +48,9 @@ func extractModel(t *testing.T, root string, p *scriptedProvider) Model {
 	}
 	var ex *todo.Extractor
 	if p != nil {
-		ex = todo.NewExtractor(p, todo.ExtractConfig{Model: "m"})
+		ex = todo.NewExtractor(p, todo.ExtractConfig{Model: "m"}, todo.BuiltinCode())
 	}
-	return m.WithTodos(Todos{Root: root, Manage: func([]string) string { return "usage" }, Detail: func(*todo.Store, todo.Item) string { return "" }, Extractor: ex})
+	return m.WithTodos(Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "usage" }, Detail: func(*todo.Store, todo.Item) string { return "" }, Extractor: ex})
 }
 
 // runExtract submits a bare /todo add and delivers the reading.
@@ -116,9 +116,9 @@ func TestTodoAdd_ProposalsCardWritesTheCheckedOnes(t *testing.T) {
 	if !strings.Contains(note, `show-the-backlog-in-the-rail → "Build the store"`) || !strings.Contains(note, `→ "nothing-like-this"`) {
 		t.Fatalf("dropped deps should be named: %q", note)
 	}
-	s := todo.Load(root)
+	s := todo.Load(todo.BuiltinCode(), root)
 	it, ok := s.Find("show-the-backlog-in-the-rail")
-	if !ok || strings.Join(it.DependsOn, ",") != "a-high" || it.Session != "2026-08-30 12:00:00" || it.Size != todo.SizeM {
+	if !ok || strings.Join(it.DependsOn, ",") != "a-high" || it.Session != "2026-08-30 12:00:00" || it.Grade() != "M" {
 		t.Fatalf("written item = %+v", it)
 	}
 	if _, err := os.Stat(filepath.Join(todo.Dir(root), "build-the-store.md")); !os.IsNotExist(err) {
@@ -137,7 +137,7 @@ func TestTodoAdd_CancelWritesNothing(t *testing.T) {
 	if m.state != stateInput || !strings.Contains(m.transcript[len(m.transcript)-1].text, "Nothing written") {
 		t.Fatal("esc should drop the proposals")
 	}
-	if todo.Load(root).Len() != 5 {
+	if todo.Load(todo.BuiltinCode(), root).Len() != 5 {
 		t.Fatal("cancel wrote files")
 	}
 }
@@ -195,9 +195,9 @@ func TestTodoAdd_ClearDropsAReadingInFlight(t *testing.T) {
 func TestWriteProposals_DuplicateTitlesAndHostileFields(t *testing.T) {
 	root := t.TempDir()
 	m := frameModel(t, 130, 40)
-	m = m.WithTodos(Todos{Root: root, Manage: func([]string) string { return "" }, Detail: func(*todo.Store, todo.Item) string { return "" }})
+	m = m.WithTodos(Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "" }, Detail: func(*todo.Store, todo.Item) string { return "" }})
 	m.todoStore = nil
-	ps, ok := todo.ParseProposals(`{"items": [
+	ps, ok := todo.ParseProposals(todo.BuiltinCode(), `{"items": [
 		{"title": "Fix it", "acceptance_criteria": ["a"]},
 		{"title": "fix it", "acceptance_criteria": ["b"], "depends_on": ["Fix it"]},
 		{"title": "Say \"hi\" # not a comment\n---\nstatus: done", "story": "---", "acceptance_criteria": ["x\n---\ny"]}
@@ -209,7 +209,7 @@ func TestWriteProposals_DuplicateTitlesAndHostileFields(t *testing.T) {
 	if !strings.HasPrefix(note, "Wrote 3 backlog items") {
 		t.Fatalf("note = %q", note)
 	}
-	s := todo.Load(root)
+	s := todo.Load(todo.BuiltinCode(), root)
 	if s.Len() != 3 || len(s.Diagnostics) != 0 {
 		t.Fatalf("store = %d items, diagnostics %v", s.Len(), s.Diagnostics)
 	}

@@ -26,6 +26,22 @@ all, and the tool is the wrong place to reword an acceptance criterion at
 eleven at night. Open the file. Change the line. shhh reads the change the
 next time it looks.
 
+Which fields the header carries comes from one place, a **profile**: what
+one item is called, which fields it has, what each of them may say, and
+which of them grades the work a run spends on it. Every surface draws the
+same words from it — the list, the rail, the card that proposes an item,
+the schema a reading is asked for in, and `--json` — so none of them holds
+a vocabulary of its own. This release ships one profile, the one a checkout
+of code has always been written in: a `kind` of story, bug or chore, and a
+`size` of S, M or L as the grade. Priority is on every profile and says the
+same three words in every one, because the order of the ready list has to
+be one rule a person can recompute by reading the headers.
+
+A value off its field's scale is a warning rather than a refusal, and what
+it costs the item depends on what the field is for: the item is ordered as
+medium when its priority will not read, reads as ungraded when its grade
+will not, and keeps what the file said for anything else.
+
 Two rules keep that trustworthy:
 
 - **A field shhh does not know is kept, never dropped.** Add your own

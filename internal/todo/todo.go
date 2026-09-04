@@ -24,15 +24,6 @@ const (
 	RunSubdir  = ".run"
 )
 
-// Kind is what sort of work an item is.
-type Kind string
-
-const (
-	KindStory Kind = "story"
-	KindBug   Kind = "bug"
-	KindChore Kind = "chore"
-)
-
 // Priority orders ready items. The rank is the reason it is a type: "high"
 // sorts before "medium" by what it means, not by its spelling.
 type Priority string
@@ -41,16 +32,6 @@ const (
 	PriorityHigh   Priority = "high"
 	PriorityMedium Priority = "medium"
 	PriorityLow    Priority = "low"
-)
-
-// Size is the grade a runner reads to decide how much ceremony an item
-// gets. An empty size is "not graded yet", never a default.
-type Size string
-
-const (
-	SizeS Size = "S"
-	SizeM Size = "M"
-	SizeL Size = "L"
 )
 
 // Status is where an item is in its life. Done items live in the archive
@@ -65,8 +46,8 @@ const (
 )
 
 // Item is one backlog file as read. Fields the header did not set are
-// empty; Extra holds the header fields this package does not know, in file
-// order, so a write puts them back where they were.
+// empty; Extra holds the header fields neither this package nor the profile
+// knows, in file order, so a write puts them back where they were.
 type Item struct {
 	// Slug is the file's base name without .md and the item's identity:
 	// what a dependency names, what a command takes.
@@ -76,10 +57,14 @@ type Item struct {
 	// Archived reports the item was read from the done archive.
 	Archived bool
 
-	Title     string
-	Kind      Kind
+	Title string
+	// Fields are the profile's own header fields by name — what sort of
+	// work this is, how big it is — as strings, because what the words may
+	// be is the profile's to say and not this package's. Priority is not
+	// among them: it is the one field every profile carries and the one
+	// this package orders by, so it keeps a type and a rank.
+	Fields    map[string]string
 	Priority  Priority
-	Size      Size
 	Status    Status
 	DependsOn []string
 	Created   string
@@ -89,7 +74,12 @@ type Item struct {
 	// the reading. Empty is an item nobody has read that way, which is not
 	// the same as one whose reading has gone stale.
 	Groomed string
-	Extra   []Field
+	Extra   []Unknown
+
+	// Profile is the vocabulary the file was read under. It is carried so
+	// that a reader holding one item can still say what its grade means
+	// without being handed the profile a second time.
+	Profile Profile
 
 	// Body is everything after the header, exactly as written.
 	Body string
@@ -100,8 +90,10 @@ type Item struct {
 	Warnings []string
 }
 
-// Field is one header line this package does not interpret.
-type Field struct {
+// Unknown is one header line nothing interpreted: a key the package does
+// not own and the profile does not declare. It is carried so a write puts
+// it back exactly where it was.
+type Unknown struct {
 	Key, Value string
 }
 

@@ -1255,8 +1255,9 @@ func TestGolden_TodoNoRepository(t *testing.T) {
 		}
 		it := todo.Item{
 			Slug: "cache-ttl", Title: "Give the cache a lifetime",
-			Size: todo.SizeS, Priority: todo.PriorityHigh,
-			Path: ".shhh/todo/cache-ttl.md",
+			Profile: todo.BuiltinCode(), Fields: map[string]string{"size": "S"},
+			Priority: todo.PriorityHigh,
+			Path:     ".shhh/todo/cache-ttl.md",
 		}
 		st := run.Start(it, "amber-lake", "manual", 1, run.Options{NoCommit: true})
 		st.Paths = []string{"internal/provider/cache.go", "internal/provider/cache_test.go"}
@@ -1290,8 +1291,9 @@ func TestGolden_NewSessionRow(t *testing.T) {
 		}
 		it := todo.Item{
 			Slug: "cache-ttl", Title: "Give the cache a lifetime",
-			Size: todo.SizeS, Priority: todo.PriorityHigh,
-			Path: ".shhh/todo/cache-ttl.md",
+			Profile: todo.BuiltinCode(), Fields: map[string]string{"size": "S"},
+			Priority: todo.PriorityHigh,
+			Path:     ".shhh/todo/cache-ttl.md",
 		}
 		st := run.Start(it, "amber-lake", "manual", 1, run.Options{})
 		st.Stage = run.StageImplement
@@ -1353,9 +1355,9 @@ func TestGolden_ItemDraft(t *testing.T) {
 		root := todoTestRoot(t)
 		m := frameModel(t, width, 40)
 		m.sessionName = "2026-09-04 09:00:00"
-		m = m.WithTodos(Todos{Root: root, Manage: func([]string) string { return "" },
+		m = m.WithTodos(Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "" },
 			Detail: func(*todo.Store, todo.Item) string { return "" }})
-		proposals, ok := todo.ParseProposals(draftFixture)
+		proposals, ok := todo.ParseProposals(todo.BuiltinCode(), draftFixture)
 		if !ok {
 			t.Fatal("the fixture should parse as a proposal")
 		}
@@ -1404,7 +1406,7 @@ func TestGolden_TodoSprint(t *testing.T) {
 			}
 		}
 		m := frameModel(t, width, 40)
-		m = m.WithTodos(Todos{Root: root, Manage: func([]string) string { return "" },
+		m = m.WithTodos(Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "" },
 			Detail: func(*todo.Store, todo.Item) string { return "" }})
 		// The card is opened from a reading, because that is the only way a
 		// card comes up: the answer below is a planning turn's, read by the
@@ -1558,28 +1560,29 @@ func TestGolden_OnCloseGate(t *testing.T) {
 }
 
 // goldenRunItem is the item every run-row capture is a run of.
-func goldenRunItem(size todo.Size) todo.Item {
+func goldenRunItem(size string) todo.Item {
 	return todo.Item{
 		Slug: "cache-ttl", Title: "Give the cache a lifetime",
-		Priority: todo.PriorityHigh, Size: size,
-		Body: "## Tests\n- go test ./internal/cache\n",
+		Priority: todo.PriorityHigh, Profile: todo.BuiltinCode(),
+		Fields: map[string]string{"kind": "story", "size": size},
+		Body:   "## Tests\n- go test ./internal/cache\n",
 	}
 }
 
 // goldenRunPlan is a research answer at a size: the shape the runner parses,
 // with the numbered plan the row draws as the research stage's answer.
-func goldenRunPlan(size todo.Size, questions string) string {
+func goldenRunPlan(size, questions string) string {
 	if questions == "" {
 		questions = "none"
 	}
 	return "## Plan\n\n1. Read the cache's own tests\n   files: internal/cache/cache_test.go\n\n" +
 		"2. Give an entry a deadline\n   files: internal/cache/cache.go\n\n" +
-		"size: " + string(size) + "\nquestions: " + questions + "\n"
+		"size: " + size + "\nquestions: " + questions + "\n"
 }
 
 // goldenRun starts a run with the clock pinned, so the duration field is the
 // same string on every machine, and hands it back with its item.
-func goldenRun(size todo.Size) (todo.Item, *run.State) {
+func goldenRun(size string) (todo.Item, *run.State) {
 	it := goldenRunItem(size)
 	st := run.Start(it, "2026-09-04 10:00:00", "manual", 1, run.Options{Repo: true})
 	st.Started = time.Date(2026, 9, 4, 10, 0, 0, 0, time.UTC)
@@ -1591,7 +1594,7 @@ func goldenRun(size todo.Size) (todo.Item, *run.State) {
 // capture a row nothing can produce.
 func goldenRunRow(t *testing.T, width int, expanded bool, build func(it todo.Item, st *run.State, r *todoRunRow)) string {
 	t.Helper()
-	it, st := goldenRun(todo.SizeM)
+	it, st := goldenRun("M")
 	r := newTodoRunRow(st)
 	build(it, st, r)
 	// Pinned last: the machine stamps Updated on every save, and the row's
@@ -1629,17 +1632,17 @@ func TestGolden_TodoRunRow(t *testing.T) {
 				})},
 			{Label: "the same run building what research planned", View: goldenRunRow(t, width, false,
 				func(it todo.Item, st *run.State, r *todoRunRow) {
-					driveRun(r, st.First(it, ""), st.Observe(it, goldenRunPlan(todo.SizeS, "")))
+					driveRun(r, st.First(it, ""), st.Observe(it, goldenRunPlan("S", "")))
 				})},
 			{Label: "a medium run spending a remediation round on a failed verify", View: goldenRunRow(t, width, false,
 				func(it todo.Item, st *run.State, r *todoRunRow) {
-					driveRun(r, st.First(it, ""), st.Observe(it, goldenRunPlan(todo.SizeM, "")),
+					driveRun(r, st.First(it, ""), st.Observe(it, goldenRunPlan("M", "")),
 						st.Observe(it, "Gave an entry a deadline."),
 						st.VerifyResult(it, false, "--- FAIL: TestExpiry (0.01s)"))
 				})},
 			{Label: "reviewed, committed and done, opened to its answers", View: goldenRunRow(t, width, true,
 				func(it todo.Item, st *run.State, r *todoRunRow) {
-					driveRun(r, st.First(it, ""), st.Observe(it, goldenRunPlan(todo.SizeM, "")),
+					driveRun(r, st.First(it, ""), st.Observe(it, goldenRunPlan("M", "")),
 						st.Observe(it, "Gave an entry a deadline."),
 						st.VerifyResult(it, true, "ok  internal/cache  0.4s"),
 						st.ReviewResult(it, "verdict: clean"),
@@ -1648,7 +1651,7 @@ func TestGolden_TodoRunRow(t *testing.T) {
 				})},
 			{Label: "the same run after the round it spent · what it cost stays on the row", View: goldenRunRow(t, width, false,
 				func(it todo.Item, st *run.State, r *todoRunRow) {
-					driveRun(r, st.First(it, ""), st.Observe(it, goldenRunPlan(todo.SizeM, "")),
+					driveRun(r, st.First(it, ""), st.Observe(it, goldenRunPlan("M", "")),
 						st.Observe(it, "Gave an entry a deadline."),
 						st.VerifyResult(it, false, "--- FAIL: TestExpiry (0.01s)"),
 						st.Observe(it, "Fixed the expiry."),
@@ -1659,7 +1662,7 @@ func TestGolden_TodoRunRow(t *testing.T) {
 				})},
 			{Label: "a large run in three lanes, one landed", View: goldenRunRow(t, width, false,
 				func(it todo.Item, st *run.State, r *todoRunRow) {
-					driveRun(r, st.First(it, ""), st.Observe(it, goldenRunPlan(todo.SizeL, "")))
+					driveRun(r, st.First(it, ""), st.Observe(it, goldenRunPlan("L", "")))
 					// The pause a large item always takes, then the split's
 					// own answer, which is what names the lanes.
 					driveRun(r, st.Resume(it), st.Observe(it, goldenLanes))
@@ -1668,7 +1671,7 @@ func TestGolden_TodoRunRow(t *testing.T) {
 			{Label: "paused on a question research could not settle", View: goldenRunRow(t, width, false,
 				func(it todo.Item, st *run.State, r *todoRunRow) {
 					driveRun(r, st.First(it, ""),
-						st.Observe(it, goldenRunPlan(todo.SizeM, "\n- should a stale read serve or block?")))
+						st.Observe(it, goldenRunPlan("M", "\n- should a stale read serve or block?")))
 				})},
 			{Label: "blocked, with the follow-up it wrote and the key that reopens it", View: goldenRunRow(t, width, false,
 				func(it todo.Item, st *run.State, r *todoRunRow) {
@@ -1677,7 +1680,7 @@ func TestGolden_TodoRunRow(t *testing.T) {
 				})},
 			{Label: "picked up from a checkpoint · the stages it skipped are restored, not passed",
 				View: goldenRunRow(t, width, false, func(it todo.Item, st *run.State, r *todoRunRow) {
-					st.Stage, st.Plan = run.StageVerify, goldenRunPlan(todo.SizeM, "")
+					st.Stage, st.Plan = run.StageVerify, goldenRunPlan("M", "")
 					st.Steps = []string{"Read the cache's own tests", "Give an entry a deadline"}
 					// The row is opened on the checkpoint, which is what the
 					// session does before it continues a run.
@@ -1721,7 +1724,7 @@ func TestGolden_TodoGroom(t *testing.T) {
 		if err := os.WriteFile(path, []byte(item), 0o644); err != nil {
 			t.Fatal(err)
 		}
-		it, err := todo.LoadFile(path)
+		it, err := todo.LoadFile(todo.BuiltinCode(), path)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1752,7 +1755,7 @@ func TestGolden_TodoGroom(t *testing.T) {
 		}
 		r.Head, r.Read = "1a2b3c4d5e6f", time.Date(2026, 9, 4, 0, 0, 0, 0, time.UTC)
 		m := frameModel(t, width, 40)
-		m = m.WithTodos(Todos{Root: root, Manage: func([]string) string { return "" },
+		m = m.WithTodos(Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "" },
 			Detail: func(*todo.Store, todo.Item) string { return "" }})
 		m.todoGroomer.item = it
 		card, _ := m.openTodoGroomCard(r)

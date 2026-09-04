@@ -188,7 +188,7 @@ backlog · the cockpit sprint                              6 items · [?] hide t
 [ctrl+u] clear the filter; clear it again to close it
 [s] cycle the status filter
 [p] cycle the priority filter
-[k] cycle the kind filter
+[k] cycle the next field filter
 [r] only what can be started now
 [w] jump to what this one waits on
 [e] open the file in your editor
@@ -381,7 +381,7 @@ backlog · the cockpit sprint                              6 items · [?] hide t
 ␛[94m[ctrl+u]␛[m␛[38;5;241m clear the filter; clear it again to close it␛[m
 ␛[94m[s]␛[m␛[38;5;241m cycle the status filter␛[m
 ␛[94m[p]␛[m␛[38;5;241m cycle the priority filter␛[m
-␛[94m[k]␛[m␛[38;5;241m cycle the kind filter␛[m
+␛[94m[k]␛[m␛[38;5;241m cycle the next field filter␛[m
 ␛[94m[r]␛[m␛[38;5;241m only what can be started now␛[m
 ␛[94m[w]␛[m␛[38;5;241m jump to what this one waits on␛[m
 ␛[94m[e]␛[m␛[38;5;241m open the file in your editor␛[m

@@ -7,21 +7,21 @@ import (
 	"github.com/rfizzle/shhh/internal/todo"
 )
 
-func item(size todo.Size) todo.Item {
-	return todo.Item{Slug: "x", Title: "Do x", Size: size, Priority: todo.PriorityMedium, Path: "/r/.shhh/todo/x.md", Body: "## Acceptance criteria\n- [ ] works"}
+func item(size string) todo.Item {
+	return todo.Item{Slug: "x", Title: "Do x", Fields: map[string]string{"size": size}, Profile: todo.BuiltinCode(), Priority: todo.PriorityMedium, Path: "/r/.shhh/todo/x.md", Body: "## Acceptance criteria\n- [ ] works"}
 }
 
 const planText = "## Plan: do x\n\n1. Read the thing\n   files: a.go\n   action: read\n2. Change it\n   files: a.go\n   action: edit\n\nsize: S\nquestions: none\n"
 
 func TestRun_HappyPathSmall(t *testing.T) {
-	it := item(todo.SizeM)
+	it := item("M")
 	s := Start(it, "sess", "manual", 3, Options{Repo: true})
 	first := s.First(it, "")
 	if first.Action != ActionPrompt || first.Mode != ModePlan || !strings.Contains(first.Prompt, "RESEARCH") || !strings.Contains(first.Prompt, "BACKLOG ITEM x") {
 		t.Fatalf("first = %+v", first)
 	}
 	step := s.Observe(it, planText)
-	if step.Action != ActionPrompt || step.Stage != StageImplement || step.Mode != ModeAuto || s.Size != todo.SizeS || len(s.Steps) != 2 {
+	if step.Action != ActionPrompt || step.Stage != StageImplement || step.Mode != ModeAuto || s.Grade != "S" || len(s.Steps) != 2 {
 		t.Fatalf("after research = %+v, state %+v", step, s)
 	}
 	if !strings.Contains(step.Prompt, "APPROVED PLAN") || !strings.Contains(step.Prompt, "tick its checkbox") {
@@ -51,13 +51,13 @@ func TestRun_HappyPathSmall(t *testing.T) {
 
 func TestRun_RemediationRoundsBySize(t *testing.T) {
 	for _, c := range []struct {
-		size   todo.Size
+		size   string
 		rounds int
-	}{{todo.SizeS, 1}, {todo.SizeM, 2}, {todo.SizeL, 2}, {"", 2}} {
+	}{{"S", 1}, {"M", 2}, {"L", 2}, {"", 2}} {
 		it := item(c.size)
 		s := Start(it, "", "", 0, Options{Repo: true})
 		s.First(it, "")
-		s.Observe(it, strings.Replace(planText, "size: S", "size: "+string(c.size), 1))
+		s.Observe(it, strings.Replace(planText, "size: S", "size: "+c.size, 1))
 		s.Observe(it, "done")
 		var step Step
 		for i := 0; i <= c.rounds; i++ {
@@ -78,7 +78,7 @@ func TestRun_RemediationRoundsBySize(t *testing.T) {
 }
 
 func TestRun_ReviewFindingsThenClean(t *testing.T) {
-	it := item(todo.SizeM)
+	it := item("M")
 	s := Start(it, "", "", 0, Options{Repo: true})
 	s.First(it, "")
 	s.Observe(it, strings.Replace(planText, "size: S", "size: M", 1))
@@ -103,18 +103,18 @@ func TestRun_ResearchGates(t *testing.T) {
 		"empty":         "   ",
 	}
 	for name, text := range cases {
-		it := item(todo.SizeS)
+		it := item("S")
 		s := Start(it, "", "", 0, Options{Repo: true})
 		s.First(it, "")
 		if step := s.Observe(it, text); step.Action != ActionBlocked || s.Blocked == "" {
 			t.Errorf("%s: %+v", name, step)
 		}
 	}
-	it := item(todo.SizeS)
+	it := item("S")
 	s := Start(it, "", "", 0, Options{Repo: true})
 	s.First(it, "")
 	s.Observe(it, "## Plan: x\n\n1. a\n\nsize: L\nquestions: none\n")
-	if s.Size != todo.SizeL || s.SizeBefore != todo.SizeS || !strings.Contains(s.Summary(), "size L (was S)") {
+	if s.Grade != "L" || s.GradeBefore != "S" || !strings.Contains(s.Summary(), "size L (was S)") {
 		t.Errorf("regrade not recorded: %s", s.Summary())
 	}
 }
@@ -138,7 +138,7 @@ func TestParsers(t *testing.T) {
 }
 
 func TestTestCommands_SnapshotAtStart(t *testing.T) {
-	it := item(todo.SizeS)
+	it := item("S")
 	it.Body = "## Tests\n- `go test ./a`\n- go vet ./...\n-\n\n## Notes\n- not a test"
 	s := Start(it, "", "", 0, Options{Repo: true})
 	if got := strings.Join(s.Tests, "|"); got != "go test ./a|go vet ./..." {
@@ -148,7 +148,7 @@ func TestTestCommands_SnapshotAtStart(t *testing.T) {
 
 func TestCheckpoint_RoundTrips(t *testing.T) {
 	root := t.TempDir()
-	s := Start(item(todo.SizeS), "sess", "manual", 2, Options{Repo: true})
+	s := Start(item("S"), "sess", "manual", 2, Options{Repo: true})
 	s.Stage = StageVerify
 	s.Round = 1
 	if err := s.Save(root); err != nil {
@@ -170,18 +170,18 @@ func TestRun_PauseGatesBySize(t *testing.T) {
 	}
 	cases := []struct {
 		name          string
-		before        todo.Size
+		before        string
 		text          string
 		action        Action
 		pausedContain string
 	}{
-		{"S clean", todo.SizeS, plan("S", "none"), ActionPrompt, ""},
-		{"S question blocks", todo.SizeS, plan("S", "which flag?"), ActionBlocked, ""},
-		{"M clean", todo.SizeM, plan("M", "none"), ActionPrompt, ""},
-		{"M question pauses", todo.SizeM, plan("M", "which flag?"), ActionPause, "questions"},
-		{"M upgraded from S pauses", todo.SizeS, plan("M", "none"), ActionPause, "up from S"},
-		{"M downgraded to S continues", todo.SizeM, plan("S", "none"), ActionPrompt, ""},
-		{"L always pauses", todo.SizeL, plan("L", "none"), ActionPause, "large"},
+		{"S clean", "S", plan("S", "none"), ActionPrompt, ""},
+		{"S question blocks", "S", plan("S", "which flag?"), ActionBlocked, ""},
+		{"M clean", "M", plan("M", "none"), ActionPrompt, ""},
+		{"M question pauses", "M", plan("M", "which flag?"), ActionPause, "questions"},
+		{"M upgraded from S pauses", "S", plan("M", "none"), ActionPause, "up from S"},
+		{"M downgraded to S continues", "M", plan("S", "none"), ActionPrompt, ""},
+		{"L always pauses", "L", plan("L", "none"), ActionPause, "large"},
 		{"ungraded to M continues", "", plan("M", "none"), ActionPrompt, ""},
 	}
 	for _, c := range cases {
@@ -199,7 +199,7 @@ func TestRun_PauseGatesBySize(t *testing.T) {
 }
 
 func TestRun_ResumeAndReplan(t *testing.T) {
-	it := item(todo.SizeL)
+	it := item("L")
 	s := Start(it, "", "", 0, Options{Repo: true})
 	s.First(it, "")
 	large := strings.Replace(planText, "size: S", "size: L", 1)
@@ -223,7 +223,7 @@ func TestRun_ResumeAndReplan(t *testing.T) {
 }
 
 func TestRun_ReviewBySize(t *testing.T) {
-	it := item(todo.SizeM)
+	it := item("M")
 	s := Start(it, "", "", 0, Options{Repo: true})
 	s.First(it, "")
 	s.Observe(it, strings.Replace(planText, "size: S", "size: M", 1))
@@ -251,7 +251,7 @@ func TestRun_ReviewBySize(t *testing.T) {
 	if s.Reviewer != "todo-review-x-2" {
 		t.Fatalf("the second review is a new child: %q", s.Reviewer)
 	}
-	small := item(todo.SizeS)
+	small := item("S")
 	ss := Start(small, "", "", 0, Options{Repo: true})
 	ss.First(small, "")
 	ss.Observe(small, planText)
@@ -262,10 +262,10 @@ func TestRun_ReviewBySize(t *testing.T) {
 }
 
 func TestContinue_ReentersEachStage(t *testing.T) {
-	it := item(todo.SizeM)
+	it := item("M")
 	for stage, want := range map[Stage]Action{StageResearch: ActionPrompt, StageImplement: ActionPrompt, StageRemediate: ActionPrompt, StageVerify: ActionVerify, StageReview: ActionReview, StageCommit: ActionPrompt, StageDone: ActionBlocked, StageBlocked: ActionBlocked} {
 		s := Start(it, "", "", 0, Options{Repo: true})
-		s.Stage, s.Plan, s.Size, s.Message = stage, "## Plan: x\n\n1. a", todo.SizeM, "stale"
+		s.Stage, s.Plan, s.Grade, s.Message = stage, "## Plan: x\n\n1. a", "M", "stale"
 		step := s.Continue(it)
 		if step.Action != want {
 			t.Errorf("%s: action %v, want %v", stage, step.Action, want)
@@ -277,7 +277,7 @@ func TestContinue_ReentersEachStage(t *testing.T) {
 }
 
 func TestContinue_AtAPauseReshowsTheCard(t *testing.T) {
-	it := item(todo.SizeL)
+	it := item("L")
 	s := Start(it, "", "", 0, Options{Repo: true})
 	s.Stage, s.Paused, s.Plan = StageResearch, "a large item pauses", "## Plan: x\n\n1. a"
 	if step := s.Continue(it); step.Action != ActionPause || s.Paused == "" {
@@ -286,9 +286,9 @@ func TestContinue_AtAPauseReshowsTheCard(t *testing.T) {
 }
 
 func TestReview_NamesAreNeverReused(t *testing.T) {
-	it := item(todo.SizeM)
+	it := item("M")
 	s := Start(it, "", "", 0, Options{Repo: true})
-	s.Size = todo.SizeM
+	s.Grade = "M"
 	first := s.review(it).Shown
 	s.Reviewer = ""
 	second := s.review(it).Shown
@@ -301,7 +301,7 @@ func TestReview_NamesAreNeverReused(t *testing.T) {
 // report that names the paths the work is in and says it was not committed,
 // rather than going on to a commit turn with nothing to commit into.
 func TestRun_WithoutACommitEndsAfterTheReview(t *testing.T) {
-	it := item(todo.SizeM)
+	it := item("M")
 	s := Start(it, "sess", "manual", 1, Options{NoCommit: true})
 	s.First(it, "")
 	s.Observe(it, planText)
@@ -332,7 +332,7 @@ func TestRun_WithoutACommitEndsAfterTheReview(t *testing.T) {
 // The default is unchanged: nothing asked for means a commit turn follows a
 // clean review, as it always did.
 func TestRun_ACommitIsStillTheDefaultEnd(t *testing.T) {
-	it := item(todo.SizeM)
+	it := item("M")
 	s := Start(it, "", "", 0, Options{Repo: true})
 	s.First(it, "")
 	s.Observe(it, planText)
@@ -346,7 +346,7 @@ func TestRun_ACommitIsStillTheDefaultEnd(t *testing.T) {
 // Every stage prompt that names a git command reads one fact, so outside a
 // repository none of them tells the model to run something that will fail.
 func TestPrompts_GitStepsAreConditionalOnARepository(t *testing.T) {
-	it := item(todo.SizeM)
+	it := item("M")
 	for _, c := range []struct {
 		name  string
 		build func(repo bool) string
@@ -373,7 +373,7 @@ func TestPrompts_GitStepsAreConditionalOnARepository(t *testing.T) {
 // reviewer that believes there is history behind it reports a file as
 // unchanged when what it found was no repository to ask.
 func TestReviewTask_WithoutARepositorySaysTheDiffIsAllThereIs(t *testing.T) {
-	it := item(todo.SizeM)
+	it := item("M")
 	const patch = "diff --git a/a.go b/a.go\n+++ b/a.go\n+x\n"
 
 	s := Start(it, "", "", 0, Options{NoCommit: true})
@@ -396,7 +396,7 @@ func TestReviewTask_WithoutARepositorySaysTheDiffIsAllThereIs(t *testing.T) {
 // Re-sending the prompt there would make exactly the commit the person had
 // just said not to make.
 func TestRun_ContinueAtCommitHonoursANoCommitRun(t *testing.T) {
-	it := item(todo.SizeM)
+	it := item("M")
 	s := Start(it, "sess", "manual", 1, Options{Repo: true})
 	s.Stage = StageCommit
 	s.Paths = []string{"a.go"}
@@ -421,7 +421,7 @@ func TestRun_ContinueAtCommitHonoursANoCommitRun(t *testing.T) {
 // re-planned research too, and nothing at all without a sprint.
 func TestRun_ResearchCarriesTheSprintGoal(t *testing.T) {
 	const goal = "Make the provider cache trustworthy end to end."
-	it := item(todo.SizeM)
+	it := item("M")
 	s := Start(it, "sess", "manual", 1, Options{Repo: true, Sprint: goal})
 	for _, step := range []Step{s.First(it, ""), s.Continue(it), s.Replan(it, "answer")} {
 		if !strings.Contains(step.Prompt, "SPRINT") || !strings.Contains(step.Prompt, goal) {
@@ -442,7 +442,7 @@ func TestRun_ResearchCarriesTheSprintGoal(t *testing.T) {
 }
 
 func TestClosesWithGate_IsTheImplementStageAndNoOther(t *testing.T) {
-	it := item(todo.SizeM)
+	it := item("M")
 	s := Start(it, "", "", 0, Options{Repo: true, CloseGate: true})
 	if s.ClosesWithGate() {
 		t.Error("research closes with the gate")
@@ -465,7 +465,7 @@ func TestClosesWithGate_IsTheImplementStageAndNoOther(t *testing.T) {
 }
 
 func TestClosesWithGate_IsOffWhereTheWorkspaceNamesNoSuite(t *testing.T) {
-	it := item(todo.SizeM)
+	it := item("M")
 	s := Start(it, "", "", 0, Options{Repo: true})
 	s.First(it, "")
 	s.Observe(it, planText)
@@ -475,7 +475,7 @@ func TestClosesWithGate_IsOffWhereTheWorkspaceNamesNoSuite(t *testing.T) {
 }
 
 func TestChecks_CarriesOnlyAPassAndIsSpentByTheVerify(t *testing.T) {
-	it := item(todo.SizeM)
+	it := item("M")
 	s := Start(it, "", "", 0, Options{Repo: true, CloseGate: true})
 	s.Checks(false)
 	if s.Checked {
@@ -492,7 +492,7 @@ func TestChecks_CarriesOnlyAPassAndIsSpentByTheVerify(t *testing.T) {
 }
 
 func TestContinue_DropsAVerdictReachedInAnotherSitting(t *testing.T) {
-	it := item(todo.SizeM)
+	it := item("M")
 	s := Start(it, "", "", 0, Options{Repo: true, CloseGate: true})
 	s.Stage, s.Checked, s.Plan = StageVerify, true, planText
 	if step := s.Continue(it); step.Action != ActionVerify {
@@ -563,7 +563,7 @@ func TestStripStagesArePlacedAndNameable(t *testing.T) {
 // A review's verdict is on the checkpoint, because it is the review's whole
 // answer and a run picked up in another session has no other way to know it.
 func TestReviewVerdictIsRecorded(t *testing.T) {
-	it := todo.Item{Slug: "x", Size: todo.SizeS}
+	it := todo.Item{Slug: "x", Fields: map[string]string{"size": "S"}, Profile: todo.BuiltinCode()}
 	s := Start(it, "sess", "manual", 1, Options{})
 	s.Plan = "## Plan\n\n1. a\n"
 	s.review(it)
@@ -592,7 +592,7 @@ func TestHeldBy(t *testing.T) {
 		t.Error("an item with no checkpoint reads as held")
 	}
 
-	s := Start(item(todo.SizeS), "sess-a", "", 0, Options{})
+	s := Start(item("S"), "sess-a", "", 0, Options{})
 	s.Stage = StageImplement
 	if err := s.Save(root); err != nil {
 		t.Fatal(err)
@@ -629,7 +629,7 @@ func TestHeldBy(t *testing.T) {
 // The grooming prompt names the item, offers the closed verdict set and no
 // other word, and asks for the shape the reader parses.
 func TestRun_TheGroomingPromptOffersTheClosedSet(t *testing.T) {
-	p := GroomPrompt(item(todo.SizeM))
+	p := GroomPrompt(item("M"))
 	if !strings.Contains(p, "GROOMING") || !strings.Contains(p, "BACKLOG ITEM x") {
 		t.Fatalf("prompt = %q", p)
 	}
@@ -649,7 +649,7 @@ func TestRun_TheGroomingPromptOffersTheClosedSet(t *testing.T) {
 // else: repeating it at every stage would spend tokens restating what only
 // the plan is built from.
 func TestRun_ResearchCarriesTheAcceptedGrooming(t *testing.T) {
-	it := item(todo.SizeM)
+	it := item("M")
 	const block = "GROOMING — this item was read against the tree on 2026-09-04"
 	s := Start(it, "sess", "manual", 1, Options{Repo: true, Groomed: block})
 	if first := s.First(it, ""); !strings.Contains(first.Prompt, block) {
@@ -670,7 +670,7 @@ func TestRun_ResearchCarriesTheAcceptedGrooming(t *testing.T) {
 
 // A run with no accepted reading says nothing about one.
 func TestRun_ResearchSaysNothingWithoutAGrooming(t *testing.T) {
-	it := item(todo.SizeM)
+	it := item("M")
 	s := Start(it, "sess", "manual", 1, Options{Repo: true})
 	if first := s.First(it, ""); strings.Contains(first.Prompt, "GROOMING") {
 		t.Fatalf("research prompt = %q", first.Prompt)
@@ -680,7 +680,7 @@ func TestRun_ResearchSaysNothingWithoutAGrooming(t *testing.T) {
 // Every stage takes its wording from the set the run was started with, and a
 // stage nothing replaced keeps the built-in words.
 func TestWordings_EachStageTakesItsOwnAndOnlyItsOwn(t *testing.T) {
-	it := item(todo.SizeM)
+	it := item("M")
 	w := Wordings{
 		Research:   "MY RESEARCH",
 		Implement:  "MY IMPLEMENT",
@@ -719,7 +719,7 @@ func TestWordings_EachStageTakesItsOwnAndOnlyItsOwn(t *testing.T) {
 // The standards sentence is one wording shared by the stages that change the
 // tree, and the stages that only read do not carry it either way.
 func TestWordings_StandardsIsSharedByTheStagesThatChangeTheTree(t *testing.T) {
-	it := item(todo.SizeM)
+	it := item("M")
 	w := Wordings{Standards: "MY STANDARDS"}
 	for _, got := range []string{
 		researchPrompt(it, "", "", "", w),
@@ -743,7 +743,7 @@ func TestWordings_StandardsIsSharedByTheStagesThatChangeTheTree(t *testing.T) {
 // A wording that says nothing about the answer still produces a prompt that
 // asks for it, and the answer that shape asks for is one Observe reads.
 func TestWordings_TheAnswerShapeIsAppendedWhateverTheWordingSays(t *testing.T) {
-	it := item(todo.SizeM)
+	it := item("M")
 	w := Wordings{
 		Research:  "Read the code. Say nothing else.",
 		Implement: "Write the code.",
@@ -759,7 +759,7 @@ func TestWordings_TheAnswerShapeIsAppendedWhateverTheWordingSays(t *testing.T) {
 		}
 	}
 	step := s.Observe(it, planText)
-	if step.Stage != StageImplement || s.Size != todo.SizeS {
+	if step.Stage != StageImplement || s.Grade != "S" {
 		t.Fatalf("the answer to a replaced wording was not read: %+v", step)
 	}
 	if !strings.Contains(step.Prompt, "Do not commit; the runner commits") {
@@ -778,7 +778,7 @@ func TestWordings_TheAnswerShapeIsAppendedWhateverTheWordingSays(t *testing.T) {
 // A wording that names a block places it; one that does not takes it after
 // the instruction, in the order the built-in has them.
 func TestWordings_PlaceholdersArePlacedWhereNamedAndAppendedWhereNot(t *testing.T) {
-	it := item(todo.SizeM)
+	it := item("M")
 	named := implementPrompt(it, planText, "ANSWERS HERE", Wordings{
 		Implement: "before\n\n" + PlaceholderPlan + "\n\nbetween\n\n" + PlaceholderItem + "\n\nafter",
 	})
@@ -826,7 +826,7 @@ func TestWordings_DigestMovesWithAnEdit(t *testing.T) {
 // A run picked up after the files moved says so on the row, because a run
 // whose stages were asked different things is not one run's worth of work.
 func TestWordings_AContinuedRunSaysTheWordsMoved(t *testing.T) {
-	it := item(todo.SizeM)
+	it := item("M")
 	s := Start(it, "sess", "manual", 1, Options{Repo: true, Wordings: Wordings{Research: "as written"}})
 	if step := s.Continue(it); strings.Contains(step.Shown, "wordings changed") {
 		t.Fatalf("an unedited set must say nothing: %q", step.Shown)
@@ -848,7 +848,7 @@ func TestWordings_AContinuedRunSaysTheWordsMoved(t *testing.T) {
 // it is the file's, and a builder that broke the sentence into paragraphs
 // around the block would be editing the wording rather than filling it in.
 func TestWordings_AnInlinePlaceholderKeepsItsSentence(t *testing.T) {
-	it := item(todo.SizeM)
+	it := item("M")
 	got := remediatePrompt(it, "off by one", Wordings{
 		Remediate: "Please fix " + PlaceholderFindings + " carefully.",
 	})
@@ -871,7 +871,7 @@ func TestWordings_AnInlinePlaceholderKeepsItsSentence(t *testing.T) {
 // instruction instead, which is the only order a builder can choose for
 // prose it did not write.
 func TestWordings_TheBuiltInStagesShowTheBlocksBeforeTheInstructions(t *testing.T) {
-	it := item(todo.SizeM)
+	it := item("M")
 	for _, tc := range []struct {
 		name         string
 		built        string
@@ -888,5 +888,71 @@ func TestWordings_TheBuiltInStagesShowTheBlocksBeforeTheInstructions(t *testing.
 		if block < 0 || after < 0 || block > after {
 			t.Errorf("%s puts %q at %d and %q at %d:\n%s", tc.name, tc.block, block, tc.after, after, tc.built)
 		}
+	}
+}
+
+// researchProfile is a vocabulary with two grades rather than three, which
+// is the shape the runner has to work without knowing either word: the
+// first grade reviews itself and spends one round, the last is divided into
+// lanes and gated before anything is built.
+func researchProfile() todo.Profile {
+	return todo.Profile{
+		Noun: "question",
+		Fields: []todo.Field{
+			todo.PriorityField(),
+			{Name: "depth", Values: []todo.Value{{Name: "quick"}, {Name: "deep"}}},
+		},
+		Grade: "depth",
+	}
+}
+
+func graded(p todo.Profile, grade string) todo.Item {
+	return todo.Item{Slug: "x", Title: "Do x", Profile: p, Priority: todo.PriorityMedium,
+		Fields: map[string]string{p.Grade: grade}, Path: "/r/.shhh/todo/x.md",
+		Body: "## Acceptance criteria\n- [ ] works"}
+}
+
+// The gates read the grade's rank, not its word: on a two-grade scale the
+// first grade is the one the three-grade scale calls S and the last is the
+// one it calls L, with nothing in between.
+func TestRun_GatesReadTheRankAndNotTheWord(t *testing.T) {
+	p := researchProfile()
+	quick := graded(p, "quick")
+	s := Start(quick, "", "", 0, Options{Repo: true})
+	if s.Rounds() != 1 {
+		t.Errorf("the smallest grade should spend one round, got %d", s.Rounds())
+	}
+	s.First(quick, "")
+	if step := s.Observe(quick, "## Plan: x\n\n1. a\n\ndepth: quick\nquestions: none\n"); step.Stage != StageImplement {
+		t.Fatalf("a quick item should go straight to implement: %+v", step)
+	}
+	s.Observe(quick, "done")
+	if step := s.VerifyResult(quick, true, ""); step.Action != ActionPrompt || s.Reviewer != "" {
+		t.Errorf("the smallest grade reviews itself: %+v", step)
+	}
+
+	deep := graded(p, "deep")
+	d := Start(deep, "", "", 0, Options{Repo: true})
+	if d.Rounds() != 2 {
+		t.Errorf("a grade above the smallest should spend two rounds, got %d", d.Rounds())
+	}
+	d.First(deep, "")
+	if step := d.Observe(deep, "## Plan: x\n\n1. a\n\ndepth: deep\nquestions: none\n"); step.Action != ActionPause {
+		t.Fatalf("the largest grade pauses before anything is built: %+v", step)
+	}
+	if step := d.Resume(deep); step.Stage != StageSplit {
+		t.Fatalf("the largest grade is divided into lanes: %+v", step)
+	}
+}
+
+// The grade line the research stage answers with is the profile's own field
+// and its own words: a line naming something else is not a grade.
+func TestRun_GradeLineIsTheProfilesField(t *testing.T) {
+	p := researchProfile()
+	if got, ok := gradeLine(p, "size: L\ndepth: DEEP\n"); !ok || got != "deep" {
+		t.Errorf("grade = %q %v", got, ok)
+	}
+	if _, ok := gradeLine(p, "depth: shallow\n"); ok {
+		t.Error("a word off the scale is not a grade")
 	}
 }

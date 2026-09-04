@@ -36,7 +36,7 @@ Today the reader serves a stale entry rather than refusing.
 func groomedItem(t *testing.T, dir string) Item {
 	t.Helper()
 	path := write(t, dir, "cache-ttl.md", groomable)
-	it, err := LoadFile(path)
+	it, err := LoadFile(BuiltinCode(), path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -107,11 +107,11 @@ evidence: the config reader and its two callers are all in scope now
 			t.Errorf("missing %q:\n%s", want, out)
 		}
 	}
-	again, err := LoadFile(it.Path)
+	again, err := LoadFile(BuiltinCode(), it.Path)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if again.Size != SizeL || again.Groomed != "2026-09-04 @ abc1234" {
+	if again.Grade() != "L" || again.Groomed != "2026-09-04 @ abc1234" {
 		t.Errorf("reread = %+v", again)
 	}
 }
@@ -154,7 +154,7 @@ evidence: cache-store is in the archive as of 4d1e00b
 	if _, _, err := Accept(it.Path, r.Changes(), ""); err != nil {
 		t.Fatal(err)
 	}
-	again, err := LoadFile(it.Path)
+	again, err := LoadFile(BuiltinCode(), it.Path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -447,7 +447,7 @@ func TestGroom_TwoCorrectionsOfOneLineTakeTheFirstAndNameTheRest(t *testing.T) {
 	dir := t.TempDir()
 	path := write(t, dir, "cache-ttl.md",
 		"---\ntitle: Give the cache a lifetime\ndepends_on: [a, b, c]\n---\n\n## Notes\nhi\n")
-	it, err := LoadFile(path)
+	it, err := LoadFile(BuiltinCode(), path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -475,7 +475,7 @@ evidence: b is in the archive
 	if len(skipped) != 1 || skipped[0].Why != WhyLineTaken {
 		t.Fatalf("skipped = %+v", skipped)
 	}
-	again, err := LoadFile(path)
+	again, err := LoadFile(BuiltinCode(), path)
 	if err != nil {
 		t.Fatal(err)
 	}

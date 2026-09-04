@@ -713,9 +713,9 @@ func (m Model) todoPauseLines() []string {
 	st := m.todoRunner.state
 	width := m.contentWidth()
 	var lines []string
-	head := fmt.Sprintf("%s · size %s", st.Slug, orDash(string(st.Size)))
-	if st.SizeBefore != st.Size {
-		head += fmt.Sprintf(" (was %s)", orDash(string(st.SizeBefore)))
+	head := fmt.Sprintf("%s · %s %s", st.Slug, st.Profile.Grade, orDash(st.Grade))
+	if st.GradeBefore != st.Grade {
+		head += fmt.Sprintf(" (was %s)", orDash(st.GradeBefore))
 	}
 	if len(st.Steps) > 0 {
 		head += fmt.Sprintf(" · %s", plural(len(st.Steps), "step"))
@@ -949,11 +949,20 @@ func todoFollowUp(it todo.Item, st *run.State) todo.Proposal {
 	if len(criteria) == 0 {
 		criteria = []string{"What " + it.Slug + " left undone is done"}
 	}
+	// The follow-up carries the blocked item's own header words, with the
+	// grade the run was working at rather than the one the file still says:
+	// research may have raised it, and what is left to do is the size of
+	// the work as the run found it.
+	fields := map[string]string{todo.PriorityField().Name: string(it.Priority)}
+	for name, value := range it.Fields {
+		fields[name] = value
+	}
+	if st.Profile.Grade != "" {
+		fields[st.Profile.Grade] = st.Grade
+	}
 	return todo.Proposal{
 		Title:     "Follow up " + it.Slug + ": " + it.Title,
-		Kind:      string(it.Kind),
-		Priority:  string(it.Priority),
-		Size:      string(st.Size),
+		Fields:    fields,
 		Story:     "Continue " + it.Slug + ", which blocked at " + string(st.Stage) + ".",
 		Criteria:  criteria,
 		Notes:     []string{"Blocked because: " + strings.ReplaceAll(st.Blocked, "\n", " ")},
@@ -1387,10 +1396,10 @@ func (r *todoRunRow) elapsed() time.Duration {
 // title is the row's growing field.
 func (r *todoRunRow) title() string {
 	t := "todo run " + r.st.Slug
-	if r.st.Size != "" {
-		t += " · size " + string(r.st.Size)
-		if r.st.SizeBefore != r.st.Size {
-			t += " (was " + orDash(string(r.st.SizeBefore)) + ")"
+	if r.st.Grade != "" {
+		t += " · " + r.st.Profile.Grade + " " + r.st.Grade
+		if r.st.GradeBefore != r.st.Grade {
+			t += " (was " + orDash(r.st.GradeBefore) + ")"
 		}
 	}
 	return t
@@ -1530,7 +1539,7 @@ type runRowLine struct {
 // stage is ticked — and `round 1/2` read beside a finished run would say a
 // round is in flight when none is.
 func (r *todoRunRow) rounds() string {
-	n, of := r.st.Round, run.Rounds(r.st.Size)
+	n, of := r.st.Round, r.st.Rounds()
 	if r.st.Stage == run.StageRemediate {
 		return fmt.Sprintf("round %d/%d", n, of)
 	}

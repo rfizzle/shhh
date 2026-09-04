@@ -36,14 +36,14 @@ func write(t *testing.T, dir, name, content string) string {
 }
 
 func TestParse_ReadsKnownFieldsAndKeepsTheRest(t *testing.T) {
-	it, err := Parse("/x/rail-todo-block.md", sample)
+	it, err := Parse(BuiltinCode(), "/x/rail-todo-block.md", sample)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if it.Slug != "rail-todo-block" || it.Title != "Show open items in the rail" {
 		t.Errorf("slug/title = %q/%q", it.Slug, it.Title)
 	}
-	if it.Priority != PriorityHigh || it.Size != SizeM || it.Status != StatusOpen || it.Kind != KindStory {
+	if it.Priority != PriorityHigh || it.Grade() != "M" || it.Status != StatusOpen || it.Fields["kind"] != "story" {
 		t.Errorf("fields = %+v", it)
 	}
 	if strings.Join(it.DependsOn, ",") != "item-store,rail-block" {
@@ -76,7 +76,7 @@ func TestParse_LenientWhereUsableStrictWhereNot(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			it, err := Parse("/x/a-thing.md", c.content)
+			it, err := Parse(BuiltinCode(), "/x/a-thing.md", c.content)
 			if c.wantErr != "" {
 				if err == nil || !strings.Contains(err.Error(), c.wantErr) {
 					t.Fatalf("err = %v, want %q", err, c.wantErr)
@@ -125,13 +125,14 @@ func TestSlugs(t *testing.T) {
 }
 
 func TestRender_RoundTrips(t *testing.T) {
-	it := Item{Slug: "x", Title: "A: title with colon", Kind: KindBug, Priority: PriorityLow, Size: SizeS,
-		DependsOn: []string{"a", "b"}, Created: "2026-08-30", Extra: []Field{{"owner", "me"}}, Body: "## Notes\nhi"}
-	back, err := Parse("/x/x.md", Render(it))
+	it := Item{Slug: "x", Title: "A: title with colon", Priority: PriorityLow,
+		Fields:    map[string]string{"kind": "bug", "size": "S"},
+		DependsOn: []string{"a", "b"}, Created: "2026-08-30", Extra: []Unknown{{"owner", "me"}}, Body: "## Notes\nhi"}
+	back, err := Parse(BuiltinCode(), "/x/x.md", Render(BuiltinCode(), it))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if back.Title != it.Title || back.Kind != it.Kind || back.Priority != it.Priority || back.Size != it.Size ||
+	if back.Title != it.Title || back.Fields["kind"] != "bug" || back.Priority != it.Priority || back.Grade() != "S" ||
 		back.Status != StatusOpen || strings.Join(back.DependsOn, ",") != "a,b" || back.Created != it.Created ||
 		len(back.Extra) != 1 || back.Extra[0] != it.Extra[0] || strings.TrimSpace(back.Body) != it.Body {
 		t.Errorf("round trip lost something: %+v", back)
@@ -183,7 +184,7 @@ func TestStore_ReadyAndOrder(t *testing.T) {
 	write(t, filepath.Join(dir, DoneSubdir), "done-one.md", "---\ntitle: done\nstatus: done\n---\n")
 	write(t, dir, "README.txt", "not an item")
 
-	s := Load(root)
+	s := Load(BuiltinCode(), root)
 	slugs := func(items []Item) string {
 		var out []string
 		for _, it := range items {
@@ -220,7 +221,7 @@ func TestStore_ReadyAndOrder(t *testing.T) {
 }
 
 func TestStore_EmptyRootIsEmpty(t *testing.T) {
-	s := Load(t.TempDir())
+	s := Load(BuiltinCode(), t.TempDir())
 	if s.Len() != 0 || len(s.Diagnostics) != 0 || len(s.Ready()) != 0 {
 		t.Errorf("empty root loaded %+v", s)
 	}
@@ -232,20 +233,20 @@ func TestStore_EmptyRootIsEmpty(t *testing.T) {
 
 func TestCreateAndArchive(t *testing.T) {
 	root := t.TempDir()
-	p, err := Create(root, Item{Slug: "first-thing", Title: "First", Body: "## Notes\nx"})
+	p, err := Create(BuiltinCode(), root, Item{Slug: "first-thing", Title: "First", Body: "## Notes\nx"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(filepath.Join(Dir(root), ".gitignore")); err != nil {
 		t.Error("ignore file not written")
 	}
-	if _, err := Create(root, Item{Slug: "first-thing", Title: "Again"}); err == nil {
+	if _, err := Create(BuiltinCode(), root, Item{Slug: "first-thing", Title: "Again"}); err == nil {
 		t.Error("duplicate slug accepted")
 	}
-	if _, err := Create(root, Item{Slug: "Bad Slug", Title: "x"}); err == nil {
+	if _, err := Create(BuiltinCode(), root, Item{Slug: "Bad Slug", Title: "x"}); err == nil {
 		t.Error("invalid slug accepted")
 	}
-	if _, err := Create(root, Item{Slug: "no-title"}); err == nil {
+	if _, err := Create(BuiltinCode(), root, Item{Slug: "no-title"}); err == nil {
 		t.Error("missing title accepted")
 	}
 
@@ -260,13 +261,13 @@ func TestCreateAndArchive(t *testing.T) {
 	if !strings.Contains(string(data), "status: done") || !strings.HasSuffix(string(data), "## Notes\nx\n\n## Report\ndone it\n") {
 		t.Errorf("archived file = %q", data)
 	}
-	if _, err := Create(root, Item{Slug: "first-thing", Title: "Again"}); err == nil {
+	if _, err := Create(BuiltinCode(), root, Item{Slug: "first-thing", Title: "Again"}); err == nil {
 		t.Error("archived slug reusable")
 	}
 	if _, err := Archive(root, "first-thing", ""); err == nil {
 		t.Error("archiving twice succeeded")
 	}
-	s := Load(root)
+	s := Load(BuiltinCode(), root)
 	if len(s.Done) != 1 || s.Len() != 0 {
 		t.Errorf("store after archive: %d active, %d done", s.Len(), len(s.Done))
 	}
@@ -275,7 +276,7 @@ func TestCreateAndArchive(t *testing.T) {
 func TestCreate_RefusesTheOldLayout(t *testing.T) {
 	root := t.TempDir()
 	write(t, root, StateDir, "old context file")
-	_, err := Create(root, Item{Slug: "x", Title: "x"})
+	_, err := Create(BuiltinCode(), root, Item{Slug: "x", Title: "x"})
 	if err == nil || !strings.Contains(err.Error(), "shhh doctor") {
 		t.Errorf("err = %v", err)
 	}
@@ -313,7 +314,7 @@ func TestEditHeader_KeepsLineEndingsBOMAndComments(t *testing.T) {
 
 func TestParse_TitleWithHashRoundTrips(t *testing.T) {
 	for _, title := range []string{"Fix #12 in the parser", `Say "hi" # not a comment`, "[bracketed] first", "  padded  "} {
-		back, err := Parse("/x/x.md", Render(Item{Slug: "x", Title: title}))
+		back, err := Parse(BuiltinCode(), "/x/x.md", Render(BuiltinCode(), Item{Slug: "x", Title: title}))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -321,11 +322,11 @@ func TestParse_TitleWithHashRoundTrips(t *testing.T) {
 			t.Errorf("title %q came back as %q", title, back.Title)
 		}
 	}
-	it, err := Parse("/x/x.md", "---\ntitle: \"quoted\" # comment\nsize: 'S' # c\n---\n")
+	it, err := Parse(BuiltinCode(), "/x/x.md", "---\ntitle: \"quoted\" # comment\nsize: 'S' # c\n---\n")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if it.Title != "quoted" || it.Size != SizeS {
+	if it.Title != "quoted" || it.Grade() != "S" {
 		t.Errorf("quoted then comment: %+v", it)
 	}
 }
@@ -392,7 +393,7 @@ func TestStore_KeepsWhatWouldNotParse(t *testing.T) {
 	write(t, dir, "half-written.md", "no header at all\n")
 	write(t, filepath.Join(dir, DoneSubdir), "old-mess.md", "---\nkind: story\n---\n")
 
-	s := Load(root)
+	s := Load(BuiltinCode(), root)
 	if s.Len() != 1 || len(s.Done) != 0 {
 		t.Fatalf("store read %d active and %d done", s.Len(), len(s.Done))
 	}
@@ -417,7 +418,7 @@ func TestStore_KeepsWhatWouldNotParse(t *testing.T) {
 // and an item coming back says nothing about that.
 func TestReopen_BringsAnArchivedItemBackWithItsReport(t *testing.T) {
 	root := t.TempDir()
-	if _, err := Create(root, Item{Slug: "first-thing", Title: "First", Body: "## Notes\nx"}); err != nil {
+	if _, err := Create(BuiltinCode(), root, Item{Slug: "first-thing", Title: "First", Body: "## Notes\nx"}); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := Archive(root, "first-thing", "## Report\ndone it"); err != nil {
@@ -434,7 +435,7 @@ func TestReopen_BringsAnArchivedItemBackWithItsReport(t *testing.T) {
 	if !strings.Contains(string(data), "status: open") || !strings.Contains(string(data), "## Report\ndone it") {
 		t.Errorf("reopened file = %q", data)
 	}
-	s := Load(root)
+	s := Load(BuiltinCode(), root)
 	if s.Len() != 1 || len(s.Done) != 0 {
 		t.Errorf("store after reopen: %d active, %d done", s.Len(), len(s.Done))
 	}
@@ -448,7 +449,7 @@ func TestReopen_BringsAnArchivedItemBackWithItsReport(t *testing.T) {
 // nothing lists it.
 func TestReopen_RefusesBeforeTouchingTheItem(t *testing.T) {
 	root := t.TempDir()
-	if _, err := Create(root, Item{Slug: "same-name", Title: "First"}); err != nil {
+	if _, err := Create(BuiltinCode(), root, Item{Slug: "same-name", Title: "First"}); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := Archive(root, "same-name", ""); err != nil {
@@ -459,7 +460,7 @@ func TestReopen_RefusesBeforeTouchingTheItem(t *testing.T) {
 	if _, err := Reopen(root, "same-name"); err == nil {
 		t.Fatal("reopening onto an existing file succeeded")
 	}
-	archived, err := LoadFile(filepath.Join(Dir(root), DoneSubdir, "same-name.md"))
+	archived, err := LoadFile(BuiltinCode(), filepath.Join(Dir(root), DoneSubdir, "same-name.md"))
 	if err != nil || archived.Status != StatusDone {
 		t.Errorf("the archived item was changed by a refusal: %+v (%v)", archived, err)
 	}

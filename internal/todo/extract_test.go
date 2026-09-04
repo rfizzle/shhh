@@ -51,13 +51,13 @@ const proposalsJSON = `{"items": [
 
 func TestExtract_ToolCallIsRead(t *testing.T) {
 	fp := &fakeProvider{events: []provider.StreamEvent{{ToolCalls: []provider.ToolCall{{Name: ExtractToolName, Arguments: proposalsJSON}}}}}
-	e := NewExtractor(fp, ExtractConfig{Model: "m"})
+	e := NewExtractor(fp, ExtractConfig{Model: "m"}, BuiltinCode())
 	r := e.Extract(context.Background(), ExtractRequest{Instructions: []string{"do the thing"}, Existing: []string{"old — Old one"}})
 	if r.Failed || len(r.Proposals) != 2 {
 		t.Fatalf("result = %+v", r)
 	}
 	p := r.Proposals[0]
-	if p.Priority != "high" || p.Size != "M" || p.Notes[0] != "Passive block, no keys never" || p.DependsOn[0] != "Build the store" {
+	if p.Fields["priority"] != "high" || p.Fields["size"] != "M" || p.Notes[0] != "Passive block, no keys never" || p.DependsOn[0] != "Build the store" {
 		t.Errorf("normalised proposal = %+v", p)
 	}
 	if r.Usage.PromptTokens != 10 || r.Model != "m" {
@@ -76,7 +76,7 @@ func TestExtract_ToolCallIsRead(t *testing.T) {
 // by default is the whole ceiling and no proposals.
 func TestExtract_InstructionsAreSeparateFromTheDigest(t *testing.T) {
 	fp := &fakeProvider{events: []provider.StreamEvent{{ToolCalls: []provider.ToolCall{{Name: ExtractToolName, Arguments: proposalsJSON}}}}}
-	NewExtractor(fp, ExtractConfig{Model: "m"}).Extract(context.Background(), ExtractRequest{Instructions: []string{"do the thing"}})
+	NewExtractor(fp, ExtractConfig{Model: "m"}, BuiltinCode()).Extract(context.Background(), ExtractRequest{Instructions: []string{"do the thing"}})
 	if !strings.Contains(fp.system, "You turn a coding session into backlog items") {
 		t.Errorf("system message = %q", fp.system)
 	}
@@ -93,7 +93,7 @@ func TestExtract_InstructionsAreSeparateFromTheDigest(t *testing.T) {
 
 func TestExtract_TextFallbackAndFailures(t *testing.T) {
 	fp := &fakeProvider{events: []provider.StreamEvent{{Token: "Here you go:\n```json\n" + proposalsJSON + "\n```"}}}
-	r := NewExtractor(fp, ExtractConfig{Model: "m"}).Extract(context.Background(), ExtractRequest{})
+	r := NewExtractor(fp, ExtractConfig{Model: "m"}, BuiltinCode()).Extract(context.Background(), ExtractRequest{})
 	if r.Failed || len(r.Proposals) != 2 {
 		t.Fatalf("text fallback = %+v", r)
 	}
@@ -103,7 +103,7 @@ func TestExtract_TextFallbackAndFailures(t *testing.T) {
 		"nothing":        {events: []provider.StreamEvent{{Token: "no items here"}}},
 	}
 	for name, fp := range cases {
-		r := NewExtractor(fp, ExtractConfig{Model: "m"}).Extract(context.Background(), ExtractRequest{})
+		r := NewExtractor(fp, ExtractConfig{Model: "m"}, BuiltinCode()).Extract(context.Background(), ExtractRequest{})
 		if !r.Failed || r.Err == "" {
 			t.Errorf("%s: result = %+v", name, r)
 		}
@@ -115,13 +115,13 @@ func TestExtract_TextFallbackAndFailures(t *testing.T) {
 }
 
 func TestProposal_ItemRendersTheSections(t *testing.T) {
-	ps, _ := ParseProposals(proposalsJSON)
-	it := ps[0].Item("show-the-backlog-in-the-rail", "2026-08-30", "2026-08-30 12:00:00")
-	back, err := Parse("/x/show-the-backlog-in-the-rail.md", Render(it))
+	ps, _ := ParseProposals(BuiltinCode(), proposalsJSON)
+	it := ps[0].Item(BuiltinCode(), "show-the-backlog-in-the-rail", "2026-08-30", "2026-08-30 12:00:00")
+	back, err := Parse(BuiltinCode(), "/x/show-the-backlog-in-the-rail.md", Render(BuiltinCode(), it))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if back.Priority != PriorityHigh || back.Size != SizeM || back.Kind != KindStory || back.Session != "2026-08-30 12:00:00" {
+	if back.Priority != PriorityHigh || back.Grade() != "M" || back.Fields["kind"] != "story" || back.Session != "2026-08-30 12:00:00" {
 		t.Errorf("header = %+v", back)
 	}
 	for _, want := range []string{"As a user, I want", "## Acceptance criteria\n- [ ] A block appears", "## Tasks\n- [ ] todoBlock", "## Tests\n- go test", "## Notes\n- Passive"} {
@@ -129,8 +129,8 @@ func TestProposal_ItemRendersTheSections(t *testing.T) {
 			t.Errorf("body lacks %q:\n%s", want, back.Body)
 		}
 	}
-	bare := ps[1].Item("build-the-store", "", "")
-	if bare.Kind != KindChore || bare.Priority != PriorityMedium || strings.Contains(bare.Body, "## Tasks") {
+	bare := ps[1].Item(BuiltinCode(), "build-the-store", "", "")
+	if bare.Fields["kind"] != "chore" || bare.Priority != PriorityMedium || strings.Contains(bare.Body, "## Tasks") {
 		t.Errorf("bare item = %+v", bare)
 	}
 }
@@ -140,11 +140,11 @@ func TestParseProposals_Bounds(t *testing.T) {
 	for i := 0; i < MaxProposals+3; i++ {
 		items = append(items, `{"title": "t`+strings.Repeat("x", 500)+`"}`)
 	}
-	ps, ok := ParseProposals(`{"items": [` + strings.Join(items, ",") + `]}`)
+	ps, ok := ParseProposals(BuiltinCode(), `{"items": [`+strings.Join(items, ",")+`]}`)
 	if !ok || len(ps) != MaxProposals || len([]rune(ps[0].Title)) != maxProposalLine {
 		t.Errorf("bounds: %d proposals, title %d runes", len(ps), len([]rune(ps[0].Title)))
 	}
-	if _, ok := ParseProposals("not json"); ok {
+	if _, ok := ParseProposals(BuiltinCode(), "not json"); ok {
 		t.Error("garbage parsed")
 	}
 }
@@ -155,14 +155,14 @@ func TestParseProposals_Bounds(t *testing.T) {
 // object alone, which the same parser reads.
 func TestExtract_OffersASchemaAndTheToolTogether(t *testing.T) {
 	fp := &fakeProvider{events: []provider.StreamEvent{{Token: proposalsJSON}}}
-	r := NewExtractor(fp, ExtractConfig{Model: "m"}).Extract(context.Background(), ExtractRequest{})
+	r := NewExtractor(fp, ExtractConfig{Model: "m"}, BuiltinCode()).Extract(context.Background(), ExtractRequest{})
 	if r.Failed || len(r.Proposals) != 2 {
 		t.Fatalf("result = %+v", r)
 	}
 	if fp.got.ResponseSchema == nil || fp.got.ResponseSchema.Name != ExtractToolName {
 		t.Fatalf("response schema = %+v", fp.got.ResponseSchema)
 	}
-	if !bytes.Equal(fp.got.ResponseSchema.Schema, extractSchema) {
+	if !bytes.Equal(fp.got.ResponseSchema.Schema, extractSchema(BuiltinCode())) {
 		t.Errorf("the schema and the tool describe one shape, got %s", fp.got.ResponseSchema.Schema)
 	}
 	if len(fp.got.Tools) != 1 || fp.got.Tools[0].Name != ExtractToolName {
@@ -174,7 +174,7 @@ func TestExtract_OffersASchemaAndTheToolTogether(t *testing.T) {
 // names a key it does not require, so every object in this one does both.
 func TestExtractSchema_ClosesAndRequiresEverything(t *testing.T) {
 	var shape map[string]any
-	if err := json.Unmarshal(extractSchema, &shape); err != nil {
+	if err := json.Unmarshal(extractSchema(BuiltinCode()), &shape); err != nil {
 		t.Fatal(err)
 	}
 	var walk func(node map[string]any, path string)
@@ -211,7 +211,7 @@ const draftJSON = `{"items": [
 
 func TestDraft_OneItemFromASentence(t *testing.T) {
 	fp := &fakeProvider{events: []provider.StreamEvent{{ToolCalls: []provider.ToolCall{{Name: ExtractToolName, Arguments: draftJSON}}}}}
-	d := NewDrafter(fp, ExtractConfig{Model: "m"})
+	d := NewDrafter(fp, ExtractConfig{Model: "m"}, BuiltinCode())
 	r := d.Draft(context.Background(), DraftRequest{
 		Sentence: "the cache never expires anything",
 		Existing: []string{"cache-store — Store the entries"},
@@ -225,7 +225,7 @@ func TestDraft_OneItemFromASentence(t *testing.T) {
 		t.Fatalf("proposals = %d, want 1", len(r.Proposals))
 	}
 	p := r.Proposals[0]
-	if p.Kind != "story" || p.Size != "S" || p.DependsOn[0] != "cache-store" {
+	if p.Fields["kind"] != "story" || p.Fields["size"] != "S" || p.DependsOn[0] != "cache-store" {
 		t.Errorf("normalised proposal = %+v", p)
 	}
 	if !strings.Contains(fp.prompt, "UNTRUSTED REQUEST") ||
@@ -242,7 +242,7 @@ func TestDraft_OneItemFromASentence(t *testing.T) {
 
 func TestDraft_NothingToDraftFrom(t *testing.T) {
 	fp := &fakeProvider{}
-	d := NewDrafter(fp, ExtractConfig{Model: "m"})
+	d := NewDrafter(fp, ExtractConfig{Model: "m"}, BuiltinCode())
 	r := d.Draft(context.Background(), DraftRequest{Sentence: "   "})
 	if !r.Failed || !strings.Contains(r.Err, "nothing to draft") {
 		t.Fatalf("result = %+v", r)
@@ -261,8 +261,47 @@ func TestDraft_DisabledAndEmptyAnswer(t *testing.T) {
 		t.Error("a nil drafter drafted something")
 	}
 	fp := &fakeProvider{events: []provider.StreamEvent{{Token: "sorry, no."}}}
-	d := NewDrafter(fp, ExtractConfig{Model: "m"})
+	d := NewDrafter(fp, ExtractConfig{Model: "m"}, BuiltinCode())
 	if r := d.Draft(context.Background(), DraftRequest{Sentence: "x"}); !r.Failed || !strings.Contains(r.Err, "proposed nothing") {
 		t.Errorf("result = %+v", r)
+	}
+}
+
+// codeSchema is the shape a reading of a code backlog is asked for, written
+// out as it stood before the fields were the profile's. The generator has to
+// produce it byte for byte: one vocabulary through the seam draws what the
+// constants drew, which is the only way to know the seam changed nothing.
+const codeSchema = `{
+	"type": "object",
+	"properties": {
+		"items": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"properties": {
+					"title": {"type": "string"},
+					"kind": {"type": "string", "enum": ["story", "bug", "chore"]},
+					"priority": {"type": "string", "enum": ["high", "medium", "low"]},
+					"size": {"type": "string", "enum": ["S", "M", "L"]},
+					"story": {"type": "string"},
+					"acceptance_criteria": {"type": "array", "items": {"type": "string"}},
+					"tasks": {"type": "array", "items": {"type": "string"}},
+					"tests": {"type": "array", "items": {"type": "string"}},
+					"notes": {"type": "array", "items": {"type": "string"}},
+					"depends_on": {"type": "array", "items": {"type": "string"}}
+				},
+				"required": ["title", "kind", "priority", "size", "story",
+					"acceptance_criteria", "tasks", "tests", "notes", "depends_on"],
+				"additionalProperties": false
+			}
+		}
+	},
+	"required": ["items"],
+	"additionalProperties": false
+}`
+
+func TestExtractSchema_TheCodeProfileRendersTheSchemaThatWas(t *testing.T) {
+	if got := string(extractSchema(BuiltinCode())); got != codeSchema {
+		t.Errorf("the schema moved:\ngot:\n%s\n\nwant:\n%s", got, codeSchema)
 	}
 }

@@ -93,7 +93,7 @@ func TestSprintBoard_ClosedOffersItsPage(t *testing.T) {
 
 // planScreen is a screen with a proposal on its sprint tab.
 func planScreen() *BacklogScreen {
-	return &BacklogScreen{
+	b := &BacklogScreen{
 		Rows: goldenBacklogRows(), MaxLines: 24,
 		Plan: &SprintPlan{
 			Budget: "S=2 M=1",
@@ -104,6 +104,8 @@ func planScreen() *BacklogScreen {
 			},
 		},
 	}
+	b.Priority, b.Fields = goldenBacklogFields()
+	return b
 }
 
 // The card holds the keyboard: j/k move where the list under it moves on

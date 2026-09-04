@@ -43,7 +43,7 @@ func TestBacklogScreen_FiltersNarrowAsStated(t *testing.T) {
 	}{
 		{"status", "s", "screen-over-items prose-renderer drop-loses-the-file half-written", "open"},
 		{"priority", "p", "rail-todo-block screen-over-items half-written", "high priority"},
-		{"kind", "k", "rail-todo-block screen-over-items sprint-file half-written", "storys"},
+		{"kind", "k", "rail-todo-block screen-over-items sprint-file half-written", "kind story"},
 		{"ready", "r", "prose-renderer drop-loses-the-file half-written", "ready"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -381,5 +381,52 @@ func TestBacklogScreen_AnItemThatFitsSpendsNoFoldRow(t *testing.T) {
 	short := ansi.Strip(b.View(110))
 	if !strings.Contains(short, "more rows below") {
 		t.Errorf("an item that does not fit should say how much it folded:\n%s", short)
+	}
+}
+
+// researchFields is a second vocabulary, as a project that keeps a reading
+// list would hand it over: questions and readings, graded by how deep the
+// answer has to go. The screen draws its letters and narrows on its words
+// without holding one of them.
+func researchFields() (BacklogField, []BacklogField) {
+	priority, _ := goldenBacklogFields()
+	return priority, []BacklogField{
+		{Name: "kind", Values: []BacklogValue{
+			{Word: "question", Glyph: "Q"}, {Word: "reading", Glyph: "R"}}},
+		{Name: "depth", Values: []BacklogValue{
+			{Word: "quick", Glyph: "Q"}, {Word: "deep", Glyph: "D"}}},
+	}
+}
+
+// A second vocabulary draws its own letters on the rows and narrows on its
+// own words, and the footer names the field a filter stopped on — "reading"
+// on its own would not say what was narrowed.
+func TestBacklogScreen_DrawsASecondVocabulary(t *testing.T) {
+	b := &BacklogScreen{MaxLines: 24, Rows: []BacklogRow{
+		{Slug: "why-tabs", Title: "Why tabs", Priority: "high", Status: "open",
+			Values: map[string]string{"kind": "reading", "depth": "deep"}, State: BacklogReady},
+		{Slug: "who-reads-it", Title: "Who reads it", Priority: "low", Status: "open",
+			Values: map[string]string{"kind": "question"}, State: BacklogReady},
+	}}
+	b.Priority, b.Fields = researchFields()
+	view := ansi.Strip(b.View(110))
+	// The first row is graded and the second is not, which is the hyphen.
+	for _, want := range []string{"why-tabs  HRD", "who-reads-it  LQ-"} {
+		if !strings.Contains(view, want) {
+			t.Errorf("the rows never draw %q:\n%s", want, view)
+		}
+	}
+	pressAll(b, "kk")
+	if got := slugsShowing(b); got != "why-tabs" {
+		t.Errorf("[k] left %q, want why-tabs", got)
+	}
+	if got := b.filterWords(); got != "kind reading" {
+		t.Errorf("the header says %q, want %q", got, "kind reading")
+	}
+	// The cycle runs on into the second field rather than stopping at the
+	// first, which is what one key over a list of fields has to do.
+	pressAll(b, "k")
+	if got := b.filterWords(); got != "depth quick" {
+		t.Errorf("after three presses the header says %q", got)
 	}
 }

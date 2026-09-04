@@ -866,10 +866,10 @@ func TestGolden_InspectorRail(t *testing.T) {
 				Sprint: "rail-and-runner", SprintDone: 2, SprintTotal: 6,
 				SprintItem: "rail-todo-block", SprintStage: "review",
 				Rows: []InspectorTodoRow{
-					{Slug: "rail-todo-block", Priority: "H", Size: "M", State: TodoRunning, Note: "review 1/2"},
-					{Slug: "add-todo-runner", Priority: "H", Size: "L", State: TodoWaiting, Note: "needs rail-todo-block"},
-					{Slug: "todo-add-extraction", Priority: "M", Size: "M", State: TodoReady},
-					{Slug: "headless-todo-run", Priority: "L", Size: "M", State: TodoBlocked, Note: "blocked"},
+					{Slug: "rail-todo-block", Priority: "H", Grade: "M", State: TodoRunning, Note: "review 1/2"},
+					{Slug: "add-todo-runner", Priority: "H", Grade: "L", State: TodoWaiting, Note: "needs rail-todo-block"},
+					{Slug: "todo-add-extraction", Priority: "M", Grade: "M", State: TodoReady},
+					{Slug: "headless-todo-run", Priority: "L", Grade: "M", State: TodoBlocked, Note: "blocked"},
 				},
 				More: 2, Hint: "/todo for the whole backlog",
 			},
@@ -1773,27 +1773,27 @@ func TestGolden_HistoryScreen(t *testing.T) {
 func goldenBacklogRows() []BacklogRow {
 	return []BacklogRow{
 		{Slug: "rail-todo-block", Title: "The backlog block on the inspector rail",
-			Kind: "story", Priority: "high", Status: "in progress", Size: "M",
+			Priority: "high", Status: "in progress", Values: map[string]string{"kind": "story", "size": "M"},
 			State: BacklogRunning, Blocks: []string{"screen-over-items"}, InSprint: true,
 			Fields: []string{"story", "high", "size M", "in progress", "written 2026-08-28"},
 			Body:   "**As a** reader, **I want** the queue beside the turn.\n\n## Acceptance criteria\n\n- [x] four rows and a count\n- [ ] the running item first\n"},
 		{Slug: "screen-over-items", Title: "A screen over the whole backlog, with the body beside the list",
-			Kind: "story", Priority: "high", Status: "open", Size: "L",
+			Priority: "high", Status: "open", Values: map[string]string{"kind": "story", "size": "L"},
 			State: BacklogWaiting, Waits: []string{"rail-todo-block", "prose-renderer"},
 			Fields: []string{"story", "high", "size L", "open", "written 2026-08-30"},
 			Body:   "## Acceptance criteria\n\n- [ ] the list on the left\n- [ ] the body on the right\n"},
 		{Slug: "prose-renderer", Title: "One renderer for every piece of prose",
-			Kind: "chore", Priority: "medium", Status: "open", Size: "S",
+			Priority: "medium", Status: "open", Values: map[string]string{"kind": "chore", "size": "S"},
 			State:  BacklogReady,
 			Fields: []string{"chore", "medium", "size S", "open", "written 2026-08-31"},
 			Body:   "The transcript and the item body draw the same headings.\n"},
 		{Slug: "sprint-file", Title: "The sprint is a file that names its items",
-			Kind: "story", Priority: "medium", Status: "blocked", Size: "M",
+			Priority: "medium", Status: "blocked", Values: map[string]string{"kind": "story", "size": "M"},
 			State: BacklogBlocked, InSprint: true,
 			Fields: []string{"story", "medium", "size M", "blocked", "written 2026-09-01"},
 			Body:   "## Blocked\n\nWaiting on a decision about where the file lives.\n"},
 		{Slug: "drop-loses-the-file", Title: "Dropping an item says what it loses",
-			Kind: "bug", Priority: "low", Status: "open", Size: "",
+			Priority: "low", Status: "open", Values: map[string]string{"kind": "bug", "size": ""},
 			State:  BacklogReady,
 			Fields: []string{"bug", "low", "ungraded", "open"},
 			Body:   "The verb deletes the file and the sentence should say so.\n"},
@@ -1807,25 +1807,40 @@ func goldenBacklogRows() []BacklogRow {
 func goldenBacklogDone() []BacklogRow {
 	return []BacklogRow{
 		{Slug: "keys-are-declared-once", Title: "Every key is declared once",
-			Kind: "chore", Priority: "high", Status: "done", Size: "M",
+			Priority: "high", Status: "done", Values: map[string]string{"kind": "chore", "size": "M"},
 			State:  BacklogArchived,
 			Fields: []string{"chore", "high", "size M", "done", "written 2026-08-20"},
 			Body:   "Sixty-eight literals came out of twenty files; the register is the one place a key is written down.\n"},
 		{Slug: "windowed-list", Title: "One windowed list under five cards",
-			Kind: "chore", Priority: "medium", Status: "done", Size: "S",
+			Priority: "medium", Status: "done", Values: map[string]string{"kind": "chore", "size": "S"},
 			State:  BacklogArchived,
 			Fields: []string{"chore", "medium", "size S", "done", "written 2026-08-24", "no report"}},
 	}
+}
+
+// goldenBacklogFields is the vocabulary the fixture's items are written in
+// — a checkout of code — as the screen is handed it: the field that orders
+// the list, and the fields it letters and filters after it.
+func goldenBacklogFields() (BacklogField, []BacklogField) {
+	return BacklogField{Name: "priority", Values: []BacklogValue{
+			{Word: "high", Glyph: "H"}, {Word: "medium", Glyph: "M"}, {Word: "low", Glyph: "L"}}},
+		[]BacklogField{
+			{Name: "kind", Values: []BacklogValue{{Word: "story"}, {Word: "bug"}, {Word: "chore"}}},
+			{Name: "size", Values: []BacklogValue{
+				{Word: "S", Glyph: "S"}, {Word: "M", Glyph: "M"}, {Word: "L", Glyph: "L"}}},
+		}
 }
 
 // goldenBacklogScreen is the screen over that fixture. It supplies no prose
 // renderer, so the pane draws the file's own lines: the renderer the session
 // wires lives above this package.
 func goldenBacklogScreen() *BacklogScreen {
-	return &BacklogScreen{
+	b := &BacklogScreen{
 		Rows: goldenBacklogRows(), Done: goldenBacklogDone(),
 		Sprint: "the cockpit sprint", MaxLines: 22,
 	}
+	b.Priority, b.Fields = goldenBacklogFields()
+	return b
 }
 
 // goldenSprintRows is the sprint's set as the tab draws it: one item
@@ -1836,7 +1851,7 @@ func goldenSprintRows() []BacklogRow {
 	rows := goldenBacklogRows()
 	return []BacklogRow{
 		{Slug: "keys-are-declared-once", Title: "Every key is declared once",
-			Kind: "chore", Priority: "high", Status: "done", Size: "M",
+			Priority: "high", Status: "done", Values: map[string]string{"kind": "chore", "size": "M"},
 			State: BacklogArchived, Note: "done", InSprint: true,
 			Fields: []string{"chore", "high", "size M", "done", "written 2026-08-20"},
 			Body:   "Sixty-eight literals came out of twenty files.\n"},
@@ -1861,6 +1876,7 @@ func goldenSprintScreen(board *SprintBoard) *BacklogScreen {
 		Rows: goldenBacklogRows(), Done: goldenBacklogDone(),
 		Sprint: "the cockpit sprint", Board: board, MaxLines: 24,
 	}
+	b.Priority, b.Fields = goldenBacklogFields()
 	b.Update(key("tab"))
 	return b
 }
@@ -1895,13 +1911,16 @@ func TestGolden_SprintBoard(t *testing.T) {
 			Rows: goldenBacklogRows(), Done: goldenBacklogDone(), MaxLines: 24,
 			Plan: goldenSprintPlan(),
 		}
+		plan.Priority, plan.Fields = goldenBacklogFields()
 		droppedRow := *plan
 		dropped := &BacklogScreen{Rows: droppedRow.Rows, Done: droppedRow.Done, MaxLines: 24,
 			Plan: goldenSprintPlan()}
+		dropped.Priority, dropped.Fields = goldenBacklogFields()
 		dropped.Update(key("j"))
 		dropped.Update(key(" "))
 		left := &BacklogScreen{Rows: droppedRow.Rows, Done: droppedRow.Done, MaxLines: 24,
 			Plan: goldenSprintPlan()}
+		left.Priority, left.Fields = goldenBacklogFields()
 		left.Update(key("o"))
 		return []golden.Panel{
 			{Label: "the set being worked · the goal, the meter, and the stage of the one in flight",

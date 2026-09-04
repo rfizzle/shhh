@@ -67,6 +67,11 @@ type Todos struct {
 	// Wordings are the stage instructions a run sends, as the host read
 	// them. The zero value is the built-in set.
 	Wordings run.Wordings
+	// Profile is the vocabulary this project's backlog is written in, as
+	// the host resolved it. It is handed over rather than defaulted here
+	// because a screen that made up its own words would draw a backlog
+	// nobody wrote.
+	Profile todo.Profile
 }
 
 // WithTodos enables /todo and the TODO block.
@@ -87,7 +92,7 @@ func (m *Model) reloadTodos() {
 		m.todoStore = nil
 		return
 	}
-	m.todoStore = todo.Load(m.todos.Root)
+	m.todoStore = todo.Load(m.todos.Profile, m.todos.Root)
 	// How far behind each item's last reading has fallen is a question for
 	// the repository, so it is asked here — where the backlog is read —
 	// rather than by the surfaces that draw it every frame (todogroom.go).
@@ -165,10 +170,7 @@ func todoRow(s *todo.Store, it todo.Item, running *run.State) components.Inspect
 	row := components.InspectorTodoRow{
 		Slug:     it.Slug,
 		Priority: strings.ToUpper(string(it.Priority[:1])),
-		Size:     string(it.Size),
-	}
-	if row.Size == "" {
-		row.Size = "-"
+		Grade:    todoGradeGlyph(it),
 	}
 	switch it.Status {
 	case todo.StatusBlocked:
@@ -178,7 +180,7 @@ func todoRow(s *todo.Store, it todo.Item, running *run.State) components.Inspect
 		if running != nil && running.Slug == it.Slug {
 			row.Note = string(running.Stage)
 			if running.Round > 0 {
-				row.Note += fmt.Sprintf(" %d/%d", running.Round, run.Rounds(running.Size))
+				row.Note += fmt.Sprintf(" %d/%d", running.Round, running.Rounds())
 			}
 			row.LanesDone, row.LanesTotal = laneProgress(running)
 		}
@@ -191,6 +193,20 @@ func todoRow(s *todo.Store, it todo.Item, running *run.State) components.Inspect
 		}
 	}
 	return row
+}
+
+// todoGradeGlyph is the one letter a rail row draws an item's grade as,
+// and a hyphen for one nobody has graded — a blank column would read as a
+// row that is missing a field rather than a file that is.
+func todoGradeGlyph(it todo.Item) string {
+	f, ok := it.Profile.GradeField()
+	if !ok {
+		return "-"
+	}
+	if glyph := f.Glyph(it.Grade()); glyph != "" {
+		return glyph
+	}
+	return "-"
 }
 
 // todoStaleRow adds what a rail row says about a reading that has fallen
@@ -404,14 +420,14 @@ func (m Model) todoEditorFinished(msg todoEditorDoneMsg) (tea.Model, tea.Cmd) {
 	if _, err := os.Stat(msg.path); err != nil {
 		return m.systemNotice(fmt.Sprintf("%s is gone; the backlog no longer has %s.", filepath.Base(msg.path), msg.slug))
 	}
-	it, err := todo.LoadFile(msg.path)
+	it, err := todo.LoadFile(m.todos.Profile, msg.path)
 	if err != nil {
 		return m.systemNotice(fmt.Sprintf("%s does not load as an item now — %v. It stays on disk; fix the header and it comes back.", filepath.Base(msg.path), err))
 	}
 	m.signal(observe.SignalTodo, observe.TodoEdit)
 	note := fmt.Sprintf("Saved %s: %s (%s, %s", it.Slug, it.Title, it.Priority, it.Status)
-	if it.Size != "" {
-		note += ", " + string(it.Size)
+	if grade := it.Grade(); grade != "" {
+		note += ", " + grade
 	}
 	note += ")."
 	for _, w := range it.Warnings {
@@ -455,6 +471,7 @@ func (m Model) openTodoScreen() (tea.Model, tea.Cmd) {
 		return m.systemNotice("The backlog is unavailable in this session.")
 	}
 	m.backlog = &components.BacklogScreen{Prose: todoProse, Plan: m.sprintPlan}
+	m.backlog.Priority, m.backlog.Fields = todoScreenFieldSet(m.todos.Profile)
 	m.reloadTodos()
 	m.enterSurface(stateBacklog)
 	return m, nil
@@ -636,6 +653,26 @@ func (m Model) refreshTodoScreen() {
 	m.backlog.Why = todoScreenWhy
 }
 
+// todoScreenFieldSet is the project's vocabulary as the screen filters and
+// letters it: the field that orders the list, then the rest in the order
+// the profile declares them.
+func todoScreenFieldSet(p todo.Profile) (components.BacklogField, []components.BacklogField) {
+	var priority components.BacklogField
+	var fields []components.BacklogField
+	for _, f := range p.Fields {
+		screen := components.BacklogField{Name: f.Name}
+		for _, v := range f.Values {
+			screen.Values = append(screen.Values, components.BacklogValue{Word: v.Name, Glyph: v.Glyph})
+		}
+		if f.Orders() {
+			priority = screen
+			continue
+		}
+		fields = append(fields, screen)
+	}
+	return priority, fields
+}
+
 // todoScreenRows is one tab's rows: the active backlog in its working order,
 // or the archive. The files that would not parse go on the end of whichever
 // directory they were found in — a row rather than a gap, because the file
@@ -670,9 +707,9 @@ func (m Model) todoScreenRows(s *todo.Store, archived bool) []components.Backlog
 func (m Model) todoScreenRow(s *todo.Store, it todo.Item) components.BacklogRow {
 	row := components.BacklogRow{
 		Slug: it.Slug, Path: it.Path, Title: it.Title,
-		Kind: string(it.Kind), Priority: string(it.Priority),
-		Status: todoStatusWords(it.Status), Size: string(it.Size),
-		State: todoScreenState(s, it), Body: it.Body,
+		Priority: string(it.Priority), Values: it.Fields,
+		Status: todoStatusWords(it.Status),
+		State:  todoScreenState(s, it), Body: it.Body,
 		Waits: s.Waiting(it), Blocks: todoBlockedBy(s, it.Slug),
 		Warnings: it.Warnings,
 	}
@@ -699,20 +736,29 @@ func (m Model) todoScreenRow(s *todo.Store, it todo.Item) components.BacklogRow 
 	return row
 }
 
-// todoScreenFields is the compact row above an item's body: what sort of
-// work it is, how soon, how big, where it stands and when it was written.
-// The file has them one per line, which is right for a file; beside a list
-// they are a row.
+// todoScreenFields is the compact row above an item's body: the header's
+// own fields in the project's order, where the item stands, and when it was
+// written. The file has them one per line, which is right for a file;
+// beside a list they are a row.
+//
+// The grade carries its field's name and an ungraded item says so, because
+// a bare letter off a scale is not a fact and a missing one is worth
+// stating: it is what a run reads to decide how much ceremony to spend.
 func todoScreenFields(it todo.Item, status string) []string {
 	fields := []string{}
-	if it.Kind != "" {
-		fields = append(fields, string(it.Kind))
-	}
-	fields = append(fields, string(it.Priority))
-	if it.Size != "" {
-		fields = append(fields, "size "+string(it.Size))
-	} else {
-		fields = append(fields, "ungraded")
+	for _, f := range it.Profile.Fields {
+		switch {
+		case f.Orders():
+			fields = append(fields, string(it.Priority))
+		case f.Name == it.Profile.Grade:
+			if grade := it.Fields[f.Name]; grade != "" {
+				fields = append(fields, f.Name+" "+grade)
+			} else {
+				fields = append(fields, "ungraded")
+			}
+		case it.Fields[f.Name] != "":
+			fields = append(fields, it.Fields[f.Name])
+		}
 	}
 	fields = append(fields, status)
 	if it.Created != "" {

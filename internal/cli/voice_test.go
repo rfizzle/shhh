@@ -35,7 +35,7 @@ func TestEveryEmptyStateSpeaksTheSameWay(t *testing.T) {
 		{"shhh observe", observeReport(observeData{Window: "30d"}).Render(200)},
 		{"shhh memory", memoryReport(memory.NewStore(nil, "/repo"), nil, memoryWayOut, now).Render(200)},
 		{"shhh skills", skillsReport(nil).Render(200)},
-		{"shhh todo", todoReport(todo.Load(t.TempDir())).Render(200)},
+		{"shhh todo", todoReport(todo.Load(todo.BuiltinCode(), t.TempDir())).Render(200)},
 		{"shhh mcp", mcpListingReport(nil, &mcp.Catalog{}, "").Render(200)},
 		{"shhh chats", chatsReport(nil, now).Render(200)},
 		{"shhh logs", logsEmpty("/state/shhh.log").Render(200)},

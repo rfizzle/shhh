@@ -62,7 +62,7 @@ func groomModel(t *testing.T, items map[string]string) (Model, string) {
 	m := frameModel(t, 130, 40)
 	m.changes = changeset.New(1 << 20)
 	m.policy.mode = agent.ModeManual
-	m = m.WithTodos(Todos{Root: root, Manage: func([]string) string { return "" },
+	m = m.WithTodos(Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "" },
 		Detail: func(*todo.Store, todo.Item) string { return "" }})
 	return m, root
 }
@@ -110,7 +110,7 @@ func TestTodoGroom_AcceptingWritesTheNamedLinesAndTheStamp(t *testing.T) {
 	m = groom(t, m, "/todo groom cache-ttl", groomAnswer)
 	m = press(t, m, "enter")
 
-	it, ok := todo.Load(root).Find("cache-ttl")
+	it, ok := todo.Load(todo.BuiltinCode(), root).Find("cache-ttl")
 	if !ok {
 		t.Fatal("the item is gone")
 	}
@@ -177,7 +177,7 @@ func TestTodoGroom_AllStopsOnEscKeepingWhatWasAccepted(t *testing.T) {
 	if m.todoGroomer.going() {
 		t.Error("esc did not stop the pass")
 	}
-	s := todo.Load(root)
+	s := todo.Load(todo.BuiltinCode(), root)
 	if first, _ := s.Find("cache-ttl"); first.Groomed == "" {
 		t.Error("the accepted item lost its stamp")
 	}

@@ -15,6 +15,7 @@ package chat
 import (
 	"context"
 	"fmt"
+	"maps"
 	"os"
 	"os/exec"
 	"slices"
@@ -131,7 +132,7 @@ func (m Model) openTodoProposals(proposals []todo.Proposal, what string) (tea.Mo
 		// else, so the facts the reader decides on go in the meta.
 		opts[i] = components.SelectOption{
 			Label: p.Title,
-			Meta:  todoProposalMeta(p),
+			Meta:  todoProposalMeta(m.todos.Profile, p),
 		}
 	}
 	card := components.NewMultiSelect(fmt.Sprintf("%s — %s toggles, %s all or none, %s writes the checked ones, %s writes nothing",
@@ -151,10 +152,20 @@ func (m Model) openTodoProposals(proposals []todo.Proposal, what string) (tea.Mo
 	return m, nil
 }
 
-// todoProposalMeta is the row's right-hand field: kind, priority, size and
-// what the item waits on, so the reader can judge it without opening it.
-func todoProposalMeta(p todo.Proposal) string {
-	meta := fmt.Sprintf("%s · %s · %s", p.Kind, p.Priority, p.Size)
+// todoProposalMeta is the row's right-hand field: the header fields the
+// reading answered and what the item waits on, so the reader can judge it
+// without opening it.
+func todoProposalMeta(profile todo.Profile, p todo.Proposal) string {
+	words := make([]string, 0, len(profile.Fields))
+	for _, f := range profile.Fields {
+		// A field the reading did not answer is left out rather than left
+		// blank: two separators with nothing between them read as a row
+		// that lost a word rather than as a proposal that has none.
+		if word := p.Fields[f.Name]; word != "" {
+			words = append(words, word)
+		}
+	}
+	meta := strings.Join(words, " · ")
 	if len(p.DependsOn) > 0 {
 		meta += " · after " + strings.Join(p.DependsOn, ", ")
 	}
@@ -254,14 +265,14 @@ func (m *Model) writeProposals(proposals []todo.Proposal, accepted []int) (strin
 			}
 		}
 		a.DependsOn = deps
-		it := a.Item(a.slug, created, m.sessionName)
-		if _, err := todo.Create(m.todos.Root, it); err != nil {
+		it := a.Item(m.todos.Profile, a.slug, created, m.sessionName)
+		if _, err := todo.Create(m.todos.Profile, m.todos.Root, it); err != nil {
 			fmt.Fprintf(&b, "\ncould not write %s: %v", a.slug, err)
 			continue
 		}
 		slugs = append(slugs, a.slug)
 		written++
-		fmt.Fprintf(&b, "\n  %s  %s · %s · %s", a.slug, it.Priority, sizeOrDash(it.Size), it.Title)
+		fmt.Fprintf(&b, "\n  %s  %s · %s · %s", a.slug, it.Priority, gradeOrDash(it), it.Title)
 	}
 	m.reloadTodos()
 	head := fmt.Sprintf("Wrote %s to %s.", plural(written, "backlog item"), todo.Dir(m.todos.Root))
@@ -298,11 +309,13 @@ func has(s *todo.Store, slug string) bool {
 	return ok
 }
 
-func sizeOrDash(s todo.Size) string {
-	if s == "" {
-		return "-"
+// gradeOrDash is the item's grade, or a dash for one nobody has graded: a
+// listing that left the column blank would read as a field the row forgot.
+func gradeOrDash(it todo.Item) string {
+	if grade := it.Grade(); grade != "" {
+		return grade
 	}
-	return string(s)
+	return "-"
 }
 
 // uniqueSlug suffixes a slug that is already taken, so two proposals with
@@ -367,21 +380,16 @@ type todoDraftEditorDoneMsg struct {
 	err  error
 }
 
-// The header rows, in the order the card draws them. The first three each
-// step a closed scale in place; the last is a list rather than a scale, so
-// the key that changes a field opens the backlog on it instead of stepping
-// one.
-const (
-	todoDraftKind = iota
-	todoDraftPriority
-	todoDraftSize
-	todoDraftDepends
-)
+// The header rows are the profile's own fields, in the order it declares
+// them, and then the dependency row. Each field row steps a closed scale in
+// place; the last is a list rather than a scale, so the key that changes a
+// field opens the backlog on it instead of stepping one.
+func (d *todoDraft) dependsRow() int { return len(d.profile.Fields) }
 
-// todoDraftUngraded is what the size row says, and what it means: an item
-// nobody has graded, which is not the same as a small one. It is on the scale
-// the row steps through because a size set by mistake needs a way back off
-// it.
+// todoDraftUngraded is what the grade row says, and what it means: an item
+// nobody has graded, which is not the same as one at the bottom of the
+// scale. It is on the scale the row steps through because a grade set by
+// mistake needs a way back off it.
 const todoDraftUngraded = "ungraded"
 
 // todoDraftNone is the dependency row on an item that waits on nothing.
@@ -396,6 +404,10 @@ const todoDraftNone = "nothing"
 // same door.
 type todoDraft struct {
 	proposal todo.Proposal
+	// profile is the vocabulary the rows are drawn from and the item will
+	// be written in: which fields there are, what each may say, and which
+	// of them is the grade.
+	profile todo.Profile
 	// body is the item's prose as it will be written. It is kept beside the
 	// proposal because the editor rewrites prose and the proposal's sections
 	// cannot hold what comes back: rebuilding the body from them would throw
@@ -421,10 +433,15 @@ type todoDraft struct {
 }
 
 // newTodoDraft builds the card around one proposal.
-func newTodoDraft(p todo.Proposal, deps []components.SelectOption, known []string, from int) *todoDraft {
+func newTodoDraft(profile todo.Profile, p todo.Proposal, deps []components.SelectOption, known []string, from int) *todoDraft {
+	// The proposal's fields are copied rather than shared: the card writes
+	// every keystroke back into its own copy, and a draft that esc dropped
+	// would otherwise have already changed the row it was opened from.
+	p.Fields = maps.Clone(p.Fields)
 	d := &todoDraft{
 		proposal: p,
-		body:     p.Item("", "", "").Body,
+		profile:  profile,
+		body:     p.Item(profile, "", "", "").Body,
 		fields:   &components.Select{Unnumbered: true},
 		deps:     deps,
 		known:    known,
@@ -434,31 +451,38 @@ func newTodoDraft(p todo.Proposal, deps []components.SelectOption, known []strin
 	return d
 }
 
-// sync redraws the header rows from the proposal.
+// sync redraws the header rows from the proposal, one row per field the
+// profile declares. The grading field carries an extra stop for an item
+// nobody has graded, because a grade set by mistake needs a way back off
+// the scale; every other field falls back to its own default.
 func (d *todoDraft) sync() {
-	kind, priority, size := string(todo.KindStory), string(todo.PriorityMedium), todoDraftUngraded
-	if d.proposal.Kind != "" {
-		kind = d.proposal.Kind
-	}
-	if d.proposal.Priority != "" {
-		priority = d.proposal.Priority
-	}
-	if d.proposal.Size != "" {
-		size = d.proposal.Size
-	}
 	waits := todoDraftNone
 	if len(d.proposal.DependsOn) > 0 {
 		waits = strings.Join(d.proposal.DependsOn, ", ")
 	}
-	d.fields.Options = []components.SelectOption{
-		{Label: "kind", Value: kind, Values: []string{
-			string(todo.KindStory), string(todo.KindBug), string(todo.KindChore)}},
-		{Label: "priority", Value: priority, Values: []string{
-			string(todo.PriorityHigh), string(todo.PriorityMedium), string(todo.PriorityLow)}},
-		{Label: "size", Value: size, Values: []string{
-			string(todo.SizeS), string(todo.SizeM), string(todo.SizeL), todoDraftUngraded}},
-		{Label: "waits on", Value: waits},
+	d.fields.Options = nil
+	for _, f := range d.profile.Fields {
+		value, words := d.proposal.Fields[f.Name], f.Words()
+		if f.Name == d.profile.Grade {
+			words = append(words, todoDraftUngraded)
+			if value == "" {
+				value = todoDraftUngraded
+			}
+		}
+		if value == "" {
+			value = f.Default
+		}
+		// A field with no default still has to show a word: a row drawn
+		// blank is one the reader cannot tell from a scale with nothing on
+		// it, and stepping it would be the first thing that ever set it.
+		if value == "" && len(words) > 0 {
+			value = words[0]
+		}
+		d.fields.Options = append(d.fields.Options,
+			components.SelectOption{Label: f.Name, Value: value, Values: words})
 	}
+	d.fields.Options = append(d.fields.Options,
+		components.SelectOption{Label: "waits on", Value: waits})
 	d.fields.Title = d.proposal.Title
 	d.fields.Chips = []string{todo.Slugify(d.proposal.Title)}
 	d.fields.HintKeys = d.hint()
@@ -471,11 +495,15 @@ func (d *todoDraft) sync() {
 
 // read takes the rows back into the proposal.
 func (d *todoDraft) read() {
-	d.proposal.Kind = d.fields.Options[todoDraftKind].Value
-	d.proposal.Priority = d.fields.Options[todoDraftPriority].Value
-	d.proposal.Size = d.fields.Options[todoDraftSize].Value
-	if d.proposal.Size == todoDraftUngraded {
-		d.proposal.Size = ""
+	if d.proposal.Fields == nil {
+		d.proposal.Fields = map[string]string{}
+	}
+	for i, f := range d.profile.Fields {
+		value := d.fields.Options[i].Value
+		if f.Name == d.profile.Grade && value == todoDraftUngraded {
+			value = ""
+		}
+		d.proposal.Fields[f.Name] = value
 	}
 }
 
@@ -625,7 +653,7 @@ func (m *Model) dropTodoDraft() {
 
 // openTodoDraft puts one proposal on the card.
 func (m *Model) openTodoDraft(p todo.Proposal, from int) {
-	m.todoDraft = newTodoDraft(p, m.todoDraftDeps(), m.todoDraftKnown(from), from)
+	m.todoDraft = newTodoDraft(m.todos.Profile, p, m.todoDraftDeps(), m.todoDraftKnown(from), from)
 	m.enterSurface(stateTodoDraft)
 	m.syncViewport()
 }
@@ -712,7 +740,7 @@ func (m *Model) answerTodoDraft(msg tea.KeyPressMsg) (bool, overlayAction) {
 	}
 	pressed := msg.String()
 	switch {
-	case keys.Is(pressed, keys.Select.Toggle) && d.fields.Focus == todoDraftDepends:
+	case keys.Is(pressed, keys.Select.Toggle) && d.fields.Focus == d.dependsRow():
 		if len(d.deps) == 0 {
 			// A key that cannot act says why rather than doing nothing: an
 			// empty backlog is the one state where this row has no list to
@@ -747,7 +775,7 @@ func (m *Model) takeTodoDraft() overlayAction {
 		if d.from < len(m.todoProposals) {
 			m.todoProposals[d.from] = d.proposal
 			if m.todoPropose != nil && d.from < len(m.todoPropose.Options) {
-				m.todoPropose.Options[d.from].Meta = todoProposalMeta(d.proposal)
+				m.todoPropose.Options[d.from].Meta = todoProposalMeta(d.profile, d.proposal)
 			}
 		}
 		return m.leaveTodoDraft()
@@ -799,7 +827,7 @@ func (m *Model) writeTodoDraft(d *todoDraft) (string, bool) {
 		}
 	}
 	slug := uniqueSlug(todo.Slugify(d.proposal.Title), taken)
-	it := d.proposal.Item(slug, time.Now().Format("2006-01-02"), m.sessionName)
+	it := d.proposal.Item(d.profile, slug, time.Now().Format("2006-01-02"), m.sessionName)
 	it.Body = d.body
 	var deps, dropped []string
 	for _, dep := range d.proposal.DependsOn {
@@ -810,13 +838,13 @@ func (m *Model) writeTodoDraft(d *todoDraft) (string, bool) {
 		dropped = append(dropped, dep)
 	}
 	it.DependsOn = deps
-	path, err := todo.Create(m.todos.Root, it)
+	path, err := todo.Create(d.profile, m.todos.Root, it)
 	if err != nil {
 		return fmt.Sprintf("Could not write %s: %v", slug, err), false
 	}
 	m.reloadTodos()
 	out := fmt.Sprintf("Wrote %s to %s.\n  %s  %s · %s · %s",
-		slug, path, slug, it.Priority, sizeOrDash(it.Size), it.Title)
+		slug, path, slug, it.Priority, gradeOrDash(it), it.Title)
 	if len(dropped) > 0 {
 		out += "\nDropped dependencies that name nothing in the backlog: " + strings.Join(dropped, ", ") + "."
 	}
@@ -836,7 +864,7 @@ func (m *Model) editTodoDraft() overlayAction {
 	if m.working() || m.frameWorking() {
 		return overlayAction{note: "Not while the turn is running — the editor takes the terminal with it. The draft is still on the card."}
 	}
-	path, err := writeTodoDraftFile(m.todoDraft.proposal, m.todoDraft.body)
+	path, err := writeTodoDraftFile(m.todoDraft.profile, m.todoDraft.proposal, m.todoDraft.body)
 	if err != nil {
 		return overlayAction{note: "Could not write the draft out — " + err.Error() + ". The draft is still on the card."}
 	}
@@ -851,14 +879,14 @@ func (m *Model) editTodoDraft() overlayAction {
 // format an item has: what comes back is read by the same parser that reads
 // the backlog, so an editor that broke the header says so here rather than
 // after the file has been written into the project.
-func writeTodoDraftFile(p todo.Proposal, body string) (string, error) {
-	it := p.Item(todo.Slugify(p.Title), time.Now().Format("2006-01-02"), "")
+func writeTodoDraftFile(profile todo.Profile, p todo.Proposal, body string) (string, error) {
+	it := p.Item(profile, todo.Slugify(p.Title), time.Now().Format("2006-01-02"), "")
 	it.Body = body
 	f, err := os.CreateTemp("", "shhh-item-*.md")
 	if err != nil {
 		return "", err
 	}
-	if _, err := f.WriteString(todo.Render(it)); err != nil {
+	if _, err := f.WriteString(todo.Render(profile, it)); err != nil {
 		_ = f.Close()
 		_ = os.Remove(f.Name())
 		return "", err
@@ -894,15 +922,18 @@ func (m Model) todoDraftEditorFinished(msg todoDraftEditorDoneMsg) (tea.Model, t
 	if err != nil {
 		return back("Could not read the draft back, so it is as you left it — " + err.Error())
 	}
-	it, err := todo.Parse(msg.path, string(content))
+	it, err := todo.Parse(d.profile, msg.path, string(content))
 	if err != nil {
 		return back("That does not read as an item — " + err.Error() + ". The draft is as you left it.")
 	}
 	if it.Title != "" {
 		d.proposal.Title = it.Title
 	}
-	d.proposal.Kind, d.proposal.Priority = string(it.Kind), string(it.Priority)
-	d.proposal.Size, d.proposal.DependsOn = string(it.Size), it.DependsOn
+	d.proposal.Fields = map[string]string{todo.PriorityField().Name: string(it.Priority)}
+	for name, value := range it.Fields {
+		d.proposal.Fields[name] = value
+	}
+	d.proposal.DependsOn = it.DependsOn
 	d.body = it.Body
 	d.sync()
 	note := ""

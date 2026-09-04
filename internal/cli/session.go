@@ -941,16 +941,22 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	}
 	if cwd != "" && !session.conversation {
 		root := todo.Root(cwd)
+		// The vocabulary the backlog is written in is resolved once, here,
+		// and handed to every reader of it. This release ships one profile,
+		// and the reason it travels rather than being reached for is that
+		// the next one will not be the same for every checkout.
+		profile := todo.BuiltinCode()
 		model = model.WithTodos(chat.Todos{
 			Root: root, Manage: todoManager(root), Detail: todoDetail,
+			Profile: profile,
 			// The session's own model reads the session: extraction is a
 			// judgement about the whole conversation, not a status line, and
 			// the cheap summary model is the wrong price point for it.
-			Extractor: todo.NewExtractor(ledger.For(env.prov, meter.SourceBacklog), todo.ExtractConfig{Model: env.modelName}),
+			Extractor: todo.NewExtractor(ledger.For(env.prov, meter.SourceBacklog), todo.ExtractConfig{Model: env.modelName}, profile),
 			// Drafting an item from a sentence is the same judgement in one
 			// paragraph rather than over a whole session, so it goes to the
 			// same model and is metered against the same source.
-			Drafter:     todo.NewDrafter(ledger.For(env.prov, meter.SourceBacklog), todo.ExtractConfig{Model: env.modelName}),
+			Drafter:     todo.NewDrafter(ledger.For(env.prov, meter.SourceBacklog), todo.ExtractConfig{Model: env.modelName}, profile),
 			NoCommit:    !cfg.TodoCommitEnabled(),
 			ItemTimeout: cfg.TodoItemTimeout(),
 			GroomStale:  cfg.TodoGroomStale(),

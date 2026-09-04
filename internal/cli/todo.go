@@ -29,9 +29,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// todoProfile is the vocabulary a checkout's backlog is written in. This
+// release ships one, and it is asked for here rather than reached for by
+// each reader so that the next release has one place to resolve it in.
+func todoProfile() todo.Profile { return todo.BuiltinCode() }
+
 // loadTodos reads the backlog of the checkout dir is in.
 func loadTodos(dir string) *todo.Store {
-	return todo.Load(todo.Root(dir))
+	return todo.Load(todoProfile(), todo.Root(dir))
 }
 
 // todoCwd is the directory `shhh todo` reads the backlog of. An unreadable
@@ -157,7 +162,7 @@ func todoRow(s *todo.Store, it todo.Item) report.Row {
 		State:   todoRowState(s, it),
 		Name:    it.Slug,
 		Subject: clipRunes(it.Title, 72),
-		Detail:  joinDetail(string(it.Kind), joinDetail(string(it.Priority), todoSize(it))),
+		Detail:  joinDetail(todoFieldDetail(it), joinDetail(string(it.Priority), it.Grade())),
 		Outcome: todoState(s, it),
 	}
 }
@@ -220,9 +225,19 @@ func todoRowState(s *todo.Store, it todo.Item) report.State {
 	return report.Queue
 }
 
-// todoSize is the item's size where it declared one; an item that did not
-// says nothing rather than a dash.
-func todoSize(it todo.Item) string { return string(it.Size) }
+// todoFieldDetail is the item's header fields other than the priority and
+// the grade, which the row states either side of it. An item that declared
+// none says nothing rather than a dash.
+func todoFieldDetail(it todo.Item) string {
+	detail := ""
+	for _, f := range it.Profile.Fields {
+		if f.Orders() || f.Name == it.Profile.Grade {
+			continue
+		}
+		detail = joinDetail(detail, it.Fields[f.Name])
+	}
+	return detail
+}
 
 // todoState is the row's state column: the status, or for an open item
 // whether it is ready and if not what it waits on.
@@ -261,7 +276,7 @@ func todoSprintReport(s *todo.Store) report.Report {
 			State:   todoSprintRowState(e),
 			Name:    e.Slug,
 			Subject: clipRunes(e.Item.Title, 72),
-			Detail:  joinDetail(string(e.Item.Priority), string(e.Item.Size)),
+			Detail:  joinDetail(string(e.Item.Priority), e.Item.Grade()),
 			Outcome: todoSprintOutcome(e),
 		})
 	}
@@ -319,13 +334,17 @@ func todoItemReport(s *todo.Store, it todo.Item, body bool) report.Report {
 		Subject: clipRunes(it.Title, 72),
 	}
 	pairs := []report.Pair{{Key: "status", Value: todoState(s, it)}, {Key: "priority", Value: string(it.Priority)}}
-	for _, p := range []report.Pair{
-		{Key: "kind", Value: string(it.Kind)},
-		{Key: "size", Value: string(it.Size)},
-		{Key: "depends on", Value: strings.Join(it.DependsOn, ", ")},
-		{Key: "created", Value: it.Created},
-		{Key: "session", Value: it.Session},
-	} {
+	rest := make([]report.Pair, 0, len(it.Profile.Fields)+3)
+	for _, f := range it.Profile.Fields {
+		if !f.Orders() {
+			rest = append(rest, report.Pair{Key: f.Name, Value: it.Fields[f.Name]})
+		}
+	}
+	rest = append(rest,
+		report.Pair{Key: "depends on", Value: strings.Join(it.DependsOn, ", ")},
+		report.Pair{Key: "created", Value: it.Created},
+		report.Pair{Key: "session", Value: it.Session})
+	for _, p := range rest {
 		if p.Value != "" {
 			pairs = append(pairs, p)
 		}
@@ -447,7 +466,13 @@ func newTodoSprintPlanCmd() *cobra.Command {
 			return todoSprintPlanHeadless(cmd, size, asJSON)
 		},
 	}
-	cmd.Flags().StringVar(&size, "size", "", "the budget the set has to fit, as S=n,M=n,L=n")
+	// The flag is the profile's grading field, because what a set is
+	// budgeted in is what a run spends: a backlog of readings is bounded in
+	// depths and has no size to be asked for. A profile that does not grade
+	// its work is offered no budget at all rather than one it cannot spend.
+	if name, shape, graded := todo.BudgetFlag(todoProfile()); graded {
+		cmd.Flags().StringVar(&size, name, "", "the budget the set has to fit, as "+shape)
+	}
 	// Not todoJSONFlag: that one promises the store's warnings with the
 	// listing, and a proposal is a reading rather than a listing — it
 	// carries reasons, not diagnostics.
@@ -458,12 +483,12 @@ func newTodoSprintPlanCmd() *cobra.Command {
 // todoSprintPlanHeadless spends the one turn and reads its answer against
 // the candidates it was asked about.
 func todoSprintPlanHeadless(cmd *cobra.Command, spec string, asJSON bool) error {
-	budget, err := todo.ParseSprintBudget(spec)
+	budget, err := todo.ParseSprintBudget(todoProfile(), spec)
 	if err != nil {
 		return err
 	}
 	root := todo.Root(todoCwd())
-	s := todo.Load(root)
+	s := todo.Load(todoProfile(), root)
 	if s.Sprint.Open() {
 		return fmt.Errorf("%s is still open — one sprint at a time; `shhh todo sprint` shows it", s.Sprint.Name)
 	}
@@ -472,7 +497,8 @@ func todoSprintPlanHeadless(cmd *cobra.Command, spec string, asJSON bool) error 
 		return fmt.Errorf("nothing is ready, so there is no set to propose")
 	}
 	if !budget.Fits(candidates) {
-		return fmt.Errorf("no ready item fits %s; without --size the whole ready list is read", budget)
+		name, _, _ := todo.BudgetFlag(todoProfile())
+		return fmt.Errorf("no ready item fits %s; without --%s the whole ready list is read", budget, name)
 	}
 	// The driver is built with no commit to make: planning changes nothing,
 	// so the refusal a run gives outside a repository is not this command's
@@ -653,7 +679,7 @@ func (e todoUsage) Error() string { return e.text }
 // See docs/capabilities/todo.md#an-item-is-a-file-you-can-edit.
 func todoVerb(root string, args []string) (string, error) {
 	usage := todoUsage{"Usage: /todo [list] · /todo show <slug> · /todo add <text> · /todo block <slug> [why] · /todo open <slug> · /todo done <slug> · /todo drop <slug> · /todo edit <slug> · /todo sprint"}
-	s := todo.Load(root)
+	s := todo.Load(todoProfile(), root)
 	if len(args) == 0 || (len(args) == 1 && args[0] == "list") {
 		return todoListing(s), nil
 	}
@@ -676,20 +702,33 @@ func todoVerb(root string, args []string) (string, error) {
 		if title == "" {
 			return "", usage
 		}
+		// An item typed at the command line takes every field's default,
+		// which is what the profile is for: nothing here decides what a
+		// new item is called or how big it is.
+		profile := todoProfile()
 		it := todo.Item{
-			Slug:     todo.Slugify(title),
-			Title:    title,
-			Kind:     todo.KindStory,
-			Priority: todo.PriorityMedium,
-			Created:  time.Now().Format("2006-01-02"),
-			Body:     todoTemplate,
+			Slug:    todo.Slugify(title),
+			Title:   title,
+			Fields:  map[string]string{},
+			Created: time.Now().Format("2006-01-02"),
+			Body:    todoTemplate,
+			Profile: profile,
 		}
-		path, err := todo.Create(root, it)
+		for _, f := range profile.Fields {
+			if f.Orders() {
+				it.Priority = todo.Priority(f.Default)
+				continue
+			}
+			if f.Default != "" {
+				it.Fields[f.Name] = f.Default
+			}
+		}
+		path, err := todo.Create(profile, root, it)
 		if err != nil {
 			return "", err
 		}
 		return report.Report{Sections: []report.Section{{Rows: []report.Row{
-			report.Done("added", it.Slug+" · "+string(it.Kind)+" · medium"),
+			report.Done("added", it.Slug+" · "+joinDetail(todoFieldDetail(it), string(it.Priority))),
 			{State: report.Run, Subject: "fill in the criteria", Detail: "/todo edit " + it.Slug, Body: []string{path}},
 		}}}}.String(), nil
 	case "block":
@@ -743,7 +782,7 @@ func todoVerb(root string, args []string) (string, error) {
 		// Archiving by hand is one of the two ways a sprint's last
 		// slug is accounted for, so the close is checked here as well
 		// as at the end of a run.
-		if closed, err := todo.CloseSprintIfDone(root); err != nil {
+		if closed, err := todo.CloseSprintIfDone(todoProfile(), root); err != nil {
 			rows = append(rows, report.Row{State: report.Warn, Subject: "the sprint could not be closed", Detail: err.Error()})
 		} else if closed != "" {
 			rows = append(rows, report.Done("sprint closed", closed))
@@ -837,7 +876,7 @@ func todoSprintManage(root string, s *todo.Store, args []string) (string, error)
 		}
 		return report.Report{Sections: []report.Section{{Rows: []report.Row{report.Done("goal of "+sp.Name, "rewritten")}}}}.String(), nil
 	case "close":
-		to, err := todo.CloseSprint(root)
+		to, err := todo.CloseSprint(todoProfile(), root)
 		if err != nil {
 			return "", err
 		}
@@ -935,7 +974,7 @@ func todoGroomHeadless(cmd *cobra.Command, slug string, all bool) error {
 		return fmt.Errorf("--all reads the whole backlog, so it does not take an item as well")
 	}
 	root := todo.Root(todoCwd())
-	store := todo.Load(root)
+	store := todo.Load(todoProfile(), root)
 	items, err := todoGroomTargets(store, slug, all)
 	if err != nil {
 		return err

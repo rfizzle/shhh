@@ -95,7 +95,7 @@ func TestTodoRunHeadless_SprintCommitsAndArchivesEachItem(t *testing.T) {
 	if blocked := d.sprint(context.Background(), 0); blocked {
 		t.Fatalf("the sprint should have finished:\n%s", out.String())
 	}
-	store := todo.Load(root)
+	store := todo.Load(todo.BuiltinCode(), root)
 	for _, slug := range []string{"a-one", "b-two"} {
 		if it, ok := store.Find(slug); !ok || !it.Archived {
 			t.Fatalf("%s should be archived: %+v", slug, it)
@@ -137,7 +137,7 @@ func TestTodoRunHeadless_BlockStopsTheSprintAndExitsSeven(t *testing.T) {
 	if !asExitError(err, &ee) || ee.code != exitBlocked {
 		t.Fatalf("a blocked run should carry the blocked code, got %v", err)
 	}
-	store := todo.Load(root)
+	store := todo.Load(todo.BuiltinCode(), root)
 	if it, _ := store.Find("a-one"); it.Status != todo.StatusBlocked || !strings.Contains(it.Body, "## Blocked") {
 		t.Fatalf("the evidence should be on the item: %+v", it)
 	}
@@ -177,7 +177,7 @@ func TestTodoRunHeadless_NoCommitSprintKeepsTheItemsApart(t *testing.T) {
 	if blocked := d.sprint(context.Background(), 0); blocked {
 		t.Fatalf("the sprint should have finished:\n%s", out.String())
 	}
-	second, ok := todo.Load(root).Find("b-two")
+	second, ok := todo.Load(todo.BuiltinCode(), root).Find("b-two")
 	if !ok || !second.Archived {
 		t.Fatalf("b-two should be archived: %+v", second)
 	}
@@ -197,7 +197,7 @@ func TestTodoRunHeadless_MaxRunsOneAndStops(t *testing.T) {
 	if blocked := d.sprint(context.Background(), 1); blocked {
 		t.Fatalf("the cap is not a block:\n%s", out.String())
 	}
-	store := todo.Load(root)
+	store := todo.Load(todo.BuiltinCode(), root)
 	if it, _ := store.Find("b-two"); it.Archived {
 		t.Fatal("the second item should not have been started")
 	}
@@ -252,7 +252,7 @@ func TestTodoRunHeadless_ContinuesACheckpoint(t *testing.T) {
 		t.Fatal(err)
 	}
 	st := run.Start(it, "earlier", "", 0, run.Options{Repo: true})
-	st.Stage, st.Size, st.Plan = run.StageCommit, todo.SizeS, headlessPlan
+	st.Stage, st.Grade, st.Plan = run.StageCommit, "S", headlessPlan
 	st.Paths = []string{"a.go"}
 	if err := os.WriteFile(filepath.Join(root, "a.go"), []byte("package a\n"), 0o644); err != nil {
 		t.Fatal(err)
@@ -312,7 +312,7 @@ func TestTodoRunTarget(t *testing.T) {
 	if err := os.WriteFile(waits, []byte("---\ntitle: four\ndepends_on: a-one\n---\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	s := todo.Load(root)
+	s := todo.Load(todo.BuiltinCode(), root)
 	if it, err := todoRunTarget(s, ""); err != nil || it.Slug != "a-one" {
 		t.Fatalf("the next ready item = %q/%v", it.Slug, err)
 	}
@@ -347,7 +347,7 @@ func TestTodoPorcelainPaths(t *testing.T) {
 
 func mustItem(t *testing.T, root, slug string) todo.Item {
 	t.Helper()
-	it, ok := todo.Load(root).Find(slug)
+	it, ok := todo.Load(todo.BuiltinCode(), root).Find(slug)
 	if !ok {
 		t.Fatalf("no item %q", slug)
 	}
@@ -373,7 +373,7 @@ func TestTodoRunHeadless_ACutStageAnswerBlocksTheItem(t *testing.T) {
 		return todoTurn{text: headlessPlan, code: exitDone, truncated: true}, nil
 	}
 
-	st := d.work(context.Background(), todo.Load(root).Items[0], nil)
+	st := d.work(context.Background(), todo.Load(todo.BuiltinCode(), root).Items[0], nil)
 
 	if st.Stage != run.StageBlocked {
 		t.Fatalf("half an answer must not be graded, stage %s:\n%s", st.Stage, out.String())
@@ -381,7 +381,7 @@ func TestTodoRunHeadless_ACutStageAnswerBlocksTheItem(t *testing.T) {
 	if st.Blocked != run.CutAtCeiling(run.StageResearch) {
 		t.Fatalf("the ceiling should be the evidence, got %q", st.Blocked)
 	}
-	if it, _ := todo.Load(root).Find("a-one"); it.Status != todo.StatusBlocked {
+	if it, _ := todo.Load(todo.BuiltinCode(), root).Find("a-one"); it.Status != todo.StatusBlocked {
 		t.Fatalf("the item should be blocked, is %s", it.Status)
 	}
 }
@@ -392,7 +392,7 @@ func TestTodoRunHeadless_AWholeStageAnswerIsRead(t *testing.T) {
 	root := todoRepo(t, "a-one")
 	d, _ := headlessDriver(t, root, stageAnswers(root))
 
-	if st := d.work(context.Background(), todo.Load(root).Items[0], nil); st.Stage != run.StageDone {
+	if st := d.work(context.Background(), todo.Load(todo.BuiltinCode(), root).Items[0], nil); st.Stage != run.StageDone {
 		t.Fatalf("an answer the model finished is the stage's answer, stage %s", st.Stage)
 	}
 }

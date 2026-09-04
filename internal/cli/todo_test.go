@@ -27,7 +27,7 @@ func todoFixture(t *testing.T) string {
 }
 
 func TestTodoListing(t *testing.T) {
-	s := todo.Load(todoFixture(t))
+	s := todo.Load(todo.BuiltinCode(), todoFixture(t))
 	out := todoListing(s)
 	for _, want := range []string{
 		"· first   First thing · high · S  [ready]",
@@ -47,14 +47,14 @@ func TestTodoListing(t *testing.T) {
 }
 
 func TestTodoListing_Empty(t *testing.T) {
-	out := todoListing(todo.Load(t.TempDir()))
+	out := todoListing(todo.Load(todo.BuiltinCode(), t.TempDir()))
 	if !strings.Contains(out, "⊘ no backlog here") {
 		t.Errorf("empty listing = %q", out)
 	}
 }
 
 func TestTodoDetail(t *testing.T) {
-	s := todo.Load(todoFixture(t))
+	s := todo.Load(todo.BuiltinCode(), todoFixture(t))
 	it, _ := s.Find("first")
 	out := todoDetail(s, it)
 	for _, want := range []string{"shhh todo first — First thing", "status:    ready", "size:      S", "## Notes", "hi"} {
@@ -109,7 +109,7 @@ func TestTodoManager(t *testing.T) {
 	if !strings.Contains(out, "✓ added fix-the-12-parser-crash") {
 		t.Errorf("add = %q", out)
 	}
-	it, ok := todo.Load(root).Find("fix-the-12-parser-crash")
+	it, ok := todo.Load(todo.BuiltinCode(), root).Find("fix-the-12-parser-crash")
 	if !ok || it.Title != "Fix the #12 parser crash" || it.Priority != todo.PriorityMedium || it.Created == "" || !strings.Contains(it.Body, "## Acceptance criteria") {
 		t.Errorf("added item = %+v", it)
 	}
@@ -123,7 +123,7 @@ func TestTodoManager(t *testing.T) {
 	if out := manage([]string{"block", "first", "needs", "a", "decision"}); !strings.Contains(out, "✓ blocked first") {
 		t.Errorf("block = %q", out)
 	}
-	it, _ = todo.Load(root).Find("first")
+	it, _ = todo.Load(todo.BuiltinCode(), root).Find("first")
 	if it.Status != todo.StatusBlocked || !strings.HasSuffix(it.Body, "## Blocked\nneeds a decision\n") {
 		t.Errorf("blocked item = %+v", it)
 	}
@@ -165,7 +165,7 @@ func sprintFixture(t *testing.T) string {
 }
 
 func TestTodoSprintReport(t *testing.T) {
-	out := todoSprintReport(todo.Load(sprintFixture(t))).String()
+	out := todoSprintReport(todo.Load(todo.BuiltinCode(), sprintFixture(t))).String()
 	for _, want := range []string{
 		"shhh todo sprint — caching",
 		"Make the cache trustworthy.",
@@ -181,7 +181,7 @@ func TestTodoSprintReport(t *testing.T) {
 }
 
 func TestTodoSprintReport_Empty(t *testing.T) {
-	out := todoSprintReport(todo.Load(t.TempDir())).String()
+	out := todoSprintReport(todo.Load(todo.BuiltinCode(), t.TempDir())).String()
 	if !strings.Contains(out, "⊘ no sprint here") {
 		t.Errorf("empty sprint view = %q", out)
 	}
@@ -190,7 +190,7 @@ func TestTodoSprintReport_Empty(t *testing.T) {
 // The sprint scopes the ready set, so the listing's tally has to say which
 // sprint it is counting or the rows and the tally read as a contradiction.
 func TestTodoListing_NamesTheSprintItCountsReadyIn(t *testing.T) {
-	out := todoListing(todo.Load(sprintFixture(t)))
+	out := todoListing(todo.Load(todo.BuiltinCode(), sprintFixture(t)))
 	if !strings.Contains(out, "1 ready in caching") {
 		t.Errorf("listing tally = %q", out)
 	}
@@ -275,7 +275,7 @@ func TestTodoManager_SprintVerbsRefuseAClosedSprint(t *testing.T) {
 }
 
 func TestTodoSetReport_Ready(t *testing.T) {
-	s := todo.Load(todoFixture(t))
+	s := todo.Load(todo.BuiltinCode(), todoFixture(t))
 	out := todoSetReport(s, "shhh todo ready", s.Ready()).String()
 	for _, want := range []string{"shhh todo ready — 1 item", "· first  First thing · high · S  [ready]"} {
 		if !strings.Contains(out, want) {
@@ -290,7 +290,7 @@ func TestTodoSetReport_Ready(t *testing.T) {
 // Nothing ready and no backlog at all are different answers, and each names
 // the way out of its own situation.
 func TestTodoSetReport_NothingReady(t *testing.T) {
-	s := todo.Load(t.TempDir())
+	s := todo.Load(todo.BuiltinCode(), t.TempDir())
 	out := todoSetReport(s, "shhh todo next", todoNext(s)).String()
 	if !strings.Contains(out, "⊘ nothing is ready") {
 		t.Errorf("empty next = %q", out)
@@ -301,7 +301,7 @@ func TestTodoSetReport_NothingReady(t *testing.T) {
 }
 
 func TestTodoNext(t *testing.T) {
-	s := todo.Load(todoFixture(t))
+	s := todo.Load(todo.BuiltinCode(), todoFixture(t))
 	next := todoNext(s)
 	if len(next) != 1 || next[0].Slug != "first" {
 		t.Fatalf("next = %+v", next)
@@ -316,7 +316,7 @@ func TestTodoJSON(t *testing.T) {
 	root := sprintFixture(t)
 	must(t, os.WriteFile(filepath.Join(todo.Dir(root), "fourth.md"),
 		[]byte("---\ntitle: Fourth\nsize: XL\n---\n"), 0o644))
-	s := todo.Load(root)
+	s := todo.Load(todo.BuiltinCode(), root)
 
 	data, err := json.Marshal(todoJSON(s, s.Items))
 	if err != nil {
@@ -336,7 +336,7 @@ func TestTodoJSON(t *testing.T) {
 	for _, it := range doc.Items {
 		byslug[it.Slug] = it
 	}
-	if first := byslug["first"]; !first.Ready || first.State != "ready" || first.Size != "S" || first.Title != "First thing" {
+	if first := byslug["first"]; !first.Ready || first.State != "ready" || first.Fields["size"] != "S" || first.Title != "First thing" {
 		t.Errorf("first = %+v", first)
 	}
 	if second := byslug["second"]; second.Ready || second.State != "waits on first" ||
@@ -364,7 +364,7 @@ func TestTodoJSON(t *testing.T) {
 // The sprint verb answers about the sprint: its slugs, in the file's order,
 // and not the rest of the backlog.
 func TestTodoJSON_SprintVerb(t *testing.T) {
-	s := todo.Load(sprintFixture(t))
+	s := todo.Load(todo.BuiltinCode(), sprintFixture(t))
 	doc := todoJSON(s, todoSprintItems(s))
 	var slugs []string
 	for _, it := range doc.Items {
@@ -380,7 +380,7 @@ func TestTodoJSON_SprintVerb(t *testing.T) {
 // the state each slug is in placed against the backlog.
 func TestTodoJSON_SprintRoundTripsTheFile(t *testing.T) {
 	root := sprintFixture(t)
-	s := todo.Load(root)
+	s := todo.Load(todo.BuiltinCode(), root)
 	data, err := json.Marshal(todoJSON(s, todoSprintItems(s)))
 	if err != nil {
 		t.Fatal(err)
@@ -489,7 +489,7 @@ func TestTodoShow_PipedIsTheFile(t *testing.T) {
 // The header report is the same one the transcript draws, minus the body the
 // terminal path lays out itself.
 func TestTodoItemReport_WithoutTheBody(t *testing.T) {
-	s := todo.Load(todoFixture(t))
+	s := todo.Load(todo.BuiltinCode(), todoFixture(t))
 	it, _ := s.Find("first")
 	out := todoItemReport(s, it, false).String()
 	if !strings.Contains(out, "status:    ready") {
@@ -511,7 +511,7 @@ func TestTodoGroomReport_IsTheWholeReadingAndWritesNothing(t *testing.T) {
 		"## Acceptance criteria\n- [ ] internal/cache/store.go:88 reads the config\n- [ ] The reader drops a stale entry\n"
 	path := filepath.Join(dir, "first.md")
 	must(t, os.WriteFile(path, []byte(item), 0o644))
-	it, err := todo.LoadFile(path)
+	it, err := todo.LoadFile(todo.BuiltinCode(), path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -546,7 +546,7 @@ func TestTodoGroomReport_NamesAnItemTheTreeHasFinished(t *testing.T) {
 }
 
 func TestTodoGroomTargets(t *testing.T) {
-	s := todo.Load(todoFixture(t))
+	s := todo.Load(todo.BuiltinCode(), todoFixture(t))
 	all, err := todoGroomTargets(s, "", true)
 	if err != nil || len(all) != len(s.Items) {
 		t.Fatalf("--all = %d items, %v", len(all), err)
@@ -578,7 +578,7 @@ func TestTodoSprintPlan_IsTheWholeRecommendationAndWritesNothing(t *testing.T) {
 		}
 		return answer
 	})
-	s := todo.Load(root)
+	s := todo.Load(todo.BuiltinCode(), root)
 	plan, err := todoSprintPlanRead(context.Background(), d, s, s.Ready(), nil)
 	if err != nil {
 		t.Fatal(err)
@@ -611,11 +611,11 @@ func TestTodoSprintPlan_IsTheWholeRecommendationAndWritesNothing(t *testing.T) {
 // and the item headers already say so: no turn is spent finding out.
 func TestTodoSprintPlan_RefusesABudgetNothingFits(t *testing.T) {
 	root := todoFixture(t)
-	budget, err := todo.ParseSprintBudget("L=2")
+	budget, err := todo.ParseSprintBudget(todo.BuiltinCode(), "L=2")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if budget.Fits(todo.Load(root).Ready()) {
+	if budget.Fits(todo.Load(todo.BuiltinCode(), root).Ready()) {
 		t.Fatal("a backlog of small items fits a budget of large ones")
 	}
 }

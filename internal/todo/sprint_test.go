@@ -107,7 +107,7 @@ func TestStoreReady_ScopedToTheSprintInFileOrder(t *testing.T) {
 	// The sprint states the reverse of the backlog's own order and leaves
 	// one ready item out; a waiting slug is skipped rather than offered.
 	root := sprintRoot(t, "---\nname: caching\n---\ngoal\n\n## Items\n- cache-invalidate\n- cache-ttl\n")
-	s := Load(root)
+	s := Load(BuiltinCode(), root)
 	if got := itemSlugs(s.Ready()); got != "cache-ttl" {
 		t.Fatalf("ready = %q; the sprint's order stands and a waiting slug is skipped", got)
 	}
@@ -127,7 +127,7 @@ func TestStoreReady_ScopedToTheSprintInFileOrder(t *testing.T) {
 }
 
 func TestStoreReady_UnchangedWithNoSprintFile(t *testing.T) {
-	s := Load(sprintRoot(t, ""))
+	s := Load(BuiltinCode(), sprintRoot(t, ""))
 	if s.Sprint != nil {
 		t.Fatalf("sprint = %+v, want none", s.Sprint)
 	}
@@ -137,14 +137,14 @@ func TestStoreReady_UnchangedWithNoSprintFile(t *testing.T) {
 }
 
 func TestStoreReady_UnscopedByAClosedSprint(t *testing.T) {
-	s := Load(sprintRoot(t, "---\nname: caching\nstatus: closed\n---\ngoal\n\n## Items\n- cache-ttl\n"))
+	s := Load(BuiltinCode(), sprintRoot(t, "---\nname: caching\nstatus: closed\n---\ngoal\n\n## Items\n- cache-ttl\n"))
 	if got := itemSlugs(s.Ready()); got != "cache-ttl cache-metrics" {
 		t.Fatalf("ready = %q; a closed sprint scopes nothing", got)
 	}
 }
 
 func TestStoreLoad_ASprintThatWillNotParseIsADiagnostic(t *testing.T) {
-	s := Load(sprintRoot(t, "---\nstatus: open\n---\n"))
+	s := Load(BuiltinCode(), sprintRoot(t, "---\nstatus: open\n---\n"))
 	if s.Sprint != nil {
 		t.Fatalf("sprint = %+v, want none", s.Sprint)
 	}
@@ -157,7 +157,7 @@ func TestStoreLoad_ASprintThatWillNotParseIsADiagnostic(t *testing.T) {
 }
 
 func TestStoreLoad_TheSprintIsNotReadAsAnItem(t *testing.T) {
-	s := Load(sprintRoot(t, sampleSprint))
+	s := Load(BuiltinCode(), sprintRoot(t, sampleSprint))
 	if len(s.Diagnostics) != 0 {
 		t.Fatalf("diagnostics = %v", s.Diagnostics)
 	}
@@ -168,7 +168,7 @@ func TestStoreLoad_TheSprintIsNotReadAsAnItem(t *testing.T) {
 
 func TestParseSprintBudget_RefusesWhatItCannotSpend(t *testing.T) {
 	for _, spec := range []string{"S", "XL=1", "S=x", "S=-1"} {
-		if _, err := ParseSprintBudget(spec); err == nil {
+		if _, err := ParseSprintBudget(BuiltinCode(), spec); err == nil {
 			t.Errorf("%q was accepted", spec)
 		}
 	}
@@ -261,13 +261,13 @@ func TestCloseSprintIfDone_ArchivesTheLastSlugWithTheReports(t *testing.T) {
 	root := sprintRoot(t, "---\nname: caching\n---\ngoal\n\n## Items\n- cache-ttl\n- cache-keys\n- cache-gone\n")
 	// cache-gone is in the sprint and in no directory: a slug dropped from
 	// the backlog is accounted for rather than holding the set open.
-	if to, err := CloseSprintIfDone(root); err != nil || to != "" {
+	if to, err := CloseSprintIfDone(BuiltinCode(), root); err != nil || to != "" {
 		t.Fatalf("closed early: %q %v", to, err)
 	}
 	if _, err := Archive(root, "cache-ttl", "## Report\nSummary: the lifetime is a duration on the entry.\n"); err != nil {
 		t.Fatal(err)
 	}
-	to, err := CloseSprintIfDone(root)
+	to, err := CloseSprintIfDone(BuiltinCode(), root)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -296,14 +296,14 @@ func TestCloseSprintIfDone_ArchivesTheLastSlugWithTheReports(t *testing.T) {
 			t.Errorf("the archived sprint lacks %q:\n%s", want, text)
 		}
 	}
-	if Load(root).Sprint != nil {
+	if Load(BuiltinCode(), root).Sprint != nil {
 		t.Error("the backlog still reads a sprint")
 	}
 }
 
 func TestCloseSprint_EarlyListsWhatWasLeft(t *testing.T) {
 	root := sprintRoot(t, "---\nname: caching\n---\ngoal\n\n## Items\n- cache-ttl\n- cache-metrics\n")
-	to, err := CloseSprint(root)
+	to, err := CloseSprint(BuiltinCode(), root)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -324,7 +324,7 @@ func TestCloseSprint_EarlyListsWhatWasLeft(t *testing.T) {
 // not hold the sprint open either.
 func TestSprintProgress_LeavesOutASlugTheBacklogNoLongerHolds(t *testing.T) {
 	root := sprintRoot(t, "---\nname: caching\n---\ngoal\n\n## Items\n- cache-keys\n- cache-gone\n- cache-ttl\n")
-	s := Load(root)
+	s := Load(BuiltinCode(), root)
 	done, total := s.SprintProgress()
 	if done != 1 || total != 2 {
 		t.Fatalf("progress = %d of %d, want 1 of 2", done, total)
@@ -378,7 +378,7 @@ func TestSprintAdd_TouchesExactlyOneLine(t *testing.T) {
 // discovered as a backlog with no next item.
 func TestParseSprint_AnEmptyListIsAWarning(t *testing.T) {
 	root := sprintRoot(t, "---\nname: caching\n---\ngoal\n\n## Items\n")
-	s := Load(root)
+	s := Load(BuiltinCode(), root)
 	if len(s.Ready()) != 0 {
 		t.Fatalf("ready = %v; an open sprint that names nothing scopes to nothing", itemSlugs(s.Ready()))
 	}
@@ -391,7 +391,7 @@ func TestParseSprint_AnEmptyListIsAWarning(t *testing.T) {
 // skipped by the loader and would break the sprint reader too.
 func TestCreate_RefusesTheSprintsFileName(t *testing.T) {
 	root := sprintRoot(t, "")
-	_, err := Create(root, Item{Slug: strings.TrimSuffix(SprintFile, ".md"), Title: "Not an item"})
+	_, err := Create(BuiltinCode(), root, Item{Slug: strings.TrimSuffix(SprintFile, ".md"), Title: "Not an item"})
 	if err == nil || !strings.Contains(err.Error(), "names the sprint file") {
 		t.Fatalf("err = %v", err)
 	}
@@ -407,7 +407,7 @@ func TestCreateSprint_RefusesANameTheArchiveHolds(t *testing.T) {
 	if _, err := CreateSprint(root, sp); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := CloseSprint(root); err != nil {
+	if _, err := CloseSprint(BuiltinCode(), root); err != nil {
 		t.Fatal(err)
 	}
 	if !SprintNameTaken(root, "caching") {

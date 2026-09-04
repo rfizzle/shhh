@@ -55,7 +55,7 @@ type Sprint struct {
 	// Created and Session are when and by whom the set was chosen.
 	Created string
 	Session string
-	Extra   []Field
+	Extra   []Unknown
 
 	// Goal is the paragraph above the item list, as written.
 	Goal string
@@ -140,7 +140,7 @@ func ParseSprint(path, content string) (*Sprint, error) {
 		case keySession:
 			sp.Session = l.value
 		default:
-			sp.Extra = append(sp.Extra, Field{Key: l.key, Value: l.value})
+			sp.Extra = append(sp.Extra, Unknown{Key: l.key, Value: l.value})
 		}
 	}
 	if sp.Name == "" {
@@ -526,26 +526,55 @@ func (s *Store) SprintFinished() bool {
 	return true
 }
 
-// SprintBudget is how many items of each size a proposed set may hold.
-// Size is the budget's unit because size is what the runner gates on: a
-// sprint of three L items is a different week from one of nine S ones.
-type SprintBudget map[Size]int
+// SprintBudget is how many items of each grade a proposed set may hold, in
+// the profile's own order. The grade is the budget's unit because the grade
+// is what a run spends on: a sprint of three of the largest is a different
+// week from one of nine of the smallest.
+//
+// It is a list rather than a map because a budget has to state itself back
+// — on the plan card, and in the prompt the reading is asked with — in the
+// profile's own order, and a map would have to be handed the profile again
+// at every one of those points to know what that order was.
+type SprintBudget []GradeCount
+
+// GradeCount is one grade's allowance.
+type GradeCount struct {
+	Grade string
+	Count int
+}
 
 // String is the budget as every surface states it, and empty for no budget
 // at all. A proposal states the budget it was bounded by, so a person
 // reading a set can see the shape of the question it answered.
 func (b SprintBudget) String() string {
 	var parts []string
-	for _, size := range []Size{SizeS, SizeM, SizeL} {
-		if n, ok := b[size]; ok {
-			parts = append(parts, fmt.Sprintf("%s=%d", size, n))
-		}
+	for _, g := range b {
+		parts = append(parts, fmt.Sprintf("%s=%d", g.Grade, g.Count))
 	}
 	return strings.Join(parts, " ")
 }
 
+// clone is the budget as a set of allowances something is about to spend
+// against, so the budget itself is not decremented.
+func (b SprintBudget) clone() SprintBudget {
+	return append(SprintBudget(nil), b...)
+}
+
+// spend takes one item of the grade out of the budget and reports whether
+// there was one to take. A grade the budget does not name has no allowance,
+// which is what leaves an ungraded item out of a stated budget.
+func (b SprintBudget) spend(grade string) bool {
+	for i := range b {
+		if b[i].Grade == grade && b[i].Count > 0 {
+			b[i].Count--
+			return true
+		}
+	}
+	return false
+}
+
 // Fits reports the budget could admit at least one of the items. A budget
-// naming only sizes the ready list does not hold admits nothing, and a
+// naming only grades the ready list does not hold admits nothing, and a
 // reading spent discovering that is a turn spent on an answer the item
 // headers already gave.
 func (b SprintBudget) Fits(items []Item) bool {
@@ -553,22 +582,48 @@ func (b SprintBudget) Fits(items []Item) bool {
 		return len(items) > 0
 	}
 	for _, it := range items {
-		if b[it.Size] > 0 {
-			return true
+		for _, g := range b {
+			if g.Grade == it.Grade() && g.Count > 0 {
+				return true
+			}
 		}
 	}
 	return false
 }
 
-// ParseSprintBudget reads `S=2,M=1,L=0`. A size the spec does not name gets
-// no allowance, so a stated budget is the whole of what it admits — an
-// ungraded item has no size to spend and is left out until it is graded.
-func ParseSprintBudget(spec string) (SprintBudget, error) {
+// BudgetFlag is what the flag that asks for a budget is called and the
+// shape a spec for it takes — `size` and `S=n,M=n,L=n` for a backlog of
+// code — and false for a profile that does not grade its work, which has no
+// budget to state. The flag and the words it asks for come from here rather
+// than from each surface, so that the option a person is offered and the
+// spec the parser accepts cannot say different things.
+func BudgetFlag(p Profile) (name, shape string, ok bool) {
+	f, ok := p.GradeField()
+	if !ok {
+		return "", "", false
+	}
+	parts := make([]string, 0, len(f.Values))
+	for _, v := range f.Values {
+		parts = append(parts, v.Name+"=n")
+	}
+	return f.Name, strings.Join(parts, ","), true
+}
+
+// ParseSprintBudget reads `S=2,M=1,L=0` in the profile's grades. A grade the
+// spec does not name gets no allowance, so a stated budget is the whole of
+// what it admits — an ungraded item has no grade to spend and is left out
+// until it is graded. A profile that does not grade its work takes no
+// budget at all, because there is nothing to count.
+func ParseSprintBudget(p Profile, spec string) (SprintBudget, error) {
 	spec = strings.TrimSpace(spec)
 	if spec == "" {
 		return nil, nil
 	}
-	b := SprintBudget{}
+	f, ok := p.GradeField()
+	if !ok {
+		return nil, fmt.Errorf("%s items are not graded, so there is nothing to budget", p.Noun)
+	}
+	counts := map[string]int{}
 	for _, part := range strings.Split(spec, ",") {
 		part = strings.TrimSpace(part)
 		if part == "" {
@@ -576,19 +631,26 @@ func ParseSprintBudget(spec string) (SprintBudget, error) {
 		}
 		key, value, ok := strings.Cut(part, "=")
 		if !ok {
-			return nil, fmt.Errorf("%q is not size=count", part)
+			return nil, fmt.Errorf("%q is not %s=count", part, f.Name)
 		}
-		size := Size(strings.ToUpper(strings.TrimSpace(key)))
-		switch size {
-		case SizeS, SizeM, SizeL:
-		default:
-			return nil, fmt.Errorf("%q is not a size (S, M, L)", key)
+		grade, ok := f.Canonical(strings.TrimSpace(key))
+		if !ok {
+			return nil, fmt.Errorf("%q is not a %s (%s)", key, f.Name, f.List())
 		}
 		var n int
 		if _, err := fmt.Sscanf(strings.TrimSpace(value), "%d", &n); err != nil || n < 0 {
 			return nil, fmt.Errorf("%q is not a count", value)
 		}
-		b[size] = n
+		counts[grade] = n
+	}
+	// The list comes out in the profile's order rather than the spec's, so
+	// two people who typed the same budget in a different order read the
+	// same line back.
+	var b SprintBudget
+	for _, v := range f.Values {
+		if n, ok := counts[v.Name]; ok {
+			b = append(b, GradeCount{Grade: v.Name, Count: n})
+		}
 	}
 	return b, nil
 }
@@ -619,8 +681,8 @@ func (s *Store) Unblocks(slug string) int {
 // The reports are copied rather than pointed at because the sprint is the
 // record of a set of work and an archived item can be edited afterwards;
 // what the sprint says the set produced is what it said at the time.
-func CloseSprint(root string) (string, error) {
-	s := Load(root)
+func CloseSprint(p Profile, root string) (string, error) {
+	s := Load(p, root)
 	if s.Sprint == nil {
 		return "", fmt.Errorf("there is no sprint")
 	}
@@ -652,12 +714,12 @@ func CloseSprint(root string) (string, error) {
 // accounted for, and reports where the file went. It answers "" when
 // there is no sprint or the set is still being worked, so a caller can
 // call it after every archive without asking first.
-func CloseSprintIfDone(root string) (string, error) {
-	s := Load(root)
+func CloseSprintIfDone(p Profile, root string) (string, error) {
+	s := Load(p, root)
 	if !s.Sprint.Open() || !s.SprintFinished() {
 		return "", nil
 	}
-	return CloseSprint(root)
+	return CloseSprint(p, root)
 }
 
 // sprintClosingBlock is what is appended to the sprint on its way to the

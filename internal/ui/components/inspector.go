@@ -228,10 +228,12 @@ const (
 // InspectorTodoRow is one backlog item in the TODO block.
 type InspectorTodoRow struct {
 	Slug string
-	// Priority and Size are one letter each — H/M/L and S/M/L — the two
-	// facts that decide the order and the ceremony, and nothing else fits.
-	Priority, Size string
-	State          TodoRowState
+	// Priority and Grade are one letter each — the priority's, and the
+	// item's grade on whatever scale the project grades work by. They are
+	// the two facts that decide the order and the ceremony, and nothing
+	// else fits.
+	Priority, Grade string
+	State           TodoRowState
 	// Note is the right-hand column: what the row waits on, or the stage a
 	// running one is at. Blank for a ready row, which has nothing to add.
 	Note string
@@ -896,7 +898,7 @@ func (r InspectorRail) todoBlock(width int) (railBlock, bool) {
 	}
 	for _, row := range t.Rows {
 		glyph, style := todoRowTone(row.State)
-		left := glyph + " " + sty.Dim.Render(row.Priority+" "+row.Size) + " " + style.Render(row.Slug)
+		left := glyph + " " + sty.Dim.Render(row.Priority+" "+row.Grade) + " " + style.Render(row.Slug)
 		b.add(railRow(left, row.note(), width, inspectorIndent))
 	}
 	if t.More > 0 {

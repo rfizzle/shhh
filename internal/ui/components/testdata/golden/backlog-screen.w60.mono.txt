@@ -224,7 +224,7 @@ backl…  6 items · [?] hide the keys · [q] back to the prompt
 [ctrl+u] clear the filter; clear it again to close it
 [s] cycle the status filter
 [p] cycle the priority filter
-[k] cycle the kind filter
+[k] cycle the next field filter
 [r] only what can be started now
 [w] jump to what this one waits on
 [e] open the file in your editor
@@ -453,7 +453,7 @@ backl…  6 items · [?] hide the keys · [q] back to the prompt
 ␛[38;5;254m[ctrl+u]␛[m␛[38;5;244m clear the filter; clear it again to close it␛[m
 ␛[38;5;254m[s]␛[m␛[38;5;244m cycle the status filter␛[m
 ␛[38;5;254m[p]␛[m␛[38;5;244m cycle the priority filter␛[m
-␛[38;5;254m[k]␛[m␛[38;5;244m cycle the kind filter␛[m
+␛[38;5;254m[k]␛[m␛[38;5;244m cycle the next field filter␛[m
 ␛[38;5;254m[r]␛[m␛[38;5;244m only what can be started now␛[m
 ␛[38;5;254m[w]␛[m␛[38;5;244m jump to what this one waits on␛[m
 ␛[38;5;254m[e]␛[m␛[38;5;244m open the file in your editor␛[m

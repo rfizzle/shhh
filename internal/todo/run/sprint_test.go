@@ -30,7 +30,7 @@ func backlog(t *testing.T, items ...string) string {
 
 func TestSprint_TakesEachReadyItemOnce(t *testing.T) {
 	root := backlog(t, "a-one", "b-two")
-	store := todo.Load(root)
+	store := todo.Load(todo.BuiltinCode(), root)
 	sp := StartSprint("s1", "manual", 0, false)
 
 	first, ok := sp.Next(store)
@@ -56,7 +56,7 @@ func TestSprint_TakesEachReadyItemOnce(t *testing.T) {
 
 func TestSprint_MaxStopsIt(t *testing.T) {
 	root := backlog(t, "a-one", "b-two")
-	store := todo.Load(root)
+	store := todo.Load(todo.BuiltinCode(), root)
 	sp := StartSprint("s1", "manual", 1, false)
 	if _, ok := sp.Next(store); !ok {
 		t.Fatal("the first item should be taken")
@@ -78,7 +78,7 @@ func TestSprint_TakesTheSprintFilesSetInItsOrder(t *testing.T) {
 	if err := os.WriteFile(todo.SprintPath(root), []byte(sprint), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	store := todo.Load(root)
+	store := todo.Load(todo.BuiltinCode(), root)
 	sp := StartSprint("s1", "manual", 0, false)
 	var got []string
 	for {
@@ -113,7 +113,7 @@ func TestSprint_BlocksAndStopsAreEndings(t *testing.T) {
 func TestSprint_CheckpointSurvivesTheProcess(t *testing.T) {
 	root := backlog(t, "a-one")
 	sp := StartSprint("s1", "manual", 2, true)
-	store := todo.Load(root)
+	store := todo.Load(todo.BuiltinCode(), root)
 	if _, ok := sp.Next(store); !ok {
 		t.Fatal("an item should be taken")
 	}
@@ -176,7 +176,7 @@ func TestSprint_ExpiredNeedsACapAndAnItem(t *testing.T) {
 func TestSprint_SummaryStatesWhereItIs(t *testing.T) {
 	root := backlog(t, "a-one", "b-two")
 	sp := StartSprint("s1", "manual", 0, false)
-	store := todo.Load(root)
+	store := todo.Load(todo.BuiltinCode(), root)
 	sp.Next(store)
 	if got := sp.Summary(); !strings.Contains(got, "0 items done") || !strings.Contains(got, "on a-one") {
 		t.Fatalf("summary = %q", got)

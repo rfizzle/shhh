@@ -76,9 +76,9 @@ func (m Model) startTodoSprintPlan(args []string) (tea.Model, tea.Cmd) {
 	if note, held := m.planHeld(); held {
 		return m.systemNotice(note)
 	}
-	budget, err := parseSprintPlanArgs(args)
+	budget, err := parseSprintPlanArgs(m.todos.Profile, args)
 	if err != nil {
-		return m.systemNotice("Usage: /todo sprint plan [--size S=n,M=n,L=n] — " + err.Error())
+		return m.systemNotice(sprintPlanUsage(m.todos.Profile) + " — " + err.Error())
 	}
 	candidates := s.Ready()
 	if len(candidates) == 0 {
@@ -317,15 +317,20 @@ func sprintBudgetWords(budget todo.SprintBudget) string {
 // word is refused rather than ignored: a mistyped flag that was skipped
 // would write a sprint of the whole ready list, which is the answer the
 // budget was there to avoid.
-func parseSprintPlanArgs(args []string) (todo.SprintBudget, error) {
+func parseSprintPlanArgs(profile todo.Profile, args []string) (todo.SprintBudget, error) {
 	spec := ""
+	// The one flag is named for the profile's grading field, the way the
+	// command's is: a backlog nobody grades is offered no budget, so every
+	// word after the verb is a word it does not take.
+	name, _, graded := todo.BudgetFlag(profile)
+	flag := "--" + name
 	for i := 0; i < len(args); i++ {
 		switch a := args[i]; {
-		case strings.HasPrefix(a, "--size="):
-			spec = strings.TrimPrefix(a, "--size=")
-		case a == "--size":
+		case graded && strings.HasPrefix(a, flag+"="):
+			spec = strings.TrimPrefix(a, flag+"=")
+		case graded && a == flag:
 			if i+1 >= len(args) {
-				return nil, fmt.Errorf("--size needs a budget")
+				return nil, fmt.Errorf("%s needs a budget", flag)
 			}
 			i++
 			spec = args[i]
@@ -333,7 +338,17 @@ func parseSprintPlanArgs(args []string) (todo.SprintBudget, error) {
 			return nil, fmt.Errorf("%q is not a flag this takes", a)
 		}
 	}
-	return todo.ParseSprintBudget(spec)
+	return todo.ParseSprintBudget(profile, spec)
+}
+
+// sprintPlanUsage is the verb's own line, with the budget flag the profile
+// gives it or nothing at all where it grades no work.
+func sprintPlanUsage(profile todo.Profile) string {
+	name, shape, graded := todo.BudgetFlag(profile)
+	if !graded {
+		return "Usage: /todo sprint plan"
+	}
+	return fmt.Sprintf("Usage: /todo sprint plan [--%s %s]", name, shape)
 }
 
 // writeSprintPlan writes the accepted set as the sprint file, in the order
@@ -417,7 +432,7 @@ func (m *Model) closeFinishedSprint() string {
 	// the file out from under every reader of it — the page is written from
 	// what the sprint said at the moment it stopped being a plan.
 	sp, entries := m.sprintAsClosed()
-	to, err := todo.CloseSprintIfDone(m.todos.Root)
+	to, err := todo.CloseSprintIfDone(m.todos.Profile, m.todos.Root)
 	if err != nil {
 		return "\nThe sprint could not be closed — " + err.Error()
 	}

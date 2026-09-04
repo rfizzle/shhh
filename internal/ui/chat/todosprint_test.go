@@ -187,7 +187,7 @@ func TestSprintPlan_AnswerInNoShapeWritesNothing(t *testing.T) {
 // the reader can check without reading the items.
 func TestSprintPlan_HeaderStatesTheBudget(t *testing.T) {
 	m, _ := sprintModel(t, "")
-	budget, err := todo.ParseSprintBudget("S=2,M=1")
+	budget, err := todo.ParseSprintBudget(todo.BuiltinCode(), "S=2,M=1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -414,7 +414,7 @@ func TestSprintPlan_NamesTheSecondSprintOfADayApart(t *testing.T) {
 		t.Fatalf("sprint = %v %v", sp, err)
 	}
 	name := sp.Name
-	if _, err := todo.CloseSprint(root); err != nil {
+	if _, err := todo.CloseSprint(todo.BuiltinCode(), root); err != nil {
 		t.Fatal(err)
 	}
 	m.reloadTodos()
@@ -429,7 +429,7 @@ func TestSprintPlan_NamesTheSecondSprintOfADayApart(t *testing.T) {
 	if again.Name == name {
 		t.Fatalf("both sprints are named %q; the second could never be filed", name)
 	}
-	if _, err := todo.CloseSprint(root); err != nil {
+	if _, err := todo.CloseSprint(todo.BuiltinCode(), root); err != nil {
 		t.Fatalf("the second sprint could not be closed: %v", err)
 	}
 }

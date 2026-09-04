@@ -93,20 +93,39 @@ func or(configured, builtin string) string {
 	return builtin
 }
 
-// itemBlock is the item as the model sees it in every stage.
+// itemBlock is the item as the model sees it in every stage. The header
+// fields are named as well as stated — `size: M` rather than `size M` —
+// because which fields an item carries is the project's to say, and a stage
+// reading `deep` on its own could not tell what it was the answer to.
 func itemBlock(it todo.Item) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "BACKLOG ITEM %s (%s, priority %s", it.Slug, orDash(string(it.Kind)), it.Priority)
-	if it.Size != "" {
-		fmt.Fprintf(&b, ", size %s", it.Size)
+	fmt.Fprintf(&b, "BACKLOG ITEM %s", it.Slug)
+	if fields := itemFields(it); fields != "" {
+		fmt.Fprintf(&b, " (%s)", fields)
 	}
-	b.WriteString(")\n")
+	b.WriteString("\n")
 	fmt.Fprintf(&b, "File: %s\n", it.Path)
 	fmt.Fprintf(&b, "Title: %s\n", it.Title)
 	if body := strings.TrimSpace(it.Body); body != "" {
 		b.WriteString("\n" + body + "\n")
 	}
 	return b.String()
+}
+
+// itemFields is the item's header fields in the profile's order, each as
+// `name: value`, leaving out the ones the file did not set.
+func itemFields(it todo.Item) string {
+	var parts []string
+	for _, f := range it.Profile.Fields {
+		value := it.Fields[f.Name]
+		if f.Orders() {
+			value = string(it.Priority)
+		}
+		if value != "" {
+			parts = append(parts, f.Name+": "+value)
+		}
+	}
+	return strings.Join(parts, ", ")
 }
 
 const builtinStandards = `Read AGENTS.md (or the project's equivalent) and any skill that applies before you touch anything. Follow the project's standards for how work is documented and tested. Preserve unrelated changes already in the working tree and never edit generated files directly.`

@@ -40,7 +40,7 @@ func todoModel(t *testing.T, root string) Model {
 	t.Helper()
 	m := frameModel(t, 130, 40)
 	manage := func(args []string) string { return "managed " + strings.Join(args, " ") }
-	return m.WithTodos(Todos{Root: root, Manage: manage, Detail: func(_ *todo.Store, it todo.Item) string { return "detail " + it.Slug }})
+	return m.WithTodos(Todos{Profile: todo.BuiltinCode(), Root: root, Manage: manage, Detail: func(_ *todo.Store, it todo.Item) string { return "detail " + it.Slug }})
 }
 
 func TestInspectorTodo_RowsInWorkingOrderAndCounts(t *testing.T) {
@@ -240,7 +240,7 @@ func TestTodoScreen_BodyGoesThroughTheProseRenderer(t *testing.T) {
 func TestTodoCommand_SubcommandReloadsTheStore(t *testing.T) {
 	root := todoTestRoot(t)
 	m := frameModel(t, 130, 40)
-	m = m.WithTodos(Todos{Root: root, Manage: func(args []string) string {
+	m = m.WithTodos(Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func(args []string) string {
 		_ = todo.SetStatus(filepath.Join(todo.Dir(root), "d-ready.md"), todo.StatusBlocked)
 		return "changed"
 	}, Detail: func(*todo.Store, todo.Item) string { return "" }})
@@ -263,7 +263,7 @@ func TestTodoEditor_ReloadsAndReportsTheFile(t *testing.T) {
 	updated, _ := m.todoEditorFinished(todoEditorDoneMsg{slug: "d-ready", path: path})
 	next := updated.(Model)
 	last := next.transcript[len(next.transcript)-1].text
-	if !strings.HasPrefix(last, "Saved d-ready: Ready now (medium, open).") || !strings.Contains(last, `unknown size "XL"`) {
+	if !strings.HasPrefix(last, "Saved d-ready: Ready now (medium, open).") || !strings.Contains(last, `unknown size "xl"`) {
 		t.Fatalf("note = %q", last)
 	}
 	if it, _ := next.todoStore.Find("d-ready"); it.Title != "Ready now" {
@@ -339,7 +339,7 @@ func TestTodo_TurnEndReloadsTheStore(t *testing.T) {
 	if m.todoStore.Count(todo.StatusBlocked) != 2 {
 		t.Fatal("a turn ending should re-read the backlog")
 	}
-	if row := todoRow(m.todoStore, todo.Item{Slug: "x", Priority: todo.PriorityLow}, nil); row.Size != "-" || row.Priority != "L" {
+	if row := todoRow(m.todoStore, todo.Item{Slug: "x", Priority: todo.PriorityLow, Profile: todo.BuiltinCode()}, nil); row.Grade != "-" || row.Priority != "L" {
 		t.Fatalf("ungraded row = %+v", row)
 	}
 }
@@ -353,5 +353,29 @@ func TestTodoEditor_RefusedWhileWorking(t *testing.T) {
 	}
 	if !strings.Contains(lipgloss.NewStyle().Render(updated.(Model).transcript[len(updated.(Model).transcript)-1].text), "not while the turn is running") {
 		t.Fatal("the refusal should say why")
+	}
+}
+
+// The rail's two letters are the priority's and the grade's, whatever the
+// project grades work by: a backlog of questions graded by depth draws its
+// own letter there and the rail holds none of the words.
+func TestTodoRow_DrawsTheProfilesGradeGlyph(t *testing.T) {
+	p := todo.Profile{
+		Noun: "question",
+		Fields: []todo.Field{
+			todo.PriorityField(),
+			{Name: "depth", Values: []todo.Value{
+				{Name: "quick", Glyph: "Q"}, {Name: "deep", Glyph: "D"}}},
+		},
+		Grade: "depth",
+	}
+	deep := todo.Item{Slug: "why-tabs", Priority: todo.PriorityHigh, Profile: p,
+		Fields: map[string]string{"depth": "deep"}}
+	if row := todoRow(&todo.Store{}, deep, nil); row.Priority != "H" || row.Grade != "D" {
+		t.Errorf("row = %+v", row)
+	}
+	ungraded := todo.Item{Slug: "who-reads-it", Priority: todo.PriorityLow, Profile: p}
+	if row := todoRow(&todo.Store{}, ungraded, nil); row.Grade != "-" {
+		t.Errorf("an ungraded row = %+v", row)
 	}
 }

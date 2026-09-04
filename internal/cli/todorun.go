@@ -111,7 +111,7 @@ func todoRunHeadless(cmd *cobra.Command, slug string, flags todoRunFlags) error 
 	if flags.all {
 		return exitOf(d.sprint(cmd.Context(), flags.max))
 	}
-	store := todo.Load(d.root)
+	store := todo.Load(todoProfile(), d.root)
 	it, err := todoRunTarget(store, slug)
 	if err != nil {
 		return err
@@ -278,7 +278,7 @@ func (d *todoDriver) sprint(ctx context.Context, max int) bool {
 // sprintItem is the item the sprint works next: the one it was interrupted
 // on, or the next ready one.
 func (d *todoDriver) sprintItem(sp *run.Sprint) (todo.Item, bool) {
-	store := todo.Load(d.root)
+	store := todo.Load(todoProfile(), d.root)
 	if slug, resuming := sp.Resume(); resuming {
 		it, ok := store.Find(slug)
 		if !ok || it.Archived {
@@ -734,7 +734,7 @@ func (d *todoDriver) finish(st *run.State, it todo.Item) {
 			fmt.Fprintf(d.out, "✓ todo run %s finished, but the item could not be archived — %v. The report is on the item and it is open.\n", st.Slug, err)
 		} else {
 			fmt.Fprintln(d.out, todoRunDoneLine(st, to))
-			if closed, err := todo.CloseSprintIfDone(d.root); err == nil && closed != "" {
+			if closed, err := todo.CloseSprintIfDone(todoProfile(), d.root); err == nil && closed != "" {
 				fmt.Fprintln(d.out, "sprint file closed → "+closed)
 			}
 		}
@@ -765,4 +765,4 @@ func todoRunDoneLine(st *run.State, to string) string {
 
 // sprintGoal is the open sprint's goal, which rides in every item's research
 // prompt so an item knows what the set it belongs to is for.
-func (d *todoDriver) sprintGoal() string { return todo.Load(d.root).Sprint.Purpose() }
+func (d *todoDriver) sprintGoal() string { return todo.Load(todoProfile(), d.root).Sprint.Purpose() }

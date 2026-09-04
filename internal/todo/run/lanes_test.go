@@ -21,7 +21,7 @@ task: Wire the command (step 3).
 
 func largeAtSplit(t *testing.T) (*State, todo.Item) {
 	t.Helper()
-	it := item(todo.SizeL)
+	it := item("L")
 	s := Start(it, "sess", "manual", 1, Options{Repo: true})
 	s.First(it, "")
 	if step := s.Observe(it, strings.Replace(planText, "size: S", "size: L", 1)); step.Action != ActionPause {

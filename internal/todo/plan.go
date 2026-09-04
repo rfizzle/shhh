@@ -197,7 +197,7 @@ out: <slug> <exactly one of: ` + omissionWords() + `>
 func (s *Store) planCandidate(it Item) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "- %s — %s\n", it.Slug, it.Title)
-	facts := []string{orDash(string(it.Kind)), "priority " + string(it.Priority), "size " + sizeOrUngraded(it.Size)}
+	facts := itemFacts(it)
 	if n := s.Unblocks(it.Slug); n > 0 {
 		facts = append(facts, fmt.Sprintf("unblocks %d", n))
 	}
@@ -231,14 +231,28 @@ func readingCounts(r Reading) string {
 	return strings.Join(parts, " · ")
 }
 
-// sizeOrUngraded says an ungraded item is ungraded rather than showing a
-// dash: the budget spends by size, and an item with no size cannot be
-// spent, which the planner has to be able to see.
-func sizeOrUngraded(size Size) string {
-	if size == "" {
-		return "ungraded"
+// itemFacts is the header as the planner reads it: every field the profile
+// declares, in its order. The grade carries its field's name because a bare
+// word off a scale is not a fact, and an ungraded item says so rather than
+// showing a dash — the budget spends by grade, and an item with none cannot
+// be spent, which is what the planner has to be able to see.
+func itemFacts(it Item) []string {
+	facts := make([]string, 0, len(it.Profile.Fields))
+	for _, f := range it.Profile.Fields {
+		switch f.Name {
+		case keyPriority:
+			facts = append(facts, "priority "+string(it.Priority))
+		case it.Profile.Grade:
+			if grade := it.Fields[f.Name]; grade != "" {
+				facts = append(facts, f.Name+" "+grade)
+			} else {
+				facts = append(facts, "ungraded")
+			}
+		default:
+			facts = append(facts, orDash(it.Fields[f.Name]))
+		}
 	}
-	return string(size)
+	return facts
 }
 
 // orDash is the word for a field the item left empty.
@@ -299,9 +313,9 @@ const (
 // out of the set and into the left-out list as `too big`, because a budget
 // the answer may overrun is not a budget.
 func ParsePlan(answer string, candidates []Item, budget SprintBudget) Plan {
-	size := map[string]Size{}
+	grade := map[string]string{}
 	for _, it := range candidates {
-		size[it.Slug] = it.Size
+		grade[it.Slug] = it.Grade()
 	}
 	var p Plan
 	seen := map[string]bool{}
@@ -328,7 +342,7 @@ func ParsePlan(answer string, candidates []Item, budget SprintBudget) Plan {
 			}
 		case hasMarker(line, itemMarker):
 			flush()
-			if slug, ok := candidateSlug(size, value(line, itemMarker)); ok {
+			if slug, ok := candidateSlug(grade, value(line, itemMarker)); ok {
 				cur = &PlanItem{Slug: slug}
 			}
 		case hasMarker(line, whyMarker):
@@ -337,20 +351,20 @@ func ParsePlan(answer string, candidates []Item, budget SprintBudget) Plan {
 			}
 		case hasMarker(line, outMarker):
 			flush()
-			if slug, why, ok := parseOmission(value(line, outMarker), size); ok && !seen[slug] {
+			if slug, why, ok := parseOmission(value(line, outMarker), grade); ok && !seen[slug] {
 				seen[slug] = true
 				p.Left = append(p.Left, PlanOmission{Slug: slug, Why: why})
 			}
 		}
 	}
 	flush()
-	return p.underBudget(budget, size)
+	return p.underBudget(budget, grade)
 }
 
 // known reports the slug is one of the candidates, including an ungraded
-// one whose size is the empty string.
-func known(size map[string]Size, slug string) bool {
-	_, ok := size[slug]
+// one whose grade is the empty string.
+func known(grade map[string]string, slug string) bool {
+	_, ok := grade[slug]
 	return ok
 }
 
@@ -359,13 +373,13 @@ func known(size map[string]Size, slug string) bool {
 // asked for as `item: <slug>` comes back as `item: cache-ttl — Give the
 // cache a lifetime` often enough to matter: an item dropped for the title
 // beside it is one the reading meant to propose and the person never sees.
-func candidateSlug(size map[string]Size, text string) (string, bool) {
+func candidateSlug(grade map[string]string, text string) (string, bool) {
 	whole := unfence(strings.TrimSpace(text))
-	if known(size, whole) {
+	if known(grade, whole) {
 		return whole, true
 	}
 	if first, _, ok := strings.Cut(whole, " "); ok {
-		if first = unfence(first); known(size, first) {
+		if first = unfence(first); known(grade, first) {
 			return first, true
 		}
 	}
@@ -376,8 +390,8 @@ func candidateSlug(size map[string]Size, text string) (string, bool) {
 // put between them. A line naming no candidate or no word from the set is
 // dropped: "left out for a reason nobody wrote down" is the row this list
 // exists to make impossible.
-func parseOmission(line string, size map[string]Size) (string, Omission, bool) {
-	slug, ok := candidateSlug(size, line)
+func parseOmission(line string, grade map[string]string) (string, Omission, bool) {
+	slug, ok := candidateSlug(grade, line)
 	if !ok {
 		return "", "", false
 	}
@@ -387,25 +401,21 @@ func parseOmission(line string, size map[string]Size) (string, Omission, bool) {
 }
 
 // underBudget moves the items the budget has no room for into the left-out
-// list, keeping the order the reading gave. An ungraded item has no size to
-// spend, so a stated budget leaves it out — the same rule the filter this
-// replaced applied, and for the same reason: a budget counts sizes, and an
-// item with none cannot be counted against it.
-func (p Plan) underBudget(budget SprintBudget, size map[string]Size) Plan {
-	if budget == nil {
+// list, keeping the order the reading gave. An ungraded item has no grade
+// to spend, so a stated budget leaves it out — the same rule the filter
+// this replaced applied, and for the same reason: a budget counts grades,
+// and an item with none cannot be counted against one.
+func (p Plan) underBudget(budget SprintBudget, grade map[string]string) Plan {
+	if len(budget) == 0 {
 		return p
 	}
-	left := SprintBudget{}
-	for s, n := range budget {
-		left[s] = n
-	}
+	left := budget.clone()
 	kept := make([]PlanItem, 0, len(p.Items))
 	for _, it := range p.Items {
-		if left[size[it.Slug]] <= 0 {
+		if !left.spend(grade[it.Slug]) {
 			p.Left = append(p.Left, PlanOmission{Slug: it.Slug, Why: OmitTooBig})
 			continue
 		}
-		left[size[it.Slug]]--
 		kept = append(kept, it)
 	}
 	p.Items = kept

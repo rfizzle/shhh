@@ -27,9 +27,9 @@ func draftModel(t *testing.T, root string, p *scriptedProvider, signals *[]strin
 	m.sessionName = "2026-09-04 09:00:00"
 	var dr *todo.Drafter
 	if p != nil {
-		dr = todo.NewDrafter(p, todo.ExtractConfig{Model: "m"})
+		dr = todo.NewDrafter(p, todo.ExtractConfig{Model: "m"}, todo.BuiltinCode())
 	}
-	m = m.WithTodos(Todos{Root: root, Manage: func([]string) string { return "usage" },
+	m = m.WithTodos(Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "usage" },
 		Detail: func(*todo.Store, todo.Item) string { return "" }, Drafter: dr})
 	if signals != nil {
 		m = m.WithObserver(observe.Observer{Signal: func(_ observe.Pos, code, reason string) {
@@ -98,8 +98,8 @@ func TestTodoNew_TheCardWritesTheItem(t *testing.T) {
 	// The header is set in place: down to the size row and one step of the
 	// scale, which is M → L.
 	m = pressKeys(t, m, keyDown, keyDown, keySpace)
-	if m.todoDraft.proposal.Size != "L" {
-		t.Fatalf("size = %q, want L", m.todoDraft.proposal.Size)
+	if m.todoDraft.proposal.Fields["size"] != "L" {
+		t.Fatalf("size = %q, want L", m.todoDraft.proposal.Fields["size"])
 	}
 	m = pressKeys(t, m, keyEnter)
 	if m.state != stateInput || m.todoDraft != nil {
@@ -111,14 +111,14 @@ func TestTodoNew_TheCardWritesTheItem(t *testing.T) {
 	}
 
 	// Every field is on the file the store reads back.
-	it, ok := todo.Load(root).Find("give-the-cache-a-lifetime")
+	it, ok := todo.Load(todo.BuiltinCode(), root).Find("give-the-cache-a-lifetime")
 	if !ok {
 		t.Fatal("the item was not written")
 	}
 	switch {
 	case it.Title != "Give the cache a lifetime":
 		t.Errorf("title = %q", it.Title)
-	case it.Kind != todo.KindStory || it.Priority != todo.PriorityHigh || it.Size != todo.SizeL:
+	case it.Fields["kind"] != "story" || it.Priority != todo.PriorityHigh || it.Grade() != "L":
 		t.Errorf("header = %+v", it)
 	case it.Status != todo.StatusOpen || it.Created == "":
 		t.Errorf("state = %+v", it)
@@ -149,7 +149,7 @@ func TestTodoNew_AMissingDependencyIsAWarningAndIsNotWritten(t *testing.T) {
 	if !strings.Contains(note, "Dropped dependencies that name nothing in the backlog: nothing-like-this.") {
 		t.Fatalf("note = %q", note)
 	}
-	it, _ := todo.Load(root).Find("give-the-cache-a-lifetime")
+	it, _ := todo.Load(todo.BuiltinCode(), root).Find("give-the-cache-a-lifetime")
 	if strings.Join(it.DependsOn, ",") != "a-high" {
 		t.Fatalf("depends_on = %v", it.DependsOn)
 	}
@@ -233,7 +233,7 @@ func TestTodoAdd_TheHeaderIsSetOnTheProposalsCard(t *testing.T) {
 	if m.state != stateTodoPropose || m.todoDraft != nil {
 		t.Fatalf("enter should go back to the proposals card, state=%d", m.state)
 	}
-	if m.todoProposals[0].Size != "L" {
+	if m.todoProposals[0].Fields["size"] != "L" {
 		t.Fatalf("the proposal keeps the header it was given: %+v", m.todoProposals[0])
 	}
 	if !strings.Contains(m.todoPropose.Options[0].Meta, "story · high · L") {
@@ -241,8 +241,8 @@ func TestTodoAdd_TheHeaderIsSetOnTheProposalsCard(t *testing.T) {
 	}
 	// And the file lands with it.
 	m = pressKeys(t, m, keyEnter)
-	it, ok := todo.Load(root).Find("show-the-backlog-in-the-rail")
-	if !ok || it.Size != todo.SizeL {
+	it, ok := todo.Load(todo.BuiltinCode(), root).Find("show-the-backlog-in-the-rail")
+	if !ok || it.Grade() != "L" {
 		t.Fatalf("written item = %+v", it)
 	}
 }
@@ -255,7 +255,7 @@ func TestTodoAdd_LeavingAHeaderKeepsTheProposals(t *testing.T) {
 	if m.state != stateTodoPropose || m.todoDraft != nil || len(m.todoProposals) != 3 {
 		t.Fatalf("esc should go back to the proposals card: state=%d", m.state)
 	}
-	if m.todoProposals[0].Size != "M" {
+	if m.todoProposals[0].Fields["size"] != "M" {
 		t.Fatalf("the proposal should be as it was: %+v", m.todoProposals[0])
 	}
 }
@@ -357,7 +357,7 @@ func TestTodoNew_TheEditorHandsTheItemBack(t *testing.T) {
 	if m.state != stateTodoDraft {
 		t.Fatalf("the card should come back up: state=%d", m.state)
 	}
-	if m.todoDraft.proposal.Title != "A lifetime, renamed" || m.todoDraft.proposal.Size != "S" {
+	if m.todoDraft.proposal.Title != "A lifetime, renamed" || m.todoDraft.proposal.Fields["size"] != "S" {
 		t.Fatalf("the edit should be the draft: %+v", m.todoDraft.proposal)
 	}
 	if !strings.Contains(m.todoDraft.body, "Rewritten by hand.") {
@@ -368,8 +368,8 @@ func TestTodoNew_TheEditorHandsTheItemBack(t *testing.T) {
 	}
 	// What was written by hand is what lands.
 	m = pressKeys(t, m, keyEnter)
-	it, ok := todo.Load(root).Find("a-lifetime-renamed")
-	if !ok || it.Size != todo.SizeS || !strings.Contains(it.Body, "Rewritten by hand.") {
+	it, ok := todo.Load(todo.BuiltinCode(), root).Find("a-lifetime-renamed")
+	if !ok || it.Grade() != "S" || !strings.Contains(it.Body, "Rewritten by hand.") {
 		t.Fatalf("written item = %+v", it)
 	}
 }

@@ -172,14 +172,23 @@ func (s Step) Name() string {
 	return s.Action.String()
 }
 
-// Rounds is how many remediation rounds a size gets before the run blocks.
+// Rounds is how many remediation rounds a grade gets before the run blocks:
+// the smallest grade on the scale gets one, everything else two. It takes
+// the grade's rank rather than its word, so a backlog graded quick · deep
+// spends what one graded S · M · L spends and the runner knows neither word.
 // See docs/capabilities/todo.md#a-run-is-turns-with-gates-between-them.
-func Rounds(size todo.Size) int {
-	if size == todo.SizeS {
+func Rounds(rank int) int {
+	if rank == smallestGrade {
 		return 1
 	}
 	return 2
 }
+
+// smallestGrade is the rank of the first word on a profile's grading scale.
+// A run reads three things off the scale and nothing else: the smallest
+// grade reviews itself and gets one remediation round, the largest is
+// divided into lanes, and an ungraded item ranks zero and is neither.
+const smallestGrade = 1
 
 // State is a run's checkpoint: everything the machine needs to continue
 // from the start of its current stage. It is written after every
@@ -196,8 +205,17 @@ type State struct {
 	// PrevMode is the session's mode before the run, restored after.
 	PrevMode string `json:"prev_mode"`
 
-	SizeBefore todo.Size `json:"size_before"`
-	Size       todo.Size `json:"size"`
+	// GradeBefore is the grade the item carried when the run started and
+	// Grade the one it is being worked at, which research may raise.
+	GradeBefore string `json:"grade_before"`
+	Grade       string `json:"grade"`
+	// Profile is the vocabulary the item is written in, which is where the
+	// grade's rank comes from. It is re-stamped from the item at Start and
+	// at Continue, the way the session and the mode are, rather than
+	// written into the checkpoint: the words on an item are read from the
+	// project every time, and a run that carried its own copy could be
+	// working an item by a scale the project has since rewritten.
+	Profile todo.Profile `json:"-"`
 	// Plan is the research answer as written; Steps its parsed titles.
 	Plan      string   `json:"plan"`
 	Steps     []string `json:"steps"`
@@ -327,7 +345,7 @@ func Start(it todo.Item, session, prevMode string, turn int, opt Options) *State
 	return &State{
 		Slug: it.Slug, Session: session, Started: now, Updated: now,
 		Stage: StageResearch, Turn: turn, PrevMode: prevMode,
-		SizeBefore: it.Size, Size: it.Size,
+		GradeBefore: it.Grade(), Grade: it.Grade(), Profile: it.Profile,
 		Tests:     TestCommands(it.Body),
 		NoCommit:  opt.NoCommit,
 		Repo:      opt.Repo,
@@ -420,6 +438,7 @@ func HeldBy(root, slug string) (Hold, bool) {
 // under another is a run whose halves were asked different things, and the
 // row is where a reader finds that out.
 func (s *State) Continue(it todo.Item) Step {
+	s.Profile = it.Profile
 	step := s.continueStage(it)
 	if now := s.Wordings.Digest(); now != s.WordingsAt {
 		s.WordingsAt = now
@@ -557,39 +576,42 @@ func (s *State) afterResearch(it todo.Item, text string) Step {
 	for _, st := range p.Steps {
 		s.Steps = append(s.Steps, st.Title)
 	}
-	if size, ok := sizeLine(text); ok {
-		s.Size = size
+	if grade, ok := gradeLine(it.Profile, text); ok {
+		s.Grade = grade
 	}
 	s.Questions = questionLines(text)
 	if !p.Structured() {
 		return s.block("research produced no numbered plan")
 	}
 	// An item with no grade yet is not upgraded by getting one.
-	upgraded := s.SizeBefore != "" && rank(s.Size) > rank(s.SizeBefore)
+	rank := s.rank()
+	upgraded := s.GradeBefore != "" && rank > s.Profile.GradeRank(s.GradeBefore)
 	switch {
-	case s.Size == todo.SizeS && len(s.Questions) > 0:
+	case rank == smallestGrade && len(s.Questions) > 0:
 		return s.block("open questions after research:\n- " + strings.Join(s.Questions, "\n- "))
-	case s.Size == todo.SizeL:
+	case s.largest():
 		return s.pause("a large item pauses before anything is built")
 	case len(s.Questions) > 0:
 		return s.pause("research left questions")
 	case upgraded:
-		return s.pause(fmt.Sprintf("research graded the item %s, up from %s", s.Size, orDash(string(s.SizeBefore))))
+		return s.pause(fmt.Sprintf("research graded the item %s, up from %s", s.Grade, orDash(s.GradeBefore)))
 	}
 	return s.implement(it)
 }
 
-func rank(size todo.Size) int {
-	switch size {
-	case todo.SizeS:
-		return 1
-	case todo.SizeM:
-		return 2
-	case todo.SizeL:
-		return 3
-	}
-	return 0
+// rank is where this run's grade sits on the profile's scale, and zero for
+// an ungraded item.
+func (s *State) rank() int { return s.Profile.GradeRank(s.Grade) }
+
+// largest reports the item graded at the top of the scale — the grade that
+// buys a division into lanes and a gate before anything is built.
+func (s *State) largest() bool {
+	rank := s.rank()
+	return rank > 0 && rank == s.Profile.Grades()
 }
+
+// Rounds is how many remediation rounds this run gets.
+func (s *State) Rounds() int { return Rounds(s.rank()) }
 
 func (s *State) pause(why string) Step {
 	s.Paused = why
@@ -599,7 +621,7 @@ func (s *State) pause(why string) Step {
 // implement is the stage after the gate. A large item is divided first
 // and built by writer children; anything smaller is built here.
 func (s *State) implement(it todo.Item) Step {
-	if s.Size == todo.SizeL {
+	if s.largest() {
 		return s.split(it)
 	}
 	s.Paused = ""
@@ -663,7 +685,7 @@ func (s *State) VerifyResult(it todo.Item, ok bool, output string) Step {
 // edit made while reviewing would land unverified.
 func (s *State) review(it todo.Item) Step {
 	s.Stage = StageReview
-	if s.Size == todo.SizeS {
+	if s.rank() == smallestGrade {
 		s.Reviewer = ""
 		return Step{Action: ActionPrompt, Stage: StageReview, Mode: ModePlan,
 			Prompt: reviewPrompt(it, s.Plan, s.Repo, s.Wordings), Shown: s.label("review")}
@@ -718,13 +740,13 @@ func (s *State) afterReview(it todo.Item, text string) Step {
 // remediate spends a round, or blocks when they are spent.
 func (s *State) remediate(it todo.Item, findings string) Step {
 	s.Findings = findings
-	if s.Round >= Rounds(s.Size) {
+	if s.Round >= s.Rounds() {
 		return s.block(fmt.Sprintf("remediation rounds spent (%d):\n%s", s.Round, findings))
 	}
 	s.Round++
 	s.Stage = StageRemediate
 	return Step{Action: ActionPrompt, Stage: StageRemediate, Mode: ModeAuto,
-		Prompt: remediatePrompt(it, findings, s.Wordings), Shown: s.label(fmt.Sprintf("remediate %d/%d", s.Round, Rounds(s.Size)))}
+		Prompt: remediatePrompt(it, findings, s.Wordings), Shown: s.label(fmt.Sprintf("remediate %d/%d", s.Round, s.Rounds()))}
 }
 
 // afterCommit reads the commit message and the report.
@@ -813,17 +835,17 @@ func (s *State) label(stage string) string {
 func (s *State) Summary() string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "%s · %s", s.Slug, s.Stage)
-	if s.Size != "" {
-		fmt.Fprintf(&b, " · size %s", s.Size)
-		if s.SizeBefore != s.Size {
-			fmt.Fprintf(&b, " (was %s)", orDash(string(s.SizeBefore)))
+	if s.Grade != "" {
+		fmt.Fprintf(&b, " · %s %s", s.Profile.Grade, s.Grade)
+		if s.GradeBefore != s.Grade {
+			fmt.Fprintf(&b, " (was %s)", orDash(s.GradeBefore))
 		}
 	}
 	if s.NoCommit {
 		b.WriteString(" · not committed")
 	}
 	if s.Round > 0 {
-		fmt.Fprintf(&b, " · remediation %d/%d", s.Round, Rounds(s.Size))
+		fmt.Fprintf(&b, " · remediation %d/%d", s.Round, s.Rounds())
 	}
 	if n := len(s.Lanes); n > 0 {
 		done := 0
@@ -877,18 +899,32 @@ func orDash(s string) string {
 var (
 	// [ \t]* rather than \s* after the colon: \s crosses a newline, and the
 	// value has to be on the marker's own line.
-	sizePattern     = regexp.MustCompile(`(?im)^[ \t]*size:[ \t]*([SML])\b`)
 	blockedPattern  = regexp.MustCompile(`(?im)^[ \t]*blocked:[ \t]*(.+)$`)
 	verdictPattern  = regexp.MustCompile(`(?im)^[ \t]*verdict:[ \t]*(clean|findings)\b`)
 	questionPattern = regexp.MustCompile(`(?im)^[ \t]*questions:[ \t]*(.*)$`)
 )
 
-func sizeLine(text string) (todo.Size, bool) {
-	m := sizePattern.FindStringSubmatch(text)
-	if m == nil {
+// gradeLine is the grade the research stage answered with: the first line
+// whose key is the profile's grading field and whose first word is one of
+// that field's own. A line naming a word off the scale is passed over
+// rather than taken, because a grade the profile cannot rank is one the run
+// cannot spend against — and the line below it may well be the right one.
+func gradeLine(p todo.Profile, text string) (string, bool) {
+	f, ok := p.GradeField()
+	if !ok {
 		return "", false
 	}
-	return todo.Size(strings.ToUpper(m[1])), true
+	for _, line := range strings.Split(text, "\n") {
+		key, value, found := strings.Cut(strings.TrimSpace(line), ":")
+		if !found || !strings.EqualFold(strings.TrimSpace(key), f.Name) {
+			continue
+		}
+		word, _, _ := strings.Cut(strings.TrimSpace(value), " ")
+		if grade, ok := f.Canonical(word); ok {
+			return grade, true
+		}
+	}
+	return "", false
 }
 
 func blockedLine(text string) (string, bool) {
