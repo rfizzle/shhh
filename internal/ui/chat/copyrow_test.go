@@ -1,8 +1,8 @@
 package chat
 
 // [y] in reading mode (docs/interface/surfaces.md#reading-mode): the focused
-// row's content, shaped by what the row is, through the same clipboard path
-// /copy uses.
+// row's content, shaped by what the row is, put on the terminal's own
+// clipboard where it takes one and on this machine's where it does not.
 
 import (
 	"strings"
@@ -211,5 +211,60 @@ func TestReadingHint_CopyOfferFollowsTheRow(t *testing.T) {
 	m = updated.(Model)
 	if line := ansi.Strip(m.readingKeyLine(m.contentWidth())); !strings.Contains(line, "["+keys.Shown(keys.Reading.Copy)+"]") {
 		t.Fatalf("a command row should offer [y], got %q", line)
+	}
+}
+
+// Over ssh the machine running shhh is not the machine the reader is sitting
+// at: a tool there copies to a clipboard nobody can paste from, and on a
+// server with no display there is no tool at all. A terminal that takes a
+// clipboard write is asked first, and the copy goes through with nothing on
+// PATH to do it.
+func TestCopyRow_TheTerminalTakesItWithNoToolOnPath(t *testing.T) {
+	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	m := New(msgs, mockStream)
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+	m = updated.(Model)
+	m.copyFn = func(string) clipboard.Result {
+		t.Error("the terminal takes the copy before any tool is looked for")
+		return clipboard.Result{Warning: "no clipboard tool found"}
+	}
+	m.caps.Clipboard = true
+	m.appendEntry(entry{kind: entryCommand, text: "go build", toolResult: "ok"})
+	m.viewport.SetLines(m.renderHistoryLines())
+	updated, _ = m.Update(readingChord())
+	m = updated.(Model)
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
+	m = updated.(Model)
+
+	want, ok := clipboard.OSC52("$ go build\nok")
+	if !ok {
+		t.Fatal("the row's text should fit one clipboard write")
+	}
+	if got := notifyRaw(t, cmd); got != want {
+		t.Errorf("wrote %q, want %q", got, want)
+	}
+	// The caption stands, and no failure lands in the transcript: the write
+	// has no reply, so "it went" is the whole of what can be known.
+	if !strings.Contains(m.readingCopied, "copied command") {
+		t.Errorf("the rail should caption the copy, got %q", m.readingCopied)
+	}
+	es := *m.entries()
+	if last := es[len(es)-1]; last.kind == entrySystem {
+		t.Errorf("a copy that went should say nothing in the transcript, got %q", last.text)
+	}
+}
+
+// A terminal that never said it takes a write leaves the copy to the tools,
+// which is where it was before.
+func TestCopyRow_AnUnlistedTerminalLeavesItToTheTools(t *testing.T) {
+	var caught []string
+	m := copyModel(t, &caught)
+	m.appendEntry(entry{kind: entryCommand, text: "go build", toolResult: "ok"})
+	m = yank(t, m)
+	if len(caught) != 1 {
+		t.Fatalf("the tool should have had the copy, got %d", len(caught))
+	}
+	if m.readingCopied == "" {
+		t.Error("the rail should caption the copy")
 	}
 }

@@ -1174,6 +1174,28 @@ func (m Model) conversationTurns() int {
 
 func (m Model) Messages() []provider.Message { return m.agent.Messages() }
 
+// copyText puts text on a clipboard and says which one took it.
+//
+// The terminal is asked first: it is the copy that crosses an ssh
+// connection, because the write is answered by the terminal the reader is
+// sitting at rather than by a tool on the machine the session is running on
+// — where the clipboard belongs to nobody and, on a server with no display,
+// does not exist. The terminals that will not take it hand the copy back and
+// the external tools have it, exactly as they did before.
+//
+// The sequence leaves as a command rather than as a write of its own: this
+// program has one writer and everything it says goes out through that
+// (docs/architecture.md#only-one-place-speaks-to-the-terminal).
+func (m Model) copyText(text string) (clipboard.Result, tea.Cmd) {
+	if cmd := m.caps.Copy(text); cmd != nil {
+		return clipboard.Result{OK: true, Tool: clipboard.Terminal}, cmd
+	}
+	if m.copyFn == nil {
+		return clipboard.Result{}, nil
+	}
+	return m.copyFn(text), nil
+}
+
 func (m Model) Init() tea.Cmd {
 	// No spinner tick here: nothing is moving on an empty session, and a
 	// chain started before there is anything to animate is a chain that dies

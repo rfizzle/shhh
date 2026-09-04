@@ -1,6 +1,7 @@
 package clipboard
 
 import (
+	"encoding/base64"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -141,5 +142,42 @@ func TestToolForLinuxFallsThroughToXsel(t *testing.T) {
 	}
 	if got := toolFor("linux", only); got != "xsel" {
 		t.Errorf("got %q", got)
+	}
+}
+
+// The terminal's own clipboard: the sequence, and the two texts it declines.
+
+func TestOSC52CarriesTheTextBase64(t *testing.T) {
+	seq, ok := OSC52("copy me")
+	if !ok {
+		t.Fatal("a short text should go by OSC 52")
+	}
+	want := "\x1b]52;c;" + base64.StdEncoding.EncodeToString([]byte("copy me")) + "\x07"
+	if seq != want {
+		t.Errorf("sequence = %q, want %q", seq, want)
+	}
+}
+
+// Nothing to copy is not a copy. An OSC 52 with an empty payload is the
+// sequence that *clears* the clipboard, so sending one would lose whatever
+// was on it to answer a key that had nothing to give.
+func TestOSC52DeclinesEmptyText(t *testing.T) {
+	if _, ok := OSC52(""); ok {
+		t.Error("an empty text should not reach the terminal")
+	}
+}
+
+// Too long for one write is declined rather than truncated: the sequence has
+// no reply, so a terminal that dropped half of it would leave the reader
+// pasting half a diff with nothing to say it had happened.
+func TestOSC52DeclinesMoreThanOneWriteHolds(t *testing.T) {
+	if _, ok := OSC52(strings.Repeat("x", osc52Max)); ok {
+		t.Error("a payload past the cap should be left to the tools")
+	}
+	// And the largest text that does fit still goes: the cap is on the
+	// encoded length, not on the text's.
+	fits := strings.Repeat("x", osc52Max/4*3)
+	if _, ok := OSC52(fits); !ok {
+		t.Errorf("%d bytes encode to %d, which fits", len(fits), base64.StdEncoding.EncodedLen(len(fits)))
 	}
 }

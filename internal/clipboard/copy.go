@@ -17,6 +17,13 @@ var runCmd = func(name string, args ...string) *exec.Cmd {
 	return exec.Command(name, args...)
 }
 
+// Copy puts text on the clipboard of the machine shhh is running on, through
+// whichever external tool this platform has.
+//
+// It is the fallback rather than the first attempt. A terminal that takes a
+// clipboard write is handed the text directly (osc52.go), because a tool on
+// this machine copies to this machine — which over ssh is not the machine
+// the reader is sitting at.
 func Copy(text string) Result {
 	tool := detectTool()
 	if tool == "" {

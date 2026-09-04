@@ -328,3 +328,61 @@ func TestCellSize_NeedsBothHalves(t *testing.T) {
 func notifyReply(parts string) string {
 	return ansi.DesktopNotification("p="+parts, "i="+notifyQueryID, "p=?")
 }
+
+// The clipboard write: which terminals get one, what goes out, and the two
+// answers that leave the copy to the tools instead.
+
+func TestClipboard_IsReadOffTheNameTheTerminalGave(t *testing.T) {
+	for _, name := range []string{"ghostty 1.2.0", "WezTerm 20240203", "iTerm2 3.5.0", "tmux 3.4"} {
+		var term Terminal
+		term.Update(tea.TerminalVersionMsg{Name: name})
+		if !term.Clipboard {
+			t.Errorf("%q takes a clipboard write", name)
+		}
+	}
+	// A terminal shhh has not heard of is not refused a copy — it is copied
+	// for by the external tools, which is where the answer was before.
+	var unknown Terminal
+	unknown.Update(tea.TerminalVersionMsg{Name: "Terminal.app 2.14"})
+	if unknown.Clipboard {
+		t.Error("an unlisted terminal should be left to the tools")
+	}
+	// And a terminal that never named itself said nothing about this either.
+	if (Terminal{}).Clipboard {
+		t.Error("silence is not a yes")
+	}
+}
+
+func TestCopy_WritesTheTextToTheTerminal(t *testing.T) {
+	term := Terminal{Clipboard: true}
+	seq := raw(t, term.Copy("copied over ssh"))
+	if want := ansi.SetClipboard(ansi.SystemClipboard, "copied over ssh"); seq != want {
+		t.Errorf("wrote %q, want %q", seq, want)
+	}
+}
+
+// Inside tmux the write has to be told it is passing through, or tmux fills
+// its own paste buffer and the terminal the reader is sitting at never hears
+// about the copy.
+func TestCopy_PassesThroughTmux(t *testing.T) {
+	withProfile(t, colorprofile.ANSI256)
+	var term Terminal
+	term.Query([]string{"TERM=xterm-ghostty", "TMUX=/tmp/tmux-1000/default,123,0"})
+	// tmux answers XTVERSION itself — that question is not passed out to the
+	// terminal beyond it — so tmux's own name is what comes back inside a
+	// session, and tmux is what has to be told the write is going past it.
+	term.Update(tea.TerminalVersionMsg{Name: "tmux 3.4"})
+	seq := raw(t, term.Copy("through tmux"))
+	if !strings.HasPrefix(seq, "\x1bPtmux;") {
+		t.Errorf("the write did not pass through tmux: %q", seq)
+	}
+}
+
+func TestCopy_DeclinesWhatItCannotCarry(t *testing.T) {
+	if cmd := (Terminal{}).Copy("anything"); cmd != nil {
+		t.Error("a terminal that did not say it takes a write must not be written to")
+	}
+	if cmd := (Terminal{Clipboard: true}).Copy(""); cmd != nil {
+		t.Error("nothing to copy is not a copy")
+	}
+}

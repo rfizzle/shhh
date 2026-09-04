@@ -52,6 +52,7 @@ import (
 	"github.com/charmbracelet/colorprofile"
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -79,6 +80,14 @@ type Terminal struct {
 	// Notifications reports whether the terminal answered the OSC 99 query
 	// saying it can raise a desktop notification with a title.
 	Notifications bool
+	// Clipboard reports whether this terminal takes a clipboard write — the
+	// copy answered by the terminal in front of the reader rather than by a
+	// program on the machine shhh is running on, and so the only copy that
+	// reaches the right clipboard over ssh.
+	//
+	// It is the one capability here read off another question's answer
+	// rather than asked for; clipboardWriters says why.
+	Clipboard bool
 
 	// Background is the colour the terminal reported as its own ground, and
 	// nil when it did not answer or was not asked. It is the only capability
@@ -199,6 +208,7 @@ func (t *Terminal) Update(msg tea.Msg) {
 		t.Kitty = true
 	case tea.TerminalVersionMsg:
 		t.Name = m.Name
+		t.Clipboard = t.Clipboard || writesClipboard(m.Name)
 	case tea.ModeReportMsg:
 		if m.Mode == ansi.ModeFocusEvent {
 			// Set or reset both mean the terminal knows the mode; only "not
@@ -241,6 +251,67 @@ func (t Terminal) DarkGround() (dark, answered bool) {
 // protocol. Kitty is preferred where both are offered; this is the question
 // of whether there is any picture to be had.
 func (t Terminal) Graphics() bool { return t.Kitty || t.Sixel }
+
+// Copy hands text to the terminal's own clipboard, and returns nil where
+// this terminal will not take it — one that did not name itself as a
+// terminal that does (Clipboard), or text longer than a single clipboard
+// write holds. A caller can ask unconditionally and let the answer decide,
+// which is the shape every other capability here is spent in; nil is where
+// the external tools take the copy back (internal/clipboard).
+//
+// Inside tmux the sequence has to be told it is passing through, exactly as
+// the graphics query is: tmux otherwise sets its own paste buffer and the
+// terminal beyond it — the one attached to the reader's keyboard — never
+// hears about the copy.
+func (t Terminal) Copy(text string) tea.Cmd {
+	if !t.Clipboard {
+		return nil
+	}
+	seq, ok := clipboard.OSC52(text)
+	if !ok {
+		return nil
+	}
+	if t.tmux {
+		seq = ansi.TmuxPassthrough(seq)
+	}
+	return tea.Raw(seq)
+}
+
+// clipboardWriters lists the terminals that take a clipboard write, by the
+// name they give XTVERSION.
+//
+// A list rather than a query, and the only capability here decided that way.
+// The question OSC 52 defines is a *read* — "tell me what is on the
+// clipboard" — and the terminals worth asking answer that one by asking the
+// person: kitty and Ghostty both default to putting a permission dialog in
+// front of a program that wants to read what was copied. Probing for the
+// write would raise that dialog on every session that started, to learn
+// something the terminal has already said by naming itself.
+//
+// So the list is of terminals whose own documentation says they take the
+// write, matched against XTVERSION's answer. It is deliberately not
+// `answering` above, which is a different question — that one is which
+// terminals reply to a query instead of printing it — and a terminal absent
+// from this one is not refused a copy, it is copied for by the tools.
+var clipboardWriters = []string{
+	"alacritty", "contour", "foot", "ghostty", "iterm2", "kitty", "rio",
+	// tmux answers XTVERSION itself rather than passing it out to the
+	// terminal beyond, so its own name is what arrives inside a session.
+	"tmux", "wezterm",
+}
+
+// writesClipboard reads one XTVERSION answer against that list. The names
+// arrive cased however the terminal writes them ("WezTerm 20240203",
+// "iTerm2 3.5.0"), so the comparison is not.
+func writesClipboard(name string) bool {
+	name = strings.ToLower(name)
+	for _, w := range clipboardWriters {
+		if strings.Contains(name, w) {
+			return true
+		}
+	}
+	return false
+}
 
 // answering lists the terminals that answer XTVERSION and the graphics
 // queries, by the name they put in TERM. They are asked even where the rule

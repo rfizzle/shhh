@@ -22,9 +22,16 @@ import (
 )
 
 // copyFocusedRow answers [y]: the focused row's content goes to the
-// clipboard through the same path /copy and the drag selection use, and the
-// reading rail captions what was caught. A row with nothing to copy hands
-// the letter back to the draft, the way [-] does with nothing open.
+// clipboard and the reading rail captions what was caught. A row with
+// nothing to copy hands the letter back to the draft, the way [-] does with
+// nothing open.
+//
+// It is the one copy that can offer the terminal's own clipboard (copyText),
+// because it is the one that can hand a command back for the write. /copy
+// and the drag selection reach the same tools through the same copyFn, but
+// a slash command answers with a string and a selection with a model, so
+// neither has anywhere to put the sequence; over ssh those two still copy to
+// the machine nobody is sitting at.
 func (m Model) copyFocusedRow(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	es := *m.entries()
 	text, what := m.rowCopyText(es, m.focusIdx)
@@ -34,11 +41,12 @@ func (m Model) copyFocusedRow(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	// The failures land in the transcript, where /copy's and the drag
 	// selection's already go: a missing clipboard tool is a fact about the
 	// machine the reader has to act on, not a caption.
-	if m.copyFn == nil {
-		return m.focusNotice("Copying is not available in this session.")
-	}
-	if res := m.copyFn(text); res.Warning != "" {
+	res, write := m.copyText(text)
+	switch {
+	case res.Warning != "":
 		return m.focusNotice(res.Warning)
+	case !res.OK:
+		return m.focusNotice("Copying is not available in this session.")
 	}
 	n := strings.Count(text, "\n") + 1
 	noun := "lines"
@@ -46,7 +54,10 @@ func (m Model) copyFocusedRow(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		noun = "line"
 	}
 	m.readingCopied = fmt.Sprintf("✂ copied %s · %d %s", what, n, noun)
-	return m, nil
+	// The caption stands as soon as the write leaves. A clipboard write to
+	// the terminal has no reply and nothing to wait for, so "it went" is the
+	// whole of what can be known about it.
+	return m, write
 }
 
 // focusNotice is systemNotice with reading mode's render: the row lands in
