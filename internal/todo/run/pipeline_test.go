@@ -290,7 +290,7 @@ func TestFinish_EveryEndingIsCarriedOut(t *testing.T) {
 		if err := p.Validate(); err != nil {
 			t.Fatalf("%s: %v", f, err)
 		}
-		s := Start(it, "sess", "manual", 1, Options{Repo: true, Pipeline: p})
+		s := Start(it, "sess", "manual", 1, Options{Repo: true, Pipeline: p, Notebook: true})
 		s.First(it, "")
 		s.Paths = []string{"a.md"}
 		return s, s.Observe(it, "did it")
@@ -329,5 +329,25 @@ func TestFinish_EveryEndingIsCarriedOut(t *testing.T) {
 		if step.Action != ActionDone || !s.Over() || !strings.Contains(s.Report, "## Report") {
 			t.Fatalf("%s = %+v", f, step)
 		}
+	}
+}
+
+// A write-up is read in the session's shared notebook, so a session with no
+// notebook has nowhere to put one: the note finish files the report the code
+// writes rather than spending a turn asking for a write-up nobody will read.
+func TestFinish_ANoteWithNoNotebookIsAnArchive(t *testing.T) {
+	it := note()
+	p := Pipeline{Name: "x", Steps: []PipelineStep{
+		{Name: "do", Kind: KindTurn, Access: Write, Builtin: "DO."},
+		{Name: "end", Kind: KindFinish, Access: Read, Finish: FinishNote, Builtin: "END."},
+	}}
+	s := Start(it, "sess", "manual", 1, Options{Repo: true, Pipeline: p})
+	s.First(it, "")
+	s.Paths = []string{"a.md"}
+	if step := s.Observe(it, "did it"); step.Action != ActionDone || !s.Over() {
+		t.Fatalf("the run spent a turn on a write-up with nowhere to read it: %+v", step)
+	}
+	if !strings.Contains(s.Report, "## Report") {
+		t.Fatalf("the archive carries no report of its own: %q", s.Report)
 	}
 }

@@ -941,11 +941,11 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	}
 	if cwd != "" && !session.conversation {
 		root := todo.Root(cwd)
-		// The vocabulary the backlog is written in is resolved once, here,
-		// and handed to every reader of it. This release ships one profile,
-		// and the reason it travels rather than being reached for is that
-		// the next one will not be the same for every checkout.
-		profile := todo.BuiltinCode()
+		// The vocabulary the backlog is written in is resolved once, for the
+		// process, and handed to every reader of it rather than reached for:
+		// which words an item carries is the project's answer, so there is
+		// no default to fall back on (todoprofile.go).
+		profile := todoProfile()
 		model = model.WithTodos(chat.Todos{
 			Root: root, Manage: todoManager(root), Detail: todoDetail,
 			Profile: profile,

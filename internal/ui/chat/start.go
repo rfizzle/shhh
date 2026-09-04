@@ -67,6 +67,13 @@ type StartRecent struct {
 	Held bool
 }
 
+// StartProfile is the backlog profile in force, named and placed: which one,
+// and where it was read from.
+type StartProfile struct {
+	Name string
+	From string
+}
+
 // StartInfo is everything the start screen renders, gathered once by the CLI
 // at session start.
 type StartInfo struct {
@@ -78,6 +85,13 @@ type StartInfo struct {
 	// the checkout's settings file is: a session running words the reader
 	// never wrote is one they cannot account for from their own files.
 	Wordings []string
+	// Profile is the backlog profile this project's items are written in and
+	// worked under, and the zero value is the one a checkout of code has
+	// always run. It is on the screen beside the root for the reason the
+	// root is: what an item is called, which fields it carries and which
+	// steps a run takes are all different here, and a reader who does not
+	// know which profile is in force cannot account for any of them.
+	Profile StartProfile
 	// Trust is what this checkout was not allowed to put into the session.
 	// It is on the screen because it is the difference between a session
 	// that is small and one that is small for a reason, and it backs
@@ -288,6 +302,15 @@ func startNotes(info StartInfo) []components.StartNote {
 	if root := info.Project.RootDisplay; root != "" && root != info.Project.Display {
 		notes = append(notes, components.StartNote{Label: "root", Value: root,
 			Detail: "the backlog and this project's state are kept here"})
+	}
+	// And what that backlog is: the profile decides what an item is called,
+	// which fields it carries and which steps a run of it takes, so a
+	// session working under one the reader did not choose would draw a
+	// backlog they cannot account for. The ordinary project runs the one
+	// shhh ships and says nothing here.
+	if name := info.Profile.Name; name != "" {
+		notes = append(notes, components.StartNote{Label: "profile", Value: name,
+			Detail: info.Profile.From + " · the words on an item and the steps of a run"})
 	}
 	// The names are spelled out because a checkout that has told the model
 	// nothing looks exactly like one that has, and the reader's next move is

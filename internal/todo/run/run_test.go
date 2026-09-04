@@ -732,8 +732,8 @@ func TestWordings_StandardsIsSharedByTheStagesThatChangeTheTree(t *testing.T) {
 		promptAt("research", it, promptArgs{}, w),
 		promptAt("implement", it, promptArgs{plan: planText}, w),
 		promptAt("remediate", it, promptArgs{findings: "a finding"}, w),
-		laneTask(it, planText, Lane{Name: "one", Paths: []string{"a.go"}, Task: "build a"}, "", w),
-		integratePrompt(it, planText, []Lane{{Name: "one", Paths: []string{"a.go"}}}, "", w),
+		laneTask(it, planText, Lane{Name: "one", Paths: []string{"a.go"}, Task: "build a"}, "", w, BuiltinCode()),
+		integratePrompt(it, planText, []Lane{{Name: "one", Paths: []string{"a.go"}}}, "", w, BuiltinCode()),
 	} {
 		if !strings.Contains(got, "MY STANDARDS") || strings.Contains(got, "Read AGENTS.md") {
 			t.Errorf("a stage kept the built-in standards sentence:\n%s", got)

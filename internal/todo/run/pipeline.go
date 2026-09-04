@@ -27,7 +27,19 @@ type Pipeline struct {
 	// says it came from.
 	Name  string
 	Steps []PipelineStep
+	// Standards is the shared sentence every step that changes the tree
+	// carries, and empty for a pipeline that keeps the built-in one. It is
+	// the pipeline's rather than a constant because a profile ships its own
+	// wordings and this is one of them: a backlog of readings has different
+	// standards to a checkout of code, and a run that sent the code one
+	// anyway would be telling the model to read AGENTS.md about work that
+	// has no tree.
+	Standards string
 }
+
+// standards is the shared sentence this pipeline sends where no file
+// replaced it.
+func (p Pipeline) standards() string { return or(p.Standards, builtinStandards) }
 
 // PipelineStep is one step of a run.
 type PipelineStep struct {
@@ -255,6 +267,20 @@ func (p Pipeline) Remediation() (PipelineStep, bool) {
 	return PipelineStep{}, false
 }
 
+// Stated reports a pipeline somebody wrote down, which is not the same as
+// one with steps in it: a profile may state a run of no steps, and a caller
+// that named no pipeline at all has simply not said and takes the built-in
+// one (Options.Steps).
+func (p Pipeline) Stated() bool { return p.Name != "" || len(p.Steps) > 0 }
+
+// Runs reports the pipeline having any steps at all. A profile may state no
+// run — a checklist is a list of things to do rather than a thing to work,
+// and a model turn spent on one would describe the work instead of doing it
+// — and a surface asked for a run says so rather than sending the item into
+// a run its own backlog never stated.
+// See docs/capabilities/todo.md#a-profile-says-what-the-work-is.
+func (p Pipeline) Runs() bool { return len(p.Steps) > 0 }
+
 // Finishes reports the pipeline ending in something.
 func (p Pipeline) Finishes() bool {
 	for _, ps := range p.Steps {
@@ -305,6 +331,12 @@ func (p Pipeline) Place(s Stage) int {
 // a table of its own, so a profile with a step nobody thought of still has a
 // file it can be tuned with.
 func (p Pipeline) WordingKeys() []string {
+	// A profile with no run instructs nothing, so it names no wording and a
+	// scaffold of its directory writes no files: a `standards.md` beside a
+	// pipeline that never sends it is a file whose edits do nothing.
+	if len(p.Steps) == 0 {
+		return nil
+	}
 	out := []string{WordingStandards}
 	for _, ps := range p.Steps {
 		switch ps.Kind {
@@ -360,12 +392,24 @@ func (p Pipeline) Digest() string {
 // not a run with a stage missing, it is a run that ends another way, and the
 // report it writes says where the work is instead.
 // See docs/capabilities/todo.md#a-run-is-turns-with-gates-between-them.
-func (p Pipeline) Archiving() Pipeline {
+func (p Pipeline) Archiving() Pipeline { return p.archiving(FinishCommit) }
+
+// Noteless is this pipeline with every note finish turned into an archive —
+// the run in a session that has no shared notebook. A note finish spends a
+// turn asking for the write-up rather than letting the code state what was
+// done, which is worth a turn when there is somewhere for the writing to be
+// read; where there is not, the code's own report says the same thing for
+// nothing.
+// See docs/capabilities/todo.md#a-profile-says-what-the-work-is.
+func (p Pipeline) Noteless() Pipeline { return p.archiving(FinishNote) }
+
+// archiving is this pipeline with one kind of finish replaced by an archive.
+func (p Pipeline) archiving(from Finish) Pipeline {
 	out := p
 	out.Steps = make([]PipelineStep, len(p.Steps))
 	copy(out.Steps, p.Steps)
 	for i := range out.Steps {
-		if out.Steps[i].Kind == KindFinish && out.Steps[i].Finish == FinishCommit {
+		if out.Steps[i].Kind == KindFinish && out.Steps[i].Finish == from {
 			out.Steps[i].Finish = FinishArchive
 		}
 	}

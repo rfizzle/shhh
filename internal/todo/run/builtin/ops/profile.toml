@@ -1,0 +1,58 @@
+# A backlog of operational work: a task to carry out, an incident to settle,
+# a change to make. A run plans it, asks before acting, acts, and then checks
+# — because what tells you an operational change worked is a command, not a
+# reading of the diff.
+#
+# The check runs the item's own `## Tests` bullets and the workspace's
+# quality gate. A project whose landing is one command names it here, on the
+# check step or on the finish, and the runner runs that instead.
+
+name = "ops"
+noun = "task"
+
+[[field]]
+name = "kind"
+default = "task"
+values = [
+  { name = "task", gloss = "work to carry out" },
+  { name = "incident", gloss = "something broken, being put right" },
+  { name = "change", gloss = "a planned change to something running" },
+]
+
+[[field]]
+name = "priority"
+
+[[step]]
+name = "plan"
+kind = "turn"
+mode = "read"
+standards = true
+blocks = ["item", "answers"]
+reads = ["plan", "questions"]
+
+# Ungraded work reads one rule for every item, so this gate stops wherever
+# the planning turn left a question: acting on a guess is the failure an
+# operational backlog cannot take back.
+[[step]]
+name = "pause"
+kind = "gate"
+under = "plan"
+pause = ["questions"]
+
+[[step]]
+name = "act"
+kind = "turn"
+mode = "write"
+standards = true
+blocks = ["item", "plan", "answers"]
+tail = "Do not commit. Change nothing the plan does not name."
+
+[[step]]
+name = "check"
+kind = "command"
+
+[[step]]
+name = "file"
+kind = "finish"
+mode = "read"
+finish = "archive"

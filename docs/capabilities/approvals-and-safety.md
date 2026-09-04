@@ -282,9 +282,9 @@ It is one answer about the whole checkout, given once: `shhh doctor trust`,
 `[a]` on the doctor's trust row, or `/trust` in a session. It covers
 `.shhh/skills`, `.agents/skills`, `.claude/skills`, `.shhh/agents`,
 `.shhh/quality.json`, `.shhh/hooks.json`, `.shhh/mcp.json`, `.mcp.json`,
-`.shhh/config.toml` and `.shhh/prompts`, and what is recorded is those files
-as they stand — so
-editing any of them, or writing one that was not there, asks again. The
+`.shhh/config.toml`, `.shhh/prompts` and `.shhh/todo/profile`, and what is
+recorded is those files as they stand — so editing any of them, or writing
+one that was not there, asks again. The
 answer is kept outside the checkout, in the local store, because a file in
 the checkout is the thing being decided about.
 
@@ -302,7 +302,11 @@ where a suite is a command line that runs. A wording under `.shhh/prompts` is
 prose and still inside the set, on the other half of that same line — it is
 not a file the model chooses to read, it is what shhh itself says at a stage
 that changes the tree without asking
-([`todo.md`](todo.md#the-stage-prompts-are-yours-to-edit)).
+([`todo.md`](todo.md#the-stage-prompts-are-yours-to-edit)). A backlog profile
+under `.shhh/todo/profile` is that text plus the shape of the run that sends
+it — which steps there are, what each may do to the tree, where the person is
+asked — so it is in the set on both counts
+([`todo.md`](todo.md#a-profile-says-what-the-work-is)).
 
 Trust granted inside a session takes effect in the next one. The prompt
 naming the skills and the toolset holding the gate were both built when the

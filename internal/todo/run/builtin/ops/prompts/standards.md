@@ -1,0 +1,1 @@
+Read the project's own notes and any skill that applies before you start. Follow the project's standards for how a finding is written down and where it is kept. Preserve work already in the tree and never overwrite somebody else's notes.

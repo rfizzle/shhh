@@ -1,0 +1,78 @@
+# A backlog of things to find out. An item is a question, a source to read,
+# somebody to ask, or several readings drawn together; a run scopes it,
+# gathers what answers it, has the gathering read by somebody who did not do
+# it, and files the write-up. Nothing is built, nothing is verified and
+# nothing is committed.
+
+name = "research"
+noun = "question"
+grade = "depth"
+
+[[field]]
+name = "kind"
+default = "question"
+values = [
+  { name = "question", gloss = "something to find out" },
+  { name = "reading", gloss = "one source to read and write up" },
+  { name = "interview", gloss = "somebody to ask" },
+  { name = "synthesis", gloss = "several readings drawn together" },
+]
+
+[[field]]
+name = "priority"
+
+# Two grades, not three: what a reading costs is how far it goes, and the
+# rules the runner states by grade are read from both ends of whatever scale
+# a profile has.
+[[field]]
+name = "depth"
+values = [
+  { name = "quick", gloss = "an hour: one source, and what it says", glyph = "Q" },
+  { name = "deep", gloss = "days: several sources, and a conclusion drawn across them", glyph = "D" },
+]
+
+[[step]]
+name = "scope"
+kind = "turn"
+mode = "read"
+standards = true
+blocks = ["item", "answers"]
+reads = ["plan", "grade", "questions"]
+
+# A quick reading is not worth stopping for. A deep one always stops: what
+# counts as an answer, and how far to go looking for it, is the person's to
+# settle before days are spent on it.
+[[step]]
+name = "pause"
+kind = "gate"
+under = "scope"
+pause = ["never", "always-when deep"]
+
+[[step]]
+name = "gather"
+kind = "turn"
+mode = "write"
+standards = true
+blocks = ["item", "plan", "answers"]
+tail = "Write what you find down as you go, in the files the plan names. Do not commit."
+
+# A quick reading is read back by the session that made it; a deep one by
+# somebody who did not gather it, because a reading that only agrees with
+# itself has not been checked.
+[[step]]
+name = "review"
+kind = "agent"
+mode = "read"
+blocks = ["item", "plan", "diff"]
+solo = "quick"
+
+# A reading's product is the write-up, so the run spends a turn on it rather
+# than letting the code state what was done. Where the session has no shared
+# notebook for the write-up to be read in, the run files the code's own
+# report instead.
+[[step]]
+name = "file"
+kind = "finish"
+mode = "read"
+finish = "note"
+blocks = ["item"]

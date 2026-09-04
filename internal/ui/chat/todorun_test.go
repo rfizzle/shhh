@@ -244,6 +244,34 @@ func TestTodoRun_Guards(t *testing.T) {
 	}
 }
 
+// A profile may state no run at all — a checklist is a list of things to do
+// rather than a thing to work — and asking for one on such a backlog says so
+// and offers the verb that files the item, rather than sending it into the
+// run some other profile has.
+func TestTodoRun_AProfileWithNoRunSaysSoAndOffersDone(t *testing.T) {
+	m, _ := runModel(t)
+	m.todos.Profile.Name = "checklist"
+	m.todos.Pipeline = run.Pipeline{Name: "checklist"}
+	m.input.SetValue("/todo run do-it")
+	updated, _ := m.submitInput()
+	next := updated.(Model)
+	note := next.transcript[len(next.transcript)-1].text
+	if !strings.Contains(note, "checklist profile has no run") || !strings.Contains(note, "/todo done do-it") {
+		t.Fatalf("the refusal does not say what to do instead: %q", note)
+	}
+	if next.todoRunner.state != nil {
+		t.Fatal("a run started under a profile that states none")
+	}
+	// And the same for a whole set: there is no item to name, so the
+	// sentence is about the backlog rather than about one row.
+	m.input.SetValue("/todo run --all")
+	updated, _ = m.submitInput()
+	next = updated.(Model)
+	if note := next.transcript[len(next.transcript)-1].text; !strings.Contains(note, "no run, so there is no set to work") {
+		t.Fatalf("a sprint under a profile with no run: %q", note)
+	}
+}
+
 func TestTodoVerifyCmd_RunsSnapshotAndReportsFailure(t *testing.T) {
 	m, root := runModel(t)
 	m.todoRunner.state = &run.State{Slug: "do-it", Tests: []string{"true", "exit 3"}}

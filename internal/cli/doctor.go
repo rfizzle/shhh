@@ -56,6 +56,7 @@ import (
 	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/structural"
+	"github.com/rfizzle/shhh/internal/todo/run"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/update"
 	"github.com/spf13/cobra"
@@ -1284,7 +1285,7 @@ func doctorHooks(set *hook.Set, ceiling time.Duration) doctorFinding {
 // failure that stops a session from starting at all, and a reader who has
 // just written the path is exactly who is looking here.
 func probePrompts(_ context.Context, cfg config.Config) doctorFinding {
-	return doctorPrompts(readWordings(cfg.Prompts, projectPrompts()))
+	return doctorPrompts(readWordings(cfg.Prompts, projectPrompts()), backlogProfileIs())
 }
 
 // doctorPrompts is that reading. Replacing nothing is the ordinary case and
@@ -1296,15 +1297,17 @@ func probePrompts(_ context.Context, cfg config.Config) doctorFinding {
 // force, so "which file am I actually running" is the question this row is
 // opened with — and a wording that has gone missing is found here rather
 // than at the next session that refuses to start.
-func doctorPrompts(rows []wordingRow) doctorFinding {
+func doctorPrompts(rows []wordingRow, profile backlogProfile) doctorFinding {
+	under := profileLines(profile)
 	if len(rows) == 0 {
 		return doctorFinding{
 			Subject: "no wordings replaced", Detail: "the built-in prose",
 			Outcome: "empty", State: components.DoctorSkipped,
+			Fix: under, FixLabel: "show the profile this backlog runs under",
 		}
 	}
 	names := make([]string, 0, len(rows))
-	lines := make([]string, 0, len(rows))
+	lines := append([]string{}, under...)
 	unreadable := 0
 	for _, r := range rows {
 		names = append(names, r.key)
@@ -1329,6 +1332,35 @@ func doctorPrompts(rows []wordingRow) doctorFinding {
 		f.FixLabel = fmt.Sprintf("show the %s", countOf(len(f.Fix), "line", "lines"))
 	}
 	return f
+}
+
+// profileLines say which profile the wordings belong to: a wording key is a
+// step of a run, so "which file am I running" is only half the question — the
+// other half is which run has a step by that name at all. A profile that will
+// not load is said here rather than as a list of keys nothing could read,
+// because there is no step to name a wording for until it does.
+func profileLines(p backlogProfile) []string {
+	if p.err != nil {
+		return []string{p.err.Error()}
+	}
+	lines := []string{"profile " + p.name() + " — " + p.from}
+	steps := p.pipeline.Strip()
+	if len(steps) == 0 {
+		return append(lines, "no run: this profile's items are worked by hand")
+	}
+	names := make([]string, 0, len(steps))
+	for _, s := range steps {
+		names = append(names, string(s))
+	}
+	wordings := "wordings: " + strings.Join(p.pipeline.WordingKeys(), ", ")
+	if p.dir != "" {
+		// A profile read from a directory has its wordings in files the
+		// reader can open, and the row's next use is opening one. The
+		// directory is named the way the profile above it is, so the two
+		// lines read as one place.
+		wordings += " · under " + p.from + run.ProfileWordings + "/"
+	}
+	return append(lines, "steps: "+strings.Join(names, " · "), wordings)
 }
 
 func probeTools(context.Context, config.Config) doctorFinding {

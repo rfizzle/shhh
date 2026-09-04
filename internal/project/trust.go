@@ -17,7 +17,10 @@ package project
 // the other half of that same line: it is not a file the model chooses to
 // read, it is what shhh itself says at a stage that changes the tree without
 // asking, and a checkout that could rewrite that could take the standards
-// sentence out of every run in every clone.
+// sentence out of every run in every clone. A backlog profile is that same
+// text plus the shape of the run that sends it — which steps there are, what
+// each may do to the tree, where the person is asked — so it is in the set
+// on both counts.
 
 import (
 	"crypto/sha256"
@@ -44,6 +47,7 @@ const (
 	KindServers  Kind = "MCP servers"
 	KindSettings Kind = "settings"
 	KindPrompts  Kind = "wordings"
+	KindProfile  Kind = "backlog profile"
 )
 
 // resource is one kind and the paths, relative to the root, it is read from.
@@ -66,6 +70,7 @@ var resources = []resource{
 	{KindServers, []string{".shhh/mcp.json", ".mcp.json"}},
 	{KindSettings, []string{ConfigFile}},
 	{KindPrompts, []string{PromptsDir}},
+	{KindProfile, []string{TodoProfileDir}},
 }
 
 // Store is where the answer is kept: outside the checkout, because a file in

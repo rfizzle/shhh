@@ -327,7 +327,7 @@ func (s *State) laneNames(all bool) []string {
 // rules a lane works under. The item goes in by content, never by path —
 // a worktree of an uncommitted backlog holds no item files.
 func (s *State) LaneTask(it todo.Item, lane Lane) string {
-	return laneTask(it, s.Plan, lane, answersBlock(s.Answers), s.Wordings)
+	return laneTask(it, s.Plan, lane, answersBlock(s.Answers), s.Wordings, s.Shape())
 }
 
 // LanePatched is the front-end reporting a lane's patch landed on the
@@ -383,7 +383,7 @@ func (s *State) LaneFailed(agent, why string) Step {
 func (s *State) integrate(it todo.Item, ps PipelineStep) Step {
 	s.Stage = ps.Stage()
 	return Step{Action: ActionPrompt, Stage: ps.Stage(), Mode: ps.Access.Mode(),
-		Prompt: integratePrompt(it, s.Plan, s.Lanes, answersBlock(s.Answers), s.Wordings), Shown: s.label("integrate the lanes")}
+		Prompt: integratePrompt(it, s.Plan, s.Lanes, answersBlock(s.Answers), s.Wordings, s.Shape()), Shown: s.label("integrate the lanes")}
 }
 
 func clampText(s string, max int) string {
@@ -429,7 +429,7 @@ task: <what this lane builds, which plan steps it covers, and what it must not t
 	return b.String()
 }
 
-func laneTask(it todo.Item, plan string, lane Lane, answers string, w Wordings) string {
+func laneTask(it todo.Item, plan string, lane Lane, answers string, w Wordings, p Pipeline) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "You are building lane %q of a backlog item that other writers are building the rest of, in parallel, each in an isolated copy of the repository.\n\n", lane.Name)
 	b.WriteString(itemBlock(it))
@@ -439,14 +439,14 @@ func laneTask(it todo.Item, plan string, lane Lane, answers string, w Wordings) 
 	}
 	b.WriteString("YOUR LANE:\n" + strings.TrimSpace(lane.Task) + "\n\n")
 	b.WriteString("PATHS YOU MAY CREATE OR EDIT: " + strings.Join(lane.Paths, ", ") + "\n\n")
-	b.WriteString(w.standards() + "\n\n")
+	b.WriteString(w.standards(p) + "\n\n")
 	b.WriteString(`Touch only the paths listed; another lane owns everything else, and a change outside your paths will collide with theirs. Use only what exists in the tree now — the other lanes' work is not in your copy. Build and run the tests for what you changed. Do not edit the backlog item file (it is not in your copy) and do not commit.
 
 End with a short report of what you changed and anything the integration turn must wire up. If you cannot finish inside your paths, say so plainly in the report and change nothing you cannot finish.`)
 	return b.String()
 }
 
-func integratePrompt(it todo.Item, plan string, lanes []Lane, answers string, w Wordings) string {
+func integratePrompt(it todo.Item, plan string, lanes []Lane, answers string, w Wordings, p Pipeline) string {
 	var b strings.Builder
 	b.WriteString("INTEGRATE stage. Writer sub-agents built this item in lanes, each in an isolated copy, and every lane's patch is now applied to the tree. Make the lanes fit together and finish the item.\n\n")
 	b.WriteString(itemBlock(it))
@@ -464,7 +464,7 @@ func integratePrompt(it todo.Item, plan string, lanes []Lane, answers string, w 
 		}
 		fmt.Fprintf(&b, "\n--- lane %s (%s) ---\n%s\n", l.Name, strings.Join(l.Paths, ", "), report)
 	}
-	b.WriteString("\n" + w.standards() + "\n\n")
+	b.WriteString("\n" + w.standards(p) + "\n\n")
 	b.WriteString(`Read the tree as it now is — the lanes were written blind to each other. Wire what the reports say needs wiring, resolve anything that no longer builds, and satisfy every acceptance criterion the lanes left. As you confirm each criterion and task, tick its checkbox in the item file named above. Do not commit; the runner commits. Do not run the whole verification suite yourself; the runner runs it next.
 
 When you are done, answer with a short summary of what you changed beyond the lanes and anything departed from in the plan and why. If the lanes cannot be made to fit, answer with one line ` + "`blocked: <why>`" + `.`)

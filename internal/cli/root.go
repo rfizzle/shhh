@@ -110,6 +110,15 @@ func NewRootCmd() *cobra.Command {
 				return err
 			}
 
+			// The backlog's profile is resolved here for the same reason and
+			// on the same terms: a name that answers to no directory is a
+			// project whose items would be read under words nobody chose,
+			// and every surface after this asks for the profile rather than
+			// resolving one of its own (todoprofile.go).
+			if perr := backlogProfileFor(cfg).err; perr != nil && cmd.Annotations[ownsConfigError] == "" {
+				return perr
+			}
+
 			// Gateway profiles register as providers before anything
 			// resolves one, so `--provider <name>` and provider.default work
 			// the same as a built-in. A malformed profile is reported and

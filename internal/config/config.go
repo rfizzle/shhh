@@ -56,6 +56,19 @@ type HooksConfig struct {
 
 // TodoConfig is what a backlog run does when it is not told otherwise.
 type TodoConfig struct {
+	// Profile names the profile this project's backlog is written in and
+	// worked under — what an item is called, which fields it carries, and
+	// which steps a run of it takes. Unset is the profile a checkout of code
+	// has always run, because that is the backlog shhh shipped with and a
+	// project that says nothing has one of those.
+	//
+	// It is a name rather than a path: a profile is a directory of a table
+	// and its wordings, and a path in a checkout's settings file is a path
+	// in every clone of it. The name is resolved against the checkout's own
+	// directory, the person's, and the profiles built into the binary, in
+	// that order.
+	// See docs/capabilities/todo.md#a-profile-says-what-the-work-is.
+	Profile string `toml:"profile"`
 	// Commit says whether a run ends in a commit. Unset is a commit,
 	// because a commit is what the runner treats as done and an item
 	// archived beside an uncommitted tree is an item that says it landed

@@ -1,0 +1,32 @@
+# A backlog of things to write down. There is nothing to plan, nothing to
+# verify and nobody to review: one turn writes the note, and the item is
+# filed. It is the shortest run a pipeline can state, and it is here to show
+# that a run may be short.
+
+name = "notes"
+noun = "note"
+
+[[field]]
+name = "kind"
+default = "note"
+values = [
+  { name = "note", gloss = "something to write down" },
+  { name = "idea", gloss = "something to come back to" },
+]
+
+[[field]]
+name = "priority"
+
+[[step]]
+name = "write"
+kind = "turn"
+mode = "write"
+standards = true
+blocks = ["item"]
+tail = "Write it where the item says, and change nothing else. Do not commit."
+
+[[step]]
+name = "file"
+kind = "finish"
+mode = "read"
+finish = "archive"

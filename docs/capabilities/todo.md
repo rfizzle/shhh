@@ -31,9 +31,10 @@ one item is called, which fields it has, what each of them may say, and
 which of them grades the work a run spends on it. Every surface draws the
 same words from it — the list, the rail, the card that proposes an item,
 the schema a reading is asked for in, and `--json` — so none of them holds
-a vocabulary of its own. This release ships one profile, the one a checkout
-of code has always been written in: a `kind` of story, bug or chore, and a
-`size` of S, M or L as the grade. Priority is on every profile and says the
+a vocabulary of its own. Which profile a project runs is a line in its
+settings ([below](#a-profile-says-what-the-work-is)); unset is the one a
+checkout of code has always been written in: a `kind` of story, bug or chore,
+and a `size` of S, M or L as the grade. Priority is on every profile and says the
 same three words in every one, because the order of the ready list has to
 be one rule a person can recompute by reading the headers.
 
@@ -217,6 +218,77 @@ lives in the same directory now, as a file inside it rather than a file of
 the same name beside it. A checkout still holding the old single file is
 reported by `shhh doctor`, which offers to move it
 ([configuration.md](configuration.md#a-migration-is-a-doctor-check)).
+
+## A profile says what the work is
+
+Everything above this line is the same whatever the work is: one file per
+item, the four statuses, ready as dependencies archived, the sprint, the
+archive. Everything below it is not. What an item is called, which fields it
+carries and what those may say, which of them grades the effort a run spends,
+and which steps a run has at all — those are facts about the project, and a
+project whose backlog is a reading list should not have to fork the tool to
+say so.
+
+A **profile** says them, and it is a directory: a `profile.toml` holding the
+vocabulary and the run, and a `prompts/` directory holding one file per step
+of that run. `todo.profile` in the settings names which one, and unset is
+`code` — the profile a checkout of code has always been written in.
+
+**Five profiles ship.** `code` is today's: a story, a bug or a chore, graded
+S, M or L, worked by research, implement, verify, review, remediate and
+commit. `research` is a backlog of questions, readings, interviews and
+syntheses, graded quick or deep, worked by scope, gather, review and a
+write-up — no verify, no commit. `ops` is tasks, incidents and changes,
+ungraded, worked by plan, act and a command that checks the change landed.
+`notes` is one turn that writes the note down. `checklist` has no run at all:
+asking for one says so and offers the verb that files the item, because what
+an item on a checklist needs is a person doing it.
+
+**A profile composes; it does not invent.** A step is one of six kinds the
+program carries out, each with the answer it asks for and the reading of that
+answer — a turn, a sub-agent, a division into lanes, a command, a gate, a
+finish ([above](#a-run-is-turns-with-gates-between-them)). A profile says
+which of them a run has, in what order, in which mode and with what the gate
+stops for; it cannot say what a step's answer looks like, because a step whose
+answer nothing can read is a step nothing can gate. A profile that states a
+shape the runner cannot carry out — a run with no ending, a gate after the
+tree has already moved, a division with no turn to put the lanes back
+together, a commit where nothing writes — is refused when it is read, with
+the file, the line and the rule. So is a name reserved by a pattern that will
+not compile, which would otherwise reserve nothing at all and look like it
+was working.
+
+Priority is on every profile and says the same three words in every one. The
+order of the ready list has to be something a person can recompute by reading
+the headers, and a profile that could rename or reorder priority would make
+two projects' backlogs sort differently under what reads as one rule. The
+file says only where priority's column goes.
+
+**Three places hold a profile, most specific first.** The checkout's own, at
+`.shhh/todo/profile/`; then a directory of your own, at `todo/<name>/` beside
+your settings; then the profiles built into the binary. A name nothing
+answers to stops the command and names all three, because the person who
+typed the name is deciding where to put the directory.
+
+A checkout's profile is behind its trust answer, for the reason its wordings
+are: it is not prose the model chooses to read, it is what shhh itself says
+at a step that changes the tree without asking — plus the shape of the run
+that says it. Until the person has answered for the checkout, the profile is
+among what the session names as withheld, and the run falls back to theirs or
+to the built-in one.
+
+The wordings under a profile follow the rules every other wording follows
+([below](#the-stage-prompts-are-yours-to-edit)): instruction only, the blocks
+placed where the file wants them, the answer shape appended by the program. A
+step whose file is not in the directory stops the load rather than falling
+back to shhh's own words, because a run that sent the code profile's
+implement wording to a reading step would be telling the model to build
+something.
+
+A session names the profile beside the root whenever it is not `code`, the
+backlog counts in the profile's own noun, and `shhh doctor` says which
+profile is in force, where it was read from and which steps and wordings it
+has.
 
 ## A session proposes; you accept
 

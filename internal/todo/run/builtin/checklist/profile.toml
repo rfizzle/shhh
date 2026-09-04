@@ -1,0 +1,10 @@
+# A list of things to do, in the order they matter, ticked off by hand. It
+# has no run at all: what an item on it needs is a person doing it, and a
+# model turn spent on one would be a turn spent describing work rather than
+# doing it. Asking for a run says so, and offers to mark the item done.
+
+name = "checklist"
+noun = "item"
+
+[[field]]
+name = "priority"

@@ -22,6 +22,7 @@ import (
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/structural"
+	"github.com/rfizzle/shhh/internal/todo/run"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -978,17 +979,35 @@ func TestProbeOtel_ReadsTheConfiguredEndpoint(t *testing.T) {
 
 // The doctor reads every wording a file replaced, because an unreadable one
 // is the config failure that stops a session from starting at all. Replacing
-// nothing is the ordinary case, not a fault.
+// nothing is the ordinary case, not a fault — and the row still says which
+// profile the wordings belong to, since a key is a step of a run and a run
+// with no step by that name has no wording to replace.
 func TestDoctorPrompts(t *testing.T) {
-	none := doctorPrompts(nil)
+	code := builtinBacklogProfile()
+	under := profileLines(code)
+	none := doctorPrompts(nil, code)
 	if none.State != components.DoctorSkipped || none.Outcome != "empty" {
 		t.Fatalf("a machine on the built-in prose is reported as a fault: %+v", none)
+	}
+	if len(none.Fix) != len(under) || !strings.Contains(none.Fix[0], "code") {
+		t.Fatalf("the row does not name the profile: %+v", none.Fix)
+	}
+	if !strings.Contains(strings.Join(none.Fix, "\n"), "research") {
+		t.Fatalf("the row does not name the profile's steps: %+v", none.Fix)
+	}
+
+	// A profile read out of a directory names that directory, so the reader
+	// whose next act is opening one of its wordings knows where to look.
+	from := backlogProfile{words: code.words, pipeline: code.pipeline,
+		from: project.TodoProfileDir + "/", dir: "/repo/" + project.TodoProfileDir}
+	if lines := profileLines(from); !strings.Contains(lines[2], project.TodoProfileDir+"/"+run.ProfileWordings+"/") {
+		t.Fatalf("the row does not name the profile's own wordings directory: %q", lines[2])
 	}
 
 	ok := doctorPrompts([]wordingRow{
 		{key: "steer", from: ".shhh/prompts/steer.md"},
 		{key: "todo_review", from: "~/.config/shhh/prompts/todo_review.md"},
-	})
+	}, code)
 	if ok.Outcome != "ok" || !strings.Contains(ok.Subject, "2 wordings") {
 		t.Fatalf("the row does not count what it read: %+v", ok)
 	}
@@ -997,20 +1016,20 @@ func TestDoctorPrompts(t *testing.T) {
 	}
 	// Which of the three directories won is the question this row is opened
 	// with, so every wording names the file it was read from.
-	if len(ok.Fix) != 2 ||
-		!strings.Contains(ok.Fix[0], ".shhh/prompts/steer.md") ||
-		!strings.Contains(ok.Fix[1], "~/.config/shhh/prompts/todo_review.md") {
+	if len(ok.Fix) != len(under)+2 ||
+		!strings.Contains(ok.Fix[len(under)], ".shhh/prompts/steer.md") ||
+		!strings.Contains(ok.Fix[len(under)+1], "~/.config/shhh/prompts/todo_review.md") {
 		t.Fatalf("the row does not say where each wording came from: %+v", ok.Fix)
 	}
 
 	bad := doctorPrompts([]wordingRow{
 		{key: "steer", from: ".shhh/prompts/steer.md"},
 		{key: "todo_commit", err: errors.New("config prompts.todo_commit: /w/commit.md: no such file")},
-	})
+	}, code)
 	if bad.State != components.DoctorFailed || bad.Consequence == "" {
 		t.Fatalf("an unreadable wording did not fail the row: %+v", bad)
 	}
-	if len(bad.Fix) != 2 || !strings.Contains(bad.Fix[1], "/w/commit.md") {
+	if len(bad.Fix) != len(under)+2 || !strings.Contains(bad.Fix[len(under)+1], "/w/commit.md") {
 		t.Fatalf("the row does not carry the reason: %+v", bad.Fix)
 	}
 }

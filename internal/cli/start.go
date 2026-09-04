@@ -92,6 +92,12 @@ func buildStartInfo(survey project.Info, db *storage.DB, gateEnabled bool, trust
 	// they cannot account for from their own file alone.
 	survey.ConfigFile = proj.Display
 	info := chat.StartInfo{Project: survey, Trust: trust, Wordings: wordings}
+	// The profile is named only where it is not the one shhh ships: a line
+	// saying `code` on every session in every Go checkout is a line nobody
+	// reads by the third one (todoprofile.go).
+	if p := backlogProfileIs(); p.name() != defaultProfileName {
+		info.Profile = chat.StartProfile{Name: p.name(), From: p.from}
+	}
 	if gateEnabled {
 		info.Gate = startGate(wd)
 	}

@@ -515,6 +515,9 @@ var settings = []Setting{
 	},
 
 	{
+		Key: "todo.profile", Kind: KindString, Default: "code",
+		Desc: "The profile this project's backlog is written in and worked under: what an item is called, which fields it carries, and which steps a run takes; it is looked for in this checkout, then beside your settings, then among the ones built in.",
+	}, {
 		Key: "todo.commit", Kind: KindBool, Default: "on",
 		Desc: "End a backlog run in a commit; off leaves the change in the working tree, which is the answer for a directory that is not a repository.",
 	}, {

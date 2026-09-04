@@ -598,6 +598,34 @@ func TestGolden_StartScreen(t *testing.T) {
 	})
 }
 
+// TestGolden_StartProfile captures the screen of a project whose backlog is
+// not a checkout of code's. The profile decides what an item is called, which
+// fields it carries and which steps a run takes, so it is named beside the
+// root and says where it was read from — a session working under one the
+// reader did not choose would draw a backlog they cannot account for.
+//
+// It is a capture of its own rather than a panel on the first-contact one
+// because the ordinary project says nothing here, and the screen that says
+// nothing is the one the other capture is about.
+func TestGolden_StartProfile(t *testing.T) {
+	captureGolden(t, "start-profile", "the start screen naming the backlog profile", goldenWidths, func(width int) []golden.Panel {
+		build := func(profile StartProfile) string {
+			info := startFixture()
+			info.Profile = profile
+			m := frameModel(t, width, 40).WithStartScreen(info)
+			return m.renderHistory()
+		}
+		return []golden.Panel{
+			{Label: "the checkout carries its own profile", View: build(StartProfile{
+				Name: "research", From: project.TodoProfileDir + "/"})},
+			{Label: "a profile of the reader's own, by name", View: build(StartProfile{
+				Name: "ops", From: "~/.config/shhh/todo/ops/"})},
+			{Label: "one of the profiles shhh ships", View: build(StartProfile{
+				Name: "notes", From: "built in"})},
+		}
+	})
+}
+
 // TestGolden_ScaffoldCard captures the card the scaffold offer opens: every
 // path it would create before it asks, and the two ways of not writing that
 // differ in what they leave behind.

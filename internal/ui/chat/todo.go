@@ -474,7 +474,7 @@ func (m Model) openTodoScreen() (tea.Model, tea.Cmd) {
 	if !m.todosEnabled() {
 		return m.systemNotice("The backlog is unavailable in this session.")
 	}
-	m.backlog = &components.BacklogScreen{Prose: todoProse, Plan: m.sprintPlan}
+	m.backlog = &components.BacklogScreen{Prose: todoProse, Plan: m.sprintPlan, Noun: m.todos.Profile.Noun}
 	m.backlog.Priority, m.backlog.Fields = todoScreenFieldSet(m.todos.Profile)
 	m.reloadTodos()
 	m.enterSurface(stateBacklog)

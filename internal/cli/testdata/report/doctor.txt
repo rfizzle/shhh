@@ -7,6 +7,10 @@
         sudo apt install bubblewrap
   ⊘ engine    no container engine  [not checked]
   ✓ prompts   3 wordings · steer · summary · todo_commit  [ok]
+        profile code — built in
+        steps: research · implement · verify · review · commit
+        wordings: standards, research, implement, review, review_task,
+        remediate, commit
         steer — .shhh/prompts/steer.md
         summary — config prompts.summary
         todo_commit — ~/.config/shhh/prompts/todo_commit.md

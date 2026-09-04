@@ -117,25 +117,31 @@ func BuiltinCode() Profile {
 	}
 }
 
+// Reserved is the compiled rule, nil for a profile that reserves nothing,
+// and an error for a pattern that will not compile. Whatever reads a profile
+// out of a file asks before the profile is in force, because a pattern that
+// does not compile reserves nothing at all: a project that typed one and got
+// no refusals would believe its rule was being kept.
+func (p Profile) Reserved() (*regexp.Regexp, error) {
+	if p.SlugRefuse == "" {
+		return nil, nil
+	}
+	return regexp.Compile(p.SlugRefuse)
+}
+
 // RefuseSlug reports the profile refusing a name for a new item, and nil
 // where it has no rule or the name is not one it reserves. Only a slug
 // being chosen is put to it — an item already on disk keeps whatever name
 // it has, since a refusal that stranded a file would lose the work rather
 // than rename it.
 //
-// A pattern that will not compile refuses nothing, because refusing every
-// name would leave a project unable to write an item at all. Nothing says
-// so out loud yet, and that is a debt rather than a design: this is the
-// only place the pattern is read, so whatever first reads a profile out of
-// a file owes the person a refusal at load naming the pattern and the line
-// it is on — a typed regex that silently stops reserving anything is the
-// failure this note exists to stop somebody shipping.
+// A pattern that will not compile refuses nothing here, because refusing
+// every name would leave a project unable to write an item at all. It cannot
+// reach this far: a profile is refused at load over a pattern that will not
+// compile, so one in force always has one that does.
 func (p Profile) RefuseSlug(slug string) error {
-	if p.SlugRefuse == "" {
-		return nil
-	}
-	re, err := regexp.Compile(p.SlugRefuse)
-	if err != nil || !re.MatchString(slug) {
+	re, err := p.Reserved()
+	if err != nil || re == nil || !re.MatchString(slug) {
 		return nil
 	}
 	return fmt.Errorf("slug %q is a name the %s profile reserves; name the work instead", slug, p.Name)

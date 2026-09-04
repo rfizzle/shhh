@@ -1,0 +1,111 @@
+# The vocabulary a checkout of code has always been written in, and the run
+# that works it: read the item and plan the change, ask the person what the
+# reading could not settle, build it — in lanes where the work is graded
+# largest — verify, review, remediate what either turned up, and commit.
+#
+# Copy this directory to write your own. Everything here is the profile's;
+# what a step is made of, the answer it asks for and the reading of that
+# answer are the runner's, and a step may only be one of the kinds it has.
+
+name = "code"
+noun = "item"
+grade = "size"
+
+[[field]]
+name = "kind"
+default = "story"
+values = [
+  { name = "story" },
+  { name = "bug" },
+  { name = "chore" },
+]
+
+# Priority is on every profile and says the same words in every one, so the
+# file says only where its column goes.
+[[field]]
+name = "priority"
+
+# The grade is what a run spends against: the rounds it buys, whether the
+# work is divided into lanes, and whether a reader other than the writer
+# reads it. The glosses are what a reading turn is offered when it grades an
+# item itself.
+[[field]]
+name = "size"
+values = [
+  { name = "S", gloss = "an hour, one or two files, no design decisions", glyph = "S" },
+  { name = "M", gloss = "an afternoon, a few files, some judgement", glyph = "M" },
+  { name = "L", gloss = "days, many files, or design decisions still open", glyph = "L" },
+]
+
+[[step]]
+name = "research"
+kind = "turn"
+mode = "read"
+standards = true
+blocks = ["item", "answers"]
+reads = ["plan", "grade", "questions"]
+
+# A small item never pauses, and an open question on one ends the run rather
+# than being guessed at: a runner that answers a product decision for the
+# person is writing their backlog rather than working it. A medium one
+# pauses on a question or on a grade the reading raised. The largest always
+# pauses, because that is the moment spend and blast radius are decided.
+[[step]]
+name = "pause"
+kind = "gate"
+under = "research"
+pause = ["never", "questions-or-upgraded", "always-when L"]
+
+[[step]]
+name = "split"
+kind = "fan-out"
+mode = "read"
+under = "implement"
+when = "largest"
+
+[[step]]
+name = "fan-out"
+kind = "fan-out"
+mode = "write"
+under = "implement"
+when = "largest"
+
+[[step]]
+name = "implement"
+kind = "turn"
+mode = "write"
+standards = true
+blocks = ["item", "plan", "answers"]
+tail = "Do not commit; the runner commits. Do not run the whole verification suite yourself; the runner runs it next."
+
+[[step]]
+name = "verify"
+kind = "command"
+
+# The smallest grade reads its own work in the session's own turn; anything
+# larger is read by a child that did not write it, because a second opinion
+# is only one if it comes from somewhere else.
+[[step]]
+name = "review"
+kind = "agent"
+mode = "read"
+blocks = ["item", "plan", "diff"]
+solo = "S"
+
+[[step]]
+name = "remediate"
+kind = "turn"
+mode = "write"
+standards = true
+blocks = ["item", "findings"]
+under = "implement"
+back = "verify"
+rounds = [1, 2, 2]
+tail = "Do not commit. If a finding is wrong, say so and why rather than changing working code."
+
+[[step]]
+name = "commit"
+kind = "finish"
+mode = "read"
+finish = "commit"
+blocks = ["item"]

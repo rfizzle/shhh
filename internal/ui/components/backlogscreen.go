@@ -257,6 +257,11 @@ type BacklogScreen struct {
 	// the host read them.
 	Rows []BacklogRow
 	Done []BacklogRow
+	// Noun is what the project calls one item, singular — "item", "story",
+	// "question", "task" — which is what the tally counts in. Empty is
+	// "item". A screen that counted questions as items would be naming the
+	// backlog by a word that appears nowhere in it.
+	Noun string
 	// Priority is the field that orders the list. It has a key of its own
 	// because every backlog has it and it is what the list is sorted by,
 	// so it is the one filter a reader reaches for without reading the
@@ -711,13 +716,22 @@ func (b *BacklogScreen) filterWords() string {
 // a list that is not the backlog.
 func (b *BacklogScreen) count() string {
 	if b.planning() {
-		return fmt.Sprintf("%d of %s kept", len(b.Plan.Kept()), plural(len(b.Plan.Rows), "item"))
+		return fmt.Sprintf("%d of %s kept", len(b.Plan.Kept()), plural(len(b.Plan.Rows), b.noun()))
 	}
 	total := len(b.rows())
 	if len(b.shown) == total {
-		return plural(total, "item")
+		return plural(total, b.noun())
 	}
-	return fmt.Sprintf("%d of %s", len(b.shown), plural(total, "item"))
+	return fmt.Sprintf("%d of %s", len(b.shown), plural(total, b.noun()))
+}
+
+// noun is what one row is called, with the fallback a host that named none
+// gets.
+func (b *BacklogScreen) noun() string {
+	if b.Noun == "" {
+		return "item"
+	}
+	return b.Noun
 }
 
 // paneRows is the body, which of the three tabs is up decides what: a
@@ -1133,7 +1147,7 @@ func (b *BacklogScreen) edgeRow(row BacklogRow) string {
 			" · "+keys.Bracket(keys.Backlog.Depends)+" goes there")
 	}
 	if len(row.Blocks) > 0 {
-		parts = append(parts, plural(len(row.Blocks), "item")+" waits on this: "+
+		parts = append(parts, plural(len(row.Blocks), b.noun())+" waits on this: "+
 			strings.Join(row.Blocks, ", "))
 	}
 	return strings.Join(parts, "   ")

@@ -106,6 +106,12 @@ func todoRunHeadless(cmd *cobra.Command, slug string, flags todoRunFlags) error 
 	if err != nil {
 		return err
 	}
+	// A profile may state no run at all, and its items are still items: what
+	// one needs is a person doing it, so the offer is the verb that files it
+	// rather than a run that would describe the work instead of doing it.
+	if !d.steps().Runs() {
+		return fmt.Errorf("the %s profile has no run: its items are worked by hand, and `shhh todo done <item>` files one", todoProfile().Name)
+	}
 	// What this process must be able to do is what the run's steps ask for,
 	// step by step: a pipeline that never commits wants no repository, and a
 	// division into lanes is the one step an unattended run falls back from

@@ -78,8 +78,9 @@ func (w Wordings) Digest() string {
 	return hex.EncodeToString(h.Sum(nil)[:8])
 }
 
-// standards is the shared sentence as this run sends it.
-func (w Wordings) standards() string { return or(w[WordingStandards], builtinStandards) }
+// standards is the shared sentence as this run sends it: the file that
+// replaced it, or the one the pipeline carries.
+func (w Wordings) standards(p Pipeline) string { return or(w[WordingStandards], p.standards()) }
 
 // or is the wording in force for one step: the file's where there is one, and
 // the built-in text otherwise. A file of whitespace is not a wording —
@@ -279,7 +280,7 @@ func (p Pipeline) prompt(a promptArgs, w Wordings, profile todo.Profile) string 
 	}
 	var after []string
 	if ps.Standards {
-		after = append(after, w.standards())
+		after = append(after, w.standards(p))
 	}
 	if ps.Kind == KindFinish && ps.Finish == FinishCommit {
 		// The style sentence is not a substitution a wording may place: it is

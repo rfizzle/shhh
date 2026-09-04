@@ -398,6 +398,28 @@ func researchFields() (BacklogField, []BacklogField) {
 	}
 }
 
+// The tally counts in the word the project uses for one item. "12 items" on
+// a list of questions names the backlog by a word that appears nowhere in it.
+func TestBacklogScreen_TheTallyCountsInTheProjectsOwnNoun(t *testing.T) {
+	rows := []BacklogRow{
+		{Slug: "why-tabs", Title: "Why tabs", Priority: "high", Status: "open", State: BacklogReady},
+		{Slug: "who-reads-it", Title: "Who reads it", Priority: "low", Status: "open", State: BacklogReady},
+	}
+	b := &BacklogScreen{MaxLines: 24, Rows: rows, Noun: "question"}
+	b.Priority, b.Fields = researchFields()
+	b.sync()
+	if got := b.count(); got != "2 questions" {
+		t.Errorf("the tally says %q", got)
+	}
+	// A host that names none gets the word every backlog started with, so
+	// nothing has to state the ordinary answer.
+	plain := &BacklogScreen{MaxLines: 24, Rows: rows}
+	plain.sync()
+	if got := plain.count(); got != "2 items" {
+		t.Errorf("the tally with no noun says %q", got)
+	}
+}
+
 // A second vocabulary draws its own letters on the rows and narrows on its
 // own words, and the footer names the field a filter stopped on — "reading"
 // on its own would not say what was narrowed.

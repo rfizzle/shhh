@@ -179,7 +179,16 @@ func (m Model) beginTodoRun(arg string, noCommit, inSprint bool) (tea.Model, tea
 		// several steps before it is needed.
 		Groomed:  todo.GroomingBlock(m.todos.Root, it.Slug),
 		Wordings: m.todos.Wordings,
-		Pipeline: m.todos.Pipeline}
+		Pipeline: m.todos.Pipeline,
+		// A write-up is read in the session's shared notebook, so a finish
+		// that spends a turn on one asks whether there is a notebook first.
+		Notebook: m.notebook != nil}
+	// A profile may state no run at all, and the item is still an item: what
+	// it needs is a person doing it, so the offer is the one verb that files
+	// it rather than a run that would describe the work instead of doing it.
+	if !opt.Steps().Runs() {
+		return m.systemNotice(fmt.Sprintf("The %s profile has no run: its items are worked by hand. /todo done %s files this one.", m.todos.Profile.Name, it.Slug))
+	}
 	// What this session must be able to do is what the run's steps ask for,
 	// step by step: a pipeline that never writes wants no changeset and one
 	// that never commits wants no repository.
@@ -1820,7 +1829,10 @@ func (m Model) startTodoSprint(opt todoRunArgs) (tea.Model, tea.Cmd) {
 		return m.systemNotice("Answer the open decision first; a sprint starts from an idle session.")
 	}
 	noCommit := opt.noCommit || m.todos.NoCommit
-	steps := run.Options{NoCommit: noCommit, Pipeline: m.todos.Pipeline}.Steps()
+	steps := run.Options{NoCommit: noCommit, Pipeline: m.todos.Pipeline, Notebook: m.notebook != nil}.Steps()
+	if !steps.Runs() {
+		return m.systemNotice(fmt.Sprintf("The %s profile has no run, so there is no set to work: its items are worked by hand.", m.todos.Profile.Name))
+	}
 	if ref, refused := steps.Refuse(m.todoRunCan(project.InRepo(m.todos.Root))); refused {
 		return m.systemNotice(m.todoRunRefusal(ref, ""))
 	}

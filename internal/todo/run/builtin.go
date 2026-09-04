@@ -90,7 +90,8 @@ const (
 // run with no verify and no commit without any of the mechanism moving.
 func BuiltinCode() Pipeline {
 	return Pipeline{
-		Name: "code",
+		Name:      "code",
+		Standards: builtinStandards,
 		Steps: []PipelineStep{{
 			Name: "research", Kind: KindTurn, Access: Read,
 			Builtin:   builtinResearch,
@@ -156,7 +157,10 @@ func BuiltinWordings() Wordings { return BuiltinCode().Builtins() }
 
 // Builtins is this pipeline's own words, by key.
 func (p Pipeline) Builtins() Wordings {
-	w := Wordings{WordingStandards: builtinStandards}
+	if len(p.Steps) == 0 {
+		return Wordings{}
+	}
+	w := Wordings{WordingStandards: p.standards()}
 	for _, ps := range p.Steps {
 		if ps.Builtin != "" {
 			w[ps.Key()] = ps.Builtin

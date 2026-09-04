@@ -146,7 +146,7 @@ func goldenChecks() []components.DoctorCheck {
 			{key: "steer", from: ".shhh/prompts/steer.md"},
 			{key: "summary", from: "config prompts.summary"},
 			{key: "todo_commit", from: "~/.config/shhh/prompts/todo_commit.md"},
-		}), 0),
+		}, builtinBacklogProfile()), 0),
 	}
 }
 

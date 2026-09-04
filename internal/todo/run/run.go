@@ -314,19 +314,29 @@ type Options struct {
 	// Pipeline is the steps this run takes, and the empty pipeline is the
 	// built-in code one.
 	Pipeline Pipeline
+	// Notebook reports the session keeping a shared notebook, which is where
+	// a write-up is read. A finish that spends a turn asking for one has
+	// nowhere to put it without a notebook, so it files what the code can
+	// say instead.
+	Notebook bool
 }
 
 // Steps is the pipeline this run works: the profile's, with a commit finish
-// turned into an archive where the person asked for a run without one. A run
-// without a commit is not a run with a step missing — it is a run that ends
-// another way, and the report it writes says where the work is instead.
+// turned into an archive where the person asked for a run without one, and a
+// note finish turned into one where there is no notebook for the writing to
+// be read in. A run without a commit is not a run with a step missing — it is
+// a run that ends another way, and the report it writes says where the work
+// is instead.
 func (o Options) Steps() Pipeline {
 	p := o.Pipeline
-	if len(p.Steps) == 0 {
+	if !p.Stated() {
 		p = BuiltinCode()
 	}
 	if o.NoCommit {
 		p = p.Archiving()
+	}
+	if !o.Notebook {
+		p = p.Noteless()
 	}
 	return p
 }
