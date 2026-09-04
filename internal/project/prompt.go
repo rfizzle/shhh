@@ -56,9 +56,22 @@ func PromptBlock(info Info) string {
 		// round. Without it an agent reads its own diff, finds changes it
 		// cannot remember making, and sets about explaining or reverting
 		// them.
-		lines = append(lines, fmt.Sprintf(
-			"- %s already changed before this session started. That work is not yours: leave it alone unless asked, and do not count it as part of what you did.",
-			dirtyPaths(info.Dirty)))
+		//
+		// Which sentence it is turns on where the count came from, and the
+		// two say different things. A count read at launch is work that
+		// predates the conversation, all of it somebody else's. A count read
+		// again an hour later has the session's own edits in it, and telling
+		// a model none of that is its own would have it disown the file it
+		// wrote ten minutes ago.
+		if info.Reread.IsZero() {
+			lines = append(lines, fmt.Sprintf(
+				"- %s already changed before this session started. That work is not yours: leave it alone unless asked, and do not count it as part of what you did.",
+				dirtyPaths(info.Dirty)))
+		} else {
+			lines = append(lines, fmt.Sprintf(
+				"- %s as of %s, counted again when this conversation was rebuilt. Your own edits are in that count now; what you cannot account for is not yours, so leave it alone unless asked.",
+				dirtyPaths(info.Dirty), info.Reread.Local().Format(SiblingClock)))
+		}
 	}
 
 	if !info.Sibling.IsZero() {
@@ -76,13 +89,69 @@ func PromptBlock(info Info) string {
 	if len(lines) == 0 {
 		return ""
 	}
-	return "# Workspace\n" + strings.Join(lines, "\n")
+	return blockHeading + "\n" + strings.Join(lines, "\n")
 }
 
-// SiblingClock is how the other session's start time is written wherever it
-// is named. The hour and the minute and nothing else: the question a reader
-// has is "before or after I started", which a clock answers and a date does
-// not.
+// blockHeading opens the block, and is also how a prompt that already carries
+// one is found again when the block is rebuilt.
+const blockHeading = "# Workspace"
+
+// ReplaceBlock swaps the workspace block inside a system prompt for block,
+// which is how a conversation rebuilt from a stored message — compacted, or
+// loaded out of the store — comes back describing the checkout in front of it
+// rather than the one it opened on.
+//
+// A prompt with no block is answered unchanged. The sections of a prompt are
+// assembled by whoever built it and this one only ever appears because that
+// assembly put it there, so a prompt without it is not a prompt with a gap to
+// fill: it is one whose builder had nothing to say about the checkout, and
+// guessing at a place to insert a section would put the block somewhere no
+// assembly would have chosen.
+//
+// The block is found by the last line that is exactly its heading, and it
+// ends at the blank line that separates prompt sections — the block itself
+// never contains one. The last rather than the first, because the heading is
+// an ordinary line of markdown and a project instruction file, injected ahead
+// of this section, is free to contain the same words.
+//
+// The match is exact, which assumes a prompt assembled in this process out of
+// "\n". That is what every builder here does; a prompt that had been round-
+// tripped through a file with carriage returns would find no heading and come
+// back unchanged, which is the safe way to be wrong — it leaves the reading
+// the conversation already had rather than cutting somewhere by guess.
+func ReplaceBlock(sysPrompt, block string) string {
+	// Nothing to put there. Every regeneration of a surveyed workspace says
+	// at least one thing about it, so an empty block here is a caller with no
+	// reading at all, and the reading already in the prompt beats none.
+	if block == "" {
+		return sysPrompt
+	}
+	lines := strings.Split(sysPrompt, "\n")
+	start := -1
+	for i, line := range lines {
+		if line == blockHeading {
+			start = i
+		}
+	}
+	if start < 0 {
+		return sysPrompt
+	}
+	end := start + 1
+	for end < len(lines) && lines[end] != "" {
+		end++
+	}
+	rebuilt := make([]string, 0, len(lines))
+	rebuilt = append(rebuilt, lines[:start]...)
+	rebuilt = append(rebuilt, strings.Split(block, "\n")...)
+	rebuilt = append(rebuilt, lines[end:]...)
+	return strings.Join(rebuilt, "\n")
+}
+
+// SiblingClock is how the workspace block writes a moment: the other
+// session's start time wherever it is named, and the moment a re-read dirty
+// count was taken. The hour and the minute and nothing else: the question a
+// reader has of either is "before or after the thing I am looking at", which
+// a clock answers and a date does not.
 const SiblingClock = "15:04"
 
 // dirtyPaths is n uncommitted paths, in words.

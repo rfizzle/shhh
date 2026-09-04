@@ -96,3 +96,63 @@ func TestPromptBlockSaysNothingWhenNobodyElseIsHere(t *testing.T) {
 		t.Errorf("a session alone in a checkout has no sibling to name:\n%s", got)
 	}
 }
+
+// After a re-reading the count is not somebody else's work any more: the
+// session has been editing for an hour, and its own files are in it.
+func TestPromptBlockDatesACountItTookAgain(t *testing.T) {
+	at := time.Date(2026, 9, 4, 14, 32, 0, 0, time.Local)
+	got := PromptBlock(Info{Dir: "/work", Repo: true, Branch: "master", Dirty: 3, Reread: at})
+	if !strings.Contains(got, "3 uncommitted paths as of 14:32") {
+		t.Errorf("a re-read count is dated:\n%s", got)
+	}
+	if strings.Contains(got, "before this session started") {
+		t.Errorf("a count taken an hour in did not predate the session:\n%s", got)
+	}
+	if !strings.Contains(got, "Your own edits are in that count now") {
+		t.Errorf("a model told none of it is its own disowns the file it just wrote:\n%s", got)
+	}
+}
+
+func TestReplaceBlockSwapsTheBlockAndLeavesTheRestAlone(t *testing.T) {
+	before := PromptBlock(Info{Dir: "/work", Repo: true, Branch: "master", Dirty: 1})
+	sysPrompt := "# Environment\nShell: bash\n\n" + before + "\n\n# Tools\nread_file\n"
+	after := PromptBlock(Info{Dir: "/work", Repo: true, Branch: "side"})
+
+	got := ReplaceBlock(sysPrompt, after)
+	if !strings.Contains(got, "Git branch: side") {
+		t.Errorf("the new block should be in there:\n%s", got)
+	}
+	if strings.Contains(got, "Git branch: master") || strings.Contains(got, "uncommitted") {
+		t.Errorf("the old block should be gone:\n%s", got)
+	}
+	if !strings.Contains(got, "# Environment\nShell: bash") || !strings.Contains(got, "# Tools\nread_file") {
+		t.Errorf("the sections either side are not this function's to touch:\n%s", got)
+	}
+}
+
+// A project instruction file is injected ahead of this section and is free to
+// contain the same heading; the block is the last one, not the first.
+func TestReplaceBlockTakesTheLastHeading(t *testing.T) {
+	quoted := "# Project instructions\n\n# Workspace\nThe team calls the repo root the workspace.\n"
+	sysPrompt := quoted + "\n" + PromptBlock(Info{Dir: "/work", Repo: true, Branch: "master"}) + "\n"
+
+	got := ReplaceBlock(sysPrompt, PromptBlock(Info{Dir: "/work", Repo: true, Branch: "side"}))
+	if !strings.Contains(got, "The team calls the repo root the workspace.") {
+		t.Errorf("somebody else's heading is not the block:\n%s", got)
+	}
+	if !strings.Contains(got, "Git branch: side") {
+		t.Errorf("the block should have been replaced:\n%s", got)
+	}
+}
+
+// A prompt whose builder had nothing to say about the checkout is not a
+// prompt with a gap to fill.
+func TestReplaceBlockLeavesAPromptWithoutOneAlone(t *testing.T) {
+	sysPrompt := "# Environment\nShell: bash\n"
+	if got := ReplaceBlock(sysPrompt, PromptBlock(Info{Dir: "/work", Repo: true, Branch: "side"})); got != sysPrompt {
+		t.Errorf("nothing to replace, so nothing changes:\n%s", got)
+	}
+	if got := ReplaceBlock(sysPrompt, ""); got != sysPrompt {
+		t.Errorf("no reading at all is worse than the one already there:\n%s", got)
+	}
+}

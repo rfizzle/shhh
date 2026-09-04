@@ -264,7 +264,14 @@ type sessionEnv struct {
 	// carried rather than taken again because it costs a tree walk and two
 	// git invocations, and the model's prompt block and the start screen are
 	// two readings of one answer.
-	survey      project.Info
+	survey project.Info
+	// workspace is the workspace prompt block over the checkout as it stands
+	// when it is called: the survey the session opened on with its git half
+	// asked again, and whoever else is in the checkout asked again with it.
+	// It is here rather than at either of its readers because a conversation
+	// rebuilt by a compaction and a child spawned an hour in are describing
+	// the same tree, and two readings taken separately would be two answers.
+	workspace   func() string
 	messages    []provider.Message
 	stream      agent.StreamFunc
 	switchModel func(string)
@@ -340,6 +347,16 @@ func (s chatSession) systemPrompt(configExtra string) (text string, projectToken
 	block := project.InstructionBlock(instructions, prompt.InstructionBudget)
 	extra := prompt.CombineExtra(configExtra, block, project.PromptBlock(survey), s.promptExtra)
 	return s.buildPrompt(info, extra), agent.EstimateTokens(block), survey
+}
+
+// workspaceBlock is the checkout read again, or nothing where the session was
+// assembled without a survey to read it from — a host with no reading of the
+// tree says nothing about it rather than stopping the child that asked.
+func (e *sessionEnv) workspaceBlock() string {
+	if e == nil || e.workspace == nil {
+		return ""
+	}
+	return e.workspace()
 }
 
 func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledger) (*sessionEnv, error) {
@@ -481,6 +498,16 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 		return ev, cancel, nil
 	}
 
+	// The launch survey with its git half asked again, and whoever else is in
+	// the checkout asked again with it. Everything else it holds is the tree
+	// walk, which is the expensive question and the one that does not go
+	// stale while somebody is working in the directory.
+	workspace := func() string {
+		info := project.RereadGit(survey)
+		info.Sibling = session.sibling.since()
+		return project.PromptBlock(info)
+	}
+
 	return &sessionEnv{
 		cfg:           cfg,
 		prov:          p,
@@ -489,6 +516,7 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 		sysPrompt:     sysPrompt,
 		prompts:       prompts,
 		survey:        survey,
+		workspace:     workspace,
 		projectTokens: projectTokens,
 		messages:      messages,
 		stream:        stream,
@@ -785,6 +813,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithWorkspace(cwd).
 		WithObserver(recorder.observer()).
 		WithNewSession(newSession).
+		WithWorkspaceBlock(env.workspaceBlock).
 		WithToolDefinitions(toolDefTokens(session.toolDefs)).
 		WithProjectContextTokens(env.projectTokens).
 		WithToolExecutor(executor).

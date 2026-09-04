@@ -11,6 +11,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/pricing"
+	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -567,5 +568,96 @@ func TestTrimContext_WiredStoreMakesElisionRecoverable(t *testing.T) {
 	}
 	if !found {
 		t.Fatalf("the placeholder names no entry the store took: %q", placeholder)
+	}
+}
+
+// A compaction keeps the system prompt and replaces everything under it, so
+// the workspace block is the one thing left describing the checkout as it was
+// when the session opened.
+func TestCompact_RereadsTheWorkspace(t *testing.T) {
+	stream := func(_ []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		ch := make(chan provider.StreamEvent, 2)
+		ch <- provider.StreamEvent{Token: "the summary"}
+		ch <- provider.StreamEvent{Done: true}
+		close(ch)
+		_, cancel := context.WithCancel(context.Background())
+		return ch, cancel, nil
+	}
+	opened := project.PromptBlock(project.Info{Dir: "/work", Repo: true, Branch: "master"})
+	m := New([]provider.Message{
+		{Role: provider.RoleSystem, Content: "sys\n\n" + opened},
+		{Role: provider.RoleUser, Content: "question"},
+		{Role: provider.RoleAssistant, Content: "answer"},
+	}, stream).WithWorkspaceBlock(func() string {
+		return project.PromptBlock(project.Info{Dir: "/work", Repo: true, Branch: "side"})
+	})
+
+	m = driveCompact(t, m)
+
+	sysPrompt := m.Messages()[0].Content
+	if !strings.Contains(sysPrompt, "Git branch: side") {
+		t.Fatalf("the rebuilt conversation should name the branch it is on now:\n%s", sysPrompt)
+	}
+	if strings.Contains(sysPrompt, "Git branch: master") {
+		t.Fatalf("the branch of the first minute should be gone:\n%s", sysPrompt)
+	}
+	if !strings.HasPrefix(sysPrompt, "sys\n\n") {
+		t.Fatalf("the rest of the prompt is not compaction's to touch:\n%s", sysPrompt)
+	}
+}
+
+// A host with no reading of the tree leaves the prompt exactly as it was,
+// which is what every front-end without one did before there was anything to
+// ask.
+func TestCompact_WithoutAWorkspaceReadingKeepsThePrompt(t *testing.T) {
+	stream := func(_ []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		ch := make(chan provider.StreamEvent, 2)
+		ch <- provider.StreamEvent{Token: "the summary"}
+		ch <- provider.StreamEvent{Done: true}
+		close(ch)
+		_, cancel := context.WithCancel(context.Background())
+		return ch, cancel, nil
+	}
+	opened := project.PromptBlock(project.Info{Dir: "/work", Repo: true, Branch: "master"})
+	m := New([]provider.Message{
+		{Role: provider.RoleSystem, Content: "sys\n\n" + opened},
+		{Role: provider.RoleUser, Content: "question"},
+	}, stream)
+
+	m = driveCompact(t, m)
+
+	if m.Messages()[0].Content != "sys\n\n"+opened {
+		t.Fatalf("nothing to read the tree with, so nothing changes:\n%s", m.Messages()[0].Content)
+	}
+}
+
+// A loaded conversation brings its own system prompt back out of the store,
+// written in a sitting that may be days old. The checkout in front of it is
+// this one.
+func TestChatLoad_RereadsTheWorkspace(t *testing.T) {
+	db := rewindTestDB(t)
+	stale := project.PromptBlock(project.Info{Dir: "/work", Repo: true, Branch: "master", Dirty: 4})
+	if err := db.SaveChat("alpha", []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys\n\n" + stale},
+		{Role: provider.RoleUser, Content: "q"},
+		{Role: provider.RoleAssistant, Content: "a"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	m := readyModel(t).WithDB(db).WithWorkspaceBlock(func() string {
+		return project.PromptBlock(project.Info{Dir: "/work", Repo: true, Branch: "side"})
+	})
+
+	m.loadChatByName("alpha")
+
+	sysPrompt := m.Messages()[0].Content
+	if !strings.Contains(sysPrompt, "Git branch: side") {
+		t.Fatalf("a loaded conversation should name the branch it is on now:\n%s", sysPrompt)
+	}
+	if strings.Contains(sysPrompt, "Git branch: master") || strings.Contains(sysPrompt, "4 uncommitted") {
+		t.Fatalf("the checkout of the sitting that saved it is gone:\n%s", sysPrompt)
+	}
+	if !strings.HasPrefix(sysPrompt, "sys\n\n") {
+		t.Fatalf("the rest of the stored prompt is not this reading's to touch:\n%s", sysPrompt)
 	}
 }

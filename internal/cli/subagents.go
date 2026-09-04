@@ -186,8 +186,9 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 		// The parent's checkout, not the child's worktree: a writer's
 		// worktree is a copy of this one, and the context a child is given
 		// is the context the session it serves was given.
-		extra := prompt.CombineExtra(cfg.Behavior.SystemPromptExtra,
-			project.InstructionBlock(project.Instructions(root, userInstructionsPath()), prompt.InstructionBudget))
+		extra := childExtra(cfg.Behavior.SystemPromptExtra,
+			project.InstructionBlock(project.Instructions(root, userInstructionsPath()), prompt.InstructionBudget),
+			env.workspaceBlock(), spec.Worktree)
 
 		var sysPrompt string
 		var defs []provider.Tool
@@ -436,6 +437,39 @@ func scopeNote(paths []string) string {
 	}
 	return "\n\n# Scope\nYour changes are scoped to: " + strings.Join(paths, ", ") +
 		". Other agents may be working elsewhere in the repository at the same time. Keep every change inside your scope; if the task appears to need a change outside it, describe that in your report instead of making it."
+}
+
+// childExtra is the standing context every child is given on top of its role
+// prompt: what the config file adds to every prompt here, what the project
+// says about itself, the checkout as it stands now, and where in it the child
+// is standing.
+//
+// The workspace block is read again for each child rather than taken from the
+// session's own prompt: a child spawned an hour in is being sent to look at
+// the tree as it is then, and the branch and the dirty count the session
+// opened on are the two facts most likely to have moved since.
+func childExtra(configExtra, instructions, workspace string, worktree bool) string {
+	return prompt.CombineExtra(configExtra, instructions, workspace, worktreeNote(worktree))
+}
+
+// worktreeNote tells a child standing in an isolated copy of the checkout
+// what git in there will tell it, because the workspace block above it
+// describes the parent's directory and the two do not agree.
+//
+// The copy is stood on a commit of its own that already holds the parent's
+// uncommitted work, which is what keeps the patch it hands back its own work
+// alone. That leaves a child whose HEAD is on no branch and whose tree is
+// clean, reading a block that names a branch and a count of changed paths.
+// Unexplained, the child goes looking for the changes it was promised, finds
+// none, and reports the workspace as wrong.
+func worktreeNote(worktree bool) string {
+	if !worktree {
+		return ""
+	}
+	return "You are not standing in that directory: your workspace is an isolated copy of it, " +
+		"and the facts above describe the checkout it was copied from. " +
+		"Your own HEAD is a commit made for this copy that already contains those uncommitted changes, so it belongs to no branch and your tree reads as clean. " +
+		"That is expected — do not commit, switch branches, or try to reconcile the two."
 }
 
 // profileEnv builds a custom profile's prompt, toolset and auto-run

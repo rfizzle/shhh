@@ -1355,3 +1355,44 @@ func TestChildFinishesAReplyCutAtTheCeiling(t *testing.T) {
 			sup.Transcript("researcher-1"))
 	}
 }
+
+// What a child is told about the workspace turns on where it is standing. A
+// writer's git answers about a seed commit and a clean tree, so a writer
+// handed the parent's branch and dirty count without being told it is in a
+// copy reads its own `git status` as a contradiction; a reader is in the
+// parent's own directory and has nothing to reconcile.
+func TestSpecSaysWhetherTheChildStandsInACopy(t *testing.T) {
+	repo := initTestRepo(t)
+	var specs []Spec
+	var mu sync.Mutex
+	base := (&scriptedEnv{steps: []streamStep{{text: "done"}, {text: "done"}}}).factory()
+	sup := New(context.Background(), Options{
+		Root: repo,
+		NewEnv: func(ctx context.Context, spec Spec) (Env, error) {
+			mu.Lock()
+			specs = append(specs, spec)
+			mu.Unlock()
+			return base(ctx, spec)
+		},
+	})
+	t.Cleanup(sup.Close)
+
+	if _, err := spawnRaw(sup, `{"role":"writer","task":"carry on"}`); err != nil {
+		t.Fatalf("the writer should spawn: %v", err)
+	}
+	if _, err := spawnRaw(sup, `{"role":"researcher","task":"look around"}`); err != nil {
+		t.Fatalf("the researcher should spawn: %v", err)
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+	if len(specs) != 2 {
+		t.Fatalf("both children build an environment, got %d", len(specs))
+	}
+	if !specs[0].Worktree {
+		t.Fatalf("a writer works in an isolated copy: %+v", specs[0])
+	}
+	if specs[1].Worktree {
+		t.Fatalf("a reader stands in the parent's own directory: %+v", specs[1])
+	}
+}

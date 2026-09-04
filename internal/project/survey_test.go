@@ -252,3 +252,63 @@ func TestHead_EmptyOutsideARepository(t *testing.T) {
 		t.Fatalf("head = %q outside a repository, want empty", head)
 	}
 }
+
+// The whole point of asking git again: a conversation rebuilt after a branch
+// switch names the branch it is on, not the one it opened on. The walk's
+// answers survive, because the walk is the expensive half and a checkout does
+// not change ecosystem while somebody is working in it.
+func TestRereadGit_NamesTheBranchTheCheckoutIsOnNow(t *testing.T) {
+	git, err := exec.LookPath("git")
+	if err != nil {
+		t.Skip("git is not on PATH")
+	}
+	dir := t.TempDir()
+	run := func(args ...string) {
+		t.Helper()
+		cmd := exec.Command(git, append([]string{"-C", dir}, args...)...)
+		cmd.Env = append(os.Environ(), "GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_SYSTEM=/dev/null")
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %s: %v\n%s", strings.Join(args, " "), err, out)
+		}
+	}
+	run("init", "--initial-branch=trunk")
+	run("config", "user.email", "t@example.com")
+	run("config", "user.name", "t")
+	writeFiles(t, dir, map[string]string{"go.mod": "module example.com/x\n\ngo 1.24\n", "main.go": "package main\n"})
+	run("add", ".")
+	run("commit", "-m", "first")
+
+	opened := Survey(dir)
+	if opened.Branch != "trunk" || opened.Packages != 1 {
+		t.Fatalf("survey = branch %q packages %d, want trunk and 1", opened.Branch, opened.Packages)
+	}
+	if !opened.Reread.IsZero() {
+		t.Fatal("the reading a session opens on is not a re-reading")
+	}
+
+	run("checkout", "-b", "side")
+	writeFiles(t, dir, map[string]string{"main.go": "package main // edited\n"})
+
+	again := RereadGit(opened)
+	if again.Branch != "side" {
+		t.Fatalf("branch = %q, want side", again.Branch)
+	}
+	if again.Dirty != 1 {
+		t.Fatalf("dirty = %d, want 1", again.Dirty)
+	}
+	if again.Reread.IsZero() {
+		t.Fatal("a re-reading is stamped, or the block cannot say which count it holds")
+	}
+	if again.Language != "go" || again.Packages != 1 || again.Unit != "package" {
+		t.Fatalf("the walk's answers should survive: %+v", again)
+	}
+}
+
+// A survey nobody took has no directory to ask about, and asking git about
+// the process's own working directory would answer about somewhere else.
+func TestRereadGit_LeavesAnUnsurveyedWorkspaceAlone(t *testing.T) {
+	got := RereadGit(Info{})
+	if got.Repo || got.Branch != "" || got.Dirty != 0 || !got.Reread.IsZero() {
+		t.Fatalf("an unsurveyed workspace should come back untouched, got %+v", got)
+	}
+}

@@ -541,6 +541,30 @@ already there.
 Where there is no repository the absence is stated too, because it is the
 fact that makes an edit unrecoverable.
 
+The survey is read once, but the block built from it does not freeze. A
+conversation that is rebuilt out of a stored message carries a prompt written
+for a moment that has passed: a compaction keeps the prompt the session
+opened on and discards everything under it, and loading a saved conversation
+brings back the prompt that was stored with it, which may be days old. Either
+way the model went on reasoning from the branch and the dirty count of a
+minute that has since seen a pull and two branch switches. Both moments ask
+git again now and keep the rest of the survey: the package walk is the
+expensive question and it is also the one that does not go stale, since a
+checkout does not change ecosystem while somebody is working in it.
+
+A count taken again says so. "Already there before this session started" is a
+claim about work that predates the conversation, and it stops being true once
+the session has been editing for an hour — so a re-read count is dated
+instead, and says the session's own edits are in it. A model told none of it
+was its own would set about disowning the file it wrote ten minutes ago.
+
+Sub-agents are handed the block too, read at the moment each one is spawned,
+because a child sent to look at the tree is being sent to look at it as it is
+then. A child that writes is told one thing more: it is not standing in that
+directory. Its workspace is an isolated copy stood on a commit of its own, so
+git in there reports a clean tree and no branch, and a child left to
+reconcile that with the block goes looking for changes it will never find.
+
 The date is environment, so it sits with the shell and the working directory
 in every prompt that has an environment. A model reasons from its own
 training cutoff unless something tells it otherwise, and left to that it

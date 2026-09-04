@@ -298,6 +298,14 @@ type Spec struct {
 	// Paths is the writer's declared write scope, so its prompt can say what
 	// it may touch while other agents work elsewhere; nil means unscoped.
 	Paths []string
+	// Worktree reports that Root is an isolated checkout seeded from the
+	// parent's tree rather than the parent's own directory. What the child
+	// is told about the workspace turns on it: git in there answers about a
+	// detached seed commit and a clean tree, so a child handed the parent's
+	// branch and dirty count without being told where it is standing would
+	// read its own `git status` as a contradiction and go looking for the
+	// changes it was promised.
+	Worktree bool
 	// Mode is the permission mode the child starts in, after the profile
 	// and the clamp to the parent have had their say, and MaxRounds its
 	// per-turn round cap (0 when it has none). Neither builds the runtime —
@@ -1373,7 +1381,8 @@ func (s *Supervisor) restart(c *child, detail string) error {
 		root = wt.root
 	}
 	cctx, cancel := context.WithCancel(s.ctx)
-	env, err := s.opts.NewEnv(cctx, Spec{Name: c.name, Role: c.role, Root: root, Model: c.model, Paths: c.paths})
+	env, err := s.opts.NewEnv(cctx, Spec{Name: c.name, Role: c.role, Root: root, Model: c.model, Paths: c.paths,
+		Worktree: wt.dir != ""})
 	if err != nil {
 		cancel()
 		if wt.dir != "" {
@@ -1405,7 +1414,7 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	c.mu.Unlock()
 	if s.opts.Record != nil {
 		c.rec = s.opts.Record(Spec{Name: c.name, Role: c.role, Root: root, Model: c.model, Paths: c.paths,
-			Mode: s.childMode(c), MaxRounds: roundCap(a)}, env.SystemPrompt)
+			Worktree: wt.dir != "", Mode: s.childMode(c), MaxRounds: roundCap(a)}, env.SystemPrompt)
 	}
 
 	s.wg.Add(1)
@@ -1597,7 +1606,8 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 	}
 
 	cctx, cancel := context.WithCancel(s.ctx)
-	env, err := s.opts.NewEnv(cctx, Spec{Name: name, Role: args.role, Root: root, Model: model, Paths: args.paths})
+	env, err := s.opts.NewEnv(cctx, Spec{Name: name, Role: args.role, Root: root, Model: model, Paths: args.paths,
+		Worktree: wt.dir != ""})
 	if err != nil {
 		cancel()
 		if wt.dir != "" {
@@ -1639,7 +1649,7 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 	// after the clamp — not the one asked for; c.mode alone is the request.
 	if s.opts.Record != nil {
 		c.rec = s.opts.Record(Spec{Name: name, Role: args.role, Root: root, Model: model, Paths: args.paths,
-			Mode: s.childMode(c), MaxRounds: roundCap(a)}, env.SystemPrompt)
+			Worktree: wt.dir != "", Mode: s.childMode(c), MaxRounds: roundCap(a)}, env.SystemPrompt)
 	}
 
 	s.mu.Lock()
@@ -2098,6 +2108,7 @@ Write a short handoff for whoever picks this up: what you established or changed
 func (s *Supervisor) finalCheckIn(c *child) {
 	c.mu.Lock()
 	hit, root, model, paths := c.budgetHit, c.root, c.model, c.paths
+	worktree := c.worktree != ""
 	c.mu.Unlock()
 	if !hit {
 		return
@@ -2105,7 +2116,8 @@ func (s *Supervisor) finalCheckIn(c *child) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), finalCheckInTimeout)
 	defer cancel()
-	env, err := s.opts.NewEnv(ctx, Spec{Name: c.name, Role: c.role, Root: root, Model: model, Paths: paths})
+	env, err := s.opts.NewEnv(ctx, Spec{Name: c.name, Role: c.role, Root: root, Model: model, Paths: paths,
+		Worktree: worktree})
 	if err != nil {
 		return
 	}

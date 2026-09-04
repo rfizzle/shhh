@@ -94,6 +94,13 @@ type Info struct {
 	// here: whether that file was read is a question about trust and about
 	// the person's own file, and neither is visible from the tree.
 	ConfigFile string
+	// Reread is when the git half of this survey was taken again, and zero
+	// where it is the reading the session opened on. A conversation that is
+	// rebuilt out of a stored message hours later takes the git half afresh,
+	// and the workspace block says which of the two counts it is stating:
+	// work that predates the session is not the same claim as a count that
+	// has the session's own edits in it.
+	Reread time.Time
 	// Sibling is when another session already open in this checkout started,
 	// and zero when there is none. It is the one thing here the survey
 	// cannot find out for itself — nothing in the filesystem says who else
@@ -130,6 +137,31 @@ func Survey(dir string) Info {
 	}
 	info.Root = Root(dir)
 	info.RootDisplay = Abbreviate(info.Root)
+	return info
+}
+
+// RereadGit asks git again the questions that go stale while a conversation
+// is open — the branch, whether HEAD is detached, how much is uncommitted,
+// and which commit it is — and keeps everything else info already holds.
+//
+// The split is what makes this cheap enough to do at a compaction or a load.
+// The package walk is the expensive half of a survey and it is also the half
+// that does not go stale: a checkout does not change ecosystem while somebody
+// is working in it, and its branch changes several times an hour.
+//
+// A survey nobody took is answered unchanged. There is no directory to ask
+// about, and a git reading of the process's own working directory would be a
+// finding about somewhere else.
+func RereadGit(info Info) Info {
+	if info.Dir == "" {
+		return info
+	}
+	info.Repo, info.Branch, info.Detached, info.Dirty = surveyGit(info.Dir)
+	info.Head = ""
+	if info.Repo {
+		info.Head = Head(info.Dir)
+	}
+	info.Reread = time.Now()
 	return info
 }
 

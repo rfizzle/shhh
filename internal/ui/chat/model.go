@@ -396,6 +396,10 @@ type Model struct {
 	// the two commands — the conversation still starts over, on the prompt
 	// it already had.
 	newSession NewSession
+	// workspaceBlock is the checkout read again, as the prompt section that
+	// states it. Nil in a host that cannot survey one, which leaves a
+	// rebuilt conversation on the reading it already carried.
+	workspaceBlock func() string
 
 	viewport viewport
 	input    textarea.Model
@@ -1453,6 +1457,10 @@ func (m *Model) loadChatByName(name string) string {
 		tools.ForgetAll()
 	}
 	m.resumeConversation(name, msgs)
+	// The loaded conversation brought its own system prompt, written in a
+	// sitting that may be days old; the checkout in front of it is this one
+	// (context.go).
+	m.regenerateWorkspace()
 	return fmt.Sprintf("Loaded chat %q (%d messages)", name, len(msgs))
 }
 

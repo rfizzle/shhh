@@ -13,6 +13,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -198,6 +199,10 @@ func (m Model) finishCompact() (tea.Model, tea.Cmd) {
 	run, carried := m.planRun, m.planChecklist()
 
 	m.agent.Compact(summary, kept)
+	// A compaction keeps the system prompt and replaces everything under it,
+	// so the workspace block is the one thing left describing the checkout as
+	// it was when the session opened rather than as it is now.
+	m.regenerateWorkspace()
 	// The counter the shared step leaves alone. Here the compaction is the
 	// user's own request, and a request typed by the person in front of the
 	// session is exactly what a fresh round budget is for.
@@ -229,6 +234,38 @@ func (m Model) finishCompact() (tea.Model, tea.Cmd) {
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	return m, m.autosaveCmd()
+}
+
+// regenerateWorkspace puts the checkout as it stands now into the system
+// prompt, replacing the workspace block the conversation was carrying.
+//
+// It runs where a conversation is rebuilt out of a stored message — a
+// compaction, a load — and nowhere else. Those are the two moments the block
+// outlives the reading it was taken from: everything else in the prompt was
+// built for the session that is running, while the branch and the dirty count
+// were true of a minute that may be hours gone. A conversation continuing on
+// them names a branch nobody is on and disowns changes that are its own.
+//
+// A host that cannot survey the checkout leaves the prompt alone, which is
+// what every front-end without one did before there was anything to ask.
+func (m *Model) regenerateWorkspace() {
+	if m.workspaceBlock == nil {
+		return
+	}
+	msgs := m.agent.Messages()
+	if len(msgs) == 0 || msgs[0].Role != provider.RoleSystem {
+		return
+	}
+	rebuilt := project.ReplaceBlock(msgs[0].Content, m.workspaceBlock())
+	if rebuilt == msgs[0].Content {
+		return
+	}
+	// Copied rather than written through the slice the agent handed back:
+	// the conversation is the agent's to hold, and a caller reaching into it
+	// is a write nothing in the agent can see.
+	updated := append([]provider.Message(nil), msgs...)
+	updated[0].Content = rebuilt
+	m.agent.SetMessages(updated)
 }
 
 // compactedNotice is the line that opens the rebuilt conversation. It names

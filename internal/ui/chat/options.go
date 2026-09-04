@@ -116,6 +116,15 @@ func (m Model) WithNewSession(fn NewSession) Model {
 	return m
 }
 
+// WithWorkspaceBlock wires the checkout reading a rebuilt conversation is
+// given: fn answers with the workspace section of the system prompt as the
+// tree stands when it is called. A compaction and a load replace the block
+// the conversation was carrying with it (context.go).
+func (m Model) WithWorkspaceBlock(fn func() string) Model {
+	m.workspaceBlock = fn
+	return m
+}
+
 // WithTitle overrides the header title (default "shhh chat"), so `shhh code`
 // can reuse the TUI under its own name.
 func (m Model) WithTitle(title string) Model {
