@@ -58,6 +58,13 @@ type StartRecent struct {
 	Updated time.Time
 	Cost    float64
 	Priced  bool
+	// Held marks that a newer conversation was stepped past to reach this
+	// one, because another running session is autosaving into its slot. It
+	// is a flag rather than that slot's name: which conversation the other
+	// session is having is its own, and this screen states only that one was
+	// there.
+	// See docs/capabilities/sessions-and-memory.md#a-session-knows-it-is-not-alone.
+	Held bool
 }
 
 // StartInfo is everything the start screen renders, gathered once by the CLI
@@ -385,8 +392,9 @@ func verifyPrompt(info StartInfo) string {
 }
 
 // recentDetail prices the resume offer: how much conversation is in it, what
-// it cost, and how long ago it was. A session with no observability record
-// keeps the first and last clauses and drops the price.
+// it cost, how long ago it was, and — where this is not the last conversation
+// — why it is the one being offered. A session with no observability record
+// keeps the other clauses and drops the price.
 func recentDetail(r StartRecent, now time.Time) string {
 	parts := []string{plural(r.Turns, "turn")}
 	if r.Title != "" {
@@ -397,6 +405,15 @@ func recentDetail(r StartRecent, now time.Time) string {
 	}
 	if !r.Updated.IsZero() {
 		parts = append(parts, agoLabel(r.Updated, now))
+	}
+	if r.Held {
+		// Why this conversation and not the last one. Without it the row
+		// reads as the last conversation having lost the turns that are in
+		// fact still being added to it somewhere else, which is the one
+		// misreading this offer can produce. One word, last, in the same
+		// clause list as the price and the age: the row is an offer, and a
+		// screen that stopped to explain itself would be a notice.
+		parts = append(parts, "elsewhere")
 	}
 	return strings.Join(parts, " · ")
 }

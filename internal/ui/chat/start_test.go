@@ -380,6 +380,26 @@ func TestStartScreen_SaysWhenAnotherSessionIsOpenHere(t *testing.T) {
 	}
 }
 
+// The offer can be a conversation older than the last one, because the store
+// steps past a slot another running session is autosaving into. The row says
+// which it is and why, so the offer never reads as the last conversation
+// having lost the turns still being added to it somewhere else.
+func TestStartScreen_SaysWhyTheOfferIsNotTheLastConversation(t *testing.T) {
+	info := startFixture()
+	info.Recent.Held = true
+	view := startText(startModel(t, info))
+	if !strings.Contains(view, "pick up (last session)") {
+		t.Fatalf("the offer went missing:\n%s", view)
+	}
+	if !strings.Contains(view, "elsewhere") {
+		t.Fatalf("the row never says why it is not the last conversation:\n%s", view)
+	}
+
+	if view := startText(startModel(t, startFixture())); strings.Contains(view, "elsewhere") {
+		t.Fatalf("an offer that stepped past nothing should not explain itself:\n%s", view)
+	}
+}
+
 // The header drops clauses from the right, so the clause that survives a
 // narrow terminal has to be this one rather than the package count.
 func TestStartScreen_TheSiblingClauseOutlivesTheNarrowHeader(t *testing.T) {

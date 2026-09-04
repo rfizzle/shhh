@@ -154,9 +154,12 @@ So both say so. Where another session already has this checkout open, the
 start screen carries one more clause on its header line — *another session
 open here since 10:32* — the model's workspace block says the same and adds
 that changes it did not make are most likely that session's work, and the
-block reporting that the tree moved ends by naming the likeliest author. None
-of them names the other session's conversation: what it is doing is its own,
-and this one needs only to know that somebody is there to ask.
+block reporting that the tree moved ends by naming the likeliest author —
+behind `--print` as much as in front of a person, since a run nobody is
+watching is the one that would otherwise spend its rounds explaining or
+reverting work it never did. None of them names the other session's
+conversation: what it is doing is its own, and this one needs only to know
+that somebody is there to ask.
 
 The record is what answers the question. A session's row has always said when
 it started and when it ended, and an unfinished row has always meant two
@@ -178,7 +181,17 @@ it stores no paths.
 The last place it shows is the saved conversations. A slot a running session
 is still autosaving into is marked wherever conversations are listed, and the
 picker will not open it — loading a conversation somebody else is still
-adding to only gets it taken back by their next save.
+adding to only gets it taken back by their next save. Offering to pick up
+where you left off steps past such a slot to the newest one nobody else
+holds, and the row it draws says in a word that it did — an offer that
+quietly changed which conversation it was making would read as the last one
+having lost the turns that are in fact still being added to it somewhere
+else. Asking for the last session by flag does not: an instruction answered
+with a different conversation is the worse failure of the two — worst where
+nobody is watching — so the slot is named and refused instead, and the name
+is the way through, since a conversation asked for by name opens whoever
+holds it. A slot whose session is gone is offered like any other, since the
+record of that session was closed at this one's start.
 
 ### A slot belongs to one session
 

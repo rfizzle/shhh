@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -1302,4 +1303,94 @@ func TestJSONLStreamIsAQuietNoOpWhenNobodyAskedForOne(t *testing.T) {
 	obs.usage(provider.Usage{PromptTokens: 1})
 	obs.signal(observe.SignalRetry, "overloaded")
 	obs.stream.closed(obs.pos(), observe.TurnDone, exitDone, "done", provider.Usage{}, nil)
+}
+
+// treeRepo is a checkout with one commit and a clean tree. Config is pinned
+// so a developer's own hooks and identity never reach the test.
+func treeRepo(t *testing.T) string {
+	t.Helper()
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not on PATH")
+	}
+	ws := t.TempDir()
+	git := func(args ...string) {
+		t.Helper()
+		cmd := exec.Command("git", append([]string{"-C", ws}, args...)...)
+		cmd.Env = append(os.Environ(),
+			"GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_SYSTEM=/dev/null",
+			"GIT_AUTHOR_NAME=test", "GIT_AUTHOR_EMAIL=test@test",
+			"GIT_COMMITTER_NAME=test", "GIT_COMMITTER_EMAIL=test@test")
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	git("init", "-q", "-b", "main")
+	if err := os.WriteFile(filepath.Join(ws, "a.txt"), []byte("hello\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	git("add", ".")
+	git("commit", "-q", "-m", "init")
+	return ws
+}
+
+// The block that tells an unattended turn its tree moved ends by naming the
+// likeliest author, because it takes the session's own reading rather than
+// building a second one that knows less.
+func TestHeadlessTree_CarriesTheSiblingClause(t *testing.T) {
+	ws := treeRepo(t)
+	db, err := storage.OpenPath(filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	defer db.Close()
+
+	// Another running session in this checkout. The parent is the one such
+	// process a test can name portably.
+	other, err := db.StartAgentSession("code", "openai", "gpt-test")
+	if err != nil {
+		t.Fatalf("start: %v", err)
+	}
+	if err := db.StampAgentSession(other, storage.AgentProvenance{
+		Project: fingerprint(projectFingerprintRoot())}); err != nil {
+		t.Fatalf("stamp: %v", err)
+	}
+	if _, err := db.SQL().Exec(
+		`UPDATE agent_sessions SET pid = ? WHERE id = ?`, os.Getppid(), other); err != nil {
+		t.Fatalf("place: %v", err)
+	}
+
+	own := &writtenByCalls{}
+	c := headlessTree(config.Config{}, readSibling(db), own)
+	if c == nil {
+		t.Fatal("the reading is on by default and the run got none")
+	}
+	if c.Own == nil {
+		t.Fatal("the run's own writes are the subtrahend and were not handed over")
+	}
+	// Only the directory is the test's: everything else is what the run
+	// itself would have been given.
+	c.Dir = ws
+
+	a := agent.New(nil, nil)
+	a.SetTreeCheck(*c)
+	if err := os.WriteFile(filepath.Join(ws, "b.txt"), []byte("somebody else\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	n, ok := a.NextTreeNotice(false)
+	if !ok {
+		t.Fatal("a changed tree told the run nothing")
+	}
+	if !strings.Contains(n.Message, "another session is open in this checkout") {
+		t.Fatalf("the block did not name the likeliest author:\n%s", n.Message)
+	}
+}
+
+// A reading the config turned off stays off, subtrahend and all.
+func TestHeadlessTree_StaysOffWhereTheConfigSaysSo(t *testing.T) {
+	off := false
+	cfg := config.Config{}
+	cfg.Behavior.TreeCheck = &off
+	if c := headlessTree(cfg, readSibling(nil), &writtenByCalls{}); c != nil {
+		t.Fatalf("got %+v, want no reading at all", c)
+	}
 }

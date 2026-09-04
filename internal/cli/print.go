@@ -373,6 +373,21 @@ func (w *writtenByCalls) paths() []string {
 	return append([]string(nil), w.list...)
 }
 
+// headlessTree is the reading an unattended run watches its checkout with:
+// the session's own wrap, over the paths the run's calls wrote where a
+// session hands in its changeset. Assembling a second reading here is how the
+// two came to differ once already — the session's block named the likeliest
+// author of a change it had not made and the run's did not, which is backwards,
+// since the run is the one with nobody in front of it to work that out.
+func headlessTree(cfg config.Config, sib sessionSibling, own *writtenByCalls) *agent.TreeCheck {
+	c := withSibling(treeCheck(cfg), sib)
+	if c == nil {
+		return nil
+	}
+	c.Own = own.paths
+	return c
+}
+
 // headlessSlotLayout is how an unattended run's slot is named: the moment it
 // began, to the second, which is what a session's own unnamed slot is called.
 // The two spellings have to be the same one — a name in this shape is read
@@ -556,6 +571,13 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	if db != nil {
 		defer db.Close()
 	}
+	// Pointed at the store before the prompt and the tree reading are built
+	// from it, exactly as a session does. A run nobody is watching is the one
+	// that most needs the answer: told nothing, it sets about explaining or
+	// reverting a change another session made, and there is nobody there to
+	// stop it.
+	// See docs/capabilities/sessions-and-memory.md#a-session-knows-it-is-not-alone.
+	session.sibling = readSibling(db)
 	// MCP servers, mirroring the interactive session. A read-only server's
 	// tools run; every other server's calls are gated and resolved the way
 	// web_fetch is — --yes opts in, the default denies.
@@ -770,8 +792,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// kept whether or not the tree check is on.
 	own := &writtenByCalls{}
 	resolve = own.wrap(resolve)
-	if c := treeCheck(cfg); c != nil {
-		c.Own = own.paths
+	if c := headlessTree(cfg, session.sibling, own); c != nil {
 		a.SetTreeCheck(*c)
 	}
 	h := &agent.Headless{

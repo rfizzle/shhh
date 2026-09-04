@@ -99,6 +99,11 @@ func buildStartInfo(survey project.Info, db *storage.DB, gateEnabled bool, trust
 				Updated: recent.UpdatedAt,
 				Cost:    recent.Cost,
 				Priced:  recent.Priced,
+				// The store steps past a slot another running session is
+				// autosaving into, so the offer can be a conversation older
+				// than the last one. The screen says so on the row rather
+				// than swapping the answer silently.
+				Held: recent.Held != "",
 			}
 		}
 	}

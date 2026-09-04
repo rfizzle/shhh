@@ -492,21 +492,45 @@ type RecentChat struct {
 	Turns     int
 	Cost      float64
 	Priced    bool
+	// Held is the newest slot that was stepped past because another running
+	// session is autosaving into it, and is empty when none was. It is filled
+	// whether or not an older slot was left to return, so a caller reads it
+	// before it reads the ok: "there is nothing to come back to" and "the
+	// thing to come back to belongs to somebody else" are different answers,
+	// and a caller that was given an instruction rather than making an offer
+	// has to be able to refuse the second one by name.
+	Held string
 }
 
-// MostRecentChat returns the newest saved session, or ok=false when nothing
-// has been saved yet. A missing observability record costs the price clause,
-// never the suggestion.
+// MostRecentChat returns the newest saved session nobody else is writing to,
+// or ok=false when there is none. A missing observability record costs the
+// price clause, never the suggestion.
+//
+// A slot a running session is still autosaving into is stepped past rather
+// than returned: what it holds is half of somebody else's conversation, and
+// their next save takes the slot back from whoever opened it. What was
+// stepped past is named in Held rather than dropped, so a caller that has to
+// answer for the newest slot in particular can say which one it was.
+// See docs/capabilities/sessions-and-memory.md#a-session-knows-it-is-not-alone.
 func (db *DB) MostRecentChat() (RecentChat, bool, error) {
 	entries, err := db.ListChats()
 	if err != nil {
 		return RecentChat{}, false, err
 	}
+	past := 0
+	for past < len(entries) && entries[past].Live {
+		past++
+	}
+	held := ""
+	if past > 0 {
+		held = entries[0].Name
+	}
+	entries = entries[past:]
 	if len(entries) == 0 {
-		return RecentChat{}, false, nil
+		return RecentChat{Held: held}, false, nil
 	}
 	e := entries[0]
-	out := RecentChat{Name: e.Name, Title: e.Title, UpdatedAt: e.UpdatedAt, Turns: e.Turns}
+	out := RecentChat{Name: e.Name, Title: e.Title, UpdatedAt: e.UpdatedAt, Turns: e.Turns, Held: held}
 
 	// The session that was running when the chat was last written is the one
 	// whose lifetime contains that write: started before it, and either still

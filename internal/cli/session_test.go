@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"errors"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -194,5 +195,59 @@ func TestResumeChat_WithoutAStore(t *testing.T) {
 	_, err := chatSession{continueLast: true}.resumeChat(nil)
 	if err == nil || !strings.Contains(err.Error(), "cannot resume") {
 		t.Fatalf("err = %v, want one naming what is unavailable", err)
+	}
+}
+
+// heldChat saves name and hands the slot to another running process, the way
+// a second session's autosave leaves it. The parent is the one process a
+// test can name portably and still know is alive.
+func heldChat(t *testing.T, db *storage.DB, name string) {
+	t.Helper()
+	if err := db.SaveChat(name, []provider.Message{
+		{Role: provider.RoleUser, Content: "theirs"}}); err != nil {
+		t.Fatalf("save %s: %v", name, err)
+	}
+	id, err := db.StartAgentSession("code", "openai", "gpt-test")
+	if err != nil {
+		t.Fatalf("start the other session: %v", err)
+	}
+	if err := db.LinkAgentSession(id, name); err != nil {
+		t.Fatalf("link %s: %v", name, err)
+	}
+	if _, err := db.SQL().Exec(
+		`UPDATE agent_sessions SET pid = ? WHERE id = ?`, os.Getppid(), id); err != nil {
+		t.Fatalf("place the other session: %v", err)
+	}
+}
+
+// --continue asks for the last session, and the last session can be a slot
+// another process is still writing into. The flag is an instruction, so it
+// is refused by name rather than answered with the conversation before it —
+// and the name is the way through, since a slot asked for by name opens
+// whoever holds it.
+func TestResumeChat_ContinueRefusesASlotSomebodyElseHolds(t *testing.T) {
+	db := resumeStore(t)
+	if err := db.SaveChat("older", []provider.Message{
+		{Role: provider.RoleUser, Content: "mine"}}); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+	time.Sleep(2 * time.Millisecond)
+	heldChat(t, db, "newest")
+
+	_, err := chatSession{continueLast: true}.resumeChat(db)
+	if err == nil {
+		t.Fatal("--continue opened a slot another session is writing into")
+	}
+	if !strings.Contains(err.Error(), "newest") ||
+		!strings.Contains(err.Error(), "open in another session") {
+		t.Fatalf("err = %v, want one naming the slot and why", err)
+	}
+
+	got, err := chatSession{resumeName: "newest"}.resumeChat(db)
+	if err != nil {
+		t.Fatalf("resume by name: %v", err)
+	}
+	if got.slot != "newest" {
+		t.Fatalf("slot = %q, want the one that was named", got.slot)
 	}
 }

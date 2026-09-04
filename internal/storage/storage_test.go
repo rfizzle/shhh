@@ -1595,3 +1595,76 @@ func TestListChats_MarksASlotARunningSessionStillHolds(t *testing.T) {
 		t.Error("a slot whose session ended is marked live")
 	}
 }
+
+// liveChatFixture saves name and hands it to a session running under pid, the
+// way another process's autosave leaves it.
+func liveChatFixture(t *testing.T, db *DB, name string, pid int) {
+	t.Helper()
+	if err := db.SaveChat(name, []provider.Message{
+		{Role: provider.RoleUser, Content: "hello"}}); err != nil {
+		t.Fatalf("save %s: %v", name, err)
+	}
+	id := openSessionIn(t, db, "checkout-a", pid, time.Now())
+	if err := db.LinkAgentSession(id, name); err != nil {
+		t.Fatalf("link %s: %v", name, err)
+	}
+}
+
+// Coming back to the last conversation steps past a slot another running
+// session is autosaving into: what is in it is half of somebody else's turn,
+// and their next save takes the slot back.
+func TestMostRecentChat_StepsPastASlotARunningSessionHolds(t *testing.T) {
+	db := openTestDB(t)
+	liveOnly(t, 4242)
+
+	if err := db.SaveChat("older", []provider.Message{
+		{Role: provider.RoleUser, Content: "then"}}); err != nil {
+		t.Fatalf("save older: %v", err)
+	}
+	time.Sleep(2 * time.Millisecond)
+	liveChatFixture(t, db, "newest", 4242)
+
+	recent, ok, err := db.MostRecentChat()
+	if err != nil || !ok {
+		t.Fatalf("ok = %v, err = %v; want the slot before the busy one", ok, err)
+	}
+	if recent.Name != "older" {
+		t.Fatalf("name = %q, want the newest slot nobody else holds", recent.Name)
+	}
+	if recent.Held != "newest" {
+		t.Fatalf("held = %q, want the slot that was stepped past", recent.Held)
+	}
+}
+
+// Where the only slot is one somebody else holds there is nothing to come
+// back to — and still something to say about why.
+func TestMostRecentChat_NamesTheHeldSlotWithNothingBehindIt(t *testing.T) {
+	db := openTestDB(t)
+	liveOnly(t, 4242)
+	liveChatFixture(t, db, "newest", 4242)
+
+	recent, ok, err := db.MostRecentChat()
+	if err != nil || ok {
+		t.Fatalf("ok = %v, err = %v; want nothing to offer", ok, err)
+	}
+	if recent.Held != "newest" {
+		t.Fatalf("held = %q, want the slot that was stepped past", recent.Held)
+	}
+}
+
+// A slot whose session is gone is offered like any other. Nothing has to be
+// forgiven for it: the row that session left open is closed at the next
+// session's start, and a process that does not answer holds nothing.
+func TestMostRecentChat_OffersASlotWhoseSessionIsGone(t *testing.T) {
+	db := openTestDB(t)
+	liveOnly(t)
+	liveChatFixture(t, db, "newest", 4242)
+
+	recent, ok, err := db.MostRecentChat()
+	if err != nil || !ok {
+		t.Fatalf("ok = %v, err = %v; want the slot offered", ok, err)
+	}
+	if recent.Name != "newest" || recent.Held != "" {
+		t.Fatalf("got %q (held %q), want the slot a dead session left", recent.Name, recent.Held)
+	}
+}

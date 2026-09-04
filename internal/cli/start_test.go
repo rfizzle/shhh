@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/project"
@@ -121,6 +122,28 @@ func TestBuildStartInfo_CarriesTheMostRecentSavedSession(t *testing.T) {
 	}
 	if info.Recent.Turns != 1 {
 		t.Fatalf("turns = %d, want 1", info.Recent.Turns)
+	}
+}
+
+// The offer is the newest conversation nobody else is writing into. Putting
+// the slot a second session is autosaving into on the screen would offer a
+// conversation that its owner's next save takes straight back.
+func TestBuildStartInfo_OffersTheNewestSlotNobodyElseHolds(t *testing.T) {
+	db := resumeStore(t)
+	if err := db.SaveChat("loop refactor", testChatMessages()); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+	time.Sleep(2 * time.Millisecond)
+	heldChat(t, db, "someone else's")
+
+	info := buildStartInfo(project.Survey(""), db, false, chat.Trust{})
+	if !info.Recent.Present || info.Recent.Name != "loop refactor" {
+		t.Fatalf("recent = %+v, want the newest slot nobody else holds", info.Recent)
+	}
+	// And the screen is told it is offering an older conversation, so the
+	// row can say why rather than swapping the answer silently.
+	if !info.Recent.Held {
+		t.Fatal("the offer stepped past a slot and the screen was not told")
 	}
 }
 

@@ -1207,6 +1207,18 @@ func (s chatSession) resumeChat(db *storage.DB) (reopenedChat, error) {
 		if err != nil {
 			return reopenedChat{}, err
 		}
+		// The newest slot can be one another running session is autosaving
+		// into, and the offer on the start screen quietly takes the one
+		// before it. This is not an offer. Somebody asked for the last
+		// session, and answering an instruction with a different
+		// conversation is the failure that is worst where nobody is
+		// watching, so it is named and refused instead. Naming it is also
+		// the way through: a slot asked for by name is opened whoever holds
+		// it, which is the rule the branch above already follows.
+		if recent.Held != "" {
+			return reopenedChat{}, fmt.Errorf(
+				"%q is open in another session; resume it by name to open it anyway", recent.Held)
+		}
 		if ok {
 			name = recent.Name
 		}
