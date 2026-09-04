@@ -11,6 +11,7 @@ package caps
 // wrote it.
 
 import (
+	"image/color"
 	"strings"
 	"testing"
 
@@ -56,6 +57,7 @@ func TestQuery_AsksTheWholeSetOnAnOrdinaryTerminal(t *testing.T) {
 		{"primary device attributes", ansi.RequestPrimaryDeviceAttributes},
 		{"focus mode report", ansi.RequestModeFocusEvent},
 		{"desktop notifications", notifyQuery()},
+		{"the terminal's own background", ansi.RequestBackgroundColor},
 		{"name and version", ansi.RequestNameVersion},
 		{"window size in pixels", ansi.WindowOp(14)},
 	} {
@@ -110,7 +112,7 @@ func TestQuery_HoldsTheRiskyThreeWhereTheRuleSays(t *testing.T) {
 	withProfile(t, colorprofile.ANSI256)
 	// The safe three always go out; only the ones a terminal can print
 	// instead of answering are held.
-	safe := []string{ansi.RequestPrimaryDeviceAttributes, ansi.RequestModeFocusEvent, notifyQuery()}
+	safe := []string{ansi.RequestPrimaryDeviceAttributes, ansi.RequestModeFocusEvent, notifyQuery(), ansi.RequestBackgroundColor}
 
 	for _, tc := range []struct {
 		name string
@@ -190,6 +192,40 @@ func TestUpdate_EachReplyLandsOnItsOwnField(t *testing.T) {
 	}
 	if !term.Graphics() {
 		t.Error("either protocol is a picture")
+	}
+}
+
+// The ground is the one answer with two readings — light or dark, and
+// whether anything was said at all — because a terminal that never replied
+// and a terminal with a black background give the same bool and mean
+// different things to the palette.
+func TestUpdate_ReadsTheGround(t *testing.T) {
+	var silent Terminal
+	if dark, answered := silent.DarkGround(); dark || answered {
+		t.Errorf("a terminal that said nothing reported dark=%v answered=%v", dark, answered)
+	}
+
+	for _, tc := range []struct {
+		name string
+		bg   color.Color
+		dark bool
+	}{
+		{"a white terminal", color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, false},
+		{"the light grey a solarized terminal uses", color.RGBA{R: 0xfd, G: 0xf6, B: 0xe3, A: 0xff}, false},
+		{"a black terminal", color.RGBA{A: 0xff}, true},
+		{"the near-black most dark themes use", color.RGBA{R: 0x1c, G: 0x1c, B: 0x1c, A: 0xff}, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var term Terminal
+			term.Update(tea.BackgroundColorMsg{Color: tc.bg})
+			dark, answered := term.DarkGround()
+			if !answered {
+				t.Fatal("a reply that landed was not recorded as an answer")
+			}
+			if dark != tc.dark {
+				t.Errorf("dark = %v, want %v", dark, tc.dark)
+			}
+		})
 	}
 }
 

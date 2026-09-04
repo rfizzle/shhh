@@ -8,12 +8,15 @@
 package components
 
 import (
+	"fmt"
 	"image/color"
 	"io"
 	"os"
+	"strings"
 
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/colorprofile"
+	"github.com/charmbracelet/x/exp/charmtone"
 )
 
 // Token is one palette colour, written once for every colour profile a
@@ -98,13 +101,14 @@ type ColorTokens struct {
 	Body    Token // ordinary body text
 }
 
-// Palette is the live token set: the full palette above, or the two-grey
-// mono palette while mono conformance is on (mono.go). Every style in
-// the product reads it through newStyles, which applyPalette re-runs whenever
-// the palette is swapped.
+// Palette is the live token set: whichever of the shipped tables the theme
+// resolves to, or the two-grey mono palette while mono conformance is on
+// (mono.go). Every style in the product reads it through newStyles, which
+// applyPalette re-runs whenever the palette is swapped.
 var Palette = FullPalette
 
-// FullPalette is the coloured token set — the palette unless mono is on.
+// FullPalette is the coloured token set chosen against a dark ground — the
+// palette unless mono is on or another theme was asked for.
 //
 // Ten of the fifteen hexes are exactly the 256 index beside them, because the
 // cube and the greyscale ramp are colours a design can name. The other five —
@@ -131,6 +135,283 @@ var FullPalette = ColorTokens{
 	// is the exact value of 250 rather than a colour chosen for it.
 	Subtle: token("#bcbcbc", "250", "7"),
 	Body:   token("#d0d0d0", "252", "7"),
+}
+
+// LightPalette is the same fifteen jobs on a light ground.
+//
+// A table is chosen against a ground and is legible only on it
+// (docs/interface/principles.md#a-colour-is-three-values-and-a-ground): body
+// text at #d0d0d0 is the most readable thing on a black terminal and almost
+// nothing on a white one, while the chrome greys — chosen to sit *below* the
+// body on a dark ground — come out above it. So this is not the dark table
+// lightened; it is the same fifteen decisions taken again with the ground
+// the other way up.
+//
+// Three things carry over unchanged, because they are not about the ground:
+//
+//   - The three rungs. Every token still says what it is at truecolor, at
+//     256 and at sixteen, and nothing derives anything.
+//   - The five that are the terminal's own — add, del, hunk, info and
+//     bright. A user's own red is still the red their diffs are deleted in;
+//     what changes is which end of their theme is asked for, since on a
+//     light ground the readable half of sixteen colours is the un-bolded
+//     half and 15 is invisible where 0 is not.
+//   - Ten hexes that are exactly the 256 index beside them, for the same
+//     reason: the cube and the greyscale ramp are colours a design can name.
+//
+// One thing is deliberately inverted. Dim and Dimmer swap their relative
+// weight: Dim is chrome and Dimmer is content, so Dimmer is always the rung
+// with more contrast against the ground — which on a dark terminal makes it
+// the *lighter* grey and on a light one the *darker* one. #8a8a8a is Dimmer
+// in the table above and Dim here, and that is the swap rather than a
+// mistake. Reverse it and the scroll gutter's thumb sinks into its own track
+// exactly as it would if the two were exchanged on the dark ground.
+//
+// The chrome grey stands off white by 3.45:1, which is what #626262 stands
+// off black by (3.44:1) — the faintest thing on the screen is equally faint
+// on both grounds, and the body is equally readable.
+var LightPalette = ColorTokens{
+	Add:     token("#008700", "2", "2"),
+	Del:     token("#d70000", "1", "1"),
+	AddBg:   token("#d7ffd7", "194", "10"),
+	DelBg:   token("#ffd7d7", "224", "9"),
+	Hunk:    token("#008787", "6", "6"),
+	Accent:  token("#af5f00", "130", "3"),
+	Info:    token("#005fd7", "4", "4"),
+	FocusBg: token("#d7d7ff", "189", "7"),
+	Dim:     token("#8a8a8a", "245", "8"),
+	Dimmer:  token("#6c6c6c", "242", "8"),
+	Spin:    token("#af005f", "125", "5"),
+	Status:  token("#767676", "243", "8"),
+	Bright:  token("#121212", "0", "0"),
+	// Subtle has no counterpart to reconcile with on either ground, so its
+	// hex is the exact value of 239.
+	Subtle: token("#4e4e4e", "239", "8"),
+	Body:   token("#303030", "236", "0"),
+}
+
+// CharmPalette is the fifteen jobs done in CharmTone, the palette the
+// libraries this interface is built on are drawn in. It is a dark table like
+// the first one and it is not a variant of it: every hue is picked from the
+// published set rather than approximated, which is why it exists at all —
+// a theme that only shifted the greys would be a preference, and this one is
+// a different set of colours doing the same fifteen jobs.
+//
+// The five that defer to the terminal on the other two tables do not defer
+// here. A named palette that handed its green back to whatever the user's
+// config says is not that palette, so every token carries a real 256 index
+// and the sixteen-colour rung is the only place the terminal's own theme is
+// still spent.
+var CharmPalette = ColorTokens{
+	Add:     tone(charmtone.Guac, "42", "10"),
+	Del:     tone(charmtone.Coral, "203", "9"),
+	AddBg:   tint(charmtone.Guac, "22", "2"),
+	DelBg:   tint(charmtone.Coral, "52", "1"),
+	Hunk:    tone(charmtone.Turtle, "44", "14"),
+	Accent:  tone(charmtone.Tang, "209", "11"),
+	Info:    tone(charmtone.Malibu, "39", "12"),
+	FocusBg: tone(charmtone.Charple, "63", "12"),
+	Dim:     tone(charmtone.Iron, "239", "8"),
+	Dimmer:  tone(charmtone.Squid, "245", "8"),
+	Spin:    tone(charmtone.Cheeky, "212", "13"),
+	Status:  tone(charmtone.Oyster, "241", "8"),
+	Bright:  tone(charmtone.Salt, "255", "15"),
+	Subtle:  tone(charmtone.Smoke, "250", "7"),
+	Body:    tone(charmtone.Ash, "253", "7"),
+}
+
+// tone writes one row of the CharmTone table: the published hex, and the two
+// indices it stands for on a terminal that cannot show it.
+func tone(k charmtone.Key, ansi256, ansi16 string) Token {
+	return token(k.Hex(), ansi256, ansi16)
+}
+
+// tint is tone for the two intraline backgrounds, which CharmTone has no
+// colour for: it is a foreground set, and every entry in it is a colour meant
+// to be read rather than read against.
+//
+// Mixing the hue into the set's own ground is the obvious derivation and it
+// is wrong here. The ground is a dark purple, the mix runs through hue rather
+// than through light, and the short way round from purple to CharmTone's
+// green is blue: an eighth of the way out of it is a slate that says nothing
+// about an addition, and the deletion's eighth is a slate a shade to the left
+// of it. Two tints told apart only by a reader who has both on screen at once
+// is the one thing an intraline background must not be.
+//
+// So the hue keeps its own hue and gives up light instead: three eighths of
+// it, which is where the first table's tints sit — its green is 95 of 255,
+// and that is the weight a ground can carry without taking the row's text
+// with it. The two index rungs are the ones that table chose, because a dark
+// green and a dark red are the whole of what those two columns can say.
+func tint(k charmtone.Key, ansi256, ansi16 string) Token {
+	r, g, b, _ := k.RGBA()
+	darken := func(v uint32) uint8 { return uint8(v >> 8 * 3 / 8) }
+	return Token{
+		TrueColor: color.RGBA{R: darken(r), G: darken(g), B: darken(b), A: 0xff},
+		ANSI256:   lipgloss.Color(ansi256),
+		ANSI:      lipgloss.Color(ansi16),
+	}
+}
+
+// The theme names, which are what `/ui theme` takes and what appearance.theme
+// holds. ThemeAuto is the one that is not a table: it is whichever of dark and
+// light matches the ground the terminal reported, and it is the default,
+// because a terminal that never answers keeps the table the product has
+// always had.
+const (
+	ThemeAuto  = "auto"
+	ThemeDark  = "dark"
+	ThemeLight = "light"
+	ThemeCharm = "charm"
+)
+
+// theme is one shipped table and the ground it was chosen against. The table
+// is the whole of the theme — fifteen tokens, no more, so a surface cannot
+// reach for a colour a theme forgot to bring — and the ground is beside it
+// rather than in it because nothing draws with it: it is what the screen
+// would be painted with if the reader asked for that (GroundColor), and the
+// terminal's own otherwise.
+type theme struct {
+	tokens ColorTokens
+	ground Token
+}
+
+// themes is every table that ships. A theme is added by adding a row here and
+// a word to ThemeNames; nothing else in the product knows how many there are.
+var themes = map[string]theme{
+	ThemeDark:  {FullPalette, token("#1c1c1c", "234", "0")},
+	ThemeLight: {LightPalette, token("#ffffff", "231", "15")},
+	ThemeCharm: {CharmPalette, tone(charmtone.Pepper, "235", "0")},
+}
+
+// ThemeNames is the words a reader may choose between, auto first because it
+// is the default and the one that needs no decision.
+func ThemeNames() []string {
+	return []string{ThemeAuto, ThemeDark, ThemeLight, ThemeCharm}
+}
+
+var (
+	// themeName is what was asked for, which is not always what is drawn:
+	// mono outranks it and auto resolves through the ground below.
+	themeName = ThemeAuto
+	// lightGround is what the terminal said about its own background. False
+	// until it answers, which is the same answer as a dark terminal — and
+	// deliberately so, since the table that stands while nobody has answered
+	// should be the one that was right for every terminal before the
+	// question was asked.
+	lightGround bool
+	// paintGround is the switch, off by default. See GroundColor.
+	paintGround bool
+)
+
+// ThemeName is the theme that was asked for, by name.
+func ThemeName() string { return themeName }
+
+// SetTheme swaps the table every surface draws with, through the same door
+// SetMono uses. An unknown name is refused and nothing changes: a themes
+// table that silently fell back would leave the reader looking at the old
+// colours and reading their own configuration to find out why.
+//
+// Mono outranks it. A theme asked for while mono is on is remembered and
+// takes effect when mono is turned off, which is the same bargain the full
+// palette has always had.
+func SetTheme(name string) error {
+	if name == "" {
+		name = ThemeAuto
+	}
+	if _, ok := themes[resolveTheme(name)]; !ok {
+		return fmt.Errorf("unknown theme %q (%s)", name, strings.Join(ThemeNames(), ", "))
+	}
+	if name == themeName {
+		return nil
+	}
+	themeName = name
+	if !mono {
+		swapPalette(activeTokens())
+	}
+	return nil
+}
+
+// SetGround records what the terminal said its own background is and reports
+// whether the palette moved because of it — which it does only under the auto
+// theme, and only when the answer is new. A host that draws from a cache
+// invalidates it on true.
+//
+// A terminal is asked once and may answer more than once (a re-attach, a
+// theme changed under a running session), so this is idempotent rather than
+// one-shot.
+func SetGround(dark bool) bool {
+	if lightGround == !dark {
+		return false
+	}
+	lightGround = !dark
+	if mono || themeName != ThemeAuto {
+		return false
+	}
+	swapPalette(activeTokens())
+	return true
+}
+
+// PaintGround turns the theme's own background on for the whole screen, and
+// reports whether that changed anything. See GroundColor for why it is a
+// switch.
+func PaintGround(on bool) bool {
+	if on == paintGround {
+		return false
+	}
+	paintGround = on
+	return true
+}
+
+// GroundPainted reports whether the screen is painted with the theme's
+// background rather than left on the terminal's own.
+func GroundPainted() bool { return paintGround }
+
+// GroundColor is the colour the whole screen is painted with, or nil for the
+// terminal's own — which is the default and stays it.
+//
+// A theme repaints the ground it was chosen against, and doing that by
+// default would take a decision the reader already made: the terminal's
+// background is theirs, it is what every other program on that screen sits
+// on, and a session that overpainted it would be the one window that does not
+// match. So it is offered — a light theme on a dark terminal is legible
+// either way, and only the reader knows whether they wanted shhh to look like
+// their terminal or like itself.
+//
+// Under mono there is nothing to paint: a third shade is exactly what two
+// greys have given up.
+func GroundColor() color.Color {
+	if !paintGround || mono {
+		return nil
+	}
+	return themes[resolveTheme(themeName)].ground.Color()
+}
+
+// resolveTheme is the table a name names. Everything but auto names itself.
+func resolveTheme(name string) string {
+	if name != ThemeAuto {
+		return name
+	}
+	if lightGround {
+		return ThemeLight
+	}
+	return ThemeDark
+}
+
+// activeTokens is the token set the current theme resolves to, ignoring mono
+// — SetMono owns that question and asks this one on the way back out.
+func activeTokens() ColorTokens { return themes[resolveTheme(themeName)].tokens }
+
+// swapPalette installs a token set and rebuilds every derived style, here and
+// in every host that registered with OnPaletteChange. It is the one door:
+// mono, the theme, the terminal's own ground and the colour profile all reach
+// the styles through it, so a swap can never rebuild half the product.
+func swapPalette(p ColorTokens) {
+	Palette = p
+	applyPalette()
+	for _, fn := range paletteHooks {
+		fn()
+	}
 }
 
 // profile is the colour profile every token resolves against: what the
@@ -178,10 +459,7 @@ func SetProfile(p colorprofile.Profile) {
 		return
 	}
 	profile = p
-	applyPalette()
-	for _, fn := range paletteHooks {
-		fn()
-	}
+	swapPalette(Palette)
 }
 
 // Color is the rung of the token the profile can show — the one value a

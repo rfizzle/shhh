@@ -154,6 +154,38 @@ sentences. Three rules follow from fixing them:
 A surface that needs a field the grid does not have is a card, not a row. That
 is the escape hatch, and it is deliberately expensive.
 
+### A colour is three values and a ground
+
+A token is written once for every colour profile a terminal can report —
+truecolor, 256 and sixteen — rather than written once and degraded. A
+downsampler gets the greys right and the hues wrong in the way that costs the
+most: at sixteen colours the nearest match to a warning and to a thing in
+motion is the red a failure already owns, so three states arrive as one hue on
+the profile invariant 1 exists for.
+
+Five of the fifteen are the terminal's own theme colours by choice — the
+diff's two verdicts, the hunk heading, the key offer, and the crest. A user
+who set their green is looked at all day in their green, and the design's own
+hex is what a terminal that can show it gets.
+
+The ground is the other half of a colour. A table is chosen against a ground
+and is legible only on it: the same grey that is chrome on a black terminal is
+gone on a white one, and body text chosen to lead on one ends up behind the
+chrome on the other. So there is a table per ground, the terminal is asked
+which it has rather than assumed to have the dark one, and the two chrome
+greys swap their relative weight between them — what is faint is what has
+least contrast with the ground, which is the lighter grey on one and the
+darker grey on the other.
+
+A theme repaints the ground it was chosen against only if asked. The terminal's
+background belongs to the reader and to every other program on that screen;
+a session that overpainted it by default would be the one window that does not
+match.
+
+The exact rungs are the design system's. What is fixed here is that there are
+three of them, that five defer to the terminal, that a ground is asked for,
+and that no surface may reach for a colour outside the fifteen.
+
 ### Closed vocabularies
 
 The verbs a row can use, the outcomes it can report, and the classes a failure

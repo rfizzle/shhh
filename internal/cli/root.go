@@ -13,6 +13,7 @@ import (
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/profile"
+	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/update"
 	"github.com/spf13/cobra"
 )
@@ -128,6 +129,18 @@ func NewRootCmd() *cobra.Command {
 			}
 
 			cmd.SetContext(withProjectConfig(withConfig(cmd.Context(), cfg), proj))
+
+			// The colour table every surface draws with, settled once here
+			// rather than by each of them: the palette is a package-wide
+			// swap because the components contract is View(width) string,
+			// which leaves nowhere to thread a theme through, and the chat
+			// TUI, the take-over screens, the saved-chat browser and the
+			// one-shot generate surface all read the same one. A name no
+			// table answers to is refused on the same terms a key no setting
+			// reads is, and for the same reason.
+			if err := components.SetTheme(cfg.Appearance.Theme); err != nil && cmd.Annotations[ownsConfigError] == "" {
+				return err
+			}
 
 			update.BackgroundCheck(version)
 

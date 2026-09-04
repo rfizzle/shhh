@@ -464,6 +464,15 @@ func (c Config) AgentModel(role, sessionModel string) string {
 
 type AppearanceConfig struct {
 	AccentColor string `toml:"accent_color"`
+	// Theme is which of the shipped colour tables every surface draws with:
+	// `auto`, which asks the terminal what its own background is and takes
+	// the table chosen against that ground, or one of them by name. It is a
+	// word rather than a set of colours because the tables are the
+	// product's — a palette a file could extend would be a file that can
+	// reach for a colour no token names
+	// (docs/interface/principles.md#a-colour-is-three-values-and-a-ground).
+	// Empty is `auto`, the way an unset key is everywhere else.
+	Theme string `toml:"theme"`
 	// Mouse turns terminal mouse reporting on. It is on by default so the
 	// wheel scrolls the transcript, click-drag selects it (scrolling past the
 	// edge of the pane and copying on release), and clicks open rows or answer

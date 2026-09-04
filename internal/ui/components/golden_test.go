@@ -2173,3 +2173,80 @@ func TestGolden_ScreenFamily(t *testing.T) {
 			}
 		})
 }
+
+// withTheme draws the rest of the test through one of the shipped tables and
+// puts the session's own back afterwards. Mono is turned off first because it
+// outranks a theme, which is the right order everywhere except in a capture
+// that is about the table.
+func withTheme(t *testing.T, name string) {
+	t.Helper()
+	wasMono, wasTheme := Mono(), ThemeName()
+	SetMono(false)
+	if err := SetTheme(name); err != nil {
+		t.Fatalf("theme %q: %v", name, err)
+	}
+	t.Cleanup(func() {
+		_ = SetTheme(wasTheme)
+		SetMono(wasMono)
+	})
+}
+
+// TestGolden_LightTable captures the light ground's column on the surfaces
+// that spend the tokens whose job changes with the ground: the two chrome
+// greys on a row's counts and tail, the intraline tints and the diff's two
+// verdicts, and the card's border, keys and crest.
+//
+// It is a chosen few and not the whole catalog on purpose. What the captures
+// above hold is the layout, which the table cannot move; what this one holds
+// is the colour assignment, which is the ansi block and is the same in every
+// file that draws the same token. Capturing the catalog twice would double
+// the review surface to restate one column.
+func TestGolden_LightTable(t *testing.T) {
+	withColorProfile(t, colorprofile.ANSI256)
+	withTheme(t, ThemeLight)
+	for _, width := range []int{60, 110} {
+		golden.Assert(t, widthName("light-table", width), golden.Case{
+			Surface: "the light ground's column, on the surfaces that spend it",
+			Width:   width,
+			Panels: []golden.Panel{
+				{Label: "rows · the chrome greys, a failure, a denial and the reading cursor", View: strings.Join([]string{
+					ActivityRow{
+						Kind: ActivityTool, Verb: "read", Target: "internal/agent/loop.go",
+						Counts: "218 lines", Duration: "0.6s",
+					}.View(width),
+					ActivityRow{
+						Kind: ActivityCommand, Verb: "run", Target: "go test ./internal/agent/...",
+						State: ActivityFailed, Outcome: OutcomeExit(1), Duration: "21.4s",
+						Expanded: true,
+						Detail:   []string{"--- FAIL: TestRoundLimit (0.00s)"},
+					}.View(width),
+					ActivityRow{
+						Kind: ActivityCommand, Verb: "run", Target: "rm -rf ./build",
+						State: ActivityDenied, ByRule: true,
+						Outcome: OutcomeBy(OutcomeDenied, "auto · plan mode"), Duration: NoDuration,
+					}.View(width),
+					ActivityRow{
+						Kind: ActivityCommand, Verb: "run", Target: "go build ./cmd/shhh",
+						State: ActivityRunning, Outcome: OutcomeRunning,
+					}.View(width),
+					ActivityRow{
+						Kind: ActivityTool, Verb: "read", Target: "internal/agent/loop.go",
+						Selected: true, Counts: "218 lines", Duration: "0.6s",
+					}.View(width),
+				}, "\n")},
+				{Label: "diff · the two verdicts and the hunk heading", View: (&DiffView{
+					Path: "internal/agent/loop.go", Verb: "edit",
+					Hunks: goldenHunks(), Mode: DiffExpanded, Height: 14, MaxLines: 12,
+				}).View(width)},
+				{Label: "card · the border, the question and the keys", View: (&ApprovalCard{
+					Variant:     ApprovalCommand,
+					Title:       "Approve command",
+					Headline:    "Assistant wants to run: go test ./internal/agent/...",
+					Question:    "Run this command?",
+					AllowAlways: true,
+					AlwaysHint:  "a: always allow commands this session",
+				}).View(width)},
+			},
+		})
+	}
+}

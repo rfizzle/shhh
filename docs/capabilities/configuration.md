@@ -489,6 +489,7 @@ knows it; the profiles under `[agents]` are one key per role, which the
 | Key | Takes | Default | What it decides |
 |---|---|---|---|
 | `accent_color` | text | (the palette's own) | The accent the surfaces are painted with. |
+| `theme` | word: `auto`, `dark`, `light`, `charm` | `auto` | Which colour table every surface draws with: `auto` asks the terminal what its own background is and takes the table chosen for that ground, or name one. |
 | `mouse` | true/false | `on` | Terminal mouse reporting: the wheel scrolls the transcript and shhh selects text itself. Off leaves the terminal its native click-drag selection. |
 | `notify` | true/false | `on` | Raise a desktop notification when a turn stops while the window is not the one in front. |
 | `window_title` | true/false | `on` | Name the terminal's own tab after the session. |

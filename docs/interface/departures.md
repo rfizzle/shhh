@@ -193,3 +193,35 @@ is spent out of the pane's rows rather than the window's, so a short pane gets
 the name in one row of the texture and a monochrome terminal gets neither —
 the face states nothing the line under it does not, and what states nothing is
 what a palette with two greys gives up first.
+
+## The light table's rungs were chosen in the binary
+
+`tokens/colors.css` has one column. It states a hex and the 256 index that hex
+stands for, for fifteen tokens, chosen against a dark ground — and every one of
+those choices is a choice about the ground as much as about the hue, which is
+why a light terminal cannot be served by lightening them
+([the rule](principles.md#a-colour-is-three-values-and-a-ground)).
+
+The second column belongs there and is not there yet, so the light table was
+chosen here instead, on the first column's own reasons: three rungs per token
+and nothing derived, the same five tokens deferring to the terminal's theme,
+ten hexes that are exactly the 256 index beside them, and the two chrome greys
+keeping their jobs by swapping their weight — the faint one is the one nearer
+the ground, which is the lighter grey on black and the darker grey on white.
+
+This is a gap and not a disagreement. When the column is drawn, these fifteen
+rows are what it has to reconcile with, and where the two differ the artboard
+wins.
+
+## A theme is a table, and CharmTone is one of them
+
+The design system describes one palette. A second table of the same fifteen
+jobs drawn in CharmTone is not a divergence from it — nothing about the
+product's colours changes for anyone who does not ask for it — but it is a set
+of colours that no artboard states, so it is written down here.
+
+It exists because the interface is built on libraries drawn in that palette and
+the pairing is worth offering, and it is the one table where the five tokens
+that normally defer to the terminal's own theme do not: a named palette that
+handed its green back to whatever the user's config says would not be that
+palette.

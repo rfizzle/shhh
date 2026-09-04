@@ -1274,11 +1274,19 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		msg = ctrlJ
 	}
 	// What the terminal can do is folded in wherever the reply lands
-	//. The answers come back as five unrelated message types,
-	// over however long the terminal takes to send them, and none of them
-	// is anything else on this switch's business — so they are read here,
-	// before the routing, and go on to it unchanged.
+	//. The answers come back as unrelated message types, one
+	// per question, over however long the terminal takes to send them, and
+	// none of them is anything else on this switch's business — so they are
+	// read here, before the routing, and go on to it unchanged.
 	m.caps.Update(msg)
+	// The terminal's own background is the one capability that changes what
+	// is already on screen: under the auto theme it decides which table the
+	// surfaces draw with, so a reply that arrives mid-session leaves every
+	// cached row painted in the table the session opened with
+	// (docs/interface/principles.md#a-colour-is-three-values-and-a-ground).
+	if bg, ok := msg.(tea.BackgroundColorMsg); ok && components.SetGround(bg.IsDark()) {
+		m.invalidateRenderCache()
+	}
 	// Three routes, and every message takes exactly one of them: what the
 	// terminal and the window did (system.go), what the reader pressed
 	// (keyroute.go), and what the session's own turn reported (turn.go).

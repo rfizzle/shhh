@@ -352,6 +352,10 @@ var settings = []Setting{
 		Key: "appearance.accent_color", Kind: KindString, Default: "(the palette's own)",
 		Desc: "The accent the surfaces are painted with.",
 	}, {
+		Key: "appearance.theme", Kind: KindEnum, Default: "auto",
+		Values: []string{"auto", "dark", "light", "charm"},
+		Desc:   "Which colour table every surface draws with: `auto` asks the terminal what its own background is and takes the table chosen for that ground, or name one.",
+	}, {
 		Key: "appearance.mouse", Kind: KindBool, Default: "on",
 		Desc: "Terminal mouse reporting: the wheel scrolls the transcript and shhh selects text itself. Off leaves the terminal its native click-drag selection.",
 	}, {

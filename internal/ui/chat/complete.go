@@ -153,6 +153,8 @@ func buildSlashCommands() []slashCommand {
 			argSpecs: []argSpec{
 				{options: []argOption{
 					{"verbosity", "Activity feed density"},
+					{"theme", "Which colour table every surface draws with"},
+					{"ground", "Paint the screen with the theme's own background"},
 					{"mono", "Strip every surface to two greys"},
 					{"mouse", "Whether shhh or the terminal owns the mouse"},
 					{"notify", "Say so when a turn stops and you are elsewhere"},
@@ -165,6 +167,16 @@ func buildSlashCommands() []slashCommand {
 					{"low", "Step headers only"},
 					{"normal", "Read-only calls folded"},
 					{"high", "Every row expanded"},
+				}},
+				{after: []string{"theme"}, options: []argOption{
+					{components.ThemeAuto, "The table chosen for the background this terminal reports"},
+					{components.ThemeDark, "The product's own colours, on a dark ground"},
+					{components.ThemeLight, "The same fifteen jobs, on a light ground"},
+					{components.ThemeCharm, "The same fifteen jobs in CharmTone"},
+				}},
+				{after: []string{"ground"}, options: []argOption{
+					{"on", "Paint the background the theme was drawn against"},
+					{"off", "Leave the terminal's own background"},
 				}},
 				{after: []string{"mono"}, options: []argOption{
 					{"on", "Two greys — glyphs and words carry every state"},

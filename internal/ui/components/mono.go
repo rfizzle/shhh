@@ -72,19 +72,21 @@ func MonoForced() bool { return monoEnvForced }
 // SetMono swaps the palette and rebuilds every derived style, in this package
 // and in every host that registered with OnPaletteChange. It is a no-op when
 // the mode is already what was asked for.
+//
+// Turning it off restores the theme that was asked for rather than the dark
+// table, because a theme asked for under mono is remembered and this is where
+// it lands: a session that chose the light table, turned mono on to check an
+// invariant and turned it back off would otherwise come back on a black
+// terminal's palette.
 func SetMono(on bool) {
 	if on == mono {
 		return
 	}
 	mono = on
 	if on {
-		Palette = MonoPalette
+		swapPalette(MonoPalette)
 	} else {
-		Palette = FullPalette
-	}
-	applyPalette()
-	for _, fn := range paletteHooks {
-		fn()
+		swapPalette(activeTokens())
 	}
 }
 

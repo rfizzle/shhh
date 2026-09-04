@@ -14,6 +14,7 @@ import (
 	"charm.land/lipgloss/v2"
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/ultraviolet/layout"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 // View is the frame the terminal shows. In v2 that is a value rather than a
@@ -44,6 +45,11 @@ func (m Model) View() tea.View {
 	if m.mouseOn {
 		v.MouseMode = tea.MouseModeCellMotion
 	}
+	// The screen's own ground, which is nil unless the reader asked the theme
+	// to paint the background it was chosen against (/ui ground). Nil is the
+	// default and means the terminal's own background stands, which is what
+	// every other program on that screen sits on.
+	v.BackgroundColor = components.GroundColor()
 	// And the two states outside the rectangle, for the third and fourth
 	// times the same argument: the tab's name and the tab's progress light
 	// are what this frame says they are (terminal.go). Empty and nil mean

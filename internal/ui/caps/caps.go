@@ -43,6 +43,7 @@
 package caps
 
 import (
+	"image/color"
 	"slices"
 	"strconv"
 	"strings"
@@ -78,6 +79,14 @@ type Terminal struct {
 	// Notifications reports whether the terminal answered the OSC 99 query
 	// saying it can raise a desktop notification with a title.
 	Notifications bool
+
+	// Background is the colour the terminal reported as its own ground, and
+	// nil when it did not answer or was not asked. It is the only capability
+	// here that changes what shhh draws rather than what it may draw: the
+	// palette is chosen against a ground, so a table picked for the wrong one
+	// puts chrome above body text and faint rules over both
+	// (docs/interface/principles.md#a-colour-is-three-values-and-a-ground).
+	Background color.Color
 
 	// Dumb is a terminal that has said in advance that it cannot do any of
 	// this: TERM=dumb is the one answer that arrives without being asked.
@@ -134,6 +143,12 @@ func (t *Terminal) Query(environ []string) tea.Cmd {
 	var b strings.Builder
 	b.WriteString(ansi.RequestPrimaryDeviceAttributes)
 	b.WriteString(ansi.RequestModeFocusEvent)
+	// The terminal's own background, which decides which palette is legible
+	// on it. It is in the first tier and not behind held: OSC 11 predates
+	// every terminal in the list below, and it is asked as a raw sequence
+	// with the rest rather than as the command Bubble Tea offers for it,
+	// because this package writes its questions once and in one order.
+	b.WriteString(ansi.RequestBackgroundColor)
 	b.WriteString(notifyQuery())
 	if t.Held == "" {
 		b.WriteString(ansi.RequestNameVersion)
@@ -157,10 +172,10 @@ func (t *Terminal) Query(environ []string) tea.Cmd {
 	return tea.Raw(b.String())
 }
 
-// Update folds one reply in. The answers arrive as five unrelated message
-// types, spread over however long the terminal takes, and each of them is
-// nothing else's business — so a host calls this with every message it sees
-// and this decides which ones were addressed to it.
+// Update folds one reply in. The answers arrive as unrelated message types,
+// one per question, spread over however long the terminal takes, and each of
+// them is nothing else's business — so a host calls this with every message
+// it sees and this decides which ones were addressed to it.
 //
 // A yes is never taken back. A terminal can be asked more than once across a
 // session (a resize re-reports its pixels, tmux re-attaches), and a reply
@@ -176,6 +191,8 @@ func (t *Terminal) Update(msg tea.Msg) {
 		}
 	case uv.PixelSizeEvent:
 		t.PixelWidth, t.PixelHeight = m.Width, m.Height
+	case tea.BackgroundColorMsg:
+		t.Background = m.Color
 	case uv.KittyGraphicsEvent:
 		// The terminal answered a graphics query at all, which is the whole
 		// question — what it said about the one-pixel image does not matter.
@@ -206,6 +223,18 @@ func (t Terminal) CellSize(cols, rows int) (width, height int) {
 		return 0, 0
 	}
 	return t.PixelWidth / cols, t.PixelHeight / rows
+}
+
+// DarkGround reports what the terminal said about its own background, and
+// whether it said anything. The two answers are separate for the reason Asked
+// and Held are: a terminal that never answered is not a terminal with a dark
+// background, and a palette chosen on the difference would be choosing on a
+// zero value.
+func (t Terminal) DarkGround() (dark, answered bool) {
+	if t.Background == nil {
+		return false, false
+	}
+	return uv.BackgroundColorEvent{Color: t.Background}.IsDark(), true
 }
 
 // Graphics reports whether the terminal can draw an image at all, by either

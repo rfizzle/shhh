@@ -371,7 +371,7 @@ func (m Model) runningCommandRow(width int) string {
 // window is called, and what the terminal itself can do.
 func (m *Model) uiCommand(parts []string) string {
 	if len(parts) == 1 {
-		return fmt.Sprintf("Activity feed verbosity: %s.\nMonochrome: %s.\nMouse reporting: %s.\nDesktop notifications: %s.\nSession titles: %s.\nWindow title: %s.\nLayout: %s.\nTerminal: %s.\n"+uiUsage, m.verbosity, monoStatus(), m.mouseStatus(), m.notifyStatus(), m.titleStatus(), m.windowStatus(), m.inspectorStatus(), terminalName(m.caps))
+		return fmt.Sprintf("Activity feed verbosity: %s.\nTheme: %s.\nScreen ground: %s.\nMonochrome: %s.\nMouse reporting: %s.\nDesktop notifications: %s.\nSession titles: %s.\nWindow title: %s.\nLayout: %s.\nTerminal: %s.\n"+uiUsage, m.verbosity, m.themeStatus(), groundStatus(), monoStatus(), m.mouseStatus(), m.notifyStatus(), m.titleStatus(), m.windowStatus(), m.inspectorStatus(), terminalName(m.caps))
 	}
 	switch parts[1] {
 	case "verbosity":
@@ -388,6 +388,10 @@ func (m *Model) uiCommand(parts []string) string {
 		m.verbosity = v
 		m.invalidateRenderCache()
 		return fmt.Sprintf("Activity feed verbosity set to %s.", v)
+	case "theme":
+		return m.themeCommand(parts)
+	case "ground":
+		return m.groundCommand(parts)
 	case "mono":
 		return m.monoCommand(parts)
 	case "mouse":
@@ -409,7 +413,7 @@ func (m *Model) uiCommand(parts []string) string {
 // uiUsage is the one line naming everything /ui answers for. It is a constant
 // because the bare readout and the unknown-subcommand reply are the same
 // list, and a list written twice is a list that drifts.
-const uiUsage = "Usage: /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse <on|off> · /ui notify <on|off> · /ui title <on|off> · /ui window <on|off> · /ui rail <auto|columns> · /ui terminal"
+const uiUsage = "Usage: /ui verbosity <low|normal|high> · /ui theme <auto|dark|light|charm> · /ui ground <on|off> · /ui mono <on|off> · /ui mouse <on|off> · /ui notify <on|off> · /ui title <on|off> · /ui window <on|off> · /ui rail <auto|columns> · /ui terminal"
 
 // terminalName is the one-line answer the bare /ui gives: what the terminal
 // called itself when shhh asked. A terminal that was asked
@@ -491,6 +495,99 @@ func pick(ok bool, yes, no string) string {
 	}
 	return no
 }
+
+// themeStatus describes which colour table the surfaces are drawing with. The
+// auto answer says what the terminal reported as well as which table it chose,
+// because those are two facts and the one worth reading is usually the first:
+// a reader looking at a light theme they did not ask for is looking for the
+// terminal that asked for it.
+func (m Model) themeStatus() string {
+	name := components.ThemeName()
+	if name != components.ThemeAuto {
+		return name
+	}
+	dark, answered := m.caps.DarkGround()
+	switch {
+	case !answered:
+		return "auto — this terminal has not said what its background is, so the dark table stands"
+	case dark:
+		return "auto — dark, which is what this terminal reports its background as"
+	}
+	return "auto — light, which is what this terminal reports its background as"
+}
+
+// themeCommand handles /ui theme: which of the shipped tables every surface
+// draws with. Mono outranks it, so a theme asked for under mono says what will
+// happen rather than pretending nothing did
+// (docs/interface/principles.md#a-colour-is-three-values-and-a-ground).
+func (m *Model) themeCommand(parts []string) string {
+	if len(parts) == 2 {
+		return fmt.Sprintf("Theme: %s.\n%s", m.themeStatus(), themeUsage)
+	}
+	if len(parts) != 3 {
+		return themeUsage
+	}
+	if err := components.SetTheme(parts[2]); err != nil {
+		return "Error: " + err.Error()
+	}
+	m.invalidateRenderCache()
+	note := fmt.Sprintf("Theme: %s.", m.themeStatus())
+	if components.Mono() {
+		note += " Monochrome is on, so it takes effect when that goes off."
+	}
+	if m.writeConfig == nil {
+		return note + "\nThis session cannot write the config file, so it is for this session only."
+	}
+	if err := m.writeConfig("appearance.theme", parts[2]); err != nil {
+		return note + "\nIt could not be saved: " + err.Error()
+	}
+	return note + " Saved — new sessions start this way."
+}
+
+// themeUsage is the one line /ui theme answers with, built from the tables
+// that ship rather than from a list written twice.
+var themeUsage = "Usage: /ui theme <" + strings.Join(components.ThemeNames(), "|") +
+	"> — auto takes the table chosen for the background this terminal reports; the others name one."
+
+// groundStatus describes what the screen behind the surfaces is painted with.
+func groundStatus() string {
+	if components.GroundPainted() {
+		return "the theme's own"
+	}
+	return "the terminal's own"
+}
+
+// groundCommand handles /ui ground: whether the theme repaints the whole
+// screen with the background it was chosen against. Off is the default and
+// the reason is the reader's, not the palette's — their terminal's background
+// is what every other program on that screen sits on.
+func (m *Model) groundCommand(parts []string) string {
+	if len(parts) == 2 {
+		return fmt.Sprintf("Screen ground: %s.\n%s", groundStatus(), groundUsage)
+	}
+	if len(parts) != 3 {
+		return groundUsage
+	}
+	var on bool
+	switch parts[2] {
+	case "on", "true", "yes":
+		on = true
+	case "off", "false", "no":
+		on = false
+	default:
+		return fmt.Sprintf("Error: unknown ground setting %q (on, off)", parts[2])
+	}
+	if !components.PaintGround(on) {
+		return fmt.Sprintf("Screen ground already %s.", groundStatus())
+	}
+	m.invalidateRenderCache()
+	if on {
+		return "Screen ground: the theme's own — shhh paints the background it was drawn against, for this session."
+	}
+	return "Screen ground: the terminal's own — shhh paints no background, which is where it starts."
+}
+
+const groundUsage = "Usage: /ui ground <on|off> — on paints the whole screen with the background the theme was chosen against; off leaves the terminal's own. It lasts for this session."
 
 // monoStatus describes the current monochrome state, naming the environment
 // when it is what turned mono on.
