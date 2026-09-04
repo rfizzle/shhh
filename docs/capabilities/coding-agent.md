@@ -600,11 +600,20 @@ to ask.
 
 The reading costs one status call per boundary, and a checkout where that
 call is slow keeps only the turn boundary, where the wait is against a person
-typing rather than a model answering. It can be turned off. What it does not
-see is content: a path that was already changed when a stranger changed it
-again has the same status line before and after, and that case is caught
-where it always was — by the fingerprint a read leaves behind, checked at the
-edit.
+typing rather than a model answering. It can be turned off.
+
+What the status call does not see is content: a path that was already changed
+when a stranger changed it again has the same status line before and after.
+That half is answered from the other side. Every file the session has been
+shown is re-checked at the same boundaries, and the ones holding something
+else now are named in the same block, under *files you have read changed* —
+so a session that has to go back and read something hears it with everything
+else that moved
+([`approvals-and-safety.md#a-file-is-changed-from-what-was-read`](approvals-and-safety.md#a-file-is-changed-from-what-was-read)).
+Each file is named once. A file the session has not gone back to is still
+stale at the next boundary and the one after it, and a clause that repeats
+every round is what teaches the model to skip the block it is in; it is named
+again if it moves again.
 
 ## It can check itself
 

@@ -270,7 +270,18 @@ run the paths its mutating calls wrote (`writtenByCalls` in
 so the next notice can say a command ran rather than claim the changes are
 somebody else's. A sub-agent is not handed one: a writer stands in its own
 worktree, and a reader's fan-out would multiply the cost. `behavior.tree_check`
-turns it off. Why it exists and what it deliberately does not see:
+turns it off.
+
+Porcelain names paths and not their content, so the other half of the reading
+comes from the record of what the model has been shown: `tools.SeenChanged`,
+reached through the `ReadChanged` hook and wired once in `treeCheck`
+(`internal/cli/session.go`) because the record is one per process rather than
+one per front-end. The record itself is `internal/tools/seen.go` — a read
+writes to it, a mutation is checked against it, `NoteUnknown` fills it from a
+restored transcript that says what was read and not what it held, and
+`ForgetAll` empties it whenever one conversation gives way to another.
+`treeState.reported` is what keeps a stale reading from being named at every
+round until the model goes back to it. Why it exists and what it does not see:
 [`docs/capabilities/coding-agent.md#the-tree-can-move-under-a-session`](docs/capabilities/coding-agent.md#the-tree-can-move-under-a-session).
 
 ### The interruption machinery

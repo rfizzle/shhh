@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 // readWholeFile puts the file through read_file the way a session would, so a
@@ -234,5 +235,115 @@ func TestForgetAllTakesBackWhatAnEarlierSessionWasShown(t *testing.T) {
 	}
 	if data, _ := os.ReadFile(path); string(data) != "port: 9090\n" {
 		t.Errorf("the file must be untouched, got %q", data)
+	}
+}
+
+// The blind spot the boundary re-check exists for: a file the model read and
+// somebody else rewrote. It is named before the model gets as far as an edit.
+func TestSeenChangedNamesAFileRewrittenUnderTheModel(t *testing.T) {
+	ForgetAll()
+	dir := t.TempDir()
+	path := seed(t, dir, "shared.txt", "one\n")
+	readWholeFile(t, path)
+	if got := SeenChanged(); len(got) != 0 {
+		t.Fatalf("an untouched file is not a change: %v", got)
+	}
+
+	seed(t, dir, "shared.txt", "somebody else's work, at another length\n")
+	got := SeenChanged()
+	if len(got) != 1 || filepath.Base(got[0]) != "shared.txt" {
+		t.Fatalf("the rewritten file should be named, got %v", got)
+	}
+
+	// And where the length held, which is the case only a hash can answer.
+	readWholeFile(t, path)
+	seed(t, dir, "shared.txt", "somebody else's work, at another LENGTH\n")
+	later := time.Now().Add(2 * time.Second)
+	if err := os.Chtimes(path, later, later); err != nil {
+		t.Fatal(err)
+	}
+	if got := SeenChanged(); len(got) != 1 {
+		t.Fatalf("the same length is not the same content, got %v", got)
+	}
+}
+
+// The prefilter must not turn a touch into a report: a build that rewrites a
+// file with the same bytes moves its time and nothing else, and a block that
+// fires on that is a block the model learns to skip.
+func TestSeenChangedIgnoresATouchThatKeptTheContent(t *testing.T) {
+	ForgetAll()
+	dir := t.TempDir()
+	path := seed(t, dir, "same.txt", "unchanged\n")
+	readWholeFile(t, path)
+
+	later := time.Now().Add(2 * time.Second)
+	if err := os.Chtimes(path, later, later); err != nil {
+		t.Fatal(err)
+	}
+	if got := SeenChanged(); len(got) != 0 {
+		t.Fatalf("the same bytes at a new time are not a change: %v", got)
+	}
+	// And the record now carries the new time, so the next boundary answers
+	// from the stat alone rather than opening the file again.
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rec, ok := lookupSeen(path); !ok || !rec.mod.Equal(info.ModTime()) {
+		t.Fatalf("the record should have taken the new time: %+v", rec)
+	}
+	if got := SeenChanged(); len(got) != 0 {
+		t.Fatalf("still not a change: %v", got)
+	}
+}
+
+// A file the model read and then deleted from under itself is not what it was
+// shown either, and the direction that never lets a stale mutation through is
+// to say so.
+func TestSeenChangedNamesAFileThatIsGone(t *testing.T) {
+	ForgetAll()
+	dir := t.TempDir()
+	path := seed(t, dir, "doomed.txt", "here\n")
+	readWholeFile(t, path)
+	if err := os.Remove(path); err != nil {
+		t.Fatal(err)
+	}
+	if got := SeenChanged(); len(got) != 1 {
+		t.Fatalf("a deleted file should be named, got %v", got)
+	}
+}
+
+// A conversation comes back carrying its read_file calls and not the files
+// they read. The record says only that the model has seen something, which is
+// enough to refuse the first change and send it to look again.
+func TestNoteUnknownRefusesTheFirstChangeAndReportsNothing(t *testing.T) {
+	ForgetAll()
+	dir := t.TempDir()
+	path := seed(t, dir, "restored.go", "alpha\nbeta\n")
+	NoteUnknown(path)
+
+	// Nothing is known about what it held, so nothing can be said about
+	// whether that changed: the boundary re-check leaves it alone.
+	if got := SeenChanged(); len(got) != 0 {
+		t.Fatalf("a record with no fingerprint has nothing to compare: %v", got)
+	}
+
+	_, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: path, OldText: "beta", NewText: "gamma"}))
+	var stale StaleError
+	if !errors.As(err, &stale) {
+		t.Fatalf("the first change to a restored read is refused as stale, got %T: %v", err, err)
+	}
+
+	// A path the restored transcript never read keeps the ordinary rule: the
+	// quoted text is its own evidence.
+	fresh := seed(t, dir, "unrestored.go", "alpha\nbeta\n")
+	if _, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: fresh, OldText: "beta", NewText: "gamma"})); err != nil {
+		t.Fatalf("a file nothing claims to have read is not stale: %v", err)
+	}
+
+	// And reading it again answers the question the record could not.
+	readWholeFile(t, path)
+	if _, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: path, OldText: "beta", NewText: "gamma"})); err != nil {
+		t.Fatalf("a re-read is what the refusal asked for: %v", err)
 	}
 }

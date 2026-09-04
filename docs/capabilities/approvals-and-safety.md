@@ -127,6 +127,34 @@ generic line, because the two failures are answered differently: one is
 somebody else's work arriving, the other is a round the model will spend
 again on its own.
 
+**The same question is asked at the round boundary, not only at the change.**
+Asked only at the change, the model spends a round writing something that
+cannot land. Asked between rounds, it is told while there is still a round to
+re-read in. So every file the model has been shown is re-checked where the
+session takes its other readings of the tree, and the ones whose content no
+longer matches are named there, in the same block. This is the half the
+reading of the tree cannot do for itself: git names the paths that are dirty
+and says nothing about what is in them, so a file that was already dirty when
+somebody rewrote it in place looks identical either side of the change — and
+the file being worked on is nearly always already dirty.
+
+That re-check is cheap by construction. A file whose length changed holds
+different content and is never opened; a file whose length and modification
+time are both unchanged is taken as untouched; only the remainder is read and
+hashed. A rewrite landing in the same second at the same length slips past
+that prefilter and is still refused at the change, which hashes
+unconditionally.
+
+**A conversation that comes back does not come back with its reading.** The
+transcript says which files were read; nothing on the machine says what they
+held, and they have had however long the conversation was closed to move. So
+reopening one records each of those files as read-with-unknown-content: the
+first change to one is refused and costs a round, against an edit applied to a
+picture nobody can vouch for. A file the transcript never read keeps the
+ordinary rule, because a quoted snippet is its own evidence. Starting a new
+conversation, or loading a different one, empties the record instead —
+neither conversation read what the other did.
+
 ## A closed verb set is what makes a read a read
 
 Reading a repository's history — who last touched this line, when did this

@@ -26,6 +26,7 @@ import (
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/todo"
+	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/caps"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -1442,6 +1443,14 @@ func (m *Model) loadChatByName(name string) string {
 	msgs, err := m.db.LoadChat(name)
 	if err != nil {
 		return "Error: " + err.Error()
+	}
+	// What the model was shown belongs to the conversation it was shown in.
+	// Another conversation read other files, so its record would let a full
+	// overwrite through on a reading this one never made (tools/seen.go).
+	// Loading the slot this session is already writing is not that: it is the
+	// same conversation, and it read exactly what the record says.
+	if name != m.sessionName {
+		tools.ForgetAll()
 	}
 	m.resumeConversation(name, msgs)
 	return fmt.Sprintf("Loaded chat %q (%d messages)", name, len(msgs))

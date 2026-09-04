@@ -303,7 +303,7 @@ func TestTree_ParseStatusV2(t *testing.T) {
 func TestTree_DiffOnSnapshotsBuiltByHand(t *testing.T) {
 	last := TreeSnapshot{Head: "1111111aaaa", Branch: "main", Status: map[string]string{"a": ".M", "gone": "??"}}
 	now := TreeSnapshot{Head: "2222222bbbb", Branch: "main", Status: map[string]string{"a": "M.", "new": "??", "mine": "??"}}
-	n, ok := diffTree(last, now, map[string]bool{"mine": true}, 0, nil)
+	n, ok := diffTree(last, now, map[string]bool{"mine": true}, nil, 0, nil)
 	if !ok {
 		t.Fatal("expected a notice")
 	}
@@ -313,7 +313,7 @@ func TestTree_DiffOnSnapshotsBuiltByHand(t *testing.T) {
 	if n.Signal() != "both" {
 		t.Errorf("signal = %q", n.Signal())
 	}
-	if _, ok := diffTree(now, now, nil, 0, nil); ok {
+	if _, ok := diffTree(now, now, nil, nil, 0, nil); ok {
 		t.Error("identical snapshots owe nothing")
 	}
 }
@@ -340,7 +340,7 @@ func TestTree_BlockNamesTheOtherSessionInThisCheckout(t *testing.T) {
 	last := TreeSnapshot{Head: "1111111aaaa", Branch: "main", Status: map[string]string{}}
 	now := TreeSnapshot{Head: "1111111aaaa", Branch: "main", Status: map[string]string{"a": ".M"}}
 
-	alone, ok := diffTree(last, now, nil, 0, func() bool { return false })
+	alone, ok := diffTree(last, now, nil, nil, 0, func() bool { return false })
 	if !ok {
 		t.Fatal("expected a notice")
 	}
@@ -348,7 +348,7 @@ func TestTree_BlockNamesTheOtherSessionInThisCheckout(t *testing.T) {
 		t.Errorf("nobody else is here to name:\n%s", alone.Message)
 	}
 
-	shared, ok := diffTree(last, now, nil, 0, func() bool { return true })
+	shared, ok := diffTree(last, now, nil, nil, 0, func() bool { return true })
 	if !ok {
 		t.Fatal("expected a notice")
 	}
@@ -362,7 +362,7 @@ func TestTree_BlockNamesTheOtherSessionInThisCheckout(t *testing.T) {
 
 	// The same clause after a command of the session's own, where the block
 	// attributes nothing: it still says who else is here to ask.
-	afterCommand, _ := diffTree(last, now, nil, 1, func() bool { return true })
+	afterCommand, _ := diffTree(last, now, nil, nil, 1, func() bool { return true })
 	if !strings.HasSuffix(afterCommand.Message, "another session is open in this checkout.") {
 		t.Errorf("the clause is owed on both wordings:\n%s", afterCommand.Message)
 	}
@@ -373,8 +373,99 @@ func TestTree_BlockNamesTheOtherSessionInThisCheckout(t *testing.T) {
 func TestTree_NoSiblingReadingCostsOnlyTheClause(t *testing.T) {
 	last := TreeSnapshot{Head: "1111111aaaa", Branch: "main", Status: map[string]string{}}
 	now := TreeSnapshot{Head: "1111111aaaa", Branch: "main", Status: map[string]string{"a": ".M"}}
-	n, ok := diffTree(last, now, nil, 0, nil)
+	n, ok := diffTree(last, now, nil, nil, 0, nil)
 	if !ok || !strings.HasSuffix(n.Message, "do not revert or explain them.") {
 		t.Errorf("message:\n%s", n.Message)
 	}
+}
+
+// The case the status call is blind to: a file that was already dirty when
+// somebody rewrote it in place. Porcelain says the same thing either side of
+// the change, so the block would have nothing to report without the other
+// reading.
+func TestTree_AFileTheModelReadIsNamedWhenItsContentMoved(t *testing.T) {
+	ws, _ := treeFixture(t)
+	// Dirty before the baseline is taken, so the status line does not move.
+	write(t, ws, "a.txt", "mine\n")
+	read := []string{
+		filepath.Join(ws, "a.txt"),
+		// The tool's own state is not the tree moving, and a file outside
+		// the checkout cannot be named beside a status line.
+		filepath.Join(ws, ".shhh", "run.json"),
+		filepath.Join(t.TempDir(), "elsewhere.txt"),
+	}
+	a := New(nil, nil)
+	a.SetTreeCheck(TreeCheck{Dir: ws, ReadChanged: func() []string { return read }})
+	if !a.TreeChecking() {
+		t.Fatal("the reading should be on inside a repository")
+	}
+
+	n, ok := a.NextTreeNotice(false)
+	if !ok {
+		t.Fatal("a file whose content moved is worth the block on its own")
+	}
+	if n.Message != "[tree: 1 file you have read changed: a.txt]\n"+
+		"This session did not make these changes. Re-read a file before editing it, and do not revert or explain them." {
+		t.Errorf("message:\n%s", n.Message)
+	}
+	if n.Notice != "Tree moved — 1 file you have read changed." {
+		t.Errorf("notice = %q", n.Notice)
+	}
+	if n.Paths != 0 || n.ReadPaths != 1 || n.HeadMoved || n.Signal() != "paths" {
+		t.Errorf("notice fields: %+v, signal %q", n, n.Signal())
+	}
+
+	// The file is still stale at the next boundary and at every one after it
+	// until the model reads it again. Saying so every round is how a block
+	// becomes the thing the model skips, so it is said once.
+	if n, ok := a.NextTreeNotice(false); ok {
+		t.Errorf("a stale reading already named is not named again:\n%s", n.Message)
+	}
+
+	// Once it leaves the set — the model read it again, or the old content
+	// came back — a later move is news again.
+	read = nil
+	if _, ok := a.NextTreeNotice(false); ok {
+		t.Fatal("a file that is no longer stale owes nothing")
+	}
+	read = []string{filepath.Join(ws, "a.txt")}
+	if n, ok := a.NextTreeNotice(false); !ok || n.ReadPaths != 1 {
+		t.Errorf("a file that moved again is named again, got ok=%v:\n%s", ok, n.Message)
+	}
+}
+
+// The two halves are different claims about possibly overlapping sets, so
+// they are two clauses rather than one count.
+func TestTree_MovedPathsAndStaleReadsAreReportedTogether(t *testing.T) {
+	last := TreeSnapshot{Head: "1111111aaaa", Branch: "main", Status: map[string]string{"a": ".M"}}
+	now := TreeSnapshot{Head: "1111111aaaa", Branch: "main", Status: map[string]string{"a": ".M", "new": "??"}}
+
+	n, ok := diffTree(last, now, nil, []string{"b", "a"}, 0, nil)
+	if !ok {
+		t.Fatal("expected a notice")
+	}
+	if want := "[tree: 1 path changed outside this session: new · 2 files you have read changed: a, b]"; !strings.HasPrefix(n.Message, want) {
+		t.Errorf("message:\n%s\nwant prefix:\n%s", n.Message, want)
+	}
+	if n.Notice != "Tree moved — 1 path changed outside this session, 2 files you have read changed." {
+		t.Errorf("notice = %q", n.Notice)
+	}
+	if n.Signal() != "paths" {
+		t.Errorf("signal = %q", n.Signal())
+	}
+	// A commit and a stale reading together are still both halves to the
+	// recorder, whose set of three has no fourth answer.
+	moved := TreeSnapshot{Head: "2222222bbbb", Branch: "main", Status: map[string]string{"a": ".M"}}
+	if s := mustDiff(t, last, moved, []string{"a"}).Signal(); s != "both" {
+		t.Errorf("signal = %q, want both", s)
+	}
+}
+
+func mustDiff(t *testing.T, last, now TreeSnapshot, read []string) TreeNotice {
+	t.Helper()
+	n, ok := diffTree(last, now, nil, read, 0, nil)
+	if !ok {
+		t.Fatal("expected a notice")
+	}
+	return n
 }

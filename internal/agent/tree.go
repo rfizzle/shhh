@@ -22,10 +22,14 @@ package agent
 // model — which has the command in its own transcript — is left to
 // reconcile.
 //
-// What it does not see is content. A path that was already changed when a
+// What git does not see is content. A path that was already changed when a
 // stranger changed it again has the same status line before and after, and
-// this reading never opens a file. That case is caught where it has always
-// been caught: the fingerprint a read leaves behind, checked at the edit.
+// the status call never opens a file. That half is answered from the other
+// side: the record of what the model has been shown, re-checked at these same
+// boundaries, names the files whose content no longer matches what it read.
+// They are reported in the same block, because a session that has to go back
+// and read something should hear it in one place, with everything else that
+// moved.
 //
 // It is never told what moved the tree. Git does not know, and a guess
 // dressed as a fact is what the model would act on.
@@ -71,6 +75,13 @@ type TreeCheck struct {
 	IsCommand func(name string) bool
 	Budget    time.Duration
 	Log       func(msg string)
+	// ReadChanged, when set, names the files the model has been shown whose
+	// content has since moved, as absolute paths. It is asked at every
+	// boundary alongside the status call, and answers the question the status
+	// call cannot: a file that was already dirty when somebody rewrote it in
+	// place is named by porcelain either way. Nil is what a surface keeping
+	// no such record has to say.
+	ReadChanged func() []string
 	// Sibling, when set, reports whether another session is open in this
 	// checkout right now. It is asked at each notice rather than once at the
 	// start: the other session usually opens after this one, and the notice
@@ -91,11 +102,14 @@ type TreeSnapshot struct {
 
 // TreeNotice is one report of the tree having moved, ready to deliver: the
 // message that joins the conversation and the one-line account the reader is
-// shown beside it. Paths is how many were reported after subtraction.
+// shown beside it. Paths is how many were reported after subtraction;
+// ReadPaths is how many files the model had read hold something else now,
+// which is a different claim about a possibly overlapping set.
 type TreeNotice struct {
 	Message     string
 	Notice      string
 	Paths       int
+	ReadPaths   int
 	HeadMoved   bool
 	BranchMoved bool
 	// Commands is how many command calls ran since the last snapshot. When it
@@ -109,8 +123,12 @@ type TreeNotice struct {
 // changed set did, "both" otherwise.
 func (n TreeNotice) Signal() string {
 	moved := n.HeadMoved || n.BranchMoved
+	// A file whose content moved is a path change to the recorder, whatever
+	// porcelain made of it: the set is closed at three, and reporting a
+	// content-only notice as "head" would be the one wrong answer available.
+	paths := n.Paths > 0 || n.ReadPaths > 0
 	switch {
-	case moved && n.Paths > 0:
+	case moved && paths:
 		return "both"
 	case moved:
 		return "head"
@@ -127,6 +145,13 @@ type treeState struct {
 	// degraded is set once a status call blew the budget; from then on only
 	// the turn boundary reads.
 	degraded bool
+	// reported is the set of stale readings the notices already named. The
+	// path half of this reading reports each change once because it compares
+	// two snapshots, and the content half has to be made to: a file the model
+	// has not re-read yet is still stale at the next boundary and at the one
+	// after that, and a clause that repeats every round is what teaches the
+	// model to skip the block it is in.
+	reported map[string]bool
 }
 
 // SetTreeCheck turns the reading on. A directory that is not inside a git
@@ -209,37 +234,75 @@ func (a *Agent) NextTreeNotice(turnStart bool) (TreeNotice, bool) {
 	last := t.last
 	t.last, t.commands = now, 0
 
-	n, ok := diffTree(last, now, own, commands, t.cfg.Sibling)
+	n, ok := diffTree(last, now, own, t.readChanged(), commands, t.cfg.Sibling)
 	return n, ok
 }
 
 // ownPaths is what the session has written, keyed the way the snapshot keys
-// paths. A path outside the repository is dropped: it cannot appear in the
-// status and so cannot be subtracted from it.
+// paths.
 func (t *treeState) ownPaths() map[string]bool {
 	if t.cfg.Own == nil {
 		return nil
 	}
 	own := map[string]bool{}
 	for _, p := range t.cfg.Own() {
-		abs, err := filepath.Abs(p)
-		if err != nil {
-			continue
+		if rel, ok := t.relative(p); ok {
+			own[rel] = true
 		}
-		rel, err := filepath.Rel(t.top, abs)
-		if err != nil || rel == ".." || strings.HasPrefix(rel, "../") {
-			continue
-		}
-		own[filepath.ToSlash(rel)] = true
 	}
 	return own
 }
 
+// readChanged is what the record of shown files says has moved since the last
+// boundary, keyed the same way. The call is made at every boundary and is
+// answered from a stat per file in the common case, which is why it rides
+// here rather than behind a budget of its own.
+//
+// A file already named stays out until it leaves the set — which it does when
+// the model reads it again, or when somebody puts the old content back — and
+// is named afresh if it moves after that.
+func (t *treeState) readChanged() []string {
+	if t.cfg.ReadChanged == nil {
+		return nil
+	}
+	stale := map[string]bool{}
+	var fresh []string
+	for _, p := range t.cfg.ReadChanged() {
+		rel, ok := t.relative(p)
+		if !ok {
+			continue
+		}
+		stale[rel] = true
+		if !t.reported[rel] {
+			fresh = append(fresh, rel)
+		}
+	}
+	t.reported = stale
+	return fresh
+}
+
+// relative keys a path the way the snapshot keys them: from the repository
+// root, forward slashes. A path outside the repository is dropped — it cannot
+// appear in the status, so it can neither be subtracted from one nor named
+// beside one.
+func (t *treeState) relative(p string) (string, bool) {
+	abs, err := filepath.Abs(p)
+	if err != nil {
+		return "", false
+	}
+	rel, err := filepath.Rel(t.top, abs)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, "../") {
+		return "", false
+	}
+	return filepath.ToSlash(rel), true
+}
+
 // diffTree is the comparison itself, separated from the git calls so it can
-// be tested on snapshots built by hand. sibling may be nil and is asked only
-// once there is something to report — it is a store read, and a boundary
-// where nothing moved has nothing to attribute to anybody.
-func diffTree(last, now TreeSnapshot, own map[string]bool, commands int, sibling func() bool) (TreeNotice, bool) {
+// be tested on snapshots built by hand. read is what the record of shown
+// files says has moved, already keyed to the root. sibling may be nil and is
+// asked only once there is something to report — it is a store read, and a
+// boundary where nothing moved has nothing to attribute to anybody.
+func diffTree(last, now TreeSnapshot, own map[string]bool, read []string, commands int, sibling func() bool) (TreeNotice, bool) {
 	var changed []string
 	for p, st := range now.Status {
 		if last.Status[p] != st {
@@ -253,14 +316,22 @@ func diffTree(last, now TreeSnapshot, own map[string]bool, commands int, sibling
 	}
 	changed = foreign(changed, own)
 	sort.Strings(changed)
+	// The session's own writes are not subtracted from the read set, because
+	// they are already absent from it: a tool that writes a file records what
+	// it wrote, so the picture the model holds of that file is current. What
+	// is dropped is the tool's own state directory, which is bookkeeping
+	// rather than the tree moving.
+	read = foreign(read, nil)
+	sort.Strings(read)
 
 	n := TreeNotice{
 		Paths:       len(changed),
+		ReadPaths:   len(read),
 		HeadMoved:   last.Head != now.Head,
 		BranchMoved: last.Branch != now.Branch || last.Detached != now.Detached,
 		Commands:    commands,
 	}
-	if !n.HeadMoved && !n.BranchMoved && n.Paths == 0 {
+	if !n.HeadMoved && !n.BranchMoved && n.Paths == 0 && n.ReadPaths == 0 {
 		return TreeNotice{}, false
 	}
 
@@ -279,6 +350,15 @@ func diffTree(last, now TreeSnapshot, own map[string]bool, commands int, sibling
 	if n.Paths > 0 {
 		count = fmt.Sprintf("%d %s changed %s", n.Paths, plural(n.Paths, "path"), attribution)
 		parts = append(parts, count+": "+pathList(changed))
+	}
+	// The read set is named on its own clause rather than folded into the
+	// count above, because it is a different sentence: those paths moved,
+	// these are files whose content is no longer what this session was shown.
+	// A path can honestly be in both.
+	readCount := ""
+	if n.ReadPaths > 0 {
+		readCount = fmt.Sprintf("%d %s you have read changed", n.ReadPaths, plural(n.ReadPaths, "file"))
+		parts = append(parts, readCount+": "+pathList(read))
 	}
 	var b strings.Builder
 	b.WriteString("[tree: " + strings.Join(parts, " · ") + "]\n")
@@ -308,6 +388,9 @@ func diffTree(last, now TreeSnapshot, own map[string]bool, commands int, sibling
 	}
 	if count != "" {
 		row = append(row, count)
+	}
+	if readCount != "" {
+		row = append(row, readCount)
 	}
 	n.Notice = "Tree moved — " + strings.Join(row, ", ") + "."
 	return n, true

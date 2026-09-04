@@ -21,26 +21,51 @@ package tools
 // because a modification time is a second-granularity clock on some
 // filesystems, and the whole point is to catch two changes that happened
 // close together.
+//
+// The same record answers the same question at a round boundary, where being
+// told early is worth a round: a file that moved is named to the model while
+// it still has a round to re-read in, rather than at the moment its edit is
+// refused. The time is not trusted there either — it only says which files
+// are worth opening.
 // See docs/capabilities/approvals-and-safety.md#a-file-is-changed-from-what-was-read.
 
 import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"os"
 	"path/filepath"
+	"sort"
 	"sync"
+	"time"
 )
 
 // seenFile is one file as a tool last showed it: the fingerprint of the whole
-// file at that moment, and whether the model was shown all of it or only a
-// window.
+// file at that moment, the length and modification time it had then, and
+// whether the model was shown all of it or only a window.
 type seenFile struct {
 	sum string
+	// size and mod are the cheap half of "is this still what was shown". A
+	// file whose length moved holds different content and needs no hash to
+	// say so; one whose length and modification time are both unchanged is
+	// taken as untouched. Only the remainder — the same length at a new time
+	// — is worth opening, which is what keeps the boundary re-check off the
+	// critical path of a round.
+	size int64
+	mod  time.Time
 	// whole is false for a read that was given a line range or that hit the
 	// output cap. It is the difference between changing a file and replacing
 	// one, which is why write_file asks about it and edit_file does not.
 	whole bool
 }
+
+// unknown reports a record made for a file something says was read without
+// saying what it held — a conversation restored from the store, which carries
+// its read_file calls and not the files those calls read. It matches no
+// content, so the first mutation against such a file is refused as stale, and
+// it is left out of the boundary re-check: nothing is known about what the
+// file held, so nothing can be said about whether that changed.
+func (f seenFile) unknown() bool { return f.sum == "" }
 
 // The record is process-wide because the files are. A session, its sub-agents
 // and its background work all run here, and a writer in a worktree is keyed
@@ -69,11 +94,25 @@ func fingerprint(content []byte) string {
 	return hex.EncodeToString(sum[:])
 }
 
-// noteShown records a file as the model has just been shown it.
+// noteShown records a file as the model has just been shown it. content is
+// the whole file, so its length is the file's and no stat is asked for it;
+// the modification time is, and a stat that fails leaves the zero time, which
+// no real time matches — costing the re-check a hash rather than an answer.
+//
+// The time is read after the content, so a rewrite landing in that gap at the
+// same length pairs the old fingerprint with the new time and the boundary
+// re-check rules the file out until it moves again. That is the same window
+// as a same-second same-length rewrite, and it ends the same way: checkSeen
+// hashes unconditionally, so no mutation gets through on it.
 func noteShown(path string, content []byte, whole bool) {
+	key := seenKey(path)
+	rec := seenFile{sum: fingerprint(content), size: int64(len(content)), whole: whole}
+	if info, err := os.Stat(key); err == nil {
+		rec.mod = info.ModTime()
+	}
 	seenMu.Lock()
 	defer seenMu.Unlock()
-	seen[seenKey(path)] = seenFile{sum: fingerprint(content), whole: whole}
+	seen[key] = rec
 }
 
 // forget drops a file's record, for a path whose content is no longer
@@ -161,11 +200,107 @@ func checkSeen(path string, current []byte, existed, replacing bool) error {
 	return nil
 }
 
-// ForgetAll drops every record. A session ending and another beginning in the
-// same process is the one caller: the records say what the model was shown,
-// and the model that comes back has been shown nothing. Keeping them would
-// let a full overwrite through on the strength of a read the new
-// conversation never made — the one thing the record exists to refuse.
+// NoteUnknown records a path as one the model has been shown without knowing
+// what it was shown, for a conversation taken back out of the store. The
+// transcript says which files were read; nothing on this machine says what
+// they held, and they have had however long the conversation was closed to
+// move.
+//
+// Recorded this way, the first mutation against such a file is refused as
+// stale and the model reads it again, which costs one round. The alternative
+// is an edit applied to a picture nobody can vouch for, and that costs
+// somebody's work. A path the restored transcript never read is not recorded
+// at all and keeps the ordinary rule, because a quoted snippet is its own
+// evidence.
+// See docs/capabilities/approvals-and-safety.md#a-file-is-changed-from-what-was-read.
+func NoteUnknown(path string) {
+	seenMu.Lock()
+	defer seenMu.Unlock()
+	seen[seenKey(path)] = seenFile{}
+}
+
+// SeenChanged names every file the model has been shown whose content is no
+// longer what it was shown, as absolute paths in sorted order.
+//
+// It is the question checkSeen asks at the mutation, asked at a round
+// boundary instead. Asked only at the mutation, the model spends a round
+// writing a change that cannot land; asked between rounds, it is told while
+// there is still a round to re-read in. And it is the one reading git cannot
+// do: porcelain names the paths that are dirty and says nothing about what is
+// in them, so a file that was already dirty when somebody rewrote it in place
+// has the same status line before and after — and the file being worked on is
+// nearly always already dirty.
+//
+// The prefilter is what makes it affordable at that rate. A file whose length
+// changed is different content by definition and is never opened; a file
+// whose length and modification time are both unchanged is taken as
+// untouched. A rewrite that lands in the same second at the same length slips
+// past that and is still refused at the mutation, which hashes
+// unconditionally.
+// See docs/capabilities/approvals-and-safety.md#a-file-is-changed-from-what-was-read.
+func SeenChanged() []string {
+	seenMu.Lock()
+	recs := make(map[string]seenFile, len(seen))
+	for path, rec := range seen {
+		if !rec.unknown() {
+			recs[path] = rec
+		}
+	}
+	seenMu.Unlock()
+
+	// The stats and hashes happen outside the lock: a round dispatches its
+	// read-only calls concurrently, and holding the record shut while this
+	// walks the disk would serialise them behind it.
+	var changed []string
+	refreshed := map[string]seenFile{}
+	for path, rec := range recs {
+		info, err := os.Stat(path)
+		switch {
+		case err != nil:
+			// Deleted, or no longer readable. Either way it is not what was
+			// shown, and saying so is the direction that never lets a stale
+			// mutation through.
+			changed = append(changed, path)
+			continue
+		case info.Size() != rec.size:
+			changed = append(changed, path)
+			continue
+		case info.ModTime().Equal(rec.mod):
+			continue
+		}
+		content, err := os.ReadFile(path)
+		if err != nil || fingerprint(content) != rec.sum {
+			changed = append(changed, path)
+			continue
+		}
+		// The same content at a new time: a touch, a rewrite of identical
+		// bytes, a checkout that put the file back. Remembering the new time
+		// is what stops the next boundary opening it all over again.
+		rec.mod = info.ModTime()
+		refreshed[path] = rec
+	}
+	sort.Strings(changed)
+
+	seenMu.Lock()
+	defer seenMu.Unlock()
+	for path, rec := range refreshed {
+		// Only where the record is still the one that was checked: a read
+		// that landed while this was hashing knows more recent facts than
+		// these, and must not be written over by them.
+		if cur, ok := seen[path]; ok && cur.sum == rec.sum && cur.size == rec.size {
+			seen[path] = rec
+		}
+	}
+	return changed
+}
+
+// ForgetAll drops every record. The callers are the two ways one conversation
+// gives way to another in a running process — a session ending and another
+// beginning, and a saved conversation loaded over the one on screen. The
+// records say what the model was shown, and the model that comes back has
+// been shown nothing. Keeping them would let a full overwrite through on the
+// strength of a read the new conversation never made — the one thing the
+// record exists to refuse.
 func ForgetAll() {
 	seenMu.Lock()
 	defer seenMu.Unlock()

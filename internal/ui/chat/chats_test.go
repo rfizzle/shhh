@@ -1,6 +1,8 @@
 package chat
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -8,6 +10,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/golden"
 )
 
@@ -338,5 +341,64 @@ func TestChatPick_ASlotAnotherSessionHoldsIsNotOffered(t *testing.T) {
 	}
 	if strings.Contains(view, "Loaded") {
 		t.Fatalf("the live slot was loaded anyway:\n%s", view)
+	}
+}
+
+// What the model was shown belongs to the conversation it was shown in.
+// Opening somebody else's leaves a record of readings this conversation never
+// made, which is exactly the evidence a full overwrite is let through on.
+func TestChatLoad_ADifferentConversationEmptiesWhatWasShown(t *testing.T) {
+	tools.ForgetAll()
+	t.Cleanup(tools.ForgetAll)
+	m := chatPickModel(t, "alpha")
+	changed := shownFile(t)
+	if changed() == nil {
+		t.Fatal("the record should stand before anything is loaded")
+	}
+
+	// Loading the slot this session is already writing is not another
+	// conversation: it read exactly what the record says.
+	m.sessionName = "alpha"
+	m.loadChatByName("alpha")
+	if changed() == nil {
+		t.Fatal("reopening this session's own slot must keep what it was shown")
+	}
+
+	m.sessionName = "2026-01-01 00:00:00"
+	m.loadChatByName("alpha")
+	if err := changed(); err != nil {
+		t.Fatalf("another conversation's readings are not this one's: %v", err)
+	}
+}
+
+// A new conversation has been shown nothing, whatever the one before it read.
+func TestChatNew_TheRecordOfWhatWasShownIsEmptied(t *testing.T) {
+	tools.ForgetAll()
+	t.Cleanup(tools.ForgetAll)
+	m := chatPickModel(t, "alpha")
+	changed := shownFile(t)
+
+	m.startNewSession()
+
+	if err := changed(); err != nil {
+		t.Fatalf("the new conversation has been shown nothing: %v", err)
+	}
+}
+
+// shownFile records a file as one this conversation has been shown and hands
+// back the question that says whether that record still stands: a change to
+// it is refused while it does, and allowed once nothing claims to have read
+// it.
+func shownFile(t *testing.T) func() error {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "code.go")
+	if err := os.WriteFile(path, []byte("alpha\nbeta\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	tools.NoteUnknown(path)
+	return func() error {
+		_, err := tools.PreviewMutation(tools.EditFileName,
+			[]byte(`{"path":"`+path+`","old_text":"beta","new_text":"gamma"}`))
+		return err
 	}
 }
