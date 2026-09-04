@@ -66,6 +66,19 @@ and is invisible here. A restore that quietly missed half of a turn's work
 would be worse than one that never offered, so the row that would write files
 names the hole before it is chosen.
 
+**Where the tree is too large to read, the message says so rather than
+guessing.** The line reporting whether the working tree still matches the
+checkpoint is read off the same digest a quality verdict is pinned to, and
+that digest covers the content of the changed files only up to a bound. Past
+it — more dirty paths, or more changed bytes, than it will read — it stands
+for their names and not for what is in them, so two readings can come out
+identical over files that differ, which is what happens when a run of edits
+stays inside files that were already dirty. The message then names the bound
+and says the comparison could not be made, in place of the sentence claiming
+nothing has changed. It is a warning and not a refusal: the restore is still
+offered, because what it puts back comes from the session's own records rather
+than from that reading.
+
 A conversation opened again from an earlier sitting can still take its turns
 back: the records are kept with the conversation rather than in the process
 that made them, so closing the terminal is no longer the same act as

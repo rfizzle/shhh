@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/storage"
 )
 
@@ -537,5 +539,143 @@ func TestRewind_ARebuiltCheckpointOffersNoFiles(t *testing.T) {
 	m = sendText(t, m, "/rewind 1")
 	if m.state != stateInput {
 		t.Fatalf("a rebuilt checkpoint has no turn to restore, got state %v", m.state)
+	}
+}
+
+// unhashableSnapshots wires the checkpoint capture to a real reading of ws,
+// which is what the session does — the flag saying whether the content was
+// digested has to survive the copy or the divergence line has nothing to
+// check.
+func unhashableSnapshots(ws string) func() GitSnapshot {
+	return func() GitSnapshot {
+		fp := quality.TakeFingerprint(ws)
+		return GitSnapshot{
+			Repo: fp.Repo, Head: fp.Head, StatusHash: fp.StatusHash,
+			DirtyPaths: fp.DirtyPaths, Unhashed: fp.Unhashed,
+		}
+	}
+}
+
+// Past the bound the digest stands for the dirty paths' names and only as
+// much of their content as was reached, so a run of edits confined to files
+// that were already dirty leaves two readings identical. The sentence saying
+// the tree still matches is the one a restore gets decided on, so it is the
+// one withheld.
+func TestRewind_ATreePastTheBoundIsNotReadAsUnchanged(t *testing.T) {
+	cases := []struct {
+		name string
+		fill func(t *testing.T, ws string)
+	}{
+		// Both fixtures are sized comfortably past their bound rather than
+		// to it: the numbers themselves live in the quality package, and a
+		// copy of one here would be a second statement of it to go stale.
+		{"more paths than are digested", func(t *testing.T, ws string) {
+			t.Helper()
+			for i := 0; i < 1000; i++ {
+				name := filepath.Join(ws, fmt.Sprintf("f%04d.txt", i))
+				if err := os.WriteFile(name, []byte("x\n"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+		}},
+		{"more bytes than are digested", func(t *testing.T, ws string) {
+			t.Helper()
+			// Sparse: the budget is checked against the reported size before
+			// anything is read, so this crosses the bound at no disk cost.
+			for i := 0; i < 4; i++ {
+				f, err := os.Create(filepath.Join(ws, fmt.Sprintf("big%d.bin", i)))
+				if err != nil {
+					t.Fatal(err)
+				}
+				if err := f.Truncate(16 << 20); err != nil {
+					t.Fatal(err)
+				}
+				if err := f.Close(); err != nil {
+					t.Fatal(err)
+				}
+			}
+		}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ws := treeRepo(t)
+			tc.fill(t, ws)
+			m := newRewindModel(t).WithGitSnapshots(unhashableSnapshots(ws))
+			m = completeExchange(t, m, "change stuff", "done")
+
+			if !m.checkpoints[0].git.Unhashed {
+				t.Fatalf("the fixture should be past the bound: %+v", m.checkpoints[0].git)
+			}
+			note := m.gitDivergence(m.checkpoints[0])
+			if !strings.Contains(note, "cannot be read") {
+				t.Fatalf("expected the unreadable-tree line, got %q", note)
+			}
+			if !strings.Contains(note, quality.ContentBound()) {
+				t.Fatalf("the line should name the bound, got %q", note)
+			}
+			if strings.Contains(note, "match this checkpoint") {
+				t.Fatalf("a tree nobody digested must not read as unchanged, got %q", note)
+			}
+		})
+	}
+}
+
+// Within the bound the reading is the one it always was: an untouched tree
+// matches, and an edit to a file that was already dirty is a change, because
+// the content is digested and the still path list hides nothing.
+func TestRewind_WithinTheBoundTheReadingIsUnchanged(t *testing.T) {
+	ws := treeRepo(t)
+	dirty := filepath.Join(ws, "dirty.txt")
+	if err := os.WriteFile(dirty, []byte("first\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	m := newRewindModel(t).WithGitSnapshots(unhashableSnapshots(ws))
+	m = completeExchange(t, m, "change stuff", "done")
+
+	if m.checkpoints[0].git.Unhashed {
+		t.Fatalf("one dirty path is well inside the bound: %+v", m.checkpoints[0].git)
+	}
+	if note := m.gitDivergence(m.checkpoints[0]); !strings.Contains(note, "match this checkpoint") {
+		t.Fatalf("an untouched tree should still read as matching, got %q", note)
+	}
+	if err := os.WriteFile(dirty, []byte("second\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if note := m.gitDivergence(m.checkpoints[0]); !strings.Contains(note, "has changed since this checkpoint") {
+		t.Fatalf("an edit inside an already-dirty file is a change, got %q", note)
+	}
+}
+
+// The reading is a warning and not a refusal. What a restore puts back comes
+// from the session's own records, which are exact whatever the tree's size,
+// so a tree the fingerprint could not read is still offered one.
+func TestRewind_ATreePastTheBoundStillOffersTheRestore(t *testing.T) {
+	db := rewindTestDB(t)
+	m := rewindChangeModel(t, db, changeset.New(0), "past the bound").
+		WithGitSnapshots(func() GitSnapshot {
+			return GitSnapshot{Repo: true, Head: "abc123def4567", StatusHash: "s", DirtyPaths: 900, Unhashed: true}
+		})
+	dir := t.TempDir()
+	kept := filepath.Join(dir, "kept.go")
+	if err := os.WriteFile(kept, []byte("one\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	m = sendText(t, m, "first")
+	recordEdit(t, m, kept, "one\n", "two\n")
+	m = completeReply(t, m, "did it")
+
+	m = sendText(t, m, "/rewind 1")
+	if m.state != statePick || m.picker == nil || len(m.picker.Options) != 3 {
+		t.Fatalf("an unreadable tree must still be offered all three answers, got state %v", m.state)
+	}
+	m = press(t, m, "j")
+	m = press(t, m, "j") // conversation → files → both
+	m = press(t, m, "enter")
+
+	if m.state != stateUndoConfirm {
+		t.Fatalf("the files half should still reach the confirm, got state %v", m.state)
+	}
+	if note := lastSystem(t, m); !strings.Contains(note, "cannot be read") {
+		t.Fatalf("the message should warn what it could not check, got %q", note)
 	}
 }

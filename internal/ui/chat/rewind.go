@@ -28,6 +28,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -39,6 +40,12 @@ type GitSnapshot struct {
 	Head       string
 	StatusHash string
 	DirtyPaths int
+	// Unhashed marks a reading taken over a tree with more changed content
+	// than the digest covers. The hash then stands for the path list and
+	// only as much content as was reached, so two of them can be equal over
+	// files that differ — carrying the flag is what keeps the divergence
+	// reading from mistaking that equality for an unchanged tree.
+	Unhashed bool
 }
 
 // checkpoint marks where one user turn starts in the conversation.
@@ -330,6 +337,18 @@ func (m Model) gitDivergence(cp checkpoint) string {
 		return fmt.Sprintf("Git: HEAD has moved since this checkpoint (%s → %s).", shortHead(cp.git.Head), shortHead(now.Head))
 	case cp.git.StatusHash != now.StatusHash:
 		return fmt.Sprintf("Git: the working tree has changed since this checkpoint (%d dirty path(s) then, %d now).", cp.git.DirtyPaths, now.DirtyPaths)
+	// Two hashes that differ differ over something real, so the line above
+	// stands whether or not the content was digested. Equality is the one
+	// reading a partial digest cannot support: past the bound the hash covers
+	// the path list and only as much content as was reached, so a run of
+	// edits confined to files that were already dirty leaves it identical.
+	// Saying the tree matches on that evidence is the reading a restore gets
+	// decided on, and it is the one that has to be withheld — as a warning,
+	// not a refusal: the restore is still offered, and the person is told
+	// what the sentence under it could not check.
+	// See docs/capabilities/coding-agent.md#a-rewind-can-put-the-files-back.
+	case cp.git.Unhashed || now.Unhashed:
+		return fmt.Sprintf("Git: the tree holds more changed content than can be digested (past the %s bound), so whether it still matches this checkpoint cannot be read — check the files a restore would write before taking it.", quality.ContentBound())
 	default:
 		return fmt.Sprintf("Git: HEAD %s and the working tree match this checkpoint.", shortHead(now.Head))
 	}

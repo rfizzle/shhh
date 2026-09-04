@@ -43,6 +43,16 @@ const (
 	maxHashedBytes = 32 << 20
 )
 
+// ContentBound names those bounds in the words a surface uses when it has to
+// say why a reading could not be taken. It is a function over one phrase
+// rather than two exported numbers because every caller handed the numbers
+// has to word them itself, and a second wording of one bound goes stale the
+// moment the bound moves — the reader then has two answers to "how large is
+// too large" and no way to tell which is current.
+func ContentBound() string {
+	return fmt.Sprintf("%d-path / %d MiB", maxHashedPaths, maxHashedBytes>>20)
+}
+
 // TakeFingerprint captures the workspace's current fingerprint. Every gate
 // run takes it — attended, backgrounded or unattended — so there is one
 // definition of "the tree this verdict covers" and no path that skips it.
@@ -196,8 +206,8 @@ func (f Fingerprint) Describe() string {
 		return fmt.Sprintf("HEAD %s, clean tree", head)
 	}
 	if f.Unhashed {
-		return fmt.Sprintf("HEAD %s, dirty tree (%d changed/untracked paths, unhashed: past the %d-path / %d MiB bound on content)",
-			head, f.DirtyPaths, maxHashedPaths, maxHashedBytes>>20)
+		return fmt.Sprintf("HEAD %s, dirty tree (%d changed/untracked paths, unhashed: past the %s bound on content)",
+			head, f.DirtyPaths, ContentBound())
 	}
 	return fmt.Sprintf("HEAD %s, dirty tree (%d changed/untracked paths)", head, f.DirtyPaths)
 }

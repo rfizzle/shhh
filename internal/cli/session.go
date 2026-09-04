@@ -1201,9 +1201,17 @@ func treeCheck(cfg config.Config) *agent.TreeCheck {
 
 // gitSnapshot captures the workspace's git state for rewind checkpoints
 // , so /rewind can report what diverged since a checkpoint.
+//
+// Whether the content was digested travels with the digest. Dropping it here
+// would hand the rewind view a hash it cannot read the way the gate reads it:
+// past the bound, two of them compare equal over different files, and the
+// divergence line would report an unchanged tree on the strength of it.
 func gitSnapshot() chat.GitSnapshot {
 	fp := quality.TakeFingerprint(".")
-	return chat.GitSnapshot{Repo: fp.Repo, Head: fp.Head, StatusHash: fp.StatusHash, DirtyPaths: fp.DirtyPaths}
+	return chat.GitSnapshot{
+		Repo: fp.Repo, Head: fp.Head, StatusHash: fp.StatusHash,
+		DirtyPaths: fp.DirtyPaths, Unhashed: fp.Unhashed,
+	}
 }
 
 // toolDefTokens roughly estimates what each registered tool definition costs
