@@ -438,6 +438,14 @@ func (d *todoDriver) ask(ctx context.Context, deadline time.Time, step run.Step)
 	cmd := exec.CommandContext(ctx, d.bin, args...)
 	cmd.Dir = d.root
 	cmd.Env = runner.Environ()
+	// A sprint that is cancelled, by its deadline or by the driver's own
+	// context ending, interrupts the stage's turn rather than killing it, so
+	// the child writes its record and leaves a slot the way the contract
+	// promises; the delay is the grace before the kill that a second signal
+	// would have delivered at a terminal.
+	// See docs/capabilities/headless.md#what-a-signal-does-to-a-run.
+	cmd.Cancel = func() error { return cmd.Process.Signal(os.Interrupt) }
+	cmd.WaitDelay = 10 * time.Second
 	var out, errOut strings.Builder
 	cmd.Stdout, cmd.Stderr = &out, &errOut
 	runErr := cmd.Run()
