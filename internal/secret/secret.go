@@ -50,6 +50,30 @@ func ValidName(name string) error {
 	return nil
 }
 
+// maskedSuffixes are the endings a variable name has when it holds a
+// credential by convention — AWS_SECRET_ACCESS_KEY, GITHUB_TOKEN,
+// STRIPE_SECRET. It is three suffixes and not a cleverer rule because the
+// mask has to be explainable in one sentence to the person turning it off
+// and to the model finding a variable unset.
+var maskedSuffixes = [...]string{"_KEY", "_SECRET", "_TOKEN"}
+
+// MaskedEnvName reports whether a variable of this name is kept out of an
+// assistant command's environment while the mask is on. Only the name
+// decides: the mask exists for the credentials nobody declared, so there is
+// no value to compare against. A secret the user did declare is exempt,
+// because it is put back by name after the mask has run — the user asked
+// for that one to be reachable.
+// See docs/capabilities/secrets.md#the-names-that-do-not-travel.
+func MaskedEnvName(name string) bool {
+	up := strings.ToUpper(name)
+	for _, suffix := range maskedSuffixes {
+		if strings.HasSuffix(up, suffix) {
+			return true
+		}
+	}
+	return false
+}
+
 // entry is one secret with the forms it is scrubbed in, computed once at
 // Add so a scrub costs no allocation per secret.
 type entry struct {
@@ -96,6 +120,13 @@ func newEntry(name, value string) entry {
 type Vault struct {
 	mu      sync.RWMutex
 	entries []entry
+	// envMask records that this session's commands run with
+	// credential-shaped variables stripped from their environment. The
+	// vault does not do the stripping — the runner does — but it is what
+	// describes the session to the model, and a model that finds
+	// $GITHUB_TOKEN unset needs to be told which of the two things
+	// happened.
+	envMask bool
 }
 
 // New returns an empty vault.
@@ -126,6 +157,28 @@ func (v *Vault) Add(name, value string) error {
 	}
 	v.entries = append(v.entries, e)
 	return nil
+}
+
+// SetEnvMask records whether the session masks credential-shaped variables
+// out of what a command inherits, so the prompt block can say so. It is set
+// once, when the session opens its secrets, before anything reads it.
+func (v *Vault) SetEnvMask(on bool) {
+	if v == nil {
+		return
+	}
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	v.envMask = on
+}
+
+// EnvMask reports what SetEnvMask was told. A nil vault masks nothing.
+func (v *Vault) EnvMask() bool {
+	if v == nil {
+		return false
+	}
+	v.mu.RLock()
+	defer v.mu.RUnlock()
+	return v.envMask
 }
 
 // Remove forgets a secret, reporting whether there was one. What was already
@@ -186,9 +239,17 @@ func (v *Vault) Environ() []string {
 
 // Scrub replaces every occurrence of every secret in s — the value, its
 // common encodings, and any run of it at least minFragment bytes long —
-// with the secret's placeholder. It is the whole guarantee, so it is the
-// one function every path to the model goes through; a nil vault scrubs
-// nothing.
+// with the secret's placeholder, and then replaces anything left that
+// carries a known credential's shape with the shape's placeholder. It is
+// the whole guarantee, so it is the one function every path to the model
+// goes through; a nil vault scrubs nothing.
+//
+// The two passes are in that order and not the other, and a session with no
+// secrets at all still runs the second. A declared value that also looks
+// like a GitHub token comes out as [secret:NAME] rather than
+// [redacted:github-token], because the name is what lets the reader tell
+// which of their secrets was used; running the shapes first would throw
+// that away for every credential the user bothered to declare.
 //
 // It is also what the components that write a copy to disk are handed —
 // the evidence store's reducer and the process supervisor take this method
@@ -202,9 +263,6 @@ func (v *Vault) Scrub(s string) string {
 	v.mu.RLock()
 	entries := v.entries
 	v.mu.RUnlock()
-	if len(entries) == 0 {
-		return s
-	}
 	for _, e := range entries {
 		ph := Placeholder(e.name)
 		// Whole values and encodings first: a base64 form shares no
@@ -218,7 +276,7 @@ func (v *Vault) Scrub(s string) string {
 			s = scrubFragments(s, e, ph)
 		}
 	}
-	return s
+	return redact(s)
 }
 
 // scrubFragments replaces every run of e.value in s at least minFragment

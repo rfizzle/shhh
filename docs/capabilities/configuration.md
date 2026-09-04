@@ -459,6 +459,7 @@ knows it; the profiles under `[agents]` are one key per role, which the
 | Key | Takes | Default | What it decides |
 |---|---|---|---|
 | `env` | list | (nothing declared) | Environment variables to declare as secrets in every session: the model may use the value and never sees it. |
+| `env_mask` | true/false | `on` | Keep variables whose names end in _KEY, _SECRET or _TOKEN out of the environment of the commands the assistant runs, unless secrets.env declares one. |
 
 **`[mcp]`**
 

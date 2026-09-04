@@ -154,11 +154,19 @@ type chatSession struct {
 // everything after it works with the vault's name list and scrub.
 // See docs/capabilities/secrets.md#a-secret-is-an-environment-variable.
 func (s *chatSession) openSecrets(cmd *cobra.Command, red *evidence.Reducer, procSup *process.Supervisor) error {
-	v, err := loadSecrets(ConfigFrom(cmd.Context()), s.secretFlags, cmd.ErrOrStderr())
+	cfg := ConfigFrom(cmd.Context())
+	v, err := loadSecrets(cfg, s.secretFlags, cmd.ErrOrStderr())
 	if err != nil {
 		return err
 	}
 	s.vault = v
+	// The mask goes on before the pairs do, so a declared secret whose name
+	// the mask would have dropped is put back by the pairs: the user asked
+	// for that one to be reachable, and the mask is for the ones nobody
+	// asked for.
+	mask := maskForSession(cfg)
+	v.SetEnvMask(mask != nil)
+	runner.SetEnvMask(mask)
 	runner.SetSessionEnv(v.Environ())
 	// The executor chain scrubs what the model reads; these two write the
 	// copies that stay on disk after the turn — the evidence store's full

@@ -770,6 +770,28 @@ func TestTreeCheckIsOnUnlessTurnedOff(t *testing.T) {
 	}
 }
 
+// The mask defaults on because the environment it takes variables out of is
+// a developer's, full of tokens nobody meant to lend to a model; secrets.env
+// is the list of the ones that were meant.
+func TestSecretsEnvMaskIsOnUnlessTurnedOff(t *testing.T) {
+	var cfg Config
+	if !cfg.SecretsEnvMaskEnabled() {
+		t.Fatal("unset is on")
+	}
+	if err := Set(&cfg, "secrets.env_mask", "false"); err != nil {
+		t.Fatal(err)
+	}
+	if cfg.SecretsEnvMaskEnabled() {
+		t.Error("secrets.env_mask=false should turn the mask off")
+	}
+	if err := Set(&cfg, "secrets.env_mask", "true"); err != nil {
+		t.Fatal(err)
+	}
+	if !cfg.SecretsEnvMaskEnabled() {
+		t.Error("secrets.env_mask=true should turn it back on")
+	}
+}
+
 // A value that is not the shape its key takes is refused, naming the key and
 // what it wanted, and the setting is left as it was. Every one of these
 // wrote a plausible wrong answer once: `abc` on a retention key wrote zero,

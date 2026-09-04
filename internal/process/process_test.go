@@ -156,6 +156,34 @@ func TestEnv_RestrictedToPathHomePlusExplicit(t *testing.T) {
 	}
 }
 
+// A captured command inherits the whole environment and has the
+// credential-shaped names taken out of it; a process starts from nothing and
+// is handed the session's secrets back. The two arrive at the same place, and
+// this is the half that would go quiet if somebody widened buildEnv — the
+// spool of a process that dumped its environment reaches the evidence store
+// and outlives the session by a week.
+func TestEnv_CredentialShapedVariablesNeverReachAProcess(t *testing.T) {
+	s := newTestSupervisor(t, nil)
+	t.Setenv("SHHH_TEST_TOKEN", "undeclared")
+	t.Setenv("SHHH_TEST_SECRET", "undeclared")
+	t.Setenv("SHHH_TEST_KEY", "undeclared")
+	s.SetEnv([]string{"DECLARED_KEY=lent-on-purpose"})
+
+	execute(t, s, `{"action":"start","name":"env","command":"env"}`)
+	waitFor(t, "env to exit", func() bool {
+		return strings.Contains(execute(t, s, `{"action":"status","name":"env"}`), "exited")
+	})
+	out := execute(t, s, `{"action":"read","name":"env"}`)
+	for _, name := range []string{"SHHH_TEST_TOKEN", "SHHH_TEST_SECRET", "SHHH_TEST_KEY"} {
+		if strings.Contains(out, name) {
+			t.Errorf("%s reached the process: %q", name, out)
+		}
+	}
+	if !strings.Contains(out, "DECLARED_KEY=lent-on-purpose") {
+		t.Errorf("a declared secret must reach the process, got %q", out)
+	}
+}
+
 func TestInput_ReachesStdin(t *testing.T) {
 	s := newTestSupervisor(t, nil)
 	execute(t, s, `{"action":"start","name":"cat","command":"cat"}`)

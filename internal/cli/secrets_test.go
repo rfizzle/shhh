@@ -32,6 +32,23 @@ func TestLoadSecrets_ConfigSkipsUnsetFlagRefuses(t *testing.T) {
 	}
 }
 
+// The mask is a name test the CLI resolves and the runner is handed; the
+// runner never asks the configuration what it wants, so this is the only
+// place secrets.env_mask is read.
+func TestMaskForSession_FollowsTheSetting(t *testing.T) {
+	mask := maskForSession(config.Config{})
+	if mask == nil {
+		t.Fatal("unset is on")
+	}
+	if !mask("GITHUB_TOKEN") || mask("PATH") {
+		t.Fatal("the mask must read the name and only the name")
+	}
+	off := false
+	if maskForSession(config.Config{Secrets: config.SecretsConfig{EnvMask: &off}}) != nil {
+		t.Fatal("secrets.env_mask=false must install no mask at all")
+	}
+}
+
 func TestSecretsManager(t *testing.T) {
 	t.Setenv("SHHH_TEST_TOKEN", "tok-tok-tok")
 	v := secret.New()

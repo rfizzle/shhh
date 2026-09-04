@@ -429,3 +429,206 @@ func TestScrub_EvidenceToolPagesTheSameTextEitherWay(t *testing.T) {
 		t.Fatalf("header must count the stored copy: %q", afterH)
 	}
 }
+
+// fixtures are one well-shaped example per entry in the table, with the kind
+// each must come back as. The values are structurally real and belong to
+// nobody: AWS's own documentation example key, and tokens built to the
+// published prefixes and lengths.
+var fixtures = []struct{ kind, text string }{
+	{"aws-access-key", "AKIAIOSFODNN7EXAMPLE"},
+	{"aws-access-key", "ASIAY34FZKBOKMUTVV7A"},
+	{"github-token", "ghp_016C4C7C4C7C4C7C4C7C4C7C4C7C4C7C4C7C"},
+	{"github-token", "gho_016C4C7C4C7C4C7C4C7C4C7C4C7C4C7C4C7C"},
+	{"github-token", "github_pat_11ABCDEFG0abcdefghijkl_" + strings.Repeat("Z", 59)},
+	{"slack-token", "xoxb-263594206564-2343594206574-FGqmpXTNWtEjIvJdrHFMnzYN"},
+	{"jwt", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"},
+	{"private-key", "-----BEGIN RSA PRIVATE KEY-----\nMIIBOgIBAAJBAKj34GkxFhD90vcNLYLInFEX6Ppy1tPf9Cnzj4p4WGeKLs1Pt8Qu\nKUpRKfFLfRYC9AIKjbJTWit+CqvjWYzvQwECAwEAAQ==\n-----END RSA PRIVATE KEY-----"},
+}
+
+// Every shape in the table is recognised on its own, with nothing declared:
+// the vault's own pass answers "hide this value" and needs somebody to have
+// named it, and the whole point of this one is the credential nobody did.
+func TestRedact_EveryShapeInTheTable(t *testing.T) {
+	for _, f := range fixtures {
+		got := New().Scrub("before " + f.text + " after")
+		if want := "before " + Redacted(f.kind) + " after"; got != want {
+			t.Errorf("%s:\n got %q\nwant %q", f.kind, got, want)
+		}
+	}
+}
+
+// The prefilter that keeps this pass cheap is also the way a new shape gets
+// silently disabled: a marker no match can contain is an optimisation, and a
+// marker that is merely wrong is a pattern that never runs. Every shape has
+// to have a fixture, and every fixture has to carry the shape's markers.
+func TestRedact_EveryShapeIsReachableThroughItsMarkers(t *testing.T) {
+	covered := map[string]bool{}
+	for _, f := range fixtures {
+		covered[f.kind] = true
+		for _, sh := range shapes {
+			if sh.kind != f.kind {
+				continue
+			}
+			if !sh.matches(f.text) {
+				t.Errorf("%s: the markers turn away a value the pattern matches", sh.kind)
+			}
+		}
+	}
+	for _, sh := range shapes {
+		if !covered[sh.kind] {
+			t.Errorf("%s has no fixture, so nothing would notice if it stopped matching", sh.kind)
+		}
+	}
+}
+
+// The failure this table can actually have, and the reason every entry is a
+// marker the issuer put there rather than a guess at entropy. A JWT is three
+// base64 runs separated by dots, which is also an import path, a dotted
+// identifier and a version number; without the `eyJ` header prefix this pass
+// would take the module line out of a build error and leave the model
+// debugging text it cannot read.
+func TestRedact_LeavesOrdinaryTextAlone(t *testing.T) {
+	ordinary := []string{
+		"github.com/rfizzle/shhh/internal/secret",
+		"gopkg.in/yaml.v3 v3.0.1",
+		"require github.com/spf13/cobra v1.10.1 // indirect",
+		"go1.24.3 linux/amd64",
+		"cmd.Env.Contains.Something",
+		"THISISNOTANACCESSKEYATALL",
+		"ghp_short",
+		"xoxb-1",
+		"xoxo-hugs-and-kisses-everyone",
+	}
+	for _, text := range ordinary {
+		if got := New().Scrub(text); got != text {
+			t.Errorf("%q was rewritten to %q", text, got)
+		}
+	}
+}
+
+// The order of the two passes, stated as the thing a reader would notice: a
+// declared token comes back named, so the reader can tell which of their
+// secrets was used. Redacting it by kind first would throw that away for
+// every credential somebody bothered to declare.
+func TestScrub_ADeclaredValueIsReplacedByNameAndNotByKind(t *testing.T) {
+	const token = "ghp_016C4C7C4C7C4C7C4C7C4C7C4C7C4C7C4C7C"
+	v := New()
+	if err := v.Add("GITHUB_TOKEN", token); err != nil {
+		t.Fatal(err)
+	}
+	got := v.Scrub("authorization: bearer " + token)
+	if want := "authorization: bearer " + Placeholder("GITHUB_TOKEN"); got != want {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+	if strings.Contains(got, Redacted("github-token")) {
+		t.Fatal("a declared value must keep its name")
+	}
+}
+
+// The three surfaces the chain has to cover, with nothing declared at all:
+// what a tool hands back, what goes into a message on its way to a provider,
+// and the spool a long-running process leaves in the evidence store — the
+// copy that outlives the session by a week and that nothing on screen would
+// report.
+func TestRedact_ReachesToolOutputAMessageAndASpool(t *testing.T) {
+	t.Setenv("SHELL", "/bin/sh")
+	const token = "ghp_016C4C7C4C7C4C7C4C7C4C7C4C7C4C7C4C7C"
+	v := New()
+
+	root := t.TempDir()
+	config := "token = \"" + token + "\"\n" + strings.Repeat("padding = \"xxxxxxxxxxxxxxxxxxxx\"\n", 300)
+	store, call := evidenceChain(t, v, root, config)
+	for _, tool := range []string{"read_file", "execute_command"} {
+		if out := call(tool); strings.Contains(out, token) {
+			t.Fatalf("%s handed the token back", tool)
+		}
+	}
+
+	msgs := v.ScrubMessages([]provider.Message{{Role: "user", Content: "here it is: " + token}})
+	if strings.Contains(msgs[0].Content, token) || !strings.Contains(msgs[0].Content, Redacted("github-token")) {
+		t.Fatalf("message = %q", msgs[0].Content)
+	}
+
+	sup, err := process.New(root, store.Put)
+	if err != nil {
+		t.Fatalf("process.New: %v", err)
+	}
+	t.Cleanup(sup.Close)
+	sup.SetScrub(v.Scrub)
+	start := fmt.Sprintf(`{"action":"start","name":"printer","command":"printf 'token=%%s' '%s'"}`, token)
+	if _, err := sup.Execute(json.RawMessage(start)); err != nil {
+		t.Fatalf("start: %v", err)
+	}
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		out, err := sup.Execute(json.RawMessage(`{"action":"status","name":"printer"}`))
+		if err != nil {
+			t.Fatalf("status: %v", err)
+		}
+		if strings.Contains(out, "full log: evidence ev-") {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("timed out waiting for the spool to be stored: %s", out)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	err = filepath.WalkDir(filepath.Join(root, "evidence"), func(path string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return err
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		if bytes.Contains(data, []byte(token)) {
+			t.Errorf("%s holds the token", filepath.Base(path))
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+// The mask reads a name and nothing else, because the credentials it is for
+// are the ones no value was ever declared for.
+func TestMaskedEnvName(t *testing.T) {
+	for _, name := range []string{"GITHUB_TOKEN", "AWS_SECRET_ACCESS_KEY", "STRIPE_SECRET", "npm_token"} {
+		if !MaskedEnvName(name) {
+			t.Errorf("%s should be masked", name)
+		}
+	}
+	for _, name := range []string{"PATH", "HOME", "SHELL", "KEYBOARD", "TOKENIZER", "SECRETS_DIR"} {
+		if MaskedEnvName(name) {
+			t.Errorf("%s should not be masked", name)
+		}
+	}
+}
+
+// The mask's symptom is a variable that is simply unset, which is exactly
+// what a machine nobody configured looks like — so the block says the mask
+// is there even when no secret was declared, and says what the other
+// placeholder means whatever else it says.
+func TestPromptBlock_SaysTheMaskAndTheRedactionExist(t *testing.T) {
+	masked := New()
+	masked.SetEnvMask(true)
+	block := PromptBlock(masked)
+	for _, want := range []string{"## Secrets", "_TOKEN", Redacted("kind")} {
+		if !strings.Contains(block, want) {
+			t.Errorf("block lacks %q:\n%s", want, block)
+		}
+	}
+
+	v := New()
+	v.SetEnvMask(true)
+	if err := v.Add("API_KEY", "value-value-value"); err != nil {
+		t.Fatal(err)
+	}
+	block = PromptBlock(v)
+	for _, want := range []string{"$API_KEY", Placeholder("API_KEY"), "_SECRET", Redacted("kind")} {
+		if !strings.Contains(block, want) {
+			t.Errorf("block lacks %q:\n%s", want, block)
+		}
+	}
+}

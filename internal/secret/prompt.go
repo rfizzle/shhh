@@ -6,20 +6,48 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
-// PromptBlock describes the session's secrets to the model: the names, the
-// one way to use them, and what it will see instead of a value. Empty when
-// there are none, so the section costs nothing until it is needed.
+// PromptBlock describes what this session hides from the model and how it
+// will notice: the declared secrets by name, the mask over the variables
+// nobody declared, and the two placeholders that stand where a value would
+// have been. Empty when there is nothing to hide and no mask, so the
+// section costs nothing until it is needed.
 //
-// The block says how the value shows up rather than only that it is hidden,
-// because a model that does not know the placeholder reads it as the
-// command having failed and starts debugging the wrong thing.
+// The block says how a hidden value shows up rather than only that it is
+// hidden, because a model that does not know the placeholder reads it as
+// the command having failed and starts debugging the wrong thing — and the
+// same is true of the mask, where the symptom is a variable that is simply
+// unset and looks exactly like a machine that was never configured.
 func PromptBlock(v *Vault) string {
 	names := v.Names()
-	if len(names) == 0 {
+	masked := v.EnvMask()
+	if len(names) == 0 && !masked {
 		return ""
 	}
 	var b strings.Builder
 	b.WriteString("## Secrets\n\n")
+	if len(names) > 0 {
+		b.WriteString(namedSecrets(names))
+	} else {
+		b.WriteString("This session keeps credentials out of what you run and what you read; the user has declared none of them to you by name.\n\n")
+	}
+	if masked {
+		b.WriteString("- Variables whose names end in `_KEY`, `_SECRET` or `_TOKEN` are removed from the environment of every command you run")
+		if len(names) > 0 {
+			b.WriteString(", unless the user declared one as a secret above")
+		}
+		b.WriteString(". One of them reading as unset is that mask and not a broken setup: name the variable you need and the user can hand it over.\n")
+	}
+	b.WriteString("- Text that carries a well-known credential's shape — an AWS access key, a GitHub or Slack token, a private-key block, a JWT — is replaced with `")
+	b.WriteString(Redacted("kind"))
+	b.WriteString("` wherever you would have read it, whoever it belongs to. That is a value that was there, not an error and not a literal to copy.\n")
+	return b.String()
+}
+
+// namedSecrets is the part of the block that exists only when the user
+// declared something: the names, the one way to reach them, and the
+// placeholder that names the secret back.
+func namedSecrets(names []string) string {
+	var b strings.Builder
 	b.WriteString("This session holds secret values the user set aside for you to use without seeing. ")
 	b.WriteString("Each is an environment variable in every command you run and every script a command runs: ")
 	for i, n := range names {
@@ -41,8 +69,12 @@ func PromptBlock(v *Vault) string {
 // ScrubMessages returns msgs with every text field scrubbed, for a request
 // about to leave for a provider. The slice is copied; messages are values,
 // so the caller's conversation is untouched.
+//
+// A vault with nothing declared still walks the messages, because the pass
+// over credential shapes has nothing to do with what was declared and this
+// is the last door before the text leaves the machine.
 func (v *Vault) ScrubMessages(msgs []provider.Message) []provider.Message {
-	if v == nil || v.Len() == 0 {
+	if v == nil {
 		return msgs
 	}
 	out := make([]provider.Message, len(msgs))

@@ -379,6 +379,15 @@ func (s *Supervisor) resolveCwd(p string) (string, error) {
 
 // buildEnv is the restricted child environment: PATH and HOME from the
 // session, plus explicitly passed vars — which can never shadow those two.
+//
+// Naming the two variables rather than filtering shhh's own environment is
+// what masks the credentials nobody declared here: a captured command
+// inherits everything and has the names it must not carry taken away, and a
+// process starts from nothing and is handed the session's secrets back by
+// SetEnv. Widening this to os.Environ would put every token on the machine
+// into a process whose spool outlives the session by a week, and nothing on
+// screen would say so.
+// See docs/capabilities/secrets.md#the-names-that-do-not-travel.
 func buildEnv(extra map[string]string) ([]string, error) {
 	env := []string{"PATH=" + os.Getenv("PATH"), "HOME=" + os.Getenv("HOME")}
 	keys := make([]string, 0, len(extra))

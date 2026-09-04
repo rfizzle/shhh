@@ -47,6 +47,17 @@ func loadSecrets(cfg config.Config, flags []string, warn io.Writer) (*secret.Vau
 	return v, nil
 }
 
+// maskForSession is the name test the runner puts an inherited variable to,
+// or nil when the user turned the mask off. It is resolved here rather than
+// in the runner because the runner is told what to do and never asks the
+// configuration what it wants.
+func maskForSession(cfg config.Config) func(string) bool {
+	if !cfg.SecretsEnvMaskEnabled() {
+		return nil
+	}
+	return secret.MaskedEnvName
+}
+
 // secretFromSpec resolves one NAME or NAME=value spec. A bare name reads
 // the value from the environment, which is the form to prefer: a value on
 // the command line is in the shell's history and every process listing.

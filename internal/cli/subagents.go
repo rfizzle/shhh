@@ -249,10 +249,12 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			}
 		}
 		// Secrets are read at spawn rather than at session start, so a
-		// child knows what /secret added since.
-		if session.vault.Len() > 0 {
-			sysPrompt = prompt.CombineExtra(sysPrompt, secret.PromptBlock(session.vault))
-		}
+		// child knows what /secret added since. The block is asked for
+		// whether or not anything is declared, because it also says that
+		// credential-shaped variables are masked out of a command's
+		// environment — and a child runs its commands through the same
+		// masked environment the session does.
+		sysPrompt = prompt.CombineExtra(sysPrompt, secret.PromptBlock(session.vault))
 
 		// Approved non-exec gated calls: file mutations dispatch through their
 		// own path (never the auto-run executor), everything else falls back to

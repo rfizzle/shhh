@@ -239,3 +239,46 @@ func TestRunStaysOnTheUsersShell(t *testing.T) {
 		t.Error("Run succeeded with an unusable $SHELL, so it is no longer reading it")
 	}
 }
+
+// The mask is by variable name and it runs before the session's own pairs,
+// which is what exempts a declared secret: FOO_TOKEN is taken away because
+// nobody asked for it, and API_KEY survives because somebody did.
+func TestEnvMask_TakesTheCredentialShapedVariablesNobodyDeclared(t *testing.T) {
+	t.Setenv("SHELL", "/bin/sh")
+	t.Setenv("SHHH_TEST_TOKEN", "inherited-token")
+	t.Setenv("SHHH_TEST_SECRET", "inherited-secret")
+	t.Setenv("SHHH_TEST_KEY", "inherited-key")
+	t.Setenv("SHHH_TEST_HOST", "example.invalid")
+	SetEnvMask(func(name string) bool {
+		return strings.HasSuffix(name, "_TOKEN") || strings.HasSuffix(name, "_SECRET") ||
+			strings.HasSuffix(name, "_KEY")
+	})
+	SetSessionEnv([]string{"SHHH_TEST_KEY=declared"})
+	t.Cleanup(func() { SetEnvMask(nil); SetSessionEnv(nil) })
+
+	const cmd = `printf '%s|%s|%s|%s' "$SHHH_TEST_TOKEN" "$SHHH_TEST_SECRET" "$SHHH_TEST_KEY" "$SHHH_TEST_HOST"`
+	out, code := RunCapture(context.Background(), cmd)
+	if code != 0 {
+		t.Fatalf("exit %d: %q", code, out)
+	}
+	if want := "||declared|example.invalid"; out != want {
+		t.Fatalf("out = %q, want %q", out, want)
+	}
+}
+
+// With no mask installed a command inherits what it always did, and a
+// session that declares nothing hands exec.Cmd a nil environment rather
+// than a filtered copy of its own.
+func TestEnvMask_OffInheritsEverything(t *testing.T) {
+	t.Setenv("SHELL", "/bin/sh")
+	t.Setenv("SHHH_TEST_TOKEN", "inherited-token")
+	SetEnvMask(nil)
+	SetSessionEnv(nil)
+	if Environ() != nil {
+		t.Fatal("no mask and no pairs must leave the command to inherit")
+	}
+	out, code := RunCapture(context.Background(), `printf '%s' "$SHHH_TEST_TOKEN"`)
+	if code != 0 || out != "inherited-token" {
+		t.Fatalf("out=%q code=%d", out, code)
+	}
+}

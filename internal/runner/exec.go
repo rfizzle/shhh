@@ -36,8 +36,9 @@ func shellCommand(ctx context.Context, command string) *exec.Cmd {
 // only in the one that mattered.
 // See docs/capabilities/secrets.md#a-secret-is-an-environment-variable.
 var (
-	sessionMu  sync.RWMutex
-	sessionEnv []string
+	sessionMu   sync.RWMutex
+	sessionEnv  []string
+	sessionMask func(name string) bool
 )
 
 // SetSessionEnv replaces the NAME=value pairs every captured command gets
@@ -49,15 +50,47 @@ func SetSessionEnv(env []string) {
 	sessionMu.Unlock()
 }
 
-// Environ is the inherited environment plus the session's pairs, or nil
-// when there are none, which leaves exec.Cmd to inherit exactly as before.
+// SetEnvMask installs the test an inherited variable's name is put to
+// before a captured command sees it: true drops it. nil inherits
+// everything, which is a session that turned the mask off.
+//
+// It is a predicate rather than a list of names or a package that knows
+// what a credential looks like, for the same reason the scrub is a
+// function: this package runs commands and has no business holding the
+// vocabulary of secrets. The session's own pairs are appended after the
+// mask has run, so a variable the user declared as a secret reaches the
+// command even though its name is one the mask would have dropped.
+// See docs/capabilities/secrets.md#the-names-that-do-not-travel.
+func SetEnvMask(mask func(name string) bool) {
+	sessionMu.Lock()
+	sessionMask = mask
+	sessionMu.Unlock()
+}
+
+// Environ is the inherited environment, masked, plus the session's pairs —
+// or nil when there is neither a mask nor a pair, which leaves exec.Cmd to
+// inherit exactly as before.
 func Environ() []string {
 	sessionMu.RLock()
-	defer sessionMu.RUnlock()
-	if len(sessionEnv) == 0 {
+	env, mask := sessionEnv, sessionMask
+	sessionMu.RUnlock()
+	if len(env) == 0 && mask == nil {
 		return nil
 	}
-	return append(os.Environ(), sessionEnv...)
+	// os.Environ allocates a fresh slice on every call, so filtering it in
+	// place cannot reach anything but this command's own copy.
+	inherited := os.Environ()
+	if mask != nil {
+		kept := inherited[:0]
+		for _, pair := range inherited {
+			if name, _, ok := strings.Cut(pair, "="); ok && mask(name) {
+				continue
+			}
+			kept = append(kept, pair)
+		}
+		inherited = kept
+	}
+	return append(inherited, env...)
 }
 
 // Run executes a command with the terminal inherited, and it is the one

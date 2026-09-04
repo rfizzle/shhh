@@ -91,6 +91,72 @@ seeing the key by accident; it is not a proof against a model that has
 decided to exfiltrate one. That is what approval is for: the command that
 sends the key somewhere new is a command, and it is shown before it runs.
 
+## The shapes it knows without being told
+
+A secret has to be declared before it can be hidden by value, and the leak
+that actually happens is the one nobody saw coming: a key sitting in a config
+file the model reads, a bearer token in an API response, a private key printed
+by a script that was only meant to check it exists. None of those were
+declared, so none of them are values the vault can look for.
+
+What they have instead is a shape. The credential families worth recognising
+carry their own markers, because the services that issue them wanted them
+findable in a leaked repository as much as anyone: AWS access keys begin
+`AKIA` or `ASIA` and are twenty characters, every GitHub token issued since
+2021 carries a prefix, Slack's begin `xox`, a private key is delimited by its
+own `BEGIN` and `END` lines, and a JWT starts with a base64 JSON object. Text
+matching one of those is replaced with `[redacted:aws-access-key]`,
+`[redacted:jwt]` and so on — the kind, because nothing at this point knows
+whose credential it was.
+
+The pass runs after the vault's own and never instead of it. A declared value
+that also looks like a GitHub token comes out as `[secret:GITHUB_TOKEN]`, not
+`[redacted:github-token]`, because the name is what lets the reader tell which
+of their secrets was used; a session with nothing declared still gets the
+shapes.
+
+The table is small on purpose, and every entry in it is a marker the issuer
+put there rather than a guess at how random a string looks. A pattern loose
+enough to catch an unmarked secret is a pattern that redacts ordinary text,
+and the cost of that lands somewhere unhelpful: a JWT is three base64 runs
+separated by dots, which is also the shape of a Go import path and of a
+version number, so the header prefix is required and `github.com/owner/repo`
+survives. Text taken out of a build error is a model debugging something it
+cannot read.
+
+This is text matching with the same limit the rest of the scrub has. A
+credential with no marker — a bare hex API key, a password — is not
+recognised, and neither is a private key whose closing line never arrived
+because the output was cut. Redaction is a floor under the accidents, not a
+guarantee about a determined leak.
+
+## The names that do not travel
+
+The other half is by name, and it happens before the command runs rather than
+after it. A developer's machine exports credentials the session was never
+told about, and a command the model runs inherits all of them by default —
+which means the model can read any of them, and any of them can be sent
+somewhere by a script it wrote. `secrets.env_mask`, on unless turned off,
+takes the variables whose names end in `_KEY`, `_SECRET` or `_TOKEN` out of
+the environment every assistant command inherits.
+
+A secret the user declared is exempt: `secrets.env` and `--secret` name the
+credentials that were meant to be lent, and those are put back by name after
+the mask has run. Three suffixes and not a cleverer rule, because the mask has
+to be explainable in one sentence both to the person turning it off and to the
+model that just found a variable unset — which is why the system prompt says
+the mask is there. Unset with no explanation looks exactly like a machine that
+was never configured, and the model would go and fix the wrong thing.
+
+The long-running processes the model starts never had the problem: the process
+tool builds its child's environment from nothing, naming `PATH` and `HOME`,
+and the session's declared secrets are handed to it explicitly.
+
+The mask is not containment. It reduces what a command can pick up by
+accident; a command that reads `~/.aws/credentials` is reading a file, and
+that is a question for what a command may reach and for the approval in front
+of it.
+
 ## Where a value comes from
 
 Values come from the environment, or from the user's hands, and never from

@@ -125,6 +125,12 @@ type SecretsConfig struct {
 	// Env names environment variables to declare as secrets in every
 	// session; one that is unset is skipped with a warning.
 	Env []string `toml:"env"`
+	// EnvMask keeps the variables that hold a credential by convention out
+	// of the environment an assistant command inherits. Unset means on: the
+	// machine shhh runs on is a developer's, its environment is full of
+	// tokens nobody meant to lend to a model, and Env is the list of the
+	// ones that were meant.
+	EnvMask *bool `toml:"env_mask"`
 }
 
 // SummaryConfig tunes the session summary: the periodic reading a
@@ -546,6 +552,15 @@ func (c Config) MouseEnabled() bool {
 // only thing that tells a session it is not alone in the checkout.
 func (c *Config) TreeCheckEnabled() bool {
 	return c.Behavior.TreeCheck == nil || *c.Behavior.TreeCheck
+}
+
+// SecretsEnvMaskEnabled reports whether an assistant command runs without
+// the credential-shaped variables it would otherwise inherit: what
+// secrets.env_mask says, or — unset — yes, because the variables it takes
+// away are the ones nobody chose to lend.
+// See docs/capabilities/secrets.md#the-names-that-do-not-travel.
+func (c *Config) SecretsEnvMaskEnabled() bool {
+	return c.Secrets.EnvMask == nil || *c.Secrets.EnvMask
 }
 
 // HeadlessSummaryEnabled reports whether a non-interactive run takes readings:

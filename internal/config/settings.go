@@ -423,6 +423,9 @@ var settings = []Setting{
 	{
 		Key: "secrets.env", Kind: KindList, Default: "(nothing declared)",
 		Desc: "Environment variables to declare as secrets in every session: the model may use the value and never sees it.",
+	}, {
+		Key: "secrets.env_mask", Kind: KindBool, Default: "on",
+		Desc: "Keep variables whose names end in _KEY, _SECRET or _TOKEN out of the environment of the commands the assistant runs, unless secrets.env declares one.",
 	},
 
 	{
