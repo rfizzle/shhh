@@ -23,6 +23,7 @@ type Config struct {
 	Appearance AppearanceConfig `toml:"appearance"`
 	History    HistoryConfig    `toml:"history"`
 	Reports    ReportsConfig    `toml:"reports"`
+	Observe    ObserveConfig    `toml:"observe"`
 	Agents     AgentsConfig     `toml:"agents"`
 	Summary    SummaryConfig    `toml:"summary"`
 	Secrets    SecretsConfig    `toml:"secrets"`
@@ -490,7 +491,24 @@ type ReportsConfig struct {
 	RetentionDays int `toml:"retention_days"`
 }
 
+// ObserveConfig governs the session record. It has a window of its own, and
+// a longer one, because the reader is a different reader: history's window is
+// about a person remembering a command they ran, and this one is read by a
+// comparison of two cohorts, which over a change made last quarter wants the
+// quarter before it as well.
+// See docs/capabilities/sessions-and-memory.md#the-record-is-kept-for-a-window.
+type ObserveConfig struct {
+	RetentionDays int `toml:"retention_days"`
+}
+
 const DefaultRetentionDays = 90
+
+// DefaultObserveRetentionDays is twice history's window, rounded to the two
+// quarters a before-and-after reading needs: a comparison split on a change
+// made three months ago has to have the sessions from either side of it, and
+// ninety days would leave one of the two cohorts empty at exactly the moment
+// somebody asks.
+const DefaultObserveRetentionDays = 180
 
 const DefaultContextMaxTokens = 8000
 
@@ -656,6 +674,13 @@ func (c Config) EffectiveReportsRetentionDays() int {
 		return c.Reports.RetentionDays
 	}
 	return DefaultRetentionDays
+}
+
+func (c Config) EffectiveObserveRetentionDays() int {
+	if c.Observe.RetentionDays > 0 {
+		return c.Observe.RetentionDays
+	}
+	return DefaultObserveRetentionDays
 }
 
 // ProviderAPIKey returns the configured API key: the value of the variable

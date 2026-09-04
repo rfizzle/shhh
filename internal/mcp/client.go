@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -14,6 +15,7 @@ import (
 	"time"
 
 	sdk "github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/profile"
 )
 
@@ -94,6 +96,24 @@ func Dial(ctx context.Context, def Definition) (*Server, error) {
 		// server that started and then never answered is the common
 		// timeout — and nothing else will ever close it.
 		s.kill()
+		// A server that will not connect is written down because the
+		// session goes on without it: its tools are simply absent, and a
+		// model that never had a tool does not report missing one
+		// (docs/capabilities/configuration.md#a-failure-is-written-down).
+		// The transport's own error is left out — it is built from the
+		// command line or the endpoint the definition names, which is the
+		// one thing this file should not accumulate; `shhh mcp` shows it
+		// whole, to the person who asked.
+		//
+		// A cancelled dial is not a server that would not connect. The
+		// context here is the session's own, and a caller that has given up
+		// waiting leaves this goroutine running against it — so quitting
+		// with a slow server still dialling would write a line accusing it
+		// of a failure that was the session ending.
+		if !errors.Is(err, context.Canceled) && ctx.Err() == nil {
+			logs.Logger().Warn("mcp server would not connect",
+				"server", def.Name, "transport", string(def.Transport))
+		}
 		return nil, s.wrapErr("connect", err)
 	}
 	s.session = session

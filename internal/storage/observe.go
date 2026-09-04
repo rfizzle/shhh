@@ -1274,6 +1274,68 @@ func (db *DB) exportAgentEvents(sessionID int64) ([]AgentExportEvent, error) {
 	return events, rows.Err()
 }
 
+// PruneAgentObservability deletes the sessions that ended before the window
+// and every event they recorded, and returns how many sessions it removed.
+// It is the record's window, the way history and the report store have one;
+// PurgeAgentObservability below is the switch, and the two stay apart because
+// a reader who wants the last six months and a reader who wants none of it
+// are asking different questions.
+//
+// A session is pruned with its whole family. agent_sessions.parent_id has no
+// cascade of its own, so a parent deleted while one of its children survives
+// would leave a row pointing at nothing — and a child outlives its parent
+// often enough to matter, since a killed child's row is closed at the next
+// session's start rather than when its parent ended. Taking the descendants
+// with it is also the honest reading: a sub-agent's spend is only meaningful
+// against the session that spawned it.
+//
+// The events go first and both statements share one transaction, so there is
+// no instant at which an event's session is gone. Nothing here relies on the
+// cascade the schema declares: a prune that quietly did nothing because a
+// pragma was off is exactly the failure a window cannot afford, since nobody
+// looks at a table that is supposed to shrink by itself.
+func (db *DB) PruneAgentObservability(retentionDays int) (int64, error) {
+	if retentionDays <= 0 {
+		return 0, nil
+	}
+	cutoff := observeCutoff(time.Now().AddDate(0, 0, -retentionDays))
+	tx, err := db.sql.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+
+	// Only an ended row starts a family off. An open one is either a session
+	// still running — a sitting older than the window is implausible, but
+	// deleting the row out from under one would leave it recording into
+	// nothing — or one whose ending was never written, and the next session's
+	// start closes that, which brings it into the prune's reach then. A
+	// descendant goes with its parent whether or not it ended, because the
+	// alternative is the dangling row this exists to avoid.
+	const doomed = `WITH RECURSIVE doomed(id) AS (
+		    SELECT id FROM agent_sessions WHERE ended_at IS NOT NULL AND ended_at < ?
+		    UNION
+		    SELECT s.id FROM agent_sessions s JOIN doomed d ON s.parent_id = d.id
+		)`
+	if _, err := tx.Exec(doomed+`
+		 DELETE FROM agent_events WHERE session_id IN (SELECT id FROM doomed)`, cutoff); err != nil {
+		return 0, err
+	}
+	res, err := tx.Exec(doomed+`
+		 DELETE FROM agent_sessions WHERE id IN (SELECT id FROM doomed)`, cutoff)
+	if err != nil {
+		return 0, err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("count pruned sessions: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return n, nil
+}
+
 // PurgeAgentObservability deletes every recorded session and event, returning
 // how many sessions were removed.
 func (db *DB) PurgeAgentObservability() (int64, error) {

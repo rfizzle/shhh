@@ -1090,3 +1090,43 @@ func TestEnvVarSet_AnEmptyExportIsNotAKey(t *testing.T) {
 		t.Error("naming no variable reads as set")
 	}
 }
+
+// The record's window is its own and longer than history's, and it stands
+// until the file names a number. The pairing matters: a reader who set
+// history.retention_days and expected the record to follow it would find the
+// record kept twice as long, which is the intent and has to be visible.
+func TestObserveRetention_ItsOwnWindowAndItsOwnDefault(t *testing.T) {
+	var cfg Config
+	if got := cfg.EffectiveObserveRetentionDays(); got != DefaultObserveRetentionDays {
+		t.Errorf("an unset observe.retention_days is %d days, want %d", got, DefaultObserveRetentionDays)
+	}
+	if DefaultObserveRetentionDays <= DefaultRetentionDays {
+		t.Errorf("the record's window (%d) should outlast history's (%d)",
+			DefaultObserveRetentionDays, DefaultRetentionDays)
+	}
+	cfg.History.RetentionDays = 7
+	if got := cfg.EffectiveObserveRetentionDays(); got != DefaultObserveRetentionDays {
+		t.Errorf("history's window moved the record's to %d days", got)
+	}
+
+	path := filepath.Join(t.TempDir(), "config.toml")
+	if err := Write(path, Edit{Key: "observe.retention_days", Value: "30"}); err != nil {
+		t.Fatal(err)
+	}
+	loaded, err := LoadFrom(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := loaded.EffectiveObserveRetentionDays(); got != 30 {
+		t.Errorf("after the write, observe.retention_days is %d days, want 30", got)
+	}
+	if err := Write(path, Edit{Key: "observe.retention_days", Value: ""}); err != nil {
+		t.Fatal(err)
+	}
+	if loaded, err = LoadFrom(path); err != nil {
+		t.Fatal(err)
+	}
+	if got := loaded.EffectiveObserveRetentionDays(); got != DefaultObserveRetentionDays {
+		t.Errorf("a reset leaves %d days, want the default %d", got, DefaultObserveRetentionDays)
+	}
+}

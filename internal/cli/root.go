@@ -104,9 +104,10 @@ func NewRootCmd() *cobra.Command {
 
 			update.BackgroundCheck(version)
 
-			// The history purge rides the first store a command opens
-			// (store.go) rather than a connection of its own from here.
+			// Both windows ride the first store a command opens (store.go)
+			// rather than a connection of their own from here.
 			setHistoryRetention(cfg.EffectiveRetentionDays())
+			setObserveRetention(cfg.EffectiveObserveRetentionDays())
 
 			return nil
 		},

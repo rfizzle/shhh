@@ -998,3 +998,138 @@ func TestReadAgentCohort_ScopesEveryAggregateToItsOwnSessions(t *testing.T) {
 		t.Errorf("rounds per turn is %v, want 4", reading.Turns[0].AvgRounds)
 	}
 }
+
+// endedSessionAt writes a session that started and ended ago days back, with
+// one event of its own, as a sitting from that far back would have left it.
+func endedSessionAt(t *testing.T, db *DB, ago time.Duration) int64 {
+	t.Helper()
+	id, err := db.StartAgentSession("chat", "openai", "gpt-test")
+	if err != nil {
+		t.Fatalf("start session: %v", err)
+	}
+	if err := db.RecordAgentEvent(id, AgentEvent{Kind: AgentEventTool, Tool: "read_file", Outcome: "ok"}); err != nil {
+		t.Fatalf("record event: %v", err)
+	}
+	when := time.Now().Add(-ago).UTC().Format(observeTimeFormat)
+	if _, err := db.SQL().Exec(
+		`UPDATE agent_sessions SET started_at = ?, ended_at = ? WHERE id = ?`, when, when, id); err != nil {
+		t.Fatalf("place session: %v", err)
+	}
+	return id
+}
+
+func countRows(t *testing.T, db *DB, query string, args ...any) int {
+	t.Helper()
+	var n int
+	if err := db.SQL().QueryRow(query, args...).Scan(&n); err != nil {
+		t.Fatalf("count: %v", err)
+	}
+	return n
+}
+
+// The window removes what is past it and nothing else, and a session's events
+// leave with it: an event row whose session is gone is a row no reading can
+// place, since every aggregate joins through the session.
+func TestPruneAgentObservability_TakesTheEventsAndLeavesTheWindow(t *testing.T) {
+	db := openTestDB(t)
+	old := endedSessionAt(t, db, 200*24*time.Hour)
+	recent := endedSessionAt(t, db, 30*24*time.Hour)
+
+	pruned, err := db.PruneAgentObservability(180)
+	if err != nil {
+		t.Fatalf("prune: %v", err)
+	}
+	if pruned != 1 {
+		t.Fatalf("pruned %d sessions, want the one outside the window", pruned)
+	}
+	if n := countRows(t, db, `SELECT COUNT(*) FROM agent_sessions WHERE id = ?`, old); n != 0 {
+		t.Errorf("the session outside the window is still there")
+	}
+	if n := countRows(t, db, `SELECT COUNT(*) FROM agent_sessions WHERE id = ?`, recent); n != 1 {
+		t.Errorf("the session inside the window was pruned")
+	}
+	if n := countRows(t, db, `SELECT COUNT(*) FROM agent_events WHERE session_id = ?`, old); n != 0 {
+		t.Errorf("%d events of the pruned session survived it", n)
+	}
+	if n := countRows(t, db, `SELECT COUNT(*) FROM agent_events WHERE session_id = ?`, recent); n != 1 {
+		t.Errorf("the kept session lost its events")
+	}
+	orphans := countRows(t, db,
+		`SELECT COUNT(*) FROM agent_events e LEFT JOIN agent_sessions s ON s.id = e.session_id WHERE s.id IS NULL`)
+	if orphans != 0 {
+		t.Errorf("%d events point at a session that is gone", orphans)
+	}
+}
+
+// A child goes with the parent it was spawned by, whether or not its own row
+// was ever closed. Leaving it would leave a row pointing at nothing, and its
+// spend means nothing without the session that spent it.
+func TestPruneAgentObservability_TakesTheChildrenWithTheParent(t *testing.T) {
+	db := openTestDB(t)
+	parent := endedSessionAt(t, db, 200*24*time.Hour)
+	child, err := db.StartChildAgentSession(parent, "subagent", "openai", "gpt-test")
+	if err != nil {
+		t.Fatalf("start child: %v", err)
+	}
+	if err := db.RecordAgentEvent(child, AgentEvent{Kind: AgentEventTurn, Outcome: "completed"}); err != nil {
+		t.Fatalf("record child event: %v", err)
+	}
+
+	pruned, err := db.PruneAgentObservability(180)
+	if err != nil {
+		t.Fatalf("prune: %v", err)
+	}
+	if pruned != 2 {
+		t.Fatalf("pruned %d sessions, want the parent and its child", pruned)
+	}
+	if n := countRows(t, db, `SELECT COUNT(*) FROM agent_sessions`); n != 0 {
+		t.Errorf("%d session rows left, want none", n)
+	}
+	if n := countRows(t, db, `SELECT COUNT(*) FROM agent_events`); n != 0 {
+		t.Errorf("%d event rows left, want none", n)
+	}
+}
+
+// A session that never wrote an ending is left where it is. It is either
+// running or waiting to be closed by the next session's start, and the row is
+// what that reconciliation reads.
+func TestPruneAgentObservability_LeavesAnOpenSessionAlone(t *testing.T) {
+	db := openTestDB(t)
+	id, err := db.StartAgentSession("chat", "openai", "gpt-test")
+	if err != nil {
+		t.Fatalf("start session: %v", err)
+	}
+	when := time.Now().Add(-300 * 24 * time.Hour).UTC().Format(observeTimeFormat)
+	if _, err := db.SQL().Exec(`UPDATE agent_sessions SET started_at = ? WHERE id = ?`, when, id); err != nil {
+		t.Fatalf("place session: %v", err)
+	}
+
+	pruned, err := db.PruneAgentObservability(180)
+	if err != nil {
+		t.Fatalf("prune: %v", err)
+	}
+	if pruned != 0 {
+		t.Fatalf("pruned %d sessions, want none", pruned)
+	}
+	if n := countRows(t, db, `SELECT COUNT(*) FROM agent_sessions WHERE id = ?`, id); n != 1 {
+		t.Errorf("the open session was pruned")
+	}
+}
+
+// Zero days is a window nobody set, and a prune that read it as "keep
+// nothing" would empty the table on the first command a fresh install ran.
+func TestPruneAgentObservability_NoWindowPrunesNothing(t *testing.T) {
+	db := openTestDB(t)
+	endedSessionAt(t, db, 400*24*time.Hour)
+
+	pruned, err := db.PruneAgentObservability(0)
+	if err != nil {
+		t.Fatalf("prune: %v", err)
+	}
+	if pruned != 0 {
+		t.Fatalf("pruned %d sessions with no window set, want none", pruned)
+	}
+	if n := countRows(t, db, `SELECT COUNT(*) FROM agent_sessions`); n != 1 {
+		t.Errorf("the session was pruned by a window nobody set")
+	}
+}

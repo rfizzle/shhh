@@ -23,11 +23,13 @@ package agent
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -364,6 +366,7 @@ func (s *Summarizer) Summarize(ctx context.Context, req SummaryRequest) SummaryV
 	}
 	if err != nil {
 		v.Err = "the session summary could not be read: " + err.Error()
+		logSummaryFailure(v.Model, err, time.Since(start))
 		return finish(v)
 	}
 	if text == "" {
@@ -372,6 +375,30 @@ func (s *Summarizer) Summarize(ctx context.Context, req SummaryRequest) SummaryV
 	}
 	v.Text, v.State, v.Reason, v.Failed = text, state, reason, false
 	return finish(v)
+}
+
+// logSummaryFailure writes down a reading that did not happen. Failing soft
+// is what makes this the one mechanism with nothing on screen to notice: the
+// block keeps the last reading and says it is stale, which is right for the
+// person working and useless afterwards for the person asking why the rail
+// stopped moving three hours ago
+// (docs/capabilities/configuration.md#a-failure-is-written-down).
+//
+// A cancelled reading is not a failure — it is the session ending under a
+// request that was in flight, and a log whose commonest line is something
+// somebody did on purpose is one nobody reads. The timeout is separated from
+// everything else because it is the one with an answer: summary.timeout_seconds
+// is a number the reader can raise.
+func logSummaryFailure(model string, err error, elapsed time.Duration) {
+	if errors.Is(err, context.Canceled) {
+		return
+	}
+	failure := "request failed"
+	if errors.Is(err, context.DeadlineExceeded) {
+		failure = "timed out"
+	}
+	logs.Logger().Warn("session summary not taken",
+		"model", model, "failure", failure, "elapsed", elapsed.Round(time.Millisecond))
 }
 
 // readOnce runs one reading under the configured timeout and parses it. The

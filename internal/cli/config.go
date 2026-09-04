@@ -598,6 +598,7 @@ var configLabels = map[string]string{
 	"appearance.rail_width":                "inspector rail width",
 	"history.retention_days":               "history retention",
 	"reports.retention_days":               "report retention",
+	"observe.retention_days":               "record retention",
 	"prompts.steer":                        "steer wording",
 	"prompts.check_in":                     "check-in wording",
 	"prompts.summary":                      "reading wording",

@@ -319,6 +319,38 @@ moment the export stops being content-free and the reader should know it.
 Sessions can be recorded and never read; the record can be exported as JSON
 and purged entirely.
 
+### The record is kept for a window
+
+The record is pruned at startup the way command history and generated report
+pages are: sessions that ended longer ago than `observe.retention_days` go,
+and their events go with them. A store that only grows is not a harmless
+one: the record is written by every session unconditionally, and a table
+nobody trims eventually makes the reading of it slow enough that nobody
+takes the reading.
+
+**The window is longer than history's, because the reader is a different
+reader.** History's window is about a person remembering a command they ran
+last month. This one is read by a comparison of two cohorts, and a comparison
+of a change made in one quarter wants the quarter before it as well; the
+default is a hundred and eighty days, twice history's, so that a question
+asked about last quarter's edit still has both sides of it to answer from.
+
+**Pruning a session takes everything hanging off it in one act.** Its events
+go with it, and so do the sub-agent sessions it spawned, whose spend means
+nothing without the session that spent it — an event or a child left behind
+would be a row no reading could place, since every figure is drawn by joining
+back to the session. Nothing is ever taken on account of an ending it never
+wrote: a session with no end time is either still running, or waiting to be
+closed by the next session's start, which brings it inside the prune's reach
+the ordinary way, and it leaves early only when the session that spawned it
+goes.
+
+**The window and the switch stay apart.** `shhh observe purge` still means
+everything, in one act, on purpose. Retention is the answer to "I do not want
+a store that grows forever"; purge is the answer to "I want none of this",
+and a window that quietly did the second thing would be the one setting in
+the product nobody could trust.
+
 ### Every composition is one population
 
 Every composition shhh runs — a session, a headless run, every sub-agent, and

@@ -199,6 +199,7 @@ func TestSettings_StatedDefaultsAreTheConstants(t *testing.T) {
 		"agents.model":                         config.InheritModel,
 		"history.retention_days":               strconv.Itoa(config.DefaultRetentionDays) + " days",
 		"reports.retention_days":               strconv.Itoa(config.DefaultRetentionDays) + " days",
+		"observe.retention_days":               strconv.Itoa(config.DefaultObserveRetentionDays) + " days",
 	} {
 		s, ok := config.Lookup(key)
 		if !ok {

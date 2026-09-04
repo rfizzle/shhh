@@ -11,6 +11,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/rfizzle/shhh/internal/logs"
 )
 
 // fakeLS is an in-process language server speaking framed JSON-RPC over
@@ -21,6 +23,9 @@ type fakeLS struct {
 
 	// ignoreShutdown makes the server never answer the shutdown request.
 	ignoreShutdown bool
+	// ignoreInitialize makes the server never answer the handshake, which is
+	// what a binary that starts and then hangs looks like from here.
+	ignoreInitialize bool
 	// noPublish suppresses publishDiagnostics entirely.
 	noPublish bool
 	// publishDelay holds each publishDiagnostics back, standing in for a
@@ -106,6 +111,9 @@ func (f *fakeLS) serve(r io.Reader, w io.WriteCloser) {
 		}
 		switch msg.Method {
 		case "initialize":
+			if f.ignoreInitialize {
+				continue
+			}
 			caps := f.caps
 			if caps == "" {
 				caps = "{}"
@@ -1267,5 +1275,38 @@ func TestToolset_DiagnosticsKeepsAQuestionItCannotAnswerOpen(t *testing.T) {
 	held := waitForHeld(t, m)
 	if !strings.Contains(held, "undefined: second") {
 		t.Fatalf("the outstanding answer must still arrive, got %q", held)
+	}
+}
+
+// A server that never handshakes leaves a line behind. The manager drops it
+// and the session runs on without it, so the only symptom otherwise is
+// navigation quietly answering out of its fallbacks.
+func TestStartServer_AHandshakeThatNeverAnsweredReachesTheLog(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "shhh.log")
+	logs.To(path)
+	t.Cleanup(func() { logs.To("") })
+
+	root := t.TempDir()
+	fake := &fakeLS{ignoreInitialize: true}
+	spec := ServerSpec{Name: "gopls", Command: "gopls", Extensions: []string{".go"}}
+	if _, err := startServer(spec, root, fake.connect, 20*time.Millisecond); err == nil {
+		t.Fatal("a server that never answers initialize must not start")
+	}
+
+	body, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("nothing was written to the log: %v", err)
+	}
+	written := string(body)
+	for _, want := range []string{"language server handshake failed", "server=gopls", "step=initialize"} {
+		if !strings.Contains(written, want) {
+			t.Errorf("the line does not say %s:\n%s", want, written)
+		}
+	}
+	// The workspace is what the handshake is about, and the file is shared
+	// between sessions and outlives them; a path in it is a path nobody
+	// asked to keep.
+	if strings.Contains(written, root) {
+		t.Errorf("the line names the workspace:\n%s", written)
 	}
 }

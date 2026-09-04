@@ -285,6 +285,24 @@ otherwise be painted over a running session. It does not hold the
 conversation: that is in the state directory too, and a log that repeated it
 would be a second transcript with none of a transcript's structure.
 
+The mechanisms that fail quietly write here too, and they are the reason to
+open the file at all. A permission classifier that used up its attempts and
+fell back to asking; a session reading that timed out, leaving the block on
+the rail standing and stale; a language server that never completed its
+handshake; an MCP server that would not connect; commands running with
+nothing containing them because this host offers no mechanism. Each of those
+changes how a session behaves and none of them stops it, so the symptom is
+always something else — more approval cards than usual, navigation answering
+out of its fallbacks, tools that are simply absent. Each line names the
+mechanism and what went wrong with it, and stops there. It does not repeat
+the failing component's own words: where those are a provider's, the refused
+request has already written a line of its own here, and where they are a
+server's or this host's they are on the screen and in `shhh doctor`, in front
+of the person who can act on them. They are also where the paths and the
+command lines are, and this file is shared between sessions and outlives all
+of them — a diagnostic is not the place to accumulate what a machine was
+pointed at.
+
 Nothing is written until something goes wrong. A machine where nothing has
 gone wrong therefore has no log file at all, and the reader is told that
 rather than shown an empty file shhh made for itself on the way past. Once
@@ -429,6 +447,12 @@ knows it; the profiles under `[agents]` are one key per role, which the
 | Key | Takes | Default | What it decides |
 |---|---|---|---|
 | `retention_days` | number | 90 days | How long a generated report page is kept. |
+
+**`[observe]`**
+
+| Key | Takes | Default | What it decides |
+|---|---|---|---|
+| `retention_days` | number | 180 days | How long a session's record and its events are kept before startup prunes them; longer than history's window because a comparison reads back across a change made a quarter ago. |
 
 **`[agents]`**
 

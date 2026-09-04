@@ -12,6 +12,8 @@ import (
 	"sync"
 	"time"
 	"unicode/utf16"
+
+	"github.com/rfizzle/shhh/internal/logs"
 )
 
 // transport is a started server process's stdio plus lifecycle hooks; tests
@@ -158,14 +160,32 @@ func startServer(spec ServerSpec, root string, connect func(ServerSpec, string) 
 	result, err := s.conn.call("initialize", initParams, s.reqTimeout)
 	if err != nil {
 		tr.kill()
+		logHandshakeFailure(spec.Name, "initialize")
 		return nil, fmt.Errorf("%s initialize failed: %w", spec.Name, err)
 	}
 	s.caps = parseCapabilities(result)
 	if err := s.conn.notify("initialized", map[string]any{}); err != nil {
 		tr.kill()
+		logHandshakeFailure(spec.Name, "initialized")
 		return nil, fmt.Errorf("%s initialized notification failed: %w", spec.Name, err)
 	}
 	return s, nil
+}
+
+// logHandshakeFailure writes down a server that never came up. The manager
+// drops such a server and the session carries on without it, so the only
+// symptom is navigation quietly answering out of the fallbacks — the
+// question "why did the language server stop being useful on Tuesday" has
+// nowhere else to be answered from
+// (docs/capabilities/configuration.md#a-failure-is-written-down).
+//
+// The step is the whole of the failure and the server's own words are left
+// out. A language server explains itself in terms of the workspace it was
+// pointed at, and this file is shared between sessions and outlives all of
+// them, so a diagnostic naming a file would put a path in the one place the
+// reader did not ask for one.
+func logHandshakeFailure(server, step string) {
+	logs.Logger().Warn("language server handshake failed", "server", server, "step", step)
 }
 
 func (s *server) handleNotification(method string, params json.RawMessage) {

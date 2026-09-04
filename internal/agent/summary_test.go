@@ -4,10 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -441,5 +444,56 @@ func TestSummary_PromptAndSchemaAgreeOnTheStates(t *testing.T) {
 		if !strings.Contains(string(summarySchema), `"`+state+`"`) {
 			t.Errorf("the schema does not admit %q", state)
 		}
+	}
+}
+
+// A reading that timed out is written down, because failing soft is exactly
+// what leaves nothing on screen: the block keeps the last reading and calls
+// it stale, which is right at the time and useless three hours later.
+func TestSummarizer_ATimedOutReadingReachesTheLog(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "shhh.log")
+	logs.To(path)
+	t.Cleanup(func() { logs.To("") })
+
+	p := &fakeClassifierProvider{fn: func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+		// Never answers, so the attempt's own deadline is what ends it.
+		return make(chan provider.StreamEvent), nil
+	}}
+	v := NewSummarizer(p, SummaryConfig{Model: "small", Timeout: 10 * time.Millisecond}).
+		Summarize(context.Background(), testSummaryRequest())
+	if !v.Failed {
+		t.Fatalf("the setup is wrong: the reading succeeded, %+v", v)
+	}
+
+	written := readLog(t, path)
+	for _, want := range []string{"session summary not taken", "model=small", `failure="timed out"`} {
+		if !strings.Contains(written, want) {
+			t.Errorf("the line does not say %s:\n%s", want, written)
+		}
+	}
+	// The digest carries the target and the tools; the file keeps neither.
+	for _, never := range []string{"make the round limit a checkpoint", "agent/loop.go"} {
+		if strings.Contains(written, never) {
+			t.Errorf("the line carries %q, which the record's own posture refuses:\n%s", never, written)
+		}
+	}
+}
+
+// A reading the session cancelled is not a failure of the summariser, and a
+// line for every session that ended mid-request would bury the ones that are.
+func TestSummarizer_ACancelledReadingWritesNothing(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "shhh.log")
+	logs.To(path)
+	t.Cleanup(func() { logs.To("") })
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	p := &fakeClassifierProvider{fn: func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+		return nil, context.Canceled
+	}}
+	NewSummarizer(p, SummaryConfig{Model: "small"}).Summarize(ctx, testSummaryRequest())
+
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Errorf("a cancelled reading wrote a log line: %v, %s", err, readLog(t, path))
 	}
 }

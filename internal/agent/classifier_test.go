@@ -5,10 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -387,4 +390,90 @@ func TestClassifier_OffersASchemaAndTheToolTogether(t *testing.T) {
 	if v := NewClassifier(failing, ClassifierConfig{Model: "m"}).Judge(context.Background(), testRequest()); v.Decision != Ask || !v.Failed {
 		t.Fatalf("a provider error still fails closed, got %+v", v)
 	}
+}
+
+// A classifier that ran out of attempts leaves a line behind. It has no
+// surface of its own: the approval card the caller falls back to is the same
+// card a policy would have raised, so a classifier that stopped answering
+// looks like a session that has become talkative.
+func TestClassifier_ExhaustedRetriesReachTheLog(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "shhh.log")
+	logs.To(path)
+	t.Cleanup(func() { logs.To("") })
+
+	p := &fakeClassifierProvider{fn: func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+		return eventsOf(provider.StreamEvent{Token: "I am not sure what to do here.", Done: true}), nil
+	}}
+	v := NewClassifier(p, ClassifierConfig{Model: "small", Retries: 1}).Judge(context.Background(), testRequest())
+	if !v.Failed {
+		t.Fatalf("the setup is wrong: the classifier answered, %+v", v)
+	}
+
+	written := readLog(t, path)
+	for _, want := range []string{"permission classifier failed closed", "model=small", `failure="invalid decision"`, "attempts=2"} {
+		if !strings.Contains(written, want) {
+			t.Errorf("the line does not say %s:\n%s", want, written)
+		}
+	}
+	// The evidence is the conversation and the proposed command; a log that
+	// carried either would be a transcript in the one file that keeps none.
+	for _, never := range []string{"go test ./...", "run the tests", "/work"} {
+		if strings.Contains(written, never) {
+			t.Errorf("the line carries %q, which the record's own posture refuses:\n%s", never, written)
+		}
+	}
+}
+
+// A request that failed every time says so rather than blaming the model for
+// an answer it never got the chance to give.
+func TestClassifier_ExhaustedRequestsSayWhichFailureItWas(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "shhh.log")
+	logs.To(path)
+	t.Cleanup(func() { logs.To("") })
+
+	p := &fakeClassifierProvider{fn: func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+		return nil, errors.New("401 unauthorized")
+	}}
+	NewClassifier(p, ClassifierConfig{Model: "small", Retries: 1}).Judge(context.Background(), testRequest())
+
+	written := readLog(t, path)
+	if !strings.Contains(written, `failure="request failed"`) {
+		t.Errorf("the line should name the request failure:\n%s", written)
+	}
+	// The refusal itself is already a line of its own, written by the
+	// failure taxonomy; repeating the provider's prose here would file the
+	// same failure twice.
+	if strings.Contains(written, "401 unauthorized") {
+		t.Errorf("the line repeats the provider's own words:\n%s", written)
+	}
+}
+
+// A session cancelled under an attempt is not a failure — it is somebody
+// pressing escape, and a log whose commonest line is that is one nobody
+// reads.
+func TestClassifier_ACancelledSessionWritesNothing(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "shhh.log")
+	logs.To(path)
+	t.Cleanup(func() { logs.To("") })
+
+	ctx, cancel := context.WithCancel(context.Background())
+	p := &fakeClassifierProvider{fn: func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+		cancel()
+		return nil, context.Canceled
+	}}
+	NewClassifier(p, ClassifierConfig{Model: "small", Retries: 2}).Judge(ctx, testRequest())
+
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Errorf("a cancelled session wrote a log line: %v, %s", err, readLog(t, path))
+	}
+}
+
+// readLog reads back what the diagnostic sink was handed.
+func readLog(t *testing.T, path string) string {
+	t.Helper()
+	body, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("nothing was written to the log: %v", err)
+	}
+	return string(body)
 }

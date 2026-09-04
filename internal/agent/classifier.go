@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -188,6 +189,7 @@ func (c *Classifier) Judge(ctx context.Context, req ClassifierRequest) Classifie
 	}
 
 	v.Reason = "the classifier returned an invalid decision"
+	failure := classifierInvalid
 	for attempt := 1; attempt <= c.cfg.attempts(); attempt++ {
 		instructions := c.cfg.prompt()
 		if attempt > 1 {
@@ -205,6 +207,7 @@ func (c *Classifier) Judge(ctx context.Context, req ClassifierRequest) Classifie
 				// The session (not the attempt) was cancelled; retrying is futile.
 				return finish(v)
 			}
+			failure = classifierRequestFailed
 			continue
 		}
 		if decision == Allow || decision == Deny {
@@ -213,10 +216,33 @@ func (c *Classifier) Judge(ctx context.Context, req ClassifierRequest) Classifie
 			v.Failed = false
 			return finish(v)
 		}
+		failure = classifierInvalid
 		v.Reason = "the classifier returned an invalid decision"
 	}
+	// The attempts are used up and the call falls back to asking the user.
+	// It is written down because it has no surface of its own: the approval
+	// card that follows looks exactly like the one a policy would have
+	// raised, so a classifier that has stopped answering reads as a session
+	// that has simply become talkative
+	// (docs/capabilities/configuration.md#a-failure-is-written-down).
+	//
+	// The reason travels as a code rather than the provider's words. The
+	// request that failed has already written its own line here through the
+	// failure taxonomy, and repeating it would put the same failure in the
+	// file twice with the second copy carrying whatever prose the provider
+	// chose to send.
+	logs.Logger().Warn("permission classifier failed closed",
+		"model", strings.TrimSpace(c.cfg.Model), "failure", failure,
+		"attempts", c.cfg.attempts())
 	return finish(v)
 }
+
+// The two ways a classifier runs out of attempts, as codes: either every
+// reply came back without a usable verdict, or every request failed.
+const (
+	classifierInvalid       = "invalid decision"
+	classifierRequestFailed = "request failed"
+)
 
 // completeOnce runs one classifier attempt under the configured timeout and
 // parses its decision; Ask with a nil error means the response was invalid.

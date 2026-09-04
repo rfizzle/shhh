@@ -10,6 +10,7 @@ import (
 	"time"
 
 	sdk "github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/rfizzle/shhh/internal/logs"
 )
 
 // The test binary doubles as a stdio MCP server: run with the environment
@@ -370,5 +371,65 @@ func TestCompactArgs(t *testing.T) {
 	}
 	if CompactArgs(json.RawMessage(`{}`)) != "" || CompactArgs(nil) != "" {
 		t.Error("empty args rendered")
+	}
+}
+
+// A server that will not connect leaves a line behind. The session carries on
+// without its tools, and a model that never had a tool does not report
+// missing one, so nothing else says the server was ever meant to be there.
+func TestDial_ATransportThatWillNotConnectReachesTheLog(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "shhh.log")
+	logs.To(path)
+	t.Cleanup(func() { logs.To("") })
+
+	missing := filepath.Join(t.TempDir(), "no-such-server")
+	def := Definition{Name: "ghost", Scope: ScopeUser, Transport: TransportStdio, Command: missing}
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	if _, err := Dial(ctx, def); err == nil {
+		t.Fatal("a server whose command does not exist must not dial")
+	}
+
+	body, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("nothing was written to the log: %v", err)
+	}
+	written := string(body)
+	for _, want := range []string{"mcp server would not connect", "server=ghost", "transport=stdio"} {
+		if !strings.Contains(written, want) {
+			t.Errorf("the line does not say %s:\n%s", want, written)
+		}
+	}
+	// The transport's error is built from the command the definition names.
+	// `shhh mcp` shows it whole to the person who asked; the file two
+	// sessions share keeps no command lines.
+	if strings.Contains(written, missing) {
+		t.Errorf("the line names the command:\n%s", written)
+	}
+}
+
+// A dial the session cancelled is not a server that would not connect. The
+// context is the session's own and a caller that gave up waiting leaves this
+// dial running against it, so quitting with a slow server still handshaking
+// would otherwise accuse it of a failure that was the session ending.
+func TestDial_ACancelledDialWritesNothing(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "shhh.log")
+	logs.To(path)
+	t.Cleanup(func() { logs.To("") })
+
+	// A server that starts and then says nothing, which is what a handshake
+	// outlasting the session looks like from here. The context is dead
+	// before the dial, which is the state this goroutine finds itself in
+	// when the session it belongs to has already gone.
+	def := Definition{Name: "slow", Scope: ScopeUser, Transport: TransportStdio, Command: "sleep", Args: []string{"30"}}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if _, err := Dial(ctx, def); err == nil {
+		t.Fatal("a cancelled dial must not report a connected server")
+	}
+
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		body, _ := os.ReadFile(path)
+		t.Errorf("a cancelled dial wrote a log line: %v, %s", err, body)
 	}
 }

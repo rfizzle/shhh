@@ -375,6 +375,11 @@ var settings = []Setting{
 	},
 
 	{
+		Key: "observe.retention_days", Kind: KindInt, Default: "180 days",
+		Desc: "How long a session's record and its events are kept before startup prunes them; longer than history's window because a comparison reads back across a change made a quarter ago.",
+	},
+
+	{
 		Key: "agents.model", Kind: KindString, Default: "inherit",
 		Desc: "The model every sub-agent runs, unless its role says otherwise; `inherit` is the session's own.",
 	}, {

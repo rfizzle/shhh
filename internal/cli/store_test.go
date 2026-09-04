@@ -9,7 +9,7 @@ import (
 	"github.com/rfizzle/shhh/internal/storage"
 )
 
-func TestPurgeHistoryOnce_RunsOncePerProcessOnTheGivenConnection(t *testing.T) {
+func TestPruneStoreOnce_RunsOncePerProcessOnTheGivenConnection(t *testing.T) {
 	db, err := storage.OpenPath(filepath.Join(t.TempDir(), "test.db"))
 	if err != nil {
 		t.Fatal(err)
@@ -33,14 +33,14 @@ func TestPurgeHistoryOnce_RunsOncePerProcessOnTheGivenConnection(t *testing.T) {
 		return n
 	}
 
-	purge.once, purge.days = sync.Once{}, 0
-	purgeHistoryOnce(db)
+	purge.once, purge.days, purge.observeDays = sync.Once{}, 0, 0
+	pruneStoreOnce(db)
 	if count() != 2 {
 		t.Fatal("with no retention set nothing is purged")
 	}
 
 	setHistoryRetention(90)
-	purgeHistoryOnce(db)
+	pruneStoreOnce(db)
 	deadline := time.Now().Add(5 * time.Second)
 	for count() != 0 && time.Now().Before(deadline) {
 		time.Sleep(10 * time.Millisecond)
@@ -50,9 +50,57 @@ func TestPurgeHistoryOnce_RunsOncePerProcessOnTheGivenConnection(t *testing.T) {
 	}
 
 	addOld()
-	purgeHistoryOnce(db)
+	pruneStoreOnce(db)
 	time.Sleep(50 * time.Millisecond)
 	if count() != 1 {
 		t.Fatal("a second open in the same process purges nothing more")
 	}
+}
+
+// The record's window rides the same first open history's does. It is a
+// separate window and a separate table, and the failure it guards against is
+// the quiet one: a store that grows forever because the only thing that would
+// have trimmed it is a command nobody runs.
+func TestPruneStoreOnce_PrunesTheRecordOnTheSameOpen(t *testing.T) {
+	db, err := storage.OpenPath(filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	id, err := db.StartAgentSession("chat", "openai", "gpt-test")
+	must(t, err)
+	must(t, db.RecordAgentEvent(id, storage.AgentEvent{Kind: storage.AgentEventTool, Tool: "read_file", Outcome: "ok"}))
+	old := time.Now().UTC().AddDate(0, 0, -400).Format("2006-01-02T15:04:05.000Z")
+	_, err = db.SQL().Exec(`UPDATE agent_sessions SET started_at = ?, ended_at = ? WHERE id = ?`, old, old, id)
+	must(t, err)
+	sessions := func() int {
+		var n int
+		must(t, db.SQL().QueryRow(`SELECT COUNT(*) FROM agent_sessions`).Scan(&n))
+		return n
+	}
+
+	purge.once, purge.days, purge.observeDays = sync.Once{}, 0, 0
+	pruneStoreOnce(db)
+	time.Sleep(50 * time.Millisecond)
+	if sessions() != 1 {
+		t.Fatal("with no window set the record is left alone")
+	}
+
+	purge.once = sync.Once{}
+	setObserveRetention(180)
+	pruneStoreOnce(db)
+	deadline := time.Now().Add(5 * time.Second)
+	for sessions() != 0 && time.Now().Before(deadline) {
+		time.Sleep(10 * time.Millisecond)
+	}
+	if sessions() != 0 {
+		t.Fatal("the first open should prune the session past the window")
+	}
+	var events int
+	must(t, db.SQL().QueryRow(`SELECT COUNT(*) FROM agent_events`).Scan(&events))
+	if events != 0 {
+		t.Fatalf("%d events outlived the session they belong to", events)
+	}
+	setObserveRetention(0)
 }

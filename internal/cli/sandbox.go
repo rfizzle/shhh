@@ -9,6 +9,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
+	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/sandbox"
@@ -37,6 +38,22 @@ func sandboxPolicy(cfg config.Config, scopeDirs ...string) (sandbox.Policy, erro
 		DenyExtra:  cfg.Sandbox.DenyExtra,
 		WriteExtra: write,
 	}, nil
+}
+
+// logUnconfined writes down a session whose commands are not contained. The
+// status line and the approval card both say so at the time, and neither is
+// there afterwards: a run left alone overnight, or a headless one in CI, ends
+// with the profile named in a config file and nothing anywhere saying it was
+// never in force
+// (docs/capabilities/configuration.md#a-failure-is-written-down).
+//
+// What is written is the profile that was asked for, which is a word from a
+// closed set. The reason containment is unavailable is a sentence about this
+// host — often naming the binary it looked for and where — and it is on the
+// status line and in `shhh doctor`, where it is read by the person who can
+// act on it rather than accumulated in a file two sessions share.
+func logUnconfined(profile sandbox.Profile) {
+	logs.Logger().Warn("commands run unconfined", "profile", string(profile))
 }
 
 // buildContainment assembles the containment setup agent sessions run
@@ -74,6 +91,7 @@ func buildContainment(cfg config.Config, sc *scope.Scope, sup *process.Superviso
 		// the approval card says so rather than reporting the profile's
 		// answer, which is not in force.
 		c.Network = true
+		logUnconfined(policy.Profile)
 		return c, nil
 	}
 	c.Status = fmt.Sprintf("contained: %s (%s profile)", avail.Mechanism, policy.Profile)
