@@ -121,6 +121,24 @@ func TestSet_CommandAllowlist(t *testing.T) {
 	}
 }
 
+func TestSet_CommandDenylist(t *testing.T) {
+	var cfg Config
+	if err := Set(&cfg, "behavior.command_denylist", "git push, terraform apply ,"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	got := cfg.Behavior.CommandDenylist
+	if len(got) != 2 || got[0] != "git push" || got[1] != "terraform apply" {
+		t.Errorf("behavior.command_denylist = %v, want [git push, terraform apply]", got)
+	}
+
+	if err := Set(&cfg, "behavior.command_denylist", ""); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(cfg.Behavior.CommandDenylist) != 0 {
+		t.Errorf("empty value should clear the deny list, got %v", cfg.Behavior.CommandDenylist)
+	}
+}
+
 func TestSet_ModeConfig(t *testing.T) {
 	var cfg Config
 	if err := Set(&cfg, "behavior.default_mode", "accept-edits"); err != nil {

@@ -726,3 +726,80 @@ func TestGrant_ConfigsAllowlistIsNotTheSessionsToRevoke(t *testing.T) {
 		t.Fatalf("config's own allowlist should survive a revoke, got %v", got)
 	}
 }
+
+// The deny list is answered before a card is built, so nothing about the
+// session — its mode, its blanket grants, its allowlist — reaches the
+// decision. What the reader sees is the rule-denial row, in every mode.
+func TestDenylist_RefusesInEveryModeBeforeACardIsDrawn(t *testing.T) {
+	for _, mode := range []agent.Mode{agent.ModeManual, agent.ModeAcceptEdits, agent.ModeAuto, agent.ModePlan} {
+		var ran []string
+		m := execModel(t, &ran).
+			WithCommandAllowlist([]string{"git push"}).
+			WithCommandDenylist([]string{"git push"})
+		m.policy.mode = mode
+		m.policy.allCommands = true
+
+		updated, restream := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+			{ID: "call_p", Name: "execute_command", Arguments: `{"command":"go build && git push origin main"}`},
+		}})
+		m = updated.(Model)
+
+		if len(ran) != 0 {
+			t.Fatalf("%v mode ran a denied command: %v", mode, ran)
+		}
+		if m.pendingApproval != nil {
+			t.Fatalf("%v mode put a denied command on a card", mode)
+		}
+		refused := false
+		for _, msg := range m.Messages() {
+			if msg.Role == provider.RoleTool && msg.Content == agent.DenylistResult {
+				refused = true
+			}
+		}
+		if !refused {
+			t.Fatalf("%v mode did not tell the model why the command did not run", mode)
+		}
+		row := false
+		for _, e := range m.transcript {
+			if e.kind == entryTool && e.deniedBy == decidedByAuto && e.denyRule == agent.DenyReasonDenylist {
+				row = true
+			}
+		}
+		if !row {
+			t.Fatalf("%v mode drew no rule-denial row", mode)
+		}
+		view := stripANSI(m.renderHistory())
+		for _, want := range []string{"⊘", "denied · auto · deny list", "/permissions why"} {
+			if !strings.Contains(view, want) {
+				t.Fatalf("%v mode: the row should name the rule and offer its key, want %q:\n%s", mode, want, view)
+			}
+		}
+		if m.state != stateStreaming || restream == nil {
+			t.Fatalf("%v mode did not resume the loop after the refusal", mode)
+		}
+	}
+}
+
+// A rule denial is only actionable if the reader is told which rule, and the
+// deny list is one of two lists that could have answered.
+func TestDenylist_WhyNamesTheListThatAnswered(t *testing.T) {
+	var ran []string
+	m := execModel(t, &ran).WithCommandDenylist([]string{"terraform apply"})
+	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_t", Name: "execute_command", Arguments: `{"command":"terraform apply -auto-approve"}`},
+	}})
+	m = updated.(Model)
+
+	if !strings.Contains(m.lastDenial, "command deny list") || !strings.Contains(m.lastDenial, "behavior.command_denylist") {
+		t.Errorf("the denial does not name the list that answered: %q", m.lastDenial)
+	}
+	if !strings.Contains(m.lastDenial, "terraform apply") {
+		t.Errorf("the denial does not name the command it refused: %q", m.lastDenial)
+	}
+	if !strings.Contains(m.grantStatus(), "behavior.command_denylist") {
+		t.Errorf("/permissions grants does not name the deny list:\n%s", m.grantStatus())
+	}
+	if !strings.Contains(m.policyHelp(), "denylist:") {
+		t.Errorf("/help does not name the deny list:\n%s", m.policyHelp())
+	}
+}

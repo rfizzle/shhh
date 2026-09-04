@@ -68,15 +68,21 @@ func (p Project) Loaded() bool { return p.Path != "" }
 // Sets reports whether the checkout's file decided a key.
 func (p Project) Sets(key string) bool { return slices.Contains(p.Keys, key) }
 
-// unionKeys are the three keys a project extends rather than replaces. A
-// checkout that adds a command to the allowlist cannot know what is already
-// on the person's, so replacing would silently take away commands that have
-// nothing to do with this repository — and the failure is a session that
-// starts asking about `ls` again with nothing on screen to say why. Every
-// other list overrides like a scalar, because every other list is a complete
-// answer rather than a set of additions.
+// unionKeys are the keys a project extends rather than replaces. A checkout
+// that adds a command to the allowlist cannot know what is already on the
+// person's, so replacing would silently take away commands that have nothing
+// to do with this repository — and the failure is a session that starts
+// asking about `ls` again with nothing on screen to say why. Every other list
+// overrides like a scalar, because every other list is a complete answer
+// rather than a set of additions.
+//
+// The deny list unions for the same reason read in the other direction: a
+// checkout that names one more command to refuse must not be able to drop the
+// ones the person refuses everywhere, and a union is the only merge where a
+// checkout can add a refusal and never take one away.
 var unionKeys = []string{
 	"behavior.command_allowlist",
+	"behavior.command_denylist",
 	"behavior.read_only_commands",
 	"behavior.scope_dirs",
 }

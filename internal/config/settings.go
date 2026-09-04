@@ -220,6 +220,9 @@ var settings = []Setting{
 		Key: "behavior.command_allowlist", Kind: KindList, Default: "(empty — every command asks)",
 		Desc: "Command prefixes that auto-approve in a session; a safety-flagged command always asks anyway.",
 	}, {
+		Key: "behavior.command_denylist", Kind: KindList, Default: "(empty — nothing is refused in advance)",
+		Desc: "Command prefixes refused in every mode; read before the allowlist, and no approval can allow one.",
+	}, {
 		Key: "behavior.read_only_commands", Kind: KindList, Default: "(the built-in inspection list alone)",
 		Desc: "Commands added to the built-in inspection list that runs without asking; entries skip the built-in flag guards.",
 	}, {

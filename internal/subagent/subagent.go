@@ -338,6 +338,11 @@ type Options struct {
 	// CommandAllowlist is the parent's config allowlist, inherited by
 	// children (inheriting it keeps the child at most as permissive).
 	CommandAllowlist []string
+	// CommandDenylist is the parent's config deny list, inherited for the
+	// opposite reason: a refusal that stopped at the session is a refusal a
+	// fan-out walks around, and a child has no card to draw and nobody to
+	// draw it for.
+	CommandDenylist []string
 	// ReadOnlyExtra and ReadOnlyDisabled mirror the parent's read-only
 	// inspection allowlist settings, so a child's reads are as quiet as the
 	// parent's.
@@ -951,6 +956,7 @@ func (s *Supervisor) childPolicy(c *child) agent.ModePolicy {
 		AllowCommands:    g.AllCommands,
 		EditDirs:         g.EditDirs,
 		CommandAllowlist: allowlist,
+		CommandDenylist:  s.opts.CommandDenylist,
 		ReadOnlyExtra:    s.opts.ReadOnlyExtra,
 		ReadOnlyDisabled: s.opts.ReadOnlyDisabled,
 	}
@@ -2190,11 +2196,16 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 			c.rec.Decision(c.pos(), d, code)
 		}
 	}
-	// The static policy denies in plan mode, which refuses the call with the
-	// result that tells the model why nothing ran, and for a path no grant
-	// can reach, which says which path and why.
+	// The static policy denies for a command the user's deny list names,
+	// which is refused whatever this child's mode is; in plan mode, which
+	// refuses the call with the result that tells the model why nothing ran;
+	// and for a path no grant can reach, which says which path and why.
 	if decision == agent.Deny {
 		record(observe.DecisionDeny, observe.ReasonCode(reason))
+		if reason == agent.DenyReasonDenylist {
+			c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Refused: " + title + " — " + reason})
+			return agent.DenylistResult
+		}
 		if strings.HasPrefix(reason, "outside the working scope") {
 			c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Refused: " + title + " — " + reason})
 			return agent.ScopeRefusedResult(reason)

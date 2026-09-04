@@ -32,6 +32,46 @@ Plan mode is not a safety mode with the volume turned up. It is a different
 activity: deciding whether the approach is right, before any of it is worth
 approving individually.
 
+## A deny list is answered before anything can allow
+
+Two lists of command prefixes belong to the person and to nobody else. The
+allowlist says what may run without being asked about. The deny list says
+what may not run at all, and it is read first — before the allowlist, before
+the session's own grants, before the mode, and before the classifier is paid
+to think about it. `git push` or `terraform apply` on that list never becomes
+a card, in any mode, headless included, with the flag that approves
+everything set.
+
+Deny beats allow because the two are answers to different questions. An
+allowlist entry means "stop asking me about this"; a deny list entry means
+"this is not a decision". A command on both is denied, and that is not a
+conflict to resolve — a person who has said both has said the second one
+about a narrower thing.
+
+Both lists match the same way: the leading words of a command against the
+words of an entry, so `git push` covers `git push origin main` and does not
+cover `git pushall`. They read a chain differently, and deliberately. The
+allowlist refuses to match a line carrying shell punctuation at all, because
+a prefix it could be talked into misreading would be a grant; over-reading
+there costs one prompt. The deny list reads every command the line will
+actually run, because a refusal it could be talked into missing would be the
+hole it was written to close. Over-reading here costs a refusal the reader
+can see is wrong and can correct in one line of their configuration.
+
+What "every command the line will actually run" covers is the next section:
+the deny list and the list of dangerous shapes are asked the same question
+about the same text, and they read it with the same code, so a spelling one
+of them learns is a spelling both of them know.
+
+A refused command draws the rule denial, not yours, and the reason names the
+list so the reader knows which file to open. What the model is told is that
+the command will not run in this session however it is spelled, and nothing
+about where the list lives: the list is the user's, and a refusal that came
+with editing instructions would be handing over the way around it. Neither
+list is reachable by any tool. A checkout can add to either through its own
+settings file, and only add — a repository may refuse one more command here
+and may never take away a refusal the person holds everywhere.
+
 ## The classifier fails closed
 
 Auto mode's classifier never approves on error. A timeout, a malformed answer,
@@ -72,12 +112,47 @@ it has already been chosen.
 A command that reaches execution without having been confirmed somewhere still
 gets asked. There is no path that skips both.
 
+## One act has many spellings
+
+What counts as dangerous is a small table of verbs and the options they
+carry, not a list of strings to look for. `rm -rf`, `rm -r -f`, `rm -fr` and
+`rm -R --force` are one command written four ways, and a pattern that knows
+the first is a pattern that stops working at the first person who types the
+second. So the flag is read out of a bundle and from anywhere in the argument
+list, the long spelling counts as the short one, and a command behind `sudo`
+is the command it escalates.
+
+The other half of the same failure is a chain. Each command in a line is read
+separately, because the dangerous one is rarely the first, and a pattern
+anchored to the start of a line sees `make clean` in `make clean && rm -rf /`
+and nothing else. A command is also read where it is being carried rather
+than typed: what an interpreter was handed (`sh -c "rm -rf /"`), what a
+search was told to run over what it found (`find . -exec rm -rf {} \;`), and
+what sits behind an escalation and that escalation's own options. `sudo -E`
+and `sudo -u root` are the two spellings that walk past a reader which stops
+at the first flag, so what follows an escalation is offered at every word:
+shhh cannot tell the value of `-u` from the command behind it without
+knowing sudo's option table, and guessing in the safe direction costs one
+visible refusal.
+
+Force is not what makes a recursive delete permanent — it only stops `rm`
+asking about a write-protected file — so recursion alone is enough to move
+the key. The same reading covers the spellings people reach for when they are
+in a hurry: a `find` with `-delete`, a `git clean -fdx`, a `git checkout` of
+a pathspec rather than a branch, a `chmod 777` with or without `-R`.
+
+What stays a pattern in the text is what genuinely is one: a redirection onto
+a device, a pipe into an interpreter, a statement in SQL. A table straining
+to describe those would say less than the expression it replaced.
+
 ## Denials are two different facts
 
 "You said no" and "a rule said no" are reported differently, and neither is
 confusable with "it failed". The reader's next action depends on which one it
 was — change your mind, or change your configuration — so collapsing them
-destroys the only information they needed.
+destroys the only information they needed. A rule denial says which rule, and
+the key on the row asks for the longer answer: the deny list, plan mode, or a
+path no grant can reach are three different things to go and change.
 
 A denial is recorded as an act, and carries the mutation rail, because the
 point of that rail is finding the moments that mattered.

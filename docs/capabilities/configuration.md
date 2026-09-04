@@ -28,15 +28,18 @@ does not name is left exactly as they wrote it. A whole-file project config
 would make everyone who clones the repository restate their provider and
 their key in it, which is why nobody in the field does that either.
 
-Three keys are the exception, and they extend rather than replace:
-`behavior.command_allowlist`, `behavior.read_only_commands` and
-`behavior.scope_dirs`. A checkout adding a command to the allowlist cannot
-know what is already on the person's list, so replacing would quietly take
-away commands that have nothing to do with this repository — and the symptom
-is a session asking about `ls` again with nothing on screen to say why. The
-checkout's scope directories are resolved against the checkout, so a
-relative path means the same directory in every clone. Every other list is a
-complete answer and overrides like a scalar.
+Four keys are the exception, and they extend rather than replace:
+`behavior.command_allowlist`, `behavior.command_denylist`,
+`behavior.read_only_commands` and `behavior.scope_dirs`. A checkout adding a
+command to the allowlist cannot know what is already on the person's list, so
+replacing would quietly take away commands that have nothing to do with this
+repository — and the symptom is a session asking about `ls` again with
+nothing on screen to say why. The deny list unions for the same reason read
+in the other direction: a checkout may add a command it does not want run
+here, and may never drop one the person refuses everywhere. The checkout's
+scope directories are resolved against the checkout, so a relative path means
+the same directory in every clone. Every other list is a complete answer and
+overrides like a scalar.
 
 A short set of keys is refused in the checkout's file, whatever the answer
 to trust was. Each is a key whose value in a checkout is a value in every
@@ -427,6 +430,7 @@ knows it; the profiles under `[agents]` are one key per role, which the
 | `safety_warnings` | true/false | `on` | Say what a destructive command will do before it is approved. |
 | `system_prompt_extra` | text | (nothing) | Text appended to every system prompt. |
 | `command_allowlist` | list | (empty — every command asks) | Command prefixes that auto-approve in a session; a safety-flagged command always asks anyway. |
+| `command_denylist` | list | (empty — nothing is refused in advance) | Command prefixes refused in every mode; read before the allowlist, and no approval can allow one. |
 | `read_only_commands` | list | (the built-in inspection list alone) | Commands added to the built-in inspection list that runs without asking; entries skip the built-in flag guards. |
 | `read_only_auto` | true/false | `on` | Run the built-in inspection list without asking; off makes a read prompt like anything else. |
 | `scope_dirs` | list | (the directory the session opened in) | Directories added to a session's working scope at start, beside the one it was opened in. |

@@ -129,6 +129,45 @@ func TestTouches_PartialResolutionKeepsBothHalves(t *testing.T) {
 	}
 }
 
+// A recursive delete is one act with several spellings, and the flag can sit
+// anywhere in the argument list. Reading it off the front of the first
+// argument would describe half of these as a single path going.
+func TestOutline_RecursionIsReadFromAnyFlagPosition(t *testing.T) {
+	recursive := []string{
+		"rm -rf ./build",
+		"rm -fr ./build",
+		"rm -r -f ./build",
+		"rm -R ./build",
+		"rm --recursive ./build",
+		"rm ./build -r",
+		"sudo rm -rv ./build",
+		"make clean && rm -r ./build",
+	}
+	for _, command := range recursive {
+		if !Outline(command).Recursive {
+			t.Errorf("Outline(%q).Recursive = false, want true", command)
+		}
+	}
+	flat := []string{"rm ./build", "rm -f ./build", "rm -i ./build", "rmdir ./build", "mkdir -p ./build"}
+	for _, command := range flat {
+		if Outline(command).Recursive {
+			t.Errorf("Outline(%q).Recursive = true, want false", command)
+		}
+	}
+}
+
+// The card names the path the command wrote, and for a recursive delete the
+// path is not the whole of what goes.
+func TestTouches_RecursionSaysWhatGoesWithThePath(t *testing.T) {
+	_, detail := Outline("rm -rf ./build").Touches()
+	if !strings.Contains(detail, "everything under it") {
+		t.Fatalf("touches detail should say the tree goes, got %q", detail)
+	}
+	if _, detail := Outline("rm ./build").Touches(); strings.Contains(detail, "everything under it") {
+		t.Fatalf("a plain rm names one path, got %q", detail)
+	}
+}
+
 func TestOutline_SeverityLeadsWithSafetyFlag(t *testing.T) {
 	c := Outline("rm -rf ./dist")
 	if c.Level != High {

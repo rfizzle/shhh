@@ -206,6 +206,23 @@ func ScopeRefusedResult(reason string) string {
 		"). Work inside the session's directories, or ask the user to run /add-dir for a directory that can be granted."
 }
 
+// DenyReasonDenylist is the rule name a command refused for the deny list
+// carries. It is short because it is printed on the denial row beside who
+// decided, and `/permissions why` is where the key it came from is named.
+const DenyReasonDenylist = "deny list"
+
+// DenylistResult is the tool result recorded for a command the deny list
+// refused, so the model spends no more rounds on a command that has no
+// spelling that would run.
+//
+// It names no key and points at no file. The list is the user's, and a
+// refusal that came with instructions for editing it would be handing the
+// model the way around it.
+// See docs/capabilities/approvals-and-safety.md#a-deny-list-is-answered-before-anything-can-allow.
+const DenylistResult = "error: this command is on the deny list for this session. It is refused in every " +
+	"permission mode and no approval can allow it, so retrying it or rephrasing it will not run it. " +
+	"Say what you were trying to do and let the user decide."
+
 // PlanModeResult is the tool result recorded for a gated call refused in
 // plan mode, so the model learns why nothing ran instead of the call being
 // silently dropped.
@@ -227,6 +244,12 @@ type ModePolicy struct {
 	// CommandAllowlist entries pre-approve matching commands — the config
 	// list, plus whatever [a] has recorded on a command card this session.
 	CommandAllowlist []string
+	// CommandDenylist entries refuse matching commands outright
+	// (behavior.command_denylist). It is read before the allowlist and
+	// before the classifier, and nothing a session can grant reaches past
+	// it: it is the answer a person gave once, for every mode, so that a
+	// command they never want run is not a card they have to keep refusing.
+	CommandDenylist []string
 	// ReadOnlyExtra extends the built-in read-only command allowlist
 	// (behavior.read_only_commands).
 	ReadOnlyExtra []string
@@ -348,6 +371,13 @@ func PlanInspectionAllowed(command string) bool {
 // Decide returns the verdict for one gated action and, for Allow, the reason
 // shown in the transcript ("session policy", "allowlist", "auto mode", …).
 func (p ModePolicy) Decide(a Action) (Decision, string) {
+	// The deny list is read before anything else, including the mode: it is
+	// the one answer no mode changes, and it is read first so that the
+	// reason the row carries names the list rather than whichever rule
+	// happened to refuse the call second.
+	if a.Kind == ActionCommand && DenylistMatches(p.CommandDenylist, a.Command) {
+		return Deny, DenyReasonDenylist
+	}
 	if p.Mode == ModePlan {
 		// Plan mode grants inspection even with the read-only allowlist
 		// disabled: read-only is the whole point of the mode.

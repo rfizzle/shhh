@@ -379,6 +379,7 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			return subagent.Recorder{Observer: r.observer(), End: r.end}
 		},
 		CommandAllowlist: cfg.Behavior.CommandAllowlist,
+		CommandDenylist:  cfg.Behavior.CommandDenylist,
 		ReadOnlyExtra:    cfg.Behavior.ReadOnlyCommands,
 		ReadOnlyDisabled: !cfg.ReadOnlyAutoEnabled(),
 		// Children get the same auto-mode classifier the parent uses, so an

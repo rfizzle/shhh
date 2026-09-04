@@ -798,7 +798,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// and is remembered on its way past: a denial still standing when the
 	// model stops is what says this run was refused rather than finished.
 	verdict := &lastVerdict{}
-	resolve := headlessApprover(cmd.Context(), opts, allowlist, run, containRefusal, red, verdict.wrap(obs.decision),
+	resolve := headlessApprover(cmd.Context(), opts, allowlist, cfg.Behavior.CommandDenylist, run, containRefusal, red, verdict.wrap(obs.decision),
 		session.web, procSup, lspMutationHook(session.lsp), sc, session.mcpTools)
 	// A headless run has no changeset, so what it wrote is read off the
 	// calls that wrote it. Two readers want that list — the tree check, as
@@ -1198,10 +1198,14 @@ func headlessGate(name string) bool {
 // reduction pipeline (red is nil-safe) like every other tool result. Each
 // verdict is reported to record (nil-safe) as a content-free decision event.
 //
+// denylist is read before anything that can approve, --yes included: a
+// headless run is the surface with nobody to ask, so a list the user wrote to
+// mean "never" has to mean it here most of all.
+//
 // containRefusal, when set, is the answer every command gets before policy is
 // consulted at all: a run told to require containment on a host with none has
 // nothing left to decide.
-func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, run func(context.Context, string) (string, int), containRefusal string, red *evidence.Reducer, record func(decision, reason string), webTools *web.Toolset, procSup *process.Supervisor, mutationHook chat.MutationHook, sc *scope.Scope, mcpTools *mcp.Toolset) func(provider.ToolCall) string {
+func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist []string, run func(context.Context, string) (string, int), containRefusal string, red *evidence.Reducer, record func(decision, reason string), webTools *web.Toolset, procSup *process.Supervisor, mutationHook chat.MutationHook, sc *scope.Scope, mcpTools *mcp.Toolset) func(provider.ToolCall) string {
 	note := func(decision, reason string) {
 		if record != nil {
 			record(decision, reason)
@@ -1238,6 +1242,10 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, r
 			_, command, err := process.StartSummary(json.RawMessage(tc.Arguments))
 			if err != nil {
 				return "error: " + err.Error()
+			}
+			if agent.DenylistMatches(denylist, command) {
+				note(observe.DecisionDeny, observe.ReasonDenylist)
+				return agent.DenylistResult
 			}
 			if warnings := safety.Check(command); len(warnings) > 0 {
 				risks := make([]string, 0, len(warnings))
@@ -1277,6 +1285,12 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, r
 			}
 			if err := json.Unmarshal([]byte(tc.Arguments), &args); err != nil || strings.TrimSpace(args.Command) == "" {
 				return "error: invalid command arguments"
+			}
+			// Before --yes and before the allowlist: a deny list that a flag
+			// could out-rank would be a preference and not a rule.
+			if agent.DenylistMatches(denylist, args.Command) {
+				note(observe.DecisionDeny, observe.ReasonDenylist)
+				return agent.DenylistResult
 			}
 			if warnings := safety.Check(args.Command); len(warnings) > 0 {
 				risks := make([]string, 0, len(warnings))

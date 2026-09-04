@@ -831,6 +831,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			WithTailRunner(scrubTailRunner(session.vault, runner.RunCaptureTail)).
 			WithContainment(scrubContainment(session.vault, containment)).
 			WithCommandAllowlist(cfg.Behavior.CommandAllowlist).
+			WithCommandDenylist(cfg.Behavior.CommandDenylist).
 			WithCommandTimeout(cfg.CommandTimeout()).
 			WithReadOnlyCommands(cfg.Behavior.ReadOnlyCommands, !cfg.ReadOnlyAutoEnabled()).
 			WithGitSnapshots(gitSnapshot).

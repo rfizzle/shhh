@@ -274,3 +274,154 @@ func TestResolveAutoWillNotWidenTheScopeOnTheUsersBehalf(t *testing.T) {
 		t.Error("an ordinary directory is exactly what auto mode may answer for")
 	}
 }
+
+// The deny list is the one answer no mode changes, and it is read before
+// anything that could allow: a permissive mode, a blanket session grant, the
+// allowlist, and the built-in read-only list are all downstream of it.
+func TestDecideRefusesADeniedCommandInEveryMode(t *testing.T) {
+	p := ModePolicy{
+		CommandDenylist:  []string{"git push", "terraform apply"},
+		CommandAllowlist: []string{"git push"},
+		AllowCommands:    true,
+	}
+	commands := []string{
+		"git push origin main",
+		"git push --force",
+		"sudo terraform apply -auto-approve",
+		"go build && git push",
+		"echo done; git push",
+		"terraform apply",
+	}
+	for _, mode := range []Mode{ModeManual, ModeAcceptEdits, ModeAuto, ModePlan} {
+		p.Mode = mode
+		for _, command := range commands {
+			decision, reason := p.Decide(Action{Kind: ActionCommand, Command: command})
+			if decision != Deny {
+				t.Errorf("%v mode, %q = %v; want Deny", mode, command, decision)
+			}
+			if reason != DenyReasonDenylist {
+				t.Errorf("%v mode, %q gave reason %q; want the deny list named", mode, command, reason)
+			}
+		}
+	}
+}
+
+// Deny beats allow, and it beats the read-only list too: a command a person
+// has refused is refused however innocent the verb in front of it reads.
+func TestDecideDenyBeatsEveryGrant(t *testing.T) {
+	p := ModePolicy{
+		Mode:             ModeAuto,
+		CommandDenylist:  []string{"git", "ls"},
+		CommandAllowlist: []string{"git status"},
+		AllowCommands:    true,
+	}
+	for _, command := range []string{"git status", "ls -la"} {
+		if decision, _ := p.Decide(Action{Kind: ActionCommand, Command: command}); decision != Deny {
+			t.Errorf("%q = %v; want Deny", command, decision)
+		}
+	}
+	// An empty list refuses nothing — auto mode hands the same command to
+	// the classifier, which is the question the list exists to skip.
+	open := ModePolicy{Mode: ModeAuto}
+	if decision, _ := open.Decide(Action{Kind: ActionCommand, Command: "git push"}); decision != Ask {
+		t.Errorf("an empty deny list refused a command anyway: %v", decision)
+	}
+	// An edit is not a command, and the command list does not answer for one.
+	edit := ModePolicy{Mode: ModeAcceptEdits, CommandDenylist: []string{"rm"}}
+	if decision, _ := edit.Decide(Action{Kind: ActionEdit, Path: "rm/notes.md"}); decision != Allow {
+		t.Errorf("the command deny list answered for an edit: %v", decision)
+	}
+}
+
+// The list matches a command wherever it sits in a chain, and it reads the
+// escalated spelling as the command it escalates. An allowlist refuses to
+// match a chain and the reader is asked; a deny list that did the same would
+// be walked around with two characters.
+func TestDenylistMatchesReadsEveryCommandInTheLine(t *testing.T) {
+	deny := []string{"git push", "terraform apply"}
+	matched := []string{
+		"git push",
+		"git push origin main",
+		"go test ./... && git push",
+		"go test ./...; git push",
+		"go test ./... || git push",
+		"echo $(git push)",
+		"sudo terraform apply",
+		"env TF_LOG=debug terraform apply",
+		"true\ngit push",
+		"go build | git push",
+	}
+	for _, command := range matched {
+		if !DenylistMatches(deny, command) {
+			t.Errorf("DenylistMatches(%q) = false, want true", command)
+		}
+	}
+	clear := []string{
+		"git status",
+		"git pushall",
+		"go test ./...",
+		"terraform plan",
+		"echo git push is denied here",
+	}
+	for _, command := range clear {
+		if DenylistMatches(deny, command) {
+			t.Errorf("DenylistMatches(%q) = true, want false", command)
+		}
+	}
+	if DenylistMatches(nil, "git push") {
+		t.Error("an empty deny list matched something")
+	}
+}
+
+// The refusal the model reads names no key and points at no file: the list
+// is the user's, and a refusal carrying the instructions for editing it
+// would be handing the model the way around it.
+func TestDenylistResultTellsTheModelToStopRatherThanHowToEditTheList(t *testing.T) {
+	if !strings.HasPrefix(DenylistResult, "error:") {
+		t.Errorf("the tool result should read as an error, got %q", DenylistResult)
+	}
+	for _, leak := range []string{"command_denylist", "config.toml", "behavior."} {
+		if strings.Contains(DenylistResult, leak) {
+			t.Errorf("the tool result names %q, which the model can act on: %q", leak, DenylistResult)
+		}
+	}
+}
+
+// The two spellings a chain-aware split alone would miss: a command reached
+// by its path, and a command handed to an interpreter as an argument.
+func TestDenylistMatchesReadsAPathAndAnInterpretersArgument(t *testing.T) {
+	deny := []string{"git push", "terraform apply", "./scripts/deploy.sh"}
+	matched := []string{
+		"/usr/bin/git push origin main",
+		"sudo /usr/local/bin/terraform apply",
+		`sh -c "git push"`,
+		"bash -c 'terraform apply -auto-approve'",
+		`/bin/bash -lc "cd /tmp && git push"`,
+		"./scripts/deploy.sh --prod",
+		// An escalation carries its own options, and shhh cannot tell the
+		// value of one from the command behind it without knowing sudo's
+		// table — so the list is offered every word after the escalation.
+		"sudo -E git push",
+		"sudo -u deploy terraform apply",
+		"env -i git push",
+		// A search hands the rest of the line to another program.
+		`find . -name '*.tf' -exec terraform apply {} \;`,
+		`eval "git push"`,
+	}
+	for _, command := range matched {
+		if !DenylistMatches(deny, command) {
+			t.Errorf("DenylistMatches(%q) = false, want true", command)
+		}
+	}
+	// Quoting is ignored only inside an interpreter's arguments: everywhere
+	// else a quoted mention of a denied command is a mention.
+	clear := []string{
+		`git commit -m "do not git push yet"`,
+		"grep -rn terraform apply-notes.md",
+	}
+	for _, command := range clear {
+		if DenylistMatches(deny, command) {
+			t.Errorf("DenylistMatches(%q) = true, want false", command)
+		}
+	}
+}

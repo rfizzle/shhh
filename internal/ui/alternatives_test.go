@@ -117,8 +117,10 @@ func TestAlternatives_ChoosingOneMakesItTheCommand(t *testing.T) {
 func TestAlternatives_TheChosenCommandIsArmedLikeTheFirstOne(t *testing.T) {
 	// The alternative here is destructive and the command it replaces is not:
 	// everything the surface states about a command has to be re-read, not
-	// carried over.
-	m := withAlternatives(t, "find ./build -mindepth 1 -delete\n--- alternatives\nrm -rf ./build\n# one call · not reversible")
+	// carried over. The first one measures the directory rather than
+	// emptying it — a find with -delete reads as a gentler spelling and is
+	// the same act, which is why the safety list knows it.
+	m := withAlternatives(t, "du -sh ./build\n--- alternatives\nrm -rf ./build\n# one call · not reversible")
 	if strings.Contains(m.View().Content, "[y] run it") {
 		t.Fatalf("the first command should not have moved the default:\n%s", m.View().Content)
 	}

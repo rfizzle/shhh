@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/mattn/go-isatty"
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/observe"
@@ -44,6 +45,12 @@ func oneShotOutcome(r ui.GenerateResult) string {
 		return observe.TurnCancelled
 	}
 	return observe.TurnDone
+}
+
+// runAction reports whether an action from the result surface is one that
+// executes the command rather than showing, editing or saving it.
+func runAction(a ui.Action) bool {
+	return a == ui.ActionRun || a == ui.ActionRunAll || a == ui.ActionRunStep
 }
 
 // pendingRecord is the store and the session row, opened away from the path
@@ -414,13 +421,27 @@ func newCmdCmd() *cobra.Command {
 				return reportFailure(result.Err, resolved.Model)
 			}
 
+			// The command on the screen is the model's, not the reader's,
+			// so the deny list answers for it here as it does at a card:
+			// the point of the list is that this command never becomes a
+			// decision, and a key pressed on it is not the answer to one.
+			if runAction(result.Action) && agent.DenylistMatches(cfg.Behavior.CommandDenylist, result.Command) {
+				fmt.Fprintln(os.Stderr, "\n⊘ Refused — this command is on the deny list in your configuration; it was not run.")
+				// The request was answered and the answer was refused,
+				// which is the bucket a cancel lands in: an outcome mix
+				// that could not tell a refusal from a completed run is
+				// the one figure this record exists to make readable.
+				outcome = observe.TurnCancelled
+				return nil
+			}
+
 			// The result surface already moves the safe default on a
 			// destructive command and takes a deliberate `y` for it,
 			// so asking the same question again here is a second prompt for
 			// one decision. It still runs for anything that reached this
 			// point without being asked.
 			if cfg.SafetyWarningsEnabled() && !result.Confirmed {
-				if result.Action == ui.ActionRun || result.Action == ui.ActionRunAll || result.Action == ui.ActionRunStep {
+				if runAction(result.Action) {
 					if warnings := safety.Check(result.Command); len(warnings) > 0 {
 						fmt.Fprintln(os.Stderr, "\n⚠ Safety warning:")
 						for _, w := range warnings {

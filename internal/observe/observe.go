@@ -118,8 +118,13 @@ const (
 	ReasonSessionGrant    = "session-grant"
 	ReasonSessionScope    = "session-scope"
 	ReasonAllowlist       = "allowlist"
-	ReasonPlanMode        = "plan-mode"
-	ReasonPlanInspection  = "plan-inspection"
+	// A command the deny list refused. It is its own code rather than one
+	// of the mode's, because what a reader does about it is edit a list and
+	// not change a mode, and a rate that mixed the two would answer neither
+	// question.
+	ReasonDenylist       = "denylist"
+	ReasonPlanMode       = "plan-mode"
+	ReasonPlanInspection = "plan-inspection"
 	// AskReason's, for a call the policy hands to a person.
 	ReasonSafety         = "safety"
 	ReasonScopeSensitive = "scope-sensitive"
@@ -422,6 +427,8 @@ func ReasonCode(raw string) string {
 		return ReasonSessionScope
 	case "allowlist":
 		return ReasonAllowlist
+	case agent.DenyReasonDenylist:
+		return ReasonDenylist
 	case "plan mode":
 		return ReasonPlanMode
 	case "plan mode inspection":

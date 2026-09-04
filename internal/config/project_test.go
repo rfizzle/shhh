@@ -64,19 +64,22 @@ default_mode = "auto"
 	}
 }
 
-// The three allowlist-shaped keys extend rather than replace: a checkout
+// The four allowlist-shaped keys extend rather than replace: a checkout
 // cannot know what is on the person's list, and a replacement would quietly
-// take away commands that have nothing to do with this repository.
-func TestLayerProject_TheThreeAllowlistsUnionAndScopeDirsAreRooted(t *testing.T) {
+// take away commands that have nothing to do with this repository — or, on
+// the deny list, take away a refusal the person holds everywhere.
+func TestLayerProject_TheCommandListsUnionAndScopeDirsAreRooted(t *testing.T) {
 	path := writeProject(t, `
 [behavior]
 command_allowlist = ["go test", "ls"]
+command_denylist = ["terraform apply"]
 read_only_commands = ["rg"]
 scope_dirs = ["../shared", "/opt/fixed"]
 mode_cycle = ["manual", "auto"]
 `)
 	user := Config{}
 	user.Behavior.CommandAllowlist = []string{"ls", "git status"}
+	user.Behavior.CommandDenylist = []string{"git push"}
 	user.Behavior.ModeCycle = []string{"manual", "accept-edits", "auto", "plan"}
 
 	cfg, _, err := LayerProject(user, path)
@@ -85,6 +88,9 @@ mode_cycle = ["manual", "auto"]
 	}
 	if got := strings.Join(cfg.Behavior.CommandAllowlist, ","); got != "ls,git status,go test" {
 		t.Errorf("the allowlist is not the person's with the checkout's added: %q", got)
+	}
+	if got := strings.Join(cfg.Behavior.CommandDenylist, ","); got != "git push,terraform apply" {
+		t.Errorf("the checkout took away a refusal instead of adding one: %q", got)
 	}
 	if got := strings.Join(cfg.Behavior.ReadOnlyCommands, ","); got != "rg" {
 		t.Errorf("an empty list on the person's side did not take the checkout's: %q", got)

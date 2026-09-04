@@ -86,8 +86,14 @@ type Command struct {
 	// leaves it false, and Reach says so rather than promising quiet.
 	Net bool
 	// Sudo is true when any segment runs under a privilege-escalation prefix.
-	Sudo  bool
-	Level Level
+	Sudo bool
+	// Recursive is true when a segment deletes recursively. The flag is read
+	// out of a bundle and from anywhere in the argument list, because `rm
+	// -rf`, `rm -fr`, `rm -r -f` and `rm ./build -R` are one command spelled
+	// four ways — and the difference between them and a plain `rm` is not
+	// one path against another, it is one path against everything under it.
+	Recursive bool
+	Level     Level
 	// describe is whether a recorded write is stat-ed and walked. Outline
 	// leaves it false: it wants the names, not the sizes.
 	describe bool
@@ -161,6 +167,9 @@ func (c Command) Touches() (value, detail string) {
 		value += fmt.Sprintf(" and %d more", n)
 	}
 	detail = c.Writes[0].Describe()
+	if c.Recursive {
+		detail += "; removed with everything under it"
+	}
 	if len(c.Unresolved) > 0 {
 		detail += "; " + c.Unresolved[0]
 	}
@@ -410,6 +419,9 @@ func (c *Command) resolveSegment(seg segment) {
 		c.resolveDD(toks[1:])
 		return
 	}
+	if verb == "rm" && recursiveDelete(toks[1:]) {
+		c.Recursive = true
+	}
 	if rule, ok := writeVerbs[verb]; ok {
 		c.resolveVerb(verb, rule, toks[1:])
 		return
@@ -512,6 +524,29 @@ func splitRedirect(s string) (op, target string) {
 	body = strings.TrimPrefix(body, ">")
 	body = strings.TrimPrefix(body, "|")
 	return ">", body
+}
+
+// recursiveDelete reports whether rm was told to descend, in any of the
+// spellings it accepts. A short option is read as a bundle of letters rather
+// than matched off the front of the word, so the position the letter happens
+// to sit in decides nothing — which is the whole difference between this and
+// asking whether an argument starts with `-r`.
+func recursiveDelete(toks []token) bool {
+	for _, t := range toks {
+		w := t.text
+		switch {
+		case w == "--recursive", w == "--dir":
+			return true
+		case strings.HasPrefix(w, "--"):
+			// Any other long option, caught here so its letters are never
+			// read as a bundle: `--interactive` is not a `-r`.
+		case len(w) > 1 && w[0] == '-':
+			if strings.ContainsAny(w[1:], "rR") {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func hasFlag(toks []token, flag string) bool {

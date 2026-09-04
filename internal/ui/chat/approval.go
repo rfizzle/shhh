@@ -272,6 +272,23 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 		m.viewport.GotoBottom()
 		return m.advanceApprovalQueue()
 	}
+	// A command the deny list names is answered here too, and for the same
+	// reason: the list is the user's standing answer, so there is no card to
+	// draw, no earlier [A] that reaches it and no classifier round to spend.
+	// The row is the rule-denial row rather than a notice, because a denial
+	// is a moment that mattered and the reader's next act depends on knowing
+	// a rule and not a person refused it.
+	if m.deniedByRule(req) {
+		m.recordDecision(observe.DecisionDeny, observe.ReasonDenylist)
+		m.lastDenial = req.summary + " — " + denylistWhy
+		// Surfaces on the notice rail until the next user turn.
+		m.denialNotice = req.summary
+		m.agent.ResolveApproval(agent.DenylistResult)
+		m.appendEntry(deniedEntry(req, decidedByAuto, agent.DenyReasonDenylist, 0))
+		m.viewport.SetLines(m.renderHistoryLines())
+		m.viewport.GotoBottom()
+		return m.advanceApprovalQueue()
+	}
 	m.pendingApproval = req
 	if req.kind == approvalExec {
 		m.pendingRun = req.command
@@ -420,6 +437,8 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 // can reach, and the classifier's reason otherwise.
 func denialResult(reason string) string {
 	switch {
+	case reason == agent.DenyReasonDenylist:
+		return agent.DenylistResult
 	case reason == "plan mode":
 		return agent.PlanModeResult
 	case strings.HasPrefix(reason, "outside the working scope"):

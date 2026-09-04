@@ -6,6 +6,8 @@ package agent
 import (
 	"path/filepath"
 	"strings"
+
+	"github.com/rfizzle/shhh/internal/safety"
 )
 
 // allowlistUnsafe are shell metacharacters that could chain a second command
@@ -19,8 +21,62 @@ func AllowlistMatches(allowlist []string, command string) bool {
 	if strings.ContainsAny(command, allowlistUnsafe) {
 		return false
 	}
+	return anyPrefix(allowlist, command)
+}
+
+// DenylistMatches reports whether any command in the line is one the deny
+// list names, by the same leading-words rule the allowlist uses. It is asked
+// before anything that can allow, and nothing downstream can overrule it.
+//
+// What counts as "a command in the line" is the safety package's reading of
+// it, which the two gates share on purpose. Both are asked the same question
+// — is this line going to run that — and a spelling one of them learns and
+// the other does not is a hole in whichever was not told.
+//
+// It is the opposite reading of a chain from the allowlist's. A line an
+// allowlist cannot parse is a line it refuses to match, and the reader is
+// asked; the cost of over-reading there is a prompt. A line a deny list
+// cannot parse would be a line it lets through, and `git status && git push`
+// is exactly the spelling somebody would reach for.
+func DenylistMatches(denylist []string, command string) bool {
+	if len(denylist) == 0 {
+		return false
+	}
+	for _, cmd := range safety.Commands(command) {
+		if denies(denylist, cmd) {
+			return true
+		}
+	}
+	return false
+}
+
+// denies matches one command against the list, as it was written and again
+// with the program's own name in place of the path it was reached by:
+// `/usr/bin/git push` is a `git push`. Both spellings are tried rather than
+// only the second, because an entry that names a path of its own —
+// `./scripts/deploy.sh` — has to keep matching the way it was written.
+func denies(denylist []string, cmd string) bool {
+	if anyPrefix(denylist, cmd) {
+		return true
+	}
+	words := strings.Fields(cmd)
+	if len(words) == 0 {
+		return false
+	}
+	base := safety.BaseName(words[0])
+	if base == words[0] {
+		return false
+	}
+	words[0] = base
+	return anyPrefix(denylist, strings.Join(words, " "))
+}
+
+// anyPrefix reports whether command's leading words are exactly the words of
+// some entry. It is the matching rule both lists share, so a person who has
+// learned how one of them reads a command has learned the other.
+func anyPrefix(entries []string, command string) bool {
 	words := strings.Fields(command)
-	for _, entry := range allowlist {
+	for _, entry := range entries {
 		pattern := strings.Fields(entry)
 		if len(pattern) == 0 || len(pattern) > len(words) {
 			continue

@@ -348,6 +348,12 @@ type BehaviorConfig struct {
 	// sessions ("go test" approves "go test ./..."); safety-flagged commands
 	// always prompt regardless. Empty (the default) means every command asks.
 	CommandAllowlist []string `toml:"command_allowlist"`
+	// CommandDenylist entries refuse matching agent commands outright, by the
+	// same leading-words rule the allowlist uses and before it. It is the
+	// answer given once for every mode: a command on it never reaches a card,
+	// a classifier, or a headless run's --yes. Empty (the default) means
+	// nothing is refused in advance.
+	CommandDenylist []string `toml:"command_denylist"`
 	// ReadOnlyCommands extends the built-in inspection allowlist that runs
 	// without prompting in every mode (agent.ReadOnlyCommands). Entries are
 	// the user's own call: they skip the built-in flag guards.

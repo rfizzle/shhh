@@ -31,6 +31,14 @@ func (m Model) WithCommandAllowlist(list []string) Model {
 	return m
 }
 
+// WithCommandDenylist sets the config-provided command deny list
+// (behavior.command_denylist): commands whose leading words match an entry
+// are refused before a card is drawn, in every mode.
+func (m Model) WithCommandDenylist(list []string) Model {
+	m.policy.denylist = list
+	return m
+}
+
 // WithCommandTimeout bounds how long one assistant-run command may take.
 // Zero or less removes the ceiling.
 //
@@ -73,6 +81,7 @@ func (m Model) modePolicy() agent.ModePolicy {
 		AllowCommands:    m.policy.allCommands,
 		EditDirs:         m.policy.editDirs,
 		CommandAllowlist: m.allowlist(),
+		CommandDenylist:  m.policy.denylist,
 		ReadOnlyExtra:    m.policy.readOnlyExtra,
 		ReadOnlyDisabled: m.policy.readOnlyDisabled,
 	}
@@ -88,6 +97,29 @@ func (m Model) allowlist() []string {
 	out := make([]string, 0, len(m.policy.allowlist)+len(m.policy.commands))
 	return append(append(out, m.policy.allowlist...), m.policy.commands...)
 }
+
+// deniedByRule reports whether the deny list answers this request, which is
+// asked before a card is built rather than after: a command the user has
+// refused in advance is not a decision, so there is nothing to draw, nothing
+// to batch-approve and nothing to send to the classifier.
+//
+// It is asked of the actions that run a command — execute_command and a
+// process start — because the list names commands. An edit is a different
+// question and the deny list does not answer it.
+// See docs/capabilities/approvals-and-safety.md#a-deny-list-is-answered-before-anything-can-allow.
+func (m Model) deniedByRule(req *approvalRequest) bool {
+	if req == nil || req.command == "" {
+		return false
+	}
+	return agent.DenylistMatches(m.policy.denylist, req.command)
+}
+
+// denylistWhy is the sentence `/permissions why` prints under a deny-list
+// refusal. "A rule said no" is only actionable when the reader is told which
+// rule, so it names the list and the key it is written in — the reader is the
+// one person who can edit it, and the model is deliberately told neither.
+const denylistWhy = "refused by the command deny list (behavior.command_denylist), " +
+	"which is read before the allowlist and before the classifier"
 
 // grants is the session's four grants as one value, for the surfaces that
 // carry all of them: the sub-agent supervisor and /permissions revoke.
@@ -333,6 +365,9 @@ func (m Model) policyHelp() string {
 	if n := len(m.policy.allowlist); n > 0 {
 		fmt.Fprintf(&sb, "  allowlist: %d command pattern(s) from config auto-approve\n", n)
 	}
+	if n := len(m.policy.denylist); n > 0 {
+		fmt.Fprintf(&sb, "  denylist:  %d command pattern(s) from config are refused in every mode\n", n)
+	}
 	if m.grants().Any() {
 		sb.WriteString("  /permissions grants names them; /permissions revoke takes them back.\n")
 	}
@@ -386,7 +421,7 @@ func allowlistMatches(allowlist []string, command string) bool {
 // the same act.
 func (m Model) grantStatus() string {
 	g := m.grants()
-	if !g.Any() && len(m.policy.allowlist) == 0 && len(m.scopeDirs()) == 0 {
+	if !g.Any() && len(m.policy.allowlist) == 0 && len(m.policy.denylist) == 0 && len(m.scopeDirs()) == 0 {
 		return "Nothing is granted — every gated call asks.\n" +
 			"[a] on a confirm prompt grants the one shape of call it is showing; /permissions allow <commands|edits> grants the category."
 	}
@@ -412,6 +447,9 @@ func (m Model) grantStatus() string {
 	}
 	if n := len(m.policy.allowlist); n > 0 {
 		fmt.Fprintf(&sb, "  config     %d command pattern(s) from behavior.command_allowlist — not this session's to revoke\n", n)
+	}
+	if n := len(m.policy.denylist); n > 0 {
+		fmt.Fprintf(&sb, "  config     %d command pattern(s) from behavior.command_denylist — refused before anything here can allow them\n", n)
 	}
 	if g.Any() {
 		sb.WriteString("/permissions revoke [edits|commands] takes them back.")
@@ -498,6 +536,11 @@ type policyState struct {
 	mode      agent.Mode
 	cycle     []agent.Mode
 	allowlist []string
+	// denylist is the config's refusals. It is not a grant and nothing in
+	// this struct can revoke it: it sits here because it is read against the
+	// mode in the same breath the allowlist is, and a reader looking for
+	// what answers a command should find both in one place.
+	denylist []string
 	// timeout bounds one assistant-run command; zero means no ceiling.
 	timeout time.Duration
 	// The blanket grants: every edit, every command, until revoked. They are
