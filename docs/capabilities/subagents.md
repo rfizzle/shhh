@@ -175,6 +175,15 @@ key that leaves: a mistyped answer costs an answer, not the drafting.
 Retry re-runs a child on its original task rather than asking the parent to
 reconstruct what it was doing.
 
+A child that has just failed is often still stopping — a writer's isolated
+copy of the workspace is a directory that has to be taken away, and on a busy
+machine that is not instant. The retry waits for it and says so on the lane
+rather than refusing: the offer appears the moment the child fails, and a
+person pressing it then has no way of knowing that the previous attempt is
+still letting go. The wait is bounded, because a teardown that never finishes
+must not leave a child queued behind it forever; past the bound the child is
+failed again, with the same offer still standing.
+
 ## Related
 
 - [`coding-agent.md`](coding-agent.md) — the parent

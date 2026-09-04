@@ -9,7 +9,9 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/rfizzle/shhh/internal/provider"
 )
@@ -121,5 +123,201 @@ func blockedForeverEnv() EnvFactory {
 			Stream:       stream,
 			Executor:     func(string, json.RawMessage) (string, error) { return "", errors.New("unused") },
 		}, nil
+	}
+}
+
+// TestRetryWaitsForTheAttemptItReplaces drives a retry into the window
+// between a child failing and its attempt letting go. The recorder's End is
+// the teardown step the test holds open; a real one is a worktree being
+// removed, which is a git process and is exactly as slow as the machine is
+// busy.
+func TestRetryWaitsForTheAttemptItReplaces(t *testing.T) {
+	env := &scriptedEnv{}
+	release := make(chan struct{})
+	releaseOnce := sync.OnceFunc(func() { close(release) })
+	sup := New(context.Background(), Options{
+		Root:   t.TempDir(),
+		NewEnv: env.factory(),
+		Record: func(Spec, string) Recorder {
+			return Recorder{End: func() { <-release }}
+		},
+	})
+	t.Cleanup(sup.Close)
+	t.Cleanup(releaseOnce)
+
+	// No scripted steps: the first stream fails, which fails the child.
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the loop"}`)
+	waitState(t, sup, "researcher-1", StateFailed)
+
+	env.mu.Lock()
+	env.steps = []streamStep{{text: "the loop lives in internal/agent"}}
+	env.mu.Unlock()
+
+	if err := sup.Retry("researcher-1"); err != nil {
+		t.Fatalf("a retry pressed while the attempt is still stopping must wait, not refuse: %v", err)
+	}
+	st, _ := sup.Get("researcher-1")
+	if st.State != StateQueued || !strings.Contains(st.Detail, "waiting for the last attempt to stop") {
+		t.Fatalf("the lane must say what it is waiting for, got %s / %q", st.State, st.Detail)
+	}
+
+	releaseOnce()
+	waitState(t, sup, "researcher-1", StateDone)
+	done, _ := sup.Get("researcher-1")
+	if done.Summary != "the loop lives in internal/agent" {
+		t.Fatalf("the waiting retry never ran: %q", done.Summary)
+	}
+}
+
+// TestTheRetryOfferArrivesAfterTheAttemptHasStopped covers the other half:
+// the ordinary press answers the failure event, so that event must not go out
+// while the attempt is still holding its workspace. Nobody pressing `[r]` can
+// see a teardown, and a refusal they can only answer by pressing again is not
+// an answer.
+func TestTheRetryOfferArrivesAfterTheAttemptHasStopped(t *testing.T) {
+	env := &scriptedEnv{}
+	release := make(chan struct{})
+	releaseOnce := sync.OnceFunc(func() { close(release) })
+	sup := New(context.Background(), Options{
+		Root:   t.TempDir(),
+		NewEnv: env.factory(),
+		Record: func(Spec, string) Recorder {
+			return Recorder{End: func() { <-release }}
+		},
+	})
+	t.Cleanup(sup.Close)
+	t.Cleanup(releaseOnce)
+
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the loop"}`)
+	waitState(t, sup, "researcher-1", StateFailed)
+
+	settle := time.After(100 * time.Millisecond)
+	for waiting := true; waiting; {
+		select {
+		case ev := <-sup.Events():
+			if ev.Kind == EventDone {
+				t.Fatal("the retry was offered while the attempt was still stopping")
+			}
+		case <-settle:
+			waiting = false
+		}
+	}
+
+	releaseOnce()
+	c := sup.byName["researcher-1"]
+	deadline := time.After(5 * time.Second)
+	for {
+		select {
+		case ev := <-sup.Events():
+			if ev.Kind != EventDone {
+				continue
+			}
+			if ev.Status.State != StateFailed {
+				t.Fatalf("the failure event says %s", ev.Status.State)
+			}
+			select {
+			case <-c.done:
+			default:
+				t.Fatal("the failure event went out before the attempt let go")
+			}
+			return
+		case <-deadline:
+			t.Fatal("the failure event never arrived")
+		}
+	}
+}
+
+// TestARetryThatCannotStartLeavesTheOfferStanding covers the way out of the
+// wait. A teardown that never finishes must not leave a child queued behind
+// it with no way to ask again: the child goes back to the failure it had,
+// with the reason on its transcript, and `[r]` still means something.
+func TestARetryThatCannotStartLeavesTheOfferStanding(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	env := &scriptedEnv{}
+	release := make(chan struct{})
+	releaseOnce := sync.OnceFunc(func() { close(release) })
+	sup := New(ctx, Options{
+		Root:   t.TempDir(),
+		NewEnv: env.factory(),
+		Record: func(Spec, string) Recorder {
+			return Recorder{End: func() { <-release }}
+		},
+	})
+	t.Cleanup(sup.Close)
+	t.Cleanup(releaseOnce)
+	t.Cleanup(cancel)
+
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the loop"}`)
+	waitState(t, sup, "researcher-1", StateFailed)
+	failed, _ := sup.Get("researcher-1")
+
+	if err := sup.Retry("researcher-1"); err != nil {
+		t.Fatalf("retry: %v", err)
+	}
+	// A second press while the first is still waiting starts nothing: the
+	// child is queued, and a queued child is refused like any other live one.
+	if err := sup.Retry("researcher-1"); err == nil {
+		t.Fatal("a second retry must not start a second attempt")
+	} else if !strings.Contains(err.Error(), "queued") {
+		t.Fatalf("the refusal must name the state, got %q", err)
+	}
+
+	cancel()
+	waitState(t, sup, "researcher-1", StateFailed)
+	back, _ := sup.Get("researcher-1")
+	if back.Detail != failed.Detail {
+		t.Fatalf("the child must go back to the failure it had, got %q want %q", back.Detail, failed.Detail)
+	}
+	if !transcriptHas(sup.Transcript("researcher-1"), EntrySystem, "The retry did not start — ") {
+		t.Fatalf("the transcript must say why nothing happened: %+v", sup.Transcript("researcher-1"))
+	}
+}
+
+// TestAKillDuringTheWaitStopsTheRetry: a child waiting out its own teardown
+// is not finished, so the manager still offers to kill it. The kill has to
+// land on the retry — the attempt it would otherwise cancel has already
+// stopped — or the child starts again after being told to stop.
+func TestAKillDuringTheWaitStopsTheRetry(t *testing.T) {
+	env := &scriptedEnv{}
+	release := make(chan struct{})
+	releaseOnce := sync.OnceFunc(func() { close(release) })
+	sup := New(context.Background(), Options{
+		Root:   t.TempDir(),
+		NewEnv: env.factory(),
+		Record: func(Spec, string) Recorder {
+			return Recorder{End: func() { <-release }}
+		},
+	})
+	t.Cleanup(sup.Close)
+	t.Cleanup(releaseOnce)
+
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the loop"}`)
+	waitState(t, sup, "researcher-1", StateFailed)
+
+	// A second attempt would succeed, so a retry that ran anyway would show.
+	env.mu.Lock()
+	env.steps = []streamStep{{text: "the loop lives in internal/agent"}}
+	env.mu.Unlock()
+
+	if err := sup.Retry("researcher-1"); err != nil {
+		t.Fatalf("retry: %v", err)
+	}
+	if err := sup.Kill("researcher-1"); err != nil {
+		t.Fatalf("a waiting child must be killable: %v", err)
+	}
+	waitState(t, sup, "researcher-1", StateFailed)
+	releaseOnce()
+
+	// Nothing starts after the kill: the teardown it was waiting for has
+	// finished and the child is still where the kill left it.
+	deadline := time.Now().Add(200 * time.Millisecond)
+	for time.Now().Before(deadline) {
+		if st, _ := sup.Get("researcher-1"); st.State != StateFailed {
+			t.Fatalf("the killed retry started anyway (%s)", st.State)
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	if !transcriptHas(sup.Transcript("researcher-1"), EntrySystem, "The retry did not start — the agent was killed.") {
+		t.Fatalf("the transcript must say the kill stopped it: %+v", sup.Transcript("researcher-1"))
 	}
 }

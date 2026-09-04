@@ -1220,6 +1220,12 @@ func (s *Supervisor) Kill(name string) error {
 // new: a fresh conversation, a fresh workspace for a writer, and a fresh
 // token budget, because an attempt that inherits the spend that killed it
 // fails again before it has done anything.
+//
+// It returns when the child is claimed rather than when the new attempt
+// starts. A child whose previous attempt has not finished stopping waits for
+// it — the lane says what it is waiting for — because the alternative is
+// asking somebody to press the key again for a window they cannot see.
+// See docs/capabilities/subagents.md#a-failed-child-can-be-run-again.
 func (s *Supervisor) Retry(name string) error {
 	c, err := s.lookup(name)
 	if err != nil {
@@ -1228,20 +1234,127 @@ func (s *Supervisor) Retry(name string) error {
 	if s.ctx.Err() != nil {
 		return errors.New("the agent supervisor is shut down")
 	}
+	var wctx context.Context
+	var wcancel context.CancelFunc
+	var done chan struct{}
+	// Reading the state and claiming the child are one step. Two presses that
+	// both read "failed" would each start an attempt on the same child, and
+	// the one that lost would leave a worktree and a goroutine behind with
+	// nothing pointing at them. The claim is the queued state itself, so the
+	// second press meets the refusal every other live state meets.
 	c.mu.Lock()
 	state, detail := c.state, c.detail
+	if state == StateFailed {
+		c.state, c.detail = StateQueued, retryWaitDetail
+		// The channel is taken here and not read at the select below: what
+		// has to stop is the attempt being replaced, and a restart gives the
+		// child a new one.
+		done = c.done
+		// A child queued behind its own teardown is not finished, so it is
+		// still offered a kill — and that kill has to reach the retry, since
+		// the attempt it would otherwise cancel has already stopped. The wait
+		// gets a context for exactly that: stop() cancels whatever is
+		// current, and until the new attempt has one of its own, this is it.
+		wctx, wcancel = context.WithCancel(s.ctx)
+		c.ctx, c.cancel = wctx, wcancel
+	}
 	c.mu.Unlock()
 	if state != StateFailed {
 		return fmt.Errorf("agent %s is %s; only a failed agent can be retried", name, state)
 	}
-	// The previous run's goroutine owns the worktree cleanup and the done
-	// channel, so a retry waits for it to be gone rather than racing it.
-	select {
-	case <-c.done:
-	default:
-		return fmt.Errorf("agent %s is still shutting down; try again in a moment", name)
-	}
 
+	// The previous attempt's goroutine owns the worktree cleanup and closes
+	// the done channel last of all, so a retry joins it rather than racing
+	// it. A parent acting on the event that says the child failed finds
+	// nothing to wait for, because that event goes out after the channel
+	// closes; a surface that draws its offer from the child's state sees it
+	// fail before any of the teardown has run, and that is the press that
+	// waits — what it is waiting on is a git process, which takes exactly as
+	// long as the machine is busy.
+	select {
+	case <-done:
+		err := s.restart(c, detail)
+		// The new attempt brought its own context; this one has nothing left
+		// to govern either way.
+		wcancel()
+		if err != nil {
+			// The failure goes back as an error rather than onto the
+			// transcript: this caller has it in hand, and the one path where
+			// nobody does is the wait below, which writes it there itself.
+			c.set(StateFailed, detail)
+			s.emitUpdate(c)
+			return err
+		}
+		return nil
+	default:
+	}
+	// Waiting is the child's business rather than the caller's: the press
+	// comes from a keystroke, and a surface that blocked on a teardown would
+	// stop redrawing everything else for as long as it took. The lane says
+	// what it is waiting for instead.
+	s.emitUpdate(c)
+	// Safe against a Close racing this: the attempt this waits on has not
+	// closed its done channel, so it still holds a count of its own.
+	s.wg.Add(1)
+	go func() {
+		defer s.wg.Done()
+		defer wcancel()
+		timer := time.NewTimer(retryTeardownWait)
+		defer timer.Stop()
+		select {
+		case <-done:
+			if err := s.restart(c, detail); err != nil {
+				s.abandonRetry(c, detail, err.Error())
+			}
+		case <-timer.C:
+			s.abandonRetry(c, detail, "the previous attempt has not stopped")
+		case <-wctx.Done():
+			reason := "the agent was killed"
+			if s.ctx.Err() != nil {
+				reason = "the session is shutting down"
+			}
+			s.abandonRetry(c, detail, reason)
+		}
+	}()
+	return nil
+}
+
+// retryWaitDetail is the lane while a retry waits out the attempt it
+// replaces. A retry that has to wait is the ordinary queue with one more
+// thing in front of it, so it is the queued state and names what it is
+// queued behind — every surface that draws a child reads this detail, and a
+// lane that said only "queued" would be a retry that looked like it had
+// started.
+const retryWaitDetail = "queued · waiting for the last attempt to stop"
+
+// retryTeardownWait bounds that wait at the bound a stopping child already
+// has: the handoff a child stopped by its budget is given is the longest
+// step in any teardown, so a teardown that outlasts it is stuck rather than
+// slow. Waiting on a stuck one forever would leave the lane queued behind
+// something that is never coming back, with no way to ask again.
+const retryTeardownWait = finalCheckInTimeout
+
+// abandonRetry puts the child back where the retry found it and says on its
+// transcript why nothing happened. The failure and its offer both stand:
+// what could not be started is this attempt, so pressing again is still the
+// right thing to do.
+func (s *Supervisor) abandonRetry(c *child, detail, reason string) {
+	c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "The retry did not start — " + reason + "."})
+	c.set(StateFailed, detail)
+	s.emitUpdate(c)
+}
+
+// restart gives the child a new attempt on the same task: a fresh
+// conversation, a fresh workspace for a writer and a fresh budget. detail is
+// what the attempt it replaces ended saying, which the transcript note
+// repeats. The caller owns the child's state, so a setup that fails here
+// leaves the child claimed and hands back the error for the caller to put
+// it right with.
+func (s *Supervisor) restart(c *child, detail string) error {
+	if s.ctx.Err() != nil {
+		return errors.New("the agent supervisor is shut down")
+	}
+	var err error
 	root := s.opts.Root
 	var wt worktreeHandle
 	if c.profile.Writes {
@@ -1616,6 +1729,23 @@ func literalPrefix(p string) string {
 // run drives one child to completion on its own goroutine.
 func (s *Supervisor) run(c *child) {
 	defer s.wg.Done()
+	// How the attempt ended, and the one event that says so. It is captured
+	// where the state is set and sent on the way out, after the defers below
+	// have released everything the attempt held — the slot, the worktree, and
+	// last of all the done channel a retry joins. A parent that acts on this
+	// event therefore cannot act while the attempt still owns its workspace;
+	// one that watches the child's state instead sees it fail before any of
+	// the teardown has run, which is why the retry waits rather than refusing.
+	//
+	// The status is taken at the transition rather than read here, because by
+	// the time this runs a retry may already have started: the child would
+	// then report itself queued in the event that says it finished.
+	var ended Status
+	finish := func(state State, detail string) {
+		c.set(state, detail)
+		ended = c.status()
+	}
+	defer func() { s.emit(Event{Kind: EventDone, Status: ended}) }()
 	defer close(c.done)
 	if c.rec.End != nil {
 		defer c.rec.End()
@@ -1634,8 +1764,7 @@ func (s *Supervisor) run(c *child) {
 	case s.sem <- struct{}{}:
 		defer func() { <-s.sem }()
 	case <-c.ctx.Done():
-		c.set(StateFailed, "cancelled")
-		s.emit(Event{Kind: EventDone, Status: c.status()})
+		finish(StateFailed, "cancelled")
 		return
 	}
 
@@ -1812,8 +1941,7 @@ func (s *Supervisor) run(c *child) {
 				reason = budgetReason(c)
 			}
 			endTurn(observe.TurnCancelled)
-			c.set(StateFailed, reason)
-			s.emit(Event{Kind: EventDone, Status: c.status()})
+			finish(StateFailed, reason)
 			return
 		}
 
@@ -1845,8 +1973,7 @@ func (s *Supervisor) run(c *child) {
 			}
 
 			endTurn(observe.TurnDone)
-			c.set(StateDone, "done · "+plural(tools, "tool"))
-			s.emit(Event{Kind: EventDone, Status: c.status()})
+			finish(StateDone, "done · "+plural(tools, "tool"))
 			return
 		}
 
@@ -1859,8 +1986,7 @@ func (s *Supervisor) run(c *child) {
 			s.emitUpdate(c)
 			next, ok := s.awaitSteering(c)
 			if !ok {
-				c.set(StateFailed, "cancelled")
-				s.emit(Event{Kind: EventDone, Status: c.status()})
+				finish(StateFailed, "cancelled")
 				return
 			}
 			turn = next
@@ -1906,8 +2032,7 @@ func (s *Supervisor) run(c *child) {
 		endTurn(outcome)
 		c.agent.CancelTurn()
 		s.finalCheckIn(c)
-		c.set(StateFailed, s.failReason(c, err))
-		s.emit(Event{Kind: EventDone, Status: c.status()})
+		finish(StateFailed, s.failReason(c, err))
 		return
 	}
 }
