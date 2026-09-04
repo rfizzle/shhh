@@ -591,9 +591,12 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	session.sibling = readSibling(db)
 	// MCP servers, mirroring the interactive session. A read-only server's
 	// tools run; every other server's calls are gated and resolved the way
-	// web_fetch is — --yes opts in, the default denies.
+	// web_fetch is — --yes opts in, the default denies. A conversation takes
+	// only the servers marked read-only, here as on the screen: which
+	// servers a surface may reach is the surface's, not the screen's.
+	// See docs/capabilities/mcp.md#what-a-conversation-may-reach.
 	if session.mcp {
-		defer session.attachMCP(cmd.Context(), db, false)()
+		defer session.attachMCP(cmd.Context(), db, session.conversation)()
 	}
 
 	registerSkills(&session)
@@ -851,6 +854,10 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// hook refused is not counted as one and a call it rewrote is counted as
 	// the call that ran.
 	resolve = hookApprover(hooks, hookPos(a.Rounds), verdict.wrap(obs.decision), resolve)
+	// And outside all of it, what this run actually offered. A name nothing
+	// registered is not a call, so it is not a hook's event and not a path
+	// this run wrote either.
+	resolve = onlyRegistered(session.toolDefs, resolve)
 	if c := headlessTree(cfg, session.sibling, own); c != nil {
 		a.SetTreeCheck(*c)
 	}
@@ -1392,6 +1399,35 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist [
 			return "error: file modification not approved: headless mode denies edits by default (run with --yes)"
 		}
 		return "error: tool " + tc.Name + " cannot be approved in this session"
+	}
+}
+
+// onlyRegistered answers a call naming a tool this run never offered the way
+// the dispatch chain answers one, rather than letting the approver behind it
+// decide.
+//
+// The approver decides by tier: a name that mutates is a mutation and a
+// command is a command, wherever the name came from and whether or not
+// anything registered it. That is the right rule for a surface that
+// registered the whole toolset and the wrong one for a surface that
+// registered part of it — a conversation has no editor and no runner, and a
+// run of one with --yes would otherwise write a file through a name it never
+// offered. The model is told what it has (prompt.Toolbox), so a call to
+// something else is a mistake either way; this decides which mistake it is,
+// and the answer is the one the dispatch chain gives a name it does not know,
+// so the model reads the same sentence whichever side of the gate the name
+// fell on.
+// See docs/capabilities/chat.md#chat-changes-nothing.
+func onlyRegistered(defs []provider.Tool, next func(provider.ToolCall) string) func(provider.ToolCall) string {
+	offered := make(map[string]bool, len(defs))
+	for _, d := range defs {
+		offered[d.Name] = true
+	}
+	return func(tc provider.ToolCall) string {
+		if !offered[tc.Name] {
+			return "error: unknown tool: " + tc.Name
+		}
+		return next(tc)
 	}
 }
 

@@ -9,6 +9,15 @@ the difference is only in who is on the other end. Nobody reads the answer as
 it arrives; something else runs the command, waits for it to finish, and has
 to decide what to do next from what it got.
 
+`shhh chat -p "…"` is the other one: the conversation with the screen taken
+away. The contract is the same contract — the same statuses, the same three
+shapes, the same record — and what differs between the two runs is what
+differs between the two sessions ([`chat.md`](chat.md#a-conversation-runs-without-a-screen)).
+It reads files, the web and the servers marked read-only; it has no editor, no
+command runner and no changeset, and no flag turns one on. Reach for it where
+the work is reading and answering, and for `shhh code -p` where the work
+changes something.
+
 That is the whole design constraint. A person watching a session can see a
 round cap being hit, can read a provider's rate limit on the meter, can tell a
 finished turn from an interrupted one at a glance. A script sees a process
@@ -217,10 +226,15 @@ one backlog item taken from research through to a commit — or the whole ready
 list, one item at a time, with `--all`.
 
 It is the same machine the session drives and it drives it the same way, with
-the screen taken away. Each stage of a run is one `shhh code --print` in the
-checkout, so a stage is a session and an item is a handful of them; nothing
-carries between two stages except the item's checkpoint, which is what the
-checkpoint has always been for. What a stage produced is read out of its
+the screen taken away. Each stage of a run is one print run in the checkout,
+so a stage is a session and an item is a handful of them; nothing carries
+between two stages except the item's checkpoint, which is what the checkpoint
+has always been for. **Which print run is the step's own mode**: a stage that
+changes the tree is a coding agent in auto, and a run whose every stage only
+reads is a conversation from end to end, so a backlog of readings is worked
+overnight without a coding agent ever starting. The reading stages of a run
+that does write stay with the coding agent, because what they read is the
+change that run made. What a stage produced is read out of its
 transcript whatever status that process left, because a stage that ran out of
 rounds still did work and the machine judges a stage on its answer.
 

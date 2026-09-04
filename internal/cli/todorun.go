@@ -5,10 +5,11 @@ package cli
 // at a time and one session per item.
 //
 // The session is a process. Every step that spends a turn spends it as one
-// `shhh code --print` in the checkout — the shape the eval runner already
-// uses, for the same reason: what a step produced is read out of the
-// transcript whatever the process's exit status, because a step that ran out
-// of rounds still did work and the machine judges it on its answer. Nothing
+// print run in the checkout — `shhh code` where the work changes the tree and
+// `shhh chat` where it only reads — the shape the eval runner already uses,
+// for the same reason: what a step produced is read out of the transcript
+// whatever the process's exit status, because a step that ran out of rounds
+// still did work and the machine judges it on its answer. Nothing
 // carries between two steps except the checkpoint, which is what the
 // checkpoint has always been for: every step prompt states the item, the plan
 // and the findings it needs, so a step is startable from nothing. A command
@@ -388,6 +389,13 @@ func (d *todoDriver) begin(it todo.Item, inSprint bool) (*run.State, run.Step) {
 			st.NoCommit, st.Repo, st.Sprint = opt.NoCommit, opt.Repo, opt.Sprint
 			st.CloseGate, st.InSprint = opt.CloseGate, opt.InSprint
 			st.Groomed, st.Wordings = opt.Groomed, opt.Wordings
+			// The steps are re-stamped like the session and the mode, and
+			// not read back out of the checkpoint, which does not carry
+			// them: a state handed none reads as the profile a checkout of
+			// code runs, so a continued reading would be worked through
+			// stages it never had — and refused for having changed shape,
+			// which is the sentence a run that really did change gets.
+			st.Pipeline = opt.Steps()
 			return st, st.Continue(it)
 		}
 		// An item left in progress by something that wrote no checkpoint is
@@ -442,10 +450,12 @@ func (d *todoDriver) carry(ctx context.Context, deadline time.Time, st *run.Stat
 		// runner must not do, so the item stops with the questions on it.
 		return st.Block("the run reached a decision and there is nobody to ask — " + st.Paused)
 	case run.ActionReview:
-		// An implement stage that left the tree exactly as it found it has
-		// produced nothing to review and nothing to commit, and another round
-		// over the same plan would produce the same nothing.
-		if len(st.Paths) == 0 {
+		// A stage that was meant to change the tree and left it exactly as it
+		// found it has produced nothing to review and nothing to commit, and
+		// another round over the same plan would produce the same nothing. A
+		// run whose steps only read has no change to point at by design, and
+		// the reader is given what the run gathered instead.
+		if st.Pipeline.Writes() && len(st.Paths) == 0 {
 			return st.Block("the run changed no files under the repository, so there is nothing to review")
 		}
 		// A reviewer child is a spawn, and an unattended run has no
@@ -478,11 +488,11 @@ func (d *todoDriver) say(st *run.State, step run.Step) {
 	fmt.Fprintf(d.out, "▸ todo run %s · %s\n", st.Slug, step.Name())
 }
 
-// ask spends one stage as one session: a `shhh code --print` in the checkout,
-// with the stage's prompt and the permissions its mode asks for. The working
-// stages auto-approve, because there is nobody to approve for them; the
-// reading stages do not, which is what keeps a review from editing the tree
-// it is reviewing.
+// ask spends one stage as one session: a print run in the checkout, with the
+// stage's prompt and the permissions its mode asks for. The working stages
+// auto-approve, because there is nobody to approve for them; the reading
+// stages do not, which is what keeps a review from editing the tree it is
+// reviewing.
 //
 // The answer is read out of the transcript whatever the process's status. A
 // stage that ran out of rounds or lost the provider still produced whatever
@@ -493,15 +503,7 @@ func (d *todoDriver) say(st *run.State, step run.Step) {
 // is a whole one, because the status cannot: a turn that ended at the model's
 // output ceiling ended the way turns end.
 func (d *todoDriver) ask(ctx context.Context, deadline time.Time, step run.Step) (todoTurn, error) {
-	// The step's mode is what chooses the process. Both are `shhh code
-	// --print` today, because that is the only unattended surface there is;
-	// a step that only reads wants the read-only conversation instead, and
-	// this is where it will be chosen once that surface can be printed to.
-	args := []string{"code", "--print", "--output", "json"}
-	if step.Mode == run.ModeAuto {
-		args = append(args, "--yes")
-	}
-	args = append(args, step.Prompt)
+	args := append(todoStageArgs(d.steps().Writes(), step.Mode), step.Prompt)
 	if !deadline.IsZero() {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithDeadline(ctx, deadline)
@@ -540,6 +542,29 @@ func (d *todoDriver) ask(ctx context.Context, deadline time.Time, step run.Step)
 	}
 	return todoTurn{code: code}, fmt.Errorf("the %s turn produced no answer (exit %d): %s",
 		step.Stage, code, todoFirstProblem(t.Error, errOut.String(), errString(runErr)))
+}
+
+// todoStageArgs is the process a stage's turn is spent as, and the whole of
+// the choice. A step that changes the tree is a coding session in auto: it
+// needs the editor, the runner and the changeset, and there is nobody to
+// approve each edit for it. A step that only reads needs none of those, so a
+// run whose every step reads is a conversation from end to end and never
+// loads a coding agent's containment or toolset for work that would not
+// touch them.
+//
+// The reading steps of a run that does write stay with the coding agent, and
+// that is what `writes` is for. What those steps read is the change the run
+// made — the diff a review is of, the history a commit message is written
+// into — and reading it takes tools a conversation does not have.
+// See docs/capabilities/headless.md#the-backlog-worked-without-you.
+func todoStageArgs(writes bool, mode run.Mode) []string {
+	if mode == run.ModeAuto {
+		return []string{"code", "--print", "--output", "json", "--yes"}
+	}
+	if writes {
+		return []string{"code", "--print", "--output", "json"}
+	}
+	return []string{"chat", "--print", "--output", "json"}
 }
 
 // todoFirstProblem is the first of the places a failed stage says why, in the

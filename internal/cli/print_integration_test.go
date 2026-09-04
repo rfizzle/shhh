@@ -464,6 +464,15 @@ func TestPrintRun_EveryStatusTheContractNames(t *testing.T) {
 		code: 6,
 		says: "a tool call was refused",
 	}, {
+		// The statuses are the print path's and not the coding agent's: a
+		// conversation behind --print is the same run and leaves the same
+		// contract behind.
+		name:   "a conversation whose provider stopped answering",
+		script: []reply{{status: http.StatusInternalServerError}},
+		args:   []string{"chat", "-p", "say hi"},
+		code:   4,
+		says:   "overloaded",
+	}, {
 		name:   "a run somebody interrupted while it was working",
 		script: []reply{{text: "thinking about it", hold: true}},
 		args:   []string{"code", "-p", "take your time"},
@@ -660,5 +669,57 @@ func write(t *testing.T, path, body string) {
 	}
 	if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// A conversation runs without a screen too, and what it leaves behind is what
+// the coding agent's print run leaves behind: the same transcript, the same
+// fields in it, the same status. A script that reads one reads the other.
+func TestPrintRun_AConversationLeavesTheSameTranscript(t *testing.T) {
+	f := startFakeProvider(t,
+		reply{tool: "read_file", args: map[string]string{"path": "there.txt"}},
+		reply{text: "the answer"})
+	s := newPrintSession(t, f)
+	write(t, filepath.Join(s.dir, "there.txt"), "something to read\n")
+
+	out, errs, code := s.run(t, "", "chat", "--print", "--output", "json", "read it")
+	if code != 0 {
+		t.Fatalf("the run exited %d\nstdout: %s\nstderr: %s", code, out, errs)
+	}
+	var transcript struct {
+		Final     string `json:"final"`
+		Truncated bool   `json:"truncated"`
+	}
+	if err := json.Unmarshal([]byte(out), &transcript); err != nil {
+		t.Fatalf("the transcript did not parse: %v\n%s", err, out)
+	}
+	if transcript.Final != "the answer" || transcript.Truncated {
+		t.Fatalf("the transcript says %+v", transcript)
+	}
+	if !strings.Contains(errs, "read_file") {
+		t.Errorf("the read the run made should be on stderr, got %q", errs)
+	}
+}
+
+// What a conversation cannot do, it cannot be told to do. A tool that writes
+// is not registered, so a call naming one is answered as the unknown name it
+// is rather than resolved by a policy that judges by tier — and the opt-in
+// that approves what leaves the machine buys nothing here, because there was
+// never a call to approve.
+func TestPrintRun_AConversationHasNothingThatWrites(t *testing.T) {
+	f := startFakeProvider(t,
+		reply{tool: "write_file", args: map[string]string{"path": "made.txt", "content": "work\n"}},
+		reply{text: "there is nothing here to write with"})
+	s := newPrintSession(t, f)
+
+	out, errs, code := s.run(t, "", "chat", "--print", "--yes", "write something")
+	if code != 0 {
+		t.Fatalf("the run exited %d\nstdout: %s\nstderr: %s", code, out, errs)
+	}
+	if _, err := os.Stat(filepath.Join(s.dir, "made.txt")); !os.IsNotExist(err) {
+		t.Fatalf("a conversation wrote a file: %v", err)
+	}
+	if !strings.Contains(flatten(errs), "unknown tool: write_file") {
+		t.Errorf("the call should have been answered as an unknown name, stderr: %s", errs)
 	}
 }

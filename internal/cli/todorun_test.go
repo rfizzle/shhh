@@ -396,3 +396,319 @@ func TestTodoRunHeadless_AWholeStageAnswerIsRead(t *testing.T) {
 		t.Fatalf("an answer the model finished is the stage's answer, stage %s", st.Stage)
 	}
 }
+
+// withBacklogProfile states the profile this process works under, the way a
+// settings file resolved into one would. The reader is a variable for
+// exactly this: writing a directory to imply the profile would test the
+// resolution rather than the run.
+func withBacklogProfile(t *testing.T, words todo.Profile, pipeline run.Pipeline) {
+	t.Helper()
+	held := backlogProfile{words: words, pipeline: pipeline, from: builtinProfileFrom}
+	backlogProfileIs = func() backlogProfile { return held }
+	t.Cleanup(func() { backlogProfileIs = heldBacklogProfile })
+}
+
+// aBacklogOf is a backlog written in another profile's vocabulary, with no
+// repository under it: a run whose steps only read wants none, and a
+// checkout is the fact this case is about not needing.
+func aBacklogOf(t *testing.T, root string, header string, slugs ...string) string {
+	t.Helper()
+	dir := todo.Dir(root)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, slug := range slugs {
+		body := "---\ntitle: " + slug + "\n" + header + "---\n## Acceptance Criteria\n- [ ] say what the sources say\n"
+		if err := os.WriteFile(filepath.Join(dir, slug+".md"), []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return root
+}
+
+// readingAnswers is a model that does what each step of the shipped reading
+// profile asks.
+func readingAnswers(step run.Step) string {
+	switch step.Stage {
+	case "scope":
+		return "## Plan: read it\n\n1. Read the paper\n   files: paper.md\n   action: read\n\ndepth: quick\nquestions: none\n"
+	case "review":
+		return "verdict: clean"
+	case "file":
+		return "REPORT:\n## Report\nSummary: the sources agree.\n"
+	}
+	return "The sources say tabs."
+}
+
+// A run whose every step reads is spent in conversations from end to end.
+// Nothing about it wants the coding agent's editor, its command runner or a
+// record of what it changed, and an unattended sprint over a reading list
+// must not start one to find that out.
+func TestTodoRunHeadless_AReadingRunIsSpentInConversations(t *testing.T) {
+	words, pipeline, err := run.BuiltinProfile("research")
+	if err != nil {
+		t.Fatal(err)
+	}
+	withBacklogProfile(t, words, pipeline)
+	root := aBacklogOf(t, t.TempDir(), "kind: reading\ndepth: quick\n", "a-one")
+	d, out := headlessDriver(t, root, nil)
+	var argv [][]string
+	d.turn = func(_ context.Context, _ time.Time, step run.Step) (todoTurn, error) {
+		// The argv the stage's own process would be started with, which is
+		// the whole of what the choice of process is.
+		argv = append(argv, todoStageArgs(d.steps().Writes(), step.Mode))
+		return todoTurn{text: readingAnswers(step), code: exitDone}, nil
+	}
+
+	st := d.work(context.Background(), mustReading(t, root, "a-one"), nil)
+	if st.Stage != run.StageDone {
+		t.Fatalf("the reading stopped at %s:\n%s", st.Stage, out.String())
+	}
+	if len(argv) == 0 {
+		t.Fatal("the run spent no turn at all")
+	}
+	for _, args := range argv {
+		if args[0] != "chat" {
+			t.Fatalf("a step that only reads was spent as %v", args)
+		}
+	}
+	if it, _ := todo.Load(words, root).Find("a-one"); !it.Archived {
+		t.Fatalf("the reading should be archived: %+v", it)
+	}
+}
+
+// A reading handed to somebody who did not do it has no change to point at,
+// and the run that never writes is the run that has none by design. The
+// reader is given what the run gathered instead of being turned away for a
+// tree nothing was going to touch.
+func TestTodoRunHeadless_AReadingIsReviewedWithNoChangeToPointAt(t *testing.T) {
+	dir := t.TempDir()
+	aReadingProfile(t, dir)
+	words, pipeline, err := run.LoadProfile(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	withBacklogProfile(t, words, pipeline)
+	root := aBacklogOf(t, t.TempDir(), "kind: reading\n", "a-one")
+	d, out := headlessDriver(t, root, nil)
+	var argv [][]string
+	d.turn = func(_ context.Context, _ time.Time, step run.Step) (todoTurn, error) {
+		argv = append(argv, todoStageArgs(d.steps().Writes(), step.Mode))
+		if step.Stage == "check" {
+			return todoTurn{text: "verdict: clean", code: exitDone}, nil
+		}
+		return todoTurn{text: "The sources say tabs.", code: exitDone}, nil
+	}
+
+	st := d.work(context.Background(), mustReading(t, root, "a-one"), nil)
+	if st.Stage != run.StageDone {
+		t.Fatalf("the reading stopped at %s (%s):\n%s", st.Stage, st.Blocked, out.String())
+	}
+	if len(argv) != 2 {
+		t.Fatalf("a reading and a reading of it are two turns, spent %d: %v", len(argv), argv)
+	}
+	for _, args := range argv {
+		if args[0] != "chat" {
+			t.Fatalf("a step that only reads was spent as %v", args)
+		}
+	}
+}
+
+// aReadingProfile writes a profile whose steps only read and whose reading is
+// handed to somebody else at every grade, which the shipped reading profile
+// does only at a grade an unattended run stops at.
+func aReadingProfile(t *testing.T, dir string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Join(dir, run.ProfileWordings), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	table := `
+name = "reading"
+noun = "reading"
+
+[[field]]
+name = "kind"
+values = [{ name = "reading" }]
+
+[[field]]
+name = "priority"
+
+[[step]]
+name = "read"
+kind = "turn"
+mode = "read"
+reads = ["findings"]
+
+[[step]]
+name = "check"
+kind = "agent"
+mode = "read"
+blocks = ["findings"]
+
+[[step]]
+name = "file"
+kind = "finish"
+finish = "archive"
+`
+	files := map[string]string{
+		run.ProfileFile: table,
+		filepath.Join(run.ProfileWordings, run.WordingStandards+".md"): "STANDARDS.\n",
+		filepath.Join(run.ProfileWordings, "read.md"):                  "READ IT.\n",
+		filepath.Join(run.ProfileWordings, "check.md"):                 "CHECK IT.\n{{findings}}\n",
+		filepath.Join(run.ProfileWordings, "check_task.md"):            "CHECK IT.\n{{findings}}\n",
+	}
+	for name, text := range files {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(text), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+// mustReading is the item as the profile in force reads it.
+func mustReading(t *testing.T, root, slug string) todo.Item {
+	t.Helper()
+	it, ok := todo.Load(todoProfile(), root).Find(slug)
+	if !ok {
+		t.Fatalf("no item %q", slug)
+	}
+	return it
+}
+
+// A reading that stops is the one code the runner adds to the closed set,
+// whichever profile the backlog is written in: what a run left behind is the
+// run's own ending, and not the ending of the process a stage was spent as.
+func TestTodoRunHeadless_AReadingThatBlocksExitsSeven(t *testing.T) {
+	words, pipeline, err := run.BuiltinProfile("research")
+	if err != nil {
+		t.Fatal(err)
+	}
+	withBacklogProfile(t, words, pipeline)
+	root := aBacklogOf(t, t.TempDir(), "kind: reading\ndepth: quick\n", "a-one")
+	d, _ := headlessDriver(t, root, func(step run.Step) string {
+		if step.Stage == "scope" {
+			return "## Plan: read it\n\n1. Read it\n   files: paper.md\n\ndepth: quick\nquestions:\n- which edition?\n"
+		}
+		return "?"
+	})
+
+	st := d.work(context.Background(), mustReading(t, root, "a-one"), nil)
+	if st.Stage != run.StageBlocked {
+		t.Fatalf("an open question on a reading that never pauses blocks, stage %s", st.Stage)
+	}
+	var ee exitError
+	if err := exitOf(true); !asExitError(err, &ee) || ee.code != exitBlocked {
+		t.Fatalf("a blocked reading should carry the blocked code, got %v", err)
+	}
+}
+
+// A reading picked up from a checkpoint is worked under its own profile's
+// steps. The checkpoint does not carry them — the words on an item are read
+// from the project every time — so a run continued without them stated would
+// be worked through the stages a checkout of code has, and refused for
+// having changed shape on its way there.
+func TestTodoRunHeadless_AContinuedReadingKeepsItsOwnSteps(t *testing.T) {
+	words, pipeline, err := run.BuiltinProfile("research")
+	if err != nil {
+		t.Fatal(err)
+	}
+	withBacklogProfile(t, words, pipeline)
+	root := aBacklogOf(t, t.TempDir(), "kind: reading\ndepth: quick\n", "a-one")
+	it := mustReading(t, root, "a-one")
+	if err := todo.SetStatus(it.Path, todo.StatusInProgress); err != nil {
+		t.Fatal(err)
+	}
+	st := run.Start(it, "earlier", "", 0, run.Options{Pipeline: pipeline})
+	st.Stage, st.Grade, st.Plan = "gather", "quick", "## Plan: read it\n\n1. Read the paper\n"
+	if err := st.Save(root); err != nil {
+		t.Fatal(err)
+	}
+
+	d, out := headlessDriver(t, root, nil)
+	var stages []string
+	d.turn = func(_ context.Context, _ time.Time, step run.Step) (todoTurn, error) {
+		stages = append(stages, string(step.Stage))
+		return todoTurn{text: readingAnswers(step), code: exitDone}, nil
+	}
+
+	got := d.work(context.Background(), mustReading(t, root, "a-one"), nil)
+	if got.Stage != run.StageDone {
+		t.Fatalf("the continued reading stopped at %s (%s):\n%s", got.Stage, got.Blocked, out.String())
+	}
+	if strings.Join(stages, " ") != "gather review" {
+		t.Fatalf("the continued run took the stages %v", stages)
+	}
+}
+
+// stageBinary stands in for this executable where a test wants the argv a
+// stage's process was really started with. It writes its arguments down, one
+// per line, and answers with the transcript shape a stage is read out of.
+func stageBinary(t *testing.T, argv string) string {
+	t.Helper()
+	if _, err := exec.LookPath("sh"); err != nil {
+		t.Skip("no shell to stand in for the binary")
+	}
+	bin := filepath.Join(t.TempDir(), "stage")
+	script := "#!/bin/sh\nprintf '%s\\n' \"$@\" > '" + argv + "'\nprintf '{\"final\":\"answered\"}'\n"
+	if err := os.WriteFile(bin, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	return bin
+}
+
+// The argv a stage is spent as, read off a process that was really started.
+// The choice is made where the process is built, and a test that stubs the
+// turn out reads back its own arithmetic instead of the run's.
+func TestTodoDriver_TheStageProcessIsStartedWithTheArgsItsModeChose(t *testing.T) {
+	research, researchSteps, err := run.BuiltinProfile("research")
+	if err != nil {
+		t.Fatal(err)
+	}
+	code, codeSteps, err := run.BuiltinProfile("code")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range []struct {
+		name   string
+		words  todo.Profile
+		steps  run.Pipeline
+		mode   run.Mode
+		want   string
+		header string
+	}{{
+		name: "a step of a run that never writes", words: research, steps: researchSteps,
+		mode: run.ModePlan, header: "kind: reading\ndepth: quick\n",
+		want: "chat --print --output json the prompt",
+	}, {
+		name: "a step that changes the tree", words: code, steps: codeSteps,
+		mode: run.ModeAuto, header: "size: S\n",
+		want: "code --print --output json --yes the prompt",
+	}, {
+		name: "a reading step of a run that writes", words: code, steps: codeSteps,
+		mode: run.ModePlan, header: "size: S\n",
+		want: "code --print --output json the prompt",
+	}} {
+		t.Run(c.name, func(t *testing.T) {
+			withBacklogProfile(t, c.words, c.steps)
+			root := aBacklogOf(t, t.TempDir(), c.header, "a-one")
+			d, _ := headlessDriver(t, root, nil)
+			argv := filepath.Join(t.TempDir(), "argv")
+			d.bin = stageBinary(t, argv)
+
+			got, err := d.ask(context.Background(), time.Time{},
+				run.Step{Stage: "scope", Mode: c.mode, Prompt: "the prompt"})
+			if err != nil {
+				t.Fatalf("the stage did not run: %v", err)
+			}
+			if got.text != "answered" {
+				t.Fatalf("the stage's answer is %q", got.text)
+			}
+			started, err := os.ReadFile(argv)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if line := strings.Join(strings.Fields(string(started)), " "); line != c.want {
+				t.Fatalf("the stage was started as %q, want %q", line, c.want)
+			}
+		})
+	}
+}

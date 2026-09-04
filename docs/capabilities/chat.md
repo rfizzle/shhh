@@ -141,6 +141,26 @@ session has a persona by that name it is the one spawned; where it does not
 — every coding session — the step falls back to the role that would have
 read the work anyway, so the same backlog is workable from both.
 
+## A conversation runs without a screen
+
+`shhh chat --print "…"` is this session with the screen taken away: the same
+prompt, the same reads, the same record, and the same statuses and shapes the
+coding agent's print run leaves behind, so whatever reads one reads the
+other ([`headless.md`](headless.md#the-exit-code-is-the-contract)). It exists
+because work that only reads should not have to start a coding agent to get
+done — a backlog of readings worked overnight would otherwise load a
+containment, a changeset and a command runner it will never touch
+([`todo.md`](todo.md#a-run-is-turns-with-gates-between-them)).
+
+What it will not do is what it has nobody to ask. A delegate is a spawn and a
+spawn is an approval, so a run behind `--print` has no colleagues; durable
+memory proposes nothing, for the same reason. The one decision that is left —
+whether a request may leave the machine — is denied unless `--yes` gives the
+answer in advance. There is no flag for anything else because there is
+nothing else: a tool name this session never offered is answered as unknown
+rather than resolved, so a run cannot be talked into an edit through a tool it
+does not have.
+
 ## Related
 
 - [`coding-agent.md`](coding-agent.md) — the other session, and why it is a
