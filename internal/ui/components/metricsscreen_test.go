@@ -336,3 +336,65 @@ func TestMetricsScreen_NoModelsSaysSo(t *testing.T) {
 		t.Fatal("an empty table left its heading over nothing")
 	}
 }
+
+// The fitter both block-bodied screens drop sections with. What differs
+// between them is the order, which is a fact about the screen; what is shared
+// is when the marker's own row starts coming off the budget.
+func TestSectionFitter_KeepsEverythingThatFits(t *testing.T) {
+	f := SectionFitter{Rows: func(int) int { return 3 }}
+	if got := f.Fit(4, 12); len(got) != 4 {
+		t.Fatalf("twelve rows hold four three-row sections, got %v", got)
+	}
+	if got := f.Fit(4, 0); len(got) != 4 {
+		t.Fatalf("an unbounded budget drops nothing, got %v", got)
+	}
+}
+
+// Once anything goes, the row naming it comes off the budget before the next
+// section does: a fold that overran the screen to say what it folded would
+// push the row under it off the bottom.
+func TestSectionFitter_ReservesTheMarkersRowOnceAnythingDrops(t *testing.T) {
+	f := SectionFitter{Rows: func(int) int { return 3 }}
+	// Eleven rows is one short of four sections. Three of them plus the
+	// marker is ten, which fits; four plus the marker is thirteen, which
+	// does not.
+	kept := f.Fit(4, 11)
+	if len(kept) != 3 {
+		t.Fatalf("three sections and a marker fit eleven rows, got %v", kept)
+	}
+	if dropped := f.Dropped(4, kept); len(dropped) != 1 || dropped[0] != 3 {
+		t.Fatalf("the last section is the one that went, got %v", dropped)
+	}
+}
+
+// A screen with room for nothing still shows one section: a body with no rows
+// on it is worse than one that overruns by a line, and the caller's own cut
+// is what holds the height contract there.
+func TestSectionFitter_OneSectionAlwaysSurvives(t *testing.T) {
+	f := SectionFitter{Rows: func(int) int { return 5 }}
+	if got := f.Fit(4, 1); len(got) != 1 || got[0] != 0 {
+		t.Fatalf("one section survives any budget, got %v", got)
+	}
+}
+
+// The order is the screen's. A diagnostic drops what has least to say, which
+// is what keeps the failure the reader opened it for on the screen.
+func TestSectionFitter_DropsInTheOrderTheScreenGives(t *testing.T) {
+	// Section 1 is the loud one; Next always names the quietest position
+	// among what is left, which here is the first that is not it.
+	f := SectionFitter{
+		Rows: func(int) int { return 2 },
+		Next: func(kept []int) int {
+			for i, s := range kept {
+				if s != 1 {
+					return i
+				}
+			}
+			return 0
+		},
+	}
+	kept := f.Fit(4, 3)
+	if len(kept) != 1 || kept[0] != 1 {
+		t.Fatalf("the loud section is the one left standing, got %v", kept)
+	}
+}

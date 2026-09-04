@@ -54,12 +54,21 @@ type ResultAction struct {
 }
 
 type Model struct {
-	items    []Item
-	filtered []int
-	actions  []ActionDef
+	items   []Item
+	actions []ActionDef
+
+	// list is the shared pointer over the items the filter left showing
+	// (the components package's List): its items are their positions in
+	// items, so a key that renames or deletes still names the row the host
+	// gave us rather than a row in a filtered copy.
+	//
+	// Its window is settled by the update that moved the pointer rather than
+	// by the frame that draws it: View runs on a copy of this model, so a
+	// window resolved there is thrown away, and one resolved from nothing
+	// walks the list looking for the pointer on every single frame.
+	list components.List[int]
 
 	filter textinput.Model
-	cursor int
 	action int
 
 	width  int
@@ -93,16 +102,16 @@ func New(items []Item, actions []ActionDef) Model {
 	ti.Placeholder = "Type to filter..."
 	ti.CharLimit = 100
 
-	filtered := make([]int, len(items))
+	shown := make([]int, len(items))
 	for i := range items {
-		filtered[i] = i
+		shown[i] = i
 	}
 
 	return Model{
-		items:    items,
-		filtered: filtered,
-		actions:  actions,
-		filter:   ti,
+		items:   items,
+		list:    components.List[int]{Items: shown},
+		actions: actions,
+		filter:  ti,
 	}
 }
 
@@ -116,6 +125,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 		m.ready = true
+		m.settleWindow()
 		return m, nil
 
 	case tea.KeyPressMsg:
@@ -147,7 +157,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.detail {
 			return m.updateDetail(msg)
 		}
-		return m.updateList(msg)
+		next, cmd := m.updateList(msg)
+		if lm, ok := next.(Model); ok {
+			lm.settleWindow()
+			return lm, cmd
+		}
+		return next, cmd
 	}
 
 	if m.filter.Focused() {
@@ -165,21 +180,11 @@ func (m Model) updateList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.quit = true
 		return m, tea.Quit
 	case pressed == "j", pressed == "down":
-		if len(m.filtered) > 0 {
-			m.cursor++
-			if m.cursor >= len(m.filtered) {
-				m.cursor = len(m.filtered) - 1
-			}
-		}
+		m.list.Move(1)
 	case pressed == "k", pressed == "up":
-		if len(m.filtered) > 0 {
-			m.cursor--
-			if m.cursor < 0 {
-				m.cursor = 0
-			}
-		}
+		m.list.Move(-1)
 	case keys.Is(pressed, keys.Browse.Open):
-		if len(m.filtered) > 0 {
+		if len(m.list.Items) > 0 {
 			m.detail = true
 			m.action = 0
 		}
@@ -188,21 +193,21 @@ func (m Model) updateList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// two are one call rather than a focus and a remembered follow-up.
 		return m, m.filter.Focus()
 	case keys.Is(pressed, keys.Browse.Delete) && m.ops.Delete != nil:
-		if len(m.filtered) == 0 {
+		if len(m.list.Items) == 0 {
 			return m, nil
 		}
-		item := m.items[m.filtered[m.cursor]]
+		item := m.items[m.focused()]
 		with := ""
 		if item.Deleting != "" {
 			with = " " + item.Deleting
 		}
-		m.target = m.filtered[m.cursor]
+		m.target = m.focused()
 		m.confirm = &components.Confirm{Prompt: fmt.Sprintf("Delete %q%s? Files on disk are untouched.", item.Title, with)}
 	case keys.Is(pressed, keys.Browse.Rename) && m.ops.Rename != nil:
-		if len(m.filtered) == 0 {
+		if len(m.list.Items) == 0 {
 			return m, nil
 		}
-		m.target = m.filtered[m.cursor]
+		m.target = m.focused()
 		ti := textinput.New()
 		ti.Prompt = "rename ▸ "
 		ti.CharLimit = 0
@@ -307,10 +312,10 @@ func (m Model) updateDetail(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 // report the refusal would take the row off the screen along with every
 // other one they came to see.
 func (m Model) take(label string) (tea.Model, tea.Cmd) {
-	if len(m.filtered) == 0 {
+	if len(m.list.Items) == 0 {
 		return m, nil
 	}
-	item := m.items[m.filtered[m.cursor]]
+	item := m.items[m.focused()]
 	if item.Refused != "" {
 		m.notice = item.Refused
 		return m, nil
@@ -345,7 +350,7 @@ func (m Model) screen() string {
 func (m Model) viewList() string {
 	var b strings.Builder
 
-	title := sty.ListTitle.Render(fmt.Sprintf(" %d items", len(m.filtered)))
+	title := sty.ListTitle.Render(fmt.Sprintf(" %d items", len(m.list.Items)))
 	if m.filter.Focused() || m.filter.Value() != "" {
 		title += "  " + m.filter.View()
 	} else {
@@ -355,21 +360,25 @@ func (m Model) viewList() string {
 	b.WriteString(divider(m.width) + "\n")
 
 	foot := m.footer()
-	listHeight := m.height - 3 - len(foot)
-	if listHeight < 1 {
-		listHeight = 1
-	}
 
-	start, end := m.visibleRange(listHeight)
-	for i := start; i < end; i++ {
-		idx := m.filtered[i]
-		item := m.items[idx]
+	// The window is the one every long list in the product scrolls through,
+	// markers included: a browser that dropped rows off either end without
+	// counting them would be the one list here that hides rather than folds.
+	lo, hi := m.list.Range(m.listHeight())
+	if lo > 0 {
+		b.WriteString("  " + components.ListOverflowRow("↑", lo, "", m.width-4) + "\n")
+	}
+	for i := lo; i < hi; i++ {
+		item := m.items[m.list.Items[i]]
 		line := m.formatListItem(item, m.width-4)
-		if i == m.cursor {
+		if i == m.list.Focus {
 			b.WriteString(sty.Cursor.Render("> ") + sty.SelectedItem.Render(line) + "\n")
 		} else {
 			b.WriteString("  " + sty.Item.Render(line) + "\n")
 		}
+	}
+	if hi < len(m.list.Items) {
+		b.WriteString("  " + components.ListOverflowRow("↓", len(m.list.Items)-hi, "", m.width-4) + "\n")
 	}
 	for _, line := range foot {
 		b.WriteString(line + "\n")
@@ -413,11 +422,11 @@ func (m Model) footer() []string {
 // under it. It was a title, a rule, the body and another rule — the card's
 // own shape, drawn by hand and one column narrower.
 func (m Model) viewDetail() string {
-	if len(m.filtered) == 0 {
+	if len(m.list.Items) == 0 {
 		return "No item selected."
 	}
 
-	item := m.items[m.filtered[m.cursor]]
+	item := m.items[m.focused()]
 	card := components.Card{Title: item.Title}
 	inner := card.Inner(m.width)
 
@@ -476,41 +485,33 @@ func (m Model) formatListItem(item Item, maxWidth int) string {
 	return title + sep + sty.Preview.Render(components.Clip(preview, remaining))
 }
 
-func (m Model) visibleRange(height int) (int, int) {
-	total := len(m.filtered)
-	if total == 0 {
-		return 0, 0
-	}
-	start := 0
-	if m.cursor >= height {
-		start = m.cursor - height + 1
-	}
-	end := start + height
-	if end > total {
-		end = total
-	}
-	return start, end
+// settleWindow moves the list's window to wherever the pointer now is, so
+// the frame that draws it starts from the run it settled on rather than
+// looking for the pointer from the top.
+func (m *Model) settleWindow() { m.list.Range(m.listHeight()) }
+
+// listHeight is how many rows the list itself gets: the terminal less the
+// title, the rule, the trailing newline and whatever the footer is holding.
+func (m Model) listHeight() int {
+	return max(m.height-3-len(m.footer()), 1)
 }
 
+// focused is the position in items of the row the pointer is on. Callers
+// check that the filter left something first: an empty list has no row to
+// name, and there is nothing sensible for this to answer then.
+func (m Model) focused() int { return m.list.Items[m.list.Focus] }
+
+// applyFilter re-runs the match after the query changed. An item is matched
+// by its name or by the words it opens with, so a reader who remembers either
+// can find it.
 func (m *Model) applyFilter() {
-	query := strings.ToLower(m.filter.Value())
-	if query == "" {
-		m.filtered = make([]int, len(m.items))
-		for i := range m.items {
-			m.filtered[i] = i
-		}
-	} else {
-		m.filtered = nil
-		for i, item := range m.items {
-			if strings.Contains(strings.ToLower(item.Title), query) ||
-				strings.Contains(strings.ToLower(item.Preview), query) {
-				m.filtered = append(m.filtered, i)
-			}
-		}
+	m.list.Items = components.Filter(m.items, m.filter.Value(), func(item Item) []string {
+		return []string{item.Title, item.Preview}
+	})
+	if m.list.Focus >= len(m.list.Items) {
+		m.list.Focus = max(0, len(m.list.Items)-1)
 	}
-	if m.cursor >= len(m.filtered) {
-		m.cursor = max(0, len(m.filtered)-1)
-	}
+	m.settleWindow()
 }
 
 func divider(width int) string {

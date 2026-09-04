@@ -189,6 +189,70 @@ func (m *Model) scrollPage(dir int) {
 	}
 }
 
+// searchTranscript looks for what the reader typed in the pane they are
+// reading, and reports how many times it is there. It is the reading
+// surface's own search: the transcript is one scroll of prose, and the
+// question a reader has in the middle of it is where a path or an error was
+// said, not which row said it.
+//
+// It goes to the pane rather than to a viewer with a screen of its own, for
+// the same reason the wheel does — whatever is holding the pane is what a
+// gesture over the pane means. The full-screen diff and review mode scroll
+// themselves and have no search; a query typed while one of those is up finds
+// nothing rather than moving the transcript behind it.
+func (m *Model) searchTranscript(query string) int {
+	if m.paneTakenOver() {
+		return 0
+	}
+	found := m.viewport.Search(query)
+	m.atBottom = m.viewport.AtBottom()
+	return found
+}
+
+// searchStep moves to the next occurrence, dir being -1 back and +1 on. The
+// pane follows it, which pauses the follow-the-live-end the way any other
+// scroll does.
+func (m *Model) searchStep(dir int) {
+	if m.paneTakenOver() {
+		return
+	}
+	if dir < 0 {
+		m.viewport.PrevMatch()
+	} else {
+		m.viewport.NextMatch()
+	}
+	m.atBottom = m.viewport.AtBottom()
+}
+
+// searchNotice is what the rail says while a search is open: which occurrence
+// the reader is on and how many there are, or that there are none. A count on
+// its own would leave "is there another one below me" unanswered, which is
+// the question the keys next to it answer.
+func (m Model) searchNotice() string {
+	if !m.viewport.Searching() {
+		return ""
+	}
+	at, total := m.viewport.MatchPosition()
+	if total == 0 {
+		return "no match"
+	}
+	return fmt.Sprintf("%d/%d", at, total)
+}
+
+// paneTakenOver reports that something other than the transcript is drawing
+// in the pane and doing its own scrolling.
+func (m Model) paneTakenOver() bool {
+	switch {
+	case m.state == stateDiffFull && m.fullDiff != nil:
+		return true
+	case m.state == stateOutputFull && m.fullOutput != nil:
+		return true
+	case m.state == stateReview && m.review != nil:
+		return true
+	}
+	return false
+}
+
 // returnToInput leaves focus mode carrying the keystroke that ended it, so
 // the character a reader typed lands in the draft instead of being spent on
 // the exit. Esc and typing are the two ways out; this is the second.
@@ -303,7 +367,14 @@ func (m Model) readingRail(width int) string {
 // which is the transcript's answer to "how much of this is there". A
 // transcript with nothing expandable is being read rather than navigated, so
 // it has no place to report.
+//
+// An open search takes that place over. Both answer "where am I in this", and
+// while a query is up the occurrence is the one the reader is moving through
+// — the row cursor is not what the next key moves.
 func (m Model) readingLabel() string {
+	if note := m.searchNotice(); note != "" {
+		return "READING · " + note
+	}
 	pos, total := m.readingPosition()
 	if total == 0 {
 		return "READING"

@@ -334,29 +334,22 @@ func (d *DoctorScreen) bodyRows(width, budget int) []string {
 		return flatten(sections)
 	}
 
-	kept := append([]int(nil), indexes(len(sections))...)
-	for len(kept) > 1 && d.sectionCost(sections, kept)+1 > budget {
-		kept = dropOne(kept, d.quietest(kept))
+	fitter := SectionFitter{
+		Rows: func(i int) int { return len(sections[i]) },
+		Next: d.quietest,
 	}
+	kept := fitter.Fit(len(sections), budget)
 	rows := make([]string, 0, budget)
 	for _, i := range kept {
 		rows = append(rows, sections[i]...)
 	}
-	rows = append(rows, indentBy(d.droppedRow(kept, width-ptrWidth), ptrWidth, width))
+	dropped := fitter.Dropped(len(sections), kept)
+	rows = append(rows, indentBy(d.droppedRow(dropped, width-ptrWidth), ptrWidth, width))
 	// One check whose fix is longer than the whole screen is the case whole
 	// sections cannot answer. Its own rows give ground then, and the marker
 	// truncRows leaves behind says how many went — the budget is what the
 	// terminal has, and overrunning it would push the summary off the bottom.
 	return truncRows(rows, budget, width)
-}
-
-// sectionCost is what a set of kept checks renders to.
-func (d *DoctorScreen) sectionCost(sections [][]string, kept []int) int {
-	n := 0
-	for _, i := range kept {
-		n += len(sections[i])
-	}
-	return n
 }
 
 // quietest is the check to drop next: the one with least to say, and the last
@@ -373,19 +366,11 @@ func (d *DoctorScreen) quietest(kept []int) int {
 	return at
 }
 
-// droppedRow names the checks that did not fit. A marker that only said "4
-// more" would leave the reader guessing which four the screen is sitting on,
-// which on a diagnostic is the whole question.
-func (d *DoctorScreen) droppedRow(kept []int, width int) string {
-	shown := map[int]bool{}
-	for _, i := range kept {
-		shown[i] = true
-	}
-	var names []string
-	for i, check := range d.Checks {
-		if !shown[i] {
-			names = append(names, check.Name)
-		}
+// droppedRow names the checks that did not fit.
+func (d *DoctorScreen) droppedRow(dropped []int, width int) string {
+	names := make([]string, 0, len(dropped))
+	for _, i := range dropped {
+		names = append(names, d.Checks[i].Name)
 	}
 	return sty.Dim.Render(Clip(
 		fmt.Sprintf("↓ %d more · %s", len(names), strings.Join(names, " · ")), width))
@@ -715,20 +700,4 @@ func countChecks(n int) string {
 		return "1 check"
 	}
 	return fmt.Sprintf("%d checks", n)
-}
-
-// indexes is 0..n-1, the order the checks were run in.
-func indexes(n int) []int {
-	out := make([]int, n)
-	for i := range out {
-		out[i] = i
-	}
-	return out
-}
-
-// dropOne is the list with one position removed.
-func dropOne(list []int, at int) []int {
-	out := make([]int, 0, len(list)-1)
-	out = append(out, list[:at]...)
-	return append(out, list[at+1:]...)
 }

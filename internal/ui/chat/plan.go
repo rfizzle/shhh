@@ -433,8 +433,52 @@ func (m Model) declaredSteps() []plan.Step {
 // blocksOf tiles entries into transcript blocks with the approved plan's
 // declared steps overlaid, which is the one call site every reader of the
 // outline should use.
+//
+// A frame tiles a run once. Reading mode's paint asked the session's own
+// transcript for its tiling eight times — the pane's render, the row cursor's
+// place, and what each key on offer would act on, each of them a scan over
+// every entry in the session — so a long session paid for all eight on every
+// frame. Measured on the golden transcript at a hundred and sixty columns:
+// eight tilings a paint in reading mode, one everywhere else.
+//
+// The memo is on the frame, which is alive for exactly one paint (layout.go),
+// and the declared steps are therefore not part of the key: nothing inside a
+// paint can approve or drop a plan. Outside a paint there is no frame and
+// every caller tiles as it always did.
 func (m Model) blocksOf(es []entry) []transcriptBlock {
-	return stepBlocks(es, m.declaredSteps())
+	if m.framed == nil {
+		return stepBlocks(es, m.declaredSteps())
+	}
+	key := runOf(es)
+	if blocks, ok := m.framed.blocks[key]; ok {
+		return blocks
+	}
+	blocks := stepBlocks(es, m.declaredSteps())
+	if m.framed.blocks == nil {
+		m.framed.blocks = map[blockRun][]transcriptBlock{}
+	}
+	m.framed.blocks[key] = blocks
+	return blocks
+}
+
+// blockRun names a run of entries: where it starts and how long it is. It is
+// the first element's address rather than an index because the runs a frame
+// tiles are slices of different things — the session's transcript, the
+// current turn's tail of it, an attached child's own — and an index would
+// make two of those look like one.
+type blockRun struct {
+	first *entry
+	n     int
+}
+
+// runOf is the run a slice of entries names. An empty run has no element to
+// point at and is one run, which is the right answer: tiling nothing is
+// nothing whichever nothing it was.
+func runOf(es []entry) blockRun {
+	if len(es) == 0 {
+		return blockRun{}
+	}
+	return blockRun{first: &es[0], n: len(es)}
 }
 
 // lastLiveBlock is the index of the last block rows can still land in — the

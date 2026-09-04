@@ -184,12 +184,16 @@ func (m *MetricsScreen) bodyRows(width, budget int) []string {
 		return flatten(sections)
 	}
 
-	// Whole blocks go first, from the bottom, and the row that replaces them
-	// names what went rather than only marking that something did (invariant 4).
-	kept, dropped := sections, 0
-	for len(kept) > 1 && rowCount(kept)+markerRows(dropped) > budget {
-		kept, dropped = kept[:len(kept)-1], dropped+1
+	// Whole blocks go first, from the bottom — the blocks are already in the
+	// order they are worth reading — and the row that replaces them names
+	// what went rather than only marking that something did (invariant 4).
+	fit := SectionFitter{Rows: func(i int) int { return len(sections[i]) }}.
+		Fit(len(sections), budget)
+	kept := make([][]string, 0, len(fit))
+	for _, i := range fit {
+		kept = append(kept, sections[i])
 	}
+	dropped := len(sections) - len(kept)
 	if dropped == 0 {
 		// Everything fits, or the table alone still does not and windows itself
 		// against the whole budget.
@@ -206,15 +210,6 @@ func (m *MetricsScreen) bodyRows(width, budget int) []string {
 		return append(flatten(kept), marker)
 	}
 	return append(m.tableRows(width, budget-1), marker)
-}
-
-// markerRows is the row the dropped-blocks marker will cost once anything has
-// been dropped at all.
-func markerRows(dropped int) int {
-	if dropped == 0 {
-		return 0
-	}
-	return 1
 }
 
 // droppedRow names the blocks that did not fit. A marker that only said "2

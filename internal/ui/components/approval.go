@@ -379,14 +379,14 @@ func (c *ApprovalCard) windowBody(body []string, hintRows int, width int) []stri
 	if visible < 0 || len(body) <= visible {
 		return body
 	}
-	off := clampOffset(c.BodyOffset, len(body), visible)
-	win := append([]string(nil), body[off:off+visible]...)
-	if below := len(body) - (off + visible); below > 0 {
+	p := Pager{Offset: c.BodyOffset, Height: visible}
+	win := append([]string(nil), p.Window(body)...)
+	if below := p.Below(); below > 0 {
 		win[len(win)-1] = sty.Dim.Render(Clip(c.tailLabel(countedTail(below+1),
 			keys.Shown(keys.Decision.ScrollDown)), inner))
 	}
-	if off > 0 {
-		label := c.tailLabel(fmt.Sprintf("… %s above", plural(off+1, "line")),
+	if above := p.Above(); above > 0 {
+		label := c.tailLabel(fmt.Sprintf("… %s above", plural(above+1, "line")),
 			keys.Shown(keys.Decision.ScrollUp))
 		win[0] = sty.Dim.Render(Clip(label, inner))
 	}

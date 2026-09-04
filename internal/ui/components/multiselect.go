@@ -33,10 +33,19 @@ type MultiSelect struct {
 	Focus    int
 	MaxLines int
 	notice   string
-	// window is the shared sliding window (listwindow.go). A multi-select owns
-	// its own Focus, which is why it did not come along when the window went the
-	// window to the selector.
-	window listWindow
+	// list is the shared pointer and window (list.go). A multi-select owns
+	// its own Focus, which is why it did not come along when the movement and
+	// the window went to the selector.
+	list List[SelectOption]
+}
+
+// pointer aims the shared list at this card's rows. Every option is one row —
+// a multi-select shows no descriptions — and every one of them is something a
+// key can land on, so nothing is skipped and the markers count rows and
+// options alike.
+func (s *MultiSelect) pointer() *List[SelectOption] {
+	s.list.Items, s.list.Focus = s.Options, s.Focus
+	return &s.list
 }
 
 // NewMultiSelect builds a multi-select with nothing checked.
@@ -54,17 +63,20 @@ func (s *MultiSelect) count() int {
 	return n
 }
 
+// step moves the pointer one row, stopping at either end.
+func (s *MultiSelect) step(delta int) {
+	l := s.pointer()
+	l.Move(delta)
+	s.Focus = l.Focus
+}
+
 func (s *MultiSelect) Update(msg tea.KeyPressMsg) (done bool, result MultiSelectResult) {
 	s.notice = ""
 	switch pressed := msg.String(); {
 	case pressed == "up", pressed == "k":
-		if s.Focus > 0 {
-			s.Focus--
-		}
+		s.step(-1)
 	case pressed == "down", pressed == "j":
-		if s.Focus < len(s.Options)-1 {
-			s.Focus++
-		}
+		s.step(1)
 	case keys.Is(pressed, keys.Select.Toggle):
 		if s.Focus < len(s.Checked) {
 			s.Checked[s.Focus] = !s.Checked[s.Focus]
@@ -116,28 +128,20 @@ func (s *MultiSelect) View(width int) string {
 }
 
 // visibleRows renders the checkbox list windowed to a body budget, with the
-// markers the window makes necessary. Every option is one row — a
-// multi-select shows no descriptions — and every one of them is something a
-// key can land on, so the markers count rows and options alike here.
+// markers the window makes necessary.
 func (s *MultiSelect) visibleRows(width, budget int) []string {
 	inner := width - cardFrameWidth
 	n := len(s.Options)
-	g := listGeometry{
-		n:      n,
-		focus:  s.Focus,
-		height: func(int) int { return 1 },
-		counts: func(int) bool { return true },
-	}
-	lo, hi := s.window.rangeFor(g, budget)
+	lo, hi := s.pointer().Range(budget)
 	var rows []string
 	if lo > 0 {
-		rows = append(rows, listOverflowRow("↑", lo, s.checkedNote(0, lo), width))
+		rows = append(rows, ListOverflowRow("↑", lo, s.checkedNote(0, lo), width-cardFrameWidth))
 	}
 	for i := lo; i < hi; i++ {
 		rows = append(rows, s.optionRow(i, inner))
 	}
 	if hi < n {
-		rows = append(rows, listOverflowRow("↓", n-hi, s.checkedNote(hi, n), width))
+		rows = append(rows, ListOverflowRow("↓", n-hi, s.checkedNote(hi, n), width-cardFrameWidth))
 	}
 	return rows
 }

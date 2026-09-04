@@ -741,11 +741,11 @@ func (h *HistoryScreen) closest() string {
 	return ""
 }
 
-// matchesQuery is the match rule, over one row.
+// matchesQuery is the match rule, over one row: an entry is matched by what
+// was asked for or by the command that came back, so a reader who remembers
+// either can find it.
 func matchesQuery(row HistoryRow, query string) bool {
-	return query == "" ||
-		strings.Contains(strings.ToLower(row.Prompt), query) ||
-		strings.Contains(strings.ToLower(row.Command), query)
+	return Matches(query, row.Prompt, row.Command)
 }
 
 // move steps the pointer to the next entry the filter left showing, stopping

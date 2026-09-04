@@ -290,3 +290,119 @@ func markerLine(view, arrow string) string {
 	}
 	return ""
 }
+
+// The pointer's own rules, which the window is one half of. Five lists moved
+// onto them and the two that carry group rails are the ones the arithmetic
+// has to be told about: a pointer that can land on a rail is a keystroke
+// spent on a label.
+func TestList_MoveStepsOverRailsAndStopsAtTheEnds(t *testing.T) {
+	opts := []SelectOption{
+		{Label: "COMMANDS", Header: true},
+		{Label: "one"},
+		{Label: "FILES", Header: true},
+		{Label: "two"},
+	}
+	l := List[SelectOption]{Items: opts, Focus: 1, Skip: func(o SelectOption) bool { return o.Header }}
+
+	l.Move(1)
+	if l.Focus != 3 {
+		t.Fatalf("a move down should step over the rail to 3, got %d", l.Focus)
+	}
+	l.Move(1)
+	if l.Focus != 3 {
+		t.Fatalf("a move off the end should leave the pointer where it was, got %d", l.Focus)
+	}
+	l.Move(-1)
+	if l.Focus != 1 {
+		t.Fatalf("a move up should step back over the rail to 1, got %d", l.Focus)
+	}
+	l.Move(-1)
+	if l.Focus != 1 {
+		t.Fatalf("a move off the top should leave the pointer where it was, got %d", l.Focus)
+	}
+}
+
+// A list with nothing to skip is the other four: the same move, clamped.
+func TestList_MoveClampsWhenNothingIsSkipped(t *testing.T) {
+	l := List[SelectOption]{Items: checkList(3)}
+	l.Move(-1)
+	if l.Focus != 0 {
+		t.Fatalf("the top is the top, got %d", l.Focus)
+	}
+	for range 5 {
+		l.Move(1)
+	}
+	if l.Focus != 2 {
+		t.Fatalf("the bottom is the bottom, got %d", l.Focus)
+	}
+}
+
+// A list that opened on a rail — or on nothing, after a filter shortened it —
+// moves its pointer to something that can be chosen.
+func TestList_NormalizeLeavesThePointerOnAnOption(t *testing.T) {
+	skip := func(o SelectOption) bool { return o.Header }
+	rails := []SelectOption{{Label: "COMMANDS", Header: true}, {Label: "one"}}
+
+	l := List[SelectOption]{Items: rails, Focus: 0, Skip: skip}
+	l.Normalize()
+	if l.Focus != 1 {
+		t.Fatalf("a pointer on a rail should move to the option under it, got %d", l.Focus)
+	}
+
+	l = List[SelectOption]{Items: rails, Focus: 9, Skip: skip}
+	l.Normalize()
+	if l.Focus != 1 {
+		t.Fatalf("a pointer past the end should come back to the last option, got %d", l.Focus)
+	}
+
+	l = List[SelectOption]{Items: []SelectOption{{Label: "one"}, {Label: "TAIL", Header: true}}, Focus: 1, Skip: skip}
+	l.Normalize()
+	if l.Focus != 0 {
+		t.Fatalf("a rail with nothing under it should send the pointer back up, got %d", l.Focus)
+	}
+}
+
+// The number keys count what can be chosen, not what is drawn.
+func TestList_CountsAndIndexesWhatCanBeChosen(t *testing.T) {
+	opts := []SelectOption{
+		{Label: "COMMANDS", Header: true},
+		{Label: "one"},
+		{Label: "FILES", Header: true},
+		{Label: "two"},
+	}
+	l := List[SelectOption]{Items: opts, Skip: func(o SelectOption) bool { return o.Header }}
+	if got := l.Count(); got != 2 {
+		t.Fatalf("two options among four rows, got %d", got)
+	}
+	if got := l.First(); got != 1 {
+		t.Fatalf("the first option is at 1, got %d", got)
+	}
+	if got := l.Index(2); got != 3 {
+		t.Fatalf("the second option is at 3, got %d", got)
+	}
+}
+
+// The filter every list here answers: case-folded substring over the fields a
+// row offers, and an empty query is not a filter.
+func TestList_FilterMatchesAnyFieldFolded(t *testing.T) {
+	type row struct{ label, key string }
+	rows := []row{
+		{"Retention", "history.retention_days"},
+		{"Mouse", "appearance.mouse"},
+		{"Rail width", "appearance.rail_width"},
+	}
+	fields := func(r row) []string { return []string{r.label, r.key} }
+
+	if got := Filter(rows, "", fields); len(got) != 3 {
+		t.Fatalf("an empty query filters nothing, got %d rows", len(got))
+	}
+	if got := Filter(rows, "MOUSE", fields); len(got) != 1 || got[0] != 1 {
+		t.Fatalf("a query folds to lower case, got %v", got)
+	}
+	if got := Filter(rows, "appearance.", fields); len(got) != 2 {
+		t.Fatalf("a query may match the key behind the name, got %v", got)
+	}
+	if got := Filter(rows, "nothing here", fields); len(got) != 0 {
+		t.Fatalf("a query that matches nothing shows nothing, got %v", got)
+	}
+}

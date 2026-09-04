@@ -94,15 +94,16 @@ type AgentList struct {
 	Rows     []AgentRow
 	Focus    int
 	MaxLines int
-	// window is the shared sliding window (listwindow.go). A fan-out wide
+	// list is the shared pointer and window (list.go). A fan-out wide
 	// enough to overflow this card is itself the problem the screen should be
 	// showing, which is why the manager went unwindowed at first — but a
 	// list the pointer can walk off the bottom of is worse than a wide
 	// fan-out, so it scrolls now, on the same code every other list uses.
 	// Blocked children never scroll: they are pinned above the window, so
 	// opening the manager because something needs you always shows you the
-	// thing that does.
-	window listWindow
+	// thing that does. Its items are the scrolling half's own positions,
+	// which is why they are indices rather than rows.
+	list List[int]
 }
 
 // split divides the rows into the ones pinned above the window and the ones
@@ -136,6 +137,16 @@ func (l *AgentList) focused() AgentRow {
 	return l.Rows[l.Focus]
 }
 
+// step moves the pointer one row over the whole list, the pinned rows
+// included, stopping at either end. It is over Rows rather than over the
+// scrolling half the window covers, because a blocked child is pinned above
+// the window and is still a row the pointer walks through.
+func (l *AgentList) step(delta int) {
+	rows := List[AgentRow]{Items: l.Rows, Focus: l.Focus}
+	rows.Move(delta)
+	l.Focus = rows.Focus
+}
+
 // Update handles list keys. Cancel, kill, answer and retry resolve with
 // done=false so the list stays open over the live view (the host performs the
 // action and comes back); attach and esc dismiss it. [a] and [r] are silent
@@ -144,13 +155,9 @@ func (l *AgentList) focused() AgentRow {
 func (l *AgentList) Update(msg tea.KeyPressMsg) (done bool, result AgentListResult) {
 	switch pressed := msg.String(); {
 	case pressed == "up", pressed == "k":
-		if l.Focus > 0 {
-			l.Focus--
-		}
+		l.step(-1)
 	case pressed == "down", pressed == "j":
-		if l.Focus < len(l.Rows)-1 {
-			l.Focus++
-		}
+		l.step(1)
 	case keys.Is(pressed, keys.Agent.Attach):
 		if l.focused().State == AgentOffer {
 			return true, AgentListResult{Action: AgentDraft, Index: l.Focus}
@@ -303,28 +310,24 @@ func (l *AgentList) visibleRows(width, budget int, scrolling []int) []string {
 			focus = pos
 		}
 	}
-	g := listGeometry{
-		n:     n,
-		focus: focus,
-		height: func(pos int) int {
-			if l.Rows[scrolling[pos]].Note != "" {
-				return 2
-			}
-			return 1
-		},
-		counts: func(int) bool { return true },
+	l.list.Items, l.list.Focus = scrolling, focus
+	l.list.Rows = func(pos int) int {
+		if l.Rows[scrolling[pos]].Note != "" {
+			return 2
+		}
+		return 1
 	}
-	lo, hi := l.window.rangeFor(g, budget)
+	lo, hi := l.list.Range(budget)
 	var rows []string
 	if lo > 0 {
-		rows = append(rows, listOverflowRow("↑", lo, "", width))
+		rows = append(rows, ListOverflowRow("↑", lo, "", width-cardFrameWidth))
 	}
 	for pos := lo; pos < hi; pos++ {
 		i := scrolling[pos]
 		rows = append(rows, l.Rows[i].render(inner, i == l.Focus)...)
 	}
 	if hi < n {
-		rows = append(rows, listOverflowRow("↓", n-hi, "", width))
+		rows = append(rows, ListOverflowRow("↓", n-hi, "", width-cardFrameWidth))
 	}
 	return rows
 }

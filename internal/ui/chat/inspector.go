@@ -135,13 +135,56 @@ func (m Model) turnElapsed() time.Duration {
 	return m.turnEnded.Sub(m.turnStarted)
 }
 
-// inspectorData assembles the rail from what the session already tracks. A
+// inspectorData is the rail a frame draws, resolved onto the frame the first
+// time it is asked for and read back from there after (layout.go). Outside a
+// paint there is no frame and every caller resolves its own.
+func (m Model) inspectorData() components.InspectorRail {
+	if m.framed == nil {
+		return m.resolveInspector()
+	}
+	if key := m.railKey(); m.framed.rail == nil || m.framed.rail.key != key {
+		m.framed.rail = &railBlock{key: key, rail: m.resolveInspector()}
+	}
+	return m.framed.rail.rail
+}
+
+// railBlock is the rail resolved, with the reading it was resolved under.
+type railBlock struct {
+	key  railKey
+	rail components.InspectorRail
+}
+
+// railKey is what the rail was drawn against: the spinner's frame, how much
+// transcript there is, and which turn the session is on. Between them they
+// move on every tick the rail has anything new to say, which is what makes
+// them the reading to compare rather than the whole of it.
+//
+// It is a key and not an assumption because everything else the rail reads —
+// the changeset, a child's token count, the bill — moves on its own clock. A
+// frame is one paint (layout.go), and inside one paint none of those can
+// move; a memo that outlived a paint would be answering with a reading that
+// had, and comparing the key is what stops that from being something the next
+// reader has to know.
+type railKey struct {
+	frame   int
+	entries int
+	turn    int64
+}
+
+// railKey reads the three the rail is keyed on off the session. It is here
+// rather than beside the fields because what the rail depends on is the
+// rail's own business.
+func (m Model) railKey() railKey {
+	return railKey{frame: m.spinFrame, entries: len(m.transcript), turn: m.turnCount}
+}
+
+// resolveInspector assembles the rail from what the session already tracks. A
 // block with nothing to say is left nil, and the component omits it.
 //
 // The approved plan's checklist is read once and handed to both blocks that
 // need it: THIS TURN takes its denominator from it and PLAN draws it, and
-// reading the transcript twice per frame to tell one story would be waste.
-func (m Model) inspectorData() components.InspectorRail {
+// reading the transcript twice to tell one story would be waste.
+func (m Model) resolveInspector() components.InspectorRail {
 	steps := m.planChecklist()
 	return components.InspectorRail{
 		Summary: m.inspectorSummary(),

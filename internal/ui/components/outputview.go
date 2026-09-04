@@ -101,13 +101,12 @@ func (v *OutputView) View(width int) string {
 		offer(keys.Output.Collapse), offer(keys.Output.Back),
 	}, " · "))
 
-	body := v.bodyRows(width)
-	rows := v.bodyHeight()
-	v.Offset = clampOffset(v.Offset, len(body), rows)
-	end := min(v.Offset+rows, len(body))
+	p := Pager{Offset: v.Offset, Height: v.bodyHeight()}
+	visible := p.Window(v.bodyRows(width))
+	v.Offset = p.Offset
 
-	out := []string{header}
-	for _, l := range body[v.Offset:end] {
+	out := make([]string, 0, len(visible))
+	for _, l := range visible {
 		// The one door foreign bytes come through here, exactly as a detail
 		// body's: re-painted into the palette before they are measured.
 		if painted, ok := repaint(l, Palette.Dimmer); ok {
@@ -116,10 +115,7 @@ func (v *OutputView) View(width int) string {
 		}
 		out = append(out, sty.Dimmer.Render(Clip(l, width)))
 	}
-	for len(out) < rows+1 {
-		out = append(out, "")
-	}
-	return strings.Join(append(out, footer), "\n")
+	return p.Screen(header, out, footer)
 }
 
 // bodyRows is the body as display rows: the lines themselves, or their

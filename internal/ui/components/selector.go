@@ -168,31 +168,40 @@ type Select struct {
 	// can have.
 	hostCursor bool
 
-	// window is the slice of Options the card shows when the list is taller
-	// than the card, and the shared one every long list scrolls
-	// through the shared window — see listwindow.go. A filter that shortened the
-	// list clamps it and a Focus outside it pulls it back, so no host has to
-	// reset it.
-	window listWindow
+	// list is the shared pointer and window (list.go). It is a field rather
+	// than a local because the window is state: a card that recomputed where
+	// it was scrolled to on every keystroke would re-centre under the reader.
+	// A filter that shortened the list clamps it and a Focus outside it pulls
+	// it back, so no host has to reset it.
+	list List[SelectOption]
 }
 
-// geometry is what the shared window needs to know about this list: every
-// option is one row — its description rides the row rather than sitting under
-// it — except on a FocusDesc card, where the focused option carries its
-// consequence underneath. Group rails are labels rather than options, so the
-// markers do not offer to scroll to them.
-func (s *Select) geometry() listGeometry {
-	return listGeometry{
-		n:     len(s.Options),
-		focus: s.Focus,
-		height: func(i int) int {
-			if s.FocusDesc && i == s.Focus && !s.Options[i].Header && s.Options[i].Desc != "" {
-				return 2
-			}
-			return 1
-		},
-		counts: func(i int) bool { return !s.Options[i].Header },
+// pointer aims the shared list at this card's own fields and hands it back.
+// Options and Focus stay the card's, because hosts set both — a picker opens
+// with the pointer on the model in use — so the shape of the list is restated
+// here on the way in and the focus the movement left is read back out.
+//
+// Restated on every call, and that is not waste: the two functions close over
+// this receiver, and a card is a value that gets copied — the session holds
+// its picker by value and hands copies of the whole model around. A pair kept
+// from an earlier call would be answering about the card it was built on,
+// which after one copy is not this one.
+//
+// Every option is one row, its description riding the row rather than sitting
+// under it, except on a FocusDesc card where the focused option carries its
+// consequence underneath. Group rails label the options beneath them rather
+// than offering one, so the pointer steps over them and the markers do not
+// offer to scroll to them.
+func (s *Select) pointer() *List[SelectOption] {
+	s.list.Items, s.list.Focus = s.Options, s.Focus
+	s.list.Skip = func(o SelectOption) bool { return o.Header }
+	s.list.Rows = func(i int) int {
+		if s.FocusDesc && i == s.Focus && !s.Options[i].Header && s.Options[i].Desc != "" {
+			return 2
+		}
+		return 1
 	}
+	return &s.list
 }
 
 func (s *Select) Update(msg tea.KeyPressMsg) (done bool, result SelectResult) {
@@ -760,23 +769,23 @@ func (s *Select) visibleRowsFocus(width, budget int, numbered bool) ([]string, i
 	if s.Filtering && s.selectable() == 0 {
 		return s.noMatchRows(width), 0, -1
 	}
-	g := s.geometry()
-	lo, hi := s.window.rangeFor(g, budget)
+	l := s.pointer()
+	lo, hi := l.Range(budget)
 	rows := s.optionRows(width, numbered, lo, hi)
 	focusAt := -1
 	if s.Focus >= lo && s.Focus < hi {
-		focusAt = g.rows(lo, s.Focus) + g.height(s.Focus) - 1
+		focusAt = l.RowsIn(lo, s.Focus+1) - 1
 	}
 	if lo > 0 {
-		rows = append([]string{listOverflowRow("↑", g.countIn(0, lo), "", width)}, rows...)
+		rows = append([]string{ListOverflowRow("↑", l.CountIn(0, lo), "", width-cardFrameWidth)}, rows...)
 		if focusAt >= 0 {
 			focusAt++
 		}
 	}
 	if hi < len(s.Options) {
-		rows = append(rows, listOverflowRow("↓", g.countIn(hi, len(s.Options)), "", width))
+		rows = append(rows, ListOverflowRow("↓", l.CountIn(hi, len(s.Options)), "", width-cardFrameWidth))
 	}
-	return rows, g.countIn(lo, hi), focusAt
+	return rows, l.CountIn(lo, hi), focusAt
 }
 
 // noMatchRows is what a filter that matched nothing renders: a row, not
@@ -796,83 +805,32 @@ func (s *Select) noMatchRows(width int) []string {
 // move steps the focus by delta, over any header rows in the way. A move that
 // runs off either end leaves the focus where it was.
 func (s *Select) move(delta int) {
-	for i := s.Focus + delta; i >= 0 && i < len(s.Options); i += delta {
-		if !s.Options[i].Header {
-			s.Focus = i
-			return
-		}
-	}
+	l := s.pointer()
+	l.Move(delta)
+	s.Focus = l.Focus
 }
 
 // normalizeFocus keeps the pointer on a row that can be chosen: a list that
 // opens on a header — or on nothing, after a filter shortened it — moves the
 // focus to the nearest option instead.
 func (s *Select) normalizeFocus() {
-	if len(s.Options) == 0 {
-		s.Focus = 0
-		return
-	}
-	if s.Focus < 0 {
-		s.Focus = 0
-	}
-	if s.Focus >= len(s.Options) {
-		s.Focus = len(s.Options) - 1
-	}
-	if !s.Options[s.Focus].Header {
-		return
-	}
-	for i := s.Focus; i < len(s.Options); i++ {
-		if !s.Options[i].Header {
-			s.Focus = i
-			return
-		}
-	}
-	for i := s.Focus; i >= 0; i-- {
-		if !s.Options[i].Header {
-			s.Focus = i
-			return
-		}
-	}
+	l := s.pointer()
+	l.Normalize()
+	s.Focus = l.Focus
 }
 
 // FirstSelectable is the index of the first row a key can land on. A filtered
 // list puts its pointer here after every keystroke, because the rows
 // under it are not the rows that were there a moment ago.
-func (s *Select) FirstSelectable() int {
-	for i, opt := range s.Options {
-		if !opt.Header {
-			return i
-		}
-	}
-	return 0
-}
+func (s *Select) FirstSelectable() int { return s.pointer().First() }
 
 // selectable counts the rows a key can land on, which is every row until a
 // list carries headers.
-func (s *Select) selectable() int {
-	n := 0
-	for _, opt := range s.Options {
-		if !opt.Header {
-			n++
-		}
-	}
-	return n
-}
+func (s *Select) selectable() int { return s.pointer().Count() }
 
 // selectableIndex maps a 1-based position among the selectable rows — what
 // the number keys and the "1." prefixes count — to its index in Options.
-func (s *Select) selectableIndex(n int) int {
-	seen := 0
-	for i, opt := range s.Options {
-		if opt.Header {
-			continue
-		}
-		if seen++; seen == n {
-			return i
-		}
-	}
-	return 0
-}
+func (s *Select) selectableIndex(n int) int { return s.pointer().Index(n) }
 
 // digitIndex maps a number key to a 1-based position among n rows, or -1.
 func digitIndex(key string, n int) int {

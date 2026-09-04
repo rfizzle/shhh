@@ -5,6 +5,7 @@ package chat
 // and out that a draft can never produce by accident.
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -648,5 +649,92 @@ func TestMouse_WithoutAWriterSaysSo(t *testing.T) {
 	last := next.transcript[len(next.transcript)-1]
 	if !strings.Contains(last.text, "this session only") {
 		t.Fatalf("an unsaved flip should say so, got %q", last.text)
+	}
+}
+
+// The reading surface's own search: it goes to the pane the reader is
+// looking at, it moves that pane, and it says where in the answers it is.
+func TestSearch_FindsAndJumpsInTheTranscript(t *testing.T) {
+	m := proseModel(t)
+	if found := m.searchTranscript("parser"); found == 0 {
+		t.Fatal("the word is in the transcript twelve times over")
+	}
+	// A fresh search starts at the first occurrence the pane has not already
+	// scrolled past, so the reader is shown what is in front of them rather
+	// than sent to the top of the session.
+	at, total := m.viewport.MatchPosition()
+	if at == 0 || at == 1 {
+		t.Fatalf("a pane at the live end starts on an occurrence near it, got %d of %d", at, total)
+	}
+	if got := m.searchNotice(); got != fmt.Sprintf("%d/%d", at, total) {
+		t.Fatalf("the rail should say which occurrence this is, got %q", got)
+	}
+
+	// From the last occurrence, next wraps to the first — which is at the top
+	// of a session this long, so the pane has to have moved to reach it.
+	m.viewport.GotoBottom()
+	m.atBottom = true
+	for i := at; i < total; i++ {
+		m.searchStep(1)
+	}
+	m.searchStep(1)
+	if got, _ := m.viewport.MatchPosition(); got != 1 {
+		t.Fatalf("next from the last occurrence wraps to the first, got %d", got)
+	}
+	if off := m.viewport.YOffset(); off > 2 {
+		t.Fatalf("the pane should have jumped back to the top of the session, offset %d", off)
+	}
+	if m.atBottom {
+		t.Fatal("a search that scrolled off the live end pauses the follow, as any scroll does")
+	}
+}
+
+// A query that finds nothing says so rather than moving the pane.
+func TestSearch_SaysWhenThereIsNoMatch(t *testing.T) {
+	m := proseModel(t)
+	before := m.viewport.YOffset()
+	if found := m.searchTranscript("a word this session never said"); found != 0 {
+		t.Fatalf("found %d", found)
+	}
+	if got := m.searchNotice(); got != "no match" {
+		t.Fatalf("notice = %q", got)
+	}
+	m.searchStep(1)
+	if m.viewport.YOffset() != before {
+		t.Fatal("nothing to jump to should move nothing")
+	}
+}
+
+// A surface that took the pane over scrolls itself, so a query typed while
+// one is up finds nothing rather than moving the transcript behind it.
+func TestSearch_LeavesASurfaceThatOwnsThePaneAlone(t *testing.T) {
+	m := diffFullModel(t)
+	if found := m.searchTranscript("added line"); found != 0 {
+		t.Fatalf("the full-screen diff has no search, found %d", found)
+	}
+	if got := m.searchNotice(); got != "" {
+		t.Fatalf("notice = %q", got)
+	}
+}
+
+// The reading rail already reports where the reader is in the transcript, so
+// an open search reports its own position there rather than inventing a
+// second place to say the same kind of thing.
+func TestSearch_TheReadingRailReportsThePosition(t *testing.T) {
+	m := proseModel(t)
+	if got := m.readingLabel(); strings.Contains(got, "/") && !strings.HasPrefix(got, "READING ") {
+		t.Fatalf("with no search the rail is unchanged, got %q", got)
+	}
+	before := m.readingLabel()
+
+	m.searchTranscript("parser")
+	at, total := m.viewport.MatchPosition()
+	if got, want := m.readingLabel(), fmt.Sprintf("READING · %d/%d", at, total); got != want {
+		t.Fatalf("rail = %q, want %q", got, want)
+	}
+
+	m.searchTranscript("")
+	if got := m.readingLabel(); got != before {
+		t.Fatalf("clearing the search puts the rail back, got %q want %q", got, before)
 	}
 }

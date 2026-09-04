@@ -137,7 +137,7 @@ func bodyBudget(maxLines, pinned int) int {
 	return max(maxLines-2-pinned, 1)
 }
 
-// listOverflowRow is the marker on a windowed list's edge. It counts what it
+// ListOverflowRow is the marker on a windowed list's edge. It counts what it
 // is hiding rather than only marking that something is (invariant 4) — the
 // form the queue strip's own overflowRow uses about a different list, which
 // `ui_kits/cockpit/Lists.html` keeps for this one, so the borrowing it
@@ -149,7 +149,11 @@ func bodyBudget(maxLines, pinned int) int {
 // empty for most of them. The multi-select uses it to say how many of the
 // hidden rows are ticked, because a count you cannot see is a count you
 // cannot trust.
-func listOverflowRow(arrow string, n int, note string, width int) string {
+//
+// The width is the columns the marker has, not the card's: the saved-chat
+// browser windows a list that is not in a card at all, and a marker that
+// subtracted a frame it was never drawn in would come up two columns short.
+func ListOverflowRow(arrow string, n int, note string, width int) string {
 	label := "…"
 	if n > 0 {
 		label = fmt.Sprintf("%s %d more", arrow, n)
@@ -157,5 +161,5 @@ func listOverflowRow(arrow string, n int, note string, width int) string {
 	if note != "" {
 		label += " · " + note
 	}
-	return sty.Dim.Render(Clip(label, width-cardFrameWidth))
+	return sty.Dim.Render(Clip(label, width))
 }

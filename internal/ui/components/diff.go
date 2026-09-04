@@ -418,17 +418,10 @@ func (d *DiffView) fullView(width int) string {
 		offer(keys.Diff.SideBySide), offer(keys.Diff.Back),
 	}, " · "))
 
-	body := d.fullBody(width)
-	rows := d.bodyHeight()
-	d.Offset = clampOffset(d.Offset, len(body), rows)
-	end := min(d.Offset+rows, len(body))
-	visible := body[d.Offset:end]
-
-	out := append([]string{header}, visible...)
-	for len(out) < rows+1 {
-		out = append(out, "")
-	}
-	return strings.Join(append(out, footer), "\n")
+	p := Pager{Offset: d.Offset, Height: d.bodyHeight()}
+	visible := p.Window(d.fullBody(width))
+	d.Offset = p.Offset
+	return p.Screen(header, visible, footer)
 }
 
 // fullBody renders (and caches) the full-screen body rows, so scrolling a
@@ -468,13 +461,9 @@ func (d *DiffView) sideBySideActive(width int) bool {
 	return d.SideBySide || width >= sideBySideMinWidth
 }
 
-// scrollTo clamps and applies a new full-screen offset.
+// scrollTo holds a new full-screen offset inside the body and applies it.
 func (d *DiffView) scrollTo(offset int) {
-	d.Offset = clampOffset(offset, d.fullBodyLen(), d.bodyHeight())
-}
-
-func clampOffset(offset, total, visible int) int {
-	return max(0, min(offset, total-visible))
+	d.Offset = Pager{Offset: offset, Height: d.bodyHeight(), Total: d.fullBodyLen()}.Held()
 }
 
 // fullBodyLen is the total body row count of the current full-screen layout;

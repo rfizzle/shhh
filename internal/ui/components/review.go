@@ -610,9 +610,14 @@ func (v *ReviewView) paneRows(width, rows int) []string {
 	}
 
 	body, focus := v.hunkRows(*f, width)
-	v.Offset = clampOffset(scrollTo(v.Offset, focus, max(rows-1, 1)), len(body), max(rows-1, 1))
-	end := min(v.Offset+max(rows-1, 1), len(body))
-	return append([]string{Clip(head, width)}, body[v.Offset:end]...)
+	// The pane follows the focused hunk: moving between hunks is how this
+	// surface is read, so the row the pointer is on is brought in before the
+	// window is taken.
+	p := Pager{Offset: v.Offset, Height: max(rows-1, 1), Total: len(body)}
+	p.Reveal(focus)
+	visible := p.Window(body)
+	v.Offset = p.Offset
+	return append([]string{Clip(head, width)}, visible...)
 }
 
 // fileStageLabel says how much of the focused file is staged, in words as
@@ -674,18 +679,6 @@ func (v *ReviewView) hunkHeader(f ReviewFile, i int, h diff.Hunk, width int) str
 		lead += " "
 	}
 	return lead + sty.Hunk.Render(Clip(h.Header(), max(width-lipgloss.Width(lead), 0)))
-}
-
-// scrollTo keeps the focused row inside a window of the given height,
-// scrolling the least it can.
-func scrollTo(offset, focus, height int) int {
-	if focus < offset {
-		return focus
-	}
-	if focus >= offset+height {
-		return focus - height + 1
-	}
-	return offset
 }
 
 // footerRows are the keys the surface offers, plus any notice a key left

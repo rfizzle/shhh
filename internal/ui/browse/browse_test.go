@@ -213,3 +213,34 @@ func TestBrowse_TheDetailIsDrawnInTheSharedFrame(t *testing.T) {
 		}
 	}
 }
+
+// The browser scrolls on the window every long list in the product uses, and
+// counts what it is hiding: a list that dropped rows off either end without
+// saying so would be the one list here that hides rather than folds.
+func TestBrowse_WindowsAndCountsWhatItHides(t *testing.T) {
+	items := make([]Item, 40)
+	for i := range items {
+		items[i] = Item{ID: string(rune('a' + i%26)), Title: strings.Repeat("chat", 1) + " " + string(rune('a'+i%26)) + string(rune('0'+i/10))}
+	}
+	m := New(items, []ActionDef{{Label: "Open", Shortcut: "o"}})
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 60, Height: 12})
+	m = updated.(Model)
+
+	view := m.screen()
+	if !strings.Contains(view, "more") {
+		t.Fatalf("forty items in twelve rows should say how many are below:\n%s", view)
+	}
+
+	// Walking the pointer down moves the window with it, and once it has
+	// moved the marker above says how much went.
+	for range 20 {
+		m = press(t, m, "j")
+	}
+	view = m.screen()
+	if !strings.Contains(view, "↑") {
+		t.Fatalf("a window that has scrolled says what is above it:\n%s", view)
+	}
+	if !strings.Contains(view, items[m.list.Focus].Title) {
+		t.Fatalf("the pointer must stay inside the window:\n%s", view)
+	}
+}

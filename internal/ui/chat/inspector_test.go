@@ -618,3 +618,66 @@ func TestAppendEntry_StampsTheTurn(t *testing.T) {
 		t.Fatalf("an explicit turn is kept, got %d", got)
 	}
 }
+
+// A frame tiles a run of entries once. Reading mode's paint asked for the
+// session's tiling eight times before this, and the scan is over every entry
+// in the session, so a long session paid for all eight on every keystroke.
+// The map counts the tilings a frame took.
+func TestFrameMemo_TilesEachRunOnce(t *testing.T) {
+	m := inspectorModel(t, 160, 40)
+	m.framed = &frame{}
+
+	first := m.blocksOf(m.transcript)
+	again := m.blocksOf(m.transcript)
+	if len(m.framed.blocks) != 1 {
+		t.Fatalf("one run asked for twice is one tiling, took %d", len(m.framed.blocks))
+	}
+	if len(first) == 0 || &first[0] != &again[0] {
+		t.Fatal("the second reader should have been handed the first one's tiling")
+	}
+
+	// A different run is a different tiling, not the same one reused: a tail
+	// of the transcript and an attached child's own are different lists of
+	// entries that one shared answer would confuse.
+	m.blocksOf(m.transcript[1:])
+	if len(m.framed.blocks) != 2 {
+		t.Fatalf("two runs is two tilings, took %d", len(m.framed.blocks))
+	}
+}
+
+// Outside a paint there is no frame to reuse, and every caller tiles as it
+// always did.
+func TestFrameMemo_TilesFreshWithNoFrame(t *testing.T) {
+	m := inspectorModel(t, 160, 40)
+	first := m.blocksOf(m.transcript)
+	again := m.blocksOf(m.transcript)
+	if len(first) == 0 || &first[0] == &again[0] {
+		t.Fatal("with no frame, each call tiles for itself")
+	}
+}
+
+// The rail is keyed on the spinner's frame, the transcript's length and the
+// turn count, so a frame that asks twice builds it once and a reading that
+// moved builds it again.
+func TestRailMemo_IsKeyedRatherThanRebuilt(t *testing.T) {
+	m := inspectorModel(t, 160, 40)
+	m.framed = &frame{}
+
+	first := m.inspectorData()
+	held := m.framed.rail
+	if held == nil {
+		t.Fatal("the rail should have been resolved onto the frame")
+	}
+	if got := m.inspectorData(); m.framed.rail != held {
+		t.Fatalf("a second reader should have been handed the resolved rail, got %+v", got.Frame)
+	}
+
+	// The spinner ticking is a reading that moved, and the rail draws it.
+	m.spinFrame++
+	if m.inspectorData(); m.framed.rail == held {
+		t.Fatal("a spinner tick should have resolved the rail again")
+	}
+	if m.framed.rail.rail.Frame != first.Frame+1 {
+		t.Fatalf("the rebuilt rail should carry the new frame, got %d", m.framed.rail.rail.Frame)
+	}
+}

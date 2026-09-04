@@ -69,6 +69,14 @@ type frame struct {
 	rails     *[]string
 	interrupt *[]string
 	mode      *frameLayout
+	// blocks is the step tiling of a run of transcript entries, by run
+	// (plan.go). It is a map rather than a slot because a frame tiles more
+	// than one run — the session's own, the current turn's, the plan's — and
+	// asks for each of them more than once.
+	blocks map[blockRun][]transcriptBlock
+	// rail is the inspector rail resolved, with the reading it was resolved
+	// under (inspector.go).
+	rail *railBlock
 }
 
 // tailBlock is the live tail rendered once, with the width it was rendered

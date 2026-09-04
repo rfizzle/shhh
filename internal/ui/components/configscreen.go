@@ -581,16 +581,9 @@ func qualifier(detail string) string {
 // its name or by the config key behind it, so a reader who knows the key can
 // type it.
 func (c *ConfigScreen) match() []int {
-	query := strings.ToLower(strings.TrimSpace(c.menu.Query))
-	out := make([]int, 0, len(c.Rows))
-	for i, row := range c.Rows {
-		if query == "" ||
-			strings.Contains(strings.ToLower(row.Label), query) ||
-			strings.Contains(strings.ToLower(row.Key), query) {
-			out = append(out, i)
-		}
-	}
-	return out
+	return Filter(c.Rows, strings.TrimSpace(c.menu.Query), func(row ConfigRow) []string {
+		return []string{row.Label, row.Key}
+	})
 }
 
 // refilter re-runs the match after a keystroke changed the query, and puts
@@ -611,12 +604,12 @@ func (c *ConfigScreen) refilterPicker() {
 	if row == nil {
 		return
 	}
-	query := strings.ToLower(strings.TrimSpace(c.picker.Query))
-	matches := make([]SelectOption, 0, len(row.Options))
-	for _, o := range row.Options {
-		if query == "" || strings.Contains(strings.ToLower(o.Label), query) {
-			matches = append(matches, o)
-		}
+	shown := Filter(row.Options, strings.TrimSpace(c.picker.Query), func(o SelectOption) []string {
+		return []string{o.Label}
+	})
+	matches := make([]SelectOption, 0, len(shown))
+	for _, i := range shown {
+		matches = append(matches, row.Options[i])
 	}
 	c.picker.Options = matches
 	c.picker.Focus = 0
