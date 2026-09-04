@@ -25,6 +25,8 @@ package eval
 
 import (
 	"fmt"
+	"math"
+	"strconv"
 	"time"
 )
 
@@ -52,10 +54,13 @@ type Case struct {
 	// Check is the argv run in the workspace after the agent stops. Exit zero
 	// is the pass, and nothing else about it is interpreted.
 	Check []string
-	// Skip, when set, is why this case is not run — a case that needs a
-	// toolchain this machine does not have says so rather than failing as
-	// though the agent were at fault.
-	Skip string
+	// Requires names the commands the case cannot run without, and Skip,
+	// when set, is which of them this machine has not got — a case needing a
+	// toolchain that is absent says so rather than failing as though the
+	// agent were at fault. Both are kept: what the case needs is the case's
+	// own claim, and what is missing is this machine's answer to it.
+	Requires []string
+	Skip     string
 }
 
 // Attempt is one run of one case. A case is run more than once because the
@@ -173,6 +178,25 @@ func (r Result) Verdict() Verdict {
 	}
 }
 
+// String is the verdict as the word a report and a written run both spell it
+// with, so a file can be read against a report without a translation between
+// them.
+func (v Verdict) String() string {
+	switch v {
+	case Passed:
+		return "passed"
+	case Flaky:
+		return "flaky"
+	case Failed:
+		return "failed"
+	case Skipped:
+		return "skipped"
+	case Errored:
+		return "errored"
+	}
+	return "unknown"
+}
+
 // Median is the middle value of what f returns across the attempts that ran,
 // which is the summary statistic to use on a handful of samples: one attempt
 // that spent three times the rounds moves a mean and does not move this.
@@ -192,6 +216,19 @@ func (r Result) Median(f func(Attempt) float64) float64 {
 		return vals[mid]
 	}
 	return (vals[mid-1] + vals[mid]) / 2
+}
+
+// FormatRounds is how a median of rounds is spelled, wherever it is printed.
+//
+// The decimal is not decoration: a median over an even number of attempts
+// lands on a half, and 2.5 printed as "2" beside a 2 leaves a row claiming a
+// regression next to two identical numbers. It is dropped where there is
+// nothing after the point, because most runs have none.
+func FormatRounds(n float64) string {
+	if n == math.Trunc(n) {
+		return strconv.FormatFloat(n, 'f', 0, 64)
+	}
+	return strconv.FormatFloat(n, 'f', 1, 64)
 }
 
 // MedianRounds and Cost are the two numbers a comparison is usually read on:

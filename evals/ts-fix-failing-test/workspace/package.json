@@ -1,0 +1,5 @@
+{
+  "name": "latency",
+  "private": true,
+  "type": "module"
+}

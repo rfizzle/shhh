@@ -1,0 +1,6 @@
+name = "ts-fix-failing-test"
+prompt = "The tests in this directory fail. Find out why and fix the code so they pass. Do not change the tests."
+
+requires = ["node", "git"]
+
+check = ["node", "--experimental-strip-types", "latency.test.ts"]

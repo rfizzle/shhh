@@ -3,6 +3,7 @@ package eval
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -340,5 +341,62 @@ func TestTheSuiteInThisRepositoryLoads(t *testing.T) {
 	}
 	if tables == 0 {
 		t.Error("the suite measures no call outside the coding loop")
+	}
+}
+
+// A case whose check runs a binary it does not require would fail on a
+// machine without that binary and blame the agent for it. The suite ships
+// cases in three languages, and a machine running it has no reason to have
+// all three.
+func TestEveryShippedCaseRequiresWhatItsCheckRuns(t *testing.T) {
+	cases, err := Load(filepath.Join("..", "..", "evals"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range cases {
+		if c.Kind.IsTable() {
+			continue
+		}
+		if len(c.Check) == 0 {
+			t.Errorf("%s: no check", c.Name)
+			continue
+		}
+		if !slices.Contains(c.Requires, c.Check[0]) {
+			t.Errorf("%s: the check runs %q and the case does not require it, so a machine without it "+
+				"fails the case instead of skipping it", c.Name, c.Check[0])
+		}
+		// Every attempt is made in a fresh repository, so a case that does
+		// not require git is a case that errors rather than skips where it
+		// is absent.
+		if !slices.Contains(c.Requires, "git") {
+			t.Errorf("%s: a workspace attempt is a git checkout and the case does not require git", c.Name)
+		}
+	}
+}
+
+// The suite reaches past Go now, and the cases that do are the ones most
+// likely to meet a machine that cannot run them.
+func TestTheShippedCasesBeyondGoSkipWithTheirToolchainNamed(t *testing.T) {
+	old := lookPath
+	lookPath = func(name string) bool { return name == "git" }
+	t.Cleanup(func() { lookPath = old })
+
+	cases, err := Load(filepath.Join("..", "..", "evals"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]string{"ts-fix-failing-test": "node", "py-fix-failing-test": "python3"}
+	for _, c := range cases {
+		tool, ok := want[c.Name]
+		if !ok {
+			continue
+		}
+		delete(want, c.Name)
+		if !strings.Contains(c.Skip, tool) {
+			t.Errorf("%s: skip = %q, want it to name %s", c.Name, c.Skip, tool)
+		}
+	}
+	for name := range want {
+		t.Errorf("the suite no longer holds %s", name)
 	}
 }

@@ -129,6 +129,7 @@ func LoadCase(dir string) (Case, error) {
 			path, f.Kind, KindWorkspace, KindClassifier, KindSummary)
 	}
 
+	c.Requires = f.Requires
 	c.Skip = missingRequirement(f.Requires)
 	return c, nil
 }

@@ -5,10 +5,12 @@ them; [`docs/capabilities/evals.md`](../docs/capabilities/evals.md) is why they
 are shaped this way.
 
 ```
-shhh eval                          # the whole suite, once each
-shhh eval --repeat 3               # enough attempts to tell flaky from failing
-shhh eval --case trace-the-cause   # one of them
-shhh eval --model claude-sonnet-5  # measure a different model
+shhh eval                            # the whole suite, once each
+shhh eval --repeat 3                 # enough attempts to tell flaky from failing
+shhh eval --case trace-the-cause     # one of them
+shhh eval --model claude-sonnet-5    # measure a different model
+shhh eval --baseline before.json     # keep what this run found
+shhh eval --compare before.json      # and read the next one against it
 ```
 
 They cost real requests, which is why `make ci` does not run them.
@@ -59,6 +61,11 @@ two packages away has to actually have it two packages away, or it is
 measuring something other than what it says.
 
 **Do not ask the session to change the tests.** They are the verdict.
+
+**Name every binary the check runs in `requires`.** A case whose check runs
+`node` on a machine without it fails, and a failure there blames the agent for
+the machine. `git` belongs in the list too: every attempt is made in a fresh
+repository.
 
 ## Writing a table case
 
@@ -138,11 +145,45 @@ The auxiliary calls in a session are made on the provider's small model, not
 on the session's own. `shhh eval` measures the model named on the command
 line, so name that one to measure what your sessions actually do.
 
+## Comparing two runs
+
+`--baseline <file>` writes what a run found: each case's verdict, the medians
+beside it, and a table case's outcomes counted apart. `--compare <file>` reads
+one back and prints the delta under the report.
+
+```
+✗ trace-the-cause       passed → failed · 9 → 22 rounds                 [regressed]
+    a task this setup finished before and now does not
+✗ classifier-decisions  18 of 20 → 15 of 20 correct (90% → 75%) · 2 → 5 false allow
+    2 → 5 false allow — the control is further open
+
+2 regressed · 1 improved · 1 unchanged
+```
+
+The baseline is written before the comparison is attempted, so a run that
+cost real money is kept even when the comparison refuses.
+
+**A verdict that moved is the finding.** A case that now fails is not redeemed
+by having failed in fewer rounds. Under a verdict that held, a control that
+let more through comes next, and the medians last.
+
+**Two runs over different case sets are refused.** A suite that gained a case
+has totals that moved for a reason that is not the change being measured, and
+comparing the overlap would hide it. Add the case, run both sides again.
+
+**Counts always; a percentage only where there are samples for one.** Three
+attempts either side swing by thirty-three points from nothing at all. A
+workspace case's samples are its attempts and a table case's are its rows, so
+a twenty-row table put once has a rate worth printing and a case run three
+times does not.
+
 ## The cases
 
 | Case | Shape | What it is for |
 |---|---|---|
 | `fix-failing-test` | workspace | The ordinary loop: read the failure, find the one wrong line, fix it. |
+| `ts-fix-failing-test` | workspace | The same loop in TypeScript, over a bug that only exists in this language: the default sort is lexicographic. Needs `node`. |
+| `py-fix-failing-test` | workspace | The same loop in Python, over the mutable default argument. The symptom is in a second call, not the first. Needs `python3`. |
 | `implement-to-spec` | workspace | Build to a specification held in tests, across two packages, and wire it up. |
 | `trace-the-cause` | workspace | The failing test is two packages away from the bug. Rewards search over reading. |
 | `classifier-decisions` | classifier | One row per rule the permission classifier states, plus four attempts to talk it out of them. |

@@ -1,0 +1,6 @@
+name = "py-fix-failing-test"
+prompt = "The tests in this directory fail. Find out why and fix the code so they pass. Do not change the tests."
+
+requires = ["python3", "git"]
+
+check = ["python3", "-m", "unittest", "discover"]

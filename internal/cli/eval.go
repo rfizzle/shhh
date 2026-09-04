@@ -36,6 +36,7 @@ func newEvalCmd() *cobra.Command {
 	var repeat int
 	var timeout time.Duration
 	var only []string
+	var baselinePath, comparePath string
 
 	cmd := &cobra.Command{
 		Use:   "eval [suite]",
@@ -46,6 +47,8 @@ func newEvalCmd() *cobra.Command {
 			"A case with no workspace is a labelled table instead, put to one of the calls a session makes beside the " +
 			"coding loop — a permission decision, a status reading — and scored by comparing the answer with the label. " +
 			"Those are made on the model named here, so name the one your sessions actually make them on.\n\n" +
+			"`--baseline` writes what this run found to a file, and `--compare` reads one back and prints the delta " +
+			"beneath the report, so a prompt edit is judged against a run rather than against the memory of one.\n\n" +
 			"Every case costs real requests. A suite is a way to find out whether a model, a prompt or a setting change " +
 			"actually did the work, and it is not part of `make ci` for that reason.",
 		Args: cobra.MaximumNArgs(1),
@@ -107,7 +110,39 @@ func newEvalCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return report.Fprint(cmd.OutOrStdout(), evalReport(sum))
+			out := cmd.OutOrStdout()
+			if err := report.Fprint(out, evalReport(sum)); err != nil {
+				return err
+			}
+
+			// The baseline to compare against is read before the new one is
+			// written, and the new one is written before either failure is
+			// returned. Both halves of that matter: `--baseline b --compare
+			// b` is the obvious way to keep a rolling baseline, and writing
+			// first would have it compare the run with itself and report no
+			// change every time — while returning early on a comparison that
+			// refuses would throw away a run that has already been paid for.
+			var before eval.Baseline
+			var compareErr error
+			if comparePath != "" {
+				before, compareErr = eval.ReadBaseline(comparePath)
+			}
+			if baselinePath != "" {
+				if err := eval.WriteBaseline(baselinePath, sum.Baseline()); err != nil {
+					return err
+				}
+			}
+			if compareErr != nil {
+				return compareErr
+			}
+			if comparePath == "" {
+				return nil
+			}
+			cmp, err := eval.Compare(before, sum.Baseline())
+			if err != nil {
+				return err
+			}
+			return report.Fprint(out, compareReport(cmp, time.Now()))
 		},
 	}
 
@@ -115,6 +150,8 @@ func newEvalCmd() *cobra.Command {
 	cmd.Flags().IntVar(&repeat, "repeat", 1, "attempts per case; more than one is what tells a flaky case from a failing one")
 	cmd.Flags().DurationVar(&timeout, "timeout", defaultEvalTimeout, "ceiling on one attempt (0 removes it)")
 	cmd.Flags().StringArrayVar(&only, "case", nil, "run only this case, by name (repeatable)")
+	cmd.Flags().StringVar(&baselinePath, "baseline", "", "write this run's verdicts and medians to this file")
+	cmd.Flags().StringVar(&comparePath, "compare", "", "read a baseline written earlier and print the delta beneath the report")
 	return cmd
 }
 
@@ -352,7 +389,7 @@ func evalDetail(res eval.Result) string {
 		parts = append(parts, fmt.Sprintf("%d of %d correct", score.Correct(), score.Rows()))
 	}
 	if rounds := res.MedianRounds(); rounds > 0 {
-		parts = append(parts, fmt.Sprintf("%.0f rounds", rounds))
+		parts = append(parts, eval.FormatRounds(rounds)+" rounds")
 	}
 	if tokens := res.Median(func(a eval.Attempt) float64 { return float64(a.TokensIn + a.TokensOut) }); tokens > 0 {
 		parts = append(parts, tokenCount(int64(tokens))+" tokens")
@@ -402,4 +439,181 @@ func firstLineOf(s string) string {
 		}
 	}
 	return "the check failed and printed nothing"
+}
+
+// compareReport is this run read against a baseline: a row per case, what
+// moved, and which way.
+//
+// It is the run's own report shape again rather than a table of its own. A
+// reader has just read the report above it, and a second grid to learn is a
+// second grid to misread — the delta's rows differ only in carrying two
+// numbers where the report carried one.
+// See docs/capabilities/evals.md#a-run-can-be-compared-with-the-last-one.
+func compareReport(cmp eval.Comparison, now time.Time) report.Report {
+	r := report.Report{Title: "shhh eval --compare",
+		Subject: "against a run from " + historyAgo(cmp.Before.Recorded, now)}
+
+	section := report.Section{}
+	withheld := 0
+	for _, d := range cmp.Cases {
+		section.Rows = append(section.Rows, compareRow(d))
+		// Only a row that shows a pair of counts is a row with a rate
+		// missing from it. A case attempted once has none to withhold, and
+		// one that is not comparable prints neither.
+		if d.Change != eval.Incomparable && carriesCounts(d) && !d.ReadableRate() {
+			withheld++
+		}
+	}
+	r.Sections = []report.Section{section}
+
+	// A comparison across models is a legitimate thing to want — it is most
+	// of why anyone keeps a baseline — but a reader looking for the effect of
+	// a prompt edit should not have to discover the model moved underneath
+	// them by reading two file headers.
+	if cmp.Before.Model != cmp.After.Model {
+		r.Notes = append(r.Notes, report.Note{State: report.Warn,
+			Text: fmt.Sprintf("the baseline was measured on %s and this run on %s, so every row carries that change too",
+				modelOrUnknown(cmp.Before.Model), modelOrUnknown(cmp.After.Model))})
+	}
+	if withheld > 0 {
+		r.Notes = append(r.Notes, report.Note{State: report.Skip,
+			Text: fmt.Sprintf("%s carry counts and no rate: under %d samples a side, one sample moves a percentage "+
+				"further than anything being measured here does",
+				countOf(withheld, "row", "rows"), eval.MinRateSamples)})
+	}
+
+	improved, regressed, unchanged, incomparable := cmp.Tally()
+	// A run that moved nothing gets a sentence rather than a count of
+	// zeroes: it is the answer the reader ran the comparison for, and
+	// "0 regressed · 0 improved · 5 unchanged" makes them work it out.
+	if regressed == 0 && improved == 0 && incomparable == 0 {
+		r.Tally = "no change across " + countOf(unchanged, "case", "cases")
+		return r
+	}
+	var parts []string
+	if regressed > 0 {
+		parts = append(parts, fmt.Sprintf("%d regressed", regressed))
+	}
+	if improved > 0 {
+		parts = append(parts, fmt.Sprintf("%d improved", improved))
+	}
+	parts = append(parts, fmt.Sprintf("%d unchanged", unchanged))
+	if incomparable > 0 {
+		parts = append(parts, fmt.Sprintf("%d not comparable", incomparable))
+	}
+	r.Tally = strings.Join(parts, " · ")
+	return r
+}
+
+func modelOrUnknown(model string) string {
+	if model == "" {
+		return "an unnamed model"
+	}
+	return model
+}
+
+// compareRow is one case between the two runs.
+func compareRow(d eval.Delta) report.Row {
+	row := report.Row{Name: d.Name, Subject: compareSubject(d), Detail: compareDetail(d)}
+	switch d.Change {
+	case eval.Regressed:
+		row.State, row.Outcome, row.Consequence = report.Fail, "regressed", d.Why
+	case eval.Improved:
+		row.State, row.Outcome = report.Pass, "improved"
+	case eval.Incomparable:
+		row.State, row.Outcome, row.Consequence = report.Skip, "not comparable", d.Why
+	default:
+		row.State, row.Outcome = report.Pass, "unchanged"
+	}
+	return row
+}
+
+// compareSubject is what the case was decided as, both times.
+//
+// A side that was skipped or never ran has no counts, and a pair like
+// `0 of 3 → 0 of 0` reads as three attempts that stopped passing rather than
+// as a case the machine did not run. Those rows carry the two words alone.
+func compareSubject(d eval.Delta) string {
+	if d.Change == eval.Incomparable {
+		return d.Before.Verdict + " → " + d.After.Verdict
+	}
+	if before, after := d.Before.Table, d.After.Table; before != nil && after != nil {
+		return fmt.Sprintf("%d of %d → %d of %d correct%s", before.Correct, before.Rows,
+			after.Correct, after.Rows, rateShift(d, before.Correct, before.Rows, after.Correct, after.Rows))
+	}
+	line := d.Before.Verdict + " → " + d.After.Verdict
+	if carriesCounts(d) {
+		line += fmt.Sprintf(" · %d of %d → %d of %d passed%s", d.Before.Passes, d.Before.Attempts,
+			d.After.Passes, d.After.Attempts,
+			rateShift(d, d.Before.Passes, d.Before.Attempts, d.After.Passes, d.After.Attempts))
+	}
+	return line
+}
+
+// carriesCounts reports whether the row shows a pair of counts a rate could
+// be drawn from. A table row always does; a workspace row does once the case
+// was attempted more than once, and a single attempt has no rate to print or
+// to withhold.
+func carriesCounts(d eval.Delta) bool {
+	if d.Before.Table != nil && d.After.Table != nil {
+		return true
+	}
+	return d.Before.Attempts > 1 || d.After.Attempts > 1
+}
+
+// rateShift is the pair of percentages, or nothing where there are too few
+// samples for one to mean anything. The counts are printed either way, so a
+// row that withholds its rate is still a row with numbers in it.
+func rateShift(d eval.Delta, beforeN, beforeOf, afterN, afterOf int) string {
+	if !d.ReadableRate() || beforeOf == 0 || afterOf == 0 {
+		return ""
+	}
+	return fmt.Sprintf(" (%.0f%% → %.0f%%)", 100*float64(beforeN)/float64(beforeOf), 100*float64(afterN)/float64(afterOf))
+}
+
+// compareDetail is what the verdict cost, both times: the outcomes counted
+// apart for a table, then the two numbers a comparison is read on.
+//
+// False allow leads the line for a table because it is the one number here
+// that costs something outside the suite — a control that lets one more
+// action through has failed a little further open, whatever the totals did.
+//
+// A figure that is the same on both sides is left out. The row is clipped to
+// the terminal from the target end, so `6 → 6 rounds` is width taken from the
+// numbers that actually moved, which are the only reason the row is here.
+func compareDetail(d eval.Delta) string {
+	var parts []string
+	if before, after := d.Before.Table, d.After.Table; before != nil && after != nil {
+		parts = append(parts, countShift(before.FalseAllow, after.FalseAllow, "false allow")...)
+		parts = append(parts, countShift(before.FalseDeny, after.FalseDeny, "false deny")...)
+		parts = append(parts, countShift(before.Unanswered, after.Unanswered, "with no answer")...)
+	}
+	if before, after := eval.FormatRounds(d.Before.Rounds), eval.FormatRounds(d.After.Rounds); before != after {
+		parts = append(parts, before+" → "+after+" rounds")
+	}
+	if before, after := spendPair(d); before != after {
+		parts = append(parts, before+" → "+after)
+	}
+	return strings.Join(parts, " · ")
+}
+
+// spendPair is what the case cost either side, or two empty strings where
+// nothing was priced — which the caller reads as a pair that did not move and
+// so prints nothing, rather than as two dashes taking the width the numbers
+// that did move needed.
+func spendPair(d eval.Delta) (before, after string) {
+	if !d.Before.Priced || !d.After.Priced {
+		return "", ""
+	}
+	return metricsSpend(d.Before.Cost, true), metricsSpend(d.After.Cost, true)
+}
+
+// countShift is one outcome either side, and nothing at all where it never
+// happened in either run: a row of zeroes is the width the numbers that did
+// move needed.
+func countShift(before, after int, label string) []string {
+	if before == 0 && after == 0 {
+		return nil
+	}
+	return []string{fmt.Sprintf("%d → %d %s", before, after, label)}
 }
