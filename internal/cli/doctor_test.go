@@ -940,3 +940,46 @@ func TestDoctorConfig_TwoHeldKeysAreOneRowThatReads(t *testing.T) {
 		t.Fatalf("the fix does not name the second key's companion: %+v", both)
 	}
 }
+
+// The row a reader looks at to answer "are my sessions leaving this
+// machine". Off is not a fault — it is what almost every machine is — and an
+// endpoint that cannot be sent to is a warning rather than a failure,
+// because nothing about the session stops working.
+func TestDoctorOtel(t *testing.T) {
+	off := doctorOtel("  ")
+	if off.State != components.DoctorSkipped {
+		t.Fatalf("no endpoint should not be a fault: %+v", off)
+	}
+	if !strings.Contains(off.Subject, "stays on this machine") {
+		t.Fatalf("the row does not say where the record is: %q", off.Subject)
+	}
+
+	on := doctorOtel("http://localhost:4318")
+	if on.State != components.DoctorPassed {
+		t.Fatalf("a usable endpoint did not pass: %+v", on)
+	}
+	if !strings.Contains(on.Subject, "http://localhost:4318") {
+		t.Fatalf("the row does not name the endpoint: %q", on.Subject)
+	}
+
+	bad := doctorOtel("localhost:4318")
+	if bad.State != components.DoctorWarned {
+		t.Fatalf("an endpoint with no scheme did not warn: %+v", bad)
+	}
+	if !strings.Contains(bad.Consequence, "recorded locally") {
+		t.Fatalf("the consequence does not say what still works: %q", bad.Consequence)
+	}
+}
+
+// The probe reads the config and nothing else, so the row is the same on a
+// machine with a collector and on one without.
+func TestProbeOtel_ReadsTheConfiguredEndpoint(t *testing.T) {
+	var cfg config.Config
+	if f := probeOtel(t.Context(), cfg); f.State != components.DoctorSkipped {
+		t.Fatalf("an empty config is export off: %+v", f)
+	}
+	cfg.Otel.Endpoint = "https://otel.example:4318"
+	if f := probeOtel(t.Context(), cfg); !strings.Contains(f.Subject, "otel.example") {
+		t.Fatalf("the probe did not read the endpoint: %+v", f)
+	}
+}

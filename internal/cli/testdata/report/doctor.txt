@@ -1,9 +1,10 @@
-  shhh doctor — 3 checks
+  shhh doctor — 4 checks
 
   ✓ binary    shhh 0.9.4 · linux/amd64  [ok]
+  ✓ otel      http://localhost:4318 · content-free  [ok]
   ✗ sandbox   bwrap not found  [UNCONTAINED]
       commands run with your own permissions, in your own filesystem
         sudo apt install bubblewrap
   ⊘ engine    no container engine  [not checked]
 
-  1 failed · 1 passed · 1 not checked
+  1 failed · 2 passed · 1 not checked

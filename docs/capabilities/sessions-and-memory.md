@@ -368,6 +368,45 @@ a store that grows forever"; purge is the answer to "I want none of this",
 and a window that quietly did the second thing would be the one setting in
 the product nobody could trust.
 
+### The record can leave this machine
+
+Set `otel.endpoint` to a collector and every session is also sent to it over
+OTLP: one span per session, one event on that span per row the record keeps,
+and the totals the session spent as attributes on the span. It is off until
+an endpoint is written down, and the endpoint is the only setting — what
+gets exported is the record, and the record is fixed.
+
+**It is the same record, not a second one.** Every event is reported to the
+store and to the collector from the same arguments at the same moment, in
+the same words: the outcome the row keeps is the outcome the span event
+carries, and the codes are the closed sets the record already reasons in. A
+dashboard built on the export and a reading taken with `shhh observe` are
+therefore two views of one thing rather than two numbers that have to be
+reconciled.
+
+**The content-free posture is what makes this safe to switch on.** There is
+no filter between the record and the wire, and there deliberately is not
+one: a filter is a mechanism that can be wrong one day without anything
+failing, and the reason none is needed is that there was never a path, a
+prompt or a command in the record to remove. What crosses the network is
+what the local table holds. The one thing that does not cross is the name of
+the saved conversation a session is writing — that name is the join from the
+record to what was actually said, and putting the two side by side stays a
+deliberate act at the export command rather than something that happens to
+every collector on the network.
+
+**A collector that will not answer costs a session nothing.** The connection
+is made when a session ends, not when it starts, so an endpoint that is down
+is invisible until then; the attempt is bounded and never retried; and a
+failure switches export off for the rest of the process and writes one line
+to the diagnostic log. A session that ends because you started a new
+conversation does not wait for the send at all — that boundary is crossed
+while you are sitting in front of it, and a collector that is merely slow is
+not allowed to be felt there. The record is a by-product of doing the work, so it
+is never a reason for the work to wait or to stop. `shhh doctor` names the
+endpoint when one is set, so where the record goes is visible without
+opening the file.
+
 ### Every composition is one population
 
 Every composition shhh runs — a session, a headless run, every sub-agent, and
@@ -564,7 +603,10 @@ disagree.
 ## Where it all lives
 
 One local embedded database file, on your machine, in the platform's
-conventional data directory. Nothing here is sent anywhere.
+conventional data directory. Nothing here is sent anywhere unless you write
+down a collector to send it to, and then it is the session record and only
+the session record — the half that has no prompt, no path and no command in
+it — that leaves.
 
 ## Related
 

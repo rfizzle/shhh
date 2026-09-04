@@ -454,6 +454,12 @@ knows it; the profiles under `[agents]` are one key per role, which the
 |---|---|---|---|
 | `retention_days` | number | 180 days | How long a session's record and its events are kept before startup prunes them; longer than history's window because a comparison reads back across a change made a quarter ago. |
 
+**`[otel]`**
+
+| Key | Takes | Default | What it decides |
+|---|---|---|---|
+| `endpoint` | text | (off — the record stays on this machine) | Where an OTLP collector listens, as a URL with its scheme; each session is sent to it as one span when the session ends. |
+
 **`[agents]`**
 
 | Key | Takes | Default | What it decides |

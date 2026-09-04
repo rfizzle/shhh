@@ -24,6 +24,7 @@ type Config struct {
 	History    HistoryConfig    `toml:"history"`
 	Reports    ReportsConfig    `toml:"reports"`
 	Observe    ObserveConfig    `toml:"observe"`
+	Otel       OtelConfig       `toml:"otel"`
 	Agents     AgentsConfig     `toml:"agents"`
 	Summary    SummaryConfig    `toml:"summary"`
 	Secrets    SecretsConfig    `toml:"secrets"`
@@ -509,6 +510,24 @@ type ReportsConfig struct {
 // See docs/capabilities/sessions-and-memory.md#the-record-is-kept-for-a-window.
 type ObserveConfig struct {
 	RetentionDays int `toml:"retention_days"`
+}
+
+// OtelConfig sends the session record somewhere other than this machine.
+//
+// One key, and it is the endpoint, because there is nothing else to decide.
+// What is exported is the record, which is fixed; whether to export is
+// answered by whether an endpoint is written down; and the record is
+// content-free by construction, so there is no subset of it anyone would
+// want to choose. A second key here would be a knob over a decision the
+// product has already made.
+// See docs/capabilities/sessions-and-memory.md#the-record-can-leave-this-machine.
+type OtelConfig struct {
+	// Endpoint is where an OTLP collector listens, as a URL with its scheme
+	// — `http://localhost:4318`, or the full path where a gateway mounts the
+	// receiver somewhere other than the root. Empty is off, which is the
+	// default: a machine that has not been told where to send the record
+	// keeps it.
+	Endpoint string `toml:"endpoint"`
 }
 
 const DefaultRetentionDays = 90

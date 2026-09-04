@@ -5,6 +5,7 @@ package cli
 // observeRecorder half persists what a running session reports.
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -18,6 +19,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
+	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -45,6 +47,39 @@ type observeRecorder struct {
 	// outcome is the session outcome the last closing turn wrote, so the
 	// end knows whether anything ever said how the session came out.
 	outcome string
+	// span is the row said out loud to a collector, or nil when no endpoint
+	// is configured — which is the ordinary case. Every event the recorder
+	// writes to the store is written to it as well, from the same arguments,
+	// so the two records cannot disagree about what happened.
+	span *observe.SessionSpan
+}
+
+// observeExport is the collector every session opened in this process
+// reports to, or nil when the record stays on this machine. It is a value of
+// the package rather than an argument because the four surfaces that open a
+// recorder resolve their own model, provider and prices and have no reason
+// to know about a collector — and the root, which reads the config, is the
+// one place that does.
+var observeExport *observe.Exporter
+
+// setObserveExport is the root's half: the endpoint, read once from the
+// config, turned into the exporter every recorder afterwards hangs its span
+// on. An endpoint that will not parse costs one log record and leaves export
+// off, which is the same answer a collector that will not answer gets — the
+// record is a by-product of a session and never a reason for one to refuse
+// to start.
+// See docs/capabilities/sessions-and-memory.md#the-record-can-leave-this-machine.
+func setObserveExport(endpoint string) {
+	observeExport = nil
+	if strings.TrimSpace(endpoint) == "" {
+		return
+	}
+	exp, err := observe.NewExporter(context.Background(), endpoint, version)
+	if err != nil {
+		logs.Logger().Warn("session record not exported", "error", err)
+		return
+	}
+	observeExport = exp
 }
 
 // startObserveRecorder opens a session row; any failure disables recording
@@ -64,7 +99,8 @@ func startObserveRecorder(db *storage.DB, kind, provider, model string, prices *
 	if err != nil {
 		return nil
 	}
-	return &observeRecorder{db: db, id: id, prices: prices, model: model, kind: kind, provider: provider}
+	return &observeRecorder{db: db, id: id, prices: prices, model: model, kind: kind, provider: provider,
+		span: observeExport.Session(kind, provider, model)}
 }
 
 // startChildObserveRecorder opens a sub-agent's session row linked to its
@@ -77,7 +113,8 @@ func startChildObserveRecorder(db *storage.DB, kind, provider, model string, pri
 	if err != nil {
 		return nil
 	}
-	return &observeRecorder{db: db, id: id, prices: prices, model: model, kind: kind, provider: provider}
+	return &observeRecorder{db: db, id: id, prices: prices, model: model, kind: kind, provider: provider,
+		span: observeExport.Session(kind, provider, model)}
 }
 
 // sessionID is the recorder's session row id (0 when recording is disabled),
@@ -276,6 +313,7 @@ func (r *observeRecorder) usage(turns, tokensIn, tokensOut int64) {
 			cost = in + out
 		}
 	}
+	r.span.Usage(turns, tokensIn, tokensOut, cost)
 	_ = r.db.UpdateAgentSession(r.id, turns, tokensIn, tokensOut, cost)
 }
 
@@ -293,6 +331,7 @@ func (r *observeRecorder) usagePriced(turns, tokensIn, tokensOut int64, cost flo
 		r.usage(turns, tokensIn, tokensOut)
 		return
 	}
+	r.span.Usage(turns, tokensIn, tokensOut, cost)
 	_ = r.db.UpdateAgentSession(r.id, turns, tokensIn, tokensOut, cost)
 }
 
@@ -300,6 +339,7 @@ func (r *observeRecorder) toolCallAt(at observe.Pos, tool string, duration time.
 	if r == nil {
 		return
 	}
+	r.span.ToolCall(at, tool, duration, outcome, class)
 	ms := duration.Milliseconds()
 	_ = r.db.RecordAgentEvent(r.id, storage.AgentEvent{
 		Kind: storage.AgentEventTool, Tool: tool, DurationMs: &ms, Outcome: outcome, Reason: class,
@@ -311,6 +351,7 @@ func (r *observeRecorder) decisionAt(at observe.Pos, decision, reason string) {
 	if r == nil {
 		return
 	}
+	r.span.Decision(at, decision, reason)
 	_ = r.db.RecordAgentEvent(r.id, storage.AgentEvent{
 		Kind: storage.AgentEventDecision, Outcome: decision, Reason: reason, Turn: at.Turn, Round: at.Round,
 	})
@@ -325,6 +366,7 @@ func (r *observeRecorder) turn(turn, rounds int64, duration time.Duration, outco
 	if r == nil {
 		return
 	}
+	r.span.Turn(turn, rounds, duration, outcome)
 	// The heartbeat rides the turn close rather than being called from each
 	// front-end's own boundary: this callback is the one every surface
 	// already reports a finished turn through, so there is one site to keep
@@ -346,6 +388,7 @@ func (r *observeRecorder) signal(at observe.Pos, code, reason string) {
 	if r == nil {
 		return
 	}
+	r.span.Signal(at, code, reason)
 	_ = r.db.RecordAgentEvent(r.id, storage.AgentEvent{
 		Kind: storage.AgentEventSignal, Outcome: code, Reason: reason, Turn: at.Turn, Round: at.Round,
 	})
@@ -364,12 +407,18 @@ func (r *observeRecorder) gate(suite, verdict string) {
 	if r == nil {
 		return
 	}
+	r.span.Gate(suite, verdict)
 	_ = r.db.RecordAgentEvent(r.id, storage.AgentEvent{
 		Kind: storage.AgentEventSignal, Tool: suite, Outcome: observe.SignalGate, Reason: verdict,
 	})
 }
 
-// link names the saved conversation the session is writing.
+// link names the saved conversation the session is writing. It is the one
+// callback with no exported half: the name is the join from the record to
+// what was actually said, and putting the two side by side is a deliberate
+// act taken at the export command rather than a thing that happens to every
+// collector on the network
+// (docs/capabilities/sessions-and-memory.md#observations-are-what-the-session-did).
 func (r *observeRecorder) link(name string) {
 	if r == nil || name == "" || name == r.linked {
 		return
@@ -395,6 +444,20 @@ func (r *observeRecorder) end() {
 		outcome = observe.SessionAbandoned
 	}
 	_ = r.db.EndAgentSession(r.id, outcome)
+	// Cleared after the send because a span is sent when it ends, so there
+	// is nothing left to say through this one.
+	r.span.End(r.closingOutcome())
+	r.span = nil
+}
+
+// closingOutcome is the outcome a row closed without a surface naming one
+// settles on: the standing reading where a turn wrote one, the abandonment
+// where none did.
+func (r *observeRecorder) closingOutcome() string {
+	if r.outcome != "" {
+		return r.outcome
+	}
+	return observe.SessionAbandoned
 }
 
 // endWith closes the row with an outcome the surface knows better than its
@@ -408,6 +471,8 @@ func (r *observeRecorder) endWith(outcome string) {
 	}
 	r.outcome = outcome
 	_ = r.db.EndAgentSession(r.id, outcome)
+	r.span.End(outcome)
+	r.span = nil
 }
 
 // restart closes this row and opens another for the conversation that
@@ -424,12 +489,25 @@ func (r *observeRecorder) restart() bool {
 	if r == nil {
 		return false
 	}
+	// The closing conversation's span goes out on a goroutine of its own,
+	// and this is the one place that is true. A session boundary is answered
+	// inside the update loop — `/new`, the pressure card's recovery, a run
+	// that starts a fresh conversation — so a collector that is slow rather
+	// than absent would hold the screen still for as long as an export is
+	// allowed to take. The process exit keeps the synchronous send, because
+	// there a span nobody waits for is a span the process outlives.
+	if closing := r.span; closing != nil {
+		outcome := r.closingOutcome()
+		r.span = nil
+		go closing.End(outcome)
+	}
 	r.end()
 	id, err := r.db.StartAgentSession(r.kind, r.provider, r.model)
 	if err != nil {
 		return false
 	}
 	r.id, r.linked, r.outcome = id, "", ""
+	r.span = observeExport.Session(r.kind, r.provider, r.model)
 	return true
 }
 

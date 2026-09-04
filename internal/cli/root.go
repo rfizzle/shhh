@@ -129,6 +129,11 @@ func NewRootCmd() *cobra.Command {
 			// rather than a connection of their own from here.
 			setHistoryRetention(cfg.EffectiveRetentionDays())
 			setObserveRetention(cfg.EffectiveObserveRetentionDays())
+			// And the collector, for the same reason and in the same place:
+			// a recorder is opened by four surfaces that resolve their own
+			// model and provider, and this is where the config is read
+			// (observe.go).
+			setObserveExport(cfg.Otel.Endpoint)
 
 			return nil
 		},

@@ -1130,3 +1130,36 @@ func TestObserveRetention_ItsOwnWindowAndItsOwnDefault(t *testing.T) {
 		t.Errorf("a reset leaves %d days, want the default %d", got, DefaultObserveRetentionDays)
 	}
 }
+
+// The record leaves this machine only when a file says where to, so the
+// default has to be nothing at all, and the key has to survive the file it
+// was written in.
+func TestOtelEndpoint_OffUntilTheFileNamesOne(t *testing.T) {
+	var fresh Config
+	if fresh.Otel.Endpoint != "" {
+		t.Fatalf("a machine nobody configured exports to %q", fresh.Otel.Endpoint)
+	}
+
+	path := filepath.Join(t.TempDir(), "config.toml")
+	if err := os.WriteFile(path, []byte("[otel]\nendpoint = \"http://localhost:4318\"\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := LoadFrom(path)
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	if cfg.Otel.Endpoint != "http://localhost:4318" {
+		t.Fatalf("otel.endpoint = %q", cfg.Otel.Endpoint)
+	}
+
+	var written Config
+	if err := Set(&written, "otel.endpoint", "https://otel.example:4318"); err != nil {
+		t.Fatalf("set: %v", err)
+	}
+	if written.Otel.Endpoint != "https://otel.example:4318" {
+		t.Fatalf("otel.endpoint = %q after a write", written.Otel.Endpoint)
+	}
+	if text, set := Value(written, "otel.endpoint"); !set || text != "https://otel.example:4318" {
+		t.Fatalf("the listing reads back %q (set=%v)", text, set)
+	}
+}

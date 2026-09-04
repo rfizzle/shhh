@@ -47,6 +47,7 @@ import (
 	"github.com/rfizzle/shhh/internal/lsp"
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/migrate"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/reports"
@@ -263,6 +264,7 @@ func doctorProbes() []doctorProbe {
 		{name: "store", run: probeStore},
 		{name: "logs", run: probeLogs},
 		{name: "reports", run: probeReports},
+		{name: "otel", run: probeOtel},
 		{name: "sandbox", run: probeSandbox},
 		{name: "engine", run: probeEngine},
 		{name: "git", run: probeGit},
@@ -923,6 +925,49 @@ func doctorReports(path string, count int, size int64, err error) doctorFinding 
 	}
 }
 
+func probeOtel(_ context.Context, cfg config.Config) doctorFinding {
+	return doctorOtel(cfg.Otel.Endpoint)
+}
+
+// doctorOtel reads the one setting that sends the session record off this
+// machine, and it reads it rather than reaching it. A collector is somebody
+// else's process on somebody else's network: opening a connection to it
+// would make this the one check in the run that costs a third party a round
+// trip, and a collector that happens to be down is not a fault of this
+// machine's — the exporter's own answer to that is to give up quietly and
+// write one line to the log.
+//
+// The row exists so that "my sessions are leaving this machine" is a fact a
+// reader can see without opening the config file, which is the same reason
+// the store and the log rows name their paths.
+func doctorOtel(endpoint string) doctorFinding {
+	if strings.TrimSpace(endpoint) == "" {
+		return doctorFinding{
+			Subject: "the record stays on this machine",
+			Outcome: "off",
+			State:   components.DoctorSkipped,
+		}
+	}
+	target, err := observe.ParseEndpoint(endpoint)
+	if err != nil {
+		return doctorFinding{
+			Subject: "the collector endpoint is not a URL", Detail: err.Error(), Outcome: "unusable",
+			State:       components.DoctorWarned,
+			Consequence: "sessions are recorded locally and nothing is exported",
+			FixLabel:    "show the shape it takes",
+			Fix: []string{
+				"shhh config set otel.endpoint http://localhost:4318",
+				"the scheme decides whether the record crosses the network in the clear, so it is never guessed",
+			},
+		}
+	}
+	return doctorFinding{
+		Subject: target,
+		Detail:  "content-free",
+		Outcome: "ok",
+	}
+}
+
 func probeSandbox(_ context.Context, cfg config.Config) doctorFinding {
 	policy, err := sandboxPolicy(cfg)
 	if err != nil {
@@ -1483,6 +1528,8 @@ func doctorQueuedSubject(name string) string {
 		return "where a refused request is written down"
 	case "reports":
 		return "the report pages sessions built"
+	case "otel":
+		return "where the session record is sent"
 	case "sandbox":
 		return "what contains an approved command"
 	case "engine":

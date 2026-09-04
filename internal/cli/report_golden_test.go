@@ -129,6 +129,7 @@ func TestReportGoldens_FitTheirWidth(t *testing.T) {
 func goldenChecks() []components.DoctorCheck {
 	return []components.DoctorCheck{
 		{Name: "binary", Subject: "shhh 0.9.4", Detail: "linux/amd64", Outcome: "ok"},
+		{Name: "otel", Subject: "http://localhost:4318", Detail: "content-free", Outcome: "ok"},
 		{Name: "sandbox", Subject: "bwrap not found", Outcome: "UNCONTAINED",
 			State:       components.DoctorFailed,
 			Consequence: "commands run with your own permissions, in your own filesystem",

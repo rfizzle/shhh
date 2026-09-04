@@ -380,6 +380,11 @@ var settings = []Setting{
 	},
 
 	{
+		Key: "otel.endpoint", Kind: KindString, Default: "(off — the record stays on this machine)",
+		Desc: "Where an OTLP collector listens, as a URL with its scheme; each session is sent to it as one span when the session ends.",
+	},
+
+	{
 		Key: "agents.model", Kind: KindString, Default: "inherit",
 		Desc: "The model every sub-agent runs, unless its role says otherwise; `inherit` is the session's own.",
 	}, {
