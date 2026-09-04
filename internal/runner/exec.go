@@ -1,7 +1,6 @@
 package runner
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"os"
@@ -14,19 +13,6 @@ import (
 	"github.com/rfizzle/shhh/internal/history"
 	"github.com/rfizzle/shhh/internal/shell"
 )
-
-// shellCommand is a command line as an *exec.Cmd through the execution shell
-// (shell.Execution). Every captured form goes through it so that none of them
-// can end up spelling the invocation itself (shell.Shell).
-//
-// Captured means shhh composed it and shhh reads the output back: the agent's
-// execute_command, /run, a sub-agent's command. That is the whole of the
-// execution shell's case, and the reason Run below is the one function here
-// that does not use it.
-func shellCommand(ctx context.Context, command string) *exec.Cmd {
-	argv := shell.Execution().Argv(command)
-	return exec.CommandContext(ctx, argv[0], argv[1:]...)
-}
 
 // sessionEnv is what every captured command's environment carries beyond
 // the process's own: the session's secrets, as NAME=value. It is
@@ -135,95 +121,30 @@ func Run(command string) (exitCode int) {
 	return 0
 }
 
-// RunCapture executes command through the user's shell with stdout and stderr
-// captured instead of inherited, for callers that display the output
+// RunCapture executes command through the execution shell with stdout and
+// stderr captured instead of inherited, for callers that display the output
 // themselves (e.g. the chat TUI). Cancelling the context kills the command;
 // a non-exit failure (including a kill) reports exit code -1.
 func RunCapture(ctx context.Context, command string) (output string, exitCode int) {
-	cmd := prepare(shellCommand(ctx, command), "")
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) {
-			return string(out), exitErr.ExitCode()
-		}
-		return string(out), -1
-	}
-	return string(out), 0
-}
-
-// lineWriter captures combined output while reporting each completed line,
-// so a caller can render a live tail while the command runs.
-type lineWriter struct {
-	mu      sync.Mutex
-	buf     bytes.Buffer
-	partial bytes.Buffer
-	onLine  func(string)
-}
-
-func (w *lineWriter) Write(p []byte) (int, error) {
-	n := len(p)
-	w.mu.Lock()
-	w.buf.Write(p)
-	var lines []string
-	for {
-		i := bytes.IndexByte(p, '\n')
-		if i < 0 {
-			w.partial.Write(p)
-			break
-		}
-		w.partial.Write(p[:i])
-		lines = append(lines, w.partial.String())
-		w.partial.Reset()
-		p = p[i+1:]
-	}
-	w.mu.Unlock()
-	if w.onLine != nil {
-		for _, l := range lines {
-			w.onLine(l)
-		}
-	}
-	return n, nil
-}
-
-func (w *lineWriter) output() string {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	return w.buf.String()
-}
-
-// runTail runs a prepared command with its combined output both captured and
-// reported line-by-line to onLine.
-func runTail(cmd *exec.Cmd, onLine func(string)) (string, int) {
-	w := &lineWriter{onLine: onLine}
-	cmd.Stdout = w
-	cmd.Stderr = w
-	err := cmd.Run()
-	out := w.output()
-	if err != nil {
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) {
-			return out, exitErr.ExitCode()
-		}
-		return out, -1
-	}
-	return out, 0
+	out, err := capture(ctx, "", command, shellArgv(command), nil)
+	return noteSpawnFailure(out, err), resultCode(err)
 }
 
 // RunCaptureTail is RunCapture reporting each completed output line to onLine
 // as it appears, so callers can show a live tail. onLine runs on the
-// command's output goroutines and must be safe to call concurrently.
+// command's output goroutine and must be safe to call concurrently.
 func RunCaptureTail(ctx context.Context, command string, onLine func(string)) (string, int) {
-	return runTail(prepare(shellCommand(ctx, command), ""), onLine)
+	out, err := capture(ctx, "", command, shellArgv(command), onLine)
+	return noteSpawnFailure(out, err), resultCode(err)
 }
 
 // RunCaptureArgvTail is RunCaptureArgv with the same live-line reporting, for
-// pre-built invocations like contained commands.
-func RunCaptureArgvTail(ctx context.Context, argv []string, onLine func(string)) (string, int) {
-	if len(argv) == 0 {
-		return "error: empty command", -1
-	}
-	return runTail(prepare(exec.CommandContext(ctx, argv[0], argv[1:]...), ""), onLine)
+// pre-built invocations like contained commands. command is the text the argv
+// was built from: it is what a surface listing this command shows, and a
+// mechanism's own flags are not that.
+func RunCaptureArgvTail(ctx context.Context, command string, argv []string, onLine func(string)) (string, int) {
+	out, err := capture(ctx, "", command, argv, onLine)
+	return noteSpawnFailure(out, err), resultCode(err)
 }
 
 // RunCaptureArgv executes an explicit argv (no shell) with output captured,
@@ -234,37 +155,59 @@ func RunCaptureArgvTail(ctx context.Context, argv []string, onLine func(string))
 // RunCaptureIn is RunCapture with an explicit working directory, for
 // sub-agent commands that must run inside their own workspace.
 func RunCaptureIn(ctx context.Context, dir, command string) (output string, exitCode int) {
-	cmd := prepare(shellCommand(ctx, command), dir)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) {
-			return string(out), exitErr.ExitCode()
-		}
-		return strings.TrimSpace(string(out) + "\nerror: " + err.Error()), -1
-	}
-	return string(out), 0
+	out, err := capture(ctx, dir, command, shellArgv(command), nil)
+	return noteSpawnFailure(out, err), resultCode(err)
 }
 
-func RunCaptureArgv(ctx context.Context, argv []string) (output string, exitCode int) {
-	return RunCaptureArgvIn(ctx, "", argv)
+// RunCaptureArgv executes an explicit argv (no shell) with output captured,
+// for pre-built invocations like sandbox-wrapped commands. A spawn failure —
+// the containment binary vanished, say — reports the error in the output with
+// exit code -1, so the command fails visibly instead of running bare.
+// command is the text the argv was built from, for the surfaces that list it.
+func RunCaptureArgv(ctx context.Context, command string, argv []string) (output string, exitCode int) {
+	return RunCaptureArgvIn(ctx, "", command, argv)
 }
 
 // RunCaptureArgvIn is RunCaptureArgv with an explicit working directory
 // (empty keeps the process cwd), for sandbox-wrapped sub-agent commands whose
 // mechanism does not chdir itself.
-func RunCaptureArgvIn(ctx context.Context, dir string, argv []string) (output string, exitCode int) {
-	if len(argv) == 0 {
-		return "error: empty command", -1
+func RunCaptureArgvIn(ctx context.Context, dir, command string, argv []string) (output string, exitCode int) {
+	out, err := capture(ctx, dir, command, argv, nil)
+	return noteSpawnFailure(out, err), resultCode(err)
+}
+
+// shellArgv is a command line as the execution shell's argv (shell.Execution).
+// Every captured form goes through it so that none of them can end up
+// spelling the invocation itself (shell.Shell).
+//
+// Captured means shhh composed it and shhh reads the output back: the agent's
+// execute_command, /run, a sub-agent's command. That is the whole of the
+// execution shell's case, and the reason Run above is the one function here
+// that does not use it.
+func shellArgv(command string) []string { return shell.Execution().Argv(command) }
+
+// resultCode is the exit code a captured command reports: its own where it
+// ran and exited, and -1 for everything else — a command that could not be
+// spawned, one killed by a signal, one whose ceiling stopped it.
+func resultCode(err error) int {
+	if err == nil {
+		return 0
 	}
-	cmd := prepare(exec.CommandContext(ctx, argv[0], argv[1:]...), dir)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) {
-			return string(out), exitErr.ExitCode()
-		}
-		return strings.TrimSpace(string(out) + "\nerror: " + err.Error()), -1
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		return exitErr.ExitCode()
 	}
-	return string(out), 0
+	return -1
+}
+
+// noteSpawnFailure puts a failure that is not the command's own exit into the
+// output, where the callers that read only text can see it. A command that
+// exited — including one a signal ended — says everything it has to say in
+// its output and its code.
+func noteSpawnFailure(out string, err error) string {
+	var exitErr *exec.ExitError
+	if err == nil || errors.As(err, &exitErr) {
+		return out
+	}
+	return strings.TrimSpace(out + "\nerror: " + err.Error())
 }

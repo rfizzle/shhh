@@ -86,6 +86,29 @@ broken command — so the reason is appended in words: that it did not fail, it
 did not finish, and what to do about it. Without that the model debugs a
 command that was working.
 
+**A command that is still printing is moved, not killed.** The ceiling catches
+two different things. One is the command that was never going to print again;
+killing that costs nothing. The other is a dev server, a watcher or a log
+tail started in the foreground, which is working perfectly and merely never
+going to return — and killing that throws away a running server for a mistake
+that is cheap to undo the other way. So a command that has printed something
+by the time its ceiling arrives is handed to the process supervisor as it is,
+still running, under a name taken from the program it runs; a command that has
+printed nothing is stopped as before. Nothing is respawned: a port already
+bound or a build already half done makes a second start a different command.
+
+What comes back names the process, because the model already has the verbs for
+one — read its output, write to it, stop it — and the whole point of moving it
+rather than killing it is that those verbs now apply. It is stopped when the
+session ends, like anything else the session started, and it counts in what
+the session reports as running.
+
+**One command's output cannot take the session's memory with it.** Output is
+held to a bound as it arrives, far above the few thousand bytes any reader or
+model is shown, so a build with a verbose flag left on is capped while it runs
+rather than after it finishes. What was dropped is counted in the output,
+because a silent gap reads as the command having gone quiet.
+
 ## A started process is contained too
 
 There are two ways for the assistant to run something: a command that returns
@@ -102,12 +125,23 @@ Falling back would be worse here than anywhere else, because a process
 lasts — every surface would go on saying the session is contained for as
 long as the one thing outside it kept running.
 
+A process can also be given a terminal instead of pipes, for the commands
+that behave differently when nobody appears to be watching: a REPL that only
+prompts on one, a tool that asks for a passphrase, a runner whose progress
+output goes quiet down a pipe. It is asked for and never assumed, because a
+terminal has a single stream and the split between a command's output and its
+errors is gone the moment one is used. The mechanism wraps such a process
+exactly as it wraps any other, and where the platform has no terminal to give,
+the start says so in a sentence rather than pretending.
+
 The exception is a run whose commands go inside a disposable container. A
 process cannot follow them in: what would be left holding it is the client
 that started the exec rather than the process itself, so stopping it would
 leave something running in a container nobody is watching. Such a run
 refuses a start rather than spawning it on the host, which is the same
-answer for the same reason — outside the container is bare.
+answer for the same reason — outside the container is bare. The command
+ceiling answers to the same fact: there is nowhere to move a command to, so
+one that reaches it there is stopped whether or not it was still printing.
 
 ## What is reported is what is in force
 

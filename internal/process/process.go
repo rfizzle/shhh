@@ -5,7 +5,9 @@
 // captured into bounded per-stream ring buffers for paged reads, with the
 // full log (bounded) stored in the evidence store when the process ends.
 // Every process runs in its own process group so stop, session end, cancel,
-// and quit terminate the full tree — no orphans.
+// and quit terminate the full tree — no orphans. A start is not the only way
+// in: a command that reaches its ceiling still printing is handed over as it
+// is (adopt.go), and from then on it is one of these.
 package process
 
 import (
@@ -48,6 +50,12 @@ const (
 	// stopGrace is how long a stopped process group gets to exit after
 	// SIGTERM before it is SIGKILLed.
 	stopGrace = 2 * time.Second
+
+	// drainGrace bounds how long the reaper waits for the last of a
+	// terminal-backed process's output after the process itself has gone.
+	// A terminal that has already been read to its end returns immediately;
+	// this is only the bound on one that has not.
+	drainGrace = 500 * time.Millisecond
 )
 
 var (
@@ -228,6 +236,11 @@ type proc struct {
 	// exited is closed by the reaper once the process is gone and its exit
 	// state below is recorded.
 	exited chan struct{}
+	// drained is closed when a terminal-backed process's output has been
+	// read to its end; nil for a process on pipes, whose output os/exec
+	// finishes copying before its wait returns. Without it the reaper's
+	// close of the master would cut off whatever the terminal still held.
+	drained chan struct{}
 
 	mu       sync.Mutex
 	done     bool
@@ -408,8 +421,10 @@ func buildEnv(extra map[string]string) ([]string, error) {
 }
 
 // start spawns a named process in its own process group and probes briefly
-// for an immediate exit so the model sees instant failures.
-func (s *Supervisor) start(name, command, cwd string, extraEnv map[string]string) (string, error) {
+// for an immediate exit so the model sees instant failures. tty gives it a
+// pseudo-terminal instead of pipes, for the commands that behave differently
+// when nobody appears to be watching.
+func (s *Supervisor) start(name, command, cwd string, extraEnv map[string]string, tty bool) (string, error) {
 	if !nameRe.MatchString(name) {
 		return "", fmt.Errorf("invalid process name %q (letters, digits, . _ -, max 64 chars)", name)
 	}
@@ -466,7 +481,7 @@ func (s *Supervisor) start(name, command, cwd string, extraEnv map[string]string
 	cmd := exec.Command(argv[0], argv[1:]...)
 	cmd.Dir = dir
 	cmd.Env = append(env, s.env...)
-	cmd.SysProcAttr = sysProcAttr()
+	cmd.SysProcAttr = sysProcAttr(tty)
 
 	p := &proc{
 		name:     name,
@@ -477,25 +492,44 @@ func (s *Supervisor) start(name, command, cwd string, extraEnv map[string]string
 		exited:   make(chan struct{}),
 		evidence: map[string]string{},
 	}
-	cmd.Stdout = p.stdout
-	cmd.Stderr = p.stderr
-	stdin, err := cmd.StdinPipe()
-	if err != nil {
-		s.mu.Unlock()
-		return "", fmt.Errorf("cannot open stdin: %w", err)
-	}
-	p.stdin = stdin
-
-	if err := cmd.Start(); err != nil {
-		s.mu.Unlock()
-		_ = stdin.Close()
-		return "", fmt.Errorf("cannot start process: %w", err)
+	if tty {
+		// A terminal is one stream in both directions, so the master is
+		// both this process's input and the whole of its output; stderr
+		// stays empty because the terminal never had two.
+		f, err := startPTY(cmd)
+		if err != nil {
+			s.mu.Unlock()
+			return "", err
+		}
+		p.stdin = f
+		p.drained = make(chan struct{})
+		go func() {
+			defer close(p.drained)
+			// A master whose child has gone reports EIO rather than EOF on
+			// Linux, so the end of the copy is the end of the process and
+			// not an error worth reporting.
+			_, _ = io.Copy(p.stdout, f)
+		}()
+	} else {
+		cmd.Stdout = p.stdout
+		cmd.Stderr = p.stderr
+		stdin, err := cmd.StdinPipe()
+		if err != nil {
+			s.mu.Unlock()
+			return "", fmt.Errorf("cannot open stdin: %w", err)
+		}
+		p.stdin = stdin
+		if err := cmd.Start(); err != nil {
+			s.mu.Unlock()
+			_ = stdin.Close()
+			return "", fmt.Errorf("cannot start process: %w", err)
+		}
 	}
 	p.pid = cmd.Process.Pid
 	s.procs[name] = p
 	s.mu.Unlock()
 
-	go s.reap(p, cmd)
+	go s.reap(p, cmd.Wait)
 
 	select {
 	case <-p.exited:
@@ -505,9 +539,11 @@ func (s *Supervisor) start(name, command, cwd string, extraEnv map[string]string
 }
 
 // reap waits for a process, records its exit state, and stores the full log
-// spools as evidence.
-func (s *Supervisor) reap(p *proc, cmd *exec.Cmd) {
-	err := cmd.Wait()
+// spools as evidence. It takes the wait rather than the command because a
+// process the supervisor did not spawn arrives with one already in flight,
+// and os/exec allows only one.
+func (s *Supervisor) reap(p *proc, wait func() error) {
+	err := wait()
 	code := 0
 	if err != nil {
 		code = -1
@@ -515,7 +551,15 @@ func (s *Supervisor) reap(p *proc, cmd *exec.Cmd) {
 			code = exitErr.ExitCode()
 		}
 	}
-	_ = p.stdin.Close()
+	if p.drained != nil {
+		select {
+		case <-p.drained:
+		case <-time.After(drainGrace):
+		}
+	}
+	if p.stdin != nil {
+		_ = p.stdin.Close()
+	}
 
 	evidence := map[string]string{}
 	if s.store != nil {
@@ -573,6 +617,10 @@ func (s *Supervisor) input(name, text string) (string, error) {
 	}
 	if p.isDone() {
 		return "", fmt.Errorf("process %q has exited; its stdin is closed", name)
+	}
+	if p.stdin == nil {
+		return "", fmt.Errorf("process %q was moved here from a foreground command and has no input to write to; "+
+			"stop it and start it again with the process tool if it needs one", name)
 	}
 	if text == "" {
 		return "", fmt.Errorf("text is required (include a trailing newline to submit a line)")

@@ -673,6 +673,13 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 					return nil, fmt.Errorf("a long-running process cannot be started inside this run's disposable container; use execute_command, or run without --sandbox")
 				},
 			})
+			// The command ceiling answers to the same fact. A command that
+			// will not finish here is running in the container and the local
+			// process is the exec client, so handing that to the supervisor
+			// would put a name and a stop verb on something that is not the
+			// process. It is stopped at the ceiling instead.
+			// See docs/capabilities/containment.md#a-started-process-is-contained-too.
+			runner.SetAdopter(nil)
 		}
 	} else {
 		containment, err := buildContainment(cfg, sc, procSup)

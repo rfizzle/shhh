@@ -2,10 +2,12 @@ package cli
 
 import (
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/process"
+	"github.com/rfizzle/shhh/internal/runner"
 )
 
 // openProcessSupervisor builds the session's long-running process supervisor
@@ -27,6 +29,21 @@ func openProcessSupervisor(red *evidence.Reducer) *process.Supervisor {
 		fmt.Fprintf(os.Stderr, "warning: process supervisor unavailable: %v\n", err)
 		return nil
 	}
+	// Where a session has a supervisor, a command that is still printing when
+	// it reaches its ceiling becomes one of its processes instead of being
+	// killed. It is installed here rather than beside each runner because
+	// every command path leads to the same place, and a ceiling that
+	// backgrounded on one and killed on another would be a dev server that
+	// lives or dies by whether containment was available on the machine.
+	// See docs/capabilities/containment.md#a-command-that-will-not-finish-is-not-waited-on-forever.
+	runner.SetAdopter(func(h runner.Handover) (string, io.Writer, error) {
+		return sup.Adopt(process.Adoption{
+			Command: h.Command,
+			PID:     h.PID,
+			Started: h.Started,
+			Wait:    h.Wait,
+		})
+	})
 	return sup
 }
 

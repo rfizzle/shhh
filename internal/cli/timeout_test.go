@@ -2,7 +2,6 @@ package cli
 
 import (
 	"context"
-	"strings"
 	"testing"
 	"time"
 )
@@ -18,36 +17,24 @@ func TestBoundedRunnerLeavesAFinishingCommandAlone(t *testing.T) {
 	}
 }
 
-// The notice is the whole point: output and an exit code cannot tell a
-// command that failed from one that was stopped, and a model given only those
-// debugs the command.
-func TestBoundedRunnerSaysWhyACommandStopped(t *testing.T) {
+// The wrapper's whole job is the deadline: it is what the surfaces with no
+// reader are missing, and the runner reads it back off the context to decide
+// what a command that reaches it deserves.
+func TestBoundedRunnerPutsTheLimitOnTheContext(t *testing.T) {
+	var limit time.Duration
 	run := boundedRunner(func(ctx context.Context, _ string) (string, int) {
-		<-ctx.Done()
-		return "partial output", -1
-	}, 50*time.Millisecond)
+		deadline, ok := ctx.Deadline()
+		if !ok {
+			t.Error("a bounded command must carry a deadline")
+			return "", -1
+		}
+		limit = time.Until(deadline)
+		return "", 0
+	}, time.Minute)
 
-	out, _ := run(context.Background(), "sleep 30")
-	if !strings.Contains(out, "partial output") {
-		t.Errorf("what the command printed should survive: %q", out)
-	}
-	if !strings.Contains(out, "did not finish") {
-		t.Errorf("the notice must distinguish stopped from failed: %q", out)
-	}
-	if !strings.Contains(out, "command_timeout_seconds") {
-		t.Errorf("the notice should name the way out: %q", out)
-	}
-}
-
-func TestBoundedRunnerNotesATimeoutThatPrintedNothing(t *testing.T) {
-	run := boundedRunner(func(ctx context.Context, _ string) (string, int) {
-		<-ctx.Done()
-		return "", -1
-	}, 50*time.Millisecond)
-
-	out, _ := run(context.Background(), "sleep 30")
-	if !strings.Contains(out, "did not finish") {
-		t.Errorf("a silent command that timed out still has to say so: %q", out)
+	run(context.Background(), "sleep 30")
+	if limit <= 0 || limit > time.Minute {
+		t.Fatalf("the deadline should be the limit, got %s", limit)
 	}
 }
 
@@ -69,11 +56,14 @@ func TestBoundedRunnerImposesNoDeadlineWithoutALimit(t *testing.T) {
 	}
 }
 
-// A caller's own cancellation is not a timeout, and must not be reported as
-// one — the reader pressing the cancel key has not hit any limit.
-func TestBoundedRunnerDoesNotCallACancellationATimeout(t *testing.T) {
+// A caller's own cancellation still reaches the command, and arrives as a
+// cancellation rather than as the limit having been reached — the two get
+// different answers at the other end.
+func TestBoundedRunnerPassesACancellationThrough(t *testing.T) {
+	var cause error
 	run := boundedRunner(func(ctx context.Context, _ string) (string, int) {
 		<-ctx.Done()
+		cause = ctx.Err()
 		return "stopped", -1
 	}, time.Hour)
 
@@ -82,8 +72,8 @@ func TestBoundedRunnerDoesNotCallACancellationATimeout(t *testing.T) {
 		time.Sleep(30 * time.Millisecond)
 		cancel()
 	}()
-	out, _ := run(ctx, "sleep 30")
-	if strings.Contains(out, "time limit") {
-		t.Errorf("a cancellation is not a timeout: %q", out)
+	run(ctx, "sleep 30")
+	if cause != context.Canceled {
+		t.Errorf("a cancellation is not a timeout: %v", cause)
 	}
 }

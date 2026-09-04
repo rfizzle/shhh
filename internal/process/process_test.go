@@ -410,7 +410,7 @@ func TestSetEnv_ProcessesCarrySessionPairsOverExtras(t *testing.T) {
 	s := newTestSupervisor(t, nil)
 	s.SetEnv([]string{"SHHH_TEST_SECRET=vault"})
 	extra := map[string]string{"SHHH_TEST_SECRET": "model", "OTHER": "kept"}
-	if _, err := s.start("env", `printf '%s %s' "$SHHH_TEST_SECRET" "$OTHER"; sleep 0.2`, "", extra); err != nil {
+	if _, err := s.start("env", `printf '%s %s' "$SHHH_TEST_SECRET" "$OTHER"; sleep 0.2`, "", extra, false); err != nil {
 		t.Fatalf("start: %v", err)
 	}
 	deadline := time.Now().Add(3 * time.Second)

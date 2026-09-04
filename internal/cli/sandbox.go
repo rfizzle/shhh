@@ -127,14 +127,14 @@ func buildContainment(cfg config.Config, sc *scope.Scope, sup *process.Superviso
 		if err != nil {
 			return "sandbox: " + err.Error(), -1
 		}
-		return runner.RunCaptureArgv(ctx, argv)
+		return runner.RunCaptureArgv(ctx, command, argv)
 	}
 	c.TailRun = func(ctx context.Context, command string, onLine func(string)) (string, int) {
 		argv, err := wrap(command)
 		if err != nil {
 			return "sandbox: " + err.Error(), -1
 		}
-		return runner.RunCaptureArgvTail(ctx, argv, onLine)
+		return runner.RunCaptureArgvTail(ctx, command, argv, onLine)
 	}
 	return c, nil
 }
@@ -214,7 +214,7 @@ func startSandbox(ctx context.Context, cfg config.Config, env []string) (run fun
 	}
 
 	run = func(ctx context.Context, command string) (string, int) {
-		return runner.RunCaptureArgv(ctx, c.ExecArgv(command, env...))
+		return runner.RunCaptureArgv(ctx, command, c.ExecArgv(command, env...))
 	}
 	cleanup = func() {
 		// The parent ctx is usually done by cleanup time; destruction gets its

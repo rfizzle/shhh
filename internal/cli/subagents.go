@@ -546,7 +546,7 @@ func childCommandRunnerUnbounded(cfg config.Config, dir string, sc *scope.Scope)
 				if wErr != nil {
 					return "sandbox: " + wErr.Error(), -1
 				}
-				return runner.RunCaptureArgvIn(ctx, dir, argv)
+				return runner.RunCaptureArgvIn(ctx, dir, command, argv)
 			}
 		}
 	}

@@ -1,10 +1,12 @@
 package tools
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"unicode/utf8"
@@ -179,5 +181,55 @@ func TestSearch_LongMatchLineTrimmed(t *testing.T) {
 	}
 	if len(out) > MaxSearchLineBytes+len(path)+100 {
 		t.Errorf("matched line not trimmed: %d bytes", len(out))
+	}
+}
+
+// A command that prints faster than anyone reads is held to the bound while
+// it runs, long before the truncation the model sees. The count of what was
+// dropped is what keeps the gap from reading as the command having gone
+// quiet.
+func TestCaptureBuffer_HoldsABurstToItsBound(t *testing.T) {
+	b := NewCaptureBuffer(MaxCapturedOutputBytes)
+	chunk := bytes.Repeat([]byte("x"), 1<<16)
+	const burst = 100 << 20
+	for written := 0; written < burst; written += len(chunk) {
+		if n, err := b.Write(chunk); n != len(chunk) || err != nil {
+			t.Fatalf("a full buffer must still report the whole write: %d %v", n, err)
+		}
+	}
+	if got := len(b.Bytes()); got != MaxCapturedOutputBytes {
+		t.Errorf("kept %d bytes, want the bound %d", got, MaxCapturedOutputBytes)
+	}
+	if got := b.Len(); got != burst {
+		t.Errorf("printed %d bytes, want %d", got, burst)
+	}
+	out := b.String()
+	if !strings.Contains(out, "dropped") {
+		t.Error("the output has to say bytes went missing, or the gap reads as silence")
+	}
+	if !strings.Contains(out, strconv.Itoa(burst-MaxCapturedOutputBytes)) {
+		t.Error("the notice should count what was dropped")
+	}
+	// Whatever survives still passes through the model's own cap unchanged.
+	if cut, truncated := TruncateOutput(out, MaxExecOutputBytes); !truncated || len(cut) > MaxExecOutputBytes {
+		t.Errorf("the bound sits above the truncation, not instead of it: %d", len(cut))
+	}
+}
+
+// The head is kept because the head is what every reader of this output gets.
+func TestCaptureBuffer_KeepsTheHead(t *testing.T) {
+	b := NewCaptureBuffer(8)
+	_, _ = b.Write([]byte("first"))
+	_, _ = b.Write([]byte("second"))
+	if got := string(b.Bytes()); got != "firstsec" {
+		t.Fatalf("got %q", got)
+	}
+}
+
+func TestCaptureBuffer_UnboundedKeepsEverything(t *testing.T) {
+	b := NewCaptureBuffer(0)
+	_, _ = b.Write([]byte("everything"))
+	if got := b.String(); got != "everything" {
+		t.Fatalf("got %q", got)
 	}
 }

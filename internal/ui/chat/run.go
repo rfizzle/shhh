@@ -200,10 +200,6 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 		runFn = m.containment.Run
 		tailFn = m.containment.TailRun
 	}
-	timeout := m.policy.timeout
-	if !assistant {
-		timeout = 0
-	}
 	return m, func() tea.Msg {
 		start := time.Now()
 		var out string
@@ -214,11 +210,11 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 		} else {
 			out, code = runFn(ctx, command)
 		}
-		// A killed command reports what it managed to print and an exit code
-		// that says nothing about why it stopped. The model has to be told
-		// which of the two it was, or it reads a timeout as a failing command
-		// and starts debugging the command.
-		out = noteTimeout(out, ctx.Err(), timeout)
+		// What the ceiling did to a command that reached it — stopped it, or
+		// handed it to the process supervisor because it was still
+		// printing — is said in the output by the runner that holds it, in
+		// words, because an exit code cannot tell either of those from a
+		// command that broke.
 		return cmdDoneMsg{runID: runID, command: command, output: out, exitCode: code, duration: time.Since(start), local: local}
 	}
 }

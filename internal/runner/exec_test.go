@@ -90,7 +90,7 @@ func TestRunCapture_ContextCancelKills(t *testing.T) {
 }
 
 func TestRunCaptureArgv_RunsExplicitArgv(t *testing.T) {
-	out, code := RunCaptureArgv(context.Background(), []string{"/bin/sh", "-c", "echo wrapped; exit 4"})
+	out, code := RunCaptureArgv(context.Background(), "echo wrapped; exit 4", []string{"/bin/sh", "-c", "echo wrapped; exit 4"})
 	if !strings.Contains(out, "wrapped") {
 		t.Errorf("expected output captured, got %q", out)
 	}
@@ -100,7 +100,7 @@ func TestRunCaptureArgv_RunsExplicitArgv(t *testing.T) {
 }
 
 func TestRunCaptureArgv_MissingBinaryFailsVisibly(t *testing.T) {
-	out, code := RunCaptureArgv(context.Background(), []string{"/nonexistent/bwrap-xyz", "true"})
+	out, code := RunCaptureArgv(context.Background(), "true", []string{"/nonexistent/bwrap-xyz", "true"})
 	if code != -1 {
 		t.Errorf("expected exit code -1 for a vanished binary, got %d", code)
 	}
@@ -110,7 +110,7 @@ func TestRunCaptureArgv_MissingBinaryFailsVisibly(t *testing.T) {
 }
 
 func TestRunCaptureArgv_EmptyArgv(t *testing.T) {
-	out, code := RunCaptureArgv(context.Background(), nil)
+	out, code := RunCaptureArgv(context.Background(), "", nil)
 	if code != -1 || !strings.Contains(out, "error") {
 		t.Errorf("empty argv should fail, got %q code %d", out, code)
 	}
@@ -146,7 +146,7 @@ func TestRunCaptureTail_ExitCodeAndNilCallback(t *testing.T) {
 }
 
 func TestRunCaptureArgvTail_EmptyArgv(t *testing.T) {
-	out, code := RunCaptureArgvTail(context.Background(), nil, nil)
+	out, code := RunCaptureArgvTail(context.Background(), "", nil, nil)
 	if code != -1 || !strings.Contains(out, "error") {
 		t.Fatalf("empty argv should fail, got %q code %d", out, code)
 	}
@@ -155,7 +155,7 @@ func TestRunCaptureArgvTail_EmptyArgv(t *testing.T) {
 func TestRunCaptureArgvTail_RunsExplicitArgv(t *testing.T) {
 	var mu sync.Mutex
 	var lines []string
-	out, code := RunCaptureArgvTail(context.Background(), []string{"/bin/sh", "-c", "echo wrapped"}, func(l string) {
+	out, code := RunCaptureArgvTail(context.Background(), "echo wrapped", []string{"/bin/sh", "-c", "echo wrapped"}, func(l string) {
 		mu.Lock()
 		lines = append(lines, l)
 		mu.Unlock()
@@ -180,8 +180,8 @@ func TestSessionEnv_ReachesEveryCapturedCommand(t *testing.T) {
 		"RunCapture":         func() (string, int) { return RunCapture(ctx, cmd) },
 		"RunCaptureTail":     func() (string, int) { return RunCaptureTail(ctx, cmd, nil) },
 		"RunCaptureIn":       func() (string, int) { return RunCaptureIn(ctx, t.TempDir(), cmd) },
-		"RunCaptureArgv":     func() (string, int) { return RunCaptureArgv(ctx, []string{"/bin/sh", "-c", cmd}) },
-		"RunCaptureArgvTail": func() (string, int) { return RunCaptureArgvTail(ctx, []string{"/bin/sh", "-c", cmd}, nil) },
+		"RunCaptureArgv":     func() (string, int) { return RunCaptureArgv(ctx, cmd, []string{"/bin/sh", "-c", cmd}) },
+		"RunCaptureArgvTail": func() (string, int) { return RunCaptureArgvTail(ctx, cmd, []string{"/bin/sh", "-c", cmd}, nil) },
 	}
 	for name, run := range runs {
 		if out, code := run(); out != "s3cret" || code != 0 {

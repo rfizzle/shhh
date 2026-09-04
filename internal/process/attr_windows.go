@@ -9,7 +9,9 @@ import "syscall"
 // process the reader did not mean to interrupt. Process groups, and the
 // parent-death signalling Linux has, do not exist here; signal_windows.go is
 // what ends a tree instead.
-func sysProcAttr() *syscall.SysProcAttr {
+// A terminal is never given to a process here (pty_windows.go says why), so
+// the request cannot reach this.
+func sysProcAttr(bool) *syscall.SysProcAttr {
 	return &syscall.SysProcAttr{CreationFlags: createNewProcessGroup}
 }
 

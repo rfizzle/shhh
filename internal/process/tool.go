@@ -21,6 +21,7 @@ func Definition() provider.Tool {
 			"Action \"start\" launches a command under a name — the user must approve it like any command — with cwd contained to the workspace and an environment of PATH and HOME plus any env vars you pass. " +
 			"\"status\" reports one process (or all, when name is omitted); \"read\" pages a stream's captured output (byte-clamped; use offset from a previous read to continue, omit it for the tail); " +
 			"\"input\" writes text to the process's stdin verbatim (include a trailing newline to submit a line); \"stop\" terminates the whole process tree. " +
+			"Pass pty:true on start only for a command that needs to believe a terminal is attached — an interactive REPL, a prompt for a passphrase, a runner whose progress output goes quiet down a pipe; a terminal has one stream, so such a process captures everything as stdout and nothing as stderr. " +
 			"Recent output lives in a bounded buffer; the full log (bounded) is stored as evidence when the process ends. " +
 			"Every process is terminated when the session ends. Prefer this over execute_command for anything that must keep running while you work (start a server, probe it, read its logs, stop it).",
 		Parameters: json.RawMessage(`{
@@ -31,6 +32,7 @@ func Definition() provider.Tool {
 				"command": {"type": "string", "description": "start: the shell command to run"},
 				"cwd": {"type": "string", "description": "start: working directory, relative to the workspace root (default: the root)"},
 				"env": {"type": "object", "additionalProperties": {"type": "string"}, "description": "start: extra environment variables; PATH and HOME cannot be overridden"},
+				"pty": {"type": "boolean", "description": "start: give the process a terminal instead of pipes, for commands that behave differently without one; its output all arrives as stdout"},
 				"stream": {"type": "string", "enum": ["stdout", "stderr"], "description": "read: which stream (default stdout)"},
 				"offset": {"type": "integer", "description": "read: absolute byte offset to read from (omit for the tail)"},
 				"limit": {"type": "integer", "description": "read: max bytes to return (default 4096, max 16384)"},
@@ -47,6 +49,7 @@ type toolArgs struct {
 	Command string            `json:"command"`
 	Cwd     string            `json:"cwd"`
 	Env     map[string]string `json:"env"`
+	PTY     bool              `json:"pty"`
 	Stream  string            `json:"stream"`
 	Offset  *int64            `json:"offset"`
 	Limit   int               `json:"limit"`
@@ -92,7 +95,7 @@ func (s *Supervisor) Execute(args json.RawMessage) (string, error) {
 		if a.Name == "" {
 			return "", fmt.Errorf("name is required")
 		}
-		return s.start(a.Name, a.Command, a.Cwd, a.Env)
+		return s.start(a.Name, a.Command, a.Cwd, a.Env, a.PTY)
 	case "status":
 		return s.status(a.Name)
 	case "read":
