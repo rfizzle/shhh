@@ -61,8 +61,8 @@ func headlessDriver(t *testing.T, root string, answer func(run.Step) string) (*t
 	if err != nil {
 		t.Fatal(err)
 	}
-	d.turn = func(_ context.Context, _ time.Time, step run.Step) (string, int, error) {
-		return answer(step), exitDone, nil
+	d.turn = func(_ context.Context, _ time.Time, step run.Step) (todoTurn, error) {
+		return todoTurn{text: answer(step), code: exitDone}, nil
 	}
 	return d, out
 }
@@ -158,7 +158,7 @@ func TestTodoRunHeadless_NoCommitSprintKeepsTheItemsApart(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	d.turn = func(_ context.Context, _ time.Time, step run.Step) (string, int, error) {
+	d.turn = func(_ context.Context, _ time.Time, step run.Step) (todoTurn, error) {
 		if step.Stage == run.StageImplement {
 			// One file per item, so what each run may claim is decidable.
 			name := "a.go"
@@ -166,12 +166,12 @@ func TestTodoRunHeadless_NoCommitSprintKeepsTheItemsApart(t *testing.T) {
 				name = "b.go"
 			}
 			_ = os.WriteFile(filepath.Join(root, name), []byte("package a\n"), 0o644)
-			return "Changed " + name + ".", exitDone, nil
+			return todoTurn{text: "Changed " + name + ".", code: exitDone}, nil
 		}
 		if step.Stage == run.StageResearch {
-			return headlessPlan, exitDone, nil
+			return todoTurn{text: headlessPlan, code: exitDone}, nil
 		}
-		return "verdict: clean", exitDone, nil
+		return todoTurn{text: "verdict: clean", code: exitDone}, nil
 	}
 
 	if blocked := d.sprint(context.Background(), 0); blocked {
@@ -361,4 +361,38 @@ func asExitError(err error, target *exitError) bool {
 		*target = e
 	}
 	return ok
+}
+
+// The stage's own process finishes a reply the ceiling cut, once, and says
+// when it could not. A stage answer that came back cut anyway stops the item
+// with that written on it: nobody is here to read half a review and notice.
+func TestTodoRunHeadless_ACutStageAnswerBlocksTheItem(t *testing.T) {
+	root := todoRepo(t, "a-one")
+	d, out := headlessDriver(t, root, nil)
+	d.turn = func(_ context.Context, _ time.Time, step run.Step) (todoTurn, error) {
+		return todoTurn{text: headlessPlan, code: exitDone, truncated: true}, nil
+	}
+
+	st := d.work(context.Background(), todo.Load(root).Items[0], nil)
+
+	if st.Stage != run.StageBlocked {
+		t.Fatalf("half an answer must not be graded, stage %s:\n%s", st.Stage, out.String())
+	}
+	if st.Blocked != run.CutAtCeiling(run.StageResearch) {
+		t.Fatalf("the ceiling should be the evidence, got %q", st.Blocked)
+	}
+	if it, _ := todo.Load(root).Find("a-one"); it.Status != todo.StatusBlocked {
+		t.Fatalf("the item should be blocked, is %s", it.Status)
+	}
+}
+
+// A whole answer says so by saying nothing, which is how every reader of the
+// stage transcript already read it.
+func TestTodoRunHeadless_AWholeStageAnswerIsRead(t *testing.T) {
+	root := todoRepo(t, "a-one")
+	d, _ := headlessDriver(t, root, stageAnswers(root))
+
+	if st := d.work(context.Background(), todo.Load(root).Items[0], nil); st.Stage != run.StageDone {
+		t.Fatalf("an answer the model finished is the stage's answer, stage %s", st.Stage)
+	}
 }

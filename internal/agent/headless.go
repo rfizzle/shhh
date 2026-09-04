@@ -148,6 +148,12 @@ type Headless struct {
 	// (retry.go).
 	retry Backoff
 
+	// truncated is what TruncatedReply answers. It describes a turn that is
+	// over and is written only by the goroutine running it, which is why it
+	// sits outside the lock below — there is no answer to ask it about while
+	// a Run is still deciding what the answer is.
+	truncated bool
+
 	mu sync.Mutex
 	// streamCancel aborts whatever the run is currently waiting on — the
 	// in-flight stream, or the timer of a retry wait, which registers itself
@@ -159,6 +165,13 @@ type Headless struct {
 // SetRetryLimit bounds this run's stalls at the attempts a setting names;
 // nil is a file that named none and keeps the built-in bound (retry.go).
 func (h *Headless) SetRetryLimit(n *int) { h.retry.SetLimit(n) }
+
+// TruncatedReply reports the answer the last Run returned as one the model's
+// output ceiling cut short and the round's single continuation had already
+// been spent on. It answers about a finished Run and is read after one. It is the first half of an answer that looks exactly like a
+// whole one, and a caller that grades it as whole grades half the work.
+// See docs/capabilities/providers.md#a-reply-says-why-it-stopped.
+func (h *Headless) TruncatedReply() bool { return h.truncated }
 
 // Interrupt cancels the current turn from another goroutine: the in-flight
 // stream is aborted and Run returns ErrInterrupted at the next checkpoint,
@@ -195,6 +208,9 @@ func (h *Headless) Run(prompt string) (string, error) {
 	h.mu.Lock()
 	h.interrupted = false
 	h.mu.Unlock()
+	// A Headless is reused across a child's turns, so how the last answer
+	// ended is not this one's until this one ends.
+	h.truncated = false
 	// Starting a turn ends whatever stall the last one was in, the same way
 	// the session's own start does. A Headless is reused across a child's
 	// turns, so a budget carried over from a turn interrupted mid-backoff
@@ -211,6 +227,11 @@ func (h *Headless) Run(prompt string) (string, error) {
 	// spending a whole turn being asked for one more paragraph, and there is
 	// nobody here to notice that it is.
 	continued := false
+	// carried is the first half of an answer the ceiling cut, held until the
+	// continuation arrives so the turn answers with what the model wrote
+	// rather than with the part that came back last. It is dropped wherever
+	// the next reply replaces the answer instead of finishing it.
+	carried := ""
 	for {
 		// The window is recovered here and nowhere else. This is a round
 		// boundary — no stream is open and no call is owed a result — and it
@@ -257,10 +278,22 @@ func (h *Headless) Run(prompt string) (string, error) {
 			h.Agent.CancelTurn()
 			return "", ErrInterrupted
 		}
+		// How this round ended is this round's own. A ceiling reached before
+		// a hand-back or a round of tools sent the turn round again says
+		// nothing about the answer the turn goes on to return, and the run
+		// must not still be saying it when that answer arrives.
+		h.truncated = false
 		if len(calls) == 0 {
 			if text != "" {
 				h.Agent.Append(provider.Message{Role: provider.RoleAssistant, Content: text})
 			}
+			// What the turn answers with is the whole of what the model
+			// wrote. A continuation was told to carry on from where the
+			// sentence stopped, so the reply that comes back is the rest of
+			// an answer and means nothing without the half in front of it —
+			// and the caller reading that reply is the one place the two
+			// halves are ever put back together.
+			answer := carried + text
 			// A reply the model stopped writing because it filled its output
 			// budget is not an answer, it is the first half of one — and
 			// nothing downstream of an unattended run can tell the
@@ -269,11 +302,22 @@ func (h *Headless) Run(prompt string) (string, error) {
 			// it; here there is nobody to ask, so the run asks the model to
 			// carry on, once, and lets the second attempt stand whatever it
 			// is. Twice would be a turn with no ceiling at all.
-			if stop == provider.StopLength && text != "" && !continued {
-				continued = true
-				h.Agent.Append(provider.Message{Role: provider.RoleUser, Content: ContinueAfterCeiling})
-				h.notifyContinue(continueNotice)
-				continue
+			if stop == provider.StopLength && text != "" {
+				if !continued {
+					continued, carried = true, answer
+					h.Agent.Append(provider.Message{Role: provider.RoleUser, Content: ContinueAfterCeiling})
+					h.notifyContinue(continueNotice)
+					continue
+				}
+				// The round's one continuation is spent and the reply
+				// stopped short again, so the half answer is what this run
+				// has. What it must not do is hand that back looking like a
+				// whole one: a caller judging the work — a backlog run
+				// grading a stage, a lane reading its writer — cannot see
+				// from the words that the sentence was cut, and every one of
+				// them is somewhere nobody is watching.
+				h.truncated = true
+				h.notifyContinue(truncatedReplyNotice)
 			}
 			if stop == provider.StopLength && text == "" {
 				// The budget went entirely on a call the ceiling then cut,
@@ -286,21 +330,27 @@ func (h *Headless) Run(prompt string) (string, error) {
 			// The answer is in the conversation before the close is asked
 			// anything, so a hand-back reads as a reply to what was just
 			// said rather than as an interruption of it.
-			if fb := h.closeFeedback(text); fb != "" {
+			if fb := h.closeFeedback(answer); fb != "" {
 				h.Agent.Append(provider.Message{Role: provider.RoleUser, Content: fb})
 				// The round counter is untouched: the turn goes on under
 				// the ceiling it was already under, because a turn that
 				// could not finish inside its budget must not be handed a
-				// fresh one for having failed a check.
+				// fresh one for having failed a check. What is dropped is
+				// the half in hand: what the model writes after a hand-back
+				// answers the check, and is a reply in its own right rather
+				// than the rest of the one before it.
+				carried = ""
 				continue
 			}
-			return text, nil
+			return answer, nil
 		}
 
 		// A round that ran tools is a fresh round, and its own reply gets its
 		// own continuation: what the bound exists to stop is a turn spent
-		// asking for the rest of one answer, not a long turn.
-		continued = false
+		// asking for the rest of one answer, not a long turn. The half in
+		// hand goes with it, because what the model writes once it has its
+		// results is an answer and not the end of the sentence it stopped.
+		continued, carried = false, ""
 		if stop == provider.StopLength {
 			// The round asked for tools and ran out of budget while it was
 			// still writing them. What survived is whole and runs as usual;
@@ -491,15 +541,21 @@ func (h *Headless) askSummary(msgs []provider.Message, choice string) (string, e
 // be a second answer to what the model is being asked for.
 const ContinueAfterCeiling = "Your previous reply stopped because it reached the maximum output length. Continue it from exactly where it stopped — do not repeat what you already wrote, and keep what is left brief enough to finish."
 
-// The two things a surface says about a ceiling a round reached. Neither is a
-// failure: one is the run finishing an answer that stopped mid-sentence, the
-// other is a round losing a call the model had not finished writing.
+// The three things a surface says about a ceiling a round reached. None is a
+// failure: one is the run finishing an answer that stopped mid-sentence, one
+// is the answer stopping short a second time with the round's continuation
+// already spent, and the last is a round losing a call the model had not
+// finished writing.
 //
-// The second is exported because the session says it too, in its own
+// The last is exported because the session says it too, in its own
 // transcript, about the same event on the same round tail. Two spellings of
 // one fact is how a reader ends up thinking they are two facts.
 const (
 	continueNotice = "The reply reached the model's output ceiling; asking it to finish."
+	// truncatedReplyNotice is the ending a caller has to act on rather than
+	// merely read, which is why TruncatedReply states it as a fact as well
+	// as this stating it in words: the answer that came back is half of one.
+	truncatedReplyNotice = "The reply reached the model's output ceiling again; this answer stops mid-sentence."
 	// TruncatedRoundNotice is what every surface says when a round of tool
 	// calls ended at the ceiling: what the model finished writing runs, and
 	// what it did not was dropped before anything could dispatch it.

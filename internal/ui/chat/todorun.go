@@ -197,6 +197,9 @@ func (m Model) todoRunStep(step run.Step) (tea.Model, tea.Cmd) {
 		m.applyMode(mode)
 		m.todoRunner.mark = len(m.transcript)
 		m.todoRunner.turn = int(m.turnCount) + 1
+		// Every stage gets its own continuation, and this is the stage
+		// starting.
+		m.todoRunner.continued, m.todoRunner.carried = false, ""
 		return m.sendUserMessageAs(step.Prompt, step.Shown)
 	case run.ActionVerify:
 		// The row already says the run is verifying; what a notice would add
@@ -262,7 +265,63 @@ func (m Model) todoRunAfter(prev Model) (Model, tea.Cmd) {
 		next, cmd := m.stopTodoRun()
 		return next.(Model), cmd
 	}
+	if res, ok := m.todoStageStopped(); ok {
+		return m.todoRunUnfinished(res)
+	}
 	next, cmd := m.todoRunStep(st.Observe(m.todoRunner.item, m.todoStageAnswer()))
+	return next.(Model), cmd
+}
+
+// todoStageStopped is the recovery row the stage's turn ended on, when it
+// ended on one at all. Both rows it can be — a reply cut at the model's
+// output ceiling and a reply the wire dropped mid-sentence — say the same
+// thing about the answer: it is not the whole of one, and it reads like the
+// whole of one, because a sentence that stops is all either of them leaves
+// on screen (resume.go).
+//
+// The search stops at the last thing the model said. A turn continued past a
+// ceiling has a whole reply under its row, and that reply is the answer; a
+// row already acted on stops it for the same reason.
+func (m Model) todoStageStopped() (*streamResume, bool) {
+	for i := len(m.transcript) - 1; i >= m.todoRunner.mark && i >= 0; i-- {
+		switch e := m.transcript[i]; e.kind {
+		case entryStreamDrop:
+			if e.resume == nil || e.resume.spent {
+				return nil, false
+			}
+			return e.resume, true
+		case entryAssistant:
+			return nil, false
+		}
+	}
+	return nil, false
+}
+
+// todoRunUnfinished is what the run does about a stage turn whose reply is
+// not a whole one. Which of the two it is decides everything: a ceiling is
+// arithmetic and the model can write past it, so the run has it finished; a
+// dropped wire left half a sentence and whether that half is worth keeping
+// is a judgement the row offers a reader and a run may not make for itself.
+// See docs/capabilities/todo.md#a-run-is-turns-with-gates-between-them.
+func (m Model) todoRunUnfinished(res *streamResume) (Model, tea.Cmd) {
+	st := m.todoRunner.state
+	if !res.truncated {
+		// Nothing about the item is wrong — the transport failed — so the
+		// run lets go at its checkpoint the way a displaced turn does,
+		// leaving the item in progress for /todo run to pick up.
+		next, cmd := m.stopTodoRunKeeping(fmt.Sprintf("the %s turn dropped mid-reply", st.Stage))
+		return next.(Model), cmd
+	}
+	if m.todoRunner.continued {
+		next, cmd := m.todoRunStep(st.Block(run.CutAtCeiling(st.Stage)))
+		return next.(Model), cmd
+	}
+	// The half is kept because it is half of the stage's answer and not a
+	// draft of it: the model was told to carry on from where it stopped
+	// rather than to write the answer again, so what comes back is the rest
+	// and the stage is judged on the two together.
+	m.todoRunner.continued, m.todoRunner.carried = true, res.text
+	next, cmd := m.continueStream(res)
 	return next.(Model), cmd
 }
 
@@ -277,14 +336,25 @@ func (m Model) todoRunHoldsInput() (string, bool) {
 	return fmt.Sprintf("a backlog run is going (%s · %s) — /todo stop ends it, /todo status shows it; commands still work", m.todoRunner.state.Slug, m.todoRunner.state.Stage), true
 }
 
-// todoStageAnswer is the assistant's last message since the stage began.
+// todoStageAnswer is the assistant's last message since the stage began,
+// behind whatever a ceiling cut off the front of it. A continued reply
+// arrives as two entries and is one answer: the model was asked to carry on
+// from where it stopped, so the second entry starts mid-thought and means
+// nothing on its own.
+//
+// The walk stops at the recovery row between the halves, because everything
+// above it is already in hand and reading it twice would hand the stage its
+// own first half again.
 func (m Model) todoStageAnswer() string {
 	for i := len(m.transcript) - 1; i >= m.todoRunner.mark && i >= 0; i-- {
-		if m.transcript[i].kind == entryAssistant {
-			return m.transcript[i].text
+		switch e := m.transcript[i]; e.kind {
+		case entryStreamDrop:
+			return m.todoRunner.carried
+		case entryAssistant:
+			return m.todoRunner.carried + e.text
 		}
 	}
-	return ""
+	return m.todoRunner.carried
 }
 
 // todoVerifyCmd runs the item's listed tests, then the project's checks,
@@ -1904,6 +1974,15 @@ type todoRunState struct {
 	// ended by the cancel chord rather than by an answer.
 	turn      int
 	cancelled bool
+	// continued marks a stage that has spent its one continuation past the
+	// model's output ceiling, and carried is the half it was spent on — what
+	// the stage's answer has to be read behind, because the model was told
+	// to carry on from where it stopped rather than to write the answer
+	// again. They are two fields and not one because the bound is a count
+	// and not a length: a half that happened to be empty must still not buy
+	// the stage a second attempt.
+	continued bool
+	carried   string
 	// followUpRow is 1 + the transcript index of the run row a blocked run
 	// left, while its follow-up proposal is still on the card.
 	followUpRow int

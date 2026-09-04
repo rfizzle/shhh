@@ -374,7 +374,14 @@ again, once per round, and lets the second attempt stand whatever it is — a
 turn free to ask for one more paragraph every time it filled a budget would
 have no ceiling at all in the one place nobody is there to notice. A round
 that ran tools starts fresh, because what the bound exists to stop is a turn
-spent finishing one answer, not a long turn.
+spent finishing one answer, not a long turn. What the turn hands back is both
+halves: the second was written to carry on from where the first stopped, so
+the rest of an answer returned on its own would be a sentence beginning in
+the middle. Standing is not the same as
+being whole: a second attempt the ceiling also cut says so alongside the
+answer, because what reads it downstream — a backlog run grading a stage, a
+lane reading its writer — cannot see it in the words, and everything that
+reads it is somewhere nobody is watching.
 
 **The silent case is the tool call**, and it is why this is worth doing at
 all. A reply that stops in the middle of writing a call leaves half a JSON

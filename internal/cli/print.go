@@ -930,7 +930,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	code := headlessExitCode(outcome, gateErr != nil, refused)
 	switch opts.output {
 	case outputJSON:
-		if err := writeJSONTranscript(os.Stdout, a.Messages(), final, usage, out); err != nil {
+		if err := writeJSONTranscript(os.Stdout, a.Messages(), final, h.TruncatedReply(), usage, out); err != nil {
 			return err
 		}
 	case outputJSONL:
@@ -1314,11 +1314,20 @@ func clipActivityLine(raw string) string {
 // jsonTranscript is the --json output: the outcome, usage totals, and the
 // full conversation including tool calls and results.
 type jsonTranscript struct {
-	Success  bool          `json:"success"`
-	Error    string        `json:"error,omitempty"`
-	Final    string        `json:"final"`
-	Usage    jsonUsage     `json:"usage"`
-	Messages []jsonMessage `json:"messages"`
+	Success bool   `json:"success"`
+	Error   string `json:"error,omitempty"`
+	Final   string `json:"final"`
+	// Truncated qualifies Final: the answer stopped at the model's output
+	// ceiling and the run's one continuation had already been spent, so what
+	// is quoted is the first half of an answer. It is stated because nothing
+	// downstream can see it in the words — the sentence simply ends — and a
+	// caller that grades the answer grades half the work. It is absent when
+	// the answer is whole, which is how every earlier reader of this shape
+	// already reads it.
+	// See docs/capabilities/providers.md#a-reply-says-why-it-stopped.
+	Truncated bool          `json:"truncated,omitempty"`
+	Usage     jsonUsage     `json:"usage"`
+	Messages  []jsonMessage `json:"messages"`
 }
 
 // jsonUsage is what the run cost, as every JSON shape reports it. The cached
@@ -1380,12 +1389,13 @@ func jsonMessages(msgs []provider.Message) []jsonMessage {
 	return out
 }
 
-func writeJSONTranscript(w io.Writer, msgs []provider.Message, final string, usage provider.Usage, runErr error) error {
+func writeJSONTranscript(w io.Writer, msgs []provider.Message, final string, truncated bool, usage provider.Usage, runErr error) error {
 	t := jsonTranscript{
-		Success:  runErr == nil,
-		Final:    final,
-		Usage:    usageOf(usage),
-		Messages: jsonMessages(msgs),
+		Success:   runErr == nil,
+		Final:     final,
+		Truncated: truncated,
+		Usage:     usageOf(usage),
+		Messages:  jsonMessages(msgs),
 	}
 	if runErr != nil {
 		t.Error = runErr.Error()

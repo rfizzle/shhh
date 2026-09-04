@@ -1421,3 +1421,99 @@ func TestTodoSprint_StatusNamesTheSprint(t *testing.T) {
 		t.Fatalf("status should say where the sprint is and open the row: state=%d", next.state)
 	}
 }
+
+// cutAnswer ends the in-flight stage turn with a reply the model's output
+// ceiling stopped mid-sentence. It reads on screen exactly like the answer
+// above, which is the whole reason the run has to ask how the turn ended.
+func cutAnswer(t *testing.T, m Model, text string) Model {
+	t.Helper()
+	if !m.working() {
+		t.Fatalf("no stage turn in flight (state %d)", m.state)
+	}
+	m.streaming = text
+	updated, _ := m.Update(doneMsg{stop: provider.StopLength})
+	return updated.(Model)
+}
+
+// The ceiling is arithmetic and the model can write past it, so the run has
+// the sentence finished before it grades anything — and grades the whole of
+// what the model wrote, not the part that came back last.
+func TestTodoRun_ACutStageAnswerIsFinishedBeforeItIsRead(t *testing.T) {
+	m, _ := runModel(t)
+	m.input.SetValue("/todo run do-it")
+	updated, _ := m.submitInput()
+	m = updated.(Model)
+
+	// The size is split across the halves, so neither is a plan on its own.
+	tail := "ze: S\nquestions: none\n"
+	m = cutAnswer(t, m, strings.TrimSuffix(runPlan, tail))
+	if m.todoRunner.state.Stage != run.StageResearch {
+		t.Fatalf("half an answer is not the stage's answer, moved to %s", m.todoRunner.state.Stage)
+	}
+	if !m.working() {
+		t.Fatal("the run should have asked for the rest of the reply itself")
+	}
+	msgs := m.agent.Messages()
+	if last := msgs[len(msgs)-1]; last.Role != provider.RoleUser || last.Content != agent.ContinueAfterCeiling {
+		t.Fatalf("the run sends the instruction the row's key sends, got %+v", last)
+	}
+
+	m = answer(t, m, tail)
+	if m.todoRunner.state.Stage != run.StageImplement {
+		t.Fatalf("the finished answer should be read as the plan, stage %s", m.todoRunner.state.Stage)
+	}
+	if m.todoRunner.state.Size != todo.SizeS {
+		t.Fatalf("the size arrived in the second half, got %q", m.todoRunner.state.Size)
+	}
+}
+
+// One continuation per stage. A second ceiling is the run's evidence rather
+// than a third attempt, because a stage free to ask for one more paragraph
+// every time it filled a budget would be under no ceiling at all.
+func TestTodoRun_ASecondCeilingInAStageBlocksIt(t *testing.T) {
+	m, root := runModel(t)
+	m.input.SetValue("/todo run do-it")
+	updated, _ := m.submitInput()
+	m = updated.(Model)
+
+	m = cutAnswer(t, m, "## Plan: do it\n\n1. Change a.go\n   files: a.g")
+	m = cutAnswer(t, m, "o\n   action: edit\n\nsi")
+
+	if m.todoRunner.state != nil || m.policy.mode != agent.ModeManual {
+		t.Fatalf("the run should have ended and the mode restored: %v %s", m.todoRunner.state, m.policy.mode)
+	}
+	it, _ := todo.Load(root).Find("do-it")
+	if it.Status != todo.StatusBlocked || !strings.Contains(it.Body, run.CutAtCeiling(run.StageResearch)) {
+		t.Fatalf("the ceiling should be the evidence on the item: %+v", it)
+	}
+}
+
+// A dropped wire is the other way a reply stops short, and it is not the
+// run's to answer: what was kept is half a sentence and whether it is worth
+// having is the judgement the row offers a reader. So the run lets go at its
+// checkpoint, the way a displaced turn does.
+func TestTodoRun_ADroppedStageTurnPausesAtTheCheckpoint(t *testing.T) {
+	m, root := runModel(t)
+	m.input.SetValue("/todo run do-it")
+	updated, _ := m.submitInput()
+	m = updated.(Model)
+
+	m.streaming = "## Plan: do it\n\n1. Change a.g"
+	updated, _ = m.Update(streamErrMsg{err: networkFailure()})
+	m = updated.(Model)
+
+	if m.todoRunner.state != nil || m.policy.mode != agent.ModeManual {
+		t.Fatalf("the run should be let go of and the mode restored: %v %s", m.todoRunner.state, m.policy.mode)
+	}
+	if it, _ := todo.Load(root).Find("do-it"); it.Status != todo.StatusInProgress {
+		t.Fatalf("nothing about the item is wrong, so it stays in progress, is %s", it.Status)
+	}
+	st, err := run.Load(root, "do-it")
+	if err != nil || st.Stage != run.StageResearch {
+		t.Fatalf("the checkpoint should be kept at research: %+v %v", st, err)
+	}
+	note := m.transcript[len(m.transcript)-1].text
+	if !strings.Contains(note, "dropped mid-reply") || !strings.Contains(note, "/todo run do-it continues it") {
+		t.Fatalf("the row should say why and how to pick it up, got %q", note)
+	}
+}

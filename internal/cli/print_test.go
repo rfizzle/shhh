@@ -171,7 +171,7 @@ func TestWriteJSONTranscript(t *testing.T) {
 		{Role: provider.RoleAssistant, Content: "done"},
 	}
 	var sb strings.Builder
-	if err := writeJSONTranscript(&sb, msgs, "done", provider.Usage{PromptTokens: 10, CompletionTokens: 5, CachedTokens: 7}, nil); err != nil {
+	if err := writeJSONTranscript(&sb, msgs, "done", false, provider.Usage{PromptTokens: 10, CompletionTokens: 5, CachedTokens: 7}, nil); err != nil {
 		t.Fatalf("writeJSONTranscript: %v", err)
 	}
 
@@ -196,7 +196,7 @@ func TestWriteJSONTranscript(t *testing.T) {
 	}
 
 	sb.Reset()
-	if err := writeJSONTranscript(&sb, nil, "", provider.Usage{}, fmt.Errorf("boom")); err != nil {
+	if err := writeJSONTranscript(&sb, nil, "", false, provider.Usage{}, fmt.Errorf("boom")); err != nil {
 		t.Fatalf("writeJSONTranscript: %v", err)
 	}
 	if err := json.Unmarshal([]byte(sb.String()), &got); err != nil {
@@ -204,6 +204,24 @@ func TestWriteJSONTranscript(t *testing.T) {
 	}
 	if got.Success || got.Error != "boom" {
 		t.Fatalf("failure transcript wrong: %+v", got)
+	}
+
+	// An answer the ceiling cut says so, because nothing in the words does.
+	// A whole one says nothing, which is how every reader of this shape
+	// already read it before there was a field.
+	sb.Reset()
+	if err := writeJSONTranscript(&sb, nil, "the first half of", true, provider.Usage{}, nil); err != nil {
+		t.Fatalf("writeJSONTranscript: %v", err)
+	}
+	if !strings.Contains(sb.String(), `"truncated": true`) {
+		t.Fatalf("a cut answer should be stated as one:\n%s", sb.String())
+	}
+	sb.Reset()
+	if err := writeJSONTranscript(&sb, nil, "whole", false, provider.Usage{}, nil); err != nil {
+		t.Fatalf("writeJSONTranscript: %v", err)
+	}
+	if strings.Contains(sb.String(), "truncated") {
+		t.Fatalf("a whole answer should carry no such field:\n%s", sb.String())
 	}
 }
 

@@ -93,6 +93,15 @@ Naming both `--json` and a `--output` that disagrees with it is refused rather
 than resolved, because either answer would be somebody's script quietly
 reading the wrong stream.
 
+The transcript also says when the answer it quotes is half of one. A reply cut
+off at the model's output ceiling is continued once by the run itself, and a
+second attempt that stopped at the ceiling too still stands — but it stands
+labelled, because nothing in the words says the sentence was cut and a caller
+that grades the answer would be grading half the work
+([`providers.md`](providers.md#a-reply-says-why-it-stopped)). A whole answer
+carries no such label, which is how every reader of this shape already read it
+before there was one.
+
 The token totals state the cached share of the prompt as well as the prompt
 and completion counts. It is billed at a fraction of the rest and cannot be
 recovered from the other two figures, so a script pricing a night of runs

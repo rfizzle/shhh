@@ -734,6 +734,22 @@ func (s *State) Committed(files []string) Step {
 // could not be made, a tree with foreign staged changes.
 func (s *State) Block(reason string) Step { return s.block(reason) }
 
+// CutAtCeiling is the evidence a stage blocks with when its answer stopped at
+// the model's output ceiling and the one continuation a stage gets had
+// already been spent. A stage gets one because a stage free to ask for one
+// more paragraph every time it filled a budget would be under no ceiling at
+// all; it gets no more than one because grading half a review or half an
+// implementation is the mistake the gates exist to prevent.
+//
+// It is a function rather than a method because both drivers reach the same
+// reading by different routes — the session watches its own turn end, the
+// unattended runner reads what a stage's process reported — and the item
+// should not be able to tell which of them stopped it.
+// See docs/capabilities/todo.md#a-run-is-turns-with-gates-between-them.
+func CutAtCeiling(stage Stage) string {
+	return fmt.Sprintf("the %s answer was cut at the model's output ceiling twice; it was continued once and stopped short again, and half an answer is not the stage's answer", stage)
+}
+
 func (s *State) block(reason string) Step {
 	s.Blocked = reason
 	s.Stage = StageBlocked

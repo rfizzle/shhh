@@ -300,6 +300,28 @@ command that picks it up. Stopping the run is the one explicit end, and
 that is the one that puts the item back to open with the tree as the run
 left it.
 
+**A stage's answer has to be a whole one.** Every gate in the run reads what
+a turn said, and a reply the model did not finish reads exactly like one it
+did: the sentence simply stops. So the run asks how the turn ended before it
+reads what the turn produced. A reply cut off at the model's output ceiling
+is finished first — the run sends the same instruction the session offers
+behind a key, once per stage, and grades the two halves as the one answer
+they are. A second ceiling in the same stage stops the item with that as its
+evidence, because a stage free to ask for one more paragraph every time it
+filled a budget would be under no ceiling at all, and because half a review
+graded as a whole one is exactly the mistake the gates exist to prevent. A
+reply the wire dropped is not finished by the run at all: what was kept is
+half a sentence, whether it is worth keeping is a judgement, and the run has
+no standing to make one — so it pauses at its checkpoint the way a displaced
+turn does, and the row says which of the two happened.
+
+An unattended run is held to the same reading. Each stage there is a process
+of its own that finishes its own cut-off reply once and says in its
+transcript when it could not, and a stage whose answer came back cut anyway
+stops the item rather than being graded — the sprint is where this matters
+most, because a half answer taken for a whole one is the kind of mistake
+nobody is there to catch.
+
 ## A large item is built in lanes
 
 A large item is the one size the session does not build itself. After the

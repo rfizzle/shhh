@@ -845,8 +845,11 @@ func TestHeadlessRun_ContinuesAReplyCutAtTheCeiling(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if final != " and the second." {
-		t.Fatalf("final = %q", final)
+	// Both halves, because the continuation was told to carry on from where
+	// the sentence stopped: the rest of an answer means nothing handed back
+	// without the part it continues.
+	if final != "The first half of the answer and the second." {
+		t.Fatalf("final = %q, want the whole of what the model wrote", final)
 	}
 	if len(notices) != 1 {
 		t.Fatalf("the run should say once that it asked for the rest, got %v", notices)
@@ -872,8 +875,8 @@ func TestHeadlessRun_ContinuesOnceARound(t *testing.T) {
 		lengthRound("first"),
 		lengthRound("second"),
 	))
-	var notices int
-	h := &Headless{Agent: a, OnContinue: func(string) { notices++ }}
+	var notices []string
+	h := &Headless{Agent: a, OnContinue: func(n string) { notices = append(notices, n) }}
 
 	final, err := h.Run("explain it")
 	if err != nil {
@@ -882,11 +885,37 @@ func TestHeadlessRun_ContinuesOnceARound(t *testing.T) {
 	// The second attempt stands whatever it is: a turn that could ask for
 	// one more paragraph every time would have no ceiling at all where
 	// nobody is watching.
-	if final != "second" {
+	if final != "firstsecond" {
 		t.Fatalf("final = %q, want the second attempt to stand", final)
 	}
-	if notices != 1 {
-		t.Fatalf("one continuation per round, got %d", notices)
+	if len(notices) != 2 || notices[0] != continueNotice {
+		t.Fatalf("one continuation per round, got %q", notices)
+	}
+	// Standing is not the same as being whole. The second attempt stopped at
+	// the ceiling too, and what reads it — a run grading a stage, a lane
+	// reading its writer — cannot see that in the words.
+	if notices[1] != truncatedReplyNotice {
+		t.Fatalf("the second ceiling should be said out loud, got %q", notices[1])
+	}
+	if !h.TruncatedReply() {
+		t.Fatal("the answer that stopped short a second time should say so")
+	}
+}
+
+// An answer that reached no ceiling says so, and a run that hit one on an
+// earlier round is not still saying it hit one at the end.
+func TestHeadlessRun_AWholeAnswerIsNotTruncated(t *testing.T) {
+	a := New(nil, scriptedStream(t,
+		lengthRound("the first half of"),
+		doneRound(" the answer"),
+	))
+	h := &Headless{Agent: a}
+
+	if _, err := h.Run("explain it"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if h.TruncatedReply() {
+		t.Fatal("an answer the model finished is a whole one")
 	}
 }
 
@@ -905,7 +934,10 @@ func TestHeadlessRun_AToolRoundEarnsItsOwnContinuation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if final != "done" {
+	// The reply after the tools is what the turn answers with, both halves
+	// of it — the half before the tool round is a different reply, and the
+	// results the model asked for stand between them.
+	if final != "after the toolsdone" {
 		t.Fatalf("final = %q", final)
 	}
 	if notices != 2 {

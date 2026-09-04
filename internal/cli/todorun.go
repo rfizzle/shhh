@@ -184,11 +184,25 @@ type todoDriver struct {
 	// baseline from before the sprint would hand every one of those files to
 	// the next item as its own.
 	dirty map[string]bool
-	// turn spends one stage as one session and answers with what the model
-	// said, the status the process left and why there was no answer. It is a
-	// field because the loop around it is the part worth testing and a test
-	// that had to stand up a provider to reach it would test neither.
-	turn func(ctx context.Context, deadline time.Time, step run.Step) (text string, code int, err error)
+	// turn spends one stage as one session and answers with what that
+	// session produced, or with why there was no answer. It is a field
+	// because the loop around it is the part worth testing and a test that
+	// had to stand up a provider to reach it would test neither.
+	turn func(ctx context.Context, deadline time.Time, step run.Step) (todoTurn, error)
+}
+
+// todoTurn is what one stage's process produced: the answer it wrote, the
+// status it left, and whether that answer is a whole one.
+type todoTurn struct {
+	text string
+	code int
+	// truncated reports an answer the stage's own process ended on after the
+	// model's output ceiling cut it and the one continuation a round allows
+	// had already been spent. It is stated rather than inferred because
+	// nothing in the words says it: the sentence stops, and a stage graded
+	// on half a review or half an implementation is graded on half the work
+	// in the one place nobody is watching.
+	truncated bool
 }
 
 func newTodoDriver(out io.Writer, root string, cfg config.Config, noCommit bool) (*todoDriver, error) {
@@ -349,9 +363,17 @@ func (d *todoDriver) begin(it todo.Item, inSprint bool) (*run.State, run.Step) {
 func (d *todoDriver) carry(ctx context.Context, deadline time.Time, st *run.State, it todo.Item, step run.Step) run.Step {
 	switch step.Action {
 	case run.ActionPrompt:
-		text, code, err := d.turn(ctx, deadline, step)
+		t, err := d.turn(ctx, deadline, step)
 		if err != nil {
 			return st.Block(err.Error())
+		}
+		if t.truncated {
+			// The stage's process already asked the model to finish the
+			// sentence once, which is the whole of what a continuation is
+			// worth here, and got another cut one back. The answer is not
+			// read: a stage judged on half of one is how a run advances
+			// past work that was never done.
+			return st.Block(run.CutAtCeiling(step.Stage))
 		}
 		// The stage's own process ran the workspace's checks as it closed and
 		// said so in its status, so the verify stage takes that verdict
@@ -362,9 +384,9 @@ func (d *todoDriver) carry(ctx context.Context, deadline time.Time, st *run.Stat
 		// pass would skip the verify stage's own run over a tree nothing has
 		// checked.
 		if st.ClosesWithGate() {
-			st.Checks(code == exitDone)
+			st.Checks(t.code == exitDone)
 		}
-		return st.Observe(it, text)
+		return st.Observe(it, t.text)
 	case run.ActionVerify:
 		ok, output := d.verify(ctx, st)
 		fmt.Fprintln(d.out, output)
@@ -421,7 +443,11 @@ func (d *todoDriver) say(st *run.State, step run.Step) {
 // stage that ran out of rounds or lost the provider still produced whatever
 // it produced, and the machine judges a stage on its answer — an empty one is
 // what blocks the item, not a non-zero status.
-func (d *todoDriver) ask(ctx context.Context, deadline time.Time, step run.Step) (text string, code int, err error) {
+//
+// The transcript is also where the process says whether the answer it quotes
+// is a whole one, because the status cannot: a turn that ended at the model's
+// output ceiling ended the way turns end.
+func (d *todoDriver) ask(ctx context.Context, deadline time.Time, step run.Step) (todoTurn, error) {
 	args := []string{"code", "--print", "--output", "json"}
 	if step.Mode == run.ModeAuto {
 		args = append(args, "--yes")
@@ -446,23 +472,24 @@ func (d *todoDriver) ask(ctx context.Context, deadline time.Time, step run.Step)
 	var out, errOut strings.Builder
 	cmd.Stdout, cmd.Stderr = &out, &errOut
 	runErr := cmd.Run()
-	code = exitDone
+	code := exitDone
 	var ee *exec.ExitError
 	if errors.As(runErr, &ee) {
 		code = ee.ExitCode()
 	}
 	var t struct {
-		Final string `json:"final"`
-		Error string `json:"error"`
+		Final     string `json:"final"`
+		Error     string `json:"error"`
+		Truncated bool   `json:"truncated"`
 	}
 	_ = json.Unmarshal([]byte(out.String()), &t)
 	if strings.TrimSpace(t.Final) != "" {
-		return t.Final, code, nil
+		return todoTurn{text: t.Final, code: code, truncated: t.Truncated}, nil
 	}
 	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-		return "", code, errors.New(run.TimedOut(d.itemTimeout))
+		return todoTurn{code: code}, errors.New(run.TimedOut(d.itemTimeout))
 	}
-	return "", code, fmt.Errorf("the %s turn produced no answer (exit %d): %s",
+	return todoTurn{code: code}, fmt.Errorf("the %s turn produced no answer (exit %d): %s",
 		step.Stage, code, todoFirstProblem(t.Error, errOut.String(), errString(runErr)))
 }
 
