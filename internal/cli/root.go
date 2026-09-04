@@ -180,7 +180,7 @@ func NewRootCmd() *cobra.Command {
 		&cobra.Group{ID: groupRecords, Title: "Records"},
 		&cobra.Group{ID: groupSetup, Title: "Setup"},
 	)
-	addGrouped(cmd, groupSessions, newChatCmd(), newCmdCmd(), newCodeCmd())
+	addGrouped(cmd, groupSessions, newChatCmd(), newCmdCmd(), newCodeCmd(), newServeCmd())
 	addGrouped(cmd, groupRecords, newChatsCmd(), newHistoryCmd(), newLogsCmd(),
 		newReportsCmd(), newSnippetsCmd(), newMemoryCmd(), newMetricsCmd(),
 		newObserveCmd(), newRateCmd(), newTodoCmd())

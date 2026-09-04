@@ -232,6 +232,12 @@ type headlessObserver struct {
 	// than the agent itself because that is the whole of what a position
 	// needs from it.
 	rounds func() int
+	// turn is which turn of the conversation the events belong to. A run with
+	// nobody in front of it is one turn by construction — one prompt in, one
+	// answer out — and leaves this nil; a surface that carries several turns
+	// over one conversation fills it in, because a record that filed all of
+	// them under turn 1 could not tell a long session from a stalled one.
+	turn func() int64
 	// stream is the event stream the run was asked for, or nil where it was
 	// not. It hangs here rather than beside the hooks so that what is written
 	// to it and what is written to the record leave from one place: an event
@@ -240,11 +246,13 @@ type headlessObserver struct {
 	stream *jsonlStream
 }
 
-// pos is where the run is now. A headless run is one turn by construction —
-// one prompt in, one answer out — so the turn is always 1 rather than a
-// counter nothing would increment.
+// pos is where the run is now.
 func (h headlessObserver) pos() observe.Pos {
-	return observe.Pos{Turn: 1, Round: int64(h.rounds())}
+	turn := int64(1)
+	if h.turn != nil {
+		turn = h.turn()
+	}
+	return observe.Pos{Turn: turn, Round: int64(h.rounds())}
 }
 
 // signal records one of the loop's own safeguards firing, and puts it on the
@@ -819,20 +827,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	var usage provider.Usage
 	webTools := session.web
 	mcpTools := session.mcpTools
-	gate = func(tc provider.ToolCall) bool {
-		if webTools != nil && tc.Name == web.FetchToolName {
-			return true
-		}
-		// The process tool gates on its arguments: only start needs
-		// approval; status/read/input/stop auto-run.
-		if procSup != nil && tc.Name == process.ToolName {
-			return process.NeedsApproval(json.RawMessage(tc.Arguments))
-		}
-		if mcpTools != nil && mcpTools.Has(tc.Name) {
-			return !mcpTools.ReadOnly(tc.Name)
-		}
-		return headlessGate(tc.Name)
-	}
+	gate = unattendedGate(webTools, procSup, mcpTools)
 	// A non-interactive run has nobody to notice it has drifted or that it
 	// already has what it needs, which is why readings default on here. The
 	// prompt is the instruction every one of them is judged against.

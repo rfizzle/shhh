@@ -1,4 +1,4 @@
-# Running it from a script
+# Driving it without the screen
 
 ## A run nobody is watching is still answerable to somebody
 
@@ -153,6 +153,62 @@ A flag the run cannot honour is a usage error rather than a silent no-op.
 `--resume` with no chat named opens a picker, and a run with nobody in front
 of it can neither draw one nor be answered — so it says so, instead of
 starting from nothing while claiming to have resumed.
+
+## Something else can drive it
+
+A script starts a run, waits, and reads what it left behind. That is the whole
+of the arrangement above, and it rules out everything that has to happen while
+the run is going: a question put to somebody, a correction sent mid-turn, a
+second window watching the same work.
+
+`shhh serve` is the same agent with a protocol in front of it instead of a
+terminal. It speaks JSON-RPC — one JSON object per line, over stdio or a unix
+socket — and a client opens a session, starts a turn in it, steers or
+interrupts that turn, and answers the calls the turn may not make unasked. The
+events it receives while all that happens are the ones above, unchanged: the
+same lines, the same words, forwarded rather than rewritten, so a client that
+can read a run's output can read a session it is driving with the same code.
+
+Nothing about the run itself moves behind the protocol. It is assembled the
+way an unattended run is — the same tools registered on the same conditions,
+the same containment around a command, the same hooks at the same seams, the
+same record written — because a second way to build a session is a second set
+of answers to every question about what one may do. shhh's own screen has not
+moved behind it either, and is not going to as part of this: what the surface
+buys is that something else *can*, and the first thing worth pointing at it is
+an adapter to a protocol somebody else's editor already speaks.
+
+A server has one working directory, which is the checkout it was started in.
+Sessions on it are several conversations over that one tree, and each is
+addressed by a name the server minted; a second client naming one is handed
+the conversation so far and joins the audience for the rest of it. Two clients
+on one session see one transcript, because there is one.
+
+## A client answers one call at a time
+
+The approval queue belongs to the protocol and not to the client. A request is
+put to everyone watching the session under an id the server minted, and an
+answer names that id. There is no name for a request that has not happened, so
+there is nothing for a client to approve a tier with in advance — no standing
+yes, no `--yes`, no mode. Every gated call is one question and one answer.
+
+The answer is a decision, and a decision does not outrank a rule. What a
+client allows still goes to the same approver a `--yes` run's calls go to, so
+the deny list refuses it, an uncontained host refuses it where containment was
+required, the safety table refuses a dangerous command, and the working scope
+answers a write outside it — in that order, exactly as they answer a run
+nobody is driving. A directory that can never be granted, or one that
+is sensitive, is refused there whatever the client said; an ordinary one is
+added, because the path was in the call the client was shown and answering yes
+to the call is answering yes to where it writes. Containment, the checkout's
+trust answer and the deny mask are the same whoever is at the other end. A
+refusal, on the other hand, is final on its own: nothing behind it is
+consulted, because an allowlist that could run a call the client had just
+declined would make the question a formality.
+
+An approval nobody is left to answer is a refusal. A client that disconnects
+with a request outstanding does not leave the turn waiting for a decision that
+is never coming.
 
 ## The backlog, worked without you
 

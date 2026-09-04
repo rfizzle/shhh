@@ -11,6 +11,7 @@
     chat [prompt] [--flags]            Start a conversation
     cmd [prompt] [--flags]             Generate one shell command
     code [command] [prompt] [--flags]  Start a coding agent session
+    serve [--flags]                    Serve the coding agent over JSON-RPC for another client to drive
            
   RECORDS  
            

@@ -9,7 +9,7 @@ none of them names a Go symbol (see [the rules](../README.md#the-four-rules)).
 | [`chat.md`](chat.md) | The conversation: answers, reads, delegates to read-only personas, changes nothing |
 | [`coding-agent.md`](coding-agent.md) | The agent that edits, runs and checks its own work |
 | [`subagents.md`](subagents.md) | Handing part of a job to a child agent |
-| [`headless.md`](headless.md) | Running it from a script: the exit codes, the event stream, and what a run with nobody watching does not get |
+| [`headless.md`](headless.md) | Driving it without the screen: the exit codes, the event stream, the protocol another client drives a session through, and what a run with nobody watching does not get |
 | [`skills.md`](skills.md) | Folders of instructions for one kind of task, loaded when a task matches |
 | [`mcp.md`](mcp.md) | Tools from outside: MCP servers the person defined, what they may do, and who may start one |
 | [`hooks.md`](hooks.md) | Your own commands at the seams the session already has: before a tool, after it, at a turn's close, at a session's start |

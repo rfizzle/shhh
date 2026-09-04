@@ -726,7 +726,7 @@ fix it.
 
 ## Related
 
-- [`headless.md`](headless.md) — running it from a script: the exit codes and
+- [`headless.md`](headless.md) — driving it without the screen: the exit codes and
   the event stream
 - [`subagents.md`](subagents.md) — handing work to children
 - [`approvals-and-safety.md`](approvals-and-safety.md) — what it may do

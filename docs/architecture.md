@@ -23,6 +23,20 @@ becomes a state the caller has to handle. That is the trade, and it is worth
 it: the alternative is an agent that behaves differently depending on who is
 watching.
 
+What that buys, eventually, is a front-end in another process. A loop that is
+advanced one step at a time by whatever is holding it does not care whether
+that thing is on this side of a socket, so putting a protocol in front of it
+is wiring rather than a redesign — and the shape was already there, which is
+why the surface could be added without moving the screen behind it. The rule
+that makes it safe to have is that the protocol contributes exactly two
+things, where the events go and who is asked, and contributes nothing to what
+a session may do. Everything else is assembled the way the unattended run
+assembles it, because a second assembly is a second set of answers to every
+question about containment, trust and refusals, and the two would agree only
+on the day the second was written.
+
+See [`capabilities/headless.md`](capabilities/headless.md).
+
 ## Tiers, not permissions
 
 Tools are separated by what they can do to your machine, and the separation is
