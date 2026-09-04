@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/storage"
@@ -83,8 +84,13 @@ func withSibling(c *agent.TreeCheck, sib sessionSibling) *agent.TreeCheck {
 // The survey is handed in rather than taken here because the model's prompt
 // block is built from the same answer, and the tree walk behind it is not
 // worth doing twice.
-func buildStartInfo(survey project.Info, db *storage.DB, gateEnabled bool, trust chat.Trust) chat.StartInfo {
+func buildStartInfo(survey project.Info, db *storage.DB, gateEnabled bool, trust chat.Trust, proj config.Project) chat.StartInfo {
 	wd := survey.Dir
+	// The checkout's own settings file rides on the survey, the way the
+	// sibling reading does: the screen states what this session is running
+	// on, and a session running on settings the reader never wrote is one
+	// they cannot account for from their own file alone.
+	survey.ConfigFile = proj.Display
 	info := chat.StartInfo{Project: survey, Trust: trust}
 	if gateEnabled {
 		info.Gate = startGate(wd)

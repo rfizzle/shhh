@@ -38,6 +38,11 @@ type configReading struct {
 	// none.
 	Env  string `json:"env,omitempty"`
 	Flag string `json:"flag,omitempty"`
+	// Project is the checkout's own settings file where that file decided
+	// this key, and empty everywhere else. It rides on the reading so the
+	// JSON names the file too: a script reading `project` and no path could
+	// not say which checkout.
+	Project string `json:"project,omitempty"`
 	// EnvSet says whether the variable a variable-naming key names is
 	// exported on this machine. It is absent rather than false for every key
 	// that names none, because a false there would read as a variable that is
@@ -55,10 +60,7 @@ func newConfigListCmd() *cobra.Command {
 			"Name a section — provider, behavior, sandbox — to list one table of the file.",
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := config.Load()
-			if err != nil {
-				return err
-			}
+			cfg, proj := ConfigFrom(cmd.Context()), ProjectConfigFrom(cmd.Context())
 			section := ""
 			if len(args) == 1 {
 				section = strings.ToLower(strings.Trim(args[0], "[]"))
@@ -67,12 +69,12 @@ func newConfigListCmd() *cobra.Command {
 						"`shhh config list`"))
 				}
 			}
-			readings := configReadings(cfg, section)
+			readings := configReadings(cfg, proj, section)
 			if asJSON {
 				return writeJSON(cmd, readings)
 			}
 			return report.Fprint(cmd.OutOrStdout(),
-				configListReport(readings, section, shortPath(config.WritePath())))
+				configListReport(readings, section, configListSubject(shortPath(config.WritePath()), proj)))
 		},
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "emit the readings as JSON")
@@ -92,11 +94,7 @@ func newConfigGetCmd() *cobra.Command {
 			if !ok {
 				return fmt.Errorf("%s", config.UnknownKeyMessage(key))
 			}
-			cfg, err := config.Load()
-			if err != nil {
-				return err
-			}
-			reading := configReadingOf(cfg, s)
+			reading := configReadingOf(ConfigFrom(cmd.Context()), ProjectConfigFrom(cmd.Context()), s)
 			if asJSON {
 				return writeJSON(cmd, reading)
 			}
@@ -120,16 +118,31 @@ func configSections() []string {
 
 // configReadings is every setting this config answers, filtered to one
 // section when one was named.
-func configReadings(cfg config.Config, section string) []configReading {
+func configReadings(cfg config.Config, proj config.Project, section string) []configReading {
 	entries := configEntries(cfg)
 	out := make([]configReading, 0, len(entries))
 	for _, s := range entries {
 		if section != "" && s.Group() != section {
 			continue
 		}
-		out = append(out, configReadingOf(cfg, s))
+		out = append(out, configReadingOf(cfg, proj, s))
 	}
 	return out
+}
+
+// configListSubject names the files the listing is a reading of: the user's
+// always, and the checkout's beside it where one is in force. A listing that
+// named one file while printing values from two is the reading a person
+// would take to the wrong file.
+//
+// The user's path is passed in rather than read here, for the reason the
+// report itself takes one: the render is a function of its arguments, so a
+// fixture of it says the same thing on every machine.
+func configListSubject(path string, proj config.Project) string {
+	if proj.Loaded() {
+		path += " · " + proj.Display
+	}
+	return path
 }
 
 // configReadingOf resolves one key the way a run would: the environment
@@ -140,7 +153,7 @@ func configReadings(cfg config.Config, section string) []configReading {
 // `--model` here would be naming a rank that was not consulted. The
 // documentation's own table says which keys a flag outranks, and the listing
 // says so on the row.
-func configReadingOf(cfg config.Config, s config.Setting) configReading {
+func configReadingOf(cfg config.Config, proj config.Project, s config.Setting) configReading {
 	reading := configReading{
 		Key: s.Key, Section: s.Group(), Takes: s.Kind.String(), Values: s.Values,
 		Default: s.Default, Desc: s.Desc, Env: s.Env, Flag: s.Flag,
@@ -149,8 +162,14 @@ func configReadingOf(cfg config.Config, s config.Setting) configReading {
 	switch env := os.Getenv(s.Env); {
 	case s.Env != "" && env != "":
 		reading.Value, reading.Source, reading.Set = env, s.Env, true
+	case proj.Sets(s.Key):
+		// Ahead of the "was anything set" test, because a checkout that
+		// empties a list or turns a flag off decided that key too, and a
+		// row reading `default` there names the wrong file.
+		reading.Value, reading.Source, reading.Set = stored, "project", true
+		reading.Project = proj.Display
 	case set:
-		reading.Value, reading.Source, reading.Set = stored, "file", true
+		reading.Value, reading.Source, reading.Set = stored, "user", true
 	default:
 		reading.Value, reading.Source = s.Default, "default"
 	}
@@ -234,6 +253,13 @@ func configGetReport(reading configReading) report.Report {
 	}
 	if reading.Source != "default" {
 		row.Body = append(row.Body, "Unset it and "+reading.Default+" stands.")
+	}
+	if reading.Project != "" {
+		said := "This checkout's " + reading.Project + " sets it, which outranks your own file here."
+		if config.UnionsInProject(reading.Key) {
+			said += " It adds to your list rather than replacing it, because a checkout cannot know what is already on yours."
+		}
+		row.Body = append(row.Body, said)
 	}
 	if outranks := configOutranks(reading); outranks != "" {
 		row.Body = append(row.Body, outranks)

@@ -348,7 +348,7 @@ func doctorBinary(version, goos, goarch, path string) doctorFinding {
 	return f
 }
 
-// probeConfig reads the file again rather than taking the config it was
+// probeConfig reads the files again rather than taking the config it was
 // handed: this is the one command that runs when the load failed (root.go
 // lets it through on ownsConfigError), and the config in hand is then the
 // zero value with the reason left behind in the startup path.
@@ -364,7 +364,17 @@ func probeConfig(_ context.Context, _ config.Config) doctorFinding {
 		}
 	}
 	cfg, err := config.LoadFrom(paths...)
-	return doctorConfig(read, paths, cfg, err)
+	var proj config.Project
+	if err == nil {
+		// The same layering a session would do, refusal included: the doctor
+		// is where a file that stops every command is read, and a checkout's
+		// file can stop them the same way the user's can.
+		cfg, proj, err = layerProjectConfig(cfg, workingDir())
+		if err != nil {
+			read = config.ProjectPath(workingDir())
+		}
+	}
+	return doctorConfig(read, paths, cfg, proj, err)
 }
 
 // doctorConfig says which file was read and what it set. No file at all is
@@ -373,7 +383,7 @@ func probeConfig(_ context.Context, _ config.Config) doctorFinding {
 // setup check gets asked. A file that would not load is the row's failure,
 // worded as the refusal every other command gave, so the doctor is where the
 // person who was just refused reads why.
-func doctorConfig(read string, paths []string, cfg config.Config, err error) doctorFinding {
+func doctorConfig(read string, paths []string, cfg config.Config, proj config.Project, err error) doctorFinding {
 	if err != nil {
 		f := doctorFinding{
 			Subject: shortPath(read), Detail: err.Error(),
@@ -425,7 +435,30 @@ func doctorConfig(read string, paths []string, cfg config.Config, err error) doc
 		Detail:  countOf(configSettingsSet(cfg), "setting set", "settings set"),
 		Outcome: "ok",
 	}
-	return withLiteralKeyWarning(f, cfg)
+	return withLiteralKeyWarning(withProjectFile(f, proj), cfg)
+}
+
+// withProjectFile names the checkout's own settings file on the row and the
+// keys it decided. Both files are named because the value in force can come
+// from either, and a row naming one of two files is a row that sends the
+// reader to edit the wrong one; the keys go on the fix lines rather than in
+// the detail, which clips at its column's width.
+func withProjectFile(f doctorFinding, proj config.Project) doctorFinding {
+	if !proj.Loaded() {
+		return f
+	}
+	f.Detail = joinDetail(f.Detail, proj.Display+" sets "+countOf(len(proj.Keys), "key", "keys"))
+	if len(proj.Keys) == 0 {
+		return f
+	}
+	// One line naming the file and its keys, so it still says whose keys
+	// these are under whatever label the credential warning below may put on
+	// the block.
+	f.Fix = append(f.Fix, proj.Display+" sets "+strings.Join(proj.Keys, ", "))
+	if f.FixLabel == "" {
+		f.FixLabel = "show what this checkout sets"
+	}
+	return f
 }
 
 // withLiteralKeyWarning turns the config row into a warning when the file

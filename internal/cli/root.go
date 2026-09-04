@@ -98,7 +98,13 @@ func NewRootCmd() *cobra.Command {
 			// person wrote and believes is in force is not something the
 			// record can recover afterwards. The doctor is the one exception,
 			// because it is where the refusal is read.
-			cfg, err := config.Load()
+			//
+			// Both files are read here, in the one place every command comes
+			// through: the checkout's settings layer over the user's key by
+			// key, and a session that resolved them somewhere of its own
+			// would answer differently from the screen that says where a
+			// value came from (config.go).
+			cfg, proj, err := loadLayeredConfig(workingDir())
 			if err != nil && cmd.Annotations[ownsConfigError] == "" {
 				return err
 			}
@@ -121,7 +127,7 @@ func NewRootCmd() *cobra.Command {
 				}
 			}
 
-			cmd.SetContext(withConfig(cmd.Context(), cfg))
+			cmd.SetContext(withProjectConfig(withConfig(cmd.Context(), cfg), proj))
 
 			update.BackgroundCheck(version)
 

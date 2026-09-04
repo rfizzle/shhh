@@ -1,9 +1,9 @@
-  shhh config list provider — 8 settings · ~/.config/shhh/config.toml
+  shhh config list provider — 8 settings · ~/.config/shhh/config.toml · .shhh/c…
 
   PROVIDER
 
-  · default      openai  [default]
-  ✓ model        gpt-4o  [file]
+  ✓ default      anthropic  [project]
+  ✓ model        gpt-4o  [user]
   · api_key      (from the environment)  [default]
   · api_key_env  (the provider's own variable)  [default]
   · base_url     (the provider's own)  [default]
@@ -11,4 +11,4 @@
   ✓ reasoning    high  [SHHH_REASONING]
   · cache_ttl    1h  [default]
 
-  2 set · 6 at their default
+  3 set · 5 at their default

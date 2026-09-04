@@ -23,7 +23,7 @@ func TestConfigList_StatesWhereEachValueCameFrom(t *testing.T) {
 
 	out := runRoot(t, "config", "list", "provider")
 	for _, want := range []string{
-		"model", "gpt-4o", "[file]",
+		"model", "gpt-4o", "[user]",
 		"reasoning", "high", "[SHHH_REASONING]",
 		"cache_ttl", "[default]",
 	} {
@@ -62,7 +62,7 @@ func TestConfigList_JSONCarriesTheSameFigures(t *testing.T) {
 		t.Fatalf("the history table has one key, got %d", len(readings))
 	}
 	got := readings[0]
-	if got.Key != "history.retention_days" || got.Value != "7" || got.Source != "file" || !got.Set {
+	if got.Key != "history.retention_days" || got.Value != "7" || got.Source != "user" || !got.Set {
 		t.Fatalf("reading = %+v", got)
 	}
 	if got.Default == "" || got.Desc == "" {
@@ -117,7 +117,7 @@ func TestConfigGet_TheOldRoleModelSpellingNamesTheNewKey(t *testing.T) {
 // reachable only by opening the file.
 func TestConfigRows_OneRowPerTableEntry(t *testing.T) {
 	var cfg config.Config
-	rows := configRows(cfg, cfg)
+	rows := configRows(cfg, cfg, config.Project{})
 	if len(rows) != len(configEntries(cfg)) {
 		t.Fatalf("%d rows for %d settings", len(rows), len(configEntries(cfg)))
 	}
@@ -137,7 +137,7 @@ func TestConfigRows_OneRowPerTableEntry(t *testing.T) {
 // that lands in the table lands on the screen with its words to choose from.
 func TestConfigRows_PickersComeFromTheKind(t *testing.T) {
 	var cfg config.Config
-	rows := configRows(cfg, cfg)
+	rows := configRows(cfg, cfg, config.Project{})
 	for _, s := range configEntries(cfg) {
 		row := rowFor(rows, s.Key)
 		switch s.Kind {
@@ -242,8 +242,8 @@ func TestConfigReading_AVariableCarriesItsStateIntoTheListing(t *testing.T) {
 	if !ok {
 		t.Fatal("provider.api_key_env is not a setting")
 	}
-	reading := configReadingOf(cfg, s)
-	if reading.Value != "SHHH_TEST_LIST_VAR" || reading.Source != "file" {
+	reading := configReadingOf(cfg, config.Project{}, s)
+	if reading.Value != "SHHH_TEST_LIST_VAR" || reading.Source != "user" {
 		t.Fatalf("the reading does not name the variable the file set: %+v", reading)
 	}
 	if reading.EnvSet == nil || !*reading.EnvSet {
@@ -253,7 +253,7 @@ func TestConfigReading_AVariableCarriesItsStateIntoTheListing(t *testing.T) {
 		t.Fatalf("the row does not print the state, got %q", got)
 	}
 
-	unnamed := configReadingOf(cfg, mustLookup(t, "provider.model"))
+	unnamed := configReadingOf(cfg, config.Project{}, mustLookup(t, "provider.model"))
 	if unnamed.EnvSet != nil {
 		t.Fatalf("a key naming no variable claims one is missing: %+v", unnamed)
 	}

@@ -85,6 +85,15 @@ type Info struct {
 	// project from two.
 	Root        string
 	RootDisplay string
+	// ConfigFile is the checkout's own settings file where one was read over
+	// the user's, stated from Root the way ContextFiles are. Empty is a
+	// session running on the user's settings alone — the checkout has none,
+	// or has not been trusted to be read.
+	//
+	// Like Sibling it is filled in by whoever loaded it rather than found
+	// here: whether that file was read is a question about trust and about
+	// the person's own file, and neither is visible from the tree.
+	ConfigFile string
 	// Sibling is when another session already open in this checkout started,
 	// and zero when there is none. It is the one thing here the survey
 	// cannot find out for itself — nothing in the filesystem says who else

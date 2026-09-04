@@ -2,8 +2,9 @@ package project
 
 // What a checkout is allowed to make a session load. A clone arrives with
 // files that name skills to activate, personas to spawn, check commands to
-// run and servers to start, and every one of them is somebody else's writing
-// executing as the person who cloned it. So none of them load until that
+// run, servers to start and settings that say which commands run without
+// asking, and every one of them is somebody else's writing executing as the
+// person who cloned it. So none of them load until that
 // person has said so, once, for the whole checkout — and what they said so
 // about is the checkout as it stood, so an edit to any of those files asks
 // again. See
@@ -32,11 +33,12 @@ import (
 type Kind string
 
 const (
-	KindSkills  Kind = "skills"
-	KindAgents  Kind = "agent profiles"
-	KindGate    Kind = "quality suites"
-	KindHooks   Kind = "hooks"
-	KindServers Kind = "MCP servers"
+	KindSkills   Kind = "skills"
+	KindAgents   Kind = "agent profiles"
+	KindGate     Kind = "quality suites"
+	KindHooks    Kind = "hooks"
+	KindServers  Kind = "MCP servers"
+	KindSettings Kind = "settings"
 )
 
 // resource is one kind and the paths, relative to the root, it is read from.
@@ -57,6 +59,7 @@ var resources = []resource{
 	{KindGate, []string{".shhh/quality.json"}},
 	{KindHooks, []string{".shhh/hooks.json"}},
 	{KindServers, []string{".shhh/mcp.json", ".mcp.json"}},
+	{KindSettings, []string{ConfigFile}},
 }
 
 // Store is where the answer is kept: outside the checkout, because a file in

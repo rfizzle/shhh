@@ -124,7 +124,7 @@ func resolveProvider(ctx context.Context, cfg config.Config, req providerRequest
 		return nil, req, err
 	}
 	if choice.Save {
-		saveProviderChoice(next)
+		saveProviderChoice(ProjectConfigFrom(ctx), next)
 	}
 	return p, next, nil
 }
@@ -159,7 +159,7 @@ func askProvider(survey resolve.Survey) (ui.ProviderChoice, bool) {
 // that fails is reported and nothing else: the session was already started on
 // the choice, and refusing to run because the preference could not be saved
 // would be the wrong trade.
-func saveProviderChoice(req providerRequest) {
+func saveProviderChoice(proj config.Project, req providerRequest) {
 	edits := []config.Edit{{Key: "provider.default", Value: req.Provider}}
 	// The name is written where the key is already exported under one, and
 	// the key itself only where it is not: the file that names a variable is
@@ -184,11 +184,15 @@ func saveProviderChoice(req providerRequest) {
 	if req.Model != "" {
 		edits = append(edits, config.Edit{Key: "provider.model", Value: req.Model})
 	}
-	if err := writeConfigEdits(config.WritePath(), edits...); err != nil {
+	note, err := writeConfigEdits(proj, config.WritePath(), edits...)
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "shhh: could not save the provider to %s: %v\n", config.WritePath(), err)
 		return
 	}
 	fmt.Fprintf(os.Stderr, "shhh: saved the provider to %s\n", config.WritePath())
+	if note != "" {
+		fmt.Fprintf(os.Stderr, "shhh: %s\n", note)
+	}
 	if suggest != "" {
 		// One line, and it says where the key went before it says what to do
 		// instead: the person pasted a key thirty seconds ago, and the fact

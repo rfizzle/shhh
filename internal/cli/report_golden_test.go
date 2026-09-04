@@ -343,19 +343,29 @@ func TestReport_NoColorIsByteIdenticalToAPipe(t *testing.T) {
 	}
 }
 
-// goldenConfig is one table of the file answered three ways: a key the file
-// set, a key an environment variable outranks it on, and the rest standing at
-// their defaults. Every source the listing can print is therefore in the
-// fixture.
+// goldenProject is a checkout carrying one setting of its own, so the
+// fixture covers the source a repository's file supplies.
+func goldenProject() config.Project {
+	return config.Project{
+		Path: "/repo/.shhh/config.toml", Display: ".shhh/config.toml",
+		Keys: []string{"provider.default"},
+	}
+}
+
+// goldenConfig is one table of the file answered four ways: a key the
+// checkout set, a key the person's own file set, a key an environment
+// variable outranks both on, and the rest standing at their defaults. Every
+// source the listing can print is therefore in the fixture.
 func goldenConfig() []configReading {
 	var cfg config.Config
+	cfg.Provider.Default = "anthropic"
 	cfg.Provider.Model = "gpt-4o"
 	var out []configReading
 	for _, s := range configEntries(cfg) {
 		if s.Group() != "provider" {
 			continue
 		}
-		reading := configReadingOf(cfg, s)
+		reading := configReadingOf(cfg, goldenProject(), s)
 		if s.Key == "provider.reasoning" {
 			reading.Value, reading.Source, reading.Set = "high", s.Env, true
 		}
@@ -365,7 +375,8 @@ func goldenConfig() []configReading {
 }
 
 func goldenConfigList() report.Report {
-	return configListReport(goldenConfig(), "provider", "~/.config/shhh/config.toml")
+	return configListReport(goldenConfig(), "provider",
+		configListSubject("~/.config/shhh/config.toml", goldenProject()))
 }
 
 func goldenConfigGet() report.Report {

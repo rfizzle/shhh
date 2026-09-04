@@ -171,7 +171,7 @@ func TestSaveProviderChoice_NamesTheVariableThatAlreadyHoldsTheKey(t *testing.T)
 	t.Setenv("ANTHROPIC_API_KEY", "sk-ant-the-one-key")
 
 	done := captureStderr(t)
-	saveProviderChoice(providerRequest{Provider: "anthropic", APIKey: "sk-ant-the-one-key"})
+	saveProviderChoice(config.Project{}, providerRequest{Provider: "anthropic", APIKey: "sk-ant-the-one-key"})
 	said := done()
 
 	written := readConfigFile(t)
@@ -198,7 +198,7 @@ func TestSaveProviderChoice_WritesTheKeyAndSaysWhereItWent(t *testing.T) {
 	t.Setenv("ANTHROPIC_API_KEY", "")
 
 	done := captureStderr(t)
-	saveProviderChoice(providerRequest{Provider: "anthropic", APIKey: "sk-ant-nowhere-else"})
+	saveProviderChoice(config.Project{}, providerRequest{Provider: "anthropic", APIKey: "sk-ant-nowhere-else"})
 	said := done()
 
 	written := readConfigFile(t)

@@ -79,12 +79,12 @@ func TestDoctorBinary(t *testing.T) {
 func TestDoctorConfig(t *testing.T) {
 	read := doctorConfig("/home/u/.config/shhh/config.toml", nil, config.Config{
 		Provider: config.ProviderConfig{Default: "anthropic", Model: "claude-opus-5"},
-	}, nil)
+	}, config.Project{}, nil)
 	if read.State != components.DoctorPassed || !strings.Contains(read.Detail, "2 settings set") {
 		t.Fatalf("a config file that was read does not say what it set: %+v", read)
 	}
 
-	none := doctorConfig("", []string{"/home/u/.config/shhh/config.toml"}, config.Config{}, nil)
+	none := doctorConfig("", []string{"/home/u/.config/shhh/config.toml"}, config.Config{}, config.Project{}, nil)
 	if none.State != components.DoctorSkipped {
 		t.Fatalf("no config file was reported as a fault: %+v", none)
 	}
@@ -100,7 +100,7 @@ func TestDoctorConfig_RefusedFile(t *testing.T) {
 		Path: "/home/u/.config/shhh/config.toml",
 		Keys: []config.UnknownKey{{Key: "behaviour", Nearest: "behavior"}},
 	}
-	f := doctorConfig("/home/u/.config/shhh/config.toml", nil, config.Config{}, err)
+	f := doctorConfig("/home/u/.config/shhh/config.toml", nil, config.Config{}, config.Project{}, err)
 	if f.State != components.DoctorFailed || f.Outcome != "refused" {
 		t.Fatalf("a file that would not load passed: %+v", f)
 	}
@@ -111,7 +111,7 @@ func TestDoctorConfig_RefusedFile(t *testing.T) {
 		t.Fatalf("the fix does not offer the nearest key: %+v", f)
 	}
 
-	two := doctorConfig("/home/u/.config/shhh/config.toml", nil, config.Config{}, &config.UnknownKeyError{
+	two := doctorConfig("/home/u/.config/shhh/config.toml", nil, config.Config{}, config.Project{}, &config.UnknownKeyError{
 		Path: "/home/u/.config/shhh/config.toml",
 		Keys: []config.UnknownKey{{Key: "behaviour", Nearest: "behavior"}, {Key: "top"}},
 	})
@@ -119,7 +119,7 @@ func TestDoctorConfig_RefusedFile(t *testing.T) {
 		t.Fatalf("two keys are not two fix lines under one detail: %+v", two)
 	}
 
-	parse := doctorConfig("/home/u/.config/shhh/config.toml", nil, config.Config{},
+	parse := doctorConfig("/home/u/.config/shhh/config.toml", nil, config.Config{}, config.Project{},
 		errors.New("toml: line 1: expected '.' or ']'"))
 	if parse.State != components.DoctorFailed || !strings.Contains(parse.Detail, "line 1") {
 		t.Fatalf("a parse failure is not carried on the row: %+v", parse)
@@ -890,7 +890,7 @@ func TestDoctorConfig_WarnsOnAKeyTheFileHolds(t *testing.T) {
 	t.Setenv("SHHH_PROVIDER", "")
 	held := doctorConfig("/home/u/.config/shhh/config.toml", nil, config.Config{
 		Provider: config.ProviderConfig{Default: "anthropic", APIKey: "sk-ant-in-the-file"},
-	}, nil)
+	}, config.Project{}, nil)
 	if held.State != components.DoctorWarned || held.Outcome != "key in the file" {
 		t.Fatalf("a file holding a key passed: %+v", held)
 	}
@@ -910,14 +910,14 @@ func TestDoctorConfig_WarnsOnAKeyTheFileHolds(t *testing.T) {
 
 	named := doctorConfig("/home/u/.config/shhh/config.toml", nil, config.Config{
 		Provider: config.ProviderConfig{Default: "anthropic", APIKeyEnv: "ANTHROPIC_API_KEY"},
-	}, nil)
+	}, config.Project{}, nil)
 	if named.State != components.DoctorPassed || named.Outcome != "ok" {
 		t.Fatalf("a file that names a variable was warned about: %+v", named)
 	}
 
 	search := doctorConfig("/home/u/.config/shhh/config.toml", nil, config.Config{
 		Web: config.WebConfig{SearchAPIKey: "brave-in-the-file"},
-	}, nil)
+	}, config.Project{}, nil)
 	if search.State != components.DoctorWarned || !strings.Contains(search.Detail, "web.search_api_key") {
 		t.Fatalf("the second credential is not warned about the same way: %+v", search)
 	}
@@ -931,7 +931,7 @@ func TestDoctorConfig_TwoHeldKeysAreOneRowThatReads(t *testing.T) {
 	both := doctorConfig("/home/u/.config/shhh/config.toml", nil, config.Config{
 		Provider: config.ProviderConfig{Default: "anthropic", APIKey: "sk-ant-one"},
 		Web:      config.WebConfig{SearchAPIKey: "brave-two"},
-	}, nil)
+	}, config.Project{}, nil)
 	if !strings.Contains(both.Detail, "provider.api_key and web.search_api_key hold the key itself") {
 		t.Fatalf("two keys do not read as two: %+v", both)
 	}

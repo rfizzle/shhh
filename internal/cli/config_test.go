@@ -32,7 +32,7 @@ func TestConfigRows_SourceStatesWhereTheValueCameFrom(t *testing.T) {
 	var base config.Config
 	base.Provider.Default = "openai"
 
-	rows := configRows(base, base)
+	rows := configRows(base, base, config.Project{})
 	if got := rowFor(rows, "provider.default").Source; got != "user" {
 		t.Fatalf("a value the file set reads as user, got %q", got)
 	}
@@ -42,7 +42,7 @@ func TestConfigRows_SourceStatesWhereTheValueCameFrom(t *testing.T) {
 
 	staged := base
 	staged.Behavior.Shell = "/bin/zsh"
-	rows = configRows(staged, base)
+	rows = configRows(staged, base, config.Project{})
 	if got := rowFor(rows, "behavior.shell").Source; got != "unwritten" {
 		t.Fatalf("a staged edit says it is not in the file yet, got %q", got)
 	}
@@ -52,7 +52,7 @@ func TestConfigRows_SourceStatesWhereTheValueCameFrom(t *testing.T) {
 // empty column: the default is the answer to "why is this on".
 func TestConfigRows_UnsetRowsShowTheirDefault(t *testing.T) {
 	var cfg config.Config
-	rows := configRows(cfg, cfg)
+	rows := configRows(cfg, cfg, config.Project{})
 	for _, row := range rows {
 		if row.Value == "" {
 			t.Fatalf("%s renders nothing when it is unset", row.Key)
@@ -80,7 +80,7 @@ func TestConfigRows_ModeGlyphMatchesTheCockpit(t *testing.T) {
 	} {
 		var cfg config.Config
 		cfg.Behavior.DefaultMode = tc.mode
-		row := rowFor(configRows(cfg, cfg), "behavior.default_mode")
+		row := rowFor(configRows(cfg, cfg, config.Project{}), "behavior.default_mode")
 		if !strings.HasPrefix(row.Value, tc.glyph+" ") {
 			t.Errorf("%s renders as %q, want the %s glyph", tc.mode, row.Value, tc.glyph)
 		}
@@ -98,7 +98,7 @@ func TestConfigRows_ModeGlyphMatchesTheCockpit(t *testing.T) {
 func TestConfigRows_AnUnreadableModeSaysSo(t *testing.T) {
 	var cfg config.Config
 	cfg.Behavior.DefaultMode = "yolo"
-	row := rowFor(configRows(cfg, cfg), "behavior.default_mode")
+	row := rowFor(configRows(cfg, cfg, config.Project{}), "behavior.default_mode")
 	if row.ValueTone != components.ToneRisk || !strings.Contains(row.Detail, "not a mode") {
 		t.Fatalf("an unreadable mode states the problem: %+v", row)
 	}
@@ -109,7 +109,7 @@ func TestConfigRows_AnUnreadableModeSaysSo(t *testing.T) {
 func TestConfigRows_TheKeyIsMasked(t *testing.T) {
 	var cfg config.Config
 	cfg.Provider.APIKey = "sk-live-0000-4f9c"
-	row := rowFor(configRows(cfg, cfg), "provider.api_key")
+	row := rowFor(configRows(cfg, cfg, config.Project{}), "provider.api_key")
 	if !row.Secret {
 		t.Fatal("the api key row is a secret")
 	}
@@ -124,7 +124,7 @@ func TestConfigRows_TheKeyIsMasked(t *testing.T) {
 func TestConfigModel_StagesUntilWrite(t *testing.T) {
 	var cfg config.Config
 	cfg.Provider.Default = "openai"
-	m := newConfigModel(cfg)
+	m := newConfigModel(cfg, config.Project{})
 	if m.screen.Changed != 0 {
 		t.Fatalf("a freshly loaded config has nothing standing against it, got %d", m.screen.Changed)
 	}
@@ -149,7 +149,7 @@ func TestConfigModel_StagesUntilWrite(t *testing.T) {
 func TestConfigModel_ResetClearsOneKey(t *testing.T) {
 	var cfg config.Config
 	cfg.Behavior.Shell = "/bin/zsh"
-	m := newConfigModel(cfg)
+	m := newConfigModel(cfg, config.Project{})
 	m.apply(components.ConfigChange{Key: "behavior.shell", Reset: true})
 	if m.cfg.Behavior.Shell != "" {
 		t.Fatalf("reset clears the key, got %q", m.cfg.Behavior.Shell)
@@ -162,7 +162,7 @@ func TestConfigModel_ResetClearsOneKey(t *testing.T) {
 // A key the config package does not know is reported on the screen rather
 // than dropped silently.
 func TestConfigModel_AnUnknownKeyIsReported(t *testing.T) {
-	m := newConfigModel(config.Config{})
+	m := newConfigModel(config.Config{}, config.Project{})
 	m.apply(components.ConfigChange{Key: "behavior.nonsense", Value: "1"})
 	if !strings.Contains(m.screen.Notice, "unknown config key") {
 		t.Fatalf("the screen says what went wrong: %q", m.screen.Notice)
@@ -171,7 +171,7 @@ func TestConfigModel_AnUnknownKeyIsReported(t *testing.T) {
 
 // Leaving without writing quits and saves nothing.
 func TestConfigModel_EscWritesNothing(t *testing.T) {
-	m := newConfigModel(config.Config{})
+	m := newConfigModel(config.Config{}, config.Project{})
 	m.apply(components.ConfigChange{Key: "behavior.shell", Value: "/bin/zsh"})
 	next, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	if cmd == nil {
@@ -186,7 +186,7 @@ func TestConfigModel_EscWritesNothing(t *testing.T) {
 // nothing is set — the screen is where a reader finds out what this machine
 // actually does, and /help can only name the defaults.
 func TestConfigRows_PasteThresholdsStateTheirDefault(t *testing.T) {
-	rows := configRows(config.Config{}, config.Config{})
+	rows := configRows(config.Config{}, config.Config{}, config.Project{})
 	lines := rowFor(rows, "appearance.paste_lines")
 	if lines.Value != "10 lines" || lines.Source != "default" {
 		t.Fatalf("unset paste_lines row = %q/%q, want the default", lines.Value, lines.Source)
@@ -200,7 +200,7 @@ func TestConfigRows_PasteThresholdsStateTheirDefault(t *testing.T) {
 	// answer it is rather than as "-1".
 	var off config.Config
 	off.Appearance.PasteLines = -1
-	row := rowFor(configRows(off, config.Config{}), "appearance.paste_lines")
+	row := rowFor(configRows(off, config.Config{}, config.Project{}), "appearance.paste_lines")
 	if !strings.Contains(row.Value, "never") {
 		t.Fatalf("a negative paste_lines reads %q, want it stated in words", row.Value)
 	}
@@ -210,7 +210,7 @@ func TestConfigRows_PasteThresholdsStateTheirDefault(t *testing.T) {
 // built-in value that stands while nothing is set — the screen is where a
 // reader finds out what this machine actually does.
 func TestConfigRows_SteeringKeysStateTheirDefaults(t *testing.T) {
-	rows := configRows(config.Config{}, config.Config{})
+	rows := configRows(config.Config{}, config.Config{}, config.Project{})
 	for key, want := range map[string]string{
 		"behavior.check_in_interval_rounds":    strconv.Itoa(agent.DefaultCheckInInterval) + " rounds",
 		"behavior.check_in_max_doublings":      strconv.Itoa(agent.DefaultCheckInDoublings) + " doublings",
@@ -232,7 +232,7 @@ func TestConfigRows_SteeringKeysStateTheirDefaults(t *testing.T) {
 	var off config.Config
 	off.Behavior.CheckInMaxDoublings = -1
 	off.Summary.SteerTargetChars = -1
-	rows = configRows(off, config.Config{})
+	rows = configRows(off, config.Config{}, config.Project{})
 	if got := rowFor(rows, "behavior.check_in_max_doublings").Value; !strings.Contains(got, "never") {
 		t.Errorf("a negative widening reads %q, want it stated in words", got)
 	}
@@ -289,7 +289,7 @@ func TestCheckConfigValue_RefusesAWordOutsideItsKeysVocabulary(t *testing.T) {
 // The screen refuses the same word `config set` does, on the row rather than
 // after the write, so nothing is staged that the file would not take.
 func TestConfigModel_AModeOutsideTheFourIsRefused(t *testing.T) {
-	m := newConfigModel(config.Config{})
+	m := newConfigModel(config.Config{}, config.Project{})
 	m.apply(components.ConfigChange{Key: "behavior.default_mode", Value: "yolo"})
 	if !strings.Contains(m.screen.Notice, "yolo") {
 		t.Fatalf("the screen says what was wrong: %q", m.screen.Notice)
@@ -309,7 +309,7 @@ func TestConfigRows_TheRoleModelsAreListed(t *testing.T) {
 		"reviewer":      {Model: "claude-haiku-4-5"},
 		"archaeologist": {Model: "tiny"},
 	}
-	rows := configRows(cfg, config.Config{})
+	rows := configRows(cfg, config.Config{}, config.Project{})
 	for _, key := range []string{
 		"agents.profiles.researcher.model",
 		"agents.profiles.writer.model",
@@ -335,14 +335,14 @@ func TestConfigRows_TheRoleModelsAreListed(t *testing.T) {
 // that stands while nothing is set — the screen is where a reader finds out
 // what this machine actually does.
 func TestConfigRows_TheCacheLifetimeStatesItsDefault(t *testing.T) {
-	row := rowFor(configRows(config.Config{}, config.Config{}), "provider.cache_ttl")
+	row := rowFor(configRows(config.Config{}, config.Config{}, config.Project{}), "provider.cache_ttl")
 	if row.Value != string(provider.DefaultCacheTTL) || row.Source != "default" {
 		t.Fatalf("unset cache_ttl row = %q/%q, want the default", row.Value, row.Source)
 	}
 
 	var set config.Config
 	set.Provider.CacheTTL = "5m"
-	if got := rowFor(configRows(set, config.Config{}), "provider.cache_ttl").Value; got != "5m" {
+	if got := rowFor(configRows(set, config.Config{}, config.Project{}), "provider.cache_ttl").Value; got != "5m" {
 		t.Errorf("a set cache_ttl reads back as %q", got)
 	}
 }
@@ -351,14 +351,14 @@ func TestConfigRows_TheCacheLifetimeStatesItsDefault(t *testing.T) {
 // the reader who wants a narrower rail has to be able to see that the wider
 // one they are looking at was nobody's choice.
 func TestConfigRows_TheRailWidthStatesTheLadder(t *testing.T) {
-	row := rowFor(configRows(config.Config{}, config.Config{}), "appearance.rail_width")
+	row := rowFor(configRows(config.Config{}, config.Config{}, config.Project{}), "appearance.rail_width")
 	if row.Value != components.RailWidthAuto || row.Source != "default" {
 		t.Fatalf("unset rail_width row = %q/%q, want the ladder", row.Value, row.Source)
 	}
 
 	var set config.Config
 	set.Appearance.RailWidth = "60"
-	if got := rowFor(configRows(set, config.Config{}), "appearance.rail_width").Value; got != "60" {
+	if got := rowFor(configRows(set, config.Config{}, config.Project{}), "appearance.rail_width").Value; got != "60" {
 		t.Errorf("a set rail_width reads back as %q", got)
 	}
 }
@@ -366,14 +366,14 @@ func TestConfigRows_TheRailWidthStatesTheLadder(t *testing.T) {
 // The backlog run's commit row states its default rather than reading as
 // unset, because unset is on and only false is a fact worth showing as set.
 func TestConfigRows_TheBacklogCommitStatesItsDefault(t *testing.T) {
-	row := rowFor(configRows(config.Config{}, config.Config{}), "todo.commit")
+	row := rowFor(configRows(config.Config{}, config.Config{}, config.Project{}), "todo.commit")
 	if row.Value != "on" || row.Source != "default" {
 		t.Fatalf("unset todo.commit row = %q/%q, want the default", row.Value, row.Source)
 	}
 	var off config.Config
 	no := false
 	off.Todo.Commit = &no
-	if got := rowFor(configRows(off, config.Config{}), "todo.commit").Value; got != "false" {
+	if got := rowFor(configRows(off, config.Config{}, config.Project{}), "todo.commit").Value; got != "false" {
 		t.Errorf("todo.commit = false reads back as %q", got)
 	}
 }
@@ -382,14 +382,14 @@ func TestConfigRows_TheBacklogCommitStatesItsDefault(t *testing.T) {
 // a bound of none back in words: zero is an answer on this key, and a row
 // that showed it as "0 attempts" would read as an empty field.
 func TestConfigRows_TheRetryBoundStatesItsDefault(t *testing.T) {
-	row := rowFor(configRows(config.Config{}, config.Config{}), "behavior.provider_retries")
+	row := rowFor(configRows(config.Config{}, config.Config{}, config.Project{}), "behavior.provider_retries")
 	if want := strconv.Itoa(agent.MaxRetryAttempts) + " attempts"; row.Value != want || row.Source != "default" {
 		t.Fatalf("unset provider_retries row = %q/%q, want %q/default", row.Value, row.Source, want)
 	}
 	var off config.Config
 	none := 0
 	off.Behavior.ProviderRetries = &none
-	if got := rowFor(configRows(off, config.Config{}), "behavior.provider_retries").Value; !strings.Contains(got, "none") {
+	if got := rowFor(configRows(off, config.Config{}, config.Project{}), "behavior.provider_retries").Value; !strings.Contains(got, "none") {
 		t.Errorf("a bound of none reads %q, want it stated in words", got)
 	}
 }
@@ -400,7 +400,7 @@ func TestConfigRows_TheRetryBoundStatesItsDefault(t *testing.T) {
 func TestConfigModel_AStagedRoleModelIsUnwritten(t *testing.T) {
 	var loaded config.Config
 	loaded.Agents.Profiles = map[string]config.AgentProfile{"reviewer": {Model: "haiku"}}
-	m := newConfigModel(loaded)
+	m := newConfigModel(loaded, config.Project{})
 	m.apply(components.ConfigChange{Key: "agents.profiles.reviewer.model", Value: "opus"})
 
 	row := rowFor(m.screen.Rows, "agents.profiles.reviewer.model")
@@ -421,7 +421,7 @@ func TestConfigRows_AVariableRowShowsTheNameAndItsState(t *testing.T) {
 	t.Setenv("SHHH_TEST_ROW_VAR", "sk-exported")
 	var cfg config.Config
 	cfg.Provider.APIKeyEnv = "SHHH_TEST_ROW_VAR"
-	row := rowFor(configRows(cfg, cfg), "provider.api_key_env")
+	row := rowFor(configRows(cfg, cfg, config.Project{}), "provider.api_key_env")
 	if row.Value != "SHHH_TEST_ROW_VAR" {
 		t.Fatalf("the row does not show the variable name, got %q", row.Value)
 	}
@@ -433,7 +433,7 @@ func TestConfigRows_AVariableRowShowsTheNameAndItsState(t *testing.T) {
 	}
 
 	cfg.Provider.APIKeyEnv = "SHHH_TEST_ROW_VAR_NOBODY_EXPORTED"
-	row = rowFor(configRows(cfg, cfg), "provider.api_key_env")
+	row = rowFor(configRows(cfg, cfg, config.Project{}), "provider.api_key_env")
 	if row.Detail != "not set in the environment" {
 		t.Fatalf("a variable nobody exported reads as present, got %q", row.Detail)
 	}
@@ -444,7 +444,7 @@ func TestConfigRows_AVariableRowShowsTheNameAndItsState(t *testing.T) {
 func TestConfigRows_AHeldKeySaysWhatHoldingItCosts(t *testing.T) {
 	var cfg config.Config
 	cfg.Provider.APIKey = "sk-in-the-file-1234"
-	row := rowFor(configRows(cfg, cfg), "provider.api_key")
+	row := rowFor(configRows(cfg, cfg, config.Project{}), "provider.api_key")
 	if row.Value != components.MaskSecret("sk-in-the-file-1234") {
 		t.Fatalf("the row is not the mask and only the mask, got %q", row.Value)
 	}

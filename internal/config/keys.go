@@ -15,7 +15,7 @@ import (
 // tails — and meanwhile the person reads `[behaviour]` in their own file and
 // cannot see why it is not in effect. That is the one failure the whole
 // arrangement exists to prevent
-// (docs/capabilities/configuration.md#one-file-one-format-one-resolution-order).
+// (docs/capabilities/configuration.md#two-files-one-resolution-order).
 type UnknownKeyError struct {
 	Path string
 	Keys []UnknownKey

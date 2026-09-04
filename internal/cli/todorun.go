@@ -100,10 +100,7 @@ func todoRunHeadless(cmd *cobra.Command, slug string, flags todoRunFlags) error 
 	case flags.max < 0:
 		return fmt.Errorf("--max %d: a sprint works whole items", flags.max)
 	}
-	cfg, err := config.Load()
-	if err != nil {
-		return err
-	}
+	cfg := ConfigFrom(cmd.Context())
 	d, err := newTodoDriver(cmd.OutOrStdout(), todo.Root(todoCwd()), cfg, flags.noCommit)
 	if err != nil {
 		return err

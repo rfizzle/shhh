@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"slices"
@@ -12,6 +13,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
+	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/subagent"
@@ -27,11 +29,8 @@ func newConfigCmd() *cobra.Command {
 			"and where it came from, `config get <key>` prints one, and `config set <key> <value>` changes one " +
 			"without opening the screen.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := config.Load()
-			if err != nil {
-				return err
-			}
-			p := newProgram(newConfigModel(cfg))
+			cfg := ConfigFrom(cmd.Context())
+			p := newProgram(newConfigModel(cfg, ProjectConfigFrom(cmd.Context())))
 			finalModel, err := p.Run()
 			if err != nil {
 				return err
@@ -41,7 +40,11 @@ func newConfigCmd() *cobra.Command {
 				return result.err
 			}
 			if result.saved {
-				_ = report.Fprintln(cmd.OutOrStderr(), report.Done("wrote", config.WritePath()))
+				wrote := report.Done("wrote", config.WritePath())
+				if result.note != "" {
+					wrote.Body = []string{result.note}
+				}
+				_ = report.Fprintln(cmd.OutOrStderr(), wrote)
 			}
 			return nil
 		},
@@ -52,32 +55,136 @@ func newConfigCmd() *cobra.Command {
 }
 
 func newConfigSetCmd() *cobra.Command {
-	return &cobra.Command{
+	var toProject bool
+	cmd := &cobra.Command{
 		Use:   "set <key> <value>",
 		Short: "Set a config value",
-		Long:  "Set a configuration key. Example: shhh config set provider.default openai",
-		Args:  cobra.ExactArgs(2),
+		Long: "Set a configuration key. Example: shhh config set provider.default openai\n" +
+			"`--project` writes the checkout's own file instead of yours, for what is true of the repository rather than of you.",
+		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := writeConfigEdits(config.WritePath(), config.Edit{Key: args[0], Value: args[1]}); err != nil {
+			edit := config.Edit{Key: args[0], Value: args[1]}
+			if toProject {
+				path, err := projectWritePath(edit.Key, workingDir())
+				if err != nil {
+					return err
+				}
+				if _, err := writeConfigEdits(config.Project{}, path, edit); err != nil {
+					return err
+				}
+				// Named from the checkout rather than absolutely: the file is
+				// always this path inside whatever repository the reader is
+				// standing in, and the absolute form is the half that clips.
+				wrote := report.Done("set", edit.Key+" = "+edit.Value+" in "+project.ConfigFile)
+				wrote.Body = []string{projectTrustNote()}
+				return report.Fprintln(cmd.OutOrStdout(), wrote)
+			}
+			note, err := writeConfigEdits(ProjectConfigFrom(cmd.Context()), config.WritePath(), edit)
+			if err != nil {
 				return err
 			}
-			return report.Fprintln(cmd.OutOrStdout(), report.Done("set", args[0]+" = "+args[1]))
+			done := report.Done("set", edit.Key+" = "+edit.Value)
+			if note != "" {
+				done.Body = []string{note}
+			}
+			return report.Fprintln(cmd.OutOrStdout(), done)
 		},
 	}
+	cmd.Flags().BoolVar(&toProject, "project", false,
+		"write this checkout's "+project.ConfigFile+" rather than your own file")
+	return cmd
 }
 
-// writeConfigEdits is the one door onto the config file from this command
-// and every surface it wires: each value is judged before any of it is
-// written, so a file is never left holding half an edit that the next key
-// turned out to fail on
+// projectTrustNote is what a write to the checkout's file has to add about
+// whether that file is being read at all. Editing any file the checkout
+// declares is a change the person has not answered for, so a write made
+// through shhh takes the checkout's own settings out of the next session
+// until they answer again — and a confirmation that did not say so would
+// leave them reading a value that is written down and not in force.
+func projectTrustNote() string {
+	if projectTrust().Allows() {
+		return "this checkout changed, so it asks to be trusted again before its settings load — `shhh doctor trust`"
+	}
+	return "this checkout is not trusted, so its settings do not load here — `shhh doctor trust`"
+}
+
+// projectWritePath is the settings file of the checkout dir stands in,
+// refusing a key a checkout may not decide before anything is created: the
+// refusal a write gets is the refusal a load would have given, so nobody
+// writes a file that then stops every command in the repository.
+func projectWritePath(key, dir string) (string, error) {
+	if reason := config.RefusedInProject(key); reason != "" {
+		return "", fmt.Errorf("config key %s is not read from a checkout's file — %s; set it in %s",
+			key, reason, shortPath(config.WritePath()))
+	}
+	if dir == "" {
+		return "", errors.New("there is no working directory here, so there is no checkout to write")
+	}
+	return config.ProjectPath(dir), nil
+}
+
+// workingDir is the directory a checkout is looked for from, and "" where
+// the process cannot say — which finds no checkout rather than answering
+// about somewhere else.
+func workingDir() string {
+	dir, err := os.Getwd()
+	if err != nil {
+		return ""
+	}
+	return dir
+}
+
+// writeConfigEdits is the one door onto a config file from this command and
+// every surface it wires: each value is judged before any of it is written,
+// so a file is never left holding half an edit that the next key turned out
+// to fail on
 // (docs/capabilities/configuration.md#a-value-is-refused-before-it-is-written).
-func writeConfigEdits(path string, edits ...config.Edit) error {
+//
+// The note it answers with is what the checkout's file has to say about the
+// keys just written to the user's: a value that was saved and is not what
+// this directory will use is the one outcome a confirmation must not report
+// as plain success.
+func writeConfigEdits(proj config.Project, path string, edits ...config.Edit) (string, error) {
+	keys := make([]string, 0, len(edits))
 	for _, e := range edits {
 		if err := checkConfigValue(e.Key, e.Value); err != nil {
-			return err
+			return "", err
 		}
+		keys = append(keys, e.Key)
 	}
-	return config.Write(path, edits...)
+	if err := config.Write(path, edits...); err != nil {
+		return "", err
+	}
+	return proj.OverriddenNote(keys...), nil
+}
+
+// loadLayeredConfig is how every command reads the settings in force: the
+// user's file, then the file of the checkout dir stands in over it, where
+// there is one and the person has trusted the checkout to be read at all.
+func loadLayeredConfig(dir string) (config.Config, config.Project, error) {
+	cfg, err := config.Load()
+	if err != nil {
+		return cfg, config.Project{}, err
+	}
+	return layerProjectConfig(cfg, dir)
+}
+
+// layerProjectConfig is the second half of that load, which the doctor makes
+// separately: it reads the files itself, because it is the one command that
+// runs when the first half failed.
+//
+// The stat comes before the trust read so the ordinary repository pays
+// nothing for this. Establishing trust walks and fingerprints everything the
+// checkout declares, and a checkout with no settings file has none to gate.
+func layerProjectConfig(cfg config.Config, dir string) (config.Config, config.Project, error) {
+	if dir == "" {
+		return cfg, config.Project{}, nil
+	}
+	path := config.ProjectFileAt(dir)
+	if path == "" || !projectTrust().Allows() {
+		return cfg, config.Project{}, nil
+	}
+	return config.LayerProject(cfg, path)
 }
 
 // checkConfigValue refuses a key no setting reads and a value that is not
@@ -168,9 +275,16 @@ func wordFromTheTable(s config.Setting) func(string) error {
 // writes is the staged keys alone, each as the value it was staged with, so
 // the file keeps every line the screen did not touch.
 type configModel struct {
-	base  config.Config
-	cfg   config.Config
+	base config.Config
+	cfg  config.Config
+	// proj is what the checkout's own file set, which decides a row's source
+	// field and what a write to the user's file has to say for itself.
+	proj  config.Project
 	saved bool
+	// note is what the checkout's file had to say about the keys just
+	// written, kept until the screen has closed: the screen quits on the
+	// write, so there is no row left to put it on.
+	note  string
 	err   error
 	width int
 	// staged is the value each edited key was given, as typed or picked,
@@ -185,8 +299,8 @@ type configModel struct {
 // said how wide it is — the working width the artboard is drawn at.
 const defaultConfigWidth = 110
 
-func newConfigModel(cfg config.Config) configModel {
-	m := configModel{base: cfg, cfg: cfg, width: defaultConfigWidth, staged: map[string]string{}}
+func newConfigModel(cfg config.Config, proj config.Project) configModel {
+	m := configModel{base: cfg, cfg: cfg, proj: proj, width: defaultConfigWidth, staged: map[string]string{}}
 	m.screen.Path = shortPath(config.WritePath())
 	m.refresh()
 	return m
@@ -209,10 +323,11 @@ func (m configModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		if r, ok := result.(components.ConfigResult); ok && r.Write {
-			if err := writeConfigEdits(config.WritePath(), m.edits()...); err != nil {
+			note, err := writeConfigEdits(m.proj, config.WritePath(), m.edits()...)
+			if err != nil {
 				m.err = err
 			} else {
-				m.saved = true
+				m.saved, m.note = true, note
 			}
 		}
 		return m, tea.Quit
@@ -274,7 +389,7 @@ func (m configModel) edits() []config.Edit {
 // refresh rebuilds every row from the staged config and recounts what is
 // standing against the file.
 func (m *configModel) refresh() {
-	m.screen.Rows = configRows(m.cfg, m.base)
+	m.screen.Rows = configRows(m.cfg, m.base, m.proj)
 	changed := 0
 	for _, s := range configSettings(m.cfg, m.base) {
 		staged, _ := config.Value(m.cfg, s.Key)
@@ -312,7 +427,7 @@ type configSetting struct {
 // one from the loaded file: every row states where its value came from,
 // because "why is this on" is the only question a config screen is ever
 // asked.
-func configRows(cfg, base config.Config) []components.ConfigRow {
+func configRows(cfg, base config.Config, proj config.Project) []components.ConfigRow {
 	settings := configSettings(cfg, base)
 	rows := make([]components.ConfigRow, 0, len(settings))
 	for _, s := range settings {
@@ -334,7 +449,7 @@ func configRows(cfg, base config.Config) []components.ConfigRow {
 			row.Value = raw
 		}
 		loaded, _ := config.Value(base, s.Key)
-		row.Source, row.SourceTone = configSource(raw, loaded)
+		row.Source, row.SourceTone = configSource(raw, loaded, proj.Sets(s.Key))
 		if s.Key == "provider.model" {
 			if n := len(row.Options); n > 0 {
 				row.Source += fmt.Sprintf(" · %d available", n)
@@ -409,14 +524,27 @@ func (s configSetting) answers(cfg config.Config) []components.SelectOption {
 	return nil
 }
 
-// configSource is the right-hand field: where this answer came from. There
-// are three readings and no more, because there are only ever three: nothing
-// is set and the built-in default stands, the loaded file set it, or this
-// session has staged something the file does not have yet.
-func configSource(staged, loaded string) (string, components.FieldTone) {
+// configSource is the right-hand field: where this answer came from.
+// Nothing is set and the built-in default stands; the checkout's own file
+// decided it; the user's file decided it; or this session has staged
+// something no file holds yet.
+//
+// The checkout is read ahead of the default because a key it sets to a value
+// that looks unset — a list emptied, a flag turned off — was still that
+// checkout's decision, and a row reading `default` there would send the
+// reader hunting through their own file for it.
+func configSource(staged, loaded string, fromProject bool) (string, components.FieldTone) {
 	switch {
+	case staged != loaded && fromProject:
+		// Both facts, because they are about to collide: the write goes to
+		// the person's file and the checkout's is what this directory will
+		// keep reading. Saying only "unwritten" would let them press [w] on
+		// a value that saves cleanly and does nothing here.
+		return "unwritten · project", components.ToneOpen
 	case staged != loaded:
 		return "unwritten", components.ToneOpen
+	case fromProject:
+		return "project", components.ToneNeutral
 	case staged == "":
 		return "default", components.ToneNeutral
 	}
@@ -811,8 +939,9 @@ func shortPath(path string) string {
 // default, /model agents, /reasoning, the /ui toggles). It edits the file's
 // text for that key alone, so an edit made elsewhere since the session
 // started is not clobbered by this session's stale copy.
-func configWriter() func(key, value string) error {
+func configWriter(proj config.Project) func(key, value string) error {
 	return func(key, value string) error {
-		return writeConfigEdits(config.WritePath(), config.Edit{Key: key, Value: value})
+		_, err := writeConfigEdits(proj, config.WritePath(), config.Edit{Key: key, Value: value})
+		return err
 	}
 }

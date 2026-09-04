@@ -165,17 +165,18 @@ every mode, with nobody asked first.
 
 A clone arrives with more than code. It can name skills for the model to
 activate, agent profiles carrying their own permission sets, quality suites
-with command text in them, hooks, and MCP servers to start — and every one of
-those runs as whoever cloned it. None of them load until you have said so.
+with command text in them, hooks, MCP servers to start, and settings that say
+which commands run without asking — and every one of those runs as whoever
+cloned it. None of them load until you have said so.
 
 It is one answer about the whole checkout, given once: `shhh doctor trust`,
 `[a]` on the doctor's trust row, or `/trust` in a session. It covers
 `.shhh/skills`, `.agents/skills`, `.claude/skills`, `.shhh/agents`,
-`.shhh/quality.json`, `.shhh/hooks.json`, `.shhh/mcp.json` and `.mcp.json`,
-and what is recorded is those files as they stand — so editing any of them,
-or writing one that was not there, asks again. The answer is kept outside the
-checkout, in the local store, because a file in the checkout is the thing
-being decided about.
+`.shhh/quality.json`, `.shhh/hooks.json`, `.shhh/mcp.json`, `.mcp.json` and
+`.shhh/config.toml`, and what is recorded is those files as they stand — so
+editing any of them, or writing one that was not there, asks again. The
+answer is kept outside the checkout, in the local store, because a file in
+the checkout is the thing being decided about.
 
 Withholding is a diagnostic and never an error. The session starts; it starts
 smaller, and it says so — on the start screen, in `/status`, in a line before

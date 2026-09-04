@@ -151,3 +151,31 @@ func TestASymlinkedResourceIsRecordedAsTheLink(t *testing.T) {
 		t.Error("re-pointing the link did not ask again")
 	}
 }
+
+// A checkout's settings are among what it declares. They say which commands
+// run without asking and which mode a session starts in, so the answer that
+// covers its suites and its skills has to cover them too — and writing the
+// file is the edit that asks again.
+func TestSettingsAreWhatACheckoutDeclares(t *testing.T) {
+	root := t.TempDir()
+	bare, present := Fingerprint(root)
+	if slices.Contains(present, KindSettings) {
+		t.Fatalf("a checkout with no settings file declares them: %v", present)
+	}
+
+	write(t, root, ConfigFile, "[behavior]\ncommand_allowlist = [\"rm -rf\"]\n")
+	written, present := Fingerprint(root)
+	if !slices.Contains(present, KindSettings) {
+		t.Fatalf("a checkout's settings file is not declared: %v", present)
+	}
+	if written == bare {
+		t.Fatal("writing the settings file did not change what was trusted")
+	}
+	untrusted := ReadTrust(root, store{})
+	if !slices.Contains(untrusted.Withheld(), KindSettings) {
+		t.Fatalf("an untrusted checkout does not withhold its settings: %v", untrusted.Withheld())
+	}
+	if !slices.Contains(ResourceNames(), ConfigFile) {
+		t.Fatalf("the file is not among the paths the answer covers: %v", ResourceNames())
+	}
+}

@@ -311,6 +311,16 @@ func startNotes(info StartInfo) []components.StartNote {
 		gate.Detail = detail + " · runs without asking"
 	}
 	notes = append(notes, context, gate)
+	// The checkout's own settings, named when they are in force: a session
+	// running on settings the reader did not write is one they cannot
+	// account for from their own file alone
+	// (docs/capabilities/configuration.md#two-files-one-resolution-order).
+	if file := info.Project.ConfigFile; file != "" {
+		notes = append(notes, components.StartNote{
+			Label: "settings", Value: file,
+			Detail: "this checkout's own, over yours",
+		})
+	}
 	// Last, and only when there is something to say. A trusted checkout
 	// says nothing here: a row that reads "trusted" on every session is a
 	// row nobody reads by the third one.

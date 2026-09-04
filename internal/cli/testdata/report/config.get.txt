@@ -1,6 +1,6 @@
   shhh config get — provider.model
 
-  ✓ gpt-4o  [file]
+  ✓ gpt-4o  [user]
       The model a session runs on.
       Unset it and (the provider's own default) stands.
       --model on the command line, then SHHH_MODEL in the environment, outrank

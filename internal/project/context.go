@@ -19,12 +19,14 @@ import (
 // (docs/capabilities/configuration.md#a-migration-is-a-doctor-check).
 var contextFilenames = []string{filepath.Join(".shhh", "project.md"), "AGENTS.md", "CLAUDE.md"}
 
-// StateDir is the checkout's shhh directory and ContextFile the context
-// file inside it — where `shhh init --project` writes and what a session
-// reads first, relative to the checkout.
+// StateDir is the checkout's shhh directory, ContextFile the context file
+// inside it — where `shhh init --project` writes and what a session reads
+// first — and ConfigFile the settings a checkout keeps beside them, all
+// relative to the checkout.
 const (
 	StateDir    = ".shhh"
 	ContextFile = ".shhh/project.md"
+	ConfigFile  = ".shhh/config.toml"
 )
 
 // Root is the directory a checkout's shhh state belongs to: the enclosing

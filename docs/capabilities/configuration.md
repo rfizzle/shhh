@@ -1,20 +1,75 @@
 # Configuration
 
-## One file, one format, one resolution order
+## Two files, one resolution order
 
 Settings live in a TOML file in the platform's conventional configuration
-directory. Every value resolves most-specific-first: an explicit flag, then
-the environment, then the file, then a default.
+directory, and a checkout may keep a second one of its own at
+`.shhh/config.toml`. Every value resolves most-specific-first: an explicit
+flag, then the environment, then the checkout's file, then yours, then a
+default.
 
-Four keys have all four ranks, and they are the ones a single run is most
+Four keys have the top two ranks, and they are the ones a single run is most
 often started with a different answer to: which provider, which model, its
 key and its reasoning level, all under `[provider]`. The provider's base URL
-has the environment rank and no flag. Every other key is the file or the
+has the environment rank and no flag. Every other key is a file or the
 default — there is no flag and no environment variable for it.
 
 No setting reverses this order. That uniformity is worth more than the
 flexibility of special-casing, because it is what makes a wrong value
-*findable*: a user who can predict where a value came from can fix it.
+*findable*: a user who can predict where a value came from can fix it. Every
+surface that shows a value says which rank it came from, the checkout
+included, for the same reason.
+
+The two files merge key by key rather than one replacing the other. What is
+true of a repository — which commands run without asking, which mode a
+session starts in, which model reviews here — travels with the repository;
+what is true of the person stays in their own file, and a key the checkout
+does not name is left exactly as they wrote it. A whole-file project config
+would make everyone who clones the repository restate their provider and
+their key in it, which is why nobody in the field does that either.
+
+Three keys are the exception, and they extend rather than replace:
+`behavior.command_allowlist`, `behavior.read_only_commands` and
+`behavior.scope_dirs`. A checkout adding a command to the allowlist cannot
+know what is already on the person's list, so replacing would quietly take
+away commands that have nothing to do with this repository — and the symptom
+is a session asking about `ls` again with nothing on screen to say why. The
+checkout's scope directories are resolved against the checkout, so a
+relative path means the same directory in every clone. Every other list is a
+complete answer and overrides like a scalar.
+
+A short set of keys is refused in the checkout's file, whatever the answer
+to trust was. Each is a key whose value in a checkout is a value in every
+clone of it, or one that reaches past the tree onto the machine:
+
+| Key | Why not |
+|---|---|
+| `provider.api_key`, `web.search_api_key` | a credential in a checkout is a credential in every clone of it |
+| `provider.api_key_env`, `web.search_api_key_env` | it would let the checkout choose which of your variables is sent as a key |
+| `secrets.env` | it declares which of your environment variables a session may spend, which is about the machine rather than the tree |
+| `[sandbox]` | it decides what a contained command may reach, which is the containment itself |
+| `[mcp.servers]` | a server is a program to start, and a checkout names its servers in `.shhh/mcp.json` instead |
+| `[prompts]` | it points at a file anywhere on the machine and replaces what a session is told |
+
+Refusing them rather than leaning on trust alone is the second gate: the
+field's other harnesses let a project file set nearly anything, and trust is
+one answer given once, months before the commit that adds a key to that
+file. A refused key stops the load with the reason and the file the key
+belongs in, the way an unknown key does.
+
+The checkout's file is read only where the checkout is trusted. Until then
+it is withheld with the rest of what the checkout declares and named on the
+start screen, in `/status` and in the doctor's trust row, and the session
+runs on the user's file alone.
+
+Writes go to the user's file — `config set`, the config screen's `[w]`, the
+slash commands that save their answer — because that is the file that is
+the person's. `config set --project` writes the checkout's, refusing a key
+from the set above before it creates anything. A write to a key the checkout
+overrides is made and says so: the user's file is read in every other
+checkout, so refusing it would punish them for where they were standing,
+and a confirmation that let them believe the value took effect here is the
+one thing it must not do.
 
 Two keys name a value rather than holding one. `provider.api_key_env` and
 `web.search_api_key_env` are the name of an environment variable, read at
@@ -22,8 +77,8 @@ start and read ahead of the `api_key` and `search_api_key` beside them —
 the same shape MCP headers, `secrets.env` and gateway profiles already take,
 and for their reason: a file that holds a credential is a credential in
 every backup, sync and pasted issue of that file. The two that hold one stay
-for a release and the doctor warns on them. This is not a fifth rank; the
-variable is the answer the file gave, and everything above the file still
+for a release and the doctor warns on them. This is not another rank; the
+variable is the answer that file gave, and everything above it still
 outranks it.
 
 The same reason decides what happens to a key the file names that no setting
@@ -215,12 +270,12 @@ read from the checkout the same way and behind the same gate. The user's
 asks nothing of the project and is read wherever shhh runs.
 
 What a checkout carries layers over what the user has: its agent profiles, its
-MCP servers and its skills, each shadowing the user's by name, and those
-instruction files. Settings are not yet among them — the settings file is the
-user's alone, and a checkout's copy is not read. When they are, a value the
-checkout overrides will be said so by the surface rather than shown as the
-winner alone — otherwise a user reads their own configuration and cannot see
-why it is not what they set.
+MCP servers and its skills, each shadowing the user's by name, those
+instruction files, and its settings, which merge over the user's key by key
+(*Two files, one resolution order*). A value the checkout overrides is said to
+be the checkout's by the surface that shows it rather than shown as the winner
+alone — otherwise a user reads their own configuration and cannot see why it
+is not what they set.
 
 ## The mechanism is code, its wording is configuration
 
@@ -336,7 +391,7 @@ edits.
 The default column is what stands when nothing sets the key — not a literal
 in the file, which is why some of them are sentences. A key whose name is in
 brackets in that column has no value of its own until something else decides
-it. Unless a row says otherwise, a key is the file or the default: there is
+it. Unless a row says otherwise, a key is a file or the default: there is
 no flag and no environment variable for it.
 
 Two tables are not here because a key is the wrong shape for them.

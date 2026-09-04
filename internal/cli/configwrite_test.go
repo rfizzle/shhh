@@ -77,7 +77,7 @@ func TestConfigSet_CreatesTheFileWithOnlyTheKey(t *testing.T) {
 func TestConfigModel_WritesOnlyTheStagedKeys(t *testing.T) {
 	cfg, err := config.LoadFrom(pointConfigAt(t, handWrittenConfig))
 	must(t, err)
-	m := newConfigModel(cfg)
+	m := newConfigModel(cfg, config.Project{})
 	m.apply(components.ConfigChange{Key: "behavior.default_mode", Value: "auto"})
 	m.apply(components.ConfigChange{Key: "appearance.mouse", Reset: true})
 	m.apply(components.ConfigChange{Key: "provider.model", Value: "claude-opus-5"})
@@ -106,7 +106,7 @@ func TestConfigModel_WritesOnlyTheStagedKeys(t *testing.T) {
 func TestSaveProviderChoice_WritesTheChoiceAlone(t *testing.T) {
 	path := pointConfigAt(t, handWrittenConfig)
 	done := captureStderr(t)
-	saveProviderChoice(providerRequest{Provider: "openai", Model: "gpt-5"})
+	saveProviderChoice(config.Project{}, providerRequest{Provider: "openai", Model: "gpt-5"})
 	if msg := done(); !strings.Contains(msg, "saved the provider") {
 		t.Fatalf("stderr = %q", msg)
 	}
@@ -121,7 +121,7 @@ func TestSaveProviderChoice_WritesTheChoiceAlone(t *testing.T) {
 // The writer a session's slash commands share edits one key of the file.
 func TestConfigWriter_EditsOneKey(t *testing.T) {
 	path := pointConfigAt(t, handWrittenConfig)
-	must(t, configWriter()("appearance.mouse", "true"))
+	must(t, configWriter(config.Project{})("appearance.mouse", "true"))
 	got, err := os.ReadFile(path)
 	must(t, err)
 	want := strings.Replace(handWrittenConfig, "mouse = false", "mouse = true", 1)
@@ -197,7 +197,7 @@ func TestConfigSet_RefusesAValueTheKeyCannotHold(t *testing.T) {
 // mode saved from inside a session is one the next session can read.
 func TestConfigWriter_RefusesAModeOutsideTheFour(t *testing.T) {
 	path := pointConfigAt(t, handWrittenConfig)
-	if err := configWriter()("behavior.default_mode", "yolo"); err == nil {
+	if err := configWriter(config.Project{})("behavior.default_mode", "yolo"); err == nil {
 		t.Fatal("the writer refuses a mode that is not one")
 	}
 	got, err := os.ReadFile(path)

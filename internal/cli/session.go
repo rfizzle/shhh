@@ -642,6 +642,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		return err
 	}
 	cfg := env.cfg
+	proj := ProjectConfigFrom(cmd.Context())
 
 	// Permission mode: starting mode and Shift+Tab cycle come from
 	// config; the default is manual (everything prompts).
@@ -785,7 +786,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithSecrets(chat.Secrets{Manage: secretsManager(session.vault), Scrub: session.vault.ScrubMessage}).
 		WithScope(sc).
 		WithMaxToolRounds(maxRoundsFor(cfg, session.maxRounds, session.maxRoundsSet)).
-		WithConfigWriter(configWriter()).
+		WithConfigWriter(configWriter(proj)).
 		WithMouse(cfg.MouseEnabled()).
 		WithPasteThresholds(cfg.Appearance.PasteLines, cfg.Appearance.PasteColumns).
 		WithRailWidth(components.RailWidthOrAuto(cfg.Appearance.RailWidth)).
@@ -794,7 +795,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithDefaults(chat.Defaults{
 			Model:      cfg.Provider.Model,
 			AgentModel: cfg.Agents.Model,
-			Outranked:  resolve.ModelOutranks(*session.flags),
+			Outranked:  outranking(resolve.ModelOutranks(*session.flags), proj, "provider.model"),
 		}).
 		WithApprovalMode(mode, cycle).
 		WithSteering(steering(cfg, env.prompts)).
@@ -804,7 +805,8 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithTitler(titler, cfg.TitlesEnabled()).
 		WithModelSwitcher(env.switchModel).
 		WithReasoning(env.effort, env.switchReasoning).
-		WithReasoningDefault(cfg.Provider.Reasoning, resolve.ReasoningOutranks(*session.flags)).
+		WithReasoningDefault(cfg.Provider.Reasoning,
+			outranking(resolve.ReasoningOutranks(*session.flags), proj, "provider.reasoning")).
 		WithProvider(env.provName, env.replaceKey, env.switchProvider).
 		WithModelOptions(provider.KnownModels(env.prov.Name())).
 		WithModelLister(modelListerFor(env.prov)).
@@ -828,7 +830,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			WithTreeCheck(withSibling(treeCheck(cfg), session.sibling)).
 			// First contact: the empty session's start screen, surveyed
 			// once here rather than assembled per frame.
-			WithStartScreen(buildStartInfo(env.survey, db, gate != nil, chatTrust(db))).
+			WithStartScreen(buildStartInfo(env.survey, db, gate != nil, chatTrust(db), proj)).
 			// The one thing the screen offers that writes: scaffolding the
 			// checkout's own context file, behind a card.
 			WithScaffold(buildScaffold(db, cwd))
@@ -1288,4 +1290,21 @@ func pickSavedChat(db *storage.DB) (string, error) {
 		return "", nil
 	}
 	return m.Result.Item.ID, nil
+}
+
+// outranking is what a session tells a slash command that writes a default:
+// the flag or the environment variable that beats the file, and where
+// neither does, the checkout's own settings file where it decided that key.
+// A default written into the user's file and then overruled reads exactly
+// like one that was never saved, which is how `/model default` came to look
+// broken while writing the file correctly every time — and a checkout's file
+// is the one rank that stays in force after the terminal is closed.
+func outranking(above string, proj config.Project, key string) string {
+	if above != "" {
+		return above
+	}
+	if !proj.Sets(key) {
+		return ""
+	}
+	return proj.Display + " in this checkout sets " + key
 }

@@ -107,10 +107,10 @@ type Setting struct {
 	// Secret marks a value that must never be echoed. The screen masks it and
 	// the listing prints whether it is set rather than what it is.
 	Secret bool
-	// Env is the environment variable that outranks the file for this key,
-	// and Flag the command-line flag that outranks both. Five keys have a
-	// rank above the file and the rest are the file or the default
-	// (docs/capabilities/configuration.md#one-file-one-format-one-resolution-order).
+	// Env is the environment variable that outranks both files for this key,
+	// and Flag the command-line flag that outranks all three. Five keys have
+	// a rank above the files and the rest are a file or the default
+	// (docs/capabilities/configuration.md#two-files-one-resolution-order).
 	Env  string
 	Flag string
 }
