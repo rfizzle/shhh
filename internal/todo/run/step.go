@@ -150,6 +150,13 @@ const (
 	// ReadsQuestions takes the questions the step could not settle, which is
 	// what the gate after it is about.
 	ReadsQuestions
+	// ReadsFindings keeps the whole answer as what the run carries forward
+	// for a later step to read. It has no marker line, because there is no
+	// part of the answer to pick out: a step that gathers rather than
+	// changes anything has produced nothing but what it wrote, and a step
+	// after it that read a summary of that would be reading a summary of a
+	// summary.
+	ReadsFindings
 )
 
 // Has reports the step taking that part of the answer.
@@ -218,6 +225,12 @@ const blockedLineShape = "If you cannot do it as the item asks, answer with one 
 // a short account of what it did, and the block line.
 const summaryShape = "When you are done, answer with a short summary of what you did and anything you departed from and why. " + blockedLineShape
 
+// findingsShape is what a turn whose answer is the record asks for. It says
+// the answer is the whole of it, because a turn that left the work in files
+// nobody named — or in a summary of itself — leaves the steps after it
+// reading nothing.
+const findingsShape = "Answer with what you found, in full and in order, naming the source of every claim. This answer is the whole of what the steps after this one read, so anything left out of it is lost. " + blockedLineShape
+
 // planShape is the numbered plan the steps after a planning turn are built on.
 const planShape = `The plan, in the plan shape (a "## Plan:" heading, then numbered steps with files:/action:/note: lines).`
 
@@ -265,6 +278,9 @@ func (ps PipelineStep) Shape(p todo.Profile, task bool) string {
 // turnShape is a turn's answer: the numbered asks it declared it reads, or a
 // summary where it declared none, and the block line either way.
 func (ps PipelineStep) turnShape(p todo.Profile) string {
+	if ps.Reads.Has(ReadsFindings) {
+		return findingsShape
+	}
 	var asks []string
 	if ps.Reads.Has(ReadsPlan) {
 		asks = append(asks, planShape)

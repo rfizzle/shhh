@@ -188,14 +188,11 @@ func TestBuiltinProfile_AReadingIsWorkedWithoutARepository(t *testing.T) {
 		Fields: map[string]string{"kind": "reading", "depth": "quick"},
 		Body:   "## Acceptance Criteria\n- [ ] say what the sources say\n"}
 
-	// The gathering writes, so a session that tracks nothing is turned away
-	// — and nothing about a repository or a supervisor is asked, because no
-	// step of this run wants either.
-	if ref, refused := p.Refuse(Can{Runner: true}); !refused || ref.Need != NeedChangeset {
-		t.Fatalf("a run that writes was allowed in a session that tracks nothing: %+v", ref)
-	}
-	if _, refused := p.Refuse(Can{Changeset: true, Runner: true}); refused {
-		t.Fatal("a run with no commit and no lanes asked for a repository or a supervisor")
+	// Every step of it reads, so it asks a session for nothing: no record of
+	// what it changed, because it changes nothing; no command runner, no
+	// supervisor and no repository, because no step of this run wants one.
+	if ref, refused := p.Refuse(Can{}); refused {
+		t.Fatalf("a run whose steps only read asked a session for something: %+v", ref)
 	}
 
 	s := Start(it, "sess", "manual", 1, Options{Pipeline: p, Notebook: true})
@@ -209,6 +206,11 @@ func TestBuiltinProfile_AReadingIsWorkedWithoutARepository(t *testing.T) {
 	}
 	if step = s.Observe(it, "gathered it"); step.Stage != "review" {
 		t.Fatalf("after the gathering: %+v", step)
+	}
+	// The gathering is the answer, so it is what the reader is handed —
+	// there is no change to point one at.
+	if task := s.ReviewTask(it, ""); !strings.Contains(task, "gathered it") {
+		t.Fatalf("the reader was not given the gathering:\n%s", task)
 	}
 	if step = s.Observe(it, "verdict: clean"); step.Stage != "file" {
 		t.Fatalf("after the reading: %+v", step)
@@ -285,6 +287,10 @@ func TestLoadProfile_RefusesWhatTheRunnerCannotCarryOut(t *testing.T) {
 		name:  "a run with no finish",
 		table: strings.Replace(oneStep, "\n[[step]]\nname = \"file\"\nkind = \"finish\"\nfinish = \"archive\"\n", "", 1),
 		says:  "no finish step",
+	}, {
+		name:  "a persona on a step with nobody to be one",
+		table: strings.Replace(oneStep, `standards = true`, "standards = true\npersona = \"editor\"", 1),
+		says:  "there is nobody for the persona to be",
 	}} {
 		t.Run(tc.name, func(t *testing.T) {
 			table := tc.table
@@ -455,5 +461,50 @@ func TestLoadProfile_TheDirectorysWordsAreWhatTheRunSends(t *testing.T) {
 	prompt := p.prompt(promptArgs{step: step, item: note()}, nil, todo.BuiltinCode())
 	if !strings.Contains(prompt, "WRITE.") || !strings.Contains(prompt, "STANDARDS.") {
 		t.Fatalf("the run sends words the profile did not write:\n%s", prompt)
+	}
+}
+
+// A step that hands work to a colleague may name one. The name is read off
+// the file like every other word about a step, because a profile whose
+// reader could only be named in Go would be a profile a project cannot
+// write.
+func TestLoadProfile_AnAgentStepNamesItsReader(t *testing.T) {
+	table := oneStep + `
+[[step]]
+name = "read"
+kind = "agent"
+mode = "read"
+persona = "editor"
+`
+	dir := writeProfile(t, table, map[string]string{
+		WordingStandards: "STANDARDS.", "write": "WRITE.", "read": "READ.", "read_task": "READ IT.",
+	})
+	_, pipeline, err := LoadProfile(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	step, ok := pipeline.Step("read")
+	if !ok {
+		t.Fatal("the reading step did not load")
+	}
+	if step.Persona != "editor" {
+		t.Fatalf("the reading step names %q as its reader", step.Persona)
+	}
+}
+
+// The reader of a shipped profile's gathering is named in its file, so a
+// conversation with a colleague of that name sends the work to them and every
+// other session falls back to the role.
+func TestBuiltinProfile_TheReadingStepNamesItsReader(t *testing.T) {
+	_, p, err := BuiltinProfile("research")
+	if err != nil {
+		t.Fatal(err)
+	}
+	step, ok := p.Step("review")
+	if !ok {
+		t.Fatal("the research profile has no reading step")
+	}
+	if step.Persona == "" {
+		t.Fatal("the reading step names no reader, so a conversation cannot send it to one")
 	}
 }

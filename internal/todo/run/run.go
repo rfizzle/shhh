@@ -197,8 +197,10 @@ type State struct {
 
 	// Round counts remediation rounds used.
 	Round int `json:"round"`
-	// Findings is what the last review or verify turned up, for the
-	// remediation prompt and, at the end, for the evidence.
+	// Findings is what the run carries forward for a later step to read:
+	// what the last review or verify turned up, for the remediation prompt
+	// and, at the end, for the evidence — or what a gathering turn found,
+	// where the pipeline says its answer is the record.
 	Findings string `json:"findings"`
 	// Verdict is the word the last review answered with, kept because it is
 	// the review's whole answer and because the surfaces that draw a run
@@ -703,6 +705,9 @@ func (s *State) afterTurn(it todo.Item, ps PipelineStep, text string) Step {
 	if ps.Reads.Has(ReadsQuestions) {
 		s.Questions = questionLines(text)
 	}
+	if ps.Reads.Has(ReadsFindings) {
+		s.Findings = text
+	}
 	if ps.Reads.Has(ReadsPlan) {
 		p := plan.Parse(text)
 		s.Plan = text
@@ -924,14 +929,15 @@ func (s *State) readingStep() (PipelineStep, bool) {
 
 // ReviewTask is the reader child's task: the item, the plan, and the change
 // as the front-end read it, since the child has no commands to read the
-// change with itself.
+// change with itself — and what the run gathered, for a pipeline whose
+// reading is of a turn's findings rather than of a change to the tree.
 func (s *State) ReviewTask(it todo.Item, diff string) string {
 	ps, ok := s.readingStep()
 	if !ok {
 		return ""
 	}
 	return s.Shape().prompt(promptArgs{step: ps, item: it, repo: s.Repo,
-		plan: s.Plan, diff: diff, task: true}, s.Wordings, s.Profile)
+		plan: s.Plan, diff: diff, findings: s.Findings, task: true}, s.Wordings, s.Profile)
 }
 
 // SelfReview is the fallback when no child can be had — the orchestrator

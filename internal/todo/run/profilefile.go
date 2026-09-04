@@ -107,6 +107,7 @@ type stepFile struct {
 	Under     string   `toml:"under"`
 	When      string   `toml:"when"`
 	Solo      string   `toml:"solo"`
+	Persona   string   `toml:"persona"`
 	Finish    string   `toml:"finish"`
 	Command   string   `toml:"command"`
 }
@@ -395,7 +396,7 @@ func (sf stepFile) step(src source, words todo.Profile) (PipelineStep, error) {
 	ps := PipelineStep{
 		Name: sf.Name, Kind: Kind(sf.Kind), Wording: sf.Wording, Tail: sf.Tail,
 		Standards: sf.Standards, Rounds: sf.Rounds, Back: sf.Back, Under: sf.Under,
-		Command: sf.Command,
+		Persona: sf.Persona, Command: sf.Command,
 	}
 	if !ps.Kind.Known() {
 		return PipelineStep{}, at("step %q is of no kind this runner has (%s)", sf.Name, strings.Join(kindWords(), ", "))
@@ -575,11 +576,11 @@ func readsSet() []struct {
 	return []struct {
 		word  string
 		reads Reads
-	}{{"plan", ReadsPlan}, {"grade", ReadsGrade}, {"questions", ReadsQuestions}}
+	}{{"plan", ReadsPlan}, {"grade", ReadsGrade}, {"questions", ReadsQuestions}, {"findings", ReadsFindings}}
 }
 
 func readsWords() []string {
-	out := make([]string, 0, 3)
+	out := make([]string, 0, len(readsSet()))
 	for _, r := range readsSet() {
 		out = append(out, r.word)
 	}

@@ -532,7 +532,8 @@ There are six kinds of step and the program owns all six:
 
 - a **turn**, one message of the conversation in a reading or a writing mode,
   which always says whether it could not do the work and says the grade and
-  any open questions where the step asks for them;
+  any open questions where the step asks for them — and where the step says
+  its answer is the record, what it found is what the steps after it read;
 - an **agent**, a sub-agent that reads the work it did not do and answers
   clean or with findings, falling back to a turn of the session's own where
   there is no supervisor to spawn one from;

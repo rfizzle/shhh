@@ -55,23 +55,31 @@ kind = "gate"
 under = "scope"
 pause = ["never", "always-when deep"]
 
+# The gathering is the answer. A reading is not a change to the tree, so the
+# turn reads its sources and states what they say, and the run carries that
+# answer to the steps after it: the scope's plan names what to go to, and the
+# review reads the gathering rather than a diff.
 [[step]]
 name = "gather"
 kind = "turn"
-mode = "write"
+mode = "read"
 standards = true
 blocks = ["item", "plan", "answers"]
-tail = "Write what you find down as you go, in the files the plan names. Do not commit."
+reads = ["findings"]
 
 # A quick reading is read back by the session that made it; a deep one by
 # somebody who did not gather it, because a reading that only agrees with
-# itself has not been checked.
+# itself has not been checked. The reader is named rather than left to the
+# surface: a conversation with a colleague of that name sends the gathering
+# to them, and every session without one falls back to the role that reads
+# work anyway.
 [[step]]
 name = "review"
 kind = "agent"
 mode = "read"
-blocks = ["item", "plan", "diff"]
+blocks = ["item", "plan", "findings"]
 solo = "quick"
+persona = "reviewer"
 
 # A reading's product is the write-up, so the run spends a turn on it rather
 # than letting the code state what was done. Where the session has no shared
