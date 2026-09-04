@@ -52,6 +52,34 @@ func TestInspectorContext_EstimatedSaysSo(t *testing.T) {
 	}
 }
 
+// A corrected estimate is a third kind of number, and it goes beside the
+// count rather than under the bar: the sparkline's own label owns that row
+// for most of a session, and a figure whose meaning changed has to say so
+// whenever it is on screen.
+func TestInspectorContext_CorrectedSaysSo(t *testing.T) {
+	r := InspectorRail{Context: &InspectorContext{
+		Pct: 41, Tokens: 82000, Window: 200000, Estimated: true, Corrected: true,
+		Burn: []float64{1, 2, 3, 4},
+	}}
+	view := stripANSI(r.View(InspectorWidth, 0))
+	for _, want := range []string{"~82k", "corrected", "per round"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("a corrected estimate should show %q:\n%s", want, view)
+		}
+	}
+	// The bar keeps its full width beside the longer label.
+	if !strings.Contains(view, strings.Repeat("▰", 9)+strings.Repeat("▱", 13)) {
+		t.Fatalf("the meter should be undisturbed by the label:\n%s", view)
+	}
+	// An uncorrected estimate says nothing about a correction.
+	plain := InspectorRail{Context: &InspectorContext{
+		Pct: 41, Tokens: 82000, Window: 200000, Estimated: true,
+	}}
+	if strings.Contains(stripANSI(plain.View(InspectorWidth, 0)), "corrected") {
+		t.Fatal("nothing corrected an estimate nobody measured")
+	}
+}
+
 func TestInspectorRail_BlockOrderAndContents(t *testing.T) {
 	view := stripANSI(fullRail().View(InspectorWidth, 0))
 	for _, want := range []string{

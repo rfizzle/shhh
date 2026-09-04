@@ -2,6 +2,7 @@ package chat
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 	"testing"
@@ -327,7 +328,10 @@ func TestCompact_RestartsFromSummary(t *testing.T) {
 	if m.contextTokens != 0 {
 		t.Fatalf("the pre-compaction report describes a discarded conversation, got %d", m.contextTokens)
 	}
-	if want := estimateMessageTokens(m.Messages()); m.estimatedContextTokens() != want {
+	// Back to the session's own arithmetic over the rebuilt conversation,
+	// scaled by what the report the compaction itself produced taught the
+	// session about that arithmetic.
+	if want := m.calibration.Apply(estimateMessageTokens(m.Messages())); m.estimatedContextTokens() != want {
 		t.Fatalf("context estimate should reset to %d, got %d", want, m.estimatedContextTokens())
 	}
 	last := m.transcript[len(m.transcript)-1]
@@ -520,5 +524,47 @@ func TestContextWindow_EndpointOutranksTheTable(t *testing.T) {
 	m = m.WithPricing(nil, "claude-opus-5")
 	if got := m.contextWindow(); got != 1_000_000 {
 		t.Errorf("unanswered model = %d, want the family floor 1000000", got)
+	}
+}
+
+// TestTrimContext_WiredStoreMakesElisionRecoverable checks the plumbing the
+// host does: a session with an evidence store elides through it, so the
+// placeholder names the entry that still holds the result and the model can
+// page it back instead of running the tool again.
+func TestTrimContext_WiredStoreMakesElisionRecoverable(t *testing.T) {
+	kept := map[string]string{}
+	m := New([]provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "q1"},
+		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "c1", Name: "read_file"}}},
+		{Role: provider.RoleTool, Content: strings.Repeat("x", 40000), ToolCallID: "c1"},
+		{Role: provider.RoleUser, Content: "q2"},
+	}, mockStream).WithEvidence(Evidence{
+		Keep: func(tool, content string) (string, bool) {
+			id := "ev-00000000000000" + fmt.Sprintf("%02d", len(kept))
+			kept[id] = content
+			return id, true
+		},
+	})
+	m.contextTokens = 30000
+
+	if n := m.trimContext(); n != 1 {
+		t.Fatalf("want 1 elided result, got %d", n)
+	}
+	placeholder := m.Messages()[3].Content
+	if placeholder == elidedResult {
+		t.Fatal("a session with a store must name the entry rather than eliding blind")
+	}
+	var found bool
+	for id, content := range kept {
+		if strings.Contains(placeholder, id) {
+			found = true
+			if len(content) != 40000 {
+				t.Fatalf("the store was handed %d bytes, not the whole result", len(content))
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("the placeholder names no entry the store took: %q", placeholder)
 	}
 }

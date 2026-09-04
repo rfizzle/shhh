@@ -277,6 +277,47 @@ carries a row for an older generation wherever that generation is both still
 widely served and much smaller than the current one, and a version written
 the way weights are packaged is read as the version it is.
 
+## How full the window is, corrected by what it cost
+
+The window's size comes from the table. How much of it a conversation is
+using does not: the only figure that answers that exactly is the provider's
+own, and it arrives after the request, which is one request too late to
+decide whether that request needed trimming first.
+
+So the size is estimated from the bytes, at four of them to the token. That
+is about right for prose and wrong in one direction for everything else a
+coding session carries — source, JSON, diffs and stack traces all tokenize
+nearer three bytes to the token, and they are most of what fills a long
+session. Under-counting means the window is fuller than the meter says, the
+trim fires later than it should, and the request that overflows is the one
+nobody was warned about.
+
+Counting for real would mean a token-counting round-trip before every
+request: a request spent to find out what a request will cost, on the one
+dialect of five that offers the call in a comparable shape. The correction is
+free instead. Every response reports what the prompt it just read actually
+came to, and the estimate for those same messages is already in hand, so the
+ratio between them is a measurement nobody paid for. It is folded into a
+running factor that scales later estimates, weighted so that three responses
+land near a steady ratio and no single request — a cache-warming first round,
+a turn carrying three screenshots — can own the figure.
+
+The factor is a fact about a tokenizer, so it belongs to one model and starts
+over when the session switches: a stale correction is worse than none,
+because it is confident. It is bounded at two bytes to the token in one
+direction and eight in the other, which is wider than any text a conversation
+carries; a ratio outside that is a report describing something other than
+what was counted, and against that the last good factor is the better guess.
+A provider that reports no usage at all teaches it nothing, and such a session
+runs on the plain estimate exactly as it always did.
+
+None of this touches a reported figure. Where a report has arrived it is used
+as it arrived — it is the measurement the factor is derived from, and scaling
+it would be converting a number into itself. Which of the three a figure is —
+a report, a plain estimate, a corrected one — is stated wherever it is shown,
+because a number that quietly changed what it means is worse than either a
+guess or a measurement.
+
 ## A request says whether a tool may be called
 
 A request that offers tools also says what may be done with them, and the

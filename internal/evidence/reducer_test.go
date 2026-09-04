@@ -239,3 +239,61 @@ func TestReducer_SetScrubNilSafe(t *testing.T) {
 		t.Fatal("a nil reducer must stay a no-op")
 	}
 }
+
+// TestReducer_KeepScrubsAndMintsAnID: the window trim writes into the same
+// store the reduction pipeline does, so it goes through the same door.
+func TestReducer_KeepScrubsAndMintsAnID(t *testing.T) {
+	r := testReducer(t)
+	r.SetScrub(func(s string) string { return strings.ReplaceAll(s, "hunter2", "[secret:PW]") })
+	in := "the deploy key is hunter2\n" + bigOutput()
+
+	id, ok := r.Keep("execute_command", in)
+	if !ok {
+		t.Fatal("a working store must take a trimmed result")
+	}
+	if !idRe.MatchString(id) {
+		t.Fatalf("Keep minted %q, which is not an evidence id", id)
+	}
+	data, meta, err := r.Store().Read(id, 0, len(in)+1)
+	if err != nil {
+		t.Fatalf("the kept original must be readable: %v", err)
+	}
+	if strings.Contains(string(data), "hunter2") {
+		t.Fatal("the copy that outlives the session must have passed the scrub")
+	}
+	if !strings.Contains(string(data), "[secret:PW]") {
+		t.Fatal("the kept original must name the secret it held")
+	}
+	if meta.Tool != "execute_command" {
+		t.Fatalf("entry filed under %q", meta.Tool)
+	}
+}
+
+// TestReducer_KeepWithoutATool: a trimmed result carries only the id of the
+// call it answers, and the assistant message that made the call may be gone.
+func TestReducer_KeepWithoutATool(t *testing.T) {
+	r := testReducer(t)
+	id, ok := r.Keep("", "some output nobody can attribute")
+	if !ok {
+		t.Fatal("an unattributed result is still worth keeping")
+	}
+	meta, err := r.Store().Info(id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if meta.Tool != unnamedTool {
+		t.Fatalf("entry filed under %q, want %q", meta.Tool, unnamedTool)
+	}
+}
+
+// TestReducer_KeepWithoutAStore: no store is no offer, and the caller elides
+// with the bare placeholder rather than failing.
+func TestReducer_KeepWithoutAStore(t *testing.T) {
+	var r *Reducer
+	if _, ok := r.Keep("execute_command", "anything"); ok {
+		t.Fatal("a nil reducer cannot have kept anything")
+	}
+	if _, ok := NewReducer(nil).Keep("execute_command", "anything"); ok {
+		t.Fatal("a reducer with no store cannot have kept anything")
+	}
+}

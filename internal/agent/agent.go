@@ -111,6 +111,10 @@ type Agent struct {
 	// alone. Nil keeps nothing.
 	keep func(content string) bool
 
+	// archive, when set, is where a tool result about to be trimmed is put
+	// so the model can ask for it back. Nil makes every trim permanent.
+	archive func(tool, content string) (id string, ok bool)
+
 	// scrub, when set, rewrites every text that joins the conversation or
 	// leaves it for a provider. Nil leaves text alone.
 	scrub func(msg provider.Message) provider.Message
@@ -133,6 +137,20 @@ func (a *Agent) SetExecutor(executor ToolExecutor) { a.executor = executor }
 // to drop — and dropping one fails silently, since the model just carries
 // on without them. The caller says which those are.
 func (a *Agent) KeepResults(keep func(content string) bool) { a.keep = keep }
+
+// StoreElided installs the archive a tool result is put into just before a
+// trim replaces it, returning the id the placeholder then names. Answering
+// false is a result that could not be kept, and the trim elides it with the
+// bare placeholder rather than stopping: the request that provoked the trim
+// still has to fit, and a session whose store is full is exactly the session
+// that most needs the window back.
+//
+// It takes a function rather than a store so this package still knows nothing
+// about what evidence is, the way the scrub and the keep predicate do.
+// See docs/capabilities/evidence.md#a-trim-makes-the-same-promise.
+func (a *Agent) StoreElided(archive func(tool, content string) (string, bool)) {
+	a.archive = archive
+}
 
 // SetScrub installs the rewrite every message goes through on the way in
 // (Append, SetMessages) and on the way out (Stream). It is where the

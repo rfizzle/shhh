@@ -319,3 +319,80 @@ func TestVitals_NeitherRailMovesWhenATurnGoesBackOnTheBooks(t *testing.T) {
 		t.Fatal("a grant that spent nothing has nothing to animate")
 	}
 }
+
+// TestContextAccounting_CorrectedEstimateSaysSo is the second half of the
+// bug: four bytes to the token under-counts a tool-heavy conversation, so the
+// session measures its own arithmetic against what the provider charged and
+// scales by what it finds — and every surface showing the result says which
+// of the three kinds of number it is.
+func TestContextAccounting_CorrectedEstimateSaysSo(t *testing.T) {
+	m := vitalsModel(t)
+	m.agent.Append(provider.Message{Role: provider.RoleTool, Content: strings.Repeat("t", 40000), ToolCallID: "c1"})
+	raw := m.contextEstimate().total()
+
+	// Three responses each charging half again what the estimate said.
+	for range 3 {
+		m.accumulateUsage(&provider.Usage{PromptTokens: int(raw * 3 / 2), CompletionTokens: 100})
+	}
+	// A trim discards the report, which described a conversation that no
+	// longer exists — from here the estimate is what governs.
+	m.contextTokens = 0
+
+	b := m.contextAccounting()
+	if b.Reported {
+		t.Fatal("nothing has been reported about the trimmed conversation")
+	}
+	if !b.Corrected {
+		t.Fatal("a session that has measured its estimator reports a corrected figure")
+	}
+	if b.total() <= raw {
+		t.Fatalf("the correction should raise the estimate: %d against the raw %d", b.total(), raw)
+	}
+	if b.total() != m.calibration.Apply(raw) {
+		t.Fatalf("the total is the estimate under the factor: %d against %d", b.total(), m.calibration.Apply(raw))
+	}
+	if rail := m.inspectorContext(); rail == nil || !rail.Corrected || !rail.Estimated {
+		t.Fatalf("the rail must say the figure is a corrected estimate, got %+v", rail)
+	}
+	if got := m.contextScreenData().Source; got != "corrected estimate" {
+		t.Fatalf("/context calls the figure %q", got)
+	}
+	// And /stats calls it the same thing, because it is the same figure.
+	if out := m.statsReport(); !strings.Contains(out, "corrected estimate") {
+		t.Fatalf("/stats should name the correction:\n%s", out)
+	}
+
+	// And the moment a report arrives it is used as it arrived: the factor is
+	// derived from reports, so scaling one by it would convert a measurement
+	// into itself.
+	m.contextTokens = 9999
+	b = m.contextAccounting()
+	if !b.Reported || b.Corrected || b.total() != 9999 {
+		t.Fatalf("a report must be used unchanged, got %+v totalling %d", b, b.total())
+	}
+	if got := m.contextScreenData().Source; got != "provider-reported" {
+		t.Fatalf("/context calls the figure %q", got)
+	}
+}
+
+// TestContextAccounting_UnreportedSessionIsUncorrected: a provider that
+// reports no usage leaves the whole mechanism where it was.
+func TestContextAccounting_UnreportedSessionIsUncorrected(t *testing.T) {
+	m := vitalsModel(t)
+	m.agent.Append(provider.Message{Role: provider.RoleTool, Content: strings.Repeat("t", 40000), ToolCallID: "c1"})
+	raw := m.contextEstimate().total()
+	for range 3 {
+		m.accumulateUsage(&provider.Usage{})
+	}
+
+	b := m.contextAccounting()
+	if b.Corrected || b.Reported || b.total() != raw {
+		t.Fatalf("an unreported session estimates exactly as before, got %+v totalling %d", b, b.total())
+	}
+	if got := m.contextScreenData().Source; got != "estimated" {
+		t.Fatalf("/context calls the figure %q", got)
+	}
+	if rail := m.inspectorContext(); rail == nil || rail.Corrected {
+		t.Fatalf("the rail has nothing to correct, got %+v", rail)
+	}
+}

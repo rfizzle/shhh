@@ -72,6 +72,38 @@ func (r *Reducer) Scrub(s string) string {
 // Store exposes the underlying session store (for /evidence management).
 func (r *Reducer) Store() *Store { return r.store }
 
+// unnamedTool is what an entry is filed under when the caller could not say
+// which tool produced it. A trimmed result carries only the id of the call it
+// answers, and the assistant message that made that call may itself have been
+// compacted away; the entry is still readable and searchable, which is the
+// whole of what the id is for.
+const unnamedTool = "unknown"
+
+// Keep stores text a caller is about to drop out of the conversation and
+// returns the id that pages it back. The window trim is that caller: it
+// replaces a tool result with a placeholder naming this id, so what left the
+// window is still somewhere the model can ask for.
+//
+// It scrubs first, exactly as Process does, because the copy the store writes
+// is the one that outlives the session by a week whatever the model was
+// shown. A store that cannot take the text answers false rather than an
+// error: the caller's job is to shrink a request, and it has a way to do that
+// without an id.
+// See docs/capabilities/evidence.md#a-trim-makes-the-same-promise.
+func (r *Reducer) Keep(tool, content string) (string, bool) {
+	if r == nil || r.store == nil {
+		return "", false
+	}
+	if tool == "" {
+		tool = unnamedTool
+	}
+	id, err := r.store.Put(tool, []byte(r.Scrub(content)))
+	if err != nil {
+		return "", false
+	}
+	return id, true
+}
+
 // Process runs one tool result through the reduction pipeline. Results at or
 // below the threshold — and any result the pipeline cannot improve or whose
 // original cannot be stored — pass through untouched (fail open). A reduced

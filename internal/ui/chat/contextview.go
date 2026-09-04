@@ -109,10 +109,6 @@ func (m Model) contextScreenData() components.ContextScreen {
 	b := m.contextAccounting()
 	window := m.contextWindow()
 	total := b.total()
-	source := "estimated"
-	if b.Reported {
-		source = "provider-reported"
-	}
 	screen := components.ContextScreen{
 		Model:      m.modelName,
 		Provider:   m.providerName,
@@ -121,7 +117,7 @@ func (m Model) contextScreenData() components.ContextScreen {
 		Pct:        percentOf(total, window),
 		Warn:       warnThresholdPercent,
 		Alert:      trimThresholdPercent,
-		Source:     source,
+		Source:     b.source(),
 		Categories: m.contextCategories(b, window),
 		Groups:     m.contextGroups(b),
 	}

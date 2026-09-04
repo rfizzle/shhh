@@ -26,13 +26,9 @@ func (m Model) WithToolTokenEstimate(n int64) Model {
 // rail reads.
 func (m Model) statsReport() string {
 	b := m.contextAccounting()
-	source := "estimated"
-	if b.Reported {
-		source = "provider-reported"
-	}
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "Context occupancy (~%s of %s window, %s):\n",
-		formatTokenCount(b.total()), formatTokenCount(m.contextWindow()), source)
+		formatTokenCount(b.total()), formatTokenCount(m.contextWindow()), b.source())
 	for _, row := range []struct {
 		label  string
 		tokens int64

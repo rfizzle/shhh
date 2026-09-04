@@ -381,6 +381,7 @@ func (m Model) inspectorContext() *components.InspectorContext {
 		WarnPct:   warnThresholdPercent,
 		AlertPct:  trimThresholdPercent,
 		Estimated: !b.Reported,
+		Corrected: b.Corrected,
 	}
 	if m.TotalTokensIn != 0 || m.TotalTokensOut != 0 {
 		c.Tokens1 = "↑" + formatTokenCount(m.TotalTokensIn)

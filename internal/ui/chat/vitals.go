@@ -290,15 +290,66 @@ type contextBreakdown struct {
 	// reported context size. False means the total is our own estimate, and
 	// every surface showing it says so.
 	Reported bool
+	// Corrected is true when the total is an estimate this session has
+	// measured against what the provider charged for the same messages, and
+	// scaled by what it found. It is never true beside Reported: a report is
+	// used as it arrived. The surfaces name the three cases apart, because a
+	// figure that quietly changed what it means is worse than either a guess
+	// or a measurement.
+	Corrected bool
 }
 
 func (b contextBreakdown) total() int64 {
 	return b.System + b.Project + b.Tools + b.Messages + b.ToolResults
 }
 
+// source names where the total came from, in the words every occupancy
+// surface states it in. One phrasing for three surfaces: they already read
+// one accounting so they cannot quote three numbers, and a figure that is
+// called two things on two screens is the same defect one step later.
+func (b contextBreakdown) source() string {
+	switch {
+	case b.Reported:
+		return "provider-reported"
+	case b.Corrected:
+		// Still a guess, but not the same guess: the estimator has been
+		// measured against what the provider charged, and the figure is
+		// scaled by what that measurement found.
+		return "corrected estimate"
+	}
+	return "estimated"
+}
+
 // contextAccounting is the single source for context occupancy: the rail's
-// CONTEXT block, /stats' breakdown and the trim thresholds all read it.
+// CONTEXT block, /stats' breakdown and the trim thresholds all read it. It is
+// the provider's reported size where one has arrived, and this session's own
+// estimate — corrected by what earlier reports said that estimate was worth —
+// where none has.
+//
+// The correction is deliberately not applied to a report. A report is the
+// measurement the factor is derived from, so scaling one by the factor would
+// be applying a conversion to the thing it converts to.
+// See docs/capabilities/providers.md#how-full-the-window-is-corrected-by-what-it-cost.
 func (m Model) contextAccounting() contextBreakdown {
+	b := m.contextEstimate()
+	if m.contextTokens > 0 {
+		b = b.scaledTo(m.contextTokens)
+		b.Reported = true
+		return b
+	}
+	if corrected := m.calibration.Apply(b.total()); corrected != b.total() {
+		b = b.scaledTo(corrected)
+		b.Corrected = true
+	}
+	return b
+}
+
+// contextEstimate is the categories as this session's own arithmetic makes
+// them: every message walked, nothing scaled onto it and no correction
+// applied. It is what a report is compared against to work the correction
+// out, so measuring it through either would be measuring the factor against
+// itself.
+func (m Model) contextEstimate() contextBreakdown {
 	b := contextBreakdown{Tools: m.toolDefTokens}
 	for i, msg := range m.agent.Messages() {
 		switch {
@@ -318,16 +369,14 @@ func (m Model) contextAccounting() contextBreakdown {
 		b.System -= p
 		b.Project = p
 	}
-	if m.contextTokens > 0 {
-		return b.scaledTo(m.contextTokens)
-	}
 	return b
 }
 
-// scaledTo rescales the estimated categories so they sum to the provider's
-// reported context size. The shares are ours, the total is the provider's,
-// and the rounding remainder goes to the largest category so the parts never
-// disagree with the whole.
+// scaledTo rescales the estimated categories so they sum to a total worked
+// out elsewhere — the provider's report, or the estimate under this session's
+// correction factor. The shares are ours either way, and the rounding
+// remainder goes to the largest category so the parts never disagree with the
+// whole. Which of the two it was is the caller's to record.
 func (b contextBreakdown) scaledTo(target int64) contextBreakdown {
 	est := b.total()
 	if target <= 0 {
@@ -336,9 +385,9 @@ func (b contextBreakdown) scaledTo(target int64) contextBreakdown {
 	if est <= 0 {
 		// Nothing to apportion — a reported context with no message list
 		// behind it (a resumed session mid-stream) is all prompt.
-		return contextBreakdown{System: target, Reported: true}
+		return contextBreakdown{System: target}
 	}
-	out := contextBreakdown{Reported: true}
+	var out contextBreakdown
 	src := []int64{b.System, b.Project, b.Tools, b.Messages, b.ToolResults}
 	dst := []*int64{&out.System, &out.Project, &out.Tools, &out.Messages, &out.ToolResults}
 	largest := 0

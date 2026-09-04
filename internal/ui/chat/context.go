@@ -45,7 +45,8 @@ const (
 	trimLowWaterPercent = warnThresholdPercent
 )
 
-// elidedResult replaces trimmed tool results in the conversation.
+// elidedResult replaces a trimmed tool result the evidence store could not
+// take; one it could take carries the id that pages the original back.
 const elidedResult = agent.ElidedResult
 
 // What a compaction keeps besides the summary. The pressure card
@@ -146,7 +147,7 @@ func (m Model) estimatedContextTokens() int64 {
 // agent's message list.
 func (m *Model) trimContext() int {
 	before := m.estimatedContextTokens()
-	elided, after := m.agent.TrimOldToolResults(before, m.trimThreshold(), m.trimLowWater())
+	elided, after := m.agent.TrimOldToolResults(before, m.trimThreshold(), m.trimLowWater(), m.calibration)
 	if elided > 0 {
 		window := m.contextWindow()
 		m.signal(observe.SignalTrim, observe.TrimReason(elided,

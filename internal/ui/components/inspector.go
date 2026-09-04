@@ -358,6 +358,12 @@ type InspectorContext struct {
 	// provider-reported size, and the block says so in words — a
 	// number nobody vouched for should not look like one that was.
 	Estimated bool
+	// Corrected says that estimate has been scaled by what the host measured
+	// its own arithmetic to be worth against the provider's reports. It sits
+	// beside the count rather than under the sparkline, because the
+	// sparkline's own label takes that row for most of a session and a
+	// figure whose meaning changed has to say so whenever it is on screen.
+	Corrected bool
 }
 
 // InspectorSpend is the SPEND block: this turn's cost, how it split between
@@ -1286,7 +1292,11 @@ func (r InspectorRail) contextBlock(width int) (railBlock, bool) {
 	}
 	// The bar's number is the token count at the rail's right edge, in the
 	// meter's own colour — the bar never carries the value alone.
-	b.add(railRow(meter.Bar(), style.Render(count), width, inspectorIndent))
+	right := style.Render(count)
+	if c.Corrected {
+		right = sty.Dim.Render("corrected") + " " + right
+	}
+	b.add(railRow(meter.Bar(), right, width, inspectorIndent))
 	tokens := strings.TrimSpace(c.Tokens1 + " " + c.Tokens2)
 	lead := ""
 	switch {

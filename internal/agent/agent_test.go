@@ -253,7 +253,7 @@ func TestTrimOldToolResults_ProtectsCurrentTurn(t *testing.T) {
 		{Role: provider.RoleTool, Content: "recent result", ToolCallID: "c2"},
 	}, noStream)
 
-	elided, newEst := a.TrimOldToolResults(30000, 26000, 26000)
+	elided, newEst := a.TrimOldToolResults(30000, 26000, 26000, Calibration{})
 	if elided != 1 {
 		t.Fatalf("want 1 elided result, got %d", elided)
 	}
@@ -280,7 +280,7 @@ func TestTrimOldToolResults_NoopUnderThreshold(t *testing.T) {
 		{Role: provider.RoleUser, Content: "q2"},
 	}, noStream)
 
-	elided, newEst := a.TrimOldToolResults(1000, 26000, 26000)
+	elided, newEst := a.TrimOldToolResults(1000, 26000, 26000, Calibration{})
 	if elided != 0 || newEst != 1000 {
 		t.Fatalf("under the threshold nothing should change, got elided=%d est=%d", elided, newEst)
 	}
@@ -364,7 +364,7 @@ func TestTrimOldToolResults_RunsDownToTheMark(t *testing.T) {
 		provider.Message{Role: provider.RoleUser, Content: "q2"})
 
 	deep := New(append([]provider.Message(nil), msgs...), noStream)
-	elided, newEst := deep.TrimOldToolResults(70000, 60000, 40000)
+	elided, newEst := deep.TrimOldToolResults(70000, 60000, 40000, Calibration{})
 	if newEst > 40000 {
 		t.Fatalf("the trim stopped at %d, above the mark of 40000", newEst)
 	}
@@ -375,7 +375,7 @@ func TestTrimOldToolResults_RunsDownToTheMark(t *testing.T) {
 	// Nothing left to do on a conversation already under the mark: the
 	// second request of a session that just trimmed pays for no surgery at
 	// all, which is the cost this exists to remove.
-	again, sameEst := deep.TrimOldToolResults(newEst, 60000, 40000)
+	again, sameEst := deep.TrimOldToolResults(newEst, 60000, 40000, Calibration{})
 	if again != 0 || sameEst != newEst {
 		t.Fatalf("a second trim over the same messages elided %d, est %d", again, sameEst)
 	}
@@ -384,7 +384,7 @@ func TestTrimOldToolResults_RunsDownToTheMark(t *testing.T) {
 	// minimum that clears the line, which is what a single-figure trim did
 	// and what leaves the next round to do it again.
 	shallow := New(append([]provider.Message(nil), msgs...), noStream)
-	if elided, _ := shallow.TrimOldToolResults(70000, 60000, 60000); elided != 2 {
+	if elided, _ := shallow.TrimOldToolResults(70000, 60000, 60000, Calibration{}); elided != 2 {
 		t.Fatalf("a mark at the threshold elided %d, want the 2 that clear it", elided)
 	}
 }
@@ -404,7 +404,7 @@ func TestTrimOldToolResults_MarkAboveThresholdTrimsToTheThreshold(t *testing.T) 
 		{Role: provider.RoleUser, Content: "q2"},
 	}, noStream)
 
-	elided, newEst := a.TrimOldToolResults(70000, 60000, 90000)
+	elided, newEst := a.TrimOldToolResults(70000, 60000, 90000, Calibration{})
 	if elided != 2 || newEst > 60000 {
 		t.Fatalf("want the conversation trimmed to the threshold, got %d elided est %d", elided, newEst)
 	}
@@ -422,7 +422,7 @@ func TestTrimOldToolResults_KeepsClaimedResults(t *testing.T) {
 	}, noStream)
 	a.KeepResults(func(content string) bool { return strings.HasPrefix(content, "<keep>") })
 
-	elided, _ := a.TrimOldToolResults(30000, 26000, 26000)
+	elided, _ := a.TrimOldToolResults(30000, 26000, 26000, Calibration{})
 	if elided != 1 {
 		t.Fatalf("want 1 elided result, got %d", elided)
 	}
@@ -604,7 +604,7 @@ func TestTrimOldToolResults_ElidingDropsWhatRodeOnTheResult(t *testing.T) {
 		{Role: provider.RoleUser, Content: "q2"},
 	}, noStream)
 
-	if elided, _ := a.TrimOldToolResults(30000, 26000, 26000); elided != 1 {
+	if elided, _ := a.TrimOldToolResults(30000, 26000, 26000, Calibration{}); elided != 1 {
 		t.Fatalf("want 1 elided result, got %d", elided)
 	}
 	if got := a.Messages()[1].Attachments; got != nil {

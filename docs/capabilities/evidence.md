@@ -57,6 +57,29 @@ The ids are opaque session-scoped tokens rather than paths. A retrieval
 mechanism that took a filename would be a file read with no scope check
 wearing a different name.
 
+## A trim makes the same promise
+
+The store is not only for output that arrived too big. A long session fills
+the window whatever each result cost, and when it does the oldest tool
+results are elided to make room for the next request. That used to be the end
+of them: the model would notice a finding missing, run the tool again, and
+get charged for the same bytes twice — and the loop that watches for a
+session going in circles would report it, correctly, as going in circles.
+
+So an elided result goes into the store on its way out, and what replaces it
+in the conversation is a notice carrying the id, worded the way a reduction's
+notice is. One wording, because the model is told once how to page an id back
+and that instruction has to cover both. It is short enough that eliding still
+recovers most of what it elided for, and a result shorter than the notice
+that would replace it is left where it is: rewriting it would cost the
+provider's cached prefix from that message on and give back nothing.
+
+Recovery is an offer, never a condition. A store that cannot take the
+result — full, gone, never opened — leaves the plain placeholder behind and
+the trim goes ahead, because the request that provoked it still has to fit,
+and a session whose store is failing is exactly the session that most needs
+the window back.
+
 ## Related
 
 - [`coding-agent.md`](coding-agent.md) — the rounds this is spent on, and the

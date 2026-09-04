@@ -924,6 +924,12 @@ type Model struct {
 	// zero means nothing has been reported about the current message list, so
 	// the accounting estimates instead and says so.
 	contextTokens int64
+	// calibration is what this session has learned about its own estimator
+	// from the reports that have arrived, and it scales every estimate the
+	// accounting makes once a report has been compared against one. It is the
+	// session's, not the conversation's: /clear and a compaction throw away
+	// the messages, and neither changes how the model counts them.
+	calibration agent.Calibration
 	// vitals is the session's per-turn usage history and the burn series
 	// behind the rail's sparkline; projectTokens is the estimated
 	// size of the project context inside the system prompt, which the
@@ -3394,6 +3400,14 @@ func (m *Model) accumulateUsage(u *provider.Usage) {
 	if u == nil {
 		return
 	}
+	// The estimator is measured here because here is the one moment the two
+	// figures describe the same messages: the response this usage belongs to
+	// has not joined the conversation yet, so what the accounting counts is
+	// the list the request was built from. What a request puts on top of that
+	// list — the compaction instruction, the plan-mode preamble — is a few
+	// dozen tokens against a whole conversation, and no single round can move
+	// the factor far in any case.
+	m.calibration.Observe(m.modelName, int64(u.PromptTokens), m.contextEstimate().total())
 	cost, priced := m.usageCost(*u)
 	m.vitals.record(m.modelName, *u, cost, priced)
 	m.TotalTokensIn, m.TotalTokensOut = m.vitals.totalIn, m.vitals.totalOut

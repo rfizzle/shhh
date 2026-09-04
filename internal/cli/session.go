@@ -891,7 +891,13 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			WithScaffold(buildScaffold(db, cwd))
 	}
 	if red != nil {
-		model = model.WithEvidence(chat.Evidence{Reduce: red.Process, Manage: evidenceManager(red)})
+		model = model.WithEvidence(chat.Evidence{
+			Reduce: red.Process,
+			Manage: evidenceManager(red),
+			// The window trim writes into the same store, so what it elides
+			// is retrievable the way a reduced result is.
+			Keep: red.Keep,
+		})
 	}
 	if session.lsp != nil {
 		model = model.WithMutationHook(lspMutationHook(session.lsp))

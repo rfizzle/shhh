@@ -352,6 +352,31 @@ tokens and pays that price again a round later; closing the gap would put the
 defect back. What a request actually read from cache is on `/context`, which
 is where the effect is visible.
 
+**An elided result is recoverable.** `Agent.StoreElided` takes the archive a
+result is put into just before the trim replaces it, and the placeholder then
+names the id — worded like the reduction notice `evidence.Reducer.Process`
+writes, so the toolbox's one instruction about ids covers both
+([`docs/capabilities/evidence.md#a-trim-makes-the-same-promise`](docs/capabilities/evidence.md#a-trim-makes-the-same-promise)).
+`evidence.Reducer.Keep` is what the host wires in (`chat.Evidence.Keep`, set
+in `internal/cli/session.go`); it scrubs before the store writes, like every
+other door onto that store. An archive that answers false, or a result under
+`minEvidenceBytes`, gets the bare `agent.ElidedResult`, and the loop tells an
+already-elided message from a fresh one by prefix rather than by equality —
+the placeholder is a different string every time now.
+
+**The estimate that triggers the trim is corrected against the reports.**
+`agent.Calibration` is a per-model running ratio of what the provider charged
+to what `EstimateTokens` made of the same messages
+([`docs/capabilities/providers.md#how-full-the-window-is-corrected-by-what-it-cost`](docs/capabilities/providers.md#how-full-the-window-is-corrected-by-what-it-cost)).
+The chat model owns one, folds a response into it in `accumulateUsage` — before
+the response joins the conversation, which is what makes the two figures
+describe the same messages — and `contextAccounting` applies it to the
+estimate and never to a report. `TrimOldToolResults` takes it too, because the
+caller trims against a corrected figure and shrinking that by raw estimates
+would stop the loop late. What a figure is — a report, an estimate, a
+corrected estimate — is one phrasing in `contextBreakdown.source`, on
+`/context` and `/stats` as the source line and on the rail beside the count.
+
 ### Provider Interface
 
 All providers implement `StreamCompletion(ctx, messages, opts) (<-chan StreamEvent, error)`. Providers register via `provider.Register(name, factory)` with a `Factory func(ResolveOpts) (Provider, error)`. Provider names are normalized (underscores become hyphens). What the interface deliberately does not abstract over: [`docs/capabilities/providers.md`](docs/capabilities/providers.md).
