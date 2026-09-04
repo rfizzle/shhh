@@ -215,7 +215,9 @@ func (e Effort) ThinkingBudget(ceiling int) int {
 // dropping them turns the second round of every thinking turn into a 400.
 // Text and Signature are the two halves of a thinking block; Redacted holds
 // the opaque payload of a safety-redacted one, which travels the same way and
-// has no readable content.
+// has no readable content. The Responses API has no readable half at all:
+// there Signature carries the reasoning item's id and Redacted its sealed
+// content, and both go back verbatim because nothing is stored server-side.
 type ReasoningBlock struct {
 	Text      string
 	Signature string
