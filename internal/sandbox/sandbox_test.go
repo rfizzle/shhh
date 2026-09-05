@@ -302,7 +302,7 @@ func TestReportRefusedPolicy(t *testing.T) {
 // mechanism as a write grant — that is the whole point of having added it,
 // and it is what stops containment refusing a write the user approved.
 func TestScopeDirectoriesBecomeWriteGrants(t *testing.T) {
-	policy, ws := workspacePolicy(t)
+	policy, _ := workspacePolicy(t)
 	added := mkdir(t, filepath.Join(t.TempDir(), "config"))
 	policy.WriteExtra = []string{added}
 	// The grant is the resolved spelling, and a scratch directory sits behind
@@ -328,7 +328,9 @@ func TestScopeDirectoriesBecomeWriteGrants(t *testing.T) {
 	if profile := seatbeltProfile(s); !strings.Contains(profile, `(subpath "`+added+`")`) {
 		t.Fatalf("seatbelt should allow writes under the added directory, got:\n%s", profile)
 	}
-	if !slices.Contains(s.write, ws) {
+	// The workspace grant is the resolved spelling too, which is what the
+	// spec already holds; the raw scratch path is behind the same symlink.
+	if !slices.Contains(s.write, s.workspace) {
 		t.Fatal("the workspace grant must survive alongside the added directory")
 	}
 }
