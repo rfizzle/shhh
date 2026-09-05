@@ -350,12 +350,16 @@ var migrations = []string{
 // ALTER TABLE, which fails the second with a duplicate column. The busy
 // timeout makes the loser wait rather than fail, and the re-read makes it
 // find the step already recorded and move on.
+//
+// The version table itself is created under the same lock. As a bare
+// statement it starts a read transaction to look the table up and only then
+// asks to write, and in WAL mode a writer whose snapshot has gone stale is
+// refused outright (SQLITE_BUSY_SNAPSHOT) rather than made to wait — so two
+// openers of a brand-new store could race, and the busy timeout never got a
+// say. BEGIN IMMEDIATE takes the write lock before reading anything, and
+// that wait is the one the timeout covers.
 func (db *DB) migrate() error {
 	ctx := context.Background()
-	_, err := db.sql.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL)`)
-	if err != nil {
-		return fmt.Errorf("create schema_version: %w", err)
-	}
 	// One conn for the whole run: BEGIN IMMEDIATE is a statement rather than
 	// a database/sql option, and it has to run on the same connection the
 	// step and its COMMIT do.
@@ -364,6 +368,17 @@ func (db *DB) migrate() error {
 		return fmt.Errorf("migrate: %w", err)
 	}
 	defer conn.Close()
+
+	if _, err := conn.ExecContext(ctx, `BEGIN IMMEDIATE`); err != nil {
+		return fmt.Errorf("begin migration: %w", err)
+	}
+	if _, err := conn.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL)`); err != nil {
+		_, _ = conn.ExecContext(ctx, `ROLLBACK`)
+		return fmt.Errorf("create schema_version: %w", err)
+	}
+	if _, err := conn.ExecContext(ctx, `COMMIT`); err != nil {
+		return fmt.Errorf("create schema_version: %w", err)
+	}
 
 	for {
 		if _, err := conn.ExecContext(ctx, `BEGIN IMMEDIATE`); err != nil {

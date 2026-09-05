@@ -54,8 +54,10 @@ func OpenPath(path string) (*DB, error) {
 	// on a row a foreign key cascade removed — so deleting a conversation
 	// would take its messages and leave their words in the index, which is
 	// the growing-forever store the index was added to stop
-	// (migrate.go).
-	conn, err := sql.Open("sqlite", path+"?_pragma=journal_mode(wal)&_pragma=foreign_keys(on)&_pragma=recursive_triggers(on)&_pragma=busy_timeout(5000)")
+	// (migrate.go). The busy timeout comes first so the pragmas behind it
+	// wait for another opener too: switching the journal mode takes a lock
+	// of its own.
+	conn, err := sql.Open("sqlite", path+"?_pragma=busy_timeout(5000)&_pragma=journal_mode(wal)&_pragma=foreign_keys(on)&_pragma=recursive_triggers(on)")
 	if err != nil {
 		return nil, fmt.Errorf("open database: %w", err)
 	}
