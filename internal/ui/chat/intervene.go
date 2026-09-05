@@ -43,5 +43,9 @@ func (m *Model) injectInterventions() {
 	m.agent.Append(provider.Message{Role: provider.RoleUser, Content: iv.Message})
 	m.appendEntry(entry{kind: entrySystem, text: iv.Notice})
 	m.signal(observe.SignalIntervene, iv.Kind.Signal())
-	m.syncViewport()
+	// A row was appended, so the pane is redrawn the way every other system
+	// row is; the resize hook alone would leave it unseen until the next
+	// stream flush.
+	m.viewport.SetLines(m.renderHistoryLines())
+	m.viewport.GotoBottom()
 }

@@ -61,5 +61,9 @@ func (m *Model) injectTreeNotice(turnStart bool) {
 	m.agent.Append(provider.Message{Role: provider.RoleUser, Content: n.Message})
 	m.appendEntry(entry{kind: entrySystem, text: n.Notice})
 	m.signal(observe.SignalTree, n.Signal())
-	m.syncViewport()
+	// A row was appended, so the pane is redrawn the way every other system
+	// row is; the resize hook alone would leave it unseen until the next
+	// stream flush.
+	m.viewport.SetLines(m.renderHistoryLines())
+	m.viewport.GotoBottom()
 }

@@ -161,7 +161,10 @@ func (m Model) startKey(key string) (Model, bool) {
 	default:
 		return m, false
 	}
-	m.syncViewport()
+	// The pointer is pane content, not panel height: the rows are re-rendered
+	// here, because the resize hook only sets lines when the pane's size has
+	// changed, which on a keypress it never has.
+	m.refreshTranscript()
 	return m, true
 }
 

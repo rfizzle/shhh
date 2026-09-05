@@ -54,6 +54,18 @@ func startModel(t *testing.T, info StartInfo) Model {
 
 func startText(m Model) string { return ansi.Strip(m.renderHistory()) }
 
+// startPointerRow is the row of the pane as drawn — the viewport's lines,
+// which is what a keypress has to update — that carries the pointer's
+// marker, or "" when no row does.
+func startPointerRow(m Model) string {
+	for _, line := range strings.Split(ansi.Strip(m.viewport.View()), "\n") {
+		if strings.Contains(line, "❯") {
+			return line
+		}
+	}
+	return ""
+}
+
 func TestStartScreen_StatesTheProjectItOpenedIn(t *testing.T) {
 	view := startText(startModel(t, startFixture()))
 	for _, want := range []string{
@@ -227,10 +239,19 @@ func TestStartScreen_ArrowsMoveThePointerAndEnterRunsTheOffer(t *testing.T) {
 	if m.startFocus != 1 {
 		t.Fatalf("down moved focus to %d, want 1", m.startFocus)
 	}
+	// The pane the reader sees is the viewport's lines, not a fresh render:
+	// the marker has to be on the second offer there, or the pointer moved
+	// in state and nowhere else.
+	if row := startPointerRow(m); !strings.Contains(row, "explain what changed") {
+		t.Fatalf("after down the marker should stand on the second offer, it is on %q", row)
+	}
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyUp})
 	m = updated.(Model)
 	if m.startFocus != 0 {
 		t.Fatalf("up moved focus to %d, want 0", m.startFocus)
+	}
+	if row := startPointerRow(m); !strings.Contains(row, "pick up") {
+		t.Fatalf("after up the marker should be back on the first offer, it is on %q", row)
 	}
 	// The pointer does not run off either end of the list.
 	for range 5 {
@@ -246,6 +267,9 @@ func TestStartScreen_ArrowsMoveThePointerAndEnterRunsTheOffer(t *testing.T) {
 	}
 	if m.startFocus != 2 {
 		t.Fatalf("focus ran off the bottom to %d", m.startFocus)
+	}
+	if row := startPointerRow(m); !strings.Contains(row, "quality gate") {
+		t.Fatalf("the marker should have followed the pointer to the third offer, it is on %q", row)
 	}
 
 	// Enter on a read-only offer sends it as an ordinary message, through the
