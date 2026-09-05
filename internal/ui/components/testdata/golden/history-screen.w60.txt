@@ -12,7 +12,7 @@
 ── layout ──────────────────────────────────────────────────
 · the list · every row says what became of the command
 shhh history · 6 entries · 2 run         [?] keys · [q] quit
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────
 
 ❯ $ delete every log file older than a week  exit 0     1.4s
   $ show the ten biggest files in this dire…  copied    0.9s
@@ -34,7 +34,7 @@ shhh history · 6 entries · 2 run         [?] keys · [q] quit
 
 · the pointer moved · the preview follows, and has no cursor of its own
 shhh history · 6 entries · 2 run         [?] keys · [q] quit
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────
 
   $ delete every log file older than a week  exit 0     1.4s
   $ show the ten biggest files in this dire…  copied    0.9s
@@ -56,7 +56,7 @@ tue · anthropic/claude-sonnet-4.6                        run
 
 · a long command · continued under the row, never clipped away
 shhh history · 6 entries · 2 run         [?] keys · [q] quit
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────
 
   $ delete every log file older than a week  exit 0     1.4s
   $ show the ten biggest files in this dire…  copied    0.9s
@@ -78,7 +78,7 @@ mon · openai/gpt-5.2                                    save
 
 · filtered · both counts on the query row, and what it hid under the list
 shhh history · 6 entries · 2 run         [?] keys · [q] quit
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────
 
 ▸ log█                                          2 of 6 match
 ────────────────────────────────────────────────────────────
@@ -100,7 +100,7 @@ shhh history · 6 entries · 2 run         [?] keys · [q] quit
 
 · a filter that matched nothing · a row, not an empty pane
 shhh history · 6 entries · 2 run         [?] keys · [q] quit
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────
 
 ▸ kubectl█                                      0 of 6 match
 ────────────────────────────────────────────────────────────
@@ -115,7 +115,7 @@ no entry selected
 
 · [x] · the inline confirm, naming what it would take, defaulting to no
 shhh history · 6 entries · 2 run         [?] keys · [q] quit
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────
 
 ❯ $ delete every log file older than a week  exit 0     1.4s
   $ show the ten biggest files in this dire…  copied    0.9s
@@ -135,7 +135,7 @@ Delete the entry for "delete every log file older than a we…
 
 · a command carried out · the notice the host left behind
 shhh history · 6 entries · 2 run         [?] keys · [q] quit
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────
 
   $ delete every log file older than a week  exit 0     1.4s
 ❯ $ show the ten biggest files in this dire…  copied    0.9s
@@ -157,7 +157,7 @@ copied the command to the clipboard
 
 · [?] · every key the screen has, including the ones the row sheds
 shhh history · 6 entries · 2 run         [?] keys · [q] quit
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────
 
 ❯ $ delete every log file older than a week  exit 0     1.4s
   $ show the ten biggest files in this dire…  copied    0.9s
@@ -180,7 +180,7 @@ shhh history · 6 entries · 2 run         [?] keys · [q] quit
 ── ansi ────────────────────────────────────────────────────
 · the list · every row says what became of the command
 ␛[1;97mshhh history␛[m␛[38;5;241m · 6 entries · 2 run␛[m         ␛[38;5;241m[?] keys · [q] quit␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
 ␛[1;48;5;62m❯ $ delete every log file older than a week  exit 0     1.4s␛[m
   $ show the ten biggest files in this dire…  ␛[92mcopied␛[m    ␛[38;5;252m0.9s␛[m
@@ -202,7 +202,7 @@ shhh history · 6 entries · 2 run         [?] keys · [q] quit
 
 · the pointer moved · the preview follows, and has no cursor of its own
 ␛[1;97mshhh history␛[m␛[38;5;241m · 6 entries · 2 run␛[m         ␛[38;5;241m[?] keys · [q] quit␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   $ delete every log file older than a week  ␛[92mexit 0␛[m     ␛[38;5;252m1.4s␛[m
   $ show the ten biggest files in this dire…  ␛[92mcopied␛[m    ␛[38;5;252m0.9s␛[m
@@ -224,7 +224,7 @@ shhh history · 6 entries · 2 run         [?] keys · [q] quit
 
 · a long command · continued under the row, never clipped away
 ␛[1;97mshhh history␛[m␛[38;5;241m · 6 entries · 2 run␛[m         ␛[38;5;241m[?] keys · [q] quit␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   $ delete every log file older than a week  ␛[92mexit 0␛[m     ␛[38;5;252m1.4s␛[m
   $ show the ten biggest files in this dire…  ␛[92mcopied␛[m    ␛[38;5;252m0.9s␛[m
@@ -246,7 +246,7 @@ shhh history · 6 entries · 2 run         [?] keys · [q] quit
 
 · filtered · both counts on the query row, and what it hid under the list
 ␛[1;97mshhh history␛[m␛[38;5;241m · 6 entries · 2 run␛[m         ␛[38;5;241m[?] keys · [q] quit␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
 ␛[94m▸ ␛[m␛[97mlog█␛[m                                          ␛[38;5;241m2 of 6 match␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
@@ -268,7 +268,7 @@ shhh history · 6 entries · 2 run         [?] keys · [q] quit
 
 · a filter that matched nothing · a row, not an empty pane
 ␛[1;97mshhh history␛[m␛[38;5;241m · 6 entries · 2 run␛[m         ␛[38;5;241m[?] keys · [q] quit␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
 ␛[94m▸ ␛[m␛[97mkubectl█␛[m                                      ␛[38;5;241m0 of 6 match␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
@@ -283,7 +283,7 @@ shhh history · 6 entries · 2 run         [?] keys · [q] quit
 
 · [x] · the inline confirm, naming what it would take, defaulting to no
 ␛[1;97mshhh history␛[m␛[38;5;241m · 6 entries · 2 run␛[m         ␛[38;5;241m[?] keys · [q] quit␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
 ␛[1;48;5;62m❯ $ delete every log file older than a week  exit 0     1.4s␛[m
   $ show the ten biggest files in this dire…  ␛[92mcopied␛[m    ␛[38;5;252m0.9s␛[m
@@ -303,7 +303,7 @@ shhh history · 6 entries · 2 run         [?] keys · [q] quit
 
 · a command carried out · the notice the host left behind
 ␛[1;97mshhh history␛[m␛[38;5;241m · 6 entries · 2 run␛[m         ␛[38;5;241m[?] keys · [q] quit␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   $ delete every log file older than a week  ␛[92mexit 0␛[m     ␛[38;5;252m1.4s␛[m
 ␛[1;48;5;62m❯ $ show the ten biggest files in this dire…  copied    0.9s␛[m
@@ -325,7 +325,7 @@ shhh history · 6 entries · 2 run         [?] keys · [q] quit
 
 · [?] · every key the screen has, including the ones the row sheds
 ␛[1;97mshhh history␛[m␛[38;5;241m · 6 entries · 2 run␛[m         ␛[38;5;241m[?] keys · [q] quit␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
 ␛[1;48;5;62m❯ $ delete every log file older than a week  exit 0     1.4s␛[m
   $ show the ten biggest files in this dire…  ␛[92mcopied␛[m    ␛[38;5;252m0.9s␛[m

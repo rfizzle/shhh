@@ -478,7 +478,7 @@ the one beside it. The refusal names the surface, the keystroke and both acts.
 deleting a saved chat, forcing an undo past its confirm: these are the keys a
 reader must not reach by reflex, which is why the agent manager kills on a
 capital and gave up the lower-case letter to do it
-([the departure](../interface/departures.md#the-agent-manager-kills-on-a-capital)).
+([the rule](../interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard)).
 A file that took the letter back would undo that decision from outside the
 program, where no review sees it.
 

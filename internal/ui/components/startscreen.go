@@ -166,7 +166,7 @@ var startTrailGaps = []int{1, 1, 2, 3, 5}
 // and the face costs four more; twenty-four is the first height that holds
 // the widest of those with the face above it and a row still to spare. Under
 // it those four rows come out of the offers, which are the reason the screen
-// exists, so the name goes in one row of the texture instead — which costs
+// exists, so the name goes in one row of the rule instead — which costs
 // two.
 const startFaceHeight = 24
 
@@ -221,11 +221,11 @@ func startTrail(room int) string {
 	return b.String()
 }
 
-// nameRule is the one-row face: the name sitting in the texture, in the
+// nameRule is the one-row face: the name sitting in the rule, in the
 // grammar a card's top edge puts its title in, so the short screen and the
 // tall one are the same product rather than two.
 func nameRule(width int) string {
-	// Two columns of texture, a space either side of the name, and whatever
+	// Two columns of rule, a space either side of the name, and whatever
 	// the row has left after them. Under three columns left there is no rule
 	// behind the name, only a glyph or two trailing it, which reads as a
 	// stray character rather than as chrome — so the row is not drawn at all
@@ -234,8 +234,8 @@ func nameRule(width int) string {
 	if fill < 3 {
 		return ""
 	}
-	return sty.Dim.Render(textureFill(2)) + " " + brightStyle().Render(startName) +
-		" " + sty.Dim.Render(textureFill(fill))
+	return sty.Dim.Render(ruleRun(2)) + " " + brightStyle().Render(startName) +
+		" " + sty.Dim.Render(ruleRun(fill))
 }
 
 // startName is what the product calls itself. It is here rather than borrowed

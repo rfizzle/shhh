@@ -12,7 +12,7 @@
 ── layout ──────────────────────────────────────────────────
 · the set being worked · the goal, the meter, and the stage of the one in flight
 backlog · sprint                     5 items · [?] keys · [q] back to the prompt
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────────────────────────
 
 Put the backlog, the run and the sprint on screen, so watching a night's work is
 a glance rather than a scroll.
@@ -38,7 +38,7 @@ chore · high · size M · done · written 2026-08-20 · in the cockpit sprint
 
 · stopped on a block · the block on the board with the item that wrote it
 backlog · sprint                     5 items · [?] keys · [q] back to the prompt
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────────────────────────
 
 Put the backlog, the run and the sprint on screen, so watching a night's work is
 a glance rather than a scroll.
@@ -64,7 +64,7 @@ chore · high · size M · done · written 2026-08-20 · in the cockpit sprint
 
 · closed · the record, with the page it wrote as the last row
 backlog · sprint                     0 items · [?] keys · [q] back to the prompt
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────────────────────────
 
 Put the backlog, the run and the sprint on screen, so watching a night's work is
 a glance rather than a scroll.
@@ -79,7 +79,7 @@ no item selected
 
 · planning · the proposal with the budget in the header
 backlog · planning         3 of 3 items kept · [?] keys · [q] back to the prompt
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────────────────────────
 
 nothing is written until [enter]
 Make every piece of prose on screen come out of one renderer.
@@ -96,7 +96,7 @@ Reads as a minor release.
 
 · a row dropped · it keeps its place and loses its tick
 backlog · planning         2 of 3 items kept · [?] keys · [q] back to the prompt
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────────────────────────
 
 nothing is written until [enter]
 Make every piece of prose on screen come out of one renderer.
@@ -113,7 +113,7 @@ Reads as a minor release.
 
 · what was left out · folded under the set until the key opens it
 backlog · planning         3 of 3 items kept · [?] keys · [q] back to the prompt
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────────────────────────
 
 nothing is written until [enter]
 Make every piece of prose on screen come out of one renderer.
@@ -134,7 +134,7 @@ Reads as a minor release.
 ── ansi ────────────────────────────────────────────────────
 · the set being worked · the goal, the meter, and the stage of the one in flight
 ␛[1;97mbacklog␛[m␛[38;5;241m · sprint␛[m                     ␛[38;5;241m5 items␛[m␛[38;5;241m · [?] keys · [q] back to the prompt␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;241mPut the backlog, the run and the sprint on screen, so watching a night's work is␛[m
 ␛[38;5;241ma glance rather than a scroll.␛[m
@@ -160,7 +160,7 @@ Reads as a minor release.
 
 · stopped on a block · the block on the board with the item that wrote it
 ␛[1;97mbacklog␛[m␛[38;5;241m · sprint␛[m                     ␛[38;5;241m5 items␛[m␛[38;5;241m · [?] keys · [q] back to the prompt␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;241mPut the backlog, the run and the sprint on screen, so watching a night's work is␛[m
 ␛[38;5;241ma glance rather than a scroll.␛[m
@@ -186,7 +186,7 @@ Reads as a minor release.
 
 · closed · the record, with the page it wrote as the last row
 ␛[1;97mbacklog␛[m␛[38;5;241m · sprint␛[m                     ␛[38;5;241m0 items␛[m␛[38;5;241m · [?] keys · [q] back to the prompt␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;241mPut the backlog, the run and the sprint on screen, so watching a night's work is␛[m
 ␛[38;5;241ma glance rather than a scroll.␛[m
@@ -201,7 +201,7 @@ Reads as a minor release.
 
 · planning · the proposal with the budget in the header
 ␛[1;97mbacklog␛[m␛[38;5;241m · planning␛[m         ␛[38;5;241m3 of 3 items kept␛[m␛[38;5;241m · [?] keys · [q] back to the prompt␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;241mnothing is written until ␛[m␛[94m[enter]␛[m
 ␛[38;5;241mMake every piece of prose on screen come out of one renderer.␛[m
@@ -218,7 +218,7 @@ Reads as a minor release.
 
 · a row dropped · it keeps its place and loses its tick
 ␛[1;97mbacklog␛[m␛[38;5;241m · planning␛[m         ␛[38;5;241m2 of 3 items kept␛[m␛[38;5;241m · [?] keys · [q] back to the prompt␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;241mnothing is written until ␛[m␛[94m[enter]␛[m
 ␛[38;5;241mMake every piece of prose on screen come out of one renderer.␛[m
@@ -235,7 +235,7 @@ Reads as a minor release.
 
 · what was left out · folded under the set until the key opens it
 ␛[1;97mbacklog␛[m␛[38;5;241m · planning␛[m         ␛[38;5;241m3 of 3 items kept␛[m␛[38;5;241m · [?] keys · [q] back to the prompt␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;241mnothing is written until ␛[m␛[94m[enter]␛[m
 ␛[38;5;241mMake every piece of prose on screen come out of one renderer.␛[m

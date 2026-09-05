@@ -12,7 +12,7 @@
 ── layout ──────────────────────────────────────────────────
 · the list · every row states where its value came from
 shhh config                              [?] keys · [q] quit
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────
 
   SESSION
   ❯ permission mode    ⏵⏵ auto — edits apply; allowli…  user
@@ -36,7 +36,7 @@ shhh config                              [?] keys · [q] quit
 
 · changing one · the picker opens under the row, not over the screen
 shhh config                              [?] keys · [q] quit
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────
 
   SESSION
     permission mode    ⏵⏵ auto — edits apply; allowli…  user
@@ -60,7 +60,7 @@ shhh config                              [?] keys · [q] quit
 
 · the picker filtered · the query row carries both counts
 shhh config                              [?] keys · [q] quit
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────
 
   SESSION
     permission mode    ⏵⏵ auto — edits apply; allowli…  user
@@ -84,7 +84,7 @@ shhh config                              [?] keys · [q] quit
 
 · a setting with no answers to choose · a field under the row
 shhh config                              [?] keys · [q] quit
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────
 
   SESSION
     permission mode    ⏵⏵ auto — edits apply; allowli…  user
@@ -108,7 +108,7 @@ shhh config                              [?] keys · [q] quit
 
 · a secret · the mask, never the key
 shhh config                              [?] keys · [q] quit
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────
 
   SESSION
     permission mode    ⏵⏵ auto — edits apply; allowli…  user
@@ -132,7 +132,7 @@ shhh config                              [?] keys · [q] quit
 
 · staged · the header counts it and [w] is offered
 shhh config · 2 changes unwritten        [?] keys · [q] quit
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────
 
   SESSION
     permission mode    ⏵⏵ auto — edits apply; allowli…  user
@@ -156,7 +156,7 @@ shhh config · 2 changes unwritten        [?] keys · [q] quit
 
 · the write-back · the inline confirm, defaulting to no
 shhh config · 2 changes unwritten        [?] keys · [q] quit
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────
 
   SESSION
   ❯ permission mode    ⏵⏵ auto — edits apply; allowli…  user
@@ -180,7 +180,7 @@ Write 2 changes to ~/.config/shhh/config.toml?  [y/N]
 
 · the settings filtered · the list is the same window
 shhh config                              [?] keys · [q] quit
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────
 
   ▸ mo█                                        4 of 14 match
   SESSION
@@ -198,7 +198,7 @@ shhh config                              [?] keys · [q] quit
 
 · [?] · every key the screen has, including the picker's
 shhh config                              [?] keys · [q] quit
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────
 
   SESSION
   ❯ permission mode    ⏵⏵ auto — edits apply; allowli…  user
@@ -223,7 +223,7 @@ shhh config                              [?] keys · [q] quit
 ── ansi ────────────────────────────────────────────────────
 · the list · every row states where its value came from
 ␛[1;97mshhh config␛[m                              ␛[38;5;241m[?] keys · [q] quit␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mSESSION␛[m
   ␛[1;48;5;62m❯ permission mode    ⏵⏵ auto — edits apply; allowli…  user␛[m
@@ -247,7 +247,7 @@ shhh config                              [?] keys · [q] quit
 
 · changing one · the picker opens under the row, not over the screen
 ␛[1;97mshhh config␛[m                              ␛[38;5;241m[?] keys · [q] quit␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mSESSION␛[m
     permission mode    ␛[92m⏵⏵ auto␛[m ␛[38;5;241m— edits apply; allowli…␛[m  ␛[38;5;252muser␛[m
@@ -271,7 +271,7 @@ shhh config                              [?] keys · [q] quit
 
 · the picker filtered · the query row carries both counts
 ␛[1;97mshhh config␛[m                              ␛[38;5;241m[?] keys · [q] quit␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mSESSION␛[m
     permission mode    ␛[92m⏵⏵ auto␛[m ␛[38;5;241m— edits apply; allowli…␛[m  ␛[38;5;252muser␛[m
@@ -295,7 +295,7 @@ shhh config                              [?] keys · [q] quit
 
 · a setting with no answers to choose · a field under the row
 ␛[1;97mshhh config␛[m                              ␛[38;5;241m[?] keys · [q] quit␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mSESSION␛[m
     permission mode    ␛[92m⏵⏵ auto␛[m ␛[38;5;241m— edits apply; allowli…␛[m  ␛[38;5;252muser␛[m
@@ -319,7 +319,7 @@ shhh config                              [?] keys · [q] quit
 
 · a secret · the mask, never the key
 ␛[1;97mshhh config␛[m                              ␛[38;5;241m[?] keys · [q] quit␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mSESSION␛[m
     permission mode    ␛[92m⏵⏵ auto␛[m ␛[38;5;241m— edits apply; allowli…␛[m  ␛[38;5;252muser␛[m
@@ -343,7 +343,7 @@ shhh config                              [?] keys · [q] quit
 
 · staged · the header counts it and [w] is offered
 ␛[1;97mshhh config␛[m␛[38;5;214m · 2 changes unwritten␛[m        ␛[38;5;241m[?] keys · [q] quit␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mSESSION␛[m
     permission mode    ␛[92m⏵⏵ auto␛[m ␛[38;5;241m— edits apply; allowli…␛[m  ␛[38;5;252muser␛[m
@@ -367,7 +367,7 @@ shhh config                              [?] keys · [q] quit
 
 · the write-back · the inline confirm, defaulting to no
 ␛[1;97mshhh config␛[m␛[38;5;214m · 2 changes unwritten␛[m        ␛[38;5;241m[?] keys · [q] quit␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mSESSION␛[m
   ␛[1;48;5;62m❯ permission mode    ⏵⏵ auto — edits apply; allowli…  user␛[m
@@ -391,7 +391,7 @@ shhh config                              [?] keys · [q] quit
 
 · the settings filtered · the list is the same window
 ␛[1;97mshhh config␛[m                              ␛[38;5;241m[?] keys · [q] quit␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   ␛[94m▸ ␛[m␛[97mmo█␛[m                                        ␛[38;5;241m4 of 14 match␛[m
   ␛[1;94mSESSION␛[m
@@ -409,7 +409,7 @@ shhh config                              [?] keys · [q] quit
 
 · [?] · every key the screen has, including the picker's
 ␛[1;97mshhh config␛[m                              ␛[38;5;241m[?] keys · [q] quit␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mSESSION␛[m
   ␛[1;48;5;62m❯ permission mode    ⏵⏵ auto — edits apply; allowli…  user␛[m

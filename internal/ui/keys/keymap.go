@@ -21,7 +21,7 @@ package keys
 // and a file that broke it would put the first case of a switch silently in
 // front of the second. And it may not move a destructive act onto a movement
 // key: the reason the agent manager kills on a capital in the first place
-// (docs/interface/departures.md#the-agent-manager-kills-on-a-capital),
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard),
 // which a keymap would otherwise be a way around.
 //
 // Refusing the whole file is the point of refusing at all. A file half
@@ -226,7 +226,7 @@ func destructive() []Binding {
 // records: a movement key may not also end something. The manager gave up
 // the lower-case letter for it, and a file that took it back would undo the
 // decision from outside the program
-// (docs/interface/departures.md#the-agent-manager-kills-on-a-capital).
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 func checkDestructive() error {
 	for _, b := range destructive() {
 		for _, k := range b.Keys() {

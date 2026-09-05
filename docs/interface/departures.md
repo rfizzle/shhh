@@ -8,58 +8,15 @@ the next reader finds a decision rather than a discrepancy.
 Two positions are allowed and there is no third: a divergence is either fixed
 in the implementation, or it is recorded here. What counts as a divergence is
 what a reader sees on the row — a field named one thing in the design and
-another in Go is not one.
+another in Go is not one. Where a guideline and an artboard disagree about a
+rule, the guideline wins, and an artboard that breaks one is a bug in the
+artboard rather than a departure.
 
-## An unavailable option carries a glyph, not just a shade
-
-The design paints an unusable row grey and stops there.
-[Colour never carries meaning alone](principles.md#colour-never-carries-meaning-alone)
-does not allow a shade to be the only difference between two states, and the
-monochrome palette has one grey to spend. The glyph stays, and so do the words
-beside it.
-
-Where a guideline and an artboard disagree about a rule, the guideline wins.
-
-## An unavailable option is still selectable
-
-The design says such a row is shown but not selectable. Choosing it is how the
-surface explains *why* it cannot be used — the reason is stated on the row
-rather than swallowed. Nothing acts on the choice, so no key does anything it
-did not offer.
-
-It is a row that answers rather than a row that refuses.
-
-## The multi-select keeps its pointer
-
-The design draws a focused row as a checkbox inside a focus background, with
-no pointer. A background is the one focus treatment a monochrome terminal
-cannot carry, so the pointer stays.
-
-## The note field is a labelled row, not a nested frame
-
-The design draws a border around the note. A card's height comes out of the
-bottom panel's budget, and a nested frame spends two of its rows on that
-border — taken from the options. A label above the text names the field just
-as well and costs nothing, and it turns red when the note is required exactly
-as the border would have.
-
-## The plan card numbers its options
-
-The design draws them unnumbered. The card offers jump-to-number keys, and a
-number you can read has to be a number you can type.
-
-## The plan checklist has a fourth state
-
-The design declares done, running and to-do. A step that finished and
-contained a failure is none of the three, and the checklist is the answer to
-"where are we".
-
-## The plan checklist names a command, not keys
-
-The design offers keys on the rail. The rail has no way to hold the keyboard,
-so a key printed there would be an offer nothing accepts
-([invariant 5](principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard)).
-It names the command that shows the whole list instead.
+A section here is one of two things, and says which: a *disagreement*, where
+an artboard draws one thing and the binary draws another for a stated reason;
+or a *gap*, where no artboard draws the surface at all and the binary had to
+decide. A gap is closed by drawing the artboard, and where the two then differ
+the artboard wins.
 
 ## Diff line numbers are as wide as the file
 
@@ -73,14 +30,6 @@ The design uses a true minus sign, which is the right character for a *count*
 — and it is used for counts. In the gutter the marker is part of a unified
 diff, which is a format other tools parse, so it stays a hyphen.
 
-## A fan-out lane's verb is the kind, not the child's name
-
-The design puts the child's name in the verb field. The verb vocabulary is
-[closed](principles.md#closed-vocabularies) and its field never grows, and two
-children's names clip to the same eight columns. The verb says what kind of
-row it is; the name leads the target, which is the only field allowed to grow,
-and the lane still lines up with the rows around it.
-
 ## The inspector rail is drawn at one width and rendered at several
 
 The rail's artboard is drawn at its narrowest, which is the width the surface
@@ -93,55 +42,19 @@ soon as there is a wide variant of it to state them; until then the artboard
 is the narrow end of a range rather than the whole of it, which is a gap and
 not a disagreement.
 
-## The agent manager kills on a capital
+## The scroll gutter has no artboard
 
-The design offers a lower-case key. That key is move-up on every list in the
-product, including this one, and a movement key that also kills a process is
-the worst kind of false offer. Cancelling and killing are the same letter in
-two cases, and the pair reads as one escalation.
+No artboard draws a scroll gutter, and the drawing kit has no glyph for one.
+The binary draws a dashed track under a block thumb in the column beside the
+pane divider, told from the divider by shape and not by shade
+([invariant 1](principles.md#colour-never-carries-meaning-alone)), because two
+rules a column apart in the same material read as a double border.
 
-The rule outlives this surface. A
-[keymap file](../capabilities/configuration.md#the-keymap-file) can move keys,
-and it is refused where it would put a destructive act — killing, deleting,
-forcing an undo past its confirm — under a key that moves the cursor. A
-decision taken here to keep a reflex safe is not one a file gets to reverse.
-
-## The scroll gutter is a dashed track under a block thumb
-
-The design gives the gutter the same rule the frame and the pane divider draw,
-one shade apart. The gutter sits one column from that divider, so two rules a
-column apart read as a double border, and the rows the thumb covers read as a
-third. The shade that was meant to separate them is the first thing a
-monochrome terminal spends, and a sixteen-colour one spends it too.
-
-The gutter is the one column on the screen that reports a position rather than
-bounding a region, so it is the one that changes: a dashed track under a block
-thumb, told from the divider by shape and not by shade
-([invariant 1](principles.md#colour-never-carries-meaning-alone)).
-
-## Stopping a run is the cancel chord, not Esc
-
-The design offers Esc on the rail as the key that stops the run. Esc here
-means [go back](principles.md#esc-is-always-the-safe-answer) and nothing else:
-it clears the draft, drops a selection, dismisses a menu, detaches a level,
-leaves a waiting decision waiting. A key that backs out of that many surfaces
-cannot also be the one that abandons minutes of work, because the hand
-presses it before the eye has read which of them it is about to do. The
-cancel chord stops the turn, and every rail that offered the artboard's Esc
-names the chord instead.
-
-## The turn's account opens the top rail
-
-The frame's artboard hangs the session identity at the rail's left corner and
-the running turn's account against its right. The account is the only thing on
-the frame that changes while a turn runs, and the eye that is watching it is on
-the prompt glyph two rows below the left corner; on a three-thousand-pixel
-window the artboard's arrangement puts the moving figures a hundred and fifty
-columns from there, at the one edge of the screen nobody is looking at.
-
-So the two sides trade places: the account opens the rail and the identity —
-the breadcrumb while attached, nothing at the root — closes it. Where the rail
-has room for only one, the account is the one that stays.
+The drawing is provisional. The gutter is the one column on the screen that
+reports a position rather than bounding a region, and what that column should
+look like is a decision the design system has not taken. This is a gap: when
+the gutter is drawn, the artboard wins, and the kit gains whatever glyphs it
+needs.
 
 ## The backlog block opens with a sprint row
 
@@ -153,52 +66,20 @@ sits above the items, states the set's name and how many of them are done, and
 is absent altogether where no set is open, so a backlog worked without one
 looks exactly as the artboard draws it.
 
-## The backlog run's row is drawn with the step's grammar
+## The backlog run's row has no artboard
 
-The RunRow artboard states the row's own layout. What the binary draws is the
-step header's grammar instead — the same fold state, the same lead columns,
-the same faint rule, the same right-aligned duration field — with the stages
-under it as a strip and each stage's own note under that.
+There is no artboard for a run's row. What the binary draws is the step
+header's grammar — the same fold state, the same lead columns, the same faint
+rule, the same right-aligned duration field — with the stages under it as a
+strip and each stage's own note under that.
 
 The reason is the neighbours. A run's row sits in a transcript of steps, and
 a run *is* a step of steps: a second header shape a column out of alignment
 would read as a different kind of thing at exactly the moment the reader is
 being told it is the same kind. Column widths are the design system's to
-settle, and the artboard is the place to settle them; until the two are read
-side by side this is a row drawn from the grammar its neighbours keep rather
-than a disagreement with the artboard about any of them.
-
-## The chrome's empty runs are a diagonal texture
-
-The design draws a screen's title rule and a card's top edge as flat lines,
-which is what they were. Two families that share no material read as two
-products, and the shade that would otherwise be spent making them look
-related is the shade a monochrome terminal has already spent.
-
-So the run that carries nothing — the rule under a header, the part of a top
-edge between the title and the chips — is filled with a diagonal instead. It
-is one glyph and no colour, which is the point: the alternative that gives
-the same read is a gradient, and a gradient is a run of colours no token
-names.
-
-The glyph is a choice the artboards have not made, and it belongs to them as
-soon as there is one to make it in. Until then this is a material picked to
-be checkable in two greys rather than a disagreement about any drawing.
-
-## The product's face is three rows of half blocks
-
-There is no wordmark artboard. The start screen is the one surface with rows
-to spare and the only place the product is looked at rather than read, so it
-is where the name is drawn: three rows of the half-block set, with the mark
-the working label stands an unarrived cell in for trailing off the end of it.
-
-Two rules were decided here that an artboard would otherwise decide. The
-letterforms are drawn from the drawing kit rather than from a font, because a
-font is a dependency and four letters are three lines of table. And the face
-is spent out of the pane's rows rather than the window's, so a short pane gets
-the name in one row of the texture and a monochrome terminal gets neither —
-the face states nothing the line under it does not, and what states nothing is
-what a palette with two greys gives up first.
+settle, and the artboard is the place to settle them. This is a gap: when the
+row is drawn, this is what the artboard has to reconcile with, and where the
+two differ the artboard wins.
 
 ## The light table's rungs were chosen in the binary
 
@@ -234,11 +115,16 @@ palette.
 
 ## The backlog screen's layout was decided in the binary
 
-There is no artboard for it. The screen is the supporting screens' own shape
-over backlog items, so most of it needed no decision — the header and its
-rule, the two panes and the divider, the key row, the windowed list and the
-counted overflow markers were all drawn already. Four things it could not
-take from anywhere, and they were decided here:
+The Backlog artboard draws `/todo` as a picker: a card in the panel, one slug
+per row with its state beside it, and enter to read one. The binary draws a
+screen. Reading an item, walking both ends of its dependencies and acting on
+it are what the command is opened for, and a card cannot hold them, so the
+picker was superseded rather than disagreed with — the screen is the
+supporting screens' own shape over backlog items, and an artboard for it is
+owed. Most of it needed no decision: the header and its rule, the two panes
+and the divider, the key row, the windowed list and the counted overflow
+markers were all drawn already. Four things it could not take from anywhere,
+and they were decided here:
 
 **The row's field order, and which field gives ground.** The name and the two
 grade letters are kept, the state clips, and the title goes first. The pane
@@ -303,7 +189,7 @@ with, and where the two differ the artboard wins.
 There is no artboard for it, and one is owed. Most of the tab needed no
 decision — the two panes, the windowed list, the header, the rule and the key
 row are the backlog screen's, drawn already, and the progress meter is the
-step meter with the set's own noun. Four things it could not take from
+step meter with the set's own noun. Five things it could not take from
 anywhere, and they were decided here:
 
 **The head is pinned above both panes, and it gives ground first.** What the
@@ -328,26 +214,22 @@ at. The card holds the keyboard while it is up, so the tab's own list is
 drawn and not live — which is what lets the card keep `j/k`, the one pair
 this screen had to break.
 
+**The plan's card carries a reading, and folds what it left out.** The
+proposal is a reading of the ready items — grouped by what makes a set ship
+as one change — so every row's reason is a sentence a model wrote, and the
+card has a second half: the candidates the reading did not take, each with
+one word for why. That list is folded under the set behind its own key rather
+than drawn beside it. What the reader is answering is the set; what was left
+out is the evidence behind the answer, and a recommendation that showed only
+what it took could not be argued with — which is the whole of what a reading
+is for. Folded, the row states how many went and which words they took, so
+the count is never the only thing on screen
+([fold, never hide](principles.md#fold-never-hide)).
+
 **A dropped row keeps its place.** The alternative was removing it, and the
 card is the only record of what was proposed: a row that left could not be put
 back without planning again. So the box empties and the row stays where the
 order put it.
 
-When there is an artboard, these four decisions are what it has to reconcile
+When there is an artboard, these five decisions are what it has to reconcile
 with, and where the two differ the artboard wins.
-
-## The sprint plan's card carries a reading, and folds what it left out
-
-The design draws the proposal as a list of items with a reason on each row
-and nothing else. The proposal is a reading of the ready items — grouped by
-what makes a set ship as one change — so every row's reason is a sentence a
-model wrote, and the card has a second half the design has no room for: the
-candidates the reading did not take, each with one word for why.
-
-That list is folded under the set behind its own key rather than drawn
-beside it. What the reader is answering is the set; what was left out is the
-evidence behind the answer, and a recommendation that showed only what it
-took could not be argued with — which is the whole of what a reading is for.
-Folded, the row states how many went and which words they took, so the count
-is never the only thing on screen
-([fold, never hide](principles.md#fold-never-hide)).

@@ -12,7 +12,7 @@
 ── layout ──────────────────────────────────────────────────
 · the set · a line per item, and what was left out folded under it
 backlog · planning · everything ready                    2 of 2 items kept · [?] keys · [q] back to the prompt
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 nothing is written until [enter]
 Make the cache expire what it should and say what it did.
@@ -28,7 +28,7 @@ Reads as a minor release.
 
 · what was left out · the word beside each candidate the reading did not take
 backlog · planning · everything ready                    2 of 2 items kept · [?] keys · [q] back to the prompt
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 nothing is written until [enter]
 Make the cache expire what it should and say what it did.
@@ -46,7 +46,7 @@ Reads as a minor release.
 
 · a row dropped · it keeps its place and loses its tick
 backlog · planning · everything ready                    1 of 2 items kept · [?] keys · [q] back to the prompt
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 nothing is written until [enter]
 Make the cache expire what it should and say what it did.
@@ -63,7 +63,7 @@ Reads as a minor release.
 ── ansi ────────────────────────────────────────────────────
 · the set · a line per item, and what was left out folded under it
 ␛[1;97mbacklog␛[m␛[38;5;241m · planning␛[m␛[38;5;241m · everything ready␛[m                    ␛[38;5;241m2 of 2 items kept␛[m␛[38;5;241m · [?] keys · [q] back to the prompt␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;241mnothing is written until ␛[m␛[94m[enter]␛[m
 ␛[38;5;241mMake the cache expire what it should and say what it did.␛[m
@@ -79,7 +79,7 @@ Reads as a minor release.
 
 · what was left out · the word beside each candidate the reading did not take
 ␛[1;97mbacklog␛[m␛[38;5;241m · planning␛[m␛[38;5;241m · everything ready␛[m                    ␛[38;5;241m2 of 2 items kept␛[m␛[38;5;241m · [?] keys · [q] back to the prompt␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;241mnothing is written until ␛[m␛[94m[enter]␛[m
 ␛[38;5;241mMake the cache expire what it should and say what it did.␛[m
@@ -97,7 +97,7 @@ Reads as a minor release.
 
 · a row dropped · it keeps its place and loses its tick
 ␛[1;97mbacklog␛[m␛[38;5;241m · planning␛[m␛[38;5;241m · everything ready␛[m                    ␛[38;5;241m1 of 2 items kept␛[m␛[38;5;241m · [?] keys · [q] back to the prompt␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;241mnothing is written until ␛[m␛[94m[enter]␛[m
 ␛[38;5;241mMake the cache expire what it should and say what it did.␛[m

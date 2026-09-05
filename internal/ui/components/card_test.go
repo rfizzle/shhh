@@ -9,9 +9,9 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
-// The run between a card's title and its chips is texture, and it is the same
-// texture a take-over screen's title rule is made of — that is the whole of
-// what makes a card and a screen read as one product rather than as two
+// The run between a card's title and its chips is the same rule a take-over
+// screen's title rule is made of, in colour and in mono alike — one material
+// is what makes a card and a screen read as one product rather than as two
 // widgets that happen to be in the same binary.
 func TestCard_TopEdgeAndTheScreenRuleAreTheSameMaterial(t *testing.T) {
 	withColorProfile(t, colorprofile.ANSI256)
@@ -23,39 +23,28 @@ func TestCard_TopEdgeAndTheScreenRuleAreTheSameMaterial(t *testing.T) {
 	t.Cleanup(func() { SetMono(was) })
 	SetMono(false)
 	color := top()
-	if !strings.Contains(color, textureMark) || strings.Contains(color, plainMark+plainMark) {
-		t.Fatalf("a card's top edge should be filled with the texture, got %q", color)
-	}
-	if rule := ansi.Strip(titleRule(60)); !strings.Contains(rule, textureMark) {
-		t.Fatalf("a screen's title rule should be the same texture, got %q", rule)
-	}
-	// A rule inside a surface divides rather than bounds, and stays flat.
-	if rule := ansi.Strip(screenRule(60)); strings.Contains(rule, textureMark) {
-		t.Fatalf("a pane divider is not an edge, got %q", rule)
-	}
-
-	// Mono has one grey for chrome and no second tone to spend on a
-	// decoration, so both collapse to the flat rule they were.
-	SetMono(true)
-	mono := top()
-	if strings.Contains(mono, textureMark) {
-		t.Fatalf("the texture should be declined in mono, got %q", mono)
-	}
-	if !strings.Contains(mono, strings.Repeat(plainMark, 8)) {
-		t.Fatalf("mono should leave the flat rule behind, got %q", mono)
+	if !strings.Contains(color, strings.Repeat(plainMark, 8)) {
+		t.Fatalf("a card's top edge should be filled with the rule, got %q", color)
 	}
 	if rule := ansi.Strip(titleRule(60)); rule != strings.Repeat(plainMark, 60) {
-		t.Fatalf("the mono title rule should be the flat one, got %q", rule)
+		t.Fatalf("a screen's title rule should be the flat rule, got %q", rule)
 	}
-	if lipgloss.Width(color) != lipgloss.Width(mono) {
-		t.Fatalf("the two edges measure differently: %d vs %d", lipgloss.Width(color), lipgloss.Width(mono))
+	if rule := ansi.Strip(screenRule(60)); rule != strings.Repeat(plainMark, 60) {
+		t.Fatalf("a pane divider is the same rule, got %q", rule)
+	}
+
+	// Mono has one grey for chrome and nothing to decorate with, and the
+	// row it draws is the same row.
+	SetMono(true)
+	if mono := top(); mono != color {
+		t.Fatalf("the top edge should not change under mono:\n%q\n%q", color, mono)
 	}
 }
 
-// The texture fills only what carries nothing. A card's border colour says
-// how much the decision on it weighs, so the corners, the title's lead-in and
-// the chips keep it and only the run between them is drawn as chrome.
-func TestCard_TextureNeverEatsTheTitleOrTheChips(t *testing.T) {
+// The fill takes only what carries nothing. A card's border colour says how
+// much the decision on it weighs, so the corners, the title's lead-in and the
+// chips keep it and only the run between them is drawn as chrome.
+func TestCard_FillNeverEatsTheTitleOrTheChips(t *testing.T) {
 	withColorProfile(t, colorprofile.ANSI256)
 	was := Mono()
 	t.Cleanup(func() { SetMono(was) })
@@ -69,8 +58,8 @@ func TestCard_TextureNeverEatsTheTitleOrTheChips(t *testing.T) {
 		if !strings.HasPrefix(top, "┌─ ") || !strings.HasSuffix(top, "┐") {
 			t.Fatalf("width %d: the frame lost a corner: %q", width, top)
 		}
-		if strings.Contains(top, textureMark+"Approve") || strings.Contains(top, "medium"+textureMark) {
-			t.Fatalf("width %d: the texture ran into a field: %q", width, top)
+		if strings.Contains(top, plainMark+"Approve") || strings.Contains(top, "medium"+plainMark) {
+			t.Fatalf("width %d: the fill ran into a field: %q", width, top)
 		}
 	}
 }

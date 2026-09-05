@@ -12,7 +12,7 @@
 ── layout ──────────────────────────────────────────────────
 · the brief · the roles this session already has are on the header
 /agents new · a coding agent · researcher                                                            esc leave
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   ● brief   · questions   · draft
 
@@ -32,7 +32,7 @@
 
 · the drafter's first question, asked on its own
 /agents new · a coding agent · researcher                                                            esc leave
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   ✓ brief   ● questions   · draft
 
@@ -46,7 +46,7 @@
 
 · the second, with the first answer still above it
 /agents new · a coding agent · researcher                                                      esc back a step
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   ✓ brief   ● questions   · draft
 
@@ -63,7 +63,7 @@
 
 · the draft · both places a coding agent's profile can live
 /agents new · a coding agent · researcher                                                esc discard the draft
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   ✓ brief   ✓ questions   ● draft
 
@@ -79,7 +79,7 @@
     You add table-driven tests for one package at a time. Read the package first, then the tests it already
     ⋮ 2 more lines · shift+↓ read on
 
-┌─ Keep test-writer? ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱┐
+┌─ Keep test-writer? ────────────────────────────────────────────────────────────────────────────────────────┐
 │ ❯ 1. Save to this project  /repo/.shhh/agents                                                              │
 │   2. Save globally         /home/x/.config/shhh/agents                                                     │
 │   3. Refine                say what to change in the note                                                  │
@@ -92,7 +92,7 @@
 ── ansi ────────────────────────────────────────────────────
 · the brief · the roles this session already has are on the header
 ␛[1;97m/agents new␛[m␛[38;5;241m · a coding agent · researcher␛[m                                                            ␛[38;5;241mesc leave␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[94m● brief␛[m␛[38;5;245m   ␛[m␛[38;5;245m· questions␛[m␛[38;5;245m   ␛[m␛[38;5;245m· draft␛[m
 
@@ -112,7 +112,7 @@
 
 · the drafter's first question, asked on its own
 ␛[1;97m/agents new␛[m␛[38;5;241m · a coding agent · researcher␛[m                                                            ␛[38;5;241mesc leave␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;241m✓ brief␛[m␛[38;5;245m   ␛[m␛[94m● questions␛[m␛[38;5;245m   ␛[m␛[38;5;245m· draft␛[m
 
@@ -126,7 +126,7 @@
 
 · the second, with the first answer still above it
 ␛[1;97m/agents new␛[m␛[38;5;241m · a coding agent · researcher␛[m                                                      ␛[38;5;241mesc back a step␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;241m✓ brief␛[m␛[38;5;245m   ␛[m␛[94m● questions␛[m␛[38;5;245m   ␛[m␛[38;5;245m· draft␛[m
 
@@ -143,7 +143,7 @@
 
 · the draft · both places a coding agent's profile can live
 ␛[1;97m/agents new␛[m␛[38;5;241m · a coding agent · researcher␛[m                                                ␛[38;5;241mesc discard the draft␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;241m✓ brief␛[m␛[38;5;245m   ␛[m␛[38;5;241m✓ questions␛[m␛[38;5;245m   ␛[m␛[94m● draft␛[m
 
@@ -159,7 +159,7 @@
     ␛[38;5;243mYou add table-driven tests for one package at a time. Read the package first, then the tests it already␛[m
     ␛[38;5;241m⋮ 2 more lines · shift+↓ read on␛[m
 
-␛[38;5;241m┌─ Keep test-writer? ␛[m␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m␛[38;5;241m┐␛[m
+␛[38;5;241m┌─ Keep test-writer? ␛[m␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;241m┐␛[m
 ␛[38;5;241m│␛[m ␛[1;48;5;62m❯ 1. Save to this project  /repo/.shhh/agents␛[m                                                              ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   2. Save globally         ␛[38;5;241m/home/x/.config/shhh/agents␛[m                                                     ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   3. Refine                ␛[38;5;241msay what to change in the note␛[m                                                  ␛[38;5;241m│␛[m

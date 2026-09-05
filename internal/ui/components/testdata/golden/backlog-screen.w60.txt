@@ -12,7 +12,7 @@
 ── layout ──────────────────────────────────────────────────
 · the list · slug, grade, state and title, with the item beside it
 backlog          6 items · [?] keys · [q] back to the prompt
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────
 
 ❯ ▸ rail-todo-block  HM  in progress  The backlog block on …
   · screen-over-items  HL  waits on rail-todo-block +1
@@ -36,7 +36,7 @@ story · high · size M · in progress · written 2026-08-28 · …
 
 · a waiting item · both ends of the edge on its header row
 backlog          6 items · [?] keys · [q] back to the prompt
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────
 
   ▸ rail-todo-block  HM  in progress  The backlog block on …
 ❯ · screen-over-items  HL  waits on rail-todo-block +1
@@ -60,7 +60,7 @@ story · high · size L · open · written 2026-08-30
 
 · a file that will not parse · a row in warning tone, the reason as its body
 backlog          6 items · [?] keys · [q] back to the prompt
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────
 
   ▸ rail-todo-block  HM  in progress  The backlog block on …
   · screen-over-items  HL  waits on rail-todo-block +1
@@ -81,7 +81,7 @@ no title in the header
 
 · [/] · the query row, with the header saying what it left
 backlog     1 of 6 items · [?] keys · [q] back to the prompt
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────
 
 ▸ sprint█
 ────────────────────────────────────────────────────────────
@@ -102,7 +102,7 @@ story · medium · size M · blocked · written 2026-09-01 · in…
 
 · [s] · the status filter in words, and what it hid under the list
 backlog     4 of 6 items · [?] keys · [q] back to the prompt
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────
 
 ❯ · screen-over-items  HL  waits on rail-todo-block +1
   · prose-renderer  MS  ready  One renderer for every piece…
@@ -126,7 +126,7 @@ story · high · size L · open · written 2026-08-30
 
 · [enter] · the body with the surface to itself
 backlog          6 items · [?] keys · [q] back to the prompt
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────
 
 rail-todo-block
 The backlog block on the inspector rail
@@ -146,7 +146,7 @@ story · high · size M · in progress · written 2026-08-28 · …
 
 · [tab] · the archive, each item's report as its body
 backlog · done   2 items · [?] keys · [q] back to the prompt
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────
 
 ❯ ✓ keys-are-declared-once  HM  done  Every key is declared…
   ✓ windowed-list  MS  done  One windowed list under five c…
@@ -165,7 +165,7 @@ chore · high · size M · done · written 2026-08-20
 
 · [x] · the one confirm that names what it loses
 backlog          6 items · [?] keys · [q] back to the prompt
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────
 
 ❯ ▸ rail-todo-block  HM  in progress  The backlog block on …
   · screen-over-items  HL  waits on rail-todo-block +1
@@ -187,7 +187,7 @@ Drop rail-todo-block? The file is deleted, not archived.  […
 
 · a turn is running · the keys that change a file are grey, and the row says why
 backlog          6 items · [?] keys · [q] back to the prompt
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────
 
 ❯ ▸ rail-todo-block  HM  in progress  The backlog block on …
   · screen-over-items  HL  waits on rail-todo-block +1
@@ -211,7 +211,7 @@ the turn is running; these change the files it may be worki…
 
 · [?] · every key the screen has
 backl…  6 items · [?] hide the keys · [q] back to the prompt
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────
 
 ❯ ▸ rail-todo-block  HM  in progress  The backlog block on …
 … (+1 more rows)
@@ -241,7 +241,7 @@ backl…  6 items · [?] hide the keys · [q] back to the prompt
 ── ansi ────────────────────────────────────────────────────
 · the list · slug, grade, state and title, with the item beside it
 ␛[1;97mbacklog␛[m          ␛[38;5;241m6 items␛[m␛[38;5;241m · [?] keys · [q] back to the prompt␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
 ␛[94m❯ ␛[m␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;241mHM␛[m␛[38;5;241m  in progress  The backlog block on …␛[m
   ␛[38;5;241m·␛[m ␛[38;5;241mscreen-over-items␛[m  ␛[38;5;241mHL␛[m␛[38;5;241m  waits on rail-todo-block +1␛[m
@@ -265,7 +265,7 @@ backl…  6 items · [?] hide the keys · [q] back to the prompt
 
 · a waiting item · both ends of the edge on its header row
 ␛[1;97mbacklog␛[m          ␛[38;5;241m6 items␛[m␛[38;5;241m · [?] keys · [q] back to the prompt␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;241mHM␛[m␛[38;5;241m  in progress  The backlog block on …␛[m
 ␛[94m❯ ␛[m␛[38;5;241m·␛[m ␛[1;97mscreen-over-items␛[m  ␛[38;5;241mHL␛[m␛[38;5;241m  waits on rail-todo-block +1␛[m
@@ -289,7 +289,7 @@ backl…  6 items · [?] hide the keys · [q] back to the prompt
 
 · a file that will not parse · a row in warning tone, the reason as its body
 ␛[1;97mbacklog␛[m          ␛[38;5;241m6 items␛[m␛[38;5;241m · [?] keys · [q] back to the prompt␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;241mHM␛[m␛[38;5;241m  in progress  The backlog block on …␛[m
   ␛[38;5;241m·␛[m ␛[38;5;241mscreen-over-items␛[m  ␛[38;5;241mHL␛[m␛[38;5;241m  waits on rail-todo-block +1␛[m
@@ -310,7 +310,7 @@ backl…  6 items · [?] hide the keys · [q] back to the prompt
 
 · [/] · the query row, with the header saying what it left
 ␛[1;97mbacklog␛[m     ␛[38;5;241m1 of 6 items␛[m␛[38;5;241m · [?] keys · [q] back to the prompt␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
 ␛[94m▸ ␛[m␛[97msprint█␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
@@ -331,7 +331,7 @@ backl…  6 items · [?] hide the keys · [q] back to the prompt
 
 · [s] · the status filter in words, and what it hid under the list
 ␛[1;97mbacklog␛[m     ␛[38;5;241m4 of 6 items␛[m␛[38;5;241m · [?] keys · [q] back to the prompt␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
 ␛[94m❯ ␛[m␛[38;5;241m·␛[m ␛[1;97mscreen-over-items␛[m  ␛[38;5;241mHL␛[m␛[38;5;241m  waits on rail-todo-block +1␛[m
   ␛[38;5;241m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;241mMS␛[m␛[38;5;241m  ready  One renderer for every piece…␛[m
@@ -355,7 +355,7 @@ backl…  6 items · [?] hide the keys · [q] back to the prompt
 
 · [enter] · the body with the surface to itself
 ␛[1;97mbacklog␛[m          ␛[38;5;241m6 items␛[m␛[38;5;241m · [?] keys · [q] back to the prompt␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
 ␛[1;97mrail-todo-block␛[m
 ␛[38;5;241mThe backlog block on the inspector rail␛[m
@@ -375,7 +375,7 @@ backl…  6 items · [?] hide the keys · [q] back to the prompt
 
 · [tab] · the archive, each item's report as its body
 ␛[1;97mbacklog␛[m␛[38;5;241m · done␛[m   ␛[38;5;241m2 items␛[m␛[38;5;241m · [?] keys · [q] back to the prompt␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
 ␛[94m❯ ␛[m␛[92m✓␛[m ␛[1;97mkeys-are-declared-once␛[m  ␛[38;5;241mHM␛[m␛[38;5;241m  done  Every key is declared…␛[m
   ␛[92m✓␛[m ␛[38;5;241mwindowed-list␛[m  ␛[38;5;241mMS␛[m␛[38;5;241m  done  One windowed list under five c…␛[m
@@ -394,7 +394,7 @@ backl…  6 items · [?] hide the keys · [q] back to the prompt
 
 · [x] · the one confirm that names what it loses
 ␛[1;97mbacklog␛[m          ␛[38;5;241m6 items␛[m␛[38;5;241m · [?] keys · [q] back to the prompt␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
 ␛[94m❯ ␛[m␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;241mHM␛[m␛[38;5;241m  in progress  The backlog block on …␛[m
   ␛[38;5;241m·␛[m ␛[38;5;241mscreen-over-items␛[m  ␛[38;5;241mHL␛[m␛[38;5;241m  waits on rail-todo-block +1␛[m
@@ -416,7 +416,7 @@ backl…  6 items · [?] hide the keys · [q] back to the prompt
 
 · a turn is running · the keys that change a file are grey, and the row says why
 ␛[1;97mbacklog␛[m          ␛[38;5;241m6 items␛[m␛[38;5;241m · [?] keys · [q] back to the prompt␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
 ␛[94m❯ ␛[m␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;241mHM␛[m␛[38;5;241m  in progress  The backlog block on …␛[m
   ␛[38;5;241m·␛[m ␛[38;5;241mscreen-over-items␛[m  ␛[38;5;241mHL␛[m␛[38;5;241m  waits on rail-todo-block +1␛[m
@@ -440,7 +440,7 @@ backl…  6 items · [?] hide the keys · [q] back to the prompt
 
 · [?] · every key the screen has
 ␛[1;97mbackl…␛[m  ␛[38;5;241m6 items␛[m␛[38;5;241m · [?] hide the keys · [q] back to the prompt␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
 ␛[94m❯ ␛[m␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;241mHM␛[m␛[38;5;241m  in progress  The backlog block on …␛[m
 ␛[3;38;5;241m… (+1 more rows)␛[m

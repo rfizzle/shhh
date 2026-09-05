@@ -428,7 +428,7 @@ func TestStartScreen_TheFaceIsSizedByThePaneNotTheWindow(t *testing.T) {
 	if strings.Contains(short, "▄▀▀▀") {
 		t.Fatalf("a short pane has no rows to spend on three of them:\n%s", short)
 	}
-	if !strings.Contains(short, "shhh ╱") {
+	if !strings.Contains(short, "shhh ─") {
 		t.Fatalf("the short pane should still say whose screen it is:\n%s", short)
 	}
 }

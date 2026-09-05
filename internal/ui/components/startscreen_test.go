@@ -130,7 +130,7 @@ func TestStartScreen_WithoutSuggestionsTheKeysGoToo(t *testing.T) {
 
 // The face is the one thing on this screen worth rows rather than
 // information, so it is the one thing the pane's height decides: three rows
-// and a trail where there is room, one row of the name in the texture where
+// and a trail where there is room, one row of the name in the rule where
 // there is not, and nothing at all from a host that never said how tall it is.
 func TestStartScreen_TheFaceIsWhatTheHeightAllows(t *testing.T) {
 	s := startFixture()
@@ -140,7 +140,7 @@ func TestStartScreen_TheFaceIsWhatTheHeightAllows(t *testing.T) {
 		want   string
 	}{
 		{"a host that did not say", 0, "~/src/shhh"},
-		{"a short pane", startFaceHeight - 1, "╱╱ shhh ╱"},
+		{"a short pane", startFaceHeight - 1, "── shhh ─"},
 		{"room for the wordmark", startFaceHeight, startWordmark[0]},
 	} {
 		s.Height = c.height

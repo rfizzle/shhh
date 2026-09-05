@@ -597,9 +597,9 @@ is actually in force, not from what was configured.
 
 The card's border carries how much the decision on it weighs, and the run of
 its top edge between the title and the chips carries nothing — so that run is
-drawn as chrome, in the texture and the tone a screen's rule is drawn in,
-while the corners, the title's lead-in and the chips keep the weight. The
-frame still says what it said; the empty part of it stops pretending to.
+drawn as chrome, in the tone a screen's rule is drawn in, while the corners,
+the title's lead-in and the chips keep the weight. The frame still says what
+it said; the empty part of it stops pretending to.
 
 A card can outgrow the panel it is allowed, and what does not fit is
 never merely clipped. The body scrolls in place behind counted tails — the
@@ -738,7 +738,7 @@ one that gets one. Where the pane has the rows, the name is drawn in three of
 them out of the half blocks, with the same mark the working label stands an
 unarrived cell in for trailing off the end of it — so the first thing on
 screen is the entrance every turn after it will make, made once. Where the
-pane does not, the name goes in a single row of the texture instead, because
+pane does not, the name goes in a single row of the rule instead, because
 four rows taken from the offers are four taken from the reason the screen
 exists. A monochrome terminal gets neither. The face states nothing the line
 under it does not, which makes it decoration, and decoration is the first
@@ -773,21 +773,12 @@ that never ends. So the row that found it offers to make it, and puts the same
 confirm in front of it that the settings screen puts in front of a write
 (docs/capabilities/configuration.md#a-migration-is-a-doctor-check).
 
-The rule under a screen's header is drawn as a diagonal texture rather than as
-a flat line, and it is the same texture that fills a card's top edge. That is
-the only thing these two families have in common that they did not already
-have, and it is enough: a card and a screen read as one product instead of as
-two widgets in the same binary. It is a texture and not a gradient for the
-reason the working label's sweep is two rungs and not a blend — a gradient is
-a run of colours no token names, and a colour the table does not hold is one
-the monochrome swap cannot answer for. The texture costs one glyph, no colour,
-and it is decoration, so a monochrome terminal declines it and gets back the
-flat rule it always had.
-
-A rule inside a surface is not an edge and stays flat: the pane divider, the
-line between a list and the output under it, the card's own divider above its
-keys. The texture says where a surface stops, and a rule between two halves of
-one surface would be saying the opposite.
+The rule under a screen's header and the run of a card's top edge are the
+same material: the one rule the drawing kit has, in the chrome tone. That is
+what makes a card and a screen read as one product instead of as two widgets
+in the same binary. A diagonal texture was tried in that run and taken out
+again — it collapsed to the flat rule under a two-grey palette, which is the
+proof that it carried nothing, and it was a material no artboard draws.
 
 ### The backlog screen
 

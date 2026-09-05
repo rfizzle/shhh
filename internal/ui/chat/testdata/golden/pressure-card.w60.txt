@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · at the alert threshold, with the turns to keep
-┌─ Context is nearly full ╱╱╱╱╱╱╱╱╱╱─ 92% · ~30k / 32k ┐
+┌─ Context is nearly full ─────────── 92% · ~30k / 32k ┐
 │ ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱                               │
 │                                                      │
 │ 30k  the conversation — 2 messages                   │
@@ -29,7 +29,7 @@
 
 ── ansi ────────────────────────────────────────────────────
 · at the alert threshold, with the turns to keep
-␛[1;91m┌─ Context is nearly full ␛[m␛[38;5;241m╱╱╱╱╱╱╱╱╱╱␛[m␛[1;91m─ 92% · ~30k / 32k ┐␛[m
+␛[1;91m┌─ Context is nearly full ␛[m␛[38;5;241m──────────␛[m␛[1;91m─ 92% · ~30k / 32k ┐␛[m
 ␛[1;91m│␛[m ␛[1;91m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱␛[m                               ␛[1;91m│␛[m
 ␛[1;91m│␛[m                                                      ␛[1;91m│␛[m
 ␛[1;91m│␛[m ␛[38;5;243m30k␛[m  ␛[38;5;252mthe conversation␛[m␛[38;5;241m — 2 messages␛[m                   ␛[1;91m│␛[m

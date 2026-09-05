@@ -12,7 +12,7 @@
 ── layout ──────────────────────────────────────────────────
 · the run · a row per check, the fix offered on the ones that need it
 shhh doctor · 10 checks                                                                                 1.4s · [?] keys · [q] quit
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
    ✓ binary  shhh 0.9.4 · darwin/arm64 · ~/.local/bin/shhh                                                                ok
    ✓ config  ~/.config/shhh/config.toml · 6 settings set                                                                  ok
@@ -36,7 +36,7 @@ shhh doctor · 10 checks                                                        
 
 · the fix open · under the row it belongs to, one indent past the consequence
 shhh doctor · 10 checks                                                                                 1.4s · [?] keys · [q] quit
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
    ✓ binary  shhh 0.9.4 · darwin/arm64 · ~/.local/bin/shhh                                                                ok
    ✓ config  ~/.config/shhh/config.toml · 6 settings set                                                                  ok
@@ -64,7 +64,7 @@ shhh doctor · 10 checks                                                        
 
 · the pointer moved · the next check that needs something takes the live key
 shhh doctor · 10 checks                                                                                 1.4s · [?] keys · [q] quit
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
    ✓ binary  shhh 0.9.4 · darwin/arm64 · ~/.local/bin/shhh                                                                ok
    ✓ config  ~/.config/shhh/config.toml · 6 settings set                                                                  ok
@@ -88,7 +88,7 @@ shhh doctor · 10 checks                                                        
 
 · still going · what has answered, one running, the rest queued
 shhh doctor · 10 checks · ▸ running                                                                     0.3s · [?] keys · [q] quit
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
    ✓ binary  shhh 0.9.4 · darwin/arm64 · ~/.local/bin/shhh                                                                ok
    ✓ config  ~/.config/shhh/config.toml · 6 settings set                                                                  ok
@@ -107,7 +107,7 @@ shhh doctor · 10 checks · ▸ running                                         
 
 · a short terminal · the passes go first, and the marker names them
 shhh doctor · 10 checks                                                                                 1.4s · [?] keys · [q] quit
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 ❯  ✗ model   anthropic · claude-opus-5 · no key in any of the four places                                             no key
     no session will start until a key is found — every one exits on "no provider"
@@ -127,7 +127,7 @@ shhh doctor · 10 checks                                                        
 
 · the keys · [?] over a screen that has five of them
 shhh doctor · 10 checks                                                                                 1.4s · [?] keys · [q] quit
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
    ✓ binary  shhh 0.9.4 · darwin/arm64 · ~/.local/bin/shhh                                                                ok
    ✓ config  ~/.config/shhh/config.toml · 6 settings set                                                                  ok
@@ -157,7 +157,7 @@ shhh doctor · 10 checks                                                        
 
 · a clean run · no pointer, no fix key, and nothing to act on
 shhh doctor · 3 checks                                                                                  0.9s · [?] keys · [q] quit
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
    ✓ binary  shhh 0.9.4 · darwin/arm64                                                                                    ok
    ✓ sandbox sandbox-exec · Seatbelt · workspace profile                                                           contained
@@ -168,7 +168,7 @@ shhh doctor · 3 checks                                                         
 ── ansi ────────────────────────────────────────────────────
 · the run · a row per check, the fix offered on the ones that need it
 ␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m                                                                                 ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
    ␛[92m✓␛[m binary  ␛[38;5;252mshhh 0.9.4␛[m␛[38;5;241m · darwin/arm64 · ~/.local/bin/shhh␛[m                                                                ␛[38;5;241mok␛[m
    ␛[92m✓␛[m config  ␛[38;5;252m~/.config/shhh/config.toml␛[m␛[38;5;241m · 6 settings set␛[m                                                                  ␛[38;5;241mok␛[m
@@ -192,7 +192,7 @@ shhh doctor · 3 checks                                                         
 
 · the fix open · under the row it belongs to, one indent past the consequence
 ␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m                                                                                 ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
    ␛[92m✓␛[m binary  ␛[38;5;252mshhh 0.9.4␛[m␛[38;5;241m · darwin/arm64 · ~/.local/bin/shhh␛[m                                                                ␛[38;5;241mok␛[m
    ␛[92m✓␛[m config  ␛[38;5;252m~/.config/shhh/config.toml␛[m␛[38;5;241m · 6 settings set␛[m                                                                  ␛[38;5;241mok␛[m
@@ -220,7 +220,7 @@ shhh doctor · 3 checks                                                         
 
 · the pointer moved · the next check that needs something takes the live key
 ␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m                                                                                 ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
    ␛[92m✓␛[m binary  ␛[38;5;252mshhh 0.9.4␛[m␛[38;5;241m · darwin/arm64 · ~/.local/bin/shhh␛[m                                                                ␛[38;5;241mok␛[m
    ␛[92m✓␛[m config  ␛[38;5;252m~/.config/shhh/config.toml␛[m␛[38;5;241m · 6 settings set␛[m                                                                  ␛[38;5;241mok␛[m
@@ -244,7 +244,7 @@ shhh doctor · 3 checks                                                         
 
 · still going · what has answered, one running, the rest queued
 ␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m␛[38;5;241m · ␛[m␛[38;5;205m▸ running␛[m                                                                     ␛[38;5;245m0.3s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
    ␛[92m✓␛[m binary  ␛[38;5;252mshhh 0.9.4␛[m␛[38;5;241m · darwin/arm64 · ~/.local/bin/shhh␛[m                                                                ␛[38;5;241mok␛[m
    ␛[92m✓␛[m config  ␛[38;5;252m~/.config/shhh/config.toml␛[m␛[38;5;241m · 6 settings set␛[m                                                                  ␛[38;5;241mok␛[m
@@ -263,7 +263,7 @@ shhh doctor · 3 checks                                                         
 
 · a short terminal · the passes go first, and the marker names them
 ␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m                                                                                 ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[94m❯␛[m  ␛[91m✗␛[m model   ␛[38;5;252manthropic␛[m␛[38;5;241m · claude-opus-5 · no key in any of the four places␛[m                                             ␛[91mno key␛[m
     ␛[38;5;245mno session will start until a key is found — every one exits on "no provider"␛[m
@@ -283,7 +283,7 @@ shhh doctor · 3 checks                                                         
 
 · the keys · [?] over a screen that has five of them
 ␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m                                                                                 ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
    ␛[92m✓␛[m binary  ␛[38;5;252mshhh 0.9.4␛[m␛[38;5;241m · darwin/arm64 · ~/.local/bin/shhh␛[m                                                                ␛[38;5;241mok␛[m
    ␛[92m✓␛[m config  ␛[38;5;252m~/.config/shhh/config.toml␛[m␛[38;5;241m · 6 settings set␛[m                                                                  ␛[38;5;241mok␛[m
@@ -313,7 +313,7 @@ shhh doctor · 3 checks                                                         
 
 · a clean run · no pointer, no fix key, and nothing to act on
 ␛[1;97mshhh doctor␛[m␛[38;5;241m · 3 checks␛[m                                                                                  ␛[38;5;245m0.9s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
    ␛[92m✓␛[m binary  ␛[38;5;252mshhh 0.9.4␛[m␛[38;5;241m · darwin/arm64␛[m                                                                                    ␛[38;5;241mok␛[m
    ␛[92m✓␛[m sandbox ␛[38;5;252msandbox-exec␛[m␛[38;5;241m · Seatbelt · workspace profile␛[m                                                           ␛[38;5;241mcontained␛[m

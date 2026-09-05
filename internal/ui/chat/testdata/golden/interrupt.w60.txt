@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · ungated · the draft still has the keyboard
-┌─ Approve edit ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱─ ⚠ medium ┐
+┌─ Approve edit ───────────────────────────── ⚠ medium ┐
 │ Assistant wants to write main.go                     │
 │ ⚠ medium                                             │
 │ @@ -1,1 +1,2 @@                                      │
@@ -31,7 +31,7 @@
 
 · gated · the handover, and the card has it
 ──── DECISION ──────────────────────────────────────────
-┌─ Approve edit ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱─ ⚠ medium ┐
+┌─ Approve edit ───────────────────────────── ⚠ medium ┐
 │ Assistant wants to write main.go                     │
 │ ⚠ medium                                             │
 │ @@ -1,1 +1,2 @@                                      │
@@ -50,7 +50,7 @@
 
 · grace · held on a warm keyboard, keys a moment away
 ──── DECISION ──────────────────────────────────────────
-┌─ Approve edit ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱─ ⚠ medium ┐
+┌─ Approve edit ───────────────────────────── ⚠ medium ┐
 │ Assistant wants to write main.go                     │
 │ ⚠ medium                                             │
 │ @@ -1,1 +1,2 @@                                      │
@@ -65,7 +65,7 @@
 
 ── ansi ────────────────────────────────────────────────────
 · ungated · the draft still has the keyboard
-␛[38;5;214m┌─ Approve edit ␛[m␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m␛[38;5;214m─ ⚠ medium ┐␛[m
+␛[38;5;214m┌─ Approve edit ␛[m␛[38;5;241m────────────────────────────␛[m␛[38;5;214m─ ⚠ medium ┐␛[m
 ␛[38;5;214m│␛[m ␛[1;94mAssistant wants to write main.go␛[m                     ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[91m⚠ medium␛[m                                             ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[96m@@ -1,1 +1,2 @@␛[m                                      ␛[38;5;214m│␛[m
@@ -85,7 +85,7 @@
 
 · gated · the handover, and the card has it
 ␛[38;5;241m────␛[m ␛[1;94mDECISION␛[m ␛[38;5;241m──────────────────────────────────────────␛[m
-␛[38;5;214m┌─ Approve edit ␛[m␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m␛[38;5;214m─ ⚠ medium ┐␛[m
+␛[38;5;214m┌─ Approve edit ␛[m␛[38;5;241m────────────────────────────␛[m␛[38;5;214m─ ⚠ medium ┐␛[m
 ␛[38;5;214m│␛[m ␛[1;94mAssistant wants to write main.go␛[m                     ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[91m⚠ medium␛[m                                             ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[96m@@ -1,1 +1,2 @@␛[m                                      ␛[38;5;214m│␛[m
@@ -104,7 +104,7 @@
 
 · grace · held on a warm keyboard, keys a moment away
 ␛[38;5;241m────␛[m ␛[1;94mDECISION␛[m ␛[38;5;241m──────────────────────────────────────────␛[m
-␛[38;5;214m┌─ Approve edit ␛[m␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m␛[38;5;214m─ ⚠ medium ┐␛[m
+␛[38;5;214m┌─ Approve edit ␛[m␛[38;5;241m────────────────────────────␛[m␛[38;5;214m─ ⚠ medium ┐␛[m
 ␛[38;5;214m│␛[m ␛[1;94mAssistant wants to write main.go␛[m                     ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[91m⚠ medium␛[m                                             ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[96m@@ -1,1 +1,2 @@␛[m                                      ␛[38;5;214m│␛[m

@@ -50,48 +50,34 @@ type Keyed[R any] interface {
 	Update(msg tea.KeyPressMsg) (done bool, result R)
 }
 
-// textureMark is what an empty run of chrome is filled with: a diagonal
-// rather than a flat rule, so a screen's title rule and a card's top edge are
-// the same material and read as one product rather than as two borrowed
-// widgets (docs/interface/surfaces.md#the-supporting-screens).
-//
-// It is a texture and not a gradient for the reason the working label's sweep
-// is two rungs and not a blend: a gradient is a run of colours the palette
-// does not name, and a token the table does not hold is a token the mono swap
-// cannot answer for and the mono goldens cannot check. A diagonal costs one
-// glyph and no colour at all.
-const textureMark = "╱"
-
-// plainMark is the flat rule the texture collapses to. The diagonal is
-// decoration — it says nothing the rule does not — so a palette with two greys
-// to spend declines it exactly the way it declines the sweep's crest, and the
-// row it leaves behind is the rule that was always there
-// (docs/interface/principles.md#colour-never-carries-meaning-alone).
+// plainMark is the rule every empty run of chrome is drawn in: the rule under
+// a screen's header, a card's top edge between its title and its chips, the
+// divider between two panes. It is one glyph because the drawing kit is one
+// material (`ui_kits/cockpit/Sheet.html`, the kit line), and a run that
+// carries nothing has nothing to say with a second one. A diagonal texture
+// was tried here and declined: it collapsed to this rule under mono, which is
+// the proof that it carried nothing, and it was a material no artboard draws
+// (docs/interface/surfaces.md#the-supporting-screens).
 const plainMark = "─"
 
-// textureFill is width columns of whichever of the two the palette is
-// carrying. A caller paints it; this decides only the material.
-func textureFill(width int) string {
+// ruleRun is width columns of the rule, unpainted. A caller paints it; this
+// decides only the material.
+func ruleRun(width int) string {
 	if width <= 0 {
 		return ""
 	}
-	if Mono() {
-		return strings.Repeat(plainMark, width)
-	}
-	return strings.Repeat(textureMark, width)
+	return strings.Repeat(plainMark, width)
 }
 
 // screenRule is the horizontal rule a screen's panes and sections are divided
-// by. It stays flat: the texture marks where a surface *ends*, and a rule
-// between two halves of one surface would be saying the opposite.
-func screenRule(width int) string { return sty.Dim.Render(strings.Repeat(plainMark, max(width, 0))) }
+// by.
+func screenRule(width int) string { return sty.Dim.Render(ruleRun(width)) }
 
-// titleRule is the rule under a screen's header — the edge of the surface
-// rather than a division inside it, which is why it is the one drawn in the
-// texture. A card's top edge is the same row on a smaller frame, and drawing
-// the two in the same material is the whole of what makes them one product
+// titleRule is the rule under a screen's header. A card's top edge is the
+// same row on a smaller frame, and drawing the two from the same material is
+// what makes a card and a screen read as one product
 // (docs/interface/surfaces.md#the-supporting-screens).
-func titleRule(width int) string { return sty.Dim.Render(textureFill(max(width, 0))) }
+func titleRule(width int) string { return sty.Dim.Render(ruleRun(width)) }
 
 // screenTitle is a header's first field: the surface's own name, in the one
 // treatment that is never dropped. It is clipped instead, and only once

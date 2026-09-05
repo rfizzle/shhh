@@ -12,7 +12,7 @@
 ── layout ──────────────────────────────────────────────────
 · the list · slug, grade, state and title, with the item beside it
 backlog · the cockpit sprint         6 items · [?] keys · [q] back to the prompt
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────────────────────────
 
 ❯ ▸ rail-todo-block  HM  in progress  The backlog block on the inspector rail
   · screen-over-items  HL  waits on rail-todo-block +1  A screen over the whole…
@@ -36,7 +36,7 @@ story · high · size M · in progress · written 2026-08-28 · in the cockpit s
 
 · a waiting item · both ends of the edge on its header row
 backlog · the cockpit sprint         6 items · [?] keys · [q] back to the prompt
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────────────────────────
 
   ▸ rail-todo-block  HM  in progress  The backlog block on the inspector rail
 ❯ · screen-over-items  HL  waits on rail-todo-block +1  A screen over the whole…
@@ -60,7 +60,7 @@ waits on rail-todo-block, prose-renderer · [w] goes there
 
 · a file that will not parse · a row in warning tone, the reason as its body
 backlog · the cockpit sprint         6 items · [?] keys · [q] back to the prompt
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────────────────────────
 
   ▸ rail-todo-block  HM  in progress  The backlog block on the inspector rail
   · screen-over-items  HL  waits on rail-todo-block +1  A screen over the whole…
@@ -81,7 +81,7 @@ no title in the header
 
 · [/] · the query row, with the header saying what it left
 backlog · matching sprint       1 of 6 items · [?] keys · [q] back to the prompt
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────────────────────────
 
 ▸ sprint█
 ────────────────────────────────────────────────────────────────────────────────
@@ -102,7 +102,7 @@ Waiting on a decision about where the file lives.
 
 · [s] · the status filter in words, and what it hid under the list
 backlog · open                  4 of 6 items · [?] keys · [q] back to the prompt
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────────────────────────
 
 ❯ · screen-over-items  HL  waits on rail-todo-block +1  A screen over the whole…
   · prose-renderer  MS  ready  One renderer for every piece of prose
@@ -126,7 +126,7 @@ waits on rail-todo-block, prose-renderer · [w] goes there
 
 · [enter] · the body with the surface to itself
 backlog · the cockpit sprint         6 items · [?] keys · [q] back to the prompt
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────────────────────────
 
 rail-todo-block
 The backlog block on the inspector rail
@@ -145,7 +145,7 @@ story · high · size M · in progress · written 2026-08-28 · in the cockpit s
 
 · [tab] · the archive, each item's report as its body
 backlog · done                       2 items · [?] keys · [q] back to the prompt
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────────────────────────
 
 ❯ ✓ keys-are-declared-once  HM  done  Every key is declared once
   ✓ windowed-list  MS  done  One windowed list under five cards
@@ -164,7 +164,7 @@ key is written down.
 
 · [x] · the one confirm that names what it loses
 backlog · the cockpit sprint         6 items · [?] keys · [q] back to the prompt
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────────────────────────
 
 ❯ ▸ rail-todo-block  HM  in progress  The backlog block on the inspector rail
   · screen-over-items  HL  waits on rail-todo-block +1  A screen over the whole…
@@ -186,7 +186,7 @@ Drop rail-todo-block? The file is deleted, not archived.  [y/N]
 
 · a turn is running · the keys that change a file are grey, and the row says why
 backlog · the cockpit sprint         6 items · [?] keys · [q] back to the prompt
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────────────────────────
 
 ❯ ▸ rail-todo-block  HM  in progress  The backlog block on the inspector rail
   · screen-over-items  HL  waits on rail-todo-block +1  A screen over the whole…
@@ -210,7 +210,7 @@ the turn is running; these change the files it may be working from
 
 · [?] · every key the screen has
 backlog                     6 items · [?] hide the keys · [q] back to the prompt
-╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱
+────────────────────────────────────────────────────────────────────────────────
 
 ❯ ▸ rail-todo-block  HM  in progress  The backlog block on the inspector rail
 … (+1 more rows)
@@ -240,7 +240,7 @@ backlog                     6 items · [?] hide the keys · [q] back to the prom
 ── ansi ────────────────────────────────────────────────────
 · the list · slug, grade, state and title, with the item beside it
 ␛[1;97mbacklog␛[m␛[38;5;241m · the cockpit sprint␛[m         ␛[38;5;241m6 items␛[m␛[38;5;241m · [?] keys · [q] back to the prompt␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[94m❯ ␛[m␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;241mHM␛[m␛[38;5;241m  in progress  The backlog block on the inspector rail␛[m
   ␛[38;5;241m·␛[m ␛[38;5;241mscreen-over-items␛[m  ␛[38;5;241mHL␛[m␛[38;5;241m  waits on rail-todo-block +1  A screen over the whole…␛[m
@@ -264,7 +264,7 @@ backlog                     6 items · [?] hide the keys · [q] back to the prom
 
 · a waiting item · both ends of the edge on its header row
 ␛[1;97mbacklog␛[m␛[38;5;241m · the cockpit sprint␛[m         ␛[38;5;241m6 items␛[m␛[38;5;241m · [?] keys · [q] back to the prompt␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;241mHM␛[m␛[38;5;241m  in progress  The backlog block on the inspector rail␛[m
 ␛[94m❯ ␛[m␛[38;5;241m·␛[m ␛[1;97mscreen-over-items␛[m  ␛[38;5;241mHL␛[m␛[38;5;241m  waits on rail-todo-block +1  A screen over the whole…␛[m
@@ -288,7 +288,7 @@ backlog                     6 items · [?] hide the keys · [q] back to the prom
 
 · a file that will not parse · a row in warning tone, the reason as its body
 ␛[1;97mbacklog␛[m␛[38;5;241m · the cockpit sprint␛[m         ␛[38;5;241m6 items␛[m␛[38;5;241m · [?] keys · [q] back to the prompt␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;241mHM␛[m␛[38;5;241m  in progress  The backlog block on the inspector rail␛[m
   ␛[38;5;241m·␛[m ␛[38;5;241mscreen-over-items␛[m  ␛[38;5;241mHL␛[m␛[38;5;241m  waits on rail-todo-block +1  A screen over the whole…␛[m
@@ -309,7 +309,7 @@ backlog                     6 items · [?] hide the keys · [q] back to the prom
 
 · [/] · the query row, with the header saying what it left
 ␛[1;97mbacklog␛[m␛[38;5;241m · matching sprint␛[m       ␛[38;5;241m1 of 6 items␛[m␛[38;5;241m · [?] keys · [q] back to the prompt␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[94m▸ ␛[m␛[97msprint█␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
@@ -330,7 +330,7 @@ backlog                     6 items · [?] hide the keys · [q] back to the prom
 
 · [s] · the status filter in words, and what it hid under the list
 ␛[1;97mbacklog␛[m␛[38;5;241m · open␛[m                  ␛[38;5;241m4 of 6 items␛[m␛[38;5;241m · [?] keys · [q] back to the prompt␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[94m❯ ␛[m␛[38;5;241m·␛[m ␛[1;97mscreen-over-items␛[m  ␛[38;5;241mHL␛[m␛[38;5;241m  waits on rail-todo-block +1  A screen over the whole…␛[m
   ␛[38;5;241m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;241mMS␛[m␛[38;5;241m  ready  One renderer for every piece of prose␛[m
@@ -354,7 +354,7 @@ backlog                     6 items · [?] hide the keys · [q] back to the prom
 
 · [enter] · the body with the surface to itself
 ␛[1;97mbacklog␛[m␛[38;5;241m · the cockpit sprint␛[m         ␛[38;5;241m6 items␛[m␛[38;5;241m · [?] keys · [q] back to the prompt␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[1;97mrail-todo-block␛[m
 ␛[38;5;241mThe backlog block on the inspector rail␛[m
@@ -373,7 +373,7 @@ backlog                     6 items · [?] hide the keys · [q] back to the prom
 
 · [tab] · the archive, each item's report as its body
 ␛[1;97mbacklog␛[m␛[38;5;241m · done␛[m                       ␛[38;5;241m2 items␛[m␛[38;5;241m · [?] keys · [q] back to the prompt␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[94m❯ ␛[m␛[92m✓␛[m ␛[1;97mkeys-are-declared-once␛[m  ␛[38;5;241mHM␛[m␛[38;5;241m  done  Every key is declared once␛[m
   ␛[92m✓␛[m ␛[38;5;241mwindowed-list␛[m  ␛[38;5;241mMS␛[m␛[38;5;241m  done  One windowed list under five cards␛[m
@@ -392,7 +392,7 @@ backlog                     6 items · [?] hide the keys · [q] back to the prom
 
 · [x] · the one confirm that names what it loses
 ␛[1;97mbacklog␛[m␛[38;5;241m · the cockpit sprint␛[m         ␛[38;5;241m6 items␛[m␛[38;5;241m · [?] keys · [q] back to the prompt␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[94m❯ ␛[m␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;241mHM␛[m␛[38;5;241m  in progress  The backlog block on the inspector rail␛[m
   ␛[38;5;241m·␛[m ␛[38;5;241mscreen-over-items␛[m  ␛[38;5;241mHL␛[m␛[38;5;241m  waits on rail-todo-block +1  A screen over the whole…␛[m
@@ -414,7 +414,7 @@ backlog                     6 items · [?] hide the keys · [q] back to the prom
 
 · a turn is running · the keys that change a file are grey, and the row says why
 ␛[1;97mbacklog␛[m␛[38;5;241m · the cockpit sprint␛[m         ␛[38;5;241m6 items␛[m␛[38;5;241m · [?] keys · [q] back to the prompt␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[94m❯ ␛[m␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;241mHM␛[m␛[38;5;241m  in progress  The backlog block on the inspector rail␛[m
   ␛[38;5;241m·␛[m ␛[38;5;241mscreen-over-items␛[m  ␛[38;5;241mHL␛[m␛[38;5;241m  waits on rail-todo-block +1  A screen over the whole…␛[m
@@ -438,7 +438,7 @@ backlog                     6 items · [?] hide the keys · [q] back to the prom
 
 · [?] · every key the screen has
 ␛[1;97mbacklog␛[m                     ␛[38;5;241m6 items␛[m␛[38;5;241m · [?] hide the keys · [q] back to the prompt␛[m
-␛[38;5;241m╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[94m❯ ␛[m␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;241mHM␛[m␛[38;5;241m  in progress  The backlog block on the inspector rail␛[m
 ␛[3;38;5;241m… (+1 more rows)␛[m

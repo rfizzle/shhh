@@ -123,16 +123,15 @@ func cardTop(c Card, border lipgloss.Style, width int) string {
 // (docs/interface/surfaces.md#the-approval-card).
 //
 // Under mono there is no second tone to hold, so the whole row goes through
-// the frame's own style in one call — which is the row the frame drew before
-// there was a texture, byte for byte. An edge with no room left for a fill
+// the frame's own style in one call. An edge with no room left for a fill
 // takes that call too: a style renders a pair of escapes around an empty
 // string, and three runs where there is nothing between the title and the
 // corner is two of those for nothing.
 func paintCardTop(border lipgloss.Style, left string, fill int, right string) string {
 	if Mono() || fill <= 0 {
-		return border.Render(left + textureFill(fill) + right)
+		return border.Render(left + ruleRun(fill) + right)
 	}
-	return border.Render(left) + sty.Dim.Render(textureFill(fill)) + border.Render(right)
+	return border.Render(left) + sty.Dim.Render(ruleRun(fill)) + border.Render(right)
 }
 
 // chipRun renders the chips as they sit in the border: each between ─ and a

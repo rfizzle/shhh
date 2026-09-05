@@ -287,10 +287,10 @@ func (m Model) frameHints() string {
 	switch {
 	case m.decisionUngated():
 		// The three keys that matter while a decision waits. Stopping the run
-		// is ctrl+c here rather than the artboard's esc, because esc on this
-		// surface goes back rather than stopping anything — the divergence is
-		// recorded in
-		// docs/interface/departures.md#stopping-a-run-is-the-cancel-chord-not-esc.
+		// is the cancel chord, never esc: esc on this surface goes back rather
+		// than stopping anything, and ending a turn belongs to a chord no
+		// reflex produces
+		// (docs/interface/principles.md#esc-is-always-the-safe-answer).
 		hints = []string{
 			keys.Shown(keys.Draft.Answer) + " " + keys.Words(keys.Draft.Answer),
 			keys.Shown(keys.Draft.Send) + " queues steering",
@@ -671,8 +671,7 @@ func railLabelWidth(leftLabel string, width int) int {
 // the eye watching it is already on the prompt glyph two rows below the
 // rail's left corner. On a three-thousand-pixel window the same figures sat
 // against the right edge, a hundred and fifty columns from anything the
-// reader was looking at — the divergence from the artboard is recorded in
-// docs/interface/departures.md#the-turns-account-opens-the-top-rail.
+// reader was looking at (docs/interface/surfaces.md#the-input-frame).
 func (m Model) topRailLabels(mode frameLayout, width int) (left, right string) {
 	var identity, identityLabel string
 	if m.attachedTo != "" && mode != frameNarrow {
