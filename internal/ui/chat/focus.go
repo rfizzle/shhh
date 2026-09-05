@@ -8,6 +8,7 @@ package chat
 // all other keys.
 
 import (
+	"slices"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -120,6 +121,15 @@ func (m Model) enterFocusMode() (tea.Model, tea.Cmd) {
 	}
 	m.enterSurface(stateFocus)
 	idxs := m.expandableIndices()
+	if m.pointer && slices.Contains(idxs, m.focusIdx) {
+		// A pointer lit from the prompt is where the reader already is, so
+		// the mode opens on it; the flag goes, because in here the cursor
+		// is the state (pointer.go).
+		m.pointer = false
+		m.refreshFocusView()
+		return m, nil
+	}
+	m.pointer = false
 	if len(idxs) == 0 {
 		m.focusIdx = -1
 		m.invalidateRenderCache()
@@ -140,6 +150,30 @@ func (m Model) enterFocusMode() (tea.Model, tea.Cmd) {
 		break
 	}
 	m.refreshFocusView()
+	return m, nil
+}
+
+// openCursorRow is [enter]'s act on the row under the cursor, shared with the
+// pointer's open (pointer.go) so the two are one handler: the row's
+// structure — a step's fold, a group's, a diff's three modes — is
+// toggleRow's, the key's own gesture is the cycle, and what is left is the
+// plain body flag. ret is the surface a full-screen body comes back to,
+// which is the mode here and the prompt from the pointer.
+func (m Model) openCursorRow(ret state) (tea.Model, tea.Cmd) {
+	claimed, full, output := m.toggleRow(m.focusIdx, gestureCycle)
+	if full != nil {
+		return m.openDiffFull(full, ret)
+	}
+	if output {
+		es := *m.entries()
+		return m.openOutputFull(m.rowOutputView(es[m.focusIdx]), m.focusIdx, ret)
+	}
+	if !claimed {
+		if es := *m.entries(); m.focusIdx >= 0 && m.focusIdx < len(es) {
+			es[m.focusIdx].expanded = !es[m.focusIdx].expanded
+		}
+	}
+	m.refreshCursorView()
 	return m, nil
 }
 
@@ -288,21 +322,7 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// press to spend, three depths reached by spending it again.
 		// What is left is the plain body flag, which this mode sets on every
 		// row it can put its cursor on.
-		claimed, full, output := m.toggleRow(m.focusIdx, gestureCycle)
-		if full != nil {
-			return m.openDiffFull(full, stateFocus)
-		}
-		if output {
-			es := *m.entries()
-			return m.openOutputFull(m.rowOutputView(es[m.focusIdx]), m.focusIdx, stateFocus)
-		}
-		if !claimed {
-			if es := *m.entries(); m.focusIdx >= 0 && m.focusIdx < len(es) {
-				es[m.focusIdx].expanded = !es[m.focusIdx].expanded
-			}
-		}
-		m.refreshFocusView()
-		return m, nil
+		return m.openCursorRow(stateFocus)
 	}
 	// Typing is the other way out. The letters above are focus
 	// mode's own and stay its own; every other printable character hands the
@@ -409,6 +429,9 @@ func (m Model) exitFocusMode() (tea.Model, tea.Cmd) {
 	// to clear them.
 	m.viewport.ClearSearch()
 	m.leaveSurface()
+	// The pointer is not left lit behind the mode: esc from here returns to
+	// the prompt, and the prompt the reader left had no gutter on it.
+	m.pointer = false
 	m.invalidateRenderCache()
 	m.syncViewport()
 	m.viewport.SetLines(m.renderHistoryLines())

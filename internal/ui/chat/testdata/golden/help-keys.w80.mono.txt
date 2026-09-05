@@ -79,10 +79,16 @@ Keys:
                  (while the agent is working, enter queues a steering message   
                   that joins the conversation before the next model request)    
   up/down        Recall previous inputs (when the input is empty)               
-  shift+↑        Scroll the transcript a line, without leaving the prompt —     
-  shift+↓        the draft keeps the keyboard and every letter it has           
-                 (ctrl+up and ctrl+down do the same, for terminals that         
-                  report them)                                                  
+  shift+↑        Move the pointer over the pane's rows — reading mode's cursor  
+  shift+↓        seen from the prompt. The draft keeps the keyboard and every   
+                 letter it has, and the pane scrolls only as far as keeps the   
+                 pointed row in view. On the start screen the offers are the    
+                 rows. Esc drops the pointer; ctrl+o opens reading mode on it   
+  shift+→        Open or run the pointed row, and close it: what enter and -    
+  shift+←        do under reading mode's cursor, by the same handler. A row's   
+                 own letters (a turn's v and u, a failure's r) stay reading     
+                 mode's, because at the prompt a letter is text. Enter on an    
+                 empty draft is the same open                                   
   ctrl+o         Reading mode: select transcript rows (j/k, u/d half a page),   
                  expand/collapse (enter), y copies the row under the cursor —   
                  a command as $ cmd over its output, an edit as its unified     
@@ -236,10 +242,16 @@ Keys:
 ␛[3;38;5;244m                 (while the agent is working, enter queues a steering message␛[m   
 ␛[3;38;5;244m                  that joins the conversation before the next model request)␛[m    
 ␛[3;38;5;244m  up/down        Recall previous inputs (when the input is empty)␛[m               
-␛[3;38;5;244m  shift+↑        Scroll the transcript a line, without leaving the prompt —␛[m     
-␛[3;38;5;244m  shift+↓        the draft keeps the keyboard and every letter it has␛[m           
-␛[3;38;5;244m                 (ctrl+up and ctrl+down do the same, for terminals that␛[m         
-␛[3;38;5;244m                  report them)␛[m                                                  
+␛[3;38;5;244m  shift+↑        Move the pointer over the pane's rows — reading mode's cursor␛[m  
+␛[3;38;5;244m  shift+↓        seen from the prompt. The draft keeps the keyboard and every␛[m   
+␛[3;38;5;244m                 letter it has, and the pane scrolls only as far as keeps the␛[m   
+␛[3;38;5;244m                 pointed row in view. On the start screen the offers are the␛[m    
+␛[3;38;5;244m                 rows. Esc drops the pointer; ctrl+o opens reading mode on it␛[m   
+␛[3;38;5;244m  shift+→        Open or run the pointed row, and close it: what enter and -␛[m    
+␛[3;38;5;244m  shift+←        do under reading mode's cursor, by the same handler. A row's␛[m   
+␛[3;38;5;244m                 own letters (a turn's v and u, a failure's r) stay reading␛[m     
+␛[3;38;5;244m                 mode's, because at the prompt a letter is text. Enter on an␛[m    
+␛[3;38;5;244m                 empty draft is the same open␛[m                                   
 ␛[3;38;5;244m  ctrl+o         Reading mode: select transcript rows (j/k, u/d half a page),␛[m   
 ␛[3;38;5;244m                 expand/collapse (enter), y copies the row under the cursor —␛[m   
 ␛[3;38;5;244m                 a command as $ cmd over its output, an edit as its unified␛[m     

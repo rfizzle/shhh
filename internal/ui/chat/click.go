@@ -90,6 +90,11 @@ func (m Model) clickAt(x, y int) (tea.Model, tea.Cmd) {
 		if !m.clickableTranscript() {
 			return m, nil
 		}
+		// On the start screen the rows are the offers, and an offer names
+		// one line of input that enter already runs (start.go).
+		if m.startChoosing() {
+			return m.clickOffer(pt.line)
+		}
 		return m.clickRow(pt.line)
 	}
 	return m.clickKey(x, y)
@@ -125,7 +130,7 @@ func (m Model) clickableTranscript() bool {
 // there is nothing there to open yet.
 func (m Model) unitAtLine(line int) (idx, offset int, ok bool) {
 	es := *m.entries()
-	focus := m.state == stateFocus
+	focus := m.gutterShowing()
 	at := 0
 	var prev entry
 	havePrev := false

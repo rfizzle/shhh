@@ -26,8 +26,8 @@ Some things worth doing first:
   ⚙ run the default quality gate and triage what fails
     one approval, then it reports back
 
-[↑↓] choose · [enter] start · or just type what you want
-[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+/] palette · [c…
+[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start · or just type what…
+[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse
 
 · the pointer on the offer that costs an approval
 ▄▀▀▀ █    █    █
@@ -45,8 +45,8 @@ Some things worth doing first:
 ❯ ⚙ run the default quality gate and triage what fails
     one approval, then it reports back
 
-[↑↓] choose · [enter] start · or just type what you want
-[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+/] palette · [c…
+[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start · or just type what…
+[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse
 
 · clean tree · nothing saved, no gate, no project context
 ▄▀▀▀ █    █    █
@@ -64,8 +64,8 @@ Some things worth doing first:
   ⚙ run go test ./... and triage the failures
     one approval, then it reports back
 
-[↑↓] choose · [enter] start · or just type what you want
-[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+/] palette · [c…
+[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start · or just type what…
+[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse
 
 · outside a repository · the package count is a floor
 ▄▀▀▀ █    █    █
@@ -83,8 +83,8 @@ Some things worth doing first:
   ⚙ run the default quality gate and triage what fails
     one approval, then it reports back
 
-[↑↓] choose · [enter] start · or just type what you want
-[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+/] palette · [c…
+[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start · or just type what…
+[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse
 
 · nothing read · the third offer writes the file that would be
 ▄▀▀▀ █    █    █
@@ -101,8 +101,8 @@ Some things worth doing first:
   ⚙ explain what changed in the working tree — reads only, no writes
   ✎ scaffold .shhh/ — one approval
 
-[↑↓] choose · [enter] start · or just type what you want
-[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+/] palette · [c…
+[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start · or just type what…
+[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse
 
 · somebody else is in this checkout too
 ▄▀▀▀ █    █    █
@@ -120,8 +120,8 @@ Some things worth doing first:
   ⚙ run the default quality gate and triage what fails
     one approval, then it reports back
 
-[↑↓] choose · [enter] start · or just type what you want
-[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+/] palette · [c…
+[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start · or just type what…
+[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse
 
 · a checkout nobody has answered for · what it is holding back
 ▄▀▀▀ █    █    █
@@ -141,8 +141,8 @@ Some things worth doing first:
   ⚙ run go test ./... and triage the failures
     one approval, then it reports back
 
-[↑↓] choose · [enter] start · or just type what you want
-[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+/] palette · [c…
+[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start · or just type what…
+[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse
 
 · the checkout brought its own settings and its own wordings
 ▄▀▀▀ █    █    █
@@ -163,8 +163,8 @@ Some things worth doing first:
   ⚙ run the default quality gate and triage what fails
     one approval, then it reports back
 
-[↑↓] choose · [enter] start · or just type what you want
-[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+/] palette · [c…
+[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start · or just type what…
+[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse
 
 · typing dismissed the list · the facts stay
 ▄▀▀▀ █    █    █
@@ -176,7 +176,7 @@ Some things worth doing first:
 context  AGENTS.md — in the system prompt
 gate     default — vet, test · runs without asking
 
-[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+/] palette · [c…
+[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse
 
 ── ansi ────────────────────────────────────────────────────
 · first contact · a dirty checkout with a session to pick up
@@ -195,8 +195,8 @@ gate     default — vet, test · runs without asking
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m
     ␛[38;5;241mone approval, then it reports back␛[m
 
-␛[3;38;5;241m[↑↓] choose · [enter] start · or just type what you want␛[m
-␛[3;38;5;241m[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+/] palette · [c…␛[m
+␛[3;38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start · or just type what…␛[m
+␛[3;38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse␛[m
 
 · the pointer on the offer that costs an approval
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -214,8 +214,8 @@ gate     default — vet, test · runs without asking
 ␛[1;48;5;62m❯ ⚙ run the default quality gate and triage what fails␛[m
     ␛[38;5;241mone approval, then it reports back␛[m
 
-␛[3;38;5;241m[↑↓] choose · [enter] start · or just type what you want␛[m
-␛[3;38;5;241m[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+/] palette · [c…␛[m
+␛[3;38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start · or just type what…␛[m
+␛[3;38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse␛[m
 
 · clean tree · nothing saved, no gate, no project context
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -233,8 +233,8 @@ gate     default — vet, test · runs without asking
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun go test ./... and triage the failures␛[m
     ␛[38;5;241mone approval, then it reports back␛[m
 
-␛[3;38;5;241m[↑↓] choose · [enter] start · or just type what you want␛[m
-␛[3;38;5;241m[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+/] palette · [c…␛[m
+␛[3;38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start · or just type what…␛[m
+␛[3;38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse␛[m
 
 · outside a repository · the package count is a floor
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -252,8 +252,8 @@ gate     default — vet, test · runs without asking
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m
     ␛[38;5;241mone approval, then it reports back␛[m
 
-␛[3;38;5;241m[↑↓] choose · [enter] start · or just type what you want␛[m
-␛[3;38;5;241m[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+/] palette · [c…␛[m
+␛[3;38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start · or just type what…␛[m
+␛[3;38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse␛[m
 
 · nothing read · the third offer writes the file that would be
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -270,8 +270,8 @@ gate     default — vet, test · runs without asking
   ␛[38;5;214m⚙␛[m ␛[38;5;252mexplain what changed in the working tree␛[m␛[38;5;241m — reads only, no writes␛[m
   ␛[38;5;214m✎␛[m ␛[38;5;252mscaffold .shhh/␛[m␛[38;5;241m — one approval␛[m
 
-␛[3;38;5;241m[↑↓] choose · [enter] start · or just type what you want␛[m
-␛[3;38;5;241m[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+/] palette · [c…␛[m
+␛[3;38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start · or just type what…␛[m
+␛[3;38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse␛[m
 
 · somebody else is in this checkout too
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -289,8 +289,8 @@ gate     default — vet, test · runs without asking
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m
     ␛[38;5;241mone approval, then it reports back␛[m
 
-␛[3;38;5;241m[↑↓] choose · [enter] start · or just type what you want␛[m
-␛[3;38;5;241m[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+/] palette · [c…␛[m
+␛[3;38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start · or just type what…␛[m
+␛[3;38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse␛[m
 
 · a checkout nobody has answered for · what it is holding back
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -310,8 +310,8 @@ gate     default — vet, test · runs without asking
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun go test ./... and triage the failures␛[m
     ␛[38;5;241mone approval, then it reports back␛[m
 
-␛[3;38;5;241m[↑↓] choose · [enter] start · or just type what you want␛[m
-␛[3;38;5;241m[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+/] palette · [c…␛[m
+␛[3;38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start · or just type what…␛[m
+␛[3;38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse␛[m
 
 · the checkout brought its own settings and its own wordings
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -332,8 +332,8 @@ gate     default — vet, test · runs without asking
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m
     ␛[38;5;241mone approval, then it reports back␛[m
 
-␛[3;38;5;241m[↑↓] choose · [enter] start · or just type what you want␛[m
-␛[3;38;5;241m[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+/] palette · [c…␛[m
+␛[3;38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start · or just type what…␛[m
+␛[3;38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse␛[m
 
 · typing dismissed the list · the facts stay
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -345,4 +345,4 @@ gate     default — vet, test · runs without asking
 ␛[38;5;241mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
 ␛[38;5;241mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;241m — vet, test · runs without asking␛[m
 
-␛[3;38;5;241m[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+/] palette · [c…␛[m
+␛[3;38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse␛[m

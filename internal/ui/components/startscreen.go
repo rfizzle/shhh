@@ -83,34 +83,72 @@ const suggestionGutter = 2
 
 // View renders the screen at the given width.
 func (s StartScreen) View(width int) string {
+	rows, _ := s.layout(width)
+	return strings.Join(rows, "\n")
+}
+
+// OfferAt reports which suggestion the pane's row belongs to, for a click
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+// The answer comes from the same layout View draws, so a cell can never
+// name an offer the eye did not see there; a detail that wrapped onto its
+// own line is part of its offer, and every other row is nobody's.
+func (s StartScreen) OfferAt(width, row int) (int, bool) {
+	_, offers := s.layout(width)
+	if row < 0 || row >= len(offers) || offers[row] < 0 {
+		return 0, false
+	}
+	return offers[row], true
+}
+
+// layout is the screen's rows and, beside each, the index of the suggestion
+// it draws or -1.
+func (s StartScreen) layout(width int) ([]string, []int) {
 	if width <= 0 {
-		return ""
+		return nil, nil
 	}
 	rows := s.faceRows(width)
+	offers := make([]int, len(rows))
+	for i := range offers {
+		offers[i] = -1
+	}
+	blank := func(n int) {
+		for range n {
+			offers = append(offers, -1)
+		}
+	}
 	if line := s.factLine(width); line != "" {
 		rows = append(rows, line)
+		blank(1)
 	}
 	if notes := s.noteRows(width); len(notes) > 0 {
 		rows = append(rows, "")
 		rows = append(rows, notes...)
+		blank(1 + len(notes))
 	}
 	if len(s.Suggestions) > 0 {
 		rows = append(rows, "")
+		blank(1)
 		if s.Lead != "" {
 			rows = append(rows, sty.Dim.Render(Clip(s.Lead, width)))
+			blank(1)
 		}
-		rows = append(rows, s.suggestionRows(width)...)
+		lines, owners := s.suggestionRows(width)
+		rows = append(rows, lines...)
+		offers = append(offers, owners...)
 	}
 	if s.Hint != "" {
 		rows = append(rows, "", sty.Hint.Render(Clip(s.Hint, width)))
+		blank(2)
 	}
 	if s.Nav != "" {
 		if s.Hint == "" {
 			rows = append(rows, "")
+			blank(1)
 		}
 		rows = append(rows, sty.Hint.Render(Clip(s.Nav, width)))
+		blank(1)
 	}
-	return strings.Join(rows, "\n")
+	return rows, offers
 }
 
 // The product's name as this screen wears it
@@ -298,12 +336,14 @@ func (s StartScreen) noteRows(width int) []string {
 	return rows
 }
 
-// suggestionRows renders the offered work. A row that fits keeps its detail
-// beside the title; one that does not drops the detail onto its own indented
-// line rather than losing it to a clip, because the detail is the permission
-// the row costs.
-func (s StartScreen) suggestionRows(width int) []string {
+// suggestionRows renders the offered work, and says beside each row which
+// suggestion it belongs to. A row that fits keeps its detail beside the
+// title; one that does not drops the detail onto its own indented line
+// rather than losing it to a clip, because the detail is the permission the
+// row costs.
+func (s StartScreen) suggestionRows(width int) ([]string, []int) {
 	var rows []string
+	var owners []int
 	for i, sg := range s.Suggestions {
 		focused := i == s.Focus
 		head := strings.Repeat(" ", suggestionGutter) + sg.Glyph + " " + sg.Title
@@ -312,16 +352,19 @@ func (s StartScreen) suggestionRows(width int) []string {
 		}
 		if sg.Detail == "" {
 			rows = append(rows, s.row(focused, head, "", width))
+			owners = append(owners, i)
 			continue
 		}
 		if lipgloss.Width(head+" — "+sg.Detail) <= width {
 			rows = append(rows, s.row(focused, head, sg.Detail, width))
+			owners = append(owners, i)
 			continue
 		}
 		rows = append(rows, s.row(focused, head, "", width),
 			Clip(strings.Repeat(" ", suggestionGutter+2)+sty.Dim.Render(sg.Detail), width))
+		owners = append(owners, i, i)
 	}
-	return rows
+	return rows, owners
 }
 
 // row styles one suggestion line. The focused row is highlighted whole, the

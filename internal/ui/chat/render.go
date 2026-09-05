@@ -329,9 +329,10 @@ func (m *Model) renderHistoryRawLines() []string {
 	if testHookRenderHistory != nil {
 		testHookRenderHistory()
 	}
-	if m.state == stateFocus {
+	if m.gutterShowing() {
 		// Focus mode renders fresh with the selection gutter, bypassing the
-		// incremental cache; it scopes to whichever agent is focused.
+		// incremental cache; it scopes to whichever agent is focused. A
+		// pointer lit from the prompt is the same gutter without the mode.
 		content, _, _ := m.renderFocusHistory()
 		return strings.Split(content, "\n")
 	}

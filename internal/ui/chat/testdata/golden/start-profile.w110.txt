@@ -26,8 +26,8 @@ Some things worth doing first:
   ⚙ explain what changed in the working tree — reads only, no writes
   ⚙ run the default quality gate and triage what fails — one approval, then it reports back
 
-[↑↓] choose · [enter] start · or just type what you want
-[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse
+[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start · or just type what you want
+[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse
 
 · a profile of the reader's own, by name
 ▄▀▀▀ █    █    █
@@ -45,8 +45,8 @@ Some things worth doing first:
   ⚙ explain what changed in the working tree — reads only, no writes
   ⚙ run the default quality gate and triage what fails — one approval, then it reports back
 
-[↑↓] choose · [enter] start · or just type what you want
-[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse
+[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start · or just type what you want
+[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse
 
 · one of the profiles shhh ships
 ▄▀▀▀ █    █    █
@@ -64,8 +64,8 @@ Some things worth doing first:
   ⚙ explain what changed in the working tree — reads only, no writes
   ⚙ run the default quality gate and triage what fails — one approval, then it reports back
 
-[↑↓] choose · [enter] start · or just type what you want
-[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse
+[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start · or just type what you want
+[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse
 
 ── ansi ────────────────────────────────────────────────────
 · the checkout carries its own profile
@@ -84,8 +84,8 @@ Some things worth doing first:
   ␛[38;5;214m⚙␛[m ␛[38;5;252mexplain what changed in the working tree␛[m␛[38;5;241m — reads only, no writes␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m␛[38;5;241m — one approval, then it reports back␛[m
 
-␛[3;38;5;241m[↑↓] choose · [enter] start · or just type what you want␛[m
-␛[3;38;5;241m[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse␛[m
+␛[3;38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start · or just type what you want␛[m
+␛[3;38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse␛[m
 
 · a profile of the reader's own, by name
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -103,8 +103,8 @@ Some things worth doing first:
   ␛[38;5;214m⚙␛[m ␛[38;5;252mexplain what changed in the working tree␛[m␛[38;5;241m — reads only, no writes␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m␛[38;5;241m — one approval, then it reports back␛[m
 
-␛[3;38;5;241m[↑↓] choose · [enter] start · or just type what you want␛[m
-␛[3;38;5;241m[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse␛[m
+␛[3;38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start · or just type what you want␛[m
+␛[3;38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse␛[m
 
 · one of the profiles shhh ships
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -122,5 +122,5 @@ Some things worth doing first:
   ␛[38;5;214m⚙␛[m ␛[38;5;252mexplain what changed in the working tree␛[m␛[38;5;241m — reads only, no writes␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m␛[38;5;241m — one approval, then it reports back␛[m
 
-␛[3;38;5;241m[↑↓] choose · [enter] start · or just type what you want␛[m
-␛[3;38;5;241m[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse␛[m
+␛[3;38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start · or just type what you want␛[m
+␛[3;38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palette · [ctrl+x] mouse␛[m

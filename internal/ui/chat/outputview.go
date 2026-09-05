@@ -101,6 +101,12 @@ func (m Model) closeOutputFull() (tea.Model, tea.Cmd) {
 	case stateConfirmRun:
 		m.viewport.SetLines(m.renderHistoryLines())
 	default:
+		if m.pointerLit() {
+			// Opened from the prompt over the pointer, so the pane comes
+			// back to the pointed row and not to the live end.
+			m.refreshCursorView()
+			break
+		}
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 	}

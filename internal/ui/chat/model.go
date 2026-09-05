@@ -634,6 +634,11 @@ type Model struct {
 	// click.go). A click is a press and a release in the same cell, which is
 	// what lets one button carry both the selection drag and the targets.
 	press pointerPress
+	// pointer is whether the pane's pointer is lit from the prompt: reading
+	// mode's cursor (focusIdx) drawn while the draft holds the keyboard
+	// (pointer.go). A flag beside the index rather than a state of its own,
+	// because the keyboard does not move.
+	pointer bool
 	// railDiff is the rail cell a file's diff was opened from (railclick.go).
 	railDiff pointerPress
 	// writeConfig persists one config key to the user's file. The CLI

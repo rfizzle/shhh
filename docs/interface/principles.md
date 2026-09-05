@@ -107,6 +107,13 @@ screen. No modifier stands in for the distinction: shift-click belongs to the
 terminal, which keeps it for its own selection and hands the application
 nothing.
 
+The prompt's own chords may act on the pane through the pointer — reading
+mode's cursor, drawn while the draft holds the keyboard — and the keyboard
+does not move: the chords are declared on the input, and what one does to a
+row is what the mode's key does to it, by the same handler. A row's letters
+are not reachable that way, because at the prompt a letter is text; the
+handover is what makes them keys.
+
 A row is a target only where the pointer names exactly one thing and that
 thing already has a key. That is what makes the rail's list of changed files
 and its map of sessions clickable — each row names one path, one session, and

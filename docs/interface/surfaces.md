@@ -172,6 +172,17 @@ The transcript gets a cursor, and the keyboard moves to it. This is the one
 mechanism behind every "expand" in the session, which is what lets the input
 keep every other key.
 
+The cursor is also reachable without the handover. Shift on the arrows
+moves it from the prompt — the pointer — and shift+→ and shift+← are enter
+and collapse on the row it names; enter on an empty draft is the same open.
+The draft keeps the keyboard and every character, the pane scrolls only as
+far as keeps the pointed row in view, and esc drops the pointer before it
+does anything else. What the pointer cannot do is press a row's own letters,
+because at the prompt a letter is text; that is what the handover is still
+for, and ctrl+o opens the mode on the pointed row. Line scrolling from the
+prompt went with this: pgup/pgdn and the wheel are the scroll, and ctrl on
+the arrows was never a chord shhh could keep ([reserved keys](reserved-keys.md)).
+
 It is also where rows that offer keys without expanding are answered — a
 turn's changeset, a provider failure. Both are passive renderers; holding
 their keys here is what keeps `v`, `u`, `r`, `c`, `e` and `p` available for
@@ -732,6 +743,13 @@ available afterwards: what was refused was being asked, not the file.
 
 Typing anything dismisses the offers and keeps the facts, because the input
 owns every ordinary key the moment there is a draft.
+
+An offer is reached three ways that are one act: the arrows and enter, the
+pointer chords — shift on the arrows, the same chords that go on working in
+the pane after the first turn — and a click on its row. Each runs the line
+of input the offer names, through the submit typing it would take, so an
+offer can never reach somewhere typing could not. The lead, the facts and
+the hint lines are not targets: they name nothing to run.
 
 This is the one screen with room for the product to have a face, and the only
 one that gets one. Where the pane has the rows, the name is drawn in three of

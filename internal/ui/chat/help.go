@@ -405,12 +405,22 @@ the level is stated on the vitals rail beside the model`,
 		text:  `Recall previous inputs (when the input is empty)`,
 	},
 	{
-		binds: []keys.Binding{keys.Draft.ScrollUp, keys.Draft.ScrollDown},
+		binds: []keys.Binding{keys.Draft.PointUp, keys.Draft.PointDown},
 		sep:   "\n",
-		text: `Scroll the transcript a line, without leaving the prompt —
-the draft keeps the keyboard and every letter it has
-(ctrl+up and ctrl+down do the same, for terminals that
- report them)`,
+		text: `Move the pointer over the pane's rows — reading mode's cursor
+seen from the prompt. The draft keeps the keyboard and every
+letter it has, and the pane scrolls only as far as keeps the
+pointed row in view. On the start screen the offers are the
+rows. Esc drops the pointer; ctrl+o opens reading mode on it`,
+	},
+	{
+		binds: []keys.Binding{keys.Draft.Open, keys.Draft.Close},
+		sep:   "\n",
+		text: `Open or run the pointed row, and close it: what enter and -
+do under reading mode's cursor, by the same handler. A row's
+own letters (a turn's v and u, a failure's r) stay reading
+mode's, because at the prompt a letter is text. Enter on an
+empty draft is the same open`,
 	},
 	{
 		binds: []keys.Binding{keys.Draft.Reading},

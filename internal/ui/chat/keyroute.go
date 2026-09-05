@@ -365,18 +365,47 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 			m.scrollPage(dir)
 			return m, nil, true
 		}
-	case keys.Is(pressed, keys.Draft.ScrollUp):
-		// The same job by a line rather than a page. Both
-		// chords are bound because terminals disagree about which they
-		// report: the textarea underneath claims neither, and neither is
-		// reachable by typing.
+	case keys.Is(pressed, keys.Draft.PointUp, keys.Draft.PointDown):
+		// The pointer: reading mode's cursor moved from the prompt, with
+		// the draft keeping the keyboard and every letter it has
+		// (pointer.go). On the start screen the offers are the rows, and
+		// the chord is the plain arrow's act there.
+		dir, arrow := -1, "up"
+		if keys.Is(pressed, keys.Draft.PointDown) {
+			dir, arrow = 1, "down"
+		}
+		if next, claimed := m.startKey(arrow); claimed {
+			return next, nil, true
+		}
+		// Claimed whenever the input is live, even with nothing to point
+		// at: the textarea underneath binds shift on the arrows to
+		// selecting text, and a chord declared on the input must not fall
+		// through to a meaning nothing offered.
 		if m.inputLive() {
-			m.scrollLines(-keyScrollLines)
+			if m.attachedTo == "" {
+				m.movePointer(dir)
+			}
 			return m, nil, true
 		}
-	case keys.Is(pressed, keys.Draft.ScrollDown):
+	case keys.Is(pressed, keys.Draft.Open):
+		// Enter's act on the pointed row, reached without emptying the
+		// draft: an offer on the start screen runs, a row opens.
+		if action := m.startAction(); action != "" {
+			m.input.SetValue(action)
+			return answered(m.submitInput())
+		}
+		if m.pointerLit() {
+			return answered(m.openCursorRow(m.state))
+		}
 		if m.inputLive() {
-			m.scrollLines(keyScrollLines)
+			return m, nil, true
+		}
+	case keys.Is(pressed, keys.Draft.Close):
+		if m.pointerLit() {
+			m.closePointed()
+			return m, nil, true
+		}
+		if m.inputLive() {
 			return m, nil, true
 		}
 	case keys.Is(pressed, keys.Draft.Clear):
@@ -387,6 +416,12 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 		// sentence they were writing.
 		if m.cancelSelection() {
 			m.refreshTranscript()
+			return m, nil, true
+		}
+		// A lit pointer is the next thing esc leaves, for the same reason
+		// and ahead of the draft: it is the thing most recently put on the
+		// screen, and dropping it costs no letters.
+		if m.dropPointer() {
 			return m, nil, true
 		}
 		// With the completion menu open, esc only dismisses the menu; the
@@ -545,6 +580,12 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 		if action := m.startAction(); action != "" {
 			m.input.SetValue(action)
 			return answered(m.submitInput())
+		}
+		// And enter on an empty draft with the pointer lit is the pointer's
+		// open — the reading the start screen established, held everywhere.
+		// With a draft, enter sends the draft, pointer or not.
+		if m.pointerLit() && strings.TrimSpace(m.input.Value()) == "" {
+			return answered(m.openCursorRow(m.state))
 		}
 		// One submit path for every state that keeps the input live
 		// (command.go): commands run, plain text is a message when

@@ -17,7 +17,7 @@ import (
 
 // keymapGeneration numbers the most recent release that moved keys. Bump it
 // when a release rebinds again, and the notice shows once more.
-const keymapGeneration = 1
+const keymapGeneration = 2
 
 const keymapMarkerFile = "keymap_notice"
 

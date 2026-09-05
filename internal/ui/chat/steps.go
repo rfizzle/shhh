@@ -491,9 +491,11 @@ func (m Model) blockUnits(blk transcriptBlock, es []entry, width int, focus bool
 	addEntry := func(i int, detail bool) {
 		e := es[i]
 		// A row's own keys are live only under reading mode's cursor;
-		// anywhere else they render beside the key that hands the keyboard
-		// to the transcript.
-		add(i, e, e, m.renderEntryDetail(e, entryWidth(e), focus && i == focusIdx, detail), selectable(e))
+		// anywhere else — including under the pointer lit from the prompt,
+		// where every letter is text — they render beside the key that
+		// hands the keyboard to the transcript.
+		keysLive := focus && i == focusIdx && m.state == stateFocus
+		add(i, e, e, m.renderEntryDetail(e, entryWidth(e), keysLive, detail), selectable(e))
 	}
 
 	if blk.step == nil {

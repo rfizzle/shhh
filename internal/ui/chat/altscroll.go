@@ -28,7 +28,7 @@ package chat
 // The fix is to make the documented behaviour the real one. shhh asks the
 // terminal to stop synthesising, and the wheel goes back to doing nothing
 // until reporting is on — which is what reading mode always claimed, and what
-// makes the keyboard transfers (pgup/pgdn, shift+arrows, ctrl+o) the whole
+// makes the keyboard transfers (pgup/pgdn, the pointer chords, ctrl+o) the whole
 // story for a session that has not bought the wheel with its selection.
 //
 // Suppressing rather than using those arrows is a decision, not an oversight,

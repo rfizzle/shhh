@@ -29,8 +29,8 @@ Some things worth doing first:
   ⚙ run the default quality gate and triage what fails
     one approval, then it reports back
 
-[↑↓] choose · [enter] start · or just type what you wa…
-[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · […
+[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…
+[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…
 
 · a profile of the reader's own, by name
 ▄▀▀▀ █    █    █
@@ -51,8 +51,8 @@ Some things worth doing first:
   ⚙ run the default quality gate and triage what fails
     one approval, then it reports back
 
-[↑↓] choose · [enter] start · or just type what you wa…
-[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · […
+[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…
+[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…
 
 · one of the profiles shhh ships
 ▄▀▀▀ █    █    █
@@ -73,8 +73,8 @@ Some things worth doing first:
   ⚙ run the default quality gate and triage what fails
     one approval, then it reports back
 
-[↑↓] choose · [enter] start · or just type what you wa…
-[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · […
+[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…
+[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…
 
 ── ansi ────────────────────────────────────────────────────
 · the checkout carries its own profile
@@ -96,8 +96,8 @@ Some things worth doing first:
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m
     ␛[38;5;241mone approval, then it reports back␛[m
 
-␛[3;38;5;241m[↑↓] choose · [enter] start · or just type what you wa…␛[m
-␛[3;38;5;241m[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · […␛[m
+␛[3;38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…␛[m
+␛[3;38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…␛[m
 
 · a profile of the reader's own, by name
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -118,8 +118,8 @@ Some things worth doing first:
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m
     ␛[38;5;241mone approval, then it reports back␛[m
 
-␛[3;38;5;241m[↑↓] choose · [enter] start · or just type what you wa…␛[m
-␛[3;38;5;241m[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · […␛[m
+␛[3;38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…␛[m
+␛[3;38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…␛[m
 
 · one of the profiles shhh ships
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -140,5 +140,5 @@ Some things worth doing first:
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m
     ␛[38;5;241mone approval, then it reports back␛[m
 
-␛[3;38;5;241m[↑↓] choose · [enter] start · or just type what you wa…␛[m
-␛[3;38;5;241m[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · […␛[m
+␛[3;38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…␛[m
+␛[3;38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…␛[m

@@ -35,6 +35,8 @@
 package keys
 
 import (
+	"strings"
+
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 )
@@ -80,6 +82,21 @@ func Shown(b Binding) string { return b.Help().Key }
 
 // Bracket is the bracketed spelling, which is what most of the product draws.
 func Bracket(b Binding) string { return "[" + b.Help().Key + "]" }
+
+// BracketPair is Bracket for two bindings that are one gesture in two
+// directions, printed the way every hint row prints such a pair: `[shift+↑↓]`
+// where the two spellings differ only in their last glyph, and `[a/b]` where
+// they do not — a rebind that split the pair is shown as split.
+func BracketPair(up, down Binding) string {
+	a, b := Shown(up), Shown(down)
+	ra, rb := []rune(a), []rune(b)
+	arrows := "↑↓←→"
+	if len(ra) > 1 && len(rb) == len(ra) && string(ra[:len(ra)-1]) == string(rb[:len(rb)-1]) &&
+		strings.ContainsRune(arrows, ra[len(ra)-1]) && strings.ContainsRune(arrows, rb[len(rb)-1]) {
+		return "[" + a + string(rb[len(rb)-1]) + "]"
+	}
+	return "[" + a + "/" + b + "]"
+}
 
 // Words are the binding's own words. A surface that means something more
 // specific says so instead — the register is not a style guide, and "try
@@ -127,10 +144,20 @@ type DraftKeys struct {
 	HistoryNext   Binding
 	HistorySearch Binding
 
-	ScrollUp   Binding
-	ScrollDown Binding
-	PageUp     Binding
-	PageDown   Binding
+	// PointUp and PointDown move the pane's pointer — reading mode's cursor,
+	// seen from the prompt — and Open and Close act on the row it names,
+	// with the keyboard never leaving the draft. They are the arrows under
+	// shift because the pointer is the one thing on first contact that has
+	// to work everywhere, and shift on an arrow is reported by every
+	// terminal and taken by no desktop (docs/interface/reserved-keys.md).
+	// Line scrolling, which had the pair, left the prompt: pgup/pgdn and
+	// the wheel are the scroll, and a pointer walk scrolls the pane anyway.
+	PointUp   Binding
+	PointDown Binding
+	Open      Binding
+	Close     Binding
+	PageUp    Binding
+	PageDown  Binding
 
 	Reading Binding
 	Agents  Binding
@@ -201,10 +228,12 @@ var Draft = DraftKeys{
 	HistoryNext:   bind("↓", "the next one", "down"),
 	HistorySearch: bind("ctrl+r", "search the input history", "ctrl+r"),
 
-	ScrollUp:   bind("shift+↑", "scroll the transcript a line", "shift+up", "ctrl+up"),
-	ScrollDown: bind("shift+↓", "scroll it back", "shift+down", "ctrl+down"),
-	PageUp:     bind("pgup", "page the transcript", "pgup"),
-	PageDown:   bind("pgdn", "page it back", "pgdown"),
+	PointUp:   bind("shift+↑", "move the pointer up a row of the pane", "shift+up"),
+	PointDown: bind("shift+↓", "down a row", "shift+down"),
+	Open:      bind("shift+→", "open or run the pointed row", "shift+right"),
+	Close:     bind("shift+←", "close it", "shift+left"),
+	PageUp:    bind("pgup", "page the transcript", "pgup"),
+	PageDown:  bind("pgdn", "page it back", "pgdown"),
 
 	Reading: bind("ctrl+o", "reading mode", "ctrl+o"),
 	Agents:  bind("ctrl+b", "the agent manager", "ctrl+b"),

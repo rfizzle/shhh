@@ -202,3 +202,36 @@ func TestStartScreen_FocusAfterStaysInTheList(t *testing.T) {
 		t.Fatalf("FocusAfter on an empty list = %d, want 0", got)
 	}
 }
+
+// OfferAt answers a click: the rows an offer draws name it, wrapped detail
+// included, and every other row names nothing.
+func TestStartScreen_OfferAtNamesTheOffersRowsAndNothingElse(t *testing.T) {
+	for _, width := range []int{110, 50} {
+		s := startFixture()
+		rows := strings.Split(startView(s, width), "\n")
+		found := map[int]int{}
+		for i, row := range rows {
+			idx, ok := s.OfferAt(width, i)
+			title := strings.Contains(row, "pick up") || strings.Contains(row, "explain what") ||
+				strings.Contains(row, "quality gate")
+			if title && !ok {
+				t.Fatalf("w%d row %d draws an offer and names none: %q", width, i, row)
+			}
+			if ok && !title && width == 110 {
+				t.Fatalf("w%d row %d is not an offer and yet names %d: %q", width, i, idx, row)
+			}
+			if ok {
+				found[idx]++
+			}
+		}
+		if len(found) != 3 {
+			t.Fatalf("w%d should name three offers, found %v", width, found)
+		}
+		if width == 50 && found[2] < 2 {
+			t.Fatalf("at w50 the third offer's detail wraps, and both rows should name it: %v", found)
+		}
+	}
+	if _, ok := startFixture().OfferAt(110, -1); ok {
+		t.Fatal("a row above the screen names nothing")
+	}
+}

@@ -183,42 +183,6 @@ func TestPgDown_AtTheBottomDoesNothing(t *testing.T) {
 	}
 }
 
-// Shift+arrows are the fine adjustment beside pgup/pgdn, and they are held to
-// the same rule: a line of scroll, and the draft keeps the keyboard.
-func TestShiftArrows_ScrollALineWithoutTakingTheKeyboard(t *testing.T) {
-	for _, k := range []tea.KeyPressMsg{
-		{Code: tea.KeyUp, Mod: tea.ModShift},
-		{Code: tea.KeyUp, Mod: tea.ModCtrl},
-	} {
-		m := typeChars(t, proseModel(t), "mid sentence")
-		before := m.viewport.YOffset()
-
-		updated, _ := m.Update(k)
-		m = updated.(Model)
-
-		if m.state != stateInput {
-			t.Fatalf("%v should leave the keyboard in the draft, got state %d", k, m.state)
-		}
-		if m.viewport.YOffset() != before-keyScrollLines {
-			t.Fatalf("%v should scroll up one line, offset %d → %d", k, before, m.viewport.YOffset())
-		}
-		if m.input.Value() != "mid sentence" {
-			t.Fatalf("%v must not touch the draft, got %q", k, m.input.Value())
-		}
-	}
-
-	// And back down again.
-	m := proseModel(t)
-	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyUp, Mod: tea.ModShift})
-	m = updated.(Model)
-	up := m.viewport.YOffset()
-	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyDown, Mod: tea.ModShift})
-	next := updated.(Model)
-	if got := next.viewport.YOffset(); got != up+keyScrollLines {
-		t.Fatalf("shift+↓ should scroll back down, offset %d → %d", up, got)
-	}
-}
-
 // ↑ used to hand the keyboard over on an empty draft with no history to
 // recall. A key that changes surface depending on how much history a session
 // happens to have is one nobody can learn — and on a terminal that

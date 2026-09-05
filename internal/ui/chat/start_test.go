@@ -491,3 +491,79 @@ func TestStartScreen_NamesTheBacklogWhenItIsNotThisProjects(t *testing.T) {
 		t.Fatalf("the screen should name the backlog and why it is there:\n%s", view)
 	}
 }
+
+// The pointer chords are the other route to an offer, and they are the same
+// route: the marker moves, and shift+→ runs what enter would.
+func TestStartScreen_ThePointerChordsChooseAndOpenAnOffer(t *testing.T) {
+	m := startModel(t, startFixture())
+	for range 2 {
+		updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyDown, Mod: tea.ModShift})
+		m = updated.(Model)
+	}
+	if row := startPointerRow(m); !strings.Contains(row, "quality gate") {
+		t.Fatalf("shift+↓ twice should put the marker on the third offer, it is on %q", row)
+	}
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyUp, Mod: tea.ModShift})
+	m = updated.(Model)
+	if row := startPointerRow(m); !strings.Contains(row, "explain what changed") {
+		t.Fatalf("shift+↑ should step back to the second offer, it is on %q", row)
+	}
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyRight, Mod: tea.ModShift})
+	m = updated.(Model)
+	if len(m.transcript) == 0 || !strings.Contains(m.transcript[0].text, "explain what changed in the working tree") {
+		t.Fatalf("shift+→ should run the pointed offer as enter does: %+v", m.transcript)
+	}
+	if m.state == stateFocus {
+		t.Fatal("running an offer must not move the keyboard")
+	}
+}
+
+// An offer is a click target: it names one line of input and enter already
+// runs it. The rest of the screen is not.
+func TestStartScreen_AClickOnAnOfferRunsItAndTheChromeIsInert(t *testing.T) {
+	m := startModel(t, startFixture()).WithMouse(true)
+	m.copyFn = (&clip{}).fn()
+	m.viewport.SetLines(m.renderHistoryLines())
+
+	x, y := at(t, m, lineOf(t, m, "Some things worth doing first"), 4)
+	m = click(t, m, x, y)
+	if len(m.transcript) != 0 {
+		t.Fatalf("the lead is not an offer, yet a click on it sent %+v", m.transcript)
+	}
+	x, y = at(t, m, lineOf(t, m, "[↑↓]"), 4)
+	m = click(t, m, x, y)
+	if len(m.transcript) != 0 {
+		t.Fatalf("the hint is not an offer, yet a click on it sent %+v", m.transcript)
+	}
+
+	// A press on an offer that comes up somewhere else is a drag, and a
+	// drag runs nothing.
+	line := lineOf(t, m, "explain what changed")
+	x, y = at(t, m, line, 4)
+	next, _ := m.Update(mousePress(x, y))
+	m = next.(Model)
+	next, _ = m.Update(mouseRelease(x, y+2))
+	m = next.(Model)
+	if len(m.transcript) != 0 {
+		t.Fatalf("a drag off an offer should run nothing, sent %+v", m.transcript)
+	}
+
+	m.input.SetValue("half a sentence")
+	m.viewport.SetLines(m.renderHistoryLines())
+	if _, _, ok := m.startOfferLine(line); ok {
+		t.Fatal("with a draft the list is dismissed, so there is no offer to click")
+	}
+	m.input.Reset()
+	m.viewport.SetLines(m.renderHistoryLines())
+
+	m = click(t, m, x, y)
+	if len(m.transcript) == 0 || !strings.Contains(m.transcript[0].text, "explain what changed in the working tree") {
+		t.Fatalf("a click on the second offer should run it as enter would: %+v", m.transcript)
+	}
+	if m.startFocus != 1 {
+		t.Fatalf("the pointer should have gone to the clicked offer first, it is on %d", m.startFocus)
+	}
+	if m.state == stateFocus {
+		t.Fatal("a click never takes the keyboard")
+	}
+}

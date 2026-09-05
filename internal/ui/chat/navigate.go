@@ -42,12 +42,6 @@ import (
 // other pager the reader uses.
 const wheelLines = 3
 
-// keyScrollLines is how far shift+↑ / shift+↓ move it. One line, because the
-// key is the fine adjustment in a pair: pgup/pgdn are there for the distance,
-// and a reader nudging the transcript to bring one row back into view wants
-// the row, not three of them.
-const keyScrollLines = 1
-
 // keys.Draft.Mouse flips terminal mouse reporting from anywhere. Ctrl+X
 // because of what is left rather than what it stands for: the textarea
 // underneath claims a, b, d, e, f, k, n, p, t, u, v and w; this surface

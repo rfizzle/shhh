@@ -20,6 +20,7 @@ import (
 	"strings"
 	"time"
 
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -184,6 +185,38 @@ func (m Model) startAction() string {
 	return actions[m.startFocus]
 }
 
+// clickOffer runs the offer a click on the pane's line landed on, exactly as
+// enter on it would, and does nothing for a line that is not an offer. The
+// pointer goes to the row first, so what ran is the row that is lit. The
+// line is resolved by the component that laid the rows out
+// (components.StartScreen.OfferAt) rather than by reading the rendered text
+// back, which is the rule the rail's targets set (click.go).
+func (m Model) clickOffer(line int) (tea.Model, tea.Cmd) {
+	i, action, ok := m.startOfferLine(line)
+	if !ok {
+		return m, nil
+	}
+	m.startFocus = i
+	m.input.SetValue(action)
+	return m.submitInput()
+}
+
+// startOfferLine is which offer the pane's line draws and the line of input
+// behind it, while the list is live; with the list dismissed no line is an
+// offer.
+func (m Model) startOfferLine(line int) (int, string, bool) {
+	if !m.startChoosing() {
+		return 0, "", false
+	}
+	screen, actions := m.startScreen()
+	screen.Height = m.viewportHeight()
+	i, ok := screen.OfferAt(m.transcriptWidth(), line)
+	if !ok || i < 0 || i >= len(actions) {
+		return 0, "", false
+	}
+	return i, actions[i], true
+}
+
 // renderStartScreen draws the screen for the transcript pane.
 func (m Model) renderStartScreen(width int) string {
 	screen, _ := m.startScreen()
@@ -213,7 +246,12 @@ func (m Model) startScreen() (components.StartScreen, []string) {
 		Lead:        "Some things worth doing first:",
 		Suggestions: suggestions,
 		Focus:       min(max(m.startFocus, 0), max(len(suggestions)-1, 0)),
-		Hint:        "[↑↓] choose · [enter] start · or just type what you want",
+		// Both routes to an offer are named, because they answer different
+		// hands: the plain arrows are what a reader tries first, and the
+		// pointer chords are the ones that go on working in the pane after
+		// the first turn (pointer.go).
+		Hint: "[↑↓] or " + keys.BracketPair(keys.Draft.PointUp, keys.Draft.PointDown) + " choose · [enter] or " +
+			keys.Bracket(keys.Draft.Open) + " start · or just type what you want",
 		// The navigation line survives the typing dismissal above, because
 		// these keys survive it: every one of them works with a half-written
 		// draft in the box. This is the one screen every user
@@ -222,11 +260,11 @@ func (m Model) startScreen() (components.StartScreen, []string) {
 		// that setting is the whole difficulty.
 		//
 		// Scrolling and the handover are named apart, because they are two
-		// things now: pgup reads without giving up the keyboard, the reading
-		// chord is what hands it over when the rows are what you want. The
-		// spellings are the register's, so this line cannot survive a rebind
-		// with the old chord on it.
-		Nav: "[pgup] or [shift+↑↓] scroll · " + keys.Bracket(keys.Draft.Reading) + " select rows · " +
+		// things: pgup reads without giving up the keyboard, the reading
+		// chord is what hands it over when the rows' own letters are what
+		// you want. The spellings are the register's, so this line cannot
+		// survive a rebind with the old chord on it.
+		Nav: keys.Bracket(keys.Draft.PageUp) + " scroll · " + keys.Bracket(keys.Draft.Reading) + " select rows · " +
 			keys.Bracket(keys.Draft.Palette) + " palette · " + keys.Bracket(keys.Draft.Mouse) + " mouse",
 	}, actions
 }
