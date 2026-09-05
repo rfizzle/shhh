@@ -2,7 +2,12 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"time"
+
+	sqlite "modernc.org/sqlite"
+	sqlite3 "modernc.org/sqlite/lib"
 )
 
 var migrations = []string{
@@ -405,4 +410,43 @@ func (db *DB) migrate() error {
 			return fmt.Errorf("commit migration %d: %w", current+1, err)
 		}
 	}
+}
+
+// openRetries bounds how many times a fresh opener tries the migration again
+// after SQLite refused its lock outright, and openRetryWait is the pause
+// between tries — together about a second, which is longer than any first
+// migration step takes.
+const (
+	openRetries   = 20
+	openRetryWait = 50 * time.Millisecond
+)
+
+// migrateWithRetry is migrate, tried again when SQLite refused a lock rather
+// than waiting for it. The busy timeout covers a wait, but there is one
+// SQLite will not make: two openers of a brand-new store, one holding a
+// shared lock while it switches the journal mode and the other holding a
+// reserved lock while it commits the first step, would each be waiting on
+// the other, so the switcher is handed SQLITE_BUSY at once instead of the
+// busy handler (sqlite.org/c3ref/busy_handler.html). Nothing is half-done on
+// that connection — the pragma is the first thing it ran — so it starts over,
+// and the second time the store is already in WAL and the wait is one the
+// timeout covers. It showed up as a one-in-hundreds failure of the concurrent
+// opener test on the CI runner and never on a workstation.
+func (db *DB) migrateWithRetry() error {
+	var err error
+	for attempt := 0; attempt <= openRetries; attempt++ {
+		if err = db.migrate(); err == nil || !refusedLock(err) {
+			return err
+		}
+		time.Sleep(openRetryWait)
+	}
+	return err
+}
+
+// refusedLock reports whether err is SQLITE_BUSY: a lock SQLite handed back
+// rather than waited for. A busy timeout that ran out arrives as the same
+// code, and after openRetries the difference no longer matters.
+func refusedLock(err error) bool {
+	var e *sqlite.Error
+	return errors.As(err, &e) && e.Code() == sqlite3.SQLITE_BUSY
 }

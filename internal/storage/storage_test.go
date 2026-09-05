@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -1301,6 +1302,38 @@ func TestOpenPath_ConcurrentOpenersMigrateOnce(t *testing.T) {
 		if versions != len(migrations) {
 			t.Fatalf("round %d: every step recorded exactly once, got %d rows for %d steps", round, versions, len(migrations))
 		}
+	}
+}
+
+// TestRefusedLock_IsSQLiteBusyAndNothingElse pins the predicate the opener
+// retries on to the code SQLite hands back when it will not wait for a lock:
+// a connection with no busy timeout asking to write while another holds the
+// store exclusively.
+func TestRefusedLock_IsSQLiteBusyAndNothingElse(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "test.db")
+	holder, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer holder.Close()
+	holder.SetMaxOpenConns(1)
+	if _, err := holder.Exec(`BEGIN EXCLUSIVE`); err != nil {
+		t.Fatal(err)
+	}
+	other, err := sql.Open("sqlite", path+"?_pragma=busy_timeout(0)")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer other.Close()
+	_, err = other.Exec(`CREATE TABLE t (x)`)
+	if err == nil {
+		t.Fatal("a write under another connection's exclusive lock should be refused")
+	}
+	if !refusedLock(err) {
+		t.Fatalf("SQLITE_BUSY should read as a refused lock, got %v", err)
+	}
+	if refusedLock(errors.New("database is locked")) || refusedLock(nil) {
+		t.Fatal("only the driver's own busy code is a refused lock")
 	}
 }
 

@@ -56,7 +56,8 @@ func OpenPath(path string) (*DB, error) {
 	// the growing-forever store the index was added to stop
 	// (migrate.go). The busy timeout comes first so the pragmas behind it
 	// wait for another opener too: switching the journal mode takes a lock
-	// of its own.
+	// of its own — and the one wait SQLite refuses to make is why the
+	// migration is tried again (migrateWithRetry).
 	conn, err := sql.Open("sqlite", path+"?_pragma=busy_timeout(5000)&_pragma=journal_mode(wal)&_pragma=foreign_keys(on)&_pragma=recursive_triggers(on)")
 	if err != nil {
 		return nil, fmt.Errorf("open database: %w", err)
@@ -64,7 +65,7 @@ func OpenPath(path string) (*DB, error) {
 	conn.SetMaxOpenConns(1)
 
 	db := &DB{sql: conn, chatWrote: map[string]chatWrite{}, chatMoved: map[string]string{}}
-	if err := db.migrate(); err != nil {
+	if err := db.migrateWithRetry(); err != nil {
 		conn.Close()
 		return nil, fmt.Errorf("migrate: %w", err)
 	}
