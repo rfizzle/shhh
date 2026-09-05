@@ -267,7 +267,7 @@ func TestFrame_AttachedShowsChildGutterAndVitals(t *testing.T) {
 	if !strings.Contains(view, "│ researcher-1 ❯ ") {
 		t.Fatalf("attached gutter should carry the child's name:\n%s", view)
 	}
-	if !strings.Contains(view, "esc detach · ctrl+b agents") {
+	if !strings.Contains(view, "esc detach · alt+a agents") {
 		t.Fatalf("attached frame missing the detach hints:\n%s", view)
 	}
 }

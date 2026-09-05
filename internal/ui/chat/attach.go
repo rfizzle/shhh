@@ -1,8 +1,8 @@
 package chat
 
 // Sub-agent management and steering (
-// docs/interface/surfaces.md#the-agent-manager): the agent list (`/agents` /
-// ctrl+b) is a live view of every agent with cancel and kill actions, and
+// docs/interface/surfaces.md#the-agent-manager): the agent list (`/agents`,
+// or its chord) is a live view of every agent with cancel and kill actions, and
 // attaching renders a child's session on the full chat surface — same
 // components, breadcrumb header, steering input, approval cards in place, and
 // mode changes clamped to the orchestrator's ceiling. Attach is a focus
@@ -558,7 +558,7 @@ func (m Model) listAnswerAsk() *subagent.Ask {
 }
 
 // listAnswerCard is the routed approval card as it renders over the list.
-// The hints drop [g] and [ctrl+b]: the manager is already what is underneath,
+// The hints drop [g] and the manager's chord: the manager is already what is underneath,
 // and answering here is the whole point of being here.
 func (m Model) listAnswerCard(ask *subagent.Ask) *components.ApprovalCard {
 	card := m.childAskCard(ask)

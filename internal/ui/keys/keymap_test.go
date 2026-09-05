@@ -100,7 +100,7 @@ func TestLoad_ReachesANestedKeyByEitherSpelling(t *testing.T) {
 	restoreRegister(t)
 	path := keymapFile(t, `
 [select.palette]
-next = "ctrl+j"
+next = "ctrl+]"
 
 [select]
 MoveJK = ["up", "down", "j", "k"]
@@ -108,7 +108,7 @@ MoveJK = ["up", "down", "j", "k"]
 	if err := Load(path); err != nil {
 		t.Fatalf("a valid keymap was refused: %v", err)
 	}
-	if !Is("ctrl+j", Select.Palette.Next) {
+	if !Is("ctrl+]", Select.Palette.Next) {
 		t.Errorf("the palette's next answers %v", Select.Palette.Next.Keys())
 	}
 	if !Is("j", Select.MoveJK) {

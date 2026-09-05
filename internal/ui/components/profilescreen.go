@@ -214,7 +214,7 @@ func NewProfileScreen(name string) *ProfileScreen {
 	ta.SetHeight(1)
 	ta.ShowLineNumbers = false
 	ta.CharLimit = 0
-	ta.KeyMap.InsertNewline.SetKeys(append(keys.Draft.Newline.Keys()[1:], keys.Draft.FollowUp.Keys()...)...)
+	ta.KeyMap.InsertNewline.SetKeys(keys.Draft.Newline.Keys()[1:]...)
 	ta.Focus()
 	return &ProfileScreen{Name: name, focus: -1, field: ta}
 }

@@ -31,17 +31,19 @@ func TestNewlineKey_RecognisesEveryModifiedEnter(t *testing.T) {
 	}
 }
 
-// Alt+enter on an idle draft is still the newline it always was: the
-// follow-up case claims it only while a turn is live.
-func TestUpdate_AltEnterIdleInsertsNewline(t *testing.T) {
+// Alt+enter is nobody's now: it was the follow-up chord and a third newline,
+// and Windows Terminal takes it for full screen, so neither meaning survives
+// (docs/interface/reserved-keys.md). Idle, it inserts nothing and queues
+// nothing.
+func TestUpdate_AltEnterIsNoLongerANewline(t *testing.T) {
 	m := frameModel(t, 100, 40)
 	m.input.SetValue("first line")
 
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter, Mod: tea.ModAlt})
 	next := updated.(Model)
 
-	if !strings.Contains(next.input.Value(), "\n") {
-		t.Fatalf("alt+enter idle did not insert a newline: %q", next.input.Value())
+	if strings.Contains(next.input.Value(), "\n") {
+		t.Fatalf("alt+enter idle inserted a newline: %q", next.input.Value())
 	}
 	if len(next.followUps) != 0 {
 		t.Fatalf("alt+enter idle queued a follow-up: %v", next.followUps)

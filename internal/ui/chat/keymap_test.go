@@ -306,9 +306,9 @@ func TestDraft_FreedChordsStayTextKeysUnderALiveSupervisor(t *testing.T) {
 	if got := m.input.Value(); got != "xab" {
 		t.Errorf("with a supervisor wired, ctrl+a stopped being line start: %q", got)
 	}
-	m, _ = pressKey(t, m, tea.KeyPressMsg{Code: 'b', Mod: tea.ModCtrl})
+	m, _ = pressKey(t, m, tea.KeyPressMsg{Code: 'a', Mod: tea.ModAlt})
 	if m.agentList == nil {
-		t.Error("ctrl+b did not open the agent manager")
+		t.Error("the manager chord did not open the agent manager")
 	}
 }
 
@@ -339,7 +339,7 @@ func TestKeysNotice_RidesTheNoticeRailWhenDue(t *testing.T) {
 	if !strings.Contains(line, "keys changed:") {
 		t.Errorf("the rebind notice is not on the rail: %q", line)
 	}
-	for _, want := range []string{"reading", "palette", "agents", "history search"} {
+	for _, want := range []string{"queue", "agents", "pointer", "palette", "reading"} {
 		if !strings.Contains(line, want) {
 			t.Errorf("the notice does not name the %s rebind: %q", want, line)
 		}

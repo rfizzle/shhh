@@ -19,7 +19,7 @@
    ✓ agent   tester-2  intern…  done · 9 tools · $0.03   41s
     all four packages pass
    · agent   reader-4  survey internal/ui       queued  1.0s
-    [ctrl+b] agents
+    [alt+a] agents
 
 · settled · every child has stopped
  ◇ fan-out   3 agents                2 done · 1 failed 2m04s
@@ -45,7 +45,7 @@
    ␛[38;5;254m✓␛[m agent   ␛[38;5;254mtester-2␛[m␛[38;5;244m  intern…␛[m  ␛[38;5;254mdone␛[m␛[38;5;244m · ␛[m␛[38;5;244m9 tools · $0.03␛[m   ␛[38;5;244m41s␛[m
     ␛[38;5;244mall four packages pass␛[m
    ␛[38;5;244m·␛[m agent   ␛[38;5;254mreader-4␛[m␛[38;5;244m  survey internal/ui␛[m       ␛[38;5;244mqueued␛[m  ␛[38;5;244m1.0s␛[m
-    ␛[38;5;254m[ctrl+b]␛[m␛[38;5;244m agents␛[m
+    ␛[38;5;254m[alt+a]␛[m␛[38;5;244m agents␛[m
 
 · settled · every child has stopped
  ␛[38;5;254m◇␛[m fan-out   ␛[38;5;244m3 agents␛[m                ␛[38;5;254m2 done␛[m␛[38;5;244m · ␛[m␛[38;5;254m1 failed␛[m ␛[38;5;244m2m04s␛[m

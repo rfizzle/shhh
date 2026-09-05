@@ -14,16 +14,17 @@
 Keys:                                                                           
   enter          Send message        shift+enter  Insert newline                
                  (ctrl+j does the same, for terminals that cannot report        
-                  shift+enter; so does alt+enter while nothing is running.      
+                  shift+enter.                                                  
                   A draft ending in \ turns enter into a newline too, the       
                   shell's own continuation — end in \\ to send a literal        
                   backslash)                                                    
-  alt+enter      While a turn is live, queue the draft as a follow-up sent      
+  ctrl+n         While a turn is live, queue the draft as a follow-up sent      
                  when the turn completes. Steering (enter) joins the running    
                  turn; a follow-up waits for it to end. After a cancel the      
-                 queue is held rather than sent — the notice rail says so       
-  alt+↑          Pull the newest queued message — a follow-up first, else a     
-                 steering line — back into the draft                            
+                 queue is held rather than sent — the notice rail says so.      
+                 On an empty draft the same key pulls the newest queued         
+                 message — a follow-up first, else a steering line — back.      
+                 (It was the line editor's next-line; ↓ still is)               
   @              At the start of a word, open a file menu over what this        
                  session changed and the checkout's recent files, filtered      
                  by what you type after it. tab or enter inserts the path,      
@@ -102,7 +103,7 @@ Keys:
                   opens over a running turn, which keeps streaming underneath;  
                   a transcript with nothing selectable opens as a plain pager.  
                   /step opens the in-flight step's detail from the prompt)      
-  ctrl+b         Agent manager: enter attaches to an agent's session, x cancels 
+  alt+a          Agent manager: enter attaches to an agent's session, x cancels 
                  its turn, X kills it; attached, typing steers the agent,       
                  shift+tab sets its mode (clamped), esc detaches                
   ctrl+f         The backlog screen: the project's items on the left and the one
@@ -177,16 +178,17 @@ Keys:
 ␛[3;38;5;244mKeys:␛[m                                                                           
 ␛[3;38;5;244m  enter          Send message        shift+enter  Insert newline␛[m                
 ␛[3;38;5;244m                 (ctrl+j does the same, for terminals that cannot report␛[m        
-␛[3;38;5;244m                  shift+enter; so does alt+enter while nothing is running.␛[m      
+␛[3;38;5;244m                  shift+enter.␛[m                                                  
 ␛[3;38;5;244m                  A draft ending in \ turns enter into a newline too, the␛[m       
 ␛[3;38;5;244m                  shell's own continuation — end in \\ to send a literal␛[m        
 ␛[3;38;5;244m                  backslash)␛[m                                                    
-␛[3;38;5;244m  alt+enter      While a turn is live, queue the draft as a follow-up sent␛[m      
+␛[3;38;5;244m  ctrl+n         While a turn is live, queue the draft as a follow-up sent␛[m      
 ␛[3;38;5;244m                 when the turn completes. Steering (enter) joins the running␛[m    
 ␛[3;38;5;244m                 turn; a follow-up waits for it to end. After a cancel the␛[m      
-␛[3;38;5;244m                 queue is held rather than sent — the notice rail says so␛[m       
-␛[3;38;5;244m  alt+↑          Pull the newest queued message — a follow-up first, else a␛[m     
-␛[3;38;5;244m                 steering line — back into the draft␛[m                            
+␛[3;38;5;244m                 queue is held rather than sent — the notice rail says so.␛[m      
+␛[3;38;5;244m                 On an empty draft the same key pulls the newest queued␛[m         
+␛[3;38;5;244m                 message — a follow-up first, else a steering line — back.␛[m      
+␛[3;38;5;244m                 (It was the line editor's next-line; ↓ still is)␛[m               
 ␛[3;38;5;244m  @              At the start of a word, open a file menu over what this␛[m        
 ␛[3;38;5;244m                 session changed and the checkout's recent files, filtered␛[m      
 ␛[3;38;5;244m                 by what you type after it. tab or enter inserts the path,␛[m      
@@ -265,7 +267,7 @@ Keys:
 ␛[3;38;5;244m                  opens over a running turn, which keeps streaming underneath;␛[m  
 ␛[3;38;5;244m                  a transcript with nothing selectable opens as a plain pager.␛[m  
 ␛[3;38;5;244m                  /step opens the in-flight step's detail from the prompt)␛[m      
-␛[3;38;5;244m  ctrl+b         Agent manager: enter attaches to an agent's session, x cancels␛[m 
+␛[3;38;5;244m  alt+a          Agent manager: enter attaches to an agent's session, x cancels␛[m 
 ␛[3;38;5;244m                 its turn, X kills it; attached, typing steers the agent,␛[m       
 ␛[3;38;5;244m                 shift+tab sets its mode (clamped), esc detaches␛[m                
 ␛[3;38;5;244m  ctrl+f         The backlog screen: the project's items on the left and the one␛[m

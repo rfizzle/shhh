@@ -118,21 +118,23 @@ func Words(b Binding) string { return b.Help().Desc }
 type DraftKeys struct {
 	Send    Binding
 	Newline Binding
-	// FollowUp queues the draft for after the turn — steering joins the
-	// running conversation, a follow-up waits for it to finish. Idle, the
-	// same chord is a newline: there is no turn to follow, and the chord
-	// has inserted newlines on this surface since before it meant anything
-	// else, so a terminal that cannot report shift+enter loses nothing.
-	FollowUp Binding
-	// PullQueued takes the newest queued message — a follow-up first, else
-	// steering — back into the draft.
-	PullQueued Binding
-	Editor     Binding
-	Attach     Binding
-	Complete   Binding
-	Palette    Binding
-	Reasoning  Binding
-	Mode       Binding
+	// Queue is the follow-up queue's one chord, read two ways by the draft's
+	// emptiness: with a turn live and something typed, the draft joins the
+	// queue for after the turn (steering joins the running conversation, a
+	// follow-up waits for it to finish); on an empty draft, the newest
+	// queued message — a follow-up first, else steering — comes back. It
+	// was two chords, alt+enter and alt+↑, and both are Windows Terminal's
+	// (docs/interface/reserved-keys.md); one key a reader learns once is
+	// the better trade anyway, since the two halves cannot be confused.
+	// The chord was the textarea's next-line, which the arrows already
+	// are, the way ctrl+p was its previous-line before the hold took it.
+	Queue     Binding
+	Editor    Binding
+	Attach    Binding
+	Complete  Binding
+	Palette   Binding
+	Reasoning Binding
+	Mode      Binding
 
 	// Pause holds a working turn at its next round boundary and lets a held
 	// one go on. It is one key for both halves because it is one act read
@@ -198,13 +200,12 @@ type DraftKeys struct {
 
 // Draft's keys, in the order the input frame and /help name them.
 var Draft = DraftKeys{
-	Send:       bind("enter", "send the message", "enter"),
-	Newline:    bind("shift+enter", "insert a newline", "shift+enter", "ctrl+j"),
-	FollowUp:   bind("alt+enter", "queue a follow-up for after the turn (a newline while idle)", "alt+enter"),
-	PullQueued: bind("alt+↑", "pull the newest queued message back into the draft", "alt+up"),
-	Editor:     bind("ctrl+g", "open the draft in $EDITOR", "ctrl+g"),
-	Attach:     bind("ctrl+v", "attach the clipboard", "ctrl+v"),
-	Complete:   bind("tab", "complete a slash command", "tab"),
+	Send:     bind("enter", "send the message", "enter"),
+	Newline:  bind("shift+enter", "insert a newline", "shift+enter", "ctrl+j"),
+	Queue:    bind("ctrl+n", "queue the draft for after the turn; on an empty draft, pull the newest queued message back", "ctrl+n"),
+	Editor:   bind("ctrl+g", "open the draft in $EDITOR", "ctrl+g"),
+	Attach:   bind("ctrl+v", "attach the clipboard", "ctrl+v"),
+	Complete: bind("tab", "complete a slash command", "tab"),
 	// The palette moved off ctrl+p to make room for the hold, and it went to
 	// the slash key because `/` is already the command prefix: a chord that
 	// opens the list of commands reads as the key the commands start with.
@@ -236,7 +237,12 @@ var Draft = DraftKeys{
 	PageDown:  bind("pgdn", "page it back", "pgdown"),
 
 	Reading: bind("ctrl+o", "reading mode", "ctrl+o"),
-	Agents:  bind("ctrl+b", "the agent manager", "ctrl+b"),
+	// The manager is on alt with the rest of the agent family — alt+[ and
+	// alt+] walk the sessions, alt+a opens the list of them — because
+	// ctrl+b is tmux's prefix and never reaches the program there, and
+	// every ctrl letter the terminal delivers is spent or the line
+	// editor's (docs/interface/reserved-keys.md).
+	Agents:  bind("alt+a", "the agent manager", "alt+a"),
 	Backlog: bind("ctrl+f", "the backlog screen", "ctrl+f"),
 
 	// The brackets are next and previous in the shape the key caps already

@@ -20,10 +20,12 @@ package chat
 // serve.
 //
 // It is still not guaranteed: a terminal that ignores both requests keeps
-// sending a bare CR, and no amount of decoding invents the shift. So
-// alt+enter stays bound, ctrl+j joins it, and the rail names shift+enter
-// because that is what works nearly everywhere and the other two are the
-// fallback rather than the instruction.
+// sending a bare CR, and no amount of decoding invents the shift. So ctrl+j
+// stands beside it, and the rail names shift+enter because that is what
+// works nearly everywhere and the other is the fallback rather than the
+// instruction. Alt+enter was a third spelling once, and went when the
+// follow-up chord it shared did: Windows Terminal takes it for full screen
+// (docs/interface/reserved-keys.md).
 
 import (
 	tea "charm.land/bubbletea/v2"

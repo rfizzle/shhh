@@ -22,6 +22,7 @@ import (
 	"github.com/charmbracelet/colorprofile"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/ui/golden"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 	"github.com/rfizzle/shhh/internal/ui/raster"
 )
 
@@ -792,7 +793,7 @@ func TestGolden_FanoutBlock(t *testing.T) {
 	captureGolden(t, "fanout-block", "fan-out block", goldenWidths, func(width int) []golden.Panel {
 		flight := FanoutBlock{
 			Elapsed: "1m12s",
-			Keys:    []TurnKey{{Key: "[ctrl+b]", Label: "agents"}},
+			Keys:    []TurnKey{{Key: keys.Bracket(keys.Draft.Agents), Label: "agents"}},
 			Lanes: []FanoutLane{
 				{State: FanoutRunning, Name: "writer-1", Task: "docs/loop.md",
 					Step: 2, Steps: 5, Tools: 6, Spend: "$0.02", Elapsed: "12s", Seeded: 5},

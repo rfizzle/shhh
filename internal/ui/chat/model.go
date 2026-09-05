@@ -871,7 +871,7 @@ type Model struct {
 	// steering holds messages typed while the agent is working; they
 	// are injected as user messages before the next stream request.
 	steering []string
-	// followUps are drafts queued with alt+enter while a turn was live,
+	// followUps are drafts queued with the queue chord while a turn was live,
 	// sent one per turn end once the session is idle (followup.go). held
 	// stops the automatic send after a cancel: the queue survives, the rail
 	// says so, and the reader decides what still applies.

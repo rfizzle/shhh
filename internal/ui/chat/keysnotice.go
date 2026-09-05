@@ -25,12 +25,12 @@ import (
 // were the first to, being the two nobody has had to relearn in releases.
 func KeysChangedNotice() string {
 	changes := []string{
+		keys.Shown(keys.Draft.Queue) + " queue",
+		keys.Shown(keys.Draft.Agents) + " agents",
 		keys.Shown(keys.Draft.PointDown) + " pointer",
 		keys.Shown(keys.Draft.Palette) + " palette",
 		keys.Shown(keys.Draft.Pause) + " hold",
 		keys.Shown(keys.Draft.Reading) + " reading",
-		keys.Shown(keys.Draft.Agents) + " agents",
-		keys.Shown(keys.Draft.HistorySearch) + " history search",
 	}
 	return "keys changed: " + strings.Join(changes, " · ") + " — /help keys"
 }

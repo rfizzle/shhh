@@ -109,13 +109,13 @@ model-data: ## Regenerate the built-in model-data snapshot from the public table
 # staleness check, and `make ci` therefore performs it too.
 docs: ## Rewrite the documentation sections generated from the code
 	@echo "${MAGENTA}Writing the generated documentation sections...${RESET}"
-	@SHHH_UPDATE_DOCS=1 $(GOTEST) -count=1 -run TestReference ./internal/config
+	@SHHH_UPDATE_DOCS=1 $(GOTEST) -count=1 -run TestReference ./internal/config ./internal/ui/keys
 
 docs-check: ## Verify every docs/ citation resolves and every generated section is current
 	@echo "${MAGENTA}Checking documentation citations...${RESET}"
 	@python3 scripts/check-docs.py
 	@echo "${MAGENTA}Checking the generated documentation sections...${RESET}"
-	@$(GOTEST) -count=1 -run TestReference ./internal/config
+	@$(GOTEST) -count=1 -run TestReference ./internal/config ./internal/ui/keys
 
 ## Evals:
 eval: build ## Run the eval suite against the configured model (costs real requests)

@@ -50,13 +50,13 @@ func New(initialMessages []provider.Message, stream StreamFunc) Model {
 	ta.MinHeight = inputHeight
 	ta.MaxHeight = maxDraftRows
 	ta.SetHeight(inputHeight)
-	// Three keys insert a line break, one of which the user can find:
+	// Two keys insert a line break, one of which the user can find:
 	// shift+enter is rewritten to ctrl+j before the textarea sees it
 	// (newline.go), and ctrl+j is the chord that works in a terminal too old
-	// to report either. Alt+enter reaches the textarea only when the
-	// follow-up case above it fell through — an idle draft — and inserts
-	// the newline it always has there (followup.go).
-	ta.KeyMap.InsertNewline.SetKeys(append(keys.Draft.Newline.Keys()[1:], keys.Draft.FollowUp.Keys()...)...)
+	// to report it. Alt+enter used to be a third, and went with the
+	// follow-up chord it shared: Windows Terminal takes it for full screen
+	// (docs/interface/reserved-keys.md).
+	ta.KeyMap.InsertNewline.SetKeys(keys.Draft.Newline.Keys()[1:]...)
 
 	// One frame set, one cadence, one colour, shared with the one-shot UI.
 	s := components.NewSpinnerModel()

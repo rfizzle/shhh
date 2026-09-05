@@ -11,15 +11,16 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
-func altEnterMsg() tea.KeyPressMsg {
-	return tea.KeyPressMsg{Code: tea.KeyEnter, Mod: tea.ModAlt}
+// queueChord is the follow-up queue's one chord (keys.Draft.Queue).
+func queueChord() tea.KeyPressMsg {
+	return tea.KeyPressMsg{Code: 'n', Mod: tea.ModCtrl}
 }
 
 func TestFollowUp_QueuesWhileTurnIsLive(t *testing.T) {
 	m := steeringModel(t, mockStream)
 	m.input.SetValue("and then update the docs")
 
-	updated, _ := m.Update(altEnterMsg())
+	updated, _ := m.Update(queueChord())
 	next := updated.(Model)
 
 	if len(next.followUps) != 1 || next.followUps[0] != "and then update the docs" {
@@ -39,7 +40,7 @@ func TestFollowUp_QueuesWhileTurnIsLive(t *testing.T) {
 func TestFollowUp_SentWhenTheTurnEnds(t *testing.T) {
 	m := steeringModel(t, mockStream)
 	m.input.SetValue("and then update the docs")
-	updated, _ := m.Update(altEnterMsg())
+	updated, _ := m.Update(queueChord())
 	m = updated.(Model)
 
 	updated, _ = m.Update(doneMsg{})
@@ -60,7 +61,7 @@ func TestFollowUp_SentWhenTheTurnEnds(t *testing.T) {
 func TestFollowUp_SteeringStillWinsTheTurnEnd(t *testing.T) {
 	m := steeringModel(t, mockStream)
 	m.input.SetValue("later: docs")
-	updated, _ := m.Update(altEnterMsg())
+	updated, _ := m.Update(queueChord())
 	m = updated.(Model)
 	m = sendText(t, m, "now: fix the test")
 
@@ -79,7 +80,7 @@ func TestFollowUp_SteeringStillWinsTheTurnEnd(t *testing.T) {
 func TestFollowUp_SurvivesCancelHeld(t *testing.T) {
 	m := steeringModel(t, mockStream)
 	m.input.SetValue("and then update the docs")
-	updated, _ := m.Update(altEnterMsg())
+	updated, _ := m.Update(queueChord())
 	m = updated.(Model)
 
 	m.cancelStreaming()
@@ -104,16 +105,17 @@ func TestFollowUp_SurvivesCancelHeld(t *testing.T) {
 	}
 }
 
-func TestFollowUp_AltUpPullsNewestBack(t *testing.T) {
+func TestFollowUp_TheChordOnAnEmptyDraftPullsNewestBack(t *testing.T) {
 	m := steeringModel(t, mockStream)
 	m.input.SetValue("first")
-	updated, _ := m.Update(altEnterMsg())
+	updated, _ := m.Update(queueChord())
 	m = updated.(Model)
 	m.input.SetValue("second")
-	updated, _ = m.Update(altEnterMsg())
+	updated, _ = m.Update(queueChord())
 	m = updated.(Model)
 
-	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyUp, Mod: tea.ModAlt})
+	// The same chord on the empty draft is the pull.
+	updated, _ = m.Update(queueChord())
 	m = updated.(Model)
 
 	if m.input.Value() != "second" {
@@ -127,7 +129,7 @@ func TestFollowUp_AltUpPullsNewestBack(t *testing.T) {
 func TestFollowUp_BrokenTurnHoldsTheQueue(t *testing.T) {
 	m := steeringModel(t, mockStream)
 	m.input.SetValue("deploy it")
-	updated, _ := m.Update(altEnterMsg())
+	updated, _ := m.Update(queueChord())
 	m = updated.(Model)
 
 	updated, _ = m.endBrokenTurn()
@@ -140,7 +142,7 @@ func TestFollowUp_BrokenTurnHoldsTheQueue(t *testing.T) {
 func TestFollowUp_LoadedConversationDropsTheQueue(t *testing.T) {
 	m := steeringModel(t, mockStream)
 	m.input.SetValue("deploy it")
-	updated, _ := m.Update(altEnterMsg())
+	updated, _ := m.Update(queueChord())
 	m = updated.(Model)
 	m.cancelStreaming()
 
@@ -157,7 +159,7 @@ func TestFollowUp_RefusesACommandDraft(t *testing.T) {
 	m := steeringModel(t, mockStream)
 	for _, draft := range []string{"!make test", "/compact"} {
 		m.input.SetValue(draft)
-		updated, _ := m.Update(altEnterMsg())
+		updated, _ := m.Update(queueChord())
 		next := updated.(Model)
 		if len(next.followUps) != 0 {
 			t.Fatalf("%q must not queue as a message, got %v", draft, next.followUps)
@@ -177,7 +179,7 @@ func TestFollowUp_SentAfterARunCommand(t *testing.T) {
 
 	// Queued while the command runs.
 	m.input.SetValue("then commit it")
-	updated, _ = m.Update(altEnterMsg())
+	updated, _ = m.Update(queueChord())
 	m = updated.(Model)
 	if len(m.followUps) != 1 {
 		t.Fatalf("expected the follow-up queued during the run, got %v", m.followUps)

@@ -114,6 +114,11 @@ row is what the mode's key does to it, by the same handler. A row's letters
 are not reachable that way, because at the prompt a letter is text; the
 handover is what makes them keys.
 
+A chord the desktop, the terminal or a multiplexer takes before shhh sees it
+is not a chord, and the register's [reserved list](reserved-keys.md) says
+which those are: the keyboard shhh ships spends none of them without a
+sentence beside it, and a keymap file that moves a key onto one is refused.
+
 A row is a target only where the pointer names exactly one thing and that
 thing already has a key. That is what makes the rail's list of changed files
 and its map of sessions clickable — each row names one path, one session, and

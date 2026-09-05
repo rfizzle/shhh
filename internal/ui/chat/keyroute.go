@@ -550,18 +550,20 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 			}
 			return m, nil, true
 		}
-	case keys.Is(pressed, keys.Draft.FollowUp):
-		// Alt+enter with a turn live queues the draft for after it
-		// (followup.go); everywhere else — idle, attached, an empty
-		// box — it falls through to the textarea's newline.
+	case keys.Is(pressed, keys.Draft.Queue):
+		// One chord, read by the draft's emptiness (followup.go): with a
+		// turn live and something typed it queues the draft for after
+		// the turn; on an empty draft it takes the newest queued message
+		// back. Claimed whenever the input is live, because the textarea
+		// underneath has a meaning for it that nothing offered.
 		if next, cmd, claimed := m.queueFollowUp(); claimed {
 			return next, cmd, true
 		}
-	case keys.Is(pressed, keys.Draft.PullQueued):
-		// Alt+↑ takes the newest queued message — follow-up first,
-		// else steering — back into the draft.
 		if next, cmd, claimed := m.pullQueued(); claimed {
 			return next, cmd, true
+		}
+		if m.inputLive() {
+			return m, nil, true
 		}
 	case keys.Is(pressed, keys.Draft.Send):
 		// A trailing backslash turns this enter into a newline, the

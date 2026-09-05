@@ -76,7 +76,7 @@ func Surfaces() []Surface {
 			Position: Home,
 			Reached:  "it has the keyboard unless something has taken it",
 			Bindings: []Binding{
-				Draft.Send, Draft.Newline, Draft.FollowUp, Draft.PullQueued,
+				Draft.Send, Draft.Newline, Draft.Queue,
 				Draft.Editor, Draft.Attach,
 				Draft.Complete, Draft.Palette, Draft.Reasoning, Draft.Mode,
 				Draft.Pause,

@@ -31,7 +31,7 @@
 ╰─ enter send · shift+enter newline · ctrl+g editor · ctrl+v attach · ctrl+/ palette · shift+tab mode ───────────────────────╯
 
 · the keys-changed notice on the rail
-keys changed: shift+↓ pointer · ctrl+/ palette · ctrl+p hold · ctrl+o reading · ctrl+b agents · ctrl+r history search — /help…
+keys changed: ctrl+n queue · alt+a agents · shift+↓ pointer · ctrl+/ palette · ctrl+p hold · ctrl+o reading — /help keys      
 ╭─ idle ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ ❯                                                                                                                          │
 │                                                                                                                            │
@@ -61,7 +61,7 @@ keys changed: shift+↓ pointer · ctrl+/ palette · ctrl+p hold · ctrl+o readi
 ␛[38;5;254m╰─␛[m ␛[38;5;244;3menter send · shift+enter newline · ctrl+g editor · ctrl+v attach · ctrl+/ palette · shift+tab mode␛[m ␛[38;5;254m───────────────────────╯␛[m
 
 · the keys-changed notice on the rail
-␛[38;5;254mkeys changed: shift+↓ pointer · ctrl+/ palette · ctrl+p hold · ctrl+o reading · ctrl+b agents · ctrl+r history search — /help…␛[m
+␛[38;5;254mkeys changed: ctrl+n queue · alt+a agents · shift+↓ pointer · ctrl+/ palette · ctrl+p hold · ctrl+o reading — /help keys␛[m      
 ␛[38;5;254m╭─␛[m ␛[38;5;244midle␛[m ␛[38;5;254m─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254;1m❯␛[m ␛[40m                                                                                                                        ␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[30m                                                                                                                        ␛[m ␛[38;5;254m│␛[m

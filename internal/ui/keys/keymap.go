@@ -13,8 +13,11 @@ package keys
 // of it happens once, at the top of the process, and the register is
 // ordinary package data from then on.
 //
-// Two things a file may not do, and both are refusals of the whole file
-// rather than of a line. It may not leave a surface answering one keystroke
+// Three things a file may not do, and each is a refusal of the whole file
+// rather than of a line. It may not move a key onto a chord the desktop, the
+// terminal or a multiplexer takes before shhh sees it (reserved.go): a hint
+// offering such a chord is a false offer on the machine the reader is
+// holding. It may not leave a surface answering one keystroke
 // with two acts — that is the register's own rule, the one the list exists
 // to make checkable
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard),
@@ -176,6 +179,9 @@ func spelling(presses []string) string { return strings.Join(presses, "/") }
 // check is the register's own rules asked of the register as it now stands.
 func check() error {
 	if err := checkDestructive(); err != nil {
+		return err
+	}
+	if err := checkReserved(); err != nil {
 		return err
 	}
 	return checkOneKeystrokeOnce()

@@ -7,6 +7,7 @@ The rules every surface obeys, and what each surface is for.
 | [`principles.md`](principles.md) | The five invariants and the grammar that follows from them |
 | [`surfaces.md`](surfaces.md) | What each surface is for and when the session shows it |
 | [`departures.md`](departures.md) | Where the implementation deliberately differs from the design system, and why |
+| [`reserved-keys.md`](reserved-keys.md) | The chords the desktops, terminals and multiplexers take, which the register may not spend |
 
 **Exact visual specification is not here.** Column widths, colour rungs, glyph
 assignments and the artboards are normative in the `shhh Design System`

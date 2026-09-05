@@ -5,8 +5,10 @@ package chat
 // conversation before the next model request. A follow-up is the other
 // intent — "when this is done, then…" — and it waits for the turn to
 // finish before going out as the next user message. One chord separates
-// them: enter steers, alt+enter queues a follow-up. Idle, alt+enter is the
-// newline it has always been, because there is no turn to follow.
+// them: enter steers, the queue chord queues a follow-up — and on an empty
+// draft the same chord takes the newest queued message back, since a box
+// with nothing in it has nothing to queue and the two halves cannot be
+// confused (keys.Draft.Queue).
 //
 // A cancel does not send what was queued for a turn that no longer exists:
 // the queue survives, marked held, and the rail offers the way to take a
@@ -22,10 +24,10 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
-// queueFollowUp answers alt+enter on the orchestrator draft: with a turn
-// live and something typed, the draft joins the follow-up queue. It reports
-// false when the chord is not its to claim — idle, attached, or an empty
-// box — and the key falls through to the textarea's newline.
+// queueFollowUp answers the queue chord on the orchestrator draft: with a
+// turn live and something typed, the draft joins the follow-up queue. It
+// reports false when the chord is not its to claim — idle, attached, or an
+// empty box — and the chord's other half is asked.
 func (m Model) queueFollowUp() (tea.Model, tea.Cmd, bool) {
 	if !m.inputLive() || m.attachedTo != "" || !m.turnInFlight() {
 		return m, nil, false
@@ -60,11 +62,11 @@ func (m Model) queueFollowUp() (tea.Model, tea.Cmd, bool) {
 	return m, nil, true
 }
 
-// pullQueued answers alt+↑: the newest queued message — a follow-up first,
-// else a steering line — comes back into the draft, above whatever is
-// already there. It reports false when there is nothing to pull.
+// pullQueued is the queue chord's other half: on an empty draft, the newest
+// queued message — a follow-up first, else a steering line — comes back into
+// the draft. It reports false with a draft in the box or nothing to pull.
 func (m Model) pullQueued() (tea.Model, tea.Cmd, bool) {
-	if !m.inputLive() || m.attachedTo != "" {
+	if !m.inputLive() || m.attachedTo != "" || strings.TrimSpace(m.input.Value()) != "" {
 		return m, nil, false
 	}
 	var pulled string
@@ -80,9 +82,6 @@ func (m Model) pullQueued() (tea.Model, tea.Cmd, bool) {
 		m.steering = m.steering[:len(m.steering)-1]
 	default:
 		return m, nil, false
-	}
-	if cur := m.input.Value(); strings.TrimSpace(cur) != "" {
-		pulled += "\n" + cur
 	}
 	m.input.SetValue(pulled)
 	m.input.MoveToEnd()
@@ -139,7 +138,7 @@ func (m Model) followUpNotice() string {
 		label += "s"
 	}
 	if m.followUpsHeld {
-		label += " held — " + keys.Shown(keys.Draft.PullQueued) + " recalls"
+		label += " held — " + keys.Shown(keys.Draft.Queue) + " recalls"
 	}
 	return label
 }

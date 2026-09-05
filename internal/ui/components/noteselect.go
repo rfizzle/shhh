@@ -30,8 +30,7 @@ type NoteSelect struct {
 }
 
 // NewNoteSelect builds the component with a single-line note field
-// (ctrl+j or alt+enter for a rare newline), mirroring the chat input's
-// keymap.
+// (ctrl+j for a rare newline), mirroring the chat input's keymap.
 func NewNoteSelect(title string, options []SelectOption) *NoteSelect {
 	ta := textarea.New()
 	ta.Placeholder = "note (optional)"
@@ -42,7 +41,7 @@ func NewNoteSelect(title string, options []SelectOption) *NoteSelect {
 	// itself answers: tab moves between the note and the options, and enter
 	// confirms. Alt+enter is a newline here — the card holds the keyboard,
 	// so the draft's follow-up meaning does not apply.
-	ta.KeyMap.InsertNewline.SetKeys(append(keys.Draft.Newline.Keys()[1:], keys.Draft.FollowUp.Keys()...)...)
+	ta.KeyMap.InsertNewline.SetKeys(keys.Draft.Newline.Keys()[1:]...)
 	return &NoteSelect{Select: Select{Title: title, Options: options}, Note: ta}
 }
 

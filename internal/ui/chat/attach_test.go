@@ -146,10 +146,10 @@ func TestAgentListOpensAttachesAndDetaches(t *testing.T) {
 	m := newSubagentModel(t, sup)
 	spawnBlockedChild(t, sup)
 
-	updated, _ := m.Update(tea.KeyPressMsg{Code: 'b', Mod: tea.ModCtrl})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'a', Mod: tea.ModAlt})
 	m = updated.(Model)
 	if m.agentList == nil {
-		t.Fatal("ctrl+b must open the agent list")
+		t.Fatal("the manager chord must open the agent list")
 	}
 	view := m.View().Content
 	if !strings.Contains(view, "orchestrator") || !strings.Contains(view, "researcher-1") {
@@ -311,7 +311,7 @@ func TestKillFromListWithInlineConfirm(t *testing.T) {
 	m := newSubagentModel(t, sup)
 	spawnBlockedChild(t, sup)
 
-	updated, _ := m.Update(tea.KeyPressMsg{Code: 'b', Mod: tea.ModCtrl})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'a', Mod: tea.ModAlt})
 	m = updated.(Model)
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 	m = updated.(Model)
@@ -393,7 +393,7 @@ func TestBlockedRowSortsUpAndSaysWhatItWaitsFor(t *testing.T) {
 			t.Fatalf("a child's row must carry lane progress: %+v", row)
 		}
 	}
-	updated, _ := m.Update(tea.KeyPressMsg{Code: 'b', Mod: tea.ModCtrl})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'a', Mod: tea.ModAlt})
 	m = updated.(Model)
 	if view := m.View().Content; !strings.Contains(view, "2 needs you") {
 		t.Fatalf("the manager's title rail must state who needs you:\n%s", view)
@@ -411,7 +411,7 @@ func TestAnswerBlockedChildFromTheList(t *testing.T) {
 	spawnInto(t, sup, `{"role":"researcher","task":"survey"}`)
 	m = pumpAsks(t, m, sup, 1)
 
-	updated, _ := m.Update(tea.KeyPressMsg{Code: 'b', Mod: tea.ModCtrl})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'a', Mod: tea.ModAlt})
 	m = updated.(Model)
 	// The child sorts directly below the orchestrator; [a] on it opens the card.
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
@@ -461,7 +461,7 @@ func TestAnswerFromTheListDeclinesOnEsc(t *testing.T) {
 	spawnInto(t, sup, `{"role":"researcher","task":"survey"}`)
 	m = pumpAsks(t, m, sup, 1)
 
-	updated, _ := m.Update(tea.KeyPressMsg{Code: 'b', Mod: tea.ModCtrl})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'a', Mod: tea.ModAlt})
 	m = updated.(Model)
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 	m = updated.(Model)
@@ -493,7 +493,7 @@ func TestRetryFailedChildFromTheList(t *testing.T) {
 		return ok && st.State == subagent.StateFailed
 	})
 
-	updated, _ := m.Update(tea.KeyPressMsg{Code: 'b', Mod: tea.ModCtrl})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'a', Mod: tea.ModAlt})
 	m = updated.(Model)
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 	m = updated.(Model)

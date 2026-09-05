@@ -179,7 +179,7 @@ each other, and what a backlog run wrote up. drop <n> removes
 one, clear empties it`,
 	"/memory": `Durable memories: list (default) · add [global] [kind] <text> ·
 edit <id> (opens the entry in your editor) · forget <id>`,
-	"/agents": `Agent manager: attach, steer, cancel, kill sub-agents (also ctrl+b)
+	"/agents": `Agent manager: attach, steer, cancel, kill sub-agents (also ` + keys.Shown(keys.Draft.Agents) + `)
 new [brief]      draft an agent profile from a sentence with
                  the model's help: answer its questions if it
                  has any, then keep, refine or discard the
@@ -295,22 +295,20 @@ var helpKeyRows = []helpKeyRow{
 		binds: []keys.Binding{keys.Draft.Send, keys.Draft.Newline},
 		text: `Send message        shift+enter  Insert newline
 (ctrl+j does the same, for terminals that cannot report
- shift+enter; so does alt+enter while nothing is running.
+ shift+enter.
  A draft ending in \ turns enter into a newline too, the
  shell's own continuation — end in \\ to send a literal
  backslash)`,
 	},
 	{
-		binds: []keys.Binding{keys.Draft.FollowUp},
+		binds: []keys.Binding{keys.Draft.Queue},
 		text: `While a turn is live, queue the draft as a follow-up sent
 when the turn completes. Steering (enter) joins the running
 turn; a follow-up waits for it to end. After a cancel the
-queue is held rather than sent — the notice rail says so`,
-	},
-	{
-		binds: []keys.Binding{keys.Draft.PullQueued},
-		text: `Pull the newest queued message — a follow-up first, else a
-steering line — back into the draft`,
+queue is held rather than sent — the notice rail says so.
+On an empty draft the same key pulls the newest queued
+message — a follow-up first, else a steering line — back.
+(It was the line editor's next-line; ↓ still is)`,
 	},
 	{
 		key: "@",

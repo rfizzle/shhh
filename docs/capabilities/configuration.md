@@ -482,6 +482,14 @@ capital and gave up the lower-case letter to do it
 A file that took the letter back would undo that decision from outside the
 program, where no review sees it.
 
+**It cannot move a key onto a chord the desktop or the terminal takes.**
+Mission Control has `ctrl+↑`, Windows Terminal has `alt+enter`, tmux has
+`ctrl+b`, and a hint offering any of them is a false offer on the machine the
+reader is holding. The refusal names the chord, who takes it and where
+([the inventory](../interface/reserved-keys.md)); a modifier on the arrow,
+function and navigation rows is reported everywhere and taken by nobody,
+which is where a file that needs a third key should look.
+
 Modal editing is not this. A file moves keys inside the keyboard that already
 exists; it does not add a mode with a keyboard of its own.
 
