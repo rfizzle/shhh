@@ -3,6 +3,11 @@
 What shhh can do, and why each thing exists. One document per capability;
 none of them names a Go symbol (see [the rules](../README.md#the-four-rules)).
 
+Extension happens at the seams rather than through a registry: every seam is a
+file under the project directory — skills, hooks, MCP server definitions,
+agent profiles, stage prompts, quality suites, the project's own settings, the
+backlog profile — read only once you have said the checkout is trusted.
+
 | Document | What it covers |
 |---|---|
 | [`generation.md`](generation.md) | Turning a sentence into a command, and everything around that decision |

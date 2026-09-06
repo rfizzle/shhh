@@ -1,7 +1,9 @@
 # What shhh is
 
 shhh turns what you meant into something your machine can run, and it does
-that at four different sizes.
+that at four different sizes. As of 2026-09-06 that feature set is the target
+rather than a waypoint: the work from here is refinement — quality,
+efficiency, fewer moving parts to keep true — rather than more features.
 
 The smallest is a command you could have written yourself if you remembered
 the flags. The largest is an agent that edits the repository, runs the tests,
@@ -102,3 +104,52 @@ at:
   [`interface/principles.md`](interface/principles.md).
 - **It does not need a network to be honest.** What containment is actually in
   force is reported from what is in force, never from what was configured.
+
+## What shhh will not add
+
+The sizes above are the whole of it. These are the additions asked for often
+enough to be worth naming as refused, each with the reason it was refused, so
+that raising one again takes a new reason rather than a new week:
+
+- **Reach beyond the terminal** — no editor extension, no web app, no phone
+  client; a session already speaks a protocol another program can drive, so
+  somebody else's editor adapts to that instead of shhh growing a second
+  surface to keep true.
+- **A plugin registry** — a market of installable bundles is a supply chain,
+  and "whose code, updated when, running as whom" is a question a registry
+  asks of every user and answers for none of them.
+- **Agent teams with peer messaging** — routing, liveness and two children
+  waiting on each other are a runtime; the shared notebook is the half kept,
+  because passing on what one child learned is most of what a team delivers.
+- **A semantic code index** — an embedding index is a persistent store that
+  is stale the moment the next edit lands, and a read that needs the network,
+  which a read here never does; search, and the language server where one is
+  running, are the navigation.
+- **Automatic memory** — something that writes down in the background what it
+  decided you meant builds a list you never agreed to; every memory here is
+  proposed and yours to decline.
+- **Subscription logins** — signing into a consumer plan means carrying
+  somebody else's browser flow, token cache and terms of use; shhh takes a
+  key, and a gateway in front of it where a team has one.
+- **A Windows containment mechanism of its own** — a third mechanism is a
+  third one to verify and to report honestly on every surface that mentions
+  containment, and the disposable container already covers that host; a
+  command with nothing containing it says so in that word.
+- **Vim mode** — one surface, one keystroke, one act is the rule the key
+  register holds, and a modal map is the same keystroke meaning different
+  things depending on a mode no screen shows; a key in the wrong place moves
+  in a keymap file instead.
+- **An MCP login flow, or serving MCP back** — the forwarder in front of a
+  remote server already does the token dance, and anything wanting to drive
+  shhh has the session protocol; each would be a second implementation of
+  something that already works.
+- **A network allowlist in front of a contained command** — an allowlist
+  means a proxy to run, a certificate to trust and a list to keep current,
+  and a list that has gone stale blocks the work rather than the harm; a
+  contained command has the network as it is, or closed.
+
+Extension happens at the seams instead, and never through a registry: every
+seam is a file under the project directory — skills, hooks, MCP server
+definitions, agent profiles, stage prompts, quality suites, the project's own
+settings, the backlog profile — read only once you have said the checkout is
+trusted.
