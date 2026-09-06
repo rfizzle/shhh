@@ -269,6 +269,66 @@ turns those settings off for its own calls, which matters more here than
 anywhere else in the tool set: this is the one tool that runs unattended, in
 every mode, with nobody asked first.
 
+## The writing half of git is a tool too
+
+Reading history became a tool because a read that asks is a read the agent
+skips. Committing became one for the opposite reason: it is the act that
+always asks, however many times you have said yes to it.
+
+The allowlist cannot help. It refuses any line carrying shell punctuation —
+that refusal is what keeps a pre-approved shape from becoming a chain — and a
+commit message is quoted text. So `git commit -m "…"` is a classifier round in
+auto mode and a card everywhere else, every single time, and the last thing a
+turn does is the thing it interrupts you for.
+
+Carrying the message as a field costs neither. The writing half of git is its
+own tool with four verbs and nothing else: stage, commit, create a branch,
+switch to one. Push, reset, clean, checkout of paths, rebase, merge, stash,
+tag, `--amend`, `--force` and `--author` have no field to arrive in, exactly
+as the reader's excluded verbs have none.
+
+It is not a read, so it is not on the reader's tier. It sits at the write tier
+and is answered the way an edit is answered: it applies where an edit applies,
+it asks where an edit asks, and plan mode refuses it. The deny list is read
+before any of that — an entry for `git commit` refuses the commit verb by the
+same match the command path uses, because a person who wrote that line meant
+the act and not the spelling, and a tool that let the act through under
+another name would be the way around the list.
+
+Two of its rules are things a shell cannot do.
+
+**It stages only this session's own work.** `git add -A` stages your
+uncommitted morning beside the agent's afternoon, and the commit that results
+cannot be reverted, cited or read as a unit. This tool has no field for `-A`
+and no field for a glob: it takes paths, one by one, and refuses by name any
+path the session's own record of what it changed does not hold. The rule that
+work already in the tree is not the agent's stops being a sentence in the
+prompt and becomes a fact about the arguments.
+
+**Hooks run only on a checkout you trust.** A commit hook is a program git
+runs as you, and a checkout can point git at one inside itself. That is the
+line trust already draws around everything else a clone can make a session
+run, so a commit on an untrusted checkout passes `--no-verify` and the receipt
+says `hooks skipped · checkout not trusted` rather than leaving you to
+discover that the repository's own checks did not run.
+
+What it cannot do, it says. An empty index is refused by name rather than
+turned into an empty commit; `--allow-empty` has no field. An identity nobody
+configured is git's own refusal, quoted, because inventing an author would
+need `--author` and there is no field for that either. A switch that would
+lose work is refused the way git refuses it, and no flag here discards
+anything.
+
+Push stays a command. It is the one verb that reaches the network, it is the
+classifier prompt's own example of an external side effect, and a tool that
+could push would need a card of its own — which is what `execute_command`
+already is.
+
+A commit is outside undo, and the turn's close says so where you can see it:
+`/undo` restores files from the session's own records and leaves history
+alone. The honest way back from a commit is `git revert`, which is a sentence
+you type rather than a key shhh can offer.
+
 ## A checkout declares what it runs
 
 A clone arrives with more than code. It can name skills for the model to

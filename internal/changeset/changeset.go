@@ -837,6 +837,27 @@ func (s *Store) SessionFiles() []SessionFile {
 	return append([]SessionFile(nil), s.session...)
 }
 
+// Paths is SessionFiles reduced to the names, in the same first-edit order.
+// It is what the git stager reads: staging is decided by whether this session
+// changed a file, not by how much of it changed, and a caller that only needs
+// the answer to that should not have to walk hunks to get it.
+//
+// A file a turn edited back to where it started is not in it, for the reason
+// it is not in SessionFiles: the session's state, not its history. Staging a
+// file the session left exactly as it found it would put nothing in the
+// index anyway.
+func (s *Store) Paths() []string {
+	files := s.SessionFiles()
+	if len(files) == 0 {
+		return nil
+	}
+	paths := make([]string, 0, len(files))
+	for _, f := range files {
+		paths = append(paths, f.Path)
+	}
+	return paths
+}
+
 // sessionFilesLocked is the walk itself. It reads the turns directly rather
 // than through Turns(), because the cache it fills has to be filled under the
 // same lock that a write clears it under.

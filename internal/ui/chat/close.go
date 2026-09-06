@@ -17,7 +17,9 @@ import (
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/changeset"
+	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/quality"
+	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -66,11 +68,13 @@ func (m *Model) appendTurnClose() {
 // tracks.
 func (m Model) turnCloseData() *components.TurnClose {
 	es := m.turnEntries()
+	commit := turnCommitRow(es)
 	c := components.TurnClose{
 		State:   m.turnOutcome,
 		Elapsed: components.FormatElapsed(m.turnElapsed()),
 		Note:    m.roundNote(),
-		Changes: m.turnChangesRow(),
+		Changes: m.turnChangesRow(commit != nil),
+		Commit:  commit,
 		Checks:  turnChecksRow(es),
 	}
 	// The count is the steps this turn actually ran, so an approved plan's
@@ -110,22 +114,53 @@ func (m Model) roundNote() string {
 
 // turnChangesRow is the changed-files row, read from the turn's changeset.
 // A turn that changed nothing has no row — the summary row stands alone.
-func (m Model) turnChangesRow() *components.TurnChanges {
+//
+// A turn that committed keeps the review offer and loses the undo one. Undo
+// puts files back out of the session's own records, which still works, but
+// offering it beside a commit would read as an offer to take the commit back,
+// and the honest key for that is `git revert` — a sentence somebody types,
+// not a key shhh can put on a row. The commit row below says so in words.
+func (m Model) turnChangesRow(committed bool) *components.TurnChanges {
 	t, ok := m.changes.Turn(m.turnCount)
 	if !ok || t.Files() == 0 {
 		return nil
+	}
+	offers := []components.TurnKey{
+		{Key: keys.Bracket(keys.Row.Review), Label: keys.Words(keys.Row.Review)},
+	}
+	if !committed {
+		offers = append(offers, components.TurnKey{Key: keys.Bracket(keys.Row.Undo), Label: keys.Words(keys.Row.Undo)})
 	}
 	return &components.TurnChanges{
 		Files:   t.Files(),
 		Added:   t.Added,
 		Removed: t.Removed,
 		Mode:    t.ModeChange(),
-		Keys: []components.TurnKey{
-			{Key: keys.Bracket(keys.Row.Review), Label: keys.Words(keys.Row.Review)},
-			{Key: keys.Bracket(keys.Row.Undo), Label: keys.Words(keys.Row.Undo)},
-		},
-		Note: trackingNote(t),
+		Keys:    offers,
+		Note:    trackingNote(t),
 	}
+}
+
+// turnCommitRow is the commit this turn made, or nothing. The receipt is the
+// tool's own words — one wording for the row, the close and the unattended
+// runner — and the last commit of a turn is the one the close names, because
+// that is the one HEAD is standing on.
+func turnCommitRow(es []entry) *components.TurnCommit {
+	for i := len(es) - 1; i >= 0; i-- {
+		e := es[i]
+		if e.kind != entryTool || e.toolName != structural.GitWriteToolName {
+			continue
+		}
+		if digest.GitVerb(e.toolArgs) != structural.CommitVerb {
+			continue
+		}
+		receipt := firstLine(e.toolResult)
+		if receipt == "" || strings.HasPrefix(receipt, "error:") {
+			continue
+		}
+		return &components.TurnCommit{Receipt: receipt}
+	}
+	return nil
 }
 
 // trackingNote says what git knew about the files when they were edited — the

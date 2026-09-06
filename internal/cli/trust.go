@@ -180,7 +180,7 @@ func trustManager(db *storage.DB) func(args []string) string {
 // list for the start screen and /status, and the answer behind /trust.
 func chatTrust(db *storage.DB) chat.Trust {
 	t := projectTrust()
-	return chat.Trust{Withheld: t.WithheldNames(), Changed: t.Changed, Manage: trustManager(db)}
+	return chat.Trust{Withheld: t.WithheldNames(), Changed: t.Changed, Granted: t.Allows(), Manage: trustManager(db)}
 }
 
 // trustStartupNote is the line a session prints before it starts when the

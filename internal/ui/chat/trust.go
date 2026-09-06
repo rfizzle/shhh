@@ -33,6 +33,14 @@ type Trust struct {
 	Changed bool
 	// Manage backs the /trust slash command.
 	Manage func(args []string) string
+	// Granted is the answer itself: the checkout was trusted at exactly the
+	// state it is in now. Withheld is the list a reader is shown and is
+	// empty both for a trusted checkout and for one that declares nothing,
+	// so it cannot answer this question — and a commit hook is a program the
+	// checkout can point git at, which is a decision that needs the answer
+	// and not the list.
+	// See docs/capabilities/approvals-and-safety.md#a-checkout-declares-what-it-runs.
+	Granted bool
 }
 
 // trust is what the checkout was not allowed to put into this session.

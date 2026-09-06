@@ -151,7 +151,12 @@ const (
 // Action is one approval-gated tool call as the mode policy sees it.
 type Action struct {
 	Kind ActionKind
-	// Command is the command text for ActionCommand (allowlist matching).
+	// Command is the command text for ActionCommand (allowlist matching),
+	// and for an action of any other kind the line the deny list is matched
+	// against. A tool with a closed verb set stands for a command line —
+	// the git writer's commit verb stands for `git commit` — and a person
+	// who put that line on the deny list meant the act, not the spelling, so
+	// the tool cannot be the way around it.
 	Command string
 	// Path is the file for ActionEdit, which is what a directory-scoped edit
 	// grant is matched against (GrantPrefix's counterpart).
@@ -374,8 +379,11 @@ func (p ModePolicy) Decide(a Action) (Decision, string) {
 	// The deny list is read before anything else, including the mode: it is
 	// the one answer no mode changes, and it is read first so that the
 	// reason the row carries names the list rather than whichever rule
-	// happened to refuse the call second.
-	if a.Kind == ActionCommand && DenylistMatches(p.CommandDenylist, a.Command) {
+	// happened to refuse the call second. It is read off the line rather
+	// than off the kind, so an action that stands for a command line is
+	// answered by the same match the command path uses whatever tier it
+	// sits at.
+	if a.Command != "" && DenylistMatches(p.CommandDenylist, a.Command) {
 		return Deny, DenyReasonDenylist
 	}
 	if p.Mode == ModePlan {

@@ -34,6 +34,7 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/todo/run"
@@ -1339,6 +1340,57 @@ func TestGolden_StaleEditRow(t *testing.T) {
 		return []golden.Panel{
 			{Label: "the row · a file that moved, and a call that was malformed", View: build(false)},
 			{Label: "the row opened · the sentence the model was given", View: build(true)},
+		}
+	})
+}
+
+// TestGolden_GitWriteRows pins the rows a turn's git writes leave behind: the
+// four verbs on the accent rail under the command glyph, the receipt in the
+// outcome column where the field never clips, and the close of a turn that
+// committed — which names the sha, says what undo does not reach, and no
+// longer offers [u].
+//
+// One width, because 80 columns is where the receipt and the target compete
+// for the row: wider and both simply fit.
+func TestGolden_GitWriteRows(t *testing.T) {
+	captureGolden(t, "git-write-rows", "the rows a git write leaves", []int{80}, func(width int) []golden.Panel {
+		row := func(args, result string) entry {
+			return entry{kind: entryTool, toolName: structural.GitWriteToolName,
+				toolArgs: args, toolResult: result, duration: 300 * time.Millisecond}
+		}
+		build := func(es ...entry) string {
+			m := frameModel(t, width, 40)
+			m.transcript = es
+			m.invalidateRenderCache()
+			return m.renderHistory()
+		}
+		return []golden.Panel{
+			{Label: "the four verbs", View: build(
+				row(`{"verb":"add","paths":["internal/agent/loop.go","internal/agent/mode.go"]}`, "staged 2 files"),
+				row(`{"verb":"commit","message":"feat(agent): cap rounds at the limit instead of erroring"}`,
+					"committed 3 files as a41f2c9 on master"),
+				row(`{"verb":"branch","branch":"topic"}`, "created branch topic"),
+				row(`{"verb":"switch","branch":"master"}`, "switched to master"),
+			)},
+			{Label: "refused · a file the session did not change", View: build(
+				row(`{"verb":"add","paths":["README.md"]}`,
+					"error: README.md is not this session's work; commit it yourself"),
+			)},
+			{Label: "committed on an untrusted checkout · the hooks that did not run", View: build(
+				row(`{"verb":"commit","message":"feat(agent): cap rounds at the limit"}`,
+					"committed 3 files as a41f2c9 on master\nhooks skipped · checkout not trusted — /trust to run them"),
+			)},
+			{Label: "the turn's close · the sha, and what undo does not reach", View: build(
+				row(`{"verb":"commit","message":"feat(agent): cap rounds at the limit"}`,
+					"committed 3 files as a41f2c9 on master"),
+				entry{kind: entryTurnClose, turn: 1, close: &components.TurnClose{
+					State: components.TurnDone, Steps: 4, Tools: 18, Elapsed: "1m 04s", Spend: "$0.14",
+					Changes: &components.TurnChanges{Files: 3, Added: 30, Removed: 4,
+						Keys: []components.TurnKey{{Key: "[v]", Label: "review"}},
+						Note: "all tracked in git"},
+					Commit: &components.TurnCommit{Receipt: "committed 3 files as a41f2c9 on master"},
+				}},
+			)},
 		}
 	})
 }

@@ -18,6 +18,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/runner"
+	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/todo"
 )
 
@@ -36,7 +37,14 @@ const gitNotInstalled = 127
 // unit. without is how the surface asking for this run says "run it without
 // a commit", because the answer to a repository that cannot take one is to
 // ask for the archive finish instead and the person is owed the way through.
-func Commit(root string, paths []string, message, without string) ([]string, error) {
+//
+// The argv is the write tool's, not a second spelling of it: this used to
+// write out `git add --` and `git commit -F` by hand, and a commit is the one
+// act of a run that cannot be taken back, so two spellings were two places
+// the rule about what a commit may carry could quietly disagree. hooks is the
+// checkout's trust answer, which is what decides whether the checkout's own
+// commit hooks run.
+func Commit(root string, paths []string, message, without string, hooks bool) ([]string, error) {
 	if len(paths) == 0 {
 		return nil, errors.New("the run changed no files under the repository")
 	}
@@ -64,7 +72,11 @@ func Commit(root string, paths []string, message, without string) ([]string, err
 	default:
 		return nil, fmt.Errorf("git diff --cached exited %d: %s", code, out)
 	}
-	if out, code := git(root, append([]string{"add", "--"}, paths...)...); code != 0 {
+	add, err := structural.AddArgv(paths)
+	if err != nil {
+		return nil, err
+	}
+	if out, code := git(root, add...); code != 0 {
 		return nil, fmt.Errorf("git add: %s", out)
 	}
 	f, err := os.CreateTemp("", "shhh-todo-commit-*.txt")
@@ -77,7 +89,11 @@ func Commit(root string, paths []string, message, without string) ([]string, err
 		return nil, err
 	}
 	f.Close()
-	if out, code := git(root, "commit", "-F", f.Name()); code != 0 {
+	commit, err := structural.CommitArgv(f.Name(), hooks)
+	if err != nil {
+		return nil, err
+	}
+	if out, code := git(root, commit...); code != 0 {
 		return nil, fmt.Errorf("git commit: %s", out)
 	}
 	return paths, nil

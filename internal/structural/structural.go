@@ -1,10 +1,11 @@
 // Package structural exposes best-in-class external code tools — fd,
 // ast-grep, sd, tokei, jaq, yq, and git — as first-class agent tools, so the
-// model searches structurally, reads history, and previews transforms instead
-// of improvising shell pipelines. Each tool is registered only when its binary
-// is found on PATH; git additionally only inside a repository, and yq
-// additionally only when the binary answering to that name is the one whose
-// flags this package relies on.
+// model searches structurally, reads history, writes to the repository and
+// previews transforms instead of improvising shell pipelines. Each tool is
+// registered only when its binary is found on PATH; git additionally only
+// inside a repository, the writing half of git additionally only where a
+// surface asked for it, and yq additionally only when the binary answering to
+// that name is the one whose flags this package relies on.
 //
 // The safety invariants are ported from pi tool-runtime, several of them
 // empirically load-bearing there:
@@ -15,7 +16,7 @@
 //     flag-shaped pattern as a flag value and blocks on stdin).
 //   - Search paths are resolved against the workspace root, symlinks and all,
 //     and containment-checked before any spawn.
-//   - No tool in this package writes a file, ever: sd always runs with
+//   - No tool that auto-runs here writes anything, ever: sd always runs with
 //     --preview (it writes in place by default), ast-grep never sees
 //     -U/--update-all, jaq's file-reading and in-place flags
 //     (-L, -f/--from-file, --slurpfile, --rawfile, -i/--in-place) are not in
@@ -23,6 +24,10 @@
 //     its security flags, and git reaches five reading verbs with no field a
 //     sixth could arrive in. Rewrites and replacements return preview diffs
 //     the model applies via edit_file through the approval queue.
+//   - The writing half of git is the one tool here that changes anything, and
+//     it is not an auto-run tool: it reaches four verbs, it exists only where
+//     a surface asked for it (AllowWrites), and it is approved at the write
+//     tier like an edit.
 //   - Every spawn has a timeout and output bounds; a missing binary, timeout,
 //     or cancellation degrades to a clean tool error, never a hang.
 package structural
@@ -45,13 +50,14 @@ import (
 
 // Model-facing tool names.
 const (
-	FdToolName      = "fd"
-	AstGrepToolName = "ast_grep"
-	SdToolName      = "sd"
-	TokeiToolName   = "tokei"
-	JaqToolName     = "jaq"
-	YqToolName      = "yq"
-	GitToolName     = "git"
+	FdToolName       = "fd"
+	AstGrepToolName  = "ast_grep"
+	SdToolName       = "sd"
+	TokeiToolName    = "tokei"
+	JaqToolName      = "jaq"
+	YqToolName       = "yq"
+	GitToolName      = "git"
+	GitWriteToolName = "git_write"
 )
 
 const (
@@ -79,13 +85,14 @@ var lookPath = func(name string) (string, bool) {
 
 // binaryNames maps each tool to the binary it wraps.
 var binaryNames = map[string]string{
-	FdToolName:      "fd",
-	AstGrepToolName: "ast-grep",
-	SdToolName:      "sd",
-	TokeiToolName:   "tokei",
-	JaqToolName:     "jaq",
-	YqToolName:      "yq",
-	GitToolName:     "git",
+	FdToolName:       "fd",
+	AstGrepToolName:  "ast-grep",
+	SdToolName:       "sd",
+	TokeiToolName:    "tokei",
+	JaqToolName:      "jaq",
+	YqToolName:       "yq",
+	GitToolName:      "git",
+	GitWriteToolName: "git",
 }
 
 // toolOrder fixes the registration order of the wrapped tools. git is not in
@@ -116,6 +123,11 @@ type Toolset struct {
 	root    string
 	bins    map[string]string
 	timeout time.Duration
+	// writes is what the write tool needs and only a session can supply:
+	// the record of what this session changed, and the checkout's trust
+	// answer. Nil is a toolset that reads git and cannot write it, which is
+	// every toolset until a surface says otherwise (AllowWrites).
+	writes *Writes
 }
 
 // Detect probes PATH for the wrapped binaries and returns the session
@@ -202,6 +214,9 @@ func (t *Toolset) Definitions() []provider.Tool {
 	if _, ok := t.bins[GitToolName]; ok {
 		defs = append(defs, gitTool)
 	}
+	if _, ok := t.bins[GitWriteToolName]; ok {
+		defs = append(defs, gitWriteTool)
+	}
 	return defs
 }
 
@@ -216,6 +231,9 @@ func (t *Toolset) Execute(name string, args json.RawMessage) (string, error) {
 	if _, ok := t.bins[name]; !ok {
 		if name == GitToolName {
 			return "", fmt.Errorf("git is not available: this workspace is not inside a git repository, or the %q binary was not found on PATH", binaryNames[name])
+		}
+		if name == GitWriteToolName {
+			return "", fmt.Errorf("%s is not available: this surface does not write to git", name)
 		}
 		if _, known := binaryNames[name]; known {
 			return "", fmt.Errorf("%s is not available: the %q binary was not found on PATH", name, binaryNames[name])
@@ -237,6 +255,8 @@ func (t *Toolset) Execute(name string, args json.RawMessage) (string, error) {
 		return t.executeYq(args)
 	case GitToolName:
 		return t.executeGit(args)
+	case GitWriteToolName:
+		return t.executeGitWrite(args)
 	}
 	return "", fmt.Errorf("unknown structural tool: %s", name)
 }

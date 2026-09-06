@@ -260,7 +260,7 @@ func TestRecordChildPatch_AModeOnlyPatchIsATurnToUndo(t *testing.T) {
 		t.Fatalf("the record should carry both modes, got %q", got)
 	}
 
-	row := m.turnChangesRow()
+	row := m.turnChangesRow(false)
 	if row == nil || row.Mode != "mode 0644 → 0755" {
 		t.Fatalf("the changeset row should state the mode, got %+v", row)
 	}
@@ -335,7 +335,7 @@ func TestRecordChildPatch_AModeChangedWithContentIsStatedBesideTheCounts(t *test
 
 	// The turn's own row keeps its counts: the mode stands in for them only
 	// where there are none.
-	if row := m.turnChangesRow(); row == nil || row.Mode != "" {
+	if row := m.turnChangesRow(false); row == nil || row.Mode != "" {
 		t.Fatalf("a turn with lines to count states them, got %+v", row)
 	}
 

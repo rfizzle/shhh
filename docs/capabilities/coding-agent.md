@@ -589,6 +589,13 @@ no memory of making, and starts explaining or reverting them. So the count is
 given with the one thing that has to be said about it: those changes were
 already there.
 
+That rule is also enforced rather than only stated. Staging and committing are
+a tool with a closed verb set, not a command line
+([`approvals-and-safety.md`](approvals-and-safety.md#the-writing-half-of-git-is-a-tool-too)),
+and it can stage only paths this session's own record of what it changed
+holds — so the work that was in the tree when the session opened cannot be
+carried into a commit even by an agent that forgot it was there.
+
 Where there is no repository the absence is stated too, because it is the
 fact that makes an edit unrecoverable.
 

@@ -172,7 +172,7 @@ internal/
   project/                 The checkout as the session finds it: the survey, and the instruction files it reads root-down
   shell/                   Which shell this platform runs a command line with, and how — the one resolution the prompt and every runner read
   process/                 Background process management (the process tool)
-  structural/              Optional external tools integration (ast-grep, fd, jaq, sd, tokei, yq) and the read-only git verbs
+  structural/              Optional external tools integration (ast-grep, fd, jaq, sd, tokei, yq), the read-only git verbs, and the four git writes a surface can ask for
   radius/                  Blast-radius analysis for edits
   preflight/               Startup checks
   rpc/                     The JSON-RPC surface behind `shhh serve`: the wire, the session registry and the approval queue a client answers
@@ -254,6 +254,49 @@ arguments, not about the output** — a call that names no path answers for the
 whole repository, so a session rooted in a subdirectory sees history from
 outside its root. That is what `git status` means and it is not worth
 breaking; know that it is true.
+
+### The git writes
+
+`internal/structural/gitwrite.go` is the `git_write` tool: four verbs (`add`,
+`commit`, `branch`, `switch`) built by `buildGitWriteArgv`, sharing the
+reader's ref charset (`checkGitRef`), pathspec resolution (`resolveGitPaths`)
+and environment scrub (`spawnEnv`, which answers for both names). Why it is a
+tool rather than a command line:
+[`docs/capabilities/approvals-and-safety.md#the-writing-half-of-git-is-a-tool-too`](docs/capabilities/approvals-and-safety.md#the-writing-half-of-git-is-a-tool-too).
+
+**It is registered by a surface, not by the machine.** `NewToolset` never
+registers it; `AllowWrites` does, and only `buildToolset` calls that, only
+when `toolsetOpts.gitWrites` is set. A conversation and every sub-agent
+therefore never have it — a child's work comes back to its parent as a patch.
+The two things `structural.Writes` carries are the two only a surface knows:
+the paths this session changed (`changeset.Store.Paths` on the screen,
+`writtenByCalls.paths` headless) and the checkout's trust answer
+(`project.Trust.RunsOwnPrograms`).
+
+**It is gated at the write tier and dispatched by the write path.**
+`chat.GatedPreview.Write` is what puts it there — `baseAction` in
+`ui/chat/policy.go` reads it and answers `agent.ActionEdit` — and
+`GatedPreview.DenyLine` (from `structural.WriteLine`) is the command line
+`ModePolicy.Decide` matches against the deny list. `Decide` reads the deny
+list off `Action.Command` rather than off `Action.Kind` for exactly this: a
+`git commit` entry has to refuse the verb whatever tier the call sits at.
+Headless is `headlessGate` plus the `git_write` branch of `headlessApprover`.
+
+What will bite you: **the three readings around a commit are hand-written
+argv, not builder output** (`stagedFiles`, `head`, `branch`). That is
+deliberate — none of it comes from the model — but it means a flag added to
+`buildGitWriteArgv`'s common prefix does not reach them. **`switch --create`
+takes its name attached** (`--create=<name>`), because the name after the `--`
+delimiter is git's start-point in that form; every other verb puts its
+argument after the delimiter. **`run.Commit` builds its argv here too**
+(`structural.AddArgv`, `structural.CommitArgv`), so the unattended runner and
+the tool cannot spell a commit two ways.
+
+The transcript row is `activityVerbFor` (the verb is a field of the call, so
+the row reads it out of the arguments) plus `digest.Arg`'s `git_write` case
+for the target, and the receipt is the row's outcome. The turn's close gains
+a commit row from `turnCommitRow` in `ui/chat/close.go`, which is also what
+takes `[u]` off the changed-files row.
 
 ### Permission Modes
 

@@ -117,9 +117,16 @@ const (
 // activityVerbs is the one table mapping tool names onto the closed verb
 // vocabulary of docs/interface/principles.md#closed-vocabularies — read,
 // search, glob, lsp, web, edit, write, patch, run, memory, spawn, fan-out,
-// agent, report. A tool that maps onto none of them is a hole in this table,
-// not a fifteenth verb: it renders as itself, clipped to the verb column,
-// which is the signal that the table is stale.
+// agent, report, and the four git writes — add, commit, branch, switch. A tool
+// that maps onto none of them is a hole in this table, not a new verb invented
+// at the call site: it renders as itself, clipped to the verb column, which is
+// the signal that the table is stale.
+//
+// The writing half of git is the one tool whose entry here is a default rather
+// than an answer. Its four verbs are four different acts, so the row reads the
+// verb out of the call (activityVerbFor); this entry is what a call whose
+// arguments could not be read falls back to, which is a call that is about to
+// be a failed row anyway.
 var activityVerbs = map[string]string{
 	"read_file":                 "read",
 	"list_directory":            "read",
@@ -130,6 +137,7 @@ var activityVerbs = map[string]string{
 	structural.YqToolName:       "search",
 	structural.TokeiToolName:    "search",
 	structural.GitToolName:      "read",
+	structural.GitWriteToolName: "commit",
 	"glob":                      "glob",
 	structural.FdToolName:       "glob",
 	lsp.DefinitionToolName:      "lsp",
@@ -163,6 +171,22 @@ func activityVerb(tool string) string {
 	return tool
 }
 
+// activityVerbFor is activityVerb for a caller that has the call's arguments
+// to hand. Only the writing half of git needs them: `commit` is the word the
+// reader scans a transcript for, and it is a field of the call rather than
+// part of the tool's name. Everything that names a call to the person uses
+// this rather than the name-only form — the row, the running status line, the
+// output screen's title, the copied label — because a running `add` reported
+// as `commit` is a worse answer than no answer.
+func activityVerbFor(tool, args string) string {
+	if tool == structural.GitWriteToolName {
+		if v := digest.GitVerb(args); v != "" {
+			return v
+		}
+	}
+	return activityVerb(tool)
+}
+
 // activityKind picks the row's glyph and, with it, whether the row carries
 // the mutation rail: ⚙ reads, $ commands, ✎ anything that
 // persists, ◇ sub-agents, ⇄ a server call the user did not mark read-only.
@@ -180,7 +204,11 @@ func (m Model) activityKind(tool string) components.ActivityKind {
 		return components.ActivitySubagent
 	case tool == reports.ToolName:
 		return components.ActivityReport
-	case tool == tools.ExecCommandName || tool == process.ToolName || tool == quality.ToolName:
+	case tool == tools.ExecCommandName || tool == process.ToolName || tool == quality.ToolName ||
+		tool == structural.GitWriteToolName:
+		// A git write draws as a command, with the accent rail: it is the
+		// same act a `git commit` line would have been, and the tier it is
+		// approved at does not change what the reader is looking at.
 		return components.ActivityCommand
 	case tools.IsMutating(tool) || tool == memory.RememberToolName || tool == structural.SdToolName:
 		return components.ActivityEdit
@@ -192,6 +220,12 @@ func (m Model) activityKind(tool string) components.ActivityKind {
 // (matches found, items listed, lines read).
 func activityCounts(tool, result string) string {
 	if strings.TrimSpace(result) == "" {
+		return ""
+	}
+	if tool == structural.GitWriteToolName {
+		// A git write answers with a receipt and the boundaries of the act,
+		// not with output. `2 lines` about it would be a measurement of the
+		// sentence rather than of anything that happened.
 		return ""
 	}
 	n := len(strings.Split(strings.TrimRight(result, "\n"), "\n"))
@@ -290,7 +324,7 @@ func (m Model) activityRowDetail(e entry, stepDetail bool) components.ActivityRo
 		}
 	} else {
 		row.Kind = m.activityKind(e.toolName)
-		row.Verb = activityVerb(e.toolName)
+		row.Verb = activityVerbFor(e.toolName, e.toolArgs)
 		row.Target = digest.Arg(e.toolName, e.toolArgs)
 		switch {
 		case e.deniedBy != "":
@@ -328,6 +362,23 @@ func (m Model) activityRowDetail(e entry, stepDetail bool) components.ActivityRo
 		case strings.HasPrefix(result, "error:"):
 			row.State = components.ActivityFailed
 			row.Outcome = "error"
+		case e.toolName == structural.GitWriteToolName:
+			// The receipt is the outcome, where the field never clips: the
+			// sha is the one part of a commit nobody can reconstruct from
+			// the call, and a row that kept it in a one-line body would make
+			// the reader open the row to learn what landed.
+			//
+			// Anything the result says under the receipt — the hooks a
+			// commit on an untrusted checkout did not run — opens the row
+			// itself. It is a boundary of the act rather than output, so it
+			// is stated where the reader already is rather than behind a
+			// keystroke; a row wide enough to carry it in the outcome field
+			// would be wider than eighty columns.
+			receipt, rest, _ := strings.Cut(strings.TrimRight(result, "\n"), "\n")
+			row.Outcome, result = receipt, strings.TrimSpace(rest)
+			if result != "" {
+				row.Expanded = true
+			}
 		case e.toolName == reports.ToolName:
 			// The link is the outcome — the one field that never clips —
 			// and the page is the body, so the row keeps nothing else. The

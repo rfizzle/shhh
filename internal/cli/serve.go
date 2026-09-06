@@ -247,7 +247,10 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	if err != nil {
 		return nil, err
 	}
-	ts, err := buildToolset(cmd, &session, "serve", toolsetOpts{scope: sc})
+	// The paths this session's own calls write, named before the toolset
+	// because the git stager may stage nothing else.
+	own := &writtenByCalls{}
+	ts, err := buildToolset(cmd, &session, "serve", toolsetOpts{scope: sc, gitWrites: headlessWrites(session, own)})
 	if err != nil {
 		return nil, err
 	}
@@ -365,7 +368,6 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		},
 		hook.Executor(agent.NewRepeatDetector().WrapExecutor(ts.executor(session))))))
 
-	own := &writtenByCalls{}
 	// The unattended run's approver, opted in, is what a call the client
 	// allowed is run through — so the deny list, the containment refusal, the
 	// safety table and the working scope answer it exactly as they answer a
@@ -374,7 +376,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	// than replacing one.
 	allowed := headlessApprover(cmd.Context(), printOpts{yes: true}, cfg.Behavior.CommandAllowlist,
 		cfg.Behavior.CommandDenylist, run, containment.Refusal, red, answeredByClient(record),
-		session.web, procSup, chainMutation(lspMutationHook(session.lsp), hookPostMutation(hooks)), sc, session.mcpTools)
+		session.web, procSup, chainMutation(lspMutationHook(session.lsp), hookPostMutation(hooks)), sc, session.mcpTools, session.structural)
 	resolveCall := func(tc provider.ToolCall) string {
 		if seams.Ask(rpc.Call{Tool: tc.Name, Arguments: tc.Arguments, Turn: l.turnNow(), Round: int64(a.Rounds())}) {
 			return allowed(tc)

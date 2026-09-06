@@ -12,6 +12,7 @@ import (
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -81,13 +82,16 @@ func TestActivityRow_ToolNounsAndKinds(t *testing.T) {
 }
 
 // TestActivityVerbs_ClosedVocabulary pins the closed verb table: every tool
-// this session can call maps onto one of the fourteen verbs, and an unmapped
-// name falls through as itself — the signal that the table is stale.
+// this session can call maps onto one of the verbs the list holds, and an
+// unmapped name falls through as itself — the signal that the table is stale.
 func TestActivityVerbs_ClosedVocabulary(t *testing.T) {
 	closed := map[string]bool{"read": true, "search": true, "glob": true, "lsp": true,
 		"web": true, "edit": true, "write": true, "patch": true, "run": true,
 		"memory": true, "spawn": true, "fan-out": true, "agent": true,
-		"report": true}
+		"report": true,
+		// The four git writes. They are acts rather than tools, which is why
+		// the row reads them out of the call rather than off the name.
+		"add": true, "commit": true, "branch": true, "switch": true}
 	for tool, verb := range activityVerbs {
 		if !closed[verb] {
 			t.Fatalf("%s maps onto %q, which is not one of the fourteen verbs", tool, verb)
@@ -107,6 +111,20 @@ func TestActivityVerbs_ClosedVocabulary(t *testing.T) {
 	}
 	if got := activityVerb("mystery_tool"); got != "mystery_tool" {
 		t.Fatalf("an unmapped tool renders as itself, got %q", got)
+	}
+	// The writing half of git is the one tool whose verb is a field of the
+	// call: `commit` is the word a reader scans for, and it is not in the
+	// tool's name.
+	for args, want := range map[string]string{
+		`{"verb":"commit","message":"feat: x"}`: "commit",
+		`{"verb":"add","paths":["a.go"]}`:       "add",
+		`{"verb":"branch","branch":"topic"}`:    "branch",
+		`{"verb":"switch","branch":"master"}`:   "switch",
+		`not json`:                              "commit",
+	} {
+		if got := activityVerbFor(structural.GitWriteToolName, args); got != want {
+			t.Fatalf("%s should render as %q, got %q", args, got, want)
+		}
 	}
 }
 

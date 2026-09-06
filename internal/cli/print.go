@@ -36,6 +36,7 @@ import (
 	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/stdin"
 	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/chat"
 	"github.com/rfizzle/shhh/internal/web"
@@ -569,7 +570,12 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// run with nobody in front of it never pops one, because nobody is
 	// guaranteed to be at the desktop and the URL reaches the transcript
 	// either way.
-	ts, err := buildToolset(cmd, &session, "print", toolsetOpts{scope: sc})
+	// What this run wrote is read off the calls that wrote it, where a
+	// session hands in its changeset; it is named before the toolset because
+	// the git stager reads it, and it is the same list the tree reading
+	// subtracts below.
+	own := &writtenByCalls{}
+	ts, err := buildToolset(cmd, &session, "print", toolsetOpts{scope: sc, gitWrites: headlessWrites(session, own)})
 	if err != nil {
 		return err
 	}
@@ -842,13 +848,11 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// model stops is what says this run was refused rather than finished.
 	verdict := &lastVerdict{}
 	resolve := headlessApprover(cmd.Context(), opts, allowlist, cfg.Behavior.CommandDenylist, run, containRefusal, red, verdict.wrap(obs.decision),
-		session.web, procSup, chainMutation(lspMutationHook(session.lsp), hookPostMutation(hooks)), sc, session.mcpTools)
-	// A headless run has no changeset, so what it wrote is read off the
-	// calls that wrote it. Two readers want that list — the tree check, as
-	// the subtrahend for what somebody else changed, and the close run, to
-	// know whether this turn changed anything worth checking — so it is
-	// kept whether or not the tree check is on.
-	own := &writtenByCalls{}
+		session.web, procSup, chainMutation(lspMutationHook(session.lsp), hookPostMutation(hooks)), sc, session.mcpTools, session.structural)
+	// Three readers want that list — the tree check, as the subtrahend for
+	// what somebody else changed; the close run, to know whether this turn
+	// changed anything worth checking; and the git stager, which may stage
+	// nothing else — so it is kept whether or not the tree check is on.
 	resolve = own.wrap(resolve)
 	// The hooks go outside the reader of what this run wrote, so a call a
 	// hook refused is not counted as one and a call it rewrote is counted as
@@ -1247,10 +1251,21 @@ func headlessFlagCheck(session chatSession) error {
 	return nil
 }
 
-// headlessGate mirrors the TUI's requiresApproval: exec and file-modification
-// tools go through approval; read-only tools run directly.
+// headlessGate mirrors the TUI's requiresApproval: exec, file-modification
+// and git-write tools go through approval; read-only tools run directly.
 func headlessGate(name string) bool {
-	return name == tools.ExecCommandName || tools.IsMutating(name)
+	return name == tools.ExecCommandName || tools.IsMutating(name) || name == structural.GitWriteToolName
+}
+
+// headlessWrites is what a run with nobody in front of it hands the git
+// stager. A conversation gets nothing: it has no editor, so it has no work of
+// its own to stage. Everything else stages exactly the paths its own calls
+// wrote, which is the rule a session states with its changeset.
+func headlessWrites(session chatSession, own *writtenByCalls) *structural.Writes {
+	if session.conversation {
+		return nil
+	}
+	return &structural.Writes{Files: own.paths, Hooks: projectTrust().RunsOwnPrograms()}
 }
 
 // headlessApprover resolves approval-gated tool calls without a prompt:
@@ -1266,7 +1281,7 @@ func headlessGate(name string) bool {
 // containRefusal, when set, is the answer every command gets before policy is
 // consulted at all: a run told to require containment on a host with none has
 // nothing left to decide.
-func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist []string, run func(context.Context, string) (string, int), containRefusal string, red *evidence.Reducer, record func(decision, reason string), webTools *web.Toolset, procSup *process.Supervisor, mutationHook chat.MutationHook, sc *scope.Scope, mcpTools *mcp.Toolset) func(provider.ToolCall) string {
+func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist []string, run func(context.Context, string) (string, int), containRefusal string, red *evidence.Reducer, record func(decision, reason string), webTools *web.Toolset, procSup *process.Supervisor, mutationHook chat.MutationHook, sc *scope.Scope, mcpTools *mcp.Toolset, structTools *structural.Toolset) func(provider.ToolCall) string {
 	note := func(decision, reason string) {
 		if record != nil {
 			record(decision, reason)
@@ -1379,6 +1394,22 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist [
 			}
 			note(observe.DecisionDeny, observe.ReasonHeadlessDefault)
 			return "error: command not approved: headless mode denies commands by default (run with --yes or --allow)"
+		}
+		// A git write sits at the write tier, so it is answered where a file
+		// modification is answered — after the deny list, which reads the
+		// command line the call stands for, because a person who refused
+		// `git commit` refused the act and not the spelling.
+		if structTools != nil && tc.Name == structural.GitWriteToolName {
+			if line := structural.WriteLine(json.RawMessage(tc.Arguments)); agent.DenylistMatches(denylist, line) {
+				note(observe.DecisionDeny, observe.ReasonDenylist)
+				return agent.DenylistResult
+			}
+			if opts.yes {
+				note(observe.DecisionAllow, observe.ReasonHeadlessYes)
+				return red.Process(tc.Name, agent.ExecuteWith(structTools.Execute, tc))
+			}
+			note(observe.DecisionDeny, observe.ReasonHeadlessDefault)
+			return "error: git write not approved: headless mode denies writes by default (run with --yes)"
 		}
 		if tools.IsMutating(tc.Name) {
 			if opts.yes {

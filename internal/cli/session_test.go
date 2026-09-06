@@ -2,8 +2,10 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -12,6 +14,8 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/shell"
 	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/rfizzle/shhh/internal/structural"
+	"github.com/rfizzle/shhh/internal/ui/chat"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -331,5 +335,78 @@ func TestChatsModel_TheScreensAnswerReachesTheCommand(t *testing.T) {
 	}
 	if !m.result.Open || m.result.ID != "gamma" {
 		t.Fatalf("result = %+v, want the conversation the screen chose", m.result)
+	}
+}
+
+// The card a git write asks through states the boundaries of the act. Two of
+// them are stated on every verb, because the question a person asks when an
+// agent touches git is what it can reach, and an answer that appears on some
+// cards and not others is one they have to go looking for. The other two are
+// stated on the one verb that cannot be taken back.
+func TestGitWriteGatedPreview_StatesTheBoundariesOfTheAct(t *testing.T) {
+	// A real repository, because the write tool exists only where git found
+	// a history to write to.
+	root := t.TempDir()
+	if out, err := exec.Command("git", "-C", root, "init", "-q").CombinedOutput(); err != nil {
+		t.Skipf("git init failed (%v): %s", err, out)
+	}
+	st := structural.NewToolset(root)
+	if st == nil {
+		t.Skip("no workspace root")
+	}
+	st.AllowWrites(structural.Writes{Files: func() []string { return nil }})
+	if !st.Has(structural.GitWriteToolName) {
+		t.Skip("git is not available here")
+	}
+
+	labels := func(p chat.GatedPreview) map[string]chat.GatedField {
+		m := map[string]chat.GatedField{}
+		for _, f := range p.Fields {
+			m[f.Label] = f
+		}
+		return m
+	}
+
+	staging, err := gitWriteGatedPreview(st, json.RawMessage(`{"verb":"add","paths":["a.go"]}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !staging.Write || staging.DenyLine != "git add" || staging.Title != "stage 1 file" {
+		t.Fatalf("a staging card: %+v", staging)
+	}
+	fields := labels(staging)
+	if fields["push"].Value != "no" || fields["stages"].Value == "" {
+		t.Fatalf("every card states what it stages and that nothing is pushed: %+v", staging.Fields)
+	}
+	if _, ok := fields["undo"]; ok {
+		t.Fatalf("only a commit needs the undo line: %+v", staging.Fields)
+	}
+
+	commit, err := gitWriteGatedPreview(st, json.RawMessage(`{"verb":"commit","message":"feat: do it"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if commit.DenyLine != "git commit" {
+		t.Fatalf("the card carries the line the deny list answers: %q", commit.DenyLine)
+	}
+	fields = labels(commit)
+	if fields["hooks"].Value != "skipped" {
+		t.Fatalf("an untrusted checkout runs no hooks: %+v", commit.Fields)
+	}
+	if fields["undo"].Value != "git revert" || fields["undo"].Detail != components.CommitUndoNote {
+		t.Fatalf("the commit card says what the way back is: %+v", commit.Fields)
+	}
+
+	st.AllowWrites(structural.Writes{Files: func() []string { return nil }, Hooks: true})
+	trusted, err := gitWriteGatedPreview(st, json.RawMessage(`{"verb":"commit","message":"feat: do it"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if labels(trusted)["hooks"].Value != "run" {
+		t.Fatalf("a trusted checkout runs its hooks: %+v", trusted.Fields)
+	}
+
+	if _, err := gitWriteGatedPreview(st, json.RawMessage(`{"verb":"push"}`)); err == nil {
+		t.Fatal("a verb outside the set must not produce a card")
 	}
 }

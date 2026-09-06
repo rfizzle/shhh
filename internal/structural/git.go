@@ -355,7 +355,9 @@ func blameWindow(a gitArgs) (string, error) {
 }
 
 // spawnEnv is the environment one tool's spawn runs with; nil inherits the
-// session's unchanged, which is what every tool but git wants.
+// session's unchanged, which is what every tool but git wants. Both halves of
+// git share it rather than each keeping a copy: the hygiene is a fact about
+// running git at all, and a second copy is a second thing to keep in step.
 //
 // git needs one because two of its configuration keys name a program git then
 // runs, and neither is reachable by a flag. --no-pager and --no-ext-diff shut
@@ -371,7 +373,7 @@ func blameWindow(a gitArgs) (string, error) {
 // renumber theirs or be renumbered by it, and either way the override this
 // function exists for is the one that goes missing.
 func spawnEnv(name string) []string {
-	if name != GitToolName {
+	if name != GitToolName && name != GitWriteToolName {
 		return nil
 	}
 	env := os.Environ()

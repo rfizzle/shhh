@@ -278,6 +278,66 @@ func TestPolicy_GenericGatedToolAlwaysPrompts(t *testing.T) {
 	}
 }
 
+// A gated tool that says it sits at the write tier is answered where an edit
+// is answered — and the deny line it carries is read first, whatever the mode
+// says about edits.
+func TestPolicy_AWriteTierToolIsAnsweredLikeAnEdit(t *testing.T) {
+	preview := map[string]GatedPreviewFunc{
+		"git_write": func(raw json.RawMessage) (GatedPreview, error) {
+			return GatedPreview{Title: "commit", Summary: "feat: do it", Write: true, DenyLine: "git commit"}, nil
+		},
+	}
+	call := provider.ToolCall{ID: "call_gw", Name: "git_write", Arguments: `{"verb":"commit","message":"feat: do it"}`}
+	offer := func(m Model) Model {
+		updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{call}})
+		return updated.(Model)
+	}
+	executor := func(name string, args json.RawMessage) (string, error) {
+		return "committed 1 file as a41f2c9 on master", nil
+	}
+
+	// Manual asks, exactly as it asks about an edit.
+	m := offer(gatedModel(t, executor, preview))
+	if m.state != stateConfirmRun {
+		t.Fatalf("manual mode should ask, got state %d", m.state)
+	}
+	if !strings.Contains(m.View().Content, "commit") {
+		t.Fatal("the card should name the act rather than the tool")
+	}
+
+	// Accept-edits and auto proceed, exactly as they proceed with an edit.
+	for _, mode := range []agent.Mode{agent.ModeAcceptEdits, agent.ModeAuto} {
+		m := gatedModel(t, executor, preview)
+		m.policy.mode = mode
+		if m := offer(m); m.state == stateConfirmRun {
+			t.Fatalf("%v should proceed without asking", mode)
+		}
+	}
+
+	// Plan mode refuses it, because plan mode refuses every write.
+	m = gatedModel(t, executor, preview)
+	m.policy.mode = agent.ModePlan
+	if m := offer(m); m.state == stateConfirmRun {
+		t.Fatal("plan mode should refuse rather than ask")
+	}
+
+	// And the deny list answers before any of that.
+	m = gatedModel(t, executor, preview)
+	m.policy.mode = agent.ModeAuto
+	m.policy.denylist = []string{"git commit"}
+	m = offer(m)
+	if m.state == stateConfirmRun {
+		t.Fatal("a denied act must not be put to the user")
+	}
+	found := false
+	for _, e := range m.transcript {
+		found = found || (e.deniedBy != "" && e.toolName == "git_write")
+	}
+	if !found {
+		t.Fatalf("the denial should leave a row, transcript = %+v", m.transcript)
+	}
+}
+
 func TestMode_AcceptEditsAutoAppliesEditsButPromptsCommands(t *testing.T) {
 	var ran []string
 	m := execModel(t, &ran)

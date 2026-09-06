@@ -18,6 +18,7 @@ import (
 	"github.com/rfizzle/shhh/internal/reports"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/skill"
+	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/spf13/cobra"
 )
@@ -32,6 +33,14 @@ type toolsetOpts struct {
 	// nobody in front of it never does: there is no guarantee of a desktop,
 	// and the URL reaches the transcript either way.
 	browser bool
+	// gitWrites says this surface writes to git, and carries the two things
+	// only a surface can answer: the record of what it changed, which is
+	// what may be staged, and the checkout's trust answer, which is whether
+	// the checkout's own commit hooks may run. Nil is the reading half
+	// alone — which is what a conversation gets, having no editor, and what
+	// a surface with no record of its own writes gets, having nothing to
+	// stage from.
+	gitWrites *structural.Writes
 }
 
 // toolset is what the registration opened. The pieces are held by name
@@ -81,8 +90,15 @@ func buildToolset(cmd *cobra.Command, session *chatSession, kind string, opts to
 		t.closers = append(t.closers, session.lsp.Close)
 	}
 	// Structural code tools: fd, ast-grep, sd, tokei, jaq — read-only
-	// wrappers, each registered only when its binary is on PATH.
+	// wrappers, each registered only when its binary is on PATH — and the
+	// writing half of git where the surface asked for it, which is the one
+	// tool here that is approved rather than auto-run.
 	if session.structural != nil {
+		// The writing half joins before the definitions are read, because
+		// whether it is there is what the definitions say.
+		if opts.gitWrites != nil {
+			session.structural.AllowWrites(*opts.gitWrites)
+		}
 		register(session.structural.Definitions()...)
 	}
 	// The quality gate: the model runs the project's own checks by suite

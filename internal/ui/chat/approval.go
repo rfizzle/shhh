@@ -39,6 +39,21 @@ type GatedPreview struct {
 	// cannot resolve these from the arguments the way it resolves a shell
 	// command's paths, so the tool that owns them supplies them.
 	Fields []GatedField
+	// Write puts the call at the write tier rather than the command tier: it
+	// proceeds where an edit proceeds, is asked where an edit is asked, and
+	// is refused in plan mode. It is for a tool that changes the machine
+	// without writing a file to it — the git writer is the one — and it is
+	// the tool's own statement rather than a guess, because nothing here can
+	// read a tier out of a schema.
+	Write bool
+	// Title is the card's headline where the tool's name is not the act —
+	// `commit 3 files` rather than `use git_write`. Empty keeps the name.
+	Title string
+	// DenyLine is the command line this call stands for, matched against the
+	// deny list before anything can allow it. A tool with a closed verb set
+	// stands for a line the person may already have refused, and a tool that
+	// did not say so would be the way around the list.
+	DenyLine string
 }
 
 // GatedField is one row of a tool's blast-radius block.
@@ -81,6 +96,9 @@ type approvalRequest struct {
 	// fields is a gated tool's own blast-radius block, from its
 	// GatedPreview.
 	fields []GatedField
+	// write marks a generic approval that sits at the write tier, from its
+	// GatedPreview: mode policy answers it the way it answers an edit.
+	write bool
 	// auto marks a call the session approved on the user's behalf — mode
 	// policy, a session grant, or the auto-mode classifier. It is what the
 	// changeset record's origin says afterwards.
@@ -238,12 +256,20 @@ func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, err
 	if summary == "" {
 		summary = digest.FormatArgs(tc.Arguments)
 	}
+	// The tool's own headline where it wrote one: `use git_write` names the
+	// mechanism, and a card asks about an act.
+	title := "use " + tc.Name
+	if p.Title != "" {
+		title = p.Title
+	}
 	return &approvalRequest{
 		call:    tc,
 		kind:    approvalGeneric,
-		title:   "use " + tc.Name,
+		title:   title,
+		command: p.DenyLine,
 		summary: summary,
 		fields:  p.Fields,
+		write:   p.Write,
 	}, nil
 }
 

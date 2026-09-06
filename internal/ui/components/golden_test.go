@@ -247,6 +247,14 @@ func TestGolden_TurnClose(t *testing.T) {
 			{Label: "keys waiting · reading mode is up, the cursor is elsewhere", View: closed(func(c *TurnClose) {
 				c.KeysWaiting = true
 			})},
+			// A turn that committed: the receipt is a row of its own, the
+			// undo sentence rides beside it, and the changed-files row loses
+			// [u] because the honest key for taking a commit back is `git
+			// revert`, which is a sentence you type.
+			{Label: "committed · the receipt, and what undo does not reach", View: closed(func(c *TurnClose) {
+				c.Commit = &TurnCommit{Receipt: "committed 3 files as a41f2c9 on master"}
+				c.Changes.Keys = []TurnKey{{Key: "[v]", Label: "review"}}
+			})},
 		}
 	})
 }

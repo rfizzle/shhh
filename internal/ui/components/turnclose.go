@@ -51,6 +51,31 @@ type TurnChanges struct {
 	Note string
 }
 
+// CommitUndoNote is what the commit row says about undo, and it is the
+// component's own words rather than the host's because it is a fact about
+// shhh and not about this turn: an undo puts files back out of the session's
+// own records and never touches history. It is stated on the row rather than
+// left to be discovered, because the honest way back from a commit is `git
+// revert`, which is a sentence somebody types and not a key we offer.
+//
+// It is short because it has to survive the note column at eighty columns
+// inside a transcript, where the row has around seventy-five to itself and
+// the receipt has already spent forty of them. The longer sentence — undo
+// restores files and leaves history alone — is the same fact and does not
+// fit; this half of it is the half a reader needs at the moment they are
+// looking for a way back.
+const CommitUndoNote = "/undo does not reach history"
+
+// TurnCommit is the row a turn that committed adds — the receipt, worded by
+// the host, in the one place a reader looks for what the turn did. A turn
+// that made no commit has none, and the changed-files row above it then keeps
+// its undo offer.
+type TurnCommit struct {
+	// Receipt is the commit said in one line: what landed, its sha, and the
+	// branch it landed on.
+	Receipt string
+}
+
 // TurnChecks is the third row — the verdict of a quality gate or a test run
 // the turn made. Absent when the turn ran neither.
 type TurnChecks struct {
@@ -78,6 +103,7 @@ type TurnClose struct {
 	Note string
 
 	Changes *TurnChanges
+	Commit  *TurnCommit
 	Checks  *TurnChecks
 	// KeysWaiting says the changeset row does not hold the keyboard, so its
 	// keys render grey rather than in the colour that means "you can press
@@ -138,6 +164,9 @@ func (c TurnClose) Summary() string {
 			changed = plural(ch.Files, "file") + " changed · " + ch.Mode
 		}
 		parts = append(parts, changed)
+	}
+	if cm := c.Commit; cm != nil {
+		parts = append(parts, cm.Receipt)
 	}
 	if ck := c.Checks; ck != nil {
 		verdict := " passing"
@@ -221,6 +250,15 @@ func (c TurnClose) View(width int) string {
 			}
 		}
 		lines = append(lines, closeLine(lead, text, sty.Dim.Render(ch.Note), width))
+	}
+
+	if cm := c.Commit; cm != nil {
+		// The accent rail, because a commit changed the machine, and the
+		// ✓ of a thing that landed rather than the ✎ of a thing that was
+		// written: the row above already said what was written.
+		lines = append(lines, closeLine(
+			closeLead(sty.Accent.Render("▎"), sty.Add.Render("✓")),
+			sty.Body.Render(cm.Receipt), sty.Dim.Render(CommitUndoNote), width))
 	}
 
 	if ck := c.Checks; ck != nil {

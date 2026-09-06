@@ -2,6 +2,7 @@ package changeset
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -823,5 +824,26 @@ func TestFold_CollapsesARunOfTurns(t *testing.T) {
 func TestFold_OfNothing(t *testing.T) {
 	if folded := Fold(nil); folded.Files() != 0 || folded.N != 0 {
 		t.Fatalf("folding nothing is nothing, got %+v", folded)
+	}
+}
+
+// Paths is what the git stager reads: the names of what this session changed,
+// and nothing about a file it left where it found it.
+func TestPathsNamesWhatTheSessionChanged(t *testing.T) {
+	s := New(DefaultMaxBytes)
+	s.Add(1, Record{Path: "a.go", Before: "one\n", After: "two\n", BeforeExists: true, AfterExists: true})
+	s.Add(1, Record{Path: "new.go", After: "package new\n", AfterExists: true})
+	// Changed and put back inside the session: its state is where it
+	// started, so there is nothing to stage.
+	s.Add(1, Record{Path: "b.go", Before: "one\n", After: "two\n", BeforeExists: true, AfterExists: true})
+	s.Add(2, Record{Path: "b.go", Before: "two\n", After: "one\n", BeforeExists: true, AfterExists: true})
+
+	got := s.Paths()
+	want := []string{"a.go", "new.go"}
+	if !slices.Equal(got, want) {
+		t.Fatalf("Paths() = %v, want %v", got, want)
+	}
+	if paths := (*Store)(nil).Paths(); paths != nil {
+		t.Fatalf("a session with no store changed nothing, got %v", paths)
 	}
 }

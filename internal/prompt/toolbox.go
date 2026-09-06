@@ -39,6 +39,7 @@ var toolboxNotes = []struct{ name, note string }{
 	{"yq", "query YAML and XML without writing a script for it — a CI workflow, a manifest, a linter config. It answers at the nesting level you asked about, where search returns whichever indentation matched."},
 	{"tokei", "counts of code by language — the shape and size of an unfamiliar repository in one call."},
 	{"git", "read this repository's history: status, log, show, diff, blame. Ask it rather than running git as a command — it is read-only, so it answers without an approval."},
+	{"git_write", "write to this repository: add, commit, branch, switch. Use it rather than running git as a command — the message is a field, so nothing is quoted and no approval is spent on punctuation. It refuses what it cannot do rather than doing it another way: add stages only files this session changed and has no way to stage everything, commit needs a staged index, branch never deletes, and push, reset, clean, checkout, rebase, merge, stash, tag, amend and force are not reachable here at all. Pushing is a command, and it asks."},
 	{"web_fetch", "read a URL. Approval-gated, since it leaves the machine."},
 	{"web_search", "search the web when the answer is not in the workspace."},
 	{"process", "start and watch a long-running process (a dev server, a watcher) without blocking the session on it."},

@@ -104,12 +104,49 @@ func Arg(tool, rawArgs string) string {
 			return verb
 		}
 	}
+	if tool == "git_write" {
+		// The row's verb column already carries the write verb (GitVerb), so
+		// the target is what the verb was pointed at and never repeats it: a
+		// commit's subject, a branch's name, the first file a staging named.
+		return gitWriteTarget(args)
+	}
 	for _, key := range argKeys {
 		if v, ok := args[key].(string); ok && v != "" {
 			return FirstLine(v)
 		}
 	}
 	return FormatArgs(rawArgs)
+}
+
+// GitVerb is the write verb a call to the writing half of git names. It is
+// the row's verb rather than the tool's name because the four verbs are four
+// different acts, and a row that called all of them by the tool's name would
+// put the one word the reader is scanning for into the target column.
+func GitVerb(rawArgs string) string {
+	var args map[string]any
+	if err := json.Unmarshal([]byte(rawArgs), &args); err != nil {
+		return ""
+	}
+	verb, _ := args["verb"].(string)
+	return verb
+}
+
+// gitWriteTarget is what one write was pointed at.
+func gitWriteTarget(args map[string]any) string {
+	if m, _ := args["message"].(string); m != "" {
+		return FirstLine(m)
+	}
+	if b, _ := args["branch"].(string); b != "" {
+		return b
+	}
+	if paths, ok := args["paths"].([]any); ok && len(paths) > 0 {
+		first, _ := paths[0].(string)
+		if len(paths) == 1 {
+			return first
+		}
+		return first + " +" + strconv.Itoa(len(paths)-1)
+	}
+	return ""
 }
 
 // FormatArgs is the flat key=value rendering of a call's arguments, for a

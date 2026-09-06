@@ -573,13 +573,32 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		return err
 	}
 
+	// The changeset store is named here and opened below, where the local
+	// store it persists into is open. The git stager reads it through this
+	// variable rather than through a copy of what it held at registration:
+	// what may be staged is what the session has changed by the time the
+	// call is made, not what it had changed when the toolset was built.
+	var changes *changeset.Store
+	var gitWrites *structural.Writes
+	if !session.conversation {
+		gitWrites = &structural.Writes{
+			Files: func() []string { return changes.Paths() },
+			// A commit hook is a program git runs as whoever opened the
+			// session, and a checkout can point git at one inside itself, so
+			// it is behind the same answer every other thing a checkout
+			// declares is behind.
+			// See docs/capabilities/approvals-and-safety.md#a-checkout-declares-what-it-runs.
+			Hooks: projectTrust().RunsOwnPrograms(),
+		}
+	}
+
 	// Everything a session and an unattended run both register, on the
 	// conditions they both register it under: the reducer, the web tools, the
 	// language server, the structural tools, the quality gate, the process
 	// supervisor, the report publisher and the vault (toolset.go). A session
 	// pops a browser for a page the model published, because somebody is here
 	// to read it.
-	ts, err := buildToolset(cmd, &session, session.kind, toolsetOpts{scope: sc, browser: true})
+	ts, err := buildToolset(cmd, &session, session.kind, toolsetOpts{scope: sc, browser: true, gitWrites: gitWrites})
 	if err != nil {
 		return err
 	}
@@ -812,7 +831,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// takes it below, because a writer child starts from the parent's
 	// uncommitted work and the supervisor is built first. A conversation
 	// never wires it up and leaves it empty.
-	changes := changeset.New(changeset.DefaultMaxBytes)
+	changes = changeset.New(changeset.DefaultMaxBytes)
 	if db != nil {
 		// The store is where those records outlive the sitting, so a
 		// conversation opened again can still take one of its turns back.
@@ -1037,6 +1056,15 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			}}, nil
 		}
 		model = model.WithSubagents(sup).WithPersonas(buildPersonas(session, env, agents, sup, ledger))
+	}
+	// The writing half of git is gated at the write tier: it proceeds where
+	// an edit proceeds and is asked where an edit is asked, because what it
+	// changes is the repository rather than the world outside the machine.
+	if session.structural != nil && session.structural.Has(structural.GitWriteToolName) {
+		st := session.structural
+		gatedPreviews[structural.GitWriteToolName] = func(args json.RawMessage) (chat.GatedPreview, error) {
+			return gitWriteGatedPreview(st, args)
+		}
 	}
 	// A server call the user did not mark read-only goes through the
 	// queue the same way: the card says where it goes and what leaves
@@ -1521,4 +1549,42 @@ func outranking(above string, proj config.Project, key string) string {
 		return ""
 	}
 	return proj.Display + " in this checkout sets " + key
+}
+
+// gitWriteGatedPreview is the card a git write asks through. Its fields are
+// the boundaries of the act, and each is something the reader would otherwise
+// have to know already: what happens to work that is not the session's,
+// whether anything leaves the machine, and — for the one verb that cannot be
+// taken back — whether the repository's own checks ran and what the way back
+// is.
+//
+// `push` is stated on every one of them, not only on a commit, because the
+// question a person asks when an agent touches git is whether it can reach
+// the remote, and an answer that appears on some cards and not others is one
+// the reader has to go looking for.
+func gitWriteGatedPreview(st *structural.Toolset, args json.RawMessage) (chat.GatedPreview, error) {
+	w, err := st.WritePlan(args)
+	if err != nil {
+		return chat.GatedPreview{}, err
+	}
+	hooks := chat.GatedField{Label: "hooks", Value: "run", Detail: "the checkout's own commit hooks; a failure cancels and changes nothing"}
+	if !w.Hooks {
+		hooks = chat.GatedField{Label: "hooks", Value: "skipped", Detail: "this checkout is not trusted, so its own programs do not run"}
+	}
+	fields := []chat.GatedField{
+		{Label: "stages", Value: "this session's files only", Detail: "work that was already in the tree is never staged"},
+		{Label: "push", Value: "no", Detail: "shhh never pushes; the remote is yours"},
+	}
+	if w.Verb == structural.CommitVerb {
+		fields = append(fields, hooks,
+			chat.GatedField{Label: "undo", Value: "git revert", Detail: components.CommitUndoNote})
+	}
+	return chat.GatedPreview{
+		Title:    w.Title,
+		Action:   w.Verb,
+		Summary:  w.Summary,
+		Fields:   fields,
+		Write:    true,
+		DenyLine: structural.WriteLine(args),
+	}, nil
 }

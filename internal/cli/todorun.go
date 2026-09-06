@@ -649,7 +649,11 @@ func todoTail(s string, lines int) string {
 // things depending on who asked for it.
 func (d *todoDriver) commit(st *run.State) ([]string, error) {
 	return run.Commit(d.root, st.Paths, st.Message,
-		"--no-commit runs an item without one, or todo.commit = false makes that the default")
+		"--no-commit runs an item without one, or todo.commit = false makes that the default",
+		// A commit hook is a program the checkout can point git at, so it
+		// runs under the same answer everything else the checkout declares
+		// runs under.
+		projectTrust().RunsOwnPrograms())
 }
 
 // paths is what the run may stage: everything under the root that changed

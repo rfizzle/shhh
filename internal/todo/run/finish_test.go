@@ -49,7 +49,7 @@ func TestCommit_StagesTheRunsPathsAndNothingElse(t *testing.T) {
 	write(t, root, "b.go", "package b\n")
 	write(t, root, "stranger.go", "package stranger\n")
 
-	files, err := Commit(root, []string{"a.go", "b.go"}, "feat(a): do the thing\n\nBecause.", "ask for it without one")
+	files, err := Commit(root, []string{"a.go", "b.go"}, "feat(a): do the thing\n\nBecause.", "ask for it without one", true)
 	if err != nil {
 		t.Fatalf("commit: %v", err)
 	}
@@ -80,7 +80,7 @@ func TestCommit_RefusesAnIndexItDidNotFill(t *testing.T) {
 	if out, code := git(root, "add", "--", "theirs.go"); code != 0 {
 		t.Fatalf("git add: %s", out)
 	}
-	_, err := Commit(root, []string{"a.go"}, "subject", "ask for it without one")
+	_, err := Commit(root, []string{"a.go"}, "subject", "ask for it without one", true)
 	if err == nil || !strings.Contains(err.Error(), "already holds staged changes") {
 		t.Fatalf("err = %v", err)
 	}
@@ -91,7 +91,7 @@ func TestCommit_RefusesAnIndexItDidNotFill(t *testing.T) {
 func TestCommit_OutsideARepositorySaysSoAndOffersTheWayThrough(t *testing.T) {
 	root := t.TempDir()
 	write(t, root, "a.go", "package a\n")
-	_, err := Commit(root, []string{"a.go"}, "subject", "--no-commit runs it without one")
+	_, err := Commit(root, []string{"a.go"}, "subject", "--no-commit runs it without one", true)
 	if err == nil || !strings.Contains(err.Error(), "not a git repository") ||
 		!strings.Contains(err.Error(), "--no-commit runs it without one") {
 		t.Fatalf("err = %v", err)
@@ -101,7 +101,7 @@ func TestCommit_OutsideARepositorySaysSoAndOffersTheWayThrough(t *testing.T) {
 // A run that changed nothing has nothing to commit, and says that rather
 // than making an empty one.
 func TestCommit_RefusesAnEmptyRun(t *testing.T) {
-	if _, err := Commit(t.TempDir(), nil, "subject", "ask"); err == nil ||
+	if _, err := Commit(t.TempDir(), nil, "subject", "ask", true); err == nil ||
 		!strings.Contains(err.Error(), "changed no files") {
 		t.Fatalf("err = %v", err)
 	}

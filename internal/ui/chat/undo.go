@@ -201,9 +201,11 @@ func (m Model) applyUndo(plan changeset.UndoPlan, of undoSubject, force bool) (t
 // took back. The note says what that was.
 func (m Model) undoCloseData(note string) *components.TurnClose {
 	return &components.TurnClose{
-		State:   components.TurnDone,
-		Note:    note,
-		Changes: m.turnChangesRow(),
+		State: components.TurnDone,
+		Note:  note,
+		// An undo's own close made no commit, so the row keeps both offers:
+		// the turn it took back is not the turn being closed here.
+		Changes: m.turnChangesRow(false),
 	}
 }
 

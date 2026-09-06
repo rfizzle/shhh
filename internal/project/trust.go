@@ -108,6 +108,18 @@ type Trust struct {
 // Allows reports whether the checkout's own resources may load.
 func (t Trust) Allows() bool { return t.Granted }
 
+// RunsOwnPrograms reports whether a program the checkout itself carries may
+// be run by something shhh starts. It is the same answer Allows gives, under
+// the name of the question a caller outside the resource list is asking.
+//
+// The caller is the commit: git runs whatever core.hooksPath names, and a
+// checkout can point that at a directory inside itself — which is how every
+// hook manager in the field works. So a commit made on an untrusted checkout
+// runs no hooks, and the receipt says so. It is the line trust already draws,
+// asked about a program that is not in the resource set because it is not a
+// file shhh reads; nothing here changes what is fingerprinted.
+func (t Trust) RunsOwnPrograms() bool { return t.Granted }
+
 // Withheld is what this session did not load and would have, or nothing
 // when the checkout is trusted or holds none of it. It is a diagnostic:
 // nothing here stops a session starting.

@@ -71,9 +71,12 @@ func (m Model) todoCommitCmd() tea.Cmd {
 	slug := m.todoRunner.state.Slug
 	message := m.todoRunner.state.Message
 	paths := m.todoRunPaths()
+	// A commit hook is a program the checkout can point git at, so it runs
+	// under the same answer everything else the checkout declares runs under.
+	hooks := m.trust().Granted
 	without := fmt.Sprintf("/todo run %s --no-commit runs it without one, or todo.commit = false makes that the default", slug)
 	return func() tea.Msg {
-		files, err := run.Commit(root, paths, message, without)
+		files, err := run.Commit(root, paths, message, without, hooks)
 		return todoCommitMsg{slug: slug, files: files, err: err}
 	}
 }

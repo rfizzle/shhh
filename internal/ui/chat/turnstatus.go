@@ -114,7 +114,7 @@ func (m Model) runningToolLabel() string {
 		return ""
 	}
 	tc := m.runningTools[0]
-	verb, arg := activityVerb(tc.Name), digest.Arg(tc.Name, tc.Arguments)
+	verb, arg := activityVerbFor(tc.Name, tc.Arguments), digest.Arg(tc.Name, tc.Arguments)
 	switch {
 	case arg == "":
 		return verb

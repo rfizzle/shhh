@@ -13,6 +13,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/quality"
+	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -97,6 +98,63 @@ func TestTurnClose_TheChangesRowStatesTheFilesAndOffersTheKeys(t *testing.T) {
 	if c.Changes.Note != "no git here" {
 		t.Fatalf("outside a repository the tracking note should say so, got %q", c.Changes.Note)
 	}
+}
+
+// A turn that committed names the sha where the reader is already looking,
+// says what undo does not reach, and stops offering [u]: undo puts files back
+// out of the session's own records and never touches history, so offering it
+// beside a commit would read as an offer to take the commit back.
+func TestTurnClose_ACommittedTurnNamesTheShaAndDropsTheUndoOffer(t *testing.T) {
+	receipt := "committed 3 files as a41f2c9 on master"
+	commit := entry{kind: entryTool, toolName: structural.GitWriteToolName,
+		toolArgs: `{"verb":"commit","message":"feat(agent): cap rounds"}`, toolResult: receipt}
+
+	c := turnCommitRow([]entry{commit})
+	if c == nil || c.Receipt != receipt {
+		t.Fatalf("the commit row should carry the receipt, got %+v", c)
+	}
+	// The last commit of a turn is the one HEAD is standing on.
+	second := commit
+	second.toolResult = "committed 1 file as b52d3e0 on master"
+	if c := turnCommitRow([]entry{commit, second}); c == nil || c.Receipt != second.toolResult {
+		t.Fatalf("the close should name the turn's last commit, got %+v", c)
+	}
+	// A staging is not a commit, and a refused commit did not happen.
+	for _, e := range []entry{
+		{kind: entryTool, toolName: structural.GitWriteToolName,
+			toolArgs: `{"verb":"add","paths":["a.go"]}`, toolResult: "staged 1 file"},
+		{kind: entryTool, toolName: structural.GitWriteToolName,
+			toolArgs: `{"verb":"commit","message":"x"}`, toolResult: "error: nothing is staged"},
+	} {
+		if c := turnCommitRow([]entry{e}); c != nil {
+			t.Fatalf("%s should leave no commit row, got %+v", e.toolResult, c)
+		}
+	}
+
+	view := plainView(&components.TurnClose{
+		State:   components.TurnDone,
+		Changes: turnChangesRowFor(3, 30, 4, true),
+		Commit:  &components.TurnCommit{Receipt: receipt},
+	}, 110)
+	for _, want := range []string{receipt, components.CommitUndoNote, "[v] review"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("the close should state %q, got:\n%s", want, view)
+		}
+	}
+	if strings.Contains(view, "undo turn") {
+		t.Fatalf("a committed changeset offers no undo key, got:\n%s", view)
+	}
+}
+
+// turnChangesRowFor is the changed-files row a test states directly, so the
+// assertion above is about the row's shape rather than about a changeset
+// store it had to fill first.
+func turnChangesRowFor(files, added, removed int, committed bool) *components.TurnChanges {
+	keys := []components.TurnKey{{Key: "[v]", Label: "review"}}
+	if !committed {
+		keys = append(keys, components.TurnKey{Key: "[u]", Label: "undo turn"})
+	}
+	return &components.TurnChanges{Files: files, Added: added, Removed: removed, Keys: keys}
 }
 
 func TestTurnClose_ACancelledTurnSaysSoAndStillReportsWhatItChanged(t *testing.T) {

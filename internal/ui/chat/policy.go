@@ -284,6 +284,13 @@ func baseAction(req *approvalRequest) agent.Action {
 	case approvalDiff:
 		return agent.Action{Kind: agent.ActionEdit, Path: req.path}
 	}
+	// A generic approval that said it sits at the write tier is judged as an
+	// edit, and carries its deny line so a person's refusal of the command
+	// spelling still answers first. It is read before the command fallback
+	// below: the line is what the deny list matches, not what the tier is.
+	if req.write {
+		return agent.Action{Kind: agent.ActionEdit, Path: req.path, Command: req.command}
+	}
 	// A generic approval carrying a command — a process start — is
 	// judged as a command: allowlist entries apply and safety flags stick.
 	if req.command != "" {

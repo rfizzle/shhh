@@ -25,6 +25,7 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/web"
 )
 
@@ -43,7 +44,7 @@ func fakeRun(ran *[]string) func(context.Context, string) (string, int) {
 
 func TestHeadlessApprover_DeniesCommandByDefault(t *testing.T) {
 	var ran []string
-	resolve := headlessApprover(context.Background(), printOpts{}, nil, nil, fakeRun(&ran), "", nil, nil, nil, nil, nil, nil, nil)
+	resolve := headlessApprover(context.Background(), printOpts{}, nil, nil, fakeRun(&ran), "", nil, nil, nil, nil, nil, nil, nil, nil)
 
 	result := resolve(execCall("echo hi"))
 	if !strings.HasPrefix(result, "error:") || !strings.Contains(result, "--yes") {
@@ -56,7 +57,7 @@ func TestHeadlessApprover_DeniesCommandByDefault(t *testing.T) {
 
 func TestHeadlessApprover_YesRunsCommand(t *testing.T) {
 	var ran []string
-	resolve := headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, fakeRun(&ran), "", nil, nil, nil, nil, nil, nil, nil)
+	resolve := headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, fakeRun(&ran), "", nil, nil, nil, nil, nil, nil, nil, nil)
 
 	result := resolve(execCall("echo hi"))
 	if len(ran) != 1 || ran[0] != "echo hi" {
@@ -69,7 +70,7 @@ func TestHeadlessApprover_YesRunsCommand(t *testing.T) {
 
 func TestHeadlessApprover_AllowlistRunsMatchingCommand(t *testing.T) {
 	var ran []string
-	resolve := headlessApprover(context.Background(), printOpts{}, []string{"go test"}, nil, fakeRun(&ran), "", nil, nil, nil, nil, nil, nil, nil)
+	resolve := headlessApprover(context.Background(), printOpts{}, []string{"go test"}, nil, fakeRun(&ran), "", nil, nil, nil, nil, nil, nil, nil, nil)
 
 	if result := resolve(execCall("go test ./...")); strings.HasPrefix(result, "error:") {
 		t.Fatalf("allowlisted command must run, got %q", result)
@@ -84,7 +85,7 @@ func TestHeadlessApprover_AllowlistRunsMatchingCommand(t *testing.T) {
 
 func TestHeadlessApprover_SafetyFlaggedDeniedEvenWithYes(t *testing.T) {
 	var ran []string
-	resolve := headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, fakeRun(&ran), "", nil, nil, nil, nil, nil, nil, nil)
+	resolve := headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, fakeRun(&ran), "", nil, nil, nil, nil, nil, nil, nil, nil)
 
 	result := resolve(execCall("git reset --hard"))
 	if !strings.HasPrefix(result, "error:") || !strings.Contains(result, "safety-flagged") {
@@ -97,7 +98,7 @@ func TestHeadlessApprover_SafetyFlaggedDeniedEvenWithYes(t *testing.T) {
 
 func TestHeadlessApprover_InvalidCommandArguments(t *testing.T) {
 	var ran []string
-	resolve := headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, fakeRun(&ran), "", nil, nil, nil, nil, nil, nil, nil)
+	resolve := headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, fakeRun(&ran), "", nil, nil, nil, nil, nil, nil, nil, nil)
 
 	tc := provider.ToolCall{ID: "c1", Name: "execute_command", Arguments: `{"command":""}`}
 	if result := resolve(tc); !strings.HasPrefix(result, "error:") {
@@ -110,7 +111,7 @@ func TestHeadlessApprover_DeniesEditsByDefault(t *testing.T) {
 	args, _ := json.Marshal(map[string]string{"path": path, "content": "hi"})
 	tc := provider.ToolCall{ID: "c1", Name: "write_file", Arguments: string(args)}
 
-	resolve := headlessApprover(context.Background(), printOpts{}, nil, nil, fakeRun(&[]string{}), "", nil, nil, nil, nil, nil, nil, nil)
+	resolve := headlessApprover(context.Background(), printOpts{}, nil, nil, fakeRun(&[]string{}), "", nil, nil, nil, nil, nil, nil, nil, nil)
 	if result := resolve(tc); !strings.HasPrefix(result, "error:") || !strings.Contains(result, "--yes") {
 		t.Fatalf("default must deny edits with guidance, got %q", result)
 	}
@@ -119,12 +120,44 @@ func TestHeadlessApprover_DeniesEditsByDefault(t *testing.T) {
 	}
 }
 
+// A git write sits at the write tier headless too: it is gated like an edit,
+// denied by default, and refused outright where the deny list names the act
+// it stands for.
+func TestHeadlessApprover_GitWriteIsAnsweredAtTheWriteTier(t *testing.T) {
+	if !headlessGate(structural.GitWriteToolName) {
+		t.Fatal("a git write must go through approval, not the auto-run path")
+	}
+	root := t.TempDir()
+	if out, err := exec.Command("git", "-C", root, "init", "-q").CombinedOutput(); err != nil {
+		t.Skipf("git init failed (%v): %s", err, out)
+	}
+	st := structural.NewToolset(root)
+	if st == nil {
+		t.Skip("no workspace root")
+	}
+	st.AllowWrites(structural.Writes{Files: func() []string { return nil }})
+	if !st.Has(structural.GitWriteToolName) {
+		t.Skip("git is not available here")
+	}
+	tc := provider.ToolCall{ID: "c1", Name: structural.GitWriteToolName,
+		Arguments: `{"verb":"commit","message":"feat: do it"}`}
+
+	deny := headlessApprover(context.Background(), printOpts{}, nil, nil, fakeRun(&[]string{}), "", nil, nil, nil, nil, nil, nil, nil, st)
+	if result := deny(tc); !strings.HasPrefix(result, "error:") || !strings.Contains(result, "--yes") {
+		t.Fatalf("the default must deny a git write with guidance, got %q", result)
+	}
+	denied := headlessApprover(context.Background(), printOpts{yes: true}, nil, []string{"git commit"}, fakeRun(&[]string{}), "", nil, nil, nil, nil, nil, nil, nil, st)
+	if result := denied(tc); result != agent.DenylistResult {
+		t.Fatalf("a deny-list entry for the act must refuse it under --yes too, got %q", result)
+	}
+}
+
 func TestHeadlessApprover_YesAppliesEdit(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "f.txt")
 	args, _ := json.Marshal(map[string]string{"path": path, "content": "hi"})
 	tc := provider.ToolCall{ID: "c1", Name: "write_file", Arguments: string(args)}
 
-	resolve := headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, fakeRun(&[]string{}), "", nil, nil, nil, nil, nil, nil, nil)
+	resolve := headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, fakeRun(&[]string{}), "", nil, nil, nil, nil, nil, nil, nil, nil)
 	if result := resolve(tc); strings.HasPrefix(result, "error:") {
 		t.Fatalf("--yes must apply the edit, got %q", result)
 	}
@@ -135,7 +168,7 @@ func TestHeadlessApprover_YesAppliesEdit(t *testing.T) {
 }
 
 func TestHeadlessApprover_UnknownGatedToolDenied(t *testing.T) {
-	resolve := headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, fakeRun(&[]string{}), "", nil, nil, nil, nil, nil, nil, nil)
+	resolve := headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, fakeRun(&[]string{}), "", nil, nil, nil, nil, nil, nil, nil, nil)
 	tc := provider.ToolCall{ID: "c1", Name: "mystery_tool", Arguments: `{}`}
 	if result := resolve(tc); !strings.HasPrefix(result, "error:") {
 		t.Fatalf("unknown gated tool must be denied, got %q", result)
@@ -227,7 +260,7 @@ func TestWriteJSONTranscript(t *testing.T) {
 
 func TestHeadlessApprover_WebFetchDeniedByDefault(t *testing.T) {
 	webTools := web.NewToolset(web.NewFetcher(web.Policy{AllowPrivate: true}), nil)
-	resolve := headlessApprover(context.Background(), printOpts{}, nil, nil, fakeRun(&[]string{}), "", nil, nil, webTools, nil, nil, nil, nil)
+	resolve := headlessApprover(context.Background(), printOpts{}, nil, nil, fakeRun(&[]string{}), "", nil, nil, webTools, nil, nil, nil, nil, nil)
 	tc := provider.ToolCall{ID: "c1", Name: web.FetchToolName, Arguments: `{"url":"https://example.com/"}`}
 	if result := resolve(tc); !strings.HasPrefix(result, "error:") || !strings.Contains(result, "--yes") {
 		t.Fatalf("default must deny web fetch with guidance, got %q", result)
@@ -242,7 +275,7 @@ func TestHeadlessApprover_WebFetchRunsWithYes(t *testing.T) {
 	defer srv.Close()
 
 	webTools := web.NewToolset(web.NewFetcher(web.Policy{AllowPrivate: true}), nil)
-	resolve := headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, fakeRun(&[]string{}), "", nil, nil, webTools, nil, nil, nil, nil)
+	resolve := headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, fakeRun(&[]string{}), "", nil, nil, webTools, nil, nil, nil, nil, nil)
 	tc := provider.ToolCall{ID: "c1", Name: web.FetchToolName, Arguments: `{"url":"` + srv.URL + `"}`}
 	result := resolve(tc)
 	if strings.HasPrefix(result, "error:") || !strings.Contains(result, "fetched body") {
@@ -251,7 +284,7 @@ func TestHeadlessApprover_WebFetchRunsWithYes(t *testing.T) {
 }
 
 func TestHeadlessApprover_WebFetchUnregisteredWithoutToolset(t *testing.T) {
-	resolve := headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, fakeRun(&[]string{}), "", nil, nil, nil, nil, nil, nil, nil)
+	resolve := headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, fakeRun(&[]string{}), "", nil, nil, nil, nil, nil, nil, nil, nil)
 	tc := provider.ToolCall{ID: "c1", Name: web.FetchToolName, Arguments: `{"url":"https://example.com/"}`}
 	if result := resolve(tc); !strings.HasPrefix(result, "error:") {
 		t.Fatalf("web fetch without a toolset must be denied, got %q", result)
@@ -273,7 +306,7 @@ func TestHeadlessApprover_MutationHookAppendsDiagnostics(t *testing.T) {
 		hookedPath = a.Path
 		return result + "\n\nDiagnostics (fake) for f.go:\nf.go:1:1 error: boom"
 	}
-	resolve := headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, fakeRun(&[]string{}), "", nil, nil, nil, nil, hook, nil, nil)
+	resolve := headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, fakeRun(&[]string{}), "", nil, nil, nil, nil, hook, nil, nil, nil)
 	result := resolve(tc)
 	if !strings.Contains(result, "Diagnostics (fake)") {
 		t.Fatalf("approved edit result should carry the hook's diagnostics, got %q", result)
@@ -294,7 +327,7 @@ func TestHeadlessApprover_MutationHookMayPrependToTheResult(t *testing.T) {
 	hook := func(name string, raw json.RawMessage, result string) string {
 		return "[diagnostics: other.go — 1 error]\nother.go:3:1 error: boom\n\n" + result
 	}
-	resolve := headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, fakeRun(&[]string{}), "", nil, nil, nil, nil, hook, nil, nil)
+	resolve := headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, fakeRun(&[]string{}), "", nil, nil, nil, nil, hook, nil, nil, nil)
 	result := resolve(tc)
 	if !strings.HasPrefix(result, "[diagnostics: other.go — 1 error]") {
 		t.Fatalf("a held block should open the result, got %q", result)
@@ -323,7 +356,7 @@ func newTestProcessSupervisor(t *testing.T) *process.Supervisor {
 
 func TestHeadlessApprover_DeniesProcessStartByDefault(t *testing.T) {
 	sup := newTestProcessSupervisor(t)
-	resolve := headlessApprover(context.Background(), printOpts{}, nil, nil, fakeRun(&[]string{}), "", nil, nil, nil, sup, nil, nil, nil)
+	resolve := headlessApprover(context.Background(), printOpts{}, nil, nil, fakeRun(&[]string{}), "", nil, nil, nil, sup, nil, nil, nil, nil)
 	result := resolve(processStartCall("web", "echo hi"))
 	if !strings.HasPrefix(result, "error:") || !strings.Contains(result, "--yes") {
 		t.Fatalf("default must deny process starts with guidance, got %q", result)
@@ -332,7 +365,7 @@ func TestHeadlessApprover_DeniesProcessStartByDefault(t *testing.T) {
 
 func TestHeadlessApprover_YesStartsProcess(t *testing.T) {
 	sup := newTestProcessSupervisor(t)
-	resolve := headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, fakeRun(&[]string{}), "", nil, nil, nil, sup, nil, nil, nil)
+	resolve := headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, fakeRun(&[]string{}), "", nil, nil, nil, sup, nil, nil, nil, nil)
 	result := resolve(processStartCall("web", "echo hi"))
 	if !strings.Contains(result, "process web:") {
 		t.Fatalf("--yes must start the process, got %q", result)
@@ -341,7 +374,7 @@ func TestHeadlessApprover_YesStartsProcess(t *testing.T) {
 
 func TestHeadlessApprover_AllowlistStartsMatchingProcess(t *testing.T) {
 	sup := newTestProcessSupervisor(t)
-	resolve := headlessApprover(context.Background(), printOpts{}, []string{"echo"}, nil, fakeRun(&[]string{}), "", nil, nil, nil, sup, nil, nil, nil)
+	resolve := headlessApprover(context.Background(), printOpts{}, []string{"echo"}, nil, fakeRun(&[]string{}), "", nil, nil, nil, sup, nil, nil, nil, nil)
 	result := resolve(processStartCall("web", "echo hi"))
 	if !strings.Contains(result, "process web:") {
 		t.Fatalf("an allowlisted command must start, got %q", result)
@@ -350,7 +383,7 @@ func TestHeadlessApprover_AllowlistStartsMatchingProcess(t *testing.T) {
 
 func TestHeadlessApprover_SafetyFlaggedProcessStartDenied(t *testing.T) {
 	sup := newTestProcessSupervisor(t)
-	resolve := headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, fakeRun(&[]string{}), "", nil, nil, nil, sup, nil, nil, nil)
+	resolve := headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, fakeRun(&[]string{}), "", nil, nil, nil, sup, nil, nil, nil, nil)
 	result := resolve(processStartCall("wipe", "rm -rf /tmp/x"))
 	if !strings.HasPrefix(result, "error:") || !strings.Contains(result, "interactive approval") {
 		t.Fatalf("safety-flagged starts must be denied even with --yes, got %q", result)
@@ -374,7 +407,7 @@ func TestHeadlessApprover_DenylistHoldsUnderYesAndTheAllowlist(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			var ran []string
 			resolve := headlessApprover(context.Background(), c.opts, c.allowlist, []string{"git push"},
-				fakeRun(&ran), "", nil, nil, nil, nil, nil, nil, nil)
+				fakeRun(&ran), "", nil, nil, nil, nil, nil, nil, nil, nil)
 
 			if result := resolve(execCall("git push origin main")); result != agent.DenylistResult {
 				t.Fatalf("a denied command answered %q, want the deny-list refusal", result)
@@ -392,7 +425,7 @@ func TestHeadlessApprover_DenylistHoldsUnderYesAndTheAllowlist(t *testing.T) {
 func TestHeadlessApprover_DenylistHoldsForAProcessStart(t *testing.T) {
 	sup := newTestProcessSupervisor(t)
 	resolve := headlessApprover(context.Background(), printOpts{yes: true}, nil, []string{"npm run"},
-		fakeRun(&[]string{}), "", nil, nil, nil, sup, nil, nil, nil)
+		fakeRun(&[]string{}), "", nil, nil, nil, sup, nil, nil, nil, nil)
 	if result := resolve(processStartCall("web", "npm run dev")); result != agent.DenylistResult {
 		t.Fatalf("a denied process start answered %q, want the deny-list refusal", result)
 	}
@@ -1523,7 +1556,7 @@ func raise(t *testing.T, sig os.Signal) {
 func TestHeadlessApprover_RequiredContainmentRefusesEvenWithYes(t *testing.T) {
 	const refusal = "error: this session requires containment and no mechanism is in force: bwrap not found"
 	var ran []string
-	resolve := headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, fakeRun(&ran), refusal, nil, nil, nil, nil, nil, nil, nil)
+	resolve := headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, fakeRun(&ran), refusal, nil, nil, nil, nil, nil, nil, nil, nil)
 
 	if result := resolve(execCall("echo hi")); result != refusal {
 		t.Fatalf("the refusal is the result the model reads, got %q", result)
@@ -1539,7 +1572,7 @@ func TestHeadlessApprover_RequiredContainmentRefusesEvenWithYes(t *testing.T) {
 func TestHeadlessApprover_RequiredContainmentRefusesAProcessStart(t *testing.T) {
 	const refusal = "error: this session requires containment and no mechanism is in force: bwrap not found"
 	sup := newTestProcessSupervisor(t)
-	resolve := headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, fakeRun(&[]string{}), refusal, nil, nil, nil, sup, nil, nil, nil)
+	resolve := headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, fakeRun(&[]string{}), refusal, nil, nil, nil, sup, nil, nil, nil, nil)
 
 	if result := resolve(processStartCall("watch", "sleep 30")); result != refusal {
 		t.Fatalf("a start must be refused too, got %q", result)

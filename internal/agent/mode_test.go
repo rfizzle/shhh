@@ -306,6 +306,39 @@ func TestDecideRefusesADeniedCommandInEveryMode(t *testing.T) {
 	}
 }
 
+// A tool with a closed verb set stands for a command line, and the deny list
+// answers that line whatever tier the tool sits at. A person who wrote `git
+// commit` on the list meant the act; a tool that let the act through under
+// another name would be the way around the list.
+func TestDecideRefusesADeniedActAtTheWriteTier(t *testing.T) {
+	p := ModePolicy{CommandDenylist: []string{"git commit"}, AllowEdits: true}
+	for _, mode := range []Mode{ModeManual, ModeAcceptEdits, ModeAuto, ModePlan} {
+		p.Mode = mode
+		decision, reason := p.Decide(Action{Kind: ActionEdit, Command: "git commit"})
+		if decision != Deny {
+			t.Errorf("%v mode: a denied act at the write tier = %v; want Deny", mode, decision)
+		}
+		if reason != DenyReasonDenylist {
+			t.Errorf("%v mode gave reason %q; want the deny list named", mode, reason)
+		}
+		// The other verbs of the same tool are untouched: the list refused
+		// one act, not the tool.
+		if decision, _ := p.Decide(Action{Kind: ActionEdit, Command: "git add"}); decision == Deny && mode != ModePlan {
+			t.Errorf("%v mode: `git add` was refused by a `git commit` entry", mode)
+		}
+	}
+	// An act the list says nothing about proceeds where an edit proceeds.
+	open := ModePolicy{Mode: ModeAuto}
+	if decision, reason := open.Decide(Action{Kind: ActionEdit, Command: "git commit"}); decision != Allow || reason != "auto mode" {
+		t.Errorf("auto mode = %v (%q); want Allow by the mode, as an edit is", decision, reason)
+	}
+	// And plan mode refuses it, because plan mode refuses every write.
+	plan := ModePolicy{Mode: ModePlan}
+	if decision, _ := plan.Decide(Action{Kind: ActionEdit, Command: "git commit"}); decision != Deny {
+		t.Errorf("plan mode = %v; want Deny", decision)
+	}
+}
+
 // Deny beats allow, and it beats the read-only list too: a command a person
 // has refused is refused however innocent the verb in front of it reads.
 func TestDecideDenyBeatsEveryGrant(t *testing.T) {
