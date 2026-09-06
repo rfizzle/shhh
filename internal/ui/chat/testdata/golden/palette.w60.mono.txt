@@ -23,9 +23,9 @@
 │   /reasoning              How much the mode…  ctrl+t │
 │ FILES                                                │
 │   internal/agent/loop.go  modified 4m ago            │
-│   README.md               modified 2h ago            │
-│ … 16 more — keep typing                              │
-│ enter run · tab complete · ↑↓ move · esc dismiss     │
+│ ↓ 1 more                                             │
+│ [enter] run · [tab] complete · [↑↓] move             │
+│ [esc] dismiss                                        │
 └──────────────────────────────────────────────────────┘
 
 · mid-turn, filtered to an idle-only command
@@ -33,7 +33,8 @@
 │ ▸ cl                                                 │
 │ COMMANDS                                             │
 │ ❯ /clear  Start a new session                        │
-│ enter run · tab complete · ↑↓ move · esc dismiss     │
+│ [enter] run · [tab] complete · [↑↓] move             │
+│ [esc] dismiss                                        │
 └──────────────────────────────────────────────────────┘
 
 ── ansi ────────────────────────────────────────────────────
@@ -50,9 +51,9 @@
 ␛[38;5;244m│␛[m   /reasoning              ␛[38;5;244mHow much the mode…␛[m  ␛[38;5;254mctrl+t␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[1;38;5;254mFILES␛[m                                                ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   internal/agent/loop.go  ␛[38;5;244mmodified 4m ago␛[m            ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m   README.md               ␛[38;5;244mmodified 2h ago␛[m            ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[1;38;5;254m… 16 more — keep typing␛[m                              ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[3;38;5;244menter run · tab complete · ↑↓ move · esc dismiss␛[m     ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;244m↓ 1 more␛[m                                             ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[3;38;5;244m[enter] run · [tab] complete · [↑↓] move␛[m             ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[3;38;5;244m[esc] dismiss␛[m                                        ␛[38;5;244m│␛[m
 ␛[38;5;244m└──────────────────────────────────────────────────────┘␛[m
 
 · mid-turn, filtered to an idle-only command
@@ -60,5 +61,6 @@
 ␛[38;5;244m│␛[m ␛[38;5;254m▸ ␛[m␛[38;5;254mcl ␛[m                                                ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[1;38;5;254mCOMMANDS␛[m                                             ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[1;48;5;237m❯ /clear  Start a new session␛[m                        ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[3;38;5;244menter run · tab complete · ↑↓ move · esc dismiss␛[m     ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[3;38;5;244m[enter] run · [tab] complete · [↑↓] move␛[m             ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[3;38;5;244m[esc] dismiss␛[m                                        ␛[38;5;244m│␛[m
 ␛[38;5;244m└──────────────────────────────────────────────────────┘␛[m

@@ -135,11 +135,16 @@ func Bracket(b Binding) string { return "[" + b.Help().Key + "]" }
 // directions, printed the way every hint row prints such a pair: `[shift+↑↓]`
 // where the two spellings differ only in their last glyph, and `[a/b]` where
 // they do not — a rebind that split the pair is shown as split.
+//
+// A pair with nothing in front of the arrows is the same fact with an empty
+// prefix: the palette moves on `↑` and `↓`, and the row a reader learned on
+// every other list says `[↑↓]`. Excluding it would leave one surface writing
+// the same gesture as `[↑/↓]`, which is the notation this is for.
 func BracketPair(up, down Binding) string {
 	a, b := Shown(up), Shown(down)
 	ra, rb := []rune(a), []rune(b)
 	arrows := "↑↓←→"
-	if len(ra) > 1 && len(rb) == len(ra) && string(ra[:len(ra)-1]) == string(rb[:len(rb)-1]) &&
+	if len(ra) > 0 && len(rb) == len(ra) && string(ra[:len(ra)-1]) == string(rb[:len(rb)-1]) &&
 		strings.ContainsRune(arrows, ra[len(ra)-1]) && strings.ContainsRune(arrows, rb[len(rb)-1]) {
 		return "[" + a + string(rb[len(rb)-1]) + "]"
 	}

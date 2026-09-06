@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 )
 
 func TestCockpit_Segments(t *testing.T) {
@@ -144,13 +145,43 @@ func TestRenderCard_FrameAndClip(t *testing.T) {
 	}
 }
 
-func TestHintRows_StackWhenNarrow(t *testing.T) {
-	segments := []string{"space toggle", "a all/none", "enter apply", "esc cancel"}
+// A key row takes another row rather than losing anything to a clip
+// (docs/interface/principles.md#fold-never-hide), and it packs the rows
+// greedily: one segment per row was three rows where two would do, and on a
+// card whose hints come off its own list that is two entries the reader does
+// not see.
+func TestHintRows_WrapRatherThanClip(t *testing.T) {
+	segments := []string{"[space] toggle", "[a] all/none", "[enter] apply", "[esc] cancel"}
 	if rows := hintRows(segments, 80); len(rows) != 1 {
-		t.Fatalf("wide terminals join hints on one row, got %d", len(rows))
+		t.Fatalf("a row that fits is one row, got %d", len(rows))
 	}
-	if rows := hintRows(segments, 30); len(rows) != len(segments) {
-		t.Fatalf("narrow terminals stack hints instead of truncating, got %d", len(rows))
+	for _, width := range []int{30, 40, 55, 64, 70} {
+		rows := hintRows(segments, width)
+		plain := strings.Join(rows, " ")
+		for _, seg := range segments {
+			if !strings.Contains(ansi.Strip(plain), seg) {
+				t.Errorf("at width %d the row lost %q:\n%s", width, seg, plain)
+			}
+		}
+		for _, row := range rows {
+			if w := lipgloss.Width(ansi.Strip(row)); w > width-cardFrameWidth {
+				t.Errorf("at width %d a row is %d columns wide: %q", width, w, row)
+			}
+		}
+	}
+}
+
+// A surface that cannot spend a second row says which field it would rather
+// lose by putting it last, and the field goes whole.
+func TestDropToFit_GivesUpTheLastFieldWhole(t *testing.T) {
+	segments := []string{"Apply this change? [y/N]", "[ctrl+space] for [a]/[d]",
+		"any other key goes to your draft"}
+	got := FitSegments(segments, 55)
+	if want := "Apply this change? [y/N] · [ctrl+space] for [a]/[d]"; got != want {
+		t.Errorf("fitted to %q, want %q", got, want)
+	}
+	if only := FitSegments(segments, 4); only != segments[0] {
+		t.Errorf("the first field is kept whatever it costs, got %q", only)
 	}
 }
 

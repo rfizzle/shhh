@@ -7,10 +7,14 @@ package ui
 
 import (
 	"context"
+	"regexp"
 	"strings"
 	"testing"
 
+	"github.com/charmbracelet/x/ansi"
+
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // withAlternatives streams a structured response to completion and hands back
@@ -83,6 +87,42 @@ func TestAlternatives_ThePickerMarksTheCommandOnScreen(t *testing.T) {
 	// focused row's is on screen with it.
 	if !strings.Contains(view, "the command on screen") {
 		t.Errorf("the marked row does not say what it is:\n%s", view)
+	}
+}
+
+// The picker's key row is the register's spellings in the notation every
+// other surface writes a live key in, so a keymap file that moves one moves
+// the offer with it
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+//
+// The row is read back off the rendered screen rather than off the field it
+// was built from, because what the check is worth is that the notation held
+// all the way to the terminal: every bracketed run on it has to be a
+// declaration's own spelling, and the three the card means have to be there.
+func TestAlternatives_ThePickerOffersTheRegistersKeys(t *testing.T) {
+	view := press(t, withAlternatives(t, twoOthers), "a").View().Content
+	for _, want := range []string{
+		keys.Bracket(keys.Select.Move) + " move",
+		keys.Bracket(keys.Select.Take) + " choose",
+		keys.Bracket(keys.Select.Cancel) + " back",
+	} {
+		if !strings.Contains(view, want) {
+			t.Errorf("the picker does not offer %q:\n%s", want, view)
+		}
+	}
+	shown := map[string]bool{}
+	for _, s := range append(keys.Surfaces(), keys.Programs()...) {
+		for _, b := range s.Bindings {
+			shown[keys.Shown(b)] = true
+		}
+	}
+	row := ansi.Strip(view)
+	row = row[strings.Index(row, keys.Bracket(keys.Select.Move)):]
+	row, _, _ = strings.Cut(row, "\n")
+	for _, m := range regexp.MustCompile(`\[([^\]]+)\]`).FindAllStringSubmatch(row, -1) {
+		if !shown[m[1]] {
+			t.Errorf("the picker offers %q on %q, which no binding is spelled", m[1], row)
+		}
 	}
 }
 

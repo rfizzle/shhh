@@ -248,7 +248,9 @@ func (m Model) startScreen() (components.StartScreen, []string) {
 		// hands: the plain arrows are what a reader tries first, and the
 		// pointer chords are the ones that go on working in the pane after
 		// the first turn (pointer.go).
-		Hint: "[↑↓] or " + keys.BracketPair(keys.Draft.PointUp, keys.Draft.PointDown) + " choose · [enter] or " +
+		Hint: keys.BracketPair(keys.Draft.HistoryPrev, keys.Draft.HistoryNext) + " or " +
+			keys.BracketPair(keys.Draft.PointUp, keys.Draft.PointDown) + " choose · " +
+			keys.Bracket(keys.Draft.Send) + " or " +
 			keys.Bracket(keys.Draft.Open) + " start · or just type what you want",
 		// The navigation line survives the typing dismissal above, because
 		// these keys survive it: every one of them works with a half-written

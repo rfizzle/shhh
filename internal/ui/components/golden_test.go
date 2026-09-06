@@ -1118,7 +1118,8 @@ func TestGolden_PlanCard(t *testing.T) {
 						Desc: "stays in plan mode; the plan keeps its place in the conversation"},
 					{Label: "Reject the plan", Desc: "nothing runs and the session stays in plan mode"},
 				},
-				Hint: "↑↓/jk move · enter select · 1–5 jump · s save · esc keep planning",
+				HintKeys: []string{"[↑↓/jk] move", "[enter] select", "[1–5] jump",
+					"[s] save", "[esc] keep planning"},
 			}
 			mut(&c)
 			return c.View(width)

@@ -15,10 +15,6 @@ const cardFrameWidth = 4
 // bare.
 const minCardWidth = 12
 
-// narrowWidth is the threshold below which hint rows stack one segment per
-// line instead of truncating (AGENTS.md).
-const narrowWidth = 60
-
 // Clip truncates s to the given display width, ANSI-aware, ending with … when
 // anything was dropped. It measures display cells rather than bytes or runes,
 // which is why a surface outside this package reaches for it rather than

@@ -472,7 +472,7 @@ func (c *ConfigScreen) offers() []KeyOffer {
 			keep,
 		}
 	}
-	offers := []KeyOffer{keyOffer(keys.Select.Move), keyOfferAs(keys.Screen.Take, "change")}
+	offers := []KeyOffer{keyOffer(keys.Screen.Move), keyOfferAs(keys.Screen.Take, "change")}
 	if c.menu.Filtering {
 		offers = append(offers, keyOffer(keys.Screen.ClearQ))
 	} else {

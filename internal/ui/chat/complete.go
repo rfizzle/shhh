@@ -637,22 +637,48 @@ func (m Model) completionMenuLines() []string {
 	if !showHint {
 		return lines
 	}
-	hint := "tab complete · enter run · ↑↓ move · esc dismiss"
-	if m.completionRunsInput() {
+	segments := m.completionHint()
+	if len(m.complete.items) > visible {
+		segments = append([]string{fmt.Sprintf("%d/%d", m.complete.idx+1, len(m.complete.items))}, segments...)
+	}
+	// The row sheds a whole segment rather than being cut where the pane ends:
+	// half an offer is worse than no offer, because a reader cannot tell it
+	// from a key that is spelled that way
+	// (docs/interface/principles.md#fold-never-hide).
+	return append(lines, sty.Complete.Hint.Render(components.FitSegments(segments, width)))
+}
+
+// completionHint is the menu's key row, in the order it may be given up.
+// Every spelling is the draft binding the menu answers underneath it — the
+// menu is the draft's own surface and borrows nothing from the selector
+// family — so a keymap file that moves one moves the offer with it
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+//
+// Tab leads because completing is what the menu is for; running is what
+// happens once there is nothing left to complete.
+func (m Model) completionHint() []string {
+	complete := keys.Bracket(keys.Draft.Complete) + " complete"
+	move := keys.BracketPair(keys.Draft.HistoryPrev, keys.Draft.HistoryNext) + " move"
+	dismiss := keys.Bracket(keys.Draft.Clear) + " dismiss"
+	switch {
+	case m.complete.files:
+		// A file row is inserted, never run: the sentence goes on.
+		return []string{
+			keys.Bracket(keys.Draft.Complete) + "/" + keys.Bracket(keys.Draft.Send) + " insert",
+			move, dismiss,
+		}
+	case m.completionRunsInput():
 		// Enter runs the line as it stands here, so the row says which line
 		// that is: a reader who tab-completed "/model" is about to get the
 		// picker, not the first row under the cursor.
-		hint = "tab complete · enter run " + strings.TrimSpace(m.complete.forInput) +
-			" · ↑↓ pick · esc dismiss"
+		return []string{
+			complete,
+			keys.Bracket(keys.Draft.Send) + " run " + strings.TrimSpace(m.complete.forInput),
+			keys.BracketPair(keys.Draft.HistoryPrev, keys.Draft.HistoryNext) + " pick",
+			dismiss,
+		}
 	}
-	if m.complete.files {
-		// A file row is inserted, never run: the sentence goes on.
-		hint = "tab/enter insert · ↑↓ move · esc dismiss"
-	}
-	if len(m.complete.items) > visible {
-		hint = fmt.Sprintf("%d/%d · %s", m.complete.idx+1, len(m.complete.items), hint)
-	}
-	return append(lines, sty.Complete.Hint.Render(clipRow(hint, width)))
+	return []string{complete, keys.Bracket(keys.Draft.Send) + " run", move, dismiss}
 }
 
 // plainCommandLabel is the unstyled name+args column used for alignment.

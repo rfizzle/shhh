@@ -582,12 +582,15 @@ func rank(state DoctorState) int {
 
 // offers is the key row beside the summary. `[r]` is not offered while the
 // run is still going — re-running a run that has not finished is not an offer
-// (invariant 5) — and `[↑↓]` only appears where there is more than one row to
-// move between.
+// (invariant 5) — and the movement key only appears where there is more than
+// one row to move between. It is the screen's own movement binding and not
+// the selector family's: a footer that offered a key the screen does not
+// answer is the drift the register exists to close
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 func (d *DoctorScreen) offers() []TurnKey {
 	var offers []TurnKey
 	if d.stops() > 1 {
-		offers = append(offers, keyOffer(keys.Select.Move))
+		offers = append(offers, keyOffer(keys.Screen.Move))
 	}
 	if len(d.Checks) > 0 {
 		offers = append(offers, keyOfferAs(keys.Screen.Copy, "copy the report"))

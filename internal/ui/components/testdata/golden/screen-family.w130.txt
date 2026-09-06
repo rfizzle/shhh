@@ -22,7 +22,7 @@ shhh doctor · 10 checks                                                        
     [f] show the fix for this host
   ↓ 8 more · binary · config · store · engine · git · tools · memory · update
 
-  ✗ 2 failed · 2 warnings · 5 passed · 1 not checked                    [↑↓] move · [c] copy the report · [r] run the checks again
+  ✗ 2 failed · 2 warnings · 5 passed · 1 not checked                 [↑↓/jk] move · [c] copy the report · [r] run the checks again
 
 · metrics · the spend rides with the one key the screen has
 shhh metrics · last 30 days · 251 requests · 4 models                                                            $18.42 · [q] quit
@@ -46,7 +46,7 @@ shhh config · ~/.config/shhh/config.toml · 2 changes unwritten                
 
   ↓ 10 more
 
-[↑↓] move · [enter] change · [/] filter · [r] reset to default · [w] write the file · [esc] discard   nothing is written until [w]
+[↑↓/jk] move · [enter] change · [/] filter · [r] reset to default · [w] write the file · [esc] discard
 
 · history · the subject, and a foot key row that states the way out
 shhh history · 6 entries · 2 run                                                                               [?] keys · [q] quit
@@ -113,7 +113,7 @@ shhh rate · 1 of 5                                                             
     ␛[38;5;245m[f]␛[m␛[38;5;241m show the fix for this host␛[m
   ␛[38;5;241m↓ 8 more · binary · config · store · engine · git · tools · memory · update␛[m
 
-  ␛[91m✗␛[m ␛[91m2 failed␛[m␛[38;5;241m · ␛[m␛[38;5;214m2 warnings␛[m␛[38;5;241m · ␛[m␛[38;5;252m5 passed␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 not checked␛[m                    ␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m run the checks again␛[m
+  ␛[91m✗␛[m ␛[91m2 failed␛[m␛[38;5;241m · ␛[m␛[38;5;214m2 warnings␛[m␛[38;5;241m · ␛[m␛[38;5;252m5 passed␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 not checked␛[m                 ␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m run the checks again␛[m
 
 · metrics · the spend rides with the one key the screen has
 ␛[1;97mshhh metrics␛[m␛[38;5;241m · last 30 days · 251 requests · 4 models␛[m                                                            ␛[38;5;252m$18.42␛[m␛[38;5;241m · [q] quit␛[m
@@ -137,7 +137,7 @@ shhh rate · 1 of 5                                                             
 
   ␛[38;5;241m↓ 10 more␛[m
 
-␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m reset to default␛[m␛[38;5;241m · ␛[m␛[94m[w]␛[m␛[38;5;241m write the file␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m discard␛[m   ␛[38;5;241mnothing is written until [w]␛[m
+␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m reset to default␛[m␛[38;5;241m · ␛[m␛[94m[w]␛[m␛[38;5;241m write the file␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m discard␛[m
 
 · history · the subject, and a foot key row that states the way out
 ␛[1;97mshhh history␛[m␛[38;5;241m · 6 entries · 2 run␛[m                                                                               ␛[38;5;241m[?] keys · [q] quit␛[m

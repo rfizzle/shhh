@@ -29,7 +29,7 @@
 │   3. Step through it — manual approvals                                                                                        │
 │   4. Keep planning — tell me what to change                                                                                    │
 │   5. Reject the plan                                                                                                           │
-│ ↑↓/jk move · enter select · 1–5 jump · s save · esc keep planning                                                              │
+│ [↑↓/jk] move · [enter] select · [1–5] jump · [s] save · [esc] keep planning                                                    │
 └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 · focus moved · only the focused option explains itself
@@ -51,7 +51,7 @@
 │     every edit and every command asks you first                                                                                │
 │   4. Keep planning — tell me what to change                                                                                    │
 │   5. Reject the plan                                                                                                           │
-│ ↑↓/jk move · enter select · 1–5 jump · s save · esc keep planning                                                              │
+│ [↑↓/jk] move · [enter] select · [1–5] jump · [s] save · [esc] keep planning                                                    │
 └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 · a radius worth reading twice
@@ -73,7 +73,7 @@
 │   3. Step through it — manual approvals                                                                                        │
 │   4. Keep planning — tell me what to change                                                                                    │
 │   5. Reject the plan                                                                                                           │
-│ ↑↓/jk move · enter select · 1–5 jump · s save · esc keep planning                                                              │
+│ [↑↓/jk] move · [enter] select · [1–5] jump · [s] save · [esc] keep planning                                                    │
 └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 · bounded · the steps it cannot fit are counted
@@ -92,7 +92,7 @@
 │   3. Step through it — manual approvals                                                                                        │
 │   4. Keep planning — tell me what to change                                                                                    │
 │   5. Reject the plan                                                                                                           │
-│ ↑↓/jk move · enter select · 1–5 jump · s save · esc keep planning                                                              │
+│ [↑↓/jk] move · [enter] select · [1–5] jump · [s] save · [esc] keep planning                                                    │
 └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 · too short for a single step · says so rather than counting more than none
@@ -107,7 +107,7 @@
 │   3. Step through it — manual approvals                                                                                        │
 │   4. Keep planning — tell me what to change                                                                                    │
 │   5. Reject the plan                                                                                                           │
-│ ↑↓/jk move · enter select · 1–5 jump · s save · esc keep planning                                                              │
+│ [↑↓/jk] move · [enter] select · [1–5] jump · [s] save · [esc] keep planning                                                    │
 └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 · no structure · prose with the same options below it
@@ -122,7 +122,7 @@
 │   3. Step through it — manual approvals                                                                                        │
 │   4. Keep planning — tell me what to change                                                                                    │
 │   5. Reject the plan                                                                                                           │
-│ ↑↓/jk move · enter select · 1–5 jump · s save · esc keep planning                                                              │
+│ [↑↓/jk] move · [enter] select · [1–5] jump · [s] save · [esc] keep planning                                                    │
 └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 ── ansi ────────────────────────────────────────────────────
@@ -145,7 +145,7 @@
 ␛[38;5;241m│␛[m   3. Step through it — manual approvals                                                                                        ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   4. Keep planning — tell me what to change                                                                                    ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   5. Reject the plan                                                                                                           ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[3;38;5;241m↑↓/jk move · enter select · 1–5 jump · s save · esc keep planning␛[m                                                              ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[3;38;5;241m[↑↓/jk] move · [enter] select · [1–5] jump · [s] save · [esc] keep planning␛[m                                                    ␛[38;5;241m│␛[m
 ␛[38;5;241m└────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘␛[m
 
 · focus moved · only the focused option explains itself
@@ -167,7 +167,7 @@
 ␛[38;5;241m│␛[m ␛[38;5;241m    every edit and every command asks you first␛[m                                                                                ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   4. Keep planning — tell me what to change                                                                                    ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   5. Reject the plan                                                                                                           ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[3;38;5;241m↑↓/jk move · enter select · 1–5 jump · s save · esc keep planning␛[m                                                              ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[3;38;5;241m[↑↓/jk] move · [enter] select · [1–5] jump · [s] save · [esc] keep planning␛[m                                                    ␛[38;5;241m│␛[m
 ␛[38;5;241m└────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘␛[m
 
 · a radius worth reading twice
@@ -189,7 +189,7 @@
 ␛[38;5;241m│␛[m   3. Step through it — manual approvals                                                                                        ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   4. Keep planning — tell me what to change                                                                                    ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   5. Reject the plan                                                                                                           ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[3;38;5;241m↑↓/jk move · enter select · 1–5 jump · s save · esc keep planning␛[m                                                              ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[3;38;5;241m[↑↓/jk] move · [enter] select · [1–5] jump · [s] save · [esc] keep planning␛[m                                                    ␛[38;5;241m│␛[m
 ␛[38;5;241m└────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘␛[m
 
 · bounded · the steps it cannot fit are counted
@@ -208,7 +208,7 @@
 ␛[38;5;241m│␛[m   3. Step through it — manual approvals                                                                                        ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   4. Keep planning — tell me what to change                                                                                    ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   5. Reject the plan                                                                                                           ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[3;38;5;241m↑↓/jk move · enter select · 1–5 jump · s save · esc keep planning␛[m                                                              ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[3;38;5;241m[↑↓/jk] move · [enter] select · [1–5] jump · [s] save · [esc] keep planning␛[m                                                    ␛[38;5;241m│␛[m
 ␛[38;5;241m└────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘␛[m
 
 · too short for a single step · says so rather than counting more than none
@@ -223,7 +223,7 @@
 ␛[38;5;241m│␛[m   3. Step through it — manual approvals                                                                                        ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   4. Keep planning — tell me what to change                                                                                    ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   5. Reject the plan                                                                                                           ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[3;38;5;241m↑↓/jk move · enter select · 1–5 jump · s save · esc keep planning␛[m                                                              ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[3;38;5;241m[↑↓/jk] move · [enter] select · [1–5] jump · [s] save · [esc] keep planning␛[m                                                    ␛[38;5;241m│␛[m
 ␛[38;5;241m└────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘␛[m
 
 · no structure · prose with the same options below it
@@ -238,5 +238,5 @@
 ␛[38;5;241m│␛[m   3. Step through it — manual approvals                                                                                        ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   4. Keep planning — tell me what to change                                                                                    ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   5. Reject the plan                                                                                                           ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[3;38;5;241m↑↓/jk move · enter select · 1–5 jump · s save · esc keep planning␛[m                                                              ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[3;38;5;241m[↑↓/jk] move · [enter] select · [1–5] jump · [s] save · [esc] keep planning␛[m                                                    ␛[38;5;241m│␛[m
 ␛[38;5;241m└────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘␛[m

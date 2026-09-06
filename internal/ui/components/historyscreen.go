@@ -535,11 +535,12 @@ func fitsBeside(offers []KeyOffer, field string, width int) bool {
 // The row also gives ground for the field beside it, and the movement
 // reminder is what it gives first — the history browser's `nothing is re-run
 // until [enter]` is the sentence a reader has to have read before they walk
-// away, and `[↑↓]` is the one segment `[?]` still carries in full. Nothing is
-// ever truncated to make room (invariant 4); the segment goes whole or it
-// stays whole.
+// away, and the movement key is the one segment `[?]` still carries in full.
+// Nothing is ever truncated to make room (invariant 4); the segment goes
+// whole or it stays whole. It is the screen's own binding, so the row offers
+// what the pointer under it actually answers.
 func (h *HistoryScreen) offers(width int, field string) []KeyOffer {
-	move := keyOffer(keys.Select.Move)
+	move := keyOffer(keys.Screen.Move)
 	var acts []KeyOffer
 	if h.current() != nil {
 		acts = append(acts, keyOffer(keys.Screen.Rerun))

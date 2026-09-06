@@ -246,7 +246,7 @@ func TestFrame_CompletionMenuInsideFrame(t *testing.T) {
 	if !strings.Contains(view, "╭─") {
 		t.Fatalf("the frame should stay up while the completion menu is open:\n%s", view)
 	}
-	if !strings.Contains(view, "/model") || !strings.Contains(view, "tab complete") {
+	if !strings.Contains(view, "/model") || !strings.Contains(view, "[tab] complete") {
 		t.Fatalf("the completion menu should render inside the frame:\n%s", view)
 	}
 }

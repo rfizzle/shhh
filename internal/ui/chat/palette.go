@@ -84,6 +84,26 @@ type paletteEntry struct {
 	rank int
 }
 
+// paletteHint is the palette's key row, in reading order. Every spelling on
+// it is the declaration the handler answers to, so a keymap file that moves
+// one moves both — and the brackets are the notation every other surface
+// writes a live key in
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+// The words are the palette's own: `tab` here writes the entry into the
+// input, which is completing it, and "run" and "dismiss" say what the two
+// halves of the surface do rather than what a list does.
+//
+// It is a function and not a package var for the reason planHint is: a keymap
+// file is read after this package is initialised and before anything draws.
+func paletteHint() []string {
+	return []string{
+		keys.Bracket(keys.Select.Palette.Run) + " run",
+		keys.Bracket(keys.Select.Palette.Write) + " complete",
+		keys.BracketPair(keys.Select.Palette.Prev, keys.Select.Palette.Next) + " move",
+		keys.Bracket(keys.Select.Cancel) + " dismiss",
+	}
+}
+
 // paletteState is the open palette: what has been typed, every candidate
 // gathered when it opened, and the rows currently showing — one per option in
 // the picker, headers included, so a chosen row is an index into it.
@@ -106,7 +126,7 @@ func (m Model) openPalette() (tea.Model, tea.Cmd) {
 		// disagree about what a query line looks like. It keeps its own chip,
 		// which counts matches rather than a catalog.
 		Filtering: true,
-		Hint:      "enter run · tab complete · ↑↓ move · esc dismiss",
+		HintKeys:  paletteHint(),
 	}
 	// The panel places the terminal's own cursor on the query row, so the
 	// card stops painting one (docs/interface/surfaces.md#selectors).

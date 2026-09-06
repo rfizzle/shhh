@@ -305,22 +305,70 @@ func packOffersIn(offers []KeyOffer, width int, live bool) []string {
 	return rows
 }
 
-// hintRows renders a run of hint segments — a selector's `↑↓ move`, a card's
-// `[y] to allow`. They pack the other way round from the offers above, and
-// the difference is not drift: an offer run is measured against the width it
-// is drawn at, and a hint run is drawn inside a frame the caller has already
-// budgeted for, so it is joined into one line while the terminal is wide
-// enough to read one and stacked one per segment when it is not. Packing it
-// greedily against a width that is four columns wider than the frame is how
-// a hint row ends up clipped by the border it was measured past.
+// hintRows renders a run of hint segments — a selector's `[↑↓] move`, a
+// card's `[y] to allow`. They are measured against the frame the caller has
+// already budgeted for and not against the width the caller was handed:
+// packing them against a width four columns wider than the frame is how a
+// hint row ends up clipped by the border it was measured past.
+//
+// A row too long for its frame takes another row rather than losing anything
+// (docs/interface/principles.md#fold-never-hide). It is packed the way the
+// key footer packs its offers, greedily, and for the same reason: every
+// segment here is something the surface can do, and a terminal that cannot
+// carry them side by side gets more rows rather than fewer offers. One
+// segment per row is what this did before, which on a card whose rows come
+// off its own list spent three rows to say what two could.
+//
+// What a caller must not hand this is a segment it would rather drop than
+// wrap. A field that qualifies the keys rather than being one — the approval
+// card's sentence about the draft — is fitted by its own surface first, in
+// the order that surface gives things up.
 func hintRows(segments []string, width int) []string {
-	joined := strings.Join(segments, " · ")
-	if width >= narrowWidth || lipgloss.Width(joined) <= width-cardFrameWidth {
+	room := width - cardFrameWidth
+	if joined := strings.Join(segments, " · "); lipgloss.Width(joined) <= room {
 		return []string{sty.Hint.Render(joined)}
 	}
-	rows := make([]string, 0, len(segments))
-	for _, seg := range segments {
-		rows = append(rows, sty.Hint.Render(seg))
+	var rows []string
+	line := []string{}
+	flush := func() {
+		if len(line) > 0 {
+			rows = append(rows, sty.Hint.Render(strings.Join(line, " · ")))
+			line = nil
+		}
 	}
+	for _, seg := range segments {
+		next := strings.Join(append(append([]string{}, line...), seg), " · ")
+		if len(line) > 0 && lipgloss.Width(next) > room {
+			flush()
+		}
+		line = append(line, seg)
+	}
+	flush()
 	return rows
+}
+
+// dropToFit is the segments that fit in room, given up from the end and never
+// cut into. The first is kept whatever it costs: a row with nothing on it
+// says less than a row whose one offer is too wide for the terminal, and
+// there is nothing further to give up.
+//
+// It is the other answer to a row that will not fit, for the rows that cannot
+// spend a second one — a card bounded to a share of the screen, a run drawn
+// dim beside the words that say why it is not live yet. A caller orders the
+// segments by what it would rather lose, the way the header's rail and the
+// key footer's field are ordered.
+func dropToFit(segments []string, room int) []string {
+	for len(segments) > 1 && lipgloss.Width(strings.Join(segments, " · ")) > room {
+		segments = segments[:len(segments)-1]
+	}
+	return segments
+}
+
+// FitSegments is dropToFit as the one row it renders to.
+//
+// It is exported because the completion menu's key row is drawn outside this
+// package and against the pane rather than a card frame, and a second copy of
+// the rule is how the surfaces came to disagree about it in the first place.
+func FitSegments(segments []string, room int) string {
+	return strings.Join(dropToFit(segments, room), " · ")
 }

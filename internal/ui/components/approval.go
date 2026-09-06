@@ -454,8 +454,8 @@ func (c *ApprovalCard) hintRowsFor(width, inner int) []string {
 	}
 	if c.HeldOnArrival && c.Grace {
 		rows := graceRows(c.Question+" "+c.keys(), width)
-		if rest := c.arrivalRest(); rest != "" {
-			rows = append(rows, sty.Dim.Render(Clip(rest, inner)))
+		if rest := c.arrivalRest(); len(rest) > 0 {
+			rows = append(rows, sty.Dim.Render(FitSegments(rest, inner)))
 		}
 		if c.Return != "" {
 			rows = append(rows, sty.Dim.Render(Clip(c.Return, inner)))
@@ -485,8 +485,15 @@ func (c *ApprovalCard) hintRowsFor(width, inner int) []string {
 		}
 	}
 	segments := append([]string{hint}, c.ExtraHints...)
-	if rest := c.arrivalRest(); rest != "" {
-		segments = append(segments, rest)
+	if rest := c.arrivalRest(); len(rest) > 0 {
+		// Fitted into what the answer left of the row rather than wrapped:
+		// the sentence about the draft is an annotation on the keys, not one
+		// of them, and the panel a card is drawn in may take at most 40% of
+		// the terminal (docs/interface/principles.md#one-interaction-panel),
+		// so a row spent on it is a row the transcript gives up. The handover
+		// in front of it is an offer and stays.
+		room := inner - lipgloss.Width(strings.Join(segments, " · ")) - 3
+		segments = append(segments, dropToFit(rest, room)...)
 	}
 	if c.SafeDefault != "" {
 		segments = append(segments, c.SafeDefault)
@@ -618,9 +625,15 @@ func (c *ApprovalCard) KeyAt(row string, col int) (string, bool) {
 // that everything else goes into the draft. It is the not-yet-live row turned
 // around — there the handover buys every key, here it buys the ones a
 // sentence could have produced by accident.
-func (c *ApprovalCard) arrivalRest() string {
+//
+// The two are separate fields, in the order the row gives them up: the
+// handover is an offer and the sentence after it is what explains the offer,
+// so a terminal that cannot carry both drops the explanation whole rather
+// than ending the row mid-sentence — the same order the chrome's header fits
+// its halves in (docs/interface/principles.md#fold-never-hide).
+func (c *ApprovalCard) arrivalRest() []string {
 	if !c.HeldOnArrival {
-		return ""
+		return nil
 	}
 	var rest []string
 	if c.AllowAlways {
@@ -633,14 +646,21 @@ func (c *ApprovalCard) arrivalRest() string {
 		rest = append(rest, keys.Shown(keys.Decision.Batch))
 	}
 	if len(rest) == 0 || c.Handover == "" {
-		return "any other key goes to your draft"
+		return []string{arrivalDraftWords}
 	}
 	for i, k := range rest {
 		rest[i] = "[" + k + "]"
 	}
-	return "[" + c.Handover + "] for " + strings.Join(rest, "/") +
-		" · any other key goes to your draft"
+	return []string{
+		"[" + c.Handover + "] for " + strings.Join(rest, "/"),
+		arrivalDraftWords,
+	}
 }
+
+// arrivalDraftWords is what a card that took the keyboard by arriving says
+// about every key it did not claim. It is a sentence rather than an offer,
+// which is why it is the field the row drops.
+const arrivalDraftWords = "any other key goes to your draft"
 
 // fullWords is what [d] is said to open: the register's own words unless the
 // card means something more specific — the command card's full view.

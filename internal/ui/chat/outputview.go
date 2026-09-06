@@ -14,6 +14,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // noOutputEntry marks a view that came from no transcript row — the command
@@ -115,9 +116,9 @@ func (m Model) closeOutputFull() (tea.Model, tea.Cmd) {
 
 // renderOutputFullHint fills the input area while the full screen shows.
 func (m Model) renderOutputFullHint() string {
-	label := "esc back"
+	label := keys.Shown(keys.Output.Back) + " " + keys.Words(keys.Output.Back)
 	if m.outputReturn == stateConfirmRun {
-		label = "esc: back to the approval prompt"
+		label = keys.Shown(keys.Output.Back) + ": back to the approval prompt"
 	}
 	return sty.SystemMsg.Render(label) + strings.Repeat("\n", inputHeight-1)
 }

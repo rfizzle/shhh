@@ -23,7 +23,10 @@ func planModel(t *testing.T, stream StreamFunc) Model {
 		{Role: provider.RoleUser, Content: "plan the change"},
 	}
 	m := New(msgs, stream)
-	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+	// Tall enough that the panel's 60% bound is not what decides how many
+	// steps show: these tests read what a step row says, and a card the
+	// terminal squeezes counts the steps it folded rather than stating them.
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 40})
 	m = updated.(Model)
 	m.policy.mode = agent.ModePlan
 	m.state = stateStreaming

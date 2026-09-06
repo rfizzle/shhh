@@ -5,10 +5,17 @@ package components
 //
 // Every key row in this package is drawn from a binding rather than from a
 // string, so the spelling a reader is offered is the spelling the handler
-// beside it answers to. There are two shapes and the difference is not
-// decorative: a card's key row brackets its keys because they sit in a
-// sentence (`[y] allow`), and the selector family's hint line does not
-// because it is already a run of nothing but keys.
+// beside it answers to. There are two shapes: a card's key row brackets its
+// keys because they sit in a sentence (`[y] allow`), and the family's own
+// default hint line does not, because it is already a run of nothing but
+// keys and the card it is inside has the keyboard.
+//
+// A surface that supplies a row of its own rather than taking the default
+// brackets it, whichever component draws it. Those rows are read beside the
+// screens' footers and the approval card's, and a reader who has learned that
+// a bracket means a live key is worse served by two notations than by the
+// distinction the default draws
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 //
 // Words are the binding's own unless a surface has better ones. `[r]` is "try
 // again" in the register and "ask again from scratch" on the row that means

@@ -17,15 +17,15 @@
 │   size      M                                        │
 │   waits on  a-high, nothing-like-this                │
 │   As a user, I want entries to expire so that        │
-│ ↓ 17 more                                            │
+│   stale answers stop being served.                   │
+│                                                      │
+│   Acceptance criteria                                │
+│ ↓ 14 more                                            │
 │ nothing in the backlog is named nothing-like-this —  │
 │ dropped rather than written as a dependency on       │
 │ nothing                                              │
-│ ↑↓ move                                              │
-│ space change                                         │
-│ e the editor                                         │
-│ enter write it                                       │
-│ esc drop it                                          │
+│ ↑↓ move · space change · e the editor                │
+│ enter write it · esc drop it                         │
 └──────────────────────────────────────────────────────┘
 
 · the dependency row opened on the backlog
@@ -46,15 +46,15 @@
 ␛[38;5;241m│␛[m   size      ␛[38;5;252mM␛[m                                        ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   waits on  ␛[38;5;252ma-high, nothing-like-this␛[m                ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;252mAs a user, I want entries to expire so that ␛[m       ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;241m↓ 17 more␛[m                                            ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   ␛[38;5;252mstale answers stop being served.␛[m                   ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m                                                      ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   ␛[1;97mAcceptance criteria␛[m                                ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;241m↓ 14 more␛[m                                            ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[91mnothing in the backlog is named nothing-like-this —␛[m  ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[91mdropped rather than written as a dependency on␛[m       ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[91mnothing␛[m                                              ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[3;38;5;241m↑↓ move␛[m                                              ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[3;38;5;241mspace change␛[m                                         ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[3;38;5;241me the editor␛[m                                         ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[3;38;5;241menter write it␛[m                                       ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[3;38;5;241mesc drop it␛[m                                          ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[3;38;5;241m↑↓ move · space change · e the editor␛[m                ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[3;38;5;241menter write it · esc drop it␛[m                         ␛[38;5;241m│␛[m
 ␛[38;5;241m└──────────────────────────────────────────────────────┘␛[m
 
 · the dependency row opened on the backlog

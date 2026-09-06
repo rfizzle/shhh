@@ -38,7 +38,8 @@ func planFixture() *PlanCard {
 			{Label: "Run it unattended — auto mode", Desc: "the classifier judges the rest"},
 			{Label: "Step through it — manual approvals", Desc: "every edit asks you first"},
 		},
-		Hint: "↑↓/jk move · enter select · s save · esc keep planning",
+		HintKeys: []string{"[↑↓/jk] move", "[enter] select", "[s] save",
+			"[esc] keep planning"},
 	}
 }
 
@@ -124,7 +125,7 @@ func TestPlanCard_OnlyTheFocusedOptionExplainsItself(t *testing.T) {
 
 func TestPlanCard_OptionsAreNumberedAndKeyed(t *testing.T) {
 	view := planView(planFixture(), 100)
-	for _, want := range []string{"1. Run the whole plan", "3. Step through it", "s save"} {
+	for _, want := range []string{"1. Run the whole plan", "3. Step through it", "[s] save"} {
 		if !strings.Contains(view, want) {
 			t.Errorf("view should carry %q:\n%s", want, view)
 		}
@@ -143,7 +144,7 @@ func TestPlanCard_BoundedHeightCountsWhatItDrops(t *testing.T) {
 	}
 	// The decision survives the squeeze: options and keys are never what the
 	// bound takes.
-	for _, want := range []string{"Run the whole plan", "esc keep planning"} {
+	for _, want := range []string{"Run the whole plan", "[esc] keep planning"} {
 		if !strings.Contains(view, want) {
 			t.Errorf("the bound must not eat %q:\n%s", want, view)
 		}

@@ -27,7 +27,8 @@
   a reviewer who reads a diff for security problems and reports by severity
   a docs keeper who updates the documentation a change made stale, and nothing …
 
-  enter draft from what you typed · ↑↓ the field or a starting point · esc noth…
+  enter draft from what you typed · ↑↓ the field or a starting point
+  esc nothing is drafted
 
 · the pointer moved onto a starting point · enter takes that one instead
 /agents new · a coding agent · reviewer tester                         esc leave
@@ -46,7 +47,8 @@
 ❯ a reviewer who reads a diff for security problems and reports by severity
   a docs keeper who updates the documentation a change made stale, and nothing …
 
-  enter draft from this one · ↑↓ the field or a starting point · esc nothing is…
+  enter draft from this one · ↑↓ the field or a starting point
+  esc nothing is drafted
 
 · the wait · the step it was started from, and the key that stops it
 /agents new · a coding agent · reviewer tester                 esc stop drafting
@@ -175,7 +177,8 @@
   ␛[38;5;244ma reviewer who reads a diff for security problems and reports by severity␛[m
   ␛[38;5;244ma docs keeper who updates the documentation a change made stale, and nothing …␛[m
 
-  ␛[3;38;5;244menter draft from what you typed · ↑↓ the field or a starting point · esc noth…␛[m
+  ␛[3;38;5;244menter draft from what you typed · ↑↓ the field or a starting point␛[m
+  ␛[3;38;5;244mesc nothing is drafted␛[m
 
 · the pointer moved onto a starting point · enter takes that one instead
 ␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · reviewer tester␛[m                         ␛[38;5;244mesc leave␛[m
@@ -194,7 +197,8 @@
 ␛[38;5;254m❯ ␛[m␛[1;48;5;237ma reviewer who reads a diff for security problems and reports by severity␛[m
   ␛[38;5;244ma docs keeper who updates the documentation a change made stale, and nothing …␛[m
 
-  ␛[3;38;5;244menter draft from this one · ↑↓ the field or a starting point · esc nothing is…␛[m
+  ␛[3;38;5;244menter draft from this one · ↑↓ the field or a starting point␛[m
+  ␛[3;38;5;244mesc nothing is drafted␛[m
 
 · the wait · the step it was started from, and the key that stops it
 ␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · reviewer tester␛[m                 ␛[38;5;244mesc stop drafting␛[m

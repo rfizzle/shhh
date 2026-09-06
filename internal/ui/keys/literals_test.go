@@ -40,6 +40,7 @@ import (
 	"go/token"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -174,6 +175,56 @@ func TestNoKeystrokeIsComparedToALiteral(t *testing.T) {
 					}
 				}
 			}
+			return true
+		})
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+// A key row is built, never typed (
+// docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+//
+// The two tests above police chords and comparisons. This one polices the
+// third shape the drift took: a hint row written out as prose — `enter run ·
+// tab complete · ↑↓ move · esc dismiss` — where every spelling is a bare key
+// no chord test can see and no handler is being compared to. Five rows in the
+// product were written that way, and they were the five that had never been
+// bracketed either, because a row nothing reads from the register is a row
+// nothing holds to the product's notation.
+//
+// What is refused is a literal that opens with a key and then names an act:
+// that shape is a key row and nothing else says it. Prose about a key does
+// not open with one, and a row built from the register does not reach the
+// source as a literal at all.
+var typedKeyRow = regexp.MustCompile(
+	`^(enter|esc|tab|↑↓)[a-z/↑↓ ]* (run|complete|move|dismiss|apply|cancel|` +
+		`choose|select|jump|save|back)`)
+
+func TestNoKeyRowIsTypedByHand(t *testing.T) {
+	fset := token.NewFileSet()
+	err := filepath.Walk("..", func(path string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() || !strings.HasSuffix(path, ".go") ||
+			strings.HasSuffix(path, "_test.go") {
+			return err
+		}
+		f, perr := parser.ParseFile(fset, path, nil, 0)
+		if perr != nil {
+			return perr
+		}
+		ast.Inspect(f, func(n ast.Node) bool {
+			lit, ok := n.(*ast.BasicLit)
+			if !ok || lit.Kind != token.STRING {
+				return true
+			}
+			v, uerr := strconv.Unquote(lit.Value)
+			if uerr != nil || !typedKeyRow.MatchString(v) {
+				return true
+			}
+			t.Errorf("%s: %q is a key row written by hand; build it from a "+
+				"binding in this package", fset.Position(lit.Pos()), v)
 			return true
 		})
 		return nil

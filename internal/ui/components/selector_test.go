@@ -245,12 +245,35 @@ func TestSelect_QueryChipsAndHint(t *testing.T) {
 	s := &Select{
 		Title: "Palette", Options: grouped(), Unnumbered: true,
 		Filtering: true, Query: "mod", Chips: []string{"12 results"},
-		Hint: "enter run · tab complete · ↑↓ move · esc dismiss",
+		HintKeys: []string{"[enter] run", "[tab] complete", "[↑↓] move", "[esc] dismiss"},
 	}
 	view := s.View(70)
-	for _, want := range []string{"Palette", "12 results", "▸ mod█", "COMMANDS", "tab complete"} {
+	for _, want := range []string{"Palette", "12 results", "▸ mod█", "COMMANDS", "[tab] complete"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("expected %q in the card:\n%s", want, view)
+		}
+	}
+}
+
+// A card's key row is segments, so a terminal too narrow for the joined run
+// wraps it rather than cutting a segment in half: a reader cannot tell an
+// offer that was clipped from a key spelled that way
+// (docs/interface/principles.md#fold-never-hide). Width 40 is where the
+// palette's row stops fitting on one line.
+func TestSelect_NarrowKeyRowKeepsEverySegmentWhole(t *testing.T) {
+	segments := []string{"[enter] run", "[tab] complete", "[↑↓] move", "[esc] dismiss"}
+	s := &Select{Title: "Palette", Options: grouped(), Unnumbered: true,
+		Filtering: true, HintKeys: segments}
+	rows := s.hintSegments(40)
+	for i, row := range hintRows(rows, 40) {
+		if strings.Contains(stripANSI(row), "…") {
+			t.Errorf("hint row %d is cut: %q", i, stripANSI(row))
+		}
+	}
+	view := stripANSI(s.View(40))
+	for _, seg := range segments {
+		if !strings.Contains(view, seg) {
+			t.Errorf("the row lost %q:\n%s", seg, view)
 		}
 	}
 }

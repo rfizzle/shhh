@@ -32,7 +32,7 @@ shhh config · ~/.config/shhh/config.toml                                       
     network            private hosts reachable — intranet and localhost fetches are allowed               user
   ↓ 3 more
 
-[↑↓] move · [enter] change · [/] filter · [r] reset to default · [esc] discard                     14 settings
+[↑↓/jk] move · [enter] change · [/] filter · [r] reset to default · [esc] discard                  14 settings
 
 · changing one · the picker opens under the row, not over the screen
 shhh config · ~/.config/shhh/config.toml                                                   [?] keys · [q] quit
@@ -152,7 +152,7 @@ shhh config · ~/.config/shhh/config.toml · 2 changes unwritten                
     network            private hosts reachable — intranet and localhost fetches are allowed               user
   ↓ 3 more
 
-[↑↓] move · [enter] change · [/] filter · [r] reset to default · [w] write the file · [esc] discard
+[↑↓/jk] move · [enter] change · [/] filter · [r] reset to default · [w] write the file · [esc] discard
 
 · the write-back · the inline confirm, defaulting to no
 shhh config · ~/.config/shhh/config.toml · 2 changes unwritten                             [?] keys · [q] quit
@@ -193,7 +193,7 @@ shhh config · ~/.config/shhh/config.toml                                       
   WORKSPACE
     memory           on — 4 entries · .shhh/memory.md                                                  default
 
-[↑↓] move · [enter] change · [ctrl+u] clear the filter · [esc] discard
+[↑↓/jk] move · [enter] change · [ctrl+u] clear the filter · [esc] discard
 
 · [?] · every key the screen has, including the picker's
 shhh config · ~/.config/shhh/config.toml                                                   [?] keys · [q] quit
@@ -242,7 +242,7 @@ shhh config · ~/.config/shhh/config.toml                                       
     network            ␛[38;5;214mprivate hosts reachable␛[m ␛[38;5;241m— intranet and localhost fetches are allowed␛[m               ␛[38;5;252muser␛[m
   ␛[38;5;241m↓ 3 more␛[m
 
-␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m reset to default␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m discard␛[m                     ␛[38;5;241m14 settings␛[m
+␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m reset to default␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m discard␛[m                  ␛[38;5;241m14 settings␛[m
 
 · changing one · the picker opens under the row, not over the screen
 ␛[1;97mshhh config␛[m␛[38;5;241m · ~/.config/shhh/config.toml␛[m                                                   ␛[38;5;241m[?] keys · [q] quit␛[m
@@ -362,7 +362,7 @@ shhh config · ~/.config/shhh/config.toml                                       
     network            ␛[38;5;214mprivate hosts reachable␛[m ␛[38;5;241m— intranet and localhost fetches are allowed␛[m               ␛[38;5;252muser␛[m
   ␛[38;5;241m↓ 3 more␛[m
 
-␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m reset to default␛[m␛[38;5;241m · ␛[m␛[94m[w]␛[m␛[38;5;241m write the file␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m discard␛[m
+␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m reset to default␛[m␛[38;5;241m · ␛[m␛[94m[w]␛[m␛[38;5;241m write the file␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m discard␛[m
 
 · the write-back · the inline confirm, defaulting to no
 ␛[1;97mshhh config␛[m␛[38;5;241m · ~/.config/shhh/config.toml␛[m␛[38;5;214m · 2 changes unwritten␛[m                             ␛[38;5;241m[?] keys · [q] quit␛[m
@@ -403,7 +403,7 @@ shhh config · ~/.config/shhh/config.toml                                       
   ␛[1;94mWORKSPACE␛[m
     me␛[1mmo␛[mry           ␛[38;5;252mon␛[m ␛[38;5;241m— 4 entries · .shhh/memory.md␛[m                                                  ␛[38;5;252mdefault␛[m
 
-␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+u]␛[m␛[38;5;241m clear the filter␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m discard␛[m
+␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+u]␛[m␛[38;5;241m clear the filter␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m discard␛[m
 
 · [?] · every key the screen has, including the picker's
 ␛[1;97mshhh config␛[m␛[38;5;241m · ~/.config/shhh/config.toml␛[m                                                   ␛[38;5;241m[?] keys · [q] quit␛[m

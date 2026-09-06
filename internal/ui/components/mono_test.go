@@ -262,9 +262,9 @@ func monoFixtures() []monoSurface {
 			Chip:  "1 step",
 			Steps: []PlanStep{{Number: 1, Title: "Rework the round accounting",
 				Detail: "internal/agent/loop.go", Kind: "read only", KindTone: ToneSafe}},
-			Summary: []PlanFact{{Text: "1 file touched"}, {Text: "reversible", Tone: ToneSafe}},
-			Options: []SelectOption{{Label: "Run the whole plan — accept-edits mode"}},
-			Hint:    "enter select · s save · esc keep planning",
+			Summary:  []PlanFact{{Text: "1 file touched"}, {Text: "reversible", Tone: ToneSafe}},
+			Options:  []SelectOption{{Label: "Run the whole plan — accept-edits mode"}},
+			HintKeys: []string{"[enter] select", "[s] save", "[esc] keep planning"},
 		}
 		mut(&c)
 		return c.View(w)

@@ -98,14 +98,12 @@ type Select struct {
 	// Chips ride the right end of the title border. A card that sets
 	// none gets the window's own count instead — see chips.
 	Chips []string
-	// Hint replaces the default key-hint line for a surface whose keys are
-	// not the default ones.
-	Hint string
-	// HintKeys is the same replacement given as its segments, for a surface
-	// whose row is long enough that a narrow terminal has to stack it rather
-	// than clip it: nothing on a key row is ever truncated
-	// (docs/interface/principles.md#fold-never-hide). Hint is the pre-joined
-	// form, kept for the rows short enough that it never came up.
+	// HintKeys replaces the default key row for a surface whose keys are not
+	// the family's, given as its segments and in reading order. Segments
+	// rather than one string because nothing on a key row is ever truncated
+	// (docs/interface/principles.md#fold-never-hide): a terminal too narrow
+	// for the joined run takes another row, and a row handed over pre-joined
+	// can only be cut in the middle of a clause.
 	HintKeys []string
 	// AltKey is a second way to take the focused option, and AltLabel is what
 	// it buys. They are for a card whose choice has two readings — /model's
@@ -480,9 +478,6 @@ func (s *Select) hasRowKeys() bool {
 func (s *Select) hintSegments(width int) []string {
 	if len(s.HintKeys) > 0 {
 		return s.HintKeys
-	}
-	if s.Hint != "" {
-		return []string{s.Hint}
 	}
 	if s.Filtering {
 		if s.selectable() == 0 {

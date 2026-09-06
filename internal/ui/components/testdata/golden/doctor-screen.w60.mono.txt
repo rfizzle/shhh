@@ -33,7 +33,8 @@ shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
     [f] show how to upgrade
 
   ✗ 2 failed · 2 warnings · 5 passed · 1 not checked
-[↑↓] move · [c] copy the report · [r] run the checks again
+[↑↓/jk] move · [c] copy the report
+[r] run the checks again
 
 · the fix open · under the row it belongs to, one indent past the consequence
 shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
@@ -62,7 +63,8 @@ shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
     [f] show how to upgrade
 
   ✗ 2 failed · 2 warnings · 5 passed · 1 not checked
-[↑↓] move · [c] copy the report · [r] run the checks again
+[↑↓/jk] move · [c] copy the report
+[r] run the checks again
 
 · the pointer moved · the next check that needs something takes the live key
 shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
@@ -87,7 +89,8 @@ shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
     [f] show how to upgrade
 
   ✗ 2 failed · 2 warnings · 5 passed · 1 not checked
-[↑↓] move · [c] copy the report · [r] run the checks again
+[↑↓/jk] move · [c] copy the report
+[r] run the checks again
 
 · still going · what has answered, one running, the rest queued
 shhh doctor · ▸ running           0.3s · [?] keys · [q] quit
@@ -122,12 +125,11 @@ shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
    ⚠ engine  podman · no sandbox image conf…  no image
     the engine is there, so only the image stands between t…
     [f] show the 1-line fix
-   ⚠ update  shhh 0.9.5 is out · this ma…  out of date
-    [f] show how to upgrade
-  ↓ 6 more · binary · config · store · git · tools · memory
+  ↓ 7 more · binary · config · store · git · tools · memory…
 
   ✗ 2 failed · 2 warnings · 5 passed · 1 not checked
-[↑↓] move · [c] copy the report · [r] run the checks again
+[↑↓/jk] move · [c] copy the report
+[r] run the checks again
 
 · the keys · [?] over a screen that has five of them
 shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
@@ -193,7 +195,8 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
     ␛[38;5;244m[f]␛[m␛[38;5;244m show how to upgrade␛[m
 
   ␛[38;5;254m✗␛[m ␛[38;5;254m2 failed␛[m␛[38;5;244m · ␛[m␛[38;5;254m2 warnings␛[m␛[38;5;244m · ␛[m␛[38;5;254m5 passed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 not checked␛[m
-␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy the report␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m run the checks again␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy the report␛[m
+␛[38;5;254m[r]␛[m␛[38;5;244m run the checks again␛[m
 
 · the fix open · under the row it belongs to, one indent past the consequence
 ␛[1;38;5;254mshhh doctor␛[m␛[38;5;244m · 10 checks␛[m           ␛[38;5;244m1.4s␛[m␛[38;5;244m · [?] keys · [q] quit␛[m
@@ -222,7 +225,8 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
     ␛[38;5;244m[f]␛[m␛[38;5;244m show how to upgrade␛[m
 
   ␛[38;5;254m✗␛[m ␛[38;5;254m2 failed␛[m␛[38;5;244m · ␛[m␛[38;5;254m2 warnings␛[m␛[38;5;244m · ␛[m␛[38;5;254m5 passed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 not checked␛[m
-␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy the report␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m run the checks again␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy the report␛[m
+␛[38;5;254m[r]␛[m␛[38;5;244m run the checks again␛[m
 
 · the pointer moved · the next check that needs something takes the live key
 ␛[1;38;5;254mshhh doctor␛[m␛[38;5;244m · 10 checks␛[m           ␛[38;5;244m1.4s␛[m␛[38;5;244m · [?] keys · [q] quit␛[m
@@ -247,7 +251,8 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
     ␛[38;5;244m[f]␛[m␛[38;5;244m show how to upgrade␛[m
 
   ␛[38;5;254m✗␛[m ␛[38;5;254m2 failed␛[m␛[38;5;244m · ␛[m␛[38;5;254m2 warnings␛[m␛[38;5;244m · ␛[m␛[38;5;254m5 passed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 not checked␛[m
-␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy the report␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m run the checks again␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy the report␛[m
+␛[38;5;254m[r]␛[m␛[38;5;244m run the checks again␛[m
 
 · still going · what has answered, one running, the rest queued
 ␛[1;38;5;254mshhh doctor␛[m␛[38;5;244m · ␛[m␛[38;5;254m▸ running␛[m           ␛[38;5;244m0.3s␛[m␛[38;5;244m · [?] keys · [q] quit␛[m
@@ -282,12 +287,11 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
    ␛[38;5;254m⚠␛[m engine  ␛[38;5;254mpodman␛[m␛[38;5;244m · no sandbox image conf…␛[m  ␛[38;5;254mno image␛[m
     ␛[38;5;244mthe engine is there, so only the image stands between t…␛[m
     ␛[38;5;244m[f]␛[m␛[38;5;244m show the 1-line fix␛[m
-   ␛[38;5;254m⚠␛[m update  ␛[38;5;254mshhh 0.9.5 is out␛[m␛[38;5;244m · this ma…␛[m  ␛[38;5;254mout of date␛[m
-    ␛[38;5;244m[f]␛[m␛[38;5;244m show how to upgrade␛[m
-  ␛[38;5;244m↓ 6 more · binary · config · store · git · tools · memory␛[m
+  ␛[38;5;244m↓ 7 more · binary · config · store · git · tools · memory…␛[m
 
   ␛[38;5;254m✗␛[m ␛[38;5;254m2 failed␛[m␛[38;5;244m · ␛[m␛[38;5;254m2 warnings␛[m␛[38;5;244m · ␛[m␛[38;5;254m5 passed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 not checked␛[m
-␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy the report␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m run the checks again␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy the report␛[m
+␛[38;5;254m[r]␛[m␛[38;5;244m run the checks again␛[m
 
 · the keys · [?] over a screen that has five of them
 ␛[1;38;5;254mshhh doctor␛[m␛[38;5;244m · 10 checks␛[m           ␛[38;5;244m1.4s␛[m␛[38;5;244m · [?] keys · [q] quit␛[m

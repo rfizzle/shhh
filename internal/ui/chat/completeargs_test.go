@@ -259,7 +259,7 @@ func TestArgCompletion_DynamicSourceReadOncePerMenu(t *testing.T) {
 func TestArgCompletion_MenuInView(t *testing.T) {
 	m := typeChars(t, readyModel(t), "/ui verbosity ")
 	view := m.View().Content
-	if !strings.Contains(view, "low") || !strings.Contains(view, "tab complete") {
+	if !strings.Contains(view, "low") || !strings.Contains(view, "[tab] complete") {
 		t.Fatal("the view should render the argument menu and its hint line")
 	}
 }
@@ -354,7 +354,7 @@ func TestArgCompletion_HintNamesTheLineEnterRuns(t *testing.T) {
 	m = typeChars(t, m, "/model ")
 
 	menu := strings.Join(m.completionMenuLines(), "\n")
-	if !strings.Contains(menu, "enter run /model") {
+	if !strings.Contains(menu, "[enter] run /model") {
 		t.Fatalf("the hint should name the line enter runs:\n%s", menu)
 	}
 }

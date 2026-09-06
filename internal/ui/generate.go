@@ -739,7 +739,16 @@ func (m GenerateModel) openAlternatives() (GenerateModel, tea.Cmd) {
 		Unnumbered: true,
 		Options:    opts,
 		Focus:      m.chosen,
-		Hint:       "↑↓ move · enter choose · esc back",
+		// The row is the register's, bracketed like every other live key, and
+		// worded for what this card does: enter takes an alternative back to
+		// the key row rather than running it, and esc is going back rather
+		// than cancelling anything
+		// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+		HintKeys: []string{
+			keys.Bracket(keys.Select.Move) + " move",
+			keys.Bracket(keys.Select.Take) + " choose",
+			keys.Bracket(keys.Select.Cancel) + " back",
+		},
 	}
 	m.phase = phasePick
 	return m, nil

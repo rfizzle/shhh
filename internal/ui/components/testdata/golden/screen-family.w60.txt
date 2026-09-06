@@ -20,7 +20,8 @@ shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
   ↓ 9 more · binary · config · store · sandbox · engine · g…
 
   ✗ 2 failed · 2 warnings · 5 passed · 1 not checked
-[↑↓] move · [c] copy the report · [r] run the checks again
+[↑↓/jk] move · [c] copy the report
+[r] run the checks again
 
 · metrics · the spend rides with the one key the screen has
 shhh metrics                               $18.42 · [q] quit
@@ -43,7 +44,7 @@ shhh config · 2 changes unwritten        [?] keys · [q] quit
     safety warnings    on                            default
   ↓ 10 more
 
-[↑↓] move · [enter] change · [/] filter
+[↑↓/jk] move · [enter] change · [/] filter
 [r] reset to default · [w] write the file · [esc] discard
 
 · history · the subject, and a foot key row that states the way out
@@ -56,7 +57,7 @@ shhh history · 6 entries · 2 run         [?] keys · [q] quit
   $ find every reference to ErrRoundLimit u…  saved     1.1s
 ↓ 2 more
 
-[↑↓] move · [enter] re-run it · [c] copy it
+[↑↓/jk] move · [enter] re-run it · [c] copy it
 [s] save it as a snippet · [x] delete it · [/] filter
 [esc] back to the shell
 
@@ -112,7 +113,8 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
   ␛[38;5;241m↓ 9 more · binary · config · store · sandbox · engine · g…␛[m
 
   ␛[91m✗␛[m ␛[91m2 failed␛[m␛[38;5;241m · ␛[m␛[38;5;214m2 warnings␛[m␛[38;5;241m · ␛[m␛[38;5;252m5 passed␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 not checked␛[m
-␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m run the checks again␛[m
+␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m␛[38;5;241m copy the report␛[m
+␛[94m[r]␛[m␛[38;5;241m run the checks again␛[m
 
 · metrics · the spend rides with the one key the screen has
 ␛[1;97mshhh metrics␛[m                               ␛[38;5;252m$18.42␛[m␛[38;5;241m · [q] quit␛[m
@@ -135,7 +137,7 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
     safety warnings    ␛[92mon␛[m                            ␛[38;5;252mdefault␛[m
   ␛[38;5;241m↓ 10 more␛[m
 
-␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m
+␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m
 ␛[94m[r]␛[m␛[38;5;241m reset to default␛[m␛[38;5;241m · ␛[m␛[94m[w]␛[m␛[38;5;241m write the file␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m discard␛[m
 
 · history · the subject, and a foot key row that states the way out
@@ -148,7 +150,7 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
   $ find every reference to ErrRoundLimit u…  ␛[92msaved␛[m     ␛[38;5;252m1.1s␛[m
 ␛[38;5;241m↓ 2 more␛[m
 
-␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m re-run it␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m␛[38;5;241m copy it␛[m
+␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m re-run it␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m␛[38;5;241m copy it␛[m
 ␛[94m[s]␛[m␛[38;5;241m save it as a snippet␛[m␛[38;5;241m · ␛[m␛[94m[x]␛[m␛[38;5;241m delete it␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m
 ␛[94m[esc]␛[m␛[38;5;241m back to the shell␛[m
 

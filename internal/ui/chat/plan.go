@@ -68,12 +68,19 @@ var planApproveOptions = []components.SelectOption{
 // moves one moves both. It is a function rather than a package var because
 // a file is read after this package is initialised and before anything
 // draws — a var would have snapshotted the shipped spelling.
-func planHint() string {
-	return keys.Shown(keys.Select.MoveJK) + " move · " +
-		keys.Shown(keys.Select.Take) + " select · " +
-		keys.Shown(keys.Plan.Jump) + " jump · " +
-		keys.Shown(keys.Plan.Save) + " save · " +
-		keys.Shown(keys.Select.Cancel) + " keep planning"
+//
+// The segments are separate so a terminal too narrow for the run takes
+// another row instead of ending one mid-clause, and they are bracketed
+// because a bracket is what a live key looks like everywhere else in the
+// product (docs/interface/principles.md#fold-never-hide).
+func planHint() []string {
+	return []string{
+		keys.Bracket(keys.Select.MoveJK) + " move",
+		keys.Bracket(keys.Select.Take) + " select",
+		keys.Bracket(keys.Plan.Jump) + " jump",
+		keys.Bracket(keys.Plan.Save) + " save",
+		keys.Bracket(keys.Select.Cancel) + " keep planning",
+	}
 }
 
 // armPlan parses and prices the planning response the prompt is about to ask
@@ -222,7 +229,7 @@ func (m Model) planCard() *components.PlanCard {
 		Title:         "Plan ready",
 		Options:       planApproveOptions,
 		Focus:         m.planChoice,
-		Hint:          planHint(),
+		HintKeys:      planHint(),
 		Summary:       m.planFacts,
 		SummaryDetail: m.planDetail,
 		MaxLines:      m.planPanelBound(),
