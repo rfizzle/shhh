@@ -95,8 +95,8 @@ type ColorTokens struct {
 	Accent  Token // tool glyphs, ⚠ warnings, gated modes, ctx ≥70%, and the mutation rail
 	Info    Token // sub-agents, block headings, and every key the interface offers
 	FocusBg Token // selected option/row background, the cursor block
-	Dim     Token // chrome, counts, hints, faint rules, empty meter cells, the scroll gutter's track
-	Dimmer  Token // tool output, live tails, detail bodies, sparklines, the scroll gutter's thumb
+	Dim     Token // chrome, counts, hints, faint rules, empty meter cells, the scroll gutter's thumb
+	Dimmer  Token // tool output, live tails, detail bodies, sparklines
 	Spin    Token // anything in motion — spinner frames, ▸ running…, ✦ checking
 	Status  Token // status text, the ⛨ containment line
 	Bright  Token // headings, the focused row's text, the working label's crest
@@ -167,8 +167,9 @@ var FullPalette = ColorTokens{
 // with more contrast against the ground — which on a dark terminal makes it
 // the *lighter* grey and on a light one the *darker* one. #8a8a8a is Dimmer
 // in the table above and Dim here, and that is the swap rather than a
-// mistake. Reverse it and the scroll gutter's thumb sinks into its own track
-// exactly as it would if the two were exchanged on the dark ground.
+// mistake. Reverse it and a tool's output on Dimmer goes fainter than the
+// rules around it on Dim, so the chrome of the pane reads as the loudest
+// thing in it.
 //
 // The chrome grey stands off white by 3.45:1, which is what #626262 stands
 // off black by (3.44:1) — the faintest thing on the screen is equally faint
@@ -523,11 +524,9 @@ type Styles struct {
 	QueryText lipgloss.Style
 	Match     lipgloss.Style
 
-	// The scroll gutter: the track is chrome like every other faint
-	// rule, the thumb a step brighter — the same step a sparkline stands off
-	// the chrome by, and for the same reason. It is a shape, not a
+	// The scroll gutter's thumb: chrome like every other faint mark on the
+	// frame, and the only thing drawn in that column. It is a shape, not a
 	// measurement.
-	ScrollTrack lipgloss.Style
 	ScrollThumb lipgloss.Style
 
 	// The working label's sweep: the crest of the light that runs
@@ -587,14 +586,12 @@ func newStyles(p ColorTokens) Styles {
 		QueryText: lipgloss.NewStyle().Foreground(p.Bright.Color()),
 		Match:     lipgloss.NewStyle().Bold(true),
 
-		// The names read backwards and the pair is right: Dimmer is the
-		// lighter rung, Dim the darker one, so the thumb is the brighter of
-		// the two. Swap them to "fix" the naming and the thumb sinks into its
-		// own track — the gutter still draws, and stops saying where in the
-		// transcript the reader is. Only the stroke survives mono, where both
-		// rungs are one grey.
-		ScrollTrack: lipgloss.NewStyle().Foreground(p.Dim.Color()),
-		ScrollThumb: lipgloss.NewStyle().Foreground(p.Dimmer.Color()),
+		// One token, the same Dim the frame's own rules are drawn in: the
+		// gutter is chrome, and it has nothing in its column to be told apart
+		// from, so a second rung would be a distinction with nothing on the
+		// other side of it. What the mark says is said by its stroke and its
+		// length, both of which survive a terminal with no colour at all.
+		ScrollThumb: lipgloss.NewStyle().Foreground(p.Dim.Color()),
 
 		AnimCrest: lipgloss.NewStyle().Foreground(p.Bright.Color()),
 

@@ -74,6 +74,13 @@ func monoFixtures() []monoSurface {
 		return strings.Join(UnifiedLines(hunk(kind), w, UnifiedOpts{LineNumbers: true, Emphasis: true}), "\n")
 	}
 
+	// The transcript's gutter as a column, for a pane six rows tall over ten
+	// times that much transcript — short enough to read, long enough that the
+	// thumb floors at one row and has somewhere to travel.
+	gutterColumn := func(offset int) string {
+		return strings.Join(Scrollbar(6, 60, 6, offset), "\n")
+	}
+
 	// One staged chip. The name and the size are held constant, so the
 	// kind's mark is the only thing left to tell the three apart — which is
 	// what makes the strip legible on a terminal with no colour at all.
@@ -487,18 +494,19 @@ func monoFixtures() []monoSurface {
 			{"unstaged", staged(false)},
 			{"staged", staged(true)},
 		}},
-		// The scroll gutter has two states and one column to say them in, so
-		// ink coverage is all it has: dim and dimmer are the same grey here.
-		// The divider the next column over is the third thing that coverage
-		// has to carry it away from, and it is in the walk for the same
-		// reason — all three are chrome a column apart once the shades
-		// collapse, and only the amount of ink in the cell is left to tell a
-		// stippled fill, a solid fill and a rule apart.
-		{"scroll gutter cell", []monoState{
-			// The top row of a gutter scrolled to its end, and of the same
-			// gutter at its top.
-			{"track", Scrollbar(4, 40, 1, 39)[0]},
-			{"thumb", Scrollbar(4, 40, 1, 0)[0]},
+		// The scroll gutter draws one mark on the one chrome token, so where
+		// the mark is and how heavy it is are the whole of what it says. The
+		// divider the next column over is in the walk for the same reason —
+		// the two columns are chrome a cell apart once every shade collapses,
+		// and a short heavy mark against a full-height light rule is what is
+		// left to tell them apart.
+		{"scroll gutter column", []monoState{
+			// The whole column rather than one cell of it, because where the
+			// mark sits is the state: the same short thumb at the bottom, in
+			// the middle and at the top is three readings of the transcript.
+			{"pinned to the live end", gutterColumn(54)},
+			{"scrolled to the middle", gutterColumn(27)},
+			{"at the top", gutterColumn(0)},
 			// The pane divider's cell as the split draws it: the frame's rule
 			// on the chrome token.
 			{"pane divider", sty.Dim.Render(paneDivider)},

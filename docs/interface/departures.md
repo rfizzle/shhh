@@ -42,31 +42,6 @@ soon as there is a wide variant of it to state them; until then the artboard
 is the narrow end of a range rather than the whole of it, which is a gap and
 not a disagreement.
 
-## The scroll gutter has no artboard
-
-No artboard draws a scroll gutter, and the drawing kit has no glyph for one.
-The binary draws a light-shade track under a full-block thumb in the column
-beside the pane divider, told from the divider by shape and not by shade
-([invariant 1](principles.md#colour-never-carries-meaning-alone)), because two
-rules a column apart in the same material read as a double border. Both glyphs
-ink the whole cell, so the thumb sits inside the track rather than beside it,
-and the share of the whole that is showing is the thing the column draws.
-
-Two other pairs were considered and refused. A thumb with no track behind it
-draws a part without its whole: proportion is a ratio, and with the track gone
-the second term is a pane edge that is not on the screen — at the live end of
-a long transcript the drawing shrinks to a single cell in the corner, which is
-the moment the column is most worth reading. A rule under a heavy rule was
-refused for the reason a rule was refused before: a rule one column from the
-pane's own rule reads as a double border however heavy it is drawn.
-
-The drawing is still a gap rather than a decision. The gutter is the one
-column on the screen that reports a position rather than bounding a region,
-and what that column should look like is a decision the design system has not
-taken: there is no artboard, and the pair above was chosen against the
-invariants rather than from a drawing. When the gutter is drawn, the artboard
-wins, and the kit gains whatever glyphs it needs.
-
 ## The backlog block opens with a sprint row
 
 The Backlog artboard draws the block as a heading and a list of items. A set

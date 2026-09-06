@@ -30,38 +30,31 @@ func plainGutter(rows []string) string {
 // wrong.
 const paneDivider = "│"
 
-// Three columns land side by side on a two-pane screen — track, thumb and
-// divider — and only the stroke separates them once colour is off
-// (invariant 1).
-func TestScrollbar_GlyphsAreNotTheDividersRule(t *testing.T) {
-	for _, c := range []struct{ name, a, b string }{
-		{"track and thumb", scrollTrack, scrollThumb},
-		{"track and the divider", scrollTrack, paneDivider},
-		{"thumb and the divider", scrollThumb, paneDivider},
-	} {
-		if c.a == c.b {
-			t.Errorf("%s draw the same glyph %q", c.name, c.a)
-		}
+// Two columns of chrome land side by side on a two-pane screen — the thumb
+// and the divider one cell apart — and only the stroke separates them once
+// colour is off (invariant 1).
+func TestScrollbar_ThumbIsNotTheDividersRule(t *testing.T) {
+	if scrollThumb == paneDivider {
+		t.Errorf("the thumb and the divider draw the same glyph %q", scrollThumb)
 	}
 }
 
-// The defect the pair replaced was a half-cell thumb over a centred track:
-// two glyphs in one column that never lined up, so the column read as two
-// drawings rather than one bar with a filled share. The guard is the family
-// both glyphs come from — a shade that inks the whole cell — because a
-// proportion is only readable when the part sits inside the whole.
-func TestScrollbar_BothGlyphsInkTheWholeCell(t *testing.T) {
-	const wholeCell = "░▒▓█"
-	const halfCell = "▌▐▀▄"
-	for _, c := range []struct{ name, glyph string }{
-		{"track", scrollTrack},
-		{"thumb", scrollThumb},
-	} {
-		if !strings.Contains(wholeCell, c.glyph) {
-			t.Errorf("the %s draws %q, which is not one of the whole-cell shades %q", c.name, c.glyph, wholeCell)
-		}
-		if strings.Contains(halfCell, c.glyph) {
-			t.Errorf("the %s draws the half-cell block %q", c.name, c.glyph)
+// The column holds one mark and nothing else. A run behind the thumb is what
+// grows the double border back beside the divider, and a shaded one is a grey
+// ramp drawn with dots — meaning in a shade, which is what mono catches. So
+// every row that is not the thumb is a blank cell, and the thumb is the heavy
+// vertical rather than a block.
+func TestScrollbar_TheThumbIsTheOnlyThingDrawn(t *testing.T) {
+	if scrollThumb != "┃" {
+		t.Errorf("the thumb draws %q, not the heavy vertical", scrollThumb)
+	}
+	if strings.TrimSpace(scrollBlank) != "" {
+		t.Errorf("a non-thumb row draws %q, which is not an empty cell", scrollBlank)
+	}
+	for _, row := range Scrollbar(10, 100, 10, 4) {
+		plain := ansi.Strip(row)
+		if plain != scrollThumb && strings.TrimSpace(plain) != "" {
+			t.Errorf("a gutter row draws %q, which is neither the thumb nor a blank cell", plain)
 		}
 	}
 }
@@ -88,12 +81,12 @@ func TestScrollbar_ThumbIsTheVisibleShare(t *testing.T) {
 		height, content, viewport, offset int
 		want                              string
 	}{
-		{"half the transcript fits", 10, 20, 10, 0, "█████░░░░░"},
-		{"half, scrolled to the end", 10, 20, 10, 10, "░░░░░█████"},
-		{"half, one line in", 10, 20, 10, 1, "░█████░░░░"},
-		{"a fifth fits", 10, 50, 10, 0, "██░░░░░░░░"},
-		{"a transcript far longer than the pane", 8, 4000, 8, 0, "█░░░░░░░"},
-		{"and at its end", 8, 4000, 8, 3992, "░░░░░░░█"},
+		{"half the transcript fits", 10, 20, 10, 0, "┃┃┃┃┃     "},
+		{"half, scrolled to the end", 10, 20, 10, 10, "     ┃┃┃┃┃"},
+		{"half, one line in", 10, 20, 10, 1, " ┃┃┃┃┃    "},
+		{"a fifth fits", 10, 50, 10, 0, "┃┃        "},
+		{"a transcript far longer than the pane", 8, 4000, 8, 0, "┃       "},
+		{"and at its end", 8, 4000, 8, 3992, "       ┃"},
 	} {
 		got := plainGutter(Scrollbar(c.height, c.content, c.viewport, c.offset))
 		if got != c.want {
@@ -133,9 +126,9 @@ func TestScrollbar_ClampsAnImpossibleOffset(t *testing.T) {
 		offset int
 		want   string
 	}{
-		{11, "░░░░░█████"},
-		{400, "░░░░░█████"},
-		{-3, "█████░░░░░"},
+		{11, "     ┃┃┃┃┃"},
+		{400, "     ┃┃┃┃┃"},
+		{-3, "┃┃┃┃┃     "},
 	} {
 		if got := plainGutter(Scrollbar(10, 20, 10, c.offset)); got != c.want {
 			t.Fatalf("offset %d: gutter = %q, want %q", c.offset, got, c.want)

@@ -924,7 +924,8 @@ func TestGolden_ScrollGutter(t *testing.T) {
 //
 // It is captured at the narrowest terminal that splits, because that is where
 // the two columns are closest to the text on either side of them, and in both
-// palettes, because mono is where the shade between track and thumb is gone.
+// palettes, because mono is where every rung of chrome collapses onto the one
+// grey and the mark has only its stroke and its length left.
 // That terminal is four columns wider than the breakpoint the split is named
 // for: the surface loses its horizontal padding before the threshold is read,
 // so 130 content columns is the first arrangement with a rail in it.
@@ -944,7 +945,7 @@ func TestGolden_ScrollGutterBesideTheDivider(t *testing.T) {
 			return []golden.Panel{
 				{Label: "the live end · the thumb is on the last row",
 					View: build(func(m *Model) {})},
-				{Label: "scrolled halfway up · track, thumb and divider in three columns",
+				{Label: "scrolled halfway up · the thumb and the divider a column apart",
 					View: build(func(m *Model) { m.viewport.SetYOffset(m.viewport.TotalLineCount() / 2) })},
 			}
 		})

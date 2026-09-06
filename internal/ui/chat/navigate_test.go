@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/colorprofile"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -888,5 +889,60 @@ func TestSearch_TheQueryRowSwallowsAKeyItCannotUse(t *testing.T) {
 	}
 	if got := m.input.Value(); got != "" {
 		t.Fatalf("nothing reached the draft, got %q", got)
+	}
+}
+
+// The reading cursor's highlight stops at the pane's edge, one column before
+// the scroll gutter. The gutter says where the pane sits in the whole
+// transcript, which is a fact about the pane and not about the row a cursor
+// happens to be on, so the thumb never comes up dressed as part of the
+// selection. It is the same reason the gutter takes no key and no click.
+// See docs/interface/principles.md#colour-never-carries-meaning-alone.
+func TestReadingMode_TheLitRowStopsBeforeTheGutter(t *testing.T) {
+	was := components.Profile()
+	components.SetProfile(colorprofile.ANSI256)
+	t.Cleanup(func() { components.SetProfile(was) })
+
+	m := focusModel(t)
+	// Enough rows behind the selected one that the pane overflows, since a
+	// gutter is only drawn when there is something below.
+	for i := 0; i < 20; i++ {
+		m.appendEntry(entry{kind: entryCommand,
+			text: fmt.Sprintf("go test ./internal/agent/round%02d", i), toolResult: "ok"})
+	}
+	m.invalidateRenderCache()
+	m.viewport.SetLines(m.renderHistoryLines())
+	m.viewport.GotoBottom()
+	m, _ = pressKey(t, m, readingChord())
+	if m.state != stateFocus {
+		t.Fatalf("the reading chord should enter reading mode, got state %d", m.state)
+	}
+	rows := components.Scrollbar(m.viewport.Height(), m.viewport.TotalLineCount(),
+		m.viewport.Height(), m.viewport.YOffset())
+	if rows == nil {
+		t.Fatal("the fixture has to overflow its pane, or there is no gutter to check")
+	}
+
+	focusBg := ansi.NewStyle().BackgroundColor(components.Palette.FocusBg.Color()).String()
+	lit := 0
+	for i, line := range strings.Split(m.transcriptBody(), "\n") {
+		if i >= len(rows) || !strings.Contains(line, focusBg) {
+			continue
+		}
+		lit++
+		if !strings.HasSuffix(line, rows[i]) {
+			t.Fatalf("row %d does not end in its gutter cell %q", i, rows[i])
+		}
+		if strings.Contains(rows[i], focusBg) {
+			t.Fatalf("the gutter cell on lit row %d is painted %q", i, rows[i])
+		}
+		// The highlight is closed before the cell is drawn, so nothing is
+		// still armed when the terminal reaches it.
+		if head := strings.TrimSuffix(line, rows[i]); !strings.HasSuffix(head, ansi.ResetStyle) {
+			t.Fatalf("lit row %d leaves its background armed at the gutter: %q", i, head)
+		}
+	}
+	if lit == 0 {
+		t.Fatal("no row is lit, so nothing was checked")
 	}
 }
