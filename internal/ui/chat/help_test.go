@@ -190,3 +190,30 @@ func TestHelp_AConversationOffersTheBacklogAndNotTheChangeset(t *testing.T) {
 		}
 	}
 }
+
+// An alt chord is dead on a stock Mac terminal until the profile's Option
+// key is told to send the escape prefix, so the row beside every alt chord
+// names that setting — the key list is where a reader whose chord typed a
+// character goes to find out why, and a row that only spelled the chord
+// again would send them away with nothing
+// (docs/interface/reserved-keys.md#what-is-left).
+func TestHelpNamesTheOptionSettingBesideEveryAltChord(t *testing.T) {
+	for _, r := range helpKeyRows {
+		for _, b := range r.binds {
+			for _, k := range b.Keys() {
+				if !strings.HasPrefix(k, "alt+") {
+					continue
+				}
+				if !strings.Contains(r.text, "Option") {
+					t.Errorf("the row for %q (%s) does not name the Option setting", k, keys.Words(b))
+				}
+			}
+		}
+	}
+	list := helpKeysText()
+	for _, want := range []string{"Use Option as Meta key", "Esc+", "shhh doctor"} {
+		if !strings.Contains(list, want) {
+			t.Errorf("the key list never says %q", want)
+		}
+	}
+}

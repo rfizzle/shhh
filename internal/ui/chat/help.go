@@ -389,7 +389,9 @@ the draft back exactly as it was`,
 		binds: []keys.Binding{keys.Draft.Reasoning},
 		text: `Cycle the reasoning level: off → low → medium → high. It
 changes the next model request, not the one in flight, and
-the level is stated on the vitals rail beside the model`,
+the level is stated on the vitals rail beside the model
+(the alt+t alias needs the Option setting the agent manager's
+row names)`,
 	},
 	{
 		binds: []keys.Binding{keys.Draft.Mode},
@@ -440,7 +442,12 @@ esc or typing returns to the prompt
 		binds: []keys.Binding{keys.Draft.Agents},
 		text: `Agent manager: enter attaches to an agent's session, x cancels
 its turn, X kills it; attached, typing steers the agent,
-shift+tab sets its mode (clamped), esc detaches`,
+shift+tab sets its mode (clamped), esc detaches.
+On a Mac an alt chord arrives only once the terminal's Option
+key sends the escape prefix, which the stock terminals do not
+until told — Terminal.app: Settings › Profiles › Keyboard ›
+Use Option as Meta key; iTerm2: Profiles › Keys › Left Option
+key: Esc+. shhh doctor's keys row reads yours`,
 	},
 	{
 		binds: []keys.Binding{keys.Draft.Backlog},
@@ -461,7 +468,8 @@ AGENTS map — the orchestrator and every agent it started, in
 the order they were started, wrapping at both ends. The rail
 stays up while you are in an agent's session and marks the
 row you are in; everything you do *to* an agent is still in
-the manager`,
+the manager (alt needs the Option setting the agent manager's
+row names)`,
 	},
 	{
 		binds: []keys.Binding{keys.Draft.Editor},

@@ -8,6 +8,7 @@ package cli
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"os"
 	"path/filepath"
@@ -681,6 +682,9 @@ func TestRunDoctorChecks_EveryCheckAnswers(t *testing.T) {
 	was := updateCheck
 	updateCheck = func(string) string { return "" }
 	t.Cleanup(func() { updateCheck = was })
+	wasPrefs := readPrefs
+	readPrefs = func(context.Context, string) (any, error) { return map[string]any{}, nil }
+	t.Cleanup(func() { readPrefs = wasPrefs })
 
 	checks := runDoctorChecks(t.Context(), config.Config{}, doctorProbes())
 	if len(checks) != len(doctorProbes()) {

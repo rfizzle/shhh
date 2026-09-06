@@ -241,7 +241,11 @@ var Draft = DraftKeys{
 	// alt+] walk the sessions, alt+a opens the list of them — because
 	// ctrl+b is tmux's prefix and never reaches the program there, and
 	// every ctrl letter the terminal delivers is spent or the line
-	// editor's (docs/interface/reserved-keys.md).
+	// editor's (docs/interface/reserved-keys.md). What alt costs is the
+	// Option key: a stock Mac terminal composes a character for it until
+	// the profile is told to send the escape prefix, so the doctor has a
+	// row that reads the setting and the key list names it beside these
+	// (docs/interface/reserved-keys.md#what-is-left).
 	Agents:  bind("alt+a", "the agent manager", "alt+a"),
 	Backlog: bind("ctrl+f", "the backlog screen", "ctrl+f"),
 

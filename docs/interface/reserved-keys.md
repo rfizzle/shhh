@@ -135,12 +135,26 @@ The chords the keyboard shhh ships spends although the list names them. Each is 
 
 ## What is left
 
-The Option key on macOS is the one row the table cannot settle from a page:
-Terminal.app's "Use Option as Meta key" and iTerm2's Left Option "Esc+" are
-both off by default as far as use remembers (*verify*), and where they are,
-every alt chord shhh binds — the agent family on `alt+a`, `alt+[`, `alt+]`,
-and the `alt+t` alias — types a character instead. That is checked on a Mac,
-not here.
+The Option key on macOS is the one row the table cannot settle from a page,
+so it was settled at a keyboard. At Terminal.app's default profile on
+2026-09-06, `alt+a`, `alt+[`, `alt+]` and `alt+t` typed `å`, `“`, `‘` and
+`†`: "Use Option as Meta key" is off until a person ticks it, and every alt
+chord shhh binds — the agent family and the `alt+t` alias — is dead there
+until they do. iTerm2's Left Option "Esc+" is believed to be off the same
+way (*verify* — its default profile has not been pressed yet).
+
+The chords stay on alt rather than moving. Every ctrl letter the terminal
+delivers is spent or the line editor's, the free set is function keys and
+modified navigation keys, and the cost of alt is one tick in a profile
+rather than a dead key. What shhh does about the tick: `shhh doctor` has a
+row for it, which on a Mac reads the setting from the profile Terminal.app
+opens new windows with, or the profile the iTerm2 session is in, and says
+which box turns it on — a profile that composes characters is a warning
+naming the chords it costs, and the row is not checked at all off a Mac or
+in a terminal whose preferences shhh does not read. The key list (`?` on an
+empty draft, and `/help`) names the same setting beside the chords. iTerm2's
+"Meta" is not the tick: it sets the eighth bit on the byte, which is not the
+escape prefix a chord is, and the row says so.
 
 Free chords, spelled the way the decoder spells them and so the way a
 keymap file must: `ctrl+]`, `ctrl+^`, the plain function keys `f2` … `f9`

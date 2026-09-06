@@ -255,11 +255,13 @@ type doctorProbe struct {
 }
 
 // doctorProbes is every check, in the order they run and the order they read:
-// what shhh is, what it was configured with, what it can talk to, then what
-// it can do to this machine, and last what it might become.
+// what shhh is and the terminal it is drawn in, what it was configured with,
+// what it can talk to, then what it can do to this machine, and last what it
+// might become.
 func doctorProbes() []doctorProbe {
 	return []doctorProbe{
 		{name: "binary", run: probeBinary},
+		{name: "keys", run: probeOptionKey},
 		{name: "config", run: probeConfig},
 		{name: "migrate", run: probeMigrate},
 		{name: "model", run: probeModel},
@@ -1680,6 +1682,8 @@ func doctorQueuedSubject(name string) string {
 	switch name {
 	case "binary":
 		return "which shhh this is"
+	case "keys":
+		return "whether the terminal delivers every chord the keyboard offers"
 	case "config":
 		return "the config file and what it sets"
 	case "migrate":
