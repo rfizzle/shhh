@@ -32,7 +32,8 @@ shhh doctor · 10 checks                                                        
    ⚠ update  shhh 0.9.5 is out · this machine is on 0.9.4                                                        out of date
     [f] show how to upgrade
 
-  ✗ 2 failed · 2 warnings · 5 passed · 1 not checked                 [↑↓/jk] move · [c] copy the report · [r] run the checks again
+  ✗ 2 failed · 2 warnings · 5 passed · 1 not checked
+[↑↓/jk] move · [c] copy the report · [r] run the checks again · [esc] back to the shell
 
 · the fix open · under the row it belongs to, one indent past the consequence
 shhh doctor · 10 checks                                                                                 1.4s · [?] keys · [q] quit
@@ -60,7 +61,8 @@ shhh doctor · 10 checks                                                        
    ⚠ update  shhh 0.9.5 is out · this machine is on 0.9.4                                                        out of date
     [f] show how to upgrade
 
-  ✗ 2 failed · 2 warnings · 5 passed · 1 not checked                 [↑↓/jk] move · [c] copy the report · [r] run the checks again
+  ✗ 2 failed · 2 warnings · 5 passed · 1 not checked
+[↑↓/jk] move · [c] copy the report · [r] run the checks again · [esc] back to the shell
 
 · the pointer moved · the next check that needs something takes the live key
 shhh doctor · 10 checks                                                                                 1.4s · [?] keys · [q] quit
@@ -84,7 +86,8 @@ shhh doctor · 10 checks                                                        
    ⚠ update  shhh 0.9.5 is out · this machine is on 0.9.4                                                        out of date
     [f] show how to upgrade
 
-  ✗ 2 failed · 2 warnings · 5 passed · 1 not checked                 [↑↓/jk] move · [c] copy the report · [r] run the checks again
+  ✗ 2 failed · 2 warnings · 5 passed · 1 not checked
+[↑↓/jk] move · [c] copy the report · [r] run the checks again · [esc] back to the shell
 
 · still going · what has answered, one running, the rest queued
 shhh doctor · 10 checks · ▸ running                                                                     0.3s · [?] keys · [q] quit
@@ -103,7 +106,7 @@ shhh doctor · 10 checks · ▸ running                                         
    · memory  not started                                                                                              queued     —
    · update  not started                                                                                              queued     —
 
-  ✗ 1 failed · 2 passed · 1 running · 6 queued                                                                 [c] copy the report
+  ✗ 1 failed · 2 passed · 1 running · 6 queued                                       [c] copy the report · [esc] back to the shell
 
 · a short terminal · the passes go first, and the marker names them
 shhh doctor · 10 checks                                                                                 1.4s · [?] keys · [q] quit
@@ -118,12 +121,12 @@ shhh doctor · 10 checks                                                        
    ⚠ engine  podman · no sandbox image configured                                                                   no image
     the engine is there, so only the image stands between this host and a sandbox
     [f] show the 1-line fix
-   ⊘ memory  nothing remembered yet · ~/src/shhh                                                                       empty
    ⚠ update  shhh 0.9.5 is out · this machine is on 0.9.4                                                        out of date
     [f] show how to upgrade
-  ↓ 5 more · binary · config · store · git · tools
+  ↓ 6 more · binary · config · store · git · tools · memory
 
-  ✗ 2 failed · 2 warnings · 5 passed · 1 not checked                 [↑↓/jk] move · [c] copy the report · [r] run the checks again
+  ✗ 2 failed · 2 warnings · 5 passed · 1 not checked
+[↑↓/jk] move · [c] copy the report · [r] run the checks again · [esc] back to the shell
 
 · the keys · [?] over a screen that has five of them
 shhh doctor · 10 checks                                                                                 1.4s · [?] keys · [q] quit
@@ -163,7 +166,7 @@ shhh doctor · 3 checks                                                         
    ✓ sandbox sandbox-exec · Seatbelt · workspace profile                                                           contained
    ✓ git     ~/src/shhh · clean                                                                                           ok  0.2s
 
-  ✓ 3 passed                                                                        [c] copy the report · [r] run the checks again
+  ✓ 3 passed                                              [c] copy the report · [r] run the checks again · [esc] back to the shell
 
 ── ansi ────────────────────────────────────────────────────
 · the run · a row per check, the fix offered on the ones that need it
@@ -188,7 +191,8 @@ shhh doctor · 3 checks                                                         
    ␛[38;5;214m⚠␛[m update  ␛[38;5;252mshhh 0.9.5 is out␛[m␛[38;5;241m · this machine is on 0.9.4␛[m                                                        ␛[38;5;214mout of date␛[m
     ␛[38;5;245m[f]␛[m␛[38;5;241m show how to upgrade␛[m
 
-  ␛[91m✗␛[m ␛[91m2 failed␛[m␛[38;5;241m · ␛[m␛[38;5;214m2 warnings␛[m␛[38;5;241m · ␛[m␛[38;5;252m5 passed␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 not checked␛[m                 ␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m run the checks again␛[m
+  ␛[91m✗␛[m ␛[91m2 failed␛[m␛[38;5;241m · ␛[m␛[38;5;214m2 warnings␛[m␛[38;5;241m · ␛[m␛[38;5;252m5 passed␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 not checked␛[m
+␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m run the checks again␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m back to the shell␛[m
 
 · the fix open · under the row it belongs to, one indent past the consequence
 ␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m                                                                                 ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
@@ -216,7 +220,8 @@ shhh doctor · 3 checks                                                         
    ␛[38;5;214m⚠␛[m update  ␛[38;5;252mshhh 0.9.5 is out␛[m␛[38;5;241m · this machine is on 0.9.4␛[m                                                        ␛[38;5;214mout of date␛[m
     ␛[38;5;245m[f]␛[m␛[38;5;241m show how to upgrade␛[m
 
-  ␛[91m✗␛[m ␛[91m2 failed␛[m␛[38;5;241m · ␛[m␛[38;5;214m2 warnings␛[m␛[38;5;241m · ␛[m␛[38;5;252m5 passed␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 not checked␛[m                 ␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m run the checks again␛[m
+  ␛[91m✗␛[m ␛[91m2 failed␛[m␛[38;5;241m · ␛[m␛[38;5;214m2 warnings␛[m␛[38;5;241m · ␛[m␛[38;5;252m5 passed␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 not checked␛[m
+␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m run the checks again␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m back to the shell␛[m
 
 · the pointer moved · the next check that needs something takes the live key
 ␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m                                                                                 ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
@@ -240,7 +245,8 @@ shhh doctor · 3 checks                                                         
    ␛[38;5;214m⚠␛[m update  ␛[38;5;252mshhh 0.9.5 is out␛[m␛[38;5;241m · this machine is on 0.9.4␛[m                                                        ␛[38;5;214mout of date␛[m
     ␛[38;5;245m[f]␛[m␛[38;5;241m show how to upgrade␛[m
 
-  ␛[91m✗␛[m ␛[91m2 failed␛[m␛[38;5;241m · ␛[m␛[38;5;214m2 warnings␛[m␛[38;5;241m · ␛[m␛[38;5;252m5 passed␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 not checked␛[m                 ␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m run the checks again␛[m
+  ␛[91m✗␛[m ␛[91m2 failed␛[m␛[38;5;241m · ␛[m␛[38;5;214m2 warnings␛[m␛[38;5;241m · ␛[m␛[38;5;252m5 passed␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 not checked␛[m
+␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m run the checks again␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m back to the shell␛[m
 
 · still going · what has answered, one running, the rest queued
 ␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m␛[38;5;241m · ␛[m␛[38;5;205m▸ running␛[m                                                                     ␛[38;5;245m0.3s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
@@ -259,7 +265,7 @@ shhh doctor · 3 checks                                                         
    ␛[38;5;241m·␛[m memory  ␛[38;5;252mnot started␛[m␛[38;5;241m␛[m                                                                                              ␛[38;5;241mqueued␛[m     ␛[38;5;245m—␛[m
    ␛[38;5;241m·␛[m update  ␛[38;5;252mnot started␛[m␛[38;5;241m␛[m                                                                                              ␛[38;5;241mqueued␛[m     ␛[38;5;245m—␛[m
 
-  ␛[91m✗␛[m ␛[91m1 failed␛[m␛[38;5;241m · ␛[m␛[38;5;252m2 passed␛[m␛[38;5;241m · ␛[m␛[38;5;205m1 running␛[m␛[38;5;241m · ␛[m␛[38;5;241m6 queued␛[m                                                                 ␛[94m[c]␛[m␛[38;5;241m copy the report␛[m
+  ␛[91m✗␛[m ␛[91m1 failed␛[m␛[38;5;241m · ␛[m␛[38;5;252m2 passed␛[m␛[38;5;241m · ␛[m␛[38;5;205m1 running␛[m␛[38;5;241m · ␛[m␛[38;5;241m6 queued␛[m                                       ␛[94m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m back to the shell␛[m
 
 · a short terminal · the passes go first, and the marker names them
 ␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m                                                                                 ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
@@ -274,12 +280,12 @@ shhh doctor · 3 checks                                                         
    ␛[38;5;214m⚠␛[m engine  ␛[38;5;252mpodman␛[m␛[38;5;241m · no sandbox image configured␛[m                                                                   ␛[38;5;214mno image␛[m
     ␛[38;5;245mthe engine is there, so only the image stands between this host and a sandbox␛[m
     ␛[38;5;245m[f]␛[m␛[38;5;241m show the 1-line fix␛[m
-   ␛[38;5;241m⊘␛[m memory  ␛[38;5;252mnothing remembered yet␛[m␛[38;5;241m · ~/src/shhh␛[m                                                                       ␛[38;5;241mempty␛[m
    ␛[38;5;214m⚠␛[m update  ␛[38;5;252mshhh 0.9.5 is out␛[m␛[38;5;241m · this machine is on 0.9.4␛[m                                                        ␛[38;5;214mout of date␛[m
     ␛[38;5;245m[f]␛[m␛[38;5;241m show how to upgrade␛[m
-  ␛[38;5;241m↓ 5 more · binary · config · store · git · tools␛[m
+  ␛[38;5;241m↓ 6 more · binary · config · store · git · tools · memory␛[m
 
-  ␛[91m✗␛[m ␛[91m2 failed␛[m␛[38;5;241m · ␛[m␛[38;5;214m2 warnings␛[m␛[38;5;241m · ␛[m␛[38;5;252m5 passed␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 not checked␛[m                 ␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m run the checks again␛[m
+  ␛[91m✗␛[m ␛[91m2 failed␛[m␛[38;5;241m · ␛[m␛[38;5;214m2 warnings␛[m␛[38;5;241m · ␛[m␛[38;5;252m5 passed␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 not checked␛[m
+␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m run the checks again␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m back to the shell␛[m
 
 · the keys · [?] over a screen that has five of them
 ␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m                                                                                 ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
@@ -319,4 +325,4 @@ shhh doctor · 3 checks                                                         
    ␛[92m✓␛[m sandbox ␛[38;5;252msandbox-exec␛[m␛[38;5;241m · Seatbelt · workspace profile␛[m                                                           ␛[38;5;241mcontained␛[m
    ␛[92m✓␛[m git     ␛[38;5;252m~/src/shhh␛[m␛[38;5;241m · clean␛[m                                                                                           ␛[38;5;241mok␛[m  ␛[38;5;245m0.2s␛[m
 
-  ␛[92m✓␛[m ␛[38;5;252m3 passed␛[m                                                                        ␛[94m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m run the checks again␛[m
+  ␛[92m✓␛[m ␛[38;5;252m3 passed␛[m                                              ␛[94m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m run the checks again␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m back to the shell␛[m

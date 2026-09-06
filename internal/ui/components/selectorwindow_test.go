@@ -259,7 +259,7 @@ func TestNoteSelectWindow_KeepsTheNoteFieldOnTheCard(t *testing.T) {
 	if !strings.Contains(view, "note (optional)") {
 		t.Fatalf("the note field should survive a long list:\n%s", view)
 	}
-	if !strings.Contains(view, "tab note/options") {
+	if !strings.Contains(view, "[tab] note/options") {
 		t.Fatalf("and so should the hints:\n%s", view)
 	}
 	if got := focusedRow(view); got != "18. model-18" {

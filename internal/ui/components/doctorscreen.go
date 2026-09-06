@@ -593,7 +593,11 @@ func (d *DoctorScreen) offers() []TurnKey {
 	if !d.Running {
 		offers = append(offers, keyOffer(keys.Screen.Again))
 	}
-	return offers
+	// The way out is the last offer on every screen in the family, and the
+	// only one of them a diagnostic always has: a run with no checks to move
+	// between and nothing to copy still has to say how to leave
+	// (docs/interface/surfaces.md#the-supporting-screens).
+	return append(offers, wayOut(backToShell))
 }
 
 // keyList is every key the screen has, for `[?]`.
@@ -611,8 +615,8 @@ func (d *DoctorScreen) keyList() []TurnKey {
 	list = append(list,
 		keyOfferAs(keys.Screen.Copy, "copy the whole report as text"),
 		keyOfferAs(keys.Screen.Again, "run every check again"),
-		keyOfferAs(keys.Select.Cancel, "back to the shell"),
-		keyOfferAs(keys.Screen.Quit, "back to the shell"))
+		wayOut(backToShell),
+		keyOfferAs(keys.Screen.Quit, backToShell))
 	return list
 }
 

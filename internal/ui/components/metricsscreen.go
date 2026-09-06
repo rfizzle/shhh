@@ -134,10 +134,11 @@ type MetricsScreen struct {
 // beside it (Keyed).
 type MetricsResult struct{}
 
-// Update is the screen's whole keyboard, and it is one key. The screen's
-// header offers `[q] quit` and nothing else: there is no pointer to move,
+// Update is the screen's whole keyboard, and it is one act. The header
+// offers it as `[q]` and the footer as `[esc]`, which are the two spellings
+// the whole family states its way out in; there is no pointer to move,
 // nothing to choose and nothing to change, so there is no key list to open
-// either — a `[?]` over a single key would be a row explaining the row above
+// either — a `[?]` over a single act would be a row explaining the row above
 // it.
 func (m *MetricsScreen) Update(msg tea.KeyPressMsg) (done bool, result MetricsResult) {
 	switch pressed := msg.String(); {
@@ -152,13 +153,21 @@ func (m *MetricsScreen) Update(msg tea.KeyPressMsg) (done bool, result MetricsRe
 func (m *MetricsScreen) SetSize(_, height int) { m.MaxLines = height }
 
 // View renders the screen: the shared chrome, with the model table and the
-// meter blocks in the rows it leaves. There is no footer — the screen has one
-// key and it is in the header.
+// meter blocks in the rows it leaves.
+//
+// The footer is the one the other eight have. This screen went without one on
+// the reading that a surface with a single key has nothing to put at its
+// foot, and what that cost was a reader crossing the family: eight screens
+// state the way out on the bottom row and this one stated it only at the top,
+// so the row the eye had learned to go to was blank on exactly the screen
+// with the least else on it
+// (docs/interface/surfaces.md#the-supporting-screens).
 func (m *MetricsScreen) View(width int) string {
 	if width <= 0 {
 		return ""
 	}
-	return ScreenChrome{Header: m.header(), MaxLines: m.MaxLines}.
+	return ScreenChrome{Header: m.header(), MaxLines: m.MaxLines,
+		Foot: KeyFooter{Offers: []KeyOffer{wayOut(backToShell)}}.Rows(width)}.
 		View(width, func(budget int) []string { return m.bodyRows(width, budget) })
 }
 
@@ -216,7 +225,10 @@ func (m *MetricsScreen) bodyRows(width, budget int) []string {
 	if len(kept) > 1 {
 		return append(flatten(kept), marker)
 	}
-	return append(m.tableRows(width, budget-1), marker)
+	// max, because a zero budget is "unbounded" to the table and one row less
+	// than nothing is not what a screen with no room left meant: the floor is
+	// a table that windows to its marker, never a table that draws whole.
+	return append(m.tableRows(width, max(budget-1, 1)), marker)
 }
 
 // droppedRow names the blocks that did not fit. A marker that only said "2

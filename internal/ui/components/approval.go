@@ -68,16 +68,29 @@ const (
 	SeverityHigh
 )
 
-// Word is the severity as the card prints it. HIGH is shouted because it is
-// the one level where the reader is meant to stop.
-func (s Severity) Word() string {
+// Level is the severity as one word. HIGH is shouted because it is the one
+// level where the reader is meant to stop.
+func (s Severity) Level() string {
 	switch s {
 	case SeverityLow:
-		return "⚠ low"
+		return "low"
 	case SeverityMedium:
-		return "⚠ medium"
+		return "medium"
 	case SeverityHigh:
-		return "⚠ HIGH"
+		return "HIGH"
+	}
+	return ""
+}
+
+// Word is the severity as the title chip prints it: the glyph and the level.
+// The glyph belongs to the chip, which is where the card leads with the
+// severity; the body row states the same level with the reading behind it, so
+// the three ways the card says it are three statements rather than one
+// sentence printed twice
+// (docs/interface/principles.md#colour-never-carries-meaning-alone).
+func (s Severity) Word() string {
+	if level := s.Level(); level != "" {
+		return "⚠ " + level
 	}
 	return ""
 }
@@ -154,6 +167,18 @@ type ApprovalCard struct {
 	// Severity leads the card as a word and rides the top border as the last
 	// chip; it also picks the border colour.
 	Severity Severity
+	// SeverityReason is what makes this call that severity, as a clause the
+	// level is read with: `edits one file under internal/agent`. It is the
+	// third of the three ways a card leading with severity has to state it —
+	// the border and the title chip are the other two — and it is a reading
+	// the host derived rather than the chip said again
+	// (docs/interface/principles.md#colour-never-carries-meaning-alone).
+	//
+	// A variant with no reading behind it leaves it empty and the row states
+	// the level alone, because a reason invented to fill the row would be the
+	// one thing on the card a reader could not check
+	// (docs/interface/principles.md#a-stat-that-cannot-be-reported-is-left-out).
+	SeverityReason string
 	// Warnings are safety.Check risks, rendered as ⚠ rows; when present the
 	// caller must not set AllowAlways (flagged actions are never
 	// blanket-approved).
@@ -326,9 +351,10 @@ func (c *ApprovalCard) View(width int) string {
 func (c *ApprovalCard) buildRows(width int) (body, hints []string) {
 	inner := width - cardFrameWidth
 	body = []string{sty.Headline.Render(c.Headline)}
-	// Severity leads the body, as a word beside the first risk. The border
-	// and the title chip say the same thing again, which is what makes the
-	// card survive mono and a colour-blind reader alike.
+	// Severity leads the body, as the level and what makes it that. The
+	// border and the title chip carry the level too, and three statements of
+	// one fact is what makes the card survive mono and a colour-blind reader
+	// alike — three copies of one phrase would not.
 	body = append(body, c.severityRows()...)
 	// The generic variant's one-liner belongs with the headline it qualifies,
 	// above the blast-radius block rather than below it.
@@ -677,12 +703,23 @@ func (c *ApprovalCard) fullWords() string {
 	return keys.Words(keys.Decision.Diff)
 }
 
-// severityRows are the ⚠ rows: the severity word leads the first risk, and
-// further risks follow it. A rated card with no risks still states its level,
-// because the word is what the border colour means.
+// severityRows are the severity as the body states it — the level and what
+// makes it that — and the risks under it.
+//
+// The level is said in the level's own terms and not in the chip's: the chip
+// on the title rail already reads `⚠ medium`, and a first body row reading
+// `⚠ medium` under it spent a row of a bounded card saying the same three
+// characters again. What the reader cannot get anywhere else is why this call
+// is that level, so that is what the row carries
+// (docs/interface/surfaces.md#the-approval-card).
+//
+// A flagged command needs no separate clause: its risks are the reason it is
+// high, so the first of them is the reading, and the rest follow as ⚠ rows.
+// A rated card with neither still states its level, because the word is what
+// the border colour means.
 func (c *ApprovalCard) severityRows() []string {
-	word := c.Severity.Word()
-	if word == "" {
+	level := c.Severity.Level()
+	if level == "" {
 		var rows []string
 		for _, w := range c.Warnings {
 			rows = append(rows, sty.Warn.Render("⚠ "+w))
@@ -693,12 +730,16 @@ func (c *ApprovalCard) severityRows() []string {
 	if c.Severity == SeverityLow {
 		style = sty.Dim
 	}
-	var rows []string
-	if len(c.Warnings) == 0 {
-		return append(rows, style.Render(word))
+	reason, rest := c.SeverityReason, c.Warnings
+	if reason == "" && len(rest) > 0 {
+		reason, rest = rest[0], rest[1:]
 	}
-	rows = append(rows, style.Render(word+"  ")+sty.Dim.Render(c.Warnings[0]))
-	for _, w := range c.Warnings[1:] {
+	lead := style.Render(level)
+	if reason != "" {
+		lead += sty.Dim.Render(" · " + reason)
+	}
+	rows := []string{lead}
+	for _, w := range rest {
 		rows = append(rows, sty.Warn.Render("⚠ "+w))
 	}
 	return rows

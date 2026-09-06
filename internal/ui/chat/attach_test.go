@@ -428,7 +428,7 @@ func TestAnswerBlockedChildFromTheList(t *testing.T) {
 	if !strings.Contains(view, "echo hi") {
 		t.Fatalf("the approval card is not over the list:\n%s", view)
 	}
-	if strings.Contains(view, "enter attach") {
+	if strings.Contains(view, "[enter] attach") {
 		t.Fatalf("the list must step aside while the card is up:\n%s", view)
 	}
 
@@ -447,7 +447,7 @@ func TestAnswerBlockedChildFromTheList(t *testing.T) {
 	if m.answerAgent != "" || m.agentList == nil {
 		t.Fatalf("answering must return to the list (answerAgent=%q, open=%v)", m.answerAgent, m.agentList != nil)
 	}
-	if !strings.Contains(m.View().Content, "enter attach") {
+	if !strings.Contains(m.View().Content, "[enter] attach") {
 		t.Fatalf("the list did not come back:\n%s", m.View().Content)
 	}
 }
@@ -498,7 +498,7 @@ func TestRetryFailedChildFromTheList(t *testing.T) {
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 	m = updated.(Model)
 	view := m.View().Content
-	if !strings.Contains(view, "r retry") {
+	if !strings.Contains(view, "[r] retry") {
 		t.Fatalf("a failed row must offer the retry:\n%s", view)
 	}
 	if !strings.Contains(view, "cancelled") {

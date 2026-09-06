@@ -34,7 +34,7 @@ shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
 
   ✗ 2 failed · 2 warnings · 5 passed · 1 not checked
 [↑↓/jk] move · [c] copy the report
-[r] run the checks again
+[r] run the checks again · [esc] back to the shell
 
 · the fix open · under the row it belongs to, one indent past the consequence
 shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
@@ -64,7 +64,7 @@ shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
 
   ✗ 2 failed · 2 warnings · 5 passed · 1 not checked
 [↑↓/jk] move · [c] copy the report
-[r] run the checks again
+[r] run the checks again · [esc] back to the shell
 
 · the pointer moved · the next check that needs something takes the live key
 shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
@@ -90,7 +90,7 @@ shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
 
   ✗ 2 failed · 2 warnings · 5 passed · 1 not checked
 [↑↓/jk] move · [c] copy the report
-[r] run the checks again
+[r] run the checks again · [esc] back to the shell
 
 · still going · what has answered, one running, the rest queued
 shhh doctor · ▸ running           0.3s · [?] keys · [q] quit
@@ -110,7 +110,7 @@ shhh doctor · ▸ running           0.3s · [?] keys · [q] quit
    · update  not started                        queued     —
 
   ✗ 1 failed · 2 passed · 1 running · 6 queued
-[c] copy the report
+[c] copy the report · [esc] back to the shell
 
 · a short terminal · the passes go first, and the marker names them
 shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
@@ -129,7 +129,7 @@ shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
 
   ✗ 2 failed · 2 warnings · 5 passed · 1 not checked
 [↑↓/jk] move · [c] copy the report
-[r] run the checks again
+[r] run the checks again · [esc] back to the shell
 
 · the keys · [?] over a screen that has five of them
 shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
@@ -169,7 +169,9 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
    ✓ sandbox sandbox-exec · Seatbelt · wor…  contained
    ✓ git     ~/src/shhh · clean                     ok  0.2s
 
-  ✓ 3 passed  [c] copy the report · [r] run the checks again
+  ✓ 3 passed
+[c] copy the report · [r] run the checks again
+[esc] back to the shell
 
 ── ansi ────────────────────────────────────────────────────
 · the run · a row per check, the fix offered on the ones that need it
@@ -196,7 +198,7 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
 
   ␛[91m✗␛[m ␛[91m2 failed␛[m␛[38;5;241m · ␛[m␛[38;5;214m2 warnings␛[m␛[38;5;241m · ␛[m␛[38;5;252m5 passed␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 not checked␛[m
 ␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m␛[38;5;241m copy the report␛[m
-␛[94m[r]␛[m␛[38;5;241m run the checks again␛[m
+␛[94m[r]␛[m␛[38;5;241m run the checks again␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m back to the shell␛[m
 
 · the fix open · under the row it belongs to, one indent past the consequence
 ␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m           ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
@@ -226,7 +228,7 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
 
   ␛[91m✗␛[m ␛[91m2 failed␛[m␛[38;5;241m · ␛[m␛[38;5;214m2 warnings␛[m␛[38;5;241m · ␛[m␛[38;5;252m5 passed␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 not checked␛[m
 ␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m␛[38;5;241m copy the report␛[m
-␛[94m[r]␛[m␛[38;5;241m run the checks again␛[m
+␛[94m[r]␛[m␛[38;5;241m run the checks again␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m back to the shell␛[m
 
 · the pointer moved · the next check that needs something takes the live key
 ␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m           ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
@@ -252,7 +254,7 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
 
   ␛[91m✗␛[m ␛[91m2 failed␛[m␛[38;5;241m · ␛[m␛[38;5;214m2 warnings␛[m␛[38;5;241m · ␛[m␛[38;5;252m5 passed␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 not checked␛[m
 ␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m␛[38;5;241m copy the report␛[m
-␛[94m[r]␛[m␛[38;5;241m run the checks again␛[m
+␛[94m[r]␛[m␛[38;5;241m run the checks again␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m back to the shell␛[m
 
 · still going · what has answered, one running, the rest queued
 ␛[1;97mshhh doctor␛[m␛[38;5;241m · ␛[m␛[38;5;205m▸ running␛[m           ␛[38;5;245m0.3s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
@@ -272,7 +274,7 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
    ␛[38;5;241m·␛[m update  ␛[38;5;252mnot started␛[m␛[38;5;241m␛[m                        ␛[38;5;241mqueued␛[m     ␛[38;5;245m—␛[m
 
   ␛[91m✗␛[m ␛[91m1 failed␛[m␛[38;5;241m · ␛[m␛[38;5;252m2 passed␛[m␛[38;5;241m · ␛[m␛[38;5;205m1 running␛[m␛[38;5;241m · ␛[m␛[38;5;241m6 queued␛[m
-␛[94m[c]␛[m␛[38;5;241m copy the report␛[m
+␛[94m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m back to the shell␛[m
 
 · a short terminal · the passes go first, and the marker names them
 ␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m           ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
@@ -291,7 +293,7 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
 
   ␛[91m✗␛[m ␛[91m2 failed␛[m␛[38;5;241m · ␛[m␛[38;5;214m2 warnings␛[m␛[38;5;241m · ␛[m␛[38;5;252m5 passed␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 not checked␛[m
 ␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m␛[38;5;241m copy the report␛[m
-␛[94m[r]␛[m␛[38;5;241m run the checks again␛[m
+␛[94m[r]␛[m␛[38;5;241m run the checks again␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m back to the shell␛[m
 
 · the keys · [?] over a screen that has five of them
 ␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m           ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
@@ -331,4 +333,6 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
    ␛[92m✓␛[m sandbox ␛[38;5;252msandbox-exec␛[m␛[38;5;241m · Seatbelt · wor…␛[m  ␛[38;5;241mcontained␛[m
    ␛[92m✓␛[m git     ␛[38;5;252m~/src/shhh␛[m␛[38;5;241m · clean␛[m                     ␛[38;5;241mok␛[m  ␛[38;5;245m0.2s␛[m
 
-  ␛[92m✓␛[m ␛[38;5;252m3 passed␛[m  ␛[94m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m run the checks again␛[m
+  ␛[92m✓␛[m ␛[38;5;252m3 passed␛[m
+␛[94m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m run the checks again␛[m
+␛[94m[esc]␛[m␛[38;5;241m back to the shell␛[m

@@ -128,8 +128,14 @@ func Typed(pressed string) bool { return len([]rune(pressed)) == 1 }
 // same binding.
 func Shown(b Binding) string { return b.Help().Key }
 
-// Bracket is the bracketed spelling, which is what most of the product draws.
-func Bracket(b Binding) string { return "[" + b.Help().Key + "]" }
+// Bracket is the bracketed spelling, which is what the product draws.
+func Bracket(b Binding) string { return Bracketed(b.Help().Key) }
+
+// Bracketed is the same notation over a spelling a surface is holding on its
+// own — a key handed to it as the string Shown gave, where the declaration
+// behind it did not travel with the value. Bracket is the form to reach for;
+// this exists so the brackets themselves are written in one place.
+func Bracketed(key string) string { return "[" + key + "]" }
 
 // BracketPair is Bracket for two bindings that are one gesture in two
 // directions, printed the way every hint row prints such a pair: `[shift+↑↓]`

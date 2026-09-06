@@ -237,7 +237,7 @@ func (r *RateScreen) footer() KeyFooter {
 // answers are gone from it and only the way out is left: a key that cannot
 // act is not an offer (invariant 5).
 func (r *RateScreen) offers() []KeyOffer {
-	out := keyOfferAs(keys.Select.Cancel, "stop")
+	out := wayOut("stop")
 	if r.current() == nil {
 		return []KeyOffer{out}
 	}
@@ -255,7 +255,7 @@ func (r *RateScreen) keyList() []KeyOffer {
 		keyOfferAs(keys.Screen.Worked, "it did what was asked"),
 		keyOfferAs(keys.Screen.Failed, "it did not"),
 		keyOfferAs(keys.Screen.Skip, "no answer; it stays unrated"),
-		keyOfferAs(keys.Select.Cancel, "stop, keeping every answer already given"),
+		wayOut("stop, keeping every answer already given"),
 		keyOfferAs(keys.Screen.Quit, "stop, keeping every answer already given"),
 	}
 }

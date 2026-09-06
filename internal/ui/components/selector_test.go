@@ -56,7 +56,7 @@ func TestSelect_ViewShowsPointerAndFocusedDesc(t *testing.T) {
 	if !strings.Contains(view, "tell me what to change") {
 		t.Fatalf("focused option's description should show:\n%s", view)
 	}
-	if !strings.Contains(view, "esc cancel") {
+	if !strings.Contains(view, "[esc] cancel") {
 		t.Fatalf("hints should render:\n%s", view)
 	}
 }
@@ -107,7 +107,7 @@ func TestMultiSelect_ViewShowsChecksAndCount(t *testing.T) {
 	if !strings.Contains(view, "[x]") || !strings.Contains(view, "[ ]") {
 		t.Fatalf("view should render checked and unchecked boxes:\n%s", view)
 	}
-	if !strings.Contains(view, "enter apply (1)") {
+	if !strings.Contains(view, "[enter] apply (1)") {
 		t.Fatalf("confirm hint should show the live count:\n%s", view)
 	}
 }

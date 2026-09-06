@@ -522,7 +522,7 @@ func (s *Select) hintSegments(width int) []string {
 	take, alt := offer(keys.Select.Take), ""
 	if s.AltKey != "" {
 		take = words(keys.Select.Take, s.enterLabel())
-		alt = s.AltKey + " " + s.AltLabel
+		alt = keys.Bracketed(s.AltKey) + " " + s.AltLabel
 	}
 	inner := Card{}.Inner(width)
 	actions := make([]string, 0, len(s.Actions))

@@ -62,7 +62,7 @@ func TestScreenHeader_TheTallyDropsBeforeTheWayOut(t *testing.T) {
 		{"history", 44, "[q] quit", "4 entries", func(w int) string { return historyScreen().View(w) }},
 		{"rate", 30, "[q] quit", "1 of 3", func(w int) string { return rateScreen().View(w) }},
 		{"context", 44, "[q] back", "this session", func(w int) string { return context.View(w) }},
-		{"profile", 44, "esc leave", "reviewer tester", func(w int) string { return profile().View(w) }},
+		{"profile", 44, "[esc] leave", "reviewer tester", func(w int) string { return profile().View(w) }},
 		{"snippets", 44, "[q] quit", "3 snippets", func(w int) string { return snippetScreen().View(w) }},
 		{"chats", 44, "[q] quit", "3 conversations", func(w int) string { return chatScreen().View(w) }},
 	} {

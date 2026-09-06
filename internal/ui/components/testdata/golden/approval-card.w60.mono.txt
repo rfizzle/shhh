@@ -21,7 +21,7 @@
 · variant · command, a batch waiting behind it
 ┌─ Approve command (1 of 5) ──────────────────────── ⚠ low ┐
 │ Assistant wants to run: go test ./internal/agent/...     │
-│ ⚠ low                                                    │
+│ low · writes nothing                                     │
 ├──────────────────────────────────────────────────────────┤
 │ Run this command? [y/n/a/A]                              │
 │ (a: always allow commands this session)                  │
@@ -31,7 +31,7 @@
 · variant · command, flagged, contained, blast radius
 ┌─ Approve command (2 of 5) ─────────────────────── ⚠ HIGH ┐
 │ Assistant wants to run: rm -rf ./build && npm run build  │
-│ ⚠ HIGH  deletes files recursively (rm -rf)               │
+│ HIGH · deletes files recursively (rm -rf)                │
 │                                                          │
 │ touches   ./build                                        │
 │ undo      none — nothing it writes is tracked in git     │
@@ -45,7 +45,7 @@
 · variant · command, uncontained
 ┌─ Approve command ────────────── ⚠ UNCONTAINED ─ ⚠ medium ┐
 │ Assistant wants to run: curl -fsSL https://get.pnpm.io/› │
-│ ⚠ medium                                                 │
+│ medium · what it writes could not be resolved            │
 │                                                          │
 │ touches   unknown                                        │
 │ undo      unknown                                        │
@@ -60,7 +60,7 @@
 · bound · a long command card, counted then scrolled
 ┌─ Approve command ────────────────────────────── ⚠ medium ┐
 │ Assistant wants to run: ./scripts/release.sh --channel › │
-│ ⚠ medium  runs a repository script; shhh cannot see ins› │
+│ medium · runs a repository script; shhh cannot see insi› │
 │                                                          │
 │ touches   ./dist — the script rewrites the release tree  │
 │ undo      none — nothing it writes is tracked in git     │
@@ -89,7 +89,7 @@
 · variant · edit, diff body
 ┌─ Approve edit ───────────────────────────────── ⚠ medium ┐
 │ Assistant wants to edit: internal/agent/loop.go          │
-│ ⚠ medium                                                 │
+│ medium · edits one file under internal/agent/            │
 │ @@ -138,6 +138,7 @@                                      │
 │   138      for round := 0; ; round++ {                   │
 │   139          if round >= a.maxRounds {                 │
@@ -106,7 +106,7 @@
 · state · not yet live, beside a draft that has the keyboard
 ┌─ Approve edit ───────────────────────────────── ⚠ medium ┐
 │ Assistant wants to edit: internal/agent/loop.go          │
-│ ⚠ medium                                                 │
+│ medium · edits one file under internal/agent/            │
 │ @@ -138,6 +138,7 @@                                      │
 │   138      for round := 0; ; round++ {                   │
 │   139          if round >= a.maxRounds {                 │
@@ -124,7 +124,7 @@
 · variant · generic
 ┌─ Approve tool ──────────────────────────────────── ⚠ low ┐
 │ Assistant wants to use: web_fetch                        │
-│ ⚠ low                                                    │
+│ low                                                      │
 │ GET https://pkg.go.dev/context#WithCancel                │
 │                                                          │
 │ domain    pkg.go.dev — the request leaves this machine   │
@@ -146,7 +146,7 @@
 · variant · command, a batch waiting behind it
 ␛[38;5;244m┌─ Approve command (1 of 5) ──────────────────────── ⚠ low ┐␛[m
 ␛[38;5;244m│␛[m ␛[1;38;5;254mAssistant wants to run: go test ./internal/agent/...␛[m     ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;244m⚠ low␛[m                                                    ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;244mlow␛[m␛[38;5;244m · writes nothing␛[m                                     ␛[38;5;244m│␛[m
 ␛[38;5;244m├──────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;244m│␛[m ␛[3;38;5;244mRun this command? [y/n/a/A]␛[m                              ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[3;38;5;244m(a: always allow commands this session)␛[m                  ␛[38;5;244m│␛[m
@@ -156,7 +156,7 @@
 · variant · command, flagged, contained, blast radius
 ␛[38;5;254m┌─ Approve command (2 of 5) ─────────────────────── ⚠ HIGH ┐␛[m
 ␛[38;5;254m│␛[m ␛[1;38;5;254mAssistant wants to run: rm -rf ./build && npm run build␛[m  ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m⚠ HIGH  ␛[m␛[38;5;244mdeletes files recursively (rm -rf)␛[m               ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254mHIGH␛[m␛[38;5;244m · deletes files recursively (rm -rf)␛[m                ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                          ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254m./build␛[m                                        ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254mnone␛[m␛[38;5;244m — nothing it writes is tracked in git␛[m     ␛[38;5;254m│␛[m
@@ -170,7 +170,7 @@
 · variant · command, uncontained
 ␛[38;5;254m┌─ Approve command ────────────── ⚠ UNCONTAINED ─ ⚠ medium ┐␛[m
 ␛[38;5;254m│␛[m ␛[1;38;5;254mAssistant wants to run: curl -fsSL https://get.pnpm.io/␛[m␛[38;5;244m›␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m                                                 ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254mmedium␛[m␛[38;5;244m · what it writes could not be resolved␛[m            ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                          ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254munknown␛[m                                        ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254munknown␛[m                                        ␛[38;5;254m│␛[m
@@ -185,7 +185,7 @@
 · bound · a long command card, counted then scrolled
 ␛[38;5;254m┌─ Approve command ────────────────────────────── ⚠ medium ┐␛[m
 ␛[38;5;254m│␛[m ␛[1;38;5;254mAssistant wants to run: ./scripts/release.sh --channel ␛[m␛[38;5;244m›␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium  ␛[m␛[38;5;244mruns a repository script; shhh cannot see ins␛[m␛[38;5;244m›␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254mmedium␛[m␛[38;5;244m · runs a repository script; shhh cannot see insi␛[m␛[38;5;244m›␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                          ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254m./dist␛[m␛[38;5;244m — the script rewrites the release tree␛[m  ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254mnone␛[m␛[38;5;244m — nothing it writes is tracked in git␛[m     ␛[38;5;254m│␛[m
@@ -214,7 +214,7 @@
 · variant · edit, diff body
 ␛[38;5;254m┌─ Approve edit ───────────────────────────────── ⚠ medium ┐␛[m
 ␛[38;5;254m│␛[m ␛[1;38;5;254mAssistant wants to edit: internal/agent/loop.go␛[m          ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m                                                 ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254mmedium␛[m␛[38;5;244m · edits one file under internal/agent/␛[m            ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m@@ -138,6 +138,7 @@␛[m                                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m  138      for round := 0; ; round++ {␛[m                   ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m  139          if round >= a.maxRounds {␛[m                 ␛[38;5;254m│␛[m
@@ -231,7 +231,7 @@
 · state · not yet live, beside a draft that has the keyboard
 ␛[38;5;254m┌─ Approve edit ───────────────────────────────── ⚠ medium ┐␛[m
 ␛[38;5;254m│␛[m ␛[1;38;5;254mAssistant wants to edit: internal/agent/loop.go␛[m          ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m                                                 ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254mmedium␛[m␛[38;5;244m · edits one file under internal/agent/␛[m            ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m@@ -138,6 +138,7 @@␛[m                                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m  138      for round := 0; ; round++ {␛[m                   ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m  139          if round >= a.maxRounds {␛[m                 ␛[38;5;254m│␛[m
@@ -249,7 +249,7 @@
 · variant · generic
 ␛[38;5;244m┌─ Approve tool ──────────────────────────────────── ⚠ low ┐␛[m
 ␛[38;5;244m│␛[m ␛[1;38;5;254mAssistant wants to use: web_fetch␛[m                        ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;244m⚠ low␛[m                                                    ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;244mlow␛[m                                                      ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244mGET https://pkg.go.dev/context#WithCancel␛[m                ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m                                                          ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244mdomain    ␛[m␛[38;5;254mpkg.go.dev␛[m␛[38;5;244m — the request leaves this machine␛[m   ␛[38;5;244m│␛[m

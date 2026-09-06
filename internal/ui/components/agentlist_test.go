@@ -72,10 +72,10 @@ func TestAgentListOffersOnlyWhatTheRowCanDo(t *testing.T) {
 		want  []string
 		gone  []string
 	}{
-		{focus: 0, gone: []string{"a answer", "r retry"}},
-		{focus: 1, want: []string{"a answer"}, gone: []string{"r retry"}},
-		{focus: 2, gone: []string{"a answer", "r retry"}},
-		{focus: 3, want: []string{"r retry"}, gone: []string{"a answer"}},
+		{focus: 0, gone: []string{"[a] answer", "[r] retry"}},
+		{focus: 1, want: []string{"[a] answer"}, gone: []string{"[r] retry"}},
+		{focus: 2, gone: []string{"[a] answer", "[r] retry"}},
+		{focus: 3, want: []string{"[r] retry"}, gone: []string{"[a] answer"}},
 	}
 	for _, c := range cases {
 		view := ansi.Strip((&AgentList{Rows: rows, Focus: c.focus}).View(96))

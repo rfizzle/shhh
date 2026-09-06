@@ -525,7 +525,7 @@ func (h *HistoryScreen) offers(width int, field string) []KeyOffer {
 		}
 		acts = append(acts, keyOffer(keys.Screen.Filter))
 	}
-	acts = append(acts, keyOfferAs(keys.Select.Cancel, "back to the shell"))
+	acts = append(acts, wayOut(backToShell))
 
 	// The rungs, in the order the row gives ground: the movement reminder first,
 	// because `[?]` still carries it in full and every list in the product moves
@@ -579,8 +579,8 @@ func (h *HistoryScreen) keyList() []KeyOffer {
 		keyOfferAs(keys.Screen.Filter, "filter by what was asked or by what came back"),
 		keyOfferAs(keys.Screen.ClearQ, "clear the filter; clear it again to close it"),
 		keyOfferAs(keys.Query.Rub, "take a rune back out of the filter"),
-		keyOfferAs(keys.Select.Cancel, "back to the shell, running nothing"),
-		keyOfferAs(keys.Screen.Quit, "back to the shell, running nothing"),
+		wayOut(backToShell),
+		keyOfferAs(keys.Screen.Quit, backToShell),
 	}
 }
 

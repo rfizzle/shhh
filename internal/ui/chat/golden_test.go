@@ -235,9 +235,19 @@ func TestGolden_PromptFrame(t *testing.T) {
 		idle := goldenModel(t, width)
 		working := goldenModel(t, width)
 		working.state = stateStreaming
+		// The same turn with turns behind it. What the session has spent is
+		// no longer what this turn has spent, so the top rail says the
+		// turn's and the rail below says the session's; on the panel above,
+		// where the two are one figure, the top rail says neither
+		// (docs/interface/surfaces.md#the-input-frame).
+		behind := goldenModel(t, width)
+		behind.state = stateStreaming
+		behind.TotalTokensIn += 120_000
+		behind.TotalTokensOut += 30_000
 		return []golden.Panel{
 			{Label: "state · idle", View: promptSurface(idle)},
-			{Label: "state · working", View: promptSurface(working)},
+			{Label: "state · working, the first turn of the session", View: promptSurface(working)},
+			{Label: "state · working, with turns behind it", View: promptSurface(behind)},
 		}
 	})
 }
@@ -1597,6 +1607,9 @@ func TestGolden_MultiEditCard(t *testing.T) {
 		// that would be a different string in the golden on every machine.
 		m.pendingApproval.path = filepath.Join("internal", "agent", "loop.go")
 		m.pendingApproval.title = m.pendingApproval.verb + " " + m.pendingApproval.path
+		// The severity's reading names that path too, and it was taken when
+		// the decision was armed — before the swap.
+		m.pendingBlast.reason = editReason(m.pendingApproval.path)
 		return []golden.Panel{
 			{Label: "one card · three places in one file", View: strings.Join(m.confirmLines(), "\n")},
 		}

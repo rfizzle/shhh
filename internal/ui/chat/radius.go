@@ -15,6 +15,7 @@ package chat
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/changeset"
@@ -28,8 +29,15 @@ import (
 // reinforce it.
 type blastRadius struct {
 	severity components.Severity
-	risks    []string
-	fields   []components.CardField
+	// reason is what makes the decision that severity, in the terms the
+	// severity is decided in. It is stated beside the level on the card's
+	// first body row, so the level arrives with the reading behind it rather
+	// than as the title chip printed a second time
+	// (docs/interface/surfaces.md#the-approval-card). Empty where nothing
+	// here has a reading to offer, which leaves the row stating the level.
+	reason string
+	risks  []string
+	fields []components.CardField
 	// chip is the containment state folded into the title rail;
 	// uncontained promotes ⚠ UNCONTAINED there instead.
 	chip        string
@@ -77,7 +85,7 @@ func (m Model) resolveRadius(req *approvalRequest) blastRadius {
 // contained, from /run, which is the user's own and never is.
 func (m Model) commandRadius(command string, contain cardContainment) blastRadius {
 	res := radius.Resolve(m.workspace, command)
-	b := blastRadius{severity: severityOf(res.Level), risks: res.Risks}
+	b := blastRadius{severity: severityOf(res.Level), reason: commandReason(res), risks: res.Risks}
 
 	value, detail := res.Touches()
 	b.fields = append(b.fields, components.CardField{
@@ -87,7 +95,10 @@ func (m Model) commandRadius(command string, contain cardContainment) blastRadiu
 	if f, ok := scopeField(m.pendingScope); ok {
 		b.fields = append(b.fields, f)
 		if b.severity < components.SeverityMedium {
-			b.severity = components.SeverityMedium
+			// The scope is what raised it, so the scope is what the level is
+			// stated with: the reading the command itself gave is no longer
+			// the reason for the level the card is showing.
+			b.severity, b.reason = components.SeverityMedium, "reaches outside the working scope"
 		}
 	}
 	if contain.assistant {
@@ -211,14 +222,14 @@ func uncontainedDetail(detail string) string {
 // records the file on both sides of the call, so undo restores it
 // whether or not git ever knew about it.
 func (m Model) editRadius(req *approvalRequest) blastRadius {
-	b := blastRadius{severity: components.SeverityMedium}
+	b := blastRadius{severity: components.SeverityMedium, reason: editReason(req.path)}
 	// An edit outside the working scope is the one thing an edit card cannot
 	// say with a diff: the diff shows what changes, not that it changes
 	// something the session was never scoped to.
 	if f, ok := scopeField(m.pendingScope); ok {
 		b.fields = append(b.fields, f)
 		if m.pendingScope.class != scope.Ordinary {
-			b.severity = components.SeverityHigh
+			b.severity, b.reason = components.SeverityHigh, "edits a file outside the working scope"
 			b.safe = "[n] deny — the safe answer"
 		}
 	}
@@ -246,17 +257,78 @@ func (m Model) genericRadius(req *approvalRequest) blastRadius {
 		})
 	}
 	b := blastRadius{severity: components.SeverityLow}
+	var open []string
 	for _, f := range req.fields {
 		tone := components.ToneNeutral
 		if f.Open {
 			tone = components.ToneOpen
 			b.severity = components.SeverityMedium
+			open = append(open, f.Label)
 		}
 		b.fields = append(b.fields, components.CardField{
 			Label: f.Label, Value: f.Value, Detail: f.Detail, Tone: tone,
 		})
 	}
+	// What the tool declared is the whole of what this variant knows, so it is
+	// the whole of what the level can be stated with. A tool that declared
+	// nothing leaves the reason empty and the row says the level alone —
+	// there is no reading here to make one out of.
+	switch {
+	case len(open) > 0:
+		b.reason = strings.Join(open, " and ") + " open"
+	case len(b.fields) > 0:
+		b.reason = "nothing it reports is open"
+	}
 	return b
+}
+
+// commandReason says what makes a command the level it is, in the terms the
+// level is decided in: it is flagged, it writes or could not be accounted
+// for, or it resolved and writes nothing. The card states it beside the
+// level, so the level arrives with its reading rather than a second time
+// (docs/interface/surfaces.md#the-approval-card).
+//
+// A flagged command gets none: the risks are the reason it is high and the
+// card already carries the first of them on that row.
+func commandReason(res radius.Command) string {
+	switch {
+	case len(res.Risks) > 0:
+		return ""
+	case len(res.Writes) > 0 && len(res.Unresolved) > 0:
+		return "writes " + plural(len(res.Writes), "path") + ", and part of it did not resolve"
+	case len(res.Writes) > 0:
+		return "writes " + plural(len(res.Writes), "path") + writesUnder(res.Writes)
+	case len(res.Unresolved) > 0:
+		return "what it writes could not be resolved"
+	}
+	return "writes nothing"
+}
+
+// writesUnder names the directory every resolved write is in, where they
+// share one. Where they do not, it says nothing: "under" a directory only
+// half the paths are in would be a claim about the other half.
+func writesUnder(writes []radius.Target) string {
+	dir := filepath.Dir(writes[0].Path)
+	for _, w := range writes[1:] {
+		if filepath.Dir(w.Path) != dir {
+			return ""
+		}
+	}
+	if dir == "." || dir == "" {
+		return ""
+	}
+	return " under " + displayDir(dir)
+}
+
+// editReason says what makes an edit medium: it is one file, and where in the
+// tree. An edit card carries no `touches` row — the diff below is the blast
+// radius — so this is the card's only statement of how far the change reaches
+// before the diff itself.
+func editReason(path string) string {
+	if dir := filepath.Dir(path); dir != "." && dir != "" {
+		return "edits one file under " + displayDir(dir)
+	}
+	return "edits one file"
 }
 
 // processContainment is the mechanism a process start would run under. The

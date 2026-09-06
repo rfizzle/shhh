@@ -519,9 +519,9 @@ func (c *ConfigScreen) offers() []KeyOffer {
 		// be describing the old key, and one that promised only "leave" would be
 		// hiding what leaving costs.
 		return append(offers, keyOffer(keys.Screen.Write),
-			keyOfferAs(keys.Select.Cancel, "discard, after asking"))
+			wayOut("discard, after asking"))
 	}
-	return append(offers, keyOfferAs(keys.Select.Cancel, "leave"))
+	return append(offers, wayOut("leave"))
 }
 
 // keyList is every key the screen has, for `[?]`. It says what the compact
@@ -544,7 +544,7 @@ func (c *ConfigScreen) keyList() []KeyOffer {
 		keyOfferAs(keys.Query.Rub, "take a rune back out of either"),
 		keyOfferAs(keys.Screen.Reset, "reset this setting to its default"),
 		keyOfferAs(keys.Screen.Write, "write every staged change to "+c.Path),
-		keyOfferAs(keys.Select.Cancel, out),
+		wayOut(out),
 		keyOfferAs(keys.Screen.Quit, quit),
 	}
 }

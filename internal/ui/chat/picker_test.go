@@ -1077,7 +1077,7 @@ func TestModelPick_MakeDefaultSwitchesAndPersists(t *testing.T) {
 	}
 	// The open query row offers the way back to the card's own keys rather
 	// than a clear that would do nothing.
-	if hint := ansi.Strip(m.picker.View(110)); !strings.Contains(hint, "ctrl+u row keys") {
+	if hint := ansi.Strip(m.picker.View(110)); !strings.Contains(hint, "[ctrl+u] row keys") {
 		t.Errorf("the searching card should name the way back to its keys:\n%s", hint)
 	}
 	updated, _ = m.Update(ctrlU)
@@ -1087,7 +1087,7 @@ func TestModelPick_MakeDefaultSwitchesAndPersists(t *testing.T) {
 	}
 	// Both readings are on the card, and enter's is named once d's is.
 	hint := ansi.Strip(m.picker.View(110))
-	for _, want := range []string{"enter this session", "d and make it default"} {
+	for _, want := range []string{"[enter] this session", "[d] and make it default"} {
 		if !strings.Contains(hint, want) {
 			t.Errorf("the card should offer %q:\n%s", want, hint)
 		}
@@ -1125,7 +1125,7 @@ func TestModelPick_NoWriterNoDefaultOffer(t *testing.T) {
 	}
 	updated, _ = m.Update(ctrlU)
 	m = updated.(Model)
-	if hint := ansi.Strip(m.picker.View(110)); !strings.Contains(hint, "enter select") {
+	if hint := ansi.Strip(m.picker.View(110)); !strings.Contains(hint, "[enter] select") {
 		t.Errorf("enter goes back to its plain label when it is the only one:\n%s", hint)
 	}
 }

@@ -15,7 +15,12 @@
           
           
 
-· state · working
+· state · working, the first turn of the session
+          
+          
+          
+
+· state · working, with turns behind it
           
           
           
@@ -26,7 +31,12 @@
 ␛[38;5;244m␛[m          
 ␛[38;5;244m␛[m          
 
-· state · working
+· state · working, the first turn of the session
+␛[38;5;254m␛[38;5;244m␛[m␛[m␛[38;5;254m␛[m␛[38;5;254m␛[38;5;254m ␛[m␛[m␛[38;5;254m␛[m␛[38;5;254m         ␛[m
+␛[38;5;244m␛[m          
+␛[38;5;244m␛[m          
+
+· state · working, with turns behind it
 ␛[38;5;254m␛[38;5;244m␛[m␛[m␛[38;5;254m␛[m␛[38;5;254m␛[38;5;254m ␛[m␛[m␛[38;5;254m␛[m␛[38;5;254m         ␛[m
 ␛[38;5;244m␛[m          
 ␛[38;5;244m␛[m          

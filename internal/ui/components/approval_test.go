@@ -72,8 +72,11 @@ func TestApprovalCard_Warnings(t *testing.T) {
 	}
 }
 
-// Severity leads the card as a word and rides the border as a chip, so a
-// reader who cannot see the border colour loses nothing.
+// Severity is said three ways — the border, the chip on the title rail and
+// the first body row — and the three are three statements. The chip carries
+// the level with its glyph; the body row carries the level with what makes it
+// that, so a reader who cannot see the border colour loses nothing and a
+// reader who can see it is not shown the same two words twice.
 func TestApprovalCard_SeverityIsAWordNotOnlyAColour(t *testing.T) {
 	c := &ApprovalCard{
 		Variant:  ApprovalCommand,
@@ -84,14 +87,23 @@ func TestApprovalCard_SeverityIsAWordNotOnlyAColour(t *testing.T) {
 		Question: "Run this command?",
 	}
 	view := ansi.Strip(c.View(90))
-	if strings.Count(view, "⚠ HIGH") != 2 {
-		t.Fatalf("severity should lead the body and ride the title rail:\n%s", view)
+	if strings.Count(view, "⚠ HIGH") != 1 {
+		t.Fatalf("the glyph belongs to the title chip alone:\n%s", view)
 	}
-	if !strings.Contains(view, "⚠ HIGH  deletes files recursively (rm -rf)") {
-		t.Fatalf("the severity word should lead the first risk:\n%s", view)
+	if !strings.Contains(view, "HIGH · deletes files recursively (rm -rf)") {
+		t.Fatalf("the body row should state the level with what makes it that:\n%s", view)
 	}
-	c.Severity = SeverityLow
-	if !strings.Contains(ansi.Strip(c.View(90)), "⚠ low") {
+	c.Severity, c.Warnings = SeverityMedium, nil
+	c.SeverityReason = "edits one file under internal/agent"
+	view = ansi.Strip(c.View(90))
+	if !strings.Contains(view, "medium · edits one file under internal/agent") {
+		t.Fatalf("a card with a reason states it beside the level:\n%s", view)
+	}
+	if strings.Count(view, "⚠ medium") != 1 {
+		t.Fatalf("the body row must not repeat the chip:\n%s", view)
+	}
+	c.Severity, c.SeverityReason = SeverityLow, ""
+	if !strings.Contains(ansi.Strip(c.View(90)), "low") {
 		t.Fatal("a low-severity card still states its level")
 	}
 }

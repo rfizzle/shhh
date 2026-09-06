@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · the brief · the field has the keyboard, the starting points are under it
-/agents new · a coding agent · reviewer tester     esc leave
+/agents new · a coding agent · reviewer tester   [esc] leave
 ────────────────────────────────────────────────────────────
 
   ● brief   · questions   · draft
@@ -27,12 +27,12 @@
   a reviewer who reads a diff for security problems and rep…
   a docs keeper who updates the documentation a change made…
 
-  enter draft from what you typed
-  ↑↓ the field or a starting point
-  esc nothing is drafted
+  [enter] draft from what you typed
+  [↑↓] the field or a starting point
+  [esc] nothing is drafted
 
 · the pointer moved onto a starting point · enter takes that one instead
-/agents new · a coding agent · reviewer tester     esc leave
+/agents new · a coding agent · reviewer tester   [esc] leave
 ────────────────────────────────────────────────────────────
 
   ● brief   · questions   · draft
@@ -48,22 +48,22 @@
 ❯ a reviewer who reads a diff for security problems and rep…
   a docs keeper who updates the documentation a change made…
 
-  enter draft from this one
-  ↑↓ the field or a starting point
-  esc nothing is drafted
+  [enter] draft from this one
+  [↑↓] the field or a starting point
+  [esc] nothing is drafted
 
 · the wait · the step it was started from, and the key that stops it
-/agents new                                esc stop drafting
+/agents new                              [esc] stop drafting
 ────────────────────────────────────────────────────────────
 
   ● brief   · questions   · draft
 
   ⠸ drafting  4.2s
 
-  esc stop drafting
+  [esc] stop drafting
 
 · one question · the answers already given stay above it
-/agents new                                  esc back a step
+/agents new                                [esc] back a step
 ────────────────────────────────────────────────────────────
 
   ✓ brief   ● questions   · draft
@@ -77,10 +77,10 @@
   ┄ your answer
     ┃ enter alone says you have no preference               
 
-  enter answer it · esc back to the last answer
+  [enter] answer it · [esc] back to the last answer
 
 · the draft · the profile over the decision that writes it
-/agents new                            esc discard the draft
+/agents new                          [esc] discard the draft
 ────────────────────────────────────────────────────────────
 
   ✓ brief   ⊘ questions   ● draft
@@ -108,11 +108,11 @@
 │   4. Discard                                             │
 │ ┄ note (optional)                                        │
 │   (none)                                                 │
-│ tab note/options · enter confirm · esc cancel            │
+│ [tab] note/options · [enter] confirm · [esc] cancel      │
 └──────────────────────────────────────────────────────────┘
 
 · a short surface · the card is the one thing that never gives ground
-/agents new                            esc discard the draft
+/agents new                          [esc] discard the draft
 ────────────────────────────────────────────────────────────
 
   ✓ brief   ⊘ questions   ● draft
@@ -126,11 +126,11 @@
 │   4. Discard                                             │
 │ ┄ note (optional)                                        │
 │   (none)                                                 │
-│ tab note/options · enter confirm · esc cancel            │
+│ [tab] note/options · [enter] confirm · [esc] cancel      │
 └──────────────────────────────────────────────────────────┘
 
 · the file already exists · the card asks again, saying so
-/agents new                            esc discard the draft
+/agents new                          [esc] discard the draft
 ────────────────────────────────────────────────────────────
 
   ✓ brief   ⊘ questions   ● draft
@@ -149,7 +149,7 @@
     You add table-driven tests for one package at a time.
     Read the package first, then the tests it already has,
     then write the cases the existing table is missing.
-    ⋮ 3 more lines · shift+↓ read on
+    ⋮ 3 more lines · [shift+↓] read on
 
 ┌─ Keep test-writer? ──────────────────────────────────────┐
 │ ❯ 1. Save to this project  .shhh/agents                  │
@@ -158,12 +158,12 @@
 │   4. Discard                                             │
 │ ┄ note (optional)                                        │
 │   (none)                                                 │
-│ tab note/options · enter confirm · esc cancel            │
+│ [tab] note/options · [enter] confirm · [esc] cancel      │
 └──────────────────────────────────────────────────────────┘
 
 ── ansi ────────────────────────────────────────────────────
 · the brief · the field has the keyboard, the starting points are under it
-␛[1;97m/agents new␛[m␛[38;5;241m · a coding agent · reviewer tester␛[m     ␛[38;5;241mesc leave␛[m
+␛[1;97m/agents new␛[m␛[38;5;241m · a coding agent · reviewer tester␛[m   ␛[38;5;241m[esc] leave␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   ␛[94m● brief␛[m␛[38;5;245m   ␛[m␛[38;5;245m· questions␛[m␛[38;5;245m   ␛[m␛[38;5;245m· draft␛[m
@@ -179,12 +179,12 @@
   ␛[38;5;243ma reviewer who reads a diff for security problems and rep…␛[m
   ␛[38;5;243ma docs keeper who updates the documentation a change made…␛[m
 
-  ␛[3;38;5;241menter draft from what you typed␛[m
-  ␛[3;38;5;241m↑↓ the field or a starting point␛[m
-  ␛[3;38;5;241mesc nothing is drafted␛[m
+  ␛[3;38;5;241m[enter] draft from what you typed␛[m
+  ␛[3;38;5;241m[↑↓] the field or a starting point␛[m
+  ␛[3;38;5;241m[esc] nothing is drafted␛[m
 
 · the pointer moved onto a starting point · enter takes that one instead
-␛[1;97m/agents new␛[m␛[38;5;241m · a coding agent · reviewer tester␛[m     ␛[38;5;241mesc leave␛[m
+␛[1;97m/agents new␛[m␛[38;5;241m · a coding agent · reviewer tester␛[m   ␛[38;5;241m[esc] leave␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   ␛[94m● brief␛[m␛[38;5;245m   ␛[m␛[38;5;245m· questions␛[m␛[38;5;245m   ␛[m␛[38;5;245m· draft␛[m
@@ -200,22 +200,22 @@
 ␛[94m❯ ␛[m␛[1;48;5;62ma reviewer who reads a diff for security problems and rep…␛[m
   ␛[38;5;243ma docs keeper who updates the documentation a change made…␛[m
 
-  ␛[3;38;5;241menter draft from this one␛[m
-  ␛[3;38;5;241m↑↓ the field or a starting point␛[m
-  ␛[3;38;5;241mesc nothing is drafted␛[m
+  ␛[3;38;5;241m[enter] draft from this one␛[m
+  ␛[3;38;5;241m[↑↓] the field or a starting point␛[m
+  ␛[3;38;5;241m[esc] nothing is drafted␛[m
 
 · the wait · the step it was started from, and the key that stops it
-␛[1;97m/agents new␛[m                                ␛[38;5;241mesc stop drafting␛[m
+␛[1;97m/agents new␛[m                              ␛[38;5;241m[esc] stop drafting␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   ␛[94m● brief␛[m␛[38;5;245m   ␛[m␛[38;5;245m· questions␛[m␛[38;5;245m   ␛[m␛[38;5;245m· draft␛[m
 
   ␛[38;5;205m⠸ drafting␛[m␛[38;5;241m  4.2s␛[m
 
-  ␛[3;38;5;241mesc stop drafting␛[m
+  ␛[3;38;5;241m[esc] stop drafting␛[m
 
 · one question · the answers already given stay above it
-␛[1;97m/agents new␛[m                                  ␛[38;5;241mesc back a step␛[m
+␛[1;97m/agents new␛[m                                ␛[38;5;241m[esc] back a step␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;241m✓ brief␛[m␛[38;5;245m   ␛[m␛[94m● questions␛[m␛[38;5;245m   ␛[m␛[38;5;245m· draft␛[m
@@ -229,10 +229,10 @@
   ␛[38;5;241m┄ your answer␛[m
     ␛[38;5;252m␛[38;5;241m┃ ␛[m␛[m␛[38;5;252m␛[7;38;5;62me␛[m␛[m␛[38;5;252m␛[38;5;241mnter alone says you have no preference␛[m␛[m␛[38;5;252m               ␛[m
 
-  ␛[3;38;5;241menter answer it · esc back to the last answer␛[m
+  ␛[3;38;5;241m[enter] answer it · [esc] back to the last answer␛[m
 
 · the draft · the profile over the decision that writes it
-␛[1;97m/agents new␛[m                            ␛[38;5;241mesc discard the draft␛[m
+␛[1;97m/agents new␛[m                          ␛[38;5;241m[esc] discard the draft␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;241m✓ brief␛[m␛[38;5;245m   ␛[m␛[38;5;245m⊘ questions␛[m␛[38;5;245m   ␛[m␛[94m● draft␛[m
@@ -260,11 +260,11 @@
 ␛[38;5;241m│␛[m   4. Discard                                             ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m┄ note (optional)␛[m                                        ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;245m(none)␛[m                                                 ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[3;38;5;241mtab note/options · enter confirm · esc cancel␛[m            ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[3;38;5;241m[tab] note/options · [enter] confirm · [esc] cancel␛[m      ␛[38;5;241m│␛[m
 ␛[38;5;241m└──────────────────────────────────────────────────────────┘␛[m
 
 · a short surface · the card is the one thing that never gives ground
-␛[1;97m/agents new␛[m                            ␛[38;5;241mesc discard the draft␛[m
+␛[1;97m/agents new␛[m                          ␛[38;5;241m[esc] discard the draft␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;241m✓ brief␛[m␛[38;5;245m   ␛[m␛[38;5;245m⊘ questions␛[m␛[38;5;245m   ␛[m␛[94m● draft␛[m
@@ -278,11 +278,11 @@
 ␛[38;5;241m│␛[m   4. Discard                                             ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m┄ note (optional)␛[m                                        ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;245m(none)␛[m                                                 ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[3;38;5;241mtab note/options · enter confirm · esc cancel␛[m            ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[3;38;5;241m[tab] note/options · [enter] confirm · [esc] cancel␛[m      ␛[38;5;241m│␛[m
 ␛[38;5;241m└──────────────────────────────────────────────────────────┘␛[m
 
 · the file already exists · the card asks again, saying so
-␛[1;97m/agents new␛[m                            ␛[38;5;241mesc discard the draft␛[m
+␛[1;97m/agents new␛[m                          ␛[38;5;241m[esc] discard the draft␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;241m✓ brief␛[m␛[38;5;245m   ␛[m␛[38;5;245m⊘ questions␛[m␛[38;5;245m   ␛[m␛[94m● draft␛[m
@@ -301,7 +301,7 @@
     ␛[38;5;243mYou add table-driven tests for one package at a time.␛[m
     ␛[38;5;243mRead the package first, then the tests it already has,␛[m
     ␛[38;5;243mthen write the cases the existing table is missing.␛[m
-    ␛[38;5;241m⋮ 3 more lines · shift+↓ read on␛[m
+    ␛[38;5;241m⋮ 3 more lines · [shift+↓] read on␛[m
 
 ␛[38;5;241m┌─ Keep test-writer? ␛[m␛[38;5;241m──────────────────────────────────────␛[m␛[38;5;241m┐␛[m
 ␛[38;5;241m│␛[m ␛[1;48;5;62m❯ 1. Save to this project  .shhh/agents␛[m                  ␛[38;5;241m│␛[m
@@ -310,5 +310,5 @@
 ␛[38;5;241m│␛[m   4. Discard                                             ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m┄ note (optional)␛[m                                        ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;245m(none)␛[m                                                 ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[3;38;5;241mtab note/options · enter confirm · esc cancel␛[m            ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[3;38;5;241m[tab] note/options · [enter] confirm · [esc] cancel␛[m      ␛[38;5;241m│␛[m
 ␛[38;5;241m└──────────────────────────────────────────────────────────┘␛[m

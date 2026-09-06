@@ -55,7 +55,7 @@ func filtered(query string) *Select {
 // answers is not a catalog to search.
 func TestSelectFilter_SlashOpensTheRowOnlyWhereItIsOffered(t *testing.T) {
 	s := &Select{Title: "Switch model", Options: catalog(), MaxLines: 10, Filterable: true}
-	if view := ansi.Strip(s.View(70)); !strings.Contains(view, "/ filter") {
+	if view := ansi.Strip(s.View(70)); !strings.Contains(view, "[/] filter") {
 		t.Fatalf("a filterable card should offer the key that opens the row:\n%s", view)
 	}
 	s.Update(key("/"))
@@ -64,7 +64,7 @@ func TestSelectFilter_SlashOpensTheRowOnlyWhereItIsOffered(t *testing.T) {
 	}
 
 	fixed := &Select{Title: "Switch mode", Options: planOptions()}
-	if view := ansi.Strip(fixed.View(70)); strings.Contains(view, "/ filter") {
+	if view := ansi.Strip(fixed.View(70)); strings.Contains(view, "[/] filter") {
 		t.Fatalf("a card that is a fixed set of answers offers no filter:\n%s", view)
 	}
 	fixed.Update(key("/"))
@@ -147,7 +147,7 @@ func TestSelectFilter_ClearingAnEmptyQueryClosesTheRow(t *testing.T) {
 	s := filtered("")
 	s.AltKey, s.AltLabel = "d", "and make it default"
 
-	if view := ansi.Strip(s.View(70)); !strings.Contains(view, "ctrl+u row keys") {
+	if view := ansi.Strip(s.View(70)); !strings.Contains(view, "[ctrl+u] row keys") {
 		t.Fatalf("an empty query offers the way back to the row's keys:\n%s", view)
 	}
 
@@ -158,7 +158,7 @@ func TestSelectFilter_ClearingAnEmptyQueryClosesTheRow(t *testing.T) {
 	if s.QueryChanged() {
 		t.Fatal("closing the row is not a query change: there is nothing to re-filter")
 	}
-	if view := ansi.Strip(s.View(70)); !strings.Contains(view, "d and make it default") {
+	if view := ansi.Strip(s.View(70)); !strings.Contains(view, "[d] and make it default") {
 		t.Fatalf("the card's own keys are back on the row:\n%s", view)
 	}
 
@@ -239,13 +239,13 @@ func TestSelectFilter_NoMatchIsARowNotAnEmptyPane(t *testing.T) {
 	view := ansi.Strip(s.View(70))
 	for _, want := range []string{
 		"0 of 24 match", `no match for "sonnet-5"`,
-		"closest is claude-sonnet-4.6", "ctrl+u clear the filter", "esc cancel",
+		"closest is claude-sonnet-4.6", "[ctrl+u] clear the filter", "[esc] cancel",
 	} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("expected %q on the empty card:\n%s", want, view)
 		}
 	}
-	if strings.Contains(view, "enter select") {
+	if strings.Contains(view, "[enter] select") {
 		t.Fatalf("nothing on the card can be selected, so enter is not offered:\n%s", view)
 	}
 	// And enter does not act, because a key that cannot act does not act.
@@ -398,7 +398,7 @@ func TestNoteSelectFilter_PinsItsQueryRowAndKeepsTheNote(t *testing.T) {
 		t.Fatalf("digits are text on an open query line, got %q", ns.Select.Query)
 	}
 	view := ansi.Strip(ns.View(70))
-	for _, want := range []string{"▸ 19█", "20 of 20 match", "note (optional)", "ctrl+u clear"} {
+	for _, want := range []string{"▸ 19█", "20 of 20 match", "note (optional)", "[ctrl+u] clear"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("expected %q on the card:\n%s", want, view)
 		}

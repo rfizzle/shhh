@@ -849,11 +849,12 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 	return card
 }
 
-// applyTo puts the resolved block onto the card: the severity word and the
-// border that reinforces it, the risks, the fields, the containment chip, and
-// the two lines that explain what the keys do not.
+// applyTo puts the resolved block onto the card: the severity, the reading
+// that makes it that and the border which reinforces both, the risks, the
+// fields, the containment chip, and the two lines that explain what the keys
+// do not.
 func (b blastRadius) applyTo(card *components.ApprovalCard) {
-	card.Severity = b.severity
+	card.Severity, card.SeverityReason = b.severity, b.reason
 	card.Fields = b.fields
 	card.Chip, card.Uncontained = b.chip, b.uncontained
 	card.SafeDefault, card.Footnote = b.safe, b.footnote

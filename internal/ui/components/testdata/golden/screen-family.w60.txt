@@ -21,7 +21,7 @@ shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
 
   ✗ 2 failed · 2 warnings · 5 passed · 1 not checked
 [↑↓/jk] move · [c] copy the report
-[r] run the checks again
+[r] run the checks again · [esc] back to the shell
 
 · metrics · the spend rides with the one key the screen has
 shhh metrics                               $18.42 · [q] quit
@@ -32,6 +32,8 @@ shhh metrics                               $18.42 · [q] quit
   claude-sonnet-4.6        46   1.1M    96k   $4.71  910ms
   gemini-3-flash           12    88k     7k  <$0.01  310ms
   house-model               9    42k     3k       —   1.2s
+
+[esc] back to the shell
 
 · config · the file, and what is standing against it
 shhh config · 2 changes unwritten        [?] keys · [q] quit
@@ -75,7 +77,7 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
 [y] worked · [n] did not · [s] skip · [esc] stop
 
 · context · the occupancy is the tally beside the keys
-/context         ~312.4k · [?] keys · [q] back to the prompt
+/context                       ~312.4k · [?] keys · [q] back
 ────────────────────────────────────────────────────────────
 
   ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰
@@ -89,7 +91,7 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
   ▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱
 
 · the profile drafter · the way out is the whole right-hand run
-/agents new · a coding agent · reviewer tester     esc leave
+/agents new · a coding agent · reviewer tester   [esc] leave
 ────────────────────────────────────────────────────────────
 
   ● brief   · questions   · draft
@@ -99,8 +101,8 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
   ┄ in your own words
     ┃ what it is for                                        
 
-  enter draft from what you typed
-  esc nothing is drafted
+  [enter] draft from what you typed
+  [esc] nothing is drafted
 
 · snippets · the list, the command it would run, and the promise that it will not
 shhh snippets · 3 snippets               [?] keys · [q] quit
@@ -136,7 +138,7 @@ shhh chats · 3 conversations             [?] keys · [q] quit
 
   ␛[91m✗␛[m ␛[91m2 failed␛[m␛[38;5;241m · ␛[m␛[38;5;214m2 warnings␛[m␛[38;5;241m · ␛[m␛[38;5;252m5 passed␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 not checked␛[m
 ␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m␛[38;5;241m copy the report␛[m
-␛[94m[r]␛[m␛[38;5;241m run the checks again␛[m
+␛[94m[r]␛[m␛[38;5;241m run the checks again␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m back to the shell␛[m
 
 · metrics · the spend rides with the one key the screen has
 ␛[1;97mshhh metrics␛[m                               ␛[38;5;252m$18.42␛[m␛[38;5;241m · [q] quit␛[m
@@ -147,6 +149,8 @@ shhh chats · 3 conversations             [?] keys · [q] quit
   ␛[38;5;252mclaude-sonnet-4.6        46   1.1M    96k   $4.71  910ms␛[m
   ␛[38;5;252mgemini-3-flash           12    88k     7k  <$0.01  310ms␛[m
   ␛[38;5;252mhouse-model               9    42k     3k       —   1.2s␛[m
+
+␛[94m[esc]␛[m␛[38;5;241m back to the shell␛[m
 
 · config · the file, and what is standing against it
 ␛[1;97mshhh config␛[m␛[38;5;214m · 2 changes unwritten␛[m        ␛[38;5;241m[?] keys · [q] quit␛[m
@@ -190,7 +194,7 @@ shhh chats · 3 conversations             [?] keys · [q] quit
 ␛[94m[y]␛[m␛[38;5;241m worked␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m did not␛[m␛[38;5;241m · ␛[m␛[94m[s]␛[m␛[38;5;241m skip␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m stop␛[m
 
 · context · the occupancy is the tally beside the keys
-␛[1;97m/context␛[m         ␛[92m~312.4k␛[m␛[38;5;241m · [?] keys · [q] back to the prompt␛[m
+␛[1;97m/context␛[m                       ␛[92m~312.4k␛[m␛[38;5;241m · [?] keys · [q] back␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;243m▰␛[m␛[94m▰␛[m␛[38;5;214m▰▰▰␛[m␛[38;5;252m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m
@@ -204,7 +208,7 @@ shhh chats · 3 conversations             [?] keys · [q] quit
   ␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m
 
 · the profile drafter · the way out is the whole right-hand run
-␛[1;97m/agents new␛[m␛[38;5;241m · a coding agent · reviewer tester␛[m     ␛[38;5;241mesc leave␛[m
+␛[1;97m/agents new␛[m␛[38;5;241m · a coding agent · reviewer tester␛[m   ␛[38;5;241m[esc] leave␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   ␛[94m● brief␛[m␛[38;5;245m   ␛[m␛[38;5;245m· questions␛[m␛[38;5;245m   ␛[m␛[38;5;245m· draft␛[m
@@ -214,8 +218,8 @@ shhh chats · 3 conversations             [?] keys · [q] quit
   ␛[38;5;241m┄ in your own words␛[m
     ␛[38;5;252m␛[38;5;241m┃ ␛[m␛[m␛[38;5;252m␛[7;38;5;62mw␛[m␛[m␛[38;5;252m␛[38;5;241mhat it is for␛[m␛[m␛[38;5;252m                                        ␛[m
 
-  ␛[3;38;5;241menter draft from what you typed␛[m
-  ␛[3;38;5;241mesc nothing is drafted␛[m
+  ␛[3;38;5;241m[enter] draft from what you typed␛[m
+  ␛[3;38;5;241m[esc] nothing is drafted␛[m
 
 · snippets · the list, the command it would run, and the promise that it will not
 ␛[1;97mshhh snippets␛[m␛[38;5;241m · 3 snippets␛[m               ␛[38;5;241m[?] keys · [q] quit␛[m

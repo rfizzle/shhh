@@ -235,7 +235,7 @@ func TestProfileScreen_TheCardSurvivesAShortSurface(t *testing.T) {
 		if lines := strings.Count(view, "\n") + 1; lines > height {
 			t.Fatalf("h=%d: rendered %d lines", height, lines)
 		}
-		for _, want := range []string{"Keep test-writer?", "Save to this project", "enter confirm", "esc cancel"} {
+		for _, want := range []string{"Keep test-writer?", "Save to this project", "[enter] confirm", "[esc] cancel"} {
 			if !strings.Contains(view, want) {
 				t.Fatalf("h=%d: the card lost %q:\n%s", height, want, view)
 			}

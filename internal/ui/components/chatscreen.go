@@ -401,7 +401,7 @@ func (c *ChatScreen) offers() []KeyOffer {
 		}
 		offers = append(offers, keyOffer(keys.Screen.Filter))
 	}
-	return append(offers, keyOfferAs(keys.Select.Cancel, "back to the shell"))
+	return append(offers, wayOut(backToShell))
 }
 
 // keyList is every key the screen has, for `[?]`.
@@ -414,8 +414,8 @@ func (c *ChatScreen) keyList() []KeyOffer {
 		keyOfferAs(keys.Screen.Filter, "filter by name or by what it was about"),
 		keyOfferAs(keys.Screen.ClearQ, "clear the filter or the rename row"),
 		keyOfferAs(keys.Query.Rub, "take a rune back out of either"),
-		keyOfferAs(keys.Screen.Keep, "keep the name, or leave the screen"),
-		keyOfferAs(keys.Screen.Quit, "back to the shell, opening nothing"),
+		keyOfferAs(keys.Screen.Keep, "keep the name, or "+backToShell),
+		keyOfferAs(keys.Screen.Quit, backToShell),
 	}
 }
 

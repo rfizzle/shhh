@@ -24,6 +24,14 @@ func statusModel(t *testing.T) Model {
 	return m
 }
 
+// afterAnEarlierTurn puts a closed turn's spend on the session. It is what
+// makes the running turn's account something the top rail states at all: on a
+// session whose first turn is still open the two rails carry one figure, and
+// the top one leaves it to the rail below (turnstatus.go).
+func afterAnEarlierTurn(m *Model) {
+	m.TotalTokensIn, m.TotalTokensOut = 5000, 2000
+}
+
 // settleCounts runs the counters to their targets, so a test can assert the
 // figures the session measured rather than whichever frame of the climb it
 // happened to stop on.
@@ -105,6 +113,7 @@ func TestTurnStatus_NamesTheCallItIsRunning(t *testing.T) {
 
 func TestTurnStatus_TokensMoveWhileTheProseArrives(t *testing.T) {
 	m := statusModel(t)
+	afterAnEarlierTurn(&m)
 	before, _ := m.turnStatus()
 
 	m.streaming = strings.Repeat("token ", 400)
@@ -126,6 +135,7 @@ func TestTurnStatus_TokensMoveWhileTheProseArrives(t *testing.T) {
 // numbers under it.
 func TestTurnStatus_TokensMoveWhileTheReasoningArrives(t *testing.T) {
 	m := statusModel(t)
+	afterAnEarlierTurn(&m)
 	m.events = make(chan provider.StreamEvent)
 	before, _ := m.turnStatus()
 
@@ -347,5 +357,31 @@ func TestTurnStatus_TheUpdateTailAimsTheCounters(t *testing.T) {
 	}
 	if _, got := m.easedTurnTokens(); got != want {
 		t.Fatalf("the climb should land on the measured figure %d, got %d", want, got)
+	}
+}
+
+// The top rail states the turn's account only where it is not the session's.
+// A first turn is the whole of what the session has spent, so the two rails
+// would carry the same three figures a hand apart and neither would say which
+// is which (docs/interface/surfaces.md#the-input-frame).
+func TestTurnStatus_TheFirstTurnLeavesTheAccountToTheRailBelow(t *testing.T) {
+	m := statusModel(t)
+	m.streaming = strings.Repeat("token ", 400)
+	settleCounts(&m)
+
+	first, _ := m.turnStatus()
+	if first.Up != "" || first.Down != "" || first.Cost != "" {
+		t.Fatalf("the first turn is the session's whole account, so the top rail states none of it: %q %q %q",
+			first.Up, first.Down, first.Cost)
+	}
+
+	// With a turn behind it the same figures are a different reading, and the
+	// rail says them.
+	afterAnEarlierTurn(&m)
+	settleCounts(&m)
+	again, _ := m.turnStatus()
+	if again.Up == "" || again.Down == "" || again.Cost == "" {
+		t.Fatalf("a turn that is not the whole session states its own account: %q %q %q",
+			again.Up, again.Down, again.Cost)
 	}
 }

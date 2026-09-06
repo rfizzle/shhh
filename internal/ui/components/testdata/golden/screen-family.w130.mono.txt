@@ -17,12 +17,10 @@ shhh doctor · 10 checks                                                        
 ❯  ✗ model   anthropic · claude-opus-5 · no key in any of the four places                                             no key
     no session will start until a key is found — every one exits on "no provider"
     [f] show the four places shhh looks
-   ✗ sandbox no containment mechanism · sandbox-exec not found                                                   uncontained  0.1s
-    every approval will show ⚠ UNCONTAINED, and an approved command runs as you
-    [f] show the fix for this host
-  ↓ 8 more · binary · config · store · engine · git · tools · memory · update
+  ↓ 9 more · binary · config · store · sandbox · engine · git · tools · memory · update
 
-  ✗ 2 failed · 2 warnings · 5 passed · 1 not checked                 [↑↓/jk] move · [c] copy the report · [r] run the checks again
+  ✗ 2 failed · 2 warnings · 5 passed · 1 not checked
+[↑↓/jk] move · [c] copy the report · [r] run the checks again · [esc] back to the shell
 
 · metrics · the spend rides with the one key the screen has
 shhh metrics · last 30 days · 251 requests · 4 models                                                            $18.42 · [q] quit
@@ -33,6 +31,8 @@ shhh metrics · last 30 days · 251 requests · 4 models                        
   claude-sonnet-4.6        46   1.1M    96k   $4.71  910ms  2.1s  ▂▃▆▄▃█▅
   gemini-3-flash           12    88k     7k  <$0.01  310ms  0.5s  ▁▁▄▁▁▁█
   house-model               9    42k     3k       —   1.2s     —  ▁▁▁▁█▁▁
+
+[esc] back to the shell
 
 · config · the file, and what is standing against it
 shhh config · ~/.config/shhh/config.toml · 2 changes unwritten                                                 [?] keys · [q] quit
@@ -74,7 +74,7 @@ shhh rate · 1 of 5                                                             
 [y] worked · [n] did not · [s] skip · [esc] stop
 
 · context · the occupancy is the tally beside the keys
-/context · this session · 1m window                                                    ~312.4k · [?] keys · [q] back to the prompt
+/context · this session · 1m window                                                                  ~312.4k · [?] keys · [q] back
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰   claude-opus-5[1m]
@@ -88,7 +88,7 @@ shhh rate · 1 of 5                                                             
   ▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱   ▰ tool definitions      22.3k   2.2%
 
 · the profile drafter · the way out is the whole right-hand run
-/agents new · a coding agent · reviewer tester                                                                           esc leave
+/agents new · a coding agent · reviewer tester                                                                         [esc] leave
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   ● brief   · questions   · draft
@@ -98,7 +98,7 @@ shhh rate · 1 of 5                                                             
   ┄ in your own words
     ┃ what it is for                                                                                                              
 
-  enter draft from what you typed · esc nothing is drafted
+  [enter] draft from what you typed · [esc] nothing is drafted
 
 · snippets · the list, the command it would run, and the promise that it will not
 shhh snippets · 3 snippets                                                                                     [?] keys · [q] quit
@@ -133,12 +133,10 @@ shhh chats · 3 conversations                                                   
 ␛[38;5;254m❯␛[m  ␛[38;5;254m✗␛[m model   ␛[38;5;254manthropic␛[m␛[38;5;244m · claude-opus-5 · no key in any of the four places␛[m                                             ␛[38;5;254mno key␛[m
     ␛[38;5;244mno session will start until a key is found — every one exits on "no provider"␛[m
     ␛[38;5;254m[f]␛[m␛[38;5;244m show the four places shhh looks␛[m
-   ␛[38;5;254m✗␛[m sandbox ␛[38;5;254mno containment mechanism␛[m␛[38;5;244m · sandbox-exec not found␛[m                                                   ␛[38;5;254muncontained␛[m  ␛[38;5;244m0.1s␛[m
-    ␛[38;5;244mevery approval will show ⚠ UNCONTAINED, and an approved command runs as you␛[m
-    ␛[38;5;244m[f]␛[m␛[38;5;244m show the fix for this host␛[m
-  ␛[38;5;244m↓ 8 more · binary · config · store · engine · git · tools · memory · update␛[m
+  ␛[38;5;244m↓ 9 more · binary · config · store · sandbox · engine · git · tools · memory · update␛[m
 
-  ␛[38;5;254m✗␛[m ␛[38;5;254m2 failed␛[m␛[38;5;244m · ␛[m␛[38;5;254m2 warnings␛[m␛[38;5;244m · ␛[m␛[38;5;254m5 passed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 not checked␛[m                 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy the report␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m run the checks again␛[m
+  ␛[38;5;254m✗␛[m ␛[38;5;254m2 failed␛[m␛[38;5;244m · ␛[m␛[38;5;254m2 warnings␛[m␛[38;5;244m · ␛[m␛[38;5;254m5 passed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 not checked␛[m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy the report␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m run the checks again␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
 
 · metrics · the spend rides with the one key the screen has
 ␛[1;38;5;254mshhh metrics␛[m␛[38;5;244m · last 30 days · 251 requests · 4 models␛[m                                                            ␛[38;5;254m$18.42␛[m␛[38;5;244m · [q] quit␛[m
@@ -149,6 +147,8 @@ shhh chats · 3 conversations                                                   
   ␛[38;5;254mclaude-sonnet-4.6        46   1.1M    96k   $4.71  910ms  2.1s␛[m  ␛[38;5;244m▂▃▆▄▃█▅␛[m
   ␛[38;5;254mgemini-3-flash           12    88k     7k  <$0.01  310ms  0.5s␛[m  ␛[38;5;244m▁▁▄▁▁▁█␛[m
   ␛[38;5;254mhouse-model               9    42k     3k       —   1.2s     —␛[m  ␛[38;5;244m▁▁▁▁█▁▁␛[m
+
+␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
 
 · config · the file, and what is standing against it
 ␛[1;38;5;254mshhh config␛[m␛[38;5;244m · ~/.config/shhh/config.toml␛[m␛[38;5;254m · 2 changes unwritten␛[m                                                 ␛[38;5;244m[?] keys · [q] quit␛[m
@@ -190,7 +190,7 @@ shhh chats · 3 conversations                                                   
 ␛[38;5;254m[y]␛[m␛[38;5;244m worked␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m␛[38;5;244m did not␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m skip␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m stop␛[m
 
 · context · the occupancy is the tally beside the keys
-␛[1;38;5;254m/context␛[m␛[38;5;244m · this session · 1m window␛[m                                                    ␛[38;5;254m~312.4k␛[m␛[38;5;244m · [?] keys · [q] back to the prompt␛[m
+␛[1;38;5;254m/context␛[m␛[38;5;244m · this session · 1m window␛[m                                                                  ␛[38;5;254m~312.4k␛[m␛[38;5;244m · [?] keys · [q] back␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;244m▰␛[m␛[38;5;254m▰␛[m␛[38;5;254m▰▰▰␛[m␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m   ␛[1;38;5;254mclaude-opus-5[1m]␛[m
@@ -204,7 +204,7 @@ shhh chats · 3 conversations                                                   
   ␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m   ␛[38;5;254m▰ ␛[m␛[38;5;254mtool definitions  ␛[m␛[38;5;254m    22.3k␛[m␛[38;5;244m   2.2%␛[m
 
 · the profile drafter · the way out is the whole right-hand run
-␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · reviewer tester␛[m                                                                           ␛[38;5;244mesc leave␛[m
+␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · reviewer tester␛[m                                                                         ␛[38;5;244m[esc] leave␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;254m● brief␛[m␛[38;5;244m   ␛[m␛[38;5;244m· questions␛[m␛[38;5;244m   ␛[m␛[38;5;244m· draft␛[m
@@ -214,7 +214,7 @@ shhh chats · 3 conversations                                                   
   ␛[38;5;244m┄ in your own words␛[m
     ␛[38;5;254m␛[38;5;244m┃ ␛[m␛[m␛[38;5;254m␛[7;38;5;237mw␛[m␛[m␛[38;5;254m␛[38;5;244mhat it is for␛[m␛[m␛[38;5;254m                                                                                                              ␛[m
 
-  ␛[3;38;5;244menter draft from what you typed · esc nothing is drafted␛[m
+  ␛[3;38;5;244m[enter] draft from what you typed · [esc] nothing is drafted␛[m
 
 · snippets · the list, the command it would run, and the promise that it will not
 ␛[1;38;5;254mshhh snippets␛[m␛[38;5;244m · 3 snippets␛[m                                                                                     ␛[38;5;244m[?] keys · [q] quit␛[m

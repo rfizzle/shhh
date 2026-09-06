@@ -35,6 +35,8 @@ shhh metrics · last 30 days · 251 requests · 4 models                        
   how the commands ran                                                                                                    203 runs
   gpt-5.2            ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱ 81% exited 0                                                                164 of 203
 
+[esc] back to the shell
+
 · nothing priced · the split is over tokens and says so
 shhh metrics · last 30 days · 251 requests · 4 models                                                                     [q] quit
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -60,6 +62,8 @@ shhh metrics · last 30 days · 251 requests · 4 models                        
   how the commands ran                                                                                                    203 runs
   gpt-5.2            ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱ 81% exited 0                                                                164 of 203
 
+[esc] back to the shell
+
 · a short terminal · what fits is drawn, what went is named
 shhh metrics · last 30 days · 251 requests · 4 models                                                            $18.42 · [q] quit
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -69,13 +73,9 @@ shhh metrics · last 30 days · 251 requests · 4 models                        
   claude-sonnet-4.6        46   1.1M    96k   $4.71  910ms  2.1s  ▂▃▆▄▃█▅
   gemini-3-flash           12    88k     7k  <$0.01  310ms  0.5s  ▁▁▄▁▁▁█
   house-model               9    42k     3k       —   1.2s     —  ▁▁▁▁█▁▁
+  ↓ 3 more · where the money went · how the answers came back · how the commands ran
 
-  where the money went                                                                                                last 30 days
-  $ run              ▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱ $9.94 · 54%                                                               203 requests
-  copied             ▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ $5.11 · 28%                                                                31 requests
-  ⊘ dismissed        ▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ $2.41 · 13%                                                                19 requests
-  ✗ no answer        ▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ $0.96 · 5%                                                                  9 requests
-  ↓ 2 more · how the answers came back · how the commands ran
+[esc] back to the shell
 
 · a shorter one · the table windows last and says what it holds back
 shhh metrics · last 30 days · 251 requests · 4 models                                                            $18.42 · [q] quit
@@ -86,12 +86,16 @@ shhh metrics · last 30 days · 251 requests · 4 models                        
   ↓ 3 more models
   ↓ 3 more · where the money went · how the answers came back · how the commands ran
 
+[esc] back to the shell
+
 · nothing recorded · a heading over nothing says so
 shhh metrics · all time · 0 requests · 0 models                                                                           [q] quit
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   MODEL  REQUESTS  ↑ TOK  ↓ TOK  SPEND  TTFT  P95  TOK · 7d
   no models to show
+
+[esc] back to the shell
 
 ── ansi ────────────────────────────────────────────────────
 · the surface · the table, the spend split, and the ratios under it
@@ -119,6 +123,8 @@ shhh metrics · all time · 0 requests · 0 models                              
   ␛[38;5;241mhow the commands ran␛[m                                                                                                    ␛[38;5;241m203 runs␛[m
   ␛[38;5;241mgpt-5.2          ␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱ 81% exited 0␛[m                                                                ␛[38;5;252m164 of 203␛[m
 
+␛[94m[esc]␛[m␛[38;5;241m back to the shell␛[m
+
 · nothing priced · the split is over tokens and says so
 ␛[1;97mshhh metrics␛[m␛[38;5;241m · last 30 days · 251 requests · 4 models␛[m                                                                     ␛[38;5;241m[q] quit␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
@@ -144,6 +150,8 @@ shhh metrics · all time · 0 requests · 0 models                              
   ␛[38;5;241mhow the commands ran␛[m                                                                                                    ␛[38;5;241m203 runs␛[m
   ␛[38;5;241mgpt-5.2          ␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱ 81% exited 0␛[m                                                                ␛[38;5;252m164 of 203␛[m
 
+␛[94m[esc]␛[m␛[38;5;241m back to the shell␛[m
+
 · a short terminal · what fits is drawn, what went is named
 ␛[1;97mshhh metrics␛[m␛[38;5;241m · last 30 days · 251 requests · 4 models␛[m                                                            ␛[38;5;252m$18.42␛[m␛[38;5;241m · [q] quit␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
@@ -153,13 +161,9 @@ shhh metrics · all time · 0 requests · 0 models                              
   ␛[38;5;252mclaude-sonnet-4.6        46   1.1M    96k   $4.71  910ms  2.1s␛[m  ␛[38;5;245m▂▃▆▄▃█▅␛[m
   ␛[38;5;252mgemini-3-flash           12    88k     7k  <$0.01  310ms  0.5s␛[m  ␛[38;5;245m▁▁▄▁▁▁█␛[m
   ␛[38;5;252mhouse-model               9    42k     3k       —   1.2s     —␛[m  ␛[38;5;245m▁▁▁▁█▁▁␛[m
+  ␛[38;5;241m↓ 3 more · where the money went · how the answers came back · how the commands ran␛[m
 
-  ␛[38;5;241mwhere the money went␛[m                                                                                                ␛[38;5;241mlast 30 days␛[m
-  ␛[38;5;241m$ run            ␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱ $9.94 · 54%␛[m                                                               ␛[38;5;252m203 requests␛[m
-  ␛[38;5;241mcopied           ␛[m  ␛[38;5;214m▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ $5.11 · 28%␛[m                                                                ␛[38;5;252m31 requests␛[m
-  ␛[38;5;241m⊘ dismissed      ␛[m  ␛[38;5;214m▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ $2.41 · 13%␛[m                                                                ␛[38;5;252m19 requests␛[m
-  ␛[38;5;241m✗ no answer      ␛[m  ␛[91m▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ $0.96 · 5%␛[m                                                                  ␛[91m9 requests␛[m
-  ␛[38;5;241m↓ 2 more · how the answers came back · how the commands ran␛[m
+␛[94m[esc]␛[m␛[38;5;241m back to the shell␛[m
 
 · a shorter one · the table windows last and says what it holds back
 ␛[1;97mshhh metrics␛[m␛[38;5;241m · last 30 days · 251 requests · 4 models␛[m                                                            ␛[38;5;252m$18.42␛[m␛[38;5;241m · [q] quit␛[m
@@ -170,9 +174,13 @@ shhh metrics · all time · 0 requests · 0 models                              
   ␛[38;5;241m↓ 3 more models␛[m
   ␛[38;5;241m↓ 3 more · where the money went · how the answers came back · how the commands ran␛[m
 
+␛[94m[esc]␛[m␛[38;5;241m back to the shell␛[m
+
 · nothing recorded · a heading over nothing says so
 ␛[1;97mshhh metrics␛[m␛[38;5;241m · all time · 0 requests · 0 models␛[m                                                                           ␛[38;5;241m[q] quit␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mMODEL  REQUESTS  ↑ TOK  ↓ TOK  SPEND  TTFT  P95  TOK · 7d␛[m
   ␛[38;5;241mno models to show␛[m
+
+␛[94m[esc]␛[m␛[38;5;241m back to the shell␛[m

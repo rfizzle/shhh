@@ -20,7 +20,7 @@
 │     the rails and the frame are one component            │
 │   ✗ patcher-4  apply patch       failed · 1 tool · $0.01 │
 │     round limit (25) reached                             │
-│ enter attach · x cancel · X kill · esc back              │
+│ [enter] attach · [x] cancel · [X] kill · [esc] back      │
 └──────────────────────────────────────────────────────────┘
 
 · focus · the blocked child, [a] answers it here
@@ -33,7 +33,8 @@
 │     the rails and the frame are one component            │
 │   ✗ patcher-4  apply patch       failed · 1 tool · $0.01 │
 │     round limit (25) reached                             │
-│ enter attach · a answer · x cancel · X kill · esc back   │
+│ [enter] attach · [a] answer · [x] cancel · [X] kill      │
+│ [esc] back                                               │
 └──────────────────────────────────────────────────────────┘
 
 · focus · the failed child, [r] runs it again
@@ -46,7 +47,8 @@
 │     the rails and the frame are one component            │
 │ ❯ ✗ patcher-4  apply patch       failed · 1 tool · $0.01 │
 │     round limit (25) reached                             │
-│ enter attach · r retry · x cancel · X kill · esc back    │
+│ [enter] attach · [r] retry · [x] cancel · [X] kill       │
+│ [esc] back                                               │
 └──────────────────────────────────────────────────────────┘
 
 · the row that is not an agent · enter drafts a profile instead of attaching
@@ -60,7 +62,7 @@
 │   ✗ patcher-4  apply patch       failed · 1 tool · $0.01 │
 │     round limit (25) reached                             │
 │ ❯ ⚙ draft a new profile                      /agents new │
-│ enter draft a profile · esc back                         │
+│ [enter] draft a profile · [esc] back                     │
 └──────────────────────────────────────────────────────────┘
 
 ── ansi ────────────────────────────────────────────────────
@@ -74,7 +76,7 @@
 ␛[38;5;244m│␛[m     ␛[38;5;244mthe rails and the frame are one component␛[m            ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254m✗␛[m patcher-4  ␛[38;5;244mapply patch␛[m       ␛[38;5;254mfailed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 tool · $0.01␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m     ␛[38;5;244mround limit (25) reached␛[m                             ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[3;38;5;244menter attach · x cancel · X kill · esc back␛[m              ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[3;38;5;244m[enter] attach · [x] cancel · [X] kill · [esc] back␛[m      ␛[38;5;244m│␛[m
 ␛[38;5;244m└──────────────────────────────────────────────────────────┘␛[m
 
 · focus · the blocked child, [a] answers it here
@@ -87,7 +89,8 @@
 ␛[38;5;244m│␛[m     ␛[38;5;244mthe rails and the frame are one component␛[m            ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254m✗␛[m patcher-4  ␛[38;5;244mapply patch␛[m       ␛[38;5;254mfailed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 tool · $0.01␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m     ␛[38;5;244mround limit (25) reached␛[m                             ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[3;38;5;244menter attach · a answer · x cancel · X kill · esc back␛[m   ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[3;38;5;244m[enter] attach · [a] answer · [x] cancel · [X] kill␛[m      ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[3;38;5;244m[esc] back␛[m                                               ␛[38;5;244m│␛[m
 ␛[38;5;244m└──────────────────────────────────────────────────────────┘␛[m
 
 · focus · the failed child, [r] runs it again
@@ -100,7 +103,8 @@
 ␛[38;5;244m│␛[m     ␛[38;5;244mthe rails and the frame are one component␛[m            ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[1;48;5;237m❯␛[m ␛[38;5;254m✗␛[m patcher-4  ␛[38;5;244mapply patch␛[m       ␛[38;5;254mfailed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 tool · $0.01␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m     ␛[38;5;244mround limit (25) reached␛[m                             ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[3;38;5;244menter attach · r retry · x cancel · X kill · esc back␛[m    ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[3;38;5;244m[enter] attach · [r] retry · [x] cancel · [X] kill␛[m       ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[3;38;5;244m[esc] back␛[m                                               ␛[38;5;244m│␛[m
 ␛[38;5;244m└──────────────────────────────────────────────────────────┘␛[m
 
 · the row that is not an agent · enter drafts a profile instead of attaching
@@ -114,5 +118,5 @@
 ␛[38;5;244m│␛[m   ␛[38;5;254m✗␛[m patcher-4  ␛[38;5;244mapply patch␛[m       ␛[38;5;254mfailed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 tool · $0.01␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m     ␛[38;5;244mround limit (25) reached␛[m                             ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[1;48;5;237m❯␛[m ␛[38;5;254m⚙␛[m draft a new profile                      ␛[38;5;244m/agents new␛[m ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[3;38;5;244menter draft a profile · esc back␛[m                         ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[3;38;5;244m[enter] draft a profile · [esc] back␛[m                     ␛[38;5;244m│␛[m
 ␛[38;5;244m└──────────────────────────────────────────────────────────┘␛[m

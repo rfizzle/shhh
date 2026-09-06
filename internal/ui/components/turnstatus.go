@@ -12,8 +12,11 @@ package components
 // a closed vocabulary of four, so a state nobody defined has to pick the
 // nearest rather than invent a fifth. The fields leave in one order as the
 // terminal narrows — tool argument, then token counts, then elapsed — and the
-// phase and the cost never leave, because what it is doing and what it is
-// costing are the two things the line exists to say. And the spinner frame is
+// phase never leaves, nor does the cost once a host has stated one, because
+// what it is doing and what it is costing are the two things the line exists
+// to say. Whether it states the cost at all is the host's: an account the
+// rail below is already carrying is not one this line has to repeat
+// (docs/interface/surfaces.md#the-input-frame). And the spinner frame is
 // passed in rather than kept, so this line, the running activity row and
 // anything else that moves show the same frame from the one tick source.
 
@@ -86,8 +89,13 @@ type TurnStatus struct {
 	// them ("9,834"), the settled shape ("41.2k") once nothing is, and a
 	// figure part-way between two rounds while a count is still climbing to
 	// the second (odometer.go). Both are needed for either to render, because
-	// one arrow alone is half a fact. Cost is what they have cost, and it
-	// never drops.
+	// one arrow alone is half a fact. Cost is what they have cost, and once
+	// it is here the drop ladder never takes it.
+	//
+	// A host leaves all three empty where the account it would draw is the
+	// one already on the rail below — on a first-turn session the turn is the
+	// session — and the line is the phase, the spinner and elapsed
+	// (docs/interface/surfaces.md#the-input-frame).
 	Up, Down string
 	Cost     string
 

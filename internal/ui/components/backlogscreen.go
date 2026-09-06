@@ -669,7 +669,10 @@ func (b *BacklogScreen) headerKeys() string {
 	if b.keys {
 		list = keys.Bracket(keys.Backlog.List) + " hide the keys"
 	}
-	return list + " · " + keys.Bracket(keys.Backlog.Back) + " " + keys.Words(keys.Backlog.Back)
+	// One word, the way every screen in the family ends its header: what the
+	// key is for. What it will do is the foot's to say
+	// (docs/interface/surfaces.md#the-supporting-screens).
+	return list + " · " + words(keys.Backlog.Back, "back")
 }
 
 // filterWords is what the header says the filters are, in words rather than
@@ -1241,7 +1244,10 @@ func (b *BacklogScreen) offers() []KeyOffer {
 		return []KeyOffer{
 			keyOffer(keys.Backlog.Move),
 			keyOfferAs(keys.Backlog.ClearQ, "clear the filter, then close it"),
-			keyOfferAs(keys.Backlog.Back, "close it"),
+			// esc and not the letter: a row being typed into keeps every
+			// letter as text, so the two keystrokes no sentence produces are
+			// the whole of what closes it (invariant 5).
+			wayOut("close it"),
 		}
 	}
 	if b.reading {
@@ -1259,7 +1265,7 @@ func (b *BacklogScreen) offers() []KeyOffer {
 	if !b.ReadOnly {
 		out = append(out, b.stateOffers()...)
 	}
-	return append(out, keyOfferAs(keys.Backlog.Back, "back to the prompt"))
+	return append(out, wayOut(backToPrompt))
 }
 
 // tabOffer names the tab the key would go to rather than the tab it is on,
@@ -1389,7 +1395,7 @@ func (b *BacklogScreen) keyList() []KeyOffer {
 	if b.Sprint != "" {
 		out = append(out, keyOfferAs(keys.Backlog.Sprint, "add it to "+b.Sprint+", or drop it"))
 	}
-	return append(out, keyOfferAs(keys.Backlog.Back, "back to the prompt"))
+	return append(out, wayOut(backToPrompt), keyOfferAs(keys.Backlog.Back, backToPrompt))
 }
 
 // archived, sprinting and planning are which tab the screen is on and

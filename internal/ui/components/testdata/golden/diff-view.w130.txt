@@ -38,7 +38,7 @@
 
 
 
-diff · j/k scroll · n/p hunk · s side-by-side · esc back
+diff · [j/k] scroll · [n/p] hunk · [s] side-by-side · [esc] back
 
 ── ansi ────────────────────────────────────────────────────
 · mode · collapsed (transcript row)
@@ -69,4 +69,4 @@ diff · j/k scroll · n/p hunk · s side-by-side · esc back
 
 
 
-␛[3;38;5;241mdiff · j/k scroll · n/p hunk · s side-by-side · esc back␛[m
+␛[3;38;5;241mdiff · [j/k] scroll · [n/p] hunk · [s] side-by-side · [esc] back␛[m

@@ -309,12 +309,16 @@ func (c *ContextScreen) header() ScreenHeader {
 // register, and the way back. A takeover that did not state its way out would
 // be a surface holding the keyboard with nothing saying how to give it back
 // (invariant 5).
+//
+// The way back is one word here, as it is on every screen in the family: a
+// header field says what the key is for and the foot says what it will do
+// (docs/interface/surfaces.md#the-supporting-screens).
 func (c *ContextScreen) headerKeys() string {
 	list := keys.Bracket(keys.Context.List) + " " + keys.Words(keys.Context.List)
 	if c.ShowKeys {
 		list = keys.Bracket(keys.Context.List) + " hide the keys"
 	}
-	return list + " · " + keys.Bracket(keys.Context.Back) + " " + keys.Words(keys.Context.Back)
+	return list + " · " + words(keys.Context.Back, "back")
 }
 
 // bodyRows is the two panels and the folds under them, trimmed to the budget.
@@ -605,11 +609,14 @@ func (c *ContextScreen) keyRows(width int) []string {
 	if !c.ShowKeys {
 		return []string{Clip(sty.Dim.Render(contextKeyRow(width)), width)}
 	}
-	rows := make([]string, 0, len(keys.Context.All()))
+	rows := make([]string, 0, len(keys.Context.All())+1)
 	for _, b := range keys.Context.All() {
 		rows = append(rows, Clip(sty.Dim.Render("  "+offer(b)), width))
 	}
-	return rows
+	// The way out answers to esc as well as to the letter, and the register
+	// is where a key the compact row spells one way is spelled both.
+	return append(rows,
+		Clip(sty.Dim.Render("  "+words(keys.Select.Cancel, backToPrompt)), width))
 }
 
 // contextKeyRow is the surface's keys as one line, in the order the register
@@ -617,11 +624,17 @@ func (c *ContextScreen) keyRows(width int) []string {
 // out is the last thing on it and so the last thing to go: a takeover that
 // clipped its own exit would be holding the keyboard with nothing saying how
 // to give it back (invariant 5).
+//
+// `[?]` and the letter are not on it. The header already carries both, and a
+// frame that repeats a key row verbatim two rows down has spent a row saying
+// nothing — so the foot states the act in the phrase and under the key a
+// reader reaches for, which is what every other screen in the family does
+// (docs/interface/surfaces.md#the-supporting-screens).
 func contextKeyRow(width int) string {
-	all := keys.Context.All()
-	parts := make([]string, 0, len(all))
-	for _, b := range all {
-		parts = append(parts, keys.Bracket(b)+" "+keys.Words(b))
+	parts := []string{
+		offer(keys.Context.Move),
+		offer(keys.Context.Expand),
+		words(keys.Select.Cancel, backToPrompt),
 	}
 	for len(parts) > 1 {
 		if lipgloss.Width(strings.Join(parts, " · ")) <= width {

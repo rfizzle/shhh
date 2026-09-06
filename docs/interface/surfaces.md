@@ -261,6 +261,16 @@ session has spent is what the earlier turns cost plus what this one is costing,
 and a request's report replaces that turn's estimate instead of being added to
 it.
 
+Which is why the top rail states the turn's tokens and cost only where they
+are not the session's. On the first turn of a session the two accounts are the
+same three figures, and drawing them on both rails puts one number twice on
+one frame, a hand apart, with nothing to say which is which except that they
+agree. So the top rail draws them once the turns before it have made them a
+different reading, and carries the phase, the spinner and how long it has been
+in it until then. Nothing about how a figure is shaped changes with it: a
+count still prints every digit while something is moving it and goes back to
+`41.2k` once nothing is.
+
 Above it, a notice rail exists only while there is something to say and
 disappears when there is not. Under that, on the terminals too narrow for the
 [inspector rail](#the-inspector-rail), the status row that stands in for it.
@@ -601,10 +611,20 @@ touches, whether shhh can take it back, and whether the network is open. A
 prompt that says only what the action *is* asks the reader to do the risk
 assessment themselves, at speed, twenty times a session — and they will stop.
 
-Severity leads as a word. Resolution is honest about its limits: where the
-blast radius cannot be determined, the card says so rather than reporting a
-confident nothing. What the containment profile allows is reported from what
-is actually in force, not from what was configured.
+Severity leads as a word. The card says it three ways at once — the border,
+the chip on the title rail, and the first row of the body — and the three are
+three statements rather than one printed three times. The chip is the level
+with its glyph; the body row is the level with what makes it that, in the
+terms the level was decided in: *medium · edits one file under internal/agent*,
+*low · writes nothing*, *HIGH* followed by the risk that flagged it. Where a
+variant has nothing to read the reason off, the row states the level and stops,
+because a reason invented to fill it would be the one thing on the card the
+reader could not check.
+
+Resolution is honest about its limits: where the blast radius cannot be
+determined, the card says so rather than reporting a confident nothing. What
+the containment profile allows is reported from what is actually in force, not
+from what was configured.
 
 The card's border carries how much the decision on it weighs, and the run of
 its top edge between the title and the chips carries nothing — so that run is
@@ -782,6 +802,33 @@ ground given up in the same order as the terminal narrows, the same key row at
 the foot and the same `[?]` behind it. The two that arrived last had each been
 drawing a chrome of their own, and the way that showed was not in either of
 them: it was reading all of them side by side.
+
+They say the way out in one voice, and each of them says it twice because a
+key row and a header are read at different moments — not because there are two
+facts. The header ends with the register's key and then the letter, with the
+act in one word: `quit` where the screen was opened from a command line,
+`back` where it was opened from a session. The foot ends with the same act
+under the key a reader reaches for without thinking, and there it is a phrase:
+**back to the shell** on doctor, metrics, history, snippets and the saved-chat
+browser, **back to the prompt** on the context reading and on the backlog,
+which is drawn on this chrome too ([the backlog screen](#the-backlog-screen)).
+For leaving a screen and changing nothing there is no third wording.
+
+Three of them leave by doing something rather than nothing, and each says what
+it does in this same vocabulary instead of inventing one: the settings screen
+*leaves* with nothing staged and *discards, after asking* with something
+staged; rating *stops*; and the drafting flow unwinds one exchange at a time,
+so what its esc says is which of the four things it is about to do — leave,
+go back a step, stop the drafting turn, or drop the draft
+([the profile drafter](#the-profile-drafter)). That flow is also the one
+header here with no register key to put in front of the way out, so esc is
+the whole of its right-hand run.
+
+Neither row repeats the other. The header carries the register's key and the
+letter; the foot carries what the screen can do and, last, the way out. A
+surface that put `[?]` and the letter on both rows spent its bottom row saying
+what its top row had already said, which on the narrowest terminal is the row
+that had least to give.
 
 Three of them list something and preview what the pointer is on — past
 commands, saved commands, saved conversations — and they split the terminal

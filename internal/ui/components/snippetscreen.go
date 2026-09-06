@@ -385,7 +385,7 @@ func (s *SnippetScreen) offers(width int, field string) []KeyOffer {
 		}
 		acts = append(acts, keyOffer(keys.Screen.Filter))
 	}
-	acts = append(acts, keyOfferAs(keys.Select.Cancel, "back to the shell"))
+	acts = append(acts, wayOut(backToShell))
 
 	rungs := [][]KeyOffer{
 		append([]KeyOffer{move}, acts...),
@@ -417,8 +417,8 @@ func (s *SnippetScreen) keyList() []KeyOffer {
 		keyOfferAs(keys.Screen.Filter, "filter by name or by what the command is"),
 		keyOfferAs(keys.Screen.ClearQ, "clear the filter or the rename row"),
 		keyOfferAs(keys.Query.Rub, "take a rune back out of either"),
-		keyOfferAs(keys.Screen.Keep, "keep the name, or leave the screen"),
-		keyOfferAs(keys.Screen.Quit, "back to the shell, running nothing"),
+		keyOfferAs(keys.Screen.Keep, "keep the name, or "+backToShell),
+		keyOfferAs(keys.Screen.Quit, backToShell),
 	}
 }
 

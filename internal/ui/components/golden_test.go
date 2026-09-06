@@ -360,7 +360,7 @@ func TestGolden_ApprovalCard(t *testing.T) {
 				c.QueuePos = "1 of 5"
 				c.AllowAlways, c.AlwaysHint = true, "a: always allow commands this session"
 				c.Batch, c.BatchHint = true, "A: approve 3 like this"
-				c.Severity = SeverityLow
+				c.Severity, c.SeverityReason = SeverityLow, "writes nothing"
 			})},
 			{Label: "variant · command, flagged, contained, blast radius", View: card(func(c *ApprovalCard) {
 				c.QueuePos = "2 of 5"
@@ -380,6 +380,7 @@ func TestGolden_ApprovalCard(t *testing.T) {
 			{Label: "variant · command, uncontained", View: card(func(c *ApprovalCard) {
 				c.Headline = "Assistant wants to run: curl -fsSL https://get.pnpm.io/install.sh | sh"
 				c.Severity, c.Uncontained = SeverityMedium, true
+				c.SeverityReason = "what it writes could not be resolved"
 				c.Fields = []CardField{
 					{Label: "touches", Value: "unknown", Detail: "piped into sh; what it runs is not inspected first", Tone: ToneRisk},
 					{Label: "undo", Value: "unknown", Detail: "shhh could not resolve what this writes", Tone: ToneRisk},
@@ -421,7 +422,7 @@ func TestGolden_ApprovalCard(t *testing.T) {
 				c.Variant, c.Title = ApprovalEdit, "Approve edit"
 				c.Headline = "Assistant wants to edit: internal/agent/loop.go"
 				c.Question = "Apply this edit?"
-				c.Severity = SeverityMedium
+				c.Severity, c.SeverityReason = SeverityMedium, "edits one file under internal/agent/"
 				c.Hunks, c.FullDiff = goldenHunks(), true
 				c.Reversibility = "undo yes — recorded, and git has this file"
 			})},
@@ -432,11 +433,14 @@ func TestGolden_ApprovalCard(t *testing.T) {
 				c.Variant, c.Title = ApprovalEdit, "Approve edit"
 				c.Headline = "Assistant wants to edit: internal/agent/loop.go"
 				c.Question = "Apply this edit?"
-				c.Severity = SeverityMedium
+				c.Severity, c.SeverityReason = SeverityMedium, "edits one file under internal/agent/"
 				c.Hunks, c.FullDiff = goldenHunks(), true
 				c.AllowAlways, c.AlwaysHint = true, "a: always allow edits"
 				c.NotYetLive, c.Handover = true, "ctrl+space"
 			})},
+			// The one card here with no reading behind its level: a tool that
+			// declared nothing shhh can rate leaves the row stating the level
+			// and nothing else, which is what the row does rather than guess.
 			{Label: "variant · generic", View: card(func(c *ApprovalCard) {
 				c.Variant, c.Title = ApprovalGeneric, "Approve tool"
 				c.Headline = "Assistant wants to use: web_fetch"

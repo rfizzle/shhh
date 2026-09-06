@@ -47,16 +47,34 @@ func (m Model) turnStatus() (components.TurnStatus, bool) {
 	// liveTurnTokens' answer, and how they get there is the odometer's. Full
 	// resolution while the turn works, because the rounding that makes
 	// `41.2k` the right shape for a finished session is exactly what hides a
-	// round of movement.
+	// round of movement. The cost is derived from those live counts and not
+	// from the last thing a response reported, which is also why an unpriced
+	// model states tokens here instead of a made-up zero.
 	in, out := m.easedTurnTokens()
 	if in > 0 || out > 0 {
-		s.Up, s.Down = components.FormatLiveCount(in), components.FormatLiveCount(out)
+		up, down, cost := components.FormatLiveCount(in), components.FormatLiveCount(out), m.spendLabel(in, out)
+		if m.accountDiffers(up, down, cost) {
+			s.Up, s.Down, s.Cost = up, down, cost
+		}
 	}
-	// Derived from the live counts, not from the last thing a response
-	// reported — which is also why an unpriced model states tokens here
-	// instead of a made-up zero.
-	s.Cost = m.spendLabel(in, out)
 	return s, true
+}
+
+// accountDiffers reports whether the turn's account is something the frame is
+// not already saying. The vitals rail two rows below carries the session's,
+// and on the first turn of a session the two are the same three figures —
+// drawn twice, a hand apart, with nothing to tell the reader which is which
+// except that they agree (docs/interface/surfaces.md#the-input-frame).
+//
+// It compares what the two rails would print rather than what they were
+// composed from. That is the fact the reader has in front of them, and it is
+// also the honest test: the two accounts climb on counters of their own
+// (vitals.go), so figures that round to one shape are one shape on screen
+// whatever the raw totals behind them were.
+func (m Model) accountDiffers(up, down, cost string) bool {
+	sin, sout := m.liveSessionTokens()
+	return up != m.countLabel(sin) || down != m.countLabel(sout) ||
+		cost != m.spendLabel(sin, sout)
 }
 
 // turnPhase is which of the four phases the turn is in, the argument to name
