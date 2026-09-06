@@ -1,12 +1,18 @@
 package cli
 
 import (
+	"encoding/json"
+	"errors"
+	"slices"
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
+	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/subagent"
+	"github.com/rfizzle/shhh/internal/tools"
 )
 
 func TestAgentProfilesReaders(t *testing.T) {
@@ -99,5 +105,75 @@ func TestSessionEnvWorkspaceBlockIsOptional(t *testing.T) {
 	env := &sessionEnv{workspace: func() string { return "# Workspace\n- Git branch: side" }}
 	if got := env.workspaceBlock(); got != "# Workspace\n- Git branch: side" {
 		t.Errorf("the block should come through as it was built, got %q", got)
+	}
+}
+
+// Every child is wired into the parent's notebook the same way, and a
+// writer is the case that has to be said out loud: it works in an isolated
+// copy of the checkout and still writes into the session's notebook, under
+// its own name, because the notebook belongs to the session and not to a
+// tree. It can add and read; there is no tool that removes anything.
+func TestChildWritesIntoTheParentsNotebook(t *testing.T) {
+	nb := notebook.New(nil)
+	nb.SetTurn(4)
+	_, _, _ = nb.Write(notebook.Orchestrator, "The gate lives in mode.go", "policy.Decide reads the deny list")
+
+	passed := errors.New("passed on")
+	next := func(string, json.RawMessage) (string, error) { return "", passed }
+
+	for _, child := range []string{"writer-1", "researcher-1", "reviewer-1"} {
+		defs, exec, sysPrompt := withNotebook(nb, child, tools.Definitions(), next, "# Environment")
+		var have []string
+		for _, d := range defs {
+			have = append(have, d.Name)
+		}
+		for _, want := range []string{notebook.WriteToolName, notebook.ReadToolName} {
+			if !slices.Contains(have, want) {
+				t.Errorf("%s was not given %s", child, want)
+			}
+		}
+		if !strings.Contains(sysPrompt, "The gate lives in mode.go") {
+			t.Errorf("%s was not told what the notebook already holds:\n%s", child, sysPrompt)
+		}
+		if !strings.Contains(sysPrompt, "# Environment") {
+			t.Errorf("%s lost the prompt the block was added to:\n%s", child, sysPrompt)
+		}
+		args := json.RawMessage(`{"title":"` + child + ` found it","body":"in internal/cli"}`)
+		if _, err := exec(notebook.WriteToolName, args); err != nil {
+			t.Fatalf("%s could not write: %v", child, err)
+		}
+		// Nothing a child can call removes a note; an unknown name is
+		// passed on down the chain rather than answered here.
+		if _, err := exec("delete_note", json.RawMessage(`{"id":1}`)); !errors.Is(err, passed) {
+			t.Errorf("%s reached something that deletes", child)
+		}
+	}
+
+	notes := notebook.WrittenIn(nb.List(), 4, notebook.Orchestrator)
+	if len(notes) != 3 {
+		t.Fatalf("the parent's notebook holds %d of its children's notes", len(notes))
+	}
+	for i, want := range []string{"writer-1", "researcher-1", "reviewer-1"} {
+		if notes[i].Author != want {
+			t.Errorf("note %d signed %q, want %q", i, notes[i].Author, want)
+		}
+	}
+	// The orchestrator's own note is still there and is not counted as a
+	// child's.
+	if nb.Len() != 4 {
+		t.Fatalf("the notebook holds %d notes", nb.Len())
+	}
+}
+
+// A session with no notebook is left exactly as it was: the block is what
+// tells a child the tools exist, so it must never be added without them.
+func TestChildWithoutANotebookIsUnchanged(t *testing.T) {
+	base := agent.ToolExecutor(func(string, json.RawMessage) (string, error) { return "ok", nil })
+	defs, exec, sysPrompt := withNotebook(nil, "writer-1", tools.Definitions(), base, "# Environment")
+	if len(defs) != len(tools.Definitions()) || sysPrompt != "# Environment" {
+		t.Errorf("a session with no notebook still handed one out: %d defs, prompt %q", len(defs), sysPrompt)
+	}
+	if out, err := exec(notebook.WriteToolName, nil); err != nil || out != "ok" {
+		t.Errorf("the chain was wrapped anyway: %q %v", out, err)
 	}
 }

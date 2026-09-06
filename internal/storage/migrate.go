@@ -345,6 +345,13 @@ var migrations = []string{
 	);
 
 	CREATE INDEX IF NOT EXISTS idx_changes_session_turn ON changes(session_id, turn);`,
+
+	// The turn a note was written in, so the turn that spawned a fan-out can
+	// say what came back from it. Zero is a note written before any surface
+	// said which turn was open — every note already in a store when this
+	// column arrived — and it reads as "no turn", not as turn one
+	// (docs/capabilities/subagents.md#what-they-share).
+	`ALTER TABLE notes ADD COLUMN turn INTEGER NOT NULL DEFAULT 0;`,
 }
 
 // migrate brings the store up to the current schema, one step per

@@ -8,22 +8,36 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
-// The notebook's two tools. Both auto-run in every mode: a note is text in
-// a store the user can list and clear, and a read is a read. Writing needs
-// no confirmation the way a memory does because a note claims nothing
-// beyond this conversation.
-// See docs/capabilities/chat.md#what-they-share.
+// The notebook's two tools, and there is deliberately no third. Both
+// auto-run in every mode: a note is text in a store the user can list and
+// clear, and a read is a read. Writing needs no confirmation the way a
+// memory does because a note claims nothing beyond this session.
+//
+// There is no delete tool, for any agent, in any mode. An agent may add to
+// what the session knows and read what is there; removing something is the
+// person's, through /notes. Without that line a delegate could quietly
+// unmake a sibling's finding, and the parent would read a notebook that
+// looks complete.
+// See docs/capabilities/subagents.md#what-they-share.
 const (
 	WriteToolName = "write_note"
 	ReadToolName  = "read_note"
 )
 
-// Definitions are the tool definitions every agent in a chat session gets.
+// Orchestrator is the author a session's own agent signs its notes with.
+// Every delegate signs with its own name, so this is the one string that
+// says "not a delegate" — which is what the turn's close counts against
+// when it reports what came back from a fan-out.
+const Orchestrator = "assistant"
+
+// Definitions are the tool definitions every agent in a session gets — the
+// orchestrator and every delegate, in a conversation and in a coding
+// session alike.
 func Definitions() []provider.Tool {
 	return []provider.Tool{
 		{
 			Name:        WriteToolName,
-			Description: "Write a note to the session's shared notebook, which every agent in this session (the orchestrator and all delegates) can read. Use it for what the rest of the session will need: a fact established, a source and what it said, a decision the user made. One paragraph, titled. Notes persist with the conversation and are not the user's durable memory.",
+			Description: "Write a note to the session's shared notebook, which every agent in this session (the orchestrator and all delegates) can read. Use it for what the rest of the session will need: a fact established, a source and what it said, a decision the user made. One paragraph, titled. Notes persist with the session and are not the user's durable memory. Notes cannot be removed once written; only the user can drop one.",
 			Parameters: json.RawMessage(`{
 				"type": "object",
 				"properties": {

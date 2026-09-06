@@ -6,15 +6,16 @@ import (
 	"github.com/rfizzle/shhh/internal/notebook"
 )
 
-// The notebook's persistence: notes keyed by the chat session slot they
-// belong to, so a resumed conversation resumes its notebook. The store owns
-// the bounds and the in-memory copy; this layer only persists.
+// The notebook's persistence: notes keyed by the session slot they belong
+// to, so a resumed session — a conversation or a coding session — resumes
+// its notebook. The store owns the bounds and the in-memory copy; this layer
+// only persists.
 
 // SaveNote inserts one note under a session and returns its id.
 func (db *DB) SaveNote(session string, n notebook.Note) (int64, error) {
 	res, err := db.sql.Exec(
-		`INSERT INTO notes (session, author, title, body, written_at) VALUES (?, ?, ?, ?, ?)`,
-		session, n.Author, n.Title, n.Body, n.Written.UTC().Format(time.RFC3339Nano),
+		`INSERT INTO notes (session, author, title, body, turn, written_at) VALUES (?, ?, ?, ?, ?, ?)`,
+		session, n.Author, n.Title, n.Body, n.Turn, n.Written.UTC().Format(time.RFC3339Nano),
 	)
 	if err != nil {
 		return 0, err
@@ -25,7 +26,7 @@ func (db *DB) SaveNote(session string, n notebook.Note) (int64, error) {
 // LoadNotes returns a session's notes, oldest first.
 func (db *DB) LoadNotes(session string) ([]notebook.Note, error) {
 	rows, err := db.sql.Query(
-		`SELECT id, author, title, body, written_at FROM notes WHERE session = ? ORDER BY id`, session)
+		`SELECT id, author, title, body, turn, written_at FROM notes WHERE session = ? ORDER BY id`, session)
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +37,7 @@ func (db *DB) LoadNotes(session string) ([]notebook.Note, error) {
 			n       notebook.Note
 			written string
 		)
-		if err := rows.Scan(&n.ID, &n.Author, &n.Title, &n.Body, &written); err != nil {
+		if err := rows.Scan(&n.ID, &n.Author, &n.Title, &n.Body, &n.Turn, &written); err != nil {
 			return nil, err
 		}
 		n.Written, _ = time.Parse(time.RFC3339Nano, written)

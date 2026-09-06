@@ -175,8 +175,8 @@ them, set NAME takes one from your environment (or NAME=value
 declares it outright), forget NAME drops it. What a command
 prints is scrubbed of them before it reaches the transcript`,
 	"/notes": `The session's shared notebook — what the agents wrote for
-each other, and what a backlog run wrote up. drop <n> removes
-one, clear empties it`,
+each other, and what a backlog run wrote up, listed by author.
+Dropping is yours alone: drop <n> removes one, clear empties it`,
 	"/memory": `Durable memories: list (default) · add [global] [kind] <text> ·
 edit <id> (opens the entry in your editor) · forget <id>`,
 	"/agents": `Agent manager: attach, steer, cancel, kill sub-agents (also ` + keys.Shown(keys.Draft.Agents) + `)

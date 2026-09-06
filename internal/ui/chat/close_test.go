@@ -12,6 +12,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -399,5 +400,74 @@ func TestTurnClose_IsAnOrdinaryTranscriptEntry(t *testing.T) {
 		if len([]rune(line)) > 46 {
 			t.Fatalf("a re-rendered row must fit the new width: %q", line)
 		}
+	}
+}
+
+// A child's report reaches the model and never the screen. Its notes are
+// the other half — what a sibling will need — and without a line at the
+// turn's close the person would not know anything had been written until
+// they typed /notes.
+func TestTurnClose_TheCloseNamesWhatTheChildrenWroteDown(t *testing.T) {
+	m := turnModel(t)
+	m = m.WithNotebook(notebook.New(nil))
+	m.turnCount = 4
+	m.notebook.SetTurn(4)
+
+	if got := m.turnNotesClause(); got != "" {
+		t.Fatalf("a turn nobody wrote in reports %q", got)
+	}
+	// The session's own notes are not a fan-out's findings: the rows that
+	// wrote them are already in front of the person.
+	_, _, _ = m.notebook.Write(notebook.Orchestrator, "Mine", "what I worked out")
+	if got := m.turnNotesClause(); got != "" {
+		t.Fatalf("the orchestrator's own note was counted as a child's: %q", got)
+	}
+
+	_, _, _ = m.notebook.Write("reviewer-1", "The gate reads the deny list", "policy.Decide")
+	_, _, _ = m.notebook.Write("reviewer-1", "And the write tier", "mode.go")
+	if got := m.turnNotesClause(); got != "2 notes from reviewer-1" {
+		t.Fatalf("the close said %q", got)
+	}
+	_, _, _ = m.notebook.Write("researcher-1", "Where the goldens live", "testdata/golden")
+	if got := m.turnNotesClause(); got != "3 notes from reviewer-1, researcher-1" {
+		t.Fatalf("the close said %q", got)
+	}
+
+	// A later turn reports its own fan-out, not the one before it.
+	m.turnCount = 5
+	m.notebook.SetTurn(5)
+	if got := m.turnNotesClause(); got != "" {
+		t.Fatalf("turn 5 claimed turn 4's notes: %q", got)
+	}
+	_, _, _ = m.notebook.Write("writer-1", "The patch is in loop.go", "one hunk")
+	if got := m.turnNotesClause(); got != "1 note from writer-1" {
+		t.Fatalf("the close said %q", got)
+	}
+
+	// The row is a reading, not an act: no rail, and nothing in the glyph
+	// column either.
+	view := plainView(&components.TurnClose{
+		State: components.TurnDone, Notes: "2 notes from reviewer-1",
+	}, 80)
+	line := strings.Split(view, "\n")[1]
+	if !strings.HasPrefix(line, "   2 notes from reviewer-1") {
+		t.Fatalf("the notes row carries a rail or a glyph: %q", line)
+	}
+	// And the notification, which has no glyphs at all, says it too.
+	if s := (&components.TurnClose{State: components.TurnDone, Notes: "2 notes from reviewer-1"}).Summary(); !strings.Contains(s, "2 notes from reviewer-1") {
+		t.Fatalf("the summary dropped the notes: %q", s)
+	}
+}
+
+// The turn a note carries is the turn the surface was on when it was
+// written, and the notebook is told at the same moment the counter moves.
+func TestTurnClose_TheNotebookIsToldWhichTurnIsOpen(t *testing.T) {
+	m := sendText(t, readyModel(t).WithNotebook(notebook.New(nil)), "have a look")
+	n, _, err := m.notebook.Write("researcher-1", "Found it", "in loop.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n.Turn != m.turnCount {
+		t.Fatalf("a note written during turn %d was stamped %d", m.turnCount, n.Turn)
 	}
 }

@@ -162,6 +162,27 @@ func (a *agentProfiles) modelFor(cfg config.Config, role subagent.Role, requeste
 	return cfg.AgentModel(string(role), sessionModel)
 }
 
+// withNotebook wires a child into the session's shared notebook: the two
+// tools, an executor that signs what it writes with the child's own name,
+// and the titles already in the notebook, so the child starts by reading
+// rather than re-finding.
+//
+// It is one call outside every role branch, because every child gets this
+// and no child gets a variant of it. A writer works in an isolated copy of
+// the checkout and still writes into the parent's notebook — the notebook
+// belongs to the session, not to a tree — and no child gets a way to remove
+// anything from it, because there is no such tool to hand out.
+// See docs/capabilities/subagents.md#what-they-share.
+func withNotebook(nb *notebook.Store, name string, defs []provider.Tool, base agent.ToolExecutor, sysPrompt string) (
+	[]provider.Tool, agent.ToolExecutor, string) {
+	if nb == nil {
+		return defs, base, sysPrompt
+	}
+	defs = append(defs, notebook.Definitions()...)
+	base = nb.WrapExecutor(name, base)
+	return defs, base, prompt.CombineExtra(sysPrompt, notebook.PromptBlock(nb.List()))
+}
+
 // buildSupervisor assembles the session's sub-agent supervisor. The session's
 // changeset comes in because a writer starts from the parent's tree, and the
 // files git has never heard of are the half of that tree only the session
@@ -234,14 +255,7 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			base = session.skills.WrapExecutor(base)
 			sysPrompt = prompt.CombineExtra(sysPrompt, skill.PromptBlock(session.skills))
 		}
-		// The shared notebook, signed with the child's name, and the
-		// titles already in it so the child starts by reading rather than
-		// re-finding (docs/capabilities/chat.md#what-they-share).
-		if session.notebook != nil {
-			defs = append(defs, notebook.Definitions()...)
-			base = session.notebook.WrapExecutor(spec.Name, base)
-			sysPrompt = prompt.CombineExtra(sysPrompt, notebook.PromptBlock(session.notebook.List()))
-		}
+		defs, base, sysPrompt = withNotebook(session.notebook, spec.Name, defs, base, sysPrompt)
 		// The servers the person marked read-only are reads, and a child
 		// gets them the way it gets the skills catalog. Every other
 		// server's tools need a card, and a child has no card of its own

@@ -45,6 +45,8 @@ var toolboxNotes = []struct{ name, note string }{
 	{"process", "start and watch a long-running process (a dev server, a watcher) without blocking the session on it."},
 	{"quality_gate", "run the project's own configured checks by suite name."},
 	{"report", "publish an answer that is a page rather than a paragraph — timings, comparisons, structures — as a local graphical page. The first line of its result is the link; put it in your answer. Plain text stays right for anything a sentence or a short table answers."},
+	{"write_note", "leave a note in the session's shared notebook, which every agent in this session — you and every sub-agent — reads. Write what the rest of the session needs and not what only your answer needs: a fact established, a source and what it said. A note cannot be unwritten; only the user drops one."},
+	{"read_note", "read the session's shared notebook. Read it before delegating, so a sub-agent is not sent to find what a sibling already found, and after a fan-out, for what its children wrote down beside their reports."},
 	{"spawn_agent", "delegate a self-contained piece of work — a wide search, an independent change — to a sub-agent. Its context is its own, so this is how a broad hunt happens without spending yours."},
 	{"agent_report", "collect what a spawned agent found."},
 	{"evidence", "retrieve the full output of an earlier tool result that was reduced. The notice on a reduced result carries its id."},

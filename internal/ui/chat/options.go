@@ -191,11 +191,13 @@ func (m *Model) adoptSlot(name string) {
 // user messages are the other reading and cover exactly that case.
 // Overshooting only skips a number, which costs nothing.
 func (m *Model) bindSlot() {
-	m.bindNotebook()
 	m.changes.SetSlot(m.sessionName)
 	if last := max(m.changes.LastTurn(), int64(m.conversationTurns())); last > m.turnCount {
 		m.turnCount = last
 	}
+	// After the counter has caught up, not before: the bind is also what
+	// tells the notebook which turn is open.
+	m.bindNotebook()
 }
 
 // mintSlot moves the session to a slot of its own, claimed now, giving back

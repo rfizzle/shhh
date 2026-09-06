@@ -139,8 +139,8 @@ type chatSession struct {
 	// of the surfaces that account for them. Sub-agents are offered, but
 	// only the roles that read. See docs/capabilities/chat.md#chat-changes-nothing.
 	conversation bool
-	// notebook is the shared channel between a conversation's agents;
-	// nil registers no notebook tools.
+	// notebook is the shared channel between the session's agents, opened
+	// by openNotebook; nil registers no notebook tools.
 	notebook *notebook.Store
 	// mcp connects the MCP servers the catalog names; mcpTools and
 	// mcpCatalog are what came of it. A conversation takes only servers
@@ -182,6 +182,28 @@ func (s *chatSession) openSecrets(cmd *cobra.Command, red *evidence.Reducer, pro
 	}
 	s.promptExtra = prompt.CombineExtra(s.promptExtra, secret.PromptBlock(v))
 	return nil
+}
+
+// openNotebook opens the session's shared notebook and registers its two
+// tools. Every session gets one — a conversation's colleagues and a coding
+// session's children alike, because what one child learns is what the next
+// should not have to find again, and that is as true of a fan-out over a
+// repository as of one over the web. It persists under the session slot when
+// storage is open and lives in memory for the session otherwise.
+//
+// It runs after the secrets are open, because the vault's rewrite has to be
+// on the store before anything can be written into it: a note outlives the
+// turn that wrote it, so a wrap around the store would see a value only once
+// the backend had already kept it.
+// See docs/capabilities/subagents.md#what-they-share.
+func (s *chatSession) openNotebook(db *storage.DB) {
+	var backend notebook.Backend
+	if db != nil {
+		backend = db
+	}
+	s.notebook = notebook.New(backend)
+	s.notebook.SetScrub(s.vault.Scrub)
+	s.toolDefs = append(append([]provider.Tool{}, s.toolDefs...), notebook.Definitions()...)
 }
 
 // sessionEnv is the provider-and-prompt setup shared by the interactive chat
@@ -661,17 +683,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		}
 	}
 
-	// The shared notebook: every agent in a conversation reads and
-	// writes it. It persists under the session slot when storage is open,
-	// and lives in memory for the session otherwise.
-	if session.conversation {
-		var backend notebook.Backend
-		if db != nil {
-			backend = db
-		}
-		session.notebook = notebook.New(backend)
-		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), notebook.Definitions()...)
-	}
+	session.openNotebook(db)
 
 	registerSkills(&session)
 
@@ -903,8 +915,9 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithModelOptions(provider.KnownModels(env.prov.Name())).
 		WithModelLister(modelListerFor(env.prov)).
 		WithEndpointWindows(endpointWindowsFor(env.prov))
+	model = model.WithNotebook(session.notebook)
 	if session.conversation {
-		model = model.WithConversation().WithNotebook(session.notebook)
+		model = model.WithConversation()
 	} else {
 		// The coding agent's machinery for acting and accounting for it:
 		// the command runners, containment, the changeset behind review

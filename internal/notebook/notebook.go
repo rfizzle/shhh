@@ -1,9 +1,9 @@
-// Package notebook is the shared channel between the agents of one chat
-// session: a set of short, titled, signed notes that the orchestrator and
-// every delegate can read and write. It is working state for one
-// conversation — kept with the session so a resume brings it back, and
-// never proposed to the user as memory.
-// See docs/capabilities/chat.md#what-they-share.
+// Package notebook is the shared channel between the agents of one session
+// — a conversation's or a coding session's: a set of short, titled, signed
+// notes that the orchestrator and every delegate can read and write. It is
+// working state for one session — kept with the session so a resume brings
+// it back, and never proposed to the user as memory.
+// See docs/capabilities/subagents.md#what-they-share.
 package notebook
 
 import (
@@ -24,15 +24,28 @@ const (
 	// MaxNotes bounds a session's notebook; the oldest is dropped when a new
 	// one would exceed it, and the drop is reported to the writer.
 	MaxNotes = 200
+	// MaxPromptTitles bounds the titles block a child is spawned with
+	// (PromptBlock). A title line is the title plus its id and its author,
+	// so a full notebook is around 200 × 100 characters — roughly five
+	// thousand tokens a child pays before it has read anything, spent again
+	// per child of a fan-out. The cap is set from that arithmetic rather
+	// than from any reading of how far back a session refers: forty lines
+	// is about a thousand tokens, and what falls outside it is still in the
+	// notebook and still reachable by read_note, so the cost of being wrong
+	// is one round in the rare case rather than a window in every one.
+	MaxPromptTitles = 40
 )
 
-// Note is one entry. Author is the agent that wrote it — "you" for the
-// orchestrator, a delegate's name otherwise — so a reader can weigh it.
+// Note is one entry. Author is the agent that wrote it — the orchestrator's
+// own name, or a delegate's — so a reader can weigh it, and Turn is the
+// turn it was written in, so the turn that spawned a fan-out can say what
+// came back from it.
 type Note struct {
 	ID      int64
 	Author  string
 	Title   string
 	Body    string
+	Turn    int64
 	Written time.Time
 }
 
@@ -55,6 +68,8 @@ type Store struct {
 	session string
 	notes   []Note
 	nextID  int64
+	turn    int64
+	scrub   func(string) string
 	now     func() time.Time
 }
 
@@ -62,6 +77,39 @@ type Store struct {
 // that lives as long as the process.
 func New(backend Backend) *Store {
 	return &Store{backend: backend, now: time.Now, nextID: 1}
+}
+
+// SetScrub installs the rewrite a note goes through before it is kept. A
+// note outlives the turn that wrote it — a row in the state directory that
+// a resume reads back — so a vaulted value reaching it has leaked in the
+// way that lasts longest, whatever the agent that wrote it was shown. It is
+// installed on the store rather than wrapped around it so the bytes on disk,
+// the bytes /notes prints and the bytes read_note returns are one text: a
+// wrapper would see the note only after the backend had already written it.
+//
+// It is a function and not a vault so this package needs to know nothing
+// about what a secret is. Nil is a session with no secrets.
+// See docs/capabilities/secrets.md#the-value-is-scrubbed-at-every-door.
+func (s *Store) SetScrub(scrub func(string) string) {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	s.scrub = scrub
+	s.mu.Unlock()
+}
+
+// SetTurn tells the notebook which turn is open, so a note a delegate
+// writes carries the turn its parent spawned it in. The caller is the
+// surface that owns the turn counter; a store nobody tells stamps zero,
+// which reads as "no turn said so" rather than as turn one.
+func (s *Store) SetTurn(turn int64) {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	s.turn = turn
+	s.mu.Unlock()
 }
 
 // Bind names the session the notebook belongs to and loads what that
@@ -111,7 +159,18 @@ func (s *Store) Bind(session string) error {
 
 // Write adds a note. It returns the note as stored and the title of any
 // note dropped to stay under MaxNotes.
+//
+// The scrub runs before the bounds are checked, not after, so the note that
+// is measured, refused, stored and echoed is one text. Scrubbing afterwards
+// would let a note pass the length check as the model wrote it and then grow
+// past it as a placeholder replaced a short value — and the copy on disk
+// would no longer be the copy the writer was told about.
 func (s *Store) Write(author, title, body string) (Note, string, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.scrub != nil {
+		title, body = s.scrub(title), s.scrub(body)
+	}
 	title = strings.TrimSpace(title)
 	body = strings.TrimSpace(body)
 	switch {
@@ -124,9 +183,7 @@ func (s *Store) Write(author, title, body string) (Note, string, error) {
 	case len(body) > MaxBodyLen:
 		return Note{}, "", fmt.Errorf("body is too long (%d chars, max %d) — a note is a paragraph; put the source in the evidence store or cite it", len(body), MaxBodyLen)
 	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	n := Note{ID: s.nextID, Author: author, Title: title, Body: body, Written: s.now()}
+	n := Note{ID: s.nextID, Author: author, Title: title, Body: body, Turn: s.turn, Written: s.now()}
 	if s.backend != nil && s.session != "" {
 		id, err := s.backend.SaveNote(s.session, n)
 		if err != nil {
@@ -187,7 +244,11 @@ func (s *Store) Find(query string) []Note {
 	return out
 }
 
-// Delete removes a note by id.
+// Delete removes a note by id. It is the person's route only: no agent has
+// a tool that reaches it (tool.go registers a write and a read and nothing
+// else), so a delegate can add to what the session knows and can never take
+// something out of it behind the person's back.
+// See docs/capabilities/subagents.md#what-they-share.
 func (s *Store) Delete(id int64) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -213,32 +274,110 @@ func (s *Store) Len() int {
 }
 
 // Format renders notes for a model: one heading per note with its author
-// and id, so a later call can cite or delete it.
+// and id, so a later call can cite it.
 func Format(notes []Note) string {
 	if len(notes) == 0 {
 		return "The notebook is empty."
 	}
+	return formatNotes(notes, true)
+}
+
+// formatNotes is Format's body, with the author dropped where the reader
+// already has it from the heading above.
+func formatNotes(notes []Note, signed bool) string {
 	var b strings.Builder
 	for i, n := range notes {
 		if i > 0 {
 			b.WriteString("\n\n")
 		}
-		fmt.Fprintf(&b, "## [n%d] %s — %s\n%s", n.ID, n.Title, n.Author, n.Body)
+		if signed {
+			fmt.Fprintf(&b, "## [n%d] %s — %s\n%s", n.ID, n.Title, n.Author, n.Body)
+			continue
+		}
+		fmt.Fprintf(&b, "## [n%d] %s\n%s", n.ID, n.Title, n.Body)
 	}
 	return b.String()
 }
 
-// PromptBlock is the notebook as a system-prompt section for an agent that
-// starts after notes exist: the titles only, so a delegate knows what it can
-// read without the whole notebook riding in its prompt.
+// PromptBlock is the notebook as a system-prompt section for a delegate:
+// what the notebook is for, and the titles already in it, so the child
+// starts by reading rather than re-finding — without the whole notebook
+// riding in its prompt.
+//
+// The block is emitted here rather than written into the sub-agent prompts
+// because a prompt must never name a tool the session might not have: this
+// text is appended exactly where the two notebook tools were registered, so
+// the child is told about a store it can really reach.
+//
+// Only the newest MaxPromptTitles titles are listed, with a line saying how
+// many are not. The block goes into the child's system prompt, so what it
+// costs is counted in the session's system-prompt category like every other
+// block — the cap is what keeps that cost bounded as a long session's
+// notebook fills.
 func PromptBlock(notes []Note) string {
-	if len(notes) == 0 {
-		return ""
-	}
 	var b strings.Builder
-	b.WriteString("# Notebook\nThe session's shared notebook already holds these notes; read_note returns any of them in full:\n")
-	for _, n := range notes {
+	b.WriteString("# Notebook\n")
+	b.WriteString("This session has a shared notebook that every agent in it — the orchestrator and every other delegate — reads and writes. Read it before you go looking: a sibling may already have found what you are about to re-find. Write a note for what the rest of the session will need, not for what only your report has to say. You can add to the notebook and read it; you cannot remove anything from it.\n")
+	if len(notes) == 0 {
+		b.WriteString("It is empty so far.")
+		return b.String()
+	}
+	shown := notes
+	if len(shown) > MaxPromptTitles {
+		shown = shown[len(shown)-MaxPromptTitles:]
+		fmt.Fprintf(&b, "It already holds %d notes; the %d most recent are listed below, and read_note returns any note in full, listed here or not:\n",
+			len(notes), len(shown))
+	} else {
+		b.WriteString("It already holds these notes; read_note returns any of them in full:\n")
+	}
+	for _, n := range shown {
 		fmt.Fprintf(&b, "- [n%d] %s (%s)\n", n.ID, n.Title, n.Author)
 	}
 	return strings.TrimRight(b.String(), "\n")
+}
+
+// FormatByAuthor is the notebook as the person reads it: the notes grouped
+// under the agent that wrote each one, authors in the order they first
+// wrote. Format's flat, oldest-first list is what an agent reads, because an
+// agent is looking for a fact and the session's order is the useful one;
+// somebody reading their own session is asking who found what, and a
+// fan-out's notes arrive interleaved.
+// See docs/capabilities/subagents.md#what-they-share.
+func FormatByAuthor(notes []Note) string {
+	if len(notes) == 0 {
+		return "The notebook is empty."
+	}
+	var authors []string
+	byAuthor := map[string][]Note{}
+	for _, n := range notes {
+		if _, seen := byAuthor[n.Author]; !seen {
+			authors = append(authors, n.Author)
+		}
+		byAuthor[n.Author] = append(byAuthor[n.Author], n)
+	}
+	var b strings.Builder
+	for i, a := range authors {
+		if i > 0 {
+			b.WriteString("\n\n")
+		}
+		fmt.Fprintf(&b, "# %s\n\n%s", a, formatNotes(byAuthor[a], false))
+	}
+	return b.String()
+}
+
+// WrittenIn returns the notes written in one turn by anyone but author —
+// what a fan-out left behind, which is the thing the turn that spawned it
+// has to be told about. A note stamped with turn zero was written before
+// any surface said which turn was open and belongs to no turn.
+func WrittenIn(notes []Note, turn int64, author string) []Note {
+	if turn <= 0 {
+		return nil
+	}
+	var out []Note
+	for _, n := range notes {
+		if n.Turn == turn && n.Author != author {
+			out = append(out, n)
+		}
+	}
+	return out
 }

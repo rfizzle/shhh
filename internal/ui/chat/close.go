@@ -75,6 +75,7 @@ func (m Model) turnCloseData() *components.TurnClose {
 		Note:    m.roundNote(),
 		Changes: m.turnChangesRow(commit != nil),
 		Commit:  commit,
+		Notes:   m.turnNotesClause(),
 		Checks:  turnChecksRow(es),
 	}
 	// The count is the steps this turn actually ran, so an approved plan's

@@ -80,6 +80,45 @@ session is looking at, and every agent — the root included — is the same kin
 of thing. That equivalence is why the interactive surfaces did not need a
 second implementation for children.
 
+## What they share
+
+A child cannot see the conversation it was spawned from, and the parent only
+receives its final message. That is the right contract for one task and the
+wrong one for a fan-out: four children sent into the same unfamiliar tree
+will each work out where the tests live, and three of those readings are
+paid for twice.
+
+The session's notebook is the shared channel, and it is a file rather than a
+runtime — there is no messaging between children, no mailbox and no lead.
+Any agent in the session, the parent and every child, can write a short
+titled note and read the notes that exist. A child is spawned knowing what
+the notebook already holds — the titles, not the bodies, so a long session's
+notebook does not ride in every child's prompt — and reads the ones it wants
+in full. Notes are signed with the author's name and stamped with the turn
+they were written in, so what came back from one fan-out can be told from
+what came back from the next, and the parent's turn closes by saying how many
+notes its children left and who wrote them.
+
+A child may add and read; it may never remove. There is no delete tool for
+any agent in any mode: without that line a child could quietly unmake a
+sibling's finding, and the parent would read a notebook that looks complete.
+Dropping a note is the person's, through `/notes`, which lists the notebook
+grouped by the agent that wrote each entry.
+
+A writer child works in an isolated copy of the checkout and still writes
+into the parent's notebook, because the notebook belongs to the session and
+not to a tree. That is not a way into your checkout: a note is prose with the
+standing of an instruction file — it can ask, and nothing in it runs. No
+approval card consults it, no route into the checkout reads it, and a child's
+patch is approved exactly as it was before.
+
+A note is not a report. The report is what the child owes its parent — the
+findings, the evidence, the verdict — and it comes back to the parent
+unchanged. A note is what a sibling will need. And a note is not memory
+(`sessions-and-memory.md`): memory is durable, general, and confirmed by the
+person before it is kept; a note is working state, and its lifetime is the
+session's.
+
 ## A hold reaches the whole fan-out
 
 Holding the session's own turn holds every child with it. Nothing stops where

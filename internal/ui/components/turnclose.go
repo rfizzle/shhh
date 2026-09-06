@@ -105,6 +105,10 @@ type TurnClose struct {
 	Changes *TurnChanges
 	Commit  *TurnCommit
 	Checks  *TurnChecks
+	// Notes is what the turn's delegates left in the session's shared
+	// notebook, e.g. "2 notes from reviewer". Empty where no delegate wrote
+	// one, which is every turn that did not fan out.
+	Notes string
 	// KeysWaiting says the changeset row does not hold the keyboard, so its
 	// keys render grey rather than in the colour that means "you can press
 	// this": while the draft has it, `v` is a letter and belongs in the
@@ -146,8 +150,9 @@ func (c TurnClose) stateGlyph() (string, string) {
 
 // Summary is the whole block said in one plain line, without the state word
 // the notification's title already carries and without a glyph in it: what
-// the turn cost, what it changed, and whether the checks still pass — the
-// three rows a turn closes with, in the order the screen draws them.
+// the turn cost, what it changed, what its delegates wrote down, and whether
+// the checks still pass — the rows a turn closes with, in the order the
+// screen draws them.
 //
 // It exists because a notification is the one surface that cannot draw
 // . Everything it says has to be words, so the glyph that
@@ -167,6 +172,9 @@ func (c TurnClose) Summary() string {
 	}
 	if cm := c.Commit; cm != nil {
 		parts = append(parts, cm.Receipt)
+	}
+	if c.Notes != "" {
+		parts = append(parts, c.Notes)
 	}
 	if ck := c.Checks; ck != nil {
 		verdict := " passing"
@@ -259,6 +267,13 @@ func (c TurnClose) View(width int) string {
 		lines = append(lines, closeLine(
 			closeLead(sty.Accent.Render("▎"), sty.Add.Render("✓")),
 			sty.Body.Render(cm.Receipt), sty.Dim.Render(CommitUndoNote), width))
+	}
+
+	if c.Notes != "" {
+		// No rail and no glyph: nothing here changed the machine, and a
+		// reading of what the session already holds is not one of the acts
+		// the glyph column names. The empty gutter is what says so.
+		lines = append(lines, closeLine(closeLead("", " "), sty.Dim.Render(c.Notes), "", width))
 	}
 
 	if ck := c.Checks; ck != nil {

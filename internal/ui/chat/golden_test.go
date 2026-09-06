@@ -1965,3 +1965,43 @@ func TestGolden_ChatTodo(t *testing.T) {
 		}
 	})
 }
+
+// TestGolden_NotebookRows captures the two places a shared notebook reaches
+// the screen: the line a turn closes with when its children wrote something
+// down, and /notes, which is where the person reads and corrects a store the
+// agents write to without asking.
+//
+// One width. The close line is a clause and the listing is prose the
+// transcript wraps like any other; neither has a layout that changes with
+// the terminal, so three more captures would be copies of this one.
+func TestGolden_NotebookRows(t *testing.T) {
+	captureGolden(t, "notebook-rows", "the notebook on the screen", []int{80}, func(width int) []golden.Panel {
+		nb := notebook.New(nil)
+		nb.SetTurn(4)
+		_, _, _ = nb.Write(notebook.Orchestrator, "The freeze is the target",
+			"From here the work is making what exists better, not wider.")
+		_, _, _ = nb.Write("reviewer-1", "The deny list is read before the tier",
+			"policy.Decide matches on the command, so an entry refuses the verb in every mode.")
+		_, _, _ = nb.Write("researcher-1", "Where the goldens live",
+			"internal/ui/chat/testdata/golden, one file per width and one per palette.")
+
+		closeBlock := func() string {
+			m := frameModel(t, width, 40)
+			m.transcript = []entry{{kind: entryTurnClose, turn: 4, close: &components.TurnClose{
+				State: components.TurnDone, Steps: 2, Tools: 11, Elapsed: "1m 12s", Spend: "$0.21",
+				Notes: "2 notes from reviewer-1, researcher-1",
+			}}}
+			m.invalidateRenderCache()
+			return m.renderHistory()
+		}
+		listing := func() string {
+			m := frameModel(t, width, 40).WithNotebook(nb)
+			m.appendEntry(entry{kind: entrySystem, text: m.notesCommand(nil)})
+			return m.renderHistory()
+		}
+		return []golden.Panel{
+			{Label: "the turn's close · what the fan-out wrote down", View: closeBlock()},
+			{Label: "/notes · the notebook by the agent that wrote each entry", View: listing()},
+		}
+	})
+}

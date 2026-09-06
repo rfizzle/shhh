@@ -169,7 +169,7 @@ func (m Model) closeUndoConfirm() (tea.Model, tea.Cmd) {
 func (m Model) applyUndo(plan changeset.UndoPlan, of undoSubject, force bool) (tea.Model, tea.Cmd) {
 	out := plan.Apply(force)
 	if len(out.Records) > 0 {
-		m.turnCount++
+		m.nextTurn()
 		m.signal(observe.SignalUndo, "")
 		var evicted []int64
 		for _, r := range out.Records {

@@ -99,17 +99,20 @@ routes to, each answering in its own voice, each unable to change anything.
 
 ## What they share
 
-A delegate cannot see the conversation it was spawned from, and the
-orchestrator only receives its final message. That is the right contract
-for one task and the wrong one for a team that keeps working across tasks:
-what one researcher found on Monday is exactly what the next one should not
-have to find again.
+The session's notebook is the shared channel between a conversation and its
+colleagues: what one researcher found on Monday is exactly what the next one
+should not have to find again. Any agent in the session — the orchestrator
+and every delegate — can write a short, titled, signed note and read the
+notes that exist. It persists with the session, so a resumed conversation
+resumes its notebook, and a delegate spawned later starts by reading what
+the earlier ones left. A backlog run whose finish is a write-up rather than a
+commit puts the write-up here, which is where it is read.
 
-The session's notebook is the shared channel. Any agent in the session — the
-orchestrator and every delegate — can write a note and read the notes that
-exist. A note is short, titled, and signed by the agent that wrote it; it
-persists with the session, so a resumed conversation resumes its notebook,
-and a delegate spawned later starts by reading what the earlier ones left.
+The notebook is not a conversation's alone: a coding session and its children
+share one on the same terms, and what an agent may put in it, what it may
+never take out, and why it is a file rather than a messaging runtime are in
+[`subagents.md`](subagents.md#what-they-share).
+
 Notes are not memory (`sessions-and-memory.md`): memory is durable, general,
 and confirmed by the person before it is kept; a note is working state, and
 its lifetime is the conversation's.

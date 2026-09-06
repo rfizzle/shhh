@@ -623,6 +623,11 @@ directory. Its workspace is an isolated copy stood on a commit of its own, so
 git in there reports a clean tree and no branch, and a child left to
 reconcile that with the block goes looking for changes it will never find.
 
+A child is also handed the session's shared notebook, so a fan-out passes on
+what it learns instead of finding it four times; what an agent may put in it
+and what it may never take out are in
+[`subagents.md`](subagents.md#what-they-share).
+
 The date is environment, so it sits with the shell and the working directory
 in every prompt that has an environment. A model reasons from its own
 training cutoff unless something tells it otherwise, and left to that it

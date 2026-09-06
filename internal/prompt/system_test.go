@@ -111,14 +111,16 @@ func TestBuildConversation(t *testing.T) {
 	if !strings.Contains(got, "Prefer explaining with examples") {
 		t.Error("expected extra prompt to be appended")
 	}
-	for _, want := range []string{"Everything you can reach is a read", "cannot run commands or edit files", "Notebook", "Cwd: /home/user"} {
+	for _, want := range []string{"Everything you can reach is a read", "cannot run commands or edit files", "Cwd: /home/user"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("conversation prompt missing %q", want)
 		}
 	}
 	// No tool the session lacks is named, and no shell guidance rides
-	// along: there is nothing that could use it.
-	for _, absent := range []string{"execute_command", "write_file", "Shell: bash", "sudo"} {
+	// along: there is nothing that could use it. The notebook is in the
+	// list because it is registered on a condition like every other
+	// optional tool, and Toolbox is what states those.
+	for _, absent := range []string{"execute_command", "write_file", "Shell: bash", "sudo", "write_note", "Notebook"} {
 		if strings.Contains(got, absent) {
 			t.Errorf("conversation prompt names %q", absent)
 		}

@@ -64,8 +64,8 @@ Commands:
                  trust <name> lets a server this checkout declares start from
                  the next session on; distrust <name> withdraws that
   /notes         The session's shared notebook — what the agents wrote for
-                 each other, and what a backlog run wrote up. drop <n> removes
-                 one, clear empties it
+                 each other, and what a backlog run wrote up, listed by author.
+                 Dropping is yours alone: drop <n> removes one, clear empties it
   /todo          The project's backlog: bare opens a picker · show|edit <slug> ·
                  add (reads this session into proposed items you accept or drop) ·
                  add <text> · block <slug> [why] · open|done|drop <slug> ·
@@ -140,8 +140,8 @@ Commands:
                  trust <name> lets a server this checkout declares start from
                  the next session on; distrust <name> withdraws that
   /notes         The session's shared notebook — what the agents wrote for
-                 each other, and what a backlog run wrote up. drop <n> removes
-                 one, clear empties it
+                 each other, and what a backlog run wrote up, listed by author.
+                 Dropping is yours alone: drop <n> removes one, clear empties it
   /todo          The project's backlog: bare opens a picker · show|edit <slug> ·
                  add (reads this session into proposed items you accept or drop) ·
                  add <text> · block <slug> [why] · open|done|drop <slug> ·
@@ -228,8 +228,8 @@ Commands:
                  trust <name> lets a server this checkout declares start from
                  the next session on; distrust <name> withdraws that
   /notes         The session's shared notebook — what the agents wrote for
-                 each other, and what a backlog run wrote up. drop <n> removes
-                 one, clear empties it
+                 each other, and what a backlog run wrote up, listed by author.
+                 Dropping is yours alone: drop <n> removes one, clear empties it
   /todo          The project's backlog: bare opens a picker · show|edit <slug> ·
                  add (reads this session into proposed items you accept or drop) ·
                  add <text> · block <slug> [why] · open|done|drop <slug> ·
@@ -304,8 +304,8 @@ Commands:
                  trust <name> lets a server this checkout declares start from
                  the next session on; distrust <name> withdraws that
   /notes         The session's shared notebook — what the agents wrote for
-                 each other, and what a backlog run wrote up. drop <n> removes
-                 one, clear empties it
+                 each other, and what a backlog run wrote up, listed by author.
+                 Dropping is yours alone: drop <n> removes one, clear empties it
   /todo          The project's backlog: bare opens a picker · show|edit <slug> ·
                  add (reads this session into proposed items you accept or drop) ·
                  add <text> · block <slug> [why] · open|done|drop <slug> ·

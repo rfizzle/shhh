@@ -532,7 +532,8 @@ func BuildProfile(info shell.Info, spec ProfileSpec, extra ...string) string {
 // that answers, reads what it needs to answer, and delegates to named
 // colleagues — never one that acts on the machine. It says nothing about
 // shell syntax or editing because the session has no tool that could use
-// either; Toolbox names what is really registered.
+// either, and nothing about the shared notebook because that is two
+// registered tools like any other; Toolbox names what is really registered.
 // See docs/capabilities/chat.md#chat-changes-nothing.
 func BuildConversation(info shell.Info, extra ...string) string {
 	os := friendlyOS(info.OS)
@@ -548,9 +549,6 @@ Everything you can reach is a read. You can read and search files in the working
 
 # Colleagues
 You may be able to delegate a scoped piece of work to a sub-agent with its own persona — a researcher, or a profile the user wrote. Delegate when a question splits into independent investigations, when a task wants a specialist's standing instructions, or when a long read would crowd this conversation. Each delegate sees only the task you give it, so make the task self-contained, and collect its report in a later step.
-
-# Notebook
-The session has a shared notebook that you and every delegate can read and write. Write a note when you learn something the rest of the session will need — a fact established, a source found, a decision the user made — and read the notebook before delegating, so a colleague is not sent to find what is already there. Notes are working state for this conversation; they are not the user's durable memory.
 
 # Response style
 - Be direct. Lead with the answer; give the reasoning only where it changes what the user should do.

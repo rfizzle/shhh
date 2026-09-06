@@ -7,9 +7,11 @@ import (
 	"testing"
 
 	"github.com/rfizzle/shhh/internal/config"
+	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
+	"github.com/rfizzle/shhh/internal/secret"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/web"
 	"github.com/spf13/cobra"
@@ -125,5 +127,50 @@ func TestBuildToolsetOffersOnlyWhatWasRegistered(t *testing.T) {
 	}
 	if bts.gate != nil || bts.proc != nil {
 		t.Error("a conversation opened a gate or a supervisor it does not register")
+	}
+}
+
+// The notebook is not a conversation's. A coding session's children are the
+// case it was always for — a fan-out of four finding the same thing four
+// times is the cost it removes — so both kinds of session open one and
+// register the same two tools.
+func TestEverySessionOpensANotebook(t *testing.T) {
+	for _, tc := range []struct {
+		what    string
+		session chatSession
+	}{
+		{"a coding session", chatSession{kind: "code", toolDefs: tools.DefinitionsFull()}},
+		{"a conversation", chatSession{kind: "chat", conversation: true, toolDefs: tools.Definitions()}},
+	} {
+		s := tc.session
+		s.openNotebook(nil)
+		if s.notebook == nil {
+			t.Fatalf("%s opened no notebook", tc.what)
+		}
+		have := map[string]bool{}
+		for _, name := range toolsetNames(s.toolDefs) {
+			have[name] = true
+		}
+		if !have[notebook.WriteToolName] || !have[notebook.ReadToolName] {
+			t.Errorf("%s was not offered the notebook: %v", tc.what, toolsetNames(s.toolDefs))
+		}
+	}
+}
+
+// The vault's rewrite is on the store before the first note can be written,
+// because the copy a note leaves behind outlives the turn that wrote it.
+func TestANotebookOpensWithTheSessionsScrub(t *testing.T) {
+	v := secret.New()
+	if err := v.Add("API_KEY", "hunter2"); err != nil {
+		t.Fatalf("declare: %v", err)
+	}
+	s := chatSession{kind: "code", vault: v}
+	s.openNotebook(nil)
+	n, _, err := s.notebook.Write("researcher-1", "The key", "it is hunter2")
+	if err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	if strings.Contains(n.Body, "hunter2") {
+		t.Errorf("a declared secret was written into the notebook: %q", n.Body)
 	}
 }

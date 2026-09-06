@@ -1497,7 +1497,7 @@ func (m Model) sendUserMessageAs(text, shown string) (tea.Model, tea.Cmd) {
 	// over: /clear empties the transcript without making it new again.
 	m.spendStartScreen()
 	m.clearRetryChain()
-	m.turnCount++
+	m.nextTurn()
 	m.turnStarted, m.turnEnded = time.Now(), time.Time{}
 	m.turnOpen, m.turnOutcome = true, components.TurnDone
 	m.turnTokensIn, m.turnTokensOut = 0, 0

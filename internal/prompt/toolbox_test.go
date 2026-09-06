@@ -150,3 +150,19 @@ func TestToolbox_SteersTheLanguageServerAheadOfSearchAndRead(t *testing.T) {
 		t.Errorf("symbol search should be described before fd, got:\n%s", got)
 	}
 }
+
+// The notebook is stated where every other conditional tool is stated. It
+// was in the conversation prompt as prose once, which said it to a session
+// that might not have registered it and said nothing to a coding session
+// that had.
+func TestToolboxStatesTheNotebook(t *testing.T) {
+	got := Toolbox([]provider.Tool{{Name: "write_note"}, {Name: "read_note"}})
+	for _, want := range []string{"write_note —", "read_note —", "shared notebook", "before delegating"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("the toolbox does not state %q:\n%s", want, got)
+		}
+	}
+	if got := Toolbox([]provider.Tool{{Name: "read_file"}}); strings.Contains(got, "notebook") {
+		t.Errorf("a session with no notebook was told about one:\n%s", got)
+	}
+}

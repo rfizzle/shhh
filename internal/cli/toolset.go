@@ -11,6 +11,7 @@ package cli
 import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/evidence"
+	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -178,7 +179,7 @@ func (t *toolset) executor(session chatSession) agent.ToolExecutor {
 		exec = session.skills.WrapExecutor(exec)
 	}
 	if session.notebook != nil {
-		exec = session.notebook.WrapExecutor("assistant", exec)
+		exec = session.notebook.WrapExecutor(notebook.Orchestrator, exec)
 	}
 	if t.evidence != nil {
 		exec = t.evidence.WrapExecutor(exec)

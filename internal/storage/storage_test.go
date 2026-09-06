@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -2147,5 +2148,49 @@ func TestPruneOldChats_TakesTheWholeTreeAndItsWords(t *testing.T) {
 	}
 	if messages != 0 || indexed != 0 {
 		t.Fatalf("%d messages and %d index rows outlived the conversations they belong to", messages, indexed)
+	}
+}
+
+// The notebook comes back with the session it belongs to, and each note
+// comes back with the turn it was written in — a coding session's fan-out
+// notes are only tellable from the next fan-out's by that number.
+func TestNotesRoundTripWithTheirTurn(t *testing.T) {
+	db := openTestDB(t)
+	written := time.Now().UTC().Truncate(time.Millisecond)
+	for _, n := range []notebook.Note{
+		{Author: "researcher-1", Title: "Where the gate is", Body: "policy.Decide", Turn: 4, Written: written},
+		{Author: notebook.Orchestrator, Title: "Before any turn", Body: "at session start", Written: written},
+	} {
+		if _, err := db.SaveNote("slot-a", n); err != nil {
+			t.Fatalf("save: %v", err)
+		}
+	}
+	if _, err := db.SaveNote("slot-b", notebook.Note{Author: "x", Title: "elsewhere", Body: "b", Turn: 9, Written: written}); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+
+	got, err := db.LoadNotes("slot-a")
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("slot-a came back with %d notes", len(got))
+	}
+	if got[0].Turn != 4 || got[0].Author != "researcher-1" {
+		t.Errorf("note = %+v", got[0])
+	}
+	// A note written before any surface said which turn was open reads as
+	// no turn, not as turn one.
+	if got[1].Turn != 0 {
+		t.Errorf("an unstamped note came back as turn %d", got[1].Turn)
+	}
+	if err := db.DeleteNote("slot-a", got[0].ID); err != nil {
+		t.Fatalf("delete: %v", err)
+	}
+	if after, _ := db.LoadNotes("slot-a"); len(after) != 1 {
+		t.Errorf("delete left %d notes", len(after))
+	}
+	if other, _ := db.LoadNotes("slot-b"); len(other) != 1 {
+		t.Errorf("another slot's notebook was touched")
 	}
 }

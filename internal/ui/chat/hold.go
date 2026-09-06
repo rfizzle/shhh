@@ -125,7 +125,7 @@ func (m Model) releaseHold() (tea.Model, tea.Cmd) {
 		// another sitting, and this session has no accounting for it: what
 		// it costs from here is what this sitting is billed for, so the turn
 		// is opened rather than reopened.
-		m.turnCount++
+		m.nextTurn()
 		m.turnStarted, m.turnEnded = time.Now(), time.Time{}
 		m.turnOpen, m.turnOutcome = true, components.TurnDone
 		m.turnTokensIn, m.turnTokensOut = 0, 0

@@ -2,6 +2,8 @@ package notebook
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -61,8 +63,10 @@ func TestWriteReadAndFind(t *testing.T) {
 	if !strings.Contains(block, "- [n1] Pricing source (assistant)") {
 		t.Fatalf("prompt block: %q", block)
 	}
-	if PromptBlock(nil) != "" {
-		t.Fatal("empty notebook has a prompt block")
+	// An empty notebook still gets a block: a child that is not told the
+	// notebook exists cannot read it before it re-finds something.
+	if empty := PromptBlock(nil); !strings.Contains(empty, "It is empty so far.") {
+		t.Fatalf("empty notebook block: %q", empty)
 	}
 }
 
@@ -138,5 +142,135 @@ func TestToolsRouteAndSign(t *testing.T) {
 	}
 	if out, _ := child("read_file", nil); out != "passed:read_file" {
 		t.Fatalf("passthrough: %q", out)
+	}
+}
+
+// A vaulted value never reaches the backend. The store is what outlives the
+// turn, so the scrub is installed on it rather than wrapped around it: what
+// the writer is told, what /notes prints and what the backend kept are one
+// text.
+func TestScrubRunsBeforeTheNoteIsKept(t *testing.T) {
+	b := &fakeBackend{}
+	s := New(b)
+	s.SetScrub(func(in string) string { return strings.ReplaceAll(in, "hunter2", "${API_KEY}") })
+	if err := s.Bind("slot"); err != nil {
+		t.Fatal(err)
+	}
+	n, _, err := s.Write("researcher-1", "The key is hunter2", "curl -H 'Bearer hunter2' …")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, got := range []string{n.Title, n.Body, Format(s.List()), FormatByAuthor(s.List())} {
+		if strings.Contains(got, "hunter2") {
+			t.Errorf("the value survived in %q", got)
+		}
+	}
+	kept := b.saved["slot"]
+	if len(kept) != 1 {
+		t.Fatalf("backend kept %d notes", len(kept))
+	}
+	if strings.Contains(kept[0].Title+kept[0].Body, "hunter2") {
+		t.Errorf("the value reached the backend: %+v", kept[0])
+	}
+	if !strings.Contains(kept[0].Body, "${API_KEY}") {
+		t.Errorf("the placeholder did not reach the backend: %+v", kept[0])
+	}
+}
+
+// A note carries the turn it was written in, and a store nobody told stamps
+// zero rather than turn one.
+func TestNotesCarryTheirTurn(t *testing.T) {
+	s := New(nil)
+	before, _, _ := s.Write("assistant", "Untold", "written before a turn was named")
+	if before.Turn != 0 {
+		t.Errorf("a note written before any turn was named = turn %d", before.Turn)
+	}
+	s.SetTurn(7)
+	_, _, _ = s.Write("reviewer", "One", "a")
+	_, _, _ = s.Write("reviewer", "Two", "b")
+	_, _, _ = s.Write(Orchestrator, "Mine", "c")
+	s.SetTurn(8)
+	_, _, _ = s.Write("researcher-1", "Later", "d")
+
+	got := WrittenIn(s.List(), 7, Orchestrator)
+	if len(got) != 2 || got[0].Title != "One" || got[1].Title != "Two" {
+		t.Fatalf("turn 7's delegate notes = %+v", got)
+	}
+	if n := WrittenIn(s.List(), 0, Orchestrator); n != nil {
+		t.Errorf("turn zero claimed %d notes", len(n))
+	}
+}
+
+// The two tools are the whole vocabulary: an agent adds and reads, and no
+// argument to either of them removes anything. Deleting is the person's.
+func TestNoAgentCanDelete(t *testing.T) {
+	names := map[string]bool{}
+	for _, d := range Definitions() {
+		names[d.Name] = true
+	}
+	if len(names) != 2 || !names[WriteToolName] || !names[ReadToolName] {
+		t.Fatalf("the notebook offers %v", names)
+	}
+	s := New(nil)
+	_, _, _ = s.Write("assistant", "Kept", "the fact")
+	next := func(string, json.RawMessage) (string, error) { return "", errNotMine }
+	child := s.WrapExecutor("writer-1", next)
+	for _, name := range []string{"delete_note", "drop_note", "notebook_delete"} {
+		if _, err := child(name, json.RawMessage(`{"id":1}`)); err != errNotMine {
+			t.Errorf("%s was answered by the notebook rather than passed on", name)
+		}
+	}
+	if s.Len() != 1 {
+		t.Fatalf("the notebook lost a note to an agent: %d left", s.Len())
+	}
+}
+
+var errNotMine = errors.New("passed on")
+
+// The titles block is what a child pays for at spawn, so it is bounded: a
+// full notebook lists its most recent titles and says how many it did not.
+func TestPromptBlockIsCapped(t *testing.T) {
+	s := New(nil)
+	for i := 0; i < MaxPromptTitles+10; i++ {
+		if _, _, err := s.Write("assistant", fmt.Sprintf("Note %d", i), "body"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	block := PromptBlock(s.List())
+	if n := strings.Count(block, "\n- ["); n != MaxPromptTitles {
+		t.Fatalf("the block listed %d titles", n)
+	}
+	if !strings.Contains(block, fmt.Sprintf("It already holds %d notes", MaxPromptTitles+10)) {
+		t.Fatalf("the block does not say how many it left out: %q", block)
+	}
+	// The newest are the ones kept.
+	if !strings.Contains(block, "Note 49") || strings.Contains(block, "Note 0 (") {
+		t.Fatalf("the block kept the wrong end: %q", block)
+	}
+}
+
+// The person's listing groups by the agent that wrote each note; the
+// model's stays in the session's own order.
+func TestFormatByAuthorGroups(t *testing.T) {
+	s := New(nil)
+	_, _, _ = s.Write("researcher-1", "First", "a")
+	_, _, _ = s.Write("reviewer-1", "Second", "b")
+	_, _, _ = s.Write("researcher-1", "Third", "c")
+	got := FormatByAuthor(s.List())
+	if strings.Index(got, "# researcher-1") > strings.Index(got, "# reviewer-1") {
+		t.Fatalf("authors out of first-write order: %q", got)
+	}
+	if strings.Count(got, "# researcher-1") != 1 {
+		t.Fatalf("an author was listed twice: %q", got)
+	}
+	if strings.Index(got, "Third") > strings.Index(got, "Second") {
+		t.Fatalf("a note was not filed under its author: %q", got)
+	}
+	// The author is on the heading, so it is not repeated on every note.
+	if strings.Contains(got, "— researcher-1") {
+		t.Fatalf("the author is stated twice: %q", got)
+	}
+	if FormatByAuthor(nil) != "The notebook is empty." {
+		t.Fatal("an empty notebook did not say so")
 	}
 }
