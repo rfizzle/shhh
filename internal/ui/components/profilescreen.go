@@ -195,9 +195,11 @@ type ProfileScreen struct {
 	focus  int
 	field  textarea.Model
 	decide *NoteSelect
-	// scroll is how far into Prompt the draft card's profile pane has been
-	// pushed.
-	scroll int
+	// prompt is the offset into Prompt the draft card's profile pane is read
+	// through, held as a Pager like every other scrolling body's here, so the
+	// fold under it counts through the same arithmetic the rest of the
+	// package folds through (docs/interface/principles.md#fold-never-hide).
+	prompt Pager
 	// from is the step the wait was entered from, which is the step the rail
 	// keeps showing while it lasts: a drafting turn started from the brief
 	// may still come back with questions, so a rail that jumped to the draft
@@ -278,7 +280,7 @@ func (p *ProfileScreen) Show(draft ProfileDraftView, saves []SelectOption) {
 	p.Draft = draft
 	p.Warning = ""
 	p.saves = saves
-	p.scroll = 0
+	p.prompt.Offset = 0
 	p.field.Blur()
 	options := append([]SelectOption{}, saves...)
 	options = append(options,
@@ -383,10 +385,10 @@ func (p *ProfileScreen) updateDraft(msg tea.KeyPressMsg) (bool, ProfileResult) {
 	}
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Profile.ScrollUp):
-		p.scroll = max(p.scroll-1, 0)
+		p.scrollPrompt(-1)
 		return false, ProfileResult{}
 	case keys.Is(pressed, keys.Profile.ScrollDown):
-		p.scroll = min(p.scroll+1, max(len(p.promptLines)-profilePromptRows, 0))
+		p.scrollPrompt(1)
 		return false, ProfileResult{}
 	}
 	done, res := p.decide.Update(msg)
@@ -748,6 +750,18 @@ func (p *ProfileScreen) factRows(width int) []string {
 	return rows
 }
 
+// scrollPrompt moves the profile pane by a row, held inside the profile
+// against the rows the card offers rather than the rows the ladder last drew
+// it in: how far a press can read is a fact about the card, so a terminal
+// short enough to shrink the pane does not also lengthen the scroll.
+func (p *ProfileScreen) scrollPrompt(by int) {
+	p.prompt.Offset = Pager{
+		Offset: p.prompt.Offset + by,
+		Height: profilePromptRows,
+		Total:  len(p.promptLines),
+	}.Held()
+}
+
 // promptRows is the profile itself under a fold that counts what it is
 // holding back (invariant 4) and says which key opens it.
 func (p *ProfileScreen) promptRows(width, pane int) []string {
@@ -755,13 +769,15 @@ func (p *ProfileScreen) promptRows(width, pane int) []string {
 	if len(p.promptLines) == 0 || pane <= 0 {
 		return []string{Clip(head, width)}
 	}
-	p.scroll = min(p.scroll, max(len(p.promptLines)-pane, 0))
-	end := min(p.scroll+pane, len(p.promptLines))
+	// The rows the ladder settled on are the pager's height, so a pane it
+	// shrank folds the lines it really dropped rather than the six the card
+	// asks for.
+	p.prompt.Height = pane
 	rows := []string{Clip(head, width)}
-	for _, line := range p.promptLines[p.scroll:end] {
+	for _, line := range p.prompt.Window(p.promptLines) {
 		rows = append(rows, Clip(indent("  "+sty.Status.Render(line)), width))
 	}
-	if rest := len(p.promptLines) - end; rest > 0 {
+	if rest := p.prompt.Below(); rest > 0 {
 		rows = append(rows, Clip(indent("  "+sty.Dim.Render(fmt.Sprintf("⋮ %s · %s",
 			plural(rest, "more line"), words(keys.Profile.ScrollDown, "read on")))), width))
 	}

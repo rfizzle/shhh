@@ -191,6 +191,40 @@ func TestProfileScreen_TheProfileScrolls(t *testing.T) {
 	}
 }
 
+// The offset is held inside the profile: pressing past the last line settles
+// on it rather than reading into nothing, and one press back up is enough to
+// undo the overshoot.
+func TestProfileScreen_TheProfilePaneHoldsItsEnds(t *testing.T) {
+	p := draftScreen()
+	p.MaxLines = 30
+	// The profile is wrapped as it is drawn, so the pane knows how long the
+	// body is only once it has been on screen.
+	top := p.View(100)
+	for range 40 {
+		p.Update(tea.KeyPressMsg{Code: tea.KeyDown, Mod: tea.ModShift})
+	}
+	// The press holds the offset itself rather than leaving it to the draw:
+	// an overshoot the render clamps looks the same on screen and still
+	// costs a press for every row it ran past before it moves again.
+	if want := len(p.promptLines) - profilePromptRows; p.prompt.Offset != want {
+		t.Fatalf("offset after the overshoot = %d, want %d", p.prompt.Offset, want)
+	}
+	end := p.View(100)
+	if end == top {
+		t.Fatalf("shift+↓ should scroll the profile:\n%s", end)
+	}
+	p.Update(tea.KeyPressMsg{Code: tea.KeyUp, Mod: tea.ModShift})
+	if p.View(100) == end {
+		t.Fatalf("shift+↑ after an overshoot should scroll back up:\n%s", end)
+	}
+	for range 40 {
+		p.Update(tea.KeyPressMsg{Code: tea.KeyUp, Mod: tea.ModShift})
+	}
+	if back := p.View(100); back != top {
+		t.Fatalf("shift+↑ should settle at the first line:\n%s", back)
+	}
+}
+
 // The card is the thing the surface is for, so it is the one thing that never
 // gives ground: a decision whose keys were cut off by the height is not one.
 func TestProfileScreen_TheCardSurvivesAShortSurface(t *testing.T) {
