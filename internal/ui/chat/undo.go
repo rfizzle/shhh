@@ -101,7 +101,7 @@ func (m *Model) armUndo(plan changeset.UndoPlan, of undoSubject, confirmTurn int
 	m.undoPlan = plan
 	m.undoSubject = of
 	m.undoAsk = &components.UndoConfirm{
-		Turn:     confirmTurn,
+		Confirm:  components.Confirm{Prompt: fmt.Sprintf("Undo turn %d?", confirmTurn)},
 		Restores: plan.Restores() - driftedIn(plan, false),
 		Removes:  plan.Removes() - driftedIn(plan, true),
 		Drifted:  plan.Drifted(),
@@ -130,11 +130,10 @@ func (m Model) updateUndoConfirm(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if m.undoAsk == nil {
 		return m.closeUndoConfirm()
 	}
-	done, result := m.undoAsk.Update(msg)
+	done, decision := m.undoAsk.Update(msg)
 	if !done {
 		return m, nil
 	}
-	decision, _ := result.(components.UndoDecision)
 	plan, of := m.undoPlan, m.undoSubject
 	updated, cmd := m.closeUndoConfirm()
 	next := updated.(Model)

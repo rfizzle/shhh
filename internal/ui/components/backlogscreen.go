@@ -486,13 +486,16 @@ func (b *BacklogScreen) ask(a BacklogAct, slug, prompt string) {
 // exactly as it was, which is what esc promises everywhere else
 // (docs/interface/principles.md#esc-is-always-the-safe-answer).
 func (b *BacklogScreen) updateConfirm(msg tea.KeyPressMsg) (bool, BacklogResult) {
-	done, result := b.confirm.Update(msg)
-	if !done {
+	answered, yes := confirmed(&b.confirm, msg)
+	if !answered {
 		return false, BacklogResult{}
 	}
+	// The armed command goes down with the question either way: it was armed
+	// for this question, and a decline that left it behind would hand it to
+	// whatever is asked next.
 	cmd := b.pending
-	b.confirm, b.pending = nil, nil
-	if yes, _ := result.(bool); yes && cmd != nil {
+	b.pending = nil
+	if yes && cmd != nil {
 		return false, BacklogResult{Do: cmd}
 	}
 	return false, BacklogResult{}

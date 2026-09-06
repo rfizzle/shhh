@@ -304,7 +304,8 @@ func monoFixtures() []monoSurface {
 	// The undo confirm holds its counts constant so that only drift is left
 	// to tell the states apart.
 	undo := func(drifted []string) string {
-		return UndoConfirm{Turn: 7, Restores: 2, Removes: 1, Drifted: drifted}.View(w)
+		return UndoConfirm{Confirm: Confirm{Prompt: "Undo turn 7?"},
+			Restores: 2, Removes: 1, Drifted: drifted}.View(w)
 	}
 
 	// The close rows hold their stats constant so that only the state itself

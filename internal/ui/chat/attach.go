@@ -440,14 +440,14 @@ func (m Model) updateAgentList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m.updateListAnswer(msg, ask)
 	}
 	if m.killConfirm != nil {
-		done, result := m.killConfirm.Update(msg)
+		done, yes := m.killConfirm.Update(msg)
 		if !done {
 			return m, nil
 		}
 		target := m.killTarget
 		m.killConfirm = nil
 		m.killTarget = ""
-		if confirmed, _ := result.(bool); confirmed {
+		if yes {
 			if err := m.subagents.Kill(target); err != nil {
 				m.noteChild(target, err.Error())
 			} else {

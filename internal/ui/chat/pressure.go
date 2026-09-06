@@ -85,10 +85,13 @@ func (m Model) pressureCardData() *components.PressureCard {
 		Alert:     trimThresholdPercent,
 		Estimated: !b.Reported,
 		Rows:      m.pressureRows(b),
+		// The three offers come from the same declarations the card reads a
+		// press against, so a keymap that moves one moves the offer with it
+		// rather than showing a key the card no longer answers to.
 		Keys: []components.KeyOffer{
-			{Key: "[enter]", Label: "compact now"},
-			{Key: "[n]", Label: "new session"},
-			{Key: "[esc]", Label: "keep going"},
+			{Key: keys.Bracket(keys.Wait.Compact), Label: keys.Words(keys.Wait.Compact)},
+			{Key: keys.Bracket(keys.Wait.NewSession), Label: keys.Words(keys.Wait.NewSession)},
+			{Key: keys.Bracket(keys.Wait.KeepGoing), Label: keys.Words(keys.Wait.KeepGoing)},
 		},
 	}
 	card.Keeps = m.compactKeepsClause()
@@ -238,13 +241,12 @@ func (m Model) updatePressure(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if !done {
 		return m, nil
 	}
-	pressed, _ := result.(string)
 	updated, cmd := m.closePressure()
 	next := updated.(Model)
-	switch {
-	case keys.Is(pressed, keys.Wait.Compact):
+	switch result {
+	case components.PressureCompact:
 		return next.startCompact()
-	case keys.Is(pressed, keys.Wait.NewSession):
+	case components.PressureNewSession:
 		return next.pressureNewSession()
 	}
 	// Esc keeps going, and says nothing: the answer that changes nothing

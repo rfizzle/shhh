@@ -247,12 +247,7 @@ func (d *DoctorScreen) Update(msg tea.KeyPressMsg) (done bool, result DoctorResu
 // screen back exactly as it was — nothing has happened yet, which is the whole
 // reason the question is there.
 func (d *DoctorScreen) updateConfirm(msg tea.KeyPressMsg) (bool, DoctorResult) {
-	done, result := d.confirm.Update(msg)
-	if !done {
-		return false, DoctorResult{}
-	}
-	d.confirm = nil
-	if yes, _ := result.(bool); yes {
+	if answered, yes := confirmed(&d.confirm, msg); answered && yes {
 		return false, DoctorResult{Command: &DoctorCommand{Act: DoctorApply, At: d.asking}}
 	}
 	return false, DoctorResult{}

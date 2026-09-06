@@ -269,13 +269,13 @@ func (m Model) updateChatOps(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 	ops.notice = ""
 	switch {
 	case ops.confirm != nil:
-		done, result := ops.confirm.Update(msg)
+		done, yes := ops.confirm.Update(msg)
 		if !done {
 			return m, nil, true
 		}
 		target := ops.target
 		ops.confirm, ops.target = nil, ""
-		if confirmed, _ := result.(bool); confirmed {
+		if yes {
 			m.deleteChat(target)
 		}
 		m.syncViewport()

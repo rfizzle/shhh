@@ -127,17 +127,24 @@ type MetricsScreen struct {
 	MaxLines int
 }
 
+// MetricsResult is the screen's answer, and it carries nothing: the reading
+// changes nothing about the session, so leaving is all the screen has to
+// report and `done` says that. It is a type of its own rather than a bare
+// `struct{}` so the host reads the same shape here as at the six screens
+// beside it (Keyed).
+type MetricsResult struct{}
+
 // Update is the screen's whole keyboard, and it is one key. The screen's
 // header offers `[q] quit` and nothing else: there is no pointer to move,
 // nothing to choose and nothing to change, so there is no key list to open
 // either — a `[?]` over a single key would be a row explaining the row above
 // it.
-func (m *MetricsScreen) Update(msg tea.KeyPressMsg) (done bool, result struct{}) {
+func (m *MetricsScreen) Update(msg tea.KeyPressMsg) (done bool, result MetricsResult) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Screen.Quit):
-		return true, struct{}{}
+		return true, MetricsResult{}
 	}
-	return false, struct{}{}
+	return false, MetricsResult{}
 }
 
 // SetSize gives the screen the terminal's rectangle. It lays itself out from

@@ -380,14 +380,14 @@ func (m Model) openPasteDrop() (tea.Model, tea.Cmd) {
 // confirm is up.
 func (m Model) updatePasteDrop(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if c := m.pasteDropConfirm; c != nil {
-		done, result := c.Update(msg)
+		done, yes := c.Update(msg)
 		if !done {
 			return m, nil
 		}
 		m.pasteDropConfirm = nil
 		m.leaveSurface()
 		m.syncViewport()
-		if yes, _ := result.(bool); yes && len(m.attachments) == 1 {
+		if yes && len(m.attachments) == 1 {
 			return m.dropAttachment(m.attachments[0].Name)
 		}
 		return m.surfaceNotice("nothing dropped")

@@ -356,8 +356,7 @@ func (m *Model) answerKeyEntry(msg tea.KeyPressMsg) (bool, overlayAction) {
 		m.syncViewport()
 		return false, overlayAction{}
 	}
-	secret, _ := result.(string)
-	return true, m.closeKeyEntry(secret)
+	return true, m.closeKeyEntry(result.Value)
 }
 
 // closeKeyEntry hands the screen back and applies the key, if one was given.

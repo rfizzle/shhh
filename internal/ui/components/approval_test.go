@@ -413,15 +413,15 @@ func TestApprovalCard_Keys(t *testing.T) {
 	cases := []struct {
 		key    string
 		done   bool
-		result any
+		result ApprovalDecision
 	}{
 		{"y", true, ApprovalApprove},
 		{"enter", true, ApprovalApprove},
 		{"n", true, ApprovalDeny},
 		{"esc", true, ApprovalDeny},
 		{"ctrl+c", true, ApprovalDeny},
-		{"a", false, nil}, // AllowAlways off: [a] ignored
-		{"z", false, nil},
+		{"a", false, ApprovalWaiting}, // AllowAlways off: [a] ignored
+		{"z", false, ApprovalWaiting},
 	}
 	for _, tc := range cases {
 		done, result := c.Update(key(tc.key))

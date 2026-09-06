@@ -233,13 +233,11 @@ func (h *HistoryScreen) SetQuery(query string) {
 	h.refilter()
 }
 
+// updateConfirm is the keyboard while the delete question is up. Declining
+// leaves the list exactly as it was, and the row the answer acts on is the
+// one under the pointer when it is answered.
 func (h *HistoryScreen) updateConfirm(msg tea.KeyPressMsg) (bool, HistoryResult) {
-	done, result := h.confirm.Update(msg)
-	if !done {
-		return false, HistoryResult{}
-	}
-	h.confirm = nil
-	if yes, _ := result.(bool); yes {
+	if answered, yes := confirmed(&h.confirm, msg); answered && yes {
 		if row := h.current(); row != nil {
 			return false, HistoryResult{Do: &HistoryCommand{Act: HistoryDelete, ID: row.ID}}
 		}

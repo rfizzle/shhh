@@ -71,16 +71,16 @@ func (m Model) updateOutputFull(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m.closeOutputFull()
 	}
 	m.fullOutput.Height = m.viewportHeight()
-	switch m.fullOutput.Update(msg) {
-	case components.OutputBack:
-		return m.closeOutputFull()
-	case components.OutputCollapse:
+	done, result := m.fullOutput.Update(msg)
+	if !done {
+		return m, nil
+	}
+	if result == components.OutputCollapse {
 		if es := *m.entries(); m.outputIdx >= 0 && m.outputIdx < len(es) {
 			es[m.outputIdx].expanded = false
 		}
-		return m.closeOutputFull()
 	}
-	return m, nil
+	return m.closeOutputFull()
 }
 
 // closeOutputFull returns from the full screen to wherever it was opened

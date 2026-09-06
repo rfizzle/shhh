@@ -225,7 +225,7 @@ func (m Model) updateQuitConfirm(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.leaveSurface()
 		return m, nil
 	}
-	done, result := m.quitAsk.Update(msg)
+	done, yes := m.quitAsk.Update(msg)
 	if !done {
 		return m, nil
 	}
@@ -233,7 +233,7 @@ func (m Model) updateQuitConfirm(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	m.quitAsk, m.quitAskYes = nil, nil
 	m.leaveSurface()
 	m.syncViewport()
-	if yes, _ := result.(bool); yes && act != nil {
+	if yes && act != nil {
 		return m, act(&m)
 	}
 	return m, nil

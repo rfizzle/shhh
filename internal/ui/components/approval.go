@@ -27,8 +27,14 @@ const (
 type ApprovalDecision int
 
 const (
+	// ApprovalWaiting is no decision at all: the key was none of the card's
+	// answers and the card is still up. It is the zero value so that the
+	// result of an unresolved press is inert — a host that read it without
+	// the done flag would otherwise read a press of any letter as an
+	// approval.
+	ApprovalWaiting ApprovalDecision = iota
 	// ApprovalApprove runs the pending action (y / enter).
-	ApprovalApprove ApprovalDecision = iota
+	ApprovalApprove
 	// ApprovalDeny declines it (n / esc / ctrl+c) — esc never destroys.
 	ApprovalDeny
 	// ApprovalAlways approves and auto-allows the category for the session
@@ -245,19 +251,19 @@ func (c *ApprovalCard) arrivalKey(pressed string) (ApprovalDecision, bool) {
 	case keys.Is(pressed, keys.Decision.Deny):
 		return ApprovalDeny, true
 	}
-	return 0, false
+	return ApprovalWaiting, false
 }
 
 // Update maps decision keys, preserving the chat confirm prompt's y/n/esc
 // semantics. Unrecognized keys — including [a] when AllowAlways is off —
 // leave the card waiting.
-func (c *ApprovalCard) Update(msg tea.KeyPressMsg) (done bool, result any) {
+func (c *ApprovalCard) Update(msg tea.KeyPressMsg) (done bool, result ApprovalDecision) {
 	if c.NotYetLive {
 		// The card does not hold the keyboard, so none of its keys exist yet
 		// (invariant 5). The host owns the one key that changes that, and
 		// everything else belongs to the draft — including enter, which is
 		// how a sentence ends.
-		return false, nil
+		return false, ApprovalWaiting
 	}
 	if c.HeldOnArrival {
 		// The card has the keyboard, but nobody handed it over. It answers
@@ -292,7 +298,7 @@ func (c *ApprovalCard) Update(msg tea.KeyPressMsg) (done bool, result any) {
 	case keys.Is(pressed, keys.Decision.Deny):
 		return true, ApprovalDeny
 	}
-	return false, nil
+	return false, ApprovalWaiting
 }
 
 // View renders the card at the given width, bounded to MaxLines rows: a body

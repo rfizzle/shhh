@@ -15,13 +15,11 @@ func runes(s string) tea.KeyPressMsg { return tea.KeyPressMsg{Code: []rune(s)[0]
 
 func answer(t *testing.T, c *UndoConfirm, msg tea.KeyPressMsg) (bool, UndoDecision) {
 	t.Helper()
-	done, result := c.Update(msg)
-	d, _ := result.(UndoDecision)
-	return done, d
+	return c.Update(msg)
 }
 
 func TestUndoConfirm_DefaultIsDecline(t *testing.T) {
-	c := &UndoConfirm{Turn: 7, Restores: 2}
+	c := &UndoConfirm{Confirm: Confirm{Prompt: "Undo turn 7?"}, Restores: 2}
 	for _, msg := range []tea.KeyPressMsg{
 		runes("n"), {Code: tea.KeyEnter}, {Code: tea.KeyEscape},
 	} {
@@ -38,7 +36,7 @@ func TestUndoConfirm_DefaultIsDecline(t *testing.T) {
 // Force exists only where there is drift to force through; without any, [f]
 // is not an answer and the key is left alone.
 func TestUndoConfirm_ForceOnlyWithDrift(t *testing.T) {
-	clean := &UndoConfirm{Turn: 7, Restores: 1}
+	clean := &UndoConfirm{Confirm: Confirm{Prompt: "Undo turn 7?"}, Restores: 1}
 	if done, _ := answer(t, clean, runes("f")); done {
 		t.Fatal("f should not resolve a confirm with nothing drifted")
 	}
@@ -46,7 +44,7 @@ func TestUndoConfirm_ForceOnlyWithDrift(t *testing.T) {
 		t.Fatalf("force should not be offered without drift, got %q", view)
 	}
 
-	drifted := &UndoConfirm{Turn: 7, Restores: 1, Drifted: []string{"a.go"}}
+	drifted := &UndoConfirm{Confirm: Confirm{Prompt: "Undo turn 7?"}, Restores: 1, Drifted: []string{"a.go"}}
 	if done, d := answer(t, drifted, runes("f")); !done || d != UndoForce {
 		t.Fatalf("f should force through drift, got done=%v %v", done, d)
 	}
@@ -55,7 +53,7 @@ func TestUndoConfirm_ForceOnlyWithDrift(t *testing.T) {
 // With every file drifted there is nothing for [y] to do, so it is neither
 // offered nor bound — the confirm never shows a key that does nothing.
 func TestUndoConfirm_YesIsWithheldWhenItWouldDoNothing(t *testing.T) {
-	c := &UndoConfirm{Turn: 7, Drifted: []string{"a.go"}}
+	c := &UndoConfirm{Confirm: Confirm{Prompt: "Undo turn 7?"}, Drifted: []string{"a.go"}}
 	if done, _ := answer(t, c, runes("y")); done {
 		t.Fatal("y should not resolve a confirm with nothing to restore")
 	}
@@ -71,7 +69,7 @@ func TestUndoConfirm_YesIsWithheldWhenItWouldDoNothing(t *testing.T) {
 // The drift list is bounded: past a few names the rest are counted, because
 // the prompt has to fit in the input area.
 func TestUndoConfirm_DriftListIsBounded(t *testing.T) {
-	c := UndoConfirm{Turn: 7, Restores: 1,
+	c := UndoConfirm{Confirm: Confirm{Prompt: "Undo turn 7?"}, Restores: 1,
 		Drifted: []string{"a.go", "b.go", "c.go", "d.go", "e.go"}}
 	view := ansi.Strip(c.View(80))
 	if !strings.Contains(view, "5 files changed since the turn") {
@@ -83,12 +81,12 @@ func TestUndoConfirm_DriftListIsBounded(t *testing.T) {
 }
 
 func TestUndoConfirm_StatesBothKindsOfEffect(t *testing.T) {
-	view := ansi.Strip(UndoConfirm{Turn: 3, Restores: 2, Removes: 1}.View(96))
+	view := ansi.Strip(UndoConfirm{Confirm: Confirm{Prompt: "Undo turn 3?"}, Restores: 2, Removes: 1}.View(96))
 	if !strings.Contains(view, "restores 2 files") || !strings.Contains(view, "deletes 1 file it created") {
 		t.Fatalf("the confirm should state what it would do to each kind, got %q", view)
 	}
 	// A kind with no files in it is left out rather than reported as a zero.
-	only := ansi.Strip(UndoConfirm{Turn: 3, Restores: 2}.View(96))
+	only := ansi.Strip(UndoConfirm{Confirm: Confirm{Prompt: "Undo turn 3?"}, Restores: 2}.View(96))
 	if strings.Contains(only, "deletes") {
 		t.Fatalf("nothing should be said about a kind with no files, got %q", only)
 	}

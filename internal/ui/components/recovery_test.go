@@ -126,12 +126,12 @@ func TestProviderCard_ClaimsOnlyTheKeysItOffers(t *testing.T) {
 		t.Error("a key the card does not offer should not resolve it")
 	}
 	done, result := card.Update(tea.KeyPressMsg{Code: 'p', Text: "p"})
-	if !done || result != "p" {
+	if !done || result != ProviderPaste {
 		t.Errorf("[p] should resolve the card, got done=%v result=%v", done, result)
 	}
 	esc := &ProviderCard{Keys: []KeyOffer{{Key: "[p]"}}}
 	done, result = esc.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
-	if !done || result != "" {
+	if !done || result != ProviderDismiss {
 		t.Errorf("esc should decline, got done=%v result=%v", done, result)
 	}
 }
@@ -156,7 +156,7 @@ func TestSecretPrompt_MasksAndNeverEchoes(t *testing.T) {
 		t.Errorf("backspace should delete one rune, Len() = %d", p.Len())
 	}
 	done, result := p.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
-	if !done || result != "sk-secre" {
+	if !done || result.Value != "sk-secre" {
 		t.Errorf("enter should resolve to what was typed, got %v", result)
 	}
 }
@@ -165,7 +165,7 @@ func TestSecretPrompt_EscResolvesToNothing(t *testing.T) {
 	p := &SecretPrompt{}
 	p.Update(tea.KeyPressMsg{Code: 'a', Text: "abc"})
 	done, result := p.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
-	if !done || result != "" {
+	if !done || result.Value != "" {
 		t.Errorf("esc declines and keeps the old key, got done=%v result=%v", done, result)
 	}
 }

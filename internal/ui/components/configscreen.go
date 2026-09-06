@@ -300,26 +300,23 @@ func (c *ConfigScreen) updateSecret(msg tea.KeyPressMsg) (bool, ConfigResult) {
 	if !done {
 		return false, ConfigResult{}
 	}
-	value, _ := result.(string)
 	c.secret = nil
-	// The masked entry resolves to "" on esc, which leaves the key that was
-	// already there in place — esc never destroys.
-	if value == "" {
+	// The masked entry resolves to an empty value on esc, which leaves the
+	// key that was already there in place — esc never destroys.
+	if result.Value == "" {
 		return false, ConfigResult{}
 	}
 	if row := c.rowAt(c.editRow); row != nil {
-		return false, ConfigResult{Change: &ConfigChange{Key: row.Key, Value: value}}
+		return false, ConfigResult{Change: &ConfigChange{Key: row.Key, Value: result.Value}}
 	}
 	return false, ConfigResult{}
 }
 
+// updateConfirm is the keyboard while the write question is up. Answering it
+// takes it down; only yes writes, and the screen closes on the write because
+// there is nothing left for it to say.
 func (c *ConfigScreen) updateConfirm(msg tea.KeyPressMsg) (bool, ConfigResult) {
-	done, result := c.confirm.Update(msg)
-	if !done {
-		return false, ConfigResult{}
-	}
-	c.confirm = nil
-	if yes, _ := result.(bool); yes {
+	if answered, yes := confirmed(&c.confirm, msg); answered && yes {
 		return true, ConfigResult{Write: true}
 	}
 	return false, ConfigResult{}

@@ -81,17 +81,23 @@ type DiffView struct {
 	cachedBodySBS   bool
 }
 
-// Update handles keys while the viewer is focused. done reports that the
-// viewer was dismissed (esc from the collapsed or expanded form); result is
-// always nil. Esc from full screen steps back to the expanded view — esc
-// never destroys.
+// DiffResult is the viewer's answer, and it carries nothing. The viewer
+// walks between its three forms and scrolls; it decides nothing about the
+// session, so `done` — the viewer was dismissed — is the whole of what it
+// has to report. It is a type of its own rather than `any` so the viewer
+// answers a key the way every other surface does (Keyed).
+type DiffResult struct{}
+
 // SetSize gives the viewer the terminal's rectangle. It lays itself out from
 // the width it is rendered at, so only the height is kept — and the height it
 // keeps is the full-screen budget rather than the bound on the inline body,
 // which is the other number this type carries.
 func (d *DiffView) SetSize(_, height int) { d.Height = height }
 
-func (d *DiffView) Update(msg tea.KeyPressMsg) (done bool, result any) {
+// Update handles keys while the viewer is focused. done reports that the
+// viewer was dismissed (esc from the collapsed or expanded form). Esc from
+// full screen steps back to the expanded view — esc never destroys.
+func (d *DiffView) Update(msg tea.KeyPressMsg) (done bool, result DiffResult) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Reading.Expand):
 		// [enter] expand · [enter] full view · [enter again] collapse.
@@ -104,16 +110,16 @@ func (d *DiffView) Update(msg tea.KeyPressMsg) (done bool, result any) {
 		default:
 			d.Mode = DiffCollapsed
 		}
-		return false, nil
+		return false, DiffResult{}
 	case keys.Is(pressed, keys.Diff.Back):
 		if d.Mode == DiffFull {
 			d.Mode = DiffExpanded
-			return false, nil
+			return false, DiffResult{}
 		}
-		return true, nil
+		return true, DiffResult{}
 	}
 	if d.Mode != DiffFull {
-		return false, nil
+		return false, DiffResult{}
 	}
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Diff.Scroll):
@@ -123,7 +129,7 @@ func (d *DiffView) Update(msg tea.KeyPressMsg) (done bool, result any) {
 	case keys.Is(pressed, keys.Diff.SideBySide):
 		d.SideBySide = !d.SideBySide
 	}
-	return false, nil
+	return false, DiffResult{}
 }
 
 // View renders the current mode at the given width.

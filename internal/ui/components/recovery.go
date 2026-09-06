@@ -310,20 +310,53 @@ type ProviderCard struct {
 	Keys []KeyOffer
 }
 
-// Update resolves on any offered key, and on esc, which declines. The result
-// is the chosen keystroke, or "" for a decline — esc always dismisses, never
-// destroys.
-func (c *ProviderCard) Update(msg tea.KeyPressMsg) (done bool, result any) {
+// ProviderAction is the answer to the card: which of its offers was taken.
+type ProviderAction int
+
+const (
+	// ProviderNone is no answer: the key was none of the card's offers and
+	// the card is still up. It is the zero value so an unresolved press
+	// cannot be read as one of the offers.
+	ProviderNone ProviderAction = iota
+	// ProviderWizard opens the list of providers to set one up from.
+	ProviderWizard
+	// ProviderPaste opens the masked prompt for a key for the provider that
+	// was looked for.
+	ProviderPaste
+	// ProviderLocal takes the local runtime that answered, which needs
+	// neither a key nor the wizard.
+	ProviderLocal
+	// ProviderDismiss declines the card — esc, and any offer that is none of
+	// the three above. Nothing is set up.
+	ProviderDismiss
+)
+
+// Update resolves on any offered key, and on esc, which dismisses — esc
+// never destroys. The card's own offers are consulted before the key is read
+// as one of the actions, because the local offer only exists where something
+// local answered and a key the card did not show does not act (invariant 5).
+func (c *ProviderCard) Update(msg tea.KeyPressMsg) (done bool, result ProviderAction) {
 	pressed := msg.String()
 	if keys.Is(pressed, keys.Screen.Quit) {
-		return true, ""
+		return true, ProviderDismiss
 	}
 	for _, k := range c.Keys {
-		if strings.Trim(k.Key, "[]") == pressed {
-			return true, pressed
+		if strings.Trim(k.Key, "[]") != pressed {
+			continue
 		}
+		switch {
+		case keys.Is(pressed, keys.Setup.Wizard):
+			return true, ProviderWizard
+		case keys.Is(pressed, keys.Setup.Paste):
+			return true, ProviderPaste
+		case keys.Is(pressed, keys.Setup.Local):
+			return true, ProviderLocal
+		}
+		// An offer with no action of its own dismisses the card, which is
+		// where a fourth offer would land until it was given one here.
+		return true, ProviderDismiss
 	}
-	return false, nil
+	return false, ProviderNone
 }
 
 // View renders the card at the given width.
@@ -411,28 +444,36 @@ type SecretPrompt struct {
 	value []rune
 }
 
-// Update accumulates the key. Enter resolves to what was typed, esc to "";
-// backspace deletes; every other printable rune is appended. Paste arrives as
-// a run of runes, which is the ordinary case here.
-func (s *SecretPrompt) Update(msg tea.KeyPressMsg) (done bool, result any) {
+// SecretResult is what the masked prompt resolved to.
+type SecretResult struct {
+	// Value is what was typed, trimmed. An empty one is a decline — esc,
+	// ctrl+c, or enter on nothing typed — and leaves whatever was there in
+	// place, because esc never destroys.
+	Value string
+}
+
+// Update accumulates the key. Enter resolves to what was typed, esc to an
+// empty value; backspace deletes; every other printable rune is appended.
+// Paste arrives as a run of runes, which is the ordinary case here.
+func (s *SecretPrompt) Update(msg tea.KeyPressMsg) (done bool, result SecretResult) {
 	switch msg.Code {
 	case tea.KeyEnter:
-		return true, strings.TrimSpace(string(s.value))
+		return true, SecretResult{Value: strings.TrimSpace(string(s.value))}
 	case tea.KeyEscape:
-		return true, ""
+		return true, SecretResult{}
 	case tea.KeyBackspace:
 		if len(s.value) > 0 {
 			s.value = s.value[:len(s.value)-1]
 		}
-		return false, nil
+		return false, SecretResult{}
 	}
 	if msg.Mod.Contains(tea.ModCtrl) && msg.Code == 'c' {
-		return true, ""
+		return true, SecretResult{}
 	}
 	// Text is the characters the key contributes and nothing else, so the
 	// space bar types a space and every chord types nothing.
 	s.value = append(s.value, []rune(msg.Text)...)
-	return false, nil
+	return false, SecretResult{}
 }
 
 // Len is how many characters have been entered, for a caller that wants to

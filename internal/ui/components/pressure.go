@@ -84,20 +84,48 @@ type PressureCard struct {
 	Keys []KeyOffer
 }
 
-// Update resolves on any offered key and on esc, which declines. The result
-// is the chosen keystroke, or "" for a decline — esc keeps going, which is
-// invariant 3 holding even at 94%.
-func (c *PressureCard) Update(msg tea.KeyPressMsg) (done bool, result any) {
+// PressureDecision is the answer to the card: which of the three offers the
+// key took.
+type PressureDecision int
+
+const (
+	// PressureNone is no answer: the key was none of the card's offers and
+	// the card is still up. It is the zero value so an unresolved press
+	// cannot be read as one of the answers.
+	PressureNone PressureDecision = iota
+	// PressureCompact recovers the window in place, keeping the session.
+	PressureCompact
+	// PressureNewSession crosses the session boundary instead.
+	PressureNewSession
+	// PressureKeepGoing changes nothing — esc, which keeps going, which is
+	// invariant 3 holding even at 94%.
+	PressureKeepGoing
+)
+
+// Update resolves on any offered key and on esc, which declines. The card's
+// own offers are consulted before the key is read as one of the three
+// answers, because a key the card did not show does not act (invariant 5).
+func (c *PressureCard) Update(msg tea.KeyPressMsg) (done bool, result PressureDecision) {
 	pressed := msg.String()
 	if keys.Is(pressed, keys.Select.Cancel) {
-		return true, ""
+		return true, PressureKeepGoing
 	}
 	for _, k := range c.Keys {
-		if strings.Trim(k.Key, "[]") == pressed {
-			return true, pressed
+		if strings.Trim(k.Key, "[]") != pressed {
+			continue
 		}
+		switch {
+		case keys.Is(pressed, keys.Wait.Compact):
+			return true, PressureCompact
+		case keys.Is(pressed, keys.Wait.NewSession):
+			return true, PressureNewSession
+		}
+		// An offer with no answer of its own is the answer that changes
+		// nothing, which is where the card's own [esc] offer lands and where
+		// a fourth offer would land until it was given one here.
+		return true, PressureKeepGoing
 	}
-	return false, nil
+	return false, PressureNone
 }
 
 // meter is the card's bar: the same component, cell count and thresholds the

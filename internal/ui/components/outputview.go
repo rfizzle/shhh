@@ -38,7 +38,8 @@ type OutputView struct {
 	Wrap bool
 }
 
-// OutputResult is Update's answer when a key ends the view.
+// OutputResult is what a key did to the view: left it up, or one of the two
+// ways out of it.
 type OutputResult int
 
 const (
@@ -52,13 +53,27 @@ const (
 	OutputCollapse
 )
 
-// Update handles keys while the viewer holds the screen.
-func (v *OutputView) Update(msg tea.KeyPressMsg) OutputResult {
+// SetSize gives the view the terminal's rectangle. It lays itself out from
+// the width it is rendered at, so only the height is kept.
+func (v *OutputView) SetSize(_, height int) { v.Height = height }
+
+// Scroll moves the body by delta rows. The wheel routes here too. The clamp
+// lives in View, which knows the width the body wraps at; a press past the
+// end is pulled back on the next frame, so it still costs one press to
+// recover.
+func (v *OutputView) Scroll(delta int) {
+	v.Offset = max(v.Offset+delta, 0)
+}
+
+// Update handles keys while the viewer holds the screen. done reports that
+// the key ended the view, which is the shape every other surface answers a
+// key in (Keyed) — a scroll leaves the view up and says so.
+func (v *OutputView) Update(msg tea.KeyPressMsg) (done bool, result OutputResult) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Output.Back, keys.Output.Leave):
-		return OutputBack
+		return true, OutputBack
 	case keys.Is(pressed, keys.Output.Collapse):
-		return OutputCollapse
+		return true, OutputCollapse
 	case keys.Is(pressed, keys.Output.Scroll):
 		v.Scroll(keys.Step(pressed, keys.Output.Scroll))
 	case keys.Is(pressed, keys.Output.PageUp):
@@ -66,19 +81,7 @@ func (v *OutputView) Update(msg tea.KeyPressMsg) OutputResult {
 	case keys.Is(pressed, keys.Output.PageDown):
 		v.Scroll(v.bodyHeight())
 	}
-	return OutputStay
-}
-
-// Scroll moves the body by delta rows. The wheel routes here too. The clamp
-// lives in View, which knows the width the body wraps at; a press past the
-// end is pulled back on the next frame, so it still costs one press to
-// recover.
-// SetSize gives the view the terminal's rectangle. It lays itself out from
-// the width it is rendered at, so only the height is kept.
-func (v *OutputView) SetSize(_, height int) { v.Height = height }
-
-func (v *OutputView) Scroll(delta int) {
-	v.Offset = max(v.Offset+delta, 0)
+	return false, OutputStay
 }
 
 // bodyHeight is the rows left for content once the header and footer have

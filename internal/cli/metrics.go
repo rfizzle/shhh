@@ -478,7 +478,7 @@ func metricsLatency(ms *float64) string {
 // carry: the screen has one key and nothing to change, so the only answer it
 // has is that it is finished.
 func runMetricsScreen(screen components.MetricsScreen) error {
-	quit := func(done bool, _ struct{}) tea.Cmd {
+	quit := func(done bool, _ components.MetricsResult) tea.Cmd {
 		if done {
 			return tea.Quit
 		}

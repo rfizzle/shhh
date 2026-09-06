@@ -160,24 +160,6 @@ func TestNoteSelect_ListNavigationWhileNoteBlurred(t *testing.T) {
 	}
 }
 
-func TestConfirm_Keys(t *testing.T) {
-	c := &Confirm{Prompt: "Discard 14 unsaved turns?"}
-	if done, result := c.Update(key("y")); !done || result != true {
-		t.Fatal("y should confirm")
-	}
-	for _, k := range []string{"n", "enter", "esc"} {
-		if done, result := c.Update(key(k)); !done || result != false {
-			t.Fatalf("%s should decline (default No)", k)
-		}
-	}
-	if done, _ := c.Update(key("z")); done {
-		t.Fatal("other keys should wait")
-	}
-	if view := c.View(80); !strings.Contains(view, "Discard 14 unsaved turns?") || !strings.Contains(view, "[y/N]") {
-		t.Fatalf("confirm should render prompt and [y/N]: %q", view)
-	}
-}
-
 // grouped is a filtered list of the shape the palette builds: rails
 // that label the runs beneath them, and one option that cannot be acted on.
 func grouped() []SelectOption {

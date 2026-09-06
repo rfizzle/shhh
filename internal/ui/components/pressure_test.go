@@ -133,20 +133,20 @@ func TestPressureCard_CountsAreRightAligned(t *testing.T) {
 func TestPressureCard_KeysResolveAndEscDeclines(t *testing.T) {
 	for _, tc := range []struct {
 		key  string
-		want string
+		want PressureDecision
 	}{
-		{"enter", "enter"},
-		{"n", "n"},
-		{"esc", ""},
-		{"ctrl+c", ""},
+		{"enter", PressureCompact},
+		{"n", PressureNewSession},
+		{"esc", PressureKeepGoing},
+		{"ctrl+c", PressureKeepGoing},
 	} {
 		c := pressureFixture()
 		done, result := c.Update(pressFor(tc.key))
 		if !done {
 			t.Fatalf("%q should resolve the card", tc.key)
 		}
-		if got, _ := result.(string); got != tc.want {
-			t.Fatalf("%q should resolve to %q, got %q", tc.key, tc.want, got)
+		if result != tc.want {
+			t.Fatalf("%q should resolve to %v, got %v", tc.key, tc.want, result)
 		}
 	}
 

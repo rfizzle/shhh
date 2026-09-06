@@ -148,11 +148,11 @@ func (m ProviderSetup) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		switch result {
-		case keys.Shown(keys.Setup.Wizard):
+		case components.ProviderWizard:
 			m.pick = components.Select{Title: "Which provider", Options: providerOptions(m.providers)}
 			m.step = stepPickProvider
 			return m, nil
-		case keys.Shown(keys.Setup.Paste):
+		case components.ProviderPaste:
 			m.choice.Provider = m.survey.Provider
 			m.secret = components.SecretPrompt{
 				Prompt: "Paste a key for " + m.survey.Provider,
@@ -160,7 +160,7 @@ func (m ProviderSetup) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			}
 			m.step = stepPasteKey
 			return m, nil
-		case keys.Shown(keys.Setup.Local):
+		case components.ProviderLocal:
 			// A local runtime needs no key and no wizard: it is already
 			// answering, which is the whole of the offer.
 			m.choice = ProviderChoice{
@@ -198,7 +198,7 @@ func (m ProviderSetup) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		if !done {
 			return m, nil
 		}
-		key, _ := result.(string)
+		key := result.Value
 		if key == "" && !m.picked {
 			// Nothing pasted for the provider that just failed: that is a
 			// decline of the offer, not a session on an empty key.
@@ -212,11 +212,11 @@ func (m ProviderSetup) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case stepSave:
-		done, result := m.save.Update(msg)
+		done, yes := m.save.Update(msg)
 		if !done {
 			return m, nil
 		}
-		m.choice.Save, _ = result.(bool)
+		m.choice.Save = yes
 		return m.finish()
 	}
 	return m.finish()

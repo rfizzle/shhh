@@ -37,11 +37,15 @@ const (
 	UndoForce
 )
 
-// UndoConfirm is the prompt an undo asks through. Restores and Removes are
-// what [y] would do — the drifted files are not in them, because [y] does
-// not touch a drifted file.
+// UndoConfirm is the prompt an undo asks through: the inline confirm, with
+// the counts the question is about and the drift the second answer is for.
+// It is the same yes/no question every other confirm asks — the host words
+// it, [y] and [n] mean here what they mean everywhere — so it embeds one
+// rather than restating its keys, and adds only what an undo has to say.
+// Restores and Removes are what [y] would do; the drifted files are not in
+// them, because [y] does not touch a drifted file.
 type UndoConfirm struct {
-	Turn int64
+	Confirm
 	// Restores is how many files [y] writes back; Removes how many it
 	// deletes, which are the files the turn created.
 	Restores, Removes int
@@ -53,25 +57,27 @@ type UndoConfirm struct {
 func (c UndoConfirm) touches() int { return c.Restores + c.Removes }
 
 // Update resolves on the first decisive key: y undoes, f forces through
-// drift, and n, enter, esc and ctrl+c all decline. With nothing for [y] to
-// do — every file drifted — y is not bound, so the only ways out are the
-// deliberate [f] and declining.
-func (c *UndoConfirm) Update(msg tea.KeyPressMsg) (done bool, result any) {
-	switch pressed := msg.String(); {
-	case keys.Is(pressed, keys.Confirm.Yes):
-		if c.touches() == 0 {
-			return false, nil
-		}
-		return true, UndoApply
-	case keys.Is(pressed, keys.Confirm.Force):
+// drift, and n, enter, esc and ctrl+c all decline. The yes/no half is the
+// embedded confirm's, so an answer that changes there changes here. With
+// nothing for [y] to do — every file drifted — y is not bound, so the only
+// ways out are the deliberate [f] and declining.
+func (c *UndoConfirm) Update(msg tea.KeyPressMsg) (done bool, result UndoDecision) {
+	if keys.Is(msg.String(), keys.Confirm.Force) {
 		if len(c.Drifted) == 0 {
-			return false, nil
+			return false, UndoCancel
 		}
 		return true, UndoForce
-	case keys.Is(pressed, keys.Confirm.No):
-		return true, UndoCancel
 	}
-	return false, nil
+	answered, yes := c.Confirm.Update(msg)
+	switch {
+	case !answered:
+		return false, UndoCancel
+	case yes && c.touches() == 0:
+		return false, UndoCancel
+	case yes:
+		return true, UndoApply
+	}
+	return true, UndoCancel
 }
 
 // effect is what [y] would do, in words: a count per kind, and nothing said
@@ -120,13 +126,12 @@ func (c UndoConfirm) driftRows(width int) []string {
 // the statement moves to a row of its own rather than pushing them off the
 // end.
 func (c UndoConfirm) headRows(width int) []string {
-	question := fmt.Sprintf("Undo turn %d?", c.Turn)
 	keys := sty.Headline.Render(c.defaultKeys())
-	if full := sty.Body.Render(question+" "+c.effect()) + "  " + keys; lipgloss.Width(full) <= width {
+	if full := sty.Body.Render(c.Prompt+" "+c.effect()) + "  " + keys; lipgloss.Width(full) <= width {
 		return []string{full}
 	}
 	return []string{
-		Clip(sty.Body.Render(question)+"  "+keys, width),
+		Clip(sty.Body.Render(c.Prompt)+"  "+keys, width),
 		Clip(sty.Dim.Render(c.effect()), width),
 	}
 }

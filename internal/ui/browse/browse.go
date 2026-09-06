@@ -219,13 +219,13 @@ func (m Model) updateList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 // updateConfirm answers the armed delete confirm: y deletes, everything
 // else is No.
 func (m Model) updateConfirm(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	done, result := m.confirm.Update(msg)
+	done, yes := m.confirm.Update(msg)
 	if !done {
 		return m, nil
 	}
 	target := m.target
 	m.confirm = nil
-	if confirmed, _ := result.(bool); !confirmed {
+	if !yes {
 		return m, nil
 	}
 	item := m.items[target]
