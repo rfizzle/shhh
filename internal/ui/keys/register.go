@@ -418,23 +418,37 @@ func Programs() []Surface {
 			Bindings: []Binding{Setup.Wizard, Setup.Paste, Setup.Local},
 		},
 		{
-			Name:     "the saved-chat browser",
+			Name:     "shhh snippets",
 			Section:  "docs/interface/surfaces.md#the-supporting-screens",
 			Position: Takeover,
-			Reached:  "shhh chats, or --resume on shhh chat and shhh code",
+			Reached:  "shhh snippets",
 			Bindings: []Binding{
-				Browse.Move, Browse.Open, Browse.Filter, Browse.Delete, Browse.Rename,
-				Browse.Quit,
+				Screen.Move, Screen.Rerun, Screen.Copy, Screen.Rename,
+				Screen.Delete, Screen.Filter, Screen.ClearQ, Query.Rub,
+				Screen.List, Screen.Quit,
 			},
 		},
 		{
-			Name:     "a saved chat's detail",
+			Name:     "the saved-chat browser",
+			Section:  "docs/interface/surfaces.md#the-supporting-screens, docs/capabilities/sessions-and-memory.md#housekeeping",
+			Position: Takeover,
+			Reached:  "shhh chats, or --resume on shhh chat and shhh code",
+			Bindings: []Binding{
+				Screen.Move, Screen.Take, Screen.Rename, Screen.Delete,
+				Screen.Filter, Screen.ClearQ, Query.Rub, Screen.List, Screen.Quit,
+			},
+		},
+		{
+			// The rename row both of those open, which is a row of its own
+			// for the reason a selector being typed into is: a line being
+			// typed into keeps every letter as text, so none of the screen's
+			// bare letters are live while it is up and enter means something
+			// else here than it does on the list underneath.
+			Name:     "a rename row",
 			Section:  "docs/interface/surfaces.md#the-supporting-screens",
 			Position: Takeover,
-			Reached:  Bracket(Browse.Open) + " on a chat",
-			Bindings: []Binding{
-				Browse.Action, Browse.Prev, Browse.Take, Browse.Back, Browse.Leave,
-			},
+			Reached:  Bracket(Screen.Rename) + " on a snippet or a saved chat",
+			Bindings: []Binding{Screen.Take, Screen.ClearQ, Query.Rub, Screen.Keep},
 		},
 	}
 }

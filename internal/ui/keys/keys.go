@@ -957,9 +957,9 @@ var Preview = PreviewKeys{
 }
 
 // ScreenKeys are the supporting TUIs': `shhh config`, `shhh history`,
-// `shhh metrics`, `shhh doctor`. They are where `?` was invented — the
-// compact key row swapped for the whole list, in place — which is the idiom
-// reading mode borrows.
+// `shhh metrics`, `shhh doctor`, `shhh snippets` and the saved-chat browser.
+// They are where `?` was invented — the compact key row swapped for the whole
+// list, in place — which is the idiom reading mode borrows.
 type ScreenKeys struct {
 	Move   Binding
 	Take   Binding
@@ -976,9 +976,15 @@ type ScreenKeys struct {
 	Rerun   Binding
 	Snippet Binding
 	Delete  Binding
-	Fix     Binding
-	Again   Binding
-	Apply   Binding
+	// Rename opens the one-line rename row over the item under the pointer.
+	// It is the screens' half of the key the picker inside a session answers
+	// on the same act (Select.Rename), which is why the two are spelled the
+	// same and declared apart: one belongs to a card beside a live draft and
+	// this one to a surface that holds the whole keyboard.
+	Rename Binding
+	Fix    Binding
+	Again  Binding
+	Apply  Binding
 
 	// Worked, Failed and Skip are `shhh rate`'s three answers. They are
 	// bare letters on a takeover, like every other key in this group, and
@@ -1006,6 +1012,7 @@ var Screen = ScreenKeys{
 	Rerun:   bind("enter", "re-run it", "enter"),
 	Snippet: bind("s", "save it as a snippet", "s"),
 	Delete:  bind("x", "delete it", "x"),
+	Rename:  bind("r", "rename it", "r"),
 	Fix:     bind("f", "show the fix", "f"),
 	Again:   bind("r", "run the checks again", "r"),
 	// Apply is the one key on a supporting screen that changes the machine
@@ -1104,37 +1111,4 @@ var Setup = SetupKeys{
 	Wizard: bind("enter", "setup wizard", "enter"),
 	Paste:  bind("p", "paste a key", "p"),
 	Local:  bind("o", "a local model", "o"),
-}
-
-// BrowseKeys are the saved-chat browser's.
-type BrowseKeys struct {
-	Move   Binding
-	Open   Binding
-	Filter Binding
-	// Delete and Rename act on the focused chat from the list: the first
-	// arms an inline confirm, the second opens a rename row.
-	Delete Binding
-	Rename Binding
-	Action Binding
-	Prev   Binding
-	Take   Binding
-	Back   Binding
-	Quit   Binding
-	// Leave is the detail pane's `q`. The list's Quit answers esc as well;
-	// in the detail esc is Back, so the two cannot be one binding.
-	Leave Binding
-}
-
-var Browse = BrowseKeys{
-	Move:   bind("j/k", "move", "k", "j", "up", "down"),
-	Open:   bind("enter", "open it", "enter", "l", "right"),
-	Filter: bind("/", "filter", "/"),
-	Delete: bind("x", "delete", "x"),
-	Rename: bind("r", "rename", "r"),
-	Action: bind("tab", "next action", "tab", "right"),
-	Prev:   bind("shift+tab", "the previous one", "shift+tab"),
-	Take:   bind("enter", "take it", "enter"),
-	Back:   bind("esc", "back to the list", "esc", "h", "left"),
-	Quit:   bind("q", "quit", "q", "esc"),
-	Leave:  bind("q", "quit", "q"),
 }

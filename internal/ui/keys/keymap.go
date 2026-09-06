@@ -208,7 +208,7 @@ func pairs() []Binding {
 		Review.MoveFile, Review.MoveHunk,
 		Agent.Move, Profile.Move,
 		Diff.Scroll, Diff.Hunk, Output.Scroll,
-		Screen.Move, Browse.Move,
+		Screen.Move,
 	}
 }
 
@@ -263,7 +263,7 @@ var movement = []string{
 func destructive() []Binding {
 	return []Binding{
 		Agent.Cancel, Agent.Kill,
-		Select.Delete, Browse.Delete, Screen.Delete,
+		Select.Delete, Screen.Delete,
 		Confirm.Force,
 	}
 }
@@ -311,7 +311,6 @@ func groups() map[string]reflect.Value {
 		"screen":   reflect.ValueOf(&Screen).Elem(),
 		"oneshot":  reflect.ValueOf(&OneShot).Elem(),
 		"setup":    reflect.ValueOf(&Setup).Elem(),
-		"browse":   reflect.ValueOf(&Browse).Elem(),
 		"plan":     reflect.ValueOf(&Plan).Elem(),
 		"query":    reflect.ValueOf(&Query).Elem(),
 	}

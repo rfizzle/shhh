@@ -4,15 +4,15 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
+	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/term"
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/storage"
-	"github.com/rfizzle/shhh/internal/ui/browse"
+	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/spf13/cobra"
 )
 
@@ -84,73 +84,133 @@ func snippetsReport(snippets []storage.Snippet, now time.Time) report.Report {
 	return r
 }
 
-func runSnippetsBrowser(db *storage.DB, snippets []storage.Snippet) error {
-	items := make([]browse.Item, len(snippets))
-	for i, s := range snippets {
-		preview := s.Command
-		if s.Description != "" {
-			preview = s.Description
-		}
-		items[i] = browse.Item{
-			ID:      strconv.FormatInt(s.ID, 10),
-			Title:   s.Name,
-			Preview: truncate(preview, 60),
-			Detail:  fmt.Sprintf("Name:         %s\nDescription:  %s\nCommand:      %s\nSaved:        %s", s.Name, s.Description, s.Command, s.UpdatedAt.Local().Format("2006-01-02 15:04:05")),
-		}
-	}
+// defaultSnippetsWidth is what the screen is drawn at before the terminal has
+// said how wide it is — the working width the artboard is drawn at.
+const defaultSnippetsWidth = 130
 
-	actions := []browse.ActionDef{
-		{Label: "Copy", Shortcut: "c"},
-		{Label: "Run", Shortcut: "r"},
-		{Label: "Delete", Shortcut: "d"},
-		{Label: "Rename", Shortcut: "n"},
-	}
+// snippetsModel hosts the snippet browser
+// (docs/interface/surfaces.md#the-supporting-screens). It owns everything the
+// screen deliberately does not: what a snippet is, how long ago it was saved,
+// and when any of it reaches the store.
+//
+// The screen resolves a key to a components.SnippetCommand; the host carries
+// it out, says so in the notice line, and hands back fresh rows. `[enter]` is
+// the exception and closes the screen, because running a command takes the
+// terminal the TUI is holding.
+type snippetsModel struct {
+	db       *storage.DB
+	snippets []storage.Snippet
+	now      time.Time
+	result   components.SnippetResult
 
-	model := browse.New(items, actions)
-	p := newProgram(model)
-	result, err := p.Run()
-	if err != nil {
-		return err
-	}
+	screen components.SnippetScreen
+}
 
-	m := result.(browse.Model)
-	if m.Result == nil {
+func newSnippetsModel(db *storage.DB, snippets []storage.Snippet, now time.Time) *snippetsModel {
+	m := &snippetsModel{db: db, snippets: snippets, now: now}
+	m.refresh()
+	return m
+}
+
+// answer carries out the housekeeping a key asked for and keeps what the
+// screen closed with, which is read once the terminal has been given back.
+func (m *snippetsModel) answer(done bool, result components.SnippetResult) tea.Cmd {
+	m.screen.Notice = ""
+	if result.Do != nil {
+		m.apply(*result.Do)
+	}
+	if !done {
 		return nil
 	}
+	m.result = result
+	return tea.Quit
+}
 
-	name := extractField(m.Result.Item.Detail, "Name:")
-	command := extractField(m.Result.Item.Detail, "Command:")
-
-	switch m.Result.Action {
-	case "Copy":
-		res := clipboard.Copy(command)
-		if !res.OK {
-			_ = report.Fprintln(os.Stderr, report.Row{State: report.Fail,
-				Subject: "clipboard", Detail: res.Warning})
+// apply carries out one command against the store and rebuilds the rows, so
+// the screen redraws from the store rather than from what it thinks changed.
+func (m *snippetsModel) apply(command components.SnippetCommand) {
+	s, ok := m.snippet(command.ID)
+	if !ok {
+		return
+	}
+	switch command.Act {
+	case components.SnippetCopy:
+		if res := clipboard.Copy(s.Command); !res.OK {
+			m.screen.Notice = "clipboard: " + res.Warning
 		} else {
-			_ = report.Fprintln(os.Stdout, report.Done("copied snippet", name))
+			m.screen.Notice = "copied the command to the clipboard"
 		}
-	case "Run":
-		code := runner.Run(command)
-		os.Exit(code)
-	case "Delete":
-		if err := db.DeleteSnippet(name); err != nil {
-			return fmt.Errorf("delete snippet: %w", err)
+	case components.SnippetRename:
+		if err := m.db.RenameSnippet(s.Name, command.Name); err != nil {
+			m.screen.Notice = "rename: " + err.Error()
+			return
 		}
-		_ = report.Fprintln(os.Stdout, report.Done("deleted snippet", name))
-	case "Rename":
-		fmt.Print("New name: ")
-		var newName string
-		// No answer reads as an empty name, which keeps the old one.
-		_, _ = fmt.Scanln(&newName)
-		if newName != "" {
-			if err := db.RenameSnippet(name, newName); err != nil {
-				return fmt.Errorf("rename snippet: %w", err)
-			}
-			_ = report.Fprintln(os.Stdout, report.Done("renamed snippet", name+" → "+newName))
+		m.screen.Notice = fmt.Sprintf("renamed %q to %q", s.Name, command.Name)
+	case components.SnippetDelete:
+		if err := m.db.DeleteSnippet(s.Name); err != nil {
+			m.screen.Notice = "delete: " + err.Error()
+			return
+		}
+		m.screen.Notice = fmt.Sprintf("deleted %q", s.Name)
+	}
+	m.reread()
+}
+
+// snippet is the store's record behind a row id.
+func (m *snippetsModel) snippet(id string) (storage.Snippet, bool) {
+	for _, s := range m.snippets {
+		if strconv.FormatInt(s.ID, 10) == id {
+			return s, true
 		}
 	}
+	return storage.Snippet{}, false
+}
 
+// reread asks the store for the listing again after a command changed it. A
+// read that fails leaves the rows it already had and says so, because a
+// browser that emptied itself on a failed read would look like a store that
+// had lost everything.
+func (m *snippetsModel) reread() {
+	snippets, err := m.db.ListSnippets()
+	if err != nil {
+		m.screen.Notice = "list: " + err.Error()
+		return
+	}
+	m.snippets = snippets
+	if m.screen.Focus >= len(m.snippets) {
+		m.screen.Focus = max(len(m.snippets)-1, 0)
+	}
+	m.refresh()
+}
+
+// refresh rebuilds every row and the header subject from the snippets the
+// host is holding.
+func (m *snippetsModel) refresh() {
+	rows := make([]components.SnippetRow, 0, len(m.snippets))
+	for _, s := range m.snippets {
+		rows = append(rows, components.SnippetRow{
+			ID:          strconv.FormatInt(s.ID, 10),
+			Name:        s.Name,
+			Description: s.Description,
+			Command:     s.Command,
+			Saved:       historyAgo(s.UpdatedAt, m.now),
+		})
+	}
+	m.screen.Rows = rows
+	m.screen.Subject = countOf(len(m.snippets), "snippet", "snippets")
+}
+
+func runSnippetsBrowser(db *storage.DB, snippets []storage.Snippet) error {
+	m := newSnippetsModel(db, snippets, time.Now())
+	if _, err := newProgram(newScreenModel(&m.screen, defaultSnippetsWidth, m.answer)).Run(); err != nil {
+		return err
+	}
+	// Nothing is run until [enter], which is what the screen's key row
+	// promised. The program has given the terminal back by now, so the command
+	// runs in the shell's own stdio.
+	if m.result.Run && m.result.Command != "" {
+		os.Exit(runner.Run(m.result.Command))
+	}
 	return nil
 }
 
@@ -246,17 +306,4 @@ func newSnippetShowCmd() *cobra.Command {
 			return nil
 		},
 	}
-}
-
-// extractField pulls a labelled line back out of a browse detail body. The
-// snippet browser is the last surface that needs it: the history browser
-// stopped round-tripping its fields through rendered text when it moved onto
-// the cockpit's own components.
-func extractField(detail, prefix string) string {
-	for _, line := range strings.Split(detail, "\n") {
-		if strings.HasPrefix(line, prefix) {
-			return strings.TrimSpace(strings.TrimPrefix(line, prefix))
-		}
-	}
-	return ""
 }

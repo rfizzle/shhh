@@ -3,9 +3,9 @@ package components
 // The chrome the take-over screens share
 // (docs/interface/surfaces.md#the-supporting-screens).
 //
-// Seven surfaces open the same way: the surface's name on the left, what it
+// Nine surfaces open the same way: the surface's name on the left, what it
 // offers on the right, a rule under both, a body that spends whatever rows
-// are left, and a key row at the foot. They were seven copies of that, and
+// are left, and a key row at the foot. Seven of them were copies of that, and
 // the copies had drifted. Three of them clipped the left half and let the
 // keys go, which on a narrow terminal is a take-over surface with nothing on
 // screen saying how to leave it; three clipped the right; one of the seven
@@ -35,7 +35,7 @@ import (
 //
 // The width is passed with the height because a surface is given a rectangle
 // rather than a number. A surface that lays itself out from the width it is
-// rendered at may ignore it here; the seven screens do.
+// rendered at may ignore it here; the screens all do.
 type Sized interface {
 	SetSize(width, height int)
 }

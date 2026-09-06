@@ -15,7 +15,8 @@ import (
 var _ = []Sized{
 	(*DoctorScreen)(nil), (*MetricsScreen)(nil), (*ConfigScreen)(nil),
 	(*HistoryScreen)(nil), (*RateScreen)(nil), (*ContextScreen)(nil),
-	(*ProfileScreen)(nil), (*ReviewView)(nil), (*DiffView)(nil),
+	(*ProfileScreen)(nil), (*SnippetScreen)(nil), (*ChatScreen)(nil),
+	(*ReviewView)(nil), (*DiffView)(nil),
 	(*OutputView)(nil), (*AttachmentView)(nil),
 }
 
@@ -29,8 +30,10 @@ func headerOf(view string) string {
 // order as the terminal narrows: the reading it is counting goes, and the
 // stated way out of the surface stays (invariant 5). Three of these screens
 // used to do the opposite, and nothing in their own tests could see it — each
-// was self-consistent, and only the seven side by side showed the
-// disagreement.
+// was self-consistent, and only the family side by side showed the
+// disagreement. Two more joined it from a chrome of their own, and the reason
+// this list is the thing to add a screen to is that they arrived keeping the
+// order without anyone checking.
 func TestScreenHeader_TheTallyDropsBeforeTheWayOut(t *testing.T) {
 	profile := func() *ProfileScreen {
 		p := NewProfileScreen("/agents new")
@@ -60,6 +63,8 @@ func TestScreenHeader_TheTallyDropsBeforeTheWayOut(t *testing.T) {
 		{"rate", 30, "[q] quit", "1 of 3", func(w int) string { return rateScreen().View(w) }},
 		{"context", 44, "[q] back", "this session", func(w int) string { return context.View(w) }},
 		{"profile", 44, "esc leave", "reviewer tester", func(w int) string { return profile().View(w) }},
+		{"snippets", 44, "[q] quit", "3 snippets", func(w int) string { return snippetScreen().View(w) }},
+		{"chats", 44, "[q] quit", "3 conversations", func(w int) string { return chatScreen().View(w) }},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			head := headerOf(tc.view(tc.narrow))

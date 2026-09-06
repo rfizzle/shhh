@@ -12,7 +12,7 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/shell"
 	"github.com/rfizzle/shhh/internal/storage"
-	"github.com/rfizzle/shhh/internal/ui/browse"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 // endpointProvider is a provider whose endpoint reports the context length it
@@ -257,7 +257,7 @@ func TestResumeChat_ContinueRefusesASlotSomebodyElseHolds(t *testing.T) {
 // another running session is autosaving into and refuses to open it, in the
 // words the picker inside a session says, while the row stays a row that can
 // be read, renamed or deleted. A slot nobody holds opens as it always did.
-func TestChatBrowseItems_ASlotSomebodyElseHoldsRefusesToOpen(t *testing.T) {
+func TestChatBrowseRows_ASlotSomebodyElseHoldsRefusesToOpen(t *testing.T) {
 	db := resumeStore(t)
 	if err := db.SaveChat("mine", []provider.Message{
 		{Role: provider.RoleUser, Content: "ours"}}); err != nil {
@@ -269,24 +269,67 @@ func TestChatBrowseItems_ASlotSomebodyElseHoldsRefusesToOpen(t *testing.T) {
 	if err != nil {
 		t.Fatalf("list: %v", err)
 	}
-	rows := map[string]browse.Item{}
-	for _, item := range chatBrowseItems(db, entries) {
-		rows[item.ID] = item
+	rows := map[string]components.ChatRow{}
+	for _, row := range chatBrowseRows(db, entries) {
+		rows[row.ID] = row
 	}
 	if len(rows) != 2 {
 		t.Fatalf("both slots are listed, got %d", len(rows))
 	}
 
 	held := rows["theirs"]
-	if !strings.Contains(held.Preview, "open in another session") {
-		t.Fatalf("preview = %q, want the mark", held.Preview)
+	if held.Mark != "open in another session" {
+		t.Fatalf("mark = %q, want the words the row states", held.Mark)
 	}
 	if !strings.Contains(held.Refused, `"theirs"`) ||
 		!strings.Contains(held.Refused, "open in another session") ||
 		!strings.Contains(held.Refused, "still being written there") {
 		t.Fatalf("refused = %q, want the words the picker inside a session says", held.Refused)
 	}
-	if free := rows["mine"]; free.Refused != "" || strings.Contains(free.Preview, "another session") {
+	if free := rows["mine"]; free.Refused != "" || free.Mark != "" {
 		t.Fatalf("a slot nobody holds opens, got %+v", free)
+	}
+}
+
+// The host half of the browser: what the screen closed with is what the
+// command opens, and a housekeeping key reaches the store and comes back as a
+// notice with the screen still up.
+func TestChatsModel_TheScreensAnswerReachesTheCommand(t *testing.T) {
+	db := resumeStore(t)
+	for _, name := range []string{"alpha", "beta"} {
+		if err := db.SaveChat(name, []provider.Message{
+			{Role: provider.RoleUser, Content: "hello"}}); err != nil {
+			t.Fatalf("save %s: %v", name, err)
+		}
+	}
+	entries, err := db.ListChats()
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+
+	m := newChatsModel(db, entries)
+	if len(m.screen.Rows) != 2 || m.screen.Subject != "2 conversations" {
+		t.Fatalf("the screen was not filled from the store: %+v", m.screen.Subject)
+	}
+
+	// A rename with the screen still up reaches the store and the rows are
+	// read back from it rather than patched in place.
+	if cmd := m.answer(false, components.ChatResult{
+		Do: &components.ChatCommand{Act: components.ChatRename, ID: "alpha", Name: "gamma"},
+	}); cmd != nil {
+		t.Fatal("housekeeping closed the browser")
+	}
+	if !strings.Contains(m.screen.Notice, `renamed "alpha" to "gamma"`) {
+		t.Fatalf("notice = %q, want what the key did", m.screen.Notice)
+	}
+	if _, err := db.LoadChat("gamma"); err != nil {
+		t.Fatalf("the rename did not reach the store: %v", err)
+	}
+
+	if cmd := m.answer(true, components.ChatResult{Open: true, ID: "gamma"}); cmd == nil {
+		t.Fatal("the screen closing did not end the program")
+	}
+	if !m.result.Open || m.result.ID != "gamma" {
+		t.Fatalf("result = %+v, want the conversation the screen chose", m.result)
 	}
 }

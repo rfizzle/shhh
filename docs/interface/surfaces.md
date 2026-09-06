@@ -764,13 +764,30 @@ thing a palette with two greys to spend gives up.
 
 ### The supporting screens
 
-Configuration, history, metrics, doctor and rating are each re-cut from parts
-that already exist — the row, the windowed list, the meter, the card. Nothing
-new is introduced, and the gain is that a reader who knows the session already
-knows these. The MCP server listing is the doctor screen over servers rather
-than checks: a connect is a check, so it is the same row, and a server
-waiting on the person's trust offers it the way a pending migration offers
-the move.
+Configuration, history, snippets, metrics, doctor and rating are each re-cut
+from parts that already exist — the row, the windowed list, the meter, the
+card. Nothing new is introduced, and the gain is that a reader who knows the
+session already knows these. The MCP server listing is the doctor screen over
+servers rather than checks: a connect is a check, so it is the same row, and a
+server waiting on the person's trust offers it the way a pending migration
+offers the move. The saved-chat browser is the same cut over conversations:
+the list on the left, the one the pointer is on beside it, and the renaming
+and deleting the picker inside a session already offers
+(../capabilities/sessions-and-memory.md#housekeeping).
+
+Nine surfaces take the whole terminal this way — those seven, the reading of
+what is in the session's context and the drafting flow for a new agent profile
+— and they are one family rather than nine screens: the same header, the same
+ground given up in the same order as the terminal narrows, the same key row at
+the foot and the same `[?]` behind it. The two that arrived last had each been
+drawing a chrome of their own, and the way that showed was not in either of
+them: it was reading all of them side by side.
+
+Three of them list something and preview what the pointer is on — past
+commands, saved commands, saved conversations — and they split the terminal
+the same way: two columns where there is room for two, stacked where there is
+not, and the preview giving way to the list when the rows run out, because a
+screen that cannot preview an item can still say which items there are.
 
 Rating is the one of them that asks rather than reports, and it is drawn as
 the thing it is: one card, the answers as keys on it, and no list to walk,

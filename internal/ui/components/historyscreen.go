@@ -2,9 +2,9 @@ package components
 
 // The history browser (
 // docs/interface/surfaces.md#the-supporting-screens,
-// ui_kits/cockpit/Tools.html). `shhh history` shipped on
-// `internal/ui/browse`, which invented a list, a query line, a detail page
-// and an action bar of its own. It is re-cut here from parts that already
+// ui_kits/cockpit/Tools.html). `shhh history` shipped on a browser of its
+// own that invented a list, a query line, a detail page and an action bar
+// nothing else in the product drew. It is re-cut here from parts that already
 // exist: the selector window with its markers, its filter row and its two
 // counts; the column grid for the entry it selects; and the inline confirm in
 // front of the one key that destroys something.
@@ -261,46 +261,20 @@ func (h *HistoryScreen) View(width int) string {
 		Foot:     h.footer(width).Rows(width),
 		Notice:   h.Notice,
 		MaxLines: h.MaxLines,
-	}.View(width, func(budget int) []string { return h.paneRows(width, budget) })
+	}.View(width, func(budget int) []string { return h.panes().rows(width, budget) })
 }
 
-// paneRows is the body: the search and the preview side by side where the
-// terminal can carry two columns, and stacked where it cannot. Stacked, the
+// panes is the body: the search and the preview, split the way every screen
+// with a list and a preview splits them (screenpanes.go). Stacked, the
 // preview keeps a floor and the list gives way to it — a browser that cannot
 // show the command it is about to run is not a browser.
-func (h *HistoryScreen) paneRows(width, budget int) []string {
-	if width < historyStackWidth {
-		return h.stackedRows(width, budget)
+func (h *HistoryScreen) panes() screenPanes {
+	return screenPanes{
+		stackAt: historyStackWidth, listMin: historyListMin,
+		listMax: historyListMax, minPreview: historyMinPreview,
+		list:    h.listRows,
+		preview: h.previewRows,
 	}
-	listWidth := min(max(width/2, historyListMin), historyListMax)
-	paneWidth := max(width-listWidth-lipgloss.Width(reviewDivider), 8)
-	list := h.listRows(listWidth, budget)
-	pane := h.previewRows(paneWidth)
-	rows := max(len(list), len(pane))
-	if budget > 0 {
-		rows = min(rows, budget)
-	}
-	return joinReviewPanes(list, pane, listWidth, rows)
-}
-
-// stackedRows is the narrow layout: the search above, the preview below,
-// nothing truncated sideways.
-func (h *HistoryScreen) stackedRows(width, budget int) []string {
-	pane := h.previewRows(width)
-	if budget <= 0 {
-		return append(append(h.listRows(width, 0), screenRule(width)), pane...)
-	}
-	// The rule between the panes costs a row.
-	avail := budget - 1
-	if avail < historyMinPreview+2 {
-		// No room for both: the list wins, because a screen that cannot preview an
-		// entry can still say which entries there are.
-		return truncRows(h.listRows(width, budget), budget, width)
-	}
-	keep := min(len(pane), max(avail/2, historyMinPreview))
-	rows := h.listRows(width, avail-keep)
-	rows = append(rows, screenRule(width))
-	return append(rows, truncRows(pane, keep, width)...)
 }
 
 // listRows is the left pane: the filter row pinned above the selector window,
@@ -408,10 +382,7 @@ func (h *HistoryScreen) previewTitle(row HistoryRow, width int) string {
 	if row.Action != "" {
 		right = sty.Dim.Render(row.Action)
 	}
-	if pad := width - lipgloss.Width(left) - lipgloss.Width(right); pad >= 2 && right != "" {
-		return left + strings.Repeat(" ", pad) + right
-	}
-	return Clip(left, width)
+	return paneTitle(left, right, width)
 }
 
 // commandRows is the entry's command on the grid. It is the thing `[enter]`

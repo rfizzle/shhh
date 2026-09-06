@@ -102,6 +102,28 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
   enter draft from what you typed
   esc nothing is drafted
 
+· snippets · the list, the command it would run, and the promise that it will not
+shhh snippets · 3 snippets               [?] keys · [q] quit
+────────────────────────────────────────────────────────────
+
+❯ ports      what is listening on this machine        4m ago
+  big-files  the ten biggest files here            yesterday
+  prune      drop every merged branch                    tue
+
+[↑↓/jk] move · [enter] run it · [c] copy it · [r] rename it
+[x] delete it · [/] filter · [esc] back to the shell
+
+· the saved-chat browser · a row another session holds says so in a word
+shhh chats · 3 conversations             [?] keys · [q] quit
+────────────────────────────────────────────────────────────
+
+  morning-fix  the retry backoff was doubling twice · 12 tu…
+❯ held         reading the sandbox…  open in another session
+  tuesday      naming the report pages · 31 turns · Sep 3 1…
+
+[↑↓/jk] move · [r] rename it · [x] delete it · [/] filter
+[esc] back to the shell
+
 ── ansi ────────────────────────────────────────────────────
 · doctor · the count on the left, the clock and the keys on the right
 ␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m           ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
@@ -194,3 +216,25 @@ shhh rate · 1 of 5                       [?] keys · [q] quit
 
   ␛[3;38;5;241menter draft from what you typed␛[m
   ␛[3;38;5;241mesc nothing is drafted␛[m
+
+· snippets · the list, the command it would run, and the promise that it will not
+␛[1;97mshhh snippets␛[m␛[38;5;241m · 3 snippets␛[m               ␛[38;5;241m[?] keys · [q] quit␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
+
+␛[1;48;5;62m❯ ports      what is listening on this machine        4m ago␛[m
+  big-files  ␛[38;5;241mthe ten biggest files here␛[m            ␛[38;5;252myesterday␛[m
+  prune      ␛[38;5;241mdrop every merged branch␛[m                    ␛[38;5;252mtue␛[m
+
+␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m run it␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m␛[38;5;241m copy it␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m rename it␛[m
+␛[94m[x]␛[m␛[38;5;241m delete it␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m back to the shell␛[m
+
+· the saved-chat browser · a row another session holds says so in a word
+␛[1;97mshhh chats␛[m␛[38;5;241m · 3 conversations␛[m             ␛[38;5;241m[?] keys · [q] quit␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
+
+  morning-fix  ␛[38;5;241mthe retry backoff was doubling twice · 12 tu…␛[m
+␛[1;48;5;62m❯ held         reading the sandbox…  open in another session␛[m
+  tuesday      ␛[38;5;241mnaming the report pages · 31 turns · Sep 3 1…␛[m
+
+␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m rename it␛[m␛[38;5;241m · ␛[m␛[94m[x]␛[m␛[38;5;241m delete it␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m
+␛[94m[esc]␛[m␛[38;5;241m back to the shell␛[m

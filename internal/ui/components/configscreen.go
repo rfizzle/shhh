@@ -128,7 +128,7 @@ type ConfigScreen struct {
 	optRow  []int
 	picker  *Select
 	editRow int
-	edit    *configEdit
+	edit    *lineEdit
 	secret  *SecretPrompt
 	confirm *Confirm
 	keys    bool
@@ -238,7 +238,7 @@ func (c *ConfigScreen) open() {
 			Hint: row.Key,
 		}
 	default:
-		c.edit = &configEdit{value: []rune(row.Value)}
+		c.edit = &lineEdit{value: []rune(row.Value), hint: "type a value"}
 	}
 }
 
@@ -661,13 +661,23 @@ func (c *ConfigScreen) optIndex(row int) int {
 	return first
 }
 
-// configEdit is the one-line field a setting with no answers to choose from
-// opens under itself. It is the filter row's own `▸ text█` grammar,
-// because the reader has met that row on every picker in the product and a
-// second idea of "a line you type into" is exactly what this story deletes.
-type configEdit struct{ value []rune }
+// lineEdit is the one-line field a screen opens over the row under its
+// pointer: a setting with no answers to choose from, the name a snippet or a
+// saved chat is being renamed to. It is the filter row's own `▸ text█`
+// grammar, because the reader has met that row on every picker in the product
+// and a second idea of "a line you type into" is one more thing to learn.
+type lineEdit struct {
+	value []rune
+	// lead names what is being typed where the row above it does not — a
+	// rename row opens holding a name that is already there, and `rename ▸`
+	// is what says the field is not the filter. Empty is a field the row it
+	// opened under has already named.
+	lead string
+	// hint is what the row says while nothing has been typed into it.
+	hint string
+}
 
-func (e *configEdit) update(msg tea.KeyPressMsg) {
+func (e *lineEdit) update(msg tea.KeyPressMsg) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Screen.ClearQ):
 		e.value = nil
@@ -680,10 +690,14 @@ func (e *configEdit) update(msg tea.KeyPressMsg) {
 	}
 }
 
-func (e *configEdit) view() string {
-	row := sty.Info.Render("▸ ") + sty.QueryText.Render(string(e.value)+queryCursor)
-	if len(e.value) == 0 {
-		row += sty.Dim.Render(" type a value")
+func (e *lineEdit) view() string {
+	row := ""
+	if e.lead != "" {
+		row = sty.Dim.Render(e.lead + " ")
+	}
+	row += sty.Info.Render("▸ ") + sty.QueryText.Render(string(e.value)+queryCursor)
+	if len(e.value) == 0 && e.hint != "" {
+		row += sty.Dim.Render(" " + e.hint)
 	}
 	return row
 }

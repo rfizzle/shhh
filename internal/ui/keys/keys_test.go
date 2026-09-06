@@ -205,16 +205,13 @@ func TestEveryDeclaredBindingIsOnASurface(t *testing.T) {
 		{"Preview", []Binding{Preview.Back, Preview.Leave}},
 		{"Screen", []Binding{Screen.Move, Screen.Take, Screen.Filter, Screen.ClearQ,
 			Screen.List, Screen.Quit, Screen.Reset, Screen.Write, Screen.Keep,
-			Screen.Copy, Screen.Rerun, Screen.Snippet, Screen.Delete, Screen.Fix,
-			Screen.Again, Screen.Worked, Screen.Failed, Screen.Skip}},
+			Screen.Copy, Screen.Rerun, Screen.Snippet, Screen.Delete, Screen.Rename,
+			Screen.Fix, Screen.Again, Screen.Worked, Screen.Failed, Screen.Skip}},
 		{"OneShot", []Binding{OneShot.Run, OneShot.Confirm,
 			OneShot.Step, OneShot.DryRun, OneShot.Edit, OneShot.Revise, OneShot.Back,
 			OneShot.Alternatives, OneShot.Explain, OneShot.Copy, OneShot.Save,
 			OneShot.Quit}},
 		{"Setup", []Binding{Setup.Wizard, Setup.Paste, Setup.Local}},
-		{"Browse", []Binding{Browse.Move, Browse.Open, Browse.Filter, Browse.Delete,
-			Browse.Rename, Browse.Action,
-			Browse.Prev, Browse.Take, Browse.Back, Browse.Quit, Browse.Leave}},
 	}
 	for _, g := range declared {
 		for _, b := range g.bs {

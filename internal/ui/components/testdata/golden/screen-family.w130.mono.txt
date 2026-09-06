@@ -100,6 +100,31 @@ shhh rate · 1 of 5                                                             
 
   enter draft from what you typed · esc nothing is drafted
 
+· snippets · the list, the command it would run, and the promise that it will not
+shhh snippets · 3 snippets                                                                                     [?] keys · [q] quit
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+❯ ports      what is listening on t…  4m ago │ ports                                                                        4m ago
+  big-files  the ten biggest fil…  yesterday │   what is listening on this machine
+  prune      drop every merged branch    tue │ 
+                                             │   ▎$ run     lsof -nP -iTCP -sTCP:LISTEN
+
+[enter] run it · [c] copy it · [r] rename it · [x] delete it · [/] filter · [esc] back to the shell   nothing is run until [enter]
+
+· the saved-chat browser · a row another session holds says so in a word
+shhh chats · 3 conversations                                                                                   [?] keys · [q] quit
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+  morning-fix  the retry backoff was doubling twice · 12 turns … │ held                                        2026-09-06 08:02:41
+❯ held         reading the sandbox pol…  open in another session │   reading the sandbox policy
+  tuesday      naming the report pages · 31 turns · Sep 3 17:40  │ 
+                                                                 │   4 turns
+                                                                 │ 
+                                                                 │   "held" is open in another session — its conversation is still
+                                                                 │   being written there.
+
+[↑↓/jk] move · [r] rename it · [x] delete it · [/] filter · [esc] back to the shell                        open in another session
+
 ── ansi ────────────────────────────────────────────────────
 · doctor · the count on the left, the clock and the keys on the right
 ␛[1;38;5;254mshhh doctor␛[m␛[38;5;244m · 10 checks␛[m                                                                                 ␛[38;5;244m1.4s␛[m␛[38;5;244m · [?] keys · [q] quit␛[m
@@ -190,3 +215,28 @@ shhh rate · 1 of 5                                                             
     ␛[38;5;254m␛[38;5;244m┃ ␛[m␛[m␛[38;5;254m␛[7;38;5;237mw␛[m␛[m␛[38;5;254m␛[38;5;244mhat it is for␛[m␛[m␛[38;5;254m                                                                                                              ␛[m
 
   ␛[3;38;5;244menter draft from what you typed · esc nothing is drafted␛[m
+
+· snippets · the list, the command it would run, and the promise that it will not
+␛[1;38;5;254mshhh snippets␛[m␛[38;5;244m · 3 snippets␛[m                                                                                     ␛[38;5;244m[?] keys · [q] quit␛[m
+␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+
+␛[1;48;5;237m❯ ports      what is listening on t…  4m ago␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254mports␛[m                                                                        ␛[38;5;244m4m ago␛[m
+  big-files  ␛[38;5;244mthe ten biggest fil…␛[m  ␛[38;5;254myesterday␛[m␛[38;5;244m │ ␛[m  ␛[38;5;244mwhat is listening on this machine␛[m
+  prune      ␛[38;5;244mdrop every merged branch␛[m    ␛[38;5;254mtue␛[m␛[38;5;244m │ ␛[m
+                                            ␛[38;5;244m │ ␛[m  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m run     ␛[38;5;244mlsof -nP -iTCP -sTCP:LISTEN␛[m
+
+␛[38;5;254m[enter]␛[m␛[38;5;244m run it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m rename it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m delete it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m   ␛[38;5;244mnothing is run until [enter]␛[m
+
+· the saved-chat browser · a row another session holds says so in a word
+␛[1;38;5;254mshhh chats␛[m␛[38;5;244m · 3 conversations␛[m                                                                                   ␛[38;5;244m[?] keys · [q] quit␛[m
+␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+
+  morning-fix  ␛[38;5;244mthe retry backoff was doubling twice · 12 turns …␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254mheld␛[m                                        ␛[38;5;244m2026-09-06 08:02:41␛[m
+␛[1;48;5;237m❯ held         reading the sandbox pol…  open in another session␛[m␛[38;5;244m │ ␛[m  ␛[38;5;244mreading the sandbox policy␛[m
+  tuesday      ␛[38;5;244mnaming the report pages · 31 turns · Sep 3 17:40␛[m ␛[38;5;244m │ ␛[m
+                                                                ␛[38;5;244m │ ␛[m  ␛[38;5;254m4 turns␛[m
+                                                                ␛[38;5;244m │ ␛[m
+                                                                ␛[38;5;244m │ ␛[m  ␛[38;5;244m"held" is open in another session — its conversation is still␛[m
+                                                                ␛[38;5;244m │ ␛[m  ␛[38;5;244mbeing written there.␛[m
+
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m rename it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m delete it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m                        ␛[38;5;244mopen in another session␛[m

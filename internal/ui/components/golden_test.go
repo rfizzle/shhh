@@ -2441,12 +2441,14 @@ func TestGolden_ProfileScreen(t *testing.T) {
 // every field of every header is showing at once.
 var screenFamilyWidths = []int{60, 130}
 
-// TestGolden_ScreenFamily captures the seven take-over screens' chrome side
+// TestGolden_ScreenFamily captures the nine take-over screens' chrome side
 // by side. Each of them has its own golden already; this one exists because
 // the thing that drifted was never visible in any single screen's capture —
-// it was the seven of them disagreeing about which half of the header gives
-// ground, and that is only readable with all seven in one file at the same
-// two widths.
+// it was the screens disagreeing about which half of the header gives ground,
+// and that is only readable with all of them in one file at the same two
+// widths. It is also what a screen joining the family is held to: the last
+// two arrived from a chrome of their own, and this file is where they are
+// read beside the seven that were already here.
 func TestGolden_ScreenFamily(t *testing.T) {
 	captureGolden(t, "screen-family", "the take-over screens through one chrome", screenFamilyWidths,
 		func(width int) []golden.Panel {
@@ -2480,6 +2482,14 @@ func TestGolden_ScreenFamily(t *testing.T) {
 					View: func() string { context.MaxLines = 12; return context.View(width) }()},
 				{Label: "the profile drafter · the way out is the whole right-hand run",
 					View: profile.View(width)},
+				{Label: "snippets · the list, the command it would run, and the promise that it will not",
+					View: (&SnippetScreen{
+						Rows: snippetRows(), Subject: "3 snippets", MaxLines: 12,
+					}).View(width)},
+				{Label: "the saved-chat browser · a row another session holds says so in a word",
+					View: (&ChatScreen{
+						Rows: chatRows(), Subject: "3 conversations", Focus: 1, MaxLines: 12,
+					}).View(width)},
 			}
 		})
 }
