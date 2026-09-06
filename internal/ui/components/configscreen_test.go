@@ -194,17 +194,101 @@ func TestConfigScreen_WriteConfirms(t *testing.T) {
 	}
 }
 
-// esc and q both leave without writing: esc discards the lot, and on
-// this screen "changes nothing" is literal because nothing has reached the
-// file yet.
+// esc and q both leave without writing, and with nothing staged they leave on
+// the press: there is no typed work to put back.
 func TestConfigScreen_LeavingWritesNothing(t *testing.T) {
 	for _, k := range []string{"esc", "q"} {
 		c := configFixture()
-		c.Changed = 3
 		done, result := c.Update(key(k))
 		if !done || result.Write || !result.Canceled {
 			t.Fatalf("%s leaves writing nothing: done=%v result=%#v", k, done, result)
 		}
+	}
+}
+
+// Staged edits are typed work, so the way out asks before it drops them
+// (docs/interface/principles.md#esc-is-always-the-safe-answer), over the same
+// count the header is carrying. q is held to it too: the invariant is about
+// abandoning work, not about which key was pressed.
+func TestConfigScreen_LeavingAsksBeforeItDiscards(t *testing.T) {
+	for _, k := range []string{"esc", "q"} {
+		c := configFixture()
+		c.Changed = 2
+		done, result := c.Update(key(k))
+		if done || result != (ConfigResult{}) {
+			t.Fatalf("%s with edits staged asks first: done=%v result=%#v", k, done, result)
+		}
+		view := stripANSI(c.View(110))
+		if !strings.Contains(view, "Discard 2 changes?") || !strings.Contains(view, "[y/N]") {
+			t.Fatalf("%s asks in the inline confirm:\n%s", k, view)
+		}
+		if !strings.Contains(view, "2 changes unwritten") {
+			t.Fatalf("the question reads the count the header carries:\n%s", view)
+		}
+		done, result = c.Update(key("y"))
+		if !done || result.Write || !result.Canceled {
+			t.Fatalf("y discards and leaves: done=%v result=%#v", done, result)
+		}
+	}
+}
+
+// Declining the discard keeps the screen and everything staged on it — n,
+// enter and esc alike, because esc on a question has never been an answer of
+// its own.
+func TestConfigScreen_DecliningTheDiscardKeepsTheEdits(t *testing.T) {
+	for _, k := range []string{"n", "enter", "esc"} {
+		c := configFixture()
+		c.Changed = 2
+		c.Update(key("esc"))
+		done, result := c.Update(key(k))
+		if done || result != (ConfigResult{}) {
+			t.Fatalf("%s on the question keeps the screen: done=%v result=%#v", k, done, result)
+		}
+		view := stripANSI(c.View(110))
+		if strings.Contains(view, "[y/N]") {
+			t.Fatalf("%s takes the question down:\n%s", k, view)
+		}
+		if c.Changed != 2 || !strings.Contains(view, "2 changes unwritten") {
+			t.Fatalf("%s keeps the staged edits:\n%s", k, view)
+		}
+		// The screen is still the screen: the next key is the settings list's.
+		done, _ = c.Update(key("y"))
+		if done {
+			t.Fatalf("%s left the answered question armed", k)
+		}
+	}
+}
+
+// The footer says what the way out does, which is not the same sentence with
+// something staged as without it.
+func TestConfigScreen_TheFooterNamesWhatTheWayOutDoes(t *testing.T) {
+	c := configFixture()
+	if view := stripANSI(c.View(110)); !strings.Contains(view, "[esc] leave") {
+		t.Fatalf("with nothing staged esc leaves:\n%s", view)
+	}
+	c.Changed = 2
+	if view := stripANSI(c.View(110)); !strings.Contains(view, "[esc] discard, after asking") {
+		t.Fatalf("with edits staged esc discards, after asking:\n%s", view)
+	}
+}
+
+// The register behind [?] reads the same state the compact row does: it would
+// be describing a screen the reader is not on if it promised a question with
+// nothing staged.
+func TestConfigScreen_TheRegisterReadsWhatIsStaged(t *testing.T) {
+	c := configFixture()
+	c.Update(key("?"))
+	if view := stripANSI(c.View(110)); strings.Contains(view, "asking") ||
+		!strings.Contains(view, "[q] leave the screen writing nothing") {
+		t.Fatalf("with nothing staged the register promises no question:\n%s", view)
+	}
+	c.Changed = 2
+	view := stripANSI(c.View(110))
+	if !strings.Contains(view, "[esc] leave the picker, or ask before discarding the lot") {
+		t.Fatalf("with edits staged the register says esc asks:\n%s", view)
+	}
+	if !strings.Contains(view, "[q] ask before discarding the lot and leaving") {
+		t.Fatalf("with edits staged the register says q asks too:\n%s", view)
 	}
 }
 

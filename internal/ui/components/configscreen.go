@@ -15,8 +15,9 @@ package components
 // value is a row, and changing one opens the picker *under* that row rather
 // than over the screen, so the setting being changed stays visible above the
 // options. And nothing reaches the file until `[w]`: every edit is staged,
-// the header counts what is standing against the file, and `[esc]` discards
-// the lot.
+// the header counts what is standing against the file, and the way out
+// discards the lot — which is why both directions go through the same
+// one-line question.
 //
 // It is a passive component like the rest of this package. It owns no config
 // semantics: a change resolves to a ConfigChange the host applies to its own
@@ -94,8 +95,8 @@ type ConfigChange struct {
 
 // ConfigResult is what a key answered with: how the screen closed — `[w]`
 // confirmed, or nothing was written, and Canceled and Write are never both
-// true because `[esc]` discards — and the edit a key made with the screen
-// still up. nil is a key that changed no setting.
+// true because the way out writes nothing — and the edit a key made with the
+// screen still up. nil is a key that changed no setting.
 type ConfigResult struct {
 	Write    bool
 	Canceled bool
@@ -130,7 +131,14 @@ type ConfigScreen struct {
 	editRow int
 	edit    *lineEdit
 	secret  *SecretPrompt
+	// confirm is the question standing in front of the two keys this screen
+	// cannot take back: the write, which reaches the file, and the way out,
+	// which drops what has been typed.
 	confirm *Confirm
+	// pending is what answering that question yes does. It is armed with the
+	// question and goes down with it, so a decline cannot hand it to whatever
+	// is asked next.
+	pending ConfigResult
 	keys    bool
 }
 
@@ -149,7 +157,7 @@ func MaskSecret(s string) string {
 }
 
 // Update is the screen's whole keyboard. The open sub-surface answers first —
-// a picker, a field, a masked entry or the write confirm owns the letters
+// a picker, a field, a masked entry or an armed question owns the letters
 // while it is up (invariant 5) — and the settings list answers otherwise.
 func (c *ConfigScreen) Update(msg tea.KeyPressMsg) (done bool, result ConfigResult) {
 	c.sync()
@@ -175,10 +183,7 @@ func (c *ConfigScreen) updateMenu(msg tea.KeyPressMsg) (bool, ConfigResult) {
 		c.open()
 		return false, ConfigResult{}
 	case keys.Is(pressed, keys.Select.Cancel):
-		// esc leaves and changes nothing, which on this screen is literal: nothing
-		// has reached the file yet, so discarding the staged edits is what "change
-		// nothing" means.
-		return true, ConfigResult{Canceled: true}
+		return c.leave()
 	}
 	// With the query line open the query line is the surface, so w, r and q are
 	// letters rather than keys — the same reading every picker in the product
@@ -194,7 +199,7 @@ func (c *ConfigScreen) updateMenu(msg tea.KeyPressMsg) (bool, ConfigResult) {
 	case keys.Is(pressed, keys.Screen.Filter):
 		c.menu.Filtering = true
 	case pressed == keys.Shown(keys.Screen.Quit):
-		return true, ConfigResult{Canceled: true}
+		return c.leave()
 	case keys.Is(pressed, keys.Screen.List):
 		c.keys = !c.keys
 	case keys.Is(pressed, keys.Screen.Reset):
@@ -203,11 +208,34 @@ func (c *ConfigScreen) updateMenu(msg tea.KeyPressMsg) (bool, ConfigResult) {
 		}
 	case keys.Is(pressed, keys.Screen.Write):
 		if c.Changed > 0 {
-			c.confirm = &Confirm{Prompt: sty.Body.Render(fmt.Sprintf(
-				"Write %s to %s?", plural(c.Changed, "change"), c.Path))}
+			c.ask(fmt.Sprintf("Write %s to %s?", plural(c.Changed, "change"), c.Path),
+				ConfigResult{Write: true})
 		}
 	}
 	return false, ConfigResult{}
+}
+
+// leave is the way out, and what it costs. Staged edits are typed work, and
+// Escape never abandons work without putting it back
+// (docs/interface/principles.md#esc-is-always-the-safe-answer): with
+// something standing against the file the question comes up first, over the
+// same count the header is carrying. With nothing staged there is nothing to
+// lose and the press closes the screen. `[q]` comes through here too — the
+// invariant is about abandoning work, not about which key was pressed.
+func (c *ConfigScreen) leave() (bool, ConfigResult) {
+	if c.Changed == 0 {
+		return true, ConfigResult{Canceled: true}
+	}
+	c.ask("Discard "+plural(c.Changed, "change")+"?", ConfigResult{Canceled: true})
+	return false, ConfigResult{}
+}
+
+// ask arms the inline confirm in front of a key, with what saying yes to it
+// does. Both questions this screen asks are one line and count the same
+// edits, because they are the two answers to the same situation.
+func (c *ConfigScreen) ask(prompt string, then ConfigResult) {
+	c.confirm = &Confirm{Prompt: sty.Body.Render(prompt)}
+	c.pending = then
 }
 
 // open is what `[enter]` does to the row under the pointer: a picker for a
@@ -312,14 +340,24 @@ func (c *ConfigScreen) updateSecret(msg tea.KeyPressMsg) (bool, ConfigResult) {
 	return false, ConfigResult{}
 }
 
-// updateConfirm is the keyboard while the write question is up. Answering it
-// takes it down; only yes writes, and the screen closes on the write because
-// there is nothing left for it to say.
+// updateConfirm is the keyboard while a question is up. Answering it takes it
+// down; only yes carries the act it was armed for, and either act closes the
+// screen because there is nothing left for it to say. Declining — n, enter or
+// esc — leaves the screen and every staged edit exactly as they were.
 func (c *ConfigScreen) updateConfirm(msg tea.KeyPressMsg) (bool, ConfigResult) {
-	if answered, yes := confirmed(&c.confirm, msg); answered && yes {
-		return true, ConfigResult{Write: true}
+	answered, yes := confirmed(&c.confirm, msg)
+	if !answered {
+		return false, ConfigResult{}
 	}
-	return false, ConfigResult{}
+	// The armed act goes down with the question either way: it was armed for
+	// this question, and a decline that left it behind would hand it to
+	// whatever is asked next.
+	act := c.pending
+	c.pending = ConfigResult{}
+	if !yes {
+		return false, ConfigResult{}
+	}
+	return true, act
 }
 
 // SetSize gives the screen the terminal's rectangle. It lays itself out from
@@ -476,14 +514,28 @@ func (c *ConfigScreen) offers() []KeyOffer {
 		offers = append(offers, keyOffer(keys.Screen.Filter), keyOffer(keys.Screen.Reset))
 	}
 	if c.Changed > 0 {
-		offers = append(offers, keyOffer(keys.Screen.Write))
+		// With something staged the way out is a discard, and it says so with
+		// the ask in the same breath: a row that promised only "discard" would
+		// be describing the old key, and one that promised only "leave" would be
+		// hiding what leaving costs.
+		return append(offers, keyOffer(keys.Screen.Write),
+			keyOfferAs(keys.Select.Cancel, "discard, after asking"))
 	}
-	return append(offers, keyOfferAs(keys.Select.Cancel, "discard"))
+	return append(offers, keyOfferAs(keys.Select.Cancel, "leave"))
 }
 
 // keyList is every key the screen has, for `[?]`. It says what the compact
 // row cannot: which keys belong to a picker rather than to the list.
+//
+// The two ways out are read from what is staged, the way the compact row is:
+// a register that promised a question with nothing staged would be describing
+// a screen the reader is not on.
 func (c *ConfigScreen) keyList() []KeyOffer {
+	out, quit := "leave the picker, or leave the screen writing nothing", "leave the screen writing nothing"
+	if c.Changed > 0 {
+		out, quit = "leave the picker, or ask before discarding the lot",
+			"ask before discarding the lot and leaving"
+	}
 	return []KeyOffer{
 		keyOfferAs(keys.Screen.Move, "move between settings"),
 		keyOfferAs(keys.Screen.Take, "change the setting under the pointer"),
@@ -492,8 +544,8 @@ func (c *ConfigScreen) keyList() []KeyOffer {
 		keyOfferAs(keys.Query.Rub, "take a rune back out of either"),
 		keyOfferAs(keys.Screen.Reset, "reset this setting to its default"),
 		keyOfferAs(keys.Screen.Write, "write every staged change to "+c.Path),
-		keyOfferAs(keys.Select.Cancel, "leave the picker, or leave the screen writing nothing"),
-		keyOfferAs(keys.Screen.Quit, "leave the screen writing nothing"),
+		keyOfferAs(keys.Select.Cancel, out),
+		keyOfferAs(keys.Screen.Quit, quit),
 	}
 }
 

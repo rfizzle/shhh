@@ -32,7 +32,7 @@ shhh config                              [?] keys · [q] quit
   ↓ 4 more
 
 [↑↓/jk] move · [enter] change · [/] filter       14 settings
-[r] reset to default · [esc] discard
+[r] reset to default · [esc] leave
 
 · changing one · the picker opens under the row, not over the screen
 shhh config                              [?] keys · [q] quit
@@ -148,11 +148,11 @@ shhh config · 2 changes unwritten        [?] keys · [q] quit
     sub-agent model    inherit                       default
 
   WORKSPACE
-    sandbox            ⛨ workspac…  unavailable on this host
-  ↓ 4 more
+  ↓ 5 more
 
 [↑↓/jk] move · [enter] change · [/] filter
-[r] reset to default · [w] write the file · [esc] discard
+[r] reset to default · [w] write the file
+[esc] discard, after asking
 
 · the write-back · the inline confirm, defaulting to no
 shhh config · 2 changes unwritten        [?] keys · [q] quit
@@ -178,6 +178,30 @@ shhh config · 2 changes unwritten        [?] keys · [q] quit
 
 Write 2 changes to ~/.config/shhh/config.toml?  [y/N]
 
+· the way out · the same question over the same count
+shhh config · 2 changes unwritten        [?] keys · [q] quit
+────────────────────────────────────────────────────────────
+
+  SESSION
+  ❯ permission mode    ⏵⏵ auto — edits apply; allowli…  user
+    round limit        25                            default
+    context budget     8000 tokens                   default
+    safety warnings    on                            default
+
+  MODEL
+    provider           openai                           user
+    model              gpt-5.2            user · 6 available
+    api key            ···4f9c                          user
+    base url           (the provider's own)          default
+    sub-agent model    inherit                       default
+
+  WORKSPACE
+    sandbox            ⛨ workspac…  unavailable on this host
+    network            private hosts reachable — intr…  user
+  ↓ 3 more
+
+Discard 2 changes?  [y/N]
+
 · the settings filtered · the list is the same window
 shhh config                              [?] keys · [q] quit
 ────────────────────────────────────────────────────────────
@@ -194,7 +218,7 @@ shhh config                              [?] keys · [q] quit
     memory           on — 4 entries · .shhh/memory…  default
 
 [↑↓/jk] move · [enter] change · [ctrl+u] clear the filter
-[esc] discard
+[esc] leave
 
 · [?] · every key the screen has, including the picker's
 shhh config                              [?] keys · [q] quit
@@ -243,7 +267,7 @@ shhh config                              [?] keys · [q] quit
   ␛[38;5;241m↓ 4 more␛[m
 
 ␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m       ␛[38;5;241m14 settings␛[m
-␛[94m[r]␛[m␛[38;5;241m reset to default␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m discard␛[m
+␛[94m[r]␛[m␛[38;5;241m reset to default␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m leave␛[m
 
 · changing one · the picker opens under the row, not over the screen
 ␛[1;97mshhh config␛[m                              ␛[38;5;241m[?] keys · [q] quit␛[m
@@ -359,11 +383,11 @@ shhh config                              [?] keys · [q] quit
     sub-agent model    ␛[38;5;252minherit␛[m                       ␛[38;5;252mdefault␛[m
 
   ␛[1;94mWORKSPACE␛[m
-    sandbox            ␛[38;5;252m⛨ workspac…␛[m  ␛[91munavailable on this host␛[m
-  ␛[38;5;241m↓ 4 more␛[m
+  ␛[38;5;241m↓ 5 more␛[m
 
 ␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m
-␛[94m[r]␛[m␛[38;5;241m reset to default␛[m␛[38;5;241m · ␛[m␛[94m[w]␛[m␛[38;5;241m write the file␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m discard␛[m
+␛[94m[r]␛[m␛[38;5;241m reset to default␛[m␛[38;5;241m · ␛[m␛[94m[w]␛[m␛[38;5;241m write the file␛[m
+␛[94m[esc]␛[m␛[38;5;241m discard, after asking␛[m
 
 · the write-back · the inline confirm, defaulting to no
 ␛[1;97mshhh config␛[m␛[38;5;214m · 2 changes unwritten␛[m        ␛[38;5;241m[?] keys · [q] quit␛[m
@@ -389,6 +413,30 @@ shhh config                              [?] keys · [q] quit
 
 ␛[38;5;252mWrite 2 changes to ~/.config/shhh/config.toml?␛[m  ␛[1;94m[y/N]␛[m
 
+· the way out · the same question over the same count
+␛[1;97mshhh config␛[m␛[38;5;214m · 2 changes unwritten␛[m        ␛[38;5;241m[?] keys · [q] quit␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
+
+  ␛[1;94mSESSION␛[m
+  ␛[1;48;5;62m❯ permission mode    ⏵⏵ auto — edits apply; allowli…  user␛[m
+    round limit        ␛[38;5;252m25␛[m                            ␛[38;5;252mdefault␛[m
+    context budget     ␛[38;5;252m8000 tokens␛[m                   ␛[38;5;252mdefault␛[m
+    safety warnings    ␛[92mon␛[m                            ␛[38;5;252mdefault␛[m
+
+  ␛[1;94mMODEL␛[m
+    provider           ␛[38;5;252mopenai␛[m                           ␛[38;5;252muser␛[m
+    model              ␛[38;5;252mgpt-5.2␛[m            ␛[38;5;252muser · 6 available␛[m
+    api key            ␛[38;5;252m···4f9c␛[m                          ␛[38;5;252muser␛[m
+    base url           ␛[38;5;252m(the provider's own)␛[m          ␛[38;5;252mdefault␛[m
+    sub-agent model    ␛[38;5;252minherit␛[m                       ␛[38;5;252mdefault␛[m
+
+  ␛[1;94mWORKSPACE␛[m
+    sandbox            ␛[38;5;252m⛨ workspac…␛[m  ␛[91munavailable on this host␛[m
+    network            ␛[38;5;214mprivate hosts reachable␛[m ␛[38;5;241m— intr…␛[m  ␛[38;5;252muser␛[m
+  ␛[38;5;241m↓ 3 more␛[m
+
+␛[38;5;252mDiscard 2 changes?␛[m  ␛[1;94m[y/N]␛[m
+
 · the settings filtered · the list is the same window
 ␛[1;97mshhh config␛[m                              ␛[38;5;241m[?] keys · [q] quit␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
@@ -405,7 +453,7 @@ shhh config                              [?] keys · [q] quit
     me␛[1mmo␛[mry           ␛[38;5;252mon␛[m ␛[38;5;241m— 4 entries · .shhh/memory…␛[m  ␛[38;5;252mdefault␛[m
 
 ␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+u]␛[m␛[38;5;241m clear the filter␛[m
-␛[94m[esc]␛[m␛[38;5;241m discard␛[m
+␛[94m[esc]␛[m␛[38;5;241m leave␛[m
 
 · [?] · every key the screen has, including the picker's
 ␛[1;97mshhh config␛[m                              ␛[38;5;241m[?] keys · [q] quit␛[m

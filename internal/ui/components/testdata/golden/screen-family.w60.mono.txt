@@ -41,11 +41,11 @@ shhh config · 2 changes unwritten        [?] keys · [q] quit
   ❯ permission mode    ⏵⏵ auto — edits apply; allowli…  user
     round limit        25                            default
     context budget     8000 tokens                   default
-    safety warnings    on                            default
-  ↓ 10 more
+  ↓ 11 more
 
 [↑↓/jk] move · [enter] change · [/] filter
-[r] reset to default · [w] write the file · [esc] discard
+[r] reset to default · [w] write the file
+[esc] discard, after asking
 
 · history · the subject, and a foot key row that states the way out
 shhh history · 6 entries · 2 run         [?] keys · [q] quit
@@ -156,11 +156,11 @@ shhh chats · 3 conversations             [?] keys · [q] quit
   ␛[1;48;5;237m❯ permission mode    ⏵⏵ auto — edits apply; allowli…  user␛[m
     round limit        ␛[38;5;254m25␛[m                            ␛[38;5;254mdefault␛[m
     context budget     ␛[38;5;254m8000 tokens␛[m                   ␛[38;5;254mdefault␛[m
-    safety warnings    ␛[38;5;254mon␛[m                            ␛[38;5;254mdefault␛[m
-  ␛[38;5;244m↓ 10 more␛[m
+  ␛[38;5;244m↓ 11 more␛[m
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m
-␛[38;5;254m[r]␛[m␛[38;5;244m reset to default␛[m␛[38;5;244m · ␛[m␛[38;5;254m[w]␛[m␛[38;5;244m write the file␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m discard␛[m
+␛[38;5;254m[r]␛[m␛[38;5;244m reset to default␛[m␛[38;5;244m · ␛[m␛[38;5;254m[w]␛[m␛[38;5;244m write the file␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m discard, after asking␛[m
 
 · history · the subject, and a foot key row that states the way out
 ␛[1;38;5;254mshhh history␛[m␛[38;5;244m · 6 entries · 2 run␛[m         ␛[38;5;244m[?] keys · [q] quit␛[m

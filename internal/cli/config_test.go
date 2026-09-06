@@ -169,12 +169,18 @@ func TestConfigModel_AnUnknownKeyIsReported(t *testing.T) {
 	}
 }
 
-// Leaving without writing quits and saves nothing.
+// Leaving without writing quits and saves nothing. With an edit staged the
+// screen asks before it drops it, so the host sees the quit only once the
+// question has been answered
+// (docs/interface/principles.md#esc-is-always-the-safe-answer).
 func TestConfigModel_EscWritesNothing(t *testing.T) {
 	m := newConfigModel(config.Config{}, config.Project{})
 	m.apply(components.ConfigChange{Key: "behavior.shell", Value: "/bin/zsh"})
-	if cmd := m.answer(m.screen.Update(tea.KeyPressMsg{Code: tea.KeyEscape})); cmd == nil {
-		t.Fatal("esc quits")
+	if cmd := m.answer(m.screen.Update(tea.KeyPressMsg{Code: tea.KeyEscape})); cmd != nil {
+		t.Fatal("esc over a staged edit asks rather than quitting")
+	}
+	if cmd := m.answer(m.screen.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})); cmd == nil {
+		t.Fatal("answering the question yes quits")
 	}
 	if m.saved {
 		t.Fatal("esc discards rather than writing")

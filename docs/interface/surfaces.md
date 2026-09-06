@@ -796,6 +796,10 @@ because the answer is what moves.
 Two rules they share are worth stating: none of them changes how your machine
 behaves without a card, and doctor in particular names fixes rather than
 applying them — the screen that changes settings is the one that asks first.
+It asks in both directions. Nothing on the settings screen reaches the file
+until the write key, so the way out of it is a discard of everything typed
+there, and that gets the same one-line question over the same count the header
+has been carrying ([invariant 3](principles.md#esc-is-always-the-safe-answer)).
 Rating writes on a keystroke and is not the exception it looks like: what it
 writes is a record of something that already happened, and the card the
 keystroke answers is on the screen while it is pressed.

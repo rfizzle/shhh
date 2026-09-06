@@ -1698,6 +1698,11 @@ func TestGolden_ConfigScreen(t *testing.T) {
 				c.Update(key("w"))
 				return c.View(width)
 			}()},
+			{Label: "the way out · the same question over the same count", View: func() string {
+				c := screen(func(c *ConfigScreen) { c.Changed = 2 })
+				c.Update(key("esc"))
+				return c.View(width)
+			}()},
 			{Label: "the settings filtered · the list is the same window", View: func() string {
 				c := screen(nil)
 				c.Update(key("/"))

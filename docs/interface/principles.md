@@ -60,6 +60,14 @@ putting it back, or destroys something that cannot be got again, and the
 invariant is broken there whatever the rail beside it promises. Ending a turn
 belongs to a chord no reflex produces, and takes two presses of it.
 
+A screen that stages work asks before Esc drops it. The question is the
+one-line confirm over the same count the screen has been showing — *Discard 2
+changes?* against a header reading *2 changes unwritten* — and declining it
+leaves the screen and every edit exactly as they were. Which key was pressed
+does not enter into it: a screen whose other way out abandons what its Esc
+would have asked about has moved the hole rather than closed it. Esc without
+staged work still leaves on the press, because there is nothing to put back.
+
 ### Fold, never hide
 
 A collapsed group still counts what it swallowed — `▸ 6 reads · 2 searches`.
