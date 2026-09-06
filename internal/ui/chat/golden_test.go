@@ -891,20 +891,6 @@ func TestGolden_ScrollGutter(t *testing.T) {
 	captureGolden(t, "scroll-gutter", "the transcript's scroll gutter", []int{80, 130}, func(width int) []golden.Panel {
 		// A short viewport, so a golden a reader has to check by counting
 		// rows is small enough to count.
-		// Numbered read rows, so a reader checking the thumb against the pane
-		// can see which slice of the whole is showing without counting. They
-		// are activity rows rather than prose because the subject here is one
-		// column, and a markdown fixture would bury it under glamour's own
-		// escapes in the ansi block.
-		reads := func(n int) []entry {
-			es := []entry{{kind: entryUser, text: "read the round accounting"}}
-			for i := 1; i <= n; i++ {
-				es = append(es, entry{kind: entryTool, toolName: "read_file",
-					toolArgs:   fmt.Sprintf(`{"path":"internal/agent/round%02d.go"}`, i),
-					toolResult: "a\nb", duration: 200 * time.Millisecond})
-			}
-			return es
-		}
 		gutter := func(entries []entry, mut func(*Model)) string {
 			m := frameModel(t, width, 26)
 			m.transcript = entries
@@ -915,10 +901,10 @@ func TestGolden_ScrollGutter(t *testing.T) {
 			mut(&m)
 			return m.transcriptBody()
 		}
-		long := reads(24)
+		long := scrollFixture(24)
 		return []golden.Panel{
 			{Label: "nothing to scroll · the column is reserved and empty",
-				View: gutter(reads(2), func(m *Model) {})},
+				View: gutter(scrollFixture(2), func(m *Model) {})},
 			{Label: "the live end · the thumb is on the last row",
 				View: gutter(long, func(m *Model) {})},
 			{Label: "scrolled halfway up",
@@ -927,6 +913,58 @@ func TestGolden_ScrollGutter(t *testing.T) {
 				View: gutter(long, func(m *Model) { m.viewport.GotoTop() })},
 		}
 	})
+}
+
+// TestGolden_ScrollGutterBesideTheDivider is the one capture that puts the
+// gutter next to the thing it must not be mistaken for. Above the split
+// threshold the transcript pane ends in the gutter and the rail begins one
+// column later behind a `│`, so two columns of chrome sit side by side and
+// only their shape keeps them apart
+// (docs/interface/principles.md#colour-never-carries-meaning-alone).
+//
+// It is captured at the narrowest terminal that splits, because that is where
+// the two columns are closest to the text on either side of them, and in both
+// palettes, because mono is where the shade between track and thumb is gone.
+// That terminal is four columns wider than the breakpoint the split is named
+// for: the surface loses its horizontal padding before the threshold is read,
+// so 130 content columns is the first arrangement with a rail in it.
+func TestGolden_ScrollGutterBesideTheDivider(t *testing.T) {
+	captureGolden(t, "scroll-gutter-rail", "the scroll gutter beside the rail's divider",
+		[]int{components.InspectorMinContentWidth + 2*horizontalPadding}, func(width int) []golden.Panel {
+			build := func(mut func(*Model)) string {
+				m := frameModel(t, width, screenHeight)
+				m.transcript = scrollFixture(90)
+				m.invalidateRenderCache()
+				m.syncViewport()
+				m.viewport.SetLines(m.renderHistoryLines())
+				m.viewport.GotoBottom()
+				mut(&m)
+				return m.View().Content
+			}
+			return []golden.Panel{
+				{Label: "the live end · the thumb is on the last row",
+					View: build(func(m *Model) {})},
+				{Label: "scrolled halfway up · track, thumb and divider in three columns",
+					View: build(func(m *Model) { m.viewport.SetYOffset(m.viewport.TotalLineCount() / 2) })},
+			}
+		})
+}
+
+// scrollFixture is n read rows behind one prompt, numbered so a reader
+// checking the thumb against the pane can see which slice of the whole is
+// showing without counting rows. Callers pick an n that overflows the pane
+// they built, since a gutter is only drawn when something is below. They are
+// activity rows rather than prose because the subject is one column, and a
+// markdown fixture would bury it under glamour's own escapes in the ansi
+// block.
+func scrollFixture(n int) []entry {
+	es := []entry{{kind: entryUser, text: "read the round accounting"}}
+	for i := 1; i <= n; i++ {
+		es = append(es, entry{kind: entryTool, toolName: "read_file",
+			toolArgs:   fmt.Sprintf(`{"path":"internal/agent/round%02d.go"}`, i),
+			toolResult: "a\nb", duration: 200 * time.Millisecond})
+	}
+	return es
 }
 
 // TestGolden_SyntaxRegister captures the diff body's syntax register (

@@ -28,17 +28,26 @@ package components
 // until there is something below.
 const ScrollGutterWidth = 1
 
-// The gutter's two glyphs: a dashed track under a block thumb. Neither is
-// the `│` the frame and the pane divider draw, and that is the point. The
-// gutter sits one column from the divider, so a track drawn with the
-// divider's own rule reads as a double border, and the rows the thumb covers
-// read as a third. The dim/dimmer step between track and thumb is a shade,
-// and a shade is gone in mono and in sixteen colours, so the stroke is what
-// tells all three columns apart: dashed, block, rule.
+// The gutter's two glyphs: a light-shade track under a full-block thumb, the
+// pair the drawing kit assigns the gutter
+// (docs/interface/departures.md#the-scroll-gutter-has-no-artboard).
+//
+// Both ink the whole cell, so the column reads as one strip: the track is the
+// whole transcript and the thumb is the share of it showing, which is the
+// only thing a proportion can be read from. A glyph that inks half a cell
+// puts the thumb and the track on different sides of the column and there is
+// no proportion left to see.
+//
+// Neither is the `│` the frame and the pane divider draw. The gutter sits one
+// column from the divider, so a track in the divider's own rule reads as a
+// double border — and a fill cannot be mistaken for a rule at all. The
+// dim/dimmer step between track and thumb is a shade, and a shade is gone in
+// mono and in sixteen colours, so ink coverage is what tells all three
+// columns apart: stippled, solid, rule.
 // See docs/interface/principles.md#colour-never-carries-meaning-alone.
 const (
-	scrollTrack = "╎"
-	scrollThumb = "▐"
+	scrollTrack = "░"
+	scrollThumb = "█"
 )
 
 // Scrollbar renders the gutter as one styled string per row: height rows of

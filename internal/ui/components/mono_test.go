@@ -488,10 +488,12 @@ func monoFixtures() []monoSurface {
 			{"staged", staged(true)},
 		}},
 		// The scroll gutter has two states and one column to say them in, so
-		// the stroke is all it has: dim and dimmer are the same grey here. The
-		// divider the next column over is the third thing that stroke has to
-		// carry it away from, and it is in the walk for the same reason — all
-		// three are dim rules a column apart once the shades collapse.
+		// ink coverage is all it has: dim and dimmer are the same grey here.
+		// The divider the next column over is the third thing that coverage
+		// has to carry it away from, and it is in the walk for the same
+		// reason — all three are chrome a column apart once the shades
+		// collapse, and only the amount of ink in the cell is left to tell a
+		// stippled fill, a solid fill and a rule apart.
 		{"scroll gutter cell", []monoState{
 			// The top row of a gutter scrolled to its end, and of the same
 			// gutter at its top.

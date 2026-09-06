@@ -45,6 +45,27 @@ func TestScrollbar_GlyphsAreNotTheDividersRule(t *testing.T) {
 	}
 }
 
+// The defect the pair replaced was a half-cell thumb over a centred track:
+// two glyphs in one column that never lined up, so the column read as two
+// drawings rather than one bar with a filled share. The guard is the family
+// both glyphs come from — a shade that inks the whole cell — because a
+// proportion is only readable when the part sits inside the whole.
+func TestScrollbar_BothGlyphsInkTheWholeCell(t *testing.T) {
+	const wholeCell = "░▒▓█"
+	const halfCell = "▌▐▀▄"
+	for _, c := range []struct{ name, glyph string }{
+		{"track", scrollTrack},
+		{"thumb", scrollThumb},
+	} {
+		if !strings.Contains(wholeCell, c.glyph) {
+			t.Errorf("the %s draws %q, which is not one of the whole-cell shades %q", c.name, c.glyph, wholeCell)
+		}
+		if strings.Contains(halfCell, c.glyph) {
+			t.Errorf("the %s draws the half-cell block %q", c.name, c.glyph)
+		}
+	}
+}
+
 func TestScrollbar_NothingToScrollDrawsNothing(t *testing.T) {
 	for _, c := range []struct {
 		name                              string
@@ -67,12 +88,12 @@ func TestScrollbar_ThumbIsTheVisibleShare(t *testing.T) {
 		height, content, viewport, offset int
 		want                              string
 	}{
-		{"half the transcript fits", 10, 20, 10, 0, "▐▐▐▐▐╎╎╎╎╎"},
-		{"half, scrolled to the end", 10, 20, 10, 10, "╎╎╎╎╎▐▐▐▐▐"},
-		{"half, one line in", 10, 20, 10, 1, "╎▐▐▐▐▐╎╎╎╎"},
-		{"a fifth fits", 10, 50, 10, 0, "▐▐╎╎╎╎╎╎╎╎"},
-		{"a transcript far longer than the pane", 8, 4000, 8, 0, "▐╎╎╎╎╎╎╎"},
-		{"and at its end", 8, 4000, 8, 3992, "╎╎╎╎╎╎╎▐"},
+		{"half the transcript fits", 10, 20, 10, 0, "█████░░░░░"},
+		{"half, scrolled to the end", 10, 20, 10, 10, "░░░░░█████"},
+		{"half, one line in", 10, 20, 10, 1, "░█████░░░░"},
+		{"a fifth fits", 10, 50, 10, 0, "██░░░░░░░░"},
+		{"a transcript far longer than the pane", 8, 4000, 8, 0, "█░░░░░░░"},
+		{"and at its end", 8, 4000, 8, 3992, "░░░░░░░█"},
 	} {
 		got := plainGutter(Scrollbar(c.height, c.content, c.viewport, c.offset))
 		if got != c.want {
@@ -112,9 +133,9 @@ func TestScrollbar_ClampsAnImpossibleOffset(t *testing.T) {
 		offset int
 		want   string
 	}{
-		{11, "╎╎╎╎╎▐▐▐▐▐"},
-		{400, "╎╎╎╎╎▐▐▐▐▐"},
-		{-3, "▐▐▐▐▐╎╎╎╎╎"},
+		{11, "░░░░░█████"},
+		{400, "░░░░░█████"},
+		{-3, "█████░░░░░"},
 	} {
 		if got := plainGutter(Scrollbar(10, 20, 10, c.offset)); got != c.want {
 			t.Fatalf("offset %d: gutter = %q, want %q", c.offset, got, c.want)
