@@ -320,13 +320,8 @@ func (m *Model) windowCommand(parts []string) string {
 	if len(parts) != 3 {
 		return "Usage: /ui window <on|off>"
 	}
-	var on bool
-	switch parts[2] {
-	case "on", "true", "yes":
-		on = true
-	case "off", "false", "no":
-		on = false
-	default:
+	on, ok := parseToggle(parts[2])
+	if !ok {
 		return fmt.Sprintf("Error: unknown window setting %q (on, off)", parts[2])
 	}
 	if on == m.windowTitleOn {

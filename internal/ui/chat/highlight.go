@@ -93,6 +93,13 @@ func fenceLexer(lang string) chroma.Lexer {
 // fenceSyntax highlights one line of a fenced block through the same palette
 // register the diff bodies use (syntaxTones), so a Go function reads the same
 // colour whether the model quoted it or changed it.
+//
+// The style it builds per segment is the one style in this package that is
+// not a token on Styles, and it cannot be: which tone a segment takes is the
+// lexer's answer about that segment, not a slot a surface draws from. The
+// palette half is still built once — syntaxTones is the register, rebuilt by
+// applyPalette — and this only dresses a run of text in the tone that
+// register already chose.
 func fenceSyntax(lang, line string) []markdown.Segment {
 	lexer := fenceLexer(lang)
 	if lexer == nil {

@@ -198,7 +198,7 @@ func (c *ConfigScreen) updateMenu(msg tea.KeyPressMsg) (bool, ConfigResult) {
 	switch {
 	case keys.Is(pressed, keys.Screen.Filter):
 		c.menu.Filtering = true
-	case pressed == keys.Shown(keys.Screen.Quit):
+	case keys.Is(pressed, keys.Screen.Quit):
 		return c.leave()
 	case keys.Is(pressed, keys.Screen.List):
 		c.keys = !c.keys

@@ -213,13 +213,10 @@ func (m *Model) titleCommand(parts []string) string {
 	if len(parts) != 3 {
 		return "Usage: /ui title <on|off>"
 	}
-	switch parts[2] {
-	case "on", "true", "yes":
-		m.titles.on = true
-	case "off", "false", "no":
-		m.titles.on = false
-	default:
+	on, ok := parseToggle(parts[2])
+	if !ok {
 		return fmt.Sprintf("Error: unknown title setting %q (on, off)", parts[2])
 	}
+	m.titles.on = on
 	return "Session titles: " + m.titleStatus() + "."
 }

@@ -63,45 +63,6 @@ func frameLayoutFor(width int) frameLayout {
 	}
 }
 
-// frameStyles is the input frame's own group, built by newFrameStyles.
-type frameStyles struct {
-	AccentPermissive lipgloss.Style
-	AccentGated      lipgloss.Style
-	AccentChecking   lipgloss.Style
-	Idle             lipgloss.Style
-	Working          lipgloss.Style
-	Hint             lipgloss.Style
-	GutterIdle       lipgloss.Style
-	GutterWork       lipgloss.Style
-	GutterBang       lipgloss.Style
-	NoticeInfo       lipgloss.Style
-	NoticeAlert      lipgloss.Style
-	// The undressed draft and the waiting chip a decision puts on the frame
-	//: the chrome goes dim, the characters stay legible.
-	DraftHeld   lipgloss.Style
-	WaitingChip lipgloss.Style
-}
-
-func newFrameStyles(p components.ColorTokens) frameStyles {
-	return frameStyles{
-		AccentPermissive: lipgloss.NewStyle().Foreground(p.Add.Color()),
-		AccentGated:      lipgloss.NewStyle().Foreground(p.Accent.Color()),
-		AccentChecking:   lipgloss.NewStyle().Foreground(p.Spin.Color()),
-		Idle:             lipgloss.NewStyle().Foreground(p.Dim.Color()),
-		Working:          lipgloss.NewStyle().Bold(true).Foreground(p.Spin.Color()),
-		Hint:             lipgloss.NewStyle().Foreground(p.Dim.Color()).Italic(true),
-		GutterIdle:       lipgloss.NewStyle().Bold(true).Foreground(p.Info.Color()),
-		GutterWork:       lipgloss.NewStyle().Bold(true).Foreground(p.Spin.Color()),
-		// The bang draft's glyph carries the gated accent: what enter does
-		// next is ask, on the confirm card.
-		GutterBang:  lipgloss.NewStyle().Bold(true).Foreground(p.Accent.Color()),
-		NoticeInfo:  lipgloss.NewStyle().Foreground(p.Info.Color()),
-		NoticeAlert: lipgloss.NewStyle().Foreground(p.Del.Color()),
-		DraftHeld:   lipgloss.NewStyle().Foreground(p.Body.Color()),
-		WaitingChip: lipgloss.NewStyle().Bold(true).Foreground(p.Accent.Color()),
-	}
-}
-
 func (m Model) frameLayout() frameLayout {
 	if m.framed == nil {
 		return frameLayoutFor(m.contentWidth())

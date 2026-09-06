@@ -405,24 +405,6 @@ func (m Model) readingKeyLine(width int) string {
 	return clipRow(joinSegs(forms[len(forms)-1]), width)
 }
 
-// hintStyles is the reading-mode hint line's own group, with the
-// mutation rail that shares its file.
-type hintStyles struct {
-	Key          lipgloss.Style
-	Safe         lipgloss.Style
-	Dim          lipgloss.Style
-	MutationRail lipgloss.Style
-}
-
-func newHintStyles(p components.ColorTokens) hintStyles {
-	return hintStyles{
-		Key:          lipgloss.NewStyle().Foreground(p.Info.Color()),
-		Safe:         lipgloss.NewStyle().Foreground(p.Add.Color()),
-		Dim:          lipgloss.NewStyle().Foreground(p.Dim.Color()),
-		MutationRail: lipgloss.NewStyle().Foreground(p.Accent.Color()),
-	}
-}
-
 // readingKeyListLines is what `[?]` puts where the compact bar was (
 // the key register): the mode's whole register, one key per line, then the
 // offers the row under the cursor makes, then the key that puts it away

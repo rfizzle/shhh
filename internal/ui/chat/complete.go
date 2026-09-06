@@ -335,23 +335,6 @@ func buildSlashCommands() []slashCommand {
 // match lists scroll to keep the focused row visible.
 const maxCompletionRows = 6
 
-// completeStyles is the slash-command menu's own group.
-type completeStyles struct {
-	Focus lipgloss.Style
-	Args  lipgloss.Style
-	Desc  lipgloss.Style
-	Hint  lipgloss.Style
-}
-
-func newCompleteStyles(p components.ColorTokens) completeStyles {
-	return completeStyles{
-		Focus: lipgloss.NewStyle().Bold(true).Background(p.FocusBg.Color()),
-		Args:  lipgloss.NewStyle().Foreground(p.Dim.Color()),
-		Desc:  lipgloss.NewStyle().Foreground(p.Dim.Color()),
-		Hint:  lipgloss.NewStyle().Foreground(p.Dim.Color()).Italic(true),
-	}
-}
-
 // matchesCommand reports whether the typed token ("/mo") is a prefix of the
 // command's name or one of its aliases.
 func (c slashCommand) matches(token string) bool {

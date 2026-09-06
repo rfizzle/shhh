@@ -10,10 +10,22 @@ import (
 // consistent; no new colors without adding a token there.
 //
 // Styles is this package's whole style set, built by newStyles from a token
-// set and nothing else. It replaced seven applyXStyles functions that each
-// mutated another file's globals (Finding 2): a group is now a value its own
-// file returns, and newStyles composes them, so a surface cannot be left out
-// of a rebuild by forgetting to call one more function.
+// set and nothing else. It replaced a set of functions that each mutated
+// another file's globals: a group is a value now, and newStyles composes
+// them, so a surface cannot be left out of a rebuild by forgetting to call
+// one more function.
+//
+// Every group and every constructor lives in this file rather than beside the
+// code that draws with it. That is the point: a style is only correct if it
+// is rebuilt when the palette changes, and applyPalette below is the one
+// place that happens. A table declared in a renderer is a table someone can
+// build at init or per call without noticing which of the two they did — the
+// first goes stale on /theme and /mono, the second allocates on every frame.
+// A `lipgloss.NewStyle()` outside this file is therefore a thing to explain,
+// and the three that remain each carry the explanation: the transcript's two
+// search marks and the drag selection are structural rather than coloured
+// (viewport.go, select.go), and the syntax segment takes the tone its lexer
+// chose (highlight.go).
 type Styles struct {
 	User       lipgloss.Style
 	Assistant  lipgloss.Style
@@ -73,6 +85,123 @@ type stepStyles struct {
 	Done      lipgloss.Style
 	Fail      lipgloss.Style
 	Run       lipgloss.Style
+}
+
+// readingStyles is the reading rail's own group.
+type readingStyles struct {
+	Label lipgloss.Style
+	Rule  lipgloss.Style
+}
+
+func newReadingStyles(p components.ColorTokens) readingStyles {
+	return readingStyles{
+		// The label is info and bold, as DRAFT, DECISION and READING all are
+		// in guidelines/invariant-inert-keys; the rule it sits on is chrome,
+		// so it is dim like every other divider. The accent belongs to the
+		// rows.
+		Label: lipgloss.NewStyle().Bold(true).Foreground(p.Info.Color()),
+		Rule:  lipgloss.NewStyle().Foreground(p.Dim.Color()),
+	}
+}
+
+// frameStyles is the input frame's own group, built by newFrameStyles.
+type frameStyles struct {
+	AccentPermissive lipgloss.Style
+	AccentGated      lipgloss.Style
+	AccentChecking   lipgloss.Style
+	Idle             lipgloss.Style
+	Working          lipgloss.Style
+	Hint             lipgloss.Style
+	GutterIdle       lipgloss.Style
+	GutterWork       lipgloss.Style
+	GutterBang       lipgloss.Style
+	NoticeInfo       lipgloss.Style
+	NoticeAlert      lipgloss.Style
+	// The undressed draft and the waiting chip a decision puts on the frame
+	//: the chrome goes dim, the characters stay legible.
+	DraftHeld   lipgloss.Style
+	WaitingChip lipgloss.Style
+}
+
+func newFrameStyles(p components.ColorTokens) frameStyles {
+	return frameStyles{
+		AccentPermissive: lipgloss.NewStyle().Foreground(p.Add.Color()),
+		AccentGated:      lipgloss.NewStyle().Foreground(p.Accent.Color()),
+		AccentChecking:   lipgloss.NewStyle().Foreground(p.Spin.Color()),
+		Idle:             lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		Working:          lipgloss.NewStyle().Bold(true).Foreground(p.Spin.Color()),
+		Hint:             lipgloss.NewStyle().Foreground(p.Dim.Color()).Italic(true),
+		GutterIdle:       lipgloss.NewStyle().Bold(true).Foreground(p.Info.Color()),
+		GutterWork:       lipgloss.NewStyle().Bold(true).Foreground(p.Spin.Color()),
+		// The bang draft's glyph carries the gated accent: what enter does
+		// next is ask, on the confirm card.
+		GutterBang:  lipgloss.NewStyle().Bold(true).Foreground(p.Accent.Color()),
+		NoticeInfo:  lipgloss.NewStyle().Foreground(p.Info.Color()),
+		NoticeAlert: lipgloss.NewStyle().Foreground(p.Del.Color()),
+		DraftHeld:   lipgloss.NewStyle().Foreground(p.Body.Color()),
+		WaitingChip: lipgloss.NewStyle().Bold(true).Foreground(p.Accent.Color()),
+	}
+}
+
+// completeStyles is the slash-command menu's own group.
+type completeStyles struct {
+	Focus lipgloss.Style
+	Args  lipgloss.Style
+	Desc  lipgloss.Style
+	Hint  lipgloss.Style
+}
+
+func newCompleteStyles(p components.ColorTokens) completeStyles {
+	return completeStyles{
+		Focus: lipgloss.NewStyle().Bold(true).Background(p.FocusBg.Color()),
+		Args:  lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		Desc:  lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		Hint:  lipgloss.NewStyle().Foreground(p.Dim.Color()).Italic(true),
+	}
+}
+
+// searchStyles is the history-search row's own group.
+type searchStyles struct {
+	Label lipgloss.Style
+	Query lipgloss.Style
+	State lipgloss.Style
+	Hint  lipgloss.Style
+}
+
+func newSearchStyles(p components.ColorTokens) searchStyles {
+	return searchStyles{
+		Label: lipgloss.NewStyle().Bold(true).Foreground(p.Info.Color()),
+		Query: lipgloss.NewStyle().Foreground(p.Body.Color()),
+		State: lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		Hint:  lipgloss.NewStyle().Foreground(p.Dim.Color()).Italic(true),
+	}
+}
+
+// hintStyles is the reading-mode hint line's own group, with the
+// mutation rail that shares its file.
+type hintStyles struct {
+	Key          lipgloss.Style
+	Safe         lipgloss.Style
+	Dim          lipgloss.Style
+	MutationRail lipgloss.Style
+}
+
+func newHintStyles(p components.ColorTokens) hintStyles {
+	return hintStyles{
+		Key:          lipgloss.NewStyle().Foreground(p.Info.Color()),
+		Safe:         lipgloss.NewStyle().Foreground(p.Add.Color()),
+		Dim:          lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		MutationRail: lipgloss.NewStyle().Foreground(p.Accent.Color()),
+	}
+}
+
+// paneStyles is the two-pane cockpit's own group.
+type paneStyles struct {
+	Divider lipgloss.Style
+}
+
+func newPaneStyles(p components.ColorTokens) paneStyles {
+	return paneStyles{Divider: lipgloss.NewStyle().Foreground(p.Dim.Color())}
 }
 
 // sty is the live style set. init builds it and keeps it current across a

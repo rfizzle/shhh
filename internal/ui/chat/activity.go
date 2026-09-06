@@ -568,13 +568,8 @@ func (m *Model) groundCommand(parts []string) string {
 	if len(parts) != 3 {
 		return groundUsage
 	}
-	var on bool
-	switch parts[2] {
-	case "on", "true", "yes":
-		on = true
-	case "off", "false", "no":
-		on = false
-	default:
+	on, ok := parseToggle(parts[2])
+	if !ok {
 		return fmt.Sprintf("Error: unknown ground setting %q (on, off)", parts[2])
 	}
 	if !components.PaintGround(on) {
@@ -614,13 +609,8 @@ func (m *Model) monoCommand(parts []string) string {
 	if len(parts) != 3 {
 		return "Usage: /ui mono <on|off>"
 	}
-	var on bool
-	switch parts[2] {
-	case "on", "true", "yes":
-		on = true
-	case "off", "false", "no":
-		on = false
-	default:
+	on, ok := parseToggle(parts[2])
+	if !ok {
 		return fmt.Sprintf("Error: unknown mono setting %q (on, off)", parts[2])
 	}
 	if !on && components.MonoForced() {

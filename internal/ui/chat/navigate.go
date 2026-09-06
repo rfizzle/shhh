@@ -489,13 +489,8 @@ func (m *Model) mouseCommand(parts []string) string {
 	if len(parts) != 3 {
 		return "Usage: /ui mouse <on|off>"
 	}
-	var on bool
-	switch parts[2] {
-	case "on", "true", "yes":
-		on = true
-	case "off", "false", "no":
-		on = false
-	default:
+	on, ok := parseToggle(parts[2])
+	if !ok {
 		return fmt.Sprintf("Error: unknown mouse setting %q (on, off)", parts[2])
 	}
 	if on == m.mouseOn {
@@ -539,21 +534,4 @@ func mouseNote(on bool) string {
 		return "Mouse reporting on — the wheel scrolls the transcript, click-drag selects it (the drag scrolls past the edge of the pane, esc cancels, and releasing copies), and a click opens the activity row or answers the approval key under it."
 	}
 	return "Mouse reporting off — the terminal keeps click-drag selection for what is on screen; pgup, ctrl+o and j/k read the transcript."
-}
-
-// readingStyles is the reading rail's own group.
-type readingStyles struct {
-	Label lipgloss.Style
-	Rule  lipgloss.Style
-}
-
-func newReadingStyles(p components.ColorTokens) readingStyles {
-	return readingStyles{
-		// The label is info and bold, as DRAFT, DECISION and READING all are
-		// in guidelines/invariant-inert-keys; the rule it sits on is chrome,
-		// so it is dim like every other divider. The accent belongs to the
-		// rows.
-		Label: lipgloss.NewStyle().Bold(true).Foreground(p.Info.Color()),
-		Rule:  lipgloss.NewStyle().Foreground(p.Dim.Color()),
-	}
 }

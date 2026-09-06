@@ -330,6 +330,11 @@ func (m Model) closeGateBlock() string {
 // toggle is the session's own state and the runner behind Manage has none,
 // so it is answered here rather than there.
 //
+// It reads the word through parseToggle, so the switch here says on and off
+// with the same vocabulary every /ui switch does; a word that names neither
+// side is not this command's — it goes on to the runner, which is where a
+// suite name is understood.
+//
 // The bottom rail's mode segment does not change for it: the gate is not a
 // permission mode, and a session that checks its work is under exactly the
 // same rules about what it may do as one that does not.
@@ -337,17 +342,18 @@ func (m *Model) gateToggle(args []string) (bool, string) {
 	if len(args) != 1 {
 		return false, ""
 	}
-	switch args[0] {
-	case "on":
-		m.closeGate.on = true
-		suite, _ := m.closeGateSuite()
-		if suite == "" {
-			return true, "A closing turn will run the gate once " + quality.ConfigRelPath + " names an on_close suite. It names none."
-		}
-		return true, fmt.Sprintf("A turn that changed files will run the %q suite as it closes.", suite)
-	case "off":
+	on, ok := parseToggle(args[0])
+	switch {
+	case !ok:
+		return false, ""
+	case !on:
 		m.closeGate.on = false
 		return true, "A closing turn will not run the gate. /gate run still does."
 	}
-	return false, ""
+	m.closeGate.on = true
+	suite, _ := m.closeGateSuite()
+	if suite == "" {
+		return true, "A closing turn will run the gate once " + quality.ConfigRelPath + " names an on_close suite. It names none."
+	}
+	return true, fmt.Sprintf("A turn that changed files will run the %q suite as it closes.", suite)
 }

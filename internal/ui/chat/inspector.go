@@ -30,7 +30,6 @@ import (
 	"fmt"
 	"time"
 
-	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -46,15 +45,6 @@ const (
 	// were thrown away while it was narrow.
 	contextBurnSamples = components.SparkCellsRailMax
 )
-
-// paneStyles is the two-pane cockpit's own group.
-type paneStyles struct {
-	Divider lipgloss.Style
-}
-
-func newPaneStyles(p components.ColorTokens) paneStyles {
-	return paneStyles{Divider: lipgloss.NewStyle().Foreground(p.Dim.Color())}
-}
 
 // twoPane reports whether the surface is split. Width is the first condition;
 // a takeover surface is the second.

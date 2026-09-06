@@ -22,7 +22,6 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -32,23 +31,6 @@ type historySearch struct {
 	saved string
 	query string
 	idx   int
-}
-
-// searchStyles is the history-search row's own group.
-type searchStyles struct {
-	Label lipgloss.Style
-	Query lipgloss.Style
-	State lipgloss.Style
-	Hint  lipgloss.Style
-}
-
-func newSearchStyles(p components.ColorTokens) searchStyles {
-	return searchStyles{
-		Label: lipgloss.NewStyle().Bold(true).Foreground(p.Info.Color()),
-		Query: lipgloss.NewStyle().Foreground(p.Body.Color()),
-		State: lipgloss.NewStyle().Foreground(p.Dim.Color()),
-		Hint:  lipgloss.NewStyle().Foreground(p.Dim.Color()).Italic(true),
-	}
 }
 
 // historySearching reports whether the search holds the keyboard.

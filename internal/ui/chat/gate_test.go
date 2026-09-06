@@ -334,6 +334,14 @@ func TestCloseGate_ToggleAnswersOnAndOff(t *testing.T) {
 	if !handled || m.closeGate.on {
 		t.Fatalf("/gate off = %v %q, on = %v", handled, note, m.closeGate.on)
 	}
+	// The toggle reads the same words every /ui switch reads, so the two
+	// spellings a person arrives with from a config file work here too.
+	if _, _ = m.handleSlashCommand("/gate true"); !m.closeGate.on {
+		t.Fatal("/gate true left the session off")
+	}
+	if _, _ = m.handleSlashCommand("/gate no"); m.closeGate.on {
+		t.Fatal("/gate no left the session on")
+	}
 	// Anything else is still the runner's to answer.
 	if _, note := m.handleSlashCommand("/gate result"); note != "gate says" {
 		t.Fatalf("/gate result = %q", note)
