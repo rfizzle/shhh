@@ -294,7 +294,7 @@ func (m Model) draftPanel() string {
 	if o := overlayFor(m.state); o != nil && o.hint != nil {
 		return o.hint(m)
 	}
-	inputView := m.input.View()
+	inputView := m.draftView()
 	// The slash-command completion menu renders under the input.
 	if m.completionActive() && m.attachedTo == "" && m.agentList == nil && m.activeChildAsk() == nil {
 		inputView += "\n" + strings.Join(m.completionMenuLines(), "\n")

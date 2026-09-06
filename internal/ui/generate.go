@@ -193,12 +193,12 @@ type GenerateResult struct {
 }
 
 func NewGenerateModel(events <-chan provider.StreamEvent, cancel context.CancelFunc, messages []provider.Message, newStream NewStreamFunc, newExplain ExplainStreamFunc, shell string) GenerateModel {
-	ti := textinput.New()
+	ti := components.NewTextInput()
 	ti.Placeholder = "Describe what to change…"
 	ti.CharLimit = 500
-	ei := textinput.New()
+	ei := components.NewTextInput()
 	ei.CharLimit = 1000
-	si := textinput.New()
+	si := components.NewTextInput()
 	si.Placeholder = "Snippet name…"
 	si.CharLimit = 100
 	msgs := make([]provider.Message, len(messages))
@@ -1162,6 +1162,15 @@ func (m GenerateModel) View() tea.View {
 	return tea.NewView(m.screen())
 }
 
+// fieldView is a one-shot field's render, in the palette as it stands now.
+// The colours reach a field only where it is drawn
+// (components.StyleTextInput), so the three fields go through one place
+// rather than each remembering.
+func fieldView(f textinput.Model) string {
+	components.StyleTextInput(&f)
+	return f.View()
+}
+
 func (m GenerateModel) screen() string {
 	switch m.phase {
 	case phaseStreaming:
@@ -1177,11 +1186,11 @@ func (m GenerateModel) screen() string {
 			m.affectedView() + m.dryRunView() +
 			m.actionBar.View()
 	case phaseEdit:
-		return sty.EditPrompt.Render("Edit: ") + m.editInput.View()
+		return sty.EditPrompt.Render("Edit: ") + fieldView(m.editInput)
 	case phaseSave:
-		return m.stream.View() + "\n" + sty.RevisePrompt.Render("Snippet name: ") + m.saveInput.View()
+		return m.stream.View() + "\n" + sty.RevisePrompt.Render("Snippet name: ") + fieldView(m.saveInput)
 	case phaseRevise:
-		return m.stream.View() + "\n" + sty.RevisePrompt.Render("Feedback: ") + m.reviseInput.View()
+		return m.stream.View() + "\n" + sty.RevisePrompt.Render("Feedback: ") + fieldView(m.reviseInput)
 	case phaseExplain:
 		view := m.stream.View() + "\n" + sty.ExplainLabel.Render("Explanation:")
 		if m.explainStream.output == "" && !m.explainStream.done {

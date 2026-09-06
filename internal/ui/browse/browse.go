@@ -98,7 +98,7 @@ func (m Model) WithOps(ops Ops) Model {
 }
 
 func New(items []Item, actions []ActionDef) Model {
-	ti := textinput.New()
+	ti := components.NewTextInput()
 	ti.Placeholder = "Type to filter..."
 	ti.CharLimit = 100
 
@@ -208,9 +208,8 @@ func (m Model) updateList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.target = m.focused()
-		ti := textinput.New()
+		ti := components.NewTextInput()
 		ti.Prompt = "rename ▸ "
-		ti.CharLimit = 0
 		ti.SetValue(m.items[m.target].Title)
 		ti.CursorEnd()
 		ti.SetWidth(max(m.width-len(ti.Prompt)-2, 8))
@@ -347,12 +346,19 @@ func (m Model) screen() string {
 	return m.viewList()
 }
 
+// fieldView is a field's render, in the palette as it stands now: the
+// colours reach a field only where it is drawn (components.StyleTextInput).
+func fieldView(f textinput.Model) string {
+	components.StyleTextInput(&f)
+	return f.View()
+}
+
 func (m Model) viewList() string {
 	var b strings.Builder
 
 	title := sty.ListTitle.Render(fmt.Sprintf(" %d items", len(m.list.Items)))
 	if m.filter.Focused() || m.filter.Value() != "" {
-		title += "  " + m.filter.View()
+		title += "  " + fieldView(m.filter)
 	} else {
 		title += sty.Hint.Render("  " + strings.Join(m.listHints(), "  "))
 	}
@@ -410,7 +416,7 @@ func (m Model) footer() []string {
 	case m.confirm != nil:
 		return []string{m.confirm.View(m.width)}
 	case m.renaming:
-		return []string{m.rename.View(), sty.Hint.Render(keys.Shown(keys.Browse.Take) + " renames  " + keys.Shown(keys.Select.Cancel) + " keeps the name")}
+		return []string{fieldView(m.rename), sty.Hint.Render(keys.Shown(keys.Browse.Take) + " renames  " + keys.Shown(keys.Select.Cancel) + " keeps the name")}
 	case m.notice != "":
 		return []string{sty.Hint.Render(m.notice)}
 	}

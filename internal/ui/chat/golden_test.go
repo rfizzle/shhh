@@ -525,7 +525,7 @@ func promptSurface(m Model) string {
 	if m.frameShowing() {
 		return m.renderPromptFrame()
 	}
-	return m.input.View()
+	return m.draftView()
 }
 
 // promptCapture is promptSurface with the cursor the surface placed inside
@@ -533,7 +533,7 @@ func promptSurface(m Model) string {
 func promptCapture(m Model) (string, *golden.Cursor) {
 	if !m.frameShowing() {
 		// The bare input is its own render, so its cursor needs no offset.
-		return m.input.View(), goldenCursor(m.input.Cursor())
+		return m.draftView(), goldenCursor(m.input.Cursor())
 	}
 	var cur cursorSink
 	view := m.renderPromptFrameWith(&cur)

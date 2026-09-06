@@ -210,11 +210,8 @@ type ProfileScreen struct {
 // row and takes the draft's newline chords, which is the note field's rule
 // and for the note field's reason: the surface answers enter itself.
 func NewProfileScreen(name string) *ProfileScreen {
-	ta := textarea.New()
+	ta := NewTextArea()
 	ta.SetHeight(1)
-	ta.ShowLineNumbers = false
-	ta.CharLimit = 0
-	ta.KeyMap.InsertNewline.SetKeys(keys.Draft.Newline.Keys()[1:]...)
 	ta.Focus()
 	return &ProfileScreen{Name: name, focus: -1, field: ta}
 }
@@ -790,6 +787,7 @@ func (p *ProfileScreen) askRows(width int) []string {
 func (p *ProfileScreen) fieldRows(width int) []string {
 	inner := max(width-profileIndent-2, 8)
 	p.field.SetWidth(inner)
+	StyleTextArea(&p.field)
 	view := p.field.View()
 	if p.focus >= 0 {
 		// Unfocused, the field echoes as plain text: a blurred textarea

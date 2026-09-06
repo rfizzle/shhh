@@ -13,7 +13,6 @@ import (
 	"context"
 	"path/filepath"
 
-	"charm.land/bubbles/v2/textarea"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/changeset"
@@ -23,18 +22,15 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"
-	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 func New(initialMessages []provider.Message, stream StreamFunc) Model {
-	ta := textarea.New()
+	ta := components.NewTextArea()
 	// No placeholder sentence and no per-line prompt: the command-center
 	// frame's gutter glyph and bottom-rail hints carry that.
 	ta.Placeholder = ""
 	ta.Prompt = ""
 	ta.Focus()
-	ta.CharLimit = 0
-	ta.ShowLineNumbers = false
 	// The draft's cursor is the terminal's own: it blinks at the reader's
 	// rate, takes their shape, and is where an input method and a screen
 	// reader look for it (docs/interface/surfaces.md#the-input-frame). What
@@ -50,13 +46,6 @@ func New(initialMessages []provider.Message, stream StreamFunc) Model {
 	ta.MinHeight = inputHeight
 	ta.MaxHeight = maxDraftRows
 	ta.SetHeight(inputHeight)
-	// Two keys insert a line break, one of which the user can find:
-	// shift+enter is rewritten to ctrl+j before the textarea sees it
-	// (newline.go), and ctrl+j is the chord that works in a terminal too old
-	// to report it. Alt+enter used to be a third, and went with the
-	// follow-up chord it shared: Windows Terminal takes it for full screen
-	// (docs/interface/reserved-keys.md).
-	ta.KeyMap.InsertNewline.SetKeys(keys.Draft.Newline.Keys()[1:]...)
 
 	// One frame set, one cadence, one colour, shared with the one-shot UI.
 	s := components.NewSpinnerModel()

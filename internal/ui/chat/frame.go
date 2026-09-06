@@ -701,12 +701,21 @@ func (m Model) topRailLabels(mode frameLayout, width int) (left, right string) {
 	return left, identityLabel
 }
 
+// draftView is the draft box's own render. It is the one place the field is
+// drawn, because the palette's colours reach a field only where it is drawn
+// (components.StyleTextArea) — a swap while a session is open otherwise
+// leaves the draft in the table the session started with.
+func (m Model) draftView() string {
+	components.StyleTextArea(&m.input)
+	return m.input.View()
+}
+
 // frameDraftLines is what goes inside the box: the textarea's rows and, under
 // them, the completion menu. bottomPanelHeight already caps the pair
 // at the confirm-panel bound, and the cut is taken here so the box's height
 // and its contents can never be counted differently.
 func (m Model) frameDraftLines() (lines, menu []string) {
-	lines = strings.Split(m.input.View(), "\n")
+	lines = strings.Split(m.draftView(), "\n")
 	switch {
 	case m.historySearching():
 		// The search states itself where the completion menu would: both

@@ -14,6 +14,9 @@ import (
 	"os"
 	"strings"
 
+	"charm.land/bubbles/v2/textarea"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/colorprofile"
 	"github.com/charmbracelet/x/exp/charmtone"
@@ -532,6 +535,15 @@ type Styles struct {
 	// a two-rung ramp and not a colour of its own — under mono it is the same
 	// grey as the base, which is how the sweep goes away.
 	AnimCrest lipgloss.Style
+
+	// The text fields, in the two style records bubbles hands out. A field
+	// paints itself from a table of its own, so the only way the palette
+	// reaches one is to give it that table; left alone it keeps a set of
+	// literal 256 indices chosen for one ground, which is a surface reaching
+	// outside the fifteen
+	// (docs/interface/principles.md#a-colour-is-three-values-and-a-ground).
+	TextArea  textarea.Styles
+	TextInput textinput.Styles
 }
 
 // sty is the live style set, rebuilt by applyPalette whenever the theme or
@@ -585,7 +597,77 @@ func newStyles(p ColorTokens) Styles {
 		ScrollThumb: lipgloss.NewStyle().Foreground(p.Dimmer.Color()),
 
 		AnimCrest: lipgloss.NewStyle().Foreground(p.Bright.Color()),
+
+		TextArea:  textAreaStyles(p),
+		TextInput: textInputStyles(p),
 	}
+}
+
+// textAreaStyles is the multi-line field's table. What has been typed is
+// body text, the placeholder and the per-line prompt are chrome, and a run
+// covered by a selection takes the same background every other selected run
+// in the product takes.
+//
+// Nothing is lit behind the text. Bubbles paints the caret's own row and the
+// rows past the end of the buffer on backgrounds of its own, and this
+// interface says where the keyboard is with a labelled rail and a pointer
+// instead
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard)
+// — a second, fainter highlight under the caret would be a third thing
+// saying it, in a colour no token issued. So the caret's row is body text
+// like every other row, and the rows past the end are left alone entirely:
+// bubbles fills them with spaces, and a foreground on whitespace is an
+// escape written for nothing.
+//
+// One table serves focused and blurred alike. Every surface that holds a
+// field either draws it only while it has the keyboard or echoes it as plain
+// text when it does not, so a dimmer blurred table would be a colour making
+// a distinction the surface has already made in words.
+func textAreaStyles(p ColorTokens) textarea.Styles {
+	state := textarea.StyleState{
+		Base:        lipgloss.NewStyle(),
+		Text:        lipgloss.NewStyle().Foreground(p.Body.Color()),
+		Placeholder: lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		Prompt:      lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		Selection:   lipgloss.NewStyle().Background(p.FocusBg.Color()),
+		// No field shhh builds shows line numbers (input.go), so neither of
+		// these draws. They are written anyway, because a token is cheaper
+		// than a field that turns them on and arrives in grey 249.
+		LineNumber:       lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		CursorLineNumber: lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		CursorLine:       lipgloss.NewStyle().Foreground(p.Body.Color()),
+		EndOfBuffer:      lipgloss.NewStyle(),
+	}
+	return textarea.Styles{Focused: state, Blurred: state, Cursor: fieldCursor(p)}
+}
+
+// textInputStyles is the one-line field's table, the same assignments over
+// the smaller record. A suggestion is chrome for the same reason a
+// placeholder is: neither is text the reader typed.
+func textInputStyles(p ColorTokens) textinput.Styles {
+	state := textinput.StyleState{
+		Text:        lipgloss.NewStyle().Foreground(p.Body.Color()),
+		Placeholder: lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		Suggestion:  lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		Prompt:      lipgloss.NewStyle().Foreground(p.Dim.Color()),
+	}
+	return textinput.Styles{Focused: state, Blurred: state, Cursor: cursorStyle(p)}
+}
+
+// cursorStyle is the block a field draws where the caret is when it is
+// drawing one itself. It is the focus background, which is the token the
+// cursor block has always been. The shape and the blink are bubbles' own
+// defaults, which are the terminal's conventions and not a colour decision.
+func cursorStyle(p ColorTokens) textinput.CursorStyle {
+	return textinput.CursorStyle{Color: p.FocusBg.Color(), Shape: tea.CursorBlock, Blink: true}
+}
+
+// fieldCursor is cursorStyle over the textarea's identical record. The two
+// packages declare the same struct rather than sharing one, so the table is
+// written once here and converted.
+func fieldCursor(p ColorTokens) textarea.CursorStyle {
+	c := cursorStyle(p)
+	return textarea.CursorStyle{Color: c.Color, Shape: c.Shape, Blink: c.Blink, BlinkSpeed: c.BlinkSpeed}
 }
 
 // applyPalette rebuilds this package's styles from the current Palette, and

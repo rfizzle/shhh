@@ -585,6 +585,47 @@ func TestGolden_Lists(t *testing.T) {
 	})
 }
 
+// TestGolden_NoteSelect captures the one card that holds a text field, in the
+// three states the field has: nothing typed, where the placeholder is up;
+// typed into, where the caret sits on the reader's own words; and the note
+// blurred, where the card echoes it as plain text and the pointer is back in
+// the list.
+//
+// The colours are the point of the capture. A field paints itself from a
+// table of its own, and this is the only surface in the catalog where that
+// table is on screen — so the ansi block here is where a placeholder or a
+// prompt reaching outside the palette would show up.
+func TestGolden_NoteSelect(t *testing.T) {
+	captureGolden(t, "note-select", "the note selector", goldenWidths, func(width int) []golden.Panel {
+		note := func(mut func(*NoteSelect)) string {
+			n := NewNoteSelect("Why did you stop it?", []SelectOption{
+				{Label: "it read the wrong file"},
+				{Label: "it was about to write over my work", RequireNote: true},
+				{Label: "something else", RequireNote: true},
+			})
+			mut(n)
+			return n.View(width)
+		}
+		focused := func(mut func(*NoteSelect)) string {
+			return note(func(n *NoteSelect) {
+				n.FocusNote = true
+				n.Note.Focus()
+				mut(n)
+			})
+		}
+		return []golden.Panel{
+			{Label: "the note has the keyboard · the placeholder is up", View: focused(func(*NoteSelect) {})},
+			{Label: "typed into · the caret's row is body text, unlit", View: focused(func(n *NoteSelect) {
+				n.Note.SetValue("it was going to rewrite the changelog")
+			})},
+			{Label: "the list has the keyboard · the note echoes as plain text", View: note(func(n *NoteSelect) {
+				n.Select.Focus = 1
+				n.Note.SetValue("it was going to rewrite the changelog")
+			})},
+		}
+	})
+}
+
 // TestGolden_WindowedLists captures the two lists the window reached late
 // : the multi-select, where what scrolls out of the window can be
 // the user's own answer, and the agent manager, where the blocked child is

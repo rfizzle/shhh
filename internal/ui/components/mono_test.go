@@ -8,6 +8,8 @@ package components
 // string and the surface fails.
 
 import (
+	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -17,6 +19,7 @@ import (
 	"github.com/charmbracelet/colorprofile"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/diff"
+	"github.com/rfizzle/shhh/internal/ui/golden"
 )
 
 // monoOn turns the mono palette on for one test and restores what was there.
@@ -114,6 +117,18 @@ func monoFixtures() []monoSurface {
 			Group: "SESSION", Key: "behavior.default_mode", Label: "setting",
 			Value: "auto", Source: source, SourceTone: tone,
 		})
+	}
+
+	// The note field, which is the surface a text field is drawn on. A field
+	// paints itself from a table of its own (input.go), so nothing else in
+	// this walk covers its placeholder or the row its caret sits on — two of
+	// the rows bubbles ships in colours the palette never issued.
+	noteField := func(mut func(*NoteSelect)) string {
+		n := NewNoteSelect("what happened?", []SelectOption{{Label: "it deleted the wrong file"}})
+		n.FocusNote = true
+		n.Note.Focus()
+		mut(n)
+		return n.View(w)
 	}
 
 	// The history browser's row states. Everything but the outcome is
@@ -715,6 +730,15 @@ func monoFixtures() []monoSurface {
 				"goroutine 1 [running]:", "main.main()", "exit status 2",
 				"goroutine 2 [select]:", "runtime.gopark()", "exit status 2"})},
 		}},
+		{"the note field", []monoState{
+			// Nothing typed, so the placeholder is up; and something typed,
+			// so the caret's own row is drawn. The two are the field's two
+			// inks and they have to read as two under the two greys.
+			{"nothing typed", noteField(func(*NoteSelect) {})},
+			{"typed into", noteField(func(n *NoteSelect) {
+				n.Note.SetValue("it took the whole directory")
+			})},
+		}},
 		{"history outcome", []monoState{
 			{"ran clean", historyRow(ActivityDone, "exit 0")},
 			{"broke", historyRow(ActivityFailed, "exit 128")},
@@ -769,7 +793,10 @@ func allowedMonoSGR(params string) bool {
 	fields := strings.Split(params, ";")
 	for i := 0; i < len(fields); i++ {
 		switch fields[i] {
-		case "", "0", "1", "2", "3", "4", "7", "22", "23", "24", "27", "39", "49":
+		// 9 and 29 are strikethrough and its reset: an attribute like bold
+		// and italic, and the one a struck-through line has to survive on
+		// when there is no colour left to say it with (diff.go, markdown).
+		case "", "0", "1", "2", "3", "4", "7", "9", "22", "23", "24", "27", "29", "39", "49":
 			continue
 		case "38", "48":
 			// 256-colour foreground/background: 38;5;N.
@@ -809,6 +836,47 @@ func TestMonoRendersTwoGreys(t *testing.T) {
 		}
 	}
 }
+
+// TestMonoGoldensRenderTwoGreys is the same check over every checked-in mono
+// capture, which is the half the fixtures cannot make: a fixture covers what
+// somebody thought to put on screen, and a golden covers what the product
+// actually drew — a placeholder that only shows when a field is empty, a
+// prompt on a row nobody built a fixture for. Anything a fixture does not put
+// on screen is otherwise only ever read by a person.
+//
+// It reads the ansi block of each file, where ESC is written as ␛ so the
+// capture stays greppable, and holds every escape in it to the same set the
+// fixtures are held to.
+func TestMonoGoldensRenderTwoGreys(t *testing.T) {
+	if golden.Updating() {
+		t.Skip("this run is rewriting the captures; the scan reads them on the next one")
+	}
+	// Both hosts with surfaces to capture keep their goldens beside their
+	// own package, so the walk is one level up and back down rather than a
+	// list this test would have to be told about.
+	files, err := filepath.Glob(filepath.Join("..", "*", golden.Dir, "*.mono.txt"))
+	if err != nil {
+		t.Fatalf("globbing the mono goldens: %v", err)
+	}
+	if len(files) == 0 {
+		t.Fatal("no mono goldens found — the check would pass on nothing")
+	}
+	for _, path := range files {
+		body, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("reading %s: %v", path, err)
+		}
+		for _, m := range goldenSGR.FindAllStringSubmatch(string(body), -1) {
+			if !allowedMonoSGR(m[1]) {
+				t.Errorf("%s holds SGR %q, which is not one of the two greys", filepath.Base(path), m[1])
+			}
+		}
+	}
+}
+
+// goldenSGR is sgrPattern over a capture rather than over a render: the file
+// writes ESC as ␛, so the pattern that reads one cannot read the other.
+var goldenSGR = regexp.MustCompile(`␛\[([0-9;]*)m`)
 
 // TestMonoLeavesTheFullPaletteIntact guards the swap itself: turning mono off
 // restores the colours, so the check above is testing a real change.

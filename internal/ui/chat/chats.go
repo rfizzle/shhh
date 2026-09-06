@@ -211,6 +211,7 @@ func (m Model) chatPickLines() []string {
 		return []string{ops.confirm.View(width)}
 	case ops.rename != nil:
 		hint := keys.Shown(keys.Select.Take) + " renames · " + keys.Shown(keys.Select.Cancel) + " keeps the name"
+		components.StyleTextInput(ops.rename)
 		return []string{ops.rename.View(), sty.Hint.Dim.Render(hint)}
 	case ops.notice != "":
 		return []string{sty.Hint.Dim.Render(ops.notice)}
@@ -341,9 +342,8 @@ func (m Model) deleteChatPrompt(name string) string {
 // newRenameRow is the one-line rename field, prefilled with the current name
 // and the cursor at its end so a suffix is one keystroke away.
 func newRenameRow(name string, width int) *textinput.Model {
-	ti := textinput.New()
+	ti := components.NewTextInput()
 	ti.Prompt = "rename ▸ "
-	ti.CharLimit = 0
 	ti.SetValue(name)
 	ti.CursorEnd()
 	ti.SetWidth(max(width-len(ti.Prompt)-1, 8))

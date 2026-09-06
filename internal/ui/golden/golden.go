@@ -45,9 +45,15 @@ const Dir = "testdata/golden"
 var updateFlag = flag.Bool("update-golden", false,
 	"rewrite the checked-in golden renders from the current output")
 
-// updating reports whether this run rewrites goldens rather than checking
-// them.
-func updating() bool { return *updateFlag || os.Getenv("SHHH_UPDATE_GOLDEN") != "" }
+// Updating reports whether this run rewrites goldens rather than checking
+// them. It is exported for the checks that read the checked-in files
+// themselves rather than comparing a render against one: a run that is
+// rewriting them is reading whatever half of the directory has been written
+// so far, since the two host packages rewrite their own in parallel.
+func Updating() bool { return *updateFlag || os.Getenv("SHHH_UPDATE_GOLDEN") != "" }
+
+// updating is Updating under this package's own name.
+func updating() bool { return Updating() }
 
 // escSymbol stands in for ESC in the ansi block. It is reversible and it
 // keeps the file greppable, which a raw 0x1b does not.
