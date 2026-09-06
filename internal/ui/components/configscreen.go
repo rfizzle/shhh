@@ -169,11 +169,7 @@ func (c *ConfigScreen) Update(msg tea.KeyPressMsg) (done bool, result ConfigResu
 func (c *ConfigScreen) updateMenu(msg tea.KeyPressMsg) (bool, ConfigResult) {
 	pressed := msg.String()
 	switch {
-	case pressed == "up":
-		c.move(-1)
-		return false, ConfigResult{}
-	case pressed == "down":
-		c.move(1)
+	case c.moved(pressed):
 		return false, ConfigResult{}
 	case keys.Is(pressed, keys.Screen.Take):
 		c.open()
@@ -195,10 +191,6 @@ func (c *ConfigScreen) updateMenu(msg tea.KeyPressMsg) (bool, ConfigResult) {
 		return false, ConfigResult{}
 	}
 	switch {
-	case pressed == "k":
-		c.move(-1)
-	case pressed == "j":
-		c.move(1)
 	case keys.Is(pressed, keys.Screen.Filter):
 		c.menu.Filtering = true
 	case pressed == keys.Shown(keys.Screen.Quit):
@@ -269,26 +261,18 @@ func (c *ConfigScreen) updatePicker(msg tea.KeyPressMsg) (bool, ConfigResult) {
 		}
 		return false, ConfigResult{}
 	}
+	pressed := msg.String()
+	if c.picker.moved(pressed) {
+		return false, ConfigResult{}
+	}
 	if c.picker.Filtering {
-		switch msg.String() {
-		case "up":
-			c.picker.move(-1)
-		case "down":
-			c.picker.move(1)
-		default:
-			c.picker.editQuery(msg)
-			if c.picker.QueryChanged() {
-				c.refilterPicker()
-			}
+		c.picker.editQuery(msg)
+		if c.picker.QueryChanged() {
+			c.refilterPicker()
 		}
 		return false, ConfigResult{}
 	}
-	switch pressed := msg.String(); {
-	case pressed == "up", pressed == "k":
-		c.picker.move(-1)
-	case pressed == "down", pressed == "j":
-		c.picker.move(1)
-	case keys.Is(pressed, keys.Screen.Filter):
+	if keys.Is(pressed, keys.Screen.Filter) {
 		c.picker.Filtering = true
 	}
 	return false, ConfigResult{}
@@ -508,6 +492,7 @@ func (c *ConfigScreen) keyList() []KeyOffer {
 		keyOfferAs(keys.Screen.Take, "change the setting under the pointer"),
 		keyOfferAs(keys.Screen.Filter, "filter the settings by name"),
 		keyOfferAs(keys.Screen.ClearQ, "clear the filter, or the field being typed into"),
+		keyOfferAs(keys.Query.Rub, "take a rune back out of either"),
 		keyOfferAs(keys.Screen.Reset, "reset this setting to its default"),
 		keyOfferAs(keys.Screen.Write, "write every staged change to "+c.Path),
 		keyOfferAs(keys.Select.Cancel, "leave the picker, or leave the screen writing nothing"),
@@ -615,22 +600,43 @@ func (c *ConfigScreen) refilterPicker() {
 	c.picker.Focus = 0
 }
 
-// move steps the pointer to the next setting the filter left showing,
-// stopping at either end rather than wrapping.
-func (c *ConfigScreen) move(delta int) {
+// moved walks the pointer over the rows the filter left showing and reports
+// whether the keystroke was the screen's own movement key. The pointer is
+// the setting's place in the whole list rather than in the filtered one, so
+// what moves is a List over what is showing (list.go) and the row it landed
+// on is read back out.
+//
+// With the query line open only the half of the binding no sentence produces
+// moves it: a j typed into a filter is a letter, which is the reading every
+// list in the product makes of its own row.
+func (c *ConfigScreen) moved(pressed string) bool {
 	if len(c.shown) == 0 {
-		return
+		return false
 	}
-	at := 0
-	for i, row := range c.shown {
-		if row == c.Focus {
-			at = i
-			break
-		}
+	l := List[int]{Items: c.shown, Focus: c.at()}
+	moved := false
+	if c.menu.Filtering {
+		moved = l.MoveTyping(pressed, keys.Screen.Move)
+	} else {
+		moved = l.Move(pressed, keys.Screen.Move)
 	}
-	c.Focus = c.shown[min(max(at+delta, 0), len(c.shown)-1)]
+	if !moved {
+		return false
+	}
+	c.Focus = c.shown[l.Focus]
 	c.picker, c.edit, c.secret = nil, nil, nil
 	c.sync()
+	return true
+}
+
+// at is where the pointer is among the rows the filter left showing.
+func (c *ConfigScreen) at() int {
+	for i, row := range c.shown {
+		if row == c.Focus {
+			return i
+		}
+	}
+	return 0
 }
 
 // current is the row under the pointer, or nil when the filter left none.
@@ -668,7 +674,7 @@ func (e *configEdit) update(msg tea.KeyPressMsg) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Screen.ClearQ):
 		e.value = nil
-	case pressed == "backspace":
+	case keys.Is(pressed, keys.Query.Rub):
 		if len(e.value) > 0 {
 			e.value = e.value[:len(e.value)-1]
 		}

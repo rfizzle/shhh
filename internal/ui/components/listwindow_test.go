@@ -295,7 +295,7 @@ func markerLine(view, arrow string) string {
 // onto them and the two that carry group rails are the ones the arithmetic
 // has to be told about: a pointer that can land on a rail is a keystroke
 // spent on a label.
-func TestList_MoveStepsOverRailsAndStopsAtTheEnds(t *testing.T) {
+func TestList_StepGoesOverRailsAndStopsAtTheEnds(t *testing.T) {
 	opts := []SelectOption{
 		{Label: "COMMANDS", Header: true},
 		{Label: "one"},
@@ -304,33 +304,33 @@ func TestList_MoveStepsOverRailsAndStopsAtTheEnds(t *testing.T) {
 	}
 	l := List[SelectOption]{Items: opts, Focus: 1, Skip: func(o SelectOption) bool { return o.Header }}
 
-	l.Move(1)
+	l.Step(1)
 	if l.Focus != 3 {
 		t.Fatalf("a move down should step over the rail to 3, got %d", l.Focus)
 	}
-	l.Move(1)
+	l.Step(1)
 	if l.Focus != 3 {
 		t.Fatalf("a move off the end should leave the pointer where it was, got %d", l.Focus)
 	}
-	l.Move(-1)
+	l.Step(-1)
 	if l.Focus != 1 {
 		t.Fatalf("a move up should step back over the rail to 1, got %d", l.Focus)
 	}
-	l.Move(-1)
+	l.Step(-1)
 	if l.Focus != 1 {
 		t.Fatalf("a move off the top should leave the pointer where it was, got %d", l.Focus)
 	}
 }
 
 // A list with nothing to skip is the other four: the same move, clamped.
-func TestList_MoveClampsWhenNothingIsSkipped(t *testing.T) {
+func TestList_StepClampsWhenNothingIsSkipped(t *testing.T) {
 	l := List[SelectOption]{Items: checkList(3)}
-	l.Move(-1)
+	l.Step(-1)
 	if l.Focus != 0 {
 		t.Fatalf("the top is the top, got %d", l.Focus)
 	}
 	for range 5 {
-		l.Move(1)
+		l.Step(1)
 	}
 	if l.Focus != 2 {
 		t.Fatalf("the bottom is the bottom, got %d", l.Focus)

@@ -181,10 +181,50 @@ func check() error {
 	if err := checkDestructive(); err != nil {
 		return err
 	}
+	if err := checkPairs(); err != nil {
+		return err
+	}
 	if err := checkReserved(); err != nil {
 		return err
 	}
 	return checkOneKeystrokeOnce()
+}
+
+// pairs is the bindings that are one offer in two directions: `j/k`, `n/p`,
+// `↑↓`. Their keystrokes are declared in pairs, the half that goes back
+// first, and Step reads the direction from that order rather than from the
+// spelling — which is what lets a handler answer `shift+↑` the way it
+// answered `up` without knowing either.
+//
+// Listed rather than derived, for the reason destructive is: nothing in a
+// binding says which of its keys go back, and a spelling is not a shape a
+// file has to keep — `screen.move = ["a", "b"]` is a legitimate move and
+// says nothing at all.
+func pairs() []Binding {
+	return []Binding{
+		Reading.Move, Reading.Match, Reading.Half,
+		Context.Move, Backlog.Move, Backlog.Page, Sprint.Move,
+		Select.Move, Select.MoveJK,
+		Review.MoveFile, Review.MoveHunk,
+		Agent.Move, Profile.Move,
+		Diff.Scroll, Diff.Hunk, Output.Scroll,
+		Screen.Move, Browse.Move,
+	}
+}
+
+// checkPairs refuses a file that leaves a two-directional key with an odd
+// number of keystrokes. A pair with one half is not a narrower keyboard, it
+// is a keyboard where the surface moves one way and never the other, and
+// nothing on the screen would say so: the hint would print the key the file
+// asked for and the pointer would only ever go back.
+func checkPairs() error {
+	for _, b := range pairs() {
+		if n := len(b.Keys()); n == 0 || n%2 != 0 {
+			return fmt.Errorf("%q moves both ways, so it needs its keystrokes in pairs — back first; %v is %d of them",
+				Words(b), b.Keys(), n)
+		}
+	}
+	return nil
 }
 
 // checkOneKeystrokeOnce refuses a surface answering one keystroke with two
@@ -272,6 +312,8 @@ func groups() map[string]reflect.Value {
 		"oneshot":  reflect.ValueOf(&OneShot).Elem(),
 		"setup":    reflect.ValueOf(&Setup).Elem(),
 		"browse":   reflect.ValueOf(&Browse).Elem(),
+		"plan":     reflect.ValueOf(&Plan).Elem(),
+		"query":    reflect.ValueOf(&Query).Elem(),
 	}
 }
 

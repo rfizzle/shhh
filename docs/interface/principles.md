@@ -95,6 +95,14 @@ that ends something under a key a reader presses to move. A file that did
 either is refused whole, because a keyboard half-moved is one no document
 describes.
 
+Declared once means answered once. A handler asks which declaration a press
+is, never which letter it was, and that goes for a key offered in two
+directions as well: which way the pointer goes is read from the declaration's
+own order rather than from the arrow's name, so a moved key moves the pointer
+and not only the hint. It is checkable by moving one: a file that puts the
+supporting screens' pointer on a chord makes the chord move it and leaves `j`
+inert, on every screen at once.
+
 A pointer is exempt — clicking a row opens it the
 way Enter would, without taking the keyboard from anyone. It opens it by a
 different route, because the two inputs have different things to spend: the

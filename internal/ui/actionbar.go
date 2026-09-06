@@ -52,10 +52,10 @@ type ActionSelectedMsg struct {
 	Action Action
 }
 
-// key is one offer on the bar: the key as it is pressed, the key as it is
+// key is one offer on the bar: the binding it answers, the key as it is
 // drawn, what it does, and how it is coloured.
 type key struct {
-	press string
+	bind  keys.Binding
 	shown string
 	label string
 	do    Action
@@ -70,7 +70,7 @@ func bar(b keys.Binding, label string, do Action, tone keyTone) key {
 	if label == "" {
 		label = keys.Words(b)
 	}
-	return key{press: b.Keys()[0], shown: keys.Shown(b), label: label, do: do, tone: tone}
+	return key{bind: b, shown: keys.Shown(b), label: label, do: do, tone: tone}
 }
 
 type keyTone int
@@ -226,16 +226,15 @@ func (m ActionBarModel) Update(msg tea.Msg) (ActionBarModel, tea.Cmd) {
 	}
 	pressed := msgKey.String()
 	for _, k := range m.keys() {
-		if pressed != k.press {
+		// The whole binding rather than the spelling it prints: the bar leaves
+		// on `q` as well as on esc, the way every full-screen surface in shhh
+		// does, and a keymap file that moved one moves what the row answers.
+		if !keys.Is(pressed, k.bind) {
 			continue
 		}
 		m.selected = k.do
 		action := k.do
 		return m, func() tea.Msg { return ActionSelectedMsg{Action: action} }
-	}
-	if pressed == "q" {
-		m.selected = ActionCancel
-		return m, func() tea.Msg { return ActionSelectedMsg{Action: ActionCancel} }
 	}
 	return m, nil
 }

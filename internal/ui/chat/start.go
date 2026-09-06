@@ -143,10 +143,15 @@ func (m Model) startChoosing() bool {
 // spendStartScreen retires the screen for the rest of the session.
 func (m *Model) spendStartScreen() { m.startSpent = true }
 
-// startKey handles ↑↓ and enter while the suggestion list is live. It reports
-// false when the screen is not claiming the key, leaving the ordinary
+// startKey moves the suggestion list one row while it is live. It reports
+// false when the screen is not claiming the movement, leaving the ordinary
 // handlers (input history, submit) exactly as they were.
-func (m Model) startKey(key string) (Model, bool) {
+//
+// It takes the direction and not the keystroke: the screen has no movement
+// binding of its own — it stands under the draft, which is holding the
+// keyboard, so what moves it is whichever of the draft's own keys the router
+// already matched (keyroute.go).
+func (m Model) startKey(delta int) (Model, bool) {
 	if !m.startChoosing() {
 		return m, false
 	}
@@ -154,14 +159,7 @@ func (m Model) startKey(key string) (Model, bool) {
 	if len(actions) == 0 {
 		return m, false
 	}
-	switch key {
-	case "up":
-		m.startFocus = screen.FocusAfter(-1)
-	case "down":
-		m.startFocus = screen.FocusAfter(1)
-	default:
-		return m, false
-	}
+	m.startFocus = screen.FocusAfter(delta)
 	// The pointer is pane content, not panel height: the rows are re-rendered
 	// here, because the resize hook only sets lines when the pane's size has
 	// changed, which on a keypress it never has.

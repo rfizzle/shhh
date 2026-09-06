@@ -60,11 +60,7 @@ func (v *OutputView) Update(msg tea.KeyPressMsg) OutputResult {
 	case keys.Is(pressed, keys.Output.Collapse):
 		return OutputCollapse
 	case keys.Is(pressed, keys.Output.Scroll):
-		if pressed == "j" || pressed == "down" {
-			v.Scroll(1)
-		} else {
-			v.Scroll(-1)
-		}
+		v.Scroll(keys.Step(pressed, keys.Output.Scroll))
 	case keys.Is(pressed, keys.Output.PageUp):
 		v.Scroll(-v.bodyHeight())
 	case keys.Is(pressed, keys.Output.PageDown):

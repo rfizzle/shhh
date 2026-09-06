@@ -231,15 +231,32 @@ func (s *Select) pointer() *List[SelectOption] {
 	return &s.list
 }
 
+// moved applies the family's movement keys and reports whether the keystroke
+// was one of them. Which binding answers is the register's own reading of
+// this card: a card with its query line open is a surface being typed into,
+// where the arrows move and a j is a letter, and so is a card whose rows
+// carry no numbers — the picker a setting opens, which the register lists as
+// moving on the arrows alone.
+func (s *Select) moved(pressed string) bool {
+	l := s.pointer()
+	moved := false
+	switch {
+	case s.Filtering:
+		moved = l.MoveTyping(pressed, keys.Select.Move)
+	case s.Unnumbered:
+		moved = l.Move(pressed, keys.Select.Move)
+	default:
+		moved = l.Move(pressed, keys.Select.MoveJK)
+	}
+	s.Focus = l.Focus
+	return moved
+}
+
 func (s *Select) Update(msg tea.KeyPressMsg) (done bool, result SelectResult) {
 	s.normalizeFocus()
 	pressed := msg.String()
 	switch {
-	case pressed == "up":
-		s.move(-1)
-		return false, SelectResult{}
-	case pressed == "down":
-		s.move(1)
+	case s.moved(pressed):
 		return false, SelectResult{}
 	case keys.Is(pressed, keys.Select.Take):
 		// A card that matched nothing has nothing for enter to take, and a
@@ -283,16 +300,6 @@ func (s *Select) Update(msg tea.KeyPressMsg) (done bool, result SelectResult) {
 	case keys.Is(pressed, keys.Select.Filter):
 		if s.Filterable {
 			s.Filtering = true
-		}
-	case pressed == "k", pressed == "j":
-		// On a list that is typed into, j and k are letters.
-		if s.Unnumbered {
-			break
-		}
-		if pressed == "k" {
-			s.move(-1)
-		} else {
-			s.move(1)
 		}
 	default:
 		if s.Unnumbered {
@@ -348,7 +355,7 @@ func (s *Select) editQuery(msg tea.KeyPressMsg) {
 			return
 		}
 		s.Query, s.queryEdited = "", true
-	case pressed == "backspace":
+	case keys.Is(pressed, keys.Query.Rub):
 		if r := []rune(s.Query); len(r) > 0 {
 			s.Query, s.queryEdited = string(r[:len(r)-1]), true
 		}
@@ -928,14 +935,6 @@ func (s *Select) noMatchRows(width int) []string {
 		rows = append(rows, sty.Dim.Render(Clip("  closest is "+s.Closest, inner)))
 	}
 	return rows
-}
-
-// move steps the focus by delta, over any header rows in the way. A move that
-// runs off either end leaves the focus where it was.
-func (s *Select) move(delta int) {
-	l := s.pointer()
-	l.Move(delta)
-	s.Focus = l.Focus
 }
 
 // normalizeFocus keeps the pointer on a row that can be chosen: a list that

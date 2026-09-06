@@ -215,10 +215,7 @@ func (d *DoctorScreen) Update(msg tea.KeyPressMsg) (done bool, result DoctorResu
 		return d.updateConfirm(msg)
 	}
 	switch pressed := msg.String(); {
-	case pressed == "up", pressed == "k":
-		d.move(-1)
-	case pressed == "down", pressed == "j":
-		d.move(1)
+	case d.moved(pressed):
 	case keys.Is(pressed, keys.Screen.Fix):
 		// A row with nothing behind `[f]` does not offer it, so pressing it there
 		// is not a refusal to report — there is simply no key.
@@ -671,18 +668,16 @@ func (d *DoctorScreen) firstStop() int {
 	return 0
 }
 
-// move steps the pointer to the next check that has a fix, stopping at either
-// end rather than wrapping — the same reading every list in the product
-// makes.
-func (d *DoctorScreen) move(delta int) {
-	stops := make([]int, 0, len(d.Checks))
-	for i, check := range d.Checks {
-		if check.actionable() {
-			stops = append(stops, i)
-		}
-	}
+// moved walks the pointer to the next check that has a fix, stopping at
+// either end rather than wrapping — the same reading every list in the
+// product makes — and reports whether the keystroke was the screen's own
+// movement key. The pointer is the check's place in the whole run rather
+// than among the actionable ones, so what moves is a List over the stops
+// (list.go).
+func (d *DoctorScreen) moved(pressed string) bool {
+	stops := d.stopRows()
 	if len(stops) == 0 {
-		return
+		return false
 	}
 	at := 0
 	for i, stop := range stops {
@@ -691,7 +686,23 @@ func (d *DoctorScreen) move(delta int) {
 			break
 		}
 	}
-	d.Focus = stops[min(max(at+delta, 0), len(stops)-1)]
+	l := List[int]{Items: stops, Focus: at}
+	if !l.Move(pressed, keys.Screen.Move) {
+		return false
+	}
+	d.Focus = stops[l.Focus]
+	return true
+}
+
+// stopRows is the checks the pointer can land on.
+func (d *DoctorScreen) stopRows() []int {
+	stops := make([]int, 0, len(d.Checks))
+	for i, check := range d.Checks {
+		if check.actionable() {
+			stops = append(stops, i)
+		}
+	}
+	return stops
 }
 
 // countChecks counts checks, in the header's own words.

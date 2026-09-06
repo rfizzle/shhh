@@ -13,14 +13,18 @@ package keys
 // outside this package fails, and the fix is always the same — declare it
 // here and match against the binding.
 //
-// Two things are deliberately not policed, and the reasons are different.
+// Two things are deliberately not policed here, and the reasons are
+// different.
 //
-// Bare letters and navigation keys are not: `j`, `k`, `up`, `enter`,
-// `backspace` and their like appear as ordinary characters all over this tree
-// — in a textarea's own handling, in a filter row reading text, in a digit
-// jump — and a test that could not tell those from a key offer would be a
-// test people turn off. The chords are what is worth policing: no sentence
-// produces one, so a chord in the source is always somebody answering a key.
+// Bare letters and navigation keys written as plain strings are not: `j`,
+// `k`, `up`, `enter`, `backspace` and their like appear as ordinary
+// characters all over this tree — in a textarea's own handling, in a filter
+// row reading text, in a digit jump — and a test that could not tell those
+// from a key offer would be a test people turn off. The chords are what is
+// worth policing here: no sentence produces one, so a chord in the source is
+// always somebody answering a key. The second test below catches the bare
+// letters where it matters, which is where one is *compared against a
+// keystroke*.
 //
 // Prose is not, and neither are test files: `/help` explains a chord in a
 // paragraph, a notice names the chord it is about, and a test says which key
@@ -36,6 +40,7 @@ import (
 	"go/token"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -98,4 +103,168 @@ func TestNoChordLiteralsOutsideTheRegister(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+}
+
+// A keystroke is matched against the register, never against a letter (
+// docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+//
+// The test above reads strings; this one reads comparisons, which is the
+// half that was actually drifting. Sixty handlers under the movement hints
+// asked `pressed == "j"`, so a keymap file that moved `screen.move` changed
+// the footer and nothing else: the hint and the handler were two facts
+// again, exactly as they were before the register existed.
+//
+// So a keystroke may not be compared to a literal. `keys.Is` says which
+// binding a press is, `keys.Step` says which half of a pair, and both read
+// the declaration a file can move. The shape is what is refused, not the
+// letter: `pressed == "j"`, and `switch pressed { case "j": }`, and the same
+// with `msg.String()` written out in place.
+//
+// It is a comparison against a *keystroke* and not against any string, which
+// is what leaves the slash-command argument switches alone: `/verbosity low`
+// and `/theme dark` switch on a word the reader typed as an argument, which
+// is text and not a key, and no register has anything to say about it.
+//
+// A range is refused as well as an equality. The plan card used to take its
+// row from `pressed >= "1" && pressed <= "5"`, which is the same fact about
+// the same five keystrokes written with a different operator, and a check
+// that only knew about `==` would have watched it go by.
+func TestNoKeystrokeIsComparedToALiteral(t *testing.T) {
+	compares := []token.Token{token.EQL, token.NEQ, token.LSS, token.LEQ, token.GTR, token.GEQ}
+	fset := token.NewFileSet()
+	err := filepath.Walk("..", func(path string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() || !strings.HasSuffix(path, ".go") ||
+			strings.HasSuffix(path, "_test.go") {
+			return err
+		}
+		f, perr := parser.ParseFile(fset, path, nil, 0)
+		if perr != nil {
+			return perr
+		}
+		named := keystrokeNames(f)
+		report := func(n ast.Node, text string) {
+			t.Errorf("%s: a keystroke is compared to %s; match it against a binding "+
+				"in internal/ui/keys instead", fset.Position(n.Pos()), text)
+		}
+		ast.Inspect(f, func(n ast.Node) bool {
+			switch n := n.(type) {
+			case *ast.BinaryExpr:
+				if !slices.Contains(compares, n.Op) {
+					return true
+				}
+				if lit, ok := stringLit(n.Y); ok && keystroke(n.X, named) {
+					report(n, lit)
+				}
+				if lit, ok := stringLit(n.X); ok && keystroke(n.Y, named) {
+					report(n, lit)
+				}
+			case *ast.SwitchStmt:
+				if n.Tag == nil || !keystroke(n.Tag, named) {
+					return true
+				}
+				for _, stmt := range n.Body.List {
+					clause, ok := stmt.(*ast.CaseClause)
+					if !ok {
+						continue
+					}
+					for _, expr := range clause.List {
+						if lit, ok := stringLit(expr); ok {
+							report(expr, lit)
+						}
+					}
+				}
+			}
+			return true
+		})
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+// stringLit is the literal an expression is, where it is one.
+func stringLit(n ast.Node) (string, bool) {
+	lit, ok := n.(*ast.BasicLit)
+	if !ok || lit.Kind != token.STRING {
+		return "", false
+	}
+	v, err := strconv.Unquote(lit.Value)
+	if err != nil {
+		return "", false
+	}
+	return strconv.Quote(v), true
+}
+
+// keystroke reports that an expression is a key press reduced to its string:
+// a `msg.String()` written out in place, or a name this file bound one to.
+// Anything else is a string about something other than the keyboard.
+func keystroke(n ast.Node, named map[string]bool) bool {
+	switch n := n.(type) {
+	case *ast.Ident:
+		return named[n.Name]
+	case *ast.CallExpr:
+		return pressString(n)
+	}
+	return false
+}
+
+// pressString reports that a call is a keystroke being reduced to its string.
+func pressString(n *ast.CallExpr) bool {
+	sel, ok := n.Fun.(*ast.SelectorExpr)
+	if !ok || sel.Sel.Name != "String" || len(n.Args) != 0 {
+		return false
+	}
+	recv, ok := sel.X.(*ast.Ident)
+	return ok && (recv.Name == "msg" || recv.Name == "key" || recv.Name == "msgKey")
+}
+
+// keystrokeNames is what a keystroke is called in one file: `pressed`, which
+// is the name this tree gives it everywhere, and whatever else was assigned
+// a `msg.String()` in that file.
+//
+// The second half is why the check does not rest on a spelling. A handler
+// that wrote `k := msg.String()` and then compared `k` would be doing the
+// thing this test refuses, under a name the test had never heard of; the
+// assignment is what says it is a keystroke, so the assignment is what is
+// read. A parameter is still matched by name — a function taking a press
+// takes it as `pressed` here, and following one across a call is a type
+// checker's job rather than a gate's.
+func keystrokeNames(f *ast.File) map[string]bool {
+	named := map[string]bool{"pressed": true}
+	// To a fixed point, because a keystroke can be handed along: `k :=
+	// pressed` is the same value under a second name, and a pass that read
+	// each assignment once would learn about it only if it happened to come
+	// after the one that named it.
+	for grew := true; grew; {
+		grew = false
+		ast.Inspect(f, func(n ast.Node) bool {
+			assign, ok := n.(*ast.AssignStmt)
+			if !ok {
+				return true
+			}
+			for i, rhs := range assign.Rhs {
+				if i >= len(assign.Lhs) || !isPress(rhs, named) {
+					continue
+				}
+				if lhs, ok := assign.Lhs[i].(*ast.Ident); ok && !named[lhs.Name] {
+					named[lhs.Name], grew = true, true
+				}
+			}
+			return true
+		})
+	}
+	return named
+}
+
+// isPress reports that an expression yields a keystroke: the call that
+// reduces one to its string, or a name already known to hold one.
+func isPress(n ast.Expr, named map[string]bool) bool {
+	switch n := n.(type) {
+	case *ast.CallExpr:
+		return pressString(n)
+	case *ast.Ident:
+		return named[n.Name]
+	}
+	return false
 }

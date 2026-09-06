@@ -169,14 +169,10 @@ func (v *ReviewView) Update(msg tea.KeyPressMsg) (done bool, result ReviewResult
 	case keys.Is(pressed, keys.Review.Back):
 		// Esc never applies and never destroys.
 		return true, ReviewResult{Canceled: true}
-	case pressed == "j", pressed == "down":
-		v.moveFile(1)
-	case pressed == "k", pressed == "up":
-		v.moveFile(-1)
-	case pressed == "n":
-		v.moveHunk(1)
-	case pressed == "p":
-		v.moveHunk(-1)
+	case keys.Is(pressed, keys.Review.MoveFile):
+		v.moveFile(keys.Step(pressed, keys.Review.MoveFile))
+	case keys.Is(pressed, keys.Review.MoveHunk):
+		v.moveHunk(keys.Step(pressed, keys.Review.MoveHunk))
 	case keys.Is(pressed, keys.Review.PageDown):
 		v.Offset += max(v.paneHeight()-1, 1)
 	case keys.Is(pressed, keys.Review.PageUp):

@@ -345,11 +345,11 @@ func (p *ProfileScreen) updateBrief(msg tea.KeyPressMsg) (bool, ProfileResult) {
 			return true, ProfileResult{Action: ProfileTake, Text: text}
 		}
 		return false, ProfileResult{}
-	case pressed == "up":
-		p.moveFocus(-1)
-		return false, ProfileResult{}
-	case pressed == "down":
-		p.moveFocus(1)
+	case keys.Is(pressed, keys.Profile.Move):
+		// The pointer runs from the field, at -1, through the starts, so what
+		// moves is a step and not a list: the row above the first start is a
+		// place the pointer lands and not an item it steps over.
+		p.moveFocus(keys.Step(pressed, keys.Profile.Move))
 		return false, ProfileResult{}
 	}
 	if p.focus < 0 {

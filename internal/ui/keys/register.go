@@ -134,7 +134,7 @@ func Surfaces() []Surface {
 			Section:  "docs/interface/surfaces.md#the-backlog-screen",
 			Position: Takeover,
 			Reached:  Shown(Draft.Backlog) + ", or /todo",
-			Bindings: Backlog.All(),
+			Bindings: append(Backlog.All(), Query.Rub),
 		},
 		{
 			// The sprint plan card, on that screen's sprint tab. It is a
@@ -159,15 +159,30 @@ func Surfaces() []Surface {
 			},
 		},
 		{
-			Name:     "the approval card, the /run confirm, the plan card",
-			Section:  "docs/interface/surfaces.md#the-approval-card, docs/interface/surfaces.md#selectors, docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard",
+			Name:     "the approval card and the /run confirm",
+			Section:  "docs/interface/surfaces.md#the-approval-card, docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard",
 			Position: Beside,
 			Reached:  Shown(Draft.Answer),
 			Bindings: []Binding{
 				Decision.Allow, Decision.Deny, Decision.Always,
-				Decision.Batch, Decision.Diff,
+				Decision.Batch, Decision.Diff, Agent.Go,
 				Decision.ScrollUp, Decision.ScrollDown,
 				Decision.PanLeft, Decision.PanRight,
+			},
+		},
+		{
+			// A row of its own, because the card is a list and answers a
+			// list's keys: it moves, takes and cancels the way every
+			// selector does, and the two keys it has beyond that are its.
+			// It sat under the approval card's row while nothing but the
+			// approval card's keys were declared for it.
+			Name:     "the plan card",
+			Section:  "docs/interface/surfaces.md#selectors, docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard",
+			Position: Beside,
+			Reached:  Shown(Draft.Answer),
+			Bindings: []Binding{
+				Select.MoveJK, Select.Take, Plan.Jump, Plan.Save,
+				Select.Cancel,
 			},
 		},
 		{
@@ -218,7 +233,7 @@ func Surfaces() []Surface {
 			Position: Takeover,
 			Reached:  "a card that opens over a catalog, or " + Bracket(Select.Filter) + " on one that does not",
 			Bindings: []Binding{
-				Select.Move, Select.Take, Select.ClearQ, Select.Cancel,
+				Select.Move, Select.Take, Select.ClearQ, Query.Rub, Select.Cancel,
 			},
 		},
 		{
@@ -329,7 +344,7 @@ func Programs() []Surface {
 			Position: Takeover,
 			Reached:  "shhh config",
 			Bindings: []Binding{
-				Screen.Move, Screen.Take, Screen.Filter, Screen.ClearQ,
+				Screen.Move, Screen.Take, Screen.Filter, Screen.ClearQ, Query.Rub,
 				Screen.Reset, Screen.Write, Screen.List, Screen.Quit,
 			},
 		},
@@ -339,7 +354,8 @@ func Programs() []Surface {
 			Position: Takeover,
 			Reached:  Bracket(Screen.Take) + " on a setting",
 			Bindings: []Binding{
-				Select.Move, Screen.Take, Screen.Filter, Screen.ClearQ, Screen.Keep,
+				Select.Move, Screen.Take, Screen.Filter, Screen.ClearQ, Query.Rub,
+				Screen.Keep,
 			},
 		},
 		{
@@ -349,7 +365,8 @@ func Programs() []Surface {
 			Reached:  "shhh history",
 			Bindings: []Binding{
 				Screen.Move, Screen.Rerun, Screen.Copy, Screen.Snippet,
-				Screen.Delete, Screen.Filter, Screen.ClearQ, Screen.List, Screen.Quit,
+				Screen.Delete, Screen.Filter, Screen.ClearQ, Query.Rub,
+				Screen.List, Screen.Quit,
 			},
 		},
 		{

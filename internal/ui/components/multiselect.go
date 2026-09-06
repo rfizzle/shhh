@@ -79,20 +79,20 @@ func (s *MultiSelect) count() int {
 	return n
 }
 
-// step moves the pointer one row, stopping at either end.
-func (s *MultiSelect) step(delta int) {
+// moved applies the family's movement keys, and reports whether the
+// keystroke was one of them. The card carries no query line, so it is the
+// whole pair the register puts on a selector: the arrows and j/k.
+func (s *MultiSelect) moved(pressed string) bool {
 	l := s.pointer()
-	l.Move(delta)
+	moved := l.Move(pressed, keys.Select.MoveJK)
 	s.Focus = l.Focus
+	return moved
 }
 
 func (s *MultiSelect) Update(msg tea.KeyPressMsg) (done bool, result MultiSelectResult) {
 	s.notice = ""
 	switch pressed := msg.String(); {
-	case pressed == "up", pressed == "k":
-		s.step(-1)
-	case pressed == "down", pressed == "j":
-		s.step(1)
+	case s.moved(pressed):
 	case keys.Is(pressed, keys.Select.Toggle):
 		if s.Focus < len(s.Checked) {
 			s.Checked[s.Focus] = !s.Checked[s.Focus]

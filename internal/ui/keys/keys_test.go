@@ -125,6 +125,22 @@ func covers(bound []string, part string, alias map[string]string) bool {
 	if named(part) || named(spelled) {
 		return true
 	}
+	// Or a range: `1–5` is a run of keys spelled by its ends, which is how a
+	// hint prints a binding standing for one offer over several rows. Both
+	// ends and everything between them has to be a key the binding answers.
+	if ends := strings.Split(part, "–"); len(ends) == 2 &&
+		len([]rune(ends[0])) == 1 && len([]rune(ends[1])) == 1 {
+		lo, hi := []rune(ends[0])[0], []rune(ends[1])[0]
+		if lo > hi {
+			return false
+		}
+		for r := lo; r <= hi; r++ {
+			if !named(string(r)) {
+				return false
+			}
+		}
+		return true
+	}
 	// Or a run of single-character keys: `jk`, `↑↓`.
 	for _, r := range part {
 		if !named(string(r)) {
@@ -177,8 +193,10 @@ func TestEveryDeclaredBindingIsOnASurface(t *testing.T) {
 			Review.PageDown, Review.Apply, Review.Back}},
 		{"Profile", []Binding{Profile.Move, Profile.Take, Profile.Note,
 			Profile.ScrollUp, Profile.ScrollDown, Profile.Back}},
-		{"Agent", []Binding{Agent.Move, Agent.Attach, Agent.Answer, Agent.Retry,
-			Agent.Cancel, Agent.Kill, Agent.Back}},
+		{"Agent", []Binding{Agent.Move, Agent.Go, Agent.Attach, Agent.Answer,
+			Agent.Retry, Agent.Cancel, Agent.Kill, Agent.Back}},
+		{"Plan", []Binding{Plan.Jump, Plan.Save}},
+		{"Query", []Binding{Query.Rub}},
 		{"Wait", []Binding{Wait.Fallback, Wait.Stop, Wait.Compact, Wait.NewSession,
 			Wait.KeepGoing, Wait.UseKey, Wait.KeepKey}},
 		{"Diff", []Binding{Diff.Scroll, Diff.Hunk, Diff.SideBySide, Diff.Back, Diff.Leave}},
@@ -395,5 +413,63 @@ func TestHandoverAliasIsNotClaimedElsewhere(t *testing.T) {
 	}
 	if len(homes) != 1 {
 		t.Errorf("ctrl+y is bound on %d surfaces (%v), want exactly one", len(homes), homes)
+	}
+}
+
+// The pair convention, checked rather than remembered. A two-directional
+// binding is one offer and one declaration, and what tells a handler which
+// way the reader meant is the order its keystrokes are written in: in pairs,
+// the half that goes back first. Step reads nothing else, so a pair written
+// the other way round would move every list the wrong way with no compile
+// error and no hint to contradict.
+func TestEveryPairIsDeclaredBackFirst(t *testing.T) {
+	// The keystrokes whose direction the keyboard itself fixes. A rebind can
+	// put a pair on two chords this list has never heard of — that is the
+	// point of a rebind — so what is checked is the shipped declarations,
+	// where every half is one of these.
+	back := map[string]bool{
+		"up": true, "k": true, "p": true, "N": true, "u": true,
+		"pgup": true, "left": true, "h": true,
+	}
+	on := map[string]bool{
+		"down": true, "j": true, "n": true, "d": true,
+		"pgdown": true, "right": true, "l": true,
+	}
+	for _, b := range pairs() {
+		ks := b.Keys()
+		if len(ks) == 0 || len(ks)%2 != 0 {
+			t.Errorf("%q moves both ways on %v, which is not pairs of keystrokes", Words(b), ks)
+			continue
+		}
+		for i := 0; i < len(ks); i += 2 {
+			if !back[ks[i]] || !on[ks[i+1]] {
+				t.Errorf("%q declares %q then %q; a pair is the half that goes back first",
+					Shown(b), ks[i], ks[i+1])
+			}
+		}
+	}
+}
+
+// And Step reads that order back. It is the one function every movement
+// handler in the product now goes through, so the two directions and the
+// keystroke that is neither are worth stating outright.
+func TestStepReadsTheHalfThatWasPressed(t *testing.T) {
+	for _, c := range []struct {
+		pressed string
+		bind    Binding
+		want    int
+	}{
+		{"k", Reading.Move, -1},
+		{"j", Reading.Move, 1},
+		{"up", Screen.Move, -1},
+		{"down", Screen.Move, 1},
+		{"j", Screen.Move, 1},
+		{"p", Diff.Hunk, -1},
+		{"n", Diff.Hunk, 1},
+		{"q", Screen.Move, 0},
+	} {
+		if got := Step(c.pressed, c.bind); got != c.want {
+			t.Errorf("Step(%q, %q) = %d, want %d", c.pressed, Shown(c.bind), got, c.want)
+		}
 	}
 }

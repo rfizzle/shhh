@@ -75,6 +75,54 @@ func Is(pressed string, bs ...Binding) bool {
 	return false
 }
 
+// Step is which half of a two-directional binding was pressed: -1 for the
+// half that goes back, +1 for the half that goes on, and 0 for a keystroke
+// the binding does not answer at all.
+//
+// A pair like `j/k` is one offer, one row and one declaration — two bindings
+// for one offer would put the same keystroke on the surface twice, which is
+// the thing the register refuses — so what a handler still has to work out is
+// which way the reader meant. The declaration says so by its order: the
+// keystrokes are written in pairs, the half that goes back first, so `k, j,
+// up, down` is the same fact as the `j/k` the hint prints. checkPairs
+// (keymap.go) holds a file to the same shape, which is what makes the answer
+// survive a rebind: `screen.move = ["shift+up", "shift+down"]` reads the way
+// `up`/`down` did and no handler learns a new spelling.
+func Step(pressed string, b Binding) int {
+	switch n := Nth(pressed, b); {
+	case n < 0:
+		return 0
+	case n%2 == 0:
+		return -1
+	default:
+		return 1
+	}
+}
+
+// Nth is where a keystroke sits among the ones a binding answers, and -1 for
+// one it does not. It is how a binding that stands for a run rather than for
+// a single act is read — the plan card's `1–5` is one offer over five rows,
+// and which row is the position of the digit — and it is what Step is built
+// on.
+func Nth(pressed string, b Binding) int {
+	if !b.Enabled() {
+		return -1
+	}
+	for i, k := range b.Keys() {
+		if k == pressed {
+			return i
+		}
+	}
+	return -1
+}
+
+// Typed reports that a keystroke is one a sentence produces. It is the test a
+// surface being typed into applies to its own movement keys: while a query
+// line is open a `j` is a letter, and the halves of the same binding that no
+// sentence can produce — an arrow, a chord — are what still move
+// (docs/interface/surfaces.md#selectors).
+func Typed(pressed string) bool { return len([]rune(pressed)) == 1 }
+
 // Shown is the spelling a hint prints, bare. Brackets are the surface's
 // business: a card writes `[y]`, a key row writes `y`, and both read the
 // same binding.
@@ -336,7 +384,7 @@ func (k ReadingKeys) All() []Binding {
 }
 
 var Reading = ReadingKeys{
-	Move:     bind("j/k", "move", "j", "k", "down", "up"),
+	Move:     bind("j/k", "move", "k", "j", "up", "down"),
 	Expand:   bind("enter", "expand", "enter"),
 	Collapse: bind("-", "collapse", "-"),
 	// Copy is [y] rather than [c], because c is "continue from here" on a
@@ -351,7 +399,7 @@ var Reading = ReadingKeys{
 	// ways with the dispatch reading which half was pressed. It is offered
 	// only while a search is live: with nothing found, n and N are letters
 	// and belong to the draft.
-	Match: bind("n/N", "match", "n", "N"),
+	Match: bind("n/N", "match", "N", "n"),
 	// Half is the pager pair u/d: half the viewport, so the reader keeps
 	// context while moving quickly. Like Move it is one binding both ways,
 	// and the dispatch reads which half was pressed. On a turn-close row
@@ -412,7 +460,7 @@ func (k ContextKeys) All() []Binding {
 }
 
 var Context = ContextKeys{
-	Move: bind("↑↓/jk", "move", "up", "down", "j", "k"),
+	Move: bind("↑↓/jk", "move", "up", "down", "k", "j"),
 	// One key both folds and unfolds. A surface whose every group is a fold
 	// would spend a second key saying what the glyph on the row already says.
 	Expand: bind("enter", "expand or fold", "enter"),
@@ -534,7 +582,7 @@ func (k SprintKeys) All() []Binding {
 }
 
 var Sprint = SprintKeys{
-	Move: bind("↑↓/jk", "move", "up", "down", "j", "k"),
+	Move: bind("↑↓/jk", "move", "up", "down", "k", "j"),
 	// Dropping is a toggle rather than a removal because the row is the
 	// only record of what was proposed: a row that left the card could not
 	// be put back, and the reader would have to plan again to see it.
@@ -702,7 +750,7 @@ type PaletteKeys struct {
 
 var Select = SelectKeys{
 	Move:   bind("↑↓", "move", "up", "down"),
-	MoveJK: bind("↑↓/jk", "move", "up", "down", "j", "k"),
+	MoveJK: bind("↑↓/jk", "move", "up", "down", "k", "j"),
 	Take:   bind("enter", "select", "enter"),
 	Alt:    bind("d", "make it the default", "d"),
 	Filter: bind("/", "filter", "/"),
@@ -738,8 +786,8 @@ type ReviewKeys struct {
 }
 
 var Review = ReviewKeys{
-	MoveFile:   bind("j/k", "file", "j", "k", "down", "up"),
-	MoveHunk:   bind("n/p", "hunk", "n", "p"),
+	MoveFile:   bind("j/k", "file", "k", "j", "up", "down"),
+	MoveHunk:   bind("n/p", "hunk", "p", "n"),
 	StageHunk:  bind("space", "stage hunk", " ", "space"),
 	StageFile:  bind("s", "file", "s"),
 	StageAll:   bind("A", "all", "a", "A"),
@@ -754,6 +802,12 @@ var Review = ReviewKeys{
 type AgentKeys struct {
 	Move   Binding
 	Attach Binding
+	// Go is the way into the manager from a child's routed approval: the
+	// card steps aside and the agent that asked is the one attached. It is
+	// declared here rather than with the card's answers because what it
+	// reaches is the manager, and because it is not an answer — the ask is
+	// still waiting when the reader comes back.
+	Go     Binding
 	Answer Binding
 	Retry  Binding
 	Cancel Binding
@@ -763,8 +817,9 @@ type AgentKeys struct {
 }
 
 var Agent = AgentKeys{
-	Move:   bind("j/k", "move", "j", "k", "down", "up"),
+	Move:   bind("j/k", "move", "k", "j", "up", "down"),
 	Attach: bind("enter", "attach", "enter"),
+	Go:     bind("g", "go to the agent that asked", "g"),
 	Answer: bind("a", "answer", "a"),
 	Retry:  bind("r", "retry", "r"),
 	Cancel: bind("x", "cancel", "x"),
@@ -845,9 +900,9 @@ type DiffKeys struct {
 }
 
 var Diff = DiffKeys{
-	Scroll:     bind("j/k", "scroll", "j", "k", "down", "up"),
+	Scroll:     bind("j/k", "scroll", "k", "j", "up", "down"),
 	SideBySide: bind("s", "side-by-side", "s"),
-	Hunk:       bind("n/p", "hunk", "n", "p"),
+	Hunk:       bind("n/p", "hunk", "p", "n"),
 	Back:       bind("esc", "back", "esc"),
 	Leave:      bind("q", "back", "q", "ctrl+c"),
 }
@@ -872,7 +927,7 @@ type OutputKeys struct {
 }
 
 var Output = OutputKeys{
-	Scroll:   bind("j/k", "scroll", "j", "k", "down", "up"),
+	Scroll:   bind("j/k", "scroll", "k", "j", "up", "down"),
 	PageUp:   bind("pgup", "page up", "pgup"),
 	PageDown: bind("pgdn", "page down", "pgdown"),
 	Collapse: bind("enter", "close the row", "enter"),
@@ -931,7 +986,7 @@ type ScreenKeys struct {
 }
 
 var Screen = ScreenKeys{
-	Move:   bind("↑↓/jk", "move", "up", "down", "j", "k"),
+	Move:   bind("↑↓/jk", "move", "up", "down", "k", "j"),
 	Take:   bind("enter", "take it", "enter"),
 	Filter: bind("/", "filter", "/"),
 	ClearQ: bind("ctrl+u", "clear the filter", "ctrl+u"),
@@ -992,7 +1047,45 @@ var OneShot = OneShotKeys{
 	Explain:      bind("x", "explain", "x"),
 	Copy:         bind("c", "copy", "c"),
 	Save:         bind("s", "save", "s"),
-	Quit:         bind("esc", "quit", "esc"),
+	// The bar is the whole screen while it is up, so the letter every
+	// full-screen viewer in shhh leaves on is live here too. The hint prints
+	// the chord a reader reaches for first and answers to both.
+	Quit: bind("esc", "quit", "esc", "q"),
+}
+
+// PlanKeys are the plan-approval card's own two: the five rows are the
+// selector family's, so the card answers Select.MoveJK, Select.Take and
+// Select.Cancel like every other list, and these are what it has that a
+// selector does not.
+type PlanKeys struct {
+	// Jump takes a row by its number, which the card prints beside each one.
+	// One binding for the five digits rather than five: what a reader learns
+	// is "the number on the row", and the handler reads which digit from the
+	// keystroke the way a pair reads which half.
+	Jump Binding
+	// Save writes the plan to a file. It is on the card rather than on a
+	// card of its own because saving is not a decision — it is something you
+	// do on the way to one — so it neither answers the question nor takes
+	// the card down.
+	Save Binding
+}
+
+var Plan = PlanKeys{
+	Jump: bind("1–5", "jump to a row", "1", "2", "3", "4", "5"),
+	Save: bind("s", "save the plan", "s", "S"),
+}
+
+// QueryKeys are the filter row's own. Every list in the product that filters
+// opens the same row and answers the same key on it, so it is declared once
+// here rather than three times in three groups: a row being typed into takes
+// its text from what was typed, and the one keystroke on it that is neither
+// text nor a way out is the one that takes a rune back.
+type QueryKeys struct {
+	Rub Binding
+}
+
+var Query = QueryKeys{
+	Rub: bind("backspace", "take a rune back", "backspace"),
 }
 
 // SetupKeys are first contact's and the provider card's.
@@ -1028,7 +1121,7 @@ type BrowseKeys struct {
 }
 
 var Browse = BrowseKeys{
-	Move:   bind("j/k", "move", "j", "k", "down", "up"),
+	Move:   bind("j/k", "move", "k", "j", "up", "down"),
 	Open:   bind("enter", "open it", "enter", "l", "right"),
 	Filter: bind("/", "filter", "/"),
 	Delete: bind("x", "delete", "x"),

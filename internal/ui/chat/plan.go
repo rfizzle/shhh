@@ -61,7 +61,20 @@ var planApproveOptions = []components.SelectOption{
 // planHint is the key row under the options. [s] is here rather than on a
 // card of its own because saving is not a decision — it is something you do
 // on the way to one.
-const planHint = "↑↓/jk move · enter select · 1–5 jump · s save · esc keep planning"
+//
+// Built from the register and not written out, so the row cannot come to
+// offer a key the card no longer answers: every spelling on it is the
+// declaration the handler above matches against, and a keymap file that
+// moves one moves both. It is a function rather than a package var because
+// a file is read after this package is initialised and before anything
+// draws — a var would have snapshotted the shipped spelling.
+func planHint() string {
+	return keys.Shown(keys.Select.MoveJK) + " move · " +
+		keys.Shown(keys.Select.Take) + " select · " +
+		keys.Shown(keys.Plan.Jump) + " jump · " +
+		keys.Shown(keys.Plan.Save) + " save · " +
+		keys.Shown(keys.Select.Cancel) + " keep planning"
+}
 
 // armPlan parses and prices the planning response the prompt is about to ask
 // about. It runs once, when the prompt opens.
@@ -80,22 +93,18 @@ func (m *Model) clearPlan() {
 
 // updatePlanApprove handles keys while the plan-approval card is showing.
 func (m Model) updatePlanApprove(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	rows := components.List[components.SelectOption]{
+		Items: planApproveOptions, Focus: m.planChoice,
+	}
 	switch pressed := msg.String(); {
-	case pressed == "up", pressed == "k":
-		if m.planChoice > 0 {
-			m.planChoice--
-		}
-		return m, nil
-	case pressed == "down", pressed == "j":
-		if m.planChoice < len(planApproveOptions)-1 {
-			m.planChoice++
-		}
+	case rows.Move(pressed, keys.Select.MoveJK):
+		m.planChoice = rows.Focus
 		return m, nil
 	case keys.Is(pressed, keys.Select.Take):
 		return m.selectPlanOption(m.planChoice)
-	case pressed >= "1" && pressed <= "5" && len(pressed) == 1:
-		return m.selectPlanOption(int(pressed[0] - '1'))
-	case pressed == "s", pressed == "S":
+	case keys.Is(pressed, keys.Plan.Jump):
+		return m.selectPlanOption(keys.Nth(pressed, keys.Plan.Jump))
+	case keys.Is(pressed, keys.Plan.Save):
 		return m.savePlanFromCard()
 	case keys.Is(pressed, keys.Select.Cancel):
 		// Esc never destroys: dismissing the prompt keeps planning.
@@ -213,7 +222,7 @@ func (m Model) planCard() *components.PlanCard {
 		Title:         "Plan ready",
 		Options:       planApproveOptions,
 		Focus:         m.planChoice,
-		Hint:          planHint,
+		Hint:          planHint(),
 		Summary:       m.planFacts,
 		SummaryDetail: m.planDetail,
 		MaxLines:      m.planPanelBound(),

@@ -220,9 +220,49 @@ func TestEveryDeclaredGroupIsReachable(t *testing.T) {
 		"RowKeys", "DecisionKeys", "ConfirmKeys", "SelectKeys", "ReviewKeys",
 		"AgentKeys", "ProfileKeys", "WaitKeys", "DiffKeys", "OutputKeys",
 		"PreviewKeys", "ScreenKeys", "OneShotKeys", "SetupKeys", "BrowseKeys",
+		"PlanKeys", "QueryKeys",
 	} {
 		if !named[want] {
 			t.Errorf("%s is declared and no keymap file can reach it", want)
 		}
+	}
+}
+
+// A pair with one half is a keyboard that moves one way and never the other,
+// and nothing on the screen would say so: the hint would print the key the
+// file asked for and the pointer would only ever go back. So the file is
+// refused, whole, the way every other refusal here is.
+func TestLoad_RefusesAHalfOfAPair(t *testing.T) {
+	restoreRegister(t)
+	err := Load(keymapFile(t, "[screen]\nmove = \"shift+up\"\n"))
+	if err == nil {
+		t.Fatal("a two-directional key with one keystroke should be refused")
+	}
+	if !strings.Contains(err.Error(), "pairs") {
+		t.Errorf("the refusal does not say what shape it wanted: %v", err)
+	}
+	if !Is("j", Screen.Move) {
+		t.Errorf("a refused file left the register at %v", Screen.Move.Keys())
+	}
+}
+
+// And a whole pair lands, on both halves and in the order the handlers read.
+// This is the move the keymap document offers as its example, checked here
+// against the register and in internal/ui/components against the two screens
+// that answer it.
+func TestLoad_AMovedPairKeepsItsDirections(t *testing.T) {
+	restoreRegister(t)
+	path := keymapFile(t, "[screen]\nmove = [\"shift+up\", \"shift+down\"]\n")
+	if err := Load(path); err != nil {
+		t.Fatalf("a valid keymap was refused: %v", err)
+	}
+	if got := Step("shift+up", Screen.Move); got != -1 {
+		t.Errorf("shift+up steps %d, want -1", got)
+	}
+	if got := Step("shift+down", Screen.Move); got != 1 {
+		t.Errorf("shift+down steps %d, want 1", got)
+	}
+	if Is("j", Screen.Move) {
+		t.Errorf("the old keystrokes are still answered: %v", Screen.Move.Keys())
 	}
 }

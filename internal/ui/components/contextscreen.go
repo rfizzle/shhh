@@ -264,12 +264,7 @@ func (c *ContextScreen) move(pressed string) {
 	if len(c.Groups) == 0 {
 		return
 	}
-	switch pressed {
-	case "up", "k":
-		c.Cursor = max(c.cursor()-1, 0)
-	default:
-		c.Cursor = min(c.cursor()+1, len(c.Groups)-1)
-	}
+	c.Cursor = min(max(c.cursor()+keys.Step(pressed, keys.Context.Move), 0), len(c.Groups)-1)
 }
 
 // cursor is Cursor clamped to the groups that exist, so a host that dropped a

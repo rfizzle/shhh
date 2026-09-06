@@ -465,7 +465,7 @@ describing neither their file nor the default. A refusal says what it refused
 and the keyboard shhh ships runs instead — out loud, rather than swallowed: a
 session quietly running neither keyboard is the failure this guards against.
 
-Two things a file cannot do.
+Four things a file cannot do.
 
 **It cannot leave one surface answering a keystroke with two acts.** That is
 the rule the register of keyed surfaces exists to make checkable
@@ -481,6 +481,15 @@ capital and gave up the lower-case letter to do it
 ([the rule](../interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard)).
 A file that took the letter back would undo that decision from outside the
 program, where no review sees it.
+
+**It cannot leave a key that moves both ways with one half.** A key offered
+as `j/k` or `↑↓` is a single act in two directions, and the keystrokes it
+answers are given in pairs — the half that goes back first, then the half
+that goes on — which is how a screen knows which way a press meant without
+being told the spelling. `move = ["shift+↑", "shift+↓"]` reads the way the
+arrows did; `move = "shift+↑"` would be a list the pointer walks up and never
+down, with the hint printing a key that half works and nothing saying so. The
+refusal names the act and the keystrokes it was given.
 
 **It cannot move a key onto a chord the desktop or the terminal takes.**
 Mission Control has `ctrl+↑`, Windows Terminal has `alt+enter`, tmux has

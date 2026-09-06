@@ -169,11 +169,7 @@ func (h *HistoryScreen) Update(msg tea.KeyPressMsg) (done bool, result HistoryRe
 	}
 	pressed := msg.String()
 	switch {
-	case pressed == "up":
-		h.move(-1)
-		return false, HistoryResult{}
-	case pressed == "down":
-		h.move(1)
+	case h.moved(pressed):
 		return false, HistoryResult{}
 	case keys.Is(pressed, keys.Screen.Rerun):
 		// The one key that leaves the screen with something to do. A list the
@@ -202,10 +198,6 @@ func (h *HistoryScreen) Update(msg tea.KeyPressMsg) (done bool, result HistoryRe
 		return false, HistoryResult{}
 	}
 	switch {
-	case pressed == "k":
-		h.move(-1)
-	case pressed == "j":
-		h.move(1)
 	case keys.Is(pressed, keys.Screen.Filter):
 		h.list.Filtering = true
 	case pressed == keys.Shown(keys.Screen.Quit):
@@ -616,6 +608,7 @@ func (h *HistoryScreen) keyList() []KeyOffer {
 		keyOfferAs(keys.Screen.Delete, "delete the entry, after confirming it"),
 		keyOfferAs(keys.Screen.Filter, "filter by what was asked or by what came back"),
 		keyOfferAs(keys.Screen.ClearQ, "clear the filter; clear it again to close it"),
+		keyOfferAs(keys.Query.Rub, "take a rune back out of the filter"),
 		keyOfferAs(keys.Select.Cancel, "back to the shell, running nothing"),
 		keyOfferAs(keys.Screen.Quit, "back to the shell, running nothing"),
 	}
@@ -748,22 +741,41 @@ func matchesQuery(row HistoryRow, query string) bool {
 	return Matches(query, row.Prompt, row.Command)
 }
 
-// move steps the pointer to the next entry the filter left showing, stopping
-// at either end rather than wrapping.
-func (h *HistoryScreen) move(delta int) {
+// moved walks the pointer over the entries the filter left showing and
+// reports whether the keystroke was the screen's own movement key. The
+// pointer is the entry's place in the whole list rather than in the filtered
+// one, so what moves is a List over what is showing (list.go).
+//
+// With the query line open only the half of the binding no sentence produces
+// moves it: a j typed into a filter is a letter.
+func (h *HistoryScreen) moved(pressed string) bool {
 	if len(h.shown) == 0 {
-		return
+		return false
 	}
-	at := 0
-	for i, row := range h.shown {
-		if row == h.Focus {
-			at = i
-			break
-		}
+	l := List[int]{Items: h.shown, Focus: h.at()}
+	moved := false
+	if h.list.Filtering {
+		moved = l.MoveTyping(pressed, keys.Screen.Move)
+	} else {
+		moved = l.Move(pressed, keys.Screen.Move)
 	}
-	h.Focus = h.shown[min(max(at+delta, 0), len(h.shown)-1)]
+	if !moved {
+		return false
+	}
+	h.Focus = h.shown[l.Focus]
 	h.confirm = nil
 	h.sync()
+	return true
+}
+
+// at is where the pointer is among the entries the filter left showing.
+func (h *HistoryScreen) at() int {
+	for i, row := range h.shown {
+		if row == h.Focus {
+			return i
+		}
+	}
+	return 0
 }
 
 // current is the entry under the pointer, or nil when the filter left none.

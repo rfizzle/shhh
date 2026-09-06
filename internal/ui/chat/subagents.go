@@ -172,7 +172,7 @@ func (m Model) updateChildAsk(msg tea.KeyPressMsg, ask *subagent.Ask) (tea.Model
 	// [g] is a bare letter, so it belongs to the card only while the card was
 	// handed the keyboard. One holding it by arrival claims nothing but its
 	// answers, and "go ahead, but…" is a sentence.
-	if msg.String() == "g" && !m.heldOnArrival && m.attachedTo != ask.Agent {
+	if keys.Match(msg, keys.Agent.Go) && !m.heldOnArrival && m.attachedTo != ask.Agent {
 		m.attach(ask.Agent)
 		return m, nil
 	}
@@ -228,7 +228,10 @@ func (m Model) childAskCard(ask *subagent.Ask) *components.ApprovalCard {
 	if m.attachedTo == ask.Agent {
 		prefix = ""
 	} else {
-		card.ExtraHints = []string{"g: attach to " + ask.Agent, keys.Shown(keys.Draft.Agents) + ": agents"}
+		card.ExtraHints = []string{
+			keys.Shown(keys.Agent.Go) + ": attach to " + ask.Agent,
+			keys.Shown(keys.Draft.Agents) + ": agents",
+		}
 	}
 	switch ask.Kind {
 	case subagent.AskCommand:

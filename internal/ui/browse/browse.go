@@ -179,10 +179,7 @@ func (m Model) updateList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case keys.Is(pressed, keys.Browse.Quit):
 		m.quit = true
 		return m, tea.Quit
-	case pressed == "j", pressed == "down":
-		m.list.Move(1)
-	case pressed == "k", pressed == "up":
-		m.list.Move(-1)
+	case m.list.Move(pressed, keys.Browse.Move):
 	case keys.Is(pressed, keys.Browse.Open):
 		if len(m.list.Items) > 0 {
 			m.detail = true

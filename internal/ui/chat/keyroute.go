@@ -370,11 +370,11 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 		// the draft keeping the keyboard and every letter it has
 		// (pointer.go). On the start screen the offers are the rows, and
 		// the chord is the plain arrow's act there.
-		dir, arrow := -1, "up"
+		dir := -1
 		if keys.Is(pressed, keys.Draft.PointDown) {
-			dir, arrow = 1, "down"
+			dir = 1
 		}
-		if next, claimed := m.startKey(arrow); claimed {
+		if next, claimed := m.startKey(dir); claimed {
 			return next, nil, true
 		}
 		// Claimed whenever the input is live, even with nothing to point
@@ -501,7 +501,7 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 		// live: an empty draft on a session that has not started yet,
 		// which is also the only time the input history has nothing to
 		// browse.
-		if next, claimed := m.startKey("up"); claimed {
+		if next, claimed := m.startKey(-1); claimed {
 			return next, nil, true
 		}
 		// Recall is the draft's, wherever the draft has the keyboard
@@ -537,7 +537,7 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 			m.complete.moved = true
 			return m, nil, true
 		}
-		if next, claimed := m.startKey("down"); claimed {
+		if next, claimed := m.startKey(1); claimed {
 			return next, nil, true
 		}
 		if m.inputLive() && m.browsingHistory() {

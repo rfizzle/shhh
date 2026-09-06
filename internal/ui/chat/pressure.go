@@ -27,6 +27,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // armPressureCard opens the card when the turn that just closed left the
@@ -240,10 +241,10 @@ func (m Model) updatePressure(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	pressed, _ := result.(string)
 	updated, cmd := m.closePressure()
 	next := updated.(Model)
-	switch pressed {
-	case "enter":
+	switch {
+	case keys.Is(pressed, keys.Wait.Compact):
 		return next.startCompact()
-	case "n":
+	case keys.Is(pressed, keys.Wait.NewSession):
 		return next.pressureNewSession()
 	}
 	// Esc keeps going, and says nothing: the answer that changes nothing

@@ -116,14 +116,10 @@ func (d *DiffView) Update(msg tea.KeyPressMsg) (done bool, result any) {
 		return false, nil
 	}
 	switch pressed := msg.String(); {
-	case pressed == "j", pressed == "down":
-		d.scrollTo(d.Offset + 1)
-	case pressed == "k", pressed == "up":
-		d.scrollTo(d.Offset - 1)
-	case pressed == "n":
-		d.jumpHunk(1)
-	case pressed == "p":
-		d.jumpHunk(-1)
+	case keys.Is(pressed, keys.Diff.Scroll):
+		d.scrollTo(d.Offset + keys.Step(pressed, keys.Diff.Scroll))
+	case keys.Is(pressed, keys.Diff.Hunk):
+		d.jumpHunk(keys.Step(pressed, keys.Diff.Hunk))
 	case keys.Is(pressed, keys.Diff.SideBySide):
 		d.SideBySide = !d.SideBySide
 	}

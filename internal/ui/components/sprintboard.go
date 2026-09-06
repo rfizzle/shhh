@@ -155,8 +155,7 @@ func (b *BacklogScreen) updatePlan(pressed string) (bool, BacklogResult) {
 	p := b.Plan
 	p.sync()
 	switch {
-	case keys.Is(pressed, keys.Sprint.Move):
-		p.list.Move(sprintMoveDelta(pressed))
+	case p.list.Move(pressed, keys.Sprint.Move):
 		p.focus = p.list.Focus
 	case keys.Is(pressed, keys.Sprint.Toggle):
 		if p.focus < len(p.Rows) {
@@ -182,16 +181,6 @@ func (b *BacklogScreen) updatePlan(pressed string) (bool, BacklogResult) {
 		return false, BacklogResult{Do: &BacklogCommand{Act: BacklogSprintCancel}}
 	}
 	return false, BacklogResult{}
-}
-
-// sprintMoveDelta reads which end of the card's movement binding was
-// pressed. It is not moveDelta because this binding has four keys and that
-// one has two: `k` goes up here, and on the list below it cycles a filter.
-func sprintMoveDelta(pressed string) int {
-	if pressed == "up" || pressed == "k" {
-		return -1
-	}
-	return 1
 }
 
 // planRows is the plan card: the budget it was bounded by, the goal it would

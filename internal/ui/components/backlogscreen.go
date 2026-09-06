@@ -381,8 +381,7 @@ func (b *BacklogScreen) Update(msg tea.KeyPressMsg) (done bool, result BacklogRe
 // model works, and nothing here is offered twice.
 func (b *BacklogScreen) readKey(pressed string) bool {
 	switch {
-	case keys.Is(pressed, keys.Backlog.Move):
-		b.move(moveDelta(pressed))
+	case b.moved(pressed):
 	case keys.Is(pressed, keys.Backlog.Read):
 		if b.current() != nil {
 			b.reading, b.pager.Offset = true, 0
@@ -504,12 +503,11 @@ func (b *BacklogScreen) updateConfirm(msg tea.KeyPressMsg) (bool, BacklogResult)
 // not letters close the row.
 func (b *BacklogScreen) editQuery(msg tea.KeyPressMsg, pressed string) (bool, BacklogResult) {
 	switch {
-	case keys.Is(pressed, keys.Backlog.Move):
+	case b.movedTyping(pressed):
 		// The list under the row is still a list, which is why the movement
 		// binding is the arrows and not j/k: a query being typed into has
 		// no letters to spare, and this screen would have had to break the
 		// pair here as well as on the list.
-		b.move(moveDelta(pressed))
 		return false, BacklogResult{}
 	case keys.Is(pressed, keys.Backlog.ClearQ):
 		// An empty filter has nothing left to clear, so the same key closes
@@ -525,7 +523,7 @@ func (b *BacklogScreen) editQuery(msg tea.KeyPressMsg, pressed string) (bool, Ba
 		// Here `q` is a letter, so only the two that no sentence produces
 		// close the row.
 		b.filtering, b.query = false, ""
-	case pressed == "backspace":
+	case keys.Is(pressed, keys.Query.Rub):
 		if r := []rune(b.query); len(r) > 0 {
 			b.query = string(r[:len(r)-1])
 		}
@@ -543,31 +541,15 @@ func (b *BacklogScreen) editQuery(msg tea.KeyPressMsg, pressed string) (bool, Ba
 func (b *BacklogScreen) updateReading(pressed string) (bool, BacklogResult) {
 	switch {
 	case keys.Is(pressed, keys.Backlog.Move):
-		b.pager.Offset += moveDelta(pressed)
+		b.pager.Offset += keys.Step(pressed, keys.Backlog.Move)
 	case keys.Is(pressed, keys.Backlog.Page):
-		b.pager.Offset += pageDelta(pressed) * max(b.pager.Height, 1)
+		b.pager.Offset += keys.Step(pressed, keys.Backlog.Page) * max(b.pager.Height, 1)
 	case keys.Is(pressed, keys.Backlog.Read), keys.Is(pressed, keys.Backlog.Back):
 		b.reading = false
 	case keys.Is(pressed, keys.Backlog.List):
 		b.keys = !b.keys
 	}
 	return false, BacklogResult{}
-}
-
-// moveDelta reads which end of a movement binding was pressed.
-func moveDelta(pressed string) int {
-	if pressed == "up" {
-		return -1
-	}
-	return 1
-}
-
-// pageDelta reads which end of the paging binding was pressed.
-func pageDelta(pressed string) int {
-	if pressed == "pgup" {
-		return -1
-	}
-	return 1
 }
 
 // swapTab steps to the next tab there is. The sprint tab is skipped where
@@ -1383,6 +1365,7 @@ func (b *BacklogScreen) keyList() []KeyOffer {
 		keyOfferAs(keys.Backlog.Tab, "the backlog, or what shipped"),
 		keyOfferAs(keys.Backlog.Filter, "filter by slug or title"),
 		keyOfferAs(keys.Backlog.ClearQ, "clear the filter; clear it again to close it"),
+		keyOfferAs(keys.Query.Rub, "take a rune back out of the filter"),
 		keyOfferAs(keys.Backlog.Status, "cycle the status filter"),
 		keyOfferAs(keys.Backlog.Priority, "cycle the priority filter"),
 	}
@@ -1496,15 +1479,28 @@ func (b *BacklogScreen) refilter() {
 	b.sync()
 }
 
-// move steps the pointer to the next row the filters left showing, stopping
-// at either end rather than wrapping.
-func (b *BacklogScreen) move(delta int) {
-	if len(b.shown) == 0 {
-		return
+// moved steps the pointer to the next row the filters left showing, stopping
+// at either end rather than wrapping, and reports whether the keystroke was
+// the screen's movement key.
+func (b *BacklogScreen) moved(pressed string) bool {
+	return b.after(b.list.Move(pressed, keys.Backlog.Move))
+}
+
+// movedTyping is moved with the filter row open, where a letter is a letter.
+func (b *BacklogScreen) movedTyping(pressed string) bool {
+	return b.after(b.list.MoveTyping(pressed, keys.Backlog.Move))
+}
+
+// after carries a move through to the pointer the tabs remember, and drops
+// any confirm the last key armed: the row it was about is no longer the row
+// under the pointer.
+func (b *BacklogScreen) after(moved bool) bool {
+	if !moved || len(b.shown) == 0 {
+		return moved
 	}
-	b.list.Move(delta)
 	b.focus[b.tab] = b.shown[min(max(b.list.Focus, 0), len(b.shown)-1)]
 	b.confirm, b.pending = nil, nil
+	return true
 }
 
 // current is the item under the pointer, or nil where the filters left none.

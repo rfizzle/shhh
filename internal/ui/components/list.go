@@ -17,7 +17,11 @@ package components
 // an item looks like, which is the part that is actually a fact about that
 // list.
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/rfizzle/shhh/internal/ui/keys"
+)
 
 // List is the pointer and the window a list of anything shares.
 //
@@ -75,10 +79,43 @@ func (l *List[T]) geometry() listGeometry {
 	}
 }
 
-// Move steps the pointer by delta, over any item it may not land on. A move
+// Move answers the movement keys of the bindings a surface declares and
+// applies the step, and reports whether the keystroke was one of them. It is
+// how a list host inherits its movement rather than writing it: the keys come
+// from the register, so a hint and its handler cannot disagree and a keymap
+// file that moves one moves both
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+//
+// The bindings are the caller's because the register says which surface
+// answers what — the picker inside a setting moves on the arrows alone and
+// the list behind it also moves on j/k, and those are two rows of the
+// register, not one rule with a flag.
+func (l *List[T]) Move(pressed string, bs ...keys.Binding) bool {
+	for _, b := range bs {
+		if delta := keys.Step(pressed, b); delta != 0 {
+			l.Step(delta)
+			return true
+		}
+	}
+	return false
+}
+
+// MoveTyping is Move for a list with its query line open: only the halves of
+// the same bindings that no sentence produces move it, because a j typed into
+// a filter is a letter (docs/interface/surfaces.md#selectors). The binding
+// stays the surface's own, so a file that moved a pointer's key moves what
+// the open row answers too.
+func (l *List[T]) MoveTyping(pressed string, bs ...keys.Binding) bool {
+	if keys.Typed(pressed) {
+		return false
+	}
+	return l.Move(pressed, bs...)
+}
+
+// Step moves the pointer by delta, over any item it may not land on. A move
 // that runs off either end leaves the pointer where it was, so the ends of a
 // list are felt rather than wrapped past.
-func (l *List[T]) Move(delta int) {
+func (l *List[T]) Step(delta int) {
 	for i := l.Focus + delta; i >= 0 && i < len(l.Items); i += delta {
 		if !l.skip(i) {
 			l.Focus = i

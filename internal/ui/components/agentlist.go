@@ -137,14 +137,16 @@ func (l *AgentList) focused() AgentRow {
 	return l.Rows[l.Focus]
 }
 
-// step moves the pointer one row over the whole list, the pinned rows
-// included, stopping at either end. It is over Rows rather than over the
-// scrolling half the window covers, because a blocked child is pinned above
-// the window and is still a row the pointer walks through.
-func (l *AgentList) step(delta int) {
+// moved applies the manager's movement keys over the whole list, the pinned
+// rows included, and reports whether the keystroke was one of them. It is
+// over Rows rather than over the scrolling half the window covers, because a
+// blocked child is pinned above the window and is still a row the pointer
+// walks through.
+func (l *AgentList) moved(pressed string) bool {
 	rows := List[AgentRow]{Items: l.Rows, Focus: l.Focus}
-	rows.Move(delta)
+	moved := rows.Move(pressed, keys.Agent.Move)
 	l.Focus = rows.Focus
+	return moved
 }
 
 // Update handles list keys. Cancel, kill, answer and retry resolve with
@@ -154,10 +156,7 @@ func (l *AgentList) step(delta int) {
 // already predicted.
 func (l *AgentList) Update(msg tea.KeyPressMsg) (done bool, result AgentListResult) {
 	switch pressed := msg.String(); {
-	case pressed == "up", pressed == "k":
-		l.step(-1)
-	case pressed == "down", pressed == "j":
-		l.step(1)
+	case l.moved(pressed):
 	case keys.Is(pressed, keys.Agent.Attach):
 		if l.focused().State == AgentOffer {
 			return true, AgentListResult{Action: AgentDraft, Index: l.Focus}

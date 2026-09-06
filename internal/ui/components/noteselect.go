@@ -72,13 +72,9 @@ func (s *NoteSelect) Update(msg tea.KeyPressMsg) (done bool, result NoteSelectRe
 	// everything but movement is text — the same reading the plain card makes
 	//. Tab is still how the note is reached, which is why it is handled
 	// above this and not here.
+	pressed := msg.String()
 	if s.Select.Filtering {
-		switch msg.String() {
-		case "up":
-			s.Select.move(-1)
-		case "down":
-			s.Select.move(1)
-		default:
+		if !s.Select.moved(pressed) {
 			s.Select.editQuery(msg)
 		}
 		return false, NoteSelectResult{}
@@ -86,17 +82,14 @@ func (s *NoteSelect) Update(msg tea.KeyPressMsg) (done bool, result NoteSelectRe
 	// List focus: reuse the single-select movement; its enter/esc/digit paths
 	// are unreachable here (handled above), except digits, which should type
 	// nothing but jump focus without confirming.
-	switch key := msg.String(); key {
-	case "up", "k":
-		s.Select.move(-1)
-	case "down", "j":
-		s.Select.move(1)
-	case "/":
+	switch {
+	case s.Select.moved(pressed):
+	case keys.Is(pressed, keys.Select.Filter):
 		if s.Select.Filterable {
 			s.Select.Filtering = true
 		}
 	default:
-		if n := digitIndex(key, s.Select.selectable()); n >= 0 {
+		if n := digitIndex(pressed, s.Select.selectable()); n >= 0 {
 			s.Select.Focus = s.Select.selectableIndex(n)
 		}
 	}

@@ -204,11 +204,7 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		if !m.viewport.Searching() {
 			return m.returnToInput(msg)
 		}
-		if pressed == "N" {
-			m.searchStep(-1)
-		} else {
-			m.searchStep(1)
-		}
+		m.searchStep(keys.Step(pressed, keys.Reading.Match))
 		return m, nil
 	case keys.Is(pressed, keys.Reading.Move):
 		// One binding, both directions: the bar offers `j/k` as a pair and
@@ -216,11 +212,7 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// the mode moves on are declared in one place. Two bindings
 		// for one offer would put the same keystroke on the surface twice,
 		// which is the thing the register refuses.
-		if pressed == "j" || pressed == "down" {
-			m.moveFocus(1)
-		} else {
-			m.moveFocus(-1)
-		}
+		m.moveFocus(keys.Step(pressed, keys.Reading.Move))
 		return m, nil
 	case keys.Is(pressed, keys.Reading.List):
 		// The register on the page. It is the same key the supporting
@@ -442,10 +434,7 @@ func (m Model) exitFocusMode() (tea.Model, tea.Cmd) {
 // the cursor along: a cursor left behind a half-page jump would be a lit row
 // nobody can see, which is the thing selectableRow exists to prevent.
 func (m *Model) halfPageFocus(pressed string) {
-	dir := 1
-	if pressed == "u" {
-		dir = -1
-	}
+	dir := keys.Step(pressed, keys.Reading.Half)
 	m.scrollLines(dir * max(m.viewport.Height()/2, 1))
 	m.snapFocusIntoView(dir)
 }
