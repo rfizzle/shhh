@@ -409,6 +409,32 @@ moment the export stops being content-free and the reader should know it.
 Sessions can be recorded and never read; the record can be exported as JSON
 and purged entirely.
 
+### How much looking comes before the first write
+
+One reading is drawn out of the tool events rather than counted as it
+happens: how many calls a session spends on reads, listings, searches, globs
+and the language server's questions before the first call that changes
+something. It is on the dashboard as the middle session's count, on a
+session's own page as that session's, and in a comparison as a rate either
+side of whatever changed.
+
+It answers one question — whether opening a session on a repository the
+model has not seen is mostly spent finding a place to start — and it is the
+number any answer to that has to move.
+
+The count is calls and not rounds, which is the one figure in the record
+where that distinction had to be made. The round a call was made in is
+optional: a surface that keeps no accounting of its own writes no position
+at all, and a round count over those sessions reads as one whichever way
+they went. The tool name is on every row the record has ever held.
+
+A session that never wrote is counted beside the reading rather than in it.
+There is no such figure for it — nothing ended the looking — and a zero
+apiece would say those sessions found their place immediately, which is the
+opposite of what happened. The share that reached a write is printed next to
+the count for the same reason, because a population that stopped writing
+would otherwise look like one that got faster.
+
 ### The record is kept for a window
 
 The record is pruned at startup the way command history and generated report

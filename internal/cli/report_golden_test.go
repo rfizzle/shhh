@@ -90,7 +90,8 @@ func TestReportGoldens(t *testing.T) {
 		{"observe.compare.small", observeCompareReport(goldenObserveCompareSmall()).Render(80)},
 		{"observe.compare.empty", observeCompareReport(goldenObserveCompareEmpty()).Render(80)},
 		{"observe.session", observeSessionReport(goldenObserveSession()).Render(80)},
-		{"observe.session.empty", observeSessionReport(goldenObserveSessionRow(), nil).Render(80)},
+		{"observe.session.empty",
+			observeSessionReport(goldenObserveSessionRow(), nil, storage.AgentFirstWrite{}).Render(80)},
 		{"rate", rateReport(rateWalk(), rateScopeOf(false, false), goldenNow).Render(80)},
 		{"rate.empty", rateReport(nil, rateScopeOf(false, false), goldenNow).Render(80)},
 		{"sandbox.empty", goldenEmptySandbox().Render(80)},
@@ -242,6 +243,13 @@ func goldenObserve() observeData {
 		ToolErrors: []storage.AgentToolErrorCount{
 			{Tool: "execute_command", Class: "exit-status", Count: 2},
 		},
+		// One session that found its place and changed something, and one
+		// that never wrote at all — which is counted beside the figure and
+		// never in it.
+		FirstWrites: []storage.AgentFirstWrite{
+			{SessionID: 12, Searches: 5, Wrote: true},
+			{SessionID: 13, Wrote: false},
+		},
 		Decisions: []storage.AgentDecisionCount{
 			{Decision: "allow", Reason: "mode-accept-edits", Count: 14},
 			{Decision: "deny", Reason: "", Count: 2},
@@ -277,7 +285,7 @@ func goldenObserve() observeData {
 // goldenObserveSession is one recorded session carrying an event of every
 // kind the timeline can draw — including one at the zero position, which is
 // what a surface that keeps no turn or round accounting records.
-func goldenObserveSession() (storage.AgentSessionSummary, []storage.AgentExportEvent) {
+func goldenObserveSession() (storage.AgentSessionSummary, []storage.AgentExportEvent, storage.AgentFirstWrite) {
 	fast, slow, turn := int64(42), int64(2400), int64(94000)
 	// The page's fixture is a session somebody has answered for, so the
 	// rating sits beside the outcome it is there to check. The bare row the
@@ -305,7 +313,7 @@ func goldenObserveSession() (storage.AgentSessionSummary, []storage.AgentExportE
 			Tool: "default", Outcome: "gate", Reason: "pass"},
 		{CreatedAt: "2026-08-31T11:33:32.000Z", Kind: storage.AgentEventTurn, Turn: 1, Round: 14,
 			Outcome: "done", DurationMs: &turn},
-	}
+	}, storage.AgentFirstWrite{SessionID: row.ID, Searches: 5, Wrote: true}
 }
 
 // goldenObserveSessionRow is the session those events belong to, alone —
@@ -449,6 +457,7 @@ func goldenObserveCompare() observeCompareData {
 				{Tool: "execute_command", Class: "timeout", Count: 2},
 				{Tool: "edit_file", Class: "bad-args", Count: 2},
 			},
+			FirstWrites: goldenFirstWrites(11, 4, 5, 6, 6, 7, 8, 9, 11),
 			Decisions: []storage.AgentDecisionCount{
 				{Decision: "allow", Reason: "mode-accept-edits", Count: 96},
 				{Decision: "ask", Reason: "safety", Count: 14},
@@ -494,6 +503,7 @@ func goldenObserveCompare() observeCompareData {
 				{Tool: "edit_file", Class: "bad-args", Count: 2},
 				{Tool: "execute_command", Class: "timeout", Count: 1},
 			},
+			FirstWrites: goldenFirstWrites(14, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 9),
 			Decisions: []storage.AgentDecisionCount{
 				{Decision: "allow", Reason: "mode-accept-edits", Count: 120},
 				{Decision: "ask", Reason: "safety", Count: 10},
@@ -526,6 +536,20 @@ func goldenObserveCompare() observeCompareData {
 		Others:      []string{"7cd0a1b2ff31"},
 		MinSessions: compareMinSessions,
 	})
+}
+
+// goldenFirstWrites is a cohort's looking: one row per session that wrote,
+// carrying what it spent finding its place, and a row with no write for each
+// of the sessions left over.
+func goldenFirstWrites(sessions int, searches ...int) []storage.AgentFirstWrite {
+	out := make([]storage.AgentFirstWrite, 0, sessions)
+	for i, n := range searches {
+		out = append(out, storage.AgentFirstWrite{SessionID: int64(i + 1), Searches: n, Wrote: true})
+	}
+	for i := len(searches); i < sessions; i++ {
+		out = append(out, storage.AgentFirstWrite{SessionID: int64(i + 1)})
+	}
+	return out
 }
 
 // goldenObserveCompareSmall is the same window with one cohort too small to

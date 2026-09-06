@@ -791,7 +791,7 @@ func TestRecordGateVerdicts_Wiring(t *testing.T) {
 // page would be inventing one of them by filling the field in.
 func TestObserveSessionReport_RatingSitsBesideTheOutcome(t *testing.T) {
 	row := goldenObserveSessionRow()
-	if got := observeSessionReport(row, nil).Render(80); strings.Contains(got, "rated:") {
+	if got := observeSessionReport(row, nil, storage.AgentFirstWrite{}).Render(80); strings.Contains(got, "rated:") {
 		t.Errorf("an unrated session was given a rating:\n%s", got)
 	}
 	for _, tc := range []struct {
@@ -799,7 +799,7 @@ func TestObserveSessionReport_RatingSitsBesideTheOutcome(t *testing.T) {
 		want   string
 	}{{true, "rated:         worked"}, {false, "rated:         did not work"}} {
 		row.Rating = &tc.rating
-		got := observeSessionReport(row, nil).Render(80)
+		got := observeSessionReport(row, nil, storage.AgentFirstWrite{}).Render(80)
 		if !strings.Contains(got, tc.want) {
 			t.Errorf("the page does not say %q:\n%s", tc.want, got)
 		}
@@ -1276,6 +1276,118 @@ func TestObserveRecorder_ARestartStillSendsTheSpanItClosed(t *testing.T) {
 		case <-arrived:
 		case <-time.After(10 * time.Second):
 			t.Fatalf("only %d of the two spans reached the collector", i)
+		}
+	}
+}
+
+// The dashboard reads the middle session, not the mean, and names the
+// population the figure is over: the sessions that never wrote are in the
+// denominator and not in the figure, because a window where nothing was
+// written is a different fact from one where everything was found
+// immediately.
+func TestObserveDashboard_FirstWriteIsTheMiddleSessionThatWrote(t *testing.T) {
+	body := observeReport(observeData{
+		Window:   "30d",
+		Sessions: []storage.AgentSessionSummary{{ID: 1, Kind: "code", StartedAt: goldenNow}},
+		FirstWrites: []storage.AgentFirstWrite{
+			{SessionID: 1, Searches: 2, Wrote: true},
+			{SessionID: 2, Searches: 40, Wrote: true},
+			{SessionID: 3, Searches: 6, Wrote: true},
+			{SessionID: 4, Wrote: false},
+		},
+	}).Render(80)
+
+	for _, want := range []string{"FIRST WRITE", "search calls", "median 6",
+		"3 of 4 sessions that called a tool"} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("the dashboard does not say %q:\n%s", want, body)
+		}
+	}
+}
+
+// A window where no session ever wrote has no such figure, and draws no
+// section rather than a zero.
+func TestObserveDashboard_NothingWrittenIsNoFigureAtAll(t *testing.T) {
+	body := observeReport(observeData{
+		Window:      "30d",
+		Sessions:    []storage.AgentSessionSummary{{ID: 1, Kind: "chat", StartedAt: goldenNow}},
+		FirstWrites: []storage.AgentFirstWrite{{SessionID: 1, Wrote: false}},
+	}).Render(80)
+	if strings.Contains(body, "FIRST WRITE") {
+		t.Fatalf("a window with no write drew a figure over nothing:\n%s", body)
+	}
+}
+
+// A session's own page states its looking, and a session that never wrote
+// states nothing: there is no count of looking that a write ended.
+func TestObserveSessionReport_LookingIsStatedOnlyWhereAWriteEndedIt(t *testing.T) {
+	row := goldenObserveSessionRow()
+	wrote := observeSessionReport(row, nil,
+		storage.AgentFirstWrite{SessionID: row.ID, Searches: 7, Wrote: true}).Render(80)
+	if !strings.Contains(wrote, "first write:") || !strings.Contains(wrote, "after 7 search calls") {
+		t.Fatalf("the page does not say what the session spent looking:\n%s", wrote)
+	}
+	never := observeSessionReport(row, nil, storage.AgentFirstWrite{SessionID: row.ID}).Render(80)
+	if strings.Contains(never, "first write:") {
+		t.Fatalf("a session that never wrote was given a figure anyway:\n%s", never)
+	}
+}
+
+// The comparison draws the share of sessions that got as far as a write
+// beside the looking, so a cohort that wrote less often cannot read as one
+// that found its way around faster.
+func TestObserveCompare_LookingCarriesTheShareThatWrote(t *testing.T) {
+	earlier := observeCohortOf("aaa", 10, nil)
+	earlier.Reading.FirstWrites = goldenFirstWrites(10, 4, 6, 8)
+	later := observeCohortOf("bbb", 10, nil)
+	later.Reading.FirstWrites = goldenFirstWrites(10, 2, 3, 4, 5, 6, 7, 8, 9)
+	data := observeCompared(observeCompareData{Window: "30d", Split: "prompt_hash", Sessions: 20,
+		Earlier: earlier, Later: later, MinSessions: compareMinSessions})
+
+	c, ok := findObserveChange(data.Changes, "first write", "search calls")
+	if !ok {
+		t.Fatalf("no first-write row: %+v", data.Changes)
+	}
+	if c.Before != 6 || c.After != 5.5 {
+		t.Fatalf("the middle session is not what the row compares: %+v", c)
+	}
+	if c.Beside == nil || c.Beside.Before != 0.3 || c.Beside.After != 0.8 {
+		t.Fatalf("the share that wrote is not beside the looking: %+v", c.Beside)
+	}
+	body := observeCompareReport(data).Render(80)
+	if !strings.Contains(body, "FIRST WRITE") || !strings.Contains(body, "wrote") {
+		t.Fatalf("the qualification is not on the screen:\n%s", body)
+	}
+}
+
+// Two cohorts that never wrote have nothing to compare, and the block is
+// left out rather than drawn as a pair of zeroes.
+func TestObserveCompare_NoWriteIsNoRow(t *testing.T) {
+	earlier := observeCohortOf("aaa", 10, nil)
+	earlier.Reading.FirstWrites = goldenFirstWrites(10)
+	later := observeCohortOf("bbb", 10, nil)
+	later.Reading.FirstWrites = goldenFirstWrites(10)
+	data := observeCompared(observeCompareData{Window: "30d", Split: "prompt_hash", Sessions: 20,
+		Earlier: earlier, Later: later, MinSessions: compareMinSessions})
+	if _, ok := findObserveChange(data.Changes, "first write", "search calls"); ok {
+		t.Fatalf("a row was drawn over cohorts that never wrote: %+v", data.Changes)
+	}
+}
+
+// The median is the middle of the sample, and the mean of the middle two
+// where there is no single middle.
+func TestObserveMedian(t *testing.T) {
+	for _, c := range []struct {
+		in   []int
+		want float64
+	}{
+		{nil, 0},
+		{[]int{4}, 4},
+		{[]int{9, 1, 5}, 5},
+		{[]int{9, 1, 5, 3}, 4},
+	} {
+		if got := observeMedian(c.in); got != c.want {
+			t.Fatalf("median of %v is %v, want %v", c.in, got, c.want)
 		}
 	}
 }

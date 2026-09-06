@@ -399,6 +399,50 @@ const (
 	ClassEmpty = "empty"
 )
 
+// The two halves of one reading: the tools a session finds its way around
+// with, and the tools that change something. How many of the first a session
+// spends before the first of the second is what says whether finding a place
+// to start is what sessions are costing, and it is a question about the
+// product that only the record can answer.
+// See docs/capabilities/sessions-and-memory.md#how-much-looking-comes-before-the-first-write.
+//
+// They are spelled out here rather than read from the constants those tools
+// are registered under, which is the same decision the dashboard's outcome
+// words are: this classifies rows written by every build that ever wrote
+// one. A name read through today's constant would silently reclassify every
+// old session the day a tool is renamed — the rows keep the spelling they
+// were written with, and nothing fails when they stop matching.
+//
+// A command is on neither list, because one tool name covers a grep and a
+// build and the record cannot tell them apart. Neither are the structural
+// data queries, git's reading half, or the structural rewriter — which
+// always previews and never writes, so it is neither the looking nor the end
+// of it. All of them answer a question about a file somebody has already
+// found, which is not the looking this measures.
+var (
+	searchTools = []string{
+		// Reads and listings.
+		"read_file", "list_directory",
+		// Searches and globs, structural and otherwise.
+		"search", "ast_grep", "glob", "fd",
+		// The language server's six questions.
+		"definition", "references", "workspace_symbol",
+		"document_symbol", "hover", "diagnostics",
+	}
+	writeTools = []string{"write_file", "edit_file", "git_write"}
+)
+
+// SearchToolNames is the tools a session finds its way around with: reads,
+// listings, searches, globs, and the language server's questions.
+func SearchToolNames() []string {
+	return append([]string(nil), searchTools...)
+}
+
+// WriteToolNames is the tools that change the tree.
+func WriteToolNames() []string {
+	return append([]string(nil), writeTools...)
+}
+
 // SummaryCode is a summarizer reading's state as the closed set
 // SignalSummary's reason is drawn from. It lives here rather than beside the
 // scheduler that happens to take the reading because every unattended

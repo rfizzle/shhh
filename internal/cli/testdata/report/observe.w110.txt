@@ -15,6 +15,10 @@
   ⚠ execute_command  8 calls · 2.4s  [25% failed]
       exit-status 2
 
+  FIRST WRITE
+
+  ✓ search calls  median 5 · 1 of 2 sessions that called a tool
+
   DECISIONS
 
   ✓ allowed · auto · mode-accept-edits  [14 times]

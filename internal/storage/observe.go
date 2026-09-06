@@ -15,8 +15,10 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -426,6 +428,25 @@ const (
 	observeSessionWindow = `started_at >= ?`
 )
 
+// observeEventSession narrows an event aggregate to one session, so a
+// figure a session's own page prints is drawn by the query the window and
+// the cohort are drawn by rather than by a second one beside it.
+const observeEventSession = `session_id = ?`
+
+// observeEventsOfWindowSessions is the window's events scoped by the session
+// that wrote them rather than by their own timestamps, which a reading of
+// whole sessions has to be: a session that was already open when the window
+// opened would otherwise be read as half of one, with its looking on one
+// side of the cutoff and the write that ended it on the other. It is how the
+// cohort scope is built, and for the same reason.
+//
+// It is deliberately not observeEventWindow, which every other aggregate in
+// this file takes. Those count events, so an event either side of the cutoff
+// is a whole fact on its own; this one counts what a session did before
+// something else it did, and half a session is not a smaller reading of it
+// but a wrong one.
+const observeEventsOfWindowSessions = `session_id IN (SELECT id FROM agent_sessions WHERE started_at >= ?)`
+
 // observeEventCohort and observeSessionCohort narrow those to the sessions
 // that ran under one value of a split column.
 //
@@ -544,13 +565,14 @@ func (db *DB) AgentCohorts(since time.Time, key string) ([]AgentCohort, error) {
 // the same shapes, so a figure on the comparison and the same figure on the
 // dashboard are the same query with a narrower scope.
 type AgentCohortReading struct {
-	Turns      []AgentTurnOutcome
-	Tools      []AgentToolUsage
-	ToolErrors []AgentToolErrorCount
-	Decisions  []AgentDecisionCount
-	Signals    []AgentSignalCount
-	Gates      []AgentGateVerdict
-	Outcomes   []AgentSessionOutcome
+	Turns       []AgentTurnOutcome
+	Tools       []AgentToolUsage
+	ToolErrors  []AgentToolErrorCount
+	FirstWrites []AgentFirstWrite
+	Decisions   []AgentDecisionCount
+	Signals     []AgentSignalCount
+	Gates       []AgentGateVerdict
+	Outcomes    []AgentSessionOutcome
 }
 
 // ReadAgentCohort runs those aggregates for one value of the split column.
@@ -574,6 +596,9 @@ func (db *DB) ReadAgentCohort(since time.Time, key, value string) (AgentCohortRe
 	}
 	if r.ToolErrors, err = db.agentToolErrors(events, cutoff, value); err != nil {
 		return AgentCohortReading{}, fmt.Errorf("query cohort tool errors: %w", err)
+	}
+	if r.FirstWrites, err = db.agentFirstWrites(events, cutoff, value); err != nil {
+		return AgentCohortReading{}, fmt.Errorf("query cohort first writes: %w", err)
 	}
 	if r.Decisions, err = db.agentDecisions(events, cutoff, value); err != nil {
 		return AgentCohortReading{}, fmt.Errorf("query cohort decisions: %w", err)
@@ -727,6 +752,105 @@ func (db *DB) agentToolErrors(scope string, args ...any) ([]AgentToolErrorCount,
 		out = append(out, c)
 	}
 	return out, rows.Err()
+}
+
+// AgentFirstWrite is how much looking one session did before it changed
+// anything: the calls it spent on reads, listings, searches, globs and the
+// language server before its first write, and whether it ever wrote at all.
+//
+// Wrote is the qualification the count cannot be read without. A session
+// that never wrote has no such figure — nothing bounds the looking — so it
+// is counted beside the rest rather than folded in at zero, which would read
+// as a session that found its place immediately.
+//
+// Calls and not rounds, which is the one place this differs from every other
+// per-turn figure in the file. The round a call was made in is optional in
+// the record: a surface that keeps no accounting writes the zero position,
+// and every row written before the headless run started counting its rounds
+// holds one. A round count over those rows is 1 for a session that read
+// forty files, which understates exactly the sessions this reading exists to
+// find; the tool name is on every row the record has ever held.
+// See docs/capabilities/sessions-and-memory.md#how-much-looking-comes-before-the-first-write.
+type AgentFirstWrite struct {
+	SessionID int64
+	Searches  int
+	Wrote     bool
+}
+
+// The first write is found by row id rather than by time or position: ids
+// are the order the events were appended in, and two calls in one round
+// share a timestamp to the millisecond often enough to matter.
+const agentFirstWritesQuery = `WITH calls AS (
+		   SELECT session_id, id, tool FROM agent_events WHERE kind = ? AND %s
+		 ), first_write AS (
+		   SELECT session_id, MIN(id) AS id FROM calls WHERE tool IN (%s) GROUP BY session_id
+		 )
+		 SELECT c.session_id, MAX(w.id) IS NOT NULL,
+		        COUNT(CASE WHEN c.id < w.id AND c.tool IN (%s) THEN 1 END)
+		 FROM calls c LEFT JOIN first_write w ON w.session_id = c.session_id
+		 GROUP BY c.session_id ORDER BY c.session_id`
+
+// AgentFirstWrites reads that for every session in the window that called a
+// tool at all. A session that called none is absent rather than present at
+// zero: it is a session with nothing to say about looking, not one that did
+// none.
+func (db *DB) AgentFirstWrites(since time.Time) ([]AgentFirstWrite, error) {
+	return db.agentFirstWrites(observeEventsOfWindowSessions, observeCutoff(since))
+}
+
+// AgentSessionFirstWrite is the same reading for one session, reported false
+// when that session called no tool. It goes through the same query as the
+// window and the cohort do, so the figure on a session's own page and the
+// figure it contributes to a rate cannot come to be counted differently.
+func (db *DB) AgentSessionFirstWrite(id int64) (AgentFirstWrite, bool, error) {
+	rows, err := db.agentFirstWrites(observeEventSession, id)
+	if err != nil || len(rows) == 0 {
+		return AgentFirstWrite{}, false, err
+	}
+	return rows[0], true, nil
+}
+
+func (db *DB) agentFirstWrites(scope string, args ...any) ([]AgentFirstWrite, error) {
+	writes, searches := observe.WriteToolNames(), observe.SearchToolNames()
+	query := fmt.Sprintf(agentFirstWritesQuery, scope, sqlPlaceholders(len(writes)), sqlPlaceholders(len(searches)))
+	// The order the placeholders are bound in is the order they appear in
+	// the text, which is the scope's, then the writes in the second common
+	// table expression, then the searches in the SELECT.
+	all := append([]any{AgentEventTool}, args...)
+	all = append(all, sqlStrings(writes)...)
+	all = append(all, sqlStrings(searches)...)
+
+	rows, err := db.sql.Query(query, all...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []AgentFirstWrite
+	for rows.Next() {
+		var f AgentFirstWrite
+		if err := rows.Scan(&f.SessionID, &f.Wrote, &f.Searches); err != nil {
+			return nil, err
+		}
+		out = append(out, f)
+	}
+	return out, rows.Err()
+}
+
+// sqlPlaceholders is a bind list of n parameters, for an IN whose length is
+// decided by a list in the code rather than by the caller.
+func sqlPlaceholders(n int) string {
+	return strings.TrimSuffix(strings.Repeat("?, ", n), ", ")
+}
+
+// sqlStrings widens a list of names into query arguments, which the driver
+// takes one at a time rather than as a slice.
+func sqlStrings(names []string) []any {
+	args := make([]any, len(names))
+	for i, n := range names {
+		args[i] = n
+	}
+	return args
 }
 
 type AgentDecisionCount struct {

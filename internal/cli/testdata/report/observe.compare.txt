@@ -17,6 +17,10 @@
   · cap-paused  40.0 → 40.0 rounds · 10% → 4% of turns (-6 pts)  [unchanged]
   · failed      6.5 → 5.8 rounds · 7% → 4% of turns (-3 pts)  [-11%]
 
+  FIRST WRITE
+
+  · search calls  6.5 → 5.0 calls · median · 73% → 79% wrote (+6 pts)  [-23%]
+
   TOOL ERRORS
 
   · exit-status  2.5% → 1.6% of calls  [-0.9 pts]

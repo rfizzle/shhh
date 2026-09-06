@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -667,11 +668,14 @@ type observeData struct {
 	ByModel    []storage.AgentModelUsage
 	ToolMix    []storage.AgentToolUsage
 	ToolErrors []storage.AgentToolErrorCount
-	Decisions  []storage.AgentDecisionCount
-	Turns      []storage.AgentTurnOutcome
-	Signals    []storage.AgentSignalCount
-	Gates      []storage.AgentGateVerdict
-	Outcomes   []storage.AgentSessionOutcome
+	// FirstWrites is one row per session that called a tool, carrying how
+	// much of that calling came before the session changed anything.
+	FirstWrites []storage.AgentFirstWrite
+	Decisions   []storage.AgentDecisionCount
+	Turns       []storage.AgentTurnOutcome
+	Signals     []storage.AgentSignalCount
+	Gates       []storage.AgentGateVerdict
+	Outcomes    []storage.AgentSessionOutcome
 }
 
 // readObserveData runs every aggregate the dashboard draws. Each query is
@@ -688,6 +692,7 @@ func readObserveData(db *storage.DB, window string, since time.Time) (observeDat
 		{"usage by model", func() (err error) { data.ByModel, err = db.AgentUsageByModel(since); return }},
 		{"tool mix", func() (err error) { data.ToolMix, err = db.AgentToolMix(since); return }},
 		{"tool errors", func() (err error) { data.ToolErrors, err = db.AgentToolErrors(since); return }},
+		{"first writes", func() (err error) { data.FirstWrites, err = db.AgentFirstWrites(since); return }},
 		{"decisions", func() (err error) { data.Decisions, err = db.AgentDecisions(since); return }},
 		{"turns", func() (err error) { data.Turns, err = db.AgentTurns(since); return }},
 		{"signals", func() (err error) { data.Signals, err = db.AgentSignals(since); return }},
@@ -725,6 +730,7 @@ func observeReport(data observeData) report.Report {
 		{Header: "BY DAY", Rows: observeDayRows(data.ByDay)},
 		{Header: "BY MODEL", Rows: observeModelRows(data.ByModel)},
 		{Header: "TOOLS", Rows: observeToolRows(data.ToolMix, data.ToolErrors)},
+		{Header: "FIRST WRITE", Rows: observeFirstWriteRows(data.FirstWrites)},
 		{Header: "DECISIONS", Rows: observeDecisionRows(data.Decisions)},
 		{Header: "TURNS", Rows: observeTurnRows(data.Turns)},
 		{Header: "SIGNALS", Rows: observeSignalRows(data.Signals)},
@@ -791,6 +797,64 @@ func observeToolRows(mix []storage.AgentToolUsage, errs []storage.AgentToolError
 // observeDecisionRows names who decided, in the transcript's own words: a
 // denial by a person is a preference and a denial by a rule is policy, and
 // the rows say which (docs/interface/principles.md#weight-tracks-risk).
+// observeFirstWriteRows is how much looking a session does before it changes
+// anything: the middle session's count of reads, searches, globs and
+// language-server calls made before its first write.
+//
+// The median rather than the mean, because this is a handful of sessions and
+// one afternoon spent reading a repository nobody here has opened before
+// moves a mean by its own share of the sample. And the sessions that never
+// wrote are counted beside it rather than in it: they have no such figure at
+// all, and a zero apiece would pull the middle of the sample onto sessions
+// that were never looking for a place to start.
+// See docs/capabilities/coding-agent.md#where-a-map-would-sit.
+func observeFirstWriteRows(firstWrites []storage.AgentFirstWrite) []report.Row {
+	var (
+		searches []int
+		never    int
+	)
+	for _, f := range firstWrites {
+		if !f.Wrote {
+			never++
+			continue
+		}
+		searches = append(searches, f.Searches)
+	}
+	if len(searches) == 0 {
+		return nil
+	}
+	// The population is named because it is not every session in the
+	// window: a session that called no tool at all is not in this reading,
+	// so a bare "9 of 10" would be read against the session count above it
+	// and come out short by however many sessions did nothing.
+	detail := fmt.Sprintf("%d of %s that called a tool", len(searches),
+		countOf(len(searches)+never, "session", "sessions"))
+	return []report.Row{{State: report.Pass, Name: "search calls",
+		Subject: "median " + observeCount(observeMedian(searches)), Detail: detail}}
+}
+
+// observeMedian is the middle of a sample, or the mean of the middle two.
+// It is written for ints because that is what the record holds, and returns
+// a float because the middle of an even sample is not one of them.
+func observeMedian(v []int) float64 {
+	if len(v) == 0 {
+		return 0
+	}
+	sorted := slices.Sorted(slices.Values(v))
+	mid := len(sorted) / 2
+	if len(sorted)%2 == 1 {
+		return float64(sorted[mid])
+	}
+	return float64(sorted[mid-1]+sorted[mid]) / 2
+}
+
+// observeCount writes a count that is usually whole: no decimal where there
+// is nothing after it, since `median 6.0` invites a reader to wonder what
+// the tenths are counting.
+func observeCount(v float64) string {
+	return strconv.FormatFloat(v, 'f', -1, 64)
+}
+
 func observeDecisionRows(decisions []storage.AgentDecisionCount) []report.Row {
 	rows := make([]report.Row, 0, len(decisions))
 	for _, d := range decisions {
@@ -1056,14 +1120,19 @@ func renderObserveSession(cmd *cobra.Command, db *storage.DB, id int64) error {
 	if err != nil {
 		return fmt.Errorf("query events: %w", err)
 	}
-	return report.Fprint(cmd.OutOrStdout(), observeSessionReport(s, events))
+	firstWrite, _, err := db.AgentSessionFirstWrite(id)
+	if err != nil {
+		return fmt.Errorf("query first write: %w", err)
+	}
+	return report.Fprint(cmd.OutOrStdout(), observeSessionReport(s, events, firstWrite))
 }
 
 // observeSessionReport builds that page. It is separate from the query so
 // the whole render can be held against a fixture: every event kind this
 // draws is a code some surface reports, and a surface that starts reporting
 // through a different path must still land on the same page.
-func observeSessionReport(s storage.AgentSessionSummary, events []storage.AgentExportEvent) report.Report {
+func observeSessionReport(s storage.AgentSessionSummary, events []storage.AgentExportEvent,
+	firstWrite storage.AgentFirstWrite) report.Report {
 	pairs := []report.Pair{
 		{Key: "started", Value: s.StartedAt.Local().Format("Jan 2 15:04")},
 		{Key: "model", Value: joinDetail(s.Provider, s.Model)},
@@ -1078,6 +1147,11 @@ func observeSessionReport(s storage.AgentSessionSummary, events []storage.AgentE
 		// A session nobody has answered for prints no row at all, which is a
 		// different fact from one somebody disliked.
 		{Key: "rated", Value: observeRating(s.Rating)},
+		// How much of the session went on finding a place to start. A
+		// session that never wrote gets no row: the count is the looking
+		// that a write ended, and there is none to report where nothing did
+		// (docs/capabilities/coding-agent.md#where-a-map-would-sit).
+		{Key: "first write", Value: observeFirstWriteOf(firstWrite)},
 		{Key: "tokens", Value: observeTokens(s.TokensIn, s.TokensOut)},
 		{Key: "cost", Value: observeCost(s.Cost)},
 		{Key: "version", Value: s.Version},
@@ -1129,6 +1203,15 @@ func observeSessionReport(s storage.AgentSessionSummary, events []storage.AgentE
 		last.Rows = append(last.Rows, observeEventRow(e))
 	}
 	return r
+}
+
+// observeFirstWriteOf is one session's looking as the page states it, and
+// nothing at all for a session that never wrote.
+func observeFirstWriteOf(f storage.AgentFirstWrite) string {
+	if !f.Wrote {
+		return ""
+	}
+	return "after " + countOf(f.Searches, "search call", "search calls")
 }
 
 // observeSettingsPairs is what the session ran under, beside the provenance
@@ -1295,7 +1378,9 @@ type observeChange struct {
 	Section string `json:"section"`
 	Name    string `json:"name"`
 	// Qualifier is what distinguishes two rows of the same name — which
-	// decider allowed a call, which reason a signal fired for.
+	// decider allowed a call, which reason a signal fired for — or, where a
+	// section holds one row, what the pair of figures on it is a statistic
+	// of.
 	Qualifier string `json:"qualifier,omitempty"`
 	// Unit is what the two values are counted in, in the words the row
 	// prints them in.
@@ -1456,6 +1541,31 @@ func (c *observeCohortData) completed() float64 {
 	return 0
 }
 
+// firstWriteLooking is the middle session's count of search calls before its
+// first write, and the share of the cohort's sessions that reached one. The
+// two come back together because the first only means anything beside the
+// second: a cohort whose sessions stopped writing altogether would otherwise
+// report the looking of whichever few still did as an improvement.
+//
+// The share is over every session in the cohort, which is the denominator
+// the report's header prints — including the ones that called no tool at
+// all, since a session that never called one never wrote either. The
+// dashboard's own row cannot use that denominator and says so instead: it is
+// drawn from the reading alone, which holds only the sessions that called
+// something.
+func (c *observeCohortData) firstWriteLooking() (median, wrote float64) {
+	var searches []int
+	for _, f := range c.Reading.FirstWrites {
+		if f.Wrote {
+			searches = append(searches, f.Searches)
+		}
+	}
+	if c.Sessions > 0 {
+		wrote = float64(len(searches)) / float64(c.Sessions)
+	}
+	return observeMedian(searches), wrote
+}
+
 // MarshalJSON writes a cohort as the denominators the report's header
 // prints, and not as the aggregates behind them. The figures are in the
 // changes; a second copy of the raw counts beside them would be a second
@@ -1564,8 +1674,9 @@ func observeCompared(data observeCompareData) observeCompareData {
 //
 // The rates that answer "did the change help" lead, and the descriptions
 // follow: how often a turn had to be corrected, how many rounds a turn took
-// at equal outcome, how often a tool failed and how, whether the gate
-// passed, and what a finished session cost. Each fact appears once — the
+// at equal outcome, how much looking came before the first write, how often
+// a tool failed and how, whether the gate passed, and what a finished
+// session cost. Each fact appears once — the
 // steering signals are dropped from the signal block and the gate from
 // nowhere else — because one fact counted twice on one screen reads as two.
 //
@@ -1578,6 +1689,7 @@ func observeCompareChanges(earlier, later *observeCohortData) []observeChange {
 	var out []observeChange
 	out = append(out, observeSteeringChanges(earlier, later)...)
 	out = append(out, observeRoundsChanges(earlier, later)...)
+	out = append(out, observeFirstWriteChanges(earlier, later)...)
 	out = append(out, observeToolErrorChanges(earlier, later)...)
 	out = append(out, observeGateChanges(earlier, later)...)
 	out = append(out, observeCostChanges(earlier, later)...)
@@ -1716,6 +1828,31 @@ func observeRoundsChanges(earlier, later *observeCohortData) []observeChange {
 		out[i] = c
 	}
 	return out
+}
+
+// observeFirstWriteChanges is how much looking a cohort does before it
+// changes anything, with the share of its sessions that got that far drawn
+// beside it — the same qualification the rounds block carries, and for the
+// same reason: a cohort that got its looking down by writing less often is
+// not a cohort that found its way around faster.
+//
+// One row and no split by anything, because the question it answers is one
+// question: whether a session opening on this tree spends its first rounds
+// finding a place to start. A cohort where nothing was ever written draws no
+// row at all rather than a pair of zeroes.
+// See docs/capabilities/coding-agent.md#where-a-map-would-sit.
+func observeFirstWriteChanges(earlier, later *observeCohortData) []observeChange {
+	earlierMedian, earlierWrote := earlier.firstWriteLooking()
+	laterMedian, laterWrote := later.firstWriteLooking()
+	if earlierWrote == 0 && laterWrote == 0 {
+		return nil
+	}
+	c := observeChangeOf("first write", "search calls", "calls", observeRounds,
+		earlierMedian, laterMedian)
+	beside := observeChangeOf("first write", "search calls", "wrote", observeShare,
+		earlierWrote, laterWrote)
+	c.key, c.Qualifier, c.Beside = "search calls", "median", &beside
+	return []observeChange{c}
 }
 
 // observeToolErrorChanges is the tool error rate by class, over every call

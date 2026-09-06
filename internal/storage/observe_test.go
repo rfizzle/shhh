@@ -1133,3 +1133,130 @@ func TestPruneAgentObservability_NoWindowPrunesNothing(t *testing.T) {
 		t.Errorf("the session was pruned by a window nobody set")
 	}
 }
+
+// How much looking a session did before it changed anything: every call to a
+// read, a search, a glob or the language server that came before the first
+// write, and none of what came after it.
+func TestAgentFirstWrites_CountsTheLookingBeforeTheFirstWrite(t *testing.T) {
+	db := openTestDB(t)
+
+	wrote, err := db.StartAgentSession("code", "openai", "gpt-test")
+	if err != nil {
+		t.Fatalf("start session: %v", err)
+	}
+	for _, tool := range []string{
+		"read_file", "search", "hover", "execute_command", "web_fetch",
+		"edit_file", "read_file", "read_file", "write_file",
+	} {
+		if err := db.RecordAgentEvent(wrote, AgentEvent{Kind: AgentEventTool, Tool: tool, Outcome: "ok"}); err != nil {
+			t.Fatalf("record event: %v", err)
+		}
+	}
+
+	// A session that only ever looked has no such figure at all.
+	looked, err := db.StartAgentSession("code", "openai", "gpt-test")
+	if err != nil {
+		t.Fatalf("start session: %v", err)
+	}
+	for _, tool := range []string{"read_file", "glob", "read_file"} {
+		if err := db.RecordAgentEvent(looked, AgentEvent{Kind: AgentEventTool, Tool: tool, Outcome: "ok"}); err != nil {
+			t.Fatalf("record event: %v", err)
+		}
+	}
+
+	// A session that called no tool at all is not in the reading.
+	if _, err := db.StartAgentSession("chat", "openai", "gpt-test"); err != nil {
+		t.Fatalf("start session: %v", err)
+	}
+
+	rows, err := db.AgentFirstWrites(time.Now().Add(-time.Hour))
+	if err != nil {
+		t.Fatalf("first writes: %v", err)
+	}
+	want := []AgentFirstWrite{
+		{SessionID: wrote, Searches: 3, Wrote: true},
+		{SessionID: looked, Searches: 0, Wrote: false},
+	}
+	if len(rows) != len(want) {
+		t.Fatalf("read %d sessions, want %d: %+v", len(rows), len(want), rows)
+	}
+	for i, w := range want {
+		if rows[i] != w {
+			t.Fatalf("session %d reads as %+v, want %+v", w.SessionID, rows[i], w)
+		}
+	}
+
+	one, ok, err := db.AgentSessionFirstWrite(wrote)
+	if err != nil || !ok {
+		t.Fatalf("session first write: %v (found %v)", err, ok)
+	}
+	if one != want[0] {
+		t.Fatalf("one session's own reading is %+v, want %+v", one, want[0])
+	}
+}
+
+// The window's reading and a cohort's are the same query, so a session
+// outside the cohort is outside its figure too.
+func TestReadAgentCohort_FirstWritesAreTheCohortsOwn(t *testing.T) {
+	db := openTestDB(t)
+
+	for _, c := range []struct {
+		version string
+		tools   []string
+	}{
+		{"v1", []string{"read_file", "read_file", "edit_file"}},
+		{"v2", []string{"read_file", "edit_file"}},
+	} {
+		id, err := db.StartAgentSession("code", "openai", "gpt-test")
+		if err != nil {
+			t.Fatalf("start session: %v", err)
+		}
+		if err := db.StampAgentSession(id, AgentProvenance{Version: c.version}); err != nil {
+			t.Fatalf("stamp session: %v", err)
+		}
+		for _, tool := range c.tools {
+			if err := db.RecordAgentEvent(id, AgentEvent{Kind: AgentEventTool, Tool: tool, Outcome: "ok"}); err != nil {
+				t.Fatalf("record event: %v", err)
+			}
+		}
+	}
+
+	reading, err := db.ReadAgentCohort(time.Now().Add(-time.Hour), "version", "v1")
+	if err != nil {
+		t.Fatalf("read cohort: %v", err)
+	}
+	if len(reading.FirstWrites) != 1 || reading.FirstWrites[0].Searches != 2 {
+		t.Fatalf("the cohort's looking is not its own: %+v", reading.FirstWrites)
+	}
+}
+
+// A session already running when the window opened is read whole. Scoped by
+// each event's own timestamp instead, its looking would sit inside the
+// window and the write that ended it outside, and it would report as a
+// session that never wrote.
+func TestAgentFirstWrites_ASessionOlderThanTheWindowIsReadWhole(t *testing.T) {
+	db := openTestDB(t)
+	id, err := db.StartAgentSession("code", "openai", "gpt-test")
+	if err != nil {
+		t.Fatalf("start session: %v", err)
+	}
+	for _, tool := range []string{"read_file", "read_file", "edit_file"} {
+		if err := db.RecordAgentEvent(id, AgentEvent{Kind: AgentEventTool, Tool: tool, Outcome: "ok"}); err != nil {
+			t.Fatalf("record event: %v", err)
+		}
+	}
+	// Backdate the events to before the cutoff, leaving the session inside
+	// it: the row is the window's, its events are not.
+	if _, err := db.sql.Exec(`UPDATE agent_events SET created_at = ? WHERE session_id = ?`,
+		observeCutoff(time.Now().Add(-48*time.Hour)), id); err != nil {
+		t.Fatalf("backdate events: %v", err)
+	}
+
+	rows, err := db.AgentFirstWrites(time.Now().Add(-time.Hour))
+	if err != nil {
+		t.Fatalf("first writes: %v", err)
+	}
+	if len(rows) != 1 || !rows[0].Wrote || rows[0].Searches != 2 {
+		t.Fatalf("the session was not read whole: %+v", rows)
+	}
+}

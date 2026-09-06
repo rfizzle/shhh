@@ -5,6 +5,7 @@
   turns:         1
   outcome:       completed
   rated:         worked
+  first write:   after 5 search calls
   tokens:        ↑41.2k ↓9.8k
   cost:          $0.51
   version:       v1.4.0

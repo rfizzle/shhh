@@ -229,6 +229,33 @@ whether what it has been doing still compiles, and it is the same answer, so
 it is one tool rather than a habit of making a trivial edit to provoke a
 re-check.
 
+## Where a map would sit
+
+A map of the repository — every file with its top-level symbols, ranked by
+how often the rest of the tree names them — would sit exactly here: after
+the instruction files in the prompt prefix, before the first search, as the
+answer to "which file" that search and the language server can only answer
+once they have been asked something.
+
+It is not built, and the reason is a measurement rather than a preference.
+The record counts what each session spends on reads, searches, globs and the
+language server before it first changes a file, and sessions here reach that
+first change in a handful of calls. A map is tokens on every turn of every
+session, cached with the prefix and paid for again after every compaction;
+against a few calls of searching it buys nothing, and it would be a second
+description of the tree to keep true beside the tree itself.
+
+That is a number and not a verdict, and it can move. `shhh observe` prints
+it — the middle session's count, and the share of sessions that got as far
+as a write — so the case for a map is a reading anyone can take rather than
+an argument anyone has to win. What would make it worth building is that
+count climbing — sessions reading a dozen files before they can change one;
+what will not is a preference for having one.
+
+An embedding index is refused outright and separately, on grounds that no
+measurement changes: it is a persistent store that goes stale the moment the
+next edit lands, and a read that needs the network.
+
 ## The readers refuse before they spend
 
 A reader that cannot help is cheapest when it says so in a line.

@@ -231,3 +231,38 @@ func TestSessionOutcome_NeverWritesUnknown(t *testing.T) {
 		}
 	}
 }
+
+// A tool on both lists would be looking and the end of looking at once: the
+// call that stops the count would also be counted by it, and which of the
+// two won would depend on the order a query happened to test them in.
+func TestToolNames_NothingIsBothLookingAndWriting(t *testing.T) {
+	writes := map[string]bool{}
+	for _, w := range WriteToolNames() {
+		writes[w] = true
+	}
+	for _, s := range SearchToolNames() {
+		if writes[s] {
+			t.Errorf("%q is counted as looking and as writing", s)
+		}
+	}
+	// The lists are what a query names in SQL, so an empty one would quietly
+	// turn the reading into a count of nothing.
+	if len(writes) == 0 || len(SearchToolNames()) == 0 {
+		t.Fatal("a tool list is empty")
+	}
+}
+
+// The caller gets a copy: the lists are named by a query on every call, and
+// one that came back as the package's own slice could be sorted or appended
+// to under it.
+func TestToolNames_AreNotThePackagesOwnSlice(t *testing.T) {
+	got := SearchToolNames()
+	if len(got) == 0 {
+		t.Fatal("no search tools")
+	}
+	first := got[0]
+	got[0] = "clobbered"
+	if SearchToolNames()[0] != first {
+		t.Fatal("a caller can rewrite the record's vocabulary")
+	}
+}
