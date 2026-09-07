@@ -385,6 +385,21 @@ out, which a run of more than one turn — a child handed another instruction at
 the boundary — would otherwise receive stamped with rounds this turn is
 counting.
 
+**Both bounds on acting are counted in the reading interval, and a surface
+hands over the interval rather than the products of it.**
+`Agent.SetInterveneBounds` takes the interval in force and how many of them a
+cooldown runs for — `SummaryRun.Bounds` is the unattended run's pair and the
+chat model's `considerVerdict` computes its own — because a surface that set
+one and forgot the other would judge a reading's age against an interval
+nobody reads on. `ConsiderVerdict` is handed the round it is asked at and
+drops a verdict at or past one interval old, returning the word the record
+files a withheld interruption under; the surfaces record it and show nothing,
+since nothing was said to the model. The age is judged where each surface
+applies a reading: the boundary that collects a parked verdict in
+`Headless.Run`, and `finishSummary` in the chat model. `Headless.OnWithheld`
+is how that reaches an unattended record, beside `OnIntervene` for the ones
+that were delivered.
+
 **A person steering a running turn moves the target; nothing else does.**
 `agent.ExtendTarget` adds their words to the instruction the readings are
 judged against and `agent.TargetLine` is how a surface quotes the result on

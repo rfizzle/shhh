@@ -98,6 +98,15 @@ type Headless struct {
 	// front-end can show it the way the chat transcript does. It may be nil.
 	OnIntervene func(iv Intervention)
 
+	// OnWithheld, when set, is told the word for an interruption the policy
+	// owed a reading and did not deliver. Nothing was said to the model, so
+	// there is nothing to show — this is for the record alone, and the run
+	// that needs it is the one whose summariser is slower than its rounds:
+	// every reading it takes is too old to act on by the time it lands, and
+	// from outside it is indistinguishable from a run that never drifted. It
+	// may be nil.
+	OnWithheld func(reason string)
+
 	// OnTree, when set, is told each time the run was told the tree moved
 	// (tree.go), for the same reason. It may be nil.
 	OnTree func(n TreeNotice)
@@ -471,12 +480,18 @@ func (h *Headless) Run(prompt string) (string, error) {
 		// one returned is offered to the policy here. The reading never
 		// blocks the round, so a run is never slower for having one.
 		if h.Summary != nil {
-			h.Agent.SetInterveneCooldown(h.Summary.Cooldown())
+			h.Agent.SetInterveneBounds(h.Summary.Bounds())
 			if v, ok := h.Summary.Tick(h.Agent.Rounds()); ok {
 				if h.OnSummary != nil {
 					h.OnSummary(v)
 				}
-				h.Agent.ConsiderVerdict(v, true)
+				// The age is judged here, where the reading is collected: a
+				// verdict is parked when it lands and taken off at the next
+				// boundary, so this round is the first one it could have
+				// acted on and the only honest place to ask how old it is.
+				if reason := h.Agent.ConsiderVerdict(v, h.Agent.Rounds(), true); reason != "" && h.OnWithheld != nil {
+					h.OnWithheld(reason)
+				}
 			}
 		}
 		if iv, ok := h.Agent.NextIntervention(h.summaryTarget()); ok {

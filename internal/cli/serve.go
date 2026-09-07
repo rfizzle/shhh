@@ -403,6 +403,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		OnText:       l.obs.text,
 		OnToolCall:   l.obs.call,
 		OnIntervene:  l.obs.intervene,
+		OnWithheld:   l.obs.withheld,
 		OnSummary:    l.obs.summary,
 		OnCompact:    l.obs.compact,
 		OnTree:       l.obs.tree,

@@ -143,7 +143,7 @@ func (r *SummaryRun) Spend() (in, out int64) {
 
 // interval is the round interval in force, doubled while readings are
 // failing: a provider that is refusing should be asked less often, not at the
-// same rate for the rest of the run.
+// same rate for the rest of the run. Caller holds the lock.
 func (r *SummaryRun) interval() int {
 	n := r.summarizer.Config().Interval()
 	if r.failures >= 2 {
@@ -152,18 +152,25 @@ func (r *SummaryRun) interval() int {
 	return n
 }
 
-// Cooldown is the minimum rounds between two verdict-driven interventions,
-// derived from the reading interval so it scales with the configuration.
-// Zero on a nil runner, which leaves the Agent's default in place.
-func (r *SummaryRun) Cooldown() int {
+// Bounds are the two numbers this run's intervention policy measures in: the
+// reading interval in force, and how many of them a cooldown runs for. Zeroes
+// on a nil runner, which leaves the Agent's defaults in place.
+//
+// The interval in force, not the configured one: a run backing off from a
+// failing summariser reads half as often, so a cooldown that did not widen
+// with it would let two interventions land on consecutive readings, and a
+// verdict would be called too old to act on while the next reading was still
+// half an interval away.
+func (r *SummaryRun) Bounds() (interval, cooldownIntervals int) {
 	if r == nil {
-		return 0
+		return 0, 0
 	}
-	// The interval in force, not the configured one: a run backing off from
-	// a failing summariser reads half as often, and a cooldown that did not
-	// widen with it would let two interventions land on consecutive
-	// readings.
-	return r.summarizer.Config().CooldownIntervals() * r.interval()
+	// Under the lock because the failure count the interval widens on is
+	// written by the reading's own goroutine, and this is read from the round
+	// boundary while one is out.
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.interval(), r.summarizer.Config().CooldownIntervals()
 }
 
 // Tick is called at a round boundary. It starts a reading if one is due and

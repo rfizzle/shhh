@@ -2,10 +2,12 @@ package chat
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -94,6 +96,55 @@ func TestIntervene_AnOnTargetReadingDeliversNothing(t *testing.T) {
 	}
 	if last := m.transcript[len(m.transcript)-1]; last.kind != entrySummary {
 		t.Fatalf("a run that is on target is not interrupted, got kind %v", last.kind)
+	}
+}
+
+// A session judges a reading's age where it applies it, which is the moment
+// it lands: there is nowhere else it waits. A reading that took a whole
+// interval to come back describes rounds the session has passed, and the
+// steer it would earn would name a departure the next digest no longer shows.
+// The reading itself is not thrown away — the rail still shows it, and the
+// record still counts it — only the interruption is withheld, under the same
+// code as the ones that were delivered.
+func TestIntervene_AReadingAnIntervalOldStillLandsAndSteersNothing(t *testing.T) {
+	m := verdictModel(t, "off_target")
+	var signals []string
+	m = m.WithObserver(observe.Observer{Signal: func(_ observe.Pos, code, reason string) {
+		signals = append(signals, code+":"+reason)
+	}})
+
+	msg := driveSummaryDone(t, m.forceSummaryCmd())
+	// The rounds the session took while the reading was out.
+	m = advanceRounds(m, m.summaryInterval())
+	m.finishSummary(msg)
+	m.injectInterventions()
+
+	if got := lastUserMessage(m); strings.Contains(got, "moved away") {
+		t.Errorf("a reading a whole interval old steered the session:\n%s", got)
+	}
+	if m.summary.last == nil || m.summary.last.State != agent.SummaryOffTarget {
+		t.Error("the reading itself should still be on the rail")
+	}
+	if last := m.transcript[len(m.transcript)-1]; last.kind != entrySummary {
+		t.Errorf("the reading should still write its own row, got kind %v", last.kind)
+	}
+	want := observe.SignalIntervene + ":" + agent.InterveneStale
+	if !slices.Contains(signals, want) {
+		t.Errorf("signals = %v, want one %q", signals, want)
+	}
+}
+
+// One round younger is one round inside the interval, and the session acts on
+// it exactly as it always did.
+func TestIntervene_AReadingARoundYoungerStillSteers(t *testing.T) {
+	m := verdictModel(t, "off_target")
+	msg := driveSummaryDone(t, m.forceSummaryCmd())
+	m = advanceRounds(m, m.summaryInterval()-1)
+	m.finishSummary(msg)
+	m.injectInterventions()
+
+	if got := lastUserMessage(m); !strings.Contains(got, "moved away") {
+		t.Errorf("a reading inside the interval should still steer, got:\n%s", got)
 	}
 }
 

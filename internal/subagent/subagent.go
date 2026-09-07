@@ -1859,6 +1859,13 @@ func (s *Supervisor) run(c *child) {
 		OnSummary: func(v agent.SummaryVerdict) {
 			signal(observe.SignalSummary, observe.SummaryCode(v.State))
 		},
+		// An interruption a reading earned and did not get. Nothing was said
+		// to the child, so nothing goes on its lane; the record is the only
+		// place a fan-out whose readings all land too late can be told from
+		// one whose children never drifted.
+		OnWithheld: func(reason string) {
+			signal(observe.SignalIntervene, reason)
+		},
 		Gate: func(tc provider.ToolCall) bool { return c.env.Gated[tc.Name] },
 		Resolve: func(tc provider.ToolCall) string {
 			return s.resolveGated(c, tc)

@@ -30,13 +30,6 @@ import (
 	"github.com/rfizzle/shhh/internal/digest"
 )
 
-// DefaultInterveneCooldown is the minimum rounds between two verdict-driven
-// interventions, for a caller that does not set one from its reading
-// interval. A reading stands for several rounds, and acting on each of them
-// would be the same message three times while the turn is still acting on the
-// first.
-const DefaultInterveneCooldown = 20
-
 // InterveneKind is what a turn is being interrupted for.
 type InterveneKind int
 
@@ -64,6 +57,15 @@ func (k InterveneKind) Signal() string {
 	}
 	return "check-in"
 }
+
+// InterveneStale is the fourth word of that same closed set, and the only one
+// no kind carries: it names an interruption that was owed and withheld
+// because the reading that earned it described work the run had already left
+// behind. It is spelled here rather than in the recorder so the three that
+// were delivered and the one that was not are one vocabulary — a reader
+// asking how often the machinery interrupts is asking about the same
+// denominator either way.
+const InterveneStale = "stale"
 
 // Word is the kind as the next reading's digest names it, a closed set like
 // the signal's. The early check-in and the interval's own share a word
@@ -211,25 +213,49 @@ type interveneState struct {
 	kind         InterveneKind
 	verdictRound int
 	lastRound    int
-	cooldown     int
+	// interval is the reading interval in force and cooldownIntervals how
+	// many of them pass between two verdict-driven interventions. Both bounds
+	// on acting are measured in the first, which is why it is the number the
+	// surface hands over rather than the products of it.
+	interval          int
+	cooldownIntervals int
 }
 
-// SetInterveneCooldown sets the minimum rounds between two verdict-driven
-// interventions. Callers derive it from the reading interval so it scales
-// with whatever the summarizer is configured to; zero or less restores the
-// default.
-func (a *Agent) SetInterveneCooldown(n int) {
-	if n <= 0 {
-		n = DefaultInterveneCooldown
+// SetInterveneBounds installs the two numbers every bound on interrupting a
+// turn is measured in: the reading interval in force — which a surface
+// backing off from a failing summariser has already widened — and how many
+// intervals pass before another verdict may interrupt. Zero or less on either
+// takes the built-in one.
+//
+// One call for both, because both are the same surface's answer to the same
+// question and a surface that set one and forgot the other would judge a
+// reading's age against an interval nobody is reading on. What it buys is
+// worth stating: a reading stands for several rounds, so acting on each of
+// them would be the same message three times while the turn is still acting
+// on the first, and a reading that took longer than the interval to come back
+// describes a turn that has since moved on.
+func (a *Agent) SetInterveneBounds(interval, cooldownIntervals int) {
+	a.intervene.interval = interval
+	a.intervene.cooldownIntervals = cooldownIntervals
+}
+
+// readingInterval is the interval in force, defaulted. It is the age at which
+// a verdict is too old to act on as well as the unit the cooldown is counted
+// in, so an unset one falls back to the summarizer's own default rather than
+// to zero — zero would drop every reading ever taken.
+func (a *Agent) readingInterval() int {
+	if a.intervene.interval <= 0 {
+		return DefaultSummaryInterval
 	}
-	a.intervene.cooldown = n
+	return a.intervene.interval
 }
 
 func (a *Agent) interveneCooldown() int {
-	if a.intervene.cooldown <= 0 {
-		return DefaultInterveneCooldown
+	n := a.intervene.cooldownIntervals
+	if n <= 0 {
+		n = DefaultCooldownIntervals
 	}
-	return a.intervene.cooldown
+	return n * a.readingInterval()
 }
 
 // ConsiderVerdict decides whether a fresh reading is worth interrupting the
@@ -241,9 +267,25 @@ func (a *Agent) interveneCooldown() int {
 // closing reading arrives after one has stopped, and there is nothing left to
 // interrupt. SummaryOnTarget and SummaryUncertain do nothing: an intervention
 // on a shrug is worse than no intervention.
-func (a *Agent) ConsiderVerdict(v SummaryVerdict, working bool) {
+//
+// rounds is where the run stands now, which is the caller's to say and not
+// this object's: a reading is offered where it is collected, and the two
+// surfaces collect at different moments — an unattended run at the round
+// boundary after the reading landed, a session the moment it lands. The
+// verdict carries the round it was asked at, so the two together are the
+// reading's age.
+//
+// It returns the word the record files a withheld interruption under, and
+// empty when nothing was withheld or when what withheld it is not an event.
+// The cooldown is not one — it is the mechanism working, and its rate is
+// already readable from the interventions that did fire — and neither is a
+// reading being offered twice. A reading that came back too old to act on is:
+// nothing else in the record says the summariser is slower than the run it is
+// reading, and a run that looks like it was never off target is exactly what
+// that failure looks like from the outside.
+func (a *Agent) ConsiderVerdict(v SummaryVerdict, rounds int, working bool) string {
 	if !working || v.Failed {
-		return
+		return ""
 	}
 	var kind InterveneKind
 	switch {
@@ -261,17 +303,40 @@ func (a *Agent) ConsiderVerdict(v SummaryVerdict, working bool) {
 		if p := a.intervene.pending; p != nil && v.Round > p.Round {
 			a.intervene.pending = nil
 		}
-		return
+		return ""
 	}
 	if v.Round == a.intervene.verdictRound {
-		return // this reading has already had its say
+		return "" // this reading has already had its say
 	}
-	if a.intervene.lastRound > 0 && a.rounds-a.intervene.lastRound < a.interveneCooldown() {
-		return
+	// A verdict has an age, and past one interval it is describing work the
+	// run left behind. A reading is asked at a round, takes as long as the
+	// summarizer takes, and is collected at a boundary after that — so a run
+	// of fast read-only rounds against a slow reading can be five rounds on
+	// from the departure by the time the verdict arrives. Delivered then, the
+	// steer names something the next digest no longer shows, the model
+	// compares the two and correctly answers that it is on target, and the
+	// run has spent a round and started a cooldown for nothing.
+	//
+	// One interval is the bound because it is the run's own answer to how
+	// long a reading stands for: past it there is another reading due, and
+	// the case for interrupting should be made by that one instead. Judged
+	// before the cooldown, which a stale verdict may also be inside, because
+	// the age is a fact about the reading and the cooldown is a fact about
+	// the run — and counting a late reading as a cooldown drop would hide
+	// the very thing this is here to make countable.
+	if rounds-v.Round >= a.readingInterval() {
+		return InterveneStale
+	}
+	// The same now the age was judged against: one moment per call, so a
+	// reading cannot be young enough to act on and old enough to be past a
+	// cooldown at the same time.
+	if a.intervene.lastRound > 0 && rounds-a.intervene.lastRound < a.interveneCooldown() {
+		return ""
 	}
 	verdict := v
 	a.intervene.pending = &verdict
 	a.intervene.kind = kind
+	return ""
 }
 
 // NextIntervention returns the interruption this round boundary owes, if any,

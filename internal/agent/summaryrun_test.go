@@ -223,8 +223,8 @@ func TestSummaryRun_DriftVerdictSteersAnUnattendedRun(t *testing.T) {
 
 	a := New(nil, noStream)
 	a.rounds = FirstSummaryRound
-	a.SetInterveneCooldown(r.Cooldown())
-	a.ConsiderVerdict(v, true)
+	a.SetInterveneBounds(r.Bounds())
+	a.ConsiderVerdict(v, a.rounds, true)
 
 	iv, ok := a.NextIntervention("ship the parser")
 	if !ok || iv.Kind != InterveneSteer {
@@ -235,10 +235,22 @@ func TestSummaryRun_DriftVerdictSteersAnUnattendedRun(t *testing.T) {
 	}
 }
 
-func TestSummaryRun_CooldownFollowsTheReadingInterval(t *testing.T) {
+// The two bounds the policy measures in are one answer, so a surface cannot
+// hand over the interval and forget what the cooldown is counted in.
+func TestSummaryRun_BoundsAreTheIntervalAndHowManyOfThem(t *testing.T) {
 	r, _ := testSummaryRun(t, &slowProvider{}, "x")
-	if got := r.Cooldown(); got != 20 {
-		t.Errorf("Cooldown() = %d, want two intervals of 10", got)
+	interval, intervals := r.Bounds()
+	if interval != 10 || intervals != 2 {
+		t.Errorf("Bounds() = %d, %d, want an interval of 10 and two of them", interval, intervals)
+	}
+
+	// A failing summariser reads half as often, and both bounds widen with
+	// it: a verdict stands for longer because the next one is further off.
+	r.mu.Lock()
+	r.failures = 2
+	r.mu.Unlock()
+	if interval, intervals = r.Bounds(); interval != 20 || intervals != 2 {
+		t.Errorf("backed off Bounds() = %d, %d, want a doubled interval", interval, intervals)
 	}
 }
 
@@ -257,7 +269,7 @@ func TestSummaryRun_NilWhenNotConfigured(t *testing.T) {
 	if _, ok := r.Tick(50); ok {
 		t.Error("a nil runner produces no verdict")
 	}
-	if r.Cooldown() != 0 || r.Recorder() != nil {
+	if interval, intervals := r.Bounds(); interval != 0 || intervals != 0 || r.Recorder() != nil {
 		t.Error("a nil runner answers empty")
 	}
 	in, out := r.Spend()

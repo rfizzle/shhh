@@ -20,7 +20,7 @@ func enoughVerdict(round int) SummaryVerdict {
 func TestConsiderVerdict_DriftEarnsASteer(t *testing.T) {
 	a := New(nil, noStream)
 	a.rounds = 5
-	a.ConsiderVerdict(driftVerdict(5), running)
+	a.ConsiderVerdict(driftVerdict(5), a.rounds, running)
 
 	iv, ok := a.NextIntervention("build the exporter")
 	if !ok {
@@ -46,7 +46,7 @@ func TestConsiderVerdict_DriftEarnsASteer(t *testing.T) {
 func TestConsiderVerdict_SufficiencyEarnsAnEarlyCheckIn(t *testing.T) {
 	a := New(nil, noStream)
 	a.rounds = 5
-	a.ConsiderVerdict(enoughVerdict(5), running)
+	a.ConsiderVerdict(enoughVerdict(5), a.rounds, running)
 
 	iv, ok := a.NextIntervention("build the exporter")
 	if !ok || iv.Kind != InterveneEnough {
@@ -67,7 +67,7 @@ func TestConsiderVerdict_OnTargetAndUnclearEarnNothing(t *testing.T) {
 	for _, state := range []SummaryState{SummaryOnTarget, SummaryUncertain} {
 		a := New(nil, noStream)
 		a.rounds = 5
-		a.ConsiderVerdict(SummaryVerdict{State: state, Round: 5}, running)
+		a.ConsiderVerdict(SummaryVerdict{State: state, Round: 5}, a.rounds, running)
 		if _, ok := a.NextIntervention("x"); ok {
 			t.Errorf("%v should not interrupt the turn", state)
 		}
@@ -79,7 +79,7 @@ func TestConsiderVerdict_OnTargetAndUnclearEarnNothing(t *testing.T) {
 func TestConsiderVerdict_AFailedReadingActsOnNothing(t *testing.T) {
 	a := New(nil, noStream)
 	a.rounds = 5
-	a.ConsiderVerdict(SummaryVerdict{State: SummaryOffTarget, Round: 5, Failed: true}, running)
+	a.ConsiderVerdict(SummaryVerdict{State: SummaryOffTarget, Round: 5, Failed: true}, a.rounds, running)
 	if _, ok := a.NextIntervention("x"); ok {
 		t.Fatal("a failed reading must not steer")
 	}
@@ -90,7 +90,7 @@ func TestConsiderVerdict_AFailedReadingActsOnNothing(t *testing.T) {
 func TestConsiderVerdict_AnIdleTurnIsNotInterrupted(t *testing.T) {
 	a := New(nil, noStream)
 	a.rounds = 5
-	a.ConsiderVerdict(driftVerdict(5), false)
+	a.ConsiderVerdict(driftVerdict(5), a.rounds, false)
 	if _, ok := a.NextIntervention("x"); ok {
 		t.Fatal("a finished turn must not be steered")
 	}
@@ -100,11 +100,11 @@ func TestConsiderVerdict_AnIdleTurnIsNotInterrupted(t *testing.T) {
 func TestNextIntervention_OneReadingActsOnce(t *testing.T) {
 	a := New(nil, noStream)
 	a.rounds = 5
-	a.ConsiderVerdict(driftVerdict(5), running)
+	a.ConsiderVerdict(driftVerdict(5), a.rounds, running)
 	if _, ok := a.NextIntervention("x"); !ok {
 		t.Fatal("setup: expected the first steer")
 	}
-	a.ConsiderVerdict(driftVerdict(5), running) // the same reading again
+	a.ConsiderVerdict(driftVerdict(5), a.rounds, running) // the same reading again
 	if _, ok := a.NextIntervention("x"); ok {
 		t.Fatal("a reading that has already acted must not act again")
 	}
@@ -116,9 +116,9 @@ func TestNextIntervention_OneReadingActsOnce(t *testing.T) {
 func TestConsiderVerdict_ALaterReadingRetiresAQueuedSteer(t *testing.T) {
 	a := New(nil, noStream)
 	a.rounds = 5
-	a.ConsiderVerdict(driftVerdict(5), running)
+	a.ConsiderVerdict(driftVerdict(5), a.rounds, running)
 	a.rounds = 8
-	a.ConsiderVerdict(SummaryVerdict{State: SummaryOnTarget, Round: 8}, running)
+	a.ConsiderVerdict(SummaryVerdict{State: SummaryOnTarget, Round: 8}, a.rounds, running)
 	if _, ok := a.NextIntervention("x"); ok {
 		t.Fatal("a steer whose case was withdrawn by a later reading must not be delivered")
 	}
@@ -129,9 +129,9 @@ func TestConsiderVerdict_ALaterReadingRetiresAQueuedSteer(t *testing.T) {
 	// is one on a shrug's predecessor.
 	b := New(nil, noStream)
 	b.rounds = 5
-	b.ConsiderVerdict(driftVerdict(5), running)
+	b.ConsiderVerdict(driftVerdict(5), b.rounds, running)
 	b.rounds = 8
-	b.ConsiderVerdict(SummaryVerdict{State: SummaryUncertain, Round: 8}, running)
+	b.ConsiderVerdict(SummaryVerdict{State: SummaryUncertain, Round: 8}, b.rounds, running)
 	if _, ok := b.NextIntervention("x"); ok {
 		t.Fatal("an unclear reading after a drift one leaves nothing to deliver")
 	}
@@ -143,8 +143,8 @@ func TestConsiderVerdict_ALaterReadingRetiresAQueuedSteer(t *testing.T) {
 func TestConsiderVerdict_AnOlderReadingLeavesTheQueueAlone(t *testing.T) {
 	a := New(nil, noStream)
 	a.rounds = 8
-	a.ConsiderVerdict(driftVerdict(8), running)
-	a.ConsiderVerdict(SummaryVerdict{State: SummaryOnTarget, Round: 5}, running)
+	a.ConsiderVerdict(driftVerdict(8), a.rounds, running)
+	a.ConsiderVerdict(SummaryVerdict{State: SummaryOnTarget, Round: 5}, a.rounds, running)
 	if iv, ok := a.NextIntervention("x"); !ok || iv.Kind != InterveneSteer {
 		t.Fatal("a reading older than the queued one must not retire it")
 	}
@@ -154,11 +154,96 @@ func TestConsiderVerdict_AnOlderReadingLeavesTheQueueAlone(t *testing.T) {
 func TestConsiderVerdict_AFailedReadingRetiresNothing(t *testing.T) {
 	a := New(nil, noStream)
 	a.rounds = 5
-	a.ConsiderVerdict(driftVerdict(5), running)
+	a.ConsiderVerdict(driftVerdict(5), a.rounds, running)
 	a.rounds = 8
-	a.ConsiderVerdict(SummaryVerdict{State: SummaryOnTarget, Round: 8, Failed: true}, running)
+	a.ConsiderVerdict(SummaryVerdict{State: SummaryOnTarget, Round: 8, Failed: true}, a.rounds, running)
 	if _, ok := a.NextIntervention("x"); !ok {
 		t.Fatal("a reading that did not happen must not retire the queued steer")
+	}
+}
+
+// A verdict has an age, and past one interval it describes work the run has
+// left behind. Delivered then, the steer names a departure the next digest no
+// longer shows, the model compares the two and correctly answers that it is
+// on target, and the run has spent a round and started a cooldown for
+// nothing.
+func TestConsiderVerdict_AReadingAnIntervalOldEarnsNothing(t *testing.T) {
+	a := New(nil, noStream)
+	a.SetInterveneBounds(10, 2)
+	a.rounds = 15
+	if got := a.ConsiderVerdict(driftVerdict(5), a.rounds, running); got != InterveneStale {
+		t.Errorf("withheld = %q, want %q", got, InterveneStale)
+	}
+	if _, ok := a.NextIntervention("x"); ok {
+		t.Fatal("a reading a whole interval old must not steer")
+	}
+
+	// One round younger is one round inside the interval, and acts exactly as
+	// it always did: the bound is a bound and not a discount.
+	b := New(nil, noStream)
+	b.SetInterveneBounds(10, 2)
+	b.rounds = 14
+	if got := b.ConsiderVerdict(driftVerdict(5), b.rounds, running); got != "" {
+		t.Errorf("withheld = %q, want a reading that still acts", got)
+	}
+	if iv, ok := b.NextIntervention("x"); !ok || iv.Kind != InterveneSteer {
+		t.Fatalf("kind = %v ok = %v, want the steer a nine-round-old reading earns", iv.Kind, ok)
+	}
+}
+
+// Sufficiency ages the same way. There is no such thing as an interruption
+// worth making about a round the run passed an interval ago.
+func TestConsiderVerdict_ASufficiencyReadingAgesToo(t *testing.T) {
+	a := New(nil, noStream)
+	a.SetInterveneBounds(10, 2)
+	a.rounds = 20
+	if got := a.ConsiderVerdict(enoughVerdict(9), a.rounds, running); got != InterveneStale {
+		t.Errorf("withheld = %q, want %q", got, InterveneStale)
+	}
+	if _, ok := a.NextIntervention("x"); ok {
+		t.Fatal("a sufficiency reading a whole interval old must not ask early")
+	}
+}
+
+// The bound is the interval in force, which is the one the surface hands
+// over: a run backing off from a failing summariser reads half as often, and
+// a verdict stands for as long as it is until the next reading. Judged
+// against the configured interval instead, every reading a backed-off run
+// took would be thrown away for being late to a schedule nobody is keeping.
+func TestConsiderVerdict_TheAgeIsMeasuredInTheIntervalInForce(t *testing.T) {
+	a := New(nil, noStream)
+	a.SetInterveneBounds(20, 2)
+	a.rounds = 20
+	if got := a.ConsiderVerdict(driftVerdict(5), a.rounds, running); got != "" {
+		t.Errorf("withheld = %q, want a reading fifteen rounds into a twenty-round interval to act", got)
+	}
+	if iv, ok := a.NextIntervention("x"); !ok || iv.Kind != InterveneSteer {
+		t.Fatalf("kind = %v ok = %v, want the steer", iv.Kind, ok)
+	}
+}
+
+// The reading that was too old is the only withholding the record hears
+// about. A cooldown is the mechanism working and its rate is already readable
+// from the interventions that did fire; a reading offered twice is one
+// reading. Counting either as a late reading would bury the number this is
+// here to make countable.
+func TestConsiderVerdict_ACooldownAndARepeatAreNotWithheldReadings(t *testing.T) {
+	a := New(nil, noStream)
+	a.SetInterveneBounds(10, 2)
+	a.rounds = 5
+	if got := a.ConsiderVerdict(driftVerdict(5), a.rounds, running); got != "" {
+		t.Fatalf("setup: withheld = %q", got)
+	}
+	if _, ok := a.NextIntervention("x"); !ok {
+		t.Fatal("setup: expected the first steer")
+	}
+	// The same reading again, then a fresh one well inside the cooldown.
+	if got := a.ConsiderVerdict(driftVerdict(5), a.rounds, running); got != "" {
+		t.Errorf("a reading offered twice reported as withheld: %q", got)
+	}
+	a.rounds = 12
+	if got := a.ConsiderVerdict(driftVerdict(12), a.rounds, running); got != "" {
+		t.Errorf("a cooldown reported as a late reading: %q", got)
 	}
 }
 
@@ -187,7 +272,7 @@ func TestIntervention_RowIsTheRoundTheKindAndTheReason(t *testing.T) {
 func TestNextIntervention_CarriesTheReadingsReason(t *testing.T) {
 	a := New(nil, noStream)
 	a.rounds = 5
-	a.ConsiderVerdict(driftVerdict(5), running)
+	a.ConsiderVerdict(driftVerdict(5), a.rounds, running)
 	iv, ok := a.NextIntervention("build the exporter")
 	if !ok {
 		t.Fatal("setup: expected the steer")
@@ -204,21 +289,22 @@ func TestNextIntervention_CarriesTheReadingsReason(t *testing.T) {
 // same interruption.
 func TestNextIntervention_OneCooldownAcrossBothKinds(t *testing.T) {
 	a := New(nil, noStream)
-	a.SetInterveneCooldown(20)
+	// Ten rounds between readings, two of them between interventions.
+	a.SetInterveneBounds(10, 2)
 	a.rounds = 5
-	a.ConsiderVerdict(driftVerdict(5), running)
+	a.ConsiderVerdict(driftVerdict(5), a.rounds, running)
 	if _, ok := a.NextIntervention("x"); !ok {
 		t.Fatal("setup: expected the first steer")
 	}
 
 	a.rounds = 24 // 19 rounds on, one short
-	a.ConsiderVerdict(enoughVerdict(24), running)
+	a.ConsiderVerdict(enoughVerdict(24), a.rounds, running)
 	if _, ok := a.NextIntervention("x"); ok {
 		t.Fatal("a sufficiency reading inside the cooldown of a steer")
 	}
 
 	a.rounds = 25
-	a.ConsiderVerdict(enoughVerdict(25), running)
+	a.ConsiderVerdict(enoughVerdict(25), a.rounds, running)
 	if _, ok := a.NextIntervention("x"); !ok {
 		t.Fatal("past the cooldown the next reading acts")
 	}
@@ -278,7 +364,7 @@ func TestNextIntervention_TheFinishIsTheSurfaces(t *testing.T) {
 		reading := New(nil, noStream)
 		reading.SetFinished(tc.finished)
 		reading.rounds = 5
-		reading.ConsiderVerdict(enoughVerdict(5), running)
+		reading.ConsiderVerdict(enoughVerdict(5), reading.rounds, running)
 		iv, ok = reading.NextIntervention("build the exporter")
 		if !ok || iv.Kind != InterveneEnough {
 			t.Fatalf("%s: kind = %v ok = %v, want InterveneEnough", tc.name, iv.Kind, ok)
@@ -298,7 +384,7 @@ func TestNextIntervention_TheFinishIsTheSurfaces(t *testing.T) {
 func TestNextIntervention_AReadingWinsOverTheClock(t *testing.T) {
 	a := New(nil, noStream)
 	a.rounds = DefaultCheckInInterval
-	a.ConsiderVerdict(driftVerdict(DefaultCheckInInterval), running)
+	a.ConsiderVerdict(driftVerdict(DefaultCheckInInterval), a.rounds, running)
 
 	iv, ok := a.NextIntervention("build the exporter")
 	if !ok || iv.Kind != InterveneSteer {
@@ -319,7 +405,7 @@ func TestNextIntervention_AReadingWinsOverTheClock(t *testing.T) {
 func TestStartTurn_RetiresAQueuedVerdict(t *testing.T) {
 	a := New(nil, noStream)
 	a.rounds = 5
-	a.ConsiderVerdict(driftVerdict(5), running)
+	a.ConsiderVerdict(driftVerdict(5), a.rounds, running)
 	a.StartTurn("something else entirely")
 	if _, ok := a.NextIntervention("x"); ok {
 		t.Fatal("a new turn retires the queued verdict")
@@ -372,7 +458,7 @@ func TestSteerPrompt_TheNewestInstructionSurvivesTheBound(t *testing.T) {
 
 	a := New(nil, noStream)
 	a.rounds = 5
-	a.ConsiderVerdict(driftVerdict(5), running)
+	a.ConsiderVerdict(driftVerdict(5), a.rounds, running)
 	iv, ok := a.NextIntervention(target)
 	if !ok {
 		t.Fatal("a drifting reading should earn an interruption")

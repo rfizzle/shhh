@@ -200,11 +200,17 @@ const (
 	// how many messages, as a number.
 	SignalSteer = "steered"
 	// SignalIntervene: the session interrupted its own turn to ask it to take
-	// stock. Reason: "steer" (a drift verdict was acted on) or "check-in"
-	// (the round interval came round). Separate from SignalSteer because the
-	// question a drift rate asks is what the session did on its own, and
-	// folding the two together would put the user's own messages in the
-	// numerator.
+	// stock, or owed itself an interruption and withheld it. Reason: "steer"
+	// (a drift verdict was acted on), "enough" (a reading said the turn had
+	// what it needs, so the check-in came early), "check-in" (the round
+	// interval came round), or "stale" (a reading earned an interruption and
+	// came back describing rounds the turn had already passed, so none was
+	// delivered). The withheld one shares the code because it is the same
+	// population: a run whose summariser is slower than its rounds looks from
+	// the outside exactly like one that never drifted, and the qualifier is
+	// what tells them apart. Separate from SignalSteer because the question a
+	// drift rate asks is what the session did on its own, and folding the two
+	// together would put the user's own messages in the numerator.
 	SignalIntervene = "intervened"
 	// SignalTree: the session told its turn the working tree moved in a way
 	// its own edits do not explain. Reason: "head" (the commit or branch

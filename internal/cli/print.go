@@ -322,6 +322,14 @@ func (h headlessObserver) intervene(iv agent.Intervention) {
 	h.signal(observe.SignalIntervene, iv.Kind.Signal())
 }
 
+// withheld records an interruption the policy owed a reading and did not
+// deliver, under the same code as the ones that were: a reader asking how a
+// run's interruptions were decided is asking about one population, and a
+// withheld one is the answer to why a run that drifted was never steered.
+func (h headlessObserver) withheld(reason string) {
+	h.signal(observe.SignalIntervene, reason)
+}
+
 // tree records the run being told the tree moved under it.
 func (h headlessObserver) tree(n agent.TreeNotice) {
 	h.signal(observe.SignalTree, n.Signal())
@@ -891,7 +899,8 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 			fmt.Fprintf(os.Stderr, "» %s\n", iv.Notice)
 			obs.intervene(iv)
 		},
-		OnSummary: summary,
+		OnSummary:  summary,
+		OnWithheld: obs.withheld,
 		// A run nobody is reading still says when its conversation was
 		// recycled, on the same stream as its other activity: an answer that
 		// arrived after a compaction was written by a model that had been

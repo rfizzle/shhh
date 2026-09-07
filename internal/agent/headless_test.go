@@ -1034,7 +1034,7 @@ func TestHeadlessRun_ASteerMovesTheTargetAndRetiresTheQueuedVerdict(t *testing.T
 		// A reading landed during the round the person typed into: the
 		// ordinary case, and the one where the machinery would otherwise
 		// answer them with an accusation about the work before they spoke.
-		a.ConsiderVerdict(driftVerdict(a.Rounds()), running)
+		a.ConsiderVerdict(driftVerdict(a.Rounds()), a.Rounds(), running)
 		return []string{"actually, fix the lexer first"}
 	}}
 	if _, err := h.Run("ship the parser"); err != nil {
@@ -1049,6 +1049,59 @@ func TestHeadlessRun_ASteerMovesTheTargetAndRetiresTheQueuedVerdict(t *testing.T
 		if strings.Contains(m.Content, "moved away") {
 			t.Fatalf("a verdict about the instruction before the steer was delivered:\n%s", m.Content)
 		}
+	}
+}
+
+// The age of a verdict is judged where the unattended run collects it. A
+// reading is parked when it lands and taken off at the next boundary, so a
+// summariser slower than the run's rounds hands the policy a departure the
+// child has already left behind — and the record is the only place that can
+// be seen, since nothing is said to the child at all.
+func TestHeadlessRun_AVerdictTooOldToActOnIsWithheldAndRecorded(t *testing.T) {
+	a := New(nil, scriptedStream(t,
+		toolCallRound(provider.ToolCall{ID: "c1", Name: "search"}),
+		toolCallRound(provider.ToolCall{ID: "c2", Name: "search"}),
+		toolCallRound(provider.ToolCall{ID: "c3", Name: "search"}),
+		doneRound("done"),
+	))
+
+	// Two rounds between readings, so a verdict asked at round 1 and
+	// collected at the boundary of round 3 is exactly one interval old, which
+	// is the first age that earns nothing.
+	run := NewSummaryRun(
+		NewSummarizer(&slowProvider{}, SummaryConfig{Model: "fast", IntervalRounds: 2, MinGap: -1}),
+		NewRecorder(0), "ship the parser")
+	if run == nil {
+		t.Fatal("expected a runner")
+	}
+	a.SetExecutor(func(string, json.RawMessage) (string, error) {
+		if a.Rounds() == 3 {
+			// A reading asked at round 1 comes back two rounds later, which
+			// is the ordinary shape of this: it is parked where it lands and
+			// collected at the boundary after that.
+			run.mu.Lock()
+			v := driftVerdict(1)
+			run.verdict = &v
+			run.mu.Unlock()
+		}
+		return "r", nil
+	})
+
+	var withheld []string
+	h := &Headless{Agent: a, Summary: run, OnWithheld: func(reason string) {
+		withheld = append(withheld, reason)
+	}}
+	if _, err := h.Run("ship the parser"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	for _, m := range a.Messages() {
+		if strings.Contains(m.Content, "moved away") {
+			t.Fatalf("a verdict about a round the run had left behind was delivered:\n%s", m.Content)
+		}
+	}
+	if len(withheld) != 1 || withheld[0] != InterveneStale {
+		t.Fatalf("withheld = %v, want one %q", withheld, InterveneStale)
 	}
 }
 

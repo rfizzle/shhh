@@ -17,13 +17,22 @@ import (
 // considerVerdict offers a fresh reading to the agent's policy. It only ever
 // queues; the round boundary delivers.
 //
-// The cooldown is counted in reading intervals rather than rounds, and in the
-// interval in force rather than the configured one: a session backing off
-// from a failing summariser reads half as often, and a cooldown that did not
-// widen with it would let two interventions land on consecutive readings.
+// Both bounds are counted in the interval in force rather than the configured
+// one: a session backing off from a failing summariser reads half as often,
+// and a cooldown that did not widen with it would let two interventions land
+// on consecutive readings.
+//
+// A reading is judged for age where it is applied, which for a session is the
+// moment it lands rather than a later boundary — there is nowhere else it
+// waits. An interruption withheld because the reading described a round the
+// session has long since passed is recorded and nothing more: no message
+// joins the conversation, so there is nothing to show the reader, and the row
+// on the rail is already the reading itself.
 func (m *Model) considerVerdict(v agent.SummaryVerdict) {
-	m.agent.SetInterveneCooldown(m.summarizer.Config().CooldownIntervals() * m.summaryInterval())
-	m.agent.ConsiderVerdict(v, m.working())
+	m.agent.SetInterveneBounds(m.summaryInterval(), m.summarizer.Config().CooldownIntervals())
+	if reason := m.agent.ConsiderVerdict(v, m.agent.Rounds(), m.working()); reason != "" {
+		m.signal(observe.SignalIntervene, reason)
+	}
 }
 
 // WithSteering installs the interruption machinery's tuning: the thresholds

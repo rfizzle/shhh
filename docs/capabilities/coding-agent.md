@@ -385,6 +385,25 @@ fresher reading can arrive first and find the session on target — and
 delivering the earlier one then would accuse a session of a departure the
 machinery itself had already stopped believing in.
 
+**A verdict has an age, and past one reading interval it earns nothing.** A
+reading is asked at a round, takes as long as the reader takes, and is applied
+at the first moment the run can act on it, so a run of fast read-only rounds
+against a slow reader can be several rounds beyond the departure by the time
+the verdict arrives. Delivered then, the steer names something the next digest
+no longer shows, the run compares the two and correctly answers that it is on
+target, and a round and a cooldown have been spent on a question about work
+that is already finished. One interval is the bound because it is the run's
+own answer to how long a reading stands for: past it another reading is due,
+and the case for interrupting should be made by that one instead. The bound is
+the interval actually in force, so a run backing off from a failing reader —
+which reads half as often — does not throw away every verdict it manages to
+get. Only the interruption is withheld: the reading itself still reaches the
+rail, the record and the next digest, because what it says about the work is
+true whatever it costs to act on it. The record files the withheld one under
+the same code as the interruptions that were delivered, since a run whose
+reader is slower than its rounds otherwise reads exactly like a run that never
+drifted.
+
 ## The interval is the last thing watching
 
 The check-in fires on a clock, and how long that clock should be depends
