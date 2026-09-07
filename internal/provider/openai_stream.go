@@ -13,12 +13,105 @@ type toolCallAccumulator struct {
 	args string
 }
 
+// toolCallSet holds a round's tool calls in the order the stream opened them,
+// addressed by the id the rest of the session answers them by.
+//
+// The `index` field is not that address. A gateway is free to number a round's
+// calls from 1, to leave a gap where a call was abandoned, or to omit the
+// index from the continuation chunks altogether, and a set keyed by index
+// answered all three by folding two calls into one: the model asks for two
+// tools, gets a result for one, and the turn runs on owing an answer nobody
+// will send. The Responses reader keys its calls by id for the same reason.
+// The index survives here only as the address for chunks that carry no id,
+// which in this dialect is every fragment after the one that opens a call.
+type toolCallSet struct {
+	order   []*toolCallAccumulator
+	byID    map[string]*toolCallAccumulator
+	byIndex map[int]*toolCallAccumulator
+}
+
+func newToolCallSet() *toolCallSet {
+	return &toolCallSet{
+		byID:    map[string]*toolCallAccumulator{},
+		byIndex: map[int]*toolCallAccumulator{},
+	}
+}
+
+// errUnaddressedToolCall is a chunk carrying neither of the two addresses.
+// There is no honest place to put it: read as call 0, which is what this did
+// once, it appends one call's arguments to another call's and hands a tool
+// input the model never wrote — silently, and invisibly in the transcript. A
+// round that ends here keeps the calls that were finished, so the session can
+// still offer to continue from them.
+var errUnaddressedToolCall = errors.New("tool call chunk carries neither an id nor an index")
+
+// accumulate places one chunk's fragment on the call it belongs to, opening
+// the call when this is the chunk that names it.
+func (s *toolCallSet) accumulate(tc openai.ToolCall) (*toolCallAccumulator, error) {
+	acc := s.find(tc)
+	if acc == nil {
+		if tc.ID == "" && tc.Index == nil {
+			return nil, errUnaddressedToolCall
+		}
+		acc = &toolCallAccumulator{}
+		s.order = append(s.order, acc)
+	}
+	if tc.ID != "" {
+		acc.id = tc.ID
+		s.byID[tc.ID] = acc
+	}
+	if tc.Index != nil {
+		s.byIndex[*tc.Index] = acc
+	}
+	if tc.Function.Name != "" {
+		acc.name = tc.Function.Name
+	}
+	acc.args += tc.Function.Arguments
+	return acc, nil
+}
+
+// find resolves the addresses on a chunk against the calls already open. An
+// index addresses only the call it was last seen on: a gateway that reuses a
+// number for a second call names that call's id in the same chunk, so the id
+// decides and the number follows the new call.
+func (s *toolCallSet) find(tc openai.ToolCall) *toolCallAccumulator {
+	if tc.ID != "" {
+		if acc, ok := s.byID[tc.ID]; ok {
+			return acc
+		}
+	}
+	if tc.Index == nil {
+		return nil
+	}
+	acc, ok := s.byIndex[*tc.Index]
+	if !ok || (tc.ID != "" && acc.id != "" && acc.id != tc.ID) {
+		return nil
+	}
+	return acc
+}
+
+// calls assembles the accumulated deltas in the order the calls were opened.
+// It is called on a half-filled set too, when a stream breaks or a ceiling
+// lands mid-accumulation, so a call that was opened and never named is still
+// carried here and judged by whoever asks for whole calls.
+func (s *toolCallSet) calls() []ToolCall {
+	calls := make([]ToolCall, 0, len(s.order))
+	for _, acc := range s.order {
+		calls = append(calls, ToolCall{
+			ID:        acc.id,
+			Name:      acc.name,
+			Arguments: acc.args,
+		})
+	}
+	return calls
+}
+
 func streamOpenAIToolCalls(stream *openai.ChatCompletionStream, classify func(error) error) <-chan StreamEvent {
 	ch := make(chan StreamEvent)
 	go func() {
 		defer close(ch)
 		defer stream.Close()
-		toolArgs := map[int]*toolCallAccumulator{}
+		toolCalls := newToolCallSet()
 		var usage *Usage
 		var stop StopReason
 		// The reason and the tokens arrive in separate chunks, so the ending
@@ -30,14 +123,14 @@ func streamOpenAIToolCalls(stream *openai.ChatCompletionStream, classify func(er
 		for {
 			resp, err := stream.Recv()
 			if errors.Is(err, io.EOF) {
-				ch <- terminalOpenAIEvent(toolArgs, usage, stop)
+				ch <- terminalOpenAIEvent(toolCalls, usage, stop)
 				return
 			}
 			if err != nil {
 				// The calls the model had finished writing travel with the
 				// failure, so the session can offer to continue from them
 				// rather than only from the top.
-				ch <- StreamEvent{ToolCalls: CompletedToolCalls(buildToolCalls(toolArgs)), Err: classify(err), Done: true}
+				ch <- StreamEvent{ToolCalls: CompletedToolCalls(toolCalls.calls()), Err: classify(err), Done: true}
 				return
 			}
 
@@ -55,7 +148,7 @@ func streamOpenAIToolCalls(stream *openai.ChatCompletionStream, classify func(er
 				// that ended on the reason alone threw them away, so every
 				// round that called a tool went unbilled and uncalibrated.
 				if stopped {
-					ch <- terminalOpenAIEvent(toolArgs, usage, stop)
+					ch <- terminalOpenAIEvent(toolCalls, usage, stop)
 					return
 				}
 			}
@@ -72,22 +165,11 @@ func streamOpenAIToolCalls(stream *openai.ChatCompletionStream, classify func(er
 			}
 
 			for _, tc := range delta.ToolCalls {
-				idx := 0
-				if tc.Index != nil {
-					idx = *tc.Index
+				acc, err := toolCalls.accumulate(tc)
+				if err != nil {
+					ch <- StreamEvent{ToolCalls: CompletedToolCalls(toolCalls.calls()), Err: classify(err), Done: true}
+					return
 				}
-				acc, exists := toolArgs[idx]
-				if !exists {
-					acc = &toolCallAccumulator{}
-					toolArgs[idx] = acc
-				}
-				if tc.ID != "" {
-					acc.id = tc.ID
-				}
-				if tc.Function.Name != "" {
-					acc.name = tc.Function.Name
-				}
-				acc.args += tc.Function.Arguments
 				// The arguments as they are written. This dialect puts the
 				// id on the first chunk of a call and omits it from the
 				// rest, so the fragment is addressed from the accumulator
@@ -120,14 +202,14 @@ func streamOpenAIToolCalls(stream *openai.ChatCompletionStream, classify func(er
 // chunk. A ceiling reached mid-call keeps only the calls that are whole —
 // half a JSON object would reach a tool as malformed input and be answered as
 // though the model had asked for something.
-func terminalOpenAIEvent(toolArgs map[int]*toolCallAccumulator, usage *Usage, stop StopReason) StreamEvent {
-	calls := buildToolCalls(toolArgs)
+func terminalOpenAIEvent(toolCalls *toolCallSet, usage *Usage, stop StopReason) StreamEvent {
+	calls := toolCalls.calls()
 	if stop == StopLength {
 		calls = CompletedToolCalls(calls)
 	}
 	if len(calls) == 0 {
-		// buildToolCalls returns an empty non-nil slice for an empty map, and
-		// a terminal event carrying one is a round with tool calls to every
+		// calls() returns an empty non-nil slice for an empty set, and a
+		// terminal event carrying one is a round with tool calls to every
 		// reader that only checks the length.
 		calls = nil
 	}
@@ -151,23 +233,4 @@ func openAIStop(reason string) StopReason {
 	default:
 		return StopOther
 	}
-}
-
-// buildToolCalls assembles the accumulated deltas in index order. It is
-// called on a half-filled map too, when a stream breaks mid-accumulation
-// , so a gap in the indices is skipped rather than dereferenced.
-func buildToolCalls(accumulators map[int]*toolCallAccumulator) []ToolCall {
-	calls := make([]ToolCall, 0, len(accumulators))
-	for i := 0; i < len(accumulators); i++ {
-		acc, ok := accumulators[i]
-		if !ok {
-			continue
-		}
-		calls = append(calls, ToolCall{
-			ID:        acc.id,
-			Name:      acc.name,
-			Arguments: acc.args,
-		})
-	}
-	return calls
 }

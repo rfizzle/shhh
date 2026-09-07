@@ -8,6 +8,8 @@ import (
 	"errors"
 	"io"
 	"testing"
+
+	openai "github.com/sashabaranov/go-openai"
 )
 
 func TestCompletedToolCalls_KeepsOnlyWholeCalls(t *testing.T) {
@@ -32,15 +34,28 @@ func TestCompletedToolCalls_EmptyIsNil(t *testing.T) {
 	}
 }
 
-func TestBuildToolCalls_SkipsGapsInAPartialMap(t *testing.T) {
-	// A stream that broke mid-accumulation can leave the index map with a
-	// hole in it; the assembly walks past it rather than dereferencing it.
-	calls := buildToolCalls(map[int]*toolCallAccumulator{
-		0: {id: "a", name: "read_file", args: "{}"},
-		2: {id: "c", name: "list_dir", args: "{}"},
-	})
-	if len(calls) != 1 || calls[0].ID != "a" {
-		t.Fatalf("assembly should stop at the gap, got %+v", calls)
+func TestToolCallSet_AssemblesEveryCallItOpened(t *testing.T) {
+	// A stream that broke mid-accumulation leaves calls in both states: one
+	// the model finished, and one opened by an index whose id never arrived.
+	// Both are assembled, in the order they were opened, and which of them is
+	// whole enough to run is judged once, afterwards.
+	set := newToolCallSet()
+	first, second := 1, 2
+	for _, chunk := range []openai.ToolCall{
+		{Index: &first, ID: "a", Function: openai.FunctionCall{Name: "read_file", Arguments: "{}"}},
+		{Index: &second, Function: openai.FunctionCall{Arguments: `{"path":`}},
+	} {
+		if _, err := set.accumulate(chunk); err != nil {
+			t.Fatalf("accumulating %+v: %v", chunk, err)
+		}
+	}
+
+	calls := set.calls()
+	if len(calls) != 2 || calls[0].ID != "a" || calls[1].ID != "" {
+		t.Fatalf("both calls should survive the assembly in order, got %+v", calls)
+	}
+	if whole := CompletedToolCalls(calls); len(whole) != 1 || whole[0].ID != "a" {
+		t.Fatalf("only the finished call is runnable, got %+v", whole)
 	}
 }
 

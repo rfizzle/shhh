@@ -138,3 +138,97 @@ func TestStreamOpenAI_AToolRoundReportsUsageFoldedIntoTheFinishChunk(t *testing.
 		t.Fatalf("usage = %+v, want 999 prompt tokens", final.Usage)
 	}
 }
+
+// A round's calls are addressed by id and not by their position in the
+// stream. Two calls numbered 1 and 2 — a gateway that starts at one, or one
+// that left a gap where a call was abandoned — used to come back as a single
+// call, so the model received a result for one tool it asked for and the turn
+// ran on owing an answer for the other.
+func TestStreamOpenAI_ParallelCallsAtIndexesThatAreNotADenseRun(t *testing.T) {
+	chunks := []string{
+		`{"id":"chatcmpl-1","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"role":"assistant","content":""}}]}`,
+		`{"id":"chatcmpl-1","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"tool_calls":[{"index":1,"id":"call_a","type":"function","function":{"name":"read_file","arguments":""}}]}}]}`,
+		`{"id":"chatcmpl-1","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"tool_calls":[{"index":2,"id":"call_b","type":"function","function":{"name":"list_dir","arguments":""}}]}}]}`,
+		`{"id":"chatcmpl-1","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"tool_calls":[{"index":1,"function":{"arguments":"{\"path\":\"a.go\"}"}}]}}]}`,
+		`{"id":"chatcmpl-1","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"tool_calls":[{"index":2,"function":{"arguments":"{\"path\":\".\"}"}}]}}]}`,
+		`{"id":"chatcmpl-1","object":"chat.completion.chunk","choices":[{"index":0,"delta":{},"finish_reason":"tool_calls"}]}`,
+	}
+	srv := openAISSEServer(t, chunks)
+	p := newTestOpenAI(srv.URL+"/v1", "gpt-4o")
+
+	ch, err := p.StreamCompletion(context.Background(), []Message{{Role: RoleUser, Content: "read a.go and list ."}}, CompletionOpts{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	fragments, final := drainFragments(t, ch)
+
+	wantFragments(t, fragments, []ToolCallDelta{
+		{ID: "call_a", Arguments: `{"path":"a.go"}`},
+		{ID: "call_b", Arguments: `{"path":"."}`},
+	})
+	if len(final.ToolCalls) != 2 {
+		t.Fatalf("the round asked for two tools and delivered %d: %+v", len(final.ToolCalls), final.ToolCalls)
+	}
+	want := []ToolCall{
+		{ID: "call_a", Name: "read_file", Arguments: `{"path":"a.go"}`},
+		{ID: "call_b", Name: "list_dir", Arguments: `{"path":"."}`},
+	}
+	for i, call := range final.ToolCalls {
+		if call != want[i] {
+			t.Errorf("call %d = %+v, want %+v", i, call, want[i])
+		}
+	}
+}
+
+// A gateway that names the call on every chunk and the index on none of them
+// still assembles one call: the id is the address, and the index is only the
+// fallback for the chunks that carry no id.
+func TestStreamOpenAI_AContinuationWithoutAnIndexReachesItsCallByID(t *testing.T) {
+	chunks := []string{
+		`{"id":"chatcmpl-1","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"tool_calls":[{"id":"call_abc","type":"function","function":{"name":"read_file","arguments":""}}]}}]}`,
+		`{"id":"chatcmpl-1","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"tool_calls":[{"id":"call_abc","function":{"arguments":"{\"path\":"}}]}}]}`,
+		`{"id":"chatcmpl-1","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"tool_calls":[{"id":"call_abc","function":{"arguments":"\"main.go\"}"}}]}}]}`,
+		`{"id":"chatcmpl-1","object":"chat.completion.chunk","choices":[{"index":0,"delta":{},"finish_reason":"tool_calls"}]}`,
+	}
+	srv := openAISSEServer(t, chunks)
+	p := newTestOpenAI(srv.URL+"/v1", "gpt-4o")
+
+	ch, err := p.StreamCompletion(context.Background(), []Message{{Role: RoleUser, Content: "read main.go"}}, CompletionOpts{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, final := drainFragments(t, ch)
+
+	if final.Err != nil {
+		t.Fatalf("the round failed: %v", final.Err)
+	}
+	want := ToolCall{ID: "call_abc", Name: "read_file", Arguments: `{"path":"main.go"}`}
+	if len(final.ToolCalls) != 1 || final.ToolCalls[0] != want {
+		t.Fatalf("calls = %+v, want the one call %+v", final.ToolCalls, want)
+	}
+}
+
+// A chunk carrying neither address ends the round. Read as call 0 — which is
+// what an index-keyed accumulator did with it — its arguments land inside a
+// call the model wrote separately, and a tool runs on input nobody asked for.
+func TestStreamOpenAI_AChunkWithNoIDAndNoIndexIsAFailure(t *testing.T) {
+	chunks := []string{
+		`{"id":"chatcmpl-1","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"call_abc","type":"function","function":{"name":"read_file","arguments":"{\"path\":\"main.go\"}"}}]}}]}`,
+		`{"id":"chatcmpl-1","object":"chat.completion.chunk","choices":[{"index":0,"delta":{"tool_calls":[{"function":{"arguments":"{\"path\":\"other.go\"}"}}]}}]}`,
+	}
+	srv := openAISSEServer(t, chunks)
+	p := newTestOpenAI(srv.URL+"/v1", "gpt-4o")
+
+	ch, err := p.StreamCompletion(context.Background(), []Message{{Role: RoleUser, Content: "read main.go"}}, CompletionOpts{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, final := drainFragments(t, ch)
+
+	if final.Err == nil {
+		t.Fatal("a fragment addressed to nothing was folded into a call instead of failing the round")
+	}
+	if len(final.ToolCalls) != 1 || final.ToolCalls[0].Arguments != `{"path":"main.go"}` {
+		t.Errorf("the failure should carry the call that was whole: %+v", final.ToolCalls)
+	}
+}
