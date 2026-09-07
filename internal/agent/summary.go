@@ -673,6 +673,30 @@ func SummaryElapsed(rounds int) string {
 	return fmt.Sprintf("%d %s ago", rounds, plural(rounds, "round"))
 }
 
+// SummaryChanges is a changeset in the words the digest states one in, and ""
+// for a session that has changed nothing — a field the digest then leaves out
+// rather than filling with a row of zeros.
+//
+// It is one function because every surface's reading is read by the same
+// model against the same instruction: a run whose files were counted in a
+// second dialect would be judged for acting on its instruction on evidence
+// that does not look like the evidence the wording was written for.
+//
+// A file count with no lines is not a gap. It is what a session that changed
+// nothing but a file's permissions has to say — `+0 −0` would tell the
+// reading the session changed nothing at all — and what a surface that reads
+// its writes off the calls that made them has, since nothing there sees the
+// file either side of the write.
+func SummaryChanges(files, added, removed int) string {
+	if files == 0 {
+		return ""
+	}
+	if added == 0 && removed == 0 {
+		return fmt.Sprintf("%d %s", files, plural(files, "file"))
+	}
+	return fmt.Sprintf("%d %s · +%d −%d", files, plural(files, "file"), added, removed)
+}
+
 func plural(n int, word string) string {
 	if n == 1 {
 		return word

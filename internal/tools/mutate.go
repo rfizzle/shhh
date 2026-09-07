@@ -60,6 +60,28 @@ func IsMutating(name string) bool {
 	return false
 }
 
+// WrittenPath is the file a mutating call names, and "" for any other call,
+// for arguments that do not parse, and for a call that named no path.
+//
+// The surfaces that keep no changeset read what a run has written off the
+// calls that wrote it — an unattended run for its tree reading and its git
+// stager, a sub-agent for the digest its readings are made of — and they
+// share this reading rather than each parsing the arguments again. A copy
+// agrees with the original on the day it is written and stops agreeing the
+// day a third mutating tool is registered.
+func WrittenPath(name, rawArgs string) string {
+	if !IsMutating(name) {
+		return ""
+	}
+	var args struct {
+		Path string `json:"path"`
+	}
+	if json.Unmarshal([]byte(rawArgs), &args) != nil {
+		return ""
+	}
+	return strings.TrimSpace(args.Path)
+}
+
 // ExecuteMutating dispatches a user-approved file-modification tool call. It
 // refuses every other tool name so read-only tools cannot be routed here by
 // mistake.

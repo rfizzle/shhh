@@ -385,6 +385,28 @@ out, which a run of more than one turn — a child handed another instruction at
 the boundary — would otherwise receive stamped with rounds this turn is
 counting.
 
+**A reading is made of the same evidence on every surface, and the wording of
+it is one function.** `SummaryRequest.Previous` is the last reading's own
+text, so the next revises it rather than describing unchanged work in new
+words; `SummaryRun` keeps it and scopes it to the turn the way it scopes the
+schedule, since a turn handed the reading before it would carry forward a
+verdict about work it has not done. `Changes` is the changeset in
+`agent.SummaryChanges`'s spelling — the chat model's `summaryChanges` and
+`SummaryRun.WithChanges` both go through it, because a run whose files were
+counted in a second dialect is judged on evidence the reading instruction was
+not written for, and a count with no lines is a real answer (a permissions-only
+turn, and every surface that reads its writes off the calls that made them).
+
+What will bite you: **a child's changed files are counted off its own calls**
+(`child.noteWrite` over `tools.WrittenPath`), not read from the parent's
+changeset store. A writer edits in an isolated worktree and the parent's store
+hears nothing until the patch lands, which is after the last reading that
+child will ever take — filtered by the child's name it answers zero at every
+reading, and the digest then shows a child that has rewritten five files as
+one that is still only reading, which is the definition of "sufficient". An
+unattended run and a served turn count theirs off `writtenByCalls`, where they
+already hand in the tree reading's subtrahend and the git stager's list.
+
 **Both bounds on acting are counted in the reading interval, and a surface
 hands over the interval rather than the products of it.**
 `Agent.SetInterveneBounds` takes the interval in force and how many of them a

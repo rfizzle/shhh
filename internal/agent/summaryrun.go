@@ -30,6 +30,14 @@ type SummaryRun struct {
 	summarizer *Summarizer
 	recorder   *Recorder
 	started    time.Time
+	// changes is what the surface has written so far, in the three numbers a
+	// changeset states, and nil where the surface keeps no count of it at
+	// all — a conversation, which has no editor. A surface that counts and
+	// has written nothing answers zero, which is the same empty field. It is
+	// set once before the run starts and read from the reading's goroutine,
+	// so it is outside the lock with the summarizer and the recorder; what
+	// it reaches for holds its own.
+	changes func() (files, added, removed int)
 
 	mu sync.Mutex
 	// target is the instruction every reading is judged against: the task the
@@ -70,9 +78,19 @@ type SummaryRun struct {
 	// interventions are the interruptions delivered this run, for the next
 	// reading's digest.
 	interventions []string
-	failures      int
-	tokensIn      int64
-	tokensOut     int64
+	// previous is the last reading's own text, which the next one is asked to
+	// revise rather than write again from nothing — what stops a run that has
+	// not changed course being described four different ways. It is turn-
+	// scoped for the reason the schedule is: a reading of the turn before
+	// judged work this turn has not done, and offered as this turn's previous
+	// it would be a claim the reader has no evidence for and every reason to
+	// carry forward. Only a reading that landed is kept — one dropped for
+	// judging an instruction a steer had already extended was never anybody's
+	// word on the run.
+	previous  string
+	failures  int
+	tokensIn  int64
+	tokensOut int64
 }
 
 // NewSummaryRun returns a runner, or nil when readings are not to be taken —
@@ -83,6 +101,23 @@ func NewSummaryRun(s *Summarizer, rec *Recorder, target string) *SummaryRun {
 		return nil
 	}
 	return &SummaryRun{summarizer: s, recorder: rec, target: target, started: time.Now()}
+}
+
+// WithChanges names where the run's changeset is counted, and returns the
+// runner so a caller wires it in one expression. A surface with no changeset
+// calls nothing, and its digest carries no changed-file line, as before.
+//
+// It is the count rather than the wording because there is one wording
+// (SummaryChanges): a surface that spelled its own would be handing the
+// reader evidence in a dialect the instruction it judges against was not
+// written for. Safe on a nil runner, which is why it may be chained onto
+// NewSummaryRun.
+func (r *SummaryRun) WithChanges(count func() (files, added, removed int)) *SummaryRun {
+	if r == nil {
+		return nil
+	}
+	r.changes = count
+	return r
 }
 
 // Recorder is where a caller sends the run's activity. Safe on a nil runner.
@@ -253,6 +288,7 @@ func (r *SummaryRun) StartTurn() {
 	r.turn++
 	r.onClose = nil
 	r.verdict = nil
+	r.previous = ""
 	r.sched = SummarySchedule{}
 	if r.cancel != nil {
 		r.cancel()
@@ -325,7 +361,7 @@ func (r *SummaryRun) read(rounds int) {
 	// would otherwise be appending to a slice the request is reading. The
 	// target is copied for the same reason, now that a steer can extend it.
 	interventions := append([]string(nil), r.interventions...)
-	target, gen := r.target, r.gen
+	target, gen, previous := r.target, r.gen, r.previous
 	r.cancel = cancel
 	r.mu.Unlock()
 
@@ -333,9 +369,11 @@ func (r *SummaryRun) read(rounds int) {
 		Target:        target,
 		Activity:      r.recorder.Rows(),
 		Assistant:     r.recorder.LastAssistant(),
+		Changes:       r.changed(),
 		Interventions: interventions,
 		Round:         rounds,
 		Elapsed:       time.Since(r.started),
+		Previous:      previous,
 	}
 	v := r.summarizer.Summarize(ctx, req)
 
@@ -382,6 +420,13 @@ func (r *SummaryRun) read(rounds int) {
 		return
 	}
 	r.failures = 0
+	// The reading that landed is what the next one revises. The line is
+	// above the branch rather than inside it because that sentence is the
+	// whole rule, and a second place to remember it is a second place to
+	// forget it: a closing reading has no next one in this turn, and the
+	// turn after starts with none whether it was kept here or dropped for
+	// landing after that turn had begun.
+	r.previous = v.Text
 	if !closing {
 		r.verdict = &v
 		r.mu.Unlock()
@@ -393,4 +438,16 @@ func (r *SummaryRun) read(rounds int) {
 	// it would make every one of them a deadlock waiting to be written.
 	r.mu.Unlock()
 	deliver(v)
+}
+
+// changed is the run's changeset for the digest, empty where the surface
+// keeps none. It is called off the lock, on the reading's own goroutine: what
+// it counts is the caller's state, guarded by the caller, and holding this
+// runner's lock across somebody else's would be an ordering nothing here can
+// see.
+func (r *SummaryRun) changed() string {
+	if r.changes == nil {
+		return ""
+	}
+	return SummaryChanges(r.changes())
 }

@@ -373,17 +373,12 @@ func (w *writtenByCalls) wrap(resolve func(provider.ToolCall) string) func(provi
 }
 
 func (w *writtenByCalls) note(tc provider.ToolCall, result string) {
-	if !tools.IsMutating(tc.Name) || strings.HasPrefix(result, "error:") {
-		return
-	}
-	var args struct {
-		Path string `json:"path"`
-	}
-	if json.Unmarshal([]byte(tc.Arguments), &args) != nil || args.Path == "" {
+	path := tools.WrittenPath(tc.Name, tc.Arguments)
+	if path == "" || strings.HasPrefix(result, "error:") {
 		return
 	}
 	w.mu.Lock()
-	w.list = append(w.list, args.Path)
+	w.list = append(w.list, path)
 	w.mu.Unlock()
 }
 
@@ -391,6 +386,23 @@ func (w *writtenByCalls) paths() []string {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	return append([]string(nil), w.list...)
+}
+
+// changed is this run's changeset for the digest its readings are made of, in
+// the three numbers a session's changeset answers with: the files, and no
+// lines. Nothing here reads a file either side of a write — the list is the
+// calls that were made, not a record of what they did — and a count of files
+// is what the reading needs to tell a run that has started acting from one
+// that is still reading (agent.SummaryChanges takes both shapes). A file
+// written twice is one file, as it is on the rail.
+func (w *writtenByCalls) changed() (files, added, removed int) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	seen := make(map[string]bool, len(w.list))
+	for _, p := range w.list {
+		seen[p] = true
+	}
+	return len(seen), 0, 0
 }
 
 // headlessTree is the reading an unattended run watches its checkout with:
@@ -866,9 +878,12 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// A non-interactive run has nobody to notice it has drifted or that it
 	// already has what it needs, which is why readings default on here. The
 	// prompt is the instruction every one of them is judged against.
+	// It reads what this run has changed off the same list the tree reading
+	// and the git stager read, so a reading judging whether the run has
+	// started acting is not left to infer it from rows that are all reads.
 	summaryRun := agent.NewSummaryRun(
 		newSummarizer(cfg, env, ledger, cfg.HeadlessSummaryEnabled()),
-		agent.NewRecorder(0), initialPrompt)
+		agent.NewRecorder(0), initialPrompt).WithChanges(own.changed)
 	// Every verdict reaches the record and the stream through the observer,
 	// and is remembered on its way past: a denial still standing when the
 	// model stops is what says this run was refused rather than finished.

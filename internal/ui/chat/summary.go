@@ -410,19 +410,11 @@ func (m Model) summaryAssistant() string {
 }
 
 // summaryChanges is the session's changeset in words, so the reading can talk
-// about what has been done without being told to count it.
+// about what has been done without being told to count it. The wording is the
+// digest's own (agent.SummaryChanges), which is what keeps a session's
+// changeset and an unattended run's the same evidence.
 func (m Model) summaryChanges() string {
-	files, added, removed := m.changes.Totals()
-	if files == 0 {
-		return ""
-	}
-	if added == 0 && removed == 0 {
-		// Nothing was counted, because the whole of what the session did to
-		// these files was their permissions. Saying `+0 −0` would tell the
-		// reading the session changed nothing.
-		return plural(files, "file")
-	}
-	return fmt.Sprintf("%s · +%d −%d", plural(files, "file"), added, removed)
+	return agent.SummaryChanges(m.changes.Totals())
 }
 
 // summaryAlerts is the standing bad news the rail already keeps on screen.

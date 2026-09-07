@@ -542,6 +542,24 @@ func TestASteerCountBelongsToTheTurnItWasGivenIn(t *testing.T) {
 	}
 }
 
+// What a child has changed is counted off its own calls. Its edits happen in
+// an isolated worktree, so the parent's changeset hears nothing about them
+// until the patch lands — which is after the last reading this child will
+// ever take, and those readings are the ones that have to tell a child that
+// has started acting from one that is still reading.
+func TestAChildCountsTheFilesItsOwnCallsWrote(t *testing.T) {
+	c := &child{name: "writer-1", role: RoleWriter}
+	c.noteWrite(provider.ToolCall{Name: "write_file", Arguments: `{"path":"a.go","content":"x"}`}, "written")
+	c.noteWrite(provider.ToolCall{Name: "edit_file", Arguments: `{"path":"a.go"}`}, "edited")
+	c.noteWrite(provider.ToolCall{Name: "edit_file", Arguments: `{"path":"b.go"}`}, "error: no such file")
+	c.noteWrite(provider.ToolCall{Name: "read_file", Arguments: `{"path":"c.go"}`}, "package main")
+
+	files, added, removed := c.changed()
+	if files != 1 || added != 0 || removed != 0 {
+		t.Fatalf("changed = %d files +%d −%d, want the one file two calls wrote", files, added, removed)
+	}
+}
+
 // A person who redirects a child mid-turn has answered the count that
 // reached them, and the child stops reporting it — the lane and the roster
 // would otherwise go on naming a child as not answering a steer while it

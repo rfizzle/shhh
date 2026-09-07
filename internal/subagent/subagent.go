@@ -20,6 +20,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/diff"
+	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/radius"
@@ -556,6 +557,17 @@ type child struct {
 	// different fact from the same call in round 2 of turn 1.
 	turns     int
 	toolCalls int
+	// wrote is the set of files this attempt's own mutating calls have
+	// written, which is what its readings are told the child has changed.
+	//
+	// It is counted off the calls rather than read from the parent's
+	// changeset because a writer edits in an isolated worktree and the parent
+	// learns nothing until the patch lands, which is after the last reading
+	// this child will ever take. A digest of twenty-four rows that are all
+	// reads, taken while five files have been rewritten, is the evidence that
+	// makes a reader call a child sufficient when it is in the middle of
+	// acting.
+	wrote     map[string]bool
 	tokensIn  int64
 	tokensOut int64
 	// priorIn/priorOut carry the spend of earlier attempts across a retry.
@@ -740,6 +752,34 @@ func (c *child) settleToolEntry(idx int, result string) {
 		c.transcript[idx].Pending = false
 	}
 	c.mu.Unlock()
+}
+
+// noteWrite records a file this child's own call wrote. A call that came back
+// an error wrote nothing, and a file written twice is one file — the same
+// reading of a write every surface without a changeset takes.
+func (c *child) noteWrite(call provider.ToolCall, result string) {
+	path := tools.WrittenPath(call.Name, call.Arguments)
+	if path == "" || digest.Outcome(result) == digest.OutcomeError {
+		return
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.wrote == nil {
+		c.wrote = map[string]bool{}
+	}
+	c.wrote[path] = true
+}
+
+// changed is this child's changeset for the digest its readings are made of:
+// the files it has written, and no line counts, since nothing here reads a
+// file either side of a write. It survives the turn boundary of a child
+// given a second instruction — the worktree it wrote does — and is taken
+// under the child's lock, since the reading that asks runs on its own
+// goroutine.
+func (c *child) changed() (files, added, removed int) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return len(c.wrote), 0, 0
 }
 
 // drainSteering pops all queued steering messages, appending each to the
@@ -1464,6 +1504,9 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	c.steers, c.verdict = 0, ""
 	c.turns = 0
 	c.toolCalls, c.step = 0, 0
+	// A retry starts from a worktree of its own, so what the attempt it
+	// replaces wrote is not in the tree this one is reading.
+	c.wrote = nil
 	c.report, c.patchNote, c.streaming = "", "", ""
 	c.mu.Unlock()
 	if s.opts.Record != nil {
@@ -1859,7 +1902,8 @@ func (s *Supervisor) run(c *child) {
 		// A child is as unwatched as a headless run, and its task is the
 		// instruction every reading is judged against. Nil unless
 		// summary.subagents is on.
-		Summary: agent.NewSummaryRun(c.env.Summarizer, agent.NewRecorder(0), c.task),
+		Summary: agent.NewSummaryRun(c.env.Summarizer, agent.NewRecorder(0), c.task).
+			WithChanges(c.changed),
 		// A child that recycled its conversation says so on its lane, which
 		// is the only place anyone is looking: a child whose answer came out
 		// of a summary of its own work is a different reading from one that
@@ -1980,6 +2024,7 @@ func (s *Supervisor) run(c *child) {
 			}
 			delete(pendingEntry, r.Call.ID)
 			c.settleToolEntry(idx, r.Result)
+			c.noteWrite(r.Call, r.Result)
 			if c.rec.ToolCall != nil {
 				outcome, class := observe.ToolOutcome(r.Result)
 				c.rec.ToolCall(c.pos(), r.Call.Name, r.Duration, outcome, class)

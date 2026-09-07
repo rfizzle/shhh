@@ -562,10 +562,17 @@ func TestWrittenByCalls_RecordsOnlySuccessfulMutations(t *testing.T) {
 		return "error: declined"
 	})
 	resolve(provider.ToolCall{Name: "write_file", Arguments: `{"path":"a.go","content":"x"}`})
+	resolve(provider.ToolCall{Name: "write_file", Arguments: `{"path":"a.go","content":"y"}`})
 	resolve(provider.ToolCall{Name: "edit_file", Arguments: `{"path":"b.go"}`})
 	resolve(provider.ToolCall{Name: "read_file", Arguments: `{"path":"c.go"}`})
-	if got := w.paths(); len(got) != 1 || got[0] != "a.go" {
-		t.Errorf("paths = %v, want [a.go]", got)
+	if got := w.paths(); len(got) != 2 || got[0] != "a.go" || got[1] != "a.go" {
+		t.Errorf("paths = %v, want a.go twice", got)
+	}
+	// The same list as a changeset states one: a file written twice is one
+	// file, and no lines, since nothing here reads the file either side of a
+	// write.
+	if files, added, removed := w.changed(); files != 1 || added != 0 || removed != 0 {
+		t.Errorf("changed = %d files +%d −%d, want 1 file and no line counts", files, added, removed)
 	}
 }
 

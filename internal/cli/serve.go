@@ -172,6 +172,12 @@ type serveLoop struct {
 	// built per turn because what a reading is judged against is that turn's
 	// instruction, and a session has one per turn.
 	summarizer *agent.Summarizer
+	// own is the paths this session's calls have written, where a session on
+	// a screen hands in its changeset. It is the session's rather than the
+	// turn's — a client asks a second question of a workspace its first
+	// question changed, and the reading of that turn should see the files as
+	// the person driving it does.
+	own *writtenByCalls
 	// verdict is the policy's last answer within the current turn, for the
 	// same reason: a denial the turn before ended on says nothing about this
 	// one. The approver reports through whichever is loaded when it fires.
@@ -250,6 +256,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	// The paths this session's own calls write, named before the toolset
 	// because the git stager may stage nothing else.
 	own := &writtenByCalls{}
+	l.own = own
 	ts, err := buildToolset(cmd, &session, "serve", toolsetOpts{scope: sc, gitWrites: headlessWrites(session, own)})
 	if err != nil {
 		return nil, err
@@ -577,7 +584,7 @@ func (l *serveLoop) Run(turn int64, prompt string) (string, error) {
 	}
 	// The readings this turn takes are judged against this turn's
 	// instruction: a session's second question is not a drift from its first.
-	l.headless.Summary = agent.NewSummaryRun(l.summarizer, agent.NewRecorder(0), prompt)
+	l.headless.Summary = agent.NewSummaryRun(l.summarizer, agent.NewRecorder(0), prompt).WithChanges(l.own.changed)
 
 	started := time.Now()
 	final, runErr := l.headless.Run(prompt)
