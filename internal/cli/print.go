@@ -94,6 +94,14 @@ const (
 	exitProvider    = 4
 	exitGate        = 5
 	exitRefused     = 6
+	// exitRejected is the run the provider would refuse again just as it
+	// stands. 4 says the built-in waits have been spent and the provider is
+	// still not answering, so a script's move is to come back later; a key
+	// that was not taken, an account with nothing left on it, an id the
+	// endpoint does not serve and a request past the window will all be
+	// exactly as wrong in an hour, and sending a caller off to wait out a
+	// typo is what this separates out.
+	exitRejected = 8
 )
 
 // errHeadlessRefused is the exit-6 run stated in words, for the stderr line
@@ -122,6 +130,8 @@ func headlessExitCode(outcome string, gateFailed, refused bool) int {
 		return exitInterrupted
 	case observe.TurnFailed:
 		return exitProvider
+	case observe.TurnRejected:
+		return exitRejected
 	}
 	switch {
 	case gateFailed:
@@ -1277,6 +1287,12 @@ func (g *headlessCloseGate) err() error {
 // spelling it `failed` here would read the whole headless population as
 // having no capped turns at all. What differs is only that nobody is here to
 // grant more rounds, and that difference is the exit code's to report.
+//
+// A turn the provider refused is `rejected` rather than `failed` for the
+// opposite reason: the two are one event only to a person watching, and to a
+// script they are opposite instructions — wait, or stop and fix something.
+// The record is where the exit code is read off, so the distinction has to
+// exist there for the status to be able to carry it.
 func headlessTurnOutcome(err error) string {
 	switch {
 	case err == nil:
@@ -1285,8 +1301,47 @@ func headlessTurnOutcome(err error) string {
 		return observe.TurnCapPaused
 	case errors.Is(err, agent.ErrInterrupted):
 		return observe.TurnCancelled
+	case providerRefusedRequest(err):
+		return observe.TurnRejected
 	}
 	return observe.TurnFailed
+}
+
+// providerRefusedRequest reports whether the run ended because the provider
+// objected to the request itself, which is the one thing a status can say
+// that tells a script not to come back later and try the same call again.
+//
+// The classes are named rather than derived from Failure.Recoverable, and the
+// difference is what happens to a class nobody has thought about here yet. A
+// class this list does not know falls to the outcome it fell to before this
+// existed, so a reader who adds one gets today's answer until somebody
+// decides otherwise; taking "not recoverable" as the rule would instead
+// enrol every future class — and, today, a malformed response and an
+// unclassified failure — into a status that tells its reader their
+// configuration is wrong, on no evidence that it is.
+func providerRefusedRequest(err error) bool {
+	f, ok := provider.AsFailure(err)
+	if !ok {
+		return false
+	}
+	switch f.Class {
+	case provider.ClassAuth, provider.ClassQuota,
+		provider.ClassContextLength, provider.ClassModelNotFound:
+		return true
+	}
+	return false
+}
+
+// failureClass is the provider's own word for what went wrong, for the JSON
+// shapes to state beside the error text. It is empty for an ending that was
+// not a provider call — a failing suite, a standing refusal, a run that
+// finished — which is how a consumer tells the two apart without parsing the
+// sentence.
+func failureClass(err error) string {
+	if f, ok := provider.AsFailure(err); ok {
+		return string(f.Class)
+	}
+	return ""
 }
 
 // headlessFlagCheck refuses a flag this run cannot honour, before anything
@@ -1534,7 +1589,14 @@ func clipActivityLine(raw string) string {
 type jsonTranscript struct {
 	Success bool   `json:"success"`
 	Error   string `json:"error,omitempty"`
-	Final   string `json:"final"`
+	// ErrorClass is the provider's own name for what went wrong, where the
+	// run ended on a provider call: `unauthorized`, `rate limited`,
+	// `context too long`. It is the field that lets a consumer tell a stall
+	// it should sit out from a request the provider will refuse again,
+	// without waiting for a status to be minted for every class.
+	// See docs/capabilities/headless.md#the-exit-code-is-the-contract.
+	ErrorClass string `json:"error_class,omitempty"`
+	Final      string `json:"final"`
 	// Truncated qualifies Final: the answer stopped at the model's output
 	// ceiling and the run's one continuation had already been spent, so what
 	// is quoted is the first half of an answer. It is stated because nothing
@@ -1616,7 +1678,7 @@ func writeJSONTranscript(w io.Writer, msgs []provider.Message, final string, tru
 		Messages:  jsonMessages(msgs),
 	}
 	if runErr != nil {
-		t.Error = runErr.Error()
+		t.Error, t.ErrorClass = runErr.Error(), failureClass(runErr)
 	}
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
@@ -1675,6 +1737,12 @@ type jsonEvent struct {
 	Exit  *int   `json:"exit,omitempty"`
 	Final string `json:"final,omitempty"`
 	Error string `json:"error,omitempty"`
+	// ErrorClass qualifies Error on the close line, in the provider's own
+	// vocabulary, so a reader acting on the stream knows whether waiting is
+	// a plan before the process has even exited. Class above is the tool
+	// vocabulary and belongs to a result line; these are two vocabularies
+	// and the field each is named on is which one it is.
+	ErrorClass string `json:"error_class,omitempty"`
 }
 
 // write puts one event on the stream. A nil stream is the run that asked for
@@ -1751,7 +1819,7 @@ func (s *jsonlStream) closed(at observe.Pos, outcome string, code int, final str
 	ev := jsonEvent{Kind: observe.EventClose, Turn: at.Turn, Round: at.Round,
 		Outcome: outcome, Exit: &code, Final: final, Usage: &priced}
 	if err != nil {
-		ev.Error = err.Error()
+		ev.Error, ev.ErrorClass = err.Error(), failureClass(err)
 	}
 	s.write(ev)
 }

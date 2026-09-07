@@ -544,6 +544,16 @@ func TestHeadlessTurnOutcome(t *testing.T) {
 		{"round cap", fmt.Errorf("%w after 60 rounds", agent.ErrRoundCap), observe.TurnCapPaused},
 		{"interrupted", agent.ErrInterrupted, observe.TurnCancelled},
 		{"stream failure", errors.New("connection reset"), observe.TurnFailed},
+		// A stall and a refusal are both a turn that broke, and only the
+		// second one stays broken however long the caller waits.
+		{"a stall the waits could not sit out", &provider.Failure{Class: provider.ClassOverloaded}, observe.TurnFailed},
+		{"a key the provider would not take", &provider.Failure{Class: provider.ClassAuth}, observe.TurnRejected},
+		{"an account with nothing left", &provider.Failure{Class: provider.ClassQuota}, observe.TurnRejected},
+		{"a request past the window", &provider.Failure{Class: provider.ClassContextLength}, observe.TurnRejected},
+		{"an id the endpoint does not serve", &provider.Failure{Class: provider.ClassModelNotFound}, observe.TurnRejected},
+		// A failure nothing could name is no evidence that the request was
+		// wrong, so it keeps the ending it had before the split existed.
+		{"a failure nothing could name", &provider.Failure{Class: provider.ClassUnclassified}, observe.TurnFailed},
 	} {
 		if got := headlessTurnOutcome(c.err); got != c.want {
 			t.Errorf("%s: headlessTurnOutcome = %q, want %q", c.name, got, c.want)
@@ -1195,6 +1205,7 @@ func TestHeadlessExitCode(t *testing.T) {
 		{"the round cap", fmt.Errorf("%w after 40 rounds", agent.ErrRoundCap), false, false, exitRoundCap},
 		{"an interrupt", agent.ErrInterrupted, false, false, exitInterrupted},
 		{"a provider that stopped answering", fmt.Errorf("overloaded"), false, false, exitProvider},
+		{"a request the provider would refuse again", &provider.Failure{Class: provider.ClassAuth}, false, false, exitRejected},
 		{"a failing suite", nil, true, false, exitGate},
 		{"a refusal that ended the turn", nil, false, true, exitRefused},
 		// The two readings only apply to a turn that finished. A run that was

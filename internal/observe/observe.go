@@ -168,6 +168,25 @@ const (
 	TurnCancelled = "cancelled"
 	TurnFailed    = "failed"
 	TurnCapPaused = "cap-paused"
+	// TurnRejected is the turn the provider ended by objecting to the
+	// request rather than by failing to answer it: a key it would not take,
+	// an account with nothing left on it, a model id it does not serve, a
+	// request larger than the window. Asking again unchanged gets the same
+	// answer, which is the whole of what separates it from TurnFailed —
+	// there the provider stopped answering and later it may not.
+	//
+	// The two add up to "turns that broke", and an aggregate that wants that
+	// has to add them. Splitting them is worth that because the unattended
+	// surfaces project the process's exit status off this value, and the one
+	// distinction a script cannot make for itself from a status is whether
+	// waiting is a plan.
+	// See docs/capabilities/headless.md#the-exit-code-is-the-contract.
+	//
+	// Only a surface holding a classified provider failure at the seam that
+	// closes the turn writes it. A session's own broken turn is TurnFailed
+	// whatever broke it, so a population read across surfaces should read
+	// the two together.
+	TurnRejected = "rejected"
 )
 
 // Signal codes for Observer.Signal. Each names the thing that fired; the
@@ -724,7 +743,7 @@ func SessionOutcome(turn string) string {
 		return SessionCompleted
 	case TurnCancelled:
 		return SessionInterrupted
-	case TurnFailed:
+	case TurnFailed, TurnRejected:
 		return SessionError
 	}
 	return ""

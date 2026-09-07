@@ -41,12 +41,22 @@ meaning it, and a script can branch on it without reading a word of output.
 | `5` | The checks failed | The turn finished and the suite it closes on did not pass. The tree changed; look at it before you ship it |
 | `6` | A call was refused | Policy denied the last approval the run asked for, so it did not do what it was asked. Re-run with `--yes`, or with `--allow` for the command shapes you meant to permit |
 | `7` | A backlog item blocked | `shhh todo run` only. The item was worked as far as it could go and stopped with the evidence written on it; the work so far is in the tree, uncommitted. Read the item, settle what it names, and reopen it |
+| `8` | The provider refused the request | Not a stall — the request itself was objected to: a key that was not taken, an account with nothing left on it, a model id the endpoint does not serve, a request past the window. Asking again unchanged gets the same answer. Fix what was named and re-run |
 
-The last row is the backlog runner's, and it is one more code in this set
-rather than a set of its own. A blocked item is not a turn that broke — every
-turn in it ended the way turns end — and it is not a failing suite or a
-refusal either. It is the runner's own terminal state, which is the one fact
-none of the codes above can carry.
+`4` and `8` are the same event to a person and opposite instructions to a
+script. Both are a run that ended on the provider, and the difference is
+whether waiting is a plan: `4` is what is left after the built-in waits have
+been spent on a rate limit, an outage or a network that dropped, and coming
+back later is the right move; `8` is a request the provider would refuse
+again just as it stands, so a script that retries it burns its schedule on a
+typo. A failure the classification has no name for stays `4`, because
+"unclassified" is not evidence that anything about the request was wrong.
+
+The backlog runner's row is one more code in this set rather than a set of
+its own. A blocked item is not a turn that broke — every turn in it ended the
+way turns end — and it is not a failing suite or a refusal either. It is the
+runner's own terminal state, which is the one fact none of the codes above
+can carry.
 
 **The code is a projection, not a second table.** The record already keeps how
 every turn ended, from its own closed set, and the exit status is read off
@@ -110,6 +120,15 @@ that grades the answer would be grading half the work
 ([`providers.md`](providers.md#a-reply-says-why-it-stopped)). A whole answer
 carries no such label, which is how every reader of this shape already read it
 before there was one.
+
+Where a run ended on the provider, both JSON shapes state the failure's class
+beside the error text — the provider's own word for it, the one the failure
+row on a screen would show: `unauthorized`, `rate limited`, `context too
+long`. A status is one branch and the class is the reason behind it, so a
+consumer that wants to log what happened, or to tell two `4`s apart, reads it
+without a code having to be minted per class. It is absent for an ending that
+was not a provider call at all — a failing suite, a standing refusal — which
+is how the two are told apart without reading the sentence.
 
 The token totals state the cached share of the prompt as well as the prompt
 and completion counts. It is billed at a fraction of the rest and cannot be

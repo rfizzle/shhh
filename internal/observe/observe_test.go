@@ -233,6 +233,9 @@ func TestSessionOutcome(t *testing.T) {
 		TurnDone:      SessionCompleted,
 		TurnCancelled: SessionInterrupted,
 		TurnFailed:    SessionError,
+		// Both ways a turn breaks close the session the same way. What to do
+		// about them differs and neither of them is the work getting done.
+		TurnRejected: SessionError,
 		// A cap is a pause, not a close: a sub-agent's supervisor grants
 		// itself more rounds and runs on, so reading one as an abandonment
 		// would libel every child that stopped to take stock.
@@ -253,7 +256,7 @@ func TestSessionOutcome(t *testing.T) {
 // which is a fact about the record rather than about the work, and a mapping
 // that produced it would make the two indistinguishable.
 func TestSessionOutcome_NeverWritesUnknown(t *testing.T) {
-	for _, turn := range []string{TurnDone, TurnCancelled, TurnFailed, TurnCapPaused, "", "surprise"} {
+	for _, turn := range []string{TurnDone, TurnCancelled, TurnFailed, TurnRejected, TurnCapPaused, "", "surprise"} {
 		if SessionOutcome(turn) == SessionUnknown {
 			t.Errorf("SessionOutcome(%q) produced %q", turn, SessionUnknown)
 		}

@@ -917,7 +917,10 @@ func observeTurnRows(turns []storage.AgentTurnOutcome) []report.Row {
 
 func observeTurnState(outcome string) report.State {
 	switch outcome {
-	case "failed":
+	// Both of the ways a turn breaks. They are two rows because what to do
+	// about them differs, and one state because neither is a turn that did
+	// the work.
+	case "failed", "rejected":
 		return report.Fail
 	case "cancelled", "cap-paused":
 		return report.Skip

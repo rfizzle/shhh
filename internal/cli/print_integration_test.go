@@ -482,6 +482,15 @@ func TestPrintRun_EveryStatusTheContractNames(t *testing.T) {
 		code: 6,
 		says: "a tool call was refused",
 	}, {
+		// The other provider ending, and the reason it is not the one above:
+		// nothing about waiting fixes a key the endpoint would not take, so
+		// a script told to sit this one out would sit it out forever.
+		name:   "a request the provider refused as it stands",
+		script: []reply{{status: http.StatusUnauthorized}},
+		args:   []string{"code", "-p", "say hi"},
+		code:   8,
+		says:   "unauthorized",
+	}, {
 		// The statuses are the print path's and not the coding agent's: a
 		// conversation behind --print is the same run and leaves the same
 		// contract behind.
@@ -717,6 +726,109 @@ func TestPrintRun_AConversationLeavesTheSameTranscript(t *testing.T) {
 	if !strings.Contains(errs, "read_file") {
 		t.Errorf("the read the run made should be on stderr, got %q", errs)
 	}
+}
+
+// The class the run ended on, in both JSON shapes. The status says which
+// branch to take and the class says why, so a consumer that logs what
+// happened, or that wants to tell one provider ending from another, does not
+// have to wait for a code to be minted per class or parse it out of a
+// sentence.
+//
+// Both endings are driven rather than asserted of the projection, because the
+// point is that the word the classification produced is the word that comes
+// out the far end of the run.
+func TestPrintRun_TheProviderFailureClassIsStated(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		status int
+		code   int
+		class  string
+	}{
+		{"a key the endpoint would not take", http.StatusUnauthorized, exitRejected, "unauthorized"},
+		{"a provider failing on its own side", http.StatusInternalServerError, exitProvider, "overloaded"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Run("json", func(t *testing.T) {
+				f := startFakeProvider(t, reply{status: tc.status})
+				s := newPrintSession(t, f)
+				out, errs, code := s.run(t, "", "code", "-p", "--output", "json", "say hi")
+				if code != tc.code {
+					t.Fatalf("the run exited %d, want %d\nstderr: %s", code, tc.code, errs)
+				}
+				var transcript struct {
+					Success    bool   `json:"success"`
+					Error      string `json:"error"`
+					ErrorClass string `json:"error_class"`
+				}
+				if err := json.Unmarshal([]byte(out), &transcript); err != nil {
+					t.Fatalf("the transcript did not parse: %v\n%s", err, out)
+				}
+				if transcript.Success || transcript.ErrorClass != tc.class {
+					t.Fatalf("the transcript says %+v, want a failure classed %q", transcript, tc.class)
+				}
+			})
+			t.Run("jsonl", func(t *testing.T) {
+				f := startFakeProvider(t, reply{status: tc.status})
+				s := newPrintSession(t, f)
+				out, errs, code := s.run(t, "", "code", "-p", "--output", "jsonl", "say hi")
+				if code != tc.code {
+					t.Fatalf("the run exited %d, want %d\nstderr: %s", code, tc.code, errs)
+				}
+				closing := closeLine(t, out)
+				if closing.ErrorClass != tc.class {
+					t.Fatalf("the close line says %+v, want a class of %q", closing, tc.class)
+				}
+				if closing.Exit == nil || *closing.Exit != tc.code {
+					t.Fatalf("the close line's exit is %v, want %d", closing.Exit, tc.code)
+				}
+			})
+		})
+	}
+}
+
+// A run that ended on nothing the provider said carries no class at all,
+// which is how a consumer tells a provider ending from every other kind
+// without reading the sentence beside it.
+func TestPrintRun_AnEndingThatWasNotAProviderCallHasNoClass(t *testing.T) {
+	f := startFakeProvider(t,
+		reply{tool: "execute_command", args: map[string]string{"command": "echo hi"}},
+		reply{text: "it would not let me"})
+	s := newPrintSession(t, f)
+
+	out, errs, code := s.run(t, "", "code", "-p", "--output", "jsonl", "run something")
+	if code != exitRefused {
+		t.Fatalf("the run exited %d, want %d\nstderr: %s", code, exitRefused, errs)
+	}
+	closing := closeLine(t, out)
+	if closing.Error == "" {
+		t.Fatalf("a refused run's close line said nothing went wrong: %+v", closing)
+	}
+	if closing.ErrorClass != "" {
+		t.Fatalf("the close line classed a refusal as %q", closing.ErrorClass)
+	}
+}
+
+// closeLine is the last line of a jsonl run: the one a consumer that reads
+// nothing else still reads.
+func closeLine(t *testing.T, out string) (ev struct {
+	Kind       string `json:"kind"`
+	Outcome    string `json:"outcome"`
+	Exit       *int   `json:"exit"`
+	Error      string `json:"error"`
+	ErrorClass string `json:"error_class"`
+}) {
+	t.Helper()
+	lines := strings.Split(strings.TrimSpace(out), "\n")
+	for i := len(lines) - 1; i >= 0; i-- {
+		if err := json.Unmarshal([]byte(lines[i]), &ev); err != nil {
+			t.Fatalf("line %d of the stream did not parse: %v\n%s", i+1, err, lines[i])
+		}
+		if ev.Kind == observe.EventClose {
+			return ev
+		}
+	}
+	t.Fatalf("the stream has no close line:\n%s", out)
+	return ev
 }
 
 // What a conversation cannot do, it cannot be told to do. A tool that writes
