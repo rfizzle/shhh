@@ -95,6 +95,8 @@ func TestFailureRow_StateAndKeysByClass(t *testing.T) {
 		{provider.ClassQuota, components.RecoveryBroken, []string{"[p]"}},
 		{provider.ClassOverloaded, components.RecoveryStalled, []string{"[r]", "[p]"}},
 		{provider.ClassContextLength, components.RecoveryBroken, []string{"[c]", "[r]"}},
+		// No [r]: the next request would carry the same id.
+		{provider.ClassModelNotFound, components.RecoveryBroken, []string{"[p]"}},
 		{provider.ClassNetwork, components.RecoveryStalled, []string{"[r]", "[p]"}},
 		{provider.ClassMalformed, components.RecoveryBroken, []string{"[r]", "[p]"}},
 		{provider.ClassCancelled, components.RecoveryStopped, nil},

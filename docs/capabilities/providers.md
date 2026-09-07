@@ -522,8 +522,15 @@ provider's own reduced rate rather than at the price of reading it fresh.
 ## Failures are classified before they are surfaced
 
 Every provider error is mapped into a closed set — unauthorised, rate limited,
-quota exhausted, overloaded, context too long, network, malformed, cancelled,
-and one class for everything the table has no case for.
+quota exhausted, overloaded, context too long, no such model, network,
+malformed, cancelled, and one class for everything the table has no case for.
+
+A model the provider does not serve earns a class of its own rather than
+falling to the catch-all, because the catch-all offers "try again" and the
+next request would carry the same id. It is also the failure a near-miss
+spelling produces — a gateway writes a generation with a dot where the
+vendor's own API writes a hyphen — so the row names the id and points at the
+picker.
 
 The classes belong to the provider layer; what to *offer* about each one
 belongs to the interface. That split is why a new provider inherits every

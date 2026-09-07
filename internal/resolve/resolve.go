@@ -4,12 +4,22 @@ import "os"
 
 const DefaultProvider = "openai"
 
+// defaultModels is what each built-in provider is asked for when nothing
+// named a model. It is a second copy of provider.Defaults, kept because this
+// package answers "what would this session run on" for surfaces that must not
+// construct a provider to find out — `shhh providers`, the config screen —
+// and importing the provider registry to read one string would pull every
+// vendor SDK into all of them.
+//
+// A copy that disagrees is the whole risk, and it is not theoretical: the
+// gateway entry was a hyphen where OpenRouter writes a dot, in both tables at
+// once. The test beside this one is what holds them together.
 var defaultModels = map[string]string{
 	"openai":            "gpt-4o",
 	"openai-responses":  "gpt-4.1",
 	"anthropic":         "claude-opus-5",
 	"gemini":            "gemini-2.5-flash",
-	"openrouter":        "anthropic/claude-sonnet-4-6",
+	"openrouter":        "anthropic/claude-sonnet-4.6",
 	"openai-compatible": "llama3",
 }
 

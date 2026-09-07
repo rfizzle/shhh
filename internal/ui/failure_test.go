@@ -40,11 +40,36 @@ func TestFailureReport_ClassifiesAndOffersACommand(t *testing.T) {
 	}
 }
 
+// A gateway id spelled the vendor's way used to land here as `404
+// unclassified` with "try again" beside it, which is the one thing that
+// cannot work — the retry carries the same id. The row has to name the id and
+// send the reader at the id.
+func TestFailureReport_NamesTheModelAGatewayDoesNotServe(t *testing.T) {
+	model := "anthropic/claude-sonnet-4-6"
+	report, ok := FailureReport(&provider.Failure{
+		Class: provider.ClassModelNotFound, Status: 404, Provider: "openrouter",
+		Message: "No endpoints found for " + model,
+	}, model)
+	if !ok {
+		t.Fatal("a classified failure should report")
+	}
+	got := ansi.Strip(report)
+	for _, want := range []string{model, "404 no such model", "--model <name>"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("the report should say %q, got:\n%s", want, got)
+		}
+	}
+	if strings.Contains(got, "unclassified") {
+		t.Errorf("the class was named; the row should not say unclassified, got:\n%s", got)
+	}
+}
+
 func TestFailureReport_EveryClassSaysSomethingUseful(t *testing.T) {
 	for _, class := range []provider.Class{
 		provider.ClassAuth, provider.ClassRateLimit, provider.ClassQuota,
-		provider.ClassOverloaded, provider.ClassContextLength, provider.ClassNetwork,
-		provider.ClassMalformed, provider.ClassCancelled, provider.ClassUnclassified,
+		provider.ClassOverloaded, provider.ClassContextLength, provider.ClassModelNotFound,
+		provider.ClassNetwork, provider.ClassMalformed, provider.ClassCancelled,
+		provider.ClassUnclassified,
 	} {
 		t.Run(string(class), func(t *testing.T) {
 			report, ok := FailureReport(&provider.Failure{Class: class, Message: "because"}, "gpt-4o")

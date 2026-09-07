@@ -50,6 +50,12 @@ const (
 	ClassOverloaded Class = "overloaded"
 	// ClassContextLength — the request did not fit the model's window.
 	ClassContextLength Class = "context too long"
+	// ClassModelNotFound — the provider has no model under the id that was
+	// sent. It is separated from the 404 it arrives as because it is the one
+	// refusal a session can fix without leaving the session, and because
+	// retrying is the one thing that cannot work: the id will be the same
+	// id next time.
+	ClassModelNotFound Class = "no such model"
 	// ClassNetwork — the request never reached the provider, or the
 	// connection died on the way back.
 	ClassNetwork Class = "network"
@@ -72,6 +78,7 @@ var (
 	ErrQuota         = errors.New(string(ClassQuota))
 	ErrOverloaded    = errors.New(string(ClassOverloaded))
 	ErrContextLength = errors.New(string(ClassContextLength))
+	ErrModelNotFound = errors.New(string(ClassModelNotFound))
 	ErrNetwork       = errors.New(string(ClassNetwork))
 	ErrMalformed     = errors.New(string(ClassMalformed))
 	ErrCancelled     = errors.New(string(ClassCancelled))
@@ -84,6 +91,7 @@ var sentinels = map[Class]error{
 	ClassQuota:         ErrQuota,
 	ClassOverloaded:    ErrOverloaded,
 	ClassContextLength: ErrContextLength,
+	ClassModelNotFound: ErrModelNotFound,
 	ClassNetwork:       ErrNetwork,
 	ClassMalformed:     ErrMalformed,
 	ClassCancelled:     ErrCancelled,
@@ -288,6 +296,15 @@ func classFromStatus(status int, message string) (Class, bool) {
 		return ClassQuota, true
 	case 408:
 		return ClassNetwork, true
+	case 404:
+		// A completions endpoint answers 404 for two things: an id it does
+		// not serve, and a base URL that is not the endpoint. Only the
+		// first says so in the body, and guessing the first from a bare 404
+		// would send a reader after a model name when the address is wrong.
+		if hasAny(message, modelPhrases) {
+			return ClassModelNotFound, true
+		}
+		return "", false
 	case 413:
 		return ClassContextLength, true
 	case 429:
@@ -298,6 +315,9 @@ func classFromStatus(status int, message string) (Class, bool) {
 	case 400, 422:
 		if hasAny(message, contextPhrases) {
 			return ClassContextLength, true
+		}
+		if hasAny(message, modelPhrases) {
+			return ClassModelNotFound, true
 		}
 		if hasAny(message, quotaPhrases) {
 			return ClassQuota, true
@@ -320,6 +340,22 @@ var (
 		"context length", "context_length_exceeded", "maximum context",
 		"too many tokens", "prompt is too long", "input is too long",
 		"reduce the length", "exceeds the maximum", "max_tokens",
+	}
+	// modelPhrases are the five dialects' ways of saying they have no model
+	// under this id. Each is anchored on a word the vendor writes beside the
+	// id — never a bare "not found", which is also what a wrong base URL's
+	// own 404 page says.
+	//
+	//	openrouter: No endpoints found for anthropic/claude-sonnet-4-6
+	//	openai:     The model `gpt-9` does not exist ... code model_not_found
+	//	anthropic:  model: claude-x        (the whole message; the id follows)
+	//	gemini:     models/gemini-x is not found for API version v1beta
+	//	ollama:     model "llama3" not found, try pulling it first
+	modelPhrases = []string{
+		"no endpoints found", "model not found", "model_not_found",
+		"not_found_error", "unknown model", "invalid model",
+		"does not exist", "is not found for api version",
+		"not found, try pulling", "model: ",
 	}
 	quotaPhrases = []string{
 		"insufficient_quota", "quota", "billing", "credit balance",
@@ -352,7 +388,9 @@ var (
 // classFromMessage reads the class out of the provider's prose. The order is
 // the disambiguation: quota before rate limit because an out-of-credit 429
 // says both, malformed before network because "unexpected EOF" is a dropped
-// connection and "unexpected end of JSON input" is not.
+// connection and "unexpected end of JSON input" is not, and the model before
+// the key because OpenAI answers an id it does not serve with "does not
+// exist or you do not have access to it", which is half an auth message.
 func classFromMessage(message string) (Class, bool) {
 	msg := strings.ToLower(message)
 	// A status the dialect only wrote into its prose still outranks the
@@ -368,6 +406,7 @@ func classFromMessage(message string) (Class, bool) {
 		class   Class
 	}{
 		{contextPhrases, ClassContextLength},
+		{modelPhrases, ClassModelNotFound},
 		{quotaPhrases, ClassQuota},
 		{ratePhrases, ClassRateLimit},
 		{overloadPhrases, ClassOverloaded},

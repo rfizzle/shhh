@@ -13,11 +13,17 @@ import (
 
 const (
 	defaultOpenRouterBaseURL = "https://openrouter.ai/api/v1"
-	defaultOpenRouterModel   = "anthropic/claude-sonnet-4-6"
+	// OpenRouter writes the generation with a dot where Anthropic's own API
+	// writes a hyphen, and the gateway does not forgive the near miss: it
+	// answers `404 No endpoints found for anthropic/claude-sonnet-4-6` to
+	// the first request of every session that took the default, and no price
+	// table has heard of that id either, so the meter bills the whole
+	// conversation at nothing.
+	defaultOpenRouterModel = "anthropic/claude-sonnet-4.6"
 	// cheapOpenRouterModel is the gateway's spelling of the same Haiku the
 	// Anthropic provider names, because the gateway's own default is an
 	// Anthropic model and the two should not disagree about which small
-	// model that family has. OpenRouter writes the generation with a dot.
+	// model that family has.
 	cheapOpenRouterModel = "anthropic/claude-haiku-4.5"
 )
 

@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/rfizzle/shhh/internal/pricing"
 )
 
 func modelsServer(t *testing.T, body string) *httptest.Server {
@@ -195,5 +197,50 @@ func TestOpenAICompatIsAModelWindower(t *testing.T) {
 	var p Provider = &OpenAICompat{}
 	if _, ok := p.(ModelWindower); !ok {
 		t.Fatal("the compat provider should answer for its endpoint's windows")
+	}
+}
+
+// The picker's catalog and every provider's defaults are ids typed by hand,
+// and a mistyped one fails in two ways at once: the provider answers 404, and
+// no price table has heard of it, so the session's own tokens cost nothing
+// while the cheap auxiliary calls make the total read as priced. The gateway
+// spelling is where this actually happened — OpenRouter writes a generation
+// with a dot where Anthropic's own API writes a hyphen.
+//
+// The snapshot is the right table to ask because it ships in the binary: an
+// id it cannot answer for is one a fresh or offline install prices at zero,
+// whatever today's download would have said.
+func TestHardcodedModelIDsArePriced(t *testing.T) {
+	table := pricing.Snapshot()
+	if table.Len() == 0 {
+		t.Fatal("the built-in snapshot is empty")
+	}
+	// The openai-compatible default is the name a local runtime answers to,
+	// and no public table has ever keyed one. It is the one id here that is
+	// deliberately absent, and internal/provider's family floor — not the
+	// table — is what prices and sizes it.
+	unpriceable := map[string]bool{defaultCompatModel: true}
+
+	check := func(t *testing.T, where, model string) {
+		t.Helper()
+		if model == "" || unpriceable[model] {
+			return
+		}
+		if _, ok := table.Entry(model); !ok {
+			t.Errorf("%s: the snapshot has no entry for %q", where, model)
+		}
+	}
+	for name, models := range knownModels {
+		for _, model := range models {
+			t.Run(name+"/"+model, func(t *testing.T) {
+				check(t, "the "+name+" catalog", model)
+			})
+		}
+	}
+	for name, d := range defaults {
+		t.Run(name+"/defaults", func(t *testing.T) {
+			check(t, name+"'s default model", d.Model)
+			check(t, name+"'s cheap model", d.CheapModel)
+		})
 	}
 }

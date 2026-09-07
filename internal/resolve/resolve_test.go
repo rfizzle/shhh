@@ -3,6 +3,8 @@ package resolve
 import (
 	"os"
 	"testing"
+
+	"github.com/rfizzle/shhh/internal/provider"
 )
 
 func clearEnv(t *testing.T) {
@@ -127,7 +129,7 @@ func TestResolve_EmptyFlagsFallThrough(t *testing.T) {
 	if r.Provider != "openrouter" {
 		t.Errorf("expected provider 'openrouter' from env, got %q", r.Provider)
 	}
-	if r.Model != "anthropic/claude-sonnet-4-6" {
+	if r.Model != "anthropic/claude-sonnet-4.6" {
 		t.Errorf("expected default openrouter model, got %q", r.Model)
 	}
 }
@@ -141,7 +143,7 @@ func TestResolve_DefaultModelMatchesProvider(t *testing.T) {
 	}{
 		{"openai", "gpt-4o"},
 		{"gemini", "gemini-2.5-flash"},
-		{"openrouter", "anthropic/claude-sonnet-4-6"},
+		{"openrouter", "anthropic/claude-sonnet-4.6"},
 		{"openai-compatible", "llama3"},
 	}
 	for _, tt := range tests {
@@ -180,5 +182,17 @@ func must(t *testing.T, err error) {
 	t.Helper()
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+// The two default tables are one fact written twice, so the only thing that
+// keeps them true is a test that reads both. This is a test-only import of
+// the provider registry: the package itself stays free of it, which is the
+// reason the copy exists at all.
+func TestDefaultModelsAgreeWithTheProviderRegistry(t *testing.T) {
+	for name, model := range defaultModels {
+		if got := provider.Defaults(name).Model; got != model {
+			t.Errorf("%s: resolve says %q, the provider registry says %q", name, model, got)
+		}
 	}
 }

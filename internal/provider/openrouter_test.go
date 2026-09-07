@@ -36,8 +36,12 @@ func TestOpenRouter_DefaultModel(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if p.model != "anthropic/claude-sonnet-4-6" {
-		t.Errorf("expected default model 'anthropic/claude-sonnet-4-6', got %q", p.model)
+	// The constant rather than a literal: what this asserts is that an
+	// unnamed model falls back at all. Whether the id is one the gateway
+	// serves is TestHardcodedModelIDsArePriced's question, and a literal
+	// here was a fifth place for the same typo to live.
+	if p.model != defaultOpenRouterModel {
+		t.Errorf("expected the default model %q, got %q", defaultOpenRouterModel, p.model)
 	}
 }
 

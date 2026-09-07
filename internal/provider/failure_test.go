@@ -54,6 +54,13 @@ func TestClassify_ProviderShapes(t *testing.T) {
 		{"openai 429 quota", &openai.APIError{HTTPStatusCode: 429, Message: "You exceeded your current quota, please check your plan and billing details"}, ClassQuota},
 		{"openai 400 context", &openai.APIError{HTTPStatusCode: 400, Message: "This model's maximum context length is 128000 tokens"}, ClassContextLength},
 		{"openai 400 otherwise", &openai.APIError{HTTPStatusCode: 400, Message: "Unknown parameter: 'reasoning'"}, ClassUnclassified},
+		{"openai 404 model", &openai.APIError{HTTPStatusCode: 404, Message: "The model `gpt-9` does not exist or you do not have access to it."}, ClassModelNotFound},
+		{"openrouter 404 model", &openai.APIError{HTTPStatusCode: 404, Message: "No endpoints found for anthropic/claude-sonnet-4-6"}, ClassModelNotFound},
+		{"ollama 404 model", &openai.RequestError{HTTPStatusCode: 404, Body: []byte(`model "llama3" not found, try pulling it first`)}, ClassModelNotFound},
+		// A base URL that is not a completions endpoint answers 404 too, and
+		// it says nothing about a model. Naming this one would send the
+		// reader after a model id while the address is what is wrong.
+		{"404 with no model in it", &openai.APIError{HTTPStatusCode: 404, Message: "404 page not found"}, ClassUnclassified},
 		{"openai 500", &openai.APIError{HTTPStatusCode: 500, Message: "The server had an error"}, ClassOverloaded},
 		{"openai 503", &openai.APIError{HTTPStatusCode: 503, Message: "Service Unavailable"}, ClassOverloaded},
 		{"openai transport 401", &openai.RequestError{HTTPStatusCode: 401, Body: []byte("invalid api key")}, ClassAuth},
@@ -65,6 +72,7 @@ func TestClassify_ProviderShapes(t *testing.T) {
 		{"anthropic 529", anthropicError(t, 529, `{"error":{"type":"overloaded_error","message":"Overloaded"}}`), ClassOverloaded},
 		{"anthropic credit", anthropicError(t, 400, `{"error":{"type":"invalid_request_error","message":"Your credit balance is too low to access the API"}}`), ClassQuota},
 		{"anthropic context", anthropicError(t, 400, `{"error":{"type":"invalid_request_error","message":"prompt is too long: 210000 tokens > 200000"}}`), ClassContextLength},
+		{"anthropic 404 model", anthropicError(t, 404, `{"error":{"type":"not_found_error","message":"model: claude-x"}}`), ClassModelNotFound},
 
 		// gemini, which reports its status in prose
 		{"gemini typed 429", genai.APIError{Code: 429, Message: "Resource has been exhausted"}, ClassRateLimit},
@@ -72,6 +80,7 @@ func TestClassify_ProviderShapes(t *testing.T) {
 		{"gemini 403 in prose", errors.New("googleapi: Error 403: forbidden"), ClassAuth},
 		{"gemini 429 in prose", errors.New("googleapi: Error 429: rate limit"), ClassRateLimit},
 		{"gemini 503 in prose", errors.New("googleapi: Error 503: The model is overloaded"), ClassOverloaded},
+		{"gemini 404 in prose", errors.New("googleapi: Error 404: models/gemini-x is not found for API version v1beta, or is not supported for generateContent"), ClassModelNotFound},
 
 		// the transport, which belongs to no dialect
 		{"cancelled", context.Canceled, ClassCancelled},

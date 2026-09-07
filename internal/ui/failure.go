@@ -98,6 +98,8 @@ func failureOutcome(f *provider.Failure) string {
 		return "the provider's side"
 	case provider.ClassContextLength:
 		return "over the window"
+	case provider.ClassModelNotFound:
+		return "the id, not the key"
 	case provider.ClassNetwork:
 		return "never reached it"
 	case provider.ClassMalformed:
@@ -125,6 +127,8 @@ func failureRemedy(f *provider.Failure) string {
 		return "run it again, or --provider <name> to ask somewhere else"
 	case provider.ClassContextLength:
 		return "shorten the prompt, or pipe less into it"
+	case provider.ClassModelNotFound:
+		return "--model <name>, or shhh providers lists what each one serves"
 	case provider.ClassCancelled:
 		return "nothing was sent"
 	}

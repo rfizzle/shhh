@@ -136,6 +136,8 @@ func failureOutcome(f *provider.Failure) string {
 		return "the provider's side"
 	case provider.ClassContextLength:
 		return "over the window"
+	case provider.ClassModelNotFound:
+		return "the id, not the key"
 	case provider.ClassNetwork:
 		return "never reached it"
 	case provider.ClassMalformed:
@@ -157,6 +159,8 @@ func failureNote(f *provider.Failure) string {
 		return "waiting will not clear this one"
 	case provider.ClassContextLength:
 		return "compacting keeps the plan and the recent turns"
+	case provider.ClassModelNotFound:
+		return "/model lists what this provider serves"
 	}
 	return "nothing in the turn was lost"
 }
@@ -185,6 +189,13 @@ func (m Model) failureKeys(f *provider.Failure) []components.KeyOffer {
 	case provider.ClassContextLength:
 		add(keys.Shown(keys.Row.Continue), "compact now")
 		add(keys.Shown(keys.Row.Retry), "then try again")
+	case provider.ClassModelNotFound:
+		// No [r]. The id is the failure, and the next request would carry
+		// the same one — the note sends the reader to the picker that can
+		// change it instead.
+		if m.canSwitchProvider() {
+			add(keys.Shown(keys.Row.Provider), "switch provider")
+		}
 	case provider.ClassCancelled:
 		// You stopped it on purpose. Offering a key here would be the
 		// interface arguing with the decision.
