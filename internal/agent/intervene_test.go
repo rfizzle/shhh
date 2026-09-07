@@ -241,6 +241,58 @@ func TestNextIntervention_ClockFiresWithNoVerdictAtAll(t *testing.T) {
 	}
 }
 
+// The exit a check-in offers belongs to the surface, not to whichever route
+// asked. A child's clock check-in and the one a sufficient reading brings
+// forward both point at the final report that ends its turn; a session's
+// point at the person in front of it. Only the round cap ever named the
+// report before, so a child asked by its clock was told to say so to nobody.
+func TestNextIntervention_TheFinishIsTheSurfaces(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		finished string
+		want     string
+		notWant  string
+	}{
+		{"a session", "", FinishedInSession, FinishedAsSubAgent},
+		{"a child", FinishedAsSubAgent, FinishedAsSubAgent, FinishedInSession},
+	} {
+		check := func(route, msg string) {
+			t.Helper()
+			if !strings.Contains(msg, tc.want) {
+				t.Errorf("%s, %s: missing %q from:\n%s", tc.name, route, tc.want, msg)
+			}
+			if strings.Contains(msg, tc.notWant) {
+				t.Errorf("%s, %s: carries the other surface's exit %q", tc.name, route, tc.notWant)
+			}
+		}
+
+		clock := New(nil, noStream)
+		clock.SetFinished(tc.finished)
+		clock.rounds = DefaultCheckInInterval
+		iv, ok := clock.NextIntervention("build the exporter")
+		if !ok || iv.Kind != InterveneCheckIn {
+			t.Fatalf("%s: kind = %v ok = %v, want InterveneCheckIn", tc.name, iv.Kind, ok)
+		}
+		check("the clock", iv.Message)
+
+		reading := New(nil, noStream)
+		reading.SetFinished(tc.finished)
+		reading.rounds = 5
+		reading.ConsiderVerdict(enoughVerdict(5), running)
+		iv, ok = reading.NextIntervention("build the exporter")
+		if !ok || iv.Kind != InterveneEnough {
+			t.Fatalf("%s: kind = %v ok = %v, want InterveneEnough", tc.name, iv.Kind, ok)
+		}
+		check("a sufficient reading", iv.Message)
+
+		capped := New(nil, noStream)
+		capped.SetFinished(tc.finished)
+		capped.rounds = 25
+		check("a caller with its own reason", capped.CheckInMessage())
+		check("a forced check-in", capped.ForceCheckIn())
+	}
+}
+
 // A reading wins over the clock: it is the same question asked for a reason,
 // and asking both in one round is asking twice.
 func TestNextIntervention_AReadingWinsOverTheClock(t *testing.T) {

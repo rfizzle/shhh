@@ -79,6 +79,18 @@ func (a *Agent) SetCheckInInterval(n int) {
 	a.steering.CheckInInterval = n
 }
 
+// SetFinished overrides the line this surface's check-ins close on. Empty
+// restores FinishedInSession.
+//
+// It is per-surface for the reason the interval is, and it is the same one
+// line: a check-in exists to give a turn that is quietly already done
+// somewhere to go other than more reading, and where that is depends on what
+// ends the turn. A session says so to the person in front of it; a child's
+// final report is its whole deliverable, and one told to say so instead says
+// so into a transcript nobody reads and carries on.
+// See docs/capabilities/coding-agent.md#the-interval-is-the-last-thing-watching.
+func (a *Agent) SetFinished(line string) { a.steering.Finished = line }
+
 // checkInInterval is the number of rounds owed before the next check-in,
 // widened by how many this turn has already had.
 func (a *Agent) checkInInterval() int {
@@ -99,9 +111,10 @@ func (a *Agent) checkInInterval() int {
 // is running out, a model apologises and stops; asked what is left, it says
 // so and carries on. The last line is the one that matters for a turn that
 // has quietly finished — it gives it somewhere to go other than more reading.
-// The closing line is the caller's because a session and a sub-agent finish
+// The closing line is a parameter because a session and a sub-agent finish
 // differently: one reports to the person in front of it, the other has a
-// final report that is its whole deliverable.
+// final report that is its whole deliverable. Which of the two a turn is
+// asked with is Steering.Finished, not the call site.
 func CheckInPrompt(used int, whenFinished string) string {
 	return buildCheckIn(strconv.Itoa(used), whenFinished)
 }
@@ -150,7 +163,7 @@ func (a *Agent) TakeCheckIn() (prompt string, ok bool) {
 	// different question with a reason behind it, and one turn's worth of
 	// them should not make the generic question rarer.
 	a.checkIns++
-	return a.steering.checkInPrompt(a.rounds, FinishedInSession), true
+	return a.steering.checkInPrompt(a.rounds), true
 }
 
 // ForceCheckIn returns the check-in unconditionally and marks it taken. It is
@@ -160,7 +173,7 @@ func (a *Agent) TakeCheckIn() (prompt string, ok bool) {
 // session that has no reading to go on.
 func (a *Agent) ForceCheckIn() string {
 	a.NoteIntervention()
-	return a.steering.checkInPrompt(a.rounds, FinishedInSession)
+	return a.steering.checkInPrompt(a.rounds)
 }
 
 // CheckInInterval is the rounds owed before the next check-in, for a caller
@@ -169,16 +182,19 @@ func (a *Agent) ForceCheckIn() string {
 func (a *Agent) CheckInInterval() int { return a.checkInInterval() }
 
 // CheckInMessage is the check-in this agent would ask at the round it has
-// reached, closing with whenFinished. It is for a caller holding a reason of
-// its own — a sub-agent's round cap, which is a check-in rather than a stop —
-// and it marks nothing: TakeCheckIn and ForceCheckIn are the two that do.
+// reached. It is for a caller holding a reason of its own — a sub-agent's
+// round cap, which is a check-in rather than a stop — and it marks nothing:
+// TakeCheckIn and ForceCheckIn are the two that do.
 //
 // It goes through the agent rather than through CheckInPrompt so a caller
-// that has its own reason still asks in the surface's own wording. A second
-// route to the same message is how one of them ends up saying something the
-// operator replaced everywhere else.
-func (a *Agent) CheckInMessage(whenFinished string) string {
-	return a.steering.checkInPrompt(a.rounds, whenFinished)
+// that has its own reason still asks in the surface's own wording, closing on
+// the surface's own exit. A second route to the same message is how one of
+// them ends up saying something the operator replaced everywhere else — and
+// the closing line is not the caller's to choose for the same reason: the
+// round cap was the only route that named the report, so a child asked by its
+// clock was told to say so to nobody.
+func (a *Agent) CheckInMessage() string {
+	return a.steering.checkInPrompt(a.rounds)
 }
 
 // NoteIntervention records that something has just asked the turn to take

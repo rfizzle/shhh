@@ -347,13 +347,20 @@ round until the model goes back to it. Why it exists and what it does not see:
 The steer and the check-in are decided in `internal/agent` and delivered by
 whichever front-end holds the turn. `agent.Steering` (`steering.go`) is the
 tuning every surface carries: the check-in interval, how far it widens, the
-bound on what a steer quotes back, and the two wordings. A zero value is the
-built-in set, so a test and an unconfigured session run the same words.
-`SetCheckInInterval` writes only the interval, because that one is
-per-surface — `newChildAgent` applies the configured set and then puts a
-child's own shorter interval back over it. The summariser's and the
-classifier's own instructions are `SummaryConfig.Prompt` and
-`ClassifierConfig.Prompt`, beside the rest of what each costs.
+bound on what a steer quotes back, the line a check-in closes on, and the two
+wordings. A zero value is the built-in set, so a test and an unconfigured
+session run the same words. `SetCheckInInterval` and `SetFinished` write one
+field each, because those two are the surface's rather than the config's —
+`newChildAgent` applies the configured set and then puts a child's own shorter
+interval and its own `FinishedAsSubAgent` back over it. **A child's finish is
+spelled in exactly one place**, `Steering.Finished`: the clock's
+`TakeCheckIn`, the sufficiency branch of `NextIntervention`, `ForceCheckIn`
+and the round cap's `CheckInMessage` all read it, and a configured wording's
+`{{finished}}` is substituted from it. A call site that names a closing line
+of its own is how a child asked by its clock ends up told to say so to
+nobody. The summariser's and the classifier's own instructions are
+`SummaryConfig.Prompt` and `ClassifierConfig.Prompt`, beside the rest of what
+each costs.
 
 **When the next reading is due is one predicate — `agent.SummarySchedule`
 (`schedule.go`) — and each surface holds a value of it**: the session on its

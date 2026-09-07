@@ -299,7 +299,7 @@ func (a *Agent) NextIntervention(target string) (Intervention, bool) {
 		}
 		return Intervention{
 			Kind:    InterveneEnough,
-			Message: a.steering.checkInPrompt(a.rounds, FinishedInSession),
+			Message: a.steering.checkInPrompt(a.rounds),
 			Notice:  enoughNotice(v.Reason),
 			Reason:  v.Reason,
 		}, true

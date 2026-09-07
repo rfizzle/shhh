@@ -104,9 +104,9 @@ func (e *PlaceholderError) Error() string {
 }
 
 // Steering is the interruption machinery's tuning: the two thresholds, the
-// bound on what a steer quotes back, and the wordings themselves. A zero
-// Steering is the built-in set, which is what every surface that configures
-// nothing runs.
+// bound on what a steer quotes back, the exit a check-in offers, and the
+// wordings themselves. A zero Steering is the built-in set, which is what
+// every surface that configures nothing runs.
 type Steering struct {
 	// CheckInInterval is how many rounds pass before a turn is asked to take
 	// stock. Zero or less keeps DefaultCheckInInterval. It is per-surface —
@@ -116,6 +116,11 @@ type Steering struct {
 	// Zero keeps the built-in bound; any negative fixes the interval, so a
 	// long turn is asked at the same rate from first round to last.
 	CheckInDoublings int
+	// Finished is the line a check-in closes on: the exit it offers a turn
+	// that has quietly already done the work. Empty keeps FinishedInSession.
+	// It is per-surface for the same reason the interval is — see SetFinished,
+	// which sets this field alone.
+	Finished string
 	// SteerTargetChars bounds the instruction a steer quotes back. Zero keeps
 	// the built-in bound; any negative quotes it whole, however long the user
 	// typed.
@@ -147,15 +152,27 @@ func (s Steering) doublings() int {
 	return s.CheckInDoublings
 }
 
+// finished is the line this surface's check-ins close on, defaulted. It is
+// read here rather than passed in at each call because the exit a check-in
+// offers is a fact about the surface and not about the caller: a child asked
+// by its round cap and a child asked by its clock are the same turn, and the
+// two routes drifted apart the moment they each carried their own answer.
+func (s Steering) finished() string {
+	if s.Finished == "" {
+		return FinishedInSession
+	}
+	return s.Finished
+}
+
 // checkInPrompt is the check-in this surface asks, built from the override
 // when there is one.
-func (s Steering) checkInPrompt(used int, whenFinished string) string {
+func (s Steering) checkInPrompt(used int) string {
 	if s.CheckIn == "" {
-		return CheckInPrompt(used, whenFinished)
+		return CheckInPrompt(used, s.finished())
 	}
 	return strings.NewReplacer(
 		PlaceholderRounds, strconv.Itoa(used),
-		PlaceholderFinished, whenFinished,
+		PlaceholderFinished, s.finished(),
 	).Replace(s.CheckIn)
 }
 

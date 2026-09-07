@@ -1003,8 +1003,11 @@ func TestNewChildAgent_BothPathsGetTheChildInterval(t *testing.T) {
 
 // The configured wording reaches a child and the configured interval does
 // not: a child has none of what makes a session's long interval safe, and
-// the two halves of that are one line apart in newChildAgent.
-func TestNewChildAgent_TakesTheWordingsAndKeepsItsOwnInterval(t *testing.T) {
+// the two halves of that are one line apart in newChildAgent. The child's own
+// exit is the third: every check-in it is asked closes on its final report,
+// including the configured wording's own {{finished}}, because a child told
+// to say so says so into a transcript nobody reads.
+func TestNewChildAgent_TakesTheWordingsAndKeepsItsOwnIntervalAndExit(t *testing.T) {
 	env := Env{
 		SystemPrompt: "you are a child",
 		Steering: agent.Steering{
@@ -1017,8 +1020,13 @@ func TestNewChildAgent_TakesTheWordingsAndKeepsItsOwnInterval(t *testing.T) {
 		t.Errorf("interval = %d, want the child's own %d", got, ChildCheckInInterval)
 	}
 	want := "used 0. " + agent.FinishedAsSubAgent
-	if got := a.CheckInMessage(agent.FinishedAsSubAgent); got != want {
+	if got := a.CheckInMessage(); got != want {
 		t.Errorf("check-in = %q, want the configured wording %q", got, want)
+	}
+	// One field, so every route the agent has to a check-in — its clock, a
+	// reading that says it has enough, its round cap — asks with the report.
+	if got := a.Steering().Finished; got != agent.FinishedAsSubAgent {
+		t.Errorf("finish = %q, want the child's own %q", got, agent.FinishedAsSubAgent)
 	}
 }
 

@@ -278,6 +278,12 @@ func newChildAgent(env Env, maxRounds int) *agent.Agent {
 	// safe. Everything else in the set — the wordings, the widening, what a
 	// steer quotes — is the same question asked of the same machinery.
 	a.SetCheckInInterval(ChildCheckInInterval)
+	// And its exit, in the same place and for the same kind of reason: a
+	// child has no person to say "the work is finished" to, and one that says
+	// it into its own transcript carries on reading. Its final report is what
+	// ends its turn, so that is what its check-ins point at — every route to
+	// one, not just the round cap that used to name it.
+	a.SetFinished(agent.FinishedAsSubAgent)
 	if env.Scrub != nil {
 		a.SetScrub(env.Scrub)
 	}
@@ -2054,9 +2060,10 @@ func (s *Supervisor) run(c *child) {
 			c.agent.SetMaxRounds(c.agent.MaxRounds() * checkInGrowth)
 			c.appendEntry(TranscriptEntry{Kind: EntrySystem,
 				Text: fmt.Sprintf("Check-in %d — %d rounds used. Taking stock, then carrying on.", n, used)})
-			// Through the child's own agent, so a configured wording reaches
-			// this check-in as well as the interval's.
-			turn = c.agent.CheckInMessage(agent.FinishedAsSubAgent)
+			// Through the child's own agent, so a configured wording and the
+			// child's own closing line reach this check-in as well as the
+			// interval's.
+			turn = c.agent.CheckInMessage()
 			c.set(StateRunning, fmt.Sprintf("running · check-in %d", n))
 			s.emitUpdate(c)
 			continue

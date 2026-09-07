@@ -406,6 +406,14 @@ the direction: an interval that is too short costs one round of a turn being
 asked a question it can answer in a sentence, and an interval that is too long
 costs the whole investigation nobody interrupted.
 
+**So is the exit the check-in offers.** The one line the question exists for
+is the one giving a turn that is quietly already done somewhere to go other
+than more reading, and where that is depends on what ends the turn. A session
+says so to the person in front of it. A sub-agent's final report is its whole
+deliverable, and one told to say so instead says so into a transcript nobody
+reads and carries on — so its check-ins point at the report, whichever of them
+asked.
+
 **It widens as a turn goes on.** Often enough early to catch a turn working on
 the wrong thing, rare enough later to stay out of the way of one that is
 committed and going somewhere. The widening stops after two doublings, because

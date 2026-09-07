@@ -12,7 +12,7 @@ import (
 // configurable wording invites.
 func TestSteering_ZeroValueIsTheBuiltInSet(t *testing.T) {
 	var s Steering
-	if got, want := s.checkInPrompt(12, FinishedInSession), CheckInPrompt(12, FinishedInSession); got != want {
+	if got, want := s.checkInPrompt(12), CheckInPrompt(12, FinishedInSession); got != want {
 		t.Fatalf("the zero value must ask the built-in check-in:\n%s", got)
 	}
 	if got, want := s.steerPrompt("build the exporter", "editing elsewhere"),
@@ -98,8 +98,8 @@ func TestSteering_OverridesCarryTheirValues(t *testing.T) {
 		CheckIn: "rounds so far: " + PlaceholderRounds + ". " + PlaceholderFinished,
 		Steer:   "asked for " + PlaceholderTarget + "; noticed " + PlaceholderReason,
 	}
-	got := s.checkInPrompt(31, FinishedAsSubAgent)
-	if got != "rounds so far: 31. "+FinishedAsSubAgent {
+	got := s.checkInPrompt(31)
+	if got != "rounds so far: 31. "+FinishedInSession {
 		t.Fatalf("check-in override: %q", got)
 	}
 	got = s.steerPrompt("  build the exporter  ", " editing elsewhere ")
@@ -108,15 +108,23 @@ func TestSteering_OverridesCarryTheirValues(t *testing.T) {
 	}
 
 	// Every route to a check-in goes through the same wording, including the
-	// one a caller with its own reason takes — a child's round cap.
+	// one a caller with its own reason takes — a child's round cap — and each
+	// substitutes the surface's own closing line rather than one of its own.
 	a := New(nil, nil)
 	a.SetSteering(s)
 	a.rounds = 31
-	if got := a.CheckInMessage(FinishedAsSubAgent); got != "rounds so far: 31. "+FinishedAsSubAgent {
+	if got := a.CheckInMessage(); got != "rounds so far: 31. "+FinishedInSession {
 		t.Fatalf("check-in for a caller with its own reason: %q", got)
 	}
 	if got := a.ForceCheckIn(); got != "rounds so far: 31. "+FinishedInSession {
 		t.Fatalf("forced check-in: %q", got)
+	}
+	a.SetFinished(FinishedAsSubAgent)
+	if got := a.CheckInMessage(); got != "rounds so far: 31. "+FinishedAsSubAgent {
+		t.Fatalf("a sub-agent surface's own reason: %q", got)
+	}
+	if got := a.ForceCheckIn(); got != "rounds so far: 31. "+FinishedAsSubAgent {
+		t.Fatalf("a sub-agent surface's forced check-in: %q", got)
 	}
 }
 
