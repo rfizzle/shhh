@@ -21,6 +21,7 @@ import (
 	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/tools"
+	"github.com/rfizzle/shhh/internal/web"
 	"github.com/spf13/cobra"
 )
 
@@ -82,6 +83,16 @@ func buildToolset(cmd *cobra.Command, session *chatSession, kind string, opts to
 	// and web_search where a search key is configured.
 	if session.web != nil {
 		register(session.web.Definitions()...)
+		// A page goes into the store whole and the fetch cuts what the
+		// conversation carries itself, naming the id that reads on from the
+		// cut. Both halves are handed over here, and the tool is declared
+		// bounded in the same breath, because a fetch that stores its own
+		// page and a pipeline that stores it again disagree about which id
+		// holds the page.
+		if t.evidence != nil {
+			session.web.UseEvidence(t.evidence.Keep, t.evidence.Scrub)
+			t.evidence.Exempt(web.FetchToolName)
+		}
 	}
 	// LSP integration: the definition/references tools when a language
 	// server was detected, plus after-edit diagnostics. Servers start lazily

@@ -14,6 +14,13 @@ ever asked for is whether a request may leave the machine — a fetch, a
 search, a delegate — because that is the one act a read-only session still
 has that is not free.
 
+A read that leaves the machine is also the most expensive one, so a page is
+kept whole. What the conversation carries is the opening slice of it; the rest
+is in the session's evidence store under the id the result names, a read away
+at any point in the conversation. Fetching the same URL a second time buys the
+same first slice, which is the loop the notice exists to stop —
+[`evidence.md`](evidence.md) is where that store and its paging live.
+
 Read-only is a property of the session, not a mode it starts in. A mode can
 be cycled; a toolset that was never registered cannot be reached by any key.
 That is what lets chat drop the machinery that exists to make mutation safe:

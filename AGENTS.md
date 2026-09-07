@@ -498,6 +498,36 @@ window is at least the conversation's. Both surfaces report through
 `Headless.OnCompact`: stderr and the record for a `-p` run, a transcript row
 and a lane update for a child.
 
+### The fetched page
+
+`internal/web/tool.go` cuts what a fetch puts in the conversation
+(`MaxInlineBytes`, 48 KB) and `Toolset.inline` is the one place a page's text
+becomes a tool result. `buildToolset` hands it the session's store —
+`UseEvidence(reducer.Keep, reducer.Scrub)` — and declares the fetch bounded in
+the same lines (`evidence.Reducer.Exempt`), because the two go together: a
+fetch that keeps its own page and a reduction pipeline that keeps it again
+disagree about which id holds the page
+([`docs/capabilities/evidence.md#a-page-is-kept-whole`](docs/capabilities/evidence.md#a-page-is-kept-whole)).
+The toolset a session builds is the object its children fetch through, so a
+child's page lands in the same store under an id its own evidence tool
+resolves.
+
+What will bite you: **the store write goes before the cut, and the scrub
+before both.** This was the defect — the fetch cut first, so what the pipeline
+stored as the "original" was the already-cut text and the tail of a long page
+was gone before anything could keep it. The scrub runs once, at the top of
+`inline`, for the reason the reducer scrubs before reducing: cut one text and
+store another and the offset the notice quotes lands somewhere else in the
+original. `FetchPlan.Receives` changes wording with the store, since it is a
+promise to a person about where the page goes.
+
+`internal/web/pdf.go` shells out to `pdftotext`, resolved once by
+`DetectPDFText` in `openWebTools` (`internal/cli/web.go`) the way the
+structural tools probe PATH, with the path on `Toolset.PDFText`. The bytes go
+to a temp file, never the reader's stdin — a PDF is read by seeking to the
+table at its end. Tests put a stub `pdftotext` on PATH or set `PDFText`
+directly; this machine need not have poppler for them to run.
+
 ### Provider Interface
 
 All providers implement `StreamCompletion(ctx, messages, opts) (<-chan StreamEvent, error)`. Providers register via `provider.Register(name, factory)` with a `Factory func(ResolveOpts) (Provider, error)`. Provider names are normalized (underscores become hyphens). What the interface deliberately does not abstract over: [`docs/capabilities/providers.md`](docs/capabilities/providers.md).

@@ -45,5 +45,11 @@ func openWebTools(cfg config.Config) *web.Toolset {
 		}
 	}
 
-	return web.NewToolset(fetcher, searcher)
+	ts := web.NewToolset(fetcher, searcher)
+	// PATH is probed once here, with the structural tools' probes, rather
+	// than on the fetch that turns out to be a PDF: the answer cannot change
+	// while the session runs, and the fetch that needs it is already the
+	// slowest call in the session.
+	ts.PDFText = web.DetectPDFText()
+	return ts
 }

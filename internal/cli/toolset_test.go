@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"sort"
 	"strings"
 	"testing"
@@ -172,5 +173,38 @@ func TestANotebookOpensWithTheSessionsScrub(t *testing.T) {
 	}
 	if strings.Contains(n.Body, "hunter2") {
 		t.Errorf("a declared secret was written into the notebook: %q", n.Body)
+	}
+}
+
+// A session that has both a store and the web tools hands one to the other:
+// the page goes into the store whole and the pipeline leaves the fetch's own
+// result alone.
+func TestAFetchIsWiredToTheSessionsEvidenceStore(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	sc, err := sessionScope(config.Config{}, nil)
+	if err != nil {
+		t.Fatalf("session scope: %v", err)
+	}
+	session := codeToolset()
+	ts, err := buildToolset(toolsetCmd(t), &session, "code", toolsetOpts{scope: sc})
+	if err != nil {
+		t.Fatalf("session registration: %v", err)
+	}
+	defer ts.close()
+	if ts.evidence == nil {
+		t.Fatal("this session was supposed to open a store")
+	}
+
+	plan, err := session.web.FetchPlan(json.RawMessage(`{"url":"https://example.com/doc"}`))
+	if err != nil {
+		t.Fatalf("FetchPlan: %v", err)
+	}
+	if !strings.Contains(plan.Receives, "evidence store") {
+		t.Errorf("the fetch was not given the store: %q", plan.Receives)
+	}
+
+	page := strings.Repeat("a fetched page, long enough to be worth reducing.\n", 500)
+	if got := ts.evidence.Process(web.FetchToolName, page); got != page {
+		t.Errorf("a fetch result was reduced a second time: %d of %d bytes", len(got), len(page))
 	}
 }

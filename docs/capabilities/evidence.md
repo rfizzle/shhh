@@ -22,16 +22,16 @@ the reader cannot undo is worse than no reduction at all.
 
 ## Reduction is for unbounded output
 
-A command's output has no natural size. Neither does a page's, or a remote
-server's. That is the whole reason the pipeline exists, and it is the only
-place it earns its cost.
+A command's output has no natural size. Neither does a remote server's. That
+is the whole reason the pipeline exists, and it is the only place it earns its
+cost.
 
 **A tool that already bounds its own output is exempt.** Reading a file,
-listing a directory, searching, globbing — each of these returns a shape it
-chose, inside a cap chosen for that shape, and says how to continue past it
-when it runs out. Cutting a head and a tail through that result is not a
-saving. It is a second, shape-blind edit on top of a deliberate one, and what
-it destroys is the middle.
+listing a directory, searching, globbing, fetching a page — each of these
+returns a shape it chose, inside a cap chosen for that shape, and says how to
+continue past it when it runs out. Cutting a head and a tail through that
+result is not a saving. It is a second, shape-blind edit on top of a
+deliberate one, and what it destroys is the middle.
 
 The failure this rule exists for was specific and expensive. The file read is
 told, in the instruction the model actually acts on, to return a whole file in
@@ -56,6 +56,41 @@ place.
 The ids are opaque session-scoped tokens rather than paths. A retrieval
 mechanism that took a filename would be a file read with no scope check
 wearing a different name.
+
+## A page is kept whole
+
+Not everything in the store arrived as a tool result that was too big. A
+fetched page goes in whole, before anything is cut, and the slice the
+conversation carries is the opening of exactly those stored bytes. What the
+reader gets back is that slice and one notice: the entry that holds the page,
+the offset the cut fell at, and the two things that can be done with an entry
+— read on from there, or search it for a literal.
+
+The ordering is the point, and it was wrong first. The fetch cut the page to
+what a conversation could carry, and the reduction pipeline then kept *that*
+as the original. Everything past the cut was gone before anything could store
+it, and nothing said so: a documentation page whose answer sat two thirds of
+the way down came back as a page that did not answer the question.
+
+A page is also the one read whose size nobody chose — not the reader, not
+shhh, only whoever published it. So the fetch bounds itself, the way a file
+read does, and the pipeline leaves the result alone. Reducing a view that was
+already cut on purpose would cost the middle of it and write a second copy of
+a page the store already holds.
+
+The cache keeps what was fetched rather than what was extracted, so the second
+read of a long page costs no request and still lands whole in the store. A
+page paged back from a cached fetch reads the same as one paged back from a
+fresh one.
+
+**Two shapes of page are not text, and both say so rather than failing
+quietly.** A PDF is turned into text by the reader this machine has installed;
+where it has none the result names the program that would have read it, so
+the answer is "install this" rather than a retry of the same URL. And a page
+that is a shell for a script — a large document that yields a title and four
+words — is reported as exactly that, with the byte counts, because a fetch
+that returns four words looks like a page that says four things, and the next
+move is otherwise the same URL with a different guess.
 
 ## A trim makes the same promise
 

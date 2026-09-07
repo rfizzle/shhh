@@ -20,7 +20,11 @@ type Reducer struct {
 	// leaves it alone. Guarded because a round dispatches its tool calls at
 	// once, so Process runs on several goroutines while /secret can add a
 	// secret on the UI's.
-	scrub         func(string) string
+	scrub func(string) string
+	// exempt is the tools this session's surface declared already bounded,
+	// beside the ones the toolbox answers for itself. Guarded for the same
+	// reason scrub is.
+	exempt        map[string]bool
 	reductions    int
 	originalBytes int64
 	reducedBytes  int64
@@ -67,6 +71,42 @@ func (r *Reducer) Scrub(s string) string {
 		return s
 	}
 	return scrub(s)
+}
+
+// Exempt declares tools whose results arrive already bounded, joining the set
+// the toolbox names for itself: the pipeline passes their results through
+// untouched.
+//
+// It exists for a tool this package cannot ask about. A file read or a search
+// is bounded by the toolbox, which the pipeline queries by name; a fetched
+// page is bounded by the web toolset, which sits outside both and has already
+// put the whole page in this store before cutting what the model reads.
+// Reducing that a second time takes a view somebody sized on purpose, cuts a
+// head and a tail out of it, and writes a second copy of what the store
+// already holds — under an id that names the copy rather than the page.
+// See docs/capabilities/evidence.md#a-page-is-kept-whole.
+//
+// Declared while the session registers its tools, before the first call.
+// Safe on a nil Reducer.
+func (r *Reducer) Exempt(names ...string) {
+	if r == nil {
+		return
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.exempt == nil {
+		r.exempt = make(map[string]bool, len(names))
+	}
+	for _, n := range names {
+		r.exempt[n] = true
+	}
+}
+
+// exempted reports whether a surface declared this tool self-bounding.
+func (r *Reducer) exempted(tool string) bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.exempt[tool]
 }
 
 // Store exposes the underlying session store (for /evidence management).
@@ -122,7 +162,7 @@ func (r *Reducer) Process(tool, result string) string {
 	if r == nil || r.store == nil {
 		return result
 	}
-	if tools.SelfBounding(tool) {
+	if tools.SelfBounding(tool) || r.exempted(tool) {
 		return result
 	}
 	// Scrubbed before the reduction rather than around the store call, so

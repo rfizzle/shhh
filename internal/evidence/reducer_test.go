@@ -157,6 +157,37 @@ func TestReducer_SelfBoundingToolsAreNotReduced(t *testing.T) {
 	}
 }
 
+// A result that arrives already stored is not reduced again. The web toolset
+// puts a page in this store whole and cuts what the conversation carries
+// itself, naming the entry that reads on from the cut; a second reduction
+// would cut the middle out of that view and store a copy of a copy under an
+// id that names the wrong thing.
+func TestReducer_ExemptToolsAreNotReduced(t *testing.T) {
+	in := bigOutput()
+	r := testReducer(t)
+	r.Exempt("web_fetch")
+
+	if got := r.Process("web_fetch", in); got != in {
+		t.Errorf("an exempt result must reach the model as the tool wrote it, got %d of %d bytes", len(got), len(in))
+	}
+	if st := r.Store().Stats(); st.Entries != 0 {
+		t.Error("an exempt tool keeps its own original; the pipeline stores nothing")
+	}
+	if rs := r.Stats(); rs.Reductions != 0 {
+		t.Error("pass-through must not count as a reduction")
+	}
+	// Only what was declared. Everything else the same session runs is
+	// still unbounded output.
+	if got := r.Process("execute_command", in); got == in {
+		t.Fatal("exempting one tool must not exempt the others")
+	}
+}
+
+func TestReducer_ExemptIsNilSafe(t *testing.T) {
+	var r *Reducer
+	r.Exempt("web_fetch")
+}
+
 // The store's copy is the one that outlives the turn, so a scrub that runs
 // around the reducer instead of inside it protects the model and nothing
 // else: the file is written first and read back clean afterwards.

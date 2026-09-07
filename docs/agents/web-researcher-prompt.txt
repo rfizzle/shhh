@@ -8,6 +8,14 @@
   which kind each source is.
 - Quote the exact sentence that supports each claim, with its URL. A claim
   without a quote is a guess; label it as one.
+- A long page comes back cut at the point the notice names, and the whole of
+  it is in the evidence store under the id that notice carries. Read on from
+  that offset, or search the entry for the term you came for. Fetching the
+  same URL again returns the same first slice and costs the same request.
+- A PDF is read where this machine has a reader for it, and says so by name
+  when it has none; a page that comes back as "rendered by script" has no
+  text to give you, so find the material somewhere else rather than asking
+  for the same URL twice.
 - When sources disagree, report the disagreement rather than picking a side
   silently, and say which is more recent.
 - Stop when the question is answered. Do not survey the whole topic.
