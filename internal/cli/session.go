@@ -174,15 +174,17 @@ func (s *chatSession) openSecrets(cmd *cobra.Command, red *evidence.Reducer, pro
 	v.SetEnvMask(mask != nil)
 	runner.SetEnvMask(mask)
 	runner.SetSessionEnv(v.Environ())
-	// The executor chain scrubs what the model reads; these two write the
+	// The executor chain scrubs what the model reads; these three write the
 	// copies that stay on disk after the turn — the evidence store's full
-	// original, and a process's spool on its way there — and a wrap around
-	// either of them sees the text only once it is already written.
+	// original, a process's spool on its way there, and the web response
+	// cache the fetcher fills from under every one of those doors — and a
+	// wrap around any of them sees the text only once it is already written.
 	red.SetScrub(v.Scrub)
 	if procSup != nil {
 		procSup.SetEnv(v.Environ())
 		procSup.SetScrub(v.Scrub)
 	}
+	scrubWebCache(s.web, v.Scrub)
 	s.promptExtra = prompt.CombineExtra(s.promptExtra, secret.PromptBlock(v))
 	return nil
 }

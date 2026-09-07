@@ -616,6 +616,22 @@ store another and the offset the notice quotes lands somewhere else in the
 original. `FetchPlan.Receives` changes wording with the store, since it is a
 promise to a person about where the page goes.
 
+**The response cache (`internal/web/cache.go`) is written from under that
+door, so it takes the scrub itself.** `Cache.Put` runs inside `Fetcher.Fetch`,
+below `Toolset.inline`, and what it writes stays under the state directory for
+the TTL — so `openSecrets` hands it `v.Scrub` through `scrubWebCache`
+(`internal/cli/web.go`), beside the reducer's and the process supervisor's.
+Two things about it will bite you. **The entry is scrubbed and the key is
+not**: the key is the SHA-256 of the URL as asked for, and hashing the
+scrubbed form would mean the next fetch of the same URL missed the entry it
+had just written. And **`Prune` decides expiry from the directory entry's
+mtime while `Get` reads `meta.Fetched`** — the sweep runs on the path that
+opens a session, where reading and JSON-parsing every file in the directory is
+a wait before anything paints, and an entry is written once so the two agree;
+a fetch being answered gets the entry's own timestamp. Only a text body is
+rewritten (`textualBody`): a substitution inside a PDF is corruption, and the
+text it is read as goes through the same scrub in `inline`.
+
 **Pacing lives in `internal/web/limiter.go`, one `limiter` per `Fetcher`,
 which is one per session — children fetch through the parent's `Toolset`
 (`session.web` in `subagents.go`), so the pacing a fan-out gets is the pacing

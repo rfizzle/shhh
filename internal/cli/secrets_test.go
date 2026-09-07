@@ -3,15 +3,21 @@ package cli
 import (
 	"bytes"
 	"context"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/spf13/cobra"
 
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/project"
+	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/secret"
+	"github.com/rfizzle/shhh/internal/web"
 )
 
 func TestLoadSecrets_ConfigSkipsUnsetFlagRefuses(t *testing.T) {
@@ -133,5 +139,66 @@ func TestOpenQualityGate_TakesTheScrubOpenedAfterIt(t *testing.T) {
 	}
 	if !strings.Contains(out, secret.Placeholder("GATE_TEST_KEY")) {
 		t.Fatalf("the excerpt must name the secret it held:\n%s", out)
+	}
+}
+
+func TestOpenSecrets_HandsTheScrubToTheWebCache(t *testing.T) {
+	const value = "sk-live-0f1e2d3c4b5a6978"
+	t.Setenv("WEBCACHE_TEST_KEY", value)
+	// The runner's session environment is process-wide; this case leaves it
+	// as it found it.
+	t.Cleanup(func() {
+		runner.SetSessionEnv(nil)
+		runner.SetEnvMask(nil)
+	})
+
+	dir := t.TempDir()
+	cache, err := web.OpenCache(dir, time.Hour)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fetcher := web.NewFetcher(web.Policy{})
+	fetcher.Cache = cache
+	session := &chatSession{web: web.NewToolset(fetcher, nil)}
+
+	cmd := &cobra.Command{}
+	cmd.SetErr(io.Discard)
+	cmd.SetContext(withConfig(context.Background(), config.Config{
+		Secrets: config.SecretsConfig{Env: []string{"WEBCACHE_TEST_KEY"}},
+	}))
+	if err := session.openSecrets(cmd, nil, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	// The fetcher writes an entry from under every door the session's own
+	// scrub sits on, so the vault has to have reached the cache itself.
+	url := "https://example.com/api?token=" + value
+	cache.Put(url, "", web.Result{
+		Status:      200,
+		ContentType: "text/plain",
+		Body:        []byte("key=" + value),
+	})
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) == 0 {
+		t.Fatal("expected the entry to be written")
+	}
+	for _, e := range entries {
+		data, err := os.ReadFile(filepath.Join(dir, e.Name()))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if strings.Contains(string(data), value) {
+			t.Errorf("%s holds the value: %s", e.Name(), data)
+		}
+	}
+	got, ok := cache.Get(url)
+	if !ok {
+		t.Fatal("expected the entry to be found under the URL as asked for")
+	}
+	if want := "key=" + secret.Placeholder("WEBCACHE_TEST_KEY"); string(got.Body) != want {
+		t.Errorf("body = %q, want %q", got.Body, want)
 	}
 }

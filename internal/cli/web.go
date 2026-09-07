@@ -82,6 +82,27 @@ func openWebTools(cfg config.Config) *web.Toolset {
 	return ts
 }
 
+// scrubWebCache hands the session's rewrite to the response cache. The cache
+// is the one copy of a fetched page written from inside the fetcher — below
+// the door that scrubs what the model reads and what the evidence store
+// keeps — so a page holding a vaulted value, and a URL carrying a token in
+// its query string, would otherwise sit under the state directory in the
+// clear for the length of the TTL.
+//
+// It takes the same function the evidence store does, so the cached page and
+// the stored page say the same thing, and it is called where the vault opens
+// rather than where the cache is built: a session does not know what its
+// secrets are until then.
+// See docs/capabilities/secrets.md#the-value-is-scrubbed-at-every-door.
+func scrubWebCache(ts *web.Toolset, scrub func(string) string) {
+	if ts == nil || ts.Fetcher == nil {
+		return
+	}
+	// A nil cache is a session with nowhere to keep one; SetScrub is safe on
+	// it.
+	ts.Fetcher.Cache.SetScrub(scrub)
+}
+
 // recordSearches points a session's web tools at its record, so every search
 // lands beside the rest of what the session did under the backend that
 // answered it — and under nothing else: the query stays in the session's own

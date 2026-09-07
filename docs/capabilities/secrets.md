@@ -59,11 +59,18 @@ tool's log are the same leak through a different tool.
 The copies that outlive the turn are scrubbed where they are written rather
 than where they are read. The evidence store keeps the full original of a
 reduced result as a file for a week, a long-running process spools its
-output into the same store, and a quality check's whole output is kept
-there too; all three pass the scrub on the way in, so the spool, the
-excerpt on screen and the buffer the model pages back hold the same clean
-text. A value the model never saw but the disk kept is the leak that lasts
-longest, and it is the one nothing on screen would report.
+output into the same store, a quality check's whole output is kept there
+too, and a fetched page is cached on disk for the hour a second read of it
+would cost a request; all four pass the scrub on the way in, so the spool,
+the excerpt on screen and the buffer the model pages back hold the same
+clean text. A value the model never saw but the disk kept is the leak that
+lasts longest, and it is the one nothing on screen would report.
+
+The cached page is the one written from the deepest place — the fetcher
+writes it before anything has read the page, so it is under every other
+door. What is scrubbed there is the address as well as the text: a URL
+carries whatever was put in its query string, and a token in one is a
+secret written down twice.
 
 A check is the least obvious of the three, because it is not a tool result
 at all: it is the project's own linter or test command, and it runs with
