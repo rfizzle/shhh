@@ -366,7 +366,17 @@ count, so the reading that says whether the steer took arrives
 delivery sites — `injectInterventions` in the chat model, the boundary tail of
 `Headless.Run` — owe their schedule an `Intervened` and the next digest an
 `Intervention.Row`; a surface that delivers an interruption and forgets either
-reads to its own reader as a session that was never steered.
+reads to its own reader as a session that was never steered. The turn's close
+is the same predicate's `CloseDue` on both surfaces, and on an unattended run
+it is the one reading that lands after `Run` has returned — `SummaryRun.Close`
+hands it straight to `OnSummary` from its own goroutine instead of parking it
+for a boundary that will never come, so a hook that touches state its caller
+tears down at the end of a run has to survive that. Readings are turn-scoped
+for the same reason the round counter is: `SummaryRun.StartTurn` at the top of
+every `Run` starts the schedule again and drops a reading the turn before left
+out, which a run of more than one turn — a child handed another instruction at
+the boundary — would otherwise receive stamped with rounds this turn is
+counting.
 
 **A person steering a running turn moves the target; nothing else does.**
 `agent.ExtendTarget` adds their words to the instruction the readings are

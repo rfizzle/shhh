@@ -303,31 +303,39 @@ func TestHeadlessRun_InterruptCancelsTurn(t *testing.T) {
 func TestHeadlessRun_OnSummaryGetsALandedReading(t *testing.T) {
 	a := New(nil, scriptedStream(t,
 		toolCallRound(provider.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}),
+		toolCallRound(provider.ToolCall{ID: "c2", Name: "read_file", Arguments: `{"path":"y"}`}),
+		toolCallRound(provider.ToolCall{ID: "c3", Name: "read_file", Arguments: `{"path":"z"}`}),
+		toolCallRound(provider.ToolCall{ID: "c4", Name: "read_file", Arguments: `{"path":"w"}`}),
 		doneRound("done")))
-	a.SetExecutor(func(string, json.RawMessage) (string, error) { return "contents", nil })
-
 	run, _ := testSummaryRun(t, &slowProvider{}, "ship the parser")
-	// A reading is parked rather than taken: how one is scheduled is
-	// summaryrun's business, and this is about what happens to it once it
-	// lands. A reading recorded at round 1 holds the interval closed so none
-	// goes out.
-	parked := SummaryVerdict{State: SummaryOnTarget, Text: "on it", Round: 1}
-	run.mu.Lock()
-	run.verdict = &parked
-	run.sched.Read(1)
-	run.mu.Unlock()
+	a.SetExecutor(func(string, json.RawMessage) (string, error) {
+		// A reading the boundary before this call started lands while the
+		// call runs, so the boundary after it is certain to collect one:
+		// this is about what happens to a reading once it has landed, not
+		// about when one is asked for.
+		waitFor(t, "a reading in flight to come back", func() bool { return !reading(run) })
+		return "contents", nil
+	})
 
-	var seen []SummaryState
+	seen := make(chan SummaryVerdict, 4)
 	h := &Headless{
 		Agent:     a,
 		Summary:   run,
-		OnSummary: func(v SummaryVerdict) { seen = append(seen, v.State) },
+		OnSummary: func(v SummaryVerdict) { seen <- v },
 	}
 	if _, err := h.Run("go"); err != nil {
 		t.Fatalf("run: %v", err)
 	}
-	if len(seen) != 1 || seen[0] != SummaryOnTarget {
-		t.Fatalf("OnSummary saw %v, want one on-target reading", seen)
+	// The first of them is the one a round boundary collected, which is what
+	// this is about. The run closes on a second one, which is its own test.
+	select {
+	case v := <-seen:
+		if v.State != SummaryOnTarget || v.Round != FirstSummaryRound {
+			t.Fatalf("OnSummary saw %v at round %d, want the on-target reading of round %d",
+				v.State, v.Round, FirstSummaryRound)
+		}
+	default:
+		t.Fatal("a reading landed and OnSummary was never told")
 	}
 }
 
@@ -1041,5 +1049,126 @@ func TestHeadlessRun_ASteerMovesTheTargetAndRetiresTheQueuedVerdict(t *testing.T
 		if strings.Contains(m.Content, "moved away") {
 			t.Fatalf("a verdict about the instruction before the steer was delivered:\n%s", m.Content)
 		}
+	}
+}
+
+// A run ends on a reading of how it ended, and does not wait for it: the
+// answer is the run's deliverable and a summary is never the reason a run is
+// slower. The verdict reaches OnSummary when it lands, for the surface that
+// outlives the run to record.
+func TestHeadlessRun_ClosesOnAReadingItDoesNotWaitFor(t *testing.T) {
+	// Two rounds: enough for the close to be worth a reading, and short of
+	// the round the first reading of a turn falls due at, so the only
+	// request this run makes is the one its close asks for.
+	a := New(nil, scriptedStream(t,
+		toolCallRound(provider.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}),
+		toolCallRound(provider.ToolCall{ID: "c2", Name: "read_file", Arguments: `{"path":"y"}`}),
+		doneRound("done")))
+	a.SetExecutor(func(string, json.RawMessage) (string, error) { return "contents", nil })
+
+	p := &slowProvider{delay: 300 * time.Millisecond}
+	run, _ := testSummaryRun(t, p, "ship the parser")
+
+	seen := make(chan SummaryVerdict, 4)
+	h := &Headless{Agent: a, Summary: run, OnSummary: func(v SummaryVerdict) { seen <- v }}
+	start := time.Now()
+	if _, err := h.Run("go"); err != nil {
+		t.Fatalf("run: %v", err)
+	}
+	if elapsed := time.Since(start); elapsed > 200*time.Millisecond {
+		t.Fatalf("the run waited %v on its closing reading", elapsed)
+	}
+	select {
+	case v := <-seen:
+		if v.State != SummaryOnTarget {
+			t.Fatalf("state = %v, want the closing reading", v.State)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("the closing reading never reached OnSummary")
+	}
+	if in, out := run.Spend(); in == 0 || out == 0 {
+		t.Fatalf("Spend() = %d/%d, want the closing reading counted", in, out)
+	}
+	if p.count() != 1 {
+		t.Fatalf("readings = %d, want the close's alone", p.count())
+	}
+}
+
+// The closing verdict is never acted on. The turn is over, so an off-target
+// reading of it has nothing left to steer — and a queued steer would be
+// delivered into whatever turn came next.
+func TestHeadlessRun_TheClosingVerdictSteersNothing(t *testing.T) {
+	a := New(nil, scriptedStream(t,
+		toolCallRound(provider.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}),
+		toolCallRound(provider.ToolCall{ID: "c2", Name: "read_file", Arguments: `{"path":"y"}`}),
+		doneRound("done")))
+	a.SetExecutor(func(string, json.RawMessage) (string, error) { return "contents", nil })
+
+	run, _ := testSummaryRun(t, &slowProvider{state: "off_target"}, "ship the parser")
+
+	seen := make(chan SummaryVerdict, 4)
+	h := &Headless{Agent: a, Summary: run, OnSummary: func(v SummaryVerdict) { seen <- v }}
+	if _, err := h.Run("go"); err != nil {
+		t.Fatalf("run: %v", err)
+	}
+	select {
+	case v := <-seen:
+		if v.State != SummaryOffTarget {
+			t.Fatalf("state = %v, want the off-target close", v.State)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("the closing reading never reached OnSummary")
+	}
+	if iv, ok := a.NextIntervention("ship the parser"); ok {
+		t.Fatalf("the closing verdict queued an intervention: %+v", iv)
+	}
+}
+
+// A run short enough to be legible in full takes no closing reading: it would
+// be the same sentence twice, at the price of a request.
+func TestHeadlessRun_AShortRunClosesOnNothing(t *testing.T) {
+	a := New(nil, scriptedStream(t, doneRound("done")))
+	p := &slowProvider{}
+	run, _ := testSummaryRun(t, p, "ship the parser")
+
+	h := &Headless{Agent: a, Summary: run, OnSummary: func(SummaryVerdict) {
+		t.Error("a one-round run was read at its close")
+	}}
+	if _, err := h.Run("go"); err != nil {
+		t.Fatalf("run: %v", err)
+	}
+	if p.count() != 0 {
+		t.Fatalf("readings = %d for a run that answered outright, want none", p.count())
+	}
+}
+
+// A child handed another instruction at the boundary runs its next turn on
+// the same runner. The reading the turn before closed on is retired when the
+// next turn starts rather than arriving in the middle of it stamped with the
+// wrong rounds.
+func TestHeadlessRun_ASecondTurnRetiresTheClosingReading(t *testing.T) {
+	a := New(nil, scriptedStream(t,
+		toolCallRound(provider.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}),
+		toolCallRound(provider.ToolCall{ID: "c2", Name: "read_file", Arguments: `{"path":"y"}`}),
+		doneRound("done"),
+		doneRound("and again")))
+	a.SetExecutor(func(string, json.RawMessage) (string, error) { return "contents", nil })
+
+	run, _ := testSummaryRun(t, &slowProvider{delay: 300 * time.Millisecond}, "ship the parser")
+
+	seen := make(chan SummaryVerdict, 4)
+	h := &Headless{Agent: a, Summary: run, OnSummary: func(v SummaryVerdict) { seen <- v }}
+	if _, err := h.Run("go"); err != nil {
+		t.Fatalf("first turn: %v", err)
+	}
+	// The steer arrived while the answer was being written, so the next turn
+	// starts before the closing reading of the last one can land.
+	if _, err := h.Run("actually, fix the lexer first"); err != nil {
+		t.Fatalf("second turn: %v", err)
+	}
+	select {
+	case v := <-seen:
+		t.Fatalf("a reading of the turn before landed in the next one: %+v", v)
+	case <-time.After(600 * time.Millisecond):
 	}
 }

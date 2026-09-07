@@ -62,10 +62,6 @@ import (
 // stand while the session is idle — that is the one you come back to the
 // terminal for.
 const (
-	// summaryCloseMinRounds is how many rounds a turn has to have taken
-	// before its close is worth a reading. A one-round answer is already on
-	// screen in full; summarizing it would be the same sentence twice.
-	summaryCloseMinRounds = 2
 	// summaryActivityRows bounds the recent work in the digest.
 	summaryActivityRows = 24
 	// summaryAssistantChars bounds the last assistant message in the digest.
@@ -224,23 +220,15 @@ func (m *Model) summaryCmd() tea.Cmd {
 // transition, not a message any one of the dozen handlers that reach it could
 // be trusted to send.
 //
-// It ignores the interval, because the close is the reading that will sit on
-// screen while nothing else moves, and a turn that finished at round 7 with a
-// summary from round 3 would be describing its own middle. It does not ignore
-// summaryCloseMinRounds: a turn that took one round is already legible in
-// full.
+// Whether the close is worth a reading — a turn long enough to be worth
+// reading, with something in it since the last reading — is the schedule's,
+// because an unattended run closes on the same question and a rule added to
+// one of them has to reach the other (schedule.go).
 func (m *Model) summaryCloseCmd(prev Model) tea.Cmd {
 	if !prev.working() || m.working() {
 		return nil
 	}
-	rounds := m.agent.Rounds()
-	if rounds < summaryCloseMinRounds {
-		return nil
-	}
-	// A turn read this round has nothing new to say — unless the machinery
-	// spoke to the model in the meantime, which is the other half of what
-	// the schedule counts as having moved.
-	if !m.summary.schedule.Moved(rounds) {
+	if !m.summary.schedule.CloseDue(m.agent.Rounds()) {
 		return nil
 	}
 	return m.forceSummaryCmd()

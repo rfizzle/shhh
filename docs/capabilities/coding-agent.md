@@ -429,6 +429,17 @@ request goes out in the background at a round boundary and whatever has come
 back is collected at a later one, so a run that finishes first simply never
 uses it.
 
+**A run ends on a reading of how it ended.** Otherwise its last word is
+whatever the interval happened to catch, which for a run that was steered and
+came back is the departure rather than the return, and a reading that had not
+answered yet when the work finished is paid for and read by nobody. The
+closing reading is not waited for either — the answer is what the run is for,
+and holding a child's report until a summariser has finished describing it
+would be the reading costing the fan-out. It arrives afterwards, so a surface
+that outlives the run records it and a one-shot command that has already
+printed its answer and exited simply does not have it. Nothing is steered by
+it: the turn it describes is over.
+
 **Which surfaces take readings is the reader's, because the cost is per
 agent.** A non-interactive run is one agent and takes them by default. A
 fan-out is as many agents as it is wide, and six children are six more

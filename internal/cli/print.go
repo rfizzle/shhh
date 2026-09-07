@@ -826,6 +826,23 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		events = newJSONLStream(os.Stdout)
 	}
 	obs := headlessObserver{rec: recorder, rounds: a.Rounds, stream: events}
+	// The reading a run closes on is not waited for, so it can land after
+	// the loop has returned — and a one-shot has nowhere to put it by then:
+	// the stream's last line has been written, the record is being closed,
+	// and neither is something a late goroutine may still be writing behind.
+	// So it is dropped by rule rather than by however fast the process
+	// exits. A surface that outlives its runs is where a closing reading is
+	// recorded.
+	var lateMu sync.Mutex
+	runOver := false
+	summary := func(v agent.SummaryVerdict) {
+		lateMu.Lock()
+		defer lateMu.Unlock()
+		if runOver {
+			return
+		}
+		obs.summary(v)
+	}
 	// A headless run is one turn; it closes here with the rounds it took,
 	// the same event an interactive turn ends with.
 	var runErr error
@@ -874,7 +891,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 			fmt.Fprintf(os.Stderr, "» %s\n", iv.Notice)
 			obs.intervene(iv)
 		},
-		OnSummary: obs.summary,
+		OnSummary: summary,
 		// A run nobody is reading still says when its conversation was
 		// recycled, on the same stream as its other activity: an answer that
 		// arrived after a compaction was written by a model that had been
@@ -965,6 +982,11 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	stopSignals := interruptOnSignal(h.Interrupt)
 	final, err := h.Run(initialPrompt)
 	stopSignals()
+	// Past here the record and the stream belong to the shutdown below, and
+	// a reading still out is on its own.
+	lateMu.Lock()
+	runOver = true
+	lateMu.Unlock()
 	runErr = err
 	// Whatever ended it, the conversation is left where the next `shhh chat
 	// --continue` will find it, and the record is told which slot that is —

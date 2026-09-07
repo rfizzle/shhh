@@ -113,3 +113,18 @@ func (s SummarySchedule) LastRound() int { return s.lastRound }
 func (s SummarySchedule) Moved(rounds int) bool {
 	return rounds > s.lastRound || s.intervenedRound >= s.lastRound
 }
+
+// CloseDue reports whether the reading a turn ends on is worth taking. It
+// ignores the interval, because the close is the reading that stands after
+// the work has stopped and a turn that finished at round 7 with a reading
+// from round 3 would be describing its own middle. What it does ask is that
+// the turn was long enough to be worth reading at all
+// (SummaryCloseMinRounds) and that something has happened since the last
+// reading (Moved).
+//
+// Both surfaces close on this one predicate: the session, where the verdict
+// is what sits on the rail while nothing else moves, and the unattended run,
+// where it is the last thing the record says about the turn.
+func (s SummarySchedule) CloseDue(rounds int) bool {
+	return rounds >= SummaryCloseMinRounds && s.Moved(rounds)
+}

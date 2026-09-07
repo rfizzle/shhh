@@ -264,6 +264,7 @@ func TestSummaryRun_NilWhenNotConfigured(t *testing.T) {
 	if in != 0 || out != 0 {
 		t.Error("a nil runner spends nothing")
 	}
+	r.Close(50, func(SummaryVerdict) { t.Error("a nil runner takes no closing reading") })
 }
 
 // waitFor polls until cond holds, or fails the test saying what it waited for.
@@ -339,5 +340,169 @@ func TestSummaryRun_ASteerRetiresTheReadingInFlight(t *testing.T) {
 	}
 	if r.sched.LastRound() != 0 {
 		t.Fatalf("the retired reading stamped the schedule at round %d", r.sched.LastRound())
+	}
+}
+
+// The reading a run ends on describes how it ended. A run read at round 3
+// that returns at round 6 has done three rounds nobody has read, and the
+// verdict that would otherwise stand is the one from its middle.
+func TestSummaryRun_CloseReadsHowTheTurnEnded(t *testing.T) {
+	p := &slowProvider{}
+	r, rec := testSummaryRun(t, p, "ship the parser")
+	rec.Assistant("the parser ships")
+	waitVerdict(t, r, FirstSummaryRound)
+
+	got := make(chan SummaryVerdict, 2)
+	r.Close(FirstSummaryRound+3, func(v SummaryVerdict) { got <- v })
+	select {
+	case v := <-got:
+		if v.State != SummaryOnTarget {
+			t.Fatalf("state = %v, want the closing reading", v.State)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("the closing reading never arrived")
+	}
+	if p.count() != 2 {
+		t.Fatalf("readings = %d, want the interval one and the close", p.count())
+	}
+	if sent := p.requests()[1]; !strings.Contains(sent, "the parser ships") {
+		t.Fatalf("the closing reading should carry what the run finished on:\n%s", sent)
+	}
+	// What it cost is what any other reading costs, on the same figure.
+	in, out := r.Spend()
+	if in != 200 || out != 20 {
+		t.Fatalf("Spend() = %d/%d, want both readings counted", in, out)
+	}
+}
+
+// A turn with nothing new to say is not read again for ending: a one-round
+// answer is already whole, and a turn read at the round it returned at has
+// had nothing happen since.
+func TestSummaryRun_CloseSkipsATurnWithNothingNewToSay(t *testing.T) {
+	p := &slowProvider{}
+	r, _ := testSummaryRun(t, p, "ship the parser")
+
+	// Close starts its reading before it returns, so asking the runner
+	// whether one is out is the whole answer and no waiting is involved.
+	r.Close(1, func(SummaryVerdict) { t.Error("a one-round turn was read at its close") })
+	if reading(r) {
+		t.Fatal("a one-round turn was read at its close")
+	}
+
+	waitVerdict(t, r, FirstSummaryRound)
+	r.Close(FirstSummaryRound, func(SummaryVerdict) {})
+	if reading(r) {
+		t.Fatal("a turn read at the round it ended at was read again for ending")
+	}
+	if p.count() != 1 {
+		t.Fatalf("readings = %d, want only the one the interval asked for", p.count())
+	}
+}
+
+// reading reports whether a reading is out, which Close decides before it
+// returns.
+func reading(r *SummaryRun) bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.inFlight
+}
+
+// A reading still out when the run returns is collected rather than parked
+// forever: there is no next round boundary to Tick it off, and it was paid
+// for.
+func TestSummaryRun_CloseCollectsTheReadingInFlight(t *testing.T) {
+	p := &slowProvider{delay: 50 * time.Millisecond}
+	r, _ := testSummaryRun(t, p, "ship the parser")
+	r.Tick(FirstSummaryRound)
+	waitFor(t, "the reading to go out", func() bool { return p.count() == 1 })
+
+	got := make(chan SummaryVerdict, 2)
+	r.Close(FirstSummaryRound+3, func(v SummaryVerdict) { got <- v })
+	select {
+	case <-got:
+	case <-time.After(2 * time.Second):
+		t.Fatal("the reading in flight was never collected")
+	}
+	if p.count() != 1 {
+		t.Fatalf("readings = %d; the close asked for a second one over the top", p.count())
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.verdict != nil {
+		t.Fatal("the collected reading was parked as well as delivered")
+	}
+}
+
+// A verdict that landed after the last round boundary has nowhere to go
+// either, so the close takes it out on its way past.
+func TestSummaryRun_CloseCollectsAParkedVerdict(t *testing.T) {
+	p := &slowProvider{}
+	r, _ := testSummaryRun(t, p, "ship the parser")
+	r.Tick(FirstSummaryRound)
+	waitFor(t, "the first reading to park a verdict", func() bool {
+		r.mu.Lock()
+		defer r.mu.Unlock()
+		return r.verdict != nil
+	})
+
+	got := make(chan SummaryVerdict, 2)
+	r.Close(FirstSummaryRound, func(v SummaryVerdict) { got <- v })
+	select {
+	case v := <-got:
+		if v.Round != FirstSummaryRound {
+			t.Fatalf("round = %d, want the parked reading", v.Round)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("the parked verdict was dropped")
+	}
+}
+
+// A run with a second turn reuses everything the first ran on. A reading the
+// first turn closed on is retired when the next one starts: delivered late it
+// would describe one turn stamped with another's rounds, and while it is out
+// no reading of the new turn can go at all.
+func TestSummaryRun_ANewTurnRetiresTheClosingReading(t *testing.T) {
+	p := &slowProvider{delay: 50 * time.Millisecond}
+	r, _ := testSummaryRun(t, p, "ship the parser")
+	r.Tick(FirstSummaryRound)
+	waitFor(t, "the reading to go out", func() bool { return p.count() == 1 })
+	r.Close(FirstSummaryRound+3, func(SummaryVerdict) {
+		t.Error("a reading the turn before closed on was delivered into the next turn")
+	})
+
+	r.StartTurn()
+	waitFor(t, "the retired reading to come back", func() bool { return !reading(r) })
+	r.mu.Lock()
+	parked, failures := r.verdict, r.failures
+	r.mu.Unlock()
+	if parked != nil {
+		t.Fatal("the retired reading was parked for the new turn to collect")
+	}
+	if failures != 0 {
+		t.Fatalf("failures = %d; a reading the run retired is not the provider's failure", failures)
+	}
+	// And the new turn is read: the runner is not left holding the old
+	// turn's request.
+	waitVerdict(t, r, FirstSummaryRound+FirstSummaryRound+3)
+}
+
+// A verdict nobody collected is the turn before's too. A run that ended on
+// its round cap or an interrupt takes no closing reading, so the last
+// reading of that turn can be sitting on the parking spot when the next turn
+// starts — and a verdict is what queues an interruption, so handed on it
+// would steer this turn with a reading of the last one.
+func TestSummaryRun_ANewTurnRetiresAnUncollectedVerdict(t *testing.T) {
+	p := &slowProvider{state: "off_target"}
+	r, _ := testSummaryRun(t, p, "ship the parser")
+	r.Tick(FirstSummaryRound)
+	waitFor(t, "the reading to park a verdict", func() bool {
+		r.mu.Lock()
+		defer r.mu.Unlock()
+		return r.verdict != nil
+	})
+
+	r.StartTurn()
+	if v, ok := r.Tick(1); ok {
+		t.Fatalf("the turn before's verdict was collected by this one: %+v", v)
 	}
 }

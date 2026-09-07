@@ -106,6 +106,12 @@ type Headless struct {
 	// policy is offered it. Every reading arrives here and not only the ones
 	// that go on to interrupt the turn, because a drift rate is a fraction
 	// and this is its denominator.
+	//
+	// The reading a run ends on arrives on its own goroutine and after Run
+	// has returned, because nothing waits for it. A hook that touches state
+	// a caller tears down when the run ends has to survive that — or the
+	// caller has already exited, which is the one-shot case and loses the
+	// reading rather than racing anything.
 	// See docs/capabilities/sessions-and-memory.md#observations-are-what-the-session-did.
 	OnSummary func(v SummaryVerdict)
 
@@ -217,6 +223,11 @@ func (h *Headless) Run(prompt string) (string, error) {
 	// so the instruction is read against the tree as it is.
 	h.deliverTree(true)
 	h.Agent.StartTurn(prompt)
+	// A run with a second turn — a child handed another instruction at the
+	// boundary — reuses this runner, and a reading the turn before closed on
+	// belongs to that turn: left out, it would land stamped with this turn's
+	// rounds and hold every reading of this turn behind it.
+	h.Summary.StartTurn()
 	// Whether this round has already asked the model to finish a reply the
 	// output ceiling cut short. One per round, and a round that ran tools
 	// clears it: the bound is what keeps a model that answers at length from
@@ -338,6 +349,16 @@ func (h *Headless) Run(prompt string) (string, error) {
 				carried = ""
 				continue
 			}
+			// The run ends on a reading of how it ended, rather than
+			// leaving the record whatever the last interval happened to
+			// see: a child steered back on target has been on target since,
+			// and a reading that was still out when the answer came would
+			// otherwise be paid for and read by nobody. It is started here
+			// and never waited for — Run returns now, and the verdict
+			// reaches OnSummary if and when it lands, which is why a surface
+			// that outlives its run records it and a one-shot that exits
+			// first does not.
+			h.Summary.Close(h.Agent.Rounds(), h.OnSummary)
 			return answer, nil
 		}
 

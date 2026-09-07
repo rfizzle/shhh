@@ -67,6 +67,12 @@ const (
 	// turn has a block within its first half-minute instead of after a whole
 	// interval of silence.
 	FirstSummaryRound = 3
+	// SummaryCloseMinRounds is how many rounds a turn has to have taken
+	// before the reading it ends on is worth taking. A one-round answer is
+	// already there in full — on the screen a session draws it on, or as the
+	// whole of what an unattended run returned — and reading it back would be
+	// the same sentence twice.
+	SummaryCloseMinRounds = 2
 
 	// maxSummaryText and maxSummaryReason bound what the model may put on the
 	// rail. They are enforced here rather than asked for in the prompt: a

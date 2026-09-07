@@ -38,7 +38,7 @@ type SummaryRun struct {
 	// it from its own goroutine.
 	target   string
 	inFlight bool
-	// gen counts the times the target has been extended. A reading carries
+	// gen counts the times a person has extended the target. A reading carries
 	// the generation it was asked under, so one that was already out when a
 	// person steered is discarded when it lands instead of being acted on:
 	// it judged the work against an instruction that is no longer all of
@@ -51,6 +51,18 @@ type SummaryRun struct {
 	// summarizer into its backoff.
 	cancel  context.CancelFunc
 	verdict *SummaryVerdict
+	// onClose is where a reading goes once the run has returned, and nil
+	// while it is still running. A parked verdict is collected by the next
+	// round boundary, and after the last one there is no next: without this
+	// the reading a run ends on would be paid for and read by nobody.
+	onClose func(SummaryVerdict)
+	// turn counts the turns this runner has served and readTurn is the one
+	// the reading in flight was asked in. Readings are turn-scoped, because
+	// the round counter they are scheduled and stamped in goes back to zero
+	// with every turn: one that outlives its own turn is dropped rather than
+	// delivered stamped with rounds another turn is counting, and the two
+	// counters are what tell them apart whatever order they lock in.
+	turn, readTurn int
 	// sched is when the next reading is due, which is the session's schedule
 	// too — one predicate, so a rule added to it cannot be forgotten on one
 	// of the two surfaces (schedule.go).
@@ -167,6 +179,7 @@ func (r *SummaryRun) Tick(rounds int) (SummaryVerdict, bool) {
 	due := r.due(rounds)
 	if due {
 		r.inFlight = true
+		r.readTurn = r.turn
 	}
 	r.mu.Unlock()
 
@@ -202,6 +215,98 @@ func (r *SummaryRun) Intervened(rounds int, iv Intervention) {
 	r.interventions = append(r.interventions, iv.Row(rounds))
 }
 
+// StartTurn hands the runner to the next turn of a run that has more than
+// one — a child given another instruction at the boundary runs it on
+// everything the turn before ran on. The schedule starts again, because the
+// round counter it counts in has, and a reading of the turn before goes no
+// further, whether it is still out or came back to a verdict nobody
+// collected: delivered or ticked off into this turn it would be read
+// as this turn's, stamped with rounds this turn is counting, and a verdict is
+// what queues an interruption — the turn before's reading would steer the
+// turn after it. A run that ended on a round cap or an interrupt is the
+// ordinary way one is left parked, since neither path takes a closing
+// reading.
+//
+// What a reading in flight cost is still counted; its request is cancelled
+// because nobody can use the answer, and the drop is the turn's and not the
+// cancellation's, since a cancelled request comes back failed and a failure
+// the run caused itself must not put the summarizer into its backoff. It
+// still holds the one in-flight slot until it lands, so the first rounds of
+// the new turn may go unread — bounded by one request, and the alternative is
+// two readings out at once.
+//
+// Safe on a nil runner, and on the ordinary run of one turn it is the first
+// call and does nothing.
+func (r *SummaryRun) StartTurn() {
+	if r == nil {
+		return
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.turn++
+	r.onClose = nil
+	r.verdict = nil
+	r.sched = SummarySchedule{}
+	if r.cancel != nil {
+		r.cancel()
+		r.cancel = nil
+	}
+}
+
+// Close is the reading a run ends on, and is called where the run returns an
+// answer. It ignores the interval and asks what a session's close asks
+// (SummarySchedule.CloseDue): a turn long enough to be worth reading, with
+// something in it since the last reading. A reading already in flight is
+// collected instead of a second one being asked for, and a verdict that
+// landed after the last round boundary goes out here too — nothing will ever
+// Tick either of them off the parking spot now. Both can happen in one call
+// and both are real readings: the parked one is the turn's middle and the
+// fresh one is its end.
+//
+// deliver is handed each verdict on the reading's own goroutine, which for a
+// reading that was not back yet is after the run has returned. That is the
+// whole shape of this: a summary is never the reason a run is slower, and a
+// child's report to its parent is the run's deliverable, so waiting out a
+// reading on the end of every child would be the summariser costing the
+// fan-out. A surface that outlives the run — a lane under its supervisor, a
+// served session — records the verdict when it arrives; a one-shot run that
+// has already exited loses it and says nothing. A nil deliver takes no
+// closing reading at all: there would be nowhere for it to go, and a reading
+// nobody can read is a request nobody should pay for.
+//
+// The verdict is never offered to the intervention policy. There is no turn
+// left to interrupt, which is the same reason a session's close reading is
+// applied with the turn already idle. Safe on a nil runner.
+func (r *SummaryRun) Close(rounds int, deliver func(SummaryVerdict)) {
+	if r == nil || deliver == nil {
+		return
+	}
+	r.mu.Lock()
+	parked := r.verdict
+	r.verdict = nil
+	start := !r.inFlight && r.sched.CloseDue(rounds)
+	// A reading in flight is this turn's only if it was asked in this turn.
+	// One left over from the turn before was dropped when that turn ended,
+	// and adopting it back would deliver the turn before's verdict as this
+	// one's.
+	adopt := r.inFlight && r.readTurn == r.turn
+	if start {
+		r.inFlight = true
+		r.readTurn = r.turn
+	}
+	if start || adopt {
+		r.onClose = deliver
+	}
+	r.mu.Unlock()
+
+	if parked != nil {
+		deliver(*parked)
+	}
+	if start {
+		go r.read(rounds)
+	}
+}
+
 // read takes one reading and parks the result for the next Tick.
 func (r *SummaryRun) read(rounds int) {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -228,26 +333,57 @@ func (r *SummaryRun) read(rounds int) {
 	v := r.summarizer.Summarize(ctx, req)
 
 	r.mu.Lock()
-	defer r.mu.Unlock()
 	r.inFlight = false
 	r.tokensIn += int64(v.Usage.PromptTokens)
 	r.tokensOut += int64(v.Usage.CompletionTokens)
+	// Whether the run has returned since this went out. Taken under the lock
+	// with everything else, and cleared as it is taken: it is one reading's
+	// delivery and not a mode the runner stays in.
+	deliver := r.onClose
+	r.onClose = nil
 	if gen != r.gen {
 		// A person steered while this was out. It judged the work against
 		// part of what has been asked, so its verdict is dropped and its
 		// failure is not the summarizer's — what it cost was still spent,
 		// and the schedule Extend reset is left where it was put.
+		r.mu.Unlock()
+		return
+	}
+	if r.readTurn != r.turn {
+		// The turn this read is over and another has started. Its rounds
+		// count nothing in this one, so it is neither delivered nor parked
+		// — and for the same reason as above, its cost stands and its
+		// failure is not the summarizer's.
+		r.mu.Unlock()
 		return
 	}
 	r.cancel = nil
-	r.sched.Read(rounds)
+	// The turn a closing reading was taken of is over, so it leaves the
+	// schedule where the last reading inside the turn put it: the rounds of
+	// a turn that has ended have nothing to tell the next one, and a Headless
+	// is reused across a child's turns.
+	closing := deliver != nil
+	if !closing {
+		r.sched.Read(rounds)
+	}
 	if v.Failed {
 		// A failed reading changes nothing. The clock still moves, so a
 		// provider that is down is retried on the interval rather than on
 		// every round.
 		r.failures++
+		r.mu.Unlock()
 		return
 	}
 	r.failures = 0
-	r.verdict = &v
+	if !closing {
+		r.verdict = &v
+		r.mu.Unlock()
+		return
+	}
+	// Nothing will Tick this off the parking spot — that was the last round
+	// boundary there will be — so it goes straight out, with the lock
+	// released first: deliver is the caller's code and holding a lock across
+	// it would make every one of them a deadlock waiting to be written.
+	r.mu.Unlock()
+	deliver(v)
 }
