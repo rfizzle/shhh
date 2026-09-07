@@ -183,11 +183,14 @@ func (w *captureWriter) printed() bool {
 func (w *captureWriter) handOff(dst io.Writer) string {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	out := w.buf.String()
-	_, _ = dst.Write(w.buf.Bytes())
+	// One assembly for both: the taker is seeded with exactly what the result
+	// shows, drop notice included, so the bytes it goes on appending to are
+	// not a head and a tail glued together with no sign of the gap between.
+	kept := w.buf.Bytes()
+	_, _ = dst.Write(kept)
 	w.mirror = dst
 	w.onLine = nil
-	return out
+	return string(kept)
 }
 
 // capture runs one invocation with its combined output captured and its

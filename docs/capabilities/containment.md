@@ -166,8 +166,13 @@ the session reports as running.
 **One command's output cannot take the session's memory with it.** Output is
 held to a bound as it arrives, far above the few thousand bytes any reader or
 model is shown, so a build with a verbose flag left on is capped while it runs
-rather than after it finishes. What was dropped is counted in the output,
-because a silent gap reads as the command having gone quiet.
+rather than after it finishes. What is kept is both ends — the bound's first
+half from where the command started, its second half from where the command
+stopped — because a command says how it went in its last lines, and output cut
+to its opening would report a long build by its warmup and send the model to
+run the whole thing again with a pipe into `tail`. What was dropped is the
+middle, and it is counted there in the output, because a silent gap reads as
+the command having gone quiet.
 
 ## A started process is contained too
 

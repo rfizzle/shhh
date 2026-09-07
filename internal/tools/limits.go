@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 	"sync"
@@ -134,15 +135,31 @@ func cutUTF8(s string, max int) string {
 const MaxCapturedOutputBytes = 1 << 20
 
 // CaptureBuffer accumulates a command's output up to a byte bound, counting
-// what it had to drop. It keeps the head rather than the tail because the
-// head is what every reader of this output gets: TruncateOutput cuts from the
-// front too, so a buffer holding the tail would show the model a different
-// thousand bytes than the one it would have shown had the command been quiet.
+// what it had to drop. It keeps both ends — the first half of the bound
+// verbatim, the last half in a ring — and drops the middle.
+//
+// The tail is kept because the tail is where a command says how it went: a
+// build prints its verdict last, a test run summarises last, an installer
+// names the package it died on last. A buffer that kept only the head handed
+// every reader below it — the reduction the model is shown, the evidence
+// store fed from the same bytes — the tail of the first megabyte instead, so
+// a three-megabyte `go build` was reported by its warmup, and the model's
+// cheapest way out was to run the whole thing again with `| tail`.
+//
+// The head is kept as well because a failure's first line is often its cause
+// (the first compile error, the first stack frame), and because a reader who
+// asked for a command's output and got its last screen would have no idea
+// what it started doing.
 type CaptureBuffer struct {
 	max int
 
-	mu      sync.Mutex
-	buf     []byte
+	mu   sync.Mutex
+	head []byte
+	// tail is a ring of the most recent bytes, at most max less the head's
+	// bound. start is the index of its oldest byte, and stays 0 until the
+	// ring fills.
+	tail    []byte
+	start   int
 	dropped int64
 }
 
@@ -152,6 +169,12 @@ type CaptureBuffer struct {
 func NewCaptureBuffer(max int) *CaptureBuffer {
 	return &CaptureBuffer{max: max}
 }
+
+// headBound is how much of max the verbatim head may take; the rest is the
+// tail's ring. An even split needs no argument for one end over the other,
+// and each half is still two orders of magnitude above anything a reader or
+// a model is shown.
+func (b *CaptureBuffer) headBound() int { return b.max / 2 }
 
 // Write appends what it can and counts the rest.
 //
@@ -164,50 +187,96 @@ func (b *CaptureBuffer) Write(p []byte) (int, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	if b.max <= 0 {
-		b.buf = append(b.buf, p...)
+		b.head = append(b.head, p...)
 		return wrote, nil
 	}
-	if room := b.max - len(b.buf); room > 0 {
+	if room := b.headBound() - len(b.head); room > 0 {
 		if len(p) <= room {
-			b.buf = append(b.buf, p...)
+			b.head = append(b.head, p...)
 			return wrote, nil
 		}
-		b.buf = append(b.buf, p[:room]...)
+		b.head = append(b.head, p[:room]...)
 		p = p[room:]
 	}
-	b.dropped += int64(len(p))
+	b.push(p)
 	return wrote, nil
 }
 
-// Bytes copies out what was kept.
+// push adds p to the tail ring, counting whatever it displaces as dropped.
+// The caller holds the lock and has already filled the head.
+func (b *CaptureBuffer) push(p []byte) {
+	max := b.max - b.headBound()
+	if max <= 0 {
+		b.dropped += int64(len(p))
+		return
+	}
+	if len(p) >= max {
+		// One write bigger than the ring: everything in it goes, and so does
+		// all of p but its last max bytes.
+		b.dropped += int64(len(b.tail)) + int64(len(p)-max)
+		b.tail = append(b.tail[:0], p[len(p)-max:]...)
+		b.start = 0
+		return
+	}
+	if room := max - len(b.tail); room > 0 {
+		n := min(room, len(p))
+		b.tail = append(b.tail, p[:n]...)
+		p = p[n:]
+		if len(p) == 0 {
+			return
+		}
+	}
+	// Full from here, so every byte written displaces one.
+	b.dropped += int64(len(p))
+	n := copy(b.tail[b.start:], p)
+	copy(b.tail, p[n:])
+	b.start = (b.start + len(p)) % max
+}
+
+// Bytes is what was kept: the head, a line naming what was dropped, and the
+// tail. The notice is part of the bytes rather than a second return value
+// because every reader of a command's output is a place a silent gap would be
+// read as the command having stopped printing — and with both ends kept, a
+// gap with nothing in it would read as two runs glued together.
 func (b *CaptureBuffer) Bytes() []byte {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	out := make([]byte, len(b.buf))
-	copy(out, b.buf)
+	if b.dropped == 0 {
+		// Nothing was displaced, so the ring never wrapped and the two
+		// halves are one contiguous run of the command's output.
+		out := make([]byte, 0, len(b.head)+len(b.tail))
+		return append(append(out, b.head...), b.tail...)
+	}
+	notice := fmt.Sprintf("\n… (%d bytes from the middle were dropped: one command's output is held to %d bytes while it runs, so both ends survive)\n",
+		b.dropped, b.max)
+	head := bytes.TrimRight(b.head, "\n")
+	tail := b.ordered()
+	out := make([]byte, 0, len(head)+len(notice)+len(tail))
+	out = append(out, head...)
+	out = append(out, notice...)
+	return append(out, tail...)
+}
+
+// ordered flattens the ring oldest byte first, dropping any leading bytes of
+// a UTF-8 sequence the bound split: the ring starts wherever the command
+// happened to be, and a lone continuation byte reaches the model as a
+// replacement character in the middle of a word.
+func (b *CaptureBuffer) ordered() []byte {
+	out := make([]byte, 0, len(b.tail))
+	out = append(out, b.tail[b.start:]...)
+	out = append(out, b.tail[:b.start]...)
+	for len(out) > 0 && !utf8.RuneStart(out[0]) {
+		out = out[1:]
+	}
 	return out
 }
 
-// String is what was kept, with a line naming what was not. The notice is
-// part of the output rather than a second return value because every reader
-// of a command's output is a place a silent gap would be read as the command
-// having stopped printing.
-func (b *CaptureBuffer) String() string {
-	b.mu.Lock()
-	dropped := b.dropped
-	out := string(b.buf)
-	b.mu.Unlock()
-	if dropped == 0 {
-		return out
-	}
-	return strings.TrimRight(out, "\n") +
-		fmt.Sprintf("\n… (%d more bytes were printed and dropped: one command's output is held to %d bytes while it runs)",
-			dropped, b.max)
-}
+// String is Bytes as text.
+func (b *CaptureBuffer) String() string { return string(b.Bytes()) }
 
 // Len is how many bytes the command has printed, dropped ones included.
 func (b *CaptureBuffer) Len() int64 {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	return int64(len(b.buf)) + b.dropped
+	return int64(len(b.head)) + int64(len(b.tail)) + b.dropped
 }

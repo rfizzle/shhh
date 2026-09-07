@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/rfizzle/shhh/internal/tools"
 )
 
 func testReducer(t *testing.T) *Reducer {
@@ -362,5 +364,47 @@ func TestReducer_KeepWithoutAStore(t *testing.T) {
 	}
 	if _, ok := NewReducer(nil).Keep("execute_command", "anything"); ok {
 		t.Fatal("a reducer with no store cannot have kept anything")
+	}
+}
+
+// A three-megabyte command reaches the model and the store by its own last
+// lines. The capture buffer bounds the output as it arrives, and both
+// surfaces below it are fed from that one buffer: when it kept only the head,
+// a build's verdict was gone from every one of them and the model's cheapest
+// move was to run the whole thing again with a pipe into tail.
+func TestReducer_ProcessKeepsAThreeMegabyteCommandsVerdict(t *testing.T) {
+	r := testReducer(t)
+	const verdict = "FAIL\tgithub.com/example/pkg/forty\t0.312s"
+
+	buf := tools.NewCaptureBuffer(tools.MaxCapturedOutputBytes)
+	filler := []byte(strings.Repeat("ok  \tgithub.com/example/pkg\t0.002s\n", 1<<10))
+	for written := 0; written < 3<<20; written += len(filler) {
+		if _, err := buf.Write(filler); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := buf.Write([]byte(verdict + "\n")); err != nil {
+		t.Fatal(err)
+	}
+
+	out := r.Process("execute_command", buf.String())
+	if !strings.HasSuffix(strings.TrimRight(out, "\n"), verdict) {
+		t.Errorf("the reduced tail has to be the command's tail, got %q", out[max(0, len(out)-200):])
+	}
+
+	m := noticeIDRe.FindStringSubmatch(out)
+	if m == nil {
+		t.Fatalf("a reduction of this size has to be stored: %q", out[:min(len(out), 200)])
+	}
+	meta, err := r.Store().Info(m[1])
+	if err != nil {
+		t.Fatal(err)
+	}
+	stored, _, err := r.Store().Read(m[1], max(0, int(meta.Stored)-200), 200)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasSuffix(strings.TrimRight(string(stored), "\n"), verdict) {
+		t.Errorf("the stored original ends where the command did, got %q", stored)
 	}
 }

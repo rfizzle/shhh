@@ -197,13 +197,15 @@ func TestCaptureBuffer_HoldsABurstToItsBound(t *testing.T) {
 			t.Fatalf("a full buffer must still report the whole write: %d %v", n, err)
 		}
 	}
-	if got := len(b.Bytes()); got != MaxCapturedOutputBytes {
-		t.Errorf("kept %d bytes, want the bound %d", got, MaxCapturedOutputBytes)
-	}
 	if got := b.Len(); got != burst {
 		t.Errorf("printed %d bytes, want %d", got, burst)
 	}
 	out := b.String()
+	// The bound is on the command's bytes; the notice that names the gap is
+	// the buffer's own and is the only thing above it.
+	if len(out) > MaxCapturedOutputBytes+512 {
+		t.Errorf("kept %d bytes, want the bound %d and a notice", len(out), MaxCapturedOutputBytes)
+	}
 	if !strings.Contains(out, "dropped") {
 		t.Error("the output has to say bytes went missing, or the gap reads as silence")
 	}
@@ -216,13 +218,108 @@ func TestCaptureBuffer_HoldsABurstToItsBound(t *testing.T) {
 	}
 }
 
-// The head is kept because the head is what every reader of this output gets.
-func TestCaptureBuffer_KeepsTheHead(t *testing.T) {
+// Both ends are kept and the middle is what goes, because a command says how
+// it went in its last line: a buffer that kept only the head would report a
+// three-megabyte build by its warmup.
+func TestCaptureBuffer_KeepsTheVerdictInTheTail(t *testing.T) {
+	b := NewCaptureBuffer(MaxCapturedOutputBytes)
+	const first = "=== RUN   TestFirst\n"
+	const verdict = "FAIL\tgithub.com/example/pkg/forty\t0.312s\n"
+	filler := bytes.Repeat([]byte("ok  \tgithub.com/example/pkg\t0.002s\n"), 1<<16)
+	printed := int64(0)
+	write := func(p []byte) {
+		t.Helper()
+		if n, err := b.Write(p); n != len(p) || err != nil {
+			t.Fatalf("a full buffer must still report the whole write: %d %v", n, err)
+		}
+		printed += int64(len(p))
+	}
+	write([]byte(first))
+	for written := 0; written < 3<<20; written += len(filler) {
+		write(filler)
+	}
+	write([]byte(verdict))
+
+	out := b.String()
+	if !strings.HasSuffix(out, verdict) {
+		t.Errorf("the last line written has to be the last line kept, got %q", out[max(0, len(out)-120):])
+	}
+	if !strings.HasPrefix(out, first) {
+		t.Errorf("the head is kept too, got %q", out[:min(len(out), 120)])
+	}
+	// What went is exactly the middle: everything printed, less the two ends
+	// still in the buffer.
+	if got := b.Len(); got != printed {
+		t.Errorf("printed %d bytes, want %d", got, printed)
+	}
+	if !strings.Contains(out, strconv.FormatInt(printed-MaxCapturedOutputBytes, 10)) {
+		t.Errorf("the notice should count the middle, %d bytes", printed-MaxCapturedOutputBytes)
+	}
+	// The notice sits between the two ends, not after them.
+	gap := strings.Index(out, "dropped")
+	if gap < 0 || gap > len(out)-len(verdict) {
+		t.Errorf("the drop notice belongs between the head and the tail, found at %d of %d", gap, len(out))
+	}
+}
+
+// The split is even and the tail is a ring, so the bytes on either side of
+// the notice are the first and last the command printed.
+func TestCaptureBuffer_KeepsBothEnds(t *testing.T) {
 	b := NewCaptureBuffer(8)
-	_, _ = b.Write([]byte("first"))
-	_, _ = b.Write([]byte("second"))
-	if got := string(b.Bytes()); got != "firstsec" {
-		t.Fatalf("got %q", got)
+	for _, w := range []string{"abcd", "efg", "hij", "klmn"} {
+		if n, err := b.Write([]byte(w)); n != len(w) || err != nil {
+			t.Fatalf("write %q: %d %v", w, n, err)
+		}
+	}
+	out := b.String()
+	if !strings.HasPrefix(out, "abcd\n… (") {
+		t.Errorf("head should be the first four bytes: %q", out)
+	}
+	if !strings.HasSuffix(out, ")\nklmn") {
+		t.Errorf("tail should be the last four bytes: %q", out)
+	}
+	if got, want := b.Len(), int64(14); got != want {
+		t.Errorf("printed %d bytes, want %d", got, want)
+	}
+	if !strings.Contains(out, "6 bytes from the middle") {
+		t.Errorf("six bytes went from the middle: %q", out)
+	}
+}
+
+// The ring wraps a byte at a time as often as it wraps in one write, and the
+// accounting has to survive both.
+func TestCaptureBuffer_RingWrapsByteByByte(t *testing.T) {
+	b := NewCaptureBuffer(8)
+	const src = "0123456789abcdefghij"
+	for i := 0; i < len(src); i++ {
+		if _, err := b.Write([]byte{src[i]}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	out := b.String()
+	if !strings.HasPrefix(out, "0123\n") {
+		t.Errorf("head should be %q: %q", src[:4], out)
+	}
+	if !strings.HasSuffix(out, "ghij") {
+		t.Errorf("tail should be %q: %q", src[len(src)-4:], out)
+	}
+	if got, want := b.Len(), int64(len(src)); got != want {
+		t.Errorf("printed %d bytes, want %d", got, want)
+	}
+}
+
+// A bound that falls inside a multi-byte rune must not start the tail on a
+// continuation byte; the model would read a replacement character mid-word.
+func TestCaptureBuffer_TailStartsOnARune(t *testing.T) {
+	b := NewCaptureBuffer(8)
+	_, _ = b.Write([]byte("abcd"))
+	_, _ = b.Write([]byte("xy€z"))
+	out := b.String()
+	if !utf8.ValidString(out) {
+		t.Errorf("kept output must stay valid UTF-8: %q", out)
+	}
+	if !strings.HasSuffix(out, "€z") {
+		t.Errorf("the whole rune has to survive: %q", out)
 	}
 }
 
