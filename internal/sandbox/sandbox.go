@@ -71,6 +71,58 @@ type Policy struct {
 	SecretNames []string
 }
 
+// WithEnv returns the policy widened by pairs the caller is handing this one
+// command directly — the `env` argument of a process start. The mechanism
+// rebuilds the environment from the policy and clears whatever the spawn set
+// beside it, so a pair that is not in the policy never reaches the command:
+// a server told PORT=3001 comes up on 3000 and the model debugs a server
+// that is running fine.
+//
+// It widens by name and nothing else. Each pair's name joins the allowlist
+// the way a declared secret's does — there is no shape a name can have that
+// gets it in — and a name the person already declared as a session secret is
+// dropped rather than applied, so the session's value still wins. That is
+// the precedence the uncontained spawn has, where the session's pairs are
+// appended after the caller's, and the two paths agreeing is the whole
+// reason this is one function rather than a rule each of them remembers.
+func (p Policy) WithEnv(pairs []string) Policy {
+	if len(pairs) == 0 {
+		return p
+	}
+	declared := make(map[string]bool, len(p.SecretNames))
+	for _, name := range p.SecretNames {
+		declared[name] = true
+	}
+	// An empty Env means "this process's own", and appending to it would
+	// quietly turn that into "these pairs and nothing else" — a
+	// contained command with no PATH, which fails as "not found" rather than
+	// as anything about the environment. Materialise it first.
+	base := p.Env
+	if base == nil {
+		base = os.Environ()
+	}
+	// Fresh slices: a policy is handed out by value but its slices are
+	// shared, and appending in place would let one start's extras survive
+	// into the next command's environment.
+	env := make([]string, 0, len(base)+len(pairs))
+	env = append(env, base...)
+	names := make([]string, 0, len(p.SecretNames)+len(pairs))
+	names = append(names, p.SecretNames...)
+	for _, pair := range pairs {
+		name, _, ok := strings.Cut(pair, "=")
+		if !ok || declared[name] {
+			continue
+		}
+		// After p.Env, whose last pairs are the session's own: containedEnv
+		// keeps the later of two pairs with one name, so an extra outranks
+		// the inherited variable it shares a name with.
+		env = append(env, pair)
+		names = append(names, name)
+	}
+	p.Env, p.SecretNames = env, names
+	return p
+}
+
 // Availability reports whether a containment mechanism can wrap commands on
 // this host. Detail is honest either way: the mechanism's note when OK, or
 // exactly why containment is unavailable when not.

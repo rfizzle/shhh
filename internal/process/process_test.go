@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -514,14 +515,15 @@ func TestSetContainment_StartRunsUnderTheWrap(t *testing.T) {
 		mu       sync.Mutex
 		sawDir   string
 		sawArgv  []string
+		sawEnv   []string
 		wrapRuns int
 	)
 	s.SetContainment(Containment{
 		Mechanism: "testwrap",
-		Wrap: func(dir string, argv []string) ([]string, error) {
+		Wrap: func(dir string, argv, env []string) ([]string, error) {
 			mu.Lock()
 			defer mu.Unlock()
-			sawDir, sawArgv, wrapRuns = dir, argv, wrapRuns+1
+			sawDir, sawArgv, sawEnv, wrapRuns = dir, argv, env, wrapRuns+1
 			return []string{"/bin/sh", "-c", "echo wrapped-by-the-mechanism"}, nil
 		},
 	})
@@ -543,6 +545,11 @@ func TestSetContainment_StartRunsUnderTheWrap(t *testing.T) {
 	}
 	if len(sawArgv) == 0 || !strings.Contains(strings.Join(sawArgv, " "), "echo bare") {
 		t.Errorf("the wrap must be handed the command's own argv, got %v", sawArgv)
+	}
+	// The start named no env, so the wrap is handed none: a mechanism does
+	// not widen its allowlist for a start that asked for nothing.
+	if len(sawEnv) != 0 {
+		t.Errorf("a start with no env must hand the wrap none, got %v", sawEnv)
 	}
 	if got := s.Contained(); got != "testwrap" {
 		t.Errorf("Contained() = %q, want the mechanism in force", got)
@@ -572,7 +579,7 @@ func TestSetContainment_WrapFailureRefusesTheStart(t *testing.T) {
 	s := newTestSupervisor(t, nil)
 	s.SetContainment(Containment{
 		Mechanism: "testwrap",
-		Wrap: func(string, []string) ([]string, error) {
+		Wrap: func(string, []string, []string) ([]string, error) {
 			return nil, fmt.Errorf("writable path /w is inside masked path /w/m")
 		},
 	})
@@ -601,7 +608,7 @@ func TestSetContainment_WrapFailureRefusesTheStart(t *testing.T) {
 	})
 	s.SetContainment(Containment{
 		Mechanism: "testwrap",
-		Wrap:      func(string, []string) ([]string, error) { return nil, fmt.Errorf("no") },
+		Wrap:      func(string, []string, []string) ([]string, error) { return nil, fmt.Errorf("no") },
 	})
 	_ = executeErr(t, s, `{"action":"start","name":"srv","command":"sleep 30"}`)
 	if !strings.Contains(execute(t, s, `{"action":"status","name":"srv"}`), "exited") {
@@ -656,8 +663,9 @@ func TestStart_ContainedProcessCannotReadTheDenyMask(t *testing.T) {
 	s := newTestSupervisor(t, nil)
 	s.SetContainment(Containment{
 		Mechanism: avail.Mechanism,
-		Wrap: func(dir string, argv []string) ([]string, error) {
-			return sandbox.WrapArgv(avail, sandbox.Policy{Workspace: s.root, Cwd: dir}, argv)
+		Wrap: func(dir string, argv, env []string) ([]string, error) {
+			p := sandbox.Policy{Workspace: s.root, Cwd: dir}.WithEnv(env)
+			return sandbox.WrapArgv(avail, p, argv)
 		},
 	})
 	execute(t, s, peek)
@@ -670,6 +678,71 @@ func TestStart_ContainedProcessCannotReadTheDenyMask(t *testing.T) {
 	// went wrong.
 	if st := execute(t, s, `{"action":"status","name":"peek"}`); strings.Contains(st, "exited (code 0)") {
 		t.Fatalf("the contained read should have failed on the masked path:\n%s\n%s", st, out)
+	}
+}
+
+// The extras travel with the argv rather than being left on the spawn: a
+// mechanism clears the environment it was handed and rebuilds it from its
+// own policy, so a wrap that is not told them has nothing to put back.
+func TestSetContainment_TheStartsEnvReachesTheWrap(t *testing.T) {
+	s := newTestSupervisor(t, nil)
+	var (
+		mu     sync.Mutex
+		sawEnv []string
+	)
+	s.SetContainment(Containment{
+		Mechanism: "testwrap",
+		Wrap: func(_ string, _, env []string) ([]string, error) {
+			mu.Lock()
+			defer mu.Unlock()
+			sawEnv = env
+			return []string{"/bin/sh", "-c", "true"}, nil
+		},
+	})
+
+	execute(t, s, `{"action":"start","name":"srv","command":"true","env":{"PORT":"3001","APP_MODE":"debug"}}`)
+
+	mu.Lock()
+	defer mu.Unlock()
+	// PATH and HOME are the policy's own on that side, so what crosses is
+	// the start's own pairs and nothing else, sorted as buildEnv sorts them.
+	if want := []string{"APP_MODE=debug", "PORT=3001"}; !slices.Equal(sawEnv, want) {
+		t.Errorf("the wrap must be handed the start's own pairs, got %v want %v", sawEnv, want)
+	}
+}
+
+// The tool promises an environment of PATH and HOME plus whatever the start
+// passed, and under containment the mechanism rebuilds that environment from
+// its policy — so the pairs have to be in the policy or the promise is
+// quietly false. The symptom is a server told PORT=3001 coming up on 3000
+// while the model probes the port it asked for and debugs a process that is
+// running fine. It runs under whichever mechanism the host has and skips by
+// name where there is none.
+func TestStart_ContainedProcessCarriesTheEnvItWasGiven(t *testing.T) {
+	avail := sandbox.Detect()
+	if !avail.OK {
+		t.Skipf("no containment mechanism here: %s", avail.Detail)
+	}
+	t.Setenv("SHHH_TEST_UNDECLARED", "leaked")
+
+	s := newTestSupervisor(t, nil)
+	s.SetContainment(Containment{
+		Mechanism: avail.Mechanism,
+		Wrap: func(dir string, argv, env []string) ([]string, error) {
+			p := sandbox.Policy{Workspace: s.root, Cwd: dir}.WithEnv(env)
+			return sandbox.WrapArgv(avail, p, argv)
+		},
+	})
+
+	execute(t, s, `{"action":"start","name":"env","command":"echo port=$PORT undeclared=$SHHH_TEST_UNDECLARED","env":{"PORT":"3001"}}`)
+	out := streams(t, s, "env")
+	if !strings.Contains(out, "port=3001") {
+		t.Fatalf("the start's own env must survive the wrap:\n%s", out)
+	}
+	// The extras widen the allowlist by name; they do not turn it into a
+	// mask. A variable nobody named still does not cross.
+	if strings.Contains(out, "leaked") {
+		t.Fatalf("an undeclared variable crossed containment:\n%s", out)
 	}
 }
 

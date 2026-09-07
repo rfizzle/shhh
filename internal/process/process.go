@@ -102,12 +102,15 @@ type Containment struct {
 	// reporting this session says, and the word a refusal has to name so the
 	// reader knows which thing said no.
 	Mechanism string
-	// Wrap returns argv wrapped to run in dir under the mechanism. The
-	// directory travels with the argv rather than being left to the spawn's
-	// own: a mechanism that chdirs would otherwise put the process in
-	// shhh's working directory, and the cwd the start asked for — already
-	// contained to the workspace — would be silently dropped.
-	Wrap func(dir string, argv []string) ([]string, error)
+	// Wrap returns argv wrapped to run in dir under the mechanism, carrying
+	// env — the start's own NAME=value extras. Both travel with the argv
+	// rather than being left to the spawn's own, for the same reason: a
+	// mechanism rebuilds the process's world and drops whatever the spawn
+	// set beside it. A chdir would put the process in shhh's working
+	// directory instead of the cwd the start asked for, and a cleared
+	// environment takes the extras with it — a server told PORT=3001 comes
+	// up on 3000, and the model debugs a server that is running fine.
+	Wrap func(dir string, argv, env []string) ([]string, error)
 }
 
 // inForce reports whether this containment can actually wrap a start. A
@@ -391,7 +394,8 @@ func (s *Supervisor) resolveCwd(p string) (string, error) {
 }
 
 // buildEnv is the restricted child environment: PATH and HOME from the
-// session, plus explicitly passed vars — which can never shadow those two.
+// session, plus the start's own pairs — which extraPairs has already refused
+// to let shadow those two.
 //
 // Naming the two variables rather than filtering shhh's own environment is
 // what masks the credentials nobody declared here: a captured command
@@ -401,13 +405,23 @@ func (s *Supervisor) resolveCwd(p string) (string, error) {
 // into a process whose spool outlives the session by a week, and nothing on
 // screen would say so.
 // See docs/capabilities/secrets.md#the-names-that-do-not-travel.
-func buildEnv(extra map[string]string) ([]string, error) {
+func buildEnv(extra []string) []string {
 	env := []string{"PATH=" + os.Getenv("PATH"), "HOME=" + os.Getenv("HOME")}
+	return append(env, extra...)
+}
+
+// extraPairs validates the start's own env argument and renders it as sorted
+// NAME=value pairs. It is separate from buildEnv because the extras are
+// needed twice: once in the environment of the spawn, and once by the
+// containment wrap, which rebuilds the environment from its policy and never
+// sees what the spawn was given.
+func extraPairs(extra map[string]string) ([]string, error) {
 	keys := make([]string, 0, len(extra))
 	for k := range extra {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
+	pairs := make([]string, 0, len(keys))
 	for _, k := range keys {
 		if !envRe.MatchString(k) {
 			return nil, fmt.Errorf("invalid environment variable name %q", k)
@@ -415,9 +429,9 @@ func buildEnv(extra map[string]string) ([]string, error) {
 		if k == "PATH" || k == "HOME" {
 			return nil, fmt.Errorf("environment variable %s cannot be overridden", k)
 		}
-		env = append(env, k+"="+extra[k])
+		pairs = append(pairs, k+"="+extra[k])
 	}
-	return env, nil
+	return pairs, nil
 }
 
 // start spawns a named process in its own process group and probes briefly
@@ -435,10 +449,11 @@ func (s *Supervisor) start(name, command, cwd string, extraEnv map[string]string
 	if err != nil {
 		return "", err
 	}
-	env, err := buildEnv(extraEnv)
+	extras, err := extraPairs(extraEnv)
 	if err != nil {
 		return "", err
 	}
+	env := buildEnv(extras)
 
 	// The wrap runs outside the lock, because resolving a policy stats the
 	// filesystem and the supervisor's one mutex is what every status, read
@@ -448,7 +463,7 @@ func (s *Supervisor) start(name, command, cwd string, extraEnv map[string]string
 	// about to replace.
 	argv := shell.Execution().Argv(command)
 	if contain := s.containment(); contain.inForce() {
-		wrapped, err := contain.Wrap(dir, argv)
+		wrapped, err := contain.Wrap(dir, argv, extras)
 		if err != nil {
 			// Refused, never started bare. Every surface in this session
 			// says the mechanism is containing what the assistant runs, and

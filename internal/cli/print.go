@@ -715,7 +715,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 			// See docs/capabilities/containment.md#a-started-process-is-contained-too.
 			procSup.SetContainment(process.Containment{
 				Mechanism: "container sandbox",
-				Wrap: func(string, []string) ([]string, error) {
+				Wrap: func(string, []string, []string) ([]string, error) {
 					return nil, fmt.Errorf("a long-running process cannot be started inside this run's disposable container; use execute_command, or run without --sandbox")
 				},
 			})

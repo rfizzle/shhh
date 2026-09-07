@@ -96,6 +96,12 @@ the leak came from.
 know the name of the thing it is stopping, and the next tool to invent a
 credential variable will not be on it.
 
+Naming one is how anything else gets on the list, and there are two ways to
+do it: the person declares a session secret, or the assistant passes a
+variable to the one process it is starting. Both widen the list by name and
+for nothing else, and where the two collide the person's value is the one
+that arrives.
+
 Dropping the address is most of the answer and not all of it, because a path
 is a convention as much as an address: the agent's socket is masked as well,
 so a command that guessed where to look finds nothing there.
@@ -220,6 +226,14 @@ a command that was going to be contained never quietly runs bare instead.
 Falling back would be worse here than anywhere else, because a process
 lasts — every surface would go on saying the session is contained for as
 long as the one thing outside it kept running.
+
+A start can pass variables of its own — the port to listen on, the mode to
+run in. Under containment those go into the policy rather than onto the
+spawn, because the mechanism clears whatever the spawn was given and rebuilds
+the environment from the policy alone. Left on the spawn they are dropped
+without a word, and the failure that follows points nowhere near its cause: a
+server told to listen on 3001 comes up on 3000, the probe finds nothing, and
+what is being debugged is a process that is running fine.
 
 A process can also be given a terminal instead of pipes, for the commands
 that behave differently when nobody appears to be watching: a REPL that only

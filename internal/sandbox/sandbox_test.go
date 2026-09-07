@@ -431,3 +431,59 @@ func TestScopeDirectoriesBecomeWriteGrants(t *testing.T) {
 		t.Fatal("the workspace grant must survive alongside the added directory")
 	}
 }
+
+// The environment a start passes has to be in the policy or it is not in the
+// command: the mechanism clears whatever the spawn set. This is the check
+// that a variable named in a `process start` survives the rebuild, that it
+// outranks an inherited variable of the same name — the value the caller
+// asked for is the value it meant — and that a name the person declared as a
+// session secret keeps the session's value instead, which is the precedence
+// the uncontained spawn has.
+func TestWithEnvWidensTheAllowlistByNameOnly(t *testing.T) {
+	policy, _ := workspacePolicy(t)
+	policy.Env = []string{"PATH=/usr/bin:/bin", "PORT=3000", "DEPLOY_KEY=session"}
+	policy.SecretNames = []string{"DEPLOY_KEY"}
+
+	widened := policy.WithEnv([]string{"PORT=3001", "APP_MODE=debug", "DEPLOY_KEY=stolen"})
+	env := containedEnv(widened.Env, widened.SecretNames)
+
+	for _, want := range []string{"PORT=3001", "APP_MODE=debug", "DEPLOY_KEY=session"} {
+		if !slices.Contains(env, want) {
+			t.Errorf("contained environment = %v, want %s", env, want)
+		}
+	}
+	if slices.Contains(env, "PORT=3000") {
+		t.Errorf("the start's own value must win over the inherited one: %v", env)
+	}
+	if slices.Contains(env, "DEPLOY_KEY=stolen") {
+		t.Errorf("a start must not shadow a declared secret: %v", env)
+	}
+	// A variable nobody named is still not on the list — widening is by
+	// name, and there is no shape that gets a name in.
+	if got := containedEnv([]string{"AWS_SESSION_TOKEN=borrowed"}, widened.SecretNames); len(got) != 0 {
+		t.Errorf("an undeclared variable must not cross: %v", got)
+	}
+	// The original policy is untouched: it is rebuilt per command and handed
+	// out by value, so one start's extras leaking into the next command's
+	// environment is the failure this copy prevents.
+	if len(policy.Env) != 3 || len(policy.SecretNames) != 1 {
+		t.Errorf("WithEnv must not mutate the policy it was given: %v %v", policy.Env, policy.SecretNames)
+	}
+}
+
+// A policy with no environment of its own draws from this process's, and
+// widening it must not turn that into "these pairs and nothing else" — a
+// contained command with no PATH fails as "not found", which points nowhere
+// near the environment.
+func TestWithEnvKeepsTheInheritedEnvironmentWhenPolicyHasNone(t *testing.T) {
+	t.Setenv("PATH", "/usr/bin:/bin")
+	policy, _ := workspacePolicy(t)
+
+	widened := policy.WithEnv([]string{"PORT=3001"})
+	env := containedEnv(widened.Env, widened.SecretNames)
+	for _, want := range []string{"PATH=/usr/bin:/bin", "PORT=3001"} {
+		if !slices.Contains(env, want) {
+			t.Errorf("contained environment = %v, want %s", env, want)
+		}
+	}
+}

@@ -2,15 +2,18 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"runtime"
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/logs"
+	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/scope"
@@ -232,5 +235,55 @@ func TestChildCommandRunner_RequiredContainmentRefusesToo(t *testing.T) {
 	}
 	if !strings.Contains(out, "requires containment") {
 		t.Fatalf("the refusal should say why, got %q", out)
+	}
+}
+
+// The wiring the symptom came through. A start's `env` reaches the supervisor,
+// the supervisor hands it to the wrap, and the wrap has to put it in the
+// policy — the mechanism rebuilds the environment from that policy alone, so
+// a pair left anywhere else is gone before the command reads it, and a server
+// told PORT=3001 comes up on 3000 while the model probes 3001 and debugs a
+// process that is running fine. It runs under whichever mechanism the host
+// has and skips by name where there is none.
+func TestBuildContainment_AStartCarriesItsOwnEnv(t *testing.T) {
+	avail := sandbox.Detect()
+	if !avail.OK {
+		t.Skipf("no containment mechanism here: %s", avail.Detail)
+	}
+	t.Setenv("SHELL", "/bin/sh")
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	dir := t.TempDir()
+	sc, errs := scope.New(dir)
+	if len(errs) > 0 {
+		t.Fatalf("scope: %v", errs)
+	}
+	sup, err := process.New(dir, nil)
+	if err != nil {
+		t.Fatalf("process.New: %v", err)
+	}
+	t.Cleanup(sup.Close)
+
+	if _, err := buildContainment(config.Config{}, sc, sup); err != nil {
+		t.Fatalf("build containment: %v", err)
+	}
+	if sup.Contained() == "" {
+		t.Fatal("this host has a mechanism, so the supervisor should be under it")
+	}
+	if _, err := sup.Execute(json.RawMessage(
+		`{"action":"start","name":"env","command":"echo port=$PORT","env":{"PORT":"3001"}}`)); err != nil {
+		t.Fatalf("start: %v", err)
+	}
+
+	var out string
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		out, _ = sup.Execute(json.RawMessage(`{"action":"read","name":"env","stream":"stdout","offset":0}`))
+		if strings.Contains(out, "port=") {
+			break
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	if !strings.Contains(out, "port=3001") {
+		t.Fatalf("the start's own env must reach the contained process:\n%s", out)
 	}
 }

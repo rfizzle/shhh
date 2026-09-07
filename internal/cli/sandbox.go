@@ -158,16 +158,22 @@ func buildContainment(cfg config.Config, sc *scope.Scope, sup *process.Superviso
 	// WrapArgv with that directory as the policy's cwd — a mechanism that
 	// chdirs uses it, and a policy resolved against shhh's own working
 	// directory would put the process somewhere the model did not ask for.
+	//
+	// The start's own env goes into the policy for the same reason the
+	// directory does: the mechanism rebuilds the environment from the
+	// allowlist, so a pair left on the spawn is cleared before the command
+	// sees it. The extras widen that allowlist by name, which is the
+	// mechanism a declared secret already uses.
 	if sup != nil {
 		sup.SetContainment(process.Containment{
 			Mechanism: avail.Mechanism,
-			Wrap: func(dir string, argv []string) ([]string, error) {
+			Wrap: func(dir string, argv, env []string) ([]string, error) {
 				p, err := policyNow()
 				if err != nil {
 					return nil, err
 				}
 				p.Cwd = dir
-				return sandbox.WrapArgv(avail, p, argv)
+				return sandbox.WrapArgv(avail, p.WithEnv(env), argv)
 			},
 		})
 	}
