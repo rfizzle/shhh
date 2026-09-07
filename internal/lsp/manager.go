@@ -262,6 +262,21 @@ func (m *Manager) hold(path string, q heldQuestion) {
 	m.held[path] = q
 }
 
+// DropHeld closes the open question about path on behalf of a reader that
+// will not be coming back for it.
+//
+// The held queue is one queue and it is drained by whoever reads next, which
+// is right for a session and wrong the moment more than one agent is asking:
+// a sub-agent works in an isolated copy of the checkout, so a question it
+// left open would be collected by the session and put in front of a result
+// about a file the person is not editing. A reader that cannot be the one to
+// collect its own late answer closes the question instead, and asks the
+// diagnostics tool outright if it wants it.
+// See docs/capabilities/subagents.md#a-child-searches-with-what-the-session-searches-with.
+func (m *Manager) DropHeld(path string) {
+	m.dropHeld(m.abs(path))
+}
+
 // dropHeld forgets path's open question, which is what an answer delivered by
 // any other route means.
 func (m *Manager) dropHeld(path string) {

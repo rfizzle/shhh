@@ -37,6 +37,14 @@ import (
 // the goldens would pass where they were written and fail on CI, which runs
 // in UTC. Pinning makes the checked-in text mean the same thing everywhere.
 func TestMain(m *testing.M) {
+	// Before anything else, and before the package build below: with this set
+	// the process is not running tests at all, it is the language server one
+	// of them spawned (subagents_test.go), and everything this function does
+	// to prepare a suite is work that server has no use for.
+	if os.Getenv(fakeLSPEnv) != "" {
+		serveFakeLSP(os.Stdin, os.Stdout)
+		return
+	}
 	time.Local = time.UTC
 	dir, err := os.MkdirTemp("", "shhh-cli-test")
 	if err != nil {

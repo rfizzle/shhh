@@ -4,8 +4,22 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/shhh/internal/evidence"
+	"github.com/rfizzle/shhh/internal/lsp"
+	"github.com/rfizzle/shhh/internal/mcp"
+	"github.com/rfizzle/shhh/internal/memory"
+	"github.com/rfizzle/shhh/internal/notebook"
+	"github.com/rfizzle/shhh/internal/persona"
+	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/quality"
+	"github.com/rfizzle/shhh/internal/reports"
 	"github.com/rfizzle/shhh/internal/shell"
+	"github.com/rfizzle/shhh/internal/skill"
+	"github.com/rfizzle/shhh/internal/structural"
+	"github.com/rfizzle/shhh/internal/subagent"
+	"github.com/rfizzle/shhh/internal/todo"
+	"github.com/rfizzle/shhh/internal/web"
 )
 
 func testShell() shell.Info {
@@ -187,5 +201,34 @@ func TestToolboxStatesTheNotebook(t *testing.T) {
 	}
 	if got := Toolbox([]provider.Tool{{Name: "read_file"}}); strings.Contains(got, "notebook") {
 		t.Errorf("a session with no notebook was told about one:\n%s", got)
+	}
+}
+
+// Every tool shhh can put in front of a model has a note here. A tool with
+// none reaches the model as a bare schema — the tool you reach for last, if
+// at all — and the three that had none were the three nobody had thought
+// about since, which is exactly how that happens.
+//
+// The names are taken from the packages that own them, so a rename is a
+// compile error here rather than a note that quietly stops matching.
+func TestToolboxHasANoteForEveryToolThatCanBeRegistered(t *testing.T) {
+	registrable := []string{
+		lsp.DefinitionToolName, lsp.ReferencesToolName, lsp.WorkspaceSymbolToolName,
+		lsp.DocumentSymbolToolName, lsp.HoverToolName, lsp.DiagnosticsToolName,
+		structural.FdToolName, structural.AstGrepToolName, structural.SdToolName,
+		structural.TokeiToolName, structural.JaqToolName, structural.YqToolName,
+		structural.GitToolName, structural.GitWriteToolName,
+		web.FetchToolName, web.SearchToolName,
+		mcp.ResourceToolName, process.ToolName, quality.ToolName, reports.ToolName,
+		notebook.WriteToolName, notebook.ReadToolName,
+		subagent.SpawnToolName, subagent.ReportToolName, subagent.SteerToolName,
+		evidence.ToolName, memory.RememberToolName, skill.ToolName,
+		todo.ExtractToolName, persona.DraftToolName,
+	}
+	got := Toolbox(toolList(registrable...))
+	for _, name := range registrable {
+		if !strings.Contains(got, "- "+name+" — ") {
+			t.Errorf("%s can be registered and has no note saying what it is for", name)
+		}
 	}
 }

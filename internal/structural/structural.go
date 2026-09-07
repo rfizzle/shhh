@@ -176,6 +176,46 @@ func NewToolset(root string) *Toolset {
 	return t
 }
 
+// Rooted is this toolset contained to another directory: the same binaries,
+// found once at session start, and never the writing half of git. nil when
+// root cannot be resolved, and nil on a nil toolset.
+//
+// A sub-agent is what it is for. A child stands somewhere else — a writer in
+// an isolated copy of the checkout — and every path argument here is resolved
+// against the root the toolset was built with, so a child handed the
+// session's own toolset would be searching the tree it is not working in.
+// Probing PATH again per child would spend six lookups and a git subprocess
+// on every spawn, every retry and every handoff to learn what this session
+// already knows; what differs between the two is the root and nothing else.
+//
+// The repository question is not re-asked either. A writer's root is a git
+// worktree and a reader's is this very directory, so the answer is the one
+// already in hand; a root that turned out not to be in a repository would
+// have git registered and git itself would say so, which is the same refusal
+// by a different route.
+//
+// The write half is dropped rather than carried: it is registered by a
+// surface calling AllowWrites, and a child is not a surface — its work comes
+// back to its parent as a patch, and a child that could commit would be
+// writing history nobody approved.
+func (t *Toolset) Rooted(root string) *Toolset {
+	if t == nil {
+		return nil
+	}
+	resolved, err := filepath.EvalSymlinks(root)
+	if err != nil {
+		return nil
+	}
+	bins := make(map[string]string, len(t.bins))
+	for name, path := range t.bins {
+		if name == GitWriteToolName {
+			continue
+		}
+		bins[name] = path
+	}
+	return &Toolset{root: resolved, bins: bins, timeout: t.timeout}
+}
+
 // insideRepo reports whether root is inside a git working tree; a variable so
 // tests can decide without building one.
 var insideRepo = func(root string) bool {

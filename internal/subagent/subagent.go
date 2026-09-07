@@ -298,6 +298,19 @@ type Env struct {
 	// the built-in bound. A fan-out is where waiting one out matters most,
 	// because a limit refuses every child at once.
 	Retries *int
+	// Window is the child model's context window as the downloaded price
+	// table answers it, and 0 where the table has no row for the model. The
+	// table is asked in the CLI because that is where it is open, and it is
+	// asked first: the family floor this package can reach on its own is a
+	// conservative reading of a model name, so a child on a model the table
+	// knows would otherwise recover its window against a smaller number than
+	// it has, or — for a name no family matches — against nothing at all.
+	Window int64
+	// ToolTokens is what the child's registered definitions cost on every
+	// request. They are not in the conversation, so a child that left them
+	// out of the estimate would think it had a toolset's worth of room it
+	// does not have — and a child's toolset is now most of a session's.
+	ToolTokens int64
 }
 
 // execResult is a command's output as the child's tool result: reduced, then
@@ -313,22 +326,25 @@ func (e Env) execResult(output string, exitCode int) string {
 }
 
 // childCompactor is a child's window-recovery step, or nothing where the
-// window cannot be established. Only the model's name is available to work it
-// out from — a child holds one stream, bound to one model and one role-scoped
-// toolset, and never sees the definitions themselves — so a name no family
-// answers for leaves the child running exactly as it did before, which is the
-// cheaper of the two mistakes: recovering against a guessed window would
-// throw away the work of a child that had most of its room left.
+// window cannot be established. The price table's answer comes first, carried
+// on the Env because that is where the table is open, and the family floor is
+// the fallback — a name neither can place leaves the child running exactly as
+// it did before, which is the cheaper of the two mistakes: recovering against
+// a guessed window would throw away the work of a child that had most of its
+// room left.
 //
-// The summary is asked of the child's own model for the same reason. The one
-// door a child has out is its stream, and a request on another model would
-// have to be built somewhere that knows what the child's tools are.
-func childCompactor(model string) *agent.Compactor {
-	window, ok := provider.ContextWindowFor(model)
-	if !ok {
+// The summary is asked of the child's own model. The one door a child has out
+// is its stream, and a request on another model would have to be built
+// somewhere that knows what the child's tools are.
+func childCompactor(model string, env Env) *agent.Compactor {
+	window := env.Window
+	if window <= 0 {
+		window, _ = provider.ContextWindowFor(model)
+	}
+	if window <= 0 {
 		return nil
 	}
-	return &agent.Compactor{Model: model, Window: window}
+	return &agent.Compactor{Model: model, Window: window, ToolTokens: env.ToolTokens}
 }
 
 // roundCap is the cap a child's agent is running under as the record spells
@@ -2063,7 +2079,7 @@ func (s *Supervisor) run(c *child) {
 	}
 	h := &agent.Headless{
 		Agent:   c.agent,
-		Compact: childCompactor(c.model),
+		Compact: childCompactor(c.model, c.env),
 		// A child is as unwatched as a headless run, and its task is the
 		// instruction every reading is judged against. Nil unless
 		// summary.subagents is on.

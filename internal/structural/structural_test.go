@@ -586,3 +586,47 @@ func TestExecuteSdPreviewBanner(t *testing.T) {
 		t.Fatalf("expected the preview banner, got %q", out)
 	}
 }
+
+// A sub-agent stands somewhere else and needs the same tools contained to
+// where it stands. The probe is not repeated — PATH is what it was, and a
+// spawn, a retry and a handoff would each pay for it again — and the writing
+// half of git does not come along, because a child has no approval card and
+// its work comes back as a patch.
+func TestRootedIsTheSameToolsElsewhereWithoutTheWriteHalf(t *testing.T) {
+	session := newTestToolset(t, map[string]string{
+		FdToolName:       "/usr/bin/fd",
+		GitToolName:      "/usr/bin/git",
+		GitWriteToolName: "/usr/bin/git",
+	})
+	elsewhere, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	child := session.Rooted(elsewhere)
+	if child == nil {
+		t.Fatal("a toolset that found its binaries handed a child none")
+	}
+	if child.root != elsewhere {
+		t.Errorf("the child's tools are contained to %q, not where it stands", child.root)
+	}
+	for _, want := range []string{FdToolName, GitToolName} {
+		if !child.Has(want) {
+			t.Errorf("%s was found once and not carried over", want)
+		}
+	}
+	if child.Has(GitWriteToolName) {
+		t.Error("the writing half of git followed a child that has nobody to ask")
+	}
+	// The session's own toolset is untouched by the copy.
+	if !session.Has(GitWriteToolName) || session.root == elsewhere {
+		t.Error("rooting a copy changed the toolset it was copied from")
+	}
+	// A root that cannot be resolved is no toolset rather than one contained
+	// to nothing, and a session that registered none hands out none.
+	if got := session.Rooted(filepath.Join(elsewhere, "does-not-exist")); got != nil {
+		t.Errorf("a root that is not there produced a toolset: %+v", got)
+	}
+	if got := (*Toolset)(nil).Rooted(elsewhere); got != nil {
+		t.Errorf("a session with no tools handed a child some: %+v", got)
+	}
+}

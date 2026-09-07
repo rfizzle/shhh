@@ -46,7 +46,7 @@ func BuiltinProfiles() Profiles {
 	return Profiles{
 		RoleResearcher: {
 			Name:        RoleResearcher,
-			Description: "read-only tools plus web; use for parallel research and codebase surveys",
+			Description: "the session's own read-only toolset plus web; use for parallel research and codebase surveys",
 		},
 		RoleWriter: {
 			Name:        RoleWriter,

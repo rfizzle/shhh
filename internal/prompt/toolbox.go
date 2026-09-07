@@ -42,6 +42,7 @@ var toolboxNotes = []struct{ name, note string }{
 	{"git_write", "write to this repository: add, commit, branch, switch. Use it rather than running git as a command — the message is a field, so nothing is quoted and no approval is spent on punctuation. It refuses what it cannot do rather than doing it another way: add stages only files this session changed and has no way to stage everything, commit needs a staged index, branch never deletes, and push, reset, clean, checkout, rebase, merge, stash, tag, amend and force are not reachable here at all. Pushing is a command, and it asks."},
 	{"web_fetch", "read a URL. Approval-gated, since it leaves the machine."},
 	{"web_search", "search the web when the answer is not in the workspace."},
+	{"mcp_resource", "read one document or record an MCP server publishes, by URI. The MCP servers section of your instructions lists what each server holds; the read changes nothing and costs no approval."},
 	{"process", "start and watch a long-running process (a dev server, a watcher) without blocking the session on it."},
 	{"quality_gate", "run the project's own configured checks by suite name."},
 	{"report", "publish an answer that is a page rather than a paragraph — timings, comparisons, structures — as a local graphical page. The first line of its result is the link; put it in your answer. Plain text stays right for anything a sentence or a short table answers."},
@@ -53,6 +54,8 @@ var toolboxNotes = []struct{ name, note string }{
 	{"evidence", "retrieve the full output of an earlier tool result that was reduced. The notice on a reduced result carries its id."},
 	{"remember", "propose a durable fact worth keeping across sessions. The user confirms it before it persists."},
 	{"skill", "load the full instructions of a skill from the Skills list when the task matches one. Do it before starting the work, not after."},
+	{"backlog_proposals", "hand back the backlog items read out of a session — every one of them, in a single call. It is offered on its own, for a request whose whole answer is that list."},
+	{"draft_profile", "hand back a drafted agent profile, or the few short questions a draft would need answered first. It is offered on its own, for a request whose whole answer is the draft."},
 }
 
 // Toolbox describes the optional tools this session registered, for the

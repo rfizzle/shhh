@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/rfizzle/shhh/internal/lsp"
 )
 
 func rootedPath(t *testing.T, root, name, args string) (string, error) {
@@ -125,5 +127,39 @@ func TestRootArgs_CarriesTheEditsArray(t *testing.T) {
 	}
 	if got.Edits[0].OldText != "alpha" || got.Edits[1].NewText != "two" || !got.Edits[1].ReplaceAll {
 		t.Errorf("the edits should arrive as written, got %+v", got.Edits)
+	}
+}
+
+// The language server's questions take a path and mean the child's workspace
+// by it. A child shares its parent's server, which resolves a relative path
+// against the parent's checkout — so a writer asking about `internal/foo.go`
+// would be answered about the copy it is not editing.
+func TestRootArgs_TheLanguageServerAsksAboutTheChildsCopy(t *testing.T) {
+	root := t.TempDir()
+	for _, name := range []string{
+		lsp.DefinitionToolName, lsp.ReferencesToolName,
+		lsp.DocumentSymbolToolName, lsp.HoverToolName, lsp.DiagnosticsToolName,
+	} {
+		p, err := rootedPath(t, root, name, `{"path":"internal/foo.go","line":3,"symbol":"x"}`)
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		if p != filepath.Join(root, "internal/foo.go") {
+			t.Errorf("%s asked about %s, not the child's own copy", name, p)
+		}
+	}
+	// diagnostics with no path means every file the server has checked, not
+	// the workspace, so an absent one is left absent.
+	out, err := RootArgs(root, lsp.DiagnosticsToolName, json.RawMessage(`{}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(out), root) {
+		t.Errorf("a workspace-wide question was narrowed to a path: %s", out)
+	}
+	// workspace_symbol has no path at all and is left as it was.
+	if out, err := RootArgs(root, lsp.WorkspaceSymbolToolName, json.RawMessage(`{"query":"Spawn"}`)); err != nil ||
+		string(out) != `{"query":"Spawn"}` {
+		t.Errorf("a question with no path was rewritten: %s %v", out, err)
 	}
 }

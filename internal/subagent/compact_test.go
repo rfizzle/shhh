@@ -82,10 +82,10 @@ func TestChildCompactsAndReportsOnItsLane(t *testing.T) {
 // was: recovering against a guessed window would throw away the work of a
 // child that had most of its room left.
 func TestChildCompactorNeedsAWindowItCanName(t *testing.T) {
-	if c := childCompactor("a-private-build-of-our-own"); c != nil {
+	if c := childCompactor("a-private-build-of-our-own", Env{}); c != nil {
 		t.Fatalf("a step was built against a window nothing could name: %+v", c)
 	}
-	c := childCompactor("phi")
+	c := childCompactor("phi", Env{})
 	if c == nil {
 		t.Fatal("no step for a model whose window is published")
 	}
@@ -96,6 +96,27 @@ func TestChildCompactorNeedsAWindowItCanName(t *testing.T) {
 	// one role-scoped toolset, is the only door a child has out.
 	if c.Stream != nil {
 		t.Fatal("a child was given a stream of its own to summarize on")
+	}
+}
+
+// The table is asked before the family floor, and the definitions the child
+// was actually given are part of what fills its window. A child is routinely
+// routed to a model the session is not on — a cheap one for a wide search —
+// and the floor is a reading of a model's name, so a name only the table can
+// place used to leave that child running with no recovery at all.
+func TestChildCompactorTakesTheTablesWindowAndTheToolsetsCost(t *testing.T) {
+	env := Env{Window: 400_000, ToolTokens: 3_500}
+	c := childCompactor("a-private-build-of-our-own", env)
+	if c == nil {
+		t.Fatal("no step for a model the price table can place")
+	}
+	if c.Window != 400_000 || c.ToolTokens != 3_500 {
+		t.Fatalf("step built with %+v", c)
+	}
+	// And the table wins where both can answer: it is the model's published
+	// window, where the family floor is what every model of that shape has.
+	if c := childCompactor("phi", Env{Window: 999_000}); c == nil || c.Window != 999_000 {
+		t.Fatalf("the family floor was preferred to the table: %+v", c)
 	}
 }
 

@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/lsp"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -39,6 +40,16 @@ func RootArgs(root, name string, args json.RawMessage) (json.RawMessage, error) 
 	optionalPath := false
 	switch name {
 	case "read_file", "list_directory", tools.WriteFileName, tools.EditFileName:
+	// The language server's questions take the same argument and mean the
+	// same thing by it. A child shares its parent's server rather than
+	// starting one of its own, and that server resolves a relative path
+	// against the parent's checkout — so a writer that asked about
+	// `internal/foo.go` would be answered about the copy it is not editing.
+	// diagnostics is here for its path and not for its absence: called with
+	// none it means every file the server has checked, which is not the
+	// workspace and must not be turned into it.
+	case lsp.DefinitionToolName, lsp.ReferencesToolName, lsp.DocumentSymbolToolName,
+		lsp.HoverToolName, lsp.DiagnosticsToolName:
 	case "search", "glob":
 		optionalPath = true
 	default:

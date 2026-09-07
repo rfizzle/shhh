@@ -20,6 +20,53 @@ interleaved with changes from other children, in a working directory the user
 is also using. Isolation is what makes the parent's approval meaningful:
 nothing a child did reaches your tree until you take it.
 
+## A child searches with what the session searches with
+
+A child is given the session's own read-only toolset, not a smaller one: the
+[six questions a language
+server answers](coding-agent.md#six-questions-for-the-language-server), the
+structural search tools this machine turned out to have, and the read-only
+git verbs — on top of the file tools every child always had.
+
+A delegated search is worth delegating only if the child is at least as good
+at it as the session that delegated it; a child that had to grind a text search
+where its parent would have asked for a symbol's references spent more of its
+own budget to come back with less, and a reader with no git tool and no
+command to run one with could not read the history of the file it was sent to
+explain.
+
+Two tools stay behind, and for the same reason: they need somebody to answer.
+Writing to git is approved on a card, and a child has no card of its own — its
+work comes back as a patch you approve whole. A report is a page published for
+the person, and a child answers its parent; what it found reaches a page
+through the parent's own call.
+
+The tools are contained to where the child is standing. A writer works in an
+isolated copy of the checkout, so every path its searches, its structural
+queries and its questions to the language server name is a path in that
+copy — the code it is actually editing — and one that climbs out of it is
+refused. The language server itself is the session's, not one per child: a
+project-wide symbol search is answered out of the checkout the copy was made
+from, which holds the same code apart from what the child has just changed.
+
+A writer's applied edit comes back carrying the language server's verdict on
+the file it just wrote, as one applied on your own screen does. A child that
+had to run the build to find out what it broke spent a round and an approval
+on a question that had already been answered.
+
+One half of that is the session's alone. A check that runs long leaves its
+answer to be collected by the next edit anyone makes, and with several agents
+editing at once "the next edit" is somebody else's: a child would be handed a
+verdict about your file, or a sibling's, and you would be handed one about a
+file inside a copy of the checkout you are not standing in. So a child takes
+no late answer and leaves none behind. What it gives up is the answer to its
+own slow check, which it can ask for outright — every child has the tool, and
+is told to use it after an edit that came back without a verdict.
+
+Every child's prompt ends with the same toolbox block a session's does: a line
+per tool saying when it is the right answer, over the set that child actually
+ended up with. Nothing in it describes a tool the child does not have.
+
 ## A writer starts from your tree
 
 An isolated copy of the repository is not the same thing as a copy of the last
@@ -209,6 +256,13 @@ the approval machinery reasons about. A profile that can write or execute is
 a writer in the sense above: it gets its own copy of the repository and hands
 back a patch. A profile that can only read and browse is a researcher. There
 is no third shape, and a profile cannot ask for one.
+
+The allowlist narrows the tiers and nothing else. It names file tools,
+commands and the web — the things a tier decides — and never the navigation
+tools, the notebook or the skills catalog, which every child gets whatever its
+profile says: those are how a child reads, and a profile that could take them
+away would be a profile that made its agent worse at the one thing every agent
+does.
 
 A profile can make its children stricter than the session — a reviewer that
 starts in plan mode under an auto session — and never looser. The clamp that

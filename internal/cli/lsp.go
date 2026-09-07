@@ -64,6 +64,41 @@ func lspMutationHook(ts *lsp.Toolset) chat.MutationHook {
 	}
 }
 
+// childMutationHook is lspMutationHook for a sub-agent: the same fresh
+// verdict on the file the child just wrote, and nothing at all from the
+// session's queue of late answers.
+//
+// The queue is shared, because the language server is — one per session, not
+// one per child, since a `gopls` per writer would be a language server per
+// spawn over a copy of the tree the session's own is already indexing. A
+// child draining that queue would put a verdict about the session's file, or
+// a sibling's, in front of its own result; a child leaving its own question
+// in it would do the same to the person's next edit, naming a path in a
+// worktree they are not standing in. So a child neither reads the queue nor
+// leaves anything in it, and the promise the queue makes — exactly once, in
+// front of the next result its reader sees — goes on meaning what it said.
+//
+// What a child gives up is the late answer to its own edit, which it can ask
+// for outright: the diagnostics tool is registered on every child, and the
+// toolbox note tells it to ask after an edit that came back without a block.
+// See docs/capabilities/subagents.md#a-child-searches-with-what-the-session-searches-with.
+func childMutationHook(ts *lsp.Toolset) chat.MutationHook {
+	if ts == nil {
+		return nil
+	}
+	return func(name string, args json.RawMessage, result string) string {
+		path := lspTouchedPath(name, args, result)
+		if path == "" {
+			return result
+		}
+		if fresh := ts.Manager.DiagnosticsAfterChange(path); fresh != "" {
+			return result + "\n\n" + fresh
+		}
+		ts.Manager.DropHeld(path)
+		return result
+	}
+}
+
 // lspTouchedPath is the file a mutation hook should ask the language server
 // about, and "" for every call it must leave alone.
 //

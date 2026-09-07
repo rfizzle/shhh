@@ -1,21 +1,31 @@
 package cli
 
 import (
+	"bufio"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
+	"github.com/rfizzle/shhh/internal/evidence"
+	"github.com/rfizzle/shhh/internal/lsp"
 	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
+	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
+	"github.com/rfizzle/shhh/internal/ui/chat"
 )
 
 func TestAgentProfilesReaders(t *testing.T) {
@@ -212,5 +222,325 @@ func TestChildWithoutANotebookIsUnchanged(t *testing.T) {
 	}
 	if out, err := exec(notebook.WriteToolName, nil); err != nil || out != "ok" {
 		t.Errorf("the chain was wrapped anyway: %q %v", out, err)
+	}
+}
+
+// A child gets the navigation toolset the session has and the block that
+// explains it. A researcher without `references` is worse at searching than
+// the session that delegated the search to it, which is the one thing a
+// delegated search must not be; until this it also had no way to read git
+// history at all, having neither the git tool nor a command to run one with.
+func TestAChildGetsTheNavigationToolsetAndTheBlockThatExplainsIt(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	session := codeToolset()
+	session.lsp = lsp.NewToolset(lsp.NewManager(cwd, nil, lsp.Options{}))
+	session.structural = structural.NewToolset(cwd)
+	if session.structural == nil {
+		t.Skip("the workspace root could not be resolved")
+	}
+	// A coding session's own toolset writes to git, which is the half a
+	// child must not inherit.
+	session.structural.AllowWrites(structural.Writes{Files: func() []string { return nil }})
+	red := openEvidence()
+	if red == nil {
+		t.Skip("no evidence store, so no evidence tool to be told about")
+	}
+
+	defs, exec, sysPrompt, _ := withSessionTools(
+		session, red, "researcher-1", cwd, tools.Definitions(), tools.Execute, "# Environment")
+	names := toolsetNames(defs)
+
+	for _, want := range []string{
+		lsp.DefinitionToolName, lsp.ReferencesToolName, lsp.WorkspaceSymbolToolName,
+		lsp.DocumentSymbolToolName, lsp.HoverToolName, lsp.DiagnosticsToolName, evidence.ToolName,
+	} {
+		if !slices.Contains(names, want) {
+			t.Errorf("a child was not given %s; it has %v", want, names)
+		}
+	}
+	// git is registered by whether this is a repository, so a child gets it
+	// exactly when the session did.
+	if session.structural.Has(structural.GitToolName) != slices.Contains(names, structural.GitToolName) {
+		t.Errorf("the child's git differs from the session's; it has %v", names)
+	}
+	// And never the writing half, which the session above does have: a child
+	// has no card of its own, so a commit it asked for would have nobody to
+	// ask.
+	if slices.Contains(names, structural.GitWriteToolName) {
+		t.Errorf("a child was given the writing half of git: %v", names)
+	}
+
+	// The block names them, over the set the registration actually finished
+	// with — the evidence tool included, whose whole job is to answer a
+	// reduction notice the child was otherwise never told about.
+	for _, want := range []string{"# Toolbox", "- references — ", "- evidence — "} {
+		if !strings.Contains(sysPrompt, want) {
+			t.Errorf("the child's prompt does not carry %q:\n%s", want, sysPrompt)
+		}
+	}
+	if !strings.Contains(sysPrompt, "# Environment") {
+		t.Errorf("the child lost the prompt the blocks were added to:\n%s", sysPrompt)
+	}
+
+	// The chain dispatches them too: a malformed question is refused by the
+	// language server's own toolset, where a name that fell through to the
+	// base executor would come back unknown.
+	if _, err := exec(lsp.DefinitionToolName, json.RawMessage(`{"line":1,"symbol":"x"}`)); err == nil ||
+		!strings.Contains(err.Error(), "path is required") {
+		t.Errorf("the language server's tools were registered but not wired: %v", err)
+	}
+}
+
+// The structural toolset a child gets is its own, contained to where the
+// child is standing. A writer stands in an isolated copy of the checkout, and
+// one reading the parent's tree would be reading the code it is not editing.
+func TestAChildsStructuralToolsAreContainedToItsOwnWorkspace(t *testing.T) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	session := structural.NewToolset(cwd)
+	if session == nil {
+		t.Skip("the workspace root could not be resolved")
+	}
+	child := childStructural(session, cwd)
+	if child == nil {
+		t.Fatal("a session with structural tools handed its children none")
+	}
+	if !child.Has(structural.GitToolName) {
+		t.Skip("not inside a git repository, so the git tool was not registered")
+	}
+	// This directory, not the checkout above it: a path that climbs out is
+	// refused by the root the toolset was built with.
+	if _, err := child.Execute(structural.GitToolName,
+		json.RawMessage(`{"verb":"status","paths":["../../go.mod"]}`)); err == nil ||
+		!strings.Contains(err.Error(), "outside the workspace") {
+		t.Errorf("a path outside the child's workspace was not refused: %v", err)
+	}
+	// And a session that registered none hands out none, so a conversation's
+	// children are left exactly as they were.
+	if got := childStructural(nil, cwd); got != nil {
+		t.Errorf("a session with no structural tools handed its children some: %+v", got)
+	}
+}
+
+// What the child's window-recovery step measures against, and what it counts
+// as spent before its first message. A child is routinely routed to a model
+// the session is not on, so the answer has to be about the child's model.
+func TestAChildsWindowIsTheTablesAnswerForItsOwnModel(t *testing.T) {
+	if got := childWindow(nil, "some-model"); got != 0 {
+		t.Errorf("a session with no price table answered %d; the family floor is the fallback", got)
+	}
+	if got := childToolTokens(nil); got != 0 {
+		t.Errorf("no definitions cost %d tokens", got)
+	}
+	if got := childToolTokens(tools.Definitions()); got <= 0 {
+		t.Errorf("the base read-only toolset was costed at %d tokens", got)
+	}
+}
+
+// fakeLSPEnv turns this test binary into the language server the test below
+// spawns. The client's transport seam is package-private to internal/lsp, so
+// the only server reachable from here is a real process — this binary again,
+// answering on stdio instead of running a suite. TestMain reads the variable
+// before it prepares anything (logs_test.go).
+const fakeLSPEnv = "SHHH_TEST_FAKE_LSP"
+
+// serveFakeLSP answers the handshake and publishes one error diagnostic for
+// every file it is told changed, which is the whole of what an after-edit
+// check asks of a server.
+func serveFakeLSP(in io.Reader, out io.Writer) {
+	r := bufio.NewReader(in)
+	var mu sync.Mutex
+	write := func(body string) {
+		mu.Lock()
+		defer mu.Unlock()
+		fmt.Fprintf(out, "Content-Length: %d\r\n\r\n%s", len(body), body)
+	}
+	diagnose := func(uri string) {
+		write(`{"jsonrpc":"2.0","method":"textDocument/publishDiagnostics","params":{"uri":` +
+			strconv.Quote(uri) +
+			`,"diagnostics":[{"range":{"start":{"line":3,"character":1},"end":{"line":3,"character":8}},` +
+			`"severity":1,"source":"fake","message":"undefined: greeet"}]}}`)
+	}
+	for {
+		body, err := readLSPFrame(r)
+		if err != nil {
+			return
+		}
+		var msg struct {
+			ID     json.RawMessage `json:"id"`
+			Method string          `json:"method"`
+			Params struct {
+				TextDocument struct {
+					URI string `json:"uri"`
+				} `json:"textDocument"`
+			} `json:"params"`
+		}
+		if json.Unmarshal(body, &msg) != nil {
+			continue
+		}
+		switch msg.Method {
+		case "initialize":
+			write(`{"jsonrpc":"2.0","id":` + string(msg.ID) + `,"result":{"capabilities":{}}}`)
+		case "shutdown":
+			write(`{"jsonrpc":"2.0","id":` + string(msg.ID) + `,"result":null}`)
+		case "exit":
+			return
+		case "textDocument/didOpen", "textDocument/didChange":
+			// A file named for it is answered after the client has stopped
+			// waiting, which is the case the held queue exists for and the
+			// one a child must not leave behind.
+			if strings.Contains(msg.Params.TextDocument.URI, "late") {
+				uri := msg.Params.TextDocument.URI
+				go func() {
+					time.Sleep(150 * time.Millisecond)
+					diagnose(uri)
+				}()
+				continue
+			}
+			diagnose(msg.Params.TextDocument.URI)
+		}
+	}
+}
+
+// readLSPFrame reads one Content-Length-framed message.
+func readLSPFrame(r *bufio.Reader) ([]byte, error) {
+	length := 0
+	for {
+		line, err := r.ReadString('\n')
+		if err != nil {
+			return nil, err
+		}
+		line = strings.TrimRight(line, "\r\n")
+		if line == "" {
+			break
+		}
+		if name, value, ok := strings.Cut(line, ":"); ok && strings.EqualFold(strings.TrimSpace(name), "Content-Length") {
+			if length, err = strconv.Atoi(strings.TrimSpace(value)); err != nil {
+				return nil, err
+			}
+		}
+	}
+	body := make([]byte, length)
+	if _, err := io.ReadFull(r, body); err != nil {
+		return nil, err
+	}
+	return body, nil
+}
+
+// A writer's applied edit comes back carrying the language server's verdict
+// on the file it just wrote, as one applied on the session's own screen does.
+// Without it a child learns what it broke by running the build, which is a
+// round and an approval for something the server had already answered.
+func TestAWritersEditCarriesTheLanguageServersVerdict(t *testing.T) {
+	t.Setenv(fakeLSPEnv, "1")
+	root := t.TempDir()
+	path := filepath.Join(root, "main.go")
+	if err := os.WriteFile(path, []byte("package main\n\nfunc main() {\n\tgreeet()\n}\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	ts := lsp.NewToolset(lsp.NewManager(root, []lsp.ServerSpec{{
+		Name:       "fake",
+		Command:    os.Args[0],
+		Extensions: []string{".go"},
+	}}, lsp.Options{RequestTimeout: 10 * time.Second, DiagnosticsTimeout: 10 * time.Second}))
+	defer ts.Close()
+
+	const applied = "Applied 1 edit"
+	calls := 0
+	exec := withDiagnostics(lspMutationHook(ts), func(name string, args json.RawMessage) (string, error) {
+		calls++
+		if name == "read_file" {
+			return "package main", nil
+		}
+		return applied, nil
+	})
+
+	edit := json.RawMessage(`{"path":` + strconv.Quote(path) + `}`)
+	out, err := exec(tools.EditFileName, edit)
+	if err != nil {
+		t.Fatalf("the edit failed: %v", err)
+	}
+	if !strings.HasPrefix(out, applied) {
+		t.Errorf("the result the child asked for was replaced rather than added to: %q", out)
+	}
+	if !strings.Contains(out, "undefined: greeet") {
+		t.Fatalf("the edit came back without the server's verdict: %q", out)
+	}
+
+	// A read is not an edit, and nothing is asked about one.
+	if out, err := exec("read_file", edit); err != nil || out != "package main" {
+		t.Errorf("a read was sent to the language server: %q %v", out, err)
+	}
+	if calls != 2 {
+		t.Errorf("the chain ran the call %d times", calls)
+	}
+	// No server detected is the executor unchanged, not a wrap that asks
+	// nothing.
+	plain := agent.ToolExecutor(func(string, json.RawMessage) (string, error) { return applied, nil })
+	if got := withDiagnostics(childMutationHook(nil), plain); got == nil {
+		t.Error("a session with no language server lost its executor")
+	}
+}
+
+// The language server is the session's, and so is its queue of answers that
+// arrived after the edit that asked stopped waiting. A child neither reads
+// that queue — a verdict about the session's file, or a sibling's, in front
+// of its own result — nor leaves anything in it, which would put a verdict
+// about a file inside a worktree in front of the person's next edit.
+func TestAChildLeavesTheSessionsLateAnswersAlone(t *testing.T) {
+	t.Setenv(fakeLSPEnv, "1")
+	root := t.TempDir()
+	write := func(name string) string {
+		t.Helper()
+		path := filepath.Join(root, name)
+		if err := os.WriteFile(path, []byte("package main\n\nfunc main() {\n\tgreeet()\n}\n"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		return path
+	}
+	// A wait short enough that the fake's late answer never makes it, so
+	// every edit below leaves an open question behind.
+	ts := lsp.NewToolset(lsp.NewManager(root, []lsp.ServerSpec{{
+		Name:       "fake",
+		Command:    os.Args[0],
+		Extensions: []string{".go"},
+	}}, lsp.Options{RequestTimeout: 10 * time.Second, DiagnosticsTimeout: 20 * time.Millisecond}))
+	defer ts.Close()
+
+	edit := func(hook chat.MutationHook, path string) string {
+		exec := withDiagnostics(hook, func(string, json.RawMessage) (string, error) { return "Applied 1 edit", nil })
+		out, err := exec(tools.EditFileName, json.RawMessage(`{"path":`+strconv.Quote(path)+`}`))
+		if err != nil {
+			t.Fatalf("the edit failed: %v", err)
+		}
+		return out
+	}
+
+	// The session's own hook leaves its question open, which is what lets a
+	// late answer reach the model at all.
+	session := write("late-session.go")
+	if out := edit(lspMutationHook(ts), session); strings.Contains(out, "undefined") {
+		t.Fatalf("the answer arrived inside the wait, so nothing was held: %q", out)
+	}
+	// A child's does not, and takes nothing from the queue either.
+	child := write("late-child.go")
+	if out := edit(childMutationHook(ts), child); strings.Contains(out, "undefined") {
+		t.Fatalf("a child's edit carried a verdict it should not have: %q", out)
+	}
+	// Both answers have landed by now. Only the session's is waiting.
+	time.Sleep(250 * time.Millisecond)
+	held := ts.Manager.TakeHeldDiagnostics()
+	if !strings.Contains(held, filepath.Base(session)) {
+		t.Errorf("the session's own late answer was lost: %q", held)
+	}
+	if strings.Contains(held, filepath.Base(child)) {
+		t.Errorf("a child left a question behind for the session to collect: %q", held)
 	}
 }

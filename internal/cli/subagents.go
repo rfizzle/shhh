@@ -19,6 +19,7 @@ import (
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/evidence"
+	"github.com/rfizzle/shhh/internal/lsp"
 	"github.com/rfizzle/shhh/internal/mcp"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/notebook"
@@ -33,8 +34,10 @@ import (
 	"github.com/rfizzle/shhh/internal/shell"
 	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
+	"github.com/rfizzle/shhh/internal/ui/chat"
 	"github.com/rfizzle/shhh/internal/web"
 )
 
@@ -183,6 +186,158 @@ func withNotebook(nb *notebook.Store, name string, defs []provider.Tool, base ag
 	return defs, base, prompt.CombineExtra(sysPrompt, notebook.PromptBlock(nb.List()))
 }
 
+// withSessionTools puts on a child everything the session shares with every
+// child, whatever its role and whatever its profile granted: the navigation
+// toolset, the evidence tool, the skills catalog, the notebook, the servers
+// the person marked read-only, what the vault will scrub — and last, over the
+// set all of that produced, the toolbox that says what each of them is for.
+//
+// It returns the definitions, the auto-run chain, the prompt and the trim's
+// keep-back rule. It is one function rather than a run of branches inside the
+// spawn closure because the toolbox has to be built over the finished set: a
+// block assembled halfway through would describe a toolset the child does not
+// have, which is the one failure the toolbox exists to prevent.
+//
+// The report tool is deliberately not among them. A report is the session's
+// answer surface to the user; a child answers its parent, and a page the user
+// is never handed a link to is spent tokens. What a child found reaches a
+// page through the parent's own report call, the same way it reaches the
+// transcript.
+func withSessionTools(session chatSession, red *evidence.Reducer, name, croot string,
+	defs []provider.Tool, base agent.ToolExecutor, sysPrompt string) (
+	[]provider.Tool, agent.ToolExecutor, string, func(string) bool) {
+	defs, base = withNavigation(session.lsp, childStructural(session.structural, croot), defs, base)
+	if red != nil {
+		defs = append(defs, evidence.ToolDefinition())
+	}
+	// Children see the same skills the session does: a writer told to follow
+	// the project's documentation skill has to be able to read it, and the
+	// catalog is a read whatever the child's tier — and its instructions have
+	// to survive the child's window trim, the same as they survive the
+	// session's.
+	var keepResult func(string) bool
+	if session.skills.Len() > 0 {
+		defs = append(defs, skill.ToolDefinition(session.skills))
+		base = session.skills.WrapExecutor(base)
+		sysPrompt = prompt.CombineExtra(sysPrompt, skill.PromptBlock(session.skills))
+		keepResult = skill.IsContent
+	}
+	defs, base, sysPrompt = withNotebook(session.notebook, name, defs, base, sysPrompt)
+	// The servers the person marked read-only are reads, and a child gets
+	// them the way it gets the skills catalog. Every other server's tools
+	// need a card, and a child has no card of its own
+	// (docs/capabilities/mcp.md#what-a-conversation-may-reach).
+	if session.mcpTools != nil {
+		if ro := session.mcpTools.ReadOnlyDefinitions(); len(ro) > 0 {
+			defs = append(defs, ro...)
+			base = session.mcpTools.WrapReadOnlyExecutor(base)
+			sysPrompt = prompt.CombineExtra(sysPrompt, mcp.ReadOnlyPromptBlock(session.mcpTools))
+		}
+	}
+	// Secrets are read at spawn rather than at session start, so a child
+	// knows what /secret added since. The block is asked for whether or not
+	// anything is declared, because it also says that credential-shaped
+	// variables are masked out of a command's environment — and a child runs
+	// its commands through the same masked environment the session does.
+	sysPrompt = prompt.CombineExtra(sysPrompt, secret.PromptBlock(session.vault))
+	// And last, what is in the box. A child met most of these tools as bare
+	// schemas, which is the tool you reach for last if at all — the evidence
+	// tool among them, whose whole job is to answer a reduction notice the
+	// child had nothing telling it what to do about.
+	return defs, base, prompt.CombineExtra(sysPrompt, prompt.Toolbox(defs)), keepResult
+}
+
+// withNavigation puts the session's navigation toolset on a child: the six
+// questions a language server answers and the read-only structural tools,
+// each registered exactly when the session registered it.
+//
+// It is one call outside every role branch, for the same reason withNotebook
+// is: every child gets this and no child gets a variant of it. A researcher
+// without `references` is worse at searching than the session that delegated
+// the search to it, which is the one thing a delegated search must not be;
+// and until this, a researcher had no way to read git history at all, having
+// neither the git tool nor a command to run one with.
+//
+// `git_write` is not here and cannot be: the write half is registered by a
+// surface calling AllowWrites, and the toolset built below is the child's
+// own, which never has. A child has no approval card of its own, so a commit
+// it asked for would have nobody to ask.
+// See docs/capabilities/subagents.md#a-child-searches-with-what-the-session-searches-with.
+func withNavigation(ls *lsp.Toolset, st *structural.Toolset, defs []provider.Tool, base agent.ToolExecutor) (
+	[]provider.Tool, agent.ToolExecutor) {
+	if ls != nil {
+		defs = append(defs, ls.Definitions()...)
+		base = ls.WrapExecutor(base)
+	}
+	if st != nil {
+		defs = append(defs, st.Definitions()...)
+		base = st.WrapExecutor(base)
+	}
+	return defs, base
+}
+
+// childStructural is the child's own structural toolset: the session's own
+// probe, contained to the child's workspace rather than the parent's, and
+// reading git rather than writing it.
+//
+// A writer's root is its worktree, and every path argument these tools take
+// is resolved against the root the toolset was built with and refused if it
+// leaves it — so `fd` inside a writer lists the copy it is editing rather
+// than the checkout it was copied from. The session's own toolset cannot be
+// handed over for that reason, and for a second one: a coding session has
+// given it the writing half of git, which a child must not have.
+//
+// nil where the session registered none, so a conversation's children are
+// left exactly as they were.
+// See docs/capabilities/subagents.md#a-child-searches-with-what-the-session-searches-with.
+func childStructural(session *structural.Toolset, root string) *structural.Toolset {
+	return session.Rooted(root)
+}
+
+// withDiagnostics appends the language server's verdict on a file a call just
+// wrote to that call's result, and leaves every other result alone — which is
+// the hook's own reading of which calls those are, not a second copy of it.
+// A nil hook (no server detected) is the executor unchanged.
+// See docs/capabilities/subagents.md#a-child-searches-with-what-the-session-searches-with.
+func withDiagnostics(hook chat.MutationHook, exec agent.ToolExecutor) agent.ToolExecutor {
+	if hook == nil {
+		return exec
+	}
+	return func(name string, args json.RawMessage) (string, error) {
+		result, err := exec(name, args)
+		if err != nil {
+			return result, err
+		}
+		return hook(name, args, result), nil
+	}
+}
+
+// childWindow is the child model's context window as the downloaded price
+// table answers it, and 0 where the table has no row for it — the family
+// floor behind that is the subagent package's own fallback.
+//
+// The table is asked here because this is where it is open, and it is asked
+// first because it is the better answer: a child is routinely routed to a
+// model the session is not on, and the floor is a reading of a model's name.
+func childWindow(prices *pricing.Table, model string) int64 {
+	if prices == nil {
+		return 0
+	}
+	window, _ := prices.ContextWindow(model)
+	return window
+}
+
+// childToolTokens is what a child's definitions cost on every request it
+// makes. They are not in its conversation, so a child measuring only its
+// messages thinks it has a toolset's worth of room it does not have.
+func childToolTokens(defs []provider.Tool) int64 {
+	var total int64
+	for _, t := range toolDefTokens(defs) {
+		total += t.Tokens
+	}
+	return total
+}
+
 // buildSupervisor assembles the session's sub-agent supervisor. The session's
 // changeset comes in because a writer starts from the parent's tree, and the
 // files git has never heard of are the half of that tree only the session
@@ -252,45 +407,7 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 				gated[web.FetchToolName] = true
 			}
 		}
-		if red != nil {
-			defs = append(defs, evidence.ToolDefinition())
-		}
-		// The report tool is deliberately not here. A report is the
-		// session's answer surface to the user; a child answers its parent,
-		// and a page the user is never handed a link to is spent tokens.
-		// What a child found reaches a page through the parent's own report
-		// call, the same way it reaches the transcript.
-		// Children see the same skills the session does: a writer told to
-		// follow the project's documentation skill has to be able to read
-		// it, and the catalog is a read whatever the child's tier — and its
-		// instructions have to survive the child's window trim, the same as
-		// they survive the session's.
-		var keepResult func(string) bool
-		if session.skills.Len() > 0 {
-			defs = append(defs, skill.ToolDefinition(session.skills))
-			base = session.skills.WrapExecutor(base)
-			sysPrompt = prompt.CombineExtra(sysPrompt, skill.PromptBlock(session.skills))
-			keepResult = skill.IsContent
-		}
-		defs, base, sysPrompt = withNotebook(session.notebook, spec.Name, defs, base, sysPrompt)
-		// The servers the person marked read-only are reads, and a child
-		// gets them the way it gets the skills catalog. Every other
-		// server's tools need a card, and a child has no card of its own
-		// (docs/capabilities/mcp.md#what-a-conversation-may-reach).
-		if session.mcpTools != nil {
-			if ro := session.mcpTools.ReadOnlyDefinitions(); len(ro) > 0 {
-				defs = append(defs, ro...)
-				base = session.mcpTools.WrapReadOnlyExecutor(base)
-				sysPrompt = prompt.CombineExtra(sysPrompt, mcp.ReadOnlyPromptBlock(session.mcpTools))
-			}
-		}
-		// Secrets are read at spawn rather than at session start, so a
-		// child knows what /secret added since. The block is asked for
-		// whether or not anything is declared, because it also says that
-		// credential-shaped variables are masked out of a command's
-		// environment — and a child runs its commands through the same
-		// masked environment the session does.
-		sysPrompt = prompt.CombineExtra(sysPrompt, secret.PromptBlock(session.vault))
+		defs, base, sysPrompt, keepResult := withSessionTools(session, red, spec.Name, croot, defs, base, sysPrompt)
 
 		// Approved non-exec gated calls: file mutations dispatch through their
 		// own path (never the auto-run executor), everything else falls back to
@@ -314,6 +431,19 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 		repeats := agent.NewRepeatDetector()
 		autoExec = repeats.WrapExecutor(autoExec)
 		gatedExec = repeats.WrapExecutor(gatedExec)
+		// An applied edit carries the language server's verdict on the file
+		// it touched, as one applied on the session's own screen does — with
+		// the session's queue of late answers left alone, which is what
+		// childMutationHook is for.
+		//
+		// It sits outside the reduction rather than inside it, where the
+		// session's own hook sits. A verdict is bounded by the server that
+		// gave it and by this package's own caps, so there is nothing for the
+		// reduction to do to it, and a block replaced by a notice saying an
+		// id can be paged would cost the child the round the block was there
+		// to save. The vault's scrub is outside both, so the text still
+		// passes through it.
+		gatedExec = withDiagnostics(childMutationHook(session.lsp), gatedExec)
 
 		streamDefs := defs
 		// The child's model is resolved by the supervisor (spawn argument →
@@ -380,6 +510,12 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			Summarizer: newSummarizer(cfg, env, ledger, cfg.SubagentSummaryEnabled()),
 			Steering:   steering(cfg, env.prompts),
 			Retries:    cfg.Behavior.ProviderRetries,
+			// What the child's window-recovery step measures against: the
+			// downloaded table's answer for the model this child was routed
+			// to, which is routinely not the session's, and what its own
+			// definitions cost on every request it makes.
+			Window:     childWindow(prices, childModel),
+			ToolTokens: childToolTokens(streamDefs),
 		}, nil
 	}
 
