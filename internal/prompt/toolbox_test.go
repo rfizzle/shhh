@@ -85,7 +85,7 @@ func TestFindingThings_ReachesEveryInvestigatingPrompt(t *testing.T) {
 		name, prompt, rules string
 	}{
 		{"agent", BuildAgent(testShell()), findingThings},
-		{"researcher", BuildResearcher(testShell()), findingThingsBrief},
+		{"researcher", BuildResearcher(testShell(), WebTools{Fetch: true, Search: true}), findingThingsBrief},
 		{"writer", BuildWriter(testShell()), findingThingsBrief},
 		{"profile", profile, findingThingsBrief},
 	} {

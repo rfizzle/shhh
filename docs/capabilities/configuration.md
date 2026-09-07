@@ -52,6 +52,7 @@ clone of it, or one that reaches past the tree onto the machine:
 | `provider.api_key`, `web.search_api_key` | a credential in a checkout is a credential in every clone of it |
 | `provider.api_key_env`, `web.search_api_key_env` | it would let the checkout choose which of your variables is sent as a key |
 | `web.allow_hosts` | it would let the checkout decide where a session's reads leave for; a checkout may add to `web.deny_hosts`, and only add |
+| `web.search_url` | it would let the checkout decide which machine every search in the session is sent to |
 | `secrets.env` | it declares which of your environment variables a session may spend, which is about the machine rather than the tree |
 | `[sandbox]` | it decides what a contained command may reach, which is the containment itself |
 | `[mcp.servers]` | a server is a program to start, and a checkout names its servers in `.shhh/mcp.json` instead |
@@ -505,6 +506,33 @@ which is where a file that needs a third key should look.
 Modal editing is not this. A file moves keys inside the keyboard that already
 exists; it does not add a mode with a keyboard of its own.
 
+## Which search a session has
+
+`web.search_provider` names the backend the `web_search` tool asks, and each
+one is registered on what it needs and nothing else.
+
+| Backend | What it needs | What it is |
+|---|---|---|
+| `brave` (the default) | `web.search_api_key_env`, or `web.search_api_key` | A paid API. Without a key the tool is not registered at all, and the session reads only URLs it is given. |
+| `searxng` | `web.search_url` | A SearXNG instance you run. It takes no key. A URL with no path of its own is read as the instance's root and asked at `/search`, and the instance must list `json` under `search.formats` in its own `settings.yml`. |
+
+A backend named without what it needs leaves `web_search` unregistered rather
+than registering a tool whose every call fails, and says so on the way past.
+`shhh doctor` has a row for the backend in force; for an instance it asks the
+instance, because whether it answers in JSON is not knowable from here.
+
+Beyond the words, a search takes three parameters, and each backend maps them
+onto its own spelling:
+
+| Parameter | Takes | `brave` | `searxng` |
+|---|---|---|---|
+| `freshness` | `day`, `week`, `month`, `year` | `freshness=pd`/`pw`/`pm`/`py` | `time_range` |
+| `site` | one host | the `site:` operator in the query | the `site:` operator in the query |
+| `offset` | a page, counting from zero | `offset`, which pages no further than 9 | `pageno`, counting from one |
+
+A parameter a backend cannot express is refused by name rather than dropped —
+[`evidence.md`](evidence.md#a-search-is-refused-rather-than-widened) is why.
+
 ## Every setting
 
 Every key is declared once, and this table is that declaration printed. The
@@ -601,7 +629,8 @@ own file could hold.
 | `cache_ttl_minutes` | number | `60` | How long a cached response stays fresh. |
 | `allow_hosts` | list | (empty — every host asks the first time) | Hosts a fetch reaches without asking, in every session; an exact host, never a suffix, so `docs.python.org` does not cover `python.org`. |
 | `deny_hosts` | list | (empty — nothing is refused in advance) | Hosts no fetch reaches; read before the allow list, before a session grant and before the classifier, and no approval can allow one. |
-| `search_provider` | word: `brave` | `brave` | Which backend the web_search tool asks. |
+| `search_provider` | word: `brave`, `searxng` | `brave` | Which backend the web_search tool asks: `brave`, which takes a key, or `searxng`, a self-hosted instance at `search_url`, which takes none. |
+| `search_url` | text | (unset — the searxng backend is not registered) | The SearXNG instance the web_search tool asks when `search_provider` is `searxng`; a URL with no path of its own is read as the instance's root and asked at /search. The instance must list `json` under `search.formats` in its own settings. |
 | `search_api_key` | text | (unset — web_search is not registered) | The search backend's key itself, which puts a copy of it in every copy of this file; `search_api_key_env` is the form to prefer. It is a credential: the listing says whether it is set, never what it is. |
 | `search_api_key_env` | variable | (unset — web_search is not registered) | The environment variable the search backend's key is read from at start, so the file names the key instead of holding it. It is read ahead of `search_api_key`. |
 

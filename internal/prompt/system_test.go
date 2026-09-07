@@ -193,7 +193,7 @@ func TestFriendlyOS(t *testing.T) {
 
 func TestBuildResearcher_Instructions(t *testing.T) {
 	info := shell.Info{Shell: "bash", OS: "linux", Cwd: "/home/user/project"}
-	got := BuildResearcher(info, "EXTRA CONTEXT")
+	got := BuildResearcher(info, WebTools{Fetch: true, Search: true}, "EXTRA CONTEXT")
 
 	for _, want := range []string{
 		"research sub-agent",
@@ -320,7 +320,7 @@ func TestEveryPromptStatesTheDate(t *testing.T) {
 	for name, got := range map[string]string{
 		"one-shot":     Build(info),
 		"agent":        BuildAgent(info),
-		"researcher":   BuildResearcher(info),
+		"researcher":   BuildResearcher(info, WebTools{Fetch: true, Search: true}),
 		"reviewer":     BuildReviewer(info),
 		"writer":       BuildWriter(info),
 		"profile":      BuildProfile(info, spec),
@@ -444,5 +444,47 @@ func TestTheAgentPromptExplainsTheTreeNotice(t *testing.T) {
 	got := BuildAgent(shell.Info{Shell: "bash", OS: "linux", Cwd: "/work"})
 	if !strings.Contains(got, `"[tree: …]" message`) || !strings.Contains(got, "never who moved it") {
 		t.Errorf("the agent prompt should explain the tree notice:\n%s", got)
+	}
+}
+
+// A session is told which half of the web it has, and told it once. The
+// sentence about having no search is there exactly when no search backend is
+// registered — a researcher promised a search it does not have spends a
+// round finding that out and then guesses at the URL.
+func TestWebTools_TheFetchOnlySentenceIsThereExactlyWhenSearchIsNot(t *testing.T) {
+	info := shell.Info{Shell: "bash", OS: "linux", Cwd: "/tmp"}
+	both := BuildResearcher(info, WebTools{Fetch: true, Search: true})
+	fetchOnly := BuildResearcher(info, WebTools{Fetch: true})
+	none := BuildResearcher(info, WebTools{})
+
+	if strings.Contains(both, noSearch) {
+		t.Error("a session with a search backend was told it has none")
+	}
+	if !strings.Contains(both, "web_search") {
+		t.Error("a session with both tools was not told about search")
+	}
+	if !strings.Contains(fetchOnly, noSearch) {
+		t.Error("a session with fetch alone was not told search is missing")
+	}
+	if strings.Contains(fetchOnly, "web_search") {
+		t.Error("a session with fetch alone was told about web_search anyway")
+	}
+	if strings.Contains(none, "web_fetch") || !strings.Contains(none, "no web tools at all") {
+		t.Errorf("a session with no web tools was told about them:\n%s", none)
+	}
+
+	// A profile that researches gets the same sentence on the same terms.
+	withSearch := BuildProfile(info, ProfileSpec{Name: "auditor", Tools: []string{"read_file", "web_fetch", "web_search"}})
+	withoutSearch := BuildProfile(info, ProfileSpec{Name: "auditor", Tools: []string{"read_file", "web_fetch"}})
+	if strings.Contains(withSearch, noSearch) {
+		t.Error("a profile granted search was told it has none")
+	}
+	if !strings.Contains(withoutSearch, noSearch) {
+		t.Error("a profile granted only fetch was not told search is missing")
+	}
+	// A profile with no web tools is told nothing about the web at all.
+	noWeb := BuildProfile(info, ProfileSpec{Name: "auditor", Tools: []string{"read_file"}})
+	if strings.Contains(noWeb, noSearch) || strings.Contains(noWeb, "Web tools") {
+		t.Error("a profile with no web tools was told about the web")
 	}
 }

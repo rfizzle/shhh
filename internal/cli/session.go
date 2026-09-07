@@ -865,6 +865,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// built because the runner has no session to report to until one is
 	// open.
 	recordGateVerdicts(gate, recorder)
+	recordSearches(session.web, recorder)
 
 	// The changeset store is opened here rather than where the chat model
 	// takes it below, because a writer child starts from the parent's

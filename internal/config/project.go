@@ -112,6 +112,7 @@ var projectRefusals = []projectRefusal{
 	{"provider.api_key", "a credential in a checkout is a credential in every clone of it"},
 	{"provider.api_key_env", "it would let the checkout choose which of your variables is sent as the key"},
 	{"web.allow_hosts", "it would let the checkout decide which hosts a session reaches without being asked; a checkout may add to web.deny_hosts and only add"},
+	{"web.search_url", "it would let the checkout decide which machine every search in the session is sent to"},
 	{"web.search_api_key", "a credential in a checkout is a credential in every clone of it"},
 	{"web.search_api_key_env", "it would let the checkout choose which of your variables is sent as the search key"},
 	{"secrets.env", "it declares which of your environment variables a session may spend, which is about the machine rather than the tree"},

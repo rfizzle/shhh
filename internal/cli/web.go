@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/web"
 )
@@ -49,14 +51,26 @@ func openWebTools(cfg config.Config) *web.Toolset {
 		}
 	}
 
+	// Each backend is registered on what it needs and nothing else: Brave on
+	// its key, a SearXNG instance on its URL. A backend named without what
+	// it needs leaves search unregistered rather than registering a tool
+	// whose every call fails
+	// (docs/capabilities/evidence.md#search-has-more-than-one-backend).
 	var searcher *web.Searcher
-	if key := cfg.WebSearchAPIKey(); key != "" {
-		switch cfg.Web.SearchProvider {
-		case "", "brave":
+	switch cfg.Web.SearchProvider {
+	case "", web.ProviderBrave:
+		if key := cfg.WebSearchAPIKey(); key != "" {
 			searcher = &web.Searcher{APIKey: key}
-		default:
-			fmt.Fprintf(os.Stderr, "warning: unknown web.search_provider %q (supported: brave); web_search disabled\n", cfg.Web.SearchProvider)
 		}
+	case web.ProviderSearXNG:
+		if url := strings.TrimSpace(cfg.Web.SearchURL); url != "" {
+			searcher = &web.Searcher{Provider: web.ProviderSearXNG, Endpoint: url}
+		} else {
+			fmt.Fprintln(os.Stderr, "warning: web.search_provider is searxng but web.search_url names no instance; web_search disabled")
+		}
+	default:
+		fmt.Fprintf(os.Stderr, "warning: unknown web.search_provider %q (supported: %s, %s); web_search disabled\n",
+			cfg.Web.SearchProvider, web.ProviderBrave, web.ProviderSearXNG)
 	}
 
 	ts := web.NewToolset(fetcher, searcher)
@@ -66,4 +80,22 @@ func openWebTools(cfg config.Config) *web.Toolset {
 	// slowest call in the session.
 	ts.PDFText = web.DetectPDFText()
 	return ts
+}
+
+// recordSearches points a session's web tools at its record, so every search
+// lands beside the rest of what the session did under the backend that
+// answered it — and under nothing else: the query stays in the session's own
+// sources ledger.
+//
+// It is one function rather than a line at each surface for the reason the
+// gate's is: three surfaces build a web toolset today, and a surface that
+// searched and recorded nothing produces a rate over the surfaces that
+// remembered.
+func recordSearches(ts *web.Toolset, rec *observeRecorder) {
+	if ts == nil {
+		return
+	}
+	// A session that is not recording leaves the hook nil, which the toolset
+	// reads as "record nothing".
+	ts.UseObserver(observe.SearchHook(rec.observer()))
 }

@@ -350,6 +350,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 			summary: cfg.HeadlessSummaryEnabled(),
 		}))
 	recordGateVerdicts(qgate, l.recorder)
+	recordSearches(session.web, l.recorder)
 
 	// The events a client reads are the run's own, written by the same
 	// encoder to a writer that hands each finished line to the protocol

@@ -25,6 +25,7 @@ import (
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/todo/run"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/web"
 )
 
 // Every check's name has to fit the eight-column verb field with a gap
@@ -1058,5 +1059,88 @@ func TestReadWordings_NamesEveryFileItCouldNotRead(t *testing.T) {
 	}
 	if failed != 2 {
 		t.Fatalf("the reading stopped early: %+v", rows)
+	}
+}
+
+// A machine with no key and no instance is not broken — it has no search,
+// and the row says so and names the two ways to get one rather than failing.
+func TestDoctorSearch_NoBackendIsNotAFailure(t *testing.T) {
+	f := doctorSearchBrave(false)
+	if f.State != components.DoctorSkipped {
+		t.Fatalf("a machine with no search failed a check: %+v", f)
+	}
+	joined := strings.Join(f.Fix, "\n")
+	if !strings.Contains(joined, "search_api_key_env") || !strings.Contains(joined, web.ProviderSearXNG) {
+		t.Errorf("the row does not name both backends:\n%s", joined)
+	}
+	if got := doctorSearchBrave(true); got.Outcome != "ok" || got.Subject != web.ProviderBrave {
+		t.Errorf("a configured key did not pass: %+v", got)
+	}
+}
+
+// The instance that answers its results page instead of JSON is the reason
+// this row reaches the network at all: the search itself would come back
+// holding nothing, which reads as a web with no answer on it. The fix names
+// the instance's own setting.
+func TestDoctorSearch_AnInstanceAnsweringHTML(t *testing.T) {
+	f := doctorSearchInstance("https://searx.example/search", web.ErrSearXNGFormat)
+	if f.State != components.DoctorWarned {
+		t.Fatalf("an instance answering HTML passed: %+v", f)
+	}
+	joined := strings.Join(f.Fix, "\n")
+	if !strings.Contains(joined, "search.formats") || !strings.Contains(joined, "json") {
+		t.Errorf("the fix does not name the format setting:\n%s", joined)
+	}
+	if got := doctorSearchInstance("https://searx.example/search", nil); got.Outcome != "ok" {
+		t.Errorf("a working instance did not pass: %+v", got)
+	}
+	if got := doctorSearchInstance("https://searx.example/search", errors.New("connection refused")); got.Outcome != "unreachable" {
+		t.Errorf("an instance that is down was not reported as such: %+v", got)
+	}
+}
+
+// The probe reads the configured backend and asks only the instance — and
+// only when one is named. Nothing here reaches the network: the request is
+// the same stub point the search endpoint override is.
+func TestProbeSearch_ReadsTheConfiguredBackend(t *testing.T) {
+	was := searxngCheck
+	t.Cleanup(func() { searxngCheck = was })
+
+	var asked string
+	searxngCheck = func(_ context.Context, endpoint string) error {
+		asked = endpoint
+		return web.ErrSearXNGFormat
+	}
+
+	cfg := config.Config{}
+	cfg.Web.SearchProvider = web.ProviderSearXNG
+	cfg.Web.SearchURL = "https://searx.example/search"
+	f := probeSearch(t.Context(), cfg)
+	if asked != cfg.Web.SearchURL {
+		t.Errorf("the probe asked %q, want the configured instance", asked)
+	}
+	if f.Outcome != "wrong format" {
+		t.Errorf("the instance's answer did not reach the row: %+v", f)
+	}
+
+	// A backend named with nothing to reach is a warning about a setting,
+	// and asks nothing.
+	asked = ""
+	cfg.Web.SearchURL = ""
+	if f := probeSearch(t.Context(), cfg); f.Outcome != "unconfigured" || asked != "" {
+		t.Errorf("searxng with no instance: %+v (asked %q)", f, asked)
+	}
+
+	// Brave is never reached: a diagnostic does not spend a request on a
+	// paid endpoint.
+	asked = ""
+	cfg.Web.SearchProvider = ""
+	if f := probeSearch(t.Context(), cfg); f.Outcome != "off" || asked != "" {
+		t.Errorf("the default backend: %+v (asked %q)", f, asked)
+	}
+
+	cfg.Web.SearchProvider = "duckduckgo"
+	if f := probeSearch(t.Context(), cfg); f.Outcome != "unusable" || !strings.Contains(f.Detail, "duckduckgo") {
+		t.Errorf("an unknown backend was not named: %+v", f)
 	}
 }

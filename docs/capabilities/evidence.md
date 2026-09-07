@@ -159,6 +159,56 @@ the trim goes ahead, because the request that provoked it still has to fit,
 and a session whose store is failing is exactly the session that most needs
 the window back.
 
+## Search has more than one backend
+
+Search was one product's defaults, which meant a machine without a paid key
+had no search at all. There are two backends now, and they answer the same
+tool in the same three fields — a title, a URL and a snippet — so what the
+model reads does not depend on which one a machine happens to have.
+
+Brave is a paid API with a key. A SearXNG instance is a metasearch front end
+somebody runs themselves; it takes no key, and it is named by its URL because
+it is their own machine and there is nowhere to default it to. An instance
+serves its results as JSON only when it has been told to, and one that has
+not answers with the page it serves a browser — the search then holds
+nothing, which reads as a web with no answer on it rather than as a setting
+one line away. That is a check `shhh doctor` makes, against the instance
+itself: whether it will answer in JSON is not something this side can know
+without asking.
+
+A scraped results page would need no instance at all, and is refused on two
+grounds that outlast any one engine: the markup changes with no notice, and
+the terms of every engine forbid it. Another paid API is a small addition
+once the parameters below are mapped, and can be made when somebody has a
+key for one.
+
+## A search is refused rather than widened
+
+A search takes three parameters beyond the words: an age to stay within, one
+site to stay on, and which page of results to return. Each backend maps them
+onto its own spelling — a two-letter code here, a `time_range` there, an
+operator inside the query where neither has a field for it — and the model
+writes the same call whichever backend is configured, because a parameter
+that changed spelling with a setting would make the call depend on something
+the model cannot see.
+
+Where a backend has no equivalent, the search is refused and the refusal
+names the parameter. The alternative is sending the search without it, and
+that failure is silent in the worst way: a question narrowed to last week
+comes back unnarrowed, the model reads year-old results as this week's, and
+nothing anywhere in the answer says otherwise. A refusal costs a round and is
+recoverable — the model drops the parameter, or narrows the words instead.
+
+## A session is told which half of the web it has
+
+A session may have both web tools, fetch alone, or neither, and the prompt
+says which. It used to hedge — web tools, "when registered" — and the hedge
+cost the sessions with no search the most: told it might have a search, a
+model spends a round calling one that is not there, reads the unknown-tool
+error, and then guesses at the URL the search would have found. Told plainly
+that fetch is all it has, it asks for a URL or reads the workspace, which are
+the two things that actually work.
+
 ## Related
 
 - [`coding-agent.md`](coding-agent.md) — the rounds this is spent on, and the

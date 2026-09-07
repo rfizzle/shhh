@@ -816,6 +816,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// with nobody in front of it is the one whose verdict the record most
 	// needs, because there was no one there to read it on the way past.
 	recordGateVerdicts(qgate, recorder)
+	recordSearches(session.web, recorder)
 	// The stream, where one was asked for. It is opened here rather than at
 	// the first event so that a consumer that read nothing still sees the
 	// close line, and it is nil for every other shape, which every write to

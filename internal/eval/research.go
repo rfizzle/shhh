@@ -156,7 +156,7 @@ func researchAttempt(ctx context.Context, c Case, opts Options) Attempt {
 	ts.UseLedger(ledger)
 
 	ag := agent.New(
-		[]provider.Message{{Role: provider.RoleSystem, Content: prompt.BuildResearcher(shell.Detect())}},
+		[]provider.Message{{Role: provider.RoleSystem, Content: prompt.BuildResearcher(shell.Detect(), prompt.WebTools{Fetch: true, Search: true})}},
 		func(msgs []provider.Message, choice string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 			sctx, cancel := context.WithCancel(runCtx)
 			ev, sErr := opts.Provider.StreamCompletion(sctx, msgs, provider.CompletionOpts{

@@ -342,8 +342,11 @@ var settings = []Setting{
 		Desc: "Hosts no fetch reaches; read before the allow list, before a session grant and before the classifier, and no approval can allow one.",
 	}, {
 		Key: "web.search_provider", Kind: KindEnum, Default: "brave",
-		Values: []string{"brave"},
-		Desc:   "Which backend the web_search tool asks.",
+		Values: []string{"brave", "searxng"},
+		Desc:   "Which backend the web_search tool asks: `brave`, which takes a key, or `searxng`, a self-hosted instance at `search_url`, which takes none.",
+	}, {
+		Key: "web.search_url", Kind: KindString, Default: "(unset — the searxng backend is not registered)",
+		Desc: "The SearXNG instance the web_search tool asks when `search_provider` is `searxng`; a URL with no path of its own is read as the instance's root and asked at /search. The instance must list `json` under `search.formats` in its own settings.",
 	}, {
 		Key: "web.search_api_key", Kind: KindString, Default: "(unset — web_search is not registered)", Secret: true,
 		Desc: "The search backend's key itself, which puts a copy of it in every copy of this file; `search_api_key_env` is the form to prefer.",

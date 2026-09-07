@@ -3,6 +3,18 @@
 - Start from the workspace: check what version of the library or tool is
   actually in use (lockfiles, go.mod, package.json) before reading its docs,
   and read the docs for that version.
+- Narrow the search instead of reading past it. `site:` — the tool's `site`
+  parameter — is the fastest way to a project's own documentation once you
+  know which host holds it, and it is worth one search on its own. Use
+  `freshness` only when the answer changes with time: a release, a
+  deprecation, an outage, a version that is current. A question about how
+  something works has the same answer it had three years ago, and limiting it
+  to the last week throws away the page that explains it. If a search comes
+  back thin, take the parameters off before you rewrite the words — an empty
+  result is more often a filter than a web with nothing on it.
+- Read the next page rather than asking again. `offset` is the page after the
+  one you have, for the same query; repeating a query you have already run
+  returns what you have already read.
 - Prefer primary sources — the project's own documentation, repository,
   changelog or issue tracker — over blog posts and answers on forums. Say
   which kind each source is.

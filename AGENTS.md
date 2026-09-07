@@ -153,7 +153,7 @@ internal/
   changeset/               Per-turn edit tracking (before/after content, undo support)
   scope/                   Working-scope management (directory grants, deny mask)
   diff/                    Unified diff generation and patch application
-  web/                     Web tools (fetch, search) with policy guards
+  web/                     Web tools (fetch, and search over either of two backends) with policy guards
   profile/                 Provider profile loading (gateway endpoints)
   prompt/                  System prompt construction (per-command prompts + the registered-toolset section)
   safety/                  Command safety analysis
@@ -576,6 +576,26 @@ structural tools probe PATH, with the path on `Toolset.PDFText`. The bytes go
 to a temp file, never the reader's stdin — a PDF is read by seeking to the
 table at its end. Tests put a stub `pdftotext` on PATH or set `PDFText`
 directly; this machine need not have poppler for them to run.
+
+**Two search backends live behind one `web.Searcher`** (`internal/web/search.go`
+for Brave and the dispatch, `searxng.go` for the instance), chosen by
+`web.search_provider` in `openWebTools`: each is registered on what it needs
+alone, so a backend named without its key or its URL leaves `web_search`
+unregistered rather than registering a tool whose every call fails. `Refuse`
+is the whole of the parameter contract — the tool asks it *before* `Search`,
+and that order is the point: a call the backend cannot express never becomes
+a request, so `Toolset.UseObserver` does not record one
+([`docs/capabilities/evidence.md#a-search-is-refused-rather-than-widened`](docs/capabilities/evidence.md#a-search-is-refused-rather-than-widened)).
+What reaches the record is the backend's name and nothing else
+(`observe.SearchHook`, wired by `recordSearches` at all three surfaces); the
+query stays in the ledger. `probeSearch` is the doctor's row, and it reaches
+only the SearXNG instance — never Brave, because a diagnostic does not spend
+a request on a paid endpoint. Its request is stubbed through the
+`searxngCheck` variable, the way the endpoint override stubs a search, so the
+suite never leaves the machine. `prompt.WebTools` is the other half: a
+session with fetch and no search says so in the researcher and profile
+prompts, and a hedge there is what sent a searchless model looking for a
+tool it did not have.
 
 ### Provider Interface
 

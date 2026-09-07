@@ -193,6 +193,39 @@ func TestGateHook_CarriesSuiteAndVerdict(t *testing.T) {
 	}
 }
 
+func TestSearchHook_NilObserverTakesNoHook(t *testing.T) {
+	if SearchHook(Observer{}) != nil {
+		t.Fatal("an observer with no Signal must produce no hook")
+	}
+}
+
+// A search reaches the record as the backend that answered it and nothing
+// else — never the words, which are the person's question and stay in the
+// session's own ledger. A backend this build has no word for is replaced
+// rather than stored, so a setting can never choose the string.
+func TestSearchHook_CarriesTheBackendAlone(t *testing.T) {
+	var at Pos
+	var code, reason string
+	hook := SearchHook(Observer{Signal: func(p Pos, c, r string) { at, code, reason = p, c, r }})
+	if hook == nil {
+		t.Fatal("expected a hook")
+	}
+	hook(SearchSearXNG)
+	if code != SignalSearch || reason != SearchSearXNG {
+		t.Fatalf("hook recorded %q/%q, want %s/%s", code, reason, SignalSearch, SearchSearXNG)
+	}
+	if at != (Pos{}) {
+		t.Fatalf("a toolset holds no position, got %+v", at)
+	}
+	hook("kagi")
+	if reason != SearchOther {
+		t.Fatalf("an unnamed backend recorded as %q, want %s", reason, SearchOther)
+	}
+	if got := SearchBackend(SearchBrave); got != SearchBrave {
+		t.Fatalf("SearchBackend(%q) = %q", SearchBrave, got)
+	}
+}
+
 // The session's outcome is the last turn's, read into the vocabulary the row
 // is kept in.
 func TestSessionOutcome(t *testing.T) {

@@ -59,6 +59,7 @@ import (
 	"github.com/rfizzle/shhh/internal/todo/run"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/update"
+	"github.com/rfizzle/shhh/internal/web"
 	"github.com/spf13/cobra"
 )
 
@@ -265,6 +266,7 @@ func doctorProbes() []doctorProbe {
 		{name: "config", run: probeConfig},
 		{name: "migrate", run: probeMigrate},
 		{name: "model", run: probeModel},
+		{name: "search", run: probeSearch},
 		{name: "store", run: probeStore},
 		{name: "logs", run: probeLogs},
 		{name: "reports", run: probeReports},
@@ -736,6 +738,123 @@ func probeModel(ctx context.Context, cfg config.Config) doctorFinding {
 		f.Detail = joinDetail(f.Detail, "reasoning "+effort.String())
 	}
 	return f
+}
+
+// probeSearch reads the web_search backend, and reaches only the one that is
+// somebody's own machine. Brave is a paid endpoint on the far side of the
+// internet and a diagnostic does not spend a request on it — the model row
+// above already reports a key as found rather than as accepted, for the same
+// reason. A SearXNG instance is the person's own host, and whether it will
+// answer in JSON is not something this side can know without asking.
+func probeSearch(ctx context.Context, cfg config.Config) doctorFinding {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	backend := cfg.Web.SearchProvider
+	if backend == "" {
+		backend = web.ProviderBrave
+	}
+	switch backend {
+	case web.ProviderBrave:
+		return doctorSearchBrave(cfg.WebSearchAPIKey() != "")
+	case web.ProviderSearXNG:
+		endpoint := strings.TrimSpace(cfg.Web.SearchURL)
+		if endpoint == "" {
+			return doctorSearchNoInstance()
+		}
+		return doctorSearchInstance(endpoint, searxngCheck(ctx, endpoint))
+	}
+	return doctorSearchUnknown(backend)
+}
+
+// searxngCheck is the instance request, a variable so the suite can answer
+// for an instance without one running — the same shape the search endpoint
+// override takes.
+var searxngCheck = web.CheckSearXNG
+
+func doctorSearchBrave(haveKey bool) doctorFinding {
+	if !haveKey {
+		// A machine with no key is not broken: it has no search. The row
+		// states what is not there rather than claiming a fault, the way the
+		// container-engine row does for a sandbox nothing asked for.
+		return doctorFinding{
+			Subject:     "no web search",
+			Outcome:     "off",
+			State:       components.DoctorSkipped,
+			Consequence: "web_search is not registered; a session reads the URLs it is given and the workspace",
+			FixLabel:    "show the two backends",
+			Fix: []string{
+				"shhh config set web.search_api_key_env BRAVE_API_KEY   a paid key, named rather than held",
+				"shhh config set web.search_provider searxng            an instance you run, which takes none",
+			},
+		}
+	}
+	return doctorFinding{Subject: web.ProviderBrave, Detail: "key found", Outcome: "ok"}
+}
+
+func doctorSearchNoInstance() doctorFinding {
+	return doctorFinding{
+		Subject: "searxng names no instance", Outcome: "unconfigured",
+		State:       components.DoctorWarned,
+		Consequence: "web_search is not registered, and the session reads only URLs it is given",
+		FixLabel:    "show the setting to fill in",
+		Fix:         []string{"shhh config set web.search_url https://searx.example.org/search"},
+	}
+}
+
+// doctorSearchInstance reports what the instance answered. An instance that
+// serves its results page instead of JSON is the failure this row exists
+// for: the search itself would come back holding nothing, which reads as a
+// web with no answer on it rather than as a setting one line away
+// (docs/capabilities/evidence.md#search-has-more-than-one-backend).
+func doctorSearchInstance(endpoint string, err error) doctorFinding {
+	switch {
+	case err == nil:
+		return doctorFinding{Subject: shortURL(endpoint), Detail: "answers JSON", Outcome: "ok"}
+	case errors.Is(err, web.ErrSearXNGFormat):
+		return doctorFinding{
+			Subject: shortURL(endpoint), Detail: "answers HTML, not JSON", Outcome: "wrong format",
+			State:       components.DoctorWarned,
+			Consequence: "every search comes back empty, as though the web held nothing",
+			FixLabel:    "show the instance setting to change",
+			Fix: []string{
+				"in the instance's settings.yml, list json under search.formats:",
+				"    search:",
+				"      formats: [html, json]",
+				"then restart the instance",
+			},
+		}
+	}
+	return doctorFinding{
+		Subject: shortURL(endpoint), Detail: err.Error(), Outcome: "unreachable",
+		State:       components.DoctorWarned,
+		Consequence: "every search fails until the instance answers",
+		FixLabel:    "show the place to check",
+		Fix:         []string{"curl -s " + shortURL(endpoint) + "?q=shhh&format=json | head -c 200"},
+	}
+}
+
+func doctorSearchUnknown(name string) doctorFinding {
+	return doctorFinding{
+		Subject: "unknown search backend", Detail: name, Outcome: "unusable",
+		State:       components.DoctorWarned,
+		Consequence: "web_search is not registered at all",
+		FixLabel:    "show the backends there are",
+		Fix: []string{
+			"shhh config set web.search_provider " + web.ProviderBrave + "     a paid key",
+			"shhh config set web.search_provider " + web.ProviderSearXNG + "   an instance you run",
+		},
+	}
+}
+
+// shortURL is a URL cut to the row's width, keeping the host and the head of
+// the path — which is what tells two instances apart.
+func shortURL(raw string) string {
+	const max = 48
+	if len(raw) <= max {
+		return raw
+	}
+	return raw[:max-1] + "…"
 }
 
 // doctorModelFinding reads the same walk the no-provider card reads:
@@ -1690,6 +1809,8 @@ func doctorQueuedSubject(name string) string {
 		return "whether this machine is still shaped an older way"
 	case "model":
 		return "the provider and where its key comes from"
+	case "search":
+		return "the backend a session searches the web with"
 	case "store":
 		return "the local store"
 	case "logs":

@@ -356,9 +356,15 @@ type WebConfig struct {
 	// list, before a session grant and before the classifier, and no
 	// approval reaches past it.
 	DenyHosts []string `toml:"deny_hosts"`
-	// SearchProvider names the web_search backend; "brave" (the default) is
-	// the only provider so far.
+	// SearchProvider names the web_search backend: "brave" (the default),
+	// which needs a key, or "searxng", a self-hosted instance at SearchURL,
+	// which needs none.
+	// See docs/capabilities/evidence.md#search-has-more-than-one-backend.
 	SearchProvider string `toml:"search_provider"`
+	// SearchURL is the SearXNG instance web_search asks. It is what makes
+	// that backend registered at all — the instance is the person's own
+	// machine, so there is nowhere to default it to.
+	SearchURL string `toml:"search_url"`
 	// SearchAPIKey enables the web_search tool; without it the tool is not
 	// registered. It holds the key itself, so every copy of this file is a
 	// copy of the key — SearchAPIKeyEnv is the form to prefer, and this one

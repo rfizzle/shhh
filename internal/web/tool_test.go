@@ -494,3 +494,59 @@ func TestFormatFetchResult_PDFPastTheCeiling(t *testing.T) {
 		t.Error("the ceiling is said before the text, not after it")
 	}
 }
+
+// The narrowing parameters reach the wire, and a value the backend cannot
+// express comes back as a refusal naming it rather than as a search that
+// quietly dropped it.
+func TestToolset_SearchParameters(t *testing.T) {
+	srv, sent := stubSearch(t, braveFixture)
+	ts := NewToolset(NewFetcher(Policy{}), &Searcher{APIKey: "k", Endpoint: srv.URL})
+
+	if _, err := ts.Execute(Orchestrator, SearchToolName,
+		json.RawMessage(`{"query":"generics","freshness":"week","site":"go.dev","offset":1}`)); err != nil {
+		t.Fatalf("Execute: %v", err)
+	}
+	q := sent()
+	if q.Get("freshness") != "pw" || q.Get("offset") != "1" || q.Get("q") != "generics site:go.dev" {
+		t.Errorf("the parameters did not reach the wire: %v", q)
+	}
+
+	_, err := ts.Execute(Orchestrator, SearchToolName, json.RawMessage(`{"query":"q","freshness":"hour"}`))
+	if err == nil || !strings.Contains(err.Error(), "freshness") {
+		t.Fatalf("err = %v, want the parameter refused by name", err)
+	}
+
+	// A site is one host: a phrase would become two words of the query and
+	// filter nothing.
+	if _, err := ts.Execute(Orchestrator, SearchToolName,
+		json.RawMessage(`{"query":"q","site":"go dev"}`)); err == nil {
+		t.Error("a site with a space in it was accepted")
+	}
+}
+
+// The record of a search is the backend that answered and nothing else. The
+// query stays in the ledger, which is the session's own.
+func TestToolset_SearchIsRecordedByBackendAlone(t *testing.T) {
+	srv, _ := stubSearch(t, braveFixture)
+	var seen []string
+	ts := NewToolset(NewFetcher(Policy{}), &Searcher{APIKey: "k", Endpoint: srv.URL})
+	ts.UseObserver(func(provider string) { seen = append(seen, provider) })
+
+	if _, err := ts.Execute(Orchestrator, SearchToolName,
+		json.RawMessage(`{"query":"a private question"}`)); err != nil {
+		t.Fatal(err)
+	}
+	if len(seen) != 1 || seen[0] != ProviderBrave {
+		t.Fatalf("recorded %v, want one row naming %q", seen, ProviderBrave)
+	}
+
+	// A call the backend refuses never becomes a request, so nothing
+	// records one.
+	if _, err := ts.Execute(Orchestrator, SearchToolName,
+		json.RawMessage(`{"query":"q","freshness":"hour"}`)); err == nil {
+		t.Fatal("expected a refusal")
+	}
+	if len(seen) != 1 {
+		t.Errorf("a refused search was recorded as a request: %v", seen)
+	}
+}

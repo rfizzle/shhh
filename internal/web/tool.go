@@ -3,6 +3,7 @@ package web
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"mime"
 	"net/url"
@@ -65,6 +66,10 @@ type Toolset struct {
 	// ledger is the session's record of what it read, installed by
 	// UseLedger; nil is a session that keeps none.
 	ledger *Ledger
+
+	// observe reports a search to the session record, installed by
+	// UseObserver; nil is a session that records nothing.
+	observe func(provider string)
 }
 
 // NewToolset builds the session toolset.
@@ -100,6 +105,21 @@ func (t *Toolset) UseEvidence(keep KeepFunc, scrub func(string) string) {
 // See docs/capabilities/chat.md#what-was-read.
 func (t *Toolset) UseLedger(l *Ledger) { t.ledger = l }
 
+// UseObserver points the search tool at the session record: report is given
+// the name of the backend a search was asked of, and nothing else.
+//
+// The name and nothing else is the whole of it. What was searched for is a
+// question the person asked, and it stays in the ledger and the transcript,
+// which are the session's own; the record is exported and read by people who
+// were not there. Which backend answered is what a reading of the record
+// needs — a machine searching a self-hosted instance and one spending a paid
+// key are different facts about how research is being paid for.
+// See docs/capabilities/sessions-and-memory.md#observations-are-what-the-session-did.
+//
+// Installed once, while the session registers its tools and before any call
+// runs, like the evidence store and the ledger above it.
+func (t *Toolset) UseObserver(report func(provider string)) { t.observe = report }
+
 // Definitions returns the provider tool definitions to register.
 func (t *Toolset) Definitions() []provider.Tool {
 	defs := []provider.Tool{{
@@ -117,14 +137,23 @@ func (t *Toolset) Definitions() []provider.Tool {
 		}`),
 	}}
 	if t.Searcher != nil {
+		// The three narrowing parameters are described whatever the backend
+		// is. A backend that cannot express one refuses the call by naming
+		// it, which is a thing the model can act on; a schema that varied
+		// with a setting nobody can see is not
+		// (docs/capabilities/evidence.md#a-search-is-refused-rather-than-widened).
 		defs = append(defs, provider.Tool{
-			Name:        SearchToolName,
-			Description: "Search the web and return the top results (title, URL, description). Use web_fetch to read a result's full content.",
+			Name: SearchToolName,
+			Description: "Search the web (" + t.Searcher.Name() + ") and return the top results (title, URL, description). " +
+				"Use web_fetch to read a result's full content.",
 			Parameters: json.RawMessage(`{
 				"type": "object",
 				"properties": {
 					"query": {"type": "string", "description": "Search query"},
-					"count": {"type": "integer", "description": "Number of results (1-10, default 10)"}
+					"count": {"type": "integer", "description": "Number of results (1-10, default 10)"},
+					"freshness": {"type": "string", "enum": ["day", "week", "month", "year"], "description": "Only results published within the last day, week, month or year"},
+					"site": {"type": "string", "description": "Only pages on this host, e.g. go.dev"},
+					"offset": {"type": "integer", "description": "Which page of results for the same query, counting from 0; use it to read on rather than repeating the query"}
 				},
 				"required": ["query"]
 			}`),
@@ -464,8 +493,11 @@ func scriptShell(text string, bodyBytes int) string {
 }
 
 type searchArgs struct {
-	Query string `json:"query"`
-	Count int    `json:"count"`
+	Query     string `json:"query"`
+	Count     int    `json:"count"`
+	Freshness string `json:"freshness"`
+	Site      string `json:"site"`
+	Offset    int    `json:"offset"`
 }
 
 func (t *Toolset) executeSearch(agent string, args json.RawMessage) (string, error) {
@@ -476,7 +508,30 @@ func (t *Toolset) executeSearch(agent string, args json.RawMessage) (string, err
 	if strings.TrimSpace(a.Query) == "" {
 		return "", fmt.Errorf("query is required")
 	}
-	results, err := t.Searcher.Search(context.Background(), a.Query, a.Count)
+	// A site is one host and goes into the query as an operator, so a value
+	// with a space in it would silently become two words of the search
+	// instead of a filter.
+	site := strings.TrimSpace(a.Site)
+	if strings.ContainsAny(site, " \t") {
+		return "", fmt.Errorf("site is one host, not a phrase: %q", a.Site)
+	}
+	q := SearchQuery{
+		Query: strings.TrimSpace(a.Query), Count: a.Count,
+		Freshness: strings.TrimSpace(a.Freshness), Site: site, Offset: a.Offset,
+	}
+	// Asked before the search rather than after it: a call the backend
+	// cannot express never leaves the machine, so it is not a request and
+	// nothing records it as one.
+	if refusal := t.Searcher.Refuse(q); refusal != "" {
+		return "", errors.New(refusal)
+	}
+	results, err := t.Searcher.Search(context.Background(), q)
+	// The request is reported whether or not it came back with anything: a
+	// backend that answers nothing and one that answers badly are the same
+	// event to a rate over how often a session searches.
+	if t.observe != nil {
+		t.observe(t.Searcher.Name())
+	}
 	if err != nil {
 		return "", err
 	}
@@ -485,7 +540,7 @@ func (t *Toolset) executeSearch(agent string, args json.RawMessage) (string, err
 	// asking where an answer came from is owed the query that found it, and
 	// a session that searched four times and read nothing is a session that
 	// answered from memory.
-	t.ledger.Record(agent, Source{Kind: KindSearch, Query: strings.TrimSpace(a.Query), Results: len(results)})
+	t.ledger.Record(agent, Source{Kind: KindSearch, Query: searchWords(q), Results: len(results)})
 	if len(results) == 0 {
 		return "No results.", nil
 	}

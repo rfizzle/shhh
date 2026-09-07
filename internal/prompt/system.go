@@ -161,10 +161,48 @@ Make changes with write_file and edit_file rather than pasting code blocks into 
 	return base
 }
 
+// WebTools says which of the two web tools a session registered, so a prompt
+// can name what is there rather than hedge about what might be.
+//
+// The hedge is what this replaces, and it cost a session with no search the
+// most. Told it had web tools "when registered", a model that has only fetch
+// spends a round calling a search that is not there, reads the unknown-tool
+// error, and then guesses at the URL the search would have found. Told
+// plainly that fetch is all it has, it asks for a URL or reads the workspace.
+// See docs/capabilities/evidence.md#a-session-is-told-which-half-of-the-web-it-has.
+type WebTools struct {
+	Fetch  bool
+	Search bool
+}
+
+// webPages is what every prompt says about a page that came back cut and a
+// host that would not answer. It is one string because it is one set of
+// facts, and three prompts saying it three ways is three wordings to keep
+// true.
+const webPages = "A long page comes back cut, with a notice naming the evidence entry that holds the whole of it — read on from the offset it gives you, or search that entry; fetching the same URL again returns the same first slice. A host that refused the request has already been waited out once for you — find the fact on another site rather than asking that one again."
+
+// noSearch is what a session with fetch and no search is told. It says what
+// to do instead, because a prompt that only names an absence leaves the
+// model to work out what the absence means for its task.
+const noSearch = "This session has no web search: read a URL the task or the user gave you, or find the answer in the workspace, rather than reaching for a search that is not there."
+
+// researcherTools is the Tools paragraph's first sentence, naming what this
+// session can actually reach.
+func (w WebTools) researcherTools() string {
+	base := "You have read-only access to the workspace (read_file, list_directory, search, glob)"
+	switch {
+	case w.Fetch && w.Search:
+		return base + " and web research tools (web_fetch, web_search). " + webPages
+	case w.Fetch:
+		return base + " and one web tool, web_fetch. " + noSearch + " " + webPages
+	}
+	return base + ", and no web tools at all this session — the answer is in the workspace or in what the task gives you."
+}
+
 // BuildResearcher is the system prompt for researcher sub-agents:
-// read-only tools plus the web, ending in a final report — the only thing the
-// orchestrator receives.
-func BuildResearcher(info shell.Info, extra ...string) string {
+// read-only tools plus whichever half of the web the session registered,
+// ending in a final report — the only thing the orchestrator receives.
+func BuildResearcher(info shell.Info, web WebTools, extra ...string) string {
 	os := friendlyOS(info.OS)
 	base := fmt.Sprintf(`You are a research sub-agent working one delegated task for an orchestrating agent. You cannot see the orchestrator's conversation, and it only receives your final message — nothing else survives.
 
@@ -174,7 +212,7 @@ Cwd: %s
 Date: %s
 
 # Tools
-You have read-only access to the workspace (read_file, list_directory, search, glob) and, when registered, web research tools (web_fetch, web_search). A long page comes back cut, with a notice naming the evidence entry that holds the whole of it — read on from the offset it gives you, or search that entry; fetching the same URL again returns the same first slice. A host that refused the request has already been waited out once for you — find the fact on another site rather than asking that one again. You cannot edit files or run commands — do not propose to; gather facts instead.
+%s You cannot edit files or run commands — do not propose to; gather facts instead.
 
 # Working style
 - Work autonomously through the task with your tools; do not ask questions — nobody will answer mid-run.
@@ -184,7 +222,7 @@ You have read-only access to the workspace (read_file, list_directory, search, g
 
 # Final report
 Your last message IS the deliverable. Make it a self-contained report: the findings, the evidence (paths, line references, URLs), and any open questions or caveats. Do not end on a question or a promise of further work.`,
-		os, info.Cwd, today(), findingThingsBrief)
+		os, info.Cwd, today(), web.researcherTools(), findingThingsBrief)
 	if len(extra) > 0 && extra[0] != "" {
 		base += "\n\n" + extra[0]
 	}
@@ -485,7 +523,10 @@ func BuildProfile(info shell.Info, spec ProfileSpec, extra ...string) string {
 		fmt.Fprintf(&b, "Read-only tools (%s) run automatically — use them proactively instead of guessing at file contents.\n", ro)
 	}
 	if web := names("web_fetch", "web_search"); web != "" {
-		fmt.Fprintf(&b, "Web tools (%s) are available for what is not in the workspace; web_fetch may need the human's approval. A long page comes back cut, with a notice naming the evidence entry that holds the whole of it — read on from the offset it gives you rather than fetching the same URL again. A host that refused the request has already been waited out once for you — find the fact on another site rather than asking that one again.\n", web)
+		fmt.Fprintf(&b, "Web tools (%s) are available for what is not in the workspace; web_fetch may need the human's approval. %s\n", web, webPages)
+		if !have["web_search"] {
+			fmt.Fprintf(&b, "%s\n", noSearch)
+		}
 	}
 	if gated := names("execute_command", "write_file", "edit_file"); gated != "" {
 		fmt.Fprintf(&b, "%s may require the human's approval per call; a declined call returns an error result — respect the decline, don't retry the same call.\n", gated)

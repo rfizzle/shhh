@@ -230,7 +230,10 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 				gated[tools.WriteFileName] = true
 				gated[tools.EditFileName] = true
 			default:
-				sysPrompt = prompt.BuildResearcher(info, extra)
+				// The child is told which half of the web it has before it
+				// is registered below, because the sentence is part of the
+				// prompt and the prompt is built once.
+				sysPrompt = prompt.BuildResearcher(info, webToolsFor(session.web), extra)
 				defs = tools.Definitions()
 			}
 			if session.web != nil {
@@ -614,4 +617,14 @@ func childCommandRunnerUnbounded(cfg config.Config, dir string, sc *scope.Scope)
 	return func(ctx context.Context, command string) (string, int) {
 		return runner.RunCaptureIn(ctx, dir, command)
 	}
+}
+
+// webToolsFor is what a child is told about the web: both tools where a
+// search backend is configured, fetch alone where none is, and neither where
+// the session registered no web tools at all.
+func webToolsFor(ts *web.Toolset) prompt.WebTools {
+	if ts == nil {
+		return prompt.WebTools{}
+	}
+	return prompt.WebTools{Fetch: true, Search: ts.Searcher != nil}
 }

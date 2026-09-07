@@ -248,6 +248,33 @@ const (
 	// Observer.Signal, because it names a subject — the suite — as well as
 	// a qualifier.
 	SignalGate = "gate"
+	// SignalSearch: a web search left the machine. Reason: the backend that
+	// answered it, from SearchBackend.
+	//
+	// The backend and nothing else. What was searched for is the person's
+	// question, and it stays in the session's own ledger and transcript;
+	// this record is exported and read by people who were not there. The
+	// backend is the part a reading of the record needs — a session
+	// searching a self-hosted instance and one spending a paid key are
+	// different facts about what research costs — and it is drawn from the
+	// closed set below so the tool's own configuration can never put a
+	// string of the person's here.
+	SignalSearch = "web-search"
+)
+
+// Search backends for SignalSearch. They are spelled out here rather than
+// read from the tools' own constants, which is the same decision the tool
+// lists further down make: this classifies rows written by every build that
+// ever wrote one, and a name read through today's constant would silently
+// reclassify every old session the day a backend is renamed.
+const (
+	SearchBrave   = "brave"
+	SearchSearXNG = "searxng"
+	// SearchOther is a backend this build has no word for. The name reaches
+	// this package from configuration, so it is replaced rather than
+	// stored: a record that is content-free by construction cannot have one
+	// path where a setting chooses the string.
+	SearchOther = "other"
 )
 
 // Reasons for SignalTodo: how the backlog grew or changed. Drafting from a
@@ -619,6 +646,36 @@ func GateHook(o Observer) func(string, quality.Verdict) {
 			suite = GateSuiteUnknown
 		}
 		o.Gate(suite, GateVerdict(v))
+	}
+}
+
+// SearchBackend maps the configured search backend's name onto the closed
+// set the record keeps of it.
+func SearchBackend(name string) string {
+	switch name {
+	case SearchBrave:
+		return SearchBrave
+	case SearchSearXNG:
+		return SearchSearXNG
+	}
+	return SearchOther
+}
+
+// SearchHook is what a surface points the web toolset at so every search
+// reaches the record under the backend that answered it. It returns nil —
+// which the toolset reads as "record nothing" — for an observer that takes
+// no signals, so a surface wires it unconditionally.
+//
+// It carries no position, for the reason a gate run carries none: the
+// toolset a session builds is the object its children search through, and it
+// holds no turn or round of its own. The zero position is what the store
+// already reads as "the recorder had no position".
+func SearchHook(o Observer) func(string) {
+	if o.Signal == nil {
+		return nil
+	}
+	return func(name string) {
+		o.Signal(Pos{}, SignalSearch, SearchBackend(name))
 	}
 }
 

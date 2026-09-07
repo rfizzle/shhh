@@ -107,7 +107,7 @@ func TestTheSearchFixtureAnswersEveryQueryWithPages(t *testing.T) {
 	defer site.close()
 
 	s := &web.Searcher{APIKey: "fixture", Endpoint: site.base + searchPath}
-	hits, err := s.Search(context.Background(), "grebe default order", 5)
+	hits, err := s.Search(context.Background(), web.SearchQuery{Query: "grebe default order", Count: 5})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -117,7 +117,7 @@ func TestTheSearchFixtureAnswersEveryQueryWithPages(t *testing.T) {
 	if !strings.HasSuffix(hits[0].URL, "/index.html") {
 		t.Errorf("the page carrying the query's words should rank first, got %s", hits[0].URL)
 	}
-	none, err := s.Search(context.Background(), "nothing on this site at all", 5)
+	none, err := s.Search(context.Background(), web.SearchQuery{Query: "nothing on this site at all", Count: 5})
 	if err != nil || len(none) == 0 {
 		t.Errorf("a query that matches nothing must still answer: %d hits, %v", len(none), err)
 	}
