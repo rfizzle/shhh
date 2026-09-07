@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -133,10 +134,34 @@ func Definitions() []provider.Tool {
 // deliberately not executable through Execute.
 const ExecCommandName = "execute_command"
 
+// What the description has to say, and why it is four times the length it
+// used to be.
+//
+// It used to say that the command is approved and that stdout, stderr and an
+// exit code come back — 203 bytes, against `process`'s 1,200. Everything else the harness enforces the model had to discover by
+// spending a round on it: that every call is its own shell, so `cd sub` and
+// the build that follows it have to be one command line; that a command still
+// printing at the session's ceiling is moved to the background rather than
+// killed, so its output stops arriving here and starts arriving through
+// `process`; that a long result comes back as its two ends with the whole of
+// it in the evidence store, so the missing middle is a call away rather than
+// a re-run with a pipe into `tail`; and that a server or a watcher belongs in
+// `process` from the start, because started here it is a command that never
+// returns.
+//
+// What contains the commands and whether they can reach the network is the
+// one fact that is not the same in two sessions, so it is not here: it is
+// resolved per session and stated in the prompt beside the working scope.
+// See docs/capabilities/containment.md#the-model-is-told-what-its-commands-run-under.
 func ExecCommandTool() provider.Tool {
 	return provider.Tool{
-		Name:        ExecCommandName,
-		Description: "Execute a shell command on the user's machine. The user is shown the command and must approve it before it runs; a declined call returns an error result. Returns combined stdout/stderr and the exit code.",
+		Name: ExecCommandName,
+		Description: "Run a shell command in the user's working directory and return its combined stdout/stderr and exit code. " +
+			"Whether it runs straight away or is shown to the user for approval first is the session's permission mode's to decide; a declined call returns an error result. " +
+			"Each call is a fresh shell: a cd, a shell variable or a source does not carry to the next one, so chain what depends on it into one command line. " +
+			"A command still running at the session's time limit is moved to the background as a named process rather than killed, and the result says so. " +
+			"Output over 4KB comes back as its head and tail with the whole of it stored as evidence; the evidence tool reads the rest. " +
+			"Anything meant to keep running — a server, a watcher, a log tail — belongs in the process tool instead, which is where its output, its input and its stop live.",
 		Parameters: json.RawMessage(`{
 			"type": "object",
 			"properties": {
@@ -162,7 +187,66 @@ func Execute(name string, args json.RawMessage) (string, error) {
 			return d.Execute(args)
 		}
 	}
-	return "", fmt.Errorf("unknown tool: %s", name)
+	return "", UnknownTool(name, ReadOnlyNames())
+}
+
+// ReadOnlyNames is the auto-run set, in the order Execute searches it.
+func ReadOnlyNames() []string {
+	defs := ReadOnly()
+	names := make([]string, len(defs))
+	for i, d := range defs {
+		names[i] = d.Tool.Name
+	}
+	return names
+}
+
+// maxUnknownToolNames bounds the list of names an unknown-tool error carries.
+// A session with a language server, the structural binaries and two MCP
+// servers registers something like forty tools, and the whole set spelled out
+// is the better part of a kilobyte in a result whose only job is to redirect
+// one call. Six hundred bytes is around forty names at this codebase's
+// average, so the bound is reached by the sessions that have most of a
+// toolset rather than by ordinary ones, and what is dropped is counted.
+const maxUnknownToolNames = 600
+
+// UnknownTool is the error a call to a name nothing registered gets, at every
+// place that can give one: the auto-run dispatch, and the surface that
+// offered only part of the toolset. It names what is registered because the
+// caller holds that list and the model is otherwise left guessing — a model
+// that called `bash` guesses `shell` next, and the round it spends doing that
+// buys nothing the answer could not have carried.
+//
+// The names are sorted so two sessions with the same toolset give the same
+// sentence, and bounded so the answer stays a line rather than a catalogue.
+func UnknownTool(name string, registered []string) error {
+	if len(registered) == 0 {
+		return fmt.Errorf("unknown tool: %s", name)
+	}
+	sorted := append([]string{}, registered...)
+	sort.Strings(sorted)
+	// Whole names only. A bound applied to the joined string would cut one
+	// in half, and a half-name is worse than a missing one: it is a name the
+	// model can call.
+	var b strings.Builder
+	listed := 0
+	for _, n := range sorted {
+		if b.Len()+len(n)+2 > maxUnknownToolNames {
+			break
+		}
+		if listed > 0 {
+			b.WriteString(", ")
+		}
+		b.WriteString(n)
+		listed++
+	}
+	if listed == 0 {
+		return fmt.Errorf("unknown tool: %s", name)
+	}
+	list := b.String()
+	if listed < len(sorted) {
+		list = fmt.Sprintf("%s, … and %d more", list, len(sorted)-listed)
+	}
+	return fmt.Errorf("unknown tool: %s (registered: %s)", name, list)
 }
 
 // What a description tells a model to do.

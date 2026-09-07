@@ -702,6 +702,12 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// requirement earns itself: there is nobody watching to notice the
 	// ⚠ UNCONTAINED on a card nobody drew.
 	containRefusal := ""
+	// What the model is told about all of it, resolved here where it is
+	// settled and joined to the prompt below (scope.go).
+	// A ceiling backgrounds a command that is still printing only where
+	// there is a supervisor to hand it to; the --sandbox branch below takes
+	// that back, having nowhere inside the container to put one.
+	cmdEnv := commandEnvironment{Ceiling: cfg.CommandTimeout(), Backgrounds: procSup != nil}
 	if opts.sandbox {
 		srun, cleanup, err := startSandbox(cmd.Context(), cfg, session.vault.Names())
 		if err != nil {
@@ -711,8 +717,14 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		run = srun
 		// The container took the same profile the spec parsed; a name the
 		// parser refused could not have started it.
+		// The mechanism is settled by the container existing, and the
+		// profile only names it: a session told nothing about the profile
+		// would still be wrong to be told nothing contains its commands.
+		cmdEnv.Mechanism = "a disposable container"
 		if profile, err := sandbox.ParseProfile(cfg.Sandbox.Profile); err == nil {
 			sandboxProfile = string(profile)
+			cmdEnv.Profile = string(profile)
+			cmdEnv.Network = profile != sandbox.ProfileWorkspaceNetless
 		}
 		if procSup != nil {
 			// Approved commands exec inside the disposable container and a
@@ -736,6 +748,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 			// process. It is stopped at the ceiling instead.
 			// See docs/capabilities/containment.md#a-started-process-is-contained-too.
 			runner.SetAdopter(nil)
+			cmdEnv.Backgrounds = false
 		}
 	} else {
 		containment, err := buildContainment(cfg, sc, procSup)
@@ -748,6 +761,14 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		}
 		containRefusal = containment.Refusal
 		hookWrap = containment.Wrap
+		cmdEnv.Mechanism, cmdEnv.Profile = containment.Mechanism, containment.Profile
+		cmdEnv.Network, cmdEnv.Refused = containment.Network, containment.Refusal != ""
+	}
+	// A conversation reaches all of this and can run none of it, so it is
+	// told about the containment only where it has the tool the containment
+	// is about.
+	if offersCommands(session.toolDefs) {
+		env.addBuiltPrompt(commandEnvironmentBlock(cmdEnv))
 	}
 	run = scrubRunner(session.vault, run)
 	// The ceiling matters most here. A session has a reader who can cancel a
@@ -1559,16 +1580,20 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist [
 // something else is a mistake either way; this decides which mistake it is,
 // and the answer is the one the dispatch chain gives a name it does not know,
 // so the model reads the same sentence whichever side of the gate the name
-// fell on.
+// fell on. That sentence names what this surface did register, which is the
+// half the model cannot work out for itself: told only that `write_file` is
+// unknown, a conversation's model reaches for `edit_file` next.
 // See docs/capabilities/chat.md#chat-changes-nothing.
 func onlyRegistered(defs []provider.Tool, next func(provider.ToolCall) string) func(provider.ToolCall) string {
 	offered := make(map[string]bool, len(defs))
+	names := make([]string, 0, len(defs))
 	for _, d := range defs {
 		offered[d.Name] = true
+		names = append(names, d.Name)
 	}
 	return func(tc provider.ToolCall) string {
 		if !offered[tc.Name] {
-			return "error: unknown tool: " + tc.Name
+			return "error: " + tools.UnknownTool(tc.Name, names).Error()
 		}
 		return next(tc)
 	}

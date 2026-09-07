@@ -1599,3 +1599,19 @@ func TestHeadlessApprover_RequiredContainmentRefusesAProcessStart(t *testing.T) 
 		t.Fatalf("nothing may be spawned, %d running", sup.Running())
 	}
 }
+
+func TestOnlyRegistered_NamesWhatThisRunOffered(t *testing.T) {
+	defs := []provider.Tool{{Name: "read_file"}, {Name: "search"}, {Name: "glob"}}
+	resolve := onlyRegistered(defs, func(provider.ToolCall) string { return "ran" })
+
+	if got := resolve(provider.ToolCall{Name: "search"}); got != "ran" {
+		t.Fatalf("a registered name goes through, got %q", got)
+	}
+	got := resolve(provider.ToolCall{Name: "write_file"})
+	if !strings.Contains(got, "unknown tool: write_file") {
+		t.Fatalf("the name that was called should be named, got %q", got)
+	}
+	if !strings.Contains(got, "glob, read_file, search") {
+		t.Fatalf("the offered set should be named, sorted, got %q", got)
+	}
+}

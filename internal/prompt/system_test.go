@@ -146,6 +146,22 @@ func TestBuildAgent_AgentInstructions(t *testing.T) {
 	}
 }
 
+// The approval sentence has to be true in all four permission modes: --yes,
+// accept-edits and auto each run some or all of the gated tools without
+// asking anybody, and a model told its edits are waiting on the user stops to
+// report work it has already done.
+func TestBuildAgent_ApprovalSentenceIsModeNeutral(t *testing.T) {
+	got := BuildAgent(shell.Info{Shell: "bash", OS: "linux", Cwd: "/work"})
+	if !strings.Contains(got, "the session's permission mode") {
+		t.Errorf("the mode should be named as what decides, got:\n%s", got)
+	}
+	for _, absent := range []string{"require their approval", "must approve"} {
+		if strings.Contains(got, absent) {
+			t.Errorf("the prompt claims every gated call asks (%q), which three modes make false", absent)
+		}
+	}
+}
+
 func TestBuildAgent_ContainsEnvironment(t *testing.T) {
 	info := shell.Info{Shell: "zsh", OS: "darwin", Cwd: "/Users/me/proj"}
 	got := BuildAgent(info)

@@ -312,6 +312,20 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		run = containment.Run
 		sandboxProfile = containment.Profile
 	}
+	// What the model is told about it, beside where it was told the work is
+	// (scope.go). It is joined to the prompt already built because the
+	// containment is resolved after the provider is, and the prompt had to
+	// exist for that.
+	env.addBuiltPrompt(commandEnvironmentBlock(commandEnvironment{
+		Mechanism: containment.Mechanism,
+		Profile:   containment.Profile,
+		Network:   containment.Network,
+		Refused:   containment.Refusal != "",
+		Ceiling:   cfg.CommandTimeout(),
+		// A ceiling backgrounds a command that is still printing only where
+		// there is a supervisor to hand it to (process.go).
+		Backgrounds: procSup != nil,
+	}))
 	run = scrubRunner(session.vault, run)
 	// Nobody is at a keyboard to cancel a command that will not finish, which
 	// is the same reason an unattended run bounds one.

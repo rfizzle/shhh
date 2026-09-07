@@ -305,6 +305,27 @@ answer for the same reason — outside the container is bare. The command
 ceiling answers to the same fact: there is nowhere to move a command to, so
 one that reaches it there is stopped whether or not it was still printing.
 
+## The model is told what its commands run under
+
+The mechanism, the profile it applies, whether the network is open and how
+long a command may run are resolved once, when the session opens, and stated
+in the prompt beside the working scope. They are one answer about this machine
+and this session rather than a range of possibilities, so they are said
+plainly: a hedge costs the contained sessions the most, and the model cannot
+find any of it out except by spending a round on a command that fails.
+
+The netless profile pays for the block on its own. A contained session's
+package install fails on the name lookup, which reads exactly like a broken
+resolver — and a model that was not told there is no network debugs DNS,
+retries against a second registry and asks for a proxy setting, three rounds
+spent on a wall that was never going to move. Told plainly, it says what it
+needed and works with what is already in the checkout.
+
+The ceiling is stated in the same place and for the same reason. What happens
+at it is not the same on every surface — a run whose commands are inside a
+disposable container has nowhere to move one to — so what is stated is what
+this session will actually do, not the rule in general.
+
 ## What is reported is what is in force
 
 Every surface that mentions containment reports the mechanism actually

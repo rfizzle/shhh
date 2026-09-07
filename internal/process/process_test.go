@@ -87,6 +87,49 @@ func TestStart_InstantFailureReportsExit(t *testing.T) {
 	}
 }
 
+func TestStart_DeadProcessCarriesItsStderr(t *testing.T) {
+	s := newTestSupervisor(t, nil)
+	s.probe = startProbe // the full probe window is what this test exercises
+	out := execute(t, s, `{"action":"start","name":"boom","command":"echo 'nope: command not found' >&2; exit 127"}`)
+	if !strings.Contains(out, "last stderr:") || !strings.Contains(out, "nope: command not found") {
+		t.Fatalf("a start that died in its probe window should carry what it printed, got %q", out)
+	}
+	// The status action answers about processes that are mostly still
+	// running, and is deliberately left as it was.
+	if st := execute(t, s, `{"action":"status","name":"boom"}`); strings.Contains(st, "last stderr:") {
+		t.Fatalf("status should be unchanged, got %q", st)
+	}
+	if ps := s.List(); strings.Contains(ps, "last stderr:") {
+		t.Fatalf("the process list should be unchanged, got %q", ps)
+	}
+}
+
+func TestStart_DeadProcessFallsBackToStdout(t *testing.T) {
+	s := newTestSupervisor(t, nil)
+	s.probe = startProbe
+	out := execute(t, s, `{"action":"start","name":"quiet","command":"echo only-stdout; exit 3"}`)
+	if !strings.Contains(out, "last stdout:") || !strings.Contains(out, "only-stdout") {
+		t.Fatalf("with an empty stderr the tail comes off stdout, got %q", out)
+	}
+}
+
+func TestStart_SilentDeathSaysNothingExtra(t *testing.T) {
+	s := newTestSupervisor(t, nil)
+	s.probe = startProbe
+	out := execute(t, s, `{"action":"start","name":"mute","command":"exit 1"}`)
+	if strings.Contains(out, "last stderr:") || strings.Contains(out, "last stdout:") {
+		t.Fatalf("a process that printed nothing has no tail to show, got %q", out)
+	}
+}
+
+func TestStart_RunningProcessHasNoTail(t *testing.T) {
+	s := newTestSupervisor(t, nil)
+	out := execute(t, s, `{"action":"start","name":"alive","command":"echo up; sleep 30"}`)
+	if strings.Contains(out, "last stdout:") {
+		t.Fatalf("a process that is still running has not finished saying anything, got %q", out)
+	}
+}
+
 func TestStart_Validation(t *testing.T) {
 	s := newTestSupervisor(t, nil)
 

@@ -5,9 +5,11 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/scope"
+	"github.com/rfizzle/shhh/internal/tools"
 )
 
 func testScope(t *testing.T, root string) *scope.Scope {
@@ -123,5 +125,70 @@ func TestScopePromptBlockNamesTheBoundaryAndTheWayOut(t *testing.T) {
 	}
 	if scopePromptBlock(nil) != "" {
 		t.Error("a session with no scope tells the model nothing about one")
+	}
+}
+
+func TestCommandEnvironmentBlock_NetlessSaysThereIsNoNetwork(t *testing.T) {
+	block := commandEnvironmentBlock(commandEnvironment{
+		Mechanism:   "bwrap",
+		Profile:     "workspace-netless",
+		Network:     false,
+		Ceiling:     10 * time.Minute,
+		Backgrounds: true,
+	})
+	for _, want := range []string{"bwrap", "workspace-netless", "no network", "10 minutes", "background"} {
+		if !strings.Contains(block, want) {
+			t.Errorf("a contained netless session should be told %q:\n%s", want, block)
+		}
+	}
+	// The failure this exists to stop: a name lookup read as a broken host.
+	if !strings.Contains(block, "resolver") {
+		t.Errorf("the block should say what a failed lookup is not:\n%s", block)
+	}
+}
+
+func TestCommandEnvironmentBlock_SaysWhenNothingContainsACommand(t *testing.T) {
+	block := commandEnvironmentBlock(commandEnvironment{Ceiling: time.Minute})
+	if !strings.Contains(block, "Nothing contains") {
+		t.Errorf("an uncontained session is told so plainly:\n%s", block)
+	}
+	if strings.Contains(block, "no network") {
+		t.Errorf("nothing wrapping the command means nothing restricting it:\n%s", block)
+	}
+	if !strings.Contains(block, "1 minute") {
+		t.Errorf("the ceiling is spelled as a sentence needs it:\n%s", block)
+	}
+}
+
+func TestCommandEnvironmentBlock_TheCeilingSaysWhatThisSurfaceDoes(t *testing.T) {
+	moved := commandEnvironmentBlock(commandEnvironment{Ceiling: time.Minute, Backgrounds: true})
+	if !strings.Contains(moved, "moved to the background") {
+		t.Errorf("a surface with a supervisor moves the command:\n%s", moved)
+	}
+	stopped := commandEnvironmentBlock(commandEnvironment{Ceiling: time.Minute})
+	if strings.Contains(stopped, "moved to the background") || !strings.Contains(stopped, "is stopped") {
+		t.Errorf("a surface with nowhere to move one stops it:\n%s", stopped)
+	}
+	if unbounded := commandEnvironmentBlock(commandEnvironment{}); strings.Contains(unbounded, "still running after") {
+		t.Errorf("a session that bounds nothing claims no ceiling:\n%s", unbounded)
+	}
+}
+
+func TestCommandEnvironmentBlock_RefusalIsSaidInsteadOfAProfile(t *testing.T) {
+	block := commandEnvironmentBlock(commandEnvironment{Refused: true, Ceiling: time.Minute})
+	if !strings.Contains(block, "refused before it runs") {
+		t.Errorf("a session that requires containment it cannot get says so:\n%s", block)
+	}
+	if strings.Contains(block, "still running after") {
+		t.Errorf("a command that cannot run has no ceiling to reach:\n%s", block)
+	}
+}
+
+func TestOffersCommands_AConversationIsToldNothingAboutRunningOne(t *testing.T) {
+	if offersCommands(tools.Definitions()) {
+		t.Error("a read-only toolset has no command to describe the environment of")
+	}
+	if !offersCommands(tools.DefinitionsWithExec()) {
+		t.Error("a toolset with execute_command does")
 	}
 }

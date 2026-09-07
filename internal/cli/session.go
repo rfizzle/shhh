@@ -409,6 +409,23 @@ func (e *sessionEnv) workspaceBlock() string {
 	return e.workspace()
 }
 
+// addBuiltPrompt joins a block to a system prompt that has already been
+// built, and to the message carrying it. Most of what the model is told is
+// folded in before the prompt is built, but a few facts are not known that
+// early — what contains this session's commands is resolved after the
+// provider is, and a session-start hook has not run yet — and a block that
+// waited for the next prompt to be built would be a block the session it was
+// resolved for never sees.
+func (e *sessionEnv) addBuiltPrompt(block string) {
+	if e == nil || block == "" {
+		return
+	}
+	e.sysPrompt = prompt.CombineExtra(e.sysPrompt, block)
+	if len(e.messages) > 0 && e.messages[0].Role == provider.RoleSystem {
+		e.messages[0].Content = e.sysPrompt
+	}
+}
+
 func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledger) (*sessionEnv, error) {
 	// --require-sandbox is folded in here rather than where containment is
 	// built, because it is not only containment that reads it: a sub-agent's
@@ -788,6 +805,24 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		if err != nil {
 			return err
 		}
+		// …and what the model is told about it, beside where it was told the
+		// work is (scope.go). It is joined to the prompt already built rather
+		// than folded in with the scope block, because the containment is
+		// resolved after the provider is and the prompt had to exist for
+		// that; it is joined to the session's own extra too, so the next
+		// /new builds a conversation that was told the same thing.
+		commandEnv := commandEnvironmentBlock(commandEnvironment{
+			Mechanism: containment.Mechanism,
+			Profile:   containment.Profile,
+			Network:   containment.Network,
+			Refused:   containment.Refusal != "",
+			Ceiling:   cfg.CommandTimeout(),
+			// A ceiling backgrounds a command that is still printing only
+			// where there is a supervisor to hand it to (process.go).
+			Backgrounds: procSup != nil,
+		})
+		env.addBuiltPrompt(commandEnv)
+		session.promptExtra = prompt.CombineExtra(session.promptExtra, commandEnv)
 	}
 
 	// The person's own commands at this session's seams (hooks.go). They are

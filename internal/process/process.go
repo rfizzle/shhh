@@ -550,7 +550,44 @@ func (s *Supervisor) start(name, command, cwd string, extraEnv map[string]string
 	case <-p.exited:
 	case <-time.After(s.probe):
 	}
-	return s.statusOf(p), nil
+	return s.startStatus(p), nil
+}
+
+// startStatus is the status block a start answers with: statusOf, plus what
+// the process printed when it is already gone by the time the probe window
+// closes.
+//
+// A start that dies in its first few hundred milliseconds is nearly always a
+// mistake in the command itself — a typo, a missing binary, a port something
+// else is already bound to — and the exit code says only that it failed. The
+// block without this says "exited (code 1)" and "43 bytes captured", which is
+// the count and not the bytes, so reading the one line that names the mistake
+// costs a second call to the same tool. It is appended only for the process
+// that is already gone: a running one has not finished saying anything yet,
+// and `status` and the /ps list answer about processes that are mostly still
+// running.
+//
+// stderr is where a failing command says why, and stdout is the fallback for
+// the process given a terminal — a terminal has one stream, so everything it
+// printed is on stdout and stderr is empty by construction.
+func (s *Supervisor) startStatus(p *proc) string {
+	block := s.statusOf(p)
+	if !p.isDone() {
+		return block
+	}
+	stream, buf := "stderr", p.stderr
+	if buf.size() == 0 {
+		stream, buf = "stdout", p.stdout
+	}
+	if buf.size() == 0 {
+		return block
+	}
+	data, _, _, _ := buf.readAt(buf.tailOffset(DefaultReadBytes), DefaultReadBytes)
+	tail := strings.TrimRight(string(data), "\n")
+	if tail == "" {
+		return block
+	}
+	return fmt.Sprintf("%s\n  last %s:\n%s", block, stream, tail)
 }
 
 // reap waits for a process, records its exit state, and stores the full log

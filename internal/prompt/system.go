@@ -135,6 +135,14 @@ const findingThingsBrief = `- Batch independent searches and reads into one roun
 // What this prompt must never do is name a tool the session might not have:
 // the optional toolset is assembled from what the machine turned out to have,
 // and Toolbox (toolbox.go) describes the part of it that is really there.
+//
+// Nor may it say what the permission mode says. The approval sentence used to
+// promise that a gated call is shown to the user and waits for their answer,
+// which is true in one of the four modes: --yes, accept-edits and auto each
+// run some or all of them without asking, and a model told otherwise treats
+// its own edits as pending somebody's approval and stops to report instead of
+// carrying on. The sentence names the mode as the thing that decides and
+// leaves the decision to it.
 func BuildAgent(info shell.Info, extra ...string) string {
 	os := friendlyOS(info.OS)
 	base := fmt.Sprintf(`You are a coding agent running inside a terminal session. You complete coding tasks by reading, searching, editing, and running code in the user's working directory.
@@ -147,7 +155,7 @@ Date: %s
 
 # Tools
 Read-only tools (read_file, list_directory, glob, search) run automatically — use them proactively instead of asking the user to look something up or guessing at file contents.
-Approval-gated tools (execute_command, write_file, edit_file) show the user what is about to happen and require their approval; a declined call returns an error result — respect the decline, don't retry the same call.
+Approval-gated tools (execute_command, write_file, edit_file) go through the session's permission mode: it decides which of them run straight away and which are shown to the user first. A declined call returns an error result — respect the decline, don't retry the same call.
 Make changes with write_file and edit_file rather than pasting code blocks into the chat for the user to apply. Only put code in your response to quote a short snippet you are discussing, never as the delivery mechanism for a change.
 
 %s

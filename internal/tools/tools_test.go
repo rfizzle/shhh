@@ -3,6 +3,7 @@ package tools
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"image"
 	"image/png"
 	"os"
@@ -37,6 +38,64 @@ func TestExecute_UnknownTool(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "unknown tool") {
 		t.Errorf("unexpected error: %v", err)
+	}
+	// The names are the half the caller holds and the model does not.
+	if !strings.Contains(err.Error(), "read_file") {
+		t.Errorf("the auto-run set should be named in the error: %v", err)
+	}
+}
+
+func TestUnknownTool_NamesTheSetSorted(t *testing.T) {
+	err := UnknownTool("bash", []string{"write_file", "read_file", "edit_file"})
+	if got, want := err.Error(), "unknown tool: bash (registered: edit_file, read_file, write_file)"; got != want {
+		t.Fatalf("UnknownTool = %q, want %q", got, want)
+	}
+	if err := UnknownTool("bash", nil); err.Error() != "unknown tool: bash" {
+		t.Fatalf("with nothing registered there is no list to give: %v", err)
+	}
+}
+
+func TestUnknownTool_BoundedToOneLine(t *testing.T) {
+	names := make([]string, 200)
+	for i := range names {
+		names[i] = fmt.Sprintf("tool_%03d", i)
+	}
+	msg := UnknownTool("bash", names).Error()
+	if len(msg) > maxUnknownToolNames+120 {
+		t.Fatalf("the error should stay a line, got %d bytes", len(msg))
+	}
+	if strings.Contains(msg, "\n") {
+		t.Fatalf("the error should be one line, got %q", msg)
+	}
+	if !strings.Contains(msg, "more") {
+		t.Fatalf("what was dropped should be counted, got %q", msg)
+	}
+	// Whole names only: a half-name is a name the model can call.
+	for _, part := range strings.Split(strings.TrimPrefix(msg, "unknown tool: bash (registered: "), ", ") {
+		if strings.HasPrefix(part, "tool_") && len(part) != len("tool_000") {
+			t.Fatalf("a name was cut in half: %q", part)
+		}
+	}
+	// And where not even the first name fits, the answer gives none rather
+	// than half of one.
+	if got := UnknownTool("bash", []string{strings.Repeat("x", maxUnknownToolNames+1)}).Error(); got != "unknown tool: bash" {
+		t.Fatalf("a name past the bound should be dropped whole, got %q", got)
+	}
+}
+
+func TestExecCommandTool_SaysWhatACommandIs(t *testing.T) {
+	desc := ExecCommandTool().Description
+	for _, want := range []string{
+		"fresh shell",     // a cd does not carry to the next call
+		"time limit",      // and what happens when one is reached
+		"background",      //
+		"evidence",        // where a long result's middle went
+		"process tool",    // where a server belongs
+		"permission mode", // and who decides whether it runs at all
+	} {
+		if !strings.Contains(desc, want) {
+			t.Errorf("execute_command's description should say %q:\n%s", want, desc)
+		}
 	}
 }
 
