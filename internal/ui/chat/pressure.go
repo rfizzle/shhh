@@ -83,7 +83,7 @@ func (m Model) pressureCardData() *components.PressureCard {
 		Window:    window,
 		Warn:      warnThresholdPercent,
 		Alert:     trimThresholdPercent,
-		Estimated: !b.Reported,
+		Estimated: b.estimated(),
 		Rows:      m.pressureRows(b),
 		// The three offers come from the same declarations the card reads a
 		// press against, so a keymap that moves one moves the offer with it

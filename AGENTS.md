@@ -549,9 +549,23 @@ the response joins the conversation, which is what makes the two figures
 describe the same messages — and `contextAccounting` applies it to the
 estimate and never to a report. `TrimOldToolResults` takes it too, because the
 caller trims against a corrected figure and shrinking that by raw estimates
-would stop the loop late. What a figure is — a report, an estimate, a
-corrected estimate — is one phrasing in `contextBreakdown.source`, on
-`/context` and `/stats` as the source line and on the rail beside the count.
+would stop the loop late. What a figure is — a report, a report with the
+rounds since estimated on top, an estimate, a corrected estimate — is one
+phrasing in `contextBreakdown.source`, on `/context` and `/stats` as the
+source line and on the rail beside the count.
+
+**A report describes the messages it counted, and nothing after them.**
+`accumulateUsage` records `contextReportedAt` — the message-list length — with
+the reported prompt count, and `contextAccounting` scales the categories of
+that prefix onto the report and adds `contextEstimateRange`'s corrected
+estimate of everything appended since. Without the index the report stands for
+the whole list, so a round that returned 400 KB of tool output moved the
+figure by zero and `trimForRequest` declined to trim a conversation far over
+its own estimate. The anchor is the prompt, not prompt plus completion:
+`vitals.lastContext` (prompt plus completion) is the burn series' sample and
+stays that, because the completion becomes a message the estimate counts for
+itself a moment later. Tool definitions and the project context belong to the
+prefix alone — they ride the front of the request once.
 
 **Compaction is a step a driver calls, not something the loop asks for**
 ([`docs/capabilities/coding-agent.md#the-window-recovers-where-nobody-is-watching`](docs/capabilities/coding-agent.md#the-window-recovers-where-nobody-is-watching)).

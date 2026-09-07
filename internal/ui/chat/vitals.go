@@ -149,8 +149,10 @@ func (v *vitals) record(model string, u provider.Usage, cost float64, priced boo
 	v.totalCost += cost
 	v.priced = v.priced || priced
 
-	// The latest request's prompt plus its completion is what the next
-	// request will roughly carry as context.
+	// What this round weighed: everything it read plus everything it wrote.
+	// It is the burn series' sample and the turn's closing figure, not the
+	// window's occupancy — that is anchored on the prompt the provider
+	// counted, and grows with the messages the round then appends.
 	v.lastContext = in + out
 	v.lastIn, v.lastCached = in, cached
 	v.current.Context = v.lastContext
@@ -293,11 +295,21 @@ type contextBreakdown struct {
 	// Corrected is true when the total is an estimate this session has
 	// measured against what the provider charged for the same messages, and
 	// scaled by what it found. It is never true beside Reported: a report is
-	// used as it arrived. The surfaces name the three cases apart, because a
+	// used as it arrived. The surfaces name the cases apart, because a
 	// figure that quietly changed what it means is worse than either a guess
 	// or a measurement.
 	Corrected bool
+	// Since is true when messages joined the conversation after the report
+	// the total is anchored on, and their estimated size was added to it.
+	// The figure is then part measurement and part guess, so a surface that
+	// still called it the provider's own would be quoting the provider for a
+	// number the provider never said.
+	Since bool
 }
+
+// estimated reports whether any part of the total is this session's own
+// arithmetic rather than something the provider counted.
+func (b contextBreakdown) estimated() bool { return !b.Reported || b.Since }
 
 func (b contextBreakdown) total() int64 {
 	return b.System + b.Project + b.Tools + b.Messages + b.ToolResults
@@ -309,6 +321,13 @@ func (b contextBreakdown) total() int64 {
 // called two things on two screens is the same defect one step later.
 func (b contextBreakdown) source() string {
 	switch {
+	case b.Reported && b.Since:
+		// Anchored on what the provider counted, with the rounds it never
+		// saw estimated on top. Naming only the anchor would put the
+		// provider's name on arithmetic it had no part in, and the phrase is
+		// kept short enough to sit on /context's occupancy row at sixty
+		// columns beside the count it qualifies.
+		return "reported plus estimate since"
 	case b.Reported:
 		return "provider-reported"
 	case b.Corrected:
@@ -322,21 +341,41 @@ func (b contextBreakdown) source() string {
 
 // contextAccounting is the single source for context occupancy: the rail's
 // CONTEXT block, /stats' breakdown and the trim thresholds all read it. It is
-// the provider's reported size where one has arrived, and this session's own
-// estimate — corrected by what earlier reports said that estimate was worth —
-// where none has.
+// the provider's reported size for the messages that report described, plus
+// this session's own estimate of everything the conversation has grown by
+// since — and where no report has arrived at all, the estimate alone,
+// corrected by what earlier reports said that estimate was worth.
+//
+// The report cannot stand for the whole list on its own. It arrives before
+// the round's answer and its tool results join the conversation, so a round
+// that returned a 400 KB result would leave the figure where it was, the trim
+// that exists for exactly that round would decline to fire, and the request
+// after it would go out oversize.
 //
 // The correction is deliberately not applied to a report. A report is the
 // measurement the factor is derived from, so scaling one by the factor would
-// be applying a conversion to the thing it converts to.
+// be applying a conversion to the thing it converts to. What is estimated on
+// top of it is an estimate like any other, and is corrected like one.
 // See docs/capabilities/providers.md#how-full-the-window-is-corrected-by-what-it-cost.
 func (m Model) contextAccounting() contextBreakdown {
-	b := m.contextEstimate()
 	if m.contextTokens > 0 {
-		b = b.scaledTo(m.contextTokens)
+		n := len(m.agent.Messages())
+		at := m.contextReportedAt
+		if at <= 0 || at > n {
+			// No index was recorded with the report, or the list has since
+			// shrunk under it: read the report as describing the list as it
+			// stands, which is what a report without an index meant.
+			at = n
+		}
+		b := m.contextEstimateRange(0, at).scaledTo(m.contextTokens)
 		b.Reported = true
+		if since := m.contextEstimateRange(at, n); since.total() > 0 {
+			b = b.plus(since.scaledTo(m.calibration.Apply(since.total())))
+			b.Since = true
+		}
 		return b
 	}
+	b := m.contextEstimate()
 	if corrected := m.calibration.Apply(b.total()); corrected != b.total() {
 		b = b.scaledTo(corrected)
 		b.Corrected = true
@@ -350,8 +389,23 @@ func (m Model) contextAccounting() contextBreakdown {
 // out, so measuring it through either would be measuring the factor against
 // itself.
 func (m Model) contextEstimate() contextBreakdown {
-	b := contextBreakdown{Tools: m.toolDefTokens}
-	for i, msg := range m.agent.Messages() {
+	return m.contextEstimateRange(0, len(m.agent.Messages()))
+}
+
+// contextEstimateRange is the same arithmetic over messages[from:to]. Only a
+// range that starts at the head of the list carries the tool definitions and
+// the project context: both ride the request once, at the front, so counting
+// them again for what a round appended would charge the conversation twice
+// for a block it sends once.
+func (m Model) contextEstimateRange(from, to int) contextBreakdown {
+	msgs := m.agent.Messages()
+	from, to = max(from, 0), min(to, len(msgs))
+	var b contextBreakdown
+	if from == 0 {
+		b.Tools = m.toolDefTokens
+	}
+	for i := from; i < to; i++ {
+		msg := msgs[i]
 		switch {
 		case i == 0 && msg.Role == provider.RoleSystem:
 			b.System += agent.EstimateTokens(msg.Content)
@@ -365,10 +419,22 @@ func (m Model) contextEstimate() contextBreakdown {
 		}
 	}
 	// The project context rides inside the system prompt; split it back out.
+	// Only a range holding the system message has anything to split.
 	if p := min(m.projectTokens, b.System); p > 0 {
 		b.System -= p
 		b.Project = p
 	}
+	return b
+}
+
+// plus adds another breakdown's categories to this one. The flags stay the
+// receiver's: which kind of number the total is is the caller's to say.
+func (b contextBreakdown) plus(o contextBreakdown) contextBreakdown {
+	b.System += o.System
+	b.Project += o.Project
+	b.Tools += o.Tools
+	b.Messages += o.Messages
+	b.ToolResults += o.ToolResults
 	return b
 }
 

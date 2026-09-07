@@ -232,7 +232,7 @@ func TestInspectorData_BlocksFromTheSession(t *testing.T) {
 	if a := rail.Changes.Alerts[0]; a.Label != "go test ./..." || a.Note != "exit 1" || a.Turn != 1 {
 		t.Fatalf("the alert names the turn that broke it: %+v", a)
 	}
-	if rail.Context == nil || rail.Context.Window != 200000 || rail.Context.Pct != 25 {
+	if rail.Context == nil || rail.Context.Window != 200000 || rail.Context.Pct != 20 {
 		t.Fatalf("CONTEXT: %+v", rail.Context)
 	}
 	if rail.Context.Tokens1 != "↑41.2k" || rail.Context.Tokens2 != "↓9.8k" {

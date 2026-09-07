@@ -952,10 +952,18 @@ type Model struct {
 	turnOutcome   components.TurnState
 	turnTokensIn  int64
 	turnTokensOut int64
-	// contextTokens is what the provider last reported the request carrying;
-	// zero means nothing has been reported about the current message list, so
-	// the accounting estimates instead and says so.
-	contextTokens int64
+	// contextTokens is what the provider last reported the request carrying,
+	// and contextReportedAt how long the message list was when that report
+	// arrived. The report describes those messages and nothing else, so the
+	// accounting estimates whatever joined the list after it and adds that on
+	// top: a round that returns 400 KB of tool output has to move the figure
+	// the trim reads, and anchoring on the report alone is how it moved it by
+	// zero. Zero tokens means nothing has been reported about this
+	// conversation and the whole figure is an estimate, which every surface
+	// showing it says. The index is only read while contextTokens is
+	// non-zero, and the two are written together.
+	contextTokens     int64
+	contextReportedAt int
 	// calibration is what this session has learned about its own estimator
 	// from the reports that have arrived, and it scales every estimate the
 	// accounting makes once a report has been compared against one. It is the

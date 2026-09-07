@@ -1253,7 +1253,7 @@ func TestSlashUnknown_Handled(t *testing.T) {
 func TestStatusBar_ShowsModelAndContext(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream).WithPricing(nil, "gpt-4o")
-	m.accumulateUsage(&provider.Usage{PromptTokens: 1200, CompletionTokens: 300})
+	m.accumulateUsage(&provider.Usage{PromptTokens: 1500, CompletionTokens: 300})
 
 	bar := m.renderStatusBar(120)
 	if !strings.Contains(bar, "gpt-4o") {
@@ -1264,7 +1264,7 @@ func TestStatusBar_ShowsModelAndContext(t *testing.T) {
 	if !strings.Contains(bar, "ctx ") || !strings.Contains(bar, "1%") {
 		t.Errorf("status bar should show the context meter, got %q", bar)
 	}
-	if !strings.Contains(bar, "↑1.2k ↓300") {
+	if !strings.Contains(bar, "↑1.5k ↓300") {
 		t.Errorf("status bar should show the usage segment, got %q", bar)
 	}
 

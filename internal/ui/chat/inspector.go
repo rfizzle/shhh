@@ -413,7 +413,7 @@ func (m Model) inspectorContext() *components.InspectorContext {
 		Window:    window,
 		WarnPct:   warnThresholdPercent,
 		AlertPct:  trimThresholdPercent,
-		Estimated: !b.Reported,
+		Estimated: b.estimated(),
 		Corrected: b.Corrected,
 	}
 	if m.TotalTokensIn != 0 || m.TotalTokensOut != 0 {

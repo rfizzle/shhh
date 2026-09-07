@@ -182,7 +182,13 @@ func (m *Model) accumulateUsage(u *provider.Usage) {
 	m.vitals.record(m.modelName, *u, cost, priced)
 	m.TotalTokensIn, m.TotalTokensOut = m.vitals.totalIn, m.vitals.totalOut
 	m.turnTokensIn, m.turnTokensOut = m.vitals.current.In, m.vitals.current.Out
-	m.contextTokens = m.vitals.lastContext
+	// The report is anchored to the messages it described. Those are the
+	// messages the request was built from: the round's answer and its tool
+	// results have not joined the list yet, so the list length goes down with
+	// the count and the accounting estimates whatever arrives after it. The
+	// prompt alone is the anchor, not prompt plus completion — the completion
+	// becomes a message a moment later, and the estimate counts it then.
+	m.contextTokens, m.contextReportedAt = m.vitals.lastIn, len(m.agent.Messages())
 	m.notifyUsage()
 }
 

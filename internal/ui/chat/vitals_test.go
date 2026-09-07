@@ -73,9 +73,15 @@ func TestVitals_TurnAccumulatesEveryRound(t *testing.T) {
 	if m.turnTokensIn != 3000 || m.turnTokensOut != 300 {
 		t.Fatalf("turn totals should mirror the vitals: ↑%d ↓%d", m.turnTokensIn, m.turnTokensOut)
 	}
-	// The context estimate is the latest round's prompt plus completion.
-	if m.contextTokens != 2200 {
-		t.Fatalf("context should follow the last round, got %d", m.contextTokens)
+	// The context figure is anchored on what the provider counted — the
+	// latest round's prompt, which is the messages the request carried — and
+	// the list length it described is recorded with it.
+	if m.contextTokens != 2000 {
+		t.Fatalf("context should follow the last round's prompt, got %d", m.contextTokens)
+	}
+	if m.contextReportedAt != len(m.agent.Messages()) {
+		t.Fatalf("the report should be anchored to the list it described: %d of %d",
+			m.contextReportedAt, len(m.agent.Messages()))
 	}
 }
 
@@ -372,6 +378,54 @@ func TestContextAccounting_CorrectedEstimateSaysSo(t *testing.T) {
 	}
 	if got := m.contextScreenData().Source; got != "provider-reported" {
 		t.Fatalf("/context calls the figure %q", got)
+	}
+}
+
+// TestContextAccounting_ReportPlusWhatLandedAfterIt: a report describes the
+// messages the request carried and no others, so what the round appends
+// afterwards is estimated on top of it — and the figure stops being the
+// provider's own the moment it does, which every surface showing it says.
+func TestContextAccounting_ReportPlusWhatLandedAfterIt(t *testing.T) {
+	m := vitalsModel(t)
+	m.agent.Append(provider.Message{Role: provider.RoleUser, Content: strings.Repeat("u", 4000)})
+	m.accumulateUsage(&provider.Usage{PromptTokens: 5000, CompletionTokens: 200})
+
+	b := m.contextAccounting()
+	if !b.Reported || b.Since || b.total() != 5000 {
+		t.Fatalf("with nothing appended since, the report stands alone: %+v totalling %d", b, b.total())
+	}
+	if got := m.contextScreenData().Source; got != "provider-reported" {
+		t.Fatalf("/context calls the figure %q", got)
+	}
+
+	// The round that report was taken for then lands: an answer, and a large
+	// tool result behind it.
+	raw := m.contextEstimate().total()
+	m.agent.Append(provider.Message{Role: provider.RoleAssistant, Content: "reading"})
+	m.agent.Append(provider.Message{Role: provider.RoleTool, Content: strings.Repeat("t", 40000), ToolCallID: "c1"})
+	since := m.contextEstimate().total() - raw
+
+	b = m.contextAccounting()
+	if !b.Reported || !b.Since {
+		t.Fatalf("the total is the report plus what landed after it: %+v", b)
+	}
+	if want := 5000 + m.calibration.Apply(since); b.total() != want {
+		t.Fatalf("want the report plus the corrected estimate of the round, %d, got %d", want, b.total())
+	}
+	if b.ToolResults <= 0 {
+		t.Fatalf("the round's output belongs to its own category: %+v", b)
+	}
+	if got := m.contextScreenData().Source; got != "reported plus estimate since" {
+		t.Fatalf("/context calls the figure %q", got)
+	}
+	if out := m.statsReport(); !strings.Contains(out, "reported plus estimate since") {
+		t.Fatalf("/stats should say what the figure is made of:\n%s", out)
+	}
+	if rail := m.inspectorContext(); rail == nil || !rail.Estimated {
+		t.Fatalf("a figure that is part estimate has to say so, got %+v", rail)
+	}
+	if card := m.pressureCardData(); card == nil || !card.Estimated {
+		t.Fatalf("the pressure card quotes an estimate too, got %+v", card)
 	}
 }
 

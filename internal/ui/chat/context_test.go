@@ -222,6 +222,55 @@ func pct(t *testing.T, s string) int {
 	return n
 }
 
+// TestTrimContext_TheRoundThatJustLandedCounts is the failure the report's
+// index exists to stop. The provider counts the messages a request carried;
+// the round that request set off then returns a large tool result, and the
+// figure the trim reads has to move with it. Anchored on the report alone it
+// did not move at all, the trim declined to fire, and the next request — the
+// one carrying the large result — went out oversize.
+func TestTrimContext_TheRoundThatJustLandedCounts(t *testing.T) {
+	m := New([]provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "q1"},
+		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "c1", Name: "read_file"}}},
+		{Role: provider.RoleTool, Content: strings.Repeat("x", 48000), ToolCallID: "c1"},
+		{Role: provider.RoleAssistant, Content: "answer 1"},
+		{Role: provider.RoleUser, Content: "q2"},
+	}, mockStream)
+
+	// The provider counts that request at 15k of the default 32768-token
+	// window, comfortably under the 26214 that trims.
+	m.accumulateUsage(&provider.Usage{PromptTokens: 15000, CompletionTokens: 200})
+	if m.contextTokens >= m.trimThreshold() {
+		t.Fatalf("the fixture's report (%d) has to sit under the threshold %d",
+			m.contextTokens, m.trimThreshold())
+	}
+	if n := m.trimContext(); n != 0 {
+		t.Fatalf("nothing should trim while the report still describes the whole conversation, got %d", n)
+	}
+
+	// And then the round that report was taken for lands: a call, and 60 KB
+	// of output behind it.
+	m.agent.Append(provider.Message{Role: provider.RoleAssistant,
+		ToolCalls: []provider.ToolCall{{ID: "c2", Name: "search"}}})
+	m.agent.Append(provider.Message{Role: provider.RoleTool,
+		Content: strings.Repeat("y", 60000), ToolCallID: "c2"})
+
+	if got := m.estimatedContextTokens(); got <= m.contextTokens {
+		t.Fatalf("the accounting ignored the round: %d against the report's %d", got, m.contextTokens)
+	}
+	m.trimForRequest()
+	if got := m.Messages()[3].Content; got != elidedResult {
+		t.Fatalf("the older result should have been elided, got %d bytes", len(got))
+	}
+	if len(m.Messages()[7].Content) != 60000 {
+		t.Fatal("the round's own result is in the current turn and must be kept")
+	}
+	if last := m.transcript[len(m.transcript)-1]; !strings.Contains(last.text, "Context trimmed") {
+		t.Fatalf("the trim should be noted in the transcript, got %q", last.text)
+	}
+}
+
 func TestSendUserMessage_TrimsAndNotes(t *testing.T) {
 	big := strings.Repeat("y", 60000)
 	m := New([]provider.Message{

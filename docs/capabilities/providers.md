@@ -325,10 +325,24 @@ runs on the plain estimate exactly as it always did.
 
 None of this touches a reported figure. Where a report has arrived it is used
 as it arrived — it is the measurement the factor is derived from, and scaling
-it would be converting a number into itself. Which of the three a figure is —
-a report, a plain estimate, a corrected one — is stated wherever it is shown,
-because a number that quietly changed what it means is worse than either a
-guess or a measurement.
+it would be converting a number into itself.
+
+A report also stops where its request stopped. It counts the messages that
+request carried, and it arrives before the round's answer and the results of
+the tools it called join the conversation. So it is held against the list it
+described, and everything appended after it is estimated on top and corrected
+like any other estimate. Letting it stand for the whole conversation is how a
+round that returned 400 KB of tool output moved the occupancy figure by
+nothing at all: the trim that exists for exactly that round declined to fire,
+and the request after it went out oversize on a number the provider was quoted
+for. What is anchored is the prompt the provider counted, not the prompt plus
+what the model wrote back — the answer becomes a message a moment later, and
+the estimate counts it then.
+
+Which kind of number a figure is — a report, a report with the rounds since
+estimated on top of it, a plain estimate, a corrected one — is stated wherever
+it is shown, because a number that quietly changed what it means is worse than
+either a guess or a measurement.
 
 ## A request says whether a tool may be called
 
