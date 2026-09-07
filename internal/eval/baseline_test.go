@@ -282,3 +282,66 @@ func TestADeltaOnAHalfRoundMedianShowsTheHalf(t *testing.T) {
 		t.Errorf("why = %q, want the half it regressed by", cmp.Cases[0].Why)
 	}
 }
+
+// researchBaseline is one research case as a run wrote it down.
+func researchBaseline(cited, quoted, facts Rate) CaseBaseline {
+	score := ResearchScore{Cited: cited, Quoted: quoted, Facts: facts}
+	res := Result{
+		Case:     Case{Name: "research-version", Kind: KindResearch},
+		Attempts: []Attempt{{Passed: score.OK(), Rounds: 6, Research: &score}},
+	}
+	return Summary{Results: []Result{res}}.Baseline().Cases[0]
+}
+
+// A run is only worth keeping if what it found comes back. The three rates
+// are the whole of what a research case found, and a baseline that dropped
+// them would compare two runs on their verdicts alone.
+func TestABaselineKeepsTheThreeResearchRates(t *testing.T) {
+	c := researchBaseline(Rate{Got: 1, Of: 2}, Rate{Got: 2, Of: 2}, Rate{Got: 2, Of: 2})
+	if c.Research == nil {
+		t.Fatal("a research case's rates must be written down")
+	}
+	if c.Research.Cited != (Rate{Got: 1, Of: 2}) || c.Research.Citations != 1 {
+		t.Errorf("cited = %v, cited-not-read = %d", c.Research.Cited, c.Research.Citations)
+	}
+	if c.Table != nil {
+		t.Errorf("a research case has no table: %+v", c.Table)
+	}
+
+	path := filepath.Join(t.TempDir(), "baseline.json")
+	if err := WriteBaseline(path, Baseline{Version: BaselineVersion, Cases: []CaseBaseline{c}}); err != nil {
+		t.Fatal(err)
+	}
+	back, err := ReadBaseline(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if back.Cases[0].Research == nil || *back.Cases[0].Research != *c.Research {
+		t.Errorf("the rates did not survive the file: %+v", back.Cases[0].Research)
+	}
+}
+
+// A write-up that started citing pages the run never fetched has got worse in
+// a way the verdict does not move: both runs failed, and the comparison has
+// to say what changed anyway.
+func TestACompareReadsAWorseCitationRateAsARegression(t *testing.T) {
+	before := researchBaseline(Rate{Got: 2, Of: 2}, Rate{Got: 1, Of: 1}, Rate{Got: 1, Of: 2})
+	after := researchBaseline(Rate{Got: 1, Of: 3}, Rate{Got: 1, Of: 1}, Rate{Got: 1, Of: 2})
+	d := delta(before, after)
+	if d.Change != Regressed {
+		t.Errorf("change = %v, want a regression", d.Change)
+	}
+	if !strings.Contains(d.Why, "cited, not read") {
+		t.Errorf("why = %q", d.Why)
+	}
+	// And a fact the write-up stopped saying is the next reading down.
+	fewer := researchBaseline(Rate{Got: 2, Of: 2}, Rate{Got: 1, Of: 1}, Rate{Got: 0, Of: 2})
+	if d := delta(before, fewer); d.Change != Regressed || !strings.Contains(d.Why, "facts") {
+		t.Errorf("change = %v, why = %q", d.Change, d.Why)
+	}
+	// A run that read every page it cited and said everything it did before
+	// moved nothing, whatever the rounds did inside the band.
+	if d := delta(before, before); d.Change != Unchanged {
+		t.Errorf("change = %v, why = %q", d.Change, d.Why)
+	}
+}

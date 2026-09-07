@@ -354,7 +354,7 @@ func TestEveryShippedCaseRequiresWhatItsCheckRuns(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, c := range cases {
-		if c.Kind.IsTable() {
+		if c.Kind != KindWorkspace {
 			continue
 		}
 		if len(c.Check) == 0 {
@@ -398,5 +398,89 @@ func TestTheShippedCasesBeyondGoSkipWithTheirToolchainNamed(t *testing.T) {
 	}
 	for name := range want {
 		t.Errorf("the suite no longer holds %s", name)
+	}
+}
+
+// writeResearchCase lays out a research case: a question, the facts it has to
+// answer with, and the site it is answered from.
+func writeResearchCase(t *testing.T, name, body string, withSite bool) string {
+	t.Helper()
+	dir := filepath.Join(t.TempDir(), name)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if withSite {
+		if err := os.MkdirAll(filepath.Join(dir, SiteDir), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(dir, CaseFile), []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return dir
+}
+
+const goodResearchCase = `
+kind = "research"
+prompt = "which order does Grebe return rows in? the site is at {site}/"
+facts = ["(?i)oldest first"]
+`
+
+func TestLoadCaseReadsAResearchCase(t *testing.T) {
+	dir := writeResearchCase(t, "research-order", goodResearchCase, true)
+	c, err := LoadCase(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.Kind != KindResearch || c.Kind.RunsBinary() {
+		t.Errorf("kind = %q, and it runs no binary", c.Kind)
+	}
+	if c.Site != filepath.Join(dir, SiteDir) {
+		t.Errorf("site = %q", c.Site)
+	}
+	if len(c.Facts) != 1 || !c.Facts[0].MatchString("rows come back OLDEST FIRST") {
+		t.Errorf("facts = %v, want the expression compiled", c.Facts)
+	}
+	if len(c.Check) != 0 {
+		t.Errorf("a research case has no check command: %v", c.Check)
+	}
+}
+
+// A research case with no site would reach whatever the machine it ran on
+// happened to be serving, or nothing at all; either way it measures something
+// other than what it says.
+func TestLoadCaseRefusesAResearchCaseWithNoSite(t *testing.T) {
+	dir := writeResearchCase(t, "no-site", goodResearchCase, false)
+	_, err := LoadCase(dir)
+	if err == nil {
+		t.Fatal("a research case without a site has nothing to answer from")
+	}
+	if !strings.Contains(err.Error(), SiteDir) {
+		t.Errorf("the error should name the missing directory: %v", err)
+	}
+}
+
+func TestLoadCaseRefusesAResearchCaseWithNothingToDecideIt(t *testing.T) {
+	dir := writeResearchCase(t, "no-facts", "kind = \"research\"\nprompt = \"what is it?\"\n", true)
+	_, err := LoadCase(dir)
+	if err == nil {
+		t.Fatal("a research case with no facts has no verdict and must be refused")
+	}
+	if !strings.Contains(err.Error(), "facts") {
+		t.Errorf("the error should name the missing field: %v", err)
+	}
+}
+
+// A fact that will not compile is a case that scores every write-up as
+// missing it, which reads as a model that never answers.
+func TestLoadCaseRefusesAFactThatIsNotAnExpression(t *testing.T) {
+	dir := writeResearchCase(t, "bad-fact",
+		"kind = \"research\"\nprompt = \"what is it?\"\nfacts = [\"oldest (first\"]\n", true)
+	_, err := LoadCase(dir)
+	if err == nil {
+		t.Fatal("a fact that cannot compile must be refused where it is written")
+	}
+	if !strings.Contains(err.Error(), "oldest (first") {
+		t.Errorf("the error should quote the fact: %v", err)
 	}
 }

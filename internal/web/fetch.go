@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/netip"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -182,8 +183,9 @@ func (f *Fetcher) dialPinned(ctx context.Context, network, addr string) (net.Con
 	if len(pinned) == 0 {
 		return nil, fmt.Errorf("host resolved to no addresses")
 	}
+	port, _ := strconv.Atoi(portStr)
 	for _, a := range pinned {
-		if err := f.Policy.EvaluateAddr(a); err != nil {
+		if err := f.Policy.evaluateAddrPort(a, port); err != nil {
 			return nil, fmt.Errorf("blocked by network policy: %w", err)
 		}
 	}
@@ -216,7 +218,7 @@ func verifyConnected(policy Policy, pinned []netip.Addr, remote net.Addr) error 
 	if !ok {
 		return fmt.Errorf("connected address unverifiable")
 	}
-	if err := policy.EvaluateAddr(connected); err != nil {
+	if err := policy.evaluateAddrPort(connected, tcp.Port); err != nil {
 		return fmt.Errorf("connected address rejected: %w", err)
 	}
 	for _, a := range pinned {

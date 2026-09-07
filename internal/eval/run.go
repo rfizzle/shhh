@@ -18,6 +18,10 @@ package eval
 // nothing from the project or the machine in them, so running a binary to
 // reach it would add a session's assembly to a measurement that is not about
 // a session. The request that goes out is the one a session would send.
+//
+// A research case runs its loop here too, and its reason is in research.go:
+// its site is on loopback, and the exception that reaches one loopback server
+// belongs in the process that knows which server that is.
 
 import (
 	"context"
@@ -55,10 +59,11 @@ type Options struct {
 	// Model names what is being measured, for the report's title, and is the
 	// model a table case's call is made on.
 	Model string
-	// Provider is what a table case asks. A workspace case never uses it —
-	// that one runs the binary, which resolves its own — but an auxiliary
-	// call is not a session and has no binary to run, so the harness makes it
-	// itself and needs somewhere to send it.
+	// Provider is what a table or research case asks. A workspace case never
+	// uses it — that one runs the binary, which resolves its own — but the
+	// other two shapes run in this process and have no binary to resolve one,
+	// so the harness makes the requests itself and needs somewhere to send
+	// them.
 	Provider provider.Provider
 	// Progress, when set, is called as each attempt finishes, so a run that
 	// takes minutes says something while it does.
@@ -138,12 +143,12 @@ func Run(ctx context.Context, cases []Case, opts Options) (Summary, error) {
 	return sum, nil
 }
 
-// needsBinary reports whether anything in the suite runs a session. A suite
-// of table cases only makes requests, and must not refuse to start because
-// the harness could not name its own executable.
+// needsBinary reports whether anything in the suite runs a session process. A
+// suite of table and research cases only makes requests from here, and must
+// not refuse to start because the harness could not name its own executable.
 func needsBinary(cases []Case) bool {
 	for _, c := range cases {
-		if !c.Kind.IsTable() {
+		if c.Kind.RunsBinary() {
 			return true
 		}
 	}
@@ -155,6 +160,9 @@ func needsBinary(cases []Case) bool {
 func attempt(ctx context.Context, bin string, c Case, opts Options) Attempt {
 	if c.Kind.IsTable() {
 		return tableAttempt(ctx, c, opts)
+	}
+	if c.Kind == KindResearch {
+		return researchAttempt(ctx, c, opts)
 	}
 	start := time.Now()
 	a := Attempt{}

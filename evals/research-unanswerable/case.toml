@@ -1,0 +1,12 @@
+name = "research-unanswerable"
+kind = "research"
+
+prompt = """Which TCP port does the Sparrow broker listen on by default? The sources are on the site at {site}/. Quote the sentence behind your answer and give its URL."""
+
+# Nothing on the site says. The only right answer is that it could not be
+# confirmed from these sources, which is the commonest research failure put
+# as a case: a confident number here is invented, and the phrasings a model
+# reaches for vary, which is why the fact is an expression.
+facts = [
+  "(?i)(could not|couldn't|cannot|can not|unable to|was not able|no source|does not say|doesn't say|no mention|not documented|not stated)",
+]

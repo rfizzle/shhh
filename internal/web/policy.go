@@ -11,9 +11,11 @@ package web
 
 import (
 	"fmt"
+	"net"
 	"net/netip"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -180,6 +182,51 @@ type Policy struct {
 	// place a refused host could be reached without a decision.
 	// See docs/capabilities/approvals-and-safety.md#a-host-is-granted-once.
 	DenyHost func(host string) bool
+
+	// fixture is the one origin — "127.0.0.1:41234" — the private-address
+	// block is lifted for, or "" for every policy but a fixture one. It is
+	// unexported so that FixturePolicy is the only way to a policy carrying
+	// one: a field anything could set would be a setting, and a setting that
+	// opens loopback is one somebody eventually turns on.
+	fixture string
+}
+
+// FixturePolicy is how a harness reaches a site it is serving itself: the
+// address guard is lifted for exactly one loopback origin, and no other host
+// is reachable at all.
+//
+// Both halves are the point. A site served for a measured run lives on
+// 127.0.0.1, which the guard refuses like any other private address, and
+// setting AllowPrivate for the run would open every service on the machine —
+// including whatever the person happens to have on :3000 — to a session
+// nobody is watching. So the exception is a whole origin rather than a host,
+// and a second server on the same address is still refused. And a run that
+// could also reach the public web would be measuring the web: the deny hook
+// refuses every host but this one, so what the run read is what the harness
+// served it.
+//
+// hostPort is the authority the server is listening on, as net.JoinHostPort
+// spells it — an IP literal and a port, which is what a listener's own
+// address answers with. A name would validate here and then be refused at
+// the dial, where what the exception is compared against is the address the
+// name resolved to.
+// See docs/capabilities/evals.md#a-research-case-is-graded-against-what-it-read.
+func FixturePolicy(hostPort string) Policy {
+	host, _, err := net.SplitHostPort(hostPort)
+	if err != nil {
+		host = hostPort
+	}
+	host = strings.Trim(host, "[]")
+	return Policy{
+		fixture:  hostPort,
+		DenyHost: func(h string) bool { return !strings.EqualFold(strings.Trim(h, "[]"), host) },
+	}
+}
+
+// servesFixture reports whether host:port is the one origin this policy was
+// built to reach.
+func (p Policy) servesFixture(host string, port int) bool {
+	return p.fixture != "" && p.fixture == net.JoinHostPort(strings.Trim(host, "[]"), strconv.Itoa(port))
 }
 
 // privateClasses are what AllowPrivate may unblock; metadata is deliberately
@@ -192,6 +239,11 @@ var privateClasses = map[ipClass]bool{
 }
 
 // EvaluateAddr applies the class policy to one address; nil means allowed.
+//
+// It is the port-blind form, kept for a caller that judges an address on its
+// own. Every step of a fetch knows the port it is heading for and calls
+// evaluateAddrPort instead, because that is the only form the fixture
+// exception can be applied in.
 func (p Policy) EvaluateAddr(a netip.Addr) error {
 	class := classify(a)
 	switch {
@@ -203,6 +255,22 @@ func (p Policy) EvaluateAddr(a netip.Addr) error {
 		return nil
 	}
 	return fmt.Errorf("address blocked (%s)", class)
+}
+
+// evaluateAddrPort is EvaluateAddr with the destination port in hand, so the
+// fixture origin can be let through without lifting the block on the address
+// class it belongs to.
+//
+// The exception is loopback's alone, and the class is asked here rather than
+// trusted from the origin string: a fixture naming any other address would
+// otherwise reach it, and the one address this file promises is never
+// reachable — the cloud metadata endpoint — is exactly the one somebody would
+// name to get there.
+func (p Policy) evaluateAddrPort(a netip.Addr, port int) error {
+	if classify(a) == classLoopback && p.servesFixture(a.Unmap().String(), port) {
+		return nil
+	}
+	return p.EvaluateAddr(a)
 }
 
 func (p Policy) portAllowed(port int) bool {
@@ -300,13 +368,16 @@ func (p Policy) ValidateURL(raw string) (Target, error) {
 			return Target{}, fmt.Errorf("invalid url: bad port")
 		}
 	}
-	if !p.portAllowed(port) {
+	// A fixture server listens on whatever port the OS handed it, which is
+	// neither 80 nor 443; the origin was named to this policy, so the port
+	// allowlist is answered by the same exception the address class is.
+	if !p.portAllowed(port) && !p.servesFixture(host, port) {
 		return Target{}, fmt.Errorf("port %d is not allowed", port)
 	}
 
 	t := Target{URL: u, Host: host, Port: port}
 	if addr, err := netip.ParseAddr(host); err == nil {
-		if err := p.EvaluateAddr(addr); err != nil {
+		if err := p.evaluateAddrPort(addr, port); err != nil {
 			return Target{}, err
 		}
 		t.Literal = addr

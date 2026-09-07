@@ -1,0 +1,18 @@
+name = "research-disagreement"
+kind = "research"
+
+prompt = """How long does Alcedo cache an access token before it asks for a new one? The sources are on the site at {site}/. Quote the sentence behind your answer, give its URL, and if the sources do not agree say so and say which one is more recent."""
+
+# Two sources, one number each. The failure this case is written for is a
+# write-up that picks the first number it read and says nothing about the
+# other, so both numbers, the disagreement and the date of the newer source
+# are all required.
+facts = [
+  "(?i)15 minutes",
+  "(?i)24 hours",
+  "(?i)disagree|contradict|conflict|inconsistent|out of date|outdated|superseded",
+  # The date alone would pass a write-up that mentions 2024 in passing, so
+  # the recency claim has to be made in words as well.
+  "(?i)(newer|more recent|most recent|newest|later|current|up to date|supersedes|superseded)",
+  "2024",
+]

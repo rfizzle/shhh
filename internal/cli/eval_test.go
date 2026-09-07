@@ -519,3 +519,113 @@ func TestCompareRowShowsTheHalfARoundMedianMovedBy(t *testing.T) {
 		t.Errorf("detail = %q, want the numbers the direction was read from", row.Detail)
 	}
 }
+
+// researchResult is one research case's row as the report reads it.
+func researchResult(score eval.ResearchScore) eval.Result {
+	return eval.Result{
+		Case:     eval.Case{Name: "research-version", Kind: eval.KindResearch},
+		Attempts: []eval.Attempt{{Passed: score.OK(), Rounds: 6, Research: &score}},
+	}
+}
+
+// The three rates are printed as three, because a write-up that carries
+// every fact and cites a page it never opened is the failure the shape
+// exists for, and one number would report it as a good run.
+func TestEvalReportPrintsTheThreeResearchRatesApart(t *testing.T) {
+	row := evalRow(researchResult(eval.ResearchScore{
+		Cited:  eval.Rate{Got: 1, Of: 2},
+		Quoted: eval.Rate{Got: 2, Of: 2},
+		Facts:  eval.Rate{Got: 2, Of: 2},
+		Misses: []string{"cited, not read: http://127.0.0.1:9/grebe-2.0.html"},
+	}))
+	if row.Outcome != "failed" {
+		t.Errorf("outcome = %q", row.Outcome)
+	}
+	for _, want := range []string{"1 of 2 cited read", "2 of 2 quotes found", "2 of 2 facts"} {
+		if !strings.Contains(row.Subject, want) {
+			t.Errorf("subject = %q, want %q in it", row.Subject, want)
+		}
+	}
+	if !strings.Contains(row.Consequence, "1 cited, not read") {
+		t.Errorf("consequence = %q", row.Consequence)
+	}
+	if !strings.Contains(strings.Join(row.Body, "\n"), "grebe-2.0.html") {
+		t.Errorf("body = %q, want the citation named", row.Body)
+	}
+}
+
+// A research row that came out whole has nothing to explain, and it must not
+// borrow the workspace shape's "the check failed and printed nothing".
+func TestEvalReportSaysNothingExtraAboutAWholeWriteUp(t *testing.T) {
+	row := evalRow(researchResult(eval.ResearchScore{
+		Cited:  eval.Rate{Got: 2, Of: 2},
+		Quoted: eval.Rate{Got: 1, Of: 1},
+		Facts:  eval.Rate{Got: 2, Of: 2},
+	}))
+	if row.Outcome != "passed" {
+		t.Errorf("outcome = %q", row.Outcome)
+	}
+	if row.Consequence != "" || len(row.Body) != 0 {
+		t.Errorf("consequence = %q, body = %q, want neither", row.Consequence, row.Body)
+	}
+}
+
+// The rates are why the case was run, and a report redirected to a file
+// measures 80 columns.
+func TestEvalReportKeepsTheResearchRatesAtEightyColumns(t *testing.T) {
+	sum := eval.Summary{Model: "claude-sonnet-5", Results: []eval.Result{researchResult(eval.ResearchScore{
+		Cited:  eval.Rate{Got: 1, Of: 3},
+		Quoted: eval.Rate{Got: 1, Of: 2},
+		Facts:  eval.Rate{Got: 1, Of: 2},
+		Misses: []string{"cited, not read: http://127.0.0.1:9/grebe-2.0.html"},
+	})}}
+	out := evalReport(sum).Render(80)
+	for _, want := range []string{"research-version", "1 of 3 cited read", "cited, not read"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("a report at 80 columns lost %q:\n%s", want, out)
+		}
+	}
+	for _, line := range strings.Split(out, "\n") {
+		if len([]rune(line)) > 80 {
+			t.Errorf("line overflows 80 columns (%d): %q", len([]rune(line)), line)
+		}
+	}
+}
+
+// A research case has no session process to resolve a provider for it.
+func TestAResearchCaseNeedsAProvider(t *testing.T) {
+	if !needsProvider([]eval.Case{{Name: "a", Kind: eval.KindResearch}}) {
+		t.Error("a research case asks the model from this process")
+	}
+}
+
+// A comparison of two research runs shows what moved: the citations first,
+// because a write-up naming a page the run never fetched is the one number
+// here that costs a reader something outside the suite.
+func TestCompareReportShowsTheResearchRatesThatMoved(t *testing.T) {
+	before := eval.CaseBaseline{Name: "research-version", Kind: eval.KindResearch, Verdict: "failed",
+		Attempts: 1, Rounds: 6, Research: &eval.ResearchBaseline{
+			Cited: eval.Rate{Got: 2, Of: 2}, Quoted: eval.Rate{Got: 1, Of: 1},
+			Facts: eval.Rate{Got: 1, Of: 2}, Citations: 0}}
+	after := eval.CaseBaseline{Name: "research-version", Kind: eval.KindResearch, Verdict: "failed",
+		Attempts: 1, Rounds: 6, Research: &eval.ResearchBaseline{
+			Cited: eval.Rate{Got: 1, Of: 3}, Quoted: eval.Rate{Got: 1, Of: 1},
+			Facts: eval.Rate{Got: 1, Of: 2}, Citations: 2}}
+
+	cmp, err := eval.Compare(
+		eval.Baseline{Version: eval.BaselineVersion, Cases: []eval.CaseBaseline{before}},
+		eval.Baseline{Version: eval.BaselineVersion, Cases: []eval.CaseBaseline{after}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := compareReport(cmp, time.Now()).Render(100)
+	for _, want := range []string{"regressed", "0 → 2 cited, not read"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("the comparison lost %q:\n%s", want, out)
+		}
+	}
+	// A rate that did not move is width taken from the ones that did.
+	if strings.Contains(out, "quotes found") {
+		t.Errorf("an unmoved rate should not be printed:\n%s", out)
+	}
+}

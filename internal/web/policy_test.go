@@ -194,3 +194,60 @@ func TestHopIdentity_IgnoresFragment(t *testing.T) {
 		t.Error("hop identity must ignore the fragment")
 	}
 }
+
+// The fixture exception is one origin's. It reaches the server it names on
+// the port it names, and lifts nothing else: another port on the same
+// loopback address is a different server, and a policy that never named a
+// fixture is unchanged.
+func TestFixturePolicy_ReachesOneOriginAndNothingElse(t *testing.T) {
+	p := FixturePolicy("127.0.0.1:41234")
+	if _, err := p.ValidateURL("http://127.0.0.1:41234/index.html"); err != nil {
+		t.Fatalf("the fixture's own origin must be reachable: %v", err)
+	}
+	for _, raw := range []string{
+		"http://127.0.0.1:3000/",           // another server on the same address
+		"http://127.0.0.2:41234/",          // another loopback address, same port
+		"http://192.168.1.4:41234/",        // a private address that is not loopback
+		"http://169.254.169.254/",          // the metadata endpoint, always refused
+		"http://example.com/",              // the public web, which is not reproducible
+		"http://[::1]:41234/",              // loopback spelled the other way
+		"http://[::ffff:127.0.0.1]:41234/", // and the mapped spelling of the same
+	} {
+		if _, err := p.ValidateURL(raw); err == nil {
+			t.Errorf("%s must be refused by a fixture policy", raw)
+		}
+	}
+	if _, err := (Policy{}).ValidateURL("http://127.0.0.1:41234/"); err == nil {
+		t.Error("a policy that named no fixture must still refuse loopback")
+	}
+}
+
+// The exception has to survive the guard's second and third looks — the
+// address policy applied to every resolved answer, and the re-verification of
+// the peer a socket reached — or a fixture URL validates and then fails to
+// dial.
+func TestFixturePolicy_AppliesToTheAddressAndThePeer(t *testing.T) {
+	p := FixturePolicy("127.0.0.1:41234")
+	loopback := netip.MustParseAddr("127.0.0.1")
+	if err := p.evaluateAddrPort(loopback, 41234); err != nil {
+		t.Errorf("the fixture's address on its own port: %v", err)
+	}
+	if err := p.evaluateAddrPort(loopback, 3000); err == nil {
+		t.Error("the same address on another port is another server")
+	}
+	if err := p.EvaluateAddr(loopback); err == nil {
+		t.Error("the port-blind form knows no fixture and must still refuse loopback")
+	}
+	if err := p.evaluateAddrPort(netip.MustParseAddr("169.254.169.254"), 41234); err == nil {
+		t.Error("the metadata endpoint is never a fixture")
+	}
+	// And naming it as the fixture does not make it one: the exception is
+	// loopback's, and the class is judged rather than taken from the origin.
+	metadata := FixturePolicy("169.254.169.254:80")
+	if err := metadata.evaluateAddrPort(netip.MustParseAddr("169.254.169.254"), 80); err == nil {
+		t.Error("a fixture policy naming the metadata endpoint must still refuse it")
+	}
+	if _, err := metadata.ValidateURL("http://169.254.169.254/"); err == nil {
+		t.Error("a fixture policy naming the metadata endpoint must still refuse its URL")
+	}
+}

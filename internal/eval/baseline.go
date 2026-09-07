@@ -81,6 +81,9 @@ type CaseBaseline struct {
 	Priced   bool    `json:"priced"`
 	// Table is a table case's rates, and nil for a workspace case.
 	Table *TableBaseline `json:"table,omitempty"`
+	// Research is a research case's three rates, and nil for every other
+	// kind.
+	Research *ResearchBaseline `json:"research,omitempty"`
 }
 
 // TableBaseline is a table case's outcomes, counted apart the way the report
@@ -95,6 +98,17 @@ type TableBaseline struct {
 	FalseDeny  int `json:"false_deny"`
 	Wrong      int `json:"wrong"`
 	Unanswered int `json:"unanswered"`
+}
+
+// ResearchBaseline is a research case's three rates, kept apart for the
+// reason a table's false allow and false deny are: a write-up that started
+// citing a page it never read has got worse in a way no total says, and a
+// verdict that read "failed" both times would report nothing at all.
+type ResearchBaseline struct {
+	Cited     Rate `json:"cited"`
+	Quoted    Rate `json:"quoted"`
+	Facts     Rate `json:"facts"`
+	Citations int  `json:"cited_not_read"`
 }
 
 // parseVerdict is the inverse, refusing a word it does not know rather than
@@ -128,6 +142,14 @@ func (s Summary) Baseline() Baseline {
 			c.Kind = KindWorkspace
 		}
 		c.Cost, c.Priced = res.Cost()
+		if score, ok := res.Research(); ok {
+			c.Research = &ResearchBaseline{
+				Cited:     score.Cited,
+				Quoted:    score.Quoted,
+				Facts:     score.Facts,
+				Citations: score.Cited.Of - score.Cited.Got,
+			}
+		}
 		if score, ok := res.Score(); ok {
 			c.Table = &TableBaseline{
 				Rows:       score.Rows(),
@@ -339,6 +361,37 @@ func delta(before, after CaseBaseline) Delta {
 				d.Change = Regressed
 			}
 			d.Why = fmt.Sprintf("%d → %d of %d correct", before.Table.Correct, after.Table.Correct, after.Table.Rows)
+			return d
+		}
+	}
+
+	if before.Research != nil && after.Research != nil {
+		// Citations lead for the reason false allow does above: a write-up
+		// naming a page the run never fetched is the one failure here that
+		// costs something outside the suite, and a reader who checks the
+		// source finds nothing there.
+		switch {
+		case after.Research.Citations != before.Research.Citations:
+			d.Change = Improved
+			d.Why = fmt.Sprintf("%d → %d cited, not read", before.Research.Citations, after.Research.Citations)
+			if after.Research.Citations > before.Research.Citations {
+				d.Change = Regressed
+				d.Why += " — the write-up names more pages the run never fetched"
+			}
+			return d
+		case after.Research.Facts.Got != before.Research.Facts.Got:
+			d.Change = Improved
+			if after.Research.Facts.Got < before.Research.Facts.Got {
+				d.Change = Regressed
+			}
+			d.Why = fmt.Sprintf("%s → %s facts", before.Research.Facts, after.Research.Facts)
+			return d
+		case after.Research.Quoted.Got != before.Research.Quoted.Got:
+			d.Change = Improved
+			if after.Research.Quoted.Got < before.Research.Quoted.Got {
+				d.Change = Regressed
+			}
+			d.Why = fmt.Sprintf("%s → %s quotes found", before.Research.Quoted, after.Research.Quoted)
 			return d
 		}
 	}

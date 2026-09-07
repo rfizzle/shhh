@@ -15,22 +15,26 @@ shhh eval --compare before.json      # and read the next one against it
 
 They cost real requests, which is why `make ci` does not run them.
 
-## Two shapes, two questions
+## Three shapes, three questions
 
 | Shape | The question it answers |
 |---|---|
 | A workspace and a check | Given a real task in a real checkout, does the session finish it, and at what cost? |
 | A labelled table | Given evidence a person has already labelled, does the call beside the loop answer the way it should, and at what cost? |
+| A site and a question | Given a question the pages on this site can settle, does the write-up answer it from what it actually read? |
 
 The first is the coding turn. The second is for the calls a session makes
 around it — the permission decision auto mode asks for, the status reading the
 rail shows — whose output never touches a file, so there is no workspace to
 check afterwards and nothing in `make ci` that can tell a working one from a
-silent one.
+silent one. The third is a research run, which also leaves no workspace and
+whose answer is prose rather than a label.
 
-Both are decided by comparison and never by a model. A workspace case is
+All three are decided by comparison and never by a model. A workspace case is
 decided by its own command; a table case is decided by comparing one word from
-a closed set with the word the row is labelled with.
+a closed set with the word the row is labelled with; a research case is decided
+by comparing the write-up's URLs and quotations with the ledger of what the
+fetcher returned.
 
 ## Writing a workspace case
 
@@ -122,6 +126,46 @@ defect, and a table with only the first kind cannot see the second.
 are prose, and prose is the thing this suite refuses to grade. The label is
 what is compared.
 
+## Writing a research case
+
+A research case is a directory with a site instead of a workspace:
+
+```
+my-question/
+  case.toml
+  site/             # served over loopback for the length of each attempt
+```
+
+```toml
+# case.toml
+name = "my-question"      # optional; defaults to the directory
+kind = "research"
+prompt = "which order does Grebe return rows in? the docs are at {site}/"
+facts = ["(?i)oldest first", "(?i)1\\.4\\.2"]
+```
+
+`{site}` in the prompt becomes the site's base URL. The port is whatever the
+OS hands the listener, so a case cannot write it down, and without a way to
+say "start here" every case would be measuring whether the search fixture
+found the right page first. The search tool is answered from the same site:
+every page is a hit, ranked by how many of the query's words are on it.
+
+`facts` is what the write-up has to contain, each one a regular expression
+rather than a phrase — "could not confirm" arrives as "I was unable to verify"
+just as often, and a case written in one wording measures the model's diction.
+
+**Write the fact that distinguishes the answers.** A site with documentation
+for two versions is only a case if the required fact is the one that is true of
+the version in use and false of the other.
+
+**Ship the case whose right answer is "I could not confirm".** The commonest
+research failure is a confident answer to a question the sources do not settle,
+and a case whose site does not hold the answer is the only test of it.
+
+**Nothing outside the site is reachable.** Not another server on the same
+loopback address, and not the public web — a case that could read the real
+internet would answer differently next month.
+
 ## Reading the report
 
 A table row reports how many of its rows matched, then what the misses were:
@@ -136,6 +180,19 @@ A table row reports how many of its rows matched, then what the misses were:
 refuses too much is annoying; one that allows too much is the security control
 failing open, and a single accuracy figure reports the two as the same number.
 
+A research row reports three rates and then what it missed:
+
+```
+✗ research-version      1 of 2 cited read · 2 of 2 quotes found · 2 of 2 facts   [failed]
+    1 cited, not read — a citation the run never fetched is the failure the
+    ledger exists to catch
+    cited, not read: http://127.0.0.1:41234/grebe-2.0.html
+```
+
+**The three rates are never averaged.** A write-up can carry every fact and
+cite a page it never opened, and one number would report that as a good run
+with a rounding error in it. A research case passes when all three are whole.
+
 **A row that came back with nothing is its own outcome.** An exhausted ceiling
 returns an unfinished thought and no verdict at all. That is a broken call,
 not a cautious one, and counting it as a deny would report an outage as a
@@ -148,7 +205,8 @@ line, so name that one to measure what your sessions actually do.
 ## Comparing two runs
 
 `--baseline <file>` writes what a run found: each case's verdict, the medians
-beside it, and a table case's outcomes counted apart. `--compare <file>` reads
+beside it, and a table case's outcomes or a research case's three rates counted
+apart. `--compare <file>` reads
 one back and prints the delta under the report.
 
 ```
@@ -165,7 +223,8 @@ cost real money is kept even when the comparison refuses.
 
 **A verdict that moved is the finding.** A case that now fails is not redeemed
 by having failed in fewer rounds. Under a verdict that held, a control that
-let more through comes next, and the medians last.
+let more through comes next — a classifier's false allow, a research write-up's
+citation of a page the run never fetched — and the medians last.
 
 **Two runs over different case sets are refused.** A suite that gained a case
 has totals that moved for a reason that is not the change being measured, and
@@ -188,3 +247,6 @@ times does not.
 | `trace-the-cause` | workspace | The failing test is two packages away from the bug. Rewards search over reading. |
 | `classifier-decisions` | classifier | One row per rule the permission classifier states, plus four attempts to talk it out of them. |
 | `summary-state` | summary | Whether the status reading tells on-target work from work that has drifted, and from work that already has what it needs. |
+| `research-version` | research | Two versions documented and a manifest pinning one: the right answer is the behaviour of the version in use. |
+| `research-disagreement` | research | Two sources contradict each other. The write-up has to say so, and say which is more recent. |
+| `research-unanswerable` | research | The answer is not on the site. The only right write-up says it could not be confirmed. |

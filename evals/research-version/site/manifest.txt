@@ -1,0 +1,9 @@
+# Petrel service manifest
+# Published from the build that is running in production.
+
+name = petrel
+runtime = go1.24
+
+[dependencies]
+grebe = 1.4.2
+heron = 0.9.1

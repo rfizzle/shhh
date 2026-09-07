@@ -20,12 +20,19 @@
 // The calls a session makes beside the coding loop leave no workspace behind
 // to check, so they get the second shape in table.go: a labelled table, an
 // answer from a closed set, and a comparison rather than a judgement.
+//
+// A run that reads the web leaves no workspace either, and what it produces
+// is prose rather than a word from a closed set. That gets the third shape in
+// research.go, which keeps the rule by grading the write-up against the
+// ledger of what the run actually fetched rather than against anyone's
+// reading of it.
 // See docs/capabilities/evals.md.
 package eval
 
 import (
 	"fmt"
 	"math"
+	"regexp"
 	"strconv"
 	"time"
 )
@@ -49,6 +56,11 @@ type Case struct {
 	// first one's leftovers would drift a little further every time it ran.
 	Dir       string
 	Workspace string
+	// Site is a research case's fixture site, served over loopback for the
+	// length of one attempt, and Facts what its write-up has to say
+	// (research.go). Both are empty for every other kind.
+	Site  string
+	Facts []*regexp.Regexp
 	// Prompt is the task, as a person would type it.
 	Prompt string
 	// Check is the argv run in the workspace after the agent stops. Exit zero
@@ -96,6 +108,9 @@ type Attempt struct {
 	// attempt. Passed above is its hard verdict: every row answered, and
 	// every answer one its row accepts.
 	Score *Score
+	// Research is a research attempt's three rates, and nil for every other
+	// kind. Passed above is its hard verdict: all three whole.
+	Research *ResearchScore
 }
 
 // Result is every attempt at one case.
@@ -119,6 +134,27 @@ func (r Result) Score() (Score, bool) {
 		}
 	}
 	return merged, len(merged.Answers) > 0
+}
+
+// Research is every attempt's grading added together, which is what a
+// research case's row is read from. The rates add because each attempt puts
+// the same question again: two runs that between them cited six pages and
+// read five of them is the honest reading of six citations, and averaging two
+// fractions would weight a terse write-up against a thorough one.
+func (r Result) Research() (ResearchScore, bool) {
+	if r.Case.Kind != KindResearch {
+		return ResearchScore{}, false
+	}
+	var merged ResearchScore
+	found := false
+	for _, a := range r.Attempts {
+		if a.Research == nil {
+			continue
+		}
+		found = true
+		merged.Add(*a.Research)
+	}
+	return merged, found
 }
 
 // Passes is how many attempts the check accepted.

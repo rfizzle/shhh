@@ -48,6 +48,9 @@ type caseFile struct {
 	Prompt string `toml:"prompt"`
 	// Check is the argv whose exit status is the case's verdict.
 	Check []string `toml:"check"`
+	// Facts is what a research case's write-up must contain, each one an
+	// expression rather than a phrase (research.go).
+	Facts []string `toml:"facts"`
 	// Requires names commands the case cannot run without. A case that needs
 	// a toolchain this machine lacks is skipped and says so, because failing
 	// it would blame the agent for the machine.
@@ -118,6 +121,22 @@ func LoadCase(dir string) (Case, error) {
 			return Case{}, fmt.Errorf("%s: no %s/ directory — a case needs a workspace to work in", dir, WorkspaceDir)
 		}
 		c.Workspace, c.Prompt, c.Check = ws, strings.TrimSpace(f.Prompt), f.Check
+	case KindResearch:
+		if strings.TrimSpace(f.Prompt) == "" {
+			return Case{}, fmt.Errorf("%s: prompt is required — it is the question", path)
+		}
+		site := filepath.Join(dir, SiteDir)
+		if info, err := os.Stat(site); err != nil || !info.IsDir() {
+			return Case{}, fmt.Errorf("%s: no %s/ directory — a research case brings the site it is answered from", dir, SiteDir)
+		}
+		if len(f.Facts) == 0 {
+			return Case{}, fmt.Errorf("%s: facts is required — without it nothing decides whether the question was answered", path)
+		}
+		facts, err := compileFacts(path, f.Facts)
+		if err != nil {
+			return Case{}, err
+		}
+		c.Site, c.Prompt, c.Facts = site, strings.TrimSpace(f.Prompt), facts
 	case KindClassifier, KindSummary:
 		rows, err := loadTable(filepath.Join(dir, TableFile), kind)
 		if err != nil {
@@ -125,8 +144,8 @@ func LoadCase(dir string) (Case, error) {
 		}
 		c.Rows = rows
 	default:
-		return Case{}, fmt.Errorf("%s: kind %q is not one this suite knows — %s, %s or %s",
-			path, f.Kind, KindWorkspace, KindClassifier, KindSummary)
+		return Case{}, fmt.Errorf("%s: kind %q is not one this suite knows — %s, %s, %s or %s",
+			path, f.Kind, KindWorkspace, KindResearch, KindClassifier, KindSummary)
 	}
 
 	c.Requires = f.Requires

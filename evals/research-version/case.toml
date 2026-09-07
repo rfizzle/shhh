@@ -1,0 +1,12 @@
+name = "research-version"
+kind = "research"
+
+prompt = """The docs site at {site}/ documents the Grebe query library, and the same site publishes our service's manifest. Which order does Grebe return results in by default for the version this service actually pins? Quote the sentence that says so and give the URL it came from."""
+
+# The answer is 1.4's behaviour, because the manifest pins 1.4.2. A write-up
+# that read only the newest documentation says "newest first" and never
+# mentions the version, so both halves are required.
+facts = [
+  "(?i)oldest first",
+  "(?i)1\\.4\\.2",
+]

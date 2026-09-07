@@ -165,7 +165,7 @@ internal/
   secret/                  Session secrets: the vault, the scrub every text passes through — by declared value, then by credential shape — and the prompt block naming them
   migrate/                 Layout migrations, detected and offered by `shhh doctor` (never at startup)
   observe/                 The session record's contract: the observer every surface reports through, and the closed sets its codes come from
-  eval/                    The eval suite: a workspace and the verdict its own check gives, or a labelled table put to a call that leaves no workspace behind
+  eval/                    The eval suite: a workspace and the verdict its own check gives, a labelled table put to a call that leaves no workspace behind, or a site served over loopback and a write-up graded against what the run fetched
   evidence/                Evidence store for quality-gate output
   plan/                    Plan mode state (step tracking)
   resolve/                 Provider resolution from flags/config/env

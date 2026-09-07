@@ -47,6 +47,9 @@ func newEvalCmd() *cobra.Command {
 			"A case with no workspace is a labelled table instead, put to one of the calls a session makes beside the " +
 			"coding loop — a permission decision, a status reading — and scored by comparing the answer with the label. " +
 			"Those are made on the model named here, so name the one your sessions actually make them on.\n\n" +
+			"A research case brings a site instead of a workspace, served over loopback for the length of the run, and " +
+			"reports three rates over the write-up: the pages it cited that it actually read, the sentences it quoted " +
+			"that are on the page it named, and the facts the case requires.\n\n" +
 			"`--baseline` writes what this run found to a file, and `--compare` reads one back and prints the delta " +
 			"beneath the report, so a prompt edit is judged against a run rather than against the memory of one.\n\n" +
 			"Every case costs real requests. A suite is a way to find out whether a model, a prompt or a setting change " +
@@ -71,10 +74,10 @@ func newEvalCmd() *cobra.Command {
 			flags.ConfigReasoning = cfg.Provider.Reasoning
 			resolved := resolve.Resolve(flags)
 
-			// A table case has no session to run, so the harness sends its
-			// requests itself and needs a provider here. A suite of workspace
-			// cases does not, and must not be stopped at the door by a
-			// credential it was never going to use.
+			// A table or research case has no session process to run, so the
+			// harness makes the requests itself and needs a provider here. A
+			// suite of workspace cases does not, and must not be stopped at
+			// the door by a credential it was never going to use.
 			var prov provider.Provider
 			if needsProvider(cases) {
 				p, req, err := resolveProvider(cmd.Context(), cfg, providerRequest{
@@ -159,7 +162,7 @@ func newEvalCmd() *cobra.Command {
 // process rather than from a session it starts.
 func needsProvider(cases []eval.Case) bool {
 	for _, c := range cases {
-		if c.Kind.IsTable() {
+		if !c.Kind.RunsBinary() {
 			return true
 		}
 	}
@@ -303,7 +306,64 @@ func evalRow(res eval.Result) report.Row {
 		}
 		row.Body = append(row.Body, tableBody(score)...)
 	}
+	if score, ok := res.Research(); ok {
+		if c := researchConsequence(score); c != "" {
+			row.Consequence = c
+		}
+		row.Body = append(row.Body, researchBody(score)...)
+	}
 	return row
+}
+
+// researchConsequence is what a research case's misses cost, and it leads on
+// the citation because that is the one that costs something outside the
+// suite: a write-up short of a fact is incomplete, and one citing a page it
+// never opened is a source a reader will go and check and not find.
+func researchConsequence(score eval.ResearchScore) string {
+	var parts []string
+	if n := score.Cited.Of - score.Cited.Got; n > 0 {
+		parts = append(parts, fmt.Sprintf("%d cited, not read", n))
+	}
+	if n := score.Quoted.Of - score.Quoted.Got; n > 0 {
+		parts = append(parts, fmt.Sprintf("%d quoted, not on the page", n))
+	}
+	if n := score.Facts.Of - score.Facts.Got; n > 0 {
+		parts = append(parts, fmt.Sprintf("%d fact missing", n))
+	}
+	if len(parts) == 0 {
+		return ""
+	}
+	line := strings.Join(parts, " · ")
+	if score.Cited.Of > score.Cited.Got {
+		line += " — a citation the run never fetched is the failure the ledger exists to catch"
+	}
+	return line
+}
+
+// maxResearchMisses is how many missed lines a research row names before
+// counting the rest, for the reason a table row has the same ceiling.
+const maxResearchMisses = 8
+
+// researchBody names what came out wrong, in the order the three checks run.
+func researchBody(score eval.ResearchScore) []string {
+	var out []string
+	seen := map[string]bool{}
+	left := 0
+	for _, line := range score.Misses {
+		if seen[line] {
+			continue
+		}
+		seen[line] = true
+		if len(out) == maxResearchMisses {
+			left++
+			continue
+		}
+		out = append(out, line)
+	}
+	if left > 0 {
+		out = append(out, fmt.Sprintf("… and %d more", left))
+	}
+	return out
 }
 
 // tableConsequence is what a table case's misses cost, counted apart rather
@@ -388,6 +448,15 @@ func evalDetail(res eval.Result) string {
 	if score, ok := res.Score(); ok {
 		parts = append(parts, fmt.Sprintf("%d of %d correct", score.Correct(), score.Rows()))
 	}
+	// Three rates and never their average. A write-up can carry every fact
+	// and cite a page it never opened, and one number would report that as a
+	// good run with a rounding error in it.
+	if score, ok := res.Research(); ok {
+		parts = append(parts,
+			score.Cited.String()+" cited read",
+			score.Quoted.String()+" quotes found",
+			score.Facts.String()+" facts")
+	}
 	if rounds := res.MedianRounds(); rounds > 0 {
 		parts = append(parts, eval.FormatRounds(rounds)+" rounds")
 	}
@@ -415,9 +484,10 @@ func evalBody(res eval.Result) []string {
 		switch {
 		case a.Err != nil:
 			line = a.Err.Error()
-		case a.Score != nil:
-			// A table attempt ran no check and printed nothing. What it did
-			// instead is its rows, which are listed beside this.
+		case a.Score != nil, a.Research != nil:
+			// A table or research attempt ran no check and printed nothing.
+			// What it did instead is its rows or its three rates, which are
+			// listed beside this.
 			continue
 		case !a.Passed:
 			line = firstLineOf(a.CheckOutput)
@@ -588,6 +658,11 @@ func compareDetail(d eval.Delta) string {
 		parts = append(parts, countShift(before.FalseDeny, after.FalseDeny, "false deny")...)
 		parts = append(parts, countShift(before.Unanswered, after.Unanswered, "with no answer")...)
 	}
+	if before, after := d.Before.Research, d.After.Research; before != nil && after != nil {
+		parts = append(parts, countShift(before.Citations, after.Citations, "cited, not read")...)
+		parts = append(parts, researchShift(before.Facts, after.Facts, "facts")...)
+		parts = append(parts, researchShift(before.Quoted, after.Quoted, "quotes found")...)
+	}
 	if before, after := eval.FormatRounds(d.Before.Rounds), eval.FormatRounds(d.After.Rounds); before != after {
 		parts = append(parts, before+" → "+after+" rounds")
 	}
@@ -606,6 +681,15 @@ func spendPair(d eval.Delta) (before, after string) {
 		return "", ""
 	}
 	return metricsSpend(d.Before.Cost, true), metricsSpend(d.After.Cost, true)
+}
+
+// researchShift is one research rate either side, and nothing where it did not
+// move — a pair of identical fractions is width taken from the ones that did.
+func researchShift(before, after eval.Rate, label string) []string {
+	if before == after {
+		return nil
+	}
+	return []string{before.String() + " → " + after.String() + " " + label}
 }
 
 // countShift is one outcome either side, and nothing at all where it never

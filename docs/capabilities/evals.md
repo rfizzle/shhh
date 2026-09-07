@@ -92,6 +92,59 @@ all — an output ceiling spent on reasoning returns an unfinished thought and
 no verdict — and a suite that scored that as a deny would report an outage as
 a cautious security posture and pass.
 
+## A research case is graded against what it read
+
+A run that reads the web leaves no workspace to check and produces prose
+rather than a word from a closed set, so neither shape above can see it. The
+third shape gives the run a site — the case's own pages, served over loopback
+for the length of the attempt — and grades the write-up against the ledger of
+what the fetcher actually returned.
+
+That keeps the rule that nothing grades a transcript. Every comparison here is
+mechanical: a URL against the ledger's URLs, a quoted sentence against the
+bytes of the page it was attributed to, a required fact against an expression
+the case author wrote. No judgement of the prose, and no rubric.
+
+**Three rates, and never their average.** Every URL the write-up cites has to
+be one the ledger says was read; every sentence it quotes has to be on the page
+it attributes it to; every fact the case requires has to be there. A write-up
+can carry all of the facts and cite a page it never opened, and that is exactly
+the failure this shape was built to catch — a single score would report it as a
+good run with a rounding error in it. A case passes when all three are whole.
+
+**A fact is an expression, not a phrase.** "Could not confirm" arrives as
+"I was unable to verify" just as often, and a case written in one wording
+measures the model's diction rather than its answer.
+
+**The words are the page's; the punctuation is the write-up's.** A model
+quoting a clause closes it with a full stop where the page has a comma, and a
+literal comparison would score an accurate quotation as an invented one. The
+edges are trimmed and nothing else is: a changed word still misses.
+
+**The three rates are kept in a baseline** and compared like a table's
+outcomes, because the failure they exist for does not move a verdict. A
+write-up that started citing pages the run never fetched failed before and
+fails now, and only the citation rate says what changed.
+
+**One case's right answer is that there is no answer.** The commonest research
+failure is a confident answer to a question the sources do not settle, and the
+only way to test for it is a case whose site does not hold the answer and whose
+required fact is the admission.
+
+**The site is the only thing the run can reach.** The address guard refuses
+loopback like any other private address, and the exception is one origin's: a
+second server on the same address is still refused, and so is the public web,
+because a case that could read the real internet would not be reproducible. It
+is not a setting — nothing in the configuration turns it on, and the only way
+to a policy carrying one is the harness that just started the server.
+
+**A research case runs its loop in this process**, unlike a workspace case and
+like a table one. Its site is on loopback and its search endpoint is the
+fixture's, and the honest place to lift the guard for one server is the process
+that knows which server that is. The prompt, the tools, the fetch result the
+model reads and the ledger the write-up is graded against are all the shipped
+ones, which is what the measurement is about.
+
 ## A run can be compared with the last one
 
 A suite costs real requests, which makes every run worth keeping. Without one
@@ -165,3 +218,4 @@ starts feeling worse than it did. The offline gate stays offline.
 - [`coding-agent.md`](coding-agent.md) — what is being measured
 - [`approvals-and-safety.md`](approvals-and-safety.md) — why a case runs with edits approved
 - [`providers.md`](providers.md) — what a case is priced against
+- [`chat.md`](chat.md#what-was-read) — the ledger a research case is graded against
