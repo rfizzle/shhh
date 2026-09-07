@@ -2,6 +2,7 @@ package sandbox
 
 import (
 	"context"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -470,4 +471,182 @@ func refuseTheInheritedEnvironment(t *testing.T, avail Availability) {
 	if strings.Contains(out, "path=[]") {
 		t.Errorf("a command with no PATH cannot find a program under %s:\n%s", avail.Mechanism, out)
 	}
+}
+
+// The two claims the approval card makes in the person's own words — "a
+// contained command cannot write outside the workspace" and "netless has no
+// network" — put to the kernel rather than to the argv builder. Every other
+// test of them reads the spec back: that `--bind` names the workspace and
+// `--unshare-net` is in the argv. A bind that lands in the wrong order, a
+// grant that resolves to `/`, and a profile whose network clause is spelled
+// for the wrong SBPL version all produce an argv those assertions pass.
+//
+// One test per mechanism, for the reason the deny-mask pair gives: a skip
+// worth reading by name beats a platform that quietly exercised nothing.
+func TestBubblewrapRefusesAWriteOutsideTheWorkspace(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skipf("bubblewrap is the Linux mechanism and this host is %s", runtime.GOOS)
+	}
+	avail := detectBwrap()
+	if !avail.OK {
+		t.Skipf("no bubblewrap containment here: %s", avail.Detail)
+	}
+	refuseTheWriteOutsideTheWorkspace(t, avail)
+}
+
+func TestSeatbeltRefusesAWriteOutsideTheWorkspace(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skipf("Seatbelt is the macOS mechanism and this host is %s", runtime.GOOS)
+	}
+	avail := detectSeatbelt()
+	if !avail.OK {
+		t.Skipf("no Seatbelt containment here: %s", avail.Detail)
+	}
+	refuseTheWriteOutsideTheWorkspace(t, avail)
+}
+
+func TestBubblewrapGivesNetlessNoNetwork(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skipf("bubblewrap is the Linux mechanism and this host is %s", runtime.GOOS)
+	}
+	avail := detectBwrap()
+	if !avail.OK {
+		t.Skipf("no bubblewrap containment here: %s", avail.Detail)
+	}
+	refuseTheNetlessConnection(t, avail)
+}
+
+func TestSeatbeltGivesNetlessNoNetwork(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skipf("Seatbelt is the macOS mechanism and this host is %s", runtime.GOOS)
+	}
+	avail := detectSeatbelt()
+	if !avail.OK {
+		t.Skipf("no Seatbelt containment here: %s", avail.Detail)
+	}
+	refuseTheNetlessConnection(t, avail)
+}
+
+// refuseTheWriteOutsideTheWorkspace holds both halves of the write boundary
+// at once: the file inside the workspace lands on the host, and the one
+// outside every grant does not. The negative half alone would pass on a wrap
+// that failed for any reason at all, which is what the sentinel from the
+// inside write is for.
+//
+// The host is asked whether the outside file exists rather than the command
+// being asked whether it succeeded, because those are different questions:
+// bubblewrap's read-only root fails the write, but a mechanism that let the
+// write land somewhere the host cannot see would report success to the
+// command and still be a mask that holds. The control run creates the file
+// and this test removes it again, so the absence at the end is this run's.
+func refuseTheWriteOutsideTheWorkspace(t *testing.T, avail Availability) {
+	t.Helper()
+	home := testHome(t)
+	// TMPDIR is a write grant and every t.TempDir sits under the host's, so
+	// a path meant to be outside every grant has to be built before this
+	// run's scratch space is pointed somewhere of its own. Without this the
+	// "outside" file is inside the temp grant and the test proves nothing.
+	outside := mkdir(t, filepath.Join(home, "outside"))
+	t.Setenv("TMPDIR", mkdir(t, filepath.Join(home, "scratch")))
+	policy, ws := workspacePolicy(t)
+	policy.Cwd = ws
+	inside := filepath.Join(ws, "inside.txt")
+	beyond := filepath.Join(outside, "beyond.txt")
+	command := "touch " + inside + " && echo WROTE-INSIDE; touch " + beyond + " && echo WROTE-OUTSIDE"
+
+	if out, err := capture(t, shellPath(), "-c", command); err != nil || !strings.Contains(out, "WROTE-OUTSIDE") {
+		t.Fatalf("the uncontained control must write outside the workspace, or this proves nothing: %v: %s", err, out)
+	}
+	if err := os.Remove(beyond); err != nil {
+		t.Fatal(err)
+	}
+
+	argv, err := Wrap(avail, policy, command)
+	if err != nil {
+		t.Fatalf("Wrap under %s: %v", avail.Mechanism, err)
+	}
+	out, _ := capture(t, argv[0], argv[1:]...)
+	if !strings.Contains(out, "WROTE-INSIDE") {
+		t.Fatalf("a contained command must still write its own workspace under %s:\n%s", avail.Mechanism, out)
+	}
+	if strings.Contains(out, "WROTE-OUTSIDE") {
+		t.Errorf("a contained command wrote outside every grant under %s:\n%s", avail.Mechanism, out)
+	}
+	if _, err := os.Stat(beyond); err == nil {
+		t.Errorf("a contained write reached %s on the host under %s", beyond, avail.Mechanism)
+	}
+	if _, err := os.Stat(inside); err != nil {
+		t.Errorf("the contained workspace write should reach the host under %s: %v", avail.Mechanism, err)
+	}
+}
+
+// refuseTheNetlessConnection puts the netless profile to a listener this test
+// opened, which is the one destination that cannot be down, rate-limited or
+// behind somebody's proxy: a run that fails to reach example.com says nothing
+// about the profile.
+//
+// It runs the same command under both profiles rather than only the netless
+// one, so what is asserted is the profile and not containment in general —
+// a wrap that could reach nothing at all would pass the netless half on its
+// own.
+func refuseTheNetlessConnection(t *testing.T, avail Availability) {
+	t.Helper()
+	if filepath.Base(shellPath()) != "bash" {
+		// /dev/tcp is bash's, and the wrap runs the execution shell rather
+		// than one this test picks, so there is no honest way to open a
+		// socket from inside without it.
+		t.Skipf("the execution shell here is %s, which has no /dev/tcp", shellPath())
+	}
+	testHome(t)
+	addr := listenLocally(t)
+	policy, ws := workspacePolicy(t)
+	policy.Cwd = ws
+	command := "exec 3<>/dev/tcp/" + strings.Replace(addr, ":", "/", 1) + " && echo CONNECTED"
+
+	if out, err := capture(t, shellPath(), "-c", command); err != nil || !strings.Contains(out, "CONNECTED") {
+		t.Fatalf("the uncontained control must reach the listener, or this proves nothing: %v: %s", err, out)
+	}
+
+	argv, err := Wrap(avail, policy, command)
+	if err != nil {
+		t.Fatalf("Wrap under %s: %v", avail.Mechanism, err)
+	}
+	if out, err := capture(t, argv[0], argv[1:]...); err != nil || !strings.Contains(out, "CONNECTED") {
+		t.Fatalf("the workspace profile keeps the network under %s: %v:\n%s", avail.Mechanism, err, out)
+	}
+
+	policy.Profile = ProfileWorkspaceNetless
+	argv, err = Wrap(avail, policy, command)
+	if err != nil {
+		t.Fatalf("Wrap netless under %s: %v", avail.Mechanism, err)
+	}
+	out, err := capture(t, argv[0], argv[1:]...)
+	if strings.Contains(out, "CONNECTED") {
+		t.Fatalf("a netless command reached a loopback listener under %s:\n%s", avail.Mechanism, out)
+	}
+	if err == nil {
+		t.Fatalf("the netless connect exited cleanly under %s, so nothing was blocked:\n%s", avail.Mechanism, out)
+	}
+}
+
+// listenLocally opens a loopback listener that accepts and closes for the
+// life of the test, and hands back its host:port. It accepts in the
+// background because the contained half is expected never to arrive.
+func listenLocally(t *testing.T) string {
+	t.Helper()
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Skipf("no loopback listener here: %v", err)
+	}
+	t.Cleanup(func() { _ = ln.Close() })
+	go func() {
+		for {
+			conn, err := ln.Accept()
+			if err != nil {
+				return
+			}
+			_ = conn.Close()
+		}
+	}()
+	return ln.Addr().String()
 }

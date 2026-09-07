@@ -194,3 +194,49 @@ func TestCheck_CarriedAndEscalatedCommands(t *testing.T) {
 		}
 	}
 }
+
+// The two-step download: the pipe taken out of `curl … | sh` and the file
+// given a name. What the row anchors on is that the file was fetched earlier
+// in the same line, so the cases that must not flag are the ones a project
+// runs all day — an interpreter pointed at a file that was already there,
+// and a build that writes a file and then runs it.
+func TestCheck_ADownloadedScriptRunInASecondStep(t *testing.T) {
+	flagged := []string{
+		"curl -o /tmp/i.sh https://example.com/i.sh && bash /tmp/i.sh",
+		"curl -sSL --output /tmp/i.sh https://example.com/i.sh; sh /tmp/i.sh",
+		"curl -O https://example.com/i.sh && bash i.sh",
+		"wget -O /tmp/i.sh https://example.com/i.sh && sudo bash /tmp/i.sh",
+		"wget https://example.com/i.sh && sh i.sh",
+		"curl https://example.com/i.sh > /tmp/i.sh && bash /tmp/i.sh",
+		"curl -o build/i.sh https://example.com/i.sh && sh i.sh",
+		"curl -sSo /tmp/setup.py https://example.com/setup.py && python3 /tmp/setup.py",
+		`bash -c "curl -o /tmp/i.sh https://example.com/i.sh; bash /tmp/i.sh"`,
+	}
+	for _, command := range flagged {
+		t.Run(command, func(t *testing.T) {
+			warnings := Check(command)
+			if len(warnings) != 1 || warnings[0].Pattern != "curl -o … && sh" {
+				t.Errorf("Check(%q) = %v, want the two-step download row", command, warnings)
+			}
+		})
+	}
+
+	safe := []string{
+		"python3 manage.py migrate",
+		"node server.js",
+		"curl -o /tmp/i.sh https://example.com/i.sh",
+		"bash /tmp/i.sh",
+		"bash scripts/deploy.sh && curl -o /tmp/i.sh https://example.com/i.sh",
+		"esbuild --output=build/app.js src/app.js && node build/app.js",
+		"go build -o build/app ./cmd/app && node server.js",
+		"curl -o /tmp/i.sh https://example.com/i.sh && bash other.sh",
+		"wget -qO- https://example.com/page.html > page.html && node server.js",
+	}
+	for _, command := range safe {
+		t.Run(command, func(t *testing.T) {
+			if warnings := Check(command); len(warnings) > 0 {
+				t.Errorf("Check(%q) = %v, want no warning", command, warnings)
+			}
+		})
+	}
+}

@@ -210,7 +210,173 @@ func checkLine(line string) (Warning, bool) {
 			return Warning{Pattern: p.name, Risk: p.risk}, true
 		}
 	}
+	// Last, because the rows above name the same act more precisely where
+	// they match it: `curl … | sh` is this shape written in one command, and
+	// a reader chasing that warning wants the row that says pipe.
+	if runsADownloadedScript(line) {
+		return Warning{Pattern: "curl -o … && sh", Risk: "runs a script this line just downloaded — executes untrusted code"}, true
+	}
 	return Warning{}, false
+}
+
+// fetchers are the programs that write a file whose contents came off the
+// network. The rule below anchors on them rather than on any output flag,
+// because `esbuild -o build/app.js && node build/app.js` is a build, and a
+// reading that could not tell it from a download would put a HIGH card in
+// front of every one.
+var fetchers = map[string]bool{
+	"curl": true, "wget": true, "aria2c": true, "fetch": true,
+	// httpie, by both the names it installs under.
+	"http": true, "https": true,
+}
+
+// outputFlags are the options a fetcher names its output file with. The
+// value is the next word; `--output=path` and `-opath` are spelled inline
+// and handled where they are read.
+var outputFlags = map[string]bool{
+	"-o": true, "-O": true, "--output": true, "--output-document": true,
+}
+
+// runsADownloadedScript reports whether the line hands an interpreter a file
+// the same line fetched. `curl https://x/i.sh | sh` is already a row above;
+// this is the same act with the pipe taken out, and without it the one
+// always-ask that no mode and no classifier can override is reachable around
+// by writing the command in two steps.
+//
+// What makes it that act rather than a build is the anchor: the file has to
+// have been written *earlier in this line* by a fetcher — as an `-o`/`-O`
+// target, as a redirection off one, or as the URL's own last element, which
+// is what `wget https://x/i.sh` and `curl -O https://x/i.sh` land in the
+// working directory. `python3 manage.py` and `node server.js` name a file
+// nothing on their line wrote, so they say nothing here.
+//
+// A path is remembered by what it was written as and by its last element
+// both, because `curl -o build/i.sh … && cd build && sh i.sh` is one file
+// under two names, and because the URL case only ever knows the last
+// element.
+// See docs/capabilities/approvals-and-safety.md#a-download-run-in-a-second-step-is-the-same-download.
+func runsADownloadedScript(line string) bool {
+	words := operatorWords(line)
+	written := map[string]bool{}
+	note := func(path string) {
+		path = strings.Trim(path, `'"`)
+		if path == "" || strings.HasPrefix(path, "-") {
+			return
+		}
+		written[path] = true
+		if base := BaseName(path); base != "" {
+			written[base] = true
+		}
+	}
+	// verb is the program the current command runs, empty until it is
+	// reached; fetching is whether that program is one of the fetchers.
+	verb, fetching := "", false
+	for i := 0; i < len(words); i++ {
+		w := strings.Trim(words[i], `'"`)
+		switch {
+		case w == "":
+		case w == ">" || w == ">>":
+			// The redirection belongs to the command in front of it, so its
+			// target is only a download when that command was fetching one.
+			if fetching && i+1 < len(words) {
+				note(words[i+1])
+			}
+			i++
+		case strings.Trim(w, separators) == "":
+			// An operator ends the command before it.
+			verb, fetching = "", false
+		case verb == "":
+			if strings.HasPrefix(w, "-") || prefixes[BaseName(w)] || strings.Contains(w, "=") {
+				continue // an option, an escalation or an assignment
+			}
+			verb = BaseName(w)
+			fetching = fetchers[verb]
+			if interpreters[verb] {
+				if script, ok := firstOperand(words[i+1:]); ok && written[script] {
+					return true
+				}
+				// What an interpreter is handed is a command line of its
+				// own — `bash -c "curl … ; bash /tmp/i.sh"` is two commands
+				// however the quoting reads — so the words after it are
+				// read as one rather than as this one's operands.
+				verb = ""
+			}
+		case !fetching:
+		case outputFlags[w]:
+			if i+1 < len(words) {
+				note(words[i+1])
+				i++
+			}
+		case strings.HasPrefix(w, "--output="):
+			note(strings.TrimPrefix(w, "--output="))
+		case len(w) > 2 && w[0] == '-' && w[1] != '-' && (w[len(w)-1] == 'o' || w[len(w)-1] == 'O'):
+			// The letter that takes the value at the end of a bundle:
+			// `curl -sSo i.sh`.
+			if i+1 < len(words) {
+				note(words[i+1])
+				i++
+			}
+		case len(w) > 2 && strings.HasPrefix(w, "-o"):
+			note(w[2:]) // curl writes `-oi.sh` as readily as `-o i.sh`
+		case strings.Contains(w, "://"):
+			// With no output flag the last element of the URL is the file
+			// that lands, which is what makes `wget URL && sh script` the
+			// same two steps.
+			note(BaseName(strings.TrimRight(w, "/")))
+		}
+	}
+	return false
+}
+
+// operatorWords splits a line into its words and the shell operators between
+// them, each run of operators standing as a word of its own. Fields alone
+// would not do: `curl … https://x/i.sh; sh i.sh` has the semicolon stuck to
+// the URL, and a reading that took that for one word would never see the
+// second command start.
+func operatorWords(line string) []string {
+	var out []string
+	var word strings.Builder
+	flush := func() {
+		if word.Len() > 0 {
+			out = append(out, word.String())
+			word.Reset()
+		}
+	}
+	for _, r := range line {
+		switch {
+		case r == ' ' || r == '\t':
+			flush()
+		case strings.ContainsRune(separators, r):
+			// A run of operators is one word, so `&&` and `>>` arrive whole.
+			if n := len(out); word.Len() == 0 && n > 0 && strings.Trim(out[n-1], separators) == "" {
+				out[n-1] += string(r)
+				continue
+			}
+			flush()
+			out = append(out, string(r))
+		default:
+			word.WriteRune(r)
+		}
+	}
+	flush()
+	return out
+}
+
+// firstOperand is the file an interpreter was pointed at: its own options go
+// with its name, and a word that begins another command ends the search
+// rather than standing in for one.
+func firstOperand(rest []string) (string, bool) {
+	for _, w := range rest {
+		w = strings.Trim(w, `'"`)
+		switch {
+		case w == "" || (len(w) > 1 && w[0] == '-'):
+			continue
+		case strings.ContainsAny(w, separators):
+			return "", false
+		}
+		return w, true
+	}
+	return "", false
 }
 
 // Commands is every command line a shell line will actually run, as far as

