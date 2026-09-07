@@ -471,6 +471,31 @@ func TestSummary_TurnCloseTakesAReading(t *testing.T) {
 	if cmd := working.summaryCloseCmd(working); cmd != nil {
 		t.Fatal("a running turn has not closed")
 	}
+	// A steer delivered at the boundary after the reading that earned it,
+	// answered without a tool call, ends the turn at the round it started:
+	// the round counter never moves, and the reading left on screen is the
+	// off-target one the steer was the answer to.
+	steered := verdictModel(t, "off_target")
+	steered = applyReading(t, steered)
+	steered.injectInterventions()
+	if steered.summary.intervenedRound != steered.summary.lastRound {
+		t.Fatalf("setup: a steer at round %d after a reading at round %d",
+			steered.summary.intervenedRound, steered.summary.lastRound)
+	}
+	steeredIdle := steered
+	steeredIdle.state = stateInput
+	if cmd := steeredIdle.summaryCloseCmd(steered); cmd == nil {
+		t.Fatal("a turn ending on the answer to a steer takes a closing reading")
+	}
+	// With nothing delivered since it, a turn read this round still has
+	// nothing new to say.
+	quiet := verdictModel(t, "on_target")
+	quiet = applyReading(t, quiet)
+	quietIdle := quiet
+	quietIdle.state = stateInput
+	if cmd := quietIdle.summaryCloseCmd(quiet); cmd != nil {
+		t.Fatal("a turn read this round, uninterrupted, does not read again")
+	}
 }
 
 // /status is the block in words, for the terminals below 130 columns that have

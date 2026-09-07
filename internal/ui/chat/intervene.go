@@ -43,6 +43,10 @@ func (m *Model) injectInterventions() {
 	m.agent.Append(provider.Message{Role: provider.RoleUser, Content: iv.Message})
 	m.appendEntry(entry{kind: entrySystem, text: iv.Notice})
 	m.signal(observe.SignalIntervene, iv.Kind.Signal())
+	// The round it was delivered at, so a turn that ends on the model's
+	// answer to this message still closes on a fresh reading even though no
+	// further round was taken (summary.go).
+	m.summary.intervenedRound = m.agent.Rounds()
 	// A row was appended, so the pane is redrawn the way every other system
 	// row is; the resize hook alone would leave it unseen until the next
 	// stream flush.

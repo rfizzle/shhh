@@ -87,6 +87,12 @@ type summaryState struct {
 	lastAt    time.Time
 	// inFlight marks a reading already asked for; a second is never sent.
 	inFlight bool
+	// intervenedRound is the round an interruption was delivered at, and
+	// zero when none has been this turn — interventions are only ever
+	// delivered at a round boundary, which is never round zero. It is what
+	// tells the turn's close that something happened since the last reading
+	// even though the counter did not move (summaryCloseCmd).
+	intervenedRound int
 	// runID is the run the in-flight reading belongs to, so a verdict that
 	// arrives after the turn was cancelled is discarded rather than drawn.
 	runID int
@@ -106,6 +112,7 @@ func (s *summaryState) startTurn() {
 	s.last = nil
 	s.lastRound = 0
 	s.lastAt = time.Time{}
+	s.intervenedRound = 0
 }
 
 // resetSummary starts the whole mechanism over at a session boundary, where
@@ -197,7 +204,18 @@ func (m *Model) summaryCloseCmd(prev Model) tea.Cmd {
 		return nil
 	}
 	rounds := m.agent.Rounds()
-	if rounds < summaryCloseMinRounds || rounds <= m.summary.lastRound {
+	if rounds < summaryCloseMinRounds {
+		return nil
+	}
+	// A turn read this round has nothing new to say — unless the machinery
+	// spoke to the model in the meantime. A steer delivered at the boundary
+	// after the reading that earned it, answered without a tool call, ends
+	// the turn at the round it started: without this the rail keeps "off
+	// target" over the steer row and the reply that answered it until the
+	// next turn, which is the one verdict on screen that is provably out of
+	// date. Rounds are the only clock here, and an intervention is the one
+	// thing that changes the answer without moving it.
+	if rounds <= m.summary.lastRound && m.summary.intervenedRound < m.summary.lastRound {
 		return nil
 	}
 	return m.forceSummaryCmd()
