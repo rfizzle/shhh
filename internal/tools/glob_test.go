@@ -2,6 +2,7 @@ package tools
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -211,5 +212,45 @@ func TestGlob_NestedGitignoreAppliesOnlyInsideItsOwnDirectory(t *testing.T) {
 	}
 	if !strings.Contains(result, "gen.go") || strings.Contains(result, "sub/gen.go") {
 		t.Errorf("only sub/gen.go is ignored, got: %q", result)
+	}
+}
+
+func TestGlob_MatchesHiddenFilesButNotGit(t *testing.T) {
+	tmp := t.TempDir()
+	must(t, os.MkdirAll(filepath.Join(tmp, ".github", "workflows"), 0o755))
+	must(t, os.WriteFile(filepath.Join(tmp, ".github", "workflows", "ci.yml"), []byte("x"), 0o644))
+	must(t, os.MkdirAll(filepath.Join(tmp, ".git"), 0o755))
+	must(t, os.WriteFile(filepath.Join(tmp, ".git", "hooks.yml"), []byte("x"), 0o644))
+
+	args, _ := json.Marshal(globArgs{Pattern: "**/*.yml", Path: tmp})
+	result, err := Execute("glob", args)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(result, ".github/workflows/ci.yml") {
+		t.Errorf("glob should match under a hidden directory: %q", result)
+	}
+	if strings.Contains(result, ".git/hooks.yml") {
+		t.Errorf("glob should still skip .git: %q", result)
+	}
+}
+
+func TestGlob_Limit(t *testing.T) {
+	tmp := t.TempDir()
+	for i := 0; i < 12; i++ {
+		must(t, os.WriteFile(filepath.Join(tmp, fmt.Sprintf("f%02d.go", i)), []byte("x"), 0o644))
+	}
+
+	args, _ := json.Marshal(globArgs{Pattern: "*.go", Path: tmp, Limit: 5})
+	result, err := Execute("glob", args)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	paths, notice, _ := strings.Cut(result, "\n… ")
+	if got := len(strings.Split(paths, "\n")); got != 5 {
+		t.Errorf("limit 5 should return 5 paths, got %d: %q", got, result)
+	}
+	if !strings.Contains(notice, "truncated at 5 files") {
+		t.Errorf("the notice should name the limit that was applied: %q", result)
 	}
 }

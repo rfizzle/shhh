@@ -24,7 +24,10 @@ type Reducer struct {
 	// exempt is the tools this session's surface declared already bounded,
 	// beside the ones the toolbox answers for itself. Guarded for the same
 	// reason scrub is.
-	exempt        map[string]bool
+	exempt map[string]bool
+	// exemptWhen is the tools bounded for some of their calls and not
+	// others, and the question to ask of one call's arguments.
+	exemptWhen    map[string]func(json.RawMessage) bool
 	reductions    int
 	originalBytes int64
 	reducedBytes  int64
@@ -102,11 +105,48 @@ func (r *Reducer) Exempt(names ...string) {
 	}
 }
 
+// ExemptWhen declares a tool that bounds its own output on some calls and
+// not on others, and the question to ask of one call's arguments.
+//
+// It exists because a tool is not always the unit the bound is chosen at.
+// The git tool's status, log and blame verbs each bound their own output and
+// name the argument that narrows it further, so reducing one takes the
+// window the model asked for and returns its two ends; show and diff have no
+// such argument, are as large as the commit is, and are left to the reducer
+// on purpose. Exempting the tool would silence the pipeline for both pairs,
+// and not exempting it cuts the middle out of the three that were already an
+// answer.
+//
+// The question is asked where the arguments are in hand, which is the
+// dispatch chain: a result that reaches Process without them is reduced
+// unless the whole tool is Exempt. Declared while the session registers its
+// tools, before the first call. Safe on a nil Reducer.
+func (r *Reducer) ExemptWhen(name string, bounded func(json.RawMessage) bool) {
+	if r == nil || bounded == nil {
+		return
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.exemptWhen == nil {
+		r.exemptWhen = make(map[string]func(json.RawMessage) bool, 1)
+	}
+	r.exemptWhen[name] = bounded
+}
+
 // exempted reports whether a surface declared this tool self-bounding.
 func (r *Reducer) exempted(tool string) bool {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	return r.exempt[tool]
+}
+
+// callExempted reports whether this one call is bounded by the tool that
+// answered it.
+func (r *Reducer) callExempted(tool string, args json.RawMessage) bool {
+	r.mu.Lock()
+	bounded := r.exemptWhen[tool]
+	r.mu.Unlock()
+	return bounded != nil && bounded(args)
 }
 
 // Store exposes the underlying session store (for /evidence management).
@@ -193,6 +233,9 @@ func (r *Reducer) Process(tool, result string) string {
 // WrapExecutor wraps a tool executor so every successful result runs through
 // the reduction pipeline, and evidence tool calls dispatch against this
 // session's store (their output is already bounded and is never reduced).
+//
+// This is also the only place a per-call exemption can be honoured, because
+// it is the only place the arguments and the result are both in hand.
 func (r *Reducer) WrapExecutor(next func(name string, args json.RawMessage) (string, error)) func(string, json.RawMessage) (string, error) {
 	return func(name string, args json.RawMessage) (string, error) {
 		if name == ToolName {
@@ -201,6 +244,9 @@ func (r *Reducer) WrapExecutor(next func(name string, args json.RawMessage) (str
 		out, err := next(name, args)
 		if err != nil {
 			return out, err
+		}
+		if r.callExempted(name, args) {
+			return out, nil
 		}
 		return r.Process(name, out), nil
 	}

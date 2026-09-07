@@ -65,8 +65,11 @@ const (
 	SpawnTimeout = 30 * time.Second
 
 	// MaxOutputBytes caps captured stdout; the process is killed once the cap
-	// is hit, and the result carries a truncation notice. Results this large
-	// are further reduced by the evidence pipeline when it is active.
+	// is hit, and the result carries a truncation notice. That notice is the
+	// bound the model reads: a surface declares these tools self-bounding as
+	// it registers them, so the evidence pipeline does not cut a head and a
+	// tail out of a match set on top of it. git's show and diff are the
+	// exception and are reduced, because their size is the commit's.
 	MaxOutputBytes = 64 << 10
 
 	// MaxStderrBytes caps captured stderr embedded in error results.

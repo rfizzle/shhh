@@ -98,7 +98,14 @@ func buildToolset(cmd *cobra.Command, session *chatSession, kind string, opts to
 	// server was detected, plus after-edit diagnostics. Servers start lazily
 	// and shut down with the surface.
 	if session.lsp != nil {
-		register(session.lsp.Definitions()...)
+		defs := session.lsp.Definitions()
+		register(defs...)
+		// Every question a language server answers is bounded by the server
+		// and by the tool that asked it — an outline is a file's
+		// declarations, a references list is capped and says so. Reducing
+		// one takes an answer whose whole value is that it is shorter than
+		// the file and returns its two ends.
+		t.evidence.Exempt(toolNames(defs)...)
 		t.closers = append(t.closers, session.lsp.Close)
 	}
 	// Structural code tools: fd, ast-grep, sd, tokei, jaq — read-only
@@ -111,7 +118,21 @@ func buildToolset(cmd *cobra.Command, session *chatSession, kind string, opts to
 		if opts.gitWrites != nil {
 			session.structural.AllowWrites(*opts.gitWrites)
 		}
-		register(session.structural.Definitions()...)
+		defs := session.structural.Definitions()
+		register(defs...)
+		// The wrapped tools bound their own results the way this package's
+		// readers do: fd caps its paths and names the argument that narrows
+		// them, ast-grep and sd return a match set, the write half answers
+		// in a line. git is the exception, and not a whole one — three of
+		// its verbs bound themselves and two are the pipeline's to bound —
+		// so it is declared per call rather than by name.
+		for _, d := range defs {
+			if d.Name == structural.GitToolName {
+				continue
+			}
+			t.evidence.Exempt(d.Name)
+		}
+		t.evidence.ExemptWhen(structural.GitToolName, structural.GitCallBounded)
 	}
 	// The quality gate: the model runs the project's own checks by suite
 	// name, and command text only ever comes from trusted config.
@@ -146,6 +167,16 @@ func buildToolset(cmd *cobra.Command, session *chatSession, kind string, opts to
 		return nil, err
 	}
 	return t, nil
+}
+
+// toolNames is the names of a set of definitions, which is what the
+// reduction pipeline is declared in.
+func toolNames(defs []provider.Tool) []string {
+	names := make([]string, 0, len(defs))
+	for _, d := range defs {
+		names = append(names, d.Name)
+	}
+	return names
 }
 
 // close ends what the toolset opened.

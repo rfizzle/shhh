@@ -503,3 +503,177 @@ func TestSearch_RipgrepLeavesOutWhatGitignoreNames(t *testing.T) {
 	args, _ := json.Marshal(searchArgs{Pattern: "Target", Path: gitignoredTree(t)})
 	assertGitignoreHonoured(t, runSearch(t, string(args)))
 }
+
+// TestSearch_HiddenFilesOnBothBackends is the parity test for dotfiles. A
+// tracked hidden file — .golangci.yml, .github/workflows, the project's own
+// .agents/skills — is what the model is looking for when it asks where the
+// linter is configured, and for a long time it was found only on machines
+// without ripgrep. Both halves are asserted here because the failure was that
+// the two backends disagreed, not that either one was wrong on its own.
+func TestSearch_HiddenFilesOnBothBackends(t *testing.T) {
+	tree := func(t *testing.T) string {
+		t.Helper()
+		tmp := t.TempDir()
+		must(t, os.WriteFile(filepath.Join(tmp, ".golangci.yml"), []byte("linters:\n  needle: true\n"), 0o644))
+		must(t, os.MkdirAll(filepath.Join(tmp, ".git"), 0o755))
+		must(t, os.WriteFile(filepath.Join(tmp, ".git", "config"), []byte("needle\n"), 0o644))
+		return tmp
+	}
+
+	t.Run("walker", func(t *testing.T) {
+		forceWalker(t)
+		args, _ := json.Marshal(searchArgs{Pattern: "needle", Path: tree(t)})
+		result, err := Execute("search", args)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !strings.Contains(result, ".golangci.yml:2:") {
+			t.Errorf("walker should find the hidden file: %q", result)
+		}
+		if strings.Contains(result, ".git/config") {
+			t.Errorf("walker should still skip .git: %q", result)
+		}
+	})
+
+	t.Run("ripgrep argv", func(t *testing.T) {
+		// Standing in for ripgrep's own rule: a dotfile is invisible to it
+		// unless --hidden is in the argv, so a fake that answers only when
+		// the flag is there fails exactly where the real thing failed.
+		fakeRg(t, `for a in "$@"; do
+	if [ "$a" = "--hidden" ]; then printf '.golangci.yml\0002:  needle: true\n'; exit 0; fi
+done
+exit 1`)
+		args, _ := json.Marshal(searchArgs{Pattern: "needle", Path: tree(t)})
+		result, err := Execute("search", args)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !strings.Contains(result, ".golangci.yml:2:") {
+			t.Errorf("the ripgrep argv should carry --hidden: %q", result)
+		}
+	})
+
+	t.Run("ripgrep", func(t *testing.T) {
+		requireRg(t)
+		args, _ := json.Marshal(searchArgs{Pattern: "needle", Path: tree(t)})
+		result, err := Execute("search", args)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !strings.Contains(result, ".golangci.yml:2:") {
+			t.Errorf("rg should find the hidden file: %q", result)
+		}
+		if strings.Contains(result, ".git/config") {
+			t.Errorf("rg should still skip .git: %q", result)
+		}
+	})
+}
+
+func TestSearch_LiteralNeedsNoEscaping(t *testing.T) {
+	forceWalker(t)
+	tmp := t.TempDir()
+	must(t, os.WriteFile(filepath.Join(tmp, "code.go"), []byte("x := foo(1)\ny := fooo\n"), 0o644))
+
+	// Without literal this is an unterminated group and the tool refuses it,
+	// which is the round the argument exists to save.
+	bare, _ := json.Marshal(searchArgs{Pattern: "foo(", Path: tmp})
+	if _, err := Execute("search", bare); err == nil {
+		t.Fatal("an unescaped foo( should still be an invalid regular expression")
+	}
+
+	args, _ := json.Marshal(searchArgs{Pattern: "foo(", Path: tmp, Literal: true})
+	result, err := Execute("search", args)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(result, "code.go:1:") {
+		t.Errorf("literal should match foo( as written: %q", result)
+	}
+	if strings.Contains(result, "code.go:2:") {
+		t.Errorf("literal should not match fooo: %q", result)
+	}
+}
+
+// Both backends match the same string. ripgrep has flags of its own for
+// these two questions and they are not the same question: -w applies
+// half-boundaries, so on `foo(` it refuses the line `\b` accepts, and a call
+// would answer differently depending on which backend the machine has —
+// which is the failure the parity test above exists for.
+func TestSearch_RipgrepIsHandedTheWrappedPattern(t *testing.T) {
+	// Echoes back whatever pattern the argv carried, as a match line.
+	fakeRg(t, `while [ $# -gt 0 ]; do
+	if [ "$1" = "--regexp" ]; then printf 'code.go\0001:%s\n' "$2"; exit 0; fi
+	shift
+done
+exit 1`)
+	args, _ := json.Marshal(searchArgs{Pattern: "foo(", Path: t.TempDir(), Literal: true, WordBoundary: true, CaseSensitive: true})
+	result, err := Execute("search", args)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if want := `\b(?:foo\()\b`; !strings.Contains(result, want) {
+		t.Errorf("rg should be handed %s, got %q", want, result)
+	}
+}
+
+func TestSearch_WordBoundary(t *testing.T) {
+	forceWalker(t)
+	tmp := t.TempDir()
+	must(t, os.WriteFile(filepath.Join(tmp, "db.go"), []byte("s.AddMemory(x)\ns.Add(y)\n"), 0o644))
+
+	result := runSearch(t, fmt.Sprintf(`{"pattern":"Add","path":%q,"case_sensitive":true,"word_boundary":true,"context_lines":0}`, tmp))
+	if strings.Contains(result, "db.go:1:") {
+		t.Errorf("word_boundary should not match inside AddMemory: %q", result)
+	}
+	if !strings.Contains(result, "db.go:2:") {
+		t.Errorf("word_boundary should still match the whole word: %q", result)
+	}
+}
+
+func TestSearch_LimitRaisesAndIsCapped(t *testing.T) {
+	forceWalker(t)
+	tmp := t.TempDir()
+	var b strings.Builder
+	for i := 0; i < MaxSearchLimit+50; i++ {
+		fmt.Fprintf(&b, "needle %d\n", i)
+	}
+	must(t, os.WriteFile(filepath.Join(tmp, "many.txt"), []byte(b.String()), 0o644))
+
+	count := func(limit int) int {
+		t.Helper()
+		result := runSearch(t, fmt.Sprintf(`{"pattern":"needle","path":%q,"context_lines":0,"limit":%d}`, tmp, limit))
+		n := 0
+		for _, line := range strings.Split(result, "\n") {
+			if strings.Contains(line, "many.txt:") {
+				n++
+			}
+		}
+		return n
+	}
+
+	if got := count(0); got != MaxSearchResults {
+		t.Errorf("no limit should return the default %d matches, got %d", MaxSearchResults, got)
+	}
+	if got := count(120); got != 120 {
+		t.Errorf("limit should raise the default, got %d", got)
+	}
+	if got := count(MaxSearchLimit + 40); got != MaxSearchLimit {
+		t.Errorf("limit should be capped at %d, got %d", MaxSearchLimit, got)
+	}
+
+	// A notice that says to raise a number already at its maximum is the
+	// round the notice exists to save.
+	at := runSearch(t, fmt.Sprintf(`{"pattern":"needle","path":%q,"context_lines":0,"limit":%d}`, tmp, MaxSearchLimit))
+	if strings.Contains(at, "raise limit") {
+		t.Errorf("at the ceiling the notice must not offer a higher limit: %q", tail(at))
+	}
+	under := runSearch(t, fmt.Sprintf(`{"pattern":"needle","path":%q,"context_lines":0}`, tmp))
+	if !strings.Contains(under, "raise limit") {
+		t.Errorf("under the ceiling the notice should name the argument: %q", tail(under))
+	}
+}
+
+func tail(s string) string {
+	lines := strings.Split(strings.TrimRight(s, "\n"), "\n")
+	return lines[len(lines)-1]
+}

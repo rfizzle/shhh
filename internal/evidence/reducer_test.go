@@ -186,6 +186,42 @@ func TestReducer_ExemptToolsAreNotReduced(t *testing.T) {
 func TestReducer_ExemptIsNilSafe(t *testing.T) {
 	var r *Reducer
 	r.Exempt("web_fetch")
+	r.ExemptWhen("git", func(json.RawMessage) bool { return true })
+}
+
+// A tool is not always the unit its bound is chosen at. git bounds status,
+// log and blame itself and leaves show and diff to the pipeline, so the two
+// halves of one tool have to come out of the same executor differently.
+func TestReducer_ExemptWhenSplitsOneToolByItsArguments(t *testing.T) {
+	in := bigOutput()
+	r := testReducer(t)
+	r.ExemptWhen("git", func(args json.RawMessage) bool {
+		var a struct {
+			Verb string `json:"verb"`
+		}
+		return json.Unmarshal(args, &a) == nil && a.Verb == "blame"
+	})
+	exec := r.WrapExecutor(func(string, json.RawMessage) (string, error) { return in, nil })
+
+	whole, err := exec("git", json.RawMessage(`{"verb":"blame"}`))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if whole != in {
+		t.Errorf("the window the caller asked for must arrive whole, got %d of %d bytes", len(whole), len(in))
+	}
+	cut, err := exec("git", json.RawMessage(`{"verb":"show"}`))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cut == in {
+		t.Error("a verb with no bound of its own is what the pipeline is for")
+	}
+	// The exemption is a question about one call, not a state the first one
+	// leaves behind.
+	if again, _ := exec("git", json.RawMessage(`{"verb":"blame"}`)); again != in {
+		t.Error("a reduced call must not make the next bounded one reducible")
+	}
 }
 
 // The store's copy is the one that outlives the turn, so a scrub that runs

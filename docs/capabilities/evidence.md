@@ -27,11 +27,12 @@ is the whole reason the pipeline exists, and it is the only place it earns its
 cost.
 
 **A tool that already bounds its own output is exempt.** Reading a file,
-listing a directory, searching, globbing, fetching a page — each of these
-returns a shape it chose, inside a cap chosen for that shape, and says how to
-continue past it when it runs out. Cutting a head and a tail through that
-result is not a saving. It is a second, shape-blind edit on top of a
-deliberate one, and what it destroys is the middle.
+listing a directory, searching, globbing, fetching a page, outlining a file
+with the language server, attributing its lines to the commits that wrote
+them — each of these returns a shape it chose, inside a cap chosen for that
+shape, and says how to continue past it when it runs out. Cutting a head and
+a tail through that result is not a saving. It is a second, shape-blind edit
+on top of a deliberate one, and what it destroys is the middle.
 
 The failure this rule exists for was specific and expensive. The file read is
 told, in the instruction the model actually acts on, to return a whole file in
@@ -44,6 +45,20 @@ mechanism the instruction knew nothing about.
 
 Two rules that disagree do not average out. The one nearer the machine wins,
 and the reader never finds out why the other one did not work.
+
+Which tools those are is answered where they are registered, not by a list in
+the pipeline. Most of them are optional — a language server that was
+detected, an external tool that happened to be installed — so the only place
+that can name them is the one that decided this session has them, and a list
+kept anywhere else names the tools that existed on the day it was written.
+
+Sometimes the tool is not the unit the bound was chosen at. The history tool
+bounds the verbs with a narrower question to offer — a status by paths, a log
+by count, a blame by its line window — and deliberately leaves showing a
+commit and diffing two of them unbounded, because the content is however
+large the commit is and there is no argument that would return less. So that
+one is declared per call: the window the reader narrowed to arrives whole,
+and the patch that could be anything is what the pipeline is for.
 
 ## The reader can always get the whole thing back
 

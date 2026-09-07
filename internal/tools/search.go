@@ -30,10 +30,11 @@ var search = Definition{
 	Tool: provider.Tool{
 		Name: SearchName,
 		Description: "Search file contents with a regular expression (RE2 syntax). Case-insensitive by default. " +
-			"Returns matching lines as path:line: text. Skips .git, node_modules, vendor and anything .gitignore names. " +
+			"Returns matching lines as path:line: text. Hidden files are searched; .git, node_modules, vendor and anything .gitignore names are not. " +
 			"Each match comes with two lines of context by default, so the answer arrives with the hit instead of in the round after it; " +
 			"set context_lines to widen or narrow that, files_only to find which files are involved without quoting any, " +
-			"and include to limit the search to one kind of file.",
+			"and include to limit the search to one kind of file. " +
+			"Set literal to search for the pattern as written, so punctuation needs no escaping, and word_boundary to match whole words only.",
 		Parameters: json.RawMessage(`{
 			"type": "object",
 			"properties": {
@@ -42,7 +43,10 @@ var search = Definition{
 				"case_sensitive": {"type": "boolean", "description": "Match case-sensitively (default false)"},
 				"include": {"type": "string", "description": "Optional glob limiting which files are searched, e.g. *.go or internal/**/*_test.go"},
 				"context_lines": {"type": "integer", "description": "Lines of context to show around each match (0-5, default 2). Pass 0 for matching lines alone. Context lines are shown as path-line- text"},
-				"files_only": {"type": "boolean", "description": "Return one line per matching file with its match count instead of the matching lines. Use it to find where something lives"}
+				"files_only": {"type": "boolean", "description": "Return one line per matching file with its match count instead of the matching lines. Use it to find where something lives"},
+				"literal": {"type": "boolean", "description": "Treat pattern as plain text rather than a regular expression, so ( ) $ . * need no escaping"},
+				"word_boundary": {"type": "boolean", "description": "Match only where the pattern is a whole word, so Add does not match AddMemory"},
+				"limit": {"type": "integer", "description": "Maximum matches to return (default 50, or 200 with files_only; max 500)"}
 			},
 			"required": ["pattern"]
 		}`),
@@ -63,10 +67,17 @@ type searchArgs struct {
 	Include       string `json:"include"`
 	ContextLines  *int   `json:"context_lines"`
 	FilesOnly     bool   `json:"files_only"`
+	Literal       bool   `json:"literal"`
+	WordBoundary  bool   `json:"word_boundary"`
+	Limit         int    `json:"limit"`
 
-	// context is ContextLines resolved against the default, which is what
-	// every backend actually reads.
+	// context is ContextLines resolved against the default, and limit is
+	// Limit resolved against this mode's default and the ceiling. Both are
+	// what every backend actually reads: a default applied twice, once per
+	// backend, is a search that answers differently depending on which one
+	// the machine has.
 	context int
+	limit   int
 }
 
 // lookupRg reports where ripgrep lives, if it is on PATH. A variable so tests
@@ -74,6 +85,47 @@ type searchArgs struct {
 var lookupRg = func() (string, bool) {
 	path, err := exec.LookPath("rg")
 	return path, err == nil
+}
+
+// searchPattern applies the two pattern arguments, and is what both backends
+// match with: ripgrep is handed this string rather than --fixed-strings and
+// --word-regexp.
+//
+// Those flags look like the same two questions and are not. -F selects a
+// literal matcher, and -w is a rule about what surrounds a match, which
+// ripgrep applies as half-boundaries: on a pattern whose own end is
+// punctuation — `foo(`, the pattern the literal argument exists for — -w
+// refuses the line `x := foo(1)` because a word character follows the match,
+// while `\b` accepts it because the boundary is between `(` and `1`. Two
+// backends that disagree in opposite directions on the same call is the
+// failure this whole pair of arguments was added to end, so there is one
+// wrapping and both engines read it. What a quoted pattern means is not in
+// question: it is one literal string either way.
+//
+// The order matters. Quoting comes first, so a literal search for `foo(`
+// escapes the parenthesis and not the `\b` the boundary wrapper adds after
+// it; and the boundary group is a group, so `\b(?:foo|bar)\b` binds the
+// whole alternation rather than only its two ends.
+func searchPattern(args searchArgs) string {
+	expr := args.Pattern
+	if args.Literal {
+		expr = regexp.QuoteMeta(expr)
+	}
+	if args.WordBoundary {
+		expr = `\b(?:` + expr + `)\b`
+	}
+	return expr
+}
+
+// searchExpr is what the walker compiles: the shared pattern with the case
+// question, which ripgrep is asked through --ignore-case instead. Compiling
+// it is also what decides whether a call is valid at all, so the two backends
+// refuse the same inputs with the same error.
+func searchExpr(args searchArgs) string {
+	if args.CaseSensitive {
+		return searchPattern(args)
+	}
+	return "(?i)" + searchPattern(args)
 }
 
 func executeSearch(raw json.RawMessage) (string, error) {
@@ -97,14 +149,17 @@ func executeSearch(raw json.RawMessage) (string, error) {
 	if args.context > MaxSearchContextLines {
 		args.context = MaxSearchContextLines
 	}
+	args.limit = MaxSearchResults
+	if args.FilesOnly {
+		args.limit = MaxSearchFileResults
+	}
+	if args.Limit > 0 {
+		args.limit = min(args.Limit, MaxSearchLimit)
+	}
 
 	// Validate the pattern up front so both backends reject the same inputs
 	// with the same error.
-	expr := args.Pattern
-	if !args.CaseSensitive {
-		expr = "(?i)" + expr
-	}
-	re, err := regexp.Compile(expr)
+	re, err := regexp.Compile(searchExpr(args))
 	if err != nil {
 		return "", fmt.Errorf("invalid regular expression: %w", err)
 	}
@@ -175,10 +230,18 @@ func (m *includeMatcher) match(rel string) bool {
 // the same path:line format, and --null makes the path separator unambiguous.
 // It returns the formatted lines and how many of them are matches rather than
 // context, because the result cap counts matches.
+//
+// --hidden is what makes the two backends answer the same question. ripgrep
+// skips a dotfile unless told otherwise and the walker has never had such a
+// rule, so without it `.github/workflows`, `.golangci.yml` and the project's
+// own `.agents/skills` are tracked files that search reports as absent on
+// every machine with rg installed — and the model, told "No matches found",
+// concludes the file does not exist and writes a new one. The three excluded
+// globs are what keeps .git out once hidden files are in.
 func searchWithRipgrep(rg string, args searchArgs) (results []string, matches int, err error) {
 	argv := []string{
 		"--line-number", "--no-heading", "--with-filename", "--color=never",
-		"--no-messages", "--null",
+		"--no-messages", "--null", "--hidden",
 		"--max-columns", strconv.Itoa(MaxSearchLineBytes), "--max-columns-preview",
 		"--glob", "!.git", "--glob", "!node_modules", "--glob", "!vendor",
 	}
@@ -188,7 +251,7 @@ func searchWithRipgrep(rg string, args searchArgs) (results []string, matches in
 	if args.Include != "" {
 		argv = append(argv, "--glob", args.Include)
 	}
-	limit := MaxSearchResults
+	limit := args.limit
 	switch {
 	case args.FilesOnly:
 		// --count-matches answers "where does this live, and how much of it
@@ -196,11 +259,10 @@ func searchWithRipgrep(rg string, args searchArgs) (results []string, matches in
 		// is for. --line-number is meaningless with it and rg says so.
 		argv = append(argv, "--count-matches")
 		argv = removeArg(argv, "--line-number")
-		limit = MaxSearchFileResults
 	case args.context > 0:
 		argv = append(argv, "--context", strconv.Itoa(args.context))
 	}
-	argv = append(argv, "--regexp", args.Pattern, "--", args.Path)
+	argv = append(argv, "--regexp", searchPattern(args), "--", args.Path)
 
 	cmd := exec.Command(rg, argv...)
 	stdout, err := cmd.StdoutPipe()
@@ -292,10 +354,7 @@ func searchWithWalker(re *regexp.Regexp, include *includeMatcher, args searchArg
 	if err != nil {
 		return nil, 0, fmt.Errorf("cannot access path: %w", err)
 	}
-	limit := MaxSearchResults
-	if args.FilesOnly {
-		limit = MaxSearchFileResults
-	}
+	limit := args.limit
 	if !info.IsDir() {
 		results, matches = searchFile(args.Path, re, args, nil, 0, limit)
 		return results, matches, nil
@@ -434,19 +493,30 @@ func formatFileCount(path, count string) string {
 	return fmt.Sprintf("%s: %d matches", path, n)
 }
 
+// raiseLimitHint offers the limit argument in a truncation notice, and says
+// nothing once the ceiling is what was hit: a notice that tells the reader to
+// raise a number already at its maximum spends the round it exists to save.
+func raiseLimitHint(limit int) string {
+	if limit >= MaxSearchLimit {
+		return ""
+	}
+	return fmt.Sprintf(", or raise limit to at most %d", MaxSearchLimit)
+}
+
 func formatSearchResults(results []string, matches int, args searchArgs) string {
 	if len(results) == 0 {
 		return "No matches found."
 	}
 	out := strings.Join(results, "\n")
 	if args.FilesOnly {
-		if matches >= MaxSearchFileResults {
-			out += fmt.Sprintf("\n… (truncated at %d files; narrow the pattern or path to see more)", MaxSearchFileResults)
+		if matches >= args.limit {
+			out += fmt.Sprintf("\n… (truncated at %d files; narrow the pattern or path%s)", args.limit, raiseLimitHint(args.limit))
 		}
 		return out
 	}
-	if matches >= MaxSearchResults {
-		out += fmt.Sprintf("\n… (truncated at %d matches; narrow the pattern or path, or use files_only to see which files are involved)", MaxSearchResults)
+	if matches >= args.limit {
+		out += fmt.Sprintf("\n… (truncated at %d matches; narrow the pattern or path%s, or use files_only to see which files are involved)",
+			args.limit, raiseLimitHint(args.limit))
 	}
 	return out
 }

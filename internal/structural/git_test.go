@@ -456,6 +456,29 @@ func TestShapeGitOutputBoundsTheVerbsWithANarrowerQuestion(t *testing.T) {
 	}
 }
 
+// The reduction pipeline is told which verbs bound themselves, and the answer
+// has to be the same split shapeGitOutput makes: a verb bounded in both
+// places is cut twice, and one bounded in neither reaches the model whole
+// however large the commit was.
+func TestGitCallBoundedMatchesTheVerbsWithABound(t *testing.T) {
+	for _, verb := range []string{gitStatus, gitLog, gitBlame} {
+		if !GitCallBounded(json.RawMessage(`{"verb":"` + verb + `"}`)) {
+			t.Errorf("%s bounds its own output; the pipeline must leave it alone", verb)
+		}
+	}
+	for _, verb := range []string{gitShow, gitDiff} {
+		if GitCallBounded(json.RawMessage(`{"verb":"` + verb + `"}`)) {
+			t.Errorf("%s has no bound of its own; the pipeline is it", verb)
+		}
+	}
+	if GitCallBounded(json.RawMessage(`not json`)) {
+		t.Error("arguments that do not parse are not a bounded call")
+	}
+	if GitCallBounded(json.RawMessage(`{"verb":"bisect"}`)) {
+		t.Error("a verb this tool does not have is not a bounded call")
+	}
+}
+
 func tail(s string) string {
 	lines := strings.Split(strings.TrimRight(s, "\n"), "\n")
 	return lines[len(lines)-1]

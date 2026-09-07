@@ -39,6 +39,13 @@ const (
 // cap on the spawn and to the reduction pipeline, which keeps a head, a tail
 // and the flagged lines, stores the whole original as evidence, and hands
 // back the id to retrieve it.
+//
+// The split is what GitCallBounded answers, so the pipeline reduces the two
+// verbs it is the bound for and leaves the three that already bounded
+// themselves alone. Moving a verb across this line moves it there too: a
+// blame over the four hundred lines the caller asked for is fifteen kilobytes
+// and would come back as its first seventeen lines and its last eleven —
+// exactly the window the caller narrowed to, cut in the middle.
 const (
 	// MaxGitLogCommits caps the log verb's limit, and with one line per
 	// commit it is also the verb's line bound.
@@ -439,6 +446,20 @@ func shapeGitOutput(verb, out string) string {
 	}
 	return strings.Join(lines[:max], "\n") +
 		fmt.Sprintf("\n… (truncated at %d lines; %s)", max, hint)
+}
+
+// GitCallBounded reports whether one git call's verb bounds its own output,
+// which is what a surface hands the reduction pipeline so it can tell the
+// bounded verbs from show and diff. A call whose arguments do not parse is
+// not bounded: the spawn will refuse it, and an unreadable result is the one
+// case where reducing costs nothing.
+func GitCallBounded(args json.RawMessage) bool {
+	var a gitArgs
+	if err := json.Unmarshal(args, &a); err != nil {
+		return false
+	}
+	max, _ := gitBounds(a.Verb)
+	return max != 0
 }
 
 // gitBounds is the line bound for a verb and the sentence that says how to get

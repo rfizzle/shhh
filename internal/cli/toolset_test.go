@@ -8,12 +8,14 @@ import (
 	"testing"
 
 	"github.com/rfizzle/shhh/internal/config"
+	"github.com/rfizzle/shhh/internal/lsp"
 	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/secret"
 	"github.com/rfizzle/shhh/internal/shell"
+	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/web"
@@ -238,5 +240,65 @@ func TestChildFetchesThroughTheSessionsOwnToolset(t *testing.T) {
 	if _, err := exec(web.FetchToolName, json.RawMessage(`{"url":"http://169.254.169.254/latest/meta-data/"}`)); err == nil ||
 		!strings.Contains(err.Error(), "metadata") {
 		t.Fatalf("err = %v, want the session fetcher's own refusal", err)
+	}
+}
+
+// What a tool bounds for itself, the pipeline leaves alone — and the list of
+// which tools those are is only knowable where they are registered. A
+// language server's outline and an fd search are bounded by the tool that
+// answered; a head-and-tail cut through either returns the two ends of an
+// answer whose whole value was that it was already shorter than the file.
+func TestRegistrationDeclaresWhatBoundsItself(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	sc, err := sessionScope(config.Config{}, nil)
+	if err != nil {
+		t.Fatalf("session scope: %v", err)
+	}
+	session := codeToolset()
+	session.lsp = lsp.NewToolset(lsp.NewManager(t.TempDir(), nil, lsp.Options{}))
+	session.structural = structural.NewToolset(".")
+	ts, err := buildToolset(toolsetCmd(t), &session, "code", toolsetOpts{scope: sc})
+	if err != nil {
+		t.Fatalf("session registration: %v", err)
+	}
+	defer ts.close()
+	if ts.evidence == nil {
+		t.Fatal("this session was supposed to open a store")
+	}
+
+	big := strings.Repeat("internal/cli/toolset.go:42:1 func buildToolset\n", 500)
+	for _, d := range session.lsp.Definitions() {
+		if got := ts.evidence.Process(d.Name, big); got != big {
+			t.Errorf("%s: an answer the server bounded was reduced again (%d of %d bytes)", d.Name, len(got), len(big))
+		}
+	}
+	for _, d := range session.structural.Definitions() {
+		if d.Name == structural.GitToolName {
+			continue
+		}
+		if got := ts.evidence.Process(d.Name, big); got != big {
+			t.Errorf("%s: a bounded result was reduced again (%d of %d bytes)", d.Name, len(got), len(big))
+		}
+	}
+
+	// git is declared per call, because three of its verbs bound themselves
+	// and two are deliberately the pipeline's to bound.
+	if session.structural == nil || !session.structural.Has(structural.GitToolName) {
+		t.Skip("not inside a git repository, so the git tool was not registered")
+	}
+	exec := ts.evidence.WrapExecutor(func(string, json.RawMessage) (string, error) { return big, nil })
+	whole, err := exec(structural.GitToolName, json.RawMessage(`{"verb":"blame","paths":["internal/cli/toolset.go"],"start_line":200,"end_line":400}`))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if whole != big {
+		t.Errorf("the blame window the model asked for was cut: %d of %d bytes", len(whole), len(big))
+	}
+	cut, err := exec(structural.GitToolName, json.RawMessage(`{"verb":"show","ref":"HEAD"}`))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cut == big {
+		t.Error("show has no bound of its own; the pipeline is it")
 	}
 }

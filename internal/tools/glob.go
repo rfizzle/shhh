@@ -14,12 +14,13 @@ import (
 var globFiles = Definition{
 	Tool: provider.Tool{
 		Name:        GlobName,
-		Description: "Find files by glob pattern, e.g. **/*.go or cmd/*/main.go. Use ** to match any number of directories. Returns matching file paths relative to the search root, skipping .git, node_modules, vendor and anything .gitignore names.",
+		Description: "Find files by glob pattern, e.g. **/*.go or cmd/*/main.go. Use ** to match any number of directories. Returns matching file paths relative to the search root. Hidden files are matched; .git, node_modules, vendor and anything .gitignore names are not.",
 		Parameters: json.RawMessage(`{
 			"type": "object",
 			"properties": {
 				"pattern": {"type": "string", "description": "Glob pattern with / separators; * matches within a path segment, ** matches across segments"},
-				"path": {"type": "string", "description": "Optional directory to search in (defaults to current directory)"}
+				"path": {"type": "string", "description": "Optional directory to search in (defaults to current directory)"},
+				"limit": {"type": "integer", "description": "Maximum paths to return (default and maximum 500)"}
 			},
 			"required": ["pattern"]
 		}`),
@@ -30,6 +31,7 @@ var globFiles = Definition{
 type globArgs struct {
 	Pattern string `json:"pattern"`
 	Path    string `json:"path"`
+	Limit   int    `json:"limit"`
 }
 
 func executeGlob(raw json.RawMessage) (string, error) {
@@ -60,6 +62,11 @@ func executeGlob(raw json.RawMessage) (string, error) {
 	}
 	if !info.IsDir() {
 		return "", fmt.Errorf("path is not a directory: %s", args.Path)
+	}
+
+	limit := MaxGlobResults
+	if args.Limit > 0 {
+		limit = min(args.Limit, MaxGlobLimit)
 	}
 
 	var results []string
@@ -94,7 +101,7 @@ func executeGlob(raw json.RawMessage) (string, error) {
 		if !ok {
 			return nil
 		}
-		if len(results) >= MaxGlobResults {
+		if len(results) >= limit {
 			truncated = true
 			return filepath.SkipAll
 		}
@@ -110,7 +117,7 @@ func executeGlob(raw json.RawMessage) (string, error) {
 	}
 	out := strings.Join(results, "\n")
 	if truncated {
-		out += fmt.Sprintf("\n… (truncated at %d files; narrow the pattern or path to see more)", MaxGlobResults)
+		out += fmt.Sprintf("\n… (truncated at %d files; narrow the pattern or path to see more)", limit)
 	}
 	return out, nil
 }

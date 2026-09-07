@@ -52,6 +52,23 @@ const (
 	// across a whole repository.
 	MaxSearchFileResults = 200
 
+	// MaxSearchLimit is the ceiling on search's own limit argument, which is
+	// how a caller raises either default. The defaults above are sized for
+	// the common question — the first fifty matches usually settle it — and
+	// a cap with nothing above it is answered by re-running the same search
+	// with a longer pattern, which costs a round and finds the same lines.
+	// The ceiling is where a result stops being an answer and becomes a file
+	// to read: five hundred matched lines is what fd already allows itself
+	// in paths, and beyond it files_only is the shorter question.
+	MaxSearchLimit = 500
+
+	// MaxGlobLimit is the ceiling on glob's limit argument. It is
+	// MaxGlobResults, so limit only ever narrows: a path list is already the
+	// cheapest answer any reader here returns, and there is no question
+	// five hundred paths leaves open that a longer list closes — the pattern
+	// is what narrows it.
+	MaxGlobLimit = MaxGlobResults
+
 	// MaxSearchFileBytes caps the size of a file the pure-Go search fallback
 	// will read; larger files are skipped (ripgrep bounds its own reads).
 	MaxSearchFileBytes = 1 << 20

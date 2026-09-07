@@ -167,6 +167,17 @@ That reads like padding and is not. A real session spent its entire round
 budget re-running the same searches, and the instructions are what stopped it.
 They are load-bearing and should not be trimmed for brevity.
 
+The search itself is asked in the terms the question was asked in. A pattern
+can be searched for as written, so `foo(` and `$1` need no escaping and a
+mis-escaped one is not a refusal to spend a round on; it can be required to
+be a whole word, so looking for `Add` does not return every `AddMemory`; and
+the number of matches it stops at can be raised, because a cap with nothing
+above it is answered by re-running the same search with a longer pattern,
+which costs a round and finds the same lines. The defaults are unchanged:
+these are the three narrowings a reader would otherwise do by rewriting the
+regular expression, and getting one of them wrong is the round that gets
+spent.
+
 ## Six questions for the language server
 
 Where a language server was detected, the agent asks it rather than guessing
@@ -296,6 +307,16 @@ files exist.
 A directory named directly is still listed. Ignoring is about what a walk
 offers unasked; a path the caller typed is one they have already decided to
 look at.
+
+Being hidden is not the same question, and the answer to it is yes. A
+project's continuous integration, its linter configuration and its own
+written guidance all live in files that start with a dot, and they are
+tracked files a reader is expected to find. This was the same
+machine-dependent split: ripgrep skips a dotfile unless told not to, so
+searching for the linter's configuration returned nothing wherever ripgrep
+was installed and returned the file everywhere else. A model told "No matches
+found" does not conclude that the search was wrong. It concludes the file
+does not exist, and writes a new one.
 
 ## A long turn is asked what it has got
 

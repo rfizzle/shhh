@@ -45,6 +45,13 @@ func ReadOnly() []Definition {
 // dropping the middle of a file the model was told to read in one call. The
 // reduction pipeline exists for output nothing else bounds — a command's, a
 // server's, a page's — and that is the only place it earns its cost.
+//
+// It answers only for the tools in this package, and it is not the whole
+// list. A language server's outline, an fd search and a git blame over the
+// window the model asked for are all bounded by the tool that returned them
+// and all invisible from here; a surface declares those to the pipeline as
+// it registers them, which is the only place that knows which of them this
+// session has. A tool answering here is one that exists in every session.
 // See docs/capabilities/evidence.md#reduction-is-for-unbounded-output.
 func SelfBounding(name string) bool {
 	switch name {
@@ -58,6 +65,11 @@ func SelfBounding(name string) bool {
 // search and list_directory all skip the same three, so they say so in one
 // place: a directory missing from one of the three lists is a tool that
 // floods its own cap with objects nobody asked for.
+//
+// Being hidden is not on the list, and .git is here because of that: every
+// walk in this package sees dotfiles, and search tells ripgrep to see them
+// too, so what keeps a repository's object database out of an answer is this
+// name and ripgrep's matching glob rather than the leading dot.
 func skipWalk(name string) bool {
 	return name == ".git" || name == "node_modules" || name == "vendor"
 }
