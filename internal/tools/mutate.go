@@ -375,6 +375,9 @@ func applyEdits(content, path string, edits []fileEdit) (string, int, error) {
 			if looksLineNumbered(e.OldText) {
 				return "", 0, fmt.Errorf("%sold_text not found in %s; it looks like it still carries read_file's line-number prefixes — strip the leading digits and tab from each line and try again", label, path)
 			}
+			if miss, ok := nearMiss(content, e.OldText); ok {
+				return "", 0, fmt.Errorf("%sold_text not found in %s; %s from it only in whitespace: %s — re-quote it from the file, indentation and all", label, path, miss.where(), snippet(miss.actual))
+			}
 			return "", 0, fmt.Errorf("%sold_text not found in %s; it must match the file content exactly, including whitespace", label, path)
 		case len(starts) > 1 && !e.ReplaceAll:
 			return "", 0, fmt.Errorf("%sold_text matches %d locations in %s; provide a longer unique snippet or set replace_all", label, len(starts), path)
@@ -410,6 +413,85 @@ func applyEdits(content, path string, edits []fileEdit) (string, int, error) {
 	}
 	b.WriteString(content[at:])
 	return b.String(), len(matches), nil
+}
+
+// whitespaceMiss is the one place a failed quote nearly matched: the 1-based
+// line range it covers, and its first line as the file actually writes it.
+type whitespaceMiss struct {
+	first, last int
+	actual      string
+}
+
+// where names the range and agrees its verb with it, for a sentence that
+// reads the same whether one line was quoted or ten.
+func (w whitespaceMiss) where() string {
+	if w.first == w.last {
+		return fmt.Sprintf("line %d differs", w.first)
+	}
+	return fmt.Sprintf("lines %d-%d differ", w.first, w.last)
+}
+
+// nearMiss finds the single place in content whose lines differ from want
+// only in leading and trailing whitespace, for a quote that matched nothing.
+//
+// A changed indent is the commonest way a quote from a search result, a diff
+// or a wrapped paste stops matching, and it is the one miss the model cannot
+// diagnose from the refusal: the text it sent and the text in the file look
+// identical on screen. Named, it is one re-quote; unnamed, it is a re-read of
+// a file the model already has, and the read is what the reduction and the
+// window were spent avoiding.
+//
+// It is never applied. Whitespace is not decoration in every language, and
+// this is a guess about what the model meant — the model can see the line it
+// is being shown and quote it, which is the same round either way, without
+// anything being written on a machine's guess.
+//
+// Exactly one place, or nothing: two candidates make the message ambiguous,
+// and a quote of nothing but whitespace matches every blank run in the file,
+// so it is not a near miss but a different mistake.
+func nearMiss(content, want string) (whitespaceMiss, bool) {
+	wantLines := strings.Split(strings.TrimSuffix(want, "\n"), "\n")
+	trimmed := make([]string, len(wantLines))
+	blank := true
+	for i, line := range wantLines {
+		trimmed[i] = strings.TrimSpace(line)
+		if trimmed[i] != "" {
+			blank = false
+		}
+	}
+	if blank {
+		return whitespaceMiss{}, false
+	}
+
+	lines := strings.Split(content, "\n")
+	// Trimmed once rather than inside the window: a fifty-line quote against a
+	// ten-thousand-line file is half a million comparisons, and every line
+	// would otherwise be trimmed once per window it appears in.
+	bare := make([]string, len(lines))
+	for i, line := range lines {
+		bare[i] = strings.TrimSpace(line)
+	}
+	found := -1
+	for i := 0; i+len(trimmed) <= len(lines); i++ {
+		match := true
+		for j, wantLine := range trimmed {
+			if bare[i+j] != wantLine {
+				match = false
+				break
+			}
+		}
+		if !match {
+			continue
+		}
+		if found >= 0 {
+			return whitespaceMiss{}, false
+		}
+		found = i
+	}
+	if found < 0 {
+		return whitespaceMiss{}, false
+	}
+	return whitespaceMiss{first: found + 1, last: found + len(trimmed), actual: lines[found]}, true
 }
 
 // editLabel names which edit a message is about, and says nothing at all when

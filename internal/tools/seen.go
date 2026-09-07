@@ -162,6 +162,34 @@ func (e StaleError) Skipped(display string) string {
 	return "skipped · " + display + " changed since it was read"
 }
 
+// StaleSinceRead reports the file as stale — as StaleError, so every surface
+// draws the one refusal it already knows — when current is not the content
+// the model was last shown. nil when it is, and nil when nothing has shown
+// the file at all.
+//
+// It is checkSeen's staleness half asked by a reader rather than a writer. A
+// question addressed by line number rests on the same picture of the file an
+// edit does, and a line number taken from a read the file has moved under
+// points at whatever occupies that line now — so the answer is about code
+// nobody asked about, and neither the question nor the answer looks wrong.
+//
+// A record whose content is unknown — a conversation taken back out of the
+// store — is not stale here, where it is stale at a mutation. Nothing is
+// known about whether that file moved, and the mutation can afford to assume
+// the worst because being wrong costs somebody's work; refusing every
+// navigation call in a resumed session costs a re-read of every file it had
+// read, to answer a question that is usually still exactly right.
+func StaleSinceRead(path string, current []byte) error {
+	rec, ok := lookupSeen(path)
+	if !ok || rec.unknown() {
+		return nil
+	}
+	if rec.sum != fingerprint(current) {
+		return StaleError{Path: path}
+	}
+	return nil
+}
+
 // checkSeen reports whether a mutation may proceed against the file's current
 // content. A file that does not exist yet is nobody's to be stale about, so
 // existed=false always passes.

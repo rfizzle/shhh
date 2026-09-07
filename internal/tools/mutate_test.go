@@ -329,6 +329,115 @@ func TestEditFile_KeepsThePlainMissMessage(t *testing.T) {
 	}
 }
 
+// A quote that differs from the file only in indentation is the commonest
+// miss and the one the model cannot see: the two look identical on screen.
+// The line is named with the text as the file writes it, and nothing is
+// written on the strength of the guess.
+func TestEditFile_NamesTheLineThatDiffersOnlyInWhitespace(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "a.go")
+	const before = "package a\n\nfunc F() {\n\t\tif ok {\n\t\t}\n}\n"
+	must(t, os.WriteFile(path, []byte(before), 0o644))
+
+	// Four spaces where the file has two tabs: the same line on screen, and
+	// no substring of it.
+	args, _ := json.Marshal(editFileArgs{Path: path, OldText: "    if ok {", NewText: "    if !ok {"})
+	_, err := ExecuteMutating("edit_file", args)
+	if err == nil {
+		t.Fatal("a quote whose indent does not match must not apply")
+	}
+	if !strings.Contains(err.Error(), "line 4 differs from it only in whitespace") {
+		t.Errorf("the near miss should be named by line, got: %v", err)
+	}
+	if !strings.Contains(err.Error(), `"\t\tif ok {"`) {
+		t.Errorf("the refusal should quote the line as the file writes it, got: %v", err)
+	}
+	after, _ := os.ReadFile(path)
+	if string(after) != before {
+		t.Fatal("a near miss is a refusal, not a fuzzy apply")
+	}
+}
+
+func TestEditFile_NearMissSpansTheLinesItMatched(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "a.go")
+	must(t, os.WriteFile(path, []byte("package a\n\nfunc F() {\n    return 1\n}\n"), 0o644))
+
+	args, _ := json.Marshal(editFileArgs{Path: path, OldText: "func F() {\n\treturn 1\n}", NewText: "func F() int {\n\treturn 1\n}"})
+	_, err := ExecuteMutating("edit_file", args)
+	if err == nil {
+		t.Fatal("expected the mismatched indent to refuse")
+	}
+	if !strings.Contains(err.Error(), "lines 3-5 differ from it only in whitespace") {
+		t.Errorf("a multi-line near miss should name its range, got: %v", err)
+	}
+}
+
+// Two candidates say nothing: naming one of them would point at a line the
+// model has no reason to prefer, and a quote of nothing but whitespace
+// matches every blank run in the file.
+func TestEditFile_AnAmbiguousNearMissKeepsThePlainMessage(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "a.go")
+	must(t, os.WriteFile(path, []byte("\tcount++\nx\n  count++\n"), 0o644))
+
+	args, _ := json.Marshal(editFileArgs{Path: path, OldText: "    count++", NewText: "    count--"})
+	_, err := ExecuteMutating("edit_file", args)
+	if err == nil {
+		t.Fatal("expected a miss")
+	}
+	if strings.Contains(err.Error(), "whitespace:") {
+		t.Errorf("two candidates should not be named, got: %v", err)
+	}
+	if !strings.Contains(err.Error(), "including whitespace") {
+		t.Errorf("expected the plain miss message, got: %v", err)
+	}
+}
+
+// The numbered-prefix diagnosis comes first: a numbered quote also differs
+// from the file "only in whitespace" once the digits are trimmed, and the
+// prefix is the actual mistake.
+func TestEditFile_TheNumberedPrefixIsDiagnosedBeforeTheNearMiss(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "a.go")
+	must(t, os.WriteFile(path, []byte("package a\n\nfunc F() {}\n"), 0o644))
+
+	args, _ := json.Marshal(editFileArgs{Path: path, OldText: "3\tfunc F() {}", NewText: "func G() {}"})
+	_, err := ExecuteMutating("edit_file", args)
+	if err == nil {
+		t.Fatal("expected the numbered snippet not to match")
+	}
+	if !strings.Contains(err.Error(), "line-number prefixes") {
+		t.Errorf("the prefix diagnosis should win, got: %v", err)
+	}
+}
+
+func TestNearMiss(t *testing.T) {
+	const content = "package a\n\nfunc F() {\n\treturn 1\n}\n"
+	for _, tc := range []struct {
+		name  string
+		want  string
+		where string
+		found bool
+	}{
+		{name: "indent differs", want: "  return 1", where: "line 4 differs", found: true},
+		{name: "trailing space differs", want: "\treturn 1  ", where: "line 4 differs", found: true},
+		{name: "exact text is not a near miss of another line", want: "func G() {}", found: false},
+		{name: "blank quote matches nothing", want: "   ", found: false},
+		{name: "longer than the file", want: strings.Repeat("x\n", 9), found: false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			miss, ok := nearMiss(content, tc.want)
+			if ok != tc.found {
+				t.Fatalf("nearMiss(%q) = %v, want %v", tc.want, ok, tc.found)
+			}
+			if ok && miss.where() != tc.where {
+				t.Errorf("nearMiss(%q) named %s, want %s", tc.want, miss.where(), tc.where)
+			}
+		})
+	}
+}
+
 func TestLooksLineNumbered(t *testing.T) {
 	for _, tc := range []struct {
 		in   string

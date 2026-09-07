@@ -1,6 +1,7 @@
 package lsp
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -96,6 +97,15 @@ type serverCapabilities struct {
 	hover           bool
 }
 
+// syncPoint is what a server was last told about a file: the hash of the
+// content it holds, and the publish sequence that push followed — which is
+// what a later report has to beat to be a report on that content rather than
+// on whatever the file held before it.
+type syncPoint struct {
+	digest string
+	since  int64
+}
+
 // server is one running language server owned by the session.
 type server struct {
 	spec       ServerSpec
@@ -108,7 +118,8 @@ type server struct {
 	caps serverCapabilities
 
 	mu       sync.Mutex
-	versions map[string]int // open file → didOpen/didChange version
+	versions map[string]int       // open file → didOpen/didChange version
+	synced   map[string]syncPoint // open file → the content the server holds
 	diags    map[string]publishedDiags
 	pubSeq   int64
 	// changed is closed and replaced on every publishDiagnostics, waking
@@ -129,6 +140,7 @@ func startServer(spec ServerSpec, root string, connect func(ServerSpec, string) 
 		tr:         tr,
 		reqTimeout: reqTimeout,
 		versions:   make(map[string]int),
+		synced:     make(map[string]syncPoint),
 		diags:      make(map[string]publishedDiags),
 		changed:    make(chan struct{}),
 	}
@@ -218,21 +230,48 @@ func (s *server) publishSeq() int64 {
 }
 
 // syncFile pushes the file's on-disk content to the server: didOpen on first
-// contact, full-content didChange afterwards.
-func (s *server) syncFile(path string) error {
+// contact, full-content didChange afterwards. since is the publish sequence a
+// report has to be newer than to be a report on the content the server now
+// holds — the sequence this push follows, or, for content the server was
+// already given, the sequence that earlier push followed.
+//
+// The content is hashed rather than pushed unconditionally because most syncs
+// are not about a change at all: three navigation calls on one file are three
+// syncs of identical bytes, each of which makes a real server re-parse the
+// document and re-publish diagnostics for it. What that costs is not only the
+// work — a publication is what an outstanding question is measured against,
+// so a re-push of unchanged content answers an edit's open question with a
+// report the edit already had.
+//
+// Which is why a skipped push returns the older sequence rather than the
+// current one. A caller that waits from "now" on content it did not just send
+// waits for a message nobody is going to send; one that takes the last thing
+// said as this content's verdict reports a check of the file as it was before
+// the edit — and reports it as a clean bill whenever that check was clean.
+// Measured from the push the content actually went out on, an answer that has
+// already arrived comes back at once and one still in flight is waited for.
+func (s *server) syncFile(path string) (since int64, err error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return err
+		return 0, err
 	}
+	sum := sha256.Sum256(data)
+	digest := string(sum[:])
+
 	s.mu.Lock()
+	if held, ok := s.synced[path]; ok && held.digest == digest {
+		s.mu.Unlock()
+		return held.since, nil
+	}
 	version, open := s.versions[path]
 	version++
 	s.versions[path] = version
+	at := s.pubSeq
 	s.mu.Unlock()
 
 	uri := pathToURI(path)
 	if !open {
-		return s.conn.notify("textDocument/didOpen", map[string]any{
+		err = s.conn.notify("textDocument/didOpen", map[string]any{
 			"textDocument": map[string]any{
 				"uri":        uri,
 				"languageId": languageID(path),
@@ -240,11 +279,29 @@ func (s *server) syncFile(path string) error {
 				"text":       string(data),
 			},
 		})
+	} else {
+		err = s.conn.notify("textDocument/didChange", map[string]any{
+			"textDocument":   map[string]any{"uri": uri, "version": version},
+			"contentChanges": []map[string]any{{"text": string(data)}},
+		})
 	}
-	return s.conn.notify("textDocument/didChange", map[string]any{
-		"textDocument":   map[string]any{"uri": uri, "version": version},
-		"contentChanges": []map[string]any{{"text": string(data)}},
-	})
+	if err != nil {
+		// Recorded only once the server has been told, so a notify that
+		// failed is re-sent by the next sync rather than skipped as content
+		// the server is holding.
+		return at, err
+	}
+	s.mu.Lock()
+	// Only if this sync is still the latest one. A round dispatches its
+	// read-only calls concurrently, so two syncs of one file can overlap, and
+	// the slower of the two recording its digest last would leave the map
+	// claiming the server holds the content it saw first — after which the
+	// newer content would be skipped as already sent.
+	if s.versions[path] == version {
+		s.synced[path] = syncPoint{digest: digest, since: at}
+	}
+	s.mu.Unlock()
+	return at, nil
 }
 
 // waitDiagnostics blocks until the server publishes diagnostics for path
@@ -317,7 +374,7 @@ func (s *server) publishedDiagnostics() map[string]publishedDiags {
 
 // locationRequest runs a definition/references-shaped request at a position.
 func (s *server) locationRequest(method string, path string, pos Position, extra map[string]any) ([]Location, error) {
-	if err := s.syncFile(path); err != nil {
+	if _, err := s.syncFile(path); err != nil {
 		return nil, err
 	}
 	params := map[string]any{
@@ -502,7 +559,7 @@ func (s *server) workspaceSymbol(query string) ([]symbol, error) {
 // documentSymbol returns the file's outline, syncing it first so the server
 // answers about what is on disk rather than what it last saw.
 func (s *server) documentSymbol(path string) ([]symbol, error) {
-	if err := s.syncFile(path); err != nil {
+	if _, err := s.syncFile(path); err != nil {
 		return nil, err
 	}
 	result, err := s.conn.call("textDocument/documentSymbol", map[string]any{
@@ -517,7 +574,7 @@ func (s *server) documentSymbol(path string) ([]symbol, error) {
 // hover returns the symbol's type, signature and documentation at pos, already
 // flattened to plain text.
 func (s *server) hover(path string, pos Position) (string, error) {
-	if err := s.syncFile(path); err != nil {
+	if _, err := s.syncFile(path); err != nil {
 		return "", err
 	}
 	result, err := s.conn.call("textDocument/hover", map[string]any{

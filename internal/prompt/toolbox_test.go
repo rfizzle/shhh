@@ -232,3 +232,20 @@ func TestToolboxHasANoteForEveryToolThatCanBeRegistered(t *testing.T) {
 		}
 	}
 }
+
+// The note used to carry a workaround: ask after any edit that came back
+// without a diagnostics block, because a clean check and an unfinished one
+// were the same silence. They are not any more — an unfinished check says so
+// on the edit's own result — so the note names that answer instead of asking
+// for a call after every clean edit.
+func TestToolbox_DiagnosticsIsAskedForOnTheUncheckedAnswer(t *testing.T) {
+	got := Toolbox(toolList("diagnostics"))
+	if !strings.Contains(got, "when an edit came back saying the file was not checked yet") {
+		t.Errorf("the diagnostics note should name the answer that asks for it:\n%s", got)
+	}
+	for _, gone := range []string{"carried no diagnostics block", "late reports wait"} {
+		if strings.Contains(got, gone) {
+			t.Errorf("the note still carries the workaround sentence %q:\n%s", gone, got)
+		}
+	}
+}

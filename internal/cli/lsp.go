@@ -79,8 +79,9 @@ func lspMutationHook(ts *lsp.Toolset) chat.MutationHook {
 // front of the next result its reader sees — goes on meaning what it said.
 //
 // What a child gives up is the late answer to its own edit, which it can ask
-// for outright: the diagnostics tool is registered on every child, and the
-// toolbox note tells it to ask after an edit that came back without a block.
+// for outright: the diagnostics tool is registered on every child, and an
+// edit whose check had not finished says so on the result and names the tool
+// to call.
 // See docs/capabilities/subagents.md#a-child-searches-with-what-the-session-searches-with.
 func childMutationHook(ts *lsp.Toolset) chat.MutationHook {
 	if ts == nil {
@@ -91,10 +92,16 @@ func childMutationHook(ts *lsp.Toolset) chat.MutationHook {
 		if path == "" {
 			return result
 		}
-		if fresh := ts.Manager.DiagnosticsAfterChange(path); fresh != "" {
+		fresh := ts.Manager.DiagnosticsAfterChange(path)
+		// Closed whatever the verdict was, because a wait that ran out leaves
+		// the question open by design and this reader is never the one who
+		// will collect it — including on the round the child is told the file
+		// has not been checked yet, which is exactly the round a question was
+		// left behind.
+		ts.Manager.DropHeld(path)
+		if fresh != "" {
 			return result + "\n\n" + fresh
 		}
-		ts.Manager.DropHeld(path)
 		return result
 	}
 }

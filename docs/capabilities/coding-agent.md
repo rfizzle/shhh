@@ -111,6 +111,17 @@ not match refuses the whole call and leaves the file exactly as it was,
 because a file changed halfway is worse than a file not changed at all:
 nothing on screen says which half.
 
+A quote that matched nothing is told what it nearly matched. The commonest
+miss is an indent — text taken from a search result, a diff or a wrapped paste
+carries whitespace the file does not have — and it is the one miss that cannot
+be seen, because the quote and the line are identical on screen. So a failed
+match looks for the single place in the file that differs from the quote in
+leading and trailing whitespace alone, and names that line with the text as
+the file writes it. It is never applied: whitespace is meaningful in some
+languages, and this is a guess about intent, which is the model's to confirm
+by re-quoting the line it has just been shown. Unnamed, the same miss costs a
+re-read of a file the model already has.
+
 The preview and the write run the same check, so a card never offers a change
 the write would go on to refuse. And the staleness rule is unchanged, covering
 the call rather than each element of it — it is one question about the file,
@@ -194,6 +205,20 @@ and is asked by name. And a nine-hundred-line file read to learn its shape
 costs most of what the reduction exists to save, where the same file as an
 outline is a screen and usually settles which part to read.
 
+A question is addressed by file, line and the text on it, and the position
+that resolves to decides the whole answer — which the model never sees, only
+the answer. So the three ways of resolving it wrongly are refusals that name
+what to send instead, rather than a best guess: text that occurs on the line
+only inside a longer name is refused naming the name the line actually writes,
+because a confident answer about a symbol nobody asked about is worse than no
+answer; text that occurs more than once on the line is refused with every
+column it stands at, because two spellings of one name on a line can be two
+symbols with different declarations; and a
+file that has moved since the model read it is refused with the same sentence
+an edit built on a stale read is refused with, since a line number taken from
+a read the file has changed under is a coordinate in a file that no longer
+exists.
+
 Every server answers definition and references; support for symbol search,
 outlines and hover is uneven, so each of those is asked only of a server that
 advertised it. One that indexes a file but not the workspace refuses that
@@ -215,7 +240,7 @@ carries what it says back with the result, so the model reads its own mistake
 in the round that made it. A server that has just started rarely answers that
 fast. The first load of a large module is tens of seconds, and it falls
 exactly on the opening edits of a session — the ones with the most left to go
-wrong, checked by nothing, with nothing saying so.
+wrong, and the ones a check is least likely to have reached.
 
 So the wait is a deadline for that result, not for the question. When it
 passes, the question stays open, and the answer — whenever it lands — rides in
@@ -223,9 +248,19 @@ front of the next tool result the model reads, as a short bracketed block
 naming the file and tallying what was found. There is no other message going
 its way: the round that made the edit is over, and a server publishing on its
 own schedule has nobody to publish to. The wait itself is unchanged, and a
-server that never publishes still produces nothing, which is the shape of
+machine with no server for the file says nothing at all, which is the shape of
 every language-server feature here — present when the machine has it, silent
 when it does not.
+
+Silence is not one of the verdicts. From where the model sits, a clean check,
+a check that has not finished and a file nothing covers are the same empty
+result, so an edit that comes back with nothing is either taken for a clean
+bill — wrong exactly on the opening rounds, when the server is still loading —
+or answered with a diagnostics call after every edit to find out which it was.
+So a check that found nothing says so in one line, naming the server that
+looked; a wait that ran out says the file has not been checked yet and names
+the call that will say. Nothing at all is left to mean the one thing it can
+only mean: there is nobody to ask.
 
 One open question per file. A file edited again replaces its own, because
 diagnostics for the file as it was are not a report on the file as it is, and
@@ -238,7 +273,11 @@ The set can also be asked for outright — one file, or every file the session
 has had checked. That is the question the model has when it wants to know
 whether what it has been doing still compiles, and it is the same answer, so
 it is one tool rather than a habit of making a trivial edit to provoke a
-re-check.
+re-check. Asked about a file whose check has not come back, it says so rather
+than repeating what the last finished check found: problems found in the file
+as it was are worth reading whenever they were found, but nothing found in the
+file as it was, handed over as nothing found now, is the same false clean bill
+coming through a second door.
 
 ## Where a map would sit
 

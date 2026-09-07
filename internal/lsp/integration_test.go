@@ -46,8 +46,8 @@ func TestGoplsIntegration(t *testing.T) {
 
 	// Fixing the file must clear the diagnostics block.
 	writeFile("main.go", "package main\n\nfunc main() {\n\tgreet()\n}\n\nfunc greet() {\n\tprintln(\"hi\")\n}\n")
-	if out := m.DiagnosticsAfterChange(mainPath); out != "" {
-		t.Fatalf("fixed file should have no diagnostics, got %q", out)
+	if out := m.DiagnosticsAfterChange(mainPath); !strings.Contains(out, "no diagnostics") {
+		t.Fatalf("a fixed file should come back checked and clean, got %q", out)
 	}
 
 	// definition on the call site lands on the declaration.

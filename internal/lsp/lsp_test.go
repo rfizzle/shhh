@@ -3,6 +3,7 @@ package lsp
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/logs"
+	"github.com/rfizzle/shhh/internal/tools"
 )
 
 // fakeLS is an in-process language server speaking framed JSON-RPC over
@@ -287,13 +289,54 @@ func TestDiagnosticsAfterChange_ErrorsFirstAndBounded(t *testing.T) {
 	}
 }
 
-func TestDiagnosticsAfterChange_CleanFileIsSilent(t *testing.T) {
-	fake := &fakeLS{diagsFor: func(string) []Diagnostic { return nil }}
-	m, root := testManager(t, fake, Options{})
-	path := writeWorkspaceFile(t, root, "ok.go", "package main\n")
-	if out := m.DiagnosticsAfterChange(path); out != "" {
-		t.Fatalf("clean file should produce no diagnostics block, got %q", out)
-	}
+// The four things an applied change can come back with, and the one that is
+// silence. A model that reads nothing after an edit cannot tell a clean bill
+// from a check that has not run, so only the case with nobody to ask says
+// nothing at all.
+func TestDiagnosticsAfterChange_SaysWhichSilenceThisIs(t *testing.T) {
+	t.Run("clean", func(t *testing.T) {
+		fake := &fakeLS{diagsFor: func(string) []Diagnostic { return nil }}
+		m, root := testManager(t, fake, Options{})
+		path := writeWorkspaceFile(t, root, "ok.go", "package main\n")
+		if out := m.DiagnosticsAfterChange(path); out != checkedClean("gopls") {
+			t.Fatalf("a clean check should say who checked it, got %q", out)
+		}
+	})
+	t.Run("not checked yet", func(t *testing.T) {
+		// Slower than the wait below by two orders of magnitude, and still
+		// short enough that the goroutine holding it is gone before the
+		// package's tests are.
+		fake := &fakeLS{publishDelay: 2 * time.Second, diagsFor: func(string) []Diagnostic {
+			return []Diagnostic{{Severity: 1, Message: "undefined: x"}}
+		}}
+		m, root := testManager(t, fake, Options{DiagnosticsTimeout: 20 * time.Millisecond})
+		path := writeWorkspaceFile(t, root, "slow.go", "package main\n")
+		out := m.DiagnosticsAfterChange(path)
+		if out != notCheckedYet("gopls") {
+			t.Fatalf("a wait that ran out should say so, got %q", out)
+		}
+		if !strings.Contains(out, DiagnosticsToolName) {
+			t.Fatalf("the unchecked line should name the tool to call, got %q", out)
+		}
+	})
+	t.Run("no server covers the file", func(t *testing.T) {
+		fake := &fakeLS{}
+		m, root := testManager(t, fake, Options{})
+		path := writeWorkspaceFile(t, root, "notes.txt", "hello\n")
+		if out := m.DiagnosticsAfterChange(path); out != "" {
+			t.Fatalf("nobody to ask is the one silence, got %q", out)
+		}
+	})
+	t.Run("diagnostics", func(t *testing.T) {
+		fake := &fakeLS{diagsFor: func(string) []Diagnostic {
+			return []Diagnostic{{Severity: 1, Message: "undefined: x"}}
+		}}
+		m, root := testManager(t, fake, Options{})
+		path := writeWorkspaceFile(t, root, "bad.go", "package main\n")
+		if out := m.DiagnosticsAfterChange(path); !strings.HasPrefix(out, "Diagnostics (gopls) for bad.go:") {
+			t.Fatalf("a checked file with a problem should carry the block, got %q", out)
+		}
+	})
 }
 
 func TestDiagnosticsAfterChange_TruncatesAtCap(t *testing.T) {
@@ -327,14 +370,16 @@ func TestDiagnosticsAfterChange_NoServerForExtensionIsNoOp(t *testing.T) {
 	}
 }
 
-func TestDiagnosticsAfterChange_SilentServerTimesOutQuietly(t *testing.T) {
+// A server that publishes nothing costs one bounded wait and says which
+// silence that was — not a wedged loop, and not a clean bill.
+func TestDiagnosticsAfterChange_SilentServerTimesOutAtItsBound(t *testing.T) {
 	fake := &fakeLS{noPublish: true}
 	m, root := testManager(t, fake, Options{DiagnosticsTimeout: 100 * time.Millisecond})
 	path := writeWorkspaceFile(t, root, "main.go", "package main\n")
 	start := time.Now()
 	out := m.DiagnosticsAfterChange(path)
-	if out != "" {
-		t.Fatalf("expected quiet timeout, got %q", out)
+	if out != notCheckedYet("gopls") {
+		t.Fatalf("expected the unchecked line, got %q", out)
 	}
 	if elapsed := time.Since(start); elapsed > 2*time.Second {
 		t.Fatalf("timeout took too long: %s", elapsed)
@@ -349,6 +394,7 @@ func TestManager_ServerStartsLazilyAndOnce(t *testing.T) {
 	}
 	path := writeWorkspaceFile(t, root, "main.go", "package main\n")
 	m.DiagnosticsAfterChange(path)
+	writeWorkspaceFile(t, root, "main.go", "package main // and again\n")
 	m.DiagnosticsAfterChange(path)
 	if fake.connects != 1 {
 		t.Fatalf("server should start exactly once, started %d times", fake.connects)
@@ -471,6 +517,94 @@ func TestManager_SymbolNotOnLine(t *testing.T) {
 	}
 	if _, err := m.Definition(path, 99, "main"); err == nil || !strings.Contains(err.Error(), "out of range") {
 		t.Fatalf("expected out-of-range error, got %v", err)
+	}
+}
+
+// A position is what the whole answer turns on and the model never sees it,
+// so the three ways of resolving it wrongly are refusals that name what to
+// send instead.
+func TestManager_PositionRefusesRatherThanGuesses(t *testing.T) {
+	t.Run("inside a longer name", func(t *testing.T) {
+		fake := &fakeLS{}
+		m, root := testManager(t, fake, Options{})
+		path := writeWorkspaceFile(t, root, "main.go", "package main\nfunc f() { s.AddMemory(x) }\n")
+		_, err := m.Definition(path, 2, "Add")
+		if err == nil {
+			t.Fatal("Add inside AddMemory should not resolve")
+		}
+		if !strings.Contains(err.Error(), `"AddMemory"`) {
+			t.Fatalf("the refusal should name what the line writes, got %v", err)
+		}
+	})
+	t.Run("twice on the line", func(t *testing.T) {
+		fake := &fakeLS{}
+		m, root := testManager(t, fake, Options{})
+		path := writeWorkspaceFile(t, root, "main.go", "package main\nfunc g() { f := f.next }\n")
+		_, err := m.Definition(path, 2, "f")
+		if err == nil {
+			t.Fatal("two occurrences should not be resolved by picking one")
+		}
+		if !strings.Contains(err.Error(), "occurs 2 times") || !strings.Contains(err.Error(), "columns 12, 17") {
+			t.Fatalf("the refusal should count them and place them, got %v", err)
+		}
+	})
+	t.Run("the file moved since it was read", func(t *testing.T) {
+		fake := &fakeLS{}
+		m, root := testManager(t, fake, Options{})
+		path := writeWorkspaceFile(t, root, "main.go", "package main\nvar count int\n")
+		args, _ := json.Marshal(map[string]any{"path": path})
+		if _, err := tools.Execute(tools.ReadFileName, args); err != nil {
+			t.Fatal(err)
+		}
+		writeWorkspaceFile(t, root, "main.go", "package main\n\n\nvar count int\n")
+
+		_, err := m.References(path, 2, "count")
+		var stale tools.StaleError
+		if !errors.As(err, &stale) {
+			t.Fatalf("a line number from a read the file has moved under should be refused as stale, got %v", err)
+		}
+	})
+	// The symbol as the model spelled it decides where a boundary is needed:
+	// text that ends in punctuation is matched as written.
+	t.Run("punctuation needs no boundary", func(t *testing.T) {
+		fake := &fakeLS{}
+		m, root := testManager(t, fake, Options{})
+		path := writeWorkspaceFile(t, root, "main.go", "package main\nfunc h() { greet(1) }\n")
+		if _, err := m.Definition(path, 2, "greet("); err != nil {
+			t.Fatalf("a symbol quoted with its punctuation should resolve: %v", err)
+		}
+	})
+}
+
+// A file the server already holds is not pushed again. Three navigation calls
+// on one file are three syncs of identical bytes otherwise, and each one
+// makes a real server re-parse the document and re-publish for it.
+func TestManager_UnchangedFileIsSyncedOnce(t *testing.T) {
+	fake := &fakeLS{}
+	m, root := testManager(t, fake, Options{})
+	path := writeWorkspaceFile(t, root, "main.go", "package main\nvar count int\n")
+
+	for range 2 {
+		if _, err := m.Definition(path, 2, "count"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	fake.mu.Lock()
+	synced := append([]string{}, fake.synced...)
+	fake.mu.Unlock()
+	if len(synced) != 1 || synced[0] != "textDocument/didOpen" {
+		t.Fatalf("an unchanged file should be pushed once, got %v", synced)
+	}
+
+	writeWorkspaceFile(t, root, "main.go", "package main\nvar count int64\n")
+	if _, err := m.Definition(path, 2, "count"); err != nil {
+		t.Fatal(err)
+	}
+	fake.mu.Lock()
+	synced = append([]string{}, fake.synced...)
+	fake.mu.Unlock()
+	if len(synced) != 2 || synced[1] != "textDocument/didChange" {
+		t.Fatalf("a changed file should still be pushed, got %v", synced)
 	}
 }
 
@@ -1010,8 +1144,8 @@ func TestHeldDiagnostics_LateAnswerReachesTheNextResult(t *testing.T) {
 	m, root := testManager(t, fake, Options{DiagnosticsTimeout: 10 * time.Millisecond})
 	path := writeWorkspaceFile(t, root, "main.go", "package main\n")
 
-	if out := m.DiagnosticsAfterChange(path); out != "" {
-		t.Fatalf("the edit's own result must still end quietly, got %q", out)
+	if out := m.DiagnosticsAfterChange(path); out != notCheckedYet("gopls") {
+		t.Fatalf("the edit's own result should say the check has not landed, got %q", out)
 	}
 
 	held := waitForHeld(t, m)
@@ -1093,16 +1227,16 @@ func TestHeldDiagnostics_ReEditReplacesTheOpenQuestion(t *testing.T) {
 
 	writeWorkspaceFile(t, root, "main.go", "package main // first\n")
 	path := filepath.Join(root, "main.go")
-	if out := m.DiagnosticsAfterChange(path); out != "" {
-		t.Fatalf("expected a quiet timeout, got %q", out)
+	if out := m.DiagnosticsAfterChange(path); out != notCheckedYet("gopls") {
+		t.Fatalf("expected the unchecked line, got %q", out)
 	}
 	// The first answer is on the server before the second edit, so only the
 	// second edit's answer can satisfy the question it leaves behind.
 	waitForPublishes(t, m, path, 1)
 
 	writeWorkspaceFile(t, root, "main.go", "package main // second\n")
-	if out := m.DiagnosticsAfterChange(path); out != "" {
-		t.Fatalf("expected a quiet timeout, got %q", out)
+	if out := m.DiagnosticsAfterChange(path); out != notCheckedYet("gopls") {
+		t.Fatalf("expected the unchecked line, got %q", out)
 	}
 
 	held := waitForHeld(t, m)
@@ -1131,8 +1265,8 @@ func TestHeldDiagnostics_SilentServerHoldsNothing(t *testing.T) {
 	fake := &fakeLS{noPublish: true}
 	m, root := testManager(t, fake, Options{DiagnosticsTimeout: 20 * time.Millisecond})
 	path := writeWorkspaceFile(t, root, "main.go", "package main\n")
-	if out := m.DiagnosticsAfterChange(path); out != "" {
-		t.Fatalf("expected a quiet timeout, got %q", out)
+	if out := m.DiagnosticsAfterChange(path); out != notCheckedYet("gopls") {
+		t.Fatalf("expected the unchecked line, got %q", out)
 	}
 	time.Sleep(50 * time.Millisecond)
 	if held := m.TakeHeldDiagnostics(); held != "" {
@@ -1260,8 +1394,8 @@ func TestToolset_DiagnosticsKeepsAQuestionItCannotAnswerOpen(t *testing.T) {
 	// answer is still outstanding when the tool's own wait for it runs out.
 	fake.slowDown(300 * time.Millisecond)
 	writeWorkspaceFile(t, root, "main.go", "package main // second\n")
-	if out := m.DiagnosticsAfterChange(path); out != "" {
-		t.Fatalf("expected a quiet timeout, got %q", out)
+	if out := m.DiagnosticsAfterChange(path); out != notCheckedYet("gopls") {
+		t.Fatalf("expected the unchecked line, got %q", out)
 	}
 
 	out, err := NewToolset(m).Execute(DiagnosticsToolName, json.RawMessage(fmt.Sprintf(`{"path":%q}`, path)))
@@ -1308,5 +1442,73 @@ func TestStartServer_AHandshakeThatNeverAnsweredReachesTheLog(t *testing.T) {
 	// asked to keep.
 	if strings.Contains(written, root) {
 		t.Errorf("the line names the workspace:\n%s", written)
+	}
+}
+
+// A blank symbol is refused at the tools, and reaches the resolver only
+// through a direct call — where an empty needle is found at every offset and
+// advances none of them.
+func TestManager_BlankSymbolDoesNotWedgeTheResolver(t *testing.T) {
+	fake := &fakeLS{}
+	m, root := testManager(t, fake, Options{})
+	path := writeWorkspaceFile(t, root, "main.go", "package main\nvar count int\n")
+	done := make(chan error, 1)
+	go func() {
+		_, err := m.Definition(path, 2, "")
+		done <- err
+	}()
+	select {
+	case err := <-done:
+		if err == nil {
+			t.Fatal("a blank symbol should be refused")
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("resolving a blank symbol never returned")
+	}
+}
+
+// The failure the four verdicts exist to prevent, by the one route that can
+// still produce it: a clean report from before the edit. The file was checked
+// and clean, the edit that broke it is still being checked, and the server has
+// been told this content already — so neither door may hand back the earlier
+// nothing as this content's verdict.
+func TestDiagnostics_AnEarlierCleanReportIsNotThisContentsVerdict(t *testing.T) {
+	fake := &fakeLS{diagsFor: func(content string) []Diagnostic {
+		if !strings.Contains(content, "broken") {
+			return nil
+		}
+		return []Diagnostic{{Severity: 1, Message: "undefined: broken"}}
+	}}
+	m, root := testManager(t, fake, Options{DiagnosticsTimeout: 20 * time.Millisecond})
+	path := writeWorkspaceFile(t, root, "main.go", "package main\n")
+	if out := m.DiagnosticsAfterChange(path); out != checkedClean("gopls") {
+		t.Fatalf("the first check should come back clean, got %q", out)
+	}
+
+	// From here the answer outlasts every wait below, so the only report on
+	// the server is the clean one about the file as it was.
+	fake.slowDown(2 * time.Second)
+	writeWorkspaceFile(t, root, "main.go", "package main // broken\n")
+	if out := m.DiagnosticsAfterChange(path); out != notCheckedYet("gopls") {
+		t.Fatalf("the edit's own check has not landed, got %q", out)
+	}
+	// The re-ask, on content the server was already given: waiting from now
+	// would wait for a message nobody is sending, and reading the last report
+	// would hand back the clean bill from before the edit.
+	if out := m.DiagnosticsAfterChange(path); out != notCheckedYet("gopls") {
+		t.Fatalf("an unchanged re-ask must not inherit the earlier verdict, got %q", out)
+	}
+	out, err := NewToolset(m).Execute(DiagnosticsToolName, json.RawMessage(fmt.Sprintf(`{"path":%q}`, path)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, "has not finished checking") {
+		t.Fatalf("the tool should say the check is unfinished, got %q", out)
+	}
+
+	// And the answer, when it comes, is still delivered.
+	held := waitForHeld(t, m)
+	if !strings.Contains(held, "undefined: broken") {
+		t.Fatalf("the late answer must still arrive, got %q", held)
 	}
 }

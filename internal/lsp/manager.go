@@ -5,9 +5,14 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
+	"unicode"
+	"unicode/utf8"
+
+	"github.com/rfizzle/shhh/internal/tools"
 )
 
 // Default request and diagnostics-wait bounds. Requests cover initialize and
@@ -221,16 +226,27 @@ func (m *Manager) rel(path string) string {
 	return path
 }
 
-// DiagnosticsAfterChange syncs an applied file change to its server and
-// returns the fresh diagnostics as a bounded, errors-first block — or "" when
-// no server covers the file, the server is broken, or it does not publish
-// within the diagnostics timeout. It never blocks longer than the configured
-// bounds, so a hung server costs one bounded wait, not a wedged loop.
+// DiagnosticsAfterChange syncs an applied file change to its server and says
+// what the server makes of the file: the bounded, errors-first block when
+// something is wrong, a one-line clean bill when nothing is, and a line
+// saying the check has not happened yet when the wait ran out. It never
+// blocks longer than the configured bounds, so a hung server costs one
+// bounded wait, not a wedged loop.
+//
+// "" means there is nobody to ask — no detected server covers the extension,
+// the one that does never came up, or the file cannot be read now. That is
+// the only silence, because every other one reads as a verdict and is not.
+// A model whose edit came back with nothing has to choose between taking it
+// for a clean bill, which is wrong on the round a server is still starting,
+// and asking diagnostics after every edit to find out, which is a round spent
+// confirming what the last three all said. Neither is a choice it can make
+// well, since the four cases are indistinguishable from where it sits — so
+// the three that have something to say, say it.
 //
 // The wait is a deadline for this result, not for the question. A server that
-// has just started routinely takes longer than it, and an edit checked by
-// nothing is worse when nothing says so, so a wait that runs out leaves the
-// question open for TakeHeldDiagnostics to collect.
+// has just started routinely takes longer than it, so a wait that runs out
+// leaves the question open for TakeHeldDiagnostics to collect, and the line it
+// returns says which of the two silences this was.
 // See docs/capabilities/coding-agent.md#diagnostics-that-arrive-late-still-arrive.
 func (m *Manager) DiagnosticsAfterChange(path string) string {
 	path = m.abs(path)
@@ -238,21 +254,43 @@ func (m *Manager) DiagnosticsAfterChange(path string) string {
 	if srv == nil {
 		return ""
 	}
-	before := srv.publishSeq()
-	if err := srv.syncFile(path); err != nil {
+	// The wait runs from the push this content went out on, which is this
+	// call's own when the file changed and an earlier one when the server
+	// already had it — so a report that arrived while the edit was being
+	// written is here immediately, and one still in flight is waited for
+	// rather than answered around.
+	since, err := srv.syncFile(path)
+	if err != nil {
 		m.dropHeld(path)
 		return ""
 	}
-	items, ok := srv.waitDiagnostics(path, before, m.opts.DiagnosticsTimeout)
+	items, ok := srv.waitDiagnostics(path, since, m.opts.DiagnosticsTimeout)
 	if !ok {
-		m.hold(path, heldQuestion{srv: srv, afterSeq: before})
-		return ""
+		m.hold(path, heldQuestion{srv: srv, afterSeq: since})
+		return notCheckedYet(name)
 	}
 	m.dropHeld(path)
 	if len(items) == 0 {
-		return ""
+		return checkedClean(name)
 	}
 	return m.formatDiagnostics(name, path, items)
+}
+
+// checkedClean and notCheckedYet are the two one-line verdicts an applied
+// change comes back with when there is no diagnostic to show. They are one
+// line each because they ride on the end of a result about something else and
+// their whole job is to be read in a glance and not thought about again.
+//
+// The unchecked one names the tool to call rather than saying to wait: a
+// child works in its own copy of the tree and never collects the late answer
+// the session collects, so for that reader asking outright is the only route
+// there is.
+func checkedClean(server string) string {
+	return "Checked by " + server + ": no diagnostics."
+}
+
+func notCheckedYet(server string) string {
+	return "Not checked yet — " + server + " is still starting; call " + DiagnosticsToolName + " for this file."
 }
 
 // hold records — or replaces — the open question for path.
@@ -353,11 +391,16 @@ func (m *Manager) Diagnostics(path string) (string, error) {
 	if srv == nil {
 		return "", fmt.Errorf("no language server available for %s", filepath.Ext(abs))
 	}
-	before := srv.publishSeq()
-	if err := srv.syncFile(abs); err != nil {
+	// As after a change: the wait is measured from the push that put this
+	// content in front of the server, not from now, so a file the server was
+	// already given is answered by the report on it rather than by whatever
+	// it last said about an older version.
+	since, err := srv.syncFile(abs)
+	if err != nil {
 		return "", fmt.Errorf("cannot read %s: %w", m.rel(abs), err)
 	}
-	items, ok := srv.waitDiagnostics(abs, before, m.opts.DiagnosticsTimeout)
+	items, ok := srv.waitDiagnostics(abs, since, m.opts.DiagnosticsTimeout)
+	current := ok
 	if ok {
 		// This publication is newer than the sequence any question about this
 		// file is waiting on, so answering here answers that too.
@@ -371,11 +414,19 @@ func (m *Manager) Diagnostics(path string) (string, error) {
 		// this answer predates stays open.
 		var seq int64
 		items, seq, ok = srv.latestDiagnostics(abs)
+		current = seq > since
 		m.settleHeld(abs, seq)
 	}
 	switch {
 	case !ok:
 		return fmt.Sprintf("%s has not checked %s yet.", name, m.rel(abs)), nil
+	case len(items) == 0 && !current:
+		// Problems found in the file as it was are worth reading whenever
+		// they were found, and are reported below. Nothing found in the file
+		// as it was is not the same fact at all: handed over as "no
+		// diagnostics" it is a clean bill for content nothing has looked at,
+		// which is the reading this whole result exists to prevent.
+		return fmt.Sprintf("%s has not finished checking %s; its last report was on an earlier version of the file.", name, m.rel(abs)), nil
 	case len(items) == 0:
 		return fmt.Sprintf("No diagnostics for %s.", m.rel(abs)), nil
 	}
@@ -593,22 +644,130 @@ func severityLabel(severity int) string {
 }
 
 // resolvePosition locates symbol on the 1-based line of path and returns the
-// LSP position of its first occurrence.
+// LSP position it stands at.
+//
+// Everything downstream is decided by this one position, and the model does
+// not get to see it — it names a file, a line and some text, and reads an
+// answer about whatever that resolved to. So the three ways of resolving it
+// wrongly are refusals rather than guesses, each naming what to send instead:
+//
+//   - The file moved since the model read it, which makes the line number a
+//     coordinate in a file that no longer exists.
+//   - The text occurs only inside a longer name — Add inside AddMemory — and
+//     the position lands on a symbol the model did not ask about. A wrong
+//     definition is worse than no definition, because it is acted on.
+//   - The text occurs more than once on the line, where picking the first is
+//     picking silently: on `f := f.next` the two are different symbols with
+//     different declarations.
+//
+// See docs/capabilities/coding-agent.md#six-questions-for-the-language-server.
 func (m *Manager) resolvePosition(path string, line int, symbol string) (Position, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return Position{}, fmt.Errorf("cannot read file: %w", err)
+	}
+	if err := tools.StaleSinceRead(path, data); err != nil {
+		return Position{}, err
 	}
 	lines := strings.Split(string(data), "\n")
 	if line < 1 || line > len(lines) {
 		return Position{}, fmt.Errorf("line %d is out of range (file has %d lines)", line, len(lines))
 	}
 	text := lines[line-1]
-	idx := strings.Index(text, symbol)
-	if idx < 0 {
+	starts := standaloneOccurrences(text, symbol)
+	switch {
+	case len(starts) == 0:
+		if within := enclosingIdentifier(text, symbol); within != "" {
+			return Position{}, fmt.Errorf("symbol %q appears on line %d only inside %q; ask about the identifier the line actually writes", symbol, line, within)
+		}
 		return Position{}, fmt.Errorf("symbol %q not found on line %d", symbol, line)
+	case len(starts) > 1:
+		cols := make([]string, len(starts))
+		for i, at := range starts {
+			cols[i] = strconv.Itoa(utf8.RuneCountInString(text[:at]) + 1)
+		}
+		return Position{}, fmt.Errorf("symbol %q occurs %d times on line %d, at columns %s; which one is meant decides the answer, so ask about a line where it appears once, or extend symbol with enough of the line around it to be unique",
+			symbol, len(starts), line, strings.Join(cols, ", "))
 	}
-	return Position{Line: line - 1, Character: utf16Column(text, idx)}, nil
+	return Position{Line: line - 1, Character: utf16Column(text, starts[0])}, nil
+}
+
+// standaloneOccurrences is every place symbol appears on the line as its own
+// name rather than inside a longer one. The boundary is only required at an
+// end that is itself part of an identifier, so a symbol the model spelled
+// with punctuation around it — `foo(`, `.Bar` — is matched as written.
+func standaloneOccurrences(text, symbol string) []int {
+	// An empty needle is found at every offset and advances none of them, so
+	// the walk below would not end. The tools refuse a blank symbol before
+	// this, which is why the guard is a return and not an error.
+	if symbol == "" {
+		return nil
+	}
+	var starts []int
+	for off := 0; ; {
+		at := strings.Index(text[off:], symbol)
+		if at < 0 {
+			return starts
+		}
+		at += off
+		if boundedLeft(text, symbol, at) && boundedRight(text, symbol, at+len(symbol)) {
+			starts = append(starts, at)
+		}
+		off = at + len(symbol)
+	}
+}
+
+func boundedLeft(text, symbol string, at int) bool {
+	if r, _ := utf8.DecodeRuneInString(symbol); !identifierRune(r) {
+		return true
+	}
+	before, size := utf8.DecodeLastRuneInString(text[:at])
+	return size == 0 || !identifierRune(before)
+}
+
+func boundedRight(text, symbol string, end int) bool {
+	if r, _ := utf8.DecodeLastRuneInString(symbol); !identifierRune(r) {
+		return true
+	}
+	after, size := utf8.DecodeRuneInString(text[end:])
+	return size == 0 || !identifierRune(after)
+}
+
+// identifierRune reports whether r can be part of a name. It is Go's rule
+// plus the dollar, which is a name character in JavaScript, PHP and shell —
+// the languages a server here is most likely to be indexing after Go, and the
+// ones where dropping it would read $count and count as the same symbol.
+func identifierRune(r rune) bool {
+	return r == '_' || r == '$' || unicode.IsLetter(r) || unicode.IsDigit(r)
+}
+
+// enclosingIdentifier is the whole name symbol was found buried in, for the
+// refusal that has to say what the line actually writes; "" when the text
+// does not occur on the line at all.
+func enclosingIdentifier(text, symbol string) string {
+	if symbol == "" {
+		return ""
+	}
+	at := strings.Index(text, symbol)
+	if at < 0 {
+		return ""
+	}
+	start, end := at, at+len(symbol)
+	for start > 0 {
+		r, size := utf8.DecodeLastRuneInString(text[:start])
+		if !identifierRune(r) {
+			break
+		}
+		start -= size
+	}
+	for end < len(text) {
+		r, size := utf8.DecodeRuneInString(text[end:])
+		if !identifierRune(r) {
+			break
+		}
+		end += size
+	}
+	return text[start:end]
 }
 
 // Definition resolves symbol at the 1-based line of path to its definition
