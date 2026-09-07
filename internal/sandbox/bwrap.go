@@ -29,10 +29,18 @@ func detectBwrap() Availability {
 }
 
 // bwrapPrefix builds the bubblewrap invocation up to the contained command:
-// the whole filesystem read-only, write grants bound over it, and the deny
-// masks mounted last so they outrank every grant — masked directories read as
-// empty tmpfs, masked files as /dev/null. Stdio is inherited and the exit
-// code passes through.
+// the whole filesystem read-only, an empty tmpfs where the host's temporary
+// directory was, write grants bound over both, and the deny masks mounted
+// last so they outrank every grant — masked directories read as empty tmpfs,
+// masked files as /dev/null. Stdio is inherited and the exit code passes
+// through.
+//
+// The tmpfs is mounted before the grants and not after, which is what makes
+// a grant of something inside /tmp mean what it says: bubblewrap creates a
+// bind's mount point on the tmpfs, so the granted path is the only thing that
+// comes back and the rest of the host's /tmp stays out. The mask goes over
+// the tmpfs the same way, and so does the agent socket when the agent
+// happens to be listening there.
 //
 // The namespaces and the environment are the half that needs nothing
 // configured. A contained command used to see every process on the machine,
@@ -50,6 +58,12 @@ func detectBwrap() Availability {
 // is the other reason the allowlist is as short as it is.
 func bwrapPrefix(s spec) []string {
 	argv := []string{"bwrap", "--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc"}
+	for _, t := range s.tmpHidden {
+		argv = append(argv, "--tmpfs", t)
+	}
+	for _, v := range s.tmpVisible {
+		argv = append(argv, "--ro-bind", v, v)
+	}
 	for _, w := range s.write {
 		argv = append(argv, "--bind", w, w)
 	}

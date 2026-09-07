@@ -7,11 +7,15 @@
 package sandbox
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
+	"strconv"
 	"strings"
+	"syscall"
 
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/shell"
@@ -153,7 +157,7 @@ func Wrap(avail Availability, p Policy, command string) ([]string, error) {
 	if !avail.OK {
 		return nil, fmt.Errorf("wrap unsupported: %s", avail.Detail)
 	}
-	s, err := resolvePolicy(p)
+	s, err := resolvePolicy(p, avail.Mechanism)
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +180,7 @@ func WrapArgv(avail Availability, p Policy, argv []string) ([]string, error) {
 	if !avail.OK {
 		return nil, fmt.Errorf("wrap unsupported: %s", avail.Detail)
 	}
-	s, err := resolvePolicy(p)
+	s, err := resolvePolicy(p, avail.Mechanism)
 	if err != nil {
 		return nil, err
 	}
@@ -202,7 +206,19 @@ type spec struct {
 	// agentSocket is the ssh agent's socket, masked rather than left
 	// reachable; empty when this host has no agent.
 	agentSocket string
-	network     bool
+	// tmpHidden are the host's shared temporary directories, made private to
+	// the session; empty when no mechanism is named, because nothing is
+	// hiding anything then either.
+	tmpHidden []string
+	// tmpdir is the scratch directory TMPDIR points at, spelled the way the
+	// contained command will see it.
+	tmpdir string
+	// tmpVisible are the paths inside a hidden temporary directory that have
+	// to stay readable anyway: a workspace or a working directory that is not
+	// also a write grant. A grant needs no entry here — it is rebound over the
+	// privatised tmpdir on its own.
+	tmpVisible []string
+	network    bool
 }
 
 // DenyPaths is the deny mask that cannot be disabled, for the callers that
@@ -304,10 +320,16 @@ func ungrantedCredentialPaths(write []string, workspace string) []string {
 	return out
 }
 
-// defaultWritePaths are the writable grants beyond the workspace: scratch
-// space and toolchain caches, so builds and package managers keep working.
+// defaultWritePaths are the writable grants beyond the workspace: the
+// toolchain caches, so builds and package managers keep working.
+//
+// The host's temporary directory used to be the first entry here and is not
+// one any more: it is the session's own now (hostTempDirs), and a grant of it
+// would be the two-way channel the privatised tmpdir exists to close. Scratch
+// space is still writable — TMPDIR points at somewhere the command may write —
+// it is just not somewhere anything else on the machine can read.
 func defaultWritePaths() []string {
-	out := []string{os.TempDir()}
+	var out []string
 	if cache, err := os.UserCacheDir(); err == nil {
 		out = append(out, cache)
 	}
@@ -319,6 +341,98 @@ func defaultWritePaths() []string {
 		out = append(out, filepath.Join(home, "go", "pkg", "mod"))
 	}
 	return out
+}
+
+// hostTempDirs are the shared temporary directories on this host: /tmp, and
+// whatever TMPDIR names when that is somewhere else. They are the one part of
+// the filesystem every process on the machine can both read and write, which
+// makes a bind of one a channel through the containment wall in both
+// directions: a contained command reads what an uncontained one left there,
+// and leaves what an uncontained one will read.
+//
+// /tmp is first because it is the one the command sees under the mechanism
+// that can give it a filesystem of its own, and it is where TMPDIR then
+// points. A path that is not there is not returned: the mechanisms mask what
+// exists, and there is nothing to hide at a path nothing is using.
+// See docs/capabilities/containment.md#the-temporary-directory-is-the-sessions-own.
+func hostTempDirs() []string {
+	var out []string
+	for _, p := range []string{"/tmp", os.TempDir()} {
+		rp, err := resolvePath(p)
+		if err != nil {
+			continue
+		}
+		// A TMPDIR under /tmp is already hidden by /tmp, and naming it twice
+		// would be a second mount of a directory that is not there any more.
+		if slices.ContainsFunc(out, func(h string) bool { return within(rp, h) }) {
+			continue
+		}
+		out = append(out, rp)
+	}
+	return out
+}
+
+// sessionTmpDir is the scratch directory TMPDIR points at where the mechanism
+// cannot give the command a filesystem of its own — Seatbelt, which says what
+// a process may reach and cannot rearrange what is there. It is one directory
+// per shhh process under the state dir, which the deny mask already hides
+// from every contained command: the session's own scratch is reachable
+// because the profile names it after the mask and SBPL gives the later rule
+// precedence, and another session's is not reachable at all.
+//
+// A process that is gone takes its directory with it. Nothing else ever
+// deletes one — the wrap is built per command and there is no seam that runs
+// when a session ends — so the sweep is here, where the next session is
+// already reading the directory it is about to write in.
+func sessionTmpDir() (string, error) {
+	state, err := storage.Dir()
+	if err != nil {
+		return "", err
+	}
+	base := filepath.Join(state, "tmp")
+	if err := os.MkdirAll(base, 0o700); err != nil {
+		return "", err
+	}
+	sweepSessionTmpDirs(base)
+	mine := filepath.Join(base, strconv.Itoa(os.Getpid()))
+	if err := os.MkdirAll(mine, 0o700); err != nil {
+		return "", err
+	}
+	return resolvePath(mine)
+}
+
+// sweepSessionTmpDirs removes the scratch directories of sessions that have
+// ended. A name that is not a pid is left alone: this directory is shhh's
+// own, and a sweep that deleted what it did not recognise would be one bug
+// away from deleting somebody's files.
+func sweepSessionTmpDirs(base string) {
+	entries, err := os.ReadDir(base)
+	if err != nil {
+		return
+	}
+	self := os.Getpid()
+	for _, e := range entries {
+		pid, err := strconv.Atoi(e.Name())
+		if err != nil || pid == self || processAlive(pid) {
+			continue
+		}
+		_ = os.RemoveAll(filepath.Join(base, e.Name()))
+	}
+}
+
+// processAlive reports whether pid is still running. Signal 0 is the ask
+// without the signal; a process owned by somebody else answers EPERM, which
+// is an answer that it is there.
+func processAlive(pid int) bool {
+	if pid <= 0 {
+		return false
+	}
+	p, err := os.FindProcess(pid)
+	if err != nil {
+		return false
+	}
+	err = p.Signal(syscall.Signal(0))
+	return err == nil || errors.Is(err, syscall.EPERM)
 }
 
 // envAllowlist is every variable name a contained command keeps. The
@@ -400,7 +514,16 @@ func agentSocketPath() string {
 // symlinks resolved before grant/mask decisions so a link cannot smuggle a
 // masked path into a grant; a configuration that cannot be masked faithfully
 // is refused.
-func resolvePolicy(p Policy) (spec, error) {
+//
+// The mechanism is a parameter because one part of the answer is not the same
+// on both: where the session's temporary directory is. Bubblewrap can give
+// the command a filesystem of its own at /tmp and Seatbelt cannot, so the two
+// hand TMPDIR different paths, and TMPDIR is in the environment the spec
+// already carries. An empty mechanism resolves the paths and privatises
+// nothing — that is `shhh doctor` on a host where nothing wraps a command,
+// and a report that named a private tmpdir there would be describing a
+// containment that is not happening.
+func resolvePolicy(p Policy, mechanism string) (spec, error) {
 	s := spec{shell: shellPath(), env: containedEnv(p.Env, p.SecretNames), agentSocket: agentSocketPath()}
 
 	switch p.Profile {
@@ -451,6 +574,10 @@ func resolvePolicy(p Policy) (spec, error) {
 		addWrite(w)
 	}
 
+	if err := s.privatiseTmp(mechanism); err != nil {
+		return spec{}, err
+	}
+
 	// The mask is resolved after the grants because part of it is decided by
 	// them: a credential store the scope holds is one the person asked to
 	// work in, and masking it anyway would refuse every command in the
@@ -493,6 +620,72 @@ func resolvePolicy(p Policy) (spec, error) {
 	}
 
 	return s, nil
+}
+
+// privatiseTmp gives the contained command a temporary directory of its own
+// and hides the host's, which is the one place an otherwise closed write
+// boundary was open in both directions.
+//
+// It runs after the write grants because the grant is how a tool that
+// legitimately needs the host's /tmp gets it — a socket a language server put
+// there, a build cache a person pointed at. Bubblewrap mounts the tmpfs first
+// and binds the grants back over it, so a grant is exactly as wide as it was
+// asked for; Seatbelt has the deny before the allowances, which SBPL reads
+// the same way. Either way nothing new is refused: the grant path already
+// existed and this is the only thing it now has to answer for.
+func (s *spec) privatiseTmp(mechanism string) error {
+	switch mechanism {
+	case "bwrap", "sandbox-exec":
+	default:
+		return nil // nothing is wrapping the command; nothing is private
+	}
+	s.tmpHidden = hostTempDirs()
+	if len(s.tmpHidden) == 0 {
+		return nil
+	}
+	switch mechanism {
+	case "bwrap":
+		// The tmpfs is mounted over the host's own /tmp, so the path the
+		// command writes to is the path it already expects.
+		s.tmpdir = s.tmpHidden[0]
+	case "sandbox-exec":
+		dir, err := sessionTmpDir()
+		if err != nil {
+			return fmt.Errorf("wrap unsupported: cannot make a private tmpdir: %v", err)
+		}
+		s.tmpdir = dir
+	}
+	// A workspace or a working directory inside the host's tmpdir is not a
+	// place the command may write unless something granted it, but it is
+	// still where the work is: hiding it would leave the command chdir'd into
+	// a directory that is no longer there.
+	for _, path := range []string{s.workspace, s.cwd} {
+		if path == "" || !slices.ContainsFunc(s.tmpHidden, func(h string) bool { return within(path, h) }) {
+			continue
+		}
+		if slices.ContainsFunc(s.write, func(w string) bool { return within(path, w) }) {
+			continue // a grant is rebound over the tmpdir already
+		}
+		if !slices.Contains(s.tmpVisible, path) {
+			s.tmpVisible = append(s.tmpVisible, path)
+		}
+	}
+	s.env = withTmpdir(s.env, s.tmpdir)
+	return nil
+}
+
+// withTmpdir points TMPDIR at the session's own scratch. The variable is on
+// the allowlist because a build needs somewhere to write, and what it said on
+// the way in was a directory the whole machine shares.
+func withTmpdir(env []string, dir string) []string {
+	out := make([]string, 0, len(env)+1)
+	for _, pair := range env {
+		if name, _, ok := strings.Cut(pair, "="); ok && name == "TMPDIR" {
+			continue
+		}
+		out = append(out, pair)
+	}
+	return append(out, "TMPDIR="+dir)
 }
 
 // resolvePath makes path absolute and resolves every symlink in it; it errors

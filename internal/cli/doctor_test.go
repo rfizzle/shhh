@@ -314,6 +314,12 @@ func TestDoctorSandbox_Contained(t *testing.T) {
 	if !strings.Contains(f.Detail, "workspace profile") {
 		t.Fatalf("the row does not name the profile: %q", f.Detail)
 	}
+	// The temporary directory was a writable bind of the host's until it was
+	// not, and the row is where a reader who learned the old answer meets the
+	// new one.
+	if !strings.Contains(f.Detail, "private tmpdir") {
+		t.Fatalf("the row does not say the tmpdir is private: %q", f.Detail)
+	}
 	if f.Consequence != "" || len(f.Fix) != 0 {
 		t.Fatalf("a passing check offered a fix: %+v", f)
 	}

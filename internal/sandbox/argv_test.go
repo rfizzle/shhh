@@ -44,7 +44,7 @@ func TestResolveReadOnlyWorkspaceOmitsWorkspaceGrant(t *testing.T) {
 	policy, ws := workspacePolicy(t)
 	resolvedWS, _ := filepath.EvalSymlinks(ws)
 
-	s, err := resolvePolicy(policy)
+	s, err := resolvePolicy(policy, "bwrap")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -53,7 +53,7 @@ func TestResolveReadOnlyWorkspaceOmitsWorkspaceGrant(t *testing.T) {
 	}
 
 	policy.ReadOnlyWorkspace = true
-	s, err = resolvePolicy(policy)
+	s, err = resolvePolicy(policy, "bwrap")
 	if err != nil {
 		t.Fatal(err)
 	}

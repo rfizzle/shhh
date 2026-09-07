@@ -73,6 +73,39 @@ a policy whose writable path sits inside a masked one is refused rather than
 weakened — so granting a subdirectory of a store makes the whole store
 readable, and the card says so before the grant rather than after it.
 
+## The temporary directory is the session's own
+
+Everything else about containment is a wall with the workspace on one side of
+it. `/tmp` was a hole straight through: a writable bind of the host's shared
+temporary directory, on both mechanisms, because builds need scratch space.
+
+A shared scratch directory is a channel in both directions. A contained
+command can read what an uncontained process left there — a token some other
+tool cached, a socket it is listening on — and can leave something an
+uncontained process will later read and act on. Nothing else about the
+boundary is worth much while one directory is open in both directions, and the
+approval card's answer to "what can it reach" did not mention it.
+
+So the temporary directory is the session's own. Where the mechanism can give
+a command a filesystem of its own it gets an empty one, and where it cannot it
+gets a directory nothing outside this session may read. `TMPDIR` points at it
+either way, so a build that asks the usual question gets the usual answer, and
+the host's directory is not reachable at all. The toolchains this costs
+nothing: Go and npm keep their caches under `HOME`, not in the temporary
+directory.
+
+**A tool that really does need the host's `/tmp` is a grant like any other.** A
+language server's socket, a build cache somebody points at: `/add-dir` the path
+and it comes back, and only that path comes back. That is the same sentence
+that makes it writable, said once and out loud, and it is the only way the
+directory returns.
+
+The scratch does not survive the command that wrote it where the mechanism
+hands out a filesystem of its own, which is the one behaviour a person can
+notice: two commands that pass a file to each other through `/tmp` are two
+commands that now have to pass it through the workspace. `/sandbox doctor`
+names the directory in force, so the answer is where the question is asked.
+
 ## A contained command carries almost no environment
 
 The mask decides what a command can read. It cannot decide what the command

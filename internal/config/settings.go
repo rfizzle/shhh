@@ -292,7 +292,7 @@ var settings = []Setting{
 		Key: "sandbox.deny_extra", Kind: KindList, Default: "(the built-in deny mask alone)",
 		Desc: "Paths added to the built-in deny mask; a contained command sees them as empty.",
 	}, {
-		Key: "sandbox.write_extra", Kind: KindList, Default: "(the workspace, scratch and the toolchain caches)",
+		Key: "sandbox.write_extra", Kind: KindList, Default: "(the workspace, the session's own tmpdir and the toolchain caches)",
 		Desc: "Paths writable inside containment, beside the workspace.",
 	}, {
 		Key: "sandbox.container_engine", Kind: KindEnum, Default: "(auto-detected, a rootless engine first)",

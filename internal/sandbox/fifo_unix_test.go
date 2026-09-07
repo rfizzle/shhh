@@ -25,7 +25,7 @@ func TestResolveRefusesUnmaskableDenyType(t *testing.T) {
 	policy, _ := workspacePolicy(t)
 	policy.DenyExtra = []string{fifo}
 
-	_, err := resolvePolicy(policy)
+	_, err := resolvePolicy(policy, "bwrap")
 	if err == nil || !strings.Contains(err.Error(), "wrap unsupported") {
 		t.Fatalf("unmaskable deny path must be refused, got %v", err)
 	}

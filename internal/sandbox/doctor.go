@@ -36,7 +36,7 @@ func Report(avail Availability, p Policy, running int) string {
 	fmt.Fprintf(&b, "  profile:   %s (network %s)\n", profile, network)
 	fmt.Fprintf(&b, "  processes: %s\n", processLine(avail.OK, running))
 
-	s, err := resolvePolicy(p)
+	s, err := resolvePolicy(p, avail.Mechanism)
 	if err != nil {
 		fmt.Fprintf(&b, "  policy:    %v\n", err)
 		if avail.OK {
@@ -46,6 +46,7 @@ func Report(avail Availability, p Policy, running int) string {
 	}
 
 	fmt.Fprintf(&b, "  writable:  %s\n", pathList(s.write))
+	fmt.Fprintf(&b, "  tmpdir:    %s\n", tmpLine(s))
 	fmt.Fprintf(&b, "  variables: %s\n", envList(s.env))
 	masked := append(append([]string{}, s.denyDirs...), s.denyFiles...)
 	if len(masked) == 0 {
@@ -74,6 +75,17 @@ func plural(n int) string {
 		return "1 process"
 	}
 	return fmt.Sprintf("%d processes", n)
+}
+
+// tmpLine says whose temporary directory the command gets. It is a row of its
+// own rather than one more writable path because the answer changed: /tmp was
+// a bind of the host's for as long as this package has existed, and a reader
+// who remembers that is owed the sentence rather than the absence of a line.
+func tmpLine(s spec) string {
+	if s.tmpdir == "" {
+		return "the host's — nothing is containing these commands"
+	}
+	return fmt.Sprintf("%s (private to this session; the host's is not reachable)", s.tmpdir)
 }
 
 // envList names the variables a contained command carries, without their

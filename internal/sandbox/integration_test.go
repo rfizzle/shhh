@@ -287,6 +287,108 @@ func TestSeatbeltReadsACredentialStoreOnlyWhenItIsGranted(t *testing.T) {
 	refuseTheUngrantedCredentialStore(t, avail)
 }
 
+func TestBubblewrapGivesAContainedCommandItsOwnTmpdir(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skipf("bubblewrap is the Linux mechanism and this host is %s", runtime.GOOS)
+	}
+	avail := detectBwrap()
+	if !avail.OK {
+		t.Skipf("no bubblewrap containment here: %s", avail.Detail)
+	}
+	refuseTheHostTmpdir(t, avail)
+}
+
+func TestSeatbeltGivesAContainedCommandItsOwnTmpdir(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skipf("Seatbelt is the macOS mechanism and this host is %s", runtime.GOOS)
+	}
+	avail := detectSeatbelt()
+	if !avail.OK {
+		t.Skipf("no Seatbelt containment here: %s", avail.Detail)
+	}
+	refuseTheHostTmpdir(t, avail)
+}
+
+// The hole in an otherwise closed write boundary, put to the kernel: the
+// host's temporary directory was a writable bind on both mechanisms, so a
+// contained command could read what an uncontained one had left there and
+// leave what an uncontained one would read.
+//
+// Both directions are asserted, because closing one of them is not closing
+// the channel. The read is the file this test wrote to the host's tmpdir
+// before the command, with the uncontained control that shows it was there to
+// be read. The write is a file the contained command puts in its own TMPDIR,
+// looked for afterwards where an uncontained process would look — which is
+// the claim the two mechanisms agree on: bubblewrap's tmpfs keeps it out of
+// the filesystem entirely and Seatbelt's session directory keeps it out of
+// the shared one.
+func refuseTheHostTmpdir(t *testing.T, avail Availability) {
+	t.Helper()
+	const left = "HOST-TMP-BYTES"
+	const leaf = "shhh-contained-scratch"
+	testHome(t)
+	// Directly under the host's tmpdir rather than in a scratch tree of the
+	// test's own: what is being asserted is the shared directory, and
+	// t.TempDir() is a workspace the grant makes reachable on purpose.
+	host, err := os.CreateTemp("", "shhh-host-tmp-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := host.WriteString(left); err != nil {
+		t.Fatal(err)
+	}
+	if err := host.Close(); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Remove(host.Name()) })
+	landed := filepath.Join(os.TempDir(), leaf)
+	t.Cleanup(func() { _ = os.Remove(landed) })
+
+	policy, ws := workspacePolicy(t)
+	policy.Cwd = ws
+	command := "echo SHELL-RAN; cat " + host.Name() + "; echo scratch > \"$TMPDIR/" + leaf + "\" && echo WROTE"
+
+	if out, err := capture(t, shellPath(), "-c", "cat "+host.Name()); err != nil || !strings.Contains(out, left) {
+		t.Fatalf("the uncontained control must read the host tmpdir, or this proves nothing: %v: %s", err, out)
+	}
+
+	argv, err := Wrap(avail, policy, command)
+	if err != nil {
+		t.Fatalf("Wrap under %s: %v", avail.Mechanism, err)
+	}
+	out, _ := capture(t, argv[0], argv[1:]...)
+	if !strings.Contains(out, "SHELL-RAN") {
+		t.Fatalf("the contained shell never ran under %s, so the empty read proves nothing:\n%s", avail.Mechanism, out)
+	}
+	if strings.Contains(out, left) {
+		t.Errorf("a contained command read the host tmpdir under %s:\n%s", avail.Mechanism, out)
+	}
+	// A private tmpdir nothing may write to is a build that fails, so the
+	// other half of the claim is that the scratch space is real.
+	if !strings.Contains(out, "WROTE") {
+		t.Errorf("a contained command must be able to write to its own TMPDIR under %s:\n%s", avail.Mechanism, out)
+	}
+	if _, err := os.Stat(landed); err == nil {
+		t.Errorf("a contained command's scratch reached the host tmpdir under %s: %s", avail.Mechanism, landed)
+	}
+
+	// A workspace that lives in the host's tmpdir is still where the work is,
+	// and the quality gate withholds its write grant: hiding the temporary
+	// directory must not take the checkout with it, or a read-only check runs
+	// in a directory that is no longer there.
+	if err := os.WriteFile(filepath.Join(ws, "tracked.txt"), []byte("IN-THE-WORKSPACE"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	policy.ReadOnlyWorkspace = true
+	argv, err = Wrap(avail, policy, "cat "+filepath.Join(ws, "tracked.txt"))
+	if err != nil {
+		t.Fatalf("Wrap read-only under %s: %v", avail.Mechanism, err)
+	}
+	if out, err := capture(t, argv[0], argv[1:]...); err != nil || !strings.Contains(out, "IN-THE-WORKSPACE") {
+		t.Errorf("a read-only workspace inside the host tmpdir must still be readable under %s: %v:\n%s", avail.Mechanism, err, out)
+	}
+}
+
 // capture runs one argv and hands back everything it printed, wrapped or
 // bare. The deadline is the mechanism's rather than the command's: `cat`
 // returns at once, and a wrap that hangs on a kernel that will not have it

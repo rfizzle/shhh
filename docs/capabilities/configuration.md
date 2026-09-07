@@ -617,7 +617,7 @@ own file could hold.
 | `require` | true/false | `off` | Refuse an assistant command where no containment mechanism is in force, rather than running it unconfined. `--require-sandbox` is read ahead of the file. |
 | `profile` | word: `workspace`, `workspace-netless` | `workspace` | What a contained command may reach: the workspace with the network untouched, or the same with the network closed. |
 | `deny_extra` | list | (the built-in deny mask alone) | Paths added to the built-in deny mask; a contained command sees them as empty. |
-| `write_extra` | list | (the workspace, scratch and the toolchain caches) | Paths writable inside containment, beside the workspace. |
+| `write_extra` | list | (the workspace, the session's own tmpdir and the toolchain caches) | Paths writable inside containment, beside the workspace. |
 | `container_engine` | word: `podman`, `docker` | (auto-detected, a rootless engine first) | Which engine runs a container sandbox. |
 | `container_image` | text | (unset — container sandboxes are unavailable) | The digest-pinned image (name@sha256:…) a sandbox container runs. |
 | `image_allowlist` | list | (any digest-pinned image) | The only sandbox images that may run, as digest-pinned references. |

@@ -4,8 +4,11 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/rfizzle/shhh/internal/storage"
 )
 
 // testHome isolates every home-derived path (deny mask, caches, config,
@@ -69,7 +72,7 @@ func TestResolveMasksExistingDenyPaths(t *testing.T) {
 	ssh := mkdir(t, filepath.Join(home, ".ssh"))
 	policy, _ := workspacePolicy(t)
 
-	s, err := resolvePolicy(policy)
+	s, err := resolvePolicy(policy, "bwrap")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -102,7 +105,7 @@ func TestResolveMasksTheStoresNothingWritesTo(t *testing.T) {
 	}
 	policy, _ := workspacePolicy(t)
 
-	s, err := resolvePolicy(policy)
+	s, err := resolvePolicy(policy, "bwrap")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -128,7 +131,7 @@ func TestResolveMasksACredentialStoreUntilAGrantCoversIt(t *testing.T) {
 	docker := resolvedPath(t, mkdir(t, filepath.Join(home, ".docker")))
 	policy, _ := workspacePolicy(t)
 
-	s, err := resolvePolicy(policy)
+	s, err := resolvePolicy(policy, "bwrap")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -137,7 +140,7 @@ func TestResolveMasksACredentialStoreUntilAGrantCoversIt(t *testing.T) {
 	}
 
 	policy.WriteExtra = []string{kube}
-	if s, err = resolvePolicy(policy); err != nil {
+	if s, err = resolvePolicy(policy, "bwrap"); err != nil {
 		t.Fatalf("a granted credential store must not refuse the wrap: %v", err)
 	}
 	if slices.Contains(s.denyDirs, kube) {
@@ -162,7 +165,7 @@ func TestResolveUnmasksACredentialStoreGrantedBelowItsRoot(t *testing.T) {
 	policy, _ := workspacePolicy(t)
 	policy.WriteExtra = []string{inside}
 
-	s, err := resolvePolicy(policy)
+	s, err := resolvePolicy(policy, "bwrap")
 	if err != nil {
 		t.Fatalf("resolvePolicy = %v", err)
 	}
@@ -179,7 +182,7 @@ func TestResolveFollowsSymlinksBeforeMasking(t *testing.T) {
 	}
 	policy, _ := workspacePolicy(t)
 
-	s, err := resolvePolicy(policy)
+	s, err := resolvePolicy(policy, "bwrap")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -197,7 +200,7 @@ func TestResolveRefusesWriteGrantInsideMask(t *testing.T) {
 	policy.DenyExtra = []string{secrets}
 	policy.WriteExtra = []string{inside}
 
-	_, err := resolvePolicy(policy)
+	_, err := resolvePolicy(policy, "bwrap")
 	if err == nil || !strings.Contains(err.Error(), "wrap unsupported") {
 		t.Fatalf("write grant inside a mask must be refused, got %v", err)
 	}
@@ -209,7 +212,7 @@ func TestResolveRefusesWorkspaceInsideMask(t *testing.T) {
 	ws := mkdir(t, filepath.Join(area, "project"))
 	policy := Policy{Workspace: ws, DenyExtra: []string{area}}
 
-	_, err := resolvePolicy(policy)
+	_, err := resolvePolicy(policy, "bwrap")
 	if err == nil || !strings.Contains(err.Error(), "wrap unsupported") {
 		t.Fatalf("workspace inside a mask must be refused, got %v", err)
 	}
@@ -219,8 +222,165 @@ func TestResolveRefusesUnknownProfile(t *testing.T) {
 	testHome(t)
 	policy, _ := workspacePolicy(t)
 	policy.Profile = "vm"
-	if _, err := resolvePolicy(policy); err == nil || !strings.Contains(err.Error(), "wrap unsupported") {
+	if _, err := resolvePolicy(policy, "bwrap"); err == nil || !strings.Contains(err.Error(), "wrap unsupported") {
 		t.Fatalf("unknown profile must be refused, got %v", err)
+	}
+}
+
+// hiddenTmp reports whether path is inside one of the temporary directories
+// the spec hides. A host whose TMPDIR is itself under /tmp is covered by /tmp
+// and not named twice, so this is the question every caller has.
+func hiddenTmp(s spec, path string) bool {
+	return slices.ContainsFunc(s.tmpHidden, func(h string) bool { return within(path, h) })
+}
+
+// The host's temporary directory is the session's own now: not a write grant,
+// hidden by the mechanism, and TMPDIR pointing somewhere the rest of the
+// machine cannot read. Asserted on the spec because both mechanisms read it
+// from there, and on each argv below because they hide it differently.
+func TestResolvePrivatisesTheHostTmpdir(t *testing.T) {
+	testHome(t)
+	policy, _ := workspacePolicy(t)
+	hostTmp := resolvedPath(t, os.TempDir())
+
+	s, err := resolvePolicy(policy, "bwrap")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !hiddenTmp(s, hostTmp) {
+		t.Fatalf("the host tmpdir should be hidden, tmpHidden=%v", s.tmpHidden)
+	}
+	if slices.Contains(s.write, hostTmp) {
+		t.Fatalf("the host tmpdir must not be a write grant, write=%v", s.write)
+	}
+	if s.tmpdir == "" || !slices.Contains(s.env, "TMPDIR="+s.tmpdir) {
+		t.Fatalf("TMPDIR must point at the private tmpdir %q, env=%v", s.tmpdir, s.env)
+	}
+	// One TMPDIR, not the host's beside the session's.
+	tmpdirs := 0
+	for _, pair := range s.env {
+		if strings.HasPrefix(pair, "TMPDIR=") {
+			tmpdirs++
+		}
+	}
+	if tmpdirs != 1 {
+		t.Fatalf("the environment carries %d TMPDIRs: %v", tmpdirs, s.env)
+	}
+}
+
+// Bubblewrap mounts the tmpfs before the write binds, which is what makes a
+// grant of something inside /tmp mean exactly what it says: the granted path
+// is bound back over the empty filesystem and nothing else comes with it.
+func TestBwrapMountsTheTmpfsBeforeTheGrantsItRebinds(t *testing.T) {
+	testHome(t)
+	policy, ws := workspacePolicy(t)
+	hostTmp := resolvedPath(t, os.TempDir())
+	shared := resolvedPath(t, mkdir(t, filepath.Join(t.TempDir(), "lsp-sockets")))
+	policy.WriteExtra = []string{shared}
+
+	s, err := resolvePolicy(policy, "bwrap")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !hiddenTmp(s, hostTmp) {
+		t.Fatalf("the host tmpdir should be hidden, tmpHidden=%v", s.tmpHidden)
+	}
+	argv := bwrapArgv(s, "true")
+	tmpfs := -1
+	for i := 0; i+1 < len(argv); i++ {
+		if argv[i] == "--tmpfs" && slices.Contains(s.tmpHidden, argv[i+1]) {
+			tmpfs = i
+		}
+	}
+	if tmpfs < 0 {
+		t.Fatalf("the host tmpdir should be a tmpfs: %v", argv)
+	}
+	for _, granted := range []string{shared, resolvedPath(t, ws)} {
+		bind := -1
+		for i := 0; i+2 < len(argv); i++ {
+			if argv[i] == "--bind" && argv[i+1] == granted {
+				bind = i
+			}
+		}
+		if bind < 0 {
+			t.Fatalf("a grant inside the host tmpdir must be bound back: %v", argv)
+		}
+		if bind < tmpfs {
+			t.Fatalf("the tmpfs must be mounted before the grant it rebinds: %v", argv)
+		}
+	}
+}
+
+// Seatbelt cannot rearrange the filesystem, so it says the same thing in
+// rules: the host's tmpdir denied before the write allowances, the grants
+// readable again after it, and the session's own scratch allowed last of all
+// because it lives under the state directory the fixed mask has just denied.
+func TestSeatbeltDeniesTheHostTmpdirAndAllowsTheSessionsOwn(t *testing.T) {
+	home := testHome(t)
+	mkdir(t, filepath.Join(home, ".ssh"))
+	policy, _ := workspacePolicy(t)
+	shared := resolvedPath(t, mkdir(t, filepath.Join(t.TempDir(), "lsp-sockets")))
+	policy.WriteExtra = []string{shared}
+
+	s, err := resolvePolicy(policy, "sandbox-exec")
+	if err != nil {
+		t.Fatal(err)
+	}
+	state, err := storage.Dir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s.tmpdir == "" || !within(s.tmpdir, resolvedPath(t, state)) {
+		t.Fatalf("the session tmpdir must live under the masked state dir, got %q", s.tmpdir)
+	}
+	if _, err := os.Stat(s.tmpdir); err != nil {
+		t.Fatalf("the session tmpdir must exist for the command to write in it: %v", err)
+	}
+	profile := seatbeltProfile(s)
+	denyTmp := strings.Index(profile, "(deny file-read* file-write*\n  (subpath "+sbplQuote(s.tmpHidden[0]))
+	if denyTmp < 0 {
+		t.Fatalf("the host tmpdir should be denied:\n%s", profile)
+	}
+	// The write allowances follow the deny, so a grant is what brings a path
+	// back — and it has to bring reads back too, because the deny took those.
+	allowWrite := strings.Index(profile, "(allow file-write*\n  (subpath "+sbplQuote(s.workspace))
+	allowRead := strings.Index(profile, "(allow file-read*\n")
+	if allowWrite < denyTmp || allowRead < denyTmp || !strings.Contains(profile[max(allowRead, 0):], sbplQuote(shared)) {
+		t.Fatalf("a grant inside the host tmpdir must outrank the deny:\n%s", profile)
+	}
+	// Last of all: the state directory is masked, and SBPL reads the later
+	// rule as the answer.
+	allowTmp := strings.Index(profile, "(allow file-read* file-write*\n  (subpath "+sbplQuote(s.tmpdir))
+	mask := strings.LastIndex(profile, "(deny file-read* file-write*")
+	if allowTmp < 0 || allowTmp < mask {
+		t.Fatalf("the session tmpdir must be allowed after the deny mask:\n%s", profile)
+	}
+	if !strings.Contains(strings.Join(seatbeltPrefix(s), " "), "TMPDIR="+s.tmpdir) {
+		t.Fatalf("the command must be told where its tmpdir is: %v", seatbeltPrefix(s))
+	}
+}
+
+// A session's scratch directory outlives the session that made it — the wrap
+// is built per command and nothing runs when a session ends — so the next one
+// sweeps what is left of a process that has gone. A name that is not a pid is
+// not shhh's to delete.
+func TestSweepRemovesOnlyTheScratchOfProcessesThatAreGone(t *testing.T) {
+	base := t.TempDir()
+	alive := mkdir(t, filepath.Join(base, strconv.Itoa(os.Getpid())))
+	stranger := mkdir(t, filepath.Join(base, "not-a-pid"))
+	// Reserved by POSIX and never a running process, so it is the one pid
+	// that can be asserted dead.
+	gone := mkdir(t, filepath.Join(base, "999999999"))
+
+	sweepSessionTmpDirs(base)
+
+	for _, keep := range []string{alive, stranger} {
+		if _, err := os.Stat(keep); err != nil {
+			t.Errorf("the sweep removed %s: %v", keep, err)
+		}
+	}
+	if _, err := os.Stat(gone); err == nil {
+		t.Errorf("the scratch of a process that has gone should be swept: %s", gone)
 	}
 }
 
@@ -380,6 +540,14 @@ func TestReportShowsPolicy(t *testing.T) {
 	if !strings.Contains(r, "network disabled") {
 		t.Fatalf("report should show the netless profile:\n%s", r)
 	}
+	// The answer to "what can it reach" used to include the host's shared
+	// temporary directory without saying so; now it says the opposite.
+	if !strings.Contains(r, "tmpdir:") || !strings.Contains(r, "private to this session") {
+		t.Fatalf("report should say the tmpdir is the session's own:\n%s", r)
+	}
+	if strings.Contains(r, "writable:  "+resolvedPath(t, os.TempDir())+"\n") {
+		t.Fatalf("the host tmpdir must not be reported writable:\n%s", r)
+	}
 }
 
 func TestReportRefusedPolicy(t *testing.T) {
@@ -409,7 +577,7 @@ func TestScopeDirectoriesBecomeWriteGrants(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	s, err := resolvePolicy(policy)
+	s, err := resolvePolicy(policy, "bwrap")
 	if err != nil {
 		t.Fatalf("resolvePolicy = %v", err)
 	}

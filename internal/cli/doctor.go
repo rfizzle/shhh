@@ -1144,11 +1144,18 @@ func probeSandbox(_ context.Context, cfg config.Config) doctorFinding {
 // artboard leads its failure with, and the consequence is quoted from the
 // surface the reader will actually meet it on: the approval card promotes
 // `⚠ UNCONTAINED` to its title bar when nothing wraps the command.
+//
+// The row says the temporary directory is private because the answer used to
+// be the other one: /tmp was a writable bind of the host's, and a reader who
+// learned that is owed the correction where they are already looking. What
+// the private one is, and what a grant of the host's would change, is
+// docs/capabilities/containment.md#the-temporary-directory-is-the-sessions-own
+// and `/sandbox doctor`, which resolves the whole policy.
 func doctorSandbox(avail sandbox.Availability, profile, goos string) doctorFinding {
 	if avail.OK {
 		return doctorFinding{
 			Subject: avail.Mechanism,
-			Detail:  joinDetail(avail.Detail, profile+" profile"),
+			Detail:  joinDetail(joinDetail(avail.Detail, profile+" profile"), "private tmpdir"),
 			Outcome: "contained",
 		}
 	}
