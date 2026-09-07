@@ -75,6 +75,17 @@ carries the rails for what it actually did.
 A child's approvals route to wherever you are, so detaching to look at
 something else does not mean missing a decision.
 
+A child is read and steered by the same machinery a session is, and what that
+found reaches the parent rather than only the child's own transcript. Its lane
+says how many times this turn it has been told the check reads its work as off
+its task, and the roster the orchestrator collects says that too, beside the
+last reading's own word for the state of the work. One steer is the mechanism
+working. Two is a child that answered the check and carried on, which is worth
+knowing forty rounds before its final report says where it went — and the
+orchestrator, which cannot steer or end a child itself, is asked to say so to
+you rather than wait for it. Both are the machinery's own words and counts;
+nothing a child's tools read reaches the parent's conversation this way.
+
 Attaching to a child is not a separate surface. It changes which agent the
 session is looking at, and every agent — the root included — is the same kind
 of thing. That equivalence is why the interactive surfaces did not need a

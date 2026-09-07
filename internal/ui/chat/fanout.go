@@ -165,6 +165,8 @@ func (m Model) fanoutBlockFor(e entry) components.FanoutBlock {
 			Spend:   p.Spend,
 			Elapsed: turnDuration(st.Elapsed),
 			Seeded:  st.Seeded,
+			Steers:  st.Steers,
+			Verdict: st.Verdict,
 			Frame:   p.Frame,
 		}
 		if note := childNote(st); note != "" {

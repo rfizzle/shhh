@@ -156,6 +156,19 @@ type Status struct {
 	// and never reaches one; a lane showing several is a task outgrowing the
 	// interval its spawn chose, which is worth being able to see.
 	CheckIns int
+	// Steers is how many times this turn the child has been told it looks to
+	// have left its task. It is the count and not a flag because one steer is
+	// the machinery working — a child told once and back on task is the case
+	// this was built for — and a second is the case nothing above the child
+	// could see before: an interruption delivered, answered, and the next
+	// reading finding the same departure. It goes back to zero at the child's
+	// next turn, so what it reports is a child that is not answering now.
+	Steers int
+	// Verdict is the last reading of this child's work, in the summariser's
+	// own closed vocabulary and never its prose. Empty is a child with no
+	// reading at all, which is the ordinary case: children are read only
+	// where the session turned readings on for them.
+	Verdict string
 	// Seeded is how many of the parent's uncommitted paths the child's
 	// worktree was started from. Zero is a reader, or a writer spawned from
 	// a checkout with nothing uncommitted in it.
@@ -557,6 +570,15 @@ type child struct {
 	attempt   int
 	budgetHit bool
 	checkIns  int
+	// steers is what Status.Steers reports and verdict what Status.Verdict
+	// does. They are the child's own copies under this lock rather than
+	// readings of the agent: a status is taken from whichever goroutine asked
+	// — the parent's tool call, the lane's next frame — and reaching into the
+	// loop's own state from there is a race. The lock is owed on the writing
+	// side too, and by more than the run's goroutine: the reading that sets
+	// verdict can land after the run it was reading has returned.
+	steers    int
+	verdict   string
 	report    string
 	patchNote string
 	// Live session surface: transcript entries, the in-flight
@@ -656,6 +678,8 @@ func (c *child) status() Status {
 		Steps:     c.steps,
 		Summary:   summary,
 		CheckIns:  c.checkIns,
+		Steers:    c.steers,
+		Verdict:   c.verdict,
 		Seeded:    c.seeded,
 		Held:      c.heldOn != nil,
 	}
@@ -737,6 +761,12 @@ func (c *child) beginTurn() {
 	c.intCh = make(chan struct{})
 	c.intClosed = false
 	c.turns++
+	// A turn is steered about the instruction it was given. The next one has
+	// a new instruction — a person's redirection through the lane, usually
+	// the answer to the very count this carries — and starting it on the last
+	// one's tally would report a child as ignoring a steer it has just been
+	// taken off.
+	c.steers = 0
 	c.mu.Unlock()
 }
 
@@ -1431,6 +1461,7 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	c.priorIn, c.priorOut = c.priorIn+c.tokensIn, c.priorOut+c.tokensOut
 	c.tokensIn, c.tokensOut, c.budgetHit = 0, 0, false
 	c.checkIns = 0
+	c.steers, c.verdict = 0, ""
 	c.turns = 0
 	c.toolCalls, c.step = 0, 0
 	c.report, c.patchNote, c.streaming = "", "", ""
@@ -1854,10 +1885,37 @@ func (s *Supervisor) run(c *child) {
 		OnIntervene: func(iv agent.Intervention) {
 			c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: iv.Notice})
 			signal(observe.SignalIntervene, iv.Kind.Signal())
+			// A steered child says so where the parent looks — its lane and
+			// the roster — because the transcript row above is on a surface
+			// nobody has attached to, and a child that is not answering its
+			// steer is the parent's to redirect or end
+			// (docs/capabilities/subagents.md#they-are-visible-while-they-run).
+			if iv.Kind == agent.InterveneSteer {
+				c.mu.Lock()
+				c.steers++
+				c.mu.Unlock()
+			}
 			s.emitUpdate(c)
 		},
 		OnSummary: func(v agent.SummaryVerdict) {
 			signal(observe.SignalSummary, observe.SummaryCode(v.State))
+			// A reading that did not happen leaves the last one standing:
+			// the surfaces mark a failed reading stale rather than blanking
+			// what it was revising.
+			//
+			// The word is recorded and nothing is emitted. This hook is the
+			// one that can be called from the reading's own goroutine after
+			// the run it was reading has returned — a closing reading is
+			// handed straight over rather than parked for a boundary that
+			// will never come — and an update pushed from there is a send on
+			// the event channel the supervisor has already shut. The next
+			// update the child's own goroutine emits carries the word, and a
+			// child whose last act was a reading has nothing left to draw.
+			if !v.Failed {
+				c.mu.Lock()
+				c.verdict = v.State.String()
+				c.mu.Unlock()
+			}
 		},
 		// An interruption a reading earned and did not get. Nothing was said
 		// to the child, so nothing goes on its lane; the record is the only
@@ -1873,6 +1931,15 @@ func (s *Supervisor) run(c *child) {
 		Steer: func() []string {
 			msgs := c.drainSteering()
 			if len(msgs) > 0 {
+				// A person redirecting the child mid-turn is answering the
+				// very count this carries, and the loop starts the turn's
+				// reckoning again for exactly that reason. The child's own
+				// copy owes the same reset: left standing, the lane and the
+				// roster would go on reporting a child as not answering its
+				// steer while it works on the instruction that answered it.
+				c.mu.Lock()
+				c.steers = 0
+				c.mu.Unlock()
 				s.emitUpdate(c)
 			}
 			return msgs
@@ -2615,6 +2682,30 @@ func (s *Supervisor) report(raw json.RawMessage) (string, error) {
 	return c.reportText(), nil
 }
 
+// steerMark is what the roster says about a child the machinery has had to
+// interrupt: the last reading of its work, then how many times this turn it
+// has been told the reading says it has left its task.
+//
+// Both are words and numbers this package owns — the reading's state comes
+// from a closed set and the count is a count — so nothing a child's tools
+// read can reach the parent's conversation through here. Neither is stated
+// when there is nothing to state: an ordinary child takes no readings and is
+// never steered, and a roster that said so for every row would be teaching
+// the parent to skip the field.
+func steerMark(st Status) string {
+	var parts []string
+	if st.Verdict != "" {
+		parts = append(parts, st.Verdict)
+	}
+	if st.Steers > 0 {
+		parts = append(parts, plural(st.Steers, "steer"))
+	}
+	if len(parts) == 0 {
+		return ""
+	}
+	return " · " + strings.Join(parts, " · ")
+}
+
 func (s *Supervisor) statusOverview() string {
 	statuses := s.Snapshot()
 	if len(statuses) == 0 {
@@ -2629,7 +2720,7 @@ func (s *Supervisor) statusOverview() string {
 		if len(st.Paths) > 0 {
 			label += "; " + strings.Join(st.Paths, ", ")
 		}
-		fmt.Fprintf(&sb, "%s (%s): %s — %s\n", st.Name, label, st.Detail, firstLine(st.Task))
+		fmt.Fprintf(&sb, "%s (%s): %s%s — %s\n", st.Name, label, st.Detail, steerMark(st), firstLine(st.Task))
 	}
 	return strings.TrimRight(sb.String(), "\n")
 }

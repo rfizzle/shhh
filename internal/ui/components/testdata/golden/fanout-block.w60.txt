@@ -34,6 +34,7 @@
  ◇ fan-out   2 agents                        2 running   22s
    ◇ agent   researcher-…  ⠹ working · 4 tools · $0.01   22s
    ◇ agent   researcher-…  ⠹ working · 2 tools · $0.01   19s
+    2 steers · last read off target
 
 ── ansi ────────────────────────────────────────────────────
 · mid-flight · one child is waiting on you
@@ -60,3 +61,4 @@
  ␛[94m◇␛[m fan-out   ␛[38;5;241m2 agents␛[m                        ␛[38;5;205m2 running␛[m   ␛[38;5;245m22s␛[m
    ␛[94m◇␛[m agent   ␛[38;5;241mresearcher-…␛[m  ␛[38;5;205m⠹ working␛[m␛[38;5;241m · ␛[m␛[38;5;245m4 tools · $0.01␛[m   ␛[38;5;245m22s␛[m
    ␛[94m◇␛[m agent   ␛[38;5;241mresearcher-…␛[m  ␛[38;5;205m⠹ working␛[m␛[38;5;241m · ␛[m␛[38;5;245m2 tools · $0.01␛[m   ␛[38;5;245m19s␛[m
+    ␛[38;5;245m2 steers · last read off target␛[m

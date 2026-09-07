@@ -385,6 +385,31 @@ fresher reading can arrive first and find the session on target — and
 delivering the earlier one then would accuse a session of a departure the
 machinery itself had already stopped believing in.
 
+**A second steer says it is the second.** The reading that earns one is taken
+after the answer to the last one — an interruption pulls the next reading
+forward for exactly that purpose — so a turn told twice has been read again
+and read the same way, and told in the same words it has no way to know that.
+The count goes into the message from the second on, and with it the one thing
+the repetition establishes: answering in words did not change what the check
+sees, so the next round is where the answer has to be. It offers the same two
+ways out as the first, in the same order, because two readings of a digest are
+still two readings of a digest and the judge is no more reliable for having
+agreed with itself. A wording that replaces the built-in one is told the count
+too — it may place it itself, and gets a sentence under it when it does not,
+because an operator replacing the words must not have to notice that they were
+replacing the escalation with them.
+
+**What a third steer does not do is end the turn.** Ending one is a stop this
+machinery does not own: the round cap hands control back to a person, a person
+interrupts, and the person who gave a child its task can redirect or end it.
+The turn's own reader is none of those. It is a cheap model reading a digest,
+it is wrong often enough that the steer above is written to ask rather than to
+accuse, and a mechanism that can stop a turn on that reading is one that will
+sometimes stop a run doing exactly what it was asked to do, with nobody there
+to disagree. So the count escalates by leaving the turn rather than by ending
+it: it reaches the parent of a child, which reports it to the person who can
+act on it.
+
 **A verdict has an age, and past one reading interval it earns nothing.** A
 reading is asked at a round, takes as long as the reader takes, and is applied
 at the first moment the run can act on it, so a run of fast read-only rounds

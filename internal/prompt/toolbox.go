@@ -48,7 +48,7 @@ var toolboxNotes = []struct{ name, note string }{
 	{"write_note", "leave a note in the session's shared notebook, which every agent in this session — you and every sub-agent — reads. Write what the rest of the session needs and not what only your answer needs: a fact established, a source and what it said. A note cannot be unwritten; only the user drops one."},
 	{"read_note", "read the session's shared notebook. Read it before delegating, so a sub-agent is not sent to find what a sibling already found, and after a fan-out, for what its children wrote down beside their reports."},
 	{"spawn_agent", "delegate a self-contained piece of work — a wide search, an independent change — to a sub-agent. Its context is its own, so this is how a broad hunt happens without spending yours."},
-	{"agent_report", "collect what a spawned agent found."},
+	{"agent_report", "collect what a spawned agent found. Called with no name it lists every agent instead, with what each is doing; an agent listed as steered more than once is one that is not answering the check that steers it, so say so in your next message rather than waiting on its report — the user can open its lane to redirect it or end it, and you cannot."},
 	{"evidence", "retrieve the full output of an earlier tool result that was reduced. The notice on a reduced result carries its id."},
 	{"remember", "propose a durable fact worth keeping across sessions. The user confirms it before it persists."},
 	{"skill", "load the full instructions of a skill from the Skills list when the task matches one. Do it before starting the work, not after."},

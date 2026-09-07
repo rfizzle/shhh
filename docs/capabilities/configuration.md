@@ -727,7 +727,7 @@ own file could hold.
 
 | Key | Takes | Default | What it decides |
 |---|---|---|---|
-| `steer` | path | (the built-in wording) | A file whose contents replace the message a drifting turn is given; it may place `{{target}}` and `{{reason}}`. |
+| `steer` | path | (the built-in wording) | A file whose contents replace the message a drifting turn is given; it may place `{{target}}`, `{{reason}}` and `{{count}}`, how many times this turn the check has said so. |
 | `check_in` | path | (the built-in wording) | A file whose contents replace the message a turn that has reached its interval is given; it may place `{{rounds}}` and `{{finished}}`. |
 | `summary` | path | (the built-in wording) | A file whose contents replace the reading instruction the summarizing model is sent. |
 | `classifier` | path | (the built-in wording) | A file whose contents replace the instruction auto mode's permission classifier is sent. |

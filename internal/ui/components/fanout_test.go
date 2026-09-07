@@ -207,6 +207,47 @@ func TestFanoutHeaderSettles(t *testing.T) {
 	}
 }
 
+// A child the machinery has had to steer says so under its lane, where the
+// seed line goes and where nothing has to give way for it — the right-hand
+// field is what the child's name is clipped for, and a name clipped to an
+// ellipsis is a lane the reader cannot tell from the one under it. A steer
+// outranks the seed line, a settled lane keeps its result, and a child nobody
+// has had to steer says nothing, which is almost every child.
+func TestFanoutLaneCountsTheSteersItWasGiven(t *testing.T) {
+	steered := FanoutLane{State: FanoutRunning, Name: "writer-1", Task: "docs/loop.md",
+		Tools: 12, Spend: "$0.02", Steers: 2, Verdict: "off target", Seeded: 5}
+	view := ansi.Strip(steered.View(110))
+	if !strings.Contains(view, "2 steers · last read off target") {
+		t.Fatalf("a steered lane should say how often under it: %q", view)
+	}
+	// The reading is stated, never inferred from the count: a child steered
+	// twice and back on task is what the mechanism is for, and a lane that
+	// read the count as the verdict would call that one off target.
+	back := FanoutLane{State: FanoutRunning, Name: "writer-1", Steers: 2, Verdict: "on target"}
+	if view := ansi.Strip(back.View(110)); !strings.Contains(view, "2 steers · last read on target") {
+		t.Fatalf("the lane states the reading it has: %q", view)
+	}
+	if strings.Contains(view, "started from") {
+		t.Fatalf("news outranks the seed line: %q", view)
+	}
+	if !strings.Contains(view, "writer-1") {
+		t.Fatalf("the name stays whole: %q", view)
+	}
+	one := FanoutLane{State: FanoutRunning, Name: "writer-1", Tools: 3, Steers: 1}
+	if view := ansi.Strip(one.View(110)); !strings.Contains(view, "1 steer") {
+		t.Fatalf("one steer is one steer, and says so without a reading: %q", view)
+	}
+	done := FanoutLane{State: FanoutDone, Name: "writer-1", Steers: 2, Summary: "documented the sentinel"}
+	if view := ansi.Strip(done.View(110)); !strings.Contains(view, "documented the sentinel") ||
+		strings.Contains(view, "steer") {
+		t.Fatalf("a finished lane keeps its result: %q", view)
+	}
+	none := FanoutLane{State: FanoutRunning, Name: "writer-1", Tools: 3}
+	if view := ansi.Strip(none.View(110)); strings.Contains(view, "steer") {
+		t.Fatalf("a child nobody steered should say nothing: %q", view)
+	}
+}
+
 // TestFanoutLaneSaysWhatItStartedFrom is the seeded-worktree criterion on a
 // lane: a writer working from your uncommitted files says how many, while it
 // is working and there is nothing else under the lane to say. A lane that has

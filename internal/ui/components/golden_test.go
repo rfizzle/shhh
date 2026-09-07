@@ -844,7 +844,9 @@ func TestGolden_AgentList(t *testing.T) {
 // a step count for, where every lane spins instead of drawing a ratio. The
 // spinner frame is fixed so the capture is about layout rather than about
 // when the test ran. The mid-flight writer started from the parent's
-// uncommitted files, which is the one lane note a child still working has.
+// uncommitted files, and one of the spinning pair has been steered twice,
+// which are the two lane notes a child still working can have — the second
+// outranks the first where both are true.
 func TestGolden_FanoutBlock(t *testing.T) {
 	captureGolden(t, "fanout-block", "fan-out block", goldenWidths, func(width int) []golden.Panel {
 		flight := FanoutBlock{
@@ -878,7 +880,7 @@ func TestGolden_FanoutBlock(t *testing.T) {
 				{State: FanoutRunning, Name: "researcher-1", Task: "survey the round accounting",
 					Tools: 4, Spend: "$0.01", Elapsed: "22s", Frame: 2},
 				{State: FanoutRunning, Name: "researcher-2", Task: "survey the fold state",
-					Tools: 2, Spend: "$0.01", Elapsed: "19s", Frame: 2},
+					Tools: 2, Spend: "$0.01", Elapsed: "19s", Frame: 2, Steers: 2, Verdict: "off target"},
 			},
 		}
 		return []golden.Panel{

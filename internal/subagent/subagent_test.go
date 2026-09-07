@@ -41,6 +41,15 @@ type scriptedEnv struct {
 	mu    sync.Mutex
 	steps []streamStep
 
+	// summarizer, when set, is the reader the child takes periodic readings
+	// through — off in an ordinary session, so a test that wants a child
+	// judged has to say so.
+	summarizer *agent.Summarizer
+	// delay is how long each scripted round takes to answer. Rounds here are
+	// otherwise instant, which no provider is, and a reading that runs beside
+	// the loop needs the loop to take some time for the reading to land in.
+	delay time.Duration
+
 	gated      map[string]bool
 	execOut    string
 	execCode   int
@@ -60,7 +69,11 @@ func (s *scriptedEnv) factory() EnvFactory {
 			}
 			step := s.steps[0]
 			s.steps = s.steps[1:]
+			delay := s.delay
 			s.mu.Unlock()
+			if delay > 0 {
+				time.Sleep(delay)
+			}
 
 			if step.fail != nil {
 				return nil, nil, step.fail
@@ -81,6 +94,7 @@ func (s *scriptedEnv) factory() EnvFactory {
 		return Env{
 			SystemPrompt: "test system prompt",
 			Stream:       stream,
+			Summarizer:   s.summarizer,
 			Executor: func(name string, args json.RawMessage) (string, error) {
 				return "auto:" + name, nil
 			},
@@ -94,6 +108,80 @@ func (s *scriptedEnv) factory() EnvFactory {
 			Gated: s.gated,
 		}, nil
 	}
+}
+
+// readingProvider is the reader a child is judged by, answering whatever a
+// test last told it to. It is asked from the summarizer's own goroutine while
+// the child runs, so the word it is on is taken under a lock.
+type readingProvider struct {
+	mu    sync.Mutex
+	state string
+}
+
+func (p *readingProvider) say(state string) {
+	p.mu.Lock()
+	p.state = state
+	p.mu.Unlock()
+}
+
+func (p *readingProvider) StreamCompletion(context.Context, []provider.Message, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+	p.mu.Lock()
+	state := p.state
+	p.mu.Unlock()
+	ch := make(chan provider.StreamEvent, 1)
+	ch <- provider.StreamEvent{
+		ToolCalls: []provider.ToolCall{{
+			ID:   "s1",
+			Name: agent.SummaryToolName,
+			Arguments: `{"summary":"reading files in the importer","state":"` + state +
+				`","reason":"reading the importer, not the exporter"}`,
+		}},
+		Done: true,
+	}
+	close(ch)
+	return ch, nil
+}
+
+func (p *readingProvider) Name() string { return "reading" }
+
+// readRounds is a script of n tool rounds and a final answer, for a child
+// that has to run long enough to be read and steered while it works.
+func readRounds(n int) []streamStep {
+	steps := make([]streamStep, 0, n+1)
+	for i := range n {
+		steps = append(steps, streamStep{calls: []provider.ToolCall{
+			{ID: fmt.Sprintf("r%d", i), Name: "read_file", Arguments: `{"path":"importer.go"}`},
+		}})
+	}
+	return append(steps, streamStep{text: "read the importer"})
+}
+
+// judgedChild is a supervisor whose one child is read every few rounds by
+// reader. The wall-clock floor is off — this is about the round interval, and
+// twenty real seconds is not a thing a test can wait for — and the interval
+// is wide enough that a reading is still fresh at the boundary it is
+// collected at, since a verdict older than one interval is withheld as
+// describing work the run has left behind.
+func judgedChild(t *testing.T, reader provider.Provider, rounds int) *Supervisor {
+	t.Helper()
+	env := &scriptedEnv{steps: readRounds(rounds), delay: 3 * time.Millisecond,
+		summarizer: agent.NewSummarizer(reader,
+			agent.SummaryConfig{Model: "fast", IntervalRounds: 10, MinGap: -1, InterveneCooldownIntervals: 1})}
+	sup := newTestSupervisor(t, env)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the exporter"}`)
+	return sup
+}
+
+// statusOf is one child's live snapshot by name.
+func statusOf(t *testing.T, sup *Supervisor, name string) Status {
+	t.Helper()
+	for _, st := range sup.Snapshot() {
+		if st.Name == name {
+			return st
+		}
+	}
+	t.Fatalf("no agent named %s", name)
+	return Status{}
 }
 
 func newTestSupervisor(t *testing.T, env *scriptedEnv) *Supervisor {
@@ -401,6 +489,96 @@ func TestRoundLimitChecksInAndCarriesOn(t *testing.T) {
 	// only do because the check-in doubled it.
 	if st.ToolCalls != 2 {
 		t.Fatalf("expected both tool calls to run, got %d", st.ToolCalls)
+	}
+}
+
+// A child that is steered and carries on says so where the parent is
+// looking. The steer itself lands on the child's own transcript, which is a
+// surface nobody has attached to; the count and the reading behind it ride
+// the status, which is what the roster prints and what the lane draws.
+func TestSteeredChildCountsItsSteersOnTheStatusAndTheRoster(t *testing.T) {
+	// Enough rounds for several readings: the first falls due early, the
+	// rest on the interval, and a cooldown of one interval sits between two
+	// steers. The child answers none of them, which is the case this counts.
+	sup := judgedChild(t, &readingProvider{state: "off_target"}, 40)
+	execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
+
+	st := statusOf(t, sup, "researcher-1")
+	if st.Steers < 2 {
+		t.Fatalf("a child steered and read again must count more than one steer, got %d", st.Steers)
+	}
+	if st.Verdict != agent.SummaryOffTarget.String() {
+		t.Fatalf("the status must carry the last reading's word, got %q", st.Verdict)
+	}
+
+	roster := execTool(t, sup, ReportToolName, `{}`)
+	for _, want := range []string{plural(st.Steers, "steer"), agent.SummaryOffTarget.String()} {
+		if !strings.Contains(roster, want) {
+			t.Fatalf("the roster does not say %q:\n%s", want, roster)
+		}
+	}
+	if strings.Contains(roster, "reading the importer") {
+		t.Fatalf("the roster carries the reading's word and never its prose:\n%s", roster)
+	}
+}
+
+// The count is the turn's. A child handed a new instruction — which is how a
+// person answers the very count that reached them — starts it at zero, while
+// the reading stands until another one replaces it: the last reading of this
+// child's work is still the last reading.
+func TestASteerCountBelongsToTheTurnItWasGivenIn(t *testing.T) {
+	c := &child{name: "researcher-1", role: RoleResearcher}
+	c.steers, c.verdict = 2, agent.SummaryOffTarget.String()
+	c.beginTurn()
+	st := c.status()
+	if st.Steers != 0 {
+		t.Fatalf("a new turn starts with no steers, got %d", st.Steers)
+	}
+	if st.Verdict != agent.SummaryOffTarget.String() {
+		t.Fatalf("the last reading stands into the next turn, got %q", st.Verdict)
+	}
+	if got := steerMark(st); got != " · off target" {
+		t.Fatalf("the roster says the reading and no count, got %q", got)
+	}
+}
+
+// A person who redirects a child mid-turn has answered the count that
+// reached them, and the child stops reporting it — the lane and the roster
+// would otherwise go on naming a child as not answering a steer while it
+// works on the instruction that answered it. The redirect joins the running
+// turn rather than starting a new one, which is what makes this the mid-turn
+// reset and not the one every turn boundary does.
+func TestAPersonsRedirectClearsTheCountItAnswers(t *testing.T) {
+	reader := &readingProvider{state: "off_target"}
+	sup := judgedChild(t, reader, 200)
+
+	deadline := time.After(10 * time.Second)
+	for statusOf(t, sup, "researcher-1").Steers == 0 {
+		select {
+		case <-deadline:
+			t.Fatal("no steer was delivered to the child")
+		default:
+		}
+		time.Sleep(time.Millisecond)
+	}
+
+	// Nothing further is owed a steer, so what the count ends on is what the
+	// redirect left it at.
+	reader.say("on_target")
+	if err := sup.Steer("researcher-1", "read the exporter instead"); err != nil {
+		t.Fatalf("steering the child: %v", err)
+	}
+	execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
+
+	if st := statusOf(t, sup, "researcher-1"); st.Steers != 0 {
+		t.Fatalf("a person's redirect clears the count it answers, got %d", st.Steers)
+	}
+	c := sup.byName["researcher-1"]
+	c.mu.Lock()
+	turns := c.turns
+	c.mu.Unlock()
+	if turns != 1 {
+		t.Fatalf("the redirect should have joined the running turn, not started one: %d turns", turns)
 	}
 }
 

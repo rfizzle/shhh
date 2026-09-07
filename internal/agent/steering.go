@@ -20,13 +20,18 @@ import (
 
 // The substitutions an overriding wording may name. A check-in is told how
 // many rounds have gone and how the turn it is addressed to finishes; a
-// steer is told the instruction it was judged against and the reading's own
-// reason. Nothing else varies between two of either.
+// steer is told the instruction it was judged against, the reading's own
+// reason, and how many times this turn the check has said so. Nothing else
+// varies between two of either.
 const (
 	PlaceholderRounds   = "{{rounds}}"
 	PlaceholderFinished = "{{finished}}"
 	PlaceholderTarget   = "{{target}}"
 	PlaceholderReason   = "{{reason}}"
+	// PlaceholderCount is how many times this turn the check has said the
+	// same thing, for a wording that would rather say it in its own words
+	// than take the sentence the mechanism adds under one that does not.
+	PlaceholderCount = "{{count}}"
 )
 
 // The substitutions a backlog run's stage wordings may name: the blocks the
@@ -49,7 +54,7 @@ const (
 // caller should have to get it right.
 var (
 	checkInPlaceholders = []string{PlaceholderRounds, PlaceholderFinished}
-	steerPlaceholders   = []string{PlaceholderTarget, PlaceholderReason}
+	steerPlaceholders   = []string{PlaceholderTarget, PlaceholderReason, PlaceholderCount}
 )
 
 // ValidateCheckIn and ValidateSteer report the first substitution a wording
@@ -178,19 +183,35 @@ func (s Steering) checkInPrompt(used int) string {
 
 // steerPrompt is the steer this surface sends, built from the override when
 // there is one. The target is clamped either way: the anchor is whatever the
-// user typed, and the bound is the setting rather than the wording.
-func (s Steering) steerPrompt(target, reason string) string {
+// user typed, and the bound is the setting rather than the wording. count is
+// how many steers this turn has now been delivered, this one included.
+//
+// How many times the check has said the same thing is the mechanism's fact
+// rather than the wording's, so every wording carries it: a wording that
+// names {{count}} has put it where its author wanted it, and one that does
+// not gets steerRepeat under it. Left to the wording alone, an operator who
+// replaced the words would have replaced the escalation with them, and the
+// second steer would arrive as the first one again — which is the failure
+// the count exists for.
+func (s Steering) steerPrompt(target, reason string, count int) string {
 	target = strings.TrimSpace(target)
 	if n := s.SteerTargetChars; n > 0 {
 		target = clampTarget(target, n)
 	} else if n == 0 {
 		target = clampTarget(target, DefaultSteerTargetChars)
 	}
-	if s.Steer == "" {
-		return buildSteer(target, reason)
+	text := s.Steer
+	if text == "" {
+		text = buildSteer(target, reason)
+	} else {
+		text = strings.NewReplacer(
+			PlaceholderTarget, target,
+			PlaceholderReason, strings.TrimSpace(reason),
+			PlaceholderCount, strconv.Itoa(count),
+		).Replace(text)
 	}
-	return strings.NewReplacer(
-		PlaceholderTarget, target,
-		PlaceholderReason, strings.TrimSpace(reason),
-	).Replace(s.Steer)
+	if count > 1 && !strings.Contains(s.Steer, PlaceholderCount) {
+		text += "\n\n" + steerRepeat(count)
+	}
+	return text
 }

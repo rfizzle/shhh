@@ -124,8 +124,11 @@ type TodoConfig struct {
 // the record recovers from that.
 type PromptsConfig struct {
 	// Steer is the message a drifting turn is given. It may name
-	// `{{target}}`, the instruction the turn was judged against, and
-	// `{{reason}}`, the reading's own account of the departure.
+	// `{{target}}`, the instruction the turn was judged against,
+	// `{{reason}}`, the reading's own account of the departure, and
+	// `{{count}}`, how many times this turn the check has said so — a
+	// wording that leaves that out is told it in a sentence of the
+	// mechanism's own from the second steer on.
 	Steer string `toml:"steer,omitempty"`
 	// CheckIn is the message a turn that has reached its interval is given.
 	// It may name `{{rounds}}` and `{{finished}}`, the closing line that

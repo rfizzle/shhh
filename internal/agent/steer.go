@@ -68,6 +68,25 @@ func buildSteer(target, reason string) string {
 	return b.String()
 }
 
+// steerRepeat is the sentence a second and later steer in one turn carries:
+// how many times the check has now said the same thing, and what that leaves
+// the turn to do about it.
+//
+// Repetition is the whole of what it adds, because repetition is the whole of
+// what the second steer knows that the first did not. The reading that earned
+// this one was taken after the answer to the last one — the schedule pulls
+// one forward for exactly that purpose — so a turn hearing this has been read
+// again and read the same way. It still offers the same two ways out as the
+// steer above it, in the same order, because the judge is no more reliable
+// the second time: two readings of a digest are two readings of a digest.
+// What it withdraws is only the option of answering in words again, which is
+// the answer that demonstrably did not move what the check sees.
+func steerRepeat(count int) string {
+	return fmt.Sprintf("The check has read the work again since and said this %d times this turn. "+
+		"If it is wrong, say in one line what the current work does for the instruction above; "+
+		"if it is not, the answer is in what you do next rather than in another reply.", count)
+}
+
 // TakeSteer returns the steer for a drifting reading, and marks it as an
 // intervention so the check-in interval restarts from here. It is the same
 // one-call shape as TakeCheckIn, for the same reason.
@@ -77,5 +96,16 @@ func buildSteer(target, reason string) string {
 // them.
 func (a *Agent) TakeSteer(target, reason string) string {
 	a.NoteIntervention()
-	return a.steering.steerPrompt(target, reason)
+	return a.steerMessage(target, reason)
+}
+
+// steerMessage counts this steer against the turn and builds the message for
+// it. Every route that delivers one goes through here, because a route that
+// built the message itself would deliver a second steer word for word
+// identical to the first: the count is the only thing the turn has to tell
+// the two apart, and the only thing anything above the turn has to see that
+// the first one was not answered.
+func (a *Agent) steerMessage(target, reason string) string {
+	a.intervene.steers++
+	return a.steering.steerPrompt(target, reason, a.intervene.steers)
 }

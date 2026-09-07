@@ -482,7 +482,7 @@ var settings = []Setting{
 
 	{
 		Key: "prompts.steer", Kind: KindPath, Default: "(the built-in wording)",
-		Desc: "A file whose contents replace the message a drifting turn is given; it may place `{{target}}` and `{{reason}}`.",
+		Desc: "A file whose contents replace the message a drifting turn is given; it may place `{{target}}`, `{{reason}}` and `{{count}}`, how many times this turn the check has said so.",
 	}, {
 		Key: "prompts.check_in", Kind: KindPath, Default: "(the built-in wording)",
 		Desc: "A file whose contents replace the message a turn that has reached its interval is given; it may place `{{rounds}}` and `{{finished}}`.",

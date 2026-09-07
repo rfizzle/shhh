@@ -219,6 +219,13 @@ type interveneState struct {
 	// surface hands over rather than the products of it.
 	interval          int
 	cooldownIntervals int
+	// steers is how many steers this turn has been delivered, which is what
+	// the second and later one says (steerMessage). It is turn state and not
+	// a lifetime total: a run that was steered twice an hour ago and has been
+	// answering ever since is not the run this counts, and anything above the
+	// turn reading it as a reason to redirect a child would be redirecting it
+	// for work it has already left behind.
+	steers int
 }
 
 // SetInterveneBounds installs the two numbers every bound on interrupting a
@@ -357,7 +364,7 @@ func (a *Agent) NextIntervention(target string) (Intervention, bool) {
 		if kind == InterveneSteer {
 			return Intervention{
 				Kind:    InterveneSteer,
-				Message: a.steering.steerPrompt(target, v.Reason),
+				Message: a.steerMessage(target, v.Reason),
 				Notice:  steerNotice(v.Reason),
 				Reason:  v.Reason,
 			}, true
@@ -394,6 +401,13 @@ func (a *Agent) StartInterveneTurn() {
 	a.intervene.kind = InterveneCheckIn
 	a.intervene.verdictRound = 0
 	a.intervene.lastRound = 0
+	// And the steers this turn was given were given about the instruction it
+	// was given them for. A person who has just typed a correction into a
+	// running turn is the authority the machinery defers to everywhere else;
+	// telling the model, or the parent of a child, that it is on its third
+	// steer would be counting the answered ones against work nobody has read
+	// yet.
+	a.intervene.steers = 0
 }
 
 // steerNotice and enoughNotice are what the reader is told. The steer is

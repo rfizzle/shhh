@@ -400,6 +400,78 @@ func TestNextIntervention_AReadingWinsOverTheClock(t *testing.T) {
 	}
 }
 
+// The second steer of a turn says it is the second, and the first says
+// nothing about a count at all. A turn told the same thing twice in the same
+// words has no way to tell that its answer to the first one did not take, and
+// the reader of a run that was steered twice cannot tell it from one steered
+// once either.
+func TestNextIntervention_ASecondSteerSaysHowManyTimes(t *testing.T) {
+	a := New(nil, noStream)
+	a.SetInterveneBounds(10, 2)
+	a.rounds = 5
+	a.ConsiderVerdict(driftVerdict(5), a.rounds, running)
+	first, ok := a.NextIntervention("build the exporter")
+	if !ok {
+		t.Fatal("setup: expected the first steer")
+	}
+	if strings.Contains(first.Message, "times this turn") {
+		t.Fatalf("the first steer counts nothing:\n%s", first.Message)
+	}
+
+	a.rounds = 26
+	a.ConsiderVerdict(driftVerdict(26), a.rounds, running)
+	second, ok := a.NextIntervention("build the exporter")
+	if !ok {
+		t.Fatal("setup: expected the second steer past the cooldown")
+	}
+	if !strings.Contains(second.Message, "said this 2 times this turn") {
+		t.Fatalf("the second steer must say it is the second:\n%s", second.Message)
+	}
+	// The steer it is a second of is still there whole: the count is added to
+	// the wording, never in place of it.
+	if !strings.Contains(second.Message, "build the exporter") {
+		t.Fatalf("the second steer must still quote the instruction:\n%s", second.Message)
+	}
+
+	// A third is delivered like the second, with its own count. Ending the
+	// turn is a stop this machinery does not own: the count is what reaches
+	// the authority that does.
+	a.rounds = 47
+	a.ConsiderVerdict(driftVerdict(47), a.rounds, running)
+	third, ok := a.NextIntervention("build the exporter")
+	if !ok {
+		t.Fatal("a third steer is delivered, not withheld")
+	}
+	if !strings.Contains(third.Message, "said this 3 times this turn") {
+		t.Fatalf("the third steer must say it is the third:\n%s", third.Message)
+	}
+}
+
+// The count is this turn's. A new instruction is not answered by counting the
+// steers the last one earned, and neither is the correction a person types
+// into a running turn — which is the one thing in this machinery that starts
+// the turn's reckoning again.
+func TestNextIntervention_TheSteerCountIsThisTurns(t *testing.T) {
+	a := New(nil, noStream)
+	a.SetInterveneBounds(10, 2)
+	a.rounds = 5
+	a.ConsiderVerdict(driftVerdict(5), a.rounds, running)
+	if _, ok := a.NextIntervention("build the exporter"); !ok {
+		t.Fatal("setup: expected the first steer")
+	}
+
+	a.StartTurn("build the importer instead")
+	a.rounds = 5
+	a.ConsiderVerdict(driftVerdict(5), a.rounds, running)
+	iv, ok := a.NextIntervention("build the importer instead")
+	if !ok {
+		t.Fatal("setup: expected a steer in the new turn")
+	}
+	if strings.Contains(iv.Message, "times this turn") {
+		t.Fatalf("the first steer of a new turn counts nothing:\n%s", iv.Message)
+	}
+}
+
 // A verdict about the last instruction must never be delivered against the
 // next one.
 func TestStartTurn_RetiresAQueuedVerdict(t *testing.T) {

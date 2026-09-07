@@ -15,7 +15,7 @@ func TestSteering_ZeroValueIsTheBuiltInSet(t *testing.T) {
 	if got, want := s.checkInPrompt(12), CheckInPrompt(12, FinishedInSession); got != want {
 		t.Fatalf("the zero value must ask the built-in check-in:\n%s", got)
 	}
-	if got, want := s.steerPrompt("build the exporter", "editing elsewhere"),
+	if got, want := s.steerPrompt("build the exporter", "editing elsewhere", 1),
 		SteerPrompt("build the exporter", "editing elsewhere"); got != want {
 		t.Fatalf("the zero value must send the built-in steer:\n%s", got)
 	}
@@ -80,12 +80,12 @@ func TestSteering_QuotedTargetBound(t *testing.T) {
 		{"a bound is taken as written", 40, 40},
 	} {
 		// clampRunes spends the last rune of the budget on the ellipsis.
-		got := (Steering{SteerTargetChars: tc.set}).steerPrompt(long, "")
+		got := (Steering{SteerTargetChars: tc.set}).steerPrompt(long, "", 1)
 		if !strings.Contains(got, strings.Repeat("x", tc.want-1)+"…") || strings.Contains(got, strings.Repeat("x", tc.want)) {
 			t.Errorf("%s: the steer does not quote %d characters of the instruction", tc.name, tc.want)
 		}
 	}
-	whole := (Steering{SteerTargetChars: -1}).steerPrompt(long, "")
+	whole := (Steering{SteerTargetChars: -1}).steerPrompt(long, "", 1)
 	if !strings.Contains(whole, long) {
 		t.Error("a negative bound must quote the instruction whole")
 	}
@@ -102,7 +102,7 @@ func TestSteering_OverridesCarryTheirValues(t *testing.T) {
 	if got != "rounds so far: 31. "+FinishedInSession {
 		t.Fatalf("check-in override: %q", got)
 	}
-	got = s.steerPrompt("  build the exporter  ", " editing elsewhere ")
+	got = s.steerPrompt("  build the exporter  ", " editing elsewhere ", 1)
 	if got != "asked for build the exporter; noticed editing elsewhere" {
 		t.Fatalf("steer override: %q", got)
 	}
@@ -128,6 +128,33 @@ func TestSteering_OverridesCarryTheirValues(t *testing.T) {
 	}
 }
 
+// How many times the check has said the same thing this turn reaches every
+// wording. A wording that names the count places it itself; one that does not
+// gets the mechanism's own sentence under it, because an operator who
+// replaced the words must not thereby have replaced the escalation — a second
+// steer that reads exactly like the first is what the count is for.
+func TestSteering_TheSteerCountReachesEveryWording(t *testing.T) {
+	named := Steering{Steer: "steer " + PlaceholderCount + ": " + PlaceholderTarget}
+	if got := named.steerPrompt("build the exporter", "", 2); got != "steer 2: build the exporter" {
+		t.Fatalf("a wording that names the count fills it in: %q", got)
+	}
+	if got := named.steerPrompt("build the exporter", "", 1); got != "steer 1: build the exporter" {
+		t.Fatalf("the first steer of a turn is the first: %q", got)
+	}
+
+	silent := Steering{Steer: "asked for " + PlaceholderTarget}
+	if got := silent.steerPrompt("build the exporter", "", 1); got != "asked for build the exporter" {
+		t.Fatalf("a first steer says nothing about a count: %q", got)
+	}
+	got := silent.steerPrompt("build the exporter", "", 3)
+	if !strings.HasPrefix(got, "asked for build the exporter\n\n") {
+		t.Fatalf("the wording comes first and whole: %q", got)
+	}
+	if !strings.Contains(got, "said this 3 times this turn") {
+		t.Fatalf("a wording that does not count still carries the count: %q", got)
+	}
+}
+
 // A misspelled substitution is refused, because it is otherwise invisible:
 // it reaches the model as literal braces and the value never arrives.
 func TestValidatePlaceholders(t *testing.T) {
@@ -145,6 +172,12 @@ func TestValidatePlaceholders(t *testing.T) {
 	// invisible as a misspelling, and is refused the same way.
 	if err := ValidateCheckIn(PlaceholderTarget); err == nil {
 		t.Fatal("a check-in must refuse the steer's placeholders")
+	}
+	if err := ValidateSteer("asked for " + PlaceholderTarget + ", " + PlaceholderCount + " times, because " + PlaceholderReason); err != nil {
+		t.Fatalf("the placeholders a steer takes must be accepted: %v", err)
+	}
+	if err := ValidateCheckIn(PlaceholderCount); err == nil {
+		t.Fatal("a check-in must refuse the steer's count")
 	}
 	if err := ValidateVerbatim("nothing to fill in here"); err != nil {
 		t.Fatalf("prose with no placeholders is fine: %v", err)

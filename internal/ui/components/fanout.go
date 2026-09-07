@@ -84,6 +84,21 @@ type FanoutLane struct {
 	// the repository was started from. Zero says nothing — a child that
 	// started from the last commit has nothing to explain.
 	Seeded int
+	// Steers is how many times this turn the child has been told the check
+	// reads its work as off its task. Zero says nothing — a child nobody has
+	// had to steer is almost every child.
+	//
+	// It is under the lane rather than beside the tool count because the
+	// right-hand field is what the child's name gives way to: a name clipped
+	// to an ellipsis is a lane the reader cannot tell from the one under it,
+	// and the count is worth a line of its own before it is worth that.
+	Steers int
+	// Verdict is the last reading of the child's work, in the reader's own
+	// closed vocabulary. It is stated beside the count rather than inferred
+	// from it: the count is what has happened this turn and the reading is
+	// where the work stands now, and a child steered twice and back on task
+	// is the outcome the whole mechanism is for.
+	Verdict string
 	// Frame is the spinner frame for a lane with no declared step count; the
 	// host ticks it.
 	Frame int
@@ -237,15 +252,28 @@ func (l FanoutLane) View(width int) string {
 
 // note is the line under the lane: a blocked child's reason, a finished
 // child's result, or — for a child still working, which has nothing else to
-// add — what its copy of the repository was started from. Which of your
-// uncommitted files a writer can see is a question you have while it runs and
-// not after it has answered, so the line gives way to the outcome.
+// add — how often it has been steered, and failing that what its copy of the
+// repository was started from. Which of your uncommitted files a writer can
+// see is a question you have while it runs and not after it has answered, so
+// the line gives way to the outcome.
+//
+// A steer outranks the seed line while both are true, because one is news and
+// the other is context: a child that has been told twice that its work reads
+// as off its task is one to look at now, and where its files came from will
+// still be there to ask about afterwards.
 func (l FanoutLane) note() string {
 	if l.State == FanoutBlocked {
 		return l.Waiting
 	}
 	if l.State.settled() {
 		return l.Summary
+	}
+	if l.Steers > 0 {
+		note := plural(l.Steers, "steer")
+		if l.Verdict != "" {
+			note += " · last read " + l.Verdict
+		}
+		return note
 	}
 	if l.Seeded > 0 {
 		return "started from " + plural(l.Seeded, "uncommitted file") + " in your tree"

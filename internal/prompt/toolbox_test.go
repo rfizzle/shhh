@@ -151,6 +151,22 @@ func TestToolbox_SteersTheLanguageServerAheadOfSearchAndRead(t *testing.T) {
 	}
 }
 
+// What a repeatedly steered child means is said where the roster that
+// reports it is described, and only to a session that can spawn one. The
+// orchestrator cannot steer or end a child itself, so what it is asked for is
+// the one thing it can do: say so to the person who can.
+func TestToolboxSaysWhatARepeatedlySteeredAgentMeans(t *testing.T) {
+	got := Toolbox([]provider.Tool{{Name: "spawn_agent"}, {Name: "agent_report"}})
+	for _, want := range []string{"steered more than once", "next message", "lane"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("the toolbox does not state %q:\n%s", want, got)
+		}
+	}
+	if got := Toolbox([]provider.Tool{{Name: "read_file"}}); strings.Contains(got, "steered") {
+		t.Errorf("a session with no agents was told about one:\n%s", got)
+	}
+}
+
 // The notebook is stated where every other conditional tool is stated. It
 // was in the conversation prompt as prose once, which said it to a session
 // that might not have registered it and said nothing to a coding session
