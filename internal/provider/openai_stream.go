@@ -3,14 +3,20 @@ package provider
 import (
 	"errors"
 	"io"
+	"strings"
 
 	openai "github.com/sashabaranov/go-openai"
 )
 
+// toolCallAccumulator is one call as the stream writes it. The arguments are
+// a builder rather than a string because a large one arrives in very small
+// pieces — a 300 KB file body comes in fragments of a few dozen bytes, and
+// re-allocating the whole of it per fragment costs quadratic time on the
+// goroutine that is reading the wire.
 type toolCallAccumulator struct {
 	id   string
 	name string
-	args string
+	args strings.Builder
 }
 
 // toolCallSet holds a round's tool calls in the order the stream opened them,
@@ -66,7 +72,7 @@ func (s *toolCallSet) accumulate(tc openai.ToolCall) (*toolCallAccumulator, erro
 	if tc.Function.Name != "" {
 		acc.name = tc.Function.Name
 	}
-	acc.args += tc.Function.Arguments
+	acc.args.WriteString(tc.Function.Arguments)
 	return acc, nil
 }
 
@@ -100,7 +106,7 @@ func (s *toolCallSet) calls() []ToolCall {
 		calls = append(calls, ToolCall{
 			ID:        acc.id,
 			Name:      acc.name,
-			Arguments: acc.args,
+			Arguments: acc.args.String(),
 		})
 	}
 	return calls

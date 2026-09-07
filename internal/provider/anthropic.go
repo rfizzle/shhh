@@ -164,8 +164,10 @@ func (a *Anthropic) StreamCompletion(ctx context.Context, messages []Message, op
 		// The SDK's own accumulation cannot answer the one question a
 		// truncated reply asks of it — see anthropicWholeCalls — so the
 		// bytes are kept here as well, and read only when the model stopped
-		// at its ceiling.
-		fragments := map[int64]string{}
+		// at its ceiling. A builder per block, because a large argument
+		// arrives in very small pieces and re-allocating the whole of it per
+		// piece costs quadratic time on the goroutine reading the wire.
+		fragments := map[int64]*strings.Builder{}
 		for stream.Next() {
 			event := stream.Current()
 			if err := accumulated.Accumulate(event); err != nil {
@@ -189,7 +191,12 @@ func (a *Anthropic) StreamCompletion(ctx context.Context, messages []Message, op
 					// this dialect names a block once, when it starts, and
 					// every fragment after that carries only the JSON.
 					if id := anthropicBlockID(accumulated, delta.Index); id != "" && d.PartialJSON != "" {
-						fragments[delta.Index] += d.PartialJSON
+						frag, ok := fragments[delta.Index]
+						if !ok {
+							frag = &strings.Builder{}
+							fragments[delta.Index] = frag
+						}
+						frag.WriteString(d.PartialJSON)
 						ch <- StreamEvent{ToolCallDelta: &ToolCallDelta{ID: id, Arguments: d.PartialJSON}}
 					}
 				case anthropic.ThinkingDelta:
@@ -289,14 +296,14 @@ func anthropicStop(reason anthropic.StopReason) StopReason {
 // arrived instead: a block that received argument bytes that do not parse is
 // a call the ceiling landed inside of, and it is dropped.
 // See docs/capabilities/providers.md#a-reply-says-why-it-stopped.
-func anthropicWholeCalls(accumulated anthropic.Message, fragments map[int64]string) []ToolCall {
+func anthropicWholeCalls(accumulated anthropic.Message, fragments map[int64]*strings.Builder) []ToolCall {
 	var calls []ToolCall
 	for i, block := range accumulated.Content {
 		tu, ok := block.AsAny().(anthropic.ToolUseBlock)
 		if !ok {
 			continue
 		}
-		if frag, sent := fragments[int64(i)]; sent && !wholeArguments(frag) {
+		if frag, sent := fragments[int64(i)]; sent && !wholeArguments(frag.String()) {
 			continue
 		}
 		calls = append(calls, ToolCall{ID: tu.ID, Name: tu.Name, Arguments: tu.JSON.Input.Raw()})

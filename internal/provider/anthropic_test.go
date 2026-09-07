@@ -783,14 +783,19 @@ func TestAnthropic_CeilingKeepsTheTextAndDropsTheUnfinishedCall(t *testing.T) {
 		sseEvent(w, "content_block_start", `{"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}`)
 		sseEvent(w, "content_block_delta", `{"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"I will rewrite the file"}}`)
 		sseEvent(w, "content_block_stop", `{"type":"content_block_stop","index":0}`)
-		// One call the model finished writing.
+		// One call the model finished writing. Its arguments arrive in
+		// pieces and the pieces interleave with the next call's, so the
+		// judgement below rests on each block's own bytes and not on
+		// whatever the stream wrote last.
 		sseEvent(w, "content_block_start", `{"type":"content_block_start","index":1,"content_block":{"type":"tool_use","id":"call_1","name":"read_file","input":{}}}`)
-		sseEvent(w, "content_block_delta", `{"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":"{\"path\":\"a.go\"}"}}`)
-		sseEvent(w, "content_block_stop", `{"type":"content_block_stop","index":1}`)
+		sseEvent(w, "content_block_delta", `{"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":"{\"path\":"}}`)
 		// And one the ceiling landed inside of: the block opened, the
 		// arguments never closed.
 		sseEvent(w, "content_block_start", `{"type":"content_block_start","index":2,"content_block":{"type":"tool_use","id":"call_2","name":"write_file","input":{}}}`)
-		sseEvent(w, "content_block_delta", `{"type":"content_block_delta","index":2,"delta":{"type":"input_json_delta","partial_json":"{\"path\":\"a.go\",\"content\":\"package"}}`)
+		sseEvent(w, "content_block_delta", `{"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":"\"a.go\"}"}}`)
+		sseEvent(w, "content_block_stop", `{"type":"content_block_stop","index":1}`)
+		sseEvent(w, "content_block_delta", `{"type":"content_block_delta","index":2,"delta":{"type":"input_json_delta","partial_json":"{\"path\":\"a.go\","}}`)
+		sseEvent(w, "content_block_delta", `{"type":"content_block_delta","index":2,"delta":{"type":"input_json_delta","partial_json":"\"content\":\"package"}}`)
 		sseEvent(w, "content_block_stop", `{"type":"content_block_stop","index":2}`)
 		sseEvent(w, "message_delta", `{"type":"message_delta","delta":{"stop_reason":"max_tokens","stop_sequence":null},"usage":{"output_tokens":4096}}`)
 		sseEvent(w, "message_stop", `{"type":"message_stop"}`)
