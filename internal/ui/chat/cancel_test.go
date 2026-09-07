@@ -1,12 +1,15 @@
 package chat
 
 import (
+	"context"
+	"os/exec"
 	"strings"
 	"testing"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/runner"
 )
 
 // streamingCancelModel is a model mid-stream with an empty draft: the state
@@ -249,5 +252,41 @@ func TestQuit_ExpiredWindowArmsAgain(t *testing.T) {
 	}
 	if m.armedNotice() != "press again to quit" {
 		t.Fatal("the late press should have re-armed the window")
+	}
+}
+
+// Quitting cancels the running command, but a cancellation only schedules the
+// kill — inside the process that is about to exit. So the quit finishes the
+// stop itself, and a command still running when the session leaves is gone by
+// the time it does.
+func TestQuit_StopsACommandTheSessionWasRunning(t *testing.T) {
+	if _, err := exec.LookPath("sh"); err != nil {
+		t.Skip("no shell")
+	}
+	t.Setenv("SHELL", "/bin/sh")
+
+	ran := make(chan struct{})
+	go func() {
+		defer close(ran)
+		// Nothing else stops this: the model under test holds no cancel for
+		// it, which is exactly the case of a command started through some
+		// other surface of the same session.
+		runner.RunCapture(context.Background(), "sleep 30")
+	}()
+	// Let it get as far as being spawned.
+	time.Sleep(300 * time.Millisecond)
+
+	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	m := New(msgs, mockStream)
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+	m = updated.(Model)
+	m.quitNow()
+
+	// The drain is synchronous, so the command is already gone; the window
+	// is for the runner's own return behind it, not for the stop.
+	select {
+	case <-ran:
+	case <-time.After(2 * time.Second):
+		t.Fatal("quitting left a running command behind")
 	}
 }

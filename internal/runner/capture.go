@@ -206,16 +206,20 @@ func capture(ctx context.Context, dir, command string, argv []string, onLine fun
 		return "", errors.New("empty command")
 	}
 	inner, cancel := context.WithCancel(context.WithoutCancel(ctx))
-	cmd := prepare(exec.CommandContext(inner, argv[0], argv[1:]...), dir)
+	g := prepare(exec.CommandContext(inner, argv[0], argv[1:]...), dir)
+	cmd := g.cmd
 	w := newCaptureWriter(onLine)
 	cmd.Stdout, cmd.Stderr = w, w
 	started := time.Now()
-	if err := cmd.Start(); err != nil {
+	if err := g.start(); err != nil {
 		cancel()
 		return "", err
 	}
 	done := make(chan error, 1)
-	go func() { done <- cmd.Wait() }()
+	// The wait goes through the group so that the moment this command's pid
+	// stops meaning this command is recorded, which is what keeps a pending
+	// kill off a number the machine has since reused (group.go).
+	go func() { done <- g.wait() }()
 
 	watch := ctx.Done()
 	for {
@@ -245,7 +249,7 @@ func capture(ctx context.Context, dir, command string, argv []string, onLine fun
 			default:
 			}
 			limit := ceilingOf(ctx, started)
-			if name, out, ok := handOver(w, cmd, command, started, done, cancel); ok {
+			if name, out, ok := handOver(w, g, command, started, done, cancel); ok {
 				return appendNotice(out, backgroundedNotice(name, limit)), nil
 			}
 			cancel()
@@ -258,14 +262,14 @@ func capture(ctx context.Context, dir, command string, argv []string, onLine fun
 // It reports false when there is nobody to take it, when it has printed
 // nothing, or when the taker declines — each of which leaves the command to
 // be stopped.
-func handOver(w *captureWriter, cmd *exec.Cmd, command string, started time.Time, done chan error, cancel context.CancelFunc) (string, string, bool) {
+func handOver(w *captureWriter, g *group, command string, started time.Time, done chan error, cancel context.CancelFunc) (string, string, bool) {
 	adopt := currentAdopter()
-	if adopt == nil || !w.printed() || cmd.Process == nil {
+	if adopt == nil || !w.printed() || g.cmd.Process == nil {
 		return "", "", false
 	}
 	name, sink, err := adopt(Handover{
 		Command: command,
-		PID:     cmd.Process.Pid,
+		PID:     g.cmd.Process.Pid,
 		Started: started,
 		// The run's own wait is already in flight and os/exec allows only
 		// one, so the taker is handed that one. Releasing the command's
@@ -276,6 +280,9 @@ func handOver(w *captureWriter, cmd *exec.Cmd, command string, started time.Time
 	if err != nil || sink == nil {
 		return "", "", false
 	}
+	// Ownership went with it, so it comes off the list a leaving session
+	// drains: the taker decides when this command stops now.
+	g.release()
 	return name, w.handOff(sink), true
 }
 

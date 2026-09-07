@@ -29,6 +29,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -118,8 +119,9 @@ func (m Model) cancelTurnNow() (tea.Model, tea.Cmd) {
 	return m, m.autosaveCmd()
 }
 
-// quitNow carries the quit out: every live cancellation, then the autosaving
-// quit. The cancels are all nil-safe, so the idle path shares it.
+// quitNow carries the quit out: every live cancellation, then the drain that
+// makes the command cancellations stick, then the autosaving quit. The
+// cancels are all nil-safe, so the idle path shares it.
 func (m *Model) quitNow() tea.Cmd {
 	m.quitting = true
 	m.cancelSubagents()
@@ -145,6 +147,17 @@ func (m *Model) quitNow() tea.Cmd {
 		m.modelListCancel()
 		m.modelListCancel = nil
 	}
+	// Cancelling a command only asks it to stop; the kill that would follow
+	// is a timer inside this process, and quitting takes the process with it.
+	// So the stop is finished here and now rather than left to a timer that
+	// will never run — otherwise a command which ignores the interrupt
+	// outlives the session that started it and goes on holding the port or
+	// the lock the next attempt needs, which is the orphan the group
+	// mechanism exists to stop, reappearing on the one path where nobody is
+	// left to notice. The drain is bounded, so a quit with something to stop
+	// is still a quit
+	// (docs/capabilities/containment.md#a-cancelled-command-takes-its-children-with-it).
+	runner.StopCaptured()
 	return m.quitCmd()
 }
 

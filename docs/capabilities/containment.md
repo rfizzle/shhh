@@ -190,6 +190,25 @@ inherited the output pipe keeps it open after its parent is gone, and reading
 that pipe is exactly what the runner is blocked on, so a command that is
 already dead could still hold the turn open.
 
+**Quitting has to finish the stop, not start it.** The kill behind the grace
+is a timer inside shhh's own process, and quitting takes that process with it,
+so a session that merely cancelled on its way out left exactly the orphan all
+of this exists to stop — at the one moment there is nobody left to notice. A
+session that is leaving therefore drains what it started before it goes:
+interrupt, wait, kill whatever ignored the interrupt, wait again, the whole of
+it inside the same short grace, so a quit with something to stop is still a
+quit. On Linux the kernel is told separately to kill a captured command if
+shhh disappears without running that path at all — a crash, or a kill from
+outside. A command that reached its ceiling and was handed to the session's
+processes is not drained: it changed owner, and its owner decides when it
+stops.
+
+**Nothing is signalled once a command's wait has returned.** A process group
+is named by a number, and the moment the command has been reaped that number
+belongs to the machine again. On a fork-heavy build it can be handed out well
+inside the grace, so a kill that arrived late would not be a late kill for the
+command that was cancelled; it would be a prompt one for a stranger.
+
 ## A command that will not finish is not waited on forever
 
 There is a ceiling on how long one command the assistant runs may take.
