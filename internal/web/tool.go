@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"mime"
+	"net/url"
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/provider"
@@ -171,6 +172,24 @@ func (t *Toolset) FetchSummary(args json.RawMessage) (string, error) {
 		return "", err
 	}
 	return "GET " + a.URL, nil
+}
+
+// FetchHost is the host a fetch call would leave for, and "" for arguments
+// that name no usable URL. It is the approval policy's reading of a call
+// rather than the card's: a surface that has a toolset asks FetchPlan, which
+// validates the request as well; a surface deciding on behalf of a child has
+// only the arguments, and an unreadable URL is a call that will fail on its
+// own terms without any grant matching it.
+func FetchHost(args json.RawMessage) string {
+	var a fetchArgs
+	if err := json.Unmarshal(args, &a); err != nil {
+		return ""
+	}
+	u, err := url.Parse(strings.TrimSpace(a.URL))
+	if err != nil {
+		return ""
+	}
+	return u.Hostname()
 }
 
 // FetchPlan is what a fetch would do, for the approval card's blast-radius

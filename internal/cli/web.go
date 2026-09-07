@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/web"
@@ -17,7 +18,20 @@ import (
 // disables caching; an unknown search provider disables search with a
 // warning.
 func openWebTools(cfg config.Config) *web.Toolset {
-	fetcher := web.NewFetcher(web.Policy{AllowPrivate: cfg.Web.AllowPrivate})
+	// The two host lists reach the fetcher as well as the approval policy,
+	// and for the one thing only the fetcher can see: a redirect. A denied
+	// host is refused at every hop, and a hop that starts on a granted host
+	// may not end on one nobody has answered for
+	// (docs/capabilities/approvals-and-safety.md#a-host-is-granted-once).
+	deny := cfg.Web.DenyHosts
+	fetcher := web.NewFetcher(web.Policy{
+		AllowPrivate: cfg.Web.AllowPrivate,
+		DenyHost:     func(host string) bool { return agent.HostMatches(deny, host) },
+	})
+	// The standing grants are in force before any session says anything;
+	// an interactive session replaces this as [a] adds to it.
+	allow := cfg.Web.AllowHosts
+	fetcher.SetGrantedHosts(func(host string) bool { return agent.HostMatches(allow, host) })
 	if cfg.Web.FetchMaxBytes > 0 {
 		fetcher.MaxBodyBytes = cfg.Web.FetchMaxBytes
 	}

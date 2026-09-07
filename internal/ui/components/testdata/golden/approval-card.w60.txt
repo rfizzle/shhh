@@ -131,7 +131,7 @@
 │ sends     the URL and a shhh-web/1.0 user-agent          │
 │ receives  page text, whole, into the evidence store; th› │
 ├──────────────────────────────────────────────────────────┤
-│ Allow this call? [y/N]                                   │
+│ Allow this call? [y/n/a]  (a: always allow pkg.go.dev)   │
 └──────────────────────────────────────────────────────────┘
 
 ── ansi ────────────────────────────────────────────────────
@@ -256,5 +256,5 @@
 ␛[38;5;241m│␛[m ␛[38;5;241msends     ␛[m␛[38;5;252mthe URL and a shhh-web/1.0 user-agent␛[m          ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241mreceives  ␛[m␛[38;5;252mpage text, whole, into the evidence store; th␛[m␛[38;5;241m›␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m├──────────────────────────────────────────────────────────┤␛[m
-␛[38;5;241m│␛[m ␛[3;38;5;241mAllow this call? [y/N]␛[m                                   ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[3;38;5;241mAllow this call? [y/n/a]  (a: always allow pkg.go.dev)␛[m   ␛[38;5;241m│␛[m
 ␛[38;5;241m└──────────────────────────────────────────────────────────┘␛[m

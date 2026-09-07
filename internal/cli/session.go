@@ -1026,8 +1026,25 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// external actions: manual and accept-edits prompt, auto defers to the
 	// classifier.
 	gatedPreviews := map[string]chat.GatedPreviewFunc{}
+	// What this session may fetch without asking, which a spawn card states
+	// and a host grant grows. It is read and written on the UI goroutine
+	// alone — the fetcher keeps its own copy behind its own lock, because
+	// that one is read while a fetch is in flight.
+	reach := &hostReach{hosts: cfg.Web.AllowHosts}
 	if session.web != nil {
 		webTools := session.web
+		// The two config lists and the sink the session's own grants go to:
+		// a fetch is decided on its host, and the fetcher is what the
+		// decision has to reach for a redirect to be answered by it too.
+		model = model.
+			WithHostRules(cfg.Web.AllowHosts, cfg.Web.DenyHosts).
+			WithHostGrants(func(hosts []string) {
+				reachable := append([]string(nil), hosts...)
+				reach.hosts = reachable
+				webTools.Fetcher.SetGrantedHosts(func(host string) bool {
+					return agent.HostMatches(reachable, host)
+				})
+			})
 		gatedPreviews[web.FetchToolName] = func(args json.RawMessage) (chat.GatedPreview, error) {
 			summary, err := webTools.FetchSummary(args)
 			if err != nil {
@@ -1039,7 +1056,9 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			if err != nil {
 				return chat.GatedPreview{}, err
 			}
-			return chat.GatedPreview{Action: "fetch", Summary: summary, Fields: []chat.GatedField{
+			// Host is the card's own domain row, and it is what [a] grants:
+			// the reader answers for the site the card named.
+			return chat.GatedPreview{Action: "fetch", Summary: summary, Host: plan.Host, Fields: []chat.GatedField{
 				{Label: "domain", Value: plan.Host, Detail: "the request leaves this machine", Open: true},
 				{Label: "sends", Value: plan.Sends, Detail: "no file contents, no credentials"},
 				{Label: "receives", Value: plan.Receives, Detail: "it counts against the context window"},
@@ -1062,11 +1081,21 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			if plan.Writer {
 				undo = "its patch is a decision of its own before anything lands"
 			}
-			return chat.GatedPreview{Action: "spawn", Summary: summary, Fields: []chat.GatedField{
+			fields := []chat.GatedField{
 				{Label: "touches", Value: plan.Scope, Detail: "in its own worktree, not this checkout", Open: plan.Writer},
 				{Label: "undo", Value: "reviewed", Detail: undo},
 				{Label: "budget", Value: plan.Budget, Detail: "counted in the session totals"},
-			}}, nil
+			}
+			// A child that reaches the web arrives with the hosts this
+			// session has answered for and can never add to them, so what it
+			// may reach without asking is part of this decision.
+			if childReachesWeb(session, agents, plan.Role) {
+				fields = append(fields, chat.GatedField{
+					Label: "reaches", Value: reach.value(),
+					Detail: "the hosts granted here; any other asks you", Open: true,
+				})
+			}
+			return chat.GatedPreview{Action: "spawn", Summary: summary, Fields: fields}, nil
 		}
 		model = model.WithSubagents(sup).WithPersonas(buildPersonas(session, env, agents, sup, ledger))
 	}
@@ -1344,6 +1373,34 @@ func toolDefTokens(defs []provider.Tool) []chat.ToolTokens {
 		out = append(out, chat.ToolTokens{Name: def.Name, Tokens: agent.EstimateTokens(string(b))})
 	}
 	return out
+}
+
+// hostReach is the session's reachable hosts as a card states them.
+type hostReach struct{ hosts []string }
+
+// value is the hosts in one line, or the phrase for a session that has
+// answered for none — a child with no grants is not a child with no web, it
+// is a child whose every fetch comes back here as a card.
+func (h *hostReach) value() string {
+	if h == nil || len(h.hosts) == 0 {
+		return "no host granted yet — every fetch asks you"
+	}
+	return strings.Join(h.hosts, ", ")
+}
+
+// childReachesWeb reports whether a child of this role is given the fetch
+// tool at all: the built-in roles get whatever web toolset the session
+// opened, and a profile from a file gets it only where its own permissions
+// and tool list say so (subagents.go, profileEnv).
+func childReachesWeb(session chatSession, agents *agentProfiles, role subagent.Role) bool {
+	if session.web == nil || agents == nil {
+		return false
+	}
+	def, ok := agents.definitions[string(role)]
+	if !ok {
+		return true
+	}
+	return def.Has(config.PermissionWeb) && def.Allows(web.FetchToolName)
 }
 
 // wantsResume reports whether the session was told to open a stored

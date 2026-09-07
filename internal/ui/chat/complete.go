@@ -135,6 +135,7 @@ func buildSlashCommands() []slashCommand {
 				{after: []string{"revoke"}, options: []argOption{
 					{"edits", "Only the edit grants"},
 					{"commands", "Only the command grants"},
+					{"hosts", "Only the fetch host grants"},
 				}},
 			}},
 		{name: "/reasoning", args: "[off|low|medium|high|xhigh|max|default]", desc: "How much the model thinks before it answers",

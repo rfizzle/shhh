@@ -173,6 +173,13 @@ type Policy struct {
 	// AllowedPorts overrides the port allowlist; empty means 80 and 443
 	// (any port when AllowPrivate is set).
 	AllowedPorts []int
+	// DenyHost reports whether a host is one the person refuses outright.
+	// It is a hook rather than a list because the matching rule belongs to
+	// the approval policy, which answers for the same list before a card is
+	// ever drawn; here it is asked again per redirect hop, which is the only
+	// place a refused host could be reached without a decision.
+	// See docs/capabilities/approvals-and-safety.md#a-host-is-granted-once.
+	DenyHost func(host string) bool
 }
 
 // privateClasses are what AllowPrivate may unblock; metadata is deliberately
@@ -279,6 +286,9 @@ func (p Policy) ValidateURL(raw string) (Target, error) {
 	}
 	if strings.Contains(host, "%") {
 		return Target{}, fmt.Errorf("invalid url: IPv6 zone identifiers are not allowed")
+	}
+	if p.DenyHost != nil && p.DenyHost(host) {
+		return Target{}, fmt.Errorf("host %s is refused for this session; no URL on it will be fetched", host)
 	}
 
 	port := 80

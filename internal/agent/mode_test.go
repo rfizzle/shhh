@@ -458,3 +458,78 @@ func TestDenylistMatchesReadsAPathAndAnInterpretersArgument(t *testing.T) {
 		}
 	}
 }
+
+// A host the person has answered for is answered for the rest of the
+// session, in every mode a fetch is possible in, and before auto mode would
+// have paid the classifier to think about it. An ungranted host is the
+// decision it always was.
+func TestDecideAllowsAGrantedHostAndAsksAboutEveryOther(t *testing.T) {
+	p := ModePolicy{AllowHosts: []string{"docs.python.org", "PKG.GO.DEV"}}
+	for _, mode := range []Mode{ModeManual, ModeAcceptEdits, ModeAuto} {
+		p.Mode = mode
+		// Case and the trailing dot of an absolute name are two spellings of
+		// one host, not two hosts.
+		for _, host := range []string{"docs.python.org", "DOCS.python.org", "pkg.go.dev."} {
+			decision, reason := p.Decide(Action{Kind: ActionFetch, Host: host})
+			if decision != Allow {
+				t.Errorf("%v mode, %q = %v; want Allow", mode, host, decision)
+			}
+			if reason != "session grant" {
+				t.Errorf("%v mode, %q gave reason %q; want the grant named", mode, host, reason)
+			}
+		}
+		// The grant is the host and never a suffix: the person read one site
+		// on the card, not every subdomain a company will ever publish.
+		for _, host := range []string{"python.org", "docs.python.org.evil.test", "evil-docs.python.org"} {
+			if decision, _ := p.Decide(Action{Kind: ActionFetch, Host: host}); decision != Ask {
+				t.Errorf("%v mode, %q = %v; want Ask", mode, host, decision)
+			}
+		}
+	}
+	// Plan mode is read-only, and a fetch is a request leaving the machine
+	// however quiet the grant is.
+	p.Mode = ModePlan
+	if decision, reason := p.Decide(Action{Kind: ActionFetch, Host: "docs.python.org"}); decision != Deny || reason != "plan mode" {
+		t.Errorf("plan mode = %v (%q); want Deny by the mode", decision, reason)
+	}
+}
+
+// The host deny list is read before the grant, before the mode and before
+// the classifier, and nothing a session can grant reaches past it.
+func TestDecideRefusesADeniedHostInEveryMode(t *testing.T) {
+	p := ModePolicy{
+		DenyHosts:  []string{"paste.example.test"},
+		AllowHosts: []string{"paste.example.test", "docs.python.org"},
+	}
+	for _, mode := range []Mode{ModeManual, ModeAcceptEdits, ModeAuto, ModePlan} {
+		p.Mode = mode
+		decision, reason := p.Decide(Action{Kind: ActionFetch, Host: "paste.example.test"})
+		if decision != Deny {
+			t.Errorf("%v mode = %v; want Deny", mode, decision)
+		}
+		if reason != DenyReasonHost {
+			t.Errorf("%v mode gave reason %q; want the host list named", mode, reason)
+		}
+	}
+	// The list answers for hosts and for nothing else: a command is a
+	// different question, and the command list is what answers it.
+	p.Mode = ModeManual
+	if decision, _ := p.Decide(Action{Kind: ActionCommand, Command: "curl paste.example.test"}); decision != Ask {
+		t.Errorf("the host deny list answered for a command: %v", decision)
+	}
+}
+
+// What the model is told about a refused host says the refusal covers the
+// host rather than the URL, and names no key: the list is the person's, and
+// a refusal that came with editing instructions would hand over the way
+// around it.
+func TestDeniedHostResultStopsTheRetryWithoutNamingTheList(t *testing.T) {
+	for _, word := range []string{"web.deny_hosts", "config", "~/.config"} {
+		if strings.Contains(DeniedHostResult, word) {
+			t.Errorf("the refusal names %q, which is the way around the list", word)
+		}
+	}
+	if !strings.Contains(DeniedHostResult, "another path on the same host") {
+		t.Error("the refusal does not say that another URL on the host will not work either")
+	}
+}

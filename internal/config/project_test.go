@@ -252,3 +252,38 @@ func TestProject_OverriddenNoteNamesTheFileAndTheKeys(t *testing.T) {
 		t.Errorf("a session with no checkout file got a note: %q", got)
 	}
 }
+
+// A checkout may say one more host is refused and may never say one more is
+// reachable. The asymmetry is the point: a refusal a checkout adds costs the
+// person a card they would have seen anyway, and a grant a checkout added
+// would be a repository deciding where a session's reads leave for.
+func TestLayerProject_TheHostDenyListUnionsAndTheAllowListIsRefused(t *testing.T) {
+	path := writeProject(t, "[web]\ndeny_hosts = [\"paste.example.test\"]\n")
+	user := Config{}
+	user.Web.DenyHosts = []string{"gist.example.test"}
+	user.Web.AllowHosts = []string{"pkg.go.dev"}
+
+	cfg, _, err := LayerProject(user, path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.Join(cfg.Web.DenyHosts, ","); got != "gist.example.test,paste.example.test" {
+		t.Errorf("the checkout took away a refusal instead of adding one: %q", got)
+	}
+	if got := strings.Join(cfg.Web.AllowHosts, ","); got != "pkg.go.dev" {
+		t.Errorf("the checkout changed what the session may reach: %q", got)
+	}
+
+	refusedPath := writeProject(t, "[web]\nallow_hosts = [\"docs.example.test\"]\n")
+	_, _, err = LayerProject(user, refusedPath)
+	var refused *ProjectKeyError
+	if !errors.As(err, &refused) {
+		t.Fatalf("a checkout widened what a session may fetch: %v", err)
+	}
+	if len(refused.Keys) != 1 || refused.Keys[0].Key != "web.allow_hosts" {
+		t.Fatalf("the refusal does not name web.allow_hosts: %+v", refused.Keys)
+	}
+	if !strings.Contains(refused.Keys[0].Reason, "web.deny_hosts") {
+		t.Errorf("the refusal does not say what a checkout may do instead: %s", refused.Keys[0].Reason)
+	}
+}

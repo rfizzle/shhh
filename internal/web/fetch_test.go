@@ -328,3 +328,146 @@ func TestVerifyConnected(t *testing.T) {
 		t.Errorf("mapped spelling of pinned peer rejected: %v", err)
 	}
 }
+
+// loopbackResolver answers every name with 127.0.0.1, so a test can give one
+// local server two host names and exercise what "cross-host" means.
+func loopbackResolver(context.Context, string) ([]netip.Addr, error) {
+	return []netip.Addr{netip.MustParseAddr("127.0.0.1")}, nil
+}
+
+// A fetch that ran because its host was granted may not be handed on to a
+// host nobody has answered for: the person pressed [a] on one site, and a
+// redirect is that site choosing the next one. The refusal names the URL to
+// ask for, so the model's next call is the card for the new host rather than
+// the same fetch again.
+func TestFetch_AGrantedHostCannotRedirectToAnUngrantedOne(t *testing.T) {
+	var reached bool
+	mux := http.NewServeMux()
+	mux.HandleFunc("/a", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "http://localhost"+portOf(r.Host)+"/b", http.StatusFound)
+	})
+	mux.HandleFunc("/b", func(w http.ResponseWriter, r *http.Request) {
+		reached = true
+		fmt.Fprint(w, "elsewhere")
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	f := NewFetcher(Policy{AllowPrivate: true})
+	f.Resolve = loopbackResolver
+	f.SetGrantedHosts(func(host string) bool { return host == "127.0.0.1" })
+
+	_, err := f.Fetch(context.Background(), srv.URL+"/a", nil)
+	if err == nil {
+		t.Fatal("a granted host handed the request to an ungranted one")
+	}
+	if !strings.Contains(err.Error(), "localhost") || !strings.Contains(err.Error(), "decided") {
+		t.Errorf("the refusal does not say which host to ask about: %v", err)
+	}
+	if reached {
+		t.Error("the ungranted host was fetched anyway")
+	}
+
+	// Grant the destination too and the hop is not a decision any more.
+	f.SetGrantedHosts(func(host string) bool { return true })
+	if _, err := f.Fetch(context.Background(), srv.URL+"/a", nil); err != nil {
+		t.Fatalf("a hop between two granted hosts was refused: %v", err)
+	}
+	if !reached {
+		t.Error("the granted destination was not fetched")
+	}
+}
+
+// A fetch a person approved on a card follows its redirects as it always
+// did, and so does a session that has granted nothing: the rule exists to
+// stop a grant widening itself, not to make every redirect a second card.
+func TestFetch_AnUngrantedFetchFollowsItsRedirects(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/a", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "http://localhost"+portOf(r.Host)+"/b", http.StatusFound)
+	})
+	mux.HandleFunc("/b", func(w http.ResponseWriter, r *http.Request) { fmt.Fprint(w, "done") })
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	f := NewFetcher(Policy{AllowPrivate: true})
+	f.Resolve = loopbackResolver
+	f.SetGrantedHosts(func(host string) bool { return host == "docs.python.org" })
+	res, err := f.Fetch(context.Background(), srv.URL+"/a", nil)
+	if err != nil {
+		t.Fatalf("Fetch: %v", err)
+	}
+	if string(res.Body) != "done" {
+		t.Errorf("body = %q", res.Body)
+	}
+}
+
+// The host deny list is asked at every hop, which is the one place a refused
+// host could be reached without any decision being taken about it.
+func TestFetch_ADeniedHostIsRefusedOnTheFirstHopAndOnARedirect(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/a", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "http://localhost"+portOf(r.Host)+"/b", http.StatusFound)
+	})
+	mux.HandleFunc("/b", func(w http.ResponseWriter, r *http.Request) { fmt.Fprint(w, "denied content") })
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	f := NewFetcher(Policy{
+		AllowPrivate: true,
+		DenyHost:     func(host string) bool { return host == "localhost" },
+	})
+	f.Resolve = loopbackResolver
+	if _, err := f.Fetch(context.Background(), srv.URL+"/a", nil); err == nil ||
+		!strings.Contains(err.Error(), "refused for this session") {
+		t.Fatalf("a redirect reached a denied host: %v", err)
+	}
+	if _, err := f.Fetch(context.Background(), "http://localhost/b", nil); err == nil ||
+		!strings.Contains(err.Error(), "refused for this session") {
+		t.Fatalf("a denied host was fetched directly: %v", err)
+	}
+}
+
+// portOf is the ":port" of a host header, for a redirect that has to name a
+// different host on the same local server.
+func portOf(hostPort string) string {
+	if i := strings.LastIndex(hostPort, ":"); i >= 0 {
+		return hostPort[i:]
+	}
+	return ""
+}
+
+// The hop that is judged is the one being taken, not the one the chain
+// started on. A chain that launders a grant in two steps — a fetch approved
+// on a card reaches a granted host, and from there reaches anywhere — is the
+// failure a check anchored to the first host does not see.
+func TestFetch_AGrantIsNotLaunderedThroughAThirdHost(t *testing.T) {
+	var reached bool
+	mux := http.NewServeMux()
+	// The chain is 127.0.0.1 (ungranted, approved on a card) → granted.test
+	// → elsewhere.test, all on the one loopback server.
+	mux.HandleFunc("/a", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "http://granted.test"+portOf(r.Host)+"/b", http.StatusFound)
+	})
+	mux.HandleFunc("/b", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "http://elsewhere.test"+portOf(r.Host)+"/c", http.StatusFound)
+	})
+	mux.HandleFunc("/c", func(w http.ResponseWriter, r *http.Request) {
+		reached = true
+		fmt.Fprint(w, "laundered")
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	f := NewFetcher(Policy{AllowPrivate: true})
+	f.Resolve = loopbackResolver
+	f.SetGrantedHosts(func(host string) bool { return host == "granted.test" })
+
+	_, err := f.Fetch(context.Background(), srv.URL+"/a", nil)
+	if err == nil || !strings.Contains(err.Error(), "elsewhere.test") {
+		t.Fatalf("the granted host handed the request on: err = %v", err)
+	}
+	if reached {
+		t.Error("the third host was fetched anyway")
+	}
+}

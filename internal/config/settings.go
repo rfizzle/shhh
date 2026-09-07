@@ -335,6 +335,12 @@ var settings = []Setting{
 		Key: "web.cache_ttl_minutes", Kind: KindInt, Default: "60",
 		Desc: "How long a cached response stays fresh.",
 	}, {
+		Key: "web.allow_hosts", Kind: KindList, Default: "(empty — every host asks the first time)",
+		Desc: "Hosts a fetch reaches without asking, in every session; an exact host, never a suffix, so `docs.python.org` does not cover `python.org`.",
+	}, {
+		Key: "web.deny_hosts", Kind: KindList, Default: "(empty — nothing is refused in advance)",
+		Desc: "Hosts no fetch reaches; read before the allow list, before a session grant and before the classifier, and no approval can allow one.",
+	}, {
 		Key: "web.search_provider", Kind: KindEnum, Default: "brave",
 		Values: []string{"brave"},
 		Desc:   "Which backend the web_search tool asks.",

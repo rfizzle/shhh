@@ -39,6 +39,26 @@ func (m Model) WithCommandDenylist(list []string) Model {
 	return m
 }
 
+// WithHostRules sets the config-provided host lists (web.allow_hosts,
+// web.deny_hosts): a fetch to an allowed host runs without a card, and a
+// fetch to a denied one is refused before a card is drawn, in every mode.
+func (m Model) WithHostRules(allow, deny []string) Model {
+	m.policy.allowHosts = allow
+	m.policy.denyHosts = deny
+	return m
+}
+
+// WithHostGrants installs the sink the session's reachable hosts are pushed
+// to whenever they change. The fetcher is what takes them, and it is what
+// answers a redirect: a hop that starts on a granted host and ends on an
+// ungranted one is a decision nobody made, and the fetcher is the only place
+// that hop is visible.
+// See docs/capabilities/approvals-and-safety.md#a-host-is-granted-once.
+func (m Model) WithHostGrants(sink func([]string)) Model {
+	m.hostGrants = sink
+	return m
+}
+
 // WithCommandTimeout bounds how long one assistant-run command may take.
 // Zero or less removes the ceiling.
 //
@@ -82,6 +102,8 @@ func (m Model) modePolicy() agent.ModePolicy {
 		EditDirs:         m.policy.editDirs,
 		CommandAllowlist: m.allowlist(),
 		CommandDenylist:  m.policy.denylist,
+		AllowHosts:       m.hostAllowlist(),
+		DenyHosts:        m.policy.denyHosts,
 		ReadOnlyExtra:    m.policy.readOnlyExtra,
 		ReadOnlyDisabled: m.policy.readOnlyDisabled,
 	}
@@ -98,20 +120,47 @@ func (m Model) allowlist() []string {
 	return append(append(out, m.policy.allowlist...), m.policy.commands...)
 }
 
+// hostAllowlist is the config's allowed hosts and the session's own grants,
+// in that order and by the same rule the command allowlist follows: it
+// allocates only where the session has granted something.
+func (m Model) hostAllowlist() []string {
+	if len(m.policy.hosts) == 0 {
+		return m.policy.allowHosts
+	}
+	out := make([]string, 0, len(m.policy.allowHosts)+len(m.policy.hosts))
+	return append(append(out, m.policy.allowHosts...), m.policy.hosts...)
+}
+
 // deniedByRule reports whether the deny list answers this request, which is
 // asked before a card is built rather than after: a command the user has
 // refused in advance is not a decision, so there is nothing to draw, nothing
 // to batch-approve and nothing to send to the classifier.
 //
-// It is asked of the actions that run a command — execute_command and a
-// process start — because the list names commands. An edit is a different
-// question and the deny list does not answer it.
+// Two lists answer here, because they are the same act: the command list is
+// asked of the actions that run a command — execute_command and a process
+// start — and the host list of the one action that leaves the machine. An
+// edit is a different question and neither list answers it.
 // See docs/capabilities/approvals-and-safety.md#a-deny-list-is-answered-before-anything-can-allow.
 func (m Model) deniedByRule(req *approvalRequest) bool {
-	if req == nil || req.command == "" {
+	if req == nil {
 		return false
 	}
-	return agent.DenylistMatches(m.policy.denylist, req.command)
+	if req.host != "" && agent.HostMatches(m.policy.denyHosts, req.host) {
+		return true
+	}
+	return req.command != "" && agent.DenylistMatches(m.policy.denylist, req.command)
+}
+
+// ruleDenial is what a refusal by one of the two lists tells the model, and
+// the reason the denied row carries beside it. A host and a command are
+// refused by the same act and answered in the same place; what the model is
+// told differs, because a refused host is refused whatever the URL and a
+// retry with another path is the loop the wording exists to stop.
+func (m Model) ruleDenial(req *approvalRequest) (result, reason, why string) {
+	if req != nil && req.host != "" && agent.HostMatches(m.policy.denyHosts, req.host) {
+		return agent.DeniedHostResult, agent.DenyReasonHost, denyHostWhy
+	}
+	return agent.DenylistResult, agent.DenyReasonDenylist, denylistWhy
 }
 
 // denylistWhy is the sentence `/permissions why` prints under a deny-list
@@ -121,7 +170,14 @@ func (m Model) deniedByRule(req *approvalRequest) bool {
 const denylistWhy = "refused by the command deny list (behavior.command_denylist), " +
 	"which is read before the allowlist and before the classifier"
 
-// grants is the session's four grants as one value, for the surfaces that
+// denyHostWhy is the sentence `/permissions why` prints under a refused
+// fetch, in denylistWhy's shape and for its reason: the reader is the one
+// person who can edit the list, and the model is deliberately told neither
+// the key nor the file.
+const denyHostWhy = "refused by the host deny list (web.deny_hosts), " +
+	"which is read before a grant, before the mode and before the classifier"
+
+// grants is the session's five grants as one value, for the surfaces that
 // carry all of them: the sub-agent supervisor and /permissions revoke.
 func (m Model) grants() agent.Grants {
 	return agent.Grants{
@@ -129,7 +185,22 @@ func (m Model) grants() agent.Grants {
 		AllCommands: m.policy.allCommands,
 		EditDirs:    m.policy.editDirs,
 		Commands:    m.policy.commands,
+		Hosts:       m.policy.hosts,
 	}
+}
+
+// grantHost records [a] on a fetch card: the host the card named, exactly.
+// A host already reachable — from the config list or an earlier grant — adds
+// nothing, so pressing [a] twice on the same site records it once.
+func (m *Model) grantHost(host string) string {
+	host = strings.TrimSpace(host)
+	if host == "" {
+		return ""
+	}
+	if !agent.HostMatches(m.hostAllowlist(), host) {
+		m.policy.hosts = append(m.policy.hosts, host)
+	}
+	return host
 }
 
 // grantCommand records [a] on a command card: the command's leading words,
@@ -177,8 +248,11 @@ func (m *Model) revokeGrants() []string {
 		gone = append(gone, "edits in "+displayDir(d))
 	}
 	gone = append(gone, quoteAll(m.policy.commands)...)
+	for _, h := range m.policy.hosts {
+		gone = append(gone, "fetches from "+h)
+	}
 	m.policy.allEdits, m.policy.allCommands = false, false
-	m.policy.editDirs, m.policy.commands = nil, nil
+	m.policy.editDirs, m.policy.commands, m.policy.hosts = nil, nil, nil
 	return gone
 }
 
@@ -291,6 +365,13 @@ func baseAction(req *approvalRequest) agent.Action {
 	if req.write {
 		return agent.Action{Kind: agent.ActionEdit, Path: req.path, Command: req.command}
 	}
+	// A generic approval that named a host is a fetch: the host is what the
+	// two host lists and a session grant are matched against, and it is read
+	// before the command fallback for the reason the write tier is — what
+	// the call is, not what tier it sits at, decides which rule answers it.
+	if req.host != "" {
+		return agent.Action{Kind: agent.ActionFetch, Host: req.host, Command: req.command}
+	}
 	// A generic approval carrying a command — a process start — is
 	// judged as a command: allowlist entries apply and safety flags stick.
 	if req.command != "" {
@@ -347,6 +428,9 @@ func (m Model) policyLabel() string {
 	case len(m.policy.commands) > 0:
 		parts = append(parts, plural(len(m.policy.commands), "cmd"))
 	}
+	if n := len(m.policy.hosts); n > 0 {
+		parts = append(parts, plural(n, "host"))
+	}
 	if len(m.policy.allowlist) > 0 {
 		parts = append(parts, "allowlist")
 	}
@@ -369,6 +453,10 @@ func (m Model) policyHelp() string {
 	fmt.Fprintf(&sb, "  mode:      %s (%s)\n", m.policy.mode, m.policy.mode.Describe())
 	sb.WriteString("  edits:     " + status(m.policy.allEdits) + scopeSuffix(len(m.policy.editDirs), "directory", "directories") + "\n")
 	sb.WriteString("  commands:  " + status(m.policy.allCommands) + scopeSuffix(len(m.policy.commands), "command shape", "command shapes") + "\n")
+	if n := len(m.policy.hosts); n > 0 || len(m.policy.allowHosts) > 0 {
+		fmt.Fprintf(&sb, "  hosts:     %s fetched without asking (%d granted, %d from config)\n",
+			plural(n+len(m.policy.allowHosts), "host"), n, len(m.policy.allowHosts))
+	}
 	if n := len(m.policy.allowlist); n > 0 {
 		fmt.Fprintf(&sb, "  allowlist: %d command pattern(s) from config auto-approve\n", n)
 	}
@@ -428,7 +516,8 @@ func allowlistMatches(allowlist []string, command string) bool {
 // the same act.
 func (m Model) grantStatus() string {
 	g := m.grants()
-	if !g.Any() && len(m.policy.allowlist) == 0 && len(m.policy.denylist) == 0 && len(m.scopeDirs()) == 0 {
+	if !g.Any() && len(m.policy.allowlist) == 0 && len(m.policy.denylist) == 0 &&
+		len(m.policy.allowHosts) == 0 && len(m.policy.denyHosts) == 0 && len(m.scopeDirs()) == 0 {
 		return "Nothing is granted — every gated call asks.\n" +
 			"[a] on a confirm prompt grants the one shape of call it is showing; /permissions allow <commands|edits> grants the category."
 	}
@@ -446,6 +535,9 @@ func (m Model) grantStatus() string {
 	for _, c := range g.Commands {
 		sb.WriteString("  commands   " + strconv.Quote(c) + "\n")
 	}
+	for _, h := range g.Hosts {
+		sb.WriteString("  hosts      " + h + " — fetches from it, and nothing beside it\n")
+	}
 	if !g.Any() {
 		sb.WriteString("  (none — everything below came from config)\n")
 	}
@@ -458,8 +550,14 @@ func (m Model) grantStatus() string {
 	if n := len(m.policy.denylist); n > 0 {
 		fmt.Fprintf(&sb, "  config     %d command pattern(s) from behavior.command_denylist — refused before anything here can allow them\n", n)
 	}
+	for _, h := range m.policy.allowHosts {
+		sb.WriteString("  config     " + h + " from web.allow_hosts — not this session's to revoke\n")
+	}
+	if n := len(m.policy.denyHosts); n > 0 {
+		fmt.Fprintf(&sb, "  config     %s from web.deny_hosts — refused before anything here can allow them\n", plural(n, "host"))
+	}
 	if g.Any() {
-		sb.WriteString("/permissions revoke [edits|commands] takes them back.")
+		sb.WriteString("/permissions revoke [edits|commands|hosts] takes them back.")
 	}
 	return strings.TrimRight(sb.String(), "\n")
 }
@@ -478,14 +576,14 @@ func (m *Model) allowCommand(args []string) string {
 			return "Commands already run without asking. /permissions revoke commands takes it back."
 		}
 		m.policy.allCommands = true
-		m.syncChildGrants()
+		m.syncGrants()
 		return "Every command will now run without asking, except the safety-flagged ones, which always ask.\n/permissions revoke commands takes it back."
 	case "edits":
 		if m.policy.allEdits {
 			return "Edits already apply without asking. /permissions revoke edits takes it back."
 		}
 		m.policy.allEdits = true
-		m.syncChildGrants()
+		m.syncGrants()
 		return "Every edit will now apply without asking, anywhere in the workspace.\n/permissions revoke edits takes it back."
 	}
 	return "Usage: /permissions allow <commands|edits>"
@@ -497,7 +595,7 @@ func (m *Model) allowCommand(args []string) string {
 // which refuses everything — undid that.
 func (m *Model) revokeCommand(args []string) string {
 	if len(args) > 1 {
-		return "Usage: /permissions revoke [edits|commands]"
+		return "Usage: /permissions revoke [edits|commands|hosts]"
 	}
 	scope := "all"
 	if len(args) == 1 {
@@ -521,10 +619,15 @@ func (m *Model) revokeCommand(args []string) string {
 		}
 		gone = append(gone, quoteAll(m.policy.commands)...)
 		m.policy.allCommands, m.policy.commands = false, nil
+	case "hosts", "host":
+		for _, h := range m.policy.hosts {
+			gone = append(gone, "fetches from "+h)
+		}
+		m.policy.hosts = nil
 	default:
-		return "Usage: /permissions revoke [edits|commands]"
+		return "Usage: /permissions revoke [edits|commands|hosts]"
 	}
-	m.syncChildGrants()
+	m.syncGrants()
 	if len(gone) == 0 {
 		return "Nothing was granted; everything already asks."
 	}
@@ -548,6 +651,11 @@ type policyState struct {
 	// mode in the same breath the allowlist is, and a reader looking for
 	// what answers a command should find both in one place.
 	denylist []string
+	// allowHosts and denyHosts are the config's two host lists
+	// (web.allow_hosts, web.deny_hosts), which stand to a fetch as the two
+	// command lists stand to a command.
+	allowHosts []string
+	denyHosts  []string
 	// timeout bounds one assistant-run command; zero means no ceiling.
 	timeout time.Duration
 	// The blanket grants: every edit, every command, until revoked. They are
@@ -562,6 +670,10 @@ type policyState struct {
 	// never had.
 	editDirs []string
 	commands []string
+	// hosts are the hosts [a] has granted on a fetch card, exact and never a
+	// suffix. There is no blanket counterpart: "every host" is the whole of
+	// the outbound channel.
+	hosts []string
 	// Read-only inspection commands auto-run in every mode; config can
 	// extend the built-in list or turn it off entirely.
 	readOnlyExtra    []string

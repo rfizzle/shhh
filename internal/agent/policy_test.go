@@ -66,3 +66,36 @@ func TestPathUnder(t *testing.T) {
 		t.Error("no grants means nothing is granted")
 	}
 }
+
+// A host list matches a host and nothing beside it. The failure this rules
+// out is the quiet one: a suffix rule would make `docs.python.org` on the
+// card into a grant for every subdomain the domain will ever have, including
+// one an attacker registers.
+func TestHostMatches(t *testing.T) {
+	entries := []string{"docs.python.org", " Pkg.Go.Dev "}
+	for _, host := range []string{"docs.python.org", "DOCS.PYTHON.ORG", "docs.python.org.", "pkg.go.dev"} {
+		if !HostMatches(entries, host) {
+			t.Errorf("HostMatches(%q) = false; want true", host)
+		}
+	}
+	for _, host := range []string{"", "python.org", "org", "docs.python.org.evil.test", "adocs.python.org", "go.dev"} {
+		if HostMatches(entries, host) {
+			t.Errorf("HostMatches(%q) = true; want false", host)
+		}
+	}
+	if HostMatches(nil, "docs.python.org") {
+		t.Error("an empty list matched a host")
+	}
+}
+
+// Grants travel as one value because every surface that reads them reads all
+// of them; a host grant that Any() did not count would be a grant
+// /permissions grants never listed and /permissions revoke never took back.
+func TestGrantsAnyCountsTheHosts(t *testing.T) {
+	if (Grants{}).Any() {
+		t.Error("the zero value claims something is granted")
+	}
+	if !(Grants{Hosts: []string{"pkg.go.dev"}}).Any() {
+		t.Error("a host grant is not counted as a grant")
+	}
+}

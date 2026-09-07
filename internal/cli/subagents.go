@@ -395,6 +395,8 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 		},
 		CommandAllowlist: cfg.Behavior.CommandAllowlist,
 		CommandDenylist:  cfg.Behavior.CommandDenylist,
+		AllowHosts:       cfg.Web.AllowHosts,
+		DenyHosts:        cfg.Web.DenyHosts,
 		ReadOnlyExtra:    cfg.Behavior.ReadOnlyCommands,
 		ReadOnlyDisabled: !cfg.ReadOnlyAutoEnabled(),
 		// Children get the same auto-mode classifier the parent uses, so an

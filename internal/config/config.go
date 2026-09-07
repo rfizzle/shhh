@@ -344,6 +344,15 @@ type WebConfig struct {
 	FetchTimeoutSeconds int `toml:"fetch_timeout_seconds"`
 	// CacheTTLMinutes is how long a cached response stays fresh (default 60).
 	CacheTTLMinutes int `toml:"cache_ttl_minutes"`
+	// AllowHosts are hosts a fetch reaches without asking, in every session:
+	// the standing form of the grant [a] records on a fetch card. Entries
+	// are exact hosts, never suffixes.
+	// See docs/capabilities/approvals-and-safety.md#a-host-is-granted-once.
+	AllowHosts []string `toml:"allow_hosts"`
+	// DenyHosts are hosts no fetch reaches. It is read before the allow
+	// list, before a session grant and before the classifier, and no
+	// approval reaches past it.
+	DenyHosts []string `toml:"deny_hosts"`
 	// SearchProvider names the web_search backend; "brave" (the default) is
 	// the only provider so far.
 	SearchProvider string `toml:"search_provider"`

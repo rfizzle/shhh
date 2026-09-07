@@ -11,6 +11,7 @@ import (
 	"net/netip"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -54,6 +55,35 @@ type Fetcher struct {
 	Resolve      Resolver
 
 	client *http.Client
+
+	// mu guards granted, which the session replaces every time a host is
+	// granted or revoked while fetches are in flight on other goroutines.
+	mu      sync.RWMutex
+	granted func(host string) bool
+}
+
+// SetGrantedHosts installs the predicate that reports whether a host is one
+// this session reaches without asking. It is consulted on redirects and
+// nowhere else: a fetch that ran because its host was granted may not be
+// handed on to a host that was not, which would make one answered card the
+// answer for a site nobody looked at. A fetch a person approved on a card
+// follows its redirects as it always did, and so does a session that has
+// granted nothing.
+//
+// It is safe to call while fetches are running, which is what the lock is
+// for: a grant is recorded on the UI goroutine and read on whichever
+// goroutine a round's fetch landed on.
+// See docs/capabilities/approvals-and-safety.md#a-host-is-granted-once.
+func (f *Fetcher) SetGrantedHosts(granted func(host string) bool) {
+	f.mu.Lock()
+	f.granted = granted
+	f.mu.Unlock()
+}
+
+func (f *Fetcher) grantedHost() func(host string) bool {
+	f.mu.RLock()
+	defer f.mu.RUnlock()
+	return f.granted
 }
 
 // NewFetcher builds a Fetcher with defaults applied.
@@ -219,6 +249,9 @@ func (f *Fetcher) Fetch(ctx context.Context, rawURL string, initialHeaders map[s
 			if visited[nextTarget.hopIdentity()] {
 				return Result{}, fmt.Errorf("redirect cycle detected")
 			}
+			if err := f.hopAllowed(target.Host, nextTarget.Host); err != nil {
+				return Result{}, err
+			}
 			visited[nextTarget.hopIdentity()] = true
 			stripCredentialHeaders(headers, origin, nextTarget)
 			target = nextTarget
@@ -283,6 +316,29 @@ func unwrapURLError(err error) error {
 		return ue.Err
 	}
 	return err
+}
+
+// hopAllowed answers a redirect that leaves one host for another. It refuses
+// only where the hop starts on a granted host: the person pressed [a] on
+// that host, and a redirect is that host choosing the next one. The message
+// names the URL to ask for, so the model's next call is the card for the new
+// host rather than the same fetch again.
+//
+// The hop it judges is the one being taken, not the one the chain started
+// on. Anchoring it to the first host instead lets a chain launder a grant in
+// two steps: a fetch a person approved on a card reaches a granted host,
+// and from there reaches anywhere, because the first host was never granted
+// and the check had already stood down.
+func (f *Fetcher) hopAllowed(fromHost, nextHost string) error {
+	granted := f.grantedHost()
+	if granted == nil || nextHost == fromHost {
+		return nil
+	}
+	if !granted(fromHost) || granted(nextHost) {
+		return nil
+	}
+	return fmt.Errorf("%s redirected to %s, which this session has not been asked about: "+
+		"fetch the URL on %s directly so the request can be decided", fromHost, nextHost, nextHost)
 }
 
 func redirectLocation(resp *http.Response) string {

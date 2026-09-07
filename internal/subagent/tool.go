@@ -204,6 +204,10 @@ func SpawnSummary(profiles Profiles, raw json.RawMessage) (string, error) {
 // blast-radius block: the scope it may change, whether its work
 // reaches the checkout without another decision, and its token ceiling.
 type Spawn struct {
+	// Role is which profile is being spawned, for the facts a card states
+	// that this package cannot resolve — what a child of that role is given
+	// is the session's answer, not the supervisor's.
+	Role Role
 	// Scope is the paths a writer claimed, or the phrase for a child that
 	// changes nothing.
 	Scope string
@@ -220,6 +224,7 @@ func SpawnPlan(profiles Profiles, raw json.RawMessage) (Spawn, error) {
 		return Spawn{}, err
 	}
 	p := Spawn{
+		Role:   args.role,
 		Writer: args.profile.Writes,
 		Budget: fmt.Sprintf("%s, ~%s tokens", roundBudgetLabel(args.maxRounds), formatTokens(args.maxTokens)),
 	}

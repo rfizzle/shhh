@@ -130,14 +130,28 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 				if prefix := m.grantCommand(req.command); prefix != "" {
 					m.noteGrant("Commands starting " + strconv.Quote(prefix) + " will run without asking. /permissions revoke takes it back.")
 				}
-				m.syncChildGrants()
+				m.syncGrants()
 				return m.executeRun()
 			case approvalDiff:
 				m.recordDecision(observe.DecisionAllow, observe.ReasonUserAlways)
 				if dir := m.grantEditDir(req.path); dir != "" {
 					m.noteGrant("Edits in " + displayDir(dir) + " will apply without asking. /permissions revoke takes it back.")
 				}
-				m.syncChildGrants()
+				m.syncGrants()
+				return m.executeApprovedTool()
+			default:
+				// A fetch card grants its host, which is the card's own
+				// domain row and nothing beside it: the twentieth page from
+				// one documentation site is the decision already taken, and
+				// a different site is a decision nobody has been asked for.
+				if req.host == "" {
+					break
+				}
+				m.recordDecision(observe.DecisionAllow, observe.ReasonUserAlways)
+				if host := m.grantHost(req.host); host != "" {
+					m.noteGrant("Fetches from " + host + " will run without asking. /permissions revoke takes it back.")
+				}
+				m.syncGrants()
 				return m.executeApprovedTool()
 			}
 		}

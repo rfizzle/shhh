@@ -123,7 +123,7 @@ frames it (also /perms; was /mode)
 why      the latest auto-mode denial's reason
 grants   what this session has stopped asking about
 allow <commands|edits>   grant a whole category
-revoke [commands|edits]  take the grants back`,
+revoke [commands|edits|hosts]  take the grants back`,
 	"/reasoning": `How much thinking the model does before it answers: off (the
 default), low, medium, high, xhigh or max — ctrl+t cycles them
 [level]           set it for this session (also /think)

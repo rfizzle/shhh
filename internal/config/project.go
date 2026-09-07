@@ -85,12 +85,13 @@ var unionKeys = []string{
 	"behavior.command_denylist",
 	"behavior.read_only_commands",
 	"behavior.scope_dirs",
+	"web.deny_hosts",
 }
 
 // UnionsInProject reports whether a checkout extends this key rather than
 // replacing it. Surfaces that say where a value came from ask, because
-// `project` on one of these three means the checkout added to the person's
-// list rather than took it away.
+// `project` on one of these means the checkout added to the person's list
+// rather than took it away.
 func UnionsInProject(key string) bool { return slices.Contains(unionKeys, key) }
 
 // projectRefusal is one key a checkout may not set and the reason, phrased
@@ -110,6 +111,7 @@ type projectRefusal struct {
 var projectRefusals = []projectRefusal{
 	{"provider.api_key", "a credential in a checkout is a credential in every clone of it"},
 	{"provider.api_key_env", "it would let the checkout choose which of your variables is sent as the key"},
+	{"web.allow_hosts", "it would let the checkout decide which hosts a session reaches without being asked; a checkout may add to web.deny_hosts and only add"},
 	{"web.search_api_key", "a credential in a checkout is a credential in every clone of it"},
 	{"web.search_api_key_env", "it would let the checkout choose which of your variables is sent as the search key"},
 	{"secrets.env", "it declares which of your environment variables a session may spend, which is about the machine rather than the tree"},

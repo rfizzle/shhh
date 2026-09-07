@@ -455,6 +455,9 @@ func TestGolden_ApprovalCard(t *testing.T) {
 				c.Summary = "GET https://pkg.go.dev/context#WithCancel"
 				c.Question = "Allow this call?"
 				c.Severity = SeverityLow
+				// The key names the host rather than the category: what the
+				// domain row states is exactly what pressing it grants.
+				c.AllowAlways, c.AlwaysHint = true, "a: always allow pkg.go.dev"
 				c.Fields = []CardField{
 					{Label: "domain", Value: "pkg.go.dev", Detail: "the request leaves this machine", Tone: ToneOpen},
 					{Label: "sends", Value: "the URL and a shhh-web/1.0 user-agent", Detail: "no file contents, no credentials"},

@@ -26,6 +26,7 @@ import (
 	"github.com/rfizzle/shhh/internal/safety"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/tools"
+	"github.com/rfizzle/shhh/internal/web"
 )
 
 // Role scopes a child's toolset: researchers get read-only tools plus the
@@ -351,6 +352,12 @@ type Options struct {
 	// fan-out walks around, and a child has no card to draw and nobody to
 	// draw it for.
 	CommandDenylist []string
+	// AllowHosts and DenyHosts are the parent's config host lists
+	// (web.allow_hosts, web.deny_hosts), inherited for the two reasons the
+	// command lists are: what the person answered for once is answered for
+	// every agent, and what they refused is refused for every agent.
+	AllowHosts []string
+	DenyHosts  []string
 	// ReadOnlyExtra and ReadOnlyDisabled mirror the parent's read-only
 	// inspection allowlist settings, so a child's reads are as quiet as the
 	// parent's.
@@ -958,6 +965,14 @@ func (s *Supervisor) childPolicy(c *child) agent.ModePolicy {
 	if len(g.Commands) > 0 {
 		allowlist = append(append([]string(nil), allowlist...), g.Commands...)
 	}
+	// The hosts a child may reach are the parent's, and only the parent's:
+	// they arrive here and there is no path back, so a child cannot widen
+	// the set for itself or for anyone else.
+	// See docs/capabilities/approvals-and-safety.md#a-host-is-granted-once.
+	hosts := s.opts.AllowHosts
+	if len(g.Hosts) > 0 {
+		hosts = append(append([]string(nil), hosts...), g.Hosts...)
+	}
 	return agent.ModePolicy{
 		Mode:             s.childMode(c),
 		AllowEdits:       g.AllEdits,
@@ -965,6 +980,8 @@ func (s *Supervisor) childPolicy(c *child) agent.ModePolicy {
 		EditDirs:         g.EditDirs,
 		CommandAllowlist: allowlist,
 		CommandDenylist:  s.opts.CommandDenylist,
+		AllowHosts:       hosts,
+		DenyHosts:        s.opts.DenyHosts,
 		ReadOnlyExtra:    s.opts.ReadOnlyExtra,
 		ReadOnlyDisabled: s.opts.ReadOnlyDisabled,
 	}
@@ -2360,6 +2377,11 @@ func actionFor(name string, args json.RawMessage) (agent.Action, error) {
 			Command:       cmd,
 			SafetyFlagged: len(safety.Check(cmd)) > 0,
 		}, nil
+	case name == web.FetchToolName:
+		// A child's fetch is decided on the same host the parent's card
+		// would have named, so a granted host is as quiet in a child as it
+		// is in the session that granted it.
+		return agent.Action{Kind: agent.ActionFetch, Host: web.FetchHost(args)}, nil
 	case tools.IsMutating(name):
 		return agent.Action{Kind: agent.ActionEdit}, nil
 	}

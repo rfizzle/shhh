@@ -157,7 +157,10 @@ func (m Model) batchCategory(req *approvalRequest) (agent.ActionKind, bool) {
 	// batch: [A] answers the calls the session would classify the same way,
 	// and a directory nobody has put in scope is the one thing on the card
 	// the reader has not already answered for.
-	if act.SafetyFlagged || act.Kind == agent.ActionOther || len(act.OutOfScope) > 0 {
+	// A fetch is out for a reason of its own: two fetches in one queue are
+	// two hosts, which is two decisions however alike the two calls look.
+	if act.SafetyFlagged || act.Kind == agent.ActionOther || act.Kind == agent.ActionFetch ||
+		len(act.OutOfScope) > 0 {
 		return act.Kind, false
 	}
 	return act.Kind, true

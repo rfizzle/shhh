@@ -32,12 +32,19 @@ func (m Model) WithSubagents(sup *subagent.Supervisor) Model {
 	return m
 }
 
-// syncChildGrants pushes the session's [a] grants down to the supervisor: a
-// category the user waved through for the session is waved through for
-// children too, instead of being re-asked once per agent.
-func (m *Model) syncChildGrants() {
+// syncGrants pushes the session's [a] grants outward, to everything that
+// decides on their strength. The supervisor takes them because a category
+// the user waved through for the session is waved through for children too,
+// instead of being re-asked once per agent. The fetcher takes the hosts
+// because it is the only place a redirect off a granted host is visible
+// (policy.go, WithHostGrants).
+func (m *Model) syncGrants() {
+	g := m.grants()
 	if m.subagents != nil {
-		m.subagents.SetParentGrants(m.grants())
+		m.subagents.SetParentGrants(g)
+	}
+	if m.hostGrants != nil {
+		m.hostGrants(m.hostAllowlist())
 	}
 }
 

@@ -132,9 +132,9 @@ func TestArgCompletion_ModeCycle(t *testing.T) {
 		t.Fatalf("/permissions why should complete, got %v", got)
 	}
 
-	// The grants the key hands out are reachable from the menu, both halves.
+	// The grants the key hands out are reachable from the menu, all three.
 	m = typeChars(t, readyModel(t), "/permissions revoke ")
-	if got := completionNames(m); len(got) != 2 || got[0] != "edits" || got[1] != "commands" {
+	if got := completionNames(m); len(got) != 3 || got[0] != "edits" || got[1] != "commands" || got[2] != "hosts" {
 		t.Fatalf("/permissions revoke should offer its scopes, got %v", got)
 	}
 }

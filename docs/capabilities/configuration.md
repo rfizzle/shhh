@@ -28,18 +28,20 @@ does not name is left exactly as they wrote it. A whole-file project config
 would make everyone who clones the repository restate their provider and
 their key in it, which is why nobody in the field does that either.
 
-Four keys are the exception, and they extend rather than replace:
+Five keys are the exception, and they extend rather than replace:
 `behavior.command_allowlist`, `behavior.command_denylist`,
-`behavior.read_only_commands` and `behavior.scope_dirs`. A checkout adding a
-command to the allowlist cannot know what is already on the person's list, so
-replacing would quietly take away commands that have nothing to do with this
-repository — and the symptom is a session asking about `ls` again with
-nothing on screen to say why. The deny list unions for the same reason read
-in the other direction: a checkout may add a command it does not want run
-here, and may never drop one the person refuses everywhere. The checkout's
-scope directories are resolved against the checkout, so a relative path means
-the same directory in every clone. Every other list is a complete answer and
-overrides like a scalar.
+`behavior.read_only_commands`, `behavior.scope_dirs` and `web.deny_hosts`. A
+checkout adding a command to the allowlist cannot know what is already on
+the person's list, so replacing would quietly take away commands that have
+nothing to do with this repository — and the symptom is a session asking
+about `ls` again with nothing on screen to say why. The deny list unions for
+the same reason read in the other direction: a checkout may add a command it
+does not want run here, and may never drop one the person refuses
+everywhere; `web.deny_hosts` is the same rule about the same act one layer
+out, which is why the host list a checkout may *not* set is the allowing
+one. The checkout's scope directories are resolved against the checkout, so
+a relative path means the same directory in every clone. Every other list is
+a complete answer and overrides like a scalar.
 
 A short set of keys is refused in the checkout's file, whatever the answer
 to trust was. Each is a key whose value in a checkout is a value in every
@@ -49,6 +51,7 @@ clone of it, or one that reaches past the tree onto the machine:
 |---|---|
 | `provider.api_key`, `web.search_api_key` | a credential in a checkout is a credential in every clone of it |
 | `provider.api_key_env`, `web.search_api_key_env` | it would let the checkout choose which of your variables is sent as a key |
+| `web.allow_hosts` | it would let the checkout decide where a session's reads leave for; a checkout may add to `web.deny_hosts`, and only add |
 | `secrets.env` | it declares which of your environment variables a session may spend, which is about the machine rather than the tree |
 | `[sandbox]` | it decides what a contained command may reach, which is the containment itself |
 | `[mcp.servers]` | a server is a program to start, and a checkout names its servers in `.shhh/mcp.json` instead |
@@ -596,6 +599,8 @@ own file could hold.
 | `fetch_max_bytes` | number | 2 MiB | The download ceiling on one fetch. |
 | `fetch_timeout_seconds` | number | `30` | How long one fetch may take, redirects and the body read included. |
 | `cache_ttl_minutes` | number | `60` | How long a cached response stays fresh. |
+| `allow_hosts` | list | (empty — every host asks the first time) | Hosts a fetch reaches without asking, in every session; an exact host, never a suffix, so `docs.python.org` does not cover `python.org`. |
+| `deny_hosts` | list | (empty — nothing is refused in advance) | Hosts no fetch reaches; read before the allow list, before a session grant and before the classifier, and no approval can allow one. |
 | `search_provider` | word: `brave` | `brave` | Which backend the web_search tool asks. |
 | `search_api_key` | text | (unset — web_search is not registered) | The search backend's key itself, which puts a copy of it in every copy of this file; `search_api_key_env` is the form to prefer. It is a credential: the listing says whether it is set, never what it is. |
 | `search_api_key_env` | variable | (unset — web_search is not registered) | The environment variable the search backend's key is read from at start, so the file names the key instead of holding it. It is read ahead of `search_api_key`. |

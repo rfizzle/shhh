@@ -514,7 +514,9 @@ func ReasonCode(raw string) string {
 		return ReasonSessionScope
 	case "allowlist":
 		return ReasonAllowlist
-	case agent.DenyReasonDenylist:
+	case agent.DenyReasonDenylist, agent.DenyReasonHost:
+		// Both lists are the same fact for the metrics: a rule the person
+		// wrote answered before anything could allow.
 		return ReasonDenylist
 	case "plan mode":
 		return ReasonPlanMode

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,6 +16,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
+	"github.com/rfizzle/shhh/internal/web"
 )
 
 // streamStep is one scripted provider response: assistant text and/or tool
@@ -1394,5 +1396,54 @@ func TestSpecSaysWhetherTheChildStandsInACopy(t *testing.T) {
 	}
 	if specs[1].Worktree {
 		t.Fatalf("a reader stands in the parent's own directory: %+v", specs[1])
+	}
+}
+
+// A child fetches on the hosts its parent answered for and on no others: the
+// grants arrive from the parent at every decision, so revoking one there
+// takes it from the child too, and a child has no way to add one.
+func TestChildHostGrantsComeFromTheParentAndOnlyFromIt(t *testing.T) {
+	sup := New(context.Background(), Options{
+		Root:       t.TempDir(),
+		AllowHosts: []string{"crates.io"},
+		DenyHosts:  []string{"paste.example.test"},
+	})
+	t.Cleanup(sup.Close)
+	sup.SetParentMode(agent.ModeManual)
+	sup.SetParentGrants(agent.Grants{Hosts: []string{"docs.python.org"}})
+
+	c := &child{mode: agent.ModeManual}
+	decide := func(rawURL string) agent.Decision {
+		t.Helper()
+		action, err := actionFor(web.FetchToolName, json.RawMessage(fmt.Sprintf(`{"url":%q}`, rawURL)))
+		if err != nil {
+			t.Fatalf("actionFor: %v", err)
+		}
+		if action.Kind != agent.ActionFetch {
+			t.Fatalf("a child's fetch is classified as %v", action.Kind)
+		}
+		decision, _ := sup.childPolicy(c).Decide(action)
+		return decision
+	}
+
+	if got := decide("https://docs.python.org/3/library/json.html"); got != agent.Allow {
+		t.Errorf("the parent's grant did not reach the child: %v", got)
+	}
+	if got := decide("https://crates.io/crates/serde"); got != agent.Allow {
+		t.Errorf("the config's standing grant did not reach the child: %v", got)
+	}
+	if got := decide("https://pkg.go.dev/context"); got != agent.Ask {
+		t.Errorf("an ungranted host = %v; want the child to ask its parent", got)
+	}
+	if got := decide("https://paste.example.test/x"); got != agent.Deny {
+		t.Errorf("a denied host = %v; want Deny in a child too", got)
+	}
+
+	// The set is read from the parent at every decision, so taking a grant
+	// back there takes it back here. There is no path the other way: a child
+	// hands nothing to SetParentGrants.
+	sup.SetParentGrants(agent.Grants{})
+	if got := decide("https://docs.python.org/3/library/json.html"); got != agent.Ask {
+		t.Errorf("a revoked grant still ran in a child: %v", got)
 	}
 }

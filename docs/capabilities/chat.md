@@ -8,11 +8,17 @@ coding agent's surface with parts turned off.
 ## Chat changes nothing
 
 Everything chat can reach is a read: files in the working scope, the web,
-the session's own notes. There is no command runner, no file editor, and no
-way to grant one from inside the session. The one decision the person is
-ever asked for is whether a request may leave the machine — a fetch, a
+the session's own notes. There is no command runner and no file editor, and
+no way to conjure one from inside the session. The one decision the person
+is ever asked for is whether a request may leave the machine — a fetch, a
 search, a delegate — because that is the one act a read-only session still
 has that is not free.
+
+It is also the one thing a session can grant, and what it grants is a host.
+`[a]` on a fetch card answers for the site the card named and for nothing
+beside it, so a conversation that settles into one documentation set stops
+being a stream of cards
+([`approvals-and-safety.md`](approvals-and-safety.md#a-host-is-granted-once)).
 
 A read that leaves the machine is also the most expensive one, so a page is
 kept whole. What the conversation carries is the opening slice of it; the rest

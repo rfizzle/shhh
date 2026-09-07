@@ -144,6 +144,13 @@ const (
 	ActionEdit ActionKind = iota
 	// ActionCommand is a shell command.
 	ActionCommand
+	// ActionFetch is an outbound request for one page, which carries the
+	// host it leaves for. It is its own kind because the host is the unit a
+	// person answers for — the twentieth page from a documentation site is
+	// the same decision as the first, and no other kind's grant means
+	// anything about it.
+	// See docs/capabilities/approvals-and-safety.md#a-host-is-granted-once.
+	ActionFetch
 	// ActionOther is any other gated tool call (registered gated tools).
 	ActionOther
 )
@@ -161,6 +168,11 @@ type Action struct {
 	// Path is the file for ActionEdit, which is what a directory-scoped edit
 	// grant is matched against (GrantPrefix's counterpart).
 	Path string
+	// Host is the host an ActionFetch leaves for, exactly as the card names
+	// it. It is what a host grant and the host deny list are matched
+	// against, and it carries no port and no path: the person answered for
+	// the site, not for the page.
+	Host string
 	// SafetyFlagged marks commands flagged by safety.Check; they always ask
 	// the human, in every mode except plan (which refuses them outright).
 	SafetyFlagged bool
@@ -228,6 +240,22 @@ const DenylistResult = "error: this command is on the deny list for this session
 	"permission mode and no approval can allow it, so retrying it or rephrasing it will not run it. " +
 	"Say what you were trying to do and let the user decide."
 
+// DenyReasonHost is the rule name a fetch refused for the host deny list
+// carries. It is a different word from the command list's so the row says
+// which of the two answered, and so the model gets the result that is true
+// of it — a host is refused whatever the URL, which is not what
+// DenylistResult says.
+const DenyReasonHost = "host deny list"
+
+// DeniedHostResult is the tool result recorded for a fetch the host deny
+// list refused. Like DenylistResult it names no key and points at no file:
+// the list is the user's, and a refusal that came with editing instructions
+// would be handing the model the way around it.
+// See docs/capabilities/approvals-and-safety.md#a-host-is-granted-once.
+const DeniedHostResult = "error: this host is refused for this session. No URL on it will be fetched, in any " +
+	"permission mode, and no approval can allow one, so another path on the same host will not work either. " +
+	"Find the answer on another source, or say what you were looking for and let the user decide."
+
 // PlanModeResult is the tool result recorded for a gated call refused in
 // plan mode, so the model learns why nothing ran instead of the call being
 // silently dropped.
@@ -255,6 +283,15 @@ type ModePolicy struct {
 	// it: it is the answer a person gave once, for every mode, so that a
 	// command they never want run is not a card they have to keep refusing.
 	CommandDenylist []string
+	// AllowHosts are the hosts a fetch reaches without asking: the config
+	// list (web.allow_hosts) and whatever [a] has granted this session, in
+	// one field because they answer the same question and the reason a row
+	// carries is the same either way.
+	AllowHosts []string
+	// DenyHosts are hosts no fetch reaches (web.deny_hosts). Like the
+	// command deny list it is read before anything that can allow, and
+	// nothing a session can grant reaches past it.
+	DenyHosts []string
 	// ReadOnlyExtra extends the built-in read-only command allowlist
 	// (behavior.read_only_commands).
 	ReadOnlyExtra []string
@@ -386,6 +423,13 @@ func (p ModePolicy) Decide(a Action) (Decision, string) {
 	if a.Command != "" && DenylistMatches(p.CommandDenylist, a.Command) {
 		return Deny, DenyReasonDenylist
 	}
+	// The host deny list is read in the same breath and for the same reason:
+	// a host the person has refused is not a decision, so it is answered
+	// before the grant, before the mode and before the classifier is paid to
+	// think about it.
+	if a.Kind == ActionFetch && HostMatches(p.DenyHosts, a.Host) {
+		return Deny, DenyReasonHost
+	}
 	if p.Mode == ModePlan {
 		// Plan mode grants inspection even with the read-only allowlist
 		// disabled: read-only is the whole point of the mode.
@@ -429,6 +473,14 @@ func (p ModePolicy) Decide(a Action) (Decision, string) {
 			return Allow, "session policy"
 		case AllowlistMatches(p.CommandAllowlist, a.Command):
 			return Allow, "allowlist"
+		}
+	case ActionFetch:
+		// A granted host is allowed here, before auto mode's classifier is
+		// asked: the classifier's job is to judge whether a URL is an
+		// outbound channel worth stopping for, and the grant is the person
+		// having already said this host is not.
+		if HostMatches(p.AllowHosts, a.Host) {
+			return Allow, "session grant"
 		}
 	}
 	return Ask, ""

@@ -54,6 +54,11 @@ type GatedPreview struct {
 	// stands for a line the person may already have refused, and a tool that
 	// did not say so would be the way around the list.
 	DenyLine string
+	// Host is the host an outbound request leaves for, exactly as the card's
+	// own field states it. It is what [a] grants and what the two host lists
+	// are matched against, so the thing granted is the thing the reader read.
+	// See docs/capabilities/approvals-and-safety.md#a-host-is-granted-once.
+	Host string
 }
 
 // GatedField is one row of a tool's blast-radius block.
@@ -99,6 +104,9 @@ type approvalRequest struct {
 	// write marks a generic approval that sits at the write tier, from its
 	// GatedPreview: mode policy answers it the way it answers an edit.
 	write bool
+	// host is the host a generic approval's outbound request leaves for,
+	// from its GatedPreview: what [a] grants and what the host lists answer.
+	host string
 	// auto marks a call the session approved on the user's behalf — mode
 	// policy, a session grant, or the auto-mode classifier. It is what the
 	// changeset record's origin says afterwards.
@@ -270,6 +278,7 @@ func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, err
 		summary: summary,
 		fields:  p.Fields,
 		write:   p.Write,
+		host:    p.Host,
 	}, nil
 }
 
@@ -314,12 +323,13 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 	// is a moment that mattered and the reader's next act depends on knowing
 	// a rule and not a person refused it.
 	if m.deniedByRule(req) {
+		result, reason, why := m.ruleDenial(req)
 		m.recordDecision(observe.DecisionDeny, observe.ReasonDenylist)
-		m.lastDenial = req.summary + " — " + denylistWhy
+		m.lastDenial = req.summary + " — " + why
 		// Surfaces on the notice rail until the next user turn.
 		m.denialNotice = req.summary
-		m.agent.ResolveApproval(agent.DenylistResult)
-		m.appendEntry(deniedEntry(req, decidedByAuto, agent.DenyReasonDenylist, 0))
+		m.agent.ResolveApproval(result)
+		m.appendEntry(deniedEntry(req, decidedByAuto, reason, 0))
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		return m.advanceApprovalQueue()
@@ -562,6 +572,8 @@ func denialResult(reason string) string {
 	switch {
 	case reason == agent.DenyReasonDenylist:
 		return agent.DenylistResult
+	case reason == agent.DenyReasonHost:
+		return agent.DeniedHostResult
 	case reason == "plan mode":
 		return agent.PlanModeResult
 	case strings.HasPrefix(reason, "outside the working scope"):
@@ -870,6 +882,14 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 		card.Question = "Allow this?"
 		if req.summary != req.title {
 			card.Summary = firstLine(req.summary)
+		}
+		// A request that names a host offers [a], and the key says the host
+		// rather than the category: what the reader read on the card's own
+		// domain row is exactly what pressing it grants, and a page from the
+		// same site is then not a card at all.
+		if req.host != "" {
+			card.AllowAlways = true
+			card.AlwaysHint = "a: always allow " + req.host
 		}
 	}
 	return card

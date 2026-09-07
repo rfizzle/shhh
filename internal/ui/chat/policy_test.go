@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -861,5 +862,183 @@ func TestDenylist_WhyNamesTheListThatAnswered(t *testing.T) {
 	}
 	if !strings.Contains(m.policyHelp(), "denylist:") {
 		t.Errorf("/help does not name the deny list:\n%s", m.policyHelp())
+	}
+}
+
+// fetchPreviews is a fetch card's preview: the host the request leaves for,
+// stated by the tool because nothing here can read it out of a schema.
+func fetchPreviews() map[string]GatedPreviewFunc {
+	return map[string]GatedPreviewFunc{
+		"web_fetch": func(raw json.RawMessage) (GatedPreview, error) {
+			var a struct {
+				URL string `json:"url"`
+			}
+			if err := json.Unmarshal(raw, &a); err != nil {
+				return GatedPreview{}, err
+			}
+			u, err := url.Parse(a.URL)
+			if err != nil {
+				return GatedPreview{}, err
+			}
+			return GatedPreview{Action: "fetch", Summary: "GET " + a.URL, Host: u.Hostname()}, nil
+		},
+	}
+}
+
+func fetchCall(id, rawURL string) provider.ToolCall {
+	return provider.ToolCall{ID: id, Name: "web_fetch", Arguments: fmt.Sprintf(`{"url":%q}`, rawURL)}
+}
+
+// [a] on a fetch card grants the host the card named and nothing beside it:
+// the next page from the same site is not a card, and the first page from
+// another site still is.
+func TestPolicy_AlwaysAllowOneHostViaKey(t *testing.T) {
+	executor := func(name string, args json.RawMessage) (string, error) { return "page text", nil }
+	m := gatedModel(t, executor, fetchPreviews())
+	var pushed []string
+	m = m.WithHostGrants(func(hosts []string) { pushed = hosts })
+
+	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		fetchCall("call_1", "https://docs.python.org/3/library/json.html"),
+	}})
+	m = updated.(Model)
+	if m.state != stateConfirmRun {
+		t.Fatalf("the first fetch should ask, got state %d", m.state)
+	}
+	m = handover(t, m)
+	if !strings.Contains(m.View().Content, "always allow docs.python.org") {
+		t.Fatalf("the key does not say which host it grants:\n%s", m.View().Content)
+	}
+
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
+	m = updated.(Model)
+	if got := m.policy.hosts; len(got) != 1 || got[0] != "docs.python.org" {
+		t.Fatalf("[a] granted %v; want exactly the host the card showed", got)
+	}
+	if len(pushed) != 1 || pushed[0] != "docs.python.org" {
+		t.Fatalf("the fetcher was told %v; want the granted host, for the redirect rule", pushed)
+	}
+	m = drainApproved(t, m, cmd)
+
+	// The same site again is not a decision any more.
+	m.state = stateStreaming
+	updated, cmd = m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		fetchCall("call_2", "https://docs.python.org/3/library/os.html"),
+	}})
+	m = updated.(Model)
+	if m.state == stateConfirmRun {
+		t.Fatal("a second page from the granted host asked again")
+	}
+	m = drainApproved(t, m, cmd)
+
+	// A different site is, including one the granted host is a suffix of.
+	for _, other := range []string{"https://python.org/downloads", "https://pkg.go.dev/context"} {
+		m.state = stateStreaming
+		updated, _ = m.Update(toolCallsMsg{calls: []provider.ToolCall{fetchCall("call_x", other)}})
+		m = updated.(Model)
+		if m.state != stateConfirmRun {
+			t.Fatalf("%s did not ask; the grant widened past the host on the card", other)
+		}
+		m = declineCard(t, m)
+	}
+}
+
+// drainApproved runs the approved call's result back into the model, which
+// is what lets the next call be offered.
+func drainApproved(t *testing.T, m Model, cmd tea.Cmd) Model {
+	t.Helper()
+	for _, c := range unwrapBatch(cmd) {
+		if msg, ok := c().(approvedToolDoneMsg); ok {
+			updated, _ := m.Update(msg)
+			return updated.(Model)
+		}
+	}
+	return m
+}
+
+func declineCard(t *testing.T, m Model) Model {
+	t.Helper()
+	m = handover(t, m)
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'n', Text: "n"})
+	return updated.(Model)
+}
+
+// The config's own list is a standing grant of the same shape, and the deny
+// list beats both: a refused host is not a card, in any mode, and what the
+// model is told is that no URL on it will run.
+func TestPolicy_HostRulesAnswerBeforeTheCard(t *testing.T) {
+	executor := func(name string, args json.RawMessage) (string, error) { return "page text", nil }
+
+	allowed := gatedModel(t, executor, fetchPreviews()).WithHostRules([]string{"pkg.go.dev"}, nil)
+	updated, _ := allowed.Update(toolCallsMsg{calls: []provider.ToolCall{
+		fetchCall("call_a", "https://pkg.go.dev/context"),
+	}})
+	if m := updated.(Model); m.state == stateConfirmRun {
+		t.Fatal("a host on web.allow_hosts was put to the user anyway")
+	}
+
+	denied := gatedModel(t, executor, fetchPreviews()).
+		WithHostRules([]string{"paste.example.test"}, []string{"paste.example.test"})
+	denied.policy.mode = agent.ModeAuto
+	denied.policy.hosts = []string{"paste.example.test"}
+	updated, _ = denied.Update(toolCallsMsg{calls: []provider.ToolCall{
+		fetchCall("call_d", "https://paste.example.test/x"),
+	}})
+	m := updated.(Model)
+	if m.state == stateConfirmRun {
+		t.Fatal("a denied host was put to the user")
+	}
+	found := false
+	for _, e := range m.transcript {
+		found = found || (e.deniedBy != "" && e.toolName == "web_fetch")
+	}
+	if !found {
+		t.Fatalf("the refusal should leave a row, transcript = %+v", m.transcript)
+	}
+	if !strings.Contains(m.lastDenial, "web.deny_hosts") {
+		t.Errorf("/permissions why does not name the list that refused it: %q", m.lastDenial)
+	}
+}
+
+// A host grant is listed where every other grant is listed, revoked with
+// them, revoked on its own, and counted on the status line — the round trip
+// a grant nobody can take back does not have.
+func TestPolicy_HostGrantsAreListedCountedAndRevoked(t *testing.T) {
+	m := gatedModel(t, nil, fetchPreviews())
+	m = m.WithHostRules([]string{"crates.io"}, nil)
+	if got := m.grantHost("docs.python.org"); got != "docs.python.org" {
+		t.Fatalf("grantHost returned %q", got)
+	}
+	// A host the config already reaches adds nothing: pressing [a] on it is
+	// not a second grant to revoke.
+	m.grantHost("crates.io")
+	if got := m.policy.hosts; len(got) != 1 {
+		t.Fatalf("hosts = %v; want the one the config did not already cover", got)
+	}
+
+	listing := m.grantStatus()
+	for _, want := range []string{"hosts      docs.python.org", "crates.io from web.allow_hosts", "revoke [edits|commands|hosts]"} {
+		if !strings.Contains(listing, want) {
+			t.Errorf("/permissions grants does not say %q:\n%s", want, listing)
+		}
+	}
+	if got := m.policyLabel(); !strings.Contains(got, "1 host") {
+		t.Errorf("the status line does not count the host grant: %q", got)
+	}
+
+	if out := m.revokeCommand([]string{"hosts"}); !strings.Contains(out, "docs.python.org") {
+		t.Errorf("revoke does not say what went: %q", out)
+	}
+	if len(m.policy.hosts) != 0 {
+		t.Fatalf("the grant survived its revocation: %v", m.policy.hosts)
+	}
+	// The config's list is not this session's to take back.
+	if !strings.Contains(m.grantStatus(), "crates.io") {
+		t.Error("revoke took away a standing config grant")
+	}
+	// And the blanket revoke takes a host with the rest.
+	m.grantHost("pkg.go.dev")
+	if out := m.revokeCommand(nil); !strings.Contains(out, "pkg.go.dev") {
+		t.Errorf("revoke all left the host grants behind: %q", out)
 	}
 }

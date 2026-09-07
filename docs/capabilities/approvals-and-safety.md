@@ -72,6 +72,49 @@ list is reachable by any tool. A checkout can add to either through its own
 settings file, and only add — a repository may refuse one more command here
 and may never take away a refusal the person holds everywhere.
 
+## A host is granted once
+
+A fetch is the one act a read-only session still has that is not free, and
+the card that asks about it names one fact above the others: the host the
+request leaves for. So the host is what `[a]` grants. Pressing it on
+`docs.python.org` means the twentieth page of that documentation site is not
+the twentieth card, and in auto mode it is not twenty classifier rounds
+either — the classifier is asked whether a URL is an outbound channel worth
+stopping for, and the grant is the person having already said this host is
+not.
+
+The unit is the host and neither the URL nor the domain. One URL is one
+page, which would grant nothing worth having. The registrable domain is
+every subdomain a company will ever publish, which is not what anybody read
+on the card. The host is what the card printed and what the person looked
+at, so it is what the grant is made of — exactly, never as a suffix.
+`docs.python.org` does not grant `python.org`, and it does not grant
+`docs.python.org.evil.test` either.
+
+A grant is a session's, and it travels the way the other grants travel: it
+is listed by `/permissions grants`, counted on the status line, taken back
+by `/permissions revoke`, and inherited by every child the session spawns.
+A child arrives with the set and has no way to add to it — the supervisor
+reads the parent's grants at every decision and nothing points the other way
+— so a fan-out cannot widen what the person answered for. The spawn card
+says so, listing the hosts the child arrives with.
+
+The standing form of the same thing is `web.allow_hosts` in the
+configuration, and `web.deny_hosts` is the refusal that beats it, read
+before the grant, before the mode and before the classifier, exactly as the
+command deny list is. A checkout may add to the deny list and may never add
+to the allow list: which commands a repository refuses is a fact about the
+repository, and where a session's reads leave for is not.
+
+There is one place a grant could widen itself where nobody would see it: a
+redirect is the granted host choosing the next host. So a hop that starts on
+a granted host is not followed to a host nobody has answered for, wherever
+in a chain of redirects it falls. The fetcher stops and names the URL to ask
+about, and the next call draws that host's card. A hop that starts anywhere
+else follows its redirects — a fetch approved on a card was the person
+answering for that request, and a redirect is part of what a request is —
+and a session holding no grants is not held anywhere by this rule.
+
 ## The classifier fails closed
 
 Auto mode's classifier never approves on error. A timeout, a malformed answer,

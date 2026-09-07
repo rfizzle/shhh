@@ -540,6 +540,9 @@ type Model struct {
 	// What the session has stopped asking about, and the mode that frames it
 	// (policy.go).
 	policy policyState
+	// hostGrants takes the hosts this session may reach whenever they
+	// change; the fetcher is what it reaches (policy.go, WithHostGrants).
+	hostGrants func([]string)
 	// scope is the session's working scope: the directory it was
 	// opened in plus whatever has been added to it since. It is a pointer
 	// because the runner closures that wrap contained commands read it off

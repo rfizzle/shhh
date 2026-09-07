@@ -176,6 +176,36 @@ func PathUnder(dirs []string, path string) bool {
 	return false
 }
 
+// HostMatches reports whether host is one of the entries, exactly. It is the
+// one matcher every host list goes through — the session's grants, the
+// config allow list and the config deny list — so a person who has learned
+// how one of them reads a host has learned all three.
+//
+// A grant is a host and never a suffix: granting `docs.python.org` grants
+// that site and not `python.org`, and not `evil-docs.python.org` either. A
+// suffix rule would mean a person answering for one documentation site had
+// answered for every subdomain a company will ever publish, which is not
+// what they read on the card. Comparison folds case and drops the trailing
+// dot of an absolute name, because those are two spellings of one host
+// rather than two hosts.
+func HostMatches(entries []string, host string) bool {
+	h := normalizeHost(host)
+	if h == "" {
+		return false
+	}
+	for _, e := range entries {
+		if normalizeHost(e) == h {
+			return true
+		}
+	}
+	return false
+}
+
+// normalizeHost is the one spelling a host is compared in.
+func normalizeHost(h string) string {
+	return strings.ToLower(strings.TrimSuffix(strings.TrimSpace(h), "."))
+}
+
 // absClean resolves p against the working directory and cleans it, falling
 // back to a plain clean where that cannot be done.
 func absClean(p string) string {
@@ -187,7 +217,7 @@ func absClean(p string) string {
 
 // Grants are the session approval grants one surface hands another: the
 // scoped ones [a] records on a card, and the blanket ones `/mode allow` sets.
-// They travel as a struct because sub-agents inherit all four and a
+// They travel as a struct because sub-agents inherit all five and a
 // signature that grows a parameter per grant is a signature that drifts.
 type Grants struct {
 	// AllEdits and AllCommands are the blanket grants: every edit, every
@@ -198,9 +228,14 @@ type Grants struct {
 	// allowlist entries in GrantPrefix's shape.
 	EditDirs []string
 	Commands []string
+	// Hosts are the hosts a fetch reaches without asking, exactly as the
+	// card named them. There is no blanket counterpart: "every host" is the
+	// whole of the outbound channel, which is the one thing a read-only
+	// session still asks about.
+	Hosts []string
 }
 
 // Any reports whether anything has been granted at all.
 func (g Grants) Any() bool {
-	return g.AllEdits || g.AllCommands || len(g.EditDirs) > 0 || len(g.Commands) > 0
+	return g.AllEdits || g.AllCommands || len(g.EditDirs) > 0 || len(g.Commands) > 0 || len(g.Hosts) > 0
 }
