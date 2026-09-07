@@ -523,6 +523,27 @@ store another and the offset the notice quotes lands somewhere else in the
 original. `FetchPlan.Receives` changes wording with the store, since it is a
 promise to a person about where the page goes.
 
+**Pacing lives in `internal/web/limiter.go`, one `limiter` per `Fetcher`,
+which is one per session — children fetch through the parent's `Toolset`
+(`session.web` in `subagents.go`), so the pacing a fan-out gets is the pacing
+of one session.** `Fetch` asks the cache first, then takes the host's turn
+(`take`) and holds it for the whole chain, `defer`red — every redirect hop,
+the body read, and the wait a refusal costs. Three things about that shape
+will bite you. **The turn is held across the wait on purpose**: release it
+and the other two children walk straight into the refusal that was just sat
+out. **The per-request timeout is inside `fetchChain`, not around the retry**
+— put it back outside and a twenty-second `Retry-After` is a guaranteed
+timeout on the thirty-second default, since the wait would be spending the
+budget the request still needs. And **`httpClient` and `pacing` build under
+`Fetcher.mu`**, which the grant predicate already used: two children starting
+together each built a client, and only the loser's survived. `Fetcher.Waiting`
+is what the row's countdown reads and `AbandonWaits` is what the turn's cancel
+calls (`cancelStreaming`, `quitNow`); a wait no surface reports is
+indistinguishable from a hang
+([`docs/capabilities/evidence.md#a-site-is-read-at-the-pace-it-answers`](docs/capabilities/evidence.md#a-site-is-read-at-the-pace-it-answers)).
+A test drives the schedule rather than spending it by replacing the limiter's
+`now` and `after` (`newFakeWaits`).
+
 `internal/web/pdf.go` shells out to `pdftotext`, resolved once by
 `DetectPDFText` in `openWebTools` (`internal/cli/web.go`) the way the
 structural tools probe PATH, with the path on `Toolset.PDFText`. The bytes go

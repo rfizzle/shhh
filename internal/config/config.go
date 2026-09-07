@@ -339,8 +339,11 @@ type WebConfig struct {
 	AllowPrivate bool `toml:"allow_private"`
 	// FetchMaxBytes is the download ceiling per fetch (default 2 MiB).
 	FetchMaxBytes int64 `toml:"fetch_max_bytes"`
-	// FetchTimeoutSeconds bounds one fetch including redirects and the body
-	// read (default 30).
+	// FetchTimeoutSeconds bounds one request including redirects and the
+	// body read (default 30). A wait a refusing host asked for is served
+	// outside it: the ceiling is how long a request may take, not how long
+	// the session may be told to come back later.
+	// See docs/capabilities/evidence.md#a-site-is-read-at-the-pace-it-answers.
 	FetchTimeoutSeconds int `toml:"fetch_timeout_seconds"`
 	// CacheTTLMinutes is how long a cached response stays fresh (default 60).
 	CacheTTLMinutes int `toml:"cache_ttl_minutes"`

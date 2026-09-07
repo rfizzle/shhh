@@ -16,6 +16,10 @@
   when it has none; a page that comes back as "rendered by script" has no
   text to give you, so find the material somewhere else rather than asking
   for the same URL twice.
+- A host that refuses the request has already been waited out once for you,
+  and the error names it, the status it gave and how long was spent. That is
+  the site asking to be left alone: find the fact on another source rather
+  than asking it again.
 - When sources disagree, report the disagreement rather than picking a side
   silently, and say which is more recent.
 - Stop when the question is answered. Do not survey the whole topic.

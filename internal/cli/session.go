@@ -1038,6 +1038,10 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		// decision has to reach for a redirect to be answered by it too.
 		model = model.
 			WithHostRules(cfg.Web.AllowHosts, cfg.Web.DenyHosts).
+			// The pacing a fan-out puts on one host is the fetcher's, and so
+			// is the wait a refusal costs; the session only says it on the
+			// row and gives it up when the turn is cancelled.
+			WithFetchWaits(webTools.Fetcher.Waiting, webTools.Fetcher.AbandonWaits).
 			WithHostGrants(func(hosts []string) {
 				reachable := append([]string(nil), hosts...)
 				reach.hosts = reachable

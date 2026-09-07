@@ -9,6 +9,7 @@ import (
 	"net/netip"
 	"net/url"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -469,5 +470,257 @@ func TestFetch_AGrantIsNotLaunderedThroughAThirdHost(t *testing.T) {
 	}
 	if reached {
 		t.Error("the third host was fetched anyway")
+	}
+}
+
+// A fan-out is three researchers and one site. Requests to one host go out
+// one at a time; a second host is not made to wait behind them.
+func TestFetch_OneHostIsAskedOneRequestAtATime(t *testing.T) {
+	var mu sync.Mutex
+	var live, mostLive int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		live++
+		mostLive = max(mostLive, live)
+		mu.Unlock()
+		time.Sleep(20 * time.Millisecond)
+		mu.Lock()
+		live--
+		mu.Unlock()
+		fmt.Fprint(w, "page")
+	}))
+	defer srv.Close()
+
+	f := testFetcher()
+	f.Resolve = loopbackResolver
+	newFakeWaits(f.pacing())
+
+	// Two children reading the same host, at the same moment.
+	var wg sync.WaitGroup
+	for range 3 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if _, err := f.Fetch(context.Background(), "http://docs.test"+portOf(srv.Listener.Addr().String())+"/a", nil); err != nil {
+				t.Errorf("Fetch: %v", err)
+			}
+		}()
+	}
+	wg.Wait()
+	mu.Lock()
+	serialised := mostLive
+	mu.Unlock()
+	if serialised != 1 {
+		t.Fatalf("%d requests to one host were in flight at once", serialised)
+	}
+
+	// A second host runs while the first is held, which is what "per host"
+	// means: the first fetch is still in flight when the second returns.
+	held := make(chan struct{})
+	slow := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		<-held
+		fmt.Fprint(w, "slow")
+	}))
+	defer slow.Close()
+	go func() {
+		_, _ = f.Fetch(context.Background(), "http://slow.test"+portOf(slow.Listener.Addr().String())+"/a", nil)
+	}()
+	if _, err := f.Fetch(context.Background(), "http://docs.test"+portOf(srv.Listener.Addr().String())+"/b", nil); err != nil {
+		t.Fatalf("a second host waited for the first: %v", err)
+	}
+	close(held)
+}
+
+// A host that asks for the request again later is believed once: the wait it
+// named is sat out and the request made again.
+func TestFetch_ARefusalIsWaitedOutOnceAndRetried(t *testing.T) {
+	var hits atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if hits.Add(1) == 1 {
+			w.Header().Set("Retry-After", "2")
+			w.WriteHeader(http.StatusTooManyRequests)
+			return
+		}
+		fmt.Fprint(w, "page")
+	}))
+	defer srv.Close()
+
+	f := testFetcher()
+	waits := newFakeWaits(f.pacing())
+	res, err := f.Fetch(context.Background(), srv.URL, nil)
+	if err != nil {
+		t.Fatalf("Fetch: %v", err)
+	}
+	if string(res.Body) != "page" || res.Status != 200 {
+		t.Errorf("result = %d %q, want the page the retry got", res.Status, res.Body)
+	}
+	if hits.Load() != 2 {
+		t.Errorf("requests = %d, want the first and one retry", hits.Load())
+	}
+	if got := waits.recorded(); len(got) != 1 || got[0] != 2*time.Second {
+		t.Errorf("waits = %v, want the 2s the host asked for", got)
+	}
+}
+
+// A 503 with no header is waited out on the default rather than not at all:
+// the status is the host saying come back, header or no header.
+func TestFetch_OverloadWithNoHeaderWaitsTheDefault(t *testing.T) {
+	var hits atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if hits.Add(1) == 1 {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+		fmt.Fprint(w, "page")
+	}))
+	defer srv.Close()
+
+	f := testFetcher()
+	waits := newFakeWaits(f.pacing())
+	res, err := f.Fetch(context.Background(), srv.URL, nil)
+	if err != nil {
+		t.Fatalf("Fetch: %v", err)
+	}
+	if string(res.Body) != "page" {
+		t.Errorf("body = %q, want the page the retry got", res.Body)
+	}
+	if got := waits.recorded(); len(got) != 1 || got[0] != defaultRefusalWait {
+		t.Errorf("waits = %v, want one wait of %s", got, defaultRefusalWait)
+	}
+}
+
+// The second refusal is the answer, and it says enough for the model to go
+// somewhere else: the host, the status, and the wait already spent.
+func TestFetch_RefusedTwiceNamesTheHostTheStatusAndTheWait(t *testing.T) {
+	var hits atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits.Add(1)
+		w.Header().Set("Retry-After", "3")
+		w.WriteHeader(http.StatusTooManyRequests)
+	}))
+	defer srv.Close()
+
+	f := testFetcher()
+	f.Resolve = loopbackResolver
+	newFakeWaits(f.pacing())
+	_, err := f.Fetch(context.Background(), "http://docs.test"+portOf(srv.Listener.Addr().String())+"/a", nil)
+	if err == nil {
+		t.Fatal("a host that refused twice answered anyway")
+	}
+	for _, want := range []string{"docs.test", "429", "3s", "different source"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("the refusal does not say %q: %v", want, err)
+		}
+	}
+	if hits.Load() != 2 {
+		t.Errorf("requests = %d, want two — the refusal is waited out once, not repeatedly", hits.Load())
+	}
+}
+
+// Nothing else is retried. A 5xx that is not a 503 is a server that broke
+// and a 4xx is a page that is not there; both are final on the first answer,
+// and the status is the result rather than an error.
+func TestFetch_ServerErrorAndNotFoundAreFinal(t *testing.T) {
+	for _, status := range []int{http.StatusInternalServerError, http.StatusNotFound} {
+		var hits atomic.Int32
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			hits.Add(1)
+			w.WriteHeader(status)
+			fmt.Fprint(w, "no")
+		}))
+		f := testFetcher()
+		waits := newFakeWaits(f.pacing())
+		res, err := f.Fetch(context.Background(), srv.URL, nil)
+		srv.Close()
+		if err != nil {
+			t.Fatalf("%d: Fetch: %v", status, err)
+		}
+		if res.Status != status {
+			t.Errorf("status = %d, want %d", res.Status, status)
+		}
+		if hits.Load() != 1 {
+			t.Errorf("%d: requests = %d, want one", status, hits.Load())
+		}
+		if got := waits.recorded(); len(got) != 0 {
+			t.Errorf("%d: waits = %v, want none", status, got)
+		}
+	}
+}
+
+// The cache is asked before the limiter: a page two children both want costs
+// one request, and the second is answered out of the store rather than
+// queued behind the first.
+func TestFetch_TheCacheAnswersBeforeTheLimiter(t *testing.T) {
+	var hits atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits.Add(1)
+		fmt.Fprint(w, "page")
+	}))
+	defer srv.Close()
+
+	cache, err := OpenCache(t.TempDir(), time.Hour)
+	if err != nil {
+		t.Fatalf("OpenCache: %v", err)
+	}
+	f := testFetcher()
+	f.Cache = cache
+	if _, err := f.Fetch(context.Background(), srv.URL, nil); err != nil {
+		t.Fatalf("Fetch: %v", err)
+	}
+
+	// The host's turn is taken and never given back: a fetch that had to
+	// queue for it would block here forever.
+	release, err := f.pacing().take(context.Background(), "127.0.0.1")
+	if err != nil {
+		t.Fatalf("take: %v", err)
+	}
+	defer release()
+
+	done := make(chan Result, 1)
+	go func() {
+		res, err := f.Fetch(context.Background(), srv.URL, nil)
+		if err != nil {
+			t.Errorf("cached Fetch: %v", err)
+			close(done)
+			return
+		}
+		done <- res
+	}()
+	select {
+	case res := <-done:
+		if !res.FromCache {
+			t.Error("the second read was not the cached one")
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("a cached page queued behind another request to the host")
+	}
+	if hits.Load() != 1 {
+		t.Errorf("requests = %d, want one for two reads of the same page", hits.Load())
+	}
+}
+
+// A timeout is not retried. The ceiling is the person's setting, and asking
+// again is asking the same slow host to answer inside the same budget.
+func TestFetch_ATimeoutIsNotRetried(t *testing.T) {
+	var hits atomic.Int32
+	blocked := make(chan struct{})
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits.Add(1)
+		<-blocked
+	}))
+	defer func() { close(blocked); srv.Close() }()
+
+	f := testFetcher()
+	f.Timeout = 50 * time.Millisecond
+	waits := newFakeWaits(f.pacing())
+	if _, err := f.Fetch(context.Background(), srv.URL, nil); err == nil ||
+		!strings.Contains(err.Error(), "timed out") {
+		t.Fatalf("err = %v, want a timeout", err)
+	}
+	if hits.Load() != 1 {
+		t.Errorf("requests = %d, want one", hits.Load())
+	}
+	if got := waits.recorded(); len(got) != 0 {
+		t.Errorf("waits = %v, want none", got)
 	}
 }

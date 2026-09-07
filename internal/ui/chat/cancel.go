@@ -123,6 +123,9 @@ func (m Model) cancelTurnNow() (tea.Model, tea.Cmd) {
 func (m *Model) quitNow() tea.Cmd {
 	m.quitting = true
 	m.cancelSubagents()
+	if m.abandonFetchWaits != nil {
+		m.abandonFetchWaits()
+	}
 	if m.cancel != nil {
 		m.cancel()
 	}

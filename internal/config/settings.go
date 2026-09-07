@@ -330,7 +330,7 @@ var settings = []Setting{
 		Desc: "The download ceiling on one fetch.",
 	}, {
 		Key: "web.fetch_timeout_seconds", Kind: KindInt, Default: "30",
-		Desc: "How long one fetch may take, redirects and the body read included.",
+		Desc: "How long one request may take, redirects and the body read included. A wait a host asked for is not charged to it.",
 	}, {
 		Key: "web.cache_ttl_minutes", Kind: KindInt, Default: "60",
 		Desc: "How long a cached response stays fresh.",

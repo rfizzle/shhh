@@ -54,12 +54,17 @@ type Fetcher struct {
 	Cache        *Cache // optional response cache
 	Resolve      Resolver
 
-	client *http.Client
-
-	// mu guards granted, which the session replaces every time a host is
-	// granted or revoked while fetches are in flight on other goroutines.
-	mu      sync.RWMutex
+	// mu guards the three fields below, each of which is written while
+	// fetches are in flight on other goroutines: the grant predicate the
+	// session replaces whenever a host is granted or revoked, the client
+	// built on first use, and the limiter built with it. A parent and its
+	// children fetch through one Fetcher, so "first use" is a race unless it
+	// is taken here — two children starting together each built a client,
+	// and the loser's was the one every later fetch used.
+	mu      sync.Mutex
 	granted func(host string) bool
+	client  *http.Client
+	limit   *limiter
 }
 
 // SetGrantedHosts installs the predicate that reports whether a host is one
@@ -81,10 +86,36 @@ func (f *Fetcher) SetGrantedHosts(granted func(host string) bool) {
 }
 
 func (f *Fetcher) grantedHost() func(host string) bool {
-	f.mu.RLock()
-	defer f.mu.RUnlock()
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	return f.granted
 }
+
+// pacing is the session's one limiter, built on first use so a zero-value
+// Fetcher paces like any other.
+func (f *Fetcher) pacing() *limiter {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.limit == nil {
+		f.limit = newLimiter(hostGap)
+	}
+	return f.limit
+}
+
+// Waiting reports how much of a host's refusal this session is still sitting
+// out, and false where it is not waiting on that host. It is what a surface
+// asks to say so on the row: a fetch that has gone quiet for twenty seconds
+// is indistinguishable from a hang unless the screen says which it is.
+// See docs/capabilities/evidence.md#a-site-is-read-at-the-pace-it-answers.
+func (f *Fetcher) Waiting(host string) (time.Duration, bool) {
+	return f.pacing().waiting(host)
+}
+
+// AbandonWaits gives up every wait in flight. It is the turn's cancel
+// reaching the one part of a fetch that is not a request: a person who
+// stopped the turn is not asking to sit out the rest of a rate limit for a
+// page nobody will now read.
+func (f *Fetcher) AbandonWaits() { f.pacing().abandonWaits() }
 
 // NewFetcher builds a Fetcher with defaults applied.
 func NewFetcher(policy Policy) *Fetcher {
@@ -96,9 +127,12 @@ func NewFetcher(policy Policy) *Fetcher {
 	}
 }
 
-// httpClient lazily builds the pinned-dial client. Proxies are deliberately
-// disabled: a proxy would carry the connection past the dial-time guard.
+// httpClient lazily builds the pinned-dial client, once for the session and
+// every child in it. Proxies are deliberately disabled: a proxy would carry
+// the connection past the dial-time guard.
 func (f *Fetcher) httpClient() *http.Client {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	if f.client != nil {
 		return f.client
 	}
@@ -198,12 +232,23 @@ func verifyConnected(policy Policy, pinned []netip.Addr, remote net.Addr) error 
 // cache hit (fresh, same URL) short-circuiting the network entirely.
 // initialHeaders, if any, are sent on the first hop and credential-scoped to
 // its origin.
+//
+// Requests are paced per host across the session and its children, and a
+// host that refuses with "come back later" is believed once: the wait it
+// named is sat out with its turn still held, and the request made again. A
+// second refusal is the answer, as an error naming the host, the status and
+// the wait already spent, because a third identical request is the one thing
+// a rate limit is asking the session not to make.
+// See docs/capabilities/evidence.md#a-site-is-read-at-the-pace-it-answers.
 func (f *Fetcher) Fetch(ctx context.Context, rawURL string, initialHeaders map[string][]string) (Result, error) {
 	target, err := f.Policy.ValidateURL(rawURL)
 	if err != nil {
 		return Result{}, err
 	}
 
+	// The cache answers before the limiter. A page two children both want
+	// costs one request, and the second child is answered out of the store
+	// rather than queued behind the first to be told what was already there.
 	requested := target.URL.String()
 	if f.Cache != nil {
 		if res, ok := f.Cache.Get(requested); ok {
@@ -212,6 +257,70 @@ func (f *Fetcher) Fetch(ctx context.Context, rawURL string, initialHeaders map[s
 		}
 	}
 
+	pace := f.pacing()
+	release, err := pace.take(ctx, target.Host)
+	if err != nil {
+		return Result{}, err
+	}
+	defer release()
+
+	var waited time.Duration
+	for try := 0; ; try++ {
+		at, err := f.fetchChain(ctx, target, initialHeaders)
+		if err != nil {
+			return Result{}, err
+		}
+		if !refused(at.res.Status) {
+			if f.Cache != nil && at.res.Status == http.StatusOK {
+				f.Cache.Put(requested, at.res.FinalURL, at.res)
+			}
+			return at.res, nil
+		}
+		if try > 0 {
+			// Named rather than returned as a 429 body, because what the
+			// model has to do next is not in that body: the page is not
+			// coming, and the next call should be a different source.
+			return Result{}, fmt.Errorf("%s refused the request twice (%d) after waiting %s: "+
+				"the host is rate limiting this session — read a different source rather than asking it again",
+				at.host, at.res.Status, waited.Round(time.Second))
+		}
+		waited = refusalWait(at.retryAfter)
+		// The wait is registered under the host whose turn is held, which is
+		// the host the request was made to and the one the card and the row
+		// name — not the host a redirect may have ended on. A row looking up
+		// a wait has only the URL the model asked for.
+		if err := pace.waitOut(ctx, target.Host, waited); err != nil {
+			return Result{}, err
+		}
+	}
+}
+
+// attempt is what one whole request chain came back with.
+type attempt struct {
+	res Result
+	// host is the host that answered — the last one in the chain rather than
+	// the one the fetch asked for, since a redirect may have handed the
+	// request on before it was refused.
+	host string
+	// retryAfter is the wait a refusing host named, and zero for one that
+	// named nothing.
+	retryAfter time.Duration
+}
+
+// fetchChain is one attempt: the request, every redirect it is handed, and
+// the response that ends the chain.
+//
+// The per-fetch timeout is applied here rather than around the retry,
+// because the ceiling the person set is how long one request may take — time
+// a host explicitly asked shhh to wait is not that request running long, and
+// counting it there would make a twenty-second Retry-After a guaranteed
+// timeout on a thirty-second budget.
+//
+// The chain restarts from the requested URL on a retry, headers and all: the
+// redirects are the site's answer to this request, not a route to be
+// remembered, and the credential scoping has to be decided over the hops
+// actually taken.
+func (f *Fetcher) fetchChain(ctx context.Context, origin Target, initialHeaders map[string][]string) (attempt, error) {
 	timeout := f.Timeout
 	if timeout <= 0 {
 		timeout = DefaultFetchTimeout
@@ -223,34 +332,34 @@ func (f *Fetcher) Fetch(ctx context.Context, rawURL string, initialHeaders map[s
 	for k, v := range initialHeaders {
 		headers[http.CanonicalHeaderKey(k)] = v
 	}
-	origin := target
+	target := origin
 	visited := map[string]bool{target.hopIdentity(): true}
 
 	for hop := 0; ; hop++ {
 		resp, err := f.doRequest(ctx, target, headers)
 		if err != nil {
-			return Result{}, err
+			return attempt{}, err
 		}
 
 		if loc := redirectLocation(resp); loc != "" {
 			_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 4096))
 			resp.Body.Close()
 			if hop+1 > maxRedirects {
-				return Result{}, fmt.Errorf("too many redirects (max %d)", maxRedirects)
+				return attempt{}, fmt.Errorf("too many redirects (max %d)", maxRedirects)
 			}
 			next, err := target.URL.Parse(loc)
 			if err != nil {
-				return Result{}, fmt.Errorf("invalid redirect location: %w", err)
+				return attempt{}, fmt.Errorf("invalid redirect location: %w", err)
 			}
 			nextTarget, err := f.Policy.ValidateURL(next.String())
 			if err != nil {
-				return Result{}, fmt.Errorf("redirect blocked: %w", err)
+				return attempt{}, fmt.Errorf("redirect blocked: %w", err)
 			}
 			if visited[nextTarget.hopIdentity()] {
-				return Result{}, fmt.Errorf("redirect cycle detected")
+				return attempt{}, fmt.Errorf("redirect cycle detected")
 			}
 			if err := f.hopAllowed(target.Host, nextTarget.Host); err != nil {
-				return Result{}, err
+				return attempt{}, err
 			}
 			visited[nextTarget.hopIdentity()] = true
 			stripCredentialHeaders(headers, origin, nextTarget)
@@ -261,19 +370,19 @@ func (f *Fetcher) Fetch(ctx context.Context, rawURL string, initialHeaders map[s
 		body, truncated, err := readBounded(resp.Body, f.maxBody())
 		resp.Body.Close()
 		if err != nil {
-			return Result{}, fmt.Errorf("cannot read response: %w", err)
+			return attempt{}, fmt.Errorf("cannot read response: %w", err)
 		}
-		res := Result{
-			FinalURL:    target.URL.String(),
-			Status:      resp.StatusCode,
-			ContentType: resp.Header.Get("Content-Type"),
-			Body:        body,
-			Truncated:   truncated,
-		}
-		if f.Cache != nil && resp.StatusCode == http.StatusOK {
-			f.Cache.Put(requested, target.URL.String(), res)
-		}
-		return res, nil
+		return attempt{
+			res: Result{
+				FinalURL:    target.URL.String(),
+				Status:      resp.StatusCode,
+				ContentType: resp.Header.Get("Content-Type"),
+				Body:        body,
+				Truncated:   truncated,
+			},
+			host:       target.Host,
+			retryAfter: parseRetryAfter(resp.Header.Get("Retry-After"), time.Now()),
+		}, nil
 	}
 }
 

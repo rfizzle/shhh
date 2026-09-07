@@ -14,6 +14,7 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/web"
 )
 
 // activityModel builds a ready model for feed-rendering tests.
@@ -599,5 +600,72 @@ func must(t *testing.T, err error) {
 	t.Helper()
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+// A fetch that is sitting out a host's refusal says so on its row, with the
+// seconds left and the host that asked for them. A wait nobody can see is
+// indistinguishable from a session that has hung.
+func TestActivityRow_AWaitedFetchCountsDownOnItsRow(t *testing.T) {
+	m := activityModel(t)
+	pending := entry{kind: entryTool, toolName: web.FetchToolName,
+		toolArgs: `{"url":"https://docs.rs/tokio/latest/tokio/"}`, toolResult: pendingToolResult}
+
+	// Without a fetcher to ask, the row reads as the running call it is.
+	view := stripANSI(m.renderEntry(pending, 80))
+	if !strings.Contains(view, "running") || strings.Contains(view, "waiting") {
+		t.Fatalf("a fetch nobody is waiting on should read as running:\n%s", view)
+	}
+
+	m = m.WithFetchWaits(func(host string) (time.Duration, bool) {
+		if host != "docs.rs" {
+			return 0, false
+		}
+		return 7500 * time.Millisecond, true
+	}, func() {})
+	view = stripANSI(m.renderEntry(pending, 80))
+	if !strings.Contains(view, "waiting 8s · docs.rs asked") {
+		t.Fatalf("the row does not say what it is waiting for:\n%s", view)
+	}
+	if strings.Contains(view, "running") {
+		t.Fatalf("a waiting row still claims to be running:\n%s", view)
+	}
+
+	// Another host's fetch is not waiting for this one.
+	other := entry{kind: entryTool, toolName: web.FetchToolName,
+		toolArgs: `{"url":"https://pkg.go.dev/net/http"}`, toolResult: pendingToolResult}
+	if view := stripANSI(m.renderEntry(other, 80)); strings.Contains(view, "waiting") {
+		t.Fatalf("a fetch to another host was drawn as waiting:\n%s", view)
+	}
+}
+
+// The session's own fetch has no transcript row until it finishes, so its
+// wait is drawn as the live row under the transcript.
+func TestFetchWaitRow_TheSessionsOwnFetchShowsItsWait(t *testing.T) {
+	m := activityModel(t)
+	m = m.WithFetchWaits(func(string) (time.Duration, bool) { return 3 * time.Second, true }, func() {})
+	if _, ok := m.fetchWaitRow(80); ok {
+		t.Fatal("a session with no call in flight drew a waiting row")
+	}
+	m.pendingApproval = &approvalRequest{call: provider.ToolCall{
+		Name: web.FetchToolName, Arguments: `{"url":"https://docs.rs/tokio/latest/tokio/"}`}}
+	row, ok := m.fetchWaitRow(80)
+	if !ok {
+		t.Fatal("the fetch in flight drew no waiting row")
+	}
+	if !strings.Contains(stripANSI(row), "waiting 3s · docs.rs asked") {
+		t.Fatalf("the live row does not say what it is waiting for:\n%s", row)
+	}
+}
+
+// Cancelling the turn gives up the wait: a person who stopped the turn is
+// not asking to sit out the rest of a rate limit for a page nobody will read.
+func TestCancel_TheTurnsCancelAbandonsAFetchWait(t *testing.T) {
+	m := activityModel(t)
+	var abandoned int
+	m = m.WithFetchWaits(func(string) (time.Duration, bool) { return 0, false }, func() { abandoned++ })
+	m.cancelStreaming()
+	if abandoned != 1 {
+		t.Fatalf("the cancel abandoned %d waits, want one", abandoned)
 	}
 }

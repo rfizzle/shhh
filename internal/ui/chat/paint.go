@@ -186,6 +186,13 @@ func (m Model) resolveLiveTail(width int) string {
 		}
 		return ""
 	case stateRunningCmd:
+		// A fetch that is sitting out a host's refusal says so on its own
+		// row, ahead of the generic notice: "Applying changes…" for twenty
+		// seconds names neither what is happening nor why it is slow
+		// (activity.go).
+		if row, ok := m.fetchWaitRow(width); ok {
+			return row
+		}
 		if m.pendingApproval != nil && m.pendingApproval.kind != approvalExec {
 			return m.spinner.View() + " Applying changes…"
 		}

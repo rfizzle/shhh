@@ -597,7 +597,7 @@ own file could hold.
 |---|---|---|---|
 | `allow_private` | true/false | `off` | Let a fetch reach private, loopback, link-local and CGNAT addresses, and lift the 80/443 port list; cloud metadata stays blocked either way. |
 | `fetch_max_bytes` | number | 2 MiB | The download ceiling on one fetch. |
-| `fetch_timeout_seconds` | number | `30` | How long one fetch may take, redirects and the body read included. |
+| `fetch_timeout_seconds` | number | `30` | How long one request may take, redirects and the body read included. A wait a host asked for is not charged to it. |
 | `cache_ttl_minutes` | number | `60` | How long a cached response stays fresh. |
 | `allow_hosts` | list | (empty — every host asks the first time) | Hosts a fetch reaches without asking, in every session; an exact host, never a suffix, so `docs.python.org` does not cover `python.org`. |
 | `deny_hosts` | list | (empty — nothing is refused in advance) | Hosts no fetch reaches; read before the allow list, before a session grant and before the classifier, and no approval can allow one. |

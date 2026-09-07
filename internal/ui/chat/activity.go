@@ -8,6 +8,7 @@ package chat
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -346,6 +347,9 @@ func (m Model) activityRowDetail(e entry, stepDetail bool) components.ActivityRo
 		case result == pendingToolResult:
 			row.State = components.ActivityRunning
 			row.Outcome = components.OutcomeRunning
+			if outcome, counts, ok := m.fetchWaitFields(e.toolName, e.toolArgs); ok {
+				row.Outcome, row.Counts = outcome, counts
+			}
 			// The row animates from the session's one frame, and only
 			// while the loop that advances it is running: a call left pending
 			// by a cancelled turn keeps the still `▸` rather than standing on
@@ -394,6 +398,70 @@ func (m Model) activityRowDetail(e entry, stepDetail bool) components.ActivityRo
 		}
 	}
 	return row
+}
+
+// WithFetchWaits installs the fetcher's two answers about a paced fetch: how
+// much of a host's refusal is still being sat out, and how to give those
+// waits up. Without them a fetch row reads as running for as long as the
+// wait lasts, which is the one thing a wait must not look like.
+// See docs/capabilities/evidence.md#a-site-is-read-at-the-pace-it-answers.
+func (m Model) WithFetchWaits(waiting func(host string) (time.Duration, bool), abandon func()) Model {
+	m.fetchWaiting, m.abandonFetchWaits = waiting, abandon
+	return m
+}
+
+// fetchWaitFields are the outcome and counts of an in-flight fetch whose
+// host is being waited out: `waiting 8s · docs.rs asked`, dim, where a
+// running row would otherwise say only that it is running. Two fields rather
+// than one string because they are the row's two right-hand fields, which
+// the grid joins and paints itself.
+//
+// The countdown needs no timer of its own: the row is redrawn on the frames
+// the running spinner is already asking for, and it reads the remaining wait
+// off the fetcher each time.
+func (m Model) fetchWaitFields(toolName, toolArgs string) (outcome, counts string, ok bool) {
+	if toolName != web.FetchToolName || m.fetchWaiting == nil {
+		return "", "", false
+	}
+	host := web.FetchHost(json.RawMessage(toolArgs))
+	if host == "" {
+		return "", "", false
+	}
+	left, waiting := m.fetchWaiting(host)
+	if !waiting {
+		return "", "", false
+	}
+	// "asked" is what the host did, not what shhh decided: the wait is the
+	// site's own number, and the row says whose it is so the reader knows
+	// the session is being polite rather than slow.
+	return "waiting " + countdownText(left), host + " asked", true
+}
+
+// fetchWaitRow is the live row for the session's own in-flight fetch while
+// the host it asked is being waited out. The parent's tool calls reach the
+// transcript only once they finish — a child's mirrored call has a row
+// already, and gets its countdown there — so without this a twenty-second
+// wait would be twenty seconds of a session that had simply gone quiet.
+func (m Model) fetchWaitRow(width int) (string, bool) {
+	if m.pendingApproval == nil {
+		return "", false
+	}
+	call := m.pendingApproval.call
+	outcome, counts, ok := m.fetchWaitFields(call.Name, call.Arguments)
+	if !ok {
+		return "", false
+	}
+	row := components.ActivityRow{
+		Kind:    m.activityKind(call.Name),
+		State:   components.ActivityRunning,
+		Verb:    activityVerbFor(call.Name, call.Arguments),
+		Target:  digest.Arg(call.Name, call.Arguments),
+		Outcome: outcome,
+		Counts:  counts,
+		Spin:    m.spinnerWanted(),
+		Frame:   m.spinFrame,
+	}
+	return row.View(width), true
 }
 
 // runningCommandRow renders the in-flight command as a live activity row with

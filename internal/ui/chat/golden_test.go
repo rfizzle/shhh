@@ -42,6 +42,7 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/golden"
 	"github.com/rfizzle/shhh/internal/ui/keys"
+	"github.com/rfizzle/shhh/internal/web"
 )
 
 func TestMain(m *testing.M) { os.Exit(golden.Run(m)) }
@@ -1391,6 +1392,47 @@ func TestGolden_GitWriteRows(t *testing.T) {
 					Commit: &components.TurnCommit{Receipt: "committed 3 files as a41f2c9 on master"},
 				}},
 			)},
+		}
+	})
+}
+
+// TestGolden_FetchWait pins the row a paced fetch draws while the host it
+// asked is being waited out: the seconds left and the host that asked for
+// them, in the outcome field where the row's reason to be read goes, and the
+// fetch to another host beside it still running — because pacing one site
+// says nothing about another.
+//
+// One width, because the fields are the grid's own: 80 columns is where the
+// URL and the countdown compete for the row, and wider they simply fit.
+func TestGolden_FetchWait(t *testing.T) {
+	captureGolden(t, "fetch-wait", "a fetch waiting out a host's refusal", []int{80}, func(width int) []golden.Panel {
+		waiting := func(left time.Duration) Model {
+			return frameModel(t, width, 40).WithFetchWaits(func(host string) (time.Duration, bool) {
+				if host != "docs.rs" {
+					return 0, false
+				}
+				return left, true
+			}, func() {})
+		}
+		mirrored := func(left time.Duration) string {
+			m := waiting(left)
+			m.transcript = []entry{
+				{kind: entryTool, toolName: web.FetchToolName, toolResult: pendingToolResult,
+					toolArgs: `{"url":"https://docs.rs/tokio/latest/tokio/runtime/index.html"}`},
+				{kind: entryTool, toolName: web.FetchToolName, toolResult: pendingToolResult,
+					toolArgs: `{"url":"https://pkg.go.dev/net/http"}`},
+			}
+			m.invalidateRenderCache()
+			return m.renderHistory()
+		}
+		own := waiting(20 * time.Second)
+		own.pendingApproval = &approvalRequest{call: provider.ToolCall{Name: web.FetchToolName,
+			Arguments: `{"url":"https://docs.rs/tokio/latest/tokio/runtime/index.html"}`}}
+		row, _ := own.fetchWaitRow(width)
+		return []golden.Panel{
+			{Label: "a child's rows · one host waited out, another still running", View: mirrored(8 * time.Second)},
+			{Label: "the last second of the wait", View: mirrored(900 * time.Millisecond)},
+			{Label: "the session's own fetch · the live row under the transcript", View: row},
 		}
 	})
 }

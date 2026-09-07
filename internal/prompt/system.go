@@ -174,7 +174,7 @@ Cwd: %s
 Date: %s
 
 # Tools
-You have read-only access to the workspace (read_file, list_directory, search, glob) and, when registered, web research tools (web_fetch, web_search). A long page comes back cut, with a notice naming the evidence entry that holds the whole of it — read on from the offset it gives you, or search that entry; fetching the same URL again returns the same first slice. You cannot edit files or run commands — do not propose to; gather facts instead.
+You have read-only access to the workspace (read_file, list_directory, search, glob) and, when registered, web research tools (web_fetch, web_search). A long page comes back cut, with a notice naming the evidence entry that holds the whole of it — read on from the offset it gives you, or search that entry; fetching the same URL again returns the same first slice. A host that refused the request has already been waited out once for you — find the fact on another site rather than asking that one again. You cannot edit files or run commands — do not propose to; gather facts instead.
 
 # Working style
 - Work autonomously through the task with your tools; do not ask questions — nobody will answer mid-run.
@@ -485,7 +485,7 @@ func BuildProfile(info shell.Info, spec ProfileSpec, extra ...string) string {
 		fmt.Fprintf(&b, "Read-only tools (%s) run automatically — use them proactively instead of guessing at file contents.\n", ro)
 	}
 	if web := names("web_fetch", "web_search"); web != "" {
-		fmt.Fprintf(&b, "Web tools (%s) are available for what is not in the workspace; web_fetch may need the human's approval. A long page comes back cut, with a notice naming the evidence entry that holds the whole of it — read on from the offset it gives you rather than fetching the same URL again.\n", web)
+		fmt.Fprintf(&b, "Web tools (%s) are available for what is not in the workspace; web_fetch may need the human's approval. A long page comes back cut, with a notice naming the evidence entry that holds the whole of it — read on from the offset it gives you rather than fetching the same URL again. A host that refused the request has already been waited out once for you — find the fact on another site rather than asking that one again.\n", web)
 	}
 	if gated := names("execute_command", "write_file", "edit_file"); gated != "" {
 		fmt.Fprintf(&b, "%s may require the human's approval per call; a declined call returns an error result — respect the decline, don't retry the same call.\n", gated)

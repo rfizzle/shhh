@@ -543,6 +543,12 @@ type Model struct {
 	// hostGrants takes the hosts this session may reach whenever they
 	// change; the fetcher is what it reaches (policy.go, WithHostGrants).
 	hostGrants func([]string)
+	// fetchWaiting answers how long a host's refusal is still being sat out,
+	// and abandonFetchWaits gives those waits up with the turn. Both are the
+	// fetcher's, installed once (activity.go, WithFetchWaits); nil is a
+	// session with no web tools, whose fetch rows simply read as running.
+	fetchWaiting      func(host string) (time.Duration, bool)
+	abandonFetchWaits func()
 	// scope is the session's working scope: the directory it was
 	// opened in plus whatever has been added to it since. It is a pointer
 	// because the runner closures that wrap contained commands read it off

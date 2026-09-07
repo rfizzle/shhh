@@ -92,6 +92,50 @@ words — is reported as exactly that, with the byte counts, because a fetch
 that returns four words looks like a page that says four things, and the next
 move is otherwise the same URL with a different guess.
 
+## A site is read at the pace it answers
+
+A fan-out is three researchers, and to a documentation site those three are
+one session behaving like a crowd. So requests to one host go out one at a
+time across the session and its children, with a quarter of a second between
+them, and requests to different hosts never wait for each other — pacing one
+site says nothing about another. The cache is asked before any of that: a
+page two children both want costs one request, and the second child is
+answered out of the store rather than queued behind the first to be told
+what was already there.
+
+A host that says *slow down* — 429, or the 503 a host under load sends
+instead — is believed once. The wait is what it named in `Retry-After`,
+floored at a second so its window has time to actually turn and capped at
+twenty because a longer wait is a decision for the person at the keyboard
+rather than a countdown; a host that named nothing gets two seconds, which
+is the first wait of the schedule a stalled provider is waited out on,
+because one session should not hold two answers to "how long is a short
+wait". The wait is served with the host's turn still held, which is what
+keeps the other two researchers from walking into the same refusal, and it
+is not charged to the fetch timeout: that ceiling is how long one request may
+take, and time a host explicitly asked for is not the request running long.
+
+The second refusal is the answer. A page refused twice comes back as an
+error naming the host, the status and the wait already spent, so the model
+reads a different source instead of asking a third time — which is exactly
+what the rate limit was asking for. Everything else is final on the first
+answer: a 5xx that is not a 503 is a server that broke, a timeout is the
+ceiling the person set, and a 4xx other than the 429 is this host's settled
+answer about this request — the page is missing, or it is not ours to read.
+Nothing about any of them says a second identical request would go better,
+and each comes back with its status on it so the model can tell which it
+was.
+
+The wait is visible while it happens. The fetch's row says how many seconds
+are left and which host asked for them, counting down, because a session
+that has gone quiet for twenty seconds is otherwise indistinguishable from
+one that has hung — and cancelling the turn gives the wait up with it.
+
+There is no robots.txt in any of this, and that is a decision rather than an
+omission. The fetcher reads the page a person asked for, one URL at a time,
+the way the browser on their desk does; it does not crawl, and a browser
+does not ask either. At this scale the courtesy that matters is pacing.
+
 ## A trim makes the same promise
 
 The store is not only for output that arrived too big. A long session fills

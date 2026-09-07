@@ -233,6 +233,11 @@ func (m *Model) cancelStreaming() {
 	}
 	// Ctrl+C cancels the whole child tree with the turn.
 	m.cancelSubagents()
+	// And the one part of a fetch that is not a request: a wait a host asked
+	// for is time nobody is now spending it for (activity.go).
+	if m.abandonFetchWaits != nil {
+		m.abandonFetchWaits()
+	}
 	for _, tc := range m.agent.CancelTurn() {
 		m.appendEntry(entry{kind: entryTool, toolName: tc.Name, toolArgs: tc.Arguments, toolResult: cancelledToolResult})
 	}

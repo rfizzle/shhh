@@ -13,6 +13,8 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/secret"
+	"github.com/rfizzle/shhh/internal/shell"
+	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/web"
 	"github.com/spf13/cobra"
@@ -206,5 +208,35 @@ func TestAFetchIsWiredToTheSessionsEvidenceStore(t *testing.T) {
 	page := strings.Repeat("a fetched page, long enough to be worth reducing.\n", 500)
 	if got := ts.evidence.Process(web.FetchToolName, page); got != page {
 		t.Errorf("a fetch result was reduced a second time: %d of %d bytes", len(got), len(page))
+	}
+}
+
+// A child fetches through the session's own web toolset, and that object is
+// where the per-host pacing lives: three researchers reading one
+// documentation site are paced as one session because there is one fetcher,
+// not one per child. The call is proved to land there by the refusal it
+// comes back with — the fetcher's own policy, which the built-in dispatcher
+// knows nothing about.
+func TestChildFetchesThroughTheSessionsOwnToolset(t *testing.T) {
+	session := codeToolset()
+	def := config.AgentDefinition{Name: "reader", Permissions: []string{config.PermissionWeb}}
+	gated := map[string]bool{}
+	_, defs, exec := profileEnv(def, subagent.Spec{}, shell.Info{}, "", session.web, gated)
+
+	var offered bool
+	for _, name := range toolsetNames(defs) {
+		if name == web.FetchToolName {
+			offered = true
+		}
+	}
+	if !offered {
+		t.Fatalf("a child with the web permission was not offered %s", web.FetchToolName)
+	}
+	if !gated[web.FetchToolName] {
+		t.Errorf("%s reached a child ungated", web.FetchToolName)
+	}
+	if _, err := exec(web.FetchToolName, json.RawMessage(`{"url":"http://169.254.169.254/latest/meta-data/"}`)); err == nil ||
+		!strings.Contains(err.Error(), "metadata") {
+		t.Fatalf("err = %v, want the session fetcher's own refusal", err)
 	}
 }
