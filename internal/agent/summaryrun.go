@@ -34,14 +34,19 @@ type SummaryRun struct {
 	target  string
 	started time.Time
 
-	mu        sync.Mutex
-	inFlight  bool
-	verdict   *SummaryVerdict
-	lastRound int
-	lastAt    time.Time
-	failures  int
-	tokensIn  int64
-	tokensOut int64
+	mu       sync.Mutex
+	inFlight bool
+	verdict  *SummaryVerdict
+	// sched is when the next reading is due, which is the session's schedule
+	// too — one predicate, so a rule added to it cannot be forgotten on one
+	// of the two surfaces (schedule.go).
+	sched SummarySchedule
+	// interventions are the interruptions delivered this run, for the next
+	// reading's digest.
+	interventions []string
+	failures      int
+	tokensIn      int64
+	tokensOut     int64
 }
 
 // NewSummaryRun returns a runner, or nil when readings are not to be taken —
@@ -123,30 +128,44 @@ func (r *SummaryRun) Tick(rounds int) (SummaryVerdict, bool) {
 }
 
 // due reports whether a reading should go out now. Caller holds the lock.
+// Everything but "is one already in flight" is the shared schedule's.
 func (r *SummaryRun) due(rounds int) bool {
 	if r.inFlight {
 		return false
 	}
-	if r.lastRound == 0 {
-		// The first reading comes early, so a long run has a verdict to act
-		// on well before a whole interval has gone by.
-		if rounds < FirstSummaryRound {
-			return false
-		}
-	} else if rounds-r.lastRound < r.interval() {
-		return false
+	return r.sched.Due(rounds, r.interval(), r.summarizer.Config().Gap())
+}
+
+// Intervened records an interruption delivered at this round: the next
+// reading is told what was said, and falls due sooner for it, so a run nobody
+// is watching judges whether the steer took instead of repeating the verdict
+// that earned it. Safe on a nil runner.
+func (r *SummaryRun) Intervened(rounds int, iv Intervention) {
+	if r == nil {
+		return
 	}
-	return time.Since(r.lastAt) >= r.summarizer.Config().Gap()
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.sched.Intervened(rounds)
+	r.interventions = append(r.interventions, iv.Row(rounds))
 }
 
 // read takes one reading and parks the result for the next Tick.
 func (r *SummaryRun) read(rounds int) {
+	r.mu.Lock()
+	// Copied under the lock rather than shared: the request outlives this
+	// call, and a boundary delivering another interruption while it is out
+	// would otherwise be appending to a slice the request is reading.
+	interventions := append([]string(nil), r.interventions...)
+	r.mu.Unlock()
+
 	req := SummaryRequest{
-		Target:    r.target,
-		Activity:  r.recorder.Rows(),
-		Assistant: r.recorder.LastAssistant(),
-		Round:     rounds,
-		Elapsed:   time.Since(r.started),
+		Target:        r.target,
+		Activity:      r.recorder.Rows(),
+		Assistant:     r.recorder.LastAssistant(),
+		Interventions: interventions,
+		Round:         rounds,
+		Elapsed:       time.Since(r.started),
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -155,8 +174,7 @@ func (r *SummaryRun) read(rounds int) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.inFlight = false
-	r.lastRound = rounds
-	r.lastAt = time.Now()
+	r.sched.Read(rounds)
 	r.tokensIn += int64(v.Usage.PromptTokens)
 	r.tokensOut += int64(v.Usage.CompletionTokens)
 	if v.Failed {

@@ -110,6 +110,96 @@ func TestNextIntervention_OneReadingActsOnce(t *testing.T) {
 	}
 }
 
+// A queued verdict is a claim about a turn, and a fresher reading can
+// withdraw it. Delivering it after that would steer a session against
+// evidence the session already has.
+func TestConsiderVerdict_ALaterReadingRetiresAQueuedSteer(t *testing.T) {
+	a := New(nil, noStream)
+	a.rounds = 5
+	a.ConsiderVerdict(driftVerdict(5), running)
+	a.rounds = 8
+	a.ConsiderVerdict(SummaryVerdict{State: SummaryOnTarget, Round: 8}, running)
+	if _, ok := a.NextIntervention("x"); ok {
+		t.Fatal("a steer whose case was withdrawn by a later reading must not be delivered")
+	}
+
+	// A reading that could not judge retires one too: the queue is a claim
+	// the evidence no longer supports, and an unclear reading is the evidence
+	// having changed. An intervention on a shrug is worse than none, and so
+	// is one on a shrug's predecessor.
+	b := New(nil, noStream)
+	b.rounds = 5
+	b.ConsiderVerdict(driftVerdict(5), running)
+	b.rounds = 8
+	b.ConsiderVerdict(SummaryVerdict{State: SummaryUncertain, Round: 8}, running)
+	if _, ok := b.NextIntervention("x"); ok {
+		t.Fatal("an unclear reading after a drift one leaves nothing to deliver")
+	}
+}
+
+// Only a fresher one, though. Readings come back out of order — a slow
+// request asked at round 5 can land after a fast one asked at round 8 — and
+// an older on-target reading knows nothing about the departure.
+func TestConsiderVerdict_AnOlderReadingLeavesTheQueueAlone(t *testing.T) {
+	a := New(nil, noStream)
+	a.rounds = 8
+	a.ConsiderVerdict(driftVerdict(8), running)
+	a.ConsiderVerdict(SummaryVerdict{State: SummaryOnTarget, Round: 5}, running)
+	if iv, ok := a.NextIntervention("x"); !ok || iv.Kind != InterveneSteer {
+		t.Fatal("a reading older than the queued one must not retire it")
+	}
+}
+
+// A failed reading is not evidence of anything, so it withdraws nothing.
+func TestConsiderVerdict_AFailedReadingRetiresNothing(t *testing.T) {
+	a := New(nil, noStream)
+	a.rounds = 5
+	a.ConsiderVerdict(driftVerdict(5), running)
+	a.rounds = 8
+	a.ConsiderVerdict(SummaryVerdict{State: SummaryOnTarget, Round: 8, Failed: true}, running)
+	if _, ok := a.NextIntervention("x"); !ok {
+		t.Fatal("a reading that did not happen must not retire the queued steer")
+	}
+}
+
+// What the next reading is told about an interruption: the round, a word from
+// a closed set, and the earlier reading's own reason. Nothing a tool wrote is
+// anywhere near it.
+func TestIntervention_RowIsTheRoundTheKindAndTheReason(t *testing.T) {
+	steer := Intervention{Kind: InterveneSteer, Reason: "editing files outside the exporter"}
+	if got := steer.Row(14); got != "round 14 · steered · editing files outside the exporter" {
+		t.Errorf("steer row = %q", got)
+	}
+	early := Intervention{Kind: InterveneEnough, Reason: "has named the file and the line"}
+	if got := early.Row(20); got != "round 20 · check-in · has named the file and the line" {
+		t.Errorf("early check-in row = %q", got)
+	}
+	// The interval's own is owed for no reason but the clock, and a row that
+	// invented one would be the digest saying something the turn was not told.
+	if got := (Intervention{Kind: InterveneCheckIn}).Row(30); got != "round 30 · check-in" {
+		t.Errorf("clock check-in row = %q", got)
+	}
+}
+
+// The reason travels through delivery, because the row is built from the
+// delivered interruption rather than from the verdict a front-end would have
+// to keep beside it.
+func TestNextIntervention_CarriesTheReadingsReason(t *testing.T) {
+	a := New(nil, noStream)
+	a.rounds = 5
+	a.ConsiderVerdict(driftVerdict(5), running)
+	iv, ok := a.NextIntervention("build the exporter")
+	if !ok {
+		t.Fatal("setup: expected the steer")
+	}
+	if iv.Reason != "editing files outside the exporter" {
+		t.Fatalf("reason = %q", iv.Reason)
+	}
+	if got := iv.Row(5); got != "round 5 · steered · editing files outside the exporter" {
+		t.Fatalf("row = %q", got)
+	}
+}
+
 // Both verdict kinds share one cooldown, because both spend a round on the
 // same interruption.
 func TestNextIntervention_OneCooldownAcrossBothKinds(t *testing.T) {

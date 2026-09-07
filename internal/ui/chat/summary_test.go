@@ -17,10 +17,11 @@ import (
 // readingProvider answers every summary request with a scripted reading (or
 // an error), and counts how many were asked for.
 type readingProvider struct {
-	text  string
-	state string
-	err   error
-	calls int
+	text   string
+	state  string
+	reason string
+	err    error
+	calls  int
 }
 
 func (p *readingProvider) StreamCompletion(ctx context.Context, msgs []provider.Message, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
@@ -37,7 +38,7 @@ func (p *readingProvider) StreamCompletion(ctx context.Context, msgs []provider.
 		ToolCalls: []provider.ToolCall{{
 			ID:        "s1",
 			Name:      agent.SummaryToolName,
-			Arguments: `{"summary":"` + p.text + `","state":"` + state + `"}`,
+			Arguments: `{"summary":"` + p.text + `","state":"` + state + `","reason":"` + p.reason + `"}`,
 		}},
 		Usage: &provider.Usage{PromptTokens: 800, CompletionTokens: 30},
 		Done:  true,
@@ -111,7 +112,7 @@ func TestSummaryDue_ThenOnTheInterval(t *testing.T) {
 		m.agent.BeginToolRound("", []provider.ToolCall{{Name: "read_file"}}, nil)
 	}
 	m = applyReading(t, m)
-	first := m.summary.lastRound
+	first := m.summary.schedule.LastRound()
 	if first != agent.FirstSummaryRound {
 		t.Fatalf("the reading is stamped with the round it read: got %d", first)
 	}
@@ -137,7 +138,7 @@ func TestSummaryDue_WallClockFloorHoldsTheInterval(t *testing.T) {
 		Model: "fast", IntervalRounds: 1, MinGap: time.Hour,
 	}))
 	m.summary.last = &agent.SummaryVerdict{Text: "standing"}
-	m.summary.lastRound, m.summary.lastAt = 1, time.Now()
+	m.summary.schedule.Read(1)
 	for i := 0; i < 5; i++ {
 		m.agent.BeginToolRound("", []provider.ToolCall{{Name: "read_file"}}, nil)
 	}
@@ -264,7 +265,7 @@ func TestSummary_NewTurnRetiresTheReadingAndTheTarget(t *testing.T) {
 	}
 	m.state = stateInput
 	m = sendText(t, m, "now do something else")
-	if m.summary.last != nil || m.summary.lastRound != 0 {
+	if m.summary.last != nil || m.summary.schedule.LastRound() != 0 {
 		t.Fatal("a new turn retires the last turn's reading")
 	}
 	if m.inspectorSummary() != nil {
@@ -315,6 +316,22 @@ func TestSummaryRequest_CarriesNoToolOutput(t *testing.T) {
 	}
 	if strings.Contains(joined, "IGNORE PREVIOUS") {
 		t.Fatalf("tool output must never reach the digest:\n%s", joined)
+	}
+	// The interruptions the machinery has delivered are in the digest too,
+	// and they are the same boundary: a round, a word from a closed set, and
+	// the earlier reading's own reason. A tool has no way to write any of the
+	// three.
+	m.summary.noteIntervention(agent.Intervention{
+		Kind:   agent.InterveneSteer,
+		Reason: "editing files outside the exporter",
+	}, 14)
+	req = m.summaryRequest()
+	if len(req.Interventions) != 1 ||
+		req.Interventions[0] != "round 14 · steered · editing files outside the exporter" {
+		t.Fatalf("interventions = %#v", req.Interventions)
+	}
+	if strings.Contains(strings.Join(req.Interventions, "\n"), "IGNORE PREVIOUS") {
+		t.Fatal("tool output reached the interruption rows")
 	}
 }
 
@@ -448,7 +465,7 @@ func TestSummary_TurnCloseTakesAReading(t *testing.T) {
 	for i := 0; i < 4; i++ {
 		m.agent.BeginToolRound("", []provider.ToolCall{{Name: "read_file"}}, nil)
 	}
-	m.summary.lastRound = 2 // a reading from the turn's middle
+	m.summary.schedule.Read(2) // a reading from the turn's middle
 
 	working := m
 	working.state = stateStreaming
@@ -478,9 +495,9 @@ func TestSummary_TurnCloseTakesAReading(t *testing.T) {
 	steered := verdictModel(t, "off_target")
 	steered = applyReading(t, steered)
 	steered.injectInterventions()
-	if steered.summary.intervenedRound != steered.summary.lastRound {
-		t.Fatalf("setup: a steer at round %d after a reading at round %d",
-			steered.summary.intervenedRound, steered.summary.lastRound)
+	if steered.agent.Rounds() != steered.summary.schedule.LastRound() {
+		t.Fatalf("setup: the turn should end at the round it was read at, %d and %d",
+			steered.agent.Rounds(), steered.summary.schedule.LastRound())
 	}
 	steeredIdle := steered
 	steeredIdle.state = stateInput

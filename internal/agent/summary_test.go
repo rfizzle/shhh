@@ -263,7 +263,7 @@ func TestSummaryRequest_DigestKeepsTheMostRecentActivity(t *testing.T) {
 // A block with nothing to say is omitted rather than sent as an empty field.
 func TestSummaryRequest_DigestOmitsWhatIsEmpty(t *testing.T) {
 	digest := SummaryRequest{Target: "do the thing", Round: 3}.digest()
-	for _, key := range []string{"approved_plan", "latest_agent_message", "files_changed", "failing_checks", "previous_summary"} {
+	for _, key := range []string{"approved_plan", "latest_agent_message", "files_changed", "failing_checks", "previous_summary", "interventions"} {
 		if _, ok := digest[key]; ok {
 			t.Fatalf("digest should omit %q when there is none", key)
 		}
@@ -495,5 +495,56 @@ func TestSummarizer_ACancelledReadingWritesNothing(t *testing.T) {
 
 	if _, err := os.Stat(path); !os.IsNotExist(err) {
 		t.Errorf("a cancelled reading wrote a log line: %v, %s", err, readLog(t, path))
+	}
+}
+
+// A reading taken after a steer is told the steer happened. Without it the
+// reader is handed the evidence that earned the departure, its own verdict as
+// the summary that stood, and a question asking for a revision of it — and
+// says off target a second time while the cooldown holds the next steer an
+// interval away.
+func TestSummaryRequest_CarriesTheInterventionsDelivered(t *testing.T) {
+	req := testSummaryRequest()
+	req.Interventions = []string{
+		Intervention{Kind: InterveneSteer, Reason: "editing files outside the exporter"}.Row(14),
+		Intervention{Kind: InterveneEnough, Reason: "has named the file and the line"}.Row(20),
+	}
+	rows, ok := req.digest()["interventions"].([]string)
+	if !ok || len(rows) != 2 {
+		t.Fatalf("digest interventions = %#v", req.digest()["interventions"])
+	}
+	if rows[0] != "round 14 · steered · editing files outside the exporter" {
+		t.Errorf("steer row = %q", rows[0])
+	}
+	if rows[1] != "round 20 · check-in · has named the file and the line" {
+		t.Errorf("check-in row = %q", rows[1])
+	}
+}
+
+// The rows are bounded like the activity ones, and it is the recent end that
+// is kept: a reading judges the work since the latest interruption.
+func TestSummaryRequest_DigestBoundsTheInterventions(t *testing.T) {
+	req := testSummaryRequest()
+	for i := 0; i < maxSummaryInterventions+5; i++ {
+		req.Interventions = append(req.Interventions,
+			Intervention{Kind: InterveneCheckIn}.Row(i))
+	}
+	rows := req.digest()["interventions"].([]string)
+	if len(rows) != maxSummaryInterventions {
+		t.Fatalf("digest kept %d interruptions, want %d", len(rows), maxSummaryInterventions)
+	}
+	if rows[len(rows)-1] != req.Interventions[len(req.Interventions)-1] {
+		t.Fatal("the digest keeps the most recent end of the interruptions, not the oldest")
+	}
+}
+
+// The reading instruction has to say what to do with an interruption, or the
+// reader is told one happened and carries its own verdict forward anyway.
+func TestSummaryWording_TellsTheReaderWhatAnInterventionMeans(t *testing.T) {
+	wording := SummaryWording()
+	for _, want := range []string{"interventions", "previous_summary", "come back to the instruction"} {
+		if !strings.Contains(wording, want) {
+			t.Errorf("the reading instruction should say %q:\n%s", want, wording)
+		}
 	}
 }

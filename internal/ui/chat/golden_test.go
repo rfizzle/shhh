@@ -1228,7 +1228,8 @@ func TestGolden_StatusRow(t *testing.T) {
 			{Label: "idle · the reading and the session's net change", View: build(func(m *Model) {})},
 			{Label: "working · a reading the session has outrun, and 12 files", View: build(func(m *Model) {
 				m.state = stateStreaming
-				m.summary.last.Round, m.summary.lastRound = 128, 128
+				m.summary.last.Round = 128
+				m.summary.schedule.Read(128)
 				outrun(m, 128)
 				for i := range 12 {
 					m.changes.Add(1, changeset.Record{
@@ -1294,7 +1295,7 @@ func TestGolden_Screen(t *testing.T) {
 					Round: 24,
 					Model: "fast",
 				}
-				m.summary.lastRound = 24
+				m.summary.schedule.Read(24)
 			})},
 		}
 	})

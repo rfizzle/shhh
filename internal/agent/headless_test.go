@@ -309,10 +309,12 @@ func TestHeadlessRun_OnSummaryGetsALandedReading(t *testing.T) {
 	run, _ := testSummaryRun(t, &slowProvider{}, "ship the parser")
 	// A reading is parked rather than taken: how one is scheduled is
 	// summaryrun's business, and this is about what happens to it once it
-	// lands. lastRound holds the interval closed so none goes out.
+	// lands. A reading recorded at round 1 holds the interval closed so none
+	// goes out.
 	parked := SummaryVerdict{State: SummaryOnTarget, Text: "on it", Round: 1}
 	run.mu.Lock()
-	run.verdict, run.lastRound, run.lastAt = &parked, 1, time.Now()
+	run.verdict = &parked
+	run.sched.Read(1)
 	run.mu.Unlock()
 
 	var seen []SummaryState

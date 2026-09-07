@@ -42,7 +42,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
@@ -80,19 +79,17 @@ type summaryState struct {
 	// last is the reading being drawn. It survives a failed refresh, which is
 	// the whole reason it is kept here rather than rebuilt per frame.
 	last *agent.SummaryVerdict
-	// lastRound is the round last was read at, and lastAt the wall clock —
-	// the two halves of the schedule, because rounds are not evenly spaced
-	// in time and neither bound alone is enough.
-	lastRound int
-	lastAt    time.Time
+	// schedule is when the next reading is due. It is the agent's own type
+	// rather than a pair of fields here because an unattended run schedules
+	// against the same bounds, and two copies of one predicate is one place
+	// for a rule to be forgotten.
+	schedule agent.SummarySchedule
+	// interventions are the interruptions delivered this turn, as the rows
+	// the next reading is told about them in. They are turn-scoped like the
+	// schedule: a steer answered last turn is not evidence about this one.
+	interventions []string
 	// inFlight marks a reading already asked for; a second is never sent.
 	inFlight bool
-	// intervenedRound is the round an interruption was delivered at, and
-	// zero when none has been this turn — interventions are only ever
-	// delivered at a round boundary, which is never round zero. It is what
-	// tells the turn's close that something happened since the last reading
-	// even though the counter did not move (summaryCloseCmd).
-	intervenedRound int
 	// runID is the run the in-flight reading belongs to, so a verdict that
 	// arrives after the turn was cancelled is discarded rather than drawn.
 	runID int
@@ -110,9 +107,15 @@ type summaryState struct {
 // the session's, and a provider that was failing a moment ago still is.
 func (s *summaryState) startTurn() {
 	s.last = nil
-	s.lastRound = 0
-	s.lastAt = time.Time{}
-	s.intervenedRound = 0
+	s.schedule = agent.SummarySchedule{}
+	s.interventions = nil
+}
+
+// noteIntervention records an interruption the boundary has just delivered:
+// the next reading is told about it, and falls due sooner for it.
+func (s *summaryState) noteIntervention(iv agent.Intervention, round int) {
+	s.schedule.Intervened(round)
+	s.interventions = append(s.interventions, iv.Row(round))
 }
 
 // resetSummary starts the whole mechanism over at a session boundary, where
@@ -154,29 +157,15 @@ func (m Model) summaryInterval() int {
 	return n
 }
 
-// summaryDue reports whether a reading should be taken now. It is the one
-// predicate: three bounds, in the order that makes the cheapest check first.
-//
-// The first reading of a turn comes at agent.FirstSummaryRound rather than at
-// the interval, so a long turn has a block within its first half-minute
-// instead of after ten rounds of an empty rail.
+// summaryDue reports whether a reading should be taken now. What is left
+// here is the session's own half — whether readings are configured at all,
+// and whether one is already out — because the rest is the schedule an
+// unattended run keeps too (schedule.go).
 func (m Model) summaryDue() bool {
 	if !m.summaryEnabled() || m.summary.inFlight {
 		return false
 	}
-	rounds := m.agent.Rounds()
-	switch {
-	case m.summary.last == nil:
-		if rounds < agent.FirstSummaryRound {
-			return false
-		}
-	case rounds-m.summary.lastRound < m.summaryInterval():
-		return false
-	}
-	// The wall-clock floor is last because it is the one that catches a burst
-	// of fast read-only rounds, which is the case the round interval cannot
-	// see.
-	return time.Since(m.summary.lastAt) >= m.summarizer.Config().Gap()
+	return m.summary.schedule.Due(m.agent.Rounds(), m.summaryInterval(), m.summarizer.Config().Gap())
 }
 
 // summaryCmd takes a reading if one is due, and is a no-op otherwise — so
@@ -208,14 +197,9 @@ func (m *Model) summaryCloseCmd(prev Model) tea.Cmd {
 		return nil
 	}
 	// A turn read this round has nothing new to say — unless the machinery
-	// spoke to the model in the meantime. A steer delivered at the boundary
-	// after the reading that earned it, answered without a tool call, ends
-	// the turn at the round it started: without this the rail keeps "off
-	// target" over the steer row and the reply that answered it until the
-	// next turn, which is the one verdict on screen that is provably out of
-	// date. Rounds are the only clock here, and an intervention is the one
-	// thing that changes the answer without moving it.
-	if rounds <= m.summary.lastRound && m.summary.intervenedRound < m.summary.lastRound {
+	// spoke to the model in the meantime, which is the other half of what
+	// the schedule counts as having moved.
+	if !m.summary.schedule.Moved(rounds) {
 		return nil
 	}
 	return m.forceSummaryCmd()
@@ -261,16 +245,15 @@ func (m *Model) finishSummary(msg summaryDoneMsg) bool {
 	if msg.verdict.Failed {
 		m.summary.failures++
 		// The clock still moves on a failure, so a provider that is down is
-		// retried on the interval rather than on every round.
-		m.summary.lastAt = time.Now()
+		// retried on the floor rather than on every round.
+		m.summary.schedule.Missed()
 		return false
 	}
 	m.summary.failures = 0
 	v := msg.verdict
 	m.signal(observe.SignalSummary, observe.SummaryCode(v.State))
 	m.summary.last = &v
-	m.summary.lastRound = v.Round
-	m.summary.lastAt = time.Now()
+	m.summary.schedule.Read(v.Round)
 	// The row goes in before the verdict is considered: an off-target reading
 	// queues an interruption, and the row that explains the interruption has
 	// to be above it in the transcript rather than after it.
@@ -307,8 +290,12 @@ func (m Model) summaryRequest() agent.SummaryRequest {
 		Activity: m.summaryActivity(),
 		Changes:  m.summaryChanges(),
 		Alerts:   m.summaryAlerts(),
-		Round:    m.agent.Rounds(),
-		Elapsed:  m.turnElapsed(),
+		// What the machinery has said to the model this turn, so a reading
+		// after a steer judges the work since it rather than revising the
+		// verdict that caused it.
+		Interventions: m.summary.interventions,
+		Round:         m.agent.Rounds(),
+		Elapsed:       m.turnElapsed(),
 	}
 	if m.summary.last != nil {
 		req.Previous = m.summary.last.Text
@@ -445,7 +432,7 @@ func (m Model) summaryStale() bool {
 	if m.summary.last == nil {
 		return false
 	}
-	return m.agent.Rounds()-m.summary.lastRound > 2*m.summaryInterval()
+	return m.agent.Rounds()-m.summary.schedule.LastRound() > 2*m.summaryInterval()
 }
 
 // summaryTone maps the session's verdict onto the rail's own vocabulary.

@@ -361,6 +361,30 @@ reading a digest of tool activity, not the agent's reasoning, so it can be
 wrong; a confident accusation against a session that is in fact on task costs
 more than the steer saves.
 
+**The reading after an interruption starts again from it.** A steer that is
+delivered and then never mentioned leaves the next reader with the evidence
+that earned it, the verdict it earned written down as the summary that stood,
+and a question asking for a revision of that — so it says off target a second
+time, the cooldown holds the next steer a couple of intervals away, and the
+status on screen goes on describing a departure that ended. The reader is told
+instead what the machinery said and at which round, and asked to judge the
+work since on its own evidence and say whether the session came back. It is
+also asked sooner: an interruption restarts the reading clock the way the
+start of a turn does, because the interval is a cost and an interruption is a
+reason. One interruption buys one early reading, not a permanently shorter
+interval.
+
+Three things reach the reader about it and no more: that an interruption
+happened, at which round, and the reason the earlier reading itself gave. All
+three were already inside the boundary the digest draws, so telling the reader
+this costs nothing a fetched page or a command's output could ever write.
+
+A queued steer is also withdrawn rather than delivered late. A reading takes
+several rounds to come back and the interruption waits for a boundary, so a
+fresher reading can arrive first and find the session on target — and
+delivering the earlier one then would accuse a session of a departure the
+machinery itself had already stopped believing in.
+
 ## The interval is the last thing watching
 
 The check-in fires on a clock, and how long that clock should be depends

@@ -138,6 +138,41 @@ func TestSummaryRun_FirstReadingComesEarlyThenOnTheInterval(t *testing.T) {
 	}
 }
 
+// An interruption restarts an unattended run's schedule the way it restarts a
+// session's: the reading that says whether the steer took comes a few rounds
+// after it rather than a whole interval after the reading that earned it, and
+// it is told what was delivered.
+func TestSummaryRun_AnInterventionEarnsAnEarlyReadingThatIsToldAboutIt(t *testing.T) {
+	p := &slowProvider{state: "off_target"}
+	r, _ := testSummaryRun(t, p, "ship the parser")
+	waitVerdict(t, r, FirstSummaryRound)
+
+	const steered = FirstSummaryRound + 1
+	r.Intervened(steered, Intervention{
+		Kind:   InterveneSteer,
+		Reason: "editing files outside the exporter",
+	})
+	for round := steered + 1; round < steered+FirstSummaryRound; round++ {
+		r.Tick(round)
+	}
+	if p.count() != 1 {
+		t.Fatalf("readings = %d before the steer's own count came round, want 1", p.count())
+	}
+
+	r.Tick(steered + FirstSummaryRound)
+	deadline := time.Now().Add(time.Second)
+	for p.count() < 2 && time.Now().Before(deadline) {
+		time.Sleep(time.Millisecond)
+	}
+	if p.count() != 2 {
+		t.Fatalf("readings = %d, want a second one %d rounds after the steer", p.count(), FirstSummaryRound)
+	}
+	sent := strings.Join(p.requests(), "\n")
+	if !strings.Contains(sent, "round 4 · steered · editing files outside the exporter") {
+		t.Fatalf("the reading after a steer should be told about it:\n%s", sent)
+	}
+}
+
 // A reading still in flight when the next falls due is not asked twice.
 func TestSummaryRun_NeverTwoInFlight(t *testing.T) {
 	p := &slowProvider{delay: 200 * time.Millisecond}

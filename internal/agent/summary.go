@@ -75,6 +75,11 @@ const (
 	maxSummaryReason = 120
 	// maxSummaryActivity bounds the recent-activity rows in the digest.
 	maxSummaryActivity = 24
+	// maxSummaryInterventions bounds the interruptions in the digest. A turn
+	// cannot earn many — two reading intervals have to pass between two of
+	// them — and it is the recent ones a reading judges the work against, so
+	// this is a ceiling on a pathological turn rather than a working bound.
+	maxSummaryInterventions = 8
 	// maxSummaryField bounds any one line of untrusted evidence.
 	maxSummaryField = 300
 )
@@ -151,6 +156,8 @@ Also judge whether the work is still serving the instruction it started from:
 - "unclear": you cannot tell from the digest. Prefer this over guessing.
 
 When the state is not "on_target", give one short reason of at most 100 characters. Leave the reason empty otherwise.
+
+Where the digest lists interventions, the session was interrupted at those rounds and asked to check its work or take stock. Judge what it has done since the latest one on its own evidence rather than carrying the previous_summary's verdict forward, and say in your summary whether the session has come back to the instruction.
 
 Call the ` + SummaryToolName + ` tool exactly once. If you cannot call tools, reply with one line of the form "STATE: summary text", where STATE is on_target, sufficient, off_target, or unclear. Do not return anything else.`
 
@@ -282,6 +289,16 @@ type SummaryRequest struct {
 	Changes string
 	// Alerts are the checks still coming back broken.
 	Alerts []string
+	// Interventions are the interruptions the machinery has delivered this
+	// turn, oldest first, as "round 14 · steered · <reason>". A reader given
+	// the same evidence and the same previous summary repeats the verdict
+	// that earned the steer, so it is told what was said and when, and judges
+	// the work since on its own.
+	//
+	// They cross no boundary the rest of the digest does not: the kind is a
+	// word from a closed set, the reason is the earlier reading's own words,
+	// and nothing a tool returned reaches either.
+	Interventions []string
 	// Round is the tool round this reading was taken at, and Elapsed how long
 	// the turn has been running.
 	Round   int
@@ -503,6 +520,13 @@ func (r SummaryRequest) digest() map[string]any {
 	}
 	if r.Previous != "" {
 		d["previous_summary"] = clampField(r.Previous)
+	}
+	if len(r.Interventions) > 0 {
+		interventions := r.Interventions
+		if len(interventions) > maxSummaryInterventions {
+			interventions = interventions[len(interventions)-maxSummaryInterventions:]
+		}
+		d["interventions"] = clampFields(interventions)
 	}
 	return d
 }

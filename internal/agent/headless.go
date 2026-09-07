@@ -450,6 +450,12 @@ func (h *Headless) Run(prompt string) (string, error) {
 		}
 		if iv, ok := h.Agent.NextIntervention(h.summaryTarget()); ok {
 			h.Agent.Append(provider.Message{Role: provider.RoleUser, Content: iv.Message})
+			// The reading that judges what happens next is told what was
+			// just said, and comes sooner for it. Without that it is handed
+			// the evidence that earned the interruption and the verdict it
+			// earned, and says the same thing again while the cooldown holds
+			// the next one an interval away.
+			h.Summary.Intervened(h.Agent.Rounds(), iv)
 			if h.OnIntervene != nil {
 				h.OnIntervene(iv)
 			}

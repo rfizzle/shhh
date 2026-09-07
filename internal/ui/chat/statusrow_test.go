@@ -19,7 +19,7 @@ func statusRowModel(t *testing.T, width int) Model {
 	m := frameModel(t, width, 40)
 	m.summarizer = agent.NewSummarizer(&readingProvider{}, agent.SummaryConfig{Model: "fast"})
 	m.summary.last = &agent.SummaryVerdict{Text: "wiring the pause", State: agent.SummaryOnTarget, Round: 7}
-	m.summary.lastRound = 7
+	m.summary.schedule.Read(7)
 	m.turnCount = 1
 	m.changes.Add(1, changeset.Record{
 		Path: "internal/agent/loop.go", BeforeExists: true, AfterExists: true,
@@ -63,7 +63,7 @@ func outrun(m *Model, n int) {
 // heading marks it, so the row never passes an old sentence off as current.
 func TestStatusRow_StaleReadingSaysSo(t *testing.T) {
 	m := statusRowModel(t, 80)
-	outrun(&m, m.summary.lastRound)
+	outrun(&m, m.summary.schedule.LastRound())
 	if row := stripANSI(m.statusRow()); !strings.Contains(row, "stale") {
 		t.Fatalf("an outrun reading is marked stale: %q", row)
 	}
@@ -184,7 +184,8 @@ func TestStatusRow_HiddenWhileAttached(t *testing.T) {
 func TestStatusRow_DropsFromTheRight(t *testing.T) {
 	m := statusRowModel(t, 60)
 	m.state = stateStreaming
-	m.summary.last.Round, m.summary.lastRound = 128, 128
+	m.summary.last.Round = 128
+	m.summary.schedule.Read(128)
 	outrun(&m, 128)
 	for i := range 12 {
 		m.changes.Add(1, changeset.Record{

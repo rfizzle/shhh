@@ -355,6 +355,19 @@ child's own shorter interval back over it. The summariser's and the
 classifier's own instructions are `SummaryConfig.Prompt` and
 `ClassifierConfig.Prompt`, beside the rest of what each costs.
 
+**When the next reading is due is one predicate — `agent.SummarySchedule`
+(`schedule.go`) — and each surface holds a value of it**: the session on its
+`summaryState`, an unattended run on its `SummaryRun`. It carries the three
+bounds the two used to keep a copy of each (the early first reading, the
+interval, the wall-clock floor) and the fourth that made a second copy
+untenable: an interruption delivered at or since the last reading restarts the
+count, so the reading that says whether the steer took arrives
+`FirstSummaryRound` rounds after it rather than a whole interval on. Both
+delivery sites — `injectInterventions` in the chat model, the boundary tail of
+`Headless.Run` — owe their schedule an `Intervened` and the next digest an
+`Intervention.Row`; a surface that delivers an interruption and forgets either
+reads to its own reader as a session that was never steered.
+
 **Which model the bounded calls answer on is `auxiliaryModel`**
 (`internal/cli/summarizer.go`): the provider's `CheapModel` where it names
 one, the session's own where it does not, with `modelOr` putting

@@ -23,7 +23,10 @@ package agent
 // show that it did.
 // See docs/capabilities/coding-agent.md#two-failures-two-interruptions.
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // DefaultInterveneCooldown is the minimum rounds between two verdict-driven
 // interventions, for a caller that does not set one from its reading
@@ -60,6 +63,19 @@ func (k InterveneKind) Signal() string {
 	return "check-in"
 }
 
+// Word is the kind as the next reading's digest names it, a closed set like
+// the signal's. The early check-in and the interval's own share a word
+// because they share a message: what a sufficiency reading buys is the
+// timing, and the turn is asked exactly the same question either way, so a
+// digest that distinguished them would be telling the reader something the
+// conversation does not say.
+func (k InterveneKind) Word() string {
+	if k == InterveneSteer {
+		return "steered"
+	}
+	return "check-in"
+}
+
 // Intervention is one interruption, ready to deliver: the message that joins
 // the conversation, and the one-line account a front-end shows beside it.
 type Intervention struct {
@@ -70,6 +86,28 @@ type Intervention struct {
 	// what their agent does is shown and attributed, because a transcript
 	// that hides one is a transcript they cannot trust.
 	Notice string
+	// Reason is the reading's own account of why this was owed, empty for
+	// the interval's own check-in, which is owed for no reason but the
+	// clock.
+	Reason string
+}
+
+// Row is this interruption as one row of the next reading's digest —
+// "round 14 · steered · editing files outside the exporter" — so a reader
+// judging the work judges it knowing the machinery interrupted, and when.
+//
+// Nothing a tool wrote can reach it, which is what makes telling the reader
+// this affordable at all: the kind is a word from a closed set spelled in
+// this package, and the reason is the earlier reading's own words, already
+// bounded and already inside the digest's boundary. Neither ever passed
+// through a fetched page or a command's output
+// (docs/capabilities/coding-agent.md#the-verdict-is-a-steering-signal-so-the-digest-is-a-boundary).
+func (iv Intervention) Row(round int) string {
+	parts := []string{fmt.Sprintf("round %d", round), iv.Kind.Word()}
+	if reason := collapseSpace(iv.Reason); reason != "" {
+		parts = append(parts, clampRunes(reason, maxSummaryReason))
+	}
+	return strings.Join(parts, " · ")
 }
 
 // interveneState is what an Agent knows about interrupting its own turn: the
@@ -121,6 +159,15 @@ func (a *Agent) ConsiderVerdict(v SummaryVerdict, working bool) {
 	case v.State.Sufficient():
 		kind = InterveneEnough
 	default:
+		// A reading that earns nothing still retires a queued one it is
+		// newer than. The queue holds a claim about a turn that has since
+		// been read again and found not to be drifting, and delivering it at
+		// the boundary would steer a session against evidence the session
+		// itself already has — the accusation the steer is written to avoid,
+		// made after the case for it was withdrawn.
+		if p := a.intervene.pending; p != nil && v.Round > p.Round {
+			a.intervene.pending = nil
+		}
 		return
 	}
 	if v.Round == a.intervene.verdictRound {
@@ -154,12 +201,14 @@ func (a *Agent) NextIntervention(target string) (Intervention, bool) {
 				Kind:    InterveneSteer,
 				Message: a.steering.steerPrompt(target, v.Reason),
 				Notice:  steerNotice(v.Reason),
+				Reason:  v.Reason,
 			}, true
 		}
 		return Intervention{
 			Kind:    InterveneEnough,
 			Message: a.steering.checkInPrompt(a.rounds, FinishedInSession),
 			Notice:  enoughNotice(v.Reason),
+			Reason:  v.Reason,
 		}, true
 	}
 	if prompt, ok := a.TakeCheckIn(); ok {

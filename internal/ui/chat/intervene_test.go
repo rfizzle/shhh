@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -137,6 +138,42 @@ func TestIntervene_ToolOutputCannotReachTheDeliveredSteer(t *testing.T) {
 		if e.kind == entrySystem && strings.Contains(e.text, "IGNORE PREVIOUS") {
 			t.Fatal("tool output reached the steer's transcript row")
 		}
+	}
+}
+
+// A reading taken after a steer is told the steer happened, and comes sooner
+// for it. Without both, the reader is handed the twenty-four rows that earned
+// the departure and its own verdict as the summary that stood, says off
+// target again, and the cooldown then keeps the rail describing a departure
+// that ended for the rest of the interval.
+func TestIntervene_TheNextReadingIsToldAndComesSooner(t *testing.T) {
+	const reason = "editing files outside the exporter"
+	m := summaryModel(t, &readingProvider{
+		text: "Rewriting the README.", state: "off_target", reason: reason,
+	})
+	m.setTurnState(stateStreaming)
+	m = advanceRounds(m, 4)
+	m = applyReading(t, m)
+	m.injectInterventions()
+
+	steered := m.agent.Rounds()
+	want := fmt.Sprintf("round %d · steered · %s", steered, reason)
+	if got := m.summaryRequest().Interventions; len(got) != 1 || got[0] != want {
+		t.Fatalf("the next digest should carry %q, got %#v", want, got)
+	}
+
+	// And it is asked for on the turn-start count rather than the interval:
+	// the interval is the cost, and a steer is a reason.
+	for i := 1; i < agent.FirstSummaryRound; i++ {
+		m = advanceRounds(m, 1)
+		if m.summaryDue() {
+			t.Fatalf("a reading came due %d rounds after the steer", i)
+		}
+	}
+	m = advanceRounds(m, 1)
+	if !m.summaryDue() {
+		t.Fatalf("a reading is due %d rounds after a steer, inside the interval of %d",
+			agent.FirstSummaryRound, m.summaryInterval())
 	}
 }
 
