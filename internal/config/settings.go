@@ -329,6 +329,9 @@ var settings = []Setting{
 		Key: "web.fetch_max_bytes", Kind: KindInt, Default: "2 MiB", Literal: "2097152",
 		Desc: "The download ceiling on one fetch.",
 	}, {
+		Key: "web.inline_bytes", Kind: KindInt, Default: "16 KiB with an evidence store, 48 KiB without", Literal: "16384",
+		Desc: "How much of a fetched page's text one tool result carries; with a store the rest is kept whole and the result says how to read on from the cut.",
+	}, {
 		Key: "web.fetch_timeout_seconds", Kind: KindInt, Default: "30",
 		Desc: "How long one request may take, redirects and the body read included. A wait a host asked for is not charged to it.",
 	}, {

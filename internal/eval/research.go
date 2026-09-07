@@ -523,20 +523,10 @@ func openSite(dir string) (*site, error) {
 		if relErr != nil {
 			return relErr
 		}
-		p := sitePage{
+		s.files["/"+filepath.ToSlash(rel)] = sitePage{
 			Body:        body,
 			ContentType: contentType(path),
 		}
-		if strings.HasPrefix(p.ContentType, "text/html") {
-			ex := web.ExtractHTML(body)
-			p.Title, p.Text = ex.Title, ex.Text
-		} else {
-			p.Text = string(body)
-		}
-		if p.Title == "" {
-			p.Title = rel
-		}
-		s.files["/"+filepath.ToSlash(rel)] = p
 		return nil
 	})
 	if err != nil {
@@ -554,8 +544,21 @@ func openSite(dir string) (*site, error) {
 	s.authority = ln.Addr().String()
 	s.base = "http://" + s.authority
 
+	// A page is extracted here rather than as it was read, because a page is
+	// only extractable once it has an address: that is what a relative link
+	// resolves against, and the text a quotation is graded against has to be
+	// the text the model was shown.
 	for path, p := range s.files {
 		p.URL = s.base + path
+		if strings.HasPrefix(p.ContentType, "text/html") {
+			ex := web.ExtractHTML(p.Body, p.URL)
+			p.Title, p.Text = ex.Title, ex.Text
+		} else {
+			p.Text = string(p.Body)
+		}
+		if p.Title == "" {
+			p.Title = strings.TrimPrefix(path, "/")
+		}
 		s.files[path] = p
 		s.pages[p.URL] = p.Text
 		s.index = append(s.index, p)

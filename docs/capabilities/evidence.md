@@ -98,6 +98,25 @@ read of a long page costs no request and still lands whole in the store. A
 page paged back from a cached fetch reads the same as one paged back from a
 fresh one.
 
+**The slice answers a different question once the page is retrievable.** A
+session with nowhere to keep the rest has to carry as much of the page as a
+result reasonably can, because the cut is the end of it. A session with a
+store does not: the whole page is one retrieval away, so the first slice is
+for deciding whether this is the right page, not for answering from — and a
+research turn reading six pages spends a third of what it otherwise would
+before it can narrow. One setting names the slice, and setting it fixes the
+number whatever the session keeps.
+
+**A page's text keeps what makes it navigable and what makes it a table.** A
+link is written as its text and its destination together, resolved against
+the address the page was read from, so a documentation index is a set of
+addresses rather than a list of labels the next fetch has to guess a URL
+from; a fragment or a `javascript:` href is dropped, because neither is
+somewhere a fetch can go. Table cells keep their boundaries, so a parameter
+table reads as three columns rather than as `namestringthe thing`. An image
+contributes its alt text and a preformatted block is fenced, which is what
+tells a reader whose whitespace it is looking at.
+
 **Two shapes of page are not text, and both say so rather than failing
 quietly.** A PDF is turned into text by the reader this machine has installed;
 where it has none the result names the program that would have read it, so

@@ -233,7 +233,7 @@ func TestFormatFetchResult_LongPageIsKeptWholeAndPagedBack(t *testing.T) {
 
 	out := ts.FormatFetchResult(Result{FinalURL: "https://example.com/manual", Status: 200, ContentType: "text/html", Body: body})
 
-	want := ExtractHTML(body).Text
+	want := ExtractHTML(body, "https://example.com/manual").Text
 	if k.kept != want {
 		t.Fatalf("the store got %d bytes, the page extracts to %d", len(k.kept), len(want))
 	}
@@ -353,6 +353,27 @@ func TestFormatFetchResult_ScriptShell(t *testing.T) {
 	}
 }
 
+// The verdict survived links carrying their addresses: a shell's fallback
+// paragraph roughly doubled in bytes when the URLs went in, and the bound was
+// re-derived from what the same pages now extract to.
+func TestFormatFetchResult_AShellWithAddressedLinksIsStillAShell(t *testing.T) {
+	var b strings.Builder
+	b.WriteString(`<html><head><title>Console</title></head><body>` +
+		`<div id="root"><img src="/logo.svg" alt="Example Console"></div>` +
+		`<p>This page requires JavaScript. See the <a href="/docs/getting-started">documentation</a>, ` +
+		`the <a href="/status">status page</a>, or <a href="https://github.com/example/project">the repository</a>.</p>` +
+		`<script>`)
+	b.WriteString(strings.Repeat("var x=1;", 1000))
+	b.WriteString(`</script></body></html>`)
+
+	out := NewToolset(testFetcher(), nil).FormatFetchResult(Result{
+		FinalURL: "https://example.com/app", Status: 200, ContentType: "text/html", Body: []byte(b.String()),
+	})
+	if !strings.Contains(out, "rendered by script; no readable text") {
+		t.Fatalf("verdict missing:\n%s", out)
+	}
+}
+
 // A short page with little text is a short page, not a script shell.
 func TestFormatFetchResult_ShortPageIsNotAScriptShell(t *testing.T) {
 	out := NewToolset(testFetcher(), nil).FormatFetchResult(Result{
@@ -427,8 +448,50 @@ func TestFetchPlan_ReceivesNamesTheStore(t *testing.T) {
 	if err != nil {
 		t.Fatalf("FetchPlan: %v", err)
 	}
-	if plan.Receives != "page text, whole, into the evidence store; the first 48 KB into the conversation" {
+	if plan.Receives != "page text, whole, into the evidence store; the first 16 KB into the conversation" {
 		t.Errorf("receives = %q", plan.Receives)
+	}
+
+	// The card is a promise about what a person is approving, so the number
+	// it states has to be the number the cut actually uses — including the
+	// configured one.
+	ts.InlineBytes = 4 << 10
+	plan, err = ts.FetchPlan(json.RawMessage(`{"url":"https://example.com/doc"}`))
+	if err != nil {
+		t.Fatalf("FetchPlan: %v", err)
+	}
+	if !strings.Contains(plan.Receives, "the first 4 KB into the conversation") {
+		t.Errorf("the card ignores the configured bound: %q", plan.Receives)
+	}
+	out := ts.FormatFetchResult(Result{
+		FinalURL: "https://example.com/doc", Status: 200, ContentType: "text/plain",
+		Body: []byte(strings.Repeat("a", 8<<10)),
+	})
+	if !strings.Contains(out, "page text cut at 4096 of 8192 bytes") {
+		t.Errorf("the cut is not where the card said:\n%s", out[max(0, len(out)-300):])
+	}
+}
+
+// The slice a research turn pays for depends on whether the rest is
+// retrievable: a session with a store carries a third of what a session
+// without one does, because the page is one evidence read away.
+func TestInlineBound_TheStoreDecidesTheDefault(t *testing.T) {
+	text := strings.Repeat("a", MaxInlineBytes+100)
+	body := Result{FinalURL: "https://example.com/doc", Status: 200, ContentType: "text/plain", Body: []byte(text)}
+
+	storeless := NewToolset(testFetcher(), nil).FormatFetchResult(body)
+	if !strings.Contains(storeless, "content truncated at inline limit") {
+		t.Fatalf("storeless cut missing:\n%s", storeless)
+	}
+	if len(storeless) <= StoredInlineBytes {
+		t.Errorf("a storeless session must carry the generous slice; it carried %d bytes", len(storeless))
+	}
+
+	ts := NewToolset(testFetcher(), nil)
+	ts.UseEvidence((&keeper{}).keep, nil)
+	stored := ts.FormatFetchResult(body)
+	if !strings.Contains(stored, fmt.Sprintf("page text cut at %d of %d bytes", StoredInlineBytes, len(text))) {
+		t.Errorf("a session with a store must cut at the smaller bound:\n%s", stored[max(0, len(stored)-300):])
 	}
 }
 

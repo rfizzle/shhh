@@ -74,6 +74,12 @@ func openWebTools(cfg config.Config) *web.Toolset {
 	}
 
 	ts := web.NewToolset(fetcher, searcher)
+	// The bound on what a page costs to look at. It reaches the toolset
+	// rather than the fetcher: the download ceiling is how much of a
+	// document is read, and this is how much of it one tool result spends.
+	if cfg.Web.InlineBytes > 0 {
+		ts.InlineBytes = cfg.Web.InlineBytes
+	}
 	// PATH is probed once here, with the structural tools' probes, rather
 	// than on the fetch that turns out to be a PDF: the answer cannot change
 	// while the session runs, and the fetch that needs it is already the

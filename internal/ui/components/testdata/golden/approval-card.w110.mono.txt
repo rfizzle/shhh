@@ -127,7 +127,7 @@
 │                                                                                                            │
 │ domain    pkg.go.dev — the request leaves this machine                                                     │
 │ sends     the URL and a shhh-web/1.0 user-agent — no file contents, no credentials                         │
-│ receives  page text, whole, into the evidence store; the first 48 KB into the conversation                 │
+│ receives  page text, whole, into the evidence store; the first 16 KB into the conversation                 │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ Allow this call? [y/n/a]  (a: always allow pkg.go.dev)                                                     │
 └────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
@@ -250,7 +250,7 @@
 ␛[38;5;244m│␛[m                                                                                                            ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244mdomain    ␛[m␛[38;5;254mpkg.go.dev␛[m␛[38;5;244m — the request leaves this machine␛[m                                                     ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244msends     ␛[m␛[38;5;254mthe URL and a shhh-web/1.0 user-agent␛[m␛[38;5;244m — no file contents, no credentials␛[m                         ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;244mreceives  ␛[m␛[38;5;254mpage text, whole, into the evidence store; the first 48 KB into the conversation␛[m                 ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;244mreceives  ␛[m␛[38;5;254mpage text, whole, into the evidence store; the first 16 KB into the conversation␛[m                 ␛[38;5;244m│␛[m
 ␛[38;5;244m├────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;244m│␛[m ␛[3;38;5;244mAllow this call? [y/n/a]  (a: always allow pkg.go.dev)␛[m                                                     ␛[38;5;244m│␛[m
 ␛[38;5;244m└────────────────────────────────────────────────────────────────────────────────────────────────────────────┘␛[m

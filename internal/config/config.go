@@ -347,6 +347,14 @@ type WebConfig struct {
 	AllowPrivate bool `toml:"allow_private"`
 	// FetchMaxBytes is the download ceiling per fetch (default 2 MiB).
 	FetchMaxBytes int64 `toml:"fetch_max_bytes"`
+	// InlineBytes is how much of a fetched page's text one tool result
+	// carries into the conversation (default 16 KiB where the session keeps
+	// an evidence store, 48 KiB where it does not). It bounds what a page
+	// costs to look at, not what was read: with a store the rest of the page
+	// is one evidence read away, which is why the default is the smaller
+	// number there.
+	// See docs/capabilities/evidence.md#a-page-is-kept-whole.
+	InlineBytes int `toml:"inline_bytes"`
 	// FetchTimeoutSeconds bounds one request including redirects and the
 	// body read (default 30). A wait a refusing host asked for is served
 	// outside it: the ceiling is how long a request may take, not how long

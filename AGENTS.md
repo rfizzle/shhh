@@ -596,8 +596,11 @@ and a lane update for a child.
 ### The fetched page
 
 `internal/web/tool.go` cuts what a fetch puts in the conversation
-(`MaxInlineBytes`, 48 KB) and `Toolset.inline` is the one place a page's text
-becomes a tool result. `buildToolset` hands it the session's store —
+(`Toolset.inlineBytes` — `web.inline_bytes`, and without it `StoredInlineBytes`
+where the session keeps a store and `MaxInlineBytes` where it does not) and
+`Toolset.inline` is the one place a page's text becomes a tool result.
+`FetchPlan` states the same number, so the card and the cut cannot disagree.
+`buildToolset` hands it the session's store —
 `UseEvidence(reducer.Keep, reducer.Scrub)` — and declares the fetch bounded in
 the same lines (`evidence.Reducer.Exempt`), because the two go together: a
 fetch that keeps its own page and a reduction pipeline that keeps it again
@@ -631,6 +634,18 @@ a wait before anything paints, and an entry is written once so the two agree;
 a fetch being answered gets the entry's own timestamp. Only a text body is
 rewritten (`textualBody`): a substitution inside a PDF is corruption, and the
 text it is read as goes through the same scrub in `inline`.
+
+`internal/web/extract.go` is the renderer under all of that, and **it takes
+the page's final URL because a relative href is only an address relative to
+it** — `ExtractHTML(body, res.FinalURL)`. Pass "" and every relative link on
+the page silently loses its destination, which is the whole failure the
+addresses exist to stop; the eval harness extracts its fixture pages in the
+loop that assigns their URLs for exactly this reason, and not as it reads
+them off the disk. The other trap is `scriptShellTextMax`: it is a bound on
+how much text a page yields, so it is a number that moves whenever the
+renderer starts emitting something new — links carrying their URLs roughly
+doubled what a shell extracts to, and a bound left where it was would have
+read those shells as pages with something to say.
 
 **Pacing lives in `internal/web/limiter.go`, one `limiter` per `Fetcher`,
 which is one per session — children fetch through the parent's `Toolset`

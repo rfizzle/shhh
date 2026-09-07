@@ -355,6 +355,7 @@ func TestSet_WebConfig(t *testing.T) {
 	for key, value := range map[string]string{
 		"web.allow_private":         "true",
 		"web.fetch_max_bytes":       "1048576",
+		"web.inline_bytes":          "8192",
 		"web.fetch_timeout_seconds": "10",
 		"web.cache_ttl_minutes":     "30",
 		"web.search_provider":       "brave",
@@ -369,6 +370,9 @@ func TestSet_WebConfig(t *testing.T) {
 	}
 	if cfg.Web.FetchMaxBytes != 1048576 {
 		t.Errorf("web.fetch_max_bytes = %d", cfg.Web.FetchMaxBytes)
+	}
+	if cfg.Web.InlineBytes != 8192 {
+		t.Errorf("web.inline_bytes = %d", cfg.Web.InlineBytes)
 	}
 	if cfg.Web.FetchTimeoutSeconds != 10 || cfg.Web.CacheTTLMinutes != 30 {
 		t.Errorf("web timings = %d/%d, want 10/30", cfg.Web.FetchTimeoutSeconds, cfg.Web.CacheTTLMinutes)
@@ -385,6 +389,7 @@ func TestLoadFrom_WebConfig(t *testing.T) {
 [web]
 allow_private = true
 fetch_max_bytes = 4194304
+inline_bytes = 8192
 fetch_timeout_seconds = 20
 cache_ttl_minutes = 15
 search_provider = "brave"
@@ -397,8 +402,9 @@ search_api_key = "bsk-abc"
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !cfg.Web.AllowPrivate || cfg.Web.FetchMaxBytes != 4194304 || cfg.Web.FetchTimeoutSeconds != 20 ||
-		cfg.Web.CacheTTLMinutes != 15 || cfg.Web.SearchProvider != "brave" || cfg.Web.SearchAPIKey != "bsk-abc" {
+	if !cfg.Web.AllowPrivate || cfg.Web.FetchMaxBytes != 4194304 || cfg.Web.InlineBytes != 8192 ||
+		cfg.Web.FetchTimeoutSeconds != 20 || cfg.Web.CacheTTLMinutes != 15 ||
+		cfg.Web.SearchProvider != "brave" || cfg.Web.SearchAPIKey != "bsk-abc" {
 		t.Errorf("web config = %+v", cfg.Web)
 	}
 }

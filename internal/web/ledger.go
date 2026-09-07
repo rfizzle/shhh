@@ -91,8 +91,8 @@ type Ledger struct {
 // long as the process.
 //
 // There is no cap on the rows. Every row costs a request that has already
-// been paced, spent a network round trip and put up to 48 KB in front of the
-// model — a session cannot fill this the way it can fill a notebook, and a
+// been paced, spent a network round trip and put a slice of a page in front of
+// the model — a session cannot fill this the way it can fill a notebook, and a
 // ledger that dropped its oldest rows would be missing exactly the early
 // sources a long write-up cites.
 func NewLedger(backend LedgerBackend) *Ledger {

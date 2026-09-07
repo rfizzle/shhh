@@ -633,6 +633,7 @@ own file could hold.
 |---|---|---|---|
 | `allow_private` | true/false | `off` | Let a fetch reach private, loopback, link-local and CGNAT addresses, and lift the 80/443 port list; cloud metadata stays blocked either way. |
 | `fetch_max_bytes` | number | 2 MiB | The download ceiling on one fetch. |
+| `inline_bytes` | number | 16 KiB with an evidence store, 48 KiB without | How much of a fetched page's text one tool result carries; with a store the rest is kept whole and the result says how to read on from the cut. |
 | `fetch_timeout_seconds` | number | `30` | How long one request may take, redirects and the body read included. A wait a host asked for is not charged to it. |
 | `cache_ttl_minutes` | number | `60` | How long a cached response stays fresh. |
 | `allow_hosts` | list | (empty — every host asks the first time) | Hosts a fetch reaches without asking, in every session; an exact host, never a suffix, so `docs.python.org` does not cover `python.org`. |

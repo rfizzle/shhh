@@ -22,21 +22,42 @@ const (
 	SearchToolName = "web_search"
 )
 
-// MaxInlineBytes bounds the content a web tool result carries inline. The
-// rest of a longer page is not lost: it goes to the evidence store whole and
-// the result says how to read on from here.
+// MaxInlineBytes bounds the content a web tool result carries inline where
+// the session keeps no evidence store. The cut is then the end of the page as
+// far as the conversation is concerned, so it is the generous of the two.
 const MaxInlineBytes = 48 << 10
+
+// StoredInlineBytes is that bound for a session that has an evidence store,
+// where the rest of a longer page is not lost: it goes to the store whole and
+// the result says how to read on from here.
+//
+// It is a third of the storeless bound because the slice answers a different
+// question once the page is retrievable. Six pages read at 48 KB is most of a
+// research turn's window spent on navigation and prose before anything can be
+// narrowed; the first slice is for deciding whether this is the right page,
+// and the page itself is one evidence read away.
+// See docs/capabilities/evidence.md#a-page-is-kept-whole.
+const StoredInlineBytes = 16 << 10
 
 const (
 	// scriptShellBodyMin and scriptShellTextMax are the two halves of the
 	// verdict on a page that turned out to be a shell for a script. Below
 	// the first, a document with little text is simply a short document —
 	// 4 KB of markup is about one screen of prose with its tags. Above the
-	// second, there is something to read: a client-rendered shell yields its
-	// <noscript> line and its skip-to-content link, which together run well
-	// under 200 bytes, while an article's first paragraph alone clears it.
+	// second, there is something to read: a client-rendered shell yields a
+	// "this page requires JavaScript" line and a handful of fallback links,
+	// which together run well under 400 bytes, while an article's first
+	// paragraph alone clears it.
+	//
+	// 400 rather than the 200 it was, because a link now carries its
+	// destination. Shells built from what real ones ship — a fallback
+	// paragraph with three links, a footer row of four beside a logo's alt
+	// text — extract to well under 100 bytes with the labels alone and to
+	// just under 200 with the addresses in. The same pages, sitting on the
+	// old bound, one link away from being read as pages with something to
+	// say.
 	scriptShellBodyMin = 4 << 10
-	scriptShellTextMax = 200
+	scriptShellTextMax = 400
 )
 
 // KeepFunc stores a page's whole text in the session's evidence store and
@@ -57,6 +78,12 @@ type Toolset struct {
 	// PDFText is the path of the PDF reader this machine has, or "" where it
 	// has none, in which case a fetched PDF says so by name.
 	PDFText string
+
+	// InlineBytes is web.inline_bytes: how much of a page's text one result
+	// carries. 0 is the built-in answer, which depends on whether the
+	// session can retrieve the rest — StoredInlineBytes with a store,
+	// MaxInlineBytes without.
+	InlineBytes int
 
 	// keep and scrub are the session's evidence store, installed by
 	// UseEvidence; nil is a session without one.
@@ -270,7 +297,7 @@ func (t *Toolset) FetchPlan(args json.RawMessage) (FetchPlan, error) {
 	receives := fmt.Sprintf("page text into the conversation, bounded to %s", formatBytes(t.Fetcher.maxBody()))
 	if t.keep != nil {
 		receives = fmt.Sprintf("page text, whole, into the evidence store; the first %s into the conversation",
-			formatBytes(MaxInlineBytes))
+			formatBytes(int64(t.inlineBytes())))
 	}
 	return FetchPlan{
 		Host:     target.Host,
@@ -361,7 +388,7 @@ func (t *Toolset) formatFetchResult(res Result, row *Source) string {
 
 	switch {
 	case mediaType == "text/html" || mediaType == "application/xhtml+xml":
-		ex := ExtractHTML(res.Body)
+		ex := ExtractHTML(res.Body, res.FinalURL)
 		if row != nil {
 			row.Title = ex.Title
 		}
@@ -391,8 +418,21 @@ func (t *Toolset) formatFetchResult(res Result, row *Source) string {
 	return sb.String()
 }
 
+// inlineBytes is how much of a page's text one result carries: the configured
+// number where there is one, and otherwise the answer that depends on whether
+// the rest is retrievable.
+func (t *Toolset) inlineBytes() int {
+	if t.InlineBytes > 0 {
+		return t.InlineBytes
+	}
+	if t.keep != nil {
+		return StoredInlineBytes
+	}
+	return MaxInlineBytes
+}
+
 // inline is the model's view of a page's text: the whole of it goes to the
-// evidence store first, and what comes back is the opening MaxInlineBytes of
+// evidence store first, and what comes back is the opening inlineBytes of
 // exactly those bytes with the notice that pages the rest.
 //
 // The store is written before the cut, never after. Cutting first and letting
@@ -405,7 +445,8 @@ func (t *Toolset) inline(text string, row *Source) string {
 	if t.scrub != nil {
 		text = t.scrub(text)
 	}
-	if len(text) <= MaxInlineBytes {
+	bound := t.inlineBytes()
+	if len(text) <= bound {
 		return text
 	}
 	// Only a page that does not fit is stored. An entry for one that does is
@@ -420,7 +461,7 @@ func (t *Toolset) inline(text string, row *Source) string {
 	if row != nil {
 		row.Evidence = id
 	}
-	cut, _ := tools.TruncateOutput(text, MaxInlineBytes)
+	cut, _ := tools.TruncateOutput(text, bound)
 	if id == "" {
 		return cut + "\n… (content truncated at inline limit)"
 	}

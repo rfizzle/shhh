@@ -461,7 +461,7 @@ func TestGolden_ApprovalCard(t *testing.T) {
 				c.Fields = []CardField{
 					{Label: "domain", Value: "pkg.go.dev", Detail: "the request leaves this machine", Tone: ToneOpen},
 					{Label: "sends", Value: "the URL and a shhh-web/1.0 user-agent", Detail: "no file contents, no credentials"},
-					{Label: "receives", Value: "page text, whole, into the evidence store; the first 48 KB into the conversation", Detail: "it counts against the context window"},
+					{Label: "receives", Value: "page text, whole, into the evidence store; the first 16 KB into the conversation", Detail: "it counts against the context window"},
 				}
 			})},
 		}
