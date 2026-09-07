@@ -19,6 +19,10 @@ type ResolveOpts struct {
 	// that has to be told reads it through cacheTTLOrDefault, so an empty or
 	// unreadable value is the default rather than a refusal (cache.go).
 	CacheTTL string
+	// StreamIdleSeconds is how long a turn's stream may go without an event
+	// before the turn fails, as the file spells it: zero for unset, and any
+	// negative to remove the deadline (idle.go).
+	StreamIdleSeconds int
 }
 
 type ProviderDefaults struct {

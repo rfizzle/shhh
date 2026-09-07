@@ -199,6 +199,10 @@ var settings = []Setting{
 		Key: "provider.cache_ttl", Kind: KindEnum, Default: "1h",
 		Values: []string{"5m", "1h"},
 		Desc:   "How long the opening a session repeats every round stays cached between rounds.",
+	}, {
+		Key: "provider.stream_idle_seconds", Kind: KindInt, Signed: true,
+		Default: "120 seconds", Literal: "120",
+		Desc: "How long a turn's stream may go without an event before the request is abandoned and retried; a negative removes the deadline.",
 	},
 
 	{

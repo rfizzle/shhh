@@ -594,6 +594,43 @@ that reads *waiting*. Every attempt is also written to the diagnostic log
 with its class and its wait, so a run that went quiet can be told from a run
 that hung after the fact, when the screen it was said on is gone.
 
+## A stream that stops writing is a failure
+
+A request that is accepted, answered with headers and then never written to
+again looks, from inside the loop reading it, exactly like a model thinking
+hard. Both are a read that has not returned. Nothing in the reply says which
+one it is, and nothing ever will: silence has no content.
+
+So every turn's stream carries a deadline on the *gap between events*, and any
+event pushes it forward — a token, a fragment of a tool call's arguments, the
+model's thinking as it is written, a keep-alive the reader had no other use
+for. What is being watched for is silence on the wire, never progress toward
+an answer, which is why the deadline can be generous without being useless: a
+reply that takes ten minutes to write is a stream that wrote something every
+few seconds for ten minutes.
+
+The deadline reaches the request that opens the stream as well as the stream
+itself. An endpoint that accepts a connection and never sends its headers is
+the same failure one line earlier, and it is the one the plain HTTP paths had
+no protection from at all.
+
+An expired deadline ends the turn as a network failure — the class that
+already means the connection died on the way back, and one of the three the
+[schedule above](#a-stall-is-waited-out-on-one-schedule) waits out and asks
+again. That is the whole point of naming it that: a gateway that went quiet
+for thirty seconds is very often answering the next request, and the
+alternative to a retry here is a person noticing.
+
+Two minutes is the default, and `provider.stream_idle_seconds` moves it. A
+negative removes the deadline entirely, for a machine that would rather wait
+indefinitely than lose a turn.
+
+This exists for the runs with nobody in front of them. In the TUI a stalled
+stream is a person pressing Esc after twenty seconds of nothing; an unattended
+run, a served loop, a queued stage and a delegated child each have no such
+person, and the process holds its worktree lock and its budget until something
+outside it decides to intervene.
+
 ## Related
 
 - [`../architecture.md`](../architecture.md) — why the boundary is here

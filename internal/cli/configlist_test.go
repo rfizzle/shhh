@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/attachment"
@@ -184,6 +185,7 @@ func TestSettings_StatedDefaultsAreTheConstants(t *testing.T) {
 		"provider.default":                     resolve.DefaultProvider,
 		"provider.reasoning":                   provider.DefaultEffort.String(),
 		"provider.cache_ttl":                   string(provider.DefaultCacheTTL),
+		"provider.stream_idle_seconds":         strconv.Itoa(int(provider.DefaultStreamIdle/time.Second)) + " seconds",
 		"behavior.max_tool_rounds":             strconv.Itoa(agent.DefaultMaxToolRounds),
 		"behavior.context_max_tokens":          strconv.Itoa(config.DefaultContextMaxTokens) + " tokens",
 		"behavior.check_in_interval_rounds":    strconv.Itoa(agent.DefaultCheckInInterval) + " rounds",

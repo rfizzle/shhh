@@ -72,13 +72,14 @@ func addModelFlags(cmd *cobra.Command, flags *resolve.Opts) {
 // still no way in.
 func resolveProvider(ctx context.Context, cfg config.Config, req providerRequest) (provider.Provider, providerRequest, error) {
 	p, err := provider.Resolve(req.Provider, provider.ResolveOpts{
-		APIKey:        req.APIKey,
-		Model:         req.Model,
-		BaseURL:       req.BaseURL,
-		ConfigAPIKey:  cfg.ProviderAPIKey(),
-		ConfigBaseURL: cfg.ProviderBaseURL(),
-		ConfigName:    cfg.ProviderDisplayName(),
-		CacheTTL:      cfg.ProviderCacheTTL(),
+		APIKey:            req.APIKey,
+		Model:             req.Model,
+		BaseURL:           req.BaseURL,
+		ConfigAPIKey:      cfg.ProviderAPIKey(),
+		ConfigBaseURL:     cfg.ProviderBaseURL(),
+		ConfigName:        cfg.ProviderDisplayName(),
+		CacheTTL:          cfg.ProviderCacheTTL(),
+		StreamIdleSeconds: cfg.ProviderStreamIdle(),
 	})
 	if err == nil {
 		return p, req, nil
@@ -112,13 +113,14 @@ func resolveProvider(ctx context.Context, cfg config.Config, req providerRequest
 	}
 
 	p, err = provider.Resolve(next.Provider, provider.ResolveOpts{
-		APIKey:        next.APIKey,
-		Model:         next.Model,
-		BaseURL:       next.BaseURL,
-		ConfigAPIKey:  cfg.ProviderAPIKey(),
-		ConfigBaseURL: cfg.ProviderBaseURL(),
-		ConfigName:    cfg.ProviderDisplayName(),
-		CacheTTL:      cfg.ProviderCacheTTL(),
+		APIKey:            next.APIKey,
+		Model:             next.Model,
+		BaseURL:           next.BaseURL,
+		ConfigAPIKey:      cfg.ProviderAPIKey(),
+		ConfigBaseURL:     cfg.ProviderBaseURL(),
+		ConfigName:        cfg.ProviderDisplayName(),
+		CacheTTL:          cfg.ProviderCacheTTL(),
+		StreamIdleSeconds: cfg.ProviderStreamIdle(),
 	})
 	if err != nil {
 		return nil, req, err

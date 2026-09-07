@@ -53,4 +53,9 @@
 # rounds.
 #cache_ttl = "1h"
 
+# How long a turn's stream may go without an event before the request is
+# abandoned and retried; a negative removes the deadline.
+# The default is 120 seconds.
+#stream_idle_seconds = 120
+
 

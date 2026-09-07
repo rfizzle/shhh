@@ -19,8 +19,10 @@ const defaultGeminiModel = "gemini-2.5-flash"
 const cheapGeminiModel = "gemini-3.7-flash"
 
 type Gemini struct {
-	client   *genai.Client
-	model    string
+	client *genai.Client
+	model  string
+	// idleDeadline ends a turn whose stream stops writing (idle.go).
+	idleDeadline
 	classify func(error) error
 }
 
@@ -41,9 +43,10 @@ func NewGemini(opts ResolveOpts) (*Gemini, error) {
 	}
 
 	return &Gemini{
-		client:   client,
-		model:    model,
-		classify: newClassifier("gemini", "SHHH_API_KEY or GEMINI_API_KEY", key),
+		client:       client,
+		model:        model,
+		idleDeadline: idleDeadlineOf(opts.StreamIdleSeconds),
+		classify:     newClassifier("gemini", "SHHH_API_KEY or GEMINI_API_KEY", key),
 	}, nil
 }
 
@@ -78,21 +81,28 @@ func (g *Gemini) StreamCompletion(ctx context.Context, messages []Message, opts 
 	}
 	applyGeminiRequestShape(config, opts, model)
 
+	// The stream runs under its own idle deadline, so a gateway that
+	// answered and then stopped writing ends the turn instead of holding it
+	// (idle.go).
+	ctx, watch := g.guard(ctx)
+
 	ch := make(chan StreamEvent)
 	go func() {
 		defer close(ch)
+		defer watch.stop()
 		var toolCalls []ToolCall
 		var reasoning []ReasoningBlock
 		var usage *Usage
 		var stop StopReason
 		for resp, err := range g.client.Models.GenerateContentStream(ctx, model, contents, config) {
+			watch.alive()
 			if err != nil {
 				// The function calls already delivered travel with the
 				// failure, so a dropped stream can be continued.
 				ch <- StreamEvent{
 					ToolCalls: CompletedToolCalls(toolCalls),
 					Reasoning: reasoning,
-					Err:       g.classify(err),
+					Err:       g.classify(watch.err(err)),
 					Done:      true,
 				}
 				return
@@ -155,6 +165,17 @@ func (g *Gemini) StreamCompletion(ctx context.Context, messages []Message, opts 
 					}
 				}
 			}
+		}
+		// A cancelled iterator can end without yielding an error, so the
+		// deadline is asked before the round is called finished.
+		if err := watch.err(nil); err != nil {
+			ch <- StreamEvent{
+				ToolCalls: CompletedToolCalls(toolCalls),
+				Reasoning: reasoning,
+				Err:       g.classify(err),
+				Done:      true,
+			}
+			return
 		}
 		if stop == StopLength {
 			// A call the ceiling landed inside of is dropped, the same as on

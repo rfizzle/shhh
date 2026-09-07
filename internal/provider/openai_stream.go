@@ -112,11 +112,12 @@ func (s *toolCallSet) calls() []ToolCall {
 	return calls
 }
 
-func streamOpenAIToolCalls(stream *openai.ChatCompletionStream, classify func(error) error) <-chan StreamEvent {
+func streamOpenAIToolCalls(stream *openai.ChatCompletionStream, classify func(error) error, watch *idleWatch) <-chan StreamEvent {
 	ch := make(chan StreamEvent)
 	go func() {
 		defer close(ch)
 		defer stream.Close()
+		defer watch.stop()
 		toolCalls := newToolCallSet()
 		var usage *Usage
 		var stop StopReason
@@ -128,7 +129,17 @@ func streamOpenAIToolCalls(stream *openai.ChatCompletionStream, classify func(er
 
 		for {
 			resp, err := stream.Recv()
+			// Every chunk pushes the idle deadline forward, the empty ones
+			// this loop goes on to ignore included: what it watches for is
+			// silence on the wire (idle.go).
+			watch.alive()
 			if errors.Is(err, io.EOF) {
+				// A cancelled body can read as a clean end, so the deadline
+				// is asked before the round is called finished.
+				if idle := watch.err(nil); idle != nil {
+					ch <- StreamEvent{ToolCalls: CompletedToolCalls(toolCalls.calls()), Err: classify(idle), Done: true}
+					return
+				}
 				ch <- terminalOpenAIEvent(toolCalls, usage, stop)
 				return
 			}
@@ -136,7 +147,7 @@ func streamOpenAIToolCalls(stream *openai.ChatCompletionStream, classify func(er
 				// The calls the model had finished writing travel with the
 				// failure, so the session can offer to continue from them
 				// rather than only from the top.
-				ch <- StreamEvent{ToolCalls: CompletedToolCalls(toolCalls.calls()), Err: classify(err), Done: true}
+				ch <- StreamEvent{ToolCalls: CompletedToolCalls(toolCalls.calls()), Err: classify(watch.err(err)), Done: true}
 				return
 			}
 

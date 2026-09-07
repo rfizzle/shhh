@@ -468,6 +468,18 @@ type ProviderConfig struct {
 	// cache; the ones that cache by themselves ignore it
 	// (docs/capabilities/providers.md#the-prompt-prefix-is-paid-for-once).
 	CacheTTL string `toml:"cache_ttl"`
+	// StreamIdleSeconds bounds how long a turn's stream may go without an
+	// event — a token, a thinking delta, an argument fragment — before the
+	// request is abandoned and retried as a network failure. Zero keeps the
+	// built-in deadline, and any negative removes it for a machine that
+	// would rather wait indefinitely than lose a turn.
+	//
+	// What it bounds is the gap between two events and never the length of a
+	// reply, so it can be generous: an endpoint that accepts a request,
+	// sends its headers and stops writing is what it exists for, and in an
+	// unattended run there is nobody to press Esc
+	// (docs/capabilities/providers.md#a-stream-that-stops-writing-is-a-failure).
+	StreamIdleSeconds int `toml:"stream_idle_seconds"`
 }
 
 type BehaviorConfig struct {
@@ -1013,6 +1025,12 @@ func (c *Config) TodoGroomStale() int { return c.Todo.GroomStaleCommits }
 // ProviderCacheTTL returns the configured lifetime of the repeated opening.
 func (c Config) ProviderCacheTTL() string {
 	return c.Provider.CacheTTL
+}
+
+// ProviderStreamIdle returns the configured idle deadline for a turn's
+// stream, in whole seconds, as the file spells it.
+func (c Config) ProviderStreamIdle() int {
+	return c.Provider.StreamIdleSeconds
 }
 
 func Load() (Config, error) {

@@ -248,9 +248,14 @@ func newEndpoint(p Profile, e Endpoint, opts provider.ResolveOpts) (provider.Pro
 	}
 	httpClient := &http.Client{Transport: NewTransport(e, base)}
 
+	// Each dialect is told the session's idle deadline after it is built:
+	// these three constructors take a finished client rather than the resolve
+	// options the deadline lives in, and a route through a gateway is no less
+	// able to go quiet than the direct path.
 	switch e.API {
 	case APIOpenAIResponses:
 		inner := provider.NewOpenAIResponsesWith(httpClient, key, e.BaseURL, opts.Model, p.Name)
+		inner.SetStreamIdle(opts.StreamIdleSeconds)
 		return withDiscovery(e, &responsesProfile{OpenAIResponses: inner, endpoint: e, client: httpClient}), nil
 	case APIAnthropicMessage:
 		inner := provider.NewAnthropicNamed(anthropic.NewClient(
@@ -258,12 +263,14 @@ func newEndpoint(p Profile, e Endpoint, opts provider.ResolveOpts) (provider.Pro
 			option.WithBaseURL(e.BaseURL),
 			option.WithHTTPClient(httpClient),
 		), opts.Model, p.Name, opts.CacheTTL)
+		inner.SetStreamIdle(opts.StreamIdleSeconds)
 		return &anthropicProfile{Anthropic: inner, name: p.Name}, nil
 	default:
 		cfg := openai.DefaultConfig(key)
 		cfg.BaseURL = e.BaseURL
 		cfg.HTTPClient = httpClient
 		inner := provider.NewOpenAICompatNamed(openai.NewClientWithConfig(cfg), opts.Model, e.BaseURL, p.Name)
+		inner.SetStreamIdle(opts.StreamIdleSeconds)
 		return withDiscovery(e, &openAIProfile{OpenAICompat: inner, endpoint: e, client: httpClient}), nil
 	}
 }

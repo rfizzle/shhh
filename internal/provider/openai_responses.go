@@ -38,11 +38,16 @@ const (
 // gateway profile's rewriting transport (internal/profile) applies to it the
 // same way it applies to every other openai-shaped provider.
 type OpenAIResponses struct {
-	client   *http.Client
-	apiKey   string
-	baseURL  string
-	model    string
-	name     string
+	client  *http.Client
+	apiKey  string
+	baseURL string
+	model   string
+	name    string
+	// idleDeadline ends a turn whose stream stops writing (idle.go). This is
+	// the dialect that needs it most: the client below is a plain one, so a
+	// gateway that sends headers and stops writing is otherwise read here
+	// forever.
+	idleDeadline
 	classify func(error) error
 }
 
@@ -52,7 +57,9 @@ func NewOpenAIResponses(opts ResolveOpts) (*OpenAIResponses, error) {
 		return nil, fmt.Errorf("SHHH_API_KEY or OPENAI_API_KEY is not set")
 	}
 	baseURL := first(opts.BaseURL, os.Getenv("SHHH_BASE_URL"), opts.ConfigBaseURL, defaultResponsesBaseURL)
-	return NewOpenAIResponsesWith(nil, key, baseURL, first(opts.Model, defaultResponsesModel), "openai-responses"), nil
+	p := NewOpenAIResponsesWith(nil, key, baseURL, first(opts.Model, defaultResponsesModel), "openai-responses")
+	p.SetStreamIdle(opts.StreamIdleSeconds)
+	return p, nil
 }
 
 // NewOpenAIResponsesWith builds the provider over a caller-supplied HTTP
@@ -239,8 +246,15 @@ func (o *OpenAIResponses) StreamCompletion(ctx context.Context, messages []Messa
 		return nil, err
 	}
 
+	// Everything from here on runs under the idle deadline: the request that
+	// opens the stream as well as the stream itself, because an endpoint that
+	// accepts the connection and never sends its headers is the first thing
+	// there is to time out (idle.go).
+	ctx, watch := o.guard(ctx)
+
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, o.baseURL+"/responses", bytes.NewReader(body))
 	if err != nil {
+		watch.stop()
 		return nil, err
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
@@ -251,13 +265,18 @@ func (o *OpenAIResponses) StreamCompletion(ctx context.Context, messages []Messa
 
 	resp, err := o.client.Do(httpReq)
 	if err != nil {
-		return nil, o.classify(err)
+		defer watch.stop()
+		return nil, o.classify(watch.err(err))
 	}
 	if resp.StatusCode != http.StatusOK {
+		// The deadline is not asked here, and this is the one path where it
+		// is not: the endpoint answered with a status, so what refused the
+		// request is what the status says and never the wire going quiet.
+		defer watch.stop()
 		defer resp.Body.Close()
 		return nil, o.classify(responsesHTTPError(resp))
 	}
-	return streamResponses(resp.Body, o.classify), nil
+	return streamResponses(resp.Body, o.classify, watch), nil
 }
 
 // toResponseItems flattens shhh's messages into the Responses input list,

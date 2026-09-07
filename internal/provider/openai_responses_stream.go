@@ -98,11 +98,12 @@ type responseError struct {
 }
 
 // streamResponses converts the SSE body into shhh's stream events.
-func streamResponses(body io.ReadCloser, classify func(error) error) <-chan StreamEvent {
+func streamResponses(body io.ReadCloser, classify func(error) error, watch *idleWatch) <-chan StreamEvent {
 	ch := make(chan StreamEvent)
 	go func() {
 		defer close(ch)
 		defer body.Close()
+		defer watch.stop()
 
 		scanner := bufio.NewScanner(body)
 		// A single event carries a whole tool-call payload, well past the
@@ -126,6 +127,10 @@ func streamResponses(body io.ReadCloser, classify func(error) error) <-chan Stre
 		reasoningSeen := map[string]bool{}
 
 		for scanner.Scan() {
+			// Every line pushes the idle deadline forward, including the
+			// blank separators and the keep-alive comments this reader has no
+			// use for: what it watches for is silence on the wire (idle.go).
+			watch.alive()
 			payload, ok := sseData(scanner.Text())
 			if !ok {
 				continue
@@ -202,7 +207,9 @@ func streamResponses(body io.ReadCloser, classify func(error) error) <-chan Stre
 			}
 		}
 
-		if err := scanner.Err(); err != nil {
+		// The deadline is asked even where the scanner stopped without an
+		// error: a cancelled body can read as a clean end of stream.
+		if err := watch.err(scanner.Err()); err != nil {
 			ch <- StreamEvent{ToolCalls: CompletedToolCalls(orderedCalls(seen, order)), Reasoning: reasoning, Err: classify(err), Done: true}
 			return
 		}

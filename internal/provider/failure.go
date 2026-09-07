@@ -261,12 +261,21 @@ func record(f *Failure) {
 		"status", f.Status, "detail", f.Message)
 }
 
-// classOf is the mapping itself, and the only place it lives. Cancellation
-// comes first because a cancelled request often surfaces as a transport
-// error that would otherwise read as a network failure; the status is asked
-// next because a provider that answered at all is more authoritative than
-// its prose; the prose is last, for the dialects that hand back nothing else.
+// classOf is the mapping itself, and the only place it lives. A stream that
+// went quiet comes first, ahead of the cancellation the deadline is enforced
+// with (idle.go); cancellation comes next because a cancelled request often
+// surfaces as a transport error that would otherwise read as a network
+// failure; the status is asked after that because a provider that answered at
+// all is more authoritative than its prose; the prose is last, for the
+// dialects that hand back nothing else.
 func classOf(err error, status int, message string) Class {
+	if errors.Is(err, ErrStreamIdle) {
+		// The connection died on the way back, which is what the class
+		// already says — and it is one of the three the retry schedule waits
+		// out, so a gateway that stopped writing is asked again rather than
+		// sat under.
+		return ClassNetwork
+	}
 	if errors.Is(err, context.Canceled) {
 		return ClassCancelled
 	}

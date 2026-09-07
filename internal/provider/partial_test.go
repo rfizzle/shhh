@@ -86,7 +86,7 @@ func TestStreamResponses_BrokenStreamKeepsTheFinishedCalls(t *testing.T) {
 	classify := newClassifier("openai", "OPENAI_API_KEY", "sk-xxxx1234")
 
 	var last StreamEvent
-	for ev := range streamResponses(body, classify) {
+	for ev := range streamResponses(body, classify, &idleWatch{}) {
 		last = ev
 	}
 	if last.Err == nil {

@@ -33,6 +33,8 @@ type Anthropic struct {
 	model  string
 	// cacheTTL is how long the request's fixed head is cached for (cache.go).
 	cacheTTL CacheTTL
+	// idleDeadline ends a turn whose stream stops writing (idle.go).
+	idleDeadline
 	classify func(error) error
 }
 
@@ -48,10 +50,11 @@ func NewAnthropic(opts ResolveOpts) (*Anthropic, error) {
 	}
 
 	return &Anthropic{
-		client:   anthropic.NewClient(clientOpts...),
-		model:    first(opts.Model, defaultAnthropicModel),
-		cacheTTL: cacheTTLOrDefault(opts.CacheTTL),
-		classify: newClassifier("anthropic", "SHHH_API_KEY or ANTHROPIC_API_KEY", key),
+		client:       anthropic.NewClient(clientOpts...),
+		model:        first(opts.Model, defaultAnthropicModel),
+		cacheTTL:     cacheTTLOrDefault(opts.CacheTTL),
+		idleDeadline: idleDeadlineOf(opts.StreamIdleSeconds),
+		classify:     newClassifier("anthropic", "SHHH_API_KEY or ANTHROPIC_API_KEY", key),
 	}, nil
 }
 
@@ -160,9 +163,15 @@ func (a *Anthropic) StreamCompletion(ctx context.Context, messages []Message, op
 	// on it (cache.go).
 	markAnthropicCache(&params, a.cacheTTL)
 
+	// The stream runs under its own idle deadline, so a gateway that
+	// answered and then stopped writing ends the turn instead of holding it
+	// (idle.go).
+	ctx, watch := a.guard(ctx)
+
 	ch := make(chan StreamEvent)
 	go func() {
 		defer close(ch)
+		defer watch.stop()
 
 		stream := a.client.Messages.NewStreaming(ctx, params)
 		accumulated := anthropic.Message{}
@@ -175,12 +184,13 @@ func (a *Anthropic) StreamCompletion(ctx context.Context, messages []Message, op
 		// piece costs quadratic time on the goroutine reading the wire.
 		fragments := map[int64]*strings.Builder{}
 		for stream.Next() {
+			watch.alive()
 			event := stream.Current()
 			if err := accumulated.Accumulate(event); err != nil {
 				ch <- StreamEvent{
 					ToolCalls: CompletedToolCalls(anthropicToolCalls(accumulated)),
 					Reasoning: anthropicReasoning(accumulated),
-					Err:       a.classify(err),
+					Err:       a.classify(watch.err(err)),
 					Done:      true,
 				}
 				return
@@ -219,6 +229,18 @@ func (a *Anthropic) StreamCompletion(ctx context.Context, messages []Message, op
 		if err := stream.Err(); err != nil {
 			// The blocks the model had finished travel with the failure, so a
 			// dropped stream can be continued rather than only re-asked.
+			ch <- StreamEvent{
+				ToolCalls: CompletedToolCalls(anthropicToolCalls(accumulated)),
+				Reasoning: anthropicReasoning(accumulated),
+				Err:       a.classify(watch.err(err)),
+				Done:      true,
+			}
+			return
+		}
+
+		// A cancelled stream can end without an error of its own, so the
+		// deadline is asked before the round is called finished.
+		if err := watch.err(nil); err != nil {
 			ch <- StreamEvent{
 				ToolCalls: CompletedToolCalls(anthropicToolCalls(accumulated)),
 				Reasoning: anthropicReasoning(accumulated),

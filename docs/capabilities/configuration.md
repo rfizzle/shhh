@@ -579,6 +579,7 @@ own file could hold.
 | `name` | text | (the provider's own) | What the provider is called on screen, for a gateway that fronts several. |
 | `reasoning` | word: `off`, `low`, `medium`, `high`, `xhigh`, `max` | `medium` | How hard the model thinks before it answers; the level is fitted to each model, so a rung it lacks lowers to the one it has. `--reasoning` and `SHHH_REASONING` are read ahead of the file. |
 | `cache_ttl` | word: `5m`, `1h` | `1h` | How long the opening a session repeats every round stays cached between rounds. |
+| `stream_idle_seconds` | number | 120 seconds | How long a turn's stream may go without an event before the request is abandoned and retried; a negative removes the deadline. |
 
 **`[behavior]`**
 

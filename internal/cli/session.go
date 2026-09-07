@@ -516,13 +516,14 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 			baseURL = ""
 		}
 		next, rErr := provider.Resolve(name, provider.ResolveOpts{
-			APIKey:        key,
-			Model:         model,
-			BaseURL:       baseURL,
-			ConfigAPIKey:  cfg.ProviderAPIKey(),
-			ConfigBaseURL: cfg.ProviderBaseURL(),
-			ConfigName:    cfg.ProviderDisplayName(),
-			CacheTTL:      cfg.ProviderCacheTTL(),
+			APIKey:            key,
+			Model:             model,
+			BaseURL:           baseURL,
+			ConfigAPIKey:      cfg.ProviderAPIKey(),
+			ConfigBaseURL:     cfg.ProviderBaseURL(),
+			ConfigName:        cfg.ProviderDisplayName(),
+			CacheTTL:          cfg.ProviderCacheTTL(),
+			StreamIdleSeconds: cfg.ProviderStreamIdle(),
 		})
 		if rErr != nil {
 			return rErr

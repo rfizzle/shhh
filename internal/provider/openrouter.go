@@ -26,8 +26,10 @@ const (
 )
 
 type OpenRouter struct {
-	client   *openai.Client
-	model    string
+	client *openai.Client
+	model  string
+	// idleDeadline ends a turn whose stream stops writing (idle.go).
+	idleDeadline
 	classify func(error) error
 }
 
@@ -49,9 +51,10 @@ func NewOpenRouter(opts ResolveOpts) (*OpenRouter, error) {
 	}
 
 	return &OpenRouter{
-		client:   openai.NewClientWithConfig(cfg),
-		model:    model,
-		classify: newClassifier("openrouter", "SHHH_API_KEY or OPENROUTER_API_KEY", key),
+		client:       openai.NewClientWithConfig(cfg),
+		model:        model,
+		idleDeadline: idleDeadlineOf(opts.StreamIdleSeconds),
+		classify:     newClassifier("openrouter", "SHHH_API_KEY or OPENROUTER_API_KEY", key),
 	}, nil
 }
 
@@ -131,12 +134,16 @@ func (o *OpenRouter) StreamCompletion(ctx context.Context, messages []Message, o
 		}
 	}
 
+	// The stream and the request that opens it both run under the idle
+	// deadline (idle.go).
+	ctx, watch := o.guard(ctx)
 	stream, err := o.client.CreateChatCompletionStream(ctx, req)
 	if err != nil {
-		return nil, o.classify(err)
+		defer watch.stop()
+		return nil, o.classify(watch.err(err))
 	}
 
-	return streamOpenAIToolCalls(stream, o.classify), nil
+	return streamOpenAIToolCalls(stream, o.classify, watch), nil
 }
 
 func init() {

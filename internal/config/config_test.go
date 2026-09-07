@@ -1009,6 +1009,33 @@ func TestProviderCacheTTL_LoadsAndWrites(t *testing.T) {
 	}
 }
 
+// The idle deadline is a number of seconds and a negative is an answer it has
+// a meaning for — no deadline at all — so the write has to keep the sign
+// rather than refuse it as a ceiling nothing could satisfy.
+func TestProviderStreamIdle_LoadsAndWrites(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.toml")
+	if err := os.WriteFile(path, []byte("[provider]\nstream_idle_seconds = 45\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := LoadFrom(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.ProviderStreamIdle() != 45 {
+		t.Errorf("provider.stream_idle_seconds = %d, want 45", cfg.ProviderStreamIdle())
+	}
+
+	if err := Write(path, Edit{Key: "provider.stream_idle_seconds", Value: "-1"}); err != nil {
+		t.Fatal(err)
+	}
+	if cfg, err = LoadFrom(path); err != nil {
+		t.Fatal(err)
+	}
+	if cfg.ProviderStreamIdle() != -1 {
+		t.Errorf("after the write, provider.stream_idle_seconds = %d, want -1", cfg.ProviderStreamIdle())
+	}
+}
+
 // The inspector rail's width reads back off the file and through the write
 // door, which is the pair every key needs. It is a string because its value
 // is a word or a number and the surface that owns the rail decides which;

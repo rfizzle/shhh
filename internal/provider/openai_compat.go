@@ -25,11 +25,13 @@ type OpenAICompat struct {
 	// over a caller's own client (a gateway profile), which sends through a
 	// transport this package did not configure and declares its models'
 	// windows in the profile file anyway.
-	httpc    *http.Client
-	apiKey   string
-	model    string
-	baseURL  string
-	name     string
+	httpc   *http.Client
+	apiKey  string
+	model   string
+	baseURL string
+	name    string
+	// idleDeadline ends a turn whose stream stops writing (idle.go).
+	idleDeadline
 	classify func(error) error
 }
 
@@ -43,13 +45,14 @@ func NewOpenAICompat(opts ResolveOpts) (*OpenAICompat, error) {
 	cfg := openai.DefaultConfig(key)
 	cfg.BaseURL = baseURL
 	return &OpenAICompat{
-		client:   openai.NewClientWithConfig(cfg),
-		httpc:    http.DefaultClient,
-		apiKey:   key,
-		model:    model,
-		baseURL:  baseURL,
-		name:     name,
-		classify: newClassifier(name, "SHHH_API_KEY", key),
+		client:       openai.NewClientWithConfig(cfg),
+		httpc:        http.DefaultClient,
+		apiKey:       key,
+		model:        model,
+		baseURL:      baseURL,
+		name:         name,
+		idleDeadline: idleDeadlineOf(opts.StreamIdleSeconds),
+		classify:     newClassifier(name, "SHHH_API_KEY", key),
 	}, nil
 }
 
@@ -233,12 +236,16 @@ func (o *OpenAICompat) StreamCompletion(ctx context.Context, messages []Message,
 		}
 	}
 
+	// The stream and the request that opens it both run under the idle
+	// deadline (idle.go).
+	ctx, watch := o.guard(ctx)
 	stream, err := o.client.CreateChatCompletionStream(ctx, req)
 	if err != nil {
-		return nil, o.classify(err)
+		defer watch.stop()
+		return nil, o.classify(watch.err(err))
 	}
 
-	return streamOpenAIToolCalls(stream, o.classify), nil
+	return streamOpenAIToolCalls(stream, o.classify, watch), nil
 }
 
 func init() {
