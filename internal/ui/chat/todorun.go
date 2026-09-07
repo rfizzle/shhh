@@ -25,12 +25,14 @@ package chat
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/project"
+	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/todo/run"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -51,6 +53,13 @@ func todoNoRepoSprintNotice(root string) string {
 	return fmt.Sprintf("%s is not in a git repository and a run ends in a commit — /todo run --all --no-commit works the set without commits, or todo.commit = false makes that the default.", root)
 }
 
+// todoNoChecksNotice is what a run is refused with where nothing says what
+// checking this project's work means. Both ways through are named: the file
+// the gate reads, and the profile step that carries its own command instead.
+func todoNoChecksNotice(root, step string) string {
+	return fmt.Sprintf("%s has no %s, so the %s step would have nothing to run — define named suites there, or give the step a command of its own in the profile.", root, quality.ConfigRelPath, step)
+}
+
 // todoRunCan is what this session is able to do, which is what the run's
 // steps are put to before the first of them is taken.
 func (m Model) todoRunCan(repo bool) run.Can {
@@ -63,11 +72,32 @@ func (m Model) todoRunCan(repo bool) run.Can {
 		Supervisor: m.subagents != nil,
 		// A conversation registered no command tool at all, and no key
 		// reaches one, so a step whose verdict is an exit status has no way
-		// to get one here. In a session that can run commands, whether the
-		// project names any is the command step's own business.
+		// to get one here. Whether the project names any command to run is
+		// the separate question below.
 		Runner: m.codingSurfaces(),
 		Repo:   repo,
+		// The verify step runs whatever the project says checking its work
+		// means, and it is the run's one executable definition of done: the
+		// review, the commit and the archive all happen because it passed.
+		// A project that has not said would reach that step with nothing to
+		// run, so the run is refused instead of passing there on nothing.
+		Checks: m.todoProjectNamesChecks(),
 	}
+}
+
+// todoProjectNamesChecks reports the backlog's project having said what
+// checking its work means at all — a quality config it carries, whatever is
+// in it. It is read at the run's root, which is the tree the run's tests and
+// its gate both run over.
+//
+// Trust is not part of the question and neither is this session's own gate:
+// an untrusted checkout's config is still the project's word about what
+// checking means, and a config that is present but broken is too — the gate
+// says what is wrong with it where it runs. Only "there is no file" is the
+// absence a run is turned away for.
+func (m Model) todoProjectNamesChecks() bool {
+	_, err := quality.LoadConfig(m.todos.Root)
+	return !os.IsNotExist(err)
 }
 
 // todoRunRefusal is the sentence a session is turned away with. What the step
@@ -76,12 +106,15 @@ func (m Model) todoRunCan(repo bool) run.Can {
 // it, and the rest are facts about the session that nothing here can change.
 // slug is empty for a refusal about a whole set.
 func (m Model) todoRunRefusal(ref run.Refusal, slug string) string {
-	if ref.Need == run.NeedRepo {
+	switch ref.Need {
+	case run.NeedRepo:
 		root := project.Abbreviate(m.todos.Root)
 		if slug == "" {
 			return todoNoRepoSprintNotice(root)
 		}
 		return todoNoRepoNotice(root, slug)
+	case run.NeedChecks:
+		return todoNoChecksNotice(project.Abbreviate(m.todos.Root), ref.Step)
 	}
 	return "This backlog's run cannot start here: " + ref.Why + "."
 }

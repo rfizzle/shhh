@@ -118,10 +118,7 @@ func todoRunHeadless(cmd *cobra.Command, slug string, flags todoRunFlags) error 
 	// division into lanes is the one step an unattended run falls back from
 	// rather than refuses.
 	if ref, refused := d.steps().Refuse(d.can()); refused {
-		if ref.Need == run.NeedRepo {
-			return fmt.Errorf("%s is not in a git repository and a run ends in a commit — --no-commit runs it without one, or todo.commit = false makes that the default", d.root)
-		}
-		return errors.New(ref.Why)
+		return todoRunRefusal(d.root, ref)
 	}
 	if flags.all {
 		return exitOf(d.sprint(cmd.Context(), flags.max))
@@ -180,13 +177,20 @@ type todoDriver struct {
 	out     io.Writer
 	session string
 	// gate runs the project's checks at the verify stage. Nil where the
-	// checkout is untrusted or names no suites, which the verify stage says
-	// out loud rather than passing silently.
+	// checkout is untrusted, which the verify stage blocks on where the item
+	// has no checks of its own rather than passing silently.
 	gate *quality.Runner
 	// closeGate reports that the workspace names an on-close suite, so a
 	// stage's own process checks the tree as it closes and the verify stage
 	// can take that verdict instead of running the same suite again.
-	closeGate   bool
+	closeGate bool
+	// checks reports the project having said what checking its work means —
+	// a quality config it carries. It is read once here rather than at the
+	// verify stage because a run with no way to reach a verdict is refused
+	// before it spends a turn, and it is not a question about trust: an
+	// untrusted checkout's config is still the project's word, and the gate
+	// that will not run over it is caught at verify.
+	checks      bool
 	itemTimeout time.Duration
 	noCommit    bool
 	repo        bool
@@ -251,8 +255,33 @@ func newTodoDriver(out io.Writer, root string, cfg config.Config, noCommit bool)
 		d.gate = &quality.Runner{Workspace: root}
 		_, _, d.closeGate = onCloseGate(d.gate)
 	}
+	// A config that is present but broken is still the project saying what
+	// checking means, and the gate says what is wrong with it where it runs.
+	// Only "there is no file" is the absence a run is refused for.
+	_, cfgErr := quality.LoadConfig(root)
+	d.checks = !os.IsNotExist(cfgErr)
 	d.turn = d.ask
 	return d, nil
+}
+
+// todoRunRefusal is what the command exits with when the run's steps ask for
+// something this checkout cannot give. What the step wanted decides the
+// sentence, because each need has its own way through and only the surface
+// knows what to offer; the rest are facts about the process that no flag can
+// change, and the pipeline's own clause is already the whole of them.
+func todoRunRefusal(root string, ref run.Refusal) error {
+	switch ref.Need {
+	case run.NeedRepo:
+		return fmt.Errorf("%s is not in a git repository and a run ends in a commit — --no-commit runs it without one, or todo.commit = false makes that the default", root)
+	case run.NeedChecks:
+		// The verify step is what the review, the commit and the archive all
+		// happen because of, so a project that never said what checking its
+		// work means would archive every item with nothing checked. Both ways
+		// through are named: the file the gate reads, and the profile step
+		// that carries its own command instead.
+		return fmt.Errorf("%s has no %s, so the %s step would have nothing to run — define named suites there, or give the step a command of its own in the profile", root, quality.ConfigRelPath, ref.Step)
+	}
+	return errors.New(ref.Why)
 }
 
 // steps is the pipeline a run in this checkout takes, with the finish the
@@ -267,7 +296,7 @@ func (d *todoDriver) steps() run.Pipeline {
 // rather than refusing the run: a step that only sometimes happens, and has
 // somewhere to fall back to, asks for nothing up front.
 func (d *todoDriver) can() run.Can {
-	return run.Can{Changeset: true, Supervisor: false, Runner: true, Repo: d.repo}
+	return run.Can{Changeset: true, Supervisor: false, Runner: true, Repo: d.repo, Checks: d.checks}
 }
 
 // sprint works the ready list one item at a time, each in a session of its
@@ -441,9 +470,14 @@ func (d *todoDriver) carry(ctx context.Context, deadline time.Time, st *run.Stat
 		}
 		return st.Observe(it, t.text)
 	case run.ActionVerify:
-		ok, output := d.verify(ctx, st, step.Command)
-		fmt.Fprintln(d.out, output)
-		return st.VerifyResult(it, ok, output)
+		v := d.verify(ctx, st, step.Command)
+		if v.output != "" {
+			fmt.Fprintln(d.out, v.output)
+		}
+		if v.blocked != "" {
+			return st.Block(v.blocked)
+		}
+		return st.VerifyResult(it, v.ok, v.output)
 	case run.ActionPause:
 		// The pause is the one gate that asks a person, and there is nobody
 		// here to ask. Guessing the answer is the one thing a deterministic
@@ -589,11 +623,21 @@ func errString(err error) string {
 	return err.Error()
 }
 
+// todoVerdict is what the verify stage found: what it ran, whether that
+// passed, and the reason there was nothing to reach a verdict with at all.
+// The last one is separate because a run with nothing to verify is not a run
+// that verified, and it is not work a fix round could answer either.
+type todoVerdict struct {
+	ok      bool
+	output  string
+	blocked string
+}
+
 // verify runs the item's listed tests, then the project's checks. The tests
 // are the ones the item held when the run started, before any stage could
 // have edited the file: the run tells the model to tick the item's boxes as
 // it works, and a command it wrote there is not one shhh runs unasked.
-func (d *todoDriver) verify(ctx context.Context, st *run.State, named string) (bool, string) {
+func (d *todoDriver) verify(ctx context.Context, st *run.State, named string) todoVerdict {
 	ctx, cancel := context.WithTimeout(ctx, todoVerifyTimeout)
 	defer cancel()
 	var b strings.Builder
@@ -604,7 +648,7 @@ func (d *todoDriver) verify(ctx context.Context, st *run.State, named string) (b
 	if named != "" {
 		out, code := runner.RunCaptureIn(ctx, d.root, named)
 		fmt.Fprintf(&b, "$ %s → exit %d\n%s\n", named, code, todoTail(out, 40))
-		return code == 0, strings.TrimRight(b.String(), "\n")
+		return todoVerdict{ok: code == 0, output: strings.TrimRight(b.String(), "\n")}
 	}
 	for _, cmd := range st.Tests {
 		out, code := runner.RunCaptureIn(ctx, d.root, cmd)
@@ -613,26 +657,42 @@ func (d *todoDriver) verify(ctx context.Context, st *run.State, named string) (b
 			ok = false
 		}
 	}
+	// silent is why the gate reached no verdict over this tree, and empty
+	// where it reached one — pass or fail. A run is refused at its start for
+	// the same absence, so reaching it here means the item's own checks were
+	// what verified it and they are gone: what is left is the block below.
+	silent := "this checkout is not trusted, so the project's quality gate does not run here"
 	switch {
 	case st.Checked:
 		b.WriteString("quality gate: passed as the implement turn closed\n")
+		silent = ""
 	case d.gate != nil:
 		res, err := d.gate.Run(ctx, "")
 		switch {
 		case err != nil:
 			fmt.Fprintf(&b, "quality gate: %v\n", err)
-			ok = false
+			ok, silent = false, ""
+		case res.Unconfigured:
+			// A workspace with no quality config is the one blocked verdict
+			// that is not about the work. Spending a fix round on it tells a
+			// model to fix findings that are not in the tree, for the one or
+			// two rounds it has, and then blocks the item on a file only a
+			// person writes.
+			fmt.Fprintf(&b, "quality gate: %s\n", res.Reason)
+			silent = "the project has no " + quality.ConfigRelPath
 		case res.Verdict != quality.VerdictPass:
 			b.WriteString(res.Format(quality.TakeFingerprint(d.root)) + "\n")
-			ok = false
+			ok, silent = false, ""
 		default:
 			fmt.Fprintf(&b, "quality gate %q: pass\n", res.Suite)
+			silent = ""
 		}
 	}
-	if len(st.Tests) == 0 && d.gate == nil {
-		b.WriteString("nothing to verify: the item lists no tests and the project has no quality gate\n")
+	out := strings.TrimRight(b.String(), "\n")
+	if len(st.Tests) == 0 && silent != "" {
+		return todoVerdict{output: out, blocked: run.NothingVerifies("it lists no tests and " + silent)}
 	}
-	return ok, strings.TrimRight(b.String(), "\n")
+	return todoVerdict{ok: ok, output: out}
 }
 
 func todoTail(s string, lines int) string {

@@ -1095,6 +1095,24 @@ func CutAtCeiling(stage Stage) string {
 	return fmt.Sprintf("the %s answer was cut at the model's output ceiling twice; it was continued once and stopped short again, and half an answer is not the stage's answer", stage)
 }
 
+// NothingVerifies is why a run stops at a command step that had nothing to
+// run. That step is the run's one executable definition of done — the
+// reading, the commit and the archive all happen because it passed — so a
+// step that put the work to no check at all must stop the run rather than
+// report a pass with nothing standing behind it. Reporting one is worse than
+// stopping: the item is archived with none of its boxes ticked, on the least
+// supervised surface in the tree.
+//
+// It is the backstop behind the refusal a whole run gets before its first
+// step (Pipeline.Refuse): the same absence, found at the step instead, by an
+// item whose own checks were what verified it and are gone. The detail says
+// which absence, because the fix is in the item or in the project and only a
+// person can say which.
+// See docs/capabilities/todo.md#a-run-is-turns-with-gates-between-them.
+func NothingVerifies(detail string) string {
+	return "nothing verifies this item: " + detail
+}
+
 func (s *State) block(reason string) Step {
 	s.Blocked = reason
 	s.Stage = StageBlocked

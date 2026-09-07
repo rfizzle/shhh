@@ -24,6 +24,11 @@ import (
 
 const runPlan = "## Plan: do it\n\n1. Change a.go\n   files: a.go\n   action: edit\n\nsize: S\nquestions: none\n"
 
+// runChecks is the project saying what checking its work means. No test runs
+// the suite — the session's gate is nil in all of them — so what matters is
+// that the file is there for the run's start to read.
+const runChecks = `{"suites": {"default": {"checks": [{"name": "vet", "exe": "sh", "args": ["-c", "true"]}]}}}`
+
 func runModel(t *testing.T) (Model, string) {
 	t.Helper()
 	return runModelAt(t, t.TempDir())
@@ -32,13 +37,21 @@ func runModel(t *testing.T) (Model, string) {
 // runModelAt is runModel with the session's root chosen by the caller, so a
 // test can hand it a root that reaches the same directory by another name.
 //
-// The root is made to look like a repository. A run ends in a commit and
-// refuses a directory with none, and the .git entry is what that refusal
-// reads — an empty directory is enough for it, so the fixture costs no git
-// binary and no seeded history.
+// The root is made to look like a repository, and to carry a quality config.
+// A run ends in a commit and refuses a directory with no repository, and its
+// verify step runs whatever the project says checking means and refuses a
+// project that says nothing — the .git entry and the config file are what
+// those two refusals read, so the fixture costs no git binary, no seeded
+// history and no suite that is ever run.
 func runModelAt(t *testing.T, root string) (Model, string) {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Join(root, ".git"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(root, ".shhh"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, ".shhh", "quality.json"), []byte(runChecks), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	dir := todo.Dir(root)
@@ -242,6 +255,42 @@ func TestTodoRun_Guards(t *testing.T) {
 	updated, _ = m.submitInput()
 	if note := updated.(Model).transcript[len(updated.(Model).transcript)-1].text; !strings.Contains(note, "does not track changes") {
 		t.Fatalf("no changeset: %q", note)
+	}
+}
+
+// The verify step runs whatever the project says checking its work means, and
+// it is what the review, the commit and the archive all happen because of. A
+// project that has said nothing would reach that step with nothing to run, so
+// the run is refused before it spends a turn, with both ways through named.
+func TestTodoRun_RefusedWhereNothingSaysWhatCheckingMeans(t *testing.T) {
+	m, root := runModel(t)
+	if err := os.Remove(filepath.Join(root, ".shhh", "quality.json")); err != nil {
+		t.Fatal(err)
+	}
+	m.input.SetValue("/todo run do-it")
+	updated, _ := m.submitInput()
+	next := updated.(Model)
+	note := next.transcript[len(next.transcript)-1].text
+	if !strings.Contains(note, ".shhh/quality.json") || !strings.Contains(note, "verify step") {
+		t.Fatalf("the refusal does not name the missing config: %q", note)
+	}
+	if next.todoRunner.state != nil {
+		t.Fatal("a refused run must not have started")
+	}
+	// A step that names its own command is the project saying it, so the
+	// same backlog in the same directory runs.
+	steps := append([]run.PipelineStep(nil), run.BuiltinCode().Steps...)
+	for i := range steps {
+		if steps[i].Kind == run.KindCommand {
+			steps[i].Command = "true"
+		}
+	}
+	m.todos.Pipeline = run.Pipeline{Name: "code", Steps: steps}
+	m.input.SetValue("/todo run do-it")
+	updated, _ = m.submitInput()
+	if next := updated.(Model); next.todoRunner.state == nil {
+		t.Fatalf("a step naming its own command still asked for a config: %q",
+			next.transcript[len(next.transcript)-1].text)
 	}
 }
 

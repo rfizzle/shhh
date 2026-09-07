@@ -595,12 +595,24 @@ model anywhere in it. The tests are the ones the item listed when the run
 started: the run tells the model to tick the item's boxes as it works, and a
 command the model wrote into the file during the run is not one shhh will run
 unasked. A failure spends a fix round; when the rounds are spent the run stops
-with the failure as evidence. The review reads the change as a critic and
-answers clean or with findings, and findings spend a round the same way. The
-smallest grade reviews itself in the session's own turn; anything larger is
-read by a reviewer child that did not write it — a second opinion is only one
-if it comes from somewhere else — and where no child can be had the session
-reviews and the record says so.
+with the failure as evidence.
+
+Verification is also the run's one executable definition of done — the
+review, the commit and the archive all happen because it passed — so a step
+that put the work to no check at all cannot report a pass. A project that has
+not said what checking its work means is refused before the run spends its
+first turn, naming the file that would say it and the profile step that can
+carry its own command instead. Reaching that step with nothing to run anyway
+— an untrusted checkout runs no gate, and an item can list no checks of its
+own — stops the run rather than archiving an item with none of its boxes
+ticked. A missing definition is not a failing check either: it is said and
+left to a person, because no fix round can write the file for you.
+
+The review reads the change as a critic and answers clean or with findings,
+and findings spend a round the same way. The smallest grade reviews itself in
+the session's own turn; anything larger is read by a reviewer child that did
+not write it — a second opinion is only one if it comes from somewhere else —
+and where no child can be had the session reviews and the record says so.
 
 The run works in the mode that asks only when the classifier cannot
 decide, whatever mode the session was in, and puts the session's mode

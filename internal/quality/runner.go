@@ -72,6 +72,12 @@ type Result struct {
 	Reason      string // blocked/cancelled: why the run has no trustworthy verdict
 	Checks      []CheckResult
 	Fingerprint Fingerprint
+	// Unconfigured marks the one blocked verdict that says nothing about the
+	// work: the workspace has no quality config at all. It is separated
+	// because a caller that answers a failing gate by asking a model to fix
+	// what it found must not answer this one that way — nothing in the tree
+	// is wrong, and the file only a person can write is the fix.
+	Unconfigured bool
 	// Trusted says the suite name resolved in the project's own config,
 	// which is what makes the name safe to record. The gate tool takes its
 	// suite from the model, and a name that matched nothing is text the
@@ -243,6 +249,7 @@ func (r *Runner) execute(ctx context.Context, suiteName string) *Result {
 	cfg, err := LoadConfig(r.Workspace)
 	if err != nil {
 		if os.IsNotExist(err) {
+			res.Unconfigured = true
 			return blocked("no quality config: define named suites in " + ConfigRelPath)
 		}
 		return blocked("invalid quality config: " + err.Error())

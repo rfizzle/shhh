@@ -166,19 +166,39 @@ func TestPipeline_RefusesPerStepAndNotPerSession(t *testing.T) {
 	if ref.Step != "implement" {
 		t.Errorf("the refusal names %q, want the first step that writes", ref.Step)
 	}
-	ref, refused = code.Refuse(Can{Changeset: true, Supervisor: true, Runner: true, Repo: false})
+	ref, refused = code.Refuse(Can{Changeset: true, Supervisor: true, Runner: true, Repo: false, Checks: true})
 	if !refused || ref.Need != NeedRepo || ref.Step != "commit" {
 		t.Fatalf("a committing run outside a repository = %+v %v", ref, refused)
 	}
+	// The verify step runs whatever the project says checking means, and a
+	// project that has not said would reach it with nothing to run — which
+	// is a pass nothing stands behind, and an item archived with none of its
+	// boxes ticked. It is refused before the first turn is spent.
+	ref, refused = code.Refuse(Can{Changeset: true, Supervisor: true, Runner: true, Repo: true})
+	if !refused || ref.Need != NeedChecks || ref.Step != "verify" {
+		t.Fatalf("a run whose checks nothing defines = %+v %v", ref, refused)
+	}
+	// A step that names its own command is the project saying it, so the
+	// same run over the same project asks for nothing.
+	named := code
+	named.Steps = append([]PipelineStep(nil), code.Steps...)
+	for i := range named.Steps {
+		if named.Steps[i].Kind == KindCommand {
+			named.Steps[i].Command = "make check"
+		}
+	}
+	if ref, refused := named.Refuse(Can{Changeset: true, Supervisor: true, Runner: true, Repo: true}); refused {
+		t.Errorf("a step naming its own command still wants a quality config: %+v", ref)
+	}
 	// The division into lanes happens at one grade and falls back where it
 	// cannot happen at all, so it asks for no supervisor up front.
-	if _, refused := code.Refuse(Can{Changeset: true, Supervisor: false, Runner: true, Repo: true}); refused {
+	if _, refused := code.Refuse(Can{Changeset: true, Supervisor: false, Runner: true, Repo: true, Checks: true}); refused {
 		t.Error("a run that only sometimes fans out must not want a supervisor before it starts")
 	}
 	// A run without a commit is a run whose finish is the archive, and it
 	// wants no repository.
 	without := Options{NoCommit: true}.Steps()
-	if _, refused := without.Refuse(Can{Changeset: true, Supervisor: false, Runner: true, Repo: false}); refused {
+	if _, refused := without.Refuse(Can{Changeset: true, Supervisor: false, Runner: true, Repo: false, Checks: true}); refused {
 		t.Error("a run asked for without a commit must not want a repository")
 	}
 	// A pipeline that never writes, never commits and runs no command asks

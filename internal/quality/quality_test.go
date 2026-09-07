@@ -120,6 +120,13 @@ func TestRun_NoConfigBlocked(t *testing.T) {
 	if !strings.Contains(res.Format(res.Fingerprint), "Blocked is never a pass") {
 		t.Fatal("blocked result must say it is not a pass")
 	}
+	// It is separated from every other block because it says nothing about
+	// the work: a caller that answers a failing gate by asking a model to fix
+	// what it found would spend the rounds it has on a file only a person
+	// writes.
+	if !res.Unconfigured {
+		t.Fatal("a workspace with no config must be told apart from a gate that found something")
+	}
 }
 
 func TestRun_UnknownSuiteBlocked(t *testing.T) {
@@ -129,6 +136,11 @@ func TestRun_UnknownSuiteBlocked(t *testing.T) {
 	res := mustRun(t, r, "nope")
 	if res.Verdict != VerdictBlocked || !strings.Contains(res.Reason, `unknown suite "nope"`) || !strings.Contains(res.Reason, "default") {
 		t.Fatalf("verdict = %s, reason = %q", res.Verdict, res.Reason)
+	}
+	// A config that is present and wrong about a suite is about this
+	// workspace's own words, which is not the same absence.
+	if res.Unconfigured {
+		t.Fatal("a config that exists must not be reported as none")
 	}
 }
 

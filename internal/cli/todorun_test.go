@@ -12,6 +12,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/project"
+	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/todo/run"
 )
@@ -280,6 +281,124 @@ func TestTodoRunHeadless_ItemTimeoutBlocks(t *testing.T) {
 	st := d.work(context.Background(), mustItem(t, root, "a-one"), nil)
 	if st.Stage != run.StageBlocked || !strings.Contains(st.Blocked, "ran past the cap") {
 		t.Fatalf("state = %+v", st)
+	}
+}
+
+// A checkout that never said what checking its work means would reach the
+// verify step with nothing to run, and a step that put the work to no check
+// cannot report a pass: the reading, the commit and the archive all happen
+// because it passed. The run is refused before it spends a turn, and the
+// refusal names the file, because the run is unattended and the person
+// reading it is reading an exit status.
+func TestTodoRunHeadless_ARunIsRefusedWhereNothingSaysWhatCheckingMeans(t *testing.T) {
+	root := todoRepo(t, "a-one")
+	withProjectTrust(t, project.Trust{Granted: true})
+	out := &bytes.Buffer{}
+	d, err := newTodoDriver(out, root, config.Config{}, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ref, refused := d.steps().Refuse(d.can())
+	if !refused || ref.Need != run.NeedChecks {
+		t.Fatalf("a run with nothing to verify = %+v %v", ref, refused)
+	}
+	// Both ways through are named, because the run is unattended and what
+	// the person gets back is an exit status and this line.
+	said := todoRunRefusal(d.root, ref).Error()
+	if !strings.Contains(said, quality.ConfigRelPath) || !strings.Contains(said, "command of its own") {
+		t.Fatalf("the refusal does not say what to do about it: %q", said)
+	}
+	// The project saying it in its config is enough, and it is the same
+	// question whether or not this checkout is trusted to run the suites.
+	if err := os.MkdirAll(filepath.Join(root, ".shhh"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	body := `{"suites": {"default": {"checks": [{"name": "x", "exe": "sh", "args": ["-c", "true"]}]}}}`
+	if err := os.WriteFile(filepath.Join(root, ".shhh", "quality.json"), []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for _, trust := range []project.Trust{{Granted: true}, {}} {
+		withProjectTrust(t, trust)
+		d, err := newTodoDriver(out, root, config.Config{}, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if ref, refused := d.steps().Refuse(d.can()); refused {
+			t.Fatalf("trust %+v: a project that named its checks was refused: %+v", trust, ref)
+		}
+	}
+}
+
+// A profile whose command step names its own command is the project saying
+// what checking means, and it is the same project either way — so the one
+// that is refused is only the one with nothing to run.
+func TestTodoRunHeadless_AStepNamingItsCommandIsTheProjectSayingSo(t *testing.T) {
+	root := todoRepo(t, "a-one")
+	d, _ := headlessDriver(t, root, stageAnswers(root))
+	if _, refused := d.steps().Refuse(d.can()); !refused {
+		t.Fatal("a bare verify step in a checkout with no quality config should be refused")
+	}
+	d.pipeline.Steps = append([]run.PipelineStep(nil), d.pipeline.Steps...)
+	for i := range d.pipeline.Steps {
+		if d.pipeline.Steps[i].Kind == run.KindCommand {
+			d.pipeline.Steps[i].Command = "true"
+		}
+	}
+	if ref, refused := d.steps().Refuse(d.can()); refused {
+		t.Fatalf("a step naming its own command still asked for a quality config: %+v", ref)
+	}
+}
+
+// The refusal at the start is not the only way an item can arrive at the
+// verify step with nothing to run: an untrusted checkout runs no gate at all,
+// and an item can list no checks of its own. Passing there would review,
+// commit and archive work nothing has checked, on the least supervised
+// surface in the tree, so it blocks.
+func TestTodoRunHeadless_NothingToVerifyBlocksRatherThanPasses(t *testing.T) {
+	root := todoRepo(t)
+	body := "---\ntitle: a one\nsize: S\n---\nDo it.\n"
+	if err := os.WriteFile(filepath.Join(todo.Dir(root), "a-one.md"), []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	d, out := headlessDriver(t, root, stageAnswers(root))
+
+	st := d.work(context.Background(), mustItem(t, root, "a-one"), nil)
+	if st.Stage != run.StageBlocked || !strings.Contains(st.Blocked, "nothing verifies this item") {
+		t.Fatalf("state = %+v\n%s", st, out.String())
+	}
+	if st.Round != 0 {
+		t.Fatalf("a project with nothing to check is not a remediation round: round %d", st.Round)
+	}
+	if it := mustItem(t, root, "a-one"); it.Archived {
+		t.Fatalf("an item nothing verified must not be archived: %+v", it)
+	}
+	if log, _ := todoGit(root, "log", "--format=%s"); strings.Contains(log, "Change a") {
+		t.Fatalf("an item nothing verified must not be committed:\n%s", log)
+	}
+}
+
+// A missing quality config is the one blocked verdict that says nothing about
+// the work: nothing in the tree is wrong and the fix is a file only a person
+// writes. Spending the item's one or two fix rounds telling a model to fix it
+// ends with the item blocked on the same file. An item whose own tests pass
+// is verified by them, and the absence is said rather than remediated.
+func TestTodoRunHeadless_AMissingQualityConfigIsNotAFinding(t *testing.T) {
+	root := todoRepo(t, "a-one")
+	d, out := headlessDriver(t, root, stageAnswers(root))
+	// The gate a trusted checkout gets, over a project that carries no
+	// suites to run.
+	d.gate = &quality.Runner{Workspace: root}
+
+	st := d.work(context.Background(), mustItem(t, root, "a-one"), nil)
+	if st.Stage != run.StageDone {
+		t.Fatalf("the item's own tests verify it: %+v\n%s", st, out.String())
+	}
+	if st.Round != 0 {
+		t.Fatalf("the missing config spent a fix round: %d", st.Round)
+	}
+	if !strings.Contains(out.String(), "no quality config") {
+		t.Fatalf("the absence should be said out loud:\n%s", out.String())
 	}
 }
 

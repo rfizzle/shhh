@@ -463,6 +463,11 @@ type Can struct {
 	Runner bool
 	// Repo reports a git repository at the root.
 	Repo bool
+	// Checks reports the project having said what checking its work means,
+	// which is what the step that runs no command of its own has to run.
+	// A step that names its own command asks for nothing here: the profile
+	// already said it.
+	Checks bool
 }
 
 // Need is what a step wanted from the session and did not get.
@@ -479,6 +484,9 @@ const (
 	NeedRunner Need = "runner"
 	// NeedRepo is a commit finish outside a repository.
 	NeedRepo Need = "repository"
+	// NeedChecks is a command step that runs whatever the project says
+	// checking means, in a project that has not said.
+	NeedChecks Need = "checks"
 )
 
 // Refusal is a step the session cannot take: which step, what it wanted, and
@@ -521,6 +529,16 @@ func (p Pipeline) Refuse(can Can) (Refusal, bool) {
 		case ps.Kind == KindCommand && !can.Runner:
 			return Refusal{ps.Name, NeedRunner,
 				fmt.Sprintf("the %s step runs the project's checks and this session cannot run a command", ps.Name)}, true
+		// A command step with no command of its own runs whatever the project
+		// says checking means, and it is the run's one executable definition
+		// of done: the reading, the commit and the archive all happen because
+		// it passed. A project that has not said would reach that step with
+		// nothing to run, so the run is refused here rather than after every
+		// turn before it has been spent. What to offer instead is the
+		// surface's to say, which is why the need is named as well as said.
+		case ps.Kind == KindCommand && ps.Command == "" && !can.Checks:
+			return Refusal{ps.Name, NeedChecks,
+				fmt.Sprintf("the %s step runs whatever this project says checking its work means, and it has not said", ps.Name)}, true
 		case ps.Kind == KindFinish && ps.Finish.Writes() && !can.Repo:
 			return Refusal{ps.Name, NeedRepo,
 				fmt.Sprintf("the %s step ends in a commit and there is no git repository here", ps.Name)}, true
