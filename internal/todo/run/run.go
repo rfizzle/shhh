@@ -233,6 +233,11 @@ type State struct {
 	Blocked string `json:"blocked"`
 	// Files are the paths the run committed, for the report.
 	Files []string `json:"files"`
+	// Sources are the pages the run's write-up rests on, as the session
+	// recorded them, plus the ones its text cited and nobody read. The
+	// driver fills them in before the run is filed, because what a session
+	// fetched is the session's record and not this package's.
+	Sources []Source `json:"sources,omitempty"`
 	// Paths are the repository paths the run has changed so far, kept in
 	// the checkpoint because a session's own change records die with it
 	// and a run continued in a new session must still know what it may

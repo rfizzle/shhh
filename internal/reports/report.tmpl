@@ -52,6 +52,15 @@ pre.diff .file { color: var(--heading); }
 .s5 { background: var(--series-5); } .s6 { background: var(--series-6); }
 .s7 { background: var(--series-7); } .s8 { background: var(--series-8); }
 
+/* A source is its URL and the page's own title under it. The URL takes the
+   link token and is not a link: no report page carries an href, so the token
+   is what says "this is an address" where the page cannot offer to open it. */
+.sources .source { margin: 0 0 var(--gap-1); }
+.sources .source:last-child { margin-bottom: 0; }
+.source .url { color: var(--link); word-break: break-all; }
+.source .title { color: var(--prose); }
+.unread { color: var(--caption); margin: var(--gap-2) 0 var(--gap-1); }
+
 .prose p { margin: 0 0 var(--gap-1); max-width: 72ch; }
 .prose p:last-child { margin-bottom: 0; }
 svg text { font-family: var(--font-mono); }
@@ -84,7 +93,14 @@ svg text { font-family: var(--font-mono); }
 {{else if eq .Type "prose"}}  <div class="prose">
 {{range paragraphs .Text}}    <p>{{.}}</p>
 {{end}}  </div>
-{{else if eq .Type "freehand"}}  {{freehand .HTML}}
+{{else if eq .Type "sources"}}{{with sourcesRead .Sources}}  <div class="sources">
+{{range .}}    <div class="source"><div class="url">{{.URL}}</div>{{if .Title}}<div class="title">{{.Title}}</div>{{end}}</div>
+{{end}}  </div>
+{{end}}{{with sourcesUnread .Sources}}  <p class="unread">cited, not read</p>
+  <div class="sources">
+{{range .}}    <div class="source"><div class="url">{{.URL}}</div>{{if .Title}}<div class="title">{{.Title}}</div>{{end}}</div>
+{{end}}  </div>
+{{end}}{{else if eq .Type "freehand"}}  {{freehand .HTML}}
 {{end}}</section>
 {{end}}<footer><code>{{.ID}}</code> · made by shhh · reopen later: <code>shhh reports open {{.ID}}</code></footer>
 </main>

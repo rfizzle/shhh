@@ -235,7 +235,7 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			}
 			if session.web != nil {
 				defs = append(defs, session.web.Definitions()...)
-				base = session.web.WrapExecutor(tools.Execute)
+				base = session.web.WrapExecutor(spec.Name, tools.Execute)
 				gated[web.FetchToolName] = true
 			}
 		}
@@ -524,7 +524,7 @@ func profileEnv(def config.AgentDefinition, spec subagent.Spec, info shell.Info,
 		}
 		if len(admitted) > 0 {
 			defs = append(defs, admitted...)
-			base = webTools.WrapExecutor(tools.Execute)
+			base = webTools.WrapExecutor(spec.Name, tools.Execute)
 			if def.Allows(web.FetchToolName) {
 				gated[web.FetchToolName] = true
 			}

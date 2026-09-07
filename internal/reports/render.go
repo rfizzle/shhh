@@ -40,7 +40,26 @@ var tmpl = template.Must(template.New("report").Funcs(template.FuncMap{
 		return fmt.Sprintf("s%d", i%8+1)
 	},
 	"treeIndent": func(depth int) int { return depth * 16 },
+	// The sources block draws in two runs — what was read, and what was
+	// cited and never read — so the split is made here rather than with a
+	// condition inside the range: a template that filtered as it drew would
+	// walk the list twice to find out whether the second run has anything
+	// in it at all.
+	"sourcesRead":   func(list []Source) []Source { return sourcesWhere(list, true) },
+	"sourcesUnread": func(list []Source) []Source { return sourcesWhere(list, false) },
 }).Parse(reportTmpl))
+
+// sourcesWhere is the run of a sources block that was read, or the run that
+// was not.
+func sourcesWhere(list []Source, read bool) []Source {
+	var out []Source
+	for _, s := range list {
+		if s.Read == read {
+			out = append(out, s)
+		}
+	}
+	return out
+}
 
 // Render draws one stored report as a complete page under the current
 // template and tokens. Freehand blocks must already hold validated markup;

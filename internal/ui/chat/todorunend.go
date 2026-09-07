@@ -14,6 +14,7 @@ import (
 	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/todo/run"
+	"github.com/rfizzle/shhh/internal/web"
 )
 
 // todoRunDoneNote is the row a finished run closes with: what happened to
@@ -69,10 +70,39 @@ func (m Model) todoRunDone() (tea.Model, tea.Cmd) {
 // has the write-up read in the session rather than only in the archive,
 // which is the whole reason it spent a turn producing one.
 func (m Model) fileTodoRun(st *run.State) (string, error) {
+	st.Sources = m.runSources(st.Report)
 	if ending, ok := st.Pipeline.Ending(); ok && ending == run.FinishNote && m.notebook != nil {
 		return run.FileNote(m.todos.Root, st, m.todoRunner.item, m.writeRunNote)
 	}
 	return run.File(m.todos.Root, st, m.todoRunner.item)
+}
+
+// runSources is what the run's write-up rests on: the pages the session
+// actually fetched, from the ledger, and then any URL the write-up cites
+// that is not among them.
+//
+// The read half is the ledger's and never the text's, which is the whole
+// point — a model that remembers reading a page writes the same sentence
+// either way, and the second list is where that shows up.
+// See docs/capabilities/chat.md#what-was-read.
+func (m Model) runSources(report string) []run.Source {
+	rows := m.sourceLedger.List()
+	if len(rows) == 0 {
+		return nil
+	}
+	out := make([]run.Source, 0, len(rows))
+	read := map[string]bool{}
+	for _, s := range web.Pages(rows) {
+		read[web.CanonicalURL(s.FinalURL)] = true
+		out = append(out, run.Source{URL: s.FinalURL, Title: s.Title, Read: true})
+	}
+	for _, url := range web.CitedURLs(report) {
+		if read[web.CanonicalURL(url)] {
+			continue
+		}
+		out = append(out, run.Source{URL: url})
+	}
+	return out
 }
 
 // writeRunNote puts a run's write-up in the session's notebook and answers

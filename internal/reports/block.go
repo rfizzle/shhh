@@ -17,6 +17,7 @@ const (
 	BlockDiff      = "diff"
 	BlockTree      = "tree"
 	BlockProse     = "prose"
+	BlockSources   = "sources"
 	BlockFreehand  = "freehand"
 )
 
@@ -28,6 +29,7 @@ const (
 	MaxSeries     = 8
 	MaxPoints     = 120
 	MaxTreeItems  = 200
+	MaxSources    = 200
 	MaxTitleRunes = 120
 )
 
@@ -50,8 +52,9 @@ type Block struct {
 	Series  []Series   `json:"series,omitempty"` // bar_chart, line_chart
 	Diff    string     `json:"diff,omitempty"`   // unified diff text
 	Tree    []TreeItem `json:"tree,omitempty"`
-	Text    string     `json:"text,omitempty"` // prose; blank-line paragraphs
-	HTML    string     `json:"html,omitempty"` // freehand; validated then frozen
+	Text    string     `json:"text,omitempty"`    // prose; blank-line paragraphs
+	Sources []Source   `json:"sources,omitempty"` // sources
+	HTML    string     `json:"html,omitempty"`    // freehand; validated then frozen
 }
 
 // Stat is one large number in a stat band.
@@ -65,6 +68,16 @@ type Stat struct {
 type Series struct {
 	Name   string    `json:"name,omitempty"`
 	Values []float64 `json:"values"`
+}
+
+// Source is one page a report cites: the URL that answered, and the title
+// the page gave itself. Read says the page was actually fetched; a source
+// that is not read is one the write-up cited and nobody opened, and the
+// block draws those in a run of their own rather than beside the rest.
+type Source struct {
+	URL   string `json:"url"`
+	Title string `json:"title,omitempty"`
+	Read  bool   `json:"read,omitempty"`
 }
 
 // TreeItem is one row of a depth-indented tree.
@@ -160,12 +173,24 @@ func (b Block) validate() error {
 		if strings.TrimSpace(b.Text) == "" {
 			return fmt.Errorf("prose requires text")
 		}
+	case BlockSources:
+		if len(b.Sources) == 0 {
+			return fmt.Errorf("sources requires at least one {url}")
+		}
+		if len(b.Sources) > MaxSources {
+			return fmt.Errorf("%d sources is more than the %d a page lists", len(b.Sources), MaxSources)
+		}
+		for i, src := range b.Sources {
+			if strings.TrimSpace(src.URL) == "" {
+				return fmt.Errorf("source %d has no url", i+1)
+			}
+		}
 	case BlockFreehand:
 		if strings.TrimSpace(b.HTML) == "" {
 			return fmt.Errorf("freehand requires html")
 		}
 	default:
-		return fmt.Errorf("unknown type %q (valid: stats, table, bar_chart, line_chart, diff, tree, prose, freehand)", b.Type)
+		return fmt.Errorf("unknown type %q (valid: stats, table, bar_chart, line_chart, diff, tree, prose, sources, freehand)", b.Type)
 	}
 	return nil
 }

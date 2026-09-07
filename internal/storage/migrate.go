@@ -352,6 +352,31 @@ var migrations = []string{
 	// column arrived — and it reads as "no turn", not as turn one
 	// (docs/capabilities/subagents.md#what-they-share).
 	`ALTER TABLE notes ADD COLUMN turn INTEGER NOT NULL DEFAULT 0;`,
+
+	// What a session read: one row per fetch and per search, hanging off the
+	// slot's row id so the ledger dies with the conversation it explains.
+	// Content-free beyond the URL, the query and the page's own title — the
+	// page itself is in the evidence store, and the row names the entry
+	// (docs/capabilities/chat.md#what-was-read).
+	`CREATE TABLE IF NOT EXISTS sources (
+		id            INTEGER PRIMARY KEY,
+		session_id    INTEGER NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
+		turn          INTEGER NOT NULL DEFAULT 0,
+		agent         TEXT NOT NULL DEFAULT '',
+		kind          TEXT NOT NULL,
+		query         TEXT NOT NULL DEFAULT '',
+		requested_url TEXT NOT NULL DEFAULT '',
+		final_url     TEXT NOT NULL DEFAULT '',
+		title         TEXT NOT NULL DEFAULT '',
+		status        INTEGER NOT NULL DEFAULT 0,
+		bytes         INTEGER NOT NULL DEFAULT 0,
+		results       INTEGER NOT NULL DEFAULT 0,
+		cached        INTEGER NOT NULL DEFAULT 0,
+		evidence      TEXT NOT NULL DEFAULT '',
+		at            TEXT NOT NULL
+	);
+
+	CREATE INDEX IF NOT EXISTS idx_sources_session ON sources(session_id);`,
 }
 
 // migrate brings the store up to the current schema, one step per

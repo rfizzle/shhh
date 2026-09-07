@@ -217,6 +217,8 @@ func buildSlashCommands() []slashCommand {
 				argOption{"destroy", "Destroy a sandbox by id"},
 				argOption{"prune", "Remove stopped sandboxes"},
 			)},
+		{name: "/sources", desc: "What this session read: every fetch and search, by host",
+			enabled: func(m *Model) bool { return m.sourceLedger != nil }},
 		{name: "/evidence", args: "[purge]", desc: "Tool-output evidence store",
 			enabled:  func(m *Model) bool { return m.evidence.Manage != nil },
 			argSpecs: staticArgs(argOption{"purge", "Delete stored tool output"})},

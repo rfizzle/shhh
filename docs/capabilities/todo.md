@@ -275,7 +275,9 @@ of that run. `todo.profile` in the settings names which one, and unset is
 S, M or L, worked by research, implement, verify, review, remediate and
 commit. `research` is a backlog of questions, readings, interviews and
 syntheses, graded quick or deep, worked by scope, gather, review and a
-write-up — no verify, no commit. `ops` is tasks, incidents and changes,
+write-up — no verify, no commit. Its write-up ends in a *Sources* block built
+from what the session actually fetched, not from what the write-up says it
+fetched ([`chat.md`](chat.md#what-was-read)). `ops` is tasks, incidents and changes,
 ungraded, worked by scope, act and a command that checks the change landed.
 `notes` is one turn that writes the note down. `checklist` has no run at all:
 asking for one says so and offers the verb that files the item, because what
@@ -646,6 +648,12 @@ run, titled with the item's name — and the archived item says where it went.
 Where there is no notebook the run archives instead: a turn spent asking for
 a write-up nobody in the session can read produces what the code already
 knows.
+
+Both the note and the archived item end with the same *Sources* block, and
+neither is written by the turn that wrote the report: the pages are the ones
+the session's own fetches recorded, and a URL the write-up cites that is not
+among them is listed under *cited, not read* — the review step's first check
+([`chat.md`](chat.md#what-was-read)).
 
 The reason the question is asked at the start rather than at the step is that
 every step before it spends a turn: a run that did all of them and only then

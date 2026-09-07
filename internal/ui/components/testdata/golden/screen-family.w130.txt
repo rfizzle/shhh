@@ -125,6 +125,20 @@ shhh chats · 3 conversations                                                   
 
 [↑↓/jk] move · [r] rename it · [x] delete it · [/] filter · [esc] back to the shell                        open in another session
 
+· sources · the list is grouped under the hosts it read
+/sources · 2 pages · 1 host · 1 search                                                                         [?] keys · [q] back
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+searches                                                         │ https://docs.rs/tokio/latest/tokio/                orchestrator
+  ⇢ tokio runtime                 3 results · orchestrator       │   tokio — Rust
+docs.rs                                                          │ 
+❯ ⇢ /tokio/latest/tokio/          200 · orchestrator       60 KB │   kind fetch
+  ⇢ /tokio/latest/tokio/runtime/  200 (cached) · web-res…  12 KB │   url https://docs.rs/tokio/latest/tokio/
+                                                                 │   asked for https://docs.rs/tokio
+                                                                 │   status 200
+
+[↑↓/jk] move · [enter] read the page that was kept · [esc] back to the prompt              recorded by the fetch, not by the model
+
 ── ansi ────────────────────────────────────────────────────
 · doctor · the count on the left, the clock and the keys on the right
 ␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m                                                                                 ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
@@ -240,3 +254,17 @@ shhh chats · 3 conversations                                                   
                                                                 ␛[38;5;241m │ ␛[m  ␛[38;5;241mbeing written there.␛[m
 
 ␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m rename it␛[m␛[38;5;241m · ␛[m␛[94m[x]␛[m␛[38;5;241m delete it␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m back to the shell␛[m                        ␛[38;5;241mopen in another session␛[m
+
+· sources · the list is grouped under the hosts it read
+␛[1;97m/sources␛[m␛[38;5;241m · 2 pages · 1 host · 1 search␛[m                                                                         ␛[38;5;241m[?] keys · [q] back␛[m
+␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+
+␛[1;94msearches␛[m                                                        ␛[38;5;241m │ ␛[m␛[1;97mhttps://docs.rs/tokio/latest/tokio/␛[m                ␛[38;5;241morchestrator␛[m
+  ⇢ tokio runtime                 ␛[38;5;252m3 results␛[m ␛[38;5;241m· orchestrator␛[m      ␛[38;5;241m │ ␛[m  ␛[38;5;241mtokio — Rust␛[m
+␛[1;94mdocs.rs␛[m                                                         ␛[38;5;241m │ ␛[m
+␛[1;48;5;62m❯ ⇢ /tokio/latest/tokio/          200 · orchestrator       60 KB␛[m␛[38;5;241m │ ␛[m  ␛[38;5;245mkind ␛[m␛[38;5;241mfetch␛[m
+  ⇢ /tokio/latest/tokio/runtime/  ␛[38;5;252m200 (cached)␛[m ␛[38;5;241m· web-res…␛[m  ␛[38;5;252m12 KB␛[m␛[38;5;241m │ ␛[m  ␛[38;5;245murl ␛[m␛[38;5;241mhttps://docs.rs/tokio/latest/tokio/␛[m
+                                                                ␛[38;5;241m │ ␛[m  ␛[38;5;245masked for ␛[m␛[38;5;241mhttps://docs.rs/tokio␛[m
+                                                                ␛[38;5;241m │ ␛[m  ␛[38;5;245mstatus ␛[m␛[38;5;241m200␛[m
+
+␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m read the page that was kept␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m back to the prompt␛[m              ␛[38;5;241mrecorded by the fetch, not by the model␛[m

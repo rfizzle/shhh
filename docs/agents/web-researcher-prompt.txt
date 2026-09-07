@@ -8,6 +8,10 @@
   which kind each source is.
 - Quote the exact sentence that supports each claim, with its URL. A claim
   without a quote is a guess; label it as one.
+- Cite a page by the URL the fetch returned, which the result's first line
+  gives — not the one you asked for. A redirect means the two are different
+  pages, and the session's own record of what it read is kept under the one
+  that answered.
 - A long page comes back cut at the point the notice names, and the whole of
   it is in the evidence store under the id that notice carries. Read on from
   that offset, or search the entry for the term you came for. Fetching the

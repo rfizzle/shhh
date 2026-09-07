@@ -240,6 +240,13 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 		// (detail.go).
 		return m.detailFromDraft()
 
+	case text == "/sources":
+		// The ledger of what the session read, full screen. Like the
+		// occupancy surface it reads and changes nothing, so it is not
+		// idleOnly: mid-turn is exactly when somebody asks where a claim
+		// came from.
+		return m.openSources()
+
 	case text == "/context":
 		// The occupancy surface, full screen. It reads the conversation
 		// and changes nothing in it, so it is not idleOnly: a window filling

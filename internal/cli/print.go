@@ -1303,7 +1303,10 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist [
 		if webTools != nil && tc.Name == web.FetchToolName {
 			if opts.yes {
 				note(observe.DecisionAllow, observe.ReasonHeadlessYes)
-				return red.Process(tc.Name, agent.ExecuteWith(webTools.Execute, tc))
+				fetch := func(name string, args json.RawMessage) (string, error) {
+					return webTools.Execute(web.Orchestrator, name, args)
+				}
+				return red.Process(tc.Name, agent.ExecuteWith(fetch, tc))
 			}
 			note(observe.DecisionDeny, observe.ReasonHeadlessDefault)
 			return "error: web fetch not approved: headless mode denies external actions by default (run with --yes)"

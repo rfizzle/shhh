@@ -479,6 +479,34 @@ var Context = ContextKeys{
 	Back:   bind("q", "back to the prompt", "q", "esc", "ctrl+c"),
 }
 
+// SourcesKeys are the sources screen's own — the ledger of what the session
+// read. It is a takeover in the chat like the context surface, so its way out
+// goes back to the prompt rather than quitting.
+//
+// Its keys are the family's, not new ones: a list moves, `enter` takes what
+// the pointer is on, `?` shows the register. What `enter` takes here is the
+// page's whole stored text, which is why the binding says so in its own
+// words.
+type SourcesKeys struct {
+	Move Binding
+	Open Binding
+	List Binding
+	Back Binding
+}
+
+// All is the surface's keys in the order it offers them, which is the order
+// `?` lists them in.
+func (k SourcesKeys) All() []Binding {
+	return []Binding{k.Move, k.Open, k.List, k.Back}
+}
+
+var Sources = SourcesKeys{
+	Move: bind("↑↓/jk", "move", "up", "down", "k", "j"),
+	Open: bind("enter", "read the page that was kept", "enter"),
+	List: bind("?", "keys", "?"),
+	Back: bind("q", "back to the prompt", "q", "esc", "ctrl+c"),
+}
+
 // BacklogKeys are the backlog screen's own. It is a takeover in the chat
 // like the context surface, so its way out goes back to the prompt rather
 // than quitting.

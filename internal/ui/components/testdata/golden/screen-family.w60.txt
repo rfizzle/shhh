@@ -126,6 +126,19 @@ shhh chats · 3 conversations             [?] keys · [q] quit
 [↑↓/jk] move · [r] rename it · [x] delete it · [/] filter
 [esc] back to the shell
 
+· sources · the list is grouped under the hosts it read
+/sources · 2 pages · 1 host · 1 search   [?] keys · [q] back
+────────────────────────────────────────────────────────────
+
+searches
+  ⇢ tokio runtime                 3 results · orchestrator
+docs.rs
+❯ ⇢ /tokio/latest/tokio/          200 · orchestrator   60 KB
+  ⇢ /tokio/latest/tokio/runtime/  200 (cached)         12 KB
+
+[↑↓/jk] move · [enter] read the page that was kept
+[esc] back to the prompt
+
 ── ansi ────────────────────────────────────────────────────
 · doctor · the count on the left, the clock and the keys on the right
 ␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m           ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
@@ -242,3 +255,16 @@ shhh chats · 3 conversations             [?] keys · [q] quit
 
 ␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m rename it␛[m␛[38;5;241m · ␛[m␛[94m[x]␛[m␛[38;5;241m delete it␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m
 ␛[94m[esc]␛[m␛[38;5;241m back to the shell␛[m
+
+· sources · the list is grouped under the hosts it read
+␛[1;97m/sources␛[m␛[38;5;241m · 2 pages · 1 host · 1 search␛[m   ␛[38;5;241m[?] keys · [q] back␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
+
+␛[1;94msearches␛[m
+  ⇢ tokio runtime                 ␛[38;5;252m3 results␛[m ␛[38;5;241m· orchestrator␛[m
+␛[1;94mdocs.rs␛[m
+␛[1;48;5;62m❯ ⇢ /tokio/latest/tokio/          200 · orchestrator   60 KB␛[m
+  ⇢ /tokio/latest/tokio/runtime/  ␛[38;5;252m200 (cached)␛[m         ␛[38;5;252m12 KB␛[m
+
+␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m read the page that was kept␛[m
+␛[94m[esc]␛[m␛[38;5;241m back to the prompt␛[m

@@ -99,6 +99,68 @@ func Commit(root string, paths []string, message, without string, hooks bool) ([
 	return paths, nil
 }
 
+// Source is one page a run's write-up rests on: the URL that answered and
+// the page's own title. Read says the fetch really happened — the session's
+// own record of it, not the model's account — and a source that is not read
+// is one the write-up cited and nobody opened.
+//
+// The run is handed these rather than finding them: which URLs a session
+// fetched is the session's business, and this package builds prompts and
+// reads answers.
+type Source struct {
+	URL   string
+	Title string
+	Read  bool
+}
+
+// SourcesSection is the block a write-up ends with: the pages that were
+// actually read, and under them the ones the write-up cited and nobody
+// opened. It is empty when there is nothing to say.
+//
+// It is built from the session's record of its own fetches and never from
+// the write-up's prose. A sources list a model writes is a claim like any
+// other; one built from what the fetcher returned is a fact, and the second
+// list is where a source that was never read shows up — in the write-up the
+// reviewer reads, rather than in the reader's browser.
+// See docs/capabilities/chat.md#what-was-read.
+func SourcesSection(list []Source) string {
+	var read, cited []Source
+	for _, s := range list {
+		if s.Read {
+			read = append(read, s)
+			continue
+		}
+		cited = append(cited, s)
+	}
+	if len(read) == 0 && len(cited) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("\n## Sources\n\n")
+	if len(read) == 0 {
+		b.WriteString("Nothing was read: this write-up rests on what was already known.\n")
+	}
+	for _, s := range read {
+		b.WriteString(sourceLine(s))
+	}
+	if len(cited) > 0 {
+		b.WriteString("\nCited, not read:\n\n")
+		for _, s := range cited {
+			b.WriteString(sourceLine(s))
+		}
+	}
+	return b.String()
+}
+
+// sourceLine is one row of the block: the address first, because that is
+// what a reader checks, and the title after it.
+func sourceLine(s Source) string {
+	if strings.TrimSpace(s.Title) == "" {
+		return "- " + s.URL + "\n"
+	}
+	return "- " + s.URL + " — " + strings.TrimSpace(s.Title) + "\n"
+}
+
 // File writes a finished run onto its item — the report the run produced,
 // with the paths it committed and the commit line where it made a commit —
 // and archives it, answering with where the item went.
@@ -109,7 +171,7 @@ func Commit(root string, paths []string, message, without string, hooks bool) ([
 // later recovers from. What to say about that is the caller's, because the
 // two drivers say it to a transcript and to a terminal.
 func File(root string, s *State, it todo.Item) (string, error) {
-	report := s.Report
+	report := s.Report + SourcesSection(s.Sources)
 	if len(s.Files) > 0 && !s.NoCommit {
 		report += "\nCommitted: " + strings.Join(s.Files, ", ") + "\n"
 		report += todo.CommitLine(project.Head(root), s.Message)
@@ -145,7 +207,7 @@ const NoteAuthor = "todo run"
 // and the line says what could not be done instead of where to look.
 func FileNote(root string, s *State, it todo.Item, write NoteWriter) (string, error) {
 	if write != nil && strings.TrimSpace(s.Report) != "" {
-		ref, err := write(NoteAuthor, s.Slug, s.Report)
+		ref, err := write(NoteAuthor, s.Slug, s.Report+SourcesSection(s.Sources))
 		if err != nil {
 			s.Report += "\nThe write-up is not in the session notebook: " + err.Error() + "\n"
 		} else {

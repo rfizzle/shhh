@@ -61,6 +61,10 @@ type Toolset struct {
 	// UseEvidence; nil is a session without one.
 	keep  KeepFunc
 	scrub func(string) string
+
+	// ledger is the session's record of what it read, installed by
+	// UseLedger; nil is a session that keeps none.
+	ledger *Ledger
 }
 
 // NewToolset builds the session toolset.
@@ -86,6 +90,15 @@ func NewToolset(fetcher *Fetcher, searcher *Searcher) *Toolset {
 func (t *Toolset) UseEvidence(keep KeepFunc, scrub func(string) string) {
 	t.keep, t.scrub = keep, scrub
 }
+
+// UseLedger points the tools at the session's sources ledger, which every
+// fetch and every search records itself in. Like the evidence store it is
+// installed once, while the session registers its tools, and the toolset a
+// session builds is the object its children fetch through — so one ledger
+// holds the whole session's reads, each row signed by the agent that made
+// it.
+// See docs/capabilities/chat.md#what-was-read.
+func (t *Toolset) UseLedger(l *Ledger) { t.ledger = l }
 
 // Definitions returns the provider tool definitions to register.
 func (t *Toolset) Definitions() []provider.Tool {
@@ -131,23 +144,26 @@ func (t *Toolset) Has(name string) bool {
 	return false
 }
 
-// Execute dispatches a web tool call.
-func (t *Toolset) Execute(name string, args json.RawMessage) (string, error) {
+// Execute dispatches a web tool call made by agent — the orchestrator or a
+// named child, which is what the ledger's row is signed with.
+func (t *Toolset) Execute(agent, name string, args json.RawMessage) (string, error) {
 	switch {
 	case name == FetchToolName:
-		return t.executeFetch(args)
+		return t.executeFetch(agent, args)
 	case name == SearchToolName && t.Searcher != nil:
-		return t.executeSearch(args)
+		return t.executeSearch(agent, args)
 	}
 	return "", fmt.Errorf("unknown web tool: %s", name)
 }
 
 // WrapExecutor returns an executor that dispatches web tools and hands
-// everything else to next.
-func (t *Toolset) WrapExecutor(next func(name string, args json.RawMessage) (string, error)) func(string, json.RawMessage) (string, error) {
+// everything else to next. Each agent wraps with its own name, the way it
+// wraps the notebook with it, so the ledger says which of a fan-out's
+// researchers read a page.
+func (t *Toolset) WrapExecutor(agent string, next func(name string, args json.RawMessage) (string, error)) func(string, json.RawMessage) (string, error) {
 	return func(name string, args json.RawMessage) (string, error) {
 		if t.Has(name) {
-			return t.Execute(name, args)
+			return t.Execute(agent, name, args)
 		}
 		return next(name, args)
 	}
@@ -245,7 +261,7 @@ func formatBytes(n int64) string {
 	return fmt.Sprintf("%d B", n)
 }
 
-func (t *Toolset) executeFetch(args json.RawMessage) (string, error) {
+func (t *Toolset) executeFetch(agent string, args json.RawMessage) (string, error) {
 	var a fetchArgs
 	if err := json.Unmarshal(args, &a); err != nil {
 		return "", fmt.Errorf("invalid arguments: %w", err)
@@ -253,11 +269,30 @@ func (t *Toolset) executeFetch(args json.RawMessage) (string, error) {
 	if strings.TrimSpace(a.URL) == "" {
 		return "", fmt.Errorf("url is required")
 	}
+	requested := strings.TrimSpace(a.URL)
 	res, err := t.Fetcher.Fetch(context.Background(), a.URL, nil)
 	if err != nil {
+		// A fetch that never got an answer is a row too — refused by the
+		// policy, rate limited twice, timed out. The ledger answers "what
+		// did this session try to read", and a host that would not answer
+		// is the reason a source a reader expected to see is not there.
+		// Nothing is read from it, so it is not a page: Pages leaves it out
+		// and no write-up cites it.
+		t.ledger.Record(agent, Source{Kind: KindFetch, Requested: requested})
 		return "", err
 	}
-	return t.FormatFetchResult(res), nil
+	// The row is filled while the result is rendered rather than from it
+	// afterwards: the title and the evidence id are known once, where the
+	// page is extracted and stored, and a second pass over a two-megabyte
+	// page to recover them would parse it again to learn what this one
+	// already had.
+	row := Source{
+		Kind: KindFetch, Requested: requested, FinalURL: res.FinalURL,
+		Status: res.Status, Bytes: len(res.Body), Cached: res.FromCache,
+	}
+	out := t.formatFetchResult(res, &row)
+	t.ledger.Record(agent, row)
+	return out, nil
 }
 
 // FormatFetchResult renders a fetched response as the tool result: a header
@@ -270,6 +305,13 @@ func (t *Toolset) executeFetch(args json.RawMessage) (string, error) {
 // leaves an entry the model can read on from.
 // See docs/capabilities/evidence.md#a-page-is-kept-whole.
 func (t *Toolset) FormatFetchResult(res Result) string {
+	return t.formatFetchResult(res, nil)
+}
+
+// formatFetchResult is FormatFetchResult, filling in what a ledger row can
+// only learn here: the page's title and the evidence entry the cut left. A
+// nil row is a render with nothing to record.
+func (t *Toolset) formatFetchResult(res Result, row *Source) string {
 	mediaType := res.ContentType
 	if mt, _, err := mime.ParseMediaType(res.ContentType); err == nil {
 		mediaType = mt
@@ -291,6 +333,9 @@ func (t *Toolset) FormatFetchResult(res Result) string {
 	switch {
 	case mediaType == "text/html" || mediaType == "application/xhtml+xml":
 		ex := ExtractHTML(res.Body)
+		if row != nil {
+			row.Title = ex.Title
+		}
 		if ex.Title != "" {
 			fmt.Fprintf(&sb, "# %s\n", ex.Title)
 		}
@@ -304,13 +349,13 @@ func (t *Toolset) FormatFetchResult(res Result) string {
 			sb.WriteString(verdict)
 			break
 		}
-		sb.WriteString(t.inline(ex.Text))
+		sb.WriteString(t.inline(ex.Text, row))
 	case mediaType == "application/pdf":
-		sb.WriteString(t.inlinePDF(res.Body))
+		sb.WriteString(t.inlinePDF(res.Body, row))
 	case mediaType == "application/json" || strings.HasPrefix(mediaType, "text/") ||
 		strings.HasSuffix(mediaType, "+json") || strings.HasSuffix(mediaType, "+xml") ||
 		mediaType == "application/xml":
-		sb.WriteString(t.inline(string(res.Body)))
+		sb.WriteString(t.inline(string(res.Body), row))
 	default:
 		fmt.Fprintf(&sb, "(binary content type %q, %d bytes — not rendered)", mediaType, len(res.Body))
 	}
@@ -327,7 +372,7 @@ func (t *Toolset) FormatFetchResult(res Result) string {
 // page is gone before anything can hold it — while the notice still offers to
 // page a page that is no longer there.
 // See docs/capabilities/evidence.md#a-page-is-kept-whole.
-func (t *Toolset) inline(text string) string {
+func (t *Toolset) inline(text string, row *Source) string {
 	if t.scrub != nil {
 		text = t.scrub(text)
 	}
@@ -342,6 +387,9 @@ func (t *Toolset) inline(text string) string {
 		if kept, ok := t.keep(FetchToolName, text); ok {
 			id = kept
 		}
+	}
+	if row != nil {
+		row.Evidence = id
 	}
 	cut, _ := tools.TruncateOutput(text, MaxInlineBytes)
 	if id == "" {
@@ -361,7 +409,7 @@ func (t *Toolset) inline(text string) string {
 // no reader the result names the binary that would have read it: a fetch that
 // merely failed invites the same URL again, and the bytes would be just as
 // unreadable the second time.
-func (t *Toolset) inlinePDF(body []byte) string {
+func (t *Toolset) inlinePDF(body []byte, row *Source) string {
 	size := formatBytes(int64(len(body)))
 	if t.PDFText == "" {
 		return fmt.Sprintf("(PDF, %s — this machine has no %s on PATH, so a PDF cannot be read here. "+
@@ -381,9 +429,9 @@ func (t *Toolset) inlinePDF(body []byte) string {
 	// that notice reads as part of it and is about a different cut.
 	if truncated {
 		return fmt.Sprintf("(the extracted text passed the %s ceiling and was cut there)\n\n%s",
-			formatBytes(int64(t.textCeiling())), t.inline(text))
+			formatBytes(int64(t.textCeiling())), t.inline(text, row))
 	}
-	return t.inline(text)
+	return t.inline(text, row)
 }
 
 // textCeiling is how much text one fetch may yield. A PDF's text is bounded
@@ -420,7 +468,7 @@ type searchArgs struct {
 	Count int    `json:"count"`
 }
 
-func (t *Toolset) executeSearch(args json.RawMessage) (string, error) {
+func (t *Toolset) executeSearch(agent string, args json.RawMessage) (string, error) {
 	var a searchArgs
 	if err := json.Unmarshal(args, &a); err != nil {
 		return "", fmt.Errorf("invalid arguments: %w", err)
@@ -432,6 +480,12 @@ func (t *Toolset) executeSearch(args json.RawMessage) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	// A search names no page, so its row carries the words and the count of
+	// what came back. It is in the ledger all the same: a write-up's reader
+	// asking where an answer came from is owed the query that found it, and
+	// a session that searched four times and read nothing is a session that
+	// answered from memory.
+	t.ledger.Record(agent, Source{Kind: KindSearch, Query: strings.TrimSpace(a.Query), Results: len(results)})
 	if len(results) == 0 {
 		return "No results.", nil
 	}

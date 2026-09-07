@@ -2461,7 +2461,7 @@ func TestGolden_ProfileScreen(t *testing.T) {
 // every field of every header is showing at once.
 var screenFamilyWidths = []int{60, 130}
 
-// TestGolden_ScreenFamily captures the nine take-over screens' chrome side
+// TestGolden_ScreenFamily captures the ten take-over screens' chrome side
 // by side. Each of them has its own golden already; this one exists because
 // the thing that drifted was never visible in any single screen's capture —
 // it was the screens disagreeing about which half of the header gives ground,
@@ -2509,6 +2509,10 @@ func TestGolden_ScreenFamily(t *testing.T) {
 				{Label: "the saved-chat browser · a row another session holds says so in a word",
 					View: (&ChatScreen{
 						Rows: chatRows(), Subject: "3 conversations", Focus: 1, MaxLines: 12,
+					}).View(width)},
+				{Label: "sources · the list is grouped under the hosts it read",
+					View: (&SourcesScreen{
+						Rows: sourceRows(), Subject: "2 pages · 1 host · 1 search", Focus: 1, MaxLines: 12,
 					}).View(width)},
 			}
 		})

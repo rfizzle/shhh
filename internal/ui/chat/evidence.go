@@ -11,6 +11,12 @@ type Evidence struct {
 	Reduce func(tool, result string) string
 	// Manage backs the /evidence slash command (status, purge).
 	Manage func(args []string) string
+	// Read returns the opening bytes of a stored entry, and false for a
+	// session with no store or an entry it no longer holds. It is what the
+	// sources screen previews a page with and what [enter] opens whole —
+	// the ledger outlives a purge, so a row whose entry has gone still
+	// draws, without its page.
+	Read func(id string, limit int) (string, bool)
 	// Keep stores a result the window trim is about to elide and returns the
 	// id that pages it back; false is a store that could not take it, and the
 	// trim goes ahead with the bare placeholder. Nil makes elision permanent,

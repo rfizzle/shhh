@@ -24,6 +24,26 @@ func openEvidence() *evidence.Reducer {
 	return nil
 }
 
+// evidenceReader is how a surface reads a stored entry back: the opening
+// bytes of it, with a line saying what is past them where the entry is
+// longer than what was asked for. False is an entry the store no longer
+// holds — purged, pruned, or from a session whose store has gone — which the
+// sources screen reports on the row rather than as a failure.
+func evidenceReader(red *evidence.Reducer) func(id string, limit int) (string, bool) {
+	return func(id string, limit int) (string, bool) {
+		data, meta, err := red.Store().Read(id, 0, limit)
+		if err != nil {
+			return "", false
+		}
+		out := string(data)
+		if meta.Size > int64(len(data)) {
+			out += fmt.Sprintf("\n\n… (%d of %d bytes shown; the rest is in the store as %s)",
+				len(data), meta.Size, id)
+		}
+		return out, true
+	}
+}
+
 // evidenceManager backs the /evidence slash command: status by default,
 // "purge" deletes the session's stored originals.
 func evidenceManager(red *evidence.Reducer) func(args []string) string {

@@ -23,6 +23,10 @@ func sampleDocument() Document {
 			{Type: BlockDiff, Heading: "The commit that did it", Diff: "--- a/store.go\n+++ b/store.go\n@@ -1 +1 @@\n-fast()\n+slow()"},
 			{Type: BlockTree, Heading: "Where the time sits", Tree: []TreeItem{{Label: "storage"}, {Label: "migrate_test.go", Depth: 1}}},
 			{Type: BlockProse, Text: "Not new.\n\nIt has been creeping for two weeks."},
+			{Type: BlockSources, Heading: "Sources", Sources: []Source{
+				{URL: "https://go.dev/doc/go1.24", Title: "Go 1.24 release notes", Read: true},
+				{URL: "https://example.com/never", Title: "Cited by the write-up"},
+			}},
 			{Type: BlockFreehand, Heading: "Drawn freehand", HTML: `<svg viewBox="0 0 40 10"><rect x="0" y="0" width="20" height="8" fill="var(--series-1)"/></svg>`},
 		},
 	}
@@ -41,13 +45,15 @@ func TestRender_WholePage(t *testing.T) {
 	for _, want := range []string{
 		"<!doctype html>",
 		"<title>Suite timing breakdown · shhh</title>",
-		"--series-1: #0081be",              // the token block is embedded
-		`<div class="value">94s</div>`,     // stats
-		"<svg",                             // chart
-		`class="swatch s1"`,                // legend in fixed slot order
-		`<span class="del">-fast()</span>`, // diff classified
-		"padding-left: 16px",               // tree indent
-		"It has been creeping",             // prose
+		"--series-1: #0081be",                              // the token block is embedded
+		`<div class="value">94s</div>`,                     // stats
+		"<svg",                                             // chart
+		`class="swatch s1"`,                                // legend in fixed slot order
+		`<span class="del">-fast()</span>`,                 // diff classified
+		"padding-left: 16px",                               // tree indent
+		"It has been creeping",                             // prose
+		`<div class="url">https://go.dev/doc/go1.24</div>`, // a source is its address
+		`<p class="unread">cited, not read</p>`,            // in a run of its own
 		"shhh reports open rp-0123456789abcdef",
 	} {
 		if !strings.Contains(page, want) {
@@ -56,6 +62,11 @@ func TestRender_WholePage(t *testing.T) {
 	}
 	if strings.Contains(page, "<script") {
 		t.Fatal("a report page must never carry a script")
+	}
+	// No page carries an href, typed or freehand, so a source is an address
+	// drawn as one and never a link.
+	if strings.Contains(page, "<a ") || strings.Contains(page, "href=") {
+		t.Fatal("a report page must never carry a link")
 	}
 	if path := os.Getenv("REPORTS_DUMP"); path != "" {
 		_ = os.WriteFile(path, out, 0o600)

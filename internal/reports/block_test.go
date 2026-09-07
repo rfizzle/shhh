@@ -17,6 +17,7 @@ func TestDocumentValidate_Shapes(t *testing.T) {
 		{"valid diff", Document{Title: "t", Blocks: []Block{{Type: BlockDiff, Diff: "+x"}}}, ""},
 		{"valid tree", Document{Title: "t", Blocks: []Block{{Type: BlockTree, Tree: []TreeItem{{Label: "root"}}}}}, ""},
 		{"valid prose", Document{Title: "t", Blocks: []Block{{Type: BlockProse, Text: "hello"}}}, ""},
+		{"valid sources", Document{Title: "t", Blocks: []Block{{Type: BlockSources, Sources: []Source{{URL: "https://go.dev/", Read: true}}}}}, ""},
 
 		{"no title", Document{Blocks: []Block{{Type: BlockProse, Text: "x"}}}, "title is required"},
 		{"no blocks", Document{Title: "t"}, "at least one block"},
@@ -27,6 +28,8 @@ func TestDocumentValidate_Shapes(t *testing.T) {
 		{"labels mismatch", Document{Title: "t", Blocks: []Block{{Type: BlockBarChart, XLabels: []string{"a"}, Series: []Series{{Values: []float64{1, 2}}}}}}, "2 values for 1 x_labels"},
 		{"ninth series", Document{Title: "t", Blocks: []Block{{Type: BlockBarChart, Series: make([]Series, 9)}}}, "fold the rest"},
 		{"empty freehand", Document{Title: "t", Blocks: []Block{{Type: BlockFreehand}}}, "freehand requires html"},
+		{"sources without one", Document{Title: "t", Blocks: []Block{{Type: BlockSources}}}, "at least one {url}"},
+		{"source without a url", Document{Title: "t", Blocks: []Block{{Type: BlockSources, Sources: []Source{{Title: "x"}}}}}, "source 1 has no url"},
 		{"deep tree", Document{Title: "t", Blocks: []Block{{Type: BlockTree, Tree: []TreeItem{{Label: "x", Depth: 40}}}}}, "outside 0–12"},
 	}
 	for _, tc := range cases {

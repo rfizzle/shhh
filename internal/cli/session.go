@@ -142,6 +142,9 @@ type chatSession struct {
 	// notebook is the shared channel between the session's agents, opened
 	// by openNotebook; nil registers no notebook tools.
 	notebook *notebook.Store
+	// sources is the session's record of what it read, opened by
+	// openSourceLedger; nil is a session with no web tools.
+	sources *web.Ledger
 	// mcp connects the MCP servers the catalog names; mcpTools and
 	// mcpCatalog are what came of it. A conversation takes only servers
 	// marked read-only (docs/capabilities/mcp.md#what-a-conversation-may-reach).
@@ -204,6 +207,29 @@ func (s *chatSession) openNotebook(db *storage.DB) {
 	s.notebook = notebook.New(backend)
 	s.notebook.SetScrub(s.vault.Scrub)
 	s.toolDefs = append(append([]provider.Tool{}, s.toolDefs...), notebook.Definitions()...)
+}
+
+// openSourceLedger gives the web toolset the session's sources ledger: one
+// row per fetch and per search, persisted under the session slot where
+// storage is open and living for the session otherwise. It registers no
+// tool — nothing the model calls reaches it, because a record the model
+// could write is a record it could write anything into.
+//
+// It runs after the secrets are open, for the notebook's reason: a URL
+// carries whatever the model put in its query string, and a row outlives
+// the turn that made it.
+// See docs/capabilities/chat.md#what-was-read.
+func (s *chatSession) openSourceLedger(db *storage.DB) {
+	if s.web == nil {
+		return
+	}
+	var backend web.LedgerBackend
+	if db != nil {
+		backend = db
+	}
+	s.sources = web.NewLedger(backend)
+	s.sources.SetScrub(s.vault.Scrub)
+	s.web.UseLedger(s.sources)
 }
 
 // sessionEnv is the provider-and-prompt setup shared by the interactive chat
@@ -684,6 +710,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	}
 
 	session.openNotebook(db)
+	session.openSourceLedger(db)
 
 	registerSkills(&session)
 
@@ -915,7 +942,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithModelOptions(provider.KnownModels(env.prov.Name())).
 		WithModelLister(modelListerFor(env.prov)).
 		WithEndpointWindows(endpointWindowsFor(env.prov))
-	model = model.WithNotebook(session.notebook)
+	model = model.WithNotebook(session.notebook).WithSources(session.sources)
 	if session.conversation {
 		model = model.WithConversation()
 	} else {
@@ -949,6 +976,9 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			// The window trim writes into the same store, so what it elides
 			// is retrievable the way a reduced result is.
 			Keep: red.Keep,
+			// And the sources screen reads back out of it: a ledger row
+			// that names an entry can show the page it named.
+			Read: evidenceReader(red),
 		})
 	}
 	// The mutation seam: the language server's diagnostics, then the

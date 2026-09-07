@@ -30,6 +30,7 @@ import (
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/caps"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/web"
 )
 
 // sessionNameLayout is how a session that was never named is called in the
@@ -163,6 +164,11 @@ const (
 	// tree leaves — its verdicts as a diff of single lines, checked ones
 	// written on enter and nothing written on esc (todogroom.go).
 	stateTodoGroom
+	// stateSources: the sources screen is up — the ledger of what this
+	// session read, grouped by host, with the row the pointer is on beside
+	// it. A takeover like the context surface: full width, the rail hidden,
+	// esc returns, and it changes nothing.
+	stateSources
 )
 
 const inputHeight = 3
@@ -1028,6 +1034,12 @@ type Model struct {
 	// machine turned out to have (prompt.Toolbox).
 	context  *components.ContextScreen
 	toolDefs []ToolTokens
+	// The sources screen: the ledger the session's fetches record
+	// themselves in, and the screen while it is up. The screen is built
+	// once per opening, like the context surface — what it draws is what
+	// the session had read when the reader asked.
+	sourceLedger *web.Ledger
+	sources      *components.SourcesScreen
 	// backlog is the backlog screen while it is up. It is kept rather than
 	// rebuilt per frame because the pointer, the filters and the tab the
 	// reader is on are what the surface is: a screen re-derived from the

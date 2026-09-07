@@ -127,6 +127,16 @@ func Surfaces() []Surface {
 			Bindings: Context.All(),
 		},
 		{
+			// What the session read, as a screen: the ledger on the left
+			// grouped by host, the row the pointer is on beside it, and the
+			// page itself where the fetch was long enough to leave one.
+			Name:     "the sources screen",
+			Section:  "docs/interface/surfaces.md#the-supporting-screens",
+			Position: Takeover,
+			Reached:  "/sources",
+			Bindings: Sources.All(),
+		},
+		{
 			// The backlog as a screen rather than as a command that prints:
 			// the list on the left and the item's own prose on the right,
 			// with the keys that would otherwise be typed as verbs.

@@ -196,8 +196,9 @@ func (m *Model) bindSlot() {
 		m.turnCount = last
 	}
 	// After the counter has caught up, not before: the bind is also what
-	// tells the notebook which turn is open.
+	// tells the notebook and the sources ledger which turn is open.
 	m.bindNotebook()
+	m.bindSources()
 }
 
 // mintSlot moves the session to a slot of its own, claimed now, giving back

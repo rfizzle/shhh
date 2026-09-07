@@ -39,23 +39,23 @@ func TestToolset_Has(t *testing.T) {
 
 func TestToolset_ExecuteUnknown(t *testing.T) {
 	ts := NewToolset(NewFetcher(Policy{}), nil)
-	if _, err := ts.Execute("read_file", json.RawMessage(`{}`)); err == nil {
+	if _, err := ts.Execute(Orchestrator, "read_file", json.RawMessage(`{}`)); err == nil {
 		t.Fatal("expected unknown-tool error")
 	}
-	if _, err := ts.Execute(SearchToolName, json.RawMessage(`{"query":"x"}`)); err == nil {
+	if _, err := ts.Execute(Orchestrator, SearchToolName, json.RawMessage(`{"query":"x"}`)); err == nil {
 		t.Fatal("search without a key must error, not dispatch")
 	}
 }
 
 func TestToolset_FetchArgsValidation(t *testing.T) {
 	ts := NewToolset(NewFetcher(Policy{}), nil)
-	if _, err := ts.Execute(FetchToolName, json.RawMessage(`{`)); err == nil {
+	if _, err := ts.Execute(Orchestrator, FetchToolName, json.RawMessage(`{`)); err == nil {
 		t.Error("malformed JSON accepted")
 	}
-	if _, err := ts.Execute(FetchToolName, json.RawMessage(`{}`)); err == nil {
+	if _, err := ts.Execute(Orchestrator, FetchToolName, json.RawMessage(`{}`)); err == nil {
 		t.Error("missing url accepted")
 	}
-	if _, err := ts.Execute(FetchToolName, json.RawMessage(`{"url":"ftp://x/"}`)); err == nil {
+	if _, err := ts.Execute(Orchestrator, FetchToolName, json.RawMessage(`{"url":"ftp://x/"}`)); err == nil {
 		t.Error("bad scheme accepted")
 	}
 }
@@ -85,7 +85,7 @@ func TestToolset_ExecuteFetchHTML(t *testing.T) {
 	defer srv.Close()
 
 	ts := NewToolset(testFetcher(), nil)
-	out, err := ts.Execute(FetchToolName, json.RawMessage(`{"url":"`+srv.URL+`"}`))
+	out, err := ts.Execute(Orchestrator, FetchToolName, json.RawMessage(`{"url":"`+srv.URL+`"}`))
 	if err != nil {
 		t.Fatalf("Execute: %v", err)
 	}
@@ -103,7 +103,7 @@ func TestToolset_ExecuteSearch(t *testing.T) {
 	defer srv.Close()
 
 	ts := NewToolset(NewFetcher(Policy{}), &Searcher{APIKey: "k", Endpoint: srv.URL})
-	out, err := ts.Execute(SearchToolName, json.RawMessage(`{"query":"golang"}`))
+	out, err := ts.Execute(Orchestrator, SearchToolName, json.RawMessage(`{"query":"golang"}`))
 	if err != nil {
 		t.Fatalf("Execute: %v", err)
 	}
@@ -113,7 +113,7 @@ func TestToolset_ExecuteSearch(t *testing.T) {
 		}
 	}
 
-	if _, err := ts.Execute(SearchToolName, json.RawMessage(`{}`)); err == nil {
+	if _, err := ts.Execute(Orchestrator, SearchToolName, json.RawMessage(`{}`)); err == nil {
 		t.Error("missing query accepted")
 	}
 }
@@ -127,7 +127,7 @@ func TestToolset_WrapExecutor(t *testing.T) {
 
 	ts := NewToolset(testFetcher(), nil)
 	nextCalled := false
-	exec := ts.WrapExecutor(func(name string, args json.RawMessage) (string, error) {
+	exec := ts.WrapExecutor(Orchestrator, func(name string, args json.RawMessage) (string, error) {
 		nextCalled = true
 		return "next:" + name, nil
 	})
@@ -454,12 +454,12 @@ func TestExecuteFetch_ACachedPageStillPages(t *testing.T) {
 	ts := NewToolset(fetcher, nil)
 	ts.UseEvidence(k.keep, nil)
 
-	first, err := ts.Execute(FetchToolName, json.RawMessage(`{"url":"`+srv.URL+`"}`))
+	first, err := ts.Execute(Orchestrator, FetchToolName, json.RawMessage(`{"url":"`+srv.URL+`"}`))
 	if err != nil {
 		t.Fatalf("first fetch: %v", err)
 	}
 	firstKept := k.kept
-	second, err := ts.Execute(FetchToolName, json.RawMessage(`{"url":"`+srv.URL+`"}`))
+	second, err := ts.Execute(Orchestrator, FetchToolName, json.RawMessage(`{"url":"`+srv.URL+`"}`))
 	if err != nil {
 		t.Fatalf("second fetch: %v", err)
 	}

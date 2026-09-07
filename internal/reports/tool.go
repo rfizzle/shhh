@@ -20,7 +20,8 @@ func ToolDefinition() provider.Tool {
 			"structures, anything a terminal cannot hold — as a graphical page served locally for the user's browser. " +
 			"Stay in plain text when a sentence or a short table answers: a page for three rows teaches the user to ignore the link. " +
 			"Build from typed blocks: stats (a band of large numbers), table, bar_chart / line_chart (series are colored in fixed order), " +
-			"diff (unified diff text), tree (depth-indented rows), prose. " +
+			"diff (unified diff text), tree (depth-indented rows), prose, " +
+			"sources (the pages a claim rests on: each an address and the page's title, with read=false for one cited but never fetched). " +
 			"When the answer is a drawing no block holds — a graph, a timeline, a state machine — add a freehand block of static HTML and inline SVG: " +
 			"no scripts, no event handlers, no external references, and every color written as var(--token) from the report stylesheet " +
 			"(--heading --prose --secondary --caption for text; --ok --fail --risk --running for state; --add --del --hunk for change; " +
@@ -33,7 +34,7 @@ func ToolDefinition() provider.Tool {
 				"blocks": {"type": "array", "description": "Sections of the page, in reading order", "items": {
 					"type": "object",
 					"properties": {
-						"type": {"type": "string", "enum": ["stats", "table", "bar_chart", "line_chart", "diff", "tree", "prose", "freehand"]},
+						"type": {"type": "string", "enum": ["stats", "table", "bar_chart", "line_chart", "diff", "tree", "prose", "sources", "freehand"]},
 						"heading": {"type": "string", "description": "Optional section heading"},
 						"stats": {"type": "array", "items": {"type": "object", "properties": {
 							"label": {"type": "string"}, "value": {"type": "string"}, "delta": {"type": "string", "description": "Optional secondary line under the value"}},
@@ -49,6 +50,10 @@ func ToolDefinition() provider.Tool {
 							"label": {"type": "string"}, "depth": {"type": "integer"}},
 							"required": ["label"]}},
 						"text": {"type": "string", "description": "Prose; blank lines separate paragraphs"},
+						"sources": {"type": "array", "items": {"type": "object", "properties": {
+							"url": {"type": "string"}, "title": {"type": "string"},
+							"read": {"type": "boolean", "description": "True for a page that was actually fetched; false lists it under \"cited, not read\""}},
+							"required": ["url"]}},
 						"html": {"type": "string", "description": "Freehand static HTML and inline SVG; colors only as var(--token)"}
 					},
 					"required": ["type"]

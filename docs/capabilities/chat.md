@@ -130,6 +130,37 @@ Notes are not memory (`sessions-and-memory.md`): memory is durable, general,
 and confirmed by the person before it is kept; a note is working state, and
 its lifetime is the conversation's.
 
+## What was read
+
+The other thing a session and its delegates share is the record of what they
+read. Every fetch and every search — the session's own and every child's —
+is one row: which agent made it, in which turn, the URL asked for and the
+URL that answered, the status, the size, whether the cache answered instead
+of the host, and the evidence entry holding the page where the fetch left
+one. `/sources` is that ledger as a screen, grouped by the host each page
+came from, with the row the pointer is on beside it and the page the fetch
+kept under `[enter]`. It persists with the session, so a resumed conversation can
+still say where an answer came from.
+
+It is content-free beyond the address, the query and the page's own title.
+The page itself lives in the evidence store, which has its own retention and
+its own purge ([`evidence.md`](evidence.md#a-page-is-kept-whole)); this is
+the index, and it is small enough to keep.
+
+**It is recorded by the fetch and never by the model.** That is the whole
+point of it. A sources list a model writes is a claim like any other — a
+model that remembers reading a page writes the same sentence whether or not
+it did. So a backlog run that ends in a write-up gets its *Sources* block
+built from this ledger, and any URL the write-up cites that is not in the
+ledger is listed underneath as *cited, not read*. That list is the review
+step's first check, because a fabricated source is the failure this exists
+to catch, and the place to catch it is the write-up rather than the reader's
+browser.
+
+Nothing the model can call reaches the ledger. There is no tool that writes
+a row and none that removes one: a record an agent could edit would answer
+the question it exists to answer with whatever the agent preferred.
+
 ## The backlog is here too
 
 The backlog is not a coding surface. One file per item, four statuses, ready

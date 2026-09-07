@@ -129,6 +129,9 @@ default), low, medium, high, xhigh or max — ctrl+t cycles them
 [level]           set it for this session (also /think)
 default [level]   show or persist the level new sessions
                   start on (provider.reasoning)`,
+	"/sources": `What this session read: every fetch and every search, its own
+and its children's, grouped by host — with the whole page
+under [enter] where the fetch kept one`,
 	"/context": `The window as a meter, by category, with the tools itemised`,
 	"/stats":   `Context occupancy breakdown and cumulative session spend`,
 	"/step": `Open the in-flight step's detail: every row in it shows its

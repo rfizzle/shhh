@@ -39,14 +39,16 @@ func (m *Model) bindNotebook() {
 	m.notebook.SetTurn(m.turnCount)
 }
 
-// nextTurn moves the session on to its next turn number and tells the
-// notebook, so a note a delegate writes carries the turn its parent spawned
-// it in. The two are one call because a turn that moved without saying so
-// would stamp a child's note with the turn before it, and the close that
-// counts the fan-out's notes would report them against the wrong turn.
+// nextTurn moves the session on to its next turn number and tells the two
+// per-turn records — the notebook and the sources ledger — so a note or a
+// fetch a delegate makes carries the turn its parent spawned it in. They are
+// one call because a turn that moved without saying so would stamp a child's
+// work with the turn before it, and the close that counts the fan-out's
+// notes would report them against the wrong turn.
 func (m *Model) nextTurn() {
 	m.turnCount++
 	m.notebook.SetTurn(m.turnCount)
+	m.sourceLedger.SetTurn(m.turnCount)
 }
 
 // notesCommand is /notes: the notebook as the person sees it. Bare lists

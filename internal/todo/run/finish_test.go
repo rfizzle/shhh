@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/rfizzle/shhh/internal/todo"
 )
 
 // gitRepo is a repository with one commit already in it, so the index this
@@ -104,5 +106,58 @@ func TestCommit_RefusesAnEmptyRun(t *testing.T) {
 	if _, err := Commit(t.TempDir(), nil, "subject", "ask", true); err == nil ||
 		!strings.Contains(err.Error(), "changed no files") {
 		t.Fatalf("err = %v", err)
+	}
+}
+
+func TestSourcesSection_TheReadAndTheOnlyCited(t *testing.T) {
+	block := SourcesSection([]Source{
+		{URL: "https://go.dev/doc/go1.24", Title: "Go 1.24 release notes", Read: true},
+		{URL: "https://docs.rs/tokio/", Read: true},
+		{URL: "https://example.com/invented", Title: "Nobody opened this"},
+	})
+	for _, want := range []string{
+		"## Sources",
+		"- https://go.dev/doc/go1.24 — Go 1.24 release notes",
+		"- https://docs.rs/tokio/\n",
+		"Cited, not read:",
+		"- https://example.com/invented — Nobody opened this",
+	} {
+		if !strings.Contains(block, want) {
+			t.Errorf("the block is missing %q:\n%s", want, block)
+		}
+	}
+	if strings.Index(block, "Cited, not read:") < strings.Index(block, "https://docs.rs/tokio/") {
+		t.Error("what was cited and never read is listed above what was read")
+	}
+	if SourcesSection(nil) != "" {
+		t.Error("a run that read nothing still wrote a sources block")
+	}
+}
+
+// The block is built from what the session fetched and never from the
+// write-up's own prose, so it is there whether or not the turn wrote one.
+func TestFileNote_TheWriteUpCarriesTheSourcesItWasHanded(t *testing.T) {
+	root := t.TempDir()
+	write(t, root, ".shhh/todo/q-1.md", "---\nstatus: doing\n---\n\n# A question\n")
+	it := todo.Item{Path: filepath.Join(root, ".shhh/todo/q-1.md"), Slug: "q-1", Title: "A question"}
+	s := &State{Slug: "q-1", Report: "## Report\nThe answer is yes.", NoCommit: true,
+		Sources: []Source{{URL: "https://go.dev/doc", Title: "The docs", Read: true}}}
+
+	var noted string
+	if _, err := FileNote(root, s, it, func(author, title, body string) (string, error) {
+		noted = body
+		return "n1", nil
+	}); err != nil {
+		t.Fatalf("FileNote: %v", err)
+	}
+	if !strings.Contains(noted, "## Sources") || !strings.Contains(noted, "https://go.dev/doc") {
+		t.Errorf("the note carries no sources block:\n%s", noted)
+	}
+	archived, err := os.ReadFile(filepath.Join(root, ".shhh/todo/done/q-1.md"))
+	if err != nil {
+		t.Fatalf("read the archived item: %v", err)
+	}
+	if !strings.Contains(string(archived), "https://go.dev/doc") {
+		t.Errorf("the archived item carries no sources block:\n%s", archived)
 	}
 }

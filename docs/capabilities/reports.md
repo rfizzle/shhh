@@ -18,8 +18,13 @@ answers.
 ## Typed blocks and freehand
 
 Most reports are a stat band over a table with a chart under it, so those
-shapes — stats, table, bar and line charts, a diff, a tree, prose — are typed
-blocks: the model supplies data and the page draws it. Typed blocks are
+shapes — stats, table, bar and line charts, a diff, a tree, prose, sources —
+are typed blocks: the model supplies data and the page draws it. The sources
+block is the one whose content a session can hand over rather than write: a
+row is an address and the page's title, and a row marked unread is drawn
+under *cited, not read*, which is what a write-up's own sources block is
+built from ([`chat.md`](chat.md#what-was-read)). Its addresses take the link
+token and are not links — no report page carries an href, freehand or typed. Typed blocks are
 stored as data and re-drawn under the current template every time the page is
 served, so an old report quietly adopts whatever the page chrome has since
 become.

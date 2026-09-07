@@ -544,6 +544,32 @@ indistinguishable from a hang
 A test drives the schedule rather than spending it by replacing the limiter's
 `now` and `after` (`newFakeWaits`).
 
+**What a session read is `internal/web/ledger.go`, one `Ledger` per session
+and shared with every child** — the toolset is one object, so
+`Toolset.WrapExecutor(agent, next)` is where a row learns which agent made
+it, the way `notebook.Store.WrapExecutor` does. `Toolset.executeFetch` fills
+the row while the result is being rendered (`formatFetchResult` threads a
+`*web.Source` into `inline`), because the page's title and the evidence id
+are known once — where the page is extracted and stored — and recovering
+them afterwards means parsing a two-megabyte page a second time. The chat
+model binds it to the slot and stamps the turn in the same two places the
+notebook is bound (`bindSlot`, `nextTurn`), it persists through
+`internal/storage/sources.go` under the slot's **row id** rather than its
+name — the `changes` pattern, not the `notes` one, so a deleted conversation
+takes its ledger with it — and `/sources`
+(`internal/ui/chat/sources.go`, `internal/ui/components/sourcesscreen.go`)
+is the screen over it
+([`docs/capabilities/chat.md#what-was-read`](docs/capabilities/chat.md#what-was-read)).
+Two things will bite you. **No tool reaches it**: there is nothing registered
+that writes a row, because a record the model could edit answers the question
+it exists to answer with whatever the model preferred — which is also why
+`run.SourcesSection` is handed its list by the driver rather than asking the
+model for one. And **`web.Pages` is what was read, not what was tried**: it
+drops a fetch that did not answer 2xx and folds two reads of one URL through
+`web.CanonicalURL`, which is the same comparison `web.CitedURLs` runs a
+write-up's own addresses through — change one of them and *cited, not read*
+starts listing pages that were read.
+
 `internal/web/pdf.go` shells out to `pdftotext`, resolved once by
 `DetectPDFText` in `openWebTools` (`internal/cli/web.go`) the way the
 structural tools probe PATH, with the path on `Toolset.PDFText`. The bytes go
@@ -565,9 +591,9 @@ The register is built on first use rather than at initialisation, and so are the
 
 ### The take-over screens
 
-Nine surfaces take the whole terminal — doctor, metrics, config, history, rate, snippets, the saved-chat browser, the context reading and the profile drafter ([`docs/interface/surfaces.md#the-supporting-screens`](docs/interface/surfaces.md#the-supporting-screens)). **They share one chrome, in `internal/ui/components/chrome.go`, and a screen supplies its parts rather than drawing its own skeleton.** `ScreenChrome` is the header, the rule, the body's row budget and the footer; `ScreenHeader` is the row itself; `KeyFooter` is the key row and what annotates it. What a screen still owns is what is a fact about that screen: its title, what it is counting, which keys it offers, and what its body draws in the rows it is left.
+Ten surfaces take the whole terminal — doctor, metrics, config, history, rate, snippets, the saved-chat browser, the context reading, the sources ledger and the profile drafter ([`docs/interface/surfaces.md#the-supporting-screens`](docs/interface/surfaces.md#the-supporting-screens)). **They share one chrome, in `internal/ui/components/chrome.go`, and a screen supplies its parts rather than drawing its own skeleton.** `ScreenChrome` is the header, the rule, the body's row budget and the footer; `ScreenHeader` is the row itself; `KeyFooter` is the key row and what annotates it. What a screen still owns is what is a fact about that screen: its title, what it is counting, which keys it offers, and what its body draws in the rows it is left.
 
-What will bite you: **the header's two halves are fitted in the opposite order from the one that reads naturally.** The keys are laid out first and the left-hand rail into what is left of the row, so the reading a screen is counting is dropped before its stated way out is. Fitting the left first is the bug this replaced — three of the seven did it, each self-consistent, and no single screen's test could see it. The family's drop order is asserted once in `chrome_test.go` and captured once in the `screen-family` goldens at 60 and 130 columns, which is the only place all nine are side by side — and is what a screen joining the family is held to: the last two arrived carrying a chrome of their own, and neither one's own test could have said whether it matched. Three of the nine are a list with a preview beside it, and the split is `screenpanes.go` rather than a copy each: what a screen supplies is its own four numbers, because how wide the list wants to be is a fact about what its rows carry.
+What will bite you: **the header's two halves are fitted in the opposite order from the one that reads naturally.** The keys are laid out first and the left-hand rail into what is left of the row, so the reading a screen is counting is dropped before its stated way out is. Fitting the left first is the bug this replaced — three of the seven did it, each self-consistent, and no single screen's test could see it. The family's drop order is asserted once in `chrome_test.go` and captured once in the `screen-family` goldens at 60 and 130 columns, which is the only place all ten are side by side — and is what a screen joining the family is held to: the last two arrived carrying a chrome of their own, and neither one's own test could have said whether it matched. Four of the ten are a list with a preview beside it, and the split is `screenpanes.go` rather than a copy each: what a screen supplies is its own four numbers, because how wide the list wants to be is a fact about what its rows carry.
 
 A left-hand field carries the ` · ` that joins it to the field in front of it. That is why a dropped field cannot leave a dangling separator behind — and why the fields can be coloured separately, which a spinner, a percentage and a warning about unwritten changes all need.
 

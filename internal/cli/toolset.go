@@ -166,7 +166,7 @@ func (t *toolset) close() {
 func (t *toolset) executor(session chatSession) agent.ToolExecutor {
 	exec := agent.ToolExecutor(tools.Execute)
 	if session.web != nil {
-		exec = session.web.WrapExecutor(exec)
+		exec = session.web.WrapExecutor(web.Orchestrator, exec)
 	}
 	if session.lsp != nil {
 		exec = session.lsp.WrapExecutor(exec)

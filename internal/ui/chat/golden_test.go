@@ -793,6 +793,21 @@ func TestGolden_ContextScreen(t *testing.T) {
 	})
 }
 
+// TestGolden_SourcesScreen captures the sources screen through the host: the
+// rows are resolved from a real ledger rather than from a fixture of drawn
+// strings, so what the screen says a fetch cost is what the ledger recorded.
+func TestGolden_SourcesScreen(t *testing.T) {
+	captureGolden(t, "sources-screen", "the ledger of what the session read", goldenWidths, func(width int) []golden.Panel {
+		m := sendText(t, sourcesModel(t, width), "/sources")
+		opened := strings.Join(m.sourcesLines(), "\n")
+		m.sources.Focus = 1
+		return []golden.Panel{
+			{Label: "as it opens · the pointer on the last thing read", View: opened},
+			{Label: "a page that was kept · the preview opens it", View: strings.Join(m.sourcesLines(), "\n")},
+		}
+	})
+}
+
 // TestGolden_ProfileDrafter captures the drafting flow through the host: the
 // surface is built from a session's own wiring — which kind of profile this
 // is, which roles it already has, where a file could go — so the words on it

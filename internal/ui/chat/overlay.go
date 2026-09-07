@@ -361,6 +361,19 @@ func buildOverlays() map[state]*mode {
 			hint:   (Model).renderContextHint,
 			answer: (*Model).answerContext,
 		},
+		stateSources: {
+			place:   placePane,
+			borrows: true,
+			lines: func(m Model, width, height int) []string {
+				if m.sources == nil {
+					return nil
+				}
+				m.sources.SetSize(width, height)
+				return strings.Split(m.sources.View(width), "\n")
+			},
+			hint: (Model).renderSourcesHint,
+			keys: (Model).updateSources,
+		},
 		stateBacklog: {
 			place:   placePane,
 			borrows: true,

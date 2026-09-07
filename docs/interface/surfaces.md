@@ -795,9 +795,11 @@ the list on the left, the one the pointer is on beside it, and the renaming
 and deleting the picker inside a session already offers
 (../capabilities/sessions-and-memory.md#housekeeping).
 
-Nine surfaces take the whole terminal this way — those seven, the reading of
-what is in the session's context and the drafting flow for a new agent profile
-— and they are one family rather than nine screens: the same header, the same
+Ten surfaces take the whole terminal this way — those seven, the reading of
+what is in the session's context, the ledger of what the session read
+(`/sources`, [what was read](../capabilities/chat.md#what-was-read)) and the
+drafting flow for a new agent profile — and they are one family rather than
+ten screens: the same header, the same
 ground given up in the same order as the terminal narrows, the same key row at
 the foot and the same `[?]` behind it. The two that arrived last had each been
 drawing a chrome of their own, and the way that showed was not in either of
@@ -830,11 +832,12 @@ surface that put `[?]` and the letter on both rows spent its bottom row saying
 what its top row had already said, which on the narrowest terminal is the row
 that had least to give.
 
-Three of them list something and preview what the pointer is on — past
-commands, saved commands, saved conversations — and they split the terminal
-the same way: two columns where there is room for two, stacked where there is
-not, and the preview giving way to the list when the rows run out, because a
-screen that cannot preview an item can still say which items there are.
+Four of them list something and preview what the pointer is on — past
+commands, saved commands, saved conversations, and the pages this session
+read — and they split the terminal the same way: two columns where there is
+room for two, stacked where there is not, and the preview giving way to the
+list when the rows run out, because a screen that cannot preview an item can
+still say which items there are.
 
 Rating is the one of them that asks rather than reports, and it is drawn as
 the thing it is: one card, the answers as keys on it, and no list to walk,
