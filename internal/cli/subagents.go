@@ -262,11 +262,15 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 		// call, the same way it reaches the transcript.
 		// Children see the same skills the session does: a writer told to
 		// follow the project's documentation skill has to be able to read
-		// it, and the catalog is a read whatever the child's tier.
+		// it, and the catalog is a read whatever the child's tier — and its
+		// instructions have to survive the child's window trim, the same as
+		// they survive the session's.
+		var keepResult func(string) bool
 		if session.skills.Len() > 0 {
 			defs = append(defs, skill.ToolDefinition(session.skills))
 			base = session.skills.WrapExecutor(base)
 			sysPrompt = prompt.CombineExtra(sysPrompt, skill.PromptBlock(session.skills))
+			keepResult = skill.IsContent
 		}
 		defs, base, sysPrompt = withNotebook(session.notebook, spec.Name, defs, base, sysPrompt)
 		// The servers the person marked read-only are reads, and a child
@@ -361,8 +365,15 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			// the child's evidence tool — registered above — can page.
 			// Safe on a nil reducer, which reduces nothing.
 			Reduce: red.Process,
-			Gated:  gated,
-			Scrub:  session.vault.ScrubMessage,
+			// The same store again, at the other end of the window: what a
+			// child's trim elides is put there and the placeholder carries
+			// the id, so a result that left the window is one the child's
+			// own evidence tool can page back. Safe on a nil reducer, which
+			// answers that it kept nothing.
+			KeepResult: keepResult,
+			Archive:    red.Keep,
+			Gated:      gated,
+			Scrub:      session.vault.ScrubMessage,
 			// A child is as unwatched as a headless run, but a fan-out
 			// multiplies the cost by its width, so this one is opt-in
 			// (summary.subagents).

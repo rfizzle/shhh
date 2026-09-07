@@ -174,6 +174,16 @@ the trim goes ahead, because the request that provoked it still has to fit,
 and a session whose store is failing is exactly the session that most needs
 the window back.
 
+The offer holds wherever the trim runs: a person's session, an unattended
+run, a served turn, and a sub-agent. It is worth most on the last three. A
+session trims only in front of a person's request and has somebody sitting
+there to notice a finding gone and ask for it again; the others recover the
+window at every round boundary, so they trim far more often and there is
+nobody watching. The same is true of the results that are never elided at
+all — a skill's instructions are guidance for the rest of the work, and an
+unattended run that quietly stops following them is a run whose only symptom
+is the answer it gives.
+
 ## Search has more than one backend
 
 Search was one product's defaults, which meant a machine without a paid key

@@ -339,6 +339,11 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	if session.skills.Len() > 0 {
 		a.KeepResults(skill.IsContent)
 	}
+	// A served turn runs the unattended loop, so it recovers its window at
+	// every round boundary and trims far more often than a session does; the
+	// id the placeholder names is one this session's evidence tool reads.
+	// See docs/capabilities/evidence.md#a-trim-makes-the-same-promise.
+	a.StoreElided(red.Keep)
 	a.SetMaxRounds(maxRoundsFor(cfg, opts.maxRounds, opts.maxRoundsSet))
 	l.agent = a
 

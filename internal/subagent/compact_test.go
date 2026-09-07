@@ -3,11 +3,15 @@ package subagent
 import (
 	"context"
 	"encoding/json"
+	"regexp"
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/skill"
 )
 
 // bulkyEnv is the scripted environment with an executor that returns more
@@ -92,5 +96,78 @@ func TestChildCompactorNeedsAWindowItCanName(t *testing.T) {
 	// one role-scoped toolset, is the only door a child has out.
 	if c.Stream != nil {
 		t.Fatal("a child was given a stream of its own to summarize on")
+	}
+}
+
+// The whole of what a child loses when a trim runs and nothing was installed
+// to catch it: the contents of its early reads, and the instructions it was
+// told to follow. A child recovers its window at every round boundary, so it
+// meets this far more often than a person's session does — and there is
+// nobody watching it to notice either one go.
+func TestNewChildAgent_ATrimIsRecoverableAndSparesSkills(t *testing.T) {
+	store, err := evidence.Open(t.TempDir(), "sess-child-trim")
+	if err != nil {
+		t.Fatal(err)
+	}
+	red := evidence.NewReducer(store)
+
+	instructions := "<skill_content name=\"documentation\">\n" + strings.Repeat("follow this. ", 200) + "\n</skill_content>"
+	if !skill.IsContent(instructions) {
+		t.Fatal("the fixture is not what the session's keep predicate looks for")
+	}
+	original := strings.Repeat("a finding the child read once. ", 200)
+
+	a := newChildAgent(Env{
+		SystemPrompt: "sys",
+		KeepResult:   skill.IsContent,
+		Archive:      red.Keep,
+	}, 10)
+	a.SetMessages([]provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "the task"},
+		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{
+			{ID: "c1", Name: "read_file"}, {ID: "c2", Name: "skill"}}},
+		{Role: provider.RoleTool, Content: original, ToolCallID: "c1"},
+		{Role: provider.RoleTool, Content: instructions, ToolCallID: "c2"},
+		// The turn the trim runs in front of: everything before it is what
+		// a round boundary may take.
+		{Role: provider.RoleUser, Content: "carry on"},
+	})
+
+	if elided, _ := a.TrimOldToolResults(70000, 60000, 40000, agent.Calibration{}); elided != 1 {
+		t.Fatalf("want the read elided and the instructions left, got %d elided", elided)
+	}
+	if got := a.Messages()[4].Content; got != instructions {
+		t.Fatalf("a skill's instructions were elided out from under the child: %q", got)
+	}
+	placeholder := a.Messages()[3].Content
+	m := regexp.MustCompile(`evidence (ev-[0-9a-f]{16})`).FindStringSubmatch(placeholder)
+	if m == nil {
+		t.Fatalf("the placeholder must name an id the child's evidence tool can read: %q", placeholder)
+	}
+	data, meta, err := store.Read(m[1], 0, len(original)+1)
+	if err != nil {
+		t.Fatalf("the elided original must be readable: %v", err)
+	}
+	if string(data) != original || meta.Tool != "read_file" {
+		t.Fatalf("the store holds %d bytes filed under %q", len(data), meta.Tool)
+	}
+}
+
+// A child whose session has no store and no skills is left exactly as it was:
+// the trim still runs, because the request that provoked it still has to fit.
+func TestNewChildAgent_NothingInstalledStillTrims(t *testing.T) {
+	a := newChildAgent(Env{SystemPrompt: "sys"}, 10)
+	a.SetMessages([]provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "the task"},
+		{Role: provider.RoleTool, Content: strings.Repeat("x", 4000), ToolCallID: "c1"},
+		{Role: provider.RoleUser, Content: "carry on"},
+	})
+	if elided, _ := a.TrimOldToolResults(70000, 60000, 40000, agent.Calibration{}); elided != 1 {
+		t.Fatalf("want the result elided, got %d", elided)
+	}
+	if got := a.Messages()[2].Content; got != agent.ElidedResult {
+		t.Fatalf("want the bare placeholder, got %q", got)
 	}
 }

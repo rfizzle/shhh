@@ -263,6 +263,22 @@ type Env struct {
 	// would let the notice count the exit-code line as output.
 	// See docs/capabilities/evidence.md#reduction-is-for-unbounded-output.
 	Reduce func(tool, result string) string
+	// KeepResult reports a tool result the window trim must leave where it
+	// is. A result is elided on the assumption that it was consumed when it
+	// arrived; a skill's instructions are the exception, because they are
+	// what the rest of the child's work is meant to follow — and losing them
+	// fails silently, since the child carries on without them. Nil keeps
+	// nothing back.
+	KeepResult func(content string) bool
+	// Archive is where a tool result goes just before the trim replaces it,
+	// answering with the id the placeholder then names, so what left the
+	// child's window is still somewhere the child's own evidence tool can
+	// ask for. False is a result that could not be kept and the trim goes
+	// ahead with the bare placeholder: a child at the end of its window is
+	// exactly the child that most needs the room back. Nil makes elision
+	// permanent.
+	// See docs/capabilities/evidence.md#a-trim-makes-the-same-promise.
+	Archive func(tool, content string) (string, bool)
 	// Gated names the tools that must go through approval routing.
 	Gated map[string]bool
 	// Scrub, when set, is installed on the child's agent so its
@@ -348,6 +364,18 @@ func newChildAgent(env Env, maxRounds int) *agent.Agent {
 	// ends its turn, so that is what its check-ins point at — every route to
 	// one, not just the round cap that used to name it.
 	a.SetFinished(agent.FinishedAsSubAgent)
+	// And both halves of what a trim promises, here for the same reason the
+	// interval and the exit are. A child's window is recovered at every round
+	// boundary (childCompactor) rather than ahead of a person's request, so it
+	// trims far more often than a session does, and there is nobody watching
+	// it to notice a finding gone or a skill's instructions stop being
+	// followed.
+	if env.KeepResult != nil {
+		a.KeepResults(env.KeepResult)
+	}
+	if env.Archive != nil {
+		a.StoreElided(env.Archive)
+	}
 	if env.Scrub != nil {
 		a.SetScrub(env.Scrub)
 	}

@@ -800,6 +800,13 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	if session.skills.Len() > 0 {
 		a.KeepResults(skill.IsContent)
 	}
+	// And where a result it does elide goes. An unattended run recovers its
+	// window at every round boundary rather than ahead of a person's request,
+	// so it trims far more often than a session does — and there is nobody
+	// here to notice a finding gone and ask for it again. The id the
+	// placeholder names is one this run's own evidence tool reads.
+	// See docs/capabilities/evidence.md#a-trim-makes-the-same-promise.
+	a.StoreElided(red.Keep)
 	// Repeat detection goes on outside the shared chain, so it sees every
 	// tool the chain can dispatch and the result the model will actually
 	// read. A headless run needs it most: there is nobody watching to notice
