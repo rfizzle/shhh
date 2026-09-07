@@ -21,6 +21,11 @@ func streamOpenAIToolCalls(stream *openai.ChatCompletionStream, classify func(er
 		toolArgs := map[int]*toolCallAccumulator{}
 		var usage *Usage
 		var stop StopReason
+		// The reason and the tokens arrive in separate chunks, so the ending
+		// is held until both are in hand rather than sent on the first of
+		// them. StopEnd is the zero value, so the flag is what says a reason
+		// has been read at all.
+		stopped := false
 
 		for {
 			resp, err := stream.Recv()
@@ -43,6 +48,15 @@ func streamOpenAIToolCalls(stream *openai.ChatCompletionStream, classify func(er
 				}
 				if d := resp.Usage.PromptTokensDetails; d != nil {
 					usage.CachedTokens = d.CachedTokens
+				}
+				// With stream_options.include_usage the tokens for the whole
+				// round come in a chunk of their own, after the chunk that
+				// named the finish reason and with no choices in it. A round
+				// that ended on the reason alone threw them away, so every
+				// round that called a tool went unbilled and uncalibrated.
+				if stopped {
+					ch <- terminalOpenAIEvent(toolArgs, usage, stop)
+					return
 				}
 			}
 
@@ -88,14 +102,11 @@ func streamOpenAIToolCalls(stream *openai.ChatCompletionStream, classify func(er
 
 			// The reason is empty on every chunk but the last of a choice.
 			// A ceiling reached mid-call is reported here as "length" and
-			// never as "tool_calls", which is why the stop is read before
-			// the tool-call ending rather than derived from it.
+			// never as "tool_calls", so the ending is named by the reason
+			// the model sent rather than derived from the calls in hand.
 			if choice.FinishReason != "" {
 				stop = openAIStop(string(choice.FinishReason))
-			}
-			if stop == StopTool {
-				ch <- terminalOpenAIEvent(toolArgs, usage, stop)
-				return
+				stopped = true
 			}
 		}
 	}()
@@ -103,8 +114,10 @@ func streamOpenAIToolCalls(stream *openai.ChatCompletionStream, classify func(er
 }
 
 // terminalOpenAIEvent is the event that ends the stream, whichever of the two
-// endings got here: the finish reason the model sent, or the body running out
-// under it. A ceiling reached mid-call keeps only the calls that are whole —
+// endings got here: the usage chunk that follows the finish reason, or the
+// body running out under it — which is also the ending of a gateway that
+// sends no usage at all, and of one that folds usage into the finish-reason
+// chunk. A ceiling reached mid-call keeps only the calls that are whole —
 // half a JSON object would reach a tool as malformed input and be answered as
 // though the model had asked for something.
 func terminalOpenAIEvent(toolArgs map[int]*toolCallAccumulator, usage *Usage, stop StopReason) StreamEvent {
