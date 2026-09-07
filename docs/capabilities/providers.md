@@ -226,13 +226,25 @@ download serves the spend meter, the context gauge, and the reasoning
 ladder, and the three cannot disagree with each other because they are one
 file.
 
-The table is downloaded once a day, quietly, and `shhh update` downloads it
-now — with a release check for the binary alongside, or without one under
-`--data`. A snapshot of the table, trimmed to the providers shhh speaks and
-the fields it reads, is built into the binary. It is the floor under the
-download: a fresh install answers before its first fetch, an offline machine
-answers after a failed one, and a download that does not parse is not
-written over a good cache.
+The table is downloaded once a day, quietly, and nothing waits for it. What
+is already on disk answers the process that asked, and the download runs
+behind it for the next process to read — because every process pays for a
+refresh and almost none of them need today's prices to do their work. Asked
+for by hand, it does wait: `shhh update` downloads it now, with a release
+check for the binary alongside or without one under `--data`, and somebody
+who asked is owed the answer including the error.
+
+A download that does not land is remembered for an hour. A failure changes
+nothing else — the cache it would have replaced is deliberately left alone —
+so without that memory the next process reads the same stale cache and asks
+again, and a machine with no route to the table re-learns that fact in every
+process it starts. An unattended run is a fresh process per stage.
+
+A snapshot of the table, trimmed to the providers shhh speaks and the fields
+it reads, is built into the binary. It is the floor under the download: a
+fresh install answers before its first fetch, an offline machine answers
+after a failed one, and a download that does not parse is not written over a
+good cache.
 
 A gateway profile can say it outright. Its declared models take a reasoning
 shape beside their prices and context window, and a declaration outranks the

@@ -1,9 +1,16 @@
 package pricing
 
 import (
+	"errors"
+	"io"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 )
 
 func TestCost_ExactMatch(t *testing.T) {
@@ -277,5 +284,149 @@ func TestSnapshotCarriesCacheRatesForTheCachingModels(t *testing.T) {
 			t.Errorf("%s prices a cached read at or above a fresh one: %v vs %v",
 				model, p.CacheReadCostPerToken, p.InputCostPerToken)
 		}
+	}
+}
+
+// stubTransport puts fn in front of the download's client for one test, and
+// answers how many times the download actually went out.
+func stubTransport(t *testing.T, fn func() (*http.Response, error)) *atomic.Int64 {
+	t.Helper()
+	var calls atomic.Int64
+	original := client.Transport
+	client.Transport = roundTripFunc(func(*http.Request) (*http.Response, error) {
+		calls.Add(1)
+		return fn()
+	})
+	t.Cleanup(func() { client.Transport = original })
+	return &calls
+}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
+
+// freshProcess gives the test the state a newly started process has: no
+// download attempted yet. Load starts at most one per process, so a test that
+// wants a second attempt has to ask for a second process.
+func freshProcess(t *testing.T) {
+	t.Helper()
+	refreshing.Wait()
+	refreshOnce = sync.Once{}
+	t.Cleanup(func() { refreshing.Wait() })
+}
+
+// body is a 200 carrying data, as the table's host would answer.
+func body(data string) (*http.Response, error) {
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(strings.NewReader(data)),
+		Header:     make(http.Header),
+	}, nil
+}
+
+// The symptom the marker exists for: without it nothing on disk changes when
+// a download fails, so every process in an unattended run pays the same
+// timeout over again.
+func TestLoad_AFailedDownloadIsNotRepeatedByTheNextProcess(t *testing.T) {
+	t.Setenv("XDG_CACHE_HOME", t.TempDir())
+	calls := stubTransport(t, func() (*http.Response, error) {
+		return nil, errors.New("no network")
+	})
+
+	for i := range 2 {
+		freshProcess(t)
+		if _, err := Load(); err != nil {
+			t.Fatalf("load %d: %v", i, err)
+		}
+		refreshing.Wait()
+	}
+
+	if got := calls.Load(); got != 1 {
+		t.Fatalf("the second process should read the remembered failure: transport called %d times", got)
+	}
+}
+
+func TestShouldRefresh_TheFailureMarkerExpires(t *testing.T) {
+	t.Setenv("XDG_CACHE_HOME", t.TempDir())
+	path, err := cachePath()
+	must(t, err)
+
+	markFailure(path)
+	if shouldRefresh(path) {
+		t.Error("a fresh failure should hold the next download off")
+	}
+
+	old := time.Now().Add(-failTTL - time.Minute)
+	must(t, os.Chtimes(failMarker(path), old, old))
+	if !shouldRefresh(path) {
+		t.Error("an expired failure should let the next download through")
+	}
+}
+
+func TestDownload_AFailureKeepsAGoodCacheAndASuccessClearsTheMarker(t *testing.T) {
+	t.Setenv("XDG_CACHE_HOME", t.TempDir())
+	path, err := cachePath()
+	must(t, err)
+	must(t, os.MkdirAll(filepath.Dir(path), 0o700))
+	good := `{"gpt-4o": {"input_cost_per_token": 0.0000025}}`
+	must(t, os.WriteFile(path, []byte(good), 0o600))
+
+	stubTransport(t, func() (*http.Response, error) {
+		return &http.Response{StatusCode: http.StatusInternalServerError,
+			Body: io.NopCloser(strings.NewReader("nope")), Header: make(http.Header)}, nil
+	})
+	if err := download(path); err == nil {
+		t.Fatal("a 500 should be an error")
+	}
+	kept, err := os.ReadFile(path)
+	must(t, err)
+	if string(kept) != good {
+		t.Errorf("a failed download must leave the cache alone, got %q", kept)
+	}
+	if _, err := os.Stat(failMarker(path)); err != nil {
+		t.Errorf("a failed download should write the marker: %v", err)
+	}
+
+	stubTransport(t, func() (*http.Response, error) {
+		return body(`{"gpt-4o": {"input_cost_per_token": 0.000005}}`)
+	})
+	if err := download(path); err != nil {
+		t.Fatalf("download: %v", err)
+	}
+	if _, err := os.Stat(failMarker(path)); !os.IsNotExist(err) {
+		t.Errorf("a landed download should clear the marker, got %v", err)
+	}
+	table, err := loadWithSnapshot(path)
+	must(t, err)
+	if e, _ := table.Entry("gpt-4o"); e.InputCostPerToken != 0.000005 {
+		t.Errorf("the new table should be on disk, got %v", e.InputCostPerToken)
+	}
+}
+
+// The startup cost this all exists to remove: Load reads disk and returns,
+// however long the download takes.
+func TestLoad_DoesNotWaitForTheDownload(t *testing.T) {
+	t.Setenv("XDG_CACHE_HOME", t.TempDir())
+	release := make(chan struct{})
+	stubTransport(t, func() (*http.Response, error) {
+		<-release
+		return body(`{}`)
+	})
+	freshProcess(t)
+	// Registered after freshProcess so it runs before it: cleanups run last
+	// in, first out, and the wait cannot end until the download is let go.
+	t.Cleanup(func() { close(release) })
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		if _, err := Load(); err != nil {
+			t.Errorf("load: %v", err)
+		}
+	}()
+	select {
+	case <-done:
+	case <-time.After(10 * time.Second):
+		t.Fatal("Load waited for the download")
 	}
 }

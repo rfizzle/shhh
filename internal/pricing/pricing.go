@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -22,7 +23,23 @@ const (
 	pricingURL   = "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json"
 	cacheFile    = "model_prices.json"
 	recheckAfter = 24 * time.Hour
+	// failFile is written beside the cache when a download does not land.
+	// A failure changes nothing else on disk — the cache is deliberately
+	// left alone — so without this file the next process reads the same
+	// missing-or-stale cache and pays the same timeout, and so does the one
+	// after that. An unattended sprint is dozens of fresh processes.
+	failFile = "model_prices.fail"
+	// failTTL is how long that failure is remembered: short enough that a
+	// transient outage costs an hour of staleness rather than a day, on a
+	// table that is only refreshed daily anyway. internal/update uses the
+	// same window on the release feed for the same reason.
+	failTTL = time.Hour
 )
+
+// client is the download's HTTP client. It is a package variable so a test
+// can put a transport in front of it that stands in for a network that is
+// not there; nothing else replaces it.
+var client = &http.Client{Timeout: 15 * time.Second}
 
 // snapshot is the trimmed table built into the binary by `make model-data`.
 // It answers before the first download and after a download that failed,
@@ -105,23 +122,56 @@ func Snapshot() *Table {
 	return t
 }
 
-// Load is the table for this process: the snapshot, with the downloaded file
-// over it. The download is refreshed when it is older than a day; a refresh
-// that fails leaves whatever was there. It never errors on the network —
-// the snapshot always answers — only on a cache directory it cannot use.
+// Load is the table for this process: the snapshot, with whatever has already
+// been downloaded over it. It reads disk and returns; when the cache is stale
+// or missing the download runs in the background and the next process reads
+// what it wrote. It never errors on the network — the snapshot always answers
+// — only on a cache directory it cannot use.
+//
+// The refresh is off the startup path because every process pays for it and
+// almost none of them need today's prices to do their work. Synchronously,
+// a machine that cannot reach the table spent the client's whole timeout
+// before it could so much as report that no provider was configured, and an
+// unattended run is a fresh process per stage — the timeout, once per stage,
+// for the length of the sprint.
 func Load() (*Table, error) {
 	path, err := cachePath()
 	if err != nil {
 		return nil, err
 	}
 	if shouldRefresh(path) {
-		_ = download(path)
+		refreshInBackground(path)
 	}
 	return loadWithSnapshot(path)
 }
 
-// Refresh downloads the table now, whatever the cache's age, and returns the
-// resulting table. This is the manual trigger; Load is the routine one.
+var (
+	// refreshOnce keeps one process to one download however many times it
+	// loads the table — a session loads it for the meter, the ladder and
+	// the context gauge — and refreshing holds it so a test can wait for
+	// the goroutine it started.
+	refreshOnce sync.Once
+	refreshing  sync.WaitGroup
+)
+
+// refreshInBackground downloads the table without the caller waiting. A
+// process that exits first simply kills the goroutine: nothing is half
+// written (the cache lands by rename) and nothing is lost that the next
+// process cannot fetch again.
+func refreshInBackground(path string) {
+	refreshOnce.Do(func() {
+		refreshing.Add(1)
+		go func() {
+			defer refreshing.Done()
+			_ = download(path)
+		}()
+	})
+}
+
+// Refresh downloads the table now, whatever the cache's age or any remembered
+// failure, and returns the resulting table. This is the manual trigger, and
+// the one path that waits for the download: somebody asked for it and is
+// owed the answer, including the error. Load is the routine one.
 func Refresh() (*Table, error) {
 	path, err := cachePath()
 	if err != nil {
@@ -303,7 +353,13 @@ func (t *Table) lookup(model string) (ModelPricing, bool) {
 	return ModelPricing{}, false
 }
 
+// shouldRefresh reports whether it is worth asking for the table again. A
+// recent failure answers no on its own: the cache it would have replaced is
+// still missing or still stale, so age alone would say yes forever.
 func shouldRefresh(path string) bool {
+	if info, err := os.Stat(failMarker(path)); err == nil && time.Since(info.ModTime()) < failTTL {
+		return false
+	}
 	info, err := os.Stat(path)
 	if err != nil {
 		return true
@@ -311,12 +367,42 @@ func shouldRefresh(path string) bool {
 	return time.Since(info.ModTime()) > recheckAfter
 }
 
+// failMarker is the path of the marker beside the cache at path.
+func failMarker(path string) string {
+	return filepath.Join(filepath.Dir(path), failFile)
+}
+
+// markFailure records that a download did not land, at the marker's mtime.
+// The stamp inside is for whoever finds the file in their cache directory;
+// shouldRefresh reads the mtime, as it does for the cache itself.
+func markFailure(path string) {
+	marker := failMarker(path)
+	if err := os.MkdirAll(filepath.Dir(marker), 0o700); err != nil {
+		return
+	}
+	_ = os.WriteFile(marker, []byte(time.Now().UTC().Format(time.RFC3339)+"\n"), 0o600)
+}
+
+// download fetches the table over the cache at path, and records either
+// outcome: a failure leaves the cache untouched and writes the marker, a
+// success clears it. Both Load's background refresh and Refresh go through
+// here, so a manual `shhh update` that fails is remembered too.
 func download(path string) error {
+	if err := fetch(path); err != nil {
+		markFailure(path)
+		return err
+	}
+	_ = os.Remove(failMarker(path))
+	return nil
+}
+
+// fetch is the request and the write: everything download does apart from
+// recording how it went.
+func fetch(path string) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return err
 	}
 
-	client := &http.Client{Timeout: 15 * time.Second}
 	resp, err := client.Get(pricingURL)
 	if err != nil {
 		return err
@@ -336,7 +422,28 @@ func download(path string) error {
 	if _, err := parse(data); err != nil {
 		return err
 	}
-	return os.WriteFile(path, data, 0o600)
+	// Written beside the cache and renamed over it, because the writer is
+	// now a goroutine in a process that may exit at any moment: a half
+	// written file parses as nothing and carries a fresh mtime, so the
+	// table would fall back to the snapshot and stay there for a day. The
+	// mode is set rather than left to CreateTemp, so the cache's 0600 is
+	// stated where a reader looks for it.
+	tmp, err := os.CreateTemp(filepath.Dir(path), cacheFile+".*")
+	if err != nil {
+		return err
+	}
+	defer func() { _ = os.Remove(tmp.Name()) }()
+	if _, err := tmp.Write(data); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	if err := os.Chmod(tmp.Name(), 0o600); err != nil {
+		return err
+	}
+	return os.Rename(tmp.Name(), path)
 }
 
 func parse(data []byte) (*Table, error) {
