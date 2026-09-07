@@ -159,6 +159,7 @@ var activityVerbs = map[string]string{
 	skill.ToolName:              "read",
 	subagent.SpawnToolName:      "spawn",
 	subagent.ReportToolName:     "agent",
+	subagent.SteerToolName:      "steer",
 	reports.ToolName:            "report",
 }
 
@@ -201,7 +202,7 @@ func (m Model) activityKind(tool string) components.ActivityKind {
 			return components.ActivityTool
 		}
 		return components.ActivityRemote
-	case tool == subagent.SpawnToolName || tool == subagent.ReportToolName:
+	case tool == subagent.SpawnToolName || tool == subagent.ReportToolName || tool == subagent.SteerToolName:
 		return components.ActivitySubagent
 	case tool == reports.ToolName:
 		return components.ActivityReport

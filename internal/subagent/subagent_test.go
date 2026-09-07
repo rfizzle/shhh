@@ -116,6 +116,9 @@ func (s *scriptedEnv) factory() EnvFactory {
 type readingProvider struct {
 	mu    sync.Mutex
 	state string
+	// digests is every digest the reader was handed, so a test can state
+	// what the child was judged against rather than only what came back.
+	digests []string
 }
 
 func (p *readingProvider) say(state string) {
@@ -124,9 +127,21 @@ func (p *readingProvider) say(state string) {
 	p.mu.Unlock()
 }
 
-func (p *readingProvider) StreamCompletion(context.Context, []provider.Message, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+// judgedAgainst is every digest the reader has been handed so far.
+func (p *readingProvider) judgedAgainst() []string {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return append([]string(nil), p.digests...)
+}
+
+func (p *readingProvider) StreamCompletion(_ context.Context, msgs []provider.Message, _ provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
 	p.mu.Lock()
 	state := p.state
+	for _, m := range msgs {
+		if m.Role == provider.RoleUser {
+			p.digests = append(p.digests, m.Content)
+		}
+	}
 	p.mu.Unlock()
 	ch := make(chan provider.StreamEvent, 1)
 	ch <- provider.StreamEvent{
@@ -583,7 +598,7 @@ func TestAPersonsRedirectClearsTheCountItAnswers(t *testing.T) {
 	// Nothing further is owed a steer, so what the count ends on is what the
 	// redirect left it at.
 	reader.say("on_target")
-	if err := sup.Steer("researcher-1", "read the exporter instead"); err != nil {
+	if err := sup.Steer("researcher-1", "read the exporter instead", SteerFromLane); err != nil {
 		t.Fatalf("steering the child: %v", err)
 	}
 	execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
@@ -759,7 +774,7 @@ func TestCancelTurnIdleThenSteerResumes(t *testing.T) {
 		t.Fatal("cancelling an idle turn must error")
 	}
 
-	if err := sup.Steer("researcher-1", "continue please"); err != nil {
+	if err := sup.Steer("researcher-1", "continue please", SteerFromLane); err != nil {
 		t.Fatal(err)
 	}
 	report := execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
@@ -781,7 +796,7 @@ func TestCancelTurnIdleThenSteerResumes(t *testing.T) {
 		t.Fatal("transcript missing the final assistant entry")
 	}
 
-	if err := sup.Steer("researcher-1", "too late"); err == nil {
+	if err := sup.Steer("researcher-1", "too late", SteerFromLane); err == nil {
 		t.Fatal("steering a finished agent must error")
 	}
 }
@@ -880,7 +895,7 @@ func TestNoteQueuedSteeringAndWorktreeDiff(t *testing.T) {
 		t.Fatal("noting an unknown agent must error")
 	}
 
-	if err := sup.Steer("researcher-1", "queued mid-turn"); err != nil {
+	if err := sup.Steer("researcher-1", "queued mid-turn", SteerFromLane); err != nil {
 		t.Fatal(err)
 	}
 	if n := sup.QueuedSteering("researcher-1"); n != 1 {
@@ -932,7 +947,7 @@ func TestSteerDuringFinalStreamStartsNextTurn(t *testing.T) {
 	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"x"}`)
 
 	<-started
-	if err := sup.Steer("researcher-1", "one more thing"); err != nil {
+	if err := sup.Steer("researcher-1", "one more thing", SteerFromLane); err != nil {
 		t.Fatal(err)
 	}
 	close(release)
@@ -1649,5 +1664,170 @@ func TestChildHostGrantsComeFromTheParentAndOnlyFromIt(t *testing.T) {
 	sup.SetParentGrants(agent.Grants{})
 	if got := decide("https://docs.python.org/3/library/json.html"); got != agent.Ask {
 		t.Errorf("a revoked grant still ran in a child: %v", got)
+	}
+}
+
+// The orchestrator's own redirect goes down the path the lane's does, and the
+// child is then judged against the task plus what it was told: without that
+// the next reading calls the correction a departure and steers the child back
+// onto the instruction the orchestrator has just moved it off.
+func TestSteerToolRedirectsAChildAndItsNextReadingIsJudgedAgainstIt(t *testing.T) {
+	reader := &readingProvider{state: "on_target"}
+	sup := judgedChild(t, reader, 200)
+
+	// The child has to be running before a steer can join its turn.
+	waitFor(t, func() bool { return statusOf(t, sup, "researcher-1").State == StateRunning })
+
+	out := execTool(t, sup, SteerToolName, `{"name":"researcher-1","message":"read the exporter instead"}`)
+	if !strings.Contains(out, "researcher-1") {
+		t.Fatalf("the tool result names the agent it steered, got %q", out)
+	}
+
+	waitFor(t, func() bool {
+		for _, d := range reader.judgedAgainst() {
+			if strings.Contains(d, "read the exporter instead") {
+				return true
+			}
+		}
+		return false
+	})
+	// The task it was spawned with is still half of what it is judged
+	// against: a steer is added to the instruction, never a replacement for
+	// it.
+	var last string
+	for _, d := range reader.judgedAgainst() {
+		if strings.Contains(d, "read the exporter instead") {
+			last = d
+		}
+	}
+	if !strings.Contains(last, "survey the exporter") {
+		t.Fatalf("the digest dropped the task the child was spawned with:\n%s", last)
+	}
+}
+
+// A steer is a message for a running agent. One for an agent that has already
+// answered has nowhere to go, and the refusal names it rather than failing
+// quietly — the orchestrator is choosing between agents by name.
+func TestSteerToolRefusesAFinishedChildByName(t *testing.T) {
+	env := &scriptedEnv{steps: []streamStep{{text: "done"}}}
+	sup := newTestSupervisor(t, env)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the exporter"}`)
+	waitFor(t, func() bool { return statusOf(t, sup, "researcher-1").State == StateDone })
+
+	exec := sup.WrapExecutor(func(string, json.RawMessage) (string, error) {
+		return "", errors.New("unexpected passthrough")
+	})
+	_, err := exec(SteerToolName, json.RawMessage(`{"name":"researcher-1","message":"read the exporter"}`))
+	if err == nil {
+		t.Fatal("a finished agent cannot be steered")
+	}
+	if !strings.Contains(err.Error(), "researcher-1") || !strings.Contains(err.Error(), "finished") {
+		t.Fatalf("the refusal names the agent and why, got %q", err)
+	}
+
+	if _, err := exec(SteerToolName, json.RawMessage(`{"name":"nobody","message":"x"}`)); err == nil ||
+		!strings.Contains(err.Error(), "nobody") {
+		t.Fatalf("an agent that was never spawned is refused by name, got %v", err)
+	}
+}
+
+// Both fields are required, and each refusal says what to do about it: a
+// steer with no name has nowhere to go, and one with no message spends a
+// round saying nothing.
+func TestSteerToolRefusesACallWithNothingToDeliver(t *testing.T) {
+	for _, tc := range []struct{ args, want string }{
+		{`{"message":"read the exporter"}`, "name is required"},
+		{`{"name":"researcher-1","message":"  "}`, "message is required"},
+		{`{`, "invalid arguments"},
+	} {
+		if _, err := parseSteerArgs(json.RawMessage(tc.args)); err == nil ||
+			!strings.Contains(err.Error(), tc.want) {
+			t.Errorf("%s should be refused with %q, got %v", tc.args, tc.want, err)
+		}
+	}
+}
+
+// The three orchestration tools are registered together, which is what lets
+// the report tool's own description point at the steer tool by name: a
+// session that can collect a roster can always act on what the roster says.
+func TestTheOrchestrationToolsAreRegisteredTogether(t *testing.T) {
+	have := map[string]bool{}
+	for _, d := range Definitions(nil) {
+		have[d.Name] = true
+	}
+	for _, want := range []string{SpawnToolName, ReportToolName, SteerToolName} {
+		if !have[want] {
+			t.Fatalf("%s is not registered with the others: %v", want, have)
+		}
+	}
+}
+
+// Where a steer came from is the question a count alone cannot answer once
+// more than one party can steer. The word is the same on the status, the
+// roster and the lane, and it is the last steer's own — a redirect the child
+// has already taken up left the count it answered at zero.
+func TestAStatusSaysWhereTheLastSteerCameFrom(t *testing.T) {
+	c := &child{name: "researcher-1", role: RoleResearcher}
+	if got := steerMark(c.status()); got != "" {
+		t.Fatalf("a child nobody has steered says nothing, got %q", got)
+	}
+
+	c.steers, c.verdict, c.steerFrom = 2, agent.SummaryOffTarget.String(), SteerFromReading
+	st := c.status()
+	if st.SteerFrom != SteerFromReading {
+		t.Fatalf("the status carries the source, got %q", st.SteerFrom)
+	}
+	if got := steerMark(st); !strings.Contains(got, "2 steers") || !strings.Contains(got, "from reading") {
+		t.Fatalf("the roster says the count and its source, got %q", got)
+	}
+
+	// The orchestrator's redirect resets the count it answered, and the
+	// source is what is left saying anyone spoke to the child at all.
+	c.steers, c.steerFrom = 0, SteerFromParent
+	if got := steerMark(c.status()); !strings.Contains(got, "steered from parent") {
+		t.Fatalf("the roster says who redirected the child, got %q", got)
+	}
+}
+
+// waitFor blocks until cond holds, so a test can state the state it is
+// waiting for rather than the sleep it guessed at.
+func waitFor(t *testing.T, cond func() bool) {
+	t.Helper()
+	deadline := time.After(10 * time.Second)
+	for !cond() {
+		select {
+		case <-deadline:
+			t.Fatal("the condition never held")
+		default:
+		}
+		time.Sleep(time.Millisecond)
+	}
+}
+
+// A child whose turn was cancelled is idle, and a message to it is the next
+// turn rather than an addition to one. The tool says which of the two it did,
+// because "queued for its next round" would tell the orchestrator to wait for
+// a boundary that is not coming.
+func TestSteerToolStartsTheNextTurnOfAnIdleChild(t *testing.T) {
+	sup := New(t.Context(), Options{Root: t.TempDir(), NewEnv: resumableEnv("resumed and finished")})
+	t.Cleanup(sup.Close)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"long survey"}`)
+
+	waitState(t, sup, "researcher-1", StateRunning)
+	if err := sup.CancelTurn("researcher-1"); err != nil {
+		t.Fatal(err)
+	}
+	waitState(t, sup, "researcher-1", StateIdle)
+
+	out := execTool(t, sup, SteerToolName, `{"name":"researcher-1","message":"continue please"}`)
+	if !strings.Contains(out, "cancelled") || !strings.Contains(out, "next one") {
+		t.Fatalf("the result should say the message starts the next turn, got %q", out)
+	}
+	report := execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
+	if !strings.Contains(report, "resumed and finished") {
+		t.Fatalf("the orchestrator's steer should resume the child, got: %s", report)
+	}
+	if st := statusOf(t, sup, "researcher-1"); st.SteerFrom != SteerFromParent {
+		t.Fatalf("the status should say the parent spoke last, got %q", st.SteerFrom)
 	}
 }

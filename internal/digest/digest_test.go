@@ -19,6 +19,15 @@ func TestArg_PicksTheOneWorthShowing(t *testing.T) {
 		{"a history call leads with its verb", "git", `{"verb":"blame","paths":["a.go"]}`, "blame a.go"},
 		{"a ref beats a path", "git", `{"verb":"show","ref":"HEAD~2","paths":["a.go"]}`, "show HEAD~2"},
 		{"a bare verb is enough", "git", `{"verb":"status"}`, "status"},
+		// A steer's row is who was redirected and what they were told: the
+		// name alone makes every steer of a fan-out look alike, and the key
+		// order alone would give the name and drop the message.
+		{"a steer names the agent and the instruction", "agent_steer",
+			`{"name":"writer-1","message":"read the exporter instead"}`,
+			"writer-1 read the exporter instead"},
+		{"a long instruction is bounded to its first line", "agent_steer",
+			`{"name":"writer-1","message":"read the exporter instead\nnot the importer"}`,
+			"writer-1 read the exporter instead …"},
 	} {
 		if got := Arg(tc.tool, tc.args); got != tc.want {
 			t.Errorf("%s: Arg(%q, %q) = %q, want %q", tc.name, tc.tool, tc.args, got, tc.want)

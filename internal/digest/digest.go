@@ -110,6 +110,18 @@ func Arg(tool, rawArgs string) string {
 		// commit's subject, a branch's name, the first file a staging named.
 		return gitWriteTarget(args)
 	}
+	if tool == "agent_steer" {
+		// The row is who was redirected and what they were told, in that
+		// order: the name alone would make every steer of a fan-out look
+		// alike, and the message is the point of the call. Bounded to its
+		// first line, marked when there was more; the row clips the rest.
+		if name, _ := args["name"].(string); name != "" {
+			if msg, _ := args["message"].(string); msg != "" {
+				return name + " " + FirstLine(msg)
+			}
+			return name
+		}
+	}
 	for _, key := range argKeys {
 		if v, ok := args[key].(string); ok && v != "" {
 			return FirstLine(v)

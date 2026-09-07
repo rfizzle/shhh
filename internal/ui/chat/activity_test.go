@@ -2,6 +2,7 @@ package chat
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
@@ -9,10 +10,12 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/colorprofile"
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/structural"
+	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/web"
 )
@@ -89,13 +92,13 @@ func TestActivityVerbs_ClosedVocabulary(t *testing.T) {
 	closed := map[string]bool{"read": true, "search": true, "glob": true, "lsp": true,
 		"web": true, "edit": true, "write": true, "patch": true, "run": true,
 		"memory": true, "spawn": true, "fan-out": true, "agent": true,
-		"report": true,
+		"report": true, "steer": true,
 		// The four git writes. They are acts rather than tools, which is why
 		// the row reads them out of the call rather than off the name.
 		"add": true, "commit": true, "branch": true, "switch": true}
 	for tool, verb := range activityVerbs {
 		if !closed[verb] {
-			t.Fatalf("%s maps onto %q, which is not one of the fourteen verbs", tool, verb)
+			t.Fatalf("%s maps onto %q, which is not one of the fifteen verbs", tool, verb)
 		}
 	}
 	for tool, want := range map[string]string{
@@ -104,7 +107,7 @@ func TestActivityVerbs_ClosedVocabulary(t *testing.T) {
 		"hover": "lsp", "diagnostics": "lsp", "web_fetch": "web", "web_search": "web",
 		"sd": "patch", "quality_gate": "run", "process": "run", "yq": "search",
 		"remember": "memory", "spawn_agent": "spawn", "agent_report": "agent",
-		"report": "report",
+		"agent_steer": "steer", "report": "report",
 	} {
 		if got := activityVerb(tool); got != want {
 			t.Fatalf("%s should render as %q, got %q", tool, want, got)
@@ -667,5 +670,52 @@ func TestCancel_TheTurnsCancelAbandonsAFetchWait(t *testing.T) {
 	m.cancelStreaming()
 	if abandoned != 1 {
 		t.Fatalf("the cancel abandoned %d waits, want one", abandoned)
+	}
+}
+
+// A steer spends no money and creates no worktree — it is one message onto
+// the path the child's own lane already writes to — so it runs where reading
+// the roster runs, on the auto-run path, and never behind a card. A redirect
+// that has to wait for an approval arrives after the rounds it was meant to
+// save. Spawning stays gated beside it, which is the contrast that makes this
+// a decision rather than an omission.
+func TestSteerToolNeedsNoApproval(t *testing.T) {
+	m := gatedModel(t, nil, map[string]GatedPreviewFunc{
+		subagent.SpawnToolName: func(json.RawMessage) (GatedPreview, error) {
+			return GatedPreview{}, nil
+		},
+	})
+	for _, mode := range []agent.Mode{agent.ModeManual, agent.ModeAcceptEdits, agent.ModeAuto, agent.ModePlan} {
+		m.policy.mode = mode
+		steer := provider.ToolCall{Name: subagent.SteerToolName,
+			Arguments: `{"name":"writer-1","message":"read the exporter instead"}`}
+		if m.requiresApproval(steer) {
+			t.Errorf("steering an agent must never be approval-gated, and is in %s", mode)
+		}
+		if !m.requiresApproval(provider.ToolCall{Name: subagent.SpawnToolName}) {
+			t.Errorf("spawning an agent stays gated, and is not in %s", mode)
+		}
+	}
+}
+
+// The row says who was redirected and what they were told, under the verb the
+// lane's own note uses. The name alone would make every steer of a fan-out
+// look alike; the message is bounded to its first line, marked when there was
+// more, because the row is one line and the instruction need not be.
+func TestSteerRowNamesTheAgentAndWhatItWasTold(t *testing.T) {
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream)
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 110, Height: 30})
+	m = updated.(Model)
+
+	row := stripANSI(m.renderEntry(entry{kind: entryTool, toolName: subagent.SteerToolName,
+		toolArgs:   `{"name":"writer-1","message":"read the exporter instead\nnot the importer"}`,
+		toolResult: "Steered writer-1."}, 110))
+	for _, want := range []string{"steer", "writer-1", "read the exporter instead", "…"} {
+		if !strings.Contains(row, want) {
+			t.Fatalf("a steer row should contain %q:\n%s", want, row)
+		}
+	}
+	if strings.Contains(row, "not the importer") {
+		t.Fatalf("the row is bounded to the message's first line:\n%s", row)
 	}
 }

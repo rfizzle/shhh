@@ -519,3 +519,46 @@ func (p *judgeSpending) StreamCompletion(context.Context, []provider.Message, pr
 }
 
 func (p *judgeSpending) Name() string { return "judge" }
+
+// A steer is recorded as a steer with its source and nothing else. The source
+// is the point: a fan-out's drift rate cannot say whether the orchestrator is
+// answering what it sees unless the record separates the redirects it sent
+// from the ones the person sent from a lane. The message never goes in — it
+// is the parent's or the person's own words, and the record holds no content.
+func TestChildRecordsASteersSourceAndNeverItsWords(t *testing.T) {
+	env := &scriptedEnv{steps: []streamStep{
+		{calls: []provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"importer.go"}`}}},
+		{text: "read the importer"},
+	}, delay: 5 * time.Millisecond}
+	rec := &testRecorder{}
+	sup := supervisorRecording(t, env, rec)
+
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the exporter"}`)
+	if err := sup.Steer("researcher-1", "read the exporter instead", SteerFromParent); err != nil {
+		t.Fatalf("steering the child: %v", err)
+	}
+	execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
+
+	var steers []recordedEvent
+	for _, e := range rec.of("signal") {
+		if e.outcome == observe.SignalSteer {
+			steers = append(steers, e)
+		}
+	}
+	if len(steers) != 1 {
+		t.Fatalf("expected one steer signal, got %+v", steers)
+	}
+	if steers[0].reason != string(SteerFromParent) {
+		t.Fatalf("the record carries the source, got %q", steers[0].reason)
+	}
+	for _, e := range rec.all() {
+		if strings.Contains(e.reason, "exporter") {
+			t.Fatalf("the steer's words reached the record: %+v", e)
+		}
+		for _, s := range []string{e.kind, e.tool, e.outcome, e.reason} {
+			if s != "" && !storedWord.MatchString(s) {
+				t.Fatalf("a stored string is not a code: %q in %+v", s, e)
+			}
+		}
+	}
+}

@@ -82,14 +82,46 @@ its task, and the roster the orchestrator collects says that too, beside the
 last reading's own word for the state of the work. One steer is the mechanism
 working. Two is a child that answered the check and carried on, which is worth
 knowing forty rounds before its final report says where it went — and the
-orchestrator, which cannot steer or end a child itself, is asked to say so to
-you rather than wait for it. Both are the machinery's own words and counts;
-nothing a child's tools read reaches the parent's conversation this way.
+orchestrator is asked to redirect it then rather than wait for it. Both are the
+machinery's own words and counts; nothing a child's tools read reaches the
+parent's conversation this way.
+
+Both surfaces also say where the last message the child was given came from —
+its own reader, this lane, or the orchestrator — because a count with more
+than one possible author leaves the question worth asking of it unanswered.
 
 Attaching to a child is not a separate surface. It changes which agent the
 session is looking at, and every agent — the root included — is the same kind
 of thing. That equivalence is why the interactive surfaces did not need a
 second implementation for children.
+
+## Three can steer a child, and none of them can end it
+
+A child is given words by its own reader, by you at its lane, and by the
+orchestrator that wrote its task. All three arrive the same way — as a message
+in front of the child at its next round boundary — and all three have the same
+consequences for the turn they land in: what the child is judged against grows
+to include them, the reading that was in flight is dropped rather than argued
+with, and the reckoning of how often this child has ignored its check starts
+again. That is why a redirect is safe to give: the child is not then told it
+has drifted for doing what it was just asked to do.
+
+The orchestrator may speak because it wrote the task and is the only party
+besides you who knows what the child was for. The alternative is that it tells
+you instead — a message you read some rounds later, about a child you were not
+watching, which spends exactly the attention a fan-out exists to save. What
+the orchestrator gains is only the right to speak: the path its words travel
+is the one your own typing takes, and nothing a child reads can reach that
+path. A child's tool output cannot become a steer of any kind.
+
+Ending a child is yours alone, from its lane. It is not something the
+orchestrator is offered, and the reason is not symmetry: a writer stopped
+part-way leaves an isolated copy of the workspace holding an unfinished change
+that nobody has judged, and the party that would be stopping it is the one
+whose only evidence is a roster line. A run that stops a child on that reading
+sometimes stops one doing exactly what it was asked to do, with nobody there
+to disagree. A redirect is cheap to be wrong about — the child reads it and
+carries on — and a stop is not.
 
 ## What they share
 

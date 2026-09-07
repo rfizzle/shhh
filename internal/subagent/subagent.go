@@ -170,6 +170,19 @@ type Status struct {
 	// reading at all, which is the ordinary case: children are read only
 	// where the session turned readings on for them.
 	Verdict string
+	// SteerFrom is where the last message put in front of this child came
+	// from. Empty is a child nobody and nothing has redirected. It is the
+	// last steer's own source rather than the turn's, so it outlives the
+	// turn boundary a steer opens — for an idle child a steer *is* the next
+	// turn's instruction, and a source cleared at that boundary would be
+	// erased exactly where it is worth reading.
+	//
+	// It is beside the count rather than folded into it because the count
+	// answers whether the child is answering its reader and this answers who
+	// spoke to it last: a child steered twice by its own reading and once by
+	// the orchestrator is not the same as one steered three times by its
+	// reader, and only this tells them apart.
+	SteerFrom SteerSource
 	// Seeded is how many of the parent's uncommitted paths the child's
 	// worktree was started from. Zero is a reader, or a writer spawned from
 	// a checkout with nothing uncommitted in it.
@@ -591,6 +604,7 @@ type child struct {
 	// verdict can land after the run it was reading has returned.
 	steers    int
 	verdict   string
+	steerFrom SteerSource
 	report    string
 	patchNote string
 	// Live session surface: transcript entries, the in-flight
@@ -598,7 +612,7 @@ type child struct {
 	// interrupt channel.
 	transcript []TranscriptEntry
 	streaming  string
-	steering   []string
+	steering   []queuedSteer
 	intCh      chan struct{}
 	intClosed  bool
 	// heldOn is the hold this child is parked on, and nil when it is not
@@ -692,6 +706,7 @@ func (c *child) status() Status {
 		CheckIns:  c.checkIns,
 		Steers:    c.steers,
 		Verdict:   c.verdict,
+		SteerFrom: c.steerFrom,
 		Seeded:    c.seeded,
 		Held:      c.heldOn != nil,
 	}
@@ -782,16 +797,41 @@ func (c *child) changed() (files, added, removed int) {
 	return len(c.wrote), 0, 0
 }
 
+// queuedSteer is one message waiting to join a child's conversation, with
+// who sent it. The source travels with the message rather than being read off
+// the child when it lands: two of them can be queued at once, from two
+// different parties, and the record has to say which was which.
+type queuedSteer struct {
+	text string
+	from SteerSource
+}
+
 // drainSteering pops all queued steering messages, appending each to the
-// transcript as a user entry (they join the conversation now).
+// transcript as a user entry (they join the conversation now) and recording
+// each in the session record by its source.
+//
+// The record is written here, where the message reaches the child, rather
+// than where it was queued: the position an event is placed at is read off
+// the child's own agent, which is a passive state machine only the child's
+// goroutine may touch, and every caller of this is that goroutine. What goes
+// in is the source and nothing else — the message is the parent's or the
+// person's own words, and the record holds no content.
 func (c *child) drainSteering() []string {
 	c.mu.Lock()
-	msgs := c.steering
+	queued := c.steering
 	c.steering = nil
-	for _, msg := range msgs {
-		c.transcript = append(c.transcript, TranscriptEntry{Kind: EntryUser, Text: msg})
+	msgs := make([]string, 0, len(queued))
+	for _, q := range queued {
+		msgs = append(msgs, q.text)
+		c.transcript = append(c.transcript, TranscriptEntry{Kind: EntryUser, Text: q.text})
 	}
+	sig := c.rec.Signal
 	c.mu.Unlock()
+	if sig != nil {
+		for _, q := range queued {
+			sig(c.pos(), observe.SignalSteer, string(q.from))
+		}
+	}
 	return msgs
 }
 
@@ -1178,7 +1218,17 @@ func (s *Supervisor) Note(name string, e TranscriptEntry) error {
 // before its next stream request when running, or starting a fresh turn when
 // the child is idle after a cancelled turn. Finished children cannot be
 // steered.
-func (s *Supervisor) Steer(name, text string) error {
+//
+// from is who is speaking, and every route in goes through here: the person
+// typing at the child's lane and the orchestrator calling the steer tool are
+// one mechanism, so a redirect from either has the same consequences for the
+// turn it lands in — the target extended, the reading in flight retired, the
+// reckoning started again — and the surfaces need only one word to tell them
+// apart. The source is carried with the message and recorded where the child
+// takes it (drainSteering); the message itself is content and never reaches
+// the record.
+// See docs/capabilities/subagents.md#three-can-steer-a-child-and-none-of-them-can-end-it.
+func (s *Supervisor) Steer(name, text string, from SteerSource) error {
 	c, err := s.lookup(name)
 	if err != nil {
 		return err
@@ -1190,7 +1240,12 @@ func (s *Supervisor) Steer(name, text string) error {
 		c.mu.Unlock()
 		return fmt.Errorf("agent %s has finished (%s); nothing to steer", name, state)
 	}
-	c.steering = append(c.steering, text)
+	c.steering = append(c.steering, queuedSteer{text: text, from: from})
+	// The source is on the status the moment the message is queued, not when
+	// the child takes it: the orchestrator reads the roster in the round
+	// after it steered, and a redirect still waiting at a round boundary is
+	// exactly what it needs to see there.
+	c.steerFrom = from
 	c.mu.Unlock()
 	select {
 	case c.steerWake <- struct{}{}:
@@ -1488,6 +1543,16 @@ func (s *Supervisor) restart(c *child, detail string) error {
 
 	c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Retrying — the previous attempt " + detail + "."})
 
+	// The attempt's own recorder is opened before the lock — childMode takes
+	// the child's lock itself — and installed under it, because a retried
+	// child is one the parent can steer while this runs, and that is the one
+	// read of c.rec from another goroutine.
+	var rec Recorder
+	if s.opts.Record != nil {
+		rec = s.opts.Record(Spec{Name: c.name, Role: c.role, Root: root, Model: c.model, Paths: c.paths,
+			Worktree: wt.dir != "", Mode: s.childMode(c), MaxRounds: roundCap(a)}, env.SystemPrompt)
+	}
+
 	c.mu.Lock()
 	c.ctx, c.cancel = cctx, cancel
 	c.agent, c.env, c.headless = a, env, nil
@@ -1501,18 +1566,17 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	c.priorIn, c.priorOut = c.priorIn+c.tokensIn, c.priorOut+c.tokensOut
 	c.tokensIn, c.tokensOut, c.budgetHit = 0, 0, false
 	c.checkIns = 0
-	c.steers, c.verdict = 0, ""
+	// A retry is a fresh conversation on the same task: no steer has reached
+	// this attempt, whatever the last one was told.
+	c.steers, c.verdict, c.steerFrom = 0, "", ""
 	c.turns = 0
 	c.toolCalls, c.step = 0, 0
 	// A retry starts from a worktree of its own, so what the attempt it
 	// replaces wrote is not in the tree this one is reading.
 	c.wrote = nil
 	c.report, c.patchNote, c.streaming = "", "", ""
+	c.rec = rec
 	c.mu.Unlock()
-	if s.opts.Record != nil {
-		c.rec = s.opts.Record(Spec{Name: c.name, Role: c.role, Root: root, Model: c.model, Paths: c.paths,
-			Worktree: wt.dir != "", Mode: s.childMode(c), MaxRounds: roundCap(a)}, env.SystemPrompt)
-	}
 
 	s.wg.Add(1)
 	go s.run(c)
@@ -1603,6 +1667,8 @@ func (s *Supervisor) WrapExecutor(next agent.ToolExecutor) agent.ToolExecutor {
 			return s.spawn(args)
 		case ReportToolName:
 			return s.report(args)
+		case SteerToolName:
+			return s.steer(args)
 		}
 		return next(name, args)
 	}
@@ -1937,6 +2003,7 @@ func (s *Supervisor) run(c *child) {
 			if iv.Kind == agent.InterveneSteer {
 				c.mu.Lock()
 				c.steers++
+				c.steerFrom = SteerFromReading
 				c.mu.Unlock()
 			}
 			s.emitUpdate(c)
@@ -2727,6 +2794,32 @@ func (s *Supervisor) report(raw json.RawMessage) (string, error) {
 	return c.reportText(), nil
 }
 
+// steer implements agent_steer: the orchestrator's own words onto the same
+// path the child's lane writes to. It is the whole of the tool — no card, no
+// second mechanism — because what is new here is who may speak and not what
+// happens when they do. There is deliberately no tool beside it for ending a
+// child: a writer stopped part-way leaves an unfinished change in a copy of
+// the workspace that nobody has judged, and the parent's only evidence is a
+// roster line.
+// See docs/capabilities/subagents.md#three-can-steer-a-child-and-none-of-them-can-end-it.
+func (s *Supervisor) steer(raw json.RawMessage) (string, error) {
+	args, err := parseSteerArgs(raw)
+	if err != nil {
+		return "", err
+	}
+	// The state is read before the message is delivered, not after: an idle
+	// child wakes on the steer, so a status taken afterwards would say
+	// "running" about the very child whose turn this message is starting.
+	before, _ := s.Get(args.Name)
+	if err := s.Steer(args.Name, args.Message, SteerFromParent); err != nil {
+		return "", err
+	}
+	if before.State == StateIdle {
+		return fmt.Sprintf("Steered %s. Its turn had been cancelled, so your message starts its next one; collect it with agent_report.", args.Name), nil
+	}
+	return fmt.Sprintf("Steered %s. It joins the agent's conversation at its next tool round, is judged as part of what the agent was asked for, and the reading that was running is dropped rather than argued with. Do not steer it again in this round — give it rounds to answer, then read the roster.", args.Name), nil
+}
+
 // steerMark is what the roster says about a child the machinery has had to
 // interrupt: the last reading of its work, then how many times this turn it
 // has been told the reading says it has left its task.
@@ -2742,13 +2835,38 @@ func steerMark(st Status) string {
 	if st.Verdict != "" {
 		parts = append(parts, st.Verdict)
 	}
-	if st.Steers > 0 {
-		parts = append(parts, plural(st.Steers, "steer"))
+	if mark := steerCount(st); mark != "" {
+		parts = append(parts, mark)
 	}
 	if len(parts) == 0 {
 		return ""
 	}
 	return " · " + strings.Join(parts, " · ")
+}
+
+// steerCount is the steering half of that mark: how often the child has been
+// steered this turn and who spoke to it last, in the words the lane's own
+// note uses (the components package cannot see a Status, so the shape is
+// stated twice on purpose and the vocabulary is what must not drift).
+//
+// The source is stated even where the count is zero, which is what a
+// redirect the child has already taken up looks like: the count it answered
+// went back to zero when the child took the message, and without the source
+// nothing would be left saying the orchestrator had spoken to it at all. The
+// count with no source cannot come out of this package — every steer records
+// one — and is rendered anyway, because a Status is a value a caller can
+// build and a count dropped for want of a word beside it is the worse
+// failure.
+func steerCount(st Status) string {
+	switch {
+	case st.Steers > 0 && st.SteerFrom != "":
+		return plural(st.Steers, "steer") + " · from " + string(st.SteerFrom)
+	case st.Steers > 0:
+		return plural(st.Steers, "steer")
+	case st.SteerFrom != "":
+		return "steered from " + string(st.SteerFrom)
+	}
+	return ""
 }
 
 func (s *Supervisor) statusOverview() string {

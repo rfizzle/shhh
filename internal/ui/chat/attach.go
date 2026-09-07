@@ -609,7 +609,7 @@ func (m Model) attachedSubmit() (tea.Model, tea.Cmd) {
 	if parts := strings.Fields(text); strings.HasPrefix(parts[0], "/") && !strings.Contains(parts[0][1:], "/") {
 		return m.attachedCommand(parts)
 	}
-	if err := m.subagents.Steer(m.attachedTo, text); err != nil {
+	if err := m.subagents.Steer(m.attachedTo, text, subagent.SteerFromLane); err != nil {
 		m.noteChild(m.attachedTo, "Cannot steer: "+err.Error())
 	}
 	m.viewport.SetLines(m.renderHistoryLines())

@@ -156,18 +156,19 @@ func (m Model) fanoutBlockFor(e entry) components.FanoutBlock {
 	for _, st := range m.fanoutStatuses(e.fanout) {
 		p := m.childProgress(st)
 		lane := components.FanoutLane{
-			State:   p.State,
-			Name:    st.Name,
-			Task:    firstLine(st.Task),
-			Step:    p.Step,
-			Steps:   p.Steps,
-			Tools:   p.Tools,
-			Spend:   p.Spend,
-			Elapsed: turnDuration(st.Elapsed),
-			Seeded:  st.Seeded,
-			Steers:  st.Steers,
-			Verdict: st.Verdict,
-			Frame:   p.Frame,
+			State:     p.State,
+			Name:      st.Name,
+			Task:      firstLine(st.Task),
+			Step:      p.Step,
+			Steps:     p.Steps,
+			Tools:     p.Tools,
+			Spend:     p.Spend,
+			Elapsed:   turnDuration(st.Elapsed),
+			Seeded:    st.Seeded,
+			Steers:    st.Steers,
+			Verdict:   st.Verdict,
+			SteerFrom: string(st.SteerFrom),
+			Frame:     p.Frame,
 		}
 		if note := childNote(st); note != "" {
 			if st.State == subagent.StateBlocked {

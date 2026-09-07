@@ -152,17 +152,24 @@ func TestToolbox_SteersTheLanguageServerAheadOfSearchAndRead(t *testing.T) {
 }
 
 // What a repeatedly steered child means is said where the roster that
-// reports it is described, and only to a session that can spawn one. The
-// orchestrator cannot steer or end a child itself, so what it is asked for is
-// the one thing it can do: say so to the person who can.
+// reports it is described, and only to a session that can spawn one. What it
+// is asked to do about one is the act it now has, named: a message the roster
+// prompts and the model has no tool for is a message to the user about a
+// child the user was not watching.
 func TestToolboxSaysWhatARepeatedlySteeredAgentMeans(t *testing.T) {
-	got := Toolbox([]provider.Tool{{Name: "spawn_agent"}, {Name: "agent_report"}})
-	for _, want := range []string{"steered more than once", "next message", "lane"} {
+	got := Toolbox([]provider.Tool{{Name: "spawn_agent"}, {Name: "agent_report"}, {Name: "agent_steer"}})
+	for _, want := range []string{"steered more than once", "agent_steer", "what it should do instead"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("the toolbox does not state %q:\n%s", want, got)
 		}
 	}
-	if got := Toolbox([]provider.Tool{{Name: "read_file"}}); strings.Contains(got, "steered") {
+	// Ending a child stays the user's, and the note says where they do it —
+	// an orchestrator told only that it cannot end one goes looking for the
+	// tool that would.
+	if !strings.Contains(got, "lane") {
+		t.Errorf("the toolbox does not say where a child is ended:\n%s", got)
+	}
+	if got := Toolbox([]provider.Tool{{Name: "read_file"}}); strings.Contains(got, "steer") {
 		t.Errorf("a session with no agents was told about one:\n%s", got)
 	}
 }

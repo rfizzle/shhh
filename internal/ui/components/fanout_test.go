@@ -248,6 +248,32 @@ func TestFanoutLaneCountsTheSteersItWasGiven(t *testing.T) {
 	}
 }
 
+// Who steered the child is on the lane beside how often, because a steer now
+// has more than one author: the child's own reader, you at this lane, and the
+// orchestrator that wrote its task. The source stands on its own where the
+// count is zero — that is what a redirect the child has already taken up
+// looks like, and without it nothing would say anyone had spoken to it.
+func TestFanoutLaneSaysWhoSteeredTheChild(t *testing.T) {
+	read := FanoutLane{State: FanoutRunning, Name: "writer-1", Task: "docs/loop.md",
+		Tools: 12, Steers: 2, SteerFrom: "reading", Verdict: "off target"}
+	if view := ansi.Strip(read.View(110)); !strings.Contains(view, "2 steers · from reading · last read off target") {
+		t.Fatalf("the lane should name the source beside the count: %q", view)
+	}
+	redirected := FanoutLane{State: FanoutRunning, Name: "writer-1", Tools: 12,
+		SteerFrom: "parent", Verdict: "off target", Seeded: 5}
+	view := ansi.Strip(redirected.View(110))
+	if !strings.Contains(view, "steered from parent") {
+		t.Fatalf("a redirect the child has taken up still says who sent it: %q", view)
+	}
+	if strings.Contains(view, "started from") {
+		t.Fatalf("news outranks the seed line: %q", view)
+	}
+	lane := FanoutLane{State: FanoutRunning, Name: "writer-1", Tools: 3, SteerFrom: "lane"}
+	if view := ansi.Strip(lane.View(110)); !strings.Contains(view, "steered from lane") {
+		t.Fatalf("your own steer is named too: %q", view)
+	}
+}
+
 // TestFanoutLaneSaysWhatItStartedFrom is the seeded-worktree criterion on a
 // lane: a writer working from your uncommitted files says how many, while it
 // is working and there is nothing else under the lane to say. A lane that has

@@ -99,6 +99,15 @@ type FanoutLane struct {
 	// where the work stands now, and a child steered twice and back on task
 	// is the outcome the whole mechanism is for.
 	Verdict string
+	// SteerFrom is where the last steer came from, in the supervisor's own
+	// closed vocabulary. Empty says nothing — a child nobody and nothing has
+	// redirected is almost every child.
+	//
+	// It is stated because a steer now has more than one author: the check
+	// reading the child's own work, you at this lane, and the orchestrator
+	// that wrote the task. A count with no author leaves the one question
+	// worth asking of it unanswered.
+	SteerFrom string
 	// Frame is the spinner frame for a lane with no declared step count; the
 	// host ticks it.
 	Frame int
@@ -252,8 +261,8 @@ func (l FanoutLane) View(width int) string {
 
 // note is the line under the lane: a blocked child's reason, a finished
 // child's result, or — for a child still working, which has nothing else to
-// add — how often it has been steered, and failing that what its copy of the
-// repository was started from. Which of your uncommitted files a writer can
+// add — how often it has been steered and by whom, and failing that what its
+// copy of the repository was started from. Which of your uncommitted files a writer can
 // see is a question you have while it runs and not after it has answered, so
 // the line gives way to the outcome.
 //
@@ -268,17 +277,37 @@ func (l FanoutLane) note() string {
 	if l.State.settled() {
 		return l.Summary
 	}
-	if l.Steers > 0 {
-		note := plural(l.Steers, "steer")
-		if l.Verdict != "" {
-			note += " · last read " + l.Verdict
-		}
+	if note := l.steerNote(); note != "" {
 		return note
 	}
 	if l.Seeded > 0 {
 		return "started from " + plural(l.Seeded, "uncommitted file") + " in your tree"
 	}
 	return ""
+}
+
+// steerNote is the steering half of the line: how often the child has been
+// steered this turn, who spoke to it last, and what the last reading made of
+// its work. The source stands alone where the count is zero, which is what a
+// redirect the child has already taken up looks like — the count it answered
+// went back to zero when the child took the message, and the source is then
+// the only thing left saying anyone had spoken to it.
+func (l FanoutLane) steerNote() string {
+	var note string
+	switch {
+	case l.Steers > 0 && l.SteerFrom != "":
+		note = plural(l.Steers, "steer") + " · from " + l.SteerFrom
+	case l.Steers > 0:
+		note = plural(l.Steers, "steer")
+	case l.SteerFrom != "":
+		note = "steered from " + l.SteerFrom
+	default:
+		return ""
+	}
+	if l.Verdict != "" {
+		note += " · last read " + l.Verdict
+	}
+	return note
 }
 
 // sorted returns the lanes in render order: blocked first, in the order they

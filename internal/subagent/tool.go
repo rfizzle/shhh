@@ -1,8 +1,9 @@
 package subagent
 
 // The orchestration tools the parent model sees: spawn_agent (approval-gated;
-// starts a background child and returns immediately) and agent_report
-// (auto-run; status overview or a blocking wait for one child's report).
+// starts a background child and returns immediately), agent_report (auto-run;
+// status overview or a blocking wait for one child's report) and agent_steer
+// (auto-run; puts the parent's words in front of a running child).
 
 import (
 	"encoding/json"
@@ -21,6 +22,31 @@ const (
 	SpawnToolName = "spawn_agent"
 	// ReportToolName runs on the auto-run path: it only reads child state.
 	ReportToolName = "agent_report"
+	// SteerToolName runs on the auto-run path too. A steer spends no money
+	// and creates no worktree — it is a message onto the path the child's
+	// own lane already writes to — so there is nothing for a card to put to
+	// a person, and a redirect that has to wait for one is a redirect that
+	// arrives after the rounds it was meant to save.
+	SteerToolName = "agent_steer"
+)
+
+// SteerSource is where a message put in front of a child came from. It is a
+// closed set of three because the surfaces that draw it — the roster the
+// orchestrator reads, the lane the person reads, the session record — must
+// all say the same word for the same event, and a child that has been
+// redirected by the orchestrator is a different thing to read than one its
+// own reader steered.
+type SteerSource string
+
+const (
+	// SteerFromLane: the person opened the child's lane and typed.
+	SteerFromLane SteerSource = "lane"
+	// SteerFromParent: the orchestrator that wrote the task redirected it.
+	SteerFromParent SteerSource = "parent"
+	// SteerFromReading: the child's own summariser read its work as off the
+	// task and the machinery interrupted it. Unlike the other two this is
+	// nobody's message — which is exactly why the surfaces name it.
+	SteerFromReading SteerSource = "reading"
 )
 
 // Definitions returns the orchestration tool definitions the parent session
@@ -62,7 +88,47 @@ func Definitions(profiles Profiles) []provider.Tool {
 				}
 			}`),
 		},
+		{
+			Name:        SteerToolName,
+			Description: "Redirect a running sub-agent: your message reaches it as an instruction from you, the way one typed into its lane does. Use it on an agent agent_report lists as steered more than once — it is not answering the check that steers it, and you wrote its task, so say what it should do instead. The agent's own reading is judged against the task plus your message, so it will not be told it has drifted for doing what you just asked. Refused once the agent has finished; ending one is the user's, not yours.",
+			Parameters: json.RawMessage(`{
+				"type": "object",
+				"properties": {
+					"name": {"type": "string", "description": "Agent to redirect"},
+					"message": {"type": "string", "description": "What it should do instead, in your own words — a complete instruction, since the agent cannot see this conversation"}
+				},
+				"required": ["name", "message"]
+			}`),
+		},
 	}
+}
+
+// steerArgs is an agent_steer call. Both fields are required: a steer with
+// no name has nowhere to go, and one with no message is a round spent saying
+// nothing to a child that is already not answering.
+type steerArgs struct {
+	Name    string `json:"name"`
+	Message string `json:"message"`
+}
+
+// parseSteerArgs validates agent_steer's arguments. The name is not checked
+// against validName: a name the supervisor does not know is refused by the
+// supervisor, naming what it has, which is the more useful answer than a
+// spelling rule.
+func parseSteerArgs(raw json.RawMessage) (steerArgs, error) {
+	var args steerArgs
+	if err := json.Unmarshal(raw, &args); err != nil {
+		return args, fmt.Errorf("invalid arguments: %w", err)
+	}
+	args.Name = strings.TrimSpace(args.Name)
+	args.Message = strings.TrimSpace(args.Message)
+	if args.Name == "" {
+		return args, fmt.Errorf("name is required: call agent_report with no arguments for the roster")
+	}
+	if args.Message == "" {
+		return args, fmt.Errorf("message is required: say what the agent should do instead")
+	}
+	return args, nil
 }
 
 type spawnArgs struct {

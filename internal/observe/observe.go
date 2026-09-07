@@ -196,8 +196,18 @@ const (
 	// reading's state, from SummaryCode. Every reading is recorded, not just
 	// the drifting ones — a drift rate needs its denominator.
 	SignalSummary = "summary"
-	// SignalSteer: the user sent instructions into a running turn. Reason:
-	// how many messages, as a number.
+	// SignalSteer: instructions reached a running turn from outside it.
+	// Reason: how many messages, as a number, where the subject is a session
+	// — a person types into their own turn, and there is nowhere else it
+	// could have come from. Where the subject is a sub-agent the reason is
+	// the source instead — "lane" (the person opened the child's lane and
+	// typed) or "parent" (the orchestrator that wrote the task redirected
+	// it) — because a fan-out has two of them and a rate that cannot tell
+	// them apart cannot say whether the orchestrator is answering what it
+	// sees. The supervisor owns those words, the way SignalIntervene's are
+	// the loop's. A child's own reading is not among them: an interruption
+	// the machinery delivered is SignalIntervene's "steer" below, and a
+	// second record here would count one steer twice.
 	SignalSteer = "steered"
 	// SignalIntervene: the session interrupted its own turn to ask it to take
 	// stock, or owed itself an interruption and withheld it. Reason: "steer"

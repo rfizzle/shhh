@@ -33,8 +33,9 @@
 · no declared step count · every lane spins
  ◇ fan-out   2 agents                                                                          2 running   22s
    ◇ agent   researcher-1  survey the round accounting                       ⠹ working · 4 tools · $0.01   22s
+    steered from parent
    ◇ agent   researcher-2  survey the fold state                             ⠹ working · 2 tools · $0.01   19s
-    2 steers · last read off target
+    2 steers · from reading · last read off target
 
 ── ansi ────────────────────────────────────────────────────
 · mid-flight · one child is waiting on you
@@ -60,5 +61,6 @@
 · no declared step count · every lane spins
  ␛[38;5;254m◇␛[m fan-out   ␛[38;5;244m2 agents␛[m                                                                          ␛[38;5;254m2 running␛[m   ␛[38;5;244m22s␛[m
    ␛[38;5;254m◇␛[m agent   ␛[38;5;254mresearcher-1␛[m␛[38;5;244m  survey the round accounting␛[m                       ␛[38;5;254m⠹ working␛[m␛[38;5;244m · ␛[m␛[38;5;244m4 tools · $0.01␛[m   ␛[38;5;244m22s␛[m
+    ␛[38;5;244msteered from parent␛[m
    ␛[38;5;254m◇␛[m agent   ␛[38;5;254mresearcher-2␛[m␛[38;5;244m  survey the fold state␛[m                             ␛[38;5;254m⠹ working␛[m␛[38;5;244m · ␛[m␛[38;5;244m2 tools · $0.01␛[m   ␛[38;5;244m19s␛[m
-    ␛[38;5;244m2 steers · last read off target␛[m
+    ␛[38;5;244m2 steers · from reading · last read off target␛[m

@@ -401,14 +401,15 @@ replacing the escalation with them.
 
 **What a third steer does not do is end the turn.** Ending one is a stop this
 machinery does not own: the round cap hands control back to a person, a person
-interrupts, and the person who gave a child its task can redirect or end it.
+interrupts, and a child can be redirected by whoever gave it its task and
+ended by the person at its lane.
 The turn's own reader is none of those. It is a cheap model reading a digest,
 it is wrong often enough that the steer above is written to ask rather than to
 accuse, and a mechanism that can stop a turn on that reading is one that will
 sometimes stop a run doing exactly what it was asked to do, with nobody there
 to disagree. So the count escalates by leaving the turn rather than by ending
-it: it reaches the parent of a child, which reports it to the person who can
-act on it.
+it: it reaches the parent of a child, which can redirect the child itself and
+reports what it could not settle to the person who can end it.
 
 **A verdict has an age, and past one reading interval it earns nothing.** A
 reading is asked at a round, takes as long as the reader takes, and is applied
@@ -514,11 +515,14 @@ yardstick along, and keeps the verdict a closed enum rather than prose, so the
 policy branches on a value instead of on a sentence written by whatever it is
 judging.
 
-Only a person moves the target, and a steer they type into the running turn is
+The run never moves its own target, and a steer typed into the running turn is
 added to what was already asked rather than replacing it — the anchor is a
 rule about the run, not about the person it is working for, and a reading that
 judged their correction against the instruction they have moved on from would
-report them as the departure.
+report them as the departure. A child's target moves the same way for the
+orchestrator that wrote its task: it is not the run being judged, it is the
+author of the instruction that run is judged against, and its redirect is the
+same kind of thing as one typed at the child's lane.
 
 ## The round cap is a checkpoint, not a limit
 
