@@ -49,19 +49,11 @@ func lspMutationHook(ts *lsp.Toolset) chat.MutationHook {
 		return nil
 	}
 	return func(name string, args json.RawMessage, result string) string {
-		if name != tools.WriteFileName && name != tools.EditFileName {
+		path := lspTouchedPath(name, args, result)
+		if path == "" {
 			return result
 		}
-		if strings.HasPrefix(result, "error:") {
-			return result
-		}
-		var a struct {
-			Path string `json:"path"`
-		}
-		fresh := ""
-		if err := json.Unmarshal(args, &a); err == nil && a.Path != "" {
-			fresh = ts.Manager.DiagnosticsAfterChange(a.Path)
-		}
+		fresh := ts.Manager.DiagnosticsAfterChange(path)
 		if held := ts.Manager.TakeHeldDiagnostics(); held != "" {
 			result = held + "\n\n" + result
 		}
@@ -70,4 +62,20 @@ func lspMutationHook(ts *lsp.Toolset) chat.MutationHook {
 		}
 		return result
 	}
+}
+
+// lspTouchedPath is the file a mutation hook should ask the language server
+// about, and "" for every call it must leave alone.
+//
+// Which calls those are is the tools package's own reading and not a second
+// copy of it: a hook that named write_file and edit_file itself would go on
+// agreeing with the executor until a third mutating tool was registered, and
+// then quietly stop asking about the files that one wrote, with nothing
+// failing to say so. A write that came back an error changed nothing, and
+// diagnostics fetched for it would describe the file as it already was.
+func lspTouchedPath(name string, args json.RawMessage, result string) string {
+	if strings.HasPrefix(result, "error:") {
+		return ""
+	}
+	return tools.WrittenPath(name, string(args))
 }

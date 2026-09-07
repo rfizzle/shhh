@@ -159,16 +159,23 @@ func (p *readingProvider) StreamCompletion(_ context.Context, msgs []provider.Me
 
 func (p *readingProvider) Name() string { return "reading" }
 
-// readRounds is a script of n tool rounds and a final answer, for a child
-// that has to run long enough to be read and steered while it works.
-func readRounds(n int) []streamStep {
+// toolRounds is a script of n rounds that each read a file, for a child that
+// has to run long enough to be read, steered or retried while it works. What
+// ends the turn is the caller's: a script that runs out mid-turn fails the
+// child, which is an ending a test rarely means.
+func toolRounds(n int) []streamStep {
 	steps := make([]streamStep, 0, n+1)
 	for i := range n {
 		steps = append(steps, streamStep{calls: []provider.ToolCall{
 			{ID: fmt.Sprintf("r%d", i), Name: "read_file", Arguments: `{"path":"importer.go"}`},
 		}})
 	}
-	return append(steps, streamStep{text: "read the importer"})
+	return steps
+}
+
+// readRounds is toolRounds with the answer that ends the turn.
+func readRounds(n int) []streamStep {
+	return append(toolRounds(n), streamStep{text: "read the importer"})
 }
 
 // judgedChild is a supervisor whose one child is read every few rounds by

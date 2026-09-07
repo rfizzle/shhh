@@ -562,3 +562,177 @@ func TestChildRecordsASteersSourceAndNeverItsWords(t *testing.T) {
 		}
 	}
 }
+
+// roundWait is how long a scripted round takes in the tests below: long
+// enough that a verdict released a quarter of the way in lands while the
+// child is still inside that round, and short enough to run.
+const roundWait = 100 * time.Millisecond
+
+// heldReader is a reader whose answer is held until the test lets it go, so a
+// reading is still out at a moment the test chooses. A reader that answers
+// straight away lands its verdict on the round boundary that asked for it,
+// which is the one case that cannot go wrong.
+type heldReader struct {
+	state   string
+	started chan struct{}
+	release chan struct{}
+}
+
+func newHeldReader(state string) *heldReader {
+	return &heldReader{state: state, started: make(chan struct{}, 1), release: make(chan struct{})}
+}
+
+func (p *heldReader) StreamCompletion(ctx context.Context, _ []provider.Message, _ provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+	select {
+	case p.started <- struct{}{}:
+	default:
+	}
+	select {
+	case <-p.release:
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+	ch := make(chan provider.StreamEvent, 1)
+	ch <- provider.StreamEvent{
+		ToolCalls: []provider.ToolCall{{
+			ID:        "s1",
+			Name:      agent.SummaryToolName,
+			Arguments: `{"summary":"reading the importer","state":"` + p.state + `","reason":"reading the importer, not the exporter"}`,
+		}},
+		Done: true,
+	}
+	close(ch)
+	return ch, nil
+}
+
+func (p *heldReader) Name() string { return "held" }
+
+// waitAsked blocks until the reader has been asked for a reading.
+func (p *heldReader) waitAsked(t *testing.T) {
+	t.Helper()
+	select {
+	case <-p.started:
+	case <-time.After(5 * time.Second):
+		t.Fatal("no reading was ever taken of the child")
+	}
+}
+
+// waitToolCalls blocks until a child has run n tool calls, which is how a test
+// says "the run is under way" without knowing how fast the machine is.
+func waitToolCalls(t *testing.T, sup *Supervisor, name string, n int) {
+	t.Helper()
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		if st, ok := sup.Get(name); ok && st.ToolCalls >= n {
+			return
+		}
+		time.Sleep(time.Millisecond)
+	}
+	st, _ := sup.Get(name)
+	t.Fatalf("agent %s ran %d tool calls, want %d", name, st.ToolCalls, n)
+}
+
+// waitSignal blocks until a signal with this code has been recorded, and
+// returns the first one.
+func waitSignal(t *testing.T, rec *testRecorder, code string) recordedEvent {
+	t.Helper()
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		for _, e := range rec.of("signal") {
+			if e.outcome == code {
+				return e
+			}
+		}
+		time.Sleep(time.Millisecond)
+	}
+	t.Fatalf("no %s signal was recorded, got %+v", code, rec.of("signal"))
+	return recordedEvent{}
+}
+
+// A reading that comes back after the run it read has ended is filed at the
+// round it read. The child here is retried while its last reading is still
+// out, so the verdict arrives on the reader's own goroutine with a second
+// attempt's goroutine advancing the round counter: reading that counter from
+// here is a race the detector reports, and the answer it gives is about a
+// round the reading never saw.
+func TestChildFilesALateReadingAtTheRoundItRead(t *testing.T) {
+	reader := newHeldReader("on_target")
+	env := &scriptedEnv{
+		steps: append(toolRounds(3), streamStep{text: "spent it", usage: &provider.Usage{PromptTokens: 4000}}),
+		delay: 2 * time.Millisecond,
+		summarizer: agent.NewSummarizer(reader,
+			agent.SummaryConfig{Model: "fast", IntervalRounds: 10, MinGap: -1, InterveneCooldownIntervals: 1}),
+	}
+	rec := &testRecorder{}
+	sup := supervisorRecording(t, env, rec)
+
+	// The budget is what ends the first attempt: its turn finishes normally,
+	// which is what takes the closing reading, and the overrun is only
+	// visible once the answer is in hand.
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the exporter","max_tokens":2000}`)
+	reader.waitAsked(t)
+	waitState(t, sup, "researcher-1", StateFailed)
+
+	// The second attempt is not read itself, so the only verdict in play is
+	// the one still out from the attempt before it. Its rounds are slow
+	// because the verdict has to land inside one of them.
+	env.mu.Lock()
+	env.summarizer, env.steps, env.delay = nil, toolRounds(200), roundWait
+	env.mu.Unlock()
+	if err := sup.Retry("researcher-1"); err != nil {
+		t.Fatalf("retrying the child: %v", err)
+	}
+
+	// A moment in, the second attempt has started its turn — which is where
+	// it sets the counter — and is waiting on its provider, so the verdict is
+	// let go to land there. Waiting for the child to say so instead would
+	// order the two goroutines the detector is being asked about.
+	time.Sleep(roundWait / 4)
+	close(reader.release)
+
+	sig := waitSignal(t, rec, observe.SignalSummary)
+	if sig.pos.Round != agent.FirstSummaryRound {
+		t.Fatalf("the reading is filed at round %d, want the round %d it read",
+			sig.pos.Round, agent.FirstSummaryRound)
+	}
+	if sig.pos.Turn != 1 {
+		t.Fatalf("the reading is filed at turn %d, want the child's own turn 1", sig.pos.Turn)
+	}
+}
+
+// The signals raised at a round boundary keep the child's live position: a
+// verdict too old to act on is withheld now, whatever round the reading it
+// came from was taken at, and a record that filed the two events together
+// could not tell how long the run had gone on unjudged.
+func TestChildFilesAWithheldVerdictAtItsLivePosition(t *testing.T) {
+	reader := newHeldReader("off_target")
+	env := &scriptedEnv{
+		steps: toolRounds(200),
+		delay: time.Millisecond,
+		summarizer: agent.NewSummarizer(reader,
+			agent.SummaryConfig{Model: "fast", IntervalRounds: 10, MinGap: -1, InterveneCooldownIntervals: 1}),
+	}
+	rec := &testRecorder{}
+	sup := supervisorRecording(t, env, rec)
+
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the exporter"}`)
+	reader.waitAsked(t)
+	// A whole interval past the round it was taken at, the verdict describes
+	// work the child has left behind and is withheld rather than delivered.
+	waitToolCalls(t, sup, "researcher-1", agent.FirstSummaryRound+11)
+	close(reader.release)
+
+	sig := waitSignal(t, rec, observe.SignalSummary)
+	if sig.pos.Round != agent.FirstSummaryRound {
+		t.Fatalf("the reading is filed at round %d, want the round %d it read",
+			sig.pos.Round, agent.FirstSummaryRound)
+	}
+	withheld := waitSignal(t, rec, observe.SignalIntervene)
+	if withheld.reason != agent.InterveneStale {
+		t.Fatalf("expected the stale verdict to be withheld, got %+v", withheld)
+	}
+	if withheld.pos.Round <= sig.pos.Round {
+		t.Fatalf("the withheld verdict is filed at round %d, want the round the child had reached (past %d)",
+			withheld.pos.Round, sig.pos.Round)
+	}
+}

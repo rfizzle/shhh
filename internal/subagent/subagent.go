@@ -852,11 +852,31 @@ func (c *child) beginTurn() {
 
 // pos is where the child is now: the turn it is on and the tool round within
 // it, read off the same counters its status is.
+//
+// Only the goroutine running the child may call it. The round comes off the
+// agent, which is a passive state machine that goroutine drives and no lock
+// guards; anything raised from elsewhere — a reading that lands on its own
+// goroutine — states the round it is about and takes signalAt instead.
 func (c *child) pos() observe.Pos {
 	c.mu.Lock()
 	turn, a := int64(c.turns), c.agent
 	c.mu.Unlock()
 	return observe.Pos{Turn: turn, Round: int64(a.Rounds())}
+}
+
+// signalAt records one signal about a round the caller names, for the events
+// that do not come from the child's own goroutine. The turn and the recorder
+// are taken under the lock, and the agent is never touched: a caller that
+// asked for the live round would be reading a counter another goroutine is
+// advancing, and a retried child has its recorder replaced under that same
+// lock while an earlier attempt's reading is still out.
+func (c *child) signalAt(round int, code, reason string) {
+	c.mu.Lock()
+	turn, sig := int64(c.turns), c.rec.Signal
+	c.mu.Unlock()
+	if sig != nil {
+		sig(observe.Pos{Turn: turn, Round: int64(round)}, code, reason)
+	}
 }
 
 // interruptTurn closes the current turn's interrupt channel (idempotent),
@@ -2009,7 +2029,15 @@ func (s *Supervisor) run(c *child) {
 			s.emitUpdate(c)
 		},
 		OnSummary: func(v agent.SummaryVerdict) {
-			signal(observe.SignalSummary, observe.SummaryCode(v.State))
+			// The reading's own round, not the child's live one. This is the
+			// one hook that can be called from the reading's goroutine while
+			// the child goes on running — a closing reading is handed over
+			// whenever it comes back, and the attempt it was reading may
+			// have been retried by then — so the live counter here is both a
+			// read of another goroutine's field and an answer to the wrong
+			// question. The verdict is about the round its evidence was
+			// taken at, which is the round it states.
+			c.signalAt(v.Round, observe.SignalSummary, observe.SummaryCode(v.State))
 			// A reading that did not happen leaves the last one standing:
 			// the surfaces mark a failed reading stale rather than blanking
 			// what it was revising.
