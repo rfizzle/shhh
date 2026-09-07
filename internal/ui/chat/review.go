@@ -2,8 +2,8 @@ package chat
 
 // Review mode (docs/interface/surfaces.md#the-turns-close): the
 // surface `/review` and `[v]` on a turn's changeset row open — every file the
-// turn touched with its hunks, staging per hunk, and the turn's verdict
-// pinned beside the files.
+// turn touched with its hunks, the staging that says what to put back, and
+// the turn's verdict pinned beside the files.
 //
 // It reads the session's own changeset, which is what makes it work
 // in a directory that was never a repository and what makes the review of an
@@ -16,6 +16,14 @@ package chat
 // checkboxes select what an undo would put back, which is the undo's work;
 // the surface says so on screen rather than offering a key that quietly does
 // nothing.
+//
+// An undo is planned a file at a time — the record it reads holds the file's
+// two sides, not a per-hunk history — so on the session's own turn the
+// surface stages a file at a time too, and a selection that covers part of
+// one says at the confirm that the rest of it goes back with it. Staging a
+// hunk and losing the four you meant to keep is the failure this wording is
+// against; per-hunk staging stays for a child's proposed patch, where the
+// hunks really are separable.
 
 import (
 	"fmt"
@@ -71,7 +79,9 @@ func (m Model) openReview(n int64) (tea.Model, tea.Cmd) {
 		Files: reviewFiles(t),
 		// The edits are already on disk, so what is staged is what an undo
 		// would put back, not something to apply.
-		ApplyVerb:    "undo",
+		ApplyVerb: "undo",
+		// An undo restores whole files, so the surface stages whole files.
+		WholeFile:    true,
 		Verdict:      m.reviewVerdict(n),
 		Shield:       "nothing is committed",
 		ShieldDetail: reviewShieldDetail(t),
@@ -209,25 +219,47 @@ func (m Model) updateReview(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if !done {
 		return m, nil
 	}
-	files := reviewStagedPaths(m.review, staged)
+	files, partial := reviewStagedPaths(m.review, staged)
 	turn := m.reviewTurnN
 	updated, cmd := m.closeReview()
 	next := updated.(Model)
 	if staged.Canceled || len(files) == 0 || turn == 0 {
 		return next, cmd
 	}
-	return next.undoTurn(turn, files)
+	updated, cmd = next.undoTurn(turn, files)
+	// The note goes on the confirm after it is armed rather than travelling
+	// down through undoTurn, because undoTurn is entitled to arm nothing at
+	// all — an evicted turn and a selection the plan does not match both end
+	// in a notice — and a warning about a question nobody was asked is worse
+	// than none.
+	armed, ok := updated.(Model)
+	if !ok || !partial || armed.undoAsk == nil {
+		return updated, cmd
+	}
+	armed.undoAsk.Note = reviewPartialNote
+	return armed, cmd
 }
 
-// reviewStagedPaths names the files the selection covers, in list order.
-func reviewStagedPaths(v *components.ReviewView, r components.ReviewResult) []string {
-	var out []string
+// reviewPartialNote is what the confirm says about a selection that covers
+// some but not all of a file's hunks. The undo plan is per file, so the
+// hunks left unstaged go back with the ones that were staged.
+const reviewPartialNote = "staging part of a file reverts the file"
+
+// reviewStagedPaths names the files the selection covers, in list order, and
+// says whether any of them was staged in part — which the confirm has to
+// state, since the undo it arms restores each of those files whole.
+func reviewStagedPaths(v *components.ReviewView, r components.ReviewResult) (files []string, partial bool) {
 	for _, sel := range r.Staged {
-		if sel.File >= 0 && sel.File < len(v.Files) {
-			out = append(out, v.Files[sel.File].Path)
+		if sel.File < 0 || sel.File >= len(v.Files) {
+			continue
+		}
+		f := v.Files[sel.File]
+		files = append(files, f.Path)
+		if len(sel.Hunks) < len(f.Hunks) {
+			partial = true
 		}
 	}
-	return out
+	return files, partial
 }
 
 // closeReview hands the screen back to where review was opened from — focus

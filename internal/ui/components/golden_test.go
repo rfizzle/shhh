@@ -781,7 +781,10 @@ func TestGolden_ReviewMode(t *testing.T) {
 				Shield:       "nothing is committed",
 				ShieldDetail: "undo restores the 3 files this turn wrote",
 				ApplyVerb:    "undo",
-				Height:       18,
+				// The session's own turn: an undo restores whole files, so
+				// the footer promotes the file key.
+				WholeFile: true,
+				Height:    18,
 			}
 			if mut != nil {
 				mut(v)
@@ -793,6 +796,9 @@ func TestGolden_ReviewMode(t *testing.T) {
 			{Label: "staging · everything staged, second file focused", View: view(func(v *ReviewView) {
 				v.Update(key("A"))
 				v.Update(key("j"))
+			})},
+			{Label: "staging · a patch whose hunks are separable", View: view(func(v *ReviewView) {
+				v.WholeFile, v.ApplyVerb = false, "apply"
 			})},
 			{Label: "layout · side-by-side forced", View: view(func(v *ReviewView) { v.SideBySide = true })},
 			{Label: "read-only (a cumulative diff has nothing to stage)", View: view(func(v *ReviewView) {

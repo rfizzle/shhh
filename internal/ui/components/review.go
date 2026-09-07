@@ -17,6 +17,14 @@ package components
 // child's proposed patch to apply, or, for edits already on disk, what an
 // undo would put back. Esc returns the selection nowhere: the surface is not
 // destructive, and it says so on screen while it is up.
+//
+// Whether a hunk can be taken on its own is the host's fact, not this
+// surface's, so WholeFile is how a host that acts a file at a time says so.
+// The boxes and the keys follow it: the file key is promoted and the hunk
+// key is worded for what staging one hunk of five will really do, because a
+// surface that offers a per-hunk box for a per-file act is lying about the
+// blast radius, and the person finds out by losing the four hunks they
+// meant to keep.
 
 import (
 	"fmt"
@@ -137,6 +145,12 @@ type ReviewView struct {
 	// and their hunks. It is what a cumulative diff wants, where there is
 	// nothing to select.
 	ReadOnly bool
+	// WholeFile says the host acts a file at a time, so staging any hunk of
+	// a file takes the whole file with it. The selection still carries the
+	// hunks — a host whose hunks are separable leaves this false and gets
+	// per-hunk staging — but the surface stops advertising a granularity
+	// this host cannot honour.
+	WholeFile bool
 	// Height is the surface's row budget, footer included.
 	Height int
 	// SideBySide forces the paired layout; it is automatic at
@@ -191,9 +205,7 @@ func (v *ReviewView) Update(msg tea.KeyPressMsg) (done bool, result ReviewResult
 		}
 		staged := v.selection()
 		if len(staged) == 0 {
-			v.notice = "nothing staged — " + keys.Shown(keys.Review.StageHunk) +
-				" stages a hunk, " + keys.Shown(keys.Review.StageFile) + " a file, " +
-				keys.Shown(keys.Review.StageAll) + " everything"
+			v.notice = "nothing staged — " + v.stageKeyHint()
 			return false, ReviewResult{}
 		}
 		return true, ReviewResult{Staged: staged}
@@ -297,6 +309,19 @@ func (v *ReviewView) stageAll() {
 			v.Files[i].Staged[j] = want
 		}
 	}
+}
+
+// stageKeyHint is the way back from an empty selection, in the same order
+// the footer offers the keys — so a surface that stages a file at a time
+// does not answer "nothing staged" by naming a hunk key first.
+func (v *ReviewView) stageKeyHint() string {
+	if v.WholeFile {
+		return keys.Shown(keys.Review.StageFile) + " stages a file, " +
+			keys.Shown(keys.Review.StageAll) + " everything"
+	}
+	return keys.Shown(keys.Review.StageHunk) + " stages a hunk, " +
+		keys.Shown(keys.Review.StageFile) + " a file, " +
+		keys.Shown(keys.Review.StageAll) + " everything"
 }
 
 // selection is what enter reports: every file with at least one staged hunk,
@@ -617,7 +642,10 @@ func (v *ReviewView) paneRows(width, rows int) []string {
 }
 
 // fileStageLabel says how much of the focused file is staged, in words as
-// well as color.
+// well as color. What a partial selection will cost is left to the footer
+// and to the confirm: the pane header is a fitted row that clips a long
+// tail at ordinary widths, and a warning that arrives as `— the…` is worse
+// than one made once, in full, where the answer is given.
 func (v *ReviewView) fileStageLabel(f ReviewFile) string {
 	switch staged := f.stagedCount(); {
 	case len(f.Hunks) > 0 && staged == len(f.Hunks):
@@ -687,13 +715,26 @@ func (v *ReviewView) footerRows(width int) []string {
 	}
 	offers := []TurnKey{keyOffer(keys.Review.MoveHunk)}
 	if !v.ReadOnly {
-		offers = []TurnKey{
+		stage := []TurnKey{
 			keyOffer(keys.Review.StageHunk),
 			keyOffer(keys.Review.StageFile),
+		}
+		if v.WholeFile {
+			// The file key leads because the file is what this host acts on,
+			// and the hunk key keeps its place saying what pressing it costs
+			// rather than being dropped: a hunk is still how the selection
+			// is narrowed, and an offer that vanishes is not more honest
+			// than one that is worded straight.
+			stage = []TurnKey{
+				keyOffer(keys.Review.StageFile),
+				keyOfferAs(keys.Review.StageHunk, "hunk · reverts its file"),
+			}
+		}
+		offers = append(stage,
 			keyOffer(keys.Review.StageAll),
 			keyOffer(keys.Review.MoveHunk),
 			keyOfferAs(keys.Review.Apply, fmt.Sprintf("%s %s", verb, plural(v.stagedFiles(), "file"))),
-		}
+		)
 	}
 	offers = append(offers, keyOfferAs(keys.Review.Back, "leave, change nothing"))
 

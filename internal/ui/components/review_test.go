@@ -45,10 +45,11 @@ func TestReview_StagesPerHunkFileAndAll(t *testing.T) {
 		t.Fatalf("the fixture needs a two-hunk file, got %d", len(v.Files[0].Hunks))
 	}
 
-	// space stages the hunk under the cursor and nothing else.
-	v.Update(key("space"))
+	// s stages the hunk under the cursor and nothing else; space is the
+	// same key, because a box in a list is a thing people press space on.
+	v.Update(key("s"))
 	if v.Files[0].stagedCount() != 1 {
-		t.Fatalf("space should stage one hunk, got %d", v.Files[0].stagedCount())
+		t.Fatalf("s should stage one hunk, got %d", v.Files[0].stagedCount())
 	}
 	// n moves to the next hunk of the same file; space stages that one too.
 	v.Update(key("n"))
@@ -56,10 +57,10 @@ func TestReview_StagesPerHunkFileAndAll(t *testing.T) {
 	if v.Files[0].stagedCount() != 2 {
 		t.Fatalf("the second hunk should stage too, got %d", v.Files[0].stagedCount())
 	}
-	// s on a wholly staged file clears it.
-	v.Update(key("s"))
+	// S on a wholly staged file clears it.
+	v.Update(key("S"))
 	if v.Files[0].stagedCount() != 0 {
-		t.Fatalf("s should clear a wholly staged file, got %d", v.Files[0].stagedCount())
+		t.Fatalf("S should clear a wholly staged file, got %d", v.Files[0].stagedCount())
 	}
 	// A stages everything, then nothing.
 	v.Update(key("A"))
@@ -86,9 +87,9 @@ func TestReview_EnterReportsTheStagedSelection(t *testing.T) {
 	}
 
 	// One hunk of the first file, and the whole second file.
-	v.Update(key("space"))
-	v.Update(key("j"))
 	v.Update(key("s"))
+	v.Update(key("j"))
+	v.Update(key("S"))
 	done, result := v.Update(key("enter"))
 	if !done {
 		t.Fatal("enter with a staged selection should finish the surface")
@@ -122,6 +123,42 @@ func TestReview_EscLeavesWithNothingChosen(t *testing.T) {
 	// The staging state itself survives — esc dismisses, it does not destroy.
 	if v.Files[0].stagedCount() != 2 {
 		t.Fatal("esc should leave the staging state alone")
+	}
+}
+
+// A host that acts a file at a time stops advertising a granularity it
+// cannot honour: the file key leads the footer and the hunk key says what
+// pressing it costs.
+func TestReview_WholeFileStopsPromisingPerHunkStaging(t *testing.T) {
+	v := reviewFixture()
+	v.WholeFile = true
+	v.ApplyVerb = "undo"
+
+	// Nothing staged: the way back names the file key first.
+	v.Update(key("enter"))
+	notice := ansi.Strip(v.View(110))
+	if !strings.Contains(notice, "nothing staged — S stages a file") {
+		t.Fatalf("an empty selection should offer the file key first:\n%s", notice)
+	}
+
+	v.Update(key("s")) // one hunk of two
+	out := ansi.Strip(v.View(110))
+	file, hunk := strings.Index(out, "[S] file"), strings.Index(out, "[s] hunk · reverts its file")
+	if file < 0 || hunk < 0 {
+		t.Fatalf("the footer should offer both staging keys, worded for this host:\n%s", out)
+	}
+	if file > hunk {
+		t.Fatalf("the file key is the promoted one, so it comes first:\n%s", out)
+	}
+	if strings.Contains(out, "stage hunk") {
+		t.Fatalf("this host cannot honour per-hunk staging, so it may not promise it:\n%s", out)
+	}
+
+	// The child-patch host, where the hunks really are separable, keeps the
+	// plain offer.
+	v.WholeFile = false
+	if separable := ansi.Strip(v.View(110)); !strings.Contains(separable, "[s] stage hunk") {
+		t.Fatalf("a separable host still offers per-hunk staging:\n%s", separable)
 	}
 }
 

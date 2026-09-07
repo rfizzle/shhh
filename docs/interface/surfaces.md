@@ -121,6 +121,13 @@ promise about what can be undone; that promise is the approval card's job.
 Any turn can be put back, and putting one back is itself recorded as a change
 that can be reviewed and put back in turn.
 
+Putting one back works a file at a time: what the turn recorded is each file's
+two sides, not a history within the file. Reviewing a turn therefore stages a
+file at a time as well — the file is the promoted key, and a selection that
+covers part of a file is answered with what it will really do, which is to
+revert that file whole. Where the hunks genuinely are separable, as in a patch
+a sub-agent is offering, the same surface stages per hunk.
+
 ### The backlog run's row
 
 A run of the backlog works one item through five stages over as many turns as

@@ -51,6 +51,11 @@ type UndoConfirm struct {
 	Restores, Removes int
 	// Drifted names the files that changed since the turn, in plan order.
 	Drifted []string
+	// Note is a warning the host adds under the question: something the
+	// caller knows about how the selection was made that the plan itself
+	// cannot see. An undo plans per file, so a review that staged part of a
+	// file says here that the rest of it goes back too.
+	Note string
 }
 
 // touches is what [y] would act on at all.
@@ -94,6 +99,16 @@ func (c UndoConfirm) effect() string {
 		return "Nothing is left to restore."
 	}
 	return "It " + strings.Join(parts, ", ") + "."
+}
+
+// noteRows are the host's warning, under the question and above the drift.
+// It is a warning rather than a hint because it says the answer will do more
+// than the question implies, which is the one thing a confirm must not bury.
+func (c UndoConfirm) noteRows(width int) []string {
+	if c.Note == "" {
+		return nil
+	}
+	return []string{Clip(sty.Warn.Render("⚠ "+c.Note), width)}
 }
 
 // driftRows are the drift lines: the count and what the default answer does
@@ -140,6 +155,7 @@ func (c UndoConfirm) headRows(width int) []string {
 // underneath it, and the keys last.
 func (c UndoConfirm) View(width int) string {
 	rows := c.headRows(width)
+	rows = append(rows, c.noteRows(width)...)
 	rows = append(rows, c.driftRows(width)...)
 	if len(c.Drifted) > 0 {
 		force := fmt.Sprintf("%s %s — take back %s too, discarding what changed",

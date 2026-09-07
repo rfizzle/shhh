@@ -809,8 +809,14 @@ var Select = SelectKeys{
 	},
 }
 
-// ReviewKeys are review mode's: a takeover over the whole screen, with
-// staging per hunk. Nothing it does is applied.
+// ReviewKeys are review mode's: a takeover over the whole screen. Nothing
+// it does is applied.
+//
+// The hunk key and the file key are declared apart because what staging can
+// honour is the host's, not the surface's: a patch a child is offering is
+// separable hunk by hunk, and a turn already on disk is put back a file at a
+// time, so a host that can only act per file promotes the file key and says
+// what staging one hunk of five really costs.
 type ReviewKeys struct {
 	MoveFile   Binding
 	MoveHunk   Binding
@@ -825,10 +831,14 @@ type ReviewKeys struct {
 }
 
 var Review = ReviewKeys{
-	MoveFile:   bind("j/k", "file", "k", "j", "up", "down"),
-	MoveHunk:   bind("n/p", "hunk", "p", "n"),
-	StageHunk:  bind("space", "stage hunk", " ", "space"),
-	StageFile:  bind("s", "file", "s"),
+	MoveFile: bind("j/k", "file", "k", "j", "up", "down"),
+	MoveHunk: bind("n/p", "hunk", "p", "n"),
+	// s and S rather than space and s: the two staging keys are one
+	// gesture apart, and the shifted one is the whole file, which is the
+	// bigger act. Space stays bound to the hunk because a box in a list is
+	// a thing people press space on.
+	StageHunk:  bind("s", "stage hunk", "s", " ", "space"),
+	StageFile:  bind("S", "file", "S"),
 	StageAll:   bind("A", "all", "a", "A"),
 	SideBySide: bind("\\", "side by side", "\\"),
 	PageUp:     bind("pgup", "page up", "pgup"),

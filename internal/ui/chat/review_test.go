@@ -26,6 +26,86 @@ func reviewModel(t *testing.T) (Model, string) {
 	return finishTurn(t, m), path
 }
 
+// reviewSplitModel is a recorded turn that changed one file in two separate
+// places, which is what makes a selection covering part of a file possible.
+// The record is filed directly rather than driven through the tool: an
+// overwrite of a file the session never read is refused before it reaches a
+// card, and what these tests need is the two hunks, not the route.
+func reviewSplitModel(t *testing.T) (Model, string) {
+	t.Helper()
+	before := "one\ntwo\nthree\nfour\nfive\nsix\nseven\neight\nnine\nten\neleven\ntwelve\n"
+	after := strings.Replace(before, "two\n", "TWO\n", 1)
+	after = strings.Replace(after, "eleven\n", "ELEVEN\n", 1)
+
+	path := filepath.Join(t.TempDir(), "loop.go")
+	if err := os.WriteFile(path, []byte(after), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	m := turnModel(t)
+	m.turnCount = 1
+	m.changes.Add(1, changeset.Record{
+		Path: path, Before: before, After: after,
+		BeforeExists: true, AfterExists: true,
+	})
+	return m, path
+}
+
+// openSplitReview takes that turn into review, wholly staged.
+func openSplitReview(t *testing.T, m Model) Model {
+	t.Helper()
+	updated, _ := m.openReview(1)
+	m = updated.(Model)
+	if m.review == nil {
+		t.Fatalf("the turn should open in review, got state %v", m.state)
+	}
+	if got := len(m.review.Files[0].Hunks); got != 2 {
+		t.Fatalf("the fixture needs a two-hunk file, got %d", got)
+	}
+	return m
+}
+
+// An undo is planned a file at a time, so a selection covering some but not
+// all of a file's hunks says at the confirm that the rest goes back with it.
+// This is the four hunks somebody meant to keep.
+func TestReview_APartialSelectionSaysTheFileGoesBackWhole(t *testing.T) {
+	m, _ := reviewSplitModel(t)
+	m = openSplitReview(t, m)
+
+	// The turn opens wholly staged, so the hunk key takes one hunk back out
+	// of the selection — the press the warning is about.
+	stage := keys.Shown(keys.Review.StageHunk)
+	updated, _ := m.Update(tea.KeyPressMsg{Code: []rune(stage)[0], Text: stage})
+	m = updated.(Model)
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = updated.(Model)
+
+	if m.undoAsk == nil {
+		t.Fatalf("enter should arm the undo confirm, got state %v", m.state)
+	}
+	if m.undoAsk.Note != reviewPartialNote {
+		t.Fatalf("a partial selection should carry the warning, got %q", m.undoAsk.Note)
+	}
+	if view := ansi.Strip(m.View().Content); !strings.Contains(view, reviewPartialNote) {
+		t.Fatalf("the confirm should say what the answer really does:\n%s", view)
+	}
+}
+
+// A selection that covers a file's every hunk costs nothing extra, so the
+// confirm says nothing extra.
+func TestReview_AWholeFileSelectionCarriesNoWarning(t *testing.T) {
+	m, _ := reviewSplitModel(t)
+	m = openSplitReview(t, m)
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = updated.(Model)
+
+	if m.undoAsk == nil {
+		t.Fatalf("enter should arm the undo confirm, got state %v", m.state)
+	}
+	if m.undoAsk.Note != "" {
+		t.Fatalf("a whole-file selection warns about nothing, got %q", m.undoAsk.Note)
+	}
+}
+
 func TestReview_CommandOpensTheLastTurn(t *testing.T) {
 	m, path := reviewModel(t)
 

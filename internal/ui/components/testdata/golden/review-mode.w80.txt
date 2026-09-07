@@ -27,8 +27,8 @@ REVIEW turn 7      1 of 3 staged │ internal/agent/loop.go  1 hunk · +2 −1 �
                                  │ 
                                  │ 
 ────────────────────────────────────────────────────────────────────────────────
-[space] stage hunk · [s] file · [A] all · [n/p] hunk · [enter] undo 1 file
-[esc] leave, change nothing
+[S] file · [s] hunk · reverts its file · [A] all · [n/p] hunk
+[enter] undo 1 file · [esc] leave, change nothing
 
 · staging · everything staged, second file focused
 REVIEW turn 7      3 of 3 staged │ internal/ui/chat/model.go  1 hunk · +2 −1 · …
@@ -47,7 +47,27 @@ REVIEW turn 7      3 of 3 staged │ internal/ui/chat/model.go  1 hunk · +2 −
                                  │ 
                                  │ 
 ────────────────────────────────────────────────────────────────────────────────
-[space] stage hunk · [s] file · [A] all · [n/p] hunk · [enter] undo 3 files
+[S] file · [s] hunk · reverts its file · [A] all · [n/p] hunk
+[enter] undo 3 files · [esc] leave, change nothing
+
+· staging · a patch whose hunks are separable
+REVIEW turn 7      1 of 3 staged │ internal/agent/loop.go  1 hunk · +2 −1 · ✓ s…
+──────────────────────────────── │ ❯[x] @@ -138,6 +138,7 @@
+❯[x] ✎ …rnal/agent/loop.go +2 −1 │   138      for round := 0; ; round++ {
+ [ ] ✎ …l/ui/chat/model.go +2 −1 │   139          if round >= a.maxRounds {
+ [ ] ✎ …rors.go · writer-1 +2 −1 │ - 140              return results, nil
+──────────────────────────────── │ + 140              return results, ErrRoundL…
+✗ go test ./internal/agent/... … │ + 141          }
+  --- FAIL: TestRoundLimit (0.0… │   142          }
+  loop_test.go:142               │   143      }
+──────────────────────────────── │ 
+⛨ nothing is committed           │ 
+  undo restores the 3 files thi… │ 
+                                 │ 
+                                 │ 
+                                 │ 
+────────────────────────────────────────────────────────────────────────────────
+[s] stage hunk · [S] file · [A] all · [n/p] hunk · [enter] apply 1 file
 [esc] leave, change nothing
 
 · layout · side-by-side forced
@@ -67,8 +87,8 @@ REVIEW turn 7      1 of 3 staged │ internal/agent/loop.go  1 hunk · +2 −1 �
                                  │ 
                                  │ 
 ────────────────────────────────────────────────────────────────────────────────
-[space] stage hunk · [s] file · [A] all · [n/p] hunk · [enter] undo 1 file
-[esc] leave, change nothing
+[S] file · [s] hunk · reverts its file · [A] all · [n/p] hunk
+[enter] undo 1 file · [esc] leave, change nothing
 
 · read-only (a cumulative diff has nothing to stage)
 REVIEW turn 7            3 files │ internal/agent/loop.go  1 hunk · +2 −1
@@ -108,8 +128,8 @@ REVIEW turn 7            3 files │ internal/agent/loop.go  1 hunk · +2 −1
                                 ␛[38;5;241m │ ␛[m
                                 ␛[38;5;241m │ ␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
-␛[94m[space]␛[m␛[38;5;241m stage hunk␛[m␛[38;5;241m · ␛[m␛[94m[s]␛[m␛[38;5;241m file␛[m␛[38;5;241m · ␛[m␛[94m[A]␛[m␛[38;5;241m all␛[m␛[38;5;241m · ␛[m␛[94m[n/p]␛[m␛[38;5;241m hunk␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m undo 1 file␛[m
-␛[94m[esc]␛[m␛[38;5;241m leave, change nothing␛[m
+␛[94m[S]␛[m␛[38;5;241m file␛[m␛[38;5;241m · ␛[m␛[94m[s]␛[m␛[38;5;241m hunk · reverts its file␛[m␛[38;5;241m · ␛[m␛[94m[A]␛[m␛[38;5;241m all␛[m␛[38;5;241m · ␛[m␛[94m[n/p]␛[m␛[38;5;241m hunk␛[m
+␛[94m[enter]␛[m␛[38;5;241m undo 1 file␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m leave, change nothing␛[m
 
 · staging · everything staged, second file focused
 ␛[1;94mREVIEW␛[m␛[38;5;241m turn 7␛[m      ␛[92m3 of 3 staged␛[m␛[38;5;241m │ ␛[m␛[1;97minternal/ui/chat/model.go␛[m␛[38;5;241m  1 hunk · ␛[m␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;241m · ␛[m␛[92m…␛[m
@@ -128,7 +148,27 @@ REVIEW turn 7            3 files │ internal/agent/loop.go  1 hunk · +2 −1
                                 ␛[38;5;241m │ ␛[m
                                 ␛[38;5;241m │ ␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
-␛[94m[space]␛[m␛[38;5;241m stage hunk␛[m␛[38;5;241m · ␛[m␛[94m[s]␛[m␛[38;5;241m file␛[m␛[38;5;241m · ␛[m␛[94m[A]␛[m␛[38;5;241m all␛[m␛[38;5;241m · ␛[m␛[94m[n/p]␛[m␛[38;5;241m hunk␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m undo 3 files␛[m
+␛[94m[S]␛[m␛[38;5;241m file␛[m␛[38;5;241m · ␛[m␛[94m[s]␛[m␛[38;5;241m hunk · reverts its file␛[m␛[38;5;241m · ␛[m␛[94m[A]␛[m␛[38;5;241m all␛[m␛[38;5;241m · ␛[m␛[94m[n/p]␛[m␛[38;5;241m hunk␛[m
+␛[94m[enter]␛[m␛[38;5;241m undo 3 files␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m leave, change nothing␛[m
+
+· staging · a patch whose hunks are separable
+␛[1;94mREVIEW␛[m␛[38;5;241m turn 7␛[m      ␛[92m1 of 3 staged␛[m␛[38;5;241m │ ␛[m␛[1;97minternal/agent/loop.go␛[m␛[38;5;241m  1 hunk · ␛[m␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;241m · ␛[m␛[92m✓ s…␛[m
+␛[38;5;241m────────────────────────────────␛[m␛[38;5;241m │ ␛[m␛[94m❯␛[m␛[92m[x]␛[m ␛[96m@@ -138,6 +138,7 @@␛[m
+␛[94m❯␛[m␛[92m[x]␛[m ␛[38;5;214m✎ ␛[m␛[1;97m…rnal/agent/loop.go␛[m␛[38;5;241m␛[m ␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;241m │ ␛[m␛[38;5;245m  138      for round := 0; ; round++ {␛[m
+ ␛[38;5;241m[ ]␛[m ␛[38;5;214m✎ ␛[m␛[38;5;252m…l/ui/chat/model.go␛[m␛[38;5;241m␛[m ␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;241m │ ␛[m␛[38;5;245m  139          if round >= a.maxRounds {␛[m
+ ␛[38;5;241m[ ]␛[m ␛[38;5;214m✎ ␛[m␛[38;5;252m…rors.go␛[m␛[38;5;241m · writer-1␛[m ␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;241m │ ␛[m␛[91m- 140              return results, nil␛[m
+␛[38;5;241m────────────────────────────────␛[m␛[38;5;241m │ ␛[m␛[92m+ 140              return results, ErrRoundL…␛[m
+␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... …␛[m␛[38;5;241m │ ␛[m␛[92m+ 141          }␛[m
+  ␛[38;5;245m--- FAIL: TestRoundLimit (0.0…␛[m␛[38;5;241m │ ␛[m␛[38;5;245m  142          }␛[m
+  ␛[38;5;245mloop_test.go:142␛[m              ␛[38;5;241m │ ␛[m␛[38;5;245m  143      }␛[m
+␛[38;5;241m────────────────────────────────␛[m␛[38;5;241m │ ␛[m
+␛[38;5;243m⛨ nothing is committed␛[m          ␛[38;5;241m │ ␛[m
+  ␛[38;5;241mundo restores the 3 files thi…␛[m␛[38;5;241m │ ␛[m
+                                ␛[38;5;241m │ ␛[m
+                                ␛[38;5;241m │ ␛[m
+                                ␛[38;5;241m │ ␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
+␛[94m[s]␛[m␛[38;5;241m stage hunk␛[m␛[38;5;241m · ␛[m␛[94m[S]␛[m␛[38;5;241m file␛[m␛[38;5;241m · ␛[m␛[94m[A]␛[m␛[38;5;241m all␛[m␛[38;5;241m · ␛[m␛[94m[n/p]␛[m␛[38;5;241m hunk␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m apply 1 file␛[m
 ␛[94m[esc]␛[m␛[38;5;241m leave, change nothing␛[m
 
 · layout · side-by-side forced
@@ -148,8 +188,8 @@ REVIEW turn 7            3 files │ internal/agent/loop.go  1 hunk · +2 −1
                                 ␛[38;5;241m │ ␛[m
                                 ␛[38;5;241m │ ␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
-␛[94m[space]␛[m␛[38;5;241m stage hunk␛[m␛[38;5;241m · ␛[m␛[94m[s]␛[m␛[38;5;241m file␛[m␛[38;5;241m · ␛[m␛[94m[A]␛[m␛[38;5;241m all␛[m␛[38;5;241m · ␛[m␛[94m[n/p]␛[m␛[38;5;241m hunk␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m undo 1 file␛[m
-␛[94m[esc]␛[m␛[38;5;241m leave, change nothing␛[m
+␛[94m[S]␛[m␛[38;5;241m file␛[m␛[38;5;241m · ␛[m␛[94m[s]␛[m␛[38;5;241m hunk · reverts its file␛[m␛[38;5;241m · ␛[m␛[94m[A]␛[m␛[38;5;241m all␛[m␛[38;5;241m · ␛[m␛[94m[n/p]␛[m␛[38;5;241m hunk␛[m
+␛[94m[enter]␛[m␛[38;5;241m undo 1 file␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m leave, change nothing␛[m
 
 · read-only (a cumulative diff has nothing to stage)
 ␛[1;94mREVIEW␛[m␛[38;5;241m turn 7␛[m            ␛[38;5;241m3 files␛[m␛[38;5;241m │ ␛[m␛[1;97minternal/agent/loop.go␛[m␛[38;5;241m  1 hunk · ␛[m␛[92m+2␛[m ␛[91m−1␛[m
