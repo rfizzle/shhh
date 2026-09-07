@@ -451,6 +451,12 @@ yardstick along, and keeps the verdict a closed enum rather than prose, so the
 policy branches on a value instead of on a sentence written by whatever it is
 judging.
 
+Only a person moves the target, and a steer they type into the running turn is
+added to what was already asked rather than replacing it — the anchor is a
+rule about the run, not about the person it is working for, and a reading that
+judged their correction against the instruction they have moved on from would
+report them as the departure.
+
 ## The round cap is a checkpoint, not a limit
 
 Hitting the ceiling pauses for input rather than terminating. The work so far

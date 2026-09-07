@@ -274,8 +274,16 @@ func (m *Model) injectSteering() bool {
 		m.recordCheckpoint(text)
 		m.agent.Append(provider.Message{Role: provider.RoleUser, Content: text, Attachments: atts})
 		m.appendEntry(entry{kind: entryUser, text: text, attached: attachment.Names(atts)})
+		// What the reader has just asked for is part of what this turn is
+		// serving, so it is part of what the readings judge it against
+		// (agent.ExtendTarget). The anchor is there to stop the run moving
+		// its own yardstick; the person is not the run.
+		m.summaryTarget = agent.ExtendTarget(m.summaryTarget, text)
 		atts = nil
 	}
+	// And what was judged against the shorter instruction is retired, before
+	// the boundary below can deliver it (summary.go).
+	m.summarySteered()
 	m.turnCount += int64(len(m.steering))
 	m.signal(observe.SignalSteer, strconv.Itoa(len(m.steering)))
 	m.steering = nil

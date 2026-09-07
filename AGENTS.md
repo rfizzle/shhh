@@ -368,6 +368,18 @@ delivery sites — `injectInterventions` in the chat model, the boundary tail of
 `Intervention.Row`; a surface that delivers an interruption and forgets either
 reads to its own reader as a session that was never steered.
 
+**A person steering a running turn moves the target; nothing else does.**
+`agent.ExtendTarget` adds their words to the instruction the readings are
+judged against and `agent.TargetLine` is how a surface quotes the result on
+one line — the inverse of the same join, which is why they sit together. Both
+steering sites owe it: `injectSteering` in the chat model, the `Steer` branch
+of `Headless.Run`, which is where a child's own steering arrives —
+`Supervisor.Steer` from an attached lane, the served loop's queue from an RPC
+client. Each then retires what was judged against the shorter instruction —
+`Agent.StartInterveneTurn` for the queued verdict, `summarySteered` or
+`SummaryRun.Extend` for the reading in flight and the schedule the reset round
+counter has left behind.
+
 **Which model the bounded calls answer on is `auxiliaryModel`**
 (`internal/cli/summarizer.go`): the provider's `CheapModel` where it names
 one, the session's own where it does not, with `modelOr` putting
@@ -739,8 +751,8 @@ kind `components.ActivitySummary`), which is where a reading too long for
 three rail lines can be read whole. `finishSummary` reports whether it wrote a
 row, because the reading arrives with no stream behind it owing a repaint. The
 row stores its own `summaryReading` — the verdict plus `summaryTarget` as it
-stood — rather than reading the target back at render time, since the target is
-anchored per turn and the next instruction moves it.
+stood — rather than reading the target back at render time, since the next
+instruction replaces the target and a steer typed into the turn extends it.
 
 The attached sub-agent view is not a separate surface — the chat `Model`
 renders whichever agent is focused, and every agent including the orchestrator

@@ -1003,3 +1003,43 @@ func TestHeadlessRun_AnEmptyTruncatedReplyIsNotSilent(t *testing.T) {
 		t.Fatalf("a turn that ends on nothing should say why, got %v", notices)
 	}
 }
+
+// A steer is the one thing that moves the target an unattended run's readings
+// are judged against — a person typing into an attached child's lane, or into
+// a served session, reaches it through exactly this hook — and the verdict the
+// boundary was about to deliver against the instruction before it is retired
+// rather than sent.
+func TestHeadlessRun_ASteerMovesTheTargetAndRetiresTheQueuedVerdict(t *testing.T) {
+	a := New(nil, scriptedStream(t,
+		toolCallRound(provider.ToolCall{ID: "c1", Name: "search"}),
+		doneRound("done"),
+	))
+	a.SetExecutor(func(string, json.RawMessage) (string, error) { return "r", nil })
+
+	run, _ := testSummaryRun(t, &slowProvider{}, "ship the parser")
+	steered := false
+	h := &Headless{Agent: a, Summary: run, Steer: func() []string {
+		if steered {
+			return nil
+		}
+		steered = true
+		// A reading landed during the round the person typed into: the
+		// ordinary case, and the one where the machinery would otherwise
+		// answer them with an accusation about the work before they spoke.
+		a.ConsiderVerdict(driftVerdict(a.Rounds()), running)
+		return []string{"actually, fix the lexer first"}
+	}}
+	if _, err := h.Run("ship the parser"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if got := run.Target(); !strings.Contains(got, "ship the parser") ||
+		!strings.Contains(got, "fix the lexer first") {
+		t.Fatalf("the steer should have joined the target, got %q", got)
+	}
+	for _, m := range a.Messages() {
+		if strings.Contains(m.Content, "moved away") {
+			t.Fatalf("a verdict about the instruction before the steer was delivered:\n%s", m.Content)
+		}
+	}
+}

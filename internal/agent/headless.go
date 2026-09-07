@@ -186,14 +186,10 @@ func (h *Headless) Interrupt() {
 	h.mu.Unlock()
 }
 
-// summaryTarget is the instruction a steer quotes back. It comes from the
-// reading's own anchor, which was captured when the run started.
-func (h *Headless) summaryTarget() string {
-	if h.Summary == nil {
-		return ""
-	}
-	return h.Summary.target
-}
+// summaryTarget is the instruction a steer quotes back: the reading's own
+// anchor, captured when the run started, plus whatever a person has steered
+// into the turn since.
+func (h *Headless) summaryTarget() string { return h.Summary.Target() }
 
 func (h *Headless) wasInterrupted() bool {
 	h.mu.Lock()
@@ -402,8 +398,22 @@ func (h *Headless) Run(prompt string) (string, error) {
 			if msgs := h.Steer(); len(msgs) > 0 {
 				for _, msg := range msgs {
 					h.Agent.Append(provider.Message{Role: provider.RoleUser, Content: msg})
+					// What the person asked for is now part of what the
+					// readings judge the run against. Without this the next
+					// reading calls their own correction a departure and the
+					// steer it earns quotes the task they have moved on from
+					// back at the model. A child is steered here too — what a
+					// person types into an attached lane, or an RPC client
+					// sends into a served turn, arrives through this hook and
+					// nowhere else.
+					h.Summary.Extend(msg)
 				}
 				h.Agent.ResetRounds()
+				// And the verdict about the work before they spoke is not
+				// delivered after it. The counter the cooldown is measured in
+				// has just gone back to zero as well, which is the other half
+				// of what a turn's start does here.
+				h.Agent.StartInterveneTurn()
 			}
 		}
 

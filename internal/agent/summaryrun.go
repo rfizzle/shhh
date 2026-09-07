@@ -17,6 +17,7 @@ package agent
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"time"
 )
@@ -28,15 +29,28 @@ import (
 type SummaryRun struct {
 	summarizer *Summarizer
 	recorder   *Recorder
-	// target is the instruction every reading is judged against, captured
-	// when the run starts and never re-derived — a run that drifts must not
-	// drag its own yardstick along.
-	target  string
-	started time.Time
+	started    time.Time
 
-	mu       sync.Mutex
+	mu sync.Mutex
+	// target is the instruction every reading is judged against: the task the
+	// run started on, and any steer a person has sent into it since
+	// (Extend). It is under the lock because a reading in flight is reading
+	// it from its own goroutine.
+	target   string
 	inFlight bool
-	verdict  *SummaryVerdict
+	// gen counts the times the target has been extended. A reading carries
+	// the generation it was asked under, so one that was already out when a
+	// person steered is discarded when it lands instead of being acted on:
+	// it judged the work against an instruction that is no longer all of
+	// what was asked.
+	gen int
+	// cancel stops the reading in flight, and is nil when there is none. A
+	// reading whose verdict will be discarded is not worth paying the rest
+	// of; the discard is gen's, because a cancelled request comes back as a
+	// failure and a failure the run caused itself must not put the
+	// summarizer into its backoff.
+	cancel  context.CancelFunc
+	verdict *SummaryVerdict
 	// sched is when the next reading is due, which is the session's schedule
 	// too — one predicate, so a rule added to it cannot be forgotten on one
 	// of the two surfaces (schedule.go).
@@ -65,6 +79,44 @@ func (r *SummaryRun) Recorder() *Recorder {
 		return nil
 	}
 	return r.recorder
+}
+
+// Target is the instruction this run's readings are judged against, as it
+// stands now. Empty on a nil runner, which is what a surface with no readings
+// configured hands a steer to quote back — there is nothing to quote.
+func (r *SummaryRun) Target() string {
+	if r == nil {
+		return ""
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.target
+}
+
+// Extend adds a steer a person sent into the running turn to the instruction
+// the readings are judged against, and retires everything that was queued or
+// in flight against the shorter one (ExtendTarget explains why it extends
+// rather than replaces). The schedule goes back to a turn's start, because
+// the round counter a steer resets is the one it counts in and a schedule
+// left anchored ahead of it takes no further reading this turn.
+//
+// The caller retires the Agent's own queue in the same breath
+// (StartInterveneTurn): this half is the reading, that half is the verdict a
+// boundary would otherwise deliver. Safe on a nil runner.
+func (r *SummaryRun) Extend(steer string) {
+	if r == nil || strings.TrimSpace(steer) == "" {
+		return
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.target = ExtendTarget(r.target, steer)
+	r.gen++
+	r.verdict = nil
+	r.sched = SummarySchedule{}
+	if r.cancel != nil {
+		r.cancel()
+		r.cancel = nil
+	}
 }
 
 // Spend is what the readings have cost this run, for the caller's accounting.
@@ -152,31 +204,43 @@ func (r *SummaryRun) Intervened(rounds int, iv Intervention) {
 
 // read takes one reading and parks the result for the next Tick.
 func (r *SummaryRun) read(rounds int) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	r.mu.Lock()
 	// Copied under the lock rather than shared: the request outlives this
 	// call, and a boundary delivering another interruption while it is out
-	// would otherwise be appending to a slice the request is reading.
+	// would otherwise be appending to a slice the request is reading. The
+	// target is copied for the same reason, now that a steer can extend it.
 	interventions := append([]string(nil), r.interventions...)
+	target, gen := r.target, r.gen
+	r.cancel = cancel
 	r.mu.Unlock()
 
 	req := SummaryRequest{
-		Target:        r.target,
+		Target:        target,
 		Activity:      r.recorder.Rows(),
 		Assistant:     r.recorder.LastAssistant(),
 		Interventions: interventions,
 		Round:         rounds,
 		Elapsed:       time.Since(r.started),
 	}
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 	v := r.summarizer.Summarize(ctx, req)
 
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.inFlight = false
-	r.sched.Read(rounds)
 	r.tokensIn += int64(v.Usage.PromptTokens)
 	r.tokensOut += int64(v.Usage.CompletionTokens)
+	if gen != r.gen {
+		// A person steered while this was out. It judged the work against
+		// part of what has been asked, so its verdict is dropped and its
+		// failure is not the summarizer's — what it cost was still spent,
+		// and the schedule Extend reset is left where it was put.
+		return
+	}
+	r.cancel = nil
+	r.sched.Read(rounds)
 	if v.Failed {
 		// A failed reading changes nothing. The clock still moves, so a
 		// provider that is down is retried on the interval rather than on

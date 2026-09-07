@@ -575,10 +575,12 @@ type Model struct {
 	titles      titleState
 	titleCancel context.CancelFunc
 	// summaryTarget is the instruction the current turn is serving, captured
-	// when the turn starts and never re-derived. It is what a reading judges
-	// drift against, and anchoring it here — rather than reading the tail of
-	// a conversation that may itself have drifted — is what will make
-	// auto-steering answerable.
+	// when the turn starts and never re-derived from the conversation. It is
+	// what a reading judges drift against, and anchoring it here — rather
+	// than reading the tail of a conversation that may itself have drifted —
+	// is what makes auto-steering answerable. Only the reader moves it: a
+	// steer they type into the running turn is added to it
+	// (agent.ExtendTarget), because the anchor is a rule about the run.
 	summaryTarget string
 	// defaults are the persisted model defaults /model default writes.
 	defaults Defaults

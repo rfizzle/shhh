@@ -190,3 +190,22 @@ func TestIntervene_ConfiguredWordingReachesTheConversation(t *testing.T) {
 		t.Fatalf("the steer the session sent was %q", got)
 	}
 }
+
+// A verdict about the work before the reader spoke must not be delivered
+// after they have spoken: it would quote the instruction they have moved on
+// from back at the model and accuse the session of the correction they made
+// themselves.
+func TestIntervene_AReadersSteerRetiresTheQueuedVerdict(t *testing.T) {
+	m := verdictModel(t, "off_target")
+	m = applyReading(t, m)
+
+	m.steering = []string{"actually, check the tests too"}
+	if !m.injectSteering() {
+		t.Fatal("the steer should have been injected")
+	}
+	before := len(m.agent.Messages())
+	m.injectInterventions()
+	if len(m.agent.Messages()) != before {
+		t.Fatalf("the boundary delivered something after the reader steered:\n%s", lastUserMessage(m))
+	}
+}

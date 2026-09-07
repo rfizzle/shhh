@@ -265,3 +265,79 @@ func TestSummaryRun_NilWhenNotConfigured(t *testing.T) {
 		t.Error("a nil runner spends nothing")
 	}
 }
+
+// waitFor polls until cond holds, or fails the test saying what it waited for.
+func waitFor(t *testing.T, what string, cond func() bool) {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		if cond() {
+			return
+		}
+		time.Sleep(time.Millisecond)
+	}
+	t.Fatalf("timed out waiting for %s", what)
+}
+
+// A person steering an unattended run — the orchestrator steering a child is
+// the same act — moves the instruction its readings are judged against, and
+// what was judged against the shorter one is retired rather than delivered
+// back at them.
+func TestSummaryRun_ASteerExtendsTheTargetAndRetiresTheVerdict(t *testing.T) {
+	p := &slowProvider{state: "off_target"}
+	r, _ := testSummaryRun(t, p, "ship the parser")
+
+	r.Tick(FirstSummaryRound)
+	waitFor(t, "the first reading to park a verdict", func() bool {
+		r.mu.Lock()
+		defer r.mu.Unlock()
+		return r.verdict != nil
+	})
+
+	r.Extend("actually, fix the lexer first")
+	if got := r.Target(); !strings.Contains(got, "ship the parser") ||
+		!strings.Contains(got, "fix the lexer first") {
+		t.Fatalf("the target should carry both instructions, got %q", got)
+	}
+	// The round counter a steer resets is the one the schedule counts in, so
+	// the next reading is due on a turn's own count and not an interval past
+	// a round number that no longer exists.
+	if _, ok := r.Tick(FirstSummaryRound); ok {
+		t.Fatal("the verdict about the instruction before the steer was collected")
+	}
+	waitFor(t, "a second reading", func() bool { return p.count() == 2 })
+	if sent := p.requests()[1]; !strings.Contains(sent, "ship the parser") ||
+		!strings.Contains(sent, "fix the lexer first") {
+		t.Fatalf("the reading after a steer is judged against everything asked:\n%s", sent)
+	}
+}
+
+// A reading already out when the person steered judged the work against part
+// of what has been asked, so its verdict is dropped when it lands. It is not
+// counted as a failure either: the run cancelled it, and a provider that is
+// answering must not be put into the backoff for that.
+func TestSummaryRun_ASteerRetiresTheReadingInFlight(t *testing.T) {
+	p := &slowProvider{state: "off_target", delay: 50 * time.Millisecond}
+	r, _ := testSummaryRun(t, p, "ship the parser")
+
+	r.Tick(FirstSummaryRound)
+	waitFor(t, "the reading to go out", func() bool { return p.count() == 1 })
+	r.Extend("actually, fix the lexer first")
+
+	waitFor(t, "the reading to come back", func() bool {
+		r.mu.Lock()
+		defer r.mu.Unlock()
+		return !r.inFlight
+	})
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.verdict != nil {
+		t.Fatalf("a reading asked before the steer was kept: %+v", r.verdict)
+	}
+	if r.failures != 0 {
+		t.Fatalf("failures = %d; a reading the run retired is not the provider's failure", r.failures)
+	}
+	if r.sched.LastRound() != 0 {
+		t.Fatalf("the retired reading stamped the schedule at round %d", r.sched.LastRound())
+	}
+}

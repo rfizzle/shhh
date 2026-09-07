@@ -288,3 +288,64 @@ func TestSummaryState_SufficiencyIsNotDrift(t *testing.T) {
 		}
 	}
 }
+
+// A person's steer joins what was already asked, in the order they asked it.
+// A steer is usually a refinement, and one that replaced the instruction would
+// make the work the turn was asked for first read as a departure.
+func TestExtendTarget_AddsTheSteerToWhatWasAlreadyAsked(t *testing.T) {
+	const asked = "make the round limit a checkpoint"
+	got := ExtendTarget(asked, "also check the tests")
+	if want := asked + "\n\nalso check the tests"; got != want {
+		t.Fatalf("extended target = %q, want %q", got, want)
+	}
+	if got := ExtendTarget(got, "and skip the docs"); !strings.HasSuffix(got, "and skip the docs") ||
+		!strings.Contains(got, "also check the tests") || !strings.HasPrefix(got, asked) {
+		t.Fatalf("a second steer goes on the end, got %q", got)
+	}
+	if got := ExtendTarget(asked, "   \n "); got != asked {
+		t.Fatalf("an empty steer moves nothing, got %q", got)
+	}
+	if got := ExtendTarget("", "start here"); got != "start here" {
+		t.Fatalf("a steer with no anchor is the target, got %q", got)
+	}
+}
+
+// The bound on what a steer quotes back takes the tail, and the tail of an
+// extended target is what the person said last. Each part gets its own share
+// instead, so a long instruction cannot bury the steer that followed it — the
+// bug this pair exists to end, arriving by way of the bound.
+func TestSteerPrompt_TheNewestInstructionSurvivesTheBound(t *testing.T) {
+	long := strings.Repeat("ship the parser. ", 60) // well past the bound
+	target := ExtendTarget(long, "actually, fix the lexer first")
+
+	a := New(nil, noStream)
+	a.rounds = 5
+	a.ConsiderVerdict(driftVerdict(5), running)
+	iv, ok := a.NextIntervention(target)
+	if !ok {
+		t.Fatal("a drifting reading should earn an interruption")
+	}
+	if !strings.Contains(iv.Message, "actually, fix the lexer first") {
+		t.Fatalf("the steer quoted the instruction and dropped what the person said last:\n%s", iv.Message)
+	}
+	if !strings.Contains(iv.Message, "ship the parser") {
+		t.Fatalf("the anchor should still be quoted:\n%s", iv.Message)
+	}
+	if n := len([]rune(SteerPrompt(target, "a reason"))) - len([]rune(SteerWording())); n > DefaultSteerTargetChars {
+		t.Fatalf("the quoted target ran to %d runes, past the bound of %d", n, DefaultSteerTargetChars)
+	}
+}
+
+// The line a surface quotes shows every part of the target. Taking the first
+// line of the whole thing would show a steer as though it had never been
+// typed, which is the failure ExtendTarget exists to end.
+func TestTargetLine_ShowsEveryThingThatWasAsked(t *testing.T) {
+	target := ExtendTarget("make the round limit a checkpoint\nand say so", "also check the tests")
+	want := "make the round limit a checkpoint … · also check the tests"
+	if got := TargetLine(target); got != want {
+		t.Fatalf("target line = %q, want %q", got, want)
+	}
+	if got := TargetLine(""); got != "" {
+		t.Fatalf("an empty target has no line, got %q", got)
+	}
+}

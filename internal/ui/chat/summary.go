@@ -30,7 +30,10 @@ package chat
 // interrupts the turn at the next round boundary. Three properties of this
 // file are what make that safe, and none of them may be traded away for
 // convenience. The target is anchored at turn start rather than re-derived,
-// so a run that drifts cannot drag its own yardstick along. The verdict is a
+// so a run that drifts cannot drag its own yardstick along — the reader is
+// the exception, and a steer they type into the turn extends it, because the
+// anchor is a rule about the run and not about the person it works for. The
+// verdict is a
 // closed enum rather than prose, so the policy branches on a value instead of
 // on a sentence written by whatever it is judging. And the digest carries no
 // tool output — which used to be a cost and privacy nicety and is now a
@@ -93,6 +96,11 @@ type summaryState struct {
 	// runID is the run the in-flight reading belongs to, so a verdict that
 	// arrives after the turn was cancelled is discarded rather than drawn.
 	runID int
+	// gen counts the times the person has extended this turn's target. A
+	// reading carries the generation it was asked under, so one already out
+	// when they steered is discarded rather than drawn: it judged the work
+	// against part of what has been asked.
+	gen int
 	// failures counts consecutive failed readings, for the backoff.
 	failures int
 	// tokensIn/tokensOut are what summaries have cost this session. /status
@@ -109,6 +117,38 @@ func (s *summaryState) startTurn() {
 	s.last = nil
 	s.schedule = agent.SummarySchedule{}
 	s.interventions = nil
+}
+
+// summarySteered retires what the summary had in hand when a person typed
+// into the running turn. Their words have just joined the target
+// (agent.ExtendTarget), and everything queued or in flight was judged against
+// the instruction without them: a verdict about the work before they spoke
+// would be delivered as an accusation they have already answered, and a
+// reading still out would land as a fresh verdict on a stale question.
+//
+// The schedule goes back to a turn's start for the reason the round counter
+// does — steering resets it, and a schedule anchored ahead of the counter it
+// counts in takes no further reading this turn, close included. What survives
+// is what a turn start also leaves alone: the reading on screen, which is
+// still the last thing anybody knows, and the accounting.
+func (m *Model) summarySteered() {
+	// The Agent holds the queued verdict; this file holds the reading.
+	m.agent.StartInterveneTurn()
+	m.summary.gen++
+	m.summary.schedule = agent.SummarySchedule{}
+	if !m.summary.inFlight {
+		return
+	}
+	m.summary.inFlight = false
+	if m.summaryCancel != nil {
+		// A reading whose verdict will be discarded is not worth paying the
+		// rest of. It is the generation that discards it, not the
+		// cancellation: a cancelled request comes back failed, and a failure
+		// the session caused itself must not push the summarizer into its
+		// backoff.
+		m.summaryCancel()
+		m.summaryCancel = nil
+	}
 }
 
 // noteIntervention records an interruption the boundary has just delivered:
@@ -134,6 +174,7 @@ func (m *Model) resetSummary() {
 // summaryDoneMsg carries a finished reading back to the model.
 type summaryDoneMsg struct {
 	runID   int
+	gen     int
 	verdict agent.SummaryVerdict
 }
 
@@ -215,7 +256,7 @@ func (m *Model) forceSummaryCmd() tea.Cmd {
 	m.summary.inFlight = true
 	m.summary.runID = m.agent.RunID()
 	summarizer := m.summarizer
-	runID := m.summary.runID
+	runID, gen := m.summary.runID, m.summary.gen
 	req := m.summaryRequest()
 	// Background, like the classifier's judge: nothing on screen
 	// waits for it, and the turn under it is untouched either way.
@@ -223,7 +264,7 @@ func (m *Model) forceSummaryCmd() tea.Cmd {
 	m.summaryCancel = cancel
 	return func() tea.Msg {
 		defer cancel()
-		return summaryDoneMsg{runID: runID, verdict: summarizer.Summarize(ctx, req)}
+		return summaryDoneMsg{runID: runID, gen: gen, verdict: summarizer.Summarize(ctx, req)}
 	}
 }
 
@@ -234,9 +275,11 @@ func (m *Model) forceSummaryCmd() tea.Cmd {
 // arrives with no stream behind it owing a repaint and the caller is the only
 // thing that will draw one.
 func (m *Model) finishSummary(msg summaryDoneMsg) bool {
-	if !m.summary.inFlight || msg.runID != m.summary.runID {
-		// A reading from a run the session has moved past. Its cost still
-		// counts — it was spent — but its words are about a turn that is over.
+	if !m.summary.inFlight || msg.runID != m.summary.runID || msg.gen != m.summary.gen {
+		// A reading from a run the session has moved past, or one asked
+		// before the person extended the target it was judged against. Its
+		// cost still counts — it was spent — but its words are about a
+		// question nobody is asking any more.
 		m.countSummarySpend(msg.verdict)
 		return false
 	}
@@ -538,7 +581,7 @@ func (m *Model) summaryStatus() (string, tea.Cmd) {
 		sb.WriteString(v.Reason + "\n")
 	}
 	if m.summaryTarget != "" {
-		sb.WriteString("Read against: " + truncateRunes(firstLine(m.summaryTarget), 120) + "\n")
+		sb.WriteString("Read against: " + truncateRunes(agent.TargetLine(m.summaryTarget), 120) + "\n")
 	}
 	model := v.Model
 	if model == "" {
@@ -588,9 +631,9 @@ func truncateRunes(s string, limit int) string {
 // and the target it was judged against.
 //
 // The target is copied rather than read back off the model at render time
-// because it is anchored per turn (intervene.go) — the next instruction moves
-// it, and a row that then claimed to have been read against an instruction
-// that did not exist yet would be the one lie this row can tell.
+// because it moves: the next instruction replaces it and a steer typed into
+// this turn extends it, and a row that then claimed to have been read against
+// words that did not exist yet would be the one lie this row can tell.
 type summaryReading struct {
 	verdict agent.SummaryVerdict
 	target  string
@@ -685,7 +728,7 @@ func (m Model) summaryBodyLines(r *summaryReading, width int) []string {
 		}
 	}
 	if target := strings.TrimSpace(r.target); target != "" {
-		quoted := truncateRunes(firstLine(target), summaryReadAgainstChars)
+		quoted := truncateRunes(agent.TargetLine(target), summaryReadAgainstChars)
 		lines = append(lines, strings.Split(m.wordWrap("read against: "+quoted, inner), "\n")...)
 	}
 	return lines

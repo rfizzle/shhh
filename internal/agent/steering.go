@@ -165,9 +165,9 @@ func (s Steering) checkInPrompt(used int, whenFinished string) string {
 func (s Steering) steerPrompt(target, reason string) string {
 	target = strings.TrimSpace(target)
 	if n := s.SteerTargetChars; n > 0 {
-		target = clampRunes(target, n)
+		target = clampTarget(target, n)
 	} else if n == 0 {
-		target = clampRunes(target, DefaultSteerTargetChars)
+		target = clampTarget(target, DefaultSteerTargetChars)
 	}
 	if s.Steer == "" {
 		return buildSteer(target, reason)

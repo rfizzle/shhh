@@ -26,6 +26,8 @@ package agent
 import (
 	"fmt"
 	"strings"
+
+	"github.com/rfizzle/shhh/internal/digest"
 )
 
 // DefaultInterveneCooldown is the minimum rounds between two verdict-driven
@@ -108,6 +110,97 @@ func (iv Intervention) Row(round int) string {
 		parts = append(parts, clampRunes(reason, maxSummaryReason))
 	}
 	return strings.Join(parts, " · ")
+}
+
+// targetJoin separates the things a person has asked for in one turn. It is a
+// blank line because the target is quoted back to the model whole ("What was
+// asked:"), and two instructions run together on one line read as one
+// sentence that contradicts itself.
+const targetJoin = "\n\n"
+
+// ExtendTarget adds a steer a person typed into a running turn to the
+// instruction that turn's readings are judged against: what was asked, then
+// what was said since, in the order it was said.
+//
+// The target is anchored at the turn's start so a run that has drifted cannot
+// drag its own yardstick along, and that rule is written against the run. A
+// person is the one authority the rest of this machinery already defers to —
+// only a human message lifts the round cap — and they were the one input the
+// anchor ignored: type "actually, do Y instead" into a running turn and every
+// later reading judges Y against X, calls the person's own correction a
+// departure, and quotes X back at the model as what was asked.
+//
+// It extends rather than replaces because a steer is usually a refinement
+// ("also check the tests", "skip the docs"). Judged against the refinement
+// alone, the work the turn was asked for first reads as off target, which is
+// the same argument with the roles swapped.
+func ExtendTarget(target, steer string) string {
+	steer = strings.TrimSpace(steer)
+	if steer == "" {
+		return target
+	}
+	if trimmed := strings.TrimSpace(target); trimmed != "" {
+		return trimmed + targetJoin + steer
+	}
+	return steer
+}
+
+// TargetLine is an extended target as the one line a surface quotes it on:
+// the first line of each thing the person asked, in order, separated the way
+// every other row separates its fields.
+//
+// It lives beside ExtendTarget because it is the inverse of that join and the
+// two cannot be allowed to drift: a surface that took only the first line
+// would show a steer as though it had never been typed, which is the failure
+// this whole pair exists to end. The caller bounds the result — how much room
+// a rail or a row has is the surface's own question.
+func TargetLine(target string) string {
+	parts := strings.Split(strings.TrimSpace(target), targetJoin)
+	lines := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if line := digest.FirstLine(p); line != "" {
+			lines = append(lines, line)
+		}
+	}
+	return strings.Join(lines, " · ")
+}
+
+// clampTargetParts bounds an extended target for a field that has a budget,
+// and returns what was asked as separate parts for the caller to lay out.
+//
+// Every bound in this package truncates the tail, and the tail of an extended
+// target is the newest thing the person said. A long instruction with a steer
+// after it would reach the reader as the instruction alone, and the reader
+// would go on judging the work against words the person had already replaced
+// — the failure ExtendTarget exists to end, arriving by way of the bound
+// instead. So the budget is shared out evenly instead: one instruction is
+// clamped exactly as it always was, and every further one is guaranteed a
+// share of what is left.
+func clampTargetParts(target string, limit int) []string {
+	parts := strings.Split(strings.TrimSpace(target), targetJoin)
+	share := limit
+	if len(parts) > 1 {
+		share = (limit - len(targetJoin)*(len(parts)-1)) / len(parts)
+	}
+	if share < 2 {
+		// Below two runes there is no share to give: a clamped string is at
+		// least the ellipsis that marks it. The newest instruction is the one
+		// that changes the answer, so it takes the whole budget and the rest
+		// are dropped rather than every one of them being reduced to a mark.
+		parts = parts[len(parts)-1:]
+		share = limit
+	}
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		out = append(out, clampRunes(strings.TrimSpace(p), share))
+	}
+	return out
+}
+
+// clampTarget is the target bounded and joined again as the model is shown
+// it — what was asked, then what was said since, a blank line apart.
+func clampTarget(target string, limit int) string {
+	return strings.Join(clampTargetParts(target, limit), targetJoin)
 }
 
 // interveneState is what an Agent knows about interrupting its own turn: the
@@ -225,6 +318,12 @@ func (a *Agent) NextIntervention(target string) (Intervention, bool) {
 // about the last instruction must never be delivered against the next one, and
 // the cooldown is measured in a round counter that has just gone back to zero.
 // The configured cooldown survives, being a setting rather than turn state.
+//
+// A steer typed into a running turn calls it for both of those reasons and not
+// only the second: steering resets the round counter the cooldown is counted
+// in, and a queued verdict about the work before the steer would be delivered
+// after the person had already said the same thing better — the machinery
+// arguing with them about an instruction they have moved on from.
 func (a *Agent) StartInterveneTurn() {
 	a.intervene.pending = nil
 	a.intervene.kind = InterveneCheckIn

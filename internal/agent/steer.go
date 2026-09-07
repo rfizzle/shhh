@@ -37,7 +37,7 @@ const DefaultSteerTargetChars = 400
 // instruction the turn was judged against, anchored at turn start; reason is
 // the reading's own short account of the departure, and may be empty.
 func SteerPrompt(target, reason string) string {
-	return buildSteer(clampRunes(strings.TrimSpace(target), DefaultSteerTargetChars), reason)
+	return buildSteer(clampTarget(target, DefaultSteerTargetChars), reason)
 }
 
 // SteerWording is the built-in message with its substitutions left standing,

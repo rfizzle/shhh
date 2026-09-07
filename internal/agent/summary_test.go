@@ -245,6 +245,27 @@ func TestSummaryRequest_DigestFieldsAreFlattenedAndBounded(t *testing.T) {
 	}
 }
 
+// The instruction field is bounded like every other, and what the person
+// asked for last is the part a bound must not drop: the reader would go on
+// judging the work against words they have already replaced.
+func TestSummaryRequest_DigestKeepsEveryPartOfTheInstruction(t *testing.T) {
+	req := testSummaryRequest()
+	req.Target = ExtendTarget(strings.Repeat("ship the parser. ", 60), "actually, fix the lexer first")
+	target, _ := req.digest()["instruction"].(string)
+	if !strings.Contains(target, "actually, fix the lexer first") {
+		t.Fatalf("the digest dropped what the person asked for last: %q", target)
+	}
+	if !strings.Contains(target, "ship the parser") {
+		t.Fatalf("the digest dropped the instruction: %q", target)
+	}
+	if strings.Contains(target, "\n") {
+		t.Fatalf("a digest field keeps to one line, got %q", target)
+	}
+	if n := len([]rune(target)); n > maxSummaryField+len(" · ") {
+		t.Fatalf("instruction = %d runes, want about %d", n, maxSummaryField)
+	}
+}
+
 func TestSummaryRequest_DigestKeepsTheMostRecentActivity(t *testing.T) {
 	req := testSummaryRequest()
 	req.Activity = nil

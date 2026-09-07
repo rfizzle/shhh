@@ -684,3 +684,91 @@ func TestSummaryRow_IsExpandableAndCopyable(t *testing.T) {
 		t.Fatalf("[y] copies the reading itself, got %q / %q", text, label)
 	}
 }
+
+// The anchor is a rule about the run, not about the person it works for. A
+// steer typed into the running turn joins what was already asked, in the
+// order it was asked, so a reading judges the work against everything the
+// reader has said this turn instead of calling their own correction a
+// departure.
+func TestSummary_AReadersSteerExtendsTheTarget(t *testing.T) {
+	m := summaryModel(t, &readingProvider{text: "Reading the loop."})
+	m.state = stateInput
+	m = sendText(t, m, "make the round limit a checkpoint")
+	m = advanceRounds(m, 3)
+	m = applyReading(t, m)
+
+	m.steering = []string{"also check the tests"}
+	if !m.injectSteering() {
+		t.Fatal("the steer should have been injected")
+	}
+	want := "make the round limit a checkpoint\n\nalso check the tests"
+	if m.summaryTarget != want {
+		t.Fatalf("the target after a steer is %q, want %q", m.summaryTarget, want)
+	}
+	if req := m.summaryRequest(); req.Target != want {
+		t.Fatalf("the next reading is judged against %q", req.Target)
+	}
+	// And the reader is shown what it will be judged against, on the row and
+	// on /status, bounded the way one instruction always was.
+	e := summaryRowEntry(agent.SummaryVerdict{
+		Text: "Reading the loop.", State: agent.SummaryOnTarget, Round: 4,
+	}, m.summaryTarget)
+	e.expanded = true
+	if got := ansi.Strip(m.renderEntry(e, 76)); !strings.Contains(got,
+		"read against: make the round limit a checkpoint · also check the tests") {
+		t.Fatalf("the opened row should quote both instructions:\n%s", got)
+	}
+	// The round counter a steer resets is the one the schedule counts in, so
+	// the reading that judges the work against the extended instruction comes
+	// on a turn's own count rather than an interval past a round number that
+	// no longer exists.
+	if r := m.summary.schedule.LastRound(); r != 0 {
+		t.Fatalf("the schedule still points at round %d, past the reset counter", r)
+	}
+	m = advanceRounds(m, agent.FirstSummaryRound)
+	if !m.summaryDue() {
+		t.Fatal("a reading is due on the turn-start count after a steer")
+	}
+	got, _ := m.summaryStatus()
+	if !strings.Contains(got, "Read against: make the round limit a checkpoint · also check the tests") {
+		t.Fatalf("/status should quote both instructions:\n%s", got)
+	}
+}
+
+// A reading asked before the reader steered judged the work against part of
+// what has been asked. It is retired when it lands rather than drawn, and the
+// schedule goes back to a turn's start with the round counter the steer reset.
+func TestSummary_AReadersSteerRetiresTheReadingInFlight(t *testing.T) {
+	m := summaryModel(t, &readingProvider{text: "Rewriting the README.", state: "off_target"})
+	m.setTurnState(stateStreaming)
+	m = advanceRounds(m, 4)
+	cmd := m.forceSummaryCmd()
+	if !m.summary.inFlight {
+		t.Fatal("a reading should be in flight")
+	}
+
+	m.steering = []string{"actually, check the tests too"}
+	m.injectSteering()
+	if m.summary.inFlight {
+		t.Fatal("a steer retires the reading in flight")
+	}
+
+	// The reading asked after the steer is a fresh one on the same run, so
+	// only the generation tells the two apart when the older one lands.
+	next := m.forceSummaryCmd()
+	if !m.summary.inFlight {
+		t.Fatal("a reading should be in flight again")
+	}
+	if m.finishSummary(driveSummaryDone(t, cmd)) {
+		t.Fatal("the retired reading landed a row")
+	}
+	if m.summary.last != nil {
+		t.Fatal("the retired reading was drawn")
+	}
+	if m.summary.failures != 0 {
+		t.Fatalf("failures = %d; a reading the session retired is not the provider's failure", m.summary.failures)
+	}
+	if !m.finishSummary(driveSummaryDone(t, next)) {
+		t.Fatal("the reading asked after the steer is the one that lands")
+	}
+}
