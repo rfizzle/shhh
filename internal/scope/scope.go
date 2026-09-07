@@ -16,12 +16,16 @@
 // again.
 //
 // Two classes of directory never come along for the ride. A path inside the
-// sandbox's deny mask — the credential stores and shhh's own state — is
-// Refused: it cannot be granted at all, by any key, because the mask it sits
-// behind cannot be disabled. A path that is sensitive without being masked —
-// a home directory, a system root, another tool's credential store — is
-// Sensitive: it can be granted, but only by a person answering for it, never
-// by a permissive mode or the classifier.
+// fixed deny mask — the stores nothing legitimate writes to, and shhh's own
+// state — is Refused: it cannot be granted at all, by any key, because the
+// mask it sits behind cannot be disabled. A home directory, a system root, or
+// another tool's credential store is Sensitive: it can be granted, but only
+// by a person answering for it, never by a permissive mode or the classifier.
+//
+// For a credential store the grant is also what makes it readable. Those are
+// masked from contained commands until the scope holds them, so the scope is
+// the one place a person says a kubeconfig or a registry login is part of
+// this work — said once, for reads and writes together.
 package scope
 
 import (
@@ -281,8 +285,16 @@ func Classify(dir string) (Class, string) {
 		if err != nil {
 			continue
 		}
+		if resolved == c {
+			return Sensitive, c + " holds credentials, and a grant is what lets a contained command read it"
+		}
+		// A mask cannot be made to have a hole in it: containment refuses a
+		// policy whose writable path sits inside a masked one, so a grant of
+		// a subdirectory unmasks the store it is in rather than half of it.
+		// The person answering for ~/.kube/cache is answering for the
+		// kubeconfig beside it, and the sentence they read has to say so.
 		if within(resolved, c) {
-			return Sensitive, c + " holds credentials"
+			return Sensitive, "granting anything under " + c + " makes the whole store readable to contained commands"
 		}
 	}
 	return Ordinary, ""
@@ -316,28 +328,18 @@ func sensitivePaths() []string {
 	return uniq
 }
 
-// credentialPaths are the credential stores the containment deny mask does
-// not already cover. The mask hides ~/.ssh, ~/.aws and ~/.config/gh outright;
-// these are the ones a working session might genuinely need — a kubeconfig, a
-// registry login — so they are grantable, but only by the person whose
-// credentials they are.
-func credentialPaths() []string {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return nil
-	}
-	return []string{
-		filepath.Join(home, ".gnupg"),
-		filepath.Join(home, ".kube"),
-		filepath.Join(home, ".docker"),
-		filepath.Join(home, ".azure"),
-		filepath.Join(home, ".config", "gcloud"),
-		filepath.Join(home, ".password-store"),
-		filepath.Join(home, ".gem"),
-		filepath.Join(home, ".netrc"),
-		filepath.Join(home, ".secrets"),
-	}
-}
+// credentialPaths are the credential stores a contained command may read only
+// while this scope holds them — a kubeconfig, a registry login, a cloud SDK's
+// cached token. They are the sandbox's own list rather than a second one
+// beside it: what makes them sensitive here is precisely that containment
+// masks them until they are granted, and two lists that had to agree would
+// eventually disagree — silently, in the direction of granting a directory
+// the mask still hides.
+//
+// The stores nothing legitimate writes to are not here at all. Those are in
+// the deny mask, so Classify has already refused them by the time this is
+// reached.
+func credentialPaths() []string { return sandbox.CredentialPaths() }
 
 // Describe is how a scope reads in a status line: the root, and what has been
 // added to it.

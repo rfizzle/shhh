@@ -441,6 +441,19 @@ var fixtures = []struct{ kind, text string }{
 	{"github-token", "gho_016C4C7C4C7C4C7C4C7C4C7C4C7C4C7C4C7C"},
 	{"github-token", "github_pat_11ABCDEFG0abcdefghijkl_" + strings.Repeat("Z", 59)},
 	{"slack-token", "xoxb-263594206564-2343594206574-FGqmpXTNWtEjIvJdrHFMnzYN"},
+	{"slack-token", "xapp-1-A02UBRENZ8L-2412342342342-fd4d9a1b0c8e7f6a5b4c3d2e1f0a9b8c"},
+	{"gitlab-token", "glpat-tAHOV29gnuBIPW3ahovC"},
+	{"anthropic-key", "sk-ant-api03-ahovCJQX4bipwDKRY5cjqxELSZ6dkryFMT07elszGNU18fmtAHOV29gnuBIPW3ahovCJQX4bipwDKRY5cjqxELSZ6dkryAA"},
+	{"openai-key", "sk-proj-dkryFMT07elszGNU18fmtAHOV29gnuBIPW3ahovC"},
+	{"openai-key", "sk-fmtAHOV29gnuBIPW3ahovCJQX4bipwDKRY5cjqxELSZ6dkry"},
+	{"google-api-key", "AIzalszGNU18fmtAHOV29gnuBIPW3ahovCJQX4b"},
+	{"stripe-key", "sk_live_nuBIPW3ahovCJQX4bipwDKRY"},
+	{"npm-token", "npm_ryFMT07elszGNU18fmtAHOV29gnuBIPW3aho"},
+	{"sendgrid-key", "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"},
+	// The header word is part of the match, because this is the one row with
+	// no marker of the issuer's own: what makes the run a credential is that
+	// it is being presented as one.
+	{"bearer-token", "Bearer FMT07elszGNU18fmtAHOV29gnuBIPW3ahovCJQX4"},
 	{"jwt", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"},
 	{"private-key", "-----BEGIN RSA PRIVATE KEY-----\nMIIBOgIBAAJBAKj34GkxFhD90vcNLYLInFEX6Ppy1tPf9Cnzj4p4WGeKLs1Pt8Qu\nKUpRKfFLfRYC9AIKjbJTWit+CqvjWYzvQwECAwEAAQ==\n-----END RSA PRIVATE KEY-----"},
 }
@@ -498,11 +511,59 @@ func TestRedact_LeavesOrdinaryTextAlone(t *testing.T) {
 		"ghp_short",
 		"xoxb-1",
 		"xoxo-hugs-and-kisses-everyone",
+		// `sk-` is three characters and the start of any kebab-case name, so
+		// every guard on the OpenAI row is one of these: a slug is hyphenated
+		// where the bare key is not, and neither reaches the length floor by
+		// being long.
+		"sk-lint-rules-for-the-whole-repository",
+		"github.com/anthropics/anthropic-sdk-go v1.13.0",
+		"sk-ant-api03",
+		"AIzaSyShortEnoughToBeAnExample",
+		// The environment npm itself puts in the process, and the header a
+		// script writes before the shell expands anything into it.
+		"npm_config_registry=https://registry.npmjs.org/",
+		"npm_lifecycle_event",
+		"glpat-short",
+		"SG.1",
+		"sk_live_short",
+		"xapp-1",
+		"authorization: Bearer $GITHUB_TOKEN",
+		"the bearer of this message is authorised",
 	}
 	for _, text := range ordinary {
 		if got := New().Scrub(text); got != text {
 			t.Errorf("%q was rewritten to %q", text, got)
 		}
+	}
+}
+
+// The failure a fixed-length pattern has: a key with no delimiter after it
+// matches its own length and stops, and what is left sits beside the
+// placeholder reading as though it had been redacted. Both length-driven rows
+// consume the whole run instead, which over-redacts a few characters that
+// were never the key and never leaves part of one behind.
+func TestRedact_ALengthDrivenShapeTakesTheWholeRun(t *testing.T) {
+	for _, key := range []string{
+		"AIzalszGNU18fmtAHOV29gnuBIPW3ahovCJQX4b",
+		"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",
+	} {
+		got := New().Scrub(key + "TRAILINGRUNWITHNODELIMITER")
+		if strings.Contains(got, "TRAILING") || strings.Contains(got, "RUNWITH") {
+			t.Errorf("%.12s…: the tail was left beside the placeholder: %q", key, got)
+		}
+	}
+}
+
+// The bearer row is the one that matches by presentation rather than by an
+// issuer's marker, so it is the one that can take a name away: a token that
+// arrived in a header still belongs to a family, and `[redacted:jwt]` tells
+// the reader which of their integrations was talking. It runs last for
+// exactly this, and nothing in the table's order says so out loud.
+func TestRedact_ATokenInAHeaderKeepsItsOwnFamilyName(t *testing.T) {
+	const jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+	got := New().Scrub("authorization: Bearer " + jwt)
+	if want := "authorization: Bearer " + Redacted("jwt"); got != want {
+		t.Errorf("got %q, want %q", got, want)
 	}
 }
 

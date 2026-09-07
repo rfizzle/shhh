@@ -159,6 +159,134 @@ func refuseTheMaskedRead(t *testing.T, avail Availability) {
 	}
 }
 
+// The same claim about a masked file rather than a masked directory, which is
+// a different mount and a different failure: bubblewrap binds /dev/null over
+// the path, so the read succeeds and returns nothing at all. `cat ~/.netrc`
+// exiting 0 is the mask working, so the exit status the directory case leans
+// on says nothing here — what is asserted instead is that the shell ran (the
+// sentinel arrives) and the password did not.
+//
+// .netrc is the one worth putting to the kernel: curl and git both read it
+// without being asked, so a contained command that only fetches a URL is a
+// contained command that has already opened it.
+func refuseTheMaskedFileRead(t *testing.T, avail Availability) {
+	t.Helper()
+	const password = "NETRC-PASSWORD-BYTES"
+	home := testHome(t)
+	path := filepath.Join(home, ".netrc")
+	if err := os.WriteFile(path, []byte("machine example.com login u password "+password), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	policy, ws := workspacePolicy(t)
+	policy.Cwd = ws
+	command := "echo SHELL-RAN; cat " + path
+
+	if out, err := capture(t, shellPath(), "-c", command); err != nil || !strings.Contains(out, password) {
+		t.Fatalf("the uncontained control must read the password, or this proves nothing: %v: %s", err, out)
+	}
+
+	argv, err := Wrap(avail, policy, command)
+	if err != nil {
+		t.Fatalf("Wrap under %s: %v", avail.Mechanism, err)
+	}
+	out, _ := capture(t, argv[0], argv[1:]...)
+	if !strings.Contains(out, "SHELL-RAN") {
+		t.Fatalf("the contained shell never ran under %s, so the empty read proves nothing:\n%s", avail.Mechanism, out)
+	}
+	if strings.Contains(out, password) {
+		t.Fatalf("a contained command read ~/.netrc under %s:\n%s", avail.Mechanism, out)
+	}
+}
+
+// The credential stores that are not in the fixed mask, put to the kernel
+// both ways round: masked while nothing has granted the directory, and
+// readable once the working scope holds it. The second half is the one worth
+// executing — a mask assembled from the write grants is a mask that can be
+// spelled correctly and still hide a directory the person asked to work in,
+// and every command in that session fails on a path they granted.
+func refuseTheUngrantedCredentialStore(t *testing.T, avail Availability) {
+	t.Helper()
+	const token = "KUBECONFIG-TOKEN-BYTES"
+	home := testHome(t)
+	kube := mkdir(t, filepath.Join(home, ".kube"))
+	path := filepath.Join(kube, "config")
+	if err := os.WriteFile(path, []byte("token: "+token), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	policy, ws := workspacePolicy(t)
+	policy.Cwd = ws
+	command := "echo SHELL-RAN; cat " + path
+
+	if out, err := capture(t, shellPath(), "-c", command); err != nil || !strings.Contains(out, token) {
+		t.Fatalf("the uncontained control must read the kubeconfig, or this proves nothing: %v: %s", err, out)
+	}
+
+	argv, err := Wrap(avail, policy, command)
+	if err != nil {
+		t.Fatalf("Wrap under %s: %v", avail.Mechanism, err)
+	}
+	out, _ := capture(t, argv[0], argv[1:]...)
+	if !strings.Contains(out, "SHELL-RAN") {
+		t.Fatalf("the contained shell never ran under %s, so the empty read proves nothing:\n%s", avail.Mechanism, out)
+	}
+	if strings.Contains(out, token) {
+		t.Fatalf("a contained command read an ungranted ~/.kube under %s:\n%s", avail.Mechanism, out)
+	}
+
+	policy.WriteExtra = []string{kube}
+	argv, err = Wrap(avail, policy, command)
+	if err != nil {
+		t.Fatalf("Wrap with the store granted under %s: %v", avail.Mechanism, err)
+	}
+	if out, err := capture(t, argv[0], argv[1:]...); err != nil || !strings.Contains(out, token) {
+		t.Fatalf("a granted ~/.kube must be readable under %s: %v:\n%s", avail.Mechanism, err, out)
+	}
+}
+
+func TestBubblewrapRefusesAContainedReadOfAMaskedFile(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skipf("bubblewrap is the Linux mechanism and this host is %s", runtime.GOOS)
+	}
+	avail := detectBwrap()
+	if !avail.OK {
+		t.Skipf("no bubblewrap containment here: %s", avail.Detail)
+	}
+	refuseTheMaskedFileRead(t, avail)
+}
+
+func TestSeatbeltRefusesAContainedReadOfAMaskedFile(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skipf("Seatbelt is the macOS mechanism and this host is %s", runtime.GOOS)
+	}
+	avail := detectSeatbelt()
+	if !avail.OK {
+		t.Skipf("no Seatbelt containment here: %s", avail.Detail)
+	}
+	refuseTheMaskedFileRead(t, avail)
+}
+
+func TestBubblewrapReadsACredentialStoreOnlyWhenItIsGranted(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skipf("bubblewrap is the Linux mechanism and this host is %s", runtime.GOOS)
+	}
+	avail := detectBwrap()
+	if !avail.OK {
+		t.Skipf("no bubblewrap containment here: %s", avail.Detail)
+	}
+	refuseTheUngrantedCredentialStore(t, avail)
+}
+
+func TestSeatbeltReadsACredentialStoreOnlyWhenItIsGranted(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skipf("Seatbelt is the macOS mechanism and this host is %s", runtime.GOOS)
+	}
+	avail := detectSeatbelt()
+	if !avail.OK {
+		t.Skipf("no Seatbelt containment here: %s", avail.Detail)
+	}
+	refuseTheUngrantedCredentialStore(t, avail)
+}
+
 // capture runs one argv and hands back everything it printed, wrapped or
 // bare. The deadline is the mechanism's rather than the command's: `cat`
 // returns at once, and a wrap that hangs on a kernel that will not have it

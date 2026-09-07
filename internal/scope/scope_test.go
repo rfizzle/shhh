@@ -3,6 +3,7 @@ package scope
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -81,6 +82,61 @@ func TestAddRefusesMaskedPaths(t *testing.T) {
 	}
 	if class, reason := Classify(ssh); class != Refused || reason == "" {
 		t.Fatalf("Classify(~/.ssh) = %v, %q; want Refused with a reason", class, reason)
+	}
+}
+
+// The split between the two credential classes, which is a judgement about
+// writing rather than about reading: a password store is somewhere nothing
+// legitimate writes, so it is refused outright and there is nothing to ask
+// about; a kubeconfig is somewhere a person may genuinely be working, so it
+// is theirs to grant — and that grant is also what lets a contained command
+// read it, which is why the reason says so.
+func TestClassifySplitsTheCredentialStoresByWhetherAGrantIsEverHonest(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	for _, name := range []string{".gnupg", ".password-store", ".secrets"} {
+		dir := filepath.Join(home, name)
+		if err := os.MkdirAll(dir, 0o700); err != nil {
+			t.Fatal(err)
+		}
+		if class, reason := Classify(dir); class != Refused || reason == "" {
+			t.Errorf("Classify(~/%s) = %v, %q; want Refused with a reason", name, class, reason)
+		}
+		if _, err := newScope(t, t.TempDir()).Add(dir); err == nil {
+			t.Errorf("~/%s must never be granted", name)
+		}
+	}
+	for _, name := range []string{".kube", ".docker", ".azure", ".gem"} {
+		dir := filepath.Join(home, name)
+		if err := os.MkdirAll(dir, 0o700); err != nil {
+			t.Fatal(err)
+		}
+		if class, reason := Classify(dir); class != Sensitive || reason == "" {
+			t.Errorf("Classify(~/%s) = %v, %q; want Sensitive with a reason", name, class, reason)
+		}
+		if _, err := newScope(t, t.TempDir()).Add(dir); err != nil {
+			t.Errorf("~/%s must stay grantable by the person whose credentials it is: %v", name, err)
+		}
+	}
+}
+
+// The blast radius a person answering the card has to be told about: the
+// mask is per store and cannot be given a hole, so a grant of something
+// inside one exposes everything beside it. A reason that named only the
+// directory asked for would undersell that by a whole kubeconfig.
+func TestClassifyWarnsThatAGrantInsideAStoreExposesTheWholeStore(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	kube := filepath.Join(home, ".kube")
+	if err := os.MkdirAll(filepath.Join(kube, "cache"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	class, reason := Classify(filepath.Join(kube, "cache"))
+	if class != Sensitive {
+		t.Fatalf("Classify(~/.kube/cache) = %v, want Sensitive", class)
+	}
+	if !strings.Contains(reason, "whole store") || !strings.Contains(reason, kube) {
+		t.Errorf("the reason must name the store and say the grant reaches all of it, got %q", reason)
 	}
 }
 

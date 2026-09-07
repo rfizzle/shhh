@@ -103,11 +103,25 @@ What they have instead is a shape. The credential families worth recognising
 carry their own markers, because the services that issue them wanted them
 findable in a leaked repository as much as anyone: AWS access keys begin
 `AKIA` or `ASIA` and are twenty characters, every GitHub token issued since
-2021 carries a prefix, Slack's begin `xox`, a private key is delimited by its
-own `BEGIN` and `END` lines, and a JWT starts with a base64 JSON object. Text
-matching one of those is replaced with `[redacted:aws-access-key]`,
-`[redacted:jwt]` and so on — the kind, because nothing at this point knows
-whose credential it was.
+2021 carries a prefix, GitLab's begin `glpat-`, Slack's begin `xox` or
+`xapp-`, a private key is delimited by its own `BEGIN` and `END` lines, and a
+JWT starts with a base64 JSON object. The API keys a coding session actually
+meets are here for the same reason — `sk-ant-` for Anthropic (shhh's own
+provider key included), `sk-` and `sk-proj-` for OpenAI, `AIza` for Google,
+`sk_live_` and `rk_live_` for Stripe, `npm_` for npm, `SG.` for SendGrid —
+because a key sitting in a project's `.env` is a key the model reads out loud.
+Text matching one of those is replaced with `[redacted:aws-access-key]`,
+`[redacted:anthropic-key]` and so on — the kind, because nothing at this point
+knows whose credential it was.
+
+Two of them need more than a prefix. `sk-` is three characters and also how a
+kebab-case name starts, so length and alphabet do the work the marker cannot:
+the bare form is `sk-` and then thirty-two or more characters with no hyphen
+among them, which `sk-lint-rules-for-the-whole-repository` is not. And a token
+nobody prefixed still has to travel in an `Authorization` header, so `Bearer`
+followed by a long unbroken run is read as a credential and redacted along
+with the word. That one is applied last, so a bearer token that is also a JWT
+still comes back `[redacted:jwt]`, which tells the reader more.
 
 The pass runs after the vault's own and never instead of it. A declared value
 that also looks like a GitHub token comes out as `[secret:GITHUB_TOKEN]`, not

@@ -31,6 +31,17 @@ func mkdir(t *testing.T, path string) string {
 	return path
 }
 
+// resolvedPath is how a spec spells a path: every grant and every mask has
+// its symlinks resolved, and a temp directory sits behind one on macOS.
+func resolvedPath(t *testing.T, path string) string {
+	t.Helper()
+	p, err := resolvePath(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return p
+}
+
 func workspacePolicy(t *testing.T) (Policy, string) {
 	t.Helper()
 	ws := t.TempDir()
@@ -71,6 +82,92 @@ func TestResolveMasksExistingDenyPaths(t *testing.T) {
 		if strings.Contains(d, ".aws") {
 			t.Fatalf("nonexistent deny path should be skipped, got %s", d)
 		}
+	}
+}
+
+// The stores nothing legitimate writes to are in the fixed mask, and two of
+// them are files rather than directories — a different mount on both
+// mechanisms, so the spec has to sort them before the argv can.
+func TestResolveMasksTheStoresNothingWritesTo(t *testing.T) {
+	home := testHome(t)
+	dirs := []string{".gnupg", ".password-store"}
+	for _, name := range dirs {
+		mkdir(t, filepath.Join(home, name))
+	}
+	files := []string{".netrc", ".secrets"}
+	for _, name := range files {
+		if err := os.WriteFile(filepath.Join(home, name), []byte("secret"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	policy, _ := workspacePolicy(t)
+
+	s, err := resolvePolicy(policy)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range dirs {
+		if !slices.Contains(s.denyDirs, resolvedPath(t, filepath.Join(home, name))) {
+			t.Errorf("~/%s should be masked, denyDirs=%v", name, s.denyDirs)
+		}
+	}
+	for _, name := range files {
+		if !slices.Contains(s.denyFiles, resolvedPath(t, filepath.Join(home, name))) {
+			t.Errorf("~/%s should be masked, denyFiles=%v", name, s.denyFiles)
+		}
+	}
+}
+
+// The other half of the credential story, and the one that is not a fixed
+// mask at all: a kubeconfig or a registry login is masked while nothing has
+// granted it and readable once the working scope holds it, which is the same
+// act that makes it writable. There is no third state and no setting.
+func TestResolveMasksACredentialStoreUntilAGrantCoversIt(t *testing.T) {
+	home := testHome(t)
+	kube := resolvedPath(t, mkdir(t, filepath.Join(home, ".kube")))
+	docker := resolvedPath(t, mkdir(t, filepath.Join(home, ".docker")))
+	policy, _ := workspacePolicy(t)
+
+	s, err := resolvePolicy(policy)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Contains(s.denyDirs, kube) || !slices.Contains(s.denyDirs, docker) {
+		t.Fatalf("an ungranted credential store should be masked, denyDirs=%v", s.denyDirs)
+	}
+
+	policy.WriteExtra = []string{kube}
+	if s, err = resolvePolicy(policy); err != nil {
+		t.Fatalf("a granted credential store must not refuse the wrap: %v", err)
+	}
+	if slices.Contains(s.denyDirs, kube) {
+		t.Errorf("a granted credential store must not be masked, denyDirs=%v", s.denyDirs)
+	}
+	if !slices.Contains(s.write, kube) {
+		t.Errorf("a granted credential store is a write grant like any other, write=%v", s.write)
+	}
+	if !slices.Contains(s.denyDirs, docker) {
+		t.Errorf("granting one store must not unmask the next, denyDirs=%v", s.denyDirs)
+	}
+}
+
+// A grant of something inside a store unmasks the store. Masking the parent
+// of a writable path is a configuration resolvePolicy refuses outright, so
+// the alternative to unmasking is not a narrower mask — it is a session where
+// every command fails to wrap.
+func TestResolveUnmasksACredentialStoreGrantedBelowItsRoot(t *testing.T) {
+	home := testHome(t)
+	kube := resolvedPath(t, mkdir(t, filepath.Join(home, ".kube")))
+	inside := mkdir(t, filepath.Join(kube, "cache"))
+	policy, _ := workspacePolicy(t)
+	policy.WriteExtra = []string{inside}
+
+	s, err := resolvePolicy(policy)
+	if err != nil {
+		t.Fatalf("resolvePolicy = %v", err)
+	}
+	if slices.Contains(s.denyDirs, kube) {
+		t.Errorf("a store with a granted directory inside it must not be masked, denyDirs=%v", s.denyDirs)
 	}
 }
 

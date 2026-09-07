@@ -162,6 +162,12 @@ func DenyPaths() []string { return fixedDenyPaths() }
 // fixedDenyPaths is the deny mask that cannot be disabled: credential
 // directories plus shhh's own config and state dirs, so an allowed command
 // still cannot read the user's keys or shhh's database.
+//
+// What is here rather than in CredentialPaths is decided by whether a
+// session could ever have honest business writing to it. Nothing legitimate
+// writes to the user's keyring, their GPG home, their password store, or the
+// file curl and git read plaintext passwords out of, so those need no way
+// back and get none: the working scope refuses to hold them at all.
 func fixedDenyPaths() []string {
 	var out []string
 	if home, err := os.UserHomeDir(); err == nil {
@@ -169,6 +175,14 @@ func fixedDenyPaths() []string {
 			filepath.Join(home, ".ssh"),
 			filepath.Join(home, ".aws"),
 			filepath.Join(home, ".config", "gh"),
+			// .netrc is the one plaintext store on this list and the one most
+			// likely to be read by accident: curl and git both consult it
+			// without being asked, so a command that merely fetches a URL is
+			// a command that has already opened it.
+			filepath.Join(home, ".netrc"),
+			filepath.Join(home, ".gnupg"),
+			filepath.Join(home, ".password-store"),
+			filepath.Join(home, ".secrets"),
 		)
 	}
 	for _, p := range config.Paths() {
@@ -176,6 +190,64 @@ func fixedDenyPaths() []string {
 	}
 	if dir, err := storage.Dir(); err == nil {
 		out = append(out, dir)
+	}
+	return out
+}
+
+// CredentialPaths are the credential stores a contained command may read
+// only while the session's working scope holds them. They are another tool's
+// keys — a kubeconfig, a registry login, a cloud SDK's cached token — and
+// unlike the fixed mask's entries a working session sometimes has honest
+// business with one: `kubectl get pods` is a command a person asks for.
+//
+// So they are read the way they are written. The grant is the whole
+// mechanism: masked by default, unmasked for the session by the same person
+// answering the same card that makes the directory writable, and never by a
+// permissive mode or the classifier — the working scope classifies each of
+// these sensitive for exactly that reason. There is no setting that
+// subtracts one from the mask, because a mask with a subtraction in it is a
+// mask that gets configured away.
+// See docs/capabilities/containment.md#the-deny-mask-is-not-configurable.
+func CredentialPaths() []string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil
+	}
+	return []string{
+		filepath.Join(home, ".kube"),
+		filepath.Join(home, ".docker"),
+		filepath.Join(home, ".azure"),
+		filepath.Join(home, ".config", "gcloud"),
+		filepath.Join(home, ".gem"),
+	}
+}
+
+// ungrantedCredentialPaths are the CredentialPaths this policy's grants do
+// not cover, which is what the mask has to hide. A grant counts when it is
+// the store itself or something inside it: a grant of ~/.docker/buildx says
+// nothing about the registry login beside it, but masking the parent of a
+// writable path is a configuration resolvePolicy refuses outright, so the
+// narrower grant unmasks the store rather than failing every command in the
+// session.
+//
+// The workspace counts as a grant for the same reason it is writable: a
+// project that lives under one of these directories is still the directory
+// the work is in, and a masked workspace is a session where every command
+// reads an empty tree.
+func ungrantedCredentialPaths(write []string, workspace string) []string {
+	var out []string
+	for _, c := range CredentialPaths() {
+		rp, err := resolvePath(c)
+		if err != nil {
+			continue // nothing exists there, nothing to mask
+		}
+		granted := workspace != "" && within(workspace, rp)
+		for _, w := range write {
+			granted = granted || within(w, rp)
+		}
+		if !granted {
+			out = append(out, rp)
+		}
 	}
 	return out
 }
@@ -327,8 +399,15 @@ func resolvePolicy(p Policy) (spec, error) {
 		addWrite(w)
 	}
 
+	// The mask is resolved after the grants because part of it is decided by
+	// them: a credential store the scope holds is one the person asked to
+	// work in, and masking it anyway would refuse every command in the
+	// session rather than protect anything.
+	deny := append(fixedDenyPaths(), p.DenyExtra...)
+	deny = append(deny, ungrantedCredentialPaths(s.write, s.workspace)...)
+
 	denySeen := map[string]bool{}
-	for _, d := range append(fixedDenyPaths(), p.DenyExtra...) {
+	for _, d := range deny {
 		rp, err := resolvePath(d)
 		if err != nil {
 			continue // nothing exists there, nothing to mask

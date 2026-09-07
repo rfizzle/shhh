@@ -38,11 +38,13 @@ type shape struct {
 	// markers are the issuer's own literal prefixes, and every pattern here
 	// is built around one — so text containing none of them cannot match,
 	// and a substring search says so far faster than the automaton can.
-	// Every byte a process writes goes through this pass: the automata
-	// alone read a log with no credential in it at about 20 MB/s, and the
-	// searches turn the same text away at about 660 MB/s. Output with no
-	// credential in it is the ordinary case, and this is what keeps the
-	// ordinary case cheap.
+	// Every byte a process writes goes through this pass, and the gap the
+	// searches buy is what pays for a table this size: measured together on
+	// one host, the automata alone read a log with no credential in it at
+	// about 4 MB/s and the searches turn the same text away at about
+	// 190 MB/s. Output with no credential in it is the ordinary case, and
+	// this is what keeps the ordinary case cheap — so a row that arrives
+	// without a marker costs every reader of every log, not just its own.
 	markers []string
 }
 
@@ -100,15 +102,88 @@ var shapes = []shape{
 		re:      regexp.MustCompile(`\b(?:gh[pousr]_[A-Za-z0-9]{36,255}|github_pat_[A-Za-z0-9_]{80,255})\b`),
 	},
 	{
+		// GitLab's personal access tokens carry their own prefix and are
+		// twenty characters after it. `gldt-` and `glrt-` are the deploy and
+		// runner variants of the same format; only the personal one is here,
+		// because it is the one a coding session meets in a CI file.
+		kind:    "gitlab-token",
+		markers: []string{"glpat-"},
+		re:      regexp.MustCompile(`\bglpat-[A-Za-z0-9_-]{20,}`),
+	},
+	{
 		// Slack's tokens are xox + one letter for the kind + a hyphen, and
 		// the rest is digits, letters and hyphens. The letters are the ones
 		// Slack actually issues, which deliberately excludes `o`: `xoxo-`
 		// is a sign-off, and a chat log is exactly the kind of text this
 		// runs over. Ten characters of tail is the floor, only so that
-		// `xoxb-` written in prose is not a match.
+		// `xoxb-` written in prose is not a match. `xapp-` is the same
+		// issuer's app-level token, which authenticates a socket-mode
+		// connection rather than a workspace call and so never appears with
+		// an `xox` prefix.
 		kind:    "slack-token",
-		markers: []string{"xox"},
-		re:      regexp.MustCompile(`\bxox[abeprs]-[0-9A-Za-z-]{10,}`),
+		markers: []string{"xox", "xapp-"},
+		re:      regexp.MustCompile(`\b(?:xox[abeprs]|xapp)-[0-9A-Za-z-]{10,}`),
+	},
+	{
+		// Anthropic's keys are `sk-ant-` plus the key material, and this is
+		// the one family shhh most needs to catch: its own provider key is
+		// in the environment of the session it is scrubbing, and a `.env` in
+		// the project is the ordinary place a second one sits.
+		kind:    "anthropic-key",
+		markers: []string{"sk-ant-"},
+		re:      regexp.MustCompile(`\bsk-ant-[A-Za-z0-9_-]{24,}`),
+	},
+	{
+		// OpenAI's keys are the loosest marker here — `sk-` is three
+		// characters, and it is also how a kebab-case identifier starts — so
+		// the alphabet does the work the prefix cannot. The bare form is
+		// `sk-` and then base62 alone, which no hyphenated slug can be; the
+		// project, service-account and admin forms carry their own word
+		// first, so hyphens after that word are the issuer's and not a
+		// slug's. Thirty-two is the floor for both, well under the 48 the
+		// bare form actually has and well over anything a name reaches.
+		kind:    "openai-key",
+		markers: []string{"sk-"},
+		re:      regexp.MustCompile(`\bsk-(?:proj|svcacct|admin)-[A-Za-z0-9_-]{32,}|\bsk-[A-Za-z0-9]{32,}\b`),
+	},
+	{
+		// A Google API key is `AIza` and 35 more characters; the length is
+		// the pattern, since there is no delimiter and no checksum to lean
+		// on. The floor is exact and the ceiling is not, because a pattern
+		// that stops at 39 characters inside a longer run leaves the tail of
+		// the token in the clear right after the placeholder — which reads
+		// as redacted and is not. Redacting a few characters that were never
+		// part of the key is the failure worth having.
+		kind:    "google-api-key",
+		markers: []string{"AIza"},
+		re:      regexp.MustCompile(`\bAIza[A-Za-z0-9_-]{35,255}`),
+	},
+	{
+		// Stripe's live secret and restricted keys. The test-mode prefixes
+		// (`sk_test_`, `rk_test_`) are deliberately absent: they authorise
+		// nothing real, and a test key redacted out of a payment integration
+		// is a model debugging a request it cannot see.
+		kind:    "stripe-key",
+		markers: []string{"sk_live_", "rk_live_"},
+		re:      regexp.MustCompile(`\b[sr]k_live_[A-Za-z0-9]{16,}\b`),
+	},
+	{
+		// An npm automation or granular token: `npm_` and 36 base62
+		// characters, the format every token issued since 2021 has.
+		kind:    "npm-token",
+		markers: []string{"npm_"},
+		re:      regexp.MustCompile(`\bnpm_[A-Za-z0-9]{36}\b`),
+	},
+	{
+		// SendGrid's key is three dot-separated parts, and the first is the
+		// literal `SG`. Both tails are required and long, because `SG.` on
+		// its own is an abbreviation and a sentence can end in one. The last
+		// part has a floor and no useful ceiling, for the reason the Google
+		// row has one: a bounded tail stops mid-token and leaves the rest
+		// beside the placeholder.
+		kind:    "sendgrid-key",
+		markers: []string{"SG."},
+		re:      regexp.MustCompile(`\bSG\.[A-Za-z0-9_-]{20,24}\.[A-Za-z0-9_-]{40,255}`),
 	},
 	{
 		// A JWT is three base64url runs separated by dots — which is also
@@ -122,6 +197,23 @@ var shapes = []shape{
 		kind:    "jwt",
 		markers: []string{"eyJ"},
 		re:      regexp.MustCompile(`\beyJ[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{4,}\.[A-Za-z0-9_-]{6,}`),
+	},
+	{
+		// The catch-all for the ones with no marker of their own: a token
+		// nobody prefixed still has to travel in an Authorization header, and
+		// the header word is the marker. It runs last so that a family with
+		// its own name keeps it — a bearer JWT comes back `[redacted:jwt]`,
+		// which is the more useful answer.
+		//
+		// Twenty characters of the header alphabet is what keeps `bearer`
+		// written in prose out of it: the word is followed by a word, and a
+		// twenty-character unbroken run of base64 and URL punctuation is not
+		// one. The word itself goes into the placeholder along with the
+		// token, because the alternative is a capture group and the reader
+		// loses nothing — the line still says `authorization:`.
+		kind:    "bearer-token",
+		markers: []string{"earer"},
+		re:      regexp.MustCompile(`\b[Bb]earer[ \t]+[A-Za-z0-9._~+/=-]{20,}`),
 	},
 }
 

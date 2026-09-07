@@ -26,7 +26,8 @@ list, not several that agree by convention.
   key. The mask cannot be disabled, so neither can this.
 - **Sensitive.** A home directory, a system root, another tool's credential
   store. It can be granted, but only by a person answering for it — never by a
-  permissive mode and never by the classifier.
+  permissive mode and never by the classifier. For a credential store the
+  grant is also what makes it readable at all.
 
 The second class is the interesting one. It exists because "can be granted"
 and "can be granted without a human" are different questions, and a mode that
@@ -41,6 +42,36 @@ A configurable mask is a mask that gets configured away — by a user
 troubleshooting something unrelated, by a script, by a session that argued
 persuasively. The protection is only worth having if it cannot be turned off,
 so it cannot be.
+
+What is behind it, always:
+
+- `~/.ssh`, `~/.aws`, `~/.config/gh` — the signing keys, the cloud
+  credentials, the forge token.
+- `~/.netrc`, `~/.gnupg`, `~/.password-store`, `~/.secrets` — the plaintext
+  passwords curl and git read without being asked, the GPG home, the password
+  store. Nothing legitimate writes to any of these, so nothing needs a way
+  back: the working scope refuses to hold them at all.
+- shhh's own config and state directories, so a contained command cannot read
+  the session's database or edit the settings it runs under.
+
+Another tool's credential store is a different question, because a session
+sometimes has honest business with one: `kubectl get pods` is a command a
+person asks for. So `~/.kube`, `~/.docker`, `~/.azure`, `~/.config/gcloud` and
+`~/.gem` are read the way they are written — masked while nothing has granted
+them, readable and writable once the directory is in the working scope, which
+only a person can put it in.
+
+That is one grant, not a second mechanism, and it is still true that nothing
+subtracts from the mask: the answer to "the build needs the registry login" is
+`/add-dir ~/.docker`, said once and out loud, and it is the same sentence that
+lets the build write there. `/sandbox doctor` lists the mask as it stands at
+the moment it is asked, so a store that is hidden is named where the reader is
+already looking for it.
+
+The grant is the store and not the file in it. A mask cannot be given a hole —
+a policy whose writable path sits inside a masked one is refused rather than
+weakened — so granting a subdirectory of a store makes the whole store
+readable, and the card says so before the grant rather than after it.
 
 ## A contained command carries almost no environment
 
