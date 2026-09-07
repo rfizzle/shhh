@@ -39,7 +39,7 @@ else
 	RESET   := ""
 endif
 
-.PHONY: all build build-all linux darwin windows clean fmt lint tidy test race ci cross docs docs-check eval help
+.PHONY: all build build-all linux darwin windows clean fmt lint tidy test race ci cross docs docs-check eval cache-check help
 
 all: help
 
@@ -116,6 +116,22 @@ docs-check: ## Verify every docs/ citation resolves and every generated section 
 	@python3 scripts/check-docs.py
 	@echo "${MAGENTA}Checking the generated documentation sections...${RESET}"
 	@$(GOTEST) -count=1 -run TestReference ./internal/config ./internal/ui/keys
+
+## Cache:
+# The prompt-cache markers are the one thing the offline suite cannot judge: a
+# marker the far end ignores looks exactly like one it honours, because the
+# answer is identical and only the bill differs. So this asks two live
+# endpoints — the Messages API directly, and a gateway forwarding to it, which
+# is the path that can silently drop the field on the way through. Each check
+# skips itself when its own variables are unset, so a run with one pair of
+# credentials still checks that one. -count=1 because a cached PASS would be a
+# run that asked nothing.
+#
+#	SHHH_CACHE_IT_URL=… SHHH_CACHE_IT_KEY=… \
+#	SHHH_CACHE_IT_GATEWAY_URL=… SHHH_CACHE_IT_GATEWAY_KEY=… make cache-check
+cache-check: ## Verify prompt caching against live endpoints (costs real requests)
+	@echo "${MAGENTA}Checking prompt caching against the live endpoints...${RESET}"
+	@$(GOTEST) -count=1 -v -run CacheIntegration ./internal/provider
 
 ## Evals:
 eval: build ## Run the eval suite against the configured model (costs real requests)

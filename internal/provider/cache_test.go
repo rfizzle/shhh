@@ -1,7 +1,11 @@
 package provider
 
 import (
+	"bytes"
 	"encoding/json"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"regexp"
 	"strings"
 	"testing"
@@ -161,10 +165,11 @@ func TestMarkAnthropicCacheChangesNothingButTheMarkers(t *testing.T) {
 	}
 }
 
-// The head is the block worth the longer lifetime and the rolling markers
-// are not: they are replaced every round, so the dearer write would buy a
-// prefix that is superseded within the minute.
-func TestMarkAnthropicCacheGivesTheHeadTheLongerLifetime(t *testing.T) {
+// Every marker in one request gets the same lifetime, the conversation's
+// included. A rolling marker on the shorter one expires over any pause past
+// five minutes — reading a diff, answering an approval card — and the round
+// after that pause rewrites the whole body instead of extending it.
+func TestMarkAnthropicCacheGivesEveryMarkerOneLifetime(t *testing.T) {
 	params := paramsWithTurns("be helpful", 2)
 	markAnthropicCache(&params, DefaultCacheTTL)
 
@@ -177,19 +182,42 @@ func TestMarkAnthropicCacheGivesTheHeadTheLongerLifetime(t *testing.T) {
 			if cc == nil || cc.Type == "" {
 				continue
 			}
-			if cc.TTL != anthropic.CacheControlEphemeralTTL(CacheTTL5m) {
-				t.Errorf("message %d's marker is %q, want the five minutes a rolling marker keeps", i, cc.TTL)
+			if cc.TTL != anthropic.CacheControlEphemeralTTL(CacheTTL1h) {
+				t.Errorf("message %d's marker is %q, want the head's own lifetime", i, cc.TTL)
 			}
 		}
 	}
 }
 
-func TestMarkAnthropicCacheFollowsTheConfiguredHeadLifetime(t *testing.T) {
+func TestMarkAnthropicCacheFollowsTheConfiguredLifetime(t *testing.T) {
 	params := paramsWithTurns("be helpful", 2)
 	markAnthropicCache(&params, CacheTTL5m)
 
 	if got := params.System[0].CacheControl.TTL; got != anthropic.CacheControlEphemeralTTL(CacheTTL5m) {
 		t.Errorf("the head's lifetime is %q, want the one that was chosen", got)
+	}
+	for _, i := range markedMessages(params) {
+		for _, block := range params.Messages[i].Content {
+			cc := block.GetCacheControl()
+			if cc == nil || cc.Type == "" {
+				continue
+			}
+			if cc.TTL != anthropic.CacheControlEphemeralTTL(CacheTTL5m) {
+				t.Errorf("message %d's marker is %q, want the one that was chosen", i, cc.TTL)
+			}
+		}
+	}
+}
+
+// A session pointed at a gateway profile speaking the Messages API is the
+// same session pointed at a different address, so the lifetime it chose has
+// to survive the trip.
+func TestNewAnthropicNamedHonoursTheConfiguredLifetime(t *testing.T) {
+	if got := NewAnthropicNamed(anthropic.NewClient(), "claude-opus-5", "gateway", "5m").cacheTTL; got != CacheTTL5m {
+		t.Errorf("the profile's lifetime is %q, want the one the session chose", got)
+	}
+	if got := NewAnthropicNamed(anthropic.NewClient(), "claude-opus-5", "gateway", "").cacheTTL; got != DefaultCacheTTL {
+		t.Errorf("an unset lifetime is %q, want the default", got)
 	}
 }
 
@@ -278,7 +306,7 @@ func TestMarkOpenAICacheBodyMarksTheSamePositionsAsTheNativePath(t *testing.T) {
 	), DefaultCacheTTL)
 
 	got := bodyMarks(t, body)
-	want := map[int]string{0: string(CacheTTL1h), 3: string(CacheTTL5m), 4: string(CacheTTL5m)}
+	want := map[int]string{0: string(CacheTTL1h), 3: string(CacheTTL1h), 4: string(CacheTTL1h)}
 	if len(got) != len(want) {
 		t.Fatalf("markers = %v, want %v", got, want)
 	}
@@ -333,7 +361,7 @@ func TestMarkOpenAICacheBodyWhenTheLastMessageCannotHoldAMarker(t *testing.T) {
 	body := markOpenAICacheBody(before, DefaultCacheTTL)
 
 	got := bodyMarks(t, body)
-	if len(got) != 2 || got[0] != string(CacheTTL1h) || got[1] != string(CacheTTL5m) {
+	if len(got) != 2 || got[0] != string(CacheTTL1h) || got[1] != string(CacheTTL1h) {
 		t.Fatalf("markers = %v, want the head and the one message that can carry one", got)
 	}
 
@@ -380,5 +408,93 @@ func TestMarkOpenAICacheBodyChangesNothingButTheMarkers(t *testing.T) {
 			t.Errorf("message %d says something else now: %q/%q against %q/%q",
 				i, msg.Role, msg.Content, is.Messages[i].Role, text)
 		}
+	}
+}
+
+// The marking is a round tripper because the field it writes exists only on
+// the encoded body, and because more than one path sends this dialect to a
+// gateway: the built-in provider and every profile route speaking it. What
+// each of them shares is the wire, so the wire is where the rule lives.
+func TestCacheMarkTransportMarksTheEncodedBody(t *testing.T) {
+	for _, tc := range []struct {
+		configured string
+		want       string
+	}{
+		{configured: "", want: string(CacheTTL1h)},
+		{configured: "5m", want: string(CacheTTL5m)},
+	} {
+		var got []byte
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			got, _ = io.ReadAll(r.Body)
+		}))
+
+		sent := openAIBody(t, "anthropic/claude-sonnet-4-6",
+			Message{Role: RoleSystem, Content: "be helpful"},
+			Message{Role: RoleUser, Content: "one"},
+		)
+		req, err := http.NewRequest(http.MethodPost, srv.URL, bytes.NewReader(sent))
+		if err != nil {
+			t.Fatal(err)
+		}
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := (&http.Client{Transport: NewCacheMarkTransport(nil, tc.configured)}).Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		srv.Close()
+
+		marks := bodyMarks(t, got)
+		if len(marks) != 2 || marks[0] != tc.want || marks[1] != tc.want {
+			t.Errorf("cache_ttl = %q: markers = %v, want both at %q", tc.configured, marks, tc.want)
+		}
+	}
+}
+
+// The same client asks the gateway for its catalog, and that request has no
+// body at all — so a transport that assumed one would break discovery rather
+// than mark anything.
+func TestCacheMarkTransportLeavesABodylessRequestAlone(t *testing.T) {
+	var method string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		method = r.Method
+	}))
+	defer srv.Close()
+
+	resp, err := (&http.Client{Transport: NewCacheMarkTransport(nil, "")}).Get(srv.URL + "/v1/models")
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	if method != http.MethodGet {
+		t.Errorf("the catalog query did not arrive: %q", method)
+	}
+}
+
+// A request for a model the gateway routes anywhere else leaves byte for byte
+// as it arrived, which is what makes the transport safe to wrap anything in.
+func TestCacheMarkTransportLeavesAnotherVendorAlone(t *testing.T) {
+	var got []byte
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		got, _ = io.ReadAll(r.Body)
+	}))
+	defer srv.Close()
+
+	sent := openAIBody(t, "openai/gpt-5.2",
+		Message{Role: RoleSystem, Content: "be helpful"},
+		Message{Role: RoleUser, Content: "one"},
+	)
+	req, err := http.NewRequest(http.MethodPost, srv.URL, bytes.NewReader(sent))
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := (&http.Client{Transport: NewCacheMarkTransport(nil, "")}).Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+
+	if string(got) != string(sent) {
+		t.Errorf("the request was rewritten\n before %s\n  after %s", sent, got)
 	}
 }

@@ -502,18 +502,34 @@ gateway provider defaults to is an Anthropic one, so for as long as this was
 decided by dialect a session there re-read its entire opening at full price on
 every round of every turn.
 
-A marked prefix does not live forever, and the head is worth a longer life
-than the rest of the request. The rolling marks are replaced every round, so
-five minutes is all they can use and five minutes is what they take. The head
-is the other extreme: it is the tools, the system prompt, the project's
-context and the skills catalog, it does not change for the life of the
-session, and an interactive session idles past five minutes constantly,
-because the person is reading a diff or answering someone. So the head is
-written to live an hour by default and the rolling marks keep their five
-minutes. Writing for the hour costs more than writing for the five minutes,
-which is why the head's lifetime is a setting rather than a constant: a
-session that is never idle, or one that is short, can turn it down and pay
-the lower write.
+Every path that sends that shape gets it, not just the built-in one. A
+configured gateway profile is the documented way to reach Anthropic models
+through somebody else's endpoint, so a profile whose route speaks the OpenAI
+dialect is annotated exactly as the built-in gateway is — the rule belongs to
+the wire, and every path that writes to that wire shares it.
+
+A marked prefix does not live forever, and every mark in one request is given
+the same life. The two lifetimes on offer are five minutes and an hour, each
+measured from the last read, and an hour is what a session takes unless it
+says otherwise.
+
+There is an argument for a shorter life on the rolling marks: they are
+replaced every round, so the dearer write buys a prefix the next round
+supersedes. It holds only while the rounds keep coming, and they do not. A
+session pauses constantly — the person is reading a diff, answering an
+approval card, away from the desk — and an unattended run's stop-and-wait
+makes the pause routine rather than exceptional. One pause past five minutes
+and the whole conversation under the head has expired, so the round after it
+rewrites the body from nothing, where the longer life would have paid its
+premium on that round's delta alone. The pause is what decides, and the pause
+is systematic. One lifetime is also one rule instead of two: the API takes the
+longer-lived breakpoints first, so a request carrying both had an ordering to
+keep.
+
+Writing for the hour still costs more than writing for the five minutes, which
+is why the lifetime is a setting rather than a constant: a session that is
+never idle, or one that is short, can turn it down and pay the lower write on
+everything.
 
 A saving that is real has to be visible, so what a request served from the
 cache actually cost is what the session's ledger charges for it, at the

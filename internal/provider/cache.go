@@ -16,19 +16,25 @@ package provider
 // at all. So the marker is what this file places, and it is placed on every
 // request rather than behind a setting — it changes what a round costs and
 // nothing about what it says, so there is no session that wants it off. How
-// long the head it marks stays cached is a setting; whether it is marked at
-// all is not.
+// long what it marks stays cached is a setting; whether it is marked at all
+// is not.
 //
-// Two paths reach that API and both have to be told. One speaks it directly;
-// the other sends the OpenAI shape to a gateway that forwards it, honouring
-// whatever breakpoints the request happened to carry. The positions have to
-// be the same on both, so they are chosen once here and applied twice — a
-// rule written down twice is a rule that gets corrected once.
+// Two kinds of path reach that API and both have to be told. One speaks it
+// directly; the others send the OpenAI shape to a gateway that forwards it,
+// honouring whatever breakpoints the request happened to carry — the built-in
+// gateway provider and any profile route speaking that dialect alike, which
+// is why the second is a round tripper anything can be wrapped in rather than
+// one provider's own. The positions have to be the same on both, so they are
+// chosen once here and applied twice — a rule written down twice is a rule
+// that gets corrected once.
 // See docs/capabilities/providers.md#the-prompt-prefix-is-paid-for-once.
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"strings"
 
 	"github.com/anthropics/anthropic-sdk-go"
@@ -60,20 +66,23 @@ const (
 	CacheTTL1h CacheTTL = "1h"
 )
 
-// DefaultCacheTTL is how long the request's fixed head stays cached when
-// nothing chose. An hour, because the short lifetime is measured from the
-// last read and an interactive session idles past five minutes constantly —
-// the reader is looking at a diff, answering somebody, away from the desk —
-// and the head is both the largest block of the request and the one that
-// never changes. The longer lifetime costs more to write, which is why it is
-// the head's alone and not everything's.
+// DefaultCacheTTL is how long a marked prefix stays cached when nothing
+// chose. An hour, because the short lifetime is measured from the last read
+// and a session idles past five minutes constantly — the reader is looking at
+// a diff, answering an approval card, away from the desk — and an unattended
+// run's stop-and-wait makes the pause routine rather than exceptional.
+//
+// One lifetime covers the whole request: the head and the rolling markers
+// alike. The argument for giving the rolling markers the short life is that
+// they are replaced every round, so the dearer write buys a prefix the next
+// round supersedes — and that argument holds only while the rounds keep
+// coming. One pause past five minutes and the conversation under the head has
+// expired, so the next round rewrites the whole body at the write premium,
+// where the longer lifetime would have paid that premium on one round's delta.
+// The pause is what decides, and the pause is systematic. It also leaves one
+// rule where there were two: the API takes the longer-lived breakpoints first,
+// so two lifetimes in one request had an ordering to keep and one has none.
 const DefaultCacheTTL = CacheTTL1h
-
-// rollingCacheTTL is the lifetime the conversation's trailing markers get,
-// and it is not configurable. They are replaced every round, so paying the
-// dearer write for a prefix the next round supersedes buys nothing; only the
-// head is worth the choice.
-const rollingCacheTTL = CacheTTL5m
 
 // ParseCacheTTL maps a config value to the lifetime it names. Empty is the
 // default, the way an unset key is everywhere else.
@@ -93,9 +102,9 @@ func ParseCacheTTL(s string) (CacheTTL, error) {
 // lifetime.
 func (t CacheTTL) Describe() string {
 	if t == CacheTTL1h {
-		return "the opening survives a long pause; dearer to write, and the default"
+		return "the request survives a long pause; dearer to write, and the default"
 	}
-	return "the opening is written cheaply and expires while you read"
+	return "the request is written cheaply and expires while you read"
 }
 
 // CacheTTLCycle is every lifetime, shortest first — what the config editor
@@ -155,14 +164,16 @@ func planCacheMarks(head bool, messages int) cacheMarks {
 	return marks
 }
 
-// markAnthropicCache places the plan's markers on a Messages API request.
-func markAnthropicCache(params *anthropic.MessageNewParams, headTTL CacheTTL) {
+// markAnthropicCache places the plan's markers on a Messages API request, all
+// of them at the session's lifetime (DefaultCacheTTL).
+func markAnthropicCache(params *anthropic.MessageNewParams, ttl CacheTTL) {
+	ttl = cacheTTLOrDefault(string(ttl))
 	marks := planCacheMarks(len(params.System) > 0, len(params.Messages))
 	if marks.Head {
-		params.System[len(params.System)-1].CacheControl = cacheControl(cacheTTLOrDefault(string(headTTL)))
+		params.System[len(params.System)-1].CacheControl = cacheControl(ttl)
 	}
 	for _, i := range marks.Messages {
-		markLastBlock(params.Messages[i].Content, rollingCacheTTL)
+		markLastBlock(params.Messages[i].Content, ttl)
 	}
 }
 
@@ -207,7 +218,8 @@ func markLastBlock(blocks []anthropic.ContentBlockParamUnion, ttl CacheTTL) bool
 // object, a model the gateway does not route to that API, a message with no
 // content to hold a marker — so a request that gains nothing here is byte for
 // byte the request that was sent before any of this existed.
-func markOpenAICacheBody(body []byte, headTTL CacheTTL) []byte {
+func markOpenAICacheBody(body []byte, ttl CacheTTL) []byte {
+	ttl = cacheTTLOrDefault(string(ttl))
 	var envelope map[string]json.RawMessage
 	if err := json.Unmarshal(body, &envelope); err != nil {
 		return body
@@ -233,10 +245,10 @@ func markOpenAICacheBody(body []byte, headTTL CacheTTL) []byte {
 
 	marked := false
 	if marks.Head {
-		marked = markOpenAIContentPart(&msgs[head], cacheTTLOrDefault(string(headTTL)))
+		marked = markOpenAIContentPart(&msgs[head], ttl)
 	}
 	for _, i := range marks.Messages {
-		if markOpenAIContentPart(&msgs[head+1+i], rollingCacheTTL) {
+		if markOpenAIContentPart(&msgs[head+1+i], ttl) {
 			marked = true
 		}
 	}
@@ -331,4 +343,66 @@ func markOpenAIContentPart(msg *json.RawMessage, ttl CacheTTL) bool {
 	}
 	*msg = out
 	return true
+}
+
+// NewCacheMarkTransport wraps base so that every chat-completions request
+// leaving through it carries the breakpoints, where the model it names is one
+// the gateway forwards to the Messages API.
+//
+// It is a round tripper because the encoded body is the only place the field
+// can still be reached: the Go client's content part is a closed struct with
+// nowhere to put it. And it is here rather than in any one provider because
+// more than one path sends that shape to a gateway — the built-in one, and
+// every profile whose route speaks `openai-chat` — and a marking that lived
+// in one of them left the others paying full price for their whole opening on
+// every round of every turn. Which of the two it is cannot be read off the
+// dialect: what decides is the model.
+//
+// A body it cannot read, or one for a model routed anywhere else, goes out
+// exactly as it arrived, so a wrapped client that never names an Anthropic
+// model sends what it always sent.
+func NewCacheMarkTransport(base http.RoundTripper, cacheTTL string) http.RoundTripper {
+	if base == nil {
+		base = http.DefaultTransport
+	}
+	return &cacheMarkTransport{base: base, ttl: cacheTTLOrDefault(cacheTTL)}
+}
+
+type cacheMarkTransport struct {
+	base http.RoundTripper
+	ttl  CacheTTL
+}
+
+func (t *cacheMarkTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	// A round tripper may not modify the request it was handed, and the body
+	// is what this one rewrites — so the edit is made on a copy, and the
+	// caller's request is still the one it built.
+	req = req.Clone(req.Context())
+	if err := t.mark(req); err != nil {
+		return nil, err
+	}
+	return t.base.RoundTrip(req)
+}
+
+// mark replaces the request's body with the marked one. A request with no
+// body at all — the catalog query the same client makes — has nothing to mark
+// and is left alone.
+func (t *cacheMarkTransport) mark(req *http.Request) error {
+	if req.Body == nil {
+		return nil
+	}
+	body, err := io.ReadAll(req.Body)
+	req.Body.Close()
+	if err != nil {
+		return err
+	}
+	body = markOpenAICacheBody(body, t.ttl)
+	req.Body = io.NopCloser(bytes.NewReader(body))
+	req.ContentLength = int64(len(body))
+	// GetBody is what a redirect or a retried HTTP/2 request replays the body
+	// from; without it the second attempt would send an empty one.
+	req.GetBody = func() (io.ReadCloser, error) {
+		return io.NopCloser(bytes.NewReader(body)), nil
+	}
+	return nil
 }

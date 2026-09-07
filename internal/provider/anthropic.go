@@ -59,18 +59,24 @@ func NewAnthropic(opts ResolveOpts) (*Anthropic, error) {
 // gateway profiles (internal/profile) that supply their own base URL, auth,
 // and HTTP transport.
 func NewAnthropicWith(client anthropic.Client, model string) *Anthropic {
-	return NewAnthropicNamed(client, model, "anthropic")
+	return NewAnthropicNamed(client, model, "anthropic", "")
 }
 
 // NewAnthropicNamed is NewAnthropicWith under a caller-chosen name, so a
-// gateway profile speaking the Messages API classifies its failures as
-// itself rather than as Anthropic.
-func NewAnthropicNamed(client anthropic.Client, model, name string) *Anthropic {
+// gateway profile speaking the Messages API classifies its failures as itself
+// rather than as Anthropic.
+//
+// cacheTTL is the session's configured lifetime as it was written, empty for
+// the default. A profile route reaches that API over the same markers the
+// direct path uses, so a lifetime honoured on one and hardcoded on the other
+// made the same session's opening expire at different times depending on
+// which address it was pointed at (cache.go).
+func NewAnthropicNamed(client anthropic.Client, model, name, cacheTTL string) *Anthropic {
 	name = first(name, "anthropic")
 	return &Anthropic{
 		client:   client,
 		model:    first(model, defaultAnthropicModel),
-		cacheTTL: DefaultCacheTTL,
+		cacheTTL: cacheTTLOrDefault(cacheTTL),
 		classify: newClassifier(name, "SHHH_API_KEY or ANTHROPIC_API_KEY", ""),
 	}
 }

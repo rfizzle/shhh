@@ -230,7 +230,23 @@ func newEndpoint(p Profile, e Endpoint, opts provider.ResolveOpts) (provider.Pro
 	if key == "" && e.APIKeyEnv != "" {
 		return nil, fmt.Errorf("provider %q: %s is not set", p.Name, e.APIKeyEnv)
 	}
-	httpClient := &http.Client{Transport: NewTransport(e, nil)}
+	// A route speaking the OpenAI dialect can still be talking to the Messages
+	// API: what decides is the model the request names and not the shape it is
+	// written in, and a gateway in front of Anthropic models is the case
+	// profiles were built for. So that dialect goes out over the marking
+	// transport, and the marking sits *under* the profile's own rewrites —
+	// what carries the breakpoints has to be the body as it will leave, since
+	// a rewrite rule may be what puts the routed model id on it.
+	//
+	// The empty dialect is this switch's own default and is spelled here for
+	// the same reason it is spelled there: an endpoint arrives with the field
+	// already filled in, and a route built by hand should not silently lose
+	// its breakpoints if that ever stops being true.
+	var base http.RoundTripper
+	if e.API == "" || e.API == APIOpenAIChat {
+		base = provider.NewCacheMarkTransport(nil, opts.CacheTTL)
+	}
+	httpClient := &http.Client{Transport: NewTransport(e, base)}
 
 	switch e.API {
 	case APIOpenAIResponses:
@@ -241,7 +257,7 @@ func newEndpoint(p Profile, e Endpoint, opts provider.ResolveOpts) (provider.Pro
 			option.WithAPIKey(key),
 			option.WithBaseURL(e.BaseURL),
 			option.WithHTTPClient(httpClient),
-		), opts.Model, p.Name)
+		), opts.Model, p.Name, opts.CacheTTL)
 		return &anthropicProfile{Anthropic: inner, name: p.Name}, nil
 	default:
 		cfg := openai.DefaultConfig(key)

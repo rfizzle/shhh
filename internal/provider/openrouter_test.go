@@ -18,7 +18,7 @@ func newTestOpenRouter(baseURL string, model string) *OpenRouter {
 	cfg := openai.DefaultConfig("test-key")
 	cfg.BaseURL = baseURL
 	cfg.HTTPClient = &http.Client{
-		Transport: &openRouterTransport{base: http.DefaultTransport},
+		Transport: &openRouterTransport{base: NewCacheMarkTransport(nil, "")},
 	}
 	return NewOpenRouterWith(openai.NewClientWithConfig(cfg), model)
 }
@@ -287,7 +287,7 @@ func TestOpenRouter_StreamCompletion_MarksTheCacheForAnAnthropicModel(t *testing
 	})
 
 	got := bodyMarks(t, reMarshal(t, body))
-	want := map[int]string{0: string(CacheTTL1h), 2: string(CacheTTL5m), 3: string(CacheTTL5m)}
+	want := map[int]string{0: string(CacheTTL1h), 2: string(CacheTTL1h), 3: string(CacheTTL1h)}
 	if len(got) != len(want) {
 		t.Fatalf("markers = %v, want %v", got, want)
 	}
@@ -316,8 +316,8 @@ func TestOpenRouter_StreamCompletion_MarksNothingForAnotherVendor(t *testing.T) 
 	}
 }
 
-// The configured lifetime reaches the head marker, and the rolling ones keep
-// their own — which is the whole of what the setting decides.
+// The configured lifetime reaches every marker the request carries, which is
+// the whole of what the setting decides.
 func TestOpenRouter_StreamCompletion_HonoursTheConfiguredCacheLifetime(t *testing.T) {
 	t.Setenv("SHHH_BASE_URL", "")
 	body := captureChatRequest(t, func(baseURL string) (<-chan StreamEvent, error) {
@@ -345,6 +345,6 @@ func TestOpenRouter_StreamCompletion_HonoursTheConfiguredCacheLifetime(t *testin
 		t.Errorf("the head's marker = %q, want the lifetime that was configured", got[0])
 	}
 	if got[1] != string(CacheTTL5m) {
-		t.Errorf("the rolling marker = %q, want its own five minutes", got[1])
+		t.Errorf("the rolling marker = %q, want the lifetime that was configured", got[1])
 	}
 }

@@ -1,10 +1,8 @@
 package provider
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 
@@ -46,8 +44,7 @@ func NewOpenRouter(opts ResolveOpts) (*OpenRouter, error) {
 	cfg.BaseURL = baseURL
 	cfg.HTTPClient = &http.Client{
 		Transport: &openRouterTransport{
-			base:    http.DefaultTransport,
-			headTTL: cacheTTLOrDefault(opts.CacheTTL),
+			base: NewCacheMarkTransport(http.DefaultTransport, opts.CacheTTL),
 		},
 	}
 
@@ -58,53 +55,23 @@ func NewOpenRouter(opts ResolveOpts) (*OpenRouter, error) {
 	}, nil
 }
 
-// openRouterTransport is what the gateway needs said that the OpenAI client
-// has no field for: the two attribution headers, and the cache breakpoints on
-// a request bound for an Anthropic model. Both are properties of the wire and
-// not of the conversation, and the encoded body is the last place either can
-// still be reached.
+// openRouterTransport is the one thing this gateway needs said that the
+// OpenAI client has no field for: the two attribution headers. They are a
+// property of the wire and not of the conversation, so this is where they can
+// be reached.
+//
+// The cache breakpoints are the other such property and are no longer here.
+// They belong to every path that sends this dialect to a gateway, not to this
+// provider, so they sit underneath as their own round tripper
+// (NewCacheMarkTransport) — which is what a profile route wraps too.
 type openRouterTransport struct {
 	base http.RoundTripper
-	// headTTL is how long the marked head is cached for; the zero value is
-	// the default, so a client assembled elsewhere still marks (cache.go).
-	headTTL CacheTTL
 }
 
 func (t *openRouterTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	req.Header.Set("HTTP-Referer", "https://github.com/rfizzle/shhh")
 	req.Header.Set("X-Title", "shhh")
-	if err := t.markCache(req); err != nil {
-		return nil, err
-	}
 	return t.base.RoundTrip(req)
-}
-
-// markCache annotates the outgoing body with cache breakpoints where the
-// model it names is one the gateway forwards to the Messages API. That API
-// caches only what a request asked it to, and a request assembled in the
-// OpenAI shape has asked for nothing — which is why a session here paid full
-// price for its whole opening on every round of every turn.
-//
-// A body it cannot read, or one for a model routed anywhere else, goes out
-// exactly as it arrived. The bytes are restored from what was read, so a
-// dialect that would not have understood the field is not sent a request that
-// differs from today's in any way at all.
-func (t *openRouterTransport) markCache(req *http.Request) error {
-	if req.Body == nil {
-		return nil
-	}
-	body, err := io.ReadAll(req.Body)
-	req.Body.Close()
-	if err != nil {
-		return err
-	}
-	body = markOpenAICacheBody(body, t.headTTL)
-	req.Body = io.NopCloser(bytes.NewReader(body))
-	req.ContentLength = int64(len(body))
-	req.GetBody = func() (io.ReadCloser, error) {
-		return io.NopCloser(bytes.NewReader(body)), nil
-	}
-	return nil
 }
 
 func NewOpenRouterWith(client *openai.Client, model string) *OpenRouter {

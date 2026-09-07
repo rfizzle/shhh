@@ -684,3 +684,126 @@ func TestReasoning_Validate(t *testing.T) {
 		}
 	}
 }
+
+// A gateway in front of Anthropic models is the case profiles were built for,
+// and it reaches that API in the OpenAI shape — where a request that asked
+// for nothing to be cached gets nothing cached, and re-reads its whole
+// opening at full price on every round. So the breakpoints have to be on a
+// chat route's wire too, in the shape that dialect carries them.
+func TestNew_ChatRouteCarriesTheCacheBreakpoints(t *testing.T) {
+	var body map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		w.Header().Set("Content-Type", "text/event-stream")
+		fmt.Fprint(w, "data: [DONE]\n\n")
+	}))
+	defer srv.Close()
+
+	p := Profile{Name: "gateway", API: APIOpenAIChat, BaseURL: srv.URL + "/v1", APIKey: "k"}
+	prov, err := New(p, provider.ResolveOpts{Model: "anthropic/claude-sonnet-4-6"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ch, err := prov.StreamCompletion(context.Background(), []provider.Message{
+		{Role: provider.RoleSystem, Content: "be helpful"},
+		{Role: provider.RoleUser, Content: "one"},
+		{Role: provider.RoleAssistant, Content: "two"},
+		{Role: provider.RoleUser, Content: "three"},
+	}, provider.CompletionOpts{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for ev := range ch {
+		if ev.Err != nil {
+			t.Fatalf("unexpected stream error: %v", ev.Err)
+		}
+	}
+
+	if n := marksIn(t, body); n != 3 {
+		t.Fatalf("the request carries %d breakpoints, want the head and the last two turns:\n%v", n, body)
+	}
+}
+
+// A model the gateway routes elsewhere is sent what it was always sent: the
+// marking is a statement about billing on one API, not a field to add to
+// everyone's requests.
+func TestNew_ChatRouteMarksNothingForAnotherVendor(t *testing.T) {
+	var body map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		w.Header().Set("Content-Type", "text/event-stream")
+		fmt.Fprint(w, "data: [DONE]\n\n")
+	}))
+	defer srv.Close()
+
+	p := Profile{Name: "gateway", API: APIOpenAIChat, BaseURL: srv.URL + "/v1", APIKey: "k"}
+	prov, err := New(p, provider.ResolveOpts{Model: "openai/gpt-5.2"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ch, err := prov.StreamCompletion(context.Background(), []provider.Message{
+		{Role: provider.RoleSystem, Content: "be helpful"},
+		{Role: provider.RoleUser, Content: "one"},
+	}, provider.CompletionOpts{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for range ch {
+	}
+
+	if n := marksIn(t, body); n != 0 {
+		t.Fatalf("a request routed away from the Messages API carries %d breakpoints:\n%v", n, body)
+	}
+}
+
+// The lifetime the session chose reaches a route speaking the Messages API
+// directly. The same session behind two addresses should not have its opening
+// expire at different times because of which one it was pointed at.
+func TestNew_AnthropicRouteHonoursTheConfiguredCacheLifetime(t *testing.T) {
+	var body map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		w.Header().Set("Content-Type", "text/event-stream")
+		fmt.Fprint(w, "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"m\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[],\"model\":\"claude-opus-5\",\"usage\":{\"input_tokens\":1,\"output_tokens\":1}}}\n\n")
+		fmt.Fprint(w, "event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n")
+	}))
+	defer srv.Close()
+
+	p := Profile{Name: "gateway-claude", API: APIAnthropicMessage, BaseURL: srv.URL, APIKey: "k"}
+	prov, err := New(p, provider.ResolveOpts{Model: "claude-opus-5", CacheTTL: "5m"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ch, err := prov.StreamCompletion(context.Background(), []provider.Message{
+		{Role: provider.RoleSystem, Content: "be helpful"},
+		{Role: provider.RoleUser, Content: "one"},
+	}, provider.CompletionOpts{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for ev := range ch {
+		if ev.Err != nil {
+			t.Fatalf("unexpected stream error: %v", ev.Err)
+		}
+	}
+
+	system, _ := body["system"].([]any)
+	if len(system) != 1 {
+		t.Fatalf("the request has no head to mark: %v", body["system"])
+	}
+	block, _ := system[0].(map[string]any)
+	control, _ := block["cache_control"].(map[string]any)
+	if control["ttl"] != "5m" {
+		t.Fatalf("the head's marker is %v, want the lifetime the session chose", control["ttl"])
+	}
+}
+
+// marksIn counts the cache breakpoints a decoded request body carries.
+func marksIn(t *testing.T, body map[string]any) int {
+	t.Helper()
+	raw, err := json.Marshal(body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return strings.Count(string(raw), `"cache_control"`)
+}
