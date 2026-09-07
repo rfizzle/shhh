@@ -108,6 +108,95 @@ func TestClassify_ProviderShapes(t *testing.T) {
 	}
 }
 
+// The table above is written in the phrases the classifier looks for, which
+// is why it never caught this: `contextPhrases` carried a bare "max_tokens"
+// and every one of the strings below that names that field read as a window
+// that had filled up. Two of them are not about the window at all — an
+// output ceiling set above the model's, and a field name the model does not
+// take — and the second is a request shhh makes itself, since the
+// `openai-compatible` path sends the deprecated field on purpose for any
+// model the table does not call reasoning. Both offered "compact now",
+// which spends a summary request and comes back to the identical 400.
+//
+// So this table is the literal strings the four dialects emit, copied
+// rather than paraphrased, and it asserts the three cases apart.
+func TestClassify_TheLiteralStringsTheDialectsEmit(t *testing.T) {
+	classify := newClassifier("openai", "OPENAI_API_KEY", "")
+
+	cases := []struct {
+		name string
+		err  error
+		want Class
+	}{
+		// The window is genuinely full. Every dialect says so in its own
+		// words and none of them says it with a field name.
+		{
+			"openai context",
+			&openai.APIError{HTTPStatusCode: 400, Code: "context_length_exceeded", Message: "This model's maximum context length is 128000 tokens. However, your messages resulted in 130524 tokens. Please reduce the length of the messages."},
+			ClassContextLength,
+		},
+		{
+			"openrouter context",
+			&openai.APIError{HTTPStatusCode: 400, Message: "This endpoint's maximum context length is 163840 tokens. However, you requested about 200019 tokens (196019 of text input, 4000 in the output). Please reduce the length of either one."},
+			ClassContextLength,
+		},
+		{
+			"anthropic context",
+			anthropicError(t, 400, `{"error":{"type":"invalid_request_error","message":"prompt is too long: 210410 tokens > 200000 maximum"}}`),
+			ClassContextLength,
+		},
+		{
+			"gemini context",
+			genai.APIError{Code: 400, Message: "The input token count (1305678) exceeds the maximum number of tokens allowed (1048575)."},
+			ClassContextLength,
+		},
+
+		// The output ceiling is above what the model will write. The
+		// conversation is whatever size it was; compacting it changes
+		// nothing, and the fix is a smaller ceiling.
+		{
+			"openai output ceiling",
+			&openai.APIError{HTTPStatusCode: 400, Message: "max_tokens is too large: 200000. This model supports at most 100000 completion tokens, whereas you provided 200000."},
+			ClassUnclassified,
+		},
+		{
+			"anthropic output ceiling",
+			anthropicError(t, 400, `{"error":{"type":"invalid_request_error","message":"max_tokens: 200000 > 64000, which is the maximum allowed number of output tokens for claude-sonnet-4-5-20250929"}}`),
+			ClassUnclassified,
+		},
+
+		// The request named a field this model does not take. The first is
+		// the one shhh sends itself.
+		{
+			"openai deprecated field",
+			&openai.APIError{HTTPStatusCode: 400, Message: "Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead."},
+			ClassUnclassified,
+		},
+		{
+			"openai unsupported value",
+			&openai.APIError{HTTPStatusCode: 400, Message: "Unsupported value: 'temperature' does not support 0.5 with this model. Only the default (1) value is supported."},
+			ClassUnclassified,
+		},
+		{
+			"ollama unknown field",
+			&openai.RequestError{HTTPStatusCode: 400, Body: []byte(`{"error":{"message":"unknown field max_completion_tokens","type":"invalid_request_error"}}`)},
+			ClassUnclassified,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			f, ok := AsFailure(classify(tc.err))
+			if !ok {
+				t.Fatalf("classify returned an unclassified error: %v", tc.err)
+			}
+			if f.Class != tc.want {
+				t.Errorf("class = %q, want %q (message %q)", f.Class, tc.want, f.Message)
+			}
+		})
+	}
+}
+
 func TestClassify_SentinelsMatchTheClass(t *testing.T) {
 	classify := newClassifier("openai", "OPENAI_API_KEY", "")
 	for class, sentinel := range sentinels {

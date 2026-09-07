@@ -336,10 +336,26 @@ func classFromStatus(status int, message string) (Class, bool) {
 // lowercased, and are the fallback for the dialects that report a status only
 // in prose (Gemini) and for transport errors that carry no status at all.
 var (
+	// contextPhrases are the dialects' ways of saying the request did not fit
+	// the model's window. Each is anchored on the request being too big and
+	// never on the name of a field, because the two other things a 400 says
+	// about `max_tokens` are the output ceiling being above the model's and
+	// the field being the wrong one for that model, and neither of those
+	// shrinks by compacting the conversation:
+	//
+	//	openai:     max_tokens is too large: 200000 ...
+	//	openai:     Unsupported parameter: 'max_tokens' ... Use 'max_completion_tokens' instead.
+	//	anthropic:  max_tokens: 200000 > 64000, which is the maximum allowed number of output tokens
+	//
+	// The second of those is a request shhh itself makes: the
+	// `openai-compatible` path sends the deprecated field on purpose for any
+	// model the table does not call reasoning, so naming it a full window
+	// offers "compact now", spends a summary request, and lands on the
+	// identical 400.
 	contextPhrases = []string{
 		"context length", "context_length_exceeded", "maximum context",
 		"too many tokens", "prompt is too long", "input is too long",
-		"reduce the length", "exceeds the maximum", "max_tokens",
+		"reduce the length", "exceeds the maximum",
 	}
 	// modelPhrases are the five dialects' ways of saying they have no model
 	// under this id. Each is anchored on a word the vendor writes beside the
