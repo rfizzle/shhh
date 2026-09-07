@@ -3,6 +3,8 @@ package cli
 import (
 	"encoding/json"
 	"errors"
+	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -11,6 +13,7 @@ import (
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/project"
+	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
 )
@@ -93,6 +96,40 @@ func TestChildExtraCarriesTheWorkspaceAndWhereTheChildStands(t *testing.T) {
 	}
 	if strings.Index(writer, "isolated copy") < strings.Index(writer, "Git branch: side") {
 		t.Errorf("the correction follows the facts it corrects:\n%s", writer)
+	}
+}
+
+// A child is handed the project's instructions against its own budget, not
+// the session's. A checkout whose instruction file runs to a few hundred
+// kilobytes — this one's does — otherwise put a sixth of a child's whole
+// token budget into its system prompt before it had read a line of code, and
+// again for every child in a fan-out.
+func TestChildInstructionsAreCutToTheChildsOwnBudget(t *testing.T) {
+	dir := t.TempDir()
+	var text strings.Builder
+	text.WriteString("# Fixture\n\n## Overview\n\n")
+	for text.Len() < 200<<10 {
+		text.WriteString("a line about how this project builds\n")
+	}
+	text.WriteString("\n## Gotchas\n\nthe rule nobody guesses\n")
+	if err := os.WriteFile(filepath.Join(dir, "AGENTS.md"), []byte(text.String()), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	files := project.Instructions(dir, "")
+	child := project.InstructionBlock(files, prompt.ChildInstructionBudget)
+	session := project.InstructionBlock(files, prompt.InstructionBudget)
+
+	if len(child) >= len(session) {
+		t.Fatalf("a child's block (%d bytes) is not smaller than the session's (%d)", len(child), len(session))
+	}
+	extra := childExtra("", child, "", false)
+	if len(extra) > prompt.ChildInstructionBudget+2000 {
+		t.Fatalf("a child's standing context came to %d bytes against a budget of %d",
+			len(extra), prompt.ChildInstructionBudget)
+	}
+	if !strings.Contains(extra, "the rule nobody guesses") {
+		t.Fatalf("the end of the instruction file did not survive the cut:\n%s", extra[:2000])
 	}
 }
 

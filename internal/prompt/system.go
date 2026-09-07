@@ -26,16 +26,32 @@ func today() string { return now().Format("Monday, 2 January 2006") }
 // InstructionBudget bounds the bytes of project instruction files one
 // session injects. It is a bound on a runaway set — a deep tree where every
 // directory writes its own file — rather than an editor of any single one:
-// the largest instruction file in this repository is a little under 80KB,
-// and a cap below that would cut the end off the very file the reader was
-// pointed at. At 128KB a project has to write more than a book's chapter
-// before anything is dropped, and when something is, the prompt says which
-// file and how much.
+// at 128KB a project has to write more than a book's chapter before anything
+// is dropped, and when something is, the prompt says which file and how much.
+//
+// A single file over the bound is not the exotic case it was once taken for.
+// This repository's own AGENTS.md measures 197,230 bytes, half again over it,
+// so the shape of the cut matters as much as the number: it keeps the end of
+// a file as well as its head (project.InstructionBlock), because a document
+// that leads with its shape keeps its rules last, and a head-only cut drops
+// exactly the sections a session gets corrected on.
 //
 // The number is bytes rather than tokens because the files are read from
 // disk and never re-read: a session pays for this once, at the head of a
 // prompt the provider caches, so the cheap measurement is the honest one.
 const InstructionBudget = 128 << 10
+
+// ChildInstructionBudget is the same bound for a sub-agent's prompt, and it
+// is smaller because of what a child pays it out of. A session's block is
+// read once for a conversation that runs for hours; a child is spawned for
+// one scoped task against a token budget that is the whole of its life, and
+// at the session's 128KB the instruction block alone is about a sixth of the
+// budget a child is given by default — spent before it has read a line of
+// the code it was sent to read, and spent again by every child in a fan-out.
+//
+// 32KB is a long file's head and its last sections, which is the shape the
+// cut keeps, for about 8k tokens.
+const ChildInstructionBudget = 32 << 10
 
 func Build(info shell.Info, extra ...string) string {
 	return build(info, false, extra...)

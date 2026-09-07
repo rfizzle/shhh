@@ -38,7 +38,7 @@ read-only researcher named after the file.
 | `prompt` | The agent's instructions. Appended to a base prompt built from the permissions (environment, tools, working style, final-report contract). |
 | `prompt_file` | Path to a file whose contents are the prompt; relative paths resolve against the profile's directory. Not with `prompt`. |
 | `prompt_mode` | `"append"` (default) or `"replace"`. Replace sends your prompt alone — you then own the environment and tool description too. |
-| `max_tokens` | Default token budget (prompt + completion) when the spawn names none. Clamped to the same floor and ceiling a spawn's own value is. |
+| `max_tokens` | Default token budget when the spawn names none, counted in new tokens — what the provider did not serve from its cache, plus the completion. Clamped to the same floor and ceiling a spawn's own value is. |
 | `max_rounds` | Default check-in interval in tool rounds when the spawn names none. Zero, the default, never pauses. |
 
 ## What a profile cannot do

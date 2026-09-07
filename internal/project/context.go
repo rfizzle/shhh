@@ -325,8 +325,14 @@ const instructionPreamble = "# Project instructions\n" +
 // because the nearest file is the one describing the directory the session
 // was opened in, and every cut is stated in the heading above it. A silent
 // cut leaves a model following half an instruction with nothing to say the
-// other half was ever there — and the half it loses is the end of the file,
-// which is where a document that leads with its shape keeps its rules.
+// other half was ever there.
+//
+// What a cut file keeps is its head and its end — whole sections from the
+// end wherever they fit — with the middle gone and a note saying so where it
+// went. A document that leads with its shape keeps its rules at the end, so
+// a cut that only kept the head dropped exactly the sections a reader gets
+// corrected on — the gotchas, the testing rules, the conventions — while
+// keeping the overview it could have guessed.
 // See docs/capabilities/configuration.md#project-context-is-opt-in-and-lives-with-the-project.
 func InstructionBlock(files []Instruction, budget int) string {
 	if len(files) == 0 {
@@ -347,14 +353,15 @@ func InstructionBlock(files []Instruction, budget int) string {
 		fmt.Fprintf(&b, " They came to %d bytes against a budget of %d, so they were cut from the outermost inwards; a heading below says so wherever its file was cut.", total, budget)
 	}
 	for _, f := range files {
-		text, cut := f.Text, false
+		text, cut, middle := f.Text, false, 0
 		if over > 0 {
 			room := len(text) - over
 			if room < 0 {
 				room = 0
 			}
 			over -= len(text) - room
-			text, cut = trimToLine(text, room), true
+			text, middle = cutToFit(text, room)
+			cut = true
 		}
 		// The trailing newline every text file ends with goes before the next
 		// heading, and dropping it is a layout decision rather than a cut.
@@ -366,6 +373,9 @@ func InstructionBlock(files []Instruction, budget int) string {
 		switch {
 		case cut && text == "":
 			fmt.Fprintf(&b, "\nNot read: none of its %d bytes fit in what was left of the budget.", len(f.Text))
+		case cut && middle > 0:
+			fmt.Fprintf(&b, "\nCut to fit the budget — %d of its %d bytes: its head and its end, with %d bytes dropped from the middle where the note below stands.\n%s",
+				len(f.Text)-middle, len(f.Text), middle, text)
 		case cut:
 			fmt.Fprintf(&b, "\nCut to fit the budget — this is the first %d of %d bytes.\n%s", len(text), len(f.Text), text)
 		default:
@@ -373,6 +383,172 @@ func InstructionBlock(files []Instruction, budget int) string {
 		}
 	}
 	return b.String()
+}
+
+// cutNoticeBudget is the room cutToFit holds back for the note it puts at
+// the cut. The note is part of the file's allowance rather than an extra on
+// top of it: the budget is a bound on what reaches the model, and a bound
+// that quietly grows by a line per cut file is not one.
+const cutNoticeBudget = 160
+
+// cutNotice is what stands where the middle of a file was. Without it the
+// head and the tail read as one continuous document, and a model told to
+// follow the section it is looking at cannot tell that the section before it
+// was ever there. It names where the text picks up again so the gap can be
+// closed by reading the file, which the model can do.
+func cutNotice(dropped int, resumes string) string {
+	note := fmt.Sprintf("\n\n[%d bytes cut from the middle of this file to fit the budget. It resumes %s.]\n\n",
+		dropped, resumes)
+	if len(note) > cutNoticeBudget {
+		// A heading long or strange enough to overrun the reservation loses
+		// its half of the sentence rather than the cut losing its bound.
+		note = fmt.Sprintf("\n\n[%d bytes cut from the middle of this file to fit the budget.]\n\n", dropped)
+	}
+	return note
+}
+
+// cutToFit reduces s to at most n bytes and reports how many it dropped from
+// the middle — zero when it could only cut the head off.
+//
+// It keeps the end of the file in half of what is left and fills the rest
+// with the head. Whole sections wherever they fit, because half a section
+// read out of order is worse than no section: it has no heading to say what
+// it governs, and its first sentence usually depends on the one above.
+func cutToFit(s string, n int) (string, int) {
+	if n >= len(s) {
+		return s, 0
+	}
+	if n <= 0 {
+		return "", 0
+	}
+	tail, resumes := lastSections(s, n/2)
+	head := trimToLine(s, n-len(tail)-cutNoticeBudget)
+	// Neither half is worth having alone: a tail with no head starts the
+	// file in the middle of nowhere, and a head that leaves no room for the
+	// note is the plain cut this is a refinement of.
+	if tail == "" || head == "" {
+		return trimToLine(s, n), 0
+	}
+	dropped := len(s) - len(head) - len(tail)
+	return head + cutNotice(dropped, resumes) + tail, dropped
+}
+
+// lastSections returns the longest suffix of s that fits in max bytes, and a
+// phrase saying where that suffix starts.
+//
+// It prefers a suffix that begins at a heading, at whatever depth: the
+// longest one that fits, since the tail is where a document that leads with
+// its shape keeps its rules, and a subsection the note names is not read as
+// the section above it. A file whose last section is itself larger than max
+// — this repository's own is — would otherwise keep nothing from the end at
+// all, so it falls back to whole lines and the note says the text resumes
+// part-way through.
+func lastSections(s string, max int) (tail, resumes string) {
+	heads := headingOffsets(s)
+	for _, off := range heads {
+		if len(s)-off <= max {
+			return s[off:], fmt.Sprintf("at %q", headingText(s[off:]))
+		}
+	}
+	tail = tailToLine(s, max)
+	if tail == "" {
+		return "", ""
+	}
+	under := "the file"
+	for _, off := range heads {
+		if off < len(s)-len(tail) {
+			under = fmt.Sprintf("%q", headingText(s[off:]))
+		}
+	}
+	return tail, "part-way through " + under
+}
+
+// tailToLine is trimToLine from the other end: at most n bytes of s, forward
+// to the start of the first whole line that fits.
+func tailToLine(s string, n int) string {
+	if n >= len(s) {
+		return s
+	}
+	if n <= 0 {
+		return ""
+	}
+	s = s[len(s)-n:]
+	if i := strings.IndexByte(s, '\n'); i >= 0 && i < len(s)-1 {
+		return s[i+1:]
+	}
+	return ""
+}
+
+// headingOffsets is the offset of every ATX heading line in s, in order.
+//
+// A heading inside a fenced code block is not one. Instruction files are full
+// of shell examples, and a comment line in one would otherwise be taken for a
+// section boundary — which would resume the text in the middle of a code
+// block, with its fence opened above the cut and never closed.
+//
+// A fence is closed by the marker that opened it, which is what Markdown
+// does: the other marker inside an open block is content, and treating it as
+// a close would reopen the document in the middle of an example.
+func headingOffsets(s string) []int {
+	var out []int
+	fence := ""
+	for off := 0; off < len(s); {
+		line, next := s[off:], len(s)
+		if i := strings.IndexByte(line, '\n'); i >= 0 {
+			line, next = line[:i], off+i+1
+		}
+		trimmed := strings.TrimSpace(line)
+		switch marker := fenceMarker(trimmed); {
+		case fence == "" && marker != "":
+			fence = marker
+		case fence != "" && marker == fence:
+			fence = ""
+		case fence == "" && headingLevel(line) > 0:
+			out = append(out, off)
+		}
+		off = next
+	}
+	return out
+}
+
+// fenceMarker is the fence a line opens or closes, or empty for an ordinary
+// line.
+func fenceMarker(trimmed string) string {
+	switch {
+	case strings.HasPrefix(trimmed, "```"):
+		return "```"
+	case strings.HasPrefix(trimmed, "~~~"):
+		return "~~~"
+	}
+	return ""
+}
+
+// headingLevel is the ATX heading level of a line, or zero for anything else.
+// The hashes must start the line and be followed by a space: an indented one
+// is inside a list or a code block, and `#comment` is not a heading.
+func headingLevel(line string) int {
+	n := 0
+	for n < len(line) && line[n] == '#' {
+		n++
+	}
+	if n == 0 || n > 6 || n >= len(line) || line[n] != ' ' {
+		return 0
+	}
+	return n
+}
+
+// headingText is the first line of s, capped so that the note quoting it
+// stays inside cutNoticeBudget however long the heading is.
+func headingText(s string) string {
+	line := s
+	if i := strings.IndexByte(line, '\n'); i >= 0 {
+		line = line[:i]
+	}
+	line = strings.TrimSpace(line)
+	if len(line) > 60 {
+		line = strings.ToValidUTF8(line[:60], "") + "…"
+	}
+	return line
 }
 
 // trimToLine cuts s to at most n bytes, back to the end of the last whole

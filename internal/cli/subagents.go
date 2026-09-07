@@ -197,6 +197,20 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 	if agents == nil {
 		agents = &agentProfiles{profiles: subagent.BuiltinProfiles()}
 	}
+	// The project's instruction files, read once for the session and handed
+	// to every child that follows. They are read from disk and rendered
+	// against a budget that walks the whole set; doing that inside newEnv
+	// paid for it once per spawn, again per retry, and again at the handoff
+	// a child over its budget is asked for — every one of them re-reading
+	// files nobody edited in between.
+	//
+	// The parent's checkout, not the child's worktree: a writer's worktree
+	// is a copy of this one, and the context a child is given is the context
+	// the session it serves was given. A smaller budget than the session's,
+	// because a child pays for it out of its own token budget rather than
+	// once for a conversation (prompt.ChildInstructionBudget).
+	childInstructions := project.InstructionBlock(
+		project.Instructions(root, userInstructionsPath()), prompt.ChildInstructionBudget)
 
 	newEnv := func(cctx context.Context, spec subagent.Spec) (subagent.Env, error) {
 		role, croot := spec.Role, spec.Root
@@ -204,11 +218,7 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 		// it is told the same shell (internal/shell).
 		info := shell.DetectExec()
 		info.Cwd = croot
-		// The parent's checkout, not the child's worktree: a writer's
-		// worktree is a copy of this one, and the context a child is given
-		// is the context the session it serves was given.
-		extra := childExtra(cfg.Behavior.SystemPromptExtra,
-			project.InstructionBlock(project.Instructions(root, userInstructionsPath()), prompt.InstructionBudget),
+		extra := childExtra(cfg.Behavior.SystemPromptExtra, childInstructions,
 			env.workspaceBlock(), spec.Worktree)
 
 		var sysPrompt string
@@ -472,7 +482,10 @@ func scopeNote(paths []string) string {
 // The workspace block is read again for each child rather than taken from the
 // session's own prompt: a child spawned an hour in is being sent to look at
 // the tree as it is then, and the branch and the dirty count the session
-// opened on are the two facts most likely to have moved since.
+// opened on are the two facts most likely to have moved since. The
+// instructions are the other way round — read once for the session, because
+// they are files on disk that a spawn has no reason to have changed, and
+// re-reading them cost every spawn, retry and handoff a full pass over them.
 func childExtra(configExtra, instructions, workspace string, worktree bool) string {
 	return prompt.CombineExtra(configExtra, instructions, workspace, worktreeNote(worktree))
 }

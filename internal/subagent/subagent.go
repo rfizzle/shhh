@@ -58,8 +58,8 @@ const (
 	// carries on with a larger budget. That makes the number a pacing choice
 	// rather than a safety one, and a pacing choice nobody asked for does not
 	// belong on by default. The token budget below is the guard, and it is
-	// the one that should be: spend is what actually needs stopping, and it
-	// stops a child whatever it happens to be doing.
+	// the one that should be: it stops a child whatever it happens to be
+	// doing, and it counts the thing a round cap was reaching for.
 	//
 	// A spawn may still name max_rounds to get periodic check-ins, at any
 	// size. Nothing clamps it: the cap only decides how often a child pauses
@@ -87,8 +87,19 @@ const (
 	// to catch one working on the wrong thing, rare enough later to stay out
 	// of the way of one that is not.
 	checkInGrowth = 2
-	// DefaultMaxTokens and MaxTokensCeiling bound a child's token spend
-	// (prompt + completion, provider-reported).
+	// DefaultMaxTokens and MaxTokensCeiling bound a child's attention, not
+	// its spend. What they count is fresh tokens: the part of each prompt
+	// the provider did not serve from its cache, plus the completion.
+	//
+	// The two come apart as soon as the prompt is cached, which it is by the
+	// second request of every child. Counting the whole prompt charged the
+	// same instruction block again on every round, so a child died of having
+	// re-read a prefix nobody paid full price for — six requests on a
+	// repository with a large instruction file — while a child that filled
+	// its window with tool output looked cheap. Fresh tokens are what the
+	// child has actually taken in, which is the thing worth bounding in
+	// something with nobody watching it. Money is the ledger's business and
+	// the session spend cap's, and both count a child's requests already.
 	DefaultMaxTokens  = 200_000
 	MaxTokensCeiling  = 1_000_000
 	minChildMaxTokens = 1_000
@@ -609,13 +620,19 @@ type child struct {
 	wrote     map[string]bool
 	tokensIn  int64
 	tokensOut int64
+	// fresh is what the token budget is measured against: tokensIn less the
+	// part every prompt was served from the provider's cache, plus
+	// tokensOut. It is a second counter rather than a narrower tokensIn
+	// because the two answer different questions — every surface that prices
+	// a child, and the session row it writes, wants the tokens it was billed
+	// for, and only the budget wants the tokens it took in.
+	fresh int64
 	// priorIn/priorOut carry the spend of earlier attempts across a retry.
-	// The live counters are what the token budget is measured against, so
-	// each attempt gets the budget it was spawned with, and they are what
-	// that attempt's own session row is told. The status adds the carried
-	// spend back, because money already spent does not stop being spent when
-	// the child runs again and a lane shows one child rather than one
-	// attempt.
+	// The live counters are the attempt's own, as fresh is, so each attempt
+	// gets the budget it was spawned with, and they are what that attempt's
+	// own session row is told. The status adds the carried spend back,
+	// because money already spent does not stop being spent when the child
+	// runs again and a lane shows one child rather than one attempt.
 	priorIn   int64
 	priorOut  int64
 	attempt   int
@@ -963,6 +980,13 @@ func (c *child) interruptCh() <-chan struct{} {
 
 // addUsage accumulates provider-reported usage and reports whether the
 // child's token budget is now exceeded.
+//
+// The budget is measured against fresh tokens — the prompt less what the
+// provider served from its cache, plus the completion — because a cached
+// prefix costs a fraction of the input rate and is nothing at all the child
+// has newly taken in. PromptTokens includes the cached part by contract
+// (provider.Usage), and a dialect that reports no cache at all reports zero,
+// which leaves the two figures equal and the budget where it was.
 func (c *child) addUsage(u *provider.Usage) (over bool) {
 	if u == nil {
 		return false
@@ -971,7 +995,8 @@ func (c *child) addUsage(u *provider.Usage) (over bool) {
 	defer c.mu.Unlock()
 	c.tokensIn += int64(u.PromptTokens)
 	c.tokensOut += int64(u.CompletionTokens)
-	if c.maxTokens > 0 && c.tokensIn+c.tokensOut > c.maxTokens {
+	c.fresh += int64(max(u.PromptTokens-u.CachedTokens, 0)) + int64(u.CompletionTokens)
+	if c.maxTokens > 0 && c.fresh > c.maxTokens {
 		c.budgetHit = true
 		return true
 	}
@@ -1610,7 +1635,7 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	// Each attempt is measured against the budget it was spawned with; what
 	// the earlier attempts spent is carried, not forgotten.
 	c.priorIn, c.priorOut = c.priorIn+c.tokensIn, c.priorOut+c.tokensOut
-	c.tokensIn, c.tokensOut, c.budgetHit = 0, 0, false
+	c.tokensIn, c.tokensOut, c.fresh, c.budgetHit = 0, 0, 0, false
 	c.checkIns = 0
 	// A retry is a fresh conversation on the same task: no steer has reached
 	// this attempt, whatever the last one was told.
@@ -2424,9 +2449,11 @@ func (s *Supervisor) finalCheckIn(c *child) {
 }
 
 // budgetReason is how a child that ran out of tokens says so, in the one
-// wording every path that stops for the budget uses.
+// wording every path that stops for the budget uses. It says "new" because
+// the spend beside it on the same row is the billed figure, which a cached
+// prompt puts well above the budget without ever reaching it (addUsage).
 func budgetReason(c *child) string {
-	return fmt.Sprintf("failed · token budget (~%s) exceeded", formatTokens(c.maxTokens))
+	return fmt.Sprintf("failed · token budget (~%s new) exceeded", formatTokens(c.maxTokens))
 }
 
 func (s *Supervisor) failReason(c *child, err error) string {

@@ -394,6 +394,84 @@ func TestInstructionBlock_CutsTheOutermostFileFirstAndSaysSo(t *testing.T) {
 	}
 }
 
+// A file too big for the budget keeps its end as well as its head. The rules
+// a reader gets corrected on — the gotchas, the testing conventions — are at
+// the end of a document that leads with its shape, and a cut that only kept
+// the head dropped exactly those while keeping an overview it could have
+// guessed at.
+func TestInstructionBlock_ACutFileKeepsItsEndAndSaysWhatWent(t *testing.T) {
+	var text strings.Builder
+	text.WriteString("# Project\n\n## Overview\n\n")
+	text.WriteString(strings.Repeat("overview line\n", 400))
+	text.WriteString("\n## Gotchas\n\nthe rule nobody guesses\n")
+	block := InstructionBlock([]Instruction{{Display: "AGENTS.md", Text: text.String()}}, 2000)
+
+	if !strings.Contains(block, "## Gotchas") || !strings.Contains(block, "the rule nobody guesses") {
+		t.Fatalf("the end of the file was cut away:\n%s", block)
+	}
+	if !strings.Contains(block, "## Overview") {
+		t.Fatalf("the head of the file was cut away:\n%s", block)
+	}
+	if !strings.Contains(block, "cut from the middle of this file") {
+		t.Fatalf("the gap in the middle is not marked:\n%s", block)
+	}
+	if !strings.Contains(block, `resumes at "## Gotchas"`) {
+		t.Fatalf("the note does not say where the file picks up again:\n%s", block)
+	}
+	if !strings.Contains(block, "dropped from the middle") {
+		t.Fatalf("the heading does not say what was dropped:\n%s", block)
+	}
+}
+
+// The cut is a bound, and a bound that grows by the size of its own note is
+// not one. Every size of budget over every shape of file stays inside it.
+func TestCutToFit_StaysInsideTheBudget(t *testing.T) {
+	files := []string{
+		"# Title\n\n## One\n" + strings.Repeat("a\n", 300) + "## Two\n" + strings.Repeat("b\n", 300),
+		strings.Repeat("no headings at all\n", 200),
+		"## " + strings.Repeat("long heading ", 40) + "\n" + strings.Repeat("c\n", 300),
+		strings.Repeat("one enormous line ", 500),
+	}
+	for i, text := range files {
+		for n := 1; n < len(text); n = n*3 + 1 {
+			got, dropped := cutToFit(text, n)
+			if len(got) > n {
+				t.Fatalf("file %d cut to %d bytes came to %d", i, n, len(got))
+			}
+			if dropped < 0 || dropped > len(text) {
+				t.Fatalf("file %d cut to %d bytes reports %d dropped of %d", i, n, dropped, len(text))
+			}
+		}
+	}
+}
+
+// A heading inside a fenced code block is a comment in an example, and
+// resuming a file there would open a fence the text never closes.
+func TestCutToFit_DoesNotResumeInsideACodeFence(t *testing.T) {
+	text := "# Title\n\n## One\n" + strings.Repeat("a\n", 400) +
+		"## Two\n\n```sh\n# not a heading\n" + strings.Repeat("echo hello\n", 40) + "```\n"
+	got, dropped := cutToFit(text, 900)
+	if dropped == 0 {
+		t.Fatalf("nothing was cut from the middle:\n%s", got)
+	}
+	if strings.Contains(got, "# not a heading") && !strings.Contains(got, "```sh") {
+		t.Fatalf("the file resumed inside a code fence:\n%s", got)
+	}
+
+	// The other fence character inside an open block is content, not a
+	// close: reading it as one would reopen the document mid-example and
+	// let the heading below it be taken for a section boundary.
+	mixed := "# Title\n\n## One\n" + strings.Repeat("a\n", 400) +
+		"## Two\n\n```sh\n~~~\n# not a heading\n" + strings.Repeat("echo hello\n", 40) + "```\n"
+	got, dropped = cutToFit(mixed, 900)
+	if dropped == 0 {
+		t.Fatalf("nothing was cut from the middle:\n%s", got)
+	}
+	if strings.Contains(got, "# not a heading") && !strings.Contains(got, "```sh") {
+		t.Fatalf("a stray fence character closed the block that did not open it:\n%s", got)
+	}
+}
+
 // Over budget by more than the outermost file holds, that file is named with
 // nothing under it rather than dropped without a word.
 func TestInstructionBlock_AFileThatDoesNotFitIsStillNamed(t *testing.T) {

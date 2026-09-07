@@ -65,6 +65,21 @@ machine could sustain.
 Children run without a round budget by default, because a child has nobody to
 ask when it reaches a checkpoint. The parent is the one with a human attached.
 
+A child's token budget is the same kind of limit. It counts new tokens — the
+part of each request's prompt the provider did not serve from its cache, plus
+what the child wrote — so it bounds what the child has taken in rather than
+what it cost. A cached prompt is a fraction of the price and nothing the child
+has newly read, and counting it charged a child again for its own standing
+context on every round, which ended runs that had barely started. What a child
+costs is counted too, in the session's spend ledger and against its cap.
+
+The standing context a child is given is the parent's, cut to a smaller budget
+than the session's. A session reads its instruction files once and holds them
+for hours; a child pays for them out of a budget that is the whole of its
+life, and every child in a fan-out pays again. Where the files do not fit, a
+child gets what any reader over the budget gets: the head of each file and its
+end, with a note saying how much of the middle is missing.
+
 ## They are visible while they run
 
 Each child appears in the parent's transcript as a status row, and the agent

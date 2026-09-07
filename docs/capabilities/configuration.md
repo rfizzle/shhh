@@ -266,9 +266,17 @@ They come with a bound. The set is capped in bytes, and over the cap the
 files farthest from the working directory are cut first, because the nearest
 one describes the directory the session was actually opened in. A cut is
 stated in the heading above the file it happened to: a model following half
-an instruction should be able to see that the other half existed. Nothing
-here follows an `@path` import — a line like that is read as the text it is,
-not as a pointer to another file.
+an instruction should be able to see that the other half existed.
+
+What a cut file keeps is its head and its end — whole sections from the end
+wherever they fit — with a note standing where the middle was, saying how
+many bytes went and where the text picks up again. A document that leads with
+its shape keeps its rules last, so a cut that kept only the head dropped the
+gotchas, the testing rules and the conventions while keeping an overview a
+reader could have guessed. Sub-agents are given the same files against a
+smaller bound, because a child pays for its prompt out of its own token
+budget. Nothing here follows an `@path` import — a line like that is read as
+the text it is, not as a pointer to another file.
 
 A checkout's instruction files carry exactly the trust its context file
 already carried, and nothing more: they are prose that can only instruct,

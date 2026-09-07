@@ -601,6 +601,40 @@ func TestTokenBudgetOnTheFinalResponseKeepsTheReport(t *testing.T) {
 	}
 }
 
+// TestTokenBudgetCountsFreshTokensNotCachedOnes: the budget bounds what a
+// child has taken in, and a prompt the provider served from its cache is
+// neither new to the child nor billed at the input rate. Counting the whole
+// prompt charged a child's own standing context to it again on every round,
+// which killed children with a large instruction block a handful of requests
+// in. The spend the parent is shown is still the billed figure.
+func TestTokenBudgetCountsFreshTokensNotCachedOnes(t *testing.T) {
+	env := &scriptedEnv{
+		steps: []streamStep{
+			{
+				text:  "the parser is the bottleneck",
+				usage: &provider.Usage{PromptTokens: 5000, CachedTokens: 4900, CompletionTokens: 50},
+			},
+		},
+	}
+	sup := newTestSupervisor(t, env)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"find the bottleneck","max_tokens":1000}`)
+
+	report := execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
+	if strings.Contains(report, "token budget") {
+		t.Fatalf("150 fresh tokens against a budget of 1000 must not stop a child: %s", report)
+	}
+	if !strings.Contains(report, "the parser is the bottleneck") {
+		t.Fatalf("the finished report must reach the parent: %s", report)
+	}
+	st, ok := sup.Get("researcher-1")
+	if !ok {
+		t.Fatal("the child is missing from the roster")
+	}
+	if st.TokensIn != 5000 || st.TokensOut != 50 {
+		t.Fatalf("the spend must stay the billed figure, got ↑%d ↓%d", st.TokensIn, st.TokensOut)
+	}
+}
+
 // TestRoundLimitChecksInAndCarriesOn is the heart of it: the round limit
 // is a checkpoint, not a failure. The child takes stock and keeps going on
 // the same conversation, and the budget grows so the next stop is further
