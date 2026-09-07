@@ -194,3 +194,33 @@ func TestMCPListingAndShowNamePromptsAndResources(t *testing.T) {
 		}
 	}
 }
+
+// A server that starts in a shell and not here is a mask away from working,
+// so the show screen names what it withheld. The session installs the mask
+// from its own configuration; the mcp package is told and never asks.
+func TestMCPOptionsInstallTheMaskAndShowNamesWhatItWithheld(t *testing.T) {
+	if mcpOptions(config.Config{}, false).EnvMask == nil {
+		t.Fatal("a session starts stdio servers unmasked by default")
+	}
+	off := false
+	if mcpOptions(config.Config{MCP: config.MCPConfig{EnvMask: &off}}, false).EnvMask != nil {
+		t.Fatal("mcp.env_mask=false must install no mask at all")
+	}
+
+	rep := mcp.Report{
+		Definition: mcp.Definition{Name: "docs", Scope: mcp.ScopeUser, Transport: mcp.TransportStdio, Command: "docs-mcp"},
+		Status:     mcp.StatusFailed,
+		Error:      "server docs: connect: EOF",
+		Withheld:   []string{"GITHUB_TOKEN", "STRIPE_SECRET"},
+	}
+	shown := mcpShow(rep, "")
+	for _, want := range []string{"withheld env", "GITHUB_TOKEN, STRIPE_SECRET", "mcp.env_mask"} {
+		if !strings.Contains(shown, want) {
+			t.Errorf("`shhh mcp show` lacks %q:\n%s", want, shown)
+		}
+	}
+	rep.Withheld = nil
+	if strings.Contains(mcpShow(rep, ""), "withheld env") {
+		t.Error("a server with nothing withheld carries the line anyway")
+	}
+}

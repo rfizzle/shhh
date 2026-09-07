@@ -140,6 +140,10 @@ somewhere by a script it wrote. `secrets.env_mask`, on unless turned off,
 takes the variables whose names end in `_KEY`, `_SECRET` or `_TOKEN` out of
 the environment every assistant command inherits.
 
+The same mask covers the other program shhh starts on the person's machine,
+a stdio MCP server, under a key of its own
+([`mcp.md`](mcp.md#a-server-sees-the-masked-environment)).
+
 A secret the user declared is exempt: `secrets.env` and `--secret` name the
 credentials that were meant to be lent, and those are put back by name after
 the mask has run. Three suffixes and not a cleverer rule, because the mask has

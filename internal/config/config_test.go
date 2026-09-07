@@ -829,6 +829,28 @@ func TestSecretsEnvMaskIsOnUnlessTurnedOff(t *testing.T) {
 	}
 }
 
+// The MCP mask defaults on for the same reason and is a key of its own: a
+// stdio server is a program someone else wrote, and turning the mask off for
+// the commands you watch the model run must not turn it off for that.
+func TestMCPEnvMaskIsOnUnlessTurnedOff(t *testing.T) {
+	var cfg Config
+	if !cfg.MCPEnvMaskEnabled() {
+		t.Fatal("unset is on")
+	}
+	if err := Set(&cfg, "secrets.env_mask", "false"); err != nil {
+		t.Fatal(err)
+	}
+	if !cfg.MCPEnvMaskEnabled() {
+		t.Error("secrets.env_mask=false reached the MCP mask")
+	}
+	if err := Set(&cfg, "mcp.env_mask", "false"); err != nil {
+		t.Fatal(err)
+	}
+	if cfg.MCPEnvMaskEnabled() {
+		t.Error("mcp.env_mask=false should turn the mask off")
+	}
+}
+
 // A value that is not the shape its key takes is refused, naming the key and
 // what it wanted, and the setting is left as it was. Every one of these
 // wrote a plausible wrong answer once: `abc` on a retention key wrote zero,

@@ -162,9 +162,14 @@ type Server struct {
 // it was dialled with, so a context cancelled after the handshake would
 // close the server behind a listing that says it connected. Callers bound
 // the handshake by waiting, not by cancelling (see connectOne).
-func Dial(ctx context.Context, def Definition) (*Server, error) {
+//
+// mask is the test an inherited variable's name is put to before a stdio
+// server is started with it: true withholds it. nil hands the process
+// environment over whole, which is a session that turned the mask off
+// (docs/capabilities/mcp.md#a-server-sees-the-masked-environment).
+func Dial(ctx context.Context, def Definition, mask func(name string) bool) (*Server, error) {
 	s := &Server{Definition: def}
-	transport, err := s.transport(ctx)
+	transport, err := s.transport(ctx, mask)
 	if err != nil {
 		return nil, err
 	}
@@ -225,13 +230,15 @@ func Dial(ctx context.Context, def Definition) (*Server, error) {
 }
 
 // transport builds the transport for the definition. Environment references
-// have already been expanded by the caller.
-func (s *Server) transport(ctx context.Context) (sdk.Transport, error) {
+// have already been expanded by the caller; mask is what a stdio server's
+// inherited environment is built through.
+func (s *Server) transport(ctx context.Context, mask func(name string) bool) (sdk.Transport, error) {
 	def := s.Definition
 	switch def.Transport {
 	case TransportStdio:
 		cmd := exec.CommandContext(context.Background(), def.Command, def.Args...)
-		cmd.Env = mergeEnv(os.Environ(), def.Env)
+		inherited, _ := maskedEnviron(def, mask)
+		cmd.Env = mergeEnv(inherited, def.Env)
 		s.stderr = &tailBuffer{max: 4096}
 		cmd.Stderr = s.stderr
 		s.cmd = cmd
@@ -250,6 +257,47 @@ func (s *Server) transport(ctx context.Context) (sdk.Transport, error) {
 		return &sdk.SSEClientTransport{Endpoint: def.URL, HTTPClient: httpClient(def.Headers)}, nil
 	}
 	return nil, fmt.Errorf("server %s: unknown transport %q", def.Name, def.Transport)
+}
+
+// WithheldEnv names the inherited variables a stdio server does not see
+// under the mask, sorted. A variable the definition sets itself is not
+// among them: `env = { GITHUB_TOKEN = "${GITHUB_TOKEN}" }` is the person
+// saying this server needs that one, and it is overlaid after the mask has
+// run — the same exemption a declared secret gets from the mask on the
+// model's own commands. It is nil for a remote server, which shhh starts no
+// process for, and for a session with no mask.
+func WithheldEnv(def Definition, mask func(name string) bool) []string {
+	_, withheld := maskedEnviron(def, mask)
+	return withheld
+}
+
+// maskedEnviron is the process environment a stdio server inherits — its
+// own, less what the mask drops — and the names dropped. It exists because
+// the one place shhh spawns a process for someone else's definition was
+// also the one place that process was handed more than the commands the
+// model runs get: an npx server installed from a README saw every
+// credential on the machine, while `execute_command` saw none of them
+// (docs/capabilities/mcp.md#a-server-sees-the-masked-environment).
+func maskedEnviron(def Definition, mask func(name string) bool) (env, withheld []string) {
+	if mask == nil || def.Transport != TransportStdio {
+		return os.Environ(), nil
+	}
+	// os.Environ allocates a fresh slice on every call, so filtering it in
+	// place cannot reach anything but this process's own copy.
+	inherited := os.Environ()
+	kept := inherited[:0]
+	for _, pair := range inherited {
+		name, _, ok := strings.Cut(pair, "=")
+		if ok && mask(name) {
+			if _, declared := def.Env[name]; !declared {
+				withheld = append(withheld, name)
+			}
+			continue
+		}
+		kept = append(kept, pair)
+	}
+	sort.Strings(withheld)
+	return kept, withheld
 }
 
 // mergeEnv overlays extra on base, replacing a variable already set.

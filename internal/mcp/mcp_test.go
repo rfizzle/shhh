@@ -5,12 +5,14 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
 
 	sdk "github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/rfizzle/shhh/internal/logs"
+	"github.com/rfizzle/shhh/internal/secret"
 )
 
 // The test binary doubles as a stdio MCP server: run with the environment
@@ -19,7 +21,20 @@ import (
 // spawns. No fixture binary to build, no network.
 const serverEnv = "SHHH_MCP_TEST_SERVER"
 
+// envDumpEnv names a file the binary writes its own environment to before
+// exiting: a "server" that does nothing but say what it was started with.
+// The dial fails, because nothing there speaks the protocol, and the
+// process ran — which is the whole of what a question about a spawned
+// process's environment asks. It is a mode of its own rather than one more
+// tool on the echo server so that the catalog every other test counts
+// stays the size those tests say it is.
+const envDumpEnv = "SHHH_MCP_TEST_ENVDUMP"
+
 func TestMain(m *testing.M) {
+	if path := os.Getenv(envDumpEnv); path != "" {
+		_ = os.WriteFile(path, []byte(strings.Join(os.Environ(), "\n")), 0o600)
+		return
+	}
 	if os.Getenv(serverEnv) != "" {
 		runTestServer()
 		return
@@ -119,7 +134,7 @@ func testDefinition(t *testing.T) Definition {
 func TestDialListsAndCallsTools(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
-	s, err := Dial(ctx, testDefinition(t))
+	s, err := Dial(ctx, testDefinition(t), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -162,7 +177,7 @@ func TestDialListsAndCallsTools(t *testing.T) {
 func TestDialListsPromptsAndResources(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
-	s, err := Dial(ctx, testDefinition(t))
+	s, err := Dial(ctx, testDefinition(t), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -475,7 +490,7 @@ func TestDial_ATransportThatWillNotConnectReachesTheLog(t *testing.T) {
 	def := Definition{Name: "ghost", Scope: ScopeUser, Transport: TransportStdio, Command: missing}
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
-	if _, err := Dial(ctx, def); err == nil {
+	if _, err := Dial(ctx, def, nil); err == nil {
 		t.Fatal("a server whose command does not exist must not dial")
 	}
 
@@ -513,7 +528,7 @@ func TestDial_ACancelledDialWritesNothing(t *testing.T) {
 	def := Definition{Name: "slow", Scope: ScopeUser, Transport: TransportStdio, Command: "sleep", Args: []string{"30"}}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	if _, err := Dial(ctx, def); err == nil {
+	if _, err := Dial(ctx, def, nil); err == nil {
 		t.Fatal("a cancelled dial must not report a connected server")
 	}
 
@@ -723,5 +738,106 @@ func TestAToolsetWithNoServersAnswersEverything(t *testing.T) {
 	}
 	if _, err := none.Render(context.Background(), "a:b", nil); err == nil {
 		t.Error("a nil toolset rendered a prompt")
+	}
+}
+
+// envDumpDefinition is a stdio "server" that writes its environment to path
+// and exits. The dial never connects; the file is the answer.
+func envDumpDefinition(t *testing.T, path string) Definition {
+	t.Helper()
+	exe, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return Definition{
+		Name: "dump", Scope: ScopeUser, Transport: TransportStdio,
+		Command: exe, Env: map[string]string{envDumpEnv: path},
+	}
+}
+
+// startedWith is the environment the dumped process actually had.
+func startedWith(t *testing.T, def Definition, mask func(string) bool) string {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	expanded, missing := def.Expand(nil)
+	if len(missing) > 0 {
+		t.Fatalf("the definition references unset variables: %v", missing)
+	}
+	if s, err := Dial(ctx, expanded, mask); err == nil {
+		s.Close()
+		t.Fatal("a process that only dumps its environment must not connect")
+	}
+	body, err := os.ReadFile(expanded.Env[envDumpEnv])
+	if err != nil {
+		t.Fatalf("the process wrote no environment: %v", err)
+	}
+	return string(body)
+}
+
+// The one place shhh spawns a process for someone else's definition used to
+// be the one place that process was handed more than the model's own
+// commands get. A stdio server now starts from the masked set, and the
+// `${NAME}` reference the design already asks for is what puts one back.
+func TestDial_AStdioServerStartsFromTheMaskedEnvironment(t *testing.T) {
+	t.Setenv("SHHH_FAKE_TOKEN", "sesame")
+	t.Setenv("SHHH_FAKE_PLAIN", "kept")
+
+	dir := t.TempDir()
+	def := envDumpDefinition(t, filepath.Join(dir, "masked"))
+	env := startedWith(t, def, secret.MaskedEnvName)
+	if strings.Contains(env, "SHHH_FAKE_TOKEN") {
+		t.Error("a server the person did not ask to lend a token to was handed one")
+	}
+	if !strings.Contains(env, "SHHH_FAKE_PLAIN=kept") {
+		t.Error("the mask took a variable that holds no credential by convention")
+	}
+	if got := WithheldEnv(def, secret.MaskedEnvName); !slices.Contains(got, "SHHH_FAKE_TOKEN") {
+		t.Errorf("withheld = %v, and the listing has nothing to show the person", got)
+	}
+
+	// The same server, saying which token it needs. An unset reference
+	// already keeps it from starting; a set one now has to survive the mask
+	// as well, or the reference would be decorative.
+	declared := envDumpDefinition(t, filepath.Join(dir, "declared"))
+	declared.Env["SHHH_FAKE_TOKEN"] = "${SHHH_FAKE_TOKEN}"
+	env = startedWith(t, declared, secret.MaskedEnvName)
+	if !strings.Contains(env, "SHHH_FAKE_TOKEN=sesame") {
+		t.Error("a server that declared the token it needs was not given it")
+	}
+	if got := WithheldEnv(declared, secret.MaskedEnvName); slices.Contains(got, "SHHH_FAKE_TOKEN") {
+		t.Errorf("withheld = %v, which names a variable the server was given", got)
+	}
+
+	// The escape hatch: no mask, the environment whole, and nothing to
+	// report as withheld.
+	off := envDumpDefinition(t, filepath.Join(dir, "off"))
+	if env = startedWith(t, off, nil); !strings.Contains(env, "SHHH_FAKE_TOKEN=sesame") {
+		t.Error("mcp.env_mask=false is meant to hand over the environment whole")
+	}
+	if got := WithheldEnv(off, nil); got != nil {
+		t.Errorf("withheld = %v with no mask installed", got)
+	}
+	// A remote server is no process of shhh's, so nothing is withheld from it.
+	remote := Definition{Name: "r", Scope: ScopeUser, Transport: TransportHTTP, URL: "https://example.test/mcp"}
+	if got := WithheldEnv(remote, secret.MaskedEnvName); got != nil {
+		t.Errorf("withheld = %v for a server shhh starts no process for", got)
+	}
+}
+
+// The report carries the withheld names whether or not the server answered:
+// the reader who needs them most is looking at one that would not start.
+func TestConnect_AFailedServerStillReportsWhatWasWithheld(t *testing.T) {
+	t.Setenv("SHHH_FAKE_TOKEN", "sesame")
+	def := Definition{Name: "ghost", Scope: ScopeUser, Transport: TransportStdio,
+		Command: filepath.Join(t.TempDir(), "no-such-server")}
+	ts := Connect(context.Background(), &Catalog{Servers: []Definition{def}}, Options{EnvMask: secret.MaskedEnvName})
+	defer ts.Close()
+	r := ts.Reports[0]
+	if r.Status != StatusFailed {
+		t.Fatalf("status = %s", r.Status)
+	}
+	if !slices.Contains(r.Withheld, "SHHH_FAKE_TOKEN") {
+		t.Errorf("withheld = %v", r.Withheld)
 	}
 }

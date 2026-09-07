@@ -24,6 +24,7 @@ import (
 	"github.com/rfizzle/shhh/internal/mcp"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/secret"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/chat"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -77,16 +78,25 @@ func mcpRoot() string {
 	return mcp.ProjectRoot(cwd)
 }
 
-// mcpOptions are a session's connect options: the checkout's standing, and
-// the timeout the config sets. The trust is the whole checkout's rather than
-// this server's, so a definition file the person has not read is one answer
+// mcpOptions are a session's connect options: the checkout's standing, the
+// timeout the config sets, and the mask a stdio server's environment is
+// built through. The trust is the whole checkout's rather than this
+// server's, so a definition file the person has not read is one answer
 // away from starting and not one per server
 // (docs/capabilities/mcp.md#a-checkout-cannot-start-a-process).
+//
+// The mask is resolved here rather than in the mcp package for the reason
+// the runner's is resolved in secrets.go: the package that starts the
+// process is told what to withhold and never asks the configuration what it
+// wants (docs/capabilities/mcp.md#a-server-sees-the-masked-environment).
 func mcpOptions(cfg config.Config, readOnlyOnly bool) mcp.Options {
 	t := projectTrust()
 	opts := mcp.Options{
 		Project:      mcp.ProjectTrust{Granted: t.Allows(), Changed: t.Changed},
 		ReadOnlyOnly: readOnlyOnly,
+	}
+	if cfg.MCPEnvMaskEnabled() {
+		opts.EnvMask = secret.MaskedEnvName
 	}
 	if cfg.MCP.StartupTimeoutSeconds > 0 {
 		opts.Timeout = time.Duration(cfg.MCP.StartupTimeoutSeconds) * time.Second
@@ -615,6 +625,14 @@ func mcpShow(r mcp.Report, root string) string {
 	}
 	if keys := sortedKeys(d.Env); len(keys) > 0 {
 		pairs = append(pairs, report.Pair{Key: "sets env", Value: strings.Join(keys, ", ")})
+	}
+	// The names the mask took away, so a server that starts here and not in
+	// a shell is one look rather than a bisect. The values were never here
+	// to print; the names are the whole of what the reader needs
+	// (docs/capabilities/mcp.md#a-server-sees-the-masked-environment).
+	if len(r.Withheld) > 0 {
+		pairs = append(pairs, report.Pair{Key: "withheld env",
+			Value: strings.Join(r.Withheld, ", ") + " (mcp.env_mask)"})
 	}
 	if keys := sortedKeys(d.Headers); len(keys) > 0 {
 		pairs = append(pairs, report.Pair{Key: "headers", Value: strings.Join(keys, ", ")})

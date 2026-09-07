@@ -73,6 +73,35 @@ and the listing says which variable. The alternative — sending the header
 with nothing after the word — fails at the far end, a round later, in the
 server's words rather than shhh's.
 
+## A server sees the masked environment
+
+A stdio server is a program shhh starts on the person's machine, and it used
+to be the one such program handed more than the commands the model runs get:
+a command the model runs inherits the environment with the credential-shaped
+names taken out of it, while an `npx` server installed from a README
+inherited every one of them. The mask that covers the one now covers the
+other. A server starts with the variables whose names end in `_KEY`,
+`_SECRET` or `_TOKEN` withheld, plus whatever it declared.
+
+Declaring is the `${NAME}` reference the design already asks for. A server
+that needs a token names it in its own `env`, the value is read from the
+environment at startup, and it is put back after the mask has run — the same
+exemption a declared secret gets on the model's own commands. Without that,
+the reference would be decorative: a server handed everything has no reason
+to say what it needs.
+
+The breakage is loud on purpose. A server that needed a variable nobody
+declared fails to start, which is a row in the listing, and `shhh mcp show`
+names what was withheld — so a server that works in a shell and not here is
+one look rather than a bisect. `mcp.env_mask` turns it off for a vendor
+snippet the person trusts. It is a key of its own rather than
+`secrets.env_mask` read twice, because lending your credentials to commands
+you watch the model run is not the same decision as lending them to a
+program that arrived with a README.
+
+Nothing is withheld from a remote server: shhh starts no process for one,
+and what it sends is the headers the definition names.
+
 ## A checkout cannot start a process
 
 A server definition in a project file is an instruction to run a command on

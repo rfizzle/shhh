@@ -211,6 +211,11 @@ type MCPConfig struct {
 	// (default 20). A server that has not answered by then is reported and
 	// left out; the session starts without it.
 	StartupTimeoutSeconds int `toml:"startup_timeout_seconds"`
+	// EnvMask keeps the variables that hold a credential by convention out
+	// of the environment a stdio server is started with. Unset means on:
+	// a server is a program someone else wrote, and the one it names by
+	// `${NAME}` is the one it was meant to have.
+	EnvMask *bool `toml:"env_mask"`
 	// Servers are the user's own definitions, keyed by name.
 	Servers map[string]MCPServer `toml:"servers"`
 }
@@ -808,6 +813,17 @@ func (c *Config) TreeCheckEnabled() bool {
 // See docs/capabilities/secrets.md#the-names-that-do-not-travel.
 func (c *Config) SecretsEnvMaskEnabled() bool {
 	return c.Secrets.EnvMask == nil || *c.Secrets.EnvMask
+}
+
+// MCPEnvMaskEnabled reports whether a stdio MCP server is started without
+// the credential-shaped variables it would otherwise inherit: what
+// mcp.env_mask says, or — unset — yes. It is its own key rather than
+// secrets.env_mask read twice, because turning the mask off for the
+// commands you watch the model run is not the same decision as turning it
+// off for a program that arrived with a README.
+// See docs/capabilities/mcp.md#a-server-sees-the-masked-environment.
+func (c *Config) MCPEnvMaskEnabled() bool {
+	return c.MCP.EnvMask == nil || *c.MCP.EnvMask
 }
 
 // HeadlessSummaryEnabled reports whether a non-interactive run takes readings:

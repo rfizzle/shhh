@@ -46,6 +46,11 @@ type Report struct {
 	Error   string
 	Missing []string
 	Took    time.Duration
+	// Withheld names the inherited variables the mask kept out of a stdio
+	// server's environment. It is on the report rather than on the server
+	// because the reader who needs it most is looking at one that would not
+	// start (docs/capabilities/mcp.md#a-server-sees-the-masked-environment).
+	Withheld []string
 }
 
 // ProjectTrust is the person's answer about the checkout a project server
@@ -76,6 +81,12 @@ type Options struct {
 	// Lookup resolves environment references; nil means the process
 	// environment.
 	Lookup func(string) (string, bool)
+	// EnvMask is the test an inherited variable's name is put to before a
+	// stdio server is started with it: true withholds it. nil hands the
+	// process environment over whole. The session resolves it from its
+	// configuration and this package is told, the way the runner is
+	// (docs/capabilities/mcp.md#a-server-sees-the-masked-environment).
+	EnvMask func(name string) bool
 	// Timeout overrides every definition's startup timeout when set.
 	Timeout time.Duration
 }
@@ -261,7 +272,7 @@ func admit(def Definition, opts Options) (Status, []string) {
 }
 
 func connectOne(ctx context.Context, def Definition, opts Options) Report {
-	r := Report{Definition: def}
+	r := Report{Definition: def, Withheld: WithheldEnv(def, opts.EnvMask)}
 	expanded, _ := def.Expand(opts.Lookup)
 	timeout := def.StartupTimeout()
 	if opts.Timeout > 0 {
@@ -278,7 +289,7 @@ func connectOne(ctx context.Context, def Definition, opts Options) Report {
 	}
 	done := make(chan dialed, 1)
 	go func() {
-		s, err := Dial(ctx, expanded)
+		s, err := Dial(ctx, expanded, opts.EnvMask)
 		done <- dialed{s, err}
 	}()
 	var (
