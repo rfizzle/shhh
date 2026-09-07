@@ -276,6 +276,15 @@ const (
 	// closed set below so the tool's own configuration can never put a
 	// string of the person's here.
 	SignalSearch = "web-search"
+	// SignalHook: one of the person's own hooks said something at a seam.
+	// Reason: the note the hook wrote, which is the person's own text rather
+	// than a word from a closed set — so this is the one code here that
+	// reaches a surface's event stream and never the record, which is
+	// content-free by construction. It exists because the stream is the only
+	// surface some sessions have: a run at a terminal says what a hook said
+	// on stderr, and a session driven over a socket has a client that cannot
+	// see this process's stderr at all.
+	SignalHook = "hook"
 )
 
 // Search backends for SignalSearch. They are spelled out here rather than

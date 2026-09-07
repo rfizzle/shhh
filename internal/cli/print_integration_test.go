@@ -80,6 +80,11 @@ type reply struct {
 	// finished, which is the state a run has to be in for anything from
 	// outside to interrupt a turn rather than a wait.
 	hold bool
+	// resume, when set, ends a held stream properly instead of leaving it
+	// open: the model started answering, whatever the case had to have happen
+	// while it was writing happened, and then it finished. A nil channel
+	// never fires, which is the plain hold above.
+	resume chan struct{}
 }
 
 // fakeProvider is the endpoint the binary is pointed at. It speaks the
@@ -139,7 +144,20 @@ func (f *fakeProvider) holdOpen(w http.ResponseWriter, r *http.Request, step rep
 		// Nobody waiting to hear it, or somebody already told. Either way
 		// the request goes on holding the stream, which is what it is for.
 	}
-	<-r.Context().Done()
+	select {
+	case <-step.resume:
+		// The words are already out; what is left is the ending, so the run
+		// reads the same answer it would have read without the wait.
+		send(sseChunk{
+			Choices: []sseChoice{{FinishReason: "stop"}},
+			Usage:   &sseUsage{PromptTokens: 10, CompletionTokens: 3, TotalTokens: 13},
+		})
+		fmt.Fprint(w, "data: [DONE]\n\n")
+		if fl, ok := w.(http.Flusher); ok {
+			fl.Flush()
+		}
+	case <-r.Context().Done():
+	}
 }
 
 // next records what the run asked for and hands back the answer for this

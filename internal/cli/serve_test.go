@@ -498,3 +498,101 @@ func TestServeOnSocket_RefusesAPathThatIsAlreadyThere(t *testing.T) {
 		t.Fatalf("listening on a path that is taken answered %v", err)
 	}
 }
+
+// A steer that lands while the model is writing the answer that ends the turn
+// is carried out, not queued. The loop drains what a client has said at the
+// end of a tool round, and the round a turn ends on runs no tools — so this
+// is the one steer with no boundary in front of it, and it used to sit in the
+// queue until some later turn read it as part of an instruction it was never
+// about.
+func TestServe_ASteerDuringTheFinalStreamBecomesTheRestOfTheTurn(t *testing.T) {
+	writing := make(chan struct{})
+	f := startFakeProvider(t,
+		reply{text: "the first answer", hold: true, resume: writing},
+		reply{text: "the second answer"})
+	s := newPrintSession(t, f)
+	c := serveOverStdio(t, s)
+
+	var opened rpc.SessionResult
+	c.mustCall(rpc.MethodSessionStart, rpc.StartParams{}, &opened)
+	var turn rpc.TurnResult
+	c.mustCall(rpc.MethodTurnStart, rpc.TurnParams{Session: opened.Session, Prompt: "the question"}, &turn)
+
+	// The answer is being written: the model has said something and has not
+	// stopped, which is the only moment a steer can be sent and known to have
+	// arrived after the turn's last round boundary.
+	select {
+	case <-f.holding:
+	case <-time.After(90 * time.Second):
+		t.Fatal("the turn never reached its final stream")
+	}
+	c.mustCall(rpc.MethodTurnSteer, rpc.SteerParams{Session: opened.Session, Text: "and now the other thing"}, nil)
+	close(writing)
+
+	events := c.drainToClose()
+	last := events[len(events)-1]
+	if last.Turn != turn.Turn {
+		t.Errorf("the turn the client started closed as turn %d", last.Turn)
+	}
+	if last.Final != "the second answer" {
+		t.Errorf("the turn answered %q, so the steer was never acted on", last.Final)
+	}
+	if steered := f.lastRequest(t); !containsString(steered, "and now the other thing") {
+		t.Errorf("the steer never reached the model: %v", steered)
+	}
+	// And one turn is one close line: the continuation is the rest of the
+	// turn the client started rather than a turn it was never told about.
+	closes := 0
+	for _, ev := range events {
+		if ev.Kind == observe.EventClose {
+			closes++
+		}
+	}
+	if closes != 1 {
+		t.Errorf("the turn closed %d times: %v", closes, kindsOf(events))
+	}
+}
+
+// The seams a served session fires are the seams an unattended run fires.
+// `serve` used to wire two of the five, so a project whose formatter runs at
+// a turn's close had it run under `-p` and not under the editor driving the
+// same agent over the protocol.
+func TestServe_TheTurnAndTheSessionCloseOnTheirHooks(t *testing.T) {
+	f := startFakeProvider(t, reply{text: "done"})
+	s := newPrintSession(t, f)
+	stopped := filepath.Join(s.dir, "the-session-stopped")
+	appendConfig(t, s, fmt.Sprintf(`[hooks.entries.closer]
+event = "turn_close"
+command = "printf '{\"note\":\"the turn closed\"}'"
+
+[hooks.entries.ender]
+event = "stop"
+command = "printf '' > %s"
+`, stopped))
+
+	// Registered before the server is started so it runs after the cleanup
+	// that closes the client's end and waits for the process: the session
+	// ends with the server, and the seam that ends it fires there.
+	t.Cleanup(func() {
+		if _, err := os.Stat(stopped); err != nil {
+			t.Errorf("the session ending fired no stop hook: %v", err)
+		}
+	})
+	c := serveOverStdio(t, s)
+
+	var opened rpc.SessionResult
+	c.mustCall(rpc.MethodSessionStart, rpc.StartParams{}, &opened)
+	var turn rpc.TurnResult
+	c.mustCall(rpc.MethodTurnStart, rpc.TurnParams{Session: opened.Session, Prompt: "do it"}, &turn)
+
+	events := c.drainToClose()
+	var noted bool
+	for _, ev := range events {
+		if ev.Kind == observe.EventSignal && ev.Code == observe.SignalHook && strings.Contains(ev.Reason, "the turn closed") {
+			noted = true
+		}
+	}
+	if !noted {
+		t.Errorf("nothing a turn_close hook said reached the client: %v", kindsOf(events))
+	}
+}

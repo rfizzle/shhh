@@ -21,6 +21,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -187,6 +188,19 @@ type serveLoop struct {
 	// assembly, and only the command that built this one holds what that
 	// takes.
 	fork func(rpc.Seams, []provider.Message) (rpc.Loop, error)
+	// hooks is the person's own commands at this session's seams, and
+	// hookCtx what a firing of one is bounded by. Three of the five seams are
+	// wired where they happen and these two are held here, because they fire
+	// after the assembly has returned: the turn closing, which is the end of
+	// Run, and the session stopping, which is the release. They are set only
+	// once the assembly has finished, so a session that never opened fires no
+	// stop for a start it never got past.
+	hooks   *hook.Runner
+	hookCtx context.Context
+	// stopOnce keeps the session's end to one firing. release runs on the way
+	// out of a failed assembly and again from Close, and a stop hook that ran
+	// twice is the person's own command run twice for one sitting.
+	stopOnce sync.Once
 	// closers end what the assembly opened, in the order they were given.
 	closers []func()
 
@@ -203,6 +217,10 @@ type serveLoop struct {
 	conversation []provider.Message
 	transcript   json.RawMessage
 	usage        provider.Usage
+	// final is the answer the last turn ended on, for the seam that ends the
+	// session: a stop hook is told what the session came out with, the way an
+	// unattended run's is told the one answer that run had.
+	final string
 }
 
 // openServeLoop assembles one session. initial, when set, is the conversation
@@ -448,6 +466,9 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	l.fork = func(s rpc.Seams, msgs []provider.Message) (rpc.Loop, error) {
 		return openServeLoop(cmd, opts, db, rpc.StartParams{}, s, msgs)
 	}
+	// The two seams that close are armed last, so the failure path above
+	// releases a half-built session without firing a stop for it.
+	l.hooks, l.hookCtx = hooks, cmd.Context()
 	l.snapshot()
 
 	ok = true
@@ -521,6 +542,21 @@ func (l *serveLoop) hookPos() hook.Pos {
 	return hook.Pos{Turn: l.turnNow(), Round: int64(l.agent.Rounds())}
 }
 
+// hookNote puts what a hook said where the person driving this session can
+// read it. An unattended run says it on stderr beside its other activity and
+// stops there; a client on the other end of a socket cannot see this
+// process's stderr at all, so the note goes on the event stream as well,
+// which is the surface a served session has. It reaches the stream and never
+// the record: a note is the person's own text, and the record is content-free
+// by construction.
+// See docs/capabilities/hooks.md#what-the-surfaces-say.
+func (l *serveLoop) hookNote(v hook.Verdict) {
+	hookNoteLine(v)
+	for _, note := range v.Notes {
+		l.events.signal(l.obs.pos(), observe.SignalHook, note)
+	}
+}
+
 func (l *serveLoop) turnNow() int64 {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -572,6 +608,11 @@ func (l *serveLoop) Fork(s rpc.Seams) (rpc.Loop, error) {
 // (docs/capabilities/headless.md#the-exit-code-is-the-contract), and a client
 // reading the stream should not have to learn a second way to ask how a turn
 // went depending on which surface produced it.
+//
+// One turn is one call and one close line, however many times the model is
+// asked inside it: a steer that arrives too late for the loop's own drain is
+// carried out here, under the number the client was given when it started
+// this turn.
 func (l *serveLoop) Run(turn int64, prompt string) (string, error) {
 	l.mu.Lock()
 	l.turn = turn
@@ -593,8 +634,34 @@ func (l *serveLoop) Run(turn int64, prompt string) (string, error) {
 
 	started := time.Now()
 	final, runErr := l.headless.Run(prompt)
+	rounds := int64(l.agent.Rounds())
+	// A steer that landed while the model was writing its final answer never
+	// met a round boundary: the loop drains the queue at the end of a tool
+	// round, and the round a turn ends on ran no tools. Carried out here it
+	// is still the turn the client sent it to. Left queued it would be read
+	// at a round boundary of whatever turn came next, where the readings
+	// would take it for an extension of an instruction it was never about —
+	// and a client that steered turn 3 would see the answer under turn 5.
+	for runErr == nil {
+		queued := l.drainSteering()
+		if len(queued) == 0 {
+			break
+		}
+		said := strings.Join(queued, "\n\n")
+		// The instruction the readings judge this turn against grows by what
+		// was said, exactly as it does when the same words arrive one round
+		// earlier and the loop's own drain takes them.
+		l.headless.Summary.Extend(said)
+		final, runErr = l.headless.Run(said)
+		// A fresh turn starts the round counter again, so what the record is
+		// told is the passes added up. A child files a row per pass and keeps
+		// the whole count that way; one protocol turn is one row, and reading
+		// the counter once would file the rounds before the steer under
+		// nothing at all.
+		rounds += int64(l.agent.Rounds())
+	}
 	outcome := headlessTurnOutcome(runErr)
-	l.recorder.turn(turn, int64(l.agent.Rounds()), time.Since(started), outcome)
+	l.recorder.turn(turn, rounds, time.Since(started), outcome)
 	l.saved.save(l.agent.Messages())
 	l.recorder.link(l.saved.slot)
 	l.snapshot()
@@ -611,7 +678,12 @@ func (l *serveLoop) Run(turn int64, prompt string) (string, error) {
 	}
 	l.mu.Lock()
 	usage := l.usage
+	l.final = final
 	l.mu.Unlock()
+	// The turn's own seam, in front of the line that states the turn is over,
+	// because that is the order the two happen in: a hook told about a turn
+	// after the close line had gone out would be closing nothing.
+	l.hookNote(l.hooks.TurnClose(l.hookCtx, l.hookPos(), final))
 	l.events.closed(l.obs.pos(), outcome, headlessExitCode(outcome, gateErr != nil, refused), final, usage, out)
 	return final, out
 }
@@ -642,6 +714,19 @@ func (l *serveLoop) Close() error {
 // way the toolset's own do: what was opened last was opened over what came
 // before it.
 func (l *serveLoop) release() {
+	// The session ending is a seam of its own, and it fires before what the
+	// session was assembled over goes away: a stop hook running after the
+	// toolset and the record had been torn down would be a person's command
+	// firing in a session that no longer exists.
+	l.stopOnce.Do(func() {
+		if l.hooks == nil {
+			return
+		}
+		l.mu.Lock()
+		final := l.final
+		l.mu.Unlock()
+		l.hookNote(l.hooks.Stop(l.hookCtx, l.hookPos(), final))
+	})
 	for i := len(l.closers) - 1; i >= 0; i-- {
 		l.closers[i]()
 	}

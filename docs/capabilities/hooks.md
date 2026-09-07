@@ -206,7 +206,10 @@ each of them may take, and any entry that would not load. `/status` in a
 session lists them by name and event, because a session is partly what it
 does that the session beside it does not. A hook that says something — a
 `note`, a failure, a rewrite — writes a line into the transcript, or onto
-stderr in a run with no transcript to write to.
+stderr in a run with no transcript to write to. A session driven over the
+protocol has neither, so its notes go to the client on the event stream, under
+the same signal every other safeguard reaches it by
+([`headless.md`](headless.md#something-else-can-drive-it)).
 
 ## Related
 

@@ -178,6 +178,14 @@ events it receives while all that happens are the ones above, unchanged: the
 same lines, the same words, forwarded rather than rewritten, so a client that
 can read a run's output can read a session it is driving with the same code.
 
+A steer belongs to the turn it was sent to, wherever in that turn it lands.
+One that arrives while the answer is being written has no round boundary left
+in front of it, and is carried out as the rest of that turn rather than held
+for whatever the client asks next — which would be a correction folded into
+work it was never about, answered under a turn number nobody sent it to. A
+turn is therefore one call and one close line, however many times the model
+was asked inside it.
+
 Nothing about the run itself moves behind the protocol. It is assembled the
 way an unattended run is — the same tools registered on the same conditions,
 the same containment around a command, the same hooks at the same seams, the
