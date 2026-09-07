@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -14,6 +15,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/web"
@@ -54,6 +56,32 @@ type scriptedEnv struct {
 	execOut    string
 	execCode   int
 	ranCommand atomic.Bool
+	// reduce is the reduction pipeline the child's command output goes
+	// through, as a session hands one in. Nil is a child whose surface has
+	// no evidence store.
+	reduce func(tool, result string) string
+	// requests is every message list the scripted stream has been handed,
+	// so a test can state what the child's next round actually carried —
+	// a tool result included, which is the only place a child's own view of
+	// a result can be read from.
+	requests [][]provider.Message
+}
+
+// lastToolResult is the tool result the child's most recent round carried —
+// what the child itself read of the call it just made.
+func (s *scriptedEnv) lastToolResult() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if len(s.requests) == 0 {
+		return ""
+	}
+	var result string
+	for _, m := range s.requests[len(s.requests)-1] {
+		if m.Role == provider.RoleTool {
+			result = m.Content
+		}
+	}
+	return result
 }
 
 func (s *scriptedEnv) factory() EnvFactory {
@@ -63,6 +91,7 @@ func (s *scriptedEnv) factory() EnvFactory {
 				return nil, nil, ctx.Err()
 			}
 			s.mu.Lock()
+			s.requests = append(s.requests, append([]provider.Message(nil), msgs...))
 			if len(s.steps) == 0 {
 				s.mu.Unlock()
 				return nil, nil, errors.New("scripted stream exhausted")
@@ -105,7 +134,8 @@ func (s *scriptedEnv) factory() EnvFactory {
 				s.ranCommand.Store(true)
 				return s.execOut, s.execCode
 			},
-			Gated: s.gated,
+			Reduce: s.reduce,
+			Gated:  s.gated,
 		}, nil
 	}
 }
@@ -320,6 +350,102 @@ func TestApprovalRoutingApprove(t *testing.T) {
 	}
 	if !env.ranCommand.Load() {
 		t.Fatal("approved command never ran")
+	}
+}
+
+// testRunOutput is what `go test ./...` looks like when the failure is in
+// the middle of it: passing packages either side of a failed one, and the
+// verdict on the last line. It is deliberately far past the formatter's
+// output cap, which keeps the head and nothing else.
+func testRunOutput(pkgs int) string {
+	var b strings.Builder
+	line := func(i int) {
+		fmt.Fprintf(&b, "ok  \tgithub.com/example/project/pkg%03d\t0.0%ds\n", i, i%10)
+	}
+	for i := range pkgs {
+		line(i)
+	}
+	b.WriteString("--- FAIL: TestImporterRejectsEmptyRows (0.01s)\n")
+	b.WriteString("    importer_test.go:42: wanted 3 rows, got 4\n")
+	b.WriteString("FAIL\tgithub.com/example/project/importer\t0.11s\n")
+	for i := range pkgs {
+		line(pkgs + i)
+	}
+	b.WriteString("FAIL\n")
+	return b.String()
+}
+
+// evidenceID is the id a reduction notice tells the reader to page with.
+var evidenceID = regexp.MustCompile(`evidence (ev-[0-9a-f]+)`)
+
+func TestChildCommandOutputIsReduced(t *testing.T) {
+	store, err := evidence.Open(t.TempDir(), evidence.NewSessionID())
+	if err != nil {
+		t.Fatalf("open evidence store: %v", err)
+	}
+	red := evidence.NewReducer(store)
+	out := testRunOutput(500)
+	if len(out) < 20_000 {
+		t.Fatalf("fixture is only %d bytes; the point is a run past the cap", len(out))
+	}
+	env := &scriptedEnv{
+		steps:    gatedCommandSteps("go test ./..."),
+		gated:    map[string]bool{tools.ExecCommandName: true},
+		execOut:  out,
+		execCode: 1,
+		reduce:   red.Process,
+	}
+	sup := newTestSupervisor(t, env)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"run the tests"}`)
+	nextAsk(t, sup).Respond(true)
+	execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
+
+	result := env.lastToolResult()
+	if result == "" {
+		t.Fatal("the child's next round carried no tool result")
+	}
+	if !strings.Contains(result, "--- FAIL: TestImporterRejectsEmptyRows") {
+		t.Fatalf("the failing test is not in what the child read:\n%s", result)
+	}
+	if !strings.HasSuffix(strings.TrimRight(result, "\n"), "\nFAIL") {
+		t.Fatalf("the run's verdict is not in what the child read:\n%s", result)
+	}
+	if !strings.Contains(result, "exit code: 1") {
+		t.Fatalf("result lost the exit code:\n%s", result)
+	}
+
+	// The notice names an id, and the id pages the whole output back through
+	// the same store the child's evidence tool is dispatched against.
+	m := evidenceID.FindStringSubmatch(result)
+	if m == nil {
+		t.Fatalf("no evidence id in the result:\n%s", result)
+	}
+	paged, err := store.ExecuteTool(json.RawMessage(
+		fmt.Sprintf(`{"action":"read","id":%q,"offset":%d}`, m[1], len(out)-2000)))
+	if err != nil {
+		t.Fatalf("paging the stored output: %v", err)
+	}
+	if !strings.Contains(paged, "pkg999") {
+		t.Fatalf("the store kept something other than the whole run:\n%s", paged)
+	}
+}
+
+// A child whose surface has no evidence store still gets a formatted result
+// rather than a panic, and the formatter's cap is what bounds it.
+func TestChildCommandOutputWithoutReducer(t *testing.T) {
+	env := &scriptedEnv{
+		steps:    gatedCommandSteps("go test ./..."),
+		gated:    map[string]bool{tools.ExecCommandName: true},
+		execOut:  testRunOutput(500),
+		execCode: 1,
+	}
+	sup := newTestSupervisor(t, env)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"run the tests"}`)
+	nextAsk(t, sup).Respond(true)
+	execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
+
+	if result := env.lastToolResult(); !strings.Contains(result, "(output truncated)") {
+		t.Fatalf("expected the formatter's own cap:\n%s", result)
 	}
 }
 

@@ -345,8 +345,14 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			Executor:     session.vault.WrapExecutor(subagent.RootedExecutor(croot, autoExec)),
 			ExecuteGated: session.vault.WrapExecutor(gatedExec),
 			RunCommand:   scrubRunner(session.vault, childCommandRunner(cfg, croot, sc)),
-			Gated:        gated,
-			Scrub:        session.vault.ScrubMessage,
+			// The same pipeline the parent's own commands go through, and
+			// the same store behind it: a child's evidence entries land
+			// beside the session's, so the id in a reduction notice is one
+			// the child's evidence tool — registered above — can page.
+			// Safe on a nil reducer, which reduces nothing.
+			Reduce: red.Process,
+			Gated:  gated,
+			Scrub:  session.vault.ScrubMessage,
 			// A child is as unwatched as a headless run, but a fan-out
 			// multiplies the cost by its width, so this one is opt-in
 			// (summary.subagents).

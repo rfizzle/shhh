@@ -238,6 +238,20 @@ type Env struct {
 	// RunCommand executes an approved shell command in the child's workspace
 	// (contained when a mechanism is available).
 	RunCommand func(ctx context.Context, command string) (output string, exitCode int)
+	// Reduce runs a command's output through the session's reduction
+	// pipeline before it becomes the child's tool result: a head, a tail,
+	// every line that names an error or a failure, and an id that pages the
+	// whole output back out of the evidence store. Nil reduces nothing,
+	// which leaves a child reading the first few kilobytes of a long
+	// command and nothing after them — for a test run, forty passing
+	// packages and never the verdict.
+	//
+	// It is a field rather than a wrap around RunCommand because the
+	// reduction sits between the scrub and the format: the store keeps the
+	// text the child was shown, and reducing an already-formatted result
+	// would let the notice count the exit-code line as output.
+	// See docs/capabilities/evidence.md#reduction-is-for-unbounded-output.
+	Reduce func(tool, result string) string
 	// Gated names the tools that must go through approval routing.
 	Gated map[string]bool
 	// Scrub, when set, is installed on the child's agent so its
@@ -257,6 +271,18 @@ type Env struct {
 	// the built-in bound. A fan-out is where waiting one out matters most,
 	// because a limit refuses every child at once.
 	Retries *int
+}
+
+// execResult is a command's output as the child's tool result: reduced, then
+// formatted. Every route from a child's command to tools.FormatExecResult
+// runs through here, because the formatter on its own keeps the first
+// MaxExecOutputBytes and drops the rest — and what a command has to say about
+// itself is at the end.
+func (e Env) execResult(output string, exitCode int) string {
+	if e.Reduce != nil {
+		output = e.Reduce(tools.ExecCommandName, output)
+	}
+	return tools.FormatExecResult(output, exitCode)
 }
 
 // childCompactor is a child's window-recovery step, or nothing where the
@@ -2524,7 +2550,10 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 			return "error: command execution is not available to this agent"
 		}
 		out, code := c.env.RunCommand(c.ctx, action.Command)
-		return tools.FormatExecResult(out, code)
+		// The runner has already scrubbed the output, so the reduction — and
+		// the copy the evidence store keeps of it — is over the text the
+		// child is allowed to see, as it is on the parent.
+		return c.env.execResult(out, code)
 	}
 	return agent.ExecuteWith(c.env.ExecuteGated, provider.ToolCall{ID: tc.ID, Name: tc.Name, Arguments: string(rooted)})
 }
