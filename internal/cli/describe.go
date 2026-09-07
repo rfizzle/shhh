@@ -14,6 +14,21 @@ import (
 // than the paragraph an explanation can be.
 const descriptionChars = 100
 
+// descriptionMaxTokens caps the whole response, the reasoning included: every
+// dialect spends the thought and the answer from one ceiling. Ten words is a
+// dozen tokens, so nearly all of this is room for the thought — the smallest
+// budget any dialect asks for at low is four thousand tokens, and a ceiling
+// under that ends mid-thought and describes nothing. Sending no ceiling at
+// all was worse still: the Anthropic path fell back to its own default of
+// sixty-four thousand, which is a request the model may spend minutes in.
+const descriptionMaxTokens = 8192
+
+// descriptionTimeout is how long a save waits for the phrase. It is the
+// titler's window rather than a shorter one because this is the same shape of
+// request — a small model, a shallow thought, one line back — and a window
+// that expires mid-thought files the snippet under nothing.
+const descriptionTimeout = 15 * time.Second
+
 // snippetDescription is the line a saved snippet is filed under.
 //
 // explanation is the sentence the surface already showed under the command,
@@ -23,15 +38,18 @@ const descriptionChars = 100
 // pays for the request: silent mode draws no line, and an answer can come
 // back without one.
 // See docs/capabilities/generation.md#explanation-is-on-request-not-by-default.
-func snippetDescription(ctx context.Context, p provider.Provider, command, explanation string) string {
+//
+// model is the session's own, which the request falls back to only where the
+// provider names no small one of its own (summarizer.go).
+func snippetDescription(ctx context.Context, p provider.Provider, model, command, explanation string) string {
 	if explanation != "" {
 		return clampDescription(explanation)
 	}
-	return generateDescription(ctx, p, command)
+	return generateDescription(ctx, p, model, command)
 }
 
-func generateDescription(ctx context.Context, p provider.Provider, command string) string {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+func generateDescription(ctx context.Context, p provider.Provider, model, command string) string {
+	ctx, cancel := context.WithTimeout(ctx, descriptionTimeout)
 	defer cancel()
 
 	msgs := []provider.Message{
@@ -39,7 +57,15 @@ func generateDescription(ctx context.Context, p provider.Provider, command strin
 		{Role: provider.RoleUser, Content: command},
 	}
 
-	events, err := p.StreamCompletion(ctx, msgs, provider.CompletionOpts{})
+	// A bounded call: the small model, a ceiling, and a shallow thought asked
+	// for explicitly — which is the only way to bound one on a model that
+	// thinks whether or not it was asked.
+	// See docs/capabilities/providers.md#a-bounded-call-runs-on-the-small-model.
+	events, err := p.StreamCompletion(ctx, msgs, provider.CompletionOpts{
+		Model:     auxiliaryModel(p.Name(), model),
+		MaxTokens: descriptionMaxTokens,
+		Effort:    provider.EffortLow,
+	})
 	if err != nil {
 		return ""
 	}

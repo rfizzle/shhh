@@ -519,7 +519,7 @@ func newCmdCmd() *cobra.Command {
 						fmt.Fprintf(os.Stderr, "Error saving snippet: %v\n", err)
 					} else {
 						fmt.Fprintf(os.Stderr, "Saved snippet %q.\n", result.SaveName)
-						if desc := snippetDescription(cmd.Context(), p, result.Command, result.Explanation); desc != "" {
+						if desc := snippetDescription(cmd.Context(), p, resolved.Model, result.Command, result.Explanation); desc != "" {
 							_ = db.UpdateSnippetDescription(result.SaveName, desc)
 							fmt.Fprintf(os.Stderr, "Description: %s\n", desc)
 						}

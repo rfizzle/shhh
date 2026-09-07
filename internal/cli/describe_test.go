@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 	"unicode/utf8"
+
+	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // The sentence under the command is the same sentence a summarising request
@@ -15,7 +17,7 @@ func TestSnippetDescriptionReusesTheSentenceOnScreen(t *testing.T) {
 	var asked []time.Time
 	p := oneShotProvider{answer: "summary nobody should have paid for", asked: &asked}
 
-	got := snippetDescription(context.Background(), p, "lsof -i -P -n", "Lists every open network port and the process holding it")
+	got := snippetDescription(context.Background(), p, "gpt-5", "lsof -i -P -n", "Lists every open network port and the process holding it")
 	if want := "Lists every open network port and the process holding it"; got != want {
 		t.Errorf("description = %q, want %q", got, want)
 	}
@@ -31,7 +33,7 @@ func TestSnippetDescriptionAsksWhenNothingWasShown(t *testing.T) {
 	var asked []time.Time
 	p := oneShotProvider{answer: "  list open network ports  ", asked: &asked}
 
-	got := snippetDescription(context.Background(), p, "lsof -i -P -n", "")
+	got := snippetDescription(context.Background(), p, "gpt-5", "lsof -i -P -n", "")
 	if want := "list open network ports"; got != want {
 		t.Errorf("description = %q, want %q", got, want)
 	}
@@ -46,7 +48,7 @@ func TestSnippetDescriptionIsEmptyWhenTheRequestFails(t *testing.T) {
 	var asked []time.Time
 	p := oneShotProvider{asked: &asked}
 
-	if got := snippetDescription(context.Background(), p, "lsof -i -P -n", ""); got != "" {
+	if got := snippetDescription(context.Background(), p, "gpt-5", "lsof -i -P -n", ""); got != "" {
 		t.Errorf("a refused request produced %q", got)
 	}
 }
@@ -55,14 +57,14 @@ func TestSnippetDescriptionIsEmptyWhenTheRequestFails(t *testing.T) {
 // column, so it arrives wrapped and it arrives long. Both are the store's
 // problem before they are the listing's.
 func TestSnippetDescriptionIsClampedToTheColumn(t *testing.T) {
-	wrapped := snippetDescription(context.Background(), nil, "", "Lists every open port\nand the process holding it")
+	wrapped := snippetDescription(context.Background(), nil, "gpt-5", "", "Lists every open port\nand the process holding it")
 	if want := "Lists every open port and the process holding it"; wrapped != want {
 		t.Errorf("wrapped explanation = %q, want %q", wrapped, want)
 	}
 
 	// A multi-byte character straddling the cut is the case a byte slice
 	// gets wrong: the row comes back with half a rune in it.
-	long := snippetDescription(context.Background(), nil, "", strings.Repeat("é", 200))
+	long := snippetDescription(context.Background(), nil, "gpt-5", "", strings.Repeat("é", 200))
 	if n := utf8.RuneCountInString(long); n > descriptionChars {
 		t.Errorf("clamped explanation is %d runes, want at most %d", n, descriptionChars)
 	}
@@ -95,7 +97,7 @@ func TestSavedSnippetHoldsTheDescription(t *testing.T) {
 			if err := db.SaveSnippet(c.name, command); err != nil {
 				t.Fatalf("save the snippet: %v", err)
 			}
-			desc := snippetDescription(context.Background(), p, command, c.explanation)
+			desc := snippetDescription(context.Background(), p, "gpt-5", command, c.explanation)
 			if err := db.UpdateSnippetDescription(c.name, desc); err != nil {
 				t.Fatalf("write the description: %v", err)
 			}
@@ -111,5 +113,60 @@ func TestSavedSnippetHoldsTheDescription(t *testing.T) {
 				t.Errorf("the row holds command %q", s.Command)
 			}
 		})
+	}
+}
+
+// describeProvider answers a description request and keeps the options it
+// was asked under.
+type describeProvider struct {
+	name string
+	opts *provider.CompletionOpts
+}
+
+func (p describeProvider) Name() string { return p.name }
+
+func (p describeProvider) StreamCompletion(_ context.Context, _ []provider.Message, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+	*p.opts = opts
+	events := make(chan provider.StreamEvent, 2)
+	events <- provider.StreamEvent{Token: "list open network ports"}
+	events <- provider.StreamEvent{Done: true}
+	close(events)
+	return events, nil
+}
+
+// The description is a bounded call and is sent as one. Sent bare it went out
+// with no model, no ceiling and no effort — which on a dialect whose default
+// ceiling is sixty-four thousand tokens, against a model that thinks whether
+// or not it was asked, is a ten-word phrase bought at the price of a round of
+// the session's own work.
+func TestSnippetDescriptionIsAskedAsABoundedCall(t *testing.T) {
+	var opts provider.CompletionOpts
+	p := describeProvider{name: "anthropic", opts: &opts}
+
+	if got := snippetDescription(context.Background(), p, "claude-opus-5", "lsof -i -P -n", ""); got != "list open network ports" {
+		t.Fatalf("description = %q", got)
+	}
+	if want := provider.Defaults("anthropic").CheapModel; opts.Model != want {
+		t.Errorf("model = %q, want the provider's small one, %q", opts.Model, want)
+	}
+	if opts.MaxTokens != descriptionMaxTokens {
+		t.Errorf("max tokens = %d, want %d", opts.MaxTokens, descriptionMaxTokens)
+	}
+	if opts.Effort != provider.EffortLow {
+		t.Errorf("effort = %v, want %v", opts.Effort, provider.EffortLow)
+	}
+}
+
+// A provider that names no small model of its own is answered on the
+// session's, which is the same rule every other bounded call follows.
+func TestSnippetDescriptionFallsBackToTheSessionModel(t *testing.T) {
+	var opts provider.CompletionOpts
+	p := describeProvider{name: "no-cheap-model-of-its-own", opts: &opts}
+
+	if got := snippetDescription(context.Background(), p, "llama3", "lsof -i -P -n", ""); got == "" {
+		t.Fatal("the description should still be asked for")
+	}
+	if opts.Model != "llama3" {
+		t.Errorf("model = %q, want the session's own", opts.Model)
 	}
 }
