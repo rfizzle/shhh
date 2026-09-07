@@ -360,6 +360,78 @@ func TestPricing_ConvertsToPerTokenCosts(t *testing.T) {
 	}
 }
 
+// The cache rates are the dominant term in a gateway session's bill: nearly
+// every round reads its prompt back out of the provider's cache. A declared
+// rate that never reached the table left those tokens charged at the full
+// input price.
+func TestPricing_ChargesTheDeclaredCacheRates(t *testing.T) {
+	table := pricing.NewTable(nil)
+	table.Overlay(Pricing([]Profile{{Models: []Model{{
+		ID:   "gw-sonnet",
+		Cost: Cost{Input: 3.0, Output: 15.0, CacheRead: 0.3, CacheWrite: 3.75},
+	}}}}))
+
+	in, out, ok := table.CostTokens("gw-sonnet", pricing.Tokens{
+		Input: 1_000_000, Cached: 1_000_000, Created: 1_000_000, Output: 1_000_000,
+	})
+	if !ok {
+		t.Fatalf("the declared model should price")
+	}
+	if want := 3.0 + 0.3 + 3.75; in != want {
+		t.Errorf("input cost = %v, want %v (a cached read charged at the input rate is %v)", in, want, 3.0*3)
+	}
+	if out != 15.0 {
+		t.Errorf("output cost = %v, want 15", out)
+	}
+}
+
+// A profile that names only what a cached read costs has still said
+// something the public table does not know, and the rest of the entry falls
+// back to that table rather than to zero.
+func TestPricing_CacheRatesAloneReachTheTable(t *testing.T) {
+	table := pricing.NewTable(map[string]pricing.ModelPricing{
+		"gpt-4o": {InputCostPerToken: 0.0000025, OutputCostPerToken: 0.00001, MaxInputTokens: 128000},
+	})
+	table.Overlay(Pricing([]Profile{{Models: []Model{{ID: "gpt-4o", Cost: Cost{CacheRead: 0.25}}}}}))
+
+	in, out, ok := table.CostTokens("gpt-4o", pricing.Tokens{Input: 1_000_000, Cached: 1_000_000, Output: 1_000_000})
+	if !ok {
+		t.Fatalf("the public prices should survive a cache-rate-only override")
+	}
+	if want := 2.5 + 0.25; in != want {
+		t.Errorf("input cost = %v, want %v", in, want)
+	}
+	if out != 10 {
+		t.Errorf("output cost = %v, want 10", out)
+	}
+	if window, _ := table.ContextWindow("gpt-4o"); window != 128000 {
+		t.Errorf("the public window should survive, got %d", window)
+	}
+}
+
+// A table entry that carries a price and has not yet learned the same
+// model's cache rates keeps the ones it has when a profile overrides only
+// the prices.
+func TestPricing_OverlayKeepsCacheRatesAProfileOmits(t *testing.T) {
+	table := pricing.NewTable(map[string]pricing.ModelPricing{
+		"gpt-4o": {
+			InputCostPerToken:         0.0000025,
+			OutputCostPerToken:        0.00001,
+			CacheReadCostPerToken:     0.00000025,
+			CacheCreationCostPerToken: 0.000003125,
+		},
+	})
+	table.Overlay(Pricing([]Profile{{Models: []Model{{ID: "gpt-4o", Cost: Cost{Input: 5.0, Output: 20.0}}}}}))
+
+	in, _, ok := table.CostTokens("gpt-4o", pricing.Tokens{Cached: 1_000_000, Created: 1_000_000})
+	if !ok {
+		t.Fatalf("the model should price")
+	}
+	if want := 0.25 + 3.125; in != want {
+		t.Errorf("input cost = %v, want %v", in, want)
+	}
+}
+
 func TestPricing_OverlayKeepsWhatAProfileOmits(t *testing.T) {
 	table := pricing.NewTable(map[string]pricing.ModelPricing{
 		"gpt-4o": {InputCostPerToken: 0.0000025, OutputCostPerToken: 0.00001, MaxInputTokens: 128000},

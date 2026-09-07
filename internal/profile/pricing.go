@@ -24,20 +24,37 @@ func Pricing(profiles []Profile) map[string]pricing.ModelPricing {
 	out := map[string]pricing.ModelPricing{}
 	for _, p := range profiles {
 		for _, m := range p.declaredModels() {
-			if !m.Cost.HasPricing() && m.ContextWindow == 0 && !m.Reasoning.Declared() {
+			if !m.Cost.anyRate() && m.ContextWindow == 0 && !m.Reasoning.Declared() {
 				continue
 			}
+			// The cache rates travel with the other two. A gateway session
+			// reads most of its prompt out of the provider's cache, so the
+			// cached rate is the dominant term in the bill; dropping it here
+			// left the meter charging the full input price for every one of
+			// those tokens, which on a well-cached round is an order of
+			// magnitude too much.
+			// See docs/capabilities/providers.md#the-prompt-prefix-is-paid-for-once.
 			entry := pricing.ModelPricing{
-				InputCostPerToken:  m.Cost.Input / tokensPerMillion,
-				OutputCostPerToken: m.Cost.Output / tokensPerMillion,
-				MaxInputTokens:     m.ContextWindow,
-				MaxOutputTokens:    m.MaxTokens,
+				InputCostPerToken:         m.Cost.Input / tokensPerMillion,
+				OutputCostPerToken:        m.Cost.Output / tokensPerMillion,
+				CacheReadCostPerToken:     m.Cost.CacheRead / tokensPerMillion,
+				CacheCreationCostPerToken: m.Cost.CacheWrite / tokensPerMillion,
+				MaxInputTokens:            m.ContextWindow,
+				MaxOutputTokens:           m.MaxTokens,
 			}
 			m.Reasoning.fill(&entry)
 			out[m.ID] = entry
 		}
 	}
 	return out
+}
+
+// anyRate reports whether the entry declares a price of any kind. It is
+// wider than HasPricing on purpose: a profile that says only what a cached
+// read costs has told the meter something the public table does not know,
+// and Overlay fills the rest of the entry back in from that table.
+func (c Cost) anyRate() bool {
+	return c.HasPricing() || c.CacheRead != 0 || c.CacheWrite != 0
 }
 
 // fill writes a declared reasoning shape onto a table entry. A declaration

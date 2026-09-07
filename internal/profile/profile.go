@@ -207,9 +207,10 @@ func (r Reasoning) hasLevel(e provider.Effort) bool {
 	return false
 }
 
-// Cost is per-million-token pricing. CacheRead and CacheWrite are accepted
-// and reported, but the spend meter does not use them yet: shhh's usage
-// accounting has no cached-token counters to bill against.
+// Cost is per-million-token pricing. All four rates reach the spend meter:
+// a request reports what it read fresh, what the provider served out of its
+// prompt cache and what it wrote into that cache, and each is billed at the
+// rate declared for it (pricing.go).
 type Cost struct {
 	Input      float64 `toml:"input"`
 	Output     float64 `toml:"output"`
@@ -217,7 +218,9 @@ type Cost struct {
 	CacheWrite float64 `toml:"cache_write"`
 }
 
-// HasPricing reports whether the entry carries token prices.
+// HasPricing reports whether the entry carries the two prices a listing has
+// a column for. The cache rates are not part of that answer; anyRate, which
+// is what the pricing table is built from, is the wider question.
 func (c Cost) HasPricing() bool { return c.Input != 0 || c.Output != 0 }
 
 // Key returns the resolved API key: the literal one, or the named
