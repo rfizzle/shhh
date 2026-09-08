@@ -90,7 +90,7 @@ func Definitions(profiles Profiles) []provider.Tool {
 		},
 		{
 			Name:        SteerToolName,
-			Description: "Redirect a running sub-agent: your message reaches it as an instruction from you, the way one typed into its lane does. Use it on an agent agent_report lists as steered more than once — it is not answering the check that steers it, and you wrote its task, so say what it should do instead. The agent's own reading is judged against the task plus your message, so it will not be told it has drifted for doing what you just asked. Refused once the agent has finished; ending one is the user's, not yours.",
+			Description: "Redirect a running sub-agent: your message reaches it as an instruction from you, the way one typed into its lane does. Two things on the roster call for it: an agent listed as steered more than once, which is not answering the check that steers it; and an agent whose line has not moved between two reads several rounds apart, which is the one to watch for when the roster's header says readings are off and nothing but you is checking. You wrote its task, so say what it should do instead. The agent's own reading is judged against the task plus your message, so it will not be told it has drifted for doing what you just asked. Refused once the agent has finished; ending one is the user's, not yours.",
 			Parameters: json.RawMessage(`{
 				"type": "object",
 				"properties": {

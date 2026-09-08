@@ -178,6 +178,18 @@ orchestrator is asked to redirect it then rather than wait for it. Both are the
 machinery's own words and counts; nothing a child's tools read reaches the
 parent's conversation this way.
 
+Every child is read this way unless you say otherwise, on the same interval
+and by the same small model a session's own readings use. A child is the least
+supervised thing a session runs — nobody in front of it, no round cap, and a
+final report that arrives long after the point where redirecting it would have
+helped — so it is the surface the reading was built for. What it costs is the
+arithmetic to weigh: a fan-out of six is six more readings per interval, and
+`summary.subagents` turns them off for children without touching your own
+session's. Turned off, the roster says so in a line above the agents, because
+an empty steer column then means nothing is checking rather than nothing is
+wrong, and the orchestrator is told what is left to judge a child by — an
+agent whose line has not moved between two reads several rounds apart.
+
 Both surfaces also say where the last message the child was given came from —
 its own reader, this lane, or the orchestrator — because a count with more
 than one possible author leaves the question worth asking of it unanswered.

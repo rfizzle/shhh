@@ -571,26 +571,31 @@ func TestLoadFrom_PasteThresholds(t *testing.T) {
 }
 
 // Which surfaces take readings is the reader's to decide, because the cost is
-// per agent. The defaults differ because the arithmetic does: a headless run
-// is one agent, a fan-out is as many as it is wide.
+// per agent. Both default on for the same reason: the surfaces nobody is
+// sitting in front of are the ones a reading was built for, and a child has
+// no round cap either.
 func TestSummarySurfaces_Defaults(t *testing.T) {
 	var c Config
 	if !c.HeadlessSummaryEnabled() {
 		t.Error("a headless run has nobody watching it; readings default on")
 	}
-	if c.SubagentSummaryEnabled() {
-		t.Error("a fan-out multiplies the cost by its width; readings default off")
+	if !c.SubagentSummaryEnabled() {
+		t.Error("a child has nobody watching it either; readings default on")
 	}
 }
 
 func TestSummarySurfaces_Overrides(t *testing.T) {
 	off, on := false, true
-	c := Config{Summary: SummaryConfig{Headless: &off, Subagents: &on}}
+	c := Config{Summary: SummaryConfig{Headless: &off, Subagents: &off}}
 	if c.HeadlessSummaryEnabled() {
 		t.Error("summary.headless=false should turn headless readings off")
 	}
-	if !c.SubagentSummaryEnabled() {
-		t.Error("summary.subagents=true should turn child readings on")
+	if c.SubagentSummaryEnabled() {
+		t.Error("summary.subagents=false should turn child readings off")
+	}
+	c = Config{Summary: SummaryConfig{Headless: &on, Subagents: &on}}
+	if !c.HeadlessSummaryEnabled() || !c.SubagentSummaryEnabled() {
+		t.Error("a key set to true should turn its surface's readings on")
 	}
 }
 

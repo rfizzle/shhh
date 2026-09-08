@@ -726,7 +726,7 @@ own file could hold.
 | `max_tokens` | number | `8192` | The ceiling on a reading's response, the reasoning it does before answering included. |
 | `disabled` | true/false | `off` | Turn the reading off entirely: no requests are made and the rail draws no summary block. |
 | `headless` | true/false | `on` | Take readings in a non-interactive run, which is the surface with nobody in front of it. |
-| `subagents` | true/false | `off` | Take readings in each spawned child; a fan-out of six is six more readings per interval. |
+| `subagents` | true/false | `on` | Take readings in each spawned child, which has nobody in front of it; turning it off saves a reading per interval per child and leaves a child that has wandered unnoticed until its report. |
 | `intervene_cooldown_intervals` | number | 2 readings | How many reading intervals pass between two verdict-driven interventions. |
 | `steer_target_chars` | number | 400 characters | How much of the instruction a steer quotes back to a drifting turn; a negative quotes it whole. |
 | `title` | true/false | on when a summary model is set, off otherwise | Ask the summary model to name an unnamed session after its first turn, for the saved-chat listings. |

@@ -1929,6 +1929,41 @@ func TestTheOrchestrationToolsAreRegisteredTogether(t *testing.T) {
 	}
 }
 
+// The roster's steer field is empty for two opposite reasons — a child on
+// task, and a child nothing is reading — and only one of them is good news.
+// A session that turned readings off gets the difference said once, at the
+// top, together with what is left to judge a child by.
+func TestRosterSaysWhenNothingIsReadingTheChildren(t *testing.T) {
+	sup := newTestSupervisor(t, &scriptedEnv{steps: []streamStep{{text: "done"}}})
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the exporter"}`)
+	execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
+
+	roster := execTool(t, sup, ReportToolName, `{}`)
+	if !strings.Contains(roster, "Readings are off") {
+		t.Fatalf("an unread fan-out must say so on the roster:\n%s", roster)
+	}
+	// The trigger agent_steer names when it cannot name a steer count.
+	if !strings.Contains(roster, "has not moved") {
+		t.Fatalf("the header must leave the parent something to act on:\n%s", roster)
+	}
+}
+
+// And a session on the defaults is told nothing about readings: the trigger
+// agent_steer names first — a child listed as steered — is reachable, so a
+// header saying the mechanism is on would be a line the parent learns to skip.
+func TestRosterSaysNothingAboutReadingsWhenAChildIsRead(t *testing.T) {
+	sup := judgedChild(t, &readingProvider{state: "off_target"}, 40)
+	execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
+
+	roster := execTool(t, sup, ReportToolName, `{}`)
+	if strings.Contains(roster, "Readings are off") {
+		t.Fatalf("a read child must not be reported as unread:\n%s", roster)
+	}
+	if !strings.Contains(roster, plural(statusOf(t, sup, "researcher-1").Steers, "steer")) {
+		t.Fatalf("the steer count is the trigger the roster leaves standing:\n%s", roster)
+	}
+}
+
 // Where a steer came from is the question a count alone cannot answer once
 // more than one party can steer. The word is the same on the status, the
 // roster and the lane, and it is the last steer's own — a redirect the child

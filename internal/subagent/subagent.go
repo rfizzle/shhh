@@ -68,12 +68,11 @@ const (
 	DefaultMaxRounds = agent.UnlimitedToolRounds
 	// ChildCheckInInterval is how many rounds pass before a child is asked to
 	// take stock. It is shorter than a session's because a child has less of
-	// everything else watching it: it runs uncapped by the decision above, it
-	// takes no readings unless summary.subagents says so, and there is nobody
-	// in front of it. For a child left on the defaults this check-in is the
-	// only question it will ever be put, and a session's interval — chosen
-	// for a turn that also has a reading, a cap and a reader — would be the
-	// wrong number to inherit.
+	// everything else watching it: it runs uncapped by the decision above, and
+	// there is nobody in front of it. For a child whose readings are turned
+	// off this check-in is the only question it will ever be put, and a
+	// session's interval — chosen for a turn that also has a cap and a reader
+	// — would be the wrong number to inherit.
 	//
 	// Twenty-five is the figure the budget check-in above is already reasoned
 	// against, and for the same reason: often enough early to catch a child
@@ -178,8 +177,8 @@ type Status struct {
 	Steers int
 	// Verdict is the last reading of this child's work, in the summariser's
 	// own closed vocabulary and never its prose. Empty is a child with no
-	// reading at all, which is the ordinary case: children are read only
-	// where the session turned readings on for them.
+	// reading yet — one in its first interval, or one whose session turned
+	// readings off, which is what the roster's own header exists to say.
 	Verdict string
 	// SteerFrom is where the last message put in front of this child came
 	// from. Empty is a child nobody and nothing has redirected. It is the
@@ -284,10 +283,12 @@ type Env struct {
 	// Scrub, when set, is installed on the child's agent so its
 	// conversation never holds a session secret; nil scrubs nothing.
 	Scrub func(provider.Message) provider.Message
-	// Summarizer, when set, takes periodic readings of the child so a run
-	// that has drifted or that already has what it needs is interrupted the
-	// way a session is. Nil takes no readings — the default, because a wide
-	// fan-out multiplies the cost by its width (summary.subagents).
+	// Summarizer, when set and enabled, takes periodic readings of the child
+	// so a run that has drifted or that already has what it needs is
+	// interrupted the way a session is. Nil takes no readings, which is what
+	// summary.subagents=false leaves behind: a child nothing reads is never
+	// listed as steered, so the roster says so rather than leaving the parent
+	// to read an empty field as good news.
 	Summarizer *agent.Summarizer
 	// Steering is the interruption machinery's tuning as the config file
 	// left it. A child runs the same machinery a session does, so the same
@@ -2227,8 +2228,8 @@ func (s *Supervisor) run(c *child) {
 		Agent:   c.agent,
 		Compact: childCompactor(c.model, c.env),
 		// A child is as unwatched as a headless run, and its task is the
-		// instruction every reading is judged against. Nil unless
-		// summary.subagents is on.
+		// instruction every reading is judged against. Nil where
+		// summary.subagents turned the reading off.
 		Summary: agent.NewSummaryRun(c.env.Summarizer, agent.NewRecorder(0), c.task).
 			WithChanges(c.changed),
 		// A child that recycled its conversation says so on its lane, which
@@ -3127,9 +3128,11 @@ func (s *Supervisor) steer(raw json.RawMessage) (string, error) {
 // Both are words and numbers this package owns — the reading's state comes
 // from a closed set and the count is a count — so nothing a child's tools
 // read can reach the parent's conversation through here. Neither is stated
-// when there is nothing to state: an ordinary child takes no readings and is
-// never steered, and a roster that said so for every row would be teaching
-// the parent to skip the field.
+// when there is nothing to state: a child on task and inside its first
+// reading interval has neither, and a roster that printed an empty verdict on
+// every row would be teaching the parent to skip the field. That a row can be
+// bare for want of a reader instead is the roster header's to say, once, and
+// not every line's.
 func steerMark(st Status) string {
 	var parts []string
 	if st.Verdict != "" {
@@ -3169,12 +3172,42 @@ func steerCount(st Status) string {
 	return ""
 }
 
+// readingsNote is the roster's header when nothing is reading the children on
+// it. Without it an empty steer field is ambiguous in the one direction that
+// costs something: it reads as "every child is on task" when it means "no
+// child is being checked", and the parent waits for a verdict that cannot
+// arrive. The note names the trigger left standing in its place, because a
+// roster that only says a mechanism is off has moved the problem rather than
+// solved it.
+const readingsNote = "Readings are off for sub-agents (summary.subagents), so no row below will ever say a reading's word or count a steer: an empty field here means nothing is checking, not that nothing is wrong. What is left to judge a child by is its own line — a child whose detail has not moved between two reads several rounds apart is the one to steer."
+
+// readingsOff reports whether no child on the roster has a reader behind it.
+// It is asked of the children rather than of a setting because the supervisor
+// is handed no config: what decides it is the summariser each child's Env was
+// built with, and one that is nil or disabled is a child nothing will read.
+// Asking every child rather than the first means a fan-out spawned across a
+// change of setting says the reassuring thing only when it is true of all of
+// them.
+func (s *Supervisor) readingsOff() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, c := range s.children {
+		if c.env.Summarizer.Enabled() {
+			return false
+		}
+	}
+	return true
+}
+
 func (s *Supervisor) statusOverview() string {
 	statuses := s.Snapshot()
 	if len(statuses) == 0 {
 		return "No agents have been spawned this session."
 	}
 	var sb strings.Builder
+	if s.readingsOff() {
+		sb.WriteString(readingsNote + "\n\n")
+	}
 	for _, st := range statuses {
 		label := string(st.Role)
 		if st.Model != "" {

@@ -575,9 +575,11 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			Archive:    red.Keep,
 			Gated:      gated,
 			Scrub:      session.vault.ScrubMessage,
-			// A child is as unwatched as a headless run, but a fan-out
-			// multiplies the cost by its width, so this one is opt-in
-			// (summary.subagents).
+			// A child is as unwatched as a headless run and is read for the
+			// same reason. A fan-out multiplies the cost by its width, which
+			// is what summary.subagents is there to turn off; off, the
+			// roster says so, because an unread child is never listed as
+			// steered and an empty field otherwise reads as good news.
 			Summarizer: newSummarizer(cfg, env, ledger, cfg.SubagentSummaryEnabled()),
 			Steering:   steering(cfg, env.prompts),
 			Retries:    cfg.Behavior.ProviderRetries,

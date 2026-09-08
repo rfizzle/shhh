@@ -458,8 +458,8 @@ var settings = []Setting{
 		Key: "summary.headless", Kind: KindBool, Default: "on",
 		Desc: "Take readings in a non-interactive run, which is the surface with nobody in front of it.",
 	}, {
-		Key: "summary.subagents", Kind: KindBool, Default: "off",
-		Desc: "Take readings in each spawned child; a fan-out of six is six more readings per interval.",
+		Key: "summary.subagents", Kind: KindBool, Default: "on",
+		Desc: "Take readings in each spawned child, which has nobody in front of it; turning it off saves a reading per interval per child and leaves a child that has wandered unnoticed until its report.",
 	}, {
 		Key: "summary.intervene_cooldown_intervals", Kind: KindInt, Signed: true, Default: "2 readings", Literal: "2",
 		Desc: "How many reading intervals pass between two verdict-driven interventions.",

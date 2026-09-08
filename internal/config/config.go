@@ -865,16 +865,17 @@ func (c *Config) HeadlessSummaryEnabled() bool {
 }
 
 // SubagentSummaryEnabled reports whether each spawned child takes readings:
-// what summary.subagents says, or — unset — no, because a wide fan-out
-// multiplies the cost by its width.
+// what summary.subagents says, or — unset — yes, because a child is the least
+// supervised thing a session runs: no reader in front of it, no round cap, and
+// a final report that arrives too late to redirect anything. A fan-out
+// multiplies the cost by its width, which is the reason to turn it off, and
+// the reading is bounded before it starts — one request per interval on the
+// small model, behind a wall-clock floor.
 func (c *Config) SubagentSummaryEnabled() bool {
 	if c.Summary.Disabled {
 		return false
 	}
-	if c.Summary.Subagents == nil {
-		return false
-	}
-	return *c.Summary.Subagents
+	return c.Summary.Subagents == nil || *c.Summary.Subagents
 }
 
 // TitlesEnabled reports whether sessions are titled: what summary.title
