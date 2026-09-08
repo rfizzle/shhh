@@ -95,6 +95,12 @@ type Meter struct {
 	// Text is what the meter states after its bar. Empty means its own
 	// percent, because the bar is never the only carrier of the value.
 	Text string
+	// ValueFirst states that number ahead of the bar instead of after it —
+	// `ctx 62% ▰▰▰▰▰▱▱▱`, which is the shape every rail carrying a context
+	// meter draws. The value stays beside the bar and stays in the meter's
+	// own colour; only the side it stands on changes, and nothing follows the
+	// bar (docs/interface/surfaces.md#the-input-frame).
+	ValueFirst bool
 	// Warn and Alert override MeterPressure's thresholds (0 keeps 70/90), so
 	// a meter matches the host's own trim warnings.
 	Warn, Alert int
@@ -175,24 +181,36 @@ func (m Meter) Style() lipgloss.Style {
 // View renders the meter: leading label, bar, and the value stated beside it.
 // The fill and the number are the meter's own colour and turn together; the
 // track between them does not, because a track is not part of the value.
+//
+// ValueFirst moves the number into the label, so the bar is the last thing on
+// the row rather than the first — the value is beside the bar either way,
+// which is the rule.
 func (m Meter) View() string {
+	if m.ValueFirst {
+		return join(m.label(), m.Bar())
+	}
 	return join(m.label(), m.Bar(), m.Style().Render(m.text()))
 }
 
 // label is the leading field — dim for step progress, and in the meter's own
-// colour otherwise, where the label names the value the bar is about ("ctx").
+// colour otherwise, where the label names the value the bar is about ("ctx")
+// and, under ValueFirst, states it as well.
 // A meter without one renders nothing at all rather than a styled empty
 // string: an empty Render is a pair of escapes, which join keeps and spaces,
 // and the row would then sit one column right of the row above it
 // (docs/interface/surfaces.md#the-inspector-rail).
 func (m Meter) label() string {
-	if m.Label == "" {
+	label := m.Label
+	if m.ValueFirst {
+		label = strings.TrimSpace(label + " " + m.text())
+	}
+	if label == "" {
 		return ""
 	}
 	if m.Tone == MeterProgress {
-		return sty.Dim.Render(m.Label)
+		return sty.Dim.Render(label)
 	}
-	return m.Style().Render(m.Label)
+	return m.Style().Render(label)
 }
 
 // Bar is the styled bar alone, for a host that states the meter's value

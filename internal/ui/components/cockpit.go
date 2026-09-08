@@ -81,18 +81,33 @@ func (c Cockpit) modeSegment() string {
 	}
 }
 
+// CtxMeter is a vitals rail's context segment: the shared eight-cell Meter
+// with its number ahead of the bar — `ctx 62% ▰▰▰▰▰▱▱▱` — which is how every
+// rail that carries one draws it. The percentage leads because it is the
+// figure the reader is after and the bar is the shape it is read against; a
+// rail that put the bar first made the eye cross it to reach the number
+// (docs/interface/surfaces.md#the-input-frame).
+//
+// It is exported so a rail scoped to something other than this session — an
+// attached child's, whose vitals the host assembles itself — draws the same
+// pressure the same way rather than building a meter of its own.
+func CtxMeter(pct, warn, alert int) string {
+	return Meter{
+		Pct:        pct,
+		Cells:      MeterCellsVitals,
+		Tone:       MeterPressure,
+		Label:      "ctx",
+		ValueFirst: true,
+		Warn:       warn,
+		Alert:      alert,
+	}.View()
+}
+
 // ctxMeter renders the context occupancy bar with its warning colors — the
 // shared Meter, so the vitals rail and the inspector rail cannot
 // report the same pressure two ways.
 func (c Cockpit) ctxMeter() string {
-	return Meter{
-		Pct:   c.CtxPct,
-		Cells: MeterCellsVitals,
-		Tone:  MeterPressure,
-		Label: "ctx",
-		Warn:  c.WarnPct,
-		Alert: c.AlertPct,
-	}.View()
+	return CtxMeter(c.CtxPct, c.WarnPct, c.AlertPct)
 }
 
 // agentsSegment renders the sub-agent count with the blocked badge, which

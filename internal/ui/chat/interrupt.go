@@ -35,6 +35,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	uv "github.com/charmbracelet/ultraviolet"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -422,12 +423,15 @@ func (m Model) waitingCount() int {
 }
 
 // decisionRailLabel names the surface holding the keyboard and its place in
-// what is waiting. A lone decision has no position worth stating.
+// what is waiting — `DECISION 1/2`, and `DECISION 1/1` for a lone one. The
+// count is stated even where it is one of one: the rail and the frame's own
+// `⏸ N waiting` chip are the same fact in two places, and a rail that dropped
+// the count on the commonest case left the reader to learn that this label
+// takes a count at all from the moment a second decision arrives, which is
+// the moment they have least attention to spare
+// (docs/interface/surfaces.md#the-approval-card).
 func (m Model) decisionRailLabel() string {
-	if n := m.waitingCount(); n > 1 {
-		return fmt.Sprintf("DECISION 1/%d", n)
-	}
-	return "DECISION"
+	return fmt.Sprintf("DECISION 1/%d", max(m.waitingCount(), 1))
 }
 
 // keyboardRail is the labelled rule that names the surface holding the
@@ -479,8 +483,16 @@ func (m Model) gatedExtraRows() int {
 
 // undressedDraft renders the draft while the decision holds the keyboard: the
 // frame drops its mode colour and its block cursor and keeps every character,
-// and its rail states the position it is holding, so the reader can see that
-// nothing moved while they were not typing into it.
+// and its rails state what the session is waiting for and the position the
+// sentence is being held at, so the reader can see that nothing moved while
+// they were not typing into it.
+//
+// It keeps its rails rather than going blank between them. The top one says
+// what the card above it is one of — `⏸ 1 waiting`, the frame's own chip — and
+// the bottom one carries the vitals the field-drop order never sheds: the
+// permission mode, the context pressure and the spend. A decision is the
+// moment those three are being read, so the frame under the card is the last
+// place they may go quiet (docs/interface/surfaces.md#the-input-frame).
 //
 // An empty draft has nothing to hold, and a row saying so would be a row
 // spent on the absence of one — the block is rendered only when there is
@@ -498,16 +510,41 @@ func (m Model) undressedDraft(width int) []string {
 	box := m.frameBoxFor(scr.Bounds())
 	idle := sty.Frame.Idle
 	var topLabel string
-	if id := m.frameIdentity(); id != "" {
-		topLabel = " " + idle.Render(id) + " "
+	// The chip is dim like the rest of the block: this frame is not the one
+	// holding the keyboard, and the accent form of the same chip is what the
+	// frame wears once the card hands it back (frame.go).
+	if n := m.waitingCount(); n > 0 {
+		topLabel = " " + idle.Render(fmt.Sprintf("⏸ %d waiting", n)) + " "
 	}
 	drawRail(scr, rowAt(box.area, 0), idle, "╭", "╮", topLabel, "")
 	drawIn(scr, idle.Render("│"), rowAt(box.left, 1))
 	drawIn(scr, idle.Render("│"), rowAt(box.right, 1))
 	drawIn(scr, idle.Render("▸ ")+sty.Frame.DraftHeld.Render(strings.ReplaceAll(value, "\n", " ")),
 		rowAt(box.inner, 1))
-	drawRail(scr, rowAt(box.area, 2), idle, "╰", "╯", " "+idle.Render(m.draftPosition())+" ", "")
+	drawRail(scr, rowAt(box.area, 2), idle, "╰", "╯", " "+m.heldDraftRail(width)+" ", "")
 	return strings.Split(renderScreen(scr), "\n")
+}
+
+// heldDraftRail is the undressed draft's closing rail: the vitals that never
+// drop, then the position the sentence is being held at. The position is
+// ranked below them — it is the block's own evidence and the block is on
+// screen either way, where the mode, the pressure and the spend are the
+// reading a decision is answered against.
+//
+// The segments are the session rail's own, repainted dim. Nothing in this
+// block competes with the card above it for the eye, and the glyph and the
+// word in each segment carry their meaning without the colour
+// (docs/interface/principles.md#colour-never-carries-meaning-alone).
+func (m Model) heldDraftRail(width int) string {
+	idle := sty.Frame.Idle
+	var segs []components.RailSegment
+	for _, s := range m.cockpitData(false).RailSegments() {
+		if s.Drop <= components.RailVital {
+			segs = append(segs, components.RailSegment{Text: idle.Render(ansi.Strip(s.Text)), Drop: s.Drop})
+		}
+	}
+	segs = append(segs, components.RailSegment{Text: idle.Render(m.draftPosition()), Drop: components.RailNormal})
+	return components.FitRail(segs, idle.Render(" · "), railLabelWidth("", width))
 }
 
 // draftPosition is the rail under the undressed draft: how much is held and

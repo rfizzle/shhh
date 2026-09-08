@@ -63,20 +63,27 @@ func estimateMessageTokens(msgs []provider.Message) int64 {
 // hold.
 // See docs/capabilities/providers.md#model-data-is-fetched-and-a-snapshot-ships.
 func (m Model) contextWindow() int64 {
-	if m.modelName == "" {
+	return m.windowFor(m.modelName)
+}
+
+// windowFor is that resolution for any model the session can name, which is
+// how a rail scoped to a child agent asks about the model the child is
+// running rather than the one this session is (frame.go).
+func (m Model) windowFor(model string) int64 {
+	if model == "" {
 		return DefaultContextWindow
 	}
 	if m.endpointWindows != nil {
-		if w, ok := m.endpointWindows(m.modelName); ok {
+		if w, ok := m.endpointWindows(model); ok {
 			return w
 		}
 	}
 	if m.prices != nil {
-		if w, ok := m.prices.ContextWindow(m.modelName); ok {
+		if w, ok := m.prices.ContextWindow(model); ok {
 			return w
 		}
 	}
-	if w, ok := provider.ContextWindowFor(m.modelName); ok {
+	if w, ok := provider.ContextWindowFor(model); ok {
 		return w
 	}
 	return DefaultContextWindow

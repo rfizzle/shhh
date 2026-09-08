@@ -941,6 +941,18 @@ func TestGolden_Interrupt(t *testing.T) {
 		ungated.syncInputWidth()
 		ungated.syncViewport()
 		gated := handover(t, ungated)
+		// A session with turns behind it, because the vitals are what the
+		// pair is being read for: the frame under the card states the mode,
+		// the pressure and the spend a decision is answered against, and a
+		// session that has spent nothing has none of them to state. The
+		// totals go on after the handover has run, because the rail's
+		// counters ease toward a figure they have not shown before and a
+		// fixture wants the figure rather than a frame of the climb
+		// (turnstatus.go).
+		for _, m := range []*Model{&ungated, &gated} {
+			m.TotalTokensIn += 41_200
+			m.TotalTokensOut += 9_800
+		}
 		// A card that landed on a warm, empty keyboard: held, with the grace
 		// window open and the run dimmed (interrupt.go).
 		grace := interruptedModel(t, "")
@@ -1611,17 +1623,41 @@ func TestGolden_Screen(t *testing.T) {
 // whole screen rather than the rail alone, because the fact being pinned is
 // that the child's transcript on the left and the session's numbers on the
 // right can be told apart at a glance, which only the two together show.
+//
+// The child is given a conversation before it is drawn, because a rail with
+// nothing to report is not the rail this fixture is for: the frame's top rail
+// names the phase off the call the child still has open, and the vitals rail
+// measures the pressure off the conversation behind it.
 func TestGolden_ScreenAttached(t *testing.T) {
-	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(),
+		NewEnv: billedEnv(provider.Usage{PromptTokens: 4200, CompletionTokens: 900})})
 	t.Cleanup(sup.Close)
 	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")
 	spawnChild(t, sup, subagent.RoleReviewer, "reviewer-1")
 	killChild(t, sup, "reviewer-1")
+	waitFor(t, func() bool {
+		st, ok := sup.Get("researcher-1")
+		return ok && st.Spend.In > 0
+	})
+	noteChild(t, sup, "researcher-1", subagent.TranscriptEntry{
+		Kind: subagent.EntryAssistant, Text: "Reading the round accounting first."})
+	noteChild(t, sup, "researcher-1", subagent.TranscriptEntry{
+		Kind: subagent.EntryTool, Tool: "read_file", Args: `{"path":"internal/agent/loop.go"}`,
+		Result: strings.Repeat("internal/agent/loop.go:118 the round counter is read here\n", 220)})
+	noteChild(t, sup, "researcher-1", subagent.TranscriptEntry{
+		Kind: subagent.EntryTool, Tool: "read_file", Args: `{"path":"internal/agent/round.go"}`,
+		Pending: true})
 	captureGolden(t, "screen-attached", "the surface with the keyboard in a child",
 		[]int{144}, func(width int) []golden.Panel {
 			build := func(name string) string {
 				m := frameModel(t, width, screenHeight)
 				m.transcript = goldenTranscript()
+				// The turn the transcript closes on spent two rounds, and the
+				// counter states them at rest: the rail sheds the round third
+				// and the model first (guidelines/layout-drop-order).
+				for range 2 {
+					m.agent.BeginToolRound("", nil, nil)
+				}
 				m = m.WithSubagents(sup)
 				m.attach(name)
 				m.invalidateRenderCache()

@@ -2239,19 +2239,25 @@ func TestToolLoop_RoundCapAfterApprovedCommand(t *testing.T) {
 	}
 }
 
-func TestStatusBar_ShowsRoundCounter(t *testing.T) {
+// The counter stands whether or not a turn is running. It is the third field
+// the rail sheds and the model is the first, so a rail that hid it at rest
+// while keeping the model was dropping fields in the wrong order; and what it
+// says at rest — how much of the ceiling the last turn spent — is what the
+// reader about to send the next one is asking (guidelines/layout-drop-order).
+func TestStatusBar_StatesTheRoundCounterRunningAndAtRest(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream)
+	if strings.Contains(m.renderStatusBar(80), "round") {
+		t.Fatal("a session that has run no round has no counter to state")
+	}
 	for i := 0; i < 7; i++ {
 		m.agent.BeginToolRound("", nil, nil)
 	}
-	m.state = stateStreaming
-	if !strings.Contains(m.renderStatusBar(80), "round 7") {
-		t.Fatal("status bar should show the round counter mid-turn")
-	}
-	m.state = stateInput
-	if strings.Contains(m.renderStatusBar(80), "round") {
-		t.Fatal("status bar should hide the round counter between turns")
+	for _, state := range []state{stateStreaming, stateInput} {
+		m.state = state
+		if !strings.Contains(m.renderStatusBar(80), "round 7") {
+			t.Fatalf("state %d: the rail should state the round counter", state)
+		}
 	}
 }
 

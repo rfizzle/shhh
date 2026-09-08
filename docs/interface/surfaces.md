@@ -345,6 +345,23 @@ in it until then. Nothing about how a figure is shaped changes with it: a
 count still prints every digit while something is moving it and goes back to
 `41.2k` once nothing is.
 
+Attached to a child agent, both rails scope to that child. The top one names
+the phase the child is in, read off what the supervisor already reports — a
+call the child still has open, prose already arriving, or neither — in the
+same closed vocabulary a turn of this session's own is reported in. It states
+no elapsed beside it: the number that belongs there is how long the turn has
+been in its phase, and what is reported of a child is how long the child has
+been alive, which is a different span. The vitals rail states the child's
+permission mode, its own context pressure, what it has spent against what the
+whole session has, and which of the parent's rounds it is running under.
+
+The fields a rail may shed when it runs out of columns leave in one order:
+model and provider detail first, then token counts, then the round counter,
+then the extras. Context pressure, spend, blocked or failed state and the
+permission-mode segment are not on that ladder at any width. A rail that goes
+quiet about what a child is burning goes quiet exactly where somebody is
+watching it, which is the one moment those figures are being read for.
+
 Above it, a notice rail exists only while there is something to say and
 disappears when there is not. Under that, on the terminals too narrow for the
 [inspector rail](#the-inspector-rail), the status row that stands in for it.
@@ -841,6 +858,20 @@ thing. On a gated card it hands the keyboard back and leaves the request
 where it was, which is a different act from the denial `[n]` is; on a card
 picked off the agent manager there is no draft underneath, so leaving is
 declining and the line says so.
+
+A rail above the card names whichever surface holds the keyboard and says
+which of what is waiting this is — `DECISION 1/2`, and `DECISION 1/1` where
+there is only one. The count is stated even then, because it is the same fact
+as the frame's own count of what is waiting, and a label that took a count
+only from the second decision would be one the reader meets for the first time
+when they have least attention to spare.
+
+Under it the draft is shown undressed, holding its characters, and it keeps
+both of its rails. The top one carries the count again; the bottom one carries
+the reading the decision is answered against — the permission mode, the
+context pressure, the spend — before the position the sentence is being held
+at. Those are the fields the [frame's](#the-input-frame) drop order never
+sheds, and a decision is the moment they are being read for.
 
 The decision run has two answers, and each has a spelling that says more.
 Beside *allow* and *deny* sit *allow, and say what to do next* and *deny, and

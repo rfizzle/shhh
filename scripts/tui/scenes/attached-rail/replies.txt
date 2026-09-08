@@ -1,0 +1,9 @@
+# One reply per request. The last line repeats once these run out, and both
+# the session and the child it spawns draw from this one queue.
+#
+# The sentence and the spawn are one reply, so the transcript titles the step
+# with the sentence rather than closing a turn before the call was asked for.
+Putting a reader on the round accounting.
++tool:spawn_agent:{"role":"researcher","task":"Read loop.go and say where the round counter is read.","name":"reader-1"}
+tool:read_file:{"path":"loop.go"}
+The round counter is read at the top of the loop, and nowhere else.

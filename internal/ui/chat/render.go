@@ -411,11 +411,16 @@ func (m Model) cockpitData(includeQueued bool) components.Cockpit {
 			c.ModeKind = components.CockpitGated
 		}
 	}
-	// Round counter shows only mid-turn, so long tool loops are visible — and
-	// through a round-limit pause, where the ceiling is the thing being
-	// decided. The grant on offer is stated beside it, so the counter says
-	// both what the bound is and what taking the offer would make it.
-	if m.agent.Rounds() > 0 && (m.turnState() != stateInput || m.pausedAtRoundLimit() || m.heldAtBoundary()) {
+	// The round counter stands as soon as there is one to state, idle
+	// included. It is the third field the rail sheds when it runs out of
+	// columns and the model is the first (guidelines/layout-drop-order), so a
+	// rail that hid the counter at rest while keeping the model had the order
+	// backwards — and what the counter answers at rest, how much of the
+	// ceiling the last turn spent, is exactly what the reader about to send
+	// the next one is asking. The grant on offer is stated beside it through
+	// a round-limit pause, so the counter says both what the bound is and
+	// what taking the offer would make it.
+	if m.agent.Rounds() > 0 {
 		c.Round = m.roundCounter()
 	}
 	// The session's account with the running turn's live estimate in it, so

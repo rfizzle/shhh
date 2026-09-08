@@ -30,8 +30,11 @@ func TestCockpit_Segments(t *testing.T) {
 
 func TestCockpit_CtxMeterFillAndThresholds(t *testing.T) {
 	c := Cockpit{Mode: "manual", ModeKind: CockpitGated, CtxPct: 50}
-	if view := c.View(120); !strings.Contains(view, "▰▰▰▰▱▱▱▱ 50%") {
-		t.Fatalf("50%% should fill 4 of 8 cells:\n%s", view)
+	// The number leads the bar, which is how every rail carrying a context
+	// meter draws one: the percentage is the figure, the bar is the shape it
+	// is read against.
+	if view := c.View(120); !strings.Contains(view, "ctx 50% ▰▰▰▰▱▱▱▱") {
+		t.Fatalf("50%% should fill 4 of 8 cells behind its number:\n%s", view)
 	}
 	hidden := Cockpit{Mode: "manual", ModeKind: CockpitGated, CtxPct: -1}
 	if view := hidden.View(120); strings.Contains(view, "ctx") {

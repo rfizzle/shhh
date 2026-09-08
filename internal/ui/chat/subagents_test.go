@@ -42,6 +42,32 @@ func blockingEnv() subagent.EnvFactory {
 	}
 }
 
+// billedEnv is blockingEnv with a bill: the stream reports one request's
+// usage and then blocks, so a test can observe a child that is both running
+// and has spent something — which is the state a rail scoped to a child has
+// to be able to report.
+func billedEnv(u provider.Usage) subagent.EnvFactory {
+	return func(ctx context.Context, spec subagent.Spec) (subagent.Env, error) {
+		stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+			ch := make(chan provider.StreamEvent)
+			go func() {
+				select {
+				case ch <- provider.StreamEvent{Usage: &u}:
+				case <-ctx.Done():
+				}
+				<-ctx.Done()
+				close(ch)
+			}()
+			return ch, func() {}, nil
+		}
+		return subagent.Env{
+			SystemPrompt: "sys",
+			Stream:       stream,
+			Executor:     func(string, json.RawMessage) (string, error) { return "", errors.New("unused") },
+		}, nil
+	}
+}
+
 func newSubagentModel(t *testing.T, sup *subagent.Supervisor) Model {
 	t.Helper()
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}

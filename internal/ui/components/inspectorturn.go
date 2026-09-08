@@ -56,10 +56,20 @@ func (r InspectorRail) turnBlock(width int) (railBlock, bool) {
 	if t.Files > 0 {
 		files += " " + DiffStat(t.Added, t.Removed)
 	}
-	b.add(indentRow(strings.Join([]string{
-		files,
-		sty.Dim.Render(plural(t.Tools, "tool")),
-		sty.Dim.Render(FormatElapsed(t.Elapsed)),
-	}, sty.Dim.Render(" · ")), width))
+	stats := []string{files}
+	// A turn that called no tools reports no tool count, and a turn too quick
+	// to time reports no duration: neither zero was measured, and a gap is
+	// legible as a gap where a fabricated zero is not
+	// (docs/interface/principles.md#a-stat-that-cannot-be-reported-is-left-out).
+	// The file count is the exception and says so in words — "0 files this
+	// turn" is the answer to a question the block is being asked, which is
+	// what CHANGES beneath it is being told apart from.
+	if t.Tools > 0 {
+		stats = append(stats, sty.Dim.Render(plural(t.Tools, "tool")))
+	}
+	if elapsed := FormatMeasuredElapsed(t.Elapsed); elapsed != "" {
+		stats = append(stats, sty.Dim.Render(elapsed))
+	}
+	b.add(indentRow(strings.Join(stats, sty.Dim.Render(" · ")), width))
 	return b, true
 }

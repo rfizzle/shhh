@@ -1,0 +1,33 @@
+# The keyboard moved into a child, at 144 columns — past the rung where the
+# content splits, so the inspector rail is up beside the child's transcript
+# and the frame under it is the child's own
+# (docs/interface/surfaces.md#the-input-frame).
+#
+# What the capture is for: the frame attached to a child says what the child
+# is burning. The top rail closes on the breadcrumb, in the palette's own
+# greys; the vitals rail carries the child's permission mode, its context
+# pressure and its spend, with the parent's round counter after them and the
+# child's name last — the order the field-drop ladder fixes.
+#
+# The command rather than the chord is the door in, because it is the one
+# both terminals under this harness deliver: the alt chords reach the tmux
+# pane and not the replay vhs drives.
+setup printf 'package agent\n\nfunc loop() {\n    for round := 0; round < limit; round++ {\n        step()\n    }\n}\n' > loop.go
+snap 01-start "Some things worth doing first"
+keys "who reads the round counter" Enter
+# Spawning an agent is gated, so the card is what stands between the sentence
+# and a child.
+snap 02-spawn-card "researcher agent"
+sleep 1
+keys y
+snap 03-spawned "reader-1"
+sleep 2
+keys "/attach reader-1" Enter
+snap 04-attached "esc detach"
+sleep 1
+keys Escape
+snap 05-detached "enter send · shift+enter newline"
+keys C-c
+snap 06-quit-armed "press again to quit"
+keys C-c
+snap 07-exit "that is everything the screen was holding"

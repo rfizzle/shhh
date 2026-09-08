@@ -14,7 +14,7 @@
    shhh chat                                                                                                                                    
   ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────  
   You                                                                                       │  THIS TURN                                step 2  
-    fix the round limit                                                                     │  0 files this turn · 6 tools · 0.0s               
+    fix the round limit                                                                     │  0 files this turn · 6 tools                      
                                                                                             │                                                   
   ▸ 1  Locate the round accounting ──────────────────────────────────────── ✓ 4 tools  1.2s │  CHANGES                                          
                                                                                             │   ✗ go test ./internal/agent/...                  
@@ -23,9 +23,9 @@
     ▎✗ run     go test ./internal/agent/...                                    exit 1   21s │  AGENTS                                1 running  
       --- FAIL: TestRoundLimit                                                              │▸ ⊘ orchestrator                            $0.51  
                                                                                             │    ready                                          
-   ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                                    round 2/25 │  ◇ researcher-1                                   
+   ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                                    round 2/25 │  ◇ researcher-1                            $0.05  
   ▎✎ 1 file changed +12 −4 · [v] review · [u] undo turn · [ctrl+o] to use them              │    ⠋ running                                      
-   ✗ go test ./internal/agent/... failing · exit 1 · 21s                                    │  ✗ reviewer-1                             failed  
+   ✗ go test ./internal/agent/... failing · exit 1 · 21s                                    │  ✗ reviewer-1                      failed  $0.05  
                                                                                             │    cancelled                                      
                                                                                             │                                                   
                                                                                             │  CONTEXT                             32% of 128k  
@@ -33,31 +33,31 @@
                                                                                             │                                     ↑41.2k ↓9.8k  
                                                                                             │                                                   
                                                                                             │  SPEND                                     $0.51  
-                                                                                            │  gpt-4o · $0.51 main                              
-  ◇ researcher-1  long survey                                                        running│  session total $0.51                              
+                                                                                            │  gpt-4o · $0.51 main · $0.10 ◇                    
+  ◇ researcher-1  long survey                                             running  ~5.1k tok│  session total $0.51                              
   ╭─ idle ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮  
   │ ❯                                                                                                                                        │  
   │                                                                                                                                          │  
   │                                                                                                                                          │  
-  ├─ ⏸ manual · ctx ▰▰▱▱▱▱▱▱ 32% · ↑41.2k ↓9.8k · $0.51 · ◇ 1 agent · gpt-4o ────────────────────────────────────────────────────────────────┤  
+  ├─ ⏸ manual · round 2/150 · ctx 32% ▰▰▱▱▱▱▱▱ · ↑41.2k ↓9.8k · $0.51 · ◇ 1 agent · gpt-4o ──────────────────────────────────────────────────┤  
   ╰─ enter send · shift+enter newline · ctrl+g editor · ctrl+v attach · ctrl+/ palette · shift+tab mode ─────────────────────────────────────╯  
 
 · the keyboard in a child · the rail stays, marked
    shhh chat                                                                                                                                    
   ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────  
   You                                                                                       │  THIS TURN                                step 2  
-    long survey                                                                             │  0 files this turn · 6 tools · 0.0s               
+    long survey                                                                             │  0 files this turn · 6 tools                      
                                                                                             │                                                   
-                                                                                            │  CHANGES                                          
-                                                                                            │   ✗ go test ./internal/agent/...                  
-                                                                                            │    exit 1                                         
+  ▾ 1  Reading the round accounting first. ──────────────────────────────── ▸ 2 tools       │  CHANGES                                          
+     ⚙ read    internal/agent/loop.go                                       220 lines       │   ✗ go test ./internal/agent/...                  
+     ⠋ read    internal/agent/round.go                                       running…       │    exit 1                                         
                                                                                             │                                                   
                                                                                             │  AGENTS                                1 running  
                                                                                             │  ⊘ orchestrator                            $0.51  
                                                                                             │    ready                                          
-                                                                                            │▸ ◇ researcher-1                                   
+                                                                                            │▸ ◇ researcher-1                            $0.05  
                                                                                             │    ⠋ running                                      
-                                                                                            │  ✗ reviewer-1                             failed  
+                                                                                            │  ✗ reviewer-1                      failed  $0.05  
                                                                                             │    cancelled                                      
                                                                                             │                                                   
                                                                                             │  CONTEXT                             32% of 128k  
@@ -65,13 +65,13 @@
                                                                                             │                                     ↑41.2k ↓9.8k  
                                                                                             │                                                   
                                                                                             │  SPEND                                     $0.51  
-                                                                                            │  gpt-4o · $0.51 main                              
+                                                                                            │  gpt-4o · $0.51 main · $0.10 ◇                    
                                                                                             │  session total $0.51                              
-  ╭─ ⠋WORKING ───────────────────────────────────────────────────────────────────────────────────── shhh chat · orchestrator ▸ researcher-1 ─╮  
+  ╭─ ⠋ running read internal/agent/round.go ─────────────────────────────────────────────────────── orchestrator ▸ researcher-1 · shhh chat ─╮  
   │ researcher-1 ❯                                                                                                                           │  
   │                                                                                                                                          │  
   │                                                                                                                                          │  
-  ├─ ⏸ manual · running · researcher-1 ──────────────────────────────────────────────────────────────────────────────────────────────────────┤  
+  ├─ ⏸ manual · running · ctx 9% ▰▱▱▱▱▱▱▱ · $0.05 of $0.51 · parent round 2/150 · researcher-1 ──────────────────────────────────────────────┤  
   ╰─ esc detach · alt+a agents ──────────────────────────────────────────────────────────────────────────────────────────────────────────────╯  
 
 ── ansi ────────────────────────────────────────────────────
@@ -79,7 +79,7 @@
   ␛[38;5;254;1m shhh chat␛[m                                                                                                                                    
   ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m  
   ␛[38;5;254;1mYou␛[m                                                                                       ␛[38;5;244m│␛[m  ␛[38;5;254;1mTHIS TURN␛[m                                ␛[38;5;244mstep 2␛[m  
-    fix the round limit                                                                     ␛[38;5;244m│␛[m  ␛[38;5;244m0 files this turn · 6 tools · 0.0s␛[m               
+    fix the round limit                                                                     ␛[38;5;244m│␛[m  ␛[38;5;244m0 files this turn · 6 tools␛[m                      
                                                                                             ␛[38;5;244m│␛[m                                                   
   ␛[38;5;244m▸␛[m ␛[38;5;254m1 ␛[m ␛[38;5;254mLocate the round accounting␛[m ␛[38;5;244m────────────────────────────────────────␛[m ␛[38;5;254m✓␛[m ␛[38;5;244m4 tools␛[m  ␛[38;5;244m1.2s␛[m ␛[38;5;244m│␛[m  ␛[38;5;254;1mCHANGES␛[m                                          
                                                                                             ␛[38;5;244m│␛[m   ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/...␛[m                  
@@ -88,9 +88,9 @@
     ␛[38;5;254m▎✗␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mgo test ./internal/agent/...␛[m                                    ␛[38;5;254mexit 1␛[m   ␛[38;5;244m21s␛[m ␛[38;5;244m│␛[m  ␛[38;5;254;1mAGENTS␛[m                                ␛[38;5;254m1 running␛[m  
       ␛[38;5;244m--- FAIL: TestRoundLimit␛[m                                                              ␛[38;5;244m│␛[39;48;5;237;1m▸␛[m ␛[38;5;244m⊘␛[m ␛[38;5;254morchestrator␛[m                            ␛[38;5;244m$0.51␛[m  
                                                                                             ␛[38;5;244m│␛[m    ␛[38;5;244mready␛[m                                          
-   ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[38;5;244m · 2 steps · 6 tools · 24.7s · $0.14␛[m                                    ␛[38;5;244mround 2/25␛[m ␛[38;5;244m│␛[m  ␛[38;5;254m◇␛[m ␛[38;5;254mresearcher-1␛[m                                   
+   ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[38;5;244m · 2 steps · 6 tools · 24.7s · $0.14␛[m                                    ␛[38;5;244mround 2/25␛[m ␛[38;5;244m│␛[m  ␛[38;5;254m◇␛[m ␛[38;5;254mresearcher-1␛[m                            ␛[38;5;244m$0.05␛[m  
   ␛[38;5;254m▎✎␛[m ␛[38;5;254m1 file changed +12␛[m ␛[38;5;254m−4␛[38;5;244m · [v] review · [u] undo turn · ␛[38;5;254m[ctrl+o] to use them␛[m              ␛[38;5;244m│␛[m    ␛[38;5;254m⠋ running␛[m                                      
-   ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[38;5;244m · exit 1 · 21s␛[m                                    ␛[38;5;244m│␛[m  ␛[38;5;254m✗␛[m ␛[38;5;254mreviewer-1␛[m                             ␛[38;5;254mfailed␛[m  
+   ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[38;5;244m · exit 1 · 21s␛[m                                    ␛[38;5;244m│␛[m  ␛[38;5;254m✗␛[m ␛[38;5;254mreviewer-1␛[m                      ␛[38;5;254mfailed␛[m  ␛[38;5;244m$0.05␛[m  
                                                                                             ␛[38;5;244m│␛[m    ␛[38;5;244mcancelled␛[m                                      
                                                                                             ␛[38;5;244m│␛[m                                                   
                                                                                             ␛[38;5;244m│␛[m  ␛[38;5;254;1mCONTEXT␛[m                             ␛[38;5;254m32% of 128k␛[m  
@@ -98,31 +98,31 @@
                                                                                             ␛[38;5;244m│␛[m                                     ␛[38;5;244m↑41.2k ↓9.8k␛[m  
                                                                                             ␛[38;5;244m│␛[m                                                   
                                                                                             ␛[38;5;244m│␛[m  ␛[38;5;254;1mSPEND␛[m                                     ␛[38;5;254m$0.51␛[m  
-                                                                                            ␛[38;5;244m│␛[m  ␛[38;5;244mgpt-4o · $0.51 main␛[m                              
-  ␛[38;5;254m◇␛[m researcher-1  ␛[38;5;244mlong survey␛[m                                                        ␛[38;5;244mrunning│␛[m  ␛[38;5;244msession total $0.51␛[m                              
+                                                                                            ␛[38;5;244m│␛[m  ␛[38;5;244mgpt-4o · $0.51 main · $0.10 ◇␛[m                    
+  ␛[38;5;254m◇␛[m researcher-1  ␛[38;5;244mlong survey␛[m                                             ␛[38;5;244mrunning␛[m  ␛[38;5;244m~5.1k tok│␛[m  ␛[38;5;244msession total $0.51␛[m                              
   ␛[38;5;254m╭─␛[m ␛[38;5;244midle␛[m ␛[38;5;254m───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m  
   ␛[38;5;254m│␛[m ␛[38;5;254;1m❯␛[m ␛[38;5;254m                                                                                                                                      ␛[m ␛[38;5;254m│␛[m  
   ␛[38;5;254m│␛[m                                                                                                                                          ␛[38;5;254m│␛[m  
   ␛[38;5;254m│␛[m                                                                                                                                          ␛[38;5;254m│␛[m  
-  ␛[38;5;254m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱␛[m ␛[38;5;254m32%␛[38;5;244m · ↑41.2k ↓9.8k · $0.51 · ␛[38;5;254m◇ 1 agent␛[38;5;244m · ␛[38;5;254mgpt-4o␛[m ␛[38;5;254m────────────────────────────────────────────────────────────────┤␛[m  
+  ␛[38;5;254m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · round 2/150 · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · ↑41.2k ↓9.8k · $0.51 · ␛[38;5;254m◇ 1 agent␛[38;5;244m · ␛[38;5;254mgpt-4o␛[m ␛[38;5;254m──────────────────────────────────────────────────┤␛[m  
   ␛[38;5;254m╰─␛[m ␛[38;5;244menter send · shift+enter newline · ctrl+g editor · ctrl+v attach · ctrl+/ palette · shift+tab mode␛[m ␛[38;5;254m─────────────────────────────────────╯␛[m  
 
 · the keyboard in a child · the rail stays, marked
   ␛[38;5;254;1m shhh chat␛[m                                                                                                                                    
   ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m  
   ␛[38;5;254;1mYou␛[m                                                                                       ␛[38;5;244m│␛[m  ␛[38;5;254;1mTHIS TURN␛[m                                ␛[38;5;244mstep 2␛[m  
-    long survey                                                                             ␛[38;5;244m│␛[m  ␛[38;5;244m0 files this turn · 6 tools · 0.0s␛[m               
+    long survey                                                                             ␛[38;5;244m│␛[m  ␛[38;5;244m0 files this turn · 6 tools␛[m                      
                                                                                             ␛[38;5;244m│␛[m                                                   
-                                                                                            ␛[38;5;244m│␛[m  ␛[38;5;254;1mCHANGES␛[m                                          
-                                                                                            ␛[38;5;244m│␛[m   ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/...␛[m                  
-                                                                                            ␛[38;5;244m│␛[m    ␛[38;5;244mexit 1␛[m                                         
+  ␛[38;5;254m▾␛[m ␛[38;5;254m1 ␛[m ␛[38;5;254mReading the round accounting first.␛[m ␛[38;5;244m────────────────────────────────␛[m ␛[38;5;254m▸␛[m ␛[38;5;244m2 tools␛[m       ␛[38;5;244m│␛[m  ␛[38;5;254;1mCHANGES␛[m                                          
+     ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/loop.go␛[m                                       ␛[38;5;244m220 lines␛[m       ␛[38;5;244m│␛[m   ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/...␛[m                  
+     ␛[38;5;254m⠋␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/round.go␛[m                                       ␛[38;5;254mrunning…␛[m       ␛[38;5;244m│␛[m    ␛[38;5;244mexit 1␛[m                                         
                                                                                             ␛[38;5;244m│␛[m                                                   
                                                                                             ␛[38;5;244m│␛[m  ␛[38;5;254;1mAGENTS␛[m                                ␛[38;5;254m1 running␛[m  
                                                                                             ␛[38;5;244m│␛[m  ␛[38;5;244m⊘␛[m ␛[38;5;254morchestrator␛[m                            ␛[38;5;244m$0.51␛[m  
                                                                                             ␛[38;5;244m│␛[m    ␛[38;5;244mready␛[m                                          
-                                                                                            ␛[38;5;244m│␛[39;48;5;237;1m▸␛[m ␛[38;5;254m◇␛[m ␛[38;5;254mresearcher-1␛[m                                   
+                                                                                            ␛[38;5;244m│␛[39;48;5;237;1m▸␛[m ␛[38;5;254m◇␛[m ␛[38;5;254mresearcher-1␛[m                            ␛[38;5;244m$0.05␛[m  
                                                                                             ␛[38;5;244m│␛[m    ␛[38;5;254m⠋ running␛[m                                      
-                                                                                            ␛[38;5;244m│␛[m  ␛[38;5;254m✗␛[m ␛[38;5;254mreviewer-1␛[m                             ␛[38;5;254mfailed␛[m  
+                                                                                            ␛[38;5;244m│␛[m  ␛[38;5;254m✗␛[m ␛[38;5;254mreviewer-1␛[m                      ␛[38;5;254mfailed␛[m  ␛[38;5;244m$0.05␛[m  
                                                                                             ␛[38;5;244m│␛[m    ␛[38;5;244mcancelled␛[m                                      
                                                                                             ␛[38;5;244m│␛[m                                                   
                                                                                             ␛[38;5;244m│␛[m  ␛[38;5;254;1mCONTEXT␛[m                             ␛[38;5;254m32% of 128k␛[m  
@@ -130,11 +130,11 @@
                                                                                             ␛[38;5;244m│␛[m                                     ␛[38;5;244m↑41.2k ↓9.8k␛[m  
                                                                                             ␛[38;5;244m│␛[m                                                   
                                                                                             ␛[38;5;244m│␛[m  ␛[38;5;254;1mSPEND␛[m                                     ␛[38;5;254m$0.51␛[m  
-                                                                                            ␛[38;5;244m│␛[m  ␛[38;5;244mgpt-4o · $0.51 main␛[m                              
+                                                                                            ␛[38;5;244m│␛[m  ␛[38;5;244mgpt-4o · $0.51 main · $0.10 ◇␛[m                    
                                                                                             ␛[38;5;244m│␛[m  ␛[38;5;244msession total $0.51␛[m                              
-  ␛[38;5;254m╭─␛[m ␛[38;5;254m⠋␛[1mWORKING␛[m ␛[38;5;254m─────────────────────────────────────────────────────────────────────────────────────␛[m shhh chat · orchestrator ▸ researcher-1 ␛[38;5;254m─╮␛[m  
+  ␛[38;5;254m╭─␛[m ␛[38;5;254m⠋ running read internal/agent/round.go␛[m ␛[38;5;254m───────────────────────────────────────────────────────␛[m ␛[38;5;244morchestrator␛[38;5;254m ▸ researcher-1␛[38;5;244m · shhh chat␛[m ␛[38;5;254m─╮␛[m  
   ␛[38;5;254m│␛[m ␛[38;5;254;1mresearcher-1 ❯␛[m ␛[38;5;254m                                                                                                                         ␛[m ␛[38;5;254m│␛[m  
   ␛[38;5;254m│␛[m                                                                                                                                          ␛[38;5;254m│␛[m  
   ␛[38;5;254m│␛[m                                                                                                                                          ␛[38;5;254m│␛[m  
-  ␛[38;5;254m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · running · researcher-1␛[m ␛[38;5;254m──────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m  
+  ␛[38;5;254m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · running · ␛[38;5;254mctx 9%␛[m ␛[38;5;254m▰␛[38;5;244m▱▱▱▱▱▱▱ · $0.05 of $0.51 · parent round 2/150 · researcher-1␛[m ␛[38;5;254m──────────────────────────────────────────────┤␛[m  
   ␛[38;5;254m╰─␛[m ␛[38;5;244mesc detach · alt+a agents␛[m ␛[38;5;254m──────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m  

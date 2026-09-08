@@ -386,6 +386,22 @@ func FormatElapsed(d time.Duration) string {
 	return fmt.Sprintf("%dm %02ds", int(d.Minutes()), int(d.Seconds())%60)
 }
 
+// MeasuredElapsedFloor is the shortest span a duration field reports. Under
+// it there is nothing to say: the clock was read twice in the same instant,
+// and `0.0s` is a measurement nobody made.
+const MeasuredElapsedFloor = 500 * time.Millisecond
+
+// FormatMeasuredElapsed is FormatElapsed for a field that would rather say
+// nothing than say zero: the duration where one was measured, and the empty
+// string under the floor
+// (docs/interface/principles.md#a-stat-that-cannot-be-reported-is-left-out).
+func FormatMeasuredElapsed(d time.Duration) string {
+	if d < MeasuredElapsedFloor {
+		return ""
+	}
+	return FormatElapsed(d)
+}
+
 // formatTokens is the rail's token count: 124k, 200k, 1.2M.
 func formatTokens(n int64) string {
 	switch {

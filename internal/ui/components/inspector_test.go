@@ -395,6 +395,31 @@ func TestInspectorRail_BothFileCountsSayTheirScope(t *testing.T) {
 	}
 }
 
+// A stat that was not measured is left out rather than reported as a zero
+// (docs/interface/principles.md#a-stat-that-cannot-be-reported-is-left-out).
+// A turn that called no tools has no tool count, and a turn the clock could
+// not separate from its own start has no duration. The file count is the one
+// figure the block states at zero, because it says its scope in words and
+// "nothing this turn" is the answer CHANGES beneath it is being told apart
+// from.
+func TestInspectorTurn_LeavesOutWhatItDidNotMeasure(t *testing.T) {
+	rail := InspectorRail{Turn: &InspectorTurn{Step: 1, Steps: 2, Tools: 0, Elapsed: 20 * time.Millisecond}}
+	view := stripANSI(rail.View(InspectorWidth, 0))
+	for _, unwanted := range []string{"0 tools", "0.0s"} {
+		if strings.Contains(view, unwanted) {
+			t.Fatalf("an unmeasured stat is left out, found %q in:\n%s", unwanted, view)
+		}
+	}
+	if !strings.Contains(view, "0 files this turn") {
+		t.Fatalf("the file count states its scope at zero too:\n%s", view)
+	}
+	measured := InspectorRail{Turn: &InspectorTurn{Step: 1, Steps: 2, Tools: 3, Elapsed: 4 * time.Second}}
+	got := stripANSI(measured.View(InspectorWidth, 0))
+	if !strings.Contains(got, "3 tools") || !strings.Contains(got, "4.0s") {
+		t.Fatalf("what was measured is stated:\n%s", got)
+	}
+}
+
 // Repeat edits to one path collapse to a single row carrying the turns behind
 // it; one turn's worth of edits says nothing, because "1t" is not news.
 func TestInspectorChanges_RepeatEditsCarryTheirTurnCount(t *testing.T) {

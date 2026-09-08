@@ -2,7 +2,8 @@ package chat
 
 // The spinner's tick loop (docs/interface/README.md). A running turn
 // drives three animations at once — the frame's activity slot (where the turn
-// status sits and where an attached child still reads `WORKING`),
+// status sits, for an attached child's phase as much as for this session's
+// own turn),
 // the transcript's live rows, and the inspector rail's agent lanes — and the
 // design's rule for them is that there is one tick source and never three.
 // Three timers would be three different truths about one turn.

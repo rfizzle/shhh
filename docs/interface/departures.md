@@ -378,3 +378,36 @@ would be a redesign of a takeover screen with its own artboard and its own
 goldens, and nothing in the question card asks for one. The gap is closed by
 drawing the backlog screen's own tabs, and if that artboard puts them on this
 strip, this is where they will already be.
+
+## The frame's phase is a lower-case word, and there are four of them
+
+*A disagreement.* The `Sheet` artboard draws the frame's top rail as
+`⠹ WORKING · 12.4s`; the `Frame` artboard draws the same corner as
+`⠋ running go test · 3s` and `⠹ writing · 8s`. The binary draws the lower-case
+form, because the readme's casing rule reserves upper case for rail block
+headings and a phase is the product reporting rather than a heading. `WORKING`
+is also true of every moment of every turn, so it answers nothing the rail is
+being asked.
+
+Of the two artboards' words, four are the vocabulary — `thinking…`,
+`deciding…`, `running <tool>`, `streaming…` — and `writing` is not among them.
+It is the nearest to `streaming…`, which is what a phase outside a closed
+vocabulary becomes ([closed vocabularies](principles.md#closed-vocabularies)):
+a fifth word would be a fifth state to read.
+
+## The attached rail states no elapsed beside the child's phase
+
+*A disagreement.* Both the `Frame` and the `Agents` artboards put a duration
+on the top rail of a frame attached to a child — `⠹ writing · 8s`, `⠹ 8s`. The
+binary draws the phase alone there.
+
+The number in that slot on every other frame is how long the running turn has
+been in its phase. What a supervisor reports of a child is how long the child
+has been alive, frozen when it finishes, which is a different span: a child
+five minutes old that started its third turn a moment ago would read as five
+minutes of one phase. Reporting the span it has under the label of the span it
+has not is worse than reporting neither
+([a stat that cannot be reported is left out](principles.md#a-stat-that-cannot-be-reported-is-left-out)),
+and the child's lifetime is already on its lane in the agent map, where it is
+what the column means. The gap is closed by the supervisor reporting a child's
+turn, at which point the rail can draw what the artboard draws.

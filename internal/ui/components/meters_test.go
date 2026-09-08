@@ -108,6 +108,31 @@ func TestMeterWithNoLabelStartsOnItsBar(t *testing.T) {
 	}
 }
 
+// ValueFirst moves the number in front of the bar and leaves nothing after
+// it, which is how every rail carrying a context meter draws one. The number
+// is still beside the bar and still in the meter's own colour — only the side
+// changes — so the rule the bar is never the only carrier of its value holds
+// either way.
+func TestMeterStatesItsValueBeforeTheBarWhenAsked(t *testing.T) {
+	m := Meter{Pct: 62, Cells: 8, Tone: MeterPressure, Label: "ctx", ValueFirst: true}
+	if view := stripANSI(m.View()); view != "ctx 62% ▰▰▰▰▱▱▱▱" {
+		t.Fatalf("the number leads the bar and nothing follows it, got %q", view)
+	}
+	after := Meter{Pct: 62, Cells: 8, Tone: MeterPressure, Label: "ctx"}
+	if view := stripANSI(after.View()); view != "ctx ▰▰▰▰▱▱▱▱ 62%" {
+		t.Fatalf("without it the number still follows the bar, got %q", view)
+	}
+	// A host that supplies its own text keeps it, on whichever side.
+	counted := Meter{Pct: 50, Cells: 4, Tone: MeterAgent, Text: "2 of 4", ValueFirst: true}
+	if view := stripANSI(counted.View()); view != "2 of 4 ▰▰▱▱" {
+		t.Fatalf("the host's own count leads too, got %q", view)
+	}
+	// And the vitals rail's meter is that shape wherever it is drawn.
+	if view := stripANSI(CtxMeter(62, 0, 0)); view != "ctx 62% ▰▰▰▰▱▱▱▱" {
+		t.Fatalf("the shared context meter leads with its number, got %q", view)
+	}
+}
+
 func TestMeterThresholdColours(t *testing.T) {
 	// The bar and the number turn together, so one style decides both.
 	for _, c := range []struct {

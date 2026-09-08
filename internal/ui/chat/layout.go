@@ -82,6 +82,10 @@ type frame struct {
 	// rail is the inspector rail resolved, with the reading it was resolved
 	// under (inspector.go).
 	rail *railBlock
+	// child is the attached child's reading: one pass over the transcript the
+	// supervisor mirrors, which the top rail asks for a phase and the vitals
+	// rail a context estimate (frame.go).
+	child *childReading
 }
 
 // tailBlock is the live tail rendered once, with the width it was rendered

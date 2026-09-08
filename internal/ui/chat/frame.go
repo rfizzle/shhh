@@ -158,7 +158,7 @@ func (m Model) frameExtraHeight() int {
 }
 
 // frameWorking reports whether the focused agent is actively working — the
-// top rail's WORKING state and the steering gutter glyph key off it.
+// top rail's phase and the steering gutter glyph key off it.
 func (m Model) frameWorking() bool {
 	if m.attachedTo != "" {
 		if m.subagents == nil {
@@ -167,8 +167,8 @@ func (m Model) frameWorking() bool {
 		st, ok := m.subagents.Get(m.attachedTo)
 		// A held child is still `running` as far as its lifecycle goes — it
 		// keeps its slot and its worktree — but it holds no stream, which is
-		// the only thing this answer is used for: whether the frame may say
-		// WORKING, and whether the suspend chord is refused (hold.go).
+		// the only thing this answer is used for: whether the frame states a
+		// phase at all, and whether the suspend chord is refused (hold.go).
 		return ok && st.State == subagent.StateRunning && !st.Held
 	}
 	switch m.turnState() {
@@ -208,6 +208,11 @@ func (m Model) frameAccentStyle() lipgloss.Style {
 // already does — and spent the width the turn's live account of itself
 // (turnstatus.go) reads best across. Attached, the rail is the one place
 // that says which session the keyboard is in, so the identity stays.
+// It is drawn in the palette's own greys rather than left bare. An unstyled
+// label inherits whatever foreground the terminal happens to be set to, which
+// is the one colour on this surface the palette never issued: the path leads
+// in Status and the sessions along it wear Info, the token every sub-agent
+// wears wherever one is named (docs/interface/README.md).
 func (m Model) frameIdentity() string {
 	if m.attachedTo == "" {
 		return ""
@@ -216,7 +221,23 @@ func (m Model) frameIdentity() string {
 	if title == "" {
 		title = defaultTitle
 	}
-	return title + " · " + m.breadcrumb()
+	// The path first and what the session is called after it: the breadcrumb
+	// answers which session the keyboard is in, which is why the rail carries
+	// an identity at all, and the title is the same word the header above the
+	// transcript is already showing.
+	return m.styledBreadcrumb() + sty.Frame.Identity.Render(" · "+title)
+}
+
+// styledBreadcrumb is breadcrumb in those two tones: the orchestrator the
+// path starts at in Status, and every child along it — its arrow with it, so
+// the pair reads as one step — in Info.
+func (m Model) styledBreadcrumb() string {
+	parts := strings.Split(m.breadcrumb(), " ▸ ")
+	out := sty.Frame.Identity.Render(parts[0])
+	for _, child := range parts[1:] {
+		out += sty.Frame.IdentityChild.Render(" ▸ " + child)
+	}
+	return out
 }
 
 // frameActivity is the top rail's near side, the corner over the prompt
@@ -240,13 +261,23 @@ func (m Model) frameActivity(width int) string {
 	if chip := m.holdChip(); chip != "" {
 		return sty.Frame.WaitingChip.Render(clipRow(chip, width))
 	}
-	// Attached, the frame is scoped to the child and the child's phase is not
-	// something the supervisor reports — a subagent is running, blocked or done.
-	// Naming one of the turn status's four for it would be inventing the fact,
-	// so the attached rail keeps the working indicator it had.
+	// Attached, the frame is scoped to the child, and the slot says what the
+	// child is doing in the same closed vocabulary a turn of this session's
+	// own is reported in. It used to say `WORKING`, which is the one word the
+	// vocabulary rules out: it is true of every moment of every turn, so it
+	// answers nothing, and it is upper case where a phase is a word the
+	// product is saying rather than a heading over a block.
+	//
+	// No elapsed rides beside it. The number the artboard draws there is how
+	// long the turn has been in its phase, and what the supervisor reports of
+	// a child is how long the child has been alive — a different span, and
+	// putting it under the same label would be answering a question with a
+	// figure from another one. A stat that cannot be reported is left out
+	// (docs/interface/principles.md#a-stat-that-cannot-be-reported-is-left-out).
 	if m.attachedTo != "" {
 		if m.frameWorking() {
-			return clipRow(m.spinner.View()+sty.Frame.Working.Render("WORKING"), width)
+			r := m.attachedReading()
+			return components.TurnStatus{Frame: m.spinFrame, Phase: r.phase, Tool: r.tool}.View(width)
 		}
 		return sty.Frame.Idle.Render(clipRow("idle", width))
 	}
@@ -694,9 +725,20 @@ func (m Model) frameVitals(layout frameLayout, width int) string {
 	return components.FitRail(segs, sty.StatusBar.Render(" · "), width)
 }
 
-// childRailSegments is the attached child's vitals: mode, live
-// detail (alert-styled when blocked), spend, queued steering, and the
-// child's name as the droppable-first detail field.
+// childRailSegments is the attached child's vitals: mode, live detail
+// (alert-styled where the child is waiting on the reader or has stopped), the
+// child's own context pressure, what it has spent of what the session has, the
+// parent round it is running under, queued steering, and the child's name as
+// the droppable-first detail field.
+//
+// It carries pressure and spend at every width because the field-drop order
+// never sheds them (guidelines/layout-drop-order): the model goes first, then
+// the token counts, then the round counter, then the extras, and context
+// pressure, spend, blocked or failed state and the mode segment are not on
+// that ladder at all. This rail used to state neither the pressure nor the
+// spend, so the one place that reports what a child is burning went quiet
+// exactly where somebody was watching it
+// (docs/interface/surfaces.md#the-input-frame).
 func (m Model) childRailSegments() []components.RailSegment {
 	name := m.attachedTo
 	st, ok := m.subagents.Get(name)
@@ -705,18 +747,138 @@ func (m Model) childRailSegments() []components.RailSegment {
 	}
 	mode, _ := m.subagents.AgentMode(name)
 	segs := []components.RailSegment{{Text: childModeSegment(mode), Drop: components.RailKeep}}
+	// A child waiting on an answer and a child that stopped are the two
+	// states the reader has to act on, so both are alert-styled and both are
+	// off the drop ladder: an attached rail that shed the word `failed` to
+	// make room for a round counter would be silent about the one thing the
+	// reader is attached to find out (guidelines/layout-drop-order).
 	detail, drop := sty.StatusBar.Render(st.Detail), components.RailNormal
-	if st.State == subagent.StateBlocked {
+	switch st.State {
+	case subagent.StateBlocked, subagent.StateFailed:
 		detail, drop = sty.CtxAlert.Render(st.Detail), components.RailVital
 	}
 	segs = append(segs, components.RailSegment{Text: detail, Drop: drop})
-	if spend := m.childSpendLabel(st); spend != "" {
+	if pct, ok := m.childContextPct(st); ok {
+		segs = append(segs, components.RailSegment{
+			Text: components.CtxMeter(pct, warnThresholdPercent, trimThresholdPercent),
+			Drop: components.RailVital,
+		})
+	}
+	if spend := m.childSpendAgainstSession(st); spend != "" {
 		segs = append(segs, components.RailSegment{Text: sty.StatusBar.Render(spend), Drop: components.RailVital})
+	}
+	// The round is the parent's, and says so: a child runs inside one of its
+	// spawner's tool rounds and keeps no ceiling of its own, so an unlabelled
+	// counter here would read as a bound on the child.
+	if m.agent.Rounds() > 0 {
+		segs = append(segs, components.RailSegment{
+			Text: sty.StatusBar.Render("parent " + m.roundLabel()),
+			Drop: components.RailNormal,
+		})
 	}
 	if q := m.subagents.QueuedSteering(name); q > 0 {
 		segs = append(segs, components.RailSegment{Text: sty.StatusBar.Render(fmt.Sprintf("queued %d", q)), Drop: components.RailNormal})
 	}
 	return append(segs, components.RailSegment{Text: sty.StatusBar.Render(st.Name), Drop: components.RailDetail})
+}
+
+// childSpendAgainstSession is what the child has cost and what the whole
+// session has: `$0.02 of $0.14`. The pair is the reading — a figure for one
+// agent means little without the total it is part of, and the reader attached
+// to a child is deciding whether to let it keep going
+// (docs/interface/surfaces.md#the-input-frame). A session that cannot price
+// its own total states the child's alone rather than a denominator it made up.
+func (m Model) childSpendAgainstSession(st subagent.Status) string {
+	spend := m.childSpendLabel(st)
+	if spend == "" {
+		return ""
+	}
+	if total := m.totalsLabel(m.sessionSpend()); strings.HasPrefix(total, "$") && strings.HasPrefix(spend, "$") {
+		return spend + " of " + total
+	}
+	return spend
+}
+
+// childContextPct is how much of its own model's window the attached child's
+// conversation fills, and whether there is anything to report yet. The
+// estimate is the session's own len/4 arithmetic (context.go) over the
+// transcript the supervisor mirrors, measured against the window the child's
+// model was resolved to — so a child on a smaller model reports the pressure
+// that model is under rather than this session's.
+//
+// It is an estimate and reads low: the mirror carries the conversation and
+// not the system prompt or the tool schemas in front of it. That is the same
+// direction the session's own estimate errs in before a request reports, and
+// a floor on the pressure is the reading worth having — a rail that said
+// nothing was the alternative.
+func (m Model) childContextPct(st subagent.Status) (int, bool) {
+	tokens := m.attachedReading().tokens
+	window := m.windowFor(st.Model)
+	if tokens <= 0 || window <= 0 {
+		return 0, false
+	}
+	return int(min(tokens*100/window, 100)), true
+}
+
+// childReading is what one pass over the attached child's mirrored transcript
+// answers: the phase the child is in, the call it named where it is running
+// one, and how much of its context window the conversation has filled. The
+// top rail asks for the first two and the vitals rail for the third, so the
+// pass is made once per paint and both read it (layout.go).
+type childReading struct {
+	phase  components.TurnPhase
+	tool   string
+	tokens int64
+}
+
+// attachedReading is that pass, memoised on the frame being painted.
+func (m Model) attachedReading() childReading {
+	if m.framed == nil {
+		return m.readChild(m.attachedTo)
+	}
+	if m.framed.child == nil {
+		r := m.readChild(m.attachedTo)
+		m.framed.child = &r
+	}
+	return *m.framed.child
+}
+
+// readChild reads the child's transcript once. The phase is taken off what
+// the supervisor already reports rather than invented: calls the child still
+// has open are `running`, prose already arriving is `streaming…`, and a child
+// with neither is the model reasoning before it acts. A round with several
+// calls in flight is named by none of them, which is the rule the session's
+// own status line follows (turnstatus.go).
+func (m Model) readChild(name string) childReading {
+	r := childReading{phase: components.PhaseThinking}
+	if m.subagents == nil || name == "" {
+		return r
+	}
+	entries := m.subagents.Transcript(name)
+	open := 0
+	for i := len(entries) - 1; i >= 0; i-- {
+		e := entries[i]
+		if e.Kind != subagent.EntryTool || !e.Pending {
+			break
+		}
+		open++
+		r.tool = toolLabel(e.Tool, e.Args)
+	}
+	streaming := m.subagents.StreamingText(name)
+	switch {
+	case open > 0:
+		r.phase = components.PhaseRunning
+		if open > 1 {
+			r.tool = ""
+		}
+	case streaming != "":
+		r.phase = components.PhaseStreaming
+	}
+	for _, e := range entries {
+		r.tokens += agent.EstimateTokens(e.Text) + agent.EstimateTokens(e.Args) + agent.EstimateTokens(e.Result)
+	}
+	r.tokens += agent.EstimateTokens(streaming)
+	return r
 }
 
 // railLabelWidth is the room a rail label has once the ends and an

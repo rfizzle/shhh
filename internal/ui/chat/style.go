@@ -118,7 +118,6 @@ type frameStyles struct {
 	AccentGated      lipgloss.Style
 	AccentChecking   lipgloss.Style
 	Idle             lipgloss.Style
-	Working          lipgloss.Style
 	Hint             lipgloss.Style
 	GutterIdle       lipgloss.Style
 	GutterWork       lipgloss.Style
@@ -129,6 +128,11 @@ type frameStyles struct {
 	//: the chrome goes dim, the characters stay legible.
 	DraftHeld   lipgloss.Style
 	WaitingChip lipgloss.Style
+	// The attached breadcrumb on the top rail: the path and the session's
+	// name in Status, and each agent along the path in Info, which is the
+	// token a sub-agent wears wherever one is named.
+	Identity      lipgloss.Style
+	IdentityChild lipgloss.Style
 }
 
 func newFrameStyles(p components.ColorTokens) frameStyles {
@@ -137,17 +141,18 @@ func newFrameStyles(p components.ColorTokens) frameStyles {
 		AccentGated:      lipgloss.NewStyle().Foreground(p.Accent.Color()),
 		AccentChecking:   lipgloss.NewStyle().Foreground(p.Spin.Color()),
 		Idle:             lipgloss.NewStyle().Foreground(p.Dim.Color()),
-		Working:          lipgloss.NewStyle().Bold(true).Foreground(p.Spin.Color()),
 		Hint:             lipgloss.NewStyle().Foreground(p.Dim.Color()),
 		GutterIdle:       lipgloss.NewStyle().Bold(true).Foreground(p.Info.Color()),
 		GutterWork:       lipgloss.NewStyle().Bold(true).Foreground(p.Spin.Color()),
 		// The bang draft's glyph carries the gated accent: what enter does
 		// next is ask, on the confirm card.
-		GutterBang:  lipgloss.NewStyle().Bold(true).Foreground(p.Accent.Color()),
-		NoticeInfo:  lipgloss.NewStyle().Foreground(p.Info.Color()),
-		NoticeAlert: lipgloss.NewStyle().Foreground(p.Del.Color()),
-		DraftHeld:   lipgloss.NewStyle().Foreground(p.Body.Color()),
-		WaitingChip: lipgloss.NewStyle().Bold(true).Foreground(p.Accent.Color()),
+		GutterBang:    lipgloss.NewStyle().Bold(true).Foreground(p.Accent.Color()),
+		NoticeInfo:    lipgloss.NewStyle().Foreground(p.Info.Color()),
+		NoticeAlert:   lipgloss.NewStyle().Foreground(p.Del.Color()),
+		DraftHeld:     lipgloss.NewStyle().Foreground(p.Body.Color()),
+		WaitingChip:   lipgloss.NewStyle().Bold(true).Foreground(p.Accent.Color()),
+		Identity:      lipgloss.NewStyle().Foreground(p.Status.Color()),
+		IdentityChild: lipgloss.NewStyle().Foreground(p.Info.Color()),
 	}
 }
 

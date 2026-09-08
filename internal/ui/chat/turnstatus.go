@@ -114,7 +114,14 @@ func (m Model) runningToolLabel() string {
 		return ""
 	}
 	tc := m.runningTools[0]
-	verb, arg := activityVerbFor(tc.Name, tc.Arguments), digest.Arg(tc.Name, tc.Arguments)
+	return toolLabel(tc.Name, tc.Arguments)
+}
+
+// toolLabel is that naming for one call, shared with the rail scoped to a
+// child agent, whose calls arrive through the supervisor rather than through
+// this session's own round (frame.go).
+func toolLabel(name, args string) string {
+	verb, arg := activityVerbFor(name, args), digest.Arg(name, args)
 	switch {
 	case arg == "":
 		return verb

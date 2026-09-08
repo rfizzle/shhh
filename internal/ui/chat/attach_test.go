@@ -52,6 +52,15 @@ func spawnChild(t *testing.T, sup *subagent.Supervisor, role subagent.Role, name
 	})
 }
 
+// noteChild puts one entry into a child's transcript, which is how a test
+// gives a child something to have been doing without a provider behind it.
+func noteChild(t *testing.T, sup *subagent.Supervisor, name string, e subagent.TranscriptEntry) {
+	t.Helper()
+	if err := sup.Note(name, e); err != nil {
+		t.Fatal(err)
+	}
+}
+
 // killChild stops one child and waits for the supervisor to settle it, which
 // is the deterministic way to get a session that has finished.
 func killChild(t *testing.T, sup *subagent.Supervisor, name string) {

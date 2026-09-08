@@ -366,7 +366,10 @@ func TestFrame_WaitingChipLeadsTheRail(t *testing.T) {
 }
 
 // Attached, the rail is the one place that says which session the keyboard is
-// in — so the breadcrumb stays, on the side the account gave up.
+// in — so the breadcrumb stays, on the side the account gave up. The path
+// leads and the session's name follows it, because the path is the answer the
+// far side is there to give and the name is the word the header above the
+// transcript is already showing.
 func TestFrame_AttachedBreadcrumbTakesTheFarSide(t *testing.T) {
 	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
 	t.Cleanup(sup.Close)
@@ -377,11 +380,23 @@ func TestFrame_AttachedBreadcrumbTakesTheFarSide(t *testing.T) {
 	m = updated.(Model)
 
 	rail := strings.TrimSpace(stripANSI(frameTopRail(m.View().Content)))
-	if !strings.HasSuffix(rail, "orchestrator ▸ researcher-1 ─╮") {
+	if !strings.Contains(rail, "orchestrator ▸ researcher-1 · ") || !strings.HasSuffix(rail, " ─╮") {
 		t.Fatalf("the breadcrumb should close the attached rail:\n%s", rail)
 	}
 	if !strings.HasPrefix(rail, "╭─ ") {
 		t.Fatalf("the account should open the attached rail:\n%s", rail)
+	}
+	// Every glyph of it is a colour the palette issued: the path in Status,
+	// the child in Info. Bare text inherits the terminal's own foreground,
+	// which is the one colour on this surface nobody chose.
+	styled := frameTopRail(m.View().Content)
+	for _, want := range []string{
+		sty.Frame.Identity.Render("orchestrator"),
+		sty.Frame.IdentityChild.Render(" ▸ researcher-1"),
+	} {
+		if !strings.Contains(styled, want) {
+			t.Fatalf("the breadcrumb should carry the palette's own tones, missing %q in:\n%q", want, styled)
+		}
 	}
 }
 
@@ -419,6 +434,143 @@ func TestFrame_IdentityDropsBeforeTheAccount(t *testing.T) {
 	}
 	if !dropped {
 		t.Fatal("the identity should shed once the rail cannot hold both")
+	}
+}
+
+// attachedModel is a session with the keyboard in a child that is running,
+// has been billed for a request and has a conversation behind it — the state
+// a rail scoped to a child has to be able to report in full.
+func attachedModel(t *testing.T, width int) Model {
+	t.Helper()
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(),
+		NewEnv: billedEnv(provider.Usage{PromptTokens: 4200, CompletionTokens: 900})})
+	t.Cleanup(sup.Close)
+	m := frameModel(t, width, 40).WithSubagents(sup)
+	spawnBlockedChild(t, sup)
+	waitFor(t, func() bool {
+		st, ok := sup.Get("researcher-1")
+		return ok && st.Spend.In > 0
+	})
+	noteChild(t, sup, "researcher-1", subagent.TranscriptEntry{
+		Kind: subagent.EntryTool, Tool: "read_file", Args: `{"path":"internal/agent/loop.go"}`,
+		Result: strings.Repeat("internal/agent/loop.go:118 the round counter is read here\n", 220)})
+	m.agent.BeginToolRound("", nil, nil)
+	m.attach("researcher-1")
+	return m
+}
+
+// The fields the drop order never sheds are on the attached rail at every
+// width: the permission mode, the child's context pressure and its spend
+// against the session's. What goes, goes in the order the guideline fixes —
+// the child's name is the detail rank and leaves first, the parent's round
+// counter after it (guidelines/layout-drop-order). The rail used to carry
+// none of the three, so the one place that reports what a child is burning
+// went quiet exactly where somebody was watching it.
+func TestChildRail_NeverDropsPressureSpendOrMode(t *testing.T) {
+	m := attachedModel(t, 140)
+	segs := m.childRailSegments()
+	var vital []string
+	for _, s := range segs {
+		if s.Drop <= components.RailVital {
+			vital = append(vital, stripANSI(s.Text))
+		}
+	}
+	full := stripANSI(m.frameVitals(frameWide, 200))
+	for _, want := range []string{"⏸ ", "ctx ", "▰", " of ", "parent round 1/", "researcher-1"} {
+		if !strings.Contains(full, want) {
+			t.Fatalf("a wide attached rail states everything, missing %q in %q", want, full)
+		}
+	}
+	if len(vital) < 3 {
+		t.Fatalf("mode, pressure and spend are all never-dropped fields, got %q", vital)
+	}
+	// Narrowing sheds the name, then the round, and never the three above.
+	name := strings.Index(full, "researcher-1")
+	round := strings.Index(full, "parent round")
+	if name < round {
+		t.Fatalf("the child's name is the detail rank and stands last: %q", full)
+	}
+	for width := 200; width >= 20; width -= 4 {
+		rail := stripANSI(m.frameVitals(frameWide, width))
+		if !strings.Contains(rail, "⏸ ") {
+			t.Fatalf("width %d: the mode segment is never dropped: %q", width, rail)
+		}
+		if strings.Contains(rail, "parent round") && !strings.Contains(rail, "ctx ") {
+			t.Fatalf("width %d: the round outlived the pressure: %q", width, rail)
+		}
+	}
+	// And the narrow layout, which keeps only the never-dropped fields, keeps
+	// all three of them.
+	narrow := stripANSI(m.frameVitals(frameNarrow, 200))
+	for _, want := range []string{"⏸ ", "ctx ", "$"} {
+		if !strings.Contains(narrow, want) {
+			t.Fatalf("the minimal rail keeps what never drops, missing %q in %q", want, narrow)
+		}
+	}
+	if strings.Contains(narrow, "parent round") {
+		t.Fatalf("the minimal rail keeps nothing below vital: %q", narrow)
+	}
+}
+
+// A child waiting on the reader and a child that stopped are the two states
+// the reader is attached to find out about, so neither is on the drop ladder:
+// a rail that shed the word to make room for a round counter would be silent
+// about the one thing it was opened for.
+// The waiting child shares the branch and the rank, so this pins both.
+func TestChildRail_NeverDropsAStoppedChildsState(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := frameModel(t, 140, 40).WithSubagents(sup)
+	spawnBlockedChild(t, sup)
+	killChild(t, sup, "researcher-1")
+	m.attach("researcher-1")
+
+	st, _ := sup.Get("researcher-1")
+	if st.State != subagent.StateFailed || st.Detail == "" {
+		t.Fatalf("the child should have stopped with something to say, got %v %q", st.State, st.Detail)
+	}
+	// Down to a rail with barely room for the mode beside it.
+	for width := 200; width >= 30; width -= 5 {
+		if rail := stripANSI(m.frameVitals(frameNarrow, width)); !strings.Contains(rail, st.Detail) {
+			t.Fatalf("width %d: the stopped child's state was dropped: %q", width, rail)
+		}
+	}
+	// And it is alert-styled, so the state is not left to the word alone.
+	if !strings.Contains(m.frameVitals(frameNarrow, 200), sty.CtxAlert.Render(st.Detail)) {
+		t.Fatalf("a stopped child's state carries the alert tone: %q", m.frameVitals(frameNarrow, 200))
+	}
+}
+
+// The attached top rail names the child's phase in the same closed vocabulary
+// a turn of this session's own is reported in, read off what the supervisor
+// reports: a call the child still has open is `running`, and `WORKING` — true
+// of every moment of every turn, and therefore an answer to nothing — is not
+// one of the words (docs/interface/principles.md#closed-vocabularies).
+func TestFrame_AttachedRailNamesThePhaseRatherThanWorking(t *testing.T) {
+	m := attachedModel(t, 140)
+	rail := stripANSI(m.frameActivity(120))
+	if strings.Contains(strings.ToUpper(rail), "WORKING") {
+		t.Fatalf("the phase is one of the four, not WORKING: %q", rail)
+	}
+	if !strings.Contains(rail, "thinking…") {
+		t.Fatalf("a child with nothing open is reasoning before it acts: %q", rail)
+	}
+	noteChild(t, m.subagents, "researcher-1", subagent.TranscriptEntry{
+		Kind: subagent.EntryTool, Tool: "execute_command",
+		Args: `{"command":"go test ./internal/agent/..."}`, Pending: true})
+	if rail := stripANSI(m.frameActivity(120)); !strings.Contains(rail, "running go test ./internal/agent/...") {
+		t.Fatalf("an open call names itself on the rail: %q", rail)
+	}
+	// Two calls in flight are named by neither, which is the rule the
+	// session's own status line follows.
+	noteChild(t, m.subagents, "researcher-1", subagent.TranscriptEntry{
+		Kind: subagent.EntryTool, Tool: "read_file", Args: `{"path":"round.go"}`, Pending: true})
+	rail = stripANSI(m.frameActivity(120))
+	if strings.Contains(rail, "round.go") || strings.Contains(rail, "go test") {
+		t.Fatalf("a round of several calls is named by none of them: %q", rail)
+	}
+	if !strings.Contains(rail, "running") {
+		t.Fatalf("it is still the running phase: %q", rail)
 	}
 }
 

@@ -268,6 +268,45 @@ func TestInterrupt_ARoutedChildApprovalIsInertUntilItHoldsTheKeyboard(t *testing
 	}
 }
 
+// The frame under a card that has taken the keyboard keeps saying what the
+// session is waiting for and what it is being asked against: the count on its
+// top rail, and the vitals the field-drop order never sheds on its bottom
+// one. A decision is the moment those figures are read, so this is the last
+// place they may go quiet. The DECISION rail counts a lone decision too —
+// 1/1 — because the count is the same fact as the chip and a label that took
+// one only from the second decision is one the reader meets first when they
+// have least attention to spare.
+func TestInterrupt_TheHeldDraftKeepsTheCountAndTheVitals(t *testing.T) {
+	m := interruptedModel(t, "also add a --max-rounds flag while you're in there")
+	m = handover(t, m)
+	// Turns behind it, set after the handover: the rail's counters ease
+	// toward a figure they have not shown before, and what is being asserted
+	// here is which fields the rail carries rather than a frame of that climb
+	// (turnstatus.go).
+	m.TotalTokensIn, m.TotalTokensOut = 41_200, 9_800
+	if got := m.decisionRailLabel(); got != "DECISION 1/1" {
+		t.Fatalf("the rail counts even one decision, got %q", got)
+	}
+	held := ansi.Strip(strings.Join(m.undressedDraft(m.contentWidth()), "\n"))
+	if !strings.Contains(held, "⏸ 1 waiting") {
+		t.Fatalf("the held frame's top rail counts what is waiting:\n%s", held)
+	}
+	for _, want := range []string{"⏸ manual", "ctx ", "▱", m.draftPosition()} {
+		if !strings.Contains(held, want) {
+			t.Fatalf("the held frame's rail keeps %q:\n%s", want, held)
+		}
+	}
+	// The position is the block's own evidence and ranks below the vitals, so
+	// a rail with room for one of the two keeps the reading.
+	narrow := ansi.Strip(strings.Join(m.undressedDraft(46), "\n"))
+	if !strings.Contains(narrow, "⏸ manual") {
+		t.Fatalf("the mode segment is never dropped:\n%s", narrow)
+	}
+	if strings.Contains(narrow, "cursor at") && !strings.Contains(narrow, "ctx ") {
+		t.Fatalf("the position outlived the pressure:\n%s", narrow)
+	}
+}
+
 // The rail is the check invariant 5 states: cover the colours, and the screen
 // still names the surface holding the keyboard.
 func TestInterrupt_TheRailFallsBackRatherThanClippingTheWord(t *testing.T) {
