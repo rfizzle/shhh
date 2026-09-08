@@ -212,6 +212,16 @@ func (a *Agent) SetMessages(msgs []provider.Message) {
 // Append adds one message to the conversation.
 func (a *Agent) Append(msg provider.Message) { a.messages = append(a.messages, a.scrubbed(msg)) }
 
+// AppendMachine adds a user-role message the session wrote for itself — a
+// check-in, a steer, a gate verdict, a tree notice, the nudge that continues
+// a cut-off reply. The model is handed an ordinary user message, because it
+// has no other role to read a fact in; the flag is what keeps the surfaces
+// that speak for the person from crediting it to them
+// (provider.Message.Machine).
+func (a *Agent) AppendMachine(content string) {
+	a.Append(provider.Message{Role: provider.RoleUser, Content: content, Machine: true})
+}
+
 // StartTurn begins a fresh user turn: the text joins the conversation and
 // the round counter resets.
 func (a *Agent) StartTurn(text string) { a.StartTurnWith(text, nil) }

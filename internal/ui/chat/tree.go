@@ -12,7 +12,6 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // WithTreeCheck turns the reading on; nil leaves it off. Own is filled from
@@ -58,7 +57,7 @@ func (m *Model) injectTreeNotice(turnStart bool) {
 	if !ok {
 		return
 	}
-	m.agent.Append(provider.Message{Role: provider.RoleUser, Content: n.Message})
+	m.agent.AppendMachine(n.Message)
 	m.appendEntry(entry{kind: entrySystem, text: n.Notice})
 	m.signal(observe.SignalTree, n.Signal())
 	// A row was appended, so the pane is redrawn the way every other system

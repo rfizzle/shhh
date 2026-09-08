@@ -377,6 +377,12 @@ var migrations = []string{
 	);
 
 	CREATE INDEX IF NOT EXISTS idx_sources_session ON sources(session_id);`,
+
+	// Which user-role messages nobody typed. Older rows default to 0: a
+	// conversation stored before this column existed has no record of who
+	// wrote what, and reading one as the person's is what it has always
+	// looked like on screen.
+	`ALTER TABLE chat_messages ADD COLUMN machine INTEGER NOT NULL DEFAULT 0;`,
 }
 
 // migrate brings the store up to the current schema, one step per

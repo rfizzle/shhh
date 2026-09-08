@@ -28,6 +28,19 @@ type Message struct {
 	// that requested tools needs it, and only the providers that require it
 	// back put it on the wire.
 	Reasoning []ReasoningBlock
+	// Machine marks a user-role message nobody typed: a check-in, a steer, a
+	// gate verdict, a secret's announcement, a tree notice, the summary a
+	// compaction restarts from, the output of a /run. Every provider is
+	// still handed a plain user message — the model has no other role to
+	// read a fact in — so nothing on the wire reads this. What reads it is
+	// every surface that speaks for the person: the transcript shows a
+	// flagged message as the session's own row rather than theirs, the
+	// rewind list offers no checkpoint on it, and ↑ never puts it back in
+	// the draft. It is stored beside the message, because a conversation
+	// read back out of the store would otherwise credit all of it to the
+	// reader.
+	// See docs/capabilities/sessions-and-memory.md#a-message-the-session-wrote-stays-the-sessions.
+	Machine bool
 }
 
 type Tool struct {

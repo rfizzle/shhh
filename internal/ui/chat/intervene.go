@@ -11,7 +11,6 @@ package chat
 import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
-	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // considerVerdict offers a fresh reading to the agent's policy. It only ever
@@ -49,7 +48,7 @@ func (m *Model) injectInterventions() {
 	if !ok {
 		return
 	}
-	m.agent.Append(provider.Message{Role: provider.RoleUser, Content: iv.Message})
+	m.agent.AppendMachine(iv.Message)
 	m.appendEntry(entry{kind: entrySystem, text: iv.Notice})
 	m.signal(observe.SignalIntervene, iv.Kind.Signal())
 	// Written down where the reading schedule can see it (summary.go): a

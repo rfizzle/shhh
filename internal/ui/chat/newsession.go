@@ -217,6 +217,17 @@ func (m *Model) appendMessageEntries(msgs []provider.Message) {
 	for i, msg := range msgs {
 		switch msg.Role {
 		case provider.RoleUser:
+			// A user-role message the session wrote for itself comes back as
+			// the session's row, not the reader's
+			// (provider.Message.Machine). The row carries the sentence the
+			// model was handed rather than the short notice the live row
+			// showed, because the notice was never part of the conversation
+			// — a long row in the session's own voice is still true, and a
+			// short one over the reader's name is not.
+			if msg.Machine {
+				m.appendEntry(entry{kind: entrySystem, text: msg.Content})
+				break
+			}
 			// A resumed turn keeps the names of what it attached:
 			// the bytes were saved with it, so the row that said "attached:
 			// shot.png" says it again.

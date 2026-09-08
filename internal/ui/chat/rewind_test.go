@@ -73,6 +73,47 @@ func TestCheckpoints_GitSnapshotRecorded(t *testing.T) {
 	}
 }
 
+// A conversation that came back from the store is rebuilt from its messages,
+// and the ones the session wrote for itself are the session's: they come back
+// as system rows and they are not turns. Counting one would number the check-
+// in among the reader's turns, and "before turn 4" would then cut the
+// conversation in the middle of the turn the check-in interrupted.
+func TestCheckpoints_RebuiltSkipTheMessagesTheSessionWrote(t *testing.T) {
+	steer := "You are editing a file the task did not ask about. Say why or go back."
+	m := resumedModel(t, []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "add the retry"},
+		{Role: provider.RoleAssistant, Content: "editing the config"},
+		{Role: provider.RoleUser, Content: steer, Machine: true},
+		{Role: provider.RoleAssistant, Content: "going back"},
+		{Role: provider.RoleUser, Content: "now run the tests"},
+	})
+
+	if len(m.checkpoints) != 2 {
+		t.Fatalf("expected the two typed turns as checkpoints, got %d: %+v", len(m.checkpoints), m.checkpoints)
+	}
+	loaded := m.Messages()
+	for _, cp := range m.checkpoints {
+		if loaded[cp.index].Machine {
+			t.Fatalf("checkpoint %d points at a message the session wrote: %q",
+				cp.index, loaded[cp.index].Content)
+		}
+	}
+	if m.checkpoints[1].preview != "now run the tests" {
+		t.Fatalf("the newest checkpoint previews %q, want the last typed turn",
+			m.checkpoints[1].preview)
+	}
+	var kind entryKind
+	for _, e := range m.transcript {
+		if strings.Contains(e.text, "did not ask about") {
+			kind = e.kind
+		}
+	}
+	if kind != entrySystem {
+		t.Fatalf("the steer came back as entry kind %v, want the session's own row", kind)
+	}
+}
+
 func TestRewindNumbered_TruncatesAndBranches(t *testing.T) {
 	db := rewindTestDB(t)
 	m := newRewindModel(t).WithDB(db)

@@ -156,6 +156,34 @@ func TestSaveChat_RoundTripsAttachments(t *testing.T) {
 	}
 }
 
+// Who wrote a user-role message survives the store: a conversation read back
+// with the flag lost would credit the harness's check-in to the person, and
+// every surface that reads it — the transcript, the rewind list, ↑ — would
+// say so.
+func TestSaveChat_RoundTripsWhoWroteTheMessage(t *testing.T) {
+	db := openTestDB(t)
+
+	msgs := []provider.Message{
+		{Role: provider.RoleUser, Content: "add the retry"},
+		{Role: provider.RoleAssistant, Content: "on it"},
+		{Role: provider.RoleUser, Content: "Stop and say what you have done so far.", Machine: true},
+	}
+
+	if err := db.SaveChat("checked-in", msgs); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+	loaded, err := db.LoadChat("checked-in")
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	if loaded[0].Machine {
+		t.Error("a typed prompt came back as the session's own words")
+	}
+	if !loaded[2].Machine {
+		t.Error("a check-in came back as the reader's own words")
+	}
+}
+
 func TestLoadChat_NotFound(t *testing.T) {
 	db := openTestDB(t)
 

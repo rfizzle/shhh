@@ -426,10 +426,7 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		// A local run's output stays out of the conversation: that is the
 		// whole difference `!!` buys, and the row's outcome says so (bang.go).
 		if !msg.local {
-			m.agent.Append(provider.Message{
-				Role:    provider.RoleUser,
-				Content: commandContextMessage(msg.command, out, msg.exitCode),
-			})
+			m.agent.AppendMachine(commandContextMessage(msg.command, out, msg.exitCode))
 		}
 		// A message typed while the /run command executed is sent now, with
 		// the command context already in the conversation.

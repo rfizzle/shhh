@@ -277,7 +277,7 @@ func (m Model) messageTurnGroup(scaled int64) (components.ContextGroup, bool) {
 		}
 		if msg.Role == provider.RoleUser {
 			add(label, tokens)
-			label, tokens = turnLabel(msg.Content), 0
+			label, tokens = turnLabel(msg), 0
 		} else if label == "" {
 			// An assistant message before any user message: a resumed
 			// session opening mid-turn. It is a turn whose opening is gone.
@@ -302,12 +302,12 @@ func (m Model) messageTurnGroup(scaled int64) (components.ContextGroup, bool) {
 // turnLabel is the opening of the message a turn started with, on one line.
 // A message the session wrote on the reader's behalf is named rather than
 // quoted (typedByHand, recall.go).
-func turnLabel(text string) string {
-	text = strings.TrimSpace(text)
+func turnLabel(msg provider.Message) string {
+	text := strings.TrimSpace(msg.Content)
 	switch {
 	case text == "":
 		return "(an empty message)"
-	case !typedByHand(text):
+	case !typedByHand(msg):
 		return synthesisedTurnLabel(text)
 	}
 	line := text
@@ -320,18 +320,22 @@ func turnLabel(text string) string {
 	return line
 }
 
-// synthesisedTurnLabel names one of the three user-role messages nobody
-// typed. The openings are the constants the code that writes them declares,
-// so a reworded message cannot quietly start being quoted as if it were the
-// reader's.
+// synthesisedTurnLabel names a user-role message nobody typed. Which one it
+// is comes from the opening the code that writes it declares as a constant;
+// the ones with no constant to match — what the steering machinery says in
+// the reader's role — are named for what they have in common, because a row
+// in a token table has to say whose words are being weighed and does not
+// have to say more.
 func synthesisedTurnLabel(text string) string {
 	switch {
 	case strings.HasPrefix(text, compactContextPrefix):
 		return "the compaction summary"
 	case strings.HasPrefix(text, commandContextPrefix):
 		return "a command's output"
+	case text == continuePrompt:
+		return "carrying on from a cut-off reply"
 	default:
-		return "carrying on from the round limit"
+		return "what the session said for itself"
 	}
 }
 

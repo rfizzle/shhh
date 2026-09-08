@@ -149,7 +149,7 @@ func (a *Agent) Compact(summary string, kept []provider.Message) {
 		rebuilt = append(rebuilt, a.messages[0])
 	}
 	rebuilt = append(rebuilt, provider.Message{
-		Role: provider.RoleUser, Content: CompactSummaryMessage(summary)})
+		Role: provider.RoleUser, Content: CompactSummaryMessage(summary), Machine: true})
 	rebuilt = append(rebuilt, kept...)
 	a.SetMessages(rebuilt)
 }

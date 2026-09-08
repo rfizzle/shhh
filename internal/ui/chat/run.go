@@ -251,8 +251,11 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 	}
 }
 
-// commandContextMessage is appended to the conversation (as the user) so the
-// model can see what a /run produced, without triggering a response.
+// commandContextMessage is appended to the conversation so the model can see
+// what a /run produced, without triggering a response. It goes in the user's
+// role, because that is the only role a fact can be read in, and is flagged
+// as the session's own so no surface offers it back as something the reader
+// typed (provider.Message.Machine).
 func commandContextMessage(command, output string, exitCode int) string {
 	if cut, truncated := tools.TruncateOutput(output, tools.MaxExecOutputBytes); truncated {
 		output = cut + "\n… (output truncated)"

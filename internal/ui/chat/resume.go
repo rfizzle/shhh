@@ -427,7 +427,7 @@ func (m Model) continueStream(res *streamResume) (tea.Model, tea.Cmd) {
 		m.agent.Append(provider.Message{Role: provider.RoleAssistant, Content: res.text})
 		m.appendEntry(m.stampStep(entry{kind: entryAssistant, text: res.text}))
 	}
-	m.agent.Append(provider.Message{Role: provider.RoleUser, Content: prompt})
+	m.agent.AppendMachine(prompt)
 	m.appendEntry(entry{kind: entrySystem, text: "Continuing from the partial reply."})
 	m.trimForRequest()
 	m.syncViewport()

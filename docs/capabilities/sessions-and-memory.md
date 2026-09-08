@@ -116,6 +116,29 @@ shape a person reads as "it is done", and the round it is owed would never be
 asked for. A slot with no mark is every conversation written before there was
 one, and it opens exactly the way it always opened.
 
+### A message the session wrote stays the session's
+
+A conversation holds sentences nobody typed. They are in the reader's role
+because the model has no other role to read a fact in: the check-in the turn
+asks itself, the steer a reading earns, a failed close gate's verdict, the
+name of a secret that was just set, the notice that the checkout moved under
+the session, the output of a `/run`, the summary a compaction restarts from.
+Live, each of them arrives as the session's own row and is plainly not the
+person's.
+
+A conversation read back out of the store is rebuilt from its messages, and
+that is where the authorship used to be lost: every one of them came back as
+a turn the person had taken. The transcript put the words over their name,
+the rewind list numbered a check-in among their turns — so "go back to before
+turn 4" cut the conversation in the middle of the turn the check-in
+interrupted — and ↑ offered a whole compaction summary back into the draft as
+something they might want to send again.
+
+So a message carries who wrote it, and the store keeps it. The rule is one
+sentence: a surface that speaks for the person shows only what the person
+said. What the session wrote is still in the conversation, still on screen,
+and still the session's.
+
 ### A new conversation is a new session
 
 Starting a new conversation is quitting and launching again without the exit.

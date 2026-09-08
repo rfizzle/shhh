@@ -25,14 +25,19 @@ package chat
 // a conversation put back on screen and the history behind it must not be
 // able to drift apart.
 //
-// Three user-role messages are the session talking to itself, not lines
+// Some user-role messages are the session talking to itself, not lines
 // anyone typed: the summary a compaction restarts from (/compact), the
-// output /run feeds back, and the nudge that continues a reply a dropped
-// connection cut off. Recalling one would put a sentence in the draft
-// that nobody wrote — a whole compaction summary, in the worst case — so each
-// declares its opening as a constant beside the code that writes it, and the
-// ring skips them. What ↑ offers is what a reader could have typed, or it is
-// not a history of anything.
+// output /run feeds back, the nudge that continues a reply a dropped
+// connection cut off, and everything the steering machinery says in the
+// reader's role — a check-in, a steer, a gate verdict, a secret's
+// announcement, a tree notice. Recalling one would put a sentence in the
+// draft that nobody wrote — a whole compaction summary, in the worst case —
+// so the message carries who wrote it (provider.Message.Machine) and the
+// ring skips the ones the session did. This was once a list of the openings
+// those messages start with, and the list did not know about the steering
+// machinery: a shape nobody had remembered to add to came back as the
+// reader's own words. What ↑ offers is what a reader could have typed, or it
+// is not a history of anything.
 
 import (
 	"strings"
@@ -54,7 +59,7 @@ func (m *Model) recallFromMessages(msgs []provider.Message) {
 			continue
 		}
 		text := strings.TrimSpace(msg.Content)
-		if text == "" || !typedByHand(text) {
+		if text == "" || !typedByHand(msg) {
 			continue
 		}
 		m.recordInput(text)
@@ -63,17 +68,8 @@ func (m *Model) recallFromMessages(msgs []provider.Message) {
 }
 
 // typedByHand reports whether a user-role message is a line the reader typed
-// rather than one the session wrote on their behalf. The three openings it
-// knows are declared next to the code that writes each of them, so a reworded
-// message cannot quietly start being recalled.
-func typedByHand(text string) bool {
-	switch {
-	case strings.HasPrefix(text, compactContextPrefix):
-		return false
-	case strings.HasPrefix(text, commandContextPrefix):
-		return false
-	case text == continuePrompt:
-		return false
-	}
-	return true
-}
+// rather than one the session wrote on their behalf. The flag is set where
+// the message is written and stored beside it, so a reworded message cannot
+// quietly start being recalled and a resumed conversation answers the same
+// way a live one does.
+func typedByHand(msg provider.Message) bool { return !msg.Machine }

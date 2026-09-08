@@ -159,6 +159,7 @@ func chatDigest(messages []provider.Message) uint64 {
 	for _, msg := range messages {
 		field(string(msg.Role))
 		field(msg.Content)
+		field(strconv.FormatBool(msg.Machine))
 		field(msg.ToolCallID)
 		for _, tc := range msg.ToolCalls {
 			field(tc.ID)
@@ -422,9 +423,9 @@ func (db *DB) saveChatTx(tx *sql.Tx, name string, messages []provider.Message) (
 			attachmentsJSON = &s
 		}
 		_, err := tx.Exec(
-			`INSERT INTO chat_messages (session_id, seq, role, content, tool_calls, tool_call_id, attachments)
-			 VALUES (?, ?, ?, ?, ?, ?, ?)`,
-			sessionID, i, string(msg.Role), msg.Content, toolCallsJSON, msg.ToolCallID, attachmentsJSON,
+			`INSERT INTO chat_messages (session_id, seq, role, content, tool_calls, tool_call_id, attachments, machine)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+			sessionID, i, string(msg.Role), msg.Content, toolCallsJSON, msg.ToolCallID, attachmentsJSON, msg.Machine,
 		)
 		if err != nil {
 			return 0, fmt.Errorf("insert message %d: %w", i, err)
@@ -458,7 +459,7 @@ func (db *DB) LoadChat(name string) ([]provider.Message, error) {
 	}
 
 	rows, err := db.sql.Query(
-		`SELECT role, content, tool_calls, tool_call_id, attachments
+		`SELECT role, content, tool_calls, tool_call_id, attachments, machine
 		 FROM chat_messages WHERE session_id = ? ORDER BY seq`, sessionID,
 	)
 	if err != nil {
@@ -471,14 +472,16 @@ func (db *DB) LoadChat(name string) ([]provider.Message, error) {
 		var (
 			role, content, toolCallID      string
 			toolCallsJSON, attachmentsJSON *string
+			machine                        bool
 		)
-		if err := rows.Scan(&role, &content, &toolCallsJSON, &toolCallID, &attachmentsJSON); err != nil {
+		if err := rows.Scan(&role, &content, &toolCallsJSON, &toolCallID, &attachmentsJSON, &machine); err != nil {
 			return nil, err
 		}
 		msg := provider.Message{
 			Role:       provider.Role(role),
 			Content:    content,
 			ToolCallID: toolCallID,
+			Machine:    machine,
 		}
 		if toolCallsJSON != nil {
 			if err := json.Unmarshal([]byte(*toolCallsJSON), &msg.ToolCalls); err != nil {

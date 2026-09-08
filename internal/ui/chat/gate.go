@@ -15,7 +15,6 @@ import (
 	"fmt"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 )
 
@@ -216,7 +215,7 @@ func (m Model) finishCloseGate(msg closeGateMsg) (tea.Model, tea.Cmd) {
 		// The same text the tool returns, and nothing around it: a session
 		// that phrased this failure its own way would be teaching the model
 		// a second vocabulary for an event it already knows one for.
-		m.agent.Append(provider.Message{Role: provider.RoleUser, Content: text})
+		m.agent.AppendMachine(text)
 		return m.resumeForCloseGate()
 	}
 	return m.settleCloseGate()

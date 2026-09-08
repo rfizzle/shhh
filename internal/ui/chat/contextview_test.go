@@ -155,19 +155,25 @@ func TestContext_ItemisesTheConversationByTurn(t *testing.T) {
 	}
 }
 
-// TestContext_NamesTheTurnsNobodyTyped keeps the labels honest: three
-// user-role messages are written by the session, and quoting one back as if
-// it were a question the reader asked would misreport their own session.
+// TestContext_NamesTheTurnsNobodyTyped keeps the labels honest: a message the
+// session wrote for itself is named, and quoting one back as if it were a
+// question the reader asked would misreport their own session. A steer has no
+// opening to match, so it falls to what all of them have in common rather
+// than to the wrong name.
 func TestContext_NamesTheTurnsNobodyTyped(t *testing.T) {
-	cases := map[string]string{
-		compactContextMessage("we were refactoring the loop"): "the compaction summary",
-		commandContextPrefix + " go test ./...":               "a command's output",
-		continuePrompt:                                        "carrying on from the round limit",
-		"what does ErrRoundLimit do":                          "what does ErrRoundLimit do",
+	cases := []struct {
+		msg  provider.Message
+		want string
+	}{
+		{provider.Message{Content: compactContextMessage("we were refactoring the loop"), Machine: true}, "the compaction summary"},
+		{provider.Message{Content: commandContextPrefix + " go test ./...", Machine: true}, "a command's output"},
+		{provider.Message{Content: continuePrompt, Machine: true}, "carrying on from a cut-off reply"},
+		{provider.Message{Content: "You have been asked to stop and check in.", Machine: true}, "what the session said for itself"},
+		{provider.Message{Content: "what does ErrRoundLimit do"}, "what does ErrRoundLimit do"},
 	}
-	for content, want := range cases {
-		if got := turnLabel(content); got != want {
-			t.Errorf("turnLabel(%.30q) = %q, want %q", content, got, want)
+	for _, tc := range cases {
+		if got := turnLabel(tc.msg); got != tc.want {
+			t.Errorf("turnLabel(%.30q) = %q, want %q", tc.msg.Content, got, tc.want)
 		}
 	}
 }

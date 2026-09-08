@@ -321,7 +321,7 @@ func (h *Headless) Run(prompt string) (string, error) {
 			if stop == provider.StopLength && text != "" {
 				if !continued {
 					continued, carried = true, answer
-					h.Agent.Append(provider.Message{Role: provider.RoleUser, Content: ContinueAfterCeiling})
+					h.Agent.AppendMachine(ContinueAfterCeiling)
 					h.notifyContinue(continueNotice)
 					continue
 				}
@@ -347,7 +347,7 @@ func (h *Headless) Run(prompt string) (string, error) {
 			// anything, so a hand-back reads as a reply to what was just
 			// said rather than as an interruption of it.
 			if fb := h.closeFeedback(answer); fb != "" {
-				h.Agent.Append(provider.Message{Role: provider.RoleUser, Content: fb})
+				h.Agent.AppendMachine(fb)
 				// The round counter is untouched: the turn goes on under
 				// the ceiling it was already under, because a turn that
 				// could not finish inside its budget must not be handed a
@@ -495,7 +495,7 @@ func (h *Headless) Run(prompt string) (string, error) {
 			}
 		}
 		if iv, ok := h.Agent.NextIntervention(h.summaryTarget()); ok {
-			h.Agent.Append(provider.Message{Role: provider.RoleUser, Content: iv.Message})
+			h.Agent.AppendMachine(iv.Message)
 			// The reading that judges what happens next is told what was
 			// just said, and comes sooner for it. Without that it is handed
 			// the evidence that earned the interruption and the verdict it
@@ -640,7 +640,7 @@ func (h *Headless) deliverTree(turnStart bool) {
 	if !ok {
 		return
 	}
-	h.Agent.Append(provider.Message{Role: provider.RoleUser, Content: n.Message})
+	h.Agent.AppendMachine(n.Message)
 	if h.OnTree != nil {
 		h.OnTree(n)
 	}

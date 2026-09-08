@@ -81,16 +81,18 @@ func TestResumedSession_NewInputJoinsTheHistory(t *testing.T) {
 	}
 }
 
-// The three user-role messages the session writes for itself are not lines
-// anyone typed, so ↑ never offers them (recall.go).
+// The user-role messages the session writes for itself are not lines anyone
+// typed, so ↑ never offers them (recall.go). The steer is the one the old
+// prefix list did not know about.
 func TestResumedSession_SkipsWhatNobodyTyped(t *testing.T) {
 	m := resumedModel(t, []provider.Message{
 		{Role: provider.RoleSystem, Content: "sys"},
-		{Role: provider.RoleUser, Content: compactContextMessage("the session so far, summarised")},
+		{Role: provider.RoleUser, Content: compactContextMessage("the session so far, summarised"), Machine: true},
 		{Role: provider.RoleUser, Content: "the only thing anyone typed"},
 		{Role: provider.RoleAssistant, Content: "an answer"},
-		{Role: provider.RoleUser, Content: commandContextMessage("go test ./...", "ok", 0)},
-		{Role: provider.RoleUser, Content: continuePrompt},
+		{Role: provider.RoleUser, Content: commandContextMessage("go test ./...", "ok", 0), Machine: true},
+		{Role: provider.RoleUser, Content: continuePrompt, Machine: true},
+		{Role: provider.RoleUser, Content: "You are editing a file the task did not ask about.", Machine: true},
 	})
 
 	if got := len(m.inputHistory); got != 1 {

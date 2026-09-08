@@ -49,7 +49,7 @@ func (m Model) secretCommand(args []string) (tea.Model, tea.Cmd) {
 		if m.working() || m.decisionUngated() {
 			m.steering = append(m.steering, announce)
 		} else {
-			m.agent.Append(provider.Message{Role: provider.RoleUser, Content: announce})
+			m.agent.AppendMachine(announce)
 		}
 	}
 	return m.surfaceNotice(note)

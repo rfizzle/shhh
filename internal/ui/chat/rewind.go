@@ -81,12 +81,20 @@ func (m *Model) recordCheckpoint(text string) {
 }
 
 // checkpointsFromMessages derives checkpoints from a stored conversation:
-// every user message is a rewind point. Git snapshots are unknown for rebuilt
-// checkpoints — the rewind message says so instead of guessing.
+// every user message the reader typed is a rewind point. Git snapshots are
+// unknown for rebuilt checkpoints — the rewind message says so instead of
+// guessing.
+//
+// A message the session wrote for itself is not a turn
+// (provider.Message.Machine). Counting one would put a check-in in the list
+// under the reader's name, and — because the list is numbered and "before
+// turn 4" cuts the conversation at the fourth of these — it would also
+// truncate a resumed conversation in the middle of the turn the check-in
+// interrupted.
 func checkpointsFromMessages(msgs []provider.Message) []checkpoint {
 	var cps []checkpoint
 	for i, msg := range msgs {
-		if msg.Role == provider.RoleUser {
+		if msg.Role == provider.RoleUser && !msg.Machine {
 			cps = append(cps, checkpoint{index: i, preview: firstLine(msg.Content)})
 		}
 	}
