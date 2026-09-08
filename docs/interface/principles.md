@@ -177,8 +177,15 @@ kind of act it was, which act, what it touched, what came of it, how long it
 took.
 
 Fixing the fields is what lets a reader scan one column instead of parsing
-sentences. Three rules follow from fixing them:
+sentences. Four rules follow from fixing them:
 
+- **The target leads with what the call was about, not where it was made.**
+  A search's target is its pattern and then its scope — `steeringItem
+  ./internal/ui/chat` — because a column led by the directory turns twenty
+  questions about one package into twenty identical rows, and identical rows
+  are what both a reader and a summariser judging drift read as a run going
+  in circles. A read or a write is the other way round: the file is the
+  subject there, and the pattern-first order would bury it.
 - **Only the target grows.** When the row is too narrow, the target clips; the
   outcome never does, because the outcome is the reason to read the row.
 - **Duration is a field, not a suffix.** Below the threshold it renders blank

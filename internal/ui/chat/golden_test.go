@@ -1416,6 +1416,44 @@ func TestGolden_GitWriteRows(t *testing.T) {
 	})
 }
 
+// TestGolden_SearchSweep pins what a run of searches leaves on the feed. A
+// search's row is the one row read to tell a session asking many questions
+// from a session asking one question many times, and it can only do that if
+// the pattern is in it: led by the directory, the two panels below would be
+// the same six rows.
+//
+// Two widths, because the target is the whole subject here: 60 columns is
+// where a pattern and its scope have to compete for the field, and 110 is
+// where both simply fit.
+func TestGolden_SearchSweep(t *testing.T) {
+	captureGolden(t, "search-sweep", "searches of one package on the feed", []int{60, 110}, func(width int) []golden.Panel {
+		row := func(pattern, result string, d time.Duration) entry {
+			return entry{kind: entryTool, toolName: "search",
+				toolArgs:   fmt.Sprintf(`{"pattern":%q,"path":"internal/ui/chat"}`, pattern),
+				toolResult: result, duration: d}
+		}
+		build := func(es ...entry) string {
+			m := frameModel(t, width, 40)
+			m.transcript = es
+			m.invalidateRenderCache()
+			return m.renderHistory()
+		}
+		hits := "internal/ui/chat/compose.go:41:\tsteeringItem{}"
+		return []golden.Panel{
+			{Label: "three questions about one package", View: build(
+				row("steeringItem", hits, 300*time.Millisecond),
+				row("queuedSteer", hits+"\ninternal/ui/chat/queue.go:12:\tqueuedSteer", 400*time.Millisecond),
+				row("authorOf", "no matches", 200*time.Millisecond),
+			)},
+			{Label: "one question three times · the shape a reader is watching for", View: build(
+				row("steeringItem", hits, 300*time.Millisecond),
+				row("steeringItem", hits, 300*time.Millisecond),
+				row("steeringItem", hits, 400*time.Millisecond),
+			)},
+		}
+	})
+}
+
 // TestGolden_FetchWait pins the row a paced fetch draws while the host it
 // asked is being waited out: the seconds left and the host that asked for
 // them, in the outcome field where the row's reason to be read goes, and the

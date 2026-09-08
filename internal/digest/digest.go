@@ -51,9 +51,22 @@ func Outcome(result string) string {
 // argKeys is the priority order for picking a tool call's key argument.
 var argKeys = []string{"path", "pattern", "command", "query", "url", "title", "name", "action", "task", "role"}
 
+// searchTools are the calls whose subject is the pattern and whose path is
+// only the scope it was asked in, so their rows lead with what was asked.
+// Membership is decided per tool by that role and never by reordering
+// argKeys: read_file and the write tools are about their path, and a global
+// swap would put a search's pattern where their filename belongs.
+var searchTools = map[string]bool{
+	"search":   true,
+	"glob":     true,
+	"ast_grep": true,
+	"fd":       true,
+}
+
 // Arg extracts the one argument worth showing beside a tool name — the path
-// for read_file (with its line range when paged), the pattern for search —
-// falling back to the flat key=value form for shapes it does not know.
+// for read_file (with its line range when paged), the pattern and then the
+// path for search — falling back to the flat key=value form for shapes it
+// does not know.
 //
 // Arguments are the model's own words, not an outside party's, which is why
 // they may appear where a result may not.
@@ -74,6 +87,18 @@ func Arg(tool, rawArgs string) string {
 			target += " " + compact
 		}
 		return target
+	}
+	if searchTools[tool] {
+		// A search's pattern is the question and its path is only where the
+		// question was put, so the row is `steeringItem ./internal/ui/chat`
+		// and not the directory alone. Led by the path, twenty different
+		// questions about one package are twenty identical rows — and the
+		// reading asked whether a run is going in circles is handed rows
+		// that were made indistinguishable before it saw them.
+		// See docs/interface/principles.md#one-grid.
+		if target := searchTarget(args); target != "" {
+			return target
+		}
 	}
 	if tool == "read_file" {
 		if p, _ := args["path"].(string); p != "" {
@@ -141,6 +166,38 @@ func GitVerb(rawArgs string) string {
 	}
 	verb, _ := args["verb"].(string)
 	return verb
+}
+
+// searchTarget is what one search was pointed at: the pattern, then the scope
+// when the call named one. A pattern the call left out — fd lists a directory
+// when it is given none — leaves the path to stand alone, because then the
+// directory is the whole question.
+func searchTarget(args map[string]any) string {
+	pattern, _ := args["pattern"].(string)
+	path, _ := args["path"].(string)
+	pattern, path = FirstLine(pattern), strings.TrimSpace(path)
+	if pattern == "" {
+		return path
+	}
+	if scope := searchScope(path); scope != "" {
+		return pattern + " " + scope
+	}
+	return pattern
+}
+
+// searchScope marks a search's path as a place, so the second half of
+// `steeringItem ./internal/ui/chat` cannot be read as more pattern. A path
+// that already anchors itself keeps its own form, and the default scope — the
+// whole tree, which every search shares — is left off rather than spent.
+func searchScope(path string) string {
+	switch {
+	case path == "" || path == ".":
+		return ""
+	case strings.HasPrefix(path, "./"), strings.HasPrefix(path, "../"),
+		strings.HasPrefix(path, "/"), strings.HasPrefix(path, "~"):
+		return path
+	}
+	return "./" + path
 }
 
 // gitWriteTarget is what one write was pointed at.

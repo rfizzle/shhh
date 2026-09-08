@@ -85,6 +85,27 @@ func TestActivityRow_ToolNounsAndKinds(t *testing.T) {
 	}
 }
 
+// Three searches of one package are three questions, and the rows say which
+// three. Led by the directory they would be the same row drawn three times,
+// which is what a reader scanning a feed for a run going in circles reads as
+// one — and the scope still has to be there, or the row says where nothing.
+func TestActivityRow_SearchesOfOnePackageReadAsTheirPatterns(t *testing.T) {
+	m := activityModel(t)
+	seen := map[string]bool{}
+	for _, pattern := range []string{"steeringItem", "queuedSteer", "authorOf"} {
+		row := stripANSI(m.renderEntry(entry{kind: entryTool, toolName: "search",
+			toolArgs:   fmt.Sprintf(`{"pattern":%q,"path":"internal/ui/chat"}`, pattern),
+			toolResult: "a.go:1"}, 80))
+		if !strings.Contains(row, pattern+" ./internal/ui/chat") {
+			t.Fatalf("the row should read as what was asked and where:\n%s", row)
+		}
+		seen[strings.TrimSpace(row)] = true
+	}
+	if len(seen) != 3 {
+		t.Fatalf("three questions drew %d distinct rows", len(seen))
+	}
+}
+
 // TestActivityVerbs_ClosedVocabulary pins the closed verb table: every tool
 // this session can call maps onto one of the verbs the list holds, and an
 // unmapped name falls through as itself — the signal that the table is stale.

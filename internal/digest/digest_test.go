@@ -9,7 +9,28 @@ func TestArg_PicksTheOneWorthShowing(t *testing.T) {
 	for _, tc := range []struct {
 		name, tool, args, want string
 	}{
-		{"pattern wins for search", "search", `{"pattern":"needle"}`, "needle"},
+		// A search is what was asked and where, in that order. The path is
+		// marked as a place so the row cannot be read as two patterns, and
+		// two searches of one directory are two rows whenever the questions
+		// differ — which is the whole of what a reading judging repetition
+		// has to go on.
+		{"pattern wins for search", "search", `{"pattern":"needle","path":"internal/ui/chat"}`,
+			"needle ./internal/ui/chat"},
+		{"a search with no scope is its pattern alone", "search", `{"pattern":"needle"}`, "needle"},
+		{"the default scope is not worth a column", "search", `{"pattern":"needle","path":"."}`, "needle"},
+		{"an anchored path keeps its own form", "search",
+			`{"pattern":"needle","path":"/src/app"}`, "needle /src/app"},
+		{"a path the model already anchored is not anchored twice", "search",
+			`{"pattern":"needle","path":"./internal"}`, "needle ./internal"},
+		{"a hidden directory is still marked as a place", "search",
+			`{"pattern":"needle","path":".github"}`, "needle ./.github"},
+		{"a glob reads as pattern then scope", "glob",
+			`{"pattern":"**/*.go","path":"internal"}`, "**/*.go ./internal"},
+		{"a structural search reads the same way", "ast_grep",
+			`{"pattern":"foo($$$ARGS)","path":"internal/agent","lang":"go"}`,
+			"foo($$$ARGS) ./internal/agent"},
+		{"a find with no pattern is about its directory", "fd",
+			`{"path":"internal/digest","extension":"go"}`, "internal/digest"},
 		{"a plain read shows the path", "read_file", `{"path":"a.go"}`, "a.go"},
 		{"a paged read shows the range", "read_file", `{"path":"a.go","start_line":10,"end_line":40}`, "a.go:10–40"},
 		{"an open-ended page shows the start", "read_file", `{"path":"a.go","start_line":10}`, "a.go:10–"},
