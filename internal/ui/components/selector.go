@@ -65,6 +65,17 @@ type SelectOption struct {
 	// docs/interface/surfaces.md#the-palette). Focus steps over it, it is never
 	// numbered, and no key can land on it.
 	Header bool
+	// Fold marks the marker at the foot of a list the caller trimmed itself,
+	// and holds the count it is standing in for: `↓ 16 more`, dim, in the
+	// wording every windowed list on the screen already folds in
+	// (docs/interface/principles.md#fold-never-hide). The caller writes no
+	// Label — a fold that said "… keep typing" on one list and "↓ 16 more" on
+	// the next would be two markers for one fact.
+	//
+	// It is separate from Header because a rail and a fold are opposite
+	// things: a rail is a heading over rows that are there, bold and Info,
+	// and a fold is chrome about rows that are not. Focus steps over both.
+	Fold int
 	// Dim marks an option that is showing but cannot be acted on right now,
 	// rendered behind ⊘ with its Desc stating why. It stays
 	// selectable, because choosing it is how the surface says why.
@@ -237,9 +248,9 @@ type Select struct {
 // offer to scroll to them.
 func (s *Select) pointer() *List[SelectOption] {
 	s.list.Items, s.list.Focus = s.Options, s.Focus
-	s.list.Skip = func(o SelectOption) bool { return o.Header }
+	s.list.Skip = func(o SelectOption) bool { return o.passive() }
 	s.list.Rows = func(i int) int {
-		if s.FocusDesc && i == s.Focus && !s.Options[i].Header && s.Options[i].Desc != "" {
+		if s.FocusDesc && i == s.Focus && !s.Options[i].passive() && s.Options[i].Desc != "" {
 			return 2
 		}
 		return 1
@@ -714,7 +725,7 @@ func (s *Select) grid(numbered, inner int) optionGrid {
 	}
 	continued := false
 	for _, opt := range s.Options {
-		if opt.Header {
+		if opt.passive() {
 			continue
 		}
 		if opt.Desc != "" || opt.Meta != "" || opt.Value != "" {
@@ -725,7 +736,7 @@ func (s *Select) grid(numbered, inner int) optionGrid {
 		return g
 	}
 	for _, opt := range s.Options {
-		if opt.Header {
+		if opt.passive() {
 			continue
 		}
 		g.label = max(g.label, lipgloss.Width(opt.labelText()))
@@ -733,6 +744,11 @@ func (s *Select) grid(numbered, inner int) optionGrid {
 	g.label = min(g.label, max(inner/2, 8))
 	return g
 }
+
+// passive reports a row no key can land on: a group rail, or the fold marker
+// that counts what the list is not showing. Neither is an option, so neither
+// is numbered and the pointer steps over both.
+func (opt SelectOption) passive() bool { return opt.Header || opt.Fold > 0 }
 
 // labelText is what the row says before its description: the option, behind
 // the ⊘ that marks it unavailable. The glyph, not the dimming, is what says
@@ -797,6 +813,12 @@ func (s *Select) optionRows(width int, numbered bool, lo, hi int) []string {
 	var rows []string
 	n := 0
 	for i, opt := range s.Options {
+		if opt.Fold > 0 {
+			if i >= lo && i < hi {
+				rows = append(rows, ListOverflowRow("↓", opt.Fold, "", inner))
+			}
+			continue
+		}
 		if opt.Header {
 			if i >= lo && i < hi {
 				// A group rail is info and bold, the way `decision/Select` draws it

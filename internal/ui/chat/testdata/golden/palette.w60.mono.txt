@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · nothing typed yet
-╭─ Palette ─────────────────────────────── 25 results ─╮
+╭─ ctrl+/ ──────────────────────────────── 25 matches ─╮
 │ ▸                                                    │
 │ COMMANDS                                             │
 │ ❯ /help                   Show commands, keys, and … │
@@ -28,18 +28,20 @@
 │ [esc] dismiss                                        │
 ╰──────────────────────────────────────────────────────╯
 
-· mid-turn, filtered to an idle-only command
-╭─ Palette ───────────────────────────────── 1 result ─╮
-│ ▸ cl                                                 │
+· mid-turn, an idle-only command among the runnable ones
+╭─ ctrl+/ ─────────────────────────── 3 of 25 matches ─╮
+│ ▸ co                                                 │
 │ COMMANDS                                             │
-│ ❯ /clear  Start a new session                        │
+│ ❯ /copy       Copy the last response (or just its c… │
+│   /context    The window as a meter, itemised down … │
+│   ⊘ /compact  Continue from a summary pl…  idle only │
 │ [enter] run · [tab] complete · [↑↓] move             │
 │ [esc] dismiss                                        │
 ╰──────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
 · nothing typed yet
-␛[38;5;244m╭─ Palette ─────────────────────────────── 25 results ─╮␛[m
+␛[38;5;244m╭─ ctrl+/ ──────────────────────────────── 25 matches ─╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m▸ ␛[m␛[38;5;254m ␛[m                                                  ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[1;38;5;254mCOMMANDS␛[m                                             ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[1;48;5;237m❯ /help                   Show commands, keys, and …␛[m ␛[38;5;244m│␛[m
@@ -56,11 +58,13 @@
 ␛[38;5;244m│␛[m ␛[38;5;244m[esc] dismiss␛[m                                        ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────╯␛[m
 
-· mid-turn, filtered to an idle-only command
-␛[38;5;244m╭─ Palette ───────────────────────────────── 1 result ─╮␛[m
-␛[38;5;244m│␛[m ␛[38;5;254m▸ ␛[m␛[38;5;254mcl ␛[m                                                ␛[38;5;244m│␛[m
+· mid-turn, an idle-only command among the runnable ones
+␛[38;5;244m╭─ ctrl+/ ─────────────────────────── 3 of 25 matches ─╮␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m▸ ␛[m␛[38;5;254mco ␛[m                                                ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[1;38;5;254mCOMMANDS␛[m                                             ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[1;48;5;237m❯ /clear  Start a new session␛[m                        ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[1;48;5;237m❯ /copy       Copy the last response (or just its c…␛[m ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m   ␛[38;5;254m/␛[m␛[1;38;5;254mco␛[m␛[38;5;254mntext␛[m    ␛[38;5;244mThe window as a meter, itemised down …␛[m ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m   ␛[38;5;244m⊘ /compact␛[m  ␛[38;5;244mContinue from a summary pl…␛[m  ␛[38;5;244midle only␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m[enter] run · [tab] complete · [↑↓] move␛[m             ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m[esc] dismiss␛[m                                        ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────╯␛[m

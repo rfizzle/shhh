@@ -44,10 +44,18 @@ type slashCommand struct {
 	// finished — it rewrites or replaces the conversation the agent is
 	// working in. Empty means it runs while the agent works, which
 	// is the default: inspecting and steering a running session is the point
-	// of having one. An idle-only command drops out of the menu for the
-	// duration, the way an unwired one never appears at all.
+	// of having one. An idle-only command stays in the menu for the duration,
+	// greyed behind ⊘ with idleOnlyMeta beside it; an unwired one never
+	// appears at all, because it is not a command this session has.
 	idleOnly string
 }
+
+// idleOnlyMeta is the short field a menu puts at the end of a row it cannot
+// offer yet. The registry's own reason is a sentence naming what the command
+// would disturb, and a sentence does not fit a right-aligned column beside
+// twenty other rows — the sentence is what the notice says when the row is
+// taken anyway, so the two are the same fact at two lengths.
+const idleOnlyMeta = "idle only"
 
 // idleOnlyReason reports why a command cannot run mid-turn, if it cannot.
 func idleOnlyReason(name string) (string, bool) {
@@ -76,6 +84,10 @@ type completionItem struct {
 	args  string
 	desc  string
 	space bool
+	// off is why the row cannot be run right now, in the words the row shows
+	// (idleOnlyMeta). Empty means it can. The row is still completed and still
+	// run: running it is how the session says the longer reason out loud.
+	off string
 }
 
 var (
@@ -472,15 +484,19 @@ func (m *Model) commandMatches(token string) []completionItem {
 		if c.enabled != nil && !c.enabled(m) {
 			continue
 		}
-		// A command that needs an idle session is unavailable, not hidden
-		// forever: it comes back when the turn ends.
-		if c.idleOnly != "" && m.working() {
-			continue
-		}
 		if !c.matches(token) {
 			continue
 		}
 		item := completionItem{name: c.name, args: c.args, desc: c.desc, space: c.args != ""}
+		// A command that needs an idle session is unavailable, not gone: it
+		// shows greyed with the reason beside it and comes back when the turn
+		// ends. Dropping it left the reader who typed /comp mid-turn with an
+		// empty menu and no way to tell a command that is waiting from one
+		// this build does not have
+		// (docs/interface/principles.md#fold-never-hide).
+		if c.idleOnly != "" && m.working() {
+			item.off = idleOnlyMeta
+		}
 		if c.namesExactly(token) {
 			matches = append([]completionItem{item}, matches...)
 		} else {
@@ -587,7 +603,7 @@ func (m Model) completionMenuLines() []string {
 	if !m.completionActive() {
 		return nil
 	}
-	width := m.contentWidth()
+	width := m.completionMenuWidth()
 	// The input (inputHeight rows) plus the menu must fit the confirm-panel
 	// cap; on very short terminals the hint line goes first, then rows.
 	budget := max(m.maxConfirmPanelHeight()-inputHeight, 1)
@@ -610,20 +626,7 @@ func (m Model) completionMenuLines() []string {
 
 	lines := make([]string, 0, visible+1)
 	for i := start; i < start+visible; i++ {
-		c := m.complete.items[i]
-		plain := plainCommandLabel(c)
-		pad := strings.Repeat(" ", max(nameW-lipgloss.Width(plain), 0))
-		var row string
-		if i == m.complete.idx {
-			row = sty.Complete.Focus.Render(clipRow("❯ "+plain+pad+"  "+c.desc, width))
-		} else {
-			label := c.name
-			if c.args != "" {
-				label += " " + sty.Complete.Args.Render(c.args)
-			}
-			row = clipRow("  "+label+pad+"  "+sty.Complete.Desc.Render(c.desc), width)
-		}
-		lines = append(lines, row)
+		lines = append(lines, completionRow(m.complete.items[i], i == m.complete.idx, nameW, width))
 	}
 
 	if !showHint {
@@ -673,12 +676,82 @@ func (m Model) completionHint() []string {
 	return []string{complete, keys.Bracket(keys.Draft.Send) + " run", move, dismiss}
 }
 
-// plainCommandLabel is the unstyled name+args column used for alignment.
-func plainCommandLabel(c completionItem) string {
-	if c.args == "" {
-		return c.name
+// completionMenuWidth is the columns a menu row is drawn in. The frame's box
+// spends four of the content width on its borders and their padding, and the
+// menu lands inside it beside the draft; a row that measured itself against
+// the content width would push its right-aligned field into the border, where
+// the frame cuts it and the reason reads as a shorter word. Below the frame's
+// narrowest rung the menu is written straight into the content and gets all
+// of it.
+func (m Model) completionMenuWidth() int {
+	if !m.frameShowing() {
+		return m.contentWidth()
 	}
-	return c.name + " " + c.args
+	return m.inputInnerWidth() + lipgloss.Width(m.promptGutter())
+}
+
+// completionRow lays one menu row: the name and its argument hint in a column
+// measured over the window, the description after it, and — on a row the
+// running turn has put out of reach — the ⊘ in front of the name and the
+// reason right-aligned at the end.
+//
+// The reason takes its columns before the description does, which is the drop
+// order every other list on the screen keeps: the description is what the
+// command does, and a reader who cannot have it yet is asking why rather than
+// what. It goes whole or not at all — half a clause reads as a different
+// clause (docs/interface/principles.md#fold-never-hide).
+func completionRow(c completionItem, focused bool, nameW, width int) string {
+	plain := plainCommandLabel(c)
+	pad := strings.Repeat(" ", max(nameW-lipgloss.Width(plain), 0))
+	head := "  "
+	if focused {
+		head = "❯ "
+	}
+	lead := head + plain + pad + "  "
+
+	avail := max(width-lipgloss.Width(lead), 0)
+	tail := ""
+	if c.off != "" && avail >= lipgloss.Width(c.off)+2 {
+		tail = c.off
+		avail -= lipgloss.Width(tail) + 2
+	}
+	desc := clipRow(c.desc, avail)
+	gap := ""
+	if tail != "" {
+		gap = strings.Repeat(" ", max(width-lipgloss.Width(lead+desc+tail), 0))
+	}
+
+	switch {
+	case focused:
+		// Painted whole: the row is already bold on the focus ground, and the
+		// reason rides inside that rather than beside it.
+		return sty.Complete.Focus.Render(clipRow(lead+desc+gap+tail, width))
+	case c.off != "":
+		// One run across the whole row. Split into three it would say the row
+		// is three things, when what it says is that none of it can be had yet.
+		return clipRow(sty.Complete.Off.Render(lead+desc+gap+tail), width)
+	}
+	label := sty.Complete.Name.Render(c.name)
+	if c.args != "" {
+		label += " " + sty.Complete.Args.Render(c.args)
+	}
+	return clipRow(head+label+pad+"  "+sty.Complete.Desc.Render(desc), width)
+}
+
+// plainCommandLabel is the unstyled name+args column used for alignment,
+// behind the ⊘ that marks a row the session cannot run right now. The glyph
+// is part of the column rather than a prefix outside it, so a menu holding
+// both kinds still lines its descriptions up — the same choice the selector's
+// own rows make.
+func plainCommandLabel(c completionItem) string {
+	label := c.name
+	if c.args != "" {
+		label += " " + c.args
+	}
+	if c.off != "" {
+		return "⊘ " + label
+	}
+	return label
 }
 
 // clipRow truncates a possibly-styled row to the given display width.

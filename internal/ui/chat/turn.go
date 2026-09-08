@@ -58,6 +58,19 @@ func (m Model) turnState() state {
 // screen instead of closing it: a turn that finishes (or asks for approval)
 // while the user is reading a diff waits for them to come back.
 func (m *Model) setTurnState(s state) {
+	// An open completion menu says which commands the running turn has put
+	// out of reach, so a turn starting or ending leaves it describing a
+	// session that no longer exists: a command greyed with `idle only` beside
+	// it that enter would now run, or one offered plainly that enter would
+	// now refuse. It is rebuilt on the crossing rather than on the next
+	// keystroke, because the reader typing nothing is exactly the case
+	// (complete.go).
+	wasWorking := m.working()
+	defer func() {
+		if m.working() != wasWorking && m.completionActive() {
+			m.syncCompletions()
+		}
+	}()
 	// A turn is not over while the checks it owes are still to run. The
 	// verdict belongs on the close row, so the turn goes to the gate rather
 	// than to the input and comes back here when the verdict is in

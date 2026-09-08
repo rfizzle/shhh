@@ -1,19 +1,18 @@
 package chat
 
-// The command palette (docs/interface/surfaces.md#the-palette). Ctrl+P opens
+// The command palette (docs/interface/surfaces.md#the-palette). Its chord opens
 // one prompt over everything the session can reach — the commands in the
 // command registry, the saved chats, and the files this session touched or
 // the checkout changed most recently — filtered as you type.
 //
 // It complements the inline `/` menu rather than replacing it: `/` completes
-// a command you are already typing, Ctrl+P finds one you are looking for.
-// That difference is why the two treat an unavailable command differently.
-// The menu drops a command that needs an idle turn, because it is completing
-// something
-// you are in the middle of typing; the palette keeps it, dimmed behind ⊘ with
-// the reason on its description row, because the palette is where you look
-// for a command you cannot find — and "it is not here" is the one answer that
-// sends you hunting.
+// a command you are already typing, the chord finds one you are looking for.
+// Both keep a command that needs an idle turn, dimmed behind ⊘ with the
+// reason right-aligned on its row, because "why is /compact missing" is a
+// worse question to be left with than "why is it grey" — and a menu that
+// answers the first by saying nothing sends the reader hunting through
+// /help for a command that is two keystrokes away
+// (docs/interface/principles.md#fold-never-hide).
 //
 // The surface is statePick with a query on it, not a fourth list
 // implementation: the same components.Select card, the same open/leave
@@ -79,6 +78,9 @@ type paletteEntry struct {
 	// dim is why the entry cannot be acted on right now — the registry's
 	// idleOnly reason while the agent works. Empty means it can.
 	dim string
+	// fold marks the marker row that counts the matches this card had no room
+	// for, and holds that count. It is not an entry: nothing dispatches it.
+	fold int
 	// rank is how well the query matched: 0 an exact command name, 1 a
 	// prefix, 2 a subsequence.
 	rank int
@@ -119,7 +121,12 @@ type paletteState struct {
 func (m Model) openPalette() (tea.Model, tea.Cmd) {
 	m.palette = &paletteState{all: m.paletteCandidates()}
 	m.picker = &components.Select{
-		Title:      "Palette",
+		// The chord is the title: the card is the answer to a key that was
+		// pressed, and naming the key is what tells the reader which of the two
+		// doors into this list they came through. "Palette" only named the
+		// thing they were already looking at
+		// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+		Title:      keys.Shown(keys.Draft.Palette),
 		Unnumbered: true,
 		// The palette is the filter row always open: the query line
 		// it used to draw for itself is the card's own now, so the two cannot
@@ -209,12 +216,13 @@ func (m *Model) refreshPalette() {
 			Desc:   r.desc,
 			Meta:   r.meta,
 			Header: r.header,
+			Fold:   r.fold,
 			Dim:    r.dim != "",
 		}
 	}
 	m.picker.Options = opts
 	m.picker.Query = p.query
-	m.picker.Chips = []string{paletteCount(len(matches))}
+	m.picker.Chips = []string{paletteCount(len(matches), len(p.all))}
 	m.picker.MaxLines = m.maxConfirmPanelHeight()
 	m.picker.Focus = m.picker.FirstSelectable()
 }
@@ -227,24 +235,32 @@ func (m Model) paletteRowBudget() int {
 	return max(m.maxConfirmPanelHeight()-4, 1)
 }
 
-// paletteCount is the title rail's chip. It counts the matches, not the rows
-// showing, because the rail is where you look to find out that there are
-// more.
-func paletteCount(n int) string {
-	switch n {
-	case 0:
+// paletteCount is the title rail's chip. It counts the matches against the
+// whole reach rather than the rows showing, because the rail is where you look
+// to find out that there is more — and the denominator is what says whether
+// the query narrowed anything at all
+// (docs/interface/surfaces.md#the-palette).
+func paletteCount(matched, all int) string {
+	if matched == 0 {
 		return "no matches"
-	case 1:
-		return "1 result"
 	}
-	return fmt.Sprintf("%d results", n)
+	if matched >= all {
+		// Nothing typed, or a query that kept everything: a fraction against
+		// itself is arithmetic the reader has to do to learn that nothing was
+		// filtered out.
+		return fmt.Sprintf("%d matches", all)
+	}
+	return fmt.Sprintf("%d of %d matches", matched, all)
 }
 
 // paletteFocus is the entry under the pointer, or false when the pointer is
 // on nothing — an empty list, or a query that matched nothing.
 func (m Model) paletteFocus() (paletteEntry, bool) {
 	idx := m.picker.Focus
-	if idx < 0 || idx >= len(m.palette.rows) || m.palette.rows[idx].header {
+	if idx < 0 || idx >= len(m.palette.rows) {
+		return paletteEntry{}, false
+	}
+	if row := m.palette.rows[idx]; row.header || row.fold > 0 {
 		return paletteEntry{}, false
 	}
 	return m.palette.rows[idx], true
@@ -322,9 +338,10 @@ func (m Model) paletteCommandEntries() []paletteEntry {
 		if working && c.idleOnly != "" {
 			// An unavailable command's shortcut is not an offer, so the meta
 			// field states why it is unavailable instead of what would have
-			// run it (invariant 5).
-			e.dim, e.meta = c.idleOnly, ""
-			e.desc = "needs the turn to be finished — " + c.idleOnly
+			// run it (invariant 5). The command's own description stays: a row
+			// that swapped what the command does for why it is grey would make
+			// the reader run it to find out which command they had found.
+			e.dim, e.meta = c.idleOnly, idleOnlyMeta
 		}
 		out = append(out, e)
 	}
@@ -362,8 +379,7 @@ func (m Model) paletteSessionEntries() []paletteEntry {
 			row.match = append(row.match, e.Title)
 		}
 		if m.working() {
-			row.dim = reason
-			row.desc = "needs the turn to be finished — " + reason
+			row.dim, row.meta = reason, idleOnlyMeta
 		}
 		out = append(out, row)
 	}
@@ -547,10 +563,11 @@ func paletteRows(matches []paletteEntry, budget int) []paletteEntry {
 		rows = rows[:len(rows)-1]
 	}
 	rows = trimDanglingHeader(rows)
-	return append(rows, paletteEntry{
-		header: true,
-		label:  fmt.Sprintf("… %d more — keep typing", hidden),
-	})
+	// A fold marker, in the words and the tone every other windowed list on
+	// the screen folds in — not a fourth group rail, which is what a bold Info
+	// heading over nothing read as
+	// (docs/interface/principles.md#fold-never-hide).
+	return append(rows, paletteEntry{fold: hidden})
 }
 
 // paletteGroupRun is one group's matches, in the order they will render.

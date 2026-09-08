@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -11,6 +12,8 @@ import (
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // paletteModel is a ready session whose FILES group comes from a fixed list
@@ -97,11 +100,31 @@ func TestPalette_CtrlKOpensGroupedResults(t *testing.T) {
 	if m.picker.Cursor(70) == nil {
 		t.Fatal("the query row is where the terminal's cursor goes, so the card should say where")
 	}
-	if got := strings.Join(m.picker.Chips, ""); !strings.Contains(got, "results") {
-		t.Fatalf("the title rail should count the results, got %q", got)
+	if got := strings.Join(m.picker.Chips, ""); !strings.Contains(got, "matches") {
+		t.Fatalf("the title rail should count the matches, got %q", got)
+	}
+	if m.picker.Title != keys.Shown(keys.Draft.Palette) {
+		t.Fatalf("the card is titled with the chord that opened it, got %q", m.picker.Title)
 	}
 	if m.palette.rows[m.picker.Focus].header {
 		t.Fatal("the pointer should open on a row a key can land on, not on a rail")
+	}
+}
+
+// TestPalette_CountsMatchesAgainstTheWholeReach pins the chip's two readings:
+// a query that kept everything says how much there is, and one that narrowed
+// says how much of it survived.
+func TestPalette_CountsMatchesAgainstTheWholeReach(t *testing.T) {
+	all := openPaletteWith(t, paletteModel(t), "")
+	total := len(all.palette.all)
+	if got, want := strings.Join(all.picker.Chips, ""), fmt.Sprintf("%d matches", total); got != want {
+		t.Fatalf("an unfiltered palette should count what it holds, got %q want %q", got, want)
+	}
+
+	some := openPaletteWith(t, paletteModel(t), "permissions")
+	got := strings.Join(some.picker.Chips, "")
+	if !strings.Contains(got, " of ") || !strings.HasSuffix(got, fmt.Sprintf("of %d matches", total)) {
+		t.Fatalf("a narrowed palette should count against the whole reach, got %q", got)
 	}
 }
 
@@ -291,8 +314,15 @@ func TestPalette_IdleOnlyCommandsDimRatherThanDrop(t *testing.T) {
 	if row.dim == "" {
 		t.Fatal("it should be dimmed rather than offered as runnable")
 	}
-	if !strings.Contains(row.desc, "rewrites the conversation") {
-		t.Fatalf("the reason should be stated, got %q", row.desc)
+	if row.meta != idleOnlyMeta {
+		t.Fatalf("the reason belongs in the field at the row's end, got %q", row.meta)
+	}
+	if !strings.Contains(row.desc, "summary") {
+		t.Fatalf("a greyed row keeps the command's own words, got %q", row.desc)
+	}
+	view := ansi.Strip(m.picker.View(110))
+	if !strings.Contains(view, "⊘ /compact") || !strings.Contains(view, idleOnlyMeta) {
+		t.Fatalf("the card should draw the glyph and the reason:\n%s", view)
 	}
 
 	// Choosing it answers with the notice rather than doing it.
@@ -348,11 +378,19 @@ func TestPaletteRows_CountsWhatDidNotFit(t *testing.T) {
 		t.Fatalf("the budget bounds the rows, got %d", len(rows))
 	}
 	last := rows[len(rows)-1]
-	if !last.header || !strings.Contains(last.label, "more") {
-		t.Fatalf("what did not fit should be counted, got %q", last.label)
+	if last.header || last.label != "" {
+		t.Fatalf("a fold marker is not a rail and writes no label of its own, got %+v", last)
 	}
-	if !strings.Contains(last.label, "2 more") {
-		t.Fatalf("the count should include the row it gave up for itself, got %q", last.label)
+	if last.fold != 2 {
+		t.Fatalf("the count should include the row it gave up for itself, got %d", last.fold)
+	}
+
+	// It draws as the fold marker every windowed list on the screen draws.
+	card := components.Select{Options: []components.SelectOption{
+		{Label: "/a"}, {Fold: last.fold},
+	}}
+	if view := ansi.Strip(card.View(40)); !strings.Contains(view, "↓ 2 more") {
+		t.Fatalf("the marker should count what is behind it:\n%s", view)
 	}
 }
 

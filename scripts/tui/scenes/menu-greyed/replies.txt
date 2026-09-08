@@ -1,0 +1,7 @@
+# One reply per request. The last line repeats once these run out.
+# One long command and nothing else: the turn has to still be running while
+# the two menus are opened, and the command is a wait rather than work so the
+# scene changes nothing on the machine it is driven from. Its own words are
+# what the row on screen says, which is what the card is waited for by.
+tool:execute_command:{"command":"sleep 15"}
+The menu is what the reader has while the turn runs.

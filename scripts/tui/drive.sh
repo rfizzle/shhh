@@ -231,6 +231,13 @@ tape_keyname() {
 tape_key() {
 	case $1 in
 	Enter|Escape|Tab|Space|Up|Down|Left|Right|Backspace|Home|End) echo "$1" ;;
+	# vhs has no spelling for a control chord on a punctuation key: after
+	# Ctrl+ its parser wants a letter, a named key or a second modifier, and
+	# refuses the whole tape over one. The byte the terminal actually
+	# delivers has no such problem — ctrl+/ and ctrl+_ are both the unit
+	# separator — so it is typed rather than named. tmux takes the key by
+	# name and needs none of this.
+	C-/|C-_) printf 'Type "\037"\n' ;;
 	BTab) echo "Shift+Tab" ;;
 	PgUp|PPage) echo "PageUp" ;;
 	PgDn|NPage) echo "PageDown" ;;

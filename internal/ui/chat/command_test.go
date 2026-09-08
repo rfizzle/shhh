@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
@@ -95,26 +96,41 @@ func TestCompletionMenu_OpensWhileWorking(t *testing.T) {
 	}
 }
 
-func TestCompletionMenu_HidesIdleOnlyCommandsWhileWorking(t *testing.T) {
+func TestCompletionMenu_GreysIdleOnlyCommandsWhileWorking(t *testing.T) {
 	m := workingModel(t)
 	m.input.SetValue("/c")
 	m.syncCompletions()
+	found := false
 	for _, c := range m.complete.items {
-		if c.name == "/compact" {
-			t.Fatalf("%s cannot run mid-turn, so it should not be offered: %+v", c.name, m.complete.items)
+		if c.name != "/compact" {
+			continue
 		}
+		found = true
+		if c.off == "" {
+			t.Fatalf("/compact cannot run mid-turn, so the row should say why: %+v", c)
+		}
+		if c.desc == "" {
+			t.Fatalf("a greyed row still says what the command does, got %+v", c)
+		}
+	}
+	if !found {
+		t.Fatalf("/compact should stay in the menu mid-turn, got %+v", m.complete.items)
+	}
+
+	row := completionRow(completionItem{name: "/compact", desc: "free context", off: idleOnlyMeta}, false, 12, 60)
+	if plain := ansi.Strip(row); !strings.HasPrefix(plain, "  ⊘ /compact") ||
+		!strings.HasSuffix(plain, idleOnlyMeta) {
+		t.Fatalf("the row should carry ⊘ and the reason at its end, got %q", plain)
 	}
 
 	updated, _ := m.Update(doneMsg{})
 	m = updated.(Model)
 	m.input.SetValue("/c")
 	m.syncCompletions()
-	var names []string
 	for _, c := range m.complete.items {
-		names = append(names, c.name)
-	}
-	if !containsString(names, "/compact") {
-		t.Fatalf("/compact should be back once the turn ended, got %v", names)
+		if c.name == "/compact" && c.off != "" {
+			t.Fatalf("/compact should be offered plainly once the turn ended, got %+v", c)
+		}
 	}
 }
 

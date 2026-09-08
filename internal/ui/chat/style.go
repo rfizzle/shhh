@@ -159,17 +159,32 @@ func newFrameStyles(p components.ColorTokens) frameStyles {
 // completeStyles is the slash-command menu's own group.
 type completeStyles struct {
 	Focus lipgloss.Style
+	Name  lipgloss.Style
 	Args  lipgloss.Style
 	Desc  lipgloss.Style
+	Off   lipgloss.Style
 	Hint  lipgloss.Style
 }
 
 func newCompleteStyles(p components.ColorTokens) completeStyles {
 	return completeStyles{
 		Focus: lipgloss.NewStyle().Bold(true).Background(p.FocusBg.Color()),
-		Args:  lipgloss.NewStyle().Foreground(p.Dim.Color()),
-		Desc:  lipgloss.NewStyle().Foreground(p.Dim.Color()),
-		Hint:  lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		// The unlit row's command name. It went out unpainted until the menu
+		// started greying what it cannot offer: the terminal's own foreground
+		// is a colour the palette never issued and differs between two
+		// terminals side by side, so a grey row beside it was a difference
+		// from nothing rather than a state
+		// (docs/interface/principles.md#one-grid).
+		Name: lipgloss.NewStyle().Foreground(p.Body.Color()),
+		Args: lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		Desc: lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		// A row the running turn has put out of reach, in the grey the
+		// selector greys an unavailable option in — the two menus are one
+		// answer to "why is /compact missing" and say it the same way. The ⊘
+		// in front of the name is what carries it on a terminal with no
+		// colour at all (invariant 1).
+		Off:  lipgloss.NewStyle().Foreground(p.Dimmer.Color()),
+		Hint: lipgloss.NewStyle().Foreground(p.Dim.Color()),
 	}
 }
 

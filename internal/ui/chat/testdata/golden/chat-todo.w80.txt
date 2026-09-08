@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · the completion offers /todo in a conversation
-❯ /todo [show|edit|new|add|groom|block|open|done|drop|run|sprint|status|sto…
+❯ /todo [show|edit|new|add|groom|block|open|done|drop|run|sprint|status…
 [tab] complete · [enter] run · [↑↓] move · [esc] dismiss
 
 · the backlog block on the inspector rail
@@ -31,7 +31,7 @@
 
 ── ansi ────────────────────────────────────────────────────
 · the completion offers /todo in a conversation
-␛[1;48;5;62m❯ /todo [show|edit|new|add|groom|block|open|done|drop|run|sprint|status|sto…␛[m
+␛[1;48;5;62m❯ /todo [show|edit|new|add|groom|block|open|done|drop|run|sprint|status…␛[m
 ␛[38;5;241m[tab] complete · [enter] run · [↑↓] move · [esc] dismiss␛[m
 
 · the backlog block on the inspector rail

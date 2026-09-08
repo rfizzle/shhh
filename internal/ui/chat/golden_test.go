@@ -1511,12 +1511,36 @@ func TestGolden_Palette(t *testing.T) {
 		working.setTurnState(stateStreaming)
 		reopened, _ := working.openPalette()
 		working = reopened.(Model)
-		working.palette.query = "cl"
+		working.palette.query = "co"
 		working.refreshPalette()
 
 		return []golden.Panel{
 			{Label: "nothing typed yet", View: strings.Join(idle.pickerLines(), "\n")},
-			{Label: "mid-turn, filtered to an idle-only command", View: strings.Join(working.pickerLines(), "\n")},
+			{Label: "mid-turn, an idle-only command among the runnable ones", View: strings.Join(working.pickerLines(), "\n")},
+		}
+	})
+}
+
+// TestGolden_CompletionMenu captures the slash menu under the draft while a
+// turn runs: the command that needs an idle session stays on the list behind
+// ⊘ with the reason at the end of its row, rather than leaving the reader who
+// typed /comp with an empty menu and no way to tell a command that is waiting
+// from one this build does not have.
+func TestGolden_CompletionMenu(t *testing.T) {
+	captureGolden(t, "completion-menu", "the slash menu mid-turn", goldenWidths, func(width int) []golden.Panel {
+		menu := func(text string, working bool) string {
+			m := goldenModel(t, width)
+			if working {
+				m.setTurnState(stateStreaming)
+			}
+			m.input.SetValue(text)
+			m.syncCompletions()
+			return promptSurface(m)
+		}
+		return []golden.Panel{
+			{Label: "idle · every command on the list is runnable", View: menu("/co", false)},
+			{Label: "mid-turn · the greyed rows say why", View: menu("/co", true)},
+			{Label: "mid-turn · the one command the prefix names", View: menu("/comp", true)},
 		}
 	})
 }

@@ -534,6 +534,15 @@ a fixed list of subcommands — offers them for the token under the cursor.
 Tab writes the focused row into the draft, ↑↓ move, and esc dismisses the menu
 until the draft changes again.
 
+A command the running turn has put out of reach stays on the list, behind ⊘
+and greyed, with the reason right-aligned at the end of its row and the
+command's own description still in the middle. "Why is /compact missing" is a
+worse question to be left holding than "why is it grey", and a menu that
+answers the first by showing nothing sends the reader looking for a command
+that is two keystrokes away. The reason is the short form; taking the row
+anyway is what says the long one. It takes its columns before the description
+does, and goes whole or not at all.
+
 Enter is the one key with two readings, and which it has is decided by what
 the reader has done, never by what the menu happens to be showing. A menu
 narrowed to a choice — a typed prefix, or a row arrowed onto — is a choice,
@@ -1073,9 +1082,17 @@ in. A terminal that sends neither is not stranded: the key list names the
 other door beside it, which is the prefix on an empty draft.
 
 It is the ordinary selector with its filter always open, not a fourth kind of
-list. Its count is of matches against the whole reach rather than of rows
-showing, because the whole point of the count is finding out that there is
-more.
+list. It is titled with the chord that opened it rather than with a name for
+itself, because the card is the answer to a key that was pressed. Its count is
+of matches against the whole reach rather than of rows showing, because the
+whole point of the count is finding out that there is more; a query that
+narrowed nothing says only how much there is. What the card had no room for is
+counted on a fold marker at its foot, in the same words and the same grey
+every other windowed list folds in — a marker, never a fourth group rail.
+
+It greys an unreachable command exactly as the completion menu does, and for
+the same reason: the palette is where you go to look for a command you cannot
+find.
 
 ### The start screen
 

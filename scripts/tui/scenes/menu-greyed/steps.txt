@@ -1,0 +1,37 @@
+# A menu greys what it cannot offer and says why
+# (docs/interface/surfaces.md#the-completion-menu). While the turn runs, both
+# menus that list commands keep /compact — behind the ⊘ that says it is out of
+# reach, beside the reason it is — rather than dropping it and leaving the
+# reader who typed /comp with an empty list and no way to tell a command that
+# is waiting from one this build does not have.
+snap 01-start "Some things worth doing first"
+keys "hold the turn open" Enter
+snap 02-card "sleep 15"
+sleep 1
+keys y
+# The command is a wait, so the turn stays open under everything below it and
+# the draft keeps the keyboard the whole time.
+snap 03-running "running…"
+keys "/comp"
+snap 04-completion "idle only"
+# The palette is the same answer through the other door: the chord opens it
+# over the draft, with the whole reach counted on its rail and what did not
+# fit folded at its foot.
+keys C-/
+snap 05-palette "matches"
+# Esc alone, with the terminal given time to deliver it: an escape written
+# into the pty against the keys behind it arrives as one sequence, and the
+# palette would still be up under the chord that was meant for the session.
+keys Escape
+sleep 0.5
+# The turn runs out and the menu is rebuilt on the crossing: /compact is
+# offered plainly the moment it can be had, without a keystroke to ask.
+snap 06-done "The menu is what the reader has while the turn runs"
+# The first cancel takes the draft back — /comp is still in it — and the two
+# after it are the session's own way out.
+keys C-c
+sleep 0.3
+keys C-c
+snap 07-quit-armed "press again to quit"
+keys C-c
+snap 08-exit "that is everything the screen was holding"
