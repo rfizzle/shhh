@@ -690,3 +690,44 @@ func TestWithdrawIntervention_AMessageThatIsGoneIsNotWithdrawn(t *testing.T) {
 		t.Error("a failed withdrawal must not silence the turn's readings")
 	}
 }
+
+// The notice is the mechanism's only voice, and both halves of it end a
+// sentence: the reason the summarizer wrote, and the fixed clause joined onto
+// it. A reason that closed itself must not close twice.
+func TestNotices_TheReasonIsJoinedAsOneSentence(t *testing.T) {
+	tests := []struct {
+		name   string
+		reason string
+		want   string
+	}{
+		{"a closed reason", "searching without making changes.", "searching without making changes. "},
+		{"an open reason", "searching without making changes", "searching without making changes. "},
+		{"a question", "is it still on the file it was asked about?", "is it still on the file it was asked about. "},
+		{"trailing space", "searching without making changes . ", "searching without making changes. "},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			for _, notice := range []string{steerNotice(tt.reason), enoughNotice(tt.reason)} {
+				if !strings.Contains(notice, tt.want) {
+					t.Errorf("notice = %q, want it to carry %q", notice, tt.want)
+				}
+				if strings.Contains(notice, "..") {
+					t.Errorf("notice = %q, want one full stop", notice)
+				}
+			}
+		})
+	}
+}
+
+// A reason that is nothing but punctuation is no reason. It takes the notice
+// written for a reading that gave none rather than leaving a dangling dash.
+func TestNotices_AReasonThatTrimsToNothingIsNoReason(t *testing.T) {
+	for _, reason := range []string{"", " ", "."} {
+		if got, want := steerNotice(reason), steerNotice(""); got != want {
+			t.Errorf("steerNotice(%q) = %q, want %q", reason, got, want)
+		}
+		if got, want := enoughNotice(reason), enoughNotice(""); got != want {
+			t.Errorf("enoughNotice(%q) = %q, want %q", reason, got, want)
+		}
+	}
+}

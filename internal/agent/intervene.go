@@ -495,6 +495,7 @@ func (a *Agent) InterventionWithdrawn() bool { return a.intervene.withdrawn }
 // attributed on purpose: a message the reader did not write, changing what
 // their agent does, is how a transcript stops being something they can trust.
 func steerNotice(reason string) string {
+	reason = openSentence(reason)
 	if reason == "" {
 		return "Steered — the session looked off target, so it was asked to check its work against the instruction."
 	}
@@ -502,8 +503,24 @@ func steerNotice(reason string) string {
 }
 
 func enoughNotice(reason string) string {
+	reason = openSentence(reason)
 	if reason == "" {
 		return "Check-in — the session looked to have what it needs, so it was asked to take stock early."
 	}
 	return fmt.Sprintf("Check-in — %s. Asked to take stock early.", reason)
+}
+
+// openSentence makes a summarizer's reason safe to join a sentence onto. Both
+// notices supply their own full stop and the reason is a sentence the
+// summarizer has usually already closed, so the two together print
+// "…without making changes.. The session was asked…" — a stutter in the one
+// line the reader has to trust when something they did not write has changed
+// what their agent is doing.
+//
+// The trailing punctuation goes and nothing is added: a reason that arrives
+// with none is left as it is, because the caller's own full stop closes it
+// either way. Trimming to nothing is the reasonless case — a reason of "." is
+// no reason — and returning empty routes it to the notice written for that.
+func openSentence(reason string) string {
+	return strings.TrimSpace(strings.TrimRight(strings.TrimSpace(reason), ".!?…"))
 }
