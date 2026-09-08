@@ -287,7 +287,8 @@ func (o *OpenAIResponses) StreamCompletion(ctx context.Context, messages []Messa
 func toResponseItems(messages []Message, replayReasoning bool) ([]responseItem, string) {
 	var items []responseItem
 	var instructions []string
-	for _, m := range messages {
+	replay := replayFrom(messages)
+	for i, m := range messages {
 		switch m.Role {
 		case RoleSystem:
 			if m.Content != "" {
@@ -308,21 +309,28 @@ func toResponseItems(messages []Message, replayReasoning bool) ([]responseItem, 
 			// Nothing here refuses a request that dropped it, which is what
 			// makes it easy to drop: the model derives the plan behind its
 			// own calls again, every round, from the tool results alone.
+			// So only the current chain's goes back — this API's own
+			// guidance is the reasoning items since the last user message
+			// and no more, and outside its newest models an earlier turn's
+			// is not rendered into the sample at all (reasoning.go).
 			// See docs/capabilities/providers.md#thinking-goes-back-to-the-model-that-did-it.
-			for _, r := range m.Reasoning {
-				// Both halves or nothing. A block missing either is one
-				// another dialect produced — a session that changed provider
-				// mid-conversation carries its old thinking with it — and
-				// sending it describes an item this endpoint never issued.
-				if !replayReasoning || r.Signature == "" || r.Redacted == "" {
-					continue
+			if replayReasoning && i >= replay {
+				for _, r := range m.Reasoning {
+					// Both halves or nothing. A block missing either is one
+					// another dialect produced — a session that changed
+					// provider mid-conversation carries its old thinking
+					// with it — and sending it describes an item this
+					// endpoint never issued.
+					if r.Signature == "" || r.Redacted == "" {
+						continue
+					}
+					items = append(items, responseItem{
+						Type:             "reasoning",
+						ID:               r.Signature,
+						Summary:          json.RawMessage("[]"),
+						EncryptedContent: r.Redacted,
+					})
 				}
-				items = append(items, responseItem{
-					Type:             "reasoning",
-					ID:               r.Signature,
-					Summary:          json.RawMessage("[]"),
-					EncryptedContent: r.Redacted,
-				})
 			}
 			if m.Content != "" {
 				items = append(items, responseItem{

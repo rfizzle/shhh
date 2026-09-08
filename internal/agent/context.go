@@ -93,6 +93,12 @@ func EstimateTokens(s string) int64 {
 }
 
 // EstimateMessageTokens roughly estimates the token count of a conversation.
+//
+// A resumed session and a live one at the same message count are not the
+// same request. The store keeps no reasoning, so a conversation read back
+// off disk carries none and estimates lower than the one it continues —
+// which is the honest answer, because the request it will send is smaller
+// too.
 func EstimateMessageTokens(msgs []provider.Message) int64 {
 	var n int64
 	for _, msg := range msgs {
@@ -100,9 +106,28 @@ func EstimateMessageTokens(msgs []provider.Message) int64 {
 		for _, tc := range msg.ToolCalls {
 			n += EstimateTokens(tc.Arguments)
 		}
+		n += estimateReasoningTokens(msg.Reasoning)
 		n += EstimateAttachmentTokens(msg.Attachments)
 	}
 	return n
+}
+
+// estimateReasoningTokens is what a message's thinking occupies. It is
+// counted for the same reason everything else here is: on a thinking model
+// it is the fastest-growing thing a round adds, and an estimate that left it
+// out was calibrated against a quantity the request does not contain.
+//
+// It is an over-count on the two dialects that now replay only the current
+// chain's thinking and drop the rest, and exact on the one that replays all
+// of it. That is the safe direction of the two: an over-count trims early,
+// where an under-count sends the request that overflows.
+// See docs/capabilities/providers.md#only-the-chain-being-worked-on-now-goes-back.
+func estimateReasoningTokens(blocks []provider.ReasoningBlock) int64 {
+	var b int
+	for _, r := range blocks {
+		b += len(r.Text) + len(r.Redacted)
+	}
+	return int64(b / estimatedBytesPerToken)
 }
 
 // estimatedImageTokens is what one attached image costs, roughly. Providers

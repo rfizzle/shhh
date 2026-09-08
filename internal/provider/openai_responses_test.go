@@ -681,3 +681,44 @@ func TestResponses_CeilingKeepsTheTextAndDropsTheUnfinishedCall(t *testing.T) {
 		t.Errorf("the finished call survives and half a JSON object does not, got %+v", final.ToolCalls)
 	}
 }
+
+// TestOpenAIResponses_ReplaysOnlyTheCurrentChain: this API's own guidance is
+// to pass back the reasoning items since the last user message and no more —
+// outside its newest models an earlier turn's reasoning is not rendered into
+// the sample at all, so sending it buys the model nothing and is paid for.
+func TestOpenAIResponses_ReplaysOnlyTheCurrentChain(t *testing.T) {
+	var got responsesRequest
+	srv := responsesServer(t, []string{
+		`data: {"type":"response.completed","response":{"status":"completed","output":[]}}`,
+	}, &got)
+
+	sealed := func(id string) []ReasoningBlock {
+		return []ReasoningBlock{{Signature: id, Redacted: "sealed-" + id}}
+	}
+	p := newTestResponses(srv.URL, "gpt-5.6-terra")
+	ch, err := p.StreamCompletion(context.Background(), []Message{
+		{Role: RoleUser, Content: "list files"},
+		{Role: RoleAssistant, Reasoning: sealed("rs_old"), ToolCalls: []ToolCall{{ID: "call_1", Name: "bash", Arguments: "{}"}}},
+		{Role: RoleTool, ToolCallID: "call_1", Content: "go.mod"},
+		{Role: RoleAssistant, Content: "one file", Reasoning: sealed("rs_answer")},
+		{Role: RoleUser, Content: "read it"},
+		{Role: RoleAssistant, Reasoning: sealed("rs_now"), ToolCalls: []ToolCall{{ID: "call_2", Name: "bash", Arguments: "{}"}}},
+		{Role: RoleTool, ToolCallID: "call_2", Content: "module shhh"},
+	}, CompletionOpts{Effort: EffortHigh})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, _, _, err := collect(t, ch); err != nil {
+		t.Fatalf("unexpected stream error: %v", err)
+	}
+
+	var ids []string
+	for _, item := range got.Input {
+		if item.Type == "reasoning" {
+			ids = append(ids, item.ID)
+		}
+	}
+	if len(ids) != 1 || ids[0] != "rs_now" {
+		t.Fatalf("only the current chain's reasoning goes back, got %v", ids)
+	}
+}

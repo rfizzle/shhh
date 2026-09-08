@@ -402,6 +402,7 @@ func anthropicReasoning(accumulated anthropic.Message) []ReasoningBlock {
 func toAnthropicMessages(messages []Message) (system string, out []anthropic.MessageParam) {
 	var systemParts []string
 	var pendingToolResults []anthropic.ContentBlockParamUnion
+	replay := replayFrom(messages)
 
 	flushToolResults := func() {
 		if len(pendingToolResults) > 0 {
@@ -410,7 +411,7 @@ func toAnthropicMessages(messages []Message) (system string, out []anthropic.Mes
 		}
 	}
 
-	for _, msg := range messages {
+	for i, msg := range messages {
 		switch msg.Role {
 		case RoleSystem:
 			systemParts = append(systemParts, msg.Content)
@@ -429,13 +430,21 @@ func toAnthropicMessages(messages []Message) (system string, out []anthropic.Mes
 			// Thinking leads the turn, in the order and the form it arrived:
 			// with extended thinking on, the API rejects an assistant turn
 			// that requested tools and dropped the reasoning behind them.
-			for _, r := range msg.Reasoning {
-				if r.Redacted != "" {
-					blocks = append(blocks, anthropic.NewRedactedThinkingBlock(r.Redacted))
-					continue
-				}
-				if r.Signature != "" {
-					blocks = append(blocks, anthropic.NewThinkingBlock(r.Signature, r.Text))
+			//
+			// Only the current chain's thinking goes back. What came before
+			// it is dropped from the front of the history, oldest first,
+			// because this dialect keeps prior turns' thinking in context
+			// and bills it as input for as long as the session runs
+			// (reasoning.go).
+			if i >= replay {
+				for _, r := range msg.Reasoning {
+					if r.Redacted != "" {
+						blocks = append(blocks, anthropic.NewRedactedThinkingBlock(r.Redacted))
+						continue
+					}
+					if r.Signature != "" {
+						blocks = append(blocks, anthropic.NewThinkingBlock(r.Signature, r.Text))
+					}
 				}
 			}
 			if msg.Content != "" {

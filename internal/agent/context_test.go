@@ -247,3 +247,33 @@ func TestCalibration_NothingReportedChangesNothing(t *testing.T) {
 		t.Fatalf("an unreported session must estimate exactly as before, got %v", c.Factor())
 	}
 }
+
+// A thinking model's reasoning is part of what a round adds, and on a long
+// session it is the fastest-growing part. An estimate that skipped it read
+// the same for two conversations of very different size.
+func TestEstimateMessageTokens_CountsReasoning(t *testing.T) {
+	plain := []provider.Message{
+		{Role: provider.RoleUser, Content: strings.Repeat("a", 400)},
+		{Role: provider.RoleAssistant, Content: strings.Repeat("b", 400)},
+	}
+	thought := []provider.Message{
+		plain[0],
+		{
+			Role:    provider.RoleAssistant,
+			Content: strings.Repeat("b", 400),
+			Reasoning: []provider.ReasoningBlock{
+				{Text: strings.Repeat("c", 400), Signature: "sig"},
+				{Redacted: strings.Repeat("d", 400)},
+			},
+		},
+	}
+	base := EstimateMessageTokens(plain)
+	if base != 200 {
+		t.Fatalf("expected 200 estimated tokens without reasoning, got %d", base)
+	}
+	// The two blocks are 800 bytes of thinking between them; the signature
+	// is a handle on the block rather than content the model reads back.
+	if got := EstimateMessageTokens(thought); got != base+200 {
+		t.Fatalf("expected reasoning to add 200 tokens, got %d against %d", got, base)
+	}
+}

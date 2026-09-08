@@ -831,3 +831,68 @@ func TestAnthropic_CeilingKeepsTheTextAndDropsTheUnfinishedCall(t *testing.T) {
 		t.Errorf("the finished call survives and half a JSON object does not, got %+v", final.ToolCalls)
 	}
 }
+
+// thinkingBlocks counts the thinking and redacted-thinking blocks a converted
+// turn carries, which is what a replay policy is a statement about.
+func thinkingBlocks(msg anthropic.MessageParam) int {
+	var n int
+	for _, b := range msg.Content {
+		if b.OfThinking != nil || b.OfRedactedThinking != nil {
+			n++
+		}
+	}
+	return n
+}
+
+// TestAnthropicReasoning_ReplaysOnlyTheCurrentChain: this dialect keeps prior
+// turns' thinking in context and bills it as input, so a session that
+// replayed all of it would pay again every round for every round it had ever
+// thought, in the one category a trim cannot reach.
+func TestAnthropicReasoning_ReplaysOnlyTheCurrentChain(t *testing.T) {
+	think := func(sig string) []ReasoningBlock {
+		return []ReasoningBlock{{Text: "weighing " + sig, Signature: sig}}
+	}
+	_, msgs := toAnthropicMessages([]Message{
+		{Role: RoleUser, Content: "read a"},
+		{Role: RoleAssistant, Reasoning: think("old"), ToolCalls: []ToolCall{{ID: "t1", Name: "read"}}},
+		{Role: RoleTool, ToolCallID: "t1", Content: "contents"},
+		{Role: RoleAssistant, Content: "done", Reasoning: think("older-answer")},
+		{Role: RoleUser, Content: "now read b"},
+		{Role: RoleAssistant, Reasoning: think("now"), ToolCalls: []ToolCall{{ID: "t2", Name: "read"}}},
+		{Role: RoleTool, ToolCallID: "t2", Content: "contents"},
+	})
+	// user, assistant, tool-result-as-user, assistant, user, assistant, tool
+	if n := thinkingBlocks(msgs[1]); n != 0 {
+		t.Errorf("the first turn's thinking is history and must not go back, got %d blocks", n)
+	}
+	if n := thinkingBlocks(msgs[3]); n != 0 {
+		t.Errorf("the answer that closed the first turn must not go back, got %d blocks", n)
+	}
+	last := msgs[len(msgs)-2]
+	if n := thinkingBlocks(last); n != 1 {
+		t.Fatalf("the current chain's thinking must go back, got %d blocks", n)
+	}
+	if last.Content[0].OfThinking.Signature != "now" {
+		t.Errorf("the wrong turn's thinking survived: %+v", last.Content[0].OfThinking)
+	}
+}
+
+// A round boundary appends a user message of its own — a tree notice, an
+// intervention — after the assistant turn that asked for a tool. Cutting the
+// replay at that message would send the tool_use with none of the thinking
+// behind it, which is the follow-up this API refuses.
+func TestAnthropicReasoning_KeepsTheTurnAUserMessageInterrupted(t *testing.T) {
+	_, msgs := toAnthropicMessages([]Message{
+		{Role: RoleUser, Content: "read a"},
+		{
+			Role:      RoleAssistant,
+			Reasoning: []ReasoningBlock{{Text: "weighing it", Signature: "sig"}},
+			ToolCalls: []ToolCall{{ID: "t1", Name: "read"}},
+		},
+		{Role: RoleTool, ToolCallID: "t1", Content: "contents"},
+		{Role: RoleUser, Content: "another session moved the tree under you"},
+	})
+	if n := thinkingBlocks(msgs[1]); n != 1 {
+		t.Fatalf("the tool call's thinking must survive the notice, got %d blocks", n)
+	}
+}

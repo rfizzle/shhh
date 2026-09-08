@@ -139,6 +139,62 @@ think is sent no thinking either — a conversation that crossed a switch to
 such a model still carries the thinking of the rounds before it, and handing
 that over would describe an item the model never wrote and cannot take.
 
+### Only the chain being worked on now goes back
+
+Travelling is not the same as travelling forever. What has to go back is the
+reasoning behind the calls this round is answering; the rounds before it are
+finished, and their thinking is a copy of a plan that has already been
+carried out.
+
+It is not free to keep sending. Anthropic's published pricing counts
+"thinking blocks from prior assistant turns that remain in context" as input
+tokens, and its preservation table puts every model this product would put a
+session on in the group that keeps all of them by default rather than the
+older group whose API strips them. The Responses API says the opposite thing
+and reaches the same place: outside its newest models it carries an earlier
+turn's tokens forward without rendering that turn's reasoning into the next
+sample, and its own guidance is to pass back the reasoning items since the
+last user message and no more. So on one dialect the history's thinking is
+paid for on every round for the life of the session, and on the other it is
+sent and not used.
+
+That is the category nothing else here can reach. A trim rewrites tool
+results and never an assistant turn, so on a long thinking session the one
+part of the conversation that grows every round is also the one part no
+recovery touches.
+
+So the cut is the last user turn, which is where the current chain starts,
+with one turn of slack: a round boundary can append a message of its own — a
+notice that the working tree moved, an interruption — after the assistant
+turn that asked for a tool, and cutting at that message would send the call
+with none of the thinking behind it, which is the refusal the blocks are
+carried for in the first place.
+
+The cut only ever moves forward, and that is what makes it safe on the
+dialect that checks. A thinking block records which block came before it, so
+removing them from the front of a history, oldest first, leaves every later
+block valid, while removing one from the middle invalidates all of them —
+a 400 in place of the round it was trying to make cheaper.
+
+Moving it is not free either, and the price is the prefix cache: the round
+that drops a turn's thinking sends different bytes at that position, so
+everything from there on has to be written into the cache again instead of
+read. That is why the cut is the user turn and not the round. Within a turn
+it does not move at all — and a turn is where the rounds are, up to the whole
+tool-round cap of them — so what a moved cut costs is one invalidation at the
+moment a person has just finished typing, and what it buys is every round
+after it carrying a smaller prompt.
+
+**Recorded basis, and what is still owed.** The above is what the two vendors
+publish, read on 2026-09-08; it is not a measurement. The measurement this
+asks for — one response's reported input count with and without the history's
+older reasoning, on each dialect — has not been taken, because it needs
+credentials against both. It is worth taking twice over: it would say what
+the saving actually is, and it would settle the trade against the
+invalidation above, which is the one part of this that could come out
+negative on a session of short turns. It is also the only thing that would
+catch a vendor changing this without changing the sentence.
+
 ## A bounded call runs on the small model
 
 The permission classifier, the session summary and the title it shares are
@@ -338,6 +394,22 @@ and the request after it went out oversize on a number the provider was quoted
 for. What is anchored is the prompt the provider counted, not the prompt plus
 what the model wrote back — the answer becomes a message a moment later, and
 the estimate counts it then.
+
+What is estimated includes the thinking. On a thinking model it is the
+fastest-growing thing a round adds, and an estimate that left it out was
+calibrated against a quantity the request does not contain — with the gap
+absorbed into a single correction factor applied to everything, which papers
+over the total while distorting every part of the breakdown. It is an
+over-count on the two dialects that now replay only the current chain's
+thinking, and exact on the one that replays all of it; of the two directions
+that is the safe one, because an over-count trims early where an under-count
+sends the request that overflows.
+
+One consequence is worth stating plainly: a resumed session and a live one at
+the same message count are not the same request. Nothing keeps the reasoning
+across a save — a conversation read back off disk carries none — so it
+estimates lower, and it is right to, because the request it will send is
+smaller too.
 
 Which kind of number a figure is — a report, a report with the rounds since
 estimated on top of it, a plain estimate, a corrected one — is stated wherever
