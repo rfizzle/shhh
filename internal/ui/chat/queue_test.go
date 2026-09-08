@@ -1,9 +1,11 @@
 package chat
 
-// The approval queue strip and batch approval. What these hold to is
-// that [A] never answers more than the strip said it would: the membership on
-// screen and the calls that actually run without a second prompt are the same
-// set, and a safety-flagged action is in neither.
+// The approval queue strip and the list that answers it. What these hold to
+// is that the queue key never answers more than the strip said it would: the
+// membership on screen, the rows the list opens with and the calls that run
+// without a second prompt are the same set, and a safety-flagged action is in
+// none of them. What the list adds is the other half — a row the reader
+// unchecked is denied, one at a time, by the path a single card's no takes.
 
 import (
 	"errors"
@@ -23,6 +25,25 @@ func keyA() tea.KeyPressMsg { return tea.KeyPressMsg{Code: 'A', Text: "A"} }
 
 // keyN presses the decline key.
 func keyN() tea.KeyPressMsg { return tea.KeyPressMsg{Code: 'n', Text: "n"} }
+
+// openQueue presses the queue key and asserts the list came up.
+func openQueue(t *testing.T, m Model) Model {
+	t.Helper()
+	updated, _ := m.Update(keyA())
+	m = updated.(Model)
+	if m.queueList == nil {
+		t.Fatal("the queue key should have opened the queue as a list")
+	}
+	return m
+}
+
+// answerQueue opens the list and confirms it exactly as it opened — every row
+// checked, which is the answer the key used to give on its own.
+func answerQueue(t *testing.T, m Model) (Model, tea.Cmd) {
+	t.Helper()
+	updated, cmd := openQueue(t, m).Update(keyEnter)
+	return updated.(Model), cmd
+}
 
 // execCall is one queued shell command.
 func execCall(id, command string) provider.ToolCall {
@@ -130,10 +151,10 @@ func TestBatch_MembershipSpansOnlyTheSameCategory(t *testing.T) {
 		t.Fatalf("batch should hold only the other command, got %v", got)
 	}
 	view := strings.Join(m.confirmLines(), "\n")
-	if !strings.Contains(view, "A: approve 2 like this") {
+	if !strings.Contains(view, "A: answer 2 like this as a list") {
 		t.Fatalf("the key should state how many it answers, got:\n%s", view)
 	}
-	if !strings.Contains(view, "[A] answers the 2 marked") {
+	if !strings.Contains(view, "[A] lists the 2 marked") {
 		t.Fatalf("the strip should state the batch before it applies, got:\n%s", view)
 	}
 	lines := m.confirmLines()
@@ -168,9 +189,8 @@ func TestBatch_ExcludesFlaggedActions(t *testing.T) {
 		t.Fatalf("the flagged command should be rated on the strip, got %q", lines[2])
 	}
 
-	// [A] runs the two unflagged commands; the flagged one still asks.
-	updated, cmd := m.Update(keyA())
-	m = updated.(Model)
+	// The list runs the two unflagged commands; the flagged one still asks.
+	m, cmd := answerQueue(t, m)
 	updated, _ = m.Update(driveCmdDone(t, cmd))
 	m = updated.(Model)
 	if m.state != stateConfirmRun {
@@ -203,9 +223,8 @@ func TestBatch_ApprovesEveryMemberWithoutAskingAgain(t *testing.T) {
 	m = updated.(Model)
 	m = handover(t, m)
 
-	updated, cmd := m.Update(keyA())
-	m = updated.(Model)
-	// The batch is not a session grant: it answers these three and nothing
+	m, cmd := answerQueue(t, m)
+	// The list is not a session grant: it answers these three and nothing
 	// the model asks for later.
 	if m.policy.allCommands {
 		t.Fatal("[A] must not promote the category to a session grant")
@@ -223,8 +242,8 @@ func TestBatch_ApprovesEveryMemberWithoutAskingAgain(t *testing.T) {
 	if m.state != stateStreaming || cmd == nil {
 		t.Fatal("the stream should resume once the batch drains")
 	}
-	if len(m.batchApproved) != 0 {
-		t.Fatalf("batch grants should be consumed as they are used, got %v", m.batchApproved)
+	if len(m.batchAnswered) != 0 {
+		t.Fatalf("the list's answers should be consumed as they are used, got %v", m.batchAnswered)
 	}
 }
 
@@ -251,8 +270,7 @@ func TestBatch_EditsBatchTogether(t *testing.T) {
 		t.Fatalf("an edit row should carry its diff stats, got %q", m.confirmLines()[1])
 	}
 
-	updated, cmd := m.Update(keyA())
-	m = updated.(Model)
+	m, cmd := answerQueue(t, m)
 	for i := 0; i < 2; i++ {
 		msg := driveApprovedTool(t, cmd)
 		updated, cmd = m.Update(msg)
@@ -317,8 +335,11 @@ func TestBatch_KeyIsAbsentWithoutAQueue(t *testing.T) {
 	}
 	updated, _ = m.Update(keyA())
 	m = updated.(Model)
+	if m.queueList != nil {
+		t.Fatal("[A] with nothing to list should not open a list")
+	}
 	if len(m.policy.commands) == 0 {
-		t.Fatal("[A] without a batch should still take the session grant")
+		t.Fatal("[A] without a queue should still take the session grant")
 	}
 }
 
@@ -333,21 +354,249 @@ func TestBatch_CancelledTurnDropsItsGrants(t *testing.T) {
 	}})
 	m = updated.(Model)
 	m = handover(t, m)
-	updated, _ = m.Update(keyA())
-	m = updated.(Model)
-	if len(m.batchApproved) != 2 {
-		t.Fatalf("[A] should hold grants for the two queued commands, got %v", m.batchApproved)
+	m, _ = answerQueue(t, m)
+	if len(m.batchAnswered) != 2 {
+		t.Fatalf("the list should hold answers for the two queued commands, got %v", m.batchAnswered)
 	}
 
-	// Cancelling the turn drops the queue the grants named, so the grants go
-	// with it: a later round's calls could reuse an id and must not inherit
-	// an answer given about a queue that no longer exists.
+	// Cancelling the turn drops the queue the answers named, so the answers
+	// go with it: a later round's calls could reuse an id and must not
+	// inherit an answer given about a queue that no longer exists.
 	m.cancelStreaming()
-	if len(m.batchApproved) != 0 {
-		t.Fatalf("a cancelled turn should drop its batch grants, got %v", m.batchApproved)
+	if len(m.batchAnswered) != 0 {
+		t.Fatalf("a cancelled turn should drop the list's answers, got %v", m.batchAnswered)
 	}
 	if m.pendingQueue.Rows() != 0 {
 		t.Fatal("a cancelled turn should drop its queue strip")
+	}
+}
+
+// --- the queue answered as a list ---
+
+// TestQueueList_CountsTheDecisionsItCouldNotTake holds the fold: the rows are
+// the ones the strip marked, and the queued decisions that are nobody's
+// business but their own card's are counted on the list rather than dropped
+// from it (docs/interface/principles.md#fold-never-hide).
+func TestQueueList_CountsTheDecisionsItCouldNotTake(t *testing.T) {
+	var ran []string
+	m := execModel(t, &ran)
+
+	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		execCall("c1", "echo one"),
+		execCall("c2", "echo two"),
+		execCall("c3", "git reset --hard"),
+		execCall("c4", "echo three"),
+		execCall("c5", "git reset --hard HEAD~2"),
+		execCall("c6", "echo four"),
+	}})
+	m = handover(t, updated.(Model))
+	m = openQueue(t, m)
+
+	if got := m.queueList.ids; len(got) != 4 {
+		t.Fatalf("the list should hold the head and the three marked, got %v", got)
+	}
+	view := strings.Join(m.confirmLines(), "\n")
+	if !strings.Contains(view, "2 asked on their own") {
+		t.Fatalf("the list should count what it could not take:\n%s", view)
+	}
+	if strings.Contains(view, "git reset") {
+		t.Fatalf("a flagged command must not be a row of the list:\n%s", view)
+	}
+	// It opens as the answer the key used to give on its own, which is what
+	// makes enter the old act rather than a new one.
+	for i, checked := range m.queueList.sel.Checked[:4] {
+		if !checked {
+			t.Fatalf("row %d should open checked", i)
+		}
+	}
+	// And the strip it replaced is not drawn under it: the list is that strip
+	// opened, so the queue is on the screen once.
+	if strings.Contains(view, "pending") {
+		t.Fatalf("the strip should not be drawn beneath the list:\n%s", view)
+	}
+}
+
+// TestQueueList_AllowsTheCheckedAndDeniesTheRest is the whole point of the
+// list: allowing two and denying one costs one pass, and the denial is the
+// reader's own — the same row, the same result and the same reason code a
+// card's [n] produces.
+func TestQueueList_AllowsTheCheckedAndDeniesTheRest(t *testing.T) {
+	var ran []string
+	m := execModel(t, &ran)
+
+	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		execCall("c1", "echo one"),
+		execCall("c2", "echo two"),
+		execCall("c3", "echo three"),
+	}})
+	m = handover(t, updated.(Model))
+	m = openQueue(t, m)
+
+	// Down one row and untick it: the second command is the one the reader
+	// does not want.
+	m = pressKeys(t, m, keyDown, keySpace)
+	updated, cmd := m.Update(keyEnter)
+	m = updated.(Model)
+
+	// The head runs now; the rest are answered as they reach the head.
+	for i := 0; i < 2 && cmd != nil; i++ {
+		if m.state != stateRunningCmd {
+			t.Fatalf("an allowed command should run without a prompt, got state %d", m.state)
+		}
+		updated, cmd = m.Update(driveCmdDone(t, cmd))
+		m = updated.(Model)
+	}
+	if len(ran) != 2 || ran[0] != "echo one" || ran[1] != "echo three" {
+		t.Fatalf("the checked commands should have run and nothing else, got %v", ran)
+	}
+	var denied *provider.Message
+	for i, msg := range m.Messages() {
+		if msg.ToolCallID == "c2" {
+			denied = &m.Messages()[i]
+		}
+	}
+	if denied == nil || !strings.HasPrefix(denied.Content, "error:") {
+		t.Fatalf("the unchecked command should have been refused, got %+v", denied)
+	}
+	// A denial the reader gave is drawn as theirs, not as a rule's
+	// (docs/capabilities/approvals-and-safety.md#denials-are-two-different-facts).
+	found := false
+	for _, e := range m.transcript {
+		if e.toolName == "execute_command" && e.deniedBy != "" {
+			found = true
+			if e.deniedBy != decidedByYou {
+				t.Fatalf("the list's denial should be the reader's, got %q", e.deniedBy)
+			}
+			if e.denyRule != "" {
+				t.Fatalf("the list's denial should name no rule, got %q", e.denyRule)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("the denied command should have left a row")
+	}
+}
+
+// TestQueueList_ARuleStillRefusesARowItAllowed is why the list marks rather
+// than executes: the answer is given before the calls ahead of it have run,
+// and every one of them is put to the deny list, the mode and the working
+// scope again at the head. A decision does not outrank a rule.
+func TestQueueList_ARuleStillRefusesARowItAllowed(t *testing.T) {
+	var ran []string
+	m := execModel(t, &ran).WithCommandDenylist([]string{"echo two"})
+
+	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		execCall("c1", "echo one"),
+		execCall("c2", "echo two"),
+	}})
+	m = handover(t, updated.(Model))
+
+	m, cmd := answerQueue(t, m)
+	updated, _ = m.Update(driveCmdDone(t, cmd))
+	m = updated.(Model)
+
+	if len(ran) != 1 || ran[0] != "echo one" {
+		t.Fatalf("the deny-listed command must not run, got %v", ran)
+	}
+	last := m.Messages()[len(m.Messages())-1]
+	if last.ToolCallID != "c2" || !strings.Contains(last.Content, "deny list") {
+		t.Fatalf("the deny list should have refused it in its own words, got %+v", last)
+	}
+	for _, e := range m.transcript {
+		if e.deniedBy != "" && e.deniedBy != decidedByAuto {
+			t.Fatalf("a rule's denial should not be drawn as the reader's, got %q", e.deniedBy)
+		}
+	}
+}
+
+// TestQueueList_EscAnswersNothing: the way out of a list of decisions leaves
+// every one of them exactly where it was
+// (docs/interface/principles.md#esc-is-always-the-safe-answer).
+func TestQueueList_EscAnswersNothing(t *testing.T) {
+	var ran []string
+	m := execModel(t, &ran)
+
+	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		execCall("c1", "echo one"),
+		execCall("c2", "echo two"),
+	}})
+	m = handover(t, updated.(Model))
+	before := strings.Join(m.confirmLines(), "\n")
+
+	m = openQueue(t, m)
+	updated, _ = m.Update(keyEsc)
+	m = updated.(Model)
+
+	if m.queueList != nil {
+		t.Fatal("esc should have closed the list")
+	}
+	if m.state != stateConfirmRun || m.pendingApproval == nil {
+		t.Fatalf("the card should still be waiting, got state %d", m.state)
+	}
+	if len(m.batchAnswered) != 0 {
+		t.Fatalf("esc should have answered nothing, got %v", m.batchAnswered)
+	}
+	if len(ran) != 0 {
+		t.Fatalf("esc should have run nothing, got %v", ran)
+	}
+	if got := strings.Join(m.confirmLines(), "\n"); got != before {
+		t.Fatalf("esc should give back the card it borrowed the screen from:\n%s\nwant:\n%s", got, before)
+	}
+}
+
+// TestQueueList_WindowsALongQueue: twenty decisions are scrollable rather
+// than clipped, and the marker counts what it is holding back — including how
+// many of those are ticked, which is the reader's own answer scrolled out of
+// sight.
+func TestQueueList_WindowsALongQueue(t *testing.T) {
+	var ran []string
+	m := execModel(t, &ran)
+
+	calls := make([]provider.ToolCall, 0, 20)
+	for i := 0; i < 20; i++ {
+		calls = append(calls, execCall(fmt.Sprintf("c%d", i+1), fmt.Sprintf("echo %d", i+1)))
+	}
+	updated, _ := m.Update(toolCallsMsg{calls: calls})
+	m = handover(t, updated.(Model))
+	m = openQueue(t, m)
+
+	if got := len(m.queueList.ids); got != 20 {
+		t.Fatalf("every command should be a row, got %d", got)
+	}
+	lines := m.confirmLines()
+	if len(lines) > m.maxConfirmPanelHeight() {
+		t.Fatalf("the list should stay inside the panel's %d rows, got %d",
+			m.maxConfirmPanelHeight(), len(lines))
+	}
+	view := strings.Join(lines, "\n")
+	if !strings.Contains(view, "more") || !strings.Contains(view, "checked") {
+		t.Fatalf("the window should count what it is holding back:\n%s", view)
+	}
+	if strings.Contains(view, "echo 20") {
+		t.Fatalf("a windowed list should not be drawing its last row:\n%s", view)
+	}
+}
+
+// TestQueueList_RatesEveryRow: the row carries the severity the strip gave
+// it, in the same words, because they are the same fact about the same call.
+func TestQueueList_RatesEveryRow(t *testing.T) {
+	var ran []string
+	m := execModel(t, &ran)
+	dir := t.TempDir()
+
+	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		writeCall("w1", filepath.Join(dir, "a.txt"), "one\n"),
+		writeCall("w2", filepath.Join(dir, "b.txt"), "two\n"),
+	}})
+	m = handover(t, updated.(Model))
+	m = openQueue(t, m)
+
+	view := stripANSI(strings.Join(m.confirmLines(), "\n"))
+	if strings.Count(view, "medium") != 2 {
+		t.Fatalf("both edits should carry their rating as a word:\n%s", view)
+	}
+	if !strings.Contains(view, "+1 \u22120") {
+		t.Fatalf("a row should keep the short field the strip gives it:\n%s", view)
 	}
 }
 

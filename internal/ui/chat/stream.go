@@ -274,9 +274,9 @@ func (m *Model) cancelStreaming() {
 	// (question.go).
 	m.question = nil
 	// The queue the strip described is gone with the turn, and so is every
-	// batch grant made against it.
+	// answer the list gave against it.
 	m.clearQueueStrip()
-	m.batchApproved, m.approvalTotal = nil, 0
+	m.batchAnswered, m.approvalTotal = nil, 0
 	// Ctrl+C is a cancellation, and the close rows say so.
 	m.turnOutcome = components.TurnCancelled
 	m.finishStreaming()

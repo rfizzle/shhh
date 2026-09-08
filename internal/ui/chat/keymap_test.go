@@ -427,6 +427,26 @@ func decisionCards(t *testing.T) []decisionCard {
 			card: sessionCard,
 		},
 		{
+			// The same card with a queue behind it, which is the one state
+			// the queue key is drawn in: it opens the stack as the list that
+			// answers it, and a key that is only offered where there is a
+			// queue can only be walked where there is one.
+			name: "the session's command card with a queue behind it",
+			open: func(t *testing.T) Model {
+				var ran []string
+				m := execModel(t, &ran)
+				updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+					execCall("c1", "echo one"),
+					execCall("c2", "echo two"),
+				}})
+				return handover(t, updated.(Model))
+			},
+			card: sessionCard,
+			// The strip above the card takes rows the card would have had,
+			// so this fixture's body is one row longer than its panel.
+			scrolls: true,
+		},
+		{
 			name: "a child's routed command",
 			open: routed(func(*testing.T) *subagent.Ask {
 				ask := subagent.NewAsk("writer-1", subagent.AskCommand, "run make")

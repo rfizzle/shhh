@@ -589,14 +589,17 @@ type Model struct {
 	// nothing.
 	pendingScope scopeReach
 	// The approval queue made visible: pendingQueue is the strip
-	// above the card, pendingBatch the queued call IDs [A] would answer with
-	// the current one, and batchApproved those an earlier [A] already
-	// answered — they run when they reach the head instead of asking again.
-	// approvalTotal is how many decisions this tool round queued, so the
-	// card can say "2 of 5" once two have been answered.
+	// above the card, pendingBatch the queued call IDs [A] would put on the
+	// list with the current one, and batchAnswered how that list answered
+	// them — allowed or denied — for calls that have not reached the head
+	// yet, so each is carried out when its turn comes instead of asking
+	// again. queueList is the list itself while it is open, and nil the rest
+	// of the time (queue.go). approvalTotal is how many decisions this tool
+	// round queued, so the card can say "2 of 5" once two have been answered.
 	pendingQueue  components.QueueStrip
 	pendingBatch  []string
-	batchApproved map[string]bool
+	batchAnswered map[string]bool
+	queueList     *queueList
 	approvalTotal int
 	// Compact activity feed: verbosity is the feed's default density
 	// (/ui verbosity); tailRunFn is the tail-capable command runner, and

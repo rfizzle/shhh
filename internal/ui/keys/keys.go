@@ -701,8 +701,14 @@ type DecisionKeys struct {
 	Allow  Binding
 	Deny   Binding
 	Always Binding
-	Batch  Binding
-	Diff   Binding
+	// Batch opens the queue behind the card as a list the reader checks and
+	// unchecks, rather than answering a set they cannot see. The keystroke is
+	// the one it always was and only the act behind it changed: a reader who
+	// learned it as "answer the rest like this one" presses it, sees the rest,
+	// and enter is still that answer
+	// (docs/interface/surfaces.md#the-approval-card).
+	Batch Binding
+	Diff  Binding
 
 	// AllowNoted and DenyNoted are the same two answers with a sentence
 	// attached: the key opens a one-line field under the card, and what is
@@ -812,7 +818,7 @@ var Decision = DecisionKeys{
 	AllowNoted: bind("Y", "allow, and say what to do next", "Y"),
 	DenyNoted:  bind("N", "deny, and say why", "N"),
 	Always:     bind("a", "always allow this session", "a"),
-	Batch:      bind("A", "answer the marked", "A"),
+	Batch:      bind("A", "open the queue", "A"),
 	Diff:       bind("d", "full diff", "d", "D"),
 	DryRun:     bind("t", "try the harmless form", "t"),
 	Explain:    bind("x", "explain what the command does", "x"),

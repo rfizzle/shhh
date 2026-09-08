@@ -76,6 +76,13 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if m.commandEdit != nil {
 		return m.updateCommandEdit(msg)
 	}
+	// And the queue, where the key over the stack opened it as a list. It
+	// holds the keyboard the way the fields above do, and for a reason of the
+	// same family: while it is up the keys are the selector's — its `a` ticks
+	// every row rather than granting the session (queue.go).
+	if m.queueList != nil {
+		return m.updateQueueList(msg)
+	}
 	// The card's own scroll, answered before the decision keys so a held
 	// card cannot read a chord as the start of a sentence. The chords reach
 	// here only while the card holds the keyboard; ungated they still
@@ -131,17 +138,13 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			return m.openOutputFull(m.commandCardView(), noOutputEntry, stateConfirmRun)
 		}
 	case components.ApprovalBatch:
-		// [A] answers this decision and every queued decision the session
-		// would classify the same way. Membership was on the strip
-		// before the key applied it, and a flagged action was never in it.
-		if req := m.pendingApproval; req != nil && len(m.pendingBatch) > 0 {
-			m.approveBatch()
-			m.recordDecision(observe.DecisionAllow, observe.ReasonUserBatch)
-			if req.kind == approvalExec {
-				return m.executeRun()
-			}
-			return m.executeApprovedTool()
-		}
+		// [A] renders this decision and every queued decision the session
+		// would classify the same way as the list that answers them. It
+		// settles nothing on its own — the answer is given when the list is
+		// confirmed, and esc leaves the queue as it was (queue.go).
+		// Membership was on the strip before the key opened it, and a flagged
+		// action was never in it.
+		return m.openQueueList()
 	case components.ApprovalAlways:
 		// Approve, and stop asking about this shape of call for the session
 		//. The grant is scoped to what the card showed — this

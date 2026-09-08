@@ -43,8 +43,11 @@ const (
 	// ApprovalFullDiff opens the full-screen diff view (d, only when
 	// FullDiff is set); the host returns to the card afterwards.
 	ApprovalFullDiff
-	// ApprovalBatch approves this action and every queued action the session
-	// would classify the same way (A, only when Batch is set).
+	// ApprovalBatch asks the host for the queue behind the card as a list:
+	// this action and every queued action the session would classify the same
+	// way, checked and unchecked rather than answered together (A, only when
+	// Batch is set). It settles nothing, which is why the card hands it back
+	// rather than deciding on it.
 	ApprovalBatch
 	// ApprovalRelease hands the keyboard back to the draft and asks the host
 	// to deliver the keystroke there. Only a card holding the keyboard by
@@ -230,7 +233,8 @@ type ApprovalCard struct {
 	AllowAlways bool
 	AlwaysHint  string
 	// Batch offers [A]: this action and every queued action the session
-	// would classify the same way, answered together. BatchHint
+	// would classify the same way, opened as the list that answers them.
+	// BatchHint
 	// states the count on the key, because a key that answers an unstated
 	// number of decisions is not an offer.
 	Batch     bool

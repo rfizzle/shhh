@@ -1023,6 +1023,46 @@ func TestGolden_CommandAmended(t *testing.T) {
 		})
 }
 
+// TestGolden_QueueList captures the queue opened as the list that answers it:
+// the rows the strip marked, each with the short field and its severity chip
+// right-aligned, and the decisions that stay their own card counted on a dim
+// row rather than dropped (docs/interface/surfaces.md#the-approval-card).
+//
+// Both panels are here because the fold is the half with no other witness: a
+// list that simply left the flagged rows out would look exactly like this one
+// at any width, and at sixty columns the chip and the target compete for the
+// row where that would be lost.
+func TestGolden_QueueList(t *testing.T) {
+	captureGolden(t, "queue-list", "the approval queue as a list", goldenWidths,
+		func(width int) []golden.Panel {
+			build := func(t *testing.T, calls []provider.ToolCall) string {
+				var ran []string
+				m := execModel(t, &ran)
+				m.width, m.height = width, 40
+				m.syncInputWidth()
+				updated, _ := m.Update(toolCallsMsg{calls: calls})
+				m = openQueue(t, handover(t, updated.(Model)))
+				m.syncViewport()
+				return strings.Join(m.confirmLines(), "\n")
+			}
+			whole := build(t, []provider.ToolCall{
+				execCall("c1", "go test ./internal/agent"),
+				execCall("c2", "go build ./..."),
+				execCall("c3", "gofmt -w internal/ui/chat/queue.go"),
+			})
+			folded := build(t, []provider.ToolCall{
+				execCall("c1", "go test ./internal/agent"),
+				execCall("c2", "git reset --hard"),
+				execCall("c3", "go build ./..."),
+				execCall("c4", "git reset --hard HEAD~2"),
+			})
+			return []golden.Panel{
+				{Label: "three decisions \u00b7 every row checked as it opens", View: whole},
+				{Label: "two left out \u00b7 counted, not hidden", View: folded},
+			}
+		})
+}
+
 // TestGolden_ExplainView captures the screen the command card's explain key
 // opens on, in both the states it has: the paragraph with the footer that
 // names who said it and what asking took, and the reading that did not happen

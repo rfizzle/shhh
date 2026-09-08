@@ -150,15 +150,11 @@ func (item QueueItem) right() string {
 	if item.Detail != "" {
 		b.WriteString(sty.Dimmer.Render(item.Detail))
 	}
-	if word := item.Severity.Word(); word != "" {
+	if chip := severityChip(item.Severity); chip != "" {
 		if b.Len() > 0 {
 			b.WriteString("  ")
 		}
-		style := sty.Dim
-		if item.Severity >= SeverityMedium {
-			style = sty.Warn
-		}
-		b.WriteString(style.Render(word))
+		b.WriteString(chip)
 	}
 	if item.Batch {
 		if b.Len() > 0 {
@@ -167,4 +163,25 @@ func (item QueueItem) right() string {
 		b.WriteString(sty.Info.Render(queueMarkKey))
 	}
 	return b.String()
+}
+
+// severityChip is a rating as a row prints it: the level in words, toned so
+// the two that should slow a reader down stand out and the rest state a fact.
+// The word is the whole of it — a rating carried by the hue alone would be a
+// rating half the readers never see
+// (docs/interface/principles.md#colour-never-carries-meaning-alone).
+//
+// The strip and the pick-several list the queue opens as both print it, from
+// here rather than each from its own arithmetic: a row that rated the same
+// call two ways would be two answers to one question
+// (docs/interface/surfaces.md#the-approval-card).
+func severityChip(s Severity) string {
+	word := s.Word()
+	if word == "" {
+		return ""
+	}
+	if s >= SeverityMedium {
+		return sty.Warn.Render(word)
+	}
+	return sty.Dim.Render(word)
 }

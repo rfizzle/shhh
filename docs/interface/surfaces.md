@@ -762,7 +762,20 @@ made. Esc leaves the list with nothing granted and the card still waiting.
 Where several cards are waiting, the queue strip already counts them; one key
 renders the queue as the pick-several list, each row carrying the card's
 title, its target and its severity chip, and a submit that allows the checked
-rows and denies the rest. Each denial is the reader's, drawn as one.
+rows and denies the rest. Each denial is the reader's, drawn as one. The list
+opens with every row checked, because that is the answer the key used to give
+on its own. The decisions it cannot take — a flagged action, a fetch, anything
+reaching outside the working scope, anything of another kind — stay their own
+card and are counted on a row of the list rather than left off it
+([fold, never hide](principles.md#fold-never-hide)); a queue longer than the
+panel scrolls behind the same counted markers every other list uses. Esc gives
+the screen back with the queue exactly as it was.
+
+Confirming the list marks rather than runs. Each row is answered when it
+reaches the head of the queue, and the deny list, the safety table, the mode
+and the working scope are put to it there — a decision does not outrank a
+rule, and a call the reader allowed can have become inadmissible while the
+calls ahead of it ran.
 
 ### The question card
 

@@ -2,6 +2,7 @@ package components
 
 import (
 	"fmt"
+	"strings"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
@@ -51,8 +52,18 @@ type MultiSelect struct {
 	// answer can carry the reader's own words beside the boxes. Nil is a
 	// card with no note, which is every card that had one before this field
 	// existed.
-	Note   *NoteBox
-	notice string
+	Note *NoteBox
+	// Severities rate the rows, one per option, for a list whose rows are
+	// decisions rather than choices — the approval queue answered as a list
+	// (docs/interface/surfaces.md#the-approval-card). The chip is drawn at
+	// the end of the row after the short field, in the words and the tone
+	// the queue strip prints the same rating in (severityChip). It is
+	// parallel to the options the way Checked is, because it is a fact the
+	// caller knows about the row rather than one the row carries: a list of
+	// choices has nothing to be rated about, and one that sets none renders
+	// exactly as it did before this field existed.
+	Severities []Severity
+	notice     string
 	// list is the shared pointer and window (list.go). A multi-select owns
 	// its own Focus, which is why it did not come along when the movement and
 	// the window went to the selector.
@@ -238,19 +249,49 @@ func (s *MultiSelect) optionRow(i, inner int) string {
 		label = sty.Dimmer.Render(label)
 	}
 	row := box + " " + label
-	meta := opt.metaText()
-	if meta != "" && body-lipgloss.Width(row) >= lipgloss.Width(meta)+2 {
-		tone := opt.MetaTone.style()
-		if opt.Dim {
-			tone = sty.Dimmer
+	// The right-hand run is placed first and the label clipped to what is
+	// left, the way the queue strip lays the same two columns out: the label
+	// is the only part that can be shortened and still say something, so it
+	// is the part that gives up width. A row too narrow to hold both keeps
+	// the label whole — below that width the run would be all marker and no
+	// fact.
+	if right := s.rightRun(i, opt); right != "" {
+		if room := body - lipgloss.Width(box) - 1 - lipgloss.Width(right) - 2; room > 0 {
+			row = box + " " + Clip(label, room)
+			row = padRight(row, body-lipgloss.Width(right)) + right
 		}
-		row = padRight(row, body-lipgloss.Width(meta)) + tone.Render(meta)
 	}
 	row = Clip(row, max(body, 0))
 	if i == s.Focus {
 		return sty.FocusRow.Render(Clip("❯ ", inner)) + row
 	}
 	return "  " + row
+}
+
+// rightRun is the row's right-aligned block: the short field, and after it
+// the severity chip where the caller rated the rows. They are built as one
+// run and placed once — a row that dropped the field but kept the chip would
+// put the rating in the column the reader reads the field in, and a row that
+// placed them separately would have to agree with itself twice about where
+// the label ends.
+func (s *MultiSelect) rightRun(i int, opt SelectOption) string {
+	var b strings.Builder
+	if meta := opt.metaText(); meta != "" {
+		tone := opt.MetaTone.style()
+		if opt.Dim {
+			tone = sty.Dimmer
+		}
+		b.WriteString(tone.Render(meta))
+	}
+	if i < len(s.Severities) {
+		if chip := severityChip(s.Severities[i]); chip != "" {
+			if b.Len() > 0 {
+				b.WriteString("  ")
+			}
+			b.WriteString(chip)
+		}
+	}
+	return b.String()
 }
 
 // checkedNote is what a marker adds about the run it is hiding: how many of

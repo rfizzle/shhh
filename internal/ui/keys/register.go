@@ -212,6 +212,23 @@ func Surfaces() []Surface {
 			Bindings: []Binding{Select.Take, Select.Cancel},
 		},
 		{
+			// The queue behind the card, opened as the list that answers it.
+			// It is a row of its own because it is a selector and answers a
+			// selector's keys — it moves, ticks, ticks everything and takes
+			// — and because those keys are not the card's: `a` under the
+			// card is a session grant and `a` here is all-or-none, which is
+			// exactly the kind of collision a second surface on one row
+			// would hide.
+			Name:     "the approval card's queue list",
+			Section:  "docs/interface/surfaces.md#the-approval-card, docs/interface/surfaces.md#selectors",
+			Position: Takeover,
+			Reached:  Bracket(Decision.Batch) + " on a card with a queue behind it",
+			Bindings: []Binding{
+				Select.MoveJK, Select.Toggle, Select.All,
+				Select.Take, Select.Cancel,
+			},
+		},
+		{
 			// A row of its own, because the card is a list and answers a
 			// list's keys: it moves, takes and cancels the way every
 			// selector does, and the two keys it has beyond that are its.

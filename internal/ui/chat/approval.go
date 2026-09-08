@@ -446,9 +446,13 @@ func (m Model) armApprovalDecision(req *approvalRequest) (tea.Model, tea.Cmd) {
 		m.armConfirm(req)
 		return m, nil
 	}
-	// A decision an earlier [A] already answered runs when its turn
-	// comes, without asking again.
-	if m.takeBatchApproval(req) {
+	// A decision the queue list already answered is carried out when its turn
+	// comes, without asking again: allowed, it runs; denied, it takes the
+	// path the reader's own no takes on a card of its own (queue.go).
+	if allow, answered := m.takeQueueAnswer(req); answered {
+		if !allow {
+			return m.declineApproval()
+		}
 		m.recordDecision(observe.DecisionAllow, observe.ReasonUserBatch)
 		req.autoRule = batchRule
 		if req.kind == approvalExec {
@@ -1061,7 +1065,8 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 	// rest of its category along with it.
 	card.QueuePos = m.queuePosition()
 	if card.Batch = len(m.pendingBatch) > 0; card.Batch {
-		card.BatchHint = fmt.Sprintf("A: approve %d like this", len(m.pendingBatch)+1)
+		card.BatchHint = fmt.Sprintf("%s: answer %d like this as a list",
+			keys.Shown(keys.Decision.Batch), len(m.pendingBatch)+1)
 	}
 	// The blast-radius block, resolved when the decision was armed.
 	// It also carries the safety risks, so the card states severity and
@@ -1230,6 +1235,13 @@ func (m Model) confirmLines() []string {
 	strip := m.pendingQueue.View(width)
 	if o := m.askOverlay(); o != nil {
 		return append(strip, o.Lines(m, width, 0)...)
+	}
+	if l := m.queueList; l != nil {
+		// The list replaces both the card and the strip above it: it is that
+		// strip opened, and drawing the two together would put every row on
+		// the screen twice — once as context and once as the decision — in a
+		// panel bounded to two fifths of the terminal.
+		return strings.Split(l.sel.View(width), "\n")
 	}
 	return append(strip, strings.Split(m.approvalCard().View(width), "\n")...)
 }

@@ -387,8 +387,12 @@ func (m Model) escLeavesWaiting() bool {
 		// one is up. Two surfaces cannot both have the key, and the nearer
 		// one wins: a reader escaping out of a field they opened means the
 		// field. Both of the card's fields count: the note (approval.go)
-		// and the command itself (amend.go).
-		return m.memoryAsk == nil && m.decisionNote == nil && m.commandEdit == nil
+		// and the command itself (amend.go). So does the queue opened as a
+		// list, which is not a field but is the same relation to the card —
+		// the reader is inside something they opened, and esc is the way
+		// back out of it (queue.go).
+		return m.memoryAsk == nil && m.decisionNote == nil && m.commandEdit == nil &&
+			m.queueList == nil
 	case statePlanApprove:
 		return false
 	case stateQuestion:

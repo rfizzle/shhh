@@ -9,8 +9,15 @@ package chat
 //
 // Membership is decided by the same matcher the [a] session grant uses, so
 // "the same way" means one thing in both features rather than two. A
-// safety-flagged action belongs to no batch: it is taken out and asked on its
+// safety-flagged action belongs to no list: it is taken out and asked on its
 // own, whatever else is in the queue.
+//
+// The key over the stack renders it as the pick-several list rather than
+// answering it sight unseen: allowing four and denying two is one pass over a
+// list you can see, and the alternative it replaces was all of them or six
+// cards (docs/interface/surfaces.md#the-approval-card). Confirming marks
+// rather than executes — the marks are read when each call reaches the head —
+// because a call the list allowed can be inadmissible by the time it runs.
 //
 // Like the blast-radius block beside it, the strip is resolved once, when the
 // decision is armed — it previews every queued call, which reads the files
@@ -20,14 +27,18 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/diff"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/radius"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // queueStripRows bounds the strip so a long queue cannot push the card off a
@@ -53,9 +64,10 @@ func (m Model) confirmPanelBound() int {
 	return m.maxConfirmPanelHeight() + m.pendingQueue.Rows() + m.gatedExtraRows()
 }
 
-// resolveQueue builds the strip above the card and the batch [A] would
-// answer. cur is the decision being shown — already built by the caller, so
-// its diff is not computed twice — and is the head of the queue it describes.
+// resolveQueue builds the strip above the card and the set the queue key
+// would put on the list. cur is the decision being shown — already built by
+// the caller, so its diff is not computed twice — and is the head of the
+// queue it describes.
 func (m Model) resolveQueue(cur *approvalRequest) (components.QueueStrip, []string) {
 	calls := m.agent.PendingApprovals()
 	if cur == nil || len(calls) < 2 {
@@ -84,7 +96,8 @@ func (m Model) resolveQueue(cur *approvalRequest) (components.QueueStrip, []stri
 	}
 	strip := components.QueueStrip{Items: items, MaxRows: m.stripRows()}
 	if len(batch) > 0 {
-		strip.Note = fmt.Sprintf("[A] answers the %d marked", len(batch)+1)
+		strip.Note = fmt.Sprintf("%s lists the %d marked",
+			keys.Bracket(keys.Decision.Batch), len(batch)+1)
 	}
 	return strip, batch
 }
@@ -246,37 +259,208 @@ func (m Model) queuePosition() string {
 	return fmt.Sprintf("%d of %d", max(total-remaining+1, 1), total)
 }
 
-// approveBatch marks every member of the resolved batch approved, so each one
-// runs when it reaches the head of the queue instead of being asked again.
-// Nothing is executed out of order: the queue still drains front to back, and
-// each member is re-checked against the mode and the safety checker on its
-// way through.
-func (m *Model) approveBatch() {
-	if m.batchApproved == nil {
-		m.batchApproved = make(map[string]bool, len(m.pendingBatch))
-	}
-	for _, id := range m.pendingBatch {
-		m.batchApproved[id] = true
-	}
+// queueList is the queue behind the card, open as the list that answers it:
+// the rows the reader is checking and unchecking, and the calls they stand
+// for. It is a struct of its own held by a pointer that is nil while the list
+// is down, the way every other mode with state of its own is (model.go).
+type queueList struct {
+	// sel is the pick-several list. It is a pointer and written through as
+	// one, the way the question card holds its own (question.go): the ticks
+	// are the reader's answer being assembled and there is nothing to be
+	// gained by copying it out and back on every keystroke.
+	sel *components.MultiSelect
+	// ids are the calls the rows stand for, in the rows' order — ids[0] is
+	// the decision the card is showing and the rest are queued behind it. The
+	// list is answered by walking these rather than by reading labels back
+	// off the rows, so a row's wording and the call it answers can never come
+	// apart.
+	//
+	// A row the list could not take carries no id: it is counted at the end
+	// and is not one of these.
+	ids []string
 }
 
-// takeBatchApproval reports whether this call was answered by an earlier [A],
-// consuming the grant either way. It refuses to honour one in plan mode or
-// over a flagged action — the batch was built without flagged members, and
-// the mode can have changed since the key was pressed.
-func (m *Model) takeBatchApproval(req *approvalRequest) bool {
-	if !m.batchApproved[req.call.ID] {
-		return false
+// openQueueList opens the queue as the list. The rows are exactly the ones
+// the strip marked — the reader has been looking at that membership since the
+// card was armed, and a key that opened a different set than the one it
+// advertised would be the key answering a question nobody asked.
+//
+// Everything starts checked, because that is the answer the key used to give
+// on its own: a reader who learned it as "the rest like this one" presses it,
+// sees the set, and enter is still that answer.
+func (m Model) openQueueList() (tea.Model, tea.Cmd) {
+	req := m.pendingApproval
+	if req == nil || len(m.pendingBatch) == 0 {
+		return m, nil
 	}
-	delete(m.batchApproved, req.call.ID)
+	marked := make(map[string]bool, len(m.pendingBatch))
+	for _, id := range m.pendingBatch {
+		marked[id] = true
+	}
+	label, detail := queueLabel(req)
+	opts := []components.SelectOption{{Label: label, Meta: detail}}
+	rated := []components.Severity{queueSeverity(req)}
+	ids := []string{req.call.ID}
+	apart := 0
+	for _, tc := range m.agent.PendingApprovals() {
+		if tc.ID == req.call.ID {
+			continue
+		}
+		if !marked[tc.ID] {
+			// Flagged, out of scope, a fetch, or simply another kind of act:
+			// it is asked on its own card and is counted here rather than
+			// dropped, so the list never implies the queue ends where it does
+			// (docs/interface/principles.md#fold-never-hide).
+			apart++
+			continue
+		}
+		queued := m.previewQueued(tc)
+		label, detail := queueLabel(queued)
+		opts = append(opts, components.SelectOption{Label: label, Meta: detail})
+		rated = append(rated, queueSeverity(queued))
+		ids = append(ids, tc.ID)
+	}
+	if apart > 0 {
+		opts = append(opts, components.SelectOption{
+			Label: apartRow(apart), Meta: "each is its own card", Dim: true,
+		})
+		rated = append(rated, components.SeverityNone)
+	}
+	sel := components.NewMultiSelect(queueListTitle, opts)
+	for i := range ids {
+		sel.Checked[i] = true
+	}
+	sel.Severities = rated
+	// The list windows inside the same forty per cent every decision is drawn
+	// in (docs/interface/principles.md#one-interaction-panel): a queue of
+	// twenty scrolls behind the markers the rest of the package uses rather
+	// than pushing the keys that answer it off the screen.
+	sel.MaxLines = m.maxConfirmPanelHeight()
+	// Nothing checked is an answer here, and it is "deny all of them". This
+	// list is setting what happens to each row rather than choosing among
+	// them, so refusing an empty answer would leave the reader no way to say
+	// the one thing the old key could never say.
+	sel.AllowNone = true
+	m.queueList = &queueList{sel: sel, ids: ids}
+	m.syncViewport()
+	return m, nil
+}
+
+// queueListTitle says what enter does, because that is the fact a reader
+// needs before they press it and the boxes alone do not carry it: a tick is
+// an allow and an empty box is a denial, not a row left for later.
+const queueListTitle = "Allow the checked, deny the rest"
+
+// apartRow is the count of queued decisions the list could not take. They are
+// named as what they are — decisions asked on their own — rather than as rows
+// that were removed, because from the reader's side nothing was taken away:
+// each of them still arrives as its own card.
+func apartRow(n int) string {
+	if n == 1 {
+		return "1 asked on its own"
+	}
+	return strconv.Itoa(n) + " asked on their own"
+}
+
+// updateQueueList routes a key while the list holds the keyboard. Every key
+// is the selector's while it is up — the card's own letters included, because
+// a surface that holds the keyboard answers its own keys and not those of the
+// one it is standing in front of
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+func (m Model) updateQueueList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	open := m.queueList
+	done, res := open.sel.Update(msg)
+	if !done {
+		m.syncViewport()
+		return m, nil
+	}
+	if res.Canceled {
+		// Back to the card with the queue exactly as it was: nothing
+		// answered, nothing marked, and the decision the card is showing
+		// still waiting
+		// (docs/interface/principles.md#esc-is-always-the-safe-answer).
+		m.queueList = nil
+		m.syncViewport()
+		return m, nil
+	}
+	return m.answerQueueList(res.Indices)
+}
+
+// answerQueueList carries out the list: the checked rows are allowed and the
+// unchecked denied, each by the path the same answer takes on a card of its
+// own.
+//
+// Only the head is acted on now, because only the head is at the head. The
+// rest are marked and read when their turn comes, which is the property the
+// key had before it was a list: a call allowed here may be inadmissible by
+// the time it runs — a preceding call changed the tree, a hook fired, the
+// mode moved — and the queue drains front to back so that every one of them
+// is asked those questions again where the answers are current.
+func (m Model) answerQueueList(idx []int) (tea.Model, tea.Cmd) {
+	open := m.queueList
+	m.queueList = nil
+	checked := make(map[int]bool, len(idx))
+	for _, i := range idx {
+		checked[i] = true
+	}
+	if m.batchAnswered == nil {
+		m.batchAnswered = make(map[string]bool, len(open.ids))
+	}
+	for i, id := range open.ids[1:] {
+		m.batchAnswered[id] = checked[i+1]
+	}
+	req := m.pendingApproval
+	if req == nil {
+		return m, nil
+	}
+	if !checked[0] {
+		// The reader's own no, drawn as one: the same row, the same reason
+		// code and the same result the plain key produces
+		// (docs/capabilities/approvals-and-safety.md#denials-are-two-different-facts).
+		return m.declineApproval()
+	}
+	m.recordDecision(observe.DecisionAllow, observe.ReasonUserBatch)
+	if req.kind == approvalExec {
+		return m.executeRun()
+	}
+	return m.executeApprovedTool()
+}
+
+// takeQueueAnswer reports how the list answered this call, if it answered it,
+// consuming the answer either way.
+//
+// An allow is re-checked here rather than trusted: it was given before the
+// calls ahead of this one ran, and plan mode, a safety flag or a path outside
+// the working scope may have arrived since. A refused allow falls through to
+// the policy below it and is asked afresh, which is what happens to a call
+// nobody answered.
+//
+// A denial needs no such check. Nothing that could have changed makes a
+// refused call admissible, and a reader who unchecked a row is owed that
+// answer whatever the tree did in the meantime.
+func (m *Model) takeQueueAnswer(req *approvalRequest) (allow, answered bool) {
+	mark, ok := m.batchAnswered[req.call.ID]
+	if !ok {
+		return false, false
+	}
+	delete(m.batchAnswered, req.call.ID)
+	if !mark {
+		return false, true
+	}
 	act := m.approvalAction(req)
-	return m.policy.mode != agent.ModePlan && !act.SafetyFlagged && len(act.OutOfScope) == 0
+	if m.policy.mode == agent.ModePlan || act.SafetyFlagged || len(act.OutOfScope) > 0 {
+		return false, false
+	}
+	return true, true
 }
 
 // armConfirm shows the confirm prompt for the pending decision, resolving the
-// queue strip and the batch [A] would answer alongside it.
+// queue strip and the set the queue key would list alongside it.
 func (m *Model) armConfirm(req *approvalRequest) {
 	m.pendingQueue, m.pendingBatch = m.resolveQueue(req)
+	// A list open over the last decision is not a list over this one: it was
+	// answered, or escaped, before this card was armed.
+	m.queueList = nil
 	// setTurnState resets the card's scroll along with the keyboard: every
 	// arrival at a decision passes through it, this one included.
 	m.setTurnState(stateConfirmRun)
@@ -284,7 +468,8 @@ func (m *Model) armConfirm(req *approvalRequest) {
 }
 
 // clearQueueStrip drops the strip for a decision that has no queue behind it
-// — /run, which is the user's own command and never queued.
+// — /run, which is the user's own command and never queued — and with it the
+// list, which is that strip opened and cannot outlive it.
 func (m *Model) clearQueueStrip() {
-	m.pendingQueue, m.pendingBatch = components.QueueStrip{}, nil
+	m.pendingQueue, m.pendingBatch, m.queueList = components.QueueStrip{}, nil, nil
 }
