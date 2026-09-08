@@ -1449,7 +1449,7 @@ func TestJSONLStreamReplaysToTheTranscript(t *testing.T) {
 		t.Fatalf("run = %q, %v", final, err)
 	}
 	events.closed(obs.pos(), headlessTurnOutcome(err), headlessExitCode(headlessTurnOutcome(err), false, false),
-		final, provider.Usage{PromptTokens: 10, CompletionTokens: 2, CachedTokens: 8}, nil)
+		final, provider.Usage{PromptTokens: 10, CompletionTokens: 2, CachedTokens: 8}, headlessHandles{}, nil)
 
 	// The prompt and the system message are what the run opened on, not
 	// something it did; the stream carries the turn.
@@ -1495,7 +1495,7 @@ func TestJSONLStreamIsAQuietNoOpWhenNobodyAskedForOne(t *testing.T) {
 	obs.decision(observe.DecisionDeny, observe.ReasonHeadlessDefault)
 	obs.usage(provider.Usage{PromptTokens: 1})
 	obs.signal(observe.SignalRetry, "overloaded")
-	obs.stream.closed(obs.pos(), observe.TurnDone, exitDone, "done", provider.Usage{}, nil)
+	obs.stream.closed(obs.pos(), observe.TurnDone, exitDone, "done", provider.Usage{}, headlessHandles{}, nil)
 }
 
 // treeRepo is a checkout with one commit and a clean tree. Config is pinned
@@ -1773,5 +1773,22 @@ func TestHeadlessApprover_ARefusalIsWrittenDownWithItsRule(t *testing.T) {
 	// at is not a diagnostic.
 	if !strings.Contains(line, "command=rm") || strings.Contains(line, "/tmp/x") {
 		t.Errorf("the log carries more than the program name:\n%s", line)
+	}
+}
+
+// The resume command a run states is a line somebody pastes into a shell, and
+// a slot name is whatever the person who named the conversation typed. Double
+// quotes would leave `$` and a backquote live, which is the difference
+// between a line that reopens a conversation and a line that runs something.
+func TestShellWord_NothingInASlotNameIsLiveInTheShell(t *testing.T) {
+	for _, c := range []struct{ slot, want string }{
+		{"2026-09-08 12:34:56", `'2026-09-08 12:34:56'`},
+		{"the $HOME fix", `'the $HOME fix'`},
+		{"a `whoami` run", "'a `whoami` run'"},
+		{"it's mine", `'it'\''s mine'`},
+	} {
+		if got := shellWord(c.slot); got != c.want {
+			t.Errorf("shellWord(%q) = %s, want %s", c.slot, got, c.want)
+		}
 	}
 }

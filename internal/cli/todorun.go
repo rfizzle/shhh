@@ -28,6 +28,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -37,6 +38,7 @@ import (
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/runner"
+	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/todo/run"
@@ -109,6 +111,7 @@ func todoRunHeadless(cmd *cobra.Command, slug string, flags todoRunFlags) error 
 	if err != nil {
 		return err
 	}
+	defer d.close()
 	// A profile may state no run at all, and its items are still items: what
 	// one needs is a person doing it, so the offer is the verb that files it
 	// rather than a run that would describe the work instead of doing it.
@@ -215,6 +218,31 @@ type todoDriver struct {
 	wordings run.Wordings
 	// pipeline is the steps a run of this backlog takes.
 	pipeline run.Pipeline
+	// db and rec are the run's half of the record: one row for the sprint
+	// and every stage's own row hanging under it, so what a sprint cost is a
+	// question the record can answer.
+	//
+	// The runner spends nothing itself — every token is spent by a stage's
+	// process — so this row's totals are zero and true. What it carries is
+	// the parenthood: without it a sprint is forty-eight one-shot runs the
+	// record cannot tell from forty-eight unrelated ones, and the retention
+	// prune, which takes a family together, has no family to take.
+	//
+	// It is left unstamped for the same reason. A driver resolves no
+	// reasoning level, no round cap and no containment profile — the stages
+	// do — and a stamp of those at their zero values would read as a
+	// session that ran manual, uncapped and unconfined.
+	// See docs/capabilities/sessions-and-memory.md#a-sprint-is-one-tree.
+	db  *storage.DB
+	rec *observeRecorder
+	// item is the slug the stages now being started belong to, so a stage's
+	// process can be told which item it is a stage of.
+	item string
+	// chats is every conversation this item's stages saved, and resume the
+	// command that opens the last of them. They are gathered as the item is
+	// worked and answered for when it is over (settleChats).
+	chats  []string
+	resume string
 	// turn spends one stage as one session in the directory it is given, and
 	// answers with what that session produced or with why there was no
 	// answer. It is a field because the loop around it is the part worth
@@ -247,6 +275,11 @@ type todoTurn struct {
 	gate quality.Closing
 	// written is the paths the stage's own calls wrote.
 	written []string
+	// chat is the slot the stage's process left its conversation in, and
+	// resume the command that opens it again — both off the same transcript,
+	// so the run never composes a command for a slot it only guessed at.
+	// What becomes of them is settleChats.
+	chat, resume string
 }
 
 func newTodoDriver(out io.Writer, root string, cfg config.Config, noCommit bool) (*todoDriver, error) {
@@ -279,8 +312,25 @@ func newTodoDriver(out io.Writer, root string, cfg config.Config, noCommit bool)
 	// Only "there is no file" is the absence a run is refused for.
 	_, cfgErr := quality.LoadConfig(root)
 	d.checks = !os.IsNotExist(cfgErr)
+	// The record is opened last and never refuses the run: a sprint that
+	// would not start because a table could not be written is a runner whose
+	// bookkeeping outranks the work. A nil store is a run with no record,
+	// which is what every stage already falls back to on its own.
+	if db, err := openStore(); err == nil {
+		d.db = db
+		d.rec = startObserveRecorder(db, "todo", cfg.Provider.Default, cfg.Provider.Model, nil)
+	}
 	d.turn = d.ask
 	return d, nil
+}
+
+// close ends the run's row and lets the store go, in that order: the row is
+// written on the connection this closes.
+func (d *todoDriver) close() {
+	d.rec.end()
+	if d.db != nil {
+		d.db.Close()
+	}
 }
 
 // todoRunRefusal is what the command exits with when the run's steps ask for
@@ -390,7 +440,8 @@ func todoSprintEnding(sp *run.Sprint) string {
 // work runs one item to its end and answers with the state it stopped in.
 // sp is the sprint driving it, or nil for a single item asked for by name.
 func (d *todoDriver) work(ctx context.Context, it todo.Item, sp *run.Sprint) *run.State {
-	d.wrote = nil
+	d.wrote, d.chats, d.resume = nil, nil, ""
+	d.item = it.Slug
 	d.openSpool(it.Slug)
 	st, step := d.begin(it, sp != nil)
 	deadline := time.Time{}
@@ -421,6 +472,7 @@ func (d *todoDriver) work(ctx context.Context, it todo.Item, sp *run.Sprint) *ru
 		step = d.carry(ctx, deadline, st, it, step)
 	}
 	d.finish(st, it)
+	d.settleChats(st)
 	return st
 }
 
@@ -523,6 +575,7 @@ func (d *todoDriver) carry(ctx context.Context, deadline time.Time, st *run.Stat
 		// what stays in the tree for the next process or for the person
 		// reading the block.
 		d.wrote = append(d.wrote, t.written...)
+		d.keepChat(t)
 		if err != nil {
 			return st.Block(err.Error())
 		}
@@ -622,7 +675,7 @@ func (d *todoDriver) ask(ctx context.Context, deadline time.Time, dir string, st
 	}
 	cmd := exec.CommandContext(ctx, d.bin, args...)
 	cmd.Dir = dir
-	cmd.Env = d.stageEnv(dir)
+	cmd.Env = d.stageEnv(dir, step)
 	// A sprint that is cancelled, by its deadline or by the driver's own
 	// context ending, interrupts the stage's turn rather than killing it, so
 	// the child writes its record and leaves a slot the way the contract
@@ -645,6 +698,8 @@ func (d *todoDriver) ask(ctx context.Context, deadline time.Time, dir string, st
 		Truncated bool     `json:"truncated"`
 		Gate      string   `json:"gate"`
 		Written   []string `json:"written"`
+		Chat      string   `json:"chat"`
+		Resume    string   `json:"resume"`
 	}
 	_ = json.Unmarshal([]byte(out.String()), &t)
 	// The paths are relative to the directory the stage stood in, which is
@@ -654,7 +709,7 @@ func (d *todoDriver) ask(ctx context.Context, deadline time.Time, dir string, st
 	if dir != d.root {
 		written = nil
 	}
-	turn := todoTurn{code: code, truncated: t.Truncated,
+	turn := todoTurn{code: code, truncated: t.Truncated, chat: t.Chat, resume: t.Resume,
 		gate: quality.Closing(t.Gate), written: todoWritten(d.root, written)}
 	if strings.TrimSpace(t.Final) != "" {
 		turn.text = t.Final
@@ -668,25 +723,96 @@ func (d *todoDriver) ask(ctx context.Context, deadline time.Time, dir string, st
 }
 
 // stageEnv is the environment one stage's process runs in: this run's, plus
-// the store its stages share where there is one.
+// where the stage's record row hangs, which item and stage it is, and the
+// store its stages share where there is one.
 //
-// Only a stage standing in the checkout is pointed at it. A lane stands in a
-// copy of the tree and writes its own evidence, and several lanes sharing one
-// store would be several processes writing one index at once — the run would
-// lose entries to whichever wrote last, which is worse than a lane keeping
-// its evidence to itself.
-func (d *todoDriver) stageEnv(dir string) []string {
-	if d.spoolDir == "" || dir != d.root {
-		return runner.Environ()
-	}
+// The record variables go to every stage, a lane included: a lane is a stage
+// of this item worked somewhere else, and a tree that lost its four most
+// expensive branches would be a tree of the cheap half of the work. The
+// evidence store is the one that does not, and only a stage standing in the
+// checkout is pointed at it. A lane stands in a copy of the tree and writes
+// its own evidence, and several lanes sharing one store would be several
+// processes writing one index at once — the run would lose entries to
+// whichever wrote last, which is worse than a lane keeping its evidence to
+// itself.
+func (d *todoDriver) stageEnv(dir string, step run.Step) []string {
 	env := runner.Environ()
 	if env == nil {
 		// A session with nothing to add to the environment answers with
 		// nothing at all, which exec reads as "inherit"; appending to that
-		// would hand the stage this one variable and no PATH.
+		// would hand the stage these variables and no PATH. It is taken
+		// before the branches rather than inside them, so every stage is
+		// started from one reading of the environment — the snapshot and
+		// the inherit are the same environment either way, since nothing
+		// here changes it between this line and the exec.
 		env = os.Environ()
 	}
+	if id := d.rec.sessionID(); id > 0 {
+		env = append(env, parentSessionEnv+"="+strconv.FormatInt(id, 10))
+	}
+	if d.item != "" {
+		env = append(env, todoItemEnv+"="+d.item)
+	}
+	if step.Stage != "" {
+		env = append(env, todoStageEnv+"="+string(step.Stage))
+	}
+	if d.spoolDir == "" || dir != d.root {
+		return env
+	}
 	return append(env, evidenceStoreEnv+"="+d.spoolDir)
+}
+
+// keepChat gathers the conversation a stage's process saved, and the command
+// that opens it, for the item to answer for when it is over.
+//
+// It is gathered rather than answered for on the spot because a stage is not
+// where an item stops. A turn that came back clean hands the run to the
+// checks, and it is the checks that fail and the remediation rounds that run
+// out — several transitions later, in a step that spends no turn of its own.
+// A rule applied at the stage would therefore delete the implement
+// conversation the moment its own answer parsed, which is precisely the one
+// the block is about.
+func (d *todoDriver) keepChat(t todoTurn) {
+	if t.chat == "" {
+		return
+	}
+	d.chats = append(d.chats, t.chat)
+	if t.resume != "" {
+		d.resume = t.resume
+	}
+}
+
+// settleChats is what becomes of them once the item is over: taken away where
+// the item went through, kept whole where it stopped.
+//
+// A sprint is one item after another and an item is a handful of stages, so a
+// run that kept every one of them would leave a person's saved-chat list as
+// forty-eight timestamps a day, none of which they had anything to do with —
+// and the list is the one place in the product that holds their own work. A
+// blocked item is the exception, and all of its conversations are kept rather
+// than the last: the item says what stopped the run and the evidence spool is
+// gone with it, so what is left to read is how the run got there, and which
+// stage that reading starts at is not something the runner knows.
+//
+// Best effort and quiet. A conversation that could not be deleted is a row in
+// a table with a window on it, not a run to stop
+// (docs/capabilities/sessions-and-memory.md#a-conversation-is-kept-for-a-window).
+func (d *todoDriver) settleChats(st *run.State) {
+	if st.Stage == run.StageBlocked {
+		// Said out loud, because a conversation nobody can name is one
+		// nobody opens: the block is written for a person, and this is the
+		// half of it the item file cannot carry.
+		if d.resume != "" {
+			fmt.Fprintln(d.out, "the run's conversations are kept — the last stage's is "+d.resume)
+		}
+		return
+	}
+	if d.db == nil {
+		return
+	}
+	for _, chat := range d.chats {
+		_ = d.db.DeleteChat(chat)
+	}
 }
 
 // todoWritten is a stage's own written paths in the shape a commit names
@@ -958,6 +1084,7 @@ func (d *todoDriver) review(ctx context.Context, deadline time.Time, st *run.Sta
 	}
 	t, err := d.turn(ctx, deadline, d.root,
 		run.Step{Action: run.ActionPrompt, Stage: step.Stage, Mode: step.Mode, Prompt: task})
+	d.keepChat(t)
 	// A reader that did not finish is a reader the run did not get, which is
 	// what SelfReview is for. Blocking on it stops a finished, verified piece
 	// of work over the one stage that was always allowed to be missing — the
@@ -1056,6 +1183,13 @@ func (d *todoDriver) fanOut(ctx context.Context, deadline time.Time, st *run.Sta
 	}
 	turns := make([]todoTurn, len(lanes))
 	errs := make([]error, len(lanes))
+	// A lane's conversation is one of the item's like any other, gathered on
+	// the way out however the fan-out ended.
+	defer func() {
+		for _, t := range turns {
+			d.keepChat(t)
+		}
+	}()
 	var wg sync.WaitGroup
 	for i := range lanes {
 		wg.Add(1)

@@ -42,6 +42,11 @@ type observeRecorder struct {
 	// the three of them again by a caller that would then be free to change
 	// one (restart).
 	kind, provider string
+	// parent is the row this session hangs under where a driver named one,
+	// kept for the same reason kind and provider are: a session boundary
+	// opens the next row the same way, and one that lost the parenthood
+	// would be the one row of a sprint the tree cannot reach.
+	parent int64
 	// linked is the saved conversation the row was last linked to, so an
 	// autosave that lands in the same slot costs no write.
 	linked string
@@ -103,8 +108,63 @@ func closeObserveExport() {
 	}
 }
 
+// parentSessionEnv names the record row this process's own session hangs
+// under, for the driver whose children are processes rather than a
+// supervisor's. A sprint is dozens of runs and every one of them is a stage
+// of one piece of work: without the link the record holds forty-eight
+// unrelated one-shot runs, and neither "what did that item cost" nor the
+// retention prune's family sweep can see the tree.
+//
+// It is an environment variable because that is the only channel a driver
+// that starts a process has to it, and it is read here rather than by each
+// surface so a stage spent as a conversation and a stage spent as a coding
+// run link the same way. A number that names no row is an unlinked session,
+// which is what a stale value inherited by a shell would otherwise become.
+// See docs/capabilities/sessions-and-memory.md#a-sprint-is-one-tree.
+const parentSessionEnv = "SHHH_PARENT_SESSION"
+
+// todoItemEnv and todoStageEnv are the backlog item a process was started to
+// work and the step of it this process is. They ride beside the parent id
+// because they answer the questions the link alone cannot: the tree says the
+// stages belong together and these say which item they were for and which of
+// them burned the rounds.
+const (
+	todoItemEnv  = "SHHH_TODO_ITEM"
+	todoStageEnv = "SHHH_TODO_STAGE"
+)
+
+// parentSession is the row this process was told to hang its session under,
+// or 0 where nothing told it. Anything that is not a positive number is
+// nothing told it: the value crosses a process boundary as text, and a row
+// id read out of a typo would file a session under a stranger's parent.
+//
+// A well-formed number can still name no row — a variable a shell kept from
+// a run that is over, a store purged between the driver's row and this
+// stage's — which is why the caller is prepared to open the row without it.
+func parentSession() int64 {
+	id, err := strconv.ParseInt(os.Getenv(parentSessionEnv), 10, 64)
+	if err != nil || id <= 0 {
+		return 0
+	}
+	return id
+}
+
+// todoStageStamp is the item and stage this process was started for, for the
+// surface filling the settings a row is stamped with.
+func todoStageStamp() (item, stage string) {
+	return os.Getenv(todoItemEnv), os.Getenv(todoStageEnv)
+}
+
 // startObserveRecorder opens a session row; any failure disables recording
 // for the session rather than blocking it.
+//
+// A run started by a driver that passed its own row id opens the row as that
+// row's child, so the whole sprint is one tree. The span is not linked with
+// it: the parent is another process, and the parenthood a trace carries is a
+// span context this one was never handed. The row and the span therefore
+// disagree about the parenthood by construction here, which is the one place
+// that is true and the reason the linked-in-process path takes a recorder
+// rather than an id (startChildObserveRecorder).
 func startObserveRecorder(db *storage.DB, kind, provider, model string, prices *pricing.Table) *observeRecorder {
 	if db == nil {
 		return nil
@@ -116,11 +176,21 @@ func startObserveRecorder(db *storage.DB, kind, provider, model string, prices *
 	// never a reason to refuse to start
 	// (docs/capabilities/sessions-and-memory.md#a-session-knows-it-is-not-alone).
 	_, _ = db.CloseCrashedAgentSessions()
-	id, err := db.StartAgentSession(kind, provider, model)
+	parent := parentSession()
+	id, err := db.StartChildAgentSession(parent, kind, provider, model)
+	if err != nil && parent > 0 {
+		// The parent is a foreign key, so an id naming no row is refused
+		// rather than stored. What fails there is the link and not the
+		// record: an unlinked row still says what this run cost, and a
+		// session with no record at all is the one reading nobody can get
+		// back.
+		parent = 0
+		id, err = db.StartAgentSession(kind, provider, model)
+	}
 	if err != nil {
 		return nil
 	}
-	return &observeRecorder{db: db, id: id, prices: prices, model: model, kind: kind, provider: provider,
+	return &observeRecorder{db: db, id: id, parent: parent, prices: prices, model: model, kind: kind, provider: provider,
 		span: observeExport.Session(kind, provider, model)}
 }
 
@@ -201,6 +271,11 @@ type runSettings struct {
 	// contains the surface's commands — an unconfined session runs under
 	// no profile, whatever the config asked for.
 	sandbox string
+	// item and stage are the backlog item this session was started to work
+	// and the step of it this session is, both empty on a session that is
+	// not a stage of a run. They are read off the environment by the surface
+	// rather than here so this stays a function of the config and the flags.
+	item, stage string
 	// model is what the summariser and the classifier fall back to when
 	// their own keys are unset — the provider's small model where it names
 	// one, else the session's own. It is resolved by the surface rather than
@@ -233,6 +308,8 @@ func sessionSettings(cfg config.Config, run runSettings) storage.AgentSettings {
 		MaxRounds:      run.rounds,
 		SummaryEnabled: run.summary,
 		SandboxProfile: run.sandbox,
+		Item:           run.item,
+		Stage:          run.stage,
 		ConfigHash:     configHash(cfg),
 	}
 	if run.summary {
@@ -539,7 +616,19 @@ func (r *observeRecorder) restart() bool {
 		go closing.End(outcome)
 	}
 	r.end()
-	id, err := r.db.StartAgentSession(r.kind, r.provider, r.model)
+	// The second row hangs where the first one did. A boundary crossed
+	// inside a stage is still that stage of that run, and a row that lost
+	// the link would be the one session of the sprint the tree cannot reach.
+	//
+	// It falls back the way the first row did, and for a reason the first
+	// row does not have: the parent was there when this session started and
+	// a sweep can have taken it since. A boundary that lost the record
+	// altogether is worse than one that lost the link.
+	id, err := r.db.StartChildAgentSession(r.parent, r.kind, r.provider, r.model)
+	if err != nil && r.parent > 0 {
+		r.parent = 0
+		id, err = r.db.StartAgentSession(r.kind, r.provider, r.model)
+	}
 	if err != nil {
 		return false
 	}
@@ -1278,6 +1367,8 @@ func observeSettingsPairs(c *storage.AgentSettings) []report.Pair {
 		{Key: "summary", Value: summary},
 		{Key: "classifier", Value: c.ClassifierModel},
 		{Key: "sandbox", Value: c.SandboxProfile},
+		{Key: "item", Value: c.Item},
+		{Key: "stage", Value: c.Stage},
 		{Key: "config", Value: c.ConfigHash},
 	} {
 		if p.Value != "" {

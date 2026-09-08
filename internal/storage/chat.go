@@ -632,8 +632,9 @@ func (db *DB) SearchChats(query string) ([]ChatListEntry, error) {
 
 // PruneOldChats deletes every saved conversation nothing has written to for
 // longer than retentionDays, and reports how many sessions went. Zero days is
-// off, which is what an unset setting means: a conversation is a person's
-// work and the product does not throw one away on a window nobody chose
+// off, and this is the one window a person can turn off: a conversation is
+// their work rather than the residue a session leaves behind, so the answer
+// to "keep every one of them" is an answer the key takes
 // (docs/capabilities/sessions-and-memory.md#a-conversation-is-kept-for-a-window).
 //
 // **A family goes or stays together.** A branch is a tail of the conversation

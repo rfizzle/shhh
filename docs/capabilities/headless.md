@@ -190,6 +190,29 @@ recovered from the other two figures, so a script pricing a night of runs
 against a rate card needs it stated
 ([`providers.md`](providers.md#the-prompt-prefix-is-paid-for-once)).
 
+### The run says where it left off
+
+Both JSON shapes name the slot the conversation was left in, the record row
+that says what the run cost, and the literal command that opens the
+conversation again. The transcript carries them once at the end and the
+stream's close line carries the same three, because a consumer that acts on
+the stream reads lines and never the transcript.
+
+The command is spelled out rather than left to be assembled, and it names the
+slot rather than saying `--continue`. That is the whole reason it is there: a
+script that read a status and wanted to carry that run on had `--continue`,
+which means "the most recent conversation on this machine" — and on a machine
+running two of these, or working a backlog, that is whichever run finished
+last. A name is a handle; the most recent is a race. The row id is the other
+half of the join: it is what `shhh observe` prices, so a caller can put what a
+run answered beside what it cost without matching on a timestamp — and it is
+the same field, under the same name, that a hook is handed for the same
+purpose ([`hooks.md`](hooks.md#the-payload-is-the-event-stream)), because
+there is one vocabulary and a separate process reads one of the two.
+
+The three are absent together on a run whose store never opened, because a
+handle that opens nothing is worse than none.
+
 ## The stream is the record as it happens
 
 `jsonl` exists for the thing that has to act before the run is over: a lane in
@@ -421,6 +444,15 @@ label saying so.
 
 Everything else is unchanged — shhh runs the verification, shhh makes the
 commit, and only paths the run itself changed are staged.
+
+**A sprint is one thing in the record and one thing in the store.** The runner
+opens a session row of its own and every stage's row hangs under it, so a
+night of work is a tree that can be priced by item and by stage rather than
+dozens of runs nothing relates
+([`sessions-and-memory.md`](sessions-and-memory.md#a-sprint-is-one-tree)). And
+the conversations those stages saved are taken away once the item has gone
+through, and kept whole where it stopped, because the saved-chat list is where
+a person's own work lives and a night of runs must not bury it.
 
 The status is the run's own ending: `0` for an item that finished, `7` for one
 that blocked. A sprint stops on the first block, so `7` from `--all` means the

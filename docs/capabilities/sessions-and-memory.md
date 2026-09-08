@@ -94,9 +94,12 @@ What the run leaves behind is a conversation in a slot of its own, written
 when the turn ends and equally when it does not: a round cap reached, a
 provider that stopped answering, a turn cut short. Reopening the most recent
 conversation opens it, which is the only way to see what a run that failed
-overnight was actually doing. The mark that says a turn was parked is never
-written by one — parking is something a person does with a keyboard, and
-there was none.
+overnight was actually doing — and a run answering in either JSON shape names
+its own slot rather than leaving a caller to that reading, because "the most
+recent" on a machine running two of them is whichever finished last
+([`headless.md`](headless.md#the-run-says-where-it-left-off)). The mark that
+says a turn was parked is never written by one — parking is something a person
+does with a keyboard, and there was none.
 
 The saved-chat browser is the one thing a run cannot be asked for: it is a
 full-screen program and a person choosing, and there is neither. Asking for
@@ -285,27 +288,48 @@ same sentence to its error output.
 
 ### A conversation is kept for a window
 
-`chats.retention_days` prunes saved conversations at startup the way history,
-report pages and the session record are pruned: a conversation nothing has
-written to for longer than the window goes, and the branches hanging off it go
-with it.
+`chats.retention_days` prunes saved conversations the way history, report
+pages and the session record are pruned: a conversation nothing has written to
+for longer than the window goes, and the branches hanging off it go with it.
 
-**It is off until you set it, and that is the one window here that is.** The
-other three hold residue — the commands a session generated, the pages it
+**The window is the record's, and not history's.** A record row and the
+conversation it names are two halves of one thing — the row says what a
+session cost and the slot says what it said — so a store that kept the figures
+for six months and the words for good would answer half of every question at
+twice the size. A hundred and eighty days is what both are kept for, and the
+two windows are one constant rather than two numbers that happen to match,
+because a record naming a slot the prune had already taken is the failure
+either of them drifting produces.
+
+**It is also the one window here you can turn off, and a negative is how.**
+The other three hold residue — the commands a session generated, the pages it
 produced, the figures it recorded — and residue kept forever is a store that
-only grows. A conversation is not residue. It is the work, and it is the half
-of this store a person would actually miss; a product that quietly deleted it
-on a ninety-day default nobody chose would be a product you could not leave
-running.
+only grows. A conversation is not residue: it is the work, and it is the half
+of this store a person would actually miss. So `chats.retention_days = -1`
+keeps every conversation for good, and nothing else here takes a negative for
+an answer.
 
-**What the default should be, before there is one.** Ninety days is the wrong
-answer for a conversation, because the useful ones are the ones you come back
-to a year later and the ones you never open again cost a few kilobytes.
-Anything time-based is measuring the wrong thing: a conversation stops being
-worth keeping when it stops being worth reading, and the store knows a proxy
-for that — a conversation of one turn that nobody resumed. So the argument for
-a default, when one is made, is a shape rather than a duration, and until that
-case is made the key is off and the honest behaviour is to keep everything.
+**A duration is a proxy, and the honest one would be a shape.** A conversation
+stops being worth keeping when it stops being worth reading, and the store
+knows something nearer that — a conversation of one turn nobody ever resumed.
+Until a rule of that shape exists, the window that matches the record is the
+one that keeps the two halves together, which is the mistake worth avoiding
+first.
+
+**What a run leaves behind is not left for you to find.** A backlog run is
+dozens of stages and every one of them saves its conversation, so the runner
+takes an item's away again once the item has gone through
+([`todo.md`](todo.md#a-sprint-is-runs-with-a-session-between-them)). Without
+that, a night of unattended work would bury a person's own conversations under
+a list of timestamps they had nothing to do with.
+
+An item that stopped keeps all of them, and the decision waits for the item to
+be over rather than being taken as each stage ends. A run rarely stops on the
+stage whose own turn went wrong: it stops at the checks, several transitions
+after the turn that wrote the code they are checking — so a rule applied stage
+by stage would delete exactly the conversation the block is about. Which of
+the kept ones is worth opening is not something the runner knows either, so it
+keeps them and says how to open the last.
 
 **A family goes or stays together.** The window is put to the whole branch
 family and answered by its newest member, because a branch is a tail of the
@@ -337,6 +361,18 @@ the trade for a search that does not get slower every month the store is used
 and is not what a person searching a year of history has.
 
 ### Housekeeping
+
+**The four windows are swept once a day, not once a process.** The sweeps used
+to run on the first store a process opened, which is right on a workstation —
+a process there is a person starting a session — and wrong on a machine
+working a backlog, where a sprint is dozens of processes an hour and each of
+them paid for four full-table sweeps over tables whose oldest row moves once a
+day. The store carries when they last ran, and the right to run them is
+claimed rather than read: two runs starting in the same second would both find
+a stale stamp and both sweep. Nothing schedules them and nothing runs them on
+an empty machine — a command that never opens the store leaves the sweep to
+the next one that does, which is how it has always worked and is what keeps
+this out of a daemon.
 
 A saved chat can be renamed and deleted where it is listed — the picker
 inside a session, the browser `shhh chats` opens, and the same command with
@@ -495,12 +531,11 @@ would otherwise look like one that got faster.
 
 ### The record is kept for a window
 
-The record is pruned at startup the way command history and generated report
-pages are: sessions that ended longer ago than `observe.retention_days` go,
-and their events go with them. A store that only grows is not a harmless
-one: the record is written by every session unconditionally, and a table
-nobody trims eventually makes the reading of it slow enough that nobody
-takes the reading.
+The record is pruned the way command history and generated report pages are:
+sessions that ended longer ago than `observe.retention_days` go, and their
+events go with them. A store that only grows is not a harmless one: the record
+is written by every session unconditionally, and a table nobody trims
+eventually makes the reading of it slow enough that nobody takes the reading.
 
 **The window is longer than history's, because the reader is a different
 reader.** History's window is about a person remembering a command they ran
@@ -577,6 +612,30 @@ is never a reason for the work to wait or to stop. `shhh doctor` names the
 endpoint when one is set, so where the record goes is visible without
 opening the file.
 
+### A sprint is one tree
+
+A backlog run is one item after another and an item is a handful of stages,
+and every stage is a process of its own. Left alone, the record of a night's
+work is dozens of one-shot runs it cannot tell from dozens of unrelated ones:
+nothing says they were the same piece of work, so "what did that item cost" is
+a question nobody can put, and the prune, which takes a session's family
+together, has no family to take.
+
+**So the runner opens a row of its own and every stage hangs under it.** The
+runner spends nothing — the tokens are all spent by the stages — and that row
+is the parenthood and nothing else. It is passed to a stage in its environment
+because that is the only channel a driver that starts a process has to it, and
+the stage links its row where it opens it, so a stage spent as a conversation
+and a stage spent as a coding run link the same way.
+
+**The trace and the table disagree about this one parenthood, deliberately.**
+A sub-agent inside a session hangs under its parent in both, because the
+parent's span is right there to hang from. A stage is another process, and the
+parenthood a trace carries is a span context this one was never handed — so
+the row is linked and the span is a root of its own. An id that names no row
+is a link that cannot be made rather than a run with no record: the row is
+opened without it, because an unlinked row still says what the run cost.
+
 ### Every composition is one population
 
 Every composition shhh runs — a session, a headless run, every sub-agent, and
@@ -613,6 +672,16 @@ the classifier's model, and the containment profile. These are values, not
 merely fingerprints, because the question a tuning loop asks is "sessions at
 interval 10 against sessions at interval 20", and a hash has no order and no
 meaning to group by.
+
+**Two of them are not settings at all.** A session that is one stage of a
+backlog run is stamped with the item it was working and the stage it was,
+because the questions a sprint's record exists to answer — what did that item
+cost, and which stage burns the rounds — are both a split over the window's
+sessions, and a split needs a column. They keep the same rule as the rest: a
+stage name is a word from the profile's own closed set, and an item slug is
+the identifier a person files work under, the same class of name as the saved
+conversation the row already links to. Like that name, neither leaves this
+machine.
 
 They are an allowlist, and the allowlist is what keeps the record
 content-free: every one of them is a mode name, a level, a model name, a
@@ -733,9 +802,9 @@ ratio over a cohort too small to divide.
 Everything above this is collection. The comparison is where the collection
 becomes a decision: split a window's sessions on something the record
 stamped — the prompt fingerprint, the config fingerprint, the build, the
-model, or any of the settings a session ran under — and the two largest
-groups are drawn side by side, with the direction and the size of every
-change between them.
+model, any of the settings a session ran under, or the backlog item and stage
+a run's sessions were for — and the two largest groups are drawn side by side,
+with the direction and the size of every change between them.
 
 **Rates rather than counts, because two cohorts are never the same size.** A
 week either side of an edit is not a controlled experiment: one may hold

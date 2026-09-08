@@ -290,3 +290,47 @@ func belongsToIndex(table string, indexes []string) bool {
 	}
 	return false
 }
+
+// pruneJob names the row that stamps the store's retention sweeps. One row
+// per job, so a second piece of housekeeping with a cadence of its own is a
+// second row rather than a second table.
+const pruneJob = "prune"
+
+// ClaimPrune answers whether this caller is the one to run the store's
+// retention sweeps now, and stamps the store when it is. The sweeps used to
+// run on the first open of every process, which is right on a workstation
+// where a process is a person starting a session and wrong on a machine
+// driving a backlog, where a sprint is dozens of processes an hour, each
+// paying for four full-table sweeps over tables whose oldest row moves once a
+// day.
+//
+// The answer is a claim rather than a question because the callers are
+// several processes and not several goroutines: two runs starting in the same
+// second would both read a stale stamp and both sweep. The UPDATE's own WHERE
+// is the whole of the exclusion — SQLite applies the conflict clause under
+// the write lock, so exactly one of them changes a row and the rest are told
+// no.
+//
+// A store that will not answer is a sweep skipped and never a command
+// refused: the caller treats an error as "not mine to run", and the next
+// command tries again.
+// See docs/capabilities/sessions-and-memory.md#housekeeping.
+func (db *DB) ClaimPrune(every time.Duration) (bool, error) {
+	now := time.Now().UTC()
+	var claimed bool
+	err := retryBusy(func() error {
+		res, err := db.sql.Exec(
+			`INSERT INTO housekeeping (job, ran_at) VALUES (?, ?)
+			 ON CONFLICT(job) DO UPDATE SET ran_at = excluded.ran_at
+			 WHERE housekeeping.ran_at < ?`,
+			pruneJob, now.Format(time.RFC3339Nano), now.Add(-every).Format(time.RFC3339Nano),
+		)
+		if err != nil {
+			return err
+		}
+		n, err := res.RowsAffected()
+		claimed = n > 0
+		return err
+	})
+	return claimed, err
+}

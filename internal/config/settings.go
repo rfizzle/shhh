@@ -406,8 +406,8 @@ var settings = []Setting{
 	},
 
 	{
-		Key: "chats.retention_days", Kind: KindInt, Default: "(off — a saved chat is kept until you delete it)",
-		Desc: "How long a saved conversation nobody has written to is kept before startup prunes it, with a chat's branches going when it does; unset keeps every conversation.",
+		Key: "chats.retention_days", Kind: KindInt, Signed: true, Default: "180 days", Literal: "180",
+		Desc: "How long a saved conversation nobody has written to is kept before startup prunes it, with a chat's branches going when it does; it matches the record's window because a record row names a conversation, and a negative keeps every conversation for good.",
 	},
 
 	{

@@ -959,6 +959,17 @@ leaves that switch off. An item counts as blocked when the machine reached
 blocked. There is no sentence the model can write that ends an item either
 way.
 
+**A run leaves a record and not a mess.** Every stage's session row hangs
+under one row for the run itself, so a sprint is one tree that can be priced
+by item and by stage rather than dozens of runs nothing relates
+([`sessions-and-memory.md`](sessions-and-memory.md#a-sprint-is-one-tree)).
+The conversations those stages saved go when the item goes through, and stay
+whole when it does not — the item file says what stopped the run, and they are
+what is left of how it got there. The decision waits for the item because a
+run stops at the checks rather than at the turn that wrote what failed them,
+so a stage answered for as its own turn came back would take the conversation
+the block is about.
+
 **It stops on the first block.** A blocked item has a follow-up written for
 it, and what comes next in the list may be resting on the work that did not
 land, so nothing further is attempted. The four endings are named rather

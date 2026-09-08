@@ -127,6 +127,20 @@ type AgentSettings struct {
 	// SandboxProfile is the containment profile in force, empty when
 	// nothing contains the session's commands.
 	SandboxProfile string `json:"sandbox_profile,omitempty"`
+	// Item and Stage are the backlog item this session was working and the
+	// step of it this session was, both empty on a session that was not a
+	// stage of a run. They are not configuration and they are here for the
+	// same reason the rest is: this is the set a window's sessions may be
+	// grouped by, and "what did that item cost" and "which stage burns the
+	// rounds" are the two questions a sprint's record exists to answer.
+	//
+	// They keep the allowlist's rule. A stage name is a word from the
+	// profile's own closed set, and an item slug is the identifier a person
+	// files work under — the same class of name as the saved conversation
+	// the row already links to, and like that one it stays on this machine:
+	// nothing here is exported (otel.go).
+	Item  string `json:"item,omitempty"`
+	Stage string `json:"stage,omitempty"`
 	// ConfigHash fingerprints the whole effective config.
 	ConfigHash string `json:"config_hash"`
 }
@@ -174,17 +188,17 @@ func (db *DB) StartChildAgentSession(parentID int64, kind, provider, model strin
 // what an unstamped row holds and what the reader takes for "none".
 func (db *DB) StampAgentSession(id int64, p AgentProvenance) error {
 	c := p.Settings
-	settings := []any{nil, nil, nil, nil, nil, nil, nil, nil, nil}
+	settings := []any{nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil}
 	if c.ConfigHash != "" {
 		settings = []any{c.Mode, c.Reasoning, c.MaxRounds, c.SummaryModel, c.SummaryInterval, c.SummaryEnabled,
-			c.ClassifierModel, c.SandboxProfile, c.ConfigHash}
+			c.ClassifierModel, c.SandboxProfile, c.Item, c.Stage, c.ConfigHash}
 	}
 	args := append([]any{p.Version, p.PromptHash, p.Skills, p.Project}, settings...)
 	_, err := db.sql.Exec(
 		`UPDATE agent_sessions SET version = ?, prompt_hash = ?, skills = ?, project = ?,
 		        mode = ?, reasoning = ?, max_rounds = ?,
 		        summary_model = ?, summary_interval = ?, summary_enabled = ?,
-		        classifier_model = ?, sandbox_profile = ?, config_hash = ?
+		        classifier_model = ?, sandbox_profile = ?, item = ?, stage = ?, config_hash = ?
 		 WHERE id = ?`,
 		append(args, id)...,
 	)
@@ -487,6 +501,7 @@ var agentSplitColumns = []string{
 	"mode", "reasoning", "max_rounds",
 	"summary_model", "summary_interval", "summary_enabled",
 	"classifier_model", "sandbox_profile",
+	"item", "stage",
 }
 
 // AgentSplitKeys lists what a comparison can split on, for the flag that
@@ -1180,7 +1195,7 @@ type AgentSessionSummary struct {
 const agentSessionColumns = `id, started_at, ended_at, kind, provider, model, turns, tokens_in, tokens_out, est_cost,
 		        version, prompt_hash, skills, project, chat_session, parent_id,
 		        mode, reasoning, max_rounds, summary_model, summary_interval, summary_enabled,
-		        classifier_model, sandbox_profile, config_hash, outcome, rating`
+		        classifier_model, sandbox_profile, item, stage, config_hash, outcome, rating`
 
 func scanAgentSession(rows interface{ Scan(...any) error }) (AgentSessionSummary, error) {
 	var (
@@ -1190,6 +1205,7 @@ func scanAgentSession(rows interface{ Scan(...any) error }) (AgentSessionSummary
 		// The settings columns are NULL on a row older than they are; the
 		// hash is the one that says whether the set was taken at all.
 		mode, reasoning, summaryModel, classifierModel, sandboxProfile, configHash sql.NullString
+		item, stage                                                                sql.NullString
 		maxRounds, summaryInterval                                                 sql.NullInt64
 		summaryEnabled                                                             sql.NullBool
 		// The outcome column is NULL on a row older than it is and on a
@@ -1202,7 +1218,7 @@ func scanAgentSession(rows interface{ Scan(...any) error }) (AgentSessionSummary
 		&s.Turns, &s.TokensIn, &s.TokensOut, &s.Cost,
 		&s.Version, &s.PromptHash, &s.Skills, &s.Project, &s.ChatSession, &s.ParentID,
 		&mode, &reasoning, &maxRounds, &summaryModel, &summaryInterval, &summaryEnabled,
-		&classifierModel, &sandboxProfile, &configHash, &outcome, &rating); err != nil {
+		&classifierModel, &sandboxProfile, &item, &stage, &configHash, &outcome, &rating); err != nil {
 		return s, err
 	}
 	s.Outcome = outcome.String
@@ -1214,7 +1230,8 @@ func scanAgentSession(rows interface{ Scan(...any) error }) (AgentSessionSummary
 			Mode: mode.String, Reasoning: reasoning.String, MaxRounds: int(maxRounds.Int64),
 			SummaryModel: summaryModel.String, SummaryInterval: int(summaryInterval.Int64),
 			SummaryEnabled: summaryEnabled.Bool, ClassifierModel: classifierModel.String,
-			SandboxProfile: sandboxProfile.String, ConfigHash: configHash.String,
+			SandboxProfile: sandboxProfile.String, Item: item.String, Stage: stage.String,
+			ConfigHash: configHash.String,
 		}
 	}
 	s.StartedAt, _ = time.Parse(observeTimeFormat, startedAt)

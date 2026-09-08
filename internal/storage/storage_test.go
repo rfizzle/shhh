@@ -2308,3 +2308,25 @@ func TestNotesRoundTripWithTheirTurn(t *testing.T) {
 		t.Errorf("another slot's notebook was touched")
 	}
 }
+
+// Two openers of one store in the same window: the sweeps are one job and
+// exactly one of them is the caller that runs it. The claim is a write and
+// not a read for that reason — two processes starting in the same second
+// would both read a stale stamp and both sweep.
+func TestClaimPrune_OneCallerAWindow(t *testing.T) {
+	db := openTestDB(t)
+	first, err := db.ClaimPrune(24 * time.Hour)
+	if err != nil || !first {
+		t.Fatalf("the first claim on an unswept store is %v (%v)", first, err)
+	}
+	second, err := db.ClaimPrune(24 * time.Hour)
+	if err != nil || second {
+		t.Fatalf("a second claim in the same window is %v (%v)", second, err)
+	}
+	// A window that has passed is a claim again, and it is the same call
+	// rather than a reset: nothing ever clears the stamp.
+	again, err := db.ClaimPrune(0)
+	if err != nil || !again {
+		t.Fatalf("a claim after the window is %v (%v)", again, err)
+	}
+}

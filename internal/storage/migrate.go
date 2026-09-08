@@ -383,6 +383,32 @@ var migrations = []string{
 	// wrote what, and reading one as the person's is what it has always
 	// looked like on screen.
 	`ALTER TABLE chat_messages ADD COLUMN machine INTEGER NOT NULL DEFAULT 0;`,
+
+	// Which backlog item a session was working and which stage of it. A
+	// sprint is a tree of sessions — one row for the runner and one for
+	// every stage under it — and without these the tree can be walked but
+	// not grouped: "what did that item cost" and "which stage burns the
+	// rounds" are both a split over the window's sessions, and a split needs
+	// a column. Nullable like the settings beside them, because a session that
+	// was not a stage of anything is not a stage named ""
+	// (docs/capabilities/sessions-and-memory.md#what-a-session-ran-under).
+	`ALTER TABLE agent_sessions ADD COLUMN item TEXT;
+	ALTER TABLE agent_sessions ADD COLUMN stage TEXT;`,
+
+	// When the store's retention sweeps last ran. They used to run on the
+	// first open of every process, which on a machine driving a backlog is
+	// several sweeps a minute over tables whose oldest row moves once a day
+	// — work nobody asked for, on the connection the command is waiting on
+	// (docs/capabilities/sessions-and-memory.md#housekeeping).
+	//
+	// The stamp is in the store rather than in the process because the
+	// processes are the thing there are too many of. One row per job, so a
+	// second job with its own cadence is a second row and not a second
+	// table.
+	`CREATE TABLE IF NOT EXISTS housekeeping (
+		job    TEXT NOT NULL PRIMARY KEY,
+		ran_at TEXT NOT NULL
+	);`,
 }
 
 // migrate brings the store up to the current schema, one step per

@@ -505,6 +505,11 @@ const headlessSlotLayout = "2006-01-02 15:04:05"
 type headlessChat struct {
 	db   *storage.DB
 	slot string
+	// kind is the surface the conversation belongs to — the word `shhh
+	// <kind> --resume` takes — kept so the handle a run states names the
+	// command that actually opens it: a conversation a reading run left is
+	// reopened with `shhh chat` and one a coding run left with `shhh code`.
+	kind string
 	// at and head are where the reopening's reading sits in the conversation
 	// and how long it is. Every save leaves it out: the reading is built from
 	// the checkout each time a conversation is opened, so a slot that kept
@@ -526,7 +531,7 @@ type headlessChat struct {
 // which has since moved is the one nobody is watching.
 // See docs/capabilities/sessions-and-memory.md#an-unattended-run-comes-back-too.
 func openHeadlessChat(db *storage.DB, session chatSession, initial []provider.Message, sysPrompt string) (*headlessChat, []provider.Message, error) {
-	c := &headlessChat{db: db}
+	c := &headlessChat{db: db, kind: session.kind}
 	msgs := initial
 	if session.wantsResume() {
 		reopened, err := session.resumeChat(db)
@@ -596,6 +601,40 @@ func (c *headlessChat) withoutReading(msgs []provider.Message) []provider.Messag
 	kept := make([]provider.Message, 0, len(msgs)-c.head)
 	kept = append(kept, msgs[:c.at]...)
 	return append(kept, msgs[c.at+c.head:]...)
+}
+
+// handles is where this conversation can be picked up, in the three forms a
+// caller reading JSON needs it in: the slot, the record row that says what
+// the run cost, and the command that opens the conversation again.
+//
+// The command names the slot rather than leaving it to `--continue`, which is
+// the whole point of stating it: "the most recent conversation" is whichever
+// run finished last, and on a machine working a backlog that is not this one.
+// A run whose store never opened has no slot and states none of the three,
+// because a handle that opens nothing is worse than none.
+func (c *headlessChat) handles(rec *observeRecorder) headlessHandles {
+	if c == nil || c.slot == "" {
+		return headlessHandles{}
+	}
+	h := headlessHandles{chat: c.slot, session: hookSession(rec.sessionID())}
+	if c.kind != "" {
+		h.resume = "shhh " + c.kind + " --resume=" + shellWord(c.slot)
+	}
+	return h
+}
+
+// shellWord is a slot name as one word a shell will hand back unchanged.
+//
+// Single quotes and not double, and not Go's own quoting either. A slot is a
+// timestamp on a run that minted one and whatever a person typed on a run
+// that resumed a conversation they named, so the text can hold anything —
+// and inside double quotes a shell still expands `$name` and a backquoted
+// command, which is the difference between a line somebody pastes and a line
+// that runs something. Inside single quotes nothing is special but the quote
+// itself, and the closing-reopening dance is the one escape POSIX gives for
+// it (pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html).
+func shellWord(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
 }
 
 // save writes the conversation to this run's slot, however the run ended: a
@@ -920,8 +959,14 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	if opts.autoMode {
 		recordedMode = agent.ModeAuto.String()
 	}
+	// The item and the stage a driver started this run for, where one did.
+	// They are the run's own facts and not the config's, which is why they
+	// are filled here beside the mode rather than read inside the allowlist.
+	runItem, runStage := todoStageStamp()
 	recorder.stamp(env.prompts.fingerprintOf(env.sysPrompt), session.skills.Len(), projectFingerprintRoot(), sessionSettings(cfg, runSettings{
 		mode:       recordedMode,
+		item:       runItem,
+		stage:      runStage,
 		effort:     env.effort,
 		rounds:     roundCapFor(opts.rounds(cfg)),
 		sandbox:    sandboxProfile,
@@ -1194,6 +1239,12 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// and it is not known until the save has settled where the words went.
 	saved.save(a.Messages())
 	recorder.link(saved.slot)
+	// Where this run can be picked up, in the three forms both JSON shapes
+	// state. It is read after the save because the slot is not settled until
+	// the save has landed: a name another run had taken is written to with a
+	// suffix, and a handle naming the name this run asked for would open
+	// somebody else's conversation.
+	left := saved.handles(recorder)
 	if opts.output == outputText && final != "" && !strings.HasSuffix(final, "\n") {
 		fmt.Fprintln(os.Stdout)
 	}
@@ -1228,12 +1279,12 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	case outputJSON:
 		if err := writeJSONTranscript(os.Stdout, jsonRun{
 			messages: a.Messages(), final: final, truncated: h.TruncatedReply(),
-			usage: usage, gate: closing.state(), written: own.paths(), err: out,
+			usage: usage, gate: closing.state(), written: own.paths(), left: left, err: out,
 		}); err != nil {
 			return err
 		}
 	case outputJSONL:
-		events.closed(obs.pos(), outcome, code, final, usage, out)
+		events.closed(obs.pos(), outcome, code, final, usage, left, out)
 	}
 	// Nothing to report and nothing to report it as: every code above zero
 	// has an error behind it, which is what carries it out to the process.
@@ -1916,7 +1967,22 @@ type jsonTranscript struct {
 	// the run's work: the tree says what is changed, not who changed it, and
 	// a file somebody had already left modified is one only this list can
 	// claim for the run.
-	Written  []string      `json:"written,omitempty"`
+	Written []string `json:"written,omitempty"`
+	// Chat, Session and Resume are the handles the run leaves behind: the
+	// slot the conversation was saved to, the record row that says what it
+	// cost, and the command that opens the conversation again.
+	//
+	// They are stated because the alternative a caller has is `--continue`,
+	// which is a race — "the most recent conversation" on a machine running
+	// two of these is whichever finished last, and a script that read exit
+	// 2 and wanted to carry that run on would carry on the other one. The
+	// slot is a name, so it is a handle; the row id is what joins the answer
+	// to what it cost in `shhh observe`, and it is spelled as the hook
+	// payload spells the same id.
+	// See docs/capabilities/headless.md#the-run-says-where-it-left-off.
+	Chat     string        `json:"chat,omitempty"`
+	Session  string        `json:"session,omitempty"`
+	Resume   string        `json:"resume,omitempty"`
 	Usage    jsonUsage     `json:"usage"`
 	Messages []jsonMessage `json:"messages"`
 }
@@ -1991,7 +2057,26 @@ type jsonRun struct {
 	usage     provider.Usage
 	gate      quality.Closing
 	written   []string
-	err       error
+	// left is where the run can be picked up from: the slot, the record row
+	// and the command.
+	left headlessHandles
+	err  error
+}
+
+// headlessHandles is where an unattended run left off, in the three forms a
+// caller needs it in. It is a value of its own because the three are one
+// fact and every shape that states it states all three: a transcript with a
+// slot and no row, or a close line with a row and no command to open it, is
+// half a handle.
+type headlessHandles struct {
+	chat string
+	// session is the record row rendered the way a hook is handed it — the
+	// same id, under the same key, in the same shape — because a separate
+	// process joining its own notes to shhh's table reads one of these or
+	// the other and there is one vocabulary across them
+	// (docs/capabilities/hooks.md#the-payload-is-the-event-stream).
+	session string
+	resume  string
 }
 
 func writeJSONTranscript(w io.Writer, r jsonRun) error {
@@ -2009,6 +2094,9 @@ func writeJSONTranscript(w io.Writer, r jsonRun) error {
 		Truncated: r.truncated,
 		Gate:      string(gate),
 		Written:   r.written,
+		Chat:      r.left.chat,
+		Session:   r.left.session,
+		Resume:    r.left.resume,
 		Usage:     usageOf(r.usage),
 		Messages:  jsonMessages(r.messages),
 	}
@@ -2078,6 +2166,15 @@ type jsonEvent struct {
 	// vocabulary and belongs to a result line; these are two vocabularies
 	// and the field each is named on is which one it is.
 	ErrorClass string `json:"error_class,omitempty"`
+	// Chat, Session and Resume belong to the close line too, and say the
+	// same three things the transcript's do: the slot the conversation was
+	// left in, the record row, and the command that opens it again. A reader
+	// that acts on the stream reads only lines, so a handle stated in the
+	// other shape alone would not reach it.
+	// See docs/capabilities/headless.md#the-run-says-where-it-left-off.
+	Chat    string `json:"chat,omitempty"`
+	Session string `json:"session,omitempty"`
+	Resume  string `json:"resume,omitempty"`
 }
 
 // write puts one event on the stream. A nil stream is the run that asked for
@@ -2146,13 +2243,14 @@ func (s *jsonlStream) usage(at observe.Pos, u provider.Usage) {
 // word the record keeps, the exit code projected from it, the answer, and
 // what the run spent getting there. A consumer that reads only this line has
 // everything the exit status says and the answer besides.
-func (s *jsonlStream) closed(at observe.Pos, outcome string, code int, final string, u provider.Usage, err error) {
+func (s *jsonlStream) closed(at observe.Pos, outcome string, code int, final string, u provider.Usage, left headlessHandles, err error) {
 	if s == nil {
 		return
 	}
 	priced := usageOf(u)
 	ev := jsonEvent{Kind: observe.EventClose, Turn: at.Turn, Round: at.Round,
-		Outcome: outcome, Exit: &code, Final: final, Usage: &priced}
+		Outcome: outcome, Exit: &code, Final: final, Usage: &priced,
+		Chat: left.chat, Session: left.session, Resume: left.resume}
 	if err != nil {
 		ev.Error, ev.ErrorClass = err.Error(), failureClass(err)
 	}

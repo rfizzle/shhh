@@ -18,6 +18,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -25,6 +26,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/storage"
 )
 
 // shhhBinary is the command these tests run, and shhhBuildErr is why there is
@@ -860,6 +862,9 @@ func closeLine(t *testing.T, out string) (ev struct {
 	Exit       *int   `json:"exit"`
 	Error      string `json:"error"`
 	ErrorClass string `json:"error_class"`
+	Chat       string `json:"chat"`
+	Session    string `json:"session"`
+	Resume     string `json:"resume"`
 }) {
 	t.Helper()
 	lines := strings.Split(strings.TrimSpace(out), "\n")
@@ -873,6 +878,148 @@ func closeLine(t *testing.T, out string) (ev struct {
 	}
 	t.Fatalf("the stream has no close line:\n%s", out)
 	return ev
+}
+
+// Where a run left off, in both shapes. A script that reads a status and
+// wants to carry that run on had `--continue` and nothing else, which on a
+// machine running two of these is whichever finished last — so the slot is
+// named, the record row it cost is named beside it, and the command that
+// opens the conversation again is spelled out rather than left to be
+// assembled.
+func TestPrintRun_TheRunSaysWhichSlotItLeft(t *testing.T) {
+	t.Run("json", func(t *testing.T) {
+		f := startFakeProvider(t, reply{text: "the answer"})
+		s := newPrintSession(t, f)
+		out, errs, code := s.run(t, "", "code", "-p", "--output", "json", "say hi")
+		if code != 0 {
+			t.Fatalf("the run exited %d\nstderr: %s", code, errs)
+		}
+		var transcript struct {
+			Chat    string `json:"chat"`
+			Session string `json:"session"`
+			Resume  string `json:"resume"`
+		}
+		if err := json.Unmarshal([]byte(out), &transcript); err != nil {
+			t.Fatalf("the transcript did not parse: %v\n%s", err, out)
+		}
+		if transcript.Chat == "" || transcript.Session == "" {
+			t.Fatalf("the transcript names no handle: %+v", transcript)
+		}
+		// The command names the slot rather than saying --continue, which is
+		// the whole reason it is stated.
+		want := "shhh code --resume='" + transcript.Chat + "'"
+		if transcript.Resume != want {
+			t.Fatalf("the transcript resumes with %q, want %q", transcript.Resume, want)
+		}
+		// And it is a handle: the conversation really is under that name.
+		if listing, _, code := s.run(t, "", "chats", "list", "--json"); code != 0 ||
+			!strings.Contains(listing, transcript.Chat) {
+			t.Fatalf("the slot the run named is not in the saved conversations (exit %d):\n%s", code, listing)
+		}
+	})
+	// A reader of the stream reads lines and never the transcript, so the
+	// same three have to be on the close line or they do not reach it.
+	t.Run("jsonl", func(t *testing.T) {
+		f := startFakeProvider(t, reply{text: "the answer"})
+		s := newPrintSession(t, f)
+		out, errs, code := s.run(t, "", "chat", "--print", "--output", "jsonl", "say hi")
+		if code != 0 {
+			t.Fatalf("the run exited %d\nstderr: %s", code, errs)
+		}
+		closing := closeLine(t, out)
+		if closing.Chat == "" || closing.Session == "" {
+			t.Fatalf("the close line names no handle: %+v", closing)
+		}
+		// The conversation a reading run left is reopened with the reading
+		// surface, not with the coding one.
+		if want := "shhh chat --resume='" + closing.Chat + "'"; closing.Resume != want {
+			t.Fatalf("the close line resumes with %q, want %q", closing.Resume, want)
+		}
+	})
+}
+
+// A run told which record row it is a stage of opens its own row under that
+// one, and says which item and which stage it was. It is the driver whose
+// children are processes that needs this: without it a sprint is dozens of
+// runs the record cannot tell from dozens of unrelated ones.
+func TestPrintRun_ARunToldItsParentFilesItsRowUnderIt(t *testing.T) {
+	f := startFakeProvider(t, reply{text: "done"})
+	s := newPrintSession(t, f)
+
+	// The first run stands in for the driver's own row, which is a row like
+	// any other; the second is the stage started under it.
+	first, errs, code := s.run(t, "", "code", "-p", "--output", "json", "one")
+	if code != 0 {
+		t.Fatalf("the first run exited %d\nstderr: %s", code, errs)
+	}
+	var parent struct {
+		Session string `json:"session"`
+	}
+	if err := json.Unmarshal([]byte(first), &parent); err != nil {
+		t.Fatalf("the transcript did not parse: %v\n%s", err, first)
+	}
+
+	stage := func(env ...string) int64 {
+		t.Helper()
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel()
+		cmd, out, errs := s.command(ctx, "", "code", "-p", "--output", "json", "two")
+		cmd.Env = append(cmd.Env, env...)
+		body, stderr, code := finished(t, cmd, cmd.Run(), out, errs)
+		if code != 0 {
+			t.Fatalf("the stage exited %d\nstderr: %s", code, stderr)
+		}
+		var child struct {
+			Session string `json:"session"`
+		}
+		if err := json.Unmarshal([]byte(body), &child); err != nil {
+			t.Fatalf("the transcript did not parse: %v\n%s", err, body)
+		}
+		id, err := strconv.ParseInt(child.Session, 10, 64)
+		if err != nil {
+			t.Fatalf("the stage named its record row as %q: %v", child.Session, err)
+		}
+		return id
+	}
+
+	child := stage(
+		"SHHH_PARENT_SESSION="+parent.Session,
+		"SHHH_TODO_ITEM=s-290",
+		"SHHH_TODO_STAGE=implement",
+	)
+	db, err := storage.OpenPath(filepath.Join(s.home, "data", "shhh", "shhh.db"))
+	if err != nil {
+		t.Fatalf("opening the store the runs wrote to: %v", err)
+	}
+	defer db.Close()
+	rows, err := db.AgentSessions(time.Now().Add(-time.Hour), 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got storage.AgentSessionSummary
+	for _, r := range rows {
+		if r.ID == child {
+			got = r
+		}
+	}
+	if got.ParentID == nil || strconv.FormatInt(*got.ParentID, 10) != parent.Session {
+		t.Fatalf("the stage's row hangs under %v, want %s", got.ParentID, parent.Session)
+	}
+	if got.Settings == nil || got.Settings.Item != "s-290" || got.Settings.Stage != "implement" {
+		t.Fatalf("the stage's row says it was %+v", got.Settings)
+	}
+
+	// An id naming no row is a link that cannot be made, and the record is
+	// worth more than the link: the row is opened without it rather than not
+	// opened at all.
+	unknown, err := strconv.ParseInt(parent.Session, 10, 64)
+	if err != nil {
+		t.Fatal(err)
+	}
+	orphan := stage("SHHH_PARENT_SESSION=" + strconv.FormatInt(unknown+9999, 10))
+	if orphan <= 0 {
+		t.Fatal("a run given an id that names no row recorded nothing at all")
+	}
 }
 
 // What a conversation cannot do, it cannot be told to do. A tool that writes

@@ -708,7 +708,7 @@ own file could hold.
 
 | Key | Takes | Default | What it decides |
 |---|---|---|---|
-| `retention_days` | number | (off — a saved chat is kept until you delete it) | How long a saved conversation nobody has written to is kept before startup prunes it, with a chat's branches going when it does; unset keeps every conversation. |
+| `retention_days` | number | 180 days | How long a saved conversation nobody has written to is kept before startup prunes it, with a chat's branches going when it does; it matches the record's window because a record row names a conversation, and a negative keeps every conversation for good. |
 
 **`[reports]`**
 

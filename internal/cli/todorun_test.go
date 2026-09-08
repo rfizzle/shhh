@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -17,8 +18,8 @@ import (
 
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/project"
+	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
-	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/todo/run"
 )
@@ -68,6 +69,9 @@ func headlessDriver(t *testing.T, root string, answer func(run.Step) string) (*t
 	if err != nil {
 		t.Fatal(err)
 	}
+	// The driver opens the store for the run's own record row, so a test
+	// that builds one closes it the way the command does.
+	t.Cleanup(d.close)
 	d.turn = func(_ context.Context, _ time.Time, _ string, step run.Step) (todoTurn, error) {
 		return todoTurn{text: answer(step), code: exitDone}, nil
 	}
@@ -304,6 +308,9 @@ func TestTodoRunHeadless_ARunIsRefusedWhereNothingSaysWhatCheckingMeans(t *testi
 	if err != nil {
 		t.Fatal(err)
 	}
+	// The driver opens the store for the run's own record row, so a test
+	// that builds one closes it the way the command does.
+	t.Cleanup(d.close)
 
 	ref, refused := d.steps().Refuse(d.can())
 	if !refused || ref.Need != run.NeedChecks {
@@ -1049,14 +1056,27 @@ func TestTodoRunHeadless_TheRemediateStageIsHandedTheEvidenceAndCanReadTheRest(t
 	}
 	// A lane stands in a copy of the checkout and keeps its evidence to
 	// itself; only a stage standing here is pointed at the run's store.
-	if env := strings.Join(d.stageEnv(root), "\n"); !strings.Contains(env, evidenceStoreEnv+"=") {
+	step := run.Step{Stage: run.StageRemediate}
+	if env := strings.Join(d.stageEnv(root, step), "\n"); !strings.Contains(env, evidenceStoreEnv+"="+d.spoolDir) {
 		t.Fatal("a stage in the checkout should be pointed at the run's store")
 	}
-	// Compared against the runner's own answer rather than searched for the
-	// name: reading as a stage above put the name into this process's
-	// environment, which the lane inherits like any other pair.
-	if !slices.Equal(d.stageEnv(t.TempDir()), runner.Environ()) {
-		t.Fatal("a lane should not share the run's store")
+	// A lane still carries the record's variables — it is a stage of this
+	// item worked somewhere else — so the two environments differ by the
+	// store and nothing else. Compared rather than searched for the name:
+	// reading as a stage above put the store into this process's
+	// environment, which a lane inherits like any other pair.
+	lane, stage := d.stageEnv(t.TempDir(), step), d.stageEnv(root, step)
+	if !slices.Equal(stage, append(slices.Clone(lane), evidenceStoreEnv+"="+d.spoolDir)) {
+		t.Fatal("a lane should differ from a stage in the checkout by the run's store alone")
+	}
+	if !slices.Contains(lane, todoItemEnv+"=a-one") || !slices.Contains(lane, todoStageEnv+"="+string(run.StageRemediate)) {
+		t.Fatal("a lane is a stage of the item, and what it is a stage of should reach its record row")
+	}
+	// And every stage is told which row it hangs under, which is what makes
+	// the sprint one tree in the record rather than a stage's worth of
+	// unrelated one-shot runs.
+	if id := d.rec.sessionID(); id <= 0 || !slices.Contains(lane, parentSessionEnv+"="+strconv.FormatInt(id, 10)) {
+		t.Fatalf("a stage should be told the run's record row (%d)", id)
 	}
 	// The run that ended took its spool with it.
 	if _, err := os.Stat(run.RunStateDir(root, "a-one")); !os.IsNotExist(err) {
@@ -1089,6 +1109,79 @@ func readAsAStageWould(t *testing.T, dir, id string) string {
 		t.Fatalf("read %s: %v", id, err)
 	}
 	return string(data)
+}
+
+// A sprint is dozens of stages and every one of them saves its conversation,
+// so the runner takes them away again: the saved-chat list is the one place in
+// the product holding a person's own work, and a night of runs must not bury
+// it. A blocked item is the exception, and it keeps all of them, because the
+// item file says what stopped the run and the conversations are what is left
+// of how it got there.
+//
+// The third case is the one the rule is actually about. An item rarely stops
+// on the stage whose own turn went wrong: it stops at the checks, several
+// transitions later, in a step that spends no turn at all — and a rule
+// applied as each turn came back would have deleted the implement
+// conversation before anything had looked at what it wrote.
+func TestTodoRunHeadless_AnItemsConversationsGoUnlessItStopped(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		check    string
+		breakAt  run.Stage
+		wantDone bool
+	}{
+		{name: "a run that went through", check: "true", wantDone: true},
+		{name: "a run whose stage produced nothing", check: "true", breakAt: run.StageImplement},
+		{name: "a run that stopped at the checks", check: "false"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root := todoRepo(t)
+			body := "---\ntitle: a one\nsize: S\n---\n## Tests\n- " + tc.check + "\n"
+			if err := os.WriteFile(filepath.Join(todo.Dir(root), "a-one.md"), []byte(body), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			d, out := headlessDriver(t, root, nil)
+			if d.db == nil {
+				t.Skip("no store to save a stage's conversation in")
+			}
+			answers := stageAnswers(root)
+			var stages []run.Stage
+			slotOf := func(stage run.Stage) string { return "stage " + string(stage) }
+			d.turn = func(_ context.Context, _ time.Time, _ string, step run.Step) (todoTurn, error) {
+				slot := slotOf(step.Stage)
+				must(t, d.db.SaveChat(slot, []provider.Message{{Role: provider.RoleUser, Content: "x"}}))
+				stages = append(stages, step.Stage)
+				turn := todoTurn{code: exitDone, chat: slot, resume: "shhh code --resume='" + slot + "'"}
+				if step.Stage == tc.breakAt {
+					return turn, errors.New("the stage produced no answer")
+				}
+				turn.text = answers(step)
+				return turn, nil
+			}
+
+			st := d.work(context.Background(), mustItem(t, root, "a-one"), nil)
+			if done := st.Stage == run.StageDone; done != tc.wantDone {
+				t.Fatalf("the run ended at %s — %s\n%s", st.Stage, st.Blocked, out.String())
+			}
+			if !slices.Contains(stages, run.StageImplement) {
+				t.Fatalf("no implement stage was spent: %v", stages)
+			}
+			for _, stage := range stages {
+				held, err := d.db.HasChat(slotOf(stage))
+				must(t, err)
+				// Every conversation goes where the item went through, and
+				// every one of them stays where it did not.
+				if want := !tc.wantDone; held != want {
+					t.Errorf("the %s conversation is kept=%v, want %v", stage, held, want)
+				}
+			}
+			// A conversation nobody can name is one nobody opens, so a block
+			// says how to open the last one.
+			if line := "the run's conversations are kept"; strings.Contains(out.String(), line) == tc.wantDone {
+				t.Errorf("the run said %q where it should not have:\n%s", line, out.String())
+			}
+		})
+	}
 }
 
 // A file somebody had already left modified is still a file the run may have

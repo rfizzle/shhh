@@ -880,11 +880,13 @@ func TestAgentCohorts_SplitEveryKeyTheStoreOffers(t *testing.T) {
 	stamp("gpt-a", AgentProvenance{Version: "v1", PromptHash: "aaa", Settings: AgentSettings{
 		Mode: "manual", Reasoning: "low", MaxRounds: 10,
 		SummaryModel: "sum-a", SummaryInterval: 5, SummaryEnabled: false,
-		ClassifierModel: "cls-a", SandboxProfile: "workspace", ConfigHash: "h1"}})
+		ClassifierModel: "cls-a", SandboxProfile: "workspace",
+		Item: "a-one", Stage: "implement", ConfigHash: "h1"}})
 	stamp("gpt-b", AgentProvenance{Version: "v2", PromptHash: "bbb", Settings: AgentSettings{
 		Mode: "auto", Reasoning: "high", MaxRounds: 40,
 		SummaryModel: "sum-b", SummaryInterval: 20, SummaryEnabled: true,
-		ClassifierModel: "cls-b", SandboxProfile: "readonly", ConfigHash: "h2"}})
+		ClassifierModel: "cls-b", SandboxProfile: "readonly",
+		Item: "b-two", Stage: "review", ConfigHash: "h2"}})
 
 	since := time.Now().Add(-time.Hour)
 	for _, key := range AgentSplitKeys() {

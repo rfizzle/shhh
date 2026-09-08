@@ -682,15 +682,17 @@ type HistoryConfig struct {
 	RetentionDays int `toml:"retention_days"`
 }
 
-// ChatsConfig governs the saved conversations. It is the one window in the
-// product that is off until somebody sets it: history, reports and the
-// session record are residue a session leaves behind, and a conversation is
-// the work itself.
+// ChatsConfig governs the saved conversations. Its window is the session
+// record's, because a record row and the conversation it names are two halves
+// of one thing: the row says what a session cost and the slot says what it
+// said, and a store that kept the figures for six months and the words
+// forever would be answering half the question at twice the size.
 // See docs/capabilities/sessions-and-memory.md#a-conversation-is-kept-for-a-window.
 type ChatsConfig struct {
 	// RetentionDays is how long a conversation nobody has written to is
-	// kept. Zero — the unset value — keeps every one of them forever, which
-	// is what the product did before there was a key here.
+	// kept. A negative is the answer for somebody who wants none of this —
+	// keep every conversation forever — which is what the product did
+	// before the key had a default behind it.
 	RetentionDays int `toml:"retention_days"`
 }
 
@@ -753,6 +755,13 @@ const DefaultRetentionDays = 90
 // ninety days would leave one of the two cohorts empty at exactly the moment
 // somebody asks.
 const DefaultObserveRetentionDays = 180
+
+// DefaultChatsRetentionDays is the record's window and not history's, and it
+// is written as the same constant rather than as a second 180: a saved
+// conversation is what an observe row links to, and two windows that were
+// meant to match and then drifted would leave a record naming a slot the
+// prune had already taken.
+const DefaultChatsRetentionDays = DefaultObserveRetentionDays
 
 const DefaultContextMaxTokens = 8000
 
@@ -956,11 +965,19 @@ func (c Config) EffectiveRetentionDays() int {
 	return DefaultRetentionDays
 }
 
-// EffectiveChatsRetentionDays is the saved-conversation window, and zero is
-// the answer when nobody has set one. There is no default standing behind it,
-// unlike every other window here: see ChatsConfig.
+// EffectiveChatsRetentionDays is the saved-conversation window: the number
+// where one is written down, the record's window where nothing is, and no
+// window at all where somebody wrote a negative. It is the one window here
+// that reads a negative as an answer rather than as nonsense, because it is
+// the one holding a person's own work: see ChatsConfig.
 func (c Config) EffectiveChatsRetentionDays() int {
-	return c.Chats.RetentionDays
+	switch {
+	case c.Chats.RetentionDays > 0:
+		return c.Chats.RetentionDays
+	case c.Chats.RetentionDays < 0:
+		return 0
+	}
+	return DefaultChatsRetentionDays
 }
 
 func (c Config) EffectiveReportsRetentionDays() int {

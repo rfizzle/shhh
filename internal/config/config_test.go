@@ -1261,31 +1261,45 @@ func TestOtelEndpoint_OffUntilTheFileNamesOne(t *testing.T) {
 	}
 }
 
-// A saved conversation is the work, not the residue a session leaves behind,
-// so its window is the one here with no default standing behind it. A reader
-// who set history.retention_days and found their conversations going with the
-// commands would have lost something nobody offered to take.
-func TestChatsRetention_OffUntilTheFileNamesAWindow(t *testing.T) {
+// A saved conversation and the record row that names it are two halves of
+// one thing, so the conversations' window is the record's rather than
+// history's — and it is the one window here a person can turn off, because it
+// is the one holding their own work.
+func TestChatsRetention_MatchesTheRecordAndTurnsOffOnANegative(t *testing.T) {
 	var cfg Config
-	if got := cfg.EffectiveChatsRetentionDays(); got != 0 {
-		t.Errorf("an unset chats.retention_days is %d days, want no window at all", got)
+	if got := cfg.EffectiveChatsRetentionDays(); got != DefaultObserveRetentionDays {
+		t.Errorf("an unset chats.retention_days is %d days, want the record's %d", got, DefaultObserveRetentionDays)
 	}
 	cfg.History.RetentionDays = 7
-	cfg.Observe.RetentionDays = 30
-	if got := cfg.EffectiveChatsRetentionDays(); got != 0 {
+	if got := cfg.EffectiveChatsRetentionDays(); got != DefaultObserveRetentionDays {
 		t.Errorf("another table's window moved the conversations' to %d days", got)
+	}
+	cfg.Chats.RetentionDays = -1
+	if got := cfg.EffectiveChatsRetentionDays(); got != 0 {
+		t.Errorf("a negative is %d days, want no window at all", got)
 	}
 
 	path := filepath.Join(t.TempDir(), "config.toml")
-	if err := Write(path, Edit{Key: "chats.retention_days", Value: "180"}); err != nil {
+	if err := Write(path, Edit{Key: "chats.retention_days", Value: "30"}); err != nil {
 		t.Fatal(err)
 	}
 	loaded, err := LoadFrom(path)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := loaded.EffectiveChatsRetentionDays(); got != 180 {
-		t.Errorf("after the write, chats.retention_days is %d days, want 180", got)
+	if got := loaded.EffectiveChatsRetentionDays(); got != 30 {
+		t.Errorf("after the write, chats.retention_days is %d days, want 30", got)
+	}
+	// A negative is an answer this key has a meaning for, so it is stored
+	// rather than refused the way it is everywhere else.
+	if err := Write(path, Edit{Key: "chats.retention_days", Value: "-1"}); err != nil {
+		t.Fatal(err)
+	}
+	if loaded, err = LoadFrom(path); err != nil {
+		t.Fatal(err)
+	}
+	if got := loaded.EffectiveChatsRetentionDays(); got != 0 {
+		t.Errorf("a negative in the file leaves %d days, want no window", got)
 	}
 	if err := Write(path, Edit{Key: "chats.retention_days", Value: ""}); err != nil {
 		t.Fatal(err)
@@ -1293,8 +1307,8 @@ func TestChatsRetention_OffUntilTheFileNamesAWindow(t *testing.T) {
 	if loaded, err = LoadFrom(path); err != nil {
 		t.Fatal(err)
 	}
-	if got := loaded.EffectiveChatsRetentionDays(); got != 0 {
-		t.Errorf("a reset leaves %d days, want no window", got)
+	if got := loaded.EffectiveChatsRetentionDays(); got != DefaultObserveRetentionDays {
+		t.Errorf("a reset leaves %d days, want the record's %d", got, DefaultObserveRetentionDays)
 	}
 }
 

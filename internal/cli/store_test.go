@@ -106,10 +106,12 @@ func TestPruneStoreOnce_PrunesTheRecordOnTheSameOpen(t *testing.T) {
 	setObserveRetention(0)
 }
 
-// Saved chats have a window of their own, and it is the one that is off until
-// somebody sets it: the other three tables hold what a session left behind,
-// and this one holds the session.
-func TestPruneStoreOnce_PrunesSavedChatsOnlyWhenAWindowIsSet(t *testing.T) {
+// Saved chats are swept on a window of their own, and it is the one a person
+// can turn off: the other three tables hold what a session left behind, and
+// this one holds the session. A window of zero is the run of a process the
+// root never configured, and the table is left alone rather than swept on a
+// guess.
+func TestPruneStoreOnce_PrunesSavedChatsOnTheWindowItIsGiven(t *testing.T) {
 	db, err := storage.OpenPath(filepath.Join(t.TempDir(), "test.db"))
 	if err != nil {
 		t.Fatal(err)
@@ -130,7 +132,7 @@ func TestPruneStoreOnce_PrunesSavedChatsOnlyWhenAWindowIsSet(t *testing.T) {
 	pruneStoreOnce(db)
 	time.Sleep(50 * time.Millisecond)
 	if chats() != 1 {
-		t.Fatal("with no window set a saved chat is kept whatever its age")
+		t.Fatal("with no window given a saved chat is kept whatever its age")
 	}
 
 	purge.once = sync.Once{}
@@ -144,4 +146,69 @@ func TestPruneStoreOnce_PrunesSavedChatsOnlyWhenAWindowIsSet(t *testing.T) {
 		t.Fatal("the first open should prune the chat past the window")
 	}
 	setChatsRetention(0)
+}
+
+// The sweeps are worth running once a day and no more: a window is measured
+// in days, so the oldest row one would delete moves once a day. The guard
+// that used to hold — a sync.Once — is this process asking twice, and the
+// thing there are too many of is processes: `shhh todo run` is dozens of them
+// an hour, each paying for four full-table sweeps over a table nothing has
+// aged since the last one.
+func TestPruneStoreOnce_SweepsOnceADayAndNotOncePerProcess(t *testing.T) {
+	db, err := storage.OpenPath(filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	old := time.Now().UTC().AddDate(0, 0, -400).Format(time.RFC3339Nano)
+	addOld := func() {
+		id, err := db.RecordRequest(storage.RequestRecord{Provider: "p", Model: "m", Prompt: "old", Command: "ls"})
+		must(t, err)
+		_, err = db.SQL().Exec(`UPDATE requests SET created_at = ? WHERE id = ?`, old, id)
+		must(t, err)
+	}
+	count := func() int {
+		var n int
+		must(t, db.SQL().QueryRow(`SELECT COUNT(*) FROM requests`).Scan(&n))
+		return n
+	}
+	swept := func(want int) {
+		t.Helper()
+		deadline := time.Now().Add(5 * time.Second)
+		for count() != want && time.Now().Before(deadline) {
+			time.Sleep(10 * time.Millisecond)
+		}
+	}
+	// A fresh process each time, which is what resetting the once stands for.
+	nextProcess := func() { purge.once = sync.Once{} }
+
+	addOld()
+	purge.once, purge.days, purge.chatDays, purge.observeDays = sync.Once{}, 0, 0, 0
+	setHistoryRetention(90)
+	defer setHistoryRetention(0)
+	pruneStoreOnce(db)
+	swept(0)
+	if count() != 0 {
+		t.Fatal("the first sweep of the day should have run")
+	}
+
+	addOld()
+	nextProcess()
+	pruneStoreOnce(db)
+	time.Sleep(50 * time.Millisecond)
+	if count() != 1 {
+		t.Fatal("a second process the same day swept again")
+	}
+
+	// And the day turning is what lets the next one through, which is the
+	// half a stamp nobody ever cleared would break.
+	_, err = db.SQL().Exec(`UPDATE housekeeping SET ran_at = ?`,
+		time.Now().UTC().AddDate(0, 0, -2).Format(time.RFC3339Nano))
+	must(t, err)
+	nextProcess()
+	pruneStoreOnce(db)
+	swept(0)
+	if count() != 0 {
+		t.Fatal("the sweep should run again once the day has turned")
+	}
 }
