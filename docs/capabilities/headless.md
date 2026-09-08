@@ -251,6 +251,12 @@ URL reaches the transcript anyway. Durable memory proposes nothing, because a
 proposal is confirmed by a person: an entry is a claim about you that outlives
 the run, and there is no one here to say whether it is true.
 
+A question the model puts to the reader is the same kind of thing, one step
+earlier: the tool that asks is not registered at all where nobody can answer
+it, so the model never sees a question it could only be refused. No flag
+stands in for the reader here — `--yes` answers gated calls, and a question is
+not one ([`coding-agent.md`](coding-agent.md#nobody-to-ask)).
+
 Everything else is a gated call, and a gated call has answers that do not need
 a person. `--yes` and `--allow` are the standing ones, the default is a
 refusal, and a safety-flagged command is refused whatever the flags say
@@ -406,6 +412,16 @@ declined would make the question a formality.
 An approval nobody is left to answer is a refusal. A client that disconnects
 with a request outstanding does not leave the turn waiting for a decision that
 is never coming.
+
+A question is put to the client the same way, under its own id, and its
+answer is not a decision but the reader's pick, note or words, in the shape
+the card would have collected. A client that disconnects with a question
+outstanding leaves it answered *nobody to ask* rather than the turn waiting,
+on the same rule as the approval above it. A server told nobody is attached
+never puts the question at all: the tool is not offered to a session in auto
+mode, because the classifier that answers its approvals has no standing to
+answer a question in the reader's place
+([`coding-agent.md`](coding-agent.md#nobody-to-ask)).
 
 ## The backlog, worked without you
 

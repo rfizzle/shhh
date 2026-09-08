@@ -422,6 +422,81 @@ was installed and returned the file everywhere else. A model told "No matches
 found" does not conclude that the search was wrong. It concludes the file
 does not exist, and writes a new one.
 
+## The model can ask
+
+Most of what the model needs from the reader is in the request, the tree and
+the documents the checkout wrote down. What is left is the choice it cannot
+make for them: which of three approaches, whether a change should reach a
+second package, what the list it built left out. It had one way to put that
+choice — stop, write the options into its answer, and wait for the next
+message — which ends the turn, and reads back into the transcript as prose
+rather than as a decision the reader took.
+
+So a question is a tool call. The model names what it is asking, offers the
+answers it can see, and the reader is shown a card. The answer comes back as
+the result of the call, the turn carries on, and the transcript records the
+decision as one row.
+
+**A question is a decision, so it is a card; it changed nothing, so it
+carries no rail.** That is the weight the interface gives it
+([`../interface/principles.md`](../interface/principles.md#weight-tracks-risk)),
+and what the card looks like is the interface's to say
+([`../interface/surfaces.md`](../interface/surfaces.md#the-question-card)).
+What is settled here is what a question may carry and what an answer is.
+
+**The answers offered are never all the answers.** A list the model wrote is
+a list the model may have got wrong, so every question can be answered with
+something the list did not offer: a row for it is always there, and beside
+any pick the reader may leave a note in their own words. The model may say a
+note is required where a pick alone would not be enough to act on. What comes
+back is the pick by its label and the note verbatim, and an empty note is an
+empty note rather than a missing one, so the model never has to guess whether
+a note was possible. The model may lead with one answer as its recommendation,
+and may say an answer cannot be taken and why; both are words on the row, not
+a colour.
+
+**A question can be answered by talking.** Leaving the card does not answer
+it. The question is held, the session says one is waiting, and the next
+message the reader sends is delivered as the answer, unedited, in place of a
+pick. A reader who would rather explain than choose is not made to choose
+first. The model is told which kind of answer it got, from a fixed set: a
+pick on the card, typed text, skipped, nobody to ask.
+
+**A question is the model's to ask and the reader's to pay for.** The tool's
+own description says when one is worth stopping for — only where the
+readings would lead to materially different work — because a model that asks
+instead of reading is doing to the reader what a sweep does to a round
+budget. A turn has a small number of questions, and one past the count is
+answered *skipped* with the instruction to state the assumption and continue.
+A question asked twice is a repeat like any other
+([above](#a-call-the-session-has-already-made-is-answered-by-saying-so)).
+
+### Nobody to ask
+
+Where there is no reader there is no question. A scripted run, a child agent
+and a served session told nobody is attached are not offered the tool at all,
+on the rule the unattended run already holds: a tool the run can only be
+refused is worse than one it never saw
+([`headless.md`](headless.md#everything-the-session-has-unless-somebody-has-to-answer)).
+Nothing answers in the reader's place there: not a flag, and not the
+classifier, which judges whether a call is the work that was asked for and
+has no standing on which of two designs the person prefers. That is the
+commitment the approval path makes — it never silently guesses yes
+([`approvals-and-safety.md`](approvals-and-safety.md#the-classifier-fails-closed))
+— applied one step earlier, where the question would have been asked.
+
+The answer *nobody to ask* is for the one case where somebody was there and
+left: a served session whose client started the turn, was shown the question,
+and disconnected before answering it. The call comes back with that answer
+and the instruction to state the assumption the question was about and carry
+on, so a turn is never left waiting on a decision that is not coming.
+
+A child never asks. A fan-out exists for work that does not need the reader,
+and a child that could stop it for a question would be a fan-out that needs
+watching. What a child would have asked goes into its report as the
+assumption it made
+([`subagents.md`](subagents.md#a-child-answers-to-the-session)).
+
 ## A long turn is asked what it has got
 
 A turn has no way to notice it is finished. From inside one, every round looks

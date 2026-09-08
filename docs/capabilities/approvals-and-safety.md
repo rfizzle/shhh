@@ -252,6 +252,67 @@ things to go and change.
 A denial is recorded as an act, and carries the mutation rail, because the
 point of that rail is finding the moments that mattered.
 
+## A no can say why, and a yes can say what next
+
+A denial reached the model as one fixed sentence: the user declined. Whatever
+the reader was thinking when they pressed the key — not that file, not with
+that flag, not yet — was lost at the key, and a model that hears only *no*
+tries the same act sideways, which the repeat detector then has to catch a
+round later. Most denials mean *not like that*, and *like what* is the one
+thing the model cannot find out on its own.
+
+So the card's no has a second spelling that opens a note, and the sentence
+the reader writes is what the model receives in place of the fixed one. It is
+still the reader's denial: the row draws it in the reader's colour and word,
+distinct from a rule's, with the note folded under it. A rule's denial never
+carries a note, because a rule has nothing to say beyond which rule it was.
+
+The yes has the same second spelling. A note beside an allow is steering: the
+act runs, and the sentence joins the conversation before the next round, the
+way a message typed while the turn works already does
+([`../interface/surfaces.md`](../interface/surfaces.md#the-input-frame)). It
+is offered on the card because the card is where the reader has the thought,
+and a thought held until the act has finished is usually a thought lost.
+
+## An amended command is a new command
+
+A command card offers to run the command as the reader would have written
+it. The reader edits the line in place, and what runs is their line. That
+line is not the one the model asked about, so nothing decided about the
+original carries over: the deny list is read against it, the dangerous shapes
+are read against it, its blast radius is resolved again, and the card's three
+questions are answered again before it runs. An amendment that would draw a
+heavier card draws that card. Where any of that refuses the amended line, the
+refusal is the amended line's, and the original decision is still waiting.
+
+The model is told what ran in place of what it asked for, and the transcript
+row records the line that ran, because the transcript is the account of what
+ran on this machine. An amendment is not a grant: the next call the model
+makes is asked about on its own.
+
+## A grant says when it ends
+
+Always-allow grants exactly what the card printed — a command prefix, an
+edit's directory, a fetch's host — and it granted it for the session. That is
+the right length for a documentation site and the wrong one for a build loop:
+twenty test runs in one turn want one answer, and the same answer standing for
+the rest of the afternoon is a permission the reader will not remember making.
+
+So a grant has a length, chosen where it is made: this turn, or this session.
+A turn-scoped grant expires at the turn's close; a child spawned while it
+stands inherits it and loses it when the turn that made it closes, as the
+session does. A session grant travels the way it always has. Every grant is
+listed with when it ends, counted on the status line while it stands, and can
+be revoked before then. The two lengths are the whole set: a grant that
+outlives the session is an allowlist entry in the configuration, and is typed
+there rather than pressed here.
+
+A grant also has a width, and the reader sees both before choosing. The prefix
+the card printed is the ordinary width. The line exactly as it stands is the
+narrow one — it covers `npm test` and not `npm test --update` — for the
+reader who will say yes to this and does not want to have said yes to its
+family.
+
 ## A file is changed from what was read
 
 The mutating tools used to take their arguments' word for the file underneath

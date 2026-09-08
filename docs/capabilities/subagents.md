@@ -135,6 +135,14 @@ about is refused. A patch is the exception, and only where the run may write:
 the run asked for the work, so what is left to refuse is a patch that overlaps
 one already landed.
 
+A question is the one request that has no card to become. A child is not
+offered the tool that asks, whoever is there: a fan-out exists for work that
+does not need the reader, and one that could stop for a question would need
+watching.
+A child that would have asked states the assumption it made instead, in its
+report, where the session — and the person — can read it and disagree
+([`coding-agent.md`](coding-agent.md#nobody-to-ask)).
+
 ## What comes back says what happened to it
 
 A child's report is the child's own words, and around them is everything the

@@ -706,6 +706,83 @@ stay reachable to be one. A card replacing one just answered gets no window at
 all — that keystroke was an answer, not typing, and a reader working through a
 queue is never made to wait between questions.
 
+The decision run has two answers, and each has a spelling that says more.
+Beside *allow* and *deny* sit *allow, and say what to do next* and *deny, and
+say why*, each opening the note field under the card; the note travels with
+the answer, and what it does to the model is the capability's to say
+([`../capabilities/approvals-and-safety.md`](../capabilities/approvals-and-safety.md#a-no-can-say-why-and-a-yes-can-say-what-next)).
+The plain key stays one press, because most answers are one press and a
+reader working a queue must not be made to type past a field. Which letters
+the spellings take is the register's decision; the pairing is what the card
+promises.
+
+A command card offers to be amended. The key puts the command in the text
+input, prefilled, and enter runs the line as it now reads — after the card
+has resolved it again, because it is a different command
+([`../capabilities/approvals-and-safety.md`](../capabilities/approvals-and-safety.md#an-amended-command-is-a-new-command)).
+A heavier line draws the heavier card. Esc from the field puts the original
+back, and the decision is still waiting.
+
+A command card can also explain itself. The key puts a paragraph on what the
+command does, from the same inexpensive model the classifier uses, on the
+screen the full view uses, and answers nothing. The one-shot mode's rule holds
+here: explained on request, never by default.
+
+*Allow without asking* is no longer one press. The key opens a three-row list
+that spells out each grant before it is made — this turn, this session, this
+exact line — with the pattern the grant would match on the row and, in its
+short field, when it ends
+([`../capabilities/approvals-and-safety.md`](../capabilities/approvals-and-safety.md#a-grant-says-when-it-ends)).
+A grant the reader could not see the end of is one they will forget they
+made. Esc leaves the list with nothing granted and the card still waiting.
+
+Where several cards are waiting, the queue strip already counts them; one key
+renders the queue as the pick-several list, each row carrying the card's
+title, its target and its severity chip, and a submit that allows the checked
+rows and denies the rest. Each denial is the reader's, drawn as one.
+
+### The question card
+
+The card the model draws when it asks
+([`../capabilities/coding-agent.md`](../capabilities/coding-agent.md#the-model-can-ask)).
+It is the selector in one of its dressings with a question above it, and it
+arrives the way an approval arrives: over an empty draft it takes the
+keyboard, over a sentence it waits inert, and a keyboard still warm gets the
+same grace window. It carries no severity, because nothing on it changes the
+machine, and its row in the transcript carries no rail for the same reason.
+
+Four shapes, and the shape decides the dressing: one answer is the pick-one
+list, several is the pick-several list, a yes-or-no is the inline confirm,
+and a short free answer is the note field with no list above it. Every list
+has the same last row — *something else* — which opens the note field, and on
+every shape one key opens that field beside the pick, for the reason the list
+could not have predicted. While the note holds the keyboard every letter is
+text, the way the selector's query row already works, and the list's digits
+are inert until tab hands the keyboard back. Esc from the note drops the note
+and keeps the pick; a way out that lost the pick would not be the safe one.
+
+A recommended answer leads and says *recommended* in a word. An answer that
+cannot be taken says why on its row, in the selector's own glyph and phrase.
+Every option may carry a short field on the right, which is the model's to
+fill — a file count, a cost — so a list of approaches can be compared rather
+than walked. A long description of the marked row goes behind the full-view
+key, which takes the screen the diff already knows how to take and gives it
+back with the question still waiting; the panel is too narrow for two columns.
+
+Several questions in one call are tabs on the tab bar the backlog screen
+draws, with a submit tab at the end. The strip says which are answered with a
+glyph and a word. Four is the most one call may carry, because the panel has
+forty percent of the terminal and a fifth tab would be a scroll.
+
+Esc leaves the card and answers nothing. The question is held, the notice
+rail counts it — *1 question waiting* — and the next message the reader sends
+is delivered as the answer, in their words. The gutter says the draft is
+answering rather than steering, because the two reach the model differently —
+an answer is the call's result, a steer is a message — and a reader must know
+which they are writing. The follow-up chord still queues for after the turn.
+Entering the waiting state raises the same one desktop notification an
+approval does, on the same terms ([below](#when-you-are-not-there)).
+
 ### Selectors
 
 One list component in four dressings — pick one, pick several, pick one with a
