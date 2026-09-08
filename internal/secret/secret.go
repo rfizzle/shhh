@@ -79,18 +79,17 @@ func MaskedEnvName(name string) bool {
 type entry struct {
 	name  string
 	value string
+	// ph is Placeholder(name), which every match of this entry writes.
+	ph string
 	// encoded are the whole-value transformations a command might print
 	// instead of the value itself: base64 in each alphabet, hex, URL
 	// escaping. A model that asks for `echo $KEY | base64` has not seen the
 	// key, and this is what keeps that true.
 	encoded []string
-	// windows are every minFragment-byte run of the value, for the
-	// fragment scrub.
-	windows map[string]struct{}
 }
 
 func newEntry(name, value string) entry {
-	e := entry{name: name, value: value, windows: map[string]struct{}{}}
+	e := entry{name: name, value: value, ph: Placeholder(name)}
 	raw := []byte(value)
 	seen := map[string]bool{value: true}
 	add := func(s string) {
@@ -107,12 +106,59 @@ func newEntry(name, value string) entry {
 	add(strings.ToUpper(hex.EncodeToString(raw)))
 	add(url.QueryEscape(value))
 	add(url.PathEscape(value))
-	if len(value) >= minFragment {
+	return e
+}
+
+// gateWords is the size of the prefilter bitset: one bit per two-byte
+// prefix, so 65536 bits in 8 KB. Two bytes and not one, because one does
+// not filter. Measured over 2.7 MB of credential-free log text against five
+// declared secrets: their 133 windows have 55 distinct first bytes, which
+// 76% of the text's positions hit — a token is alphanumeric and so is most
+// of a log — against 111 distinct two-byte prefixes, which 9.9% do. The map
+// lookup is what costs, and this is what the text has to get past to reach
+// one.
+const gateWords = (1 << 16) / 64
+
+// index is the shared window map every fragment scrub reads: one map over
+// all entries rather than one per entry, so the text is walked once however
+// many secrets are declared. It is built whole by Add and Remove and then
+// never written, so Scrub can take a snapshot pointer under the read lock
+// and let go of it.
+type index struct {
+	entries []entry
+	// windows maps every minFragment-byte run of every declared value to
+	// the entry it came from. A run declared by two secrets belongs to the
+	// first that declared it, which is the one whose placeholder the
+	// per-entry loop used to write.
+	windows map[string]int
+	// gate has a bit set for the first two bytes of every window. A
+	// position whose bit is clear cannot start one, which is what makes
+	// text with no secret in it near-free — the same trick, and the same
+	// reason, as the shape prefilter's marker search.
+	gate [gateWords]uint64
+}
+
+// gateBit is the bit index for a two-byte prefix.
+func gateBit(a, b byte) uint32 { return uint32(a)<<8 | uint32(b) }
+
+// newIndex builds the shared window map. Entries shorter than minFragment
+// contribute nothing: they are scrubbed whole or not at all, which is what
+// the whole-value pass does.
+func newIndex(entries []entry) *index {
+	ix := &index{entries: entries, windows: make(map[string]int)}
+	for n := range entries {
+		value := entries[n].value
 		for i := 0; i+minFragment <= len(value); i++ {
-			e.windows[value[i:i+minFragment]] = struct{}{}
+			w := value[i : i+minFragment]
+			if _, dup := ix.windows[w]; dup {
+				continue
+			}
+			ix.windows[w] = n
+			k := gateBit(value[i], value[i+1])
+			ix.gate[k>>6] |= 1 << (k & 63)
 		}
 	}
-	return e
+	return ix
 }
 
 // Vault is the session's secrets. It is safe for concurrent use: the
@@ -120,6 +166,10 @@ func newEntry(name, value string) entry {
 type Vault struct {
 	mu      sync.RWMutex
 	entries []entry
+	// idx is the fragment scrub's index over entries, rebuilt whenever
+	// entries change and never mutated after. nil is a vault nothing has
+	// been declared in.
+	idx *index
 	// envMask records that this session's commands run with
 	// credential-shaped variables stripped from their environment. The
 	// vault does not do the stripping — the runner does — but it is what
@@ -149,14 +199,31 @@ func (v *Vault) Add(name, value string) error {
 	v.mu.Lock()
 	defer v.mu.Unlock()
 	e := newEntry(name, value)
+	replaced := false
 	for i := range v.entries {
 		if v.entries[i].name == name {
 			v.entries[i] = e
-			return nil
+			replaced = true
+			break
 		}
 	}
-	v.entries = append(v.entries, e)
+	if !replaced {
+		v.entries = append(v.entries, e)
+	}
+	v.reindex()
 	return nil
+}
+
+// reindex rebuilds the shared window map from entries. It is called with
+// the write lock held, and it copies the slice rather than aliasing it:
+// Scrub reads the index without the lock, and an Add that appends in place
+// would otherwise rewrite an entry a scrub was already walking.
+func (v *Vault) reindex() {
+	if len(v.entries) == 0 {
+		v.idx = nil
+		return
+	}
+	v.idx = newIndex(append([]entry(nil), v.entries...))
 }
 
 // SetEnvMask records whether the session masks credential-shaped variables
@@ -192,6 +259,7 @@ func (v *Vault) Remove(name string) bool {
 	for i := range v.entries {
 		if v.entries[i].name == name {
 			v.entries = append(v.entries[:i], v.entries[i+1:]...)
+			v.reindex()
 			return true
 		}
 	}
@@ -261,41 +329,59 @@ func (v *Vault) Scrub(s string) string {
 		return s
 	}
 	v.mu.RLock()
-	entries := v.entries
+	ix := v.idx
 	v.mu.RUnlock()
-	for _, e := range entries {
-		ph := Placeholder(e.name)
-		// Whole values and encodings first: a base64 form shares no
-		// window with the raw value, and a raw value would otherwise be
-		// scrubbed one fragment at a time into several placeholders.
-		s = strings.ReplaceAll(s, e.value, ph)
+	if ix == nil {
+		return redact(s)
+	}
+	// Whole values and encodings first: a base64 form shares no window with
+	// the raw value, and a raw value would otherwise be scrubbed one
+	// fragment at a time into several placeholders.
+	for i := range ix.entries {
+		e := &ix.entries[i]
+		s = strings.ReplaceAll(s, e.value, e.ph)
 		for _, enc := range e.encoded {
-			s = strings.ReplaceAll(s, enc, ph)
+			s = strings.ReplaceAll(s, enc, e.ph)
 		}
-		if len(e.windows) > 0 {
-			s = scrubFragments(s, e, ph)
-		}
+	}
+	if len(ix.windows) > 0 {
+		s = ix.scrubFragments(s)
 	}
 	return redact(s)
 }
 
-// scrubFragments replaces every run of e.value in s at least minFragment
-// bytes long. A run is found by its first window and extended as far as
-// the value still contains it.
-func scrubFragments(s string, e entry, ph string) string {
+// scrubFragments replaces every run of any declared value in s at least
+// minFragment bytes long. A run is found by its first window and extended
+// as far as that window's own value still contains it.
+//
+// It is one walk of s for every secret in the vault, not one each. A
+// session with five secrets and a dev server printing a megabyte a second
+// pays for this on every byte that comes back, and the per-entry version
+// spent five map lookups a byte to answer no five times.
+func (ix *index) scrubFragments(s string) string {
 	var b strings.Builder
 	last := 0
 	for i := 0; i+minFragment <= len(s); {
-		if _, ok := e.windows[s[i:i+minFragment]]; !ok {
+		k := gateBit(s[i], s[i+1])
+		if ix.gate[k>>6]&(1<<(k&63)) == 0 {
 			i++
 			continue
 		}
+		n, ok := ix.windows[s[i:i+minFragment]]
+		if !ok {
+			i++
+			continue
+		}
+		value := ix.entries[n].value
 		end := i + minFragment
-		for end < len(s) && strings.Contains(e.value, s[i:end+1]) {
+		for end < len(s) && strings.Contains(value, s[i:end+1]) {
 			end++
 		}
+		if last == 0 {
+			b.Grow(len(s))
+		}
 		b.WriteString(s[last:i])
-		b.WriteString(ph)
+		b.WriteString(ix.entries[n].ph)
 		last, i = end, end
 	}
 	if last == 0 {

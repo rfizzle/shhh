@@ -101,6 +101,97 @@ func TestScrub_Fragments(t *testing.T) {
 	}
 }
 
+// Five secrets are one walk of the text, not five, so the case worth a test
+// is the one the per-entry version got for free: fragments of different
+// secrets interleaved, each keeping its own name.
+func TestScrub_ManySecretsInOnePass(t *testing.T) {
+	v := New()
+	values := map[string]string{
+		"ALPHA": "alpha-0123456789abcdef",
+		"BRAVO": "bravo-fedcba9876543210",
+		"DELTA": "delta-zyxwvutsrqponmlk",
+	}
+	for name, value := range values {
+		if err := v.Add(name, value); err != nil {
+			t.Fatal(err)
+		}
+	}
+	in := "a " + values["BRAVO"][:11] + " b " + values["DELTA"][4:] + " c " + values["ALPHA"] + " d"
+	want := "a [secret:BRAVO] b [secret:DELTA] c [secret:ALPHA] d"
+	if got := v.Scrub(in); got != want {
+		t.Fatalf("Scrub = %q, want %q", got, want)
+	}
+}
+
+// Remove rebuilds the shared map, and the failure it can have is silent in
+// the direction that matters: a window left behind scrubs a value nobody
+// declared any more, and one dropped by mistake stops scrubbing a value
+// that is still declared.
+func TestScrub_RemoveRebuildsTheSharedWindows(t *testing.T) {
+	v := New()
+	_ = v.Add("GONE", "gone-0123456789abcdef")
+	_ = v.Add("KEPT", "kept-fedcba9876543210")
+	if !v.Remove("GONE") {
+		t.Fatal("Remove should have found GONE")
+	}
+	in := "gone-0123456789 and kept-fedcba98"
+	if got := v.Scrub(in); got != "gone-0123456789 and [secret:KEPT]" {
+		t.Fatalf("Scrub = %q", got)
+	}
+	if v.Remove("KEPT"); v.Scrub(in) != in {
+		t.Fatalf("an empty vault still scrubbed %q", in)
+	}
+}
+
+// The scrub reads a snapshot of the index without holding the lock, which
+// is only sound because Add and Remove build a new one over a copy of the
+// entries rather than editing the one a scrub is walking. Under -race this
+// is what says so.
+func TestScrub_AddsWhileScrubbing(t *testing.T) {
+	v := New()
+	_ = v.Add("FIRST", "first-0123456789abcdef")
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for i := range 200 {
+			if err := v.Add(fmt.Sprintf("S%d", i), fmt.Sprintf("value-%03d-abcdefghij", i)); err != nil {
+				t.Error(err)
+				return
+			}
+			v.Remove(fmt.Sprintf("S%d", i-1))
+		}
+	}()
+	for range 200 {
+		if got := v.Scrub("log first-0123456789 line"); got != "log [secret:FIRST] line" {
+			t.Fatalf("Scrub = %q", got)
+		}
+	}
+	<-done
+}
+
+// The prefilter that makes text with no secret in it cheap is also the way
+// the fragment scrub gets silently disabled: a window whose gate bit is
+// clear is never looked up, and nothing on screen would show it. This is
+// the same failure the shape markers have, and it is asserted the same way.
+func TestScrubIndex_TheGateNeverTurnsAwayAWindow(t *testing.T) {
+	v := New()
+	for name, value := range map[string]string{
+		"A": "sk-live-0123456789abcdef",
+		"B": "a\x00b\xff\xfe\xfd\xfc\xfb\xfa\xf9",
+		"C": strings.Repeat("z", minFragment),
+	} {
+		if err := v.Add(name, value); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for w := range v.idx.windows {
+		k := gateBit(w[0], w[1])
+		if v.idx.gate[k>>6]&(1<<(k&63)) == 0 {
+			t.Errorf("%q is in the map and the gate turns it away", w)
+		}
+	}
+}
+
 func TestScrub_ShortSecretsMatchWhole(t *testing.T) {
 	v := New()
 	_ = v.Add("PIN", "1234")
@@ -691,5 +782,56 @@ func TestPromptBlock_SaysTheMaskAndTheRedactionExist(t *testing.T) {
 		if !strings.Contains(block, want) {
 			t.Errorf("block lacks %q:\n%s", want, block)
 		}
+	}
+}
+
+// logCorpus is credential-free text of the shape the scrub actually runs
+// over: a dev server's stdout, streaming past at whatever rate it writes.
+// Nothing in it matches a shape or a secret, because that is the case worth
+// measuring — a hit is rare and bounded, and the cost that matters is the
+// one paid on every byte that is not one.
+func logCorpus(size int) string {
+	var b strings.Builder
+	b.Grow(size + 128)
+	paths := []string{"/api/v1/users", "/api/v1/orders/4821", "/static/app.js", "/healthz", "/api/v1/search?q=widget"}
+	levels := []string{"INFO", "DEBUG", "WARN"}
+	for i := 0; b.Len() < size; i++ {
+		fmt.Fprintf(&b, "2026-09-08T14:%02d:%02d.%03dZ %s server: %s %s 200 %dms upstream=api-%d.internal pid=%d\n",
+			i%60, (i*7)%60, i%1000, levels[i%len(levels)], []string{"GET", "POST"}[i%2],
+			paths[i%len(paths)], 3+i%180, i%8, 40000+i%900)
+	}
+	return b.String()
+}
+
+var scrubSink string
+
+// BenchmarkScrub is the acceptance measurement for the scrub's cost: the
+// same log text through a vault with nothing declared and through one with
+// five secrets. The first is the shape prefilter alone and the second is
+// what a session with secrets pays on top of it; the ratio between them is
+// what the output goroutine spends on a stream nobody declared anything for.
+func BenchmarkScrub(b *testing.B) {
+	text := logCorpus(2_700_000)
+	values := []string{
+		"sk-ant-api03-9Qw3RtY6uIoP0aSdFgHjKlZxCvBnM4eR7tY2uI9oP1aSdFgH",
+		"ghp_ZxCvBnM4eR7tY2uI9oP1aSdFgHjKlQw3RtY6",
+		"AKIAQW3RTY6UIOP0ASDF",
+		"glpat-M4eR7tY2uI9oP1aSdFgH",
+		"xoxb-263594206564-2343594206574-QwErTyUiOpAsDfGhJkLzXcVb",
+	}
+	for _, n := range []int{0, 5} {
+		b.Run(fmt.Sprintf("secrets=%d", n), func(b *testing.B) {
+			v := New()
+			for i := range n {
+				if err := v.Add(fmt.Sprintf("SECRET_%d", i), values[i]); err != nil {
+					b.Fatal(err)
+				}
+			}
+			b.SetBytes(int64(len(text)))
+			b.ReportAllocs()
+			for b.Loop() {
+				scrubSink = v.Scrub(text)
+			}
+		})
 	}
 }
