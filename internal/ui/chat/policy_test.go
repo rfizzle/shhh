@@ -91,14 +91,8 @@ func TestPolicy_AllowlistAutoApprovesCommand(t *testing.T) {
 	if m.state != stateStreaming || restream == nil {
 		t.Fatal("stream should resume after the auto-approved command completes")
 	}
-	found := false
-	for _, e := range m.transcript {
-		if e.kind == entrySystem && strings.Contains(e.text, "Auto-approved (allowlist): echo hi") {
-			found = true
-		}
-	}
-	if !found {
-		t.Fatal("transcript should note the allowlist auto-approval")
+	if got := allowedOnRow(t, m, "echo hi"); got != "auto-allowed · allowlist" {
+		t.Fatalf("the command's own row should say what let it run, got %q", got)
 	}
 }
 
@@ -245,14 +239,8 @@ func TestPolicy_AlwaysAllowEditsViaKey(t *testing.T) {
 			t.Fatalf("expected %s to be written: %v", p, err)
 		}
 	}
-	found := false
-	for _, e := range m.transcript {
-		if e.kind == entrySystem && strings.Contains(e.text, "Auto-approved (session grant): write "+second) {
-			found = true
-		}
-	}
-	if !found {
-		t.Fatal("transcript should note the session-grant auto-approval")
+	if got := allowedOnRow(t, m, second); got != "auto-allowed · session grant" {
+		t.Fatalf("the edit's own row should say what let it apply, got %q", got)
 	}
 }
 
@@ -363,14 +351,8 @@ func TestMode_AcceptEditsAutoAppliesEditsButPromptsCommands(t *testing.T) {
 	if _, err := os.Stat(path); err != nil {
 		t.Fatalf("expected the file to be written: %v", err)
 	}
-	found := false
-	for _, e := range m.transcript {
-		if e.kind == entrySystem && strings.Contains(e.text, "Auto-approved (accept-edits mode): write "+path) {
-			found = true
-		}
-	}
-	if !found {
-		t.Fatal("transcript should note the accept-edits auto-approval")
+	if got := allowedOnRow(t, m, path); got != "auto-allowed · accept-edits mode" {
+		t.Fatalf("the edit's own row should say what let it apply, got %q", got)
 	}
 
 	// Commands still prompt in accept-edits.
@@ -611,14 +593,8 @@ func TestReadOnlyCommandRunsWithoutPrompt(t *testing.T) {
 	if len(ran) != 1 || ran[0] != "git status" {
 		t.Fatalf("expected the inspection command to run, got %v", ran)
 	}
-	found := false
-	for _, e := range m.transcript {
-		if e.kind == entrySystem && strings.Contains(e.text, "Auto-approved (read-only)") {
-			found = true
-		}
-	}
-	if !found {
-		t.Fatal("the transcript should say why the command ran")
+	if got := allowedOnRow(t, m, "git status"); got != "auto-allowed · read-only" {
+		t.Fatalf("the command's own row should say why it ran, got %q", got)
 	}
 }
 

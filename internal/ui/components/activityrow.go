@@ -24,6 +24,12 @@ const (
 	// detail); tailIndent is a running command's live tail.
 	detailIndent = 4
 	tailIndent   = 2
+
+	// minTargetWidth is the narrowest the target is squeezed to before the
+	// row starts giving up fields of its own. Twelve columns is a clipped
+	// file name — `…proval.go` and a space either side — which is the least
+	// that still says which act the row is about.
+	minTargetWidth = 12
 )
 
 // NoDuration is the duration field for a call that never ran — queued or
@@ -129,6 +135,14 @@ type ActivityRow struct {
 	// field never clips: it is the reason to read the row.
 	Outcome string
 	Counts  string
+	// Allowed is the account of a gated call that ran without the reader
+	// being asked — `auto-allowed · auto mode`, `auto-allowed · classifier
+	// 2.1s`. It renders inside the outcome field, after what the call did and
+	// before what it counted, because the row is the only place the decision
+	// is stated: an act and the approval of it are one row, not two. Empty on
+	// a call the reader answered themselves and on every call that was never
+	// gated.
+	Allowed string
 	// Duration is the 6-column right-aligned field. Callers omit it under 0.5s
 	// and set NoDuration for a call that never ran.
 	Duration string
@@ -270,6 +284,9 @@ func (r ActivityRow) outcomeField() string {
 		}
 		parts = append(parts, style.Render(r.Outcome))
 	}
+	if r.Allowed != "" {
+		parts = append(parts, sty.Dim.Render(r.Allowed))
+	}
 	if r.Counts != "" {
 		parts = append(parts, sty.Dimmer.Render(r.Counts))
 	}
@@ -277,6 +294,25 @@ func (r ActivityRow) outcomeField() string {
 		parts = append(parts, sty.Info.Render(r.Keys))
 	}
 	return strings.Join(parts, sty.Dim.Render(" · "))
+}
+
+// fittedOutcome is the outcome field as much of it as this width can carry.
+// The account of who allowed the call is the one part the row gives up, and
+// it gives it up rather than squeeze the target past minTargetWidth: what an
+// act was done to is why the row is read, while who allowed it is also on
+// the frame and in the mode. Nothing else in the field is ever dropped —
+// what the act did and what it counted have nowhere else to be said.
+func (r ActivityRow) fittedOutcome(width int) string {
+	field := r.outcomeField()
+	if r.Allowed == "" {
+		return field
+	}
+	if width-leadWidth-durWidth-lipgloss.Width(field)-2 >= minTargetWidth {
+		return field
+	}
+	bare := r
+	bare.Allowed = ""
+	return bare.outcomeField()
 }
 
 // durationField right-aligns the duration in its 6 columns. The field is
@@ -326,7 +362,7 @@ func gridLineWith(lead, target string, paint func(string) string, outcome, durat
 // View renders the row (plus tail and detail lines) at the given width.
 func (r ActivityRow) View(width int) string {
 	lead := r.pointer() + r.railCell() + r.glyph() + verbField(r.Verb)
-	first := gridLine(lead, r.Target, r.outcomeField(), r.Duration, width)
+	first := gridLine(lead, r.Target, r.fittedOutcome(width), r.Duration, width)
 	if r.Selected {
 		// The reading cursor lights the row it is on: the background runs the row's
 		// width and its words go bright, while the rail and the glyph keep the

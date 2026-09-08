@@ -195,8 +195,12 @@ sentences. Five rules follow from fixing them:
   one thing worth knowing about an answer that stopped early. Where a count of
   findings cannot be had — output a foreign tool shaped — the field says what
   it does know and calls it that.
-- **Only the target grows.** When the row is too narrow, the target clips; the
-  outcome never does, because the outcome is the reason to read the row.
+- **Only the target grows, and only the account gives way.** When the row is
+  too narrow, the target clips; the outcome never does, because the outcome
+  is the reason to read the row. The single exception is the account of a
+  call nobody was asked about — what allowed it — which the row drops rather
+  than squeeze the target past what still names the act: the mode that
+  allowed it is on the frame as well, and the target is nowhere else.
 - **Duration is a field, not a suffix.** Below the threshold it renders blank
   rather than as a zero, because a column of zeroes is noise. Something that
   never ran renders as a dash, which is not the same claim as zero.

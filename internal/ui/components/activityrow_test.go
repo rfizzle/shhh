@@ -254,3 +254,31 @@ func TestActivityGroup_FoldsOnTheSameGrid(t *testing.T) {
 		}
 	}
 }
+
+// The account of who allowed a call is the one field in the outcome group
+// the row will give up. It stands where the row has spare columns, and it
+// goes rather than take the target below what still names the act — which is
+// why nothing else in the group is ever dropped: what the act did and what
+// it counted have nowhere else to be said.
+func TestActivityRow_TheAccountGivesWayToTheTarget(t *testing.T) {
+	r := ActivityRow{Kind: ActivityEdit, Verb: "edit", Target: "internal/ui/chat/approval.go",
+		Allowed: OutcomeBy(OutcomeAutoAllowed, "auto mode"), Counts: "+12 −4 · 2 hunks", Duration: "1.1s"}
+
+	wide := stripANSI(r.View(120))
+	if !strings.Contains(wide, "auto-allowed · auto mode") || !strings.Contains(wide, "internal/ui/chat/approval.go") {
+		t.Fatalf("a row with room states both:\n%s", wide)
+	}
+
+	narrow := stripANSI(r.View(60))
+	if strings.Contains(narrow, "auto-allowed") {
+		t.Fatalf("a row without room drops the account:\n%s", narrow)
+	}
+	for _, want := range []string{"+12 −4 · 2 hunks", "internal/ui"} {
+		if !strings.Contains(narrow, want) {
+			t.Fatalf("and keeps %q:\n%s", want, narrow)
+		}
+	}
+	if got := len([]rune(narrow)); got > 60 {
+		t.Fatalf("the row still fits its width, got %d cells: %q", got, narrow)
+	}
+}

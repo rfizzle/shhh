@@ -280,3 +280,28 @@ func stripANSI(s string) string {
 	}
 	return b.String()
 }
+
+// The diff row states what let an edit apply without anybody being asked,
+// and gives that field up at the same point every other act's row does —
+// rather than each row having its own idea of narrow.
+func TestDiffView_TheAccountGivesWayToThePath(t *testing.T) {
+	d := &DiffView{Path: "internal/ui/chat/approval.go", Verb: "edit",
+		Hunks: sampleHunks(t), Allowed: OutcomeBy(OutcomeAutoAllowed, "auto mode")}
+
+	wide := stripANSI(d.RowView(120))
+	if !strings.Contains(wide, "auto-allowed · auto mode") || !strings.Contains(wide, "internal/ui/chat/approval.go") {
+		t.Fatalf("a row with room states both:\n%s", wide)
+	}
+	narrow := stripANSI(d.RowView(60))
+	if strings.Contains(narrow, "auto-allowed") {
+		t.Fatalf("a row without room drops the account:\n%s", narrow)
+	}
+	if !strings.Contains(narrow, "internal/ui/chat/approval.go") {
+		t.Fatalf("and keeps the path:\n%s", narrow)
+	}
+	// The expanded form answers the same way, so opening a row never loses
+	// what the closed one said.
+	if !strings.Contains(stripANSI(d.ExpandedLines(120)[0]), "auto-allowed · auto mode") {
+		t.Fatalf("the expanded head keeps the account:\n%s", d.ExpandedLines(120)[0])
+	}
+}

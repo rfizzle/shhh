@@ -296,14 +296,8 @@ func TestPlan_InspectionCommandRunsWithoutPrompt(t *testing.T) {
 	if len(ran) != 1 || ran[0] != "git status" {
 		t.Fatalf("expected git status to run, got %v", ran)
 	}
-	found := false
-	for _, e := range m.transcript {
-		if e.kind == entrySystem && strings.Contains(e.text, "Auto-approved (plan mode inspection): git status") {
-			found = true
-		}
-	}
-	if !found {
-		t.Fatal("transcript should note the inspection auto-approval")
+	if got := allowedOnRow(t, m, "git status"); got != "auto-allowed · plan mode inspection" {
+		t.Fatalf("the command's own row should say what let it run, got %q", got)
 	}
 }
 

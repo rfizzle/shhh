@@ -390,6 +390,17 @@ type entry struct {
 	deniedBy string
 	// denyRule names the rule behind an auto denial, e.g. "plan mode".
 	denyRule string
+	// allowedBy names what let a gated call run without the reader being
+	// asked — the mode or grant that allowed it, "classifier", or the batch —
+	// and renders in the act's own outcome field. The feed states an act
+	// once: a notice above the row repeating the call's verb and target
+	// spends two rows on one act and states its target twice, once bounded by
+	// the row and once not at all. Empty on a call the reader answered at the
+	// card, and on every call that was never gated.
+	allowedBy string
+	// allowElapsed is what that judgement took, where it took anything, which
+	// is the classifier and nothing else.
+	allowElapsed time.Duration
 	// stepFold is your fold override for the step this entry titles (
 	// docs/interface/surfaces.md#the-step); steps keep no layout state of their
 	// own, so it lives on the raw entry and survives a resize.

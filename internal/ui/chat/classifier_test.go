@@ -106,14 +106,13 @@ func TestClassifierFlow_AllowRunsCommand(t *testing.T) {
 	if m.state != stateStreaming || restream == nil {
 		t.Fatal("stream should resume after the classifier-approved command completes")
 	}
-	found := false
-	for _, e := range m.transcript {
-		if e.kind == entrySystem && strings.Contains(e.text, "Auto-approved (classifier") && strings.Contains(e.text, "go test ./...") {
-			found = true
-		}
+	if got := allowedOnRow(t, m, "go test ./..."); !strings.HasPrefix(got, "auto-allowed · classifier") {
+		t.Fatalf("the command's own row should say the classifier allowed it, got %q", got)
 	}
-	if !found {
-		t.Fatal("transcript should note the classifier auto-approval")
+	for _, e := range m.transcript {
+		if e.kind == entrySystem && strings.Contains(e.text, "go test ./...") {
+			t.Fatalf("the approval should not have a row of its own: %q", e.text)
+		}
 	}
 }
 

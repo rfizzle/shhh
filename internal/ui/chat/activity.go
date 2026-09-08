@@ -115,6 +115,21 @@ const (
 	decidedByAuto = "auto"
 )
 
+// The two rules that allow a call without a mode having a name for it. Every
+// other rule is the mode machine's own word for what it matched
+// ("auto mode", "allowlist", "session grant"), which the row prints as it
+// comes.
+const (
+	// batchRule is one [A] answering the decisions behind the one it was
+	// pressed on. It says "batch" rather than "you" because the reader
+	// answered a shape of call and not this call, which is the whole
+	// difference between the two keys.
+	batchRule = "batch"
+	// classifierRule is the auto-mode judge, and the one rule whose
+	// judgement costs seconds — which is why the row prints them beside it.
+	classifierRule = "classifier"
+)
+
 // activityVerbs is the one table mapping tool names onto the closed verb
 // vocabulary of docs/interface/principles.md#closed-vocabularies — read,
 // search, glob, lsp, web, edit, write, patch, run, memory, spawn, fan-out,
@@ -332,6 +347,22 @@ func turnDuration(d time.Duration) string {
 	return fmt.Sprintf("%dm", int(d.Minutes()))
 }
 
+// allowedLabel is the account of a gated call that ran without the reader
+// being asked: the outcome word, the rule that answered, and what that rule
+// cost where it cost anything — which is the classifier, whose seconds are
+// the reader's. The cost follows the same floor a duration field does, so a
+// judgement too quick to time says only who made it rather than `0.0s`; a
+// real classifier call is a request to a provider and never lands there.
+func allowedLabel(rule string, elapsed time.Duration) string {
+	if rule == "" {
+		return ""
+	}
+	if cost := activityDuration(elapsed); cost != "" {
+		rule += " " + cost
+	}
+	return components.OutcomeBy(components.OutcomeAutoAllowed, rule)
+}
+
 // activityRowFor builds the compact row for a tool or command entry, as
 // it renders outside any step that has been opened. Everything that only
 // wants to read a row's state — what it is, whether it ran, whether it broke
@@ -445,6 +476,11 @@ func (m Model) activityRowDetail(e entry, stepDetail bool) components.ActivityRo
 			result = ""
 		}
 	}
+	// What let the call run without the reader being asked, in the act's own
+	// outcome field: the feed states an act once, so the approval of it is
+	// part of the row rather than a notice above the row repeating its verb
+	// and target (docs/interface/surfaces.md#the-activity-row).
+	row.Allowed = allowedLabel(e.allowedBy, e.allowElapsed)
 	if strings.TrimSpace(result) != "" {
 		row.Detail = strings.Split(strings.TrimRight(result, "\n"), "\n")
 		if !row.Failed() && m.verbosity != verbosityLow {

@@ -60,6 +60,12 @@ type DiffView struct {
 	// — and a file that changed lines as well states it after them, because
 	// putting that file back puts the permissions back too.
 	ModeChange string
+	// Allowed is the account of an edit that applied without the reader being
+	// asked — `auto-allowed · auto mode`. It leads the stats in both
+	// in-transcript forms, for the reason the activity row carries the same
+	// field: an act and the approval of it are one row, not two. Empty on an
+	// edit the reader approved at the card.
+	Allowed string
 	// Files renders a multi-file patch in the full-screen view (the /diff
 	// session diff); when set, Path is just the header label and
 	// Hunks is ignored.
@@ -165,6 +171,27 @@ func (d *DiffView) statsLabel() string {
 	return fmt.Sprintf("+%d −%d · %s", adds, dels, plural(len(d.Hunks), "hunk"))
 }
 
+// rowLabel is the right-hand label of the two in-transcript forms: what let
+// the edit apply without anybody being asked, where something did, and then
+// the stats. The full-screen view leaves it off — it is the change itself,
+// and the row it was opened from carries the account.
+//
+// It is given the room the label has to fit in, and drops the account rather
+// than crowd the path out of the row: the activity row gives the same field
+// up first and for the same reason. Room of zero or less asks for the whole
+// label whatever it costs.
+func (d *DiffView) rowLabel(room int) string {
+	stats := d.statsLabel()
+	if d.Allowed == "" {
+		return stats
+	}
+	full := d.Allowed + " · " + stats
+	if room <= 0 || room >= lipgloss.Width(full) {
+		return full
+	}
+	return stats
+}
+
 // RowView is the collapsed one-row transcript form.
 func (d *DiffView) RowView(width int) string {
 	verb := d.Verb
@@ -172,7 +199,10 @@ func (d *DiffView) RowView(width int) string {
 		verb = "edit"
 	}
 	left := sty.Accent.Render("✎ "+verb) + " " + d.Path
-	right := sty.Dim.Render(d.statsLabel()) + "   " + sty.Hint.Render(GroupExpandKey)
+	// What the label may spend before it starts eating the path: the row
+	// less the verb, a path still worth reading, the gap and the expand key.
+	room := width - lipgloss.Width("✎ "+verb+" ") - minTargetWidth - 2 - 3 - lipgloss.Width(GroupExpandKey)
+	right := sty.Dim.Render(d.rowLabel(room)) + "   " + sty.Hint.Render(GroupExpandKey)
 	gap := width - lipgloss.Width(left) - lipgloss.Width(right)
 	if gap < 2 {
 		return Clip(left+"  "+right, width)
@@ -223,9 +253,11 @@ func UnifiedLines(hunks []diff.Hunk, width int, opts UnifiedOpts) []string {
 // ExpandedLines is the bounded in-transcript unified view.
 func (d *DiffView) ExpandedLines(width int) []string {
 	head := sty.Accent.Render("✎ ") + d.Path
-	gap := width - lipgloss.Width(head) - lipgloss.Width(d.statsLabel())
-	if gap > 1 {
-		head += strings.Repeat(" ", gap) + sty.Dim.Render(d.statsLabel())
+	// The same arithmetic the collapsed row does: the head's glyph, a path
+	// still worth reading, and the gap between them and the label.
+	label := d.rowLabel(width - lipgloss.Width("✎ ") - minTargetWidth - 2)
+	if gap := width - lipgloss.Width(head) - lipgloss.Width(label); gap > 1 {
+		head += strings.Repeat(" ", gap) + sty.Dim.Render(label)
 	}
 	body := max(d.MaxLines-1, 1)
 	if d.MaxLines == 0 {

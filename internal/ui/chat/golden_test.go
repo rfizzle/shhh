@@ -1364,6 +1364,61 @@ func TestGolden_StaleEditRow(t *testing.T) {
 	})
 }
 
+// TestGolden_AutoApproved pins what a call nobody was asked about says about
+// itself. Each of the three is one row and not two: the account of who
+// allowed it sits in the act's own outcome field, where the row already
+// bounds what it prints.
+//
+// The three are the three shapes the account has to survive. The edit keeps
+// it on the diff row, beside the stats. The staging keeps it beside a receipt
+// and a target the row cuts to `first +19` — twenty paths spelled on a line
+// above the row was what the account used to cost. And the command carries
+// the one rule whose judgement is billed in seconds, which is why the
+// classifier's row is the only one that states a second figure beside the
+// call's own duration.
+//
+// Three widths, because the account is what the row gives up when it runs
+// out of room: at 110 every row states it, at 80 only the row that can
+// afford it does, and at 60 none of them do and all three targets are back.
+// That give-way is the point of capturing the narrow widths — the account is
+// worth a row's spare columns and never worth its target.
+func TestGolden_AutoApproved(t *testing.T) {
+	captureGolden(t, "auto-approved", "what allowed an act nobody was asked about", []int{60, 80, 110}, func(width int) []golden.Panel {
+		paths := make([]string, 20)
+		for i := range paths {
+			paths[i] = fmt.Sprintf("internal/ui/chat/row%02d.go", i+1)
+		}
+		staged, err := json.Marshal(map[string]any{"verb": "add", "paths": paths})
+		if err != nil {
+			t.Fatal(err)
+		}
+		m := frameModel(t, width, 40)
+		m.transcript = []entry{
+			{kind: entryDiff, diff: &components.DiffView{
+				Path: "internal/ui/chat/approval.go", Verb: "edit",
+				Hunks: []diff.Hunk{{
+					OldStart: 417, OldCount: 3, NewStart: 417, NewCount: 2,
+					Lines: []diff.Line{
+						{Kind: diff.Context, Text: "\t\treq.autoRule = reason", OldNo: 417, NewNo: 417},
+						{Kind: diff.Del, Text: "\t\tm.appendEntry(entry{kind: entrySystem, text: notice})", OldNo: 418},
+						{Kind: diff.Context, Text: "\t\tif req.kind == approvalExec {", OldNo: 419, NewNo: 418},
+					},
+				}},
+				Mode: components.DiffCollapsed, MaxLines: maxDiffExpandedLines,
+				Allowed: allowedLabel("auto mode", 0),
+			}},
+			{kind: entryTool, toolName: structural.GitWriteToolName, toolArgs: string(staged),
+				toolResult: "staged 20 files", duration: 300 * time.Millisecond,
+				allowedBy: "auto mode"},
+			{kind: entryCommand, text: "go test ./internal/ui/...", duration: 27 * time.Second,
+				toolResult: "ok  \tgithub.com/rfizzle/shhh/internal/ui/chat\t27.107s",
+				allowedBy:  classifierRule, allowElapsed: 2100 * time.Millisecond},
+		}
+		m.invalidateRenderCache()
+		return []golden.Panel{{Label: "an edit, a staging and a command, one row each", View: m.renderHistory()}}
+	})
+}
+
 // TestGolden_GitWriteRows pins the rows a turn's git writes leave behind: the
 // four verbs on the accent rail under the command glyph, the receipt in the
 // outcome column where the field never clips, and the close of a turn that

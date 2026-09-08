@@ -103,14 +103,10 @@ func TestProcessTool_StartHonorsCommandAllowlist(t *testing.T) {
 	if m.state != stateRunningCmd {
 		t.Fatalf("an allowlisted start should auto-approve like a command, got state %d", m.state)
 	}
-	found := false
-	for _, e := range m.transcript {
-		if e.kind == entrySystem && strings.Contains(e.text, "Auto-approved (allowlist)") {
-			found = true
-		}
-	}
-	if !found {
-		t.Fatal("transcript should note the allowlist auto-approval")
+	// The start is still running, so its row is not in the transcript yet;
+	// what the row will state is on the request it rides.
+	if m.pendingApproval == nil || m.pendingApproval.autoRule != "allowlist" {
+		t.Fatalf("the start's row should be set to say the allowlist let it run, got %+v", m.pendingApproval)
 	}
 }
 

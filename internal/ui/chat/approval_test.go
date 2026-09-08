@@ -15,6 +15,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -33,6 +34,29 @@ func writeFilePreview(oldText string) GatedPreviewFunc {
 		}
 		return GatedPreview{Action: "write", Path: args.Path, OldText: oldText, NewText: args.Content}, nil
 	}
+}
+
+// allowedOnRow is what the transcript says allowed the act aimed at target,
+// read off the act's own row. There is no notice above the row to read it
+// from: an auto-approval and the act it approved are one row, so what
+// answered the decision is a field of the row like its outcome and its
+// duration. An edit keeps it on the diff viewer, every other act on its
+// activity row, which is why both are asked.
+func allowedOnRow(t *testing.T, m Model, target string) string {
+	t.Helper()
+	for _, e := range m.transcript {
+		if e.kind == entryDiff {
+			if e.diff != nil && e.diff.Path == target {
+				return e.diff.Allowed
+			}
+			continue
+		}
+		if row := m.activityRowFor(e); row.Target == target {
+			return row.Allowed
+		}
+	}
+	t.Fatalf("no row for %q in the transcript", target)
+	return ""
 }
 
 func gatedModel(t *testing.T, executor ToolExecutor, gated map[string]GatedPreviewFunc) Model {
@@ -843,5 +867,140 @@ func TestApproval_ARepeatedDeclineSaysSo(t *testing.T) {
 	}
 	if !strings.HasPrefix(second, "error:") || !strings.Contains(second, "declined") {
 		t.Fatalf("and must still read as the decline it is, got %q", second)
+	}
+}
+
+// An auto-approval is not a row. What allowed the call rides the act's own
+// row, so the feed spends one row on one act rather than two, and the second
+// of the two no longer states an unbounded copy of what the first bounds.
+func TestAutoApproval_LeavesOneRowCarryingItsOwnAccount(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "one.txt")
+	var ran []string
+	m := execModel(t, &ran)
+	m.policy.mode = agent.ModeAcceptEdits
+
+	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_w", Name: "write_file", Arguments: fmt.Sprintf(`{"path":%q,"content":"one\n"}`, path)},
+	}})
+	m = updated.(Model)
+	// Nothing yet: the decision is taken and the tool is running, and the
+	// approval has left no row behind for the act's row to duplicate.
+	if len(m.transcript) != 0 {
+		t.Fatalf("the approval should leave no row of its own, got %+v", m.transcript)
+	}
+
+	var done approvedToolDoneMsg
+	for _, c := range unwrapBatch(cmd) {
+		if msg, ok := c().(approvedToolDoneMsg); ok {
+			done = msg
+		}
+	}
+	updated, _ = m.Update(done)
+	m = updated.(Model)
+
+	if len(m.transcript) != 1 {
+		t.Fatalf("one act is one row, got %+v", m.transcript)
+	}
+	row := m.transcript[0]
+	if row.kind != entryDiff || row.diff == nil || row.diff.Path != path {
+		t.Fatalf("the one row should be the edit, got %+v", row)
+	}
+	if row.diff.Allowed != "auto-allowed · accept-edits mode" {
+		t.Fatalf("the edit's row should say what let it apply, got %q", row.diff.Allowed)
+	}
+}
+
+// The staging that made this worth fixing: twenty paths were spelled in full
+// on the approval's line while the row underneath it had always cut them to
+// the first and a count. With the line gone there is nowhere left for the
+// unbounded form to be printed.
+func TestAutoApproval_NeverPrintsWhatTheRowBounds(t *testing.T) {
+	paths := make([]string, 20)
+	for i := range paths {
+		paths[i] = fmt.Sprintf("internal/ui/chat/row%02d.go", i+1)
+	}
+	args, err := json.Marshal(map[string]any{"verb": "add", "paths": paths})
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := gatedModel(t,
+		func(string, json.RawMessage) (string, error) { return "staged 20 files", nil },
+		map[string]GatedPreviewFunc{
+			structural.GitWriteToolName: func(json.RawMessage) (GatedPreview, error) {
+				// What the real preview builds: every path, joined.
+				return GatedPreview{Title: "stage 20 files", Summary: strings.Join(paths, ", "), Write: true}, nil
+			},
+		})
+	m.policy.mode = agent.ModeAcceptEdits
+
+	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_gw", Name: structural.GitWriteToolName, Arguments: string(args)},
+	}})
+	m = updated.(Model)
+	var done approvedToolDoneMsg
+	for _, c := range unwrapBatch(cmd) {
+		if msg, ok := c().(approvedToolDoneMsg); ok {
+			done = msg
+		}
+	}
+	updated, _ = m.Update(done)
+	m = updated.(Model)
+
+	if len(m.transcript) != 1 {
+		t.Fatalf("the staging is one row, got %+v", m.transcript)
+	}
+	row := m.activityRowFor(m.transcript[0])
+	if row.Target != paths[0]+" +19" {
+		t.Fatalf("the row should bound the staging to the first path and a count, got %q", row.Target)
+	}
+	if row.Allowed != "auto-allowed · accept-edits mode" {
+		t.Fatalf("the row should say what let the staging run, got %q", row.Allowed)
+	}
+	if last := paths[len(paths)-1]; strings.Contains(m.renderHistory(), last) {
+		t.Fatalf("no row may spell the paths the staging's own row bounds away (%s)", last)
+	}
+}
+
+// A reading that lands while an approved call is running lands above the
+// call's row, and there is no approval row above that for it to have landed
+// inside: the act and its account are one row, so nothing can come between
+// them. The ordering is not repaired at render — there is no pair left to
+// order.
+func TestAutoApproval_ASummaryCannotLandInsideAnApprovedAct(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "one.txt")
+	var ran []string
+	m := execModel(t, &ran)
+	m.policy.mode = agent.ModeAcceptEdits
+
+	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_w", Name: "write_file", Arguments: fmt.Sprintf(`{"path":%q,"content":"one\n"}`, path)},
+	}})
+	m = updated.(Model)
+
+	// The reading comes back while the edit is still being written.
+	m.appendEntry(entry{kind: entrySummary, reading: &summaryReading{
+		verdict: agent.SummaryVerdict{Round: 77, State: agent.SummaryOnTarget, Text: "editing the approval queue"},
+	}})
+
+	var done approvedToolDoneMsg
+	for _, c := range unwrapBatch(cmd) {
+		if msg, ok := c().(approvedToolDoneMsg); ok {
+			done = msg
+		}
+	}
+	updated, _ = m.Update(done)
+	m = updated.(Model)
+
+	if len(m.transcript) != 2 {
+		t.Fatalf("the reading and the edit, and nothing else, got %+v", m.transcript)
+	}
+	if m.transcript[0].kind != entrySummary {
+		t.Fatalf("the reading landed first and stays first, got %+v", m.transcript[0])
+	}
+	last := m.transcript[1]
+	if last.kind != entryDiff || last.diff == nil || last.diff.Allowed == "" {
+		t.Fatalf("the edit's row still carries its own account, got %+v", last)
 	}
 }

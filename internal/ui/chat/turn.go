@@ -407,6 +407,8 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		// before both the transcript entry and the tool result, so
 		// the user sees exactly what the model got. /run — the user's own
 		// command — stays unreduced.
+		var allowedBy string
+		var allowElapsed time.Duration
 		if m.pendingApproval != nil {
 			out = m.reduceResult(tools.ExecCommandName, out)
 			outcome, class := observe.OutcomeOK, ""
@@ -414,8 +416,14 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 				outcome, class = observe.OutcomeError, observe.ClassExitStatus
 			}
 			m.recordToolEvent(tools.ExecCommandName, msg.duration, outcome, class)
+			// What allowed the command rides the command's own row: nothing
+			// said so above it (approval.go). A `/run` the reader typed has
+			// no decision behind it and so carries none.
+			allowedBy, allowElapsed = m.pendingApproval.autoRule, m.pendingApproval.autoCost
 		}
-		m.appendEntry(entry{kind: entryCommand, text: msg.command, toolResult: out, exitCode: msg.exitCode, localRun: msg.local, duration: msg.duration})
+		m.appendEntry(entry{kind: entryCommand, text: msg.command, toolResult: out,
+			exitCode: msg.exitCode, localRun: msg.local, duration: msg.duration,
+			allowedBy: allowedBy, allowElapsed: allowElapsed})
 		if m.pendingApproval != nil {
 			call := m.pendingApproval.call
 			m.pendingApproval = nil
@@ -475,6 +483,12 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 			m.signal(observe.SignalRepeat, req.call.Name)
 		}
 		m.noteEvictedTurns(msg.evicted)
+		// The plain row, for every landing but the diff's. Whichever of the
+		// three it lands as, it carries the account of what allowed the call:
+		// nothing said so above it (approval.go).
+		row := entry{kind: entryTool, toolName: req.call.Name, toolArgs: req.call.Arguments,
+			toolResult: msg.result, duration: msg.duration,
+			allowedBy: req.autoRule, allowElapsed: req.autoCost}
 		// An applied edit lands in the transcript as a collapsed diff row (
 		// docs/interface/surfaces.md#the-diff-view); failures keep the plain tool
 		// block so the error text stays visible.
@@ -486,11 +500,12 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 				Mode:     components.DiffCollapsed,
 				MaxLines: maxDiffExpandedLines,
 				Syntax:   diffSyntax(req.path),
+				Allowed:  allowedLabel(req.autoRule, req.autoCost),
 			}})
 		} else if req.call.Name == subagent.SpawnToolName && digest.Outcome(msg.result) == digest.OutcomeOK {
-			m.appendSpawnEntry(entry{kind: entryTool, toolName: req.call.Name, toolArgs: req.call.Arguments, toolResult: msg.result, duration: msg.duration})
+			m.appendSpawnEntry(row)
 		} else {
-			m.appendEntry(entry{kind: entryTool, toolName: req.call.Name, toolArgs: req.call.Arguments, toolResult: msg.result, duration: msg.duration})
+			m.appendEntry(row)
 		}
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()

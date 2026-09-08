@@ -107,10 +107,15 @@ type approvalRequest struct {
 	// host is the host a generic approval's outbound request leaves for,
 	// from its GatedPreview: what [a] grants and what the host lists answer.
 	host string
-	// auto marks a call the session approved on the user's behalf — mode
-	// policy, a session grant, or the auto-mode classifier. It is what the
-	// changeset record's origin says afterwards.
-	auto bool
+	// autoRule names what approved this call on the reader's behalf — the
+	// mode or grant that allowed it, "classifier", or the batch — and is
+	// empty on a call the reader answered at the card. It rides the request
+	// to the act's own row, which is where the account is stated, and it is
+	// what the changeset record's origin is taken from.
+	autoRule string
+	// autoCost is what that judgement took, where it took anything, which is
+	// the classifier and nothing else.
+	autoCost time.Duration
 	// memoryDraft is the proposed entry for approvalMemory.
 	memoryDraft memory.Draft
 	// mustAsk is a hook in front of this call having asked for it, or having
@@ -399,10 +404,7 @@ func (m Model) armApprovalDecision(req *approvalRequest) (tea.Model, tea.Cmd) {
 	// comes, without asking again.
 	if m.takeBatchApproval(req) {
 		m.recordDecision(observe.DecisionAllow, observe.ReasonUserBatch)
-		req.auto = true
-		m.appendEntry(entry{kind: entrySystem, text: "Approved with the batch: " + req.summary})
-		m.viewport.SetLines(m.renderHistoryLines())
-		m.viewport.GotoBottom()
+		req.autoRule = batchRule
 		if req.kind == approvalExec {
 			return m.executeRun()
 		}
@@ -414,10 +416,7 @@ func (m Model) armApprovalDecision(req *approvalRequest) (tea.Model, tea.Cmd) {
 	switch decision, reason := m.policyDecision(req); decision {
 	case agent.Allow:
 		m.recordDecision(observe.DecisionAllow, observe.ReasonCode(reason))
-		req.auto = true
-		m.appendEntry(entry{kind: entrySystem, text: "Auto-approved (" + reason + "): " + req.summary})
-		m.viewport.SetLines(m.renderHistoryLines())
-		m.viewport.GotoBottom()
+		req.autoRule = reason
 		if req.kind == approvalExec {
 			return m.executeRun()
 		}
@@ -538,14 +537,10 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 	m.notifyUsage()
 
 	req := m.pendingApproval
-	elapsed := fmt.Sprintf("%.1fs", v.Elapsed.Seconds())
 	switch decision, reason := agent.ResolveAuto(m.approvalAction(req), v); decision {
 	case agent.Allow:
 		m.recordDecision(observe.DecisionAllow, observe.ReasonClassifier)
-		req.auto = true
-		m.appendEntry(entry{kind: entrySystem, text: "Auto-approved (classifier, " + elapsed + "): " + req.summary})
-		m.viewport.SetLines(m.renderHistoryLines())
-		m.viewport.GotoBottom()
+		req.autoRule, req.autoCost = classifierRule, v.Elapsed
 		if req.kind == approvalExec {
 			return m.executeRun()
 		}
@@ -743,7 +738,7 @@ func (m Model) changeRecorder() changeRecording {
 		return changeRecording{}
 	}
 	origin := changeset.Approved
-	if req.auto {
+	if req.autoRule != "" {
 		origin = changeset.AutoApproved
 	}
 	return changeRecording{

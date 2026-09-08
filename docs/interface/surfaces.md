@@ -22,6 +22,15 @@ Because it is one shape, a reader learns it once. A provider failure using the
 same row as a file read is the point rather than an accident: a failure is
 part of the turn, not an interruption of it.
 
+An act nobody was asked about states so on its own row and not on a notice
+above it. Two rows for one act doubles the height of a session that was
+mostly auto-approved, and the notice was worse than redundant: it spelled the
+target a second time without the bounds the row puts on it, so a staging of
+twenty files printed twenty paths over a row that says the first and a count.
+The account — what allowed the call, and what the judgement cost where a
+classifier made it — is a field of the row beside the outcome, the way the
+decider on a refused row is.
+
 A row's output is bounded, and the bound is a fold rather than a loss: a body
 cut at the cap ends by counting what it swallowed. Opening the row widens the
 window in place — enough to read a failed test run whole — and opening it
