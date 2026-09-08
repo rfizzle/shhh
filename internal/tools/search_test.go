@@ -677,3 +677,88 @@ func tail(s string) string {
 	lines := strings.Split(strings.TrimRight(s, "\n"), "\n")
 	return lines[len(lines)-1]
 }
+
+// TestMeasureSearch_ReadsMatchesNotLines puts the measurement against the
+// formatter it reads, on the one result where the two numbers are furthest
+// apart: a search cut short at its cap, with context around every match. The
+// rendering is several times the finding, and a reader that reported the
+// rendering would call a truncated sweep exhaustive.
+func TestMeasureSearch_ReadsMatchesNotLines(t *testing.T) {
+	check := func(t *testing.T) {
+		dir := t.TempDir()
+		var body strings.Builder
+		for i := 0; i < MaxSearchResults+10; i++ {
+			body.WriteString("above\nneedle\nbelow\n\n\n")
+		}
+		mustWrite(t, filepath.Join(dir, "a.go"), body.String())
+		out := runSearch(t, fmt.Sprintf(`{"pattern":"needle","path":%q}`, dir))
+
+		lines := len(strings.Split(strings.TrimRight(out, "\n"), "\n"))
+		if lines <= MaxSearchResults {
+			t.Fatalf("the fixture must print more lines than it finds, got %d lines:\n%s", lines, out)
+		}
+		size := MeasureSearch(out)
+		if size.N != MaxSearchResults {
+			t.Errorf("want %d matches from a %d-line result, got %d", MaxSearchResults, lines, size.N)
+		}
+		if !size.Truncated {
+			t.Errorf("a result carrying the cap's notice is truncated: %q", tail(out))
+		}
+		if size.Files {
+			t.Errorf("a result quoting lines is not a files_only one:\n%s", out)
+		}
+	}
+	t.Run("walker", func(t *testing.T) { forceWalker(t); check(t) })
+	t.Run("ripgrep", func(t *testing.T) { requireRg(t); check(t) })
+}
+
+// TestMeasureSearch_FilesOnlyCountsFiles: files_only's lines are files, and a
+// result that reported them as matches would name a number no file in it has.
+func TestMeasureSearch_FilesOnlyCountsFiles(t *testing.T) {
+	check := func(t *testing.T) {
+		dir := searchOptsFixture(t)
+		out := runSearch(t, fmt.Sprintf(`{"pattern":"Target","path":%q,"files_only":true}`, dir))
+		size := MeasureSearch(out)
+		if !size.Files || size.N != 3 {
+			t.Errorf("want 3 files, got %+v from:\n%s", size, out)
+		}
+		if size.Truncated {
+			t.Errorf("nothing was cut short here:\n%s", out)
+		}
+	}
+	t.Run("walker", func(t *testing.T) { forceWalker(t); check(t) })
+	t.Run("ripgrep", func(t *testing.T) { requireRg(t); check(t) })
+}
+
+func TestMeasureSearch_Shapes(t *testing.T) {
+	cases := []struct {
+		name   string
+		result string
+		want   SearchSize
+	}{
+		{"nothing found is nothing, not one line", NoMatchesFound, SearchSize{}},
+		{"an empty result", "", SearchSize{}},
+		{"context lines ride with the match they earned",
+			"a.go:9- above\na.go:10: needle\na.go:11- below", SearchSize{N: 1}},
+		{"a separator between groups is not a match",
+			"a.go:10: needle\n--\na.go:80: needle", SearchSize{N: 2}},
+		{
+			// The path prefix decides, not the code: a line quoting a ratio
+			// would otherwise be read by its own text as context.
+			"a match quoting a colon and a dash",
+			"a.go:10: \tratio := 3:4-ish", SearchSize{N: 1},
+		},
+		{"a single file's count is one file",
+			"a.go: 1 match", SearchSize{N: 1, Files: true}},
+		{"the notice is not an item",
+			"a.go:10: needle\n… (truncated at 50 matches; narrow the pattern or path)",
+			SearchSize{N: 1, Truncated: true}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := MeasureSearch(tc.result); got != tc.want {
+				t.Errorf("MeasureSearch(%q) = %+v, want %+v", tc.result, got, tc.want)
+			}
+		})
+	}
+}

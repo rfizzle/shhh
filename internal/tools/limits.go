@@ -85,6 +85,33 @@ const (
 	MaxExecOutputBytes = 4000
 )
 
+// The sentences a reader returns when it found nothing. They are sentences
+// rather than an empty result because a model handed nothing at all reads it
+// as a broken tool and calls again — and they are named because anything
+// measuring a result has to know that one line of prose is not one item.
+//
+// NoMatchesFound is search's. NoFilesMatched is glob's and fd's, which ask
+// the same question of a tree and so answer a fruitless one in the same
+// words.
+const (
+	NoMatchesFound = "No matches found."
+	NoFilesMatched = "No files matched."
+)
+
+// TruncationNotice reports whether a line is a bounded reader's own "there is
+// more" sentence rather than a part of the answer.
+//
+// Every cap above is announced the same way — `… (truncated at 50 matches;
+// …)`, `… (truncated at 500 entries; …)`, fd's `… (results capped at 200;
+// …)` — and the shape is what anything counting a result has to know: a path
+// list is one line per path apart from this one, so a count that swallowed it
+// would report one item more than the tool found, on exactly the results
+// where the number is being read as thoroughness.
+// See docs/interface/principles.md#one-grid.
+func TruncationNotice(line string) bool {
+	return strings.HasPrefix(line, "… (")
+}
+
 // TruncateOutput caps s at max bytes without splitting a UTF-8 sequence. It
 // reports whether anything was cut; callers append their own tool-appropriate
 // truncation notice.

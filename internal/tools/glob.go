@@ -113,7 +113,7 @@ func executeGlob(raw json.RawMessage) (string, error) {
 	}
 
 	if len(results) == 0 {
-		return "No files matched.", nil
+		return NoFilesMatched, nil
 	}
 	out := strings.Join(results, "\n")
 	if truncated {

@@ -16,9 +16,16 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/subagent"
+	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/web"
 )
+
+// searchHits is two matches in search's own format, which is the format the
+// row's count is read out of: a fixture that only looks like output would
+// count as nothing found.
+const searchHits = "internal/agent/loop.go:88: \t\treturn ErrRoundLimit\n" +
+	"internal/agent/agent.go:12: // ErrRoundLimit ends a turn."
 
 // activityModel builds a ready model for feed-rendering tests.
 func activityModel(t *testing.T) Model {
@@ -62,7 +69,7 @@ func TestActivityRow_ToolNounsAndKinds(t *testing.T) {
 	m := activityModel(t)
 
 	search := stripANSI(m.renderEntry(entry{kind: entryTool, toolName: "search",
-		toolArgs: `{"pattern":"TODO"}`, toolResult: "a.go:1\nb.go:2\nc.go:3"}, 80))
+		toolArgs: `{"pattern":"TODO"}`, toolResult: "a.go:1: // TODO\nb.go:2: // TODO\nc.go:3: // TODO"}, 80))
 	for _, want := range []string{"search", "TODO", "3 matches"} {
 		if !strings.Contains(search, want) {
 			t.Fatalf("search row should contain %q:\n%s", want, search)
@@ -276,6 +283,56 @@ func TestActivityRow_FailedAutoExpandsBounded(t *testing.T) {
 	}
 	if n := strings.Count(view, "error detail line"); n >= 20 {
 		t.Fatalf("failure auto-expansion must stay bounded, got %d detail lines", n)
+	}
+}
+
+// TestActivityCounts_CountsWhatWasFound is the row against the tool: a search
+// prints context around every match and a notice when it stopped early, so
+// the height of the result is not the size of the answer, and the row must
+// not report the one as the other.
+func TestActivityCounts_CountsWhatWasFound(t *testing.T) {
+	var sweep strings.Builder
+	for i := 1; i <= 50; i++ {
+		fmt.Fprintf(&sweep, "a.go:%d- above\na.go:%d: needle\na.go:%d- below\n--\n", i*10-1, i*10, i*10+1)
+	}
+	sweep.WriteString("… (truncated at 50 matches; narrow the pattern or path, " +
+		"or raise limit to at most 500, or use files_only to see which files are involved)")
+	if lines := strings.Count(sweep.String(), "\n") + 1; lines < 200 {
+		t.Fatalf("the fixture must print far more lines than it found, got %d", lines)
+	}
+
+	cases := []struct {
+		name, tool, result, want string
+	}{
+		{"a truncated sweep is its matches and says there are more",
+			"search", sweep.String(), "50+ matches"},
+		{"context lines are not matches",
+			"search", "a.go:9- above\na.go:10: needle\na.go:11- below", "1 match"},
+		{"files_only counts files",
+			"search", "a.go: 1 match\nb.go: 12 matches", "2 files"},
+		{"a search that found nothing claims nothing",
+			"search", tools.NoMatchesFound, ""},
+		{"a path list really is one line per item",
+			"glob", "a.go\nb.go\nc.go", "3 items"},
+		{"but its notice is not one of them",
+			"glob", "a.go\nb.go\n… (truncated at 2 files; narrow the pattern or path to see more)", "2+ items"},
+		{"fd's cap notice is the same shape",
+			structural.FdToolName, "a.go\n… (results capped at 1; narrow the pattern or path to see more)", "1+ items"},
+		{"a listing that found nothing",
+			structural.FdToolName, tools.NoFilesMatched, ""},
+		{"a paged read is its window, not its window plus the notice",
+			"read_file", "package a\nfunc A() {}\n" +
+				"… (truncated: showing lines 1-2 of 90; call read_file again with start_line=3 to continue)",
+			"2+ lines"},
+		{"a foreign tool's output is measured in what it is",
+			structural.AstGrepToolName, "a.go\n12│\tneedle\n13│\tbelow", "3 lines"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := activityCounts(tc.tool, tc.result); got != tc.want {
+				t.Errorf("activityCounts(%s) = %q, want %q", tc.tool, got, tc.want)
+			}
+		})
 	}
 }
 

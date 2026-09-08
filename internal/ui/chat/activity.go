@@ -223,8 +223,25 @@ func (m Model) activityKind(tool string) components.ActivityKind {
 
 // activityCounts summarizes a result's size with a tool-appropriate noun
 // (matches found, items listed, lines read).
+//
+// The number is of what the call found, not of what it printed
+// (docs/interface/principles.md#one-grid). For a search those are different
+// numbers: the result carries context lines around every match and a notice
+// when the tool stopped at its cap, so counting lines described a truncated
+// fifty-match answer as `298 matches` — six times the finding, and
+// exhaustive-sounding at the moment the tool was saying it had been cut
+// short. So search is measured by the tool that wrote the format, and a
+// result it cut short reads `50+`.
+//
+// A path list is the case that hid this: `glob`, `list_directory` and `fd`
+// really are one line per item. What they share with every other bounded
+// reader is the last line, which is the tool's own notice and not a thing it
+// found — a paged read is `2000+ lines` and not 2001. `ast_grep` is the case
+// that cannot be measured at all: its output is ast-grep's own, with its own
+// context lines, so its row says how many lines came back, which is the only
+// thing that is true.
 func activityCounts(tool, result string) string {
-	if strings.TrimSpace(result) == "" {
+	if strings.TrimSpace(result) == "" || foundNothingResult(result) {
 		return ""
 	}
 	if tool == structural.GitWriteToolName {
@@ -233,13 +250,46 @@ func activityCounts(tool, result string) string {
 		// sentence rather than of anything that happened.
 		return ""
 	}
-	n := len(strings.Split(strings.TrimRight(result, "\n"), "\n"))
-	singular, plural := "line", "lines"
+	if tool == tools.SearchName {
+		size := tools.MeasureSearch(result)
+		if size.Files {
+			return countPhrase(size.N, size.Truncated, "file", "files")
+		}
+		return countPhrase(size.N, size.Truncated, "match", "matches")
+	}
+	lines := strings.Split(strings.TrimRight(result, "\n"), "\n")
+	more := tools.TruncationNotice(lines[len(lines)-1])
+	if more {
+		lines = lines[:len(lines)-1]
+	}
 	switch tool {
-	case "search", "ast_grep":
-		singular, plural = "match", "matches"
-	case "glob", "list_directory", "fd":
-		singular, plural = "item", "items"
+	case tools.GlobName, tools.ListDirectoryName, structural.FdToolName:
+		return countPhrase(len(lines), more, "item", "items")
+	}
+	return countPhrase(len(lines), more, "line", "lines")
+}
+
+// foundNothingResult reports whether a result is a reader's "nothing here"
+// sentence — search's, glob's and fd's, and ast_grep's. The field is left
+// blank rather than counting the sentence, which read as `1 match`: the
+// opposite of what the call found. Blank and not `0` for the reason duration
+// is blank below its threshold — a column of zeroes is noise, and the row
+// still carries the sentence for whoever opens it.
+func foundNothingResult(result string) bool {
+	switch strings.TrimSpace(result) {
+	case tools.NoMatchesFound, tools.NoFilesMatched, structural.NoMatches:
+		return true
+	}
+	return false
+}
+
+// countPhrase renders the counts field. `+` is how a result the tool stopped
+// short of finishing says so — `50+ matches` — because the one thing worth
+// saying about a truncated answer is that there is more of it, and it is the
+// one thing this field never said.
+func countPhrase(n int, more bool, singular, plural string) string {
+	if more {
+		return fmt.Sprintf("%d+ %s", n, plural)
 	}
 	if n == 1 {
 		return "1 " + singular

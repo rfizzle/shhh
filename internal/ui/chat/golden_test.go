@@ -120,7 +120,7 @@ func goldenTranscript() []entry {
 		{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"internal/agent/context.go"}`,
 			toolResult: "a", duration: 200 * time.Millisecond},
 		{kind: entryTool, toolName: "search", toolArgs: `{"pattern":"ErrRoundLimit"}`,
-			toolResult: "x\ny", duration: 300 * time.Millisecond},
+			toolResult: searchHits, duration: 300 * time.Millisecond},
 		{kind: entryAssistant, text: "Thread the sentinel through the loop"},
 		{kind: entryTool, toolName: "edit_file", toolArgs: `{"path":"internal/agent/loop.go"}`,
 			toolResult: "edited", duration: 1100 * time.Millisecond},
@@ -1443,7 +1443,7 @@ func TestGolden_SearchSweep(t *testing.T) {
 			{Label: "three questions about one package", View: build(
 				row("steeringItem", hits, 300*time.Millisecond),
 				row("queuedSteer", hits+"\ninternal/ui/chat/queue.go:12:\tqueuedSteer", 400*time.Millisecond),
-				row("authorOf", "no matches", 200*time.Millisecond),
+				row("authorOf", tools.NoMatchesFound, 200*time.Millisecond),
 			)},
 			{Label: "one question three times · the shape a reader is watching for", View: build(
 				row("steeringItem", hits, 300*time.Millisecond),
@@ -1451,6 +1451,48 @@ func TestGolden_SearchSweep(t *testing.T) {
 				row("steeringItem", hits, 400*time.Millisecond),
 			)},
 		}
+	})
+}
+
+// TestGolden_SearchCounts pins the counts field of a reader's row: what the
+// call found, beside what it printed.
+//
+// The four rows are one result each. A truncated search prints three hundred
+// lines and found fifty, and the row has to say both the fifty and that there
+// are more — `50+` — because a reader told `298 matches` reads the sweep as
+// exhaustive at the moment the tool said it was cut short. files_only counts
+// files, since that is what its lines are. A path list is one line per path
+// with the same notice on the end, which is the shape that hid this. And a
+// search that found nothing leaves the field empty rather than claiming the
+// sentence saying so as a finding.
+func TestGolden_SearchCounts(t *testing.T) {
+	captureGolden(t, "search-counts", "what a reader's row counts", []int{60, 110}, func(width int) []golden.Panel {
+		var sweep strings.Builder
+		for i := 1; i <= tools.MaxSearchResults; i++ {
+			fmt.Fprintf(&sweep, "internal/ui/chat/queue.go:%d- \tqueue := m.pending\n", i*10-1)
+			fmt.Fprintf(&sweep, "internal/ui/chat/queue.go:%d: \tsteeringItem{}\n", i*10)
+			fmt.Fprintf(&sweep, "internal/ui/chat/queue.go:%d- \treturn queue\n", i*10+1)
+			sweep.WriteString("--\n")
+		}
+		sweep.WriteString("… (truncated at 50 matches; narrow the pattern or path, " +
+			"or raise limit to at most 500, or use files_only to see which files are involved)")
+		tool := func(name, args, result string, d time.Duration) entry {
+			return entry{kind: entryTool, toolName: name, toolArgs: args, toolResult: result, duration: d}
+		}
+		m := frameModel(t, width, 40)
+		m.transcript = []entry{
+			tool("search", `{"pattern":"steeringItem","path":"internal/ui/chat"}`,
+				sweep.String(), 900*time.Millisecond),
+			tool("search", `{"pattern":"queuedSteer","path":"internal/ui/chat","files_only":true}`,
+				"internal/ui/chat/queue.go: 41 matches\ninternal/ui/chat/compose.go: 9 matches", 400*time.Millisecond),
+			tool("glob", `{"pattern":"**/*.go","path":"internal/ui/chat"}`,
+				"queue.go\ncompose.go\n… (truncated at 2 files; narrow the pattern or path to see more)",
+				200*time.Millisecond),
+			tool("search", `{"pattern":"authorOf","path":"internal/ui/chat"}`,
+				tools.NoMatchesFound, 200*time.Millisecond),
+		}
+		m.invalidateRenderCache()
+		return []golden.Panel{{Label: "found, not printed", View: m.renderHistory()}}
 	})
 }
 

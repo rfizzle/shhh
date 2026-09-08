@@ -13,7 +13,7 @@
 · three questions about one package
    ⚙ search  steeringItem ./internal/ui/chat                                                1 match
    ⚙ search  queuedSteer ./internal/ui/chat                                               2 matches
-   ⚙ search  authorOf ./internal/ui/chat                                                    1 match
+   ⚙ search  authorOf ./internal/ui/chat
 
 
 · one question three times · the shape a reader is watching for
@@ -26,7 +26,7 @@
 · three questions about one package
    ␛[38;5;214m⚙␛[m search  ␛[38;5;241msteeringItem ./internal/ui/chat␛[m                                                ␛[38;5;245m1 match␛[m
    ␛[38;5;214m⚙␛[m search  ␛[38;5;241mqueuedSteer ./internal/ui/chat␛[m                                               ␛[38;5;245m2 matches␛[m
-   ␛[38;5;214m⚙␛[m search  ␛[38;5;241mauthorOf ./internal/ui/chat␛[m                                                    ␛[38;5;245m1 match␛[m
+   ␛[38;5;214m⚙␛[m search  ␛[38;5;241mauthorOf ./internal/ui/chat␛[m
 
 
 · one question three times · the shape a reader is watching for

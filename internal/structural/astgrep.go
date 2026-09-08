@@ -28,6 +28,11 @@ var astGrepTool = provider.Tool{
 	}`),
 }
 
+// NoMatches is what ast_grep returns when the pattern matched nothing. It is
+// named for the same reason search's and glob's sentences are: anything
+// measuring the result has to know that this one line is not one finding.
+const NoMatches = "No matches."
+
 type astGrepArgs struct {
 	Pattern string `json:"pattern"`
 	Rewrite string `json:"rewrite"`
@@ -72,7 +77,7 @@ func (t *Toolset) executeAstGrep(raw json.RawMessage) (string, error) {
 	}
 	out = strings.TrimRight(out, "\n")
 	if out == "" {
-		return "No matches.", nil
+		return NoMatches, nil
 	}
 	if args.Rewrite != "" {
 		out = "Preview only — no file was changed. Apply wanted changes with edit_file.\n\n" + out

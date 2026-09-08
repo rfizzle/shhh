@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/tools"
 )
 
 var fdTool = provider.Tool{
@@ -120,7 +121,11 @@ func (t *Toolset) executeFd(raw json.RawMessage) (string, error) {
 	}
 	out = strings.TrimRight(out, "\n")
 	if out == "" {
-		return "No files matched.", nil
+		// fd and glob ask the same question of a tree, so a fruitless one is
+		// answered in the same words — and in one place, because anything
+		// measuring a result has to recognise the sentence to keep from
+		// counting it as a path.
+		return tools.NoFilesMatched, nil
 	}
 	limit := args.Limit
 	if limit <= 0 {

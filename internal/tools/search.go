@@ -505,7 +505,7 @@ func raiseLimitHint(limit int) string {
 
 func formatSearchResults(results []string, matches int, args searchArgs) string {
 	if len(results) == 0 {
-		return "No matches found."
+		return NoMatchesFound
 	}
 	out := strings.Join(results, "\n")
 	if args.FilesOnly {
@@ -519,6 +519,61 @@ func formatSearchResults(results []string, matches int, args searchArgs) string 
 			args.limit, raiseLimitHint(args.limit))
 	}
 	return out
+}
+
+// SearchSize is what a search result says about its own size: how many things
+// it quotes, whether those are files or matched lines, and whether the tool
+// stopped at its cap with more left to find.
+type SearchSize struct {
+	N         int
+	Files     bool
+	Truncated bool
+}
+
+// searchMatchLine is the shape formatMatch writes — a path, a line number,
+// and the separator saying whether the line matched (`:`) or is context
+// around one that did (`-`). The path is taken lazily so a matched line
+// quoting something like `3:4-` is still read by its own prefix rather than
+// by the code it found.
+var searchMatchLine = regexp.MustCompile(`^.+?:\d+([:-])`)
+
+// searchFileLine is the shape formatFileCount writes, which is the whole of a
+// files_only result: one line per file, not per match.
+var searchFileLine = regexp.MustCompile(`^.+: \d+ match(?:es)?$`)
+
+// MeasureSearch reads a search result back into the count the tool had when
+// it wrote it, so a reader can say how much was found rather than how much
+// was printed.
+//
+// Those are different numbers. A result carries up to MaxSearchContextLines
+// around every match, a separator between groups that do not touch, and a
+// notice when the cap was reached, so fifty matches arrive as three hundred
+// lines — and a reader that measured the rendering would report the search as
+// six times more thorough than it was, at the moment the tool was saying it
+// had been cut short. It lives here, beside the formatter, because it is the
+// same knowledge: the separator after the line number is what says which
+// lines matched, and nothing else can know that. Nothing carries a count out
+// of Execute — a tool returns a string, and a row is rebuilt from the stored
+// result when a session is reopened — so the format is the channel.
+func MeasureSearch(result string) SearchSize {
+	var size SearchSize
+	body := strings.TrimRight(result, "\n")
+	if body == "" || body == NoMatchesFound {
+		return size
+	}
+	for _, line := range strings.Split(body, "\n") {
+		switch m := searchMatchLine.FindStringSubmatch(line); {
+		case TruncationNotice(line):
+			size.Truncated = true
+		case m != nil:
+			if m[1] == ":" {
+				size.N++
+			}
+		case searchFileLine.MatchString(line):
+			size.Files, size.N = true, size.N+1
+		}
+	}
+	return size
 }
 
 // isBinary reports whether a file is one search has nothing to quote from.

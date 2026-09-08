@@ -177,7 +177,7 @@ kind of act it was, which act, what it touched, what came of it, how long it
 took.
 
 Fixing the fields is what lets a reader scan one column instead of parsing
-sentences. Four rules follow from fixing them:
+sentences. Five rules follow from fixing them:
 
 - **The target leads with what the call was about, not where it was made.**
   A search's target is its pattern and then its scope — `steeringItem
@@ -186,6 +186,15 @@ sentences. Four rules follow from fixing them:
   are what both a reader and a summariser judging drift read as a run going
   in circles. A read or a write is the other way round: the file is the
   subject there, and the pattern-first order would bury it.
+- **The count is of what the call found, not of what it printed.** A search
+  answers with several lines of context around every match and a notice when
+  it stopped at its cap, so a count of lines reported a truncated fifty-match
+  answer as `298 matches` — six times the finding, and exhaustive-sounding at
+  the moment the tool was saying it had been cut short. A truncated result
+  says so on the row instead, as `50+`, because "there is more of this" is the
+  one thing worth knowing about an answer that stopped early. Where a count of
+  findings cannot be had — output a foreign tool shaped — the field says what
+  it does know and calls it that.
 - **Only the target grows.** When the row is too narrow, the target clips; the
   outcome never does, because the outcome is the reason to read the row.
 - **Duration is a field, not a suffix.** Below the threshold it renders blank

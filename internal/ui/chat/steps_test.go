@@ -23,7 +23,7 @@ func stepsModel(t *testing.T) Model {
 		{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"internal/agent/loop.go"}`,
 			toolResult: "a\nb\nc", duration: 400 * time.Millisecond},
 		{kind: entryTool, toolName: "search", toolArgs: `{"pattern":"ErrRoundLimit"}`,
-			toolResult: "x\ny", duration: 300 * time.Millisecond},
+			toolResult: searchHits, duration: 300 * time.Millisecond},
 		{kind: entryAssistant, text: "Thread the sentinel through the loop"},
 		{kind: entryTool, toolName: "edit_file", toolArgs: `{"path":"internal/agent/loop.go"}`,
 			toolResult: "edited", duration: 1100 * time.Millisecond},
