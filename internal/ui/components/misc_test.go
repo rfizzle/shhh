@@ -9,17 +9,17 @@ import (
 )
 
 func TestCockpit_Segments(t *testing.T) {
-	c := Cockpit{Mode: "accept edits", ModeKind: CockpitPermissive, Round: "round 7/25",
+	c := Cockpit{Mode: "auto · accept edits", ModeKind: CockpitPermissive, Round: "round 7/25",
 		CtxPct: 62, Tokens: "↑41.2k ↓9.8k", Spend: "$0.14", Model: "gpt-5.2",
 		Agents: 2, AgentsBlocked: 1}
 	view := c.View(120)
-	for _, want := range []string{"⏵⏵ accept edits", "round 7/25", "ctx", "62%", "▰", "$0.14", "◇ 2 agents", "⚠1", "gpt-5.2"} {
+	for _, want := range []string{"⏵⏵ auto · accept edits", "round 7/25", "ctx", "62%", "▰", "$0.14", "◇ 2 agents", "⚠1", "gpt-5.2"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("cockpit should contain %q:\n%s", want, view)
 		}
 	}
-	gated := Cockpit{Mode: "plan", ModeKind: CockpitGated, CtxPct: -1}
-	if !strings.Contains(gated.View(80), "⏸ plan") {
+	gated := Cockpit{Mode: "read-only", ModeKind: CockpitGated, CtxPct: -1}
+	if !strings.Contains(gated.View(80), "⏸ read-only") {
 		t.Fatal("gated modes render ⏸")
 	}
 	checking := Cockpit{Mode: "checking", ModeKind: CockpitChecking, CtxPct: -1}
@@ -29,33 +29,33 @@ func TestCockpit_Segments(t *testing.T) {
 }
 
 func TestCockpit_CtxMeterFillAndThresholds(t *testing.T) {
-	c := Cockpit{Mode: "manual", ModeKind: CockpitGated, CtxPct: 50}
+	c := Cockpit{Mode: "gated", ModeKind: CockpitGated, CtxPct: 50}
 	// The number leads the bar, which is how every rail carrying a context
 	// meter draws one: the percentage is the figure, the bar is the shape it
 	// is read against.
 	if view := c.View(120); !strings.Contains(view, "ctx 50% ▰▰▰▰▱▱▱▱") {
 		t.Fatalf("50%% should fill 4 of 8 cells behind its number:\n%s", view)
 	}
-	hidden := Cockpit{Mode: "manual", ModeKind: CockpitGated, CtxPct: -1}
+	hidden := Cockpit{Mode: "gated", ModeKind: CockpitGated, CtxPct: -1}
 	if view := hidden.View(120); strings.Contains(view, "ctx") {
 		t.Fatalf("a negative CtxPct hides the meter:\n%s", view)
 	}
 	// Host-supplied thresholds (the trim warnings) override the defaults
 	// without changing the bar's content.
-	overridden := Cockpit{Mode: "manual", ModeKind: CockpitGated, CtxPct: 65, WarnPct: 60, AlertPct: 80}
+	overridden := Cockpit{Mode: "gated", ModeKind: CockpitGated, CtxPct: 65, WarnPct: 60, AlertPct: 80}
 	if view := overridden.View(120); !strings.Contains(view, "65%") {
 		t.Fatalf("overridden thresholds keep the meter rendering:\n%s", view)
 	}
 }
 
 func TestCockpit_DropsRightSideWhenNarrow(t *testing.T) {
-	c := Cockpit{Mode: "manual", ModeKind: CockpitGated, CtxPct: 42,
+	c := Cockpit{Mode: "gated", ModeKind: CockpitGated, CtxPct: 42,
 		Tokens: "↑41.2k ↓9.8k", Spend: "$0.14", Model: "claude-sonnet-5"}
 	view := c.View(30)
 	if strings.Contains(view, "claude-sonnet-5") {
 		t.Fatalf("narrow cockpit should drop the right-side model first:\n%s", view)
 	}
-	if !strings.Contains(view, "manual") {
+	if !strings.Contains(view, "gated") {
 		t.Fatalf("the mode segment survives narrowing:\n%s", view)
 	}
 }
@@ -64,7 +64,7 @@ func TestCockpit_DropsRightSideWhenNarrow(t *testing.T) {
 // goes altogether: the level is what the session just changed, the model is
 // the detail rank the field-drop order drops first.
 func TestCockpit_ShedsTheModelBeforeTheReasoningLevel(t *testing.T) {
-	c := Cockpit{Mode: "manual", ModeKind: CockpitGated, CtxPct: 42,
+	c := Cockpit{Mode: "gated", ModeKind: CockpitGated, CtxPct: 42,
 		Tokens: "↑41.2k ↓9.8k", Spend: "$0.14", Reasoning: "think high", Model: "claude-sonnet-5"}
 
 	wide := c.View(90)
@@ -86,7 +86,7 @@ func TestCockpit_ShedsTheModelBeforeTheReasoningLevel(t *testing.T) {
 // A session asking for no reasoning has nothing to state, and the rail is
 // exactly what it was before the level existed.
 func TestCockpit_NoReasoningSegmentWhenOff(t *testing.T) {
-	c := Cockpit{Mode: "manual", ModeKind: CockpitGated, CtxPct: -1, Model: "gpt-4o"}
+	c := Cockpit{Mode: "gated", ModeKind: CockpitGated, CtxPct: -1, Model: "gpt-4o"}
 	if got := stripANSI(c.View(60)); !strings.HasSuffix(got, "gpt-4o") {
 		t.Fatalf("expected the model alone on the right, got %q", got)
 	}
@@ -192,7 +192,7 @@ func TestDropToFit_GivesUpTheLastFieldWhole(t *testing.T) {
 // side has just been emptied: a shedding chain that can re-widen loops for
 // ever, and it loops inside the render path of a narrow terminal.
 func TestCockpit_ViewTerminatesAtEveryWidth(t *testing.T) {
-	c := Cockpit{Mode: "accept edits", ModeKind: CockpitPermissive, Round: "round 7/25",
+	c := Cockpit{Mode: "auto · accept edits", ModeKind: CockpitPermissive, Round: "round 7/25",
 		CtxPct: 62, Tokens: "↑41.2k ↓9.8k", Spend: "$0.14", Agents: 2, AgentsBlocked: 1,
 		Extra: []string{"1 queued"}, Reasoning: "think medium", Model: "claude-opus-5"}
 	for w := 0; w <= 120; w++ {

@@ -931,9 +931,11 @@ func (m Model) renderChildStatusBar(width int) string {
 	return left + strings.Repeat(" ", pad) + right
 }
 
-// childModeSegment mirrors the orchestrator's mode segment styling.
+// childModeSegment mirrors the orchestrator's mode segment — the same words
+// and the same marks, because a child's permission mode is read for the same
+// reason the parent's is.
 func childModeSegment(mode agent.Mode) string {
-	name := strings.ReplaceAll(mode.String(), "-", " ")
+	name := modeWord(mode)
 	switch mode {
 	case agent.ModeAcceptEdits, agent.ModeAuto:
 		return sty.ModePermissive.Render("⏵⏵ " + name)

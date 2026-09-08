@@ -69,7 +69,7 @@ func TestFrame_WideTwoRails(t *testing.T) {
 	m := frameModel(t, 130, 40) // the wide rung is a 110-column terminal
 	view := stripANSI(m.View().Content)
 
-	for _, want := range []string{"╭─", "├─", "╰─", "⏸ manual", "ctx ", "↑41.2k ↓9.8k", "$0.51", "gpt-4o", "enter send · shift+enter newline · ctrl+g editor · ctrl+v attach · ctrl+/ palette · shift+tab mode", "idle"} {
+	for _, want := range []string{"╭─", "├─", "╰─", "⏸ gated", "ctx ", "↑41.2k ↓9.8k", "$0.51", "gpt-4o", "enter send · shift+enter newline · ctrl+g editor · ctrl+v attach · ctrl+/ palette · shift+tab mode", "idle"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("wide frame missing %q:\n%s", want, view)
 		}
@@ -114,7 +114,7 @@ func TestFrame_CompactSingleRail(t *testing.T) {
 	if strings.Contains(view, "├─") {
 		t.Fatalf("compact frame must not have a dedicated vitals rail:\n%s", view)
 	}
-	for _, want := range []string{"╭─", "╰─", "⏸ manual", "ctx "} {
+	for _, want := range []string{"╭─", "╰─", "⏸ gated", "ctx "} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("compact frame missing %q:\n%s", want, view)
 		}
@@ -131,7 +131,7 @@ func TestFrame_NarrowMinimalRail(t *testing.T) {
 	m := frameModel(t, 60, 30) // between the 12- and 70-column rungs
 	view := stripANSI(m.View().Content)
 
-	for _, want := range []string{"╭─", "⏸ manual", "$0.51"} {
+	for _, want := range []string{"╭─", "⏸ gated", "$0.51"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("narrow frame missing %q:\n%s", want, view)
 		}
@@ -271,15 +271,15 @@ func TestFrame_TakeoverKeepsPlainStack(t *testing.T) {
 	// with the frame's own corners, so what tells the two apart on the
 	// screen is the account riding the frame's rail.
 	ungated := stripANSI(m.View().Content)
-	if !strings.Contains(ungated, "╰─ ⏸ manual") {
+	if !strings.Contains(ungated, "╰─ ⏸ gated") {
 		t.Fatalf("an ungated decision leaves the draft its frame:\n%s", ungated)
 	}
 	m = handover(t, m)
 	view := stripANSI(m.View().Content)
-	if strings.Contains(view, "╰─ ⏸ manual") {
+	if strings.Contains(view, "╰─ ⏸ gated") {
 		t.Fatalf("takeover surfaces must replace the frame:\n%s", view)
 	}
-	if !strings.Contains(view, "⏸ manual") {
+	if !strings.Contains(view, "⏸ gated") {
 		t.Fatalf("takeover surfaces keep the status bar:\n%s", view)
 	}
 	if !strings.Contains(view, "echo hi") {

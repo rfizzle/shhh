@@ -398,6 +398,22 @@ func (m Model) renderStatusBar(width int) string {
 	return m.cockpitData(true).View(width)
 }
 
+// modeWord is what a mode segment says, on this session's frame and on an
+// attached child's: the permission class the mark already means, and the
+// mode's own name after it where the class is not the whole of it. `⏵⏵ auto`
+// is every gate a mode can open; `⏵⏵ auto · accept edits` wears the same mark
+// narrowed to edits, and the second word is the difference between the two.
+// `⏸ gated` and `⏸ read-only` are each the only mode of their class, so the
+// name they happen to be set under would be one state said twice — which is
+// the drift the one segment read before every keystroke cannot afford
+// (docs/interface/principles.md#closed-vocabularies).
+func modeWord(mode agent.Mode) string {
+	if mode == agent.ModeAcceptEdits {
+		return mode.Class() + " · " + strings.ReplaceAll(mode.String(), "-", " ")
+	}
+	return mode.Class()
+}
+
 // cockpitData assembles the cockpit segments. The frame's vitals rail
 // omits the queued-steering extra — the notice rail carries it — so
 // includeQueued is false there.
@@ -412,7 +428,7 @@ func (m Model) cockpitData(includeQueued bool) components.Cockpit {
 	if m.turnState() == stateClassifying {
 		c.Mode, c.ModeKind = "checking", components.CockpitChecking
 	} else {
-		c.Mode = strings.ReplaceAll(m.policy.mode.String(), "-", " ")
+		c.Mode = modeWord(m.policy.mode)
 		switch m.policy.mode {
 		case agent.ModeAcceptEdits, agent.ModeAuto:
 			c.ModeKind = components.CockpitPermissive

@@ -61,6 +61,28 @@ func (m Mode) Describe() string {
 	}
 }
 
+// Class is the permission class a mode belongs to, and the word a session's
+// frame states its mode in: `auto` where work goes through, `gated` where it
+// asks, `read-only` where nothing can be written at all. Three words for four
+// modes, because what the reader checks before a keystroke is which of the
+// three will happen, and a class is what the frame's mark already means
+// spelled out — the mark and the word cannot then drift apart.
+//
+// String is the other vocabulary and stays the other vocabulary: it is the
+// name the config file and /permissions take, which is a different question
+// from what the session will do next.
+// See docs/interface/surfaces.md#the-input-frame.
+func (m Mode) Class() string {
+	switch m {
+	case ModeAcceptEdits, ModeAuto:
+		return "auto"
+	case ModePlan:
+		return "read-only"
+	default:
+		return "gated"
+	}
+}
+
 // ParseMode maps a config or /permissions name to its Mode.
 func ParseMode(s string) (Mode, error) {
 	switch strings.ToLower(strings.TrimSpace(s)) {

@@ -503,8 +503,8 @@ func TestMode_ShiftTabCyclesAndStatusBarShowsMode(t *testing.T) {
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 
-	if !strings.Contains(m.renderStatusBar(80), "⏸ manual") {
-		t.Fatalf("status bar should show the default manual mode, got %q", m.renderStatusBar(80))
+	if !strings.Contains(m.renderStatusBar(80), "⏸ gated") {
+		t.Fatalf("status bar should show the default gated mode, got %q", m.renderStatusBar(80))
 	}
 
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift})
@@ -512,7 +512,7 @@ func TestMode_ShiftTabCyclesAndStatusBarShowsMode(t *testing.T) {
 	if m.policy.mode != agent.ModeAcceptEdits {
 		t.Fatalf("shift+tab should cycle manual → accept-edits, got %v", m.policy.mode)
 	}
-	if !strings.Contains(m.renderStatusBar(80), "⏵⏵ accept edits") {
+	if !strings.Contains(m.renderStatusBar(80), "⏵⏵ auto · accept edits") {
 		t.Fatalf("status bar should show the permissive mode, got %q", m.renderStatusBar(80))
 	}
 
@@ -527,6 +527,41 @@ func TestMode_ShiftTabCyclesAndStatusBarShowsMode(t *testing.T) {
 	m = updated.(Model)
 	if m.policy.mode != agent.ModeManual {
 		t.Fatalf("configured cycle should wrap plan → manual, got %v", m.policy.mode)
+	}
+}
+
+// TestMode_TheSegmentStatesThePermissionClass pins the one vocabulary the
+// mode segment is written in — three class words for four modes — and the
+// rule for the second word: it stands only where the class covers more than
+// one mode, so that no state is ever named twice on the one rail read before
+// every keystroke. The attached child's segment is checked with it, because a
+// child's mode is read for the same reason and must not answer differently.
+func TestMode_TheSegmentStatesThePermissionClass(t *testing.T) {
+	for _, tc := range []struct {
+		mode agent.Mode
+		want string
+		// gone is the mode's own name, which the segment states only where
+		// the class alone would not say which mode it is.
+		gone string
+	}{
+		{agent.ModeManual, "⏸ gated", "manual"},
+		{agent.ModeAcceptEdits, "⏵⏵ auto · accept edits", ""},
+		{agent.ModeAuto, "⏵⏵ auto", ""},
+		{agent.ModePlan, "⏸ read-only", "plan"},
+	} {
+		t.Run(tc.mode.String(), func(t *testing.T) {
+			m := gatedModel(t, nil, nil).WithApprovalMode(tc.mode, nil)
+			bar := m.renderStatusBar(80)
+			if !strings.Contains(bar, tc.want) {
+				t.Fatalf("the rail should state %q, got %q", tc.want, bar)
+			}
+			if tc.gone != "" && strings.Contains(bar, tc.gone) {
+				t.Fatalf("%q is the class's own state under another name and should not be on the rail: %q", tc.gone, bar)
+			}
+			if child := childModeSegment(tc.mode); !strings.Contains(child, tc.want) {
+				t.Fatalf("an attached child's segment should state %q, got %q", tc.want, child)
+			}
+		})
 	}
 }
 

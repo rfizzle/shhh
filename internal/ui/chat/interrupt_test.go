@@ -291,7 +291,7 @@ func TestInterrupt_TheHeldDraftKeepsTheCountAndTheVitals(t *testing.T) {
 	if !strings.Contains(held, "⏸ 1 waiting") {
 		t.Fatalf("the held frame's top rail counts what is waiting:\n%s", held)
 	}
-	for _, want := range []string{"⏸ manual", "ctx ", "▱", m.draftPosition()} {
+	for _, want := range []string{"⏸ gated", "ctx ", "▱", m.draftPosition()} {
 		if !strings.Contains(held, want) {
 			t.Fatalf("the held frame's rail keeps %q:\n%s", want, held)
 		}
@@ -299,7 +299,7 @@ func TestInterrupt_TheHeldDraftKeepsTheCountAndTheVitals(t *testing.T) {
 	// The position is the block's own evidence and ranks below the vitals, so
 	// a rail with room for one of the two keeps the reading.
 	narrow := ansi.Strip(strings.Join(m.undressedDraft(46), "\n"))
-	if !strings.Contains(narrow, "⏸ manual") {
+	if !strings.Contains(narrow, "⏸ gated") {
 		t.Fatalf("the mode segment is never dropped:\n%s", narrow)
 	}
 	if strings.Contains(narrow, "cursor at") && !strings.Contains(narrow, "ctx ") {

@@ -372,6 +372,21 @@ permission-mode segment are not on that ladder at any width. A rail that goes
 quiet about what a child is burning goes quiet exactly where somebody is
 watching it, which is the one moment those figures are being read for.
 
+That segment is written in three words and the mark says which: `⏵⏵` in add
+for `auto`, where a mode lets work through, and `⏸` in accent for `gated`,
+where it asks first, and for `read-only`, where nothing can be written at
+all. There are more modes than there are words, so the one class that covers
+two of them carries the mode's own name after it — `⏵⏵ auto` is every gate a
+mode can open and `⏵⏵ auto · accept edits` is the same mark narrowed to
+edits, the pair in one tone because it is one field. A class covering a
+single mode carries no second word: the name it happens to be set under would
+be one state said twice, on the one segment that is read before every
+keystroke. Those names are the answer to a different question — what the mode
+is called where it is chosen, which is what the picker lists, what
+`/permissions` takes and what the config row shows — and while the classifier
+is deciding a call the segment says `✦ checking` instead, because for that
+moment the mode is not the answer.
+
 Above it, a notice rail exists only while there is something to say and
 disappears when there is not. Under that, on the terminals too narrow for the
 [inspector rail](#the-inspector-rail), the status row that stands in for it.

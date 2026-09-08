@@ -38,6 +38,33 @@ func TestParseMode(t *testing.T) {
 	}
 }
 
+// The class is a closed list of three and every mode is in it. Where a class
+// carries the name of a mode, that mode is in the class: a word that named
+// one state on the frame and a different one in the config file is the trap
+// a second vocabulary sets.
+func TestModeClass(t *testing.T) {
+	classes := map[Mode]string{
+		ModeManual:      "gated",
+		ModeAcceptEdits: "auto",
+		ModeAuto:        "auto",
+		ModePlan:        "read-only",
+	}
+	for _, m := range DefaultCycle() {
+		want, ok := classes[m]
+		if !ok {
+			t.Fatalf("%v has no class; the frame has no word for it", m)
+		}
+		if got := m.Class(); got != want {
+			t.Errorf("%v.Class() = %q, want %q", m, got, want)
+		}
+		for _, other := range DefaultCycle() {
+			if other.String() == m.Class() && other.Class() != m.Class() {
+				t.Errorf("%v's class is %v's own name, and %v is not in it", m, other, other)
+			}
+		}
+	}
+}
+
 func TestParseCycle(t *testing.T) {
 	cycle, err := ParseCycle([]string{"manual", "auto"})
 	if err != nil || len(cycle) != 2 || cycle[0] != ModeManual || cycle[1] != ModeAuto {

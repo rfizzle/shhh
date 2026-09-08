@@ -1,0 +1,11 @@
+# One reply per request. The last line repeats once these run out, and both
+# the session and the child it spawns draw from this one queue.
+#
+# Prose for the first turn: the mode segment is what the scene is reading, so
+# nothing here should put a card in front of it. The second turn spawns, which
+# is gated in the mode the cycle ends on — the card is the proof of it.
+The counter is read at the top of the loop, and nowhere else.
+Putting a reader on the round accounting.
++tool:spawn_agent:{"role":"researcher","task":"Read loop.go and say where the round counter is read.","name":"reader-1"}
+tool:read_file:{"path":"loop.go"}
+The round counter is read at the top of the loop, and nowhere else.

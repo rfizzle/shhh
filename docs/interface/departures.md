@@ -411,3 +411,24 @@ has not is worse than reporting neither
 and the child's lifetime is already on its lane in the agent map, where it is
 what the column means. The gap is closed by the supervisor reporting a child's
 turn, at which point the rail can draw what the artboard draws.
+
+## A read-only frame, and an auto narrowed to edits, have no artboard
+
+*A gap.* The palette row offers three words for the mode — `gated, auto or
+read-only` — and the artboards draw two of them: `⏵⏵ auto` in add on the
+frame, the main window and the interrupt, `⏸ gated` in accent on the frame
+and on an attached child's rail. No artboard draws the third, and none draws
+the mode that lets edits through while still asking about commands. The
+binary has one more mode than the design has words, so it had to decide both.
+
+Read-only wears `⏸` in accent, the mark every gated state already wears,
+because a mode that gates everything a mode can gate is not a fourth kind of
+state and a fourth mark would be read as one. The narrowed one is
+`⏵⏵ auto · accept edits`: the class's mark and word, with the mode's own name
+after it as the difference from `⏵⏵ auto`, which is every gate open. A word
+of its own for that mode was the other option and is what reopens a list the
+design closed at three
+([closed vocabularies](principles.md#closed-vocabularies)) — the reader would
+be back to learning a word per mode on the one segment they check before
+every keystroke. The gap is closed by drawing the two frames, and where they
+then differ the artboard wins.

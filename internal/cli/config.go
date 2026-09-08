@@ -582,10 +582,14 @@ func boolOptions(on, off string) []components.SelectOption {
 	}
 }
 
-// modeShow renders a permission mode the way the cockpit's own mode segment
-// does: `⏵⏵` and add for the two that let work through, `⏸` and accent
-// for the two that gate it. The glyph carries the distinction, so the colour
-// is never carrying it alone.
+// modeShow renders a permission mode under the mark ladder the frame's own
+// mode segment uses: `⏵⏵` and add for the two that let work through, `⏸` and
+// accent for the two that gate it. The glyph carries the distinction, so the
+// colour is never carrying it alone.
+//
+// The word is the mode's name rather than the frame's class word, because
+// this row is a setting: what it states is the value in the file, which is
+// the value the row's own picker writes back.
 func modeShow(raw string) (string, components.FieldTone, string) {
 	mode, err := agent.ParseMode(raw)
 	if err != nil {

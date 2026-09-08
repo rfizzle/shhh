@@ -1,0 +1,45 @@
+# The permission mode is the one field on the frame that is read before every
+# keystroke, so it is written in one closed vocabulary: the class the mark
+# already means, and the mode's own name after it only where the class covers
+# more than one mode (docs/interface/surfaces.md#the-input-frame).
+#
+# What the capture is for: the cycle key walked all the way round, one snap
+# per mode, so the marks and the words are read against each other rather than
+# one at a time — ⏵⏵ in add where work goes through, ⏸ in accent where
+# something is gated, and never two words for one state. The child's frame at
+# the end says the same thing about the agent the keyboard moved into.
+#
+# The turn comes first so the segment is read where it is really read: in
+# front of the counters, on a frame that has something to report.
+setup printf 'package agent\n\nfunc loop() {\n    for round := 0; round < limit; round++ {\n        step()\n    }\n}\n' > loop.go
+snap 01-start "Some things worth doing first"
+keys "where is the round counter read" Enter
+snap 02-gated "⏸ gated · ctx"
+keys BTab
+snap 03-accept-edits "⏵⏵ auto · accept edits"
+keys BTab
+snap 04-auto "⏵⏵ auto · ctx"
+keys BTab
+snap 05-read-only "⏸ read-only"
+keys BTab
+snap 06-gated-again "⏸ gated · ctx"
+# The child's rail carries the mode for the same reason the parent's does, and
+# a child is never more permissive than the session that spawned it — which is
+# the gated word again, on a frame the keyboard has moved into. The command
+# rather than the chord is the door in, because it is the one both terminals
+# under this harness deliver.
+keys "put a reader on it" Enter
+snap 07-spawn-card "researcher agent"
+sleep 1
+keys y
+snap 08-spawned "reader-1"
+sleep 2
+keys "/attach reader-1" Enter
+snap 09-attached "esc detach"
+sleep 1
+keys Escape
+snap 10-detached "enter send · shift+enter newline"
+keys C-c
+snap 11-quit-armed "press again to quit"
+keys C-c
+snap 12-exit "that is everything the screen was holding"
