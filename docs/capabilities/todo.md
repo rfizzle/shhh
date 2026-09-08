@@ -610,9 +610,9 @@ left to a person, because no fix round can write the file for you.
 
 The review reads the change as a critic and answers clean or with findings,
 and findings spend a round the same way. The smallest grade reviews itself in
-the session's own turn; anything larger is read by a reviewer child that did
-not write it — a second opinion is only one if it comes from somewhere else —
-and where no child can be had the session reviews and the record says so.
+the session's own turn; anything larger goes to a reader that did not write
+it, and where none can be had the session reviews and the record says so
+([below](#the-reading-is-done-by-somebody-else)).
 
 The run works in the mode that asks only when the classifier cannot
 decide, whatever mode the session was in, and puts the session's mode
@@ -634,9 +634,9 @@ repository's own style, read from its history, and the report the model
 writes goes onto the item as it is archived.
 
 **What a run needs, it asks for before it starts — step by step.** A step
-that writes needs a session that tracks what it changed; a division into lanes
-needs a supervisor as well; a command step needs somewhere to run a command;
-and a commit finish needs a repository. Each is checked against the steps this
+that writes needs a session that tracks what it changed; a division into
+lanes needs somewhere to put a writer as well; a command step needs somewhere
+to run a command; and a commit finish needs a repository. Each is checked against the steps this
 run actually has, before the first turn, and the refusal names what the step
 wanted and the way through it. It is per step and not per session because "this
 session does not track changes" is the right sentence for a step that writes
@@ -820,6 +820,24 @@ asked different things is not one run's worth of work.
 The grooming pass is not a step of a run and takes none of these: it states
 the built-in standards sentence whatever a run was configured with.
 
+## The reading is done by somebody else
+
+A run that grades its own work is the weakest reading of it there is: the
+conversation that spent ten rounds convincing itself the change is right is
+the last one to notice that it is not. So every grade above the smallest hands
+the change to a reader that did not write it, given the item, the plan and the
+diff, and none of the conversation behind them.
+
+In a session that reader is a reviewer child. From a script it is a process of
+its own — a fresh conversation, the same task, the same verdict line at the
+end — because the thing that makes the reading a second opinion is where it
+comes from, not whether a supervisor was involved.
+
+The fallback stays for the checkout that cannot produce a change to hand over.
+Outside a repository there is no diff, and a reader given the item and nothing
+else would be grading the plan rather than the work; there the run reads the
+tree in its own turn, and the step label says which of the two happened.
+
 ## A large item is built in lanes
 
 A large item is the one size the session does not build itself. After the
@@ -833,17 +851,22 @@ why. The orchestrator can also answer that the plan does not divide; a
 plan whose steps all rest on one new foundation is that kind, and a wrong
 split costs more than no split.
 
-Each lane goes to a writer child, the same kind a session spawns by hand:
-its own copy of the tree, the item and its lane in the task by content
+Each lane goes to a writer with its own copy of the tree, seeded with what
+the run has changed so far, and the item and its lane in the task by content
 rather than by path, because a copy of an uncommitted backlog holds no
-item files. The lanes are written blind to each other, which is why each
-must build against the tree as it stands. A lane's patch is the run's to
-take — the lanes were checked disjoint, and the tree is verified and
-reviewed after — so it lands without a card; a patch the supervisor flags
-as overwriting another's is refused, and the run blocks on it, with the
-other lanes' work in the tree and the missing one named. A command a
-writer's classifier cannot decide goes to the person the way every child's
-does; that is the steering a fan-out keeps.
+item files. In a session that writer is a child; from a script it is a process
+standing in the copy, and the lanes run at the same time either way — the
+isolation is what a lane needs, and a supervisor is one way to arrange it
+rather than the point of it. The lanes are written blind to each other, which
+is why each must build against the tree as it stands. A lane's patch is the
+run's to take — the lanes were checked disjoint, and the tree is verified and
+reviewed after — so it lands without a card; the patches land one at a time,
+so a lane that overlaps one already landed is refused whole, and the run
+blocks on it with the other lanes' work in the tree and the missing one named.
+A command a writer's classifier cannot decide goes to the person in a session
+the way every child's does; that is the steering a fan-out keeps. From a
+script there is nobody to take it, and the classifier's refusal is the answer
+([`headless.md`](headless.md#auto-mode-fails-closed)).
 
 A lane is not finished when its patch lands. The patch reaches the session
 while the writer that wrote it is still ending its turn, and the account
@@ -854,7 +877,7 @@ than for the last patch. When it has them all, the session takes one turn
 of its own in the working mode to make the lanes fit — wire what the
 reports say needs wiring, tick the item's boxes, which no lane could — and
 hands the tree to verification. From there a large item is a medium one:
-the same checks, the same reviewer child, the same rounds. A run continued
+the same checks, the same reading by somebody else, the same rounds. A run continued
 in a new session at its fan-out spawns only the lanes that had not landed,
 under new names, and one that landed without its report being kept is read
 from the tree rather than waited on.
@@ -913,10 +936,11 @@ in the tree, and the stop was aimed at the loop.
 From a script it is the same machine with the screen taken away. Each step
 that spends a turn is one `shhh code --print` in the checkout, and what the
 step produced is read out of that transcript whatever status the process
-left. The gates that would ask a person cannot: a run that reaches the pause
-stops with the questions written on the item rather than guessing an answer,
-and a review that would have gone to a second agent is taken in the session,
-which is what a session with no supervisor already does. The exit status is
+left. The one gate that would ask a person cannot: a run that reaches the
+pause stops with the questions written on the item rather than guessing an
+answer. The review and the lanes are taken — each as a process of its own, in
+a copy of the checkout where the work is a lane's — because neither of those
+needed a person, only somewhere else to put the work. The exit status is
 the run's own ending ([`headless.md`](headless.md#the-exit-code-is-the-contract)).
 
 ## Done is archived, not deleted

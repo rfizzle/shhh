@@ -38,6 +38,7 @@ import (
 	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/structural"
+	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/spf13/cobra"
 )
@@ -57,6 +58,12 @@ type serveOpts struct {
 	requireSandbox bool
 	maxRounds      int
 	maxRoundsSet   bool
+	// autoMode is `--mode auto`: the server answers its own gated calls
+	// through the permission classifier and draws no card at a client, which
+	// is how a session is served to something that is not watching it
+	// (approvals.go).
+	autoMode bool
+	mode     string
 }
 
 // newServeCmd is the protocol entry point: the coding agent's loop with a
@@ -77,6 +84,10 @@ func newServeCmd() *cobra.Command {
 			if opts.maxRoundsSet && opts.maxRounds < 0 {
 				return fmt.Errorf("--max-rounds cannot be negative (0 removes the cap)")
 			}
+			var err error
+			if opts.autoMode, err = parseUnattendedMode(opts.mode); err != nil {
+				return err
+			}
 			if stdio && opts.socket != "" {
 				return fmt.Errorf("--stdio speaks to the process that started this one and --socket listens for clients: pass one of them")
 			}
@@ -87,6 +98,7 @@ func newServeCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&stdio, "stdio", false, "speak the protocol on stdin and stdout (the default when --socket is not given)")
 	cmd.Flags().StringVar(&opts.socket, "socket", "", "listen for clients on this unix socket instead of stdio")
 	addModelFlags(cmd, &opts.flags)
+	cmd.Flags().StringVar(&opts.mode, "mode", "", "the permission mode: `auto` answers gated calls with the permission classifier — refusing whatever it cannot approve — instead of putting each one to a client (the only mode a server takes)")
 	cmd.Flags().BoolVar(&opts.requireSandbox, "require-sandbox", false, "refuse the assistant's commands outright where no containment mechanism is in force, rather than running them unconfined")
 	cmd.Flags().IntVar(&opts.maxRounds, "max-rounds", 0, "cap consecutive tool-call rounds per turn (0 removes the cap; default: behavior.max_tool_rounds)")
 	addDirFlag(cmd, &opts.addDirs)
@@ -265,6 +277,12 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		secretFlags:    opts.secretFlags,
 		mcp:            true,
 		requireSandbox: opts.requireSandbox,
+		// A client attached to a served session can answer the spawn card,
+		// which is the whole of what a scripted run lacked; and where
+		// --mode auto says there is no client to ask, the classifier
+		// answers it the way it answers every other gated call.
+		// See docs/capabilities/headless.md#a-run-can-delegate.
+		agents: true,
 	}
 
 	sc, err := sessionScope(cfg, session.addDirs)
@@ -287,6 +305,14 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		l.closers = append(l.closers, session.attachMCP(cmd.Context(), db, false))
 	}
 	registerSkills(&session)
+	// The roles this session can spawn, before the toolbox says what it has:
+	// the built-in two plus the user's own profiles, and a profile that does
+	// not load stops the session naming the file (subagents.go).
+	agents, err := loadAgentProfiles(true)
+	if err != nil {
+		return nil, err
+	}
+	session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), subagent.Definitions(agents.profiles)...)
 	session.promptExtra = prompt.CombineExtra(session.promptExtra, scopePromptBlock(sc))
 	session.promptExtra = prompt.CombineExtra(session.promptExtra, prompt.Toolbox(session.toolDefs))
 
@@ -382,16 +408,22 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	l.recorder = startObserveRecorder(db, "serve", env.prov.Name(), env.modelName, prices)
 	l.closers = append(l.closers, l.recorder.end)
 	hooks.SetSession(hookSession(l.recorder.sessionID()))
-	// No mode and no classifier, the same as an unattended run: approvals here
-	// are answered by a client one call at a time, and neither of those two
-	// settings is what decided them.
+	// A mode and a classifier only where --mode auto put them there. Left
+	// alone, approvals here are answered by a client one call at a time and
+	// neither of those two settings is what decided them.
+	recordedMode := ""
+	if opts.autoMode {
+		recordedMode = agent.ModeAuto.String()
+	}
 	l.recorder.stamp(env.prompts.fingerprintOf(env.sysPrompt), session.skills.Len(), projectFingerprintRoot(),
 		sessionSettings(cfg, runSettings{
-			effort:  env.effort,
-			rounds:  roundCapFor(maxRoundsFor(cfg, opts.maxRounds, opts.maxRoundsSet)),
-			sandbox: sandboxProfile,
-			model:   auxiliaryModel(env.provName, env.modelName),
-			summary: cfg.HeadlessSummaryEnabled(),
+			mode:       recordedMode,
+			effort:     env.effort,
+			rounds:     roundCapFor(maxRoundsFor(cfg, opts.maxRounds, opts.maxRoundsSet)),
+			sandbox:    sandboxProfile,
+			model:      auxiliaryModel(env.provName, env.modelName),
+			summary:    cfg.HeadlessSummaryEnabled(),
+			classifier: opts.autoMode,
 		}))
 	recordGateVerdicts(qgate, l.recorder)
 	recordSearches(session.web, l.recorder)
@@ -404,14 +436,31 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	l.verdict.Store(&lastVerdict{})
 	record := func(decision, reason string) { l.verdict.Load().wrap(l.obs.decision)(decision, reason) }
 
+	// Sub-agent orchestration: a served session spawns children the way a
+	// terminal session does, and its client answers the spawn card. Close
+	// cancels the child tree and removes the worktrees its writers were
+	// given, on the same path everything else this session opened is
+	// released on, so a client that walks away leaves none behind.
+	//
+	// The children work under this session's own policy. Auto mode where the
+	// server was put in it, and the blanket grants of a client that has been
+	// answering the parent's cards where it was not: a child that inherited
+	// neither would block on a request the protocol cannot carry.
+	// See docs/capabilities/subagents.md#a-child-answers-to-the-session.
+	classifier := buildClassifier(cfg, env, l.ledger)
+	sup := buildSupervisor(cmd.Context(), cfg, session, env, agents, red, l.recorder, db, prices, classifier, sc, l.ledger, nil)
+	sup.SetParentMode(agent.ModeAuto)
+	sup.SetParentGrants(agent.Grants{AllEdits: true, AllCommands: true})
+	l.closers = append(l.closers, sup.Close)
+
 	// The same line between the tier that runs on its own and the tier that
 	// has to be answered for that a scripted run draws (approvals.go).
-	gate := unattendedGate(session.web, procSup, session.mcpTools)
+	gate := unattendedGate(session.web, procSup, session.mcpTools, sup)
 	a.SetExecutor(agent.ToolExecutor(hooks.WrapExecutor(l.hookPos,
 		func(name string, args json.RawMessage) bool {
 			return gate(provider.ToolCall{Name: name, Arguments: string(args)})
 		},
-		hook.Executor(agent.NewRepeatDetector().WrapExecutor(ts.executor(session))))))
+		hook.Executor(agent.NewRepeatDetector().WrapExecutor(sup.WrapExecutor(ts.executor(session)))))))
 
 	// The unattended run's approver, opted in, is what a call the client
 	// allowed is run through — so the deny list, the containment refusal, the
@@ -421,8 +470,31 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	// than replacing one.
 	allowed := headlessApprover(cmd.Context(), printOpts{yes: true}, cfg.Behavior.CommandAllowlist,
 		cfg.Behavior.CommandDenylist, run, containment.Refusal, red, answeredByClient(record),
-		session.web, procSup, chainMutation(lspMutationHook(session.lsp), hookPostMutation(hooks)), sc, session.mcpTools, session.structural)
+		session.web, procSup, chainMutation(lspMutationHook(session.lsp), hookPostMutation(hooks)), sc, session.mcpTools, session.structural,
+		unattended{sup: sup})
+	// And the approver of a server told there is nobody to ask: the same
+	// standing refusals in front, the classifier where the client would have
+	// been, and a refusal wherever it cannot approve.
+	var judged func(provider.ToolCall) string
+	if opts.autoMode {
+		judged = headlessApprover(cmd.Context(), printOpts{}, cfg.Behavior.CommandAllowlist,
+			cfg.Behavior.CommandDenylist, run, containment.Refusal, red, record,
+			session.web, procSup, chainMutation(lspMutationHook(session.lsp), hookPostMutation(hooks)), sc, session.mcpTools, session.structural,
+			unattended{sup: sup, judge: &autoJudge{ctx: cmd.Context(), classifier: classifier, recent: a.Messages, cwd: hookCwd}})
+	}
+	// A supervisor blocks on its event channel, so a session that spawned a
+	// child and read nothing would stop the child at its first routed
+	// request and the turn behind it. What this session's own calls wrote is
+	// where a landed patch is added (subagents.go).
+	answerChildAsks(sup, true, own.wrote)
 	resolveCall := func(tc provider.ToolCall) string {
+		// A server in auto mode draws no card at all. The flag is the
+		// operator saying nobody is attached to answer one, and putting the
+		// call to a client that is not there would hang the turn until it
+		// detached rather than reach a decision.
+		if judged != nil {
+			return judged(tc)
+		}
 		if seams.Ask(rpc.Call{Tool: tc.Name, Arguments: tc.Arguments, Turn: l.turnNow(), Round: int64(a.Rounds())}) {
 			return allowed(tc)
 		}

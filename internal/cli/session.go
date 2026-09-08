@@ -771,17 +771,9 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		return fmt.Errorf("config behavior.mode_cycle: %w", err)
 	}
 
-	// Auto mode's permission classifier reuses the session provider;
-	// behavior.classifier_model overrides the model, and unset means the
-	// provider's small model (summarizer.go).
-	classifierModel := modelOr(cfg.Behavior.ClassifierModel, auxiliaryModel(env.provName, env.modelName))
-	classifier := agent.NewClassifier(ledger.For(env.prov, meter.SourceClassifier), agent.ClassifierConfig{
-		Model:     classifierModel,
-		Timeout:   time.Duration(cfg.Behavior.ClassifierTimeoutSeconds) * time.Second,
-		MaxTokens: cfg.Behavior.ClassifierMaxTokens,
-		Retries:   cfg.Behavior.ClassifierRetries,
-		Prompt:    env.prompts.classifier,
-	})
+	// Auto mode's permission classifier, built the way every surface that
+	// has one builds it (approvals.go).
+	classifier := buildClassifier(cfg, env, ledger)
 
 	// The session summary resolves its model the same way: summary.model
 	// overrides, and empty takes the provider's small model. It is still the
@@ -923,7 +915,8 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// leftover worktrees when the session ends.
 	var sup *subagent.Supervisor
 	if session.agents {
-		sup = buildSupervisor(cmd.Context(), cfg, session, env, agents, red, recorder, db, prices, classifier, sc, ledger, changes)
+		sup = buildSupervisor(cmd.Context(), cfg, session, env, agents, red, recorder, db, prices, classifier, sc, ledger,
+			func() []string { return sessionUntracked(changes) })
 		executor = sup.WrapExecutor(executor)
 		defer sup.Close()
 	}

@@ -460,3 +460,30 @@ func truncateTail(s string, maxChars int) string {
 	}
 	return fmt.Sprintf("%s\n... [%d characters omitted]", s[:maxChars], len(s)-maxChars)
 }
+
+// ResolveUnattended is ResolveAuto for a surface with nobody in front of it:
+// a scripted run, a served session with no client attached, a stage of a
+// backlog run. The verdict is resolved the same way — the safety and scope
+// backstops in front of it, unchanged — and then the one answer such a
+// surface cannot give is taken away: Ask means "put this to the user", and
+// there is no user to put it to, so it becomes Deny.
+//
+// Deny and not Allow, in every failure: a classifier that timed out, one that
+// answered nothing usable, one that was never configured, and one that
+// approved a safety-flagged command all end here, and the run is refused
+// rather than run unwatched. That is the whole of what "fails closed" can
+// mean where the fallback the interactive surfaces have does not exist.
+// See docs/capabilities/headless.md#auto-mode-fails-closed.
+func ResolveUnattended(a Action, v ClassifierVerdict) (Decision, string) {
+	decision, reason := ResolveAuto(a, v)
+	if decision != Ask {
+		return decision, reason
+	}
+	if strings.TrimSpace(reason) == "" {
+		reason = v.Reason
+	}
+	if strings.TrimSpace(reason) == "" {
+		reason = "the classifier reached no decision"
+	}
+	return Deny, reason
+}

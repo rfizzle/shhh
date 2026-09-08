@@ -451,13 +451,18 @@ func (p Pipeline) archiving(from Finish) Pipeline {
 	return out
 }
 
-// Can is what the session asking for a run is able to do. Every field is a
-// fact about the session and none of them is about the item.
+// Can is what the surface asking for a run is able to do. Every field is a
+// fact about that surface and none of them is about the item.
 type Can struct {
 	// Changeset reports the session tracking what it changed, which is the
 	// only way a run can know what its own work is.
 	Changeset bool
-	// Supervisor reports an agent supervisor to spawn children from.
+	// Supervisor reports somewhere to put work that is not this turn: a
+	// session answers with the agent supervisor it spawns children from, and
+	// a runner with no session answers with whether it can make an isolated
+	// copy of the checkout to run one in. What the field asks is whether a
+	// step that hands work to somebody else can happen at all, not which of
+	// the two arrangements the surface has.
 	Supervisor bool
 	// Runner reports commands being runnable here at all.
 	Runner bool
@@ -477,8 +482,7 @@ const (
 	// NeedChangeset is a step that changes the tree in a session with no
 	// record of what it changed.
 	NeedChangeset Need = "changeset"
-	// NeedSupervisor is a division into lanes with nothing to spawn writers
-	// from.
+	// NeedSupervisor is a division into lanes with nowhere to put a writer.
 	NeedSupervisor Need = "supervisor"
 	// NeedRunner is a command step where no command can be run.
 	NeedRunner Need = "runner"

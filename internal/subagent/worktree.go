@@ -455,3 +455,59 @@ func atoiDefault(s string, def int) int {
 	}
 	return n
 }
+
+// Worktree is one isolated copy of a checkout for a caller outside this
+// package: the backlog runner's fan-out, which has no supervisor to spawn
+// writers from and the same need for a lane that cannot see, or clash with,
+// what its neighbours are writing.
+//
+// It is this package's own worktree under an exported name rather than a
+// second implementation of one. The delicate half is the seeding — a lane
+// started from HEAD alone writes its patch against text the checkout no
+// longer has, and every hunk over a file the caller had already edited
+// clashes when it lands — and two copies of that reasoning come apart at the
+// first fix to either.
+// See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
+type Worktree struct{ h worktreeHandle }
+
+// NewWorktree makes one, seeded with the caller's uncommitted work: what `git
+// diff HEAD` reports, plus the untracked paths the caller says are its own.
+func NewWorktree(root string, untracked []string) (*Worktree, error) {
+	h, err := addWorktree(root, untracked)
+	if err != nil {
+		return nil, err
+	}
+	return &Worktree{h: h}, nil
+}
+
+// Root is where the work happens: the copy's own version of the directory
+// the caller was standing in, which is what keeps a lane's relative paths
+// meaning what they mean in the checkout.
+func (w *Worktree) Root() string { return w.h.root }
+
+// Land applies what was built here to the checkout it was copied from and
+// answers with the repository-relative paths the patch touched. A patch with
+// nothing in it lands nothing and names nothing, which is the answer for a
+// lane that changed no files.
+//
+// The apply is all-or-nothing (applyPatch), so a lane whose work overlaps
+// what another lane has already landed leaves the checkout exactly as it was
+// and says so with an error, rather than half-applying and leaving conflict
+// markers in files nobody has read.
+func (w *Worktree) Land() ([]string, error) {
+	patch, err := worktreePatch(w.h.dir)
+	if err != nil {
+		return nil, err
+	}
+	if strings.TrimSpace(patch) == "" {
+		return nil, nil
+	}
+	if err := applyPatch(w.h.repoTop, patch); err != nil {
+		return nil, err
+	}
+	return PatchFiles(patch), nil
+}
+
+// Remove tears the copy down. Best-effort, like every other teardown of one:
+// a directory that is already gone must not stop a run from ending.
+func (w *Worktree) Remove() { removeWorktree(w.h.repoTop, w.h.dir) }

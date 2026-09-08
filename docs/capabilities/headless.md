@@ -171,16 +171,79 @@ quietly offers a tool it cannot dispatch, or fails to offer one the other has.
 What it does not get is the things that need somebody there. Nothing pops a
 browser for a page it published — there is no guarantee of a desktop, and the
 URL reaches the transcript anyway. Durable memory proposes nothing, because a
-proposal is confirmed by a person. Sub-agents are not offered, because their
-spawn is an approval. And approvals themselves are policy's and never a
-classifier's: `--yes` and `--allow` opt in, the default denies, and a
-safety-flagged command is denied whatever the flags say
-([`approvals-and-safety.md`](approvals-and-safety.md)).
+proposal is confirmed by a person: an entry is a claim about you that outlives
+the run, and there is no one here to say whether it is true.
+
+Everything else is a gated call, and a gated call has answers that do not need
+a person. `--yes` and `--allow` are the standing ones, the default is a
+refusal, and a safety-flagged command is refused whatever the flags say
+([`approvals-and-safety.md`](approvals-and-safety.md)). What sits between "no
+to everything the flags did not name" and "yes to everything" is auto mode,
+below.
 
 A flag the run cannot honour is a usage error rather than a silent no-op.
 `--resume` with no chat named opens a picker, and a run with nobody in front
 of it can neither draw one nor be answered — so it says so, instead of
 starting from nothing while claiming to have resumed.
+
+## Auto mode fails closed
+
+`--mode auto` is the third answer. A call neither `--yes` nor `--allow`
+covers goes to the same permission classifier a session's auto mode uses: a
+small model, given the run's own conversation and the call being proposed, and
+asked whether this is the work that was asked for. It can say yes, and then
+the call runs.
+
+**What it cannot say is "ask".** A session's auto mode falls back to a card
+when the classifier times out, answers nothing usable, or is not configured;
+here that card would be drawn at nobody, so the fallback is a refusal instead.
+A classifier that is down is a run that gets nothing done, which is the right
+way round: the other reading of a broken judge is a run doing whatever it
+likes with no one watching.
+
+The backstops in front of it do not move. The deny list, the containment
+requirement and the safety table are read before the classifier is asked; a
+directory outside the working scope, or one only a person may put in it, is
+refused after a yes rather than before it, because a model judging one call is
+not who widens what a run may reach. `auto` is the only mode these surfaces
+take: the other three exist to decide which calls stop to ask a person, which
+is not a question with an answer here.
+
+A served session takes the same flag, and it means the same thing — the
+classifier answers, and no card is put to a client. That is the shape for a
+server started beside something that is not watching it; left off, a client
+answers every gated call one at a time, which is the ordinary way to drive one.
+
+## A run can delegate
+
+Given an answer to the spawn card — `--yes`, or auto mode's classifier — an
+unattended run can hand part of its job to a child, exactly as a session can:
+a researcher that reads and reports, a writer that works in an isolated copy
+of the checkout and hands back a patch. A run given neither is not offered the
+roles at all, because a tool the run can only be refused is worse than one it
+never saw.
+
+The child works under the run's own policy rather than one of its own. There
+is no second card to draw for the calls a child goes on to make, so the answer
+to the spawn is the answer to the child: a `--yes` run's children write and
+run commands, an auto-mode run's children reach the same classifier and the
+same refusal, and a request a child's own policy still stops to ask about is
+refused, because nothing here was given the standing to allow it. A writer's
+patch is the one exception, and only where the run may write at all: the run
+asked for the work and the tree is checked afterwards, so what is left to
+refuse is a patch that overlaps one already landed — which is what gets
+refused.
+
+A served session gets the roles unconditionally, because a client attached to
+it can answer the spawn card the way it answers every other. A scripted
+conversation gets none of them whatever it was given: the roles a conversation
+may spawn are the ones that only read, and a persona is worth having for the
+exchange with the person rather than for the paragraph it hands back — which
+is exactly what a run nobody is reading does not have.
+
+Children are cancelled and their worktrees removed when the run ends, on the
+same path everything else the run opened is released on, so a run that is
+killed after spawning leaves nothing behind either.
 
 ## Something else can drive it
 
@@ -265,13 +328,24 @@ change that run made. What a stage produced is read out of its
 transcript whatever status that process left, because a stage that ran out of
 rounds still did work and the machine judges a stage on its answer.
 
-Two of the gates cannot be taken here. The pause asks a person, and there is
-nobody to ask, so a run that reaches it stops with the questions written on
-the item rather than guessing; and a review that would have gone to a second
-agent is taken in the session instead, which is what a session with no
-supervisor already does. Everything else is unchanged — shhh runs the
-verification, shhh makes the commit, and only paths the run itself changed are
-staged.
+One gate cannot be taken here. The pause asks a person, and there is nobody to
+ask, so a run that reaches it stops with the questions written on the item
+rather than guessing.
+
+The two stages that need a second agent are taken. A review goes to a reader
+of its own — a process given the item, the plan and the run's diff, and none
+of the conversation that produced the work — because a run that grades itself
+is the weakest reading of the work there is. A large item is divided into
+lanes, and each lane is a process in an isolated copy of the checkout, all of
+them at once; the patches land one at a time afterwards, so two lanes over one
+file is an ending with evidence on it rather than a race
+([`todo.md`](todo.md#a-large-item-is-built-in-lanes)). Both need git — one for
+a diff to hand over, the other for a copy of the tree to work in — and outside
+a repository the run reads and builds in its own turn instead, with the step
+label saying so.
+
+Everything else is unchanged — shhh runs the verification, shhh makes the
+commit, and only paths the run itself changed are staged.
 
 The status is the run's own ending: `0` for an item that finished, `7` for one
 that blocked. A sprint stops on the first block, so `7` from `--all` means the

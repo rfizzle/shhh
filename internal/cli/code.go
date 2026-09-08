@@ -40,6 +40,7 @@ func newCodeCmd() *cobra.Command {
 	var addDirs []string
 	var secretFlags []string
 	var requireSandbox bool
+	var mode string
 
 	cmd := &cobra.Command{
 		Use:   "code [prompt]",
@@ -61,6 +62,16 @@ func newCodeCmd() *cobra.Command {
 			}
 			popts.output = output
 			headless := printMode || popts.json || popts.sandbox || cmd.Flags().Changed("output")
+			// The permission mode, which only a run with nobody in front of
+			// it takes as a flag: a session cycles its own with Shift+Tab
+			// and starts in behavior.default_mode, so a flag here would be a
+			// second way to say the same thing.
+			if popts.autoMode, err = parseUnattendedMode(mode); err != nil {
+				return err
+			}
+			if popts.autoMode && !headless {
+				return fmt.Errorf("--mode is for a run with nobody in front of it: pass it with --print, or use Shift+Tab and /permissions in a session")
+			}
 			if popts.maxRoundsSet && popts.maxRounds < 0 {
 				return fmt.Errorf("--max-rounds cannot be negative (0 removes the cap)")
 			}
@@ -90,11 +101,23 @@ func newCodeCmd() *cobra.Command {
 				requireSandbox: requireSandbox,
 			}
 			if headless {
+				// Sub-agent orchestration where this run was given an answer
+				// to the spawn card. Spawning is a gated call like any
+				// other, and --yes is the person answering every one of them
+				// in advance; auto mode is the classifier answering them
+				// instead. A run given neither has nobody to ask, so the
+				// roles are not offered at all — the model is told what it
+				// has, and a tool it can only be refused is worse than one
+				// it never saw.
+				// See docs/capabilities/headless.md#a-run-can-delegate.
+				session.agents = popts.answered()
 				return runPrintSession(cmd, args, session, popts)
 			}
-			// Sub-agent orchestration and durable memory are
-			// interactive-only: approvals and memory confirmations route to
-			// the user, which headless print mode cannot do.
+			// Sub-agent orchestration and durable memory both belong to a
+			// session, for different reasons: a memory proposal needs a
+			// person to confirm it, and there is none here. Spawning is the
+			// half that does not — it is a gated call, and the unattended
+			// surfaces answer it above.
 			session.agents = true
 			session.memory = true
 			return runChatSession(cmd, args, session)
@@ -113,6 +136,7 @@ func newCodeCmd() *cobra.Command {
 	cmd.Flags().StringVar(&popts.output, "output", "", "with --print, what the run writes: text (the answer as it is written), json (the transcript at the end) or jsonl (one event per line while it runs) (implies --print)")
 	cmd.Flags().BoolVar(&popts.yes, "yes", false, "with --print, auto-approve file edits and commands (safety-flagged commands stay denied)")
 	cmd.Flags().StringArrayVar(&popts.allow, "allow", nil, "with --print, auto-approve commands matching this prefix (repeatable; extends the config allowlist)")
+	cmd.Flags().StringVar(&mode, "mode", "", "with --print, the permission mode: `auto` puts a call --yes and --allow do not answer to the permission classifier, which refuses whatever it cannot approve (the only mode a run with no terminal takes)")
 	cmd.Flags().BoolVar(&popts.sandbox, "sandbox", false, "run approved commands inside a disposable container sandbox; needs a configured digest-pinned image (implies --print)")
 	cmd.Flags().BoolVar(&requireSandbox, "require-sandbox", false, "refuse the assistant's commands outright where no containment mechanism is in force, rather than running them unconfined")
 	cmd.Flags().IntVar(&popts.maxRounds, "max-rounds", 0, "cap consecutive tool-call rounds per turn (0 removes the cap, for a run left unattended; default: behavior.max_tool_rounds)")

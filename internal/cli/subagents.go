@@ -338,13 +338,14 @@ func childToolTokens(defs []provider.Tool) int64 {
 	return total
 }
 
-// buildSupervisor assembles the session's sub-agent supervisor. The session's
-// changeset comes in because a writer starts from the parent's tree, and the
-// files git has never heard of are the half of that tree only the session
-// itself can name.
+// buildSupervisor assembles a surface's sub-agent supervisor. untracked comes
+// in because a writer starts from the parent's tree, and the files git has
+// never heard of are the half of that tree only the surface itself can name:
+// a session reads them off its changeset, and a run that keeps none passes
+// nil, which is a writer starting from `git diff HEAD` alone.
 func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession, env *sessionEnv, agents *agentProfiles,
 	red *evidence.Reducer, recorder *observeRecorder, db *storage.DB, prices *pricing.Table,
-	classifier *agent.Classifier, sc *scope.Scope, ledger *meter.Ledger, changes *changeset.Store) *subagent.Supervisor {
+	classifier *agent.Classifier, sc *scope.Scope, ledger *meter.Ledger, untracked func() []string) *subagent.Supervisor {
 	root, err := os.Getwd()
 	if err != nil {
 		root = "."
@@ -578,7 +579,7 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 		// pinned (RootArgs). This is what stops a child *command* writing
 		// somewhere the parent never put in scope.
 		ScopeDirs: sc.All,
-		Untracked: func() []string { return sessionUntracked(changes) },
+		Untracked: untracked,
 	})
 }
 
@@ -793,4 +794,56 @@ func webToolsFor(ts *web.Toolset) prompt.WebTools {
 		return prompt.WebTools{}
 	}
 	return prompt.WebTools{Fetch: true, Search: ts.Searcher != nil}
+}
+
+// answerChildAsks answers the approval requests a child routes to a parent
+// that is not a person: a scripted run, or a served session whose protocol
+// draws cards for the calls of the turn it is running and has no vocabulary
+// for a child's. It reads until the supervisor is closed and the event
+// channel with it, and a nil supervisor starts nothing.
+//
+// It is not optional where a supervisor exists. The supervisor blocks
+// delivering an event, so a surface that spawned a child and read nothing
+// would stop the child at its first routed request and itself behind it.
+//
+// A patch is the one request it approves, and only where the run may write at
+// all. The lanes a patch comes from were checked disjoint before they were
+// spawned, and what a writer built is verified afterwards by the surface that
+// asked for it; the one thing left to refuse is a patch that overlaps one
+// already applied, which is exactly what the supervisor flags. Everything
+// else is refused: the answer to the spawn was the answer to the child, and a
+// call the child's own policy stopped to ask about is one nobody here was
+// given the standing to allow.
+// See docs/capabilities/subagents.md#a-child-answers-to-the-session.
+//
+// answerChildAsk is that rule on its own, because the loop around it is a
+// goroutine over a channel and the rule is the part worth asserting.
+func answerChildAsk(ask *subagent.Ask, writes bool) bool {
+	return writes && ask.Kind == subagent.AskPatch && len(ask.Warnings) == 0
+}
+
+func answerChildAsks(sup *subagent.Supervisor, writes bool, wrote func(...string)) {
+	if sup == nil {
+		return
+	}
+	go func() {
+		for ev := range sup.Events() {
+			switch ev.Kind {
+			case subagent.EventAsk:
+				if ev.Ask == nil {
+					continue
+				}
+				ev.Ask.Respond(answerChildAsk(ev.Ask, writes))
+			case subagent.EventPatch:
+				if wrote == nil || ev.Patch == nil {
+					continue
+				}
+				paths := make([]string, 0, len(ev.Patch.Files))
+				for _, f := range ev.Patch.Files {
+					paths = append(paths, f.Path)
+				}
+				wrote(paths...)
+			}
+		}
+	}()
 }

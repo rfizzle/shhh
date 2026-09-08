@@ -544,3 +544,51 @@ func TestAChildLeavesTheSessionsLateAnswersAlone(t *testing.T) {
 		t.Errorf("a child left a question behind for the session to collect: %q", held)
 	}
 }
+
+// What a run with nobody in front of it answers a child's routed request
+// with. The patch is the one yes, and it is a yes exactly where the run may
+// change the tree at all — a run that could spawn a writer and could not take
+// what the writer wrote would spend the whole fan-out for nothing, and the
+// child's own report would say the user declined it about a run with no user.
+func TestAnswerChildAsk_ThePatchIsTheOneRequestARunAnswers(t *testing.T) {
+	patch := subagent.NewAsk("writer-1", subagent.AskPatch, "apply 3 files")
+	clashing := subagent.NewAsk("writer-2", subagent.AskPatch, "apply 1 file")
+	clashing.Warnings = []string{"overwrites a.go, already changed by writer-1"}
+
+	for name, tc := range map[string]struct {
+		ask    *subagent.Ask
+		writes bool
+		want   bool
+	}{
+		"a patch from a run that may write":      {patch, true, true},
+		"a patch from a run that may not":        {patch, false, false},
+		"a patch that overlaps one already made": {clashing, true, false},
+		"a command the child stopped to ask on":  {subagent.NewAsk("w", subagent.AskCommand, "run rm -rf /"), true, false},
+		"an edit inside the child's own tree":    {subagent.NewAsk("w", subagent.AskEdit, "write a.go"), true, false},
+		"anything else a child routes":           {subagent.NewAsk("w", subagent.AskGeneric, "use a tool"), true, false},
+	} {
+		if got := answerChildAsk(tc.ask, tc.writes); got != tc.want {
+			t.Errorf("%s = %v, want %v", name, got, tc.want)
+		}
+	}
+}
+
+// The two flags that give a run something to say beyond a refusal, and the
+// one predicate both the delegate offer and the patch answer read.
+func TestPrintOptsAnswered_EitherFlagIsAnAnswer(t *testing.T) {
+	for name, tc := range map[string]struct {
+		opts printOpts
+		want bool
+	}{
+		"nothing given":  {printOpts{}, false},
+		"--yes":          {printOpts{yes: true}, true},
+		"--mode auto":    {printOpts{autoMode: true}, true},
+		"both":           {printOpts{yes: true, autoMode: true}, true},
+		"--allow alone":  {printOpts{allow: []string{"go test"}}, false},
+		"--sandbox only": {printOpts{sandbox: true}, false},
+	} {
+		if got := tc.opts.answered(); got != tc.want {
+			t.Errorf("%s = %v, want %v", name, got, tc.want)
+		}
+	}
+}

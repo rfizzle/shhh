@@ -125,6 +125,11 @@ This is worth stating as a commitment because the opposite is the natural way
 to write it. A classifier that returns a boolean gets a zero value, and the
 zero value has to be the one that costs nothing.
 
+Where there is no human to fall back to — a scripted run in auto mode, a
+served session told nobody is attached — the fallback is a refusal instead,
+which is the same commitment with the one remaining answer taken away
+([`headless.md`](headless.md#auto-mode-fails-closed)).
+
 ## Blast radius
 
 An approval that names the action but not its consequences pushes the risk

@@ -3,10 +3,12 @@ package cli
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -62,7 +64,7 @@ func headlessDriver(t *testing.T, root string, answer func(run.Step) string) (*t
 	if err != nil {
 		t.Fatal(err)
 	}
-	d.turn = func(_ context.Context, _ time.Time, step run.Step) (todoTurn, error) {
+	d.turn = func(_ context.Context, _ time.Time, _ string, step run.Step) (todoTurn, error) {
 		return todoTurn{text: answer(step), code: exitDone}, nil
 	}
 	return d, out
@@ -159,7 +161,7 @@ func TestTodoRunHeadless_NoCommitSprintKeepsTheItemsApart(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	d.turn = func(_ context.Context, _ time.Time, step run.Step) (todoTurn, error) {
+	d.turn = func(_ context.Context, _ time.Time, _ string, step run.Step) (todoTurn, error) {
 		if step.Stage == run.StageImplement {
 			// One file per item, so what each run may claim is decidable.
 			name := "a.go"
@@ -488,7 +490,7 @@ func asExitError(err error, target *exitError) bool {
 func TestTodoRunHeadless_ACutStageAnswerBlocksTheItem(t *testing.T) {
 	root := todoRepo(t, "a-one")
 	d, out := headlessDriver(t, root, nil)
-	d.turn = func(_ context.Context, _ time.Time, step run.Step) (todoTurn, error) {
+	d.turn = func(_ context.Context, _ time.Time, _ string, step run.Step) (todoTurn, error) {
 		return todoTurn{text: headlessPlan, code: exitDone, truncated: true}, nil
 	}
 
@@ -572,7 +574,7 @@ func TestTodoRunHeadless_AReadingRunIsSpentInConversations(t *testing.T) {
 	root := aBacklogOf(t, t.TempDir(), "kind: reading\ndepth: quick\n", "a-one")
 	d, out := headlessDriver(t, root, nil)
 	var argv [][]string
-	d.turn = func(_ context.Context, _ time.Time, step run.Step) (todoTurn, error) {
+	d.turn = func(_ context.Context, _ time.Time, _ string, step run.Step) (todoTurn, error) {
 		// The argv the stage's own process would be started with, which is
 		// the whole of what the choice of process is.
 		argv = append(argv, todoStageArgs(d.steps().Writes(), step.Mode))
@@ -611,7 +613,7 @@ func TestTodoRunHeadless_AReadingIsReviewedWithNoChangeToPointAt(t *testing.T) {
 	root := aBacklogOf(t, t.TempDir(), "kind: reading\n", "a-one")
 	d, out := headlessDriver(t, root, nil)
 	var argv [][]string
-	d.turn = func(_ context.Context, _ time.Time, step run.Step) (todoTurn, error) {
+	d.turn = func(_ context.Context, _ time.Time, _ string, step run.Step) (todoTurn, error) {
 		argv = append(argv, todoStageArgs(d.steps().Writes(), step.Mode))
 		if step.Stage == "check" {
 			return todoTurn{text: "verdict: clean", code: exitDone}, nil
@@ -744,7 +746,7 @@ func TestTodoRunHeadless_AContinuedReadingKeepsItsOwnSteps(t *testing.T) {
 
 	d, out := headlessDriver(t, root, nil)
 	var stages []string
-	d.turn = func(_ context.Context, _ time.Time, step run.Step) (todoTurn, error) {
+	d.turn = func(_ context.Context, _ time.Time, _ string, step run.Step) (todoTurn, error) {
 		stages = append(stages, string(step.Stage))
 		return todoTurn{text: readingAnswers(step), code: exitDone}, nil
 	}
@@ -813,7 +815,7 @@ func TestTodoDriver_TheStageProcessIsStartedWithTheArgsItsModeChose(t *testing.T
 			argv := filepath.Join(t.TempDir(), "argv")
 			d.bin = stageBinary(t, argv)
 
-			got, err := d.ask(context.Background(), time.Time{},
+			got, err := d.ask(context.Background(), time.Time{}, d.root,
 				run.Step{Stage: "scope", Mode: c.mode, Prompt: "the prompt"})
 			if err != nil {
 				t.Fatalf("the stage did not run: %v", err)
@@ -829,5 +831,187 @@ func TestTodoDriver_TheStageProcessIsStartedWithTheArgsItsModeChose(t *testing.T
 				t.Fatalf("the stage was started as %q, want %q", line, c.want)
 			}
 		})
+	}
+}
+
+// unpausedCode is the shipped code pipeline with the gate before the split
+// taken off. The gate is what stops a large item from ever reaching a
+// fan-out with nobody watching — it asks a person, and a run that reaches it
+// stops with the questions on the item — so a profile that does not pause at
+// the largest grade is the one shape in which a headless division into lanes
+// happens at all.
+func unpausedCode() run.Pipeline {
+	p := run.BuiltinCode()
+	for i := range p.Steps {
+		if p.Steps[i].Kind == run.KindGate {
+			p.Steps[i].Pause = []run.PauseRule{run.PauseNever, run.PauseNever, run.PauseNever}
+		}
+	}
+	return p
+}
+
+// laneOf reads which lane a writer's task is for, which is how a stub stands
+// in for four writers at once: the task names its lane in the first line and
+// nothing else in the run does.
+func laneOf(prompt string) string {
+	const marker = `You are building lane "`
+	i := strings.Index(prompt, marker)
+	if i < 0 {
+		return ""
+	}
+	rest := prompt[i+len(marker):]
+	if j := strings.IndexByte(rest, '"'); j >= 0 {
+		return rest[:j]
+	}
+	return ""
+}
+
+// A large item worked with nobody watching: four lanes, each built in a copy
+// of the checkout it cannot see out of, every patch landed on the real tree,
+// and one integration turn over the four of them.
+//
+// The lanes write only in the directory they are handed, which is what makes
+// the case about the isolation rather than about four turns in one checkout:
+// a lane whose file reached the tree without its patch landing would leave
+// the run blocked on "its patch did not land".
+func TestTodoRunHeadless_AFanOutBuildsEveryLaneInACopyAndLandsThePatches(t *testing.T) {
+	root := todoRepo(t, "big-one")
+	withBacklogProfile(t, todo.BuiltinCode(), unpausedCode())
+
+	plan := "## Plan: do it\n\n1. Change four files\n   files: a.go\n   action: edit\n\nsize: L\nquestions: none\n"
+	var lanes strings.Builder
+	for _, name := range []string{"one", "two", "three", "four"} {
+		fmt.Fprintf(&lanes, "LANE: %s\npaths: %s.go\ntask: write %s.go\n\n", name, name, name)
+	}
+
+	d, out := headlessDriver(t, root, nil)
+	var laneDirs sync.Map
+	d.turn = func(_ context.Context, _ time.Time, dir string, step run.Step) (todoTurn, error) {
+		if lane := laneOf(step.Prompt); lane != "" {
+			laneDirs.Store(lane, dir)
+			if err := os.WriteFile(filepath.Join(dir, lane+".go"), []byte("package "+lane+"\n"), 0o644); err != nil {
+				return todoTurn{}, err
+			}
+			return todoTurn{text: "wrote " + lane + ".go", code: exitDone}, nil
+		}
+		switch step.Stage {
+		case run.StageResearch:
+			return todoTurn{text: plan, code: exitDone}, nil
+		case run.StageSplit:
+			return todoTurn{text: lanes.String(), code: exitDone}, nil
+		case run.StageImplement:
+			return todoTurn{text: "Wired the four lanes together.", code: exitDone}, nil
+		case run.StageReview:
+			return todoTurn{text: "verdict: clean", code: exitDone}, nil
+		case run.StageCommit:
+			return todoTurn{text: "COMMIT: Build it\n\nBecause.\n\nREPORT: ## Report\nSummary: done.", code: exitDone}, nil
+		}
+		return todoTurn{}, fmt.Errorf("no answer for the %s stage", step.Stage)
+	}
+
+	store := todo.Load(todo.BuiltinCode(), root)
+	it, ok := store.Find("big-one")
+	if !ok {
+		t.Fatal("the item should be there")
+	}
+	st := d.work(context.Background(), it, nil)
+	if st.Stage != run.StageDone {
+		t.Fatalf("the run stopped at %s — %s\n%s", st.Stage, st.Blocked, out.String())
+	}
+	// Every lane's patch reached the checkout, which is the whole of what a
+	// lane in a copy of the tree has to produce.
+	for _, name := range []string{"one", "two", "three", "four"} {
+		if _, err := os.Stat(filepath.Join(root, name+".go")); err != nil {
+			t.Errorf("lane %s left nothing on the tree: %v", name, err)
+		}
+		dir, seen := laneDirs.Load(name)
+		if !seen {
+			t.Fatalf("lane %s was never built", name)
+		}
+		if dir.(string) == root {
+			t.Errorf("lane %s was built in the checkout rather than in a copy of it", name)
+		}
+	}
+	// And the copies are gone: a worktree per lane left behind would make
+	// every later run of the same repository slower and stranger.
+	if trees, _ := todoGit(root, "worktree", "list"); strings.Count(trees, "\n") != 0 {
+		t.Errorf("the lanes' copies should be removed:\n%s", trees)
+	}
+	if log, _ := todoGit(root, "log", "--format=%s"); !strings.Contains(log, "Build it") {
+		t.Fatalf("the integrated work should be committed:\n%s", log)
+	}
+}
+
+// The reading is done by somebody that did not write the change, and it is
+// handed the change: a fresh turn whose whole prompt is the reviewer's task
+// with the diff in it, rather than the orchestrator reading its own work.
+func TestTodoRunHeadless_TheReviewGoesToAReaderGivenTheDiff(t *testing.T) {
+	root := todoRepo(t, "a-one")
+	// The item is graded where the plan grades it, so the gate before the
+	// work has nothing to stop for: a grade the reading raised is a decision
+	// for a person, and this case is about the one after it.
+	path := filepath.Join(todo.Dir(root), "a-one.md")
+	body, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(strings.Replace(string(body), "size: S", "size: M", 1)), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var reviewed string
+	d, out := headlessDriver(t, root, nil)
+	answer := stageAnswers(root)
+	d.turn = func(_ context.Context, _ time.Time, _ string, step run.Step) (todoTurn, error) {
+		if step.Stage == run.StageReview {
+			reviewed = step.Prompt
+		}
+		// The plan grades the item M, which is the smallest grade that is
+		// read by somebody else.
+		text := answer(step)
+		if step.Stage == run.StageResearch {
+			text = strings.Replace(text, "size: S", "size: M", 1)
+		}
+		return todoTurn{text: text, code: exitDone}, nil
+	}
+	store := todo.Load(todo.BuiltinCode(), root)
+	it, _ := store.Find("a-one")
+	st := d.work(context.Background(), it, nil)
+	if st.Stage != run.StageDone {
+		t.Fatalf("the run stopped at %s — %s\n%s", st.Stage, st.Blocked, out.String())
+	}
+	if !strings.Contains(reviewed, "Review this change") || !strings.Contains(reviewed, "diff --git") || !strings.Contains(reviewed, "a.go") {
+		t.Fatalf("the reader should be handed the reviewer's task and the run's diff, got:\n%s", reviewed)
+	}
+	// The reader is named before it runs, which is what the record and the
+	// step label say the reading was done by.
+	if named := out.String(); !strings.Contains(named, "todo-review-a-one-1") {
+		t.Fatalf("the reading should name the reader:\n%s", named)
+	}
+}
+
+// Outside a repository there is no change to hand over, so the reading falls
+// back to the run's own turn — and says which of the two it did.
+func TestTodoRunHeadless_WithNoRepositoryTheRunReadsItsOwnWork(t *testing.T) {
+	root := aBacklogOf(t, t.TempDir(), "size: M\n", "a-one")
+	var read string
+	d, _ := headlessDriver(t, root, nil)
+	d.turn = func(_ context.Context, _ time.Time, _ string, step run.Step) (todoTurn, error) {
+		if step.Stage == run.StageReview {
+			read = step.Prompt
+		}
+		return todoTurn{text: "verdict: clean", code: exitDone}, nil
+	}
+	if d.repo {
+		t.Fatal("this checkout is meant not to be a repository")
+	}
+	store := todo.Load(todo.BuiltinCode(), root)
+	it, _ := store.Find("a-one")
+	step := d.review(context.Background(), time.Time{}, run.Start(it, "s", "", 0, run.Options{}),
+		it, run.Step{Stage: run.StageReview})
+	if step.Action != run.ActionPrompt || !strings.Contains(step.Shown, "no reviewer agent") {
+		t.Fatalf("the run should read its own work and say so: %+v", step)
+	}
+	if read != "" {
+		t.Fatalf("no reader should have been asked: %q", read)
 	}
 }

@@ -520,7 +520,7 @@ func todoSprintPlanHeadless(cmd *cobra.Command, spec string, asJSON bool) error 
 func todoSprintPlanRead(ctx context.Context, d *todoDriver, s *todo.Store, candidates []todo.Item, budget todo.SprintBudget) (todo.Plan, error) {
 	// The step names no stage: planning a set is not a stage of working
 	// one, and nothing here is gated, checkpointed or continued.
-	turn, err := d.turn(ctx, time.Time{}, run.Step{
+	turn, err := d.turn(ctx, time.Time{}, d.root, run.Step{
 		Action: run.ActionPrompt, Mode: run.ModePlan,
 		Prompt: s.PlanPrompt(candidates, budget.String()), Shown: "plan the sprint",
 	})
@@ -1020,7 +1020,7 @@ func todoGroomTargets(s *todo.Store, slug string, all bool) ([]todo.Item, error)
 
 // todoGroomRead spends the one turn and reads its answer against the file.
 func todoGroomRead(ctx context.Context, d *todoDriver, it todo.Item) (todo.Reading, error) {
-	turn, err := d.turn(ctx, time.Time{}, run.Step{
+	turn, err := d.turn(ctx, time.Time{}, d.root, run.Step{
 		Action: run.ActionPrompt, Stage: run.StageGroom, Mode: run.ModePlan,
 		Prompt: run.GroomPrompt(todoPipeline(), it), Shown: "groom " + it.Slug,
 	})

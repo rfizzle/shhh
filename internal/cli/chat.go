@@ -54,13 +54,18 @@ func newChatCmd() *cobra.Command {
 			session.resumeName = resumeNamed(resumeChat)
 			if printMode || popts.json || cmd.Flags().Changed("output") {
 				// The session says what it is rather than leaving the two
-				// fields describing the screen it does not have. A delegate
-				// is a spawn and a spawn is an approval; a memory is a
-				// proposal the person confirms. Neither has anybody to
-				// answer for it here, so neither is registered — and the
-				// coding agent says the same thing the other way round, by
-				// turning both on only for the interactive branch.
-				// See docs/capabilities/headless.md#everything-the-session-has-unless-somebody-has-to-answer.
+				// fields describing the screen it does not have. A memory is
+				// a proposal the person confirms, and there is nobody here to
+				// confirm one.
+				//
+				// A delegate is a spawn, which is a gated call a scripted
+				// coding run does answer with --yes (code.go). A
+				// conversation's are still left out, because the roles it may
+				// spawn are the ones that only read, and a persona is worth
+				// having for the exchange with the person rather than for the
+				// paragraph it hands back — which is precisely what a run
+				// with nobody reading it does not have.
+				// See docs/capabilities/chat.md#colleagues-not-workers.
 				session.agents, session.memory = false, false
 				return runPrintSession(cmd, args, session, popts)
 			}

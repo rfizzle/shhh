@@ -256,6 +256,24 @@ const DeniedHostResult = "error: this host is refused for this session. No URL o
 	"permission mode, and no approval can allow one, so another path on the same host will not work either. " +
 	"Find the answer on another source, or say what you were looking for and let the user decide."
 
+// UnattendedRefusedResult is the tool result recorded for a gated call an
+// unattended run refused: a run behind --print, or a served session with no
+// client to draw a card at. It carries the reason the policy reached, which
+// is the half a model can act on — a call refused for what it reaches is a
+// different next round from one the classifier judged unrelated.
+//
+// What it does not offer is a way to ask. Every other refusal here ends by
+// sending the model back to the user; there is no user, and a result that
+// told it to wait for one would cost the run the rest of its rounds waiting.
+// See docs/capabilities/headless.md#auto-mode-fails-closed.
+func UnattendedRefusedResult(what, reason string) string {
+	out := "error: " + what + " not approved"
+	if strings.TrimSpace(reason) != "" {
+		out += ": " + strings.TrimSpace(reason)
+	}
+	return out + ". This run has nobody to ask; say what you were trying to do and finish with what you can."
+}
+
 // PlanModeResult is the tool result recorded for a gated call refused in
 // plan mode, so the model learns why nothing ran instead of the call being
 // silently dropped.

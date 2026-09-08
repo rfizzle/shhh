@@ -37,6 +37,7 @@ import (
 	"github.com/rfizzle/shhh/internal/stdin"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/structural"
+	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/chat"
 	"github.com/rfizzle/shhh/internal/web"
@@ -195,12 +196,54 @@ type printOpts struct {
 	yes     bool
 	allow   []string
 	sandbox bool
+	// autoMode is `--mode auto`: a gated call neither --yes nor --allow
+	// answers goes to the permission classifier instead of being refused
+	// outright, and every way of not reaching a verdict is a refusal
+	// (approvals.go).
+	autoMode bool
 	// maxRounds overrides behavior.max_tool_rounds for this run, where 0
 	// means no cap at all. maxRoundsSet tells the two zeroes apart: the flag
 	// left alone (config, then the default) and --max-rounds 0 (uncapped).
 	maxRounds    int
 	maxRoundsSet bool
 }
+
+// parseUnattendedMode reads --mode for a surface with nobody in front of it.
+//
+// `auto` is the only name it takes, and the refusal names the other three
+// rather than pretending they do not exist: manual and accept-edits are the
+// two modes whose whole content is which calls they stop to ask about, and
+// plan mode's refusals are a shape a run left to work on its own has no use
+// for. What an unattended run needs is the one mode that decides, and the
+// flags already say the rest.
+// See docs/capabilities/headless.md#auto-mode-fails-closed.
+func parseUnattendedMode(name string) (bool, error) {
+	trimmed := strings.ToLower(strings.TrimSpace(name))
+	if trimmed == "" {
+		return false, nil
+	}
+	mode, err := agent.ParseMode(trimmed)
+	if err != nil {
+		return false, fmt.Errorf("--mode: %w", err)
+	}
+	if mode != agent.ModeAuto {
+		return false, fmt.Errorf("--mode %s needs somebody to prompt and there is nobody here: auto is the only mode a run with no terminal takes", mode)
+	}
+	return true, nil
+}
+
+// answered reports the run having been given something that can say yes to a
+// gated call at all: --yes answers every one of them in advance, and auto
+// mode puts each of them to the classifier. A run with neither refuses them
+// all, which is why it is offered no delegate and can land no child's patch
+// — neither of those is a decision it has any way to make.
+//
+// It is one predicate and not two conditions written out at each site,
+// because the two sites are the same question asked about the same run: a run
+// that may spawn a writer and may not take what the writer wrote has spent
+// the whole fan-out for nothing, and the child's own report says the user
+// declined it, about a run that has no user.
+func (o printOpts) answered() bool { return o.yes || o.autoMode }
 
 // rounds is the per-turn tool-round cap for this run: the flag when it was
 // given, the config otherwise. Hitting the cap ends a headless run with
@@ -389,6 +432,18 @@ func (w *writtenByCalls) note(tc provider.ToolCall, result string) {
 	}
 	w.mu.Lock()
 	w.list = append(w.list, path)
+	w.mu.Unlock()
+}
+
+// wrote adds paths a call did not make: a child's patch landing on the tree
+// is this run changing files, and nothing in the call log says so — the
+// writer edited a copy of the checkout and the parent only applied it.
+func (w *writtenByCalls) wrote(paths ...string) {
+	if len(paths) == 0 {
+		return
+	}
+	w.mu.Lock()
+	w.list = append(w.list, paths...)
 	w.mu.Unlock()
 }
 
@@ -637,6 +692,22 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 
 	registerSkills(&session)
 
+	// Sub-agent orchestration, where this run was started with an answer to
+	// the spawn card: --yes, which answers every other gated call, or auto
+	// mode, whose classifier answers this one the way it answers the rest
+	// (code.go). The roles are the built-in two plus whatever profiles the
+	// user wrote; a profile that does not load stops the run naming the file,
+	// exactly as it stops a session.
+	// See docs/capabilities/headless.md#a-run-can-delegate.
+	var agents *agentProfiles
+	if session.agents {
+		agents, err = loadAgentProfiles(true)
+		if err != nil {
+			return err
+		}
+		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), subagent.Definitions(agents.profiles)...)
+	}
+
 	// The model is told where the work is; a headless run cannot be
 	// asked for a directory mid-flight, so knowing the boundary is the
 	// difference between a report that names it and a round spent retrying.
@@ -825,6 +896,40 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		}
 	}()
 
+	// Session observability: headless runs record the same
+	// content-free events as interactive sessions; failure just disables
+	// recording. Tool calls are strictly sequential here, so one start
+	// timestamp is enough for durations.
+	//
+	// It is opened before the agent rather than after because the sub-agent
+	// supervisor below is built with it: a child's own row is linked to this
+	// one, and a supervisor built first would have no parent to link to.
+	recorder := startObserveRecorder(db, "print", env.prov.Name(), env.modelName, prices)
+	defer recorder.end()
+	hooks.SetSession(hookSession(recorder.sessionID()))
+	// The mode a run this shape answers with. It is empty unless --mode auto
+	// was given: a run answering with --yes and --allow alone is not in a
+	// mode, and borrowing the one a session would have started in would put
+	// a reading in the record that nothing here reads.
+	recordedMode := ""
+	if opts.autoMode {
+		recordedMode = agent.ModeAuto.String()
+	}
+	recorder.stamp(env.prompts.fingerprintOf(env.sysPrompt), session.skills.Len(), projectFingerprintRoot(), sessionSettings(cfg, runSettings{
+		mode:       recordedMode,
+		effort:     env.effort,
+		rounds:     roundCapFor(opts.rounds(cfg)),
+		sandbox:    sandboxProfile,
+		model:      auxiliaryModel(env.provName, env.modelName),
+		summary:    cfg.HeadlessSummaryEnabled(),
+		classifier: opts.autoMode,
+	}))
+	// The gate's verdict, mirroring the interactive session — and a run
+	// with nobody in front of it is the one whose verdict the record most
+	// needs, because there was no one there to read it on the way past.
+	recordGateVerdicts(qgate, recorder)
+	recordSearches(session.web, recorder)
+
 	a := agent.New(messages, env.stream)
 	a.SetSteering(steering(cfg, env.prompts))
 	a.SetScrub(session.vault.ScrubMessage)
@@ -838,6 +943,49 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// placeholder names is one this run's own evidence tool reads.
 	// See docs/capabilities/evidence.md#a-trim-makes-the-same-promise.
 	a.StoreElided(red.Keep)
+	// Auto mode's judge, where --mode auto asked for one: the same
+	// classifier a session runs, with the one answer this surface cannot
+	// give taken away (approvals.go). It reads the run's own conversation as
+	// it stands at the round the call was made in.
+	var judge *autoJudge
+	classifier := buildClassifier(cfg, env, ledger)
+	if opts.autoMode {
+		judge = &autoJudge{ctx: cmd.Context(), classifier: classifier, recent: a.Messages, cwd: hookCwd}
+	}
+
+	// Sub-agent orchestration: spawn_agent and agent_report short-circuit on
+	// the executor chain, and Close cancels the child tree and removes the
+	// worktrees its writers were given — the same defer a session tears its
+	// children down on, so a run that is killed after spawning leaves no
+	// worktree behind either.
+	//
+	// A child works under this run's policy and not one of its own: --yes is
+	// the blanket grant a session records when the user answers [a], and a
+	// child that did not inherit it would block on a card nobody can draw.
+	//
+	// The ceiling is auto whether or not --mode auto was given, because
+	// there is no mode that spells "--yes". Auto is the nearest one — edits
+	// apply, the allowlist runs, and everything else is judged — and the
+	// grants beside it are what make the difference: with them a `--yes`
+	// child runs its commands unasked, and without them an auto-mode child
+	// reaches the same classifier and the same fail-closed refusal the run
+	// itself does.
+	// See docs/capabilities/subagents.md#a-child-answers-to-the-session.
+	var sup *subagent.Supervisor
+	exec := ts.executor(session)
+	if session.agents {
+		// An unattended run seeds a writer's worktree from `git diff HEAD`
+		// and nothing else. A session names the untracked files it created
+		// out of its changeset; this run keeps no changeset, and reading the
+		// tree for them instead would carry a person's scratch files into
+		// every worktree (docs/capabilities/subagents.md#a-writer-starts-from-your-tree).
+		sup = buildSupervisor(cmd.Context(), cfg, session, env, agents, red, recorder, db, prices, classifier, sc, ledger, nil)
+		sup.SetParentMode(agent.ModeAuto)
+		sup.SetParentGrants(agent.Grants{AllEdits: opts.yes, AllCommands: opts.yes, Commands: opts.allow})
+		defer sup.Close()
+		exec = sup.WrapExecutor(exec)
+	}
+
 	// Repeat detection goes on outside the shared chain, so it sees every
 	// tool the chain can dispatch and the result the model will actually
 	// read. A headless run needs it most: there is nobody watching to notice
@@ -850,31 +998,9 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		func(name string, args json.RawMessage) bool {
 			return gate(provider.ToolCall{Name: name, Arguments: string(args)})
 		},
-		hook.Executor(agent.NewRepeatDetector().WrapExecutor(ts.executor(session))))))
+		hook.Executor(agent.NewRepeatDetector().WrapExecutor(exec)))))
 	a.SetMaxRounds(opts.rounds(cfg))
 
-	// Session observability: headless runs record the same
-	// content-free events as interactive sessions; failure just disables
-	// recording. Tool calls are strictly sequential here, so one start
-	// timestamp is enough for durations.
-	recorder := startObserveRecorder(db, "print", env.prov.Name(), env.modelName, prices)
-	defer recorder.end()
-	hooks.SetSession(hookSession(recorder.sessionID()))
-	// No mode and no classifier: a headless run answers approvals with
-	// --yes and --allow, and the record says so by leaving both empty
-	// rather than borrowing the mode a session would have started in.
-	recorder.stamp(env.prompts.fingerprintOf(env.sysPrompt), session.skills.Len(), projectFingerprintRoot(), sessionSettings(cfg, runSettings{
-		effort:  env.effort,
-		rounds:  roundCapFor(opts.rounds(cfg)),
-		sandbox: sandboxProfile,
-		model:   auxiliaryModel(env.provName, env.modelName),
-		summary: cfg.HeadlessSummaryEnabled(),
-	}))
-	// The gate's verdict, mirroring the interactive session — and a run
-	// with nobody in front of it is the one whose verdict the record most
-	// needs, because there was no one there to read it on the way past.
-	recordGateVerdicts(qgate, recorder)
-	recordSearches(session.web, recorder)
 	// The stream, where one was asked for. It is opened here rather than at
 	// the first event so that a consumer that read nothing still sees the
 	// close line, and it is nil for every other shape, which every write to
@@ -912,7 +1038,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	var usage provider.Usage
 	webTools := session.web
 	mcpTools := session.mcpTools
-	gate = unattendedGate(webTools, procSup, mcpTools)
+	gate = unattendedGate(webTools, procSup, mcpTools, sup)
 	// A non-interactive run has nobody to notice it has drifted or that it
 	// already has what it needs, which is why readings default on here. The
 	// prompt is the instruction every one of them is judged against.
@@ -927,7 +1053,14 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// model stops is what says this run was refused rather than finished.
 	verdict := &lastVerdict{}
 	resolve := headlessApprover(cmd.Context(), opts, allowlist, cfg.Behavior.CommandDenylist, run, containRefusal, red, verdict.wrap(obs.decision),
-		session.web, procSup, chainMutation(lspMutationHook(session.lsp), hookPostMutation(hooks)), sc, session.mcpTools, session.structural)
+		session.web, procSup, chainMutation(lspMutationHook(session.lsp), hookPostMutation(hooks)), sc, session.mcpTools, session.structural,
+		unattended{sup: sup, judge: judge})
+	// A supervisor blocks on its event channel, so a run that spawned a
+	// child and read nothing would stop the child at its first routed
+	// request and itself behind it. What this run's own calls wrote is where
+	// a landed patch is added, so the tree reading, the close gate and the
+	// git stager all see a child's work as this run's (subagents.go).
+	answerChildAsks(sup, opts.answered(), own.wrote)
 	// Three readers want that list — the tree check, as the subtrahend for
 	// what somebody else changed; the close run, to know whether this turn
 	// changed anything worth checking; and the git stager, which may stage
@@ -1411,35 +1544,104 @@ func headlessWrites(session chatSession, own *writtenByCalls) *structural.Writes
 // containRefusal, when set, is the answer every command gets before policy is
 // consulted at all: a run told to require containment on a host with none has
 // nothing left to decide.
-func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist []string, run func(context.Context, string) (string, int), containRefusal string, red *evidence.Reducer, record func(decision, reason string), webTools *web.Toolset, procSup *process.Supervisor, mutationHook chat.MutationHook, sc *scope.Scope, mcpTools *mcp.Toolset, structTools *structural.Toolset) func(provider.ToolCall) string {
+//
+// un is what this run has beyond its flags: the supervisor a spawn is handed
+// to, and the judge a call the flags did not answer is put to (approvals.go).
+// A zero value is the surface exactly as it was — flags, or a refusal.
+func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist []string, run func(context.Context, string) (string, int), containRefusal string, red *evidence.Reducer, record func(decision, reason string), webTools *web.Toolset, procSup *process.Supervisor, mutationHook chat.MutationHook, sc *scope.Scope, mcpTools *mcp.Toolset, structTools *structural.Toolset, un unattended) func(provider.ToolCall) string {
 	note := func(decision, reason string) {
 		if record != nil {
 			record(decision, reason)
 		}
 	}
+	// answer is what a gated call gets once every standing refusal — the
+	// containment requirement, the deny list, the safety table — has had its
+	// say: the flags, then the classifier where --mode auto asked for one,
+	// then a refusal. ok is false with the refusal to hand back; ok is true
+	// with the reason code the allow is recorded under, which the caller
+	// notes after its own scope check, since a call refused for what it
+	// reaches was never allowed.
+	//
+	// The action it builds the verdict on carries no scope fields, and it is
+	// the caller's headlessScopeCheck rather than ResolveUnattended's own
+	// backstop that holds the boundary here. The two are the same rule read
+	// at different moments: a session resolves what a call reaches before
+	// the classifier sees it, so its verdict can be overruled in one place;
+	// an unattended run resolves it after, because the check it already had
+	// answers with the sentence the model reads and adds an ordinary
+	// directory to the scope as it goes. Whichever runs, an Allow that
+	// reaches somewhere the run was not given is refused before it runs.
+	//
+	// It is one closure and not a branch written out at each tier because
+	// that order is the whole permission policy of an unattended run, and a
+	// tier that spelled it out again is a tier that can come to disagree.
+	answer := func(tc provider.ToolCall, action agent.Action, byFlag bool, flagReason, what, without string) (string, bool) {
+		if byFlag {
+			return flagReason, true
+		}
+		decision, why, code := un.judge.decide(tc, action)
+		if decision == agent.Allow {
+			return code, true
+		}
+		note(observe.DecisionDeny, code)
+		if un.judge == nil {
+			return "error: " + what + " not approved: headless mode denies " + without, false
+		}
+		return agent.UnattendedRefusedResult(what, why), false
+	}
 	return func(tc provider.ToolCall) string {
+		// Starting a child is a gated call and is answered like the rest:
+		// --yes is the blanket yes a person gave the whole run, auto mode
+		// puts it to the classifier, and a run given neither refuses it.
+		//
+		// That one answer covers the child as well as the spawn. A child
+		// works under this run's policy (print.go, serve.go) and there is no
+		// second card to draw for the calls it goes on to make, so this is
+		// the decision — and the only one.
+		// See docs/capabilities/subagents.md#spawning-is-a-decision.
+		if un.sup != nil && tc.Name == subagent.SpawnToolName {
+			reason, ok := answer(tc, agent.Action{Kind: agent.ActionOther},
+				opts.yes, observe.ReasonHeadlessYes, "spawning an agent", "sub-agents by default (run with --yes)")
+			if !ok {
+				return reason
+			}
+			note(observe.DecisionAllow, reason)
+			return red.Process(tc.Name, agent.ExecuteWith(func(_ string, args json.RawMessage) (string, error) {
+				return un.sup.Spawn(args)
+			}, tc))
+		}
 		// A server call is an external action like a fetch: --yes opts
 		// in, the default denies.
 		if mcpTools != nil && mcpTools.Has(tc.Name) {
-			if opts.yes {
-				note(observe.DecisionAllow, observe.ReasonHeadlessYes)
-				return red.Process(tc.Name, agent.ExecuteWith(mcpTools.Execute, tc))
+			reason, ok := answer(tc, agent.Action{Kind: agent.ActionOther},
+				opts.yes, observe.ReasonHeadlessYes, tc.Name, "external actions by default (run with --yes)")
+			if !ok {
+				return reason
 			}
-			note(observe.DecisionDeny, observe.ReasonHeadlessDefault)
-			return "error: " + tc.Name + " not approved: headless mode denies external actions by default (run with --yes)"
+			note(observe.DecisionAllow, reason)
+			return red.Process(tc.Name, agent.ExecuteWith(mcpTools.Execute, tc))
 		}
 		// web_fetch is an external action: --yes opts in, the default
 		// denies like every other gated call.
 		if webTools != nil && tc.Name == web.FetchToolName {
-			if opts.yes {
-				note(observe.DecisionAllow, observe.ReasonHeadlessYes)
-				fetch := func(name string, args json.RawMessage) (string, error) {
-					return webTools.Execute(web.Orchestrator, name, args)
-				}
-				return red.Process(tc.Name, agent.ExecuteWith(fetch, tc))
+			// The host is on the action because it is the unit a fetch is
+			// judged on: the classifier is being asked whether this page is
+			// an outbound channel worth stopping for, and where the request
+			// goes is most of that question.
+			fetchAction := agent.Action{Kind: agent.ActionFetch}
+			if plan, err := webTools.FetchPlan(json.RawMessage(tc.Arguments)); err == nil {
+				fetchAction.Host = plan.Host
 			}
-			note(observe.DecisionDeny, observe.ReasonHeadlessDefault)
-			return "error: web fetch not approved: headless mode denies external actions by default (run with --yes)"
+			reason, ok := answer(tc, fetchAction,
+				opts.yes, observe.ReasonHeadlessYes, "web fetch", "external actions by default (run with --yes)")
+			if !ok {
+				return reason
+			}
+			note(observe.DecisionAllow, reason)
+			fetch := func(name string, args json.RawMessage) (string, error) {
+				return webTools.Execute(web.Orchestrator, name, args)
+			}
+			return red.Process(tc.Name, agent.ExecuteWith(fetch, tc))
 		}
 		// A process start is approved like a command: safety-flagged
 		// commands are always denied headless; --yes or an allowlist match
@@ -1464,23 +1666,21 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist [
 				note(observe.DecisionDeny, observe.ReasonSafety)
 				return "error: process start denied (" + strings.Join(risks, "; ") + "); safety-flagged commands require interactive approval"
 			}
-			if opts.yes || agent.AllowlistMatches(allowlist, command) {
-				// A process start is a command, and the working scope
-				// applies to it as much as to a foreground one.
-				if deny, ok := headlessScopeCheck(sc, opts.yes, radius.WritePaths(command)); !ok {
-					note(observe.DecisionDeny, observe.ReasonOutOfScope)
-					return deny
-				}
-				if opts.yes {
-					note(observe.DecisionAllow, observe.ReasonHeadlessYes)
-				} else {
-					note(observe.DecisionAllow, observe.ReasonAllowlist)
-				}
-				exec := func(_ string, args json.RawMessage) (string, error) { return procSup.Execute(args) }
-				return red.Process(tc.Name, agent.ExecuteWith(exec, tc))
+			byFlag, flagReason := headlessCommandFlags(opts, allowlist, command)
+			reason, ok := answer(tc, agent.Action{Kind: agent.ActionCommand, Command: command},
+				byFlag, flagReason, "process start", "commands by default (run with --yes or --allow)")
+			if !ok {
+				return reason
 			}
-			note(observe.DecisionDeny, observe.ReasonHeadlessDefault)
-			return "error: process start not approved: headless mode denies commands by default (run with --yes or --allow)"
+			// A process start is a command, and the working scope
+			// applies to it as much as to a foreground one.
+			if deny, ok := headlessScopeCheck(sc, opts.yes, radius.WritePaths(command)); !ok {
+				note(observe.DecisionDeny, observe.ReasonOutOfScope)
+				return deny
+			}
+			note(observe.DecisionAllow, reason)
+			exec := func(_ string, args json.RawMessage) (string, error) { return procSup.Execute(args) }
+			return red.Process(tc.Name, agent.ExecuteWith(exec, tc))
 		}
 		if tc.Name == tools.ExecCommandName {
 			// Refused before the approval it would otherwise be given: a run
@@ -1509,61 +1709,84 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist [
 				note(observe.DecisionDeny, observe.ReasonSafety)
 				return "error: command denied (" + strings.Join(risks, "; ") + "); safety-flagged commands require interactive approval"
 			}
-			if opts.yes || agent.AllowlistMatches(allowlist, args.Command) {
-				// The working scope is checked before the grant is
-				// spent: an allowlisted command shape is not a licence to
-				// write outside the directories this run was given.
-				if deny, ok := headlessScopeCheck(sc, opts.yes, radius.WritePaths(args.Command)); !ok {
-					note(observe.DecisionDeny, observe.ReasonOutOfScope)
-					return deny
-				}
-				if opts.yes {
-					note(observe.DecisionAllow, observe.ReasonHeadlessYes)
-				} else {
-					note(observe.DecisionAllow, observe.ReasonAllowlist)
-				}
-				out, code := run(ctx, args.Command)
-				return tools.FormatExecResult(red.Process(tools.ExecCommandName, out), code)
+			byFlag, flagReason := headlessCommandFlags(opts, allowlist, args.Command)
+			reason, ok := answer(tc, agent.Action{Kind: agent.ActionCommand, Command: args.Command},
+				byFlag, flagReason, "command", "commands by default (run with --yes or --allow)")
+			if !ok {
+				return reason
 			}
-			note(observe.DecisionDeny, observe.ReasonHeadlessDefault)
-			return "error: command not approved: headless mode denies commands by default (run with --yes or --allow)"
+			// The working scope is checked before the grant is
+			// spent: an allowlisted command shape is not a licence to
+			// write outside the directories this run was given.
+			if deny, ok := headlessScopeCheck(sc, opts.yes, radius.WritePaths(args.Command)); !ok {
+				note(observe.DecisionDeny, observe.ReasonOutOfScope)
+				return deny
+			}
+			note(observe.DecisionAllow, reason)
+			out, code := run(ctx, args.Command)
+			return tools.FormatExecResult(red.Process(tools.ExecCommandName, out), code)
 		}
 		// A git write sits at the write tier, so it is answered where a file
 		// modification is answered — after the deny list, which reads the
 		// command line the call stands for, because a person who refused
 		// `git commit` refused the act and not the spelling.
 		if structTools != nil && tc.Name == structural.GitWriteToolName {
-			if line := structural.WriteLine(json.RawMessage(tc.Arguments)); agent.DenylistMatches(denylist, line) {
+			line := structural.WriteLine(json.RawMessage(tc.Arguments))
+			if agent.DenylistMatches(denylist, line) {
 				note(observe.DecisionDeny, observe.ReasonDenylist)
 				return agent.DenylistResult
 			}
-			if opts.yes {
-				note(observe.DecisionAllow, observe.ReasonHeadlessYes)
-				return red.Process(tc.Name, agent.ExecuteWith(structTools.Execute, tc))
+			// The line the call stands for travels with it, so the judge
+			// reads `git commit` rather than a tool name and a blob of
+			// arguments — the same reading the deny list just took.
+			reason, ok := answer(tc, agent.Action{Kind: agent.ActionOther, Command: line},
+				opts.yes, observe.ReasonHeadlessYes, "git write", "writes by default (run with --yes)")
+			if !ok {
+				return reason
 			}
-			note(observe.DecisionDeny, observe.ReasonHeadlessDefault)
-			return "error: git write not approved: headless mode denies writes by default (run with --yes)"
+			note(observe.DecisionAllow, reason)
+			return red.Process(tc.Name, agent.ExecuteWith(structTools.Execute, tc))
 		}
 		if tools.IsMutating(tc.Name) {
-			if opts.yes {
-				if mut, err := tools.PreviewMutation(tc.Name, json.RawMessage(tc.Arguments)); err == nil {
-					if deny, ok := headlessScopeCheck(sc, opts.yes, []string{mut.Path}); !ok {
-						note(observe.DecisionDeny, observe.ReasonOutOfScope)
-						return deny
-					}
-				}
-				note(observe.DecisionAllow, observe.ReasonHeadlessYes)
-				result := agent.ExecuteWith(tools.ExecuteMutating, tc)
-				if mutationHook != nil {
-					result = mutationHook(tc.Name, json.RawMessage(tc.Arguments), result)
-				}
-				return red.Process(tc.Name, result)
+			mut, mutErr := tools.PreviewMutation(tc.Name, json.RawMessage(tc.Arguments))
+			edit := agent.Action{Kind: agent.ActionEdit}
+			if mutErr == nil {
+				edit.Path = mut.Path
 			}
-			note(observe.DecisionDeny, observe.ReasonHeadlessDefault)
-			return "error: file modification not approved: headless mode denies edits by default (run with --yes)"
+			reason, ok := answer(tc, edit, opts.yes, observe.ReasonHeadlessYes,
+				"file modification", "edits by default (run with --yes)")
+			if !ok {
+				return reason
+			}
+			if mutErr == nil {
+				if deny, ok := headlessScopeCheck(sc, opts.yes, []string{mut.Path}); !ok {
+					note(observe.DecisionDeny, observe.ReasonOutOfScope)
+					return deny
+				}
+			}
+			note(observe.DecisionAllow, reason)
+			result := agent.ExecuteWith(tools.ExecuteMutating, tc)
+			if mutationHook != nil {
+				result = mutationHook(tc.Name, json.RawMessage(tc.Arguments), result)
+			}
+			return red.Process(tc.Name, result)
 		}
 		return "error: tool " + tc.Name + " cannot be approved in this session"
 	}
+}
+
+// headlessCommandFlags is what the run's own flags say about one command:
+// --yes is the blanket answer and --allow is the list, and the reason code
+// says which of the two answered so the record can tell a run that was waved
+// through from one that matched a shape the person wrote down.
+func headlessCommandFlags(opts printOpts, allowlist []string, command string) (bool, string) {
+	switch {
+	case opts.yes:
+		return true, observe.ReasonHeadlessYes
+	case agent.AllowlistMatches(allowlist, command):
+		return true, observe.ReasonAllowlist
+	}
+	return false, ""
 }
 
 // onlyRegistered answers a call naming a tool this run never offered the way

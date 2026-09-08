@@ -75,6 +75,19 @@ type reply struct {
 	tool   string
 	args   map[string]string
 	status int
+	// match, when set, is the request this answer is for: the text appears
+	// in one of the request's user messages, and the answer is spent the
+	// first time a request carries it.
+	//
+	// It is how a case with more than one conversation in flight stays
+	// deterministic. A run and the child it spawned reach the same endpoint
+	// in whatever order the machine gets to them, and so does the permission
+	// classifier; a script read by round number would hand each of them
+	// whichever answer the race happened to leave. The answers with no match
+	// are read in order for every request none of the matched ones is for,
+	// so a case can script two conversations and still say what everything
+	// else gets.
+	match string
 	// hold writes the text and then leaves the stream open until the client
 	// gives up on it. It is a model that has started answering and not
 	// finished, which is the state a run has to be in for anything from
@@ -93,8 +106,13 @@ type reply struct {
 // one of those at a local server would be testing the override rather than
 // the run.
 type fakeProvider struct {
-	srv    *httptest.Server
+	srv *httptest.Server
+	// script is every answer; plain is the ones with no match, which are the
+	// ones the round counter walks.
 	script []reply
+	plain  []reply
+	// spent marks a matched answer already given, by its index in script.
+	spent map[int]bool
 	// holding says a held stream is open and the run is inside it. It is
 	// buffered and written to without waiting, so an answer nobody is
 	// listening for costs the request nothing.
@@ -110,7 +128,15 @@ func startFakeProvider(t *testing.T, script ...reply) *fakeProvider {
 	if len(script) == 0 {
 		t.Fatal("a fake provider with no script answers nothing")
 	}
-	f := &fakeProvider{script: script, holding: make(chan struct{}, 1)}
+	f := &fakeProvider{script: script, holding: make(chan struct{}, 1), spent: map[int]bool{}}
+	for _, step := range script {
+		if step.match == "" {
+			f.plain = append(f.plain, step)
+		}
+	}
+	if len(f.plain) == 0 {
+		t.Fatal("a script of matched answers alone says nothing about the requests none of them is for")
+	}
 	f.srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		step := f.next(r)
 		if step.status != 0 {
@@ -188,9 +214,27 @@ func (f *fakeProvider) next(r *http.Request) reply {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.asked = append(f.asked, asked)
-	step := f.script[min(f.round, len(f.script)-1)]
+	for i, step := range f.script {
+		if step.match == "" || f.spent[i] || !askedFor(asked, step.match) {
+			continue
+		}
+		f.spent[i] = true
+		return step
+	}
+	step := f.plain[min(f.round, len(f.plain)-1)]
 	f.round++
 	return step
+}
+
+// askedFor reports one of the request's user messages carrying the text an
+// answer is written for.
+func askedFor(asked []string, match string) bool {
+	for _, m := range asked {
+		if strings.Contains(m, match) {
+			return true
+		}
+	}
+	return false
 }
 
 // firstPrompt is the user message of the run's opening request: an argument,
@@ -852,4 +896,129 @@ func TestPrintRun_AConversationHasNothingThatWrites(t *testing.T) {
 	if !strings.Contains(flatten(errs), "unknown tool: write_file") {
 		t.Errorf("the call should have been answered as an unknown name, stderr: %s", errs)
 	}
+}
+
+// A run behind --yes can delegate: the spawn is a gated call the flag
+// answers, the child works and reports, and what it found reaches the run's
+// answer. The child and the run reach the endpoint in whatever order the
+// machine gets to them, which is why each answer says which request it is
+// for rather than which round.
+func TestPrintRun_WithYesTheRunCanDelegate(t *testing.T) {
+	const prompt = "Delegate the search, then say what came back."
+	const task = "Find the needle in the haystack"
+	f := startFakeProvider(t,
+		reply{match: prompt, tool: "spawn_agent", args: map[string]string{
+			"role": "researcher", "name": "scout", "task": task,
+		}},
+		reply{match: prompt, tool: "agent_report", args: map[string]string{"name": "scout"}},
+		reply{match: prompt, text: "The scout says: NEEDLE FOUND."},
+		reply{match: task, text: "NEEDLE FOUND in haystack.go."},
+		// Everything the run asks on its own — a reading, a title — gets
+		// this, and none of it is what the case is about.
+		reply{text: "noted"},
+	)
+	s := newPrintSession(t, f)
+	stdout, stderr, code := s.run(t, "", "code", "--print", "--yes", prompt)
+	if code != exitDone {
+		t.Fatalf("exit %d, want %d\nstdout: %s\nstderr: %s", code, exitDone, stdout, stderr)
+	}
+	if !strings.Contains(stdout, "The scout says: NEEDLE FOUND.") {
+		t.Fatalf("the run's answer should carry what the child reported:\n%s", stdout)
+	}
+	if !f.wasAsked(task) {
+		t.Fatalf("the child never ran; the endpoint was asked:\n%s", f.everyPrompt())
+	}
+}
+
+// And a run that was given no answer to the spawn card is not offered the
+// roles at all: a tool it could only be refused is worse than one it never
+// saw, so the model is told the name is not one of its tools and no child
+// is started.
+func TestPrintRun_WithoutYesNothingIsDelegated(t *testing.T) {
+	const prompt = "Delegate the search, then say what came back."
+	const task = "Find the needle in the haystack"
+	f := startFakeProvider(t,
+		reply{match: prompt, tool: "spawn_agent", args: map[string]string{
+			"role": "researcher", "name": "scout", "task": task,
+		}},
+		reply{match: prompt, text: "I have no way to delegate that."},
+		reply{text: "noted"},
+	)
+	s := newPrintSession(t, f)
+	stdout, stderr, code := s.run(t, "", "code", "--print", prompt)
+	if code != exitDone {
+		t.Fatalf("exit %d, want %d\nstdout: %s\nstderr: %s", code, exitDone, stdout, stderr)
+	}
+	if f.wasAsked(task) {
+		t.Fatalf("no child should have been started:\n%s", f.everyPrompt())
+	}
+	if !strings.Contains(stderr, "spawn_agent") {
+		t.Fatalf("the refused call should be on the activity stream:\n%s", stderr)
+	}
+}
+
+// --mode auto puts a call the flags did not answer to the permission
+// classifier, and a classifier that cannot answer is a refusal rather than a
+// prompt nobody would see. The status says the run was refused, which is the
+// whole of what a script reads off a run that did nothing.
+func TestPrintRun_AutoModeRefusesWhatTheClassifierCannotAnswer(t *testing.T) {
+	f := startFakeProvider(t,
+		// The classifier's own request is the one carrying the evidence
+		// header, and it is answered with a failure both times it is tried.
+		reply{match: "UNTRUSTED EVIDENCE", status: 500},
+		reply{match: "UNTRUSTED EVIDENCE", status: 500},
+		reply{tool: "execute_command", args: map[string]string{"command": "echo hello"}},
+		reply{text: "I could not run it."},
+	)
+	s := newPrintSession(t, f)
+	stdout, stderr, code := s.run(t, "", "code", "--print", "--mode", "auto", "run echo")
+	if code != exitRefused {
+		t.Fatalf("exit %d, want %d\nstdout: %s\nstderr: %s", code, exitRefused, stdout, stderr)
+	}
+	if !f.wasAsked("UNTRUSTED EVIDENCE") {
+		t.Fatalf("the classifier should have been asked:\n%s", f.everyPrompt())
+	}
+	if !strings.Contains(stderr, "not approved") {
+		t.Fatalf("the refusal should say the command was not approved:\n%s", stderr)
+	}
+}
+
+// A mode that needs somebody to prompt is refused rather than accepted and
+// quietly turned into one of the two that do not.
+func TestPrintRun_OnlyAutoIsAModeARunWithNoTerminalTakes(t *testing.T) {
+	f := startFakeProvider(t, reply{text: "unreached"})
+	s := newPrintSession(t, f)
+	_, stderr, code := s.run(t, "", "code", "--print", "--mode", "manual", "do it")
+	if code == exitDone {
+		t.Fatalf("the run should have been refused\nstderr: %s", stderr)
+	}
+	if !strings.Contains(stderr, "auto is the only mode") {
+		t.Fatalf("the refusal should say which mode is taken:\n%s", stderr)
+	}
+}
+
+// wasAsked reports the endpoint having been sent a request carrying this
+// text in one of its user messages — which is how a case says a second
+// conversation happened at all.
+func (f *fakeProvider) wasAsked(text string) bool {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	for _, asked := range f.asked {
+		if askedFor(asked, text) {
+			return true
+		}
+	}
+	return false
+}
+
+// everyPrompt is what the endpoint was asked, for a failure that has to say
+// what happened instead.
+func (f *fakeProvider) everyPrompt() string {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	var b strings.Builder
+	for i, asked := range f.asked {
+		fmt.Fprintf(&b, "request %d: %s\n", i+1, clipActivityLine(strings.Join(asked, " | ")))
+	}
+	return b.String()
 }

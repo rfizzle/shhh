@@ -96,6 +96,36 @@ Approval is still the only way anything reaches your checkout, the lane says
 how many of your files the child started from, and a checkout with nothing
 uncommitted in it starts a child exactly where it always did.
 
+## Spawning is a decision
+
+Starting a child is an approval-gated call, like an edit or a command. It
+spends the session's budget on work nobody reads until it reports, and a
+writer's changes come back as a patch, so the question the card asks is worth
+asking: which role, what it may touch, what it will cost.
+
+The surfaces answer it differently and all of them answer it. In a session you
+answer the card. A client driving a served session answers it the way it
+answers every other gated call. A scripted run answers it with `--yes`, or
+with auto mode's classifier, and a run given neither is not offered the roles
+at all ([`headless.md`](headless.md#a-run-can-delegate)).
+
+## A child answers to the session
+
+A child's permission mode is clamped to its parent's and can never be looser,
+and the parent's session grants travel with it: what you waved through for the
+session is waved through for its children, so one grant is not re-asked once
+per agent. A profile may start a child stricter — a reviewer in plan mode
+under an auto session — and that is the only direction the clamp allows.
+
+What a child cannot do is ask somebody the session cannot reach. In a session
+its request becomes a card in front of you. Where there is nobody — a scripted
+run, or a served session whose protocol draws cards for the turn it is running
+and has no vocabulary for a child's — the answer to the spawn stands as the
+answer to the child, and a request the child's own policy still stopped to ask
+about is refused. A patch is the exception, and only where the run may write:
+the run asked for the work, so what is left to refuse is a patch that overlaps
+one already landed.
+
 ## A child inherits its scope, not more
 
 A writer sees its own working copy plus whatever the parent has already been

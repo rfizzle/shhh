@@ -398,6 +398,18 @@ not exist is refused the way an unreadable one is, and so is one naming a
 substitution that belongs to a different wording. Some are sent exactly as
 written and take none at all, which makes any of them a mistake there.
 
+## The classifier is configured once
+
+Auto mode's permission classifier has one set of settings and one place they
+are read: the model, the timeout, the retries and the wording. Every surface
+that has a classifier gets that one — the session, a scripted run in auto
+mode, a served session with nobody attached, and the children any of them
+spawn — so a timeout raised for one is raised for all of them, and there is no
+surface quietly judging calls on a different model from the one you set.
+
+The wording is a prompt file like the others above: replace it and the
+classifier is asked your question instead of the built-in one.
+
 ## A failure is written down
 
 A refused request is a row on the screen for as long as the screen lasts.

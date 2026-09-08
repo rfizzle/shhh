@@ -477,3 +477,40 @@ func readLog(t *testing.T, path string) string {
 	}
 	return string(body)
 }
+
+// Where nobody can be asked, Ask is not an answer. Every path that reaches
+// one — a failed classifier, a safety-flagged command the classifier
+// approved, a sensitive directory it approved reaching — comes back a
+// refusal, and the reason still says which of them it was.
+func TestResolveUnattended_EveryAskBecomesARefusal(t *testing.T) {
+	plain := Action{Kind: ActionCommand, Command: "go test ./..."}
+	flagged := Action{Kind: ActionCommand, Command: "git reset --hard", SafetyFlagged: true}
+	sensitive := Action{Kind: ActionCommand, Command: "cp x ~/.kube/config",
+		OutOfScope: []string{"/home/u/.kube"}, ScopeSensitive: true, ScopeReason: "credentials"}
+	allow := ClassifierVerdict{Decision: Allow, Reason: "routine"}
+
+	if d, reason := ResolveUnattended(plain, allow); d != Allow || reason != "routine" {
+		t.Fatalf("a clean allow should still run: %v %q", d, reason)
+	}
+	for name, a := range map[string]Action{"safety-flagged": flagged, "sensitive directory": sensitive} {
+		d, reason := ResolveUnattended(a, allow)
+		if d != Deny || reason == "" {
+			t.Errorf("%s after a classifier allow = %v (%q); want Deny with a reason", name, d, reason)
+		}
+	}
+	// A classifier that never answered is the case this exists for: a
+	// session falls back to a card, and there is no card here to fall back
+	// to.
+	d, reason := ResolveUnattended(plain, ClassifierVerdict{Decision: Ask, Reason: "the classifier timed out", Failed: true})
+	if d != Deny || !strings.Contains(reason, "timed out") {
+		t.Fatalf("a failed classifier = %v (%q); want Deny carrying why", d, reason)
+	}
+	// And one that failed without saying why still says something: a
+	// refusal with an empty reason reads as a refusal for no reason.
+	if _, reason := ResolveUnattended(plain, ClassifierVerdict{Decision: Ask, Failed: true}); strings.TrimSpace(reason) == "" {
+		t.Error("a refusal with no reason at all says nothing to the model or the record")
+	}
+	if d, _ := ResolveUnattended(plain, ClassifierVerdict{Decision: Deny, Reason: "unrelated"}); d != Deny {
+		t.Error("a deny passes through")
+	}
+}

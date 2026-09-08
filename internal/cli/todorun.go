@@ -30,12 +30,14 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/runner"
+	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/todo/run"
 	"github.com/spf13/cobra"
@@ -209,11 +211,16 @@ type todoDriver struct {
 	wordings run.Wordings
 	// pipeline is the steps a run of this backlog takes.
 	pipeline run.Pipeline
-	// turn spends one stage as one session and answers with what that
-	// session produced, or with why there was no answer. It is a field
-	// because the loop around it is the part worth testing and a test that
-	// had to stand up a provider to reach it would test neither.
-	turn func(ctx context.Context, deadline time.Time, step run.Step) (todoTurn, error)
+	// turn spends one stage as one session in the directory it is given, and
+	// answers with what that session produced or with why there was no
+	// answer. It is a field because the loop around it is the part worth
+	// testing and a test that had to stand up a provider to reach it would
+	// test neither.
+	//
+	// The directory is a parameter and not the driver's root because a lane
+	// is spent in a copy of the checkout rather than in it: same process,
+	// same reading of the answer, somewhere else (fanOut).
+	turn func(ctx context.Context, deadline time.Time, dir string, step run.Step) (todoTurn, error)
 }
 
 // todoTurn is what one stage's process produced: the answer it wrote, the
@@ -291,12 +298,16 @@ func (d *todoDriver) steps() run.Pipeline {
 }
 
 // can is what this process is able to do, which is what the run's steps are
-// put to before the first of them is taken. There is no supervisor outside a
-// session, which is why a division into lanes falls back to the whole plan
-// rather than refusing the run: a step that only sometimes happens, and has
-// somewhere to fall back to, asks for nothing up front.
+// put to before the first of them is taken.
+//
+// The supervisor this runner has is not a session's: a child here is a
+// process of its own — a lane standing in an isolated copy of the checkout, a
+// reader given the change and none of the conversation that made it — and
+// both of those need git, which is why the repository is the whole of the
+// answer. A step that only sometimes happens and has somewhere to fall back
+// to asks for nothing up front either way (Pipeline.Refuse).
 func (d *todoDriver) can() run.Can {
-	return run.Can{Changeset: true, Supervisor: false, Runner: true, Repo: d.repo, Checks: d.checks}
+	return run.Can{Changeset: true, Supervisor: d.repo, Runner: true, Repo: d.repo, Checks: d.checks}
 }
 
 // sprint works the ready list one item at a time, each in a session of its
@@ -445,7 +456,7 @@ func (d *todoDriver) begin(it todo.Item, inSprint bool) (*run.State, run.Step) {
 func (d *todoDriver) carry(ctx context.Context, deadline time.Time, st *run.State, it todo.Item, step run.Step) run.Step {
 	switch step.Action {
 	case run.ActionPrompt:
-		t, err := d.turn(ctx, deadline, step)
+		t, err := d.turn(ctx, deadline, d.root, step)
 		if err != nil {
 			return st.Block(err.Error())
 		}
@@ -492,12 +503,9 @@ func (d *todoDriver) carry(ctx context.Context, deadline time.Time, st *run.Stat
 		if st.Pipeline.Writes() && len(st.Paths) == 0 {
 			return st.Block("the run changed no files under the repository, so there is nothing to review")
 		}
-		// A reviewer child is a spawn, and an unattended run has no
-		// supervisor to spawn one from. The session already degrades this way
-		// when there is none, and the step says so.
-		return st.SelfReview(it)
+		return d.review(ctx, deadline, st, it, step)
 	case run.ActionFanOut:
-		return st.NoLanes(it, "no agent supervisor outside a session; building the plan whole")
+		return d.fanOut(ctx, deadline, st, it, step)
 	case run.ActionCommit:
 		files, err := d.commit(st)
 		if err != nil {
@@ -505,7 +513,10 @@ func (d *todoDriver) carry(ctx context.Context, deadline time.Time, st *run.Stat
 		}
 		return st.Committed(files)
 	case run.ActionWait:
-		return st.Block("the run is waiting on a child, and an unattended run has none")
+		// The children this runner has are waited on where they are started
+		// — a lane inside the fan-out, a reader inside the review — so a
+		// wait that reaches the loop is a wait on nothing.
+		return st.Block("the run is waiting on a child it did not start")
 	}
 	// Every action the machine has is answered above. Handing the same step
 	// back would be an unattended process spinning on it forever, which is
@@ -536,7 +547,7 @@ func (d *todoDriver) say(st *run.State, step run.Step) {
 // The transcript is also where the process says whether the answer it quotes
 // is a whole one, because the status cannot: a turn that ended at the model's
 // output ceiling ended the way turns end.
-func (d *todoDriver) ask(ctx context.Context, deadline time.Time, step run.Step) (todoTurn, error) {
+func (d *todoDriver) ask(ctx context.Context, deadline time.Time, dir string, step run.Step) (todoTurn, error) {
 	args := append(todoStageArgs(d.steps().Writes(), step.Mode), step.Prompt)
 	if !deadline.IsZero() {
 		var cancel context.CancelFunc
@@ -544,7 +555,7 @@ func (d *todoDriver) ask(ctx context.Context, deadline time.Time, step run.Step)
 		defer cancel()
 	}
 	cmd := exec.CommandContext(ctx, d.bin, args...)
-	cmd.Dir = d.root
+	cmd.Dir = dir
 	cmd.Env = runner.Environ()
 	// A sprint that is cancelled, by its deadline or by the driver's own
 	// context ending, interrupts the stage's turn rather than killing it, so
@@ -860,3 +871,153 @@ func todoRunDoneLine(st *run.State, to string) string {
 // sprintGoal is the open sprint's goal, which rides in every item's research
 // prompt so an item knows what the set it belongs to is for.
 func (d *todoDriver) sprintGoal() string { return todo.Load(todoProfile(), d.root).Sprint.Purpose() }
+
+// maxReviewDiffLines bounds the change the reader is handed. It is the
+// session's own bound, and it is a bound at all for the same reason: a
+// reader's task is a prompt, and a thousand-file diff in one would spend the
+// child's whole window on the change before it had read the item.
+const maxReviewDiffLines = 600
+
+// review hands the change to a reader that did not write it: a process of its
+// own, given the item, the plan and the run's diff, and none of the
+// conversation that produced the work. That is the whole of what a reviewer
+// child is worth here — a second opinion is only a second one where the
+// reader has not spent the last ten rounds convincing itself the work is
+// right — and it is why SelfReview below is the fallback rather than the
+// ordinary path this surface takes.
+//
+// The fallback stays for the checkout that cannot produce a change to hand
+// over. Outside a repository there is no diff, and a reader given the item
+// and nothing else would be grading the plan rather than the work; there the
+// orchestrator reads the tree in its own turn, and the step label says so.
+// See docs/capabilities/todo.md#the-reading-is-done-by-somebody-else.
+func (d *todoDriver) review(ctx context.Context, deadline time.Time, st *run.State, it todo.Item, step run.Step) run.Step {
+	if !d.repo {
+		return st.SelfReview(it)
+	}
+	task := st.ReviewTask(it, todoTail(d.reviewDiff(st), maxReviewDiffLines))
+	if strings.TrimSpace(task) == "" {
+		return st.SelfReview(it)
+	}
+	t, err := d.turn(ctx, deadline, d.root,
+		run.Step{Action: run.ActionPrompt, Stage: step.Stage, Mode: step.Mode, Prompt: task})
+	switch {
+	case err != nil:
+		return st.Block(fmt.Sprintf("the reviewer %s did not finish: %s", st.Reviewer, err.Error()))
+	case t.truncated:
+		return st.Block(run.CutAtCeiling(step.Stage))
+	}
+	return st.ReviewResult(it, t.text)
+}
+
+// reviewDiff is the change the reader is handed: `git diff` over the paths
+// the run holds, with a file git has never heard of shown whole against
+// nothing. It is the reading a session takes off its changeset, in the one
+// form a runner that keeps no changeset has — and a path git will say
+// nothing about is left out rather than reported as an empty change.
+func (d *todoDriver) reviewDiff(st *run.State) string {
+	var b strings.Builder
+	for _, rel := range st.Paths {
+		if out, code := todoGit(d.root, "diff", "--", rel); code == 0 && strings.HasPrefix(out, "diff --git") {
+			b.WriteString(out + "\n")
+			continue
+		}
+		if out, _ := todoGit(d.root, "diff", "--no-index", os.DevNull, rel); strings.HasPrefix(out, "diff --git") {
+			b.WriteString(out + "\n")
+		}
+	}
+	return b.String()
+}
+
+// fanOut builds a large item in lanes, all of them at once. A lane is a
+// process — the same one a working stage is spent as, standing in an isolated
+// copy of the checkout rather than in the checkout — because this runner has
+// no supervisor to spawn a child from, and because isolation is what a lane
+// actually needs: writers that cannot see or overwrite each other's files,
+// and a patch each that lands whole or not at all.
+//
+// The copies are made before any lane starts, so a checkout that cannot give
+// one is a fall back to building the plan whole rather than a half-started
+// fan-out with a process already writing. The patches land afterwards, one at
+// a time and in lane order, which is what makes two lanes over one file an
+// ending with evidence on it instead of a race: the first lands, the second
+// is refused whole, and the run blocks naming the lane.
+// See docs/capabilities/todo.md#a-large-item-is-built-in-lanes.
+func (d *todoDriver) fanOut(ctx context.Context, deadline time.Time, st *run.State, it todo.Item, step run.Step) run.Step {
+	if !d.repo {
+		return st.NoLanes(it, "a lane needs an isolated copy of the checkout and this is not a git repository")
+	}
+	var lanes []run.Lane
+	for _, l := range st.Lanes {
+		if l.Agent != "" {
+			lanes = append(lanes, l)
+		}
+	}
+	if len(lanes) == 0 {
+		return st.NoLanes(it, "no lane is waiting to be built")
+	}
+
+	trees := make([]*subagent.Worktree, 0, len(lanes))
+	defer func() {
+		for _, t := range trees {
+			t.Remove()
+		}
+	}()
+	for range lanes {
+		// Seeded with what the run has changed so far, the way a session
+		// seeds a writer from its changeset: the earlier stages' work is in
+		// this tree uncommitted, and a lane started without it writes its
+		// patch against text the checkout no longer has.
+		wt, err := subagent.NewWorktree(d.root, st.Paths)
+		if err != nil {
+			return st.NoLanes(it, "no isolated copy of the checkout could be made: "+todoFirstProblem(err.Error()))
+		}
+		trees = append(trees, wt)
+	}
+
+	// Every lane's step is built before any lane starts. The run's state is
+	// one value and the lanes run at once, so a task read inside a goroutine
+	// would be several readers of it for no gain: what a lane is asked is
+	// settled here and nothing changes it while they work.
+	steps := make([]run.Step, len(lanes))
+	for i, lane := range lanes {
+		steps[i] = run.Step{Action: run.ActionPrompt, Stage: st.Stage, Mode: step.Mode,
+			Prompt: st.LaneTask(it, lane)}
+	}
+	turns := make([]todoTurn, len(lanes))
+	errs := make([]error, len(lanes))
+	var wg sync.WaitGroup
+	for i := range lanes {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			turns[i], errs[i] = d.turn(ctx, deadline, trees[i].Root(), steps[i])
+		}(i)
+	}
+	wg.Wait()
+
+	next := run.Step{Action: run.ActionWait, Stage: st.Stage}
+	for i, lane := range lanes {
+		switch {
+		case errs[i] != nil:
+			return st.LaneFailed(lane.Agent, todoFirstProblem(errs[i].Error()))
+		case turns[i].truncated:
+			return st.LaneFailed(lane.Agent, run.CutAtCeiling(st.Stage))
+		}
+		files, err := trees[i].Land()
+		if err != nil {
+			return st.LaneFailed(lane.Agent, "its patch would not apply: "+todoFirstProblem(err.Error()))
+		}
+		// A lane that landed nothing is not failed here: LaneDone is where
+		// "finished but its patch did not land" is said, in the words the
+		// record already has for it.
+		if len(files) > 0 {
+			st.LanePatched(lane.Agent)
+			fmt.Fprintf(d.out, "lane %s landed %s\n", lane.Name, countOf(len(files), "file", "files"))
+		}
+		if next = st.LaneDone(it, lane.Agent, true, turns[i].text); next.Action == run.ActionBlocked {
+			return next
+		}
+	}
+	return next
+}
