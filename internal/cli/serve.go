@@ -250,7 +250,12 @@ type serveLoop struct {
 	// the last one left it. Both are read from the connection's goroutine
 	// while the turn's own is writing, which is why they are behind the lock
 	// and the message list is copied rather than shared.
-	turn         int64
+	turn int64
+	// asked is how many questions this turn has put to the client, against
+	// the budget one turn has. It is the turn's and is cleared where the turn
+	// opens, so a session on a screen and a session on the wire spend the
+	// same allowance the same way (internal/ui/chat/question.go).
+	asked        int
 	conversation []provider.Message
 	transcript   json.RawMessage
 	usage        provider.Usage
@@ -562,11 +567,25 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		if err != nil {
 			return "error: invalid arguments: " + err.Error()
 		}
+		// The question goes into the detector's window whether or not the
+		// turn has room to put it, because what the window counts is the
+		// asking. The sentence comes back rather than leading the result: a
+		// notice in front of this one would be a line to skip past before
+		// finding the JSON the answer is read out of (internal/agent/repeat.go).
+		notice := repeats.AskedBefore(json.RawMessage(tc.Arguments))
+		if !l.spendQuestion() {
+			// Nothing is put to the client at all, so nothing is recorded as
+			// put to them: the budget answered this one.
+			return ask.OverBudget().Result()
+		}
 		record(observe.DecisionAsk, observe.ReasonUser)
 		// Several questions in one call is a strip this surface does not
 		// draw; the parse already answers in a list, so the first is the
 		// whole of what a call holds today (internal/ui/chat/question.go).
 		answer := seams.Question(rpc.Question{Ask: qs[0], Turn: l.turnNow(), Round: int64(a.Rounds())})
+		if answer.Notice == "" {
+			answer.Notice = notice
+		}
 		return answer.Result()
 	}
 	resolveCall := func(tc provider.ToolCall) string {
@@ -597,11 +616,13 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		// settling "which of these three designs" at random
 		// (docs/capabilities/coding-agent.md#the-model-can-ask).
 		//
-		// It goes round the repeat detector with them, and for a reason of
-		// its own: a notice leads the result it is put on, and this result is
-		// the JSON the model reads its answer out of. The session's own card
-		// answers a question outside that path too, and two front-ends of one
-		// agent have to answer one alike
+		// It goes round the repeat detector's wrapper with them, and for a
+		// reason of its own: a notice leads the result it is put on, and this
+		// result is the JSON the model reads its answer out of. The question
+		// is still counted — askClient hands it to the detector itself and
+		// puts what comes back in a field of that JSON — and the session's
+		// own card does the same, because two front-ends of one agent have to
+		// answer one question alike
 		// (docs/architecture.md#one-agent-several-front-ends).
 		//
 		// Only where this session handed the model the tool. A call to a tool
@@ -765,6 +786,20 @@ func (l *serveLoop) turnNow() int64 {
 	return l.turn
 }
 
+// spendQuestion takes one off this turn's question budget and reports whether
+// there was one to take. The budget is spent by the asking and not by the
+// answering, so a client that left three questions is not offered a fourth
+// (docs/capabilities/coding-agent.md#the-model-can-ask).
+func (l *serveLoop) spendQuestion() bool {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if l.asked >= ask.PerTurnBudget {
+		return false
+	}
+	l.asked++
+	return true
+}
+
 // Steer queues text for the running turn.
 func (l *serveLoop) Steer(text string) {
 	l.mu.Lock()
@@ -825,6 +860,11 @@ func (l *serveLoop) Run(turn int64, prompt string) (string, error) {
 	l.mu.Lock()
 	l.turn = turn
 	l.steering = nil
+	// And this turn's allowance of questions, cleared where the turn opens
+	// rather than where one closes: a question the last turn left outstanding
+	// was asked by the turn that asked it, and must not be charged to the
+	// instruction that follows it.
+	l.asked = 0
 	l.mu.Unlock()
 	// The conversation is told the number the events are filed under, so a
 	// recorded round can be read back against what was said in it

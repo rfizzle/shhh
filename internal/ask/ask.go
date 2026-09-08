@@ -80,6 +80,31 @@ const MaxOptions = 8
 // is never dropped when the terminal is narrow.
 const MaxLabelLen = 80
 
+// PerTurnBudget is how many questions one turn may put to the person. One
+// past it is answered Skipped without reaching anybody, and the budget is
+// spent by the asking rather than by the answering: a question that reached
+// the reader has already cost them the interruption whether or not they have
+// got round to it, and refunding the ones they set down would make setting a
+// question down cost more than answering it.
+//
+// The count is the unit the reader feels. A turn runs for four minutes or for
+// forty, and "how often does this thing interrupt me" is a fact about the
+// piece of work rather than about elapsed time, which is why this is a count
+// and not a rate.
+//
+// Three is chosen against the two shapes it has to tell apart. It must not
+// catch the legitimate pair — a question, its answer, and the one follow-up
+// that answer made obvious — which is two, with a third left over for the
+// turn that genuinely forks twice. It must catch the failure: four or more
+// independent forks in one turn is a turn that should have stopped once and
+// put the whole fork in prose, because a reader answering a fourth question
+// has lost the thread of the first. Raising it buys a turn nothing it does
+// not already have and costs the reader the interruption the number exists to
+// bound; lowering it to two refuses the obvious follow-up, which is the one
+// question the first answer has already earned.
+// See docs/capabilities/coding-agent.md#the-model-can-ask.
+const PerTurnBudget = 3
+
 // Option is one answer the model offers.
 type Option struct {
 	// Label is the answer itself, and is what comes back: an answer names
@@ -123,7 +148,9 @@ const (
 	// picked, nothing was typed, and the model is told to state the
 	// assumption and carry on. Leaving the card is not this — a question the
 	// reader sets down is still outstanding, and the next message they send
-	// is the answer (docs/interface/surfaces.md#the-question-card).
+	// is the answer (docs/interface/surfaces.md#the-question-card). What it is
+	// is a question that reached nobody: the turn had no budget left to put
+	// it (OverBudget).
 	AnsweredSkipped Answered = "skipped"
 	// AnsweredNobody is a question that had somebody to ask and lost them.
 	AnsweredNobody Answered = "nobody to ask"
@@ -166,6 +193,14 @@ type Answer struct {
 	// empty string and never a missing field, so the model never has to work
 	// out whether a note was possible.
 	Note string
+	// Notice is what the run is told about the asking rather than about the
+	// answer: that this question has already been put and answered, or that
+	// the turn's budget for questions is spent. It is a field of the result
+	// and never a line in front of it, which is where every other tool's
+	// notice goes — the model reads its answer out of this JSON, and a
+	// sentence above it would be one to skip past before finding what was
+	// asked for.
+	Notice string
 }
 
 // result is the wire shape of an answer. It is JSON because the model reads
@@ -178,11 +213,14 @@ type result struct {
 	// Instruction is present only where nothing was chosen, and says what to
 	// do about that.
 	Instruction string `json:"instruction,omitempty"`
+	// Notice is present only where there is something to say about the
+	// asking itself.
+	Notice string `json:"notice,omitempty"`
 }
 
 // Result is the tool result the model reads.
 func (a Answer) Result() string {
-	r := result{Answered: string(a.Answered), Picked: a.Picked, Note: a.Note}
+	r := result{Answered: string(a.Answered), Picked: a.Picked, Note: a.Note, Notice: a.Notice}
 	if r.Picked == nil {
 		// An empty list and not null, for the reason the note is an empty
 		// string: the field's absence would be a second thing to interpret.
@@ -195,6 +233,20 @@ func (a Answer) Result() string {
 	// The struct has no field that can fail to marshal.
 	out, _ := json.Marshal(r)
 	return string(out)
+}
+
+// OverBudget is the answer to a question past the turn's budget: nothing was
+// drawn, so nothing was chosen. The sentence says which fact this is rather
+// than leaving a bare skip to be read as a reader who had nothing to say —
+// without it a model spends the rest of its rounds asking again and being
+// skipped again.
+func OverBudget() Answer {
+	return Answer{
+		Answered: AnsweredSkipped,
+		Notice: fmt.Sprintf(
+			"this turn's budget of %d questions is spent, so this one was not put to anybody. "+
+				"Do not ask again in this turn.", PerTurnBudget),
+	}
 }
 
 // Nobody is the answer to a question that had somebody to ask and lost them —
@@ -240,9 +292,10 @@ func ToolDefinition() provider.Tool {
 	return provider.Tool{
 		Name: ToolName,
 		Description: "Put one question to the person and wait for their answer. " +
-			"Only for a fork you cannot decide and where the readings would lead to materially different work: " +
+			"Only for a fork you cannot decide and where the answers would lead to materially different work: " +
 			"which of several approaches, whether a change should reach further, what a thing should be called. " +
-			"Never for something the request, the tree or the project's own documents already answer — asking instead of reading spends the person's attention. " +
+			"Where the answers would lead to the same work, and for anything the request, the tree or the project's own documents already answer, do not ask: state the assumption you would have asked about and carry on. Asking instead of reading spends the person's attention. " +
+			"A turn has room for only a few questions, and one past that count is answered skipped without reaching anybody. " +
 			"Offer the answers you can see; the person can always answer with something you did not offer, or leave a note beside their pick. " +
 			"You are told how they answered: a pick on the card, typed text, skipped, or nobody to ask. " +
 			"An answer of skipped means nobody chose — state the assumption you would have asked about and carry on.",
@@ -271,6 +324,21 @@ func ToolDefinition() provider.Tool {
 			"required": ["question", "shape"]
 		}`),
 	}
+}
+
+// QuestionText is the question an ask call is putting, or "" where the call
+// cannot be read as one at all. It is the whole of what makes two calls the
+// same question, and the only part of a call a reader telling one asking from
+// another should be held to: a model that re-asks with its options reworded
+// has asked the same thing twice.
+func QuestionText(raw json.RawMessage) string {
+	var args struct {
+		Question string `json:"question"`
+	}
+	if err := json.Unmarshal(raw, &args); err != nil {
+		return ""
+	}
+	return strings.TrimSpace(args.Question)
 }
 
 // Parse validates an ask call's arguments.

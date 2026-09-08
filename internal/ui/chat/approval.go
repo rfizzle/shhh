@@ -415,14 +415,11 @@ func (m Model) armApprovalDecision(req *approvalRequest) (tea.Model, tea.Cmd) {
 	// classifier would each be answering "which of these three designs" at
 	// random, so none of them is given the chance
 	// (docs/capabilities/coding-agent.md#the-model-can-ask). Plan mode is no
-	// exception: asking changes nothing, so there is nothing to refuse.
+	// exception: asking changes nothing, so there is nothing to refuse. The
+	// turn's own budget for questions is the one thing that answers one, and
+	// it is spent here where the question is asked (question.go).
 	if req.kind == approvalQuestion {
-		m.recordDecision(observe.DecisionAsk, observe.ReasonUser)
-		m.openQuestion(req)
-		m.pendingQueue, m.pendingBatch = m.resolveQueue(req)
-		m.setTurnState(stateQuestion)
-		m.syncViewport()
-		return m, nil
+		return m.armQuestion(req)
 	}
 	// Agent-proposed memories always require explicit user
 	// confirmation: no mode, session grant, or classifier can wave one

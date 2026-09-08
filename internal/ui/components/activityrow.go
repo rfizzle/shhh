@@ -51,7 +51,11 @@ const (
 	// (docs/capabilities/coding-agent.md#the-model-can-ask). It is an
 	// outcome and not a count because nothing was found and nothing ran:
 	// what happened is that somebody decided.
-	OutcomeAnswered    = "answered"
+	OutcomeAnswered = "answered"
+	// OutcomeSkipped is a question that was never put to anybody, so nobody
+	// decided: the row names the rule that answered it instead
+	// (docs/capabilities/coding-agent.md#the-model-can-ask).
+	OutcomeSkipped     = "skipped"
 	OutcomeAutoAllowed = "auto-allowed"
 	// OutcomeLocal marks a command row whose output stayed out of the
 	// conversation — the reader saw it, the model never did.

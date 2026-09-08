@@ -483,6 +483,13 @@ func (m Model) activityRowDetail(e entry, stepDetail bool) components.ActivityRo
 			if result != "" {
 				row.Expanded = true
 			}
+		case e.answerRule != "":
+			// A question nobody was put says what answered it rather than
+			// who. `answered` would name a decision the reader never made,
+			// and the reader is owed the reason their session stopped
+			// bringing them questions
+			// (docs/capabilities/coding-agent.md#the-model-can-ask).
+			row.Outcome = components.OutcomeBy(components.OutcomeSkipped, e.answerRule)
 		case e.answered != "":
 			// A question is a decision and not an act, so the row states how
 			// it was answered rather than what came back: the answer itself

@@ -52,6 +52,12 @@ func (m *Model) bindNotebook() {
 // it (docs/capabilities/sessions-and-memory.md#a-round-can-be-read-back).
 func (m *Model) nextTurn() {
 	m.turnCount++
+	// And the turn's budget for questions, which is spent here rather than
+	// where a turn ends for the same reason the number is a count: what the
+	// reader is being protected from is how often one instruction interrupts
+	// them, and a question still outstanding when the next instruction
+	// arrives was asked by the turn before it (question.go).
+	m.questionsAsked = 0
 	m.notebook.SetTurn(m.turnCount)
 	m.sourceLedger.SetTurn(m.turnCount)
 	m.agent.SetTurn(m.turnCount)

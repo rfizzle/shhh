@@ -42,6 +42,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/structural"
@@ -233,6 +234,40 @@ func (d *RepeatDetector) Notice(tool string, args json.RawMessage, result string
 	return result
 }
 
+// AskedBefore records one question the run has put, against the same windows
+// every other interaction goes into, and answers what the model should be
+// told where it has now put this question more than once — or "" where it has
+// not. Safe on a nil detector, which has been told nothing.
+//
+// It hands the sentence back instead of leading the result with it, which is
+// the one place this detector's rule bends and the only tool it bends for. A
+// result is prose the model reads; a question's result is the JSON its answer
+// is read out of, and a notice in front of that is a line to skip past before
+// finding what was asked for. So the surface that answered the question puts
+// the sentence where its own result shape has room for it, and every front
+// end of one agent answers a question alike
+// (docs/architecture.md#one-agent-several-front-ends).
+func (d *RepeatDetector) AskedBefore(args json.RawMessage) string {
+	// The result is no part of a question's key, so there is none to pass:
+	// what came back is exactly what two askings of one question are allowed
+	// to disagree about (interactionKey).
+	if n := d.Note(ask.ToolName, args, ""); n >= repeatNoticeAfter {
+		return askRepeatNotice(n)
+	}
+	return ""
+}
+
+// askRepeatNotice is what a model that has asked one question twice reads.
+// The other notices say a result will not change and offer another way at it;
+// this one says the opposite thing — the answer is already in hand, and the
+// way out is to use it rather than to reach the same end another way.
+func askRepeatNotice(n int) string {
+	return fmt.Sprintf(
+		"you have now put this question %d times and the answer you were given is still above, "+
+			"unchanged. Asking it again will not get you a different one. Act on the answer you "+
+			"have, or state the assumption you would have asked about and carry on.", n)
+}
+
 // Sweeps are the sweeps standing now, widest first, as rows for the reading
 // that judges whether a run is getting anywhere.
 //
@@ -373,6 +408,14 @@ func leadNotice(notice, result string) string {
 // is not the one wanted, and nonsense for a command that will not run or an
 // edit a policy has refused twice.
 func repeatNotice(tool string, n int, failed bool) string {
+	if tool == ask.ToolName {
+		// Neither sentence is true of a question. "It returned exactly this
+		// each time" is what a question is allowed not to do, and "reach the
+		// same end another way" is advice for an act. A surface that wraps
+		// this tier without meaning to would otherwise tell a model a thing
+		// about its own question that is not so.
+		return askRepeatNotice(n)
+	}
 	if failed {
 		return fmt.Sprintf(
 			repeatNoticePrefix+" this exact %s call has now come back the same way %d times — "+
@@ -390,7 +433,21 @@ func repeatNotice(tool string, n int, failed bool) string {
 // interactionKey identifies one tool interaction. Arguments are canonicalised
 // through a decode/encode round trip so the same call written two ways — a
 // different key order, different spacing — is recognised as the same call.
+//
+// A question is the one exception, and it is the exact inverse of the
+// reasoning that put the result in the key everywhere else. `go test` run
+// twice is two interactions the moment its output differs, because the output
+// is what the run went to get. A question asked twice is one question asked
+// twice whatever came back: the person may answer it differently on the
+// second asking — that is what makes it a question — and a key that let two
+// different answers pull the same asking apart would never see the failure it
+// exists for. Nothing but the question text is in it either, so a re-ask with
+// the options reworded is caught as well.
+// See docs/capabilities/coding-agent.md#the-model-can-ask.
 func interactionKey(tool string, args json.RawMessage, result string) string {
+	if tool == ask.ToolName {
+		return tool + "\x00" + ask.QuestionText(args)
+	}
 	canonical := string(args)
 	var v any
 	if err := json.Unmarshal(args, &v); err == nil {
@@ -463,6 +520,11 @@ const sweepNoticePrefix = "[sweep:"
 // the repository. Missing either one would let a run that searched a dozen
 // times, committed, and searched a dozen more be told it had been going in
 // one circle of twenty-four.
+//
+// A question is on neither list and must stay off both: nothing on the
+// machine changed, so a question neither ends a sweep of searches nor starts
+// one, and a run that stopped to ask in the middle of an investigation is
+// still on the same investigation.
 // See docs/interface/principles.md#weight-tracks-risk.
 func wroteSomething(tool string, args json.RawMessage) bool {
 	return tool == tools.ExecCommandName ||

@@ -2,6 +2,7 @@ package ask
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -229,5 +230,71 @@ func TestAnswer_ValidateHoldsAnAnswerToTheCardsOwnRules(t *testing.T) {
 	if strings.Contains(err.Error(), "(valid: "+string(AnsweredNobody)) ||
 		strings.Contains(err.Error(), ", "+string(AnsweredNobody)) {
 		t.Errorf("a client was offered the surface's own answer: %v", err)
+	}
+}
+
+// The description is where the discipline is stated, because it is what is
+// read at the moment of the call: a rewrite that drops when a question is
+// worth stopping for, or what to do instead where it is not, fails here.
+func TestToolDefinition_SaysWhenAQuestionIsWorthStoppingFor(t *testing.T) {
+	got := ToolDefinition().Description
+	for _, want := range []string{
+		// When one is worth stopping for.
+		"materially different work",
+		// And what to do instead everywhere else.
+		"already answer, do not ask",
+		"state the assumption you would have asked about and carry on",
+		// That the asking is bounded, so a run is not left to discover the
+		// budget by spending its rounds against it.
+		"only a few questions",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("the description does not say %q:\n%s", want, got)
+		}
+	}
+}
+
+// A question the budget answered is a skip like any other in its vocabulary,
+// and says why in the one field that talks about the asking rather than the
+// answer — so a model that has run out of questions carries on instead of
+// spending its remaining rounds asking again.
+func TestOverBudget_SaysWhyNothingWasChosen(t *testing.T) {
+	a := OverBudget()
+	if a.Answered != AnsweredSkipped {
+		t.Fatalf("answered = %q, want %q", a.Answered, AnsweredSkipped)
+	}
+	var got struct {
+		Answered    string `json:"answered"`
+		Instruction string `json:"instruction"`
+		Notice      string `json:"notice"`
+	}
+	if err := json.Unmarshal([]byte(a.Result()), &got); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(got.Instruction, "state the assumption") {
+		t.Errorf("instruction = %q", got.Instruction)
+	}
+	for _, want := range []string{fmt.Sprintf("%d questions", PerTurnBudget), "not put to anybody"} {
+		if !strings.Contains(got.Notice, want) {
+			t.Errorf("the notice does not say %q: %q", want, got.Notice)
+		}
+	}
+	// An ordinary skip carries no notice: nothing about the asking went
+	// wrong, and a field that was always there would say nothing.
+	if n := (Answer{Answered: AnsweredSkipped}).Result(); strings.Contains(n, "notice") {
+		t.Errorf("a reader's own skip should carry no notice: %s", n)
+	}
+}
+
+// Two calls are the same question when they put the same words, whatever else
+// they carry, and an unreadable call is no question at all.
+func TestQuestionText_IsTheWholeOfWhatMakesTwoCallsOneQuestion(t *testing.T) {
+	one := QuestionText(json.RawMessage(`{"question":"  Which store? ","shape":"choose","options":[{"label":"A"}]}`))
+	two := QuestionText(json.RawMessage(`{"question":"Which store?","shape":"text"}`))
+	if one != "Which store?" || one != two {
+		t.Errorf("got %q and %q", one, two)
+	}
+	if got := QuestionText(json.RawMessage(`not json`)); got != "" {
+		t.Errorf("an unreadable call is no question, got %q", got)
 	}
 }

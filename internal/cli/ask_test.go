@@ -8,6 +8,7 @@ package cli
 // (docs/capabilities/coding-agent.md#nobody-to-ask).
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -181,5 +182,71 @@ func TestServe_AQuestionReachesTheClientAndItsAnswerReachesTheModel(t *testing.T
 		if !strings.Contains(result, want) {
 			t.Errorf("the model was not told %q: %s", want, result)
 		}
+	}
+}
+
+// The turn's allowance of questions is the same allowance on the wire as on
+// the screen: a client is a person too, and two front-ends of one agent have
+// to spend one budget alike.
+func TestServe_ATurnsQuestionsAreBoundedForAClientToo(t *testing.T) {
+	// Two past the budget rather than one: a request the run makes for
+	// something other than a round spends a step of this script, and the case
+	// needs at least one question left over after the allowance is gone.
+	replies := make([]reply, 0, ask.PerTurnBudget+3)
+	for i := 1; i <= ask.PerTurnBudget+2; i++ {
+		replies = append(replies, reply{tool: ask.ToolName, args: map[string]string{
+			"question": fmt.Sprintf("Fork number %d?", i),
+			"shape":    string(ask.ShapeConfirm),
+		}})
+	}
+	replies = append(replies, reply{text: "carried on"})
+	f := startFakeProvider(t, replies...)
+	s := newPrintSession(t, f)
+	c := serveOverStdio(t, s)
+
+	var opened rpc.SessionResult
+	c.mustCall(rpc.MethodSessionStart, rpc.StartParams{}, &opened)
+	var turn rpc.TurnResult
+	c.mustCall(rpc.MethodTurnStart, rpc.TurnParams{Session: opened.Session, Prompt: "tidy up"}, &turn)
+
+	for i := 1; i <= ask.PerTurnBudget; i++ {
+		put := c.waitQuestion()
+		c.mustCall(rpc.MethodQuestionAnswer, rpc.QuestionAnswerParams{
+			Session: opened.Session, ID: put.ID, Answered: ask.AnsweredOnCard, Picked: []string{"yes"}}, nil)
+	}
+	events := c.drainToClose()
+
+	// The one past the budget never crossed: it was answered where it was
+	// asked, so nothing reached the client to be answered.
+	select {
+	case put := <-c.questions:
+		t.Fatalf("a question past the budget reached the client: %q", put.Question)
+	default:
+	}
+	onCard, budgeted := 0, 0
+	for _, ev := range events {
+		if ev.Tool != ask.ToolName || ev.Result == "" {
+			continue
+		}
+		switch {
+		case strings.Contains(ev.Result, string(ask.AnsweredOnCard)):
+			onCard++
+		case strings.Contains(ev.Result, "budget"):
+			budgeted++
+			for _, want := range []string{string(ask.AnsweredSkipped), "state the assumption"} {
+				if !strings.Contains(ev.Result, want) {
+					t.Errorf("the run was not told %q: %s", want, ev.Result)
+				}
+			}
+		default:
+			t.Errorf("a question was answered by nothing this story knows: %s", ev.Result)
+		}
+	}
+	if onCard != ask.PerTurnBudget {
+		t.Errorf("the client answered %d questions and the budget is %d: %v",
+			onCard, ask.PerTurnBudget, kindsOf(events))
+	}
+	if budgeted == 0 {
+		t.Errorf("no question ran into the budget: %v", kindsOf(events))
 	}
 }

@@ -199,10 +199,16 @@ The result itself is left standing, because it is still the answer — what has
 changed is that asking again cannot be the way forward.
 
 The whole interaction is the signature, and that is what makes it safe to
-apply to every tool without exception. Running the tests twice is two
-different interactions the moment the output differs, and one interaction only
-when nothing has moved — which is exactly when running them again buys
+apply to a tool without knowing anything about it. Running the tests twice is
+two different interactions the moment the output differs, and one interaction
+only when nothing has moved — which is exactly when running them again buys
 nothing.
+
+There is one thing that is not a call to a machine, and it is the one
+exception: a question put to a person ([below](#the-model-can-ask)). What came
+back is exactly what two askings of one question are allowed to disagree
+about, so the answer is left out of its signature and the question itself is
+the whole of it.
 
 **It watches the calls that have to be answered for as well as the ones that
 run on their own**, and those are where a session circles hardest: the failing
@@ -463,13 +469,40 @@ first. The model is told which kind of answer it got, from a fixed set: a
 pick on the card, typed text, skipped, nobody to ask.
 
 **A question is the model's to ask and the reader's to pay for.** The tool's
-own description says when one is worth stopping for — only where the
-readings would lead to materially different work — because a model that asks
-instead of reading is doing to the reader what a sweep does to a round
-budget. A turn has a small number of questions, and one past the count is
-answered *skipped* with the instruction to state the assumption and continue.
-A question asked twice is a repeat like any other
-([above](#a-call-the-session-has-already-made-is-answered-by-saying-so)).
+own description says when one is worth stopping for — only where the answers
+would lead to materially different work — and what to do everywhere else:
+state the assumption you would have asked about and carry on. That belongs to
+the tool rather than to a prompt block because it is read at the moment of the
+call. A model that asks instead of reading is doing to the reader what a sweep
+does to a round budget.
+
+**A turn has a small number of questions, and the number is a count rather
+than a rate.** One turn runs for four minutes or for forty, and what the
+reader feels is how often one instruction of theirs stopped to interrupt them,
+which is a fact about the piece of work. The allowance is spent by the asking
+and not by the answering: a question that reached the screen cost the
+interruption whatever the reader then did with it — picked an answer, or set
+it down for their next message to answer — so a question they have not got
+round to does not buy another one. One past the count is answered *skipped*
+without being drawn at all, which is the only thing that answer now means, and
+the run is told why, so a model that has run out of questions states its
+assumption and carries on instead of asking again. The row on the reader's
+screen names the budget rather than a decision they did not make. The count is
+the turn's, and it starts over when a turn opens rather than when one closes —
+a question still outstanding when the next instruction arrives belongs to the
+turn that asked it.
+
+**A question asked twice is a repeat**, and it is the one interaction whose
+signature leaves the result out
+([above](#a-call-the-session-has-already-made-is-answered-by-saying-so)). The
+person may answer differently the second time — that is what makes it a
+question rather than a lookup — so a signature that included the answer would
+be one that could never see the same question asked twice. Only the question's
+own words are in it, so a re-ask with the options reworded is caught too. What
+the model is told arrives in the answer itself rather than as a line in front
+of it, because that result is the JSON the answer is read out of; what it says
+is the opposite of the other notices — not *this will not change*, but *you
+already have the answer*.
 
 ### Nobody to ask
 

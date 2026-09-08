@@ -407,6 +407,11 @@ type entry struct {
 	// closed vocabulary the tool's own result carries (question.go). Empty
 	// on every row that is not a question, which is every other row.
 	answered ask.Answered
+	// answerRule names what answered a question the reader never saw — the
+	// turn's spent question budget, and nothing else today. Empty on a
+	// question that reached them, where what the row has to say is that
+	// somebody decided (question.go).
+	answerRule string
 	// allowedBy names what let a gated call run without the reader being
 	// asked — the mode or grant that allowed it, "classifier", or the batch —
 	// and renders in the act's own outcome field. The feed states an act
@@ -790,6 +795,12 @@ type Model struct {
 	// asks says the session registered the question tool, which is what a
 	// card is ever drawn for.
 	asks bool
+	// questionsAsked is how many questions this turn has put on the screen,
+	// against the budget one turn has (question.go). It is the turn's and
+	// resets when a turn opens rather than when one closes, so a question
+	// still outstanding when the next turn begins is charged to the turn that
+	// asked it and never to the turn that inherits it (notes.go).
+	questionsAsked int
 	// secrets backs /secret and the scrub on the agent.
 	secrets Secrets
 	// skills is the session's skill catalog, behind /skills, /skill and

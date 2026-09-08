@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/structural"
@@ -494,5 +495,74 @@ func TestRepeatDetector_SweepsAreAFactTheReadingIsGiven(t *testing.T) {
 	d.Notice("write_file", json.RawMessage(`{"path":"internal/agent/repeat.go","content":"x"}`), "wrote")
 	if got := d.Sweeps(); len(got) != 0 {
 		t.Errorf("a write ends the sweep, got %v", got)
+	}
+}
+
+// A question is the one interaction whose answer is left out of its
+// signature: the person may answer differently on the second asking, and a
+// key that let that pull the two askings apart would never see the failure it
+// is here for.
+func TestRepeatDetector_OneQuestionAskedTwiceIsOneQuestion(t *testing.T) {
+	d := NewRepeatDetector()
+	q := json.RawMessage(`{"question":"Which store should the cache use?","shape":"choose",` +
+		`"options":[{"label":"Postgres"},{"label":"SQLite"}]}`)
+
+	if got := d.AskedBefore(q); got != "" {
+		t.Fatalf("the first asking is not a repeat, got %q", got)
+	}
+	notice := d.AskedBefore(q)
+	if notice == "" {
+		t.Fatal("the same question put twice should say so")
+	}
+	for _, want := range []string{"2 times", "answer you have"} {
+		if !strings.Contains(notice, want) {
+			t.Errorf("the notice does not say %q:\n%s", want, notice)
+		}
+	}
+	// Under the key every other tool is held to these were two interactions
+	// the moment the answers differed, which is the reasoning this inverts.
+	if n := d.Note(ask.ToolName, q, `{"answered":"on the card","picked":["Redis"]}`); n != 3 {
+		t.Errorf("what came back is no part of a question's key, got %d", n)
+	}
+}
+
+// Only the question's own words are in the key, so a re-ask with the options
+// reworded is the same question — and a genuinely different one is not.
+func TestRepeatDetector_ADifferentQuestionIsNotARepeat(t *testing.T) {
+	d := NewRepeatDetector()
+	d.AskedBefore(json.RawMessage(`{"question":"Which store?","shape":"choose","options":[{"label":"A"}]}`))
+
+	reworded := json.RawMessage(`{"question":"Which store?","shape":"choose","options":[{"label":"B"},{"label":"C"}]}`)
+	if got := d.AskedBefore(reworded); got == "" {
+		t.Error("one question with its options reworded is still one question")
+	}
+	other := json.RawMessage(`{"question":"Should the migration be reversible?","shape":"confirm"}`)
+	if got := d.AskedBefore(other); got != "" {
+		t.Errorf("a different question is a different question, got %q", got)
+	}
+}
+
+// A question changes nothing on the machine, so it neither ends a sweep of
+// searches nor starts one: a run that stopped to ask in the middle of an
+// investigation is still on the same investigation.
+func TestRepeatDetector_AQuestionNeitherEndsASweepNorStartsOne(t *testing.T) {
+	if wroteSomething(ask.ToolName, json.RawMessage(`{"question":"Which store?","shape":"text"}`)) {
+		t.Fatal("a question writes nothing")
+	}
+	d := NewRepeatDetector()
+	var notice string
+	for i := 1; i <= sweepNoticeAfter; i++ {
+		if i == 6 {
+			d.AskedBefore(json.RawMessage(`{"question":"Which store?","shape":"text"}`))
+		}
+		notice = d.Notice("search",
+			searchOf(fmt.Sprintf("needle%d", i), "internal/ui/chat"),
+			fmt.Sprintf("a.go:%d: needle%d", i, i))
+	}
+	if !swept(notice) {
+		t.Errorf("a question in the middle of a sweep does not end it:\n%s", notice)
+	}
+	if got := d.Sweeps(); len(got) != 1 {
+		t.Errorf("the question is part of no sweep of its own, got %v", got)
 	}
 }

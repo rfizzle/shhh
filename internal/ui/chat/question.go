@@ -67,6 +67,31 @@ func (m Model) WithAsk() Model {
 	return m
 }
 
+// armQuestion is the question's place in the approval queue: a decision put
+// to the person in every mode, because every gate below it exists to decide
+// which *acts* stop to ask and a question is not an act.
+//
+// The turn's budget is spent here, where the question is asked, and not where
+// it is answered. A question that reached the screen has already cost the
+// reader the interruption whatever they then did with it — picked an answer,
+// or set it down for their next message — so a card they have not got round
+// to does not buy another one. And one past the budget draws nothing at all,
+// because a card that appeared only to be answered by a rule would be an
+// interruption charged for twice
+// (docs/capabilities/coding-agent.md#the-model-can-ask).
+func (m Model) armQuestion(req *approvalRequest) (tea.Model, tea.Cmd) {
+	if m.questionsAsked >= ask.PerTurnBudget {
+		return m.answerQuestionAs(ask.OverBudget(), overBudgetRule)
+	}
+	m.questionsAsked++
+	m.recordDecision(observe.DecisionAsk, observe.ReasonUser)
+	m.openQuestion(req)
+	m.pendingQueue, m.pendingBatch = m.resolveQueue(req)
+	m.setTurnState(stateQuestion)
+	m.syncViewport()
+	return m, nil
+}
+
 // openQuestion builds the card for a parsed question and puts it up.
 func (m *Model) openQuestion(req *approvalRequest) {
 	c := &questionCard{q: req.question}
@@ -516,16 +541,38 @@ func (m Model) answerTyped(text string) (tea.Model, tea.Cmd) {
 	return m.answerQuestion(ask.Answer{Answered: ask.AnsweredTyped, Note: text})
 }
 
+// overBudgetRule is what answered a question the turn had no budget left
+// for, in the row's own outcome field. It names the rule and not a person,
+// because nobody saw this one.
+const overBudgetRule = "over the turn's budget"
+
 // answerQuestion resolves the call through the same seam every other answered
 // decision goes through, so an interrupted turn gives an outstanding question
 // the cancelled turn's synthetic result with no handling of its own.
 func (m Model) answerQuestion(a ask.Answer) (tea.Model, tea.Cmd) {
+	return m.answerQuestionAs(a, "")
+}
+
+// answerQuestionAs is the same, for an answer no reader gave: rule names what
+// gave it instead, and its presence is what keeps the record from counting an
+// interruption that never happened.
+func (m Model) answerQuestionAs(a ask.Answer, rule string) (tea.Model, tea.Cmd) {
 	req := m.pendingApproval
 	if req == nil {
 		m.question = nil
 		return m, nil
 	}
-	m.recordDecision(observe.DecisionAsk, observe.ReasonUser)
+	if rule == "" {
+		m.recordDecision(observe.DecisionAsk, observe.ReasonUser)
+	}
+	// The question goes into the same window every other interaction does, so
+	// a model that has put one question twice is told it already has the
+	// answer. The sentence comes back rather than leading the result, because
+	// this result is the JSON the answer is read out of (repeat.go).
+	if notice := m.repeats.AskedBefore(json.RawMessage(req.call.Arguments)); notice != "" && a.Notice == "" {
+		a.Notice = notice
+		m.signal(observe.SignalRepeat, req.call.Name)
+	}
 	result := a.Result()
 	m.question = nil
 	m.pendingApproval = nil
@@ -538,6 +585,7 @@ func (m Model) answerQuestion(a ask.Answer) (tea.Model, tea.Cmd) {
 		toolArgs:   req.call.Arguments,
 		toolResult: result,
 		answered:   a.Answered,
+		answerRule: rule,
 	})
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
