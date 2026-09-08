@@ -2,7 +2,6 @@ package components
 
 import (
 	"fmt"
-	"strings"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
@@ -48,7 +47,12 @@ type MultiSelect struct {
 	// item's file in the editor on the backlog screen and one proposal's
 	// header on this card. They are offers and are never dropped.
 	Actions []string
-	notice  string
+	// Note is the one-line note field under the list, for a card whose
+	// answer can carry the reader's own words beside the boxes. Nil is a
+	// card with no note, which is every card that had one before this field
+	// existed.
+	Note   *NoteBox
+	notice string
 	// list is the shared pointer and window (list.go). A multi-select owns
 	// its own Focus, which is why it did not come along when the movement and
 	// the window went to the selector.
@@ -67,6 +71,18 @@ func (s *MultiSelect) pointer() *List[SelectOption] {
 // NewMultiSelect builds a multi-select with nothing checked.
 func NewMultiSelect(title string, options []SelectOption) *MultiSelect {
 	return &MultiSelect{Title: title, Options: options, Checked: make([]bool, len(options))}
+}
+
+// checkable is how many rows a key can put a tick in: the whole list less
+// the rows that say they cannot be taken.
+func (s *MultiSelect) checkable() int {
+	n := 0
+	for _, o := range s.Options {
+		if !o.Dim {
+			n++
+		}
+	}
+	return n
 }
 
 func (s *MultiSelect) count() int {
@@ -91,17 +107,40 @@ func (s *MultiSelect) moved(pressed string) bool {
 
 func (s *MultiSelect) Update(msg tea.KeyPressMsg) (done bool, result MultiSelectResult) {
 	s.notice = ""
-	switch pressed := msg.String(); {
+	pressed := msg.String()
+	if s.Note != nil {
+		s.Note.Settle()
+		// Tab moves the keyboard between the list and the field, and while
+		// the field has it every letter is text — the space that ticks a box
+		// and the `a` that ticks all of them included.
+		if keys.Is(pressed, keys.Select.Note) {
+			s.Note.Toggle()
+			return false, MultiSelectResult{}
+		}
+		if s.Note.Focused && !keys.Is(pressed, keys.Select.Take) && !keys.Is(pressed, keys.Select.Cancel) {
+			s.Note.Update(msg)
+			return false, MultiSelectResult{}
+		}
+	}
+	switch {
 	case s.moved(pressed):
 	case keys.Is(pressed, keys.Select.Toggle):
 		if s.Focus < len(s.Checked) {
+			if s.Options[s.Focus].Dim {
+				// A row that cannot be ticked says why again rather than
+				// doing nothing: a key that looks ignored is a key the
+				// reader presses harder (invariant 5).
+				s.notice = s.Options[s.Focus].UnavailableNotice()
+				return false, MultiSelectResult{}
+			}
 			s.Checked[s.Focus] = !s.Checked[s.Focus]
 		}
 	case keys.Is(pressed, keys.Select.All):
-		// All ↔ none: anything unchecked checks everything, else clears.
-		all := s.count() == len(s.Checked)
+		// All ↔ none: anything unchecked checks everything, else clears. A
+		// row that cannot be ticked is never ticked by it.
+		all := s.count() == s.checkable()
 		for i := range s.Checked {
-			s.Checked[i] = !all
+			s.Checked[i] = !all && !s.Options[i].Dim
 		}
 	case keys.Is(pressed, keys.Select.Take):
 		if s.count() == 0 && !s.AllowNone {
@@ -131,16 +170,27 @@ func (s *MultiSelect) View(width int) string {
 	if s.notice != "" {
 		tail = append(tail, sty.Warn.Render(Clip(s.notice, inner)))
 	}
-	segs := []string{
+	if s.Note != nil {
+		tail = append(tail, s.Note.Rows(inner)...)
+	}
+	var segs []string
+	if s.Note != nil {
+		// The field's own key leads, because it is the one this card has
+		// that the plain checkbox list does not.
+		segs = append(segs, words(keys.Select.Note, "note/options"))
+	}
+	segs = append(segs,
 		offer(keys.Select.Toggle),
 		words(keys.Select.All, "all/none"),
-	}
+	)
 	segs = append(segs, s.Actions...)
 	segs = append(segs,
 		words(keys.Select.Take, fmt.Sprintf("apply (%d)", s.count())),
 		offer(keys.Select.Cancel))
-	hint := strings.Join(segs, " · ")
-	tail = append(tail, hintRows([]string{hint}, width)...)
+	// Handed over as segments and never pre-joined: a row too wide for the
+	// terminal takes another row, and a joined one could only be cut in the
+	// middle of a clause (docs/interface/principles.md#fold-never-hide).
+	tail = append(tail, hintRows(segs, width)...)
 	rows := append(s.visibleRows(width, bodyBudget(s.MaxLines, len(tail))), tail...)
 	rows = boundRows(rows, s.MaxLines)
 	return Card{Title: s.Title}.Render(rows, width)
@@ -173,13 +223,28 @@ func (s *MultiSelect) visibleRows(width, budget int) []string {
 func (s *MultiSelect) optionRow(i, inner int) string {
 	opt := s.Options[i]
 	box := sty.Dim.Render("[ ]")
-	if i < len(s.Checked) && s.Checked[i] {
+	switch {
+	case opt.Dim:
+		// A row that cannot be ticked draws no box: an empty box is an
+		// offer, and the ⊘ the label carries is what says this row is not
+		// one (invariant 1).
+		box = "   "
+	case i < len(s.Checked) && s.Checked[i]:
 		box = sty.Add.Render("[x]")
 	}
 	body := inner - 2
-	row := box + " " + opt.Label
-	if opt.Meta != "" && body-lipgloss.Width(row) >= lipgloss.Width(opt.Meta)+2 {
-		row = padRight(row, body-lipgloss.Width(opt.Meta)) + opt.MetaTone.style().Render(opt.Meta)
+	label := opt.labelText()
+	if opt.Dim {
+		label = sty.Dimmer.Render(label)
+	}
+	row := box + " " + label
+	meta := opt.metaText()
+	if meta != "" && body-lipgloss.Width(row) >= lipgloss.Width(meta)+2 {
+		tone := opt.MetaTone.style()
+		if opt.Dim {
+			tone = sty.Dimmer
+		}
+		row = padRight(row, body-lipgloss.Width(meta)) + tone.Render(meta)
 	}
 	row = Clip(row, max(body, 0))
 	if i == s.Focus {

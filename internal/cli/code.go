@@ -120,6 +120,10 @@ func newCodeCmd() *cobra.Command {
 			// surfaces answer it above.
 			session.agents = true
 			session.memory = true
+			// And the question tool, for the memory proposal's reason
+			// exactly: a question needs somebody to answer it, and this is
+			// the only branch that has one.
+			session.ask = true
 			return runChatSession(cmd, args, session)
 		},
 	}

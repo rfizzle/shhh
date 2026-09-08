@@ -49,7 +49,7 @@ func Outcome(result string) string {
 }
 
 // argKeys is the priority order for picking a tool call's key argument.
-var argKeys = []string{"path", "pattern", "command", "query", "url", "title", "name", "action", "task", "role"}
+var argKeys = []string{"path", "pattern", "command", "query", "question", "url", "title", "name", "action", "task", "role"}
 
 // searchTools are the calls whose subject is the pattern and whose path is
 // only the scope it was asked in, so their rows lead with what was asked.

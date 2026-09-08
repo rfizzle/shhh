@@ -198,6 +198,12 @@ func queueLabel(req *approvalRequest) (label, detail string) {
 	case approvalDiff:
 		adds, dels := diff.Stats(req.hunks)
 		return firstLine(req.title), fmt.Sprintf("+%d −%d", adds, dels)
+	case approvalQuestion:
+		// The question, not the tool that carried it: a strip is what lets a
+		// reader recognise the decision without opening the card, and two
+		// queued questions both labelled `ask` would be two rows nobody can
+		// tell apart (question.go).
+		return firstLine(req.summary), ""
 	}
 	if req.title != "" {
 		return firstLine(req.title), ""

@@ -173,7 +173,7 @@ func (m Model) activeChildAsk() *subagent.Ask {
 		return nil
 	}
 	switch m.state {
-	case stateConfirmRun, statePlanApprove:
+	case stateConfirmRun, statePlanApprove, stateQuestion:
 		return nil
 	}
 	if m.agentList != nil {

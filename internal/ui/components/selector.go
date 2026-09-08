@@ -40,8 +40,17 @@ type SelectOption struct {
 	// short field — one clause, never a sentence — and it is dropped before
 	// Desc is, because Desc is the row's own words and Meta is a label on
 	// them.
-	Meta        string
-	MetaTone    FieldTone
+	Meta     string
+	MetaTone FieldTone
+	// Recommended is the list's own answer to "which of these would you
+	// take". It rides the meta field in a word, ahead of whatever the meta
+	// already said, so a monochrome terminal loses nothing — a recommendation
+	// carried by position or by colour would be a recommendation half the
+	// readers never see
+	// (docs/interface/principles.md#colour-never-carries-meaning-alone).
+	// Leading the list is the caller's: the rows arrive in the order they are
+	// drawn.
+	Recommended bool
 	RequireNote bool
 	// Values are the answers this row can hold, and Value is which of them
 	// it holds now. A row that carries them is a field rather than a choice:
@@ -690,7 +699,7 @@ func (s *Select) grid(numbered, inner int) optionGrid {
 		if opt.Header {
 			continue
 		}
-		g.label = max(g.label, lipgloss.Width(s.labelText(opt)))
+		g.label = max(g.label, lipgloss.Width(opt.labelText()))
 	}
 	g.label = min(g.label, max(inner/2, 8))
 	return g
@@ -699,11 +708,50 @@ func (s *Select) grid(numbered, inner int) optionGrid {
 // labelText is what the row says before its description: the option, behind
 // the ⊘ that marks it unavailable. The glyph, not the dimming, is what says
 // unavailable — colour never carries meaning alone (invariant 1).
-func (s *Select) labelText(opt SelectOption) string {
+//
+// It is the option's rather than the card's, because the checkbox list draws
+// the same row from the same field and a row that said ⊘ on one list and
+// nothing on the other would be two readings of one flag.
+func (opt SelectOption) labelText() string {
 	if opt.Dim {
 		return "⊘ " + opt.Label
 	}
 	return opt.Label
+}
+
+// UnavailableNotice is what a surface says when a row that cannot be taken is
+// taken anyway. The reason is the one already on the row, restated rather
+// than re-derived, so the answer to "why not" is the same words in both
+// places.
+//
+// The single-select hands the take to its host and this is the host's to
+// state, which is why it is exported; the checkbox list ticks its own boxes,
+// so it states it itself.
+func (opt SelectOption) UnavailableNotice() string {
+	reason := opt.Meta
+	if reason == "" {
+		reason = opt.Desc
+	}
+	if reason == "" {
+		return opt.Label + " cannot be taken here"
+	}
+	return opt.Label + " cannot be taken here — " + reason
+}
+
+// recommendedWord is the recommendation as a word rather than a position.
+const recommendedWord = "recommended"
+
+// metaText is the row's right-aligned field with the recommendation in front
+// of it: the recommendation is a fact about the option and the meta is a
+// note on it, so the fact leads.
+func (opt SelectOption) metaText() string {
+	if !opt.Recommended {
+		return opt.Meta
+	}
+	if opt.Meta == "" {
+		return recommendedWord
+	}
+	return recommendedWord + " · " + opt.Meta
 }
 
 // optionRows renders Options[lo:hi] with the ❯ pointer on the focused row.
@@ -781,13 +829,14 @@ func (s *Select) optionRow(opt SelectOption, n int, focused bool, g optionGrid, 
 	if g.num > 0 {
 		head += padLeft(strconv.Itoa(n)+".", g.num) + " "
 	}
-	label := s.labelText(opt)
+	label := opt.labelText()
 	left := head + padRight(label, g.label)
 
 	meta, value, desc := "", "", ""
+	metaWanted := opt.metaText()
 	avail := inner - lipgloss.Width(left)
-	if opt.Meta != "" && avail >= lipgloss.Width(opt.Meta)+2 {
-		meta = opt.Meta
+	if metaWanted != "" && avail >= lipgloss.Width(metaWanted)+2 {
+		meta = metaWanted
 		avail -= lipgloss.Width(meta) + 2
 	}
 	if opt.Value != "" && avail >= minValueWidth+2 {

@@ -123,6 +123,10 @@ type fakeProvider struct {
 	mu    sync.Mutex
 	round int
 	asked [][]string
+	// offered is the tool names each request carried. It is the only place a
+	// test can see what the model was given rather than what it did with it,
+	// which is what a tool nobody registers has to be asserted against.
+	offered [][]string
 }
 
 func startFakeProvider(t *testing.T, script ...reply) *fakeProvider {
@@ -199,8 +203,13 @@ func (f *fakeProvider) next(r *http.Request) reply {
 			Role    string          `json:"role"`
 			Content json.RawMessage `json:"content"`
 		} `json:"messages"`
+		Tools []struct {
+			Function struct {
+				Name string `json:"name"`
+			} `json:"function"`
+		} `json:"tools"`
 	}
-	var asked []string
+	var asked, offered []string
 	if err := json.NewDecoder(r.Body).Decode(&body); err == nil {
 		for _, m := range body.Messages {
 			if m.Role != "user" {
@@ -212,10 +221,14 @@ func (f *fakeProvider) next(r *http.Request) reply {
 			}
 			asked = append(asked, text)
 		}
+		for _, tl := range body.Tools {
+			offered = append(offered, tl.Function.Name)
+		}
 	}
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.asked = append(f.asked, asked)
+	f.offered = append(f.offered, offered)
 	for i, step := range f.script {
 		if step.match == "" || f.spent[i] || !askedFor(asked, step.match) {
 			continue
@@ -265,6 +278,25 @@ func (f *fakeProvider) lastRequest(t *testing.T) []string {
 		t.Fatal("the run never reached the provider")
 	}
 	return f.asked[len(f.asked)-1]
+}
+
+// toolsOffered is every tool name any request in this run carried. Every
+// request and not the last one, because a tool registered once is registered
+// for the run and a later round is not where it would go missing.
+func (f *fakeProvider) toolsOffered(t *testing.T) map[string]bool {
+	t.Helper()
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if len(f.offered) == 0 {
+		t.Fatal("the run never reached the provider")
+	}
+	names := map[string]bool{}
+	for _, req := range f.offered {
+		for _, n := range req {
+			names[n] = true
+		}
+	}
+	return names
 }
 
 // The chunk shape the dialect streams, cut down to the fields the client

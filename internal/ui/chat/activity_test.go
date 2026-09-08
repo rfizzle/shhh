@@ -120,7 +120,7 @@ func TestActivityVerbs_ClosedVocabulary(t *testing.T) {
 	closed := map[string]bool{"read": true, "search": true, "glob": true, "lsp": true,
 		"web": true, "edit": true, "write": true, "patch": true, "run": true,
 		"memory": true, "spawn": true, "fan-out": true, "agent": true,
-		"report": true, "steer": true, "retry": true,
+		"report": true, "steer": true, "retry": true, "asked": true,
 		// The four git writes. They are acts rather than tools, which is why
 		// the row reads them out of the call rather than off the name.
 		"add": true, "commit": true, "branch": true, "switch": true}

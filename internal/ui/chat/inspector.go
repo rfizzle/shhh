@@ -77,7 +77,7 @@ func (m Model) inspectorHidden() bool {
 		return true
 	}
 	switch m.state {
-	case stateConfirmRun, statePlanApprove, statePick, stateTodoPropose, stateTodoDraft, statePasteDrop, stateScaffold, statePersona, stateTodoPause, stateDiffFull, stateOutputFull, stateReview, stateContext, stateSources, stateBacklog, stateConfig, stateModelList:
+	case stateConfirmRun, statePlanApprove, stateQuestion, statePick, stateTodoPropose, stateTodoDraft, statePasteDrop, stateScaffold, statePersona, stateTodoPause, stateDiffFull, stateOutputFull, stateReview, stateContext, stateSources, stateBacklog, stateConfig, stateModelList:
 		return true
 	}
 	return false
@@ -389,7 +389,7 @@ func (m Model) orchestratorAgent() components.InspectorAgent {
 	switch {
 	case m.working():
 		a.State = components.FanoutRunning
-	case m.state == stateConfirmRun || m.state == statePlanApprove:
+	case m.state == stateConfirmRun || m.state == statePlanApprove || m.state == stateQuestion:
 		a.State = components.FanoutBlocked
 	}
 	return a

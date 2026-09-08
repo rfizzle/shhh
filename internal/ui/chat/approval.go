@@ -13,6 +13,7 @@ import (
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/digest"
@@ -86,6 +87,11 @@ const (
 	approvalDiff                        // colored unified diff of a file write/edit
 	approvalGeneric                     // one-line summary of the tool call
 	approvalMemory                      // memory proposal: scope selector with optional note
+	// approvalQuestion is the model's own question, which is a decision
+	// rather than an approval: it stops the turn and it is put to the
+	// person, but nothing about the machine changes either way
+	// (question.go).
+	approvalQuestion
 )
 
 // approvalRequest is the head of the approval queue: one tool call awaiting
@@ -119,6 +125,8 @@ type approvalRequest struct {
 	autoCost time.Duration
 	// memoryDraft is the proposed entry for approvalMemory.
 	memoryDraft memory.Draft
+	// question is the parsed question for approvalQuestion.
+	question ask.Question
 	// mustAsk is a hook in front of this call having asked for it, or having
 	// failed on a call there is somebody to ask about. It out-ranks the batch
 	// approval, the mode and the classifier, all of which answer the question
@@ -184,6 +192,13 @@ func (m Model) requiresApproval(tc provider.ToolCall) bool {
 	if tc.Name == memory.RememberToolName {
 		return true
 	}
+	// And a question always stops the turn, because a question that ran
+	// without stopping would be a question nobody answered (question.go).
+	// Only where the session handed the model the tool: a call to a tool
+	// this run does not have is answered as one and never put on a card.
+	if tc.Name == ask.ToolName && m.asks {
+		return true
+	}
 	// The process tool gates on its arguments: start launches a
 	// command and needs approval; status/read/input/stop auto-run.
 	if m.processes.Manage != nil && tc.Name == process.ToolName {
@@ -218,6 +233,13 @@ func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, err
 	// Memory proposals get the scope-selector prompt, never a generic card.
 	if tc.Name == memory.RememberToolName {
 		return m.buildMemoryApproval(tc)
+	}
+
+	// A question gets the question card, never a generic one: the card is
+	// the question and its answers, and "use ask" would be a card about the
+	// mechanism (question.go).
+	if tc.Name == ask.ToolName {
+		return m.buildQuestionApproval(tc)
 	}
 
 	// A process start is approved like a command: the card shows the
@@ -382,6 +404,21 @@ func (m Model) armApprovalDecision(req *approvalRequest) (tea.Model, tea.Cmd) {
 	// The blast radius is resolved once here, not inside View: it stats the
 	// filesystem and asks git about the paths it found.
 	m.pendingBlast = m.resolveRadius(req)
+	// A question is put to the person in every mode, because every gate
+	// below this one exists to decide which *acts* stop to ask — and a
+	// question is not an act. A --yes, a session grant, accept-edits and the
+	// classifier would each be answering "which of these three designs" at
+	// random, so none of them is given the chance
+	// (docs/capabilities/coding-agent.md#the-model-can-ask). Plan mode is no
+	// exception: asking changes nothing, so there is nothing to refuse.
+	if req.kind == approvalQuestion {
+		m.recordDecision(observe.DecisionAsk, observe.ReasonUser)
+		m.openQuestion(req)
+		m.pendingQueue, m.pendingBatch = m.resolveQueue(req)
+		m.setTurnState(stateQuestion)
+		m.syncViewport()
+		return m, nil
+	}
 	// Agent-proposed memories always require explicit user
 	// confirmation: no mode, session grant, or classifier can wave one
 	// through. Plan mode falls through to the policy below, which refuses the

@@ -24,6 +24,11 @@ type NoteSelect struct {
 	Select    Select
 	Note      textarea.Model
 	FocusNote bool
+	// Require refuses an empty note whatever row the pointer is on, for a
+	// card whose whole answer is the note — a question asked as free text
+	// has no rows for RequireNote to sit on, and one that says a note is
+	// required means it of every row rather than of a chosen few.
+	Require bool
 	// noteMissing marks a confirm attempt on a note-required option with an
 	// empty note; the note border hint turns red until the next key.
 	noteMissing bool
@@ -45,7 +50,10 @@ func NewNoteSelect(title string, options []SelectOption) *NoteSelect {
 func (s *NoteSelect) Update(msg tea.KeyPressMsg) (done bool, result NoteSelectResult) {
 	s.noteMissing = false
 	switch pressed := msg.String(); {
-	case keys.Is(pressed, keys.Select.Note):
+	// A card with no options is the field and nothing else, so there is
+	// nowhere for the note key to move the keyboard to and it is not
+	// offered: a key that cannot act does not act (invariant 5).
+	case keys.Is(pressed, keys.Select.Note) && len(s.Select.Options) > 0:
 		s.FocusNote = !s.FocusNote
 		if s.FocusNote {
 			s.Note.Focus()
@@ -56,7 +64,8 @@ func (s *NoteSelect) Update(msg tea.KeyPressMsg) (done bool, result NoteSelectRe
 	case keys.Is(pressed, keys.Select.Take):
 		idx := s.Select.Focus
 		note := strings.TrimSpace(s.Note.Value())
-		if idx < len(s.Select.Options) && s.Select.Options[idx].RequireNote && note == "" {
+		required := s.Require || (idx < len(s.Select.Options) && s.Select.Options[idx].RequireNote)
+		if required && note == "" {
 			s.noteMissing = true
 			return false, NoteSelectResult{}
 		}
@@ -96,37 +105,28 @@ func (s *NoteSelect) Update(msg tea.KeyPressMsg) (done bool, result NoteSelectRe
 	return false, NoteSelectResult{}
 }
 
+// NoteMissing reports that the last confirm was refused because the note the
+// answer needs is empty. It is how a host puts the keyboard where the missing
+// words go: the card states the refusal, and where the reader is standing
+// when they read it is the host's, because only the host knows whether this
+// card is the whole screen or a row of one.
+func (s *NoteSelect) NoteMissing() bool { return s.noteMissing }
+
 func (s *NoteSelect) View(width int) string {
 	inner := width - cardFrameWidth
 
-	noteLabel := "note (optional)"
-	labelStyle := sty.Dim
-	if s.noteMissing {
-		noteLabel = "note required"
-		labelStyle = sty.Err
-	}
-	s.Note.SetWidth(max(inner-2, 8))
-	StyleTextArea(&s.Note)
-	noteView := s.Note.View()
-	if !s.FocusNote {
-		// The unfocused region dims; a plain-text echo avoids the
-		// textarea's cursor artifacts.
-		text := s.Note.Value()
-		if text == "" {
-			text = "(none)"
-		}
-		noteView = sty.Dimmer.Render(Clip(text, max(inner-2, 8)))
-	}
 	// The note field and the hints are pinned under the list, so what they
 	// spend comes off the list's budget before its window is drawn —
 	// otherwise a long list pushes the note itself off the card.
-	tail := []string{labelStyle.Render(Clip("┄ "+noteLabel, inner))}
-	for _, l := range strings.Split(noteView, "\n") {
-		tail = append(tail, Clip("  "+l, inner))
-	}
+	tail := noteFieldRows(&s.Note, s.FocusNote, s.noteMissing, s.Require, inner)
 	// The note field's own key leads, because it is the one this card has
-	// that the plain selector does not.
-	hint := []string{words(keys.Select.Note, "note/options"), words(keys.Select.Take, "confirm")}
+	// that the plain selector does not — on a card that has options for it
+	// to move between.
+	var hint []string
+	if len(s.Select.Options) > 0 {
+		hint = append(hint, words(keys.Select.Note, "note/options"))
+	}
+	hint = append(hint, words(keys.Select.Take, "confirm"))
 	switch {
 	case s.Select.Filtering:
 		hint = append(hint, words(keys.Select.ClearQ, "clear"))

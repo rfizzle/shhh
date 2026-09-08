@@ -212,6 +212,34 @@ func Surfaces() []Surface {
 			},
 		},
 		{
+			// The model's own question, in the three dressings that are a
+			// list: pick one, pick several, and the free answer, which is
+			// the same card with the field and no rows above it. It is a
+			// list and answers a list's keys, and the note is on tab — the
+			// key every selector in the product already answers. `n` is free
+			// on the family, but spending it here alone would make this the
+			// one selector whose note is not on tab, and moving the note for
+			// every selector at once is a change with no cause on this card.
+			Name:     "the question card",
+			Section:  "docs/interface/surfaces.md#the-question-card, docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard",
+			Position: Beside,
+			Reached:  Shown(Draft.Answer),
+			Bindings: []Binding{
+				Select.MoveJK, Select.Take, Select.Toggle, Select.All,
+				Select.Note, Select.Cancel,
+			},
+		},
+		{
+			// The fourth dressing, which is a row of its own because it is
+			// not a list: a yes-or-no is the inline confirm, and its two
+			// answers claim the enter the list's take claims.
+			Name:     "a yes-or-no question",
+			Section:  "docs/interface/surfaces.md#the-question-card, docs/interface/surfaces.md#the-inline-confirm",
+			Position: Beside,
+			Reached:  Shown(Draft.Answer),
+			Bindings: []Binding{Confirm.Yes, Confirm.No, Select.Note},
+		},
+		{
 			// The one approval card the reader asks for rather than is
 			// handed: it writes a file the session offered to write, so it
 			// holds the keyboard from the moment it opens. That is also why

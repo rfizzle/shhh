@@ -219,3 +219,22 @@ order put it.
 
 When there is an artboard, these five decisions are what it has to reconcile
 with, and where the two differ the artboard wins.
+
+## Leaving a question answers it, for now
+
+The Questions artboard draws leaving a question as holding it: the card
+closes, the notice rail says one is waiting, and the next message the reader
+sends is delivered as the answer in their own words. That is what
+[the card](surfaces.md#the-question-card) says too, and it is where this is
+going.
+
+What the binary does today is close the card and answer *skipped*: nothing
+was chosen, nothing typed is lost, and the model is told to state the
+assumption it would have asked about and carry on. This is a disagreement
+with the artboard and a deliberate one — the holding behaviour needs a place
+for a held question to live, a rail that counts it, and two delivery paths
+that converge on the same answer, none of which exist yet. The interim
+answer satisfies [esc is always the safe
+answer](principles.md#esc-is-always-the-safe-answer) on its own: leaving
+changes nothing on the machine and costs the reader nothing they typed. The
+holding behaviour replaces it rather than repairing a hole.

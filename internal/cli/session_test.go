@@ -535,6 +535,7 @@ func TestCodeSessionWiresItsMechanisms(t *testing.T) {
 		{"the process supervisor", w.Processes},
 		{"the notebook", w.Notebook},
 		{"the backlog", w.Todos},
+		{"the question tool", w.Ask},
 	} {
 		if !c.got {
 			t.Errorf("a coding session was assembled without %s", c.name)
@@ -553,6 +554,9 @@ func TestConversationIsTheAssemblyWithoutTheActing(t *testing.T) {
 	}
 	if w.Processes {
 		t.Error("a conversation was given a process supervisor, and it runs no commands")
+	}
+	if w.Ask {
+		t.Error("a conversation was given the question tool, which is the coding agent's fork to put to somebody")
 	}
 	for _, c := range []struct {
 		name string

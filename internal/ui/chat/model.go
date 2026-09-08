@@ -10,6 +10,7 @@ import (
 	"charm.land/bubbles/v2/textarea"
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/clipboard"
@@ -174,6 +175,11 @@ const (
 	// edit surface, reached from inside a session (config.go). It is the one
 	// takeover here that can write a file, and it writes it on `[w]` alone.
 	stateConfig
+	// stateQuestion: the model has asked something and the card is up
+	// (question.go). It is a decision and not a surface — the turn is
+	// blocked on the call, not parked under a screen — so it arrives the way
+	// an approval arrives and is answered the same way.
+	stateQuestion
 )
 
 const inputHeight = 3
@@ -397,6 +403,10 @@ type entry struct {
 	// It is not toolResult — the call never ran and produced nothing — which
 	// is why the row that never has a body has this one instead.
 	denyNote string
+	// answered is how a question the model asked was answered, from the
+	// closed vocabulary the tool's own result carries (question.go). Empty
+	// on every row that is not a question, which is every other row.
+	answered ask.Answered
 	// allowedBy names what let a gated call run without the reader being
 	// asked — the mode or grant that allowed it, "classifier", or the batch —
 	// and renders in the act's own outcome field. The feed states an act
@@ -766,6 +776,14 @@ type Model struct {
 	// todoPlanner is the sprint planning turn in flight (todosprint.go).
 	todoPlanner todoPlanState
 	memoryAsk   *components.NoteSelect
+	// question is the card the model's own question is being asked on, and
+	// nil whenever none is outstanding (question.go). It rides beside
+	// pendingApproval rather than inside it because the request is what the
+	// call is and the card is what the reader is looking at.
+	question *questionCard
+	// asks says the session registered the question tool, which is what a
+	// card is ever drawn for.
+	asks bool
 	// secrets backs /secret and the scrub on the agent.
 	secrets Secrets
 	// skills is the session's skill catalog, behind /skills, /skill and
@@ -1618,7 +1636,8 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// The input stays live while the agent streams or runs tools so the user
 	// can type a steering message; only the confirm and plan-approval
 	// prompts take over.
-	if m.decisionUngated() || (m.state != stateConfirmRun && m.state != statePlanApprove && m.state != stateRetryWait) {
+	if m.decisionUngated() || (m.state != stateConfirmRun && m.state != statePlanApprove &&
+		m.state != stateQuestion && m.state != stateRetryWait) {
 		// Any other keypress while browsing input history turns the recalled
 		// text into a fresh draft.
 		if _, ok := msg.(tea.KeyPressMsg); ok {

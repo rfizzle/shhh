@@ -49,6 +49,10 @@ type Wiring struct {
 	Todos     bool
 	Scope     bool
 	Notebook  bool
+	// Ask is the question tool: the model can put a fork it cannot decide to
+	// the person. It is false wherever there is nobody to answer one, which
+	// is the whole of how that is decided.
+	Ask bool
 }
 
 // Wiring reports what this model was given.
@@ -67,5 +71,6 @@ func (m Model) Wiring() Wiring {
 		Todos:           m.todos.Manage != nil,
 		Scope:           m.scope != nil,
 		Notebook:        m.notebook != nil,
+		Ask:             m.asks,
 	}
 }

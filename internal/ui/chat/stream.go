@@ -264,6 +264,17 @@ func (m *Model) cancelStreaming() {
 	}
 	m.pendingApproval = nil
 	m.memoryAsk = nil
+	// And the question, which the cancel answered with the turn's synthetic
+	// result. A card left behind here is not merely a stale pointer: the
+	// grace window reads it to decide which keys a burst may not answer
+	// (interrupt.go), so the next decision to arrive would be protected by
+	// the wrong card's keys.
+	m.question = nil
+	// And the question, which the cancel answered with the turn's synthetic
+	// result. A card left behind here is not merely a stale pointer: the
+	// grace window reads it to decide which keys a burst may not answer
+	// (interrupt.go), so the next decision to arrive would be protected by
+	// the wrong card's keys.
 	// The queue the strip described is gone with the turn, and so is every
 	// batch grant made against it.
 	m.clearQueueStrip()

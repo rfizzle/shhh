@@ -44,12 +44,13 @@ import (
 // one: no sentence can produce it, so it can be live while the draft is.
 
 // interruptShowing reports whether a decision that arrived unbidden is on
-// screen: the approval card, the /run confirm, the plan card, or a child
-// agent's routed approval. These are the surfaces that appear without being
-// asked for, which is what makes them the ones invariant 5 is about.
+// screen: the approval card, the /run confirm, the plan card, the model's own
+// question, or a child agent's routed approval. These are the surfaces that
+// appear without being asked for, which is what makes them the ones
+// invariant 5 is about.
 func (m Model) interruptShowing() bool {
 	switch m.state {
-	case stateConfirmRun, statePlanApprove:
+	case stateConfirmRun, statePlanApprove, stateQuestion:
 		return true
 	}
 	return m.activeChildAsk() != nil
@@ -191,6 +192,12 @@ func (m Model) graceDiscards(pressed string) bool {
 	if keys.Is(pressed, keys.Draft.Cancel) || keys.Is(pressed, keys.Draft.Clear) {
 		return false
 	}
+	if m.question != nil {
+		// The question card's answer is enter on a row rather than a letter,
+		// and a buffered enter is exactly what a reader who just sent a
+		// message has in flight.
+		return keys.Is(pressed, keys.Select.Take) || keys.Is(pressed, keys.Confirm.Yes)
+	}
 	return keys.Is(pressed, keys.Decision.Allow) || keys.Is(pressed, keys.Decision.Deny) ||
 		keys.Is(pressed, keys.Decision.AllowNoted) || keys.Is(pressed, keys.Decision.DenyNoted)
 }
@@ -268,14 +275,22 @@ func (m *Model) armArrival() {
 // arrivalGates reports whether a decision arriving at s is one that may take
 // the keyboard by arriving at all.
 //
-// Only the approval card and the /run confirm are. Their question is the one
-// a reader walks up to a screen to answer, and the answer is one letter. The
-// plan card and the memory proposal both take typed input — a
-// choice moved with j/k, a note written into a field — so a card that took
-// the keyboard would be a card eating a sentence, which is the hazard this
-// whole rule exists for. They keep the handover, and it costs them nothing:
-// they arrive once, not once per tool call.
+// The approval card, the /run confirm and the model's own question are. Their
+// question is the one a reader walks up to a screen to answer. The plan card
+// and the memory proposal keep the handover instead, and it costs them
+// nothing: they arrive once, not once per tool call.
+//
+// The question card is here rather than with them because arriving is the
+// only thing it does — a turn asks when it asks — and because there is no
+// sentence to eat: arrivesHeld is false the moment the draft holds anything,
+// which is the whole of what the mid-sentence rule protects. What it does
+// take that the approval card does not is typed input, so the grace window
+// covers its take key as well as the approval's two letters (graceDiscards).
+// See docs/interface/surfaces.md#the-question-card.
 func (m Model) arrivalGates(s state) bool {
+	if s == stateQuestion {
+		return true
+	}
 	return s == stateConfirmRun && m.memoryAsk == nil
 }
 
@@ -333,7 +348,7 @@ func (m Model) routeDecision(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	// because both are already an answer to the card rather than a key that
 	// might have been meant for something else.
 	switch m.state {
-	case stateConfirmRun, statePlanApprove, stateScaffold:
+	case stateConfirmRun, statePlanApprove, stateScaffold, stateQuestion:
 		return m.applyOverlay(overlayFor(m.state), msg)
 	}
 	if ask := m.activeChildAsk(); ask != nil {
@@ -360,6 +375,13 @@ func (m Model) escLeavesWaiting() bool {
 		return m.memoryAsk == nil && m.decisionNote == nil
 	case statePlanApprove:
 		return false
+	case stateQuestion:
+		// A question keeps its own esc, and the answer it gives is
+		// `skipped`: nothing was chosen, the turn carries on, and the model
+		// is told to state the assumption it would have asked about
+		// (question.go). Leaving a question waiting behind the draft is a
+		// second thing esc could mean here, and it is not this one.
+		return false
 	}
 	return m.activeChildAsk() != nil
 }
@@ -370,7 +392,7 @@ func (m Model) escLeavesWaiting() bool {
 func (m Model) waitingCount() int {
 	n := len(m.childAsks)
 	switch m.state {
-	case stateConfirmRun, statePlanApprove:
+	case stateConfirmRun, statePlanApprove, stateQuestion:
 		n++
 	}
 	return n
@@ -511,6 +533,8 @@ func (m Model) resolveInterruptLines() []string {
 		return m.confirmLines()
 	case statePlanApprove:
 		return m.planApproveLines()
+	case stateQuestion:
+		return m.questionLines()
 	}
 	if ask := m.activeChildAsk(); ask != nil {
 		return m.childAskLines(ask)

@@ -41,12 +41,17 @@ const NoDuration = "—"
 // matches`, `+12 −4 · 2 hunks`) are the outcome when there is nothing else to
 // say and live in ActivityRow.Counts; everything else is one of these.
 const (
-	OutcomeOK          = "ok"
-	OutcomeRunning     = "running…"
-	OutcomeQueued      = "queued"
-	OutcomeChecking    = "checking"
-	OutcomeDenied      = "denied"
-	OutcomeApproved    = "approved"
+	OutcomeOK       = "ok"
+	OutcomeRunning  = "running…"
+	OutcomeQueued   = "queued"
+	OutcomeChecking = "checking"
+	OutcomeDenied   = "denied"
+	OutcomeApproved = "approved"
+	// OutcomeAnswered is a question the model asked and the person answered
+	// (docs/capabilities/coding-agent.md#the-model-can-ask). It is an
+	// outcome and not a count because nothing was found and nothing ran:
+	// what happened is that somebody decided.
+	OutcomeAnswered    = "answered"
 	OutcomeAutoAllowed = "auto-allowed"
 	// OutcomeLocal marks a command row whose output stayed out of the
 	// conversation — the reader saw it, the model never did.

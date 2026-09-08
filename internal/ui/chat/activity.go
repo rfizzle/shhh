@@ -15,6 +15,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/evidence"
@@ -133,8 +134,8 @@ const (
 // activityVerbs is the one table mapping tool names onto the closed verb
 // vocabulary of docs/interface/principles.md#closed-vocabularies — read,
 // search, glob, lsp, web, edit, write, patch, run, memory, spawn, fan-out,
-// agent, report, steer, retry, and the four git writes — add, commit, branch,
-// switch. A tool
+// agent, report, steer, retry, asked, and the four git writes — add, commit,
+// branch, switch. A tool
 // that maps onto none of them is a hole in this table, not a new verb invented
 // at the call site: it renders as itself, clipped to the verb column, which is
 // the signal that the table is stale.
@@ -172,6 +173,7 @@ var activityVerbs = map[string]string{
 	process.ToolName:            "run",
 	quality.ToolName:            "run",
 	memory.RememberToolName:     "memory",
+	ask.ToolName:                "asked",
 	skill.ToolName:              "read",
 	subagent.SpawnToolName:      "spawn",
 	subagent.ReportToolName:     "agent",
@@ -259,10 +261,12 @@ func activityCounts(tool, result string) string {
 	if strings.TrimSpace(result) == "" || foundNothingResult(result) {
 		return ""
 	}
-	if tool == structural.GitWriteToolName {
+	if tool == structural.GitWriteToolName || tool == ask.ToolName {
 		// A git write answers with a receipt and the boundaries of the act,
 		// not with output. `2 lines` about it would be a measurement of the
-		// sentence rather than of anything that happened.
+		// sentence rather than of anything that happened — and an answered
+		// question is the same: what came back is one decision, not a
+		// quantity of anything.
 		return ""
 	}
 	if tool == tools.SearchName {
@@ -479,6 +483,12 @@ func (m Model) activityRowDetail(e entry, stepDetail bool) components.ActivityRo
 			if result != "" {
 				row.Expanded = true
 			}
+		case e.answered != "":
+			// A question is a decision and not an act, so the row states how
+			// it was answered rather than what came back: the answer itself
+			// is the body, and the outcome column is where the reader looks
+			// for what happened (docs/interface/surfaces.md#the-activity-row).
+			row.Outcome = components.OutcomeBy(components.OutcomeAnswered, string(e.answered))
 		case e.toolName == reports.ToolName:
 			// The link is the outcome — the one field that never clips —
 			// and the page is the body, so the row keeps nothing else. The

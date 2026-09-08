@@ -25,6 +25,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/colorprofile"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/notebook"
@@ -2324,6 +2325,54 @@ func TestGolden_ChildAskCard(t *testing.T) {
 				View: build(command(), false)},
 			{Label: "a writer's patch · your files, and the diff behind a counted tail",
 				View: build(longPatchAsk(dir), true)},
+		}
+	})
+}
+
+// TestGolden_QuestionCard captures the four dressings a question is asked in
+// (docs/interface/surfaces.md#the-question-card): the pick-one list with its
+// recommendation, its short fields and the row that cannot be taken; the same
+// card with the keyboard in the note; the pick-several list; the free answer,
+// which is the note field with no rows above it; and the yes-or-no, which is
+// the inline confirm.
+//
+// The pick-one panel is where the two words this card added show up: the
+// `recommended` beside the model's own short field, and the ⊘ row whose
+// reason is a phrase rather than a dimming — both of which have to survive
+// the mono capture, because that is the whole reason they are words.
+func TestGolden_QuestionCard(t *testing.T) {
+	captureGolden(t, "question-card", "the model's question in the panel", goldenWidths, func(width int) []golden.Panel {
+		build := func(args string, mut func(Model) Model) string {
+			m := frameModel(t, width, 40).WithAsk()
+			m.state = stateStreaming
+			updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{{
+				ID: "call_q", Name: ask.ToolName, Arguments: args,
+			}}})
+			next := updated.(Model)
+			if mut != nil {
+				next = mut(next)
+			}
+			return strings.Join(next.questionLines(), "\n")
+		}
+		const choose = `{"question":"Which store should the cache use?","shape":"choose","options":[
+			{"label":"SQLite","detail":"in the checkout already","field":"3 files","recommended":true},
+			{"label":"Postgres","detail":"one more service to run","field":"9 files"},
+			{"label":"Redis","unavailable":"no client in this project"}]}`
+		return []golden.Panel{
+			{Label: "pick one · the recommendation leads and says so, and the ⊘ row says why not",
+				View: build(choose, nil)},
+			{Label: "the note has the keyboard · the list's digits are text until tab hands it back",
+				View: build(choose, func(m Model) Model {
+					m.question.openNote()
+					return m
+				})},
+			{Label: "pick several · the boxes, with the same field under them",
+				View: build(`{"question":"Which packages should the flag reach?","shape":"choose_many","options":[
+					{"label":"internal/agent"},{"label":"internal/cli"},{"label":"internal/ui/chat"}]}`, nil)},
+			{Label: "a short answer in your own words · the field and no rows above it",
+				View: build(`{"question":"What should the flag be called?","shape":"text","note":"required"}`, nil)},
+			{Label: "yes or no · the inline confirm, whose enter is the answer that changes nothing",
+				View: build(`{"question":"Should the migration be reversible?","shape":"confirm"}`, nil)},
 		}
 	})
 }

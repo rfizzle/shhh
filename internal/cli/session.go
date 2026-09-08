@@ -19,6 +19,7 @@ import (
 	"github.com/charmbracelet/x/term"
 	"github.com/mattn/go-isatty"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
@@ -99,6 +100,20 @@ type chatSession struct {
 	// proposal. Recall is not this flag's — every surface that opens a
 	// conversation takes it (memory.go).
 	memory bool
+	// ask registers the question tool, which puts a fork the model cannot
+	// decide to the person as a card. It is a registration decision and not
+	// a gate decision — a tool the run can only be refused is worse than one
+	// it never saw (docs/capabilities/headless.md#a-run-can-delegate) —
+	// which is why nothing anywhere else refuses it.
+	//
+	// The coding agent's interactive session and nothing else. A run with
+	// nobody in front of it has nobody to answer a question, and a
+	// conversation has somebody but no need: its turn ends by talking to
+	// them, so a model that wants to know which of three designs asks in the
+	// answer it was already about to write. The card is for the turn that
+	// would otherwise stop for minutes mid-work
+	// (docs/capabilities/chat.md#chat-changes-nothing).
+	ask bool
 	// skills is the catalog of Agent Skills the session discovered; nil
 	// registers neither the tool nor the prompt section. Both `shhh chat`
 	// and `shhh code`, headless included: activation is a read.
@@ -638,6 +653,20 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 	}, nil
 }
 
+// askToolDefs is the toolset with the question tool on it where there is
+// somebody to answer one, and unchanged where there is not. It is a function
+// of its own because "where" is the whole decision: a run with no reader
+// never sees the tool, is never offered it and is never refused it, which is
+// a registration decision rather than a gate decision — a tool the run can
+// only be refused is worse than one it never saw
+// (docs/capabilities/coding-agent.md#nobody-to-ask).
+func askToolDefs(session chatSession) []provider.Tool {
+	if !session.ask {
+		return session.toolDefs
+	}
+	return append(append([]provider.Tool{}, session.toolDefs...), ask.ToolDefinition())
+}
+
 // assembled, when set, takes the model runChatSession has just built instead
 // of the program that would run it. See the call site for why it is here.
 var assembled func(chat.Model) error
@@ -735,6 +764,9 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	if mem != nil && session.memory {
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), memory.ToolDefinition())
 	}
+
+	// And the question tool, on the same terms and for the same reason.
+	session.toolDefs = askToolDefs(session)
 
 	session.openNotebook(db)
 	session.openSourceLedger(db)
@@ -1087,6 +1119,12 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			Wordings:      env.prompts.todo,
 			Pipeline:      todoPipeline(),
 		})
+	}
+	if session.ask {
+		// The card is only ever drawn for a tool the session handed the
+		// model: a question the model could not have asked is a call the
+		// session does not have, and it is answered as one.
+		model = model.WithAsk()
 	}
 	if mem != nil {
 		model = model.WithMemory(chat.Memory{

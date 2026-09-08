@@ -301,7 +301,7 @@ func (m Model) openAgentList() (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	switch m.state {
-	case stateConfirmRun, statePlanApprove, stateFocus:
+	case stateConfirmRun, statePlanApprove, stateQuestion, stateFocus:
 		return m, nil
 	}
 	if m.agentList != nil {
@@ -409,7 +409,7 @@ func (m Model) orchestratorRow() components.AgentRow {
 	case stateCloseGate:
 		// And so is a turn whose work is finished and whose checks are not.
 		status = "running the checks…"
-	case stateConfirmRun, statePlanApprove:
+	case stateConfirmRun, statePlanApprove, stateQuestion:
 		status = "waiting on you"
 	}
 	if r := m.agent.Rounds(); r > 0 && m.state != stateInput {

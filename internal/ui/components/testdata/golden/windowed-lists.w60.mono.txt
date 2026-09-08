@@ -18,22 +18,22 @@
 │   [ ] never edit generated files directly                │
 │   [ ] conventional commits, one story per commit         │
 │   [ ] the plan directory is scrum, not code              │
-│   [ ] run the whole suite before saying done             │
-│ ↓ 11 more · 1 checked                                    │
-│ [space] toggle · [a] all/none · [enter] apply (3) · [es… │
+│ ↓ 12 more · 1 checked                                    │
+│ [space] toggle · [a] all/none · [enter] apply (3)        │
+│ [esc] cancel                                             │
 └──────────────────────────────────────────────────────────┘
 
 · the tail · the marker carries the ticks that scrolled away
 ┌─ Forget which memories? ─────────────────────────────────┐
-│ ↑ 11 more · 2 checked                                    │
-│   [ ] a key that cannot act is not offered               │
+│ ↑ 12 more · 2 checked                                    │
 │   [ ] mono is a first-class palette                      │
 │   [ ] the window follows the pointer and only the point… │
 │   [ ] blocked children sort to the top                   │
 │   [x] approval cards state what is reversible            │
 │   [ ] steering is queued, not interrupting               │
 │ ❯ [ ] esc always changes nothing                         │
-│ [space] toggle · [a] all/none · [enter] apply (3) · [es… │
+│ [space] toggle · [a] all/none · [enter] apply (3)        │
+│ [esc] cancel                                             │
 └──────────────────────────────────────────────────────────┘
 
 · the manager · the blocked child is pinned above the window
@@ -71,22 +71,22 @@
 ␛[38;5;244m│␛[m   ␛[38;5;244m[ ]␛[m never edit generated files directly                ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m[ ]␛[m conventional commits, one story per commit         ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m[ ]␛[m the plan directory is scrum, not code              ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m   ␛[38;5;244m[ ]␛[m run the whole suite before saying done             ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;244m↓ 11 more · 1 checked␛[m                                    ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[3;38;5;244m[space] toggle · [a] all/none · [enter] apply (3) · [es…␛[m ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;244m↓ 12 more · 1 checked␛[m                                    ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[3;38;5;244m[space] toggle · [a] all/none · [enter] apply (3)␛[m        ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[3;38;5;244m[esc] cancel␛[m                                             ␛[38;5;244m│␛[m
 ␛[38;5;244m└──────────────────────────────────────────────────────────┘␛[m
 
 · the tail · the marker carries the ticks that scrolled away
 ␛[38;5;244m┌─ Forget which memories? ─────────────────────────────────┐␛[m
-␛[38;5;244m│␛[m ␛[38;5;244m↑ 11 more · 2 checked␛[m                                    ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m   ␛[38;5;244m[ ]␛[m a key that cannot act is not offered               ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;244m↑ 12 more · 2 checked␛[m                                    ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m[ ]␛[m mono is a first-class palette                      ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m[ ]␛[m the window follows the pointer and only the point… ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m[ ]␛[m blocked children sort to the top                   ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254m[x]␛[m approval cards state what is reversible            ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m[ ]␛[m steering is queued, not interrupting               ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[1;48;5;237m❯ ␛[m␛[38;5;244m[ ]␛[m esc always changes nothing                         ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[3;38;5;244m[space] toggle · [a] all/none · [enter] apply (3) · [es…␛[m ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[3;38;5;244m[space] toggle · [a] all/none · [enter] apply (3)␛[m        ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[3;38;5;244m[esc] cancel␛[m                                             ␛[38;5;244m│␛[m
 ␛[38;5;244m└──────────────────────────────────────────────────────────┘␛[m
 
 · the manager · the blocked child is pinned above the window

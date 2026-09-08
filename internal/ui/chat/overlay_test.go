@@ -22,6 +22,7 @@ func TestOverlayPlacements(t *testing.T) {
 	want := map[state]placement{
 		stateConfirmRun:  placeFloating,
 		statePlanApprove: placeFloating,
+		stateQuestion:    placeFloating,
 
 		statePick:        placePanel,
 		stateTodoPropose: placePanel,

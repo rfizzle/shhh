@@ -112,6 +112,12 @@ func (m Model) notifyWords() (title, body string) {
 		}
 		card := m.buildApprovalCard()
 		return card.Title, card.Headline
+	case stateQuestion:
+		// The question in the reader's own words, which are the words on the
+		// card they are being called back to (question.go).
+		if c := m.question; c != nil {
+			return firstLine(c.q.Question), "Waiting for your answer"
+		}
 	case statePlanApprove:
 		card := m.planCard()
 		body := "Waiting for your decision"

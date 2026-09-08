@@ -198,6 +198,17 @@ func buildOverlays() map[state]*mode {
 			bound: func(m Model) int { return m.planPanelBound() + m.gatedExtraRows() },
 			keys:  (Model).updatePlanApprove,
 		},
+		// The third of them: the model's own question (question.go). It
+		// takes the confirm card's bound rather than the plan card's
+		// headroom, because a question's answers are shorter than a plan's
+		// steps and it has no reason to leave the forty per cent
+		// (docs/interface/principles.md#one-interaction-panel).
+		stateQuestion: {
+			place: placeFloating,
+			lines: panelRows((Model).questionPanelLines),
+			bound: (Model).confirmPanelBound,
+			keys:  (Model).updateQuestion,
+		},
 
 		// The panel overlays: the cards and selectors that take the draft box's
 		// rows out of the transcript.
