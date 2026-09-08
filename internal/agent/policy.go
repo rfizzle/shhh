@@ -24,6 +24,28 @@ func AllowlistMatches(allowlist []string, command string) bool {
 	return anyPrefix(allowlist, command)
 }
 
+// ExactMatches reports whether command is one of the entries, as it stands.
+// It is the narrow command grant: `npm test` and not `npm test --update`,
+// which is what the prefix rule above would also have covered.
+//
+// It does not refuse a line carrying shell punctuation the way the prefix
+// rule does, and deliberately. That guard exists because an entry standing
+// for a family can have a second member smuggled into it by a chain; an exact
+// entry stands for one line, so the chain in it is the one the reader read on
+// the card and granted, and nothing else matches.
+func ExactMatches(entries []string, command string) bool {
+	line := strings.TrimSpace(command)
+	if line == "" {
+		return false
+	}
+	for _, e := range entries {
+		if strings.TrimSpace(e) == line {
+			return true
+		}
+	}
+	return false
+}
+
 // DenylistMatches reports whether any command in the line is one the deny
 // list names, by the same leading-words rule the allowlist uses. It is asked
 // before anything that can allow, and nothing downstream can overrule it.
@@ -176,6 +198,25 @@ func PathUnder(dirs []string, path string) bool {
 	return false
 }
 
+// PathIs reports whether path is one of paths — the narrow edit grant, which
+// covers the one file the card showed and nothing else in its directory.
+//
+// Both sides are made absolute before they are compared, for the reason
+// PathUnder does it: the model writes whichever kind of path it happens to be
+// holding, and the grant has to mean the same thing either way.
+func PathIs(paths []string, path string) bool {
+	if len(paths) == 0 || path == "" {
+		return false
+	}
+	target := absClean(path)
+	for _, p := range paths {
+		if absClean(p) == target {
+			return true
+		}
+	}
+	return false
+}
+
 // HostMatches reports whether host is one of the entries, exactly. It is the
 // one matcher every host list goes through — the session's grants, the
 // config allow list and the config deny list — so a person who has learned
@@ -228,6 +269,14 @@ type Grants struct {
 	// allowlist entries in GrantPrefix's shape.
 	EditDirs []string
 	Commands []string
+	// EditPaths and ExactCommands are the narrow widths beside those two:
+	// this one file, and this one command line exactly as it stands. A
+	// reader who will say yes to a test command and does not want to have
+	// said yes to its family gets a grant that covers the line and nothing
+	// that merely starts with it.
+	// See docs/capabilities/approvals-and-safety.md#a-grant-says-when-it-ends.
+	EditPaths     []string
+	ExactCommands []string
 	// Hosts are the hosts a fetch reaches without asking, exactly as the
 	// card named them. There is no blanket counterpart: "every host" is the
 	// whole of the outbound channel, which is the one thing a read-only
@@ -237,5 +286,26 @@ type Grants struct {
 
 // Any reports whether anything has been granted at all.
 func (g Grants) Any() bool {
-	return g.AllEdits || g.AllCommands || len(g.EditDirs) > 0 || len(g.Commands) > 0 || len(g.Hosts) > 0
+	return g.AllEdits || g.AllCommands || len(g.EditDirs) > 0 || len(g.Commands) > 0 ||
+		len(g.EditPaths) > 0 || len(g.ExactCommands) > 0 || len(g.Hosts) > 0
 }
+
+// CoversEdit, CoversCommand and CoversHost are what one set of grants answers
+// on its own, whichever of its widths answers it.
+//
+// They exist because two readers ask the same question. A policy holds two
+// sets read in order — the grants that end with the turn, then the ones that
+// end with the session — and the surface that records a new grant asks
+// whether the set it is about to append to already covers the thing. A second
+// copy of the matching rules for either would be a second place for them to
+// disagree about what a grant covers, and the disagreement would show as a
+// permission listed twice or a grant silently dropped.
+func (g Grants) CoversEdit(path string) bool {
+	return g.AllEdits || PathUnder(g.EditDirs, path) || PathIs(g.EditPaths, path)
+}
+
+func (g Grants) CoversCommand(command string) bool {
+	return g.AllCommands || AllowlistMatches(g.Commands, command) || ExactMatches(g.ExactCommands, command)
+}
+
+func (g Grants) CoversHost(host string) bool { return HostMatches(g.Hosts, host) }

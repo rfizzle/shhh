@@ -231,6 +231,29 @@ func typingRows(keys string, width int) []string {
 	return []string{sty.Dimmer.Render(keys), sty.Dim.Render(Clip(typingWords, inner))}
 }
 
+// chosenWords is the state of a decision surface holding a list under itself
+// rather than a field: the card's keys are drawn and none of them is a key,
+// because the list below has the keyboard
+// (docs/interface/surfaces.md#the-approval-card).
+//
+// It is a second phrase rather than the field's because the two say different
+// things about the letters. Into a field they go as text, which is what makes
+// them safe to press; over a list they do nothing at all, and a reader told
+// they were being typed somewhere would go looking for where.
+const chosenWords = "the list below has the keyboard"
+
+// chosenRows renders that key row. It is typingRows with the other phrase,
+// for the reason those two share a shape: what changed is which surface holds
+// the keyboard, not how a card says its keys are dead.
+func chosenRows(keys string, width int) []string {
+	inner := Card{}.Inner(width)
+	keys = Clip(keys, inner)
+	if pad := inner - lipgloss.Width(keys) - lipgloss.Width(chosenWords); pad >= 2 {
+		return []string{sty.Dimmer.Render(keys) + strings.Repeat(" ", pad) + sty.Dim.Render(chosenWords)}
+	}
+	return []string{sty.Dimmer.Render(keys), sty.Dim.Render(Clip(chosenWords, inner))}
+}
+
 // handoverRow is the one live key on a not-yet-live surface. Its wording is
 // the card's rather than the caller's, because the mid-sentence rule fixes
 // it: the key, what it does, and where the letters go until it is pressed.

@@ -21,7 +21,7 @@
 │ network   open                                       │
 ├──────────────────────────────────────────────────────┤
 │ Run this command? [y/Y/n/N/a]  (Y/N: a note)         │
-│ (a: always allow "npm test")  (d: full view)         │
+│ (a: allow "npm test" without asking)  (d: full view) │
 │ [e] edit the command                                 │
 │ [esc] back to your draft — the decision stays waiti… │
 └──────────────────────────────────────────────────────┘
@@ -56,7 +56,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mopen␛[m                                       ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[3;38;5;244mRun this command? [y/Y/n/N/a]  (Y/N: a note)␛[m         ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[3;38;5;244m(a: always allow "npm test")  (d: full view)␛[m         ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[3;38;5;244m(a: allow "npm test" without asking)  (d: full view)␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[3;38;5;244m[e] edit the command␛[m                                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m[esc] back to your draft — the decision stays waiti…␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m└──────────────────────────────────────────────────────┘␛[m

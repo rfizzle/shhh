@@ -17,7 +17,6 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/dryrun"
 	"github.com/rfizzle/shhh/internal/hook"
-	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -55,7 +54,7 @@ func (m *Model) startRun(parts []string) (result string, entersConfirm bool) {
 
 // updateConfirmRun routes confirm-prompt keys through the approval card
 // ; the card's y/n/esc semantics match the original prompt, and [a]
-// is offered only where a session grant is allowed.
+// is offered only where a grant is allowed at all.
 func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	// A memory proposal confirms through its own prompt, not the card. It is
 	// a row of the register like every other mode (overlay.go) rather than
@@ -82,6 +81,13 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	// every row rather than granting the session (queue.go).
 	if m.queueList != nil {
 		return m.updateQueueList(msg)
+	}
+	// And the grants the always-allow key offers — the third surface the card
+	// holds under itself, after its two fields — answered here for the reason
+	// they are: it holds the keyboard, so the card's own letters, digits and
+	// chords are inert until it is closed (grant.go).
+	if m.grantChoice != nil {
+		return m.updateGrantChoice(msg)
 	}
 	// The card's own scroll, answered before the decision keys so a held
 	// card cannot read a chord as the start of a sentence. The chords reach
@@ -146,48 +152,22 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// action was never in it.
 		return m.openQueueList()
 	case components.ApprovalAlways:
-		// Approve, and stop asking about this shape of call for the session
-		//. The grant is scoped to what the card showed — this
-		// command's leading words, this file's directory — because that is
-		// what the reader read before pressing the key. The blanket grants
-		// the key used to hand out are `/permissions allow` now: a session-wide
-		// "never ask me again" is a decision worth typing, not a decision
-		// worth pressing while a card is in front of you.
+		// The key settles nothing on its own: it opens the list of grants
+		// the card can make, each row naming what it covers and when it ends
+		// (grant.go). Taking a row grants and runs, which is what the key
+		// did before the list stood in front of it; esc leaves with nothing
+		// granted and the decision still waiting.
+		//
+		// The grant is scoped to what the card showed — this command's
+		// leading words or the line itself, this file's directory or the
+		// file — because that is what the reader read. The blanket grants
+		// the key used to hand out are `/permissions allow` now: a
+		// session-wide "never ask me again" is a decision worth typing, not
+		// a decision worth pressing while a card is in front of you.
 		//
 		// Safety-flagged commands, generic gated tools, and /run keep asking
 		// (the card offers [a] only where a grant is allowed).
-		if req := m.pendingApproval; req != nil {
-			switch req.kind {
-			case approvalExec:
-				m.recordDecision(observe.DecisionAllow, observe.ReasonUserAlways)
-				if prefix := m.grantCommand(req.command); prefix != "" {
-					m.noteGrant("Commands starting " + strconv.Quote(prefix) + " will run without asking. /permissions revoke takes it back.")
-				}
-				m.syncGrants()
-				return m.executeRun()
-			case approvalDiff:
-				m.recordDecision(observe.DecisionAllow, observe.ReasonUserAlways)
-				if dir := m.grantEditDir(req.path); dir != "" {
-					m.noteGrant("Edits in " + displayDir(dir) + " will apply without asking. /permissions revoke takes it back.")
-				}
-				m.syncGrants()
-				return m.executeApprovedTool()
-			default:
-				// A fetch card grants its host, which is the card's own
-				// domain row and nothing beside it: the twentieth page from
-				// one documentation site is the decision already taken, and
-				// a different site is a decision nobody has been asked for.
-				if req.host == "" {
-					break
-				}
-				m.recordDecision(observe.DecisionAllow, observe.ReasonUserAlways)
-				if host := m.grantHost(req.host); host != "" {
-					m.noteGrant("Fetches from " + host + " will run without asking. /permissions revoke takes it back.")
-				}
-				m.syncGrants()
-				return m.executeApprovedTool()
-			}
-		}
+		return m.openGrantChoice()
 	case components.ApprovalRelease:
 		// The card had the keyboard by arrival and this key is not one of its
 		// answers, so it is the first letter of a sentence. The

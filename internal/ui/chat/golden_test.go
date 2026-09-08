@@ -1063,6 +1063,33 @@ func TestGolden_QueueList(t *testing.T) {
 		})
 }
 
+// TestGolden_GrantList captures the grants the always-allow key opens: the
+// decision run drawn dead because the list has the keyboard, the ┄ label the
+// key was offered under, the three rows with what each one covers and — in
+// the short right-aligned field — when it ends
+// (docs/capabilities/approvals-and-safety.md#a-grant-says-when-it-ends).
+//
+// Sixty columns is the width the fixture exists for: the covered prefix and
+// the end are competing for one row there, and the row gives up the prefix
+// rather than the end, because the end is the whole reason the list is drawn
+// before the grant is made.
+func TestGolden_GrantList(t *testing.T) {
+	captureGolden(t, "grant-list", "the grants the card can make", goldenWidths,
+		func(width int) []golden.Panel {
+			m := amendGoldenModel(t, width, "npm test --watch")
+			m = press(t, m, keys.Shown(keys.Decision.Always))
+			m.syncViewport()
+			moved := press(t, m, "j")
+			moved.syncViewport()
+			return []golden.Panel{
+				{Label: "the list open, the shortest grant under the pointer",
+					View: strings.Join(m.confirmPanelLines(), "\n")},
+				{Label: "one row down, on the grant that stands",
+					View: strings.Join(moved.confirmPanelLines(), "\n")},
+			}
+		})
+}
+
 // TestGolden_ExplainView captures the screen the command card's explain key
 // opens on, in both the states it has: the paragraph with the footer that
 // names who said it and what asking took, and the reading that did not happen

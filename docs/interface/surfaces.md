@@ -751,13 +751,17 @@ command does, from the same inexpensive model the classifier uses, on the
 screen the full view uses, and answers nothing. The one-shot mode's rule holds
 here: explained on request, never by default.
 
-*Allow without asking* is no longer one press. The key opens a three-row list
-that spells out each grant before it is made — this turn, this session, this
-exact line — with the pattern the grant would match on the row and, in its
-short field, when it ends
+*Allow without asking* is no longer one press. The key opens a list that
+spells out each grant before it is made — this turn, this session, and the
+narrow one: this exact line, this file alone — with the pattern the grant
+would match on the row and, in its short field, when it ends
 ([`../capabilities/approvals-and-safety.md`](../capabilities/approvals-and-safety.md#a-grant-says-when-it-ends)).
 A grant the reader could not see the end of is one they will forget they
-made. Esc leaves the list with nothing granted and the card still waiting.
+made. The prefix row wears an ellipsis and the narrow one does not, which is
+the difference between the two widths said in one character on a row too
+narrow for a clause. A fetch card's list is the two lengths and no third row:
+the host it would grant is already the narrowest a host grant gets. Esc leaves
+the list with nothing granted and the card still waiting.
 
 Where several cards are waiting, the queue strip already counts them; one key
 renders the queue as the pick-several list, each row carrying the card's

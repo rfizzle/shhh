@@ -147,8 +147,18 @@ const (
 	// them could not say how often what the model proposed was nearly right,
 	// which is the whole reason the key exists.
 	ReasonUserAmended = "user-amended"
-	ReasonUserAlways  = "user-always"
-	ReasonMemory      = "memory"
+	// The three grants the always-allow list offers, one code each. They are
+	// three rather than one because they answer three different questions
+	// about how the product is used — how often a reader wants a permission
+	// only for the work in front of them, how often they want one that
+	// stands, and how often the shape the card offered was wider than the
+	// thing they meant to allow — and a rate that mixed them would answer
+	// none of the three
+	// (docs/capabilities/approvals-and-safety.md#a-grant-says-when-it-ends).
+	ReasonUserTurn   = "user-turn"
+	ReasonUserAlways = "user-always"
+	ReasonUserExact  = "user-exact"
+	ReasonMemory     = "memory"
 	// The auto-mode classifier's. A classifier that could not decide is its
 	// own code rather than a denial, because failing closed to a prompt is
 	// not the same event as deciding no.

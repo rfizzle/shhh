@@ -18,8 +18,10 @@ import (
 // accept-edits auto-allows file edits, auto defers to policy (allowlist
 // rules, then the LLM classifier), and plan is read-only. The session-grant
 // internals still apply inside the prompting modes: [a] on a confirm prompt
-// auto-allows the rest of that category for the session, and a config
-// allowlist (behavior.command_allowlist) pre-approves specific commands.
+// offers the grants that call can make — for the turn or for the session,
+// over the pattern the card printed or over the thing exactly as it stands —
+// and a config allowlist (behavior.command_allowlist) pre-approves specific
+// commands.
 // Commands flagged by safety.Check always prompt, in every mode except plan
 // (which refuses them like everything else).
 
@@ -100,6 +102,9 @@ func (m Model) modePolicy() agent.ModePolicy {
 		AllowEdits:       m.policy.allEdits,
 		AllowCommands:    m.policy.allCommands,
 		EditDirs:         m.policy.editDirs,
+		EditPaths:        m.policy.editPaths,
+		ExactCommands:    m.policy.exactCommands,
+		TurnGrants:       m.policy.turn,
 		CommandAllowlist: m.allowlist(),
 		CommandDenylist:  m.policy.denylist,
 		AllowHosts:       m.hostAllowlist(),
@@ -177,65 +182,194 @@ const denylistWhy = "refused by the command deny list (behavior.command_denylist
 const denyHostWhy = "refused by the host deny list (web.deny_hosts), " +
 	"which is read before a grant, before the mode and before the classifier"
 
-// grants is the session's five grants as one value, for the surfaces that
-// carry all of them: the sub-agent supervisor and /permissions revoke.
+// grants is the session's grants as one value, for the surfaces that carry
+// all of them: /permissions revoke and the status listing. The turn's own are
+// deliberately not in it — what they answer is the same, but how long they
+// answer it for is not, and every reader of this value has to say so.
 func (m Model) grants() agent.Grants {
 	return agent.Grants{
-		AllEdits:    m.policy.allEdits,
-		AllCommands: m.policy.allCommands,
-		EditDirs:    m.policy.editDirs,
-		Commands:    m.policy.commands,
-		Hosts:       m.policy.hosts,
+		AllEdits:      m.policy.allEdits,
+		AllCommands:   m.policy.allCommands,
+		EditDirs:      m.policy.editDirs,
+		Commands:      m.policy.commands,
+		EditPaths:     m.policy.editPaths,
+		ExactCommands: m.policy.exactCommands,
+		Hosts:         m.policy.hosts,
 	}
 }
 
-// grantHost records [a] on a fetch card: the host the card named, exactly.
-// A host already reachable — from the config list or an earlier grant — adds
-// nothing, so pressing [a] twice on the same site records it once.
-func (m *Model) grantHost(host string) string {
+// liveGrants is every grant standing right now, the turn's and the session's
+// in one value, for the surfaces that decide on a grant's strength rather
+// than on how long it lasts: a child under this session, and the fetcher that
+// answers a redirect. They lose a turn grant when the parent pushes its
+// grants again at the turn's close, which is the same seam that expires it
+// here (subagents.go, close.go).
+func (m Model) liveGrants() agent.Grants {
+	g, t := m.grants(), m.policy.turn
+	if !t.Any() {
+		return g
+	}
+	g.AllEdits, g.AllCommands = g.AllEdits || t.AllEdits, g.AllCommands || t.AllCommands
+	g.EditDirs = concatGrants(g.EditDirs, t.EditDirs)
+	g.Commands = concatGrants(g.Commands, t.Commands)
+	g.EditPaths = concatGrants(g.EditPaths, t.EditPaths)
+	g.ExactCommands = concatGrants(g.ExactCommands, t.ExactCommands)
+	g.Hosts = concatGrants(g.Hosts, t.Hosts)
+	return g
+}
+
+// concatGrants joins two grant lists without writing into either: the
+// session's own slice is handed out by grants(), and appending to it in place
+// would extend the session's grants with the turn's the first time the
+// capacity allowed it.
+func concatGrants(session, turn []string) []string {
+	if len(turn) == 0 {
+		return session
+	}
+	out := make([]string, 0, len(session)+len(turn))
+	return append(append(out, session...), turn...)
+}
+
+// grantHost records a fetch grant of the length the reader chose: the host
+// the card named, exactly. A host already reachable — from the config list or
+// an earlier grant — adds nothing, so choosing the same row twice on the same
+// site records it once.
+//
+// It takes no narrow width because a host grant is already the narrowest
+// there is: this host and not its parent domain, and not a sibling under it
+// (docs/capabilities/approvals-and-safety.md#a-host-is-granted-once).
+func (m *Model) grantHost(host string, o grantOffer) string {
 	host = strings.TrimSpace(host)
 	if host == "" {
 		return ""
 	}
+	if o.length == forThisTurn {
+		if !agent.HostMatches(m.hostAllowlist(), host) && !m.policy.turn.CoversHost(host) {
+			m.policy.turn.Hosts = append(m.policy.turn.Hosts, host)
+		}
+		return host
+	}
+	// A host the turn already reaches is still recorded for the session:
+	// this grant is longer than that one, and skipping it would take the
+	// length the reader chose away because a shorter grant happened to
+	// cover the same host today.
 	if !agent.HostMatches(m.hostAllowlist(), host) {
 		m.policy.hosts = append(m.policy.hosts, host)
 	}
 	return host
 }
 
-// grantCommand records [a] on a command card: the command's leading words,
-// pre-approving the shape of it rather than every command there is. A prefix
-// already covered by the allowlist — the config's or an earlier grant's —
-// adds nothing, so pressing [a] twice on the same shape of command records it
-// once.
-func (m *Model) grantCommand(command string) string {
+// grantCommand records a command grant of the length and width the reader
+// chose: the command's leading words, which pre-approve the shape of it
+// rather than every command there is, or the line exactly as it stands. A
+// pattern already covered adds nothing, so choosing the same row twice on the
+// same shape of command records it once.
+//
+// It reports what was granted in the words the row printed, which is what the
+// transcript then keeps — quoted for the prefix and the exact line, because a
+// multi-word grant read unquoted in a sentence is two grants.
+func (m *Model) grantCommand(command string, o grantOffer) string {
+	if o.exact {
+		line := strings.TrimSpace(command)
+		if line == "" {
+			return ""
+		}
+		if o.length == forThisTurn {
+			if !m.commandGranted(line) && !m.policy.turn.CoversCommand(line) {
+				m.policy.turn.ExactCommands = append(m.policy.turn.ExactCommands, line)
+			}
+			return strconv.Quote(line)
+		}
+		if !m.commandGranted(line) {
+			m.policy.exactCommands = append(m.policy.exactCommands, line)
+		}
+		return strconv.Quote(line)
+	}
 	prefix := agent.GrantPrefix(command)
 	if prefix == "" {
 		return ""
 	}
-	if !agent.AllowlistMatches(m.allowlist(), prefix) {
+	if o.length == forThisTurn {
+		if !m.commandGranted(prefix) && !m.policy.turn.CoversCommand(prefix) {
+			m.policy.turn.Commands = append(m.policy.turn.Commands, prefix)
+		}
+		return strconv.Quote(prefix)
+	}
+	if !m.commandGranted(prefix) {
 		m.policy.commands = append(m.policy.commands, prefix)
 	}
-	return prefix
+	return strconv.Quote(prefix)
 }
 
-// grantEditDir records [a] on an edit card: the directory the file lives in,
-// which is the scope a reader approving a file in it has actually looked at.
-// It grants the directory and everything under it, and nothing beside it.
-func (m *Model) grantEditDir(path string) string {
+// commandGranted reports whether the session already runs this line without
+// asking — by config, by a prefix grant, or by an exact one. It is the one
+// question every command grant asks before recording itself, so the two
+// widths cannot disagree about what is already covered.
+//
+// It is the session's and not the turn's, and the asymmetry is the point. A
+// grant the session already covers is nothing to record at either length. A
+// grant the *turn* covers still records at session length, because that grant
+// is the longer of the two and dropping it would take away the length the
+// reader chose. So the turn's recorders ask both sets and the session's ask
+// only this one.
+func (m Model) commandGranted(command string) bool {
+	return agent.AllowlistMatches(m.allowlist(), command) ||
+		agent.ExactMatches(m.policy.exactCommands, command)
+}
+
+// grantEdit records an edit grant of the length and width the reader chose:
+// the directory the file lives in, which is the scope a reader approving a
+// file in it has actually looked at, or that one file alone.
+func (m *Model) grantEdit(path string, o grantOffer) string {
+	if o.exact {
+		file := strings.TrimSpace(path)
+		if file == "" {
+			return ""
+		}
+		if o.length == forThisTurn {
+			if !m.editGranted(file) && !m.policy.turn.CoversEdit(file) {
+				m.policy.turn.EditPaths = append(m.policy.turn.EditPaths, file)
+			}
+			return file
+		}
+		if !m.editGranted(file) {
+			m.policy.editPaths = append(m.policy.editPaths, file)
+		}
+		return file
+	}
 	dir := filepath.Dir(path)
 	if dir == "" {
 		return ""
 	}
-	if !agent.PathUnder(m.policy.editDirs, filepath.Join(dir, "x")) {
+	// A directory is tested by a path inside it, because the grant covers
+	// what is under a directory rather than the directory itself.
+	inside := filepath.Join(dir, "x")
+	if o.length == forThisTurn {
+		if !m.editGranted(inside) && !m.policy.turn.CoversEdit(inside) {
+			m.policy.turn.EditDirs = append(m.policy.turn.EditDirs, dir)
+		}
+		return displayDir(dir)
+	}
+	if !agent.PathUnder(m.policy.editDirs, inside) {
 		m.policy.editDirs = append(m.policy.editDirs, dir)
 	}
-	return dir
+	return displayDir(dir)
 }
 
-// revokeGrants drops every session grant and reports what went, in the order
-// the status lines name them. Config's own allowlist is untouched: it is not
-// this session's to take back.
+// editGranted reports whether this file already applies without asking, by a
+// directory grant or by a grant of the file itself. It reads the session's
+// grants alone, for the reason commandGranted does.
+func (m Model) editGranted(path string) bool {
+	return agent.PathUnder(m.policy.editDirs, path) || agent.PathIs(m.policy.editPaths, path)
+}
+
+// revokeGrants drops every grant this session has made — the standing ones
+// and the ones that were going to end with the turn — and reports what went,
+// in the order the status lines name them. A turn grant goes with the rest
+// because /permissions revoke is the way back for every grant, and one that
+// survived it on the grounds that it was going to expire anyway would be a
+// grant the reader could not take back. Config's own allowlist is untouched:
+// it is not this session's to take back.
 func (m *Model) revokeGrants() []string {
 	var gone []string
 	if m.policy.allEdits {
@@ -247,13 +381,60 @@ func (m *Model) revokeGrants() []string {
 	for _, d := range m.policy.editDirs {
 		gone = append(gone, "edits in "+displayDir(d))
 	}
+	for _, p := range m.policy.editPaths {
+		gone = append(gone, "edits to "+p)
+	}
 	gone = append(gone, quoteAll(m.policy.commands)...)
+	gone = append(gone, quoteAll(m.policy.exactCommands)...)
 	for _, h := range m.policy.hosts {
 		gone = append(gone, "fetches from "+h)
 	}
 	m.policy.allEdits, m.policy.allCommands = false, false
 	m.policy.editDirs, m.policy.commands, m.policy.hosts = nil, nil, nil
+	m.policy.editPaths, m.policy.exactCommands = nil, nil
+	return append(gone, m.revokeTurnGrants()...)
+}
+
+// revokeTurnGrants drops what this turn granted and names it, for the two
+// callers that take a grant back on purpose. The expiry at the turn's close
+// is the other route in and says nothing (expireTurnGrants).
+func (m *Model) revokeTurnGrants() []string {
+	t := m.policy.turn
+	if !t.Any() {
+		return nil
+	}
+	var gone []string
+	for _, d := range t.EditDirs {
+		gone = append(gone, "edits in "+displayDir(d)+" this turn")
+	}
+	for _, p := range t.EditPaths {
+		gone = append(gone, "edits to "+p+" this turn")
+	}
+	for _, c := range append(append([]string(nil), t.Commands...), t.ExactCommands...) {
+		gone = append(gone, strconv.Quote(c)+" this turn")
+	}
+	for _, h := range t.Hosts {
+		gone = append(gone, "fetches from "+h+" this turn")
+	}
+	m.policy.turn = agent.Grants{}
 	return gone
+}
+
+// expireTurnGrants ends every grant made for the length of this turn.
+//
+// It says nothing. The grant named its end when it was made — that is the
+// whole point of the list the key opens — so a row announcing the expiry
+// would be the session telling the reader something they were told at the
+// moment they chose it, in the middle of the block that closes the turn.
+// See docs/capabilities/approvals-and-safety.md#a-grant-says-when-it-ends.
+func (m *Model) expireTurnGrants() {
+	if !m.policy.turn.Any() {
+		return
+	}
+	m.policy.turn = agent.Grants{}
+	// The children hold their own copy, so the expiry has to reach them the
+	// way the grant did (subagents.go).
+	m.syncGrants()
 }
 
 // scopeSuffix qualifies an "ask" with the scoped grants that already answer
@@ -411,24 +592,37 @@ func (m Model) modeStatus() string {
 
 // policyLabel is the status bar segment for the session grants; empty
 // in the default everything-prompts state.
+// The turn's grants are counted here with the session's rather than in a
+// segment of their own. The chip is read at a glance and answers one question
+// — is anything running without asking right now — and a grant that ends with
+// the turn is running without asking right now. When it ends it leaves the
+// count, which is the chip saying the same thing again.
 func (m Model) policyLabel() string {
 	var parts []string
+	live := m.liveGrants()
 	switch {
-	case m.policy.allEdits:
+	case live.AllEdits:
 		parts = append(parts, "edits")
-	case len(m.policy.editDirs) > 0:
+	default:
 		// A scoped grant counts what it covers rather than claiming the
 		// category: "edits" and "2 dirs" are different states, and the chip
-		// is the only place the difference is visible at a glance.
-		parts = append(parts, plural(len(m.policy.editDirs), "dir"))
+		// is the only place the difference is visible at a glance. A file and
+		// a directory are counted apart for the same reason — the narrow
+		// grant is the one whose whole point is that it is not the directory.
+		if n := len(live.EditDirs); n > 0 {
+			parts = append(parts, plural(n, "dir"))
+		}
+		if n := len(live.EditPaths); n > 0 {
+			parts = append(parts, plural(n, "file"))
+		}
 	}
 	switch {
-	case m.policy.allCommands:
+	case live.AllCommands:
 		parts = append(parts, "cmds")
-	case len(m.policy.commands) > 0:
-		parts = append(parts, plural(len(m.policy.commands), "cmd"))
+	case len(live.Commands)+len(live.ExactCommands) > 0:
+		parts = append(parts, plural(len(live.Commands)+len(live.ExactCommands), "cmd"))
 	}
-	if n := len(m.policy.hosts); n > 0 {
+	if n := len(live.Hosts); n > 0 {
 		parts = append(parts, plural(n, "host"))
 	}
 	if len(m.policy.allowlist) > 0 {
@@ -451,9 +645,10 @@ func (m Model) policyHelp() string {
 	var sb strings.Builder
 	sb.WriteString("Approval policy:\n")
 	fmt.Fprintf(&sb, "  mode:      %s (%s)\n", m.policy.mode, m.policy.mode.Describe())
-	sb.WriteString("  edits:     " + status(m.policy.allEdits) + scopeSuffix(len(m.policy.editDirs), "directory", "directories") + "\n")
-	sb.WriteString("  commands:  " + status(m.policy.allCommands) + scopeSuffix(len(m.policy.commands), "command shape", "command shapes") + "\n")
-	if n := len(m.policy.hosts); n > 0 || len(m.policy.allowHosts) > 0 {
+	live := m.liveGrants()
+	sb.WriteString("  edits:     " + status(live.AllEdits) + scopeSuffix(len(live.EditDirs)+len(live.EditPaths), "place", "places") + "\n")
+	sb.WriteString("  commands:  " + status(live.AllCommands) + scopeSuffix(len(live.Commands)+len(live.ExactCommands), "command shape", "command shapes") + "\n")
+	if n := len(live.Hosts); n > 0 || len(m.policy.allowHosts) > 0 {
 		fmt.Fprintf(&sb, "  hosts:     %s fetched without asking (%d granted, %d from config)\n",
 			plural(n+len(m.policy.allowHosts), "host"), n, len(m.policy.allowHosts))
 	}
@@ -463,7 +658,7 @@ func (m Model) policyHelp() string {
 	if n := len(m.policy.denylist); n > 0 {
 		fmt.Fprintf(&sb, "  denylist:  %d command pattern(s) from config are refused in every mode\n", n)
 	}
-	if m.grants().Any() {
+	if live.Any() {
 		sb.WriteString("  /permissions grants names them; /permissions revoke takes them back.\n")
 	}
 	if m.policy.readOnlyDisabled {
@@ -516,29 +711,26 @@ func allowlistMatches(allowlist []string, command string) bool {
 // the same act.
 func (m Model) grantStatus() string {
 	g := m.grants()
-	if !g.Any() && len(m.policy.allowlist) == 0 && len(m.policy.denylist) == 0 &&
+	if !g.Any() && !m.policy.turn.Any() && len(m.policy.allowlist) == 0 && len(m.policy.denylist) == 0 &&
 		len(m.policy.allowHosts) == 0 && len(m.policy.denyHosts) == 0 && len(m.scopeDirs()) == 0 {
 		return "Nothing is granted — every gated call asks.\n" +
-			"[a] on a confirm prompt grants the one shape of call it is showing; /permissions allow <commands|edits> grants the category."
+			"[a] on a confirm prompt offers the grants that call can make, each with when it ends; /permissions allow <commands|edits> grants the category."
 	}
 	var sb strings.Builder
-	sb.WriteString("Session grants:\n")
+	sb.WriteString("Grants:\n")
 	if g.AllEdits {
-		sb.WriteString("  edits      every edit, anywhere (/permissions allow edits)\n")
-	}
-	for _, d := range g.EditDirs {
-		sb.WriteString("  edits      " + displayDir(d) + "\n")
+		sb.WriteString("  edits      every edit, anywhere (/permissions allow edits) — " + endsWithSession + "\n")
 	}
 	if g.AllCommands {
-		sb.WriteString("  commands   every command (/permissions allow commands)\n")
+		sb.WriteString("  commands   every command (/permissions allow commands) — " + endsWithSession + "\n")
 	}
-	for _, c := range g.Commands {
-		sb.WriteString("  commands   " + strconv.Quote(c) + "\n")
-	}
-	for _, h := range g.Hosts {
-		sb.WriteString("  hosts      " + h + " — fetches from it, and nothing beside it\n")
-	}
-	if !g.Any() {
+	// Every grant is listed with when it ends, in the words the row that made
+	// it printed: a listing that named a grant differently from the card
+	// would read as a second grant rather than as the same one, and a grant
+	// whose end is not stated is one the reader has to remember (grant.go).
+	writeGrants(&sb, g, endsWithSession)
+	writeGrants(&sb, m.policy.turn, endsWithTurn)
+	if !g.Any() && !m.policy.turn.Any() {
 		sb.WriteString("  (none — everything below came from config)\n")
 	}
 	for _, d := range m.scopeDirs() {
@@ -560,6 +752,34 @@ func (m Model) grantStatus() string {
 		sb.WriteString("/permissions revoke [edits|commands|hosts] takes them back.")
 	}
 	return strings.TrimRight(sb.String(), "\n")
+}
+
+// writeGrants lists one set of scoped grants, each row ending in the words
+// its own end was granted under. It is one function over both sets rather
+// than a loop per kind inside the listing because every one of these rows
+// says the same thing about when it ends, and a kind that acquired a
+// different phrase for it would be a second answer to the one question this
+// listing exists to answer.
+//
+// The blanket grants are not here: they have no pattern to print and a
+// sentence of their own naming the command that set them.
+func writeGrants(sb *strings.Builder, g agent.Grants, ends string) {
+	end := " — " + ends + "\n"
+	for _, d := range g.EditDirs {
+		sb.WriteString("  edits      " + displayDir(d) + end)
+	}
+	for _, p := range g.EditPaths {
+		sb.WriteString("  edits      " + p + ", that file alone" + end)
+	}
+	for _, c := range g.Commands {
+		sb.WriteString("  commands   " + strconv.Quote(c) + end)
+	}
+	for _, c := range g.ExactCommands {
+		sb.WriteString("  commands   " + strconv.Quote(c) + ", that line alone" + end)
+	}
+	for _, h := range g.Hosts {
+		sb.WriteString("  hosts      " + h + ", that host alone" + end)
+	}
 }
 
 // allowCommand is `/permissions allow <commands|edits>`: the blanket grant,
@@ -605,6 +825,10 @@ func (m *Model) revokeCommand(args []string) string {
 	switch scope {
 	case "all":
 		gone = m.revokeGrants()
+	// Each of the three takes the turn's grants of that kind with the
+	// session's: what the reader named is a kind, and a grant of that kind
+	// left standing because it was going to expire on its own is a grant the
+	// revoke they typed did not take back.
 	case "edits":
 		if m.policy.allEdits {
 			gone = append(gone, "every edit")
@@ -612,18 +836,37 @@ func (m *Model) revokeCommand(args []string) string {
 		for _, d := range m.policy.editDirs {
 			gone = append(gone, "edits in "+displayDir(d))
 		}
-		m.policy.allEdits, m.policy.editDirs = false, nil
+		for _, p := range m.policy.editPaths {
+			gone = append(gone, "edits to "+p)
+		}
+		m.policy.allEdits, m.policy.editDirs, m.policy.editPaths = false, nil, nil
+		for _, d := range m.policy.turn.EditDirs {
+			gone = append(gone, "edits in "+displayDir(d)+" this turn")
+		}
+		for _, p := range m.policy.turn.EditPaths {
+			gone = append(gone, "edits to "+p+" this turn")
+		}
+		m.policy.turn.AllEdits, m.policy.turn.EditDirs, m.policy.turn.EditPaths = false, nil, nil
 	case "commands", "cmds":
 		if m.policy.allCommands {
 			gone = append(gone, "every command")
 		}
 		gone = append(gone, quoteAll(m.policy.commands)...)
-		m.policy.allCommands, m.policy.commands = false, nil
+		gone = append(gone, quoteAll(m.policy.exactCommands)...)
+		m.policy.allCommands, m.policy.commands, m.policy.exactCommands = false, nil, nil
+		for _, c := range append(append([]string(nil), m.policy.turn.Commands...), m.policy.turn.ExactCommands...) {
+			gone = append(gone, strconv.Quote(c)+" this turn")
+		}
+		m.policy.turn.AllCommands, m.policy.turn.Commands, m.policy.turn.ExactCommands = false, nil, nil
 	case "hosts", "host":
 		for _, h := range m.policy.hosts {
 			gone = append(gone, "fetches from "+h)
 		}
 		m.policy.hosts = nil
+		for _, h := range m.policy.turn.Hosts {
+			gone = append(gone, "fetches from "+h+" this turn")
+		}
+		m.policy.turn.Hosts = nil
 	default:
 		return "Usage: /permissions revoke [edits|commands|hosts]"
 	}
@@ -670,6 +913,18 @@ type policyState struct {
 	// never had.
 	editDirs []string
 	commands []string
+	// The narrow widths the always-allow list offers beside those two: this
+	// one file, and this one command line exactly as it stands.
+	editPaths     []string
+	exactCommands []string
+	// turn is every grant made for the length of the open turn, which is a
+	// value of its own beside the fields above rather than five more fields
+	// beside them: it is read before all of them and cleared whole at the
+	// turn's close, and a grant that outlived its turn because one of five
+	// resets was forgotten is the failure the whole thing exists to prevent
+	// (grant.go, close.go).
+	// See docs/capabilities/approvals-and-safety.md#a-grant-says-when-it-ends.
+	turn agent.Grants
 	// hosts are the hosts [a] has granted on a fetch card, exact and never a
 	// suffix. There is no blanket counterpart: "every host" is the whole of
 	// the outbound channel.

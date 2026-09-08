@@ -97,6 +97,12 @@ func (m *Model) setTurnState(s state) {
 		// command the reader wrote about a different call, one enter away
 		// from running (amend.go).
 		m.commandEdit = nil
+		// Nor a grant list left open over a card that has just been
+		// answered: its rows name the command, the directory or the host
+		// that belonged to that decision, and a row taken now would grant
+		// something the card in front of the reader never showed them
+		// (grant.go).
+		m.grantChoice = nil
 	}
 	// A turn going idle stamps its end, so the inspector rail's elapsed time
 	// freezes at what the turn took instead of counting on.

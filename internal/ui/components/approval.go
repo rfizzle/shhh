@@ -274,6 +274,21 @@ type ApprovalCard struct {
 	AmendOpen    bool
 	AmendField   string
 	AmendRefused string
+	// GrantOpen is the third surface the card can hold under itself: the
+	// grants the always-allow key offers, one row each, with what the grant
+	// covers on the row and when it ends in its short field
+	// (docs/capabilities/approvals-and-safety.md#a-grant-says-when-it-ends).
+	// GrantRows are those rows and GrantFocus is the one the pointer is on —
+	// the same division of labour the two fields are under, because a list
+	// the reader has moved through outlives a frame and the card does not.
+	//
+	// It is drawn with the selector's own row layout rather than a layout of
+	// its own: a grant's end is the short right-aligned field every list in
+	// the product puts a note in, and a second renderer for it would be a
+	// second answer to what that field looks like.
+	GrantOpen  bool
+	GrantRows  []SelectOption
+	GrantFocus int
 	// ExtraHints are the keys beyond the decision run that the host answers
 	// itself — [g] to attach to the agent that asked, the manager's chord.
 	//
@@ -578,6 +593,9 @@ func (c *ApprovalCard) hintRowsFor(width, inner int) []string {
 	}
 	if c.AmendOpen {
 		return append(typingRows(c.Question+" "+c.keys(), width), c.amendRows(width, inner)...)
+	}
+	if c.GrantOpen {
+		return append(chosenRows(c.Question+" "+c.keys(), width), c.grantRows(width, inner)...)
 	}
 	if c.HeldOnArrival && c.Grace {
 		rows := graceRows(c.Question+" "+c.keys(), width)
@@ -969,6 +987,36 @@ func (c *ApprovalCard) amendRows(width, inner int) []string {
 // the key that opens it is offered under, so a reader who pressed on the
 // promise is not met with a differently worded request.
 const amendWords = "edit the command"
+
+// grantWords labels the open grant list. It is the phrase the always-allow
+// key is offered under and the phrase the documentation uses for the offer,
+// so the reader who pressed on it is met with the words they pressed on.
+const grantWords = "allow without asking"
+
+// grantRows are the grants the card can make, open under it: the ┄ label,
+// the rows themselves, and the keys that move through them and close them.
+//
+// The rows go through the single-select's own layout — the pointer, the
+// label, the description and the short right-aligned field — because a grant
+// naming its end in that field is the same row every list in the product
+// draws, and drawing it here a second way would be a second answer to what a
+// list looks like. The list built for it is a value rather than the card's:
+// nothing about a query, a window or a title applies to three rows pinned
+// under a decision.
+func (c *ApprovalCard) grantRows(width, inner int) []string {
+	list := Select{Options: c.GrantRows, Focus: c.GrantFocus}
+	rows := []string{sty.Dim.Render(Clip("┄ "+grantWords, inner))}
+	rows = append(rows, list.optionRows(width, false, 0, len(c.GrantRows))...)
+	// What esc leaves behind is spelled out rather than left to the word
+	// "cancel": the whole offer is that a grant is read before it is made,
+	// and a reader who cannot see that leaving grants nothing has to guess
+	// at what they have just done (docs/interface/principles.md#fold-never-hide).
+	return append(rows, hintRows([]string{
+		words(keys.Select.MoveJK, "choose"),
+		words(keys.Select.Take, "grant it, and run"),
+		words(keys.Select.Cancel, "back to the card — nothing is granted"),
+	}, width)...)
+}
 
 // FieldOrigin is the cell an open field's own render starts at inside the
 // rendered card. The host owns the field and so owns the caret inside it;

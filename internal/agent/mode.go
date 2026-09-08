@@ -308,6 +308,30 @@ type ModePolicy struct {
 	// EditDirs are the scoped edit grants [a] records on an edit card: edits
 	// under these directories run without asking, and nothing else does.
 	EditDirs []string
+	// EditPaths and ExactCommands are the narrow grants beside EditDirs and
+	// the allowlist: the one file, and the one command line exactly as it
+	// stands.
+	EditPaths     []string
+	ExactCommands []string
+	// TurnGrants are the grants that end when the turn that made them does.
+	// They are read before every scoped session grant below, so a call
+	// answered by one carries a reason naming the length the reader chose — a
+	// rate that reported a build loop's twenty runs as standing session
+	// grants would describe a session nobody had.
+	//
+	// The two blanket grants stay ahead of them, which is the one place the
+	// order is not "shortest first". A session that has allowed every command
+	// would go on allowing this one after the turn ends, so a row reading
+	// "turn grant" would name the narrower of two answers and say the call
+	// stops being allowed when it does not.
+	//
+	// Where they are read matters more than that they exist: this is a field
+	// of the policy rather than a check in front of it, so a turn grant sits
+	// behind the deny lists, plan mode, the safety table and the working
+	// scope exactly as a session grant does. A shorter grant is not a wider
+	// one.
+	// See docs/capabilities/approvals-and-safety.md#a-grant-says-when-it-ends.
+	TurnGrants Grants
 	// CommandAllowlist entries pre-approve matching commands — the config
 	// list, plus whatever [a] has recorded on a command card this session.
 	CommandAllowlist []string
@@ -334,6 +358,13 @@ type ModePolicy struct {
 	// (behavior.read_only_auto = false).
 	ReadOnlyDisabled bool
 }
+
+// TurnGrantReason is what a call allowed by a turn-scoped grant reports, in
+// the shape "session grant" and "session policy" already have. It is a
+// separate word rather than the same one because the two differ in the one
+// thing a reader of the row wants: a session grant is still standing after
+// this turn and a turn grant is not.
+const TurnGrantReason = "turn grant"
 
 // readOnly reports whether a command auto-runs as pure inspection.
 func (p ModePolicy) readOnly(a Action) bool {
@@ -560,13 +591,19 @@ func (p ModePolicy) decide(a Action) (Decision, string) {
 			return Allow, p.Mode.String() + " mode"
 		case p.AllowEdits:
 			return Allow, "session policy"
-		case PathUnder(p.EditDirs, a.Path):
+		case p.TurnGrants.CoversEdit(a.Path):
+			return Allow, TurnGrantReason
+		case PathUnder(p.EditDirs, a.Path), PathIs(p.EditPaths, a.Path):
 			return Allow, "session grant"
 		}
 	case ActionCommand:
 		switch {
 		case p.AllowCommands:
 			return Allow, "session policy"
+		case p.TurnGrants.CoversCommand(a.Command):
+			return Allow, TurnGrantReason
+		case ExactMatches(p.ExactCommands, a.Command):
+			return Allow, "session grant"
 		case AllowlistMatches(p.CommandAllowlist, a.Command):
 			return Allow, "allowlist"
 		}
@@ -575,6 +612,9 @@ func (p ModePolicy) decide(a Action) (Decision, string) {
 		// asked: the classifier's job is to judge whether a URL is an
 		// outbound channel worth stopping for, and the grant is the person
 		// having already said this host is not.
+		if p.TurnGrants.CoversHost(a.Host) {
+			return Allow, TurnGrantReason
+		}
 		if HostMatches(p.AllowHosts, a.Host) {
 			return Allow, "session grant"
 		}

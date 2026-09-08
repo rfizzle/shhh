@@ -926,6 +926,11 @@ type Model struct {
 	// for the same reason and is cleared in the same place; only one of the
 	// two is ever open, because only one thing can hold a keyboard.
 	commandEdit *commandEdit
+	// grantChoice is the third surface the card can open under itself: the
+	// grants the always-allow key offers, each with what it covers and when
+	// it ends (grant.go). It lives here and is cleared where the other two
+	// are, and only one of the three is ever open.
+	grantChoice *grantChoice
 	// readingCopied is the reading rail's note about the last [y]: what was
 	// copied and how far it ran. It stands until the next key in the mode,
 	// which is the moment the reader has moved on from the copy it captions.

@@ -338,8 +338,10 @@ func TestBatch_KeyIsAbsentWithoutAQueue(t *testing.T) {
 	if m.queueList != nil {
 		t.Fatal("[A] with nothing to list should not open a list")
 	}
-	if len(m.policy.commands) == 0 {
-		t.Fatal("[A] without a queue should still take the session grant")
+	// It keeps its old meaning as the shifted spelling of [a], which is now
+	// the grants the card can make rather than one of them (grant.go).
+	if m.grantChoice == nil {
+		t.Fatal("[A] without a queue should still reach the grant list")
 	}
 }
 

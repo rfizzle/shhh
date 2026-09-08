@@ -1022,6 +1022,7 @@ func (m Model) approvalCard() *components.ApprovalCard {
 	m.applyNotYetLive(card)
 	m.applyDecisionNote(card)
 	m.applyCommandEdit(card)
+	m.applyGrantChoice(card)
 	return card
 }
 
@@ -1100,14 +1101,15 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 		// flagged actions can never be pre-approved, and /run stays manual.
 		// The card says why it is missing rather than omitting it silently.
 		//
-		// What it grants is named on the card, because a key whose scope is
-		// not stated is a key pressed on a guess: [a] records the command's
-		// leading words, so the reader sees `go test` before they widen
-		// anything, not `commands` after they have.
+		// What it leads to is named on the card, because a key whose scope is
+		// not stated is a key pressed on a guess: the reader sees `go test`
+		// before they widen anything, not `commands` after they have. How
+		// long the grant lasts is the list's own to say, one press later, on
+		// the row that makes it (grant.go).
 		if req != nil && len(card.Warnings) == 0 {
 			if prefix := agent.GrantPrefix(req.command); prefix != "" {
 				card.AllowAlways = true
-				card.AlwaysHint = "a: always allow " + strconv.Quote(prefix)
+				card.AlwaysHint = "a: allow " + strconv.Quote(prefix) + " without asking"
 				// A command that writes outside the working scope is granting
 				// two things at once, and the key says both: [y]
 				// would add the directory for this session, [a] adds it and
@@ -1131,10 +1133,16 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 		card.Syntax = diffSyntax(req.path)
 		card.FullDiff = len(req.hunks) > 0
 		card.Question = "Apply this change?"
-		card.AllowAlways = true
-		card.AlwaysHint = "a: always allow edits in " + displayDir(filepath.Dir(req.path))
-		if m.pendingScope.any() {
-			card.AlwaysHint += " and add it to the working scope"
+		// No grant of any length on a flagged card, here as on the command
+		// card above: "only for a minute" is still blanket, and a flagged
+		// action is never blanket-approved
+		// (docs/capabilities/approvals-and-safety.md#a-grant-says-when-it-ends).
+		if len(card.Warnings) == 0 {
+			card.AllowAlways = true
+			card.AlwaysHint = "a: allow edits in " + displayDir(filepath.Dir(req.path)) + " without asking"
+			if m.pendingScope.any() {
+				card.AlwaysHint += " and add it to the working scope"
+			}
 		}
 	default:
 		card.Variant = components.ApprovalGeneric
@@ -1147,9 +1155,9 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 		// rather than the category: what the reader read on the card's own
 		// domain row is exactly what pressing it grants, and a page from the
 		// same site is then not a card at all.
-		if req.host != "" {
+		if req.host != "" && len(card.Warnings) == 0 {
 			card.AllowAlways = true
-			card.AlwaysHint = "a: always allow " + req.host
+			card.AlwaysHint = "a: allow " + req.host + " without asking"
 		}
 	}
 	return card

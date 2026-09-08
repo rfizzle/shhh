@@ -28,7 +28,7 @@ func (m Model) WithSubagents(sup *subagent.Supervisor) Model {
 	m.subagents = sup
 	m.childViews = map[string]*childView{}
 	sup.SetParentMode(m.policy.mode)
-	sup.SetParentGrants(m.grants())
+	sup.SetParentGrants(m.liveGrants())
 	return m
 }
 
@@ -38,13 +38,20 @@ func (m Model) WithSubagents(sup *subagent.Supervisor) Model {
 // instead of being re-asked once per agent. The fetcher takes the hosts
 // because it is the only place a redirect off a granted host is visible
 // (policy.go, WithHostGrants).
+//
+// What it pushes is every grant standing right now, the ones that end with
+// the turn included: a child running under a turn grant is doing the thing
+// that was granted, for as long as it was granted for. That the grant is
+// short is not a fact either reader can act on — neither of them can see a
+// turn — so the expiry reaches them the way the grant did, by this being
+// called again at the turn's close (close.go).
 func (m *Model) syncGrants() {
-	g := m.grants()
+	g := m.liveGrants()
 	if m.subagents != nil {
 		m.subagents.SetParentGrants(g)
 	}
 	if m.hostGrants != nil {
-		m.hostGrants(m.hostAllowlist())
+		m.hostGrants(concatGrants(m.hostAllowlist(), m.policy.turn.Hosts))
 	}
 }
 

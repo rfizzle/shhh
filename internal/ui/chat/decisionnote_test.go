@@ -250,7 +250,11 @@ func TestDecisionNote_EveryLetterIsTextWhileTheFieldIsOpen(t *testing.T) {
 				t.Fatal("esc must leave the decision waiting")
 			}
 			live := press(t, m, key)
+			// The card's other surfaces count as movement too: [a] opens the
+			// grants it can make and [A] the queue, and neither settles the
+			// decision or moves the scroll (grant.go, queue.go).
 			if live.state == before && live.pendingApproval != nil && live.decisionNote == nil &&
+				live.grantChoice == nil && live.queueList == nil &&
 				live.cardScroll == m.cardScroll {
 				// Nothing moved: the key is inert now, which is only right
 				// for the keys this card does not offer.

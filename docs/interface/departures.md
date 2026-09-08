@@ -236,3 +236,24 @@ and the second half of the title says which use it is anyway. What the
 artboard settles and the binary keeps is the rest of it: the paragraph in
 dim, and a footer naming the model, what asking took, and that nothing here
 reached the model waiting on the answer.
+
+## The grant list's narrow row is drawn only where there is one
+
+*A gap.* The artboard draws the `Allow without asking` list over a command:
+three rows at seventy-two columns, the pattern each grant would match on the
+row and its end in the short field. Nothing is drawn for the other two cards
+that offer a grant, and the third row is a width rather than a length — so
+the binary decided what it means on each.
+
+An edit card offers it as *this file only*, since the directory the card
+prints is wider than the file the reader read. A fetch card does not offer it
+at all: a host grant is already exactly the host and never a suffix of it, so
+a third row there would grant the same thing under a second name. The two
+lengths are on every one of the three, because how long a grant lasts is not
+a fact about what kind of thing it covers.
+
+One more thing the artboard leaves open, because it draws one row's pattern
+and not two side by side: the prefix rows print their pattern with a trailing
+ellipsis and the narrow row prints its own bare. At sixty columns the
+description column is the width of a short command, and a clause saying which
+of the two a row is would be the first thing the terminal dropped.

@@ -162,10 +162,10 @@ func TestPolicy_AlwaysAllowCommandsViaKey(t *testing.T) {
 		t.Fatal("unflagged command prompt with a queue behind it should offer y/Y/n/N/a/A")
 	}
 
-	// 'a' approves this command and stops the session asking about commands
-	// of the same shape — `echo`, not everything.
-	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
-	m = updated.(Model)
+	// 'a' opens the grants the card can make; the session row approves this
+	// command and stops the session asking about commands of the same shape
+	// — `go build`, not everything.
+	m, cmd := grantVia(t, m, "this session")
 	if m.policy.allCommands {
 		t.Fatal("'a' must not hand out a blanket grant; that is /permissions allow")
 	}
@@ -203,12 +203,11 @@ func TestPolicy_AlwaysAllowEditsViaKey(t *testing.T) {
 		t.Fatalf("first edit should prompt, got state %d", m.state)
 	}
 	m = handover(t, m)
-	if !strings.Contains(m.View().Content, "always allow edits") {
+	if !strings.Contains(m.View().Content, "allow edits in") {
 		t.Fatal("edit prompt should offer the always-allow option")
 	}
 
-	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
-	m = updated.(Model)
+	m, cmd := grantVia(t, m, "this session")
 	if m.policy.allEdits {
 		t.Fatal("'a' must not hand out a blanket grant; that is /permissions allow")
 	}
@@ -660,8 +659,7 @@ func TestGrant_ADifferentShapeOfCommandStillAsks(t *testing.T) {
 	}})
 	m = handover(t, updated.(Model))
 
-	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
-	m = updated.(Model)
+	m, cmd := grantVia(t, m, "this session")
 	updated, _ = m.Update(driveCmdDone(t, cmd))
 	m = updated.(Model)
 
@@ -693,8 +691,7 @@ func TestGrant_ADifferentDirectoryStillAsks(t *testing.T) {
 	}})
 	m = handover(t, updated.(Model))
 
-	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
-	m = updated.(Model)
+	m, cmd := grantVia(t, m, "this session")
 	var done approvedToolDoneMsg
 	for _, c := range unwrapBatch(cmd) {
 		if msg, ok := c().(approvedToolDoneMsg); ok {
@@ -882,12 +879,11 @@ func TestPolicy_AlwaysAllowOneHostViaKey(t *testing.T) {
 		t.Fatalf("the first fetch should ask, got state %d", m.state)
 	}
 	m = handover(t, m)
-	if !strings.Contains(m.View().Content, "always allow docs.python.org") {
+	if !strings.Contains(m.View().Content, "allow docs.python.org without asking") {
 		t.Fatalf("the key does not say which host it grants:\n%s", m.View().Content)
 	}
 
-	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
-	m = updated.(Model)
+	m, cmd := grantVia(t, m, "this session")
 	if got := m.policy.hosts; len(got) != 1 || got[0] != "docs.python.org" {
 		t.Fatalf("[a] granted %v; want exactly the host the card showed", got)
 	}
@@ -982,12 +978,12 @@ func TestPolicy_HostRulesAnswerBeforeTheCard(t *testing.T) {
 func TestPolicy_HostGrantsAreListedCountedAndRevoked(t *testing.T) {
 	m := gatedModel(t, nil, fetchPreviews())
 	m = m.WithHostRules([]string{"crates.io"}, nil)
-	if got := m.grantHost("docs.python.org"); got != "docs.python.org" {
+	if got := m.grantHost("docs.python.org", grantOffer{length: forThisSession}); got != "docs.python.org" {
 		t.Fatalf("grantHost returned %q", got)
 	}
 	// A host the config already reaches adds nothing: pressing [a] on it is
 	// not a second grant to revoke.
-	m.grantHost("crates.io")
+	m.grantHost("crates.io", grantOffer{length: forThisSession})
 	if got := m.policy.hosts; len(got) != 1 {
 		t.Fatalf("hosts = %v; want the one the config did not already cover", got)
 	}
@@ -1013,7 +1009,7 @@ func TestPolicy_HostGrantsAreListedCountedAndRevoked(t *testing.T) {
 		t.Error("revoke took away a standing config grant")
 	}
 	// And the blanket revoke takes a host with the rest.
-	m.grantHost("pkg.go.dev")
+	m.grantHost("pkg.go.dev", grantOffer{length: forThisSession})
 	if out := m.revokeCommand(nil); !strings.Contains(out, "pkg.go.dev") {
 		t.Errorf("revoke all left the host grants behind: %q", out)
 	}

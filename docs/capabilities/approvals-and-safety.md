@@ -314,11 +314,18 @@ be revoked before then. The two lengths are the whole set: a grant that
 outlives the session is an allowlist entry in the configuration, and is typed
 there rather than pressed here.
 
-A grant also has a width, and the reader sees both before choosing. The prefix
-the card printed is the ordinary width. The line exactly as it stands is the
-narrow one — it covers `npm test` and not `npm test --update` — for the
-reader who will say yes to this and does not want to have said yes to its
-family.
+A grant also has a width, and the reader sees both before choosing. The
+pattern the card printed is the ordinary width: a command's leading words, an
+edit's directory. Beside it is the narrow one — the line exactly as it stands,
+which covers `npm test` and not `npm test --update`; the one file, which
+covers it and nothing beside it in its directory — for the reader who will say
+yes to this and does not want to have said yes to its family. A fetch has no
+narrow width to offer, because a host grant is already exactly the host and
+never a suffix of it, so a fetch card offers the two lengths and stops.
+
+A flagged action is offered no grant of any length. "Only for a minute" is
+still blanket, and the card says the key is absent rather than dropping it
+without a word.
 
 ## A file is changed from what was read
 

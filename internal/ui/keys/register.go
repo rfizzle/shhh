@@ -229,6 +229,20 @@ func Surfaces() []Surface {
 			},
 		},
 		{
+			// The grants the card can make, open under it. A row of its own
+			// for the reason the two fields above have theirs — it holds the
+			// keyboard, so none of the card's answers are live while it is
+			// up — and a list rather than a field, so the keys are the
+			// selector family's: it moves, it takes, it cancels. What enter
+			// does here is make a grant and run the act, and what esc does is
+			// leave with nothing granted and the decision still waiting.
+			Name:     "the approval card's grant list",
+			Section:  "docs/interface/surfaces.md#the-approval-card, docs/capabilities/approvals-and-safety.md#a-grant-says-when-it-ends",
+			Position: Takeover,
+			Reached:  Bracket(Decision.Always) + " on a card that offers a grant",
+			Bindings: []Binding{Select.MoveJK, Select.Take, Select.Cancel},
+		},
+		{
 			// A row of its own, because the card is a list and answers a
 			// list's keys: it moves, takes and cancels the way every
 			// selector does, and the two keys it has beyond that are its.

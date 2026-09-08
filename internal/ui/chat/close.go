@@ -42,6 +42,14 @@ func (m *Model) appendTurnClose() {
 	// expires, and nothing lands in the transcript to redraw the block it
 	// was painted into.
 	m.expireSteerOffers()
+	// And a grant the reader gave for the length of this turn, beside it and
+	// at the same seam: this is the one moment the expiry can be made with
+	// the turn's own close in the transcript next to it. It ends where the
+	// turn is closed rather than where the next one opens, because a session
+	// that stops between the two must not be sitting on a permission it has
+	// already told the reader is over (policy.go).
+	// See docs/capabilities/approvals-and-safety.md#a-grant-says-when-it-ends.
+	m.expireTurnGrants()
 	outcome := m.turnOutcomeCode()
 	m.recordTurn(outcome)
 	// A turn that stopped at its round limit has already closed, with the

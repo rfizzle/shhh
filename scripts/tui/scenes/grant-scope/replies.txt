@@ -1,0 +1,8 @@
+# One reply per request. The last line repeats once these run out.
+# One command, which is all this scene needs: the card it draws is what the
+# always-allow key is pressed on. Nothing here is ever approved — the scene
+# ends by escaping the grant list and denying the call — so the line never
+# runs on the machine the scene is driven from.
+I would run the test suite in watch mode.
+tool:execute_command:{"command":"npm test --watch"}
+That settles it.

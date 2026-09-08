@@ -20,7 +20,7 @@
 │ undo      unknown — shhh could not resolve what this writes                                                                │
 │ network   open — nothing contains this command, so nothing limits what it reaches                                          │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ Run this command? [y/Y/n/N/a]  (Y/N: a note)  (a: always allow "npm test")  (d: full view) · [e] edit the command          │
+│ Run this command? [y/Y/n/N/a]  (Y/N: a note)  (a: allow "npm test" without asking)  (d: full view) · [e] edit the command  │
 │ [esc] back to your draft — the decision stays waiting, nothing is denied                                                   │
 └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
@@ -51,7 +51,7 @@
 ␛[38;5;214m│␛[m ␛[38;5;241mundo      ␛[m␛[91munknown␛[m␛[38;5;245m — shhh could not resolve what this writes␛[m                                                                ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;241mnetwork   ␛[m␛[38;5;214mopen␛[m␛[38;5;245m — nothing contains this command, so nothing limits what it reaches␛[m                                          ␛[38;5;214m│␛[m
 ␛[38;5;214m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;214m│␛[m ␛[3;38;5;241mRun this command? [y/Y/n/N/a]  (Y/N: a note)  (a: always allow "npm test")  (d: full view) · [e] edit the command␛[m          ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[3;38;5;241mRun this command? [y/Y/n/N/a]  (Y/N: a note)  (a: allow "npm test" without asking)  (d: full view) · [e] edit the command␛[m  ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;241m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m                                                   ␛[38;5;214m│␛[m
 ␛[38;5;214m└────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘␛[m
 

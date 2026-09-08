@@ -698,9 +698,23 @@ var Row = RowKeys{
 // live only once Draft.Answer has handed the keyboard over, or on a card that
 // landed on a draft nobody was typing into.
 type DecisionKeys struct {
-	Allow  Binding
-	Deny   Binding
+	Allow Binding
+	Deny  Binding
+
+	// Always opens the grants the card can make rather than making one: a
+	// list of what each would cover and when it would end, taken with the
+	// selector's own keys
+	// (docs/capabilities/approvals-and-safety.md#a-grant-says-when-it-ends).
+	//
+	// The keystroke did not move and the label did. It used to read "always
+	// allow this session", which was the whole of what one press bought and
+	// is no longer either half of it — the length is the reader's now, and
+	// the press that used to grant only offers. A register whose label
+	// described the old act would be the one place the rule it exists to
+	// enforce could not be checked: one surface, one keystroke, one act, and
+	// the label is how the act is named.
 	Always Binding
+
 	// Batch opens the queue behind the card as a list the reader checks and
 	// unchecks, rather than answering a set they cannot see. The keystroke is
 	// the one it always was and only the act behind it changed: a reader who
@@ -817,7 +831,7 @@ var Decision = DecisionKeys{
 	Deny:       bind("n", "deny", "n", "esc", "ctrl+c"),
 	AllowNoted: bind("Y", "allow, and say what to do next", "Y"),
 	DenyNoted:  bind("N", "deny, and say why", "N"),
-	Always:     bind("a", "always allow this session", "a"),
+	Always:     bind("a", "allow without asking — choose how long", "a"),
 	Batch:      bind("A", "open the queue", "A"),
 	Diff:       bind("d", "full diff", "d", "D"),
 	DryRun:     bind("t", "try the harmless form", "t"),

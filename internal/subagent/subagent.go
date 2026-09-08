@@ -1506,11 +1506,17 @@ func (s *Supervisor) SetParentMode(m agent.Mode) {
 	s.mu.Unlock()
 }
 
-// SetParentGrants records the parent's session grants ([a] on a confirm
-// prompt, /mode allow): what the user waved through for the session is waved
-// through for children too, so one grant is not re-asked once per agent. The
-// scoped grants travel with the blanket ones — a child editing under a
-// directory the parent granted is doing the thing that was granted.
+// SetParentGrants records the parent's grants ([a] on a confirm prompt,
+// /mode allow): what the user waved through is waved through for children
+// too, so one grant is not re-asked once per agent. The scoped grants travel
+// with the blanket ones — a child editing under a directory the parent
+// granted is doing the thing that was granted.
+//
+// A grant that ends with the parent's turn arrives here as one of these and
+// leaves the same way: the parent pushes its grants again at the turn's
+// close, so a child spawned under a turn grant loses it when the turn that
+// made it ends, exactly as the session does.
+// See docs/capabilities/approvals-and-safety.md#a-grant-says-when-it-ends.
 func (s *Supervisor) SetParentGrants(g agent.Grants) {
 	s.mu.Lock()
 	s.parentGrants = g
@@ -1541,6 +1547,8 @@ func (s *Supervisor) childPolicy(c *child) agent.ModePolicy {
 		AllowEdits:       g.AllEdits,
 		AllowCommands:    g.AllCommands,
 		EditDirs:         g.EditDirs,
+		EditPaths:        g.EditPaths,
+		ExactCommands:    g.ExactCommands,
 		CommandAllowlist: allowlist,
 		CommandDenylist:  s.opts.CommandDenylist,
 		AllowHosts:       hosts,

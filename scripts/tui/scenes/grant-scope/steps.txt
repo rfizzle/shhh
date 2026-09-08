@@ -1,0 +1,31 @@
+# The always-allow key is an offer now rather than a grant: it opens the
+# grants the card can make, each row naming what it covers and when it ends,
+# and leaving the list grants nothing
+# (docs/capabilities/approvals-and-safety.md#a-grant-says-when-it-ends).
+#
+# The card arrives holding the keyboard but nobody handed it over, so it
+# claims its two answers and no more; the handover chord is what makes the
+# always-allow key a key at all, which is why it is a step of its own.
+snap 01-start "Some things worth doing first"
+keys "what would you run" Enter
+snap 02-reply "I would run the test suite in watch mode"
+keys "go on then" Enter
+snap 03-card "Run this command?"
+keys C-Space
+snap 04-live "without asking"
+keys a
+snap 05-grants "until this turn ends"
+# Esc leaves the list. The card's other offers come back, which is the one
+# thing on screen that is absent while the list holds the keyboard — so
+# waiting for it waits for the card rather than passing on a row that never
+# went away.
+keys Escape
+snap 06-back "edit the command"
+# And the decision is still there to answer, which is what "grants nothing
+# and leaves the decision waiting" means: the denial reaches the model and
+# the next reply lands.
+keys n
+snap 07-denied "That settles it"
+keys C-c
+keys C-c
+snap 08-exit "that is everything the screen was holding"
