@@ -607,6 +607,16 @@ A saving that is real has to be visible, so what a request served from the
 cache actually cost is what the session's ledger charges for it, at the
 provider's own reduced rate rather than at the price of reading it fresh.
 
+That has to happen where the request arrives, because the split is gone the
+moment the totals are summed: a pair of numbers says how much came in, never
+how much of it was already paid for, and anything pricing a pair can only
+charge all of it fresh. So every requester the record names keeps its own
+running bill and reports what it was charged — a sub-agent as much as the
+session that spawned it. A sub-agent is the case that makes it obvious: it
+re-sends its whole prompt every round and works alone for hundreds of them,
+so the record of what it cost is the one figure nobody was watching as it was
+spent, and pricing its total fresh reports several times the bill.
+
 ## Failures are classified before they are surfaced
 
 Every provider error is mapped into a closed set — unauthorised, rate limited,

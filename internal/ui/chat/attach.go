@@ -857,8 +857,8 @@ func (m Model) childStatsReport(name string) string {
 	}
 	fmt.Fprintf(&sb, "  mode:       %s (ceiling: %s)\n", mode, m.subagents.ParentMode())
 	fmt.Fprintf(&sb, "  tool calls: %d\n", st.ToolCalls)
-	spend := fmt.Sprintf("  spend:      ↑%s ↓%s tokens", formatTokenCount(st.TokensIn), formatTokenCount(st.TokensOut))
-	if label := m.freshRateLabel(st.TokensIn, st.TokensOut); strings.HasPrefix(label, "$") {
+	spend := fmt.Sprintf("  spend:      ↑%s ↓%s tokens", formatTokenCount(st.Spend.In), formatTokenCount(st.Spend.Out))
+	if label := m.childSpendLabel(st); strings.HasPrefix(label, "$") {
 		spend += "  " + label
 	}
 	sb.WriteString(spend)
@@ -906,7 +906,7 @@ func (m Model) renderChildStatusBar(width int) string {
 	if st.State == subagent.StateBlocked {
 		parts[1] = sty.CtxAlert.Render(st.Detail)
 	}
-	if spend := m.freshRateLabel(st.TokensIn, st.TokensOut); spend != "" {
+	if spend := m.childSpendLabel(st); spend != "" {
 		parts = append(parts, sty.StatusBar.Render(spend))
 	}
 	if q := m.subagents.QueuedSteering(name); q > 0 {

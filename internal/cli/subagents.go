@@ -611,6 +611,10 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 	return subagent.New(ctx, subagent.Options{
 		Root:   root,
 		NewEnv: newEnv,
+		// The same table the session ledger bills against, so a child's own
+		// bill and the session's share of it are the same arithmetic on the
+		// same rates rather than two answers to reconcile.
+		Prices: prices,
 		Record: func(spec subagent.Spec, sysPrompt string) subagent.Recorder {
 			// A child is recorded against the model it actually ran on. The
 			// session model is the wrong one to price it at: agents.model and

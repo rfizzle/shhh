@@ -658,8 +658,8 @@ func TestTokenBudgetCountsFreshTokensNotCachedOnes(t *testing.T) {
 	if !ok {
 		t.Fatal("the child is missing from the roster")
 	}
-	if st.TokensIn != 5000 || st.TokensOut != 50 {
-		t.Fatalf("the spend must stay the billed figure, got ↑%d ↓%d", st.TokensIn, st.TokensOut)
+	if st.Spend.In != 5000 || st.Spend.Out != 50 {
+		t.Fatalf("the spend must stay the billed figure, got ↑%d ↓%d", st.Spend.In, st.Spend.Out)
 	}
 }
 

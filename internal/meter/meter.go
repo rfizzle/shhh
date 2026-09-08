@@ -91,13 +91,23 @@ type Totals struct {
 	Requests int
 }
 
+// Plus is two roll-ups summed — an attempt's spend added to what the attempts
+// before it cost, say. Priced carries if either side was priced, because that
+// is the question every reader of it asks: was any of this billed at a rate
+// the table knew, or is the cost a zero standing in for "no idea".
+func (t Totals) Plus(o Totals) Totals {
+	return Totals{
+		In:       t.In + o.In,
+		Out:      t.Out + o.Out,
+		Cached:   t.Cached + o.Cached,
+		Cost:     t.Cost + o.Cost,
+		Priced:   t.Priced || o.Priced,
+		Requests: t.Requests + o.Requests,
+	}
+}
+
 func (t *Totals) add(e Entry) {
-	t.In += e.In
-	t.Out += e.Out
-	t.Cached += e.Cached
-	t.Cost += e.Cost
-	t.Priced = t.Priced || e.Priced
-	t.Requests += e.Requests
+	*t = t.Plus(Totals{In: e.In, Out: e.Out, Cached: e.Cached, Cost: e.Cost, Priced: e.Priced, Requests: e.Requests})
 }
 
 // Ledger is the session's spend, accumulated in first-use order. Sub-agents

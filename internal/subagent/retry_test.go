@@ -85,8 +85,8 @@ func TestRetryCarriesSpendAndResetsTheBudget(t *testing.T) {
 	waitState(t, sup, "researcher-1", StateFailed)
 
 	spent, _ := sup.Get("researcher-1")
-	if spent.TokensIn != 4000 {
-		t.Fatalf("first attempt spend = %d, want 4000", spent.TokensIn)
+	if spent.Spend.In != 4000 {
+		t.Fatalf("first attempt spend = %d, want 4000", spent.Spend.In)
 	}
 
 	env.mu.Lock()
@@ -98,8 +98,8 @@ func TestRetryCarriesSpendAndResetsTheBudget(t *testing.T) {
 	waitState(t, sup, "researcher-1", StateDone)
 
 	st, _ := sup.Get("researcher-1")
-	if st.TokensIn != 4100 {
-		t.Fatalf("spend after the retry = %d, want 4100 (the earlier attempt is still counted)", st.TokensIn)
+	if st.Spend.In != 4100 {
+		t.Fatalf("spend after the retry = %d, want 4100 (the earlier attempt is still counted)", st.Spend.In)
 	}
 	if st.ToolCalls != 0 || st.Step != 0 {
 		t.Fatalf("the retry must start its own progress, got %d tools / step %d", st.ToolCalls, st.Step)

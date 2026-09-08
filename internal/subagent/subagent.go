@@ -23,7 +23,9 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/digest"
+	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/radius"
 	"github.com/rfizzle/shhh/internal/safety"
@@ -145,8 +147,14 @@ type Status struct {
 	State     State
 	Detail    string
 	ToolCalls int
-	TokensIn  int64
-	TokensOut int64
+	// Spend is what the child has been billed across every attempt, priced
+	// request by request as each answer came back. It is a roll-up rather
+	// than a token pair because a pair cannot be priced: the input has to be
+	// split into what was read fresh and what the provider served from its
+	// prompt cache, and a caller handed only the sum charges the whole of it
+	// at the fresh rate — several times the real bill on a child whose
+	// prompt prefix is re-sent every round.
+	Spend meter.Totals
 	// Batch groups the children one parent tool round spawned, so a fan-out
 	// can be rendered as one block rather than as interleaved rows.
 	// Children spawned before the parent opened a batch share batch zero.
@@ -563,6 +571,14 @@ type Options struct {
 	// different model under a different prompt, and a row inheriting the
 	// parent's would say it ran under something it did not.
 	Record func(spec Spec, sysPrompt string) Recorder
+	// Prices is what each child's requests are billed against as they come
+	// back. It is here rather than at the recorder because pricing is the one
+	// thing that has to happen before the totals are summed: the input is
+	// charged in parts — read fresh, served from the prompt cache, written to
+	// it — and the split survives only per request. nil leaves a child's
+	// spend counted in tokens and priced by nobody, which is the case the
+	// recorder's own fallback exists for.
+	Prices *pricing.Table
 	// CommandAllowlist is the parent's config allowlist, inherited by
 	// children (inheriting it keeps the child at most as permissive).
 	CommandAllowlist []string
@@ -795,24 +811,30 @@ type child struct {
 	// reads, taken while five files have been rewritten, is the evidence that
 	// makes a reader call a child sufficient when it is in the middle of
 	// acting.
-	wrote     map[string]bool
-	tokensIn  int64
-	tokensOut int64
-	// fresh is what the token budget is measured against: tokensIn less the
-	// part every prompt was served from the provider's cache, plus
-	// tokensOut. It is a second counter rather than a narrower tokensIn
-	// because the two answer different questions — every surface that prices
-	// a child, and the session row it writes, wants the tokens it was billed
-	// for, and only the budget wants the tokens it took in.
+	wrote map[string]bool
+	// spend is this attempt's bill, one ledger entry per model, each request
+	// priced as it came back off its own cache split. It is a ledger rather
+	// than a token pair because the pair is the defect: a child re-sends its
+	// prompt every round and the provider serves nearly all of it from cache,
+	// so a total charged at the fresh input rate reads several times what the
+	// child cost. prices may be nil, and then the ledger counts tokens and
+	// prices nothing, which is what leaves the recorder its own fallback.
+	spend  *meter.Ledger
+	prices *pricing.Table
+	// fresh is what the token budget is measured against: the input less the
+	// part every prompt was served from the provider's cache, plus the
+	// output. It is a counter of its own because it answers a different
+	// question from the bill — every surface that prices a child, and the
+	// session row it writes, wants the tokens it was billed for, and only the
+	// budget wants the tokens it newly took in.
 	fresh int64
-	// priorIn/priorOut carry the spend of earlier attempts across a retry.
-	// The live counters are the attempt's own, as fresh is, so each attempt
-	// gets the budget it was spawned with, and they are what that attempt's
-	// own session row is told. The status adds the carried spend back,
-	// because money already spent does not stop being spent when the child
-	// runs again and a lane shows one child rather than one attempt.
-	priorIn  int64
-	priorOut int64
+	// priorSpend carries the bill of earlier attempts across a retry. The
+	// live ledger is the attempt's own, as fresh is, so each attempt gets the
+	// budget it was spawned with, and it is what that attempt's own session
+	// row is told. The status adds the carried spend back, because money
+	// already spent does not stop being spent when the child runs again and a
+	// lane shows one child rather than one attempt.
+	priorSpend meter.Totals
 	// attempt is which run of this child is current, from 1. It is the
 	// child's rather than the attempt's for the reason the carried spend is:
 	// a lane shows one child, and only the record separates its attempts.
@@ -953,8 +975,7 @@ func (c *child) status() Status {
 		State:     c.state,
 		Detail:    detail,
 		ToolCalls: c.toolCalls,
-		TokensIn:  c.priorIn + c.tokensIn,
-		TokensOut: c.priorOut + c.tokensOut,
+		Spend:     c.priorSpend.Plus(c.spend.Total()),
 		Batch:     c.batch,
 		Started:   c.started,
 		Elapsed:   end.Sub(c.started),
@@ -972,7 +993,7 @@ func (c *child) status() Status {
 }
 
 // attemptSpend is what the attempt now running has cost, which is what that
-// attempt's own session row is told — deliberately not the carried pair the
+// attempt's own session row is told — deliberately not the carried total the
 // status reports. A retry opens a second row for the same child and leaves
 // the first one holding the failed attempt's spend; a row update sets
 // absolute totals, so handing the new row the carried figure would write
@@ -980,10 +1001,10 @@ func (c *child) status() Status {
 // fails, is retried and burns 30k would leave two rows summing to 130k for
 // 80k of real work, and the cost derived from those tokens inflates with
 // them.
-func (c *child) attemptSpend() (in, out int64) {
+func (c *child) attemptSpend() meter.Totals {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	return c.tokensIn, c.tokensOut
+	return c.spend.Total()
 }
 
 // takePrologue returns what this attempt's first turn opens with and clears
@@ -1326,8 +1347,16 @@ func (c *child) interruptCh() <-chan struct{} {
 	return c.intCh
 }
 
-// addUsage accumulates provider-reported usage and reports whether the
-// child's token budget is now exceeded.
+// addUsage bills one request to the child and reports whether the child's
+// token budget is now exceeded.
+//
+// The request is priced where it arrives, against the child's own model and
+// off its own cache split, because that is the only place both are in hand:
+// by the time the totals reach a recorder they are a sum, and a sum can only
+// be charged at the fresh input rate. The classifier's rounds are billed here
+// too, at the child's model rather than the classifier's own — they already
+// count against the child's budget, and the model they ran on is not
+// something the verdict carries.
 //
 // The budget is measured against fresh tokens — the prompt less what the
 // provider served from its cache, plus the completion — because a cached
@@ -1341,8 +1370,7 @@ func (c *child) addUsage(u *provider.Usage) (over bool) {
 	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.tokensIn += int64(u.PromptTokens)
-	c.tokensOut += int64(u.CompletionTokens)
+	c.spend.Record(meter.Origin{Source: meter.SourceSubagent, Label: c.name}, c.model, *u)
 	c.fresh += int64(max(u.PromptTokens-u.CachedTokens, 0)) + int64(u.CompletionTokens)
 	if c.maxTokens > 0 && c.fresh > c.maxTokens {
 		c.budgetHit = true
@@ -2013,8 +2041,9 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	c.prologue = retryPrologue(detail, handoff)
 	// Each attempt is measured against the budget it was spawned with; what
 	// the earlier attempts spent is carried, not forgotten.
-	c.priorIn, c.priorOut = c.priorIn+c.tokensIn, c.priorOut+c.tokensOut
-	c.tokensIn, c.tokensOut, c.fresh, c.budgetHit = 0, 0, 0, false
+	c.priorSpend = c.priorSpend.Plus(c.spend.Total())
+	c.spend = meter.New(c.prices)
+	c.fresh, c.budgetHit = 0, false
 	c.checkIns = 0
 	// A retry is a fresh conversation on the same task: no steer has reached
 	// this attempt, whatever the last one was told.
@@ -2368,6 +2397,8 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 		detail:    "queued",
 		started:   time.Now(),
 		attempt:   1,
+		prices:    s.opts.Prices,
+		spend:     meter.New(s.opts.Prices),
 	}
 	// A reader's workspace is the parent's own root and costs nothing to
 	// hold, so it is opened here where a failure is still this call's answer
@@ -2715,12 +2746,12 @@ func (s *Supervisor) run(c *child) {
 				c.cancel()
 			}
 			if c.rec.Usage != nil {
-				in, out := c.attemptSpend()
-				// A child runs its whole life on one model, so its totals go
-				// out unpriced for the recorder to price at that model —
-				// unlike a session's, which are a mixture only the ledger
-				// that billed each request can price.
-				c.rec.Usage(c.pos().Turn, in, out, 0, false)
+				// Already priced: each request was billed off its own cache
+				// split as it came back, and the recorder's own fallback —
+				// the pair charged whole at the fresh input rate — is what
+				// the split is here to stop it reaching for.
+				t := c.attemptSpend()
+				c.rec.Usage(c.pos().Turn, t.In, t.Out, t.Cost, t.Priced)
 			}
 		},
 		OnText: func(text string) {
@@ -3241,11 +3272,11 @@ func (s *Supervisor) classify(c *child, mode agent.Mode, tc provider.ToolCall, a
 		c.cancel()
 	}
 	if c.rec.Usage != nil {
-		in, out := c.attemptSpend()
 		// The turn count goes back with it: the totals are a whole-row
 		// update, so reporting spend without it would blank the column the
 		// last turn wrote.
-		c.rec.Usage(c.pos().Turn, in, out, 0, false)
+		t := c.attemptSpend()
+		c.rec.Usage(c.pos().Turn, t.In, t.Out, t.Cost, t.Priced)
 	}
 	verdict, reason := agent.ResolveAuto(action, v)
 	switch {
@@ -3788,7 +3819,7 @@ func (c *child) reportText() string {
 	if st.CheckIns > 0 {
 		head += " · " + plural(st.CheckIns, "check-in")
 	}
-	fmt.Fprintf(&sb, "%s · ~%s tokens\n\n", head, formatTokens(st.TokensIn+st.TokensOut))
+	fmt.Fprintf(&sb, "%s · ~%s tokens\n\n", head, formatTokens(st.Spend.In+st.Spend.Out))
 	switch {
 	case st.State == StateFailed && report == "":
 		sb.WriteString("The agent did not finish; no final report was produced.")

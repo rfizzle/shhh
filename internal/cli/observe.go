@@ -435,8 +435,13 @@ func (r *observeRecorder) observer() observe.Observer {
 }
 
 // usage records a session's running totals, pricing them against the model
-// the session was opened on. It is what a sub-agent reports with: a child
-// runs on one model for its whole life, so that model is the right one.
+// the session was opened on. It is the fallback for a run nothing priced as
+// it went, and it charges the whole input at the fresh rate — a bare pair
+// carries no cache split, so every token the provider served from its prompt
+// cache is billed here as if it had been read fresh. That is several times
+// the real figure on anything whose prompt prefix is re-sent each round, so
+// every caller that has the split passes a priced cost instead
+// (docs/capabilities/providers.md#the-prompt-prefix-is-paid-for-once).
 func (r *observeRecorder) usage(turns, tokensIn, tokensOut int64) {
 	if r == nil {
 		return
@@ -451,12 +456,15 @@ func (r *observeRecorder) usage(turns, tokensIn, tokensOut int64) {
 	_ = r.db.UpdateAgentSession(r.id, turns, tokensIn, tokensOut, cost)
 }
 
-// usagePriced records totals that arrive already priced, which is what a
-// parent session reports. Its spend is a mixture — several models, the
-// classifier and the summary among them — and only the ledger that billed
-// each request knows what rate each one went out at. Falling back to the
-// session model would price the mixture at whichever model happened to be
-// current, which is the number this exists to avoid.
+// usagePriced records totals that arrive already priced, which is what both a
+// parent session and a child report. A parent's spend is a mixture — several
+// models, the classifier and the summary among them — and only the ledger
+// that billed each request knows what rate each one went out at; a child runs
+// on one model but re-sends its prompt every round, so what it owes turns on
+// how much of each request the provider served from its cache, and that is
+// gone by the time the totals are a sum. Either way the split survives only
+// where the request arrived, so it is priced there and the cost travels with
+// the tokens.
 func (r *observeRecorder) usagePriced(turns, tokensIn, tokensOut int64, cost float64, priced bool) {
 	if r == nil {
 		return

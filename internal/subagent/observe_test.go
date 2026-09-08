@@ -2,6 +2,7 @@ package subagent
 
 import (
 	"context"
+	"math"
 	"regexp"
 	"strings"
 	"sync"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
 )
@@ -36,6 +38,7 @@ type testRecorder struct {
 	turns     int64
 	tokensIn  int64
 	tokensOut int64
+	cost      float64
 	priced    bool
 	ended     bool
 	end       observe.ChildEnd
@@ -44,10 +47,10 @@ type testRecorder struct {
 func (r *testRecorder) recorder() Recorder {
 	return Recorder{
 		Observer: observe.Observer{
-			Usage: func(turns, in, out int64, _ float64, priced bool) {
+			Usage: func(turns, in, out int64, cost float64, priced bool) {
 				r.mu.Lock()
 				defer r.mu.Unlock()
-				r.turns, r.tokensIn, r.tokensOut, r.priced = turns, in, out, priced
+				r.turns, r.tokensIn, r.tokensOut, r.cost, r.priced = turns, in, out, cost, priced
 			},
 			ToolCall: func(at observe.Pos, tool string, d time.Duration, outcome, class string) {
 				r.add(recordedEvent{kind: "tool", tool: tool, outcome: outcome, reason: class, pos: at, timed: d > 0})
@@ -207,10 +210,10 @@ func TestChildClosesWithATurnEvent(t *testing.T) {
 	if rec.turns != 1 || rec.tokensIn != 40 || rec.tokensOut != 6 {
 		t.Fatalf("unexpected totals: turns=%d in=%d out=%d", rec.turns, rec.tokensIn, rec.tokensOut)
 	}
-	// A child runs its whole life on one model, so its totals go out
-	// unpriced for the recorder to price at that model.
+	// This supervisor was given no pricing table, so nothing could be
+	// priced and the recorder's own fallback is what the row is left to.
 	if rec.priced {
-		t.Fatal("a child's totals must arrive unpriced")
+		t.Fatal("a child with no prices to bill against must report its totals unpriced")
 	}
 }
 
@@ -462,8 +465,8 @@ func TestARetriedChildsRowsSumToWhatItSpent(t *testing.T) {
 	}
 	in, out := rows.sum()
 	st, _ := sup.Get("researcher-1")
-	if in != st.TokensIn || out != st.TokensOut {
-		t.Errorf("the rows sum to %d/%d, but the child cost %d/%d", in, out, st.TokensIn, st.TokensOut)
+	if in != st.Spend.In || out != st.Spend.Out {
+		t.Errorf("the rows sum to %d/%d, but the child cost %d/%d", in, out, st.Spend.In, st.Spend.Out)
 	}
 }
 
@@ -504,8 +507,8 @@ func TestARetriedChildsClassifierSpendIsCountedOnce(t *testing.T) {
 	}
 	in, out := rows.sum()
 	st, _ := sup.Get("researcher-1")
-	if in != st.TokensIn || out != st.TokensOut {
-		t.Errorf("the rows sum to %d/%d, but the child cost %d/%d", in, out, st.TokensIn, st.TokensOut)
+	if in != st.Spend.In || out != st.Spend.Out {
+		t.Errorf("the rows sum to %d/%d, but the child cost %d/%d", in, out, st.Spend.In, st.Spend.Out)
 	}
 }
 
@@ -890,5 +893,116 @@ func TestAChildsEndCarriesTheReadingInTheRecordsOwnWord(t *testing.T) {
 	}
 	if !storedWord.MatchString(ends[0].Verdict) {
 		t.Fatalf("the stored verdict is not a code: %q", ends[0].Verdict)
+	}
+}
+
+// A child's recorded cost is what it was billed, not the whole of its input
+// charged at the fresh rate. A coding child re-sends its prompt every round
+// and the provider serves nearly all of it from cache, so the two answers are
+// not close: the same million tokens is $0.29 billed and $1.51 at the fresh
+// rate, and the record is the figure `shhh observe`, the fan-out rows and the
+// agent map all read.
+func TestAChildsRecordedCostBillsCacheReadsAtTheCacheRate(t *testing.T) {
+	env := &scriptedEnv{steps: []streamStep{{
+		text:  "done",
+		usage: &provider.Usage{PromptTokens: 1_000_000, CachedTokens: 900_000, CompletionTokens: 1_000},
+	}}}
+	prices := pricing.NewTable(map[string]pricing.ModelPricing{
+		"cached-1": {
+			InputCostPerToken:     1.5 / 1e6,
+			OutputCostPerToken:    9.0 / 1e6,
+			CacheReadCostPerToken: 0.15 / 1e6,
+		},
+	})
+	rec := &testRecorder{}
+	sup := New(t.Context(), Options{
+		Root:   t.TempDir(),
+		NewEnv: env.factory(),
+		Prices: prices,
+		Record: func(Spec, string) Recorder { return rec.recorder() },
+	})
+	t.Cleanup(sup.Close)
+
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey","model":"cached-1"}`)
+	waitState(t, sup, "researcher-1", StateDone)
+
+	// 100k read fresh at $1.50/M, 900k served from cache at $0.15/M, 1k out
+	// at $9/M.
+	const billed = 0.15 + 0.135 + 0.009
+	// What the same pair comes to with the split thrown away: every input
+	// token at the fresh rate.
+	const fresh = 1.5 + 0.009
+
+	rec.mu.Lock()
+	gotCost, gotPriced, gotIn := rec.cost, rec.priced, rec.tokensIn
+	rec.mu.Unlock()
+	if !gotPriced {
+		t.Fatal("the child reported its spend unpriced, so the record prices the sum at the fresh rate")
+	}
+	if gotIn != 1_000_000 {
+		t.Fatalf("the recorded input = %d, want the million the child took in", gotIn)
+	}
+	if math.Abs(gotCost-billed) > 1e-9 {
+		t.Fatalf("the recorded cost = %.6f, want the billed %.6f (the fresh rate would be %.6f)", gotCost, billed, fresh)
+	}
+
+	st, ok := sup.Get("researcher-1")
+	if !ok {
+		t.Fatal("the child is missing from the roster")
+	}
+	if !st.Spend.Priced || math.Abs(st.Spend.Cost-billed) > 1e-9 {
+		t.Fatalf("the child's row = %.6f (priced %v), want the billed %.6f", st.Spend.Cost, st.Spend.Priced, billed)
+	}
+	if st.Spend.Cached != 900_000 {
+		t.Fatalf("the row carries %d cache reads, want the 900k the provider served", st.Spend.Cached)
+	}
+}
+
+// A retry's row is the attempt's own bill, and the roster's is both attempts'.
+// The two are different questions and a cost that answered the wrong one is
+// counted twice: a row update writes absolute totals, so handing the second
+// attempt's row the carried figure bills the first attempt on both rows.
+func TestARetrysRecordedCostIsItsOwnAttempts(t *testing.T) {
+	env := &scriptedEnv{steps: []streamStep{
+		{text: "over budget", usage: &provider.Usage{PromptTokens: 400_000, CachedTokens: 300_000}},
+	}}
+	prices := pricing.NewTable(map[string]pricing.ModelPricing{
+		"cached-1": {
+			InputCostPerToken:     1.5 / 1e6,
+			OutputCostPerToken:    9.0 / 1e6,
+			CacheReadCostPerToken: 0.15 / 1e6,
+		},
+	})
+	rec := &testRecorder{}
+	sup := New(t.Context(), Options{
+		Root:   t.TempDir(),
+		NewEnv: env.factory(),
+		Prices: prices,
+		Record: func(Spec, string) Recorder { return rec.recorder() },
+	})
+	t.Cleanup(sup.Close)
+
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey","model":"cached-1","max_tokens":1000}`)
+	waitState(t, sup, "researcher-1", StateFailed)
+	const first = 0.15 + 0.045 // 100k fresh, 300k cached
+
+	env.mu.Lock()
+	env.steps = []streamStep{{text: "done", usage: &provider.Usage{PromptTokens: 100_000, CachedTokens: 99_500}}}
+	env.mu.Unlock()
+	if err := sup.Retry("researcher-1"); err != nil {
+		t.Fatalf("retry: %v", err)
+	}
+	waitState(t, sup, "researcher-1", StateDone)
+	const second = 0.00075 + 0.014925 // 500 fresh, 99.5k cached
+
+	rec.mu.Lock()
+	gotCost := rec.cost
+	rec.mu.Unlock()
+	if math.Abs(gotCost-second) > 1e-9 {
+		t.Fatalf("the retry's row = %.6f, want the %.6f that attempt spent", gotCost, second)
+	}
+	st, _ := sup.Get("researcher-1")
+	if math.Abs(st.Spend.Cost-(first+second)) > 1e-9 {
+		t.Fatalf("the roster = %.6f, want both attempts' %.6f", st.Spend.Cost, first+second)
 	}
 }

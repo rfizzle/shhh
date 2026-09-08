@@ -470,7 +470,7 @@ func (m Model) renderAgentRows(width int) string {
 		}
 		left := glyph + " " + st.Name + "  " + sty.ToolArgs.Render(clipText(firstLine(st.Task), max(width/3, 8)))
 		right := detail
-		if spend := st.TokensIn + st.TokensOut; spend > 0 {
+		if spend := st.Spend.In + st.Spend.Out; spend > 0 {
 			right += "  " + sty.StatusBar.Render("~"+formatTokenCount(spend)+" tok")
 		}
 		rows = append(rows, joinRow(left, right, width))

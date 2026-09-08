@@ -453,10 +453,12 @@ func (m Model) inspectorSpend() *components.InspectorSpend {
 	return &s
 }
 
-// childSpend is what every sub-agent has cost. The ledger is the answer where
-// there is one: it prices each child against the model that child ran on,
-// which a fan-out across several models makes the only defensible figure. A
-// session with no ledger falls back to the supervisor's own token counts.
+// childSpend is what every sub-agent has cost. The session ledger is the
+// answer where there is one: it prices each child against the model that
+// child ran on, which a fan-out across several models makes the only
+// defensible figure. A session with no ledger sums the children's own bills,
+// which are priced the same way — each child keeps a ledger of its own — and
+// so is a roll-up rather than a token pair.
 func (m Model) childSpend() meter.Totals {
 	if m.ledger != nil {
 		return m.ledger.SourceTotal(meter.SourceSubagent)
@@ -464,8 +466,7 @@ func (m Model) childSpend() meter.Totals {
 	var t meter.Totals
 	if m.subagents != nil {
 		for _, st := range m.subagents.Snapshot() {
-			t.In += st.TokensIn
-			t.Out += st.TokensOut
+			t = t.Plus(st.Spend)
 		}
 	}
 	return t

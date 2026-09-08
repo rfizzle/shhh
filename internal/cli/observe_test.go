@@ -105,6 +105,56 @@ func TestObserveRecorder_RoundTrip(t *testing.T) {
 	}
 }
 
+// A child's recorded cost is what the child was billed. It arrives priced
+// because only the child held the cache split — a coding child re-sends its
+// prompt every round and the provider serves nearly all of it from cache —
+// and this row is what `shhh observe`, the fan-out rows and the agent map all
+// read. Pricing the pair here instead charges every cache read fresh, which
+// is several times the bill.
+func TestChildSessionCostIsTheBilledFigure(t *testing.T) {
+	db, err := storage.OpenPath(filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	defer db.Close()
+
+	prices := pricing.NewTable(map[string]pricing.ModelPricing{
+		"cheap-model": {
+			InputCostPerToken:     0.0000015,
+			CacheReadCostPerToken: 0.00000015,
+			OutputCostPerToken:    0.000009,
+		},
+	})
+	parent := startObserveRecorder(db, "code", "anthropic", "cheap-model", prices)
+	child := startChildObserveRecorder(db, "researcher", "anthropic", "cheap-model", prices, parent)
+
+	// A million tokens in, nine tenths of them a cache read: 100k fresh at
+	// $1.50/M, 900k cached at $0.15/M, 1k out at $9/M.
+	const billed = 0.15 + 0.135 + 0.009
+	child.usagePriced(1, 1_000_000, 1_000, billed, true)
+	child.end()
+
+	sessions, err := db.AgentSessions(time.Now().Add(-time.Hour), 10)
+	if err != nil {
+		t.Fatalf("sessions: %v", err)
+	}
+	var row storage.AgentSessionSummary
+	for _, s := range sessions {
+		if s.Kind == "researcher" {
+			row = s
+		}
+	}
+	if row.Cost != billed {
+		t.Fatalf("the child's est_cost = %v, want the billed %v", row.Cost, billed)
+	}
+	// What the same pair comes to with the split thrown away, which is the
+	// figure the fallback would have written.
+	in, out, _ := prices.Cost("cheap-model", 1_000_000, 1_000)
+	if fresh := in + out; row.Cost == fresh || fresh <= billed {
+		t.Fatalf("the fresh-rate reading is %v against a bill of %v", fresh, billed)
+	}
+}
+
 func TestRenderObserveDashboard_Sections(t *testing.T) {
 	db, err := storage.OpenPath(filepath.Join(t.TempDir(), "test.db"))
 	if err != nil {

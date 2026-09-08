@@ -9,6 +9,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/shhh/internal/meter"
+	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -275,5 +277,62 @@ func TestFanoutRerendersOnResize(t *testing.T) {
 	}
 	if !strings.Contains(narrow, "researcher-1") {
 		t.Fatalf("the narrow render dropped a child's name:\n%s", narrow)
+	}
+}
+
+// A child's lane reports what the child was billed, not a re-pricing of its
+// token pair at the fresh input rate. A child re-sends its prompt every round
+// and the provider serves nearly all of it from cache, so the two figures are
+// not close — and the lane, the agent map and the attached rail all read this
+// one label.
+func TestChildSpendLabel_ReportsTheBillNotTheFreshRate(t *testing.T) {
+	table := pricing.NewTable(map[string]pricing.ModelPricing{
+		"cheap-1": {
+			InputCostPerToken:     0.0000015,
+			CacheReadCostPerToken: 0.00000015,
+			OutputCostPerToken:    0.000009,
+		},
+		"expensive-1": {InputCostPerToken: 0.00003, OutputCostPerToken: 0.00006},
+	})
+	m := New(nil, mockStream).WithPricing(table, "expensive-1")
+
+	spend := meter.New(table)
+	usage := provider.Usage{PromptTokens: 1_000_000, CachedTokens: 900_000, CompletionTokens: 1_000}
+	spend.Record(meter.Origin{Source: meter.SourceSubagent, Label: "researcher-1"}, "cheap-1", usage)
+	st := subagent.Status{Name: "researcher-1", Model: "cheap-1", Spend: spend.Total()}
+
+	got := m.childSpendLabel(st)
+	if want := formatCost(spend.Total().Cost); got != want {
+		t.Fatalf("the lane should report what the child was billed: got %q, want %q", got, want)
+	}
+	// The same tokens with the split thrown away, which is what the lane
+	// printed before: the whole input at the fresh rate, on the child's own
+	// model. Naming it is the point — the two are the same child.
+	in, out, _ := table.Cost("cheap-1", st.Spend.In, st.Spend.Out)
+	if fresh := formatCost(in + out); got == fresh {
+		t.Fatalf("a cache read billed at the fresh input rate: label and fresh-rate reading both %q", got)
+	}
+	// And never at the orchestrator's rate, which is the model the session is
+	// on and not the one that answered.
+	sin, sout, _ := table.Cost("expensive-1", st.Spend.In, st.Spend.Out)
+	if got == formatCost(sin+sout) {
+		t.Fatalf("the child was priced against the orchestrator's model: %q", got)
+	}
+}
+
+// A child nothing could price falls back to its own model's fresh rate, not
+// the orchestrator's — the fallback is a worse figure, not a wrong model.
+func TestChildSpendLabel_UnpricedFallsBackToTheChildsModel(t *testing.T) {
+	table := pricing.NewTable(map[string]pricing.ModelPricing{
+		"cheap-1":     {InputCostPerToken: 0.0000015, OutputCostPerToken: 0.000009},
+		"expensive-1": {InputCostPerToken: 0.00003, OutputCostPerToken: 0.00006},
+	})
+	m := New(nil, mockStream).WithPricing(table, "expensive-1")
+	st := subagent.Status{Name: "researcher-1", Model: "cheap-1",
+		Spend: meter.Totals{In: 1_000_000, Out: 1_000}}
+
+	in, out, _ := table.Cost("cheap-1", 1_000_000, 1_000)
+	if got, want := m.childSpendLabel(st), formatCost(in+out); got != want {
+		t.Fatalf("an unpriced child = %q, want its own model's rate %q", got, want)
 	}
 }

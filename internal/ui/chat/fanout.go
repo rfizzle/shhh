@@ -192,20 +192,29 @@ func (m Model) fanoutBlockFor(e entry) components.FanoutBlock {
 	return block
 }
 
-// childSpendLabel prices a child's usage against the model it actually ran
-// on. A fan-out is the one place where several models are billed at once —
-// the orchestrator's price is the wrong one for a child the model sent to a
-// cheaper one — so the lane asks the pricing table for the child's.
+// childSpendLabel is what a child was billed: the total the child priced
+// request by request as each answer came back, cache split and all.
+//
+// The two fallbacks are for a child nothing priced — no pricing table where
+// it ran, or a model the table does not know. Then it is the fresh input rate
+// on a bare pair, which overstates a child whose prompt prefix is re-sent
+// every round, and it is charged at the child's own model rather than the
+// session's: a fan-out is the one place where several models are billed at
+// once, and the orchestrator's price is the wrong one for a child the model
+// sent somewhere cheaper.
 func (m Model) childSpendLabel(st subagent.Status) string {
-	if st.TokensIn == 0 && st.TokensOut == 0 {
+	if st.Spend.In == 0 && st.Spend.Out == 0 {
 		return ""
 	}
+	if st.Spend.Priced {
+		return formatCost(st.Spend.Cost)
+	}
 	if m.prices != nil && st.Model != "" {
-		if in, out, found := m.prices.Cost(st.Model, st.TokensIn, st.TokensOut); found {
+		if in, out, found := m.prices.Cost(st.Model, st.Spend.In, st.Spend.Out); found {
 			return formatCost(in + out)
 		}
 	}
-	return m.freshRateLabel(st.TokensIn, st.TokensOut)
+	return m.freshRateLabel(st.Spend.In, st.Spend.Out)
 }
 
 // liveFanoutBlock is the index of the earliest transcript block holding a
