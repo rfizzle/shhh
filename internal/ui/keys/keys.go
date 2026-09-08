@@ -762,6 +762,19 @@ type DecisionKeys struct {
 	// which is the cost this register exists to make visible.
 	Explain Binding
 
+	// Amend is the command card's offer to run the line as the reader would
+	// have written it: the command opens in a field, prefilled, and what
+	// runs is what they left there
+	// (docs/capabilities/approvals-and-safety.md#an-amended-command-is-a-new-command).
+	//
+	// It is [e] — edit — the letter the one-shot's action bar already spends
+	// on the same act (OneShot.Edit), and it is unclaimed here: this card
+	// spends `y Y n N a A d D t x g` and the draft's own editor is a chord.
+	// So this is a declaration rather than a move, and the one argument that
+	// could have taken the letter first — the explain key wanting a
+	// mnemonic — was settled the other way when it was made (Explain).
+	Amend Binding
+
 	// Accept and Refuse are Allow and Deny on a card the reader summoned
 	// rather than was handed.
 	//
@@ -803,6 +816,7 @@ var Decision = DecisionKeys{
 	Diff:       bind("d", "full diff", "d", "D"),
 	DryRun:     bind("t", "try the harmless form", "t"),
 	Explain:    bind("x", "explain what the command does", "x"),
+	Amend:      bind("e", "edit the command before it runs", "e"),
 	Accept:     bind("y", "yes", "y", "Y", "enter"),
 	Refuse:     bind("n", "no, and stop offering", "n", "N"),
 

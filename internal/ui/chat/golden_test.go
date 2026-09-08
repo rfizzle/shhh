@@ -958,6 +958,71 @@ func TestGolden_DecisionNote(t *testing.T) {
 		})
 }
 
+// amendGoldenModel is a command card at a fixed width, with the keyboard, in
+// a tree of its own so the blast radius is read somewhere this test owns.
+func amendGoldenModel(t *testing.T, width int, command string) Model {
+	t.Helper()
+	m := gatedModel(t, nil, nil).WithWorkspace(t.TempDir()).
+		WithRunner(func(context.Context, string) (string, int) { return "", 0 })
+	m.width, m.height = width, 40
+	m.syncInputWidth()
+	m = execApproval(t, m, command)
+	m.syncViewport()
+	return m
+}
+
+// TestGolden_CommandAmend captures the command card's field: the decision run
+// drawn dead because the field has the keyboard, the ┄ label naming what the
+// key asked for, the line itself under it, and the two keys that close it
+// (docs/interface/surfaces.md#the-approval-card).
+//
+// It records the cursor for the reason the note field's capture does: the
+// field is the card's and the caret is the host's, and where the two meet is
+// the one thing neither of them can be asked about on its own.
+func TestGolden_CommandAmend(t *testing.T) {
+	captureCursorGolden(t, "command-amend", "the approval card's command field", goldenWidths,
+		func(width int) (golden.Panel, *golden.Cursor) {
+			m := amendGoldenModel(t, width, "npm test")
+			m = typeInto(t, press(t, m, keys.Shown(keys.Decision.Amend)), " -- --runInBand")
+			m.syncViewport()
+			return golden.Panel{
+					Label: "the command open, and every letter going into it",
+					View:  strings.Join(m.confirmPanelLines(), "\n"),
+				},
+				goldenCursor(m.confirmCursor(m.contentWidth()))
+		})
+}
+
+// TestGolden_CommandAmended captures the two states either side of that
+// field: the offer as it rides beside the decision run, and the card a line
+// heavy enough to be asked about again draws — the `was` row under the
+// headline, the chip on the title rail, and a blast radius resolved for the
+// line that will actually run
+// (docs/capabilities/approvals-and-safety.md#an-amended-command-is-a-new-command).
+//
+// The second panel is where the whole story is visible at once: at sixty
+// columns the chip and the `was` row are competing for a card that is also
+// carrying a warning, which is exactly the case a reader has to be able to
+// read.
+func TestGolden_CommandAmended(t *testing.T) {
+	captureGolden(t, "command-amended", "the approval card's amendment", goldenWidths,
+		func(width int) []golden.Panel {
+			offered := amendGoldenModel(t, width, "npm test")
+			amended := amendGoldenModel(t, width, "echo hi")
+			amended = typeInto(t, press(t, amended, keys.Shown(keys.Decision.Amend)), "")
+			e := *amended.commandEdit
+			e.field.SetValue("rm -rf ./build")
+			amended.commandEdit = &e
+			updated, _ := amended.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+			amended = updated.(Model)
+			amended.syncViewport()
+			return []golden.Panel{
+				{Label: "the offer, beside the decision run", View: strings.Join(offered.confirmPanelLines(), "\n")},
+				{Label: "the line the reader wrote, read again", View: strings.Join(amended.confirmPanelLines(), "\n")},
+			}
+		})
+}
+
 // TestGolden_ExplainView captures the screen the command card's explain key
 // opens on, in both the states it has: the paragraph with the footer that
 // names who said it and what asking took, and the reading that did not happen

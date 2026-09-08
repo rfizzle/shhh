@@ -629,16 +629,16 @@ func TestApprovalCard_TheOpenFieldDrawsTheRunDead(t *testing.T) {
 		if strings.Contains(view, notedWords()) {
 			t.Fatalf("a dead run should not qualify its keys:\n%s", view)
 		}
-		x, y, ok := c.NoteOrigin(80)
+		x, y, ok := c.FieldOrigin(80)
 		if !ok {
 			t.Fatal("an open field has a place on the card")
 		}
 		rows := strings.Split(view, "\n")
 		if y < 0 || y >= len(rows) || !strings.Contains(rows[y], "not that file") {
-			t.Fatalf("NoteOrigin points at row %d, which is %q", y, rows[min(y, len(rows)-1)])
+			t.Fatalf("FieldOrigin points at row %d, which is %q", y, rows[min(y, len(rows)-1)])
 		}
 		if at := ansi.StringWidth(rows[y][:strings.Index(rows[y], "not that file")]); at != x {
-			t.Fatalf("NoteOrigin says column %d, the field starts at %d in %q", x, at, rows[y])
+			t.Fatalf("FieldOrigin says column %d, the field starts at %d in %q", x, at, rows[y])
 		}
 	}
 }
@@ -650,7 +650,7 @@ func TestApprovalCard_TheFieldsPlaceSurvivesTheBareCard(t *testing.T) {
 	c := notedCard()
 	c.NoteOpen, c.NoteField = true, "not that file"
 	const narrow = minCardWidth - 1
-	x, y, ok := c.NoteOrigin(narrow)
+	x, y, ok := c.FieldOrigin(narrow)
 	if !ok {
 		t.Fatal("an open field has a place on a bare card too")
 	}
@@ -658,7 +658,7 @@ func TestApprovalCard_TheFieldsPlaceSurvivesTheBareCard(t *testing.T) {
 	// what is left of it: the indent, and the label above it.
 	rows := strings.Split(ansi.Strip(c.View(narrow)), "\n")
 	if y < 1 || y >= len(rows) || !strings.HasPrefix(rows[y], strings.Repeat(" ", noteIndent)+"not") {
-		t.Fatalf("NoteOrigin points at row %d of %q", y, rows)
+		t.Fatalf("FieldOrigin points at row %d of %q", y, rows)
 	}
 	if !strings.HasPrefix(rows[y-1], "┄ ") {
 		t.Fatalf("the field should sit under its label, but row %d is %q", y-1, rows[y-1])

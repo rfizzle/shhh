@@ -509,6 +509,16 @@ func (m Model) activityRowDetail(e entry, stepDetail bool) components.ActivityRo
 	// part of the row rather than a notice above the row repeating its verb
 	// and target (docs/interface/surfaces.md#the-activity-row).
 	row.Allowed = allowedLabel(e.allowedBy, e.allowElapsed)
+	// A line the reader wrote at the card is the same fact about the same
+	// act — how it came to be the act it is — so it is stated in the same
+	// field. The target is the line that ran either way, because the
+	// transcript is the account of what ran on this machine
+	// (docs/capabilities/approvals-and-safety.md#an-amended-command-is-a-new-command).
+	// The two cannot both hold: a call nobody was asked about is not one
+	// anybody amended.
+	if e.amendedFrom != "" {
+		row.Allowed = components.OutcomeBy(components.OutcomeAmended, decidedByYou)
+	}
 	if strings.TrimSpace(result) != "" {
 		row.Detail = strings.Split(strings.TrimRight(result, "\n"), "\n")
 		if !row.Failed() && m.verbosity != verbosityLow {

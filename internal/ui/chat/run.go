@@ -71,6 +71,11 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if m.decisionNote != nil {
 		return m.updateDecisionNote(msg)
 	}
+	// And the card's other field, the command itself, for exactly the same
+	// reason: while it is up every letter is text (amend.go).
+	if m.commandEdit != nil {
+		return m.updateCommandEdit(msg)
+	}
 	// The card's own scroll, answered before the decision keys so a held
 	// card cannot read a chord as the start of a sentence. The chords reach
 	// here only while the card holds the keyboard; ungated they still
@@ -87,6 +92,11 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	// The explanation, for the same reason and in the same place: it settles
 	// nothing, and the card would read the letter as the start of a sentence.
 	if next, cmd, ok := m.explainKey(msg); ok {
+		return next, cmd
+	}
+	// The amendment, in the same place and for the same reason — it settles
+	// nothing, it opens a field (amend.go).
+	if next, cmd, ok := m.amendKey(msg); ok {
 		return next, cmd
 	}
 	done, result := m.approvalCard().Update(msg)
@@ -403,7 +413,12 @@ func (m Model) finishDryRun(msg dryRunDoneMsg) (tea.Model, tea.Cmd) {
 	m.appendEntry(entry{kind: entryCommand, text: msg.command, toolResult: out,
 		exitCode: msg.exitCode, localRun: true, duration: msg.duration})
 	req := m.pendingApproval
-	pending := req != nil && req.call.ID == msg.call && m.state == stateConfirmRun
+	// The command as well as the call: the reader can have amended the line
+	// while the form was running, and a screen reporting on a command the
+	// card is no longer about would be an answer to a question nobody is
+	// still asking (amend.go).
+	pending := req != nil && req.call.ID == msg.call &&
+		req.dryCommand == msg.command && m.state == stateConfirmRun
 	if req != nil && req.call.ID == msg.call {
 		req.dryRunning = false
 	}
@@ -525,7 +540,11 @@ func (m Model) finishExplain(msg explainDoneMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	req := m.pendingApproval
-	pending := req != nil && req.call.ID == msg.call && m.state == stateConfirmRun
+	// The command as well as the call, for the reason the dry run reads
+	// both: a paragraph about the line the reader has just replaced is not
+	// an explanation of the card in front of them (amend.go).
+	pending := req != nil && req.call.ID == msg.call &&
+		req.command == msg.command && m.state == stateConfirmRun
 	if req != nil && req.call.ID == msg.call {
 		req.explaining = false
 	}

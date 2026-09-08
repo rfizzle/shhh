@@ -205,13 +205,19 @@ func graceRows(keys string, width int) []string {
 	return []string{sty.Dimmer.Render(keys), sty.Dim.Render(Clip(graceWords, inner))}
 }
 
-// typingWords is the state of a decision surface whose own note field has the
+// typingWords is the state of a decision surface whose own field has the
 // keyboard: the keys are on the card and none of them is a key, because every
-// letter is going into the sentence
+// letter is going into the field
 // (docs/interface/surfaces.md#the-approval-card). Said in words for the
 // reason the two above are — the dimming never carries the meaning alone
 // (docs/interface/principles.md#colour-never-carries-meaning-alone).
-const typingWords = "these letters go into your note"
+//
+// It names the field rather than what the field is for. The card has two of
+// them now — a sentence to send with the answer, and the command itself —
+// and the ┄ label one row below already says which one is open, so a phrase
+// naming it here would be the same fact printed twice and wrong on one of
+// the two the day a third arrives.
+const typingWords = "these letters go into the field"
 
 // typingRows renders that key row: the not-yet-live row's shape, with no
 // handover under it, because nothing is being handed anywhere — the field is

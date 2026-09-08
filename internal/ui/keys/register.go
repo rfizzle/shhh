@@ -178,7 +178,7 @@ func Surfaces() []Surface {
 				Decision.AllowNoted, Decision.DenyNoted,
 				Decision.Always,
 				Decision.Batch, Decision.Diff, Decision.DryRun,
-				Decision.Explain, Agent.Go,
+				Decision.Explain, Decision.Amend, Agent.Go,
 				Decision.ScrollUp, Decision.ScrollDown,
 				Decision.PanLeft, Decision.PanRight,
 			},
@@ -195,6 +195,20 @@ func Surfaces() []Surface {
 			Section:  "docs/interface/surfaces.md#the-approval-card",
 			Position: Takeover,
 			Reached:  Bracket(Decision.AllowNoted) + " or " + Bracket(Decision.DenyNoted) + " on the card",
+			Bindings: []Binding{Select.Take, Select.Cancel},
+		},
+		{
+			// The command itself, open in a field for the reader to change
+			// before it runs. It is a row of its own for the reason the note
+			// field's is — a surface being typed into keeps every letter as
+			// text — and it is a second row rather than the same one because
+			// the two answer the same two keys to different ends: enter here
+			// runs a command, and enter there sends a sentence with an
+			// answer that was already chosen.
+			Name:     "the approval card's command field",
+			Section:  "docs/interface/surfaces.md#the-approval-card",
+			Position: Takeover,
+			Reached:  Bracket(Decision.Amend) + " on a command card",
 			Bindings: []Binding{Select.Take, Select.Cancel},
 		},
 		{

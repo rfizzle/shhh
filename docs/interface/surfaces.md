@@ -738,8 +738,13 @@ A command card offers to be amended. The key puts the command in the text
 input, prefilled, and enter runs the line as it now reads — after the card
 has resolved it again, because it is a different command
 ([`../capabilities/approvals-and-safety.md`](../capabilities/approvals-and-safety.md#an-amended-command-is-a-new-command)).
-A heavier line draws the heavier card. Esc from the field puts the original
-back, and the decision is still waiting.
+A heavier line draws the heavier card, with the line the call carried printed
+under the headline and a chip on the title rail saying whose line this is.
+Esc from the field puts the original back, and the decision is still waiting.
+While the field has the keyboard the card's own keys are letters, the way
+they are while the note field has it. A command of more than one line is not
+offered the key at all: the field is one line, and one that quietly joined a
+heredoc into a single line would run something nobody wrote.
 
 A command card can also explain itself. The key puts a paragraph on what the
 command does, from the same inexpensive model the classifier uses, on the

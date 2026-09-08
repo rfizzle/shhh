@@ -143,6 +143,12 @@ type approvalRequest struct {
 	// would be advertised over it.
 	dryCommand string
 	dryRunning bool
+	// amendedFrom is the line the call carried, on a request whose command
+	// the reader has rewritten (amend.go). It is what the card's `was` row
+	// prints, what the model is told ran in place of what it asked for, and
+	// what marks the transcript row as the reader's line rather than the
+	// model's. Empty on every request nobody amended.
+	amendedFrom string
 	// explaining is whether a paragraph about this command is being read
 	// right now (run.go). It rides the request for the reason the dry run's
 	// two fields do: the answer is about this call, and one left behind on
@@ -679,7 +685,7 @@ type decisionNote struct {
 // edge the moment the sentence outgrows the row.
 func (n decisionNote) drawn(width int) textinput.Model {
 	field := n.field
-	field.SetWidth(components.NoteWidth(width))
+	field.SetWidth(components.FieldWidth(width))
 	components.StyleTextInput(&field)
 	return field
 }
@@ -1011,7 +1017,20 @@ func (m Model) approvalCard() *components.ApprovalCard {
 	// (invariant 5): it depends on which surface holds the keyboard.
 	m.applyNotYetLive(card)
 	m.applyDecisionNote(card)
+	m.applyCommandEdit(card)
 	return card
+}
+
+// applyCommandEdit puts the open command field on the card. The field is the
+// model's for the reason the note field is: the card is rebuilt every frame
+// and what is being typed is not (amend.go).
+func (m Model) applyCommandEdit(card *components.ApprovalCard) {
+	e := m.commandEdit
+	if e == nil {
+		return
+	}
+	card.AmendOpen, card.AmendRefused = true, e.refused
+	card.AmendField = e.drawn(m.contentWidth()).View()
 }
 
 // applyDecisionNote puts the open note field on the card. The offer itself is
@@ -1063,6 +1082,15 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 		} else {
 			card.Headline = "Run: " + firstLine(m.pendingRun)
 		}
+		// A line the reader wrote says so on the rail and prints the line it
+		// replaced under the headline: the card is about their command now,
+		// and a card that looked identical to the one the model asked for
+		// would be the one thing this key must never leave behind
+		// (docs/capabilities/approvals-and-safety.md#an-amended-command-is-a-new-command).
+		if req != nil && req.amendedFrom != "" {
+			card.Amended = true
+			card.Was = firstLine(req.amendedFrom)
+		}
 		// [a] is offered only for assistant commands without safety warnings:
 		// flagged actions can never be pre-approved, and /run stays manual.
 		// The card says why it is missing rather than omitting it silently.
@@ -1085,6 +1113,7 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 			}
 		}
 		card.ExtraHints = append(dryRunOffer(req), m.explainOffer(req)...)
+		card.ExtraHints = append(card.ExtraHints, amendOffer(req)...)
 		return card
 	}
 
@@ -1206,7 +1235,7 @@ func (m Model) confirmLines() []string {
 }
 
 // confirmCursor is where the terminal's cursor stands in the confirm panel:
-// inside the card's note field when one is open, and nowhere otherwise —
+// inside whichever of the card's two fields is open, and nowhere otherwise —
 // a card that is read rather than written into places none, and the terminal
 // hides its cursor over it (the register's cursor column, overlay.go).
 //
@@ -1220,16 +1249,21 @@ func (m Model) confirmLines() []string {
 // any other width would describe a card nobody drew. The two are the same
 // number today, and this is the one that stays right if they stop being.
 func (m Model) confirmCursor(int) *tea.Cursor {
-	n := m.decisionNote
-	if n == nil {
+	width := m.contentWidth()
+	var field textinput.Model
+	switch {
+	case m.decisionNote != nil:
+		field = m.decisionNote.drawn(width)
+	case m.commandEdit != nil:
+		field = m.commandEdit.drawn(width)
+	default:
 		return nil
 	}
-	width := m.contentWidth()
-	x, y, ok := m.approvalCard().NoteOrigin(width)
+	x, y, ok := m.approvalCard().FieldOrigin(width)
 	if !ok {
 		return nil
 	}
-	cur := n.drawn(width).Cursor()
+	cur := field.Cursor()
 	if cur == nil {
 		return nil
 	}

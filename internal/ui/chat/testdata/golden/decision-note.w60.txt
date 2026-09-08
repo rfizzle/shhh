@@ -21,7 +21,7 @@
 │ +1 −0 · 1 hunk · undo yes — recorded, and it needs › │
 ├──────────────────────────────────────────────────────┤
 │ Apply this change? [y/Y/n/N/a]                       │
-│ these letters go into your note                      │
+│ these letters go into the field                      │
 │ ┄ why not                                            │
 │   not that file                                      │
 │ [enter] deny with this                               │
@@ -40,7 +40,7 @@
 ␛[38;5;214m│␛[m ␛[38;5;241m+1 −0 · 1 hunk · undo yes — recorded, and it needs ␛[m␛[38;5;241m›␛[m ␛[38;5;214m│␛[m
 ␛[38;5;214m├──────────────────────────────────────────────────────┤␛[m
 ␛[38;5;214m│␛[m ␛[38;5;245mApply this change? [y/Y/n/N/a]␛[m                       ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;241mthese letters go into your note␛[m                      ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;241mthese letters go into the field␛[m                      ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;241m┄ why not␛[m                                            ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m   ␛[38;5;241m␛[m␛[38;5;252mnot that file␛[m ␛[38;5;252m                                    ␛[m ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[3;38;5;241m[enter] deny with this␛[m                               ␛[38;5;214m│␛[m

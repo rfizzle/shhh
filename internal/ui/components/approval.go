@@ -171,6 +171,16 @@ type ApprovalCard struct {
 	QueuePos string
 	// Headline is the first body row, e.g. "Assistant wants to run: go test".
 	Headline string
+	// Was is the line the call carried, on a card whose headline is the line
+	// the reader wrote in its place. It is a row of the body rather than a
+	// chip, because the two lines differ by a flag as often as by a verb and
+	// a difference that small has to be read side by side
+	// (docs/capabilities/approvals-and-safety.md#an-amended-command-is-a-new-command).
+	//
+	// Empty on every card whose headline is the call's own line, which is
+	// every card until one is amended — a row repeating the headline under
+	// the headline would spend a bounded card's row saying nothing.
+	Was string
 	// Severity leads the card as a word and rides the top border as the last
 	// chip; it also picks the border colour.
 	Severity Severity
@@ -195,6 +205,12 @@ type ApprovalCard struct {
 	// "⚠ UNCONTAINED" and promotes it ahead of the severity chip.
 	Chip        string
 	Uncontained bool
+	// Amended rides the title rail beside those two: the line this card is
+	// about is the reader's, not the call's. It sheds before the severity
+	// chip and after the containment one, because the body's own `was` row
+	// says the same thing and never drops, while severity is what the
+	// decision turns on.
+	Amended bool
 	// Fields is the blast-radius block under the headline: what the action
 	// touches, whether it can be undone, whether the network is open.
 	Fields []CardField
@@ -239,6 +255,21 @@ type ApprovalCard struct {
 	NoteOpen  bool
 	NoteAllow bool
 	NoteField string
+	// AmendOpen is the command itself open in a field, holding the keyboard,
+	// and AmendField is that field as its host rendered it — the same
+	// division of labour the note field is under, and the same rows: only
+	// one of the two is ever open, because only one thing can hold a
+	// keyboard.
+	//
+	// AmendRefused is the rule that turned the last confirm away, drawn red
+	// above the field with the line still in it. The field stays open
+	// because the alternative is throwing the reader's line away at the
+	// moment they most want it back — and the decision behind the card is
+	// waiting either way
+	// (docs/capabilities/approvals-and-safety.md#an-amended-command-is-a-new-command).
+	AmendOpen    bool
+	AmendField   string
+	AmendRefused string
 	// ExtraHints are the keys beyond the decision run that the host answers
 	// itself — [g] to attach to the agent that asked, the manager's chord.
 	//
@@ -400,6 +431,11 @@ func (c *ApprovalCard) View(width int) string {
 func (c *ApprovalCard) buildRows(width int) (body, hints []string) {
 	inner := width - cardFrameWidth
 	body = []string{sty.Headline.Render(c.Headline)}
+	// What the call asked for, directly under what will run instead, so the
+	// two are read as one statement rather than as two facts a row apart.
+	if c.Was != "" {
+		body = append(body, sty.Dim.Render(Clip("was: "+c.Was, inner)))
+	}
 	// Severity leads the body, as the level and what makes it that. The
 	// border and the title chip carry the level too, and three statements of
 	// one fact is what makes the card survive mono and a colour-blind reader
@@ -535,6 +571,9 @@ func (c *ApprovalCard) hintRowsFor(width, inner int) []string {
 	}
 	if c.NoteOpen {
 		return append(typingRows(c.Question+" "+c.keys(), width), c.noteRows(width, inner)...)
+	}
+	if c.AmendOpen {
+		return append(typingRows(c.Question+" "+c.keys(), width), c.amendRows(width, inner)...)
 	}
 	if c.HeldOnArrival && c.Grace {
 		rows := graceRows(c.Question+" "+c.keys(), width)
@@ -855,57 +894,88 @@ func (c *ApprovalCard) noteLabel() string {
 	return noteWhyNot
 }
 
-// NoteWidth is how wide the host should draw its field: the card's inner
-// width, less the indent the ┄ label puts it in by and the one cell the
-// field's own caret stands in past its last character. The card owns the
-// geometry and the host owns the field, so the number crosses rather than
-// being guessed at either end.
+// FieldWidth is how wide the host should draw whichever field it has open:
+// the card's inner width, less the indent the ┄ label puts it in by and the
+// one cell the field's own caret stands in past its last character. The card
+// owns the geometry and the host owns the field, so the number crosses rather
+// than being guessed at either end.
 //
 // It has no floor under the room the card actually has. A field wider than
 // the row it is drawn on would be clipped while the caret it reports was
 // not, which puts the terminal's cursor outside the card on a terminal too
 // narrow to draw one — and a cursor standing where nothing is being typed is
 // worse than a field too narrow to read.
-func NoteWidth(width int) int { return max(Card{}.Inner(width)-noteIndent-1, 1) }
+func FieldWidth(width int) int { return max(Card{}.Inner(width)-noteIndent-1, 1) }
 
-// noteRows are the open field under the dimmed decision run: the label, the
-// field as its host rendered it, and the two keys that close it.
+// fieldRows are an open field under the dimmed decision run: the label, the
+// field as its host rendered it, whatever refused the last confirm, and the
+// two keys that close it.
 //
 // The shape is the note selector's, down to the ┄ label and the two-column
 // indent under it (noteselect.go), because it is the same field doing the
 // same job and a reader meets both in the same session. What differs is the
-// hint: enter here does not confirm a selection, it sends the answer the key
-// opened the field for, and esc leaves that answer still waiting rather than
-// cancelling it.
-func (c *ApprovalCard) noteRows(width, inner int) []string {
-	rows := []string{sty.Dim.Render(Clip("┄ "+c.noteLabel(), inner))}
-	for _, l := range strings.Split(c.NoteField, "\n") {
+// hint, which is why it is the caller's: enter here does not confirm a
+// selection, and what esc leaves behind is not the same on the card's two
+// fields.
+//
+// The refusal sits under the field rather than over it so the ┄ label stays
+// the last one on the card — FieldOrigin finds the field by that label, and
+// a second one above it would put the terminal's cursor a row out.
+func (c *ApprovalCard) fieldRows(label, view, refused, take, back string, width, inner int) []string {
+	rows := []string{sty.Dim.Render(Clip("┄ "+label, inner))}
+	for _, l := range strings.Split(view, "\n") {
 		rows = append(rows, Clip(strings.Repeat(" ", noteIndent)+l, inner))
 	}
-	send := "deny with this"
-	if c.NoteAllow {
-		send = "allow, and send this"
+	if refused != "" {
+		rows = append(rows, sty.Err.Render(Clip(strings.Repeat(" ", noteIndent)+"⚠ "+refused, inner)))
 	}
 	// Wrapped rather than clipped: what esc does here is the half a narrow
 	// terminal would take, and it is the half that has to be readable — a
 	// reader who cannot see that esc settles nothing has no way out of the
 	// field they can be sure of (docs/interface/principles.md#fold-never-hide).
 	return append(rows, hintRows([]string{
-		words(keys.Select.Take, send),
-		words(keys.Select.Cancel, "back to the card — nothing is answered"),
+		words(keys.Select.Take, take),
+		words(keys.Select.Cancel, back),
 	}, width)...)
 }
 
-// NoteOrigin is the cell the open note field's own render starts at inside
-// the rendered card. The host owns the field and so owns the caret inside it;
+// noteRows are the note field, open under the card.
+func (c *ApprovalCard) noteRows(width, inner int) []string {
+	send := "deny with this"
+	if c.NoteAllow {
+		send = "allow, and send this"
+	}
+	return c.fieldRows(c.noteLabel(), c.NoteField, "", send,
+		"back to the card — nothing is answered", width, inner)
+}
+
+// amendRows are the command itself, open under the card for the reader to
+// change before it runs.
+//
+// What esc leaves behind is worth spelling out separately from the note
+// field's: there the answer the key stood for is still waiting, and here the
+// line the call carried is what comes back — which is the difference between
+// abandoning a sentence and abandoning an edit.
+func (c *ApprovalCard) amendRows(width, inner int) []string {
+	return c.fieldRows(amendWords, c.AmendField, c.AmendRefused, "run this line",
+		"back to the card with the original", width, inner)
+}
+
+// amendWords is what the open command field asks for. It is the same phrase
+// the key that opens it is offered under, so a reader who pressed on the
+// promise is not met with a differently worded request.
+const amendWords = "edit the command"
+
+// FieldOrigin is the cell an open field's own render starts at inside the
+// rendered card. The host owns the field and so owns the caret inside it;
 // what the card knows is where it put the field, and the two are added.
 //
 // It is counted off the same two halves View lays the card out from rather
 // than measured a second time beside it, for the reason KeyAt reads its run
 // out of the rendered row: a position that agreed with the layout only by
 // upkeep is one that drifts a column the first time a row is added.
-func (c *ApprovalCard) NoteOrigin(width int) (x, y int, ok bool) {
-	if !c.NoteOpen {
+func (c *ApprovalCard) FieldOrigin(width int) (x, y int, ok bool) {
+	if !c.NoteOpen && !c.AmendOpen {
 		return 0, 0, false
 	}
 	body, hints := c.buildRows(width)
@@ -988,6 +1058,9 @@ func (c *ApprovalCard) chips() []string {
 		chips = append(chips, "⚠ UNCONTAINED")
 	case c.Chip != "":
 		chips = append(chips, c.Chip)
+	}
+	if c.Amended {
+		chips = append(chips, "✎ amended")
 	}
 	if word := c.Severity.Word(); word != "" {
 		chips = append(chips, word)

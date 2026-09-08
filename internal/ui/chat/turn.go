@@ -92,6 +92,11 @@ func (m *Model) setTurnState(s state) {
 		// card would attach the reader's words to a decision they were
 		// written about something else (approval.go).
 		m.decisionNote = nil
+		// Nor a half-written amendment, and for a sharper version of the
+		// same reason: a line left over from the last card would be a
+		// command the reader wrote about a different call, one enter away
+		// from running (amend.go).
+		m.commandEdit = nil
 	}
 	// A turn going idle stamps its end, so the inspector rail's elapsed time
 	// freezes at what the turn took instead of counting on.
@@ -412,9 +417,13 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		// before both the transcript entry and the tool result, so
 		// the user sees exactly what the model got. /run — the user's own
 		// command — stays unreduced.
-		var allowedBy string
+		var allowedBy, amendedFrom string
 		var allowElapsed time.Duration
 		if m.pendingApproval != nil {
+			// The line the call carried, where the reader wrote another one
+			// in its place: the row records what ran and says whose line it
+			// was (amend.go).
+			amendedFrom = m.pendingApproval.amendedFrom
 			out = m.reduceResult(tools.ExecCommandName, out)
 			outcome, class := observe.OutcomeOK, ""
 			if msg.exitCode != 0 {
@@ -428,7 +437,7 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		}
 		m.appendEntry(entry{kind: entryCommand, text: msg.command, toolResult: out,
 			exitCode: msg.exitCode, localRun: msg.local, duration: msg.duration,
-			allowedBy: allowedBy, allowElapsed: allowElapsed})
+			allowedBy: allowedBy, allowElapsed: allowElapsed, amendedFrom: amendedFrom})
 		if m.pendingApproval != nil {
 			call := m.pendingApproval.call
 			m.pendingApproval = nil
@@ -439,10 +448,36 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 			// is what the model reads. `/run` stays out of it — the reader
 			// is here, and telling them they have run this before is telling
 			// them what they just did.
+			//
+			// The arguments are the line that ran rather than the line the
+			// call carried, which are two different things once the reader
+			// has amended one (amend.go). Keying the original against the
+			// amendment's output would file an interaction that never
+			// happened: the detector's window is the tool, its arguments and
+			// the output they produced, so the model's own line would be
+			// remembered as having produced somebody else's result — and a
+			// real repeat of the amended line would go unnoticed, because
+			// nothing was ever filed under it.
+			ranArgs := call.Arguments
+			if amendedFrom != "" {
+				ranArgs = execArguments(msg.command)
+			}
 			result := m.repeats.Notice(tools.ExecCommandName,
-				json.RawMessage(call.Arguments), execToolResult(out, msg.exitCode))
+				json.RawMessage(ranArgs), execToolResult(out, msg.exitCode))
 			if agent.IsRepeatNotice(result) {
 				m.signal(observe.SignalRepeat, tools.ExecCommandName)
+			}
+			// What ran, where it was not what was asked for, leads the whole
+			// of that: a model handed a bare success reads it as a success
+			// of the command it proposed, and carries the wrong line into
+			// its next round (amend.go). It goes on outside the detector
+			// because the detector keys on what the call produced, and a
+			// sentence about the line would make two runs of one amended
+			// command look like two different results — and it is read
+			// before the notice is looked for, so a lead of this session's
+			// own is never mistaken for one of the detector's.
+			if amendedFrom != "" {
+				result = amendedNotice(amendedFrom, msg.command) + "\n" + result
 			}
 			m.agent.ResolveApproval(result)
 			m.viewport.SetLines(m.renderHistoryLines())

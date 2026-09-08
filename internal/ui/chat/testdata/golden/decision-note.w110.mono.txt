@@ -20,7 +20,7 @@
 │ + 2  line two                                                                                          │
 │ +1 −0 · 1 hunk · undo yes — recorded, and it needs no git to restore                                   │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ Apply this change? [y/Y/n/N/a]                                         these letters go into your note │
+│ Apply this change? [y/Y/n/N/a]                                         these letters go into the field │
 │ ┄ why not                                                                                              │
 │   not that file                                                                                        │
 │ [enter] deny with this · [esc] back to the card — nothing is answered                                  │
@@ -37,7 +37,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m+ 2  line two␛[m                                                                                          ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m+1 −0 · 1 hunk · undo yes — recorded, and it needs no git to restore␛[m                                   ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mApply this change? [y/Y/n/N/a]␛[m                                         ␛[38;5;244mthese letters go into your note␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mApply this change? [y/Y/n/N/a]␛[m                                         ␛[38;5;244mthese letters go into the field␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m┄ why not␛[m                                                                                              ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m␛[m␛[38;5;254mnot that file␛[m ␛[38;5;254m                                                                                      ␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[3;38;5;244m[enter] deny with this · [esc] back to the card — nothing is answered␛[m                                  ␛[38;5;254m│␛[m

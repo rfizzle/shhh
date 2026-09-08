@@ -382,12 +382,13 @@ func (m Model) routeDecision(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 func (m Model) escLeavesWaiting() bool {
 	switch m.state {
 	case stateConfirmRun:
-		// An open note field answers esc itself — it closes the field and
-		// leaves the decision waiting — so esc is not the way back to the
-		// draft while one is up. Two surfaces cannot both have the key, and
-		// the nearer one wins: a reader escaping out of a field they opened
-		// means the field (approval.go).
-		return m.memoryAsk == nil && m.decisionNote == nil
+		// An open field answers esc itself — it closes and leaves the
+		// decision waiting — so esc is not the way back to the draft while
+		// one is up. Two surfaces cannot both have the key, and the nearer
+		// one wins: a reader escaping out of a field they opened means the
+		// field. Both of the card's fields count: the note (approval.go)
+		// and the command itself (amend.go).
+		return m.memoryAsk == nil && m.decisionNote == nil && m.commandEdit == nil
 	case statePlanApprove:
 		return false
 	case stateQuestion:

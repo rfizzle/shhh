@@ -137,10 +137,18 @@ const (
 	ReasonOutOfScope     = "out-of-scope"
 	ReasonPolicy         = "policy"
 	// The person's own answer, and the shapes a session offers it in.
-	ReasonUser       = "user"
-	ReasonUserBatch  = "user-batch"
-	ReasonUserAlways = "user-always"
-	ReasonMemory     = "memory"
+	ReasonUser      = "user"
+	ReasonUserBatch = "user-batch"
+	// ReasonUserAmended is an allow of a line the reader wrote in place of
+	// the one the call carried
+	// (docs/capabilities/approvals-and-safety.md#an-amended-command-is-a-new-command).
+	// It is its own code rather than a plain allow because the two answer
+	// different questions about how the product is used: a rate that mixed
+	// them could not say how often what the model proposed was nearly right,
+	// which is the whole reason the key exists.
+	ReasonUserAmended = "user-amended"
+	ReasonUserAlways  = "user-always"
+	ReasonMemory      = "memory"
 	// The auto-mode classifier's. A classifier that could not decide is its
 	// own code rather than a denial, because failing closed to a prompt is
 	// not the same event as deciding no.

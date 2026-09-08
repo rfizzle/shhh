@@ -423,6 +423,12 @@ type entry struct {
 	// allowElapsed is what that judgement took, where it took anything, which
 	// is the classifier and nothing else.
 	allowElapsed time.Duration
+	// amendedFrom is the line the call carried on a command row whose text
+	// is the line the reader wrote instead (amend.go). The row's text is
+	// always what ran — the transcript is the account of what ran on this
+	// machine — and this is how the row says the line was not the model's.
+	// Empty on every command nobody amended, which is nearly all of them.
+	amendedFrom string
 	// stepFold is your fold override for the step this entry titles (
 	// docs/interface/surfaces.md#the-step); steps keep no layout state of their
 	// own, so it lives on the raw entry and survives a resize.
@@ -912,6 +918,11 @@ type Model struct {
 	// every frame and what is typed has to outlive one — and it is cleared
 	// wherever the card changes (setTurnState).
 	decisionNote *decisionNote
+	// commandEdit is the command card's other field: the command itself,
+	// open for the reader to change before it runs (amend.go). It lives here
+	// for the same reason and is cleared in the same place; only one of the
+	// two is ever open, because only one thing can hold a keyboard.
+	commandEdit *commandEdit
 	// readingCopied is the reading rail's note about the last [y]: what was
 	// copied and how far it ran. It stands until the next key in the mode,
 	// which is the moment the reader has moved on from the copy it captions.

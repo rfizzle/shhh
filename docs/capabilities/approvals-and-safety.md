@@ -282,13 +282,20 @@ line is not the one the model asked about, so nothing decided about the
 original carries over: the deny list is read against it, the dangerous shapes
 are read against it, its blast radius is resolved again, and the card's three
 questions are answered again before it runs. An amendment that would draw a
-heavier card draws that card. Where any of that refuses the amended line, the
-refusal is the amended line's, and the original decision is still waiting.
+heavier card draws that card — including one that reaches a directory the card
+the reader answered never named, since saying yes to it would put that
+directory in the working scope for the rest of the session. Where any of that
+refuses the amended line, the refusal is the amended line's — named on the
+card, with the line still in the field, since a refusal that threw the line
+away would take it at the moment the reader most wants it back — and the
+original decision is still waiting.
 
-The model is told what ran in place of what it asked for, and the transcript
-row records the line that ran, because the transcript is the account of what
-ran on this machine. An amendment is not a grant: the next call the model
-makes is asked about on its own.
+The model is told what ran in place of what it asked for, in a sentence
+ahead of the result rather than as a bare success: a model handed a plain
+success reads it as a success of the command it proposed. The transcript row
+records the line that ran and says the line was the reader's, because the
+transcript is the account of what ran on this machine. An amendment is not a
+grant: the next call the model makes is asked about on its own.
 
 ## A grant says when it ends
 

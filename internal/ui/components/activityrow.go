@@ -57,6 +57,11 @@ const (
 	// (docs/capabilities/coding-agent.md#the-model-can-ask).
 	OutcomeSkipped     = "skipped"
 	OutcomeAutoAllowed = "auto-allowed"
+	// OutcomeAmended is a command the reader rewrote at the card before it
+	// ran (docs/capabilities/approvals-and-safety.md#an-amended-command-is-a-new-command).
+	// The row's target is the line that ran; this is how it says the line
+	// was not the one the call carried, which nothing else on the row could.
+	OutcomeAmended = "amended"
 	// OutcomeLocal marks a command row whose output stayed out of the
 	// conversation — the reader saw it, the model never did.
 	OutcomeLocal = "local"
@@ -151,6 +156,12 @@ type ActivityRow struct {
 	// is stated: an act and the approval of it are one row, not two. Empty on
 	// a call the reader answered themselves and on every call that was never
 	// gated.
+	//
+	// One decision the reader did make is stated here too: `amended · you`,
+	// the line they wrote in place of the one the call carried. It is the
+	// same fact in the same place — how this act came to be the act it is —
+	// and putting it anywhere else would have made two fields out of one
+	// question.
 	Allowed string
 	// Duration is the 6-column right-aligned field. Callers omit it under 0.5s
 	// and set NoDuration for a call that never ran.
