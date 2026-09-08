@@ -39,7 +39,7 @@ else
 	RESET   := ""
 endif
 
-.PHONY: all build build-all linux darwin windows clean fmt lint tidy test race ci cross docs docs-check eval eval-baseline cache-check help
+.PHONY: all build build-all linux darwin windows clean fmt lint tidy test race ci cross docs docs-check eval eval-baseline cache-check tui-build tui-run tui-shot tui-check help
 
 all: help
 
@@ -151,6 +151,30 @@ eval-baseline: build ## Rewrite evals/baseline.json from a fresh run (costs real
 	@echo "${MAGENTA}Refreshing the eval baseline...${RESET}"
 	@./$(APP_NAME) eval --refresh-baseline $(EVAL_ARGS)
 
+## TUI:
+# The golden tests render a surface in-process. These drive the built binary
+# in a tmux pane against a scripted model (scripts/tui/), which is the only
+# way to see that a key reaches a surface and that the surface reaches the
+# screen. A scene is a directory of replies and steps; the smoke scene is the
+# gate, and a surface change adds a scene of its own. Captures land under
+# bin/tui/<scene>/ and are never committed: the scene is the record.
+TUI_BIN=bin/tui/$(APP_NAME)
+SCENE ?= smoke
+
+tui-build:
+	@CGO_ENABLED=0 $(GOCMD) build -ldflags "$(LDFLAGS)" -o $(TUI_BIN) ./cmd/shhh
+
+tui-run: tui-build ## Open the TUI in this terminal against the scripted model (SCENE=<name> picks the replies)
+	@SHHH_BIN=$(TUI_BIN) scripts/tui/drive.sh --attach scripts/tui/scenes/$(SCENE)
+
+tui-shot: tui-build ## Drive a scene through the built binary and capture every step (SCENE=<name> COLS=<width> ROWS=<height>)
+	@echo "${MAGENTA}Driving the $(SCENE) scene...${RESET}"
+	@SHHH_BIN=$(TUI_BIN) scripts/tui/drive.sh scripts/tui/scenes/$(SCENE)
+
+tui-check: tui-build ## Drive the smoke scene and fail if a step never draws what it waits for
+	@echo "${MAGENTA}Driving the TUI smoke scene...${RESET}"
+	@SHHH_BIN=$(TUI_BIN) scripts/tui/drive.sh scripts/tui/scenes/smoke
+
 ## Cross:
 # The platforms goreleaser ships. A Unix-only syscall compiles perfectly on the
 # machine that introduced it and breaks a release nobody builds until they tag
@@ -193,6 +217,7 @@ ci: cross ## Run tests and lint for CI
 	fi
 	@echo "${MAGENTA}Running golangci-lint...${RESET}"
 	@$(GOLANGCI_LINT) run
+	@$(MAKE) --no-print-directory tui-check
 
 ## Help:
 help: ## Show this help

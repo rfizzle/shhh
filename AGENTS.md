@@ -86,6 +86,9 @@ golden fixture, so this cannot drift back.
 | Rewrite the eval baseline | `make eval-baseline` (the file every run is read against; the diff is the review) |
 | Verify prompt caching against live endpoints | `SHHH_CACHE_IT_URL=… SHHH_CACHE_IT_KEY=… SHHH_CACHE_IT_GATEWAY_URL=… SHHH_CACHE_IT_GATEWAY_KEY=… make cache-check` (costs real requests; each half skips when its own pair is unset) |
 | Update golden files | `go test ./internal/ui/components ./internal/ui/chat -update-golden` or `SHHH_UPDATE_GOLDEN=1 go test ./...` |
+| Open the TUI by hand against a scripted model | `make tui-run` (`SCENE=<name>` picks the replies; needs tmux) |
+| Capture the TUI at each step of a scene | `make tui-shot SCENE=<name> COLS=110 ROWS=40` (captures under `bin/tui/<name>/`) |
+| Drive the smoke scene through the built binary | `make tui-check` (part of `make ci`; the gate every surface change passes) |
 
 Build produces a `shhh` binary with version injected via `-ldflags`.
 
@@ -1186,6 +1189,46 @@ go test ./internal/ui/components ./internal/ui/chat -update-golden
 ```
 
 A `TestMain` in each golden-using package calls `golden.Run(m)` which **deletes stale golden files** that no test touched. Adding/removing a test case therefore requires running with `-update-golden` to reconcile files.
+
+### Driving the binary
+
+A golden proves a surface renders. It cannot prove that the key reaches the
+surface, that the panel it draws into is the one the register placed it in,
+or that a provider's stream arrives through the real program. `scripts/tui/`
+is the other half: `drive.sh` opens the built binary in a tmux pane of a
+stated size, in a fresh repository under a home of its own, pointed at
+`fakeprovider.py` — an openai-compatible endpoint that answers each request
+with the next line of a scene's `replies.txt` — and walks the scene's
+`steps.txt`: type these keys, then capture the screen once this text is on
+it. Each capture is the cells (`.txt`), the cells with colour (`.ansi`), and a
+picture (`.svg`, plus `.png` where `qlmanage` is, which is macOS). The
+[`tui-drive`](.agents/skills/tui-drive/SKILL.md) skill is the working guide:
+the scene grammar, the key names, and how to read a capture.
+
+**A change to a surface is accepted with both a golden and a driven
+capture.** A surface is anything under `internal/ui/` that draws, and any
+row, panel, card or screen `docs/interface/surfaces.md` names. The golden is
+the render at `goldenWidths` in both palettes, as above. The capture is the
+built binary driven through a scene that reaches the surface, at the width
+the item names — the narrowest it must fit at, when it names none — and read
+by whoever ticks the criterion: the `.txt` against what the artboard says,
+the picture by eye. A capture that was taken and not read is a screenshot in
+a folder. `make tui-check` runs the `smoke` scene and is part of `make ci`,
+so the harness itself cannot rot; a story's own scene is the story's to
+write, under `scripts/tui/scenes/<slug>/`, and it stays in the tree so the
+next change to that surface can run it again.
+
+What will bite you: **a capture is the terminal's cells, not the View's
+bytes.** tmux re-emits colour per cell, so an `.ansi` file will never match a
+golden's ansi block and must not be diffed against one; compare the `.txt`
+with the golden's layout block instead. **A snap waits for text, and the
+text has to be the surface's own.** Waiting for the line you typed passes
+before the reply arrives; wait for a word only the reply carries. **The
+scripted model speaks one dialect**, openai-compatible SSE, the one a
+`base_url` alone redirects — a scene cannot exercise the Anthropic or Gemini
+stream loops, which the provider package's own tests cover. **Captures live
+under `bin/` and are never committed**: the scene is the record, and a
+capture is reproduced from it.
 
 ### Test Conventions
 

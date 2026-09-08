@@ -1,0 +1,153 @@
+#!/usr/bin/env bash
+# Drive the built shhh binary through a scene in a tmux pane, against the
+# scripted provider, and capture the screen at every step the scene names.
+#
+# A scene is a directory holding two files:
+#
+#   replies.txt   what the model says, one reply per request (fakeprovider.py)
+#   steps.txt     what the reader does, one step per line:
+#
+#     setup <shell>             run in the workspace before the binary starts
+#     keys <tmux send-keys …>   type; Enter, Escape, Tab, BTab, Up, C-c, "a line"
+#     snap <name> [text]        capture the screen once <text> is on it
+#     sleep <seconds>           wait, for the rare step nothing on screen marks
+#
+# A snap that names text polls the screen for it and fails the run when it
+# never appears, so a scene is also a test: the exit code says whether every
+# step drew what it said it would. Captures land under $OUT as <name>.txt (the
+# cells), <name>.ansi (with colour), <name>.svg, and <name>.png where qlmanage
+# is available (macOS).
+#
+#   drive.sh <scene-dir>            run the steps and capture
+#   drive.sh --attach <scene-dir>   open the same pane in this terminal instead
+#
+# Environment: SHHH_BIN (the binary; default ./shhh), COLS/ROWS (the pane,
+# default 120x40), OUT (captures; default bin/tui/<scene>), WAIT (seconds a
+# snap waits for its text; default 20), PORT and SOCK (the provider's port and
+# the tmux server's name, for two scenes running at once).
+set -u
+here=$(cd "$(dirname "$0")" && pwd)
+root=$(cd "$here/../.." && pwd)
+
+attach=0
+if [ "${1:-}" = "--attach" ]; then attach=1; shift; fi
+scene=${1:?usage: drive.sh [--attach] <scene-dir>}
+scene=$(cd "$scene" && pwd) || exit 1
+name=$(basename "$scene")
+
+SHHH_BIN=${SHHH_BIN:-$root/shhh}
+COLS=${COLS:-120}
+ROWS=${ROWS:-40}
+OUT=${OUT:-$root/bin/tui/$name}
+WAIT=${WAIT:-20}
+PORT=${PORT:-8765}
+SOCK=${SOCK:-shhh-tui}
+
+for need in tmux python3; do
+	command -v $need >/dev/null 2>&1 || { echo "drive.sh: $need is required (brew install $need / apt-get install $need)" >&2; exit 2; }
+done
+[ -x "$SHHH_BIN" ] || { echo "drive.sh: no binary at $SHHH_BIN — run make tui-check, or set SHHH_BIN" >&2; exit 2; }
+# The pane is opened in the scene's own workspace, so a relative path to the
+# binary would be resolved there and found nowhere.
+SHHH_BIN=$(cd "$(dirname "$SHHH_BIN")" && pwd)/$(basename "$SHHH_BIN")
+[ -f "$scene/replies.txt" ] && [ -f "$scene/steps.txt" ] || { echo "drive.sh: $scene needs replies.txt and steps.txt" >&2; exit 2; }
+
+# Everything the run touches is its own: a home so no developer setting or
+# saved chat leaks in, and a fresh repository to work in, because the start
+# screen and the approval card both read the checkout they are opened in.
+work=$(mktemp -d "${TMPDIR:-/tmp}/shhh-tui.XXXXXX")
+home=$work/home
+ws=$work/ws
+mkdir -p "$home/config/shhh" "$ws" "$OUT"
+printf '[behavior]\nprovider_retries = 0\n' > "$home/config/shhh/config.toml"
+(cd "$ws" && git init -q && git -c user.email=tui@shhh -c user.name=tui commit -q --allow-empty -m init)
+
+python3 "$here/fakeprovider.py" "$PORT" "$scene/replies.txt" 2> "$OUT/provider.log" &
+provider=$!
+cleanup() {
+	tmux -L "$SOCK" kill-server 2>/dev/null
+	kill "$provider" 2>/dev/null
+	wait "$provider" 2>/dev/null
+	rm -rf "$work"
+}
+trap cleanup EXIT
+# Up before the binary asks, or the first turn reports a model it never
+# reached.
+for _ in 1 2 3 4 5 6 7 8 9 10; do
+	python3 -c "import socket; socket.create_connection(('127.0.0.1', $PORT), 1).close()" 2>/dev/null && break
+	sleep 0.2
+done
+
+# The setup lines run before the binary does, so a scene can put a file, a
+# .shhh directory or a commit in the workspace it will be opened on.
+while IFS= read -r line; do
+	case $line in
+	setup\ *) (cd "$ws" && eval "${line#setup }") || { echo "drive.sh: setup failed: ${line#setup }" >&2; exit 1; } ;;
+	esac
+done < "$scene/steps.txt"
+
+envs="HOME=$home XDG_CONFIG_HOME=$home/config XDG_DATA_HOME=$home/data"
+envs="$envs SHHH_PROVIDER=openai-compatible SHHH_BASE_URL=http://127.0.0.1:$PORT/v1 SHHH_API_KEY=scripted SHHH_MODEL=scripted-model SHHH_REASONING=medium"
+envs="$envs TERM=xterm-256color COLORTERM=truecolor"
+
+tmux -L "$SOCK" kill-server 2>/dev/null
+# The pane outlives the binary so the exit banner can be captured too.
+tmux -L "$SOCK" new-session -d -s scene -x "$COLS" -y "$ROWS" -c "$ws" "env $envs $SHHH_BIN code; sleep 60"
+
+if [ "$attach" = 1 ]; then
+	echo "shhh code against $scene/replies.txt — detach with ctrl+b d"
+	tmux -L "$SOCK" attach -t scene
+	exit 0
+fi
+
+screen() { tmux -L "$SOCK" capture-pane -p -t scene 2>/dev/null; }
+
+failed=0
+step=0
+while IFS= read -r line || [ -n "$line" ]; do
+	case $line in
+	""|\#*|setup\ *) continue ;;
+	keys\ *)
+		eval "set -- ${line#keys }"
+		tmux -L "$SOCK" send-keys -t scene "$@"
+		;;
+	sleep\ *)
+		sleep "${line#sleep }"
+		;;
+	snap\ *)
+		eval "set -- ${line#snap }"
+		snapname=$1
+		want=${2:-}
+		deadline=$(( $(date +%s) + WAIT ))
+		while [ -n "$want" ] && ! screen | grep -qF -- "$want"; do
+			if [ "$(date +%s)" -ge "$deadline" ]; then
+				echo "drive.sh: $name/$snapname: waited ${WAIT}s and never saw: $want" >&2
+				failed=1
+				break
+			fi
+			sleep 0.2
+		done
+		# One more frame so a row that arrived with the text has drawn too.
+		sleep 0.3
+		screen > "$OUT/$snapname.txt"
+		tmux -L "$SOCK" capture-pane -p -e -t scene > "$OUT/$snapname.ansi" 2>/dev/null
+		python3 "$here/ansi2svg.py" "$OUT/$snapname.ansi" "$OUT/$snapname.svg"
+		if command -v qlmanage >/dev/null 2>&1; then
+			qlmanage -t -s 2400 -o "$OUT" "$OUT/$snapname.svg" >/dev/null 2>&1 && mv -f "$OUT/$snapname.svg.png" "$OUT/$snapname.png" 2>/dev/null
+		fi
+		step=$((step + 1))
+		echo "  $snapname${want:+  ✓ \"$want\"}"
+		;;
+	*)
+		echo "drive.sh: $name: unknown step: $line" >&2
+		failed=1
+		;;
+	esac
+	[ "$failed" = 1 ] && break
+done < "$scene/steps.txt"
+
+if [ "$failed" = 1 ]; then
+	echo "drive.sh: the model was asked $(grep -c '^POST' "$OUT/provider.log" 2>/dev/null || true) times — $OUT/provider.log" >&2
+fi
+echo "captures: $OUT ($step)"
+exit $failed

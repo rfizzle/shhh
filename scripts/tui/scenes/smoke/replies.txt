@@ -1,0 +1,4 @@
+# One reply per request. The last line repeats once these run out.
+Hello from the scripted provider. Nothing here is real.
+tool:execute_command:{"command":"echo hi from the scripted provider"}
+Done: the command printed a greeting.

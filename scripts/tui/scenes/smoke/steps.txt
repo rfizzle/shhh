@@ -1,0 +1,14 @@
+# The path a first session takes: the start screen, a reply, an approval
+# card, the command's row, and the exit banner. Every snap names the text it
+# waits for, so this scene is the TUI gate as well as a tour.
+snap 01-start "Some things worth doing first"
+keys "say hi" Enter
+snap 02-reply "Hello from the scripted provider"
+keys "run something" Enter
+snap 03-approval "Run this command?"
+keys y
+snap 04-ran "Done: the command printed a greeting"
+keys C-c
+snap 05-quit-armed "press again to quit"
+keys C-c
+snap 06-exit "that is everything the screen was holding"
