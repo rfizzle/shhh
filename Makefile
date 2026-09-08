@@ -39,7 +39,7 @@ else
 	RESET   := ""
 endif
 
-.PHONY: all build build-all linux darwin windows clean fmt lint tidy test race ci cross docs docs-check eval cache-check help
+.PHONY: all build build-all linux darwin windows clean fmt lint tidy test race ci cross docs docs-check eval eval-baseline cache-check help
 
 all: help
 
@@ -134,9 +134,22 @@ cache-check: ## Verify prompt caching against live endpoints (costs real request
 	@$(GOTEST) -count=1 -v -run CacheIntegration ./internal/provider
 
 ## Evals:
+# Costs real requests: ten of the fourteen cases put a task or a question to
+# the model, which is several minutes and a few dollars a run, and more with
+# --repeat. It is not part of `make ci` for that reason, and the workflow that
+# runs it (.github/workflows/eval.yml) is one a person triggers. The four
+# scripted cases cost nothing and run without an account at all, so
+# `make eval EVAL_ARGS="--case close-gate"` is a free thing to ask for.
+#
+# Every run is read against evals/baseline.json; `make eval-baseline` is how
+# that file is replaced, which is a commit somebody reviews.
 eval: build ## Run the eval suite against the configured model (costs real requests)
 	@echo "${MAGENTA}Running the eval suite...${RESET}"
 	@./$(APP_NAME) eval $(EVAL_ARGS)
+
+eval-baseline: build ## Rewrite evals/baseline.json from a fresh run (costs real requests)
+	@echo "${MAGENTA}Refreshing the eval baseline...${RESET}"
+	@./$(APP_NAME) eval --refresh-baseline $(EVAL_ARGS)
 
 ## Cross:
 # The platforms goreleaser ships. A Unix-only syscall compiles perfectly on the

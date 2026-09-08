@@ -1,0 +1,55 @@
+[[row]]
+name = "a writer's patch lands and the parent is told what it did"
+why = "the patch is the whole of a writer's work reaching the checkout, and the parent acts next on this sentence alone"
+expect = ["reported"]
+role = "writer"
+task = "add the CSV exporter"
+paths = ["exporter.go"]
+write_path = "exporter.go"
+write_body = "package export\n\nfunc Write() string { return \"csv\" }\n"
+reply = "added a CSV exporter with one entry point"
+needs = [
+  "done",
+  "added a CSV exporter with one entry point",
+  "patch applied to the workspace",
+  "exporter.go",
+]
+
+[[row]]
+name = "a declined patch says so and says nothing was changed"
+why = "a parent that read a decline as a landing would go on to build on files that were never written"
+expect = ["reported"]
+role = "writer"
+task = "add the CSV exporter"
+paths = ["exporter.go"]
+write_path = "exporter.go"
+write_body = "package export\n\nfunc Write() string { return \"csv\" }\n"
+reply = "added a CSV exporter with one entry point"
+decline = true
+needs = [
+  "declined the patch",
+  "no files were changed",
+]
+
+[[row]]
+name = "a reader's findings and its state reach the parent"
+why = "a child that finished and one that died have to read differently, and the finding is the whole point of spawning it"
+expect = ["reported"]
+role = "researcher"
+task = "survey what the exporter writes"
+reply = "the exporter writes a header row and one line per record"
+needs = [
+  "done",
+  "the exporter writes a header row and one line per record",
+]
+
+[[row]]
+name = "the last reading of a child's work reaches the parent"
+why = "a fan-out is judged by readings nobody sees; a verdict that stayed on the lane is invisible to the model deciding what to do next"
+expect = ["reported"]
+role = "researcher"
+task = "survey what the exporter writes"
+reply = "the exporter writes a header row and one line per record"
+state = "off_target"
+reason = "reading the importer, not the exporter"
+needs = ["off target"]

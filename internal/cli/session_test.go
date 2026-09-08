@@ -410,3 +410,146 @@ func TestGitWriteGatedPreview_StatesTheBoundariesOfTheAct(t *testing.T) {
 		t.Fatal("a verb outside the set must not produce a card")
 	}
 }
+
+// The interactive assembly, built and read back.
+//
+// runChatSession is the only place sub-agents, durable memory, the permission
+// classifier, the titler, the changeset, the hooks and the store the window
+// trim recovers what it elides from are wired together, and every one of them
+// is wired behind a condition. Nothing else builds that set: the headless
+// runner assembles its own smaller one, and the chat model's own tests
+// construct a model directly and hand it exactly what they mean to test. So a
+// condition that quietly stops being true drops a mechanism out of every
+// interactive session and nothing in this repository fails.
+//
+// These build the assembly the way the command does — the real root command,
+// the real config, a provider registered for the occasion — and stop where
+// the model is finished, which is as far as anything can go without a
+// terminal.
+
+// assemblyProvider resolves and is never asked anything: the assembly builds
+// a classifier, a summarizer and a titler on a provider and stops before any
+// of them makes a request.
+type assemblyProvider struct{}
+
+func (assemblyProvider) Name() string { return "assembly-test" }
+
+func (assemblyProvider) StreamCompletion(context.Context, []provider.Message, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+	ch := make(chan provider.StreamEvent)
+	close(ch)
+	return ch, nil
+}
+
+// buildSession runs one session command as far as its model, and hands back
+// what that model was given.
+func buildSession(t *testing.T, args ...string) chat.Wiring {
+	t.Helper()
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, "config"))
+	t.Setenv("XDG_DATA_HOME", filepath.Join(home, "data"))
+	t.Setenv("XDG_CACHE_HOME", filepath.Join(home, "cache"))
+	// The resolution reads the environment above the config, and what this
+	// session runs on is what the flags below say.
+	t.Setenv("SHHH_PROVIDER", "")
+	t.Setenv("SHHH_MODEL", "")
+
+	// The session is assembled where the test runs, which is this checkout:
+	// nothing here writes to it, and the working directory is not something
+	// a test may move — a process-wide chdir would leak into every other
+	// test in the package and cost this one its cached result.
+	//
+	// A hook runner is built only where the person wrote a hook, so the
+	// config says one. It is a pre-tool hook because no tool is called here:
+	// what is under test is that the runner reached the model, not that a
+	// command ran.
+	cfgDir := filepath.Join(home, "config", "shhh")
+	if err := os.MkdirAll(cfgDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(cfgDir, "config.toml"),
+		[]byte("[hooks.entries.assembly]\nevent = \"pre_tool\"\ncommand = \"true\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	provider.Register("assembly-test", func(provider.ResolveOpts) (provider.Provider, error) {
+		return assemblyProvider{}, nil
+	})
+
+	var got chat.Wiring
+	var built bool
+	assembled = func(m chat.Model) error {
+		got, built = m.Wiring(), true
+		return nil
+	}
+	t.Cleanup(func() { assembled = nil })
+
+	cmd := NewRootCmd()
+	var out strings.Builder
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs(append(args, "--provider", "assembly-test", "--model", "assembly"))
+	if err := execute(context.Background(), cmd); err != nil {
+		t.Fatalf("shhh %v: %v\n%s", args, err, out.String())
+	}
+	if !built {
+		t.Fatalf("shhh %v returned before it built a session", args)
+	}
+	return got
+}
+
+// Every mechanism here is one whose absence a person discovers by working
+// without it: a session that never spawns a child, a memory nothing recalls,
+// an auto mode that asks about every command because the classifier is nil, a
+// trim that costs what it elides. Each is named so a failure says which went.
+func TestCodeSessionWiresItsMechanisms(t *testing.T) {
+	w := buildSession(t, "code")
+	for _, c := range []struct {
+		name string
+		got  bool
+	}{
+		{"sub-agents", w.Subagents},
+		{"durable memory", w.Memory},
+		{"the permission classifier", w.Classifier},
+		{"the titler", w.Titler},
+		{"the changeset", w.Changeset},
+		{"the hooks", w.Hooks},
+		{"the recoverable trim", w.RecoverableTrim},
+		{"the working scope", w.Scope},
+		{"the process supervisor", w.Processes},
+		{"the notebook", w.Notebook},
+		{"the backlog", w.Todos},
+	} {
+		if !c.got {
+			t.Errorf("a coding session was assembled without %s", c.name)
+		}
+	}
+}
+
+// A conversation is the same assembly with the acting taken out, and the
+// changeset is what says so: there is no edit to review, to undo, or to hand
+// a writer child to start from. Asserting it is what stops the test above
+// from passing on a build where every session is a coding one.
+func TestConversationIsTheAssemblyWithoutTheActing(t *testing.T) {
+	w := buildSession(t, "chat")
+	if w.Changeset {
+		t.Error("a conversation was given the changeset a coding turn is reviewed and undone through")
+	}
+	if w.Processes {
+		t.Error("a conversation was given a process supervisor, and it runs no commands")
+	}
+	for _, c := range []struct {
+		name string
+		got  bool
+	}{
+		{"sub-agents", w.Subagents},
+		{"durable memory", w.Memory},
+		{"the titler", w.Titler},
+		{"the recoverable trim", w.RecoverableTrim},
+		{"the backlog", w.Todos},
+	} {
+		if !c.got {
+			t.Errorf("a conversation was assembled without %s", c.name)
+		}
+	}
+}

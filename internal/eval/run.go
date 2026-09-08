@@ -219,7 +219,8 @@ func attempt(ctx context.Context, bin string, c Case, opts Options) Attempt {
 	return a
 }
 
-// tableAttempt puts every row of a table case to the real call once.
+// tableAttempt puts every row of a table case to the real call once — the
+// model's, or, for a scripted case, the harness's own.
 //
 // Rows go one at a time, like cases: the point of the pass is the rate, not
 // the wall clock, and twenty concurrent requests to the same endpoint measure
@@ -230,7 +231,10 @@ func tableAttempt(ctx context.Context, c Case, opts Options) Attempt {
 	start := time.Now()
 	a := Attempt{Score: &Score{Kind: c.Kind}}
 
-	if opts.Provider == nil {
+	// A scripted case asks nothing (mechanism.go), which is what lets it run
+	// where there is no account at all; every other table case is a request
+	// and cannot start without somewhere to send it.
+	if opts.Provider == nil && !c.Kind.Scripted() {
 		a.Err = fmt.Errorf("no provider to ask: a %s case is a request, not a session", c.Kind)
 		a.Elapsed = time.Since(start)
 		return a
@@ -252,7 +256,10 @@ func tableAttempt(ctx context.Context, c Case, opts Options) Attempt {
 		a.TokensIn += ans.Usage.PromptTokens
 		a.TokensOut += ans.Usage.CompletionTokens
 	}
-	if opts.Price != nil {
+	// A scripted case is left unpriced rather than priced at nothing: zero
+	// dollars beside a row is a measurement, and what this ran on was not
+	// the price table being cheap but no request at all.
+	if opts.Price != nil && !c.Kind.Scripted() {
 		a.Cost, a.Priced = opts.Price(opts.Model, a.TokensIn, a.TokensOut)
 	}
 

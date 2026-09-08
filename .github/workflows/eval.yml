@@ -1,0 +1,83 @@
+name: Eval
+
+# The suite is run by a person asking for it and never by a push.
+#
+# Every case that names a model costs real requests: fourteen cases, ten of
+# them on the provider, several minutes of wall clock and a few dollars at the
+# usual rates — more with --repeat, which is what a flaky case needs to be
+# told from a failing one. That is a thing to spend deliberately, and a
+# workflow that spent it on every commit would be a bill nobody decided to
+# pay and a number nobody read.
+#
+# The scripted cases cost nothing and run here whatever the secret says: they
+# put the harness's own mechanisms — the steer, the window recovery, the
+# spawn and patch loop, the quality gate — to a labelled table with the
+# model's part written down. A run without SHHH_API_KEY is those four cases
+# and ten honest skips, which is a useful thing to be able to ask for on its
+# own.
+#
+# The report is compared against evals/baseline.json, which is committed, so
+# the job's output is a delta rather than a page of numbers. Refreshing that
+# file is a commit — `shhh eval --refresh-baseline` locally, reviewed like any
+# other change — and not something this workflow does.
+# See docs/capabilities/evals.md.
+
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: "Model to measure (empty takes the configured default)"
+        required: false
+        type: string
+      repeat:
+        description: "Attempts per case; more than one is what tells a flaky case from a failing one"
+        required: false
+        default: "1"
+        type: string
+      case:
+        description: "One case by name (empty runs the whole suite)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      # A workspace case runs its check in the copied fixture, and two of them
+      # are in languages this image has to have to run them at all. A case
+      # whose toolchain is missing is skipped and says so, which is a suite
+      # reporting less than it was asked for.
+      - name: Report the toolchains the cases require
+        run: |
+          go version
+          node --version || true
+          python3 --version || true
+
+      # The inputs arrive as environment variables rather than as expressions
+      # inside the script. What a workflow_dispatch input holds is text
+      # somebody typed, and pasted into the command line by the expression
+      # syntax it would be text this runner executes.
+      - name: Run the suite
+        env:
+          SHHH_API_KEY: ${{ secrets.SHHH_API_KEY }}
+          MODEL: ${{ inputs.model }}
+          REPEAT: ${{ inputs.repeat }}
+          CASE: ${{ inputs.case }}
+        run: |
+          # Each value is quoted where it is put into the string, because
+          # the string is split by a shell again inside the make recipe and a
+          # name with a space in it would arrive as two arguments.
+          args=""
+          if [ -n "$MODEL" ]; then args="$args --model '$MODEL'"; fi
+          if [ -n "$REPEAT" ]; then args="$args --repeat '$REPEAT'"; fi
+          if [ -n "$CASE" ]; then args="$args --case '$CASE'"; fi
+          make eval EVAL_ARGS="$args"

@@ -137,20 +137,27 @@ func LoadCase(dir string) (Case, error) {
 			return Case{}, err
 		}
 		c.Site, c.Prompt, c.Facts = site, strings.TrimSpace(f.Prompt), facts
-	case KindClassifier, KindSummary:
+	case KindClassifier, KindSummary, KindSteer, KindCompaction, KindSpawn, KindGate:
 		rows, err := loadTable(filepath.Join(dir, TableFile), kind)
 		if err != nil {
 			return Case{}, err
 		}
 		c.Rows = rows
 	default:
-		return Case{}, fmt.Errorf("%s: kind %q is not one this suite knows — %s, %s, %s or %s",
-			path, f.Kind, KindWorkspace, KindResearch, KindClassifier, KindSummary)
+		return Case{}, fmt.Errorf("%s: kind %q is not one this suite knows — %s",
+			path, f.Kind, strings.Join(kindNames(), ", "))
 	}
 
 	c.Requires = f.Requires
 	c.Skip = missingRequirement(f.Requires)
 	return c, nil
+}
+
+// kindNames is every kind a case file may name, in the order the shapes were
+// added, for the sentence a misspelled one is refused with.
+func kindNames() []string {
+	return []string{string(KindWorkspace), string(KindResearch), string(KindClassifier),
+		string(KindSummary), string(KindSteer), string(KindCompaction), string(KindSpawn), string(KindGate)}
 }
 
 // tableFile is a table on disk: nothing but rows, and no top-level key beside
@@ -182,6 +189,25 @@ type rowFile struct {
 	Round        int      `toml:"round"`
 	ElapsedSecs  int      `toml:"elapsed_seconds"`
 	Previous     string   `toml:"previous"`
+
+	// What a scripted row states (mechanism.go): the model's part, and what
+	// the mechanism's output has to carry.
+	State     string   `toml:"state"`
+	Reason    string   `toml:"reason"`
+	Needs     []string `toml:"needs"`
+	Rounds    int      `toml:"rounds"`
+	Finished  bool     `toml:"finished"`
+	Summary   string   `toml:"summary"`
+	Window    int64    `toml:"window"`
+	Role      string   `toml:"role"`
+	Task      string   `toml:"task"`
+	Paths     []string `toml:"paths"`
+	WritePath string   `toml:"write_path"`
+	WriteBody string   `toml:"write_body"`
+	Reply     string   `toml:"reply"`
+	Decline   bool     `toml:"decline"`
+	Config    string   `toml:"config"`
+	Suite     string   `toml:"suite"`
 }
 
 // loadTable reads a case's rows and refuses one that cannot be scored.
@@ -216,7 +242,7 @@ func loadTable(path string, kind Kind) ([]Row, error) {
 		if len(rf.Expect) >= len(labels) {
 			return nil, fmt.Errorf("%s: %s: a row that accepts every answer measures nothing", path, name)
 		}
-		rows = append(rows, Row{
+		row := Row{
 			Name:         name,
 			Why:          strings.TrimSpace(rf.Why),
 			Expect:       rf.Expect,
@@ -233,15 +259,87 @@ func loadTable(path string, kind Kind) ([]Row, error) {
 			Round:        rf.Round,
 			Elapsed:      time.Duration(rf.ElapsedSecs) * time.Second,
 			Previous:     strings.TrimSpace(rf.Previous),
-		})
+
+			State:     strings.TrimSpace(rf.State),
+			Reason:    strings.TrimSpace(rf.Reason),
+			Needs:     rf.Needs,
+			Rounds:    rf.Rounds,
+			Finished:  rf.Finished,
+			Summary:   strings.TrimSpace(rf.Summary),
+			Window:    rf.Window,
+			Role:      strings.TrimSpace(rf.Role),
+			Task:      strings.TrimSpace(rf.Task),
+			Paths:     rf.Paths,
+			WritePath: strings.TrimSpace(rf.WritePath),
+			WriteBody: rf.WriteBody,
+			Reply:     strings.TrimSpace(rf.Reply),
+			Decline:   rf.Decline,
+			Config:    rf.Config,
+			Suite:     strings.TrimSpace(rf.Suite),
+		}
+		if err := checkScriptedRow(path, kind, row); err != nil {
+			return nil, err
+		}
+		rows = append(rows, row)
 	}
 	return rows, nil
+}
+
+// checkScriptedRow refuses a scripted row that cannot measure anything.
+//
+// Every one of these is a row that would otherwise sit in the suite
+// reporting a rate: a steer row with no reading states nothing to act on, a
+// compaction or spawn row with no `needs` asserts only that the mechanism
+// ran, and a gate row with no config measures a workspace nobody set up. The
+// reader is editing the file, so the sentence says which key is missing and
+// what it is for.
+func checkScriptedRow(path string, kind Kind, row Row) error {
+	switch kind {
+	case KindSteer:
+		if row.State == "" {
+			return fmt.Errorf("%s: %s: state is required — it is the reading the policy acts on", path, row.Name)
+		}
+		if !slices.Contains(KindSummary.Labels(), row.State) {
+			return fmt.Errorf("%s: %s: state %q is not a reading — %s",
+				path, row.Name, row.State, strings.Join(KindSummary.Labels(), ", "))
+		}
+		if row.Instruction == "" {
+			return fmt.Errorf("%s: %s: instruction is required — it is what a steer quotes back", path, row.Name)
+		}
+	case KindCompaction:
+		if len(row.Conversation) == 0 {
+			return fmt.Errorf("%s: %s: conversation is required — it is what the step is run over", path, row.Name)
+		}
+		if row.Window <= 0 {
+			return fmt.Errorf("%s: %s: window is required — nothing crosses a line that is not there", path, row.Name)
+		}
+		if len(row.Needs) == 0 {
+			return fmt.Errorf("%s: %s: needs is required — it is what the next round has to still have", path, row.Name)
+		}
+	case KindSpawn:
+		if row.Role == "" || row.Task == "" {
+			return fmt.Errorf("%s: %s: role and task are required — they are the spawn call", path, row.Name)
+		}
+		if len(row.Needs) == 0 {
+			return fmt.Errorf("%s: %s: needs is required — it is what the parent has to be told", path, row.Name)
+		}
+	case KindGate:
+		if strings.TrimSpace(row.Config) == "" {
+			return fmt.Errorf("%s: %s: config is required — it is the workspace the gate reads", path, row.Name)
+		}
+	}
+	return nil
 }
 
 // conversation turns the written lines into the turns the evidence is drawn
 // from. A line with no role prefix is the user's: that is the common case, and
 // guessing wrong there costs a label on one turn rather than a row that
 // silently vanishes from the evidence.
+//
+// `system:` and `tool:` are here for the scripted kinds, which are run over a
+// conversation rather than shown one: a window recovery keeps the system
+// message and elides the oldest tool results, and neither can be measured
+// against a transcript that has neither in it.
 func conversation(lines []string) []provider.Message {
 	var out []provider.Message
 	for _, line := range lines {
@@ -253,6 +351,10 @@ func conversation(lines []string) []provider.Message {
 		switch {
 		case strings.HasPrefix(strings.ToLower(text), "assistant:"):
 			role, text = provider.RoleAssistant, strings.TrimSpace(text[len("assistant:"):])
+		case strings.HasPrefix(strings.ToLower(text), "system:"):
+			role, text = provider.RoleSystem, strings.TrimSpace(text[len("system:"):])
+		case strings.HasPrefix(strings.ToLower(text), "tool:"):
+			role, text = provider.RoleTool, strings.TrimSpace(text[len("tool:"):])
 		case strings.HasPrefix(strings.ToLower(text), "user:"):
 			text = strings.TrimSpace(text[len("user:"):])
 		}

@@ -1,0 +1,207 @@
+{
+  "version": 1,
+  "model": "",
+  "recorded": "2026-09-08T00:44:37.460338173Z",
+  "cases": [
+    {
+      "name": "child-report",
+      "kind": "spawn",
+      "verdict": "passed",
+      "attempts": 1,
+      "passes": 1,
+      "median_rounds": 0,
+      "median_tokens": 0,
+      "median_seconds": 0.12432701,
+      "cost": 0,
+      "priced": false,
+      "table": {
+        "rows": 4,
+        "correct": 4,
+        "false_allow": 0,
+        "false_deny": 0,
+        "wrong": 0,
+        "unanswered": 0
+      }
+    },
+    {
+      "name": "classifier-decisions",
+      "kind": "classifier",
+      "verdict": "skipped",
+      "attempts": 0,
+      "passes": 0,
+      "median_rounds": 0,
+      "median_tokens": 0,
+      "median_seconds": 0,
+      "cost": 0,
+      "priced": false
+    },
+    {
+      "name": "close-gate",
+      "kind": "gate",
+      "verdict": "passed",
+      "attempts": 1,
+      "passes": 1,
+      "median_rounds": 0,
+      "median_tokens": 0,
+      "median_seconds": 0.03260971,
+      "cost": 0,
+      "priced": false,
+      "table": {
+        "rows": 5,
+        "correct": 5,
+        "false_allow": 0,
+        "false_deny": 0,
+        "wrong": 0,
+        "unanswered": 0
+      }
+    },
+    {
+      "name": "compaction-keeps-results",
+      "kind": "compaction",
+      "verdict": "passed",
+      "attempts": 1,
+      "passes": 1,
+      "median_rounds": 0,
+      "median_tokens": 0,
+      "median_seconds": 0.000020917,
+      "cost": 0,
+      "priced": false,
+      "table": {
+        "rows": 5,
+        "correct": 5,
+        "false_allow": 0,
+        "false_deny": 0,
+        "wrong": 0,
+        "unanswered": 0
+      }
+    },
+    {
+      "name": "fix-failing-test",
+      "kind": "workspace",
+      "verdict": "skipped",
+      "attempts": 0,
+      "passes": 0,
+      "median_rounds": 0,
+      "median_tokens": 0,
+      "median_seconds": 0,
+      "cost": 0,
+      "priced": false
+    },
+    {
+      "name": "implement-to-spec",
+      "kind": "workspace",
+      "verdict": "skipped",
+      "attempts": 0,
+      "passes": 0,
+      "median_rounds": 0,
+      "median_tokens": 0,
+      "median_seconds": 0,
+      "cost": 0,
+      "priced": false
+    },
+    {
+      "name": "py-fix-failing-test",
+      "kind": "workspace",
+      "verdict": "skipped",
+      "attempts": 0,
+      "passes": 0,
+      "median_rounds": 0,
+      "median_tokens": 0,
+      "median_seconds": 0,
+      "cost": 0,
+      "priced": false
+    },
+    {
+      "name": "research-disagreement",
+      "kind": "research",
+      "verdict": "skipped",
+      "attempts": 0,
+      "passes": 0,
+      "median_rounds": 0,
+      "median_tokens": 0,
+      "median_seconds": 0,
+      "cost": 0,
+      "priced": false
+    },
+    {
+      "name": "research-unanswerable",
+      "kind": "research",
+      "verdict": "skipped",
+      "attempts": 0,
+      "passes": 0,
+      "median_rounds": 0,
+      "median_tokens": 0,
+      "median_seconds": 0,
+      "cost": 0,
+      "priced": false
+    },
+    {
+      "name": "research-version",
+      "kind": "research",
+      "verdict": "skipped",
+      "attempts": 0,
+      "passes": 0,
+      "median_rounds": 0,
+      "median_tokens": 0,
+      "median_seconds": 0,
+      "cost": 0,
+      "priced": false
+    },
+    {
+      "name": "steer-on-drift",
+      "kind": "steer",
+      "verdict": "passed",
+      "attempts": 1,
+      "passes": 1,
+      "median_rounds": 0,
+      "median_tokens": 0,
+      "median_seconds": 0.00001875,
+      "cost": 0,
+      "priced": false,
+      "table": {
+        "rows": 8,
+        "correct": 8,
+        "false_allow": 0,
+        "false_deny": 0,
+        "wrong": 0,
+        "unanswered": 0
+      }
+    },
+    {
+      "name": "summary-state",
+      "kind": "summary",
+      "verdict": "skipped",
+      "attempts": 0,
+      "passes": 0,
+      "median_rounds": 0,
+      "median_tokens": 0,
+      "median_seconds": 0,
+      "cost": 0,
+      "priced": false
+    },
+    {
+      "name": "trace-the-cause",
+      "kind": "workspace",
+      "verdict": "skipped",
+      "attempts": 0,
+      "passes": 0,
+      "median_rounds": 0,
+      "median_tokens": 0,
+      "median_seconds": 0,
+      "cost": 0,
+      "priced": false
+    },
+    {
+      "name": "ts-fix-failing-test",
+      "kind": "workspace",
+      "verdict": "skipped",
+      "attempts": 0,
+      "passes": 0,
+      "median_rounds": 0,
+      "median_tokens": 0,
+      "median_seconds": 0,
+      "cost": 0,
+      "priced": false
+    }
+  ]
+}

@@ -630,6 +630,10 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 	}, nil
 }
 
+// assembled, when set, takes the model runChatSession has just built instead
+// of the program that would run it. See the call site for why it is here.
+var assembled func(chat.Model) error
+
 func runChatSession(cmd *cobra.Command, args []string, session chatSession) error {
 	// The working scope: the directory the session was opened in plus
 	// whatever config and --add-dir put beside it. Containment writes to it,
@@ -1202,6 +1206,16 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// Last, because the tool seams ask the model which calls it gates and
 	// every registration above is part of that answer (chat/hooks.go).
 	model = model.WithHooks(hooks, executor)
+
+	// The assembly ends here, and everything past it needs a terminal: a TTY
+	// on stdin, an alternate screen, a program loop. So this is the one point
+	// at which what the session wired up can be read back and asserted, and
+	// the hook is how a test gets there. It is nil in every run of the
+	// binary; only a test sets it, and it ends the session rather than
+	// returning to a program it deliberately did not start.
+	if assembled != nil {
+		return assembled(model)
+	}
 
 	if session.wantsResume() {
 		reopened, err := session.resumeChat(db)

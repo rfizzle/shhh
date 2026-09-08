@@ -1,0 +1,3 @@
+name = "close-gate"
+kind = "gate"
+requires = ["git", "sh"]

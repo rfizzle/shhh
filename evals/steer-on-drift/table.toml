@@ -1,0 +1,79 @@
+[[row]]
+name = "a departure earns a steer that quotes the task"
+why = "a steer that names no instruction tells the model it may have drifted and never says from what"
+expect = ["steered"]
+state = "off_target"
+reason = "editing files in the exporter"
+instruction = "fix the failing test in internal/calc"
+round = 8
+rounds = 9
+
+[[row]]
+name = "the steer carries the reading's own reason"
+why = "the model is asked to compare its work against something, and the reason is what says where to look"
+expect = ["steered"]
+state = "off_target"
+reason = "editing files in the exporter"
+instruction = "fix the failing test in internal/calc"
+needs = ["editing files in the exporter"]
+round = 8
+rounds = 9
+
+[[row]]
+name = "a long instruction is still quoted in what fits"
+why = "the quote is bounded, and a bound that dropped the head would quote the model nothing it recognises"
+expect = ["steered"]
+state = "off_target"
+reason = "reading the importer"
+instruction = "Rewrite the CSV exporter so every column is quoted, then update the golden files under internal/export/testdata, then check that the importer still round-trips the output, and leave the reader alone — it is covered by its own tests and the change to it belongs in another turn entirely, along with the schema note nobody has written yet."
+needs = ["Rewrite the CSV exporter so every column is quoted"]
+round = 8
+rounds = 9
+
+[[row]]
+name = "work that is on target is left alone"
+why = "the interruption costs a round, and a turn doing what it was asked has nothing to compare"
+expect = ["none"]
+state = "on_target"
+instruction = "fix the failing test in internal/calc"
+round = 8
+rounds = 9
+
+[[row]]
+name = "a reading that could not judge is left alone"
+why = "an intervention on a shrug is worse than no intervention"
+expect = ["none"]
+state = "unclear"
+instruction = "fix the failing test in internal/calc"
+round = 8
+rounds = 9
+
+[[row]]
+name = "a run that already has what it needs is asked to take stock"
+why = "the clock is a poor judge of when investigation is finished; this is the reading that can say so"
+expect = ["enough"]
+state = "sufficient"
+instruction = "find out why the importer drops the last row"
+round = 8
+rounds = 9
+
+[[row]]
+name = "a reading older than the interval is withheld"
+why = "delivered late it names something the next digest no longer shows, and the run spends a round on it"
+expect = ["stale"]
+state = "off_target"
+reason = "editing files in the exporter"
+instruction = "fix the failing test in internal/calc"
+round = 2
+rounds = 14
+
+[[row]]
+name = "a reading that lands after the turn stopped interrupts nothing"
+why = "a closing reading arrives after the work has ended, and there is nothing left to interrupt"
+expect = ["none"]
+state = "off_target"
+reason = "editing files in the exporter"
+instruction = "fix the failing test in internal/calc"
+round = 8
+rounds = 9
+finished = true

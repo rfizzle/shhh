@@ -66,12 +66,16 @@ func addModelFlags(cmd *cobra.Command, flags *resolve.Opts) {
 		"reasoning effort: off, low, medium, high, xhigh, max (default medium; fitted to the model)")
 }
 
-// resolveProvider resolves the request, and on failure asks the card. It
-// returns the provider, the request that built it (the model may have moved,
-// if the card chose a different provider), and an error only when there was
-// still no way in.
-func resolveProvider(ctx context.Context, cfg config.Config, req providerRequest) (provider.Provider, providerRequest, error) {
-	p, err := provider.Resolve(req.Provider, provider.ResolveOpts{
+// tryProvider is the resolution on its own: the provider the request names,
+// or the error saying why there is none.
+//
+// It is separated from resolveProvider for the caller that has work to do
+// without a model. Everything else in shhh needs one to do anything at all,
+// so a failure there is the setup card and an exit; a suite whose scripted
+// cases ask nobody has cases to measure either way, and must not be taken
+// out through that door (eval.go).
+func tryProvider(cfg config.Config, req providerRequest) (provider.Provider, error) {
+	return provider.Resolve(req.Provider, provider.ResolveOpts{
 		APIKey:            req.APIKey,
 		Model:             req.Model,
 		BaseURL:           req.BaseURL,
@@ -81,6 +85,14 @@ func resolveProvider(ctx context.Context, cfg config.Config, req providerRequest
 		CacheTTL:          cfg.ProviderCacheTTL(),
 		StreamIdleSeconds: cfg.ProviderStreamIdle(),
 	})
+}
+
+// resolveProvider resolves the request, and on failure asks the card. It
+// returns the provider, the request that built it (the model may have moved,
+// if the card chose a different provider), and an error only when there was
+// still no way in.
+func resolveProvider(ctx context.Context, cfg config.Config, req providerRequest) (provider.Provider, providerRequest, error) {
+	p, err := tryProvider(cfg, req)
 	if err == nil {
 		return p, req, nil
 	}

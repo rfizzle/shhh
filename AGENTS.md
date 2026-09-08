@@ -82,7 +82,8 @@ golden fixture, so this cannot drift back.
 | CI suite | `make ci` |
 | Check every released platform compiles | `make cross` (part of `make ci`) |
 | Check doc citations | `make docs-check` |
-| Run the eval suite | `make eval` (costs real requests; not part of `make ci`) |
+| Run the eval suite | `make eval` (the cases that name a model cost real requests; not part of `make ci`) |
+| Rewrite the eval baseline | `make eval-baseline` (the file every run is read against; the diff is the review) |
 | Verify prompt caching against live endpoints | `SHHH_CACHE_IT_URL=… SHHH_CACHE_IT_KEY=… SHHH_CACHE_IT_GATEWAY_URL=… SHHH_CACHE_IT_GATEWAY_KEY=… make cache-check` (costs real requests; each half skips when its own pair is unset) |
 | Update golden files | `go test ./internal/ui/components ./internal/ui/chat -update-golden` or `SHHH_UPDATE_GOLDEN=1 go test ./...` |
 
@@ -165,7 +166,7 @@ internal/
   secret/                  Session secrets: the vault, the scrub every text passes through — by declared value, then by credential shape — and the prompt block naming them
   migrate/                 Layout migrations, detected and offered by `shhh doctor` (never at startup)
   observe/                 The session record's contract: the observer every surface reports through, and the closed sets its codes come from
-  eval/                    The eval suite: a workspace and the verdict its own check gives, a labelled table put to a call that leaves no workspace behind, or a site served over loopback and a write-up graded against what the run fetched
+  eval/                    The eval suite: a workspace and the verdict its own check gives, a labelled table put to a call that leaves no workspace behind, a site served over loopback and a write-up graded against what the run fetched, or a mechanism of the harness's own put to a table with the model's part scripted
   evidence/                Evidence store for quality-gate output
   plan/                    Plan mode state (step tracking)
   resolve/                 Provider resolution from flags/config/env

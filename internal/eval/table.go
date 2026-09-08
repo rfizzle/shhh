@@ -57,8 +57,10 @@ const (
 )
 
 // IsTable reports whether this kind is scored against a table rather than a
-// workspace — which is also what says whether the run needs a provider.
-func (k Kind) IsTable() bool { return k == KindClassifier || k == KindSummary }
+// workspace. A scripted case (mechanism.go) is one of these too: it is a
+// table of rows put to a call, and the only thing that differs is that the
+// call is the harness's own and no model is asked.
+func (k Kind) IsTable() bool { return k == KindClassifier || k == KindSummary || k.Scripted() }
 
 // Labels is the closed set this kind's answers come from. A row expecting
 // anything else is a typo, and the loader refuses it rather than scoring
@@ -70,7 +72,7 @@ func (k Kind) Labels() []string {
 	case KindSummary:
 		return []string{LabelOnTarget, LabelSufficient, LabelOffTarget, LabelUnclear}
 	}
-	return nil
+	return scriptedLabels(k)
 }
 
 // defaultRowCWD is the working directory in a classifier row's evidence when
@@ -100,7 +102,11 @@ type Row struct {
 	Conversation []provider.Message
 
 	// The rest is a summary row's digest, in the fields the reading is
-	// assembled from.
+	// assembled from. A scripted row (mechanism.go) reuses them where it
+	// means the same thing — Instruction is the task a steer quotes back,
+	// Conversation is what a compaction is run over — rather than spelling
+	// a second name for one of them, because two names for the instruction
+	// is two things a case author has to know instead of one.
 	Instruction string
 	Plan        []string
 	Activity    []string
@@ -110,6 +116,40 @@ type Row struct {
 	Round       int
 	Elapsed     time.Duration
 	Previous    string
+
+	// What a scripted row states beside those (mechanism.go).
+	//
+	// State is the reading the model's part is scripted with, in the words
+	// a summary row is labelled in, and Reason the sentence that comes with
+	// it. Needs is what the mechanism's output has to carry — the fragment
+	// of the task a steer must quote, the tool result a compaction must
+	// leave standing, what the parent must be told about a child — which is
+	// the whole of what a scripted row asserts beyond the label.
+	State  string
+	Reason string
+	Needs  []string
+	Rounds int
+	// Finished says the turn had already stopped when the reading landed,
+	// which is the case where there is nothing left to interrupt.
+	Finished bool
+	// Summary is what a scripted compaction is rebuilt from, and Window the
+	// context size it is run against.
+	Summary string
+	Window  int64
+	// Role, Task and Paths are a scripted spawn's call, WritePath and
+	// WriteBody the one file its child writes, Reply the report it ends
+	// with, and Decline the person's answer to the patch card.
+	Role      string
+	Task      string
+	Paths     []string
+	WritePath string
+	WriteBody string
+	Reply     string
+	Decline   bool
+	// Config is the gate configuration the row's workspace is given, and
+	// Suite the suite the gate is asked for.
+	Config string
+	Suite  string
 }
 
 // Accepts reports whether label is one this row's author allowed.
@@ -120,6 +160,16 @@ func (r Row) Accepts(label string) bool {
 		}
 	}
 	return false
+}
+
+// needs is what this row requires of what the mechanism produced, or the
+// fallback where the row named nothing — a steer's fallback is the whole
+// instruction, which is what a steer is supposed to quote back.
+func (r Row) needs(fallback ...string) []string {
+	if len(r.Needs) > 0 {
+		return r.Needs
+	}
+	return fallback
 }
 
 // Want is the one label the row expects, or "" when it accepts several.
@@ -245,11 +295,13 @@ func (s Score) Misses() []Answer {
 // compare theirs, and a run that quietly took one reader's overridden prompt
 // or ceiling would produce a number nobody else could reproduce.
 func askRow(ctx context.Context, p provider.Provider, model string, kind Kind, row Row) Answer {
-	switch kind {
-	case KindClassifier:
+	switch {
+	case kind == KindClassifier:
 		return askClassifier(ctx, p, model, row)
-	case KindSummary:
+	case kind == KindSummary:
 		return askSummary(ctx, p, model, row)
+	case kind.Scripted():
+		return askScripted(ctx, kind, row)
 	}
 	return Answer{Row: row, Err: "not a table case"}
 }

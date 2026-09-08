@@ -11,6 +11,8 @@ package cli
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -37,6 +39,7 @@ func newEvalCmd() *cobra.Command {
 	var timeout time.Duration
 	var only []string
 	var baselinePath, comparePath string
+	var refresh bool
 
 	cmd := &cobra.Command{
 		Use:   "eval [suite]",
@@ -50,10 +53,14 @@ func newEvalCmd() *cobra.Command {
 			"A research case brings a site instead of a workspace, served over loopback for the length of the run, and " +
 			"reports three rates over the write-up: the pages it cited that it actually read, the sentences it quoted " +
 			"that are on the page it named, and the facts the case requires.\n\n" +
-			"`--baseline` writes what this run found to a file, and `--compare` reads one back and prints the delta " +
-			"beneath the report, so a prompt edit is judged against a run rather than against the memory of one.\n\n" +
-			"Every case costs real requests. A suite is a way to find out whether a model, a prompt or a setting change " +
-			"actually did the work, and it is not part of `make ci` for that reason.",
+			"A scripted case has no model in it at all: it puts one of the harness's own mechanisms — the steer, the " +
+			"window recovery, the spawn and patch loop, the quality gate — to a labelled table with the model's part " +
+			"written down, so what it measures is the wiring around the model and it costs nothing to run.\n\n" +
+			"Every run is read against the suite's own `baseline.json` unless `--compare` names another file, and " +
+			"`--refresh-baseline` is how that file is replaced — deliberately, so a change to what the suite is " +
+			"expected to produce is reviewed like any other change to it.\n\n" +
+			"Every case that names a model costs real requests. A suite is a way to find out whether a model, a prompt " +
+			"or a setting change actually did the work, and it is not part of `make ci` for that reason.",
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			dir := DefaultSuiteDir
@@ -68,28 +75,65 @@ func newEvalCmd() *cobra.Command {
 				return err
 			}
 
+			if refresh && len(only) > 0 {
+				return fmt.Errorf("--refresh-baseline writes the whole suite's baseline, so it cannot be taken from a run of part of it")
+			}
+
 			cfg := ConfigFrom(cmd.Context())
 			flags.ConfigProvider = cfg.Provider.Default
 			flags.ConfigModel = cfg.Provider.Model
 			flags.ConfigReasoning = cfg.Provider.Reasoning
 			resolved := resolve.Resolve(flags)
 
+			// A run of scripted cases alone measured no model, and the name a
+			// flag or the config would have resolved to is not a reading of
+			// anything. Recorded, it would put a model in the baseline that
+			// nothing asked, and the next comparison would report a change of
+			// model that never happened.
+			if !measuresAModel(cases) {
+				resolved.Model = ""
+			}
+
 			// A table or research case has no session process to run, so the
 			// harness makes the requests itself and needs a provider here. A
 			// suite of workspace cases does not, and must not be stopped at
 			// the door by a credential it was never going to use.
+			//
+			// A provider that will not resolve skips the cases that need one
+			// rather than ending the run. It is the same fact as a toolchain
+			// a case requires being absent — this machine cannot run that
+			// case — and the run still has the scripted cases to measure,
+			// which are exactly the ones a machine with no account has. The
+			// report says so on every row it skipped and once at the top,
+			// because a mistyped key must not read as a suite that passed.
 			var prov provider.Provider
+			var unprovided string
 			if needsProvider(cases) {
-				p, req, err := resolveProvider(cmd.Context(), cfg, providerRequest{
-					Provider: resolved.Provider,
-					Model:    resolved.Model,
-					APIKey:   flags.FlagAPIKey,
-				})
-				if err != nil {
-					return err
+				req := providerRequest{Provider: resolved.Provider, Model: resolved.Model, APIKey: flags.FlagAPIKey}
+				p, err := tryProvider(cfg, req)
+				switch {
+				case err == nil:
+					prov = p
+				case anyScripted(cases):
+					unprovided = firstLineOf(err.Error())
+					cases = skipUnprovided(cases, unprovided)
+					// And the run is recorded as having measured no model,
+					// because it did not. The name a flag or the config
+					// would have resolved to is what the skipped cases
+					// would have asked, and a baseline carrying it would
+					// claim a reading on a model nothing here spoke to.
+					resolved.Model = ""
+				default:
+					// Nothing here can run without a model, so this is the
+					// ordinary failure every other command has: the setup
+					// card, and the places it looked.
+					p, req, err = resolveProvider(cmd.Context(), cfg, req)
+					if err != nil {
+						return err
+					}
+					resolved.Provider, resolved.Model = req.Provider, req.Model
+					prov = p
 				}
-				resolved.Provider, resolved.Model = req.Provider, req.Model
-				prov = p
 			}
 
 			prices := loadPricing()
@@ -114,7 +158,7 @@ func newEvalCmd() *cobra.Command {
 				return err
 			}
 			out := cmd.OutOrStdout()
-			if err := report.Fprint(out, evalReport(sum)); err != nil {
+			if err := report.Fprint(out, evalReport(sum, unprovided)); err != nil {
 				return err
 			}
 
@@ -125,21 +169,46 @@ func newEvalCmd() *cobra.Command {
 			// first would have it compare the run with itself and report no
 			// change every time — while returning early on a comparison that
 			// refuses would throw away a run that has already been paid for.
+			committed := filepath.Join(dir, eval.BaselineFile)
+			// The suite's own baseline is the default comparison, and a suite
+			// that has none yet is not an error: the reader is told how to
+			// write one, and gets their report either way.
+			against := comparePath
+			if _, statErr := os.Stat(committed); against == "" && statErr == nil {
+				against = committed
+			}
 			var before eval.Baseline
 			var compareErr error
-			if comparePath != "" {
-				before, compareErr = eval.ReadBaseline(comparePath)
+			if against != "" {
+				before, compareErr = eval.ReadBaseline(against)
 			}
 			if baselinePath != "" {
 				if err := eval.WriteBaseline(baselinePath, sum.Baseline()); err != nil {
 					return err
 				}
 			}
+			if refresh {
+				if err := eval.WriteBaseline(committed, sum.Baseline()); err != nil {
+					return err
+				}
+				fmt.Fprintf(cmd.ErrOrStderr(), "wrote %s — what moved in it is the diff a reviewer reads\n", committed)
+			}
 			if compareErr != nil {
 				return compareErr
 			}
-			if comparePath == "" {
+			if against == "" {
+				if !refresh {
+					_ = report.Fprintln(cmd.ErrOrStderr(), report.Row{State: report.Skip,
+						Subject: fmt.Sprintf("no %s in %s, so this run was read against nothing — --refresh-baseline writes one", eval.BaselineFile, dir)})
+				}
 				return nil
+			}
+			// A run narrowed to named cases is compared against those rows of
+			// the baseline alone. Nothing else narrows it: a case the run
+			// measured and the file does not hold is still refused, because
+			// there is nothing to read it against.
+			if len(only) > 0 {
+				before = eval.Narrow(before, only)
 			}
 			cmp, err := eval.Compare(before, sum.Baseline())
 			if err != nil {
@@ -154,19 +223,62 @@ func newEvalCmd() *cobra.Command {
 	cmd.Flags().DurationVar(&timeout, "timeout", defaultEvalTimeout, "ceiling on one attempt (0 removes it)")
 	cmd.Flags().StringArrayVar(&only, "case", nil, "run only this case, by name (repeatable)")
 	cmd.Flags().StringVar(&baselinePath, "baseline", "", "write this run's verdicts and medians to this file")
-	cmd.Flags().StringVar(&comparePath, "compare", "", "read a baseline written earlier and print the delta beneath the report")
+	cmd.Flags().StringVar(&comparePath, "compare", "", "read this baseline instead of the suite's own and print the delta beneath the report")
+	cmd.Flags().BoolVar(&refresh, "refresh-baseline", false, "write this run over the suite's committed baseline, so what changed in it is reviewed like code")
 	return cmd
 }
 
 // needsProvider reports whether anything selected asks a model from this
-// process rather than from a session it starts.
+// process rather than from a session it starts. A scripted case asks nothing
+// of anybody (internal/eval/mechanism.go).
 func needsProvider(cases []eval.Case) bool {
 	for _, c := range cases {
-		if !c.Kind.RunsBinary() {
+		if !c.Kind.RunsBinary() && !c.Kind.Scripted() {
 			return true
 		}
 	}
 	return false
+}
+
+// measuresAModel reports whether anything in the run puts a question to one —
+// in this process or in a session it starts.
+func measuresAModel(cases []eval.Case) bool {
+	for _, c := range cases {
+		if !c.Kind.Scripted() {
+			return true
+		}
+	}
+	return false
+}
+
+// anyScripted reports whether the run has a case that can be measured
+// without an account, which is what decides whether a provider that will not
+// resolve is a skipped case or the end of the run.
+func anyScripted(cases []eval.Case) bool {
+	for _, c := range cases {
+		if c.Kind.Scripted() {
+			return true
+		}
+	}
+	return false
+}
+
+// skipUnprovided marks every case that needs a model as one this machine
+// cannot run, with the resolution's own sentence as the reason.
+//
+// A workspace case is one of them: it starts a session, and a session with
+// nowhere to send a request fails at its first round. Skipping it says what
+// happened; letting it run would report a machine with no account as a
+// harness that cannot do the task.
+func skipUnprovided(cases []eval.Case, why string) []eval.Case {
+	out := make([]eval.Case, 0, len(cases))
+	for _, c := range cases {
+		if !c.Kind.Scripted() && c.Skip == "" {
+			c.Skip = "no model to ask: " + why
+		}
+		out = append(out, c)
+	}
+	return out
 }
 
 // selectCases narrows the suite to the named cases, refusing a name that
@@ -232,10 +344,15 @@ func evalProgress(cmd *cobra.Command, cases, repeat int) func(eval.Case, int, ev
 }
 
 // evalReport is the summary as the shape every listing prints in.
-func evalReport(sum eval.Summary) report.Report {
+func evalReport(sum eval.Summary, unprovided string) report.Report {
 	r := report.Report{Title: "shhh eval"}
 	if sum.Model != "" {
 		r.Subject = sum.Model
+	}
+	if unprovided != "" {
+		r.Notes = append(r.Notes, report.Note{State: report.Warn,
+			Text: "no model could be resolved (" + unprovided + "), so every case that asks one was skipped; " +
+				"what ran is the scripted set, which measures the harness and not the model"})
 	}
 	section := report.Section{}
 	for _, res := range sum.Results {
@@ -293,7 +410,12 @@ func evalRow(res eval.Result) report.Row {
 	case eval.Errored:
 		row.State, row.Outcome = report.Fail, "never ran"
 		row.Consequence = "the session did not finish, so nothing was checked — this says nothing about the task"
-		if res.Case.Kind.IsTable() {
+		switch {
+		case res.Case.Kind.Scripted():
+			// A scripted case asked no model, so a broken one is a fact
+			// about this machine and never about the thing being measured.
+			row.Consequence = "the table did not finish, so any rate off it is over a prefix — this says nothing about the mechanism"
+		case res.Case.Kind.IsTable():
 			row.Consequence = "the table did not finish, so any rate off it is over a prefix — this says nothing about the model"
 		}
 	}
@@ -547,7 +669,7 @@ func compareReport(cmp eval.Comparison, now time.Time) report.Report {
 	}
 	if withheld > 0 {
 		r.Notes = append(r.Notes, report.Note{State: report.Skip,
-			Text: fmt.Sprintf("%s carry counts and no rate: under %d samples a side, one sample moves a percentage "+
+			Text: fmt.Sprintf("counts and no rate on %s: under %d samples a side, one sample moves a percentage "+
 				"further than anything being measured here does",
 				countOf(withheld, "row", "rows"), eval.MinRateSamples)})
 	}

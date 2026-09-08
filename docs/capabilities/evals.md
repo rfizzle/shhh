@@ -145,6 +145,38 @@ that knows which server that is. The prompt, the tools, the fetch result the
 model reads and the ledger the write-up is graded against are all the shipped
 ones, which is what the measurement is about.
 
+## A scripted case measures the harness
+
+The three shapes above all measure a model, and that is also why none of them
+can see the machinery around it. A steer that never quotes the instruction it
+was judged against, a window recovery that drops the tool result the next
+round was about to read, a child whose report reaches its parent without
+saying what it did, a gate that answers "pass" for a check that could not be
+started: every one of those is the harness failing rather than the model,
+every one of them is silent at the surface it happens on, and no case that
+asks a model can report any of them.
+
+So the fourth shape scripts the model's part and measures what is done with
+it. The reading a steer acts on is written in the case file rather than asked
+for; so is the summary a compacted conversation is rebuilt from, and the
+replies a spawned child answers with. Everything the case is about runs
+exactly as it runs in a session — the intervention policy, the trim and the
+rebuild, the spawn, report and patch loop against a real worktree and a real
+`git apply`, the gate over a workspace the row describes.
+
+The row states what the mechanism's output has to carry, and the label is what
+it did. A steer that arrives without the task in it is `unquoted` and not
+`steered`; a rebuilt conversation missing the result the next round needs is
+`lost` and not `kept`; a gate whose check could not be started is `blocked`
+and never `pass`. Those are comparisons of words, so the rule that nothing
+here grades a transcript holds the way it holds for a table.
+
+Two things follow from there being no request in it. A scripted case costs
+nothing, which is what lets a suite have a committed baseline at all — these
+are the rows any machine can measure, with or without an account. And its
+answer is a fact rather than a judgement: a row that misses is a defect, not a
+model having a bad day.
+
 ## A run can be compared with the last one
 
 A suite costs real requests, which makes every run worth keeping. Without one
@@ -172,6 +204,31 @@ Two runs over different case sets are refused rather than compared over what
 they share. A suite that gained a case is a suite whose totals moved for a
 reason that is not the change being measured, and quietly dropping the odd case
 out of the comparison would hide exactly that.
+
+## A suite keeps the run it is read against
+
+The baseline a run is compared with by default is a file in the suite,
+`baseline.json`, beside the cases. It is content the way the cases are: what
+this suite is expected to produce belongs with it, a change to that gets
+reviewed like a change to anything else, and a comparison that has to be
+asked for with a flag is one nobody remembers to ask for.
+
+Nothing writes it on its own. `--refresh-baseline` is how it is replaced, and
+the deliberateness is the point — a file that updated itself after every run
+would agree with every run and could never report anything. A suite with no
+baseline yet is not an error: the report says there was nothing to read the
+run against, and how to write one.
+
+A run narrowed to named cases is compared against those rows of the file and
+not the rest. That is not the overlap the section above refuses: the reader
+said which cases they wanted. A case that ran and is not in the file is still
+refused, because there is nothing to read it against.
+
+A machine with no account still measures the scripted cases, and the cases
+that need a model are skipped rather than failed — the same fact as a case
+whose toolchain is not installed. The report says so on every row and once at
+the top, so a mistyped key cannot read as a suite that passed, and the
+baseline such a run writes names no model, because it asked none.
 
 ## A rate needs enough samples to be a rate
 
@@ -209,9 +266,18 @@ differ.
 
 ## It is not part of the gate
 
-Every case costs real requests, so a suite is something you run when you want
-an answer — after a prompt change, before choosing a model, when a session
-starts feeling worse than it did. The offline gate stays offline.
+Every case that names a model costs real requests, so a suite is something you
+run when you want an answer — after a prompt change, before choosing a model,
+when a session starts feeling worse than it did. The offline gate stays
+offline. The workflow that runs the suite is one a person triggers, and it
+says what the run costs.
+
+The scripted cases cost nothing and are still not in the gate, which is a
+deliberate choice rather than an oversight: a case is where a measurement goes
+that is allowed to move, and a suite whose rows became a build failure would
+be a suite nobody dares add an exploratory row to. What belongs in `make ci`
+is the assertion a mechanism must never break; what belongs here is the
+reading of how it is doing.
 
 ## Related
 

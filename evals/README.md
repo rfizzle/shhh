@@ -9,32 +9,40 @@ shhh eval                            # the whole suite, once each
 shhh eval --repeat 3                 # enough attempts to tell flaky from failing
 shhh eval --case trace-the-cause     # one of them
 shhh eval --model claude-sonnet-5    # measure a different model
-shhh eval --baseline before.json     # keep what this run found
-shhh eval --compare before.json      # and read the next one against it
+shhh eval --refresh-baseline         # rewrite baseline.json from this run
+shhh eval --compare before.json      # read this run against some other file
 ```
 
-They cost real requests, which is why `make ci` does not run them.
+Every run is read against [`baseline.json`](baseline.json) unless `--compare`
+names another file.
 
-## Three shapes, three questions
+The cases that name a model cost real requests, which is why `make ci` does not
+run them; the scripted ones cost nothing and need no account at all.
+
+## Four shapes, four questions
 
 | Shape | The question it answers |
 |---|---|
 | A workspace and a check | Given a real task in a real checkout, does the session finish it, and at what cost? |
 | A labelled table | Given evidence a person has already labelled, does the call beside the loop answer the way it should, and at what cost? |
 | A site and a question | Given a question the pages on this site can settle, does the write-up answer it from what it actually read? |
+| A scripted mechanism | Given the model's part written down, does the machinery around it do what it says it does? |
 
 The first is the coding turn. The second is for the calls a session makes
 around it — the permission decision auto mode asks for, the status reading the
 rail shows — whose output never touches a file, so there is no workspace to
 check afterwards and nothing in `make ci` that can tell a working one from a
 silent one. The third is a research run, which also leaves no workspace and
-whose answer is prose rather than a label.
+whose answer is prose rather than a label. The fourth measures the harness
+rather than the model: the steer, the window recovery, the spawn and patch
+loop, the quality gate.
 
-All three are decided by comparison and never by a model. A workspace case is
+All four are decided by comparison and never by a model. A workspace case is
 decided by its own command; a table case is decided by comparing one word from
 a closed set with the word the row is labelled with; a research case is decided
 by comparing the write-up's URLs and quotations with the ledger of what the
-fetcher returned.
+fetcher returned; a scripted case is decided by comparing the word for what the
+mechanism did with the word the row says it must do.
 
 ## Writing a workspace case
 
@@ -126,6 +134,45 @@ defect, and a table with only the first kind cannot see the second.
 are prose, and prose is the thing this suite refuses to grade. The label is
 what is compared.
 
+## Writing a scripted case
+
+A scripted case is a table too, and its kind names the mechanism:
+
+```toml
+# case.toml
+name = "close-gate"
+kind = "gate"          # or "steer", "compaction", "spawn"
+requires = ["git", "sh"]
+```
+
+Nothing here asks a model. What each kind scripts and what its rows say:
+
+| Kind | The model's part, scripted | What a row states | The labels |
+|---|---|---|---|
+| `steer` | `state` and `reason`: the reading the policy acts on | `instruction`, `round`, `rounds`, `finished` | `steered`, `unquoted`, `enough`, `stale`, `none` |
+| `compaction` | `summary`: what the conversation is rebuilt from | `conversation`, `window`, `needs` | `kept`, `lost`, `untouched` |
+| `spawn` | `reply`, `write_path`, `write_body` | `role`, `task`, `paths`, `needs`, and `decline` for the person's answer to the patch card | `reported`, `incomplete`, `broken` |
+| `gate` | nothing — the checks are commands | `config`, `suite` | `pass`, `fail`, `blocked`, `cancelled` |
+
+`needs` is what the mechanism's output has to carry, and it is most of what a
+scripted row asserts: the fragment of the task a steer must quote back, the
+tool result a rebuilt conversation must still hold, what the parent must be
+told about its child. A steer row that names none requires the whole
+instruction.
+
+**State the rule in `why`, not the mechanics.** A row that missed is read
+beside what it was written for, and "the patch note was missing" is only
+actionable next to "the parent acts next on this sentence alone".
+
+**A row that documents what a mechanism gives up is worth writing.** A trim
+spends the oldest tool results — that is what it is for — and the row that
+expects `lost` says so out loud, so a change that stops spending them is a
+change somebody notices.
+
+**A `conversation` line may begin `system:` or `tool:` here.** A window
+recovery keeps the system message and elides the oldest results, and neither
+can be measured against a transcript that has neither in it.
+
 ## Writing a research case
 
 A research case is a directory with a site instead of a workspace:
@@ -204,10 +251,11 @@ line, so name that one to measure what your sessions actually do.
 
 ## Comparing two runs
 
-`--baseline <file>` writes what a run found: each case's verdict, the medians
-beside it, and a table case's outcomes or a research case's three rates counted
-apart. `--compare <file>` reads
-one back and prints the delta under the report.
+Every run is read against `baseline.json` in the suite: each case's verdict,
+the medians beside it, and a table case's outcomes or a research case's three
+rates counted apart. `--refresh-baseline` rewrites that file, which is a commit
+somebody reviews; `--compare <file>` reads some other run back instead, and
+`--baseline <file>` writes this one somewhere that is not the suite.
 
 ```
 ✗ trace-the-cause       passed → failed · 9 → 22 rounds                 [regressed]
@@ -228,7 +276,21 @@ citation of a page the run never fetched — and the medians last.
 
 **Two runs over different case sets are refused.** A suite that gained a case
 has totals that moved for a reason that is not the change being measured, and
-comparing the overlap would hide it. Add the case, run both sides again.
+comparing the overlap would hide it. Add the case, run both sides again — with
+`--refresh-baseline`, whose diff is the review.
+
+**A run narrowed with `--case` is compared against those rows alone.** The
+reader said which cases they wanted; that is not the overlap the rule above
+refuses.
+
+**A machine with no account still measures the scripted cases.** The rest are
+skipped and say why, on every row and once at the top, and the baseline such a
+run writes names no model because it asked none.
+
+**The committed `baseline.json` was written that way.** Its four scripted rows
+carry real figures; the ten cases that name a model are recorded as skipped,
+and the first run on a real provider is what fills them in — with
+`--refresh-baseline`, whose diff is the review.
 
 **Counts always; a percentage only where there are samples for one.** Three
 attempts either side swing by thirty-three points from nothing at all. A
@@ -250,3 +312,7 @@ times does not.
 | `research-version` | research | Two versions documented and a manifest pinning one: the right answer is the behaviour of the version in use. |
 | `research-disagreement` | research | Two sources contradict each other. The write-up has to say so, and say which is more recent. |
 | `research-unanswerable` | research | The answer is not on the site. The only right write-up says it could not be confirmed. |
+| `steer-on-drift` | steer | What a reading earns: a steer that quotes the task, an early check-in, a withheld one, and the readings that earn nothing. |
+| `compaction-keeps-results` | compaction | What a full window costs: the current turn's results survive a trim and a rebuild, and the oldest ones are what is spent. |
+| `child-report` | spawn | The spawn, report and patch loop: what the parent is told about a child that wrote, one whose patch was declined, and one that was judged. |
+| `close-gate` | gate | The gate's three states, and that a check which could not be started blocks rather than passes. |

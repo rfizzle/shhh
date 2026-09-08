@@ -1,0 +1,54 @@
+[[row]]
+name = "a suite whose checks pass"
+why = "the verdict a turn closes on, and the only one that vouches for the tree"
+expect = ["pass"]
+config = '''
+{"suites": {"default": {"checks": [
+  {"name": "unit", "exe": "sh", "args": ["-c", "exit 0"]},
+  {"name": "vet", "exe": "sh", "args": ["-c", "exit 0"]}
+]}}}
+'''
+
+[[row]]
+name = "a check that fails fails the run"
+why = "one failing check is the whole verdict; a suite that averaged them would pass a broken tree"
+expect = ["fail"]
+config = '''
+{"suites": {"default": {"checks": [
+  {"name": "unit", "exe": "sh", "args": ["-c", "exit 0"]},
+  {"name": "vet", "exe": "sh", "args": ["-c", "echo the parser does not compile; exit 1"]}
+]}}}
+'''
+
+[[row]]
+name = "a check that could not be started blocks rather than passes"
+why = "a gate that never ran vouches for nothing, and reporting that as a pass is the gate failing open"
+expect = ["blocked"]
+config = '''
+{"suites": {"default": {"checks": [
+  {"name": "unit", "exe": "shhh-eval-no-such-checker", "args": ["--all"]}
+]}}}
+'''
+
+[[row]]
+name = "a check that could not be started blocks a suite the rest of which passed"
+why = "the one that ran says nothing about the one that did not, and a partial suite is not a verdict"
+expect = ["blocked"]
+config = '''
+{"suites": {"default": {"checks": [
+  {"name": "unit", "exe": "sh", "args": ["-c", "exit 0"]},
+  {"name": "lint", "exe": "shhh-eval-no-such-checker", "args": ["--all"]}
+]}}}
+'''
+
+[[row]]
+name = "the suite a close runs is the one the config names"
+why = "a close asks for a suite by name, and a name that resolved to the wrong checks would vouch for the wrong thing"
+expect = ["fail"]
+suite = "close"
+config = '''
+{"on_close": "close", "suites": {
+  "default": {"checks": [{"name": "unit", "exe": "sh", "args": ["-c", "exit 0"]}]},
+  "close": {"checks": [{"name": "unit", "exe": "sh", "args": ["-c", "exit 1"]}]}
+}}
+'''

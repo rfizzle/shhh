@@ -25,6 +25,18 @@ import (
 	"time"
 )
 
+// BaselineFile is the baseline a suite keeps beside its cases, and the one a
+// run is read against when the reader names none.
+//
+// It is in the suite rather than beside the binary or under a cache because
+// it is content: the numbers a suite is expected to produce belong to the
+// suite the way its cases do, and a file that lives in the repository is one
+// a change to gets read like a change to anything else. A run never writes it
+// on its own — the reader asks for that in as many words — because a baseline
+// that updated itself would agree with every run and could report nothing.
+// See docs/capabilities/evals.md#a-suite-keeps-the-run-it-is-read-against.
+const BaselineFile = "baseline.json"
+
 // BaselineVersion is the format of a written baseline. It is compared on read
 // so that a file from a future shhh is refused with a sentence rather than
 // silently decoded into zero medians, which would read as a run in which
@@ -208,6 +220,27 @@ func ReadBaseline(path string) (Baseline, error) {
 		}
 	}
 	return b, nil
+}
+
+// Narrow is the baseline restricted to the named cases, in its own order.
+//
+// It is for the one narrowing that is not a change in what is measured: a
+// reader who asked for two cases by name has said which comparison they want,
+// and refusing it because the file also holds the other twelve would answer a
+// question nobody asked. Every other mismatch is still refused by Compare —
+// a case that ran and is not in the file has nothing to be read against.
+func Narrow(b Baseline, names []string) Baseline {
+	want := make(map[string]bool, len(names))
+	for _, n := range names {
+		want[n] = true
+	}
+	out := Baseline{Version: b.Version, Model: b.Model, Recorded: b.Recorded}
+	for _, c := range b.Cases {
+		if want[c.Name] {
+			out.Cases = append(out.Cases, c)
+		}
+	}
+	return out
 }
 
 // Change is what a case did between two runs.

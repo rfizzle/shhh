@@ -1,0 +1,3 @@
+name = "child-report"
+kind = "spawn"
+requires = ["git"]

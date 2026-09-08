@@ -345,3 +345,21 @@ func TestACompareReadsAWorseCitationRateAsARegression(t *testing.T) {
 		t.Errorf("change = %v, why = %q", d.Change, d.Why)
 	}
 }
+
+// A reader who named the cases they wanted has said which comparison they
+// want, and the rest of the file is not a case that vanished.
+func TestNarrowKeepsTheNamedCasesInTheFilesOwnOrder(t *testing.T) {
+	before := Baseline{Version: BaselineVersion, Cases: []CaseBaseline{
+		{Name: "alpha", Verdict: "passed"}, {Name: "beta", Verdict: "failed"}, {Name: "gamma", Verdict: "passed"},
+	}}
+	got := Narrow(before, []string{"gamma", "alpha"})
+	if len(got.Cases) != 2 || got.Cases[0].Name != "alpha" || got.Cases[1].Name != "gamma" {
+		t.Fatalf("narrowed to %+v", got.Cases)
+	}
+	if got.Version != before.Version {
+		t.Error("a narrowed baseline is the same file, read in part")
+	}
+	if len(Narrow(before, nil).Cases) != 0 {
+		t.Error("narrowing to nothing is nothing, not everything")
+	}
+}
