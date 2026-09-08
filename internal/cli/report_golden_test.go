@@ -12,6 +12,7 @@ package cli
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -89,9 +90,10 @@ func TestReportGoldens(t *testing.T) {
 		{"observe.compare", observeCompareReport(goldenObserveCompare()).Render(80)},
 		{"observe.compare.small", observeCompareReport(goldenObserveCompareSmall()).Render(80)},
 		{"observe.compare.empty", observeCompareReport(goldenObserveCompareEmpty()).Render(80)},
-		{"observe.session", observeSessionReport(goldenObserveSession()).Render(80)},
+		{"observe.session", goldenObserveSessionReport(false).Render(80)},
+		{"observe.session.transcript", goldenObserveSessionReport(true).Render(80)},
 		{"observe.session.empty",
-			observeSessionReport(goldenObserveSessionRow(), nil, storage.AgentFirstWrite{}).Render(80)},
+			observeSessionReport(goldenObserveSessionRow(), nil, storage.AgentFirstWrite{}, nil, false).Render(80)},
 		{"rate", rateReport(rateWalk(), rateScopeOf(false, false), goldenNow).Render(80)},
 		{"rate.empty", rateReport(nil, rateScopeOf(false, false), goldenNow).Render(80)},
 		{"sandbox.empty", goldenEmptySandbox().Render(80)},
@@ -289,6 +291,32 @@ func goldenObserve() observeData {
 	}
 }
 
+// goldenObserveSessionReport is that session's page, with and without the
+// conversation's own answers under each row.
+func goldenObserveSessionReport(transcript bool) report.Report {
+	row, events, first := goldenObserveSession()
+	return observeSessionReport(row, events, first, goldenObserveSessionCalls(), transcript)
+}
+
+// goldenObserveSessionCalls is what the conversation says those calls were
+// pointed at and what they came back with — the half the record does not
+// hold. The read's answer runs past the bound on purpose, so the fixture
+// shows what a row does with an output too long to print.
+func goldenObserveSessionCalls() []storage.AgentSessionCall {
+	var read strings.Builder
+	for i := 180; i < 200; i++ {
+		fmt.Fprintf(&read, "%d\tline %d of the file\n", i, i)
+	}
+	return []storage.AgentSessionCall{
+		{Turn: 1, Round: 1, Tool: "read_file",
+			Args:   `{"path":"internal/agent/agent.go","start_line":180,"end_line":240}`,
+			Result: read.String()},
+		{Turn: 1, Round: 3, Tool: "execute_command",
+			Args:   `{"command":"go test ./internal/agent"}`,
+			Result: "error: exit status 1\n--- FAIL: TestRounds (0.00s)\nFAIL\tgithub.com/rfizzle/shhh/internal/agent\t0.312s"},
+	}
+}
+
 // goldenObserveSession is one recorded session carrying an event of every
 // kind the timeline can draw — including one at the zero position, which is
 // what a surface that keeps no turn or round accounting records.
@@ -327,12 +355,14 @@ func goldenObserveSession() (storage.AgentSessionSummary, []storage.AgentExportE
 // which is also the page a session that recorded nothing renders.
 func goldenObserveSessionRow() storage.AgentSessionSummary {
 	ended := goldenNow.Add(-26 * time.Minute)
+	slot := int64(7)
 	return storage.AgentSessionSummary{
 		ID: 12, Kind: "code", Provider: "anthropic", Model: "claude-sonnet-5",
 		StartedAt: goldenNow.Add(-28 * time.Minute), EndedAt: &ended,
 		Turns: 1, TokensIn: 41200, TokensOut: 9800, Cost: 0.51,
 		Version: "v1.4.0", PromptHash: "9f2a1c04bb7e", Skills: 2,
-		Project: "3d81ee0a5c62", ChatSession: "2026-08-31 11:31:58", Outcome: "completed",
+		Project: "3d81ee0a5c62", ChatSession: "2026-08-31 11:31:58", ChatSessionID: &slot,
+		Outcome: "completed",
 		Settings: &storage.AgentSettings{
 			Mode: "accept-edits", Reasoning: "medium", MaxRounds: 150,
 			SummaryModel: "claude-haiku-4-5", SummaryInterval: 10, SummaryEnabled: true,

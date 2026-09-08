@@ -1733,10 +1733,10 @@ func TestListChats_MarksASlotARunningSessionStillHolds(t *testing.T) {
 	// "finished" and has since ended.
 	busy := openSessionIn(t, db, "checkout-a", 4242, time.Now())
 	ended := openSessionIn(t, db, "checkout-a", 4343, time.Now())
-	if err := db.LinkAgentSession(busy, "busy"); err != nil {
+	if _, err := db.LinkAgentSession(busy, "busy"); err != nil {
 		t.Fatalf("link busy: %v", err)
 	}
-	if err := db.LinkAgentSession(ended, "finished"); err != nil {
+	if _, err := db.LinkAgentSession(ended, "finished"); err != nil {
 		t.Fatalf("link finished: %v", err)
 	}
 	if err := db.EndAgentSession(ended, ""); err != nil {
@@ -1768,7 +1768,7 @@ func liveChatFixture(t *testing.T, db *DB, name string, pid int) {
 		t.Fatalf("save %s: %v", name, err)
 	}
 	id := openSessionIn(t, db, "checkout-a", pid, time.Now())
-	if err := db.LinkAgentSession(id, name); err != nil {
+	if _, err := db.LinkAgentSession(id, name); err != nil {
 		t.Fatalf("link %s: %v", name, err)
 	}
 }

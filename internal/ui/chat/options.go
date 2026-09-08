@@ -208,6 +208,7 @@ func (m *Model) bindSlot() {
 	m.changes.SetSlot(m.sessionName)
 	if last := max(m.changes.LastTurn(), int64(m.conversationTurns())); last > m.turnCount {
 		m.turnCount = last
+		m.agent.SetTurn(m.turnCount)
 	}
 	// After the counter has caught up, not before: the bind is also what
 	// tells the notebook and the sources ledger which turn is open.

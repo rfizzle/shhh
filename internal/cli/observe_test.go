@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -190,7 +191,7 @@ func TestObserveSessionTimeline(t *testing.T) {
 	var buf bytes.Buffer
 	cmd := &cobra.Command{}
 	cmd.SetOut(&buf)
-	if err := renderObserveSession(cmd, db, rec.sessionID()); err != nil {
+	if err := renderObserveSession(cmd, db, rec.sessionID(), false); err != nil {
 		t.Fatalf("render session: %v", err)
 	}
 	out := buf.String()
@@ -206,7 +207,7 @@ func TestObserveSessionTimeline(t *testing.T) {
 			t.Fatalf("timeline missing %q:\n%s", want, out)
 		}
 	}
-	if err := renderObserveSession(cmd, db, 99); err == nil {
+	if err := renderObserveSession(cmd, db, 99, false); err == nil {
 		t.Fatal("expected an error for a session that does not exist")
 	}
 
@@ -416,7 +417,7 @@ func TestObserveDashboardNeedsNoPerKindCase(t *testing.T) {
 	// And each of them renders as a timeline through the same code.
 	for kind, id := range ids {
 		buf.Reset()
-		if err := renderObserveSession(cmd, db, id); err != nil {
+		if err := renderObserveSession(cmd, db, id, false); err != nil {
 			t.Fatalf("render %s session: %v", kind, err)
 		}
 		if !strings.Contains(buf.String(), "TURN 1") {
@@ -791,7 +792,7 @@ func TestRecordGateVerdicts_Wiring(t *testing.T) {
 // page would be inventing one of them by filling the field in.
 func TestObserveSessionReport_RatingSitsBesideTheOutcome(t *testing.T) {
 	row := goldenObserveSessionRow()
-	if got := observeSessionReport(row, nil, storage.AgentFirstWrite{}).Render(80); strings.Contains(got, "rated:") {
+	if got := observeSessionReport(row, nil, storage.AgentFirstWrite{}, nil, false).Render(80); strings.Contains(got, "rated:") {
 		t.Errorf("an unrated session was given a rating:\n%s", got)
 	}
 	for _, tc := range []struct {
@@ -799,7 +800,7 @@ func TestObserveSessionReport_RatingSitsBesideTheOutcome(t *testing.T) {
 		want   string
 	}{{true, "rated:         worked"}, {false, "rated:         did not work"}} {
 		row.Rating = &tc.rating
-		got := observeSessionReport(row, nil, storage.AgentFirstWrite{}).Render(80)
+		got := observeSessionReport(row, nil, storage.AgentFirstWrite{}, nil, false).Render(80)
 		if !strings.Contains(got, tc.want) {
 			t.Errorf("the page does not say %q:\n%s", tc.want, got)
 		}
@@ -1323,11 +1324,11 @@ func TestObserveDashboard_NothingWrittenIsNoFigureAtAll(t *testing.T) {
 func TestObserveSessionReport_LookingIsStatedOnlyWhereAWriteEndedIt(t *testing.T) {
 	row := goldenObserveSessionRow()
 	wrote := observeSessionReport(row, nil,
-		storage.AgentFirstWrite{SessionID: row.ID, Searches: 7, Wrote: true}).Render(80)
+		storage.AgentFirstWrite{SessionID: row.ID, Searches: 7, Wrote: true}, nil, false).Render(80)
 	if !strings.Contains(wrote, "first write:") || !strings.Contains(wrote, "after 7 search calls") {
 		t.Fatalf("the page does not say what the session spent looking:\n%s", wrote)
 	}
-	never := observeSessionReport(row, nil, storage.AgentFirstWrite{SessionID: row.ID}).Render(80)
+	never := observeSessionReport(row, nil, storage.AgentFirstWrite{SessionID: row.ID}, nil, false).Render(80)
 	if strings.Contains(never, "first write:") {
 		t.Fatalf("a session that never wrote was given a figure anyway:\n%s", never)
 	}
@@ -1402,7 +1403,7 @@ func TestObserveSessionReport_AChildsPageSaysHowTheAttemptEnded(t *testing.T) {
 	row.Child = &observe.ChildEnd{
 		Reason: observe.ChildBudget, Verdict: "off-target", Steers: 2, Attempt: 2,
 	}
-	body := observeSessionReport(row, nil, storage.AgentFirstWrite{}).Render(80)
+	body := observeSessionReport(row, nil, storage.AgentFirstWrite{}, nil, false).Render(80)
 
 	for _, want := range []string{"ended:", "budget", "attempt:", "read as:", "off-target", "steers:"} {
 		if !strings.Contains(body, want) {
@@ -1412,7 +1413,7 @@ func TestObserveSessionReport_AChildsPageSaysHowTheAttemptEnded(t *testing.T) {
 
 	// A session that spawned nothing has no such block at all, rather than
 	// one saying it ended for no reason.
-	bare := observeSessionReport(goldenObserveSessionRow(), nil, storage.AgentFirstWrite{}).Render(80)
+	bare := observeSessionReport(goldenObserveSessionRow(), nil, storage.AgentFirstWrite{}, nil, false).Render(80)
 	if strings.Contains(bare, "ended:") {
 		t.Fatalf("a session that is not a child carries an end:\n%s", bare)
 	}
@@ -1429,5 +1430,124 @@ func TestObserveChildPairs_TheFirstAttemptIsNotNumbered(t *testing.T) {
 	}
 	if len(pairs) != 1 || pairs[0].Value != observe.ChildDone {
 		t.Fatalf("a first attempt's pairs = %+v, want just how it ended", pairs)
+	}
+}
+
+// A recorded session read back with the conversation it wrote beside it. It
+// searched twice in one round and read a file in the next, which is the shape
+// the timeline could count and could not describe.
+func observedSessionWithItsWords(t *testing.T, db *storage.DB) *observeRecorder {
+	t.Helper()
+	rec := startObserveRecorder(db, "code", "anthropic", "test-model", nil)
+	slot := "2026-09-08 10:00:00"
+	if err := db.SaveChat(slot, []provider.Message{
+		{Role: provider.RoleUser, Content: "where is the steering tuned?", Turn: 1},
+		{Role: provider.RoleAssistant, Turn: 1, Round: 8, ToolCalls: []provider.ToolCall{
+			{ID: "a", Name: "search", Arguments: `{"pattern":"steeringItem","path":"internal/ui/chat"}`},
+			{ID: "b", Name: "search", Arguments: `{"pattern":"checkInEvery","path":"internal/agent"}`},
+		}},
+		{Role: provider.RoleTool, ToolCallID: "a", Turn: 1, Round: 8,
+			Content: "internal/ui/chat/steer.go:14\ninternal/ui/chat/steer.go:52"},
+		{Role: provider.RoleTool, ToolCallID: "b", Turn: 1, Round: 8, Content: "internal/agent/checkin.go:9"},
+	}); err != nil {
+		t.Fatalf("save chat: %v", err)
+	}
+	rec.link(slot)
+	rec.toolCallAt(observe.Pos{Turn: 1, Round: 8}, "search", 57*time.Millisecond, "ok", "")
+	rec.toolCallAt(observe.Pos{Turn: 1, Round: 8}, "search", 12*time.Millisecond, "ok", "")
+	rec.turn(1, 8, time.Minute, "done")
+	return rec
+}
+
+// The row says what the call was pointed at, and two calls of one name in one
+// round say their own thing. "27 read-only rounds" and "27 read-only rounds
+// asking one question" are different diagnoses, and the target is the whole
+// difference between them.
+func TestObserveSession_ATimelineRowCarriesWhatTheCallWasPointedAt(t *testing.T) {
+	db, err := storage.OpenPath(filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	defer db.Close()
+	rec := observedSessionWithItsWords(t, db)
+
+	var buf bytes.Buffer
+	cmd := &cobra.Command{}
+	cmd.SetOut(&buf)
+	if err := renderObserveSession(cmd, db, rec.sessionID(), false); err != nil {
+		t.Fatalf("render session: %v", err)
+	}
+	out := buf.String()
+	for _, want := range []string{
+		"steeringItem ./internal/ui/chat", "checkInEvery ./internal/agent",
+		// And the page says where those came from before the rows are read.
+		"targets:", "not exported",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("the timeline does not say %q:\n%s", want, out)
+		}
+	}
+	// What a call came back with is not on the page unless it was asked for.
+	if strings.Contains(out, "internal/ui/chat/steer.go:14") {
+		t.Fatalf("the plain timeline printed a result:\n%s", out)
+	}
+
+	// --transcript puts each call's answer under its row, bounded.
+	buf.Reset()
+	if err := renderObserveSession(cmd, db, rec.sessionID(), true); err != nil {
+		t.Fatalf("render session: %v", err)
+	}
+	out = buf.String()
+	if !strings.Contains(out, "internal/ui/chat/steer.go:14") {
+		t.Fatalf("--transcript printed no result:\n%s", out)
+	}
+}
+
+// A session whose conversation cannot be reached says so, rather than drawing
+// a timeline of nameless calls that reads as a session which made none. A
+// sub-agent is the case that matters: its shape is recorded and its words are
+// not (docs/capabilities/sessions-and-memory.md#a-round-can-be-read-back).
+func TestObserveSession_ASessionWithNoConversationSaysItHasNoTargets(t *testing.T) {
+	row := goldenObserveSessionRow()
+	row.ChatSessionID, row.ChatSession = nil, ""
+	parent := int64(11)
+	row.ParentID = &parent
+	events := []storage.AgentExportEvent{
+		{CreatedAt: "2026-09-08T10:00:01.000Z", Kind: storage.AgentEventTool, Turn: 1, Round: 1,
+			Tool: "search", Outcome: "ok"},
+	}
+	child := observeSessionReport(row, events, storage.AgentFirstWrite{}, nil, false).Render(80)
+	if !strings.Contains(child, "a sub-agent's conversation is not kept") {
+		t.Fatalf("a child's page does not say why it has no targets:\n%s", child)
+	}
+
+	// A session that recorded nothing at all gets no such row: there are no
+	// rows on the page for it to be about.
+	empty := observeSessionReport(row, nil, storage.AgentFirstWrite{}, nil, false).Render(80)
+	if strings.Contains(empty, "targets:") {
+		t.Fatalf("a page with no events talks about targets:\n%s", empty)
+	}
+}
+
+// A result too long to print is cut where the session's own feed cuts it, and
+// the row says how much was left rather than trailing off.
+func TestObserveResult_IsBoundedTheWayTheFeedBoundsIt(t *testing.T) {
+	if got := observeResult(""); got != nil {
+		t.Fatalf("a call that came back with nothing carries lines: %q", got)
+	}
+	short := observeResult("one\ntwo\n")
+	if len(short) != 2 || short[1] != "two" {
+		t.Fatalf("a short result = %q, want it whole", short)
+	}
+	long := make([]string, 0, 30)
+	for i := range 30 {
+		long = append(long, strconv.Itoa(i))
+	}
+	got := observeResult(strings.Join(long, "\n"))
+	if len(got) != observeResultLines+1 {
+		t.Fatalf("a long result printed %d lines, want %d and a tally", len(got), observeResultLines+1)
+	}
+	if got[len(got)-1] != "… 22 more lines" {
+		t.Fatalf("the tally line = %q", got[len(got)-1])
 	}
 }

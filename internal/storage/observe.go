@@ -12,6 +12,7 @@ package storage
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -215,9 +216,33 @@ func (db *DB) StampAgentSession(id int64, p AgentProvenance) error {
 // of, so the two can be joined when someone deliberately wants to read what
 // a session said. The name is a timestamp or a name the user chose, not
 // content.
-func (db *DB) LinkAgentSession(id int64, chatSession string) error {
-	_, err := db.sql.Exec(`UPDATE agent_sessions SET chat_session = ? WHERE id = ?`, chatSession, id)
-	return err
+//
+// The row's own reference is written beside the name, and it is what every
+// join uses. The name is what a person types and what the export has always
+// carried; it is not an identity — a renamed conversation, or a session moved
+// to a fresh slot because another process took the one it was in, leaves the
+// name pointing at nothing.
+//
+// The first result says whether the reference resolved. A slot is claimed
+// before a session writes to it, so it almost always does; a caller that
+// links a name no row carries yet is told so rather than left holding a link
+// that will never join, and can ask again at the next save.
+// See docs/capabilities/sessions-and-memory.md#a-round-can-be-read-back.
+func (db *DB) LinkAgentSession(id int64, chatSession string) (bool, error) {
+	if _, err := db.sql.Exec(
+		`UPDATE agent_sessions SET chat_session = ?,
+		        chat_session_id = (SELECT c.id FROM chat_sessions c WHERE c.name = ?)
+		 WHERE id = ?`,
+		chatSession, chatSession, id,
+	); err != nil {
+		return false, err
+	}
+	var resolved sql.NullInt64
+	if err := db.sql.QueryRow(`SELECT chat_session_id FROM agent_sessions WHERE id = ?`, id).
+		Scan(&resolved); err != nil {
+		return false, err
+	}
+	return resolved.Valid, nil
 }
 
 // UpdateAgentSession sets a session's cumulative totals (idempotent: callers
@@ -1227,6 +1252,10 @@ type UnratedSession struct {
 // same clause — no child is linked to a conversation — which is right for a
 // different reason: a child is judged by the parent that spawned it.
 //
+// It joins on the row's reference and not on the slot's name: a
+// conversation renamed since, or one the session was moved out of, still
+// answers for the row that wrote it.
+//
 // The mapping it joins on is not one to one, and the reminder is the half
 // that suffers. Resuming a conversation opens a second session row against
 // the same name, so both are reminded by the first sitting's title and
@@ -1247,8 +1276,8 @@ func (db *DB) ListUnratedSessions(limit int) ([]UnratedSession, error) {
 		`SELECT a.id, a.started_at, a.kind, a.model, a.turns, COALESCE(a.outcome, ''),
 		        c.name, c.title, `+opening+`
 		 FROM agent_sessions a
-		 JOIN chat_sessions c ON c.name = a.chat_session
-		 WHERE a.rating IS NULL AND a.chat_session != '' AND `+opening+` IS NOT NULL
+		 JOIN chat_sessions c ON c.id = a.chat_session_id
+		 WHERE a.rating IS NULL AND `+opening+` IS NOT NULL
 		 ORDER BY a.id DESC
 		 LIMIT ?`, limit)
 	if err != nil {
@@ -1299,7 +1328,13 @@ type AgentSessionSummary struct {
 	Skills      int
 	Project     string
 	ChatSession string
-	ParentID    *int64
+	// ChatSessionID is the conversation the session wrote, as the reference
+	// every join uses. It is nil where there is nothing to reach: a session
+	// that never saved a conversation, one whose slot has been renamed or
+	// pruned since, and every child — so a reader can say "no words to show"
+	// rather than printing a timeline of nameless calls.
+	ChatSessionID *int64
+	ParentID      *int64
 	// Outcome is how the session came out, from the closed set in
 	// internal/observe. It is empty for a session that never closed a turn,
 	// which the reader shows as unknown rather than filling in.
@@ -1320,7 +1355,7 @@ type AgentSessionSummary struct {
 }
 
 const agentSessionColumns = `id, started_at, ended_at, kind, provider, model, turns, tokens_in, tokens_out, est_cost,
-		        version, prompt_hash, skills, project, chat_session, parent_id,
+		        version, prompt_hash, skills, project, chat_session, chat_session_id, parent_id,
 		        mode, reasoning, max_rounds, summary_model, summary_interval, summary_enabled,
 		        classifier_model, sandbox_profile, item, stage, config_hash, outcome, rating,
 		        check_in_interval, end_reason, verdict, steers, attempt`
@@ -1349,7 +1384,7 @@ func scanAgentSession(rows interface{ Scan(...any) error }) (AgentSessionSummary
 	)
 	if err := rows.Scan(&s.ID, &startedAt, &endedAt, &s.Kind, &s.Provider, &s.Model,
 		&s.Turns, &s.TokensIn, &s.TokensOut, &s.Cost,
-		&s.Version, &s.PromptHash, &s.Skills, &s.Project, &s.ChatSession, &s.ParentID,
+		&s.Version, &s.PromptHash, &s.Skills, &s.Project, &s.ChatSession, &s.ChatSessionID, &s.ParentID,
 		&mode, &reasoning, &maxRounds, &summaryModel, &summaryInterval, &summaryEnabled,
 		&classifierModel, &sandboxProfile, &item, &stage, &configHash, &outcome, &rating,
 		&checkInInterval, &endReason, &verdict, &steers, &attempt); err != nil {
@@ -1425,6 +1460,93 @@ func (db *DB) AgentSessionEvents(id int64) ([]AgentExportEvent, error) {
 	return db.exportAgentEvents(id)
 }
 
+// AgentSessionCall is one tool call as the conversation recorded it: what was
+// called, the arguments it was called with, and the text it came back with.
+//
+// It is content, and it is deliberately not on the event. The record stays
+// content-free by construction — every string in agent_events is an
+// identifier or a code from a closed set — so the call a row is about is read
+// back out of the conversation the session already saved, on the machine that
+// saved it, and never copied into the table the export walks.
+// See docs/capabilities/sessions-and-memory.md#a-round-can-be-read-back.
+type AgentSessionCall struct {
+	// Turn and Round are where the call was asked, and what an event is
+	// matched to it by.
+	Turn, Round int64
+	Tool        string
+	// Args is the call's arguments as the model sent them, raw JSON.
+	Args string
+	// Result is what the call came back with, empty for a call whose result
+	// never reached the conversation — one cancelled mid-round, or one the
+	// slot was saved before.
+	Result string
+}
+
+// AgentSessionCalls is every tool call in the conversation a session wrote,
+// in the order the conversation holds them, each placed at the turn and the
+// round it was asked in.
+//
+// The join is the reference on the session's row and the position on the
+// message, which is why both exist: agent_events has always known which round
+// a call was made in and chat_messages has always held what the call asked
+// for, and until they could be joined "what did round 47 search for" was
+// answered by counting rows in one table and hoping they lined up with the
+// other.
+//
+// A session with no conversation to reach — a child, a slot pruned since —
+// answers with nothing rather than an error: there is no failure in a session
+// that saved no words.
+func (db *DB) AgentSessionCalls(id int64) ([]AgentSessionCall, error) {
+	rows, err := db.sql.Query(
+		`SELECT m.turn, m.round, m.role, m.content, m.tool_calls, m.tool_call_id
+		 FROM chat_messages m
+		 JOIN agent_sessions a ON a.chat_session_id = m.session_id
+		 WHERE a.id = ? ORDER BY m.seq`, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var (
+		calls []AgentSessionCall
+		// Where each call landed, by the id the conversation gives it, so the
+		// result message that follows can be put back beside the call it
+		// answers. A round's results usually arrive in call order, but an
+		// approval answered out of turn does not, and pairing by position
+		// would then file one call's output under another's name.
+		at = map[string]int{}
+	)
+	for rows.Next() {
+		var (
+			turn, round           int64
+			role, content, callID string
+			toolCallsJSON         *string
+		)
+		if err := rows.Scan(&turn, &round, &role, &content, &toolCallsJSON, &callID); err != nil {
+			return nil, err
+		}
+		if toolCallsJSON != nil {
+			var tcs []provider.ToolCall
+			if err := json.Unmarshal([]byte(*toolCallsJSON), &tcs); err != nil {
+				return nil, fmt.Errorf("unmarshal tool calls: %w", err)
+			}
+			for _, tc := range tcs {
+				at[tc.ID] = len(calls)
+				calls = append(calls, AgentSessionCall{
+					Turn: turn, Round: round, Tool: tc.Name, Args: tc.Arguments,
+				})
+			}
+			continue
+		}
+		if role == string(provider.RoleTool) && callID != "" {
+			if i, ok := at[callID]; ok {
+				calls[i].Result = content
+			}
+		}
+	}
+	return calls, rows.Err()
+}
+
 // AgentExportSession is one session with its events, for JSON export.
 type AgentExportSession struct {
 	ID          int64   `json:"id"`
@@ -1491,13 +1613,21 @@ func (db *DB) ExportAgentObservability(since time.Time, transcript bool) ([]Agen
 	}
 	defer rows.Close()
 
-	var sessions []AgentExportSession
+	var (
+		sessions []AgentExportSession
+		// The conversation each row wrote, as the reference rather than the
+		// name it was saved under: the name on the row is the one the
+		// session used, and a conversation renamed since would either hand
+		// the export nothing or hand it whatever holds that name now.
+		slots []*int64
+	)
 	for rows.Next() {
 		s, err := scanAgentSession(rows)
 		if err != nil {
 			return nil, err
 		}
 		sessions = append(sessions, exportSession(s))
+		slots = append(slots, s.ChatSessionID)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -1509,10 +1639,10 @@ func (db *DB) ExportAgentObservability(since time.Time, transcript bool) ([]Agen
 			return nil, err
 		}
 		sessions[i].Events = events
-		if !transcript || sessions[i].ChatSession == "" {
+		if !transcript || slots[i] == nil {
 			continue
 		}
-		msgs, err := db.LoadChat(sessions[i].ChatSession)
+		msgs, err := db.chatMessages(*slots[i])
 		if err != nil {
 			// A conversation deleted since is a gap, not a failure of the
 			// export; the metrics stand on their own.

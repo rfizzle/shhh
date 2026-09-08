@@ -105,8 +105,11 @@ func (m *Model) startNewSession() (note string, save tea.Cmd) {
 	// close with a summary either.
 	m.turnOpen = false
 	// Turns are numbered from one again, which is what makes the record's
-	// turn column mean the same thing in both rows.
+	// turn column mean the same thing in both rows — and the conversation is
+	// told, so the messages of the new session are stamped with its numbering
+	// and not the old one's.
 	m.turnCount = 0
+	m.agent.SetTurn(0)
 	// A backlog run's bookkeeping is counted in those turns and indexed into
 	// that transcript, and a cancel mark left standing would end the first
 	// stage turn of the next run before it was read.

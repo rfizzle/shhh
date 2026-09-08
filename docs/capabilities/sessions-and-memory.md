@@ -513,6 +513,74 @@ moment the export stops being content-free and the reader should know it.
 Sessions can be recorded and never read; the record can be exported as JSON
 and purged entirely.
 
+### A round can be read back
+
+The record says a session made thirteen searches, ten reads and no writes
+across twenty-seven rounds. That is the shape of a session and not its
+subject, and the question anybody tuning the steering, the check-ins or the
+detectors actually asks is the other one: twenty-seven read-only rounds, or
+twenty-seven read-only rounds asking one question over and over?
+
+So a session's own page says what each call was pointed at — `search · r8 ·
+steeringItem ./internal/ui/chat · 57ms` rather than `search · r8 · 57ms` — in
+the same words the activity feed and the summarizer's reading use for the
+same call. One call reads one way everywhere; otherwise a row here and a row
+there describe the same call differently and nobody can tell whether the
+difference is the call or the renderer.
+
+**The target is read out of the conversation, never stored beside the
+event.** A path or a pattern is content, and the record is content-free by
+construction — that is what makes it safe to export without reading it
+first. So the target is drawn, at the moment the page is printed, from the
+conversation the session already saved on this machine. `shhh observe
+export` carries the timeline it always carried and none of the targets, and
+the page's header says so where a reader will see it before the rows.
+
+**The two tables are joined by a position, and the position is on the
+message.** An event has always known which turn and which round it happened
+in; a message now carries the same pair, written as the conversation is
+appended to. The other direction — the event carrying the message's sequence
+number — was the alternative and is worse twice over: the sequence a call's
+result will land at is not known when the event is written, and a sequence
+number is not a stable name for a message, because a compaction rewrites the
+conversation from zero and every earlier event would afterwards point at
+somebody else's words.
+
+**A session's link to its conversation is a reference.** It used to be the
+slot's name, matched as text — so renaming a saved conversation, or a
+session being moved to a fresh slot because another process had taken the
+one it was in, cut the record loose from the words it was about. The name is
+still on the row, because that is what a person types and what the export
+has always carried; every join, including the export's own transcript, uses
+the reference.
+
+**The conversation and the record are kept for different windows, and the
+conversation goes first.** A saved conversation is deleted by hand and
+pruned on its own retention, while the record that explains it is kept for
+twice history's. So a reference is a link that is allowed to break: deleting
+or pruning a conversation empties the link rather than being refused by it,
+and the session's page then says there are no words to show — the same
+answer it gives for a child. The alternative is a record that holds
+conversations hostage, and a retention sweep that stops working the moment
+anybody's session is linked to one.
+
+`shhh observe session <id> --transcript` goes one step further and prints
+what each call came back with under its row, bounded the way the session's
+own feed bounds a result: the head of the output and a line saying how much
+was left. It is the same deliberate act the export's `--transcript` is, for
+the same reason.
+
+**A sub-agent's conversation is not kept, so a child's calls have no targets
+to show, and its page says so.** A child is the run with nobody watching it,
+which is exactly the run somebody later wants to read — but the only place a
+conversation can be kept is the table of saved conversations, and every row
+in it is one a person can open, resume, rename and search. Filling that with
+the dozens of conversations a fan-out holds would change what `shhh chats`
+and `--continue` mean in order to answer a diagnostic question, which is a
+bigger change than the question is worth. A child's page draws the shape it
+has and says the words are absent, rather than drawing a timeline of
+nameless calls that reads as a session which made none.
+
 ### How much looking comes before the first write
 
 One reading is drawn out of the tool events rather than counted as it

@@ -1056,6 +1056,12 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		},
 		hook.Executor(repeats.WrapExecutor(exec)))))
 	a.SetMaxRounds(opts.rounds(cfg))
+	// A run with nobody in front of it is one turn by construction, which is
+	// the turn its events are filed under (headlessObserver.pos). The
+	// conversation is stamped with the same one, so the round a call was made
+	// in still finds the words it was made with when the slot is read back
+	// (docs/capabilities/sessions-and-memory.md#a-round-can-be-read-back).
+	a.SetTurn(1)
 
 	// The stream, where one was asked for. It is opened here rather than at
 	// the first event so that a consumer that read nothing still sees the

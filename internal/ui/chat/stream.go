@@ -301,6 +301,17 @@ func (m *Model) injectSteering() bool {
 			continue
 		}
 		humanSteers++
+		// The steer is a turn of its own, and the number moves before the
+		// message is written rather than after the batch, because everything
+		// stamped with it — the checkpoint, the conversation's own record of
+		// where this message was written, and every event the rest of the
+		// turn files — has to agree on which turn that is. Counted after,
+		// the words went in under the turn before them while the events went
+		// in under this one, and the two could no longer be read against
+		// each other
+		// (docs/capabilities/sessions-and-memory.md#a-round-can-be-read-back).
+		m.turnCount++
+		m.agent.SetTurn(m.turnCount)
 		m.recordCheckpoint(item.text)
 		m.agent.Append(provider.Message{Role: provider.RoleUser, Content: item.text, Attachments: atts})
 		m.appendEntry(entry{kind: entryUser, text: item.text, attached: attachment.Names(atts)})
@@ -315,7 +326,6 @@ func (m *Model) injectSteering() bool {
 		// And what was judged against the shorter instruction is retired, before
 		// the boundary below can deliver it (summary.go).
 		m.summarySteered()
-		m.turnCount += int64(humanSteers)
 		m.signal(observe.SignalSteer, strconv.Itoa(humanSteers))
 		m.resetRounds()
 	}

@@ -82,6 +82,16 @@ type Agent struct {
 	rounds    int
 	maxRounds int
 
+	// turn is which of the session's turns the conversation is on, so every
+	// message appended can say where it was written. The agent does not
+	// count it: a turn moves for reasons only the front-end knows — a
+	// person's message, a held turn released in another sitting, an undo
+	// that files its reverse edits under a number of their own — and a
+	// counter here would drift from the one the record is written under.
+	// SetTurn is how a surface that keeps the accounting says so; one that
+	// keeps none leaves it zero, which is what "no position" reads as.
+	turn int64
+
 	// lastIntervention is the round something last asked the turn to take
 	// stock — a check-in or a steer. The check-in interval is measured from
 	// it (checkin.go), and intervene is the policy that decides which of the
@@ -209,8 +219,25 @@ func (a *Agent) SetMessages(msgs []provider.Message) {
 	a.messages = msgs
 }
 
-// Append adds one message to the conversation.
-func (a *Agent) Append(msg provider.Message) { a.messages = append(a.messages, a.scrubbed(msg)) }
+// SetTurn tells the agent which turn the session has moved to, so the
+// messages appended from here carry it. Every site that moves a turn calls
+// it: a turn that moved without saying so files its events under one number
+// and writes its words under another, and nothing fails when it happens.
+func (a *Agent) SetTurn(turn int64) { a.turn = turn }
+
+// Append adds one message to the conversation, stamped with where in the
+// session it was written.
+//
+// The stamp is put on here rather than by each caller because this is the
+// one door into the conversation, and a message that arrived through it
+// without a position would be a hole in exactly the join the position exists
+// for. A message replayed into the agent whole — a resume, a compaction —
+// comes through SetMessages instead and keeps the position it was saved
+// with (provider.Message.Turn).
+func (a *Agent) Append(msg provider.Message) {
+	msg.Turn, msg.Round = a.turn, int64(a.rounds)
+	a.messages = append(a.messages, a.scrubbed(msg))
+}
 
 // AppendMachine adds a user-role message the session wrote for itself — a
 // check-in, a steer, a gate verdict, a tree notice, the nudge that continues

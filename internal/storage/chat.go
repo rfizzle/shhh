@@ -429,10 +429,14 @@ func (db *DB) saveChatTx(tx *sql.Tx, name string, messages []provider.Message) (
 			s := string(b)
 			attachmentsJSON = &s
 		}
+		// The turn and the round the message was written in ride with it,
+		// so a recorded event can be joined to the words it came from
+		// (docs/capabilities/sessions-and-memory.md#a-round-can-be-read-back).
 		_, err := tx.Exec(
-			`INSERT INTO chat_messages (session_id, seq, role, content, tool_calls, tool_call_id, attachments, machine)
-			 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+			`INSERT INTO chat_messages (session_id, seq, role, content, tool_calls, tool_call_id, attachments, machine, turn, round)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			sessionID, i, string(msg.Role), msg.Content, toolCallsJSON, msg.ToolCallID, attachmentsJSON, msg.Machine,
+			msg.Turn, msg.Round,
 		)
 		if err != nil {
 			return 0, fmt.Errorf("insert message %d: %w", i, err)
@@ -464,9 +468,31 @@ func (db *DB) LoadChat(name string) ([]provider.Message, error) {
 	if err != nil {
 		return nil, err
 	}
+	messages, err := db.chatMessages(sessionID)
+	if err != nil {
+		return nil, err
+	}
+	// What was read is what this process has in the slot: a resumed session
+	// autosaves over the conversation it just loaded, and must be able to
+	// tell that from another session's messages arriving underneath it.
+	//
+	// It is here rather than in chatMessages because only a read by name is
+	// a session taking up a slot. A read by row id is somebody looking at a
+	// conversation — the export's transcript join — and a reader that
+	// remembered the slot would make this process believe it owns one it has
+	// never written to.
+	db.rememberChat(name, messages)
+	return messages, nil
+}
 
+// chatMessages is one slot's conversation by row id, which is how anything
+// holding a reference to a conversation rather than its name reads it: a
+// name can be renamed out from under the row that named it, and the record's
+// link to the conversation it wrote is a reference for exactly that reason
+// (docs/capabilities/sessions-and-memory.md#a-round-can-be-read-back).
+func (db *DB) chatMessages(sessionID int64) ([]provider.Message, error) {
 	rows, err := db.sql.Query(
-		`SELECT role, content, tool_calls, tool_call_id, attachments, machine
+		`SELECT role, content, tool_calls, tool_call_id, attachments, machine, turn, round
 		 FROM chat_messages WHERE session_id = ? ORDER BY seq`, sessionID,
 	)
 	if err != nil {
@@ -480,8 +506,10 @@ func (db *DB) LoadChat(name string) ([]provider.Message, error) {
 			role, content, toolCallID      string
 			toolCallsJSON, attachmentsJSON *string
 			machine                        bool
+			turn, round                    int64
 		)
-		if err := rows.Scan(&role, &content, &toolCallsJSON, &toolCallID, &attachmentsJSON, &machine); err != nil {
+		if err := rows.Scan(&role, &content, &toolCallsJSON, &toolCallID, &attachmentsJSON, &machine,
+			&turn, &round); err != nil {
 			return nil, err
 		}
 		msg := provider.Message{
@@ -489,6 +517,11 @@ func (db *DB) LoadChat(name string) ([]provider.Message, error) {
 			Content:    content,
 			ToolCallID: toolCallID,
 			Machine:    machine,
+			// Where it was written, carried back so a conversation replayed
+			// into the agent keeps the position it was saved with rather
+			// than being restamped with wherever the resume has got to.
+			Turn:  turn,
+			Round: round,
 		}
 		if toolCallsJSON != nil {
 			if err := json.Unmarshal([]byte(*toolCallsJSON), &msg.ToolCalls); err != nil {
@@ -502,14 +535,7 @@ func (db *DB) LoadChat(name string) ([]provider.Message, error) {
 		}
 		messages = append(messages, msg)
 	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	// What was read is what this process has in the slot: a resumed session
-	// autosaves over the conversation it just loaded, and must be able to
-	// tell that from another session's messages arriving underneath it.
-	db.rememberChat(name, messages)
-	return messages, nil
+	return messages, rows.Err()
 }
 
 // ListChats is every saved conversation, newest first. A slot holding no

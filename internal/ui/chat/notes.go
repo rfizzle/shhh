@@ -39,16 +39,22 @@ func (m *Model) bindNotebook() {
 	m.notebook.SetTurn(m.turnCount)
 }
 
-// nextTurn moves the session on to its next turn number and tells the two
-// per-turn records — the notebook and the sources ledger — so a note or a
-// fetch a delegate makes carries the turn its parent spawned it in. They are
-// one call because a turn that moved without saying so would stamp a child's
-// work with the turn before it, and the close that counts the fan-out's
-// notes would report them against the wrong turn.
+// nextTurn moves the session on to its next turn number and tells the three
+// per-turn records — the notebook, the sources ledger and the conversation —
+// so a note or a fetch a delegate makes carries the turn its parent spawned
+// it in. They are one call because a turn that moved without saying so would
+// stamp a child's work with the turn before it, and the close that counts
+// the fan-out's notes would report them against the wrong turn.
+//
+// The conversation is told for the same reason and one more: the messages
+// appended from here carry the position the record files their events under,
+// which is what lets a recorded round be read back against what was said in
+// it (docs/capabilities/sessions-and-memory.md#a-round-can-be-read-back).
 func (m *Model) nextTurn() {
 	m.turnCount++
 	m.notebook.SetTurn(m.turnCount)
 	m.sourceLedger.SetTurn(m.turnCount)
+	m.agent.SetTurn(m.turnCount)
 }
 
 // notesCommand is /notes: the notebook as the person sees it. Bare lists

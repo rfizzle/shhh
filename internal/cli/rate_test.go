@@ -395,7 +395,7 @@ func TestUnratedItems_AsksOnlyForWhatIsInScope(t *testing.T) {
 	if err != nil {
 		t.Fatalf("start session: %v", err)
 	}
-	if err := db.LinkAgentSession(id, "a-session"); err != nil {
+	if _, err := db.LinkAgentSession(id, "a-session"); err != nil {
 		t.Fatalf("link session: %v", err)
 	}
 

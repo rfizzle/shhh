@@ -644,3 +644,37 @@ func TestExecuteCalls_ImagesSurviveAWholeRoundOfReaders(t *testing.T) {
 		}
 	}
 }
+
+// Every message the agent appends says where in the session it was written,
+// which is what joins a recorded event to the words it came from. The round is
+// the agent's own; the turn is whatever the front-end last said, because a
+// turn moves for reasons only the front-end knows.
+func TestAppend_StampsThePositionTheSessionIsAt(t *testing.T) {
+	a := newTestAgent()
+	a.SetTurn(3)
+	a.StartTurn("what changed?")
+	a.BeginToolRound("looking", []provider.ToolCall{{ID: "c1", Name: "search"}}, nil)
+	a.RecordAutoResults([]ToolResult{{Call: provider.ToolCall{ID: "c1", Name: "search"}, Result: "two hits"}})
+
+	msgs := a.Messages()
+	// The user message opens the turn, before any round has run.
+	if user := msgs[1]; user.Turn != 3 || user.Round != 0 {
+		t.Fatalf("the user message is at turn %d round %d, want turn 3 round 0", user.Turn, user.Round)
+	}
+	// The assistant's call and the result it got are both round one of it,
+	// which is the round the recorder files the tool event under.
+	for _, at := range []int{2, 3} {
+		if m := msgs[at]; m.Turn != 3 || m.Round != 1 {
+			t.Fatalf("message %d is at turn %d round %d, want turn 3 round 1", at, m.Turn, m.Round)
+		}
+	}
+
+	// A conversation replayed whole — a resume, a compaction — keeps the
+	// positions it was saved with rather than being restamped with wherever
+	// the session has got to.
+	a.SetTurn(9)
+	a.SetMessages([]provider.Message{{Role: provider.RoleUser, Content: "earlier", Turn: 1, Round: 2}})
+	if m := a.Messages()[0]; m.Turn != 1 || m.Round != 2 {
+		t.Fatalf("a replayed message was restamped to turn %d round %d", m.Turn, m.Round)
+	}
+}

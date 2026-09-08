@@ -41,6 +41,17 @@ type Message struct {
 	// reader.
 	// See docs/capabilities/sessions-and-memory.md#a-message-the-session-wrote-stays-the-sessions.
 	Machine bool
+	// Turn and Round are where in the session the message was written: the
+	// user turn, and the tool round within it. Nothing on the wire reads
+	// them — they are stamped by the agent as it appends, stored beside the
+	// message, and read back with it — and they are what joins a recorded
+	// event to the words it came from: a `search` event in round 8 of turn 3
+	// and the call that asked the question are the same fact seen from two
+	// tables, and without a position on one side there is nothing to match
+	// on. Zero on both is "no position recorded", which is what a message
+	// stored before the columns existed reads as.
+	// See docs/capabilities/sessions-and-memory.md#a-round-can-be-read-back.
+	Turn, Round int64
 }
 
 type Tool struct {

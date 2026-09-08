@@ -105,6 +105,92 @@ func TestObserver_ToolEventsRecorded(t *testing.T) {
 	}
 }
 
+// The position an event is filed at and the position the conversation writes
+// on its messages are the same position, which is the whole of what joins the
+// record to the words — a session that recorded round 8 and stamped its
+// messages round 7 would be two tables about different sessions
+// (docs/capabilities/sessions-and-memory.md#a-round-can-be-read-back).
+func TestObserver_TheRecordedRoundIsTheRoundTheConversationCarries(t *testing.T) {
+	var at observe.Pos
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
+		WithObserver(observe.Observer{ToolCall: func(p observe.Pos, _ string, _ time.Duration, _, _ string) {
+			at = p
+		}})
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
+	model := updated.(Model)
+	updated, _ = model.sendUserMessage("where is the steering tuned?")
+	model = updated.(Model)
+	model.state = stateStreaming
+
+	call := provider.ToolCall{ID: "1", Name: "search", Arguments: `{"pattern":"steeringItem"}`}
+	model.agent.BeginToolRound("looking", []provider.ToolCall{call}, nil)
+	updated, _ = model.Update(toolResultsMsg{runID: model.agent.RunID(), results: []agent.ToolResult{
+		{Call: call, Result: "one hit", Duration: time.Millisecond},
+	}})
+	model = updated.(Model)
+
+	if at.Turn != 1 || at.Round != 1 {
+		t.Fatalf("the event was filed at turn %d round %d, want turn 1 round 1", at.Turn, at.Round)
+	}
+	var found bool
+	for _, msg := range model.agent.Messages() {
+		if len(msg.ToolCalls) == 0 {
+			continue
+		}
+		found = true
+		if msg.Turn != at.Turn || msg.Round != at.Round {
+			t.Fatalf("the call was written at turn %d round %d, but recorded at turn %d round %d",
+				msg.Turn, msg.Round, at.Turn, at.Round)
+		}
+	}
+	if !found {
+		t.Fatal("the round's calls never reached the conversation")
+	}
+}
+
+// And a steer moves the turn the same way a typed message does, so the words
+// it puts in the conversation and the events filed after it agree about
+// which turn they are. A steer is the case most likely to be diagnosed later
+// — it is what somebody does when a run has gone wrong — so a join that
+// broke on one would be missing exactly where it is wanted.
+func TestObserver_ASteerMovesTheTurnOnBothSidesOfTheJoin(t *testing.T) {
+	var at observe.Pos
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
+		WithObserver(observe.Observer{Signal: func(p observe.Pos, code, _ string) {
+			if code == observe.SignalSteer {
+				at = p
+			}
+		}})
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
+	model := updated.(Model)
+	updated, _ = model.sendUserMessage("do the task")
+	model = updated.(Model)
+
+	model.steering = []steeringItem{{text: "actually do this instead"}}
+	if !model.injectSteering() {
+		t.Fatal("the steering should inject")
+	}
+
+	if at.Turn != model.turnCount {
+		t.Fatalf("the steer was recorded at turn %d while the session is on turn %d", at.Turn, model.turnCount)
+	}
+	last := model.agent.Messages()[len(model.agent.Messages())-1]
+	if last.Content != "actually do this instead" {
+		t.Fatalf("the steering never reached the conversation, last message is %+v", last)
+	}
+	if last.Turn != at.Turn {
+		t.Fatalf("the steer was written at turn %d and recorded at turn %d", last.Turn, at.Turn)
+	}
+
+	// And what the model does after it is written under the same turn, which
+	// is what the rest of the timeline is joined by.
+	model.agent.BeginToolRound("looking", []provider.ToolCall{{ID: "1", Name: "search"}}, nil)
+	call := model.agent.Messages()[len(model.agent.Messages())-1]
+	if call.Turn != model.turnCount {
+		t.Fatalf("the round after the steer was written at turn %d, want %d", call.Turn, model.turnCount)
+	}
+}
+
 func TestObserver_TurnRecordedOnClose(t *testing.T) {
 	var turns []string
 	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).

@@ -20,6 +20,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
+	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/pricing"
@@ -556,7 +557,12 @@ func (r *observeRecorder) link(name string) {
 	if r == nil || name == "" || name == r.linked {
 		return
 	}
-	if err := r.db.LinkAgentSession(r.id, name); err == nil {
+	// The name is remembered only once the reference behind it resolved, so a
+	// link taken before the slot's row existed is asked for again at the next
+	// save rather than leaving the record joined to the conversation by a
+	// name and nothing else
+	// (docs/capabilities/sessions-and-memory.md#a-round-can-be-read-back).
+	if resolved, err := r.db.LinkAgentSession(r.id, name); err == nil && resolved {
 		r.linked = name
 	}
 }
@@ -745,11 +751,13 @@ func newObserveCmd() *cobra.Command {
 	exportCmd.Flags().StringVarP(&exportOut, "out", "o", "", "write to a file (user-only permissions) instead of stdout")
 	exportCmd.Flags().BoolVar(&exportTranscript, "transcript", false, "join each session's saved conversation to its metrics (the export is no longer content-free)")
 
+	var sessionTranscript bool
 	sessionCmd := &cobra.Command{
 		Use:   "session <id>",
 		Short: "Show one recorded session as a timeline",
-		Long:  "Print one session's provenance and its events in order, grouped by turn: tool calls with their duration and outcome, decisions, and the signals the loop raised.",
-		Args:  cobra.ExactArgs(1),
+		Long: "Print one session's provenance and its events in order, grouped by turn: tool calls with what they were pointed at, their duration and outcome, decisions, and the signals the loop raised. " +
+			"What each call was pointed at is read from the conversation this machine saved beside the record, never from the record itself, which holds no such thing.",
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			id, err := strconv.ParseInt(args[0], 10, 64)
 			if err != nil || id <= 0 {
@@ -760,9 +768,11 @@ func newObserveCmd() *cobra.Command {
 				return fmt.Errorf("open database: %w", err)
 			}
 			defer db.Close()
-			return renderObserveSession(cmd, db, id)
+			return renderObserveSession(cmd, db, id, sessionTranscript)
 		},
 	}
+	sessionCmd.Flags().BoolVar(&sessionTranscript, "transcript", false,
+		"print what each call came back with under its row, bounded the way the session's own feed bounds it")
 
 	var purgeYes bool
 	purgeCmd := &cobra.Command{
@@ -1317,7 +1327,7 @@ func observeCost(v float64) string {
 // renderObserveSession prints one session: its provenance, then its events
 // in order under a section per turn, so a reader can see where the rounds
 // went and where the loop's safeguards spoke.
-func renderObserveSession(cmd *cobra.Command, db *storage.DB, id int64) error {
+func renderObserveSession(cmd *cobra.Command, db *storage.DB, id int64, transcript bool) error {
 	s, ok, err := db.AgentSession(id)
 	if err != nil {
 		return fmt.Errorf("query session: %w", err)
@@ -1333,7 +1343,14 @@ func renderObserveSession(cmd *cobra.Command, db *storage.DB, id int64) error {
 	if err != nil {
 		return fmt.Errorf("query first write: %w", err)
 	}
-	return report.Fprint(cmd.OutOrStdout(), observeSessionReport(s, events, firstWrite))
+	// What each of those calls was pointed at, read out of the conversation
+	// the session saved on this machine. It is the half the record does not
+	// hold and must not: see observeCalls.
+	calls, err := db.AgentSessionCalls(id)
+	if err != nil {
+		return fmt.Errorf("query calls: %w", err)
+	}
+	return report.Fprint(cmd.OutOrStdout(), observeSessionReport(s, events, firstWrite, calls, transcript))
 }
 
 // observeSessionReport builds that page. It is separate from the query so
@@ -1341,7 +1358,7 @@ func renderObserveSession(cmd *cobra.Command, db *storage.DB, id int64) error {
 // draws is a code some surface reports, and a surface that starts reporting
 // through a different path must still land on the same page.
 func observeSessionReport(s storage.AgentSessionSummary, events []storage.AgentExportEvent,
-	firstWrite storage.AgentFirstWrite) report.Report {
+	firstWrite storage.AgentFirstWrite, calls []storage.AgentSessionCall, transcript bool) report.Report {
 	pairs := []report.Pair{
 		{Key: "started", Value: s.StartedAt.Local().Format("Jan 2 15:04")},
 		{Key: "model", Value: joinDetail(s.Provider, s.Model)},
@@ -1367,6 +1384,11 @@ func observeSessionReport(s storage.AgentSessionSummary, events []storage.AgentE
 		{Key: "prompt", Value: s.PromptHash},
 		{Key: "project", Value: s.Project},
 		{Key: "conversation", Value: s.ChatSession},
+		// Where the targets on the rows below come from, said before the
+		// rows are read rather than after (observeTargetsOf). A session that
+		// recorded nothing gets no such row: the page has no rows for it to
+		// be about.
+		{Key: "targets", Value: observeTargetsOf(s, calls, transcript, len(events))},
 	} {
 		if p.Value != "" {
 			pairs = append(pairs, p)
@@ -1390,6 +1412,7 @@ func observeSessionReport(s storage.AgentSessionSummary, events []storage.AgentE
 	if len(events) == 0 {
 		return emptyInto(r, "no events recorded for this session", "shhh observe")
 	}
+	found := newObserveCalls(calls)
 	turn := int64(-1)
 	for _, e := range events {
 		// An event with no position joins the section it landed in, which
@@ -1410,9 +1433,86 @@ func observeSessionReport(s storage.AgentSessionSummary, events []storage.AgentE
 			r.Sections = append(r.Sections, report.Section{Header: header})
 		}
 		last := &r.Sections[len(r.Sections)-1]
-		last.Rows = append(last.Rows, observeEventRow(e))
+		last.Rows = append(last.Rows, observeEventRow(e, found.next(e), transcript))
 	}
 	return r
+}
+
+// observeCalls hands each tool event the call in the conversation that
+// produced it.
+//
+// The pairing is the turn and the round on both sides and the tool's name,
+// taken in order: a round that called `search` three times recorded three
+// events in the order the calls were made and holds three calls in that same
+// order, so the nth event of a name in a round is the nth call of that name
+// in it. Matching on the name as well as the position is what keeps a round
+// that read a file and searched for a word from handing either row the
+// other's target.
+//
+// A session whose conversation is not reachable — a child, a slot pruned
+// since, a build that recorded events before messages carried a position —
+// pairs nothing, and every row draws exactly as it did before.
+type observeCalls struct {
+	at map[observeCallKey][]storage.AgentSessionCall
+}
+
+type observeCallKey struct {
+	turn, round int64
+	tool        string
+}
+
+func newObserveCalls(calls []storage.AgentSessionCall) *observeCalls {
+	c := &observeCalls{at: make(map[observeCallKey][]storage.AgentSessionCall, len(calls))}
+	for _, call := range calls {
+		k := observeCallKey{turn: call.Turn, round: call.Round, tool: call.Tool}
+		c.at[k] = append(c.at[k], call)
+	}
+	return c
+}
+
+// next is the call this event came from, and the zero call when there is
+// none — which draws the row the record alone can draw. A call is handed out
+// once: two events of one name in one round are two calls, and answering both
+// with the first would report the second as asking a question it did not ask.
+func (c *observeCalls) next(e storage.AgentExportEvent) storage.AgentSessionCall {
+	if e.Kind != storage.AgentEventTool {
+		return storage.AgentSessionCall{}
+	}
+	k := observeCallKey{turn: e.Turn, round: e.Round, tool: e.Tool}
+	queue := c.at[k]
+	if len(queue) == 0 {
+		return storage.AgentSessionCall{}
+	}
+	c.at[k] = queue[1:]
+	return queue[0]
+}
+
+// observeTargetsOf is the header's word on where the targets below came from,
+// and it is in the header rather than in a footnote because that is where a
+// reader decides how to read the page.
+//
+// Two boundaries meet on this page and both have to be visible at the moment
+// somebody reads across them. The record is content-free and exportable; a
+// target is neither, and is read here out of a conversation that lives on
+// this machine. And a session whose conversation cannot be reached says so
+// rather than drawing a timeline of nameless calls, which reads as a session
+// that made none.
+// See docs/capabilities/sessions-and-memory.md#a-round-can-be-read-back.
+func observeTargetsOf(s storage.AgentSessionSummary, calls []storage.AgentSessionCall,
+	transcript bool, events int) string {
+	if events == 0 {
+		return ""
+	}
+	if s.ChatSessionID == nil || len(calls) == 0 {
+		if s.ParentID != nil {
+			return "none · a sub-agent's conversation is not kept"
+		}
+		return "none · no conversation to read them from"
+	}
+	if transcript {
+		return "from the conversation, with results · not exported"
+	}
+	return "from the conversation · not exported"
 }
 
 // observeFirstWriteOf is one session's looking as the page states it, and
@@ -1496,7 +1596,20 @@ func observeChildPairs(e *observe.ChildEnd) []report.Pair {
 
 // observeEventRow is one recorded event on the grid: what kind of thing
 // happened, to what, and how it came out.
-func observeEventRow(e storage.AgentExportEvent) report.Row {
+//
+// A tool row carries what the call was pointed at, when the conversation it
+// came from is on this machine to be read: `search · r8 · steeringItem
+// ./internal/ui/chat · 57ms` rather than `search · r8 · 57ms`. That is the
+// difference between twenty-seven read-only rounds and twenty-seven
+// read-only rounds asking one question, and the record cannot hold it — so
+// it is drawn from the transcript and never stored beside the event
+// (docs/capabilities/sessions-and-memory.md#a-round-can-be-read-back).
+//
+// The target is `digest.Arg`, which is the wording the activity feed and the
+// summariser's reading already use. One call reads one way everywhere, or a
+// row here and a row there describe the same call differently and nobody can
+// tell whether the difference is the call or the renderer.
+func observeEventRow(e storage.AgentExportEvent, call storage.AgentSessionCall, transcript bool) report.Row {
 	at := e.CreatedAt
 	if t, err := time.Parse(observeTimeLayout, e.CreatedAt); err == nil {
 		at = t.Local().Format("15:04:05")
@@ -1504,7 +1617,11 @@ func observeEventRow(e storage.AgentExportEvent) report.Row {
 	row := report.Row{State: report.Pass, Name: at, Outcome: e.Outcome}
 	switch e.Kind {
 	case storage.AgentEventTool:
-		row.Subject, row.Detail = e.Tool, joinDetail(e.Reason, fmtEventMs(e.DurationMs))
+		row.Subject = e.Tool
+		row.Detail = joinDetail(digest.Arg(call.Tool, call.Args), joinDetail(e.Reason, fmtEventMs(e.DurationMs)))
+		if transcript {
+			row.Body = observeResult(call.Result)
+		}
 		if e.Outcome == "error" {
 			row.State = report.Fail
 		}
@@ -1537,6 +1654,29 @@ func observeEventRow(e storage.AgentExportEvent) report.Row {
 
 // observeTimeLayout is how storage stamps event times.
 const observeTimeLayout = "2006-01-02T15:04:05.000Z"
+
+// observeResultLines is how much of a call's answer a row prints. Eight is
+// the activity feed's own depth for a row nobody has opened
+// (docs/interface/surfaces.md#the-activity-row), and the reason is the same
+// here: a timeline whose every row can print a whole file is not a timeline.
+const observeResultLines = 8
+
+// observeResult is what a call came back with, bounded the way the feed
+// bounds it — the head of the output, and a line saying how much was left,
+// because a result that trails off says nothing about how much was missed.
+// The call itself is the row above; this is the answer beside it.
+func observeResult(result string) []string {
+	result = strings.TrimRight(result, "\n")
+	if result == "" {
+		return nil
+	}
+	lines := strings.Split(result, "\n")
+	if len(lines) <= observeResultLines {
+		return lines
+	}
+	return append(lines[:observeResultLines:observeResultLines],
+		fmt.Sprintf("… %d more lines", len(lines)-observeResultLines))
+}
 
 func fmtEventMs(ms *int64) string {
 	if ms == nil {

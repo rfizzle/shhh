@@ -424,6 +424,61 @@ var migrations = []string{
 	ALTER TABLE agent_sessions ADD COLUMN verdict TEXT;
 	ALTER TABLE agent_sessions ADD COLUMN steers INTEGER;
 	ALTER TABLE agent_sessions ADD COLUMN attempt INTEGER;`,
+
+	// Where in the session a message was written. The record already places
+	// every event at a turn and a round; the conversation placed nothing at
+	// all, so "what did round 47 actually search for" was answered by
+	// counting rows in one table and hoping they lined up with the other.
+	//
+	// The position is stored on the message rather than the seq on the
+	// event, which is the other way the two tables could have been joined.
+	// The message's is both the cheaper write and the only correct one. An
+	// event is written the moment a call comes back, and the seq the call's
+	// result will end up at is not known then — the conversation is saved
+	// later, from a list the resume context has been stripped from — while
+	// the turn and the round are in the agent's hand at the instant it
+	// appends. And a seq is not a stable name for a message: a compaction
+	// rewrites the slot from zero, so every event recorded before it would
+	// afterwards point at somebody else's message, silently, in exactly the
+	// long sessions the join exists for.
+	//
+	// Both default to zero, which reads as "no position recorded" — what a
+	// message stored before these columns holds, and what a surface that
+	// keeps no turn accounting writes
+	// (docs/capabilities/sessions-and-memory.md#a-round-can-be-read-back).
+	`ALTER TABLE chat_messages ADD COLUMN turn INTEGER NOT NULL DEFAULT 0;
+	ALTER TABLE chat_messages ADD COLUMN round INTEGER NOT NULL DEFAULT 0;`,
+
+	// The conversation a session wrote, as a reference. The slot's name was
+	// the only link, and a name is not an identity: renaming a saved
+	// conversation, or a session being moved to a fresh slot because another
+	// process had taken the one it was in, left every row pointing at a name
+	// that no longer resolves — and the join that found it was a string
+	// match on a formatted timestamp.
+	//
+	// The name stays beside it. It is what a person types at `shhh chat
+	// --resume` and what the export has always carried, so removing it would
+	// break a document nobody asked to have changed; the id is what the
+	// queries join on.
+	//
+	// The backfill resolves what the names still match, which is every row
+	// whose conversation has not been renamed or pruned since. The rest keep
+	// a NULL, because a link that cannot be resolved is not one
+	// (docs/capabilities/sessions-and-memory.md#a-round-can-be-read-back).
+	//
+	// It is ON DELETE SET NULL, which is what chat_sessions.parent_id is and
+	// for the same reason: the two tables have separate windows. A
+	// conversation is deleted by hand and pruned on its own retention, while
+	// the record it explains outlives it — so the delete has to be allowed
+	// to happen and leave a row that says the words are gone. Without the
+	// clause the reference is enforced immediately (the store opens with
+	// foreign_keys on), and one linked session anywhere in a batch fails the
+	// whole of PruneOldChats' single DELETE — a prune that quietly does
+	// nothing, which is the failure a window cannot survive.
+	`ALTER TABLE agent_sessions ADD COLUMN chat_session_id INTEGER REFERENCES chat_sessions(id) ON DELETE SET NULL;
+	UPDATE agent_sessions SET chat_session_id =
+		(SELECT c.id FROM chat_sessions c WHERE c.name = agent_sessions.chat_session)
+	 WHERE chat_session != '';`,
 }
 
 // migrate brings the store up to the current schema, one step per

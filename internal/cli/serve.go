@@ -772,6 +772,10 @@ func (l *serveLoop) Run(turn int64, prompt string) (string, error) {
 	l.turn = turn
 	l.steering = nil
 	l.mu.Unlock()
+	// The conversation is told the number the events are filed under, so a
+	// recorded round can be read back against what was said in it
+	// (docs/capabilities/sessions-and-memory.md#a-round-can-be-read-back).
+	l.agent.SetTurn(turn)
 	// This turn's own readings. A hand-back budget and a standing refusal
 	// both belong to the turn that produced them; carried over, the first
 	// would be spent before the turn started and the second would report a

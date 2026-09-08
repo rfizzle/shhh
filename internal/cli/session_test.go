@@ -216,7 +216,7 @@ func heldChat(t *testing.T, db *storage.DB, name string) {
 	if err != nil {
 		t.Fatalf("start the other session: %v", err)
 	}
-	if err := db.LinkAgentSession(id, name); err != nil {
+	if _, err := db.LinkAgentSession(id, name); err != nil {
 		t.Fatalf("link %s: %v", name, err)
 	}
 	if _, err := db.SQL().Exec(

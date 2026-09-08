@@ -230,14 +230,17 @@ func TestAgentObservability_TurnsSignalsAndProvenance(t *testing.T) {
 	if err := db.StampAgentSession(id, AgentProvenance{Version: "1.2.3", PromptHash: "abc123", Skills: 2, Project: "p0", Settings: settings}); err != nil {
 		t.Fatalf("stamp: %v", err)
 	}
-	if err := db.LinkAgentSession(id, "2026-01-01 10:00:00"); err != nil {
-		t.Fatalf("link: %v", err)
-	}
+	// The conversation exists before it is linked, which is the order every
+	// surface takes: a session claims its slot before it writes, and a link
+	// is a reference to a row rather than a name that might one day exist.
 	if err := db.SaveChat("2026-01-01 10:00:00", []provider.Message{
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "fix the build"},
 	}); err != nil {
 		t.Fatalf("save chat: %v", err)
+	}
+	if _, err := db.LinkAgentSession(id, "2026-01-01 10:00:00"); err != nil {
+		t.Fatalf("link: %v", err)
 	}
 
 	ms := int64(900)
@@ -539,7 +542,7 @@ func TestListUnratedSessions_OffersWhatCanBeRemembered(t *testing.T) {
 		if err != nil {
 			t.Fatalf("start session: %v", err)
 		}
-		if err := db.LinkAgentSession(id, chat); err != nil {
+		if _, err := db.LinkAgentSession(id, chat); err != nil {
 			t.Fatalf("link session: %v", err)
 		}
 	}
@@ -665,7 +668,7 @@ func unratedFixture(t *testing.T, db *DB, chat, opening string) int64 {
 	if err != nil {
 		t.Fatalf("start session: %v", err)
 	}
-	if err := db.LinkAgentSession(id, chat); err != nil {
+	if _, err := db.LinkAgentSession(id, chat); err != nil {
 		t.Fatalf("link session: %v", err)
 	}
 	if err := db.EndAgentSession(id, "completed"); err != nil {
@@ -1364,5 +1367,215 @@ func TestEndChildAgentSession_ClosesTheRowWithHowTheAttemptEnded(t *testing.T) {
 	}
 	if p.Child != nil {
 		t.Fatalf("a session that spawned nothing carries an end: %+v", p.Child)
+	}
+}
+
+// sessionWithConversation is a recorded session whose conversation names two
+// rounds of one turn: a round that searched twice and a round that read a
+// file. It is the fixture the join is asserted over.
+func sessionWithConversation(t *testing.T, db *DB, slot string) int64 {
+	t.Helper()
+	id, err := db.StartAgentSession("code", "openai", "gpt-test")
+	if err != nil {
+		t.Fatalf("start session: %v", err)
+	}
+	msgs := []provider.Message{
+		{Role: provider.RoleUser, Content: "where is the steering tuned?", Turn: 1},
+		{Role: provider.RoleAssistant, Turn: 1, Round: 8, ToolCalls: []provider.ToolCall{
+			{ID: "a", Name: "search", Arguments: `{"pattern":"steeringItem","path":"internal/ui/chat"}`},
+			{ID: "b", Name: "search", Arguments: `{"pattern":"checkInEvery","path":"internal/agent"}`},
+		}},
+		{Role: provider.RoleTool, ToolCallID: "a", Content: "chat/steer.go:14", Turn: 1, Round: 8},
+		{Role: provider.RoleTool, ToolCallID: "b", Content: "agent/checkin.go:9", Turn: 1, Round: 8},
+		{Role: provider.RoleAssistant, Turn: 1, Round: 9, ToolCalls: []provider.ToolCall{
+			{ID: "c", Name: "read_file", Arguments: `{"path":"internal/agent/checkin.go"}`},
+		}},
+		{Role: provider.RoleTool, ToolCallID: "c", Content: "package agent", Turn: 1, Round: 9},
+	}
+	if err := db.SaveChat(slot, msgs); err != nil {
+		t.Fatalf("save chat: %v", err)
+	}
+	if _, err := db.LinkAgentSession(id, slot); err != nil {
+		t.Fatalf("link session: %v", err)
+	}
+	return id
+}
+
+// The record places every event at a turn and a round; the conversation now
+// places every message at the same one, so a recorded round can be read back
+// against what was actually asked in it.
+func TestAgentSessionCalls_ReadsTheRoundsBackOutOfTheConversation(t *testing.T) {
+	db := openTestDB(t)
+	id := sessionWithConversation(t, db, "2026-09-08 10:00:00")
+
+	calls, err := db.AgentSessionCalls(id)
+	if err != nil {
+		t.Fatalf("read calls: %v", err)
+	}
+	want := []AgentSessionCall{
+		{Turn: 1, Round: 8, Tool: "search",
+			Args: `{"pattern":"steeringItem","path":"internal/ui/chat"}`, Result: "chat/steer.go:14"},
+		{Turn: 1, Round: 8, Tool: "search",
+			Args: `{"pattern":"checkInEvery","path":"internal/agent"}`, Result: "agent/checkin.go:9"},
+		{Turn: 1, Round: 9, Tool: "read_file",
+			Args: `{"path":"internal/agent/checkin.go"}`, Result: "package agent"},
+	}
+	if len(calls) != len(want) {
+		t.Fatalf("read %d calls, want %d: %+v", len(calls), len(want), calls)
+	}
+	for i := range want {
+		if calls[i] != want[i] {
+			t.Fatalf("call %d = %+v, want %+v", i, calls[i], want[i])
+		}
+	}
+
+	// A session that saved no conversation has nothing to read, which is an
+	// empty answer and not a failure: a child records its shape and never
+	// its words.
+	bare, err := db.StartAgentSession("researcher", "openai", "gpt-test")
+	if err != nil {
+		t.Fatalf("start session: %v", err)
+	}
+	if calls, err := db.AgentSessionCalls(bare); err != nil || len(calls) != 0 {
+		t.Fatalf("an unlinked session read %d calls (%v)", len(calls), err)
+	}
+}
+
+// The link is a reference and not a name, so a conversation renamed after the
+// fact still answers for the session that wrote it. Under the name match this
+// replaced, renaming a saved conversation cut the record loose from it.
+func TestAgentSessionCalls_SurviveTheConversationBeingRenamed(t *testing.T) {
+	db := openTestDB(t)
+	id := sessionWithConversation(t, db, "2026-09-08 10:00:00")
+
+	if err := db.RenameChat("2026-09-08 10:00:00", "steering"); err != nil {
+		t.Fatalf("rename chat: %v", err)
+	}
+	calls, err := db.AgentSessionCalls(id)
+	if err != nil {
+		t.Fatalf("read calls: %v", err)
+	}
+	if len(calls) != 3 {
+		t.Fatalf("a renamed conversation lost its calls: %+v", calls)
+	}
+}
+
+// A conversation can still be deleted and pruned once a session's record
+// points at it. The two have separate windows — a conversation is deleted by
+// hand and pruned on its own retention while the record that explains it
+// outlives it — so the reference gives way rather than refusing the delete.
+// Enforced the other way, one linked session anywhere in a batch would fail
+// the whole of the prune's single statement, and the prune's error is
+// discarded by its caller: retention would stop, silently, for everyone.
+func TestDeleteChat_IsNotHeldUpByTheRecordThatPointsAtIt(t *testing.T) {
+	db := openTestDB(t)
+	id := sessionWithConversation(t, db, "2026-09-08 10:00:00")
+
+	if err := db.DeleteChat("2026-09-08 10:00:00"); err != nil {
+		t.Fatalf("delete the conversation a session is linked to: %v", err)
+	}
+	s, ok, err := db.AgentSession(id)
+	if err != nil || !ok {
+		t.Fatalf("read session: %v (found=%v)", err, ok)
+	}
+	if s.ChatSessionID != nil {
+		t.Fatalf("the row still points at a conversation that is gone: %d", *s.ChatSessionID)
+	}
+	// And the reader says there are no words rather than failing.
+	if calls, err := db.AgentSessionCalls(id); err != nil || len(calls) != 0 {
+		t.Fatalf("a deleted conversation still answered with %d calls (%v)", len(calls), err)
+	}
+
+	// The prune is the path that matters, because its error is thrown away:
+	// a session linked to a conversation past the window must not stop it.
+	other := sessionWithConversation(t, db, "2026-09-08 11:00:00")
+	if _, err := db.SQL().Exec(
+		`UPDATE chat_sessions SET updated_at = ? WHERE name = ?`,
+		time.Now().AddDate(0, 0, -400).UTC().Format(time.RFC3339Nano), "2026-09-08 11:00:00",
+	); err != nil {
+		t.Fatalf("age the conversation: %v", err)
+	}
+	n, err := db.PruneOldChats(30)
+	if err != nil {
+		t.Fatalf("prune with a linked conversation past the window: %v", err)
+	}
+	if n != 1 {
+		t.Fatalf("the prune removed %d conversations, want 1", n)
+	}
+	if s, _, _ := db.AgentSession(other); s.ChatSessionID != nil {
+		t.Fatal("a pruned conversation left its record pointing at it")
+	}
+}
+
+// The export's transcript join follows the reference too. Under the name
+// match it replaced, a conversation renamed since the session wrote it came
+// back empty — or came back as whatever conversation holds that name now.
+func TestExportAgentObservability_JoinsTheTranscriptByReference(t *testing.T) {
+	db := openTestDB(t)
+	sessionWithConversation(t, db, "2026-09-08 10:00:00")
+	if err := db.RenameChat("2026-09-08 10:00:00", "steering"); err != nil {
+		t.Fatalf("rename chat: %v", err)
+	}
+
+	sessions, err := db.ExportAgentObservability(time.Now().Add(-time.Hour), true)
+	if err != nil {
+		t.Fatalf("export: %v", err)
+	}
+	if len(sessions) != 1 {
+		t.Fatalf("exported %d sessions, want 1", len(sessions))
+	}
+	if len(sessions[0].Transcript) != 6 {
+		t.Fatalf("the renamed conversation exported %d messages, want 6", len(sessions[0].Transcript))
+	}
+}
+
+// A link says whether the reference behind it resolved, so a caller that
+// named a slot no row carries yet can ask again rather than leaving the
+// record joined to its conversation by a name and nothing else.
+func TestLinkAgentSession_SaysWhetherTheReferenceResolved(t *testing.T) {
+	db := openTestDB(t)
+	id, err := db.StartAgentSession("code", "openai", "gpt-test")
+	if err != nil {
+		t.Fatalf("start session: %v", err)
+	}
+	if resolved, err := db.LinkAgentSession(id, "not saved yet"); err != nil || resolved {
+		t.Fatalf("a link to a slot that does not exist resolved (%v, %v)", resolved, err)
+	}
+	if err := db.SaveChat("not saved yet", []provider.Message{{Role: provider.RoleUser, Content: "hi"}}); err != nil {
+		t.Fatalf("save chat: %v", err)
+	}
+	if resolved, err := db.LinkAgentSession(id, "not saved yet"); err != nil || !resolved {
+		t.Fatalf("a link to a slot that exists did not resolve (%v, %v)", resolved, err)
+	}
+	s, _, err := db.AgentSession(id)
+	if err != nil {
+		t.Fatalf("read session: %v", err)
+	}
+	if s.ChatSessionID == nil {
+		t.Fatal("the row carries no reference to the conversation it wrote")
+	}
+}
+
+// A message's position survives the store: it is written with the row and
+// read back with it, so a conversation reopened is placed where it was
+// written rather than where the resume has got to.
+func TestSaveChat_KeepsWhereEachMessageWasWritten(t *testing.T) {
+	db := openTestDB(t)
+	msgs := []provider.Message{
+		{Role: provider.RoleUser, Content: "go on", Turn: 4},
+		{Role: provider.RoleAssistant, Content: "looking", Turn: 4, Round: 2},
+	}
+	if err := db.SaveChat("slot", msgs); err != nil {
+		t.Fatalf("save chat: %v", err)
+	}
+	back, err := db.LoadChat("slot")
+	if err != nil {
+		t.Fatalf("load chat: %v", err)
+	}
+	for i := range msgs {
+		if back[i].Turn != msgs[i].Turn || back[i].Round != msgs[i].Round {
+			t.Fatalf("message %d came back at turn %d round %d, want turn %d round %d",
+				i, back[i].Turn, back[i].Round, msgs[i].Turn, msgs[i].Round)
+		}
 	}
 }
