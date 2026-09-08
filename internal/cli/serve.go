@@ -293,7 +293,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	// because the git stager may stage nothing else.
 	own := &writtenByCalls{}
 	l.own = own
-	ts, err := buildToolset(cmd, &session, "serve", toolsetOpts{scope: sc, gitWrites: headlessWrites(session, own)})
+	ts, err := buildToolset(cmd, &session, "serve", toolsetOpts{scope: sc, resident: true, gitWrites: headlessWrites(session, own)})
 	if err != nil {
 		return nil, err
 	}

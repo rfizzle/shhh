@@ -80,6 +80,15 @@ deliberately short-lived — an ephemeral loopback port that lasts as long as
 the process serving it — so the id, not the URL, is the durable name, and the
 tool's own result says how to reopen one.
 
+Which of the two a report is answered with is the surface's own lifetime. A
+session, or a server whose loop stays up, will still be there to answer a
+link, so it gets one and the model is told to include it. A run that ends
+with the answer it just wrote gets no link at all, not even one to quote: the
+result leads with the command that serves the page, the tool is described to
+the model that way so it never learns to reach for an address, and no port is
+opened. A link that stops resolving a second after the run prints it is worse
+than no link, because the answer holding it looks complete.
+
 ## Findable and prunable
 
 Permanence has a cost, and it is the one an ephemeral design would be

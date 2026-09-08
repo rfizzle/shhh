@@ -13,6 +13,7 @@ import (
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
+	"github.com/rfizzle/shhh/internal/reports"
 	"github.com/rfizzle/shhh/internal/secret"
 	"github.com/rfizzle/shhh/internal/shell"
 	"github.com/rfizzle/shhh/internal/structural"
@@ -67,7 +68,7 @@ func TestBuildToolsetRegistersTheSameNamesOnBothSurfaces(t *testing.T) {
 	}
 
 	interactive := codeToolset()
-	its, err := buildToolset(toolsetCmd(t), &interactive, "code", toolsetOpts{scope: sc, browser: true})
+	its, err := buildToolset(toolsetCmd(t), &interactive, "code", toolsetOpts{scope: sc, browser: true, resident: true})
 	if err != nil {
 		t.Fatalf("session registration: %v", err)
 	}
@@ -100,6 +101,64 @@ func TestBuildToolsetRegistersTheSameNamesOnBothSurfaces(t *testing.T) {
 			t.Errorf("%s writes and is not gated", name)
 		}
 	}
+}
+
+// A surface that ends with its answer is not handed a link it cannot keep.
+// The registration is the one place the lifetime is read, and what it guards
+// is a run behind --print quoting a loopback address whose port closed with
+// the process seconds later.
+func TestBuildToolsetTellsTheModelWhichReportLineItWillGet(t *testing.T) {
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	sc, err := sessionScope(config.Config{}, nil)
+	if err != nil {
+		t.Fatalf("session scope: %v", err)
+	}
+
+	interactive := codeToolset()
+	its, err := buildToolset(toolsetCmd(t), &interactive, "code", toolsetOpts{scope: sc, browser: true, resident: true})
+	if err != nil {
+		t.Fatalf("session registration: %v", err)
+	}
+	defer its.close()
+
+	headless := codeToolset()
+	hts, err := buildToolset(toolsetCmd(t), &headless, "print", toolsetOpts{scope: sc})
+	if err != nil {
+		t.Fatalf("headless registration: %v", err)
+	}
+	defer hts.close()
+
+	session, unattended := reportDescription(t, interactive.toolDefs), reportDescription(t, headless.toolDefs)
+	if !strings.Contains(session, "first line is the page URL") {
+		t.Errorf("a session is not offered its own report link: %q", session)
+	}
+	if strings.Contains(unattended, "first line is the page URL") {
+		t.Errorf("an unattended run is still told to quote a URL: %q", unattended)
+	}
+
+	// And the result agrees with the description, which is the half a
+	// description alone cannot promise.
+	args, _ := json.Marshal(reports.Document{Title: "t", Blocks: []reports.Block{{Type: reports.BlockProse, Text: "x"}}})
+	out, err := hts.reports.ExecuteTool(args)
+	if err != nil {
+		t.Fatalf("headless report: %v", err)
+	}
+	if first, _, _ := strings.Cut(out, "\n"); !strings.HasPrefix(first, "shhh reports open rp-") {
+		t.Errorf("an unattended run's report answers with %q, want the command that serves it", first)
+	}
+}
+
+// reportDescription is how the report tool was described to this surface's
+// model, which is where the promise about the result lives.
+func reportDescription(t *testing.T, defs []provider.Tool) string {
+	t.Helper()
+	for _, d := range defs {
+		if d.Name == reports.ToolName {
+			return d.Description
+		}
+	}
+	t.Fatal("the report tool was not registered")
+	return ""
 }
 
 // What a surface did not register, it does not offer. The conditions are the

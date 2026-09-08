@@ -35,6 +35,12 @@ type toolsetOpts struct {
 	// nobody in front of it never does: there is no guarantee of a desktop,
 	// and the URL reaches the transcript either way.
 	browser bool
+	// resident says this surface is still up after the answer that a turn
+	// produced. A report's serving link lasts exactly as long as the process
+	// holding the port, so a run that exits with its answer publishes under
+	// the page's id instead; the zero value is that safe reading, and only a
+	// surface that stays up says otherwise.
+	resident bool
 	// gitWrites says this surface writes to git, and carries the two things
 	// only a surface can answer: the record of what it changed, which is
 	// what may be staged, and the checkout's trust answer, which is whether
@@ -154,9 +160,16 @@ func buildToolset(cmd *cobra.Command, session *chatSession, kind string, opts to
 	}
 	// Report pages: an answer that is a page rather than a paragraph. The
 	// tool writes only shhh's own report store and serves on loopback, so it
-	// rides the auto-run path; no store means no report tool.
-	if t.reports = openReportsPublisher(cfg, kind, opts.browser); t.reports != nil {
-		register(reports.ToolDefinition())
+	// rides the auto-run path; no store means no report tool. What it hands
+	// back is the surface's own lifetime: a link where one will still be
+	// answered, and the page's durable name where the process is about to go
+	// (docs/capabilities/reports.md#a-report-outlives-its-session).
+	life := reports.OneShot
+	if opts.resident {
+		life = reports.Resident
+	}
+	if t.reports = openReportsPublisher(cfg, kind, life, opts.browser); t.reports != nil {
+		register(t.reports.ToolDefinition())
 		pub := t.reports
 		t.closers = append(t.closers, func() { _ = pub.Close() })
 	}

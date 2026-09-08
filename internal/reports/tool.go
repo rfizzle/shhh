@@ -12,8 +12,28 @@ import (
 // loopback only, and a page can never execute or fetch anything.
 const ToolName = "report"
 
-// ToolDefinition is the report tool registered for agent sessions.
-func ToolDefinition() provider.Tool {
+// Lifetime is how long the surface publishing a report will still be there
+// to serve it. A loopback URL is only as good as the process holding the
+// port open, so it is what decides whether the tool may hand one out at all.
+type Lifetime int
+
+const (
+	// OneShot is a surface whose process ends with the answer it just
+	// wrote: a run behind --print, a review stage's turn. It is the zero
+	// value on purpose — a surface that says nothing about itself gets the
+	// result that cannot go stale.
+	OneShot Lifetime = iota
+	// Resident is a surface that outlives the turn that published the page:
+	// the TUI, and `shhh serve`, whose loop is up until it is stopped.
+	Resident
+)
+
+// ToolDefinition is the report tool as this publisher will answer it. It
+// comes off the publisher rather than the package because the description's
+// last sentence is a promise about the result: a session that hands back an
+// id while its tool description says the first line is a URL teaches the
+// model to quote an address that stopped resolving.
+func (p *Publisher) ToolDefinition() provider.Tool {
 	return provider.Tool{
 		Name: ToolName,
 		Description: "Publish an answer that is a page rather than a paragraph — timings, comparisons, " +
@@ -26,7 +46,7 @@ func ToolDefinition() provider.Tool {
 			"no scripts, no event handlers, no external references, and every color written as var(--token) from the report stylesheet " +
 			"(--heading --prose --secondary --caption for text; --ok --fail --risk --running for state; --add --del --hunk for change; " +
 			"--series-1 … --series-8 for categorical data, in order, meaning nothing; --card --rule --track for surfaces). " +
-			"The result's first line is the page URL — include it in your answer.",
+			p.resultSentence(),
 		Parameters: json.RawMessage(`{
 			"type": "object",
 			"properties": {
@@ -64,10 +84,11 @@ func ToolDefinition() provider.Tool {
 	}
 }
 
-// Publisher executes report tool calls against one store and one server.
+// Publisher executes report tool calls against one store, and against one
+// server where the surface will outlive the answer.
 type Publisher struct {
 	store  *Store
-	server *Server
+	server *Server // nil on a one-shot surface: nothing is listening
 	origin string
 	root   string // the project this session runs in
 	open   bool   // pop a browser on publish (a headless run does not)
@@ -75,22 +96,66 @@ type Publisher struct {
 }
 
 // NewPublisher wires the report tool for one session. origin names the
-// command the session runs under; root is the project key.
-func NewPublisher(store *Store, origin, root string, open bool) *Publisher {
-	return &Publisher{
+// command the session runs under; root is the project key; life says whether
+// this surface will still be up to serve what it publishes, and a one-shot
+// one gets no server at all — the port would be gone before the reader could
+// type the address.
+func NewPublisher(store *Store, origin, root string, life Lifetime, open bool) *Publisher {
+	p := &Publisher{
 		store:  store,
-		server: NewServer(store),
 		origin: origin,
 		root:   root,
 		open:   open,
 		openFn: OpenBrowser,
 	}
+	if life == Resident {
+		p.server = NewServer(store)
+	}
+	return p
 }
 
-// Close stops the publisher's server.
-func (p *Publisher) Close() error { return p.server.Close() }
+// serving reports whether this publisher has a listener to hand an address
+// out on. Holding no server is the whole of what a one-shot lifetime
+// changes, so this is the same question as "will anything still answer that
+// URL when the model quotes it".
+func (p *Publisher) serving() bool { return p.server != nil }
 
-// Publish stores one document shhh built itself and answers with its URL.
+// firstLine is what the result leads with: the line the activity row lifts
+// and the model is told to include in its answer. Where nothing will be
+// listening it is the id's own command, which is the durable name of a page
+// (docs/capabilities/reports.md#a-report-outlives-its-session).
+func (p *Publisher) firstLine(id string) (string, error) {
+	if !p.serving() {
+		return reopenCommand(id), nil
+	}
+	return p.server.URL(id)
+}
+
+// reopenCommand serves a stored page again, and is how a report is named to
+// anyone who is not holding its port.
+func reopenCommand(id string) string { return "shhh reports open " + id }
+
+// resultSentence closes the tool description, and has to say exactly what
+// ExecuteTool will hand back — the description is where the model learns
+// which line to quote.
+func (p *Publisher) resultSentence() string {
+	if !p.serving() {
+		return "This run ends when it answers, so the page has no live address: the result's " +
+			"first line is the command that serves it — include that line, never a URL."
+	}
+	return "The result's first line is the page URL — include it in your answer."
+}
+
+// Close stops the publisher's server, where it has one.
+func (p *Publisher) Close() error {
+	if !p.serving() {
+		return nil
+	}
+	return p.server.Close()
+}
+
+// Publish stores one document shhh built itself and answers with the line
+// naming it.
 //
 // It is the door for a page written for the person rather than by the model:
 // nothing here came off a tool call, so there is no freehand to freeze and
@@ -105,11 +170,11 @@ func (p *Publisher) Publish(doc Document) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return p.server.URL(id)
+	return p.firstLine(id)
 }
 
-// ExecuteTool publishes one report and answers with its URL on the first
-// line — the line the TUI row and the model's own answer both lift.
+// ExecuteTool publishes one report and answers with the page's line first —
+// the line the TUI row and the model's own answer both lift.
 func (p *Publisher) ExecuteTool(args json.RawMessage) (string, error) {
 	var doc Document
 	if err := json.Unmarshal(args, &doc); err != nil {
@@ -132,16 +197,20 @@ func (p *Publisher) ExecuteTool(args json.RawMessage) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	url, err := p.server.URL(id)
+	line, err := p.firstLine(id)
 	if err != nil {
 		return "", err
 	}
+	if !p.serving() {
+		return fmt.Sprintf("%s\nreport %q published (id %s). This run's own link would die with it, so there is none — the command above serves the page. Include that line in your answer.",
+			line, doc.Title, id), nil
+	}
 	opened := ""
-	if p.open && p.openFn(url) == nil {
+	if p.open && p.openFn(line) == nil {
 		opened = " and opened in the user's browser"
 	}
-	return fmt.Sprintf("%s\nreport %q published (id %s)%s. It outlives this session: `shhh reports open %s` re-serves it. Include the link in your answer.",
-		url, doc.Title, id, opened, id), nil
+	return fmt.Sprintf("%s\nreport %q published (id %s)%s. It outlives this session: `%s` re-serves it. Include the link in your answer.",
+		line, doc.Title, id, opened, reopenCommand(id)), nil
 }
 
 // WrapExecutor returns an executor that dispatches report calls and hands

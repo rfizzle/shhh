@@ -8,8 +8,13 @@ import (
 
 func testPublisher(t *testing.T, open bool) (*Publisher, *[]string) {
 	t.Helper()
+	return testPublisherFor(t, Resident, open)
+}
+
+func testPublisherFor(t *testing.T, life Lifetime, open bool) (*Publisher, *[]string) {
+	t.Helper()
 	s := openTestStore(t, t.TempDir())
-	p := NewPublisher(s, "code", "/home/u/proj", open)
+	p := NewPublisher(s, "code", "/home/u/proj", life, open)
 	t.Cleanup(func() { _ = p.Close() })
 	var opened []string
 	p.openFn = func(url string) error {
@@ -110,7 +115,8 @@ func TestWrapExecutor_PassesOtherToolsThrough(t *testing.T) {
 }
 
 func TestToolDefinition_SchemaIsConservative(t *testing.T) {
-	def := ToolDefinition()
+	p, _ := testPublisher(t, false)
+	def := p.ToolDefinition()
 	if def.Name != ToolName {
 		t.Fatalf("name = %q", def.Name)
 	}
@@ -123,5 +129,63 @@ func TestToolDefinition_SchemaIsConservative(t *testing.T) {
 		if strings.Contains(raw, bad) {
 			t.Fatalf("schema uses %q, which the strictest provider converter rejects", bad)
 		}
+	}
+}
+
+// A run that exits with its answer has no address to give: the port would be
+// gone before anyone typed it, so the result leads with the command that
+// serves the page and nothing listens at all.
+func TestExecuteTool_AOneShotRunAnswersWithTheCommandAndOpensNoPort(t *testing.T) {
+	p, opened := testPublisherFor(t, OneShot, true)
+	args, _ := json.Marshal(sampleDocument())
+	out, err := p.ExecuteTool(args)
+	if err != nil {
+		t.Fatalf("ExecuteTool: %v", err)
+	}
+	id := p.store.List()[0].ID
+	first, _, _ := strings.Cut(out, "\n")
+	if first != "shhh reports open "+id {
+		t.Fatalf("first line = %q, want the command that serves %s", first, id)
+	}
+	if strings.Contains(out, "http://") {
+		t.Fatalf("a one-shot result quoted an address that dies with it: %q", out)
+	}
+	if p.server != nil {
+		t.Error("a one-shot publisher opened a listener")
+	}
+	if len(*opened) != 0 {
+		t.Fatalf("a one-shot publish opened a browser on a dead port: %v", *opened)
+	}
+}
+
+// The same page, published by a surface that will still be there, is a link.
+func TestPublish_LeadsWithWhateverTheSurfaceCanHonour(t *testing.T) {
+	resident, _ := testPublisherFor(t, Resident, false)
+	line, err := resident.Publish(sampleDocument())
+	if err != nil || !strings.HasPrefix(line, "http://127.0.0.1:") {
+		t.Fatalf("resident Publish = %q, %v", line, err)
+	}
+	oneShot, _ := testPublisherFor(t, OneShot, false)
+	line, err = oneShot.Publish(sampleDocument())
+	if err != nil || line != "shhh reports open "+oneShot.store.List()[0].ID {
+		t.Fatalf("one-shot Publish = %q, %v", line, err)
+	}
+}
+
+// The description is where the model learns which line to quote, so it says
+// what this publisher will actually answer with — the defect was a run that
+// handed back an id under a description promising a URL.
+func TestToolDefinition_DescribesTheResultThisSurfaceWillGive(t *testing.T) {
+	resident, _ := testPublisherFor(t, Resident, false)
+	if got := resident.ToolDefinition().Description; !strings.Contains(got, "first line is the page URL") {
+		t.Fatalf("a serving surface does not offer its URL: %q", got)
+	}
+	oneShot, _ := testPublisherFor(t, OneShot, false)
+	got := oneShot.ToolDefinition().Description
+	if strings.Contains(got, "first line is the page URL") {
+		t.Fatalf("a one-shot surface still trains the model on a URL: %q", got)
+	}
+	if !strings.Contains(got, "the command that serves it") {
+		t.Fatalf("a one-shot surface does not say what its first line is: %q", got)
 	}
 }

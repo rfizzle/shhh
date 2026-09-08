@@ -37,15 +37,16 @@ func reportsDir() (string, error) {
 
 // openReportsPublisher opens the report store and wires the report tool for
 // one session. Failure withholds the tool with a warning instead of blocking
-// the session; openBrowser is off for headless runs, where nobody is at the
-// desktop a browser would open on.
-func openReportsPublisher(cfg config.Config, origin string, openBrowser bool) *reports.Publisher {
+// the session; life is how long this surface will be there to serve a page,
+// and openBrowser is off for headless runs, where nobody is at the desktop a
+// browser would open on.
+func openReportsPublisher(cfg config.Config, origin string, life reports.Lifetime, openBrowser bool) *reports.Publisher {
 	dir, err := reportsDir()
 	if err == nil {
 		var store *reports.Store
 		if store, err = reports.Open(dir, cfg.EffectiveReportsRetentionDays()); err == nil {
 			wd, _ := os.Getwd()
-			return reports.NewPublisher(store, origin, project.Root(wd), openBrowser)
+			return reports.NewPublisher(store, origin, project.Root(wd), life, openBrowser)
 		}
 	}
 	fmt.Fprintf(os.Stderr, "warning: report store unavailable, the report tool is not offered: %v\n", err)

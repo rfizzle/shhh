@@ -666,7 +666,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// supervisor, the report publisher and the vault (toolset.go). A session
 	// pops a browser for a page the model published, because somebody is here
 	// to read it.
-	ts, err := buildToolset(cmd, &session, session.kind, toolsetOpts{scope: sc, browser: true, gitWrites: gitWrites})
+	ts, err := buildToolset(cmd, &session, session.kind, toolsetOpts{scope: sc, browser: true, resident: true, gitWrites: gitWrites})
 	if err != nil {
 		return err
 	}
