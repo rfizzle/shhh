@@ -265,6 +265,24 @@ it — a conversation can be rewritten into one exactly as long as the one it
 replaced, and a save that trusted the count would append onto messages nobody
 is having any more.
 
+### A save that could not be made says so
+
+A checkout with several sessions in it has several processes writing to one
+store, and the database hands a second writer its lock back rather than
+waiting for it in one case: a save that read the conversation before it wrote
+one, which is every save there is. So a write that is refused a lock is made
+again, from the beginning, for about half a second — and made again means
+read again, so a slot another session really has taken over is still refused
+rather than overwritten by persistence.
+
+What that cannot rescue, the session says out loud. A save that fails leaves
+a row in the transcript naming the slot and the reason, and a line in the log
+behind it. The conversation is still on the screen and the next save tries
+again, but quitting on an unsaved turn loses it, and the moment to learn that
+is while there is still somebody reading — not when the conversation is
+reopened and the last hour of it is not there. An unattended run prints the
+same sentence to its error output.
+
 ### A conversation is kept for a window
 
 `chats.retention_days` prunes saved conversations at startup the way history,

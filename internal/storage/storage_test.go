@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/provider"
 )
@@ -1627,6 +1628,91 @@ func TestSaveChat_RefusesASlotThatShrankUnderIt(t *testing.T) {
 	}
 	if kept, err := second.LoadChat(slot); err != nil || len(kept) != 1 {
 		t.Fatalf("the other session's conversation should be intact, got %d (err=%v)", len(kept), err)
+	}
+}
+
+// sessionWrites makes every write a running session makes, over and over: the
+// autosave that grows a message at a time, the observation event and the
+// heartbeat behind every turn, and the changeset record behind every edit.
+// They are made together because they fail together — each one begins a
+// transaction that reads before it writes, which is the shape SQLite refuses
+// a lock for outright rather than waiting (storage.go).
+func sessionWrites(db *DB, stamp string, turns int) error {
+	slot, err := db.ClaimChatSlot(stamp)
+	if err != nil {
+		return fmt.Errorf("claim slot: %w", err)
+	}
+	session, err := db.StartAgentSession("code", "anthropic", "model")
+	if err != nil {
+		return fmt.Errorf("start session: %w", err)
+	}
+	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	for turn := range turns {
+		msgs = append(msgs,
+			provider.Message{Role: provider.RoleUser, Content: fmt.Sprintf("ask %d", turn)},
+			provider.Message{Role: provider.RoleAssistant, Content: fmt.Sprintf("answer %d", turn)})
+		if _, err := db.AutosaveChat(slot, stamp+" (fresh)", msgs, nil); err != nil {
+			return fmt.Errorf("autosave turn %d: %w", turn, err)
+		}
+		if err := db.SaveChange(slot, int64(turn), 0, changeset.Record{
+			Path: fmt.Sprintf("%s/main.go", stamp), Before: "one\n", After: fmt.Sprintf("two %d\n", turn),
+			BeforeExists: true, AfterExists: true, BeforeMode: 0o644, AfterMode: 0o644,
+			Agent: changeset.MainAgent, Origin: changeset.AutoApproved, Track: changeset.TrackTracked,
+		}); err != nil {
+			return fmt.Errorf("save change turn %d: %w", turn, err)
+		}
+		if err := db.RecordAgentEvent(session, AgentEvent{
+			Kind: "turn", Outcome: "ok", Turn: int64(turn), Round: 1,
+		}); err != nil {
+			return fmt.Errorf("record event turn %d: %w", turn, err)
+		}
+		if err := db.BeatAgentSession(session); err != nil {
+			return fmt.Errorf("beat turn %d: %w", turn, err)
+		}
+	}
+	if held, err := db.LoadChat(slot); err != nil {
+		return fmt.Errorf("load back: %w", err)
+	} else if len(held) != len(msgs) {
+		return fmt.Errorf("the slot holds %d messages, wrote %d", len(held), len(msgs))
+	}
+	return nil
+}
+
+// Two processes writing to one store at once is the ordinary state of a
+// checkout with more than one session open in it, and it is the state the
+// store's steady-state writes were never tested under: the concurrent-save
+// test above fires eight goroutines at one connection, which exercises the
+// in-process mutex and never reaches SQLite's own locks at all.
+//
+// Without the busy retry every write goes through (storage.go), this fails
+// within a few dozen saves with "database is locked".
+func TestStore_TwoWritersAtOnce(t *testing.T) {
+	first, second := twoStores(t)
+
+	const turns = 60
+	done := make(chan error, 2)
+	for i, db := range []*DB{first, second} {
+		go func() { done <- sessionWrites(db, fmt.Sprintf("2026-09-08 10:0%d:00", i), turns) }()
+	}
+	for range cap(done) {
+		if err := <-done; err != nil {
+			t.Fatalf("a writer sharing the store was refused: %v", err)
+		}
+	}
+
+	var events int
+	if err := first.sql.QueryRow(`SELECT COUNT(*) FROM agent_events`).Scan(&events); err != nil {
+		t.Fatalf("count events: %v", err)
+	}
+	if events != 2*turns {
+		t.Errorf("the store holds %d events, both sessions wrote %d", events, 2*turns)
+	}
+	var changes int
+	if err := first.sql.QueryRow(`SELECT COUNT(*) FROM changes`).Scan(&changes); err != nil {
+		t.Fatalf("count changes: %v", err)
+	}
+	if changes != 2*turns {
+		t.Errorf("the store holds %d change records, both sessions wrote %d", changes, 2*turns)
 	}
 }
 

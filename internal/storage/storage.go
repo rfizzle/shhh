@@ -76,6 +76,59 @@ func (db *DB) Close() error {
 	return db.sql.Close()
 }
 
+// writeRetries bounds how many times a write a session makes while it is
+// running is tried again after SQLite refused its lock, and writeRetryWait is
+// the pause between tries — together half a second, which is far longer than
+// any single write in this store holds the database for.
+const (
+	writeRetries   = 20
+	writeRetryWait = 25 * time.Millisecond
+)
+
+// retryBusy runs a write again while SQLite hands back a refused lock rather
+// than waiting for one, and every steady-state write goes through it: the
+// autosave, the observation event, the session heartbeat and the changeset
+// record.
+//
+// The busy timeout in the DSN covers the ordinary wait, so most contention
+// never reaches here. The case it does not cover is the transaction that
+// reads before it writes, and every one of these writes is one:
+// database/sql begins deferred, so the transaction takes a read lock at its
+// first SELECT and asks to upgrade it at its first INSERT or UPDATE — and
+// SQLite refuses that upgrade outright when another connection has written
+// since the read began, because waiting could only deadlock against a writer
+// that is itself waiting for this connection's read to end
+// (sqlite.org/rescode.html#busy_snapshot). Two sessions autosaving to one
+// store reach it inside a hundred saves, which is what the two-writer test
+// in storage_test.go does.
+//
+// Nothing is half-done when it arrives: the refused statement leaves the
+// transaction to roll back, so the write starts over and reads the store as
+// it stands now. That is what makes a retry a fresh judgement rather than a
+// second attempt at a stale one, and it is why a slot another session really
+// has taken over is still refused (chat.go) — the retry outlasts a lock,
+// never a conflict.
+// See docs/capabilities/sessions-and-memory.md#a-save-that-could-not-be-made-says-so.
+func retryBusy(write func() error) error {
+	var err error
+	for attempt := 0; attempt <= writeRetries; attempt++ {
+		if err = write(); err == nil || !refusedLock(err) {
+			return err
+		}
+		time.Sleep(writeRetryWait)
+	}
+	return err
+}
+
+// execRetry is one statement under retryBusy, for the steady-state writes
+// that are a statement rather than a transaction.
+func (db *DB) execRetry(query string, args ...any) error {
+	return retryBusy(func() error {
+		_, err := db.sql.Exec(query, args...)
+		return err
+	})
+}
+
 func (db *DB) SQL() *sql.DB {
 	return db.sql
 }

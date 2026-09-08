@@ -1931,6 +1931,49 @@ func TestAutosave_RefusedSlotMovesTheSessionRatherThanClobbering(t *testing.T) {
 	}
 }
 
+// A save that fails outright is the failure a session cannot see for itself:
+// the conversation is on screen, the slot is empty, and nothing said so until
+// the person came back for it.
+func TestAutosave_AFailedSaveSaysSo(t *testing.T) {
+	db, err := storage.OpenPath(t.TempDir() + "/test.db")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	sys := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	m := sendText(t, New(sys, mockStream).WithDB(db), "a question")
+	slot := m.sessionName
+
+	// The store going away under the session is the shape every write
+	// failure has here: the save is refused and there is nowhere to put the
+	// turn.
+	db.Close()
+
+	failure := m.autosaveCmd()()
+	failed, ok := failure.(autosaveFailedMsg)
+	if !ok {
+		t.Fatalf("the autosave should have reported the failure, got %T", failure)
+	}
+	if failed.slot != slot || failed.err == nil {
+		t.Fatalf("the failure should name the slot and carry the error, got %+v", failed)
+	}
+
+	next, _ := m.Update(failure)
+	m = next.(Model)
+	var notice string
+	for _, e := range m.transcript {
+		if e.kind == entrySystem && strings.Contains(e.text, slot) {
+			notice = e.text
+		}
+	}
+	if notice == "" {
+		t.Fatalf("a failed save should leave a row naming the slot %q", slot)
+	}
+	if !strings.Contains(notice, "could not be saved") {
+		t.Fatalf("the row should say the conversation was not saved: %q", notice)
+	}
+}
+
 func TestAutosave_NilWithoutDBOrContent(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream)

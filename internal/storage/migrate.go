@@ -483,8 +483,16 @@ func (db *DB) migrateWithRetry() error {
 
 // refusedLock reports whether err is SQLITE_BUSY: a lock SQLite handed back
 // rather than waited for. A busy timeout that ran out arrives as the same
-// code, and after openRetries the difference no longer matters.
+// code, and after the retries the difference no longer matters.
+//
+// Only the primary result code is compared, and that is what the mask is for.
+// The driver turns extended result codes on, so the refusal a write gets on
+// its way up from a read of a snapshot another connection has since written
+// past arrives as SQLITE_BUSY_SNAPSHOT — 517, the same primary code with a
+// second byte saying which busy it was (sqlite.org/rescode.html#busy_snapshot).
+// It is the refusal the steady-state retry exists for, and an equality test
+// on 5 alone let two thirds of them through.
 func refusedLock(err error) bool {
 	var e *sqlite.Error
-	return errors.As(err, &e) && e.Code() == sqlite3.SQLITE_BUSY
+	return errors.As(err, &e) && e.Code()&0xff == sqlite3.SQLITE_BUSY
 }

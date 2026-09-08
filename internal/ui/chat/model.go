@@ -15,6 +15,7 @@ import (
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/hook"
+	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/observe"
@@ -1192,7 +1193,13 @@ func (m Model) autosaveCmd() tea.Cmd {
 		// says where, which is the slot every save after this one goes to.
 		slot, err := db.AutosaveChat(name, newSessionName(), msgs, hold)
 		if err != nil {
-			return nil
+			// The log line is written here rather than beside the row,
+			// because the last save a session makes is the one on the way
+			// out (quitCmd): its message may never be drawn, and the
+			// failure that costs the most is the one nobody was left to
+			// read.
+			logs.Logger().Warn("conversation not saved", "slot", name, "error", err)
+			return autosaveFailedMsg{slot: name, err: err}
 		}
 		// The title rides every save, so a slot written after the reading
 		// landed carries it and /save name takes it along.
@@ -1214,6 +1221,30 @@ func (m Model) autosaveCmd() tea.Cmd {
 // autosaveMovedMsg says an autosave found its slot taken and wrote the
 // conversation somewhere else.
 type autosaveMovedMsg struct{ from, to string }
+
+// autosaveFailedMsg says the conversation is not on disk. The store already
+// waited out every lock it could (storage.go), so what reaches here is a
+// store that will not take the write at all.
+type autosaveFailedMsg struct {
+	slot string
+	err  error
+}
+
+// noteAutosaveFailed says the turn was not written down, and says it where
+// the reader is: the transcript. A swallowed failure is the conversation the
+// person comes back for and does not find — a headless run prints the same
+// thing to stderr for the same reason (internal/cli/print.go).
+//
+// It is said again at every save that fails rather than once: an autosave
+// follows a turn, so a row per failure is a row per turn, and a store that
+// started refusing writes is not a fact that stops being true.
+// See docs/capabilities/sessions-and-memory.md#a-save-that-could-not-be-made-says-so.
+func (m *Model) noteAutosaveFailed(msg autosaveFailedMsg) {
+	m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf(
+		"This conversation could not be saved to %q: %v. It is still here to read, and the next save tries again — but quitting now would leave the turns since the last save behind.",
+		msg.slot, msg.err)})
+	m.syncViewport()
+}
 
 // noteSlotMove follows the store to the slot it put the conversation in and
 // tells the reader, who is the only one who can see that they have two

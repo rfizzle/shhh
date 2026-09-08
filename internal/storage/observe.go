@@ -248,11 +248,15 @@ func (db *DB) EndAgentSession(id int64, outcome string) error {
 // It writes to whichever row the recorder holds now, so a conversation that
 // ended and opened another inside one process keeps the beat on the row that
 // is actually open rather than on the one it left behind.
+//
+// It is written under the busy retry (storage.go) for a reason the other two
+// steady-state writes share: a beat nobody made is a session another process
+// reads as gone, and a lock refused for a hundredth of a second is not the
+// session ending.
 func (db *DB) BeatAgentSession(id int64) error {
-	_, err := db.sql.Exec(
+	return db.execRetry(
 		`UPDATE agent_sessions SET heartbeat = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?`, id,
 	)
-	return err
 }
 
 // LiveSession is another sitting open in this checkout right now, described
@@ -405,13 +409,16 @@ func heartbeatCutoff(now time.Time) string {
 // signals, outcome is the signal code and reason its qualifier — and for the
 // one signal that names a subject as well, the gate's verdict, tool carries
 // the suite that ran.
+//
+// The write is retried while a lock is refused (storage.go): an event is the
+// record of something that happened, so dropping one under contention would
+// make the dashboard quietest exactly when the checkout is busiest.
 func (db *DB) RecordAgentEvent(sessionID int64, e AgentEvent) error {
-	_, err := db.sql.Exec(
+	return db.execRetry(
 		`INSERT INTO agent_events (session_id, kind, tool, duration_ms, outcome, reason, turn, round)
 		 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 		sessionID, e.Kind, e.Tool, e.DurationMs, e.Outcome, e.Reason, e.Turn, e.Round,
 	)
-	return err
 }
 
 // observeEventWindow and observeSessionWindow are the dashboard's scopes:

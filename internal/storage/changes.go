@@ -38,11 +38,22 @@ import (
 // pruned — is not an error. There is nothing to key the record to, and a
 // session whose slot went away has already lost the conversation it belongs
 // to.
+//
+// The transaction is tried again while a lock is refused, from the top
+// (storage.go): a record dropped under contention is a file the rewind
+// cannot put back, and the blobs are content-addressed, so writing them
+// twice writes the same rows.
 func (db *DB) SaveChange(slot string, turn int64, seq int, r changeset.Record) error {
 	id, ok, err := db.chatSessionID(slot)
 	if err != nil || !ok {
 		return err
 	}
+	return retryBusy(func() error { return db.saveChangeTx(id, turn, seq, r) })
+}
+
+// saveChangeTx is one record's write, from BEGIN to COMMIT, so the whole of
+// it is what a refused lock starts over from.
+func (db *DB) saveChangeTx(id, turn int64, seq int, r changeset.Record) error {
 	tx, err := db.sql.Begin()
 	if err != nil {
 		return fmt.Errorf("save change: %w", err)

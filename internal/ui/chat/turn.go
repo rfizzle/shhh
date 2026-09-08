@@ -494,6 +494,10 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		m.noteSlotMove(msg)
 		return m, nil, true
 
+	case autosaveFailedMsg:
+		m.noteAutosaveFailed(msg)
+		return m, nil, true
+
 	case closeGateMsg:
 		// The turn has been waiting on this: its close row is not drawn yet,
 		// and a failing verdict may still earn it another round (gate.go).

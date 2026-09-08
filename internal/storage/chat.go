@@ -250,25 +250,32 @@ func (db *DB) saveChatMarked(name string, messages []provider.Message, hold *Cha
 	return db.saveChat(name, messages, true, hold)
 }
 
+// saveChat is the write both of those go through. The whole transaction is
+// what a refused lock is tried again from, never a statement inside it: a
+// save reads the slot before it writes, and a write refused on its way up
+// from that read has to read the slot again to be judging what is in there
+// now (storage.go).
 func (db *DB) saveChat(name string, messages []provider.Message, mark bool, hold *ChatHold) error {
 	db.chatMu.Lock()
 	defer db.chatMu.Unlock()
 
-	tx, err := db.sql.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	if _, err := db.saveChatTx(tx, name, messages); err != nil {
-		return err
-	}
-	if mark {
-		if err := setChatHoldTx(tx, name, hold); err != nil {
+	if err := retryBusy(func() error {
+		tx, err := db.sql.Begin()
+		if err != nil {
 			return err
 		}
-	}
-	if err := tx.Commit(); err != nil {
+		defer tx.Rollback()
+
+		if _, err := db.saveChatTx(tx, name, messages); err != nil {
+			return err
+		}
+		if mark {
+			if err := setChatHoldTx(tx, name, hold); err != nil {
+				return err
+			}
+		}
+		return tx.Commit()
+	}); err != nil {
 		return err
 	}
 	db.chatWrote[name] = chatWrite{seq: len(messages) - 1, digest: chatDigest(messages)}
