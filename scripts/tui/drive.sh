@@ -18,7 +18,15 @@
 # cells), <name>.ansi (with colour), <name>.svg, and <name>.png where qlmanage
 # is available (macOS).
 #
+# A snap is a still. --record adds the motion: the whole run wrapped in
+# asciinema, written beside the captures as <scene>.cast — text, so it diffs,
+# and playable with `asciinema play`. Where agg is installed the cast is
+# rendered to a GIF beside it; that is a bonus, and the cast is the record. A
+# machine without asciinema says so and records nothing: the run is the gate,
+# and the recording never decides it.
+#
 #   drive.sh <scene-dir>            run the steps and capture
+#   drive.sh --record <scene-dir>   the same, and record the run as a .cast
 #   drive.sh --attach <scene-dir>   open the same pane in this terminal instead
 #
 # Environment: SHHH_BIN (the binary; default ./shhh), COLS/ROWS (the pane,
@@ -30,8 +38,15 @@ here=$(cd "$(dirname "$0")" && pwd)
 root=$(cd "$here/../.." && pwd)
 
 attach=0
-if [ "${1:-}" = "--attach" ]; then attach=1; shift; fi
-scene=${1:?usage: drive.sh [--attach] <scene-dir>}
+record=0
+while [ $# -gt 0 ]; do
+	case $1 in
+	--attach) attach=1; shift ;;
+	--record) record=1; shift ;;
+	*) break ;;
+	esac
+done
+scene=${1:?usage: drive.sh [--attach] [--record] <scene-dir>}
 scene=$(cd "$scene" && pwd) || exit 1
 name=$(basename "$scene")
 
@@ -51,6 +66,19 @@ done
 # binary would be resolved there and found nowhere.
 SHHH_BIN=$(cd "$(dirname "$SHHH_BIN")" && pwd)/$(basename "$SHHH_BIN")
 [ -f "$scene/replies.txt" ] && [ -f "$scene/steps.txt" ] || { echo "drive.sh: $scene needs replies.txt and steps.txt" >&2; exit 2; }
+
+# Recording is a bonus, never a gate: a missing recorder is said out loud and
+# the run goes on. An attached pane is the reader's to drive and stops when
+# they detach, which would leave a half-written cast, so it is not recorded.
+cast=$OUT/$name.cast
+if [ "$record" = 1 ] && [ "$attach" = 1 ]; then
+	echo "drive.sh: --record records a driven run; an attached pane is not recorded" >&2
+	record=0
+fi
+if [ "$record" = 1 ] && ! command -v asciinema >/dev/null 2>&1; then
+	echo "drive.sh: no asciinema — recording nothing (brew install asciinema); the run is otherwise unchanged" >&2
+	record=0
+fi
 
 # Everything the run touches is its own: a home so no developer setting or
 # saved chat leaks in, and a fresh repository to work in, because the start
@@ -90,9 +118,15 @@ envs="HOME=$home XDG_CONFIG_HOME=$home/config XDG_DATA_HOME=$home/data"
 envs="$envs SHHH_PROVIDER=openai-compatible SHHH_BASE_URL=http://127.0.0.1:$PORT/v1 SHHH_API_KEY=scripted SHHH_MODEL=scripted-model SHHH_REASONING=medium"
 envs="$envs TERM=xterm-256color COLORTERM=truecolor"
 
+run="env $envs $SHHH_BIN code"
+# The recorder wraps the binary inside the pane, so the cast is the pane's own
+# size and every cell tmux sees is a cell it saw. -q keeps asciinema's
+# diagnostics off the screen, where a snap would otherwise read them.
+[ "$record" = 1 ] && run="asciinema rec -q --overwrite -c \"$run\" \"$cast\""
+
 tmux -L "$SOCK" kill-server 2>/dev/null
 # The pane outlives the binary so the exit banner can be captured too.
-tmux -L "$SOCK" new-session -d -s scene -x "$COLS" -y "$ROWS" -c "$ws" "env $envs $SHHH_BIN code; sleep 60"
+tmux -L "$SOCK" new-session -d -s scene -x "$COLS" -y "$ROWS" -c "$ws" "$run; sleep 60"
 
 if [ "$attach" = 1 ]; then
 	echo "shhh code against $scene/replies.txt — detach with ctrl+b d"
@@ -148,6 +182,23 @@ done < "$scene/steps.txt"
 
 if [ "$failed" = 1 ]; then
 	echo "drive.sh: the model was asked $(grep -c '^POST' "$OUT/provider.log" 2>/dev/null || true) times — $OUT/provider.log" >&2
+fi
+if [ "$record" = 1 ]; then
+	# The recorder writes the file as the binary exits, a moment after the last
+	# snap read the banner it drew on the way out.
+	for _ in 1 2 3 4 5; do [ -s "$cast" ] && break; sleep 0.2; done
+	if [ -s "$cast" ]; then
+		echo "recording: $cast"
+		# agg is what renders a cast; vhs drives a tape of its own and cannot
+		# read one, so it is named here only to say where the GIF went.
+		if command -v agg >/dev/null 2>&1; then
+			agg "$cast" "$OUT/$name.gif" && echo "recording: $OUT/$name.gif"
+		elif command -v vhs >/dev/null 2>&1; then
+			echo "drive.sh: vhs drives a .tape, not a .cast — brew install agg to render $cast as a GIF" >&2
+		fi
+	else
+		echo "drive.sh: asciinema recorded nothing to $cast" >&2
+	fi
 fi
 echo "captures: $OUT ($step)"
 exit $failed

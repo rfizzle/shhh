@@ -88,6 +88,7 @@ golden fixture, so this cannot drift back.
 | Update golden files | `go test ./internal/ui/components ./internal/ui/chat -update-golden` or `SHHH_UPDATE_GOLDEN=1 go test ./...` |
 | Open the TUI by hand against a scripted model | `make tui-run` (`SCENE=<name>` picks the replies; needs tmux) |
 | Capture the TUI at each step of a scene | `make tui-shot SCENE=<name> COLS=110 ROWS=40` (captures under `bin/tui/<name>/`) |
+| Record a scene's whole run, not only its steps | `make tui-build && SHHH_BIN=$PWD/bin/tui/shhh scripts/tui/drive.sh --record scripts/tui/scenes/<name>` (an `asciinema` `.cast` beside the captures; without asciinema it says so and records nothing) |
 | Drive the smoke scene through the built binary | `make tui-check` (part of `make ci`; the gate every surface change passes) |
 
 Build produces a `shhh` binary with version injected via `-ldflags`.

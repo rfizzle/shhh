@@ -29,6 +29,14 @@ uses `tui-shot` and reads the captures. Both need `tmux` and `python3`, and
 `tui-shot` makes a picture as well where `qlmanage` exists (macOS); elsewhere
 the `.svg` is the picture.
 
+A snap is a still. To record the run itself — the stream arriving, the card
+landing, the key answering it — add `--record`:
+
+```
+make tui-build
+SHHH_BIN=$PWD/bin/tui/shhh scripts/tui/drive.sh --record scripts/tui/scenes/smoke
+```
+
 Captures land under `bin/tui/<scene>/` and are never committed. For each
 `snap` in the scene:
 
@@ -37,10 +45,18 @@ Captures land under `bin/tui/<scene>/` and are never committed. For each
 | `<name>.txt` | the terminal's cells, no colour | `cat`; diff against a golden's layout block |
 | `<name>.ansi` | the same cells with colour | not for diffing — tmux re-emits colour per cell |
 | `<name>.svg` / `<name>.png` | a picture of the screen | the file viewer; the PNG can be read inline |
+| `<scene>.cast` | the whole run under `--record`, one per scene rather than per snap | `asciinema play`; `agg` renders it to a `<scene>.gif` beside it |
 
 Read the `.txt` first: it is the layout, and a column that drifted shows
 there. Look at the picture for what text cannot carry — a colour that stopped
 meaning what it meant, a rail that is there but dim, a glyph that fell back.
+Watch the cast for what a still cannot carry at all: how long the screen sat
+empty, what order the rows arrived in, whether a key was answered at once.
+
+The cast is text, so it diffs, and it is the record; the GIF is a bonus and
+wants `agg` (`vhs` drives a tape of its own and cannot read a cast). A
+machine without `asciinema` says so and records nothing — the run is the
+gate, and the recording never decides it.
 
 ## Write a scene
 
