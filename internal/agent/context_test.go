@@ -277,3 +277,20 @@ func TestEstimateMessageTokens_CountsReasoning(t *testing.T) {
 		t.Fatalf("expected reasoning to add 200 tokens, got %d against %d", got, base)
 	}
 }
+
+// TestElided_ReadsBackWhatTheTrimWrote: the placeholder and the read of it
+// are one wording, so a surface offering the original is offering the entry
+// the trim actually made.
+func TestElided_ReadsBackWhatTheTrimWrote(t *testing.T) {
+	if id, elided := Elided("a plain tool result"); elided || id != "" {
+		t.Fatalf("an untouched result reads as elided: id %q, elided %v", id, elided)
+	}
+	if id, elided := Elided(ElidedResult); !elided || id != "" {
+		t.Fatalf("the bare placeholder: id %q, elided %v, want elided with no id", id, elided)
+	}
+	const stored = "ev-0123456789abcdef"
+	id, elided := Elided(elidedWithEvidence(40000, stored))
+	if !elided || id != stored {
+		t.Fatalf("Elided = (%q, %v), want (%q, true)", id, elided, stored)
+	}
+}

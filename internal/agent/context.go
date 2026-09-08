@@ -70,6 +70,12 @@ const elidedPrefix = "[result elided"
 // store takes always recovers more than the notice replacing it costs.
 const minEvidenceBytes = 512
 
+// elidedEvidenceIn opens the clause naming the id, and is the seam Elided
+// reads the id back out of. One constant rather than two spellings: a
+// placeholder written to one wording and matched against another is an
+// offer the surface can see and cannot take.
+const elidedEvidenceIn = "full output stored as evidence "
+
 // elidedWithEvidence is the placeholder for a trimmed result the store took.
 // It is worded like the notice a reduction leaves so that the one instruction
 // the toolbox gives about evidence — a notice carrying an id can be paged
@@ -77,8 +83,29 @@ const minEvidenceBytes = 512
 // for the same offer would be a second thing the model has to be taught.
 func elidedWithEvidence(size int, id string) string {
 	return fmt.Sprintf(
-		"[result elided: %d bytes; full output stored as evidence %s — retrieve it with the evidence tool (info/read/search)]",
+		"[result elided: %d bytes; "+elidedEvidenceIn+"%s — retrieve it with the evidence tool (info/read/search)]",
 		size, id)
+}
+
+// Elided reports whether content is what a trim left in place of a tool
+// result, and the evidence id that pages the original back — empty for the
+// bare placeholder, which is what a result the store would not take is left
+// with.
+//
+// It is here rather than in the surface that asks because the wording is
+// this package's: a front-end matching a sentence of its own would go on
+// matching it after the sentence changed, and the symptom is a row that
+// quietly stops offering the original.
+func Elided(content string) (id string, elided bool) {
+	if !strings.HasPrefix(content, elidedPrefix) {
+		return "", false
+	}
+	_, named, ok := strings.Cut(content, elidedEvidenceIn)
+	if !ok {
+		return "", true
+	}
+	id, _, _ = strings.Cut(named, " ")
+	return id, true
 }
 
 // estimatedBytesPerToken is the rough chars→tokens heuristic used when the

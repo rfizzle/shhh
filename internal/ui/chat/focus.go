@@ -60,6 +60,23 @@ func (m Model) selectableRow(e entry) bool {
 // screen to select.
 func (m Model) expandableIndices() []int {
 	es := *m.entries()
+	if m.framed != nil {
+		key := runOf(es)
+		if idxs, ok := m.framed.expandable[key]; ok {
+			return idxs
+		}
+		idxs := m.scanExpandable(es)
+		if m.framed.expandable == nil {
+			m.framed.expandable = map[blockRun][]int{}
+		}
+		m.framed.expandable[key] = idxs
+		return idxs
+	}
+	return m.scanExpandable(es)
+}
+
+// scanExpandable is that list, built.
+func (m Model) scanExpandable(es []entry) []int {
 	var idxs []int
 	for _, blk := range m.blocksOf(es) {
 		if blk.step != nil {
@@ -89,6 +106,49 @@ func (m Model) expandableIndices() []int {
 		}
 	}
 	return idxs
+}
+
+// rowOnScreen is expandableIndices' membership test for one index, which is
+// all a lit pointer has to ask: is the row it names still one the cursor can
+// stand on, and is the pane still drawing it (pointer.go).
+//
+// The list answers it too, by scanning the whole tiling and building a
+// header for every step in the session. That is a session-long scan spent to
+// look at one row, and the pointer asks it on every repaint — which during a
+// turn is every frame.
+func (m Model) rowOnScreen(idx int) bool {
+	es := *m.entries()
+	if idx < 0 || idx >= len(es) {
+		return false
+	}
+	for _, blk := range m.blocksOf(es) {
+		if !blk.holds(idx) {
+			continue
+		}
+		if blk.step == nil {
+			start, end := blk.members()
+			return idx >= start && idx < end && m.selectableRow(es[idx])
+		}
+		if blk.step.queued() {
+			// A declared step nobody has started is a header with no rows
+			// and no entry behind it.
+			return false
+		}
+		if idx == blk.step.titleIdx {
+			return true
+		}
+		if m.headerFor(blk, es).Folded {
+			// A folded group offers its group row, not the rows inside it.
+			return false
+		}
+		for _, sl := range m.stepSlots(es, blk.step) {
+			if sl.idx == idx {
+				return m.selectableRow(es[idx])
+			}
+		}
+		return false
+	}
+	return false
 }
 
 // enterFocusMode starts focus mode on the most recent expandable row — or on
@@ -173,6 +233,11 @@ func (m Model) openCursorRow(ret state) (tea.Model, tea.Cmd) {
 			es[m.focusIdx].expanded = !es[m.focusIdx].expanded
 		}
 	}
+	// An entry's rendering changed in place, and the row may belong to a
+	// block both caches have frozen. Moving the cursor away is what would
+	// show it: the frozen lines are from before the press, so the row the
+	// reader just opened would close itself behind them.
+	m.invalidateRenderCache()
 	m.refreshCursorView()
 	return m, nil
 }
@@ -424,9 +489,13 @@ func (m Model) exitFocusMode() (tea.Model, tea.Cmd) {
 	// The pointer is not left lit behind the mode: esc from here returns to
 	// the prompt, and the prompt the reader left had no gutter on it.
 	m.pointer = false
-	m.invalidateRenderCache()
+	// The feed's cache is the render without the gutter, and the reader is
+	// back on it; the gutter's own units are unchanged and stay (render.go).
+	m.cached.reset()
 	m.syncViewport()
-	m.viewport.SetLines(m.renderHistoryLines())
+	// The way out is where a repaint the gutter held is paid for: rows that
+	// landed while the reader was scrolled up owe one.
+	m.flushStream()
 	return m, nil
 }
 
@@ -483,27 +552,16 @@ func (m *Model) snapFocusIntoView(dir int) {
 // needs — a half-page jump, a query row opening — because pulling the pane
 // back to the cursor would undo the movement the reader asked for.
 func (m *Model) redrawFocusContent() {
-	content, _, _ := m.renderFocusHistory()
-	m.viewport.SetContent(content)
+	lines, _, _ := m.renderFocusLines()
+	m.viewport.SetLines(lines)
 }
 
-// unitLineStarts is each transcript entry's first rendered line, counted the
-// way the render counts them (renderFocusHistory), so the cursor and the
-// pane cannot disagree about what is in view.
-func (m Model) unitLineStarts() map[int]int {
-	es := *m.entries()
+// unitLineStarts is each transcript entry's first rendered line, counted by
+// the render itself (gutterRender), so the cursor and the pane cannot
+// disagree about what is in view.
+func (m *Model) unitLineStarts() map[int]int {
 	starts := map[int]int{}
-	line := 0
-	var prev entry
-	havePrev := false
-	for _, u := range m.transcriptUnits(es, m.transcriptWidth(), true, m.focusIdx) {
-		if havePrev {
-			line += strings.Count(separatorBefore(prev, u.sepBefore), "\n")
-		}
-		starts[u.idx] = line
-		line += strings.Count(u.text, "\n")
-		prev, havePrev = u.sepAfter, true
-	}
+	m.gutterRender(starts)
 	return starts
 }
 
@@ -530,50 +588,243 @@ func (m *Model) moveFocus(dir int) {
 // refreshFocusView re-renders the transcript with the selection gutter and
 // scrolls the selected row into view.
 func (m *Model) refreshFocusView() {
-	content, start, count := m.renderFocusHistory()
-	m.viewport.SetContent(content)
-	if m.focusIdx < 0 {
-		// No cursor to keep on screen: where the reader scrolled to is where
-		// they meant to be.
-		return
+	lines, start, count := m.renderFocusLines()
+	m.viewport.SetLines(lines)
+	if m.focusIdx >= 0 {
+		switch {
+		case start < m.viewport.YOffset():
+			m.viewport.SetYOffset(start)
+		case start+count > m.viewport.YOffset()+m.viewport.Height():
+			m.viewport.SetYOffset(start + count - m.viewport.Height())
+		}
 	}
-	switch {
-	case start < m.viewport.YOffset():
-		m.viewport.SetYOffset(start)
-	case start+count > m.viewport.YOffset()+m.viewport.Height():
-		m.viewport.SetYOffset(start + count - m.viewport.Height())
-	}
+	// With no cursor to keep on screen, where the reader scrolled to is
+	// where they meant to be — but either way the pane has moved, and what
+	// the model believes about the live end has to follow it: a stream holds
+	// its repaints on that belief (render.go).
+	m.atBottom = m.viewport.AtBottom()
 }
 
-// renderFocusHistory renders every entry with a two-column gutter on
+// renderFocusLines renders every entry with a two-column gutter on
 // expandable rows (❯ on the selected one) and reports the selected block's
-// first line and line count for scrolling. It bypasses the incremental cache.
+// first line and line count for scrolling.
+func (m *Model) renderFocusLines() (lines []string, selStart, selCount int) {
+	return m.gutterRender(nil)
+}
+
+// renderFocusHistory is the same render as one string. Nothing on the
+// drawing path uses it: it is what the goldens capture and what the tests
+// read, joined back up from the lines above.
 func (m *Model) renderFocusHistory() (content string, selStart, selCount int) {
-	// Focus mode is a way of reading the transcript, not a takeover surface,
-	// so it wraps to the transcript pane like the ordinary feed.
+	lines, start, count := m.renderFocusLines()
+	return strings.Join(lines, "\n"), start, count
+}
+
+// gutterCache is the reading gutter's own render cache.
+//
+// The gutter is not a render of its own: it is two columns in front of one
+// that has already been made. So what is kept here is every block that can
+// no longer change, drawn once with the gutter on and no row selected, and
+// each frame puts the pointer on the one unit the cursor stands in and joins
+// the rest onto the lines they left. A tick that lands a row costs the last
+// block rather than the session, which is what the line cache buys the plain
+// feed (lines.go) and what reading mode used to pay in full on every frame —
+// thirty-two milliseconds and four megabytes of it at six hundred rows,
+// spent while the reader was standing still.
+//
+// The live Model owns it, the way it owns the feed's lines (lines.go): a
+// Model copy that has been superseded holds blocks it may no longer render
+// from. What is held is safe to share regardless — a frozen block is a pure
+// function of entries that can no longer change, so two copies appending the
+// same block append the same bytes.
+type gutterCache struct {
+	// blocks holds one element per frozen transcript block, in block order.
+	blocks []gutterBlock
+	// count is how many transcript entries those blocks cover, always a
+	// whole number of blocks.
+	count int
+	// width is the pane width they were drawn at. A different width re-wraps
+	// every one of them, so it drops the cache.
+	width int
+	// hint is the last render's line count, which is what the next one is
+	// sized from: the pane is handed the whole transcript, and growing a
+	// slice of several thousand lines from nothing is the one allocation
+	// this cache would otherwise still pay every frame.
+	hint int
+}
+
+func (c *gutterCache) reset() {
+	c.blocks, c.count = nil, 0
+}
+
+// gutterBlock is one frozen block as the gutter draws it.
+type gutterBlock struct {
+	// lines is the block's render. The first element continues the line the
+	// block before it left open, exactly as a unit's text does.
+	lines []string
+	// first and last are the entries the spacing on either side of the block
+	// is decided by (separatorBefore) — the first unit's and the last one's.
+	first, last entry
+	// starts is where each unit begins, relative to the block's first line.
+	// It is what the reading cursor's place on screen is read off, and it is
+	// kept rather than recomputed because the lines it indexes are.
+	starts []unitStart
+}
+
+// unitStart is one unit's first line inside the block that holds it.
+type unitStart struct {
+	idx  int
+	line int
+}
+
+// noFocusRow is the cursor index that selects nothing, which is what the
+// cached blocks are drawn under: a unit renders the same whether the cursor
+// is elsewhere or nowhere, and only the unit under it differs.
+const noFocusRow = -1
+
+// gutterRender is the transcript with the reading gutter over it, as the
+// lines the pane takes. starts, when given, is filled with each unit's first
+// line — the same walk, so the cursor's place and the render cannot drift.
+//
+// Lines rather than one string, for the reason the feed hands the pane lines
+// (lines.go): a session joined into one string and split again is three
+// passes over the whole transcript to redraw the last forty rows of it.
+func (m *Model) gutterRender(starts map[int]int) (lines []string, selStart, selCount int) {
+	// Reading mode is a way of reading the transcript, not a takeover
+	// surface, so it wraps to the transcript pane like the ordinary feed.
 	w := m.transcriptWidth()
 	es := *m.entries()
-	var b strings.Builder
-	line := 0
+	blocks := m.blocksOf(es)
+	// The first element is the open line every unit's text continues, so the
+	// result is what strings.Split of the joined units would have been.
+	lines = make([]string, 1, m.gutter.hint+1)
+	lines[0] = ""
 	var prev entry
 	havePrev := false
-	for _, u := range m.transcriptUnits(es, w, true, m.focusIdx) {
-		// The separator counts toward the line total before the unit starts,
-		// so the gutter pointer and scrolling stay aligned.
+
+	// emit is one unit onto the end of the lines so far. The separator
+	// counts toward the line total before the unit starts, so the gutter
+	// pointer and scrolling stay aligned.
+	emit := func(u *unit) {
 		if havePrev {
-			sep := separatorBefore(prev, u.sepBefore)
-			b.WriteString(sep)
-			line += strings.Count(sep, "\n")
+			lines = appendRendered(lines, separatorBefore(prev, u.sepBefore))
 		}
-		n := strings.Count(u.text, "\n")
+		at := len(lines) - 1
+		if starts != nil {
+			starts[u.idx] = at
+		}
 		if u.idx == m.focusIdx {
-			selStart, selCount = line, n
+			selStart, selCount = at, strings.Count(u.text, "\n")
 		}
-		b.WriteString(u.text)
-		line += n
+		lines = appendRendered(lines, u.text)
 		prev, havePrev = u.sepAfter, true
 	}
-	return b.String(), selStart, selCount
+	// splice is a whole block, taken from the cache rather than walked.
+	splice := func(gb gutterBlock) {
+		if len(gb.lines) == 0 {
+			return
+		}
+		if havePrev {
+			lines = appendRendered(lines, separatorBefore(prev, gb.first))
+		}
+		base := len(lines) - 1
+		if starts != nil {
+			for _, st := range gb.starts {
+				starts[st.idx] = base + st.line
+			}
+		}
+		lines[base] += gb.lines[0]
+		lines = append(lines, gb.lines[1:]...)
+		prev, havePrev = gb.last, true
+	}
+	fresh := func(blk transcriptBlock) {
+		units := m.blockUnits(blk, es, w, true, m.focusIdx)
+		for i := range units {
+			emit(&units[i])
+		}
+	}
+
+	if m.attachedTo != "" {
+		// A child's mirrored transcript is rewritten in place as its calls
+		// settle (attach.go), so no block of it is frozen and there is
+		// nothing here to keep. It is drawn whole, as it always was.
+		for _, blk := range blocks {
+			fresh(blk)
+		}
+		return lines, selStart, selCount
+	}
+	frozen := m.frozenGutterBlocks(es, w, blocks)
+	for bi, blk := range blocks {
+		if bi < len(frozen) && !blk.holds(m.focusIdx) {
+			splice(frozen[bi])
+			continue
+		}
+		fresh(blk)
+	}
+	m.gutter.hint = len(lines)
+	return lines, selStart, selCount
+}
+
+// frozenGutterBlocks fills the cache up to the last block a row can still
+// land in, and answers with what it holds.
+//
+// The freeze is the feed's (render.go): everything before the last block
+// rows can land in, a live fan-out, or a run's own row. What is frozen
+// cannot change, so the cache is a prefix of the tiling — and where it is
+// not, because something rebuilt the transcript without saying so, the seam
+// it was built against no longer matches and the whole of it goes.
+func (m *Model) frozenGutterBlocks(es []entry, w int, blocks []transcriptBlock) []gutterBlock {
+	if w != m.gutter.width {
+		m.gutter.reset()
+		m.gutter.width = w
+	}
+	if n := len(m.gutter.blocks); n > 0 && (n > len(blocks) || blocks[n-1].end != m.gutter.count) {
+		m.gutter.reset()
+	}
+	freeze := min(lastLiveBlock(blocks), m.liveFanoutBlock(blocks), m.liveTodoRunBlock(blocks))
+	for bi := len(m.gutter.blocks); bi < freeze; bi++ {
+		m.gutter.blocks = append(m.gutter.blocks, newGutterBlock(m.blockUnits(blocks[bi], es, w, true, noFocusRow)))
+		m.gutter.count = blocks[bi].end
+	}
+	return m.gutter.blocks
+}
+
+// newGutterBlock draws one block's units into the lines the cache keeps.
+func newGutterBlock(units []unit) gutterBlock {
+	if len(units) == 0 {
+		return gutterBlock{}
+	}
+	gb := gutterBlock{lines: []string{""}, first: units[0].sepBefore}
+	var prev entry
+	for i := range units {
+		u := &units[i]
+		if i > 0 {
+			gb.lines = appendRendered(gb.lines, separatorBefore(prev, u.sepBefore))
+		}
+		gb.starts = append(gb.starts, unitStart{idx: u.idx, line: len(gb.lines) - 1})
+		gb.lines = appendRendered(gb.lines, u.text)
+		prev = u.sepAfter
+	}
+	gb.last = prev
+	return gb
+}
+
+// appendRendered appends rendered text to lines, continuing the line the
+// last write left open. It is lineCache.write without the cache: the same
+// arithmetic, so the two renders split into lines identically.
+func appendRendered(lines []string, s string) []string {
+	switch s {
+	case "":
+		return lines
+	case "\n":
+		// The blank line between two blocks, which is most of what this is
+		// called with: splitting it would allocate a slice per block seam,
+		// which over a session is the whole of what a frame allocates.
+		return append(lines, "")
+	}
+	parts := strings.Split(s, "\n")
+	lines[len(lines)-1] += parts[0]
+	return append(lines, parts[1:]...)
 }
 
 // gutterPrefix indents a rendered block by two columns, placing the focus

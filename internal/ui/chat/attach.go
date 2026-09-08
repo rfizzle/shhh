@@ -35,6 +35,16 @@ type viewState struct {
 type childView struct {
 	entries []entry
 	scroll  viewState
+	// stream is this child's own stable-prefix cache for the message it is
+	// writing (streammd.go). The attached view re-renders that message on
+	// every frame the same way the parent's transcript does, and re-parsing
+	// a growing answer once per frame is quadratic in its length — the cost
+	// the parent stopped paying and the child went on paying. One cache per
+	// child rather than one shared: two children write two different
+	// messages, and a cache whose prefix is not this content's own drops
+	// itself on every frame, which is the uncached render with a copy of the
+	// message in front of it.
+	stream streamingMarkdown
 }
 
 // entries returns the transcript the surface currently renders: the attached
@@ -89,17 +99,28 @@ func convertChildEntry(te subagent.TranscriptEntry) entry {
 // renderAttachedHistory renders the focused child's transcript plus its
 // in-flight assistant text.
 func (m *Model) renderAttachedHistory() string {
-	cv := m.syncChildView(m.attachedTo)
+	return m.renderChildHistory(m.attachedTo, m.subagents.StreamingText(m.attachedTo))
+}
+
+// renderChildHistory is that render, told the message the child is writing
+// rather than asking the supervisor for it, so the streaming half can be
+// exercised without a provider behind it.
+func (m *Model) renderChildHistory(name, streaming string) string {
+	cv := m.syncChildView(name)
 	w := m.transcriptWidth()
 	var b strings.Builder
 	// A child's transcript groups into steps like the parent's.
 	body, prev, havePrev := joinUnits(m.transcriptUnits(cv.entries, w, false, -1), entry{}, false)
 	b.WriteString(body)
-	if s := m.subagents.StreamingText(m.attachedTo); s != "" {
+	if streaming != "" {
 		if havePrev {
 			b.WriteString(separatorBefore(prev, entry{kind: entryAssistant}))
 		}
-		b.WriteString(sty.Assistant.Render("Assistant") + "\n" + renderMarkdown(s, w))
+		// Through this child's own stable-prefix cache, which is the cache
+		// the parent's transcript has had all along (streammd.go): the
+		// attached view redraws the arriving message on every frame, and
+		// parsing it whole each time is quadratic in its length.
+		b.WriteString(sty.Assistant.Render("Assistant") + "\n" + cv.stream.Render(streaming, w))
 	}
 	if b.Len() == 0 {
 		return sty.Welcome.Render("No activity from this agent yet.")

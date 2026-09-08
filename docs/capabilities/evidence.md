@@ -187,6 +187,16 @@ recovers most of what it elided for, and a result shorter than the notice
 that would replace it is left where it is: rewriting it would cost the
 provider's cached prefix from that message on and give back nothing.
 
+The transcript's own copy goes with it, and that is the larger half of what
+a trim recovers. What the model was sent and what the screen shows are two
+copies of the same result, and eliding one left the other holding the bytes
+for the life of the process — a session that had trimmed twice was still
+carrying everything it had ever read. So the row's body is replaced by the
+same placeholder the model got. The row stays, because it is the account of
+what ran, and so do its counts, which are what a reader scanning the feed was
+reading anyway; opening the row whole pages the original back out of the
+store, which is the offer the model has, made to the person.
+
 Recovery is an offer, never a condition. A store that cannot take the
 result — full, gone, never opened — leaves the plain placeholder behind and
 the trim goes ahead, because the request that provoked it still has to fit,

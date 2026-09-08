@@ -398,6 +398,18 @@ func (m Model) activityRowDetail(e entry, stepDetail bool) components.ActivityRo
 			row.Counts = activityCounts(e.toolName, result)
 		}
 	}
+	if e.elided != nil {
+		// The body is the window trim's placeholder now, so everything the
+		// switch above just read off it describes the placeholder rather
+		// than the call: a failed call would read as clean, a commit would
+		// lose its receipt, and every row would report one line. What the
+		// row says is what it said before the trim (context.go).
+		row.State, row.Outcome = e.elided.state, e.elided.outcome
+		row.Counts = ""
+		if !row.Failed() && m.verbosity != verbosityLow {
+			row.Counts = e.elided.counts
+		}
+	}
 	return row
 }
 

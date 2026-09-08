@@ -45,7 +45,29 @@ func (m *Model) resetTranscript() {
 
 // flushStream repaints the transcript with as much of the arriving message as
 // has landed, and forgets that a repaint was owed.
+//
+// A reader who has opened reading mode or lit the pointer and scrolled off
+// the live end is shown none of it: the arriving message is not on their
+// screen (renderFocusLines draws the transcript and nothing after it), so the
+// repaint would cost the gutter's render to change nothing they can see. The
+// owed repaint is kept rather than dropped, so the flush that follows them
+// back to the bottom — or out of the gutter — is the one that pays for it.
 func (m *Model) flushStream() {
+	// One repaint tiles the transcript once, the way one paint does
+	// (plan.go). The gutter's own question — is the pointed row still on
+	// screen — is a scan over the tiling, the render that follows it is
+	// another, and nothing between them can change it.
+	if m.framed == nil {
+		m.framed = &frame{}
+		defer func() { m.framed = nil }()
+	}
+	// The cheap half of the condition first: a reader at the live end is
+	// being repainted whatever surface they are on, and asking after the
+	// pointer would be a scan spent to learn nothing.
+	if !m.atBottom && m.gutterShowing() {
+		m.streamDirty = true
+		return
+	}
 	m.streamDirty = false
 	m.viewport.SetLines(m.renderHistoryLines())
 	if m.atBottom {
@@ -55,9 +77,11 @@ func (m *Model) flushStream() {
 
 // invalidateRenderCache forces the next renderHistory to re-render every
 // entry (used when an entry's rendering changes in place, e.g. focus-mode
-// expansion).
+// expansion). Both caches go: the feed's lines and the gutter's units are
+// two renders of the same entries, and an entry that changed changed in both.
 func (m *Model) invalidateRenderCache() {
 	m.cached.reset()
+	m.gutter.reset()
 }
 
 // renderEntry renders one entry's own lines, always ending in exactly one
@@ -330,11 +354,12 @@ func (m *Model) renderHistoryRawLines() []string {
 		testHookRenderHistory()
 	}
 	if m.gutterShowing() {
-		// Focus mode renders fresh with the selection gutter, bypassing the
-		// incremental cache; it scopes to whichever agent is focused. A
-		// pointer lit from the prompt is the same gutter without the mode.
-		content, _, _ := m.renderFocusHistory()
-		return strings.Split(content, "\n")
+		// Reading mode and the pointer draw the selection gutter, from a
+		// cache of their own (focus.go); it scopes to whichever agent is
+		// focused. A pointer lit from the prompt is the same gutter without
+		// the mode.
+		lines, _, _ := m.renderFocusLines()
+		return lines
 	}
 	// Attached view: the focused child's session, rendered fresh from
 	// the supervisor's live transcript (the parent's cache is untouched).

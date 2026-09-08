@@ -74,6 +74,11 @@ type frame struct {
 	// than one run — the session's own, the current turn's, the plan's — and
 	// asks for each of them more than once.
 	blocks map[blockRun][]transcriptBlock
+	// expandable is the rows reading mode's cursor can stand on, by the same
+	// run (focus.go). It is a scan over the whole tiling, and a frame asks
+	// for it once per surface that offers a key and once more for every
+	// question about where the pointer is.
+	expandable map[blockRun][]int
 	// rail is the inspector rail resolved, with the reading it was resolved
 	// under (inspector.go).
 	rail *railBlock

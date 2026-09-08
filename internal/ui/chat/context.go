@@ -15,6 +15,7 @@ import (
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 // DefaultContextWindow is the floor: the context size (in tokens) assumed for
@@ -122,8 +123,14 @@ func (m Model) estimatedContextTokens() int64 {
 // agent's message list.
 func (m *Model) trimContext() int {
 	before := m.estimatedContextTokens()
+	// The bodies as the conversation carries them now. The surgery is in
+	// place and reports only how many it did, so this is what says which:
+	// a message whose content is no longer what it was here, and is a
+	// placeholder, is one the trim has just taken.
+	was := messageBodies(m.agent.Messages())
 	elided, after := m.agent.TrimOldToolResults(before, m.trimThreshold(), m.trimLowWater(), m.calibration)
 	if elided > 0 {
+		m.elideTranscript(was)
 		window := m.contextWindow()
 		m.signal(observe.SignalTrim, observe.TrimReason(elided,
 			percentOf(before, window), percentOf(after, window)))
@@ -133,6 +140,85 @@ func (m *Model) trimContext() int {
 		m.contextTokens = 0
 	}
 	return elided
+}
+
+// elidedRow is what a transcript row keeps once the trim has taken its body:
+// everything the row read off that body, and the evidence id that pages the
+// original back — empty where nothing kept it.
+//
+// The fields are kept rather than re-derived because the placeholder is not
+// the result: re-reading it would turn a failed call into a clean one, drop
+// the receipt a git write answered with, and have every row report that it
+// read one line (activity.go).
+type elidedRow struct {
+	state    components.ActivityState
+	outcome  string
+	counts   string
+	evidence string
+}
+
+// messageBodies is the conversation's contents, by message index.
+func messageBodies(msgs []provider.Message) []string {
+	bodies := make([]string, len(msgs))
+	for i, msg := range msgs {
+		bodies[i] = msg.Content
+	}
+	return bodies
+}
+
+// elideTranscript replaces the body of every transcript row whose result the
+// trim has just taken out of the conversation with the placeholder the model
+// was left with. was is the conversation as it stood before the trim.
+//
+// Without this a session holds two copies of everything it read: the trim
+// shrinks the request and the transcript goes on holding the megabytes it
+// elided for the life of the process, which is the half of a day-long
+// session's memory nothing was watching. The row stays, because it is what
+// happened, and so do its counts, which is the part of the body a reader
+// scanning the feed was reading anyway. What goes is the text — and the row
+// says so, and offers the original where the store took it
+// (docs/capabilities/evidence.md#a-trim-makes-the-same-promise).
+func (m *Model) elideTranscript(was []string) {
+	// Placeholders in the order the trim wrote them, filed under the result
+	// each one replaced. A result the conversation carries twice is elided
+	// twice, and the transcript's copies of it are in the same order as the
+	// messages', so the queue hands them out in that order too.
+	byResult := map[string][]string{}
+	for i, msg := range m.agent.Messages() {
+		if i >= len(was) || msg.Content == was[i] {
+			continue
+		}
+		if _, elided := agent.Elided(msg.Content); !elided {
+			continue
+		}
+		byResult[was[i]] = append(byResult[was[i]], msg.Content)
+	}
+	if len(byResult) == 0 {
+		return
+	}
+	for i := range m.transcript {
+		e := &m.transcript[i]
+		if e.elided != nil || (e.kind != entryTool && e.kind != entryCommand) {
+			continue
+		}
+		queue := byResult[e.toolResult]
+		if len(queue) == 0 {
+			continue
+		}
+		byResult[e.toolResult] = queue[1:]
+		id, _ := agent.Elided(queue[0])
+		// What the row says about the call is read off the body while there
+		// is still a body to read it off.
+		was := m.activityRowDetail(*e, false)
+		e.elided = &elidedRow{
+			state:    was.State,
+			outcome:  was.Outcome,
+			counts:   activityCounts(e.toolName, e.toolResult),
+			evidence: id,
+		}
+		e.toolResult = queue[0]
+	}
+	m.invalidateRenderCache()
 }
 
 // trimForRequest trims ahead of a stream request and notes it in the

@@ -142,7 +142,7 @@ func reviewShieldDetail(t changeset.Turn) string {
 // counts as a check.
 func (m Model) reviewVerdict(n int64) *components.ReviewVerdict {
 	es := m.entriesForTurn(n)
-	checks := turnChecksRow(es)
+	checks := m.turnChecks(n, es)
 	if checks == nil {
 		return nil
 	}
@@ -154,6 +154,25 @@ func (m Model) reviewVerdict(n int64) *components.ReviewVerdict {
 		v.Detail = failureLines(es)
 	}
 	return v
+}
+
+// turnChecks is the verdict a turn ended with: the block it closed with,
+// where it has one, and the rows themselves for a turn still in flight.
+//
+// The stored block is the reading the turn actually reported, and taking it
+// rather than parsing the rows again is what keeps a verdict from
+// disappearing weeks into a session: a check's output is a tool result like
+// any other, and a trim some turns later takes the body a verdict would have
+// to be read back out of (context.go). The row survives that; what it said
+// about how many checks passed does not survive being parsed out of the
+// placeholder.
+func (m Model) turnChecks(n int64, es []entry) *components.TurnChecks {
+	for _, e := range m.transcript {
+		if e.kind == entryTurnClose && e.turn == n && e.close != nil {
+			return e.close.Checks
+		}
+	}
+	return turnChecksRow(es)
 }
 
 // entriesForTurn is the transcript slice belonging to turn n: everything

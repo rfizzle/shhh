@@ -383,13 +383,29 @@ func (m Model) summaryActivity() []string {
 				"command", firstLine(e.text), components.OutcomeExit(e.exitCode)))
 		default:
 			rows = append(rows, agent.SummaryActivity(
-				e.toolName, digest.Arg(e.toolName, e.toolArgs), digest.Outcome(e.toolResult)))
+				e.toolName, digest.Arg(e.toolName, e.toolArgs), rowOutcome(e)))
 		}
 	}
 	if len(rows) > summaryActivityRows {
 		rows = rows[len(rows)-summaryActivityRows:]
 	}
 	return rows
+}
+
+// rowOutcome is the digest's word for how a call came back, read off the
+// result — except on a row the window trim has taken the body of, where what
+// the row said before it went is the only record left (context.go). The
+// placeholder is not an error message, so a failed call read back out of it
+// would report to the summariser as a clean one, and the steering it drives
+// would be steering about a turn that did not happen.
+func rowOutcome(e entry) string {
+	if e.elided != nil {
+		if e.elided.state == components.ActivityFailed {
+			return digest.OutcomeError
+		}
+		return digest.OutcomeOK
+	}
+	return digest.Outcome(e.toolResult)
 }
 
 // summaryAssistant is the last thing the agent said in its own words. It is

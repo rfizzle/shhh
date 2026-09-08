@@ -27,12 +27,7 @@ func (m Model) pointerLit() bool {
 	if !m.pointer || m.state == stateFocus || m.attachedTo != "" || !m.inputLive() {
 		return false
 	}
-	for _, idx := range m.expandableIndices() {
-		if idx == m.focusIdx {
-			return true
-		}
-	}
-	return false
+	return m.rowOnScreen(m.focusIdx)
 }
 
 // gutterShowing reports whether the transcript is drawn with the selection
@@ -109,8 +104,11 @@ func (m *Model) dropPointer() bool {
 		return false
 	}
 	m.pointer = false
-	m.invalidateRenderCache()
-	m.viewport.SetLines(m.renderHistoryLines())
+	m.cached.reset()
+	// The way out is where a repaint the gutter held is paid for: a stream
+	// that landed rows while the reader was scrolled up owes one, and the
+	// feed they are back on is where it shows (render.go).
+	m.flushStream()
 	return true
 }
 
@@ -120,7 +118,11 @@ func (m *Model) dropPointer() bool {
 // keep true: a reader who moved the pointer off the live end has scrolled,
 // and the next stream flush must not snap them back to the bottom.
 func (m *Model) refreshCursorView() {
-	m.invalidateRenderCache()
+	// The cursor moved, and the feed's cache is the render without a gutter
+	// over it, so it no longer describes what is on screen. The gutter's own
+	// cache stays: the units it holds carry no cursor, and the block the
+	// cursor landed in is rendered again whichever block that is (focus.go).
+	m.cached.reset()
 	m.refreshFocusView()
 	if m.state != stateFocus {
 		// The mode's refresh draws the bare render; the feed draws the

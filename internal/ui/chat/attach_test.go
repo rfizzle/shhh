@@ -672,3 +672,46 @@ func TestAttachedChildNoticeCarriesItsExpansion(t *testing.T) {
 		t.Error("opening the row should show the sentence the model was given")
 	}
 }
+
+// TestAttachedChildStreamsThroughItsOwnCache: the attached view redraws the
+// message a child is writing on every frame, and parsing that message whole
+// each time is quadratic in its length — the cost the parent's transcript
+// stopped paying and the child went on paying. One cache per child, because
+// two children write two different messages and a single cache between them
+// would drop itself on every frame.
+func TestAttachedChildStreamsThroughItsOwnCache(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")
+	spawnChild(t, sup, subagent.RoleReviewer, "reviewer-1")
+	m.attach("researcher-1")
+	w := m.transcriptWidth()
+
+	const opening = "First paragraph, finished.\n\nSecond paragraph, also finished.\n\n"
+	const arriving = opening + "Third paragraph, still being written"
+
+	got := m.renderChildHistory("researcher-1", opening)
+	if want := renderMarkdown(opening, w); !strings.HasSuffix(got, want) {
+		t.Fatalf("the child's in-flight message is not rendered as markdown:\n%q", got)
+	}
+	prefix := m.childViews["researcher-1"].stream.stablePrefix
+	if prefix == "" {
+		t.Fatal("the child's render took no stable prefix, so every frame parses the message whole")
+	}
+
+	// A second child writing a message of its own leaves the first one's
+	// cache where it was.
+	m.renderChildHistory("reviewer-1", "A different answer entirely.\n\nWith a second block.\n\n")
+	if now := m.childViews["researcher-1"].stream.stablePrefix; now != prefix {
+		t.Fatalf("one child's message dropped another's cache: %q became %q", prefix, now)
+	}
+
+	// And the glued render is the render of the whole message, which is the
+	// contract the transcript depends on: the message freezes into a row
+	// when the stream ends, rendered from the top.
+	got = m.renderChildHistory("researcher-1", arriving)
+	if want := renderMarkdown(arriving, w); !strings.HasSuffix(got, want) {
+		t.Fatal("the cached prefix and the tail do not glue back to the whole message")
+	}
+}

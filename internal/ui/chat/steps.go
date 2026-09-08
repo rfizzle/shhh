@@ -96,6 +96,29 @@ func (b transcriptBlock) members() (int, int) {
 	return b.start, b.end
 }
 
+// holds reports whether idx is one of the entries this block renders — its
+// own range, the rows a step groups, or the entry that titles it. It is what
+// the gutter's cache asks before it reuses a block: the unit under the
+// reading cursor renders differently from the same unit anywhere else
+// (focus.go), so the block holding the cursor is the one block that cannot
+// be taken from a cache built with no cursor in it.
+func (b transcriptBlock) holds(idx int) bool {
+	if idx < 0 {
+		return false
+	}
+	if idx >= b.start && idx < b.end {
+		return true
+	}
+	if b.step == nil {
+		return false
+	}
+	if idx == b.step.titleIdx {
+		return true
+	}
+	start, end := b.members()
+	return idx >= start && idx < end
+}
+
 // isActivityEntry reports whether an entry is one of the calls a step groups.
 func isActivityEntry(e entry) bool {
 	switch e.kind {

@@ -41,8 +41,43 @@ func (m Model) rowOutputView(e entry) *components.OutputView {
 	}
 	return &components.OutputView{
 		Title: strings.TrimSpace(title),
-		Lines: outputLines(e),
+		Lines: m.rowOutputLines(e),
 	}
+}
+
+// rowOutputLines is what the full screen shows for a row: its stored body,
+// or — for a row the window trim took the body of (context.go) — the
+// original paged back out of the evidence store. The offer is the point of
+// keeping it there: the transcript let the text go to keep the session
+// small, and this is the one surface that gives it back
+// (docs/capabilities/evidence.md#a-trim-makes-the-same-promise).
+//
+// A store that no longer holds it says so rather than opening a screen with
+// a placeholder on it: a purge is a thing that happens, and the row is still
+// the account of what ran.
+func (m Model) rowOutputLines(e entry) []string {
+	lines := outputLines(e)
+	if e.elided == nil {
+		return lines
+	}
+	// The same bound the sources screen opens a stored page under, and for
+	// the same reason: the viewer holds what it is given in memory.
+	if text, ok := m.readEvidence(e.elided.evidence, sourcesOpen); ok {
+		return strings.Split(strings.TrimRight(text, "\n"), "\n")
+	}
+	return append(lines, "", "The full output is no longer in the evidence store.")
+}
+
+// opensFullOutput reports whether a row has more behind its body than the
+// in-place window shows: more lines than the window holds, or a body the
+// window trim replaced whose original the evidence store can still page
+// back. Without the second case an elided row is one line and the cycle
+// stops at it, which is the offer being made and not taken.
+func (e entry) opensFullOutput(lines []string) bool {
+	if e.elided != nil {
+		return e.elided.evidence != ""
+	}
+	return len(lines) > maxExpandedResultLines
 }
 
 // outputLines is a row's detail body as the transcript shows it: the stored

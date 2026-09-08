@@ -291,6 +291,11 @@ func (m *Model) collapseFocused() bool {
 	default:
 		es[m.focusIdx].expanded = false
 	}
+	// The row renders differently now, and it may be in a block both caches
+	// have already frozen (render.go, focus.go). A cursor that then moves
+	// off it would be handed the lines from before the collapse, and the row
+	// would spring open again behind the reader.
+	m.invalidateRenderCache()
 	return true
 }
 

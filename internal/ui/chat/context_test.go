@@ -9,10 +9,13 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/quality"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 func TestContextWindow_DefaultAndTable(t *testing.T) {
@@ -708,5 +711,179 @@ func TestChatLoad_RereadsTheWorkspace(t *testing.T) {
 	}
 	if !strings.HasPrefix(sysPrompt, "sys\n\n") {
 		t.Fatalf("the rest of the stored prompt is not this reading's to touch:\n%s", sysPrompt)
+	}
+}
+
+// TestTrimContext_ElidesTheTranscriptCopy: the transcript holds the same
+// bytes the conversation does, so a trim that took one and left the other
+// recovered nothing a day-long session's memory could see. The row survives
+// with what it was showing — its counts — and its body becomes the
+// placeholder the model got.
+func TestTrimContext_ElidesTheTranscriptCopy(t *testing.T) {
+	big := strings.Repeat("line\n", 8000) // 40000 bytes, ~10k estimated tokens
+	m := New([]provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "q1"},
+		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "c1", Name: "read_file"}}},
+		{Role: provider.RoleTool, Content: big, ToolCallID: "c1"},
+		{Role: provider.RoleUser, Content: "q2"},
+	}, mockStream)
+	m.appendEntry(entry{kind: entryUser, text: "q1"})
+	m.appendEntry(entry{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"big.txt"}`, toolResult: big})
+	m.contextTokens = 30000
+
+	want := activityCounts("read_file", big)
+	if n := m.trimContext(); n != 1 {
+		t.Fatalf("want 1 elided result, got %d", n)
+	}
+	row := m.transcript[1]
+	if row.toolResult == big {
+		t.Fatal("the transcript still holds the whole result the conversation just gave up")
+	}
+	if _, elided := agent.Elided(row.toolResult); !elided {
+		t.Fatalf("row body is %q, want the placeholder the model was left with", row.toolResult)
+	}
+	if row.toolResult != m.Messages()[3].Content {
+		t.Fatalf("row says %q, model was told %q", row.toolResult, m.Messages()[3].Content)
+	}
+	if row.elided == nil || row.elided.counts != want {
+		t.Fatalf("counts %#v, want %q kept from before the elision", row.elided, want)
+	}
+	if got := m.activityRowDetail(row, false).Counts; got != want {
+		t.Fatalf("the row draws counts %q, want %q", got, want)
+	}
+}
+
+// The full-screen body of an elided row is the original, paged back out of
+// the store: the transcript let the text go and this is where it comes back.
+func TestElidedRow_OffersTheEvidencePage(t *testing.T) {
+	big := strings.Repeat("line\n", 8000)
+	kept := map[string]string{}
+	m := New([]provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "q1"},
+		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "c1", Name: "read_file"}}},
+		{Role: provider.RoleTool, Content: big, ToolCallID: "c1"},
+		{Role: provider.RoleUser, Content: "q2"},
+	}, mockStream).WithEvidence(Evidence{
+		Keep: func(_, content string) (string, bool) {
+			id := fmt.Sprintf("ev-000000000000000%d", len(kept))
+			kept[id] = content
+			return id, true
+		},
+		Read: func(id string, _ int) (string, bool) {
+			content, ok := kept[id]
+			return content, ok
+		},
+	})
+	m.appendEntry(entry{kind: entryTool, toolName: "read_file", toolResult: big})
+	m.contextTokens = 30000
+
+	if n := m.trimContext(); n != 1 {
+		t.Fatalf("want 1 elided result, got %d", n)
+	}
+	row := m.transcript[0]
+	if row.elided == nil || row.elided.evidence == "" {
+		t.Fatalf("row kept no evidence id: %#v", row.elided)
+	}
+	// The in-place body says the result was elided; the depth past it is the
+	// result itself.
+	if body := outputLines(row); len(body) != 1 || !strings.Contains(body[0], "elided") {
+		t.Fatalf("in-place body %q, want the placeholder", body)
+	}
+	if !row.opensFullOutput(outputLines(row)) {
+		t.Fatal("an elided row with a stored original does not open whole")
+	}
+	if got := m.rowOutputView(row).Lines; len(got) != 8000 {
+		t.Fatalf("full output is %d lines, want the 8000 the store kept", len(got))
+	}
+
+	// A store that no longer holds it says so rather than opening a screen
+	// with a placeholder on it.
+	clear(kept)
+	lines := m.rowOutputView(row).Lines
+	if last := lines[len(lines)-1]; !strings.Contains(last, "no longer in the evidence store") {
+		t.Fatalf("purged entry ends with %q", last)
+	}
+}
+
+// A failed call that is elided is still a failed call: the row's ✗ and its
+// outcome were read off the body, and the placeholder is not the body.
+func TestElidedRow_KeepsWhatTheBodySaid(t *testing.T) {
+	boom := "error: " + strings.Repeat("stack frame\n", 3000)
+	m := New([]provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "q1"},
+		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "c1", Name: "read_file"}}},
+		{Role: provider.RoleTool, Content: boom, ToolCallID: "c1"},
+		{Role: provider.RoleUser, Content: "q2"},
+	}, mockStream)
+	m.appendEntry(entry{kind: entryTool, toolName: "read_file", toolResult: boom})
+	m.contextTokens = 30000
+	before := m.activityRowDetail(m.transcript[0], false)
+
+	if n := m.trimContext(); n != 1 {
+		t.Fatalf("want 1 elided result, got %d", n)
+	}
+	after := m.activityRowDetail(m.transcript[0], false)
+	if !after.Failed() {
+		t.Fatal("eliding the body turned a failed call into a clean one")
+	}
+	if after.Outcome != before.Outcome {
+		t.Fatalf("outcome %q, was %q", after.Outcome, before.Outcome)
+	}
+}
+
+// A turn's verdict outlives the trim that takes the check's output: the
+// reading was reported when the turn closed, and re-parsing it out of the
+// placeholder would report no checks at all.
+func TestElidedCheck_TheTurnKeepsItsVerdict(t *testing.T) {
+	gate := "Quality gate \"default\": FAIL — 3/5 checks passed (1.2s)\n" +
+		strings.Repeat("a failing check said something\n", 2000)
+	m := New([]provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "q1"},
+		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "c1", Name: quality.ToolName}}},
+		{Role: provider.RoleTool, Content: gate, ToolCallID: "c1"},
+		{Role: provider.RoleUser, Content: "q2"},
+	}, mockStream)
+	m.appendEntry(entry{kind: entryTool, turn: 1, toolName: quality.ToolName, toolResult: gate})
+	m.appendEntry(entry{kind: entryTurnClose, turn: 1, close: &components.TurnClose{
+		Checks: turnChecksRow(m.transcript),
+	}})
+	m.contextTokens = 30000
+
+	before := m.reviewVerdict(1)
+	if before == nil || !before.Failed {
+		t.Fatalf("the turn failed its checks before the trim, got %+v", before)
+	}
+	if n := m.trimContext(); n != 1 {
+		t.Fatalf("want 1 elided result, got %d", n)
+	}
+	after := m.reviewVerdict(1)
+	if after == nil || !after.Failed || after.Label != before.Label {
+		t.Fatalf("the verdict changed with the trim: %+v, was %+v", after, before)
+	}
+}
+
+// The steering digest says how a call came back, and an elided error is
+// still an error: the placeholder carries no `error:` for it to read.
+func TestElidedRow_StillReportsAsAnErrorToTheDigest(t *testing.T) {
+	boom := "error: " + strings.Repeat("stack frame\n", 3000)
+	m := New([]provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "q1"},
+		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "c1", Name: "read_file"}}},
+		{Role: provider.RoleTool, Content: boom, ToolCallID: "c1"},
+		{Role: provider.RoleUser, Content: "q2"},
+	}, mockStream)
+	m.appendEntry(entry{kind: entryTool, toolName: "read_file", toolResult: boom})
+	m.contextTokens = 30000
+	if n := m.trimContext(); n != 1 {
+		t.Fatalf("want 1 elided result, got %d", n)
+	}
+	rows := m.summaryActivity()
+	if len(rows) != 1 || !strings.Contains(rows[0], digest.OutcomeError) {
+		t.Fatalf("the digest reports %q, want the call still failing", rows)
 	}
 }

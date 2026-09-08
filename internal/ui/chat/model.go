@@ -405,6 +405,12 @@ type entry struct {
 	// the reason a pending tool result is: what a row is doing is part of the
 	// row, and the render stays a function of the entry alone.
 	thinkStreaming bool
+	// elided marks a tool or command row the window trim has taken the body
+	// of (context.go): toolResult is the placeholder the model was left
+	// with, and this is what the row still says about what was there and
+	// where the original went. Nil on every row that still holds its own
+	// output, which is all of them until a trim runs.
+	elided *elidedRow
 	// planStep is the number of the approved plan's step this assistant
 	// announcement carries out, offPlanStep when it carries out none of them,
 	// and zero when no plan was running. It is stamped once, when the
@@ -480,6 +486,11 @@ type Model struct {
 	// [0, cached.count), always a whole number of step blocks, with
 	// the live tail rebuilt after them each frame (lines.go).
 	cached lineCache
+	// gutter is reading mode's cache of the same entries with the selection
+	// gutter over them (focus.go). Two caches rather than one because the
+	// two renders differ in the width a selectable row takes, and the pointer
+	// has to be able to come and go without either of them being rebuilt.
+	gutter gutterCache
 	// streamMD is the arriving message's own cache, keyed on nothing the
 	// caches above are: it holds a render of the part of that one message that
 	// can no longer change, so a chunk re-renders the tail rather than the

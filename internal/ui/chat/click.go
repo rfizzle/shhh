@@ -197,6 +197,10 @@ func (m Model) clickRow(line int) (tea.Model, tea.Cmd) {
 		}
 		es[idx].expanded = !es[idx].expanded
 	}
+	// The row renders differently now, and it may belong to a block the
+	// caches have frozen (render.go, focus.go). Both go, before anything
+	// draws from them again.
+	m.invalidateRenderCache()
 	if full != nil {
 		// A diff cycled past its expanded mode wants the screen. It is
 		// opened from wherever the click came from, so esc comes back there.
@@ -213,7 +217,6 @@ func (m Model) clickRow(line int) (tea.Model, tea.Cmd) {
 		m.refreshFocusView()
 		return m, nil
 	}
-	m.invalidateRenderCache()
 	m.viewport.SetLines(m.renderHistoryLines())
 	if m.atBottom {
 		// The row grew underneath itself. A reader pinned to the live end
@@ -313,12 +316,12 @@ func (m *Model) toggleRow(idx int, g rowGesture) (claimed bool, full *components
 		// body already showing whole with nothing to do.
 		switch {
 		case g == gestureBody:
-			if len(lines) > maxExpandedResultLines {
+			if es[idx].opensFullOutput(lines) {
 				return true, nil, true
 			}
 		case !es[idx].expanded:
 			es[idx].expanded = true
-		case g == gestureCycle && len(lines) > maxExpandedResultLines:
+		case g == gestureCycle && es[idx].opensFullOutput(lines):
 			return true, nil, true
 		default:
 			es[idx].expanded = false
