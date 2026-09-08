@@ -11,9 +11,11 @@ package components
 //
 // So the line is read before it is drawn. It is re-painted the way every
 // other surface is painted — as runs of text carrying a lipgloss style — with
-// the sixteen colours a terminal theme owns mapped onto the tokens that mean
-// the same thing here, and everything else the program asked for kept: bold,
-// faint, italic, underline, strikethrough, reverse. Nothing else survives.
+// every colour a program can name arriving as one of the fifteen tokens: the
+// sixteen a terminal theme owns by what they mean, the cube, the greyscale
+// ramp and a truecolor triple by what they look like. Bold, faint, underline
+// and strikethrough are kept, because they are emphasis rather than colour
+// and cost the palette nothing. Nothing else survives.
 //
 // Ported from Crush's internal/ui/common/ansi16.go (RemapANSI16 and
 // StripCursorControl), with four places where shhh's semantics win:
@@ -23,10 +25,10 @@ package components
 //     lipgloss puts foreign output behind the same renderer as everything
 //     else, so the colour profile, NO_COLOR and the mono swap reach it
 //     without this file knowing they exist.
-//   - Background colours are dropped rather than remapped. The palette allows exactly
-//     three background tints exist, and all three collapse onto --mono-bg,
-//     which means selection. A program painting a block of a detail
-//     body would be drawing the reading cursor.
+//   - Background colours are dropped rather than remapped, and reverse video
+//     with them. The palette allows exactly three background tints, and all
+//     three collapse onto --mono-bg, which means selection. A program
+//     painting a block of a detail body would be drawing the reading cursor.
 //   - Under mono no foreign colour survives at all, the way the diff renderer
 //     drops chroma highlighting rather than recolouring it. A grey
 //     step is still a distinction, and a detail body is exactly where the
@@ -38,9 +40,8 @@ package components
 //     writes all leave by the same door rather than by name.
 
 import (
-	"fmt"
 	"image/color"
-	"strconv"
+	"math"
 	"strings"
 
 	"charm.land/lipgloss/v2"
@@ -75,23 +76,22 @@ func ansiTable(p ColorTokens) [16]Token {
 // uncoloured majority of tool output render identically to the way it did
 // before this file existed.
 type foreignRun struct {
-	fg                                color.Color
-	bold, faint, italic               bool
-	underline, strike, reverse, blink bool
+	fg                color.Color
+	bold, faint       bool
+	underline, strike bool
 }
 
-// style resolves the run against the ground: the program's foreground where
-// there is one and the palette is showing colour at all, the ground
-// otherwise, plus whatever attributes the program set.
+// style resolves the run against the ground: the token the program's colour
+// arrived as where there is one and the palette is showing colour at all, the
+// ground otherwise, plus the four attributes a program keeps.
 func (r foreignRun) style(ground Token) lipgloss.Style {
 	fg := ground.Color()
 	if r.fg != nil && !mono {
 		fg = r.fg
 	}
 	return lipgloss.NewStyle().Foreground(fg).
-		Bold(r.bold).Faint(r.faint).Italic(r.italic).
-		Underline(r.underline).Strikethrough(r.strike).
-		Reverse(r.reverse).Blink(r.blink)
+		Bold(r.bold).Faint(r.faint).
+		Underline(r.underline).Strikethrough(r.strike)
 }
 
 // repaint re-paints one line of a program's own output in shhh's materials.
@@ -168,9 +168,13 @@ func isSequence(seq string) bool {
 }
 
 // apply moves the run state by one SGR sequence. Colour parameters resolve
-// through ansiPalette; background and underline colours are read only far
-// enough to skip their arguments, so they can never be misread as attributes
-// of their own.
+// to a token; background and underline colours are read only far enough to
+// skip their arguments, so they can never be misread as attributes of their
+// own.
+//
+// Three attributes are read and dropped rather than left to fall through the
+// switch, because a reader of this table is owed the reason each one is not
+// on the row (docs/interface/departures.md#a-foreign-colour-arrives-as-a-token-and-a-foreign-ground-does-not-arrive).
 func (r *foreignRun) apply(params ansi.Params) {
 	if len(params) == 0 {
 		// \x1b[m is \x1b[0m.
@@ -186,26 +190,26 @@ func (r *foreignRun) apply(params ansi.Params) {
 			r.bold = true
 		case p == 2:
 			r.faint = true
-		case p == 3:
-			r.italic = true
+		case p == 3 || p == 23:
+			// Italic is the mark on text the model said, and a detail body
+			// is the one place on the screen that is nobody's words but a
+			// program's. A linter emphasising a rule name in italic would
+			// be quoting the model.
 		case p == 4:
 			r.underline = true
-		case p == 5 || p == 6:
-			r.blink = true
-		case p == 7:
-			r.reverse = true
+		case p == 5 || p == 6 || p == 25:
+			// Blink is not in the type system and never was.
+		case p == 7 || p == 27:
+			// Reverse video paints the ground with the foreground, which is
+			// exactly what the reading cursor does to the row it is on. A
+			// program does not get to draw the cursor, for the reason a
+			// background is dropped.
 		case p == 9:
 			r.strike = true
 		case p == 22:
 			r.bold, r.faint = false, false
-		case p == 23:
-			r.italic = false
 		case p == 24:
 			r.underline = false
-		case p == 25:
-			r.blink = false
-		case p == 27:
-			r.reverse = false
 		case p == 29:
 			r.strike = false
 		case p >= 30 && p <= 37:
@@ -215,46 +219,197 @@ func (r *foreignRun) apply(params ansi.Params) {
 		case p == 39:
 			r.fg = nil
 		case p == 38:
-			// An explicit 256-colour or truecolor foreground: a colour the
-			// program could see when it chose it, and one the palette has no
-			// token to stand in for. It is kept as it was asked for and
-			// degrades through the renderer like any other.
-			c, next := extendedColor(params, i)
-			r.fg, i = c, next
+			// An explicit 256-colour or truecolor foreground. It arrives as
+			// the token nearest it, the way the sixteen arrive as the token
+			// that means what they mean — never as itself, which is the one
+			// route by which a colour the palette did not issue could reach
+			// the screen.
+			tok, ok, next := extendedColor(params, i)
+			r.fg, i = nil, next
+			if ok {
+				r.fg = tok.Color()
+			}
 		case p == 48 || p == 58:
 			// A background or an underline colour. Skipped, arguments and
 			// all.
-			_, next := extendedColor(params, i)
+			_, _, next := extendedColor(params, i)
 			i = next
 		}
 	}
 }
 
 // extendedColor reads one explicit-colour introducer and its arguments —
-// `38;5;n` or `38;2;r;g;b` — starting at params[i]. It returns the colour and
-// the index of the last parameter it consumed; a truncated introducer yields
-// no colour rather than a guess.
-func extendedColor(params ansi.Params, i int) (color.Color, int) {
+// `38;5;n` or `38;2;r;g;b` — starting at params[i]. It returns the token that
+// colour arrives as and the index of the last parameter it consumed; a
+// truncated introducer yields no token rather than a guess.
+func extendedColor(params ansi.Params, i int) (Token, bool, int) {
 	if i+1 >= len(params) {
-		return nil, i
+		return Token{}, false, i
 	}
 	switch params[i+1].Param(0) {
 	case 5:
 		if i+2 >= len(params) {
-			return nil, i + 1
+			return Token{}, false, i + 1
 		}
-		return lipgloss.Color(strconv.Itoa(params[i+2].Param(0))), i + 2
+		return indexToken(params[i+2].Param(0)), true, i + 2
 	case 2:
 		if i+4 >= len(params) {
-			return nil, len(params) - 1
+			return Token{}, false, len(params) - 1
 		}
-		return lipgloss.Color(fmt.Sprintf("#%02x%02x%02x",
+		return nearestToken(
 			clampByte(params[i+2].Param(0)),
 			clampByte(params[i+3].Param(0)),
-			clampByte(params[i+4].Param(0)))), i + 4
+			clampByte(params[i+4].Param(0))), true, i + 4
 	}
-	return nil, i + 1
+	return Token{}, false, i + 1
 }
 
-// clampByte keeps a malformed channel inside the byte the %02x expects.
+// clampByte keeps a malformed channel inside a byte.
 func clampByte(v int) int { return min(max(v, 0), 255) }
+
+// indexToken is one 256-colour index as a token.
+//
+// The first sixteen go through the same table `31` does: a program that names
+// red the long way means what a program that names it the short way means,
+// and both are del. The rest are the 6×6×6 cube and the twenty-four-step
+// greyscale ramp — values chosen off a chart rather than off a theme — so
+// they are read for what they look like and folded onto the nearest token.
+func indexToken(n int) Token {
+	n = clampByte(n)
+	switch {
+	case n < 16:
+		return ansiPalette[n]
+	case n < 232:
+		// The cube: three digits base six, each digit one of six levels.
+		levels := [6]int{0, 95, 135, 175, 215, 255}
+		n -= 16
+		return nearestToken(levels[n/36], levels[(n/6)%6], levels[n%6])
+	default:
+		v := 8 + (n-232)*10
+		return nearestToken(v, v, v)
+	}
+}
+
+// nearestToken folds one colour a program named onto the token that says the
+// nearest thing (docs/interface/principles.md#one-grid).
+//
+// It is two questions rather than one distance, because the palette is not a
+// spread of colours to match against: it is six hues with one job each and a
+// grey ramp carrying most of the screen, and the two halves are answered by
+// different facts about a colour. A colour with hue in it is folded onto the
+// token whose hue is nearest, which is the same judgement the sixteen already
+// get — a program's red is del whether it wrote 31, 38;5;196 or 38;2;255;0;0.
+// A colour with none is folded onto the grey whose lightness is nearest.
+//
+// Distance in RGB would answer neither: every token here is a mid-saturation
+// colour chosen to be read for minutes at a time, so pure red is further from
+// del in RGB than several greys are, and matching by distance would paint a
+// failure grey.
+func nearestToken(r, g, b int) Token {
+	hi, lo := max(r, max(g, b)), min(r, min(g, b))
+
+	// A colour is achromatic when what hue it has is a rounding error
+	// against how light it is: an eighth of the strongest channel, which
+	// makes the whole greyscale ramp grey and leaves the palest cube colour
+	// a hue. Black has no strongest channel and is grey by the same test.
+	if hi-lo <= hi/8 {
+		return nearestGrey((hi + lo) / 2)
+	}
+	return nearestHue(hueOf(r, g, b, hi, lo))
+}
+
+// nearestGrey picks the grey token closest in lightness. The five of them are
+// the ramp the screen is mostly built from, and a foreign grey joins it
+// rather than sitting a shade off it.
+func nearestGrey(light int) Token {
+	best, bd := foreignGreys[0].tok, math.MaxFloat64
+	for _, t := range foreignGreys {
+		if d := math.Abs(float64(light) - t.at); d < bd {
+			best, bd = t.tok, d
+		}
+	}
+	return best
+}
+
+// nearestHue picks the coloured token closest in hue, measured the short way
+// round the circle.
+func nearestHue(h float64) Token {
+	best, bd := foreignHues[0].tok, math.MaxFloat64
+	for _, t := range foreignHues {
+		d := math.Abs(h - t.at)
+		if d > 180 {
+			d = 360 - d
+		}
+		if d < bd {
+			best, bd = t.tok, d
+		}
+	}
+	return best
+}
+
+// foreignHues and foreignGreys are the tokens a colour a program named can
+// arrive as, each beside the one number it is chosen by: a hue in degrees, or
+// a lightness.
+//
+// The six coloured ones are the six the sixteen already map onto, so the
+// extended half can reach no token the short form cannot — which is what keeps
+// `38;5;n` from being a second, wider palette. The five greys are the ramp
+// itself. The four the list leaves out are the three background tints, which a
+// foreground may not borrow, and subtle, which belongs to the one-shot UI.
+//
+// Like ansiPalette they read FullPalette and are not rebuilt on a swap, for
+// the same reason: mono declines foreign colour outright rather than
+// recolouring it, so with mono on nothing reaches these tables.
+var foreignHues, foreignGreys = foreignTargets(FullPalette)
+
+type foreignTarget struct {
+	tok Token
+	at  float64
+}
+
+func foreignTargets(p ColorTokens) (hues, greys []foreignTarget) {
+	at := func(t Token, hue bool) foreignTarget {
+		r, g, b := rgb8(t.TrueColor)
+		hi, lo := max(r, max(g, b)), min(r, min(g, b))
+		if hue {
+			return foreignTarget{t, hueOf(r, g, b, hi, lo)}
+		}
+		return foreignTarget{t, float64((hi + lo) / 2)}
+	}
+	for _, t := range []Token{p.Del, p.Accent, p.Add, p.Hunk, p.Info, p.Spin} {
+		hues = append(hues, at(t, true))
+	}
+	for _, t := range []Token{p.Dim, p.Status, p.Dimmer, p.Body, p.Bright} {
+		greys = append(greys, at(t, false))
+	}
+	return hues, greys
+}
+
+// hueOf is the hue in degrees, given the channels and their extremes — the
+// textbook conversion, with the negative sixth wrapped rather than left for
+// the caller to notice.
+func hueOf(r, g, b, hi, lo int) float64 {
+	c := float64(hi - lo)
+	var h float64
+	switch hi {
+	case r:
+		h = 60 * float64(g-b) / c
+	case g:
+		h = 60 * (float64(b-r)/c + 2)
+	default:
+		h = 60 * (float64(r-g)/c + 4)
+	}
+	if h < 0 {
+		h += 360
+	}
+	return h
+}
+
+// rgb8 is a token's own colour as three bytes. Token.TrueColor is the design
+// system's hex, which is what the fold is measured against: the token a
+// colour is nearest is a fact about the palette and not about what rung of it
+// this terminal can show.
+func rgb8(c color.Color) (int, int, int) {
+	r, g, b, _ := c.RGBA()
+	return int(r >> 8), int(g >> 8), int(b >> 8)
+}

@@ -1,0 +1,8 @@
+# One reply per request. The last line repeats once these run out.
+# A linter is the archetypal foreign painter: it spends a colour per severity
+# and picks them off the 256-colour table rather than off the terminal's own
+# sixteen, so its output is exactly the half a theme mapping cannot reach.
+# The command is a printf standing in for one — the scene needs the bytes, not
+# a toolchain — and it exits non-zero so the row opens its body unasked.
+tool:execute_command:{"command":"printf '\\033[38;5;208mwarn\\033[0m  \\033[38;2;122;19;219mno-unused-vars\\033[0m  src/app.ts\\n\\033[7m 3 problems \\033[0m \\033[38;5;250m1 error, 2 warnings\\033[0m\\n'; exit 1"}
+Two warnings and an error, all in one file.

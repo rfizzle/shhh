@@ -53,6 +53,11 @@
     --- FAIL: TestRoundLimit (0.00s)
     building 100%
 
+· output · a colour outside the palette, folded onto it
+  ▎✗ run     npm run lint                                           exit 1  3.9s
+    warn  no-unused-vars  src/app.ts
+     3 problems  1 error, 2 warnings
+
 · output · bounded, the cap counts what it swallowed
   ▎✗ run     go vet ./...                                           exit 1  8.0s
     internal/agent/loop.go:88: unreachable code
@@ -119,6 +124,11 @@
   ␛[38;5;254m▎␛[m␛[38;5;254m✗␛[m run     ␛[38;5;244mgo test ./internal/agent/...␛[m                           ␛[38;5;254mexit 1␛[m ␛[38;5;244m21.4s␛[m
     ␛[38;5;244m--- ␛[m␛[38;5;244mFAIL␛[m␛[38;5;244m: ␛[m␛[1;38;5;244mTestRoundLimit␛[m␛[38;5;244m (0.00s)␛[m
     ␛[38;5;244mbuilding 100%␛[m
+
+· output · a colour outside the palette, folded onto it
+  ␛[38;5;254m▎␛[m␛[38;5;254m✗␛[m run     ␛[38;5;244mnpm run lint␛[m                                           ␛[38;5;254mexit 1␛[m  ␛[38;5;244m3.9s␛[m
+    ␛[38;5;244mwarn␛[m␛[38;5;244m  ␛[m␛[38;5;244mno-unused-vars␛[m␛[38;5;244m  src/app.ts␛[m
+    ␛[38;5;244m 3 problems ␛[m␛[38;5;244m ␛[m␛[38;5;244m1 error, 2 warnings␛[m
 
 · output · bounded, the cap counts what it swallowed
   ␛[38;5;254m▎␛[m␛[38;5;254m✗␛[m run     ␛[38;5;244mgo vet ./...␛[m                                           ␛[38;5;254mexit 1␛[m  ␛[38;5;244m8.0s␛[m

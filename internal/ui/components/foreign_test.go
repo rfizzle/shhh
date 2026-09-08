@@ -117,9 +117,9 @@ func TestForeignText_CarriageReturnOverwritesTheLine(t *testing.T) {
 // pass through whatever happens to the hue.
 func TestForeignText_AttributesPassThrough(t *testing.T) {
 	withColorProfile(t, colorprofile.ANSI256)
-	got, _ := repaint("\x1b[1;3;4mloud\x1b[0m", testGround)
+	got, _ := repaint("\x1b[1;4;9mloud\x1b[0m", testGround)
 	want := lipgloss.NewStyle().Foreground(testGround.Color()).
-		Bold(true).Italic(true).Underline(true).Render("loud")
+		Bold(true).Underline(true).Strikethrough(true).Render("loud")
 	if !strings.Contains(got, want) {
 		t.Fatalf("repaint = %q, want it to contain %q", got, want)
 	}
@@ -149,22 +149,96 @@ func TestForeignText_BackgroundsAreDropped(t *testing.T) {
 	}
 }
 
-// An explicit colour is one the program could see when it chose it, and one
-// the palette has no token to stand in for. It is kept rather than guessed
-// at.
-func TestForeignText_ExplicitColoursAreKept(t *testing.T) {
+// The extended half is the only route by which a colour outside the fifteen
+// could reach a detail body, so it is folded the way the sixteen are: a
+// program's red is del whether it wrote the short form, the index or the
+// triple, and a colour with no hue in it joins the grey ramp.
+func TestForeignText_ExplicitColoursArriveAsTokens(t *testing.T) {
 	withColorProfile(t, colorprofile.TrueColor)
 	for _, c := range []struct {
-		in    string
-		token color.Color
+		name, in string
+		token    Token
 	}{
-		{"\x1b[38;5;208mwarn\x1b[0m", lipgloss.Color("208")},
-		{"\x1b[38;2;255;170;0mwarn\x1b[0m", lipgloss.Color("#ffaa00")},
+		{"an indexed orange is accent", "\x1b[38;5;208mwarn\x1b[0m", Palette.Accent},
+		{"an indexed red is del, like 31", "\x1b[38;5;196mwarn\x1b[0m", Palette.Del},
+		{"an indexed green is add", "\x1b[38;5;46mwarn\x1b[0m", Palette.Add},
+		{"the first sixteen go through the theme table", "\x1b[38;5;5mwarn\x1b[0m", Palette.Spin},
+		{"an indexed grey joins the ramp", "\x1b[38;5;250mwarn\x1b[0m", Palette.Body},
+		{"a truecolor amber is accent", "\x1b[38;2;255;170;0mwarn\x1b[0m", Palette.Accent},
+		{"a truecolor violet is info", "\x1b[38;2;122;19;219mwarn\x1b[0m", Palette.Info},
+		{"a truecolor near-black is dim", "\x1b[38;2;18;18;18mwarn\x1b[0m", Palette.Dim},
 	} {
 		got, _ := repaint(c.in, testGround)
-		want := lipgloss.NewStyle().Foreground(c.token).Render("warn")
+		want := lipgloss.NewStyle().Foreground(c.token.Color()).Render("warn")
 		if got != want {
-			t.Fatalf("%q rendered as %q, want %q", c.in, got, want)
+			t.Fatalf("%s: %q rendered as %q, want %q", c.name, c.in, got, want)
+		}
+	}
+}
+
+// Nothing outside the fifteen reaches the screen: whatever a program names,
+// what comes back is a colour the palette issued
+// (docs/interface/principles.md#one-grid). Every index a terminal can be sent
+// is checked, because the cube and the ramp are where a stray colour would
+// hide.
+func TestForeignText_NoIndexEscapesThePalette(t *testing.T) {
+	withColorProfile(t, colorprofile.TrueColor)
+	issued := map[color.Color]bool{}
+	for _, tok := range []Token{
+		FullPalette.Add, FullPalette.Del, FullPalette.Accent, FullPalette.Info,
+		FullPalette.Hunk, FullPalette.Spin, FullPalette.Dim, FullPalette.Dimmer,
+		FullPalette.Status, FullPalette.Body, FullPalette.Bright,
+	} {
+		issued[tok.TrueColor] = true
+	}
+	for n := range 256 {
+		if got := indexToken(n).TrueColor; !issued[got] {
+			t.Fatalf("38;5;%d arrives as %v, which no token issued", n, got)
+		}
+	}
+}
+
+// A token folded onto anything but itself would mean the mapping moves a
+// colour the palette did issue, which is the one thing the fold must not do
+// to its own materials.
+func TestForeignText_EveryTokenFoldsOntoItself(t *testing.T) {
+	for _, tok := range []Token{
+		FullPalette.Add, FullPalette.Del, FullPalette.Accent, FullPalette.Info,
+		FullPalette.Hunk, FullPalette.Spin, FullPalette.Dim, FullPalette.Dimmer,
+		FullPalette.Status, FullPalette.Body, FullPalette.Bright,
+	} {
+		r, g, b, _ := tok.TrueColor.RGBA()
+		if got := nearestToken(int(r>>8), int(g>>8), int(b>>8)); got != tok {
+			t.Fatalf("%v folds onto %v, want itself", tok.TrueColor, got.TrueColor)
+		}
+	}
+}
+
+// Three attributes do not survive: italic is the mark on quoted model output,
+// blink is in no part of the type system, and reverse video paints the ground
+// with the foreground — which is what the reading cursor does to the row it
+// is on.
+func TestForeignText_ItalicBlinkAndReverseAreStripped(t *testing.T) {
+	withColorProfile(t, colorprofile.ANSI256)
+	plain := lipgloss.NewStyle().Foreground(testGround.Color()).Render("WORD")
+	for _, c := range []struct {
+		name, in string
+	}{
+		{"italic", "\x1b[3mWORD\x1b[0m"},
+		{"blink", "\x1b[5mWORD\x1b[0m"},
+		{"fast blink", "\x1b[6mWORD\x1b[0m"},
+		{"reverse", "\x1b[7mWORD\x1b[0m"},
+		{"all three at once", "\x1b[3;5;7mWORD\x1b[0m"},
+	} {
+		if got, _ := repaint(c.in, testGround); got != plain {
+			t.Fatalf("%s: %q rendered as %q, want the ground alone (%q)", c.name, c.in, got, plain)
+		}
+	}
+	// And their off-switches leave the run where it already was rather than
+	// being read as some other attribute.
+	for _, in := range []string{"\x1b[23mWORD", "\x1b[25mWORD", "\x1b[27mWORD"} {
+		if got, _ := repaint(in, testGround); got != plain {
+			t.Fatalf("%q rendered as %q, want the ground alone (%q)", in, got, plain)
 		}
 	}
 }

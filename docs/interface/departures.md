@@ -99,6 +99,51 @@ that normally defer to the terminal's own theme do not: a named palette that
 handed its green back to whatever the user's config says would not be that
 palette.
 
+## A foreign colour arrives as a token and a foreign ground does not arrive
+
+*A gap.* No artboard draws a detail body a program painted itself. What the
+design system states is the rule — output a program painted is re-painted into
+the palette on the way in
+([the rule](principles.md#one-grid)) — the fifteen tokens and their one job
+each, and a type system of a foreground colour, one background tint, bold and
+italic. It does not say what happens to the colours that rule has no token
+for, and there are two hundred and forty of them in the 256-colour table alone,
+plus every triple a truecolor terminal will take.
+
+The binary folds them rather than dropping them. A run keeps its distinction
+and the palette keeps its vocabulary: a colour with hue in it arrives as the
+token whose hue is nearest, and a colour with none joins the grey ramp at the
+rung nearest its lightness. The six hues and five greys it can land on are the
+ones the sixteen already land on, so naming a colour the long way reaches
+nothing naming it the short way cannot — a program's red is the failure red
+whether it wrote the theme colour, the index or the triple.
+
+Dropping every extended colour to Dimmer was the other option and is the worse
+one. A linter that spends orange on a warning and red on an error is drawing
+the distinction the row exists to carry, and dropping both leaves two lines
+that differ only in a word the reader has to find. The fold can be wrong about
+what a program meant; dropping is wrong about whether it meant anything.
+
+Three things a program can ask for do not arrive at all, and each is dropped
+for a reason the fold cannot answer:
+
+- **A background, and reverse video with it.** There are three background
+  tints, all three collapse onto the mono ground, and that ground means
+  selection. A program painting a block of a body — or asking for reverse
+  video, which paints the ground with the foreground — would be drawing the
+  reading cursor somewhere the reader did not put it.
+- **Italic**, which is the mark on quoted model output. A detail body is the
+  one place on the screen that is nobody's words but a program's, and a
+  linter emphasising a rule name would be quoting the model.
+- **Blink**, which is in no part of the type system.
+
+Bold, faint, underline and strikethrough pass through: they are emphasis
+rather than colour, they cost the palette nothing, and bold is half of how
+invariant 1 is met once mono has taken the hue away.
+
+The gap is closed by drawing a foreign-coloured body. Where that artboard and
+this differ, the artboard wins.
+
 ## The backlog screen's layout was decided in the binary
 
 The Backlog artboard draws `/todo` as a picker: a card in the panel, one slug

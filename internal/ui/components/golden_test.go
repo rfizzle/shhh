@@ -162,6 +162,21 @@ func TestGolden_ActivityRows(t *testing.T) {
 					"\x1b[2K\x1b[1Gbuilding 40%\rbuilding 100%",
 				}
 			})},
+			{Label: "output · a colour outside the palette, folded onto it", View: row(func(r *ActivityRow) {
+				r.Kind, r.Verb, r.Target = ActivityCommand, "run", "npm run lint"
+				r.State, r.Outcome, r.Duration = ActivityFailed, OutcomeExit(1), "3.9s"
+				r.Expanded = true
+				// The other half of what a program can name: an indexed
+				// colour off the cube, a truecolor triple, a grey off the
+				// ramp and a run of reverse video — none of them a colour
+				// the palette issued. The layout block says the text came
+				// through; the ansi block is where this row reads, because
+				// what it claims is that every run came back a token.
+				r.Detail = []string{
+					"\x1b[38;5;208mwarn\x1b[0m  \x1b[38;2;122;19;219mno-unused-vars\x1b[0m  src/app.ts",
+					"\x1b[7m 3 problems \x1b[0m \x1b[38;5;250m1 error, 2 warnings\x1b[0m",
+				}
+			})},
 			{Label: "output · bounded, the cap counts what it swallowed", View: row(func(r *ActivityRow) {
 				r.Kind, r.Verb, r.Target = ActivityCommand, "run", "go vet ./..."
 				r.State, r.Outcome, r.Duration = ActivityFailed, OutcomeExit(1), "8.0s"
