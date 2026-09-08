@@ -1160,7 +1160,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	if suite, retries, ok := onCloseGate(qgate); ok {
 		closing = &headlessCloseGate{
 			ctx: cmd.Context(), gate: qgate, suite: suite, retries: retries,
-			written: own.paths,
+			written: own.paths, before: quality.TakeFingerprint(qgate.Workspace),
 		}
 		h.OnClose = closing.close
 	}
@@ -1226,7 +1226,10 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	code := headlessExitCode(outcome, gateErr != nil, refused)
 	switch opts.output {
 	case outputJSON:
-		if err := writeJSONTranscript(os.Stdout, a.Messages(), final, h.TruncatedReply(), usage, out); err != nil {
+		if err := writeJSONTranscript(os.Stdout, jsonRun{
+			messages: a.Messages(), final: final, truncated: h.TruncatedReply(),
+			usage: usage, gate: closing.state(), written: own.paths(), err: out,
+		}); err != nil {
 			return err
 		}
 	case outputJSONL:
@@ -1387,19 +1390,31 @@ type headlessCloseGate struct {
 	// written is what the run's mutating calls wrote, the unattended
 	// stand-in for a session's changeset.
 	written func() []string
+	// before is the tree as it stood when the turn began. A turn's change
+	// does not have to arrive through a mutating call — `gofmt -w`, a code
+	// generator, a build that writes its own manifest — and a close that
+	// asked only the call log would run nothing over a tree that had moved.
+	before quality.Fingerprint
 
 	fed  int
 	last *quality.Result
+	// ran says the suite was started, which is what separates the two
+	// answers a nil result carries: a turn with nothing to check, and one
+	// whose suite could not be run.
+	ran bool
 }
 
 // close is the agent.Headless.OnClose hook.
 func (g *headlessCloseGate) close(string) string {
 	// A turn that wrote nothing, or wrote only under shhh's own state
 	// directory, has nothing a suite could have an opinion about
-	// (changeset.AnyCheckable). It runs nothing and says nothing.
-	if !changeset.AnyCheckable(g.written()) {
+	// (changeset.AnyCheckable). It runs nothing and says nothing — but only
+	// where the tree agrees with the call log, because the call log is not
+	// the whole of what a turn can change.
+	if !changeset.AnyCheckable(g.written()) && quality.TakeFingerprint(g.gate.Workspace) == g.before {
 		return ""
 	}
+	g.ran = true
 	res, err := g.gate.Run(g.ctx, g.suite)
 	if err != nil {
 		// The only error Run reports is a run already in flight, which here
@@ -1423,6 +1438,18 @@ func (g *headlessCloseGate) close(string) string {
 	// failure in words the model has never seen from the gate would be
 	// learning a second vocabulary for the same event.
 	return text
+}
+
+// state is what the close did about the project's checks, in the three
+// answers a reader of the transcript needs. It is the field a backlog run
+// reads instead of the process's exit status: a turn that ran no checks and
+// a turn whose checks passed both exit 0, and only one of them says anything
+// about the tree.
+func (g *headlessCloseGate) state() quality.Closing {
+	if g == nil || !g.ran || g.last == nil {
+		return quality.ClosingNotRun
+	}
+	return quality.ClosingOf(g.last.Verdict)
 }
 
 // err is what the last verdict says about the exit code. A pass, a
@@ -1858,9 +1885,25 @@ type jsonTranscript struct {
 	// the answer is whole, which is how every earlier reader of this shape
 	// already reads it.
 	// See docs/capabilities/providers.md#a-reply-says-why-it-stopped.
-	Truncated bool          `json:"truncated,omitempty"`
-	Usage     jsonUsage     `json:"usage"`
-	Messages  []jsonMessage `json:"messages"`
+	Truncated bool `json:"truncated,omitempty"`
+	// Gate is what the turn's close did about the project's checks:
+	// `passed`, `failed`, or `not-run` for a turn that ran none — no suite
+	// configured, or nothing changed for one to have an opinion about. It is
+	// stated rather than left to the exit status because the status cannot
+	// carry it: a turn that checked nothing and a turn whose checks passed
+	// both exit 0, and a caller that took that for a pass would be reading a
+	// tree nothing has looked at.
+	// See docs/capabilities/headless.md#three-shapes-for-the-same-run.
+	Gate string `json:"gate"`
+	// Written is the paths the run's own mutating calls wrote, in the order
+	// they were written. It is the unattended stand-in for a session's
+	// changeset, and the reason it is here is the caller that has to commit
+	// the run's work: the tree says what is changed, not who changed it, and
+	// a file somebody had already left modified is one only this list can
+	// claim for the run.
+	Written  []string      `json:"written,omitempty"`
+	Usage    jsonUsage     `json:"usage"`
+	Messages []jsonMessage `json:"messages"`
 }
 
 // jsonUsage is what the run cost, as every JSON shape reports it. The cached
@@ -1922,16 +1965,40 @@ func jsonMessages(msgs []provider.Message) []jsonMessage {
 	return out
 }
 
-func writeJSONTranscript(w io.Writer, msgs []provider.Message, final string, truncated bool, usage provider.Usage, runErr error) error {
-	t := jsonTranscript{
-		Success:   runErr == nil,
-		Final:     final,
-		Truncated: truncated,
-		Usage:     usageOf(usage),
-		Messages:  jsonMessages(msgs),
+// jsonRun is one unattended run as the transcript states it. It is a struct
+// and not six parameters because the last three arrived together and a
+// caller that transposed two of them would be writing a transcript nothing
+// downstream could tell was wrong.
+type jsonRun struct {
+	messages  []provider.Message
+	final     string
+	truncated bool
+	usage     provider.Usage
+	gate      quality.Closing
+	written   []string
+	err       error
+}
+
+func writeJSONTranscript(w io.Writer, r jsonRun) error {
+	// A run built with no gate at all still answers the question, in the
+	// same word a run whose gate found nothing to check answers it with:
+	// the field is the contract, and an empty one would leave the reader
+	// back at the exit status.
+	gate := r.gate
+	if gate == "" {
+		gate = quality.ClosingNotRun
 	}
-	if runErr != nil {
-		t.Error, t.ErrorClass = runErr.Error(), failureClass(runErr)
+	t := jsonTranscript{
+		Success:   r.err == nil,
+		Final:     r.final,
+		Truncated: r.truncated,
+		Gate:      string(gate),
+		Written:   r.written,
+		Usage:     usageOf(r.usage),
+		Messages:  jsonMessages(r.messages),
+	}
+	if r.err != nil {
+		t.Error, t.ErrorClass = r.err.Error(), failureClass(r.err)
 	}
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")

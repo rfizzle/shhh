@@ -39,7 +39,7 @@ func (m Model) startTodoReview() (tea.Model, tea.Cmd) {
 	args, _ := json.Marshal(map[string]any{
 		"role": m.todoReviewRole(st),
 		"name": st.Reviewer,
-		"task": st.ReviewTask(it, tail(m.todoRunDiff(), 600)),
+		"task": st.ReviewTask(it, run.BoundDiff(m.todoRunDiff(), run.ReviewDiffLines, run.ReviewFileFloor)),
 	})
 	if _, err := m.subagents.Spawn(args); err != nil {
 		model, _ := m.systemNotice("No reviewer agent could be spawned — " + err.Error())
@@ -72,9 +72,14 @@ func (m Model) todoReviewRole(st *run.State) string {
 // todoRunDiff is the run's change as the changeset recorded it — before
 // and after for every path, which is what shows a file the run created,
 // where git's own diff of the tree would show nothing for it.
-func (m Model) todoRunDiff() string {
+//
+// It answers with one entry per file rather than with one string because
+// what the reader is handed is bounded per file (run.BoundDiff): a budget
+// spent in order hands over the first files whole and never mentions the
+// rest, and a diff that stops looks exactly like a change that ended.
+func (m Model) todoRunDiff() []string {
 	root := m.todos.Root
-	var b strings.Builder
+	var files []string
 	seen := map[string]bool{}
 	// Paths from an earlier session have no record here; git's diff of
 	// the tree stands in, with an untracked file shown whole.
@@ -97,11 +102,11 @@ func (m Model) todoRunDiff() string {
 		// Only a diff counts; git's complaint about a path or a tree is
 		// not one, and must not reach the reviewer as if it were.
 		if out, code := git(root, "diff", "--", rel); code == 0 && strings.HasPrefix(out, "diff --git") {
-			b.WriteString(out + "\n")
+			files = append(files, out)
 			continue
 		}
 		if out, _ := git(root, "diff", "--no-index", os.DevNull, rel); strings.HasPrefix(out, "diff --git") {
-			b.WriteString(out + "\n")
+			files = append(files, out)
 		}
 	}
 	for _, t := range m.changes.Turns() {
@@ -114,10 +119,10 @@ func (m Model) todoRunDiff() string {
 				continue
 			}
 			seen[rel] = true
-			b.WriteString(recordDiff(rel, r))
+			files = append(files, recordDiff(rel, r))
 		}
 	}
-	return b.String()
+	return files
 }
 
 // recordDiff renders one record as a unified diff.
@@ -161,9 +166,10 @@ func runRelPath(root, p string) string {
 }
 
 // todoReviewDone is the reviewer child finishing: its own final message is
-// the review's answer. A child that did not finish — killed, failed, out
-// of rounds — has no answer, and the run blocks on that rather than on
-// whatever the placeholder for a failed child happens to say.
+// the review's answer. A child that did not finish — killed, failed, out of
+// rounds — has no answer, and the reading falls back to this session's own
+// turn rather than being graded on whatever the placeholder for a failed
+// child happens to say.
 func (m Model) todoReviewDone(status subagent.Status) (tea.Model, tea.Cmd, bool) {
 	st := m.todoRunner.state
 	if st == nil || st.Over() || st.Reviewer == "" || status.Name != st.Reviewer {
@@ -171,7 +177,15 @@ func (m Model) todoReviewDone(status subagent.Status) (tea.Model, tea.Cmd, bool)
 	}
 	report, state, ok := m.subagents.FinalReport(st.Reviewer)
 	if !ok || state != subagent.StateDone {
-		next, cmd := m.todoRunStep(st.Block(fmt.Sprintf("the reviewer %s did not finish: %s", st.Reviewer, status.Detail)))
+		// A reader that did not finish is a reader the run did not get,
+		// which is what SelfReview is for. Blocking on it stops a finished,
+		// verified piece of work over the one stage that was always allowed
+		// to be missing — a session with no supervisor has never had a
+		// reader either — and the step label is what says which reading
+		// this was.
+		model, _ := m.systemNotice(fmt.Sprintf("The reviewer %s did not finish (%s) — reading the change in this session instead.",
+			st.Reviewer, status.Detail))
+		next, cmd := model.(Model).todoRunStep(st.SelfReview(m.todoRunner.item))
 		return next, cmd, true
 	}
 	next, cmd := m.todoRunStep(st.ReviewResult(m.todoRunner.item, report))

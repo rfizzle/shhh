@@ -3,10 +3,13 @@ package cli
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -15,6 +18,7 @@ import (
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/quality"
+	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/todo/run"
 )
@@ -448,21 +452,6 @@ func TestTodoRunTarget(t *testing.T) {
 		if _, err := todoRunTarget(s, c.slug); err == nil || !strings.Contains(err.Error(), c.want) {
 			t.Errorf("todoRunTarget(%q) = %v, want %q", c.slug, err, c.want)
 		}
-	}
-}
-
-// What the run may stage is read out of git's own status, and the backlog is
-// never part of it.
-func TestTodoPorcelainPaths(t *testing.T) {
-	status := " M internal/agent/loop.go\n?? new.go\nR  old.go -> moved.go\n M .shhh/todo/a-one.md\n"
-	got := todoPorcelainPaths(status)
-	for _, want := range []string{"internal/agent/loop.go", "new.go", "moved.go"} {
-		if !got[want] {
-			t.Errorf("%s should be in the set: %v", want, got)
-		}
-	}
-	if got[filepath.Join(todo.StateDir, todo.Subdir, "a-one.md")] || len(got) != 3 {
-		t.Errorf("the backlog must never be staged: %v", got)
 	}
 }
 
@@ -1013,5 +1002,313 @@ func TestTodoRunHeadless_WithNoRepositoryTheRunReadsItsOwnWork(t *testing.T) {
 	}
 	if read != "" {
 		t.Fatalf("no reader should have been asked: %q", read)
+	}
+}
+
+// The stage after the failing one is asked to fix what the failure says, so
+// what it is handed has to be readable: both ends of the output, and an id
+// that resolves in a store the stage's own process can open.
+func TestTodoRunHeadless_TheRemediateStageIsHandedTheEvidenceAndCanReadTheRest(t *testing.T) {
+	root := todoRepo(t)
+	// The item's own check fails until the implement stage writes the file
+	// it is waiting for, which is what takes the run to a fix round.
+	check := `sh -c 'if [ -f fixed ]; then echo ok; else echo FIRST FAILURE; i=0; ` +
+		`while [ $i -lt 4000 ]; do echo filler $i; i=$((i+1)); done; echo LAST FAILURE; exit 1; fi'`
+	body := "---\ntitle: a one\nsize: S\n---\n## Tests\n- " + check + "\n"
+	if err := os.WriteFile(filepath.Join(todo.Dir(root), "a-one.md"), []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var d *todoDriver
+	var remediation, recovered string
+	answer := stageAnswers(root)
+	d, out := headlessDriver(t, root, func(step run.Step) string {
+		if step.Stage == run.StageRemediate {
+			remediation = step.Prompt
+			recovered = readAsAStageWould(t, d.spoolDir, evidenceIDIn(t, remediation))
+			if err := os.WriteFile(filepath.Join(root, "fixed"), []byte("y\n"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+		}
+		return answer(step)
+	})
+	if st := d.work(context.Background(), mustItem(t, root, "a-one"), nil); st.Stage != run.StageDone {
+		t.Fatalf("the run stopped at %s — %s\n%s", st.Stage, st.Blocked, out.String())
+	}
+	// Both ends: a fix round handed the tail alone gets the count of the
+	// failures and none of the failures.
+	if !strings.Contains(remediation, "FIRST FAILURE") || !strings.Contains(remediation, "LAST FAILURE") {
+		t.Fatalf("the fix round was handed neither end of the failure:\n%.600s", remediation)
+	}
+	if !strings.Contains(remediation, "bytes elided") {
+		t.Fatalf("the excerpt should say what it cut:\n%.600s", remediation)
+	}
+	// And the rest of it is there to be fetched, by the stage's own process,
+	// through the store this run spooled it into.
+	if !strings.Contains(recovered, "filler 2000") {
+		t.Fatalf("the stage could not read back what the verify spooled: %.200q", recovered)
+	}
+	// A lane stands in a copy of the checkout and keeps its evidence to
+	// itself; only a stage standing here is pointed at the run's store.
+	if env := strings.Join(d.stageEnv(root), "\n"); !strings.Contains(env, evidenceStoreEnv+"=") {
+		t.Fatal("a stage in the checkout should be pointed at the run's store")
+	}
+	// Compared against the runner's own answer rather than searched for the
+	// name: reading as a stage above put the name into this process's
+	// environment, which the lane inherits like any other pair.
+	if !slices.Equal(d.stageEnv(t.TempDir()), runner.Environ()) {
+		t.Fatal("a lane should not share the run's store")
+	}
+	// The run that ended took its spool with it.
+	if _, err := os.Stat(run.RunStateDir(root, "a-one")); !os.IsNotExist(err) {
+		t.Fatalf("the spool outlived the run: %v", err)
+	}
+}
+
+// evidenceIDIn is the id a stage would follow, read out of what it was
+// handed.
+func evidenceIDIn(t *testing.T, text string) string {
+	t.Helper()
+	m := regexp.MustCompile(`ev-[0-9a-f]{16}`).FindString(text)
+	if m == "" {
+		t.Fatalf("no evidence id in:\n%.600s", text)
+	}
+	return m
+}
+
+// readAsAStageWould opens the store the way a stage's own process does — off
+// the environment, with no path of its own — and pages an entry back.
+func readAsAStageWould(t *testing.T, dir, id string) string {
+	t.Helper()
+	t.Setenv(evidenceStoreEnv, dir)
+	red := openEvidence()
+	if red == nil {
+		t.Fatal("the stage could not open the run's store")
+	}
+	data, _, err := red.Store().Read(id, 0, 1<<20)
+	if err != nil {
+		t.Fatalf("read %s: %v", id, err)
+	}
+	return string(data)
+}
+
+// A file somebody had already left modified is still a file the run may have
+// worked on, and the tree cannot tell the two apart — so the run's own stages
+// say what they wrote, and what they wrote is committed.
+func TestTodoRunHeadless_APreDirtyFileTheRunWroteIsCommitted(t *testing.T) {
+	root := todoRepo(t, "a-one")
+	for _, name := range []string{"shared.go", "stranger.go"} {
+		if err := os.WriteFile(filepath.Join(root, name), []byte("package a\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if out, code := todoGit(root, "add", "shared.go", "stranger.go"); code != 0 {
+		t.Fatalf("git add: %s", out)
+	}
+	if out, code := todoGit(root, "commit", "-q", "-m", "seed files"); code != 0 {
+		t.Fatalf("git commit: %s", out)
+	}
+	// Both were modified before the run started; only one of them is the
+	// run's work.
+	for _, name := range []string{"shared.go", "stranger.go"} {
+		if err := os.WriteFile(filepath.Join(root, name), []byte("package a // theirs\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	d, out := headlessDriver(t, root, nil)
+	answer := stageAnswers(root)
+	d.turn = func(_ context.Context, _ time.Time, _ string, step run.Step) (todoTurn, error) {
+		if step.Stage == run.StageImplement {
+			if err := os.WriteFile(filepath.Join(root, "shared.go"), []byte("package a // the run\n"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			return todoTurn{text: "Changed shared.go.", code: exitDone, written: []string{"shared.go"}}, nil
+		}
+		return todoTurn{text: answer(step), code: exitDone}, nil
+	}
+	st := d.work(context.Background(), mustItem(t, root, "a-one"), nil)
+	if st.Stage != run.StageDone {
+		t.Fatalf("the run stopped at %s — %s\n%s", st.Stage, st.Blocked, out.String())
+	}
+	if strings.Join(st.Files, ",") != "shared.go" {
+		t.Fatalf("committed %v, want the run's own work on the file it edited", st.Files)
+	}
+	if files, _ := todoGit(root, "show", "--name-only", "--format=", "HEAD"); strings.TrimSpace(files) != "shared.go" {
+		t.Fatalf("the commit holds %q", files)
+	}
+	if status, _ := todoGit(root, "status", "--porcelain"); !strings.Contains(status, "stranger.go") {
+		t.Fatalf("somebody else's edit should be left where it was: %q", status)
+	}
+}
+
+// Every touched file reaches the reader. A budget spent in order hands over
+// the first files whole and never mentions the rest, and a reviewer cannot
+// tell a diff that stopped from a change that ended.
+func TestTodoRunHeadless_TheReviewersDiffHoldsEveryFile(t *testing.T) {
+	root := mediumItem(t, "a-one")
+	var reviewed string
+	d, out := headlessDriver(t, root, nil)
+	answer := stageAnswers(root)
+	d.turn = func(_ context.Context, _ time.Time, _ string, step run.Step) (todoTurn, error) {
+		switch step.Stage {
+		case run.StageImplement:
+			for i := range 20 {
+				body := strings.Repeat(fmt.Sprintf("// line of f%02d\n", i), 100)
+				if err := os.WriteFile(filepath.Join(root, fmt.Sprintf("f%02d.go", i)), []byte(body), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			return todoTurn{text: "Wrote twenty files.", code: exitDone}, nil
+		case run.StageReview:
+			reviewed = step.Prompt
+		}
+		text := answer(step)
+		if step.Stage == run.StageResearch {
+			text = strings.Replace(text, "size: S", "size: M", 1)
+		}
+		return todoTurn{text: text, code: exitDone}, nil
+	}
+	if st := d.work(context.Background(), mustItem(t, root, "a-one"), nil); st.Stage != run.StageDone {
+		t.Fatalf("the run stopped at %s — %s\n%s", st.Stage, st.Blocked, out.String())
+	}
+	for i := range 20 {
+		if !strings.Contains(reviewed, fmt.Sprintf("f%02d.go", i)) {
+			t.Fatalf("f%02d.go never reached the reader:\n%.400s", i, reviewed)
+		}
+	}
+	if !strings.Contains(reviewed, "more lines of this file's diff") {
+		t.Fatalf("a file that was cut should say so:\n%.400s", reviewed)
+	}
+}
+
+// A reader that did not finish is a reader the run did not get, which is what
+// the run's own reading is for. Blocking would stop finished, verified work
+// over the one stage that was always allowed to be missing.
+func TestTodoRunHeadless_AReviewerThatFailsIsReadHereInstead(t *testing.T) {
+	root := mediumItem(t, "a-one")
+	d, out := headlessDriver(t, root, nil)
+	answer := stageAnswers(root)
+	asked := 0
+	d.turn = func(_ context.Context, _ time.Time, _ string, step run.Step) (todoTurn, error) {
+		if step.Stage == run.StageReview {
+			if asked++; asked == 1 {
+				return todoTurn{}, errors.New("the reader died")
+			}
+		}
+		text := answer(step)
+		if step.Stage == run.StageResearch {
+			text = strings.Replace(text, "size: S", "size: M", 1)
+		}
+		return todoTurn{text: text, code: exitDone}, nil
+	}
+	st := d.work(context.Background(), mustItem(t, root, "a-one"), nil)
+	if st.Stage != run.StageDone {
+		t.Fatalf("a failed reader stopped the run at %s — %s\n%s", st.Stage, st.Blocked, out.String())
+	}
+	if asked != 2 {
+		t.Fatalf("the reading was asked for %d times, want the child and then this session", asked)
+	}
+	if said := out.String(); !strings.Contains(said, "did not finish") || !strings.Contains(said, "no reviewer agent") {
+		t.Fatalf("the fallback should say what it did:\n%s", said)
+	}
+}
+
+// mediumItem is a checkout holding one item graded M, which is the smallest
+// grade whose reading is done by somebody else.
+func mediumItem(t *testing.T, slug string) string {
+	t.Helper()
+	root := todoRepo(t)
+	body := "---\ntitle: " + slug + "\nsize: M\n---\n## Tests\n- true\n"
+	if err := os.WriteFile(filepath.Join(todo.Dir(root), slug+".md"), []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return root
+}
+
+// A stage's own close ran the project's checks, and the verify takes that
+// verdict rather than paying for the same suite over a tree that has not
+// moved. What it takes it from is the transcript's own word, and not the
+// process's exit status: a turn that checked nothing and a turn whose checks
+// passed both exit 0.
+func TestTodoRunHeadless_TheVerifyTakesTheWordOfTheCloseAndNotTheExitCode(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		gate  quality.Closing
+		wants string
+	}{
+		{"the close ran the suite and it passed", quality.ClosingPassed, "passed as the implement turn closed"},
+		{"the close ran nothing", quality.ClosingNotRun, `quality gate "default": pass`},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root := todoRepo(t, "a-one")
+			withProjectTrust(t, project.Trust{Granted: true})
+			suites := `{"on_close": "fast", "suites": {
+				"default": {"checks": [{"name": "c", "exe": "sh", "args": ["-c", "true"]}]},
+				"fast": {"checks": [{"name": "c", "exe": "sh", "args": ["-c", "true"]}]}}}`
+			if err := os.MkdirAll(filepath.Join(root, ".shhh"), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(root, ".shhh", "quality.json"), []byte(suites), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			out := &bytes.Buffer{}
+			d, err := newTodoDriver(out, root, config.Config{}, false)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !d.closeGate {
+				t.Fatal("the workspace names an on-close suite")
+			}
+			answer := stageAnswers(root)
+			d.turn = func(_ context.Context, _ time.Time, _ string, step run.Step) (todoTurn, error) {
+				// Every stage exits 0; only the implement stage's transcript
+				// says its close ran the checks.
+				turn := todoTurn{text: answer(step), code: exitDone}
+				if step.Stage == run.StageImplement {
+					turn.gate = tc.gate
+				}
+				return turn, nil
+			}
+			if st := d.work(context.Background(), mustItem(t, root, "a-one"), nil); st.Stage != run.StageDone {
+				t.Fatalf("the run stopped at %s — %s\n%s", st.Stage, st.Blocked, out.String())
+			}
+			if !strings.Contains(out.String(), tc.wants) {
+				t.Fatalf("the verify should say %q:\n%s", tc.wants, out.String())
+			}
+		})
+	}
+}
+
+// A run that began on a clean tree recorded an empty baseline, and an empty
+// baseline is a fact and not a gap. A second process that took the tree as
+// it now stands for the baseline would be subtracting the first process's own
+// work — files it wrote and died before recording — and the item would be
+// committed without them.
+func TestTodoRunHeadless_AContinuedRunKeepsTheBaselineItStartedWith(t *testing.T) {
+	root := todoRepo(t, "a-one")
+	d, out := headlessDriver(t, root, stageAnswers(root))
+	it := mustItem(t, root, "a-one")
+	if err := todo.SetStatus(it.Path, todo.StatusInProgress); err != nil {
+		t.Fatal(err)
+	}
+	// The checkpoint of a process that died at the commit step, over a tree
+	// that was clean when the item started — so it holds no baseline — with
+	// its own work in the tree and not yet in its paths.
+	st := run.Start(it, "earlier", "", 0, run.Options{Repo: true})
+	st.Stage, st.Grade, st.Plan = run.StageCommit, "S", headlessPlan
+	if len(st.Prestart) != 0 {
+		t.Fatalf("a clean tree should have left an empty baseline: %v", st.Prestart)
+	}
+	if err := os.WriteFile(filepath.Join(root, "a.go"), []byte("package a\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.Save(root); err != nil {
+		t.Fatal(err)
+	}
+	done := d.work(context.Background(), mustItem(t, root, "a-one"), nil)
+	if done.Stage != run.StageDone {
+		t.Fatalf("the continued run stopped at %s — %s\n%s", done.Stage, done.Blocked, out.String())
+	}
+	if files, _ := todoGit(root, "show", "--name-only", "--format=", "HEAD"); !strings.Contains(files, "a.go") {
+		t.Fatalf("the dead process's work was left behind, commit holds %q", files)
 	}
 }

@@ -205,7 +205,10 @@ func TestWriteJSONTranscript(t *testing.T) {
 		{Role: provider.RoleAssistant, Content: "done"},
 	}
 	var sb strings.Builder
-	if err := writeJSONTranscript(&sb, msgs, "done", false, provider.Usage{PromptTokens: 10, CompletionTokens: 5, CachedTokens: 7}, nil); err != nil {
+	if err := writeJSONTranscript(&sb, jsonRun{messages: msgs, final: "done",
+		usage:   provider.Usage{PromptTokens: 10, CompletionTokens: 5, CachedTokens: 7},
+		gate:    quality.ClosingPassed,
+		written: []string{"internal/a/a.go"}}); err != nil {
 		t.Fatalf("writeJSONTranscript: %v", err)
 	}
 
@@ -228,9 +231,15 @@ func TestWriteJSONTranscript(t *testing.T) {
 	if got.Messages[2].ToolCalls[0].Name != "read_file" || got.Messages[3].ToolCallID != "c1" {
 		t.Fatalf("tool call plumbing lost: %+v", got.Messages)
 	}
+	// What the close did about the checks, and what the run wrote: the
+	// backlog runner reads both off the transcript, because the exit status
+	// carries neither.
+	if got.Gate != string(quality.ClosingPassed) || strings.Join(got.Written, ",") != "internal/a/a.go" {
+		t.Fatalf("gate/written lost: %+v", got)
+	}
 
 	sb.Reset()
-	if err := writeJSONTranscript(&sb, nil, "", false, provider.Usage{}, fmt.Errorf("boom")); err != nil {
+	if err := writeJSONTranscript(&sb, jsonRun{err: fmt.Errorf("boom")}); err != nil {
 		t.Fatalf("writeJSONTranscript: %v", err)
 	}
 	if err := json.Unmarshal([]byte(sb.String()), &got); err != nil {
@@ -239,19 +248,25 @@ func TestWriteJSONTranscript(t *testing.T) {
 	if got.Success || got.Error != "boom" {
 		t.Fatalf("failure transcript wrong: %+v", got)
 	}
+	// A turn that ran no checks says so outright. It is the one of the three
+	// answers a reader would otherwise have to infer from a missing field,
+	// and inferring it from the exit status is what this exists to stop.
+	if got.Gate != string(quality.ClosingNotRun) {
+		t.Fatalf("a close that ran nothing must say so: %+v", got)
+	}
 
 	// An answer the ceiling cut says so, because nothing in the words does.
 	// A whole one says nothing, which is how every reader of this shape
 	// already read it before there was a field.
 	sb.Reset()
-	if err := writeJSONTranscript(&sb, nil, "the first half of", true, provider.Usage{}, nil); err != nil {
+	if err := writeJSONTranscript(&sb, jsonRun{final: "the first half of", truncated: true}); err != nil {
 		t.Fatalf("writeJSONTranscript: %v", err)
 	}
 	if !strings.Contains(sb.String(), `"truncated": true`) {
 		t.Fatalf("a cut answer should be stated as one:\n%s", sb.String())
 	}
 	sb.Reset()
-	if err := writeJSONTranscript(&sb, nil, "whole", false, provider.Usage{}, nil); err != nil {
+	if err := writeJSONTranscript(&sb, jsonRun{final: "whole"}); err != nil {
 		t.Fatalf("writeJSONTranscript: %v", err)
 	}
 	if strings.Contains(sb.String(), "truncated") {
@@ -1031,6 +1046,71 @@ func TestHeadlessCloseGate_RunsNothingForAChangesetWithNoWorkInIt(t *testing.T) 
 			t.Errorf("%s: err = %v, want nil", tc.name, err)
 		}
 	}
+}
+
+// A turn whose change never went through a mutating call still changed the
+// tree — `gofmt -w`, a generator, a build that writes its own manifest — and
+// the close is what stands between that and a commit nothing checked.
+func TestHeadlessCloseGate_RunsOverATreeThatMovedWithoutACall(t *testing.T) {
+	ws := gitWorkspace(t)
+	writeQualityConfig(t, ws, passingSuites)
+	g := &headlessCloseGate{
+		ctx: context.Background(), gate: &quality.Runner{Workspace: ws},
+		suite: "fast", retries: 1, written: func() []string { return nil },
+		before: quality.TakeFingerprint(ws),
+	}
+	// Nothing has moved: the call log and the tree agree, and the suite is
+	// not paid for.
+	if g.close("done"); g.state() != quality.ClosingNotRun {
+		t.Fatalf("an unchanged tree closed as %q", g.state())
+	}
+	if err := os.WriteFile(filepath.Join(ws, "generated.go"), []byte("package a\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if g.close("done"); g.state() != quality.ClosingPassed {
+		t.Fatalf("a tree that moved under the call log closed as %q", g.state())
+	}
+}
+
+// The three answers, and why a boolean is not enough: two of them exit 0.
+func TestHeadlessCloseGate_SaysWhichOfTheThreeItReached(t *testing.T) {
+	failing := t.TempDir()
+	writeQualityConfig(t, failing, `{"on_close": "fast", "suites": {
+		"fast": {"checks": [{"name": "c", "exe": "sh", "args": ["-c", "exit 3"]}]}}}`)
+	g := &headlessCloseGate{
+		ctx: context.Background(), gate: &quality.Runner{Workspace: failing},
+		suite: "fast", retries: 0, written: func() []string { return []string{"a.go"} },
+	}
+	g.close("done")
+	if g.state() != quality.ClosingFailed {
+		t.Fatalf("a failing suite closed as %q", g.state())
+	}
+	var none *headlessCloseGate
+	if none.state() != quality.ClosingNotRun {
+		t.Fatalf("a run with no gate at all closed as %q", none.state())
+	}
+}
+
+// gitWorkspace is a repository with one commit in it, which is what a tree
+// fingerprint needs to be anything but the zero one.
+func gitWorkspace(t *testing.T) string {
+	t.Helper()
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not installed")
+	}
+	ws := t.TempDir()
+	for _, args := range [][]string{
+		{"init", "-q"},
+		{"config", "user.email", "t@example.com"},
+		{"config", "user.name", "t"},
+		{"commit", "-q", "--allow-empty", "-m", "seed"},
+	} {
+		cmd := exec.Command("git", append([]string{"-C", ws}, args...)...)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v %s", args, err, out)
+		}
+	}
+	return ws
 }
 
 func TestHeadlessCloseGate_HandsBackAFailureUntilTheBudgetIsSpent(t *testing.T) {

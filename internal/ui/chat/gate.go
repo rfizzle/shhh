@@ -206,8 +206,15 @@ func (m Model) finishCloseGate(msg closeGateMsg) (tea.Model, tea.Cmd) {
 	// what counts as a pass is the one definition every surface uses — a
 	// stale pass among them, which is not one.
 	if m.todoRunner.state.ClosesWithGate() {
+		// The suite ran and its verdict is in front of us, so the answer is
+		// one of the two the close can give about work it saw: a close that
+		// ran nothing never reaches here at all.
 		sum, ok := quality.Summarize(text)
-		m.todoRunner.state.Checks(ok && sum.OK())
+		closing := quality.ClosingFailed
+		if ok && sum.OK() {
+			closing = quality.ClosingPassed
+		}
+		m.todoRunner.state.Checks(closing)
 	}
 	failed := msg.res.Verdict == quality.VerdictFail || msg.res.Verdict == quality.VerdictBlocked
 	if failed && m.closeGate.fed < retries {

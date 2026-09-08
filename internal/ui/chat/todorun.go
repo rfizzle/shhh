@@ -224,6 +224,11 @@ func (m Model) beginTodoRun(arg string, noCommit, inSprint bool) (tea.Model, tea
 		return m.systemNotice("Could not mark the item in progress: " + err.Error())
 	}
 	m.todoRunner.state = run.Start(it, m.sessionName, m.policy.mode.String(), int(m.turnCount)+1, opt)
+	// The tree as this item found it. Only what moves after this is the
+	// run's to commit — a file somebody left modified is not the run's work
+	// — and it is taken here, once, because everything after this point is
+	// the run changing the tree it would otherwise be reading a baseline off.
+	m.todoRunner.state.Prestart = run.DirtyPaths(m.todos.Root)
 	m.todoRunner.item = it
 	m.openTodoRunRow()
 	m.reloadTodos()

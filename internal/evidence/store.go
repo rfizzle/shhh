@@ -60,11 +60,23 @@ func Open(base, session string) (*Store, error) {
 		return nil, err
 	}
 	pruneSessions(base)
-	dir := filepath.Join(base, session)
+	return OpenAt(filepath.Join(base, session), session)
+}
+
+// OpenAt is the same store at a directory named outright, for a holder that
+// is not one of shhh's sessions: the backlog runner's store lives beside the
+// run it belongs to, under the repository, so that the stage after the one
+// that spooled a check's output is a process that can be pointed at the same
+// directory and read the id back.
+//
+// Nothing is pruned here. What the run spooled belongs to the run, whose own
+// ending clears it — a retention sweep of the directory a caller named would
+// be this package deleting somebody else's neighbours.
+func OpenAt(dir, name string) (*Store, error) {
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return nil, err
 	}
-	s := &Store{dir: dir, session: session, index: map[string]Meta{}}
+	s := &Store{dir: dir, session: name, index: map[string]Meta{}}
 	if data, err := os.ReadFile(filepath.Join(dir, indexFile)); err == nil {
 		_ = json.Unmarshal(data, &s.index)
 	}

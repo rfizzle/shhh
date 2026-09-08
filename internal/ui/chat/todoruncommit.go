@@ -23,43 +23,41 @@ type todoCommitMsg struct {
 	err   error
 }
 
-// todoRunPaths is what the run may stage: every path the changeset saw
-// change since the run's first turn, under the root, and not a backlog
-// file — the backlog is never committed on the project's behalf.
+// todoRunPaths is what the run may stage, in the definition both surfaces
+// share (run.Contents): what an earlier session of this run recorded, plus
+// every path this session's changeset saw change since the run's first turn,
+// plus everything the tree now reports changed that it did not already hold
+// when the item started — and never a backlog file, because the backlog is
+// never committed on the project's behalf.
+//
+// The tree is read as well as the changeset because the changeset is not the
+// whole of what a run changes: a `gofmt -w`, a generator, a `make` that
+// writes its own output are all the run's work, and none of them goes
+// through a write tool. The baseline is what keeps somebody else's edits out
+// of the commit, and the changeset is what claims a file the tree already
+// held modified for the run.
 // See docs/capabilities/todo.md#where-the-backlog-lives.
 func (m Model) todoRunPaths() []string {
 	root := m.todos.Root
-	seen := map[string]bool{}
-	var out []string
-	// What earlier sessions of this run changed comes from the checkpoint;
-	// this session's own records are added to it.
-	if m.todoRunner.state != nil {
-		for _, rel := range m.todoRunner.state.Paths {
-			if !seen[rel] {
-				seen[rel] = true
-				out = append(out, rel)
-			}
-		}
+	st := m.todoRunner.state
+	if st == nil {
+		return nil
 	}
+	var wrote []string
 	for _, t := range m.changes.Turns() {
-		if int(t.N) < m.todoRunner.state.Turn {
+		if int(t.N) < st.Turn {
 			continue
 		}
 		for _, r := range t.Records {
 			if !r.Changed() {
 				continue
 			}
-			rel := runRelPath(root, r.Path)
-			if rel == "" {
-				continue
-			}
-			if !seen[rel] {
-				seen[rel] = true
-				out = append(out, rel)
+			if rel := runRelPath(root, r.Path); rel != "" {
+				wrote = append(wrote, rel)
 			}
 		}
 	}
-	return out
+	return run.Contents(st.Paths, wrote, run.DirtyPaths(root), st.Prestart)
 }
 
 // todoCommitCmd makes the run's commit, which is the run package's to make:

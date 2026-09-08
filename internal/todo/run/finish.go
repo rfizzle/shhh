@@ -219,6 +219,17 @@ func FileNote(root string, s *State, it todo.Item, write NoteWriter) (string, er
 
 // git runs one git command in root and reports its output and its exit code.
 func git(root string, args ...string) (string, int) {
+	out, code := gitLines(root, args...)
+	return strings.TrimSpace(out), code
+}
+
+// gitLines is that without the trim, for a command whose output is read by
+// column. `git status --porcelain` states a path's staged mark in the first
+// column and its unstaged mark in the second, so a line about a file changed
+// in the tree and not in the index begins with a space — and a trimmed line
+// puts the path three characters to the left of where every reader of that
+// format looks for it.
+func gitLines(root string, args ...string) (string, int) {
 	cmd := exec.Command("git", append([]string{"-C", root}, args...)...)
 	cmd.Env = runner.Environ()
 	out, err := cmd.CombinedOutput()
@@ -232,5 +243,5 @@ func git(root string, args ...string) (string, int) {
 			out = append(out, err.Error()...)
 		}
 	}
-	return strings.TrimSpace(string(out)), code
+	return string(out), code
 }

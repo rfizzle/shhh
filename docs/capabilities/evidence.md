@@ -72,6 +72,26 @@ The ids are opaque session-scoped tokens rather than paths. A retrieval
 mechanism that took a filename would be a file read with no scope check
 wearing a different name.
 
+## A run's evidence belongs to the run
+
+A session's store is scoped to the session, and the [backlog
+runner](todo.md#a-run-is-turns-with-gates-between-them) is not one session: an
+unattended run spends each of its steps as a process of its own. The step that
+ran the checks stored what they printed; the step asked to fix what they found
+is somebody else, with a store of its own and no way to resolve an id it never
+minted.
+
+So a run has a store, beside the repository and keyed on the item, and the
+steps of that run are pointed at it. It is the same store with the same
+opaque ids — a step is handed a directory, never a path to an entry, and every
+lookup still goes through that store's index. It is invisible to git and it
+goes when the run ends: what a run spooled belongs to the run, and what
+mattered was quoted where it mattered, on the item and in the report.
+
+A step working in a copy of the checkout — a lane — keeps its evidence to
+itself. Lanes run at once, and one index written by several processes would
+lose entries to whichever wrote last.
+
 ## A page is kept whole
 
 Not everything in the store arrived as a tool result that was too big. A

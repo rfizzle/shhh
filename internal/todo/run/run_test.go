@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/todo"
 )
 
@@ -482,11 +483,15 @@ func TestClosesWithGate_IsOffWhereTheWorkspaceNamesNoSuite(t *testing.T) {
 func TestChecks_CarriesOnlyAPassAndIsSpentByTheVerify(t *testing.T) {
 	it := item("M")
 	s := Start(it, "", "", 0, Options{Repo: true, CloseGate: true})
-	s.Checks(false)
+	s.Checks(quality.ClosingFailed)
 	if s.Checked {
 		t.Error("a failing verdict was carried to the verify stage")
 	}
-	s.Checks(true)
+	s.Checks(quality.ClosingNotRun)
+	if s.Checked {
+		t.Error("a close that ran no checks was carried as a pass")
+	}
+	s.Checks(quality.ClosingPassed)
 	if !s.Checked {
 		t.Fatal("a passing verdict was not carried")
 	}

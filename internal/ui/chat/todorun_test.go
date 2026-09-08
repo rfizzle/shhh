@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -330,12 +331,48 @@ func TestTodoVerifyCmd_RunsSnapshotAndReportsFailure(t *testing.T) {
 	if msg.ok || !strings.Contains(msg.output, "$ exit 3 → exit 3") || strings.Contains(msg.output, "MODEL-WROTE-THIS") {
 		t.Fatalf("verify = %+v", msg)
 	}
+	// An item with no tests, in a checkout whose gate does not run, has
+	// nothing standing behind a pass — so the run stops rather than
+	// reporting one. It is the same answer the unattended runner gives: the
+	// item must not be able to tell which surface worked it.
 	m.todoRunner.state = &run.State{Slug: "do-it"}
 	msg = m.todoVerifyCmd("")().(todoVerifyMsg)
-	if !msg.ok || !strings.Contains(msg.output, "nothing to verify") {
+	if msg.ok || !strings.Contains(msg.blocked, "nothing verifies this item") {
 		t.Fatalf("empty verify = %+v", msg)
 	}
 	_ = root
+}
+
+// The failing command's whole output is spooled where the stage after this
+// one can read it, and what the report quotes is both ends of it: a
+// remediation turn handed the tail alone gets the count of the failures and
+// none of the failures.
+func TestTodoVerifyCmd_SpoolsTheOutputAndQuotesBothEnds(t *testing.T) {
+	m, _ := runModel(t)
+	kept := map[string]string{}
+	m.evidence.Keep = func(tool, content string) (string, bool) {
+		id := fmt.Sprintf("ev-%016x", len(kept))
+		kept[id] = content
+		return id, true
+	}
+	m.todoRunner.state = &run.State{Slug: "do-it",
+		Tests: []string{`sh -c 'echo FIRST FAILURE; i=0; while [ $i -lt 4000 ]; do echo filler line $i; i=$((i+1)); done; echo LAST LINE; exit 1'`}}
+	m.todoRunner.item = todo.Item{Slug: "do-it"}
+	msg := m.todoVerifyCmd("")().(todoVerifyMsg)
+	if msg.ok || !strings.Contains(msg.output, "[full output: evidence ev-") {
+		t.Fatalf("the report does not cite the evidence: %.200q", msg.output)
+	}
+	if !strings.Contains(msg.output, "FIRST FAILURE") || !strings.Contains(msg.output, "LAST LINE") {
+		t.Fatalf("both ends should be quoted: %.400q", msg.output)
+	}
+	if len(kept) != 1 {
+		t.Fatalf("the whole output should be spooled once, got %d entries", len(kept))
+	}
+	for _, content := range kept {
+		if len(content) <= len(msg.output) {
+			t.Fatal("the spooled original should hold more than the excerpt")
+		}
+	}
 }
 
 func TestTodoRun_TextIsRefusedAndStaleResultsIgnored(t *testing.T) {
@@ -451,7 +488,10 @@ func TestTodoCommitCmd_StagesByNameAndRefusesForeignIndex(t *testing.T) {
 	m := frameModel(t, 130, 40)
 	m.changes = changeset.New(1 << 20)
 	m = m.WithTodos(Todos{Profile: todo.BuiltinCode(), Root: root, Manage: func([]string) string { return "" }, Detail: func(*todo.Store, todo.Item) string { return "" }})
-	m.todoRunner.state = &run.State{Slug: "x", Turn: 1, Message: "Change a\n\nBecause."}
+	// stray.go was already modified when the item started, so it is not the
+	// run's work and must not ride along in its commit.
+	m.todoRunner.state = &run.State{Slug: "x", Turn: 1, Message: "Change a\n\nBecause.",
+		Prestart: []string{"stray.go"}}
 	m.changes.Add(1, changeset.Record{Path: filepath.Join(root, "a.go"), Before: "package a\n", After: "package a // changed\n", BeforeExists: true, AfterExists: true})
 
 	gitc("add", "stray.go")
@@ -661,7 +701,11 @@ func TestTodoRun_ReviewerTaskCarriesCreatedFiles(t *testing.T) {
 	_ = m
 }
 
-func TestTodoRun_FailedReviewerBlocksInsteadOfGrading(t *testing.T) {
+// A reader that did not finish is a reader the run did not get, which is
+// what the session's own reading is for. Blocking would stop a finished,
+// verified piece of work over the one stage that was always allowed to be
+// missing — a session with no supervisor has never had a reader either.
+func TestTodoRun_FailedReviewerFallsBackToReadingItHere(t *testing.T) {
 	m, sup := reviewReadyModel(t, blockingEnv())
 	if err := sup.Kill("todo-review-do-it-1"); err != nil {
 		t.Fatal(err)
@@ -669,8 +713,11 @@ func TestTodoRun_FailedReviewerBlocksInsteadOfGrading(t *testing.T) {
 	ev := waitDone(t, sup)
 	updated, _ := m.handleSubagentEvent(ev)
 	m = updated.(Model)
-	if m.todoRunner.state != nil {
-		t.Fatalf("a killed reviewer should block the run, got stage %s", m.todoRunner.state.Stage)
+	if m.todoRunner.state == nil || m.todoRunner.state.Over() {
+		t.Fatal("a killed reviewer should leave the run going")
+	}
+	if m.todoRunner.state.Reviewer != "" {
+		t.Fatalf("the reading is this session's now, reviewer = %q", m.todoRunner.state.Reviewer)
 	}
 	found := false
 	for _, e := range m.transcript {
@@ -679,7 +726,7 @@ func TestTodoRun_FailedReviewerBlocksInsteadOfGrading(t *testing.T) {
 		}
 	}
 	if !found {
-		t.Fatal("the evidence should say the reviewer did not finish")
+		t.Fatal("the transcript should say the reviewer did not finish")
 	}
 }
 
@@ -829,7 +876,7 @@ func TestTodoRun_ContinuedRunKeepsEarlierPaths(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(root, "a.go"), []byte("whole file\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if d := m2.todoRunDiff(); !strings.Contains(d, "+whole file") || !strings.Contains(d, "+++ b/b.go") {
+	if d := strings.Join(m2.todoRunDiff(), ""); !strings.Contains(d, "+whole file") || !strings.Contains(d, "+++ b/b.go") {
 		t.Fatalf("diff should cover both sessions' paths: %q", d)
 	}
 }

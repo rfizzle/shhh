@@ -314,7 +314,7 @@ func TestRun_ScrubRunsBeforeTheEvidenceHookAndTheExcerpt(t *testing.T) {
 	// wrote.
 	t.Setenv("GATE_FIXTURE_PW", "hunter2")
 	ws := t.TempDir()
-	writeConfig(t, ws, shSuite(`i=0; while [ $i -lt 200 ]; do echo "line $i says $GATE_FIXTURE_PW"; i=$((i+1)); done; exit 1`))
+	writeConfig(t, ws, shSuite(`i=0; while [ $i -lt 2000 ]; do echo "line $i says $GATE_FIXTURE_PW"; i=$((i+1)); done; exit 1`))
 	var stored string
 	r := &Runner{
 		Workspace: ws,
@@ -338,7 +338,11 @@ func TestRun_ScrubRunsBeforeTheEvidenceHookAndTheExcerpt(t *testing.T) {
 	if len(out) >= len(stored) {
 		t.Fatal("the output must be long enough that the excerpt is a cut of it")
 	}
-	if !strings.HasSuffix(stored, out) {
+	head, tail, cut := strings.Cut(out, "\n… (")
+	if !cut || !strings.HasPrefix(stored, head) {
+		t.Fatalf("excerpt %.40q is not the head of the stored capture", out)
+	}
+	if _, tail, _ = strings.Cut(tail, ") …\n"); !strings.HasSuffix(stored, tail) {
 		t.Fatalf("excerpt %.40q is not the tail of the stored capture", out)
 	}
 	if status := r.Status(); strings.Contains(status, "hunter2") {
@@ -385,6 +389,9 @@ func TestRun_InlineOutputBounded(t *testing.T) {
 	}
 	if !strings.Contains(res.Checks[0].Output, "line 1999") {
 		t.Fatal("excerpt must keep the tail, where failures land")
+	}
+	if !strings.Contains(res.Checks[0].Output, "line 0 is filler") {
+		t.Fatal("and the head, where the first failure is")
 	}
 }
 
@@ -721,14 +728,33 @@ func TestBoundedWriter(t *testing.T) {
 	}
 }
 
-func TestTailExcerpt(t *testing.T) {
-	if got := tailExcerpt("small", 100); got != "small" {
-		t.Fatalf("tailExcerpt small = %q", got)
+// TestExcerpt is the promise a remediation turn rests on: what it is handed
+// holds both ends of the output, not the tail alone, and says how much fell
+// out between them.
+func TestExcerpt(t *testing.T) {
+	if got := Excerpt("small", 100); got != "small" {
+		t.Fatalf("Excerpt small = %q", got)
 	}
-	long := strings.Repeat("aaaa\n", 100) + "final line"
-	// The 20-byte tail starts mid-line; the partial first line is trimmed.
-	if got := tailExcerpt(long, 20); got != "aaaa\nfinal line" {
-		t.Fatalf("tailExcerpt = %q", got)
+	long := "first failure\n" + strings.Repeat("aaaa\n", 500) + "FAIL 3 tests"
+	got := Excerpt(long, 200)
+	if len(got) > 260 {
+		t.Fatalf("Excerpt = %d bytes: %q", len(got), got)
+	}
+	if !strings.HasPrefix(got, "first failure\n") {
+		t.Fatalf("the head is missing: %q", got)
+	}
+	if !strings.HasSuffix(got, "FAIL 3 tests") {
+		t.Fatalf("the tail is missing: %q", got)
+	}
+	if !strings.Contains(got, "bytes elided") {
+		t.Fatalf("the cut is not stated: %q", got)
+	}
+	// A cut that lands mid-line keeps whole lines on both sides of it.
+	for _, line := range strings.Split(got, "\n") {
+		if line != "" && !strings.HasPrefix(line, "…") && line != "first failure" &&
+			line != "aaaa" && line != "FAIL 3 tests" {
+			t.Fatalf("partial line %q in %q", line, got)
+		}
 	}
 }
 

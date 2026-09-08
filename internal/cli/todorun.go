@@ -28,12 +28,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sort"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/rfizzle/shhh/internal/config"
+	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/runner"
@@ -196,15 +196,19 @@ type todoDriver struct {
 	itemTimeout time.Duration
 	noCommit    bool
 	repo        bool
-	// dirty is what the tree already held when the item now being worked
-	// started. Only what changed after that is the run's to stage, which is
-	// the same rule the session applies with its changeset: a file somebody
-	// left modified is not the run's work and must not ride along in its
-	// commit. It is retaken per item, not once per process — a sprint asked
-	// for without commits leaves each item's work in the tree, and a
-	// baseline from before the sprint would hand every one of those files to
-	// the next item as its own.
-	dirty map[string]bool
+	// wrote is what this run's own stages reported writing, gathered from
+	// each stage process's transcript. It is the run's changeset, in the one
+	// form a runner whose stages are separate processes has: the tree says
+	// what is changed and not who changed it, so a file the checkout already
+	// held modified is one only this list can claim for the run.
+	wrote []string
+	// spool stores one stage's output where the next one can read it, and is
+	// nil for a run whose store would not open. The store lives under the
+	// repository (run.EvidenceDir) rather than under shhh's state dir
+	// because the stage that reads an id back is another process standing in
+	// this checkout, and a directory is what can be handed to one.
+	spool    quality.EvidenceFunc
+	spoolDir string
 	// wordings are the step instructions this checkout runs, read once here
 	// for the same reason a session reads them at startup: a run whose
 	// wording could not be read must not begin on the built-in one.
@@ -235,6 +239,14 @@ type todoTurn struct {
 	// on half a review or half an implementation is graded on half the work
 	// in the one place nobody is watching.
 	truncated bool
+	// gate is what the stage's own close did about the project's checks, in
+	// the three answers its transcript states. It is read rather than
+	// inferred from the status for the same reason truncated is: a turn that
+	// checked nothing and a turn whose checks passed leave the same exit
+	// code behind.
+	gate quality.Closing
+	// written is the paths the stage's own calls wrote.
+	written []string
 }
 
 func newTodoDriver(out io.Writer, root string, cfg config.Config, noCommit bool) (*todoDriver, error) {
@@ -378,7 +390,8 @@ func todoSprintEnding(sp *run.Sprint) string {
 // work runs one item to its end and answers with the state it stopped in.
 // sp is the sprint driving it, or nil for a single item asked for by name.
 func (d *todoDriver) work(ctx context.Context, it todo.Item, sp *run.Sprint) *run.State {
-	d.dirty = todoDirtyPaths(d.root)
+	d.wrote = nil
+	d.openSpool(it.Slug)
 	st, step := d.begin(it, sp != nil)
 	deadline := time.Time{}
 	if d.itemTimeout > 0 {
@@ -409,6 +422,45 @@ func (d *todoDriver) work(ctx context.Context, it todo.Item, sp *run.Sprint) *ru
 	}
 	d.finish(st, it)
 	return st
+}
+
+// openSpool opens the store this item's stages spool into. A store that will
+// not open costs the run its evidence ids and nothing else: the excerpts
+// still reach the next stage, and a run that stopped because a directory
+// would not be made would be refusing work over its own bookkeeping.
+func (d *todoDriver) openSpool(slug string) {
+	d.spool, d.spoolDir = nil, ""
+	dir, err := run.MakeSpool(d.root, slug)
+	if err != nil {
+		fmt.Fprintln(d.out, "the run's evidence is not being kept — "+err.Error())
+		return
+	}
+	store, err := evidence.OpenAt(dir, slug)
+	if err != nil {
+		fmt.Fprintln(d.out, "the run's evidence is not being kept — "+err.Error())
+		return
+	}
+	d.spool, d.spoolDir = store.Put, dir
+	if d.gate != nil {
+		// The gate's checks are the ones a remediation turn is asked to fix,
+		// so their whole output is what the store is for.
+		d.gate.Evidence = store.Put
+	}
+}
+
+// keep spools one stage's output and answers with the citation the next
+// stage follows, in the wording the gate already uses for its own checks
+// (quality.Format). Nothing is said where there is no store: an id nobody
+// can resolve is worse than no id.
+func (d *todoDriver) keep(tool string, content string) string {
+	if d.spool == nil || content == "" {
+		return ""
+	}
+	id, err := d.spool(tool, []byte(content))
+	if err != nil {
+		return ""
+	}
+	return " [full output: evidence " + id + "]"
 }
 
 // begin starts the item, or picks up the checkpoint an earlier process left.
@@ -449,6 +501,15 @@ func (d *todoDriver) begin(it todo.Item, inSprint bool) (*run.State, run.Step) {
 		return st, st.Block("the item could not be marked in progress: " + err.Error())
 	}
 	st := run.Start(it, d.session, "", 0, opt)
+	// The baseline is the tree as this item found it, and it is taken here
+	// — once, where the item starts — rather than at every process that
+	// works it. A sprint asked for without commits leaves each item's work
+	// in the tree, so a baseline from before the sprint would hand every one
+	// of those files to the next item as its own; and a run picked up after
+	// a process died must subtract the baseline it began with, not the one
+	// its second process finds, which by then holds the first one's work.
+	// An empty baseline is a clean tree and is meant to stay empty.
+	st.Prestart = run.DirtyPaths(d.root)
 	return st, st.First(it, "")
 }
 
@@ -457,6 +518,11 @@ func (d *todoDriver) carry(ctx context.Context, deadline time.Time, st *run.Stat
 	switch step.Action {
 	case run.ActionPrompt:
 		t, err := d.turn(ctx, deadline, d.root, step)
+		// What the stage wrote is the run's however the stage ended: a turn
+		// that was cut off still edited the files it edited, and they are
+		// what stays in the tree for the next process or for the person
+		// reading the block.
+		d.wrote = append(d.wrote, t.written...)
 		if err != nil {
 			return st.Block(err.Error())
 		}
@@ -477,7 +543,7 @@ func (d *todoDriver) carry(ctx context.Context, deadline time.Time, st *run.Stat
 		// pass would skip the verify stage's own run over a tree nothing has
 		// checked.
 		if st.ClosesWithGate() {
-			st.Checks(t.code == exitDone)
+			st.Checks(t.gate)
 		}
 		return st.Observe(it, t.text)
 	case run.ActionVerify:
@@ -556,7 +622,7 @@ func (d *todoDriver) ask(ctx context.Context, deadline time.Time, dir string, st
 	}
 	cmd := exec.CommandContext(ctx, d.bin, args...)
 	cmd.Dir = dir
-	cmd.Env = runner.Environ()
+	cmd.Env = d.stageEnv(dir)
 	// A sprint that is cancelled, by its deadline or by the driver's own
 	// context ending, interrupts the stage's turn rather than killing it, so
 	// the child writes its record and leaves a slot the way the contract
@@ -574,19 +640,73 @@ func (d *todoDriver) ask(ctx context.Context, deadline time.Time, dir string, st
 		code = ee.ExitCode()
 	}
 	var t struct {
-		Final     string `json:"final"`
-		Error     string `json:"error"`
-		Truncated bool   `json:"truncated"`
+		Final     string   `json:"final"`
+		Error     string   `json:"error"`
+		Truncated bool     `json:"truncated"`
+		Gate      string   `json:"gate"`
+		Written   []string `json:"written"`
 	}
 	_ = json.Unmarshal([]byte(out.String()), &t)
+	// The paths are relative to the directory the stage stood in, which is
+	// the run's root for every stage but a lane — and a lane's patch is
+	// recorded where it lands, not here.
+	written := t.Written
+	if dir != d.root {
+		written = nil
+	}
+	turn := todoTurn{code: code, truncated: t.Truncated,
+		gate: quality.Closing(t.Gate), written: todoWritten(d.root, written)}
 	if strings.TrimSpace(t.Final) != "" {
-		return todoTurn{text: t.Final, code: code, truncated: t.Truncated}, nil
+		turn.text = t.Final
+		return turn, nil
 	}
 	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-		return todoTurn{code: code}, errors.New(run.TimedOut(d.itemTimeout))
+		return turn, errors.New(run.TimedOut(d.itemTimeout))
 	}
-	return todoTurn{code: code}, fmt.Errorf("the %s turn produced no answer (exit %d): %s",
+	return turn, fmt.Errorf("the %s turn produced no answer (exit %d): %s",
 		step.Stage, code, todoFirstProblem(t.Error, errOut.String(), errString(runErr)))
+}
+
+// stageEnv is the environment one stage's process runs in: this run's, plus
+// the store its stages share where there is one.
+//
+// Only a stage standing in the checkout is pointed at it. A lane stands in a
+// copy of the tree and writes its own evidence, and several lanes sharing one
+// store would be several processes writing one index at once — the run would
+// lose entries to whichever wrote last, which is worse than a lane keeping
+// its evidence to itself.
+func (d *todoDriver) stageEnv(dir string) []string {
+	if d.spoolDir == "" || dir != d.root {
+		return runner.Environ()
+	}
+	env := runner.Environ()
+	if env == nil {
+		// A session with nothing to add to the environment answers with
+		// nothing at all, which exec reads as "inherit"; appending to that
+		// would hand the stage this one variable and no PATH.
+		env = os.Environ()
+	}
+	return append(env, evidenceStoreEnv+"="+d.spoolDir)
+}
+
+// todoWritten is a stage's own written paths in the shape a commit names
+// them: relative to the run's root, with anything outside it and anything no
+// run may stage left out.
+func todoWritten(root string, paths []string) []string {
+	var out []string
+	for _, p := range paths {
+		if filepath.IsAbs(p) {
+			rel, err := filepath.Rel(root, p)
+			if err != nil || strings.HasPrefix(rel, "..") {
+				continue
+			}
+			p = rel
+		}
+		if rel := run.Committable(p); rel != "" {
+			out = append(out, rel)
+		}
+	}
+	return out
 }
 
 // todoStageArgs is the process a stage's turn is spent as, and the whole of
@@ -658,13 +778,11 @@ func (d *todoDriver) verify(ctx context.Context, st *run.State, named string) to
 	// and the workspace's suite are the answer for the step that did not.
 	if named != "" {
 		out, code := runner.RunCaptureIn(ctx, d.root, named)
-		fmt.Fprintf(&b, "$ %s → exit %d\n%s\n", named, code, todoTail(out, 40))
-		return todoVerdict{ok: code == 0, output: strings.TrimRight(b.String(), "\n")}
+		passed := d.ran(&b, named, out, code)
+		return todoVerdict{ok: passed, output: strings.TrimRight(b.String(), "\n")}
 	}
 	for _, cmd := range st.Tests {
-		out, code := runner.RunCaptureIn(ctx, d.root, cmd)
-		fmt.Fprintf(&b, "$ %s → exit %d\n%s\n", cmd, code, todoTail(out, 40))
-		if code != 0 {
+		if out, code := runner.RunCaptureIn(ctx, d.root, cmd); !d.ran(&b, cmd, out, code) {
 			ok = false
 		}
 	}
@@ -706,12 +824,19 @@ func (d *todoDriver) verify(ctx context.Context, st *run.State, named string) to
 	return todoVerdict{ok: ok, output: out}
 }
 
-func todoTail(s string, lines int) string {
-	parts := strings.Split(strings.TrimRight(s, "\n"), "\n")
-	if len(parts) > lines {
-		parts = append([]string{fmt.Sprintf("… %d lines above", len(parts)-lines)}, parts[len(parts)-lines:]...)
-	}
-	return strings.Join(parts, "\n")
+// ran writes one command's outcome into the verify's report and answers
+// whether it passed.
+//
+// What it writes is both ends of the output and a citation for the rest,
+// which is the shape the stage after this one needs. A remediation turn is
+// asked to fix what this found, and a tail alone hands it the count of the
+// failures and none of the failures; the excerpt is bounded because the
+// report goes into a prompt, and the id is how a turn that needs more than
+// the excerpt asks for it.
+func (d *todoDriver) ran(b *strings.Builder, command, out string, code int) bool {
+	fmt.Fprintf(b, "$ %s → exit %d%s\n%s\n", command, code,
+		d.keep("verify:"+command, out), quality.Excerpt(out, quality.MaxInlineBytes))
+	return code == 0
 }
 
 // commit makes the run's commit, which is the run package's to make: the
@@ -727,70 +852,14 @@ func (d *todoDriver) commit(st *run.State) ([]string, error) {
 		projectTrust().RunsOwnPrograms())
 }
 
-// paths is what the run may stage: everything under the root that changed
-// after the driver started, plus what an earlier process of the same run
-// recorded, and never a backlog file — the backlog is never committed on the
-// project's behalf.
+// paths is what the run may stage, in the definition both surfaces share
+// (run.Contents): what an earlier process of the same run recorded, plus
+// what this run's own stages wrote, plus everything under the root that
+// changed after the item started — and never a backlog file, because the
+// backlog is never committed on the project's behalf.
 // See docs/capabilities/todo.md#where-the-backlog-lives.
 func (d *todoDriver) paths(st *run.State) []string {
-	seen := map[string]bool{}
-	var out []string
-	for _, rel := range st.Paths {
-		if !seen[rel] {
-			seen[rel], out = true, append(out, rel)
-		}
-	}
-	// Sorted, because what comes out of the status is a set: an unordered
-	// commit list would put the report's own paths in a different order
-	// every time the same run was replayed, and a report that changes
-	// between two identical runs is one nothing can be compared against.
-	var found []string
-	for rel := range todoDirtyPaths(d.root) {
-		if d.dirty[rel] || seen[rel] {
-			continue
-		}
-		seen[rel] = true
-		found = append(found, rel)
-	}
-	sort.Strings(found)
-	return append(out, found...)
-}
-
-// todoDirtyPaths is what git reports as changed under root, as a set. A
-// checkout git cannot read is an empty set, which stops a commit rather than
-// staging a guess.
-func todoDirtyPaths(root string) map[string]bool {
-	status, code := todoGitLines(root, "status", "--porcelain", "--untracked-files=all")
-	if code != 0 {
-		return map[string]bool{}
-	}
-	return todoPorcelainPaths(status)
-}
-
-// todoPorcelainPaths reads `git status --porcelain` into the set of paths it
-// names, leaving the backlog out: whether the backlog is committed is the
-// project's call and nothing here stages it.
-// See docs/capabilities/todo.md#where-the-backlog-lives.
-func todoPorcelainPaths(status string) map[string]bool {
-	out := map[string]bool{}
-	backlog := filepath.Join(todo.StateDir, todo.Subdir)
-	for _, line := range strings.Split(status, "\n") {
-		if len(line) < 4 {
-			continue
-		}
-		rel := strings.TrimSpace(line[3:])
-		// A rename is reported as `orig -> now`; what the run holds is where
-		// the content is now, and the index takes the old path with it.
-		if i := strings.Index(rel, " -> "); i >= 0 {
-			rel = rel[i+4:]
-		}
-		rel = strings.Trim(rel, `"`)
-		if rel == "" || strings.HasPrefix(rel, backlog) {
-			continue
-		}
-		out[rel] = true
-	}
-	return out
+	return run.Contents(st.Paths, d.wrote, run.DirtyPaths(d.root), st.Prestart)
 }
 
 // todoGitNotInstalled is the shell's own code for a command that never
@@ -798,18 +867,10 @@ func todoPorcelainPaths(status string) map[string]bool {
 const todoGitNotInstalled = 127
 
 // todoGit runs one git command in root and reports its output and its code.
+// The reading it is used for here is a diff, which is read as text; what a
+// run may stage is read by column, and that reading lives in the run package
+// beside the definition of what a commit holds (run.DirtyPaths).
 func todoGit(root string, args ...string) (string, int) {
-	out, code := todoGitLines(root, args...)
-	return strings.TrimSpace(out), code
-}
-
-// todoGitLines is that without the trim, for a command whose output is read
-// by column. `git status --porcelain` states a path's staged mark in the
-// first column and its unstaged mark in the second, so a line about a file
-// changed in the tree and not in the index begins with a space — and a
-// trimmed line puts the path three characters to the left of where every
-// reader of that format looks for it.
-func todoGitLines(root string, args ...string) (string, int) {
 	cmd := exec.Command("git", append([]string{"-C", root}, args...)...)
 	cmd.Env = runner.Environ()
 	out, err := cmd.CombinedOutput()
@@ -823,7 +884,7 @@ func todoGitLines(root string, args ...string) (string, int) {
 			out = append(out, err.Error()...)
 		}
 	}
-	return string(out), code
+	return strings.TrimSpace(string(out)), code
 }
 
 // finish writes what the run ended as onto the item: the archive and the
@@ -844,6 +905,7 @@ func (d *todoDriver) finish(st *run.State, it todo.Item) {
 			}
 		}
 		run.Discard(d.root, st.Slug)
+		run.ClearSpool(d.root, st.Slug)
 		return
 	}
 	_ = todo.SetStatus(it.Path, todo.StatusBlocked)
@@ -854,6 +916,7 @@ func (d *todoDriver) finish(st *run.State, it todo.Item) {
 		fmt.Fprintln(d.out, "work so far stays in the tree, uncommitted: "+strings.Join(paths, ", "))
 	}
 	run.Discard(d.root, st.Slug)
+	run.ClearSpool(d.root, st.Slug)
 }
 
 // todoRunDoneLine is what a finished item says: what happened to the work,
@@ -872,12 +935,6 @@ func todoRunDoneLine(st *run.State, to string) string {
 // prompt so an item knows what the set it belongs to is for.
 func (d *todoDriver) sprintGoal() string { return todo.Load(todoProfile(), d.root).Sprint.Purpose() }
 
-// maxReviewDiffLines bounds the change the reader is handed. It is the
-// session's own bound, and it is a bound at all for the same reason: a
-// reader's task is a prompt, and a thousand-file diff in one would spend the
-// child's whole window on the change before it had read the item.
-const maxReviewDiffLines = 600
-
 // review hands the change to a reader that did not write it: a process of its
 // own, given the item, the plan and the run's diff, and none of the
 // conversation that produced the work. That is the whole of what a reviewer
@@ -895,38 +952,51 @@ func (d *todoDriver) review(ctx context.Context, deadline time.Time, st *run.Sta
 	if !d.repo {
 		return st.SelfReview(it)
 	}
-	task := st.ReviewTask(it, todoTail(d.reviewDiff(st), maxReviewDiffLines))
+	task := st.ReviewTask(it, run.BoundDiff(d.reviewDiff(st), run.ReviewDiffLines, run.ReviewFileFloor))
 	if strings.TrimSpace(task) == "" {
 		return st.SelfReview(it)
 	}
 	t, err := d.turn(ctx, deadline, d.root,
 		run.Step{Action: run.ActionPrompt, Stage: step.Stage, Mode: step.Mode, Prompt: task})
+	// A reader that did not finish is a reader the run did not get, which is
+	// what SelfReview is for. Blocking on it stops a finished, verified piece
+	// of work over the one stage that was always allowed to be missing — the
+	// checkout without a repository has never had a reader either — and the
+	// step label is what says which reading this was.
 	switch {
 	case err != nil:
-		return st.Block(fmt.Sprintf("the reviewer %s did not finish: %s", st.Reviewer, err.Error()))
+		fmt.Fprintf(d.out, "the reviewer %s did not finish (%s); reading it in this session instead\n",
+			st.Reviewer, todoFirstProblem(err.Error()))
+		return st.SelfReview(it)
 	case t.truncated:
-		return st.Block(run.CutAtCeiling(step.Stage))
+		fmt.Fprintf(d.out, "the reviewer %s was cut at the model's output ceiling; reading it in this session instead\n", st.Reviewer)
+		return st.SelfReview(it)
 	}
 	return st.ReviewResult(it, t.text)
 }
 
-// reviewDiff is the change the reader is handed: `git diff` over the paths
-// the run holds, with a file git has never heard of shown whole against
-// nothing. It is the reading a session takes off its changeset, in the one
-// form a runner that keeps no changeset has — and a path git will say
-// nothing about is left out rather than reported as an empty change.
-func (d *todoDriver) reviewDiff(st *run.State) string {
-	var b strings.Builder
+// reviewDiff is the change the reader is handed, one file at a time: `git
+// diff` over the paths the run holds, with a file git has never heard of
+// shown whole against nothing. It is the reading a session takes off its
+// changeset, in the one form a runner that keeps no changeset has — and a
+// path git will say nothing about is left out rather than reported as an
+// empty change.
+//
+// It answers with the files rather than with one string because what the
+// reader is handed is bounded per file (run.BoundDiff): a budget spent in
+// order hands over the first files whole and never mentions the rest.
+func (d *todoDriver) reviewDiff(st *run.State) []string {
+	var out []string
 	for _, rel := range st.Paths {
-		if out, code := todoGit(d.root, "diff", "--", rel); code == 0 && strings.HasPrefix(out, "diff --git") {
-			b.WriteString(out + "\n")
+		if d, code := todoGit(d.root, "diff", "--", rel); code == 0 && strings.HasPrefix(d, "diff --git") {
+			out = append(out, d)
 			continue
 		}
-		if out, _ := todoGit(d.root, "diff", "--no-index", os.DevNull, rel); strings.HasPrefix(out, "diff --git") {
-			b.WriteString(out + "\n")
+		if d, _ := todoGit(d.root, "diff", "--no-index", os.DevNull, rel); strings.HasPrefix(d, "diff --git") {
+			out = append(out, d)
 		}
 	}
-	return b.String()
+	return out
 }
 
 // fanOut builds a large item in lanes, all of them at once. A lane is a

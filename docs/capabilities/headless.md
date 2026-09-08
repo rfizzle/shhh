@@ -130,6 +130,28 @@ without a code having to be minted per class. It is absent for an ending that
 was not a provider call at all — a failing suite, a standing refusal — which
 is how the two are told apart without reading the sentence.
 
+**The transcript says what the close did about the checks, in three answers
+rather than two.** `passed` is the suite having run over the tree the turn
+left and passed, `failed` is it having run and not passed, and `not-run` is a
+turn that ran none of them — no suite configured, or nothing changed for one
+to have an opinion about. The exit status cannot carry that third answer:
+a turn that checked nothing and a turn whose checks passed both exit `0`, so
+a caller that read the status as a verdict would be treating a tree nobody
+looked at as a tree that passed. The backlog runner is that caller, and it
+reads the word.
+
+The checks run when the tree moved, whether or not a tool call is what moved
+it. A turn whose change came from `gofmt -w`, a generator or a build that
+writes its own manifest has changed the code without a mutating call in the
+log, and a close that asked only the log would let exactly that work through
+unchecked.
+
+**The transcript also says which paths the run's own calls wrote**, in the
+order they were written. The tree says what is changed and not who changed
+it, so a caller that has to commit an unattended run's work — the backlog
+runner, again — needs the run's own list to claim a file somebody else had
+already left modified, and the tree to catch what no call went through.
+
 The token totals state the cached share of the prompt as well as the prompt
 and completion counts. It is billed at a fraction of the rest and cannot be
 recovered from the other two figures, so a script pricing a night of runs

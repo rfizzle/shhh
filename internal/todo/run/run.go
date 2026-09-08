@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/plan"
+	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/todo"
 )
 
@@ -283,6 +284,13 @@ type State struct {
 	// and dropped by a run picked up in a later session — a verdict is
 	// about the tree it ran over, and a tree left overnight is not that one.
 	Checked bool `json:"checked,omitempty"`
+	// Prestart is what the tree already held changed when this item's run
+	// began. Only what moved after it is the run's to commit — the same
+	// rule both surfaces apply, and the reason it is in the checkpoint is
+	// that a run picked up by a later process must subtract the baseline the
+	// run started from and not the one its second process found, which by
+	// then holds the first process's own work.
+	Prestart []string `json:"prestart,omitempty"`
 
 	// Wordings are the step instructions this run sends. They are not in
 	// the checkpoint: they are files on disk, and a run continued a day
@@ -608,10 +616,15 @@ func (s *State) Sprinting() bool { return s != nil && s.InSprint }
 
 // Checks records what such a close reached, so the command step can take a
 // pass instead of running the same suite over a tree that has not moved
-// between them. Only a pass carries: a turn shown a failure was given rounds
-// to fix what it found, so the tree it finally left is not the one the
-// failing verdict was about.
-func (s *State) Checks(passed bool) { s.Checked = passed }
+// between them.
+//
+// Only a pass carries, and the three answers are why it takes the word and
+// not a boolean. A turn shown a failure was given rounds to fix what it
+// found, so the tree it finally left is not the one the failing verdict was
+// about; a turn whose close ran nothing has said nothing about the tree at
+// all, and the difference between that and a failure is invisible to a
+// caller passing false for both.
+func (s *State) Checks(c quality.Closing) { s.Checked = c == quality.ClosingPassed }
 
 // Over reports whether the run has reached an end state.
 func (s *State) Over() bool { return s.Stage == StageDone || s.Stage == StageBlocked }

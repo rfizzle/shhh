@@ -608,6 +608,27 @@ own — stops the run rather than archiving an item with none of its boxes
 ticked. A missing definition is not a failing check either: it is said and
 left to a person, because no fix round can write the file for you.
 
+**What the verification found is handed on in a shape the fix round can use.**
+Both ends of a failing check's output are quoted — the first failure and the
+summary that counts them — with a line saying how much fell out between them,
+and an evidence id for the whole of it. A tail alone is the one shape of
+evidence that reads as complete and is not: it hands the fix round the count
+of the failures and none of the failures. The id resolves in a store that
+belongs to the run and sits beside the repository, which is what lets the
+stage after the failing one — a separate process, in an unattended run — page
+back the part that did not fit ([`evidence.md`](evidence.md#a-runs-evidence-belongs-to-the-run)).
+
+**A turn that checks itself as it closes says which of three things happened**,
+and only one of them is taken. A turn whose close ran the project's suite and
+passed lets the verify take that verdict instead of paying for the same suite
+over a tree that has not moved. A close that ran the suite and failed is not
+carried — the turn was given rounds to fix what it found, so the tree it
+finally left is not the one that verdict was about — and neither is a close
+that ran nothing at all. The three are told apart by what the turn reported,
+never by the status it exited with: a turn that checked nothing and a turn
+whose checks passed both exit `0`
+([`headless.md`](headless.md#three-shapes-for-the-same-run)).
+
 The review reads the change as a critic and answers clean or with findings,
 and findings spend a round the same way. The smallest grade reviews itself in
 the session's own turn; anything larger goes to a reader that did not write
@@ -629,7 +650,19 @@ steer. The classifier failing closed is the steering.
 The commit is shhh's to make, not the model's. Only paths the run itself
 changed are staged, by name, and never a backlog file; a tree that already
 holds staged changes the run did not make stops the run instead of
-committing a stranger. The message is written by the model in the
+committing a stranger.
+
+**What "the run itself changed" means is one definition, on every surface.**
+It is the run's own writes — what the session's changeset recorded, or what
+an unattended run's stage processes reported writing — together with
+everything the tree reports changed that it did not already hold when the item
+started. Neither half is enough on its own. A run also changes files through
+commands, and a `gofmt -w` or a generator goes through no write tool, so a
+commit built from the writes alone leaves half the change behind. And a file
+somebody had already left modified is a file the run may still have worked on,
+so subtracting the baseline from the run's own writes leaves the item's change
+half committed. The baseline is what keeps somebody else's edits out; the
+run's own list is what claims a file they had touched first. The message is written by the model in the
 repository's own style, read from its history, and the report the model
 writes goes onto the item as it is archived.
 
@@ -833,10 +866,26 @@ its own — a fresh conversation, the same task, the same verdict line at the
 end — because the thing that makes the reading a second opinion is where it
 comes from, not whether a supervisor was involved.
 
+**The reader is handed every file that changed.** The change is bounded
+before it goes into the reader's task — a thousand-file diff would spend the
+child's whole window on the change before it had read the item — and the
+budget is divided between the files rather than spent in order. A single cut
+of the whole diff hands over the last two files and never mentions the other
+eighteen, so a reader's "the change looks right" is a statement about a tenth
+of it, and neither the reader nor the run can tell: a diff that stops looks
+exactly like a change that ended. A file that was cut says how much of it is
+missing.
+
 The fallback stays for the checkout that cannot produce a change to hand over.
 Outside a repository there is no diff, and a reader given the item and nothing
 else would be grading the plan rather than the work; there the run reads the
 tree in its own turn, and the step label says which of the two happened.
+
+It stays for the reader that did not finish, too — killed, out of rounds, cut
+at the model's output ceiling. That is a reading the run did not get, not a
+fault in the work: blocking there would stop a finished, verified change over
+the one step that has always been allowed to be missing, so the run reads it
+itself and says so.
 
 ## A large item is built in lanes
 

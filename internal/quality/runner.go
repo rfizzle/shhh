@@ -24,6 +24,42 @@ const (
 	VerdictCancelled Verdict = "cancelled"
 )
 
+// Closing is what a turn's close did about the project's checks, in the
+// three answers a reader of it needs. A turn that changed nothing runs
+// nothing, and "the process exited 0" is not one of the three: a turn whose
+// change came from `gofmt -w` or a generator exits 0 having checked
+// nothing, and a run that read that as a pass would archive the item with
+// the gate never having seen the tree.
+//
+// It lives here rather than at the surface that reports it because two
+// surfaces report it — an unattended turn's transcript and the backlog
+// runner reading one — and a word each would be two vocabularies for one
+// event.
+// See docs/capabilities/headless.md#three-shapes-for-the-same-run.
+type Closing string
+
+const (
+	// ClosingNotRun is a close that ran no checks: none configured, nothing
+	// changed for them to have an opinion about, or a suite already in
+	// flight.
+	ClosingNotRun Closing = "not-run"
+	// ClosingPassed is the suite having run over the tree the turn left and
+	// passed. It is the only one of the three a later stage may take
+	// instead of running the suite again.
+	ClosingPassed Closing = "passed"
+	// ClosingFailed is the suite having run and not passed, blocked and
+	// cancelled among them: neither is a pass.
+	ClosingFailed Closing = "failed"
+)
+
+// ClosingOf is the verdict a run reached, said in the three answers.
+func ClosingOf(v Verdict) Closing {
+	if v == VerdictPass {
+		return ClosingPassed
+	}
+	return ClosingFailed
+}
+
 // Run ceilings.
 const (
 	// DefaultCheckTimeout bounds one check when the suite sets no timeout.
@@ -36,7 +72,15 @@ const (
 	// MaxInlineBytes bounds the output excerpt a failing check contributes to
 	// the formatted result; the full bounded capture lives in the evidence
 	// store when one is wired.
-	MaxInlineBytes = 2 << 10
+	//
+	// It is 16 KB and not the 2 KB it began as because of who reads it. The
+	// excerpt is what a remediation turn is handed to fix the failure with,
+	// and 2 KB of a Go test run is the last few lines of the summary — the
+	// count of failures, and none of the failures. A turn asked to fix what
+	// it cannot see spends its round guessing; the store is the way to the
+	// rest, and the way there is only taken by a reader who can already see
+	// enough to know what to ask for.
+	MaxInlineBytes = 16 << 10
 )
 
 // WrapFunc builds the containment argv for one check; allowWrite
@@ -369,7 +413,7 @@ func (r *Runner) runCheck(ctx context.Context, suite string, check Check, argv [
 			cr.EvidenceID = id
 		}
 	}
-	cr.Output = tailExcerpt(captured, MaxInlineBytes)
+	cr.Output = Excerpt(captured, MaxInlineBytes)
 	return cr
 }
 
@@ -435,17 +479,66 @@ func resolveExe(workspace, exe string) (string, error) {
 	return path, nil
 }
 
-// tailExcerpt keeps the last max bytes of s, trimmed to whole lines when
-// possible.
-func tailExcerpt(s string, max int) string {
+// Excerpt bounds a whole captured output to max bytes in boundedWriter's
+// shape: the head, a line saying how much is missing, and the tail.
+//
+// Both ends are kept because both ends are where a reader looks. A compiler
+// or a linter says what is wrong first and stops; a test run says it first
+// and counts it last. An excerpt that keeps only the tail hands a
+// remediation turn the count and none of the failures, which is the one
+// shape of evidence that reads as complete and is not.
+//
+// It is the whole-string form of what boundedWriter does as a stream, so a
+// check's output and a command's output are cut the same way and say the
+// same thing about the cut.
+func Excerpt(s string, max int) string {
 	if len(s) <= max {
 		return s
 	}
-	cut := s[len(s)-max:]
-	if i := strings.IndexByte(cut, '\n'); i >= 0 && i < len(cut)-1 {
-		cut = cut[i+1:]
+	if max <= elisionRoom {
+		// Too small to say anything about what was cut, but a bound that
+		// hands back the whole string is not a bound: what fits, fits.
+		return wholeLinesHead(s[:max])
 	}
-	return cut
+	// The line that says what fell out is part of what the caller asked to
+	// be bounded by, so the two ends are cut to leave room for it: a bound
+	// that the sentence about the bound pushes past is not one.
+	budget := max - elisionRoom
+	headMax := budget / 4
+	head := wholeLinesHead(s[:headMax])
+	tail := wholeLinesTail(s[len(s)-(budget-headMax):])
+	return headTail([]byte(head), []byte(tail), int64(len(s)-len(head)-len(tail)))
+}
+
+// elisionRoom is what headTail's own line costs at its widest — the count in
+// it is a byte count, and no capture this reads is near a petabyte.
+const elisionRoom = 48
+
+// wholeLinesHead drops a partial last line, so the head ends where a line
+// does; a head with no line break at all is kept as it is rather than
+// dropped whole.
+func wholeLinesHead(s string) string {
+	if i := strings.LastIndexByte(s, '\n'); i > 0 {
+		return s[:i]
+	}
+	return s
+}
+
+// wholeLinesTail drops a partial first line, on the same terms.
+func wholeLinesTail(s string) string {
+	if i := strings.IndexByte(s, '\n'); i >= 0 && i < len(s)-1 {
+		return s[i+1:]
+	}
+	return s
+}
+
+// headTail is the two ends with the count of what fell between them, in the
+// one wording every caller of it prints.
+func headTail(head, tail []byte, elided int64) string {
+	if elided <= 0 {
+		return string(head) + string(tail)
+	}
+	return fmt.Sprintf("%s\n… (%d bytes elided) …\n%s", head, elided, tail)
 }
 
 // boundedWriter keeps the head and a rolling tail of a stream within a byte
@@ -487,9 +580,5 @@ func (w *boundedWriter) String() string {
 	if tailMax := w.limit - w.limit/4; len(tail) > tailMax {
 		tail = tail[len(tail)-tailMax:]
 	}
-	elided := w.total - int64(len(w.head)+len(tail))
-	if elided <= 0 {
-		return string(w.head) + string(tail)
-	}
-	return fmt.Sprintf("%s\n… (%d bytes elided) …\n%s", w.head, elided, tail)
+	return headTail(w.head, tail, w.total-int64(len(w.head)+len(tail)))
 }
