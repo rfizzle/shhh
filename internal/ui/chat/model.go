@@ -257,6 +257,9 @@ type cmdDoneMsg struct {
 	// local: a `!!` run — the output lands in the transcript and never in
 	// the conversation (bang.go).
 	local bool
+	// end is how the command ended where its exit code cannot say, read off
+	// the context it ran on while that context is still to hand (run.go).
+	end commandEnd
 }
 type initialPromptMsg struct{}
 
@@ -344,6 +347,10 @@ type entry struct {
 	toolArgs   string
 	toolResult string
 	exitCode   int
+	// end is how a command ended where its exit code cannot say — the
+	// reader's cancel, the ceiling, a signal from outside (activity.go).
+	// Empty on every command that exited on its own.
+	end commandEnd
 	// localRun marks a command row whose output stayed out of the
 	// conversation — a `!!` run (bang.go), or a dry run asked for at a card
 	// (run.go) — which its outcome says.

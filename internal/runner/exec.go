@@ -142,7 +142,7 @@ func Run(command string) (exitCode int) {
 // RunCapture executes command through the execution shell with stdout and
 // stderr captured instead of inherited, for callers that display the output
 // themselves (e.g. the chat TUI). Cancelling the context kills the command;
-// a non-exit failure (including a kill) reports exit code -1.
+// a non-exit failure reports a negative code (resultCode below).
 func RunCapture(ctx context.Context, command string) (output string, exitCode int) {
 	out, err := capture(ctx, "", command, shellArgv(command), nil)
 	return noteSpawnFailure(out, err), resultCode(err)
@@ -205,15 +205,29 @@ func RunCaptureArgvIn(ctx context.Context, dir, command string, argv []string) (
 func shellArgv(command string) []string { return shell.Execution().Argv(command) }
 
 // resultCode is the exit code a captured command reports: its own where it
-// ran and exited, and -1 for everything else — a command that could not be
-// spawned, one killed by a signal, one whose ceiling stopped it.
+// ran and exited, and a negative number where it never got one, because a
+// process a signal ended has no exit status at all.
+//
+// The negative half says which signal: -N for signal N, which is the one
+// encoding of "no status, and this is why" that fits in the int every caller
+// already reads (it is what Python's subprocess.returncode has always meant).
+// Go's own ExitCode collapses every one of them to -1, and -1 stays that
+// here: a command that could not be spawned, or one ended in a way the
+// platform left no signal behind for. A surface must not print any of these
+// as an exit status — `exit -9` is not a status any program returned — and
+// components.OutcomeExit is where that is enforced.
 func resultCode(err error) int {
 	if err == nil {
 		return 0
 	}
 	var exitErr *exec.ExitError
 	if errors.As(err, &exitErr) {
-		return exitErr.ExitCode()
+		if code := exitErr.ExitCode(); code >= 0 {
+			return code
+		}
+		if status, ok := exitErr.Sys().(syscall.WaitStatus); ok && status.Signaled() {
+			return -int(status.Signal())
+		}
 	}
 	return -1
 }

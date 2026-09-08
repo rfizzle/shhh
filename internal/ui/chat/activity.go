@@ -9,6 +9,7 @@ package chat
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -370,6 +371,47 @@ func allowedLabel(rule string, elapsed time.Duration) string {
 	return components.OutcomeBy(components.OutcomeAutoAllowed, ruleAccount(rule, elapsed))
 }
 
+// commandEnd is how a command ended where its exit code cannot say: the word
+// from the outcome vocabulary, and the number that qualifies it. It is empty
+// on every command that exited on its own, which is nearly all of them.
+type commandEnd struct {
+	// outcome is components.OutcomeStopped, OutcomeKilled or OutcomeTimedOut.
+	outcome string
+	// account is the number beside the word — `signal 9`, `30s` — and is
+	// empty where there is none to name.
+	account string
+}
+
+// commandEnding reads what ended a command off the two things that know. A
+// negative code is the runner saying the command never exited (-N for signal
+// N), and the context the command was run on says whether that was the
+// reader's cancel, the ceiling arriving, or neither — which leaves a signal
+// nobody in this session sent. Go collapses all three to -1 and a row that
+// printed the number would report `exit -1` as though a program had returned
+// it (docs/interface/principles.md#closed-vocabularies).
+//
+// The reader's cancel is read off ctx.Err rather than off the signal because
+// the signal is the same one the ceiling sends: what differs is who asked,
+// and only the context holds that.
+func commandEnding(ctxErr error, code int, limit time.Duration) commandEnd {
+	if code >= 0 {
+		return commandEnd{}
+	}
+	switch {
+	case errors.Is(ctxErr, context.DeadlineExceeded):
+		return commandEnd{outcome: components.OutcomeTimedOut, account: turnDuration(limit)}
+	case ctxErr != nil:
+		return commandEnd{outcome: components.OutcomeStopped}
+	case code < -1:
+		return commandEnd{outcome: components.OutcomeKilled, account: components.SignalAccount(-code)}
+	}
+	// -1 is the runner's "no status and no signal to name": a command that
+	// could not be spawned at all, or one the platform ended without saying
+	// how. Something outside the session stopped it, which is the word, and
+	// there is no number to put beside it.
+	return commandEnd{outcome: components.OutcomeKilled}
+}
+
 // ruleAccount is the rule that answered and what its judgement cost, which is
 // the account either way a rule can answer: it let the call run, or it
 // blocked it. A denial states it in the same field for the same reason — the
@@ -416,10 +458,27 @@ func (m Model) activityRowDetail(e entry, stepDetail bool) components.ActivityRo
 		row.Kind = components.ActivityCommand
 		row.Verb = "run"
 		row.Target = firstLine(e.text)
-		if e.exitCode != 0 {
+		switch {
+		case e.end.outcome == components.OutcomeStopped:
+			// The reader stopped it themselves, so the row is as quiet as
+			// their refusal is: ⊘ and dim, not ✗ and del. Nothing broke —
+			// they changed their mind while it was running
+			// (docs/interface/principles.md#two-denials-are-not-one-denial).
+			// The duration stays: unlike a call that was never put, this one
+			// ran, and how long for is why they stopped it.
+			row.State = components.ActivityDenied
+			row.Outcome = components.OutcomeStopped
+		case e.end.outcome != "":
+			// The ceiling, or a signal from outside the session. Neither is
+			// the reader's doing and neither did what it was asked to, so
+			// both are breaks — with the number that qualifies the word in
+			// the account field beside it.
+			row.State = components.ActivityFailed
+			row.Outcome, row.Allowed = e.end.outcome, e.end.account
+		case e.exitCode != 0:
 			row.State = components.ActivityFailed
 			row.Outcome = components.OutcomeExit(e.exitCode)
-		} else {
+		default:
 			row.Outcome = components.OutcomeOK
 		}
 		// A `!!` run's output never joined the conversation, and the

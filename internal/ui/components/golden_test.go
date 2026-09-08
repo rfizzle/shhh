@@ -207,6 +207,24 @@ func TestGolden_ActivityRows(t *testing.T) {
 					"internal/ui/chat/spin.go:12: unreachable code",
 				}
 			})},
+			// Three endings a command can have that are not an exit status,
+			// and three words, because no program returns -1. The reader's
+			// own cancel is as quiet as their refusal; the other two are
+			// breaks, and the number that qualifies each is the account.
+			{Label: "state · stopped by you", View: row(func(r *ActivityRow) {
+				r.Kind, r.Verb, r.Target = ActivityCommand, "run", "for i in 1 2 3 4; do echo round $i; sleep 1; done"
+				r.State, r.Outcome, r.Duration = ActivityDenied, OutcomeStopped, "3.7s"
+			})},
+			{Label: "state · killed from outside", View: row(func(r *ActivityRow) {
+				r.Kind, r.Verb, r.Target = ActivityCommand, "run", "go build ./..."
+				r.State, r.Outcome = ActivityFailed, OutcomeKilled
+				r.Allowed, r.Duration = SignalAccount(9), "41s"
+			})},
+			{Label: "state · timed out at the ceiling", View: row(func(r *ActivityRow) {
+				r.Kind, r.Verb, r.Target = ActivityCommand, "run", "npm run watch"
+				r.State, r.Outcome = ActivityFailed, OutcomeTimedOut
+				r.Allowed, r.Duration = "30s", "30s"
+			})},
 			{Label: "state · denied by you", View: row(func(r *ActivityRow) {
 				r.Kind, r.Verb, r.Target = ActivityCommand, "run", "rm -rf ./build"
 				r.State, r.Outcome, r.Duration = ActivityDenied, OutcomeBy(OutcomeDenied, "you"), NoDuration

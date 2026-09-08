@@ -89,6 +89,18 @@ func TestRunCapture_ContextCancelKills(t *testing.T) {
 	}
 }
 
+// A process a signal ended has no exit status at all, so the code carries the
+// signal instead of collapsing to Go's -1: it is the only thing an int can say
+// about an ending that had no status, and it is what tells `killed · signal 9`
+// from the endings nothing named. No surface prints it as one — that is
+// components.OutcomeExit's job.
+func TestRunCapture_ASignalledCommandCarriesItsSignal(t *testing.T) {
+	_, code := RunCapture(context.Background(), "kill -9 $$")
+	if code != -9 {
+		t.Errorf("a command signal 9 ended should report -9, got %d", code)
+	}
+}
+
 func TestRunCaptureArgv_RunsExplicitArgv(t *testing.T) {
 	out, code := RunCaptureArgv(context.Background(), "echo wrapped; exit 4", []string{"/bin/sh", "-c", "echo wrapped; exit 4"})
 	if !strings.Contains(out, "wrapped") {

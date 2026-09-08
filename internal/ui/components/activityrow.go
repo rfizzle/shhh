@@ -78,8 +78,47 @@ const (
 	OutcomeLocal = "local"
 )
 
-// OutcomeExit is the terminal outcome of a shell command.
-func OutcomeExit(code int) string { return "exit " + strconv.Itoa(code) }
+// A command that never exited has no exit status to report, and three
+// different things end one. The words are separate because the reader's next
+// act is: nothing, wait for the machine, or raise the ceiling
+// (docs/interface/principles.md#closed-vocabularies).
+const (
+	// OutcomeStopped is the reader's own cancel — the chord, the quit, a
+	// session boundary that took the command with it. It is their decision
+	// and not a break, so the row carries it as quietly as `denied · you`
+	// (docs/interface/principles.md#two-denials-are-not-one-denial).
+	OutcomeStopped = "stopped"
+	// OutcomeKilled is a signal nobody in this session sent: the OOM killer,
+	// an operator, a supervisor above the session. Which signal is the
+	// account beside it, because that is the whole of what a reader can act
+	// on — the number names the killer.
+	OutcomeKilled = "killed"
+	// OutcomeTimedOut is the ceiling shhh itself puts on one command
+	// (docs/capabilities/containment.md#a-command-that-will-not-finish-is-not-waited-on-forever).
+	// The limit is the account beside it: the reader's next act is to raise
+	// it or to narrow the work, and neither is possible without the number.
+	OutcomeTimedOut = "timed out"
+)
+
+// OutcomeExit is the terminal outcome of a shell command that exited on its
+// own. A negative code is not one — no program returns -1; it is what Go
+// reports for a process a signal ended, and what internal/runner passes on —
+// so it is never rendered as an exit status. A caller that knows what ended
+// the command says so with one of the three words above; one that has only
+// the code left gets the reading that is true of all three, since every one
+// of them is a command that stopped rather than a command that failed.
+func OutcomeExit(code int) string {
+	if code < 0 {
+		return OutcomeStopped
+	}
+	return "exit " + strconv.Itoa(code)
+}
+
+// SignalAccount is the account beside OutcomeKilled: which signal ended the
+// command. The word is the outcome and the number is the account, so a row
+// narrow enough to drop the account still says the command was killed —
+// the same split `blocked` and the rule that blocked it are drawn with.
+func SignalAccount(sig int) string { return "signal " + strconv.Itoa(sig) }
 
 // OutcomeBy names the decider behind a decision outcome — `denied · you`,
 // `approved · you`, `auto-allowed · read-only`. Colour never carries the
@@ -183,6 +222,12 @@ type ActivityRow struct {
 	// same fact in the same place — how this act came to be the act it is —
 	// and putting it anywhere else would have made two fields out of one
 	// question.
+	//
+	// A command that never exited puts its number here as well — `killed ·
+	// signal 9`, `timed out · 30s`. It is the same shape as `blocked` and
+	// the rule that blocked it: the outcome column carries the word from the
+	// closed vocabulary and this field carries what qualifies it, so a row
+	// narrow enough to drop the account still says what happened.
 	Allowed string
 	// Duration is the 6-column right-aligned field. Callers omit it under 0.5s
 	// and set NoDuration for a call that never ran.

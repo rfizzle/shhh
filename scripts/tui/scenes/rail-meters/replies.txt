@@ -1,7 +1,8 @@
 # One reply per request. The last line repeats once these run out.
 # A read and then a command that takes its time: the command is what holds the
 # turn open long enough for the rail to be captured with a turn still running,
-# which is the only state where every meter on it has something to say.
+# which is the only state where every meter on it has something to say — and
+# long enough after that for the reader to stop it while it is still going.
 tool:read_file:{"path":"loop.go"}
-tool:execute_command:{"command":"for i in 1 2 3 4; do echo round $i counted; sleep 1; done"}
+tool:execute_command:{"command":"for i in 1 2 3 4 5 6 7 8 9; do echo round $i counted; sleep 1; done"}
 The limit is counted in one place, and the sentinel comes back from it.

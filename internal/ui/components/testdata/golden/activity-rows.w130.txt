@@ -69,6 +69,15 @@
     internal/ui/chat/model.go:19: unused import
     … 2 more lines
 
+· state · stopped by you
+  ▎⊘ run     for i in 1 2 3 4; do echo round $i; sleep 1; done                                                       stopped  3.7s
+
+· state · killed from outside
+  ▎✗ run     go build ./...                                                                                killed · signal 9   41s
+
+· state · timed out at the ceiling
+  ▎✗ run     npm run watch                                                                                   timed out · 30s   30s
+
 · state · denied by you
   ▎⊘ run     rm -rf ./build                                                                                     denied · you     —
 
@@ -146,6 +155,15 @@
     ␛[38;5;245minternal/agent/title.go:31: self-assignment␛[m
     ␛[38;5;245minternal/ui/chat/model.go:19: unused import␛[m
     ␛[38;5;241m… 2 more lines␛[m
+
+· state · stopped by you
+  ␛[38;5;214m▎␛[m␛[38;5;241m⊘␛[m ␛[38;5;241mrun␛[m     ␛[38;5;241mfor i in 1 2 3 4; do echo round $i; sleep 1; done␛[m                                                       ␛[38;5;241mstopped␛[m  ␛[38;5;241m3.7s␛[m
+
+· state · killed from outside
+  ␛[91m▎␛[m␛[91m✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo build ./...␛[m                                                                                ␛[91mkilled␛[m␛[38;5;241m · ␛[m␛[38;5;241msignal 9␛[m   ␛[38;5;241m41s␛[m
+
+· state · timed out at the ceiling
+  ␛[91m▎␛[m␛[91m✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mnpm run watch␛[m                                                                                   ␛[91mtimed out␛[m␛[38;5;241m · ␛[m␛[38;5;241m30s␛[m   ␛[38;5;241m30s␛[m
 
 · state · denied by you
   ␛[38;5;214m▎␛[m␛[38;5;241m⊘␛[m ␛[38;5;241mrun␛[m     ␛[38;5;241mrm -rf ./build␛[m                                                                                     ␛[38;5;241mdenied · you␛[m     ␛[38;5;241m—␛[m

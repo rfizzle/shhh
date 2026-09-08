@@ -172,6 +172,24 @@ func TestActivityRow_DeniedNamesTheDecider(t *testing.T) {
 	}
 }
 
+// No program returns a negative exit status. -1 is what Go reports for a
+// process a signal ended, and the runner passes on -N for signal N, so a
+// caller that has only the code left must not print either as `exit …`: the
+// mildest of the three endings is true of all of them.
+func TestOutcomeExit_ANegativeCodeIsNotAnExitStatus(t *testing.T) {
+	if got := OutcomeExit(0); got != "exit 0" {
+		t.Errorf("a command that exited says so: %q", got)
+	}
+	for _, code := range []int{-1, -2, -9} {
+		if got := OutcomeExit(code); got != OutcomeStopped {
+			t.Errorf("OutcomeExit(%d) = %q, want %q", code, got, OutcomeStopped)
+		}
+	}
+	if got := SignalAccount(9); got != "signal 9" {
+		t.Errorf("the account names the signal: %q", got)
+	}
+}
+
 func TestActivityRow_BlankDurationKeepsTheColumn(t *testing.T) {
 	with := ActivityRow{Kind: ActivityTool, Verb: "read", Target: "a.go", Counts: "3 lines", Duration: "0.6s"}
 	without := ActivityRow{Kind: ActivityTool, Verb: "read", Target: "a.go", Counts: "3 lines"}

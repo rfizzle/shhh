@@ -213,8 +213,10 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 	assistant := m.pendingApproval != nil
 	var ctx context.Context
 	var cancel context.CancelFunc
+	limit := time.Duration(0)
 	if assistant && m.policy.timeout > 0 {
-		ctx, cancel = context.WithTimeout(context.Background(), m.policy.timeout)
+		limit = m.policy.timeout
+		ctx, cancel = context.WithTimeout(context.Background(), limit)
 	} else {
 		ctx, cancel = context.WithCancel(context.Background())
 	}
@@ -260,7 +262,12 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 		// printing — is said in the output by the runner that holds it, in
 		// words, because an exit code cannot tell either of those from a
 		// command that broke.
-		return cmdDoneMsg{runID: runID, command: command, output: out, exitCode: code, duration: time.Since(start), local: local}
+		// What ended a command that never exited is read here, where the
+		// context it ran on is still to hand: the code alone cannot tell the
+		// reader's cancel from the ceiling from a signal off the machine
+		// (activity.go).
+		return cmdDoneMsg{runID: runID, command: command, output: out, exitCode: code,
+			duration: time.Since(start), local: local, end: commandEnding(ctx.Err(), code, limit)}
 	}
 }
 
@@ -358,7 +365,8 @@ func (m Model) dryRunKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 		start := time.Now()
 		out, code := run(ctx, command)
 		return dryRunDoneMsg{runID: runID, call: call, command: command,
-			output: out, exitCode: code, duration: time.Since(start)}
+			output: out, exitCode: code, duration: time.Since(start),
+			end: commandEnding(ctx.Err(), code, limit)}
 	}, true
 }
 
@@ -372,6 +380,10 @@ type dryRunDoneMsg struct {
 	output   string
 	exitCode int
 	duration time.Duration
+	// end is how the form ended where its exit code cannot say — a derived
+	// form has a ceiling of its own, and reaching it is the one thing the
+	// reader must not read as the real command failing (activity.go).
+	end commandEnd
 }
 
 // finishDryRun files what the dry run printed and puts it on the screen.
@@ -394,7 +406,7 @@ func (m Model) finishDryRun(msg dryRunDoneMsg) (tea.Model, tea.Cmd) {
 	}
 	out := strings.TrimRight(msg.output, "\n")
 	m.appendEntry(entry{kind: entryCommand, text: msg.command, toolResult: out,
-		exitCode: msg.exitCode, localRun: true, duration: msg.duration})
+		exitCode: msg.exitCode, localRun: true, duration: msg.duration, end: msg.end})
 	req := m.pendingApproval
 	// The command as well as the call: the reader can have amended the line
 	// while the form was running, and a screen reporting on a command the

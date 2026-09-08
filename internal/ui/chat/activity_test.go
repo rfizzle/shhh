@@ -900,3 +900,79 @@ func TestActivityRow_SearchCarriesItsScopeApart(t *testing.T) {
 		t.Fatalf("a search of the whole tree marks no place, got scope %q", whole.Scope)
 	}
 }
+
+// A command that never exited has no exit status: Go hands back -1 for a
+// process a signal ended, and a row that printed that number would report
+// `exit -1` as though some program had returned it. The three things that end
+// one get three words, and the reader's own cancel is the quiet one — it is
+// their decision and not a break.
+func TestCommandRow_ANegativeExitCodeIsNeverPrintedAsAnExitStatus(t *testing.T) {
+	m := activityModel(t)
+	cases := []struct {
+		name string
+		code int
+		end  commandEnd
+		want []string
+	}{
+		{"the reader stopped it", -2,
+			commandEnd{outcome: components.OutcomeStopped},
+			[]string{"⊘", "stopped"}},
+		{"a signal from off the machine", -9,
+			commandEnd{outcome: components.OutcomeKilled, account: components.SignalAccount(9)},
+			[]string{"✗", "killed · signal 9"}},
+		{"the ceiling shhh set", -9,
+			commandEnd{outcome: components.OutcomeTimedOut, account: "30s"},
+			[]string{"✗", "timed out · 30s"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			view := stripANSI(m.renderEntry(entry{kind: entryCommand,
+				text:     "for i in 1 2 3 4; do echo round $i; sleep 1; done",
+				exitCode: tc.code, end: tc.end, duration: 3700 * time.Millisecond}, 110))
+			for _, want := range tc.want {
+				if !strings.Contains(view, want) {
+					t.Fatalf("a command that never exited should read %q:\n%s", want, view)
+				}
+			}
+			if strings.Contains(view, "exit -") {
+				t.Fatalf("no row prints a negative exit status:\n%s", view)
+			}
+			if !strings.Contains(view, "3.7s") {
+				t.Fatalf("a command that ran keeps how long it ran for:\n%s", view)
+			}
+		})
+	}
+}
+
+// Which of the three ended it comes off the context the command ran on,
+// because the signal cannot say who asked for it: the ceiling and the
+// reader's chord end a command the same way.
+func TestCommandEnding_NamesWhatEndedTheCommand(t *testing.T) {
+	cases := []struct {
+		name    string
+		ctxErr  error
+		code    int
+		limit   time.Duration
+		want    string
+		account string
+	}{
+		{name: "a command that exited on its own says nothing", code: 1},
+		{name: "the reader's cancel", ctxErr: context.Canceled, code: -2,
+			want: components.OutcomeStopped},
+		{name: "the ceiling", ctxErr: context.DeadlineExceeded, code: -9, limit: 30 * time.Second,
+			want: components.OutcomeTimedOut, account: "30s"},
+		{name: "a signal nobody here sent", code: -9,
+			want: components.OutcomeKilled, account: "signal 9"},
+		{name: "an ending with no signal to name", code: -1,
+			want: components.OutcomeKilled},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := commandEnding(tc.ctxErr, tc.code, tc.limit)
+			if got.outcome != tc.want || got.account != tc.account {
+				t.Errorf("commandEnding = %q/%q, want %q/%q",
+					got.outcome, got.account, tc.want, tc.account)
+			}
+		})
+	}
+}

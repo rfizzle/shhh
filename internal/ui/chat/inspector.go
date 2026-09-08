@@ -310,7 +310,19 @@ func (m Model) inspectorAlerts() []components.InspectorAlert {
 			last[label] = r
 			commands = append(commands, label)
 		}
-		r.turn, r.broken, r.note = e.turn, e.exitCode != 0, components.OutcomeExit(e.exitCode)
+		// A command that never exited says what ended it rather than a
+		// status it never had, the way its row does (activity.go) — and the
+		// one the reader stopped is not bad news at all. This block is
+		// cleared by the same command coming back clean, and a command
+		// somebody cancelled is not waiting to do that: they stopped it, and
+		// they know.
+		note := components.OutcomeExit(e.exitCode)
+		if e.end.outcome != "" {
+			note = e.end.outcome
+		}
+		r.turn = e.turn
+		r.broken = e.exitCode != 0 && e.end.outcome != components.OutcomeStopped
+		r.note = note
 	}
 	var alerts []components.InspectorAlert
 	for _, label := range commands {

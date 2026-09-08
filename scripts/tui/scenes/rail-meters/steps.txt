@@ -20,14 +20,26 @@ sleep 1
 keys y
 # Approved, the command runs for several seconds and the rail comes back with
 # the turn still open: CONTEXT's bar, and THIS TURN counting what the turn has
-# spent so far.
+# spent so far. It runs for longer than the meters need so that the cancel
+# below lands on a command that is still going and not on one that finished.
 snap 03-mid-turn "CONTEXT"
-snap 04-answered "The limit is counted in one place"
+# The command row's own outcome is what says the chord will reach the command
+# rather than the turn: CONTEXT is on the rail from the round before this one.
+# The live tail underneath would do as well but is only ever one second old,
+# so a capture is not guaranteed to find any particular line of it.
+snap 04-running "running…"
+keys C-c
+# A command the reader stopped is not a command that failed, and a process a
+# signal ended has no exit status to print — so the row says `stopped` in the
+# grey a person's own decision takes, not `exit -1` in the del of a break
+# (docs/interface/principles.md#closed-vocabularies).
+snap 05-stopped "stopped"
+snap 06-answered "The limit is counted in one place"
 # The answer arrives a word at a time and the turn closes after it, so the
 # frame offering to send again is what says the turn is over — a cancel before
 # that is spent on the turn rather than on the session.
-snap 05-idle "enter send · shift+enter newline"
+snap 07-idle "enter send · shift+enter newline"
 keys C-c
-snap 06-quit-armed "press again to quit"
+snap 08-quit-armed "press again to quit"
 keys C-c
-snap 07-exit "that is everything the screen was holding"
+snap 09-exit "that is everything the screen was holding"

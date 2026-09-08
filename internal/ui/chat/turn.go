@@ -456,7 +456,8 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		}
 		m.appendEntry(entry{kind: entryCommand, text: msg.command, toolResult: out,
 			exitCode: msg.exitCode, localRun: msg.local, duration: msg.duration,
-			allowedBy: allowedBy, allowElapsed: allowElapsed, amendedFrom: amendedFrom})
+			allowedBy: allowedBy, allowElapsed: allowElapsed, amendedFrom: amendedFrom,
+			end: msg.end})
 		if m.pendingApproval != nil {
 			call := m.pendingApproval.call
 			m.pendingApproval = nil
