@@ -106,13 +106,17 @@ type chatSession struct {
 	// it never saw (docs/capabilities/headless.md#a-run-can-delegate) —
 	// which is why nothing anywhere else refuses it.
 	//
-	// The coding agent's interactive session and nothing else. A run with
-	// nobody in front of it has nobody to answer a question, and a
-	// conversation has somebody but no need: its turn ends by talking to
-	// them, so a model that wants to know which of three designs asks in the
-	// answer it was already about to write. The card is for the turn that
-	// would otherwise stop for minutes mid-work
-	// (docs/capabilities/chat.md#chat-changes-nothing).
+	// The coding agent's interactive session, and a served session with a
+	// client to draw the card at — the two surfaces where somebody is there
+	// to answer. A scripted run has nobody, a served session in auto mode
+	// has said so, and a conversation has somebody but no need: its turn
+	// ends by talking to them, so a model that wants to know which of three
+	// designs asks in the answer it was already about to write. The card is
+	// for the turn that would otherwise stop for minutes mid-work
+	// (docs/capabilities/chat.md#chat-changes-nothing). Over the protocol
+	// the card is the client's to draw, and what comes back is the same
+	// answer in the same words
+	// (docs/capabilities/headless.md#a-client-answers-one-call-at-a-time).
 	ask bool
 	// skills is the catalog of Agent Skills the session discovered; nil
 	// registers neither the tool nor the prompt section. Both `shhh chat`

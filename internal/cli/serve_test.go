@@ -37,6 +37,7 @@ type rpcClient struct {
 	waiting   map[int]chan rpcReply
 	events    chan json.RawMessage
 	approvals chan rpc.ApprovalParams
+	questions chan rpc.QuestionParams
 }
 
 // rpcReply is one answer as the client reads it back. The result stays raw so
@@ -50,7 +51,8 @@ func newRPCClient(t *testing.T, w io.Writer, r io.Reader) *rpcClient {
 	c := &rpcClient{t: t, w: w,
 		waiting:   map[int]chan rpcReply{},
 		events:    make(chan json.RawMessage, 256),
-		approvals: make(chan rpc.ApprovalParams, 16)}
+		approvals: make(chan rpc.ApprovalParams, 16),
+		questions: make(chan rpc.QuestionParams, 16)}
 	go c.read(r)
 	return c
 }
@@ -90,6 +92,12 @@ func (c *rpcClient) file(line []byte) {
 		var p rpc.ApprovalParams
 		if json.Unmarshal(msg.Params, &p) == nil {
 			c.approvals <- p
+		}
+		return
+	case rpc.MethodQuestionRequest:
+		var p rpc.QuestionParams
+		if json.Unmarshal(msg.Params, &p) == nil {
+			c.questions <- p
 		}
 		return
 	}
@@ -154,6 +162,17 @@ func (c *rpcClient) waitApproval() rpc.ApprovalParams {
 		c.t.Fatal("the run never put a call to the client")
 	}
 	return rpc.ApprovalParams{}
+}
+
+func (c *rpcClient) waitQuestion() rpc.QuestionParams {
+	c.t.Helper()
+	select {
+	case p := <-c.questions:
+		return p
+	case <-time.After(90 * time.Second):
+		c.t.Fatal("the run never put a question to the client")
+	}
+	return rpc.QuestionParams{}
 }
 
 // drainToClose reads events until the turn's close line, and hands back every

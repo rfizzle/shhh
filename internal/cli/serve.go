@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/mcp"
 	"github.com/rfizzle/shhh/internal/meter"
@@ -307,6 +308,14 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		// answers it the way it answers every other gated call.
 		// See docs/capabilities/headless.md#a-run-can-delegate.
 		agents: true,
+		// And the question tool, wherever there is a client to put its card
+		// to. --mode auto is the operator saying nobody is attached, and it
+		// is the one flag that answers this by registration rather than by
+		// deciding: the classifier answers the gated calls, and it has no
+		// standing to answer which of two designs the person prefers, so the
+		// model is not offered a tool whose answer would be invented
+		// (docs/capabilities/coding-agent.md#nobody-to-ask).
+		ask: !opts.autoMode,
 	}
 
 	sc, err := sessionScope(cfg, session.addDirs)
@@ -342,6 +351,11 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	// session recalls them (memory.go). The remember tool does not come with
 	// them: the protocol carries no card for a proposal.
 	recallMemory(cmd, &session, db)
+	// The question tool does come, where the session above said there is a
+	// client to draw its card. That is the difference between the two: the
+	// protocol carries a question and its answer, and carries nothing a
+	// memory proposal could be confirmed on (session.go).
+	session.toolDefs = askToolDefs(session)
 	// The roles this session can spawn, before the toolbox says what it has:
 	// the built-in two plus the user's own profiles, and a profile that does
 	// not load stops the session naming the file (subagents.go).
@@ -540,6 +554,21 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	// request and the turn behind it. What this session's own calls wrote is
 	// where a landed patch is added (subagents.go).
 	answerChildAsks(sup, true, own.wrote)
+	// A question the model put to the person, put to whoever is watching and
+	// answered in the reader's own vocabulary. An unreadable one is the call
+	// skipped with the error, the way every other malformed call is answered.
+	askClient := func(tc provider.ToolCall) string {
+		qs, err := ask.Parse(json.RawMessage(tc.Arguments))
+		if err != nil {
+			return "error: invalid arguments: " + err.Error()
+		}
+		record(observe.DecisionAsk, observe.ReasonUser)
+		// Several questions in one call is a strip this surface does not
+		// draw; the parse already answers in a list, so the first is the
+		// whole of what a call holds today (internal/ui/chat/question.go).
+		answer := seams.Question(rpc.Question{Ask: qs[0], Turn: l.turnNow(), Round: int64(a.Rounds())})
+		return answer.Result()
+	}
 	resolveCall := func(tc provider.ToolCall) string {
 		// A server in auto mode draws no card at all. The flag is the
 		// operator saying nobody is attached to answer one, and putting the
@@ -561,6 +590,31 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	// declines the same call twice is told so, and so is a command that comes
 	// back with the same failure round after round.
 	resolveCall = repeats.WrapResolver(resolveCall)
+	if session.ask {
+		// The question goes round every answer under it, because those exist
+		// to decide which *acts* stop to ask and a question is not an act: a
+		// standing yes, the allowlist and the classifier would each be
+		// settling "which of these three designs" at random
+		// (docs/capabilities/coding-agent.md#the-model-can-ask).
+		//
+		// It goes round the repeat detector with them, and for a reason of
+		// its own: a notice leads the result it is put on, and this result is
+		// the JSON the model reads its answer out of. The session's own card
+		// answers a question outside that path too, and two front-ends of one
+		// agent have to answer one alike
+		// (docs/architecture.md#one-agent-several-front-ends).
+		//
+		// Only where this session handed the model the tool. A call to a tool
+		// the session does not have falls through and is answered as one,
+		// rather than drawing a card the run never offered.
+		gated := resolveCall
+		resolveCall = func(tc provider.ToolCall) string {
+			if tc.Name == ask.ToolName {
+				return askClient(tc)
+			}
+			return gated(tc)
+		}
+	}
 	resolveCall = own.wrap(resolveCall)
 	resolveCall = hookApprover(hooks, l.hookPos, hookNoteLine, record, resolveCall)
 	if c := headlessTree(cfg, session.sibling, own); c != nil {

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/mcp"
 	"github.com/rfizzle/shhh/internal/meter"
@@ -37,6 +38,22 @@ import (
 func unattendedGate(webTools *web.Toolset, procSup *process.Supervisor, mcpTools *mcp.Toolset, sup *subagent.Supervisor) agent.ApprovalGate {
 	return func(tc provider.ToolCall) bool {
 		if webTools != nil && tc.Name == web.FetchToolName {
+			return true
+		}
+		// A question always stops the run, because a question that ran
+		// without stopping would be a question nobody answered. It is here
+		// and not among the answers below: every other entry decides which
+		// *acts* have to be answered for, and a question is not an act, so
+		// no flag, no allowlist and not the classifier may settle one
+		// (docs/capabilities/coding-agent.md#the-model-can-ask).
+		//
+		// The entry never fires where nobody is there to answer. The tool is
+		// registered only on a session that can put the card to a client, so
+		// a scripted run, a child and a served session in auto mode never
+		// call it — a tool the run can only be refused is worse than one it
+		// never saw
+		// (docs/capabilities/headless.md#everything-the-session-has-unless-somebody-has-to-answer).
+		if tc.Name == ask.ToolName {
 			return true
 		}
 		// Starting a child is a gated call like any other, and the one this

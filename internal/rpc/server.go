@@ -11,6 +11,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/rfizzle/shhh/internal/ask"
 )
 
 // Call is one approval-gated tool call as it is put to a client: what the
@@ -22,11 +24,28 @@ type Call struct {
 	Round     int64
 }
 
+// Question is one question the model has put to the person, as it is put to a
+// client: what is being asked, and where in the session it was asked.
+//
+// The question itself is the model-facing shape rather than a copy of it. The
+// four shapes, the note and what an option may say are settled where the tool
+// is defined, and a second spelling of them here would drift the day a shape
+// is added — a client would be offered a vocabulary the model no longer has.
+type Question struct {
+	// Ask is the question as the model asked it, already parsed.
+	Ask ask.Question
+	// Turn and Round are where in the session it was asked, in the two
+	// fields every event and every approval request carries them in.
+	Turn  int64
+	Round int64
+}
+
 // Seams are what the protocol hands whatever assembles a session: where the
-// loop's events go, and who answers a call it may not make unasked. They are
-// the only two things the protocol contributes to a run — everything else
-// about it is the assembly's, which is what keeps a client from being able to
-// widen what a session may do by driving it differently.
+// loop's events go, who answers a call it may not make unasked, and who
+// answers a question it put to the person. They are the only three things the
+// protocol contributes to a run — everything else about it is the assembly's,
+// which is what keeps a client from being able to widen what a session may do
+// by driving it differently.
 type Seams struct {
 	// Emit takes one line of the stream an unattended run writes, as that
 	// run wrote it. The protocol forwards it to every client attached to the
@@ -39,6 +58,18 @@ type Seams struct {
 	// an unanswered approval is a refusal, because the alternative is a turn
 	// that hangs on a decision nobody is left to make.
 	Ask func(Call) bool
+	// Question puts one question to the session's clients and blocks until
+	// one of them answers it, the way Ask blocks — under an id the server
+	// minted, put to everyone watching, resolved by an answer naming that id.
+	//
+	// It answers `nobody to ask` where there is nobody attached, and again
+	// if the last client goes away while it is waiting. That is the same
+	// rule as the approval above and not the same answer: an approval nobody
+	// is left to answer is a refusal, and a question nobody is left to
+	// answer is not a guess — the model is told the reader has gone and to
+	// state the assumption it would have asked about
+	// (docs/capabilities/headless.md#a-client-answers-one-call-at-a-time).
+	Question func(Question) ask.Answer
 }
 
 // Loop is one conversation's passive agent as the protocol drives it. The
@@ -120,8 +151,15 @@ type Session struct {
 	conns   map[*conn]struct{}
 	pending map[string]chan bool
 	asked   int
-	turn    int64
-	running bool
+	// questions are the questions waiting for a client, under ids of their
+	// own series. A separate map and a separate counter because the two are
+	// separate vocabularies: an approval answers allow or deny and a
+	// question answers in labels, so an id that could name either would let
+	// one be answered in the other's words.
+	questions  map[string]*waitingQuestion
+	questioned int
+	turn       int64
+	running    bool
 	// reap is the timer running down the grace an unwatched session is given
 	// and reapGen which grace it belongs to; ended says this session is over
 	// — set before the teardown rather than after it, so a client attaching
@@ -142,6 +180,16 @@ type Session struct {
 	// turns counts the turn goroutine, so a session being torn down can wait
 	// for it rather than closing the loop out from under it.
 	turns sync.WaitGroup
+}
+
+// waitingQuestion is one question put to the clients: the answer channel, and
+// the question itself. The question is kept because an answer that arrives
+// from somewhere other than shhh's own card is held to the rules the card
+// enforces as it collects one, and those rules are about this question — what
+// shape it wanted, and whether the model said a note is required.
+type waitingQuestion struct {
+	q      ask.Question
+	answer chan ask.Answer
 }
 
 // setLoop fills in the session's agent once the assembly has answered, and
@@ -323,13 +371,14 @@ func (s *Server) newSession() (*Session, *Error) {
 	}
 	s.next++
 	sess := &Session{
-		id:      fmt.Sprintf("s%d", s.next),
-		srv:     s,
-		grace:   s.grace,
-		conns:   map[*conn]struct{}{},
-		pending: map[string]chan bool{},
-		gone:    make(chan struct{}),
-		done:    make(chan struct{}),
+		id:        fmt.Sprintf("s%d", s.next),
+		srv:       s,
+		grace:     s.grace,
+		conns:     map[*conn]struct{}{},
+		pending:   map[string]chan bool{},
+		questions: map[string]*waitingQuestion{},
+		gone:      make(chan struct{}),
+		done:      make(chan struct{}),
 	}
 	s.sessions[sess.id] = sess
 	return sess, nil
@@ -349,7 +398,7 @@ func (s *Server) session(id string) (*Session, *Error) {
 // session has a loop — the assembly needs them to build one — so they close
 // over the session pointer and are filled in by newSession.
 func (s *Session) seams() Seams {
-	return Seams{Emit: s.emit, Ask: s.ask}
+	return Seams{Emit: s.emit, Ask: s.ask, Question: s.askQuestion}
 }
 
 // attach adds a connection to the ones watching this session, and calls off
@@ -415,18 +464,29 @@ func (s *Session) reapNow(gen int) {
 	s.tearDown(loop, first)
 }
 
-// detach removes one, and answers every approval still waiting if it was the
+// detach removes one, and answers every request still waiting if it was the
 // last: a request with nobody left to see it is a request nobody is going to
 // answer, and the turn behind it would otherwise wait for a client that has
 // gone.
+//
+// The two are answered differently because they are asking different things.
+// An approval nobody is left to answer is a refusal; a question nobody is
+// left to answer is `nobody to ask`, which tells the model the reader has
+// gone rather than that they said no
+// (docs/capabilities/headless.md#a-client-answers-one-call-at-a-time).
 func (s *Session) detach(c *conn) {
 	s.mu.Lock()
 	delete(s.conns, c)
 	var orphaned []chan bool
+	var unanswered []chan ask.Answer
 	if len(s.conns) == 0 {
 		for id, ch := range s.pending {
 			orphaned = append(orphaned, ch)
 			delete(s.pending, id)
+		}
+		for id, q := range s.questions {
+			unanswered = append(unanswered, q.answer)
+			delete(s.questions, id)
 		}
 	}
 	// And a session nobody is left watching is one nobody is coming back to,
@@ -435,6 +495,9 @@ func (s *Session) detach(c *conn) {
 	s.mu.Unlock()
 	for _, ch := range orphaned {
 		ch <- false
+	}
+	for _, ch := range unanswered {
+		ch <- ask.Nobody()
 	}
 }
 
@@ -514,6 +577,89 @@ func (s *Session) answer(id, decision string) *Error {
 			"no approval request %q is waiting on session %s: a client answers a request it was shown", id, s.id)
 	}
 	ch <- decision == DecisionAllow
+	return nil
+}
+
+// askQuestion puts one question to the clients and waits for an answer.
+//
+// It is ask's shape and not ask's answer. The id is minted here and handed
+// out only in the request, for the reason an approval's is; the question goes
+// to everyone watching and the first structured answer wins, because two
+// clients on one session are two views of one conversation. What differs is
+// what a silence means: a turn parked on a question the reader will never see
+// is answered `nobody to ask` and told to carry on, rather than refused
+// (docs/capabilities/headless.md#a-client-answers-one-call-at-a-time).
+func (s *Session) askQuestion(q Question) ask.Answer {
+	s.mu.Lock()
+	if len(s.conns) == 0 {
+		s.mu.Unlock()
+		return ask.Nobody()
+	}
+	s.questioned++
+	id := fmt.Sprintf("q%d", s.questioned)
+	answer := make(chan ask.Answer, 1)
+	s.questions[id] = &waitingQuestion{q: q.Ask, answer: answer}
+	conns := s.watchers()
+	s.mu.Unlock()
+
+	params := QuestionParams{
+		Session: s.id, ID: id,
+		Question: q.Ask.Question, Shape: q.Ask.Shape, Note: q.Ask.Note,
+		Options: questionOptions(q.Ask.Options),
+		Turn:    q.Turn, Round: q.Round,
+	}
+	for _, c := range conns {
+		c.notify(MethodQuestionRequest, params)
+	}
+	select {
+	case a := <-answer:
+		return a
+	case <-s.gone:
+		return ask.Nobody()
+	}
+}
+
+// questionOptions is the model's own list as the wire carries it.
+func questionOptions(opts []ask.Option) []QuestionOption {
+	if len(opts) == 0 {
+		return nil
+	}
+	rows := make([]QuestionOption, 0, len(opts))
+	for _, o := range opts {
+		rows = append(rows, QuestionOption{
+			Label:       o.Label,
+			Detail:      o.Detail,
+			Field:       o.Field,
+			Recommended: o.Recommended,
+			Unavailable: o.Unavailable,
+		})
+	}
+	return rows
+}
+
+// answerQuestion resolves one waiting question. An id nothing is waiting
+// under is refused for the reason an approval's is, and an answer the card
+// would not have collected is refused rather than passed on: the model is
+// handed what a reader could have given it, whichever window collected it.
+//
+// The refusal does not spend the id. A client told its answer was malformed
+// can send another one, which is only true while the question is still there
+// to answer.
+func (s *Session) answerQuestion(id string, a ask.Answer) *Error {
+	s.mu.Lock()
+	q, ok := s.questions[id]
+	if !ok {
+		s.mu.Unlock()
+		return errorf(CodeUnknownQuestion,
+			"no question %q is waiting on session %s: a client answers a question it was shown", id, s.id)
+	}
+	if err := a.Validate(q.q); err != nil {
+		s.mu.Unlock()
+		return errorf(CodeInvalidParams, "%v", err)
+	}
+	delete(s.questions, id)
+	s.mu.Unlock()
+	q.answer <- a
 	return nil
 }
 
@@ -765,6 +911,8 @@ func (c *conn) dispatch(ctx context.Context, req request) (any, *Error) {
 		return c.turnInterrupt(req.Params)
 	case MethodApprovalAnswer:
 		return c.approvalAnswer(req.Params)
+	case MethodQuestionAnswer:
+		return c.questionAnswer(req.Params)
 	}
 	return nil, errorf(CodeMethodNotFound, "no method %q", req.Method)
 }
@@ -954,6 +1102,22 @@ func (c *conn) approvalAnswer(raw json.RawMessage) (any, *Error) {
 		return nil, rerr
 	}
 	if rerr := sess.answer(p.ID, p.Decision); rerr != nil {
+		return nil, rerr
+	}
+	return struct{}{}, nil
+}
+
+func (c *conn) questionAnswer(raw json.RawMessage) (any, *Error) {
+	p, rerr := decode[QuestionAnswerParams](raw)
+	if rerr != nil {
+		return nil, rerr
+	}
+	sess, rerr := c.srv.session(p.Session)
+	if rerr != nil {
+		return nil, rerr
+	}
+	if rerr := sess.answerQuestion(p.ID,
+		ask.Answer{Answered: p.Answered, Picked: p.Picked, Note: p.Note}); rerr != nil {
 		return nil, rerr
 	}
 	return struct{}{}, nil

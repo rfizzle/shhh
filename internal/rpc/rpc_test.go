@@ -11,6 +11,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/rfizzle/shhh/internal/ask"
 )
 
 // fakeLoop stands in for the agent behind a session. It is the whole of what
@@ -22,6 +24,9 @@ type fakeLoop struct {
 	// askTool, when set, is a call this loop puts to the clients once per
 	// turn, which is the only way an approval can be answered at all.
 	askTool string
+	// question, when set, is a question this loop puts to the clients once
+	// per turn, the same way and for the same reason.
+	question *ask.Question
 	// held, when set, is what a turn waits on before it finishes, so a test
 	// can steer or interrupt a turn that is genuinely still running.
 	held    chan struct{}
@@ -32,6 +37,7 @@ type fakeLoop struct {
 	turns       []int64
 	steers      []string
 	allowed     []bool
+	answers     []ask.Answer
 	interrupted bool
 	forks       int
 	closed      bool
@@ -59,6 +65,12 @@ func (f *fakeLoop) Run(turn int64, prompt string) (string, error) {
 		ok := f.seams.Ask(Call{Tool: f.askTool, Arguments: `{"command":"echo hi"}`, Turn: turn, Round: 1})
 		f.mu.Lock()
 		f.allowed = append(f.allowed, ok)
+		f.mu.Unlock()
+	}
+	if f.question != nil {
+		a := f.seams.Question(Question{Ask: *f.question, Turn: turn, Round: 1})
+		f.mu.Lock()
+		f.answers = append(f.answers, a)
 		f.mu.Unlock()
 	}
 	if f.held != nil {
@@ -124,6 +136,18 @@ type client struct {
 	waiting   map[int]chan response
 	events    chan json.RawMessage
 	approvals chan ApprovalParams
+	questions chan QuestionParams
+}
+
+// newClient is the client's own fields, so a case that has to own the
+// connection itself still files a question the same way dial's does. A nil
+// channel would park the reader on the first question that arrived.
+func newClient(t *testing.T, w io.Writer) *client {
+	return &client{t: t, enc: json.NewEncoder(w),
+		waiting:   map[int]chan response{},
+		events:    make(chan json.RawMessage, 64),
+		approvals: make(chan ApprovalParams, 8),
+		questions: make(chan QuestionParams, 8)}
 }
 
 func dial(t *testing.T, srv *Server) *client {
@@ -137,11 +161,8 @@ func dial(t *testing.T, srv *Server) *client {
 	})
 	go func() { _ = srv.ServeConn(ctx, there, there) }()
 
-	c := &client{t: t, enc: json.NewEncoder(here),
-		hangUp:    func() { cancel(); _ = here.Close(); _ = there.Close() },
-		waiting:   map[int]chan response{},
-		events:    make(chan json.RawMessage, 64),
-		approvals: make(chan ApprovalParams, 8)}
+	c := newClient(t, here)
+	c.hangUp = func() { cancel(); _ = here.Close(); _ = there.Close() }
 	go c.read(here)
 	return c
 }
@@ -200,6 +221,12 @@ func (c *client) file(line []byte) {
 		var p ApprovalParams
 		if json.Unmarshal(msg.Params, &p) == nil {
 			c.approvals <- p
+		}
+		return
+	case MethodQuestionRequest:
+		var p QuestionParams
+		if json.Unmarshal(msg.Params, &p) == nil {
+			c.questions <- p
 		}
 		return
 	}
@@ -270,6 +297,17 @@ func (c *client) waitApproval() ApprovalParams {
 		c.t.Fatal("no approval request arrived")
 	}
 	return ApprovalParams{}
+}
+
+func (c *client) waitQuestion() QuestionParams {
+	c.t.Helper()
+	select {
+	case p := <-c.questions:
+		return p
+	case <-time.After(5 * time.Second):
+		c.t.Fatal("no question arrived")
+	}
+	return QuestionParams{}
 }
 
 func (c *client) waitEvent(kind string) json.RawMessage {
@@ -511,10 +549,7 @@ func TestServer_AnApprovalWithNobodyLeftToAnswerIsRefused(t *testing.T) {
 	served := make(chan struct{})
 	go func() { defer close(served); _ = srv.ServeConn(ctx, there, there) }()
 
-	c := &client{t: t, enc: json.NewEncoder(here),
-		waiting:   map[int]chan response{},
-		events:    make(chan json.RawMessage, 64),
-		approvals: make(chan ApprovalParams, 8)}
+	c := newClient(t, here)
 	go c.read(here)
 
 	var opened SessionResult
@@ -562,10 +597,7 @@ func TestServer_AMalformedLineIsAnsweredAndTheConnectionCarriesOn(t *testing.T) 
 	defer cancel()
 	go func() { _ = srv.ServeConn(ctx, there, there) }()
 
-	c := &client{t: t, enc: json.NewEncoder(here),
-		waiting:   map[int]chan response{},
-		events:    make(chan json.RawMessage, 64),
-		approvals: make(chan ApprovalParams, 8)}
+	c := newClient(t, here)
 	go c.read(here)
 
 	if _, err := here.Write([]byte("{not json\n")); err != nil {
@@ -876,5 +908,234 @@ func TestSession_AReapFromAGraceThatWasCalledOffDoesNothing(t *testing.T) {
 	defer loop.mu.Unlock()
 	if loop.closed {
 		t.Error("a grace that was called off reaped the session anyway")
+	}
+}
+
+// A question crosses the protocol in each of the four shapes: what the model
+// asked goes out with its options and the reasons a row cannot be taken, and
+// what comes back is the labels the reader took and the words they wrote —
+// never an index, which is a fact about a list the model wrote and the client
+// may have drawn in an order of its own.
+func TestServer_AQuestionCrossesTheProtocolInEveryShape(t *testing.T) {
+	listed := []ask.Option{
+		{Label: "one package", Detail: "the narrow change", Field: "3 files", Recommended: true},
+		{Label: "both packages", Detail: "the wider one", Field: "11 files"},
+		{Label: "rewrite the caller", Unavailable: "the caller is generated"},
+	}
+	cases := []struct {
+		name   string
+		q      ask.Question
+		answer QuestionAnswerParams
+		want   ask.Answer
+	}{
+		{
+			name: "choose",
+			q:    ask.Question{Question: "How far should this reach?", Shape: ask.ShapeChoose, Options: listed, Note: ask.NoteOptional},
+			answer: QuestionAnswerParams{Answered: ask.AnsweredOnCard,
+				Picked: []string{"both packages"}, Note: "the second one is where the bug is"},
+			want: ask.Answer{Answered: ask.AnsweredOnCard,
+				Picked: []string{"both packages"}, Note: "the second one is where the bug is"},
+		},
+		{
+			name: "choose_many",
+			q:    ask.Question{Question: "Which of these should I fix?", Shape: ask.ShapeChooseMany, Options: listed, Note: ask.NoteOptional},
+			answer: QuestionAnswerParams{Answered: ask.AnsweredOnCard,
+				Picked: []string{"one package", "both packages"}},
+			want: ask.Answer{Answered: ask.AnsweredOnCard, Picked: []string{"one package", "both packages"}},
+		},
+		{
+			name:   "confirm",
+			q:      ask.Question{Question: "Should I delete the old path?", Shape: ask.ShapeConfirm, Note: ask.NoteRequired},
+			answer: QuestionAnswerParams{Answered: ask.AnsweredOnCard, Picked: []string{"no"}, Note: "keep it for a release"},
+			want:   ask.Answer{Answered: ask.AnsweredOnCard, Picked: []string{"no"}, Note: "keep it for a release"},
+		},
+		{
+			name:   "text",
+			q:      ask.Question{Question: "What should it be called?", Shape: ask.ShapeText, Note: ask.NoteRequired},
+			answer: QuestionAnswerParams{Answered: ask.AnsweredTyped, Note: "call it the register"},
+			want:   ask.Answer{Answered: ask.AnsweredTyped, Note: "call it the register"},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			q := tc.q
+			loop := &fakeLoop{question: &q}
+			srv := newServerWith(loop)
+			defer srv.Close()
+			c := dial(t, srv)
+
+			var opened SessionResult
+			c.mustCall(MethodSessionStart, StartParams{}, &opened)
+			var turn TurnResult
+			c.mustCall(MethodTurnStart, TurnParams{Session: opened.Session, Prompt: "do it"}, &turn)
+
+			put := c.waitQuestion()
+			if put.Session != opened.Session || put.Question != q.Question {
+				t.Fatalf("the request does not say what is being asked: %+v", put)
+			}
+			if put.Shape != q.Shape || put.Note != q.Note {
+				t.Errorf("the question crossed as shape %q note %q", put.Shape, put.Note)
+			}
+			if put.Turn != turn.Turn || put.Round != 1 {
+				t.Errorf("the question does not say where it was asked: turn %d round %d", put.Turn, put.Round)
+			}
+			if len(put.Options) != len(q.Options) {
+				t.Fatalf("the client was offered %d of %d options", len(put.Options), len(q.Options))
+			}
+			for i, o := range put.Options {
+				want := q.Options[i]
+				if o.Label != want.Label || o.Detail != want.Detail || o.Field != want.Field ||
+					o.Recommended != want.Recommended || o.Unavailable != want.Unavailable {
+					t.Errorf("option %d crossed as %+v, not %+v", i, o, want)
+				}
+			}
+
+			answer := tc.answer
+			answer.Session, answer.ID = opened.Session, put.ID
+			c.mustCall(MethodQuestionAnswer, answer, nil)
+			c.waitEvent("close")
+
+			loop.mu.Lock()
+			defer loop.mu.Unlock()
+			if len(loop.answers) != 1 {
+				t.Fatalf("the loop was told %v", loop.answers)
+			}
+			got := loop.answers[0]
+			if got.Answered != tc.want.Answered || got.Note != tc.want.Note ||
+				strings.Join(got.Picked, "|") != strings.Join(tc.want.Picked, "|") {
+				t.Errorf("the answer reached the loop as %+v, not %+v", got, tc.want)
+			}
+		})
+	}
+}
+
+// A question with nobody left to answer it is not a refusal and not a guess:
+// the model is told the reader has gone and to state the assumption it would
+// have asked about, so the turn carries on rather than parking on a decision
+// that is never coming.
+func TestServer_AQuestionWithNobodyLeftToAnswerIsNobodyToAsk(t *testing.T) {
+	q := ask.Question{Question: "Should I delete the old path?", Shape: ask.ShapeConfirm}
+	loop := &fakeLoop{question: &q}
+	srv := newServerWith(loop)
+	defer srv.Close()
+
+	here, there := net.Pipe()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	served := make(chan struct{})
+	go func() { defer close(served); _ = srv.ServeConn(ctx, there, there) }()
+
+	c := newClient(t, here)
+	go c.read(here)
+
+	var opened SessionResult
+	c.mustCall(MethodSessionStart, StartParams{}, &opened)
+	var turn TurnResult
+	c.mustCall(MethodTurnStart, TurnParams{Session: opened.Session, Prompt: "do it"}, &turn)
+	c.waitQuestion()
+
+	// The client goes away with the question outstanding.
+	_ = here.Close()
+	<-served
+
+	deadline := time.After(5 * time.Second)
+	for {
+		loop.mu.Lock()
+		answers := append([]ask.Answer(nil), loop.answers...)
+		loop.mu.Unlock()
+		if len(answers) > 0 {
+			if answers[0].Answered != ask.AnsweredNobody {
+				t.Fatalf("a question nobody was left to answer came back %+v", answers[0])
+			}
+			if !strings.Contains(answers[0].Result(), "carry on") {
+				t.Errorf("the model was not told what to do about it: %s", answers[0].Result())
+			}
+			return
+		}
+		select {
+		case <-deadline:
+			t.Fatal("the turn is still waiting for an answer from a client that has gone")
+		case <-time.After(10 * time.Millisecond):
+		}
+	}
+}
+
+// The question queue is the protocol's, in a series of its own: an approval's
+// id cannot answer a question, an answer the card would have refused as it
+// collected it is refused here, and a refusal does not spend the question —
+// a client told its answer was malformed can send another.
+func TestServer_AnAnswerToAQuestionNobodyWasShownIsRefused(t *testing.T) {
+	q := ask.Question{
+		Question: "How far should this reach?",
+		Shape:    ask.ShapeChoose,
+		Note:     ask.NoteRequired,
+		Options:  []ask.Option{{Label: "one package"}, {Label: "both packages"}},
+	}
+	loop := &fakeLoop{askTool: "execute_command", question: &q}
+	srv := newServerWith(loop)
+	defer srv.Close()
+	c := dial(t, srv)
+
+	var opened SessionResult
+	c.mustCall(MethodSessionStart, StartParams{}, &opened)
+
+	// Before any question has been asked, which is what answering one in
+	// advance would be.
+	_, rerr := c.call(MethodQuestionAnswer, QuestionAnswerParams{
+		Session: opened.Session, ID: "q1", Answered: ask.AnsweredSkipped})
+	if rerr == nil || rerr.Code != CodeUnknownQuestion {
+		t.Fatalf("answering a question nobody had asked was answered %v", rerr)
+	}
+
+	var turn TurnResult
+	c.mustCall(MethodTurnStart, TurnParams{Session: opened.Session, Prompt: "do it"}, &turn)
+	approval := c.waitApproval()
+	c.mustCall(MethodApprovalAnswer, AnswerParams{Session: opened.Session, ID: approval.ID, Decision: DecisionAllow}, nil)
+	put := c.waitQuestion()
+
+	// The approval answered a moment ago is in another series, so its id
+	// names no question.
+	_, rerr = c.call(MethodQuestionAnswer, QuestionAnswerParams{
+		Session: opened.Session, ID: approval.ID, Answered: ask.AnsweredSkipped})
+	if rerr == nil || rerr.Code != CodeUnknownQuestion {
+		t.Fatalf("an approval's id answered a question: %v", rerr)
+	}
+	// `nobody to ask` is the surface's own answer and not one a client may
+	// give: a client cannot report its own absence.
+	_, rerr = c.call(MethodQuestionAnswer, QuestionAnswerParams{
+		Session: opened.Session, ID: put.ID, Answered: ask.AnsweredNobody})
+	if rerr == nil || rerr.Code != CodeInvalidParams {
+		t.Fatalf("a client claimed the reader had gone: %v", rerr)
+	}
+	// And the two rules the card enforces as it collects an answer: a pick
+	// is a pick, and a note the model said it needs is not optional.
+	_, rerr = c.call(MethodQuestionAnswer, QuestionAnswerParams{
+		Session: opened.Session, ID: put.ID, Answered: ask.AnsweredOnCard, Note: "neither"})
+	if rerr == nil || rerr.Code != CodeInvalidParams {
+		t.Fatalf("an on-the-card answer that picked nothing was answered %v", rerr)
+	}
+	_, rerr = c.call(MethodQuestionAnswer, QuestionAnswerParams{
+		Session: opened.Session, ID: put.ID, Answered: ask.AnsweredOnCard, Picked: []string{"one package"}})
+	if rerr == nil || rerr.Code != CodeInvalidParams {
+		t.Fatalf("a required note was left off and the answer stood: %v", rerr)
+	}
+
+	// None of that spent the question, so the reader can still answer it.
+	c.mustCall(MethodQuestionAnswer, QuestionAnswerParams{
+		Session: opened.Session, ID: put.ID, Answered: ask.AnsweredOnCard,
+		Picked: []string{"one package"}, Note: "start narrow"}, nil)
+	c.waitEvent("close")
+
+	// And the same id again, now that it has been.
+	_, rerr = c.call(MethodQuestionAnswer, QuestionAnswerParams{
+		Session: opened.Session, ID: put.ID, Answered: ask.AnsweredSkipped})
+	if rerr == nil || rerr.Code != CodeUnknownQuestion {
+		t.Fatalf("an answered question was answerable again: %v", rerr)
+	}
+
+	loop.mu.Lock()
+	defer loop.mu.Unlock()
+	if len(loop.answers) != 1 || loop.answers[0].Note != "start narrow" {
+		t.Errorf("the loop was told %v", loop.answers)
 	}
 }

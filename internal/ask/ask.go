@@ -126,6 +126,26 @@ const (
 	AnsweredNobody Answered = "nobody to ask"
 )
 
+// ReaderAnswers is the closed set of answers a person can give, in the order
+// the tool's description names them.
+//
+// AnsweredNobody is deliberately not among them. It is what a question gets
+// when the person it was put to went away, which only the surface holding the
+// question can know — so a client answering one over a protocol is held to
+// these three and cannot claim the reader's absence on the reader's behalf
+// (docs/capabilities/headless.md#a-client-answers-one-call-at-a-time).
+var ReaderAnswers = []Answered{AnsweredOnCard, AnsweredTyped, AnsweredSkipped}
+
+// answerList is the three spelled for a refusal, the way shapeList spells the
+// four shapes.
+func answerList() string {
+	names := make([]string, 0, len(ReaderAnswers))
+	for _, a := range ReaderAnswers {
+		names = append(names, string(a))
+	}
+	return strings.Join(names, ", ")
+}
+
 // carryOn is what an unanswered question tells the model to do. A turn is
 // never left waiting on a decision that is not coming, and a model told only
 // "no answer" stops.
@@ -172,6 +192,43 @@ func (a Answer) Result() string {
 	// The struct has no field that can fail to marshal.
 	out, _ := json.Marshal(r)
 	return string(out)
+}
+
+// Nobody is the answer to a question that had somebody to ask and lost them —
+// the reader's client went away with the question outstanding. It is minted
+// where that loss is noticed and nowhere else, because nowhere else knows it.
+func Nobody() Answer {
+	return Answer{Answered: AnsweredNobody}
+}
+
+// Validate holds an answer to the rules the card enforces while it collects
+// one, for a surface that did not draw the card itself: a client on the
+// protocol collects the answer in a window of its own, and an answer that
+// arrived from somewhere else still has to be one the model can act on.
+//
+// The rules are the card's rather than a second set. An on-the-card answer
+// with nothing picked is a typed one; the words are the whole of a typed
+// answer; and a note the model said it needs is refused empty. Skipping is
+// always allowed, because it says nothing was chosen, which is what it is for.
+func (a Answer) Validate(q Question) error {
+	switch a.Answered {
+	case AnsweredOnCard:
+		if len(a.Picked) == 0 {
+			return fmt.Errorf("%q picked nothing — an answer in the reader's own words is %q", AnsweredOnCard, AnsweredTyped)
+		}
+	case AnsweredTyped:
+		if strings.TrimSpace(a.Note) == "" {
+			return fmt.Errorf("%q is the reader's own words and this one carries none", AnsweredTyped)
+		}
+	case AnsweredSkipped:
+		return nil
+	default:
+		return fmt.Errorf("unknown answer %q (valid: %s)", a.Answered, answerList())
+	}
+	if q.Note == NoteRequired && strings.TrimSpace(a.Note) == "" {
+		return fmt.Errorf("the question was asked with a required note and the answer carries none")
+	}
+	return nil
 }
 
 // ToolDefinition is the ask tool the session registers where there is

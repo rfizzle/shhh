@@ -130,3 +130,56 @@ func TestServe_AutoModeIsNeverOfferedTheQuestionTool(t *testing.T) {
 		t.Errorf("a served session in auto mode was offered %s", ask.ToolName)
 	}
 }
+
+// A served session with a client is the other half of the same decision:
+// there is somebody to answer, so the tool is registered and the question
+// crosses the protocol as a question rather than as a call to approve. What
+// comes back is the reader's own answer, in the words the model is told it in.
+func TestServe_AQuestionReachesTheClientAndItsAnswerReachesTheModel(t *testing.T) {
+	f := startFakeProvider(t,
+		reply{tool: ask.ToolName, args: map[string]string{
+			"question": "Should I delete the old path?",
+			"shape":    string(ask.ShapeConfirm),
+			"note":     string(ask.NoteRequired),
+		}},
+		reply{text: "kept it"})
+	s := newPrintSession(t, f)
+	c := serveOverStdio(t, s)
+
+	var opened rpc.SessionResult
+	c.mustCall(rpc.MethodSessionStart, rpc.StartParams{}, &opened)
+	var turn rpc.TurnResult
+	c.mustCall(rpc.MethodTurnStart, rpc.TurnParams{Session: opened.Session, Prompt: "tidy up"}, &turn)
+
+	put := c.waitQuestion()
+	if put.Question != "Should I delete the old path?" || put.Shape != ask.ShapeConfirm {
+		t.Fatalf("the question did not cross as one: %+v", put)
+	}
+	if put.Note != ask.NoteRequired {
+		t.Errorf("the model asked for a note and the client was not told: %+v", put)
+	}
+	c.mustCall(rpc.MethodQuestionAnswer, rpc.QuestionAnswerParams{
+		Session: opened.Session, ID: put.ID, Answered: ask.AnsweredOnCard,
+		Picked: []string{"no"}, Note: "keep it for a release"}, nil)
+	events := c.drainToClose()
+
+	if !f.toolsOffered(t)[ask.ToolName] {
+		t.Fatalf("a served session with a client was not offered %s", ask.ToolName)
+	}
+	// The answer is the result of the call, so it is on the stream where
+	// every other tool result is and in the conversation the next round reads.
+	var result string
+	for _, ev := range events {
+		if ev.Tool == ask.ToolName && ev.Result != "" {
+			result = ev.Result
+		}
+	}
+	if result == "" {
+		t.Fatalf("the question was answered and the run recorded nothing: %v", kindsOf(events))
+	}
+	for _, want := range []string{string(ask.AnsweredOnCard), "keep it for a release", `"no"`} {
+		if !strings.Contains(result, want) {
+			t.Errorf("the model was not told %q: %s", want, result)
+		}
+	}
+}

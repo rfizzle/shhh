@@ -176,3 +176,58 @@ func TestToolDefinition_OffersTheShapesTheParseTakes(t *testing.T) {
 		}
 	}
 }
+
+// The rules the card enforces as it collects an answer, held to by a surface
+// that did not draw the card: the vocabulary is the reader's three, a pick is
+// a pick, the words are the whole of a typed answer, and a note the model said
+// it needs is not optional.
+func TestAnswer_ValidateHoldsAnAnswerToTheCardsOwnRules(t *testing.T) {
+	optional := Question{Question: "Which?", Shape: ShapeChoose, Note: NoteOptional}
+	required := Question{Question: "Which?", Shape: ShapeChoose, Note: NoteRequired}
+	cases := []struct {
+		name string
+		a    Answer
+		q    Question
+		want string
+	}{
+		{name: "a pick", a: Answer{Answered: AnsweredOnCard, Picked: []string{"one"}}, q: optional},
+		{name: "words", a: Answer{Answered: AnsweredTyped, Note: "neither, really"}, q: required},
+		{name: "nothing chosen", a: Answer{Answered: AnsweredSkipped}, q: required},
+		{name: "an empty pick", a: Answer{Answered: AnsweredOnCard}, q: optional, want: "picked nothing"},
+		{name: "words that are not there", a: Answer{Answered: AnsweredTyped, Note: "  "}, q: optional, want: "carries none"},
+		{name: "a required note left off", a: Answer{Answered: AnsweredOnCard, Picked: []string{"one"}}, q: required, want: "required note"},
+		{name: "the reader's absence claimed", a: Answer{Answered: AnsweredNobody}, q: optional, want: "unknown answer"},
+		{name: "a word from nowhere", a: Answer{Answered: "maybe"}, q: optional, want: "unknown answer"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.a.Validate(tc.q)
+			if tc.want == "" {
+				if err != nil {
+					t.Fatalf("an answer the card would have taken was refused: %v", err)
+				}
+				return
+			}
+			if err == nil {
+				t.Fatalf("an answer the card would have refused stood")
+			}
+			if !strings.Contains(err.Error(), tc.want) {
+				t.Errorf("the refusal does not say %q: %v", tc.want, err)
+			}
+		})
+	}
+	// An unknown answer is told what it may have said instead, the way an
+	// unknown shape is — and `nobody to ask` is not among the three, because
+	// nothing outside the surface holding the question can report the
+	// reader's absence.
+	err := Answer{Answered: AnsweredNobody}.Validate(optional)
+	for _, a := range ReaderAnswers {
+		if !strings.Contains(err.Error(), string(a)) {
+			t.Errorf("the refusal does not offer %q: %v", a, err)
+		}
+	}
+	if strings.Contains(err.Error(), "(valid: "+string(AnsweredNobody)) ||
+		strings.Contains(err.Error(), ", "+string(AnsweredNobody)) {
+		t.Errorf("a client was offered the surface's own answer: %v", err)
+	}
+}
