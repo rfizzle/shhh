@@ -119,7 +119,7 @@ func TestNotify_AnApprovalSaysWhatTheCardSays(t *testing.T) {
 
 	seq := notifyRaw(t, next.notifyCmd(prev))
 	card := next.buildApprovalCard()
-	for _, want := range []string{card.Title, card.Headline} {
+	for _, want := range []string{card.Title, card.Act} {
 		if !strings.Contains(seq, want) {
 			t.Errorf("the notification does not say the card's own words %q:\n%q", want, seq)
 		}

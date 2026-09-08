@@ -26,7 +26,7 @@ import (
 )
 
 // blastRadius is one decision's resolved context: everything the card shows
-// between the headline and the keys, plus the two pieces of chrome that
+// between the act row and the keys, plus the two pieces of chrome that
 // reinforce it.
 type blastRadius struct {
 	severity components.Severity

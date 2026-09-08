@@ -31,7 +31,7 @@
 
 · card · the border, the question and the keys
 ╭─ Approve command ──────────────────────────────────────────────────────────────────────────────────────────╮
-│ Assistant wants to run: go test ./internal/agent/...                                                       │
+│ $ go test ./internal/agent/...                                                                             │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny · [a] allow commands without asking this session                                │
 │ [esc] back to your draft — the decision stays waiting, nothing is denied                                   │
@@ -59,7 +59,7 @@
 
 · card · the border, the question and the keys
 ␛[34m╭─ Approve command ␛[m␛[38;5;245m──────────────────────────────────────────────────────────────────────────────────────────␛[m␛[34m╮␛[m
-␛[34m│␛[m ␛[1;34mAssistant wants to run: go test ./internal/agent/...␛[m                                                       ␛[34m│␛[m
+␛[34m│␛[m ␛[38;5;130m$␛[m ␛[30mgo test ./internal/agent/...␛[m                                                                             ␛[34m│␛[m
 ␛[34m├────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[34m│␛[m ␛[34m[y]␛[m ␛[38;5;236mrun it once␛[m␛[38;5;245m · ␛[m␛[34m[n]␛[m ␛[38;5;236mdeny␛[m␛[38;5;245m · ␛[m␛[34m[a]␛[m ␛[38;5;236mallow commands without asking this session␛[m                                ␛[34m│␛[m
 ␛[34m│␛[m ␛[32m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m                                   ␛[34m│␛[m

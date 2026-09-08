@@ -22,9 +22,10 @@ func TestUserEntry_RendersMarkdown(t *testing.T) {
 	if !strings.Contains(ansi.Strip(row), "--flag") {
 		t.Errorf("the code span lost its content:\n%s", row)
 	}
-	// The label is the row's own, not the renderer's.
-	if !strings.Contains(ansi.Strip(row), "You") {
-		t.Errorf("no You label:\n%s", row)
+	// The mark is the row's own, not the renderer's, and it opens the first
+	// line rather than standing on a line of its own.
+	if !strings.HasPrefix(ansi.Strip(row), "❯ ") {
+		t.Errorf("the sent message does not open with the prompt mark:\n%s", row)
 	}
 }
 

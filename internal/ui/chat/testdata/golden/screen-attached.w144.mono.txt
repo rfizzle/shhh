@@ -13,8 +13,8 @@
 · the keyboard in this session · the map marks its first row
    shhh chat                                                                                                                                    
   ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────  
-  You                                                                                       │  THIS TURN                                step 2  
-    fix the round limit                                                                     │  0 files this turn · 6 tools                      
+  ❯ fix the round limit                                                                     │  THIS TURN                                step 2  
+  ───────────────────────────────────────────────────────────────────────────────────────── │  0 files this turn · 6 tools                      
                                                                                             │                                                   
   ▸ 1  Locate the round accounting ──────────────────────────────────────── ✓ 4 tools  1.2s │  CHANGES                                          
                                                                                             │   ✗ go test ./internal/agent/...                  
@@ -45,8 +45,8 @@
 · the keyboard in a child · the rail stays, marked
    shhh chat                                                                                                                                    
   ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────  
-  You                                                                                       │  THIS TURN                                step 2  
-    long survey                                                                             │  0 files this turn · 6 tools                      
+  ❯ long survey                                                                             │  THIS TURN                                step 2  
+  ───────────────────────────────────────────────────────────────────────────────────────── │  0 files this turn · 6 tools                      
                                                                                             │                                                   
   ▾ 1  Reading the round accounting first. ──────────────────────────────── ▸ 2 tools       │  CHANGES                                          
      ⚙ read    internal/agent/loop.go                                       220 lines       │   ✗ go test ./internal/agent/...                  
@@ -78,8 +78,8 @@
 · the keyboard in this session · the map marks its first row
   ␛[38;5;254;1m shhh chat␛[m                                                                                                                                    
   ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m  
-  ␛[38;5;254;1mYou␛[m                                                                                       ␛[38;5;244m│␛[m  ␛[38;5;254;1mTHIS TURN␛[m                                ␛[38;5;244mstep 2␛[m  
-    fix the round limit                                                                     ␛[38;5;244m│␛[m  ␛[38;5;244m0 files this turn · 6 tools␛[m                      
+  ␛[38;5;254m❯␛[m fix the round limit                                                                     ␛[38;5;244m│␛[m  ␛[38;5;254;1mTHIS TURN␛[m                                ␛[38;5;244mstep 2␛[m  
+  ␛[38;5;244m─────────────────────────────────────────────────────────────────────────────────────────␛[m ␛[38;5;244m│␛[m  ␛[38;5;244m0 files this turn · 6 tools␛[m                      
                                                                                             ␛[38;5;244m│␛[m                                                   
   ␛[38;5;244m▸␛[m ␛[38;5;254m1 ␛[m ␛[38;5;254mLocate the round accounting␛[m ␛[38;5;244m────────────────────────────────────────␛[m ␛[38;5;254m✓␛[m ␛[38;5;244m4 tools␛[m  ␛[38;5;244m1.2s␛[m ␛[38;5;244m│␛[m  ␛[38;5;254;1mCHANGES␛[m                                          
                                                                                             ␛[38;5;244m│␛[m   ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/...␛[m                  
@@ -110,8 +110,8 @@
 · the keyboard in a child · the rail stays, marked
   ␛[38;5;254;1m shhh chat␛[m                                                                                                                                    
   ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m  
-  ␛[38;5;254;1mYou␛[m                                                                                       ␛[38;5;244m│␛[m  ␛[38;5;254;1mTHIS TURN␛[m                                ␛[38;5;244mstep 2␛[m  
-    long survey                                                                             ␛[38;5;244m│␛[m  ␛[38;5;244m0 files this turn · 6 tools␛[m                      
+  ␛[38;5;254m❯␛[m long survey                                                                             ␛[38;5;244m│␛[m  ␛[38;5;254;1mTHIS TURN␛[m                                ␛[38;5;244mstep 2␛[m  
+  ␛[38;5;244m─────────────────────────────────────────────────────────────────────────────────────────␛[m ␛[38;5;244m│␛[m  ␛[38;5;244m0 files this turn · 6 tools␛[m                      
                                                                                             ␛[38;5;244m│␛[m                                                   
   ␛[38;5;254m▾␛[m ␛[38;5;254m1 ␛[m ␛[38;5;254mReading the round accounting first.␛[m ␛[38;5;244m────────────────────────────────␛[m ␛[38;5;254m▸␛[m ␛[38;5;244m2 tools␛[m       ␛[38;5;244m│␛[m  ␛[38;5;254;1mCHANGES␛[m                                          
      ␛[38;5;254m⚙␛[m ␛[38;5;254mread␛[m    ␛[38;5;254minternal/agent/loop.go␛[m                                       ␛[38;5;244m220 lines␛[m       ␛[38;5;244m│␛[m   ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/...␛[m                  

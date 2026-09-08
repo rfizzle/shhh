@@ -14,6 +14,7 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/markdown"
 )
 
 func (m *Model) appendEntry(e entry) {
@@ -196,13 +197,21 @@ func (m Model) renderEntryDetail(e entry, width int, keysLive, stepDetail bool) 
 		// The draft above deliberately does not do this — it stays a plain
 		// editor, because a sentence being typed is bytes and a renderer that
 		// reflowed them under the cursor would be fighting the writer.
-		row := sty.User.Render("You") + "\n" + renderMarkdown(e.text, width) + "\n"
+		//
+		// No speaker label on either half of the conversation. The prompt
+		// mark in the margin says whose words these are and the rule under
+		// them says where they stop, which is two of the transcript's own
+		// devices doing a job a word was doing badly: `You` and `Assistant`
+		// cost a row each, said nothing a reader scrolling a log needed, and
+		// spent Add — the token for a thing that landed — on a heading
+		// (docs/interface/surfaces.md#the-activity-row).
+		row := promptMarked(renderReaderMarkdown(e.text, width)) + "\n"
 		if len(e.attached) > 0 {
 			row += sty.SystemMsg.Render(clipRow("attached: "+strings.Join(e.attached, ", "), width)) + "\n"
 		}
-		return row
+		return row + promptRule(width) + "\n"
 	case entryAssistant:
-		return sty.Assistant.Render("Assistant") + "\n" + renderMarkdown(e.text, width) + "\n"
+		return renderMarkdown(e.text, width) + "\n"
 	case entryCompactSummary:
 		block := m.compactSummaryBlock(e, width)
 		if block == "" {
@@ -518,7 +527,7 @@ func (m *Model) renderHistoryRawLines() []string {
 		if m.startScreenShowing() {
 			return strings.Split(m.renderStartScreen(m.transcriptWidth()), "\n")
 		}
-		return strings.Split(sty.Welcome.Render("Type a message to start chatting."), "\n")
+		return strings.Split(sty.Welcome.Render("nothing yet — ask for anything"), "\n")
 	}
 	w := m.transcriptWidth()
 	if w != m.cached.width {
@@ -566,7 +575,6 @@ func (m *Model) renderHistoryRawLines() []string {
 		if havePrev {
 			m.cached.write(separatorBefore(prev, entry{kind: entryAssistant}))
 		}
-		m.cached.write(sty.Assistant.Render("Assistant") + "\n")
 		// The one thing in the transcript that is not frozen, and the only
 		// place the stable-prefix cache is used: everything else here is
 		// either cached whole or rendered once (streammd.go).
@@ -623,6 +631,27 @@ func (m Model) wordWrap(text string, width int) string {
 		result.WriteByte('\n')
 	}
 	return strings.TrimRight(result.String(), "\n")
+}
+
+// promptMarked writes the ❯ into the first row of a sent message, in the two
+// columns internal/ui/markdown holds every document back from the edge by.
+// The mark lands in the transcript's own pointer column that way, so a sent
+// message and the activity rows under it share one left edge and the reply
+// keeps the plain indent (the `Main` artboard's first two rows).
+func promptMarked(doc string) string {
+	first, rest, multi := strings.Cut(doc, "\n")
+	marked := sty.PromptMark.Render("❯") + " " + strings.TrimPrefix(first, strings.Repeat(" ", markdown.Margin))
+	if !multi {
+		return marked
+	}
+	return marked + "\n" + rest
+}
+
+// promptRule closes a sent message. It runs the pane rather than the
+// document's width: what it separates is the reader's sentence from
+// everything the session did about it, and that boundary is the pane's.
+func promptRule(width int) string {
+	return sty.PromptRule.Render(strings.Repeat("─", max(width, 0)))
 }
 
 // dividerStyle is the faint rule that opens the bottom panel and closes the

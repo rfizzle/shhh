@@ -96,8 +96,13 @@ func TestSteps_FlatWithoutTitles(t *testing.T) {
 	if got := m.renderHistory(); got != want {
 		t.Fatalf("a turn with no steps must render exactly as a flat list:\n%q\nwant:\n%q", got, want)
 	}
-	if strings.Contains(stripANSI(m.renderHistory()), "─") {
-		t.Fatal("no step chrome without steps")
+	// The only rule a flat turn draws is the one closing the sent message.
+	// Step chrome is a rule with a title and a count on the same line, so
+	// that is what this looks for rather than the glyph on its own.
+	for _, line := range strings.Split(stripANSI(m.renderHistory()), "\n") {
+		if strings.Contains(line, "─") && strings.TrimSpace(strings.ReplaceAll(line, "─", "")) != "" {
+			t.Fatalf("no step chrome without steps, got %q", line)
+		}
 	}
 }
 
@@ -119,7 +124,7 @@ func TestSteps_ProseThatIsNotATitleKeepsItsBlock(t *testing.T) {
 			if strings.Contains(view, "─") {
 				t.Fatalf("prose that is an explanation must not become a title:\n%s", view)
 			}
-			if !strings.Contains(view, "Assistant") {
+			if !strings.Contains(view, strings.Join(strings.Fields(prose)[:4], " ")) {
 				t.Fatalf("the prose keeps its own block:\n%s", view)
 			}
 		})

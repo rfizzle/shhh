@@ -12,7 +12,7 @@
 ── layout ──────────────────────────────────────────────────
 · nothing written yet
 ╭─ Approve scaffold ───────────────────────────────────╮
-│ shhh wants to write this project's context file      │
+│ ✎ write this project's context file                  │
 │ it is read into the system prompt of every session … │
 │                                                      │
 │ creates   .shhh/                                     │
@@ -28,7 +28,7 @@
 ── ansi ────────────────────────────────────────────────────
 · nothing written yet
 ␛[94m╭─ Approve scaffold ␛[m␛[38;5;241m───────────────────────────────────␛[m␛[94m╮␛[m
-␛[94m│␛[m ␛[1;94mshhh wants to write this project's context file␛[m      ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;214m✎␛[m ␛[97mwrite this project's context file␛[m                  ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;241mit is read into the system prompt of every session …␛[m ␛[94m│␛[m
 ␛[94m│␛[m                                                      ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;243mcreates   ␛[m␛[38;5;252m.shhh/␛[m                                     ␛[94m│␛[m

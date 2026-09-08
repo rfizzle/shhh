@@ -16,12 +16,26 @@ import (
 
 func shiftKey(code rune) tea.KeyPressMsg { return tea.KeyPressMsg{Code: code, Mod: tea.ModShift} }
 
-// pointerRow is the pane row carrying the gutter marker, as drawn, or "".
+// pointerRow is the line the gutter's cursor is standing on, or "" when no
+// gutter is drawn at all. The glyph is looked for at column zero and only
+// while the gutter is up: a sent message opens with the same mark two columns
+// in, and the pointer is the one that has a column to itself.
 func pointerRow(m Model) string {
-	for _, line := range strings.Split(ansi.Strip(m.viewport.View()), "\n") {
-		if strings.HasPrefix(strings.TrimLeft(line, " "), "❯") {
-			return line
+	if !m.gutterShowing() {
+		return ""
+	}
+	lines := strings.Split(ansi.Strip(m.viewport.View()), "\n")
+	for i, line := range lines {
+		if !strings.HasPrefix(line, "❯") {
+			continue
 		}
+		// A sent message opens with the same mark in the same column and is
+		// not a row the pointer can stand on. The rule under it is what
+		// tells the two apart.
+		if i+1 < len(lines) && ruleRow(lines[i+1]) {
+			continue
+		}
+		return line
 	}
 	return ""
 }

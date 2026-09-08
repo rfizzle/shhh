@@ -25,10 +25,9 @@ Conversation compacted; continuing from this summary and the last 1 turn:
     turns established the loop as the owner, the fourth moved the constant, and the fifth's tests pass
     except the one on the limit itself.
 
-You
-  Move the round limit into the loop.
+❯ Move the round limit into the loop.
+─────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-Assistant
   Moved it, and the *limit* is read from one place now.
 
 
@@ -48,9 +47,8 @@ Assistant
     ␛[3;38;5;244mturns established the loop as the owner, the fourth moved the constant, and the fifth's tests pass␛[m
     ␛[3;38;5;244mexcept the one on the limit itself.␛[m
 
-␛[1;38;5;254mYou␛[m
-  Move the round limit into the loop.
+␛[38;5;254m❯␛[m Move the round limit into the loop.
+␛[38;5;244m─────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[1;38;5;254mAssistant␛[m
   Moved it, and the *limit* is read from one place now.
 

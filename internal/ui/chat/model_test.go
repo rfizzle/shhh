@@ -176,7 +176,7 @@ func TestEmptyHistory_ShowsWelcome(t *testing.T) {
 	m.width = 80
 
 	content := m.renderHistory()
-	if !strings.Contains(content, "Type a message") {
+	if !strings.Contains(content, "ask for anything") {
 		t.Fatalf("expected welcome message, got: %s", content)
 	}
 }
@@ -1629,8 +1629,8 @@ func TestExecTool_ApprovalFlow(t *testing.T) {
 	if m.state != stateConfirmRun {
 		t.Fatalf("exec tool call should enter confirm state, got %d", m.state)
 	}
-	if !strings.Contains(m.View().Content, "Assistant wants to run") {
-		t.Fatal("confirm prompt should say the assistant is asking")
+	if !strings.Contains(m.View().Content, "touch /tmp/x") {
+		t.Fatal("the confirm prompt should state the command it is asking about")
 	}
 
 	// Approve.

@@ -41,13 +41,17 @@ type styles struct {
 	faint   lipgloss.Style
 }
 
-func newStyles(mono bool) styles {
+func newStyles(mono bool, prose ProseTone) styles {
 	if mono {
 		return styles{mono: true}
 	}
 	p := components.Palette
+	body := p.Body
+	if prose == ProseBright {
+		body = p.Bright
+	}
 	return styles{
-		body:    lipgloss.NewStyle().Foreground(p.Body.Color()),
+		body:    lipgloss.NewStyle().Foreground(body.Color()),
 		heading: lipgloss.NewStyle().Bold(true).Foreground(p.Bright.Color()),
 		bold:    lipgloss.NewStyle().Bold(true).Foreground(p.Bright.Color()),
 		italic:  lipgloss.NewStyle().Italic(true),

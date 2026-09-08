@@ -12,7 +12,7 @@
 ── layout ──────────────────────────────────────────────────
 · the field open, and every letter going into it
 ──────────
-Assis›
+✎ wri›
 … 5 m…
 [y] apply the change
 [Y] and say what next
@@ -29,7 +29,7 @@ these…
 ── ansi ────────────────────────────────────────────────────
 · the field open, and every letter going into it
 ␛[38;5;244m──────────␛[m
-␛[1;38;5;254mAssis␛[m␛[38;5;244m›␛[m
+␛[38;5;254m✎␛[m ␛[38;5;254mwri␛[m␛[38;5;244m›␛[m
 ␛[38;5;244m… 5 m…␛[m
 ␛[38;5;244m[y] apply the change␛[m
 ␛[38;5;244m[Y] and say what next␛[m

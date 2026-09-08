@@ -27,10 +27,9 @@ Conversation compacted; continuing from this summary and the last 1 turn:
     the fourth moved the constant, and the fifth's tests pass except the
     one on the limit itself.
 
-You
-  Move the round limit into the loop.
+❯ Move the round limit into the loop.
+───────────────────────────────────────────────────────────────────────────
 
-Assistant
   Moved it, and the limit is read from one place now.
 
 
@@ -52,9 +51,8 @@ Assistant
     ␛[3;38;5;245mthe fourth moved the constant, and the fifth's tests pass except the␛[m
     ␛[3;38;5;245mone on the limit itself.␛[m
 
-␛[1;94mYou␛[m
-  ␛[38;5;252mMove the round limit into the loop.␛[m
+␛[94m❯␛[m ␛[97mMove the round limit into the loop.␛[m
+␛[38;5;243m───────────────────────────────────────────────────────────────────────────␛[m
 
-␛[1;92mAssistant␛[m
   ␛[38;5;252mMoved it, and the ␛[m␛[3;38;5;252mlimit␛[m␛[38;5;252m is read from one place now.␛[m
 

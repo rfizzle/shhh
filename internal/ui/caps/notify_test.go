@@ -17,7 +17,7 @@ import (
 
 func TestNotify_UsesOSC99WhenTheTerminalAnswered(t *testing.T) {
 	term := Terminal{Asked: true, Notifications: true}
-	seq := raw(t, term.Notify("shhh · Approve command", "Assistant wants to run: go test ./..."))
+	seq := raw(t, term.Notify("shhh · Approve command", "go test ./..."))
 
 	for _, want := range []string{
 		"i=" + notifyID,
@@ -26,7 +26,7 @@ func TestNotify_UsesOSC99WhenTheTerminalAnswered(t *testing.T) {
 		"a=" + notifyApp,
 		"d=1",
 		"shhh · Approve command",
-		"Assistant wants to run: go test ./...",
+		"go test ./...",
 	} {
 		if !strings.Contains(seq, want) {
 			t.Errorf("the OSC 99 notification does not carry %q:\n%q", want, seq)
@@ -68,7 +68,7 @@ func TestNotify_FallsBackToOSC777WhenTheTerminalDidNotAnswer(t *testing.T) {
 
 func TestNotify_TakesTheOne777CannotCarryOutOfTheText(t *testing.T) {
 	term := Terminal{Asked: true}
-	seq := raw(t, term.Notify("shhh · Approve command", "Assistant wants to run: cd src; make"))
+	seq := raw(t, term.Notify("shhh · Approve command", "cd src; make"))
 
 	// Three fields: the extension name, the title and the body. A semicolon
 	// left in the text would make four, and the body would arrive truncated

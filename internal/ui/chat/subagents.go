@@ -311,30 +311,36 @@ func (m Model) childAskCard(ask *subagent.Ask) *components.ApprovalCard {
 			{Key: keys.Bracket(keys.Draft.Agents), Label: "agents"},
 		}
 	}
+	// The act, on a child's card as on the session's own: the glyph and the
+	// thing being asked for. Which agent is asking is the title rail's, above
+	// — and it is dropped there only while the reader is attached to that
+	// agent, where the whole screen is already saying whose session this is
+	// (docs/interface/surfaces.md#the-approval-card).
+	card.Act = ask.Title
 	switch ask.Kind {
 	case subagent.AskCommand:
 		card.Variant = components.ApprovalCommand
 		card.Title = prefix + "Approve command"
-		card.Headline = ask.Agent + " wants to " + ask.Title
+		card.ActGlyph = "$"
 		card.Answer = "run it once"
 	case subagent.AskEdit:
 		card.Variant = components.ApprovalEdit
 		card.Title = prefix + "Approve edit"
-		card.Headline = ask.Agent + " wants to " + ask.Title
+		card.ActGlyph = "✎"
 		card.Hunks = ask.Hunks
 		card.FullDiff = len(ask.Hunks) > 0
 		card.Answer = "apply it in the agent's workspace"
 	case subagent.AskPatch:
 		card.Variant = components.ApprovalEdit
 		card.Title = prefix + "Apply patch"
-		card.Headline = ask.Agent + " finished and wants to " + ask.Title
+		card.ActGlyph = "✎"
 		card.Hunks = ask.Hunks
 		card.FullDiff = len(ask.Hunks) > 0
 		card.Answer = "apply the patch to your workspace"
 	default:
 		card.Variant = components.ApprovalGeneric
 		card.Title = prefix + "Approve tool"
-		card.Headline = ask.Agent + " wants to " + ask.Title
+		card.ActGlyph = "⚙"
 		card.Summary = firstLine(ask.Summary)
 		card.Answer = "allow it"
 	}

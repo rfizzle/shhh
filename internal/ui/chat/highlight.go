@@ -24,6 +24,16 @@ func renderMarkdown(text string, width int) string {
 	return trimBlankLines(renderMarkdownRaw(text, width))
 }
 
+// renderReaderMarkdown is the same render in the reader's own register: a
+// sent message is drawn brighter than the reply under it, because the
+// transcript labels neither half and the weight is what tells them apart
+// (render.go, markdown.ProseBright).
+func renderReaderMarkdown(text string, width int) string {
+	o := mdOptions(width)
+	o.Prose = markdown.ProseBright
+	return trimBlankLines(strings.Join(markdown.Blocks(text, o), "\n"))
+}
+
 // trimBlankLines finishes a whole document: the last row's padding comes off,
 // because a finished document has nothing after it and that padding is not
 // holding anything up.

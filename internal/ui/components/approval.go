@@ -180,17 +180,39 @@ type ApprovalCard struct {
 	// is appended when set.
 	Title    string
 	QueuePos string
-	// Headline is the first body row, e.g. "Assistant wants to run: go test".
-	Headline string
-	// Was is the line the call carried, on a card whose headline is the line
+	// Act is the first body row: the thing this card is asking about, stated
+	// as the act itself — `go test ./internal/agent/...`, `edit main.go`,
+	// `GET pkg.go.dev/context`. It is not a sentence about who wants it. The
+	// reader is answering the act, so the act is what the row spends its
+	// columns on, and a card that opened by naming a speaker put the one
+	// thing being decided at the end of the line
+	// (docs/interface/surfaces.md#the-approval-card).
+	//
+	// A child agent's card is no exception. Which agent is asking rides the
+	// title rail there, where the queue's other identifiers ride, and the row
+	// still says only what would happen (chat/subagents.go).
+	Act string
+	// ActGlyph opens that row with the kind of act it is — `$` a command, `✎`
+	// an edit, `⚙` a read-only call, `⇄` a call to a server — the four the
+	// activity rows already draw, in the same accent, so the card and the row
+	// it will become say the same thing about the same call. Empty draws no
+	// glyph, for a card whose act has no kind: shhh's own request to write a
+	// context file is not one of the four.
+	//
+	// The mutation rail is deliberately not here. A rail marks the rows that
+	// changed something among rows that did not, and a card has no neighbours
+	// to be marked out from — the card itself is the gate
+	// (docs/interface/principles.md#weight-tracks-risk).
+	ActGlyph string
+	// Was is the line the call carried, on a card whose act is the line
 	// the reader wrote in its place. It is a row of the body rather than a
 	// chip, because the two lines differ by a flag as often as by a verb and
 	// a difference that small has to be read side by side
 	// (docs/capabilities/approvals-and-safety.md#an-amended-command-is-a-new-command).
 	//
-	// Empty on every card whose headline is the call's own line, which is
-	// every card until one is amended — a row repeating the headline under
-	// the headline would spend a bounded card's row saying nothing.
+	// Empty on every card whose act is the call's own line, which is every
+	// card until one is amended — a row repeating the act under the act
+	// would spend a bounded card's row saying nothing.
 	Was string
 	// Severity leads the card as a word and rides the top border as the last
 	// chip; it also picks the border colour.
@@ -223,7 +245,7 @@ type ApprovalCard struct {
 	// says the same thing and never drops, while severity is what the
 	// decision turns on.
 	Amended bool
-	// Fields is the blast-radius block under the headline: what the action
+	// Fields is the blast-radius block under the act row: what the action
 	// touches, whether it can be undone, whether the network is open.
 	Fields []CardField
 	// Hunks is the edit variant's diff body; Syntax highlights its lines.
@@ -472,13 +494,27 @@ func (c *ApprovalCard) tone() lipgloss.Style {
 	return c.Severity.tone()
 }
 
-// buildRows lays the card out as its two halves: the body — headline,
+// actRow draws the first body row: the kind glyph in the accent every glyph
+// column carries, and the act itself bright, because it is the one thing on
+// the card the reader has to read before answering.
+//
+// It is not clipped here. The row is laid out whole and panRows decides what
+// a narrow card shows, so a command too long for the border can be scrolled
+// into view rather than being cut off at the moment it is being approved.
+func (c *ApprovalCard) actRow() string {
+	if c.ActGlyph == "" {
+		return sty.Bright.Render(c.Act)
+	}
+	return sty.Accent.Render(c.ActGlyph) + " " + sty.Bright.Render(c.Act)
+}
+
+// buildRows lays the card out as its two halves: the body — the act,
 // severity, blast radius, and the edit variant's whole diff — and the block
 // under the rule, which is pinned. The split is what the scroll works on, so
 // View and ScrollBounds share it rather than agreeing by inspection.
 func (c *ApprovalCard) buildRows(width int) (body, hints []string) {
 	inner := width - cardFrameWidth
-	body = []string{sty.Headline.Render(c.Headline)}
+	body = []string{c.actRow()}
 	// What the call asked for, directly under what will run instead, so the
 	// two are read as one statement rather than as two facts a row apart.
 	if c.Was != "" {
@@ -489,9 +525,9 @@ func (c *ApprovalCard) buildRows(width int) (body, hints []string) {
 	// one fact is what makes the card survive mono and a colour-blind reader
 	// alike — three copies of one phrase would not.
 	body = append(body, c.severityRows()...)
-	// The generic variant's one-liner belongs with the headline it qualifies,
+	// The generic variant's one-liner belongs with the act it qualifies,
 	// above the blast-radius block rather than below it.
-	if c.Variant == ApprovalGeneric && c.Summary != "" && c.Summary != c.Headline {
+	if c.Variant == ApprovalGeneric && c.Summary != "" && c.Summary != c.Act {
 		body = append(body, sty.Dim.Render(Clip(c.Summary, inner)))
 	}
 	if len(c.Fields) > 0 {
@@ -522,7 +558,7 @@ func (c *ApprovalCard) buildRows(width int) (body, hints []string) {
 
 // visibleBody is how many body rows fit once the frame and the pinned block
 // have theirs, floored at one: a panel whose hint block leaves no room still
-// shows one row of body — the headline, or the counted tail standing for all
+// shows one row of body — the act, or the counted tail standing for all
 // of it — because a decision whose subject is entirely off screen is not one
 // (the floor the pre-scroll diff budget always had). -1 means unbounded.
 func (c *ApprovalCard) visibleBody(hintRows int) int {

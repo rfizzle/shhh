@@ -528,7 +528,7 @@ func joinSelectedRows(rows []string, width int, cutFirst bool) string {
 	}
 	trimmed := make([]string, len(rows))
 	for i, row := range rows {
-		trimmed[i] = strings.TrimRight(row, " \t")
+		trimmed[i] = strings.TrimRight(unmark(row), " \t")
 	}
 	// Classify boundaries before dedenting: softWrap reads row widths against
 	// the width the wrapper was filling, and a dedented row is narrower than
@@ -606,7 +606,7 @@ func softWrap(row, next string, width int) bool {
 	if leadingSpaces(row) != leadingSpaces(next) {
 		return false
 	}
-	if startsBlock(next) {
+	if startsBlock(next) || ruleRow(next) {
 		return false
 	}
 	word := strings.TrimLeft(next, " ")
@@ -614,6 +614,16 @@ func softWrap(row, next string, width int) bool {
 		word = word[:i]
 	}
 	return ansi.StringWidth(row)+1+ansi.StringWidth(word) > width
+}
+
+// ruleRow reports whether a row is nothing but a horizontal rule — the one
+// that closes a sent message, a step's header, a card's divider. It is chrome
+// of a whole row, so it never continues the sentence above it: unguarded it
+// always would, because its one unbroken "word" is as wide as the pane and
+// the wrap test asks whether that word could have fitted.
+func ruleRow(row string) bool {
+	row = strings.TrimSpace(row)
+	return row != "" && strings.Trim(row, "─") == ""
 }
 
 // startsBlock reports whether a row opens a markdown block — a bullet, a
@@ -637,6 +647,20 @@ func startsBlock(row string) bool {
 		return true
 	}
 	return false
+}
+
+// unmark puts back the two columns a leading ❯ stands in. The mark that opens
+// a sent message (render.go) and the cursor that stands beside a row in
+// reading mode (focus.go) are chrome in exactly the way the document margin
+// dedent strips is: nobody drags across their own question in order to copy
+// the gutter it was drawn in. Turning it into spaces rather than dropping it
+// keeps the row the width it was on screen, so the wrap arithmetic below is
+// still reading the geometry the renderer emitted.
+func unmark(row string) string {
+	if rest, ok := strings.CutPrefix(row, "❯ "); ok {
+		return "  " + rest
+	}
+	return row
 }
 
 // dedent removes the indent every selected row shares. glamour renders the

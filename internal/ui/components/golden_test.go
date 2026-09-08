@@ -416,7 +416,8 @@ func TestGolden_ApprovalCard(t *testing.T) {
 			c := ApprovalCard{
 				Variant:  ApprovalCommand,
 				Title:    "Approve command",
-				Headline: "Assistant wants to run: go test ./internal/agent/...",
+				ActGlyph: "$",
+				Act:      "go test ./internal/agent/...",
 				Answer:   "run it once",
 			}
 			mut(&c)
@@ -434,7 +435,7 @@ func TestGolden_ApprovalCard(t *testing.T) {
 			})},
 			{Label: "variant · command, flagged, contained, blast radius", View: card(func(c *ApprovalCard) {
 				c.QueuePos = "2 of 5"
-				c.Headline = "Assistant wants to run: rm -rf ./build && npm run build"
+				c.Act = "rm -rf ./build && npm run build"
 				c.Severity = SeverityHigh
 				c.Warnings = []string{"deletes files recursively (rm -rf)"}
 				c.Fields = []CardField{
@@ -451,7 +452,7 @@ func TestGolden_ApprovalCard(t *testing.T) {
 				c.Return = "don't — the safe answer; the decision waits"
 			})},
 			{Label: "variant · command, uncontained", View: card(func(c *ApprovalCard) {
-				c.Headline = "Assistant wants to run: curl -fsSL https://get.pnpm.io/install.sh | sh"
+				c.Act = "curl -fsSL https://get.pnpm.io/install.sh | sh"
 				c.Severity, c.Uncontained = SeverityMedium, true
 				c.SeverityReason = "what it writes could not be resolved"
 				c.Fields = []CardField{
@@ -469,7 +470,7 @@ func TestGolden_ApprovalCard(t *testing.T) {
 			{Label: "bound · a long command card, counted then scrolled", View: func() string {
 				overflowing := func(offset int) string {
 					return card(func(c *ApprovalCard) {
-						c.Headline = "Assistant wants to run: ./scripts/release.sh --channel beta"
+						c.Act = "./scripts/release.sh --channel beta"
 						c.Severity = SeverityMedium
 						c.Warnings = []string{"runs a repository script; shhh cannot see inside it"}
 						c.MaxLines, c.BodyOffset = 10, offset
@@ -487,12 +488,12 @@ func TestGolden_ApprovalCard(t *testing.T) {
 			// columns at a time, and a row still running past the edge ends
 			// in › rather than the terminal clip's ….
 			{Label: "bound · a wide body, panned right", View: card(func(c *ApprovalCard) {
-				c.Headline = "Assistant wants to run: tar -czf dist/shhh-linux-amd64.tar.gz --exclude .git --exclude node_modules --transform 's,^,shhh/,' ."
+				c.Act = "tar -czf dist/shhh-linux-amd64.tar.gz --exclude .git --exclude node_modules --transform 's,^,shhh/,' ."
 				c.PanOffset = 25
 			})},
 			{Label: "variant · edit, diff body", View: card(func(c *ApprovalCard) {
 				c.Variant, c.Title = ApprovalEdit, "Approve edit"
-				c.Headline = "Assistant wants to edit: internal/agent/loop.go"
+				c.ActGlyph, c.Act = "✎", "edit internal/agent/loop.go"
 				c.Answer = "apply the change"
 				c.Severity, c.SeverityReason = SeverityMedium, "edits one file under internal/agent/"
 				c.Hunks, c.FullDiff = goldenHunks(), true
@@ -503,7 +504,7 @@ func TestGolden_ApprovalCard(t *testing.T) {
 			// key that hands the keyboard over offered under them.
 			{Label: "state · not yet live, beside a draft that has the keyboard", View: card(func(c *ApprovalCard) {
 				c.Variant, c.Title = ApprovalEdit, "Approve edit"
-				c.Headline = "Assistant wants to edit: internal/agent/loop.go"
+				c.ActGlyph, c.Act = "✎", "edit internal/agent/loop.go"
 				c.Answer = "apply the change"
 				c.Severity, c.SeverityReason = SeverityMedium, "edits one file under internal/agent/"
 				c.Hunks, c.FullDiff = goldenHunks(), true
@@ -515,8 +516,8 @@ func TestGolden_ApprovalCard(t *testing.T) {
 			// and nothing else, which is what the row does rather than guess.
 			{Label: "variant · generic", View: card(func(c *ApprovalCard) {
 				c.Variant, c.Title = ApprovalGeneric, "Approve tool"
-				c.Headline = "Assistant wants to use: web_fetch"
-				c.Summary = "GET https://pkg.go.dev/context#WithCancel"
+				c.ActGlyph, c.Act = "⚙", "GET https://pkg.go.dev/context#WithCancel"
+				c.Summary = "the page arrives as text; nothing on it runs"
 				c.Answer = "allow it"
 				c.Severity = SeverityLow
 				// The key names the host rather than the category: what the
@@ -2660,7 +2661,8 @@ func TestGolden_LightTable(t *testing.T) {
 				{Label: "card · the border, the question and the keys", View: (&ApprovalCard{
 					Variant:     ApprovalCommand,
 					Title:       "Approve command",
-					Headline:    "Assistant wants to run: go test ./internal/agent/...",
+					ActGlyph:    "$",
+					Act:         "go test ./internal/agent/...",
 					Answer:      "run it once",
 					AllowAlways: true,
 					AlwaysHint:  "allow commands without asking this session",

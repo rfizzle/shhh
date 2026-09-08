@@ -11,16 +11,16 @@
 
 ── layout ──────────────────────────────────────────────────
 · the row · a file that moved, and a call that was malformed
-You
-  rebase the round cap on what loop.go says now
+❯ rebase the round cap on what loop.go says now
+───────────────────────────────────────────────────────────────────────────
 
   ▎⊘ write   internal/agent/loo…  skipped · changed since it was read     —
   ▎⊘ write   write_file                   skipped · invalid arguments     —
 
 
 · the row opened · the sentence the model was given
-You
-  rebase the round cap on what loop.go says now
+❯ rebase the round cap on what loop.go says now
+───────────────────────────────────────────────────────────────────────────
 
   ▎⊘ write   internal/agent/loo…  skipped · changed since it was read     —
     /work/shhh/internal/agent/loop.go has changed since it was read; read_…
@@ -30,16 +30,16 @@ You
 
 ── ansi ────────────────────────────────────────────────────
 · the row · a file that moved, and a call that was malformed
-␛[1;94mYou␛[m
-  ␛[38;5;252mrebase the round cap on what loop.go says now␛[m
+␛[94m❯␛[m ␛[97mrebase the round cap on what loop.go says now␛[m
+␛[38;5;243m───────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;214m▎␛[m␛[38;5;241m⊘␛[m ␛[38;5;241mwrite␛[m   ␛[38;5;241minternal/agent/loo…␛[m  ␛[38;5;241mskipped␛[m␛[38;5;241m · ␛[m␛[38;5;241mchanged since it was read␛[m     ␛[38;5;241m—␛[m
   ␛[38;5;214m▎␛[m␛[38;5;241m⊘␛[m ␛[38;5;241mwrite␛[m   ␛[38;5;241mwrite_file␛[m                   ␛[38;5;241mskipped␛[m␛[38;5;241m · ␛[m␛[38;5;241minvalid arguments␛[m     ␛[38;5;241m—␛[m
 
 
 · the row opened · the sentence the model was given
-␛[1;94mYou␛[m
-  ␛[38;5;252mrebase the round cap on what loop.go says now␛[m
+␛[94m❯␛[m ␛[97mrebase the round cap on what loop.go says now␛[m
+␛[38;5;243m───────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;214m▎␛[m␛[38;5;241m⊘␛[m ␛[38;5;241mwrite␛[m   ␛[38;5;241minternal/agent/loo…␛[m  ␛[38;5;241mskipped␛[m␛[38;5;241m · ␛[m␛[38;5;241mchanged since it was read␛[m     ␛[38;5;241m—␛[m
     ␛[38;5;245m/work/shhh/internal/agent/loop.go has changed since it was read; read_…␛[m

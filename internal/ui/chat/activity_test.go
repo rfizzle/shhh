@@ -605,9 +605,10 @@ func TestTranscriptSpacing_UniformRhythm(t *testing.T) {
 		}
 	}
 
-	// Blocks keep their air: a blank line before "You" is impossible (it leads
-	// the transcript), but every later block header has one above it.
-	for _, header := range []string{"Multi-line notice:", "Assistant"} {
+	// Blocks keep their air: a blank line above the sent message is
+	// impossible (it leads the transcript), but every later block opens with
+	// one above it.
+	for _, header := range []string{"Multi-line notice:", "Done."} {
 		for i, line := range lines {
 			if strings.HasPrefix(strings.TrimSpace(line), header) {
 				if i == 0 || !blank(i-1) {

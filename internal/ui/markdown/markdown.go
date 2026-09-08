@@ -62,7 +62,26 @@ type Options struct {
 	// one. It is injected rather than owned so that the fence and the diff
 	// view highlight through the same register (chat/highlight.go).
 	Syntax func(lang, line string) []Segment
+	// Prose is the register a paragraph's plain text is drawn in.
+	Prose ProseTone
 }
+
+// ProseTone selects the grey a document's plain text takes. Everything else
+// in the register — headings, code, links, rules — is the same document at
+// either tone: what differs is whose sentence it is.
+type ProseTone int
+
+const (
+	// ProseBody is the model's own prose, and the zero value because every
+	// document that is not a person's own message is the model's.
+	ProseBody ProseTone = iota
+	// ProseBright is a message the reader sent. The transcript labels
+	// neither half of the conversation, so weight is what tells them apart:
+	// what a person typed is the brightest text in the pane and the reply
+	// under it is body prose (chat/render.go,
+	// docs/interface/surfaces.md#the-activity-row).
+	ProseBright
+)
 
 // contentWidth is the widest a row's own content may be.
 func (o Options) contentWidth() int { return max(o.Width-2*Margin, 1) }
@@ -109,7 +128,7 @@ func Blocks(src string, o Options) []string {
 	}
 	source := []byte(src)
 	doc := parser.Parser().Parse(text.NewReader(source))
-	r := &renderer{opt: o, src: source, sty: newStyles(o.Mono)}
+	r := &renderer{opt: o, src: source, sty: newStyles(o.Mono, o.Prose)}
 	rows := r.children(doc, o.contentWidth())
 	for i, row := range rows {
 		rows[i] = r.pad(row)

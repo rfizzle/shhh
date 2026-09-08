@@ -11,8 +11,8 @@
 
 ── layout ──────────────────────────────────────────────────
 · the edits are unchecked · all three ways on
-You
-  rename the round-limit sentinel
+❯ rename the round-limit sentinel
+───────────────────────────────────────────────────────
 
    ⚠ rounds  150 of 150 used · the turn…  stopped 4m12s
     3 files changed +30 −4 · the suite has not been re…
@@ -22,8 +22,8 @@ You
 
 
 · nothing changed · only the grant can be honoured
-You
-  rename the round-limit sentinel
+❯ rename the round-limit sentinel
+───────────────────────────────────────────────────────
 
    ⚠ rounds  150 of 150 used · the turn…  stopped 4m12s
     nothing changed
@@ -31,8 +31,8 @@ You
 
 
 · a second stop · the grant doubles and [!] arrives
-You
-  rename the round-limit sentinel
+❯ rename the round-limit sentinel
+───────────────────────────────────────────────────────
 
    ⚠ rounds  200 of 200 used · 50 alrea…  stopped 4m12s
     5 files changed +112 −40
@@ -42,8 +42,8 @@ You
 
 
 · the offer is spent · the row keeps its words
-You
-  rename the round-limit sentinel
+❯ rename the round-limit sentinel
+───────────────────────────────────────────────────────
 
    ⚠ rounds  150 of 150 used · the turn…  stopped 4m12s
     3 files changed +30 −4 · the suite has not been re…
@@ -53,8 +53,8 @@ You
 
 ── ansi ────────────────────────────────────────────────────
 · the edits are unchecked · all three ways on
-␛[1;38;5;254mYou␛[m
-  rename the round-limit sentinel
+␛[38;5;254m❯␛[m rename the round-limit sentinel
+␛[38;5;244m───────────────────────────────────────────────────────␛[m
 
    ␛[38;5;254m⚠␛[m ␛[38;5;254mrounds␛[m  ␛[38;5;254m150 of 150 used␛[m␛[38;5;244m · the turn…␛[m  ␛[38;5;254mstopped␛[m ␛[38;5;244m4m12s␛[m
     ␛[38;5;244m3 files changed +30 −4 · the suite has not been re…␛[m
@@ -64,8 +64,8 @@ You
 
 
 · nothing changed · only the grant can be honoured
-␛[1;38;5;254mYou␛[m
-  rename the round-limit sentinel
+␛[38;5;254m❯␛[m rename the round-limit sentinel
+␛[38;5;244m───────────────────────────────────────────────────────␛[m
 
    ␛[38;5;254m⚠␛[m ␛[38;5;254mrounds␛[m  ␛[38;5;254m150 of 150 used␛[m␛[38;5;244m · the turn…␛[m  ␛[38;5;254mstopped␛[m ␛[38;5;244m4m12s␛[m
     ␛[38;5;244mnothing changed␛[m
@@ -73,8 +73,8 @@ You
 
 
 · a second stop · the grant doubles and [!] arrives
-␛[1;38;5;254mYou␛[m
-  rename the round-limit sentinel
+␛[38;5;254m❯␛[m rename the round-limit sentinel
+␛[38;5;244m───────────────────────────────────────────────────────␛[m
 
    ␛[38;5;254m⚠␛[m ␛[38;5;254mrounds␛[m  ␛[38;5;254m200 of 200 used␛[m␛[38;5;244m · 50 alrea…␛[m  ␛[38;5;254mstopped␛[m ␛[38;5;244m4m12s␛[m
     ␛[38;5;244m5 files changed +112 −40␛[m
@@ -84,8 +84,8 @@ You
 
 
 · the offer is spent · the row keeps its words
-␛[1;38;5;254mYou␛[m
-  rename the round-limit sentinel
+␛[38;5;254m❯␛[m rename the round-limit sentinel
+␛[38;5;244m───────────────────────────────────────────────────────␛[m
 
    ␛[38;5;254m⚠␛[m ␛[38;5;254mrounds␛[m  ␛[38;5;254m150 of 150 used␛[m␛[38;5;244m · the turn…␛[m  ␛[38;5;254mstopped␛[m ␛[38;5;244m4m12s␛[m
     ␛[38;5;244m3 files changed +30 −4 · the suite has not been re…␛[m

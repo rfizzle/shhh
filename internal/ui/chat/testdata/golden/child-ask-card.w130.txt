@@ -12,7 +12,7 @@
 ── layout ──────────────────────────────────────────────────
 · a child's command · resolved in the agent's own checkout
 ╭─ writer-1 ▸ Approve command ────────────────────────────────────────────────────────────────────────────────────── ⚠ HIGH ─╮
-│ writer-1 wants to run rm -rf build                                                                                         │
+│ $ run rm -rf build                                                                                                         │
 │ ⚠ HIGH · recursive forced deletion — may destroy files irrecoverably                                                       │
 │                                                                                                                            │
 │ lands in  the agent's worktree — an isolated checkout; your files change only when you apply its patch                     │
@@ -27,7 +27,7 @@
 
 · the same card, held by arriving · two answers, and nothing else offered
 ╭─ writer-1 ▸ Approve command ────────────────────────────────────────────────────────────────────────────────────── ⚠ HIGH ─╮
-│ writer-1 wants to run rm -rf build                                                                                         │
+│ $ run rm -rf build                                                                                                         │
 │ ⚠ HIGH · recursive forced deletion — may destroy files irrecoverably                                                       │
 │                                                                                                                            │
 │ lands in  the agent's worktree — an isolated checkout; your files change only when you apply its patch                     │
@@ -43,7 +43,7 @@
 
 · a writer's patch · your files, and the diff behind a counted tail
 ╭─ writer-1 ▸ Apply patch ──────────────────────────────────────────────────────────────────────────────────────── ⚠ medium ─╮
-│ writer-1 finished and wants to apply patch (+40 −40, 2 file(s))                                                            │
+│ ✎ apply patch (+40 −40, 2 file(s))                                                                                         │
 │ ⚠ medium · writes 2 files under internal/agent/                                                                            │
 │                                                                                                                            │
 │ lands in  your workspace — the agent's worktree is separate; this is where its work arrives                                │
@@ -62,7 +62,7 @@
 ── ansi ────────────────────────────────────────────────────
 · a child's command · resolved in the agent's own checkout
 ␛[91m╭─ writer-1 ▸ Approve command ␛[m␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────␛[m␛[91m ⚠ HIGH ─╮␛[m
-␛[91m│␛[m ␛[1;94mwriter-1 wants to run rm -rf build␛[m                                                                                         ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;214m$␛[m ␛[97mrun rm -rf build␛[m                                                                                                         ␛[91m│␛[m
 ␛[91m│␛[m ␛[91m⚠ HIGH␛[m␛[38;5;241m · recursive forced deletion — may destroy files irrecoverably␛[m                                                       ␛[91m│␛[m
 ␛[91m│␛[m                                                                                                                            ␛[91m│␛[m
 ␛[91m│␛[m ␛[38;5;243mlands in  ␛[m␛[92mthe agent's worktree␛[m␛[38;5;245m — an isolated checkout; your files change only when you apply its patch␛[m                     ␛[91m│␛[m
@@ -77,7 +77,7 @@
 
 · the same card, held by arriving · two answers, and nothing else offered
 ␛[91m╭─ writer-1 ▸ Approve command ␛[m␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────␛[m␛[91m ⚠ HIGH ─╮␛[m
-␛[91m│␛[m ␛[1;94mwriter-1 wants to run rm -rf build␛[m                                                                                         ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;214m$␛[m ␛[97mrun rm -rf build␛[m                                                                                                         ␛[91m│␛[m
 ␛[91m│␛[m ␛[91m⚠ HIGH␛[m␛[38;5;241m · recursive forced deletion — may destroy files irrecoverably␛[m                                                       ␛[91m│␛[m
 ␛[91m│␛[m                                                                                                                            ␛[91m│␛[m
 ␛[91m│␛[m ␛[38;5;243mlands in  ␛[m␛[92mthe agent's worktree␛[m␛[38;5;245m — an isolated checkout; your files change only when you apply its patch␛[m                     ␛[91m│␛[m
@@ -93,7 +93,7 @@
 
 · a writer's patch · your files, and the diff behind a counted tail
 ␛[38;5;214m╭─ writer-1 ▸ Apply patch ␛[m␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;214m ⚠ medium ─╮␛[m
-␛[38;5;214m│␛[m ␛[1;94mwriter-1 finished and wants to apply patch (+40 −40, 2 file(s))␛[m                                                            ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;214m✎␛[m ␛[97mapply patch (+40 −40, 2 file(s))␛[m                                                                                         ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;241m · writes 2 files under internal/agent/␛[m                                                                            ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                                                                                            ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mlands in  ␛[m␛[38;5;214myour workspace␛[m␛[38;5;245m — the agent's worktree is separate; this is where its work arrives␛[m                                ␛[38;5;214m│␛[m

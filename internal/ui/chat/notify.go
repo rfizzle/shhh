@@ -87,7 +87,7 @@ const notifyName = "shhh"
 
 // notifyWords is what the notification says: the title, and the line beneath
 // it. They are the words already on the screen the reader is being called
-// back to — a card's own title and headline, a turn close's own summary —
+// back to — a card's own title and act, a turn close's own summary —
 // because a summons that describes the screen in different words is a summons
 // the reader has to reconcile when they arrive.
 //
@@ -98,20 +98,21 @@ const notifyName = "shhh"
 func (m Model) notifyWords() (title, body string) {
 	if ask := m.activeChildAsk(); ask != nil {
 		card := m.childAskCard(ask)
-		return card.Title, card.Headline
+		return card.Title, card.Act
 	}
 	switch m.turnState() {
 	case stateConfirmRun:
 		// The memory proposal confirms through its own prompt rather than the
-		// card, and says its own thing.
+		// card, and says its own thing — the same line the prompt itself
+		// leads with, so the notification and the screen agree (memory.go).
 		if m.memoryAsk != nil {
 			if req := m.pendingApproval; req != nil {
-				return "Remember this?", fmt.Sprintf("Assistant proposes a %s memory: %q", req.memoryDraft.Kind, firstLine(req.memoryDraft.Text))
+				return "Remember this?", memoryProposalLine(req)
 			}
 			return "Remember this?", ""
 		}
 		card := m.buildApprovalCard()
-		return card.Title, card.Headline
+		return card.Title, card.Act
 	case stateQuestion:
 		// The model's own question, which is the card's title and so the
 		// words the reader is being called back to. It is read from

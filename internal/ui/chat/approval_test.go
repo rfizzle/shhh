@@ -105,7 +105,7 @@ func TestGatedTool_DiffApprovalFlow(t *testing.T) {
 		t.Fatal("gated tool must not run before approval")
 	}
 	view := m.View().Content
-	if !strings.Contains(view, "Assistant wants to write main.go") {
+	if !strings.Contains(ansi.Strip(view), "✎ write main.go") {
 		t.Fatal("confirm prompt should describe the file action")
 	}
 	// Diff previews carry line numbers (
@@ -334,7 +334,7 @@ func TestGatedTool_GenericPreview(t *testing.T) {
 	m = updated.(Model)
 
 	view := m.View().Content
-	if !strings.Contains(view, "Assistant wants to use my_tool") {
+	if !strings.Contains(ansi.Strip(view), "⚙ use my_tool") {
 		t.Fatal("generic approval should name the tool")
 	}
 	if !strings.Contains(view, "do the thing") {
@@ -342,6 +342,35 @@ func TestGatedTool_GenericPreview(t *testing.T) {
 	}
 	if !strings.Contains(ansi.Strip(view), "[y] allow it") {
 		t.Fatal("generic approval should offer its answer under the key")
+	}
+}
+
+// A preview that named the act and wrote a one-line form of it puts that line
+// on the card's first row instead of the tool that carries it: the reader is
+// answering `GET pkg.go.dev/context`, not `use web_fetch`
+// (docs/interface/surfaces.md#the-approval-card).
+func TestGatedTool_APreviewThatNamesTheActLeadsWithIt(t *testing.T) {
+	executor := func(name string, args json.RawMessage) (string, error) { return "ok", nil }
+	m := gatedModel(t, executor, map[string]GatedPreviewFunc{
+		"my_tool": func(raw json.RawMessage) (GatedPreview, error) {
+			return GatedPreview{Action: "fetch", Summary: "GET pkg.go.dev/context"}, nil
+		},
+	})
+
+	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_g", Name: "my_tool", Arguments: `{}`},
+	}})
+	view := ansi.Strip(updated.(Model).View().Content)
+	if !strings.Contains(view, "⚙ GET pkg.go.dev/context") {
+		t.Fatalf("the act should lead the card:\n%s", view)
+	}
+	if strings.Contains(view, "use my_tool") {
+		t.Fatalf("the mechanism should not be the card's first row:\n%s", view)
+	}
+	// And the line is drawn once: the summary row under it would be the same
+	// sentence twice.
+	if n := strings.Count(view, "GET pkg.go.dev/context"); n != 1 {
+		t.Fatalf("the act is stated %d times:\n%s", n, view)
 	}
 }
 
@@ -369,7 +398,7 @@ func TestMutatingTool_WriteApprovedThroughQueue(t *testing.T) {
 		t.Fatal("file must not exist before approval")
 	}
 	view := m.View().Content
-	if !strings.Contains(view, "Assistant wants to write") || !strings.Contains(view, "+ 1  hello") {
+	if !strings.Contains(ansi.Strip(view), "✎ write") || !strings.Contains(view, "+ 1  hello") {
 		t.Fatal("confirm prompt should show the write action and diff")
 	}
 

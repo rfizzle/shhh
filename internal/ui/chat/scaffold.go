@@ -78,7 +78,8 @@ func (m Model) scaffoldCard() *components.ApprovalCard {
 	card := &components.ApprovalCard{
 		Variant:  components.ApprovalGeneric,
 		Title:    "Approve scaffold",
-		Headline: "shhh wants to write this project's context file",
+		ActGlyph: "✎",
+		Act:      "write this project's context file",
 		Summary:  "it is read into the system prompt of every session opened here",
 		Answer:   "write them",
 		MaxLines: m.planPanelBound(),

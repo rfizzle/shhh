@@ -30,10 +30,9 @@ and the last 1 turn:
     fourth moved the constant, and the fifth's tests
     pass except the one on the limit itself.
 
-You
-  Move the round limit into the loop.
+❯ Move the round limit into the loop.
+───────────────────────────────────────────────────────
 
-Assistant
   Moved it, and the *limit* is read from one place   
   now.
 
@@ -59,10 +58,9 @@ Assistant
     ␛[3;38;5;244mfourth moved the constant, and the fifth's tests␛[m
     ␛[3;38;5;244mpass except the one on the limit itself.␛[m
 
-␛[1;38;5;254mYou␛[m
-  Move the round limit into the loop.
+␛[38;5;254m❯␛[m Move the round limit into the loop.
+␛[38;5;244m───────────────────────────────────────────────────────␛[m
 
-␛[1;38;5;254mAssistant␛[m
   Moved it, and the *limit* is read from one place   
   now.
 

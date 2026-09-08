@@ -13,7 +13,7 @@
 · the command open, and every letter going into it
 ──── DECISION 1/1 ────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ Approve command ─────────────────────────────────────────────────────────────────────────────────────────────── ⚠ medium ─╮
-│ Assistant wants to run: npm test                                                                                           │
+│ $ npm test                                                                                                                 │
 │ ⚠ medium · what it writes could not be resolved                                                                            │
 │                                                                                                                            │
 │ touches   unknown — shhh cannot tell what npm writes                                                                       │
@@ -31,7 +31,7 @@
 · the command open, and every letter going into it
 ␛[38;5;241m────␛[m ␛[1;94mDECISION 1/1␛[m ␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 ␛[38;5;214m╭─ Approve command ␛[m␛[38;5;241m───────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;214m ⚠ medium ─╮␛[m
-␛[38;5;214m│␛[m ␛[1;94mAssistant wants to run: npm test␛[m                                                                                           ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;214m$␛[m ␛[97mnpm test␛[m                                                                                                                 ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;241m · what it writes could not be resolved␛[m                                                                            ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                                                                                            ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mtouches   ␛[m␛[91munknown␛[m␛[38;5;245m — shhh cannot tell what npm writes␛[m                                                                       ␛[38;5;214m│␛[m

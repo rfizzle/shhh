@@ -203,7 +203,7 @@ func TestStartScreen_GoesOnTheFirstTurnAndDoesNotComeBackOnClear(t *testing.T) {
 	// The turn is still notionally in flight after sendUserMessage; back at
 	// rest, the empty transcript falls through to the plain welcome line.
 	m.setTurnState(stateInput)
-	if !strings.Contains(startText(m), "Type a message") {
+	if !strings.Contains(startText(m), "ask for anything") {
 		t.Fatalf("a cleared session should fall back to the welcome line:\n%s", startText(m))
 	}
 }
@@ -351,7 +351,7 @@ func TestStartScreen_HistoryKeepsTheArrowsOnceThereIsHistory(t *testing.T) {
 func TestStartScreen_AbsentSurveyKeepsThePlainWelcome(t *testing.T) {
 	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream)
 	m.width = 80
-	if !strings.Contains(ansi.Strip(m.renderHistory()), "Type a message") {
+	if !strings.Contains(ansi.Strip(m.renderHistory()), "ask for anything") {
 		t.Fatal("a model with no survey should keep the welcome line")
 	}
 }

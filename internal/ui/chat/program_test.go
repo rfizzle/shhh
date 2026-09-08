@@ -201,7 +201,7 @@ func heldCommandProgram(t *testing.T, ran *[]string) *teatest.TestModel {
 	waitForText(t, tm, draftSentence)
 
 	release()
-	waitForText(t, tm, "Assistant wants to run: echo hi")
+	waitForText(t, tm, "run it once")
 	return tm
 }
 
@@ -227,7 +227,7 @@ func TestProgram_TheApprovalCardsKeysRunTheCommand(t *testing.T) {
 			t.Fatalf("the command's row is not in the transcript, no %q:\n%s", want, frame)
 		}
 	}
-	if strings.Contains(frame, "Assistant wants to run") {
+	if strings.Contains(frame, "$ echo hi") {
 		t.Fatalf("the answered card is still on the screen:\n%s", frame)
 	}
 	// Answering hands the keyboard back at the character it was taken from.
@@ -254,7 +254,7 @@ func TestProgram_ACardsKeyIsInertUntilTheHandover(t *testing.T) {
 	if len(ran) != 0 {
 		t.Fatalf("a key the card does not hold ran the command: %v\n%s", ran, frame)
 	}
-	if !strings.Contains(frame, "Assistant wants to run: echo hi") {
+	if !strings.Contains(frame, "$ echo hi") {
 		t.Fatalf("the card left the screen without being answered:\n%s", frame)
 	}
 	// And it says so rather than leaving the reader to infer it from a dim

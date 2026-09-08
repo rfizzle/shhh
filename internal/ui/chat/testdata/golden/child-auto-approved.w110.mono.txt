@@ -11,8 +11,8 @@
 
 ── layout ──────────────────────────────────────────────────
 · an edit the mode allowed and a command the classifier did
-You
-  long survey
+❯ long survey
+─────────────────────────────────────────────────────────────────────────────────────────────────────────
 
   ▎✎ edit    internal/agent/loop.go                               auto-allowed · auto mode · 1 line
   ▎$ run     go test ./internal/agent/...                   auto-allowed · classifier 2.1s · 1 line
@@ -20,8 +20,8 @@ You
 
 ── ansi ────────────────────────────────────────────────────
 · an edit the mode allowed and a command the classifier did
-␛[1;38;5;254mYou␛[m
-  long survey
+␛[38;5;254m❯␛[m long survey
+␛[38;5;244m─────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254medit␛[m    ␛[38;5;254minternal/agent/loop.go␛[m                               ␛[38;5;244mauto-allowed · auto mode␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 line␛[m
   ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mgo test ./internal/agent/...␛[m                   ␛[38;5;244mauto-allowed · classifier 2.1s␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 line␛[m

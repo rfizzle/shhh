@@ -12,8 +12,8 @@
 ── layout ──────────────────────────────────────────────────
 · the query row where the key bar was · every match bold
 ──── SEARCH · loop.go · 1/3 ──────────────────────────────────────────────────────────────────────────────────────────────────
-You                                                                           
-  where does the round limit come from                                        
+❯ where does the round limit come from                                        
+──────────────────────────────────────────────────────────────────────────────
                                                                               
 ❯    ⚙ read    internal/agent/loop.go                            2 lines      
      ⚙ read    internal/agent/tools.go                           2 lines      
@@ -29,8 +29,8 @@ enter keep the search · esc clear it
 
 · kept · the pointer's occurrence bold on the lit row, [n/N] on the bar
 ──── SEARCH · loop.go · 2/3 ──────────────────────────────────────────────────────────────────────────────────────────────────
-You                                                                           
-  where does the round limit come from                                        
+❯ where does the round limit come from                                        
+──────────────────────────────────────────────────────────────────────────────
                                                                               
      ⚙ read    internal/agent/loop.go                            2 lines      
      ⚙ read    internal/agent/tools.go                           2 lines      
@@ -46,8 +46,8 @@ You
 
 · the only match is behind a fold · the header counts it and offers the key
 ──── SEARCH · context.go · 0/1 ───────────────────────────────────────────────────────────────────────────────────────────────
-You                                                                           ┃
-  fix the round limit                                                         ┃
+❯ fix the round limit                                                         ┃
+──────────────────────────────────────────────────────────────────────────────┃
                                                                               ┃
 ❯ ▸ 1  Locate the round accounting ────────── ✓ 4 tools · 1 match inside  1.2s┃
                                                                               ┃
@@ -65,8 +65,8 @@ enter keep the search · esc clear it
 
 · [enter] opened the step · the run it holds still says what it is covering
 ──── SEARCH · context.go · 0/1 ───────────────────────────────────────────────────────────────────────────────────────────────
-You                                                                           ┃
-  fix the round limit                                                         ┃
+❯ fix the round limit                                                         ┃
+──────────────────────────────────────────────────────────────────────────────┃
                                                                               ┃
   ▾ 1  Locate the round accounting ─────────────────────────── ✓ 4 tools  1.2s┃
 ❯    ▸ ⚙       1 match inside · 3 reads · 1 search        [enter] expand  1.2s┃
@@ -85,8 +85,8 @@ You                                                                           �
 ── ansi ────────────────────────────────────────────────────
 · the query row where the key bar was · every match bold
 ␛[38;5;241m────␛[m ␛[1;94mSEARCH · loop.go · 1/3␛[m ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────␛[m
-␛[1;94mYou␛[m                                                                           
-  ␛[38;5;252mwhere does the round limit come from␛[m                                        
+␛[94m❯␛[m ␛[97mwhere does the round limit come from␛[m                                        
+␛[38;5;243m──────────────────────────────────────────────────────────────────────────────␛[m
                                                                               
 ␛[94m❯␛[m ␛[38;5;214m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m␛[38;5;245m␛[m␛[48;5;62m   ␛[38;5;214m⚙␛[m␛[48;5;62m ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;245m␛[m␛[48;5;62m␛[97;48;5;62mread    internal/agent/␛[m␛[m␛[1mloop.go␛[m␛[94m␛[m␛[38;5;214m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m␛[38;5;245m␛[m␛[48;5;62m␛[38;5;214m␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;245m␛[m␛[48;5;62m␛[97;48;5;62m                            2 lines      ␛[m␛[m
      ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/tools.go␛[m                           ␛[38;5;245m2 lines␛[m      
@@ -102,8 +102,8 @@ You                                                                           �
 
 · kept · the pointer's occurrence bold on the lit row, [n/N] on the bar
 ␛[38;5;241m────␛[m ␛[1;94mSEARCH · loop.go · 2/3␛[m ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────␛[m
-␛[1;94mYou␛[m                                                                           
-  ␛[38;5;252mwhere does the round limit come from␛[m                                        
+␛[94m❯␛[m ␛[97mwhere does the round limit come from␛[m                                        
+␛[38;5;243m──────────────────────────────────────────────────────────────────────────────␛[m
                                                                               
      ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/␛[m␛[38;5;245m␛[m␛[1mloop.go␛[m␛[38;5;214m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m                            ␛[38;5;245m2 lines␛[m      
      ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/tools.go␛[m                           ␛[38;5;245m2 lines␛[m      
@@ -119,8 +119,8 @@ You                                                                           �
 
 · the only match is behind a fold · the header counts it and offers the key
 ␛[38;5;241m────␛[m ␛[1;94mSEARCH · context.go · 0/1␛[m ␛[38;5;241m───────────────────────────────────────────────────────────────────────────────────────────────␛[m
-␛[1;94mYou␛[m                                                                           ␛[38;5;241m┃␛[m
-  ␛[38;5;252mfix the round limit␛[m                                                         ␛[38;5;241m┃␛[m
+␛[94m❯␛[m ␛[97mfix the round limit␛[m                                                         ␛[38;5;241m┃␛[m
+␛[38;5;243m──────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;241m┃␛[m
                                                                               ␛[38;5;241m┃␛[m
 ␛[94m❯␛[m ␛[38;5;241m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m␛[38;5;241m␛[m␛[92m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m▸␛[m␛[48;5;62m ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[92m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62m1  Locate the round accounting ────────── ✓ 4 tools · 1 match inside  1.2s␛[m␛[m␛[38;5;241m┃␛[m
                                                                               ␛[38;5;241m┃␛[m
@@ -138,8 +138,8 @@ You                                                                           �
 
 · [enter] opened the step · the run it holds still says what it is covering
 ␛[38;5;241m────␛[m ␛[1;94mSEARCH · context.go · 0/1␛[m ␛[38;5;241m───────────────────────────────────────────────────────────────────────────────────────────────␛[m
-␛[1;94mYou␛[m                                                                           ␛[38;5;241m┃␛[m
-  ␛[38;5;252mfix the round limit␛[m                                                         ␛[38;5;241m┃␛[m
+␛[94m❯␛[m ␛[97mfix the round limit␛[m                                                         ␛[38;5;241m┃␛[m
+␛[38;5;243m──────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;241m┃␛[m
                                                                               ␛[38;5;241m┃␛[m
   ␛[38;5;241m▾␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mLocate the round accounting␛[m ␛[38;5;241m───────────────────────────␛[m ␛[92m✓␛[m ␛[38;5;241m4 tools␛[m  ␛[38;5;241m1.2s␛[m␛[38;5;241m┃␛[m
 ␛[94m❯␛[m ␛[38;5;241m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m   ␛[38;5;241m▸␛[m␛[48;5;62m ␛[38;5;241m⚙␛[m␛[48;5;62m       ␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62m1 match inside · 3 reads · 1 search        [enter] expand  1.2s␛[m␛[m␛[38;5;241m┃␛[m

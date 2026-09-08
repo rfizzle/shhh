@@ -125,7 +125,7 @@ func (m *Model) renderChildHistory(name, streaming string) string {
 		// the parent's transcript has had all along (streammd.go): the
 		// attached view redraws the arriving message on every frame, and
 		// parsing it whole each time is quadratic in its length.
-		b.WriteString(sty.Assistant.Render("Assistant") + "\n" + cv.stream.Render(streaming, w))
+		b.WriteString(cv.stream.Render(streaming, w))
 	}
 	if b.Len() == 0 {
 		return sty.Welcome.Render("No activity from this agent yet.")

@@ -11,8 +11,8 @@
 
 ── layout ──────────────────────────────────────────────────
 · auth · the key it sent is named, and a new one can be entered
-You
-  rename the round-limit sentinel
+❯ rename the round-limit sentinel
+──────────────────────────────────────────────────────────────────────────────
 
    ✗ model   gpt-4o · 401 unauthorized              key ···4f9c rejected
     Incorrect API key provided
@@ -22,8 +22,8 @@ You
 
 
 · rate limit · a stall, with the wait the provider named
-You
-  rename the round-limit sentinel
+❯ rename the round-limit sentinel
+──────────────────────────────────────────────────────────────────────────────
 
    ⚠ model   gpt-4o · 429 rate limited                      retry in 38s
     Rate limit reached for gpt-4o. Please try again in 38s.
@@ -33,8 +33,8 @@ You
 
 
 · context length · the only class with a remedy of its own
-You
-  rename the round-limit sentinel
+❯ rename the round-limit sentinel
+──────────────────────────────────────────────────────────────────────────────
 
    ✗ model   gpt-4o · 400 context too long               over the window
     This model's maximum context length is 128000 tokens
@@ -44,8 +44,8 @@ You
 
 
 · unclassified · the message is the whole point of the row
-You
-  rename the round-limit sentinel
+❯ rename the round-limit sentinel
+──────────────────────────────────────────────────────────────────────────────
 
    ✗ model   gpt-4o · 400 unclassified                     message below
     Unknown parameter: 'reasoning.effort'
@@ -56,8 +56,8 @@ You
 
 ── ansi ────────────────────────────────────────────────────
 · auth · the key it sent is named, and a new one can be entered
-␛[1;94mYou␛[m
-  ␛[38;5;252mrename the round-limit sentinel␛[m
+␛[94m❯␛[m ␛[97mrename the round-limit sentinel␛[m
+␛[38;5;243m──────────────────────────────────────────────────────────────────────────────␛[m
 
    ␛[91m✗␛[m ␛[38;5;252mmodel␛[m   ␛[38;5;252mgpt-4o␛[m␛[38;5;241m · 401 unauthorized␛[m              ␛[91mkey ···4f9c rejected␛[m
     ␛[38;5;245mIncorrect API key provided␛[m
@@ -67,8 +67,8 @@ You
 
 
 · rate limit · a stall, with the wait the provider named
-␛[1;94mYou␛[m
-  ␛[38;5;252mrename the round-limit sentinel␛[m
+␛[94m❯␛[m ␛[97mrename the round-limit sentinel␛[m
+␛[38;5;243m──────────────────────────────────────────────────────────────────────────────␛[m
 
    ␛[38;5;214m⚠␛[m ␛[38;5;252mmodel␛[m   ␛[38;5;252mgpt-4o␛[m␛[38;5;241m · 429 rate limited␛[m                      ␛[38;5;214mretry in 38s␛[m
     ␛[38;5;245mRate limit reached for gpt-4o. Please try again in 38s.␛[m
@@ -78,8 +78,8 @@ You
 
 
 · context length · the only class with a remedy of its own
-␛[1;94mYou␛[m
-  ␛[38;5;252mrename the round-limit sentinel␛[m
+␛[94m❯␛[m ␛[97mrename the round-limit sentinel␛[m
+␛[38;5;243m──────────────────────────────────────────────────────────────────────────────␛[m
 
    ␛[91m✗␛[m ␛[38;5;252mmodel␛[m   ␛[38;5;252mgpt-4o␛[m␛[38;5;241m · 400 context too long␛[m               ␛[91mover the window␛[m
     ␛[38;5;245mThis model's maximum context length is 128000 tokens␛[m
@@ -89,8 +89,8 @@ You
 
 
 · unclassified · the message is the whole point of the row
-␛[1;94mYou␛[m
-  ␛[38;5;252mrename the round-limit sentinel␛[m
+␛[94m❯␛[m ␛[97mrename the round-limit sentinel␛[m
+␛[38;5;243m──────────────────────────────────────────────────────────────────────────────␛[m
 
    ␛[91m✗␛[m ␛[38;5;252mmodel␛[m   ␛[38;5;252mgpt-4o␛[m␛[38;5;241m · 400 unclassified␛[m                     ␛[91mmessage below␛[m
     ␛[38;5;245mUnknown parameter: 'reasoning.effort'␛[m

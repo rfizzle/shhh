@@ -190,7 +190,8 @@ func monoFixtures() []monoSurface {
 		c := ApprovalCard{
 			Variant:  ApprovalCommand,
 			Title:    "Approve command",
-			Headline: "Assistant wants to run: go test ./...",
+			ActGlyph: "$",
+			Act:      "go test ./...",
 			Answer:   "run it once",
 		}
 		mut(&c)

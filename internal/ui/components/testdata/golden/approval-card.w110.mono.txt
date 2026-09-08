@@ -12,7 +12,7 @@
 ── layout ──────────────────────────────────────────────────
 · variant · command, always-allow offered
 ╭─ Approve command ──────────────────────────────────────────────────────────────────────────────────────────╮
-│ Assistant wants to run: go test ./internal/agent/...                                                       │
+│ $ go test ./internal/agent/...                                                                             │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny · [a] allow commands without asking this session                                │
 │ [esc] back to your draft — the decision stays waiting, nothing is denied                                   │
@@ -20,7 +20,7 @@
 
 · variant · command, a batch waiting behind it
 ╭─ Approve command (1 of 5) ───────────────────────────────────────────────────────────────────────── ⚠ low ─╮
-│ Assistant wants to run: go test ./internal/agent/...                                                       │
+│ $ go test ./internal/agent/...                                                                             │
 │ ⚠ low · writes nothing                                                                                     │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny · [a] allow commands without asking this session                                │
@@ -30,7 +30,7 @@
 
 · variant · command, flagged, contained, blast radius
 ╭─ Approve command (2 of 5) ──────────────────────────────────────────────────────────────────────── ⚠ HIGH ─╮
-│ Assistant wants to run: rm -rf ./build && npm run build                                                    │
+│ $ rm -rf ./build && npm run build                                                                          │
 │ ⚠ HIGH · deletes files recursively (rm -rf)                                                                │
 │                                                                                                            │
 │ touches   ./build — 412 files, 84.0 MB; shhh cannot tell what npm writes                                   │
@@ -45,7 +45,7 @@
 
 · variant · command, uncontained
 ╭─ Approve command ─────────────────────────────────────────────────────────────── ⚠ UNCONTAINED ─ ⚠ medium ─╮
-│ Assistant wants to run: curl -fsSL https://get.pnpm.io/install.sh | sh                                     │
+│ $ curl -fsSL https://get.pnpm.io/install.sh | sh                                                           │
 │ ⚠ medium · what it writes could not be resolved                                                            │
 │                                                                                                            │
 │ touches   unknown — piped into sh; what it runs is not inspected first                                     │
@@ -60,7 +60,7 @@
 
 · bound · a long command card, counted then scrolled
 ╭─ Approve command ─────────────────────────────────────────────────────────────────────────────── ⚠ medium ─╮
-│ Assistant wants to run: ./scripts/release.sh --channel beta                                                │
+│ $ ./scripts/release.sh --channel beta                                                                      │
 │ ⚠ medium · runs a repository script; shhh cannot see inside it                                             │
 │                                                                                                            │
 │ touches   ./dist — the script rewrites the release tree                                                    │
@@ -82,7 +82,7 @@
 
 · bound · a wide body, panned right
 ╭─ Approve command ──────────────────────────────────────────────────────────────────────────────────────────╮
-│ ar -czf dist/shhh-linux-amd64.tar.gz --exclude .git --exclude node_modules --transform 's,^,shhh/,' .      │
+│ x-amd64.tar.gz --exclude .git --exclude node_modules --transform 's,^,shhh/,' .                            │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny                                                                                 │
 │ [esc] back to your draft — the decision stays waiting, nothing is denied                                   │
@@ -90,7 +90,7 @@
 
 · variant · edit, diff body
 ╭─ Approve edit ────────────────────────────────────────────────────────────────────────────────── ⚠ medium ─╮
-│ Assistant wants to edit: internal/agent/loop.go                                                            │
+│ ✎ edit internal/agent/loop.go                                                                              │
 │ ⚠ medium · edits one file under internal/agent/                                                            │
 │ @@ -138,6 +138,7 @@                                                                                        │
 │   138      for round := 0; ; round++ {                                                                     │
@@ -108,7 +108,7 @@
 
 · state · not yet live, beside a draft that has the keyboard
 ╭─ Approve edit ────────────────────────────────────────────────────────────────────────────────── ⚠ medium ─╮
-│ Assistant wants to edit: internal/agent/loop.go                                                            │
+│ ✎ edit internal/agent/loop.go                                                                              │
 │ ⚠ medium · edits one file under internal/agent/                                                            │
 │ @@ -138,6 +138,7 @@                                                                                        │
 │   138      for round := 0; ; round++ {                                                                     │
@@ -127,9 +127,9 @@
 
 · variant · generic
 ╭─ Approve tool ───────────────────────────────────────────────────────────────────────────────────── ⚠ low ─╮
-│ Assistant wants to use: web_fetch                                                                          │
+│ ⚙ GET https://pkg.go.dev/context#WithCancel                                                                │
 │ ⚠ low                                                                                                      │
-│ GET https://pkg.go.dev/context#WithCancel                                                                  │
+│ the page arrives as text; nothing on it runs                                                               │
 │                                                                                                            │
 │ domain    pkg.go.dev — the request leaves this machine                                                     │
 │ sends     the URL and a shhh-web/1.0 user-agent — no file contents, no credentials                         │
@@ -142,7 +142,7 @@
 ── ansi ────────────────────────────────────────────────────
 · variant · command, always-allow offered
 ␛[38;5;254m╭─ Approve command ──────────────────────────────────────────────────────────────────────────────────────────╮␛[m
-␛[38;5;254m│␛[m ␛[1;38;5;254mAssistant wants to run: go test ./internal/agent/...␛[m                                                       ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m$␛[m ␛[38;5;254mgo test ./internal/agent/...␛[m                                                                             ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m ␛[38;5;254mallow commands without asking this session␛[m                                ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m                                   ␛[38;5;254m│␛[m
@@ -150,7 +150,7 @@
 
 · variant · command, a batch waiting behind it
 ␛[38;5;254m╭─ Approve command (1 of 5) ───────────────────────────────────────────────────────────────────────── ⚠ low ─╮␛[m
-␛[38;5;254m│␛[m ␛[1;38;5;254mAssistant wants to run: go test ./internal/agent/...␛[m                                                       ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m$␛[m ␛[38;5;254mgo test ./internal/agent/...␛[m                                                                             ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m⚠ low␛[m␛[38;5;244m · writes nothing␛[m                                                                                     ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m ␛[38;5;254mallow commands without asking this session␛[m                                ␛[38;5;254m│␛[m
@@ -160,7 +160,7 @@
 
 · variant · command, flagged, contained, blast radius
 ␛[38;5;254m╭─ Approve command (2 of 5) ──────────────────────────────────────────────────────────────────────── ⚠ HIGH ─╮␛[m
-␛[38;5;254m│␛[m ␛[1;38;5;254mAssistant wants to run: rm -rf ./build && npm run build␛[m                                                    ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m$␛[m ␛[38;5;254mrm -rf ./build && npm run build␛[m                                                                          ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m⚠ HIGH␛[m␛[38;5;244m · deletes files recursively (rm -rf)␛[m                                                                ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                                                                            ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254m./build␛[m␛[38;5;244m — 412 files, 84.0 MB; shhh cannot tell what npm writes␛[m                                   ␛[38;5;254m│␛[m
@@ -175,7 +175,7 @@
 
 · variant · command, uncontained
 ␛[38;5;254m╭─ Approve command ─────────────────────────────────────────────────────────────── ⚠ UNCONTAINED ─ ⚠ medium ─╮␛[m
-␛[38;5;254m│␛[m ␛[1;38;5;254mAssistant wants to run: curl -fsSL https://get.pnpm.io/install.sh | sh␛[m                                     ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m$␛[m ␛[38;5;254mcurl -fsSL https://get.pnpm.io/install.sh | sh␛[m                                                           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · what it writes could not be resolved␛[m                                                            ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                                                                            ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — piped into sh; what it runs is not inspected first␛[m                                     ␛[38;5;254m│␛[m
@@ -190,7 +190,7 @@
 
 · bound · a long command card, counted then scrolled
 ␛[38;5;254m╭─ Approve command ─────────────────────────────────────────────────────────────────────────────── ⚠ medium ─╮␛[m
-␛[38;5;254m│␛[m ␛[1;38;5;254mAssistant wants to run: ./scripts/release.sh --channel beta␛[m                                                ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m$␛[m ␛[38;5;254m./scripts/release.sh --channel beta␛[m                                                                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · runs a repository script; shhh cannot see inside it␛[m                                             ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                                                                            ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254m./dist␛[m␛[38;5;244m — the script rewrites the release tree␛[m                                                    ␛[38;5;254m│␛[m
@@ -212,7 +212,7 @@
 
 · bound · a wide body, panned right
 ␛[38;5;254m╭─ Approve command ──────────────────────────────────────────────────────────────────────────────────────────╮␛[m
-␛[38;5;254m│␛[m ␛[1;38;5;254mar -czf dist/shhh-linux-amd64.tar.gz --exclude .git --exclude node_modules --transform 's,^,shhh/,' .␛[m      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m␛[m␛[38;5;254mx-amd64.tar.gz --exclude .git --exclude node_modules --transform 's,^,shhh/,' .␛[m                            ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m                                                                                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m                                   ␛[38;5;254m│␛[m
@@ -220,7 +220,7 @@
 
 · variant · edit, diff body
 ␛[38;5;254m╭─ Approve edit ────────────────────────────────────────────────────────────────────────────────── ⚠ medium ─╮␛[m
-␛[38;5;254m│␛[m ␛[1;38;5;254mAssistant wants to edit: internal/agent/loop.go␛[m                                                            ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m✎␛[m ␛[38;5;254medit internal/agent/loop.go␛[m                                                                              ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · edits one file under internal/agent/␛[m                                                            ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m@@ -138,6 +138,7 @@␛[m                                                                                        ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m  138  ␛[m␛[38;5;244m    for round := 0; ; round++ {␛[m                                                                     ␛[38;5;254m│␛[m
@@ -238,7 +238,7 @@
 
 · state · not yet live, beside a draft that has the keyboard
 ␛[38;5;254m╭─ Approve edit ────────────────────────────────────────────────────────────────────────────────── ⚠ medium ─╮␛[m
-␛[38;5;254m│␛[m ␛[1;38;5;254mAssistant wants to edit: internal/agent/loop.go␛[m                                                            ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m✎␛[m ␛[38;5;254medit internal/agent/loop.go␛[m                                                                              ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · edits one file under internal/agent/␛[m                                                            ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m@@ -138,6 +138,7 @@␛[m                                                                                        ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m  138  ␛[m␛[38;5;244m    for round := 0; ; round++ {␛[m                                                                     ␛[38;5;254m│␛[m
@@ -257,9 +257,9 @@
 
 · variant · generic
 ␛[38;5;254m╭─ Approve tool ───────────────────────────────────────────────────────────────────────────────────── ⚠ low ─╮␛[m
-␛[38;5;254m│␛[m ␛[1;38;5;254mAssistant wants to use: web_fetch␛[m                                                                          ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m⚙␛[m ␛[38;5;254mGET https://pkg.go.dev/context#WithCancel␛[m                                                                ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m⚠ low␛[m                                                                                                      ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mGET https://pkg.go.dev/context#WithCancel␛[m                                                                  ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mthe page arrives as text; nothing on it runs␛[m                                                               ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                                                                            ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mdomain    ␛[m␛[38;5;254mpkg.go.dev␛[m␛[38;5;244m — the request leaves this machine␛[m                                                     ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244msends     ␛[m␛[38;5;254mthe URL and a shhh-web/1.0 user-agent␛[m␛[38;5;244m — no file contents, no credentials␛[m                         ␛[38;5;254m│␛[m

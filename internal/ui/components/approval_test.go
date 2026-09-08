@@ -37,10 +37,10 @@ func key(s string) tea.KeyPressMsg {
 
 func TestApprovalCard_CommandVariant(t *testing.T) {
 	c := &ApprovalCard{
-		Variant:  ApprovalCommand,
-		Title:    "Approve command",
-		Headline: "Assistant wants to run: go test ./...",
-		Answer:   "run it once",
+		Variant: ApprovalCommand,
+		Title:   "Approve command",
+		Act:     "go test ./...",
+		Answer:  "run it once",
 	}
 	view := c.View(80)
 	if !strings.Contains(view, "Approve command") || !strings.Contains(view, "go test ./...") {
@@ -62,7 +62,7 @@ func TestApprovalCard_Warnings(t *testing.T) {
 	c := &ApprovalCard{
 		Variant:  ApprovalCommand,
 		Title:    "Approve command",
-		Headline: "Assistant wants to run: rm -rf /",
+		Act:      "rm -rf /",
 		Warnings: []string{"deletes files recursively"},
 		Answer:   "run it once",
 	}
@@ -81,7 +81,7 @@ func TestApprovalCard_SeverityIsAWordNotOnlyAColour(t *testing.T) {
 	c := &ApprovalCard{
 		Variant:  ApprovalCommand,
 		Title:    "Approve command",
-		Headline: "Assistant wants to run: rm -rf ./dist",
+		Act:      "rm -rf ./dist",
 		Severity: SeverityHigh,
 		Warnings: []string{"deletes files recursively (rm -rf)"},
 		Answer:   "run it once",
@@ -120,7 +120,7 @@ func TestApprovalCard_TheSeverityLadderHasThreeColours(t *testing.T) {
 	} {
 		c := &ApprovalCard{
 			Variant: ApprovalCommand, Title: "Approve command",
-			Headline: "Assistant wants to run: go test ./...",
+			Act:      "go test ./...",
 			Severity: tc.severity, Answer: "run it once",
 		}
 		view := c.View(90)
@@ -133,7 +133,7 @@ func TestApprovalCard_TheSeverityLadderHasThreeColours(t *testing.T) {
 	}
 	unrated := &ApprovalCard{
 		Variant: ApprovalGeneric, Title: "Approve tool",
-		Headline: "Assistant wants to use: web_fetch", Answer: "allow it",
+		Act: "use web_fetch", Answer: "allow it",
 	}
 	if !strings.Contains(unrated.View(90), sty.Info.Render("╭─ Approve tool ")) {
 		t.Fatalf("a card with no rating takes the decision tone:\n%s", unrated.View(90))
@@ -147,7 +147,7 @@ func TestApprovalCard_ContainmentIsARowAndSurvivesTheNarrowCard(t *testing.T) {
 	c := &ApprovalCard{
 		Variant:  ApprovalCommand,
 		Title:    "Approve command",
-		Headline: "Assistant wants to run: go build ./...",
+		Act:      "go build ./...",
 		Severity: SeverityHigh,
 		Fields: []CardField{
 			{Label: "⛨", Value: "workspace-write · network allowed", Tone: ToneChrome},
@@ -180,7 +180,7 @@ func TestApprovalCard_BlastRadiusBlockAndRule(t *testing.T) {
 	c := &ApprovalCard{
 		Variant:  ApprovalCommand,
 		Title:    "Approve command",
-		Headline: "Assistant wants to run: rm -rf ./dist",
+		Act:      "rm -rf ./dist",
 		Severity: SeverityHigh,
 		Fields: []CardField{
 			{Label: "touches", Value: "./dist", Detail: "412 files, 84.0 MB"},
@@ -222,11 +222,11 @@ func TestApprovalCard_BlastRadiusBlockAndRule(t *testing.T) {
 // half of one.
 func TestApprovalCard_FieldDropsDetailBeforeClipping(t *testing.T) {
 	c := &ApprovalCard{
-		Variant:  ApprovalCommand,
-		Title:    "Approve command",
-		Headline: "Assistant wants to run: rm -rf ./dist",
-		Fields:   []CardField{{Label: "touches", Value: "./dist", Detail: strings.Repeat("very long detail ", 8)}},
-		Answer:   "run it once",
+		Variant: ApprovalCommand,
+		Title:   "Approve command",
+		Act:     "rm -rf ./dist",
+		Fields:  []CardField{{Label: "touches", Value: "./dist", Detail: strings.Repeat("very long detail ", 8)}},
+		Answer:  "run it once",
 	}
 	view := ansi.Strip(c.View(44))
 	if !strings.Contains(view, "touches   ./dist") {
@@ -239,11 +239,11 @@ func TestApprovalCard_FieldDropsDetailBeforeClipping(t *testing.T) {
 
 func TestApprovalCard_EditVariantShowsDiffAndStats(t *testing.T) {
 	c := &ApprovalCard{
-		Variant:  ApprovalEdit,
-		Title:    "Approve edit",
-		Headline: "Assistant wants to edit main.go",
-		Hunks:    diff.Compute("a\nb\n", "a\nc\nd\n"),
-		Answer:   "apply the change",
+		Variant: ApprovalEdit,
+		Title:   "Approve edit",
+		Act:     "edit main.go",
+		Hunks:   diff.Compute("a\nb\n", "a\nc\nd\n"),
+		Answer:  "apply the change",
 	}
 	// The diff body carries line numbers (
 	// docs/interface/surfaces.md#the-approval-card), and the reversibility line
@@ -289,7 +289,7 @@ func TestApprovalCard_EditVariantBoundsHeight(t *testing.T) {
 	c := &ApprovalCard{
 		Variant:  ApprovalEdit,
 		Title:    "Approve edit",
-		Headline: "Assistant wants to write big.txt",
+		Act:      "write big.txt",
 		Hunks:    diff.Compute(old.String(), new.String()),
 		Answer:   "apply the change",
 		MaxLines: 12,
@@ -313,7 +313,7 @@ func TestApprovalCard_BodyScrollsBehindCountedTails(t *testing.T) {
 	c := &ApprovalCard{
 		Variant:  ApprovalEdit,
 		Title:    "Approve edit",
-		Headline: "Assistant wants to write big.txt",
+		Act:      "write big.txt",
 		Hunks:    diff.Compute(old.String(), new.String()),
 		Answer:   "apply the change",
 		MaxLines: 12,
@@ -356,7 +356,7 @@ func TestApprovalCard_TinyBoundKeepsTheDecisionAndOneBodyRow(t *testing.T) {
 	edit := &ApprovalCard{
 		Variant:  ApprovalEdit,
 		Title:    "Approve edit",
-		Headline: "Assistant wants to write big.txt",
+		Act:      "write big.txt",
 		Hunks:    diff.Compute(old.String(), new.String()),
 		Answer:   "apply the change",
 		MaxLines: 6,
@@ -375,7 +375,7 @@ func TestApprovalCard_TinyBoundKeepsTheDecisionAndOneBodyRow(t *testing.T) {
 	cmd := &ApprovalCard{
 		Variant:  ApprovalCommand,
 		Title:    "Approve command",
-		Headline: "Assistant wants to run: rm -rf ./dist",
+		Act:      "rm -rf ./dist",
 		Answer:   "run it once",
 		Return:   "[esc] back to your draft — the decision stays waiting, nothing is denied",
 		MaxLines: 5,
@@ -396,7 +396,7 @@ func TestApprovalCard_NotYetLiveTailNamesNoKey(t *testing.T) {
 	c := &ApprovalCard{
 		Variant:    ApprovalEdit,
 		Title:      "Approve edit",
-		Headline:   "Assistant wants to write big.txt",
+		Act:        "write big.txt",
 		Hunks:      diff.Compute(old.String(), new.String()),
 		Answer:     "apply the change",
 		MaxLines:   12,
@@ -417,10 +417,10 @@ func TestApprovalCard_NotYetLiveTailNamesNoKey(t *testing.T) {
 func TestApprovalCard_WideBodyPans(t *testing.T) {
 	wide := "run: " + strings.Repeat("abcdefghij", 30) // 300+ columns
 	c := &ApprovalCard{
-		Variant:  ApprovalCommand,
-		Title:    "Approve command",
-		Headline: wide,
-		Answer:   "run it once",
+		Variant: ApprovalCommand,
+		Title:   "Approve command",
+		Act:     wide,
+		Answer:  "run it once",
 	}
 	plain := ansi.Strip(c.View(80))
 	if !strings.Contains(plain, "›") {
@@ -443,11 +443,11 @@ func TestApprovalCard_WideBodyPans(t *testing.T) {
 
 func TestApprovalCard_GenericVariant(t *testing.T) {
 	c := &ApprovalCard{
-		Variant:  ApprovalGeneric,
-		Title:    "Approve tool",
-		Headline: "Assistant wants to use my_tool",
-		Summary:  "do the thing",
-		Answer:   "allow it",
+		Variant: ApprovalGeneric,
+		Title:   "Approve tool",
+		Act:     "use my_tool",
+		Summary: "do the thing",
+		Answer:  "allow it",
 	}
 	view := c.View(80)
 	if !strings.Contains(view, "use my_tool") || !strings.Contains(view, "do the thing") {
@@ -503,8 +503,8 @@ func runRow(t *testing.T, c *ApprovalCard, width int, mark string) string {
 func TestApprovalCard_TheRunIsBracketedOffers(t *testing.T) {
 	c := &ApprovalCard{
 		Variant: ApprovalCommand, Title: "Approve command",
-		Headline: "Assistant wants to run: go test ./...",
-		Answer:   "run it once", AllowAlways: true,
+		Act:    "go test ./...",
+		Answer: "run it once", AllowAlways: true,
 		AlwaysHint: `allow "go test" without asking`,
 		FullDiff:   true, FullLabel: "full view",
 	}
@@ -530,7 +530,7 @@ func TestApprovalCard_TheRunIsBracketedOffers(t *testing.T) {
 func TestApprovalCard_EveryVariantSaysWhatEscDoes(t *testing.T) {
 	for _, variant := range []ApprovalVariant{ApprovalCommand, ApprovalEdit, ApprovalGeneric} {
 		c := &ApprovalCard{
-			Variant: variant, Title: "Approve", Headline: "Assistant wants to act",
+			Variant: variant, Title: "Approve", Act: "act",
 			Answer: "do it",
 		}
 		if view := ansi.Strip(c.View(90)); !strings.Contains(view, "[esc] "+waitingWords) {
@@ -540,7 +540,7 @@ func TestApprovalCard_EveryVariantSaysWhatEscDoes(t *testing.T) {
 	// A card with its own words about esc says those instead.
 	c := &ApprovalCard{
 		Variant: ApprovalCommand, Title: "Approve command",
-		Headline: "Assistant wants to run: rm -rf ./dist", Answer: "run it once",
+		Act: "rm -rf ./dist", Answer: "run it once",
 		Return: "don't — the safe answer",
 	}
 	if view := ansi.Strip(c.View(90)); !strings.Contains(view, "[esc] don't — the safe answer") {
@@ -553,8 +553,8 @@ func TestApprovalCard_EveryVariantSaysWhatEscDoes(t *testing.T) {
 func TestApprovalCard_AKeyOwnsItsWords(t *testing.T) {
 	c := &ApprovalCard{
 		Variant: ApprovalCommand, Title: "Approve command",
-		Headline: "Assistant wants to run: go test ./...",
-		Answer:   "run it once", AllowAlways: true,
+		Act:    "go test ./...",
+		Answer: "run it once", AllowAlways: true,
 		AlwaysHint: `allow "go test" without asking`,
 	}
 	for _, tc := range []struct{ offer, key string }{
@@ -583,8 +583,8 @@ func TestApprovalCard_AKeyOwnsItsWords(t *testing.T) {
 func notedCard() *ApprovalCard {
 	return &ApprovalCard{
 		Variant: ApprovalCommand, Title: "Approve command",
-		Headline: "Assistant wants to run: go test ./...",
-		Answer:   "run it once", Noted: true,
+		Act:    "go test ./...",
+		Answer: "run it once", Noted: true,
 	}
 }
 
@@ -717,10 +717,10 @@ func TestApprovalCard_TheFieldsPlaceSurvivesTheBareCard(t *testing.T) {
 func TestApprovalCard_ARowWithoutTheRunHasNoKeys(t *testing.T) {
 	c := &ApprovalCard{
 		Variant: ApprovalCommand, Title: "Approve command",
-		Headline: "Assistant wants to run: go test ./...",
-		Answer:   "run it once",
+		Act:    "go test ./...",
+		Answer: "run it once",
 	}
-	if _, ok := c.KeyAt("Assistant wants to run: go test ./...", 4); ok {
+	if _, ok := c.KeyAt("go test ./...", 4); ok {
 		t.Fatal("a body row should carry no decision key")
 	}
 }
@@ -730,7 +730,7 @@ func TestApprovalCard_ARowWithoutTheRunHasNoKeys(t *testing.T) {
 func TestApprovalCard_HeldOnArrivalOffersOnlyItsTwoKeys(t *testing.T) {
 	c := &ApprovalCard{
 		Variant: ApprovalCommand, Title: "Approve command",
-		Headline:    "Assistant wants to run: go test ./...",
+		Act:         "go test ./...",
 		Answer:      "run it once",
 		AllowAlways: true, AlwaysHint: `allow "go test" without asking`,
 		FullDiff: true, HeldOnArrival: true, Handover: "ctrl+space",

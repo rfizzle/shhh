@@ -12,7 +12,7 @@
 ── layout ──────────────────────────────────────────────────
 · one card · three places in one file
 ╭─ Approve edit ────────────────────────────────────────────────────────────────────────────────────────────────── ⚠ medium ─╮
-│ Assistant wants to edit internal/agent/loop.go                                                                             │
+│ ✎ edit internal/agent/loop.go                                                                                              │
 │ ⚠ medium · edits one file under internal/agent/                                                                            │
 │ @@ -1,10 +1,11 @@                                                                                                          │
 │    1  package agent                                                                                                        │
@@ -38,7 +38,7 @@
 ── ansi ────────────────────────────────────────────────────
 · one card · three places in one file
 ␛[38;5;254m╭─ Approve edit ────────────────────────────────────────────────────────────────────────────────────────────────── ⚠ medium ─╮␛[m
-␛[38;5;254m│␛[m ␛[1;38;5;254mAssistant wants to edit internal/agent/loop.go␛[m                                                                             ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m✎␛[m ␛[38;5;254medit internal/agent/loop.go␛[m                                                                                              ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · edits one file under internal/agent/␛[m                                                                            ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m@@ -1,10 +1,11 @@␛[m                                                                                                          ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m   1  ␛[m␛[38;5;244mpackage agent␛[m                                                                                                        ␛[38;5;254m│␛[m

@@ -13,7 +13,7 @@
 · the field open, and every letter going into it
 ──── DECISION 1/1 ──────────────────────────────────────
 ╭─ Approve edit ──────────────────────────── ⚠ medium ─╮
-│ Assistant wants to write main.go                     │
+│ ✎ write main.go                                      │
 │ ⚠ medium · edits one file                            │
 │ @@ -1,1 +1,2 @@                                      │
 │   1  line one                                        │
@@ -33,7 +33,7 @@
 · the field open, and every letter going into it
 ␛[38;5;241m────␛[m ␛[1;94mDECISION 1/1␛[m ␛[38;5;241m──────────────────────────────────────␛[m
 ␛[38;5;214m╭─ Approve edit ␛[m␛[38;5;241m────────────────────────────␛[m␛[38;5;214m ⚠ medium ─╮␛[m
-␛[38;5;214m│␛[m ␛[1;94mAssistant wants to write main.go␛[m                     ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;214m✎␛[m ␛[97mwrite main.go␛[m                                      ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;241m · edits one file␛[m                            ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[96m@@ -1,1 +1,2 @@␛[m                                      ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;241m  1  ␛[m␛[38;5;252mline␛[m␛[38;5;252m ␛[m␛[38;5;252mone␛[m                                        ␛[38;5;214m│␛[m

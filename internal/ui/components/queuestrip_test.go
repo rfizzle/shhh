@@ -114,10 +114,10 @@ func TestQueueStrip_StaysInsideItsWidth(t *testing.T) {
 
 func TestApprovalCard_BatchKey(t *testing.T) {
 	c := &ApprovalCard{
-		Variant:  ApprovalCommand,
-		Title:    "Approve command",
-		Headline: "Assistant wants to run: go test ./...",
-		Answer:   "run it once",
+		Variant: ApprovalCommand,
+		Title:   "Approve command",
+		Act:     "go test ./...",
+		Answer:  "run it once",
 	}
 	// Without a queue behind it, [A] stays the shifted spelling of [a].
 	c.AllowAlways = true

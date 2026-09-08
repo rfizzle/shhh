@@ -11,8 +11,8 @@
 
 ── layout ──────────────────────────────────────────────────
 · auth · the key it sent is named, and a new one can be entered
-You
-  rename the round-limit sentinel
+❯ rename the round-limit sentinel
+───────────────────────────────────────────────────────
 
    ✗ model   gpt-4o · 401 …  key ···4f9c rejected
     Incorrect API key provided
@@ -22,8 +22,8 @@ You
 
 
 · rate limit · a stall, with the wait the provider named
-You
-  rename the round-limit sentinel
+❯ rename the round-limit sentinel
+───────────────────────────────────────────────────────
 
    ⚠ model   gpt-4o · 429 rate lim…  retry in 38s
     Rate limit reached for gpt-4o. Please try again in…
@@ -33,8 +33,8 @@ You
 
 
 · context length · the only class with a remedy of its own
-You
-  rename the round-limit sentinel
+❯ rename the round-limit sentinel
+───────────────────────────────────────────────────────
 
    ✗ model   gpt-4o · 400 conte…  over the window
     This model's maximum context length is 128000 toke…
@@ -44,8 +44,8 @@ You
 
 
 · unclassified · the message is the whole point of the row
-You
-  rename the round-limit sentinel
+❯ rename the round-limit sentinel
+───────────────────────────────────────────────────────
 
    ✗ model   gpt-4o · 400 unclass…  message below
     Unknown parameter: 'reasoning.effort'
@@ -56,8 +56,8 @@ You
 
 ── ansi ────────────────────────────────────────────────────
 · auth · the key it sent is named, and a new one can be entered
-␛[1;38;5;254mYou␛[m
-  rename the round-limit sentinel
+␛[38;5;254m❯␛[m rename the round-limit sentinel
+␛[38;5;244m───────────────────────────────────────────────────────␛[m
 
    ␛[38;5;254m✗␛[m ␛[38;5;254mmodel␛[m   ␛[38;5;254mgpt-4o␛[m␛[38;5;244m · 401 …␛[m  ␛[38;5;254mkey ···4f9c rejected␛[m
     ␛[38;5;244mIncorrect API key provided␛[m
@@ -67,8 +67,8 @@ You
 
 
 · rate limit · a stall, with the wait the provider named
-␛[1;38;5;254mYou␛[m
-  rename the round-limit sentinel
+␛[38;5;254m❯␛[m rename the round-limit sentinel
+␛[38;5;244m───────────────────────────────────────────────────────␛[m
 
    ␛[38;5;254m⚠␛[m ␛[38;5;254mmodel␛[m   ␛[38;5;254mgpt-4o␛[m␛[38;5;244m · 429 rate lim…␛[m  ␛[38;5;254mretry in 38s␛[m
     ␛[38;5;244mRate limit reached for gpt-4o. Please try again in…␛[m
@@ -78,8 +78,8 @@ You
 
 
 · context length · the only class with a remedy of its own
-␛[1;38;5;254mYou␛[m
-  rename the round-limit sentinel
+␛[38;5;254m❯␛[m rename the round-limit sentinel
+␛[38;5;244m───────────────────────────────────────────────────────␛[m
 
    ␛[38;5;254m✗␛[m ␛[38;5;254mmodel␛[m   ␛[38;5;254mgpt-4o␛[m␛[38;5;244m · 400 conte…␛[m  ␛[38;5;254mover the window␛[m
     ␛[38;5;244mThis model's maximum context length is 128000 toke…␛[m
@@ -89,8 +89,8 @@ You
 
 
 · unclassified · the message is the whole point of the row
-␛[1;38;5;254mYou␛[m
-  rename the round-limit sentinel
+␛[38;5;254m❯␛[m rename the round-limit sentinel
+␛[38;5;244m───────────────────────────────────────────────────────␛[m
 
    ␛[38;5;254m✗␛[m ␛[38;5;254mmodel␛[m   ␛[38;5;254mgpt-4o␛[m␛[38;5;244m · 400 unclass…␛[m  ␛[38;5;254mmessage below␛[m
     ␛[38;5;244mUnknown parameter: 'reasoning.effort'␛[m

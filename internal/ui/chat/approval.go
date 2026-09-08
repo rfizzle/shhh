@@ -48,7 +48,7 @@ type GatedPreview struct {
 	// the tool's own statement rather than a guess, because nothing here can
 	// read a tier out of a schema.
 	Write bool
-	// Title is the card's headline where the tool's name is not the act —
+	// Title is the card's act row where the tool's name is not the act —
 	// `commit 3 files` rather than `use git_write`. Empty keeps the name.
 	Title string
 	// DenyLine is the command line this call stands for, matched against the
@@ -100,7 +100,7 @@ type approvalRequest struct {
 	call    provider.ToolCall
 	kind    approvalKind
 	command string      // approvalExec: the command handed to the runner; also set for a process start so mode policy treats it as a command
-	title   string      // action headline, e.g. "edit main.go"
+	title   string      // the act, e.g. "edit main.go"
 	verb    string      // approvalDiff: the action verb, e.g. "edit"
 	path    string      // approvalDiff: the file being modified
 	hunks   []diff.Hunk // approvalDiff: the change to show
@@ -324,11 +324,25 @@ func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, err
 	if summary == "" {
 		summary = digest.FormatArgs(tc.Arguments)
 	}
-	// The tool's own headline where it wrote one: `use git_write` names the
+	// The tool's own act where it wrote one: `use git_write` names the
 	// mechanism, and a card asks about an act.
 	title := "use " + tc.Name
-	if p.Title != "" {
+	switch {
+	case p.Title != "":
 		title = p.Title
+	case p.Action != "" && p.Summary != "":
+		// A preview that named the act *and* wrote a one-line form of it has
+		// already said what the card's first row is for — `GET
+		// pkg.go.dev/context`, `call github create_issue` — so the row says
+		// that instead of the tool that carries it. The card draws the line
+		// once: the summary row below is dropped when it repeats this one
+		// (components/approval.go).
+		//
+		// A tool that gave a summary and no action keeps its name, because a
+		// sentence somebody wrote about a call is not reliably a statement of
+		// the call, and a card that dropped the tool's name for one would
+		// leave the reader nothing to check the sentence against.
+		title = firstLine(p.Summary)
 	}
 	return &approvalRequest{
 		call:    tc,
@@ -1067,6 +1081,25 @@ func (m Model) applyDecisionNote(card *components.ApprovalCard) {
 	card.NoteField = n.drawn(m.contentWidth()).View()
 }
 
+// actGlyph is the glyph a card's first body row opens with: the one the
+// activity row this call is about to become will carry, so the decision and
+// the record of it are read by the same mark. The kinds that never reach a
+// card — a thought, a summary, a published report — fall to the read glyph
+// with every other call that touched nothing of the workspace.
+func actGlyph(kind components.ActivityKind) string {
+	switch kind {
+	case components.ActivityCommand:
+		return "$"
+	case components.ActivityEdit:
+		return "✎"
+	case components.ActivityRemote:
+		return "⇄"
+	case components.ActivitySubagent:
+		return "◇"
+	}
+	return "⚙"
+}
+
 func (m Model) buildApprovalCard() *components.ApprovalCard {
 	card := &components.ApprovalCard{
 		MaxLines: m.maxConfirmPanelHeight(),
@@ -1096,13 +1129,13 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 		// edit's diff (docs/interface/surfaces.md#the-approval-card).
 		card.FullDiff = true
 		card.FullLabel = "full view"
-		if req != nil {
-			card.Headline = "Assistant wants to run: " + firstLine(m.pendingRun)
-		} else {
-			card.Headline = "Run: " + firstLine(m.pendingRun)
-		}
+		// The line, and the `$` that says it is a line. Who asked for it is
+		// not on the row: a card the model raised and a card `/run` raised
+		// are the same decision about the same command, and the reader is
+		// answering the command either way.
+		card.ActGlyph, card.Act = "$", firstLine(m.pendingRun)
 		// A line the reader wrote says so on the rail and prints the line it
-		// replaced under the headline: the card is about their command now,
+		// replaced under the act row: the card is about their command now,
 		// and a card that looked identical to the one the model asked for
 		// would be the one thing this key must never leave behind
 		// (docs/capabilities/approvals-and-safety.md#an-amended-command-is-a-new-command).
@@ -1137,7 +1170,7 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 		return card
 	}
 
-	card.Headline = "Assistant wants to " + req.title
+	card.ActGlyph, card.Act = actGlyph(m.activityKind(req.call.Name)), req.title
 	switch req.kind {
 	case approvalDiff:
 		card.Variant = components.ApprovalEdit
@@ -1161,8 +1194,13 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 		card.Variant = components.ApprovalGeneric
 		card.Title = "Approve tool"
 		card.Answer = "allow it"
-		if req.summary != req.title {
-			card.Summary = firstLine(req.summary)
+		// The row the card would draw, against the row it already has: a
+		// summary of several lines is compared by the line the card would
+		// take from it, because the act above was taken from that same line
+		// and a comparison against the whole would say they differ and print
+		// it twice.
+		if line := firstLine(req.summary); line != req.title {
+			card.Summary = line
 		}
 		// A request that names a host offers [a], and the key says the host
 		// rather than the category: what the reader read on the card's own

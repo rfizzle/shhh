@@ -27,8 +27,15 @@ import (
 // (viewport.go, select.go), and the syntax segment takes the tone its lexer
 // chose (highlight.go).
 type Styles struct {
-	User       lipgloss.Style
-	Assistant  lipgloss.Style
+	// PromptMark is the ❯ that opens a message the reader sent, in the
+	// pointer column the activity rows keep clear beside it. It is the whole
+	// label: the transcript names neither speaker, so the mark says whose
+	// words follow and the brighter grey they are drawn in says it again
+	// (docs/interface/surfaces.md#the-activity-row).
+	PromptMark lipgloss.Style
+	// PromptRule is the faint rule that closes a sent message, between what
+	// the reader asked for and what the session did about it.
+	PromptRule lipgloss.Style
 	Error      lipgloss.Style
 	SystemMsg  lipgloss.Style
 	Header     lipgloss.Style
@@ -256,8 +263,8 @@ func applyPalette() {
 // theme can be rendered in a test without swapping the session's.
 func newStyles(p components.ColorTokens) Styles {
 	return Styles{
-		User:       lipgloss.NewStyle().Bold(true).Foreground(p.Info.Color()),
-		Assistant:  lipgloss.NewStyle().Bold(true).Foreground(p.Add.Color()),
+		PromptMark: lipgloss.NewStyle().Foreground(p.Info.Color()),
+		PromptRule: lipgloss.NewStyle().Foreground(p.Status.Color()),
 		Error:      lipgloss.NewStyle().Foreground(p.Del.Color()),
 		SystemMsg:  lipgloss.NewStyle().Foreground(p.Dim.Color()),
 		Header:     lipgloss.NewStyle().Bold(true).Foreground(p.Bright.Color()),

@@ -138,14 +138,22 @@ func (m Model) updateMemoryAsk(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	return m.advanceApprovalQueue()
 }
 
+// memoryProposalLine states what is on offer and where it would be kept: the
+// scope, the word `memory`, and the fact itself. It names nobody, because who
+// drafted the sentence is not what the reader is deciding about, and the one
+// thing they are — what would be written down — is what a line opening with a
+// speaker pushed to the end.
+func memoryProposalLine(req *approvalRequest) string {
+	return fmt.Sprintf("%s memory: %q", req.memoryDraft.Kind, firstLine(req.memoryDraft.Text))
+}
+
 // memoryAskLines renders the memory confirm prompt: the proposed entry above
 // the scope selector card.
 func (m Model) memoryAskLines() []string {
 	var lines []string
 	if req := m.pendingApproval; req != nil {
-		head := fmt.Sprintf("Assistant proposes a %s memory: %q", req.memoryDraft.Kind, firstLine(req.memoryDraft.Text))
-		for _, l := range strings.Split(m.wordWrap(head, m.contentWidth()), "\n") {
-			lines = append(lines, sty.User.Render(l))
+		for _, l := range strings.Split(m.wordWrap(memoryProposalLine(req), m.contentWidth()), "\n") {
+			lines = append(lines, sty.Header.Render(l))
 		}
 	}
 	return append(lines, strings.Split(m.memoryAsk.View(m.contentWidth()), "\n")...)

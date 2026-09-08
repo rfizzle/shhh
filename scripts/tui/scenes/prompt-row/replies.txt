@@ -1,0 +1,10 @@
+# One reply per request. The last line repeats once these run out.
+# Two turns. The first answers in prose alone, so the transcript holds the two
+# halves a reader is meant to tell apart without a label: the ❯ row they sent
+# and the paragraph that answered it. The second reaches a command card, which
+# states the act rather than announcing who wants it.
+#
+# The command is denied, so nothing in the scene's workspace runs.
+Round exhaustion is fatal in the loop.\nThreading a sentinel through it lets the session offer more rounds instead of dropping the turn.
+tool:execute_command:{"command":"go test ./internal/agent/..."}
+That is the shape of it.

@@ -12,8 +12,8 @@
 ── layout ──────────────────────────────────────────────────
 · the transcript has the keyboard
 ──── READING 5/5 ───────────────────────────────────────────────────────────
-You
-  fix the round limit
+❯ fix the round limit
+───────────────────────────────────────────────────────────────────────────
 
   ▸ 1  Locate the round accounting ──────────────────────── ✓ 4 tools  1.2s
 
@@ -33,8 +33,8 @@ You
 
 · the input has it · plain rail, no row lit, the frame is accented
 ────────────────────────────────────────────────────────────────────────────
-You
-  fix the round limit
+❯ fix the round limit
+───────────────────────────────────────────────────────────────────────────
 
 ▸ 1  Locate the round accounting ────────────────────────── ✓ 4 tools  1.2s
 
@@ -55,8 +55,8 @@ You
 
 · the cursor on a row that changed the machine
 ──── READING 3/5 ───────────────────────────────────────────────────────────
-You
-  fix the round limit
+❯ fix the round limit
+───────────────────────────────────────────────────────────────────────────
 
   ▸ 1  Locate the round accounting ──────────────────────── ✓ 4 tools  1.2s
 
@@ -76,8 +76,8 @@ You
 
 · expanded under the cursor · [-] joins the bar
 ──── READING 3/5 ───────────────────────────────────────────────────────────
-You
-  fix the round limit
+❯ fix the round limit
+───────────────────────────────────────────────────────────────────────────
 
   ▸ 1  Locate the round accounting ──────────────────────── ✓ 4 tools  1.2s
 
@@ -98,8 +98,8 @@ You
 
 · [?] · the mode's whole key register, where the bar was
 ──── READING 5/5 ───────────────────────────────────────────────────────────
-You
-  fix the round limit
+❯ fix the round limit
+───────────────────────────────────────────────────────────────────────────
 
   ▸ 1  Locate the round accounting ──────────────────────── ✓ 4 tools  1.2s
 
@@ -129,11 +129,10 @@ You
 
 · prose · the cursor on a message: [y] copies its markdown source
 ──── READING 1/1 ───────────────────────────────────────────────────────────
-You
-  why is the round limit fatal
+❯ why is the round limit fatal
+───────────────────────────────────────────────────────────────────────────
 
-❯ Assistant                                                                
-    Round exhaustion is fatal in Agent.runRound: the loop returns        
+❯   Round exhaustion is fatal in Agent.runRound: the loop returns          
     ErrRoundLimit, and the chat model treats any error from a round as   
     terminal.
 
@@ -145,8 +144,8 @@ You
 ── ansi ────────────────────────────────────────────────────
 · the transcript has the keyboard
 ␛[38;5;241m────␛[m ␛[1;94mREADING 5/5␛[m ␛[38;5;241m───────────────────────────────────────────────────────────␛[m
-␛[1;94mYou␛[m
-  ␛[38;5;252mfix the round limit␛[m
+␛[94m❯␛[m ␛[97mfix the round limit␛[m
+␛[38;5;243m───────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;241m▸␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mLocate the round accounting␛[m ␛[38;5;241m────────────────────────␛[m ␛[92m✓␛[m ␛[38;5;241m4 tools␛[m  ␛[38;5;241m1.2s␛[m
 
@@ -166,8 +165,8 @@ You
 
 · the input has it · plain rail, no row lit, the frame is accented
 ␛[38;5;241m────────────────────────────────────────────────────────────────────────────␛[m
-␛[1;94mYou␛[m
-  ␛[38;5;252mfix the round limit␛[m
+␛[94m❯␛[m ␛[97mfix the round limit␛[m
+␛[38;5;243m───────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;241m▸␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mLocate the round accounting␛[m ␛[38;5;241m──────────────────────────␛[m ␛[92m✓␛[m ␛[38;5;241m4 tools␛[m  ␛[38;5;241m1.2s␛[m
 
@@ -188,8 +187,8 @@ You
 
 · the cursor on a row that changed the machine
 ␛[38;5;241m────␛[m ␛[1;94mREADING 3/5␛[m ␛[38;5;241m───────────────────────────────────────────────────────────␛[m
-␛[1;94mYou␛[m
-  ␛[38;5;252mfix the round limit␛[m
+␛[94m❯␛[m ␛[97mfix the round limit␛[m
+␛[38;5;243m───────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;241m▸␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mLocate the round accounting␛[m ␛[38;5;241m────────────────────────␛[m ␛[92m✓␛[m ␛[38;5;241m4 tools␛[m  ␛[38;5;241m1.2s␛[m
 
@@ -209,8 +208,8 @@ You
 
 · expanded under the cursor · [-] joins the bar
 ␛[38;5;241m────␛[m ␛[1;94mREADING 3/5␛[m ␛[38;5;241m───────────────────────────────────────────────────────────␛[m
-␛[1;94mYou␛[m
-  ␛[38;5;252mfix the round limit␛[m
+␛[94m❯␛[m ␛[97mfix the round limit␛[m
+␛[38;5;243m───────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;241m▸␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mLocate the round accounting␛[m ␛[38;5;241m────────────────────────␛[m ␛[92m✓␛[m ␛[38;5;241m4 tools␛[m  ␛[38;5;241m1.2s␛[m
 
@@ -231,8 +230,8 @@ You
 
 · [?] · the mode's whole key register, where the bar was
 ␛[38;5;241m────␛[m ␛[1;94mREADING 5/5␛[m ␛[38;5;241m───────────────────────────────────────────────────────────␛[m
-␛[1;94mYou␛[m
-  ␛[38;5;252mfix the round limit␛[m
+␛[94m❯␛[m ␛[97mfix the round limit␛[m
+␛[38;5;243m───────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;241m▸␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mLocate the round accounting␛[m ␛[38;5;241m────────────────────────␛[m ␛[92m✓␛[m ␛[38;5;241m4 tools␛[m  ␛[38;5;241m1.2s␛[m
 
@@ -262,11 +261,10 @@ You
 
 · prose · the cursor on a message: [y] copies its markdown source
 ␛[38;5;241m────␛[m ␛[1;94mREADING 1/1␛[m ␛[38;5;241m───────────────────────────────────────────────────────────␛[m
-␛[1;94mYou␛[m
-  ␛[38;5;252mwhy is the round limit fatal␛[m
+␛[94m❯␛[m ␛[97mwhy is the round limit fatal␛[m
+␛[38;5;243m───────────────────────────────────────────────────────────────────────────␛[m
 
-␛[94m❯␛[m ␛[1;92m␛[m␛[48;5;62m␛[1;92m␛[m␛[48;5;62m␛[97;48;5;62mAssistant                                                                ␛[m␛[m
-    ␛[38;5;252mRound exhaustion is fatal in Agent.runRound: the loop␛[m ␛[38;5;252mreturns ␛[m       
+␛[94m❯␛[m ␛[38;5;252m␛[m␛[38;5;252m␛[m␛[48;5;62m  ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[97;48;5;62mRound exhaustion is fatal in Agent.runRound: the loop returns          ␛[m␛[m
     ␛[38;5;252mErrRoundLimit, and the chat model treats any error␛[m ␛[38;5;252mfrom a round as ␛[m  
     ␛[38;5;252mterminal.␛[m
 

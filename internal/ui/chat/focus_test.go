@@ -101,8 +101,10 @@ func TestFocusMode_EscReturnsToInputKeepingExpansion(t *testing.T) {
 	if !m.transcript[1].expanded {
 		t.Fatal("expansion state should survive leaving focus mode")
 	}
-	if strings.Contains(m.renderHistory(), "❯") {
-		t.Fatal("the selection pointer should disappear outside focus mode")
+	// One ❯ is left in the pane and it is the sent message's own mark; the
+	// gutter's cursor, which stands in a column of its own, is gone.
+	if n := strings.Count(m.renderHistory(), "❯"); n != 1 {
+		t.Fatalf("the selection pointer should disappear outside focus mode, %d marks left", n)
 	}
 	if !strings.Contains(m.renderHistory(), "result line 19") {
 		t.Fatal("the expanded row should stay expanded in the normal transcript")

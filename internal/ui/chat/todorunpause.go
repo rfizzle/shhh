@@ -64,7 +64,7 @@ func (m Model) todoPauseLines() []string {
 	if len(st.Steps) > 0 {
 		head += fmt.Sprintf(" · %s", plural(len(st.Steps), "step"))
 	}
-	lines = append(lines, sty.User.Render(head))
+	lines = append(lines, sty.Header.Render(head))
 	card := strings.Split(m.todoRunner.pause.View(width), "\n")
 	// What the plan may take: the panel less the head, the questions, the
 	// lanes and the selector itself.

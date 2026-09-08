@@ -22,6 +22,16 @@ Because it is one shape, a reader learns it once. A provider failure using the
 same row as a file read is the point rather than an accident: a failure is
 part of the turn, not an interruption of it.
 
+Two things in the transcript are not rows, and they are what the rows sit
+between. A message the reader sent is a `❯` row: the mark in the pointer
+column the rows keep clear, the words beside it in the brightest grey the
+pane has, and a faint rule under them saying where the message stops. A reply
+is prose and nothing else — indented, in body grey, no mark and no rule.
+Neither carries a speaker's name. A transcript is a record of what happened
+rather than a conversation being had, it has exactly two voices, and the
+brighter of the two is always the one that asked; a label saying so again
+spent a row per message on a fact the mark had already carried.
+
 A call that never happened is one too. Something the queue refused before it
 could reach a decision — arguments that would not parse, a file that moved
 since it was read — is the call's own row saying it was skipped and why,
@@ -723,15 +733,22 @@ touches, whether shhh can take it back, and whether the network is open. A
 prompt that says only what the action *is* asks the reader to do the risk
 assessment themselves, at speed, twenty times a session — and they will stop.
 
-Severity leads as a word. The card says it three ways at once — the border,
-the chip on the title rail, and the first row of the body — in one wording, so
-that a reader checking any one of them against another is not first working
-out that they are the same claim. What the body row adds is the reading behind
-the level, in the terms the level was decided in: *⚠ medium · edits one file
-under internal/agent*, *⚠ low · writes nothing*, *⚠ HIGH* followed by the risk
-that flagged it. Where a variant has nothing to read the reason off, the row
-states the level and stops, because a reason invented to fill it would be the
-one thing on the card the reader could not check.
+The first row of the body is the act. The kind glyph the transcript will draw
+this call's row with — `$` a command, `✎` an edit, `⚙` a read, `⇄` a call to a
+server — and then the act itself in the brightest grey on the card: the
+command line, the file, the request. Nobody is named on it. Who asked is not
+what the reader is deciding, and a row that opened by saying so put the one
+thing being decided at the end of the line.
+
+Severity leads as a word under it. The card says it three ways at once — the
+border, the chip on the title rail, and the row under the act — in one
+wording, so that a reader checking any one of them against another is not
+first working out that they are the same claim. What the body row adds is the
+reading behind the level, in the terms the level was decided in: *⚠ medium ·
+edits one file under internal/agent*, *⚠ low · writes nothing*, *⚠ HIGH*
+followed by the risk that flagged it. Where a variant has nothing to read the
+reason off, the row states the level and stops, because a reason invented to
+fill it would be the one thing on the card the reader could not check.
 
 The ladder has three colours and not two. *low* and *medium* wear the accent
 the mutation rail wears; *HIGH* wears the colour of failure, and so does a
@@ -897,7 +914,7 @@ input, prefilled, and enter runs the line as it now reads — after the card
 has resolved it again, because it is a different command
 ([`../capabilities/approvals-and-safety.md`](../capabilities/approvals-and-safety.md#an-amended-command-is-a-new-command)).
 A heavier line draws the heavier card, with the line the call carried printed
-under the headline and a chip on the title rail saying whose line this is.
+under the act row and a chip on the title rail saying whose line this is.
 Esc from the field puts the original back, and the decision is still waiting.
 While the field has the keyboard the card's own keys are letters, the way
 they are while the note field has it. A command of more than one line is not
