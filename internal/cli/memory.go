@@ -8,6 +8,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/memory"
+	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/spf13/cobra"
 )
@@ -23,6 +24,47 @@ func openMemoryStore(db *storage.DB) *memory.Store {
 		cwd = "."
 	}
 	return memory.NewStore(db, memory.ProjectScope(cwd))
+}
+
+// recallMemory puts the durable memories this project and this person have
+// accumulated in front of the model, and answers with the store the remember
+// tool and the /memory command are built on — nil where there is nothing to
+// recall from, or where the config turned memory off.
+//
+// It is one function for the three surfaces that open a conversation, because
+// a preference the model is told about on the screen and not in `shhh -p` is
+// a preference that looks forgotten: the person stated it once, and which
+// door they came in by is not something they said it about. Recall is a
+// bounded read of a local table with no model call behind it, so the only
+// thing an unattended run pays for it is the tokens.
+//
+// The tool is a separate question and stays where it was: a proposal has to
+// be confirmed by somebody, and a run with nobody in front of it has nobody
+// to confirm it (chatSession.memory).
+// See docs/capabilities/sessions-and-memory.md#recall-reaches-every-surface.
+func recallMemory(cmd *cobra.Command, session *chatSession, db *storage.DB) *memory.Store {
+	cfg := ConfigFrom(cmd.Context())
+	if db == nil || cfg.Behavior.MemoryDisabled {
+		return nil
+	}
+	store := openMemoryStore(db)
+	if store == nil {
+		return nil
+	}
+	entries, omitted, err := store.Recall(cfg.EffectiveMemoryMaxEntries(), int64(cfg.EffectiveMemoryMaxTokens()))
+	if err != nil {
+		// A table that will not answer is a session that starts without its
+		// memories, never a session that does not start.
+		return store
+	}
+	// The block is kept as well as appended: a child is handed the entries
+	// the parent recalled rather than querying the table again, so a fan-out
+	// reasons from the same memories the session does and pays one read
+	// between all of them (subagents.go).
+	session.memoryBlock = memory.PromptBlock(entries)
+	session.promptExtra = prompt.CombineExtra(session.promptExtra, session.memoryBlock)
+	session.memoryOmitted = omitted
+	return store
 }
 
 // memoryManager backs the /memory slash command: list (default), add, forget.

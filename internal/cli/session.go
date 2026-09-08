@@ -93,9 +93,11 @@ type chatSession struct {
 	// agents registers the sub-agent orchestration tools and supervisor
 	//; `shhh code` interactive sessions only.
 	agents bool
-	// memory enables durable memory: bounded recall into the system
-	// prompt plus the confirm-gated remember tool; `shhh code` interactive
-	// sessions only (headless runs have nobody to confirm a proposal).
+	// memory registers the confirm-gated remember tool, which proposes a
+	// durable memory for the user to save or decline: interactive sessions
+	// only, because a run with nobody in front of it has nobody to confirm a
+	// proposal. Recall is not this flag's — every surface that opens a
+	// conversation takes it (memory.go).
 	memory bool
 	// skills is the catalog of Agent Skills the session discovered; nil
 	// registers neither the tool nor the prompt section. Both `shhh chat`
@@ -122,6 +124,12 @@ type chatSession struct {
 	// promptExtra, carried here because recall runs before the chat model is
 	// built and the rail is the only party that says so.
 	memoryOmitted int
+	// memoryBlock is the recalled block on its own, as well as inside
+	// promptExtra. A child is handed it rather than reading the table again:
+	// the memories are the session's, one query answers a whole fan-out, and
+	// a child that queried for itself could be told something the session it
+	// serves was never told.
+	memoryBlock string
 	// maxRounds overrides behavior.max_tool_rounds for this session, where 0
 	// means no cap at all — the unattended `shhh code --max-rounds 0`, where
 	// the round checkpoint has nobody to stop for. maxRoundsSet tells the two
@@ -718,19 +726,14 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		defer session.attachMCP(cmd.Context(), db, session.conversation)()
 	}
 
-	// Durable memory: recalled entries join the system prompt under a
-	// hard entry/token budget — cited by id, zero model calls — and the
-	// remember tool lets the model propose new ones, each confirmed by the
-	// user before it persists.
-	var mem *memory.Store
-	if session.memory && db != nil && !ConfigFrom(cmd.Context()).Behavior.MemoryDisabled {
-		mem = openMemoryStore(db)
+	// Durable memory: recalled entries join the system prompt under a hard
+	// entry/token budget — cited by id, zero model calls — the same recall
+	// every surface takes (memory.go). The remember tool is the half that is
+	// this surface's alone: it proposes a new memory, and a proposal is
+	// confirmed by the user before it persists.
+	mem := recallMemory(cmd, &session, db)
+	if mem != nil && session.memory {
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), memory.ToolDefinition())
-		memCfg := ConfigFrom(cmd.Context())
-		if entries, omitted, recallErr := mem.Recall(memCfg.EffectiveMemoryMaxEntries(), int64(memCfg.EffectiveMemoryMaxTokens())); recallErr == nil {
-			session.promptExtra = prompt.CombineExtra(session.promptExtra, memory.PromptBlock(entries))
-			session.memoryOmitted = omitted
-		}
 	}
 
 	session.openNotebook(db)
@@ -920,7 +923,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	var sup *subagent.Supervisor
 	if session.agents {
 		sup = buildSupervisor(cmd.Context(), cfg, session, env, agents, red, recorder, db, prices, classifier, sc, ledger,
-			func() []string { return sessionUntracked(changes) })
+			hooks, func() []string { return sessionUntracked(changes) })
 		executor = sup.WrapExecutor(executor)
 		defer sup.Close()
 	}

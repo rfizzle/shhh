@@ -152,7 +152,7 @@ func TestHookApprover_AnUnattendedRunRefusesWhatItCannotAsk(t *testing.T) {
 
 	var decisions []string
 	ran := false
-	resolve := hookApprover(r, func() hook.Pos { return hook.Pos{Turn: 1} },
+	resolve := hookApprover(r, func() hook.Pos { return hook.Pos{Turn: 1} }, hookNoteLine,
 		func(decision, reason string) { decisions = append(decisions, decision+"/"+reason) },
 		func(provider.ToolCall) string { ran = true; return "ran" })
 
@@ -198,7 +198,7 @@ func TestHookApprover_FiresBothSeamsAroundAGatedCall(t *testing.T) {
 			"after":  {Event: hook.PostTool, Command: "after"},
 		}, "config.toml", "")
 		r := hook.NewRunner(set, exec, time.Second, "/work")
-		resolve := hookApprover(r, func() hook.Pos { return hook.Pos{Turn: 1} }, nil,
+		resolve := hookApprover(r, func() hook.Pos { return hook.Pos{Turn: 1} }, hookNoteLine, nil,
 			func(provider.ToolCall) string { return "ran" })
 
 		resolve(provider.ToolCall{Name: c.tool, Arguments: `{"path":"a.go"}`})
@@ -226,7 +226,7 @@ func TestHookApprover_AnAskIsNotSaidAsARefusal(t *testing.T) {
 	}
 	r := hook.NewRunner(set, exec, time.Second, "/work")
 	ran := false
-	resolve := hookApprover(r, func() hook.Pos { return hook.Pos{} }, nil,
+	resolve := hookApprover(r, func() hook.Pos { return hook.Pos{} }, hookNoteLine, nil,
 		func(provider.ToolCall) string { ran = true; return "ran" })
 
 	got := resolve(provider.ToolCall{Name: "execute_command", Arguments: `{"command":"go build"}`})

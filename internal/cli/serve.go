@@ -305,6 +305,10 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		l.closers = append(l.closers, session.attachMCP(cmd.Context(), db, false))
 	}
 	registerSkills(&session)
+	// The durable memories this project has accumulated, recalled the way a
+	// session recalls them (memory.go). The remember tool does not come with
+	// them: the protocol carries no card for a proposal.
+	recallMemory(cmd, &session, db)
 	// The roles this session can spawn, before the toolbox says what it has:
 	// the built-in two plus the user's own profiles, and a profile that does
 	// not load stops the session naming the file (subagents.go).
@@ -448,7 +452,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	// neither would block on a request the protocol cannot carry.
 	// See docs/capabilities/subagents.md#a-child-answers-to-the-session.
 	classifier := buildClassifier(cfg, env, l.ledger)
-	sup := buildSupervisor(cmd.Context(), cfg, session, env, agents, red, l.recorder, db, prices, classifier, sc, l.ledger, nil)
+	sup := buildSupervisor(cmd.Context(), cfg, session, env, agents, red, l.recorder, db, prices, classifier, sc, l.ledger, hooks, nil)
 	sup.SetParentMode(agent.ModeAuto)
 	sup.SetParentGrants(agent.Grants{AllEdits: true, AllCommands: true})
 	l.closers = append(l.closers, sup.Close)
@@ -505,7 +509,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		return declinedByClient(tc)
 	}
 	resolveCall = own.wrap(resolveCall)
-	resolveCall = hookApprover(hooks, l.hookPos, record, resolveCall)
+	resolveCall = hookApprover(hooks, l.hookPos, hookNoteLine, record, resolveCall)
 	if c := headlessTree(cfg, session.sibling, own); c != nil {
 		a.SetTreeCheck(*c)
 	}

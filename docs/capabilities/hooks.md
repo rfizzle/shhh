@@ -107,6 +107,40 @@ may change is the arguments: its answer has no field that could name a tool.
 The rule holds because there is nothing to break it with, rather than because
 something checks.
 
+## A hook fires in a child too
+
+A sub-agent's calls meet the same seams a session's calls do. This is not a
+convenience: a rule that stopped at the session would be a rule anybody could
+walk around by delegating the act, and a formatter that runs after an edit
+would quietly stop applying to most of the edits in a fan-out, because in a
+fan-out most of the edits are a child's.
+
+The two tiers are the two tiers. A child's auto-run calls meet the seam inside
+its own read-only chain; a child's gated calls meet it around the whole of its
+approval path — its mode, the classifier, and the card that reaches you — the
+same position the queue holds in a session. A `deny` on a child's call reads
+to the child exactly as it reads to a session: the call is refused in every
+permission mode, no approval can allow it, and rephrasing will not run it.
+
+What a hook says about a call the child was decided about goes on the child's
+own transcript, which is what you read when you attach to it. A child has no
+screen of its own, and a note printed on stderr instead would be drawn over
+the session that spawned it. Notes from the auto-run tier are not shown, in a
+child or anywhere else: a hook on every read of a session is a hook that would
+fill a transcript with itself.
+
+A hook that asks about a child's call — or that fails on one — stops it, the
+way it stops a call in an unattended run. A child does have an approval path
+that can reach you, but a hook's `ask` is a request for your judgement about
+that hook's own rule, and putting it into the child's path would as often hand
+it to the classifier instead.
+
+Three of the seams stay with the session. `session_start`, `turn_close` and
+`stop` fire once for the session that did the spawning, not once per child: a
+child's turn is not a turn you asked for, and a `stop` hook that ran sixteen
+times because a fan-out was sixteen wide would be reporting on the wrong
+thing.
+
 ## Nothing decides yes on a failure
 
 Exit 2 refuses the call. Any other non-zero exit is a failure, and a failure

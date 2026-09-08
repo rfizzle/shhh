@@ -380,6 +380,23 @@ already confirmed — rewording a memory is not restating it — and both mark i
 as freshly stated, so the entry you have just fixed sorts to the top of the
 list rather than below the ones you left alone.
 
+### Recall reaches every surface
+
+The same memories are recalled wherever a conversation opens: the session on
+your screen, an unattended `shhh code -p`, and a session served over the
+protocol. A preference you stated once is a preference about the work, not
+about which door you came in by, and one that applied on the screen and not in
+a scripted run would look like a preference the tool had forgotten.
+
+Proposing a new one is the half that does not travel. A memory is proposed and
+never assumed, and a proposal has to be confirmed by somebody, so the tool
+that makes one is registered only where there is somebody to confirm it.
+
+A sub-agent is handed what the session recalled rather than reading the table
+for itself. The memories belong to the conversation the child was spawned out
+of — a child that queried on its own could be working from something the
+session it serves was never told — and one read answers a whole fan-out.
+
 ## Metrics are what it cost
 
 Usage per model: requests, tokens, spend, latency and its tail.

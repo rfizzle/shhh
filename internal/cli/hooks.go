@@ -21,6 +21,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/observe"
@@ -28,6 +29,7 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/shell"
+	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/chat"
 )
@@ -178,7 +180,13 @@ func hookNotes(set *hook.Set) []string { return set.Notes() }
 // in what the model reads: nothing about the call is settled, and the same
 // call in a session would draw a card
 // (docs/capabilities/hooks.md#nothing-decides-yes-on-a-failure).
-func hookApprover(r *hook.Runner, at func() hook.Pos, record func(decision, reason string), next func(provider.ToolCall) string) func(provider.ToolCall) string {
+//
+// note is where the lines a hook wrote go. It is the caller's because the
+// surfaces do not share one: a run with nobody in front of it says them on
+// stderr, and a child says them on its own transcript, since the only screen
+// it could reach belongs to the session that spawned it.
+func hookApprover(r *hook.Runner, at func() hook.Pos, note func(hook.Verdict),
+	record func(decision, reason string), next func(provider.ToolCall) string) func(provider.ToolCall) string {
 	if r == nil {
 		return next
 	}
@@ -186,7 +194,7 @@ func hookApprover(r *hook.Runner, at func() hook.Pos, record func(decision, reas
 		ctx := context.Background()
 		call := hook.Call{ID: tc.ID, Name: tc.Name, Arguments: tc.Arguments}
 		pre := r.PreTool(ctx, at(), call, true)
-		hookNoteLine(pre)
+		note(pre)
 		if pre.Denied() || pre.Asked() {
 			if record != nil {
 				record(observe.DecisionDeny, observe.ReasonHook)
@@ -209,8 +217,65 @@ func hookApprover(r *hook.Runner, at func() hook.Pos, record func(decision, reas
 			return pre.Lead(out)
 		}
 		post := r.PostTool(ctx, at(), call, out, hook.Outcome(out))
-		hookNoteLine(post)
+		note(post)
 		return pre.Lead(post.Lead(out))
+	}
+}
+
+// childHookAuto and childHookGated are the same two seams around a
+// sub-agent's two dispatchers. A hook that fired only on the session's own
+// calls would be a rule anybody could walk around by delegating the act, and
+// a formatter that runs after an edit would stop applying to most of the
+// edits in a fan-out.
+//
+// The auto tier takes the wrap both other surfaces use, with nothing gated:
+// everything reaching that dispatcher is a call the child runs on its own.
+// The gated tier takes the approver's wrap, because a child's approval path
+// is the dispatcher for that tier exactly as the queue is in a session — and
+// putting it around the whole resolution rather than inside it is what keeps
+// a hook unable to move a call between tiers.
+//
+// It is the approver's wrap in the second sense too: a hook that asks about a
+// child's call, or fails on one, stops it rather than routing it into the
+// child's own approval path. A child does have a card that reaches the
+// person, but a hook's ask is a request for their judgement about that hook's
+// rule, and a child's path would as often answer it with the classifier.
+// See docs/capabilities/hooks.md#a-hook-fires-in-a-child-too.
+func childHookAuto(r *hook.Runner) func(subagent.Seam, agent.ToolExecutor) agent.ToolExecutor {
+	if r == nil {
+		return nil
+	}
+	return func(seam subagent.Seam, next agent.ToolExecutor) agent.ToolExecutor {
+		return agent.ToolExecutor(r.WrapExecutor(childHookPos(seam.At), nil, hook.Executor(next)))
+	}
+}
+
+func childHookGated(r *hook.Runner) func(subagent.Seam, func(provider.ToolCall) string) func(provider.ToolCall) string {
+	if r == nil {
+		return nil
+	}
+	return func(seam subagent.Seam, next func(provider.ToolCall) string) func(provider.ToolCall) string {
+		return hookApprover(r, childHookPos(seam.At), childHookNotes(seam.Note), seam.Record, next)
+	}
+}
+
+// childHookPos is where a child is, in the two numbers the record and the
+// event stream carry. A child counts its own turns and rounds, so unlike an
+// unattended run it has a real answer to both.
+func childHookPos(at func() observe.Pos) func() hook.Pos {
+	return func() hook.Pos {
+		p := at()
+		return hook.Pos{Turn: p.Turn, Round: p.Round}
+	}
+}
+
+// childHookNotes writes what the hooks said on the child's transcript, in the
+// wording the session's own transcript uses for the same lines.
+func childHookNotes(note func(string)) func(hook.Verdict) {
+	return func(v hook.Verdict) {
+		for _, line := range v.Notes {
+			note("hook — " + line)
+		}
 	}
 }
 

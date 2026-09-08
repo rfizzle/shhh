@@ -19,6 +19,7 @@ import (
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/evidence"
+	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/lsp"
 	"github.com/rfizzle/shhh/internal/mcp"
 	"github.com/rfizzle/shhh/internal/meter"
@@ -294,6 +295,36 @@ func childStructural(session *structural.Toolset, root string) *structural.Tools
 	return session.Rooted(root)
 }
 
+// childPostMutation is the person's post-tool hooks on a child's writes and
+// on nothing else.
+//
+// A child's gated dispatcher carries every gated call, a fetch among them,
+// where a session's mutating dispatcher carries only writes — and a fetch has
+// already met the seam behind it on the approval path. Without the guard, one
+// call would be put to one hook twice.
+//
+// It rides the same place the language server's verdict does, which is
+// outside the reduction, so what the hook is told the call produced is the
+// text the child is about to read — which is what a seam behind a call is
+// for.
+//
+// It reports no position, as the session's own mutation seam does not: the
+// chain is built when the child's environment is, which is before there is a
+// child to ask where it has got to. The seams in front of a child's calls do
+// report one, and a hook that needs the round can read it from those.
+func childPostMutation(r *hook.Runner) chat.MutationHook {
+	post := hookPostMutation(r)
+	if post == nil {
+		return nil
+	}
+	return func(name string, args json.RawMessage, result string) string {
+		if !tools.IsMutating(name) {
+			return result
+		}
+		return post(name, args, result)
+	}
+}
+
 // withDiagnostics appends the language server's verdict on a file a call just
 // wrote to that call's result, and leaves every other result alone — which is
 // the hook's own reading of which calls those are, not a second copy of it.
@@ -327,6 +358,38 @@ func childWindow(prices *pricing.Table, model string) int64 {
 	return window
 }
 
+// childTree is the reading that tells a child its workspace moved under it,
+// or nil where the config turned the reading off. It is the session's own
+// reading (session.go) pointed at where the child is standing, which for a
+// writer is its worktree and not the checkout that worktree was copied from.
+//
+// The subtrahend is not filled in here: what a child has written is the
+// supervisor's own record, and it fills that in when it starts the attempt.
+//
+// One thing the reading over-reports, deliberately: the record of what has
+// been shown to a model is one record per process, because the files are, so
+// a reader standing in the parent's own directory can be told a file "you
+// have read" changed when it was the session that read it. Telling the two
+// apart would need a second record keyed by who was shown what, and the
+// sentence the notice ends on — re-read it before you use it — is the right
+// advice either way.
+//
+// The likeliest-author clause is for a child standing in the parent's
+// checkout. A writer's worktree is a directory nobody else has open, so
+// naming another session there would be answering a question that could not
+// have been asked.
+func childTree(cfg config.Config, sib sessionSibling, root string, worktree bool) *agent.TreeCheck {
+	c := treeCheck(cfg)
+	if c == nil {
+		return nil
+	}
+	c.Dir = root
+	if worktree {
+		return c
+	}
+	return withSibling(c, sib)
+}
+
 // childToolTokens is what a child's definitions cost on every request it
 // makes. They are not in its conversation, so a child measuring only its
 // messages thinks it has a toolset's worth of room it does not have.
@@ -345,7 +408,8 @@ func childToolTokens(defs []provider.Tool) int64 {
 // nil, which is a writer starting from `git diff HEAD` alone.
 func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession, env *sessionEnv, agents *agentProfiles,
 	red *evidence.Reducer, recorder *observeRecorder, db *storage.DB, prices *pricing.Table,
-	classifier *agent.Classifier, sc *scope.Scope, ledger *meter.Ledger, untracked func() []string) *subagent.Supervisor {
+	classifier *agent.Classifier, sc *scope.Scope, ledger *meter.Ledger, hooks *hook.Runner,
+	untracked func() []string) *subagent.Supervisor {
 	root, err := os.Getwd()
 	if err != nil {
 		root = "."
@@ -375,7 +439,7 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 		info := shell.DetectExec()
 		info.Cwd = croot
 		extra := childExtra(cfg.Behavior.SystemPromptExtra, childInstructions,
-			env.workspaceBlock(), spec.Worktree)
+			session.memoryBlock, env.workspaceBlock(), spec.Worktree)
 
 		var sysPrompt string
 		var defs []provider.Tool
@@ -444,7 +508,13 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 		// id can be paged would cost the child the round the block was there
 		// to save. The vault's scrub is outside both, so the text still
 		// passes through it.
-		gatedExec = withDiagnostics(childMutationHook(session.lsp), gatedExec)
+		//
+		// The person's own post-tool hooks ride the same seam they ride in a
+		// session: a write and an edit are dispatched through the mutating
+		// tools, which is the one place a write can be seen, so a formatter
+		// that runs after an edit goes on running after a child's edits too.
+		gatedExec = withDiagnostics(
+			chainMutation(childMutationHook(session.lsp), childPostMutation(hooks)), gatedExec)
 
 		streamDefs := defs
 		// The child's model is resolved by the supervisor (spawn argument →
@@ -517,6 +587,16 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			// definitions cost on every request it makes.
 			Window:     childWindow(prices, childModel),
 			ToolTokens: childToolTokens(streamDefs),
+			// The person's own commands at the child's two tool dispatchers,
+			// outside the vault's scrub on both — a hook reads what the model
+			// reads, which is how the session's own seams are ordered
+			// (toolset.go puts the vault outside everything).
+			WrapAuto:  childHookAuto(hooks),
+			WrapGated: childHookGated(hooks),
+			// And the reading that tells the child its workspace moved under
+			// it, taken where the child is standing: a writer's worktree, or
+			// the parent's checkout for a reader.
+			TreeCheck: childTree(cfg, session.sibling, croot, spec.Worktree),
 		}, nil
 	}
 
@@ -624,8 +704,8 @@ func scopeNote(paths []string) string {
 
 // childExtra is the standing context every child is given on top of its role
 // prompt: what the config file adds to every prompt here, what the project
-// says about itself, the checkout as it stands now, and where in it the child
-// is standing.
+// says about itself, what this project and this person have asked for before,
+// the checkout as it stands now, and where in it the child is standing.
 //
 // The workspace block is read again for each child rather than taken from the
 // session's own prompt: a child spawned an hour in is being sent to look at
@@ -634,8 +714,12 @@ func scopeNote(paths []string) string {
 // instructions are the other way round — read once for the session, because
 // they are files on disk that a spawn has no reason to have changed, and
 // re-reading them cost every spawn, retry and handoff a full pass over them.
-func childExtra(configExtra, instructions, workspace string, worktree bool) string {
-	return prompt.CombineExtra(configExtra, instructions, workspace, worktreeNote(worktree))
+// The memories are the session's own recall for the same reason and one
+// more: they are what the person told this session, and a child that queried
+// the table for itself could be working from something the session it serves
+// was never told (memory.go).
+func childExtra(configExtra, instructions, memory, workspace string, worktree bool) string {
+	return prompt.CombineExtra(configExtra, instructions, memory, workspace, worktreeNote(worktree))
 }
 
 // worktreeNote tells a child standing in an isolated copy of the checkout

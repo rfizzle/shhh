@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,15 +18,23 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
+	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/evidence"
+	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/lsp"
+	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/notebook"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
+	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/chat"
+	"github.com/rfizzle/shhh/internal/web"
+	"github.com/spf13/cobra"
 )
 
 func TestAgentProfilesReaders(t *testing.T) {
@@ -86,7 +95,7 @@ func TestSessionUntracked(t *testing.T) {
 func TestChildExtraCarriesTheWorkspaceAndWhereTheChildStands(t *testing.T) {
 	workspace := project.PromptBlock(project.Info{Dir: "/work", Repo: true, Branch: "side", Dirty: 2})
 
-	reader := childExtra("", "# Project\nbe helpful", workspace, false)
+	reader := childExtra("", "# Project\nbe helpful", "", workspace, false)
 	if !strings.Contains(reader, "Git branch: side") || !strings.Contains(reader, "2 uncommitted paths") {
 		t.Errorf("a child should be handed the checkout the session was handed:\n%s", reader)
 	}
@@ -97,7 +106,7 @@ func TestChildExtraCarriesTheWorkspaceAndWhereTheChildStands(t *testing.T) {
 		t.Errorf("a reader stands in the parent's own directory:\n%s", reader)
 	}
 
-	writer := childExtra("", "", workspace, true)
+	writer := childExtra("", "", "", workspace, true)
 	if !strings.Contains(writer, "Git branch: side") {
 		t.Errorf("a writer is told the branch too:\n%s", writer)
 	}
@@ -133,7 +142,7 @@ func TestChildInstructionsAreCutToTheChildsOwnBudget(t *testing.T) {
 	if len(child) >= len(session) {
 		t.Fatalf("a child's block (%d bytes) is not smaller than the session's (%d)", len(child), len(session))
 	}
-	extra := childExtra("", child, "", false)
+	extra := childExtra("", child, "", "", false)
 	if len(extra) > prompt.ChildInstructionBudget+2000 {
 		t.Fatalf("a child's standing context came to %d bytes against a budget of %d",
 			len(extra), prompt.ChildInstructionBudget)
@@ -590,5 +599,292 @@ func TestPrintOptsAnswered_EitherFlagIsAnAnswer(t *testing.T) {
 		if got := tc.opts.answered(); got != tc.want {
 			t.Errorf("%s = %v, want %v", name, got, tc.want)
 		}
+	}
+}
+
+// hookRunnerSaying is a runner whose one pre_tool hook answers with the given
+// stdout and exit code, and records the payloads it was handed.
+func hookRunnerSaying(t *testing.T, stdout string, code int, seen *[]hook.Payload) *hook.Runner {
+	t.Helper()
+	set := hook.Load(map[string]hook.Entry{
+		"guard": {Event: hook.PreTool, Command: "guard"},
+	}, "config.toml", "")
+	exec := func(_ context.Context, _ string, stdin []byte) (string, int, error) {
+		var p hook.Payload
+		if err := json.Unmarshal(stdin, &p); err != nil {
+			t.Errorf("a hook was handed something that is not the payload: %v", err)
+		}
+		*seen = append(*seen, p)
+		return stdout, code, nil
+	}
+	return hook.NewRunner(set, exec, time.Second, "/work")
+}
+
+// childSeam is the seam a running child hands a wrap, with somewhere to read
+// each half of it back from.
+type childSeam struct {
+	notes     []string
+	decisions []string
+}
+
+func (c *childSeam) seam() subagent.Seam {
+	return subagent.Seam{
+		At:     func() observe.Pos { return observe.Pos{Turn: 2, Round: 7} },
+		Note:   func(text string) { c.notes = append(c.notes, text) },
+		Record: func(decision, code string) { c.decisions = append(c.decisions, decision+"/"+code) },
+	}
+}
+
+// A rule the person wrote holds on a child's calls as it holds on the
+// session's. It has to: a deny hook that stopped at the orchestrator would be
+// a deny hook anybody could walk around by delegating the act, and the model
+// asking for the call is the one deciding what to delegate.
+func TestAPreToolDenyHookRefusesAChildsCommand(t *testing.T) {
+	var payloads []hook.Payload
+	r := hookRunnerSaying(t, "", hook.DenyExit, &payloads)
+
+	seam := &childSeam{}
+	ran := false
+	resolve := childHookGated(r)(seam.seam(),
+		func(provider.ToolCall) string { ran = true; return "ran" })
+
+	got := resolve(provider.ToolCall{ID: "c1", Name: tools.ExecCommandName,
+		Arguments: `{"command":"rm -rf vendor"}`})
+	if ran {
+		t.Fatal("the child's approval path ran a call a hook refused")
+	}
+	if got != hook.DeniedResult("guard") {
+		t.Fatalf("a child is told something other than what a session is told:\n%s", got)
+	}
+	// The seam is in front of the command branch, so the hook is told about
+	// the command rather than about a result it never produced.
+	if len(payloads) != 1 || payloads[0].Tool != tools.ExecCommandName {
+		t.Fatalf("the hook was not told about the command: %+v", payloads)
+	}
+	// And where the child is, which a child can answer and an unattended run
+	// cannot: it counts its own turns and rounds.
+	if payloads[0].Turn != 2 || payloads[0].Round != 7 {
+		t.Errorf("the hook was told the wrong position: turn %d round %d", payloads[0].Turn, payloads[0].Round)
+	}
+	if len(seam.decisions) != 1 || !strings.HasPrefix(seam.decisions[0], observe.DecisionDeny) {
+		t.Errorf("a child's refusal was not recorded the way a session's is: %v", seam.decisions)
+	}
+}
+
+// What a hook says about a child goes on the child's own transcript. A child
+// has no screen, and the only one it could reach belongs to the session that
+// spawned it — a line printed there would be drawn over a running TUI.
+func TestAHooksLineAboutAChildGoesOnTheChildsTranscript(t *testing.T) {
+	var payloads []hook.Payload
+	r := hookRunnerSaying(t, `{"note":"vendor is off limits"}`, 0, &payloads)
+
+	seam := &childSeam{}
+	resolve := childHookGated(r)(seam.seam(), func(provider.ToolCall) string { return "ran" })
+	resolve(provider.ToolCall{Name: tools.ExecCommandName, Arguments: `{"command":"go build"}`})
+
+	if len(seam.notes) == 0 || !strings.Contains(seam.notes[0], "vendor is off limits") {
+		t.Fatalf("the hook's line did not reach the child's transcript: %v", seam.notes)
+	}
+}
+
+// The auto-run tier is the other dispatcher, and a hook sits inside it the
+// same way. A read is where most of a fan-out's calls are.
+func TestAChildsAutoRunCallsMeetTheHookSeam(t *testing.T) {
+	var payloads []hook.Payload
+	r := hookRunnerSaying(t, "", hook.DenyExit, &payloads)
+
+	seam := &childSeam{}
+	ran := false
+	exec := childHookAuto(r)(seam.seam(), func(string, json.RawMessage) (string, error) {
+		ran = true
+		return "contents", nil
+	})
+
+	got, err := exec(tools.ReadFileName, json.RawMessage(`{"path":"vendor/x.go"}`))
+	if err != nil {
+		t.Fatalf("a refusal is a result and never an error: %v", err)
+	}
+	if ran {
+		t.Fatal("the child's read dispatcher ran a call a hook refused")
+	}
+	if got != hook.DeniedResult("guard") {
+		t.Fatalf("a child is told something other than what a session is told:\n%s", got)
+	}
+}
+
+// A session that runs no hooks hands its children no wraps at all, so the
+// dispatchers they get are exactly the ones the Env built.
+func TestASessionWithNoHooksWrapsNothingOnItsChildren(t *testing.T) {
+	if childHookAuto(nil) != nil || childHookGated(nil) != nil {
+		t.Fatal("a session with no hooks put a wrap on its children anyway")
+	}
+}
+
+// A child reasons from the memories the session recalled. The parent read
+// them once for the whole fan-out, and a child querying the table for itself
+// could be working from something the session it serves was never told.
+func TestChildExtraCarriesTheParentsRecalledMemory(t *testing.T) {
+	block := memory.PromptBlock([]memory.Entry{
+		{ID: 4, Scope: "proj", Kind: memory.KindConvention, Text: "tests go beside the code"},
+	})
+	if block == "" {
+		t.Fatal("no block to hand over")
+	}
+	extra := childExtra("", "# Project", block, "", false)
+	if !strings.Contains(extra, "tests go beside the code") {
+		t.Fatalf("a child was not handed what the session recalled:\n%s", extra)
+	}
+	if !strings.Contains(extra, "m4") {
+		t.Fatalf("the citation went missing, so the child cannot name what it is following:\n%s", extra)
+	}
+}
+
+// The reading a child watches its workspace with is the session's own,
+// pointed at where the child is standing rather than at the parent's
+// directory — a writer edits an isolated copy, and a reading taken in the
+// checkout it was copied from would report the wrong tree entirely.
+func TestAChildsTreeReadingIsTakenWhereTheChildStands(t *testing.T) {
+	c := childTree(config.Config{}, sessionSibling{}, "/work/wt-1", true)
+	if c == nil {
+		t.Fatal("the reading is on by default and a child got none")
+	}
+	if c.Dir != "/work/wt-1" {
+		t.Errorf("the reading is taken in %q, not where the child is standing", c.Dir)
+	}
+	if c.ReadChanged == nil {
+		t.Error("a child was given no record of what has been shown to it")
+	}
+	// A worktree is a directory nobody else has open, so there is no other
+	// session to name in it.
+	if c.Sibling != nil {
+		t.Error("a writer's own copy of the checkout was told another session is in it")
+	}
+
+	reader := childTree(config.Config{}, sessionSibling{read: func() (time.Time, bool) {
+		return time.Now(), true
+	}}, "/work", false)
+	if reader == nil || reader.Sibling == nil || !reader.Sibling() {
+		t.Error("a child standing in the parent's own checkout should be told who else is in it")
+	}
+
+	off := false
+	cfg := config.Config{}
+	cfg.Behavior.TreeCheck = &off
+	if c := childTree(cfg, sessionSibling{}, "/work", false); c != nil {
+		t.Errorf("a reading the config turned off reached a child anyway: %+v", c)
+	}
+}
+
+// One recall for every surface that opens a conversation. A preference the
+// person stated once is about the work, not about which door they came in by,
+// and the block a session puts in front of the model is the block an
+// unattended run and a served session put there too — and the one a child is
+// handed rather than querying for itself.
+func TestRecallMemory_IsOneAnswerForEverySurface(t *testing.T) {
+	db, err := storage.OpenPath(filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	defer db.Close()
+	store := openMemoryStore(db)
+	if store == nil {
+		t.Fatal("no memory store to recall from")
+	}
+	if _, err := store.Add(store.Project(), memory.KindConvention,
+		"commit straight to master", memory.ProvenanceUser); err != nil {
+		t.Fatalf("add: %v", err)
+	}
+
+	cmd := &cobra.Command{}
+	cmd.SetContext(withConfig(context.Background(), config.Config{}))
+
+	var session chatSession
+	if got := recallMemory(cmd, &session, db); got == nil {
+		t.Fatal("the surface was given no store to propose or forget with")
+	}
+	if !strings.Contains(session.memoryBlock, "commit straight to master") {
+		t.Fatalf("nothing was recalled:\n%s", session.memoryBlock)
+	}
+	// The block goes into the prompt as well as being kept, because the
+	// session is the party that reasons from it.
+	if !strings.Contains(session.promptExtra, session.memoryBlock) {
+		t.Fatalf("the recalled block never reached the prompt:\n%s", session.promptExtra)
+	}
+
+	// And nothing at all where the person turned memory off, on every
+	// surface at once.
+	off := config.Config{}
+	off.Behavior.MemoryDisabled = true
+	cmd.SetContext(withConfig(context.Background(), off))
+	var silent chatSession
+	if got := recallMemory(cmd, &silent, db); got != nil || silent.memoryBlock != "" {
+		t.Fatalf("memory.disabled still recalled: %q", silent.memoryBlock)
+	}
+}
+
+// A child's write is put to one hook once. It is the case the two guards
+// exist for: a write is the one gated call a child resolves through its own
+// dispatcher, so the seam behind it is on the mutation chain and the approver
+// steps over it — and either guard missing would have one edit fire one
+// person's formatter twice.
+func TestAChildsWriteIsPutToTheSeamBehindItExactlyOnce(t *testing.T) {
+	set := hook.Load(map[string]hook.Entry{
+		"before": {Event: hook.PreTool, Command: "before"},
+		"after":  {Event: hook.PostTool, Command: "after"},
+	}, "config.toml", "")
+	var mu sync.Mutex
+	var events []string
+	r := hook.NewRunner(set, func(_ context.Context, _ string, stdin []byte) (string, int, error) {
+		var p hook.Payload
+		if err := json.Unmarshal(stdin, &p); err != nil {
+			t.Errorf("a hook was handed something that is not the payload: %v", err)
+		}
+		mu.Lock()
+		events = append(events, p.Event+":"+p.Tool)
+		mu.Unlock()
+		return "", 0, nil
+	}, time.Second, "/work")
+
+	// The child's gated dispatcher as buildSupervisor assembles it: the
+	// mutation chain over the executor, and the approver's wrap around the
+	// resolution that reaches it.
+	gatedExec := withDiagnostics(chainMutation(nil, childPostMutation(r)),
+		func(name string, _ json.RawMessage) (string, error) { return "wrote " + name, nil })
+	seam := &childSeam{}
+	resolve := childHookGated(r)(seam.seam(), func(tc provider.ToolCall) string {
+		out, err := gatedExec(tc.Name, json.RawMessage(tc.Arguments))
+		if err != nil {
+			return "error: " + err.Error()
+		}
+		return out
+	})
+
+	resolve(provider.ToolCall{Name: tools.WriteFileName, Arguments: `{"path":"a.go","content":"package a\n"}`})
+
+	mu.Lock()
+	defer mu.Unlock()
+	want := []string{hook.PreTool + ":" + tools.WriteFileName, hook.PostTool + ":" + tools.WriteFileName}
+	if len(events) != len(want) {
+		t.Fatalf("a child's write met the seams %v, want %v", events, want)
+	}
+	for i := range want {
+		if events[i] != want[i] {
+			t.Fatalf("a child's write met the seams %v, want %v", events, want)
+		}
+	}
+}
+
+// And a gated call that is not a write meets the seam behind it once too,
+// on the approver rather than the mutation chain — which is the half the
+// guard in childPostMutation is for.
+func TestAChildsFetchDoesNotMeetTheMutationSeam(t *testing.T) {
+	post := childPostMutation(hook.NewRunner(
+		hook.Load(map[string]hook.Entry{"after": {Event: hook.PostTool, Command: "after"}}, "config.toml", ""),
+		func(context.Context, string, []byte) (string, int, error) {
+			t.Error("a fetch was put to the mutation seam")
+			return "", 0, nil
+		}, time.Second, "/work"))
+	if got := post(web.FetchToolName, json.RawMessage(`{"url":"https://example.com"}`), "a page"); got != "a page" {
+		t.Fatalf("the result was rewritten by a seam that should not have fired: %q", got)
 	}
 }

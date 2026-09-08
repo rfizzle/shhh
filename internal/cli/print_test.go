@@ -26,6 +26,7 @@ import (
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/structural"
+	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/web"
 )
 
@@ -1493,6 +1494,50 @@ func TestHeadlessTree_CarriesTheSiblingClause(t *testing.T) {
 	}
 	if !strings.Contains(n.Message, "another session is open in this checkout") {
 		t.Fatalf("the block did not name the likeliest author:\n%s", n.Message)
+	}
+}
+
+// A file the run has read that somebody rewrote in place is named at the
+// round boundary, while the run still has a round to re-read it in. Git says
+// nothing about it: the file was already dirty, so porcelain reads the same
+// before and after, and the run nobody is watching is the one that would
+// otherwise spend a round writing a change that cannot land.
+func TestHeadlessTree_AFileTheRunReadThatMovedIsNamedAtTheBoundary(t *testing.T) {
+	ws := treeRepo(t)
+	read := filepath.Join(ws, "a.txt")
+	// The record of what has been shown is one record per process, so a test
+	// that leaves entries in it fails the next one.
+	tools.ForgetAll()
+	t.Cleanup(tools.ForgetAll)
+
+	c := headlessTree(config.Config{}, readSibling(nil), &writtenByCalls{})
+	if c == nil {
+		t.Fatal("the reading is on by default and the run got none")
+	}
+	if c.ReadChanged == nil {
+		t.Fatal("an unattended run was given no record of what it has been shown")
+	}
+	c.Dir = ws
+
+	args, _ := json.Marshal(map[string]string{"path": read})
+	if _, err := tools.Execute(tools.ReadFileName, args); err != nil {
+		t.Fatalf("read: %v", err)
+	}
+	a := agent.New(nil, nil)
+	a.SetTreeCheck(*c)
+	// Rewritten in place at the same moment the run was working, which is a
+	// sibling session or a sub-agent and never this run: nothing here wrote
+	// it, so it is not in the subtrahend.
+	if err := os.WriteFile(read, []byte("somebody else got here first\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	n, ok := a.NextTreeNotice(false)
+	if !ok {
+		t.Fatal("a file the run had read moved and the run was told nothing")
+	}
+	if n.ReadPaths != 1 || !strings.Contains(n.Message, "you have read changed") {
+		t.Fatalf("the boundary said nothing about what the run had been shown:\n%s", n.Message)
 	}
 }
 

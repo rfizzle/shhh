@@ -311,6 +311,65 @@ type Env struct {
 	// out of the estimate would think it had a toolset's worth of room it
 	// does not have — and a child's toolset is now most of a session's.
 	ToolTokens int64
+	// WrapAuto and WrapGated put the surface's own seams around the child's
+	// two tool dispatchers: the calls that run on their own, and the calls
+	// that are decided about. They are what carries the person's own
+	// commands into a child — a rule that stopped at the session would be a
+	// rule anybody could walk around by delegating the act
+	// (docs/capabilities/hooks.md#a-hook-fires-in-a-child-too).
+	//
+	// They wrap rather than replace: what comes back runs the dispatcher it
+	// was handed, so a surface that installs nothing changes nothing. The
+	// gated wrap goes around the whole resolution — the policy, the
+	// classifier and the card included — which is where a session's own
+	// approver meets the same seam, and which keeps the tier rule: a call is
+	// dispatched by the kind of call it is, whatever a seam said about it.
+	// Nil leaves the dispatcher exactly as this Env built it.
+	WrapAuto  func(Seam, agent.ToolExecutor) agent.ToolExecutor
+	WrapGated func(Seam, func(provider.ToolCall) string) func(provider.ToolCall) string
+	// TreeCheck, when set, is the reading that tells the child's turn its
+	// workspace moved under it, as the surface configured it. Own is filled
+	// in by this package rather than there: what the child has written is
+	// the child's own record, and the reading has to subtract it or every
+	// file the child edits comes back at the next boundary as somebody
+	// else's work.
+	//
+	// A child is what the reading is for as much as a session is — it works
+	// beside its siblings, beside the session that spawned it and beside
+	// whoever else has the checkout open, and it is the party with nobody
+	// watching its screen. Nil takes no reading.
+	TreeCheck *agent.TreeCheck
+}
+
+// Seam is what a child's dispatchers hand whoever wraps them: where the child
+// has got to, where a line about it goes on its own transcript, and where a
+// verdict about one of its calls is filed.
+//
+// All three are the child's, and the child does not exist when the surface
+// builds its Env — a wrap is built once for the surface and a Seam is passed
+// per child, which is why these are arguments to the wrap rather than fields
+// captured in it.
+type Seam struct {
+	// At is where the child has got to: which of its turns, and which round
+	// of that turn.
+	At func() observe.Pos
+	// Note puts one line on the child's transcript. A child has no screen of
+	// its own, and a surface that wrote to stderr instead would draw over the
+	// session that spawned it.
+	Note func(text string)
+	// Record files a verdict at the codes a session records its own at. An
+	// approval rate that covered the parent and not its children would be a
+	// rate over the half of the work a person was looking at.
+	Record func(decision, code string)
+}
+
+// autoExecutor is the child's auto-run dispatcher with the surface's seam
+// around it, or the bare dispatcher where the surface installed none.
+func (e Env) autoExecutor(s Seam) agent.ToolExecutor {
+	if e.WrapAuto == nil {
+		return e.Executor
+	}
+	return e.WrapAuto(s, e.Executor)
 }
 
 // execResult is a command's output as the child's tool result: reduced, then
@@ -905,6 +964,53 @@ func (c *child) changed() (files, added, removed int) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return len(c.wrote), 0, 0
+}
+
+// ownPaths is what this attempt has written, in the tree the reading is taken
+// in. A call names a path the way the model wrote it, and a writer's model is
+// standing in a worktree this process is not, so a relative path is joined to
+// the child's own root before it goes out — resolved against the process's
+// directory it would name a file in the parent's checkout, and the reading
+// would report the child's own edits as somebody else's.
+func (c *child) ownPaths() []string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	out := make([]string, 0, len(c.wrote))
+	for p := range c.wrote {
+		if !filepath.IsAbs(p) {
+			p = filepath.Join(c.root, p)
+		}
+		out = append(out, p)
+	}
+	return out
+}
+
+// seam is what this child hands a surface wrapping one of its dispatchers.
+// The recorder is read at the call rather than captured: a retried child is
+// given a new one, and a wrap built for the first attempt goes on serving the
+// second.
+func (c *child) seam() Seam {
+	return Seam{
+		At:   func() observe.Pos { return c.pos() },
+		Note: func(text string) { c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: text}) },
+		Record: func(decision, code string) {
+			if c.rec.Decision != nil {
+				c.rec.Decision(c.pos(), decision, code)
+			}
+		},
+	}
+}
+
+// watchTree turns this attempt's tree reading on, with the child's own writes
+// as the subtrahend. The reading is taken where the child is standing, which
+// for a writer is its worktree and not the checkout that worktree came from.
+func (c *child) watchTree(a *agent.Agent, env Env) {
+	if env.TreeCheck == nil {
+		return
+	}
+	cfg := *env.TreeCheck
+	cfg.Own = c.ownPaths
+	a.SetTreeCheck(cfg)
 }
 
 // queuedSteer is one message waiting to join a child's conversation, with
@@ -1677,7 +1783,11 @@ func (s *Supervisor) restart(c *child, detail string) error {
 		return fmt.Errorf("cannot set up the retry: %w", err)
 	}
 	a := newChildAgent(env, c.agent.MaxRounds())
-	a.SetExecutor(env.Executor)
+	a.SetExecutor(env.autoExecutor(c.seam()))
+	// The retry's own baseline: the tree as it stands now, not as it stood
+	// when the attempt that failed opened. Everything that moved in between
+	// is work this child neither did nor is being asked to explain.
+	c.watchTree(a, env)
 
 	c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Retrying — the previous attempt " + detail + "."})
 
@@ -1944,8 +2054,13 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 		detail:    "queued",
 		started:   time.Now(),
 	}
-	// The auto-run executor is the env's rooted, reduced chain.
-	a.SetExecutor(env.Executor)
+	// The auto-run executor is the env's rooted, reduced chain, inside
+	// whatever the surface puts on its own dispatchers.
+	a.SetExecutor(env.autoExecutor(c.seam()))
+	// And the reading that tells the child its workspace moved under it,
+	// baselined here so the first boundary compares against the tree the
+	// child was started on.
+	c.watchTree(a, env)
 	// The mode recorded is the one in force — the profile's or the parent's
 	// after the clamp — not the one asked for; c.mode alone is the request.
 	if s.opts.Record != nil {
@@ -2100,6 +2215,14 @@ func (s *Supervisor) run(c *child) {
 			c.rec.Signal(c.pos(), code, reason)
 		}
 	}
+	// The gated tier's dispatcher, inside whatever the surface puts around
+	// it. It is built once for the attempt rather than per call: the wrap is
+	// a chain of closures, and a child's rounds are the last place to be
+	// rebuilding one.
+	resolve := func(tc provider.ToolCall) string { return s.resolveGated(c, tc) }
+	if c.env.WrapGated != nil {
+		resolve = c.env.WrapGated(c.seam(), resolve)
+	}
 	h := &agent.Headless{
 		Agent:   c.agent,
 		Compact: childCompactor(c.model, c.env),
@@ -2181,10 +2304,17 @@ func (s *Supervisor) run(c *child) {
 		OnWithheld: func(reason string) {
 			signal(observe.SignalIntervene, reason)
 		},
-		Gate: func(tc provider.ToolCall) bool { return c.env.Gated[tc.Name] },
-		Resolve: func(tc provider.ToolCall) string {
-			return s.resolveGated(c, tc)
+		// The workspace moved under the child. The message has already
+		// joined its conversation by the time this is called; the row is so
+		// that a parent attaching to the lane can see why the child went
+		// back and re-read a file it had already read.
+		OnTree: func(n agent.TreeNotice) {
+			c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: n.Notice})
+			signal(observe.SignalTree, n.Signal())
+			s.emitUpdate(c)
 		},
+		Gate:    func(tc provider.ToolCall) bool { return c.env.Gated[tc.Name] },
+		Resolve: resolve,
 		Steer: func() []string {
 			msgs := c.drainSteering()
 			if len(msgs) > 0 {

@@ -692,6 +692,11 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 
 	registerSkills(&session)
 
+	// The durable memories this project has accumulated, recalled the way a
+	// session recalls them (memory.go). The remember tool does not come with
+	// them: a proposal has to be confirmed, and this run has nobody to ask.
+	recallMemory(cmd, &session, db)
+
 	// Sub-agent orchestration, where this run was started with an answer to
 	// the spawn card: --yes, which answers every other gated call, or auto
 	// mode, whose classifier answers this one the way it answers the rest
@@ -979,7 +984,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		// out of its changeset; this run keeps no changeset, and reading the
 		// tree for them instead would carry a person's scratch files into
 		// every worktree (docs/capabilities/subagents.md#a-writer-starts-from-your-tree).
-		sup = buildSupervisor(cmd.Context(), cfg, session, env, agents, red, recorder, db, prices, classifier, sc, ledger, nil)
+		sup = buildSupervisor(cmd.Context(), cfg, session, env, agents, red, recorder, db, prices, classifier, sc, ledger, hooks, nil)
 		sup.SetParentMode(agent.ModeAuto)
 		sup.SetParentGrants(agent.Grants{AllEdits: opts.yes, AllCommands: opts.yes, Commands: opts.allow})
 		defer sup.Close()
@@ -1069,7 +1074,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// The hooks go outside the reader of what this run wrote, so a call a
 	// hook refused is not counted as one and a call it rewrote is counted as
 	// the call that ran.
-	resolve = hookApprover(hooks, hookPos(a.Rounds), verdict.wrap(obs.decision), resolve)
+	resolve = hookApprover(hooks, hookPos(a.Rounds), hookNoteLine, verdict.wrap(obs.decision), resolve)
 	// And outside all of it, what this run actually offered. A name nothing
 	// registered is not a call, so it is not a hook's event and not a path
 	// this run wrote either.
