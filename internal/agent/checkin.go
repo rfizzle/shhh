@@ -21,10 +21,21 @@ package agent
 // catches a turn asking one question twice, this catches a turn that has
 // stopped asking anything new.
 // See docs/capabilities/coding-agent.md#a-long-turn-is-asked-what-it-has-got.
+//
+// The interval is rounds, and a turn that dies does not die of rounds. A
+// sub-agent's life ends on a token budget, and one making few large calls
+// spends the whole of it long before the round interval comes round: the
+// observed child died on its budget at round 27 having been asked exactly one
+// question, at round 25. So the same machinery runs on a second clock — a
+// check-in every share of the budget, widening the way the round interval
+// widens — and that one asks the question the rounds cannot, which is what
+// the spending bought.
+// See docs/capabilities/coding-agent.md#a-childs-other-clock-is-its-budget.
 
 import (
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 // DefaultCheckInInterval is how many tool rounds pass before a session is
@@ -63,6 +74,26 @@ const (
 	DefaultCheckInDoublings = 2
 )
 
+// checkInBudgetShare is the share of a turn's token budget that passes before
+// it is asked to take stock: a quarter, widening from there off the same
+// count the round interval widens off.
+//
+// It is a share rather than a number of tokens because the budget it divides
+// is the caller's, and every surface that has one sets a different one. A
+// quarter is what the observed failure asks for: a child with a 200,000-token
+// budget spent all of it in 27 rounds of reading, so the first question falls
+// around 50,000 tokens whatever shape the rounds take, and the widening puts
+// the second at three quarters, still ahead of the end. Smaller and a child
+// making a handful of large calls is interrupted before it has read anything;
+// larger and the first question arrives with too little budget left to act on
+// the answer.
+const checkInBudgetShare = 4
+
+// maxCheckInWritten bounds the files a budget check-in names back. It is a
+// question and not an inventory: a turn that has written thirty files is not
+// the one this exists for, and a list that long buries the question under it.
+const maxCheckInWritten = 8
+
 // SetCheckInInterval overrides how many rounds pass between check-ins. Zero or
 // less restores the default.
 //
@@ -91,6 +122,26 @@ func (a *Agent) SetCheckInInterval(n int) {
 // See docs/capabilities/coding-agent.md#the-interval-is-the-last-thing-watching.
 func (a *Agent) SetFinished(line string) { a.steering.Finished = line }
 
+// SetCheckInBudget gives the turn its second clock: spend answers what it has
+// taken in and what it is allowed, and written what it has changed. Nil spend
+// stops that clock, which is every surface running against no budget at all.
+//
+// The two are one call because a budget clock with nothing to say about the
+// writes is a check-in that names the wrong thing. The whole reason to ask on
+// spend rather than on rounds is that spending is not progress, and the fact
+// that says which it was is what the turn has written — a child that has used
+// a quarter of its attention and touched nothing is the failure, and its
+// round check-in, which asks about rounds, cannot see it.
+//
+// Both are read from the round boundary the check-in is asked at, on the
+// loop's own goroutine, and each guards its own state; neither is called
+// anywhere else.
+// See docs/capabilities/coding-agent.md#a-childs-other-clock-is-its-budget.
+func (a *Agent) SetCheckInBudget(spend func() (spent, budget int64), written func() []string) {
+	a.spend, a.written = spend, written
+	a.markSpend()
+}
+
 // checkInInterval is the number of rounds owed before the next check-in,
 // widened by how many this turn has already had.
 func (a *Agent) checkInInterval() int {
@@ -102,6 +153,47 @@ func (a *Agent) checkInInterval() int {
 		base *= checkInGrowth
 	}
 	return base
+}
+
+// checkInSpend is the spend owed before the next check-in, widened by how
+// many this turn has already had.
+//
+// It widens off the same count the round interval does, so the two clocks
+// are one escalation rather than two: a turn already asked twice by its
+// rounds is committed to something, and the budget is no reason to start
+// asking it at the narrow interval again. Zero is a turn with no budget,
+// which is the clock stopped.
+func (a *Agent) checkInSpend(budget int64) int64 {
+	if budget <= 0 {
+		return 0
+	}
+	share := budget / checkInBudgetShare
+	for i := 0; i < a.checkIns && i < a.steering.doublings(); i++ {
+		share *= checkInGrowth
+	}
+	return share
+}
+
+// spendDue reports whether the turn has taken in another share of its budget
+// since something last asked it to take stock.
+func (a *Agent) spendDue() bool {
+	if a.spend == nil {
+		return false
+	}
+	spent, budget := a.spend()
+	share := a.checkInSpend(budget)
+	return share > 0 && spent-a.lastSpend >= share
+}
+
+// markSpend puts the spend clock's mark where the turn stands now, which is
+// how the interval comes to be measured from the last intervention rather
+// than from the start of the turn. A surface with no budget has nothing to
+// mark and marks nothing.
+func (a *Agent) markSpend() {
+	if a.spend == nil {
+		return
+	}
+	a.lastSpend, _ = a.spend()
 }
 
 // CheckInPrompt is the built-in turn handed to a session that has reached a
@@ -141,6 +233,35 @@ Briefly take stock:
 Then carry on with the task. If you already know enough to act, stop looking and start work — more reading is not more progress. %s`, rounds, whenFinished)
 }
 
+// budgetNote is the sentence a check-in the spend clock asked carries under
+// the surface's own wording, and the only thing that tells one from a
+// check-in the round clock asked.
+//
+// It names what the turn has written rather than what it has spent, which is
+// the same choice the check-in itself makes: a turn told it is running out
+// apologises and stops, where one asked what it has to show for the work says
+// so and carries on. The answer that matters is none. A child that has spent
+// a quarter of its budget reading has nothing to show for it and is asked
+// about that specifically, because nothing else it is ever asked names it —
+// the round check-in asks about rounds, and the drift reading is a judgement
+// the child never sees.
+//
+// It goes under the surface's wording rather than into it, the way a steer's
+// repeat count does, so an operator who replaced the words did not also
+// replace this.
+func budgetNote(written []string) string {
+	if len(written) == 0 {
+		return "You have not written to any file yet. Reading and searching spend the same attention that changing something does, and leave nothing behind: if you already know enough to make the change, make it now rather than reading further."
+	}
+	names, more := written, ""
+	if len(names) > maxCheckInWritten {
+		more = fmt.Sprintf(" and %d more", len(names)-maxCheckInWritten)
+		names = names[:maxCheckInWritten]
+	}
+	return fmt.Sprintf("So far you have written %d %s: %s%s. Say which of those you consider finished and what is still to be written.",
+		len(written), plural(len(written), "file"), strings.Join(names, ", "), more)
+}
+
 // FinishedInSession and FinishedAsSubAgent are the closing lines for the two
 // kinds of turn that take stock.
 const (
@@ -155,7 +276,15 @@ const (
 // every round for the rest of the turn, which is the opposite of the
 // mechanism. Not due returns ok=false and changes nothing.
 func (a *Agent) TakeCheckIn() (prompt string, ok bool) {
-	if a.rounds <= 0 || a.rounds-a.lastIntervention < a.checkInInterval() {
+	if a.rounds <= 0 {
+		return "", false
+	}
+	// Either clock being due is a check-in due, and the spend clock is asked
+	// first because it is what decides the wording: a boundary both clocks
+	// fall on is still a budget check-in, and the round it landed on is no
+	// reason to leave out the one fact the spend can add.
+	onSpend := a.spendDue()
+	if !onSpend && a.rounds-a.lastIntervention < a.checkInInterval() {
 		return "", false
 	}
 	a.NoteIntervention()
@@ -163,7 +292,11 @@ func (a *Agent) TakeCheckIn() (prompt string, ok bool) {
 	// different question with a reason behind it, and one turn's worth of
 	// them should not make the generic question rarer.
 	a.checkIns++
-	return a.steering.checkInPrompt(a.rounds), true
+	prompt = a.steering.checkInPrompt(a.rounds)
+	if onSpend {
+		prompt += "\n\n" + budgetNote(supplied(a.written))
+	}
+	return prompt, true
 }
 
 // ForceCheckIn returns the check-in unconditionally and marks it taken. It is
@@ -205,4 +338,11 @@ func (a *Agent) CheckInMessage() string {
 // turn that has just been asked what it is doing does not need asking again
 // forty rounds after some earlier boundary. It also means a skipped round can
 // never skip a check-in, which a modulo would.
-func (a *Agent) NoteIntervention() { a.lastIntervention = a.rounds }
+//
+// Both clocks are marked, for that reason and not only for tidiness: a turn
+// asked what it is doing does not need asking again because it has since
+// spent another share of its budget on answering.
+func (a *Agent) NoteIntervention() {
+	a.lastIntervention = a.rounds
+	a.markSpend()
+}

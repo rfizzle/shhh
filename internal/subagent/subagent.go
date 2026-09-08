@@ -12,8 +12,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -1042,6 +1044,30 @@ func (c *child) changed() (files, added, removed int) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return len(c.wrote), 0, 0
+}
+
+// budget is what the spend clock reads off this attempt: the fresh tokens it
+// has taken in, and the budget those are measured against. It is the same
+// pair addUsage compares, asked from the round boundary rather than from
+// inside a response — a clock that only ticked where the budget is enforced
+// would only ever fire on the round that killed the child.
+func (c *child) budget() (spent, budget int64) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.fresh, c.maxTokens
+}
+
+// written is what this attempt has changed, as the check-in names it back.
+//
+// The paths are the model's own spelling and are deliberately not rooted the
+// way ownPaths roots them: this goes back to the child that wrote them, and a
+// writer standing in a worktree would be handed its own edits under a
+// directory it has never seen. Sorted so two check-ins over the same set read
+// the same, which a map's order does not give.
+func (c *child) written() []string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return slices.Sorted(maps.Keys(c.wrote))
 }
 
 // ownPaths is what this attempt has written, in the tree the reading is taken
@@ -2197,6 +2223,12 @@ func (s *Supervisor) openWorkspace(c *child, ctx context.Context, maxRounds, att
 	// baselined here so the first boundary compares against the tree the
 	// child was started on.
 	c.watchTree(w.agent, w.env)
+	// And the child's second clock, here rather than in newChildAgent for the
+	// reason the tree reading is: what a child has spent and what it has
+	// written are the child's own record, and newChildAgent is handed an
+	// environment. Every attempt comes through here, which is the property
+	// newChildAgent exists for.
+	w.agent.SetCheckInBudget(c.budget, c.written)
 	// The mode recorded is the one in force — the profile's or the parent's
 	// after the clamp — not the one asked for; c.mode alone is the request.
 	if s.opts.Record != nil {
@@ -2966,7 +2998,23 @@ func (s *Supervisor) finalCheckIn(c *child) {
 // the spend beside it on the same row is the billed figure, which a cached
 // prompt puts well above the budget without ever reaching it (addUsage).
 func budgetReason(c *child) string {
-	return fmt.Sprintf("failed · token budget (~%s new) exceeded", formatTokens(c.maxTokens))
+	return fmt.Sprintf("failed · token budget (~%s new) exceeded · %s",
+		formatTokens(c.maxTokens), wroteNote(len(c.written())))
+}
+
+// wroteNote is what a child had to show for a budget when the budget ran out.
+//
+// It is on the failure line and not only in the record because that line is
+// what the parent reads, and the two endings behind one budget failure want
+// different answers from it: a child that ran out mid-edit is worth retrying
+// on the work it left, and one that ran out having written nothing spent a
+// whole budget on reading and wants a narrower task instead. A spend figure
+// alone cannot tell them apart.
+func wroteNote(files int) string {
+	if files == 0 {
+		return "nothing written"
+	}
+	return fmt.Sprintf("%d %s written", files, plural(files, "file"))
 }
 
 // childEndReason is the same fork failReason takes, in the record's closed

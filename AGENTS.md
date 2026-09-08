@@ -391,6 +391,24 @@ nobody. The summariser's and the classifier's own instructions are
 `SummaryConfig.Prompt` and `ClassifierConfig.Prompt`, beside the rest of what
 each costs.
 
+**The check-in runs on two clocks and `TakeCheckIn` is the only place either
+is read.** `SetCheckInBudget` hands the agent two functions — what the turn
+has spent against what it is allowed, and the paths it has written — and
+`spendDue` fires a check-in every `checkInBudgetShare` of the budget, widening
+off `checkIns`, which is the round interval's own counter: one escalation, not
+two. `NoteIntervention` marks both clocks, so a steer postpones the budget
+question the way it postpones the round one. A check-in either clock is due
+for carries `budgetNote` under the surface's wording — the one thing that
+tells a budget check-in from a round one, and appended rather than substituted
+so a replaced wording still gets it. Both functions are the *child's*
+(`child.budget`, `child.written`), which is why they are installed in
+`openWorkspace` beside `watchTree` and not in `newChildAgent`, which is handed
+an `Env` and never sees a child; every attempt, spawn and retry alike, opens
+its workspace there. A surface that installs nothing runs on rounds alone,
+which is every session.
+Why the second clock exists and what it asks that the first cannot:
+[`docs/capabilities/coding-agent.md#a-childs-other-clock-is-its-budget`](docs/capabilities/coding-agent.md#a-childs-other-clock-is-its-budget).
+
 **When the next reading is due is one predicate — `agent.SummarySchedule`
 (`schedule.go`) — and each surface holds a value of it**: the session on its
 `summaryState`, an unattended run on its `SummaryRun`. It carries the three

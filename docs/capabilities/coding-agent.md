@@ -650,6 +650,32 @@ committed and going somewhere. The widening stops after two doublings, because
 a turn that survives a few check-ins should not become one that is never
 questioned again — that is the same failure on a longer timescale.
 
+## A child's other clock is its budget
+
+The check-in fires on rounds, and a sub-agent does not die of rounds. It dies
+of tokens: a budget is the whole of its life, and one making a few large calls
+reaches the end of it in a handful of rounds. The child this was found on ran
+out at round twenty-seven, having been asked its first and only question at
+round twenty-five. The clock worked. It was measuring a quantity that had
+almost nothing to do with what killed it.
+
+So the same machinery runs on a second clock. A turn given a budget is asked
+to take stock every quarter of it as well as every interval of rounds,
+widening off the same count, so a turn already asked twice is not asked at the
+narrow interval again by the other one. Whichever clock is due, the question
+is the surface's own, and being asked once answers both.
+
+**What the budget question adds is the writes.** Asking on spend rather than
+on rounds is only worth doing because spending is not progress, and the fact
+that says which it was is what the turn has changed — so the check-in names
+it. A child that has spent a quarter of its attention and written nothing is
+told so, and told that reading costs what changing something costs. Nothing
+else it is ever asked can say that: the round check-in asks about rounds, and
+the drift reading is a judgement about the child that the child never sees.
+
+It still says nothing about the budget itself, for the reason the check-in
+never does. A turn told it is running out apologises and stops.
+
 ## A reading for a run nobody is watching
 
 The reading began as a status block, which is a thing only a session with a

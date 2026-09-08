@@ -104,6 +104,21 @@ type Agent struct {
 	steering Steering
 	checkIns int
 
+	// spend and written are the turn's second clock: where its token budget
+	// and what it has taken out of it are read from, and where what it has
+	// changed is (checkin.go). Both are nil on a surface with no budget,
+	// which leaves that clock stopped and the round interval the only one.
+	// They are called from the round boundary the check-in is asked at, so
+	// what they reach for guards itself.
+	spend   func() (spent, budget int64)
+	written func() []string
+	// lastSpend is the spend when something last asked the turn to take
+	// stock, which is what that clock's interval is measured from — the
+	// counterpart of lastIntervention, and kept for the same reason: a
+	// budget check-in an earlier steer has just made unnecessary is the same
+	// duplicate question on either clock.
+	lastSpend int64
+
 	// executing is true while auto-run tool calls run in the background;
 	// pending holds every call of the current round still owed a result, and
 	// queue the subset awaiting user approval.
@@ -260,6 +275,7 @@ func (a *Agent) StartTurnWith(text string, atts []provider.Attachment) {
 	a.rounds = 0
 	a.lastIntervention = 0
 	a.checkIns = 0
+	a.markSpend()
 	a.StartInterveneTurn()
 	a.Append(provider.Message{Role: provider.RoleUser, Content: text, Attachments: atts})
 }
@@ -299,6 +315,12 @@ func (a *Agent) ResetRounds() {
 	a.rounds = 0
 	a.lastIntervention = 0
 	a.checkIns = 0
+	// The spend clock's mark goes to where the turn stands rather than to
+	// zero, because the spend it counts does not: a child's budget is the
+	// whole of its life and its second turn opens on whatever the first one
+	// left. Zeroed here, every turn after the first would be asked a budget
+	// check-in on its opening round.
+	a.markSpend()
 }
 
 // CapReached reports whether this turn has used up its tool rounds. An

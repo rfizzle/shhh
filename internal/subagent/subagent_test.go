@@ -65,6 +65,27 @@ type scriptedEnv struct {
 	// a tool result included, which is the only place a child's own view of
 	// a result can be read from.
 	requests [][]provider.Message
+	// repeats is the circling detector the surface wraps the child's auto-run
+	// dispatcher with and then asks for sweeps, as a session wires one. Nil
+	// is a surface that wired none, which is the ordinary test child. It is
+	// set before the supervisor runs and only read after that, so it is
+	// outside the lock the steps are under.
+	repeats *agent.RepeatDetector
+}
+
+// asked reports whether any request the child has made carried this text —
+// what the child was actually told, rather than what a hook was handed.
+func (s *scriptedEnv) asked(text string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for _, msgs := range s.requests {
+		for _, m := range msgs {
+			if strings.Contains(m.Content, text) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // lastToolResult is the tool result the child's most recent round carried —
@@ -120,7 +141,7 @@ func (s *scriptedEnv) factory() EnvFactory {
 			_, cancel := context.WithCancel(context.Background())
 			return ch, cancel, nil
 		}
-		return Env{
+		env := Env{
 			SystemPrompt: "test system prompt",
 			Stream:       stream,
 			Summarizer:   s.summarizer,
@@ -136,7 +157,14 @@ func (s *scriptedEnv) factory() EnvFactory {
 			},
 			Reduce: s.reduce,
 			Gated:  s.gated,
-		}, nil
+		}
+		if s.repeats != nil {
+			env.WrapAuto = func(_ Seam, next agent.ToolExecutor) agent.ToolExecutor {
+				return s.repeats.WrapExecutor(next)
+			}
+			env.Sweeps = s.repeats.Sweeps
+		}
+		return env, nil
 	}
 }
 
@@ -2215,5 +2243,114 @@ func TestAPatchNoteBoundsAVeryLongFileList(t *testing.T) {
 	}
 	if strings.Contains(got, files[maxNotedPatchPaths]) {
 		t.Fatalf("the list is not bounded: %q", got)
+	}
+}
+
+// spendingRounds is a script of n rounds that each read a file and take in
+// tokens doing it, for a child whose budget is what ends it rather than its
+// rounds.
+func spendingRounds(n int, perRound int) []streamStep {
+	steps := toolRounds(n)
+	for i := range steps {
+		steps[i].usage = &provider.Usage{PromptTokens: perRound}
+	}
+	return steps
+}
+
+// A child dies of tokens, not of rounds, and the round interval cannot see
+// that coming: this one spends its whole budget inside four rounds, twenty-one
+// short of the interval it would have been asked at.
+func TestChildIsAskedOnItsBudgetLongBeforeItsRounds(t *testing.T) {
+	env := &scriptedEnv{steps: spendingRounds(8, 30_000)}
+	sup := newTestSupervisor(t, env)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the exporter","max_tokens":100000}`)
+	waitState(t, sup, "researcher-1", StateFailed)
+
+	if !env.asked("routine check-in") {
+		t.Error("the child spent its whole budget without being asked anything")
+	}
+	if st := statusOf(t, sup, "researcher-1"); st.CheckIns != 0 {
+		t.Errorf("check-ins counted %d — the budget clock is the interval's, not the round cap's", st.CheckIns)
+	}
+}
+
+// The question the budget puts names what the child has to show for the
+// spending, because spending is not progress and nothing else it is ever
+// asked can tell the two apart.
+func TestABudgetCheckInAsksAReadingChildWhatItHasWritten(t *testing.T) {
+	env := &scriptedEnv{steps: spendingRounds(8, 30_000)}
+	sup := newTestSupervisor(t, env)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the exporter","max_tokens":100000}`)
+	waitState(t, sup, "researcher-1", StateFailed)
+
+	if !env.asked("not written to any file") {
+		t.Error("a child that spent a quarter of its budget reading was not asked about that")
+	}
+	if !env.asked("final report") {
+		t.Error("a budget check-in must still offer a child its own exit")
+	}
+}
+
+// A child that ran out of budget having written nothing spent a whole budget
+// on reading, and one that ran out mid-edit did not. The parent reads one
+// line about a failed child, and retrying is a different decision for each.
+func TestABudgetFailureSaysWhatTheChildHadWritten(t *testing.T) {
+	env := &scriptedEnv{steps: spendingRounds(8, 30_000)}
+	sup := newTestSupervisor(t, env)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the exporter","max_tokens":100000}`)
+	waitState(t, sup, "researcher-1", StateFailed)
+
+	st := statusOf(t, sup, "researcher-1")
+	if !strings.Contains(st.Detail, "token budget") || !strings.Contains(st.Detail, "nothing written") {
+		t.Errorf("a budget failure should say what it had to show for the budget, got %q", st.Detail)
+	}
+}
+
+// searchRounds is a script of n searches over one directory, each asking a
+// different pattern: the sweep, which is not an exact repeat of anything and
+// which every row of the digest reads as its own new question.
+func searchRounds(n int) []streamStep {
+	steps := make([]streamStep, 0, n)
+	for i := range n {
+		steps = append(steps, streamStep{calls: []provider.ToolCall{{
+			ID:        fmt.Sprintf("q%d", i),
+			Name:      "search",
+			Arguments: fmt.Sprintf(`{"pattern":"handler%d","path":"internal/exporter"}`, i),
+		}}})
+	}
+	return steps
+}
+
+// The reading is the only thing watching a child, and the child it read as on
+// target twenty times was one that had searched one directory for twenty
+// rounds and written nothing. The evidence that tells that child from one
+// doing the work has to reach the reading, which is where the judgement is
+// made.
+func TestAReadingOfAChildThatOnlyReadsIsGivenTheSweep(t *testing.T) {
+	reader := &readingProvider{state: "on_target"}
+	env := &scriptedEnv{
+		steps:   append(searchRounds(20), streamStep{text: "surveyed the exporter"}),
+		delay:   3 * time.Millisecond,
+		repeats: agent.NewRepeatDetector(),
+		summarizer: agent.NewSummarizer(reader,
+			agent.SummaryConfig{Model: "fast", IntervalRounds: 10, MinGap: -1, InterveneCooldownIntervals: 1}),
+	}
+	sup := newTestSupervisor(t, env)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the exporter"}`)
+	waitState(t, sup, "researcher-1", StateDone)
+
+	var swept string
+	for _, d := range reader.judgedAgainst() {
+		if strings.Contains(d, "sweeps") {
+			swept = d
+		}
+	}
+	if swept == "" {
+		t.Fatalf("no reading of a twenty-round sweep was given one, digests: %v", reader.judgedAgainst())
+	}
+	for _, want := range []string{"./internal/exporter", "nothing written"} {
+		if !strings.Contains(swept, want) {
+			t.Errorf("the sweep the reading was given does not say %q:\n%s", want, swept)
+		}
 	}
 }

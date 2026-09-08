@@ -214,3 +214,161 @@ func TestCheckInPrompt_AsksForStockNotForMoreWork(t *testing.T) {
 		t.Error("a sub-agent's check-in should point at its deliverable")
 	}
 }
+
+// A turn's rounds and its budget are different clocks, and the one that ends
+// a sub-agent is the budget. A child making few large calls reaches the end
+// of its budget long before the round interval comes round, so the spend asks
+// on its own.
+func TestTakeCheckIn_AsksOnTheBudgetAsWellAsTheRounds(t *testing.T) {
+	a := New(nil, noStream)
+	a.SetCheckInInterval(25)
+	var spent int64
+	a.SetCheckInBudget(func() (int64, int64) { return spent, 200_000 }, nil)
+
+	// Five rounds, each taking in a tenth of the budget: nothing the round
+	// clock can see, and half the child's life.
+	var at []int
+	for r := 1; r <= 5; r++ {
+		a.rounds = r
+		spent += 20_000
+		if _, ok := a.TakeCheckIn(); ok {
+			at = append(at, r)
+		}
+	}
+	if len(at) != 1 || at[0] != 3 {
+		t.Fatalf("budget check-ins at rounds %v, want one at round 3 — a quarter of the budget in", at)
+	}
+}
+
+// The budget clock widens off the same count the round clock does, so a turn
+// already asked twice is not asked at the narrow interval by the other one.
+func TestTakeCheckIn_TheBudgetClockWidensWithTheRounds(t *testing.T) {
+	a := New(nil, noStream)
+	var spent int64
+	a.SetCheckInBudget(func() (int64, int64) { return spent, 400 }, nil)
+
+	var at []int64
+	for r := 1; r <= 40; r++ {
+		a.rounds = r
+		spent += 10
+		if _, ok := a.TakeCheckIn(); ok {
+			at = append(at, spent)
+		}
+	}
+	// A quarter, then a half; the third would fall past the whole budget,
+	// which is a child that has already died of it.
+	want := []int64{100, 300}
+	if len(at) != len(want) {
+		t.Fatalf("check-ins at %v tokens, want %v", at, want)
+	}
+	for i := range want {
+		if at[i] != want[i] {
+			t.Fatalf("check-ins at %v tokens, want %v", at, want)
+		}
+	}
+}
+
+// A turn that has spent a share of its budget and written nothing is asked
+// about that specifically: the whole reason to ask on spend is that spending
+// is not progress.
+func TestTakeCheckIn_TheBudgetQuestionNamesTheWrites(t *testing.T) {
+	a := New(nil, noStream)
+	written := []string{}
+	var spent int64
+	a.SetCheckInBudget(func() (int64, int64) { return spent, 200 }, func() []string { return written })
+
+	spent = 100
+	a.rounds = 1
+	prompt, ok := a.TakeCheckIn()
+	if !ok {
+		t.Fatal("half the budget in, the check-in is due")
+	}
+	if !strings.Contains(prompt, "not written to any file") {
+		t.Errorf("a turn that has written nothing should be asked about it:\n%s", prompt)
+	}
+	if !strings.Contains(prompt, "take stock") {
+		t.Errorf("the budget note goes under the surface's own wording, not in place of it:\n%s", prompt)
+	}
+
+	written = []string{"internal/agent/agent.go", "internal/agent/checkin.go"}
+	spent = 300
+	a.rounds = 2
+	prompt, ok = a.TakeCheckIn()
+	if !ok {
+		t.Fatal("another share of the budget in, the check-in is due again")
+	}
+	for _, want := range []string{"2 files", "internal/agent/agent.go", "internal/agent/checkin.go"} {
+		if !strings.Contains(prompt, want) {
+			t.Errorf("missing %q from:\n%s", want, prompt)
+		}
+	}
+}
+
+// A check-in the round clock asked says nothing about writes. There is no
+// budget behind it to make the writes the point, and a session asked what it
+// has changed every forty rounds is a different mechanism from this one.
+func TestTakeCheckIn_TheRoundQuestionIsUnchanged(t *testing.T) {
+	a := New(nil, noStream)
+	a.rounds = DefaultCheckInInterval
+	prompt, ok := a.TakeCheckIn()
+	if !ok {
+		t.Fatal("the round check-in is due")
+	}
+	if prompt != CheckInPrompt(DefaultCheckInInterval, FinishedInSession) {
+		t.Errorf("a turn with no budget should be asked the built-in wording:\n%s", prompt)
+	}
+}
+
+// A steer is a check-in with better evidence on either clock: a turn that has
+// just been asked what it is doing must not be asked again because answering
+// spent another share of its budget.
+func TestTakeCheckIn_ASteerPostponesTheBudgetClock(t *testing.T) {
+	a := New(nil, noStream)
+	spent := int64(40)
+	a.SetCheckInBudget(func() (int64, int64) { return spent, 200 }, nil)
+
+	a.rounds = 1
+	a.TakeSteer("ship the parser", "reading unrelated files")
+	spent = 80
+	a.rounds = 2
+	if _, ok := a.TakeCheckIn(); ok {
+		t.Error("a turn steered one round ago must not also be asked a budget check-in")
+	}
+	spent = 130
+	a.rounds = 3
+	if _, ok := a.TakeCheckIn(); !ok {
+		t.Error("a full share past the steer, the budget check-in is due again")
+	}
+}
+
+// A child's budget is the whole of its life and its second turn opens on
+// whatever the first one left, so the mark moves with the turn rather than
+// back to zero — or every turn after the first opens on a check-in about the
+// turn before it.
+func TestStartTurn_CarriesTheSpendMark(t *testing.T) {
+	a := New(nil, noStream)
+	spent := int64(150)
+	a.SetCheckInBudget(func() (int64, int64) { return spent, 200 }, nil)
+
+	a.StartTurn("carry on")
+	a.rounds = 1
+	if _, ok := a.TakeCheckIn(); ok {
+		t.Error("a fresh turn must not be asked a budget check-in for what the turn before it spent")
+	}
+	spent = 200
+	if _, ok := a.TakeCheckIn(); !ok {
+		t.Error("a share spent inside this turn is due a check-in")
+	}
+}
+
+// A surface with no budget runs on the round clock alone, which is every
+// session: nothing here may fire on a turn that was never given one.
+func TestTakeCheckIn_NoBudgetIsNoSecondClock(t *testing.T) {
+	a := New(nil, noStream)
+	a.SetCheckInBudget(func() (int64, int64) { return 1 << 40, 0 }, nil)
+	at := checkInRounds(a, 120)
+	want := []int{40, 120}
+	if len(at) != len(want) || at[0] != want[0] || at[1] != want[1] {
+		t.Fatalf("check-ins at %v, want the round clock's %v", at, want)
+	}
+}
