@@ -91,6 +91,15 @@ output — and carrying those into every child would copy your desk rather than
 your work. The session already records each file it creates, so it can name
 the difference; git cannot.
 
+The copy is taken when the child starts, not when it is spawned. Three
+children run at once and a fan-out may ask for more, so a spawned writer can
+sit in a queue while the ones ahead of it work; one given its copy at spawn
+would hold a whole checkout on disk for that whole wait, and would begin from
+your tree as it stood when the fan-out was planned rather than as it stands
+when it begins. A writer that cannot be given a copy at all fails as a child,
+with the reason on its own lane — by then the turn that asked for it has long
+since answered, and there is nowhere else for the failure to go.
+
 This changes what a child starts from and nothing about what comes back.
 Approval is still the only way anything reaches your checkout, the lane says
 how many of your files the child started from, and a checkout with nothing

@@ -41,9 +41,17 @@ type Lane struct {
 	Report string `json:"report,omitempty"`
 }
 
-// MaxLanes bounds a fan-out. A lane past the supervisor's concurrency
-// queues, which costs nothing; more lanes than this is a plan being
-// listed, not divided.
+// MaxLanes bounds a fan-out at one more lane than the supervisor runs at
+// once, which is three (subagent.DefaultMaxConcurrent). The odd one out is
+// deliberate rather than an oversight: the fourth lane queues, and a queued
+// lane costs a name in a list and nothing else, because a writer's copy of
+// the tree is taken when its slot comes free and not when it is spawned
+// (internal/subagent, openWorkspace). So the extra lane is a slot kept fed
+// the moment the first of the three finishes, and what it starts from is the
+// tree as it stands at that moment rather than as it stood when the split
+// was planned.
+//
+// More lanes than this is a plan being listed, not divided.
 const MaxLanes = 4
 
 // maxLaneName keeps a child's name inside the supervisor's limit with the

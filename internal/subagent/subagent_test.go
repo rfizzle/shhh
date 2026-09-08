@@ -1504,13 +1504,18 @@ func TestWriterStatusCountsWhatItStartedFrom(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(repo, "notes.md"), []byte("the session wrote this\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	var mu sync.Mutex
 	asked := 0
 	env := &scriptedEnv{steps: []streamStep{{text: "done"}, {text: "done"}}}
 	sup := New(context.Background(), Options{
 		Root:   repo,
 		NewEnv: env.factory(),
 		Untracked: func() []string {
+			// Under a lock: the tree is read on the child's own goroutine
+			// now, because the copy is taken when the writer starts.
+			mu.Lock()
 			asked++
+			mu.Unlock()
 			return []string{"notes.md"}
 		},
 	})
@@ -1522,12 +1527,18 @@ func TestWriterStatusCountsWhatItStartedFrom(t *testing.T) {
 	if _, err := spawnRaw(sup, `{"role":"researcher","task":"look around"}`); err != nil {
 		t.Fatalf("the researcher should spawn: %v", err)
 	}
+	// The count arrives with the run rather than with the spawn: a queued
+	// writer has no copy of the repository to have been seeded from.
+	waitState(t, sup, "writer-1", StateDone)
+	waitState(t, sup, "researcher-1", StateDone)
 	if st, ok := sup.Get("writer-1"); !ok || st.Seeded != 2 {
 		t.Fatalf("the writer's status should say it started from 2 parent paths, got %+v", st)
 	}
 	if st, ok := sup.Get("researcher-1"); !ok || st.Seeded != 0 {
 		t.Fatalf("a reader starts from nothing, got %+v", st)
 	}
+	mu.Lock()
+	defer mu.Unlock()
 	if asked != 1 {
 		t.Fatalf("the parent's untracked files were asked for %d times, want once — only the writer has a worktree", asked)
 	}
@@ -1772,16 +1783,25 @@ func TestSpecSaysWhetherTheChildStandsInACopy(t *testing.T) {
 		t.Fatalf("the researcher should spawn: %v", err)
 	}
 
+	// A writer's environment is built when its slot comes free rather than
+	// when it is spawned, so the two arrive in no fixed order and each spec
+	// is found by the child it belongs to.
+	waitState(t, sup, "writer-1", StateDone)
+	waitState(t, sup, "researcher-1", StateDone)
 	mu.Lock()
 	defer mu.Unlock()
-	if len(specs) != 2 {
-		t.Fatalf("both children build an environment, got %d", len(specs))
+	byName := map[string]Spec{}
+	for _, sp := range specs {
+		byName[sp.Name] = sp
 	}
-	if !specs[0].Worktree {
-		t.Fatalf("a writer works in an isolated copy: %+v", specs[0])
+	if len(byName) != 2 {
+		t.Fatalf("both children build an environment, got %+v", specs)
 	}
-	if specs[1].Worktree {
-		t.Fatalf("a reader stands in the parent's own directory: %+v", specs[1])
+	if !byName["writer-1"].Worktree {
+		t.Fatalf("a writer works in an isolated copy: %+v", byName["writer-1"])
+	}
+	if byName["researcher-1"].Worktree {
+		t.Fatalf("a reader stands in the parent's own directory: %+v", byName["researcher-1"])
 	}
 }
 

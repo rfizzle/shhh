@@ -1,6 +1,7 @@
 package subagent
 
 import (
+	"context"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -564,4 +565,49 @@ func chmodCarried(t *testing.T, path string, mode os.FileMode) bool {
 		t.Fatal(err)
 	}
 	return fi.Mode().Perm() == mode
+}
+
+// linkedWorktrees counts the copies of a checkout that exist beside it. The
+// main checkout is one of the entries `git worktree list` prints, and is not
+// one of the copies.
+func linkedWorktrees(t *testing.T, repo string) int {
+	t.Helper()
+	out, err := exec.Command("git", "-C", repo, "worktree", "list", "--porcelain").CombinedOutput()
+	if err != nil {
+		t.Fatalf("git worktree list: %v\n%s", err, out)
+	}
+	n := 0
+	for _, line := range strings.Split(string(out), "\n") {
+		if strings.HasPrefix(line, "worktree ") {
+			n++
+		}
+	}
+	return n - 1
+}
+
+// A writer whose copy of the repository cannot be made fails as a child, and
+// its lane says why. The workspace is opened when the lane starts, which is
+// long after the spawn that asked for it answered: a failure handed back as
+// the spawn's return value would have nowhere left to go, and the fan-out
+// would see a writer that never wrote anything and never said why.
+func TestWriterWorkspaceFailureLandsOnTheChild(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not on PATH")
+	}
+	// Not a git repository, so there is nothing to make a worktree of and
+	// nothing to seed one from.
+	sup := New(context.Background(), Options{Root: t.TempDir(), NewEnv: hangingEnv()})
+	t.Cleanup(sup.Close)
+
+	if _, err := spawnRaw(sup, `{"role":"writer","task":"carry on"}`); err != nil {
+		t.Fatalf("the spawn itself should answer: %v", err)
+	}
+	waitState(t, sup, "writer-1", StateFailed)
+	st, _ := sup.Get("writer-1")
+	if !strings.Contains(st.Detail, "isolated worktree") || !strings.Contains(st.Detail, "git repository") {
+		t.Fatalf("the lane does not say why the writer never started: %q", st.Detail)
+	}
+	if st.Seeded != 0 {
+		t.Fatalf("a writer that never got a worktree reports %d seeded paths", st.Seeded)
+	}
 }

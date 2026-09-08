@@ -194,8 +194,10 @@ type Status struct {
 	// reader, and only this tells them apart.
 	SteerFrom SteerSource
 	// Seeded is how many of the parent's uncommitted paths the child's
-	// worktree was started from. Zero is a reader, or a writer spawned from
-	// a checkout with nothing uncommitted in it.
+	// worktree was started from. Zero is a reader, a writer started from a
+	// checkout with nothing uncommitted in it, or a writer that has not
+	// started yet — a queued one has no copy of the tree to have been
+	// seeded from, because the copy is taken when its slot comes free.
 	Seeded int
 	// Held is whether the child has reached its own round boundary while the
 	// parent's hold stands. It rides beside the state rather than replacing
@@ -697,19 +699,25 @@ func (a *Ask) Answered() (approved, ok bool) {
 // child is one sub-agent: an internal/agent instance plus its runtime and
 // live status.
 type child struct {
-	name      string
-	parent    string // spawning agent's name; "" means the orchestrator
-	role      Role
-	task      string
-	profile   Profile  // what the role means: worktree, patch, mode, budgets
-	model     string   // the model this child runs on
-	paths     []string // declared write scope (writers); nil means unscoped
-	batch     int      // the parent tool round that spawned it
-	steps     int      // step count the spawn declared; 0 means none
-	root      string   // working directory (worktree subdir for writers)
-	worktree  string   // worktree top dir; "" for researchers
-	repoTop   string   // parent repo toplevel; "" for researchers
-	seeded    int      // parent paths the worktree was started from
+	name     string
+	parent   string // spawning agent's name; "" means the orchestrator
+	role     Role
+	task     string
+	profile  Profile  // what the role means: worktree, patch, mode, budgets
+	model    string   // the model this child runs on
+	paths    []string // declared write scope (writers); nil means unscoped
+	batch    int      // the parent tool round that spawned it
+	steps    int      // step count the spawn declared; 0 means none
+	root     string   // working directory (worktree subdir for writers)
+	worktree string   // worktree top dir; "" for researchers
+	repoTop  string   // parent repo toplevel; "" for researchers
+	seeded   int      // parent paths the worktree was started from
+	// maxRounds is the per-turn round cap the next agent built for this
+	// child is given. It is the child's own field rather than a reading of
+	// the agent because there is not always an agent to ask: a writer's is
+	// built when its slot comes free, and a retry has to know the cap the
+	// attempt before it grew to at a moment when nothing is running.
+	maxRounds int
 	maxTokens int64
 
 	ctx      context.Context
@@ -1789,36 +1797,26 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	handoff := c.report
 	had := c.maxTokens
 	budget, grew := retryBudget(c.maxTokens, c.budgetHit)
+	// The cap the attempt being replaced grew to, so a retry does not start
+	// back at a ceiling its predecessor had already talked its way past.
+	maxRounds := c.maxRounds
 	c.mu.Unlock()
 
-	var err error
-	root := s.opts.Root
-	var wt worktreeHandle
-	if c.profile.Writes {
-		// The parent's tree is read again rather than reused: a retry
-		// happens minutes after the first attempt, and the session has
-		// usually gone on working in between.
-		if wt, err = addWorktree(s.opts.Root, s.parentUntracked()); err != nil {
-			return fmt.Errorf("cannot create an isolated worktree for the retry: %w", err)
-		}
-		root = wt.root
-	}
 	cctx, cancel := context.WithCancel(s.ctx)
-	env, err := s.opts.NewEnv(cctx, Spec{Name: c.name, Role: c.role, Root: root, Model: c.model, Paths: c.paths,
-		Worktree: wt.dir != ""})
-	if err != nil {
-		cancel()
-		if wt.dir != "" {
-			removeWorktree(wt.repoTop, wt.dir)
+	// A reader's workspace is opened here, where a failure is still this
+	// caller's to report. A writer's waits for the slot the new attempt has
+	// to take anyway — and waits for a second reason of its own: the parent's
+	// tree is read again rather than reused, because a retry happens minutes
+	// after the first attempt and the session has usually gone on working in
+	// between, so the later the copy is taken the truer its base.
+	w := workspace{root: s.opts.Root}
+	if !c.profile.Writes {
+		var wErr error
+		if w, wErr = s.openWorkspace(c, cctx, maxRounds); wErr != nil {
+			cancel()
+			return fmt.Errorf("cannot set up the retry: %w", wErr)
 		}
-		return fmt.Errorf("cannot set up the retry: %w", err)
 	}
-	a := newChildAgent(env, c.agent.MaxRounds())
-	a.SetExecutor(env.autoExecutor(c.seam()))
-	// The retry's own baseline: the tree as it stands now, not as it stood
-	// when the attempt that failed opened. Everything that moved in between
-	// is work this child neither did nor is being asked to explain.
-	c.watchTree(a, env)
 
 	retryNote := "Retrying — the previous attempt " + detail + "."
 	if grew {
@@ -1826,20 +1824,16 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	}
 	c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: retryNote})
 
-	// The attempt's own recorder is opened before the lock — childMode takes
-	// the child's lock itself — and installed under it, because a retried
-	// child is one the parent can steer while this runs, and that is the one
-	// read of c.rec from another goroutine.
-	var rec Recorder
-	if s.opts.Record != nil {
-		rec = s.opts.Record(Spec{Name: c.name, Role: c.role, Root: root, Model: c.model, Paths: c.paths,
-			Worktree: wt.dir != "", Mode: s.childMode(c), MaxRounds: roundCap(a)}, env.SystemPrompt)
-	}
-
+	// The workspace is installed under the lock — a retried child is one the
+	// parent can steer while this runs, and that is the one read of these
+	// fields from another goroutine. A writer's is empty but for the
+	// parent's root: it has no copy until run opens one, and everything the
+	// attempt it replaces left in these fields describes a worktree that has
+	// already been torn down.
 	c.mu.Lock()
 	c.ctx, c.cancel = cctx, cancel
-	c.agent, c.env, c.headless = a, env, nil
-	c.root, c.worktree, c.repoTop, c.seeded = root, wt.dir, wt.repoTop, wt.seeded
+	c.install(w)
+	c.maxRounds = maxRounds
 	c.done = make(chan struct{})
 	c.state, c.detail = StateQueued, "queued · retry"
 	c.started, c.ended = time.Now(), time.Time{}
@@ -1865,7 +1859,6 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	// replaces wrote is not in the tree this one is reading.
 	c.wrote = nil
 	c.report, c.patchNote, c.streaming = "", "", ""
-	c.rec = rec
 	c.mu.Unlock()
 
 	s.wg.Add(1)
@@ -1951,6 +1944,11 @@ func (s *Supervisor) WorktreeDiff(name string) (string, error) {
 	}
 	worktree, _ := c.workspace()
 	if worktree == "" {
+		if c.profile.Writes {
+			// A writer's copy is made when it starts and torn down when it
+			// stops, so there is one to diff only while it runs.
+			return "", fmt.Errorf("agent %s is %s and has no copy of the workspace to diff", name, c.status().State)
+		}
 		return "", fmt.Errorf("agent %s has no isolated workspace (%s role) — nothing to diff", name, c.role)
 	}
 	return worktreePatch(worktree)
@@ -2041,8 +2039,82 @@ func (s *Supervisor) Report(name string) (string, error) {
 	return c.reportText(), nil
 }
 
-// spawn validates the arguments, prepares the child's workspace (a git
-// worktree for writers), and starts it in the background.
+// workspace is one attempt's place to work and everything built against it:
+// the isolated checkout a writer gets, the working root inside it, the
+// environment rooted there, the agent driving it and the attempt's record.
+// The five travel together because all five are decided by a directory that,
+// for a writer, does not exist until the child starts.
+type workspace struct {
+	root  string
+	wt    worktreeHandle
+	env   Env
+	agent *agent.Agent
+	rec   Recorder
+}
+
+// openWorkspace opens one: for a writer, a detached checkout seeded from the
+// parent's tree; for a reader, the parent's own root, which needs nothing
+// taken and nothing torn down.
+//
+// A reader's is opened at spawn, where a failure can still be handed back as
+// the tool's answer. A writer's is opened in run, once the child holds a
+// slot. Four lanes over three slots is one lane waiting, and a waiting lane
+// that already had its copy would hold a whole checkout on disk for as long
+// as it queued — sixteen spawned writers is sixteen copies of the repository
+// with three of them running — seeded from a tree the session has since
+// moved on from. What a lane starts from should be the parent's work as it
+// stands when the lane starts, not as it stood when the fan-out was planned.
+// See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
+//
+// ctx and maxRounds are passed rather than read off the child because the
+// attempt they belong to is the caller's: a retry has installed neither by
+// the time it opens the workspace its new attempt will run in.
+func (s *Supervisor) openWorkspace(c *child, ctx context.Context, maxRounds int) (workspace, error) {
+	w := workspace{root: s.opts.Root}
+	var err error
+	if c.profile.Writes {
+		if w.wt, err = addWorktree(s.opts.Root, s.parentUntracked()); err != nil {
+			return workspace{}, fmt.Errorf("cannot create an isolated worktree for a writer agent: %w", err)
+		}
+		w.root = w.wt.root
+	}
+	w.env, err = s.opts.NewEnv(ctx, Spec{Name: c.name, Role: c.role, Root: w.root, Model: c.model, Paths: c.paths,
+		Worktree: w.wt.dir != ""})
+	if err != nil {
+		removeWorktree(w.wt.repoTop, w.wt.dir)
+		return workspace{}, fmt.Errorf("the agent's environment could not be built: %w", err)
+	}
+	w.agent = newChildAgent(w.env, maxRounds)
+	// The auto-run executor is the env's rooted, reduced chain, inside
+	// whatever the surface puts on its own dispatchers.
+	w.agent.SetExecutor(w.env.autoExecutor(c.seam()))
+	// And the reading that tells the child its workspace moved under it,
+	// baselined here so the first boundary compares against the tree the
+	// child was started on.
+	c.watchTree(w.agent, w.env)
+	// The mode recorded is the one in force — the profile's or the parent's
+	// after the clamp — not the one asked for; c.mode alone is the request.
+	if s.opts.Record != nil {
+		w.rec = s.opts.Record(Spec{Name: c.name, Role: c.role, Root: w.root, Model: c.model, Paths: c.paths,
+			Worktree: w.wt.dir != "", Mode: s.childMode(c), MaxRounds: roundCap(w.agent)}, w.env.SystemPrompt)
+	}
+	return w, nil
+}
+
+// install puts an opened workspace on the child, clearing the headless loop
+// the workspace it replaces was driven by. The lock is the caller's, where
+// there is anything to lock: a retry installs one in the middle of a page of
+// counter resets and no reader should ever see half of that, while a spawn
+// installs into a child no other goroutine can reach yet.
+func (c *child) install(w workspace) {
+	c.root, c.worktree, c.repoTop, c.seeded = w.root, w.wt.dir, w.wt.repoTop, w.wt.seeded
+	c.agent, c.env, c.headless, c.rec = w.agent, w.env, nil, w.rec
+}
+
+// spawn validates the arguments, gives the child everything that does not
+// depend on where it will work, and starts it in the background. A reader's
+// workspace is opened here; a writer's is opened when its slot comes free
+// (openWorkspace).
 func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 	args, err := parseSpawnArgs(s.Profiles(), raw)
 	if err != nil {
@@ -2091,27 +2163,10 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 		model = s.opts.ModelFor(args.role, args.Model)
 	}
 
-	root := s.opts.Root
-	var wt worktreeHandle
-	if args.profile.Writes {
-		if wt, err = addWorktree(s.opts.Root, s.parentUntracked()); err != nil {
-			return "", fmt.Errorf("cannot create an isolated worktree for a writer agent: %w", err)
-		}
-		root = wt.root
-	}
-
+	// The context is the child's from here, whether or not it has anywhere
+	// to work yet: a writer queued behind a full set of slots is one a kill
+	// has to reach, and the cancel is what reaches it.
 	cctx, cancel := context.WithCancel(s.ctx)
-	env, err := s.opts.NewEnv(cctx, Spec{Name: name, Role: args.role, Root: root, Model: model, Paths: args.paths,
-		Worktree: wt.dir != ""})
-	if err != nil {
-		cancel()
-		if wt.dir != "" {
-			removeWorktree(wt.repoTop, wt.dir)
-		}
-		return "", fmt.Errorf("cannot set up the agent: %w", err)
-	}
-
-	a := newChildAgent(env, args.maxRounds)
 
 	c := &child{
 		name:      name,
@@ -2122,34 +2177,29 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 		paths:     args.paths,
 		batch:     batch,
 		steps:     args.steps,
-		root:      root,
-		worktree:  wt.dir,
-		repoTop:   wt.repoTop,
-		seeded:    wt.seeded,
+		root:      s.opts.Root,
 		mode:      mode,
+		maxRounds: args.maxRounds,
 		maxTokens: args.maxTokens,
 		ctx:       cctx,
 		cancel:    cancel,
-		agent:     a,
-		env:       env,
 		done:      make(chan struct{}),
 		steerWake: make(chan struct{}, 1),
 		state:     StateQueued,
 		detail:    "queued",
 		started:   time.Now(),
 	}
-	// The auto-run executor is the env's rooted, reduced chain, inside
-	// whatever the surface puts on its own dispatchers.
-	a.SetExecutor(env.autoExecutor(c.seam()))
-	// And the reading that tells the child its workspace moved under it,
-	// baselined here so the first boundary compares against the tree the
-	// child was started on.
-	c.watchTree(a, env)
-	// The mode recorded is the one in force — the profile's or the parent's
-	// after the clamp — not the one asked for; c.mode alone is the request.
-	if s.opts.Record != nil {
-		c.rec = s.opts.Record(Spec{Name: name, Role: args.role, Root: root, Model: model, Paths: args.paths,
-			Worktree: wt.dir != "", Mode: s.childMode(c), MaxRounds: roundCap(a)}, env.SystemPrompt)
+	// A reader's workspace is the parent's own root and costs nothing to
+	// hold, so it is opened here where a failure is still this call's answer
+	// rather than a child that appears and immediately fails. A writer's
+	// waits for its slot (openWorkspace).
+	if !args.profile.Writes {
+		w, wErr := s.openWorkspace(c, cctx, args.maxRounds)
+		if wErr != nil {
+			cancel()
+			return "", wErr
+		}
+		c.install(w)
 	}
 
 	s.mu.Lock()
@@ -2263,25 +2313,61 @@ func (s *Supervisor) run(c *child) {
 	}
 	defer func() { s.emit(Event{Kind: EventDone, Status: ended}) }()
 	defer close(c.done)
-	if c.rec.End != nil {
-		defer c.rec.End()
-	}
-	// The attempt's workspace is captured here rather than read in the defer:
-	// a retry gives the child a new one, and this goroutine cleans up its own.
-	worktree, repoTop := c.workspace()
+	// The attempt's record and its workspace are captured rather than read
+	// in the defers: a retry gives the child new ones, and this goroutine
+	// closes and removes its own. Both are set again below, because a
+	// writer's are not opened until it has a slot — a writer cancelled in
+	// the queue never had either, and closes and removes nothing.
+	c.mu.Lock()
+	ctx, cancel, maxRounds, endRec := c.ctx, c.cancel, c.maxRounds, c.rec.End
+	c.mu.Unlock()
+	var worktree, repoTop string
 	defer func() {
-		if worktree != "" {
-			removeWorktree(repoTop, worktree)
+		if endRec != nil {
+			endRec()
 		}
+		removeWorktree(repoTop, worktree)
 	}()
 
 	// Bounded concurrency: take a slot or notice cancellation while queued.
 	select {
 	case s.sem <- struct{}{}:
 		defer func() { <-s.sem }()
-	case <-c.ctx.Done():
+	case <-ctx.Done():
 		finish(StateFailed, "cancelled")
 		return
+	}
+
+	// A writer's isolated checkout is taken here and not at spawn, so that a
+	// lane waiting for a slot is a queued task rather than a copy of the
+	// repository sitting on disk, and so that what it starts from is the
+	// parent's tree as it stands now (openWorkspace). A seed that cannot be
+	// carried therefore fails the child rather than the spawn: the fan-out
+	// that asked for it has long since returned.
+	if c.profile.Writes {
+		// The lane says what the wait is now for. Copying and seeding a
+		// large checkout is seconds of git, and a child that read "queued"
+		// through all of it would look like one still waiting for a slot it
+		// is in fact already holding. It is still the queued state because
+		// it is still a child with no agent behind it yet.
+		c.set(StateQueued, "queued · copying the workspace")
+		s.emitUpdate(c)
+		w, err := s.openWorkspace(c, ctx, maxRounds)
+		if err != nil {
+			// This attempt's own cancel, captured above: a failure sets the
+			// state a retry claims the child by, and by the time the child
+			// is marked failed c.cancel may already govern that retry's wait
+			// rather than anything of this attempt's.
+			cancel()
+			finish(StateFailed, "failed · "+firstLine(err.Error()))
+			s.emitUpdate(c)
+			return
+		}
+		c.mu.Lock()
+		c.install(w)
+		endRec = c.rec.End
+		c.mu.Unlock()
+		worktree, repoTop = w.wt.dir, w.wt.repoTop
 	}
 
 	c.set(StateRunning, "running")
@@ -2606,11 +2692,15 @@ func (s *Supervisor) run(c *child) {
 			// session's cap-paused turn is: the turn that reached it closed
 			// there, and the check-in it prompts is the next one.
 			endTurn(observe.TurnCapPaused)
+			grown := c.agent.MaxRounds() * checkInGrowth
+			c.agent.SetMaxRounds(grown)
 			c.mu.Lock()
 			c.checkIns++
 			n := c.checkIns
+			// The widened cap, so a retry of this attempt starts where it
+			// talked its way to rather than back at the spawn's number.
+			c.maxRounds = grown
 			c.mu.Unlock()
-			c.agent.SetMaxRounds(c.agent.MaxRounds() * checkInGrowth)
 			c.appendEntry(TranscriptEntry{Kind: EntrySystem,
 				Text: fmt.Sprintf("Check-in %d — %d rounds used. Taking stock, then carrying on.", n, used)})
 			// Through the child's own agent, so a configured wording and the
@@ -3340,9 +3430,17 @@ const readingsNote = "Readings are off for sub-agents (summary.subagents), so no
 // them.
 func (s *Supervisor) readingsOff() bool {
 	s.mu.Lock()
-	defer s.mu.Unlock()
-	for _, c := range s.children {
-		if c.env.Summarizer.Enabled() {
+	kids := make([]*child, len(s.children))
+	copy(kids, s.children)
+	s.mu.Unlock()
+	for _, c := range kids {
+		// Under the child's own lock: an environment is installed when the
+		// attempt that runs in it starts, which for a writer is on its own
+		// goroutine while the roster this answers is being drawn.
+		c.mu.Lock()
+		enabled := c.env.Summarizer.Enabled()
+		c.mu.Unlock()
+		if enabled {
 			return false
 		}
 	}

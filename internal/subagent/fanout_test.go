@@ -178,3 +178,52 @@ func TestStatusSummary(t *testing.T) {
 		t.Fatalf("summary = %q, want the report's first line", s)
 	}
 }
+
+// A queued lane is a task waiting, not a checkout waiting. Four lanes over
+// three slots leaves one writer in the queue, and a writer given its copy of
+// the repository at spawn would hold a whole checkout on disk for as long as
+// it waited there — sixteen spawned writers is sixteen copies for three
+// running children — seeded from a tree the session has since moved past.
+// The copy is taken when the lane starts.
+func TestQueuedWriterHasNoWorktreeUntilItRuns(t *testing.T) {
+	repo := initTestRepo(t)
+	sup := New(context.Background(), Options{Root: repo, NewEnv: hangingEnv(), MaxConcurrent: 1})
+	t.Cleanup(sup.Close)
+
+	// The first lane is given the one slot before the second is spawned, so
+	// which of the two queues is the test's to decide rather than the
+	// scheduler's.
+	if _, err := spawnRaw(sup, `{"role":"writer","task":"lane one"}`); err != nil {
+		t.Fatalf("the first writer should spawn: %v", err)
+	}
+	waitState(t, sup, "writer-1", StateRunning)
+	if _, err := spawnRaw(sup, `{"role":"writer","task":"lane two"}`); err != nil {
+		t.Fatalf("the second writer should spawn: %v", err)
+	}
+
+	st, ok := sup.Get("writer-2")
+	if !ok || st.State != StateQueued {
+		t.Fatalf("the second writer should be queued behind the one slot, got %+v", st)
+	}
+	if st.Seeded != 0 {
+		t.Fatalf("a queued writer reports %d seeded paths, want none — it has no copy yet", st.Seeded)
+	}
+	// The running lane has a copy and the queued one does not. Counted in
+	// the checkout rather than asked of the supervisor, because the point is
+	// what is on disk.
+	if n := linkedWorktrees(t, repo); n != 1 {
+		t.Fatalf("%d worktrees beside the checkout, want the running lane's alone", n)
+	}
+	if _, err := sup.WorktreeDiff("writer-2"); err == nil {
+		t.Fatal("a queued writer answered with a patch against a worktree it does not have")
+	}
+
+	// The slot comes free and the queued lane takes its copy then.
+	if err := sup.Kill("writer-1"); err != nil {
+		t.Fatalf("kill: %v", err)
+	}
+	waitState(t, sup, "writer-2", StateRunning)
+	if _, err := sup.WorktreeDiff("writer-2"); err != nil {
+		t.Fatalf("a started writer has no worktree to diff: %v", err)
+	}
+}
