@@ -176,6 +176,11 @@ func commandEnvironmentBlock(e commandEnvironment) string {
 		} else {
 			b.WriteString(", and there is no network at all. A download, a package install or an API call fails on the connection itself — that is this profile and not a broken proxy or a bad resolver, so do not debug it as one. Say what you needed and carry on with what is already here.")
 		}
+		// The same failure as the netless one, from the filesystem's side: a
+		// refusal is not labelled, so it arrives as whatever the program that
+		// met it calls an unreadable path.
+		// See docs/capabilities/containment.md#a-denial-arrives-as-the-commands-own-error.
+		b.WriteString(" A refused read or write comes back as the program's own error and never says sandbox — a missing file, an unreadable store, a cache it could not create. A command failing that way on a path outside the scope above is the containment and not a broken tool, so check the path before you debug the tool.")
 	}
 	switch {
 	case e.Ceiling <= 0:

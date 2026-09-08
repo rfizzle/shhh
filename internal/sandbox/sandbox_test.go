@@ -349,14 +349,67 @@ func TestSeatbeltDeniesTheHostTmpdirAndAllowsTheSessionsOwn(t *testing.T) {
 		t.Fatalf("a grant inside the host tmpdir must outrank the deny:\n%s", profile)
 	}
 	// Last of all: the state directory is masked, and SBPL reads the later
-	// rule as the answer.
+	// rule as the answer. The mask is found by its own first entry rather
+	// than by being the last deny in the profile — a host with an ssh agent
+	// puts the socket's deny after it, and that one is a literal about a
+	// socket, not the mask this ordering is about.
 	allowTmp := strings.Index(profile, "(allow file-read* file-write*\n  (subpath "+sbplQuote(s.tmpdir))
-	mask := strings.LastIndex(profile, "(deny file-read* file-write*")
-	if allowTmp < 0 || allowTmp < mask {
+	mask := strings.Index(profile, "(deny file-read* file-write*\n  (subpath "+sbplQuote(s.denyDirs[0]))
+	if allowTmp < 0 || mask < 0 || allowTmp < mask {
 		t.Fatalf("the session tmpdir must be allowed after the deny mask:\n%s", profile)
 	}
 	if !strings.Contains(strings.Join(seatbeltPrefix(s), " "), "TMPDIR="+s.tmpdir) {
 		t.Fatalf("the command must be told where its tmpdir is: %v", seatbeltPrefix(s))
+	}
+}
+
+// An allowance inside a mask is only an allowance if the path to it can be
+// walked. What the kernel does with this rule is put to it in
+// integration_test.go; what is asserted here is the shape it has to have to
+// be safe — the ancestors of the allowance, as literals, for the one
+// operation an lstat asks for and no other.
+func TestSeatbeltProfileLetsAMaskedAncestorAnswerAnLstat(t *testing.T) {
+	home := testHome(t)
+	ssh := resolvedPath(t, mkdir(t, filepath.Join(home, ".ssh")))
+	policy, _ := workspacePolicy(t)
+
+	s, err := resolvePolicy(policy, "sandbox-exec")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dirs := traversable(s)
+	state := filepath.Dir(filepath.Dir(s.tmpdir))
+	for _, want := range []string{state, filepath.Join(state, "tmp")} {
+		if !slices.Contains(dirs, want) {
+			t.Errorf("the session tmpdir cannot be reached without %s: %v", want, dirs)
+		}
+	}
+	// Only the way in. The allowance already speaks for itself, and a masked
+	// directory nothing is allowed inside has no reason to answer anything.
+	if slices.Contains(dirs, s.tmpdir) {
+		t.Errorf("the allowance itself needs no traversal rule: %v", dirs)
+	}
+	if slices.Contains(dirs, ssh) {
+		t.Errorf("a mask with nothing allowed inside it stays silent: %v", dirs)
+	}
+
+	profile := seatbeltProfile(s)
+	allow := strings.Index(profile, "(allow file-read-metadata")
+	mask := strings.Index(profile, "(deny file-read* file-write*\n  (subpath "+sbplQuote(s.denyDirs[0]))
+	if allow < 0 || mask < 0 || allow < mask {
+		t.Fatalf("the traversal rule must follow the mask it reaches through:\n%s", profile)
+	}
+	block := profile[allow:]
+	if end := strings.Index(block, "\n("); end >= 0 {
+		block = block[:end]
+	}
+	for _, dir := range dirs {
+		if !strings.Contains(block, "(literal "+sbplQuote(dir)+")") {
+			t.Errorf("%s must be named as a literal, or the rule opens a subtree:\n%s", dir, block)
+		}
+	}
+	if strings.Contains(block, "subpath") {
+		t.Errorf("a subpath here would make every masked file's metadata readable:\n%s", block)
 	}
 }
 

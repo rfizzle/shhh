@@ -3,6 +3,7 @@ package sandbox
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 )
@@ -81,6 +82,16 @@ func seatbeltProfile(s spec) string {
 		// its own and every other session's unreachable.
 		fmt.Fprintf(&b, "(allow file-read* file-write*\n  (subpath %s))\n", sbplQuote(s.tmpdir))
 	}
+	if dirs := traversable(s); len(dirs) > 0 {
+		// After every deny, because it reaches through them: an allowance
+		// inside a mask is only an allowance if the path down to it can be
+		// walked, and a deny of file-read* takes that walk with it.
+		b.WriteString("(allow file-read-metadata")
+		for _, d := range dirs {
+			fmt.Fprintf(&b, "\n  (literal %s)", sbplQuote(d))
+		}
+		b.WriteString(")\n")
+	}
 	if s.agentSocket != "" {
 		// The variable is already gone from the environment, but the path is
 		// a convention as much as an address and a command that guessed it
@@ -120,6 +131,61 @@ func tmpReadable(s spec) []string {
 			out = append(out, v)
 		}
 	}
+	return out
+}
+
+// traversable are the directories a denied subtree still has to answer a
+// metadata read for: the ancestors of every path the profile allows back
+// inside one, from the deny's own root down to the allowance's parent.
+//
+// SBPL denies by path, and a deny of file-read* over a directory takes
+// `lstat` of that directory with it. Nothing that opens a file by name
+// notices, because the kernel walks the path itself and a rule about a
+// directory is not a rule about traversing it. A program that resolves the
+// path *before* opening it does notice, and SQLite is one: its unix VFS
+// builds a database's full pathname by lstat'ing every prefix in turn to find
+// out whether any of them is a symbolic link, and treats any errno but ENOENT
+// as fatal. A denial answers EPERM, so a database inside the session's own
+// tmpdir — allowed, writable, with a plain file already written beside it —
+// cannot be opened at all, and what comes back is SQLITE_CANTOPEN (14) with
+// no mention of a sandbox. Every store a contained command opens is behind
+// that: `go test` over a package with one, a tool keeping an index, anything
+// built on SQLite.
+//
+// So the answer is a rule for the operation rather than a wider allowance.
+// The ancestors get file-read-metadata and nothing else, which is what an
+// lstat asks for: it says the directory is there and says nothing about what
+// is in it, because listing one is file-read-data and stays denied.
+// See docs/capabilities/containment.md#a-denial-arrives-as-the-commands-own-error.
+func traversable(s spec) []string {
+	denied := make([]string, 0, len(s.tmpHidden)+len(s.denyDirs))
+	denied = append(denied, s.tmpHidden...)
+	denied = append(denied, s.denyDirs...)
+	allowed := tmpReadable(s)
+	if s.tmpdir != "" {
+		allowed = append(allowed, s.tmpdir)
+	}
+	var out []string
+	for _, a := range allowed {
+		for _, d := range denied {
+			if a == d || !within(a, d) {
+				continue
+			}
+			// Every deny root here is a real directory somewhere under the
+			// home or the temporary directory, never "/" — which is worth
+			// knowing, because within() reads "/" as a prefix of nothing and
+			// a mask over the root would come out of this walk empty.
+			for p := filepath.Dir(a); within(p, d); p = filepath.Dir(p) {
+				if !slices.Contains(out, p) {
+					out = append(out, p)
+				}
+				if p == d {
+					break // the deny's own root is the last one that needs saying
+				}
+			}
+		}
+	}
+	slices.Sort(out)
 	return out
 }
 

@@ -2,6 +2,7 @@ package sandbox
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"os"
 	"os/exec"
@@ -10,6 +11,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/rfizzle/shhh/internal/storage"
 )
 
 // TestContainerLifecycleIntegration exercises the real engine end to end:
@@ -388,6 +391,155 @@ func refuseTheHostTmpdir(t *testing.T, avail Availability) {
 	if out, err := capture(t, argv[0], argv[1:]...); err != nil || !strings.Contains(out, "IN-THE-WORKSPACE") {
 		t.Errorf("a read-only workspace inside the host tmpdir must still be readable under %s: %v:\n%s", avail.Mechanism, err, out)
 	}
+}
+
+// storeProbeEnv tells a test binary it is the contained half of the SQLite
+// claim below rather than the driver of it. It rides in as a declared session
+// secret, which is the only way a name the allowlist has never heard of
+// reaches a contained command.
+const storeProbeEnv = "SHHH_IT_STORE_PROBE"
+
+// storeProbeOK is what the contained half prints when it got a store open. A
+// sentinel rather than the exit status, because a wrap that never started the
+// binary also exits non-zero and would otherwise read as the same failure.
+const storeProbeOK = "STORE-OPENED"
+
+// The claim that a contained command can still use the scratch space it was
+// given, put to the kernel: a SQLite store opened inside the session's own
+// temporary directory, by a Go program, with no TMPDIR of the test's own.
+//
+// It is here rather than in the profile tests because the profile that fails
+// this is spelled correctly. Every rule reads right, a plain `os.WriteFile`
+// into the same directory succeeds, and SQLite still cannot open a database
+// beside it — the deny took `lstat` of the ancestors with it and SQLite walks
+// them (traversable, seatbelt.go). Nothing but a kernel says so, and the cost
+// of nobody asking one was a session that spent eight rounds reading
+// `unable to open database file (14)` as a broken test.
+//
+// The contained command is this test binary again. `go test` builds it under
+// the host's temporary directory, which is the directory containment hides,
+// so it is copied into the workspace first and run from there.
+func TestSeatbeltOpensASQLiteStoreInItsOwnTmpdir(t *testing.T) {
+	if os.Getenv(storeProbeEnv) != "" {
+		openAStoreInTheContainedTmpdir(t)
+		return
+	}
+	if runtime.GOOS != "darwin" {
+		t.Skipf("Seatbelt is the macOS mechanism and this host is %s", runtime.GOOS)
+	}
+	avail := detectSeatbelt()
+	if !avail.OK {
+		t.Skipf("no Seatbelt containment here: %s", avail.Detail)
+	}
+
+	testHome(t)
+	policy, ws := workspacePolicy(t)
+	policy.Cwd = ws
+	policy.Env = append(os.Environ(), storeProbeEnv+"=1")
+	policy.SecretNames = []string{storeProbeEnv}
+
+	s, err := resolvePolicy(policy, avail.Mechanism)
+	if err != nil {
+		t.Fatalf("resolvePolicy: %v", err)
+	}
+	if s.tmpdir == "" {
+		t.Fatal("the session tmpdir is what this test is about; the spec has none")
+	}
+	argv, err := WrapArgv(avail, policy, []string{
+		copyTestBinary(t, ws), "-test.run", "^" + t.Name() + "$", "-test.v",
+	})
+	if err != nil {
+		t.Fatalf("WrapArgv under %s: %v", avail.Mechanism, err)
+	}
+	out, err := capture(t, argv[0], argv[1:]...)
+	if err != nil || !strings.Contains(out, storeProbeOK) {
+		t.Fatalf("a contained command must be able to open a store in its own tmpdir under %s: %v:\n%s", avail.Mechanism, err, out)
+	}
+	// The other half: it was the containment's temporary directory and not
+	// one the test pointed somewhere friendlier, which is the workaround this
+	// failure was lived with under.
+	if !strings.Contains(out, storeProbeOK+" "+s.tmpdir) {
+		t.Errorf("the store should have been opened inside %s, got:\n%s", s.tmpdir, out)
+	}
+	// And the mask the traversal rule reaches through still holds. Letting a
+	// masked directory answer `lstat` is a hole if it also lets the command
+	// see what is in it, and the state directory is where the session's own
+	// database lives — so the kernel is asked, not the profile text.
+	refuseTheMaskedStateDirectory(t, avail, filepath.Dir(filepath.Dir(s.tmpdir)))
+}
+
+// refuseTheMaskedStateDirectory holds the mask over shhh's own state now that
+// the profile names two of its directories in an allowance. `lstat` says a
+// directory is there; nothing here may say what is in it.
+func refuseTheMaskedStateDirectory(t *testing.T, avail Availability, state string) {
+	t.Helper()
+	const secret = "STATE-DIR-BYTES"
+	path := filepath.Join(state, "shhh.db")
+	if err := os.WriteFile(path, []byte(secret), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Remove(path) })
+	policy, ws := workspacePolicy(t)
+	policy.Cwd = ws
+	// The sentinels rather than the paths: a denial names the path it refused
+	// in its own error message, so looking for the file's name in the output
+	// finds the refusal as readily as the listing.
+	command := "echo SHELL-RAN; ls " + state + " >/dev/null 2>&1 && echo LISTED; cat " + path
+
+	if out, err := capture(t, shellPath(), "-c", command); err != nil || !strings.Contains(out, secret) || !strings.Contains(out, "LISTED") {
+		t.Fatalf("the uncontained control must read the state directory, or this proves nothing: %v: %s", err, out)
+	}
+
+	argv, err := Wrap(avail, policy, command)
+	if err != nil {
+		t.Fatalf("Wrap under %s: %v", avail.Mechanism, err)
+	}
+	out, _ := capture(t, argv[0], argv[1:]...)
+	if !strings.Contains(out, "SHELL-RAN") {
+		t.Fatalf("the contained shell never ran under %s, so the empty read proves nothing:\n%s", avail.Mechanism, out)
+	}
+	if strings.Contains(out, secret) {
+		t.Errorf("a contained command read shhh's own state under %s:\n%s", avail.Mechanism, out)
+	}
+	if strings.Contains(out, "LISTED") {
+		t.Errorf("a contained command listed shhh's own state under %s:\n%s", avail.Mechanism, out)
+	}
+}
+
+// openAStoreInTheContainedTmpdir is the half that runs inside containment. It
+// writes a plain file first, because a directory that cannot take one at all
+// makes the store's failure say nothing about SQLite.
+func openAStoreInTheContainedTmpdir(t *testing.T) {
+	t.Helper()
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "plain.txt"), []byte("PLAIN"), 0o600); err != nil {
+		t.Fatalf("a plain write into the contained tmpdir failed, so the store proves nothing: %v", err)
+	}
+	db, err := storage.OpenPath(filepath.Join(dir, "probe.db"))
+	if err != nil {
+		t.Fatalf("open a store at %s: %v", dir, err)
+	}
+	defer func() { _ = db.Close() }()
+	fmt.Println(storeProbeOK, dir)
+}
+
+// copyTestBinary puts this test binary somewhere the contained command can
+// read it and hands back the new path.
+func copyTestBinary(t *testing.T, dir string) string {
+	t.Helper()
+	self, err := os.Executable()
+	if err != nil {
+		t.Fatalf("this test has to re-run itself and cannot find itself: %v", err)
+	}
+	body, err := os.ReadFile(self)
+	if err != nil {
+		t.Fatalf("read %s: %v", self, err)
+	}
+	path := filepath.Join(dir, "contained.test")
+	if err := os.WriteFile(path, body, 0o700); err != nil {
+		t.Fatalf("write %s: %v", path, err)
+	}
+	return path
 }
 
 // capture runs one argv and hands back everything it printed, wrapped or

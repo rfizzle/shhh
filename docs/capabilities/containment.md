@@ -73,6 +73,39 @@ a policy whose writable path sits inside a masked one is refused rather than
 weakened — so granting a subdirectory of a store makes the whole store
 readable, and the card says so before the grant rather than after it.
 
+## A denial arrives as the command's own error
+
+A refusal is not labelled. Seatbelt errors a masked read rather than emptying
+it, so a contained command meets the boundary as an errno and describes it in
+its own vocabulary — a certificate store that would not open, a cache that
+could not be created, a database file that is unavailable. None of those
+sentences contains the word sandbox, and both a person and a model read them
+as a broken tool and debug them as one.
+
+So the containment says it first. A session is told what contains it and what
+that allows before it runs anything, and it is told that a command failing on
+a path outside the working scope is the boundary speaking rather than the tool
+misbehaving. That is one sentence against the rounds it costs to bisect a
+program that is working correctly.
+
+**A mask still has to be walkable.** A path is not one question to the kernel.
+A program that resolves a path before opening it asks about every directory on
+the way down, and a deny over a directory refuses those questions too. SQLite
+is the one that matters here: its Unix backend walks a database's path a
+component at a time, asking of each whether it is a symbolic link, and treats
+any refusal as fatal. A scratch directory allowed *inside* a masked one was
+therefore reachable in principle and unusable in practice — a plain file
+written successfully beside a database that could not be opened at all, and an
+error saying only that it could not be opened. Every store a contained command
+touches sat behind that, which on macOS is every test run over a package that
+keeps one.
+
+What the mask gives back is the walk and nothing else. The directories between
+a mask and an allowance inside it answer the one question the walk asks —
+that they are there — and answer nothing else: what is *in* them is a
+different operation and stays denied. Widening the mask would have worked too,
+and would have traded the protection for the bug.
+
 ## The temporary directory is the session's own
 
 Everything else about containment is a wall with the workspace on one side of

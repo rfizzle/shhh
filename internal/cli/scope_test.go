@@ -145,6 +145,19 @@ func TestCommandEnvironmentBlock_NetlessSaysThereIsNoNetwork(t *testing.T) {
 	if !strings.Contains(block, "resolver") {
 		t.Errorf("the block should say what a failed lookup is not:\n%s", block)
 	}
+	// And its half on the filesystem's side: a refused read arrives as
+	// whatever the program that met it calls an unreadable path, so a session
+	// that has not been told debugs the program.
+	if !strings.Contains(block, "never says sandbox") {
+		t.Errorf("the block should say what a refused read is not:\n%s", block)
+	}
+}
+
+func TestCommandEnvironmentBlock_AnUncontainedSessionHasNoDenialToExplain(t *testing.T) {
+	block := commandEnvironmentBlock(commandEnvironment{Mechanism: "", Ceiling: time.Minute})
+	if strings.Contains(block, "never says sandbox") {
+		t.Errorf("nothing refusing a read means no refusal to account for:\n%s", block)
+	}
 }
 
 func TestCommandEnvironmentBlock_SaysWhenNothingContainsACommand(t *testing.T) {
