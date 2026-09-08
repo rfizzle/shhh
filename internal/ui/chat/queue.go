@@ -103,31 +103,51 @@ func (m Model) previewQueued(tc provider.ToolCall) *approvalRequest {
 	return req
 }
 
-// skippedArgsNotice is the row for a call the queue could not build a
-// decision from: the model wrote arguments the tool cannot read, and there is
-// nothing for a person to do about it but read the model's next attempt.
+// skippedArgsNotice is the row for a refused call that cannot even be named:
+// a call arriving with no tool name leaves nothing to say but that one of
+// them was skipped.
 const skippedArgsNotice = "Skipped a tool call with invalid arguments."
 
+// skippedArgsRow is the line a malformed call leaves behind. It names the
+// tool because three of these in one session are otherwise indistinguishable
+// — one mistake repeated and three different ones read exactly alike — and
+// the tool is the first thing that tells them apart.
+func skippedArgsRow(name string) string {
+	if name == "" {
+		return skippedArgsNotice
+	}
+	return "skipped · " + name + " · invalid arguments"
+}
+
 // skippedCallEntry is the transcript's account of a call the queue refused
-// before it could reach a card.
+// before it could reach a card. name is the tool the model asked for.
+//
+// Both refusals fold rather than shorten: one line, with the sentence the
+// model was given underneath it and nothing dropped
+// (docs/interface/principles.md#fold-never-hide). The model is handed that
+// sentence whichever refusal this is, so a reader shown only the notice is
+// the one party to the failure who cannot tell whether the session is
+// recovering or repeating itself.
 //
 // A file that changed since it was read is not a malformed call, and saying
 // so cost the reader the one fact only they have: which editor, sibling
 // session or background build touched the file. So that refusal gets its own
-// row, naming the file and what happened to it, and folds the model's own
-// sentence underneath rather than dropping it — the row is dense, not
-// shorter (docs/interface/principles.md#fold-never-hide).
-func (m Model) skippedCallEntry(err error) entry {
+// row, naming the file and what happened to it.
+func (m Model) skippedCallEntry(name string, err error) entry {
+	// The expansion is the sentence the model was given, verbatim: a reader
+	// deciding whether the model can recover needs to see what it was
+	// actually told, not this row's paraphrase of it.
 	var stale tools.StaleError
 	if !errors.As(err, &stale) {
-		return entry{kind: entrySystem, text: skippedArgsNotice}
+		var given string
+		if err != nil {
+			given = err.Error()
+		}
+		return entry{kind: entrySystem, text: skippedArgsRow(name), toolResult: given}
 	}
 	return entry{
-		kind: entrySystem,
-		text: stale.Skipped(m.rowPath(stale.Path)),
-		// The expansion is the sentence the model was given, verbatim: a
-		// reader deciding whether the model can recover needs to see what it
-		// was actually told, not this row's paraphrase of it.
+		kind:       entrySystem,
+		text:       stale.Skipped(m.rowPath(stale.Path)),
 		toolResult: stale.Error(),
 	}
 }

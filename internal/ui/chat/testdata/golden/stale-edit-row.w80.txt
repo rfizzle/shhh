@@ -15,7 +15,7 @@ You
   rebase the round cap on what loop.go says now
 
 skipped · internal/agent/loop.go changed since it was read
-Skipped a tool call with invalid arguments.
+skipped · write_file · invalid arguments
 
 
 · the row opened · the sentence the model was given
@@ -25,7 +25,8 @@ You
 skipped · internal/agent/loop.go changed since it was read
     /work/shhh/internal/agent/loop.go has changed since it was read;
     read_file it again and rebase this change on what it says now
-Skipped a tool call with invalid arguments.
+skipped · write_file · invalid arguments
+    invalid arguments: path is required
 
 
 ── ansi ────────────────────────────────────────────────────
@@ -34,7 +35,7 @@ Skipped a tool call with invalid arguments.
   ␛[38;5;252mrebase the round cap on what loop.go says now␛[m
 
 ␛[3;38;5;241mskipped · internal/agent/loop.go changed since it was read␛[m
-␛[3;38;5;241mSkipped a tool call with invalid arguments.␛[m
+␛[3;38;5;241mskipped · write_file · invalid arguments␛[m
 
 
 · the row opened · the sentence the model was given
@@ -44,5 +45,6 @@ Skipped a tool call with invalid arguments.
 ␛[3;38;5;241mskipped · internal/agent/loop.go changed since it was read␛[m
     ␛[3;38;5;241m/work/shhh/internal/agent/loop.go has changed since it was read;␛[m
     ␛[3;38;5;241mread_file it again and rebase this change on what it says now␛[m
-␛[3;38;5;241mSkipped a tool call with invalid arguments.␛[m
+␛[3;38;5;241mskipped · write_file · invalid arguments␛[m
+    ␛[3;38;5;241minvalid arguments: path is required␛[m
 

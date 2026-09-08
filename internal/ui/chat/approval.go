@@ -306,7 +306,7 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 	req, err := m.buildApprovalRequest(tc)
 	if err != nil {
 		m.agent.ResolveApproval(m.refusedResult(tc, "error: "+err.Error()))
-		m.appendEntry(m.skippedCallEntry(err))
+		m.appendEntry(m.skippedCallEntry(tc.Name, err))
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		return m.advanceApprovalQueue()
@@ -490,7 +490,7 @@ func (m Model) finishPreToolHook(msg preToolHookMsg) (tea.Model, tea.Cmd) {
 		rebuilt, err := m.buildApprovalRequest(call)
 		if err != nil {
 			m.agent.ResolveApproval(m.refusedResult(call, "error: "+err.Error()))
-			m.appendEntry(m.skippedCallEntry(err))
+			m.appendEntry(m.skippedCallEntry(call.Name, err))
 			m.viewport.SetLines(m.renderHistoryLines())
 			m.viewport.GotoBottom()
 			return m.advanceApprovalQueue()

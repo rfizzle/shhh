@@ -370,7 +370,7 @@ func TestSkippedCallEntryTellsStalenessFromBadArguments(t *testing.T) {
 	root := t.TempDir()
 	m := New(nil, mockStream).WithWorkspace(root)
 
-	stale := m.skippedCallEntry(fmt.Errorf("invalid arguments: %w",
+	stale := m.skippedCallEntry("write_file", fmt.Errorf("invalid arguments: %w",
 		tools.StaleError{Path: filepath.Join(root, "internal", "agent", "loop.go")}))
 	if want := "skipped · internal/agent/loop.go changed since it was read"; stale.text != want {
 		t.Errorf("stale row:\n got %q\nwant %q", stale.text, want)
@@ -387,12 +387,32 @@ func TestSkippedCallEntryTellsStalenessFromBadArguments(t *testing.T) {
 		t.Error("the row must offer its body to the reader")
 	}
 
-	bad := m.skippedCallEntry(fmt.Errorf("invalid arguments: %w", errors.New("path is required")))
-	if bad.text != skippedArgsNotice {
-		t.Errorf("a malformed call keeps its line, got %q", bad.text)
+	given := fmt.Errorf("invalid arguments: %w", errors.New("path is required"))
+	bad := m.skippedCallEntry("write_file", given)
+	if want := "skipped · write_file · invalid arguments"; bad.text != want {
+		t.Errorf("malformed row:\n got %q\nwant %q", bad.text, want)
 	}
-	if bad.toolResult != "" {
-		t.Errorf("a malformed call has nothing to expand, got %q", bad.toolResult)
+	// The model is handed this sentence and the reader must be handed the
+	// same one, or three of these rows in a session cannot be told apart.
+	if bad.toolResult != given.Error() {
+		t.Errorf("expansion should be the model's sentence verbatim:\n got %q\nwant %q",
+			bad.toolResult, given.Error())
+	}
+	if len(outputLines(bad)) == 0 {
+		t.Error("the malformed row must offer its body to the reader")
+	}
+}
+
+// A call that arrives without a tool name has nothing to name, so the row
+// falls back to the notice rather than printing an empty field.
+func TestSkippedCallEntryFallsBackWhenTheToolIsUnnamed(t *testing.T) {
+	m := New(nil, mockStream)
+	e := m.skippedCallEntry("", errors.New("invalid arguments: path is required"))
+	if e.text != skippedArgsNotice {
+		t.Errorf("unnamed row:\n got %q\nwant %q", e.text, skippedArgsNotice)
+	}
+	if e.toolResult == "" {
+		t.Error("an unnamed call still folds the sentence the model was given")
 	}
 }
 
@@ -401,7 +421,7 @@ func TestSkippedCallEntryTellsStalenessFromBadArguments(t *testing.T) {
 func TestSkippedCallEntryKeepsAPathOutsideTheWorkspace(t *testing.T) {
 	m := New(nil, mockStream).WithWorkspace(filepath.Join(t.TempDir(), "checkout"))
 	outside := filepath.Join(t.TempDir(), "elsewhere", "notes.md")
-	e := m.skippedCallEntry(tools.StaleError{Path: outside})
+	e := m.skippedCallEntry("write_file", tools.StaleError{Path: outside})
 	if !strings.Contains(e.text, outside) {
 		t.Errorf("row should keep the absolute path, got %q", e.text)
 	}
