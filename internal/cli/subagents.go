@@ -595,6 +595,12 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			// (toolset.go puts the vault outside everything).
 			WrapAuto:  childHookAuto(hooks),
 			WrapGated: childHookGated(hooks),
+			// And the same detector the two dispatchers above were wrapped
+			// with, asked what ground this child has been over: its readings
+			// are the only thing watching it, and a child that has searched
+			// one directory a dozen times without writing anything is the
+			// shape they were reading as on target.
+			Sweeps: repeats.Sweeps,
 			// And the reading that tells the child its workspace moved under
 			// it, taken where the child is standing: a writer's worktree, or
 			// the parent's checkout for a reader.

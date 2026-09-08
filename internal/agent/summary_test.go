@@ -309,7 +309,7 @@ func TestSummaryRequest_DigestKeepsTheMostRecentActivity(t *testing.T) {
 // A block with nothing to say is omitted rather than sent as an empty field.
 func TestSummaryRequest_DigestOmitsWhatIsEmpty(t *testing.T) {
 	digest := SummaryRequest{Target: "do the thing", Round: 3}.digest()
-	for _, key := range []string{"approved_plan", "latest_agent_message", "files_changed", "failing_checks", "previous_summary", "interventions"} {
+	for _, key := range []string{"approved_plan", "latest_agent_message", "files_changed", "failing_checks", "sweeps", "previous_summary", "interventions"} {
 		if _, ok := digest[key]; ok {
 			t.Fatalf("digest should omit %q when there is none", key)
 		}
@@ -564,6 +564,37 @@ func TestSummaryRequest_CarriesTheInterventionsDelivered(t *testing.T) {
 	}
 	if rows[1] != "round 20 · check-in · has named the file and the line" {
 		t.Errorf("check-in row = %q", rows[1])
+	}
+}
+
+// The reading is handed the sweep as a fact. Twelve searches of one directory
+// are twelve legible and genuinely different rows in recent_steps, and
+// deciding from them that the run has been over one place without getting
+// anywhere is the judgement the readings in the session this came from got
+// wrong twenty times running.
+func TestSummaryRequest_CarriesTheSweepsStanding(t *testing.T) {
+	req := testSummaryRequest()
+	req.Sweeps = []string{SummarySweep("search", "./internal/ui/chat", 14)}
+	rows, ok := req.digest()["sweeps"].([]string)
+	if !ok || len(rows) != 1 {
+		t.Fatalf("digest sweeps = %#v", req.digest()["sweeps"])
+	}
+	if rows[0] != "search · ./internal/ui/chat · 14 calls, nothing written" {
+		t.Errorf("sweep row = %q", rows[0])
+	}
+}
+
+// And the instruction says what to do with one, or the reader is handed a
+// fact it has no rule for and goes on saying on target.
+func TestSummaryWording_TellsTheReaderWhatASweepMeans(t *testing.T) {
+	wording := SummaryWording()
+	for _, want := range []string{"sweeps", "sufficient", "off_target"} {
+		if !strings.Contains(wording, want) {
+			t.Errorf("the reading instruction never says %q", want)
+		}
+	}
+	if !strings.Contains(wording, `evidence against "on_target"`) {
+		t.Error("the instruction should say which way a sweep points")
 	}
 }
 

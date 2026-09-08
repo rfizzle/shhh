@@ -185,6 +185,32 @@ func searchTarget(args map[string]any) string {
 	return pattern
 }
 
+// SearchScope is the place one pattern-subject call was put, marked as a
+// place the way a row marks it, and "." for a call that named none — which is
+// a scope like any other, since a run can as easily ask the whole tree twenty
+// questions as one directory. It reports false for every tool whose subject
+// is its path rather than its pattern, so a caller grouping calls by where
+// they were pointed does not have to know which tools those are.
+//
+// It is here rather than beside its caller because it is the same reading
+// Arg makes to build a search's target: a second copy would agree on the day
+// it was written and stop agreeing the day a fifth pattern-subject tool is
+// registered.
+func SearchScope(tool, rawArgs string) (scope string, ok bool) {
+	if !searchTools[tool] {
+		return "", false
+	}
+	var args map[string]any
+	if err := json.Unmarshal([]byte(rawArgs), &args); err != nil {
+		return "", false
+	}
+	path, _ := args["path"].(string)
+	if s := searchScope(strings.TrimSpace(path)); s != "" {
+		return s, true
+	}
+	return ".", true
+}
+
 // searchScope marks a search's path as a place, so the second half of
 // `steeringItem ./internal/ui/chat` cannot be read as more pattern. A path
 // that already anchors itself keeps its own form, and the default scope — the

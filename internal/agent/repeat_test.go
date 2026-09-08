@@ -9,6 +9,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/structural"
 )
 
 func TestRepeatDetector_CountsIdenticalInteractions(t *testing.T) {
@@ -200,5 +201,298 @@ func TestRepeatDetector_NilIsSafe(t *testing.T) {
 	}
 	if got := d.Notice("search", json.RawMessage(`{}`), "out"); got != "out" {
 		t.Errorf("a nil detector notices nothing, got %q", got)
+	}
+	if got := d.Sweeps(); got != nil {
+		t.Errorf("a nil detector sweeps nothing, got %v", got)
+	}
+}
+
+// searchOf is one search as the model writes it: a pattern, and the place it
+// was put. The pattern is what varies in a sweep and the place is what does
+// not, so every test below builds its calls this way.
+func searchOf(pattern, path string) json.RawMessage {
+	return json.RawMessage(fmt.Sprintf(`{"pattern":%q,"path":%q}`, pattern, path))
+}
+
+func swept(result string) bool { return strings.HasPrefix(result, sweepNoticePrefix) }
+
+func TestRepeatDetector_ManyPatternsOverOnePlaceAreASweep(t *testing.T) {
+	// The failure the exact-repeat key cannot see: twenty different
+	// questions, all put to one directory, none of them followed by a change.
+	d := NewRepeatDetector()
+	var notice string
+	for i := 1; i <= 20; i++ {
+		out := d.Notice("search",
+			searchOf(fmt.Sprintf("needle%d", i), "internal/ui/chat"),
+			fmt.Sprintf("a.go:%d: needle%d", i, i))
+		if i < sweepNoticeAfter && swept(out) {
+			t.Fatalf("call %d: a sweep was called before the threshold:\n%s", i, out)
+		}
+		if i == sweepNoticeAfter {
+			if !swept(out) {
+				t.Fatalf("call %d: %d patterns over one directory is a sweep, got %q",
+					i, sweepNoticeAfter, out)
+			}
+			notice = out
+		}
+	}
+	for _, want := range []string{"12 search calls", "./internal/ui/chat", "nothing has been written"} {
+		if !strings.Contains(notice, want) {
+			t.Errorf("the notice does not say %q:\n%s", want, notice)
+		}
+	}
+	// The result is left standing under the notice, as a repeat's is: it is
+	// still the answer, and what has changed is only that asking again is not
+	// the way forward.
+	if !strings.HasSuffix(notice, "a.go:12: needle12") {
+		t.Errorf("the result should still be under the notice:\n%s", notice)
+	}
+}
+
+func TestRepeatDetector_AWriteBetweenTheSearchesIsNotASweep(t *testing.T) {
+	// The same twenty searches with one edit in the middle of them. A run
+	// that has changed something is acting on what it found, so the count
+	// starts again there and neither half reaches the threshold.
+	d := NewRepeatDetector()
+	for i := 1; i <= 20; i++ {
+		if i == 11 {
+			d.Notice("edit_file",
+				json.RawMessage(`{"path":"internal/ui/chat/model.go","old_string":"a","new_string":"b"}`),
+				"edited internal/ui/chat/model.go")
+		}
+		out := d.Notice("search",
+			searchOf(fmt.Sprintf("needle%d", i), "internal/ui/chat"),
+			fmt.Sprintf("a.go:%d: needle%d", i, i))
+		if swept(out) {
+			t.Fatalf("call %d: a run that is writing is not circling:\n%s", i, out)
+		}
+	}
+}
+
+func TestRepeatDetector_ACommandEndsASweep(t *testing.T) {
+	// shhh cannot know whether a command wrote anything and assumes it did,
+	// so a run that searched, ran the tests and searched again is not one
+	// that has been reading without acting.
+	d := NewRepeatDetector()
+	for i := 1; i <= 20; i++ {
+		if i == 11 {
+			d.Notice("execute_command", json.RawMessage(`{"command":"go test ./..."}`), "ok")
+		}
+		if out := d.Notice("search",
+			searchOf(fmt.Sprintf("needle%d", i), "internal/agent"),
+			fmt.Sprintf("out%d", i)); swept(out) {
+			t.Fatalf("call %d: a command starts the count again:\n%s", i, out)
+		}
+	}
+}
+
+func TestRepeatDetector_ANarrowingSweepIsNotCircling(t *testing.T) {
+	// The legitimate shape: a broad pattern, a narrower one, narrower again,
+	// then the file they pointed at. Four calls is not a circle, and a
+	// mechanism that called it one would cost every investigation a round.
+	d := NewRepeatDetector()
+	steps := []struct {
+		tool string
+		args json.RawMessage
+	}{
+		{"search", searchOf("Steering", "internal/agent")},
+		{"search", searchOf("Steering.CheckIn", "internal/agent")},
+		{"search", searchOf("CheckInInterval", "internal/agent")},
+		{"read_file", json.RawMessage(`{"path":"internal/agent/checkin.go"}`)},
+	}
+	for i, s := range steps {
+		if out := d.Notice(s.tool, s.args, fmt.Sprintf("out%d", i)); swept(out) {
+			t.Fatalf("step %d (%s): a narrowing sweep is not circling:\n%s", i, s.tool, out)
+		}
+	}
+}
+
+func TestRepeatDetector_TwoPlacesAreTwoShapes(t *testing.T) {
+	// Ten questions about each of two directories is twenty searches and no
+	// sweep. The place is half the shape, because a run working through a
+	// tree package by package is going somewhere and one asking a single
+	// package twenty questions is not.
+	d := NewRepeatDetector()
+	for i := 1; i <= 10; i++ {
+		for _, path := range []string{"internal/agent", "internal/ui/chat"} {
+			if out := d.Notice("search",
+				searchOf(fmt.Sprintf("needle%d", i), path),
+				fmt.Sprintf("%s:%d", path, i)); swept(out) {
+				t.Fatalf("%s call %d: two places are two shapes:\n%s", path, i, out)
+			}
+		}
+	}
+	// And one of the two, carried past the threshold on its own, is a sweep.
+	var notice string
+	for i := 11; i <= sweepNoticeAfter && notice == ""; i++ {
+		if out := d.Notice("search",
+			searchOf(fmt.Sprintf("needle%d", i), "internal/agent"),
+			fmt.Sprintf("out%d", i)); swept(out) {
+			notice = out
+		}
+	}
+	if notice == "" {
+		t.Fatalf("one place carried past the threshold is a sweep")
+	}
+	if !strings.Contains(notice, "./internal/agent") {
+		t.Errorf("the notice names the place that was swept:\n%s", notice)
+	}
+}
+
+func TestRepeatDetector_OneToolOverOnePlaceIsTheShape(t *testing.T) {
+	// A run that searches a package and then lists its files is asking two
+	// kinds of question, so the two are counted apart.
+	d := NewRepeatDetector()
+	for i := 1; i <= 10; i++ {
+		for _, tool := range []string{"search", "glob"} {
+			if out := d.Notice(tool,
+				searchOf(fmt.Sprintf("needle%d", i), "internal/agent"),
+				fmt.Sprintf("%s:%d", tool, i)); swept(out) {
+				t.Fatalf("%s call %d: two tools are two shapes:\n%s", tool, i, out)
+			}
+		}
+	}
+}
+
+func TestRepeatDetector_TheExactRepeatStillLeadsTheResult(t *testing.T) {
+	// A call that comes back identical is the cheapest and clearest thing to
+	// say, and it is still what a result leads with — one notice, not two,
+	// because the second would land where the model has stopped reading.
+	d := NewRepeatDetector()
+	args := searchOf("needle", "internal/agent")
+	if first := d.Notice("search", args, "a.go:1: needle"); IsRepeatNotice(first) || swept(first) {
+		t.Fatalf("the first call carries no notice, got %q", first)
+	}
+	if second := d.Notice("search", args, "a.go:1: needle"); !IsRepeatNotice(second) {
+		t.Fatalf("the second identical call still fires the repeat notice, got %q", second)
+	}
+	var last string
+	for i := 0; i < sweepNoticeAfter; i++ {
+		last = d.Notice("search", args, "a.go:1: needle")
+	}
+	if !IsRepeatNotice(last) {
+		t.Errorf("the exact repeat wins the head of the result, got %q", last)
+	}
+	if strings.Contains(last, sweepNoticePrefix) {
+		t.Errorf("only one notice leads a result:\n%s", last)
+	}
+}
+
+func TestRepeatDetector_ASweepIsToldAgainOnlyAtTheNextThreshold(t *testing.T) {
+	// Once past the threshold every remaining call would carry the notice,
+	// which is the mechanism becoming the noise it warns about. It repeats at
+	// the multiples instead.
+	d := NewRepeatDetector()
+	var at []int
+	for i := 1; i <= 2*sweepNoticeAfter+2; i++ {
+		if swept(d.Notice("search",
+			searchOf(fmt.Sprintf("needle%d", i), "internal/agent"),
+			fmt.Sprintf("out%d", i))) {
+			at = append(at, i)
+		}
+	}
+	want := []int{sweepNoticeAfter, 2 * sweepNoticeAfter}
+	if fmt.Sprint(at) != fmt.Sprint(want) {
+		t.Errorf("the notice should fire at %v, fired at %v", want, at)
+	}
+}
+
+func TestRepeatDetector_ASweepThatFillsTheWindowStopsBeingTold(t *testing.T) {
+	// A sweep long enough to fill the window stops growing: every call after
+	// that evicts one of its own, so the count sits at the window's size for
+	// the rest of the turn. Told on the count alone, the notice would fire on
+	// every one of those calls — the mechanism becoming the noise it warns
+	// about, in the run that needs it least noisy.
+	d := NewRepeatDetector()
+	var at []int
+	for i := 1; i <= 2*sweepWindow; i++ {
+		if swept(d.Notice("search",
+			searchOf(fmt.Sprintf("needle%d", i), "internal/agent"),
+			fmt.Sprintf("out%d", i))) {
+			at = append(at, i)
+		}
+	}
+	want := []int{12, 24, 36, 48}
+	if fmt.Sprint(at) != fmt.Sprint(want) {
+		t.Errorf("the notice should fire at %v over %d calls, fired at %v",
+			want, 2*sweepWindow, at)
+	}
+	// And a write starts it over: the run acted, so the next dozen is a new
+	// sweep and earns the notice again.
+	d.Notice("write_file", json.RawMessage(`{"path":"internal/agent/repeat.go","content":"x"}`), "wrote")
+	var again bool
+	for i := 1; i <= sweepNoticeAfter; i++ {
+		if swept(d.Notice("search",
+			searchOf(fmt.Sprintf("after%d", i), "internal/agent"),
+			fmt.Sprintf("after%d", i))) {
+			again = true
+		}
+	}
+	if !again {
+		t.Error("a write starts the sweep over, notice and all")
+	}
+}
+
+func TestRepeatDetector_AGitWriteEndsASweep(t *testing.T) {
+	// The four verbs of git's writing half all change the repository, and it
+	// is registered on every surface that reads a sweep. A run that searched
+	// a dozen times, committed, and searched a dozen more has not been going
+	// in one circle of twenty-four.
+	d := NewRepeatDetector()
+	for i := 1; i <= 20; i++ {
+		if i == 11 {
+			d.Notice(structural.GitWriteToolName,
+				json.RawMessage(`{"verb":"commit","message":"fix the thing"}`), "committed")
+		}
+		if out := d.Notice("search",
+			searchOf(fmt.Sprintf("needle%d", i), "internal/agent"),
+			fmt.Sprintf("out%d", i)); swept(out) {
+			t.Fatalf("call %d: a commit starts the count again:\n%s", i, out)
+		}
+	}
+}
+
+func TestRepeatDetector_AFailingSweepIsStillASweep(t *testing.T) {
+	// A dozen calls against a path that does not exist is the same circle as
+	// a dozen that keep returning hits, and the failure is wrapped rather
+	// than replaced so a caller testing it still finds it.
+	d := NewRepeatDetector()
+	exec := d.WrapExecutor(func(_ string, args json.RawMessage) (string, error) {
+		return "", fmt.Errorf("no such directory: internal/nope (%s)", args)
+	})
+	var last error
+	for i := 1; i <= sweepNoticeAfter; i++ {
+		_, last = exec("search", searchOf(fmt.Sprintf("needle%d", i), "internal/nope"))
+	}
+	if last == nil || !swept(last.Error()) {
+		t.Fatalf("a failing sweep is still a sweep, got %v", last)
+	}
+	if !strings.Contains(last.Error(), "no such directory") {
+		t.Errorf("the failure is wrapped, not replaced: %v", last)
+	}
+}
+
+func TestRepeatDetector_SweepsAreAFactTheReadingIsGiven(t *testing.T) {
+	d := NewRepeatDetector()
+	if got := d.Sweeps(); len(got) != 0 {
+		t.Fatalf("nothing has been swept yet, got %v", got)
+	}
+	for i := 1; i < sweepNoticeAfter; i++ {
+		d.Notice("search", searchOf(fmt.Sprintf("needle%d", i), "internal/agent"), fmt.Sprintf("out%d", i))
+	}
+	if got := d.Sweeps(); len(got) != 0 {
+		t.Fatalf("below the threshold there is no sweep to report, got %v", got)
+	}
+	for i := sweepNoticeAfter; i <= 14; i++ {
+		d.Notice("search", searchOf(fmt.Sprintf("needle%d", i), "internal/agent"), fmt.Sprintf("out%d", i))
+	}
+	want := []string{"search · ./internal/agent · 14 calls, nothing written"}
+	if got := d.Sweeps(); fmt.Sprint(got) != fmt.Sprint(want) {
+		t.Errorf("sweeps\n got %v\nwant %v", got, want)
+	}
+	// A write is the run acting on what it found, and the fact goes with it.
+	d.Notice("write_file", json.RawMessage(`{"path":"internal/agent/repeat.go","content":"x"}`), "wrote")
+	if got := d.Sweeps(); len(got) != 0 {
+		t.Errorf("a write ends the sweep, got %v", got)
 	}
 }

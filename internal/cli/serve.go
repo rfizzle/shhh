@@ -186,6 +186,12 @@ type serveLoop struct {
 	// built per turn because what a reading is judged against is that turn's
 	// instruction, and a session has one per turn.
 	summarizer *agent.Summarizer
+	// repeats is the session's circling detector, held so each turn's reading
+	// can ask it what ground has been swept. It is the session's rather than
+	// the turn's for the reason the window is: a session that asked one
+	// question and went round in circles answering it is circling on the
+	// second turn too.
+	repeats *agent.RepeatDetector
 	// seen is what this session has been shown, which is what its writes are
 	// checked against. It is the session's and not the process's: a server
 	// holds several sessions over one checkout, and a file one of them read
@@ -501,6 +507,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	// wrapped with this same one, so a command a client has answered for and
 	// a search the chain ran are one history rather than two.
 	repeats := agent.NewRepeatDetector()
+	l.repeats = repeats
 	a.SetExecutor(agent.ToolExecutor(hooks.WrapExecutor(l.hookPos,
 		func(name string, args json.RawMessage) bool {
 			return gate(provider.ToolCall{Name: name, Arguments: string(args)})
@@ -784,7 +791,8 @@ func (l *serveLoop) Run(turn int64, prompt string) (string, error) {
 	gate := l.gate
 	l.headless.Summary = agent.NewSummaryRun(l.summarizer, agent.NewRecorder(0), prompt).
 		WithChanges(l.own.changed).
-		WithAlerts(gate.alerts)
+		WithAlerts(gate.alerts).
+		WithSweeps(l.repeats.Sweeps)
 
 	started := time.Now()
 	final, runErr := l.headless.Run(prompt)

@@ -362,6 +362,11 @@ func (m Model) summaryRequest() agent.SummaryRequest {
 		Activity: m.summaryActivity(),
 		Changes:  m.summaryChanges(),
 		Alerts:   m.summaryAlerts(),
+		// What the session has been over without writing anything, from the
+		// detector that is already wrapped around both of its tiers. The
+		// rows above are what it searched for; this is what all of it has
+		// come to, which is the part a reading otherwise has to infer.
+		Sweeps: m.repeats.Sweeps(),
 		// What the machinery has said to the model this turn, so a reading
 		// after a steer judges the work since it rather than revising the
 		// verdict that caused it.

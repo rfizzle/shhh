@@ -163,6 +163,8 @@ Also judge whether the work is still serving the instruction it started from:
 
 When the state is not "on_target", give one short reason of at most 100 characters. Leave the reason empty otherwise.
 
+Where the digest lists sweeps, the session has put the same kind of question to one place a dozen times or more and has written nothing since. That is evidence against "on_target": read it as "sufficient" where the session plainly already has what it needs and is still looking, and as "off_target" where the searching has stopped turning anything up.
+
 Where the digest lists interventions, the session was interrupted at those rounds and asked to check its work or take stock. Judge what it has done since the latest one on its own evidence rather than carrying the previous_summary's verdict forward, and say in your summary whether the session has come back to the instruction.
 
 Call the ` + SummaryToolName + ` tool exactly once. If you cannot call tools, reply with one line of the form "STATE: summary text", where STATE is on_target, sufficient, off_target, or unclear. Do not return anything else.`
@@ -293,6 +295,17 @@ type SummaryRequest struct {
 	Assistant string
 	// Changes is the session's changeset in words ("8 files · +96 −11").
 	Changes string
+	// Sweeps are the places the run has been over a dozen times with nothing
+	// to show for it, as "search · ./internal/agent · 14 calls, nothing
+	// written". They are the detector's own count rather than something the
+	// reading is left to infer from the rows: a search's row leads with its
+	// pattern, so a sweep arrives as a dozen genuinely different questions,
+	// and noticing that they were all put to one place is a judgement the
+	// reading should not have to make from the evidence.
+	//
+	// They cross no boundary the rest of the digest does not: a tool's name,
+	// the scope its own arguments named, and a count.
+	Sweeps []string
 	// Alerts are the checks still coming back broken.
 	Alerts []string
 	// Interventions are the interruptions the machinery has delivered this
@@ -530,6 +543,9 @@ func (r SummaryRequest) digest() map[string]any {
 	if len(r.Alerts) > 0 {
 		d["failing_checks"] = clampFields(r.Alerts)
 	}
+	if len(r.Sweeps) > 0 {
+		d["sweeps"] = clampFields(r.Sweeps)
+	}
 	if r.Previous != "" {
 		d["previous_summary"] = clampField(r.Previous)
 	}
@@ -661,6 +677,20 @@ func SummaryActivity(tool, target, outcome string) string {
 		parts = append(parts, outcome)
 	}
 	return strings.Join(parts, " · ")
+}
+
+// SummarySweep renders one sweep for the digest, in the grid the activity
+// rows use so the reading meets it as another fact about the work and not as
+// a sentence somebody wrote into the evidence: the tool, the place, and what
+// has come of it.
+//
+// "nothing written" is stated rather than implied because it is the half a
+// reading cannot get from anywhere else. Twelve searches of one directory are
+// twelve reasonable-looking rows; twelve searches of one directory with no
+// change to show for them are a run that has stopped getting anywhere.
+func SummarySweep(tool, scope string, n int) string {
+	return SummaryActivity(tool, scope,
+		fmt.Sprintf("%d %s, nothing written", n, plural(n, "call")))
 }
 
 // SummaryElapsed is how a reading's age is stated in words, for /status.

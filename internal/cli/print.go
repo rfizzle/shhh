@@ -1103,7 +1103,8 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// started acting is not left to infer it from rows that are all reads.
 	summaryRun := agent.NewSummaryRun(
 		newSummarizer(cfg, env, ledger, cfg.HeadlessSummaryEnabled()),
-		agent.NewRecorder(0), initialPrompt).WithChanges(own.changed)
+		agent.NewRecorder(0), initialPrompt).WithChanges(own.changed).
+		WithSweeps(repeats.Sweeps)
 	// Every verdict reaches the record and the stream through the observer,
 	// and is remembered on its way past: a denial still standing when the
 	// model stops is what says this run was refused rather than finished.

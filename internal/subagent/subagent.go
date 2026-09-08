@@ -337,6 +337,18 @@ type Env struct {
 	// Nil leaves the dispatcher exactly as this Env built it.
 	WrapAuto  func(Seam, agent.ToolExecutor) agent.ToolExecutor
 	WrapGated func(Seam, func(provider.ToolCall) string) func(provider.ToolCall) string
+	// Sweeps is where this child's circling detector is asked what ground it
+	// has been over without writing anything, for the digest its readings are
+	// made of. The surface owns the detector because the surface is what
+	// wrapped the child's two dispatchers with it, and a count taken anywhere
+	// else would be counting a different window. Nil where the surface wired
+	// no detector, which leaves the field out of the digest.
+	//
+	// A child is the surface this matters most on: it is the least
+	// supervised thing a session runs, its rounds are spent out of sight, and
+	// one that read for twenty-seven rounds and wrote nothing was called on
+	// target by all three of its readings.
+	Sweeps func() []string
 	// TreeCheck, when set, is the reading that tells the child's turn its
 	// workspace moved under it, as the surface configured it. Own is filled
 	// in by this package rather than there: what the child has written is
@@ -2521,7 +2533,8 @@ func (s *Supervisor) run(c *child) {
 		// instruction every reading is judged against. Nil where
 		// summary.subagents turned the reading off.
 		Summary: agent.NewSummaryRun(c.env.Summarizer, agent.NewRecorder(0), c.task).
-			WithChanges(c.changed),
+			WithChanges(c.changed).
+			WithSweeps(c.env.Sweeps),
 		// A child that recycled its conversation says so on its lane, which
 		// is the only place anyone is looking: a child whose answer came out
 		// of a summary of its own work is a different reading from one that

@@ -88,6 +88,39 @@ func TestOutcome_IsAClosedSet(t *testing.T) {
 	}
 }
 
+// The scope on its own, for a caller grouping calls by where they were
+// pointed rather than rendering them. Two patterns over one directory are one
+// scope, which is what makes a sweep of it countable.
+func TestSearchScope_IsThePlaceAndNotThePattern(t *testing.T) {
+	for _, tc := range []struct {
+		name, tool, args, want string
+		wantOK                 bool
+	}{
+		{"a search's path is its scope", "search",
+			`{"pattern":"needle","path":"internal/ui/chat"}`, "./internal/ui/chat", true},
+		{"a different pattern is the same scope", "search",
+			`{"pattern":"other","path":"internal/ui/chat"}`, "./internal/ui/chat", true},
+		{"an anchored path keeps its own form", "search",
+			`{"pattern":"needle","path":"./internal"}`, "./internal", true},
+		{"a search that named no place is put to the whole tree", "search",
+			`{"pattern":"needle"}`, ".", true},
+		{"and so is one that named the whole tree", "glob",
+			`{"pattern":"*.go","path":"."}`, ".", true},
+		{"a read is about its file, not a place it was put", "read_file",
+			`{"path":"internal/agent/repeat.go"}`, "", false},
+		{"and so is a write", "write_file",
+			`{"path":"internal/agent/repeat.go","content":"x"}`, "", false},
+		{"arguments that do not parse name nothing", "search", `not json`, "", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got, ok := SearchScope(tc.tool, tc.args)
+			if got != tc.want || ok != tc.wantOK {
+				t.Errorf("got (%q, %v), want (%q, %v)", got, ok, tc.want, tc.wantOK)
+			}
+		})
+	}
+}
+
 func TestFirstLine_MarksWhatItTook(t *testing.T) {
 	if got := FirstLine("  one line  "); got != "one line" {
 		t.Errorf("got %q", got)

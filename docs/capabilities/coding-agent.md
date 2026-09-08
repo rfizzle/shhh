@@ -212,6 +212,48 @@ result like any other, so the second identical one says so — which is why the
 prompt no longer asks the model to respect a decline. A rule the harness
 enforces is a rule the prompt can stop spending words on.
 
+## Many questions about one place are a sweep
+
+The identical call is the tail of that failure, not its body. A session going
+in a circle over one directory rarely sends the same search twice; it sends
+forty different patterns at the same package, each a perfectly reasonable
+question, and the arguments and the output differ every time. Nothing about
+any one of those calls is wrong, which is why nothing that looks at one call
+can catch it.
+
+So a second signal counts the shape rather than the call. **Many calls of one
+kind over one place, with nothing written between them, is a sweep**, and the
+session is told about it the way it is told about a repeat: a line at the head
+of the result, naming what has been swept, how much of the run's recent work
+that has been, and that none of it has changed anything. That last part is the
+half that makes it act. A session that believes each of its searches is a new
+question answers "you are repeating yourself" by searching again; it cannot
+answer "twelve searches of this directory and nothing written" the same way.
+
+**The pattern is deliberately no part of the shape, and the place is.** The
+pattern varying while the ground does not is the failure itself, so a signal
+keyed on the pattern would be the identical call again under another name. The
+tool is part of it, because searching a package and then listing its files are
+two different questions being asked, and one tool over one place with the
+pattern changing is the shape that was actually observed.
+
+**A write ends a sweep and starts the count again.** A run that has changed
+something is acting on what it found, whatever it read to get there, and the
+threshold sits above half the length of the failure it is for so that a long
+investigation with a change in the middle of it is never told it is circling
+on the strength of the reading it did before the change. The negative case is
+as much the point as the positive one: a narrowing sweep — a broad pattern, a
+narrower one, then the file they pointed at — is three or four calls, and a
+thorough survey of an unfamiliar package is six or seven. Neither is circling
+and neither is told it is.
+
+**The reading is given the sweep as a fact.** A search's row leads with its
+pattern, so twelve searches of one directory arrive at a reading as twelve
+legible and genuinely different questions — and working out that they were all
+put to one place and that none of them came to anything is exactly the
+judgement a reading was getting wrong. It is told instead, in the same grid as
+every other row, and a run that has swept without writing is not on target.
+
 ## Six questions for the language server
 
 Where a language server was detected, the agent asks it rather than guessing

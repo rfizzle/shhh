@@ -52,6 +52,11 @@ type SummaryRun struct {
 	// leaving alone to fix it.
 	alerts func() []string
 	plan   func() []string
+	// sweeps is where the run's repeat detector is asked what ground it has
+	// been over without writing anything. It is read on the same terms as
+	// the three above: set once before the run starts, called from the
+	// reading's goroutine, and guarding itself.
+	sweeps func() []string
 
 	mu sync.Mutex
 	// target is the instruction every reading is judged against: the task the
@@ -167,6 +172,25 @@ func (r *SummaryRun) WithPlan(plan func() []string) *SummaryRun {
 		return nil
 	}
 	r.plan = plan
+	return r
+}
+
+// WithSweeps names where the run's repeat detector is asked what it has been
+// over — the ground the run has searched a dozen times with nothing written
+// since — so a reading judging whether the work is getting anywhere is handed
+// that as a fact rather than left to spot it in a dozen rows that all look
+// like different questions.
+//
+// It is the detector's count rather than the runner's own, for the reason the
+// changeset is the surface's: the detector is what decides where a sweep
+// starts and what ends one, and a second count here would be a second
+// definition of a sweep. A surface with no detector calls nothing and its
+// digest carries no sweeps field. Safe on a nil runner.
+func (r *SummaryRun) WithSweeps(sweeps func() []string) *SummaryRun {
+	if r == nil {
+		return nil
+	}
+	r.sweeps = sweeps
 	return r
 }
 
@@ -422,6 +446,7 @@ func (r *SummaryRun) read(rounds int) {
 		Changes:       r.changed(),
 		Alerts:        supplied(r.alerts),
 		Plan:          supplied(r.plan),
+		Sweeps:        supplied(r.sweeps),
 		Interventions: interventions,
 		Round:         rounds,
 		Elapsed:       time.Since(r.started),
