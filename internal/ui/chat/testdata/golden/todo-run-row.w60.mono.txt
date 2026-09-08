@@ -129,7 +129,7 @@
 ␛[38;5;244m▸␛[m ␛[38;5;254m▸␛[m  ␛[38;5;254mtodo run cache-ttl · size L (was …␛[m ␛[38;5;244m─␛[m ␛[38;5;244mfan-out␛[m ␛[38;5;244m4m12s␛[m
     ␛[38;5;254m✓␛[m ␛[38;5;254mresearch␛[m␛[38;5;244m · ␛[m␛[38;5;254m▸␛[m ␛[38;5;254mimplement␛[m␛[38;5;244m · ␛[m␛[38;5;244m·␛[m ␛[38;5;244mverify␛[m␛[38;5;244m · ␛[m␛[38;5;244m·␛[m ␛[38;5;244mreview␛[m
     ␛[38;5;244m·␛[m ␛[38;5;244mcommit␛[m
-    ␛[38;5;244mimplement  ␛[m␛[38;5;254m▰▱▱▱▱ 1/3 landed␛[m␛[38;5;244m  store · tests · bench␛[m
+    ␛[38;5;244mimplement  ␛[m␛[38;5;254m▰␛[m␛[38;5;244m▱▱▱▱␛[m ␛[38;5;254m1/3 landed␛[m␛[38;5;244m  store · tests · bench␛[m
 
 
 · paused on a question research could not settle

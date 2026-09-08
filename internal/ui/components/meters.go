@@ -173,13 +173,26 @@ func (m Meter) Style() lipgloss.Style {
 }
 
 // View renders the meter: leading label, bar, and the value stated beside it.
+// The fill and the number are the meter's own colour and turn together; the
+// track between them does not, because a track is not part of the value.
 func (m Meter) View() string {
-	if m.Tone == MeterProgress {
-		return join(sty.Dim.Render(m.Label), m.Bar(), m.Style().Render(m.text()))
+	return join(m.label(), m.Bar(), m.Style().Render(m.text()))
+}
+
+// label is the leading field — dim for step progress, and in the meter's own
+// colour otherwise, where the label names the value the bar is about ("ctx").
+// A meter without one renders nothing at all rather than a styled empty
+// string: an empty Render is a pair of escapes, which join keeps and spaces,
+// and the row would then sit one column right of the row above it
+// (docs/interface/surfaces.md#the-inspector-rail).
+func (m Meter) label() string {
+	if m.Label == "" {
+		return ""
 	}
-	// One styling pass, so nothing but spaces separates the bar from its
-	// number: the two are one field, and they turn colour together.
-	return m.Style().Render(join(m.Label, meterCells(m.pct(), m.cells()), m.text()))
+	if m.Tone == MeterProgress {
+		return sty.Dim.Render(m.Label)
+	}
+	return m.Style().Render(m.Label)
 }
 
 // Bar is the styled bar alone, for a host that states the meter's value
@@ -189,15 +202,18 @@ func (m Meter) View() string {
 func (m Meter) Bar() string {
 	cells, pct := m.cells(), m.pct()
 	filled := meterFill(pct, cells)
+	// The track is chrome under every tone: an unfilled cell is the shape the
+	// fill is measured against, not a quantity of its own, so it is the same
+	// neutral grey whatever the fill is doing — never bold, and never the
+	// fill's own colour, which would draw a full bar at every percentage.
+	track := meterRun(sty.Dim, "▱", cells-filled)
 	if m.Tone != MeterProgress {
-		return m.Style().Render(meterCells(pct, cells))
+		return meterRun(m.Style(), "▰", filled) + track
 	}
-	// The only two-colour meter: the run in flight is motion, and motion is
+	// The only two-colour fill: the run in flight is motion, and motion is
 	// never the same colour as what is already done.
 	spin := min(max(m.Running, 0), filled)
-	return sty.Add.Render(strings.Repeat("▰", filled-spin)) +
-		sty.SpinText.Render(strings.Repeat("▰", spin)) +
-		sty.Dim.Render(strings.Repeat("▱", cells-filled))
+	return meterRun(sty.Add, "▰", filled-spin) + meterRun(sty.SpinText, "▰", spin) + track
 }
 
 func (m Meter) cells() int {
@@ -229,12 +245,15 @@ func join(fields ...string) string {
 	return strings.Join(out, " ")
 }
 
-// meterCells renders the ▰/▱ run for a percentage, unstyled. The bar is never
-// the only carrier of the value — every caller states the number beside it.
-func meterCells(pct, cells int) string {
-	pct = min(max(pct, 0), 100)
-	filled := meterFill(pct, cells)
-	return strings.Repeat("▰", filled) + strings.Repeat("▱", cells-filled)
+// meterRun is n cells of one glyph in one style, and nothing at all for a run
+// of none — the same reason label has: styling an empty string writes a pair
+// of escapes, and a bar concatenated from styled runs would carry one for
+// every run it does not have.
+func meterRun(style lipgloss.Style, glyph string, n int) string {
+	if n <= 0 {
+		return ""
+	}
+	return style.Render(strings.Repeat(glyph, n))
 }
 
 // meterFill is the cell count for a percentage. Cells are truncated rather

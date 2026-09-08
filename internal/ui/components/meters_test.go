@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/charmbracelet/colorprofile"
 )
 
 func TestMeterCells(t *testing.T) {
@@ -20,12 +22,12 @@ func TestMeterCells(t *testing.T) {
 		{-5, 8, 0}, {150, 8, 8},
 	}
 	for _, c := range cases {
-		bar := meterCells(c.pct, c.cells)
+		bar := stripANSI(Meter{Pct: c.pct, Cells: c.cells}.Bar())
 		if got := strings.Count(bar, "▰"); got != c.filled {
-			t.Fatalf("meterCells(%d, %d) filled %d cells, want %d (%q)", c.pct, c.cells, got, c.filled, bar)
+			t.Fatalf("a bar of %d cells at %d%% filled %d, want %d (%q)", c.cells, c.pct, got, c.filled, bar)
 		}
 		if got := len([]rune(bar)); got != c.cells {
-			t.Fatalf("meterCells(%d, %d) is %d cells wide", c.pct, c.cells, got)
+			t.Fatalf("a bar of %d cells at %d%% is %d cells wide", c.cells, c.pct, got)
 		}
 	}
 }
@@ -49,6 +51,60 @@ func TestMeterStatesItsValueBesideTheBar(t *testing.T) {
 	// Bar is the bar alone, for a row that states the value at its own edge.
 	if bar := stripANSI(Meter{Pct: 50, Cells: 8}.Bar()); bar != "▰▰▰▰▱▱▱▱" {
 		t.Fatalf("Bar renders the run alone, got %q", bar)
+	}
+}
+
+func TestMeterTrackIsChrome(t *testing.T) {
+	// A track that is a different colour from its fill is only a fact under a
+	// profile that has colours to give.
+	was := Profile()
+	SetProfile(colorprofile.ANSI256)
+	t.Cleanup(func() { SetProfile(was) })
+	// The unfilled run is the shape the fill is measured against rather than a
+	// quantity of its own, so it is the same neutral grey under every tone —
+	// never bold, never in the fill's own colour.
+	for _, tone := range []MeterTone{
+		MeterPressure, MeterProgress, MeterAgent, MeterCountdown, MeterCategory, MeterUnasked,
+	} {
+		bar := Meter{Pct: 95, Cells: 8, Tone: tone, Running: 2}.Bar()
+		if want := sty.Dim.Render("▱"); !strings.HasSuffix(bar, want) {
+			t.Fatalf("tone %d draws its track %q, want it to end %q", tone, bar, want)
+		}
+	}
+	// The pressure meter is the one that carried its fill's colour all the way
+	// to the end of the run, in bold del once compaction was due.
+	if bar := (Meter{Pct: 95, Cells: 22, Tone: MeterPressure}).Bar(); strings.Contains(bar, sty.Err.Bold(true).Render("▱")) {
+		t.Fatalf("an alerting meter still paints its track in del: %q", bar)
+	}
+	// View draws the same bar, so the vitals rail's track is chrome too.
+	if view := (Meter{Pct: 95, Cells: 8, Label: "ctx", Tone: MeterPressure}).View(); !strings.Contains(view, sty.Dim.Render("▱")) {
+		t.Fatalf("the stated meter's track is not dim: %q", view)
+	}
+	// A full bar has no track at all — not a styled run of nothing.
+	if bar := (Meter{Pct: 100, Cells: 8}).Bar(); strings.Contains(bar, sty.Dim.Render("")) {
+		t.Fatalf("a full bar writes escapes for a track it has not got: %q", bar)
+	}
+}
+
+func TestMeterWithNoLabelStartsOnItsBar(t *testing.T) {
+	// The space is bought by escapes, so it is only there under a profile that
+	// writes them.
+	was := Profile()
+	SetProfile(colorprofile.ANSI256)
+	t.Cleanup(func() { SetProfile(was) })
+	// A meter with no leading field does not buy a space for it: styling an
+	// empty label writes a pair of escapes, which is not the empty string the
+	// row's join drops. THIS TURN's bar sits on the rail's own indent, the
+	// column CONTEXT's bar starts on, because of this.
+	for _, tone := range []MeterTone{MeterProgress, MeterPressure, MeterAgent, MeterCountdown} {
+		view := stripANSI(Meter{Pct: 50, Cells: 8, Tone: tone}.View())
+		if !strings.HasPrefix(view, "▰") {
+			t.Fatalf("tone %d with no label renders %q, want it to open on the bar", tone, view)
+		}
+	}
+	// A label that is there still leads, one space from the bar.
+	if view := stripANSI(Meter{Pct: 50, Cells: 8, Tone: MeterProgress, Label: "ctx"}.View()); !strings.HasPrefix(view, "ctx ▰") {
+		t.Fatalf("a labelled meter leads with its label: %q", view)
 	}
 }
 

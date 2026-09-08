@@ -1,0 +1,33 @@
+# The two-pane cockpit with a turn still running, so the inspector rail is on
+# screen with its meters live (docs/interface/surfaces.md#the-inspector-rail).
+# What the capture is for: every bar's unfilled run is the same neutral grey
+# whatever its fill is doing, and every block's bar starts on the rail's own
+# indent rather than one column right of it.
+#
+# The pane is 144 columns, which is past the rung where the content splits and
+# the rail takes its columns off the right.
+#
+# Spaces rather than tabs in the fixture: a tab is re-expanded by the terminal
+# against the pane's own columns, not the row's, and the capture would read as
+# a column that drifted.
+setup printf 'package agent\n\nfunc loop() {\n    for round := 0; round < limit; round++ {\n        step()\n    }\n}\n' > loop.go
+snap 01-start "Some things worth doing first"
+keys "how is the round limit counted" Enter
+# The command is the one thing in the turn that asks, and a card holds the
+# pane while it does — the rail is deliberately not on screen here.
+snap 02-card "Run this command?"
+sleep 1
+keys y
+# Approved, the command runs for several seconds and the rail comes back with
+# the turn still open: CONTEXT's bar, and THIS TURN counting what the turn has
+# spent so far.
+snap 03-mid-turn "CONTEXT"
+snap 04-answered "The limit is counted in one place"
+# The answer arrives a word at a time and the turn closes after it, so the
+# frame offering to send again is what says the turn is over — a cancel before
+# that is spent on the turn rather than on the session.
+snap 05-idle "enter send · shift+enter newline"
+keys C-c
+snap 06-quit-armed "press again to quit"
+keys C-c
+snap 07-exit "that is everything the screen was holding"

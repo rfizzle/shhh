@@ -16,7 +16,7 @@ backlog · sprint               5 items · [?] keys · [q] back
 
 Put the backlog, the run and the sprint on screen, so
 watching a night's work is a glance rather than a scroll.
- ▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 1 of 4 done  ·  9 turns · $1.42
+▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 1 of 4 done  ·  9 turns · $1.42
 next · prose-renderer
 ────────────────────────────────────────────────────────────
 ❯ ✓ keys-are-declared-once  HM  done  Every key is declared…
@@ -42,7 +42,7 @@ backlog · sprint               5 items · [?] keys · [q] back
 
 Put the backlog, the run and the sprint on screen, so
 watching a night's work is a glance rather than a scroll.
- ▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 1 of 4 done  ·  9 turns · $1.42
+▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 1 of 4 done  ·  9 turns · $1.42
 ⚠ sprint-file blocked — waiting on a decision about where
 the file lives
 ────────────────────────────────────────────────────────────
@@ -148,7 +148,7 @@ Reads as a minor release.
 
 ␛[38;5;244mPut the backlog, the run and the sprint on screen, so␛[m
 ␛[38;5;244mwatching a night's work is a glance rather than a scroll.␛[m
-␛[38;5;244m␛[m ␛[38;5;254m▰▰▰▰▰␛[m␛[38;5;254m␛[m␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;254m1 of 4 done␛[m␛[38;5;244m  ·  9 turns · $1.42␛[m
+␛[38;5;254m▰▰▰▰▰␛[m␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;254m1 of 4 done␛[m␛[38;5;244m  ·  9 turns · $1.42␛[m
 ␛[38;5;244mnext · ␛[m␛[38;5;254mprose-renderer␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 ␛[38;5;254m❯ ␛[m␛[38;5;254m✓␛[m ␛[1;38;5;254mkeys-are-declared-once␛[m  ␛[38;5;244mHM␛[m␛[38;5;244m  done  Every key is declared…␛[m
@@ -174,7 +174,7 @@ Reads as a minor release.
 
 ␛[38;5;244mPut the backlog, the run and the sprint on screen, so␛[m
 ␛[38;5;244mwatching a night's work is a glance rather than a scroll.␛[m
-␛[38;5;244m␛[m ␛[38;5;254m▰▰▰▰▰␛[m␛[38;5;254m␛[m␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;254m1 of 4 done␛[m␛[38;5;244m  ·  9 turns · $1.42␛[m
+␛[38;5;254m▰▰▰▰▰␛[m␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;254m1 of 4 done␛[m␛[38;5;244m  ·  9 turns · $1.42␛[m
 ␛[38;5;254m⚠ sprint-file blocked — waiting on a decision about where␛[m
 ␛[38;5;254mthe file lives␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m

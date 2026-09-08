@@ -112,7 +112,7 @@
 · a large run in three lanes, one landed
 ␛[38;5;241m▸␛[m ␛[38;5;205m▸␛[m  ␛[97mtodo run cache-ttl · size L (was M)␛[m ␛[38;5;241m────────────────────␛[m ␛[38;5;241mfan-out␛[m ␛[38;5;241m4m12s␛[m
     ␛[92m✓␛[m ␛[38;5;252mresearch␛[m␛[38;5;241m · ␛[m␛[38;5;205m▸␛[m ␛[97mimplement␛[m␛[38;5;241m · ␛[m␛[38;5;241m·␛[m ␛[38;5;241mverify␛[m␛[38;5;241m · ␛[m␛[38;5;241m·␛[m ␛[38;5;241mreview␛[m␛[38;5;241m · ␛[m␛[38;5;241m·␛[m ␛[38;5;241mcommit␛[m
-    ␛[38;5;241mimplement  ␛[m␛[94m▰▱▱▱▱ 1/3 landed␛[m␛[38;5;241m  store · tests · bench␛[m
+    ␛[38;5;241mimplement  ␛[m␛[94m▰␛[m␛[38;5;241m▱▱▱▱␛[m ␛[94m1/3 landed␛[m␛[38;5;241m  store · tests · bench␛[m
 
 
 · paused on a question research could not settle
