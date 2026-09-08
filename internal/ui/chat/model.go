@@ -169,6 +169,10 @@ const (
 	// it. A takeover like the context surface: full width, the rail hidden,
 	// esc returns, and it changes nothing.
 	stateSources
+	// stateConfig: the settings screen is up — `shhh config`'s own staged
+	// edit surface, reached from inside a session (config.go). It is the one
+	// takeover here that can write a file, and it writes it on `[w]` alone.
+	stateConfig
 )
 
 const inputHeight = 3
@@ -1074,6 +1078,14 @@ type Model struct {
 	// the session had read when the reader asked.
 	sourceLedger *web.Ledger
 	sources      *components.SourcesScreen
+	// The settings surface: what a session may open the config screen with,
+	// and the staged pass over the file while one is up. Both come from the
+	// CLI — the chat package owns no config semantics, the way it owns none
+	// for the writer beside it (defaults.go) — and a session without an
+	// opener says /config cannot be reached rather than drawing a screen
+	// that cannot write.
+	openConfig   ConfigOpener
+	configScreen *ConfigSession
 	// backlog is the backlog screen while it is up. It is kept rather than
 	// rebuilt per frame because the pointer, the filters and the tab the
 	// reader is on are what the surface is: a screen re-derived from the

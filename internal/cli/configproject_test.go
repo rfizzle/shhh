@@ -258,6 +258,55 @@ func TestConfigScreen_TheWriteCarriesTheOverriddenNote(t *testing.T) {
 	}
 }
 
+// The same host inside a session (`/config`): the screen is the one this
+// package builds, it says it is in a session, and what the write leaves is a
+// row for the transcript rather than a line on the way out to the shell.
+func TestConfigSession_HostsTheSameScreenAndReportsTheWrite(t *testing.T) {
+	path := pointConfigAt(t, "")
+	session, err := configSessionOpener()()
+	must(t, err)
+	if session.Screen == nil || !session.Screen.InSession {
+		t.Fatal("the session host did not hand over the screen as a session's")
+	}
+	if len(session.Screen.Rows) == 0 {
+		t.Fatal("the screen opened with no settings on it")
+	}
+
+	// Staging says nothing and reaches nothing.
+	if note := session.Answer(false, components.ConfigResult{
+		Change: &components.ConfigChange{Key: "behavior.default_mode", Value: "manual"},
+	}); note != "" {
+		t.Errorf("staging an edit left a row: %q", note)
+	}
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Fatal("a staged edit reached the file")
+	}
+
+	note := session.Answer(true, components.ConfigResult{Write: true})
+	if !strings.Contains(note, "Wrote") {
+		t.Fatalf("the write left no row: %q", note)
+	}
+	got, err := os.ReadFile(path)
+	must(t, err)
+	if !strings.Contains(string(got), `default_mode = "manual"`) {
+		t.Fatalf("the file does not hold the staged edit:\n%s", got)
+	}
+}
+
+// Leaving the screen without writing leaves nothing to say: a transcript row
+// saying a screen closed is a row about nothing.
+func TestConfigSession_LeavingWritesNothingAndSaysNothing(t *testing.T) {
+	path := pointConfigAt(t, "")
+	session, err := configSessionOpener()()
+	must(t, err)
+	if note := session.Answer(true, components.ConfigResult{Canceled: true}); note != "" {
+		t.Errorf("closing without a write left a row: %q", note)
+	}
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Fatal("leaving the screen wrote the file")
+	}
+}
+
 // The config screen reads the same two files: a row the checkout decided
 // says `project` rather than sending the reader to their own file for it.
 func TestConfigScreen_ARowTheCheckoutSetSaysProject(t *testing.T) {

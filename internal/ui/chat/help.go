@@ -153,6 +153,11 @@ withdraws it and the next session starts without them`,
 terminal  what this terminal answered when shhh asked what
           it can do: inline images, desktop notifications,
           focus events, cell size`,
+	"/config": `Every setting, staged: what each one is set to, where that value
+came from, and what [enter] offers instead of typing it. Nothing
+reaches your config file until [w], and the way out asks before
+discarding what is staged. The running session keeps the settings
+it started on`,
 	"/add-dir": `The working scope: which directories this session may write
 to. Bare lists it; <path> adds one (contained commands can
 write there, and edits there stop asking about leaving the

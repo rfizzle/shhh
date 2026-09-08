@@ -201,6 +201,12 @@ func buildSlashCommands() []slashCommand {
 				}},
 				{after: []string{"rail"}, dynamic: railArgs},
 			}},
+		// The whole settings file, where /ui is the handful of its keys a
+		// session flips often enough to have a word for. Not idleOnly: it
+		// stages edits to your own config file and writes none of them until
+		// [w] (config.go).
+		{name: "/config", desc: "Every setting, where its value came from, and what changing it costs",
+			enabled: func(m *Model) bool { return m.openConfig != nil }},
 		{name: "/add-dir", args: "[<path>|drop <path>]", desc: "The directories this session may work in",
 			enabled: func(m *Model) bool { return m.scope != nil },
 			argSpecs: []argSpec{

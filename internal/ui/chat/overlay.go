@@ -386,6 +386,16 @@ func buildOverlays() map[state]*mode {
 			hint: (Model).renderTodoScreenHint,
 			keys: (Model).updateTodoScreen,
 		},
+		// The one pane overlay that can write a file. It writes on `[w]`
+		// alone and asks before it walks away from anything staged, which is
+		// the screen's own rule rather than the register's (config.go).
+		stateConfig: {
+			place:   placePane,
+			borrows: true,
+			lines:   (Model).configScreenLines,
+			hint:    (Model).renderConfigHint,
+			answer:  (*Model).answerConfig,
+		},
 		statePersona: {
 			place:   placePane,
 			borrows: true,

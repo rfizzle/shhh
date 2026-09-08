@@ -69,6 +69,15 @@ func screenHeaderKeys() string {
 		" · " + keys.Bracket(keys.Screen.Quit) + " " + keys.Words(keys.Screen.Quit)
 }
 
+// screenBackKeys is the same pair for a screen a session opened rather than a
+// command line. One word differs, and it is the one word that is not true of
+// both: what is underneath is a prompt to go back to and not a shell to quit
+// to (docs/interface/surfaces.md#the-supporting-screens).
+func screenBackKeys() string {
+	return keys.Bracket(keys.Screen.List) + " " + keys.Words(keys.Screen.List) +
+		" · " + words(keys.Screen.Quit, "back")
+}
+
 // hideKeysOffer is the same key again, once the list it opened is showing.
 func hideKeysOffer() KeyOffer {
 	return keyOfferAs(keys.Screen.List, "hide the keys")

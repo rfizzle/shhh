@@ -833,6 +833,21 @@ go back a step, stop the drafting turn, or drop the draft
 header here with no register key to put in front of the way out, so esc is
 the whole of its right-hand run.
 
+One of them is reached both ways. The settings screen is `shhh config` from a
+shell and `/config` from inside a session, and it is the same screen either
+way: the same rows in the same order, the same account of where each value
+came from, the same staging, and the same write key. In a session it takes the
+transcript the way the context reading does, so the turn underneath goes on
+running, and what a write leaves behind is a row in that transcript saying
+what reached the file — and that the running session keeps the settings it
+started on, because a screen that changed the file is not a screen that
+changed the conversation. Two words differ and they are the two that say where
+the reader is: what the screen calls itself, and the one word its header ends
+with. The four settings that made this worth having are the ones a person
+reaches for in the middle of the work rather than before it — how often the
+harness checks in, what its steering says, which model summarises, and which
+profile the backlog is read under.
+
 Neither row repeats the other. The header carries the register's key and the
 letter; the foot carries what the screen can do and, last, the way out. A
 surface that put `[?]` and the letter on both rows spent its bottom row saying

@@ -123,6 +123,13 @@ type ConfigScreen struct {
 	// Notice is the line a key left behind — what `[w]` wrote, what `[r]` reset.
 	// The host clears it on the next keystroke.
 	Notice string
+	// InSession is a host inside a chat rather than at a command line
+	// (`/config`). The screen is the same screen; what differs is the two
+	// fields that say where the reader is — what it is called, and the one
+	// word its header ends with, which is `back` where a session is
+	// underneath it and `quit` where a shell is
+	// (docs/interface/surfaces.md#the-supporting-screens).
+	InSession bool
 
 	menu    Select
 	shown   []int
@@ -458,7 +465,11 @@ func (c *ConfigScreen) pickerBudget(pinned int) int {
 // change that has not reached the file yet is the one thing on this row a
 // reader cannot afford to lose sight of.
 func (c *ConfigScreen) header() ScreenHeader {
-	h := ScreenHeader{Left: []RailSegment{screenTitle("shhh config")}, Keys: screenHeaderKeys()}
+	title, headerKeys := "shhh config", screenHeaderKeys()
+	if c.InSession {
+		title, headerKeys = "/config", screenBackKeys()
+	}
+	h := ScreenHeader{Left: []RailSegment{screenTitle(title)}, Keys: headerKeys}
 	if c.Path != "" {
 		h.Left = append(h.Left, screenField(c.Path))
 	}

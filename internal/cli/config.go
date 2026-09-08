@@ -17,6 +17,7 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/subagent"
+	"github.com/rfizzle/shhh/internal/ui/chat"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/spf13/cobra"
 )
@@ -323,6 +324,45 @@ func (m *configModel) answer(done bool, result components.ConfigResult) tea.Cmd 
 		}
 	}
 	return tea.Quit
+}
+
+// configSessionOpener is `/config` inside a session
+// (internal/ui/chat/config.go): the same host this file gives `shhh config`,
+// handed to the chat as a screen and an answer.
+//
+// The file is read again on every opening rather than taken from the config
+// the session started with. The screen's whole right-hand column is where a
+// value came from, and a copy loaded an hour ago would be saying it about a
+// file that `shhh config set` in another terminal has edited since.
+func configSessionOpener() chat.ConfigOpener {
+	return func() (chat.ConfigSession, error) {
+		cfg, proj, err := loadLayeredConfig(workingDir())
+		if err != nil {
+			return chat.ConfigSession{}, err
+		}
+		m := newConfigModel(cfg, proj)
+		m.screen.InSession = true
+		return chat.ConfigSession{Screen: &m.screen, Answer: m.answered}, nil
+	}
+}
+
+// answered is answer for the host that is still there after the screen
+// closes: the same staging and the same write, reported as the row a session
+// puts in its transcript rather than as tea.Quit. Nothing to report — a
+// screen that closed having written nothing — is the empty string.
+func (m *configModel) answered(done bool, result components.ConfigResult) string {
+	m.answer(done, result)
+	switch {
+	case m.err != nil:
+		return "Error: could not write " + shortPath(config.WritePath()) + ": " + m.err.Error()
+	case m.saved:
+		note := "Wrote " + shortPath(config.WritePath()) + "."
+		if m.note != "" {
+			note += "\n" + m.note
+		}
+		return note
+	}
+	return ""
 }
 
 // apply stages one edit and rebuilds the rows, so the screen redraws from the

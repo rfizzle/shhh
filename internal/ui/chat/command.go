@@ -253,6 +253,14 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 		// up mid-turn is exactly when the question gets asked.
 		return m.openContext()
 
+	case text == "/config":
+		// The settings screen, full screen. Not idleOnly: the settings a
+		// person wants to change mid-session are the ones the running turn
+		// just made them think about, and nothing the screen stages reaches
+		// the file until [w] — which writes the user's own config file and
+		// not the tree the turn is working in (config.go).
+		return m.openConfigScreen()
+
 	case name == "/review":
 		// Review mode over a turn's changeset; bare takes the
 		// most recent turn that changed anything.

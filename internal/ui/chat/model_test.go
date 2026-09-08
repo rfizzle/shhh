@@ -34,7 +34,7 @@ import (
 // pointer that is nil while the mode is not up (pressure, review, the
 // overlays). This is the same guard overlay_test.go puts on the placement
 // table: a table nobody reads is a table that drifts.
-const modelFields = 248
+const modelFields = 250
 
 func TestModelHasAStatedBound(t *testing.T) {
 	got := reflect.TypeOf(Model{}).NumField()
