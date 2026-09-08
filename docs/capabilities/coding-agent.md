@@ -490,6 +490,66 @@ the same code as the interruptions that were delivered, since a run whose
 reader is slower than its rounds otherwise reads exactly like a run that never
 drifted.
 
+## A steer can be taken back
+
+The judge is a cheap model reading a digest, and it is wrong often enough that
+the steer above is written to ask rather than to accuse. Until the reader could
+answer it, that was the whole of the defence: the message was already in the
+conversation, the turn was already re-orienting around it, and the next reading
+a couple of intervals later would say the same thing again.
+
+So the notice a steer leaves carries a key, and the whole of what it costs to
+disagree with the machinery is one press. The message leaves the conversation
+— it was appended alone at a round boundary, with nothing paired to it, so
+what stood either side of it was already adjacent — and the row says it was
+withdrawn while keeping the reason the check gave, because the reader
+disagreeing with a verdict is not the same as it never having been reached.
+
+**A withdrawal silences the readings for the rest of the turn, not for a
+cooldown.** It is the reader saying the check was wrong about this turn rather
+than that it spoke too soon; a cooldown would deliver the same false positive
+against the same instruction a few rounds later, and the reader would spend the
+same key on it again. The readings themselves go on landing — the rail, the
+record and the next digest all still get them, the way they do for an
+interruption withheld as stale — and the next digest is no longer told about an
+interruption that is not in the conversation to be answered. The clock
+underneath is untouched: it is not a verdict, it is the floor beneath one, and
+it is not what was withdrawn. The next instruction starts a turn nobody has
+read yet, and the machinery speaks again.
+
+**Only a steer offers it, and only while its turn runs.** The interval's own
+check-in alleges nothing, and a row offering to switch off the last thing
+watching an unattended turn is an offer nobody should be given; the early
+check-in a sufficiency reading buys is that same message arriving sooner. And a
+finished turn has already spent the round the withdrawal would have saved and
+has already answered the steer, so taking the question out would leave the
+answer stranded in the conversation with nothing above it — which is editing
+history, not correcting a check.
+
+## An approved plan is what a reading judges against
+
+A turn's readings are judged against the instruction it started from, anchored
+at its start so a run that has drifted cannot drag its own yardstick along. The
+reader is the exception to that anchor, because the rule is about the run and
+not about the person it works for: what they type into a running turn joins
+what the turn is serving.
+
+Approving a plan is that same act. The person read the steps and said these are
+what they asked for — once, instead of typing them — so the steps join the
+target the execution turn is read against. Without it the expensive check reads
+a ten-step turn against the one line that asked for a plan, while the steps
+themselves reach the digest as a checklist nobody is judged on, and the two
+halves of the same question are answered from different evidence.
+
+The plan joins as one instruction rather than one per step. The digest shares
+one budget between the things the person has asked for, so that the newest is
+never the part a bound drops; ten steps added a step at a time would leave the
+ask that earned the plan a tenth of the room and a steer typed afterwards
+another tenth, which is that bound dropping exactly what it exists to carry. A
+planning response that never adopted the step shape moves nothing: the prose is
+already in the conversation as the model wrote it, and quoting it back as the
+instruction would put the model's own words where the person's belong.
+
 ## The interval is the last thing watching
 
 The check-in fires on a clock, and how long that clock should be depends

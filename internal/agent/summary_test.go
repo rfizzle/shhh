@@ -266,6 +266,31 @@ func TestSummaryRequest_DigestKeepsEveryPartOfTheInstruction(t *testing.T) {
 	}
 }
 
+// An approved plan is one of the things the person asked for
+// (ui/chat/planrun.go), so the target a long execution turn is read against
+// is three parts: the ask that earned the plan, the plan, and whatever was
+// typed into the turn since. The budget is shared between them, so the
+// newest — the steer — is never the one the bound drops.
+func TestSummaryRequest_DigestKeepsThePlanAndTheSteerBesideTheAsk(t *testing.T) {
+	req := testSummaryRequest()
+	req.Target = ExtendTarget(
+		ExtendTarget(strings.Repeat("build the CSV exporter. ", 20),
+			"The approved plan: "+strings.Repeat("1. read the schema; ", 20)),
+		"actually, skip the docs")
+	target, _ := req.digest()["instruction"].(string)
+	for _, want := range []string{"build the CSV exporter", "The approved plan", "actually, skip the docs"} {
+		if !strings.Contains(target, want) {
+			t.Fatalf("the digest dropped %q from the instruction: %q", want, target)
+		}
+	}
+	if strings.Contains(target, "\n") {
+		t.Fatalf("a digest field keeps to one line, got %q", target)
+	}
+	if n := len([]rune(target)); n > maxSummaryField+2*len(" · ") {
+		t.Fatalf("instruction = %d runes, want about %d", n, maxSummaryField)
+	}
+}
+
 func TestSummaryRequest_DigestKeepsTheMostRecentActivity(t *testing.T) {
 	req := testSummaryRequest()
 	req.Activity = nil

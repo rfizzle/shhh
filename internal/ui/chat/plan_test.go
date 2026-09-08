@@ -11,6 +11,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
+	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -577,5 +578,56 @@ func TestPlanCard_AnsweringTheCardDropsTheArmedPlan(t *testing.T) {
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	if got := updated.(Model).planDoc; got.Structured() || got.Text != "" {
 		t.Errorf("answering the card should drop the armed plan, got %+v", got)
+	}
+}
+
+// An approved plan is the person's own instruction, so it joins the target
+// every reading of the execution turn is judged against. Without it the
+// readings judge the one line that asked for a plan, while the steps the
+// person actually approved reach the digest as a checklist nobody is judged
+// on (docs/capabilities/coding-agent.md#an-approved-plan-is-what-a-reading-judges-against).
+func TestPlan_ApprovalExtendsTheSummaryTarget(t *testing.T) {
+	m := planModel(t, mockStream)
+	updated, _ := m.Update(doneMsg{})
+	m = updated.(Model)
+	m.summaryTarget = "make the exporter work"
+	gen := m.summary.gen
+
+	m = handover(t, m)
+	updated, _ = m.Update(tea.KeyPressMsg{Code: '1', Text: "1"})
+	m = updated.(Model)
+
+	if !strings.Contains(m.summaryTarget, "make the exporter work") {
+		t.Errorf("the ask that earned the plan should still anchor the turn: %q", m.summaryTarget)
+	}
+	for _, step := range []string{"edit a.go", "run tests"} {
+		if !strings.Contains(m.summaryTarget, step) {
+			t.Errorf("the target should carry step %q: %q", step, m.summaryTarget)
+		}
+	}
+	// One part, not one per step: the digest shares its budget between the
+	// things the person asked for, and ten of them would leave the ask a
+	// tenth of the room (planrun.go).
+	if got := strings.Count(m.summaryTarget, "\n\n"); got != 1 {
+		t.Errorf("the plan should join the target as one part, got %d joins in %q", got, m.summaryTarget)
+	}
+	// And a reading judged against the shorter instruction is retired, the
+	// way a typed steer retires one (summary.go).
+	if m.summary.gen == gen {
+		t.Error("approving a plan should retire the readings taken before it")
+	}
+	// The one line quoted on a rail or a row is every part of it, in order.
+	if line := agent.TargetLine(m.summaryTarget); !strings.Contains(line, "make the exporter work") ||
+		!strings.Contains(line, "The approved plan") {
+		t.Errorf("the target line should name both, got %q", line)
+	}
+}
+
+// Prose the card fell back to is not a checklist, and quoting a whole
+// planning response back as the instruction would put the model's own words
+// where the person's belong.
+func TestPlanTarget_UnstructuredPlanMovesNothing(t *testing.T) {
+	if got := planTarget(plan.Plan{Text: "I would start by reading the exporter."}); got != "" {
+		t.Errorf("an unstructured plan should extend nothing, got %q", got)
 	}
 }

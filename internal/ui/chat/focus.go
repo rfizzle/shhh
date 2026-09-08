@@ -36,10 +36,17 @@ func expandable(e entry) bool {
 // a provider failure's own keys and a round-limit pause's — and an assistant
 // message, which expands nothing but is what [y] copies as markdown source
 // (docs/interface/surfaces.md#reading-mode).
+//
+// An interruption's notice is the one system row on the list. It is a
+// sentence with nothing under it, which is why a notice is otherwise not a
+// stop; this one offers [u] (intervene.go), and a cursor that could not
+// reach it would be the offer nobody can take. It stays selectable once the
+// offer is spent, so the row does not go out from under the cursor standing
+// on it.
 func selectable(e entry) bool {
 	return expandable(e) || e.kind == entryTurnClose || e.kind == entryFailure ||
 		e.kind == entryStreamDrop || e.kind == entryRoundPause ||
-		e.kind == entryAssistant
+		e.kind == entryAssistant || e.intervened != nil
 }
 
 // selectableRow is selectable plus the one thing that depends on the session
@@ -295,6 +302,11 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// A round-limit pause offers all four on its own row; it is
 		// asked first because it stands where the close block would be.
 		if next, cmd, claimed := m.roundPauseKey(pressed); claimed {
+			return next, cmd
+		}
+		// And `[u]` on the notice an automatic steer left, which takes the
+		// message back out of the conversation (intervene.go).
+		if next, cmd, claimed := m.withdrawSteer(pressed); claimed {
 			return next, cmd
 		}
 		// The offers on a turn's changeset row, which are [v]

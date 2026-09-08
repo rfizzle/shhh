@@ -430,14 +430,33 @@ that were delivered.
 **A person steering a running turn moves the target; nothing else does.**
 `agent.ExtendTarget` adds their words to the instruction the readings are
 judged against and `agent.TargetLine` is how a surface quotes the result on
-one line — the inverse of the same join, which is why they sit together. Both
-steering sites owe it: `injectSteering` in the chat model, the `Steer` branch
-of `Headless.Run`, which is where a child's own steering arrives —
+one line — the inverse of the same join, which is why they sit together. Three
+sites owe it: `injectSteering` in the chat model, the `Steer` branch of
+`Headless.Run`, which is where a child's own steering arrives —
 `Supervisor.Steer` from an attached lane, the served loop's queue from an RPC
-client. Each then retires what was judged against the shorter instruction —
-`Agent.StartInterveneTurn` for the queued verdict, `summarySteered` or
-`SummaryRun.Extend` for the reading in flight and the schedule the reset round
-counter has left behind.
+client — and `approvePlan`, where the person approving a plan is saying its
+steps are what they asked for (`planTarget` renders them as one part, never
+one per step; `clampTargetParts` shares one budget between the parts, so ten
+of them would starve the ask that earned the plan). Each then retires what was
+judged against the shorter instruction — `Agent.StartInterveneTurn` for the
+queued verdict, `summarySteered` or `SummaryRun.Extend` for the reading in
+flight and the schedule the reset round counter has left behind.
+
+**A steer the reader disagrees with is taken back, not argued with.**
+`Agent.WithdrawIntervention` removes the message from the conversation —
+matched on its content *after* the scrub, since that is the form it was stored
+in, and safe to remove at all only because an interruption is appended alone
+at a round boundary with nothing paired to it — and sets a turn-scoped mark
+that `ConsiderVerdict` reads before anything else, so no further reading
+interrupts before the next instruction. `StartInterveneTurn` clears it. The
+chat model's `withdrawSteer` is the row's half: `[u]` (`keys.Row.Undo`, the
+same key a changeset row uses for its own undo) routed through reading mode's
+dispatch in `focus.go`, `summaryState.dropIntervention` so the next digest
+stops reporting an interruption that is no longer there to be answered, and
+`withdrawnNotice` rewriting the row. `entry.intervened` is what makes a notice
+a reading-mode stop at all — a system row with no body is otherwise not one.
+The record is deliberately not written there: what a withdrawal says about the
+thresholds belongs with an intervention's outcome, in one place.
 
 **Which model the bounded calls answer on is `auxiliaryModel`**
 (`internal/cli/summarizer.go`): the provider's `CheapModel` where it names

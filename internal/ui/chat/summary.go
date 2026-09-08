@@ -154,6 +154,25 @@ func (s *summaryState) noteIntervention(iv agent.Intervention, round int) {
 	s.interventions = append(s.interventions, iv.Row(round))
 }
 
+// dropIntervention unsays one of those rows, for an interruption the reader
+// has taken back (intervene.go). The message left the conversation, so a
+// digest still reporting it would be handing the next reader evidence of a
+// round that no longer exists — and asking it to judge the work since a steer
+// the model never read.
+//
+// The schedule is left where the interruption put it. A reading pulled
+// forward is a reading taken sooner, which is what the reader wants after
+// telling the machinery it was wrong: the sooner answer is the one that says
+// whether it still thinks so.
+func (s *summaryState) dropIntervention(row string) {
+	for i, have := range s.interventions {
+		if have == row {
+			s.interventions = append(s.interventions[:i:i], s.interventions[i+1:]...)
+			return
+		}
+	}
+}
+
 // resetSummary starts the whole mechanism over at a session boundary, where
 // startTurn is not enough: the spend is this session's, the backoff describes
 // a provider that was failing this session, and a reading still out was asked

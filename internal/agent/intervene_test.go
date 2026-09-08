@@ -559,3 +559,134 @@ func TestTargetLine_ShowsEveryThingThatWasAsked(t *testing.T) {
 		t.Fatalf("an empty target has no line, got %q", got)
 	}
 }
+
+// Taking a steer back. The check is a cheap model reading a digest, and the
+// whole of what it costs the reader to disagree with it is one key: the
+// message leaves the conversation, and the machinery does not spend the rest
+// of the turn making the same case again.
+
+func TestWithdrawIntervention_TheMessageLeavesTheConversation(t *testing.T) {
+	a := New(nil, noStream)
+	a.StartTurn("build the exporter")
+	a.rounds = 5
+	a.ConsiderVerdict(driftVerdict(5), a.rounds, running)
+	iv, ok := a.NextIntervention("build the exporter")
+	if !ok {
+		t.Fatal("a drifting reading should earn an interruption")
+	}
+	a.AppendMachine(iv.Message)
+
+	before := len(a.Messages())
+	if !a.WithdrawIntervention(iv) {
+		t.Fatal("the steer the machinery just appended should be withdrawable")
+	}
+	msgs := a.Messages()
+	if len(msgs) != before-1 {
+		t.Fatalf("messages = %d, want %d", len(msgs), before-1)
+	}
+	for _, msg := range msgs {
+		if msg.Content == iv.Message {
+			t.Fatal("the withdrawn steer is still in the conversation")
+		}
+	}
+	// The person's own message is untouched: what was withdrawn is what the
+	// machinery wrote, and nothing else.
+	if len(msgs) != 1 || msgs[0].Content != "build the exporter" {
+		t.Fatalf("the turn's own instruction should stand, got %+v", msgs)
+	}
+	if !a.InterventionWithdrawn() {
+		t.Error("the turn should know its interruption was taken back")
+	}
+}
+
+// A withdrawal is the reader saying the check was wrong about this turn, not
+// that it spoke too soon — so the readings go on landing and none of them
+// interrupts again before the next instruction.
+func TestWithdrawIntervention_NoFurtherReadingSteersTheTurn(t *testing.T) {
+	a := New(nil, noStream)
+	a.StartTurn("build the exporter")
+	a.rounds = 5
+	a.ConsiderVerdict(driftVerdict(5), a.rounds, running)
+	iv, _ := a.NextIntervention("build the exporter")
+	a.AppendMachine(iv.Message)
+	a.WithdrawIntervention(iv)
+
+	// Well past the cooldown a second steer would otherwise be due at, and
+	// far enough on for the clock's own check-in to be due as well.
+	a.rounds = 5 + 4*a.interveneCooldown()
+	if reason := a.ConsiderVerdict(driftVerdict(a.rounds), a.rounds, running); reason != "" {
+		t.Errorf("a withheld interruption after a withdrawal files nothing, got %q", reason)
+	}
+	// The clock underneath is untouched — it is the floor beneath the
+	// reading, not the verdict that was withdrawn — so what arrives here is
+	// the interval's own question and never the steer.
+	next, ok := a.NextIntervention("build the exporter")
+	if !ok {
+		t.Fatal("the interval's own check-in must survive a withdrawal")
+	}
+	if next.Kind != InterveneCheckIn {
+		t.Errorf("a withdrawn turn was steered again: kind = %v\n%s", next.Kind, next.Message)
+	}
+}
+
+// A withdrawal is about the instruction it was withdrawn under. The next
+// turn has not been read yet.
+func TestWithdrawIntervention_TheNextTurnIsReadAgain(t *testing.T) {
+	a := New(nil, noStream)
+	a.rounds = 5
+	a.ConsiderVerdict(driftVerdict(5), a.rounds, running)
+	iv, _ := a.NextIntervention("build the exporter")
+	a.AppendMachine(iv.Message)
+	a.WithdrawIntervention(iv)
+
+	a.StartTurn("now write the tests")
+	if a.InterventionWithdrawn() {
+		t.Fatal("a withdrawal must not outlive the turn it was made in")
+	}
+	a.rounds = 5
+	a.ConsiderVerdict(driftVerdict(5), a.rounds, running)
+	if _, ok := a.NextIntervention("now write the tests"); !ok {
+		t.Error("the next turn should be readable, and steerable, again")
+	}
+}
+
+// The count a second steer carries is how many times the check has said the
+// same thing and been left standing. A message that left the conversation was
+// never answered, so it is not one the next steer counts itself against.
+func TestWithdrawIntervention_AWithdrawnSteerIsNotCountedAgainstTheNext(t *testing.T) {
+	a := New(nil, noStream)
+	a.rounds = 5
+	a.ConsiderVerdict(driftVerdict(5), a.rounds, running)
+	first, _ := a.NextIntervention("build the exporter")
+	a.AppendMachine(first.Message)
+	a.WithdrawIntervention(first)
+
+	// The next turn, where the machinery may speak again.
+	a.StartTurn("build the exporter")
+	a.rounds = 5
+	a.ConsiderVerdict(driftVerdict(5), a.rounds, running)
+	next, ok := a.NextIntervention("build the exporter")
+	if !ok {
+		t.Fatal("the next turn should be steerable")
+	}
+	if strings.Contains(next.Message, "said this") {
+		t.Errorf("a withdrawn steer was counted against the next one:\n%s", next.Message)
+	}
+}
+
+// A steer that has since been compacted away is not one the reader can take
+// back, and the row that offered it has to be told so rather than claim a
+// withdrawal it did not perform.
+func TestWithdrawIntervention_AMessageThatIsGoneIsNotWithdrawn(t *testing.T) {
+	a := New(nil, noStream)
+	a.rounds = 5
+	a.ConsiderVerdict(driftVerdict(5), a.rounds, running)
+	iv, _ := a.NextIntervention("build the exporter")
+	// Never appended: the conversation was replaced under it.
+	if a.WithdrawIntervention(iv) {
+		t.Error("a message that is not in the conversation cannot be withdrawn")
+	}
+	if a.InterventionWithdrawn() {
+		t.Error("a failed withdrawal must not silence the turn's readings")
+	}
+}

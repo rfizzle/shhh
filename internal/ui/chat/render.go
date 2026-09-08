@@ -179,7 +179,10 @@ func (m Model) renderEntryDetail(e entry, width int, keysLive, stepDetail bool) 
 		}
 		return e.diff.View(width) + "\n"
 	case entrySystem:
-		return m.systemRow(e, width) + "\n"
+		// The offer an interruption's notice carries, where it carries one:
+		// the machinery wrote a message into this conversation, and `[u]` is
+		// how the reader takes it back (intervene.go).
+		return m.systemRow(e, width) + m.steerOfferLine(e, keysLive) + "\n"
 	case entryError:
 		return sty.Error.Render("Error: "+e.text) + "\n"
 	}

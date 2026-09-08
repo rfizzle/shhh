@@ -155,6 +155,22 @@ func (m Model) approvePlan(execMode agent.Mode) (tea.Model, tea.Cmd) {
 	// PLAN block and what /plan answers with. A plan that never
 	// adopted the step shape has no list to keep, and newPlanRun says so.
 	m.planRun = newPlanRun(doc, len(m.transcript))
+	// And it is what the readings judge the turn against
+	// (docs/capabilities/coding-agent.md#an-approved-plan-is-what-a-reading-judges-against).
+	// The anchor rule holds: only the person moves the target, and approving
+	// a plan is the person saying these steps are what they asked for — the
+	// same act as typing them, made once instead of ten times. Without it
+	// every reading of the execution turn is taken against the one line that
+	// asked for a plan, while the steps the person actually approved reach
+	// the digest as a checklist nobody is judged on.
+	if steps := planTarget(doc); steps != "" {
+		m.summaryTarget = agent.ExtendTarget(m.summaryTarget, steps)
+		// And what was judged against the shorter instruction is retired, the
+		// way a typed steer retires it (summary.go): a reading still out was
+		// asked about the turn that produced the plan, not the turn that
+		// carries it out.
+		m.summarySteered()
+	}
 	m.invalidateRenderCache()
 	m.trimForRequest()
 	m.syncViewport()

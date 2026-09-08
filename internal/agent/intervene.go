@@ -28,6 +28,7 @@ import (
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/digest"
+	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // InterveneKind is what a turn is being interrupted for.
@@ -226,6 +227,16 @@ type interveneState struct {
 	// turn reading it as a reason to redirect a child would be redirecting it
 	// for work it has already left behind.
 	steers int
+	// withdrawn marks that the person has taken this turn's interruption
+	// back. It silences the verdict-driven half of the machinery for the
+	// rest of the turn rather than restarting the ordinary cooldown, because
+	// a withdrawal is the reader saying the check was wrong about *this*
+	// turn and not that it spoke too soon: a cooldown would deliver the same
+	// false positive again, against the same instruction, a couple of
+	// intervals later, and the reader would spend the same key on it. The
+	// clock's own check-in is untouched — it is not a verdict, it is the
+	// floor beneath one, and it is not what was withdrawn.
+	withdrawn bool
 }
 
 // SetInterveneBounds installs the two numbers every bound on interrupting a
@@ -292,6 +303,17 @@ func (a *Agent) interveneCooldown() int {
 // that failure looks like from the outside.
 func (a *Agent) ConsiderVerdict(v SummaryVerdict, rounds int, working bool) string {
 	if !working || v.Failed {
+		return ""
+	}
+	if a.intervene.withdrawn {
+		// The reader has taken this turn's interruption back, which is a
+		// statement about the check rather than about the round it spoke at.
+		// The reading itself still lands — the rail, the record and the next
+		// digest all get it, the way they do for one withheld as stale —
+		// and only the interruption is withheld. Nothing is filed: what a
+		// withdrawal says about the thresholds is a question for the record,
+		// which files an intervention's outcome in one place rather than
+		// twice.
 		return ""
 	}
 	var kind InterveneKind
@@ -408,7 +430,66 @@ func (a *Agent) StartInterveneTurn() {
 	// steer would be counting the answered ones against work nobody has read
 	// yet.
 	a.intervene.steers = 0
+	// And a withdrawal was about the instruction it was withdrawn under. The
+	// next turn has not been read yet, and starting it with the machinery
+	// already silenced would carry one turn's false positive into every turn
+	// after it.
+	a.intervene.withdrawn = false
 }
+
+// WithdrawIntervention takes back an interruption this machinery delivered:
+// the message it appended leaves the conversation, and no further reading
+// interrupts this turn.
+//
+// Removing a message from a conversation is normally not a thing a surface
+// may do — an assistant's tool calls and their results are a pair, and a
+// conversation missing half of one is refused before it is read. This message
+// is safe by construction: what NextIntervention hands over is appended at a
+// round boundary, alone, as a user-role message with nothing paired to it, so
+// the messages either side of it were already adjacent.
+//
+// It matches on the content of the last machine message rather than on an
+// index, because the index a front-end holds is its transcript's and the
+// conversation is not that list: every notice, every reading and every folded
+// row the transcript draws is one the model never sees.
+//
+// It reports whether it found one. A message that has since been compacted
+// away is not one the reader can take back, and a row that says it was
+// withdrawn when it was not is worse than a row that admits it.
+func (a *Agent) WithdrawIntervention(iv Intervention) bool {
+	// The message as it was stored, not as it was written: everything on the
+	// way in goes through the scrub, so a steer that quoted an instruction
+	// carrying a secret is in the conversation with the secret already gone
+	// and would never match the words the caller still holds.
+	want := a.scrubbed(provider.Message{Role: provider.RoleUser, Content: iv.Message, Machine: true}).Content
+	idx := -1
+	for i, msg := range a.messages {
+		if msg.Machine && msg.Role == provider.RoleUser && msg.Content == want {
+			idx = i
+		}
+	}
+	if idx < 0 {
+		return false
+	}
+	a.messages = append(a.messages[:idx:idx], a.messages[idx+1:]...)
+	a.intervene.withdrawn = true
+	// Whatever was queued behind it goes too: a verdict waiting for the next
+	// boundary was earned by the reading the reader has just rejected.
+	a.intervene.pending = nil
+	// And a steer nobody will now read is not one the next steer counts
+	// itself against. The count exists to tell a turn that answering in
+	// words did not work; a message that left the conversation was never
+	// answered at all.
+	if iv.Kind == InterveneSteer && a.intervene.steers > 0 {
+		a.intervene.steers--
+	}
+	return true
+}
+
+// InterventionWithdrawn reports whether this turn's reader has taken an
+// interruption back — the one direct signal the machinery has that it was
+// wrong about a turn.
+func (a *Agent) InterventionWithdrawn() bool { return a.intervene.withdrawn }
 
 // steerNotice and enoughNotice are what the reader is told. The steer is
 // attributed on purpose: a message the reader did not write, changing what

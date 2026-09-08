@@ -37,6 +37,11 @@ func (m *Model) appendTurnClose() {
 		return
 	}
 	m.turnOpen = false
+	// A steer's notice offers its take-back only while the turn it
+	// interrupted runs (intervene.go). This is the one moment that offer
+	// expires, and nothing lands in the transcript to redraw the block it
+	// was painted into.
+	m.expireSteerOffers()
 	m.recordTurn(m.turnOutcomeCode())
 	// A turn that stopped at its round limit has already closed, with the
 	// pause row: it states the rounds it used, what it changed, and

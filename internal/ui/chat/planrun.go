@@ -280,3 +280,35 @@ func numberList(ns []int) string {
 	}
 	return strings.Join(parts, ", ")
 }
+
+// planTarget is an approved plan as the instruction a reading judges the turn
+// against: the declared steps, numbered as the person read them on the card,
+// on one line (plan.go).
+//
+// It is one part of the target rather than one part per step. agent.ExtendTarget
+// joins the things the person has asked for, and the digest shares one budget
+// between them — so a ten-step plan added a step at a time would leave the
+// instruction that asked for the plan a tenth of the room, and a steer typed
+// after it another tenth, which is the bound dropping exactly what the target
+// exists to carry. As one part it is one instruction among two or three,
+// which is the shape the sharing was written for.
+//
+// A plan that never adopted the step shape has no titles to fold in. The
+// prose the card fell back to is already in the conversation as the model
+// wrote it, and quoting a whole planning response back as the instruction
+// would put the model's own words where the person's belong.
+func planTarget(doc plan.Plan) string {
+	if !doc.Structured() {
+		return ""
+	}
+	titles := make([]string, 0, len(doc.Steps))
+	for _, s := range doc.Steps {
+		if title := strings.TrimSpace(s.Title); title != "" {
+			titles = append(titles, fmt.Sprintf("%d. %s", s.Number, title))
+		}
+	}
+	if len(titles) == 0 {
+		return ""
+	}
+	return "The approved plan: " + strings.Join(titles, "; ")
+}

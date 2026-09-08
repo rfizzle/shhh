@@ -510,11 +510,9 @@ func (r SummaryRequest) digest() map[string]any {
 		// Every part of the instruction, each with its own share of the
 		// bound and separated the way the digest separates everything else:
 		// two things the person asked must not read as one sentence, and the
-		// one they asked for last must not be the one the bound drops.
-		// Every part of the instruction, each with its own share of the
-		// bound and separated the way the digest separates everything else:
-		// two things the person asked must not read as one sentence, and the
-		// one they asked for last must not be the one the bound drops.
+		// one they asked for last must not be the one the bound drops. An
+		// approved plan is one of those parts (ui/chat/planrun.go), so a
+		// turn carrying out ten steps is read against the ten steps.
 		"instruction":  strings.Join(clampFields(clampTargetParts(r.Target, maxSummaryField)), " · "),
 		"tool_round":   r.Round,
 		"elapsed":      r.Elapsed.Round(time.Second).String(),

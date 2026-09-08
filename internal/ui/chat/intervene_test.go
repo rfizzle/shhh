@@ -9,6 +9,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // The policy — which reading earns what, and how often — is the agent's, and
@@ -258,5 +259,176 @@ func TestIntervene_AReadersSteerRetiresTheQueuedVerdict(t *testing.T) {
 	m.injectInterventions()
 	if len(m.agent.Messages()) != before {
 		t.Fatalf("the boundary delivered something after the reader steered:\n%s", lastUserMessage(m))
+	}
+}
+
+// Taking a steer back. The session's half is the row: it finds the notice the
+// cursor is on, hands the interruption to the agent, and says what happened.
+
+// steerNoticeIndex is the transcript index of the notice a steer left.
+func steerNoticeIndex(t *testing.T, m Model) int {
+	t.Helper()
+	for i, e := range m.transcript {
+		if e.intervened != nil {
+			return i
+		}
+	}
+	t.Fatalf("no interruption notice in %d entries", len(m.transcript))
+	return -1
+}
+
+// steeredModel is a running turn that has just been steered. The turn is
+// marked open the way a started one is: the row's take-back belongs to the
+// turn it interrupted, and verdictModel starts from a stream rather than from
+// a user message.
+func steeredModel(t *testing.T) Model {
+	t.Helper()
+	m := verdictModel(t, "off_target")
+	m.turnOpen = true
+	m = applyReading(t, m)
+	m.injectInterventions()
+	if !strings.Contains(lastUserMessage(m), "moved away") {
+		t.Fatal("the turn should have been steered")
+	}
+	return m
+}
+
+func TestWithdrawSteer_TheMessageLeavesAndTheRowSaysSo(t *testing.T) {
+	m := steeredModel(t)
+	idx := steerNoticeIndex(t, m)
+	m.focusIdx = idx
+
+	updated, _, claimed := m.withdrawSteer(keys.Shown(keys.Row.Undo))
+	if !claimed {
+		t.Fatal("[u] on a steer notice should be claimed by the row")
+	}
+	next := updated.(Model)
+	if got := lastUserMessage(next); strings.Contains(got, "moved away") {
+		t.Errorf("the withdrawn steer is still in the conversation:\n%s", got)
+	}
+	row := next.transcript[idx]
+	if !strings.Contains(row.text, "withdrawn") {
+		t.Errorf("the row should say it was withdrawn, got %q", row.text)
+	}
+	// The offer is spent, on the row as well as in the dispatch.
+	if _, _, claimed := next.withdrawSteer(keys.Shown(keys.Row.Undo)); claimed {
+		t.Error("a withdrawn steer should stop claiming its key")
+	}
+	if len(next.steerOffers(next.transcript[idx])) != 0 {
+		t.Error("a withdrawn steer keeps its words and loses its key")
+	}
+	// And the next digest is not told about an interruption that is no
+	// longer in the conversation.
+	for _, row := range next.summary.interventions {
+		if strings.Contains(row, "steered") {
+			t.Errorf("the digest still reports the withdrawn steer: %q", row)
+		}
+	}
+}
+
+// The reading's own reason survives the withdrawal: the reader disagreed
+// with the check, which is not the same as it never having spoken.
+func TestWithdrawnNotice_KeepsTheReadingsReason(t *testing.T) {
+	got := withdrawnNotice(agent.Intervention{
+		Kind:   agent.InterveneSteer,
+		Reason: "editing files outside the exporter",
+	})
+	if !strings.Contains(got, "editing files outside the exporter") {
+		t.Errorf("the withdrawn row should keep what the check said: %q", got)
+	}
+	if !strings.Contains(got, "withdrawn") {
+		t.Errorf("the withdrawn row should say so: %q", got)
+	}
+}
+
+// The point of the key: one press, and the machinery does not spend the rest
+// of the turn making the same case again.
+func TestWithdrawSteer_NoFurtherReadingSteersTheTurn(t *testing.T) {
+	m := steeredModel(t)
+	m.focusIdx = steerNoticeIndex(t, m)
+	updated, _, _ := m.withdrawSteer(keys.Shown(keys.Row.Undo))
+	m = updated.(Model)
+
+	// A second reading, well past the cooldown, saying exactly what the
+	// first one said.
+	m = advanceRounds(m, 4*m.summaryInterval())
+	m = applyReading(t, m)
+	before := lastUserMessage(m)
+	m.injectInterventions()
+	if got := lastUserMessage(m); got != before && strings.Contains(got, "moved away") {
+		t.Errorf("a withdrawn turn was steered again:\n%s", got)
+	}
+	// The reading itself still lands: only the interruption was withheld.
+	if m.summary.last == nil || m.summary.last.State != agent.SummaryOffTarget {
+		t.Error("the reading should still reach the rail")
+	}
+}
+
+// The offer belongs to the turn it interrupted. A finished turn's notice
+// keeps its words and loses its key: the round the model spent re-orienting
+// is spent, and all that is left to do to it is edit history.
+func TestWithdrawSteer_AFinishedTurnOffersNothing(t *testing.T) {
+	m := steeredModel(t)
+	m.focusIdx = steerNoticeIndex(t, m)
+	m.appendTurnClose()
+
+	if len(m.steerOffers(m.transcript[m.focusIdx])) != 0 {
+		t.Error("a finished turn's steer notice should offer no key")
+	}
+	if _, _, claimed := m.withdrawSteer(keys.Shown(keys.Row.Undo)); claimed {
+		t.Error("[u] on a closed turn's notice belongs to the row under it, not here")
+	}
+}
+
+// The check-in is the floor beneath the reading rather than a verdict of it:
+// nothing has been alleged, and a row offering to switch off the last thing
+// watching an unattended turn is an offer nobody should be given.
+func TestWithdrawSteer_ACheckInIsNotWithdrawable(t *testing.T) {
+	m := verdictModel(t, "sufficient")
+	m.turnOpen = true
+	m = applyReading(t, m)
+	m.injectInterventions()
+	idx := steerNoticeIndex(t, m)
+	m.focusIdx = idx
+
+	if len(m.steerOffers(m.transcript[idx])) != 0 {
+		t.Error("an early check-in should offer no take-back")
+	}
+	if _, _, claimed := m.withdrawSteer(keys.Shown(keys.Row.Undo)); claimed {
+		t.Error("[u] must not claim a check-in's notice")
+	}
+}
+
+// The offer expires with the turn, and nothing lands in the transcript to
+// redraw the block it was painted into — so the turn's close has to say the
+// lines are no longer current, or a frozen block goes on advertising it.
+func TestWithdrawSteer_TheTurnsCloseTakesThePaintedOfferDown(t *testing.T) {
+	m := steeredModel(t)
+	painted := strings.Join(m.renderHistoryLines(), "\n")
+	if !strings.Contains(painted, "take the steer back") {
+		t.Fatalf("the running turn's notice should paint its offer:\n%s", painted)
+	}
+	m.appendTurnClose()
+	if after := strings.Join(m.renderHistoryLines(), "\n"); strings.Contains(after, "take the steer back") {
+		t.Errorf("a closed turn's notice is still advertising its take-back:\n%s", after)
+	}
+}
+
+// Reading mode has to be able to reach the row, or the offer is one nobody
+// can take.
+func TestWithdrawSteer_TheNoticeIsAReadingModeStop(t *testing.T) {
+	m := steeredModel(t)
+	idx := steerNoticeIndex(t, m)
+	if !m.selectableRow(m.transcript[idx]) {
+		t.Fatal("the cursor must be able to stand on a steer notice")
+	}
+	m.focusIdx = idx
+	if len(m.readingRowOffers()) == 0 {
+		t.Error("the bar should name the row's own offer")
+	}
+	// And the row itself draws it, live under the cursor and grey beside a
+	// live draft (inertkeys.go).
+	if line := m.steerOfferLine(m.transcript[idx], true); !strings.Contains(line, "take the steer back") {
+		t.Errorf("the row should draw its offer, got %q", line)
 	}
 }

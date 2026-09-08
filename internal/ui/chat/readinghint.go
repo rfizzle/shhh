@@ -314,6 +314,9 @@ func (m Model) readingRowOffers() []components.KeyOffer {
 	if e, ok := m.focusedFailure(); ok {
 		return m.failureKeys(e.fail)
 	}
+	if e, ok := m.focusedSteerNotice(); ok {
+		return m.steerOffers(e)
+	}
 	return nil
 }
 

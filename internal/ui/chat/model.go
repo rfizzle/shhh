@@ -366,6 +366,13 @@ type entry struct {
 	// not stored: they are read off the supervisor at render time, which is
 	// what keeps them live and what lets the block re-render at any width.
 	fanout *fanoutBatch
+	// intervened is the interruption behind a steer or check-in notice
+	// (intervene.go): the message the machinery appended, so the row can take
+	// it back, and whether the reader already has. A pointer for the reason a
+	// pause is one — withdrawing spends the offer wherever the row is drawn
+	// from. Nil on every notice the machinery did not write, which is most
+	// of them.
+	intervened *interveneRow
 	// todorun is the run behind an entryTodoRun row. A pointer for the same
 	// reason: the row draws the machine's own state at render time, so it
 	// moves as the run moves and re-renders at any width.

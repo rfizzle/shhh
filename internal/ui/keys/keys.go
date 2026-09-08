@@ -641,7 +641,14 @@ var Sprint = SprintKeys{
 // of these letters for typing.
 type RowKeys struct {
 	Review Binding
-	Undo   Binding
+
+	// Undo is `[u]`, which two rows offer with different words, the way
+	// Retry below does: a turn's changeset row puts the files back, and the
+	// notice an automatic steer left takes that message out of the
+	// conversation. Both are the same gesture on the row in front of you —
+	// undo what this row is telling you about — and both are answered by
+	// reading mode standing on it, so the draft keeps the letter either way.
+	Undo Binding
 
 	// Retry is `[r]`, which two rows offer with different words: a failure
 	// asks again, a dropped stream asks again *from scratch*. Same key, same
