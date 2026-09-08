@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -732,5 +733,115 @@ func TestApprovalCard_DryRunNotOfferedWithoutAHarmlessForm(t *testing.T) {
 	}
 	if m.state != stateConfirmRun || m.pendingApproval == nil {
 		t.Fatalf("the card should still be waiting, got state %d pending %v", m.state, m.pendingApproval)
+	}
+}
+
+// runOnce drives one assistant command through the approval flow and returns
+// the tool result the model was handed.
+func runOnce(t *testing.T, m Model, command string) (Model, string) {
+	t.Helper()
+	args, _ := json.Marshal(map[string]string{"command": command})
+	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "c" + command, Name: tools.ExecCommandName, Arguments: string(args)},
+	}})
+	m = updated.(Model)
+	if m.pendingApproval == nil || m.pendingApproval.kind != approvalExec {
+		t.Fatalf("expected an exec approval, got state=%d", m.state)
+	}
+	m = handover(t, m)
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
+	m = updated.(Model)
+	var done cmdDoneMsg
+	for _, c := range unwrapBatch(cmd) {
+		if msg, ok := c().(cmdDoneMsg); ok {
+			done = msg
+		}
+	}
+	updated, _ = m.Update(done)
+	m = updated.(Model)
+	msgs := m.agent.Messages()
+	for i := len(msgs) - 1; i >= 0; i-- {
+		if msgs[i].Role == provider.RoleTool {
+			return m, msgs[i].Content
+		}
+	}
+	t.Fatal("the command produced no tool result")
+	return m, ""
+}
+
+// The failure the detector was written for, on the surface a person is
+// watching: a command the session runs again and again for the same answer.
+// It is dispatched by the model rather than by the tool executor, so the
+// detector reaches it only because the session hands the model its own.
+func TestApproval_ARepeatedCommandSaysSo(t *testing.T) {
+	m := gatedModel(t, nil, nil).
+		WithRunner(func(context.Context, string) (string, int) { return "FAIL\tinternal/calc", 1 }).
+		WithRepeats(agent.NewRepeatDetector())
+
+	m, first := runOnce(t, m, "go test ./internal/calc")
+	if agent.IsRepeatNotice(first) {
+		t.Fatalf("the first run is not a repeat: %q", first)
+	}
+	m.state = stateStreaming
+	_, second := runOnce(t, m, "go test ./internal/calc")
+	if !agent.IsRepeatNotice(second) {
+		t.Fatalf("the same command returning the same output should say so, got %q", second)
+	}
+	if !strings.Contains(second, "FAIL\tinternal/calc") {
+		t.Fatalf("the output itself must survive the notice, got %q", second)
+	}
+}
+
+// And the reader's own command is not the agent's: telling somebody standing
+// at the keyboard that they have run this before is telling them what they
+// just did.
+func TestApproval_ALocalRunIsNeverARepeat(t *testing.T) {
+	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	m := New(msgs, mockStream).
+		WithRunner(func(context.Context, string) (string, int) { return "ok", 0 }).
+		WithRepeats(agent.NewRepeatDetector())
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+	m = updated.(Model)
+
+	for range 3 {
+		updated, _ = m.Update(cmdDoneMsg{command: "ls", output: "ok", exitCode: 0, local: true})
+		m = updated.(Model)
+	}
+	for _, e := range m.transcript {
+		if agent.IsRepeatNotice(e.toolResult) {
+			t.Fatal("a /run the reader typed is theirs, and is never called a repeat")
+		}
+	}
+}
+
+// The reader declining the same call twice is the other half of the gated
+// circle, and the one the screen cannot answer: the ⊘ row is in front of the
+// person, and the model reads only the result.
+func TestApproval_ARepeatedDeclineSaysSo(t *testing.T) {
+	decline := func(t *testing.T, m Model) (Model, string) {
+		t.Helper()
+		updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+			{ID: "call_w", Name: "write_file", Arguments: `{"path":"main.go","content":"x\n"}`},
+		}})
+		m = handover(t, updated.(Model))
+		updated, _ = m.Update(tea.KeyPressMsg{Code: 'n', Text: "n"})
+		m = updated.(Model)
+		msgs := m.Messages()
+		return m, msgs[len(msgs)-1].Content
+	}
+
+	m := gatedModel(t, nil, map[string]GatedPreviewFunc{"write_file": writeFilePreview("")}).
+		WithRepeats(agent.NewRepeatDetector())
+	m, first := decline(t, m)
+	if agent.IsRepeatNotice(first) {
+		t.Fatalf("the first decline is not a repeat: %q", first)
+	}
+	m.state = stateStreaming
+	_, second := decline(t, m)
+	if !agent.IsRepeatNotice(second) {
+		t.Fatalf("a call declined twice should say so, got %q", second)
+	}
+	if !strings.HasPrefix(second, "error:") || !strings.Contains(second, "declined") {
+		t.Fatalf("and must still read as the decline it is, got %q", second)
 	}
 }

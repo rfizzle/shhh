@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"encoding/json"
 	"strings"
 	"time"
 
@@ -416,8 +417,21 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		}
 		m.appendEntry(entry{kind: entryCommand, text: msg.command, toolResult: out, exitCode: msg.exitCode, localRun: msg.local, duration: msg.duration})
 		if m.pendingApproval != nil {
+			call := m.pendingApproval.call
 			m.pendingApproval = nil
-			m.agent.ResolveApproval(execToolResult(out, msg.exitCode))
+			// The command the repeat detector was written for reaches it
+			// here and nowhere else: an assistant command is dispatched by
+			// this model rather than by the tool executor. It is the whole
+			// result that is keyed and led, exit code included, because that
+			// is what the model reads. `/run` stays out of it — the reader
+			// is here, and telling them they have run this before is telling
+			// them what they just did.
+			result := m.repeats.Notice(tools.ExecCommandName,
+				json.RawMessage(call.Arguments), execToolResult(out, msg.exitCode))
+			if agent.IsRepeatNotice(result) {
+				m.signal(observe.SignalRepeat, tools.ExecCommandName)
+			}
+			m.agent.ResolveApproval(result)
 			m.viewport.SetLines(m.renderHistoryLines())
 			m.viewport.GotoBottom()
 			return answered(m.advanceApprovalQueue())
@@ -457,6 +471,9 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		m.pendingApproval = nil
 		m.agent.ResolveApproval(msg.result)
 		m.recordToolResult(req.call.Name, msg.duration, msg.result)
+		if agent.IsRepeatNotice(msg.result) {
+			m.signal(observe.SignalRepeat, req.call.Name)
+		}
 		m.noteEvictedTurns(msg.evicted)
 		// An applied edit lands in the transcript as a collapsed diff row (
 		// docs/interface/surfaces.md#the-diff-view); failures keep the plain tool

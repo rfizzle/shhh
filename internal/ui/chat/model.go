@@ -695,6 +695,11 @@ type Model struct {
 	// mutationHook post-processes applied file-modification results before
 	// reduction — e.g. appending language-server diagnostics.
 	mutationHook MutationHook
+	// repeats is the session's repeat detector, which the CLI also wraps the
+	// tool executor with. The two tiers share one so that a call this model
+	// dispatches itself — an approved command, an applied edit — and one the
+	// executor ran are the same history (approval.go).
+	repeats *agent.RepeatDetector
 	// gate backs the /gate quality-gate command.
 	gate Gate
 	// closeGate is the run a turn makes as it closes: whether this session

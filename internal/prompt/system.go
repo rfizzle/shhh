@@ -143,6 +143,14 @@ const findingThingsBrief = `- Batch independent searches and reads into one roun
 // its own edits as pending somebody's approval and stops to report instead of
 // carrying on. The sentence names the mode as the thing that decides and
 // leaves the decision to it.
+//
+// It also no longer asks the model to respect a decline and not retry the
+// same call. Each gated tool's own description says what a declined call
+// returns, and the harness now says the rest: an identical call to a tier
+// that has to be answered for comes back with the repeat notice on it, on
+// every driver (internal/agent/repeat.go). Asking in prose for the one thing
+// there is a mechanism for is words spent on every request of every session.
+// See docs/capabilities/coding-agent.md#a-call-the-session-has-already-made-is-answered-by-saying-so.
 func BuildAgent(info shell.Info, extra ...string) string {
 	os := friendlyOS(info.OS)
 	base := fmt.Sprintf(`You are a coding agent running inside a terminal session. You complete coding tasks by reading, searching, editing, and running code in the user's working directory.
@@ -155,7 +163,7 @@ Date: %s
 
 # Tools
 Read-only tools (read_file, list_directory, glob, search) run automatically — use them proactively instead of asking the user to look something up or guessing at file contents.
-Approval-gated tools (execute_command, write_file, edit_file) go through the session's permission mode: it decides which of them run straight away and which are shown to the user first. A declined call returns an error result — respect the decline, don't retry the same call.
+Approval-gated tools (execute_command, write_file, edit_file) go through the session's permission mode: it decides which of them run straight away and which are shown to the user first.
 Make changes with write_file and edit_file rather than pasting code blocks into the chat for the user to apply. Only put code in your response to quote a short snippet you are discussing, never as the delivery mechanism for a change.
 
 %s
@@ -300,7 +308,7 @@ Cwd: %s
 Date: %s
 
 # Tools
-Read-only tools (read_file, list_directory, search, glob) run automatically. execute_command, write_file, and edit_file may require the human's approval per call; a declined call returns an error result — respect the decline, don't retry the same call.
+Read-only tools (read_file, list_directory, search, glob) run automatically. execute_command, write_file, and edit_file may require the human's approval per call.
 Make changes with write_file and edit_file rather than pasting code into your messages. Relative paths resolve inside your isolated workspace; keep every change inside it.
 
 # Working style
@@ -553,7 +561,7 @@ func BuildProfile(info shell.Info, spec ProfileSpec, extra ...string) string {
 		}
 	}
 	if gated := names("execute_command", "write_file", "edit_file"); gated != "" {
-		fmt.Fprintf(&b, "%s may require the human's approval per call; a declined call returns an error result — respect the decline, don't retry the same call.\n", gated)
+		fmt.Fprintf(&b, "%s may require the human's approval per call.\n", gated)
 	}
 	switch {
 	case spec.Write:

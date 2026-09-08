@@ -497,11 +497,15 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	// The same line between the tier that runs on its own and the tier that
 	// has to be answered for that a scripted run draws (approvals.go).
 	gate := unattendedGate(session.web, procSup, session.mcpTools, sup)
+	// One detector for the session, on both tiers: the resolver below is
+	// wrapped with this same one, so a command a client has answered for and
+	// a search the chain ran are one history rather than two.
+	repeats := agent.NewRepeatDetector()
 	a.SetExecutor(agent.ToolExecutor(hooks.WrapExecutor(l.hookPos,
 		func(name string, args json.RawMessage) bool {
 			return gate(provider.ToolCall{Name: name, Arguments: string(args)})
 		},
-		hook.Executor(agent.NewRepeatDetector().WrapExecutor(sup.WrapExecutor(ts.executor(session)))))))
+		hook.Executor(repeats.WrapExecutor(sup.WrapExecutor(ts.executor(session)))))))
 
 	// The unattended run's approver, opted in, is what a call the client
 	// allowed is run through — so the deny list, the containment refusal, the
@@ -546,6 +550,10 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		record(observe.DecisionDeny, observe.ReasonUser)
 		return declinedByClient(tc)
 	}
+	// Innermost, so what it keys on is what the tier produced: a client that
+	// declines the same call twice is told so, and so is a command that comes
+	// back with the same failure round after round.
+	resolveCall = repeats.WrapResolver(resolveCall)
 	resolveCall = own.wrap(resolveCall)
 	resolveCall = hookApprover(hooks, l.hookPos, hookNoteLine, record, resolveCall)
 	if c := headlessTree(cfg, session.sibling, own); c != nil {

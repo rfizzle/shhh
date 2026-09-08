@@ -189,6 +189,29 @@ these are the three narrowings a reader would otherwise do by rewriting the
 regular expression, and getting one of them wrong is the round that gets
 spent.
 
+## A call the session has already made is answered by saying so
+
+The instruction is one half. The other is that the session watches what it
+runs: a call whose tool, arguments and result are exactly those of a call
+inside the last two dozen comes back with a line at the top of the result
+saying how many times it has now run and that nothing about it has changed.
+The result itself is left standing, because it is still the answer — what has
+changed is that asking again cannot be the way forward.
+
+The whole interaction is the signature, and that is what makes it safe to
+apply to every tool without exception. Running the tests twice is two
+different interactions the moment the output differs, and one interaction only
+when nothing has moved — which is exactly when running them again buys
+nothing.
+
+**It watches the calls that have to be answered for as well as the ones that
+run on their own**, and those are where a session circles hardest: the failing
+command run for the fifth time, the edit issued again after it was declined, a
+call that fails the same way every time it is made. A refusal that stands is a
+result like any other, so the second identical one says so — which is why the
+prompt no longer asks the model to respect a decline. A rule the harness
+enforces is a rule the prompt can stop spending words on.
+
 ## Six questions for the language server
 
 Where a language server was detected, the agent asks it rather than guessing

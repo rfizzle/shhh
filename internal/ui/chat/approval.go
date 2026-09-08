@@ -305,7 +305,7 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 	}
 	req, err := m.buildApprovalRequest(tc)
 	if err != nil {
-		m.agent.ResolveApproval("error: " + err.Error())
+		m.agent.ResolveApproval(m.refusedResult(tc, "error: "+err.Error()))
 		m.appendEntry(m.skippedCallEntry(err))
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
@@ -317,7 +317,7 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 	// they press. The model reads the refusal as the call's result, which is
 	// where it can act on it.
 	if refusal := m.containmentRefusal(req); refusal != "" {
-		m.agent.ResolveApproval(refusal)
+		m.agent.ResolveApproval(m.refusedResult(req.call, refusal))
 		m.appendEntry(entry{
 			kind: entrySystem,
 			text: "Refused — nothing is containing commands in this session: " + req.summary,
@@ -341,7 +341,7 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 		m.lastDenial = req.summary + " — " + why
 		// Surfaces on the notice rail until the next user turn.
 		m.denialNotice = req.summary
-		m.agent.ResolveApproval(result)
+		m.agent.ResolveApproval(m.refusedResult(req.call, result))
 		m.appendEntry(deniedEntry(req, decidedByAuto, reason, 0))
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
@@ -427,7 +427,7 @@ func (m Model) armApprovalDecision(req *approvalRequest) (tea.Model, tea.Cmd) {
 		m.pendingApproval = nil
 		m.pendingRun = ""
 		m.pendingScope = scopeReach{}
-		m.agent.ResolveApproval(denialResult(reason))
+		m.agent.ResolveApproval(m.refusedResult(req.call, denialResult(reason)))
 		m.appendEntry(deniedEntry(req, decidedByAuto, reason, 0))
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
@@ -474,7 +474,7 @@ func (m Model) finishPreToolHook(msg preToolHookMsg) (tea.Model, tea.Cmd) {
 		m.lastDenial = req.summary + " — " + hookWhy(v.Reason)
 		// Surfaces on the notice rail until the next user turn.
 		m.denialNotice = req.summary
-		m.agent.ResolveApproval(hook.DeniedResult(v.Reason))
+		m.agent.ResolveApproval(m.refusedResult(req.call, hook.DeniedResult(v.Reason)))
 		m.appendEntry(deniedEntry(req, decidedByAuto, hook.DenyRule(v.Reason), 0))
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
@@ -489,7 +489,7 @@ func (m Model) finishPreToolHook(msg preToolHookMsg) (tea.Model, tea.Cmd) {
 		call.Arguments = string(v.Input)
 		rebuilt, err := m.buildApprovalRequest(call)
 		if err != nil {
-			m.agent.ResolveApproval("error: " + err.Error())
+			m.agent.ResolveApproval(m.refusedResult(call, "error: "+err.Error()))
 			m.appendEntry(m.skippedCallEntry(err))
 			m.viewport.SetLines(m.renderHistoryLines())
 			m.viewport.GotoBottom()
@@ -558,7 +558,7 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 		m.pendingApproval = nil
 		m.pendingRun = ""
 		m.pendingScope = scopeReach{}
-		m.agent.ResolveApproval(denialResult(reason))
+		m.agent.ResolveApproval(m.refusedResult(req.call, denialResult(reason)))
 		m.appendEntry(deniedEntry(req, decidedByAuto, reason, v.Elapsed))
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
@@ -576,6 +576,21 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 	}
 	m.armConfirm(req)
 	return m, nil
+}
+
+// refusedResult is a gated call that never ran, as the model reads it. Every
+// way this session refuses one goes through it, so the repeat detector sees
+// the whole tier the way the unattended drivers' single wrapped approver does
+// — an edit refused for the same reason twice is told it has been refused
+// before, rather than proposed a third time. That includes a decline the
+// reader typed: the row that says so is on their screen and not in the
+// conversation, and the model reads only the result (repeat.go).
+func (m *Model) refusedResult(tc provider.ToolCall, content string) string {
+	out := m.repeats.Notice(tc.Name, json.RawMessage(tc.Arguments), content)
+	if agent.IsRepeatNotice(out) {
+		m.signal(observe.SignalRepeat, tc.Name)
+	}
+	return out
 }
 
 // denialResult is the tool result for a call the session refused without
@@ -622,7 +637,7 @@ func (m Model) declineApproval() (tea.Model, tea.Cmd) {
 	case approvalMemory:
 		content = "error: the user declined to save this memory; do not re-propose it this session"
 	}
-	m.agent.ResolveApproval(content)
+	m.agent.ResolveApproval(m.refusedResult(req.call, content))
 	m.appendEntry(deniedEntry(req, decidedByYou, "", 0))
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
@@ -668,6 +683,15 @@ func (m Model) executeApprovedTool() (tea.Model, tea.Cmd) {
 	mutating := !registered && tools.IsMutating(call.Name)
 	reduce := m.evidence.Reduce
 	mutated := m.mutationHook
+	// A registered gated tool goes back through the session executor, which
+	// the detector already wraps, so only the direct mutating dispatch is
+	// noted here — the same reason the reduction is applied only here.
+	// It is applied last, where the executor's wrapper sits: outside the
+	// reduction, so the notice leads the result the model is really handed.
+	repeats := m.repeats
+	if !mutating {
+		repeats = nil
+	}
 	// The changeset record is taken around the call, on this goroutine: the
 	// file as it is now, then the file the call leaves behind. Both
 	// reads happen next to the write, so a file that changed underneath the
@@ -688,6 +712,7 @@ func (m Model) executeApprovedTool() (tea.Model, tea.Cmd) {
 			if reduce != nil {
 				result = reduce(call.Name, result)
 			}
+			result = repeats.Notice(call.Name, json.RawMessage(call.Arguments), result)
 		} else {
 			result = a.ExecuteCall(call)
 		}

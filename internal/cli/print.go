@@ -1044,12 +1044,17 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// The tool seams go outside it, so a hook behind a call reads the result
 	// the model will actually read — the repeat detector's notice included
 	// (hooks.go).
+	//
+	// One detector for the run, because the two tiers are one history: the
+	// approver below is wrapped with this same one, so the command it runs
+	// and the search the chain dispatches are counted in the same window.
+	repeats := agent.NewRepeatDetector()
 	var gate func(provider.ToolCall) bool
 	a.SetExecutor(agent.ToolExecutor(hooks.WrapExecutor(hookPos(a.Rounds),
 		func(name string, args json.RawMessage) bool {
 			return gate(provider.ToolCall{Name: name, Arguments: string(args)})
 		},
-		hook.Executor(agent.NewRepeatDetector().WrapExecutor(exec)))))
+		hook.Executor(repeats.WrapExecutor(exec)))))
 	a.SetMaxRounds(opts.rounds(cfg))
 
 	// The stream, where one was asked for. It is opened here rather than at
@@ -1106,6 +1111,13 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	resolve := headlessApprover(cmd.Context(), opts, allowlist, cfg.Behavior.CommandDenylist, run, containRefusal, red, verdict.wrap(obs.decision),
 		session.web, procSup, chainMutation(lspMutationHook(session.lsp), hookPostMutation(hooks)), sc, session.mcpTools, session.structural,
 		unattended{sup: sup, judge: judge, at: obs.pos})
+	// The gated tier is where an unattended run circles: the test command
+	// that fails the same way every round, the edit a policy refuses every
+	// time it is proposed. Neither reaches the executor chain — the approver
+	// runs the command and dispatches the mutation itself — so the detector
+	// is put on here as well, innermost, where the result it keys on is the
+	// one the tier produced rather than one a seam has since added to.
+	resolve = repeats.WrapResolver(resolve)
 	// A supervisor blocks on its event channel, so a run that spawned a
 	// child and read nothing would stop the child at its first routed
 	// request and itself behind it. What this run's own calls wrote is where

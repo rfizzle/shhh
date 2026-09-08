@@ -130,6 +130,33 @@ served session told nobody is attached — the fallback is a refusal instead,
 which is the same commitment with the one remaining answer taken away
 ([`headless.md`](headless.md#auto-mode-fails-closed)).
 
+## The classifier is shown what the session did, never what it read
+
+The evidence a verdict is reached on is the recent conversation, the proposed
+call, and a line for each of the session's recent tool calls: the tool's name,
+the one argument worth showing, and whether it worked.
+
+The rows are there because one of the rules cannot be answered without them.
+The classifier is asked to deny an action that runs instructions obtained from
+untrusted content, and in a coding session most of what happens between two
+sentences is tool calls with no prose at all — so a command proposed straight
+after a fetch was being judged on the user's opening request and nothing else.
+The rows put the fetch back in front of it.
+
+**What they carry is a name and an outcome word, never output.** A verdict
+decides what runs, so a fetched page able to write into the evidence would be
+writing its own permission. What a call was pointed at is the agent's own
+words and may appear; what came back is somebody else's and does not, however
+useful it would be. That is the same boundary the reading a run is steered by
+draws, for the same reason
+([`coding-agent.md`](coding-agent.md#the-verdict-is-a-steering-signal-so-the-digest-is-a-boundary)).
+
+The rule the classifier is *not* asked to enforce is the boundary a person
+states in words — "don't push", "read only". Approving already requires the
+action to stay inside the boundaries the user set, and a command a person
+wrote down as never is refused by the deny list before any model is paid to
+think about it. A rule stated twice is a rule with two places to drift.
+
 ## Blast radius
 
 An approval that names the action but not its consequences pushes the risk

@@ -1845,3 +1845,43 @@ func TestShellWord_NothingInASlotNameIsLiveInTheShell(t *testing.T) {
 		}
 	}
 }
+
+// A repeated gated command is the case the repeat detector was written for
+// and the one it could not see: an unattended run's commands never reach the
+// executor chain the detector used to be wrapped around on its own.
+func TestHeadlessApprover_ARepeatedCommandSaysSo(t *testing.T) {
+	var ran []string
+	resolve := agent.NewRepeatDetector().WrapResolver(
+		headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, fakeRun(&ran), "", nil, nil, nil, nil, nil, nil, nil, nil, unattended{}))
+
+	if first := resolve(execCall("go test ./...")); agent.IsRepeatNotice(first) {
+		t.Fatalf("the first run is not a repeat: %q", first)
+	}
+	second := resolve(execCall("go test ./..."))
+	if !agent.IsRepeatNotice(second) {
+		t.Fatalf("the same command returning the same output should say so, got %q", second)
+	}
+	if !strings.Contains(second, "exit code: 0") {
+		t.Fatalf("the output itself must survive the notice, got %q", second)
+	}
+	if len(ran) != 2 {
+		t.Fatalf("the notice is a result, not a refusal: the command still ran, ran %v", ran)
+	}
+}
+
+// And a call the run refuses the same way twice, which is the other half of
+// the circle: an edit re-issued after the policy already said no.
+func TestHeadlessApprover_ARepeatedRefusalSaysSo(t *testing.T) {
+	resolve := agent.NewRepeatDetector().WrapResolver(
+		headlessApprover(context.Background(), printOpts{}, nil, nil, fakeRun(&[]string{}), "", nil, nil, nil, nil, nil, nil, nil, nil, unattended{}))
+	call := provider.ToolCall{ID: "c1", Name: "write_file", Arguments: `{"path":"a.go","content":"package a\n"}`}
+
+	_ = resolve(call)
+	second := resolve(call)
+	if !agent.IsRepeatNotice(second) {
+		t.Fatalf("a refusal repeated should say so, got %q", second)
+	}
+	if !strings.HasPrefix(second, "error:") {
+		t.Fatalf("and must still read as a refusal, got %q", second)
+	}
+}

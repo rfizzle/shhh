@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/rfizzle/shhh/internal/digest"
+	"github.com/rfizzle/shhh/internal/provider"
 )
 
 func TestRepeatDetector_CountsIdenticalInteractions(t *testing.T) {
@@ -87,19 +90,98 @@ func TestRepeatDetector_WrapExecutorAnnotatesTheRepeat(t *testing.T) {
 	}
 }
 
-func TestRepeatDetector_WrapExecutorLeavesFailuresAlone(t *testing.T) {
+func TestRepeatDetector_WrapExecutorNotesTheSameFailureTwice(t *testing.T) {
+	// A call that fails the same way every time is circling as surely as one
+	// that succeeds identically, and it is the shape a stuck turn usually
+	// takes: a path that is not there, an argument the tool will not accept.
 	d := NewRepeatDetector()
 	exec := d.WrapExecutor(func(string, json.RawMessage) (string, error) {
-		return "", errors.New("boom")
+		return "", errors.New("no such file or directory")
 	})
-	args := json.RawMessage(`{"pattern":"foo"}`)
-	_, _ = exec("search", args)
-	out, err := exec("search", args)
-	if err == nil {
+	args := json.RawMessage(`{"path":"internal/nope.go"}`)
+
+	if _, err := exec("read_file", args); err == nil {
 		t.Fatal("expected the underlying error to pass through")
 	}
-	if strings.Contains(out, "[repeat:") {
-		t.Errorf("a failing call is the executor's error to report, got %q", out)
+	_, err := exec("read_file", args)
+	if err == nil {
+		t.Fatal("the second failure is still a failure")
+	}
+	result := ExecuteWith(exec, provider.ToolCall{Name: "read_file", Arguments: string(args)})
+	if !strings.HasPrefix(result, "error: [repeat:") {
+		t.Errorf("the notice goes behind the error prefix, got %q", result)
+	}
+	if !IsRepeatNotice(result) {
+		t.Error("a surface counting repeats has to see an errored one")
+	}
+	if !strings.Contains(result, "no such file") {
+		t.Errorf("the failure itself must survive the notice, got %q", result)
+	}
+	if strings.Contains(result, "widen or narrow the search") {
+		t.Errorf("a way out written for an unwanted answer is nonsense for a failure, got %q", result)
+	}
+}
+
+func TestRepeatDetector_WrapResolverAnnotatesTheRepeat(t *testing.T) {
+	// The gated tier: a command is resolved rather than dispatched, so this
+	// is the only place the detector can see the call its own package
+	// comment is written about.
+	d := NewRepeatDetector()
+	resolve := d.WrapResolver(func(provider.ToolCall) string {
+		return "exit code: 1\noutput:\nFAIL\tinternal/calc"
+	})
+	call := provider.ToolCall{Name: "execute_command", Arguments: `{"command":"go test ./internal/calc"}`}
+
+	if first := resolve(call); strings.Contains(first, "[repeat:") {
+		t.Errorf("the first run is not a repeat: %q", first)
+	}
+	second := resolve(call)
+	if !strings.HasPrefix(second, "[repeat:") {
+		t.Errorf("the notice should lead the result, got %q", second)
+	}
+	if !strings.Contains(second, "execute_command") || !strings.Contains(second, "2 times") {
+		t.Errorf("the notice should name the tool and the count, got %q", second)
+	}
+	if !strings.HasSuffix(second, "FAIL\tinternal/calc") {
+		t.Errorf("the output itself must survive the notice, got %q", second)
+	}
+}
+
+func TestRepeatDetector_ARepeatedRefusalIsStillAFailure(t *testing.T) {
+	// Everything that reads a result tells a failure by its "error:" head —
+	// the digest's outcome word, the record's class, the transcript row — so
+	// the notice goes behind it rather than in front of it.
+	d := NewRepeatDetector()
+	resolve := d.WrapResolver(func(provider.ToolCall) string {
+		return "error: file modification not approved: headless mode denies edits by default (run with --yes)"
+	})
+	call := provider.ToolCall{Name: "edit_file", Arguments: `{"path":"a.go","old":"x","new":"y"}`}
+
+	_ = resolve(call)
+	second := resolve(call)
+	if !strings.HasPrefix(second, "error: ") {
+		t.Errorf("a refused call stays a refusal, got %q", second)
+	}
+	if digest.Outcome(second) != digest.OutcomeError {
+		t.Errorf("the digest must still read it as a failure, got %q", digest.Outcome(second))
+	}
+	if !IsRepeatNotice(second) {
+		t.Errorf("the notice should be in there, got %q", second)
+	}
+}
+
+func TestRepeatDetector_OneDetectorIsOneHistoryAcrossBothTiers(t *testing.T) {
+	// The auto chain and the gated one share a window on purpose: a session
+	// that re-runs a command it once had approved is the same circle whether
+	// the second attempt was answered by a policy or by a person.
+	d := NewRepeatDetector()
+	exec := d.WrapExecutor(func(string, json.RawMessage) (string, error) { return "same output", nil })
+	resolve := d.WrapResolver(func(provider.ToolCall) string { return "same output" })
+	args := `{"command":"ls"}`
+
+	_, _ = exec("execute_command", json.RawMessage(args))
+	if got := resolve(provider.ToolCall{Name: "execute_command", Arguments: args}); !IsRepeatNotice(got) {
+		t.Errorf("the second tier should see the first tier's call, got %q", got)
 	}
 }
 
@@ -111,5 +193,12 @@ func TestRepeatDetector_NilIsSafe(t *testing.T) {
 	exec := d.WrapExecutor(func(string, json.RawMessage) (string, error) { return "out", nil })
 	if got, _ := exec("search", json.RawMessage(`{}`)); got != "out" {
 		t.Errorf("a nil detector wraps nothing, got %q", got)
+	}
+	resolve := d.WrapResolver(func(provider.ToolCall) string { return "out" })
+	if got := resolve(provider.ToolCall{Name: "execute_command"}); got != "out" {
+		t.Errorf("a nil detector resolves nothing, got %q", got)
+	}
+	if got := d.Notice("search", json.RawMessage(`{}`), "out"); got != "out" {
+		t.Errorf("a nil detector notices nothing, got %q", got)
 	}
 }

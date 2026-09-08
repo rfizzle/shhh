@@ -930,8 +930,12 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	}
 
 	// Repeat detection goes on last, so it sees every tool the chain
-	// can dispatch and the result the model will actually read.
-	executor = agent.NewRepeatDetector().WrapExecutor(executor)
+	// can dispatch and the result the model will actually read. The same
+	// detector goes to the model below, because the tier it dispatches
+	// itself — an approved command, an applied edit — never reaches this
+	// chain, and the two commonest circles a session falls into are there.
+	repeats := agent.NewRepeatDetector()
+	executor = repeats.WrapExecutor(executor)
 
 	// The directory the session's own paths belong to, read once: shhh never
 	// chdirs, so a session that asked again would be re-answering a settled
@@ -951,6 +955,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithToolDefinitions(toolDefTokens(session.toolDefs)).
 		WithProjectContextTokens(env.projectTokens).
 		WithToolExecutor(executor).
+		WithRepeats(repeats).
 		WithDB(db).
 		WithPricing(prices, env.modelName).
 		WithLedger(ledger).

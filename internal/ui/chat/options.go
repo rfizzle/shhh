@@ -84,6 +84,20 @@ func (m Model) WithToolExecutor(executor ToolExecutor) Model {
 	return m
 }
 
+// WithRepeats gives the session the repeat detector the tool executor is
+// wrapped with, so the calls this model dispatches itself rather than through
+// the executor — a command the reader approved, an edit applied through the
+// mutating tools — are counted in the same window as the rest.
+//
+// It is handed the detector rather than wrapping a function because the two
+// tiers meet nowhere else: one is an executor, the other is a decision
+// followed by a dispatch, and only the model knows which of its commands is
+// the agent's own rather than a `/run` the reader typed.
+func (m Model) WithRepeats(d *agent.RepeatDetector) Model {
+	m.repeats = d
+	return m
+}
+
 // WithRunner enables /run with the given command executor.
 func (m Model) WithRunner(run func(context.Context, string) (string, int)) Model {
 	m.runFn = run
