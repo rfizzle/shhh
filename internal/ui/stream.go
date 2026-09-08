@@ -127,7 +127,7 @@ func (m StreamModel) View() string {
 	if m.output == "" && !m.done {
 		return m.spinner.View() + " Thinking…"
 	}
-	return sty.Command.Render(m.output)
+	return commandLine(m.output)
 }
 
 func (m StreamModel) waitForEvent() tea.Cmd {

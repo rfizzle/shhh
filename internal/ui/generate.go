@@ -27,6 +27,7 @@ package ui
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -1026,16 +1027,23 @@ func SplitCommands(output string) []string {
 	return cmds
 }
 
-func formatMultiCommand(output string) string {
+// multiCommandView numbers several commands and leads each with the glyph one
+// command gets. The ordinal is chrome — it is the address `[t]` steps through
+// them by — so it is drawn as chrome, and the `$` beside it is what says the
+// row is a command rather than a numbered note about one.
+func multiCommandView(output string) string {
 	cmds := SplitCommands(output)
 	if len(cmds) <= 1 {
-		return output
+		return commandLine(output)
 	}
 	var b strings.Builder
 	for i, cmd := range cmds {
-		fmt.Fprintf(&b, "  %d. %s\n", i+1, cmd)
+		if i > 0 {
+			b.WriteString("\n")
+		}
+		fmt.Fprintf(&b, "  %s%s", sty.Dim.Render(strconv.Itoa(i+1)+". "), commandLine(cmd))
 	}
-	return strings.TrimRight(b.String(), "\n")
+	return b.String()
 }
 
 // streamingView is the command as it arrives. It stops at the sentinel, so
@@ -1046,13 +1054,13 @@ func (m GenerateModel) streamingView() string {
 	if m.stream.Err() != nil || m.stream.Output() == "" {
 		return m.stream.View()
 	}
-	return sty.Command.Render(proposal.CommandPart(m.stream.Output()))
+	return commandLine(proposal.CommandPart(m.stream.Output()))
 }
 
 // commandView draws the command itself, numbered when there is more than one.
 func (m GenerateModel) commandView() string {
 	if IsMultiCommand(m.stream.Output()) {
-		return sty.Command.Render(formatMultiCommand(m.stream.Output()))
+		return multiCommandView(m.stream.Output())
 	}
 	return m.stream.View()
 }
@@ -1080,7 +1088,7 @@ func (m GenerateModel) explanationView() string {
 	case m.shown == ExplainNone:
 		return ""
 	case m.shown == ExplainLong && text != "":
-		return "\n" + sty.ExplainLabel.Render("Explanation:") + "\n" + sty.ExplainBody.Render(text)
+		return "\n" + sty.Label.Render("explanation:") + "\n" + sty.ExplainBody.Render(text)
 	case text == "":
 		return ""
 	}
@@ -1092,8 +1100,9 @@ func (m GenerateModel) explanationView() string {
 // the approval cards use. The risks above it come from the same read.
 func (m GenerateModel) reachView() string {
 	var b strings.Builder
+	warn := riskStyle(m.reach.Level)
 	for _, risk := range m.reach.Risks {
-		b.WriteString("\n" + indent(sty.Risk.Render("⚠ "+risk)))
+		b.WriteString("\n" + indent(warn.Render("⚠ "+risk)))
 	}
 	b.WriteString("\n" + indent(sty.Reach.Render("⛨ "+m.reach.Reach())))
 	return b.String()
@@ -1107,20 +1116,21 @@ func (m GenerateModel) affectedView() string {
 		return ""
 	}
 	var b strings.Builder
+	warn := riskStyle(m.reach.Level)
 	b.WriteString("\n" + indent(sty.Dim.Render("would affect")))
 	if len(m.reach.Writes) == 0 {
 		reason := "shhh could not resolve what this writes"
 		if len(m.reach.Unresolved) > 0 {
 			reason = m.reach.Unresolved[0]
 		}
-		b.WriteString("\n" + indent2(sty.Risk.Render(reason)))
+		b.WriteString("\n" + indent2(warn.Render(reason)))
 		return b.String()
 	}
 	for _, w := range m.reach.Writes {
 		b.WriteString("\n" + indent2(sty.ExplainBody.Render(w.Path)+sty.Dim.Render(" — "+w.Describe())))
 	}
 	for _, u := range m.reach.Unresolved {
-		b.WriteString("\n" + indent2(sty.Risk.Render("and unresolved: "+u)))
+		b.WriteString("\n" + indent2(warn.Render("and unresolved: "+u)))
 	}
 	return b.String()
 }
@@ -1195,13 +1205,13 @@ func (m GenerateModel) screen() string {
 			m.affectedView() + m.dryRunView() +
 			m.actionBar.View()
 	case phaseEdit:
-		return sty.EditPrompt.Render("Edit: ") + fieldView(m.editInput)
+		return sty.Label.Render("edit: ") + fieldView(m.editInput)
 	case phaseSave:
-		return m.stream.View() + "\n" + sty.RevisePrompt.Render("Snippet name: ") + fieldView(m.saveInput)
+		return m.stream.View() + "\n" + sty.Label.Render("snippet name: ") + fieldView(m.saveInput)
 	case phaseRevise:
-		return m.stream.View() + "\n" + sty.RevisePrompt.Render("Feedback: ") + fieldView(m.reviseInput)
+		return m.stream.View() + "\n" + sty.Label.Render("feedback: ") + fieldView(m.reviseInput)
 	case phaseExplain:
-		view := m.stream.View() + "\n" + sty.ExplainLabel.Render("Explanation:")
+		view := m.stream.View() + "\n" + sty.Label.Render("explanation:")
 		if m.explainStream.output == "" && !m.explainStream.done {
 			view += " " + m.explainStream.spinner.View()
 		} else {

@@ -1,0 +1,11 @@
+# The one-shot is its own entry point, so this scene launches it rather than
+# typing into a session. Three runs, in order: the piped one — no terminal on
+# the other end, one line of shell to stdout and nothing else — then an
+# ordinary command, then one the safe default moves for. Each interactive run
+# ends when the reader quits it, and the next draws under what it left.
+#
+# The one-shot draws inline and clears nothing, so each run leaves its last
+# frame behind it; clear is what keeps a capture holding one screen. The
+# piped line is deliberately left standing under the first two, because a
+# capture of it beside the surface is the comparison.
+clear; echo 'list open ports' | $SHHH_BIN cmd; $SHHH_BIN cmd 'find every process listening on a port above 8000'; clear; $SHHH_BIN cmd 'delete every node_modules under ~/src'

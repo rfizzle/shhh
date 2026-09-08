@@ -85,7 +85,7 @@ golden fixture, so this cannot drift back.
 | Run the eval suite | `make eval` (the cases that name a model cost real requests; not part of `make ci`) |
 | Rewrite the eval baseline | `make eval-baseline` (the file every run is read against; the diff is the review) |
 | Verify prompt caching against live endpoints | `SHHH_CACHE_IT_URL=… SHHH_CACHE_IT_KEY=… SHHH_CACHE_IT_GATEWAY_URL=… SHHH_CACHE_IT_GATEWAY_KEY=… make cache-check` (costs real requests; each half skips when its own pair is unset) |
-| Update golden files | `go test ./internal/ui/components ./internal/ui/chat -update-golden` or `SHHH_UPDATE_GOLDEN=1 go test ./...` |
+| Update golden files | `go test ./internal/ui ./internal/ui/components ./internal/ui/chat -update-golden` or `SHHH_UPDATE_GOLDEN=1 go test ./...` |
 | Open the TUI by hand against a scripted model | `make tui-run` (`SCENE=<name>` picks the replies; needs tmux) |
 | Capture the TUI at each step of a scene | `make tui-shot SCENE=<name> COLS=110 ROWS=40` (captures under `bin/tui/<name>/`; with vhs installed, a PNG per step and a GIF of the run as well) |
 | Record a scene's whole run, not only its steps | `make tui-build && SHHH_BIN=$PWD/bin/tui/shhh scripts/tui/drive.sh --record scripts/tui/scenes/<name>` (an `asciinema` `.cast` beside the captures; without asciinema it says so and records nothing) |
@@ -1188,7 +1188,7 @@ TUI layout tests use golden files in `testdata/golden/` directories. Golden file
 
 **To update goldens after an intentional layout change:**
 ```
-go test ./internal/ui/components ./internal/ui/chat -update-golden
+go test ./internal/ui ./internal/ui/components ./internal/ui/chat -update-golden
 ```
 
 A `TestMain` in each golden-using package calls `golden.Run(m)` which **deletes stale golden files** that no test touched. Adding/removing a test case therefore requires running with `-update-golden` to reconcile files.

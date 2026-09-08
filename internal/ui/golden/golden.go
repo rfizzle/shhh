@@ -15,9 +15,9 @@
 // a colour assignment changing shows up. Both are compared, so neither a
 // moved column nor a recoloured glyph can land unnoticed.
 //
-// Only test files import this package; it lives outside them because the two
-// hosts with surfaces to capture — internal/ui/components and
-// internal/ui/chat — would otherwise each carry a copy.
+// Only test files import this package; it lives outside them because the
+// hosts with surfaces to capture — internal/ui/components, internal/ui/chat
+// and internal/ui itself — would otherwise each carry a copy.
 package golden
 
 import (

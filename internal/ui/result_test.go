@@ -13,7 +13,11 @@ import (
 
 	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/colorprofile"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/radius"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 // armed streams command to completion and hands back the model sitting on the
@@ -63,7 +67,7 @@ func TestResult_ExplainsBrieflyByDefault(t *testing.T) {
 	if !strings.Contains(view, "lists the directory in long form") {
 		t.Errorf("the explanation is not under the command:\n%s", view)
 	}
-	if strings.Contains(view, "Explanation:") {
+	if strings.Contains(view, "explanation:") {
 		t.Errorf("the one-liner rendered as the long form's block:\n%s", view)
 	}
 }
@@ -395,7 +399,7 @@ func TestResult_TheLongFormSpinsWhileItsStreamOpens(t *testing.T) {
 	if m.Phase() != phaseExplain {
 		t.Fatalf("the long form did not take the screen: %v", m.Phase())
 	}
-	if !strings.Contains(m.View().Content, "Explanation:") {
+	if !strings.Contains(m.View().Content, "explanation:") {
 		t.Errorf("the wait says nothing about what it is waiting for:\n%s", m.View().Content)
 	}
 	if m.explainStream.spinner.View() == "" {
@@ -547,7 +551,7 @@ func TestResult_TheBundledExplanationNeedsNoSecondRequest(t *testing.T) {
 	if strings.Contains(view, "--- explanation") {
 		t.Errorf("the sentinel reached the screen:\n%s", view)
 	}
-	if strings.Contains(view, "Explanation:") {
+	if strings.Contains(view, "explanation:") {
 		t.Errorf("the one-liner rendered as the long form's block:\n%s", view)
 	}
 	if !strings.Contains(view, "[↵] run") {
@@ -729,5 +733,115 @@ func TestResult_SteppingBackRestoresTheSentenceWithTheCommand(t *testing.T) {
 	m = press(t, m, "u")
 	if !strings.Contains(m.View().Content, bundledSentence) {
 		t.Errorf("stepping back did not bring the sentence back with the command:\n%s", m.View().Content)
+	}
+}
+
+// inColour resolves the palette against a profile that has colour to give.
+// The one detected from a test binary's non-terminal stdout resolves every
+// token to no colour at all, which would make every assertion below pass by
+// making every style the same.
+func inColour(t *testing.T) {
+	t.Helper()
+	was := components.Profile()
+	components.SetProfile(colorprofile.ANSI256)
+	t.Cleanup(func() { components.SetProfile(was) })
+}
+
+// The command is drawn as a command: the accent `$` that says so with no
+// colour at all, then the line in bold Bright. Add used to carry it, which
+// left the screen with two primaries — the answer and the key that runs it —
+// and nothing but hue to tell them apart.
+func TestResult_TheCommandIsLedByItsGlyphAndSetApartFromTheRunKey(t *testing.T) {
+	inColour(t)
+	m := armed(t, "lsof -nP -iTCP", nil)
+	view := m.View().Content
+	if want := commandLine("lsof -nP -iTCP"); !strings.Contains(view, want) {
+		t.Errorf("the command is not drawn as one:\n%s", view)
+	}
+	if !sty.Command.GetBold() {
+		t.Error("the command is not the bold run the artboard makes it")
+	}
+	if sty.Command.GetForeground() == sty.PrimaryKey.GetForeground() {
+		t.Error("the command and the key that runs it are the same colour")
+	}
+	if sty.CommandGlyph.GetForeground() != components.Palette.Accent.Color() {
+		t.Errorf("the glyph is %v, not the accent every tool mark uses", sty.CommandGlyph.GetForeground())
+	}
+}
+
+// The one Add on the result surface is the key that runs. Anything else in it
+// makes "green is the thing that acts" a guess.
+func TestResult_TheRunKeyIsTheOnlyAddOnTheScreen(t *testing.T) {
+	inColour(t)
+	add := components.Palette.Add.Color()
+	for name, s := range map[string]lipgloss.Style{
+		"the command":       sty.Command,
+		"the command glyph": sty.CommandGlyph,
+		"a label":           sty.Label,
+		"the explanation":   sty.ExplainBody,
+		"an offered key":    sty.Key,
+		"a key's words":     sty.KeyLabel,
+		"the containment":   sty.Reach,
+		"a HIGH warning":    sty.Risk,
+		"a quieter warning": sty.Caution,
+		"the previous rung": sty.PastCommand,
+		"the surface's dim": sty.Dim,
+	} {
+		if s.GetForeground() == add {
+			t.Errorf("%s is Add, which belongs to the key that runs", name)
+		}
+	}
+	if sty.PrimaryKey.GetForeground() != add {
+		t.Error("the key that runs is not Add")
+	}
+}
+
+// The ladder a warning is drawn on: HIGH is shouted in Del and everything
+// below it stated in Accent, the way the approval card's severity does it.
+// One colour for both makes an argument shhh could not resolve the same red
+// as a recursive forced deletion.
+func TestResult_TheRiskLadderShoutsOnlyAtTheTop(t *testing.T) {
+	inColour(t)
+	if got := riskStyle(radius.High).GetForeground(); got != components.Palette.Del.Color() {
+		t.Errorf("a HIGH reading is drawn in %v, want Del", got)
+	}
+	for _, level := range []radius.Level{radius.Low, radius.Medium} {
+		if got := riskStyle(level).GetForeground(); got != components.Palette.Accent.Color() {
+			t.Errorf("a %s reading is drawn in %v, want Accent", level, got)
+		}
+	}
+	m := armed(t, "rm -rf ~/src/build", nil)
+	if m.Reach().Level != radius.High {
+		t.Fatalf("the fixture resolved %s, and the shouted rung needs HIGH", m.Reach().Level)
+	}
+	if !strings.Contains(m.View().Content, sty.Risk.Render("⚠ "+m.Reach().Risks[0])) {
+		t.Errorf("the warning on a HIGH command is not on the top rung:\n%s", m.View().Content)
+	}
+}
+
+// A field's label is its own name in lower case, in Status — the voice every
+// other label in shhh is written in. The bold Subtle block the long form used
+// to lead with was the one heading on a screen that has no headings.
+func TestResult_TheFieldLabelsAreLowerCaseStatus(t *testing.T) {
+	inColour(t)
+	m := armed(t, "ls -la", nil)
+	for _, c := range []struct {
+		key   string
+		label string
+	}{
+		{"e", "edit: "},
+		{"r", "feedback: "},
+		{"s", "snippet name: "},
+	} {
+		view := press(t, m, c.key).View().Content
+		if !strings.Contains(view, sty.Label.Render(c.label)) {
+			t.Errorf("[%s] did not label its field %q in Status:\n%s", c.key, c.label, view)
+		}
+	}
+	if sty.Label.GetForeground() != components.Palette.Status.Color() {
+		t.Errorf("a label is %v, not Status", sty.Label.GetForeground())
+	}
+	if sty.Label.GetBold() {
+		t.Error("a label is bold, and bold is the command's and the focused row's")
 	}
 }

@@ -1,0 +1,16 @@
+# One reply per request. The last line repeats once these run out.
+#
+# A \n in a plain reply is a line break, which is what the one-shot's answer
+# needs: the command, then the sentence saying what it does, then the ways it
+# was not taken. Nothing here is ever run — the scene quits each result rather
+# than pressing the key that runs — so no line reaches the machine the scene
+# is driven from.
+#
+# The piped run first. It goes out through a different prompt and gets one
+# line of shell back, because there is nobody on the other end to read
+# anything else.
+lsof -nP -iTCP -sTCP:LISTEN
+# The ordinary command: a sentence, and two other ways to ask the same thing.
+lsof -nP -iTCP -sTCP:LISTEN | awk '$9 ~ /:[89][0-9]{3}$/'\n--- explanation\nlsof lists listening TCP sockets without resolving names; awk keeps the rows whose address ends in a port from 8000-9999.\n--- alternatives\nss -lntp 'sport > :8000'\n# linux only, and faster on a busy machine\nnetstat -anv -p tcp\n# everywhere, including a machine with no lsof
+# And the one the safety check flags, which is what moves the default key.
+find ~/src -name node_modules -type d -prune -exec rm -rf {} +\n--- explanation\n-prune stops find from descending into a directory it just deleted.

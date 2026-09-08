@@ -8,7 +8,10 @@ from a terminal with a model that says exactly what the scene needs it to.
 Every request gets the next line of the replies file, and the last line
 repeats once the file is used up. A line is one of:
 
-    Plain text, streamed a word at a time as the assistant's answer.
+    Plain text, streamed a word at a time as the assistant's answer. A
+    literal \n in it is a line break, because the one-shot's answer is
+    line-oriented — the command, then the sentence saying what it does, then
+    the alternatives — and a reply is one line of this file.
     tool:<name>:<json args>   one tool call, e.g.
     tool:execute_command:{"command":"echo hi"}
 
@@ -64,7 +67,10 @@ class Handler(BaseHTTPRequestHandler):
                                     "function": {"name": name, "arguments": args}}]}))
             self.wfile.write(chunk({}, "tool_calls"))
         else:
-            for word in line.split(" "):
+            # Splitting on spaces and rejoining with one is lossless, so a
+            # line break written as \n survives inside whatever word it landed
+            # in and reaches the client where the scene put it.
+            for word in line.replace("\\n", "\n").split(" "):
                 self.wfile.write(chunk({"content": word + " "}))
                 self.wfile.flush()
             self.wfile.write(chunk({}, "stop", {"prompt_tokens": 10, "completion_tokens": 3, "total_tokens": 13}))

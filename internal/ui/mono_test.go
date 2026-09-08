@@ -38,10 +38,9 @@ func TestMonoReachesTheGenerateStyles(t *testing.T) {
 	// The generate UI's whole surface, not just the two above.
 	for name, s := range map[string]lipgloss.Style{
 		"sty.Command":      sty.Command,
+		"sty.CommandGlyph": sty.CommandGlyph,
 		"sty.Error":        sty.Error,
-		"sty.EditPrompt":   sty.EditPrompt,
-		"sty.RevisePrompt": sty.RevisePrompt,
-		"sty.ExplainLabel": sty.ExplainLabel,
+		"sty.Label":        sty.Label,
 		"sty.ExplainBody":  sty.ExplainBody,
 		"sty.Key":          sty.Key,
 		"sty.KeyLabel":     sty.KeyLabel,
@@ -49,6 +48,7 @@ func TestMonoReachesTheGenerateStyles(t *testing.T) {
 		"sty.DangerKey":    sty.DangerKey,
 		"sty.Reach":        sty.Reach,
 		"sty.Risk":         sty.Risk,
+		"sty.Caution":      sty.Caution,
 		"sty.Dim":          sty.Dim,
 		"sty.PastCommand":  sty.PastCommand,
 	} {

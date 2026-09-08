@@ -1,0 +1,39 @@
+# The one-shot draws the command as a command
+# (docs/interface/surfaces.md#the-one-shot-result). The pane is 100 columns,
+# which is what the artboard is drawn at.
+#
+# What the cells cannot carry and the picture can: the command is the only
+# bold bright run on the screen and the `$` leading it is the accent every
+# tool mark uses, so the answer is findable with the colour covered and is no
+# longer the same green as the key that runs it; `[↵]` is the one Add left on
+# the screen; and on the destructive command the warning is the shouted rung
+# of the ladder while `[y] run it` carries the tone the running key has.
+#
+# There are no keys to reach the one-shot with — it is its own entry point —
+# so the three runs are in the scene's launch file rather than typed here.
+#
+# The piped run is first and it is the whole of the non-TTY story: one line of
+# shell on stdout, no spinner, no keys, no colour. It stays on screen above
+# everything that follows, which is what lets one capture hold both.
+snap 01-piped "lsof -nP -iTCP -sTCP:LISTEN"
+# The result surface. The key row is the surface's own and says how many other
+# commands the generation offered, so it is what the wait is on.
+snap 02-result "2 others"
+# The ways it was not taken, the one on screen marked. The mark's own words
+# are what the wait is on: a tradeoff is clipped to its column, so waiting for
+# one waits for a string the row may not be holding whole.
+keys a
+snap 03-alternatives "the command on screen"
+# Back out of the picker, then out of the run: the first escape leaves the
+# alternatives, the second quits. Two escapes written into the pty together
+# arrive as one sequence, so the sleep is the terminal's rather than the
+# product's.
+keys Escape
+sleep 0.5
+keys Escape
+# The third run, on a command the safety check flags. Enter is spent on saying
+# what would be affected and running takes a deliberate `y` — the scene reads
+# the offer and presses neither.
+snap 04-destructive "recursive forced deletion"
+keys Escape
+snap 05-quit

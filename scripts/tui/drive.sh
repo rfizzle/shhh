@@ -2,9 +2,10 @@
 # Drive the built shhh binary through a scene in a tmux pane, against the
 # scripted provider, and capture the screen at every step the scene names.
 #
-# A scene is a directory holding two files:
+# A scene is a directory holding two files, and optionally a third:
 #
 #   replies.txt   what the model says, one reply per request (fakeprovider.py)
+#   launch        what the pane runs, one shell line; default: $SHHH_BIN code
 #   steps.txt     what the reader does, one step per line:
 #
 #     setup <shell>             run in the workspace before the binary starts
@@ -133,7 +134,22 @@ envs="HOME=$home XDG_CONFIG_HOME=$home/config XDG_DATA_HOME=$home/data"
 envs="$envs SHHH_PROVIDER=openai-compatible SHHH_BASE_URL=http://127.0.0.1:$PORT/v1 SHHH_API_KEY=scripted SHHH_MODEL=scripted-model SHHH_REASONING=medium"
 envs="$envs TERM=xterm-256color COLORTERM=truecolor"
 
-run="env $envs $SHHH_BIN code"
+# What the pane runs. `shhh code` is the default because most scenes are the
+# session, but it is one of four sizes and the others are separate entry
+# points rather than something typed into the session — a scene reaching the
+# one-shot cannot get there with keys. A `launch` file is that scene's own
+# line: ordinary shell, with $SHHH_BIN the built binary, so a scene can also
+# pipe into a surface to see what it does with no terminal on the other end.
+# Keep it to single quotes: the line is re-quoted for the recorder below.
+launch="\$SHHH_BIN code"
+if [ -f "$scene/launch" ]; then
+	launch=$(grep -v '^[[:space:]]*#' "$scene/launch" | grep -m1 .)
+	[ -n "$launch" ] || { echo "drive.sh: $scene/launch names no command" >&2; exit 2; }
+fi
+# The environment is exported rather than prefixed with env(1), because a
+# launch line is a whole shell line and a prefix would reach only its first
+# command.
+run="export $envs SHHH_BIN=$SHHH_BIN; $launch"
 # The recorder wraps the binary inside the pane, so the cast is the pane's own
 # size and every cell tmux sees is a cell it saw. -q keeps asciinema's
 # diagnostics off the screen, where a snap would otherwise read them.
@@ -144,7 +160,7 @@ tmux -L "$SOCK" kill-server 2>/dev/null
 tmux -L "$SOCK" new-session -d -s scene -x "$COLS" -y "$ROWS" -c "$ws" "$run; sleep 60"
 
 if [ "$attach" = 1 ]; then
-	echo "shhh code against $scene/replies.txt — detach with ctrl+b d"
+	echo "$launch against $scene/replies.txt — detach with ctrl+b d"
 	tmux -L "$SOCK" attach -t scene
 	exit 0
 fi
@@ -237,7 +253,7 @@ write_tape() {
 		echo "Env ${kv%%=*} \"${kv#*=}\""
 	done
 	echo "Hide"
-	echo "Type \"cd $ws && stty cols $COLS rows $ROWS && exec $SHHH_BIN code\""
+	echo "Type \"cd $ws && stty cols $COLS rows $ROWS && export SHHH_BIN=$SHHH_BIN && $launch\""
 	echo "Enter"
 	echo "Sleep 500ms"
 	echo "Show"

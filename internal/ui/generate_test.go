@@ -341,8 +341,8 @@ func TestGenerate_ReviseViewShowsFeedbackPrompt(t *testing.T) {
 	m = step(m, tea.KeyPressMsg{Code: 'r', Text: "r"})
 
 	view := m.View().Content
-	if !strings.Contains(view, "Feedback") {
-		t.Error("expected 'Feedback' label in revise view")
+	if !strings.Contains(view, "feedback") {
+		t.Error("expected the feedback label in the revise view")
 	}
 	if !strings.Contains(view, "echo hi") {
 		t.Error("expected command still visible during revision")
@@ -643,8 +643,8 @@ func TestGenerate_EditPrePopulatesCommand(t *testing.T) {
 	if !strings.Contains(view, "ls -la") {
 		t.Errorf("expected command pre-populated in edit view, got: %q", view)
 	}
-	if !strings.Contains(view, "Edit") {
-		t.Error("expected 'Edit' label in edit view")
+	if !strings.Contains(view, "edit") {
+		t.Error("expected the edit label in the edit view")
 	}
 }
 
@@ -863,8 +863,8 @@ func TestGenerate_ExplainViewShowsExplanation(t *testing.T) {
 	m = step(m, cmd())
 
 	view := m.View().Content
-	if !strings.Contains(view, "Explanation") {
-		t.Error("expected 'Explanation' label in explain view")
+	if !strings.Contains(view, "explanation") {
+		t.Error("expected the explanation label in the explain view")
 	}
 	if !strings.Contains(view, "lists files") {
 		t.Error("expected explanation text in view")

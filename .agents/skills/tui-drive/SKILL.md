@@ -65,13 +65,17 @@ gate, and the recording never decides it.
 
 ## Write a scene
 
-A scene is a directory under `scripts/tui/scenes/<slug>/` with two files.
+A scene is a directory under `scripts/tui/scenes/<slug>/` with two files, and
+a third where the scene is not a session.
 
 `replies.txt` is the model, one reply per request; the last line repeats
-once they run out. Plain text streams as the assistant's answer. A line
-`tool:<name>:<json args>` is one tool call, and the tool names are the ones
-the toolset registers — `execute_command`, `read_file`, `write_file`,
-`spawn_agent` and the rest — with the arguments the tool takes:
+once they run out. Plain text streams as the assistant's answer, and a
+literal `\n` in it is a line break — which is what a one-shot's answer needs,
+since the command, the sentence saying what it does and the alternatives are
+three lines of one reply. A line `tool:<name>:<json args>` is one tool call,
+and the tool names are the ones the toolset registers — `execute_command`,
+`read_file`, `write_file`, `spawn_agent` and the rest — with the arguments
+the tool takes:
 
 ```
 Here is what I found.
@@ -111,6 +115,22 @@ snap 04-exit "that is everything the screen was holding"
 
 A snap whose text never appears fails the run, so every scene is also a
 test, and the exit code of `make tui-shot` is its verdict.
+
+`launch` is the third file, and only a scene that is not a session needs it:
+one shell line naming what the pane runs, with `$SHHH_BIN` the built binary.
+Without it the pane runs `shhh code`. `shhh cmd` is a separate entry point —
+there is no key that reaches the one-shot from a session — so a scene for it
+says so here rather than typing its way in, and the same line is where a
+scene pipes into a surface to see what it does with no terminal on the other
+end:
+
+```
+clear; echo 'list open ports' | $SHHH_BIN cmd; $SHHH_BIN cmd 'find what is listening'
+```
+
+Keep it to single quotes — the line is re-quoted for `--record` — and put a
+`clear` between runs of a surface that draws inline, because the one-shot
+clears nothing on the way out and a capture would otherwise hold two screens.
 
 Pick the width. `COLS` is the terminal, and the four the goldens use are 60,
 80, 110 and 130 — the breakpoints in `docs/interface/principles.md#one-grid`.
