@@ -125,8 +125,16 @@ type approvalRequest struct {
 	autoCost time.Duration
 	// memoryDraft is the proposed entry for approvalMemory.
 	memoryDraft memory.Draft
-	// question is the parsed question for approvalQuestion.
+	// question is the parsed question for approvalQuestion — the call's first
+	// where it carried several, which is the one the card opens on.
 	question ask.Question
+	// sheet is the rest of them, where an approvalQuestion carried more than
+	// one: the tabs, the answers gathered so far, and which tab has the
+	// keyboard (question.go). It rides the request for the reason the dry
+	// run's own two fields do — it is a fact about this call — and because it
+	// has to outlive the card, which esc puts down with the answers already
+	// on it. Nil is a call that asked one question.
+	sheet *questionSheet
 	// mustAsk is a hook in front of this call having asked for it, or having
 	// failed on a call there is somebody to ask about. It out-ranks the batch
 	// approval, the mode and the classifier, all of which answer the question

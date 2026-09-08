@@ -575,18 +575,32 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		notice := repeats.AskedBefore(json.RawMessage(tc.Arguments))
 		if !l.spendQuestion() {
 			// Nothing is put to the client at all, so nothing is recorded as
-			// put to them: the budget answered this one.
-			return ask.OverBudget().Result()
+			// put to them: the budget answered this one. A call that asked
+			// several is one asking and gets one answer for each of them, the
+			// way the card's own budget answers a whole card.
+			over := make([]ask.Answer, len(qs))
+			for i := range over {
+				over[i] = ask.OverBudget()
+			}
+			return ask.Reply(qs, over)
 		}
 		record(observe.DecisionAsk, observe.ReasonUser)
-		// Several questions in one call is a strip this surface does not
-		// draw; the parse already answers in a list, so the first is the
-		// whole of what a call holds today (internal/ui/chat/question.go).
-		answer := seams.Question(rpc.Question{Ask: qs[0], Turn: l.turnNow(), Round: int64(a.Rounds())})
-		if answer.Notice == "" {
-			answer.Notice = notice
+		// Several questions in one call are one card of tabs on the TUI and
+		// one question after another here, because the protocol's window
+		// answers one at a time
+		// (docs/capabilities/headless.md#a-client-answers-one-call-at-a-time).
+		// They go out in the order they were sent and the answers come back in
+		// it, which is the same promise the card makes: a client that answers
+		// two and then goes away leaves the third answered `nobody to ask`
+		// rather than leaving the turn parked.
+		answers := make([]ask.Answer, 0, len(qs))
+		for _, q := range qs {
+			answers = append(answers, seams.Question(rpc.Question{Ask: q, Turn: l.turnNow(), Round: int64(a.Rounds())}))
 		}
-		return answer.Result()
+		if answers[0].Notice == "" {
+			answers[0].Notice = notice
+		}
+		return ask.Reply(qs, answers)
 	}
 	resolveCall := func(tc provider.ToolCall) string {
 		// A server in auto mode draws no card at all. The flag is the

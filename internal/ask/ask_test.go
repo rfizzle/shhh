@@ -298,3 +298,123 @@ func TestQuestionText_IsTheWholeOfWhatMakesTwoCallsOneQuestion(t *testing.T) {
 		t.Errorf("an unreadable call is no question, got %q", got)
 	}
 }
+
+// A call may carry several questions, and they come back as a list in the
+// order they were sent.
+func TestParse_ReadsSeveralQuestionsInSendOrder(t *testing.T) {
+	qs, err := Parse(json.RawMessage(`{"questions":[
+		{"question":"Which store?","shape":"choose","options":[{"label":"A"},{"label":"B"}]},
+		{"question":"Reversible?","shape":"confirm"},
+		{"question":"Call it what?","shape":"text","note":"required"}]}`))
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	want := []string{"Which store?", "Reversible?", "Call it what?"}
+	if len(qs) != len(want) {
+		t.Fatalf("questions = %d, want %d", len(qs), len(want))
+	}
+	for i, w := range want {
+		if qs[i].Question != w {
+			t.Errorf("question %d = %q, want %q", i+1, qs[i].Question, w)
+		}
+	}
+	if qs[0].Shape != ShapeChoose || qs[1].Shape != ShapeConfirm || qs[2].Note != NoteRequired {
+		t.Errorf("every question keeps its own shape and note: %+v", qs)
+	}
+}
+
+// The limit is the card's, and the refusal names it rather than leaving the
+// model to guess how many it may have.
+func TestParse_RefusesAFifthQuestion(t *testing.T) {
+	var call strings.Builder
+	call.WriteString(`{"questions":[`)
+	for i := 0; i < MaxQuestions+1; i++ {
+		if i > 0 {
+			call.WriteString(",")
+		}
+		fmt.Fprintf(&call, `{"question":"q%d","shape":"confirm"}`, i)
+	}
+	call.WriteString(`]}`)
+	refused(t, call.String(), "too many questions", fmt.Sprintf("max %d", MaxQuestions))
+}
+
+// One question or a list of them, never both: a call that wrote both would
+// have to be told which half the reader saw.
+func TestParse_RefusesOneQuestionAndAListAtOnce(t *testing.T) {
+	refused(t, `{"question":"Which store?","shape":"confirm","questions":[{"question":"Reversible?","shape":"confirm"}]}`,
+		"not both", "questions")
+	// A question inside the list is held to every rule one on its own is,
+	// and the refusal says which of them it was.
+	refused(t, `{"questions":[{"question":"ok","shape":"confirm"},{"question":"bad","shape":"rank"}]}`,
+		"question 2", `unknown shape "rank"`)
+}
+
+// The answers to a call that asked several name their own question, so a
+// model reading them back never has to match on position alone.
+func TestReply_NamesEachQuestionInSendOrder(t *testing.T) {
+	qs := []Question{{Question: "Which store?"}, {Question: "Reversible?"}, {Question: "Call it what?"}}
+	as := []Answer{
+		{Answered: AnsweredOnCard, Picked: []string{"SQLite"}},
+		{Answered: AnsweredSkipped},
+		{Answered: AnsweredTyped, Note: "cacheStore"},
+	}
+	var got []struct {
+		Ask         string   `json:"ask"`
+		Answered    string   `json:"answered"`
+		Picked      []string `json:"picked"`
+		Note        string   `json:"note"`
+		Instruction string   `json:"instruction"`
+	}
+	if err := json.Unmarshal([]byte(Reply(qs, as)), &got); err != nil {
+		t.Fatalf("the reply to a call that asked several is a list: %v", err)
+	}
+	if len(got) != 3 {
+		t.Fatalf("answers = %d, want 3", len(got))
+	}
+	for i, q := range qs {
+		if got[i].Ask != q.Question {
+			t.Errorf("answer %d names %q, want %q", i+1, got[i].Ask, q.Question)
+		}
+	}
+	if got[0].Picked[0] != "SQLite" || got[2].Note != "cacheStore" {
+		t.Errorf("the answers did not survive in order: %+v", got)
+	}
+	if got[1].Instruction == "" {
+		t.Error("a skipped question still says what to do about it")
+	}
+	// A question the run never reached is the reader's absence rather than a
+	// silence to interpret.
+	short := Reply(qs, as[:1])
+	if !strings.Contains(short, string(AnsweredNobody)) {
+		t.Errorf("a run that collected two answers short says so: %s", short)
+	}
+}
+
+// A call that asked one question keeps the shape it has always had, byte for
+// byte: the result's shape is a fact about the call.
+func TestReply_LeavesOneQuestionAlone(t *testing.T) {
+	a := Answer{Answered: AnsweredOnCard, Picked: []string{"SQLite"}}
+	if got, want := Reply([]Question{{Question: "Which store?"}}, []Answer{a}), a.Result(); got != want {
+		t.Errorf("Reply = %s, want %s", got, want)
+	}
+	if strings.Contains(a.Result(), `"ask"`) {
+		t.Errorf("a lone answer names no question: %s", a.Result())
+	}
+}
+
+// The repeat detector keys an ask on what it asked, and a call that asked two
+// things is the same asking only when both match.
+func TestQuestionText_ReadsAWholeListOfQuestions(t *testing.T) {
+	const two = `{"questions":[{"question":"Which store?","shape":"confirm"},{"question":"Reversible?","shape":"confirm"}]}`
+	const twoAgain = `{"questions":[{"question":" Which store? ","shape":"text"},{"question":"Reversible?","shape":"text"}]}`
+	const shared = `{"questions":[{"question":"Which store?","shape":"confirm"},{"question":"Call it what?","shape":"confirm"}]}`
+	if QuestionText(json.RawMessage(two)) != QuestionText(json.RawMessage(twoAgain)) {
+		t.Error("the same two questions asked again are the same asking")
+	}
+	if QuestionText(json.RawMessage(two)) == QuestionText(json.RawMessage(shared)) {
+		t.Error("two calls that share one question out of two are not one asking")
+	}
+	if QuestionText(json.RawMessage(two)) == "" {
+		t.Error("a call that asked a list is still an asking")
+	}
+}

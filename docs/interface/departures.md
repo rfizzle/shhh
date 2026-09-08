@@ -257,3 +257,21 @@ and not two side by side: the prefix rows print their pattern with a trailing
 ellipsis and the narrow row prints its own bare. At sixty columns the
 description column is the width of a short command, and a clause saying which
 of the two a row is would be the first thing the terminal dropped.
+
+## The tab strip is the question card's, and the backlog screen keeps its rail
+
+*A gap.* The `Questions` artboard draws a tab strip over a card carrying
+several questions, and the question card draws exactly that. What the artboard
+does not settle is where the strip lives, and the only other tabbed surface in
+the product is the backlog screen — which draws no strip at all. Its tab is a
+field on the screen header's rail, and its three tabs are filters over one list
+rather than parts of one answer: stepping between them changes which rows are
+shown, not which part of a decision you are holding.
+
+So the strip is a component with one caller rather than two, and the backlog
+screen stays where it is. There is no second renderer to drift from it, which
+is the thing having a component protects; putting a strip on the backlog header
+would be a redesign of a takeover screen with its own artboard and its own
+goldens, and nothing in the question card asks for one. The gap is closed by
+drawing the backlog screen's own tabs, and if that artboard puts them on this
+strip, this is where they will already be.

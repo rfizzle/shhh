@@ -29,6 +29,13 @@ type NoteSelect struct {
 	// has no rows for RequireNote to sit on, and one that says a note is
 	// required means it of every row rather than of a chosen few.
 	Require bool
+	// Actions are keys the host answers beyond the ones this card answers
+	// for itself — the question card's way into the marked row's long form,
+	// and its way between the questions of one call. They are offered on the
+	// key row already worded, for the reason the checkbox list's are: a key
+	// that means one thing where it is declared can mean a near thing here,
+	// and the row has to say which.
+	Actions []string
 	// noteMissing marks a confirm attempt on a note-required option with an
 	// empty note; the note border hint turns red until the next key.
 	noteMissing bool
@@ -127,6 +134,7 @@ func (s *NoteSelect) View(width int) string {
 		hint = append(hint, words(keys.Select.Note, "note/options"))
 	}
 	hint = append(hint, words(keys.Select.Take, "confirm"))
+	hint = append(hint, s.Actions...)
 	switch {
 	case s.Select.Filtering:
 		hint = append(hint, words(keys.Select.ClearQ, "clear"))
@@ -134,7 +142,12 @@ func (s *NoteSelect) View(width int) string {
 		hint = append(hint, offer(keys.Select.Filter))
 	}
 	hint = append(hint, offer(keys.Select.Cancel))
-	tail = append(tail, hintRows([]string{strings.Join(hint, " · ")}, width)...)
+	// Handed over as segments and never pre-joined, the way the checkbox
+	// list's are: a row too wide for the terminal takes another row, and a
+	// joined one could only be cut in the middle of a clause — which on this
+	// row is the clause that says how to leave
+	// (docs/interface/principles.md#fold-never-hide).
+	tail = append(tail, hintRows(hint, width)...)
 
 	// The query line is pinned above the list exactly as it is on a plain
 	// card, so the budget order is the artboard's — query line, key hints,

@@ -1,0 +1,50 @@
+# Several questions in one call are one card of tabs with a submit at the end,
+# and the marked row's long form is behind the full-view key
+# (docs/interface/surfaces.md#the-question-card).
+#
+# What a golden cannot say and this can: that the arrows reach the strip
+# rather than the list under it, that the full view takes the whole screen and
+# gives it back with the question still waiting, and that the card is drawn in
+# the panel the register placed it in rather than over the transcript.
+snap 01-start "Some things worth doing first"
+keys "which store should the cache use" Enter
+snap 02-reply "I have three forks I cannot settle on my own"
+keys "go on then" Enter
+# The card arrives over an empty draft holding the keyboard, but nobody handed
+# it over, so its bare letters are not live yet: the handover chord is what
+# makes the strip's arrows and the full-view key keys at all.
+snap 03-card "Which store should the cache use?"
+keys C-Space
+# The strip: the tab the keyboard is on, the two still to answer, the submit
+# last, and the tail that says in words what the marks say in glyphs. `1 of 3`
+# is the reading a terminal with one colour is left with.
+snap 04-strip "1 of 3"
+# The long form of the marked row, on the screen the dry run already takes.
+# It answers nothing.
+keys d
+snap 05-long "in the checkout already"
+keys Escape
+snap 06-back "1 of 3"
+# Answering steps to the next question still open, so a reader working through
+# three of them presses no movement key at all. The mark on the first turns and
+# the word follows it.
+keys Enter
+snap 07-answered "2 of 3"
+keys y
+snap 08-third "3 of 3"
+# The arrows are the strip's, which is what the note key not being them is for.
+# Right off the last question is the tab that ends the set.
+keys Right
+snap 09-submit "unanswered"
+# And back, to show the strip walks both ways and the answers are still on it.
+keys Left
+snap 10-walked "3 of 3"
+keys Right
+# Enter sends every answer at once. The tab nobody answered goes back as
+# skipped rather than holding the reader at the card, which is why the model's
+# next reply arrives without the free answer ever being typed into.
+keys Enter
+snap 11-sent "Thank you, that settles all three"
+keys C-c
+keys C-c
+snap 12-exit "that is everything the screen was holding"

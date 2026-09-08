@@ -1,0 +1,10 @@
+# One reply per request. The last line repeats once these run out.
+#
+# Three questions in one call, which is the whole of what this scene is for:
+# the card that carries them is one card with a tab per question and a submit
+# at the end (docs/interface/surfaces.md#the-question-card). Nothing here acts
+# on the machine — a question is a decision and not an act — so the scene
+# leaves no trace in the workspace it is driven from.
+I have three forks I cannot settle on my own.
+tool:ask:{"questions":[{"question":"Which store should the cache use?","shape":"choose","options":[{"label":"SQLite","detail":"in the checkout already","field":"3 files","recommended":true},{"label":"Postgres","detail":"one more service to run","field":"9 files"}]},{"question":"Should the migration be reversible?","shape":"confirm"},{"question":"What should the flag be called?","shape":"text"}]}
+Thank you, that settles all three.

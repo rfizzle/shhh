@@ -6,6 +6,7 @@ package chat
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -734,5 +735,341 @@ func TestQuestion_EscLeavesAFreeAnswerOutright(t *testing.T) {
 	}
 	if !m.questionAside() {
 		t.Error("leaving the card hands the question to the draft")
+	}
+}
+
+// tabbedArgs is a call carrying three questions: a list, a yes-or-no and a
+// free answer, so the strip is exercised over all three dressings.
+const tabbedArgs = `{"questions":[
+	{"question":"Which store should the cache use?","shape":"choose","options":[
+		{"label":"Postgres","detail":"one more service to run","field":"3 files"},
+		{"label":"SQLite","detail":"in the checkout already","recommended":true}]},
+	{"question":"Should the migration be reversible?","shape":"confirm"},
+	{"question":"What should the flag be called?","shape":"text"}]}`
+
+// arrow is the strip's own key, which is the one movement the card answers
+// that the list under it does not.
+func arrow(back bool) tea.KeyPressMsg {
+	if back {
+		return tea.KeyPressMsg{Code: tea.KeyLeft}
+	}
+	return tea.KeyPressMsg{Code: tea.KeyRight}
+}
+
+// answeredList is the list of answers a call that asked several got back, in
+// the order the questions were sent.
+func answeredList(t *testing.T, m Model) []map[string]any {
+	t.Helper()
+	for i := len(m.transcript) - 1; i >= 0; i-- {
+		e := m.transcript[i]
+		if e.kind != entryTool || e.toolName != ask.ToolName {
+			continue
+		}
+		var got []map[string]any
+		if err := json.Unmarshal([]byte(e.toolResult), &got); err != nil {
+			t.Fatalf("the answers to a call that asked several are a list: %v (%q)", err, e.toolResult)
+		}
+		return got
+	}
+	t.Fatal("no answered question in the transcript")
+	return nil
+}
+
+// Several questions in one call are one card with a tab per question and a
+// submit at the end, and the strip says which are answered in a glyph and in
+// words — both of which have to survive a terminal with one colour.
+func TestQuestion_SeveralInOneCallAreTabs(t *testing.T) {
+	m := openedQuestion(t, agent.ModeManual, tabbedArgs)
+	if m.question.sheet == nil {
+		t.Fatal("a call carrying three questions should draw a sheet of tabs")
+	}
+	if n := len(m.question.sheet.pages); n != 3 {
+		t.Fatalf("pages = %d, want 3", n)
+	}
+	view := stripANSI(m.View().Content)
+	for _, want := range []string{"▸ 1", "· 2", "· 3", "submit", "1 of 3", "3 unanswered"} {
+		if !strings.Contains(view, want) {
+			t.Errorf("the strip does not say %q:\n%s", want, view)
+		}
+	}
+	// The first tab answered: the glyph turns and the words follow it, so
+	// nothing about which tabs are done is carried by colour alone.
+	m = sendKey(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
+	view = stripANSI(m.View().Content)
+	for _, want := range []string{"✓ 1 answered", "▸ 2", "2 of 3", "2 unanswered"} {
+		if !strings.Contains(view, want) {
+			t.Errorf("after one answer the strip does not say %q:\n%s", want, view)
+		}
+	}
+	if m.pendingApproval == nil {
+		t.Fatal("answering one tab must not answer the call")
+	}
+}
+
+// Answering steps to the next question still open, and the arrows walk the
+// strip both ways and wrap onto the submit.
+func TestQuestion_TheArrowsWalkTheStripAndAnsweringStepsIt(t *testing.T) {
+	m := openedQuestion(t, agent.ModeManual, tabbedArgs)
+	m = sendKey(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
+	if at := m.question.sheet.at; at != 1 {
+		t.Fatalf("answering the first tab should step to the second, at = %d", at)
+	}
+	m = sendKey(t, m, arrow(true))
+	if at := m.question.sheet.at; at != 0 {
+		t.Fatalf("the left arrow goes back a tab, at = %d", at)
+	}
+	// Forward off the last question is the submit, and once more wraps to
+	// the first: the submit is one key back from the first question rather
+	// than three keys forward from it.
+	for i := 0; i < 3; i++ {
+		m = sendKey(t, m, arrow(false))
+	}
+	if !m.question.submit {
+		t.Fatalf("the tab past the last question is the submit, at = %d", m.question.sheet.at)
+	}
+	m = sendKey(t, m, arrow(false))
+	if m.question.submit || m.question.sheet.at != 0 {
+		t.Fatalf("the strip wraps, at = %d", m.question.sheet.at)
+	}
+}
+
+// The answers go back in the order the questions were sent, each naming its
+// own question, and a tab nobody answered goes back skipped rather than
+// holding the reader at the card.
+func TestQuestion_SubmitSendsEveryAnswerInSendOrder(t *testing.T) {
+	m := openedQuestion(t, agent.ModeManual, tabbedArgs)
+	// The first question's recommendation, then the yes-or-no, then the free
+	// answer left alone.
+	m = sendKey(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = sendKey(t, m, tea.KeyPressMsg{Code: 'y', Text: "y"})
+	if m.question.submit || m.question.sheet.at != 2 {
+		t.Fatalf("two answers should step to the question still open, at = %d", m.question.sheet.at)
+	}
+	// The last question is the free answer, stepped onto and left; the strip
+	// says what leaving it costs before the submit is reached.
+	view := stripANSI(m.View().Content)
+	if !strings.Contains(view, "1 unanswered") {
+		t.Errorf("the strip should say what is still open:\n%s", view)
+	}
+	m = sendKey(t, m, arrow(false))
+	if !m.question.submit {
+		t.Fatal("the tab after the last question is the submit")
+	}
+	m = sendKey(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
+	got := answeredList(t, m)
+	if len(got) != 3 {
+		t.Fatalf("answers = %d, want 3", len(got))
+	}
+	want := []string{
+		"Which store should the cache use?",
+		"Should the migration be reversible?",
+		"What should the flag be called?",
+	}
+	for i, w := range want {
+		if got[i]["ask"] != w {
+			t.Errorf("answer %d names %v, want %q", i+1, got[i]["ask"], w)
+		}
+	}
+	if picked, _ := got[0]["picked"].([]any); len(picked) != 1 || picked[0] != "SQLite" {
+		t.Errorf("the first answer is the pick: %+v", got[0])
+	}
+	if picked, _ := got[1]["picked"].([]any); len(picked) != 1 || picked[0] != "yes" {
+		t.Errorf("the second answer is the yes-or-no: %+v", got[1])
+	}
+	if got[2]["answered"] != string(ask.AnsweredSkipped) {
+		t.Errorf("a tab nobody answered goes back skipped: %+v", got[2])
+	}
+	if m.pendingApproval != nil || m.question != nil {
+		t.Error("the submit answers the whole call")
+	}
+}
+
+// Esc is one press on a tabbed card: it closes the whole card, not a tab, and
+// the sentence the reader sends next answers every question still open.
+func TestQuestion_EscFromASecondTabClosesTheWholeCard(t *testing.T) {
+	m := openedQuestion(t, agent.ModeManual, tabbedArgs)
+	m = sendKey(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
+	if m.question == nil || m.question.sheet.at != 1 {
+		t.Fatal("the second tab should have the keyboard")
+	}
+	m = sendKey(t, m, tea.KeyPressMsg{Code: tea.KeyEscape})
+	if m.question != nil {
+		t.Fatal("esc closes the whole card rather than one tab of it")
+	}
+	if !m.questionAside() || m.pendingApproval == nil {
+		t.Fatal("every unanswered question stays outstanding")
+	}
+	m = submitDraft(t, m, "use whatever is already in the checkout")
+	got := answeredList(t, m)
+	if len(got) != 3 {
+		t.Fatalf("answers = %d, want 3", len(got))
+	}
+	if picked, _ := got[0]["picked"].([]any); len(picked) != 1 || picked[0] != "SQLite" {
+		t.Errorf("the answer already given survives esc: %+v", got[0])
+	}
+	for _, i := range []int{1, 2} {
+		if got[i]["answered"] != string(ask.AnsweredTyped) {
+			t.Errorf("answer %d should be the reader's own words: %+v", i+1, got[i])
+		}
+		if got[i]["note"] != "use whatever is already in the checkout" {
+			t.Errorf("answer %d does not carry the sentence: %+v", i+1, got[i])
+		}
+	}
+	if users, _ := countRows(m); users != 0 {
+		t.Errorf("the sentence answers the questions and is not also a message, user rows = %d", users)
+	}
+}
+
+// The full view puts the marked row's long form on the screen the dry run
+// already uses and gives the screen back with the question still waiting. It
+// answers nothing.
+func TestQuestion_TheFullViewReadsARowAndAnswersNothing(t *testing.T) {
+	m := openedQuestion(t, agent.ModeManual, chooseArgs)
+	m = sendKey(t, m, tea.KeyPressMsg{Code: 'd', Text: "d"})
+	if m.state != stateOutputFull || m.fullOutput == nil {
+		t.Fatalf("the full-view key should open the screen, state = %d", m.state)
+	}
+	view := stripANSI(m.View().Content)
+	for _, want := range []string{"in the checkout already", "back to the question"} {
+		if !strings.Contains(view, want) {
+			t.Errorf("the screen does not carry %q:\n%s", want, view)
+		}
+	}
+	if m.pendingApproval == nil {
+		t.Fatal("reading a row must not answer the question")
+	}
+	m = sendKey(t, m, tea.KeyPressMsg{Code: tea.KeyEscape})
+	if m.state != stateQuestion || m.question == nil {
+		t.Fatalf("the screen gives itself back to the question, state = %d", m.state)
+	}
+	if m.pendingApproval == nil {
+		t.Fatal("the question is still waiting")
+	}
+	// The row the model did not write has a long form of its own, because
+	// what it means is the card's to say.
+	m = sendKey(t, m, tea.KeyPressMsg{Code: '4', Text: "4"})
+	if m.question == nil {
+		t.Fatal("the something-else row opens the note rather than answering")
+	}
+}
+
+// While the note holds the keyboard the card's own keys are text: an arrow
+// moves the cursor and `d` is a `d`.
+func TestQuestion_TheStripAndTheFullViewAreInertWhileTheNoteIsOpen(t *testing.T) {
+	m := openedQuestion(t, agent.ModeManual, tabbedArgs)
+	m = sendKey(t, m, tea.KeyPressMsg{Code: tea.KeyTab})
+	if !m.question.noteHolds() {
+		t.Fatal("tab should put the keyboard in the note")
+	}
+	m = sendKey(t, m, tea.KeyPressMsg{Code: 'd', Text: "d"})
+	if m.state == stateOutputFull {
+		t.Error("the full-view key is a letter while the note has the keyboard")
+	}
+	m = sendKey(t, m, arrow(false))
+	if m.question.sheet.at != 0 {
+		t.Errorf("the strip does not move while the note has the keyboard, at = %d", m.question.sheet.at)
+	}
+	if got := m.question.sel.Note.Value(); got != "d" {
+		t.Errorf("the letter should have been typed, note = %q", got)
+	}
+}
+
+// A call past what a card can draw is refused before it reaches the screen,
+// the way every other malformed call is.
+func TestQuestion_AFifthQuestionIsRefusedBeforeTheCard(t *testing.T) {
+	var call strings.Builder
+	call.WriteString(`{"questions":[`)
+	for i := 0; i <= ask.MaxQuestions; i++ {
+		if i > 0 {
+			call.WriteString(",")
+		}
+		fmt.Fprintf(&call, `{"question":"question %d","shape":"confirm"}`, i)
+	}
+	call.WriteString(`]}`)
+	updated, _ := questionModel(t, agent.ModeManual).Update(askCall(call.String()))
+	m := updated.(Model)
+	if m.question != nil || m.state == stateQuestion {
+		t.Fatal("a call past the limit draws no card")
+	}
+	var found string
+	for _, e := range m.transcript {
+		found += e.text + "\n" + e.toolResult + "\n"
+	}
+	for _, want := range []string{"too many questions", fmt.Sprintf("max %d", ask.MaxQuestions)} {
+		if !strings.Contains(found, want) {
+			t.Errorf("the refusal should name the limit (%q), got:\n%s", want, found)
+		}
+	}
+}
+
+// The card that was set down comes back as it was left: the answers already
+// given are still on it and the tab the reader left is the tab they return to.
+// Reopening answers nothing.
+func TestQuestion_ReopeningATabbedCardKeepsWhatWasAnswered(t *testing.T) {
+	m := openedQuestion(t, agent.ModeManual, tabbedArgs)
+	m = sendKey(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = sendKey(t, m, tea.KeyPressMsg{Code: tea.KeyEscape})
+	if !m.questionAside() {
+		t.Fatal("esc should set the whole card down with the call outstanding")
+	}
+	// The rail counts what the next sentence is about to answer, which is the
+	// tabs still open rather than the one card holding them.
+	if rail := stripANSI(m.noticeLine()); !strings.Contains(rail, "2 questions waiting") {
+		t.Errorf("the rail should count the questions still open: %q", rail)
+	}
+	m.reopenQuestion()
+	if m.question == nil || m.question.sheet == nil {
+		t.Fatal("the handover should bring the card back")
+	}
+	if at := m.question.sheet.at; at != 1 {
+		t.Errorf("the card comes back on the tab it was left on, at = %d", at)
+	}
+	if n := m.question.sheet.answered(); n != 1 {
+		t.Errorf("the answer already given must survive, answered = %d", n)
+	}
+	if m.pendingApproval == nil {
+		t.Error("reopening answers nothing")
+	}
+}
+
+// A card whose tabs were all answered and set down before it was sent is
+// still a call waiting: the sentence is not an answer to a question, so it
+// goes beside the picks as the words the note field is for, and nothing is
+// swallowed.
+func TestQuestion_ASentenceOverAnAnsweredCardIsTheWordsBesideThePicks(t *testing.T) {
+	m := openedQuestion(t, agent.ModeManual, tabbedArgs)
+	m = sendKey(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = sendKey(t, m, tea.KeyPressMsg{Code: 'y', Text: "y"})
+	// The free answer, opened with its own key and confirmed.
+	m = sendKey(t, m, tea.KeyPressMsg{Code: tea.KeyTab})
+	m.question.sel.Note.SetValue("cacheStore")
+	m = sendKey(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
+	if !m.question.submit {
+		t.Fatalf("three answers should stand on the submit, at = %d", m.question.sheet.at)
+	}
+	if rail := stripANSI(m.noticeLine()); rail != "" {
+		// While the card is on the screen the rail says nothing; the count is
+		// for a card behind the draft.
+		t.Logf("rail while the card is up: %q", rail)
+	}
+	m = sendKey(t, m, tea.KeyPressMsg{Code: tea.KeyEscape})
+	if rail := stripANSI(m.noticeLine()); !strings.Contains(rail, "1 question waiting") {
+		t.Errorf("a call with nothing open is still a call waiting: %q", rail)
+	}
+	m = submitDraft(t, m, "whichever needs no new service")
+	got := answeredList(t, m)
+	if len(got) != 3 {
+		t.Fatalf("answers = %d, want 3", len(got))
+	}
+	for _, i := range []int{0, 1} {
+		if got[i]["answered"] != string(ask.AnsweredOnCard) {
+			t.Errorf("answer %d should keep its pick: %+v", i+1, got[i])
+		}
+		if got[i]["note"] != "whichever needs no new service" {
+			t.Errorf("answer %d should carry the sentence beside the pick: %+v", i+1, got[i])
+		}
+	}
+	if got[2]["note"] != "cacheStore" {
+		t.Errorf("an answer that carries its own words keeps them: %+v", got[2])
 	}
 }

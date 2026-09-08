@@ -204,7 +204,7 @@ func pairs() []Binding {
 	return []Binding{
 		Reading.Move, Reading.Match, Reading.Half,
 		Context.Move, Backlog.Move, Backlog.Page, Sprint.Move,
-		Select.Move, Select.MoveJK,
+		Select.Move, Select.MoveJK, Select.Tab,
 		Review.MoveFile, Review.MoveHunk,
 		Agent.Move, Profile.Move,
 		Diff.Scroll, Diff.Hunk, Output.Scroll,

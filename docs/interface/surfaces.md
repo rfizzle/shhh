@@ -808,11 +808,33 @@ fill — a file count, a cost — so a list of approaches can be compared rather
 than walked. A long description of the marked row goes behind the full-view
 key, which takes the screen the diff already knows how to take and gives it
 back with the question still waiting; the panel is too narrow for two columns.
+It answers nothing: reading what an answer means must not cost the reader the
+answer. The row the model did not write has a long form of its own there,
+because what *something else* means is the card's to say rather than the
+model's.
 
-Several questions in one call are tabs on the tab bar the backlog screen
-draws, with a submit tab at the end. The strip says which are answered with a
-glyph and a word. Four is the most one call may carry, because the panel has
-forty percent of the terminal and a fifth tab would be a scroll.
+Several questions in one call are tabs on one card, with a submit tab at the
+end. The strip marks the tab you are standing on and the tabs already
+answered, and says the same thing in words beside them — where you are among
+the questions, and how many are still open. Four is the most one call may
+carry, because the panel has forty percent of the terminal and a fifth tab
+would be a scroll.
+
+The strip steps on the arrows, because the keystroke a tab bar has everywhere
+else is the one the note is already on and one keystroke may answer one act on
+one surface. Answering a tab steps to the next question still open, so a
+reader working through three of them presses no movement key at all. The
+submit sends every answer at once, in the order the questions were asked, each
+naming the question it answers; a tab nobody answered goes back as *skipped*
+rather than holding the reader at the card, and the strip says so from the
+first tab rather than at the last one. Esc is still one press and still leaves:
+it closes the whole card, not a tab of it, and every question still open goes
+to the draft the way one does.
+
+The free answer is the one tab whose field is shut when you step onto it. A
+field that opened with the tab would take the arrows the moment the reader
+arrived, and the strip they were walking would stop moving on the tab they had
+not asked to type into; the note key opens it and hands the keyboard back.
 
 Esc leaves the card and answers nothing. The question is held, the notice
 rail counts it — *1 question waiting* — and the next message the reader sends

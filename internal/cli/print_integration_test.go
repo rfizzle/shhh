@@ -73,10 +73,14 @@ func buildShhhBinary(dir string) {
 // The last reply in a script stands for every round after it, so a script of
 // one tool call is a model that will never stop calling it.
 type reply struct {
-	text   string
-	tool   string
-	args   map[string]string
-	status int
+	text string
+	tool string
+	args map[string]string
+	// rawArgs is the call's arguments written out, for a call whose shape is
+	// not a flat object of strings — a question carrying a list of questions
+	// is the one. It wins over args where both are set.
+	rawArgs string
+	status  int
 	// match, when set, is the request this answer is for: the text appears
 	// in one of the request's user messages, and the answer is spent the
 	// first time a request carries it.
@@ -354,9 +358,13 @@ func sseSender(w http.ResponseWriter) func(sseChunk) {
 func writeReply(w http.ResponseWriter, step reply) {
 	send := sseSender(w)
 	if step.tool != "" {
-		args, _ := json.Marshal(step.args)
+		raw := step.rawArgs
+		if raw == "" {
+			args, _ := json.Marshal(step.args)
+			raw = string(args)
+		}
 		send(sseChunk{Choices: []sseChoice{{Delta: sseDelta{ToolCalls: []sseCall{{
-			Type: "function", ID: "call-1", Function: sseFunc{Name: step.tool, Arguments: string(args)},
+			Type: "function", ID: "call-1", Function: sseFunc{Name: step.tool, Arguments: raw},
 		}}}}}})
 		send(sseChunk{Choices: []sseChoice{{FinishReason: "tool_calls"}}})
 	} else {

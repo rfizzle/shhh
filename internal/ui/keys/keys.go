@@ -879,6 +879,30 @@ type SelectKeys struct {
 	Toggle Binding
 	All    Binding
 	Note   Binding
+	// Tab steps between the parts of one card — the questions of a call that
+	// asked several, and the submit that ends them.
+	//
+	// It is the arrows and not `tab`, which is the keystroke a tab strip has
+	// everywhere else in the product, because on this family `tab` is already
+	// the note and one keystroke may answer one act on one surface. Of the
+	// three ways out of that — move the note, give the strip a chord, or give
+	// it the arrows — the arrows are the only one that costs nothing: `↑↓`
+	// already walk the rows, so `←→` walking the strip is the same gesture
+	// one axis over, and no reader has to unlearn where the note is. The
+	// decision is the family's rather than one card's, so the next selector
+	// that grows tabs finds the keys already spent.
+	Tab Binding
+	// Long puts the marked row's own long form on the full screen and gives
+	// the screen back with nothing answered — the panel is too narrow for a
+	// second column, and the full view is where a card already sends what
+	// will not fit (docs/interface/surfaces.md#the-approval-card).
+	//
+	// It is `d`, which is the letter the approval card's full diff already
+	// spends on the same act: take what is under the pointer to the screen
+	// the whole product reads long things on. `Alt` spends `d` too and no
+	// surface offers both — a card with a default to set has no long form
+	// behind it and the question card has no default to set.
+	Long Binding
 	// Delete and Rename are the saved-chat picker's housekeeping keys,
 	// answered on the focused row: the first arms an inline confirm, the
 	// second opens a rename row. Bare letters, so like Alt they are text
@@ -910,6 +934,8 @@ var Select = SelectKeys{
 	Toggle: bind("space", "toggle", " ", "space"),
 	All:    bind("a", "all or none", "a"),
 	Note:   bind("tab", "note or options", "tab"),
+	Tab:    bind("←→", "the next question", "left", "right"),
+	Long:   bind("d", "the full answer", "d"),
 	Delete: bind("x", "delete", "x"),
 	Rename: bind("r", "rename", "r"),
 	Cancel: bind("esc", "cancel", "esc", "ctrl+c"),

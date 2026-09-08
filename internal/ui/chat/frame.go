@@ -496,7 +496,7 @@ func (m Model) questionNotice() string {
 	// says so already, and the count stays the count — which is also what
 	// keeps the three promises legible side by side at sixty columns, where
 	// they compete for one rail.
-	return questionNoticeFor(1, m.frameLayout() != frameWide)
+	return questionNoticeFor(m.questionsWaiting(), m.frameLayout() != frameWide)
 }
 
 // questionNoticeFor is the wording, counted, in the shape followUpNotice

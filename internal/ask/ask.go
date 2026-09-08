@@ -105,6 +105,21 @@ const MaxLabelLen = 80
 // See docs/capabilities/coding-agent.md#the-model-can-ask.
 const PerTurnBudget = 3
 
+// MaxQuestions bounds how many questions one call may carry, because several
+// in one call are drawn as tabs on one card and the card has forty per cent
+// of the terminal (docs/interface/principles.md#one-interaction-panel). On a
+// thirty-row terminal that is twelve rows, and a tab strip, a question line,
+// four option rows and a key row is already eleven of them: a fifth tab
+// could only be paid for out of the answers. So the fifth question is
+// refused, naming the limit, rather than half-drawn.
+//
+// It is larger than PerTurnBudget and does not contradict it, because the two
+// bound different things. The budget bounds interruptions — how often a turn
+// stops and takes the keyboard — and one card carrying four questions is one
+// interruption, which is the shape the budget is asking the model for. This
+// bounds what fits on that one card.
+const MaxQuestions = 4
+
 // Option is one answer the model offers.
 type Option struct {
 	// Label is the answer itself, and is what comes back: an answer names
@@ -207,6 +222,11 @@ type Answer struct {
 // it: a sentence would have to be parsed back, which is the thing the whole
 // tool exists to stop.
 type result struct {
+	// Ask is the question this answers, in the model's own words. It is
+	// present only where a call carried several, because a call that asked
+	// one question already knows which one came back and a field that was
+	// always there would be a field to read on every answer.
+	Ask      string   `json:"ask,omitempty"`
 	Answered string   `json:"answered"`
 	Picked   []string `json:"picked"`
 	Note     string   `json:"note"`
@@ -218,8 +238,8 @@ type result struct {
 	Notice string `json:"notice,omitempty"`
 }
 
-// Result is the tool result the model reads.
-func (a Answer) Result() string {
+// wire is the answer as the model reads it, with no question beside it.
+func (a Answer) wire() result {
 	r := result{Answered: string(a.Answered), Picked: a.Picked, Note: a.Note, Notice: a.Notice}
 	if r.Picked == nil {
 		// An empty list and not null, for the reason the note is an empty
@@ -230,8 +250,13 @@ func (a Answer) Result() string {
 	case AnsweredSkipped, AnsweredNobody:
 		r.Instruction = carryOn
 	}
+	return r
+}
+
+// Result is the tool result the model reads.
+func (a Answer) Result() string {
 	// The struct has no field that can fail to marshal.
-	out, _ := json.Marshal(r)
+	out, _ := json.Marshal(a.wire())
 	return string(out)
 }
 
@@ -247,6 +272,42 @@ func OverBudget() Answer {
 			"this turn's budget of %d questions is spent, so this one was not put to anybody. "+
 				"Do not ask again in this turn.", PerTurnBudget),
 	}
+}
+
+// Reply is the whole of what one call gets back: the answer where it asked
+// one question, and a list of them where it asked several.
+//
+// The list is in the order the questions were sent and every entry names its
+// own question, so a model reading them back never has to match an answer to
+// a question by counting. The reader may have answered the third tab first,
+// and a list that could only be read positionally would make the order the
+// answers were *given* in a fact the model has to reason about.
+//
+// A call that asked one question keeps the shape it has always had. The
+// result's shape is a fact about the call rather than about the answering,
+// which is one rule stated once rather than two shapes to tell apart.
+func Reply(qs []Question, as []Answer) string {
+	if len(qs) < 2 {
+		if len(as) == 0 {
+			return Nobody().Result()
+		}
+		return as[0].Result()
+	}
+	out := make([]result, 0, len(qs))
+	for i, q := range qs {
+		// A question the run never reached an answer for is one whose reader
+		// went away, which is what Nobody says and what the loop that
+		// collected these would have written anyway.
+		a := Nobody()
+		if i < len(as) {
+			a = as[i]
+		}
+		r := a.wire()
+		r.Ask = q.Question
+		out = append(out, r)
+	}
+	res, _ := json.Marshal(out)
+	return string(res)
 }
 
 // Nobody is the answer to a question that had somebody to ask and lost them —
@@ -291,17 +352,44 @@ func (a Answer) Validate(q Question) error {
 func ToolDefinition() provider.Tool {
 	return provider.Tool{
 		Name: ToolName,
-		Description: "Put one question to the person and wait for their answer. " +
+		Description: "Put a question to the person and wait for their answer. " +
 			"Only for a fork you cannot decide and where the answers would lead to materially different work: " +
 			"which of several approaches, whether a change should reach further, what a thing should be called. " +
 			"Where the answers would lead to the same work, and for anything the request, the tree or the project's own documents already answer, do not ask: state the assumption you would have asked about and carry on. Asking instead of reading spends the person's attention. " +
 			"A turn has room for only a few questions, and one past that count is answered skipped without reaching anybody. " +
 			"Offer the answers you can see; the person can always answer with something you did not offer, or leave a note beside their pick. " +
 			"You are told how they answered: a pick on the card, typed text, skipped, or nobody to ask. " +
-			"An answer of skipped means nobody chose — state the assumption you would have asked about and carry on.",
+			"An answer of skipped means nobody chose — state the assumption you would have asked about and carry on. " +
+			"Where you need several answers before you can start, ask for them in one call through `questions` (at most four): " +
+			"they are put on one card as tabs, so the person sees the third before answering the first, " +
+			"and the answers come back in the order you sent them, each naming its own question.",
 		Parameters: json.RawMessage(`{
 			"type": "object",
 			"properties": {
+				` + questionProperties + `,
+				"questions": {
+					"type": "array",
+					"description": "Several questions in one call, at most four, drawn as tabs on one card with a submit at the end. Use this instead of the fields above, never as well as them.",
+					"items": {
+						"type": "object",
+						"properties": {` + questionProperties + `},
+						"required": ["question", "shape"]
+					}
+				}
+			}
+		}`),
+	}
+}
+
+// questionProperties is one question's own fields. It is written once and
+// spliced into both places a question can be written — the call itself, and
+// an entry in its list — because two spellings of one shape is the drift the
+// parse would then have to forgive.
+//
+// Neither place can be required at the top level for that reason: a call
+// writes one or the other, and the refusal that says so is the parse's, where
+// it can name which of the two was missing.
+const questionProperties = `
 				"question": {"type": "string", "description": "The question itself, in one or two short sentences"},
 				"shape": {"type": "string", "enum": ["choose", "choose_many", "confirm", "text"], "description": "choose: one answer from the options. choose_many: any number of them. confirm: yes or no, no options. text: a short answer in their own words, no options"},
 				"options": {
@@ -319,11 +407,22 @@ func ToolDefinition() provider.Tool {
 						"required": ["label"]
 					}
 				},
-				"note": {"type": "string", "enum": ["optional", "required"], "description": "optional (the default) offers a note field beside the pick; required refuses an answer without one"}
-			},
-			"required": ["question", "shape"]
-		}`),
-	}
+				"note": {"type": "string", "enum": ["optional", "required"], "description": "optional (the default) offers a note field beside the pick; required refuses an answer without one"}`
+
+// questionArgs is one question as the model writes it. The same object
+// whether it arrives as the call itself or as one entry in the call's list,
+// which is why the parse below reads only this shape.
+type questionArgs struct {
+	Question string `json:"question"`
+	Shape    string `json:"shape"`
+	Note     string `json:"note"`
+	Options  []struct {
+		Label       string `json:"label"`
+		Detail      string `json:"detail"`
+		Field       string `json:"field"`
+		Recommended bool   `json:"recommended"`
+		Unavailable string `json:"unavailable"`
+	} `json:"options"`
 }
 
 // QuestionText is the question an ask call is putting, or "" where the call
@@ -331,52 +430,89 @@ func ToolDefinition() provider.Tool {
 // same question, and the only part of a call a reader telling one asking from
 // another should be held to: a model that re-asks with its options reworded
 // has asked the same thing twice.
+//
+// A call carrying several is all of them, in the order it sent them, because
+// the card puts them as one asking: the same three questions asked again are
+// the same asking again, and two calls that share one question out of three
+// are not.
 func QuestionText(raw json.RawMessage) string {
 	var args struct {
-		Question string `json:"question"`
+		Question  string `json:"question"`
+		Questions []struct {
+			Question string `json:"question"`
+		} `json:"questions"`
 	}
 	if err := json.Unmarshal(raw, &args); err != nil {
 		return ""
 	}
-	return strings.TrimSpace(args.Question)
+	if len(args.Questions) == 0 {
+		return strings.TrimSpace(args.Question)
+	}
+	asked := make([]string, 0, len(args.Questions))
+	for _, q := range args.Questions {
+		asked = append(asked, strings.TrimSpace(q.Question))
+	}
+	return strings.Join(asked, "\x00")
 }
 
-// Parse validates an ask call's arguments.
+// Parse validates an ask call's arguments, in the order they were written.
 //
-// It answers a slice because a call carries a list of questions the moment
-// several in one call are drawn; today it is always one, and a caller that
-// reads only the first is reading the whole of what a call may hold.
+// A call carries one question or a list of them, never both: the two spell
+// the same thing and a call that wrote both would have to be told which half
+// the reader saw. The list is capped at MaxQuestions, which is the card's
+// number and not a taste.
 func Parse(raw json.RawMessage) ([]Question, error) {
 	var args struct {
-		Question string `json:"question"`
-		Shape    string `json:"shape"`
-		Note     string `json:"note"`
-		Options  []struct {
-			Label       string `json:"label"`
-			Detail      string `json:"detail"`
-			Field       string `json:"field"`
-			Recommended bool   `json:"recommended"`
-			Unavailable string `json:"unavailable"`
-		} `json:"options"`
+		questionArgs
+		Questions []questionArgs `json:"questions"`
 	}
 	if err := json.Unmarshal(raw, &args); err != nil {
 		return nil, fmt.Errorf("invalid arguments: %w", err)
 	}
+	if len(args.Questions) == 0 {
+		q, err := parseQuestion(args.questionArgs)
+		if err != nil {
+			return nil, err
+		}
+		return []Question{q}, nil
+	}
+	if strings.TrimSpace(args.Question) != "" || strings.TrimSpace(args.Shape) != "" {
+		return nil, fmt.Errorf("a call asks one question or a list of them, not both — put every question in %q", "questions")
+	}
+	if len(args.Questions) > MaxQuestions {
+		return nil, fmt.Errorf("too many questions (%d, max %d) — the card draws them as tabs and has forty per cent of the terminal; ask the rest once these are answered", len(args.Questions), MaxQuestions)
+	}
+	qs := make([]Question, 0, len(args.Questions))
+	for i, one := range args.Questions {
+		q, err := parseQuestion(one)
+		if err != nil {
+			// Numbered from one, in the order they were sent, because that
+			// is the order the tabs are drawn in and the order the answers
+			// come back in.
+			return nil, fmt.Errorf("question %d: %w", i+1, err)
+		}
+		qs = append(qs, q)
+	}
+	return qs, nil
+}
+
+// parseQuestion validates one question, wherever it was written.
+func parseQuestion(args questionArgs) (Question, error) {
 	q := Question{Question: strings.TrimSpace(args.Question)}
 	if q.Question == "" {
-		return nil, fmt.Errorf("question is required")
+		return Question{}, fmt.Errorf("question is required")
 	}
 	if n := utf8.RuneCountInString(q.Question); n > MaxQuestionLen {
 		// Counted in characters and not in bytes, because the cap is about
 		// what fits on a card and the model is told the number in the units
 		// the message names.
-		return nil, fmt.Errorf("question is too long (%d chars, max %d) — a question is one or two short sentences", n, MaxQuestionLen)
+		return Question{}, fmt.Errorf("question is too long (%d chars, max %d) — a question is one or two short sentences", n, MaxQuestionLen)
 	}
 	switch Shape(args.Shape) {
 	case ShapeChoose, ShapeChooseMany, ShapeConfirm, ShapeText:
 		q.Shape = Shape(args.Shape)
 	default:
-		return nil, fmt.Errorf("unknown shape %q (valid: %s)", args.Shape, shapeList())
+		return Question{}, fmt.Errorf("unknown shape %q (valid: %s)", args.Shape, shapeList())
 	}
 	switch Note(args.Note) {
 	case "":
@@ -384,18 +520,18 @@ func Parse(raw json.RawMessage) ([]Question, error) {
 	case NoteOptional, NoteRequired:
 		q.Note = Note(args.Note)
 	default:
-		return nil, fmt.Errorf("unknown note %q (valid: optional, required)", args.Note)
+		return Question{}, fmt.Errorf("unknown note %q (valid: optional, required)", args.Note)
 	}
 	listed := q.Shape == ShapeChoose || q.Shape == ShapeChooseMany
 	if !listed && len(args.Options) > 0 {
-		return nil, fmt.Errorf("shape %q takes no options — use choose or choose_many for a question with a list", q.Shape)
+		return Question{}, fmt.Errorf("shape %q takes no options — use choose or choose_many for a question with a list", q.Shape)
 	}
 	if listed {
 		if len(args.Options) < 2 {
-			return nil, fmt.Errorf("shape %q needs at least two options — use confirm for a yes-or-no and text for a free answer", q.Shape)
+			return Question{}, fmt.Errorf("shape %q needs at least two options — use confirm for a yes-or-no and text for a free answer", q.Shape)
 		}
 		if len(args.Options) > MaxOptions {
-			return nil, fmt.Errorf("too many options (%d, max %d) — a list past that is a catalog rather than a choice", len(args.Options), MaxOptions)
+			return Question{}, fmt.Errorf("too many options (%d, max %d) — a list past that is a catalog rather than a choice", len(args.Options), MaxOptions)
 		}
 	}
 	seen := map[string]bool{}
@@ -403,15 +539,15 @@ func Parse(raw json.RawMessage) ([]Question, error) {
 	for _, o := range args.Options {
 		label := strings.TrimSpace(o.Label)
 		if label == "" {
-			return nil, fmt.Errorf("every option needs a label")
+			return Question{}, fmt.Errorf("every option needs a label")
 		}
 		if n := utf8.RuneCountInString(label); n > MaxLabelLen {
-			return nil, fmt.Errorf("option label is too long (%d chars, max %d)", n, MaxLabelLen)
+			return Question{}, fmt.Errorf("option label is too long (%d chars, max %d)", n, MaxLabelLen)
 		}
 		if seen[label] {
 			// Two rows with one label would come back as one answer and the
 			// reader could not tell which they took.
-			return nil, fmt.Errorf("two options share the label %q", label)
+			return Question{}, fmt.Errorf("two options share the label %q", label)
 		}
 		seen[label] = true
 		if o.Recommended {
@@ -420,7 +556,7 @@ func Parse(raw json.RawMessage) ([]Question, error) {
 				// A row that leads the list and cannot be taken is a
 				// recommendation against itself, and the reader would have
 				// to work out which half of it to believe.
-				return nil, fmt.Errorf("option %q is recommended and unavailable at once", label)
+				return Question{}, fmt.Errorf("option %q is recommended and unavailable at once", label)
 			}
 		}
 		q.Options = append(q.Options, Option{
@@ -432,7 +568,7 @@ func Parse(raw json.RawMessage) ([]Question, error) {
 		})
 	}
 	if recommended > 1 {
-		return nil, fmt.Errorf("%d options are marked recommended — a recommendation is one answer", recommended)
+		return Question{}, fmt.Errorf("%d options are marked recommended — a recommendation is one answer", recommended)
 	}
-	return []Question{q}, nil
+	return q, nil
 }

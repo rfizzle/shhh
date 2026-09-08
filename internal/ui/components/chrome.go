@@ -324,7 +324,20 @@ func packOffersIn(offers []KeyOffer, width int, live bool) []string {
 // card's sentence about the draft — is fitted by its own surface first, in
 // the order that surface gives things up.
 func hintRows(segments []string, width int) []string {
-	room := width - cardFrameWidth
+	return HintRows(segments, width-cardFrameWidth)
+}
+
+// CardHintRows is HintRows for a row drawn inside a card, which pays for the
+// card's own frame before it has room of its own. It is the door a host
+// outside this package uses to lay a key row the way every card lays one.
+func CardHintRows(segments []string, width int) []string {
+	return hintRows(segments, width)
+}
+
+// HintRows is the same for a row drawn bare in a panel, where the whole width
+// is the room. A key row that clipped would clip the clause that says how to
+// leave, which is the one clause invariant 5 exists to keep.
+func HintRows(segments []string, room int) []string {
 	if joined := strings.Join(segments, " · "); lipgloss.Width(joined) <= room {
 		return []string{sty.Hint.Render(joined)}
 	}

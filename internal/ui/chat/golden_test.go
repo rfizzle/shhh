@@ -2581,3 +2581,58 @@ func TestGolden_QuestionCard(t *testing.T) {
 		}
 	})
 }
+
+// TestGolden_QuestionTabs captures a call that asked several questions at once
+// (docs/interface/surfaces.md#the-question-card): the strip with a tab
+// answered and a tab not, the free answer whose field is shut until the note
+// key opens it, and the tab that ends the set.
+//
+// It is pinned in both palettes because the whole of what the strip says has
+// to survive a terminal with one colour: the marks say which tab is done and
+// which has the keyboard, and the tail says the same thing in words along with
+// what leaving a tab open would cost. Four questions is the most a call may
+// carry (ask.MaxQuestions), which is the width the strip is tightest at.
+func TestGolden_QuestionTabs(t *testing.T) {
+	captureGolden(t, "question-tabs", "several questions on one card", goldenWidths, func(width int) []golden.Panel {
+		build := func(args string, steps ...tea.KeyPressMsg) string {
+			m := frameModel(t, width, 40).WithAsk()
+			m.state = stateStreaming
+			updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{{
+				ID: "call_q", Name: ask.ToolName, Arguments: args,
+			}}})
+			next := updated.(Model)
+			for _, s := range steps {
+				again, _ := next.Update(s)
+				next = again.(Model)
+			}
+			return strings.Join(next.questionLines(), "\n")
+		}
+		const three = `{"questions":[
+			{"question":"Which store should the cache use?","shape":"choose","options":[
+				{"label":"SQLite","detail":"in the checkout already","field":"3 files","recommended":true},
+				{"label":"Postgres","detail":"one more service to run","field":"9 files"}]},
+			{"question":"Should the migration be reversible?","shape":"confirm"},
+			{"question":"What should the flag be called?","shape":"text"}]}`
+		const four = `{"questions":[
+			{"question":"Which store should the cache use?","shape":"choose","options":[
+				{"label":"SQLite","recommended":true},{"label":"Postgres"}]},
+			{"question":"Should the migration be reversible?","shape":"confirm"},
+			{"question":"Which packages should the flag reach?","shape":"choose_many","options":[
+				{"label":"internal/agent"},{"label":"internal/cli"}]},
+			{"question":"What should the flag be called?","shape":"text"}]}`
+		enter := tea.KeyPressMsg{Code: tea.KeyEnter}
+		right := tea.KeyPressMsg{Code: tea.KeyRight}
+		return []golden.Panel{
+			{Label: "three questions · the first tab has the keyboard and none is answered yet",
+				View: build(three)},
+			{Label: "one answered · the mark turns and the tail counts what is still open",
+				View: build(three, enter)},
+			{Label: "the free answer · its field is shut so the arrows stay the strip's",
+				View: build(three, enter, tea.KeyPressMsg{Code: 'y', Text: "y"})},
+			{Label: "the tab that ends the set · what enter sends, and what leaving a tab open costs",
+				View: build(three, enter, tea.KeyPressMsg{Code: 'y', Text: "y"}, right)},
+			{Label: "four questions · the most one call may carry, which is where the strip is tightest",
+				View: build(four, enter, right)},
+		}
+	})
+}

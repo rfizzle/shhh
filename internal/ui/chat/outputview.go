@@ -134,7 +134,10 @@ func (m Model) closeOutputFull() (tea.Model, tea.Cmd) {
 	switch m.state {
 	case stateFocus:
 		m.refreshFocusView()
-	case stateConfirmRun:
+	case stateConfirmRun, stateQuestion:
+		// A decision was still waiting when the screen opened and is still
+		// waiting now, so the pane comes back where it was rather than at the
+		// live end: the reader has not moved, only read something.
 		m.viewport.SetLines(m.renderHistoryLines())
 	default:
 		if m.pointerLit() {
@@ -152,8 +155,11 @@ func (m Model) closeOutputFull() (tea.Model, tea.Cmd) {
 // renderOutputFullHint fills the input area while the full screen shows.
 func (m Model) renderOutputFullHint() string {
 	label := keys.Shown(keys.Output.Back) + " " + keys.Words(keys.Output.Back)
-	if m.outputReturn == stateConfirmRun {
+	switch m.outputReturn {
+	case stateConfirmRun:
 		label = keys.Shown(keys.Output.Back) + ": back to the approval prompt"
+	case stateQuestion:
+		label = keys.Shown(keys.Output.Back) + ": back to the question"
 	}
 	return sty.SystemMsg.Render(label) + strings.Repeat("\n", inputHeight-1)
 }

@@ -266,24 +266,35 @@ func Surfaces() []Surface {
 			// on the family, but spending it here alone would make this the
 			// one selector whose note is not on tab, and moving the note for
 			// every selector at once is a change with no cause on this card.
+			//
+			// Which is what decides the strip: a call carrying several
+			// questions draws them as tabs, and the keystroke a tab strip
+			// has everywhere else is the one the note is already on. So the
+			// strip takes the arrows — see Select.Tab — and `d` takes the
+			// marked row's long form to the full screen, which is free here
+			// because Select.Alt is not on this row and this card has no
+			// default to set.
 			Name:     "the question card",
 			Section:  "docs/interface/surfaces.md#the-question-card, docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard",
 			Position: Beside,
 			Reached:  Shown(Draft.Answer),
 			Bindings: []Binding{
 				Select.MoveJK, Select.Take, Select.Toggle, Select.All,
-				Select.Note, Select.Cancel,
+				Select.Note, Select.Long, Select.Tab, Select.Cancel,
 			},
 		},
 		{
 			// The fourth dressing, which is a row of its own because it is
 			// not a list: a yes-or-no is the inline confirm, and its two
-			// answers claim the enter the list's take claims.
+			// answers claim the enter the list's take claims. It steps
+			// between the questions of one call on the same arrows the list
+			// dressings do, and offers no long form because it has no rows
+			// for one to be behind.
 			Name:     "a yes-or-no question",
 			Section:  "docs/interface/surfaces.md#the-question-card, docs/interface/surfaces.md#the-inline-confirm",
 			Position: Beside,
 			Reached:  Shown(Draft.Answer),
-			Bindings: []Binding{Confirm.Yes, Confirm.No, Select.Note},
+			Bindings: []Binding{Confirm.Yes, Confirm.No, Select.Note, Select.Tab},
 		},
 		{
 			// The one approval card the reader asks for rather than is
