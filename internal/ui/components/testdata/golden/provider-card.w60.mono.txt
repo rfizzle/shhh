@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · a local runtime is answering · the likely fix is named
-┌─ No model provider configured ───────────────────────────┐
+╭─ No model provider configured ───────────────────────────╮
 │ shhh looked in four places:                              │
 │   ✗ env       SHHH_API_KEY, OPENAI_API_KEY — unset       │
 │   ✗ config    ~/.config/shhh/config.toml — no provider … │
@@ -21,10 +21,10 @@
 │ the local runtime is already answering — that is the qu… │
 ├──────────────────────────────────────────────────────────┤
 │ [enter] setup wizard · [p] paste a key · [o] use llama3… │
-└──────────────────────────────────────────────────────────┘
+╰──────────────────────────────────────────────────────────╯
 
 · nothing anywhere · no fix to point at, and no local offer
-┌─ No model provider configured ───────────────────────────┐
+╭─ No model provider configured ───────────────────────────╮
 │ shhh looked in four places:                              │
 │   ✗ env       SHHH_API_KEY, OPENAI_API_KEY — unset       │
 │   ✗ config    ~/.config/shhh/config.toml — no provider … │
@@ -32,10 +32,10 @@
 │   ✗ local     localhost:11434 — nothing listening        │
 ├──────────────────────────────────────────────────────────┤
 │ [enter] setup wizard · [p] paste a key                   │
-└──────────────────────────────────────────────────────────┘
+╰──────────────────────────────────────────────────────────╯
 
 · a gateway profile is ready but its variable is not exported
-┌─ No model provider configured ───────────────────────────┐
+╭─ No model provider configured ───────────────────────────╮
 │ shhh looked in four places:                              │
 │   ✗ env       SHHH_API_KEY, OPENAI_API_KEY — unset       │
 │   ✗ config    ~/.config/shhh/config.toml — no provider … │
@@ -45,11 +45,11 @@
 │ a gateway profile loaded but its key is not exported — … │
 ├──────────────────────────────────────────────────────────┤
 │ [enter] setup wizard · [p] paste a key                   │
-└──────────────────────────────────────────────────────────┘
+╰──────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
 · a local runtime is answering · the likely fix is named
-␛[38;5;254m┌─ No model provider configured ───────────────────────────┐␛[m
+␛[38;5;254m╭─ No model provider configured ───────────────────────────╮␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mshhh looked in four places:␛[m                              ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m✗␛[m ␛[38;5;254menv       ␛[m␛[38;5;244mSHHH_API_KEY, OPENAI_API_KEY — unset␛[m       ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m✗␛[m ␛[38;5;254mconfig    ␛[m␛[38;5;244m~/.config/shhh/config.toml — no provider …␛[m ␛[38;5;254m│␛[m
@@ -59,10 +59,10 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mthe local runtime is already answering — that is the qu…␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m setup wizard␛[m␛[38;5;244m · ␛[m␛[38;5;254m[p]␛[m␛[38;5;244m paste a key␛[m␛[38;5;244m · ␛[m␛[38;5;254m[o]␛[m␛[38;5;244m use llama3…␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m└──────────────────────────────────────────────────────────┘␛[m
+␛[38;5;254m╰──────────────────────────────────────────────────────────╯␛[m
 
 · nothing anywhere · no fix to point at, and no local offer
-␛[38;5;254m┌─ No model provider configured ───────────────────────────┐␛[m
+␛[38;5;254m╭─ No model provider configured ───────────────────────────╮␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mshhh looked in four places:␛[m                              ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m✗␛[m ␛[38;5;254menv       ␛[m␛[38;5;244mSHHH_API_KEY, OPENAI_API_KEY — unset␛[m       ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m✗␛[m ␛[38;5;254mconfig    ␛[m␛[38;5;244m~/.config/shhh/config.toml — no provider …␛[m ␛[38;5;254m│␛[m
@@ -70,10 +70,10 @@
 ␛[38;5;254m│␛[m   ␛[38;5;254m✗␛[m ␛[38;5;254mlocal     ␛[m␛[38;5;244mlocalhost:11434 — nothing listening␛[m        ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m setup wizard␛[m␛[38;5;244m · ␛[m␛[38;5;254m[p]␛[m␛[38;5;244m paste a key␛[m                   ␛[38;5;254m│␛[m
-␛[38;5;254m└──────────────────────────────────────────────────────────┘␛[m
+␛[38;5;254m╰──────────────────────────────────────────────────────────╯␛[m
 
 · a gateway profile is ready but its variable is not exported
-␛[38;5;254m┌─ No model provider configured ───────────────────────────┐␛[m
+␛[38;5;254m╭─ No model provider configured ───────────────────────────╮␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mshhh looked in four places:␛[m                              ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m✗␛[m ␛[38;5;254menv       ␛[m␛[38;5;244mSHHH_API_KEY, OPENAI_API_KEY — unset␛[m       ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m✗␛[m ␛[38;5;254mconfig    ␛[m␛[38;5;244m~/.config/shhh/config.toml — no provider …␛[m ␛[38;5;254m│␛[m
@@ -83,4 +83,4 @@
 ␛[38;5;254m│␛[m ␛[38;5;244ma gateway profile loaded but its key is not exported — …␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m setup wizard␛[m␛[38;5;244m · ␛[m␛[38;5;254m[p]␛[m␛[38;5;244m paste a key␛[m                   ␛[38;5;254m│␛[m
-␛[38;5;254m└──────────────────────────────────────────────────────────┘␛[m
+␛[38;5;254m╰──────────────────────────────────────────────────────────╯␛[m

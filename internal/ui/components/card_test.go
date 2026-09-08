@@ -55,11 +55,46 @@ func TestCard_FillNeverEatsTheTitleOrTheChips(t *testing.T) {
 		if lipgloss.Width(top) != width {
 			t.Fatalf("width %d: top edge measures %d: %q", width, lipgloss.Width(top), top)
 		}
-		if !strings.HasPrefix(top, "┌─ ") || !strings.HasSuffix(top, "┐") {
+		if !strings.HasPrefix(top, "╭─ ") || !strings.HasSuffix(top, "╮") {
 			t.Fatalf("width %d: the frame lost a corner: %q", width, top)
 		}
 		if strings.Contains(top, plainMark+"Approve") || strings.Contains(top, "medium"+plainMark) {
 			t.Fatalf("width %d: the fill ran into a field: %q", width, top)
+		}
+	}
+}
+
+// A card is drawn from the same kit the input frame is, so the two shapes on
+// screen read as one material at two weights rather than as two kinds of
+// object with nothing to learn from the difference. The chip run keeps a rule
+// cell between the last chip and the corner, so the chip sits on the rail the
+// way the title does instead of being wedged into the join.
+func TestCard_CornersAreTheFramesAndTheChipSitsOnTheRail(t *testing.T) {
+	withColorProfile(t, colorprofile.ANSI256)
+	card := ansi.Strip(Card{
+		Title: "Approve edit",
+		Chips: []string{"⚠ low"},
+	}.Render([]string{"row", cardRule, "keys"}, 60))
+	lines := strings.Split(card, "\n")
+	top, rule, bottom := lines[0], lines[2], lines[len(lines)-1]
+
+	if !strings.HasPrefix(top, "╭─ Approve edit ") || !strings.HasSuffix(top, "╮") {
+		t.Fatalf("the top edge is not the frame's: %q", top)
+	}
+	if !strings.HasSuffix(top, " ⚠ low ─╮") {
+		t.Fatalf("the chip should end on a rule cell before the corner: %q", top)
+	}
+	if !strings.HasPrefix(bottom, "╰") || !strings.HasSuffix(bottom, "╯") {
+		t.Fatalf("the bottom edge is not the frame's: %q", bottom)
+	}
+	// The inner divider still meets the walls: it separates the body from
+	// the keys, it does not end the card.
+	if !strings.HasPrefix(rule, "├") || !strings.HasSuffix(rule, "┤") {
+		t.Fatalf("the divider should meet the walls: %q", rule)
+	}
+	for _, square := range []string{"┌", "┐", "└", "┘"} {
+		if strings.Contains(card, square) {
+			t.Fatalf("a card draws no square corner, found %q:\n%s", square, card)
 		}
 	}
 }

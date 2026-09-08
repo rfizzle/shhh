@@ -1,0 +1,7 @@
+# One reply per request. The last line repeats once these run out.
+# One gated write and nothing else: the card has to be on the screen at the
+# same time as the frame under it, because the thing being looked at is the
+# two shapes together. A write is what gets a card — a read is allowed
+# without one — and it lands in the scene's own throwaway workspace.
+tool:write_file:{"path":"notes.md","content":"# Notes\n\nThe round limit is a checkpoint, not a wall.\n"}
+The note is written.

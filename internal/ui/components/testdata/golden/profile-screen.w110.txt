@@ -95,7 +95,7 @@
     Run the package's tests and fix what you broke. Do not touch any file outside the package's own directory,
     and never edit a test to make a failure go away.
 
-┌─ Keep test-writer? ────────────────────────────────────────────────────────────────────────────────────────┐
+╭─ Keep test-writer? ────────────────────────────────────────────────────────────────────────────────────────╮
 │ ❯ 1. Save to this project  .shhh/agents                                                                    │
 │   2. Save globally         ~/.config/shhh/agents                                                           │
 │   3. Refine                say what to change in the note                                                  │
@@ -103,7 +103,7 @@
 │ ┄ note (optional)                                                                                          │
 │   (none)                                                                                                   │
 │ [tab] note/options · [enter] confirm · [esc] cancel                                                        │
-└────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · a short surface · the card is the one thing that never gives ground
 /agents new · a coding agent · reviewer tester                                         [esc] discard the draft
@@ -113,7 +113,7 @@
 
   test-writer — adds table-driven tests for a package and runs them
 
-┌─ Keep test-writer? ────────────────────────────────────────────────────────────────────────────────────────┐
+╭─ Keep test-writer? ────────────────────────────────────────────────────────────────────────────────────────╮
 │ ❯ 1. Save to this project  .shhh/agents                                                                    │
 │   2. Save globally         ~/.config/shhh/agents                                                           │
 │   3. Refine                say what to change in the note                                                  │
@@ -121,7 +121,7 @@
 │ ┄ note (optional)                                                                                          │
 │   (none)                                                                                                   │
 │ [tab] note/options · [enter] confirm · [esc] cancel                                                        │
-└────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · the file already exists · the card asks again, saying so
 /agents new · a coding agent · reviewer tester                                         [esc] discard the draft
@@ -145,7 +145,7 @@
     Run the package's tests and fix what you broke. Do not touch any file outside the package's own directory,
     and never edit a test to make a failure go away.
 
-┌─ Keep test-writer? ────────────────────────────────────────────────────────────────────────────────────────┐
+╭─ Keep test-writer? ────────────────────────────────────────────────────────────────────────────────────────╮
 │ ❯ 1. Save to this project  .shhh/agents                                                                    │
 │   2. Save globally         ~/.config/shhh/agents                                                           │
 │   3. Refine                say what to change in the note                                                  │
@@ -153,7 +153,7 @@
 │ ┄ note (optional)                                                                                          │
 │   (none)                                                                                                   │
 │ [tab] note/options · [enter] confirm · [esc] cancel                                                        │
-└────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
 · the brief · the field has the keyboard, the starting points are under it
@@ -241,7 +241,7 @@
     ␛[38;5;243mRun the package's tests and fix what you broke. Do not touch any file outside the package's own directory,␛[m
     ␛[38;5;243mand never edit a test to make a failure go away.␛[m
 
-␛[38;5;241m┌─ Keep test-writer? ␛[m␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;241m┐␛[m
+␛[38;5;241m╭─ Keep test-writer? ␛[m␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;241m╮␛[m
 ␛[38;5;241m│␛[m ␛[1;48;5;62m❯ 1. Save to this project  .shhh/agents␛[m                                                                    ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   2. Save globally         ␛[38;5;241m~/.config/shhh/agents␛[m                                                           ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   3. Refine                ␛[38;5;241msay what to change in the note␛[m                                                  ␛[38;5;241m│␛[m
@@ -249,7 +249,7 @@
 ␛[38;5;241m│␛[m ␛[38;5;241m┄ note (optional)␛[m                                                                                          ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;245m(none)␛[m                                                                                                   ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[3;38;5;241m[tab] note/options · [enter] confirm · [esc] cancel␛[m                                                        ␛[38;5;241m│␛[m
-␛[38;5;241m└────────────────────────────────────────────────────────────────────────────────────────────────────────────┘␛[m
+␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · a short surface · the card is the one thing that never gives ground
 ␛[1;97m/agents new␛[m␛[38;5;241m · a coding agent · reviewer tester␛[m                                         ␛[38;5;241m[esc] discard the draft␛[m
@@ -259,7 +259,7 @@
 
   ␛[38;5;252mtest-writer — adds table-driven tests for a package and runs them␛[m
 
-␛[38;5;241m┌─ Keep test-writer? ␛[m␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;241m┐␛[m
+␛[38;5;241m╭─ Keep test-writer? ␛[m␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;241m╮␛[m
 ␛[38;5;241m│␛[m ␛[1;48;5;62m❯ 1. Save to this project  .shhh/agents␛[m                                                                    ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   2. Save globally         ␛[38;5;241m~/.config/shhh/agents␛[m                                                           ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   3. Refine                ␛[38;5;241msay what to change in the note␛[m                                                  ␛[38;5;241m│␛[m
@@ -267,7 +267,7 @@
 ␛[38;5;241m│␛[m ␛[38;5;241m┄ note (optional)␛[m                                                                                          ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;245m(none)␛[m                                                                                                   ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[3;38;5;241m[tab] note/options · [enter] confirm · [esc] cancel␛[m                                                        ␛[38;5;241m│␛[m
-␛[38;5;241m└────────────────────────────────────────────────────────────────────────────────────────────────────────────┘␛[m
+␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the file already exists · the card asks again, saying so
 ␛[1;97m/agents new␛[m␛[38;5;241m · a coding agent · reviewer tester␛[m                                         ␛[38;5;241m[esc] discard the draft␛[m
@@ -291,7 +291,7 @@
     ␛[38;5;243mRun the package's tests and fix what you broke. Do not touch any file outside the package's own directory,␛[m
     ␛[38;5;243mand never edit a test to make a failure go away.␛[m
 
-␛[38;5;241m┌─ Keep test-writer? ␛[m␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;241m┐␛[m
+␛[38;5;241m╭─ Keep test-writer? ␛[m␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;241m╮␛[m
 ␛[38;5;241m│␛[m ␛[1;48;5;62m❯ 1. Save to this project  .shhh/agents␛[m                                                                    ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   2. Save globally         ␛[38;5;241m~/.config/shhh/agents␛[m                                                           ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   3. Refine                ␛[38;5;241msay what to change in the note␛[m                                                  ␛[38;5;241m│␛[m
@@ -299,4 +299,4 @@
 ␛[38;5;241m│␛[m ␛[38;5;241m┄ note (optional)␛[m                                                                                          ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;245m(none)␛[m                                                                                                   ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[3;38;5;241m[tab] note/options · [enter] confirm · [esc] cancel␛[m                                                        ␛[38;5;241m│␛[m
-␛[38;5;241m└────────────────────────────────────────────────────────────────────────────────────────────────────────────┘␛[m
+␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · pick one · the recommendation leads and says so, and the ⊘ row says why not
-┌─ Which store should the cache use? ──────────────────┐
+╭─ Which store should the cache use? ──────────────────╮
 │ ❯ 1. SQLite            in th…  recommended · 3 files │
 │   2. Postgres          one more service to…  9 files │
 │   3. ⊘ Redis               no client in this project │
@@ -20,10 +20,10 @@
 │   (none)                                             │
 │ [tab] note/options · [enter] confirm                 │
 │ [d] the full answer · [esc] cancel                   │
-└──────────────────────────────────────────────────────┘
+╰──────────────────────────────────────────────────────╯
 
 · the note has the keyboard · the list's digits are text until tab hands it back
-┌─ Which store should the cache use? ──────────────────┐
+╭─ Which store should the cache use? ──────────────────╮
 │ ❯ 1. SQLite            in th…  recommended · 3 files │
 │   2. Postgres          one more service to…  9 files │
 │   3. ⊘ Redis               no client in this project │
@@ -32,10 +32,10 @@
 │   ┃ note (optional)                                  │
 │ [tab] note/options · [enter] confirm                 │
 │ [d] the full answer · [esc] cancel                   │
-└──────────────────────────────────────────────────────┘
+╰──────────────────────────────────────────────────────╯
 
 · pick several · the boxes, with the same field under them
-┌─ Which packages should the flag reach? ──────────────┐
+╭─ Which packages should the flag reach? ──────────────╮
 │ ❯ [ ] internal/agent                                 │
 │   [ ] internal/cli                                   │
 │   [ ] internal/ui/chat                               │
@@ -45,14 +45,14 @@
 │ [tab] note/options · [space] toggle · [a] all/none   │
 │ [d] the full answer · [enter] apply (0)              │
 │ [esc] cancel                                         │
-└──────────────────────────────────────────────────────┘
+╰──────────────────────────────────────────────────────╯
 
 · a short answer in your own words · the field and no rows above it
-┌─ What should the flag be called? ────────────────────┐
+╭─ What should the flag be called? ────────────────────╮
 │ ┄ note (required)                                    │
 │   ┃ note (required)                                  │
 │ [enter] confirm · [esc] cancel                       │
-└──────────────────────────────────────────────────────┘
+╰──────────────────────────────────────────────────────╯
 
 · yes or no · the inline confirm, whose enter is the answer that changes nothing
 Should the migration be reversible?  [y/N]
@@ -62,7 +62,7 @@ Should the migration be reversible?  [y/N]
 
 ── ansi ────────────────────────────────────────────────────
 · pick one · the recommendation leads and says so, and the ⊘ row says why not
-␛[38;5;241m┌─ Which store should the cache use? ␛[m␛[38;5;241m──────────────────␛[m␛[38;5;241m┐␛[m
+␛[38;5;241m╭─ Which store should the cache use? ␛[m␛[38;5;241m──────────────────␛[m␛[38;5;241m╮␛[m
 ␛[38;5;241m│␛[m ␛[1;48;5;62m❯ 1. SQLite            in th…  recommended · 3 files␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   2. Postgres          ␛[38;5;241mone more service to…␛[m  ␛[38;5;252m9 files␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   3. ␛[38;5;245m⊘ Redis␛[m               ␛[38;5;245mno client in this project␛[m ␛[38;5;241m│␛[m
@@ -71,10 +71,10 @@ Should the migration be reversible?  [y/N]
 ␛[38;5;241m│␛[m   ␛[38;5;245m(none)␛[m                                             ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[3;38;5;241m[tab] note/options · [enter] confirm␛[m                 ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[3;38;5;241m[d] the full answer · [esc] cancel␛[m                   ␛[38;5;241m│␛[m
-␛[38;5;241m└──────────────────────────────────────────────────────┘␛[m
+␛[38;5;241m╰──────────────────────────────────────────────────────╯␛[m
 
 · the note has the keyboard · the list's digits are text until tab hands it back
-␛[38;5;241m┌─ Which store should the cache use? ␛[m␛[38;5;241m──────────────────␛[m␛[38;5;241m┐␛[m
+␛[38;5;241m╭─ Which store should the cache use? ␛[m␛[38;5;241m──────────────────␛[m␛[38;5;241m╮␛[m
 ␛[38;5;241m│␛[m ␛[1;48;5;62m❯ 1. SQLite            in th…  recommended · 3 files␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   2. Postgres          ␛[38;5;241mone more service to…␛[m  ␛[38;5;252m9 files␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   3. ␛[38;5;245m⊘ Redis␛[m               ␛[38;5;245mno client in this project␛[m ␛[38;5;241m│␛[m
@@ -83,10 +83,10 @@ Should the migration be reversible?  [y/N]
 ␛[38;5;241m│␛[m   ␛[38;5;252m␛[38;5;241m┃ ␛[m␛[m␛[38;5;252m␛[7;38;5;62mn␛[m␛[m␛[38;5;252m␛[38;5;241mote (optional)␛[m␛[m␛[38;5;252m                                 ␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[3;38;5;241m[tab] note/options · [enter] confirm␛[m                 ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[3;38;5;241m[d] the full answer · [esc] cancel␛[m                   ␛[38;5;241m│␛[m
-␛[38;5;241m└──────────────────────────────────────────────────────┘␛[m
+␛[38;5;241m╰──────────────────────────────────────────────────────╯␛[m
 
 · pick several · the boxes, with the same field under them
-␛[38;5;241m┌─ Which packages should the flag reach? ␛[m␛[38;5;241m──────────────␛[m␛[38;5;241m┐␛[m
+␛[38;5;241m╭─ Which packages should the flag reach? ␛[m␛[38;5;241m──────────────␛[m␛[38;5;241m╮␛[m
 ␛[38;5;241m│␛[m ␛[1;48;5;62m❯ ␛[m␛[38;5;241m[ ]␛[m internal/agent                                 ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m[ ]␛[m internal/cli                                   ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m[ ]␛[m internal/ui/chat                               ␛[38;5;241m│␛[m
@@ -96,14 +96,14 @@ Should the migration be reversible?  [y/N]
 ␛[38;5;241m│␛[m ␛[3;38;5;241m[tab] note/options · [space] toggle · [a] all/none␛[m   ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[3;38;5;241m[d] the full answer · [enter] apply (0)␛[m              ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[3;38;5;241m[esc] cancel␛[m                                         ␛[38;5;241m│␛[m
-␛[38;5;241m└──────────────────────────────────────────────────────┘␛[m
+␛[38;5;241m╰──────────────────────────────────────────────────────╯␛[m
 
 · a short answer in your own words · the field and no rows above it
-␛[38;5;241m┌─ What should the flag be called? ␛[m␛[38;5;241m────────────────────␛[m␛[38;5;241m┐␛[m
+␛[38;5;241m╭─ What should the flag be called? ␛[m␛[38;5;241m────────────────────␛[m␛[38;5;241m╮␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m┄ note (required)␛[m                                    ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;252m␛[38;5;241m┃ ␛[m␛[m␛[38;5;252m␛[7;38;5;62mn␛[m␛[m␛[38;5;252m␛[38;5;241mote (required)␛[m␛[m␛[38;5;252m                                 ␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[3;38;5;241m[enter] confirm · [esc] cancel␛[m                       ␛[38;5;241m│␛[m
-␛[38;5;241m└──────────────────────────────────────────────────────┘␛[m
+␛[38;5;241m╰──────────────────────────────────────────────────────╯␛[m
 
 · yes or no · the inline confirm, whose enter is the answer that changes nothing
 Should the migration be reversible?  ␛[1;94m[y/N]␛[m

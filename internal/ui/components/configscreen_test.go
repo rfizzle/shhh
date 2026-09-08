@@ -374,7 +374,7 @@ func TestConfigScreen_PointerStepsOverRails(t *testing.T) {
 // line.
 func TestConfigScreen_IsATakeoverNotACard(t *testing.T) {
 	view := stripANSI(configFixture().View(110))
-	if strings.Contains(view, "┌─") || strings.Contains(view, "└─") {
+	if strings.Contains(view, "╭─") || strings.Contains(view, "╰─") {
 		t.Fatalf("a takeover surface draws no card frame:\n%s", view)
 	}
 	lines := strings.Split(view, "\n")

@@ -12,7 +12,7 @@
 ── layout ──────────────────────────────────────────────────
 · three questions · the first tab has the keyboard and none is answered yet
 ▸ 1  · 2  · 3  · submit  1 of 3 · 3 unanswered will be sent as skipped
-┌─ Which store should the cache use? ──────────────────────────────────────┐
+╭─ Which store should the cache use? ──────────────────────────────────────╮
 │ ❯ 1. SQLite            in the checkout already     recommended · 3 files │
 │   2. Postgres          one more service to run                   9 files │
 │   3. Something else …  answer in your own words                          │
@@ -20,7 +20,7 @@
 │   (none)                                                                 │
 │ [tab] note/options · [enter] confirm · [d] the full answer               │
 │ [←→] the next question · [esc] cancel                                    │
-└──────────────────────────────────────────────────────────────────────────┘
+╰──────────────────────────────────────────────────────────────────────────╯
 
 · one answered · the mark turns and the tail counts what is still open
 ✓ 1  ▸ 2  · 3  · submit  2 of 3 · 2 unanswered will be sent as skipped
@@ -31,22 +31,22 @@ Should the migration be reversible?  [y/N]
 
 · the free answer · its field is shut so the arrows stay the strip's
 ✓ 1  ✓ 2  ▸ 3  · submit  3 of 3 · 1 unanswered will be sent as skipped
-┌─ What should the flag be called? ────────────────────────────────────────┐
+╭─ What should the flag be called? ────────────────────────────────────────╮
 │ ┄ note (required)                                                        │
 │   (none)                                                                 │
 │ [enter] confirm · [tab] answer · [←→] the next question · [esc] cancel   │
-└──────────────────────────────────────────────────────────────────────────┘
+╰──────────────────────────────────────────────────────────────────────────╯
 
 · the tab that ends the set · what enter sends, and what leaving a tab open costs
 ✓ 1  ✓ 2  · 3  ▸ submit  submit · 1 unanswered will be sent as skipped
-┌─ the answers ────────────────────────────────────────────────────────────┐
+╭─ the answers ────────────────────────────────────────────────────────────╮
 │ send 2 answers · 1 unanswered, sent as skipped                           │
 │ [enter] send · [←→] the next question · [esc] answer in your own words   │
-└──────────────────────────────────────────────────────────────────────────┘
+╰──────────────────────────────────────────────────────────────────────────╯
 
 · four questions · the most one call may carry, which is where the strip is tightest
 ✓ 1  · 2  ▸ 3  · 4  · submit  3 of 4 · 3 unanswered will be sent as skipped
-┌─ Which packages should the flag reach? ──────────────────────────────────┐
+╭─ Which packages should the flag reach? ──────────────────────────────────╮
 │ ❯ [ ] internal/agent                                                     │
 │   [ ] internal/cli                                                       │
 │   [ ] Something else …                                                   │
@@ -54,12 +54,12 @@ Should the migration be reversible?  [y/N]
 │   (none)                                                                 │
 │ [tab] note/options · [space] toggle · [a] all/none · [d] the full answer │
 │ [←→] the next question · [enter] apply (0) · [esc] cancel                │
-└──────────────────────────────────────────────────────────────────────────┘
+╰──────────────────────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
 · three questions · the first tab has the keyboard and none is answered yet
 ␛[1;48;5;237m▸ 1␛[m  ␛[38;5;244m· 2␛[m  ␛[38;5;244m· 3␛[m  ␛[38;5;244m· submit␛[m␛[38;5;244m  1 of 3 · 3 unanswered will be sent as skipped␛[m
-␛[38;5;244m┌─ Which store should the cache use? ──────────────────────────────────────┐␛[m
+␛[38;5;244m╭─ Which store should the cache use? ──────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m ␛[1;48;5;237m❯ 1. SQLite            in the checkout already     recommended · 3 files␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   2. Postgres          ␛[38;5;244mone more service to run␛[m                   ␛[38;5;254m9 files␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   3. Something else …  ␛[38;5;244manswer in your own words␛[m                          ␛[38;5;244m│␛[m
@@ -67,7 +67,7 @@ Should the migration be reversible?  [y/N]
 ␛[38;5;244m│␛[m   ␛[38;5;244m(none)␛[m                                                                 ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[3;38;5;244m[tab] note/options · [enter] confirm · [d] the full answer␛[m               ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[3;38;5;244m[←→] the next question · [esc] cancel␛[m                                    ␛[38;5;244m│␛[m
-␛[38;5;244m└──────────────────────────────────────────────────────────────────────────┘␛[m
+␛[38;5;244m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 
 · one answered · the mark turns and the tail counts what is still open
 ␛[38;5;254m✓ 1␛[m  ␛[1;48;5;237m▸ 2␛[m  ␛[38;5;244m· 3␛[m  ␛[38;5;244m· submit␛[m␛[38;5;244m  2 of 3 · 2 unanswered will be sent as skipped␛[m
@@ -78,22 +78,22 @@ Should the migration be reversible?  ␛[1;38;5;254m[y/N]␛[m
 
 · the free answer · its field is shut so the arrows stay the strip's
 ␛[38;5;254m✓ 1␛[m  ␛[38;5;254m✓ 2␛[m  ␛[1;48;5;237m▸ 3␛[m  ␛[38;5;244m· submit␛[m␛[38;5;244m  3 of 3 · 1 unanswered will be sent as skipped␛[m
-␛[38;5;244m┌─ What should the flag be called? ────────────────────────────────────────┐␛[m
+␛[38;5;244m╭─ What should the flag be called? ────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m┄ note (required)␛[m                                                        ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m(none)␛[m                                                                 ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[3;38;5;244m[enter] confirm · [tab] answer · [←→] the next question · [esc] cancel␛[m   ␛[38;5;244m│␛[m
-␛[38;5;244m└──────────────────────────────────────────────────────────────────────────┘␛[m
+␛[38;5;244m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the tab that ends the set · what enter sends, and what leaving a tab open costs
 ␛[38;5;254m✓ 1␛[m  ␛[38;5;254m✓ 2␛[m  ␛[38;5;244m· 3␛[m  ␛[1;48;5;237m▸ submit␛[m␛[38;5;244m  submit · 1 unanswered will be sent as skipped␛[m
-␛[38;5;244m┌─ the answers ────────────────────────────────────────────────────────────┐␛[m
+␛[38;5;244m╭─ the answers ────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m send 2 answers · 1 unanswered, sent as skipped                           ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[3;38;5;244m[enter] send · [←→] the next question · [esc] answer in your own words␛[m   ␛[38;5;244m│␛[m
-␛[38;5;244m└──────────────────────────────────────────────────────────────────────────┘␛[m
+␛[38;5;244m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 
 · four questions · the most one call may carry, which is where the strip is tightest
 ␛[38;5;254m✓ 1␛[m  ␛[38;5;244m· 2␛[m  ␛[1;48;5;237m▸ 3␛[m  ␛[38;5;244m· 4␛[m  ␛[38;5;244m· submit␛[m␛[38;5;244m  3 of 4 · 3 unanswered will be sent as skipped␛[m
-␛[38;5;244m┌─ Which packages should the flag reach? ──────────────────────────────────┐␛[m
+␛[38;5;244m╭─ Which packages should the flag reach? ──────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m ␛[1;48;5;237m❯ ␛[m␛[38;5;244m[ ]␛[m internal/agent                                                     ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m[ ]␛[m internal/cli                                                       ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m[ ]␛[m Something else …                                                   ␛[38;5;244m│␛[m
@@ -101,4 +101,4 @@ Should the migration be reversible?  ␛[1;38;5;254m[y/N]␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m(none)␛[m                                                                 ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[3;38;5;244m[tab] note/options · [space] toggle · [a] all/none · [d] the full answer␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[3;38;5;244m[←→] the next question · [enter] apply (0) · [esc] cancel␛[m                ␛[38;5;244m│␛[m
-␛[38;5;244m└──────────────────────────────────────────────────────────────────────────┘␛[m
+␛[38;5;244m╰──────────────────────────────────────────────────────────────────────────╯␛[m

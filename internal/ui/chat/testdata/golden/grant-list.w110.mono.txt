@@ -12,7 +12,7 @@
 ── layout ──────────────────────────────────────────────────
 · the list open, the shortest grant under the pointer
 ──── DECISION ────────────────────────────────────────────────────────────────────────────────────────────
-┌─ Approve command ──────────────────────────────────────────────────────────────────────────── ⚠ medium ┐
+╭─ Approve command ─────────────────────────────────────────────────────────────────────────── ⚠ medium ─╮
 │ Assistant wants to run: npm test --watch                                                               │
 │ medium · what it writes could not be resolved                                                          │
 │                                                                                                        │
@@ -26,11 +26,11 @@
 │   this session     npm test …                                                      until you revoke it │
 │   this exact line  npm test --watch                                                until you revoke it │
 │ [↑↓/jk] choose · [enter] grant it, and run · [esc] back to the card — nothing is granted               │
-└────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · one row down, on the grant that stands
 ──── DECISION ────────────────────────────────────────────────────────────────────────────────────────────
-┌─ Approve command ──────────────────────────────────────────────────────────────────────────── ⚠ medium ┐
+╭─ Approve command ─────────────────────────────────────────────────────────────────────────── ⚠ medium ─╮
 │ Assistant wants to run: npm test --watch                                                               │
 │ medium · what it writes could not be resolved                                                          │
 │                                                                                                        │
@@ -44,12 +44,12 @@
 │ ❯ this session     npm test …                                                      until you revoke it │
 │   this exact line  npm test --watch                                                until you revoke it │
 │ [↑↓/jk] choose · [enter] grant it, and run · [esc] back to the card — nothing is granted               │
-└────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
 · the list open, the shortest grant under the pointer
 ␛[38;5;244m────␛[m ␛[1;38;5;254mDECISION␛[m ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────␛[m
-␛[38;5;254m┌─ Approve command ──────────────────────────────────────────────────────────────────────────── ⚠ medium ┐␛[m
+␛[38;5;254m╭─ Approve command ─────────────────────────────────────────────────────────────────────────── ⚠ medium ─╮␛[m
 ␛[38;5;254m│␛[m ␛[1;38;5;254mAssistant wants to run: npm test --watch␛[m                                                               ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254mmedium␛[m␛[38;5;244m · what it writes could not be resolved␛[m                                                          ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                                                                        ␛[38;5;254m│␛[m
@@ -63,11 +63,11 @@
 ␛[38;5;254m│␛[m   this session     ␛[38;5;244mnpm test …␛[m                                                      ␛[38;5;254muntil you revoke it␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   this exact line  ␛[38;5;244mnpm test --watch␛[m                                                ␛[38;5;254muntil you revoke it␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[3;38;5;244m[↑↓/jk] choose · [enter] grant it, and run · [esc] back to the card — nothing is granted␛[m               ␛[38;5;254m│␛[m
-␛[38;5;254m└────────────────────────────────────────────────────────────────────────────────────────────────────────┘␛[m
+␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · one row down, on the grant that stands
 ␛[38;5;244m────␛[m ␛[1;38;5;254mDECISION␛[m ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────────────────␛[m
-␛[38;5;254m┌─ Approve command ──────────────────────────────────────────────────────────────────────────── ⚠ medium ┐␛[m
+␛[38;5;254m╭─ Approve command ─────────────────────────────────────────────────────────────────────────── ⚠ medium ─╮␛[m
 ␛[38;5;254m│␛[m ␛[1;38;5;254mAssistant wants to run: npm test --watch␛[m                                                               ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254mmedium␛[m␛[38;5;244m · what it writes could not be resolved␛[m                                                          ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                                                                        ␛[38;5;254m│␛[m
@@ -81,4 +81,4 @@
 ␛[38;5;254m│␛[m ␛[1;48;5;237m❯ this session     npm test …                                                      until you revoke it␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   this exact line  ␛[38;5;244mnpm test --watch␛[m                                                ␛[38;5;254muntil you revoke it␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[3;38;5;244m[↑↓/jk] choose · [enter] grant it, and run · [esc] back to the card — nothing is granted␛[m               ␛[38;5;254m│␛[m
-␛[38;5;254m└────────────────────────────────────────────────────────────────────────────────────────────────────────┘␛[m
+␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

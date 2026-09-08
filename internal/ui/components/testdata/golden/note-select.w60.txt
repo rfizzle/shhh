@@ -11,62 +11,62 @@
 
 ── layout ──────────────────────────────────────────────────
 · the note has the keyboard · the placeholder is up
-┌─ Why did you stop it? ───────────────────────────────────┐
+╭─ Why did you stop it? ───────────────────────────────────╮
 │ ❯ 1. it read the wrong file                              │
 │   2. it was about to write over my work                  │
 │   3. something else                                      │
 │ ┄ note (optional)                                        │
 │   ┃ note (optional)                                      │
 │ [tab] note/options · [enter] confirm · [esc] cancel      │
-└──────────────────────────────────────────────────────────┘
+╰──────────────────────────────────────────────────────────╯
 
 · typed into · the caret's row is body text, unlit
-┌─ Why did you stop it? ───────────────────────────────────┐
+╭─ Why did you stop it? ───────────────────────────────────╮
 │ ❯ 1. it read the wrong file                              │
 │   2. it was about to write over my work                  │
 │   3. something else                                      │
 │ ┄ note (optional)                                        │
 │   ┃ it was going to rewrite the changelog                │
 │ [tab] note/options · [enter] confirm · [esc] cancel      │
-└──────────────────────────────────────────────────────────┘
+╰──────────────────────────────────────────────────────────╯
 
 · the list has the keyboard · the note echoes as plain text
-┌─ Why did you stop it? ───────────────────────────────────┐
+╭─ Why did you stop it? ───────────────────────────────────╮
 │   1. it read the wrong file                              │
 │ ❯ 2. it was about to write over my work                  │
 │   3. something else                                      │
 │ ┄ note (optional)                                        │
 │   it was going to rewrite the changelog                  │
 │ [tab] note/options · [enter] confirm · [esc] cancel      │
-└──────────────────────────────────────────────────────────┘
+╰──────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
 · the note has the keyboard · the placeholder is up
-␛[38;5;241m┌─ Why did you stop it? ␛[m␛[38;5;241m───────────────────────────────────␛[m␛[38;5;241m┐␛[m
+␛[38;5;241m╭─ Why did you stop it? ␛[m␛[38;5;241m───────────────────────────────────␛[m␛[38;5;241m╮␛[m
 ␛[38;5;241m│␛[m ␛[1;48;5;62m❯ 1. it read the wrong file␛[m                              ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   2. it was about to write over my work                  ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   3. something else                                      ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m┄ note (optional)␛[m                                        ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;252m␛[38;5;241m┃ ␛[m␛[m␛[38;5;252m␛[7;38;5;62mn␛[m␛[m␛[38;5;252m␛[38;5;241mote (optional)␛[m␛[m␛[38;5;252m                                     ␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[3;38;5;241m[tab] note/options · [enter] confirm · [esc] cancel␛[m      ␛[38;5;241m│␛[m
-␛[38;5;241m└──────────────────────────────────────────────────────────┘␛[m
+␛[38;5;241m╰──────────────────────────────────────────────────────────╯␛[m
 
 · typed into · the caret's row is body text, unlit
-␛[38;5;241m┌─ Why did you stop it? ␛[m␛[38;5;241m───────────────────────────────────␛[m␛[38;5;241m┐␛[m
+␛[38;5;241m╭─ Why did you stop it? ␛[m␛[38;5;241m───────────────────────────────────␛[m␛[38;5;241m╮␛[m
 ␛[38;5;241m│␛[m ␛[1;48;5;62m❯ 1. it read the wrong file␛[m                              ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   2. it was about to write over my work                  ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   3. something else                                      ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m┄ note (optional)␛[m                                        ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;252m␛[38;5;241m┃ ␛[m␛[m␛[38;5;252mit was going to rewrite the changelog␛[m␛[38;5;252m␛[7;38;5;62m ␛[m␛[m␛[38;5;252m␛[m␛[38;5;252m              ␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[3;38;5;241m[tab] note/options · [enter] confirm · [esc] cancel␛[m      ␛[38;5;241m│␛[m
-␛[38;5;241m└──────────────────────────────────────────────────────────┘␛[m
+␛[38;5;241m╰──────────────────────────────────────────────────────────╯␛[m
 
 · the list has the keyboard · the note echoes as plain text
-␛[38;5;241m┌─ Why did you stop it? ␛[m␛[38;5;241m───────────────────────────────────␛[m␛[38;5;241m┐␛[m
+␛[38;5;241m╭─ Why did you stop it? ␛[m␛[38;5;241m───────────────────────────────────␛[m␛[38;5;241m╮␛[m
 ␛[38;5;241m│␛[m   1. it read the wrong file                              ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[1;48;5;62m❯ 2. it was about to write over my work␛[m                  ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   3. something else                                      ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m┄ note (optional)␛[m                                        ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;245mit was going to rewrite the changelog␛[m                  ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[3;38;5;241m[tab] note/options · [enter] confirm · [esc] cancel␛[m      ␛[38;5;241m│␛[m
-␛[38;5;241m└──────────────────────────────────────────────────────────┘␛[m
+␛[38;5;241m╰──────────────────────────────────────────────────────────╯␛[m

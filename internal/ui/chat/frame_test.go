@@ -31,11 +31,14 @@ func frameModel(t testing.TB, width, height int) Model {
 }
 
 // frameTopRail is the frame's top rail: the line the live turn status sits on
-// the left of, and the identity on the right of.
+// the left of, and the identity on the right of. A card draws the same corner
+// and lands above the frame, so the search runs from the bottom of the view —
+// the frame is the last thing on the screen that opens a rail.
 func frameTopRail(view string) string {
-	for _, line := range strings.Split(view, "\n") {
-		if strings.Contains(line, "╭─") {
-			return line
+	lines := strings.Split(view, "\n")
+	for i := len(lines) - 1; i >= 0; i-- {
+		if strings.Contains(lines[i], "╭─") {
+			return lines[i]
 		}
 	}
 	return ""
@@ -208,14 +211,16 @@ func TestFrame_TakeoverKeepsPlainStack(t *testing.T) {
 	m.state = stateConfirmRun
 	m.syncViewport()
 	// Ungated the card rides above a live frame; it takes the
-	// panel only once the decision holds the keyboard.
+	// panel only once the decision holds the keyboard. The card is drawn
+	// with the frame's own corners, so what tells the two apart on the
+	// screen is the account riding the frame's rail.
 	ungated := stripANSI(m.View().Content)
-	if !strings.Contains(ungated, "╭─") {
+	if !strings.Contains(ungated, "╰─ ⏸ manual") {
 		t.Fatalf("an ungated decision leaves the draft its frame:\n%s", ungated)
 	}
 	m = handover(t, m)
 	view := stripANSI(m.View().Content)
-	if strings.Contains(view, "╭─") {
+	if strings.Contains(view, "╰─ ⏸ manual") {
 		t.Fatalf("takeover surfaces must replace the frame:\n%s", view)
 	}
 	if !strings.Contains(view, "⏸ manual") {

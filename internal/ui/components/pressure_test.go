@@ -81,7 +81,7 @@ func TestPressureCard_MeterMatchesTheRails(t *testing.T) {
 func TestPressureCard_BorderTakesTheMeterColour(t *testing.T) {
 	withColorProfile(t, colorprofile.ANSI256)
 	c := pressureFixture()
-	probe := c.meter().Style().Render("\u250c")
+	probe := c.meter().Style().Render("\u256d")
 	probe = strings.TrimSuffix(probe, ansi.ResetStyle)
 	if got := c.View(82); !strings.Contains(got, probe) {
 		t.Fatalf("the frame should be drawn in the meter's own colour (%q), got:\n%q", probe, got)

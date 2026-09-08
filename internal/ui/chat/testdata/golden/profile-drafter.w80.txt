@@ -80,7 +80,7 @@
     You add table-driven tests for one package at a time. Read the package
     ⋮ 4 more lines · [shift+↓] read on
 
-┌─ Keep test-writer? ──────────────────────────────────────────────────────────┐
+╭─ Keep test-writer? ──────────────────────────────────────────────────────────╮
 │ ❯ 1. Save to this project  /repo/.shhh/agents                                │
 │   2. Save globally         /home/x/.config/shhh/agents                       │
 │   3. Refine                say what to change in the note                    │
@@ -88,7 +88,7 @@
 │ ┄ note (optional)                                                            │
 │   (none)                                                                     │
 │ [tab] note/options · [enter] confirm · [esc] cancel                          │
-└──────────────────────────────────────────────────────────────────────────────┘
+╰──────────────────────────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
 · the brief · the roles this session already has are on the header
@@ -161,7 +161,7 @@
     ␛[38;5;243mYou add table-driven tests for one package at a time. Read the package␛[m
     ␛[38;5;241m⋮ 4 more lines · [shift+↓] read on␛[m
 
-␛[38;5;241m┌─ Keep test-writer? ␛[m␛[38;5;241m──────────────────────────────────────────────────────────␛[m␛[38;5;241m┐␛[m
+␛[38;5;241m╭─ Keep test-writer? ␛[m␛[38;5;241m──────────────────────────────────────────────────────────␛[m␛[38;5;241m╮␛[m
 ␛[38;5;241m│␛[m ␛[1;48;5;62m❯ 1. Save to this project  /repo/.shhh/agents␛[m                                ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   2. Save globally         ␛[38;5;241m/home/x/.config/shhh/agents␛[m                       ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   3. Refine                ␛[38;5;241msay what to change in the note␛[m                    ␛[38;5;241m│␛[m
@@ -169,4 +169,4 @@
 ␛[38;5;241m│␛[m ␛[38;5;241m┄ note (optional)␛[m                                                            ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;245m(none)␛[m                                                                     ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[3;38;5;241m[tab] note/options · [enter] confirm · [esc] cancel␛[m                          ␛[38;5;241m│␛[m
-␛[38;5;241m└──────────────────────────────────────────────────────────────────────────────┘␛[m
+␛[38;5;241m╰──────────────────────────────────────────────────────────────────────────────╯␛[m

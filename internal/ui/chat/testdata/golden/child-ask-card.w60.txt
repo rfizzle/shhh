@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · a child's command · resolved in the agent's own checkout
-┌─ writer-1 ▸ Approve command ───────────────── ⚠ HIGH ┐
+╭─ writer-1 ▸ Approve command ──────────────── ⚠ HIGH ─╮
 │ writer-1 wants to run rm -rf build                   │
 │ HIGH · recursive forced deletion — may destroy file› │
 │                                                      │
@@ -23,10 +23,10 @@
 │ Run this command? [y/N] · [g] attach to writer-1     │
 │ [alt+a] agents · [n] deny — the safe answer          │
 │ [esc] back to your draft — the decision stays waiti… │
-└──────────────────────────────────────────────────────┘
+╰──────────────────────────────────────────────────────╯
 
 · the same card, held by arriving · two answers, and nothing else offered
-┌─ writer-1 ▸ Approve command ───────────────── ⚠ HIGH ┐
+╭─ writer-1 ▸ Approve command ──────────────── ⚠ HIGH ─╮
 │ writer-1 wants to run rm -rf build                   │
 │ HIGH · recursive forced deletion — may destroy file› │
 │                                                      │
@@ -39,10 +39,10 @@
 │ any other key goes to your draft                     │
 │ [n] deny — the safe answer                           │
 │ [esc] back to your draft — the decision stays waiti… │
-└──────────────────────────────────────────────────────┘
+╰──────────────────────────────────────────────────────╯
 
 · a writer's patch · your files, and the diff behind a counted tail
-┌─ writer-1 ▸ Apply patch ─────────────────── ⚠ medium ┐
+╭─ writer-1 ▸ Apply patch ────────────────── ⚠ medium ─╮
 │ writer-1 finished and wants to apply patch (+40 −40› │
 │ medium · writes 2 files under internal/agent/        │
 │                                                      │
@@ -57,11 +57,11 @@
 │ (d: full diff)                                       │
 │ [g] attach to writer-1 · [alt+a] agents              │
 │ [esc] back to your draft — the decision stays waiti… │
-└──────────────────────────────────────────────────────┘
+╰──────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
 · a child's command · resolved in the agent's own checkout
-␛[91m┌─ writer-1 ▸ Approve command ␛[m␛[38;5;241m────────────────␛[m␛[91m─ ⚠ HIGH ┐␛[m
+␛[91m╭─ writer-1 ▸ Approve command ␛[m␛[38;5;241m────────────────␛[m␛[91m ⚠ HIGH ─╮␛[m
 ␛[91m│␛[m ␛[1;94mwriter-1 wants to run rm -rf build␛[m                   ␛[91m│␛[m
 ␛[91m│␛[m ␛[91mHIGH␛[m␛[38;5;241m · recursive forced deletion — may destroy file␛[m␛[38;5;241m›␛[m ␛[91m│␛[m
 ␛[91m│␛[m                                                      ␛[91m│␛[m
@@ -73,10 +73,10 @@
 ␛[91m│␛[m ␛[3;38;5;241mRun this command? [y/N] · [g] attach to writer-1␛[m     ␛[91m│␛[m
 ␛[91m│␛[m ␛[3;38;5;241m[alt+a] agents · [n] deny — the safe answer␛[m          ␛[91m│␛[m
 ␛[91m│␛[m ␛[38;5;241m[esc] back to your draft — the decision stays waiti…␛[m ␛[91m│␛[m
-␛[91m└──────────────────────────────────────────────────────┘␛[m
+␛[91m╰──────────────────────────────────────────────────────╯␛[m
 
 · the same card, held by arriving · two answers, and nothing else offered
-␛[91m┌─ writer-1 ▸ Approve command ␛[m␛[38;5;241m────────────────␛[m␛[91m─ ⚠ HIGH ┐␛[m
+␛[91m╭─ writer-1 ▸ Approve command ␛[m␛[38;5;241m────────────────␛[m␛[91m ⚠ HIGH ─╮␛[m
 ␛[91m│␛[m ␛[1;94mwriter-1 wants to run rm -rf build␛[m                   ␛[91m│␛[m
 ␛[91m│␛[m ␛[91mHIGH␛[m␛[38;5;241m · recursive forced deletion — may destroy file␛[m␛[38;5;241m›␛[m ␛[91m│␛[m
 ␛[91m│␛[m                                                      ␛[91m│␛[m
@@ -89,10 +89,10 @@
 ␛[91m│␛[m ␛[3;38;5;241many other key goes to your draft␛[m                     ␛[91m│␛[m
 ␛[91m│␛[m ␛[3;38;5;241m[n] deny — the safe answer␛[m                           ␛[91m│␛[m
 ␛[91m│␛[m ␛[38;5;241m[esc] back to your draft — the decision stays waiti…␛[m ␛[91m│␛[m
-␛[91m└──────────────────────────────────────────────────────┘␛[m
+␛[91m╰──────────────────────────────────────────────────────╯␛[m
 
 · a writer's patch · your files, and the diff behind a counted tail
-␛[38;5;214m┌─ writer-1 ▸ Apply patch ␛[m␛[38;5;241m──────────────────␛[m␛[38;5;214m─ ⚠ medium ┐␛[m
+␛[38;5;214m╭─ writer-1 ▸ Apply patch ␛[m␛[38;5;241m──────────────────␛[m␛[38;5;214m ⚠ medium ─╮␛[m
 ␛[38;5;214m│␛[m ␛[1;94mwriter-1 finished and wants to apply patch (+40 −40␛[m␛[38;5;241m›␛[m ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[91mmedium␛[m␛[38;5;241m · writes 2 files under internal/agent/␛[m        ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                      ␛[38;5;214m│␛[m
@@ -107,4 +107,4 @@
 ␛[38;5;214m│␛[m ␛[3;38;5;241m(d: full diff)␛[m                                       ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[3;38;5;241m[g] attach to writer-1 · [alt+a] agents␛[m              ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;241m[esc] back to your draft — the decision stays waiti…␛[m ␛[38;5;214m│␛[m
-␛[38;5;214m└──────────────────────────────────────────────────────┘␛[m
+␛[38;5;214m╰──────────────────────────────────────────────────────╯␛[m

@@ -132,7 +132,7 @@ func TestRenderCard_FrameAndClip(t *testing.T) {
 		t.Fatalf("expected top, two rows, bottom; got %d lines", len(lines))
 	}
 	plain := stripANSI(card)
-	if !strings.Contains(plain, "┌─ Title") || !strings.Contains(plain, "└") {
+	if !strings.Contains(plain, "╭─ Title") || !strings.Contains(plain, "╰") {
 		t.Fatalf("card should be framed with its title:\n%s", plain)
 	}
 	for i, l := range strings.Split(plain, "\n") {

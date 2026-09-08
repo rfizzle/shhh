@@ -12,7 +12,7 @@
 ── layout ──────────────────────────────────────────────────
 · the offer, beside the decision run
 ──── DECISION ──────────────────────────────────────────────────────────────
-┌─ Approve command ────────────────────────────────────────────── ⚠ medium ┐
+╭─ Approve command ───────────────────────────────────────────── ⚠ medium ─╮
 │ Assistant wants to run: npm test                                         │
 │ medium · what it writes could not be resolved                            │
 │                                                                          │
@@ -23,11 +23,11 @@
 │ Run this command? [y/Y/n/N/a]  (Y/N: a note) · [e] edit the command      │
 │ (a: allow "npm test" without asking)  (d: full view)                     │
 │ [esc] back to your draft — the decision stays waiting, nothing is denied │
-└──────────────────────────────────────────────────────────────────────────┘
+╰──────────────────────────────────────────────────────────────────────────╯
 
 · the line the reader wrote, read again
 ──── DECISION ──────────────────────────────────────────────────────────────
-┌─ Approve command ──────────────────────────────────── ✎ amended ─ ⚠ HIGH ┐
+╭─ Approve command ─────────────────────────────────── ✎ amended ─ ⚠ HIGH ─╮
 │ Assistant wants to run: rm -rf ./build                                   │
 │ was: echo hi                                                             │
 │ HIGH · recursive forced deletion — may destroy files irrecoverably       │
@@ -40,12 +40,12 @@
 │ [e] edit the command · [n] deny — the safe answer                        │
 │ [a] always — not offered: a safety-flagged command is never pre-approved │
 │ [esc] back to your draft — the decision stays waiting, nothing is denied │
-└──────────────────────────────────────────────────────────────────────────┘
+╰──────────────────────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
 · the offer, beside the decision run
 ␛[38;5;241m────␛[m ␛[1;94mDECISION␛[m ␛[38;5;241m──────────────────────────────────────────────────────────────␛[m
-␛[38;5;214m┌─ Approve command ␛[m␛[38;5;241m─────────────────────────────────────────────␛[m␛[38;5;214m─ ⚠ medium ┐␛[m
+␛[38;5;214m╭─ Approve command ␛[m␛[38;5;241m─────────────────────────────────────────────␛[m␛[38;5;214m ⚠ medium ─╮␛[m
 ␛[38;5;214m│␛[m ␛[1;94mAssistant wants to run: npm test␛[m                                         ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[91mmedium␛[m␛[38;5;241m · what it writes could not be resolved␛[m                            ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                                          ␛[38;5;214m│␛[m
@@ -56,11 +56,11 @@
 ␛[38;5;214m│␛[m ␛[3;38;5;241mRun this command? [y/Y/n/N/a]  (Y/N: a note) · [e] edit the command␛[m      ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[3;38;5;241m(a: allow "npm test" without asking)  (d: full view)␛[m                     ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;241m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m ␛[38;5;214m│␛[m
-␛[38;5;214m└──────────────────────────────────────────────────────────────────────────┘␛[m
+␛[38;5;214m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the line the reader wrote, read again
 ␛[38;5;241m────␛[m ␛[1;94mDECISION␛[m ␛[38;5;241m──────────────────────────────────────────────────────────────␛[m
-␛[91m┌─ Approve command ␛[m␛[38;5;241m───────────────────────────────────␛[m␛[91m─ ✎ amended ─ ⚠ HIGH ┐␛[m
+␛[91m╭─ Approve command ␛[m␛[38;5;241m───────────────────────────────────␛[m␛[91m ✎ amended ─ ⚠ HIGH ─╮␛[m
 ␛[91m│␛[m ␛[1;94mAssistant wants to run: rm -rf ./build␛[m                                   ␛[91m│␛[m
 ␛[91m│␛[m ␛[38;5;241mwas: echo hi␛[m                                                             ␛[91m│␛[m
 ␛[91m│␛[m ␛[91mHIGH␛[m␛[38;5;241m · recursive forced deletion — may destroy files irrecoverably␛[m       ␛[91m│␛[m
@@ -73,4 +73,4 @@
 ␛[91m│␛[m ␛[3;38;5;241m[e] edit the command · [n] deny — the safe answer␛[m                        ␛[91m│␛[m
 ␛[91m│␛[m ␛[38;5;241m[a] always — not offered: a safety-flagged command is never pre-approved␛[m ␛[91m│␛[m
 ␛[91m│␛[m ␛[38;5;241m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m ␛[91m│␛[m
-␛[91m└──────────────────────────────────────────────────────────────────────────┘␛[m
+␛[91m╰──────────────────────────────────────────────────────────────────────────╯␛[m

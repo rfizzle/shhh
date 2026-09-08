@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · the head · two ticked rows on screen, one below the fold
-┌─ Forget which memories? ─────────────────────────────────┐
+╭─ Forget which memories? ─────────────────────────────────╮
 │ ❯ [x] prefers table-driven tests for tool packages       │
 │   [x] go, not shell, for anything with a loop in it      │
 │   [ ] the design system is the source of truth for the … │
@@ -21,10 +21,10 @@
 │ ↓ 12 more · 1 checked                                    │
 │ [space] toggle · [a] all/none · [enter] apply (3)        │
 │ [esc] cancel                                             │
-└──────────────────────────────────────────────────────────┘
+╰──────────────────────────────────────────────────────────╯
 
 · the tail · the marker carries the ticks that scrolled away
-┌─ Forget which memories? ─────────────────────────────────┐
+╭─ Forget which memories? ─────────────────────────────────╮
 │ ↑ 12 more · 2 checked                                    │
 │   [ ] mono is a first-class palette                      │
 │   [ ] the window follows the pointer and only the point… │
@@ -34,10 +34,10 @@
 │ ❯ [ ] esc always changes nothing                         │
 │ [space] toggle · [a] all/none · [enter] apply (3)        │
 │ [esc] cancel                                             │
-└──────────────────────────────────────────────────────────┘
+╰──────────────────────────────────────────────────────────╯
 
 · the manager · the blocked child is pinned above the window
-┌─ Agents ──────────────────────── 1 needs you · 8 running ┐
+╭─ Agents ─────────────────────── 1 needs you · 8 running ─╮
 │ ❯ ● orchestrator  this ses…  round 7 · streaming…  $0.12 │
 │   ⚠ runner-2  go test ./…  ⚠ needs you · 3 tools · $0.01 │
 │     waiting approval: run go test ./internal/agent/...   │
@@ -47,10 +47,10 @@
 │   ◇ writer-6  apply patch    ▰▰▰▰▱ 4/5 · 6 tools · $0.02 │
 │ ↓ 4 more                                                 │
 │ [enter] attach · [x] cancel · [X] kill · [esc] back      │
-└──────────────────────────────────────────────────────────┘
+╰──────────────────────────────────────────────────────────╯
 
 · the manager · the pointer at the foot, the blocked child still on the card
-┌─ Agents ──────────────────────── 1 needs you · 8 running ┐
+╭─ Agents ─────────────────────── 1 needs you · 8 running ─╮
 │   ● orchestrator  this ses…  round 7 · streaming…  $0.12 │
 │   ⚠ runner-2  go test ./…  ⚠ needs you · 3 tools · $0.01 │
 │     waiting approval: run go test ./internal/agent/...   │
@@ -60,11 +60,11 @@
 │   ◇ writer-9  golden captu…  ▰▰▱▱▱ 2/5 · 6 tools · $0.02 │
 │ ❯ ◇ writer-10  config sche…  ▰▰▰▱▱ 3/5 · 6 tools · $0.02 │
 │ [enter] attach · [x] cancel · [X] kill · [esc] back      │
-└──────────────────────────────────────────────────────────┘
+╰──────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
 · the head · two ticked rows on screen, one below the fold
-␛[38;5;244m┌─ Forget which memories? ─────────────────────────────────┐␛[m
+␛[38;5;244m╭─ Forget which memories? ─────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m ␛[1;48;5;237m❯ ␛[m␛[38;5;254m[x]␛[m prefers table-driven tests for tool packages       ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254m[x]␛[m go, not shell, for anything with a loop in it      ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m[ ]␛[m the design system is the source of truth for the … ␛[38;5;244m│␛[m
@@ -74,10 +74,10 @@
 ␛[38;5;244m│␛[m ␛[38;5;244m↓ 12 more · 1 checked␛[m                                    ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[3;38;5;244m[space] toggle · [a] all/none · [enter] apply (3)␛[m        ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[3;38;5;244m[esc] cancel␛[m                                             ␛[38;5;244m│␛[m
-␛[38;5;244m└──────────────────────────────────────────────────────────┘␛[m
+␛[38;5;244m╰──────────────────────────────────────────────────────────╯␛[m
 
 · the tail · the marker carries the ticks that scrolled away
-␛[38;5;244m┌─ Forget which memories? ─────────────────────────────────┐␛[m
+␛[38;5;244m╭─ Forget which memories? ─────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m↑ 12 more · 2 checked␛[m                                    ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m[ ]␛[m mono is a first-class palette                      ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m[ ]␛[m the window follows the pointer and only the point… ␛[38;5;244m│␛[m
@@ -87,10 +87,10 @@
 ␛[38;5;244m│␛[m ␛[1;48;5;237m❯ ␛[m␛[38;5;244m[ ]␛[m esc always changes nothing                         ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[3;38;5;244m[space] toggle · [a] all/none · [enter] apply (3)␛[m        ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[3;38;5;244m[esc] cancel␛[m                                             ␛[38;5;244m│␛[m
-␛[38;5;244m└──────────────────────────────────────────────────────────┘␛[m
+␛[38;5;244m╰──────────────────────────────────────────────────────────╯␛[m
 
 · the manager · the blocked child is pinned above the window
-␛[38;5;244m┌─ Agents ──────────────────────── ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;254m8 running␛[m ┐␛[m
+␛[38;5;244m╭─ Agents ─────────────────────── ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;254m8 running␛[m ─╮␛[m
 ␛[38;5;244m│␛[m ␛[1;48;5;237m❯␛[m ␛[1;38;5;254m●␛[m orchestrator  ␛[38;5;244mthis ses…␛[m  ␛[38;5;244mround 7 · streaming…␛[m  ␛[38;5;244m$0.12␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254m⚠␛[m runner-2  ␛[38;5;244mgo test ./…␛[m  ␛[38;5;254m⚠ needs you␛[m␛[38;5;244m · ␛[m␛[38;5;244m3 tools · $0.01␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m     ␛[38;5;244mwaiting approval: run go test ./internal/agent/...␛[m   ␛[38;5;244m│␛[m
@@ -100,10 +100,10 @@
 ␛[38;5;244m│␛[m   ␛[38;5;254m◇␛[m writer-6  ␛[38;5;244mapply patch␛[m    ␛[38;5;254m▰▰▰▰▱ 4/5␛[m␛[38;5;244m · ␛[m␛[38;5;244m6 tools · $0.02␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m↓ 4 more␛[m                                                 ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[3;38;5;244m[enter] attach · [x] cancel · [X] kill · [esc] back␛[m      ␛[38;5;244m│␛[m
-␛[38;5;244m└──────────────────────────────────────────────────────────┘␛[m
+␛[38;5;244m╰──────────────────────────────────────────────────────────╯␛[m
 
 · the manager · the pointer at the foot, the blocked child still on the card
-␛[38;5;244m┌─ Agents ──────────────────────── ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;254m8 running␛[m ┐␛[m
+␛[38;5;244m╭─ Agents ─────────────────────── ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;254m8 running␛[m ─╮␛[m
 ␛[38;5;244m│␛[m   ␛[1;38;5;254m●␛[m orchestrator  ␛[38;5;244mthis ses…␛[m  ␛[38;5;244mround 7 · streaming…␛[m  ␛[38;5;244m$0.12␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254m⚠␛[m runner-2  ␛[38;5;244mgo test ./…␛[m  ␛[38;5;254m⚠ needs you␛[m␛[38;5;244m · ␛[m␛[38;5;244m3 tools · $0.01␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m     ␛[38;5;244mwaiting approval: run go test ./internal/agent/...␛[m   ␛[38;5;244m│␛[m
@@ -113,4 +113,4 @@
 ␛[38;5;244m│␛[m   ␛[38;5;254m◇␛[m writer-9  ␛[38;5;244mgolden captu…␛[m  ␛[38;5;254m▰▰▱▱▱ 2/5␛[m␛[38;5;244m · ␛[m␛[38;5;244m6 tools · $0.02␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[1;48;5;237m❯␛[m ␛[38;5;254m◇␛[m writer-10  ␛[38;5;244mconfig sche…␛[m  ␛[38;5;254m▰▰▰▱▱ 3/5␛[m␛[38;5;244m · ␛[m␛[38;5;244m6 tools · $0.02␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[3;38;5;244m[enter] attach · [x] cancel · [X] kill · [esc] back␛[m      ␛[38;5;244m│␛[m
-␛[38;5;244m└──────────────────────────────────────────────────────────┘␛[m
+␛[38;5;244m╰──────────────────────────────────────────────────────────╯␛[m

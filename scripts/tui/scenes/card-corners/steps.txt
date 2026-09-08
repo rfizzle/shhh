@@ -1,0 +1,30 @@
+# A card landing on top of the input frame, with both shapes on the screen at
+# once: the card in its own tone, the frame in the mode's, and the same four
+# corners on each (docs/interface/surfaces.md#the-approval-card). The card
+# does not take the panel while the draft still holds the keyboard, which is
+# what puts the two rectangles a row apart and makes the comparison possible
+# at all.
+snap 01-start "Some things worth doing first"
+keys "write down what we settled on" Enter
+snap 02-card "notes.md"
+# A card that has just landed holds its keys for a beat, so the typing waits
+# for the grace window rather than racing it. The sentence then goes into the
+# draft, not into the card — which is the state the frame is drawn live in.
+sleep 1
+keys "and then check the round limit"
+snap 03-draft-keeps-the-keyboard "and then check the round limit"
+# Handed the keyboard, the card takes the panel and the frame goes with it;
+# the same four corners are then the only frame on the screen.
+keys C-Space
+snap 04-card-holds-the-keyboard "notes.md"
+keys y
+snap 05-answered "The note is written"
+# The draft is still holding the sentence typed at the card, and the first
+# cancel is spent emptying it — the chord only arms once there is nothing
+# left for it to take back.
+keys C-c
+sleep 0.5
+keys C-c
+snap 06-quit-armed "press again to quit"
+keys C-c
+snap 07-exit "that is everything the screen was holding"

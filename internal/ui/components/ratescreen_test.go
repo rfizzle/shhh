@@ -201,7 +201,7 @@ func TestRateScreen_ASessionIsTheSameCard(t *testing.T) {
 
 	got := rateView(r, 110)
 	for _, want := range []string{
-		"┌─ mon ", "get the observe dashboard to show the gate pass rate",
+		"╭─ mon ", "get the observe dashboard to show the gate pass rate",
 		"◇ agent", "2026-09-01T18-02 · chat · claude-opus-5 · 14 turns", "completed",
 		"[y] worked · [n] did not · [s] skip · [esc] stop",
 	} {

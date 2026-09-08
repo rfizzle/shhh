@@ -43,6 +43,12 @@ const cardRule = "\x00rule"
 // Card is a card's frame beyond its rows: the title, the chips that ride the
 // top border right-aligned, and the border colour. A zero value is the plain
 // gray frame every other card has always had.
+//
+// Its corners are ╭ ╮ ╰ ╯ — the same four glyphs the input frame is drawn
+// with, at a different tone. A card lands on top of that frame, and two
+// shapes a hand's width apart drawn from two kits read as two kinds of
+// object, which invites the reader to look for a difference that is not
+// there: both are a rectangle around something to read.
 type Card struct {
 	Title string
 	// Chips sit at the right end of the top border, joined by ─ separators.
@@ -83,7 +89,7 @@ func (c Card) Render(rows []string, width int) string {
 		pad := strings.Repeat(" ", max(0, inner-lipgloss.Width(row)))
 		b.WriteString("\n" + border.Render("│") + " " + row + pad + " " + border.Render("│"))
 	}
-	b.WriteString("\n" + border.Render("└"+strings.Repeat("─", max(0, width-2))+"┘"))
+	b.WriteString("\n" + border.Render("╰"+strings.Repeat("─", max(0, width-2))+"╯"))
 	return b.String()
 }
 
@@ -92,13 +98,13 @@ func (c Card) Render(rows []string, width int) string {
 // what is left fits beside the title; a title that still does not fit is
 // clipped, which is the one thing that never happens to a chip.
 func cardTop(c Card, border lipgloss.Style, width int) string {
-	left := "┌─ " + c.Title + " "
+	left := "╭─ " + c.Title + " "
 	chips := c.Chips
 	for {
 		right := chipRun(chips)
 		if lipgloss.Width(left)+lipgloss.Width(right)+1 <= width-1 {
 			fill := max(0, width-1-lipgloss.Width(left)-lipgloss.Width(right))
-			return paintCardTop(border, left, fill, right+"┐")
+			return paintCardTop(border, left, fill, right+"╮")
 		}
 		if len(chips) == 0 {
 			break
@@ -106,7 +112,7 @@ func cardTop(c Card, border lipgloss.Style, width int) string {
 		chips = chips[1:]
 	}
 	left = Clip(left, width-1)
-	return paintCardTop(border, left, max(0, width-1-lipgloss.Width(left)), "┐")
+	return paintCardTop(border, left, max(0, width-1-lipgloss.Width(left)), "╮")
 }
 
 // paintCardTop paints the three parts of the top edge. The fill is drawn in
@@ -130,15 +136,19 @@ func paintCardTop(border lipgloss.Style, left string, fill int, right string) st
 	return border.Render(left) + sty.Dim.Render(ruleRun(fill)) + border.Render(right)
 }
 
-// chipRun renders the chips as they sit in the border: each between ─ and a
-// space, so they read as labels on the rule rather than as content.
+// chipRun renders the chips as they sit in the border: each between a space
+// and a ─, so they read as labels on the rule rather than as content. The run
+// ends on a rule cell rather than on the chip, which is what keeps the last
+// chip off the corner — a word pressed against the join reads as part of the
+// join, and the rule cell is what says it is sitting on the border the same
+// way the title is.
 func chipRun(chips []string) string {
 	if len(chips) == 0 {
 		return ""
 	}
 	var b strings.Builder
 	for _, chip := range chips {
-		b.WriteString("─ " + chip + " ")
+		b.WriteString(" " + chip + " ─")
 	}
 	return b.String()
 }
