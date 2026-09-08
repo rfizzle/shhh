@@ -195,6 +195,15 @@ func Check(command string) []Warning {
 func checkLine(line string) (Warning, bool) {
 	for _, cmd := range Commands(line) {
 		words := strings.Fields(cmd)
+		// A reading of a line can yield a command with no words in it at
+		// all: a lone quote is a word until the quotes come off it, and a
+		// command written across several lines leaves one on a line of its
+		// own. Indexing that would panic here, on the goroutine the check
+		// runs on, and take the session down before the card the check was
+		// run for is ever drawn.
+		if len(words) == 0 {
+			continue
+		}
 		// The program's own name stands in for the path it was reached by:
 		// `/bin/rm -rf /` is an rm, and a table keyed on the verb would
 		// otherwise see a path it has never heard of.

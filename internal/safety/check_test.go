@@ -166,6 +166,53 @@ func TestCheck_Safe(t *testing.T) {
 	}
 }
 
+// notCommands are the lines a multi-line command carries that are not
+// commands: a blank one between two statements, a lone quote closing a
+// message written across lines, the body of a heredoc, punctuation with
+// nothing either side of it. Every one of them has to read as nothing rather
+// than panic — the check runs on the goroutine the session draws on, and an
+// index panic here kills the session before the card it was reading for is
+// drawn.
+var notCommands = []string{
+	"echo a\n\necho b",
+	"\n",
+	"  ;  ",
+	"cat <<'EOF' > /tmp/notes.txt\n\nbody\nEOF",
+	"git commit -m \"first line\n\nsecond line\n\"",
+	`"`,
+	`'`,
+	`""`,
+	`sudo "`,
+	"|",
+	"&&",
+}
+
+func TestCheck_ALineThatIsNotACommand(t *testing.T) {
+	for _, command := range notCommands {
+		t.Run(command, func(t *testing.T) {
+			if warnings := Check(command); len(warnings) > 0 {
+				t.Errorf("Check(%q) = %v, want no warning", command, warnings)
+			}
+		})
+	}
+}
+
+// Reading past the empty line is not reading past the line after it: a
+// danger on either side of the blank still has to reach its row.
+func TestCheck_ADangerEitherSideOfABlankLine(t *testing.T) {
+	for _, command := range []string{
+		"rm -rf /tmp/x\n\necho done",
+		"echo start\n\nrm -rf /tmp/x",
+		"git commit -m \"first line\n\nsecond line\n\"\nrm -rf /tmp/x",
+	} {
+		t.Run(command, func(t *testing.T) {
+			if len(Check(command)) == 0 {
+				t.Errorf("Check(%q) found nothing, want the recursive delete", command)
+			}
+		})
+	}
+}
+
 // A command reached by its path is the command: a table keyed on the verb
 // would otherwise see a path it has never heard of and report nothing.
 func TestCheck_ACommandReachedByItsPath(t *testing.T) {

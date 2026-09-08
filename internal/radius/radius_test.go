@@ -324,3 +324,38 @@ func TestResolve_MeasuresFromTheRootItIsGiven(t *testing.T) {
 		t.Fatalf("writes = %+v, want the absolute path measured where it is", abs.Writes)
 	}
 }
+
+// The working-scope check reads whatever a model proposed, and a model
+// proposes commands written across several lines: a blank line between two
+// statements, a closing quote left on a line of its own, a heredoc body.
+// This is the path a session reaches the danger table through, so a line
+// that is not a command has to resolve to nothing here rather than take the
+// session down on the way to the card.
+func TestWritePaths_ALineThatIsNotACommand(t *testing.T) {
+	for _, command := range []string{
+		"echo a\n\necho b",
+		"\n",
+		"  ;  ",
+		"git commit -m \"first line\n\nsecond line\n\"",
+		`"`,
+		`'`,
+		`""`,
+		`sudo "`,
+		"|",
+		"&&",
+	} {
+		t.Run(command, func(t *testing.T) {
+			if got := WritePaths(command); len(got) > 0 {
+				t.Errorf("WritePaths(%q) = %v, want nothing", command, got)
+			}
+		})
+	}
+
+	// A heredoc whose body carries a blank line still reports the file the
+	// redirection names: reading past the line is not reading past the
+	// command it sits inside.
+	const heredoc = "cat <<'EOF' > out.txt\n\nbody\nEOF"
+	if got := WritePaths(heredoc); len(got) != 1 || got[0] != "out.txt" {
+		t.Errorf("WritePaths(%q) = %v, want the redirected file", heredoc, got)
+	}
+}
