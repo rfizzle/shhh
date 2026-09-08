@@ -741,6 +741,12 @@ type Model struct {
 	// their approval requests routed into this session's approval surface.
 	subagents *subagent.Supervisor
 	childAsks []*subagent.Ask
+	// childBlast is each queued request's resolved blast-radius block, taken
+	// when the request arrives. It is stashed for the reason pendingBlast is:
+	// a card is rebuilt every frame, and resolving one of these inside a
+	// render would stat the filesystem and shell out to git on every frame a
+	// child spends waiting for an answer (radius.go).
+	childBlast map[*subagent.Ask]blastRadius
 	// decisionHeld is whether the decision on screen holds the keyboard
 	//. A card that arrives on top of a sentence never does:
 	// until the handover chord it renders its keys as not-yet-live and every

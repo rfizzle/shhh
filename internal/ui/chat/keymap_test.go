@@ -3,17 +3,24 @@ package chat
 // The realigned keymap: the readline chords reach the textarea, the palette
 // answers the chord Crush and OpenCode taught, esc esc opens rewind, ctrl+r
 // searches the ring, and `?` on an empty draft prints the keys.
+//
+// And the liveness table at the foot: every key a decision card advertises,
+// pressed through the surface's real route.
 
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
+	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 var (
@@ -348,4 +355,232 @@ func TestKeysNotice_RidesTheNoticeRailWhenDue(t *testing.T) {
 	if line := stripANSI(frameModel(t, 130, 40).noticeLine()); strings.Contains(line, "keys changed:") {
 		t.Errorf("the notice shows without being due: %q", line)
 	}
+}
+
+// --- every key a decision card offers is live ---
+
+// decisionCard is one row of the liveness table: a card the session can be
+// showing, and a fixture holding it the way a reader who answered the
+// handover holds it. What the row does not carry is the keys — those are read
+// back off the card the fixture built, so the walk cannot fall behind a card
+// that started offering one more.
+type decisionCard struct {
+	name string
+	open func(*testing.T) Model
+	card func(Model) *components.ApprovalCard
+	// scrolls says this fixture's body is longer than the panel, so the
+	// counted tail's chord is one of the keys the card is offering.
+	scrolls bool
+}
+
+// decisionCards is the table. A decision card is the one surface a bare
+// letter can reach without reading mode or a takeover in front of it, which
+// makes it the door the inert-keys register cannot see: that register asks
+// whether a key is refused while the draft is live, and this one asks the
+// other half — whether the key the card printed does anything at all once it
+// is not.
+func decisionCards(t *testing.T) []decisionCard {
+	t.Helper()
+	sessionCard := func(m Model) *components.ApprovalCard { return m.approvalCard() }
+	routedCard := func(m Model) *components.ApprovalCard { return m.childAskCard(m.activeChildAsk()) }
+	routed := func(build func(*testing.T) *subagent.Ask) func(*testing.T) Model {
+		return func(t *testing.T) Model { return routedModel(t, build(t)) }
+	}
+	return []decisionCard{
+		{
+			name: "the session's edit card",
+			open: func(t *testing.T) Model { return handover(t, interruptedModel(t, "")) },
+			card: sessionCard,
+		},
+		{
+			name: "the session's command card",
+			open: func(t *testing.T) Model {
+				var bare, contained []string
+				return runExecApproval(t, containedModel(t, &bare, &contained, "contained: bwrap (workspace profile)"))
+			},
+			card: sessionCard,
+		},
+		{
+			name: "a child's routed command",
+			open: routed(func(*testing.T) *subagent.Ask {
+				ask := subagent.NewAsk("writer-1", subagent.AskCommand, "run make")
+				ask.Command = "make"
+				return ask
+			}),
+			card: routedCard,
+		},
+		{
+			name: "a child's routed edit",
+			open: routed(func(t *testing.T) *subagent.Ask {
+				ask := subagent.NewAsk("writer-1", subagent.AskEdit, "edit internal/agent/loop.go")
+				ask.Path, ask.Root, ask.Worktree = "internal/agent/loop.go", t.TempDir(), true
+				ask.Hunks = diff.Compute("a\nb\nc\n", "a\nB\nc\n")
+				return ask
+			}),
+			card: routedCard,
+		},
+		{
+			name: "a child's routed patch",
+			open: routed(func(t *testing.T) *subagent.Ask { return longPatchAsk(t.TempDir()) }),
+			card: routedCard,
+			// The body this table exists for: forty hunks behind a counted
+			// tail, whose chord was printed and routed nowhere.
+			scrolls: true,
+		},
+		{
+			name: "a child's routed patch, answered from the manager",
+			open: func(t *testing.T) Model {
+				m := routedModel(t, longPatchAsk(t.TempDir()))
+				m.answerAgent = m.activeChildAsk().Agent
+				opened, _ := m.openAgentList()
+				return opened.(Model)
+			},
+			card: func(m Model) *components.ApprovalCard {
+				return m.listAnswerCard(m.listAnswerAsk())
+			},
+			scrolls: true,
+		},
+		{
+			name: "a child's routed tool",
+			open: routed(func(*testing.T) *subagent.Ask {
+				ask := subagent.NewAsk("researcher-1", subagent.AskGeneric, "use web_fetch")
+				ask.Summary = "https://example.com/docs"
+				return ask
+			}),
+			card: routedCard,
+		},
+	}
+}
+
+// cardKeys is everything a card is advertising, in one list: the decision run
+// it draws, the qualifier [d] rides beside it, the offers after it, and —
+// where the body does not fit — the chord the counted tail names. It is read
+// off the card rather than declared beside it, so a key added to a card joins
+// this walk by construction.
+//
+// [d] is added by hand because it is the one answer the run leaves out: the
+// card draws it as a qualifier on the key line rather than inside the
+// brackets, so KeyRun, which is what a click resolves against, has never
+// carried it.
+func cardKeys(m Model, card *components.ApprovalCard) []string {
+	var out []string
+	for _, k := range card.KeyRun() {
+		out = append(out, k.Key)
+	}
+	if card.FullDiff {
+		out = append(out, keys.Shown(keys.Decision.Diff))
+	}
+	for _, o := range card.ExtraHints {
+		out = append(out, strings.Trim(o.Key, "[]"))
+	}
+	if maxBody, _ := card.ScrollBounds(m.contentWidth()); maxBody > 0 {
+		out = append(out, keys.Shown(keys.Decision.ScrollDown))
+	}
+	return out
+}
+
+// cardState is everything a key on a decision card could reasonably move: the
+// session behind it, the card's own scroll, and the screen. A key that
+// changes none of the three did nothing.
+func cardState(m Model) string {
+	return snapshot(m) + fmt.Sprintf(" scroll=%d/%d\n", m.cardScroll, m.cardPan) + m.View().Content
+}
+
+// TestDecisionCards_EveryOfferedKeyDoesSomething is the other half of the
+// inert-keys register. That one presses every key a surface offers while the
+// draft holds the keyboard and requires each to be a letter; this one presses
+// the same keys once the card holds it and requires each to be a key.
+//
+// An offer nothing routes is the failure it catches, and it is invisible
+// without it: [d] rendered on a card whose host never answered
+// ApprovalFullDiff, or a counted tail naming a chord that reached no scroll,
+// both look exactly like a working card until they are pressed.
+func TestDecisionCards_EveryOfferedKeyDoesSomething(t *testing.T) {
+	tails := 0
+	for _, tc := range decisionCards(t) {
+		if tc.scrolls {
+			tails++
+		}
+		t.Run(tc.name, func(t *testing.T) {
+			m := tc.open(t)
+			card := tc.card(m)
+			// A fixture that was built to overflow and does not would walk
+			// the chord out of the list rather than fail on it, which is the
+			// one key here nothing else would notice missing.
+			if maxBody, _ := card.ScrollBounds(m.contentWidth()); (maxBody > 0) != tc.scrolls {
+				t.Fatalf("the fixture's body outgrows its panel by %d rows, want scrolls=%v", maxBody, tc.scrolls)
+			}
+			offered := cardKeys(m, card)
+			if len(offered) == 0 {
+				t.Fatal("a decision card with no keys is not one")
+			}
+			for _, k := range offered {
+				m := tc.open(t)
+				before := cardState(m)
+				next := pressSpelling(t, m, k)
+				if after := cardState(next); after == before {
+					t.Fatalf("%q is offered on the card and changed nothing:\n%s", k, before)
+				}
+			}
+		})
+	}
+	if tails == 0 {
+		t.Fatal("no fixture's body outgrew its panel, so the counted tail's chord went unpressed")
+	}
+}
+
+// pressSpelling sends the keystroke a register spelling stands for. It is
+// press() plus the chords, because the keys a card offers are no longer all
+// bare letters.
+func pressSpelling(t *testing.T, m Model, spelling string) Model {
+	t.Helper()
+	var msg tea.KeyPressMsg
+	rest := spelling
+	for {
+		prefix, mod, ok := modPrefix(rest)
+		if !ok {
+			break
+		}
+		msg.Mod |= mod
+		rest = strings.TrimPrefix(rest, prefix)
+	}
+	switch rest {
+	case "up", "↑":
+		msg.Code = tea.KeyUp
+	case "down", "↓":
+		msg.Code = tea.KeyDown
+	case "left", "←":
+		msg.Code = tea.KeyLeft
+	case "right", "→":
+		msg.Code = tea.KeyRight
+	case "enter":
+		msg.Code = tea.KeyEnter
+	case "esc":
+		msg.Code = tea.KeyEscape
+	case "space":
+		msg.Code = tea.KeySpace
+	default:
+		r := []rune(rest)
+		if len(r) != 1 {
+			t.Fatalf("no keystroke for the spelling %q", spelling)
+		}
+		msg.Code = r[0]
+		if msg.Mod == 0 {
+			msg.Text = rest
+		}
+	}
+	updated, _ := m.Update(msg)
+	return updated.(Model)
+}
+
+func modPrefix(s string) (prefix string, mod tea.KeyMod, ok bool) {
+	for _, p := range []struct {
+		text string
+		mod  tea.KeyMod
+	}{{"ctrl+", tea.ModCtrl}, {"alt+", tea.ModAlt}, {"shift+", tea.ModShift}} {
+		if strings.HasPrefix(s, p.text) {
+			return p.text, p.mod, true
+		}
+	}
+	return "", 0, false
 }

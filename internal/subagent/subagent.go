@@ -581,9 +581,32 @@ type Ask struct {
 	Kind     AskKind
 	Title    string
 	Command  string      // AskCommand: the command text
-	Warnings []string    // AskCommand: safety.Check risks
+	Warnings []string    // AskCommand / AskPatch: safety.Check risks, patch clashes
 	Hunks    []diff.Hunk // AskEdit / AskPatch: the change to review
 	Summary  string      // AskGeneric: one-line description
+	Path     string      // AskEdit: the file, spelled as the child's own row spells it
+
+	// The rest is what the parent's approval card needs to say more about a
+	// routed request than its title. A card that only says what the action
+	// *is* asks the reader to do the risk assessment themselves, at speed,
+	// and a child's request is the one where they have least to go on — so
+	// the ask carries where its paths live, and the card resolves the blast
+	// radius against that rather than against the parent's own checkout.
+
+	// Root is the directory the ask's relative paths are measured from: the
+	// child's own working directory for a call it is about to make, and the
+	// parent's checkout for a patch, which is the tree a patch lands in.
+	Root string
+	// Worktree says Root is an isolated checkout rather than the reader's
+	// own files. It is the difference between an approval that changes the
+	// reader's workspace now and one that changes a copy they will be shown
+	// as a patch afterwards, and nothing else on the ask carries it.
+	Worktree bool
+	// Files are the paths an AskPatch writes in the parent's checkout, as
+	// git names them. They are the patch's blast radius: unlike an edit,
+	// whose diff is the whole of it, a patch's diff can be longer than the
+	// panel and the count is what survives the fold.
+	Files []string
 
 	once sync.Once
 	resp chan bool
@@ -2741,8 +2764,21 @@ func (s *Supervisor) scopedAction(c *child, a agent.Action) agent.Action {
 	return a
 }
 
-// buildAsk assembles the approval request the parent user reviews.
+// buildAsk assembles the approval request the parent user reviews, and stamps
+// it with where the child's paths live. The stamp is applied in one place
+// rather than per kind so a request added later cannot reach the parent's
+// card with nothing behind its blast-radius block.
 func (s *Supervisor) buildAsk(c *child, name string, rooted json.RawMessage, action agent.Action) (*Ask, error) {
+	ask, err := askFor(c, name, rooted, action)
+	if err != nil {
+		return nil, err
+	}
+	ask.Root, ask.Worktree = c.root, c.worktree != ""
+	return ask, nil
+}
+
+// askFor is the request itself: the variant, and what only that variant knows.
+func askFor(c *child, name string, rooted json.RawMessage, action agent.Action) (*Ask, error) {
 	switch action.Kind {
 	case agent.ActionCommand:
 		ask := NewAsk(c.name, AskCommand, "run "+firstLine(action.Command))
@@ -2756,7 +2792,9 @@ func (s *Supervisor) buildAsk(c *child, name string, rooted json.RawMessage, act
 		if err != nil {
 			return nil, fmt.Errorf("invalid arguments: %w", err)
 		}
-		ask := NewAsk(c.name, AskEdit, mut.Action+" "+displayPath(c.root, mut.Path))
+		path := displayPath(c.root, mut.Path)
+		ask := NewAsk(c.name, AskEdit, mut.Action+" "+path)
+		ask.Path = path
 		ask.Hunks = diff.Compute(mut.OldText, mut.NewText)
 		return ask, nil
 	}
@@ -2803,12 +2841,16 @@ func (s *Supervisor) reviewPatch(c *child) {
 	hunks, files := PatchHunks(patch)
 	adds, dels := diff.Stats(hunks)
 	title := fmt.Sprintf("apply patch (+%d −%d, %d file(s))", adds, dels, files)
+	touched := PatchFiles(patch)
 	ask := NewAsk(c.name, AskPatch, title)
 	ask.Hunks = hunks
+	// A patch is the one child request that writes the reader's own files, so
+	// it is measured in the reader's own checkout: the worktree the child
+	// edited in is not where any of this lands.
+	ask.Root, ask.Files = c.repoTop, touched
 	// Two writers can hold the same file in separate worktrees; the collision
 	// only becomes visible when the second patch lands on top of the first.
 	// Say so on the card, before it is applied.
-	touched := PatchFiles(patch)
 	if clashes := s.patchClashes(c.name, touched); len(clashes) > 0 {
 		ask.Warnings = append(ask.Warnings, "overwrites changes already applied by "+strings.Join(clashes, ", "))
 	}

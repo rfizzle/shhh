@@ -83,6 +83,21 @@ func (m Model) handleSubagentEvent(ev subagent.Event) (tea.Model, tea.Cmd) {
 			return nm, tea.Batch(cmd, listenSubagents(nm.subagents.Events()))
 		}
 		m.childAsks = append(m.childAsks, ev.Ask)
+		// The block is read here, once, and not in the card: a routed card is
+		// rebuilt every frame, and this stats the filesystem and asks git
+		// (radius.go).
+		if m.childBlast == nil {
+			m.childBlast = map[*subagent.Ask]blastRadius{}
+		}
+		m.childBlast[ev.Ask] = m.childRadius(ev.Ask)
+		if m.activeChildAsk() == ev.Ask {
+			// It is the card on screen now, and its body is not the one the
+			// stored offsets describe — the reset every arrival at a decision
+			// gets (setTurnState, turn.go). One arriving behind another card
+			// takes them from nobody, so it leaves them where they are: they
+			// still belong to whatever the reader is reading.
+			m.cardScroll, m.cardPan = 0, 0
+		}
 		// A routed approval arrives the way every other decision does: on
 		// screen, and holding the keyboard only if there is no sentence for
 		// its letters to belong to. It arms itself because it is
@@ -188,7 +203,19 @@ func (m Model) updateChildAsk(msg tea.KeyPressMsg, ask *subagent.Ask) (tea.Model
 	if keys.Match(msg, keys.Draft.Agents) {
 		return m.openAgentList()
 	}
-	done, result := m.childAskCard(ask).Update(msg)
+	card := m.childAskCard(ask)
+	// The card's own scroll, answered before the decision keys so a held card
+	// cannot read a chord as the start of a sentence — the same order the
+	// session's own card answers them in (run.go). A routed card is bounded
+	// like every other, and a writer's patch is the body that needs it: forty
+	// hunks show eight lines and count the rest behind this chord, which
+	// without a route here is a count with an offer attached to it and
+	// nothing behind the offer.
+	if keys.Match(msg, keys.Decision.ScrollUp, keys.Decision.ScrollDown,
+		keys.Decision.PanLeft, keys.Decision.PanRight) {
+		return m.scrollCard(msg, card)
+	}
+	done, result := card.Update(msg)
 	if !done {
 		return m, nil
 	}
@@ -196,6 +223,16 @@ func (m Model) updateChildAsk(msg tea.KeyPressMsg, ask *subagent.Ask) (tea.Model
 		// The card had the keyboard by arrival and this key is not one of its
 		// answers: it is the start of a sentence, and the ask stays queued.
 		return m.releaseToDraft(msg)
+	}
+	if result == components.ApprovalFullDiff {
+		// [d] opens the child's change full screen with the request still
+		// waiting behind it; esc comes back to the card, which keeps the
+		// keyboard because the reader took it on purpose (leaveSurface).
+		return m.openChildDiff(ask)
+	}
+	approved, ok := askAnswer(result)
+	if !ok {
+		return m, nil
 	}
 	for i, queued := range m.childAsks {
 		if queued == ask {
@@ -210,7 +247,12 @@ func (m Model) updateChildAsk(msg tea.KeyPressMsg, ask *subagent.Ask) (tea.Model
 	// (docs/interface/surfaces.md#the-approval-card).
 	m.releaseDecision()
 	m.armArrival()
-	approved := result == components.ApprovalApprove
+	// Nor can the next card inherit this one's scroll: the offsets describe a
+	// body that has just been replaced, and a stale pan would blank the new
+	// card's rows outright — the reset the session's own arrivals get
+	// (setTurnState, turn.go).
+	m.cardScroll, m.cardPan = 0, 0
+	m.forgetChildBlast(ask)
 	ask.Respond(approved)
 	verdict := "Declined"
 	if approved {
@@ -228,16 +270,34 @@ func (m Model) updateChildAsk(msg tea.KeyPressMsg, ask *subagent.Ask) (tea.Model
 // (docs/interface/surfaces.md#the-agent-manager). Attached to that agent, the
 // prefix drops (the breadcrumb already names it) — detached, [g] offers the
 // jump into its view.
+//
+// It carries what the session's own card carries — the blast radius, the
+// severity and its reading, the containment chip, reversibility, and [d] into
+// the whole diff. The person answering is the same person deciding on the
+// same terms, and this is the card they have least else to go on from: the
+// work happened somewhere they were not watching. The variant it matters most
+// for is the patch, which writes their own files (radius.go).
 func (m Model) childAskCard(ask *subagent.Ask) *components.ApprovalCard {
-	card := &components.ApprovalCard{}
+	card := &components.ApprovalCard{
+		// The card is rebuilt every frame, so its scroll rides the model and
+		// is reset whenever the presented ask changes (updateChildAsk).
+		BodyOffset: m.cardScroll,
+		PanOffset:  m.cardPan,
+	}
 	defer m.applyNotYetLive(card)
+	// The blast-radius block, read where the request arrived rather than
+	// resolved here: this is a render, and resolving would stat the
+	// filesystem and shell out to git on every frame (handleSubagentEvent).
+	// It carries the risks too, so the card states severity and warnings from
+	// one source rather than two.
+	m.childBlastFor(ask).applyTo(card)
 	prefix := ask.Agent + " ▸ "
 	if m.attachedTo == ask.Agent {
 		prefix = ""
 	} else {
-		card.ExtraHints = []string{
-			keys.Shown(keys.Agent.Go) + ": attach to " + ask.Agent,
-			keys.Shown(keys.Draft.Agents) + ": agents",
+		card.ExtraHints = []components.KeyOffer{
+			{Key: keys.Bracket(keys.Agent.Go), Label: "attach to " + ask.Agent},
+			{Key: keys.Bracket(keys.Draft.Agents), Label: "agents"},
 		}
 	}
 	switch ask.Kind {
@@ -246,26 +306,20 @@ func (m Model) childAskCard(ask *subagent.Ask) *components.ApprovalCard {
 		card.Title = prefix + "Approve command"
 		card.Headline = ask.Agent + " wants to " + ask.Title
 		card.Question = "Run this command?"
-		if len(ask.Warnings) > 0 {
-			card.Warnings = []string{strings.Join(ask.Warnings, "; ")}
-		}
 	case subagent.AskEdit:
 		card.Variant = components.ApprovalEdit
 		card.Title = prefix + "Approve edit"
 		card.Headline = ask.Agent + " wants to " + ask.Title
 		card.Hunks = ask.Hunks
+		card.FullDiff = len(ask.Hunks) > 0
 		card.Question = "Apply this change in the agent's workspace?"
 	case subagent.AskPatch:
 		card.Variant = components.ApprovalEdit
 		card.Title = prefix + "Apply patch"
 		card.Headline = ask.Agent + " finished and wants to " + ask.Title
 		card.Hunks = ask.Hunks
+		card.FullDiff = len(ask.Hunks) > 0
 		card.Question = "Apply the agent's patch to your workspace?"
-		// A patch over files another agent already changed is the one case
-		// where two isolated writers can still collide.
-		if len(ask.Warnings) > 0 {
-			card.Warnings = []string{strings.Join(ask.Warnings, "; ")}
-		}
 	default:
 		card.Variant = components.ApprovalGeneric
 		card.Title = prefix + "Approve tool"
@@ -274,6 +328,59 @@ func (m Model) childAskCard(ask *subagent.Ask) *components.ApprovalCard {
 		card.Question = "Allow this?"
 	}
 	return card
+}
+
+// childBlastFor is the request's stashed blast-radius block. A request that
+// reaches a card without one was queued by hand rather than routed — a
+// front-end test does that — and is resolved on the spot instead, which is
+// correct and merely not cheap.
+func (m Model) childBlastFor(ask *subagent.Ask) blastRadius {
+	if b, ok := m.childBlast[ask]; ok {
+		return b
+	}
+	return m.childRadius(ask)
+}
+
+// forgetChildBlast drops the stashed blocks of requests that have left the
+// queue. Their readings describe a decision nobody can make any more, and a
+// session that answers a hundred of them should not still be holding a
+// hundred of these.
+func (m *Model) forgetChildBlast(asks ...*subagent.Ask) {
+	for _, a := range asks {
+		delete(m.childBlast, a)
+	}
+}
+
+// askAnswer is the decision a routed card's result carries, and whether the
+// result is one at all.
+//
+// Only the two answers resolve a request. A result the surface routes
+// somewhere else — the full-screen diff — must never reach the answer below
+// on its way, because everything that is not an approval there is a decline:
+// a reader who pressed [d] to read a patch before deciding would have
+// declined it by asking to read it, and the child would be told so.
+func askAnswer(result components.ApprovalDecision) (approved, ok bool) {
+	switch result {
+	case components.ApprovalApprove:
+		return true, true
+	case components.ApprovalDeny:
+		return false, true
+	}
+	return false, false
+}
+
+// openChildDiff takes a routed request's change full screen. An edit names
+// its file; a patch names none, because it is a whole worktree's work and no
+// one path is it — the header says whose instead, which is the fact a reader
+// opening it is checking.
+func (m Model) openChildDiff(ask *subagent.Ask) (tea.Model, tea.Cmd) {
+	path, verb := ask.Path, "edit"
+	if ask.Kind == subagent.AskPatch {
+		path, verb = ask.Agent+"'s patch", "apply"
+	}
+	return m.openDiffFull(&components.DiffView{
+		Path: path, Verb: verb, Hunks: ask.Hunks, Syntax: diffSyntax(ask.Path),
+	}, m.state)
 }
 
 // childAskLines renders the presented child approval card, one row per line.
@@ -298,6 +405,7 @@ func (m *Model) cancelSubagents() {
 	for _, ask := range m.childAsks {
 		ask.Respond(false)
 	}
+	m.forgetChildBlast(m.childAsks...)
 	m.childAsks = nil
 }
 

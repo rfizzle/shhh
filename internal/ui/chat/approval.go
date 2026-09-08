@@ -918,8 +918,13 @@ const cardPanStep = 5
 // scrollCard answers the card's scroll chords: a row of body per press, five
 // columns of pan, clamped against what the card can actually show so fifty
 // presses past the end cost one press back.
-func (m Model) scrollCard(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
-	maxBody, maxPan := m.approvalCard().ScrollBounds(m.contentWidth())
+//
+// It is handed the card rather than fetching one, because the session's own
+// decision and a child's routed request are two cards with one pair of
+// offsets between them, and bounds taken off the wrong card would clamp the
+// scroll against a body nobody is reading (subagents.go).
+func (m Model) scrollCard(msg tea.KeyPressMsg, card *components.ApprovalCard) (tea.Model, tea.Cmd) {
+	maxBody, maxPan := card.ScrollBounds(m.contentWidth())
 	switch {
 	case keys.Match(msg, keys.Decision.ScrollUp):
 		m.cardScroll = max(m.cardScroll-1, 0)

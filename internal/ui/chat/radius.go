@@ -21,6 +21,7 @@ import (
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/radius"
 	"github.com/rfizzle/shhh/internal/scope"
+	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -79,20 +80,41 @@ func (m Model) resolveRadius(req *approvalRequest) blastRadius {
 	return m.genericRadius(req)
 }
 
+// radiusIn is the tree a command's radius is read in: the checkout its
+// relative paths are stat-ed from, and the tracker that answers what git
+// there knows about them. The two travel together because they are one
+// answer — a tracker rooted somewhere else answers about a different tree,
+// and the card would state that answer as if it were about this one.
+type radiusIn struct {
+	workspace string
+	tracker   *changeset.Tracker
+}
+
 // commandRadius resolves a shell command: what it writes, whether git could
 // put those paths back, and what the containment profile allows it to reach.
 // The containment it is handed distinguishes the agent's commands, which run
 // contained, from /run, which is the user's own and never is.
 func (m Model) commandRadius(command string, contain cardContainment) blastRadius {
-	res := radius.Resolve(m.workspace, command)
+	return m.commandRadiusIn(radiusIn{m.workspace, m.tracker}, command, m.pendingScope, contain)
+}
+
+// commandRadiusIn is commandRadius over a tree and a scope reading it is
+// handed rather than reads off the session. A child's command runs in the
+// child's own directory, and the scope question a session's card asks —
+// approving adds this directory for the session — is not one a routed card
+// can ask, because answering it grants the child nothing (grantScope,
+// scope.go). So both travel as arguments, and a card with no scope to speak
+// of says so by passing the zero reach.
+func (m Model) commandRadiusIn(in radiusIn, command string, reach scopeReach, contain cardContainment) blastRadius {
+	res := radius.Resolve(in.workspace, command)
 	b := blastRadius{severity: severityOf(res.Level), reason: commandReason(res), risks: res.Risks}
 
 	value, detail := res.Touches()
 	b.fields = append(b.fields, components.CardField{
 		Label: "touches", Value: value, Detail: detail, Tone: touchTone(res),
 	})
-	b.fields = append(b.fields, m.undoField(res))
-	if f, ok := scopeField(m.pendingScope); ok {
+	b.fields = append(b.fields, undoField(in.tracker, res))
+	if f, ok := scopeField(reach); ok {
 		b.fields = append(b.fields, f)
 		if b.severity < components.SeverityMedium {
 			// The scope is what raised it, so the scope is what the level is
@@ -127,7 +149,11 @@ func (m Model) commandRadius(command string, contain cardContainment) blastRadiu
 // command — it records file edits, not processes — so the honest answer is
 // what git could do about the paths it resolved, and "unknown" whenever the
 // paths themselves are.
-func (m Model) undoField(res radius.Command) components.CardField {
+//
+// The tracker is an argument rather than the session's, because the answer is
+// about one tree: a command running in a child's worktree is asked of that
+// worktree's git, not of the checkout the session happens to be open in.
+func undoField(tracker *changeset.Tracker, res radius.Command) components.CardField {
 	f := components.CardField{Label: "undo"}
 	switch {
 	case len(res.Writes) == 0 && len(res.Unresolved) > 0:
@@ -141,7 +167,7 @@ func (m Model) undoField(res radius.Command) components.CardField {
 	}
 	tracked, untracked := 0, 0
 	for _, w := range res.Writes {
-		switch m.tracker.Track(w.Path) {
+		switch tracker.Track(w.Path) {
 		case changeset.TrackTracked:
 			tracked++
 		case changeset.TrackUntracked:
@@ -149,7 +175,7 @@ func (m Model) undoField(res radius.Command) components.CardField {
 		}
 	}
 	switch {
-	case !m.tracker.Repo():
+	case !tracker.Repo():
 		f.Value, f.Detail = "none", "this is not a git work tree and shhh does not record commands"
 		f.Tone = components.ToneRisk
 	case untracked == 0 && tracked == len(res.Writes):
@@ -305,12 +331,25 @@ func commandReason(res radius.Command) string {
 }
 
 // writesUnder names the directory every resolved write is in, where they
-// share one. Where they do not, it says nothing: "under" a directory only
-// half the paths are in would be a claim about the other half.
+// share one.
 func writesUnder(writes []radius.Target) string {
-	dir := filepath.Dir(writes[0].Path)
-	for _, w := range writes[1:] {
-		if filepath.Dir(w.Path) != dir {
+	paths := make([]string, len(writes))
+	for i, w := range writes {
+		paths[i] = w.Path
+	}
+	return under(paths)
+}
+
+// under is the clause a count of paths is followed by: the directory they are
+// all in, where they share one. Where they do not, it says nothing: "under" a
+// directory only half the paths are in would be a claim about the other half.
+func under(paths []string) string {
+	if len(paths) == 0 {
+		return ""
+	}
+	dir := filepath.Dir(paths[0])
+	for _, p := range paths[1:] {
+		if filepath.Dir(p) != dir {
 			return ""
 		}
 	}
@@ -392,4 +431,157 @@ func touchTone(res radius.Command) components.FieldTone {
 		return components.ToneSafe
 	}
 	return components.ToneNeutral
+}
+
+// --- a child agent's routed request ---
+//
+// The highest-consequence approval in the product is a writer's finished
+// patch: it writes the reader's own files, out of work that happened in a
+// checkout they were not watching. A routed request is answered by the same
+// person, on the same terms, as the session's own — so it is resolved through
+// the same readers, and the only difference is which checkout its paths are
+// measured in (docs/interface/surfaces.md#the-agent-manager).
+
+// childRadius is the blast-radius block for a routed child request.
+func (m Model) childRadius(ask *subagent.Ask) blastRadius {
+	switch ask.Kind {
+	case subagent.AskCommand:
+		return m.childCommandRadius(ask)
+	case subagent.AskEdit:
+		return m.childEditRadius(ask)
+	case subagent.AskPatch:
+		return m.patchRadius(ask)
+	}
+	// A generic tool declares its own radius on the session's card
+	// (GatedPreview.Fields) and declares none through a child, so the row
+	// states the level alone rather than inventing a reading for it.
+	return blastRadius{severity: components.SeverityLow}
+}
+
+// childCommandRadius resolves a child's command in the tree it will run in,
+// which is the whole of what makes the row honest: a worktree is a different
+// checkout, and the answer git gives about a path there is not the answer it
+// gives about the same path here.
+//
+// The containment named is the session's, because it is the session's: a
+// child's commands are wrapped by the same mechanism and profile with the
+// workspace grant moved to the child's directory, and a child on a host with
+// none is refused there rather than run bare.
+// See docs/capabilities/containment.md#containment-can-be-required.
+func (m Model) childCommandRadius(ask *subagent.Ask) blastRadius {
+	b := m.commandRadiusIn(radiusIn{ask.Root, m.childTracker(ask)}, ask.Command, scopeReach{},
+		cardContainment{assistant: true, mechanism: m.containment.Mechanism})
+	// The session's card explains a missing [a] as the safety flag's doing. A
+	// routed card offers no [a] at all — a session grant is the session's to
+	// make, and a child's card cannot make one — so that footnote would be
+	// answering a question this card never raised. The uncontained one stays:
+	// it is about the session, and it is as true here.
+	if !b.uncontained {
+		b.footnote = ""
+	}
+	b.fields = append([]components.CardField{landsInField(ask)}, b.fields...)
+	return b
+}
+
+// childTracker is the git this request's paths are asked about. A child
+// standing in the session's own checkout is asked of the session's tracker —
+// it is the right one and it has already paid for the answers it holds. A
+// worktree gets one of its own, taken once when the request arrives, because
+// this shells out to git and a card is rebuilt every frame.
+func (m Model) childTracker(ask *subagent.Ask) *changeset.Tracker {
+	if !ask.Worktree {
+		return m.tracker
+	}
+	return changeset.NewTracker(ask.Root)
+}
+
+// childEditRadius is the session's edit block minus the one promise it cannot
+// make. The changeset records what this session writes, and a child's own
+// edits are not this session's — only the patch a writer finishes with ever
+// reaches the store (recordChildPatch, subagents.go) — so the row says what
+// the edit costs to take back from here, which is nothing.
+func (m Model) childEditRadius(ask *subagent.Ask) blastRadius {
+	b := blastRadius{severity: components.SeverityMedium}
+	if ask.Path != "" {
+		b.reason = editReason(ask.Path)
+	}
+	b.fields = append(b.fields, landsInField(ask))
+	b.reversibility = "undo none here — this session records the agent's patch, not its edits"
+	return b
+}
+
+// patchRadius is the block for a writer's finished patch: the one child
+// request that writes the reader's own files, and so the one a child can
+// genuinely offer undo for — applying it records every file on both sides in
+// the session changeset, which is what /undo restores from.
+func (m Model) patchRadius(ask *subagent.Ask) blastRadius {
+	b := blastRadius{severity: components.SeverityMedium, reason: patchReason(ask.Files)}
+	b.risks = ask.Warnings
+	if len(b.risks) > 0 {
+		// The clash is the reading: two writers held the same file in
+		// separate worktrees and the second patch is about to land on the
+		// first, which is the one way isolated writers can still collide.
+		b.severity, b.reason = components.SeverityHigh, ""
+		b.safe = "[n] deny — the safe answer"
+	}
+	value, detail := patchTouches(ask.Files)
+	b.fields = append(b.fields, landsInField(ask), components.CardField{
+		Label: "touches", Value: value, Detail: detail, Tone: components.ToneNeutral,
+	})
+	if m.changes == nil {
+		b.reversibility = "undo none — this session records no changeset"
+		return b
+	}
+	b.reversibility = "undo yes — applying records every file on both sides"
+	return b
+}
+
+// landsInField is the row that makes every other row on a routed card read
+// correctly: which tree the request changes. A writer works in a checkout of
+// its own and the reader's files do not move until its patch is applied; an
+// agent without one is working in the reader's files right now, and a patch
+// has left the worktree behind by definition.
+func landsInField(ask *subagent.Ask) components.CardField {
+	switch {
+	case ask.Kind == subagent.AskPatch:
+		return components.CardField{
+			Label: "lands in", Value: "your workspace",
+			Detail: "the agent's worktree is separate; this is where its work arrives",
+			Tone:   components.ToneOpen,
+		}
+	case ask.Worktree:
+		return components.CardField{
+			Label: "lands in", Value: "the agent's worktree",
+			Detail: "an isolated checkout; your files change only when you apply its patch",
+			Tone:   components.ToneSafe,
+		}
+	}
+	return components.CardField{
+		Label: "lands in", Value: "your workspace",
+		Detail: "this agent has no worktree of its own",
+		Tone:   components.ToneOpen,
+	}
+}
+
+// patchReason says what makes a patch the level it is, in the terms the level
+// is decided in: how many of the reader's own files it rewrites, and where.
+func patchReason(files []string) string {
+	if len(files) == 0 {
+		return "writes your workspace"
+	}
+	return "writes " + plural(len(files), "file") + under(files)
+}
+
+// patchTouches is the `touches` row for a patch. An edit needs none — its
+// diff is the blast radius in full — but a patch's diff is routinely longer
+// than the panel, and the count is the part of it that survives the fold.
+func patchTouches(files []string) (value, detail string) {
+	if len(files) == 0 {
+		return "unknown", "the patch named no files"
+	}
+	value = files[0]
+	if n := len(files) - 1; n > 0 {
+		value += fmt.Sprintf(" and %d more", n)
+	}
+	return value, plural(len(files), "file") + " in your checkout"
 }

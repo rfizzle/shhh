@@ -68,7 +68,7 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	// scroll the transcript, exactly as before.
 	if keys.Match(msg, keys.Decision.ScrollUp, keys.Decision.ScrollDown,
 		keys.Decision.PanLeft, keys.Decision.PanRight) {
-		return m.scrollCard(msg)
+		return m.scrollCard(msg, m.approvalCard())
 	}
 	done, result := m.approvalCard().Update(msg)
 	if !done {

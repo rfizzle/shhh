@@ -2063,3 +2063,55 @@ func TestGolden_NotebookRows(t *testing.T) {
 		}
 	})
 }
+
+// TestGolden_ChildAskCard pins the routed card with the real resolver behind
+// it: the command's paths stat-ed in the child's own directory, the
+// containment the session is running under, and a writer's finished patch —
+// the one child request that writes the reader's own files, and the card that
+// used to be a title, a diff and two keys.
+//
+// The held panel is the pair the last one exists for. A card that took the
+// keyboard by arriving answers two keys and advertises two keys; [g] and the
+// manager's chord belong to the draft in that state, and drawing them would
+// be offering a key that puts a letter in the sentence.
+func TestGolden_ChildAskCard(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(dir, "build"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"shhh", "shhh.test"} {
+		if err := os.WriteFile(filepath.Join(dir, "build", name), []byte("binary\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	sup := subagent.New(context.Background(), subagent.Options{Root: dir, NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+
+	captureGolden(t, "child-ask-card", "a child agent's routed approval", goldenWidths, func(width int) []golden.Panel {
+		build := func(ask *subagent.Ask, hold bool) string {
+			m := frameModel(t, width, 40)
+			m = m.WithSubagents(sup).WithChangeset(changeset.New(64), nil).WithContainment(Containment{
+				Status: "bwrap · workspace", Mechanism: "bwrap", Profile: "workspace",
+			})
+			updated, _ := m.Update(subagentEventMsg{ev: subagent.Event{Kind: subagent.EventAsk, Ask: ask}})
+			m = updated.(Model)
+			if hold {
+				m = handover(t, m)
+			}
+			return strings.Join(m.childAskLines(ask), "\n")
+		}
+		command := func() *subagent.Ask {
+			ask := subagent.NewAsk("writer-1", subagent.AskCommand, "run rm -rf build")
+			ask.Command = "rm -rf build"
+			ask.Root, ask.Worktree = dir, true
+			return ask
+		}
+		return []golden.Panel{
+			{Label: "a child's command · resolved in the agent's own checkout", View: build(command(), true)},
+			{Label: "the same card, held by arriving · two answers, and nothing else offered",
+				View: build(command(), false)},
+			{Label: "a writer's patch · your files, and the diff behind a counted tail",
+				View: build(longPatchAsk(dir), true)},
+		}
+	})
+}

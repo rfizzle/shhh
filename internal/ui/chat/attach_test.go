@@ -536,7 +536,7 @@ func TestDetachedAskGJumpsToAgent(t *testing.T) {
 	// Detached, the card offers the jump — once it holds the keyboard, since
 	// until then [g] is a letter.
 	m = handover(t, m)
-	if view := m.View().Content; !strings.Contains(view, "g: attach to researcher-1") {
+	if view := m.View().Content; !strings.Contains(view, "[g] attach to researcher-1") {
 		t.Fatalf("routed card missing the [g] hint:\n%s", view)
 	}
 	updated, _ = m.Update(key('g'))

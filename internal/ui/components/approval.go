@@ -212,9 +212,15 @@ type ApprovalCard struct {
 	// number of decisions is not an offer.
 	Batch     bool
 	BatchHint string
-	// ExtraHints are additional key hints the host handles itself (e.g.
-	// "g: attach to writer-1" on a routed child approval).
-	ExtraHints []string
+	// ExtraHints are the keys beyond the decision run that the host answers
+	// itself — [g] to attach to the agent that asked, the manager's chord.
+	//
+	// They are pairs rather than prose so that the card knows what it is
+	// advertising: a sentence could name a key nothing routes, and neither
+	// the card nor a test could tell. The liveness table walks KeyRun and
+	// these together and presses every one of them through the surface's
+	// real route.
+	ExtraHints []KeyOffer
 	// SafeDefault names the safe answer in words, for the cards where it is
 	// not obvious from the keys — e.g. "[n] deny — the safe answer". It names
 	// a key that answers, never esc, which hands the keyboard back instead
@@ -516,7 +522,23 @@ func (c *ApprovalCard) hintRowsFor(width, inner int) []string {
 			hint, qualRow = joined, ""
 		}
 	}
-	segments := append([]string{hint}, c.ExtraHints...)
+	segments := []string{hint}
+	// A card that took the keyboard by arriving claims the two answers and
+	// nothing a mistyped word could have meant, so it advertises nothing else
+	// either — the same reason [a] and [d] lose their qualifiers just above.
+	// The offer worth removing is a bare letter, which the card would answer
+	// by putting it in the draft; a chord among them goes on working and
+	// loses only its row. That is the safe direction of the trade — a key
+	// shown and dead is what this rule exists to stop, and a key live and
+	// unshown costs a reader one thing they already knew — and it is worth
+	// more than a per-offer exception in the one block that has to stay
+	// readable at sixty columns
+	// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+	if !c.HeldOnArrival {
+		for _, o := range c.ExtraHints {
+			segments = append(segments, o.Key+" "+o.Label)
+		}
+	}
 	if rest := c.arrivalRest(); len(rest) > 0 {
 		// Fitted into what the answer left of the row rather than wrapped:
 		// the sentence about the draft is an annotation on the keys, not one

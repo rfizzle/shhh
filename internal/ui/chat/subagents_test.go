@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -14,6 +16,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/changeset"
+	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -411,4 +414,284 @@ func waitFor(t *testing.T, cond func() bool) {
 		time.Sleep(5 * time.Millisecond)
 	}
 	t.Fatal("condition never became true")
+}
+
+// --- what the routed card carries ---
+
+// longPatchAsk is a writer's finished patch as the supervisor routes one: a
+// body far longer than the panel, the files it names in the reader's own
+// checkout, and that checkout as its root.
+func longPatchAsk(root string) *subagent.Ask {
+	var before, after strings.Builder
+	for i := range 40 {
+		fmt.Fprintf(&before, "line %d\nkeep %d\n", i, i)
+		fmt.Fprintf(&after, "line %d changed\nkeep %d\n", i, i)
+	}
+	ask := subagent.NewAsk("writer-1", subagent.AskPatch, "apply patch (+40 −40, 2 file(s))")
+	ask.Hunks = diff.Compute(before.String(), after.String())
+	ask.Root = root
+	ask.Files = []string{"internal/agent/loop.go", "internal/agent/mode.go"}
+	return ask
+}
+
+// routedModel is a session with one child request on screen, holding the
+// keyboard the way a reader who answered the handover would.
+func routedModel(t *testing.T, ask *subagent.Ask) Model {
+	t.Helper()
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	m = m.WithChangeset(changeset.New(64), nil)
+	updated, _ := m.Update(subagentEventMsg{ev: subagent.Event{Kind: subagent.EventAsk, Ask: ask}})
+	return handover(t, updated.(Model))
+}
+
+// A patch is the one child request that writes the reader's own files, so its
+// card says the four things the session's own card says about an edit: where
+// it lands, what it touches, whether it can be taken back, and [d] into the
+// whole of it.
+func TestChildAskPatchCardCarriesWhatTheSessionsCardCarries(t *testing.T) {
+	dir := t.TempDir()
+	m := routedModel(t, longPatchAsk(dir))
+	view := ansi.Strip(m.View().Content)
+	for _, want := range []string{
+		"lands in  your workspace",
+		"touches   internal/agent/loop.go and 1 more",
+		"writes 2 files under internal/agent",
+	} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("the routed patch card should state %q:\n%s", want, view)
+		}
+	}
+	// Reversibility rides the stats line under the diff, where it costs the
+	// diff no rows — which on a body this long is past the fold.
+	card := m.childAskCard(m.activeChildAsk())
+	if want := "undo yes — applying records every file on both sides"; card.Reversibility != want {
+		t.Fatalf("Reversibility = %q, want %q", card.Reversibility, want)
+	}
+	if !card.FullDiff {
+		t.Fatal("a patch with hunks offers [d] into the whole of it")
+	}
+}
+
+// The block is resolved against the checkout the request's paths live in, and
+// a child's command is contained by the session's own mechanism — so the card
+// names the same containment the session's would.
+func TestChildAskCommandCardStatesContainmentAndRadius(t *testing.T) {
+	dir := t.TempDir()
+	ask := subagent.NewAsk("writer-1", subagent.AskCommand, "run rm -rf build")
+	ask.Command = "rm -rf build"
+	ask.Root, ask.Worktree = dir, true
+
+	sup := subagent.New(context.Background(), subagent.Options{Root: dir, NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup).WithContainment(Containment{
+		Status: "bwrap · workspace", Mechanism: "bwrap", Profile: "workspace",
+	})
+	updated, _ := m.Update(subagentEventMsg{ev: subagent.Event{Kind: subagent.EventAsk, Ask: ask}})
+	m = handover(t, updated.(Model))
+
+	view := ansi.Strip(m.View().Content)
+	for _, want := range []string{
+		"⛨ bwrap · workspace",
+		"lands in  the agent's worktree",
+		"touches   build",
+		"network   closed",
+	} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("the routed command card should state %q:\n%s", want, view)
+		}
+	}
+}
+
+// The card is bounded like every other, so a forty-hunk patch counts what the
+// bound swallowed — and the chord that names the count moves the body.
+func TestChildAskScrollsItsBoundedBody(t *testing.T) {
+	m := routedModel(t, longPatchAsk(t.TempDir()))
+	before := ansi.Strip(m.View().Content)
+	if !strings.Contains(before, "more lines · shift+↓") {
+		t.Fatalf("the bounded routed card should count its scrolled-off rows:\n%s", before)
+	}
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyDown, Mod: tea.ModShift})
+	m = updated.(Model)
+	if m.cardScroll != 1 {
+		t.Fatalf("shift+↓ should move the routed card's body, cardScroll = %d", m.cardScroll)
+	}
+	if after := ansi.Strip(m.View().Content); after == before {
+		t.Fatalf("shift+↓ changed nothing on screen:\n%s", after)
+	}
+}
+
+// [d] opens the child's change full screen with the request still waiting
+// behind it; esc comes back to the card, which kept the keyboard.
+func TestChildAskDiffKeyOpensTheWholeChange(t *testing.T) {
+	ask := longPatchAsk(t.TempDir())
+	m := routedModel(t, ask)
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'd', Text: "d"})
+	m = updated.(Model)
+	if m.state != stateDiffFull || m.fullDiff == nil {
+		t.Fatalf("[d] should open the full-screen diff, state %v", m.state)
+	}
+	if _, answered := ask.Answered(); answered {
+		t.Fatal("opening the diff must not answer the request")
+	}
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+	m = updated.(Model)
+	if m.activeChildAsk() != ask {
+		t.Fatal("esc should come back to the request, still waiting")
+	}
+	if !m.decisionGated() {
+		t.Fatal("the card keeps the keyboard it was handed across its own surface")
+	}
+}
+
+// A card that took the keyboard by arriving claims the two answers and
+// nothing else, so it advertises nothing else either: [g] shown while gated
+// is a key that would put a letter in the draft.
+func TestChildAskHeldOnArrivalOffersNoExtraKeys(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	ask := subagent.NewAsk("writer-1", subagent.AskCommand, "run make")
+	ask.Command = "make"
+	updated, _ := m.Update(subagentEventMsg{ev: subagent.Event{Kind: subagent.EventAsk, Ask: ask}})
+	m = updated.(Model)
+	if !m.heldOnArrival {
+		t.Fatal("an ask landing on an empty draft holds the keyboard by arrival")
+	}
+	if view := ansi.Strip(m.View().Content); strings.Contains(view, "attach to writer-1") {
+		t.Fatalf("a held-on-arrival card must not offer [g]:\n%s", view)
+	}
+	// The handover buys it, and then it is shown.
+	if view := ansi.Strip(handover(t, m).View().Content); !strings.Contains(view, "[g] attach to writer-1") {
+		t.Fatalf("the handed-over card offers [g]:\n%s", view)
+	}
+}
+
+// A key the card offers and the surface routes elsewhere must not reach the
+// answer on its way: every result that is not an approval is a decline, so
+// [d] pressed to read a patch before deciding would have declined it by
+// asking to read it — and the child would have been told so.
+func TestChildAskDiffFromTheListDoesNotAnswer(t *testing.T) {
+	ask := longPatchAsk(t.TempDir())
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	updated, _ := m.Update(subagentEventMsg{ev: subagent.Event{Kind: subagent.EventAsk, Ask: ask}})
+	m = updated.(Model)
+	m.answerAgent = ask.Agent
+	opened, _ := m.openAgentList()
+	m = opened.(Model)
+
+	updated, _ = m.updateListAnswer(tea.KeyPressMsg{Code: 'd', Text: "d"}, ask)
+	m = updated.(Model)
+	if _, answered := ask.Answered(); answered {
+		t.Fatal("[d] must open the diff, not answer the request")
+	}
+	if m.state != stateDiffFull {
+		t.Fatalf("[d] over the list should open the full-screen diff, state %v", m.state)
+	}
+	if len(m.childAsks) != 1 {
+		t.Fatalf("the request stays queued while its diff is open, %d left", len(m.childAsks))
+	}
+}
+
+// A worktree is a different checkout, so the `undo` row is asked of it and
+// not of the session's own. Reading the session's tracker instead states an
+// answer about the reader's tree as though it were about the child's — and it
+// is stated with the same confidence either way.
+func TestChildAskCommandAsksTheTreeItRunsIn(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git is not installed")
+	}
+	// The session is open outside any repository; the child works in one.
+	session, worktree := t.TempDir(), t.TempDir()
+	if err := os.WriteFile(filepath.Join(worktree, "kept.txt"), []byte("x\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for _, args := range [][]string{{"init", "-q"}, {"add", "kept.txt"}} {
+		if out, err := exec.Command("git", append([]string{"-C", worktree}, args...)...).CombinedOutput(); err != nil {
+			t.Skipf("git setup failed: %v (%s)", err, out)
+		}
+	}
+
+	ask := subagent.NewAsk("writer-1", subagent.AskCommand, "run rm kept.txt")
+	ask.Command = "rm kept.txt"
+	ask.Root, ask.Worktree = worktree, true
+
+	sup := subagent.New(context.Background(), subagent.Options{Root: session, NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup).WithWorkspace(session)
+	m = m.WithChangeset(changeset.New(64), changeset.NewTracker(session))
+	updated, _ := m.Update(subagentEventMsg{ev: subagent.Event{Kind: subagent.EventAsk, Ask: ask}})
+	m = handover(t, updated.(Model))
+
+	view := ansi.Strip(m.View().Content)
+	if !strings.Contains(view, "undo      git") {
+		t.Fatalf("the path is tracked in the tree the command runs in, and the card should say so:\n%s", view)
+	}
+}
+
+// The block is read where the request arrives, not where the card is drawn: a
+// card is rebuilt every frame, and this one stats the filesystem and shells
+// out to git.
+func TestChildAskRadiusIsResolvedOnceOnArrival(t *testing.T) {
+	ask := longPatchAsk(t.TempDir())
+	m := routedModel(t, ask)
+	if _, ok := m.childBlast[ask]; !ok {
+		t.Fatal("the arriving request should have left its resolved block behind")
+	}
+	// And it goes when the request does, so a session that answers a hundred
+	// is not still holding a hundred readings.
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'n', Text: "n"})
+	if _, ok := updated.(Model).childBlast[ask]; ok {
+		t.Fatal("an answered request should not keep its block")
+	}
+}
+
+// A child's edit lands in the agent's own worktree, and the changeset records
+// what this session writes — which a child's edits are not. Only the patch it
+// finishes with ever reaches the store, so the row says none rather than the
+// yes an edit on this side of the boundary would have earned.
+func TestChildAskEditPromisesNoUndoItCannotKeep(t *testing.T) {
+	ask := subagent.NewAsk("writer-1", subagent.AskEdit, "edit internal/agent/loop.go")
+	ask.Path, ask.Root, ask.Worktree = "internal/agent/loop.go", t.TempDir(), true
+	ask.Hunks = diff.Compute("a\nb\nc\n", "a\nB\nc\n")
+	m := routedModel(t, ask)
+
+	card := m.childAskCard(ask)
+	if want := "undo none here — this session records the agent's patch, not its edits"; card.Reversibility != want {
+		t.Fatalf("Reversibility = %q, want %q", card.Reversibility, want)
+	}
+	view := ansi.Strip(m.View().Content)
+	for _, want := range []string{
+		"lands in  the agent's worktree",
+		"medium · edits one file under internal/agent",
+	} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("the routed edit card should state %q:\n%s", want, view)
+		}
+	}
+}
+
+// The manager's chord is a draft key, so it is live wherever the draft is —
+// including on a card holding the keyboard by arriving, which is the one
+// state where the card advertises nothing but its two answers. The row it
+// loses is the safe direction of that trade; a key that did nothing would be
+// the other one.
+func TestChildAskHeldOnArrivalStillReachesTheManager(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	ask := subagent.NewAsk("writer-1", subagent.AskCommand, "run make")
+	ask.Command = "make"
+	updated, _ := m.Update(subagentEventMsg{ev: subagent.Event{Kind: subagent.EventAsk, Ask: ask}})
+	m = updated.(Model)
+	if !m.heldOnArrival {
+		t.Fatal("an ask landing on an empty draft holds the keyboard by arrival")
+	}
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'a', Mod: tea.ModAlt})
+	if next := updated.(Model); next.agentList == nil {
+		t.Fatal("the manager's chord opens the manager from a held card too")
+	}
 }

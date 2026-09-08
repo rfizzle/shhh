@@ -20,6 +20,7 @@ import (
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // viewState is one surface's saved scroll position.
@@ -240,6 +241,7 @@ func (m *Model) purgeChildAsks(name string) {
 	for _, a := range m.childAsks {
 		if a.Agent == name {
 			a.Respond(false)
+			m.forgetChildBlast(a)
 			continue
 		}
 		kept = append(kept, a)
@@ -562,7 +564,15 @@ func (m Model) listAnswerAsk() *subagent.Ask {
 // and answering here is the whole point of being here.
 func (m Model) listAnswerCard(ask *subagent.Ask) *components.ApprovalCard {
 	card := m.childAskCard(ask)
-	card.ExtraHints = []string{"esc: deny, back to the agents"}
+	// A card picked off the list is not one that arrived: the reader opened
+	// the manager and named this decision, which is the opposite of the case
+	// an arrival holds the keyboard for. So it claims every key it has —
+	// there is no draft under the list for a letter to belong to — and the
+	// one hint it keeps is the way back, which a card claiming less would
+	// have suppressed along with the rest
+	// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+	card.HeldOnArrival = false
+	card.ExtraHints = []components.KeyOffer{{Key: keys.Bracketed("esc"), Label: "deny, back to the agents"}}
 	return card
 }
 
@@ -570,8 +580,26 @@ func (m Model) listAnswerCard(ask *subagent.Ask) *components.ApprovalCard {
 // resolves the request and returns to the list; esc/n declines, because a
 // routed request is never silently dropped.
 func (m Model) updateListAnswer(msg tea.KeyPressMsg, ask *subagent.Ask) (tea.Model, tea.Cmd) {
-	done, result := m.listAnswerCard(ask).Update(msg)
+	card := m.listAnswerCard(ask)
+	// The card over the list is bounded like the card anywhere else, so it
+	// counts what the bound swallowed — and the chord it counts it behind
+	// moves the body here too.
+	if keys.Match(msg, keys.Decision.ScrollUp, keys.Decision.ScrollDown,
+		keys.Decision.PanLeft, keys.Decision.PanRight) {
+		return m.scrollCard(msg, card)
+	}
+	done, result := card.Update(msg)
 	if !done {
+		return m, nil
+	}
+	if result == components.ApprovalFullDiff {
+		// The whole change, full screen, with the request still waiting
+		// behind it — the same door the card offers anywhere else. Esc comes
+		// back here, to the list with the card still over it.
+		return m.openChildDiff(ask)
+	}
+	approved, ok := askAnswer(result)
+	if !ok {
 		return m, nil
 	}
 	m.answerAgent = ""
@@ -581,7 +609,7 @@ func (m Model) updateListAnswer(msg tea.KeyPressMsg, ask *subagent.Ask) (tea.Mod
 			break
 		}
 	}
-	approved := result == components.ApprovalApprove
+	m.forgetChildBlast(ask)
 	ask.Respond(approved)
 	verdict := "Declined"
 	if approved {
