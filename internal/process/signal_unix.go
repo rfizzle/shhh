@@ -15,6 +15,11 @@ import "syscall"
 // process ignores by definition. Cast either one and `process stop` reports
 // success having killed nothing, and the tree outlives the session.
 func signalGroup(pid int, sig termSignal) {
+	// A negated small pid is a broadcast rather than a tree; signalable
+	// (signal.go) is where that is spelled out.
+	if !signalable(pid) {
+		return
+	}
 	var real syscall.Signal
 	switch sig {
 	case signalKill:

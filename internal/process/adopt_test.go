@@ -7,6 +7,39 @@ import (
 	"time"
 )
 
+// livePID is shaped like the pid of a running command. Every offer that uses
+// it here is refused for some other reason before the pid is ever signalled.
+const livePID = 4242
+
+// adoptReal spawns a command in a group of its own and offers it to the
+// supervisor under the given command line, returning the name it got.
+//
+// The tests below want a process the supervisor is really holding, and a
+// made-up pid cannot stand in for one: the supervisor stops what it holds by
+// signalling that pid's group, so a fabricated number sends a real signal to
+// a group the test does not own — or, for the small values, to every process
+// the user has. Adopting something real keeps the cleanup pointed at this
+// test's own child.
+func adoptReal(t *testing.T, s *Supervisor, command string) string {
+	t.Helper()
+	cmd := exec.Command("/bin/sh", "-c", "sleep 30")
+	cmd.SysProcAttr = sysProcAttr(false)
+	if err := cmd.Start(); err != nil {
+		t.Skipf("no shell: %v", err)
+	}
+	done := make(chan error, 1)
+	go func() { done <- cmd.Wait() }()
+	name, _, err := s.Adopt(Adoption{
+		Command: command,
+		PID:     cmd.Process.Pid,
+		Wait:    func() error { return <-done },
+	})
+	if err != nil {
+		t.Fatalf("Adopt(%q): %v", command, err)
+	}
+	return name
+}
+
 // A running command handed over keeps running, under a name the model can
 // use, with everything it prints from then on captured where a read will find
 // it — and it stops the way any other process does.
@@ -55,29 +88,33 @@ func TestAdopt_TakesARunningCommandUnderAName(t *testing.T) {
 // name beats a pipe with nothing on the other end of it.
 func TestAdopt_HasNoInputToWriteTo(t *testing.T) {
 	s := newTestSupervisor(t, nil)
-	done := make(chan error, 1)
-	if _, _, err := s.Adopt(Adoption{Command: "tail -f log", PID: 1, Wait: func() error { return <-done }}); err != nil {
-		t.Fatalf("Adopt: %v", err)
-	}
+	adoptReal(t, s, "tail -f log")
 	err := executeErr(t, s, `{"action":"input","name":"tail","text":"x\n"}`)
 	if !strings.Contains(err.Error(), "no input") {
 		t.Errorf("the refusal should say why there is no stdin, got %v", err)
 	}
-	close(done)
 }
 
 // A refusal here is answered by the caller stopping the command, so it has to
 // be a refusal and never a half-adopted process.
 func TestAdopt_RefusesWhatItCannotHold(t *testing.T) {
 	s := newTestSupervisor(t, nil)
-	if _, _, err := s.Adopt(Adoption{Command: "sleep 30", PID: 1}); err == nil {
+	if _, _, err := s.Adopt(Adoption{Command: "sleep 30", PID: livePID}); err == nil {
 		t.Error("an offer with no wait behind it must be refused")
 	}
 	if _, _, err := s.Adopt(Adoption{Command: "sleep 30", Wait: func() error { return nil }}); err == nil {
 		t.Error("an offer with no process must be refused")
 	}
+	// A pid this low leads no tree the supervisor could have been given, and
+	// letting one in is how a later stop becomes a signal to this process's
+	// own group or to every process the user owns.
+	for _, pid := range []int{-1, 0, 1} {
+		if _, _, err := s.Adopt(Adoption{Command: "sleep 30", PID: pid, Wait: func() error { return nil }}); err == nil {
+			t.Errorf("a pid of %d names nothing that can be adopted and must be refused", pid)
+		}
+	}
 	s.Close()
-	if _, _, err := s.Adopt(Adoption{Command: "sleep 30", PID: 1, Wait: func() error { return nil }}); err == nil {
+	if _, _, err := s.Adopt(Adoption{Command: "sleep 30", PID: livePID, Wait: func() error { return nil }}); err == nil {
 		t.Error("a shut-down supervisor must refuse")
 	}
 }
@@ -101,18 +138,9 @@ func TestProcessName(t *testing.T) {
 // rather than colliding with the first.
 func TestAdopt_NamesASecondCommandOfTheSameProgram(t *testing.T) {
 	s := newTestSupervisor(t, nil)
-	done := make(chan error, 1)
-	wait := func() error { return <-done }
-	first, _, err := s.Adopt(Adoption{Command: "npm run dev", PID: 1, Wait: wait})
-	if err != nil {
-		t.Fatalf("Adopt: %v", err)
-	}
-	second, _, err := s.Adopt(Adoption{Command: "npm run build", PID: 2, Wait: wait})
-	if err != nil {
-		t.Fatalf("Adopt: %v", err)
-	}
+	first := adoptReal(t, s, "npm run dev")
+	second := adoptReal(t, s, "npm run build")
 	if first != "npm" || second != "npm-2" {
 		t.Fatalf("names collided: %q and %q", first, second)
 	}
-	close(done)
 }

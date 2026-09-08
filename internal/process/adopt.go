@@ -30,7 +30,8 @@ type Adoption struct {
 	// the status block show.
 	Command string
 	// PID leads the command's process group. A stop signals the group, not
-	// this process: the shell holding the work is not the work.
+	// this process: the shell holding the work is not the work. It is the pid
+	// of a real running command; an offer that cannot name one is refused.
 	PID int
 	// Started is when it was spawned, so its uptime counts from the command
 	// and not from the moment it changed hands.
@@ -54,7 +55,12 @@ func (s *Supervisor) Adopt(a Adoption) (string, io.Writer, error) {
 	if a.Wait == nil {
 		return "", nil, fmt.Errorf("a command can only be adopted with the wait its caller holds")
 	}
-	if a.PID <= 0 {
+	// Nothing below 2 is a command this supervisor could hold: 0 and 1 name
+	// no adoptable tree, and a stop that reached signalGroup with either of
+	// them would be asking to end the caller's own group or every process the
+	// user owns (signal.go). Refusing here keeps a fabricated pid from ever
+	// becoming a stop.
+	if a.PID <= 1 {
 		return "", nil, fmt.Errorf("a command can only be adopted while it is running")
 	}
 	started := a.Started

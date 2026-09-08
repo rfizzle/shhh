@@ -22,5 +22,8 @@ import (
 // supervisor's contract is the same on both platforms; what differs is that
 // on Windows the first attempt is no gentler than the second.
 func signalGroup(pid int, sig termSignal) {
+	if !signalable(pid) {
+		return
+	}
 	_ = exec.Command("taskkill", "/T", "/F", "/PID", strconv.Itoa(pid)).Run()
 }
