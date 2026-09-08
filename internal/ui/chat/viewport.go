@@ -210,11 +210,40 @@ func (v *viewport) RevealMatch() {
 
 // MatchPosition is which occurrence the pointer is on, 1-based, and how many
 // there are. Zero of zero is a query that found nothing.
+//
+// Both are the pane's own: they count what the pane is drawing, and what a
+// fold is covering is counted by the census over the entries and added to
+// them (search.go). Nothing here knows about a fold, which is the split that
+// keeps the marks painted on lines and the count taken from the session.
 func (v viewport) MatchPosition() (at, total int) {
 	if v.at < 0 || v.at >= len(v.matches) {
 		return 0, len(v.matches)
 	}
 	return v.at + 1, len(v.matches)
+}
+
+// MatchLine is the line the pointer's occurrence is on, and false when the
+// pointer is on none. It is what places the pointer among the occurrences a
+// fold is covering — those sit at the fold's own row — and what tells the
+// reading cursor which row to light.
+func (v viewport) MatchLine() (int, bool) {
+	if v.at < 0 || v.at >= len(v.matches) {
+		return 0, false
+	}
+	return v.matches[v.at].line, true
+}
+
+// PointAtLine puts the pointer on the first occurrence at or below a line —
+// which is what opening a fold onto its first match needs, the rows having
+// arrived between the pointer and where it should now be. A line with nothing
+// at or below it leaves the pointer where it was.
+func (v *viewport) PointAtLine(line int) {
+	for i, mt := range v.matches {
+		if mt.line >= line {
+			v.at = i
+			return
+		}
+	}
 }
 
 // find re-locates the query in the lines as they now stand, and keeps the
@@ -390,33 +419,35 @@ func (v viewport) visibleLines() []string {
 	// and not marked: the range lands past the end of what is left and
 	// styling it is a no-op. Nothing in the transcript should be wider than
 	// the pane, so this is the same corner the cut itself is here for.
-	for i, mt := range v.matches {
+	for _, mt := range v.matches {
 		if mt.line < top || mt.line >= bottom {
 			continue
 		}
-		style := matchStyle
-		if i == v.at {
-			style = matchAtStyle
-		}
 		own()
 		row := mt.line - top
-		out[row] = lipgloss.StyleRanges(out[row], lipgloss.NewRange(mt.from, mt.to, style))
+		out[row] = lipgloss.StyleRanges(out[row], lipgloss.NewRange(mt.from, mt.to, matchStyle))
 	}
 	return out
 }
 
-// matchStyle marks a line the query was found on and matchAtStyle the
-// occurrence the pointer is on. Both are structural rather than coloured, for
-// the reason every mark in the transcript is: the two have to be told apart
-// in mono as loudly as in colour (invariant 1). Underline says "here it is"
-// without covering the syntax colours underneath; reverse says "this one",
-// which is the same thing a selected span says, and the two are never up at
-// once — a drag clears the search's pointer the way it clears everything else
-// the pane was showing.
-var (
-	matchStyle   = lipgloss.NewStyle().Underline(true)
-	matchAtStyle = lipgloss.NewStyle().Reverse(true)
-)
+// matchStyle marks a run the query was found in. It is the picker's mark —
+// bold, never tinted — because a transcript match and a list match are the
+// same fact about the same query and drawing them differently would say they
+// were two kinds of thing. The one attribute is written down twice, here and
+// in the palette the widgets read, because the pane is not one of those
+// widgets; there is nothing else to the mark, so there is nothing else to
+// drift. Bold is
+// structural, so it survives mono (invariant 1), it leaves the syntax colours
+// under it alone, and it does not spend one of the three background tints,
+// which are the selection's, the lit row's and the diff's.
+//
+// The occurrence the pointer is on takes no second mark of its own. It is
+// told apart structurally too, and by something the pane already draws: the
+// reading cursor follows the pointer, so that occurrence is the bold run on
+// the lit row (search.go). Reverse video used to say it, which is the same
+// thing a selected span says — two meanings on one treatment, and the reader
+// left to work out which.
+var matchStyle = lipgloss.NewStyle().Bold(true)
 
 // View is the pane, padded to its own width and height so every row the
 // scroll gutter glues itself to is the same length.

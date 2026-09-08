@@ -1,0 +1,13 @@
+# One reply per request; a line beginning with + continues the reply above it.
+# The first reply is a sentence and four reads together, which is what a step
+# is: the prose titles it and the calls are its rows, and four consecutive
+# read-only calls fold into one counted row inside it. The step finishes, so
+# it folds down to its header — and errors.go is read by nothing else in the
+# session, so once it has folded there is no row on the screen holding that
+# path at all. That is what the search has to find.
+Locate the round accounting
++tool:read_file:{"path":"loop.go"}
++tool:read_file:{"path":"round.go"}
++tool:read_file:{"path":"errors.go"}
++tool:read_file:{"path":"limit.go"}
+The limit is a checkpoint, not a wall.

@@ -76,6 +76,7 @@ func New(initialMessages []provider.Message, stream StreamFunc) Model {
 		// store with a different bound or a git tracker.
 		changes:     changeset.New(changeset.DefaultMaxBytes),
 		sessionName: newSessionName(),
+		searchMemo:  &searchMemo{},
 	}
 }
 

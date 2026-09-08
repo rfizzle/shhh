@@ -22,6 +22,7 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // stepState is a step's state. It follows its rows: running while any
@@ -45,6 +46,13 @@ const (
 	foldAuto   foldState = iota // open while running or broken, folded once done
 	foldOpen                    // you unfolded it
 	foldClosed                  // you folded it
+	// foldSearch is a fold the transcript search opened to reach a match it
+	// had counted behind it (search.go). It draws exactly like foldOpen and
+	// is a value of its own for one reason: clearing the query puts it back,
+	// and a fold the reader opened themselves stays open. Nothing but the
+	// search writes it, so "who opened this" is answered by the entry rather
+	// than by a list somebody has to keep in step with the entries.
+	foldSearch
 )
 
 // stepTitleMaxRunes bounds what counts as a title: one short line of prose.
@@ -54,6 +62,12 @@ const stepTitleMaxRunes = 120
 
 // stepOrdinalWidth keeps titles on one column for the first 99 steps.
 const stepOrdinalWidth = 2
+
+// stepTitleMinWidth is how much of a title has to survive for the header to
+// spend columns on anything optional. Below it the title is no longer a
+// heading, and a header whose stats crowded its own title out would be an
+// outline with nothing to outline.
+const stepTitleMinWidth = 12
 
 // stepGroup is one titled run of consecutive activity entries: the assistant
 // entry at titleIdx heads it, and members [start,end) are the calls it made.
@@ -293,7 +307,7 @@ func (m Model) stepFolded(g *stepGroup, es []entry, state stepState) bool {
 		return false
 	}
 	switch es[g.titleIdx].stepFold {
-	case foldOpen:
+	case foldOpen, foldSearch:
 		return false
 	case foldClosed:
 		return true
@@ -343,6 +357,11 @@ type stepHeader struct {
 	// ordinal column's width but not a number, because the numbers are the
 	// plan's.
 	OffPlan bool
+	// Matches is how many occurrences of a live transcript search sit behind
+	// this header's fold (search.go). A fold states what it swallowed
+	// (invariant 4), and while a search is up what it swallowed includes
+	// answers to the question the reader is asking.
+	Matches int
 }
 
 // tones are the header's per-state colors, following the design system's
@@ -389,6 +408,9 @@ func (h stepHeader) countLabel() string {
 		// infer from how tall the step got (invariant 1).
 		label += " · detail"
 	}
+	if h.Matches > 0 {
+		label += " · " + matchesInside(h.Matches)
+	}
 	return label
 }
 
@@ -428,6 +450,20 @@ func (h stepHeader) View(width int) string {
 	label := h.countLabel()
 	stats := h.glyph() + " " + sty.Step.Stats.Render(label)
 	statsW := lipgloss.Width(label) + 2
+	if h.Matches > 0 {
+		// The count is only half of what the row owes the reader: a number
+		// with no way to reach it would be the fold hiding rather than
+		// folding. The offer is the first thing to go when the row is tight,
+		// though, because the count is the fact and the key is on the mode's
+		// own bar under the transcript either way
+		// (guidelines/layout-breakpoints: the word goes rather than being
+		// cut down).
+		key := " · " + searchOpenKey
+		if width-leadW-statsW-lipgloss.Width(key)-components.GridDurationWidth-3 >= stepTitleMinWidth {
+			stats += sty.Step.Stats.Render(" · ") + sty.Search.Hint.Render(searchOpenKey)
+			statsW += lipgloss.Width(key)
+		}
+	}
 
 	// The rule takes what the title leaves; the title clips before the rule
 	// disappears, because the stats are the reason to read the header.
@@ -454,17 +490,29 @@ func stepDurationField(d string, style lipgloss.Style) string {
 	return strings.Repeat(" ", w-lipgloss.Width(d)) + style.Render(d)
 }
 
+// stepStateFor is the state a step's header draws, and it is separate from
+// the header because knowing whether a step is folded is a much cheaper
+// question than building one: a header counts what a live search has found
+// behind its fold, and the walk that count is for has to ask which steps are
+// folded before it can ask anything else (search.go).
+//
+// The live step — the last block while the turn is still working — is running
+// even though every row in it has landed: a call joins the transcript only
+// once it finishes, so the rows alone never say "busy".
+func (m Model) stepStateFor(blk transcriptBlock, es []entry) stepState {
+	state, _, _ := m.stepStats(blk.step, es)
+	if state == stepDone && blk.last && m.turnState() != stateInput {
+		return stepRunning
+	}
+	return state
+}
+
 // headerFor builds the header for a step from its rows.
 func (m Model) headerFor(blk transcriptBlock, es []entry) stepHeader {
 	g := blk.step
-	state, tools, d := m.stepStats(g, es)
-	// The live step — the last block while the turn is still working — is
-	// running even though every row in it has landed: a call joins the
-	// transcript only once it finishes, so the rows alone never say "busy".
-	if state == stepDone && blk.last && m.turnState() != stateInput {
-		state = stepRunning
-	}
-	return stepHeader{
+	state := m.stepStateFor(blk, es)
+	_, tools, d := m.stepStats(g, es)
+	h := stepHeader{
 		Ordinal:  g.ordinal,
 		Title:    g.title,
 		State:    state,
@@ -474,7 +522,19 @@ func (m Model) headerFor(blk transcriptBlock, es []entry) stepHeader {
 		Detail:   g.titleIdx != stepNoTitle && es[g.titleIdx].detailFold == foldOpen,
 		OffPlan:  g.offPlan,
 	}
+	if h.Folded {
+		h.Matches = m.searchMatchesIn(es, g.start, g.end)
+	}
+	return h
 }
+
+// searchOpenKey is what a fold row counting a search's matches says opens it.
+// It is the hint treatment the counted group row's key has always used: enter
+// belongs to the draft until reading mode takes the keyboard, so on a
+// transcript row this is a label for what the row does under the cursor
+// rather than an offer standing open
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+var searchOpenKey = keys.Bracket(keys.Reading.Expand) + " open to the first"
 
 // unit is one addressable piece of rendered history: a step header, or a
 // single entry's block. Focus mode selects units, so the plain, focus and

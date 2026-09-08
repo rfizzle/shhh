@@ -18,6 +18,30 @@ or a *gap*, where no artboard draws the surface at all and the binary had to
 decide. A gap is closed by drawing the artboard, and where the two then differ
 the artboard wins.
 
+## The transcript search has no filter view
+
+*A disagreement.* The `Search` artboard draws a third window: the search as a
+filter, where only the matching rows are drawn and every run without one is
+replaced in place by a count of it — `· 203 rows without a match, folded, in
+place ·` — under a heading per turn. The binary searches the whole session,
+counts what every fold is covering, says so on the fold's row and opens it
+onto the match; it draws no filter.
+
+The reason is what a filter would be a view of. The transcript is rendered
+from the entries on every frame, and each of those renders is the whole pane:
+a streaming turn rebuilds its tail, an approval lands a row, a fold changes
+what a step shows. A filter is a second render of the same entries that has to
+survive all of them — a competing content path through the pane rather than a
+treatment on top of the one already there — and a second path is where the two
+drift into disagreeing about what the session contains, which is the exact
+failure this surface was fixed to stop making.
+
+What the filter was for is delivered without it: every match is counted
+whether or not a fold is showing it, and every match is reachable, `n` and `N`
+through what is on screen and `[enter]` through the fold rows that say what
+they are covering. The letter `f` is left unspent on the reading surface for
+the view when it is built.
+
 ## Diff line numbers are as wide as the file
 
 The design fixes the gutter width. Padding a short file out to that width

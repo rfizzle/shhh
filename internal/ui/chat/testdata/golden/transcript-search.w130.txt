@@ -10,16 +10,16 @@
 # it for the colour assignments. Trailing spaces are significant in both.
 
 ── layout ──────────────────────────────────────────────────
-· the query row where the key bar was · every hit underlined
-──── READING · 1/3 ───────────────────────────────────────────────────────────────────────────────────────────────────────────
+· the query row where the key bar was · every match bold
+──── SEARCH · loop.go · 1/3 ──────────────────────────────────────────────────────────────────────────────────────────────────
 You                                                                           
   where does the round limit come from                                        
                                                                               
-     ⚙ read    internal/agent/loop.go                            2 lines      
+❯    ⚙ read    internal/agent/loop.go                            2 lines      
      ⚙ read    internal/agent/tools.go                           2 lines      
      ⚙ read    internal/agent/loop.go                            2 lines      
      ⚙ read    internal/provider/retry.go                        2 lines      
-❯    ⚙ read    internal/agent/loop.go                            2 lines      
+     ⚙ read    internal/agent/loop.go                            2 lines      
                                                                               
                                                                               
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -27,34 +27,72 @@ search: loop.go · 1 of 3
 enter keep the search · esc clear it
 
 
-· kept · the pointer reversed, [n/N] on the bar
-──── READING · 2/3 ───────────────────────────────────────────────────────────────────────────────────────────────────────────
+· kept · the pointer's occurrence bold on the lit row, [n/N] on the bar
+──── SEARCH · loop.go · 2/3 ──────────────────────────────────────────────────────────────────────────────────────────────────
 You                                                                           
   where does the round limit come from                                        
                                                                               
      ⚙ read    internal/agent/loop.go                            2 lines      
      ⚙ read    internal/agent/tools.go                           2 lines      
-     ⚙ read    internal/agent/loop.go                            2 lines      
-     ⚙ read    internal/provider/retry.go                        2 lines      
 ❯    ⚙ read    internal/agent/loop.go                            2 lines      
+     ⚙ read    internal/provider/retry.go                        2 lines      
+     ⚙ read    internal/agent/loop.go                            2 lines      
                                                                               
                                                                               
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-[j/k] move · [enter] expand · [y] copy the row · [/] search · [n/N] match · [?] keys · [q] back to the prompt       row 5 of 5
+[j/k] move · [enter] expand · [y] copy the row · [/] search · [n/N] match · [?] keys · [q] back to the prompt       row 3 of 5
+
+
+
+· the only match is behind a fold · the header counts it and offers the key
+──── SEARCH · context.go · 0/1 ───────────────────────────────────────────────────────────────────────────────────────────────
+You                                                                           ┃
+  fix the round limit                                                         ┃
+                                                                              ┃
+❯ ▸ 1  Locate the round accounting ────────── ✓ 4 tools · 1 match inside  1.2s┃
+                                                                              ┃
+  ▾ 2  Thread the sentinel through the loop ────────────────── ✗ 2 tools   22s┃
+    ▎✎ edit    internal/agent/loop.go                             1 line  1.1s┃
+    ▎✗ run     go test ./internal/agent/...                       exit 1   21s┃
+      --- FAIL: TestRoundLimit                                                ┃
+                                                                              ┃
+   ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                       round 2/25 
+  ▎✎ 1 file changed +12 −4 · [v] review · [u] undo turn     all tracked in git 
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+search: context.go · 0 of 1
+enter keep the search · esc clear it
+
+
+· [enter] opened the step · the run it holds still says what it is covering
+──── SEARCH · context.go · 0/1 ───────────────────────────────────────────────────────────────────────────────────────────────
+You                                                                           ┃
+  fix the round limit                                                         ┃
+                                                                              ┃
+  ▾ 1  Locate the round accounting ─────────────────────────── ✓ 4 tools  1.2s┃
+❯    ▸ ⚙       1 match inside · 3 reads · 1 search        [enter] expand  1.2s┃
+                                                                              ┃
+  ▾ 2  Thread the sentinel through the loop ────────────────── ✗ 2 tools   22s┃
+    ▎✎ edit    internal/agent/loop.go                             1 line  1.1s┃
+    ▎✗ run     go test ./internal/agent/...                       exit 1   21s┃
+      --- FAIL: TestRoundLimit                                                 
+                                                                               
+   ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                       round 2/25 
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+[j/k] move · [enter] expand · [y] copy the row · [/] search · [n/N] match · [?] keys · [q] back to the prompt       row 2 of 6
 
 
 
 ── ansi ────────────────────────────────────────────────────
-· the query row where the key bar was · every hit underlined
-␛[38;5;241m────␛[m ␛[1;94mREADING · 1/3␛[m ␛[38;5;241m───────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+· the query row where the key bar was · every match bold
+␛[38;5;241m────␛[m ␛[1;94mSEARCH · loop.go · 1/3␛[m ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 ␛[1;94mYou␛[m                                                                           
   ␛[38;5;252mwhere does the round limit come from␛[m                                        
                                                                               
-     ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/␛[m␛[38;5;245m␛[m␛[7mloop.go␛[m␛[38;5;214m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m                            ␛[38;5;245m2 lines␛[m      
+␛[94m❯␛[m ␛[38;5;214m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m␛[38;5;245m␛[m␛[48;5;62m   ␛[38;5;214m⚙␛[m␛[48;5;62m ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;245m␛[m␛[48;5;62m␛[97;48;5;62mread    internal/agent/␛[m␛[m␛[1mloop.go␛[m␛[94m␛[m␛[38;5;214m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m␛[38;5;245m␛[m␛[48;5;62m␛[38;5;214m␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;245m␛[m␛[48;5;62m␛[97;48;5;62m                            2 lines      ␛[m␛[m
      ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/tools.go␛[m                           ␛[38;5;245m2 lines␛[m      
-     ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/␛[m␛[38;5;245m␛[m␛[4;4ml␛[m␛[4;4mo␛[m␛[4;4mo␛[m␛[4;4mp␛[m␛[4;4m.␛[m␛[4;4mg␛[m␛[4;4mo␛[m␛[38;5;214m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m                            ␛[38;5;245m2 lines␛[m      
+     ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/␛[m␛[38;5;245m␛[m␛[1mloop.go␛[m␛[38;5;214m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m                            ␛[38;5;245m2 lines␛[m      
      ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/provider/retry.go␛[m                        ␛[38;5;245m2 lines␛[m      
-␛[94m❯␛[m ␛[38;5;214m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m␛[38;5;245m␛[m␛[48;5;62m   ␛[38;5;214m⚙␛[m␛[48;5;62m ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;245m␛[m␛[48;5;62m␛[97;48;5;62mread    internal/agent/␛[m␛[m␛[4;4ml␛[m␛[4;4mo␛[m␛[4;4mo␛[m␛[4;4mp␛[m␛[4;4m.␛[m␛[4;4mg␛[m␛[4;4mo␛[m␛[94m␛[m␛[38;5;214m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m␛[38;5;245m␛[m␛[48;5;62m␛[38;5;214m␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;245m␛[m␛[48;5;62m␛[97;48;5;62m                            2 lines      ␛[m␛[m
+     ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/␛[m␛[38;5;245m␛[m␛[1mloop.go␛[m␛[38;5;214m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m                            ␛[38;5;245m2 lines␛[m      
                                                                               
                                                                               
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
@@ -62,19 +100,57 @@ You
 ␛[38;5;241menter keep the search · esc clear it␛[m
 
 
-· kept · the pointer reversed, [n/N] on the bar
-␛[38;5;241m────␛[m ␛[1;94mREADING · 2/3␛[m ␛[38;5;241m───────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+· kept · the pointer's occurrence bold on the lit row, [n/N] on the bar
+␛[38;5;241m────␛[m ␛[1;94mSEARCH · loop.go · 2/3␛[m ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 ␛[1;94mYou␛[m                                                                           
   ␛[38;5;252mwhere does the round limit come from␛[m                                        
                                                                               
-     ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/␛[m␛[38;5;245m␛[m␛[4;4ml␛[m␛[4;4mo␛[m␛[4;4mo␛[m␛[4;4mp␛[m␛[4;4m.␛[m␛[4;4mg␛[m␛[4;4mo␛[m␛[38;5;214m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m                            ␛[38;5;245m2 lines␛[m      
+     ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/␛[m␛[38;5;245m␛[m␛[1mloop.go␛[m␛[38;5;214m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m                            ␛[38;5;245m2 lines␛[m      
      ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/tools.go␛[m                           ␛[38;5;245m2 lines␛[m      
-     ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/␛[m␛[38;5;245m␛[m␛[7mloop.go␛[m␛[38;5;214m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m                            ␛[38;5;245m2 lines␛[m      
+␛[94m❯␛[m ␛[38;5;214m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m␛[38;5;245m␛[m␛[48;5;62m   ␛[38;5;214m⚙␛[m␛[48;5;62m ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;245m␛[m␛[48;5;62m␛[97;48;5;62mread    internal/agent/␛[m␛[m␛[1mloop.go␛[m␛[94m␛[m␛[38;5;214m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m␛[38;5;245m␛[m␛[48;5;62m␛[38;5;214m␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;245m␛[m␛[48;5;62m␛[97;48;5;62m                            2 lines      ␛[m␛[m
      ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/provider/retry.go␛[m                        ␛[38;5;245m2 lines␛[m      
-␛[94m❯␛[m ␛[38;5;214m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m␛[38;5;245m␛[m␛[48;5;62m   ␛[38;5;214m⚙␛[m␛[48;5;62m ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;245m␛[m␛[48;5;62m␛[97;48;5;62mread    internal/agent/␛[m␛[m␛[4;4ml␛[m␛[4;4mo␛[m␛[4;4mo␛[m␛[4;4mp␛[m␛[4;4m.␛[m␛[4;4mg␛[m␛[4;4mo␛[m␛[94m␛[m␛[38;5;214m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m␛[38;5;245m␛[m␛[48;5;62m␛[38;5;214m␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;245m␛[m␛[48;5;62m␛[97;48;5;62m                            2 lines      ␛[m␛[m
+     ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/␛[m␛[38;5;245m␛[m␛[1mloop.go␛[m␛[38;5;214m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m                            ␛[38;5;245m2 lines␛[m      
                                                                               
                                                                               
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
-␛[94m[j/k]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m expand␛[m␛[38;5;241m · ␛[m␛[94m[y]␛[m␛[38;5;241m copy the row␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m search␛[m␛[38;5;241m · ␛[m␛[94m[n/N]␛[m␛[38;5;241m match␛[m␛[38;5;241m · ␛[m␛[94m[?]␛[m␛[38;5;241m keys␛[m␛[38;5;241m · ␛[m␛[94m[q]␛[m␛[38;5;241m back to the prompt␛[m       ␛[38;5;241mrow 5 of 5␛[m
+␛[94m[j/k]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m expand␛[m␛[38;5;241m · ␛[m␛[94m[y]␛[m␛[38;5;241m copy the row␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m search␛[m␛[38;5;241m · ␛[m␛[94m[n/N]␛[m␛[38;5;241m match␛[m␛[38;5;241m · ␛[m␛[94m[?]␛[m␛[38;5;241m keys␛[m␛[38;5;241m · ␛[m␛[94m[q]␛[m␛[38;5;241m back to the prompt␛[m       ␛[38;5;241mrow 3 of 5␛[m
+
+
+
+· the only match is behind a fold · the header counts it and offers the key
+␛[38;5;241m────␛[m ␛[1;94mSEARCH · context.go · 0/1␛[m ␛[38;5;241m───────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;94mYou␛[m                                                                           ␛[38;5;241m┃␛[m
+  ␛[38;5;252mfix the round limit␛[m                                                         ␛[38;5;241m┃␛[m
+                                                                              ␛[38;5;241m┃␛[m
+␛[94m❯␛[m ␛[38;5;241m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m␛[38;5;241m␛[m␛[92m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m▸␛[m␛[48;5;62m ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[92m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62m1  Locate the round accounting ────────── ✓ 4 tools · 1 match inside  1.2s␛[m␛[m␛[38;5;241m┃␛[m
+                                                                              ␛[38;5;241m┃␛[m
+  ␛[38;5;241m▾␛[m ␛[38;5;252m2 ␛[m ␛[38;5;252mThread the sentinel through the loop␛[m ␛[38;5;241m──────────────────␛[m ␛[91m✗␛[m ␛[38;5;241m2 tools␛[m   ␛[38;5;241m22s␛[m␛[38;5;241m┃␛[m
+    ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                             ␛[38;5;245m1 line␛[m  ␛[38;5;241m1.1s␛[m␛[38;5;241m┃␛[m
+    ␛[91m▎␛[m␛[91m✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/...␛[m                       ␛[91mexit 1␛[m   ␛[38;5;241m21s␛[m␛[38;5;241m┃␛[m
+      ␛[38;5;245m--- FAIL: TestRoundLimit␛[m                                                ␛[38;5;241m┃␛[m
+                                                                              ␛[38;5;241m┃␛[m
+   ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m                       ␛[38;5;241mround 2/25␛[m 
+  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;241m · ␛[m␛[38;5;245m[v]␛[m␛[38;5;241m review␛[m␛[38;5;241m · ␛[m␛[38;5;245m[u]␛[m␛[38;5;241m undo turn␛[m     ␛[38;5;241mall tracked in git␛[m 
+␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;94msearch␛[m␛[38;5;241m: ␛[m␛[38;5;252mcontext.go␛[m␛[38;5;241m · 0 of 1␛[m
+␛[38;5;241menter keep the search · esc clear it␛[m
+
+
+· [enter] opened the step · the run it holds still says what it is covering
+␛[38;5;241m────␛[m ␛[1;94mSEARCH · context.go · 0/1␛[m ␛[38;5;241m───────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[1;94mYou␛[m                                                                           ␛[38;5;241m┃␛[m
+  ␛[38;5;252mfix the round limit␛[m                                                         ␛[38;5;241m┃␛[m
+                                                                              ␛[38;5;241m┃␛[m
+  ␛[38;5;241m▾␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mLocate the round accounting␛[m ␛[38;5;241m───────────────────────────␛[m ␛[92m✓␛[m ␛[38;5;241m4 tools␛[m  ␛[38;5;241m1.2s␛[m␛[38;5;241m┃␛[m
+␛[94m❯␛[m ␛[38;5;241m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m   ␛[38;5;241m▸␛[m␛[48;5;62m ␛[38;5;241m⚙␛[m␛[48;5;62m       ␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62m1 match inside · 3 reads · 1 search        [enter] expand  1.2s␛[m␛[m␛[38;5;241m┃␛[m
+                                                                              ␛[38;5;241m┃␛[m
+  ␛[38;5;241m▾␛[m ␛[38;5;252m2 ␛[m ␛[38;5;252mThread the sentinel through the loop␛[m ␛[38;5;241m──────────────────␛[m ␛[91m✗␛[m ␛[38;5;241m2 tools␛[m   ␛[38;5;241m22s␛[m␛[38;5;241m┃␛[m
+    ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                             ␛[38;5;245m1 line␛[m  ␛[38;5;241m1.1s␛[m␛[38;5;241m┃␛[m
+    ␛[91m▎␛[m␛[91m✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/...␛[m                       ␛[91mexit 1␛[m   ␛[38;5;241m21s␛[m␛[38;5;241m┃␛[m
+      ␛[38;5;245m--- FAIL: TestRoundLimit␛[m                                                 
+                                                                               
+   ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m                       ␛[38;5;241mround 2/25␛[m 
+␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[94m[j/k]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m expand␛[m␛[38;5;241m · ␛[m␛[94m[y]␛[m␛[38;5;241m copy the row␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m search␛[m␛[38;5;241m · ␛[m␛[94m[n/N]␛[m␛[38;5;241m match␛[m␛[38;5;241m · ␛[m␛[94m[?]␛[m␛[38;5;241m keys␛[m␛[38;5;241m · ␛[m␛[94m[q]␛[m␛[38;5;241m back to the prompt␛[m       ␛[38;5;241mrow 2 of 6␛[m
 
 

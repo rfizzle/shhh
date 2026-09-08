@@ -385,6 +385,14 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.scrollPage(1)
 		return m, nil
 	case keys.Is(pressed, keys.Reading.Expand):
+		// A fold counting a search's matches answers first, and answers with
+		// the match rather than with the fold: it opens and puts the cursor
+		// on the first row inside that holds one (search.go). Everywhere else
+		// this is the ordinary open, so a step with nothing the query wants
+		// behind it is opened the way it always was.
+		if next, opened := m.openFoldToMatch(); opened {
+			return next, nil
+		}
 		// The row's structure — a step's fold, a group's, a diff's three
 		// modes — is toggleRow's (click.go), so the key and the pointer open
 		// a row through one act rather than two that agree by inspection.
@@ -450,8 +458,14 @@ func (m *Model) closeSearchQuery() {
 // clearSearch is the safe answer on the row: the query, the marks and the
 // count on the rail go together, and the mode the reader was in is still
 // there.
+//
+// So do the folds the search opened. A fold it opened was opened to answer
+// the query, and the query is over; a fold the reader opened themselves is
+// theirs and stays open, which is the whole reason the search writes its own
+// override rather than the reader's (steps.go).
 func (m *Model) clearSearch() {
 	m.viewport.ClearSearch()
+	m.clearSearchFolds()
 	m.resizeAroundSearchRow()
 }
 
@@ -495,9 +509,10 @@ func (m Model) exitFocusMode() (tea.Model, tea.Cmd) {
 	m.readingCopied = ""
 	// So does the search. Its marks are painted on the pane the feed uses
 	// too, and the keys that walk them are this mode's: a query left standing
-	// would underline lines in a transcript with nothing on screen offering
-	// to clear them.
+	// would mark lines in a transcript with nothing on screen offering to
+	// clear them. The folds it opened to reach a match go back with it.
 	m.viewport.ClearSearch()
+	m.clearSearchFolds()
 	m.leaveSurface()
 	// The pointer is not left lit behind the mode: esc from here returns to
 	// the prompt, and the prompt the reader left had no gutter on it.

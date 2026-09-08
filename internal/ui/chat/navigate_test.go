@@ -661,7 +661,9 @@ func TestSearch_SaysWhenThereIsNoMatch(t *testing.T) {
 	if found := m.searchTranscript("a word this session never said"); found != 0 {
 		t.Fatalf("found %d", found)
 	}
-	if got := m.searchNotice(); got != "no match" {
+	// Nothing of nothing: the count is the session's either way, so an empty
+	// result is a number and not a different kind of answer.
+	if got := m.searchNotice(); got != "0/0" {
 		t.Fatalf("notice = %q", got)
 	}
 	m.searchStep(1)
@@ -693,8 +695,8 @@ func TestSearch_TheReadingRailReportsThePosition(t *testing.T) {
 	before := m.readingLabel()
 
 	m.searchTranscript("parser")
-	at, total := m.viewport.MatchPosition()
-	if got, want := m.readingLabel(), fmt.Sprintf("READING · %d/%d", at, total); got != want {
+	at, total := m.searchPosition()
+	if got, want := m.readingLabel(), fmt.Sprintf("SEARCH · parser · %d/%d", at, total); got != want {
 		t.Fatalf("rail = %q, want %q", got, want)
 	}
 
@@ -737,11 +739,11 @@ func TestSearch_TheKeyOpensTheQueryAndSteps(t *testing.T) {
 	if got := m.viewport.SearchQuery(); got != "parser" {
 		t.Fatalf("the query row holds what was typed, got %q", got)
 	}
-	at, total := m.viewport.MatchPosition()
+	at, total := m.searchPosition()
 	if total == 0 {
 		t.Fatal("the word is in this transcript a dozen times")
 	}
-	if got, want := m.readingLabel(), fmt.Sprintf("READING · %d/%d", at, total); got != want {
+	if got, want := m.readingLabel(), fmt.Sprintf("SEARCH · parser · %d/%d", at, total); got != want {
 		t.Fatalf("rail = %q, want %q", got, want)
 	}
 
@@ -807,8 +809,15 @@ func TestSearch_EscOnTheRowClearsTheSearchAndKeepsTheMode(t *testing.T) {
 	if got := m.searchNotice(); got != "" {
 		t.Fatalf("the rail's position goes with the query, got %q", got)
 	}
-	if got := m.readingLabel(); got != before {
-		t.Fatalf("rail = %q, want it back as it was (%q)", got, before)
+	// The rail is the reading surface's again — its name back, and its own
+	// row count in place of the search's position. Which row the cursor is
+	// standing on is not put back: the search took the reader there, and esc
+	// leaves them where it took them.
+	if got := m.readingLabel(); !strings.HasPrefix(got, "READING") {
+		t.Fatalf("rail = %q, want the reading label back (was %q)", got, before)
+	}
+	if strings.Contains(m.readingLabel(), "SEARCH") {
+		t.Fatalf("rail = %q, want no search on it", m.readingLabel())
 	}
 }
 
@@ -825,7 +834,7 @@ func TestSearch_LeavingReadingModeClearsIt(t *testing.T) {
 		t.Fatal("[q] should leave reading mode")
 	}
 	if m.viewport.Searching() {
-		t.Fatal("a query left standing would underline lines nothing on screen can clear")
+		t.Fatal("a query left standing would mark lines nothing on screen can clear")
 	}
 }
 

@@ -1288,14 +1288,13 @@ func TestGolden_SyntaxRegister(t *testing.T) {
 	})
 }
 
-// TestGolden_ReadingMode captures the surface the keyboard moves to (
-// at the two widths where the artboard's rules bite: 130, where the
-// labelled rail, the lit row and the two-line hint bar all have room, and 80,
-// where the position field narrows. It is the pair that matters — the same
+// TestGolden_ReadingMode captures the surface the keyboard moves to, at every
+// breakpoint: the labelled rail, the lit row and the hint bar have room at
+// the wide end and the position field narrows at the tight one. The same
 // screen with the keyboard in the other pane is captured beside it, because
 // "only one pane is dressed" is a thing a reader checks by looking at both.
 func TestGolden_ReadingMode(t *testing.T) {
-	captureGolden(t, "reading-mode", "reading mode", []int{80, 130}, func(width int) []golden.Panel {
+	captureGolden(t, "reading-mode", "reading mode", goldenWidths, func(width int) []golden.Panel {
 		reading := func(mut func(*Model)) string {
 			m := goldenModel(t, width)
 			next, _ := m.enterFocusMode()
@@ -1339,16 +1338,22 @@ func TestGolden_ReadingMode(t *testing.T) {
 }
 
 // TestGolden_TranscriptSearch captures the way into the transcript search at
-// the two widths reading mode is captured at: the query row where the mode's
-// key bar was, with the pane marking what the query found, and the same
-// search kept — the row closed, the pointer's occurrence reversed among the
-// underlined ones, and the pair that walks them on the bar.
+// every breakpoint: the query row where the mode's key bar was, with the pane
+// marking what the query found, and the same search kept — the row closed,
+// the pointer's occurrence bold on the lit row, and the pair that walks them
+// on the bar.
+//
+// Then the half a search over rendered lines could not do. The last two
+// panels are a query whose only occurrence is inside a step that is folded:
+// the header counts it and offers the key, and the key opens the step onto
+// the counted run that is still covering it. The rail carries the surface's
+// own name, the query and a count that includes what nothing is drawing.
 //
 // It is the pane rather than the rendered transcript, because the marks are
 // painted on the window and not on the lines the render produced, and the
 // rail is above it because the count the reader steps by is up there.
 func TestGolden_TranscriptSearch(t *testing.T) {
-	captureGolden(t, "transcript-search", "the transcript search", []int{80, 130}, func(width int) []golden.Panel {
+	captureGolden(t, "transcript-search", "the transcript search", goldenWidths, func(width int) []golden.Panel {
 		// One path said four times over, which is what a reader searches a
 		// transcript for: where was this file touched.
 		reads := []entry{{kind: entryUser, text: "where does the round limit come from"}}
@@ -1386,9 +1391,40 @@ func TestGolden_TranscriptSearch(t *testing.T) {
 			rm.viewport.GotoTop()
 			return searchSurface(rm)
 		}
+		// The only occurrence of this path is on a read inside a step that
+		// has finished and folded, so nothing on screen is drawing it: the
+		// header is what has to say it is there.
+		inFold := func(open bool) string {
+			m := goldenModel(t, width)
+			next, _ := m.enterFocusMode()
+			rm := next.(Model)
+			// The cursor stands on the header, which is the row covering the
+			// match and so the row the key is offered on.
+			rm.focusIdx = 1
+			rm.refreshFocusView()
+			keys := []tea.KeyPressMsg{slashKey}
+			for _, r := range "context.go" {
+				keys = append(keys, tea.KeyPressMsg{Code: r, Text: string(r)})
+			}
+			if open {
+				// Enter closes the query row; enter again is the fold's.
+				keys = append(keys, tea.KeyPressMsg{Code: tea.KeyEnter}, tea.KeyPressMsg{Code: tea.KeyEnter})
+			}
+			for _, msg := range keys {
+				next, _ = rm.updateFocus(msg)
+				rm = next.(Model)
+			}
+			rm.viewport.SetHeight(12)
+			rm.viewport.GotoTop()
+			return searchSurface(rm)
+		}
 		return []golden.Panel{
-			{Label: "the query row where the key bar was · every hit underlined", View: search(false)},
-			{Label: "kept · the pointer reversed, [n/N] on the bar", View: search(true)},
+			{Label: "the query row where the key bar was · every match bold", View: search(false)},
+			{Label: "kept · the pointer's occurrence bold on the lit row, [n/N] on the bar", View: search(true)},
+			{Label: "the only match is behind a fold · the header counts it and offers the key",
+				View: inFold(false)},
+			{Label: "[enter] opened the step · the run it holds still says what it is covering",
+				View: inFold(true)},
 		}
 	})
 }
@@ -1775,11 +1811,11 @@ func TestGolden_GitWriteRows(t *testing.T) {
 // the pattern is in it: led by the directory, the two panels below would be
 // the same six rows.
 //
-// Two widths, because the target is the whole subject here: 60 columns is
-// where a pattern and its scope have to compete for the field, and 110 is
-// where both simply fit.
+// Every breakpoint, because the target is the whole subject here: at the
+// tight end a pattern and its scope compete for the field, and at the wide
+// end both simply fit.
 func TestGolden_SearchSweep(t *testing.T) {
-	captureGolden(t, "search-sweep", "searches of one package on the feed", []int{60, 110}, func(width int) []golden.Panel {
+	captureGolden(t, "search-sweep", "searches of one package on the feed", goldenWidths, func(width int) []golden.Panel {
 		row := func(pattern, result string, d time.Duration) entry {
 			return entry{kind: entryTool, toolName: "search",
 				toolArgs:   fmt.Sprintf(`{"pattern":%q,"path":"internal/ui/chat"}`, pattern),
@@ -1819,7 +1855,7 @@ func TestGolden_SearchSweep(t *testing.T) {
 // search that found nothing leaves the field empty rather than claiming the
 // sentence saying so as a finding.
 func TestGolden_SearchCounts(t *testing.T) {
-	captureGolden(t, "search-counts", "what a reader's row counts", []int{60, 110}, func(width int) []golden.Panel {
+	captureGolden(t, "search-counts", "what a reader's row counts", goldenWidths, func(width int) []golden.Panel {
 		var sweep strings.Builder
 		for i := 1; i <= tools.MaxSearchResults; i++ {
 			fmt.Fprintf(&sweep, "internal/ui/chat/queue.go:%d- \tqueue := m.pending\n", i*10-1)

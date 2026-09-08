@@ -199,6 +199,13 @@ func (m *Model) searchTranscript(query string) int {
 	if m.paneTakenOver() {
 		return 0
 	}
+	if !strings.EqualFold(query, m.viewport.SearchQuery()) {
+		// Every fold on the transcript draws how many of the query's
+		// occurrences it is covering (search.go), so a new query is a new
+		// render of every fold row — including the ones in blocks the caches
+		// have frozen, which is most of a long session.
+		m.invalidateRenderCache()
+	}
 	found := m.viewport.Search(query)
 	m.atBottom = m.viewport.AtBottom()
 	return found
@@ -216,21 +223,28 @@ func (m *Model) searchStep(dir int) {
 	} else {
 		m.viewport.NextMatch()
 	}
+	// The occurrence the pointer is on is told apart by the row it is on
+	// being lit, so the cursor goes where the pointer went (search.go).
+	m.focusMatchRow()
 	m.atBottom = m.viewport.AtBottom()
 }
 
 // searchNotice is what the rail says while a search is open: which occurrence
-// the reader is on and how many there are, or that there are none. A count on
-// its own would leave "is there another one below me" unanswered, which is
-// the question the keys next to it answer.
+// the reader is on and how many there are. A count on its own would leave "is
+// there another one below me" unanswered, which is the question the keys next
+// to it answer.
+//
+// Both numbers count the whole session and not the pane. The pane knows what
+// it is drawing; every fold on the transcript is asked what it is covering
+// (search.go), and those occurrences are placed at the fold's own row —
+// which is where they are on screen — so the position steps over them in the
+// order the reader would meet them. `0/0` is a query with nothing behind it
+// anywhere, folds included, which is the whole point of counting this way.
 func (m Model) searchNotice() string {
 	if !m.viewport.Searching() {
 		return ""
 	}
-	at, total := m.viewport.MatchPosition()
-	if total == 0 {
-		return "no match"
-	}
+	at, total := m.searchPosition()
 	return fmt.Sprintf("%d/%d", at, total)
 }
 
@@ -242,9 +256,24 @@ func (m Model) searchNotice() string {
 // The pane is brought to what the new query found, and the follow is read
 // back after that rather than before: the jump is a scroll like any other and
 // pauses the follow-the-live-end the same way.
+//
+// A query backspaced away to nothing is a search that is over, so the folds
+// it opened to reach a match go back — the same act esc performs, reached the
+// other way round.
 func (m *Model) setSearchQuery(query string) {
 	m.searchTranscript(query)
+	if query == "" {
+		m.clearSearchFolds()
+	}
+	// The fold rows say what this query is finding behind them, so the
+	// transcript is redrawn for the query and not only for the marks.
+	if m.state == stateFocus {
+		m.redrawFocusContent()
+	}
 	m.viewport.RevealMatch()
+	// The occurrence the reader is being taken to is marked by its row being
+	// lit, so the cursor follows the query as it is typed (search.go).
+	m.focusMatchRow()
 	m.atBottom = m.viewport.AtBottom()
 }
 
@@ -282,10 +311,12 @@ func (m Model) transcriptSearchHead() string {
 // differently would say they were different kinds of thing.
 func (m Model) transcriptSearchLines(width int) []string {
 	state := "type to search"
+	empty := false
 	if m.viewport.Searching() {
-		at, total := m.viewport.MatchPosition()
+		at, total := m.searchPosition()
 		state = fmt.Sprintf("%d of %d", at, total)
-		if total == 0 {
+		empty = total == 0
+		if empty {
 			state = "no match"
 		}
 	}
@@ -294,7 +325,31 @@ func (m Model) transcriptSearchLines(width int) []string {
 		keys.Shown(keys.Find.Keep) + " " + keys.Words(keys.Find.Keep),
 		keys.Shown(keys.Find.Clear) + " " + keys.Words(keys.Find.Clear),
 	}, " · ")
-	return []string{clipRow(row, width), sty.Search.Hint.Render(clipRow(hint, width))}
+	lines := []string{clipRow(row, width)}
+	if empty {
+		lines = append(lines, m.noMatchLines(width)...)
+	}
+	return append(lines, sty.Search.Hint.Render(clipRow(hint, width)))
+}
+
+// noMatchLines are what an empty result says. "No match" on its own is a
+// claim about the reader's fold state as easily as about the session, so the
+// row says what it read — every row, the ones behind folds and the ones a
+// paste left — and then names the only place the answer could still be, which
+// is the sessions this one is not.
+func (m Model) noMatchLines(width int) []string {
+	rows := m.searchedRows()
+	noun := "rows"
+	if rows == 1 {
+		noun = "row"
+	}
+	said := fmt.Sprintf("no match in this session · %d %s searched, folds and pastes included", rows, noun)
+	across := "shhh history finds it across sessions: "
+	return []string{
+		sty.Search.State.Render(clipRow(said, width)),
+		clipRow(sty.Search.State.Render(across)+
+			sty.Search.Query.Render("shhh history --grep "+m.viewport.SearchQuery()), width),
+	}
 }
 
 // readingSearchCursor is where the terminal's cursor stands in reading mode's
@@ -440,18 +495,36 @@ func (m Model) readingRail(width int) string {
 // transcript with nothing expandable is being read rather than navigated, so
 // it has no place to report.
 //
-// An open search takes that place over. Both answer "where am I in this", and
-// while a query is up the occurrence is the one the reader is moving through
-// — the row cursor is not what the next key moves.
+// A search takes the whole label over, name and all. The rail is what says
+// which surface holds the keyboard, and while a query is up the surface is
+// the search: it carries its own name, the query it is running, and the
+// occurrence the reader is on in place of the row count — both answer "where
+// am I in this", and the row cursor is not what the next key moves. Clearing
+// the query gives the label back, which is how the rail says the search is
+// over without a second word for it.
 func (m Model) readingLabel() string {
-	if note := m.searchNotice(); note != "" {
-		return "READING · " + note
+	if m.viewport.SearchOpen() || m.viewport.Searching() {
+		return m.searchLabel()
 	}
 	pos, total := m.readingPosition()
 	if total == 0 {
 		return "READING"
 	}
 	return fmt.Sprintf("READING %d/%d", pos, total)
+}
+
+// searchLabel is the rail while the transcript search is up: SEARCH, the
+// query, and the position. A query row that has been opened and not typed
+// into is the name alone — there is nothing yet to say a count about.
+func (m Model) searchLabel() string {
+	label := "SEARCH"
+	if q := m.viewport.SearchQuery(); q != "" {
+		label += " · " + q
+	}
+	if note := m.searchNotice(); note != "" {
+		label += " · " + note
+	}
+	return label
 }
 
 // readingPosition is the 1-based index of the selected row among the

@@ -103,7 +103,7 @@ func (m Model) foldRun(es []entry, i, end int) int {
 // asked for rather than the chrome around it.
 func (m Model) groupFolded(e entry, stepDetail bool) bool {
 	switch e.groupFold {
-	case foldOpen:
+	case foldOpen, foldSearch:
 		return false
 	case foldClosed:
 		return true
@@ -145,14 +145,29 @@ func (m Model) stepSlots(es []entry, g *stepGroup) []slot {
 
 // groupRowFor builds the counted row for a folded run: what it swallowed, and
 // the summed duration of it.
+//
+// While a search is up the label counts one more thing — how many of the
+// query's occurrences are on the rows this one is standing in for (search.go)
+// — because a run that swallowed the only row the reader is looking for and
+// said only "6 reads" is the fold hiding rather than folding (invariant 4).
+// The key that opens it is already on the row.
 func (m Model) groupRowFor(es []entry, s slot) components.ActivityGroup {
 	members := es[s.idx : s.idx+s.span]
 	var d time.Duration
 	for _, e := range members {
 		d += e.duration
 	}
+	label := groupLabel(members)
+	if n := m.searchMatchesIn(es, s.idx, s.idx+s.span); n > 0 {
+		// The count leads while a search is up. This row's target field is
+		// the narrowest of the two fold rows — the key it is opened with
+		// sits in the outcome field beside it, whatever the width — so a
+		// count appended to the verbs is the part a narrow terminal clips
+		// away, and it is the part the reader is looking at the row for.
+		label = matchesInside(n) + " · " + label
+	}
 	return components.ActivityGroup{
-		Label:    groupLabel(members),
+		Label:    label,
 		Duration: activityDuration(d),
 	}
 }
@@ -170,7 +185,8 @@ func (m Model) groupAnchor(es []entry, idx int) bool {
 			if s.idx != idx {
 				continue
 			}
-			return s.group || (es[idx].groupFold == foldOpen && m.foldRun(es, idx, blk.step.end) >= minGroupRun)
+			opened := es[idx].groupFold == foldOpen || es[idx].groupFold == foldSearch
+			return s.group || (opened && m.foldRun(es, idx, blk.step.end) >= minGroupRun)
 		}
 	}
 	return false

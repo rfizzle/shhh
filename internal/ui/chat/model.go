@@ -556,6 +556,19 @@ type Model struct {
 	// two renders differ in the width a selectable row takes, and the pointer
 	// has to be able to come and go without either of them being rebuilt.
 	gutter gutterCache
+	// searchMemo is the transcript search's last census of what the folds are
+	// covering (search.go). The rail asks for it on every frame and the
+	// answer changes only when the query, the entries or the folds do, so
+	// answering it again per frame would re-render every folded step of the
+	// session while the reader was doing nothing but scrolling under a query
+	// they had left standing — which is the cost the two caches above exist
+	// to refuse.
+	//
+	// It is a pointer rather than a value because the census is read from
+	// the render, where this model is a copy: the box is shared and the key
+	// beside the answer is what makes that safe, since a copy that no longer
+	// describes the session cannot match its own key.
+	searchMemo *searchMemo
 	// streamMD is the arriving message's own cache, keyed on nothing the
 	// caches above are: it holds a render of the part of that one message that
 	// can no longer change, so a chunk re-renders the tail rather than the

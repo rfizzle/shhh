@@ -1,0 +1,61 @@
+# The transcript search reaches inside the folds
+# (docs/interface/surfaces.md#reading-mode). The turn leaves one step, folded
+# once it finished, with a run of four reads folded again inside it. The path
+# the reader then searches for is on a row two folds down and on nothing the
+# pane is drawing, so every count on the screen is a count of what the entries
+# hold rather than of what happened to be open.
+#
+# Spaces rather than tabs in the fixtures: a tab is re-expanded by the
+# terminal against the pane's own columns, not the row's, and the capture
+# would read as a column that drifted.
+setup printf 'package agent\n\nfunc loop() {\n    for round := 0; round < limit; round++ {\n        step()\n    }\n}\n' > loop.go
+setup printf 'package agent\n\nfunc round() int {\n    return limit\n}\n' > round.go
+setup printf 'package agent\n\nvar ErrRoundLimit = errors.New("round limit")\n' > errors.go
+setup printf 'package agent\n\nconst limit = 25\n' > limit.go
+snap 01-start "Some things worth doing first"
+keys "how is the round limit counted" Enter
+snap 02-turn "The limit is a checkpoint, not a wall"
+# Reading mode, and the step folded to its header: four reads happened and
+# the screen is holding one row about them.
+keys C-o
+snap 03-reading "Locate the round accounting"
+# The query. Nothing on the pane is drawing errors.go, so a search over the
+# rendered lines would answer none — the rail's count and the header's are
+# both counts of what the entries hold.
+keys "/"
+keys "errors.go"
+snap 04-counted "match inside"
+# Enter closes the query row; the next enter is the fold's, and it opens the
+# step onto the run that is still standing in for the row with the match.
+keys Enter
+keys Enter
+snap 05-opened "match inside"
+# And again: the run gives its rows back and the path is on the screen, bold,
+# on the row the cursor is standing on.
+keys Enter
+snap 06-reached "errors.go"
+# The query row again — [/] reopens it over the query that is still standing —
+# and esc on the row clears it. The folds the search opened go back with it,
+# so the step is a header again, and the mode the reader was in is still
+# there with its own label back on the rail.
+keys "/"
+keys Escape
+snap 07-refolded "READING"
+# And a path this session never touched. The count is the session's either
+# way, so the empty result is a number on the rail and a sentence saying what
+# it read — every row, the ones behind folds included — beside the one place
+# the answer could still be.
+keys "/"
+keys "round_test.go"
+snap 08-nothing "no match in this session"
+# The way out, and the session's. The sleep is the terminal's rather than the
+# product's: esc and a letter written into the pty together arrive as one
+# escape sequence, which is a chord and not two keys.
+keys Escape
+sleep 0.3
+keys q
+snap 09-prompt "enter send"
+keys C-c
+snap 10-quit-armed "press again to quit"
+keys C-c
+snap 11-exit "that is everything the screen was holding"

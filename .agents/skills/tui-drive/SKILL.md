@@ -84,6 +84,22 @@ tool:ask:{"question":"Which store?","shape":"choose","options":[{"label":"sqlite
 That settles it.
 ```
 
+A line beginning with `+` continues the reply above it rather than being a
+reply of its own, so one reply can carry several parts:
+
+```
+Locate the round accounting
++tool:read_file:{"path":"loop.go"}
++tool:read_file:{"path":"round.go"}
++tool:read_file:{"path":"errors.go"}
+```
+
+That is what a step is made of, and so what the folded run of read-only rows
+inside one needs: the transcript titles a step with the assistant prose
+immediately before a batch of calls. Sent as replies of their own the sentence
+would be a turn that ended before the calls were asked for, and the scene
+would get four rows and no outline.
+
 `steps.txt` is the reader, one step per line:
 
 ```

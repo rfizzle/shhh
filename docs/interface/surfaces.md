@@ -221,19 +221,54 @@ than staying lit on a row nobody can see.
 The transcript can also be searched. The slash every pager opens a query with
 opens one here: a single row where the key bar was, typed into from the first
 keystroke, with the terminal's own cursor on it and the count of what has been
-found beside it. The pane follows the query as it is typed, every occurrence is
-marked and the one the reader is on is marked differently — structurally in
-both cases, so the two read apart in mono. The mode's rail carries the position
-in place of the row count, because both answer "where am I in this" and while
-a query is up the occurrence is what the next key moves.
+found beside it. The pane follows the query as it is typed.
+
+A match is bold, and that is the whole of the mark. It is the picker's
+treatment for the same fact about the same query, so the two are not drawn as
+two kinds of thing; bold is structural, so it survives mono; it leaves the
+syntax colours under it alone; and it spends none of the three backgrounds,
+which belong to the selection, the lit row and the diff. The occurrence the
+reader is on takes no second mark, because it is already told apart by
+something the surface draws: the reading cursor follows the search, so that
+one is the bold run on the lit row.
+
+**The search reads the session, not the screen.** A count taken from the
+rendered lines is a count of the rows that happened to be open, which would
+make `no match` a fact about the reader's folds. So every fold on the
+transcript — a step showing only its header, a run of read-only calls showing
+only its count — is asked what the query finds behind it, by drawing those
+rows as opening the fold would draw them. The number goes on the fold's own
+row beside what it already says it swallowed, it is added to the count on the
+rail, and enter opens the fold onto the first row inside that holds one, a
+level at a time. Where the row is too narrow for both, the count stays and
+the key goes: the key is on the mode's bar either way, and the count is the
+thing the fold owes the reader. A fold the search opened is put back when the
+query clears; a fold the reader opened themselves stays open.
+
+The rail names the surface. While a query row is open or a search is standing
+it reads `SEARCH · <query> · 3/9` in place of the reading position — both
+answer "where am I in this", the query is what the count is a count of, and
+while a search is up the occurrence is what the next key moves. The
+occurrences a fold is covering are counted at that fold's row, which is where
+they are on the screen, so the position steps over them in the order the
+reader would meet them. The pair that walks the occurrences walks the ones the
+pane is drawing, so the position skips over the ones a fold is still covering
+— those are reached through the fold's own row, which is why the row carries
+the count and the key rather than the count alone. Clearing the query gives
+the rail's own label back.
+
+An empty result says what it read: `no match in this session · 212 rows
+searched, folds and pastes included`, and then names `shhh history --grep` as
+the way across the sessions this one is not. A count of nothing is worth
+nothing without the size of what was counted.
 
 Enter closes the row and leaves the search standing, which is what hands the
 mode's own letters back: a row being typed into keeps every letter as text, so
 the pair that steps between occurrences is only live once the row is closed.
 Esc on the row clears the query, the marks and the count together and leaves
-the mode where it was. Leaving the mode clears them too — the marks are
-painted on the pane the ordinary feed reads through, and the keys that walk
-them are this mode's.
+the mode where the search took the reader. Leaving the mode clears them too —
+the marks are painted on the pane the ordinary feed reads through, and the
+keys that walk them are this mode's.
 
 ### The input frame
 
