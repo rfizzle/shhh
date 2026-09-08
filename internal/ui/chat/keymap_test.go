@@ -16,6 +16,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
@@ -409,6 +410,19 @@ func decisionCards(t *testing.T) []decisionCard {
 				var bare, contained []string
 				m := containedModel(t, &bare, &contained, "contained: bwrap (workspace profile)")
 				return execApproval(t, m, "rsync --delete src/ dst/")
+			},
+			card: sessionCard,
+		},
+		{
+			// And the same card in a session that can be asked what the
+			// command does, which is the one state the explain key is drawn
+			// in: the offer is made only where a model is configured to
+			// answer it.
+			name: "the session's command card with an explanation",
+			open: func(t *testing.T) Model {
+				m := explainerModel(t, &paragraphProvider{text: "it copies src/ into dst/."},
+					agent.ExplainConfig{Model: "small", Prompt: explainWording})
+				return execApproval(t, m, "rsync -a --delete src/ dst/")
 			},
 			card: sessionCard,
 		},

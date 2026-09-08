@@ -238,3 +238,20 @@ answer satisfies [esc is always the safe
 answer](principles.md#esc-is-always-the-safe-answer) on its own: leaving
 changes nothing on the machine and costs the reader nothing they typed. The
 holding behaviour replaces it rather than repairing a hole.
+
+## The explanation's screen wears the full view's title, not a rail label
+
+*A disagreement.* The artboard draws the command explanation with a rail
+label reading `EXPLAIN` above the paragraph. The binary draws it on the same
+full-screen viewer the dry run and the card's own facts already open on,
+whose title rail is one line — the act, an em dash, and what it was about.
+
+The reason is the surface it borrows. The whole point of this screen is that
+it is the one the reader already knows how to leave: it takes the screen, it
+gives it back with the decision still waiting, and nothing on it enters the
+conversation. Giving one of its three uses a label the other two do not have
+would say the screens are different when the promise they make is the same,
+and the second half of the title says which use it is anyway. What the
+artboard settles and the binary keeps is the rest of it: the paragraph in
+dim, and a footer naming the model, what asking took, and that nothing here
+reached the model waiting on the answer.

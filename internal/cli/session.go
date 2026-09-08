@@ -813,6 +813,10 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// Auto mode's permission classifier, built the way every surface that
 	// has one builds it (approvals.go).
 	classifier := buildClassifier(cfg, env, ledger)
+	// The card's own reading of a command, on the same model. Only this
+	// surface builds one: it is answered by a keystroke, and an unattended
+	// run has nobody to press it (approvals.go).
+	explainer := buildExplainer(cfg, env, ledger)
 
 	// The session summary resolves its model the same way: summary.model
 	// overrides, and empty takes the provider's small model. It is still the
@@ -1010,6 +1014,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithSteering(steering(cfg, env.prompts)).
 		WithRetryLimit(cfg.Behavior.ProviderRetries).
 		WithClassifier(classifier).
+		WithExplainer(explainer).
 		WithSummarizer(summarizer).
 		WithTitler(titler, cfg.TitlesEnabled()).
 		WithModelSwitcher(env.switchModel).

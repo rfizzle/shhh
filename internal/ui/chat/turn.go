@@ -476,6 +476,12 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		// wherever it stood.
 		return answered(m.finishDryRun(msg))
 
+	case explainDoneMsg:
+		// What a cheap model said the pending command does (run.go). Like
+		// the dry run above it, nothing is waiting on it and no decision
+		// moves, so it is shown and the turn goes on standing where it stood.
+		return answered(m.finishExplain(msg))
+
 	case approvedToolDoneMsg:
 		if msg.runID != m.agent.RunID() || m.turnState() != stateRunningCmd || m.pendingApproval == nil {
 			return m, nil, true

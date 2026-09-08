@@ -746,6 +746,22 @@ type DecisionKeys struct {
 	// card's own words say what it would try.
 	DryRun Binding
 
+	// Explain is the command card's other question about the command rather
+	// than about the decision: a cheap model says what the thing in front of
+	// the reader does, on the screen the dry run opens on, and the decision
+	// is still waiting behind it
+	// (docs/interface/surfaces.md#the-approval-card).
+	//
+	// It is [x] because the one-shot's action bar already spends [x] on
+	// explaining a command (OneShot.Explain), and a reader who learned the
+	// letter there is looking at the same question here. That is an argument
+	// for the letter and not a claim to it — the two surfaces are never up
+	// at once, so nothing would have stopped a different one. What settles
+	// it is that [x] is unclaimed on this card: [e] would have to be taken
+	// from nothing and mean explain on one surface and edit on the other,
+	// which is the cost this register exists to make visible.
+	Explain Binding
+
 	// Accept and Refuse are Allow and Deny on a card the reader summoned
 	// rather than was handed.
 	//
@@ -786,6 +802,7 @@ var Decision = DecisionKeys{
 	Batch:      bind("A", "answer the marked", "A"),
 	Diff:       bind("d", "full diff", "d", "D"),
 	DryRun:     bind("t", "try the harmless form", "t"),
+	Explain:    bind("x", "explain what the command does", "x"),
 	Accept:     bind("y", "yes", "y", "Y", "enter"),
 	Refuse:     bind("n", "no, and stop offering", "n", "N"),
 

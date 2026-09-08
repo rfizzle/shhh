@@ -925,6 +925,46 @@ func TestGolden_DecisionNote(t *testing.T) {
 		})
 }
 
+// TestGolden_ExplainView captures the screen the command card's explain key
+// opens on, in both the states it has: the paragraph with the footer that
+// names who said it and what asking took, and the reading that did not happen
+// (docs/interface/surfaces.md#the-approval-card).
+//
+// Both panels are here because the failure is the half that has no other
+// witness: a screen that renders an error as an empty body looks exactly like
+// a screen whose model had nothing to say, and at sixty columns the footer is
+// where the difference would be lost.
+func TestGolden_ExplainView(t *testing.T) {
+	captureGolden(t, "explain-view", "the command card's explanation", goldenWidths,
+		func(width int) []golden.Panel {
+			read := explainView(explainDoneMsg{
+				command: "rsync -a --delete src/ dst/",
+				verdict: agent.ExplainVerdict{
+					Text: "Copies the contents of src/ into dst/, preserving permissions, " +
+						"timestamps and symlinks, and deletes anything already in dst/ that " +
+						"is not in src/.\n\nThe deletion is the part worth reading twice: " +
+						"dst/ is made to match src/ rather than added to.",
+					Model: "claude-haiku-4-5",
+					Usage: provider.Usage{PromptTokens: 214, CompletionTokens: 96},
+				},
+			})
+			read.SetSize(width, 20)
+			failed := explainView(explainDoneMsg{
+				command: "rsync -a --delete src/ dst/",
+				verdict: agent.ExplainVerdict{
+					Failed: true,
+					Model:  "claude-haiku-4-5",
+					Err:    "the explanation could not be read: context deadline exceeded",
+				},
+			})
+			failed.SetSize(width, 14)
+			return []golden.Panel{
+				{Label: "the paragraph, and what asking it cost", View: read.View(width)},
+				{Label: "a reading that did not happen", View: failed.View(width)},
+			}
+		})
+}
+
 // interruptSurface is the bottom panel a decision produces: ungated it is the
 // card, its DRAFT rail and the live frame under them; gated it is the whole
 // panel the card takes over.

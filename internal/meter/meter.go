@@ -29,7 +29,15 @@ type Source string
 const (
 	SourceAgent      Source = "agent"
 	SourceClassifier Source = "classifier"
-	SourceSummary    Source = "summary"
+	// SourceExplanation is a command explained at the approval card. It is
+	// its own source and not the classifier's because the two answer
+	// different questions with the same model: one judges a call the reader
+	// never saw, and the other is a key the reader pressed. A session where
+	// "classifier" costs more than expected is a session to change the mode
+	// of; one where "explanation" does is a reader learning a tool, and
+	// folding the second into the first would report the wrong advice.
+	SourceExplanation Source = "explanation"
+	SourceSummary     Source = "summary"
 	// SourceBacklog is the reading that turns a session into backlog items.
 	SourceBacklog Source = "backlog"
 	// SourcePersona is the drafting of an agent profile from a brief.

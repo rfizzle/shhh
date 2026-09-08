@@ -969,6 +969,30 @@ keeps the capital-N default marker and goes on reading `Y`/`N` as it always
 did, which is what leaves the `/run` confirm, the scaffold card and a child's
 routed ask byte-identical.
 
+**The two questions a command card answers about the command rather than
+about the decision are one shape written twice, on purpose.** The dry run
+(`dryRunOffer`/`dryRunKey`/`dryRunDoneMsg`/`finishDryRun`/`dryRunView` in
+`internal/ui/chat/run.go`, over `internal/dryrun`) runs a derived form of the
+command in the containment the real one would have run in; the explanation
+(`explainOffer`/`explainKey`/`explainDoneMsg`/`finishExplain`/`explainView`,
+over `agent.Explainer` in `internal/agent/explain.go`) asks a model what it
+does. Both are keyed off `pendingApproval` rather than off the model — the
+in-flight flag has to be a fact about *this* call, or the next decision in
+the queue is advertised as running one — both open through `openOutputFull`
+with `stateConfirmRun` as the return, both are routed in `updateConfirmRun`
+*above* the card so the letter is not read as the start of a sentence, and
+neither is in `KeyRun`, so `KeyAt` and a click are untouched. Three things
+bite. The offer must be absent where it cannot be answered — no derived form,
+no configured model — because `TestDecisionCards_EveryOfferedKeyDoesSomething`
+presses everything a card advertises. `agent.Explainer` takes its wording
+from `prompt.BuildExplain`, which is the one-shot's, so `internal/agent`
+imports `internal/prompt` and must not be imported by it. And the explanation
+leaves **no** transcript row where the dry run leaves one: nothing ran on
+this machine, and a row is how output reaches the screen a second time, not
+how a reading is recorded. Its spend is `meter.SourceExplanation`, built in
+`buildExplainer` (`internal/cli/approvals.go`) beside `buildClassifier` off
+the shared `gateModel`.
+
 Reasoning is a row like any other act: `internal/ui/chat/think.go` owns the
 `think` row — where the round's thinking is collected as it streams, its three
 fold depths, and the verbosity that drops it. The text it shows is not the

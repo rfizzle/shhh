@@ -291,6 +291,15 @@ func (m Model) WithClassifier(c *agent.Classifier) Model {
 	return m
 }
 
+// WithExplainer enables the command card's explanation key: a cheap model
+// says what the command in front of the reader does, and the decision is
+// still waiting behind the answer (run.go). Without one the card offers
+// nothing and the key does nothing.
+func (m Model) WithExplainer(e *agent.Explainer) Model {
+	m.explainer = e
+	return m
+}
+
 // WithMaxToolRounds overrides the per-turn tool-round cap; zero keeps
 // DefaultMaxToolRounds and a negative n is agent.UnlimitedToolRounds, which
 // starts the session with no checkpoint at all — what `shhh code

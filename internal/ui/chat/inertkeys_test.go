@@ -17,6 +17,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -72,6 +73,18 @@ func register(t *testing.T) []keyedSurface {
 				var bare, contained []string
 				m := containedModel(t, &bare, &contained, "contained: bwrap")
 				return pendingExec(t, typeChars(t, m, draftLead), "rsync --delete src/ dst/")
+			},
+			hold: handover,
+		},
+		{
+			// The command card's other question about the command, in a
+			// session with a model configured to answer it.
+			name: "the command card's explanation",
+			keys: []string{"x"},
+			open: func(t *testing.T) Model {
+				m := explainerModel(t, &paragraphProvider{text: "it copies src/ into dst/."},
+					agent.ExplainConfig{Model: "small", Prompt: explainWording})
+				return pendingExec(t, typeChars(t, m, draftLead), "rsync -a --delete src/ dst/")
 			},
 			hold: handover,
 		},

@@ -675,6 +675,24 @@ key and the card says nothing about a dry run, because a key that ran the
 real command while the card called it a dry run is the one mistake this offer
 must never make.
 
+A command the reader does not recognise can also be asked about rather than
+run. One key puts a paragraph on the screen the dry run opens on: what the
+command in front of them does, written by the same inexpensive model the
+permission classifier is configured with, in the words the one-shot explains a
+command in — one rule for what an explanation says, not two that drift. It is
+the dry run's shape with a model where the subprocess was, and it keeps the
+dry run's promise: the request is bounded, the decision is still waiting
+behind the screen, and nothing on it reaches the conversation, because the
+model asked to run this command and is still waiting for the answer to that.
+The screen names the model that answered and what asking took, since an
+explanation is a claim and a reader about to act on it is owed who made it;
+the spend is a line of its own in the session's cost, because a keystroke
+that costs money is one the reader can see. A request that fails or runs out
+of time says so there and gives the screen back — never a blank paragraph,
+and never an answer. The offer is absent where no model is configured to
+answer it, and it is the command card's alone: a diff is already the
+explanation of an edit, and the full view already shows it whole.
+
 Almost every card arrives unasked, and the rest of this section is about that
 one. The exception is a card the reader summoned — the offer to write
 something the session proposed, taken up by a command or a suggestion — which

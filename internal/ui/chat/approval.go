@@ -143,6 +143,11 @@ type approvalRequest struct {
 	// would be advertised over it.
 	dryCommand string
 	dryRunning bool
+	// explaining is whether a paragraph about this command is being read
+	// right now (run.go). It rides the request for the reason the dry run's
+	// two fields do: the answer is about this call, and one left behind on
+	// the model would be advertised over the next decision in the queue.
+	explaining bool
 }
 
 // approvedToolDoneMsg carries the executor result of an approved non-exec
@@ -1082,7 +1087,7 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 				}
 			}
 		}
-		card.ExtraHints = dryRunOffer(req)
+		card.ExtraHints = append(dryRunOffer(req), m.explainOffer(req)...)
 		return card
 	}
 

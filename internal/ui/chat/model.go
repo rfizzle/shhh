@@ -625,6 +625,12 @@ type Model struct {
 	// static policy would ask about; nil falls back to asking the user.
 	classifier       *agent.Classifier
 	classifierCancel context.CancelFunc
+	// The command card's explanation (run.go): the same cheap model, asked
+	// what the command in front of the reader does. nil is a session that
+	// makes no such offer, which is what the card checks before drawing the
+	// key. It is not the classifier's field because the two are configured
+	// apart and either can be absent while the other is there.
+	explainer *agent.Explainer
 	// The session summary (summary.go): a cheap model's periodic read
 	// of what the session is doing, drawn as the rail's SUMMARY block.
 	summarizer    *agent.Summarizer

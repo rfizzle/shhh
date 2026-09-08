@@ -14,6 +14,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/dryrun"
 	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/observe"
@@ -81,6 +82,11 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	// The dry run, before the card: it is not one of the card's answers and
 	// the card would read it as the start of a sentence.
 	if next, cmd, ok := m.dryRunKey(msg); ok {
+		return next, cmd
+	}
+	// The explanation, for the same reason and in the same place: it settles
+	// nothing, and the card would read the letter as the start of a sentence.
+	if next, cmd, ok := m.explainKey(msg); ok {
 		return next, cmd
 	}
 	done, result := m.approvalCard().Update(msg)
@@ -426,4 +432,133 @@ func dryRunView(msg dryRunDoneMsg, out string) *components.OutputView {
 		lines = []string{"It reported nothing — the dry run found no work to do."}
 	}
 	return &components.OutputView{Title: title, Lines: lines}
+}
+
+// The explanation at the card.
+//
+// The alternative to this key is leaving the card to search the web with the
+// decision still waiting behind you, which is the state the offer exists to
+// remove (docs/interface/surfaces.md#the-approval-card).
+//
+// It is the dry run's shape with a model where the subprocess was: a bounded
+// thing runs, what it produced takes the screen the full view takes, the
+// screen gives itself back with the decision still unanswered, and nothing it
+// produced enters the conversation. Copying the shape is what keeps the two
+// consistent when one of them changes. The one place they part is the
+// transcript: a dry run leaves a row because something ran on this machine,
+// and nothing ran here — a reading is not an act, which is why the summary
+// and the session's title leave no row either.
+
+// explainOffer is the key the command card advertises beside its decision
+// run, and nothing at all where nothing is configured to answer it: a key
+// that could not be answered is not an offer.
+//
+// It is an assistant's command and not a /run the reader typed. A person who
+// typed the line knows what it does, and a card with no request behind it has
+// nothing to explain — which is the same reason the offer is off on an edit,
+// where the diff is already the explanation.
+//
+// While the reading is in flight the key stays where it was drawn with the
+// words changed, for the reason the dry run's does — the answer to the press
+// is already on its way, and taking the row away mid-wait would read as the
+// offer having been withdrawn.
+func (m Model) explainOffer(req *approvalRequest) []components.KeyOffer {
+	if req == nil || req.kind != approvalExec || !m.explainer.Enabled() {
+		return nil
+	}
+	label := "explain — what this command does"
+	if req.explaining {
+		label = "explain — asking"
+	}
+	return []components.KeyOffer{{Key: keys.Bracket(keys.Decision.Explain), Label: label}}
+}
+
+// explainKey answers the card's explain key: a paragraph is read, and the
+// decision stays exactly where it was. handled is false for every key this is
+// not, and for a card that took the keyboard by arriving — that card claims
+// its answers and nothing else, and this letter is the reader's sentence
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+func (m Model) explainKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
+	if !keys.Match(msg, keys.Decision.Explain) || m.heldOnArrival {
+		return m, nil, false
+	}
+	req := m.pendingApproval
+	if req == nil || req.kind != approvalExec || req.explaining || !m.explainer.Enabled() {
+		return m, nil, false
+	}
+	req.explaining = true
+	explainer := m.explainer
+	command, call, runID := req.command, req.call.ID, m.agent.RunID()
+	return m, func() tea.Msg {
+		// The explainer bounds its own request, the way the classifier and
+		// the titler do: the deadline is a fact about the reading rather than
+		// about the surface that asked for it.
+		v := explainer.Explain(context.Background(), agent.ExplainRequest{Command: command})
+		return explainDoneMsg{runID: runID, call: call, command: command, verdict: v}
+	}, true
+}
+
+// explainDoneMsg is the paragraph, or the sentence saying there is none. It
+// carries the call it was asked about so the answer cannot be attached to the
+// next decision in the queue.
+type explainDoneMsg struct {
+	runID   int
+	call    string
+	command string
+	verdict agent.ExplainVerdict
+}
+
+// finishExplain puts the paragraph on the screen.
+//
+// The screen only opens if the decision it was asked about is still the one
+// being asked, and the card is still what is on it: a reader who opened the
+// card's full view meanwhile is reading something they asked for, and taking
+// that away would be one answer cancelling another. It opens the way the full
+// view opens and comes back the same way, with the decision still unanswered,
+// which is the whole point of the key: nothing here approves anything.
+//
+// A failed reading opens the screen too. It is the same press being answered,
+// and a key that silently did nothing when the request timed out would be
+// indistinguishable from a key that is not wired up.
+func (m Model) finishExplain(msg explainDoneMsg) (tea.Model, tea.Cmd) {
+	if msg.runID != m.agent.RunID() {
+		return m, nil
+	}
+	req := m.pendingApproval
+	pending := req != nil && req.call.ID == msg.call && m.state == stateConfirmRun
+	if req != nil && req.call.ID == msg.call {
+		req.explaining = false
+	}
+	if !pending {
+		return m, nil
+	}
+	return m.openOutputFull(explainView(msg), noOutputEntry, stateConfirmRun)
+}
+
+// explainView is the full screen the answer opens on: what was asked about,
+// what came back, and a footer naming who said it and what it cost — because
+// an explanation is a claim, and a reader about to decide on it is owed who
+// made it and what asking took.
+//
+// The last line of the footer is the one thing the screen has to say that is
+// not about the command: nothing here reached the model that is waiting for
+// the decision. It asked to run this command, and it is still waiting for the
+// answer to that.
+func explainView(msg explainDoneMsg) *components.OutputView {
+	v := msg.verdict
+	title := "explain — " + firstLine(msg.command)
+	var lines []string
+	if v.Failed {
+		// Never an empty paragraph: a blank screen is not an answer to a
+		// question somebody pressed a key to ask.
+		lines = []string{"The explanation could not be read.", "", v.Err}
+	} else {
+		lines = strings.Split(v.Text, "\n")
+	}
+	footer := "asked " + v.Model
+	if u := v.Usage; u.PromptTokens > 0 || u.CompletionTokens > 0 {
+		footer += fmt.Sprintf(" · ↑%d ↓%d", u.PromptTokens, u.CompletionTokens)
+	}
+	lines = append(lines, "", footer, "Nothing on this screen was sent to the model waiting on your answer.")
+	return &components.OutputView{Title: title, Lines: lines, Wrap: true}
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/process"
+	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -70,11 +71,51 @@ func unattendedGate(webTools *web.Toolset, procSup *process.Supervisor, mcpTools
 // See docs/capabilities/configuration.md#the-classifier-is-configured-once.
 func buildClassifier(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *agent.Classifier {
 	return agent.NewClassifier(ledger.For(env.prov, meter.SourceClassifier), agent.ClassifierConfig{
-		Model:     modelOr(cfg.Behavior.ClassifierModel, auxiliaryModel(env.provName, env.modelName)),
+		Model:     gateModel(cfg, env),
 		Timeout:   time.Duration(cfg.Behavior.ClassifierTimeoutSeconds) * time.Second,
 		MaxTokens: cfg.Behavior.ClassifierMaxTokens,
 		Retries:   cfg.Behavior.ClassifierRetries,
 		Prompt:    env.prompts.classifier,
+	})
+}
+
+// gateModel is the inexpensive model the gate reads with: what
+// behavior.classifier_model names, and the provider's small model where it
+// names nothing.
+//
+// One resolution and not one per reader. Everything asked at the approval
+// card is the same size of question about the same call, and a session where
+// the verdict came from one model and the explanation from another would be
+// two readings a person could not compare — which is exactly what the reader
+// does with them, one under the other, in the moment before answering.
+// See docs/capabilities/configuration.md#the-classifier-is-configured-once.
+func gateModel(cfg config.Config, env *sessionEnv) string {
+	return modelOr(cfg.Behavior.ClassifierModel, auxiliaryModel(env.provName, env.modelName))
+}
+
+// buildExplainer is the card's explanation: the same model the classifier
+// reads with, billed under its own source so a keystroke that spends money is
+// a line in /cost rather than an unattributed request
+// (docs/architecture.md#spend-is-counted-at-the-provider).
+//
+// It is built wherever a card can be drawn, which is the interactive session
+// and nothing else: the key is a person's, and a surface with nobody in front
+// of it has nobody to press it.
+//
+// The model is shared with the classifier and the bound is not: the
+// classifier's timeout is how long a blocked session may wait for a verdict,
+// and this one is how long a person will look at a card that says "asking".
+// A reader who lengthened the first did not ask for the second.
+//
+// The words are the one-shot's, handed down rather than restated: what an
+// explanation of a command says and how long it is was settled for `shhh cmd`
+// and `[x]` there, and a second wording here would be the same rule in two
+// places with one of them out of date. The long form is what a screen with
+// nothing else on it is for.
+func buildExplainer(cfg config.Config, env *sessionEnv, ledger *meter.Ledger) *agent.Explainer {
+	return agent.NewExplainer(ledger.For(env.prov, meter.SourceExplanation), agent.ExplainConfig{
+		Model:  gateModel(cfg, env),
+		Prompt: prompt.BuildExplain(true),
 	})
 }
 
