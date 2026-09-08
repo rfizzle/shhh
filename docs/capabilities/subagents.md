@@ -126,6 +126,24 @@ about is refused. A patch is the exception, and only where the run may write:
 the run asked for the work, so what is left to refuse is a patch that overlaps
 one already landed.
 
+## What comes back says what happened to it
+
+A child's report is the child's own words, and around them is everything the
+session already knows about how it got there: how it ended, what it spent, how
+many times it stopped to take stock, the last reading of its work and how
+often it had to be redirected. Those last two are on the roster as well, and
+they are on the report because the report is what the parent acts on — a child
+steered three times that comes back calling its work sufficient is one to
+check rather than to take, and nothing in the words themselves would say so.
+
+A writing child's report also says what became of its patch and which files
+were in it. What a patch touched is the whole of what the parent needs to
+integrate it, and it is already known at the moment the patch lands; a note
+that gave only a count sent the parent looking for the names, one round after
+the files were already in the checkout. A patch over a very long list of files
+keeps the count and drops the names past the first twenty, which is where a
+list stops being read and starts being summarised.
+
 ## A child inherits its scope, not more
 
 A writer sees its own working copy plus whatever the parent has already been
@@ -138,6 +156,14 @@ Concurrency and total spawns are capped. The binding constraint is that a
 person can only follow so many things at once — a session with a dozen live
 children is one where nobody knows what is happening, regardless of what the
 machine could sustain.
+
+The roster says how much of that is gone, because the alternative is finding
+out by having a spawn refused: a round spent, on a plan for a fan-out that was
+never going to fit. A finished agent keeps its slot — the limit is on how many
+one session may start, not on how many run at once — which is the half a
+reader assumes the other way round, so the line says it. It is also why a
+failed child is retried rather than replaced: a replacement costs a slot the
+session may not have.
 
 Children run without a round budget by default, because a child has nobody to
 ask when it reaches a checkpoint. The parent is the one with a human attached.
@@ -366,7 +392,33 @@ key that leaves: a mistyped answer costs an answer, not the drafting.
 ## A failed child can be run again
 
 Retry re-runs a child on its original task rather than asking the parent to
-reconstruct what it was doing.
+reconstruct what it was doing. The child keeps its name, its place in the
+fan-out, its declared paths and its slot, so recovering a failed agent costs
+nothing that spawning a replacement would.
+
+The new attempt is a new conversation — one that inherited the context that
+killed the last one would die of it again — but new is not blind. It opens
+with how the previous attempt ended and whatever handoff that one wrote on its
+way out, and then the task, unchanged and named as such. Without that a retry
+is the same attempt run twice: it takes the same first steps, and one that ran
+out of budget spends the same budget the same way and stops in the same place.
+The handoff is already written — a child stopped by its budget is asked for
+one on its way out — and carrying it costs nothing.
+
+A child stopped by its budget is also given a larger one, twice what it had, up
+to the ceiling any spawn is clamped to. It is the same escalation a child
+applies to its own round limit when it stops to take stock, and for the same
+reason: the second attempt at a task that proved too big for the budget is not
+worth making on that budget. A child that failed for any other reason was not
+short of attention and gets what it had.
+
+Both you and the orchestrator can retry. Yours is the key on the child's lane;
+the orchestrator has a verb of its own, so an unattended run — a backlog step,
+a fan-out nobody is watching — can recover a failed child instead of stopping
+on it. It is not put to a card, unlike a spawn: no agent is started, the task
+is the one already approved, and the slot is one already spent. What it spends
+again is the child's budget, which the session's own cap counts. Ending a child
+stays yours alone.
 
 A child that has just failed is often still stopping — a writer's isolated
 copy of the workspace is a directory that has to be taken away, and on a busy

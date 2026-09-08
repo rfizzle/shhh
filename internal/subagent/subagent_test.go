@@ -1914,15 +1914,17 @@ func TestSteerToolRefusesACallWithNothingToDeliver(t *testing.T) {
 	}
 }
 
-// The three orchestration tools are registered together, which is what lets
-// the report tool's own description point at the steer tool by name: a
-// session that can collect a roster can always act on what the roster says.
+// The orchestration tools are registered together, which is what lets each
+// one's description point at the others by name: a session that can collect a
+// roster can always act on what the roster says — steer an agent that is not
+// answering, run a failed one again. A tool wired into the dispatch and left
+// out of the definitions is a tool no model ever calls.
 func TestTheOrchestrationToolsAreRegisteredTogether(t *testing.T) {
 	have := map[string]bool{}
 	for _, d := range Definitions(nil) {
 		have[d.Name] = true
 	}
-	for _, want := range []string{SpawnToolName, ReportToolName, SteerToolName} {
+	for _, want := range []string{SpawnToolName, ReportToolName, SteerToolName, RetryToolName} {
 		if !have[want] {
 			t.Fatalf("%s is not registered with the others: %v", want, have)
 		}
@@ -2031,5 +2033,167 @@ func TestSteerToolStartsTheNextTurnOfAnIdleChild(t *testing.T) {
 	}
 	if st := statusOf(t, sup, "researcher-1"); st.SteerFrom != SteerFromParent {
 		t.Fatalf("the status should say the parent spoke last, got %q", st.SteerFrom)
+	}
+}
+
+// The roster's own facts reach the report too, because the parent reads the
+// two minutes apart and acts on the second: a child that was steered twice
+// and comes back calling its work done is a report to check rather than to
+// take, and nothing else in the report says so.
+func TestAReportCarriesTheReadingAndTheSteerCount(t *testing.T) {
+	sup := judgedChild(t, &readingProvider{state: "off_target"}, 40)
+	report := execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
+
+	st := statusOf(t, sup, "researcher-1")
+	for _, want := range []string{agent.SummaryOffTarget.String(), plural(st.Steers, "steer")} {
+		if !strings.Contains(report, want) {
+			t.Fatalf("the report does not say %q:\n%s", want, report)
+		}
+	}
+	if strings.Contains(report, "reading the importer") {
+		t.Fatalf("the report carries the reading's word and never its prose:\n%s", report)
+	}
+}
+
+// A task that outgrew the interval its spawn chose covered more ground than
+// the spawn asked for, and the count is the only thing that says so — the
+// check-ins themselves are on the child's own transcript, which the parent
+// never sees.
+func TestAReportCountsTheCheckInsAChildTookStockAt(t *testing.T) {
+	env := &scriptedEnv{steps: []streamStep{
+		{calls: []provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}},
+		{text: "surveyed the loop"},
+	}}
+	sup := newTestSupervisor(t, env)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the loop","max_rounds":1}`)
+
+	report := execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
+	if !strings.Contains(report, "1 check-in") {
+		t.Fatalf("the report must count the check-in the child took stock at:\n%s", report)
+	}
+}
+
+// The ceiling is otherwise something the parent finds out by having a spawn
+// refused — a round spent, on a plan for a fan-out that was never going to
+// fit — so the roster states it before the refusal does.
+func TestRosterSaysHowManyAgentSlotsAreUsed(t *testing.T) {
+	env := &scriptedEnv{steps: []streamStep{{text: "surveyed"}}}
+	sup := newTestSupervisor(t, env)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the loop"}`)
+	execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
+
+	roster := execTool(t, sup, ReportToolName, `{}`)
+	if !strings.Contains(roster, fmt.Sprintf("1 of %d agent slots used", MaxChildren)) {
+		t.Fatalf("the roster must say what is left of the session's spawns:\n%s", roster)
+	}
+	// A finished agent keeps its slot, which is the half a reader assumes
+	// the other way round.
+	if !strings.Contains(roster, "keeps its slot") {
+		t.Fatalf("the roster must say a finished agent keeps its slot:\n%s", roster)
+	}
+	if got := slotsLine(MaxChildren); !strings.Contains(got, "can spawn no more") {
+		t.Fatalf("a session at the ceiling must be told so, got %q", got)
+	}
+}
+
+// writingChild is a child whose first round writes files inside its own
+// workspace and whose second answers. It is scripted where a real writer's
+// model is, and real everywhere else: the files are on disk, the patch is the
+// one git computes out of them, and the note under test is written about that.
+type writingChild struct {
+	paths []string
+
+	mu    sync.Mutex
+	round int
+}
+
+func (w *writingChild) factory() EnvFactory {
+	return func(ctx context.Context, spec Spec) (Env, error) {
+		stream := func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+			w.mu.Lock()
+			w.round++
+			round := w.round
+			w.mu.Unlock()
+			ch := make(chan provider.StreamEvent, 2)
+			if round == 1 {
+				ch <- provider.StreamEvent{ToolCalls: []provider.ToolCall{
+					{ID: "w1", Name: "write_file", Arguments: `{"path":"exporter.go"}`},
+				}}
+			} else {
+				ch <- provider.StreamEvent{Token: "wrote the exporter"}
+				ch <- provider.StreamEvent{Done: true}
+			}
+			close(ch)
+			return ch, func() {}, nil
+		}
+		return Env{
+			SystemPrompt: "sys",
+			Stream:       stream,
+			Executor: func(string, json.RawMessage) (string, error) {
+				for _, p := range w.paths {
+					full := filepath.Join(spec.Root, p)
+					if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+						return "", err
+					}
+					if err := os.WriteFile(full, []byte("package x\n"), 0o644); err != nil {
+						return "", err
+					}
+				}
+				return "written", nil
+			},
+		}, nil
+	}
+}
+
+// What a patch touched is the whole of what the parent needs to integrate it,
+// and the supervisor has it in hand: a note that gave only a count sent the
+// parent to `git status` for the names, one round and one approval after the
+// files had already landed.
+func TestAPatchNoteNamesTheFilesItTouched(t *testing.T) {
+	repo := initTestRepo(t)
+	ctx, cancel := context.WithCancel(context.Background())
+	w := &writingChild{paths: []string{"exporter.go", "internal/csv/writer.go"}}
+	sup := New(ctx, Options{Root: repo, NewEnv: w.factory()})
+	// Cancelled first and closed second: the goroutine below reads the
+	// supervisor's events, and one closed while it still had a reader would
+	// leave it spinning on a shut channel.
+	t.Cleanup(sup.Close)
+	t.Cleanup(cancel)
+	go func() {
+		for {
+			select {
+			case ev := <-sup.Events():
+				if ev.Kind == EventAsk {
+					ev.Ask.Respond(true)
+				}
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
+	execTool(t, sup, SpawnToolName, `{"role":"writer","task":"add the CSV exporter"}`)
+	report := execTool(t, sup, ReportToolName, `{"name":"writer-1"}`)
+	for _, want := range []string{"patch applied to the workspace", "exporter.go", "internal/csv/writer.go"} {
+		if !strings.Contains(report, want) {
+			t.Fatalf("the patch note does not say %q:\n%s", want, report)
+		}
+	}
+}
+
+// A patch of two hundred files is a page of the parent's context spent on a
+// list it would then have to summarise; the count beside the names says the
+// size either way.
+func TestAPatchNoteBoundsAVeryLongFileList(t *testing.T) {
+	files := make([]string, maxNotedPatchPaths+5)
+	for i := range files {
+		files[i] = fmt.Sprintf("pkg/file%d.go", i)
+	}
+	got := patchPaths(files)
+	if !strings.Contains(got, "and 5 more") {
+		t.Fatalf("a long list must say how many it left out, got %q", got)
+	}
+	if strings.Contains(got, files[maxNotedPatchPaths]) {
+		t.Fatalf("the list is not bounded: %q", got)
 	}
 }

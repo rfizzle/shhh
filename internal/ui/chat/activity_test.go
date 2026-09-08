@@ -92,13 +92,13 @@ func TestActivityVerbs_ClosedVocabulary(t *testing.T) {
 	closed := map[string]bool{"read": true, "search": true, "glob": true, "lsp": true,
 		"web": true, "edit": true, "write": true, "patch": true, "run": true,
 		"memory": true, "spawn": true, "fan-out": true, "agent": true,
-		"report": true, "steer": true,
+		"report": true, "steer": true, "retry": true,
 		// The four git writes. They are acts rather than tools, which is why
 		// the row reads them out of the call rather than off the name.
 		"add": true, "commit": true, "branch": true, "switch": true}
 	for tool, verb := range activityVerbs {
 		if !closed[verb] {
-			t.Fatalf("%s maps onto %q, which is not one of the fifteen verbs", tool, verb)
+			t.Fatalf("%s maps onto %q, which is not one of the closed verbs", tool, verb)
 		}
 	}
 	for tool, want := range map[string]string{
@@ -107,7 +107,7 @@ func TestActivityVerbs_ClosedVocabulary(t *testing.T) {
 		"hover": "lsp", "diagnostics": "lsp", "web_fetch": "web", "web_search": "web",
 		"sd": "patch", "quality_gate": "run", "process": "run", "yq": "search",
 		"remember": "memory", "spawn_agent": "spawn", "agent_report": "agent",
-		"agent_steer": "steer", "report": "report",
+		"agent_steer": "steer", "agent_retry": "retry", "report": "report",
 	} {
 		if got := activityVerb(tool); got != want {
 			t.Fatalf("%s should render as %q, got %q", tool, want, got)

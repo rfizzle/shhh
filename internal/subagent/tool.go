@@ -2,8 +2,9 @@ package subagent
 
 // The orchestration tools the parent model sees: spawn_agent (approval-gated;
 // starts a background child and returns immediately), agent_report (auto-run;
-// status overview or a blocking wait for one child's report) and agent_steer
-// (auto-run; puts the parent's words in front of a running child).
+// status overview or a blocking wait for one child's report), agent_steer
+// (auto-run; puts the parent's words in front of a running child) and
+// agent_retry (auto-run; runs a failed child again on the task it has).
 
 import (
 	"encoding/json"
@@ -28,6 +29,14 @@ const (
 	// a person, and a redirect that has to wait for one is a redirect that
 	// arrives after the rounds it was meant to save.
 	SteerToolName = "agent_steer"
+	// RetryToolName runs on the auto-run path too. It starts no agent: it
+	// runs one this session already approved, on the task it was already
+	// given, in the slot it already spent, under the paths it already
+	// claimed — every question a spawn card asks was asked and answered
+	// when that agent was spawned. What it does spend is the child's budget
+	// again, and that is the session's cap and its ledger to count, as it is
+	// for a child that simply runs long.
+	RetryToolName = "agent_retry"
 )
 
 // SteerSource is where a message put in front of a child came from. It is a
@@ -100,6 +109,17 @@ func Definitions(profiles Profiles) []provider.Tool {
 				"required": ["name", "message"]
 			}`),
 		},
+		{
+			Name:        RetryToolName,
+			Description: "Run a failed sub-agent again on the same task. Only an agent agent_report lists as failed can be retried; it keeps its name, its slot and any paths it claimed, so a retry costs no agent slot and a replacement spawn does. The new attempt is a fresh conversation that opens with how the last one ended and whatever handoff it left, so it does not spend itself the same way, and one that ran out of budget is given a larger one. Returns immediately — collect the result with agent_report in a later step. It cannot change the task: to ask for something else, retry it and then agent_steer, or spawn a new agent.",
+			Parameters: json.RawMessage(`{
+				"type": "object",
+				"properties": {
+					"name": {"type": "string", "description": "The failed agent to run again"}
+				},
+				"required": ["name"]
+			}`),
+		},
 	}
 }
 
@@ -127,6 +147,31 @@ func parseSteerArgs(raw json.RawMessage) (steerArgs, error) {
 	}
 	if args.Message == "" {
 		return args, fmt.Errorf("message is required: say what the agent should do instead")
+	}
+	return args, nil
+}
+
+// retryArgs is an agent_retry call: which agent, and nothing else. There is
+// deliberately no task field — a retry that could rewrite the task would be a
+// spawn with no card, into a slot the user approved for something else. What
+// the second attempt should do differently is said with agent_steer once it
+// is running, or by spawning an agent for it.
+type retryArgs struct {
+	Name string `json:"name"`
+}
+
+// parseRetryArgs validates agent_retry's arguments. As with a steer, the
+// name is not checked against validName: an unknown name is refused by the
+// supervisor, which sends the caller to the roster rather than to a spelling
+// rule.
+func parseRetryArgs(raw json.RawMessage) (retryArgs, error) {
+	var args retryArgs
+	if err := json.Unmarshal(raw, &args); err != nil {
+		return args, fmt.Errorf("invalid arguments: %w", err)
+	}
+	args.Name = strings.TrimSpace(args.Name)
+	if args.Name == "" {
+		return args, fmt.Errorf("name is required: call agent_report with no arguments for the roster")
 	}
 	return args, nil
 }

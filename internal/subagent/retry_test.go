@@ -321,3 +321,170 @@ func TestAKillDuringTheWaitStopsTheRetry(t *testing.T) {
 		t.Fatalf("the transcript must say the kill stopped it: %+v", sup.Transcript("researcher-1"))
 	}
 }
+
+// openingTurn is the user message the child's first request of this attempt
+// carried — what the attempt was actually given, as against the task it was
+// spawned on.
+func (s *scriptedEnv) openingTurn() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if len(s.requests) == 0 {
+		return ""
+	}
+	for _, m := range s.requests[0] {
+		if m.Role == provider.RoleUser {
+			return m.Content
+		}
+	}
+	return ""
+}
+
+// A retry on the identical prompt is the same attempt run twice: it takes the
+// same first steps and, on a budget failure, spends the same budget the same
+// way. The conversation is still fresh — an attempt that inherited the
+// context that killed it would die of it again — but it opens with the two
+// facts that cost nothing to carry, and the task follows verbatim so the
+// child cannot read the prologue as an amendment to what it was asked for.
+func TestARetryIsToldHowTheLastAttemptEndedAndWhatItLeft(t *testing.T) {
+	env := &scriptedEnv{steps: []streamStep{
+		{text: "the exporter is half converted; the CSV writer is untouched",
+			usage: &provider.Usage{PromptTokens: 4000}},
+	}}
+	sup := newTestSupervisor(t, env)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"convert the exporter","max_tokens":2000}`)
+	waitState(t, sup, "researcher-1", StateFailed)
+
+	env.mu.Lock()
+	env.steps = []streamStep{{text: "converted the CSV writer"}}
+	env.requests = nil
+	env.mu.Unlock()
+
+	if err := sup.Retry("researcher-1"); err != nil {
+		t.Fatalf("retry: %v", err)
+	}
+	waitState(t, sup, "researcher-1", StateDone)
+
+	opening := env.openingTurn()
+	if !strings.HasPrefix(opening, "A previous attempt at this task ended: failed · token budget") {
+		t.Fatalf("the retry must open with how the last attempt ended:\n%s", opening)
+	}
+	if !strings.Contains(opening, "the exporter is half converted") {
+		t.Fatalf("the retry must carry what the last attempt handed over:\n%s", opening)
+	}
+	if !strings.HasSuffix(opening, "convert the exporter") {
+		t.Fatalf("the task must follow verbatim, last:\n%s", opening)
+	}
+	// The task itself is untouched: it is what every reading of this child is
+	// judged against and what its roster row states.
+	if st, _ := sup.Get("researcher-1"); st.Task != "convert the exporter" {
+		t.Fatalf("the prologue reached the task, got %q", st.Task)
+	}
+	// This child is a reader, which never had a workspace of its own: a
+	// prologue that told one its copy of the checkout was gone would send it
+	// off re-establishing something it never lost.
+	if strings.Contains(opening, "workspace") {
+		t.Fatalf("a reader is told about a workspace it never had:\n%s", opening)
+	}
+}
+
+// A child stopped by its budget and restarted on the same one stops at the
+// same place, which makes the retry a full budget spent to learn nothing. It
+// grows by the step the round cap already grows by, and the lane says so —
+// a budget that changed silently is one nobody can reconcile against the
+// spawn that set it.
+func TestABudgetExhaustedRetryIsGivenMoreThanKilledIt(t *testing.T) {
+	env := &scriptedEnv{steps: []streamStep{
+		{text: "out of room", usage: &provider.Usage{PromptTokens: 4000}},
+	}}
+	sup := newTestSupervisor(t, env)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"convert the exporter","max_tokens":2000}`)
+	waitState(t, sup, "researcher-1", StateFailed)
+
+	env.mu.Lock()
+	env.steps = []streamStep{{text: "converted it"}}
+	env.mu.Unlock()
+	if err := sup.Retry("researcher-1"); err != nil {
+		t.Fatalf("retry: %v", err)
+	}
+	waitState(t, sup, "researcher-1", StateDone)
+
+	if !transcriptHas(sup.Transcript("researcher-1"), EntrySystem, "~4k new tokens, up from ~2k") {
+		t.Fatalf("the retry row must say the budget grew and by how much: %+v", sup.Transcript("researcher-1"))
+	}
+	c := sup.byName["researcher-1"]
+	c.mu.Lock()
+	budget := c.maxTokens
+	c.mu.Unlock()
+	if budget != 4000 {
+		t.Fatalf("the second attempt's budget = %d, want 4000", budget)
+	}
+
+	// A child that failed for any other reason was not short of attention.
+	if got, grew := retryBudget(200_000, false); grew || got != 200_000 {
+		t.Fatalf("a budget that did not stop the child must not grow, got %d (%v)", got, grew)
+	}
+	// And the growth stops where a spawn's own ceiling does — including from
+	// under it, where the step would carry a budget past the bound. The row
+	// says both numbers rather than the step for this case: the attempt above
+	// half the ceiling grows, and by less than the step.
+	if got, grew := retryBudget(MaxTokensCeiling/2*3/2, true); got != MaxTokensCeiling || !grew {
+		t.Fatalf("a budget under the ceiling must grow to it, got %d (%v)", got, grew)
+	}
+	if got, grew := retryBudget(MaxTokensCeiling, true); got != MaxTokensCeiling || grew {
+		t.Fatalf("a budget at the ceiling has nowhere to grow, got %d (%v)", got, grew)
+	}
+}
+
+// The parent can act on a failed child itself. A replacement spawn costs one
+// of the session's sixteen slots and starts from nothing; a retry costs none
+// and starts from what the failed attempt left, which is why the tool exists
+// at all.
+func TestTheParentCanRetryAFailedChildWithoutSpendingASlot(t *testing.T) {
+	env := &scriptedEnv{}
+	sup := newTestSupervisor(t, env)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the loop"}`)
+	waitState(t, sup, "researcher-1", StateFailed)
+
+	env.mu.Lock()
+	env.steps = []streamStep{{text: "the loop lives in internal/agent"}}
+	env.mu.Unlock()
+
+	out := execTool(t, sup, RetryToolName, `{"name":"researcher-1"}`)
+	if !strings.Contains(out, "no agent slot") {
+		t.Fatalf("the parent must be told a retry costs no slot: %s", out)
+	}
+	waitState(t, sup, "researcher-1", StateDone)
+
+	if n := len(sup.Snapshot()); n != 1 {
+		t.Fatalf("a retry must not start a second agent, got %d", n)
+	}
+	report := execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
+	if !strings.Contains(report, "the loop lives in internal/agent") {
+		t.Fatalf("the retried child's report never reached the parent:\n%s", report)
+	}
+	if !strings.Contains(execTool(t, sup, ReportToolName, `{}`), "1 of 16 agent slots used") {
+		t.Fatal("a retried child holds the one slot it always held")
+	}
+}
+
+// The refusals are the supervisor's, so the parent is told what state the
+// child is in rather than quietly given nothing.
+func TestTheRetryToolRefusesWhatTheSupervisorRefuses(t *testing.T) {
+	sup := New(context.Background(), Options{Root: t.TempDir(), NewEnv: blockedForeverEnv()})
+	t.Cleanup(sup.Close)
+	exec := sup.WrapExecutor(nil)
+
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"long survey"}`)
+	waitState(t, sup, "researcher-1", StateRunning)
+	if _, err := exec(RetryToolName, json.RawMessage(`{"name":"researcher-1"}`)); err == nil {
+		t.Fatal("a running agent must not be retried")
+	} else if !strings.Contains(err.Error(), "running") {
+		t.Fatalf("the refusal must name the state, got %q", err)
+	}
+	if _, err := exec(RetryToolName, json.RawMessage(`{"name":"ghost"}`)); err == nil {
+		t.Fatal("an unknown agent must not be retried")
+	}
+	if _, err := exec(RetryToolName, json.RawMessage(`{}`)); err == nil {
+		t.Fatal("a retry with no name has nothing to run")
+	}
+}

@@ -222,6 +222,7 @@ func TestToolboxHasANoteForEveryToolThatCanBeRegistered(t *testing.T) {
 		mcp.ResourceToolName, process.ToolName, quality.ToolName, reports.ToolName,
 		notebook.WriteToolName, notebook.ReadToolName,
 		subagent.SpawnToolName, subagent.ReportToolName, subagent.SteerToolName,
+		subagent.RetryToolName,
 		evidence.ToolName, memory.RememberToolName, skill.ToolName,
 		todo.ExtractToolName, persona.DraftToolName,
 	}

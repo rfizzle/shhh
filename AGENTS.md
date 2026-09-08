@@ -1012,6 +1012,21 @@ child the steer *is* the next turn's instruction. A second path that queued
 into `child.steering` without going through `Steer` would deliver the message
 and leave both of them lying.
 
+**A retry is a second attempt, not the same attempt run twice.** `restart`
+(`internal/subagent/subagent.go`) reads two things off the attempt it replaces
+before it clears them — the detail it ended on, and `c.report`, which for a
+budget stop is the handoff `finalCheckIn` asked for — and leaves them in
+`child.prologue`, which `run` takes once and puts in front of the first turn.
+`c.task` is deliberately untouched by that: it is what every reading of the
+child is judged against and what the roster row prints, so the prologue lives
+on the turn and nowhere else, and a second turn on the same attempt is the
+ordinary conversation. A budget-exhausted attempt is also given `retryBudget`
+— twice what it had, clamped at `MaxTokensCeiling` — because an attempt
+restarted on the budget that killed it stops in the same place. Three doors
+open it: the lane's key, `Supervisor.Retry` from code, and the `agent_retry`
+tool, which is auto-run rather than carded because it starts no agent, takes
+no slot and re-runs a task the person already approved.
+
 **A writer's worktree is not the last commit** ([`docs/capabilities/subagents.md#a-writer-starts-from-your-tree`](docs/capabilities/subagents.md#a-writer-starts-from-your-tree)). `addWorktree` (`internal/subagent/worktree.go`) seeds each fresh worktree with `git diff HEAD --binary` from the parent plus the untracked paths `Options.Untracked` names — `sessionUntracked` in `internal/cli/subagents.go`, reading the session changeset, because git cannot tell a file this session wrote from a scratch file the person left lying about — and then **commits it in the worktree**, which is the part that will bite you: HEAD in a child is a dangling seed commit, not the parent's HEAD, and that is exactly what makes `worktreePatch`'s `git diff --cached` return the child's own work rather than the parent's changes as well. `git apply` stays plain in both directions: `--3way` implies `--index` and refuses any file whose working copy differs from the index, which is every file the parent has edited and not staged — the case this whole mechanism exists for. A seed that will not apply fails the spawn; a writer that silently started from HEAD would write a patch against text nobody has. `Status.Seeded` carries the count to the lane note.
 
 **The notebook is the session's, not a conversation's, and not a tree's** ([`docs/capabilities/subagents.md#what-they-share`](docs/capabilities/subagents.md#what-they-share)). `internal/notebook` is a `Store` of short signed notes over a `Backend` (`internal/storage/notes.go`, the `notes` table keyed by the session slot). `chatSession.openNotebook` (`internal/cli/session.go`) opens one for **every** session and runs after `buildToolset`, because `SetScrub` has to be on the store before the first write — a note outlives the turn, so a wrap around the store would see a value only after the backend kept it, which is the ordering `evidence.Reducer.SetScrub` established. `withNotebook` (`internal/cli/subagents.go`) is the one call that wires a child in, outside every role branch: the two definitions, `WrapExecutor(spec.Name, …)` for the signature, and `PromptBlock` — which is also where the child's sentence lives rather than in `internal/prompt`, since that package must never name a tool a session might not have. **There is no delete tool and there must not be one**: `Store.Delete` is reached only by `/notes` (`internal/ui/chat/notes.go`), so a child can add to what the session knows and never take something out of it. `Note.Turn` is stamped by `Store.SetTurn`, called from `Model.nextTurn` (which is what every `turnCount++` site became) and from `bindSlot` after the counter has caught up with the slot — a new session zeroes the counter and then rebinds, so both doors are covered — and `notebook.WrittenIn` is what `turnNotesClause` counts for the close's `TurnClose.Notes` row. The row carries neither rail nor glyph: it is a reading, not an act.

@@ -777,6 +777,13 @@ type child struct {
 	steerFrom SteerSource
 	report    string
 	patchNote string
+	// prologue is what the next attempt's first turn opens with, ahead of
+	// the task: what the attempt it replaces hit, and the handoff it left.
+	// It is a field rather than an argument to run because a retry can be
+	// started from three places and none of them is the goroutine that will
+	// read it, and it is taken once, so a second turn on the same attempt is
+	// the ordinary conversation.
+	prologue string
 	// Live session surface: transcript entries, the in-flight
 	// assistant text, queued steering messages, and the current turn's
 	// interrupt channel.
@@ -895,6 +902,16 @@ func (c *child) attemptSpend() (in, out int64) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.tokensIn, c.tokensOut
+}
+
+// takePrologue returns what this attempt's first turn opens with and clears
+// it, so only that turn carries it.
+func (c *child) takePrologue() string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	p := c.prologue
+	c.prologue = ""
+	return p
 }
 
 // appendEntry adds one transcript entry.
@@ -1626,7 +1643,10 @@ func (s *Supervisor) Kill(name string) error {
 // the attached view both keep their history. Everything the attempt owns is
 // new: a fresh conversation, a fresh workspace for a writer, and a fresh
 // token budget, because an attempt that inherits the spend that killed it
-// fails again before it has done anything.
+// fails again before it has done anything. New is not blind, though: the
+// conversation opens with how the attempt it replaces ended and whatever
+// handoff that one wrote (restart), which is the difference between a second
+// attempt and the same attempt run twice.
 //
 // It returns when the child is claimed rather than when the new attempt
 // starts. A child whose previous attempt has not finished stopping waits for
@@ -1761,6 +1781,16 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	if s.ctx.Err() != nil {
 		return errors.New("the agent supervisor is shut down")
 	}
+	// Read before anything is replaced: the handoff a child stopped by its
+	// budget was asked for is sitting in the report field this attempt is
+	// about to clear, and every retry that did not carry it threw away the
+	// one thing the failed attempt produced.
+	c.mu.Lock()
+	handoff := c.report
+	had := c.maxTokens
+	budget, grew := retryBudget(c.maxTokens, c.budgetHit)
+	c.mu.Unlock()
+
 	var err error
 	root := s.opts.Root
 	var wt worktreeHandle
@@ -1790,7 +1820,11 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	// is work this child neither did nor is being asked to explain.
 	c.watchTree(a, env)
 
-	c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Retrying — the previous attempt " + detail + "."})
+	retryNote := "Retrying — the previous attempt " + detail + "."
+	if grew {
+		retryNote += fmt.Sprintf(" This attempt is given ~%s new tokens, up from ~%s.", formatTokens(budget), formatTokens(had))
+	}
+	c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: retryNote})
 
 	// The attempt's own recorder is opened before the lock — childMode takes
 	// the child's lock itself — and installed under it, because a retried
@@ -1810,6 +1844,13 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	c.state, c.detail = StateQueued, "queued · retry"
 	c.started, c.ended = time.Now(), time.Time{}
 	c.attempt++
+	c.maxTokens = budget
+	// The attempt is told what the one before it hit and handed over. A
+	// retry on the identical prompt is an attempt with no reason to come out
+	// differently: the child that died re-reading a large file dies
+	// re-reading it, and the budget the session spent on the second attempt
+	// bought the first one over again.
+	c.prologue = retryPrologue(detail, handoff)
 	// Each attempt is measured against the budget it was spawned with; what
 	// the earlier attempts spent is carried, not forgotten.
 	c.priorIn, c.priorOut = c.priorIn+c.tokensIn, c.priorOut+c.tokensOut
@@ -1831,6 +1872,46 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	go s.run(c)
 	s.emitUpdate(c)
 	return nil
+}
+
+// retryBudget is what a second attempt is given, and whether that is more
+// than the first had.
+//
+// A child stopped by its budget and restarted on the same one spends it the
+// same way and stops at the same place, which makes the retry a full budget
+// spent to learn nothing. So the budget grows by the step the round cap
+// already grows by — the escalation behind a check-in, applied by a child
+// with nobody to ask — and is clamped to the ceiling a spawn is clamped to,
+// since a retry must not be the way past a bound the model cannot otherwise
+// cross. A child that failed for any other reason was not short of
+// attention and gets what it had.
+func retryBudget(maxTokens int64, budgetHit bool) (budget int64, grew bool) {
+	if !budgetHit {
+		return maxTokens, false
+	}
+	grown := min(maxTokens*checkInGrowth, int64(MaxTokensCeiling))
+	return grown, grown > maxTokens
+}
+
+// retryPrologue is what a second attempt is told about the first, ahead of
+// the task it is being given again.
+//
+// The failed attempt's conversation is gone by design — an attempt that
+// inherited it would inherit the context that killed it — but "gone" was
+// being read as "never happened": the retry opened on the identical prompt,
+// took the identical first steps, and on a budget failure spent the identical
+// budget the identical way. What is carried instead is the two facts that
+// cost nothing to carry: how it ended, and the handoff it wrote on its way
+// out. The task itself follows verbatim, and is named as such, so a child
+// cannot read the prologue as an amendment to what it was asked for.
+func retryPrologue(detail, handoff string) string {
+	var sb strings.Builder
+	sb.WriteString("A previous attempt at this task ended: " + detail + ".\n\n")
+	if handoff = strings.TrimSpace(handoff); handoff != "" {
+		sb.WriteString("What it handed over before it stopped:\n\n" + handoff + "\n\n")
+	}
+	sb.WriteString("That attempt's conversation is gone, and so is any file it changed whose patch was not approved: what you have of it is what is written above. Do not spend this attempt establishing again what it already established — carry on from it, and where it ran out or got stuck, take a different route.\n\nThe task, unchanged:\n\n")
+	return sb.String()
 }
 
 // AgentMode is the child's effective (ceiling-clamped) permission mode.
@@ -1918,6 +1999,8 @@ func (s *Supervisor) WrapExecutor(next agent.ToolExecutor) agent.ToolExecutor {
 			return s.report(args)
 		case SteerToolName:
 			return s.steer(args)
+		case RetryToolName:
+			return s.retry(args)
 		}
 		return next(name, args)
 	}
@@ -2404,7 +2487,14 @@ func (s *Supervisor) run(c *child) {
 	// The turn loop: a cancelled turn parks the child idle until a
 	// steering message starts the next one; kill (context cancellation) ends
 	// the loop from any point.
+	//
+	// The task is what every later reading of this child is judged against
+	// and what its roster row states, so it stays as it was written; what a
+	// retry adds goes in front of it, in this turn alone.
 	turn := c.task
+	if p := c.takePrologue(); p != "" {
+		turn = p + turn
+	}
 	c.appendEntry(TranscriptEntry{Kind: EntryUser, Text: turn})
 	// A child's turn closes with the same event a session's does, so the two
 	// populations answer "how many rounds did that take, and how did it end"
@@ -2986,13 +3076,19 @@ func (s *Supervisor) reviewPatch(c *child) {
 		ask.Warnings = append(ask.Warnings, "overwrites changes already applied by "+strings.Join(clashes, ", "))
 	}
 
+	// What the patch names is the whole of what the parent has to know to
+	// integrate it, and it is already in hand here: a note that gave only a
+	// count sent the parent to `git status` for the names, one round and one
+	// approval after the patch had already landed.
+	held := "; the patch would have touched " + patchPaths(touched)
+
 	note := ""
 	approved, ok := s.await(c, ask)
 	switch {
 	case !ok:
-		note = "cancelled before the patch was reviewed; no files were changed" + savedPatchNote(c.name, patch)
+		note = "cancelled before the patch was reviewed; no files were changed" + savedPatchNote(c.name, patch) + held
 	case !approved:
-		note = "the user declined the patch; no files were changed" + savedPatchNote(c.name, patch)
+		note = "the user declined the patch; no files were changed" + savedPatchNote(c.name, patch) + held
 	default:
 		// Both sides are read around `git apply`, in the real checkout: the
 		// child's own worktree edits never touched these files, so this is
@@ -3000,7 +3096,7 @@ func (s *Supervisor) reviewPatch(c *child) {
 		// gained.
 		before := readSides(c.repoTop, touched)
 		if applyErr := applyPatch(c.repoTop, patch); applyErr != nil {
-			note = "the patch failed to apply cleanly: " + firstLine(applyErr.Error()) + savedPatchNote(c.name, patch)
+			note = "the patch failed to apply cleanly: " + firstLine(applyErr.Error()) + savedPatchNote(c.name, patch) + held
 		} else {
 			s.recordApplied(c.name, touched)
 			s.emit(Event{
@@ -3011,12 +3107,28 @@ func (s *Supervisor) reviewPatch(c *child) {
 					Files: patchedFiles(s.opts.Root, c.repoTop, touched, before, readSides(c.repoTop, touched)),
 				},
 			})
-			note = fmt.Sprintf("patch applied to the workspace (+%d −%d, %d file(s))", adds, dels, files)
+			note = fmt.Sprintf("patch applied to the workspace (+%d −%d, %d file(s)): %s", adds, dels, files, patchPaths(touched))
 		}
 	}
 	c.mu.Lock()
 	c.patchNote = note
 	c.mu.Unlock()
+}
+
+// maxNotedPatchPaths bounds the file list a patch note carries. The file
+// count is stated beside the list either way, so a patch longer than this
+// loses the names past it and nothing about its size; what it buys is that a
+// mechanical change over two hundred files cannot spend a page of the
+// parent's context on a list the parent would then have to summarise.
+const maxNotedPatchPaths = 20
+
+// patchPaths renders a patch's own file list for the note the parent reads.
+func patchPaths(files []string) string {
+	if len(files) <= maxNotedPatchPaths {
+		return strings.Join(files, ", ")
+	}
+	return strings.Join(files[:maxNotedPatchPaths], ", ") +
+		fmt.Sprintf(" and %d more", len(files)-maxNotedPatchPaths)
 }
 
 // patchClashes names the other agents whose applied patches already touched
@@ -3121,6 +3233,44 @@ func (s *Supervisor) steer(raw json.RawMessage) (string, error) {
 	return fmt.Sprintf("Steered %s. It joins the agent's conversation at its next tool round, is judged as part of what the agent was asked for, and the reading that was running is dropped rather than argued with. Do not steer it again in this round — give it rounds to answer, then read the roster.", args.Name), nil
 }
 
+// retry implements agent_retry: a second attempt at a failed child's task,
+// on the child the session already has.
+//
+// It is the door the person's own retry key opens, given to the model, and
+// the reasons a spawn is put to a card do not reach it: no new agent is
+// started, the task is the one already approved, the paths are the ones
+// already claimed, and the slot is one already spent. What it spends again
+// is the child's own budget, which the session's spend cap and its ledger
+// count like every other request. The refusals are the supervisor's — only a
+// failed agent can be run again — so a parent that calls this on a running
+// child is told what state it is in rather than quietly given nothing.
+// See docs/capabilities/subagents.md#a-failed-child-can-be-run-again.
+func (s *Supervisor) retry(raw json.RawMessage) (string, error) {
+	args, err := parseRetryArgs(raw)
+	if err != nil {
+		return "", err
+	}
+	c, err := s.lookup(args.Name)
+	if err != nil {
+		return "", fmt.Errorf("no agent named %q; call agent_report with no arguments for the roster", args.Name)
+	}
+	// Read before the attempt is claimed, not after: a retry with nothing to
+	// wait for restarts inside the call below, and by the time that returns
+	// the budget has already grown and the flag that grew it is cleared.
+	c.mu.Lock()
+	had := c.maxTokens
+	budget, grew := retryBudget(c.maxTokens, c.budgetHit)
+	c.mu.Unlock()
+	if err := s.Retry(args.Name); err != nil {
+		return "", err
+	}
+	msg := fmt.Sprintf("Retrying %s on its original task. It keeps its name, its slot and any paths it claimed, so this costs no agent slot; the attempt is a fresh conversation that opens with how the last one ended and whatever handoff it left.", args.Name)
+	if grew {
+		msg += fmt.Sprintf(" It ran out of budget, so this attempt is given ~%s new tokens, up from ~%s.", formatTokens(budget), formatTokens(had))
+	}
+	return msg + fmt.Sprintf(" It works in the background: call agent_report with name=%q in a later step to collect it.", args.Name), nil
+}
+
 // steerMark is what the roster says about a child the machinery has had to
 // interrupt: the last reading of its work, then how many times this turn it
 // has been told the reading says it has left its task.
@@ -3199,12 +3349,32 @@ func (s *Supervisor) readingsOff() bool {
 	return true
 }
 
+// slotsLine says how much of the session's one spawn budget is gone. Without
+// it the ceiling is something the parent discovers by having a spawn refused
+// — a round spent, on a plan for a fan-out that was never going to fit — and
+// the count is not one it can keep for itself either, since the person, a
+// profile drafter and the backlog runner all spawn into the same sixteen.
+//
+// "Used" and not "in use": a finished agent keeps its slot, because the limit
+// is on how many one session may start rather than on how many run at once.
+// That is the half a reader assumes wrongly, so the line says it rather than
+// leaving a parent to wonder why four finished agents left it twelve.
+// See docs/capabilities/subagents.md#limits-are-about-attention-not-resources.
+func slotsLine(used int) string {
+	line := fmt.Sprintf("%d of %d agent slots used", used, MaxChildren)
+	if used >= MaxChildren {
+		return line + " — this session can spawn no more; what is left is to steer or retry the agents it has."
+	}
+	return line + " (a finished agent keeps its slot: the limit is on how many this session may start, not on how many run at once)."
+}
+
 func (s *Supervisor) statusOverview() string {
 	statuses := s.Snapshot()
 	if len(statuses) == 0 {
 		return "No agents have been spawned this session."
 	}
 	var sb strings.Builder
+	sb.WriteString(slotsLine(len(statuses)) + "\n\n")
 	if s.readingsOff() {
 		sb.WriteString(readingsNote + "\n\n")
 	}
@@ -3223,6 +3393,17 @@ func (s *Supervisor) statusOverview() string {
 
 // reportText is what the parent model receives about a child: its status
 // line, its final report, and (for writers) what happened to its patch.
+//
+// The head line carries what the roster carries — the last reading's word,
+// how often the child has been steered, who spoke to it last — because the
+// two are read by the same model minutes apart, and a fact that reaches one
+// and not the other is a fact the parent has to spend a round asking for. A
+// child steered three times that comes back calling its own work sufficient
+// is a report to check rather than to integrate, and that is only legible
+// beside the report itself. Check-ins are said where there were any: a task
+// that outgrew the interval its spawn chose several times over covered more
+// ground than the spawn asked for.
+// See docs/capabilities/subagents.md#what-comes-back-says-what-happened-to-it.
 func (c *child) reportText() string {
 	st := c.status()
 	c.mu.Lock()
@@ -3234,11 +3415,14 @@ func (c *child) reportText() string {
 	// give — `running · 3 tools`, `done · 3 tools` — so the header says it
 	// only for the states that do not, rather than saying it twice.
 	var sb strings.Builder
-	head := fmt.Sprintf("%s (%s) — %s", st.Name, st.Role, st.Detail)
+	head := fmt.Sprintf("%s (%s) — %s%s", st.Name, st.Role, st.Detail, steerMark(st))
 	switch st.State {
 	case StateRunning, StateDone:
 	default:
 		head += " · " + plural(st.ToolCalls, "tool call")
+	}
+	if st.CheckIns > 0 {
+		head += " · " + plural(st.CheckIns, "check-in")
 	}
 	fmt.Fprintf(&sb, "%s · ~%s tokens\n\n", head, formatTokens(st.TokensIn+st.TokensOut))
 	switch {

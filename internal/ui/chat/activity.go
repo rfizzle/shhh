@@ -118,7 +118,8 @@ const (
 // activityVerbs is the one table mapping tool names onto the closed verb
 // vocabulary of docs/interface/principles.md#closed-vocabularies — read,
 // search, glob, lsp, web, edit, write, patch, run, memory, spawn, fan-out,
-// agent, report, and the four git writes — add, commit, branch, switch. A tool
+// agent, report, steer, retry, and the four git writes — add, commit, branch,
+// switch. A tool
 // that maps onto none of them is a hole in this table, not a new verb invented
 // at the call site: it renders as itself, clipped to the verb column, which is
 // the signal that the table is stale.
@@ -160,6 +161,7 @@ var activityVerbs = map[string]string{
 	subagent.SpawnToolName:      "spawn",
 	subagent.ReportToolName:     "agent",
 	subagent.SteerToolName:      "steer",
+	subagent.RetryToolName:      "retry",
 	reports.ToolName:            "report",
 }
 
@@ -202,7 +204,8 @@ func (m Model) activityKind(tool string) components.ActivityKind {
 			return components.ActivityTool
 		}
 		return components.ActivityRemote
-	case tool == subagent.SpawnToolName || tool == subagent.ReportToolName || tool == subagent.SteerToolName:
+	case tool == subagent.SpawnToolName || tool == subagent.ReportToolName ||
+		tool == subagent.SteerToolName || tool == subagent.RetryToolName:
 		return components.ActivitySubagent
 	case tool == reports.ToolName:
 		return components.ActivityReport
