@@ -55,9 +55,16 @@ func (m Model) resumeToolLoop() (tea.Model, tea.Cmd) {
 	// turn has not been told about is answered against the wrong one.
 	m.injectTreeNotice(false)
 	m.injectInterventions()
+	// The round tail is where a turn recovers its window: the boundary in
+	// front of a request rather than behind a round, which is the only one
+	// that can keep a request from being the one that does not fit. Where
+	// eliding could not clear the line the summary goes first and this
+	// request follows it (context.go).
+	if m.recoverForRound() {
+		return m.startCompact()
+	}
 	m.setTurnState(stateStreaming)
 	m.streaming = ""
-	m.trimForRequest()
 	m.syncViewport()
 	return m, m.requestStream()
 }
@@ -201,8 +208,12 @@ func (m *Model) finishStreaming() {
 	m.settleThink()
 	if m.compacting {
 		// A cancelled compaction discards the partial summary and keeps the
-		// conversation unchanged (the success path goes through finishCompact).
-		m.compacting = false
+		// conversation unchanged (the success path goes through
+		// finishCompact). The turn it was recovering the window for is
+		// cancelled with it: what the reader stopped is the turn, and
+		// resuming the round they interrupted would be answering a key with
+		// the opposite of what it says.
+		m.compacting, m.compactResume = false, false
 		m.streaming = ""
 		m.events = nil
 		m.cancel = nil

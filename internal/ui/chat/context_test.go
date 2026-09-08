@@ -6,7 +6,9 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
+	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/digest"
@@ -885,5 +887,180 @@ func TestElidedRow_StillReportsAsAnErrorToTheDigest(t *testing.T) {
 	rows := m.summaryActivity()
 	if len(rows) != 1 || !strings.Contains(rows[0], digest.OutcomeError) {
 		t.Fatalf("the digest reports %q, want the call still failing", rows)
+	}
+}
+
+// filledMidTurn is a session at a round tail with its window over the alert
+// threshold and nothing a trim can take: every message is prose, and prose is
+// what a trim always keeps. The turn is long enough that the round counter is
+// worth watching.
+func filledMidTurn(t *testing.T, stream agent.StreamFunc) Model {
+	t.Helper()
+	m := New([]provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "question"},
+		{Role: provider.RoleAssistant, Content: "answer"},
+	}, stream)
+	// The report is the session's own occupancy, over the default window's
+	// trim threshold (26214 of 32768).
+	m.contextTokens = 30000
+	m.agent.BeginToolRound("working", nil, nil)
+	m.agent.BeginToolRound("still working", nil, nil)
+	// A turn in flight, so that a compaction that ended it would be visible.
+	m.turnStarted, m.turnOpen = time.Now(), true
+	m.setTurnState(stateStreaming)
+	return m
+}
+
+// midTurnStream answers the summary request with a summary and the round's
+// own request with an answer, recording what each was allowed to do about
+// tools.
+func midTurnStream(choices *[]string) agent.StreamFunc {
+	return func(_ []provider.Message, choice string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		*choices = append(*choices, choice)
+		ch := make(chan provider.StreamEvent, 2)
+		if choice == provider.ToolChoiceNone {
+			ch <- provider.StreamEvent{Token: "the summary"}
+		} else {
+			ch <- provider.StreamEvent{Token: "carrying on"}
+		}
+		ch <- provider.StreamEvent{Done: true}
+		close(ch)
+		_, cancel := context.WithCancel(context.Background())
+		return ch, cancel, nil
+	}
+}
+
+// A turn that fills its window at a round tail recovers there. The card is a
+// turn's-end offer and this turn does not have an end yet, so what used to
+// happen is that every request after this one went out oversize.
+func TestRoundTail_CompactsWhenTheTrimCannotClearTheLine(t *testing.T) {
+	var choices []string
+	m := filledMidTurn(t, midTurnStream(&choices))
+	rounds := m.agent.Rounds()
+
+	updated, cmd := m.resumeToolLoop()
+	m = updated.(Model)
+	if !m.compacting || !m.compactResume || !m.autoCompacted {
+		t.Fatalf("the round tail should have started a compaction it resumes from: compacting=%v resume=%v asked=%v",
+			m.compacting, m.compactResume, m.autoCompacted)
+	}
+	// A compaction, not a card: the card is what a turn ends on, and this
+	// turn has not ended.
+	if m.pressure != nil || m.state == statePressure {
+		t.Fatal("the round tail must not put a card up mid-turn")
+	}
+
+	// Stop the moment the summary has landed, which is where the turn either
+	// carries on or is quietly ended under the reader.
+	m, cmd = driveTurn(t, m, cmd, func(m Model) bool { return !m.compacting })
+	if m.compactResume {
+		t.Fatal("the resumption should have been spent")
+	}
+	// The conversation is the summary and the turn goes on under the round
+	// budget it already had: a turn handed a fresh one for having filled its
+	// window would have no ceiling at all.
+	if got := m.Messages()[1]; !strings.Contains(got.Content, "the summary") {
+		t.Fatalf("conversation should restart from the summary, got %+v", got)
+	}
+	if m.agent.Rounds() != rounds {
+		t.Fatalf("rounds = %d, want the %d the turn had already spent", m.agent.Rounds(), rounds)
+	}
+	// And the turn did not end here: the close row, the reading of how the
+	// turn came out and the card offered at the threshold are all owed to the
+	// round that finishes it.
+	if !m.turnEnded.IsZero() || m.turnState() != stateStreaming {
+		t.Fatalf("a compaction the round tail asked for must not close the turn: ended=%v state=%d",
+			m.turnEnded, m.turnState())
+	}
+	if m.pressure != nil {
+		t.Fatal("the card belongs at a turn's end, and this turn has not had one")
+	}
+
+	m, _ = driveTurn(t, m, cmd, nil)
+	if len(choices) != 2 || choices[0] != provider.ToolChoiceNone || choices[1] != provider.ToolChoiceAuto {
+		t.Fatalf("expected a summary request then the round's own, got %v", choices)
+	}
+	if last := m.transcript[len(m.transcript)-1]; last.kind == entryAssistant && last.text != "carrying on" {
+		t.Fatalf("the turn should have gone on to its answer, got %+v", last)
+	}
+}
+
+// And it declines over a screen somebody else is using, for the reason the
+// card declines: emptying the transcript under a reader mid-sentence is no
+// smaller a thing to do than opening a card over them.
+func TestRoundTail_DoesNotCompactOverABorrowedScreen(t *testing.T) {
+	var choices []string
+	m := filledMidTurn(t, midTurnStream(&choices))
+	m.enterSurface(stateDiffFull)
+
+	updated, cmd := m.resumeToolLoop()
+	m = updated.(Model)
+	if m.compacting || m.autoCompacted {
+		t.Fatal("a compaction must wait for the screen to come back")
+	}
+	m, _ = driveTurn(t, m, cmd, nil)
+	if len(choices) != 1 || choices[0] != provider.ToolChoiceAuto {
+		t.Fatalf("the round's own request should have gone out, got %v", choices)
+	}
+	if m.compacting || m.compactResume {
+		t.Fatal("nothing should be waiting on a summary")
+	}
+}
+
+// driveTurn runs the commands a turn returns until stop says so or nothing is
+// left to run, handing back what it had not run yet. Only the stream's own
+// messages are fed back: a batch also carries the spinner and the autosave,
+// and a test that ran those would be timing a ticker rather than driving a
+// turn.
+func driveTurn(t *testing.T, m Model, cmd tea.Cmd, stop func(Model) bool) (Model, tea.Cmd) {
+	t.Helper()
+	for i := 0; cmd != nil && i < 64; i++ {
+		msg := cmd()
+		if batch, ok := msg.(tea.BatchMsg); ok {
+			msg = nil
+			for _, c := range batch {
+				switch out := c().(type) {
+				case nil, spinner.TickMsg:
+				default:
+					msg = out
+				}
+			}
+		}
+		if msg == nil {
+			return m, nil
+		}
+		updated, out := m.Update(msg)
+		m, cmd = updated.(Model), out
+		if stop != nil && stop(m) {
+			return m, cmd
+		}
+	}
+	return m, cmd
+}
+
+// A compaction is not proof the window recovered. Where the system prompt and
+// the tool definitions are most of it, the conversation is over the threshold
+// again the moment it is rebuilt — and a bound cleared by the thing it bounds
+// would ask for a summary every round from there on.
+func TestRoundTail_AsksForOneSummaryPerCrossing(t *testing.T) {
+	var choices []string
+	m := filledMidTurn(t, midTurnStream(&choices))
+	// A window the rebuilt conversation cannot get under.
+	m = m.WithPricing(pricing.NewTable(map[string]pricing.ModelPricing{
+		"tiny": {MaxInputTokens: 10},
+	}), "tiny")
+
+	updated, cmd := m.resumeToolLoop()
+	m = updated.(Model)
+	if !m.compacting {
+		t.Fatal("the round tail should have started a compaction")
+	}
+	m, _ = driveTurn(t, m, cmd, nil)
+	if !m.autoCompacted {
+		t.Fatal("the crossing is not over, so its one attempt is spent")
+	}
+	if len(choices) != 2 || choices[1] != provider.ToolChoiceAuto {
+		t.Fatalf("expected one summary and the round's own request, got %v", choices)
 	}
 }

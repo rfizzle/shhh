@@ -47,9 +47,10 @@ func (m *Model) armPressureCard() {
 	}
 	// Something else owns the screen, the session is looking at a child, or
 	// the turn is about to continue with what was typed into it — all three
-	// are reasons to say nothing now and ask at the next turn's end.
-	if m.state.isSurface() || m.attachedTo != "" || m.agentList != nil ||
-		m.activeChildAsk() != nil || len(m.steering) > 0 {
+	// are reasons to say nothing now and ask at the next turn's end. The
+	// automatic compaction reads the same predicate, because it interrupts
+	// the same reader in the same way (context.go).
+	if !m.screenIsFree() {
 		return
 	}
 	// So is a turn that stopped at its round limit: that checkpoint is a
@@ -270,8 +271,9 @@ func (m Model) closePressure() (tea.Model, tea.Cmd) {
 // would be trusted not to do.
 func (m Model) pressureNewSession() (tea.Model, tea.Cmd) {
 	note, save := m.startNewSession()
-	// The window is empty again, so the next crossing is a new crossing.
-	m.pressureShown = false
+	// The window is empty again, so the next crossing is a new crossing —
+	// for the card and for the compaction a round tail asks for.
+	m.pressureShown, m.autoCompacted = false, false
 	m.appendEntry(entry{kind: entrySystem, text: note})
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()

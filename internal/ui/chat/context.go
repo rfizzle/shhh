@@ -117,10 +117,41 @@ func (m Model) estimatedContextTokens() int64 {
 	return m.contextAccounting().total()
 }
 
+// compactor is the shared recovery policy under this session's own figures:
+// the same threshold, the same trim and the same kept tail an unattended run
+// recovers by, so a session and a run nobody is watching cannot come to
+// answer one question two ways.
+//
+// It is built where it is used rather than kept, because every figure it
+// needs moves under the session — the window changes with /model and with an
+// endpoint that answers late, the toolset arrives after the first frame, and
+// the correction is re-learned on every response. The one thing it holds
+// between calls is a bound on how often a summary may be asked for, and this
+// surface already has that bound: the card and the automatic compaction are
+// two answers to one crossing (pressure.go), so they share the crossing
+// rather than counting two of them.
+func (m Model) compactor() *agent.Compactor {
+	c := &agent.Compactor{
+		Window: m.contextWindow(),
+		Model:  m.modelName,
+		// The definitions ride the front of every request and are in no
+		// message. The project context is not counted beside them: it lives
+		// inside the system prompt, which the estimate walks.
+		ToolTokens: m.toolDefTokens,
+	}
+	c.Calibrate(m.calibration)
+	return c
+}
+
 // trimContext elides the oldest tool results, once the estimate has crossed
 // the trim threshold, until it is back down to the low-water mark; it
 // returns how many were elided. The message surgery itself lives with the
 // agent's message list.
+//
+// The step is the shared one and it is handed no way to ask for a summary:
+// what a summary costs is a request, and a request on this surface is a
+// command the event loop answers rather than a wait a driver sits out. Where
+// a trim cannot clear the line the round tail asks for one (recoverForRound).
 func (m *Model) trimContext() int {
 	before := m.estimatedContextTokens()
 	// The bodies as the conversation carries them now. The surgery is in
@@ -128,18 +159,16 @@ func (m *Model) trimContext() int {
 	// a message whose content is no longer what it was here, and is a
 	// placeholder, is one the trim has just taken.
 	was := messageBodies(m.agent.Messages())
-	elided, after := m.agent.TrimOldToolResults(before, m.trimThreshold(), m.trimLowWater(), m.calibration)
-	if elided > 0 {
+	n := m.compactor().RecoverFrom(m.agent, before, nil)
+	if n.Elided > 0 {
 		m.elideTranscript(was)
-		window := m.contextWindow()
-		m.signal(observe.SignalTrim, observe.TrimReason(elided,
-			percentOf(before, window), percentOf(after, window)))
+		m.signal(observe.SignalTrim, observe.TrimReason(n.Elided, n.BeforePct, n.AfterPct))
 		// What the provider reported described the untrimmed conversation, so
 		// it no longer describes anything: the accounting re-derives the size
 		// from the messages that remain, and says it is estimating.
 		m.contextTokens = 0
 	}
-	return elided
+	return n.Elided
 }
 
 // elidedRow is what a transcript row keeps once the trim has taken its body:
@@ -234,6 +263,57 @@ func (m *Model) trimForRequest() {
 	m.viewport.GotoBottom()
 }
 
+// recoverForRound is the window recovery a round tail takes, and reports
+// whether the caller should ask for a summary before its own request rather
+// than send it. The trim runs here either way; the compaction it may go on to
+// ask for is the caller's to start, because on this surface a request is a
+// command.
+//
+// The trim alone was what a long turn had. A turn that crosses the line at
+// its thirtieth round of a hundred and fifty has nothing left to elide long
+// before it ends, and every request after that goes out oversize until the
+// provider refuses one — at the worst moment there is, because everything the
+// turn worked out is still only in the conversation it is about to lose. The
+// card cannot help there: it is offered at a turn's end, and this turn does
+// not have one yet.
+// See docs/capabilities/coding-agent.md#the-window-recovers-where-nobody-is-watching.
+func (m *Model) recoverForRound() bool {
+	m.trimForRequest()
+	// Read back off the session's own accounting rather than off what the
+	// trim reported, because the trim has just made the provider's report
+	// stale and this is the figure every other surface will be showing.
+	if m.contextSeverity() < 2 {
+		// Under the line: the next crossing is a new crossing, and gets its
+		// own attempt at a summary. Both ways back under re-arm, the way the
+		// card's bound does.
+		m.autoCompacted = false
+		return false
+	}
+	if m.autoCompacted || m.compacting || len(m.agent.Messages()) <= 1 {
+		return false
+	}
+	// And the card's own guards, for the same reasons: a compaction empties
+	// the transcript and reopens it on a summary, which is no smaller a
+	// thing to do to a screen somebody else is using than opening a card
+	// over it (pressure.go).
+	if !m.screenIsFree() {
+		return false
+	}
+	m.autoCompacted, m.compactResume = true, true
+	return true
+}
+
+// screenIsFree reports whether the session is somewhere a recovery may take
+// the screen: nothing borrowing it, no child lane attached or asking, and
+// nothing typed at the turn waiting to go into it. It is one predicate rather
+// than two lists because the card and the automatic compaction interrupt the
+// same reader in the same way, and a guard added to one and not the other is
+// how the two drift apart.
+func (m Model) screenIsFree() bool {
+	return !m.state.isSurface() && m.attachedTo == "" && m.agentList == nil &&
+		m.activeChildAsk() == nil && len(m.steering) == 0
+}
+
 // startCompact asks the provider to summarize the conversation; the response
 // is handled by finishCompact instead of joining the conversation.
 func (m Model) startCompact() (tea.Model, tea.Cmd) {
@@ -264,12 +344,12 @@ func (m Model) finishCompact() (tea.Model, tea.Cmd) {
 	m.streaming = ""
 	m.events = nil
 	m.cancel = nil
-	m.setTurnState(stateInput)
+	m.releaseAfterCompact()
 	if summary == "" {
 		m.appendEntry(entry{kind: entryError, text: "compaction produced no summary; conversation unchanged"})
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
-		return m, nil
+		return m.resumeAfterCompact(nil)
 	}
 	// The handoff a compaction writes is what a later opening of this
 	// conversation is given, so it is kept beside the conversation and put on
@@ -291,8 +371,13 @@ func (m Model) finishCompact() (tea.Model, tea.Cmd) {
 	m.regenerateWorkspace()
 	// The counter the shared step leaves alone. Here the compaction is the
 	// user's own request, and a request typed by the person in front of the
-	// session is exactly what a fresh round budget is for.
-	m.resetRounds()
+	// session is exactly what a fresh round budget is for. A compaction the
+	// round tail asked for is not: a turn handed a fresh budget for having
+	// filled its window would have no ceiling at all, which is the reason
+	// agent.Agent.Compact leaves the counter where it is.
+	if !m.compactResume {
+		m.resetRounds()
+	}
 	m.signal(observe.SignalCompact, observe.CompactAsked)
 	// Nothing has been reported about the rebuilt conversation yet.
 	m.contextTokens = 0
@@ -317,9 +402,46 @@ func (m Model) finishCompact() (tea.Model, tea.Cmd) {
 	}
 	// The window is empty again, so the next alert is a new crossing.
 	m.pressureShown = false
+	// The compaction's own bound is deliberately not cleared here. Being
+	// back under the line is what re-arms it (recoverForRound), and a
+	// compaction is not proof of that: a conversation whose system prompt
+	// and tool definitions are most of a small window is still over the
+	// threshold with nothing left in it, and a bound cleared by the thing it
+	// bounds would ask for a summary again on the very next round, and again
+	// after that.
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
-	return m, m.autosaveCmd()
+	return m.resumeAfterCompact(m.autosaveCmd())
+}
+
+// releaseAfterCompact ends the turn a compaction was asked inside of — unless
+// the round tail is what asked for it, in which case the turn has not ended
+// and everything an arrival at the input draws is owed to the round that
+// finishes it instead: the close row, the reading of how the turn came out,
+// the ring the spend sparkline is drawn from, the checks a close gate owes,
+// and the card offered at the threshold.
+func (m *Model) releaseAfterCompact() {
+	if m.compactResume {
+		return
+	}
+	m.setTurnState(stateInput)
+}
+
+// resumeAfterCompact hands the screen back to whatever asked for the
+// compaction: the input, or — where the round tail asked for it — the round
+// that was waiting to send its request.
+//
+// A summary that did not arrive resumes the turn all the same. The turn is
+// not abandoned for the recovery having failed: the request goes out against
+// the conversation as it stands, and what it meets is the failure row, which
+// offers the compaction again as a key somebody can press.
+func (m Model) resumeAfterCompact(cmd tea.Cmd) (tea.Model, tea.Cmd) {
+	if !m.compactResume {
+		return m, cmd
+	}
+	m.compactResume = false
+	next, resume := m.resumeToolLoop()
+	return next, tea.Batch(cmd, resume)
 }
 
 // regenerateWorkspace puts the checkout as it stands now into the system
@@ -390,10 +512,10 @@ func (m Model) abortCompact() (tea.Model, tea.Cmd) {
 	m.events = nil
 	m.cancel = nil
 	m.appendEntry(entry{kind: entryError, text: "compaction failed: the model called a tool on a request that forbade one; conversation unchanged"})
-	m.setTurnState(stateInput)
+	m.releaseAfterCompact()
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
-	return m, nil
+	return m.resumeAfterCompact(nil)
 }
 
 // compactContextPrefix opens that message. Input recall reads it: a resumed

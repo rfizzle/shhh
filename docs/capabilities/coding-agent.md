@@ -741,6 +741,27 @@ inside a round would open with results for calls the model can no longer see
 it made, which is a request the provider refuses rather than a summary that is
 merely lossy.
 
+**The session recovers at that boundary too, and the card is not what does
+it.** The card is offered when a turn ends, which is the right moment to put a
+decision to somebody — and a turn of a hundred and fifty rounds that fills its
+window at the thirtieth does not reach one for an hour. What that turn used to
+get was the trim, alone, until there was nothing left to elide; every request
+after that went out oversize until one was refused, at the worst moment there
+is, because everything the turn had worked out was still only in the
+conversation it was about to lose. So the same two answers run at the same
+boundary in a session as in a run nobody is watching, and the card goes back
+to being what it reads as: the offer made before the line is reached rather
+than the thing standing between a long turn and its window.
+
+Where the session takes that second answer, it takes it the way it takes any
+request — the screen says a summary is being asked for, the round's own
+request follows the summary rather than going out in front of it, and the turn
+carries on under the round budget it already had. It declines to take it at
+all over a screen somebody else is using: a card is up, a child's lane is
+attached, something has been typed at the turn. A compaction empties the
+transcript and reopens it on a summary, which is no smaller a thing to do to a
+reader mid-sentence than opening a card over them.
+
 Three things keep it from making matters worse. The request that asks for the
 summary forbids the model calling a tool, because it is asking for prose from
 a conversation that is nothing but tool calls and would otherwise get one

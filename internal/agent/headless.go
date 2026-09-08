@@ -169,6 +169,13 @@ type Headless struct {
 	// a Run is still deciding what the answer is.
 	truncated bool
 
+	// overflowed is whether the request before this one was refused as too
+	// long for the model's window. It is the bound on that recovery: one
+	// forced compaction per refusal, and a second refusal with nothing
+	// answered in between ends the run. Written only by the goroutine
+	// running the turn, like truncated.
+	overflowed bool
+
 	mu sync.Mutex
 	// streamCancel aborts whatever the run is currently waiting on — the
 	// in-flight stream, or the timer of a retry wait, which registers itself
@@ -222,6 +229,7 @@ func (h *Headless) Run(prompt string) (string, error) {
 	// A Headless is reused across a child's turns, so how the last answer
 	// ended is not this one's until this one ends.
 	h.truncated = false
+	h.overflowed = false
 	// Starting a turn ends whatever stall the last one was in, the same way
 	// the session's own start does. A Headless is reused across a child's
 	// turns, so a budget carried over from a turn interrupted mid-backoff
@@ -259,6 +267,16 @@ func (h *Headless) Run(prompt string) (string, error) {
 		h.recoverContext()
 		text, calls, stop, err := h.streamOnce()
 		if err != nil {
+			// A request the window could not hold is answered before the
+			// backoff is asked anything, because it is not a stall: waiting
+			// changes nothing about a conversation that is too big, and a
+			// run that spent an attempt on it would spend all three
+			// re-sending the same oversized request. What fixes it is the
+			// step this loop already takes at every round boundary, run
+			// again with the refusal itself as the measurement.
+			if h.recoverOverflow(err) {
+				continue
+			}
 			notice, ok := h.retry.Next(err)
 			if !ok {
 				return "", err
@@ -280,8 +298,11 @@ func (h *Headless) Run(prompt string) (string, error) {
 			continue
 		}
 		// A request the provider answered ends the stall, whatever the answer
-		// was: the bound is on consecutive failures.
+		// was: the bound is on consecutive failures. So is the overflow
+		// recovery's bound — a request that fitted says the last one that
+		// did not is behind the run.
 		h.retry.Reset()
+		h.overflowed = false
 		// What the agent believes it is doing is most of what a reading is.
 		h.Summary.Recorder().Assistant(text)
 		if h.wasInterrupted() {
@@ -521,6 +542,39 @@ func (h *Headless) recoverContext() {
 		return
 	}
 	h.OnCompact(n)
+}
+
+// recoverOverflow answers a request the provider refused as too long for the
+// model's window, and reports whether the run may ask the same question
+// again. Anything else — a rate limit, a broken wire, a rejected key — is not
+// its business and goes to the backoff below it.
+//
+// It is the one error class the harness knows how to fix and used to end a
+// run on. `provider.Failure.Recoverable` is honest to call it unrecoverable:
+// nothing about waiting helps, and the classifier is describing the failure
+// rather than what a particular driver can do about it. What this driver can
+// do is shrink the conversation, which is a step it already has.
+// See docs/capabilities/headless.md#a-request-that-did-not-fit-is-not-the-end-of-the-run.
+func (h *Headless) recoverOverflow(err error) bool {
+	if !errors.Is(err, provider.ErrContextLength) || h.Compact == nil || h.wasInterrupted() {
+		return false
+	}
+	// Once per refusal. A second one in a row is a window this run cannot
+	// get under — the recovery it just took is the deepest one it has — and
+	// asking again would be a loop that costs a request each time round.
+	if h.overflowed {
+		return false
+	}
+	h.overflowed = true
+	n := h.Compact.RecoverOverflow(h.Agent, h.askSummary)
+	if h.OnCompact != nil && n.Notice != "" {
+		h.OnCompact(n)
+	}
+	// And only where the conversation actually got smaller. A recovery that
+	// found nothing to elide and could not have a summary written would send
+	// the identical request, so the run ends on the refusal it has rather
+	// than on a second copy of it.
+	return n.Elided > 0 || n.Compacted
 }
 
 // askSummary opens one summary request and reads it back as prose. Like the

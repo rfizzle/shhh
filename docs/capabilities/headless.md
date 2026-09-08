@@ -95,6 +95,38 @@ is what an interrupt is worth here: the loop stops at checkpoints, and a run
 stuck somewhere between two of them has to answer to being told rather than
 asked.
 
+## A request that did not fit is not the end of the run
+
+Every other way a provider can refuse a request is either something waiting
+fixes or something only a person can. A window overflow is neither. It says
+the conversation grew past what the model can hold, and shrinking the
+conversation is a step the run already takes at every round boundary — so it
+takes it again, with the refusal itself as the measurement, and asks the same
+question once more.
+
+The refusal is the only hard fact about the window an unattended run ever
+gets. Everything else is a table that may be a generation behind, an endpoint
+serving a smaller build under a larger model's name, or a gateway with a cap
+of its own; a run that estimated its way to sixty per cent and was refused
+anyway has just been told the window is at most what it made of that request.
+That correction stands for the rest of the run, so the trim that follows it
+and every round after it are measured against the smaller figure rather than
+against the belief that was wrong.
+
+It happens once per refusal. A second overflow with nothing answered in
+between is a window the run cannot get under — the recovery it has just taken
+is the deepest one it has — and asking again would cost a request each time
+round the loop. It does not spend an attempt from the retry budget either: a
+run made to choose between recovering and retrying would spend all three
+attempts re-sending the same oversized request.
+
+A session has an answer of its own for this and always did: the failure row
+states the class and offers to compact behind a key. The recovery here is the
+version of that for a run with nobody to press it — and where a window is one
+nothing can vouch for, there is no recovery at all, because a compaction
+against a guessed window would throw away a conversation with most of its
+room left.
+
 ## Three shapes for the same run
 
 `--output` says what the run writes on stdout. Tool activity, waits and

@@ -193,6 +193,12 @@ type CompactNotice struct {
 	// of magnitude and a share is the only figure two of them can be read
 	// side by side on.
 	BeforePct, AfterPct int
+	// Overflow is whether this step answered a request the provider had
+	// already refused as too long, rather than a line an estimate had
+	// crossed. The shares either side of it are measured against a window
+	// that refusal has just corrected, so a reader who saw the round before
+	// it report sixty per cent has to be told why this one says a hundred.
+	Overflow bool
 	// Notice is the line a surface without rails shows for what happened.
 	Notice string
 	// Err is why a compaction that was attempted did not happen. The
@@ -275,14 +281,26 @@ func (c *Compactor) threshold() int64  { return c.Window * TrimThresholdPercent 
 func (c *Compactor) lowWater() int64   { return c.Window * TrimLowWaterPercent / 100 }
 func (c *Compactor) keepBudget() int64 { return c.Window * CompactKeepPercent / 100 }
 
+// Calibrate hands the step a correction that was learned somewhere else. A
+// session keeps one of its own — the rails, /stats and the pressure card all
+// read it — and a policy built out of that session that started from nothing
+// would trim against raw estimates while the screen beside it showed
+// corrected ones.
+func (c *Compactor) Calibrate(cal Calibration) {
+	if c != nil {
+		c.cal = cal
+	}
+}
+
 // Recover is the step: nothing at all while the conversation is under the
 // line, a trim once it is over, and a summary only where the trim could not
 // bring it back. It reports what it did, and the zero notice is the ordinary
 // case.
 func (c *Compactor) Recover(a *Agent, ask CompactAsk) CompactNotice {
-	n := c.recover(a, ask)
-	logRecovery(n)
-	return n
+	if c == nil || a == nil {
+		return CompactNotice{}
+	}
+	return c.step(a, c.Estimate(a.Messages()), ask)
 }
 
 // logRecovery writes down what the step did, in the shares of the window it
@@ -314,13 +332,72 @@ func logRecovery(n CompactNotice) {
 	}
 }
 
-// recover is the step itself. Recover wraps it so the reading is taken once,
-// off the notice, rather than at each of the returns below.
-func (c *Compactor) recover(a *Agent, ask CompactAsk) CompactNotice {
-	if c == nil || a == nil || c.Window <= 0 {
+// RecoverFrom is the same step measured against an occupancy the caller
+// already knows better than Estimate could work it out. A session's figure is
+// the provider's own count of the messages that count described, with only
+// what has been appended since estimated on top of it — a measurement where
+// Estimate is arithmetic — and a policy recovering against a worse number
+// than the one on the screen beside it is one question with two answers.
+// See docs/capabilities/providers.md#how-full-the-window-is-corrected-by-what-it-cost.
+func (c *Compactor) RecoverFrom(a *Agent, before int64, ask CompactAsk) CompactNotice {
+	if c == nil || a == nil {
 		return CompactNotice{}
 	}
-	before := c.Estimate(a.Messages())
+	return c.step(a, before, ask)
+}
+
+// RecoverOverflow is the step a request the provider refused as too long asks
+// for. It is the one failure in the loop that waiting cannot fix and this
+// package can: what did not fit is the conversation, and shrinking the
+// conversation is what everything above does.
+//
+// The refusal is also the only hard fact about the window anything here ever
+// gets. A pricing table a generation behind, an endpoint serving a quantized
+// build under the full model's name, a gateway with a cap of its own — all of
+// them look exactly like this from inside, and none of them can be read any
+// other way. So the belief is corrected once, downwards, and every round
+// after this one is measured against the smaller figure.
+func (c *Compactor) RecoverOverflow(a *Agent, ask CompactAsk) CompactNotice {
+	if c == nil || a == nil {
+		return CompactNotice{}
+	}
+	est := c.Estimate(a.Messages())
+	if est > 0 && (c.Window <= 0 || est < c.Window) {
+		c.Window = est
+	}
+	if c.Window <= 0 {
+		// Nothing to measure against and nothing measured: a conversation
+		// that estimates at nothing did not overflow anything this step
+		// could have shrunk.
+		return CompactNotice{}
+	}
+	// The corrected window is what forces the step past its own threshold:
+	// the conversation now measures a full window or more, however far under
+	// the line the figure it was refused under put it. And a refusal is a
+	// crossing no estimate saw, so the one attempt a summary that failed
+	// spent on the last crossing is not what this one inherits.
+	c.asked = false
+	n := c.step(a, est, ask)
+	n.Overflow = true
+	n.Notice = compactNoticeText(n)
+	return n
+}
+
+// step is the recovery itself, against whatever occupancy the caller reached
+// it with. Recover, RecoverFrom and RecoverOverflow all come through here, so
+// the reading logRecovery takes is taken once, off the notice, rather than
+// at each of the returns below.
+func (c *Compactor) step(a *Agent, before int64, ask CompactAsk) CompactNotice {
+	n := c.recover(a, before, ask)
+	logRecovery(n)
+	return n
+}
+
+// recover is the step's body.
+func (c *Compactor) recover(a *Agent, before int64, ask CompactAsk) CompactNotice {
+	if c.Window <= 0 {
+		return CompactNotice{}
+	}
 	if before <= c.threshold() {
 		// Back under the line: the next crossing is a new crossing, and gets
 		// its own attempt at a summary.
@@ -391,24 +468,38 @@ func percentOfWindow(n, window int64) int {
 	return int(min(n*100/window, 100))
 }
 
+// overflowRefusal opens the line an overflow recovery reports under, and is
+// the whole of it where there was nothing left to recover. It is said before
+// the figures rather than instead of them: a run that recovered from a
+// refusal and one that trimmed at a line it estimated for itself did the same
+// thing for opposite reasons, and only this sentence tells them apart.
+const overflowRefusal = "The provider refused the request as too long for the window."
+
 // compactNoticeText is the one wording every unattended surface reports this
 // step in. Two vocabularies for one event is two things for a reader to learn
 // about something that happened once.
 func compactNoticeText(n CompactNotice) string {
+	text := ""
 	switch {
 	case n.Compacted && n.Kept > 0:
-		return fmt.Sprintf("Context compacted at %d%%: continuing from a summary and the last %d %s (now %d%%).",
+		text = fmt.Sprintf("Context compacted at %d%%: continuing from a summary and the last %d %s (now %d%%).",
 			n.BeforePct, n.Kept, plural(n.Kept, "turn"), n.AfterPct)
 	case n.Compacted:
-		return fmt.Sprintf("Context compacted at %d%%: continuing from a summary (now %d%%).",
+		text = fmt.Sprintf("Context compacted at %d%%: continuing from a summary (now %d%%).",
 			n.BeforePct, n.AfterPct)
 	case n.Err != nil:
-		return fmt.Sprintf("Context is at %d%% and could not be compacted: %s.", n.BeforePct, n.Err)
+		text = fmt.Sprintf("Context is at %d%% and could not be compacted: %s.", n.BeforePct, n.Err)
 	case n.Elided > 0:
-		return fmt.Sprintf("Context trimmed at %d%%: %d older tool %s elided (now %d%%).",
+		text = fmt.Sprintf("Context trimmed at %d%%: %d older tool %s elided (now %d%%).",
 			n.BeforePct, n.Elided, plural(n.Elided, "result"), n.AfterPct)
 	}
-	return ""
+	switch {
+	case !n.Overflow:
+		return text
+	case text == "":
+		return overflowRefusal
+	}
+	return overflowRefusal + " " + text
 }
 
 // rewriteSystem hands the system prompt to the workspace rewriter and puts

@@ -625,7 +625,50 @@ is well-formed on every dialect), the rebuild (`Agent.Compact`), and
 the summary is asked, and the calibration. `Compactor.Recover` trims first and
 asks for a summary only where the trim could not clear the line, at most once
 per crossing. `Agent.Compact` deliberately does **not** reset the round
-counter; `finishCompact` does, because there the request was the user's own.
+counter; `finishCompact` does, because there the request was the user's own —
+and it skips that reset for a compaction the round tail asked for, which is
+not the user's.
+
+**Three doors onto the same step.** `Recover` estimates the occupancy itself.
+`RecoverFrom` takes one the caller knows better — `chat.Model.trimContext`
+passes `estimatedContextTokens`, which is the provider's own report for the
+messages it described with only what has landed since estimated on top, and a
+policy trimming against a worse figure than the rails show would be one
+question with two answers. `RecoverOverflow` is the door a refused request
+comes through: it corrects `Window` down to what it made of the request the
+provider would not take — the only hard fact about a window anything here ever
+gets — which is also what forces the step past its own threshold, then clears
+the once-per-crossing flag, because a refusal is a crossing no estimate saw.
+`Calibrate` is how a caller that keeps its own correction hands it over.
+
+**The context-length class stays non-recoverable and the driver special-cases
+it.** `provider.Failure.Recoverable` is answering "does waiting help", which
+for this class is no; `Headless.recoverOverflow` is answering "can this driver
+fix it", which is yes. It runs **before** `Backoff.Next` is asked anything, so
+the forced compaction spends no attempt — a run made to choose between
+recovering and retrying would spend all three re-sending the same oversized
+request — and `Headless.overflowed` bounds it at one per refusal, cleared by
+any request the provider answers.
+
+`chat.Model.compactor` is the session's, built where it is used rather than
+kept: every figure it needs moves under the session (the window with `/model`
+and with an endpoint that answers late, the toolset after the first frame, the
+correction on every response), and the one thing it would hold between calls —
+the bound on asking for a summary — is `Model.autoCompacted`, re-armed only by
+occupancy falling back under the line. **`pressureShown` is re-armed by a
+compaction and this is not**, and the asymmetry is the escalation: the round
+tail asks once and silently, and where that did not clear the line the card is
+still put to the reader at the turn's end. Re-arming `autoCompacted` there
+instead would ask for a summary every round on a window whose system prompt
+and tool definitions are already most of it. `recoverForRound` is the round tail:
+`trimForRequest`, then a compaction when the session is still at severity 2,
+guarded by `screenIsFree` (the predicate `armPressureCard` reads too, so a
+guard added to one cannot go missing from the other). The summary is passed as
+a **nil** `CompactAsk` and started by `resumeToolLoop` instead, because a wait
+on this surface is a `tea.Cmd`; `Model.compactResume` is what sends the round's
+own request after it rather than handing the screen back to the input, and it
+is cleared everywhere a compaction can end badly (`endBrokenTurn`,
+`finishStreaming`'s cancel).
 
 `Headless.Compact` is where an unattended run installs one, and the step runs
 at the head of each round — ahead of the request, so the first request of a

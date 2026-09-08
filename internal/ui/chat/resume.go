@@ -210,7 +210,10 @@ func (m *Model) truncatedRound() {
 // the turn closes as failed, and anything typed while it ran comes back to
 // the input rather than disappearing with it.
 func (m Model) endBrokenTurn() (tea.Model, tea.Cmd) {
-	m.compacting = false
+	// A compaction that broke takes its turn's resumption with it: the round
+	// it was recovering the window for has no window to send into, and the
+	// failure row above offers the compaction again by hand.
+	m.compacting, m.compactResume = false, false
 	m.streaming = ""
 	m.events = nil
 	m.cancel = nil

@@ -1068,6 +1068,19 @@ type Model struct {
 	// the card arrives once per crossing rather than once per turn.
 	pressure      *components.PressureCard
 	pressureShown bool
+	// autoCompacted is the bound on the compaction a round tail asks for
+	// when a trim could not clear the line (context.go): one per crossing,
+	// re-armed only by occupancy falling back under the line. Unlike the
+	// card's flag it is deliberately not re-armed by a compaction, and the
+	// asymmetry is the escalation — the round tail asks once and silently,
+	// and where that did not clear the line the card is still put to the
+	// reader when the turn ends.
+	autoCompacted bool
+	// compactResume marks a compaction the turn asked for rather than the
+	// reader: the round tail found the window still full after its trim, so
+	// what follows the summary is the request that round was about to send
+	// rather than the input.
+	compactResume bool
 	// The context surface: the screen while it is up, and the tool
 	// definitions it itemises the tool category into. The definitions are
 	// the host's because which tools a session has depends on what the

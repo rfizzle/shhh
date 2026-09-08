@@ -451,3 +451,130 @@ func TestRecoverWritesDownWhatItDidAndAtWhatShareOfTheWindow(t *testing.T) {
 		t.Errorf("a boundary with nothing to do wrote a line:\n%s", after[before:])
 	}
 }
+
+// refusedOnce is a provider that will not take the first request it is given
+// and answers everything after it from a script: the shape of a model whose
+// window is smaller than anything here believed it to be.
+func refusedOnce(t *testing.T, into *[]recordedRequest, refusals int, rounds ...[]provider.StreamEvent) StreamFunc {
+	t.Helper()
+	i := 0
+	return func(msgs []provider.Message, choice string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		*into = append(*into, recordedRequest{msgs: msgs, choice: choice})
+		if choice != provider.ToolChoiceNone && refusals > 0 {
+			refusals--
+			return nil, nil, &provider.Failure{Class: provider.ClassContextLength, Status: 400}
+		}
+		if i >= len(rounds) {
+			t.Fatalf("unexpected stream request #%d", len(*into))
+		}
+		evs := rounds[i]
+		i++
+		ch := make(chan provider.StreamEvent, len(evs))
+		for _, ev := range evs {
+			ch <- ev
+		}
+		close(ch)
+		_, cancel := context.WithCancel(context.Background())
+		return ch, cancel, nil
+	}
+}
+
+// A request the provider refuses as too long is the one failure the harness
+// already knows how to fix, and the fix is a step this loop takes at every
+// round boundary anyway. The retry budget is set to nothing here on purpose:
+// a recovery that spent an attempt would end the run instead of recovering
+// it.
+func TestHeadlessRecoversARequestThatDidNotFit(t *testing.T) {
+	var reqs []recordedRequest
+	a := New(filledWithProse(), refusedOnce(t, &reqs, 1,
+		doneRound("the conversation so far, summarised"),
+		doneRound("done"),
+	))
+
+	var notices []CompactNotice
+	// A window nothing here has any reason to doubt, and a provider that
+	// refuses the request anyway.
+	c := &Compactor{Model: "test-model", Window: 1_000_000}
+	h := &Headless{Agent: a, Compact: c, OnCompact: func(n CompactNotice) { notices = append(notices, n) }}
+	none := 0
+	h.SetRetryLimit(&none)
+
+	final, err := h.Run("carry on")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if final != "done" {
+		t.Fatalf("final = %q, want %q", final, "done")
+	}
+	if len(reqs) != 3 {
+		t.Fatalf("expected the refused request, the summary and the question asked again, got %d", len(reqs))
+	}
+	if reqs[1].choice != provider.ToolChoiceNone {
+		t.Fatalf("the second request should be the summary, got choice %q", reqs[1].choice)
+	}
+
+	// The refusal is the only hard fact about the window this run will ever
+	// get, and it stands for the rest of the run.
+	if c.Window >= 1_000_000 {
+		t.Fatalf("the window was not corrected by the refusal: %d", c.Window)
+	}
+	if len(notices) != 1 || !notices[0].Overflow || !notices[0].Compacted {
+		t.Fatalf("expected one overflow compaction reported, got %+v", notices)
+	}
+	if !strings.HasPrefix(notices[0].Notice, overflowRefusal) {
+		t.Fatalf("the notice does not say the request was refused: %q", notices[0].Notice)
+	}
+}
+
+// One recovery per refusal. A second refusal with nothing answered in between
+// is a window the run cannot get under, and asking again would cost a request
+// each time round the loop.
+func TestHeadlessEndsOnASecondRefusalInARow(t *testing.T) {
+	var reqs []recordedRequest
+	a := New(filledWithProse(), refusedOnce(t, &reqs, 2,
+		doneRound("the conversation so far, summarised"),
+	))
+
+	h := &Headless{Agent: a, Compact: &Compactor{Model: "test-model", Window: 1_000_000}}
+	if _, err := h.Run("carry on"); !errors.Is(err, provider.ErrContextLength) {
+		t.Fatalf("err = %v, want the provider's refusal", err)
+	}
+	if len(reqs) != 3 {
+		t.Fatalf("expected two refused requests with one summary between them, got %d", len(reqs))
+	}
+}
+
+// The forced step is forced by the correction: whatever share of the old
+// window the conversation was at, it is a whole one of the corrected window.
+func TestRecoverOverflowCorrectsTheWindowAndTrims(t *testing.T) {
+	big := strings.Repeat("x", 40000)
+	a := New([]provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "q"},
+		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "c1", Name: "read_file"}}},
+		{Role: provider.RoleTool, Content: big, ToolCallID: "c1"},
+		{Role: provider.RoleUser, Content: "and now"},
+	}, scriptedStream(t))
+
+	c := &Compactor{Model: "test-model", Window: 1_000_000}
+	before := c.Estimate(a.Messages())
+	// Nowhere near the line the estimate would have acted on.
+	if before > c.Window*TrimThresholdPercent/100 {
+		t.Fatalf("the fixture is already over the threshold: %d of %d", before, c.Window)
+	}
+
+	n := c.RecoverOverflow(a, nil)
+	if c.Window != before {
+		t.Fatalf("window = %d, want the estimate of the refused request (%d)", c.Window, before)
+	}
+	if n.Elided != 1 || !n.Overflow {
+		t.Fatalf("expected the old result elided under an overflow notice, got %+v", n)
+	}
+	if _, elided := Elided(a.Messages()[3].Content); !elided {
+		t.Fatalf("the old tool result should be elided, got %q", a.Messages()[3].Content)
+	}
+	if n.Notice != overflowRefusal+" "+compactNoticeText(CompactNotice{
+		BeforePct: n.BeforePct, AfterPct: n.AfterPct, Elided: 1}) {
+		t.Fatalf("notice = %q", n.Notice)
+	}
+}
