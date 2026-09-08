@@ -121,6 +121,11 @@ type AgentSettings struct {
 	SummaryModel    string `json:"summary_model,omitempty"`
 	SummaryInterval int    `json:"summary_interval,omitempty"`
 	SummaryEnabled  bool   `json:"summary_enabled"`
+	// CheckInInterval is how many rounds pass before the surface asks a turn
+	// to take stock, 0 on a surface that never asks. It is the interval in
+	// force rather than the one configured: a child's is its own, shorter,
+	// because a child has none of what makes a session's long interval safe.
+	CheckInInterval int `json:"check_in_interval,omitempty"`
 	// ClassifierModel is the model auto mode's classifier asks, empty on a
 	// surface that has none.
 	ClassifierModel string `json:"classifier_model,omitempty"`
@@ -188,17 +193,18 @@ func (db *DB) StartChildAgentSession(parentID int64, kind, provider, model strin
 // what an unstamped row holds and what the reader takes for "none".
 func (db *DB) StampAgentSession(id int64, p AgentProvenance) error {
 	c := p.Settings
-	settings := []any{nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil}
+	settings := []any{nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil}
 	if c.ConfigHash != "" {
 		settings = []any{c.Mode, c.Reasoning, c.MaxRounds, c.SummaryModel, c.SummaryInterval, c.SummaryEnabled,
-			c.ClassifierModel, c.SandboxProfile, c.Item, c.Stage, c.ConfigHash}
+			c.ClassifierModel, c.SandboxProfile, c.Item, c.Stage, c.ConfigHash, c.CheckInInterval}
 	}
 	args := append([]any{p.Version, p.PromptHash, p.Skills, p.Project}, settings...)
 	_, err := db.sql.Exec(
 		`UPDATE agent_sessions SET version = ?, prompt_hash = ?, skills = ?, project = ?,
 		        mode = ?, reasoning = ?, max_rounds = ?,
 		        summary_model = ?, summary_interval = ?, summary_enabled = ?,
-		        classifier_model = ?, sandbox_profile = ?, item = ?, stage = ?, config_hash = ?
+		        classifier_model = ?, sandbox_profile = ?, item = ?, stage = ?, config_hash = ?,
+		        check_in_interval = ?
 		 WHERE id = ?`,
 		append(args, id)...,
 	)
@@ -252,6 +258,28 @@ func (db *DB) EndAgentSession(id int64, outcome string) error {
 		`UPDATE agent_sessions SET ended_at = strftime('%Y-%m-%dT%H:%M:%fZ','now'), outcome = ? WHERE id = ?`,
 		outcome, id,
 	)
+	return err
+}
+
+// EndChildAgentSession closes a sub-agent's attempt: the end time and the
+// outcome EndAgentSession writes, and beside them how the attempt ended,
+// what the last reading made of its work, how many steers it was given and
+// which attempt the row is.
+//
+// It is a second closing statement rather than four more arguments to the
+// first because only a child has any of these, and a session that ends
+// having never spawned anything must not write four NULLs it would then be
+// read as having answered.
+// See docs/capabilities/sessions-and-memory.md#a-child-ends-for-a-reason.
+func (db *DB) EndChildAgentSession(id int64, outcome string, e observe.ChildEnd) error {
+	set := `ended_at = strftime('%Y-%m-%dT%H:%M:%fZ','now'),
+	        end_reason = ?, verdict = ?, steers = ?, attempt = ?`
+	args := []any{e.Reason, e.Verdict, e.Steers, e.Attempt}
+	if outcome != "" {
+		set += `, outcome = ?`
+		args = append(args, outcome)
+	}
+	_, err := db.sql.Exec(`UPDATE agent_sessions SET `+set+` WHERE id = ?`, append(args, id)...)
 	return err
 }
 
@@ -501,7 +529,7 @@ var agentSplitColumns = []string{
 	"mode", "reasoning", "max_rounds",
 	"summary_model", "summary_interval", "summary_enabled",
 	"classifier_model", "sandbox_profile",
-	"item", "stage",
+	"item", "stage", "check_in_interval",
 }
 
 // AgentSplitKeys lists what a comparison can split on, for the flag that
@@ -593,8 +621,13 @@ type AgentCohortReading struct {
 	FirstWrites []AgentFirstWrite
 	Decisions   []AgentDecisionCount
 	Signals     []AgentSignalCount
-	Gates       []AgentGateVerdict
-	Outcomes    []AgentSessionOutcome
+	// Interventions is the same join the dashboard draws, over this cohort:
+	// the reading that follows an interruption is the one figure a change to
+	// the thresholds is meant to move, so a comparison without it cannot
+	// answer the question it was run for.
+	Interventions []AgentInterventionOutcome
+	Gates         []AgentGateVerdict
+	Outcomes      []AgentSessionOutcome
 }
 
 // ReadAgentCohort runs those aggregates for one value of the split column.
@@ -627,6 +660,9 @@ func (db *DB) ReadAgentCohort(since time.Time, key, value string) (AgentCohortRe
 	}
 	if r.Signals, err = db.agentSignals(events, cutoff, value); err != nil {
 		return AgentCohortReading{}, fmt.Errorf("query cohort signals: %w", err)
+	}
+	if r.Interventions, err = db.agentInterventionOutcomes(events, cutoff, value); err != nil {
+		return AgentCohortReading{}, fmt.Errorf("query cohort intervention outcomes: %w", err)
 	}
 	if r.Gates, err = db.agentGateVerdicts(events, cutoff, value); err != nil {
 		return AgentCohortReading{}, fmt.Errorf("query cohort gate verdicts: %w", err)
@@ -984,6 +1020,93 @@ func (db *DB) agentSignals(scope string, args ...any) ([]AgentSignalCount, error
 	return out, rows.Err()
 }
 
+// AgentInterventionOutcome is one kind of interruption and what the next
+// reading of that session made of the run afterwards: how many times the
+// pair happened, and how many rounds apart the two were.
+//
+// It is the one reading in the record that says whether the interruption
+// machinery works. Every intervention is already recorded with its kind and
+// every reading with its state, and nothing joined the two — so a threshold
+// could be changed and the record would say the same number of steers went
+// out either way, with no way to ask whether any of them landed.
+type AgentInterventionOutcome struct {
+	// Kind is the intervention's own qualifier: "steer", "check-in",
+	// "enough" or "stale".
+	Kind string
+	// Reading is the state the next reading came back with, or "none" where
+	// the session took no further reading — a turn that ended on the
+	// interruption, or one whose summariser was off.
+	Reading string
+	Count   int
+	// AvgRounds is how far past the interruption that reading was taken. A
+	// steer answered two rounds later and one answered fifteen rounds later
+	// are not the same evidence about the interval.
+	AvgRounds float64
+}
+
+// AgentInterventionOutcomes pairs every interruption in the window with the
+// reading that followed it, most frequent first.
+//
+// The denominator is the interruptions themselves: the rows for one kind add
+// up to every interruption of that kind, so "steer → on-target" against the
+// steers in total is the rate a person changing the drift thresholds is
+// asking for. That is why a reading that never came is kept as its own row
+// rather than dropped — dropped, it would quietly shrink the denominator and
+// make the machinery look better the more often it interrupted a turn that
+// ended before anything could read it again.
+func (db *DB) AgentInterventionOutcomes(since time.Time) ([]AgentInterventionOutcome, error) {
+	return db.agentInterventionOutcomes(observeEventWindow, observeCutoff(since))
+}
+
+// The next reading is the next one written in the same turn of the same
+// session. The turn is the bound because that is what a reading is about: a
+// turn interrupted near its end and never read again was not answered by the
+// first reading of the next turn, which is judging different work against a
+// different instruction, and the rounds between them are not a distance at
+// all — the counter goes back to zero at every turn start, so the
+// subtraction would be a small or negative number standing where a wait
+// should be. An interruption with no reading after it in its own turn is
+// reported as one, which is the fact.
+//
+// Within the turn the next row is found by row id rather than by round: the
+// rows are written in the order they happened, which is what the id says and
+// what the timestamp — a millisecond stamp two events can share — does not.
+//
+// The signal codes are spelled here rather than imported, the way the gate
+// verdicts' are: this reads rows written by every build that ever wrote one,
+// and their spelling is fixed by history rather than by what this build
+// happens to write.
+const agentInterventionOutcomesQuery = `WITH intervened AS (
+		   SELECT id, session_id, kind, turn, round, reason FROM agent_events
+		   WHERE kind = ? AND outcome = 'intervened' AND %s
+		 )
+		 SELECT i.reason, COALESCE(s.reason, 'none'), COUNT(*), COALESCE(AVG(s.round - i.round), 0)
+		 FROM intervened i
+		 LEFT JOIN agent_events s ON s.id = (
+		   SELECT MIN(x.id) FROM agent_events x
+		   WHERE x.session_id = i.session_id AND x.kind = i.kind
+		     AND x.turn = i.turn AND x.outcome = 'summary' AND x.id > i.id)
+		 GROUP BY i.reason, s.reason ORDER BY COUNT(*) DESC, i.reason`
+
+func (db *DB) agentInterventionOutcomes(scope string, args ...any) ([]AgentInterventionOutcome, error) {
+	rows, err := db.sql.Query(fmt.Sprintf(agentInterventionOutcomesQuery, scope),
+		append([]any{AgentEventSignal}, args...)...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []AgentInterventionOutcome
+	for rows.Next() {
+		var o AgentInterventionOutcome
+		if err := rows.Scan(&o.Kind, &o.Reading, &o.Count, &o.AvgRounds); err != nil {
+			return nil, err
+		}
+		out = append(out, o)
+	}
+	return out, rows.Err()
+}
+
 // AgentGateVerdict is how often one quality-gate suite came out one way.
 type AgentGateVerdict struct {
 	Suite   string
@@ -1190,12 +1313,17 @@ type AgentSessionSummary struct {
 	// is a different answer from a session that ran with every value at
 	// its zero.
 	Settings *AgentSettings
+	// Child is how a sub-agent's attempt ended, and nil on every row that
+	// is not one. A child that is still running has none either: the row is
+	// closed with it.
+	Child *observe.ChildEnd
 }
 
 const agentSessionColumns = `id, started_at, ended_at, kind, provider, model, turns, tokens_in, tokens_out, est_cost,
 		        version, prompt_hash, skills, project, chat_session, parent_id,
 		        mode, reasoning, max_rounds, summary_model, summary_interval, summary_enabled,
-		        classifier_model, sandbox_profile, item, stage, config_hash, outcome, rating`
+		        classifier_model, sandbox_profile, item, stage, config_hash, outcome, rating,
+		        check_in_interval, end_reason, verdict, steers, attempt`
 
 func scanAgentSession(rows interface{ Scan(...any) error }) (AgentSessionSummary, error) {
 	var (
@@ -1213,12 +1341,18 @@ func scanAgentSession(rows interface{ Scan(...any) error }) (AgentSessionSummary
 		outcome sql.NullString
 		// The rating column is NULL until somebody answers for the session.
 		rating sql.NullBool
+		// The check-in interval joins the settings above; the four beside it
+		// are a child's end, NULL on every row that is not a child's and on
+		// a child's row until its attempt closes.
+		checkInInterval, steers, attempt sql.NullInt64
+		endReason, verdict               sql.NullString
 	)
 	if err := rows.Scan(&s.ID, &startedAt, &endedAt, &s.Kind, &s.Provider, &s.Model,
 		&s.Turns, &s.TokensIn, &s.TokensOut, &s.Cost,
 		&s.Version, &s.PromptHash, &s.Skills, &s.Project, &s.ChatSession, &s.ParentID,
 		&mode, &reasoning, &maxRounds, &summaryModel, &summaryInterval, &summaryEnabled,
-		&classifierModel, &sandboxProfile, &item, &stage, &configHash, &outcome, &rating); err != nil {
+		&classifierModel, &sandboxProfile, &item, &stage, &configHash, &outcome, &rating,
+		&checkInInterval, &endReason, &verdict, &steers, &attempt); err != nil {
 		return s, err
 	}
 	s.Outcome = outcome.String
@@ -1231,7 +1365,14 @@ func scanAgentSession(rows interface{ Scan(...any) error }) (AgentSessionSummary
 			SummaryModel: summaryModel.String, SummaryInterval: int(summaryInterval.Int64),
 			SummaryEnabled: summaryEnabled.Bool, ClassifierModel: classifierModel.String,
 			SandboxProfile: sandboxProfile.String, Item: item.String, Stage: stage.String,
-			ConfigHash: configHash.String,
+			ConfigHash:      configHash.String,
+			CheckInInterval: int(checkInInterval.Int64),
+		}
+	}
+	if endReason.Valid && endReason.String != "" {
+		s.Child = &observe.ChildEnd{
+			Reason: endReason.String, Verdict: verdict.String,
+			Steers: int(steers.Int64), Attempt: int(attempt.Int64),
 		}
 	}
 	s.StartedAt, _ = time.Parse(observeTimeFormat, startedAt)

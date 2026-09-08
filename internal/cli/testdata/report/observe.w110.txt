@@ -35,6 +35,12 @@
   · summary          5 times · on-target
   · context-trimmed  1 time · 4
 
+  INTERVENED
+
+  · steer → on-target   1 of 2 (50%) · 3 rounds later
+  · steer → off-target  1 of 2 (50%) · 5 rounds later
+  · check-in → none     1 of 1 (100%)
+
   GATE
 
   ⚠ default  8 runs · fail 2  [75% passed]

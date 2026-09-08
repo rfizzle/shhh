@@ -42,7 +42,8 @@ func (m *Model) appendTurnClose() {
 	// expires, and nothing lands in the transcript to redraw the block it
 	// was painted into.
 	m.expireSteerOffers()
-	m.recordTurn(m.turnOutcomeCode())
+	outcome := m.turnOutcomeCode()
+	m.recordTurn(outcome)
 	// A turn that stopped at its round limit has already closed, with the
 	// pause row: it states the rounds it used, what it changed, and
 	// the three ways on, and a second block offering [v] and [u] beside it
@@ -51,6 +52,15 @@ func (m *Model) appendTurnClose() {
 	if m.pausedAtRoundLimit() {
 		return
 	}
+	// And, where the machinery interrupted this turn, what the interruption
+	// came to. Below the pause on purpose, unlike the turn event above it: a
+	// granted pause reopens *this* turn rather than starting another
+	// (resumeGrantedTurn), so this runs twice for one turn if it runs before
+	// the return — and the second row would be counted as a second
+	// interrupted turn, against a steer count the reopening deliberately
+	// does not reset. A cap-paused turn is a real turn reading and repeats
+	// happily; one interrupted turn is one row (intervene.go).
+	m.recordIntervened(outcome)
 	m.appendEntry(entry{kind: entryTurnClose, turn: m.turnCount, close: m.turnCloseData()})
 	// The person's own commands at the turn's end, fired here because this is
 	// where the turn's accounting is closed and there is exactly one of these

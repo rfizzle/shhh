@@ -281,6 +281,12 @@ type runSettings struct {
 	// one, else the session's own. It is resolved by the surface rather than
 	// here so the record states the model that was actually asked.
 	model string
+	// checkIn is how many rounds pass before this surface asks a turn to
+	// take stock, and 0 where it never asks. It is the surface's own answer
+	// rather than the config's: a child's interval is shorter than a
+	// session's whatever the config says, because a child has none of what
+	// makes a session's long interval safe.
+	checkIn int
 	// summary and classifier say whether each mechanism exists on this
 	// surface at all. A one-shot takes no readings and asks no classifier,
 	// and recording the model it would have used is recording a setting
@@ -303,14 +309,15 @@ type runSettings struct {
 // See docs/capabilities/sessions-and-memory.md#what-a-session-ran-under.
 func sessionSettings(cfg config.Config, run runSettings) storage.AgentSettings {
 	out := storage.AgentSettings{
-		Mode:           run.mode,
-		Reasoning:      run.effort.String(),
-		MaxRounds:      run.rounds,
-		SummaryEnabled: run.summary,
-		SandboxProfile: run.sandbox,
-		Item:           run.item,
-		Stage:          run.stage,
-		ConfigHash:     configHash(cfg),
+		Mode:            run.mode,
+		Reasoning:       run.effort.String(),
+		MaxRounds:       run.rounds,
+		CheckInInterval: run.checkIn,
+		SummaryEnabled:  run.summary,
+		SandboxProfile:  run.sandbox,
+		Item:            run.item,
+		Stage:           run.stage,
+		ConfigHash:      configHash(cfg),
 	}
 	if run.summary {
 		out.SummaryModel = modelOr(cfg.Summary.Model, run.model)
@@ -320,6 +327,18 @@ func sessionSettings(cfg config.Config, run runSettings) storage.AgentSettings {
 		out.ClassifierModel = modelOr(cfg.Behavior.ClassifierModel, run.model)
 	}
 	return out
+}
+
+// checkInFor is the interval a surface that asks the question at all runs
+// under: what the config named, or the built-in one. It is spelled here
+// rather than read off the agent because the record is stamped before a turn
+// has been taken, and the agent's own reading of it widens as a turn goes on
+// — the number this records is the one somebody set.
+func checkInFor(rounds int) int {
+	if rounds <= 0 {
+		return agent.DefaultCheckInInterval
+	}
+	return rounds
 }
 
 // roundCapFor turns maxRoundsFor's three-way answer into the cap in force as
@@ -564,6 +583,24 @@ func (r *observeRecorder) end() {
 	r.span = nil
 }
 
+// endChild closes a sub-agent's row the way end closes a session's, and
+// records how the attempt came out beside it. It is the child's own row and
+// not the parent's, because what the end says — a budget spent, a kill, the
+// steers it took — is only answerable beside the spend and the model on that
+// same row (docs/capabilities/sessions-and-memory.md#a-child-ends-for-a-reason).
+func (r *observeRecorder) endChild(e observe.ChildEnd) {
+	if r == nil {
+		return
+	}
+	outcome := ""
+	if r.outcome == "" {
+		outcome = observe.SessionAbandoned
+	}
+	_ = r.db.EndChildAgentSession(r.id, outcome, e)
+	r.span.End(r.closingOutcome())
+	r.span = nil
+}
+
 // closingOutcome is the outcome a row closed without a surface naming one
 // settles on: the standing reading where a turn wrote one, the abandonment
 // where none did.
@@ -799,8 +836,12 @@ type observeData struct {
 	Decisions   []storage.AgentDecisionCount
 	Turns       []storage.AgentTurnOutcome
 	Signals     []storage.AgentSignalCount
-	Gates       []storage.AgentGateVerdict
-	Outcomes    []storage.AgentSessionOutcome
+	// Interventions pairs every interruption with the reading that followed
+	// it, which is the one reading here that says whether the machinery
+	// worked rather than how often it fired.
+	Interventions []storage.AgentInterventionOutcome
+	Gates         []storage.AgentGateVerdict
+	Outcomes      []storage.AgentSessionOutcome
 }
 
 // readObserveData runs every aggregate the dashboard draws. Each query is
@@ -821,6 +862,10 @@ func readObserveData(db *storage.DB, window string, since time.Time) (observeDat
 		{"decisions", func() (err error) { data.Decisions, err = db.AgentDecisions(since); return }},
 		{"turns", func() (err error) { data.Turns, err = db.AgentTurns(since); return }},
 		{"signals", func() (err error) { data.Signals, err = db.AgentSignals(since); return }},
+		{"intervention outcomes", func() (err error) {
+			data.Interventions, err = db.AgentInterventionOutcomes(since)
+			return
+		}},
 		{"gate verdicts", func() (err error) { data.Gates, err = db.AgentGateVerdicts(since); return }},
 		{"outcomes", func() (err error) { data.Outcomes, err = db.AgentSessionOutcomes(since); return }},
 	} {
@@ -859,6 +904,7 @@ func observeReport(data observeData) report.Report {
 		{Header: "DECISIONS", Rows: observeDecisionRows(data.Decisions)},
 		{Header: "TURNS", Rows: observeTurnRows(data.Turns)},
 		{Header: "SIGNALS", Rows: observeSignalRows(data.Signals)},
+		{Header: "INTERVENED", Rows: observeInterventionRows(data.Interventions)},
 		{Header: "GATE", Rows: observeGateRows(data.Gates)},
 		{Header: "OUTCOMES", Rows: observeOutcomeRows(data.Outcomes)},
 		{Header: "SESSIONS", Rows: observeSessionRows(data.Sessions)},
@@ -1053,17 +1099,52 @@ func observeTurnState(outcome string) report.State {
 	return report.Pass
 }
 
-// observeSignalRows is the loop's own safeguards, with the gate left out: it
-// has a section of its own below, and one fact counted twice on one screen
-// reads as two.
+// observeSignalRows is the loop's own safeguards, with the gate and the
+// interruptions left out: each has a section of its own below, and one fact
+// counted twice on one screen reads as two. Every interruption reaches the
+// INTERVENED block — one that nothing read afterwards as its own "none" row —
+// so nothing is lost by leaving them out here, and what is gained is that
+// the count a reader sees is the one with the reading beside it.
 func observeSignalRows(signals []storage.AgentSignalCount) []report.Row {
 	rows := make([]report.Row, 0, len(signals))
 	for _, s := range signals {
-		if s.Signal == "gate" {
+		if s.Signal == "gate" || s.Signal == "intervened" {
 			continue
 		}
 		rows = append(rows, report.Row{State: report.Queue, Name: s.Signal,
 			Subject: countOf(s.Count, "time", "times"), Detail: s.Reason})
+	}
+	return rows
+}
+
+// observeInterventionRows is what the loop's own interruptions came to: each
+// kind of interruption, the reading the session came back with afterwards,
+// and how far past the interruption that reading was taken.
+//
+// The share is over the interruptions of that kind and nothing else. That is
+// the denominator the question needs: "a hundred steers" says only that the
+// threshold is low, and "sixty of a hundred steers were followed by an
+// on-target reading" is the sentence somebody about to change the threshold
+// is trying to write. A reading that never came keeps its row for the same
+// reason — dropped, it would shrink the denominator and make the machinery
+// look better the more often it interrupted a turn that was about to end.
+func observeInterventionRows(outcomes []storage.AgentInterventionOutcome) []report.Row {
+	total := map[string]int{}
+	for _, o := range outcomes {
+		total[o.Kind] += o.Count
+	}
+	rows := make([]report.Row, 0, len(outcomes))
+	for _, o := range outcomes {
+		share := ""
+		if n := total[o.Kind]; n > 0 {
+			share = fmt.Sprintf("%d of %d (%.0f%%)", o.Count, n, float64(o.Count)/float64(n)*100)
+		}
+		detail := ""
+		if o.Reading != "none" && o.AvgRounds > 0 {
+			detail = fmt.Sprintf("%s later", countOf(int(math.Round(o.AvgRounds)), "round", "rounds"))
+		}
+		rows = append(rows, report.Row{State: report.Queue,
+			Name: o.Kind + " → " + o.Reading, Subject: share, Detail: detail})
 	}
 	return rows
 }
@@ -1297,6 +1378,7 @@ func observeSessionReport(s storage.AgentSessionSummary, events []storage.AgentE
 	if s.ParentID != nil {
 		pairs = append(pairs, report.Pair{Key: "child of", Value: strconv.FormatInt(*s.ParentID, 10)})
 	}
+	pairs = append(pairs, observeChildPairs(s.Child)...)
 	pairs = append(pairs, observeSettingsPairs(s.Settings)...)
 
 	r := report.Report{
@@ -1364,6 +1446,7 @@ func observeSettingsPairs(c *storage.AgentSettings) []report.Pair {
 		{Key: "mode", Value: c.Mode},
 		{Key: "reasoning", Value: c.Reasoning},
 		{Key: "rounds", Value: rounds},
+		{Key: "check-in", Value: checkInEvery(c.CheckInInterval)},
 		{Key: "summary", Value: summary},
 		{Key: "classifier", Value: c.ClassifierModel},
 		{Key: "sandbox", Value: c.SandboxProfile},
@@ -1374,6 +1457,39 @@ func observeSettingsPairs(c *storage.AgentSettings) []report.Pair {
 		if p.Value != "" {
 			pairs = append(pairs, p)
 		}
+	}
+	return pairs
+}
+
+// checkInEvery is the check-in interval as the page words it, and empty on a
+// surface that never asks — a one-shot has no rounds to count, and a row
+// saying so would read as a mechanism that was switched off rather than one
+// that does not apply.
+func checkInEvery(rounds int) string {
+	if rounds <= 0 {
+		return ""
+	}
+	return fmt.Sprintf("every %d rounds", rounds)
+}
+
+// observeChildPairs is how a sub-agent's attempt ended, for the page of a
+// child's own row: the reason it stopped, the last reading of its work, the
+// steers it took and which attempt it was. Nothing at all for a session that
+// is not a child's, and nothing for a child still running — the row is
+// closed with these.
+func observeChildPairs(e *observe.ChildEnd) []report.Pair {
+	if e == nil {
+		return nil
+	}
+	pairs := []report.Pair{{Key: "ended", Value: e.Reason}}
+	if e.Attempt > 1 {
+		pairs = append(pairs, report.Pair{Key: "attempt", Value: strconv.Itoa(e.Attempt)})
+	}
+	if e.Verdict != "" {
+		pairs = append(pairs, report.Pair{Key: "read as", Value: e.Verdict})
+	}
+	if e.Steers > 0 {
+		pairs = append(pairs, report.Pair{Key: "steers", Value: strconv.Itoa(e.Steers)})
 	}
 	return pairs
 }
@@ -1818,6 +1934,7 @@ func observeCompared(data observeCompareData) observeCompareData {
 func observeCompareChanges(earlier, later *observeCohortData) []observeChange {
 	var out []observeChange
 	out = append(out, observeSteeringChanges(earlier, later)...)
+	out = append(out, observeInterventionChanges(earlier, later)...)
 	out = append(out, observeRoundsChanges(earlier, later)...)
 	out = append(out, observeFirstWriteChanges(earlier, later)...)
 	out = append(out, observeToolErrorChanges(earlier, later)...)
@@ -1921,6 +2038,30 @@ func observeSteeringChanges(earlier, later *observeCohortData) []observeChange {
 	}
 	return observeTallyRows("steering", "per turn", observeRate,
 		tally(earlier), tally(later), earlier.turns(), later.turns())
+}
+
+// observeInterventionChanges is what those interruptions came to: the share
+// of every interruption in the cohort that was followed by each reading
+// state. It is the figure a change to the drift thresholds is made for —
+// the steering block above says how often the machinery spoke, and only
+// this says whether the turn was any different afterwards.
+func observeInterventionChanges(earlier, later *observeCohortData) []observeChange {
+	tally := func(c *observeCohortData) observeTally {
+		var t observeTally
+		for _, o := range c.Reading.Interventions {
+			t.add(o.Kind+"/"+o.Reading, o.Kind+" → "+o.Reading, "", float64(o.Count))
+		}
+		return t
+	}
+	interruptions := func(c *observeCohortData) float64 {
+		var n int
+		for _, o := range c.Reading.Interventions {
+			n += o.Count
+		}
+		return float64(n)
+	}
+	return observeTallyRows("intervened", "of interruptions", observeShare,
+		tally(earlier), tally(later), interruptions(earlier), interruptions(later))
 }
 
 // observeRoundsChanges is rounds per turn, grouped by how the turn came out

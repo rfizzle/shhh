@@ -16,6 +16,7 @@
   mode:          accept-edits
   reasoning:     medium
   rounds:        150
+  check-in:      every 40 rounds
   summary:       claude-haiku-4-5 · every 10 rounds
   classifier:    claude-haiku-4-5
   sandbox:       workspace

@@ -25,10 +25,11 @@ func TestSessionSettings_FieldByField(t *testing.T) {
 
 	got := sessionSettings(cfg, runSettings{
 		mode: agent.ModeAcceptEdits.String(), effort: provider.EffortLow, rounds: 40,
+		checkIn: 20,
 		sandbox: "workspace-netless", model: "session-model", summary: true, classifier: true,
 	})
 	want := storage.AgentSettings{
-		Mode: "accept-edits", Reasoning: "low", MaxRounds: 40,
+		Mode: "accept-edits", Reasoning: "low", MaxRounds: 40, CheckInInterval: 20,
 		SummaryModel: "small-model", SummaryInterval: 25, SummaryEnabled: true,
 		// Unset in the config, so the session model — the rule the
 		// classifier itself resolves by.
@@ -48,6 +49,12 @@ func TestSessionSettings_FieldByField(t *testing.T) {
 	bare := sessionSettings(config.Config{}, runSettings{effort: provider.EffortMedium})
 	if bare.SummaryInterval != 0 || bare.SummaryModel != "" || bare.SummaryEnabled || bare.ClassifierModel != "" || bare.Mode != "" {
 		t.Fatalf("a surface without the mechanisms must not record them: %+v", bare)
+	}
+	// A one-shot counts no rounds, so it never reaches a check-in: the
+	// record says nothing rather than filling in a number that was never in
+	// force.
+	if bare.CheckInInterval != 0 {
+		t.Fatalf("a surface that never asks recorded an interval: %+v", bare)
 	}
 	withSummary := sessionSettings(config.Config{}, runSettings{model: "m", summary: true})
 	if withSummary.SummaryInterval != agent.DefaultSummaryInterval || withSummary.SummaryModel != "m" {
@@ -69,13 +76,29 @@ func TestRoundCapFor(t *testing.T) {
 	}
 }
 
+// checkInFor is the interval in force: what the config named, or the
+// built-in one. A surface stamped with zero here would join a cohort of
+// "no check-in", which is not a thing a session with rounds can be.
+func TestCheckInFor(t *testing.T) {
+	for _, c := range []struct{ in, want int }{
+		{0, agent.DefaultCheckInInterval},
+		{-1, agent.DefaultCheckInInterval},
+		{15, 15},
+	} {
+		if got := checkInFor(c.in); got != c.want {
+			t.Errorf("checkInFor(%d) = %d, want %d", c.in, got, c.want)
+		}
+	}
+}
+
 // settingsAllowlist is every config key the stamp keeps whole. A key not on
 // it reaches the store only through the hash, and a key added to the config
 // is off it until someone adds it here and in sessionSettings both.
 var settingsAllowlist = map[string]bool{
-	"Summary.Model":            true,
-	"Summary.IntervalRounds":   true,
-	"Behavior.ClassifierModel": true,
+	"Summary.Model":                  true,
+	"Summary.IntervalRounds":         true,
+	"Behavior.ClassifierModel":       true,
+	"Behavior.CheckInIntervalRounds": true,
 }
 
 // Nothing off the allowlist reaches the stamp. Every config field is filled
@@ -95,8 +118,12 @@ func TestSessionSettings_KeepsNothingOffTheAllowlist(t *testing.T) {
 		t.Fatalf("marked only %d config fields; the walk is not reaching the config", len(marked))
 	}
 
+	// The check-in interval reaches the stamp through the surface rather
+	// than out of the config here, so the run resolves it the way a session
+	// does — which is what puts the config's own value under this check.
 	run := runSettings{
 		mode: "auto", effort: provider.EffortHigh, rounds: 60,
+		checkIn: checkInFor(cfg.Behavior.CheckInIntervalRounds),
 		sandbox: "workspace", model: "session-model", summary: true, classifier: true,
 	}
 	got := sessionSettings(cfg, run)
@@ -135,6 +162,10 @@ func TestSessionSettings_KeepsNothingOffTheAllowlist(t *testing.T) {
 	}
 	if got.SummaryInterval != ints["Summary.IntervalRounds"] {
 		t.Fatalf("interval = %d, want the marker %d", got.SummaryInterval, ints["Summary.IntervalRounds"])
+	}
+	if got.CheckInInterval != ints["Behavior.CheckInIntervalRounds"] {
+		t.Fatalf("check-in = %d, want the marker %d",
+			got.CheckInInterval, ints["Behavior.CheckInIntervalRounds"])
 	}
 }
 

@@ -549,6 +549,7 @@ func (m *Model) stampStep(e entry) entry {
 		return e
 	}
 	e.planStep = m.planRun.claim(title)
+	m.noteOffPlan(e.planStep)
 	return e
 }
 

@@ -676,9 +676,10 @@ differs between them to the exit code and the screen.
 A change to a setting is only worth making if the record can say whether it
 helped, and it can only say so if it knows which sessions ran under which
 value. So every session is stamped with the settings that were in force when
-it started: the permission mode, the reasoning level, the round cap, whether
-the summariser was taking readings and on which model and at what interval,
-the classifier's model, and the containment profile. These are values, not
+it started: the permission mode, the reasoning level, the round cap, how many
+rounds pass before a turn is asked to take stock, whether the summariser was
+taking readings and on which model and at what interval, the classifier's
+model, and the containment profile. These are values, not
 merely fingerprints, because the question a tuning loop asks is "sessions at
 interval 10 against sessions at interval 20", and a hash has no order and no
 meaning to group by.
@@ -714,6 +715,72 @@ to auto halfway through is a different fact from either mode on its own.
 A session recorded before the settings were kept reads as having none. It
 does not read as having today's defaults, because a reader comparing two
 sessions would take the fill for a fact.
+
+### An interruption has an outcome
+
+The session interrupts its own turns — when a reading says the work has left
+its instruction, when a reading says the work is done, and when the interval
+comes round anyway. Every one of those is recorded with the reason it fired,
+and until now that was the whole record of it: the numbers behind the
+thresholds could be changed and the record would say the same number of
+steers went out either way, with nothing anywhere saying whether a single one
+of them landed.
+
+So each interruption is paired with the next reading of that session, and the
+pairing is what `shhh observe` draws: **steer → on-target**, with the share
+of that kind's interruptions beside it and how many rounds later the reading
+was taken. The denominator is every interruption of that kind, which is what
+turns a count into a sentence somebody can act on — "a hundred steers" says
+only that the threshold is low, and "sixty of a hundred steers were followed
+by an on-target reading" is the thing a person changing it is trying to find
+out. An interruption nothing read afterwards keeps its own row rather than
+being dropped: dropped, it would quietly shrink the denominator and make the
+machinery look better the more often it interrupted a turn that was about to
+end.
+
+The turn itself answers too. A turn the machinery interrupted files, once,
+when it closes, what became of it: the word the turn ended on, or **steered
+again** where a second reading found the same departure, or **withdrawn**
+where the reader took the interruption back. One row per interrupted turn and
+not one per interruption — a turn steered three times and finished is one
+turn that took three steers, and a row for each would report it as three
+successes. A withdrawal is filed here rather than at the keystroke for the
+same reason: it is the cheapest evidence the thresholds have that the check
+was wrong about a turn, and a turn that landed in two populations at once
+would be evidence for nothing.
+
+The same shape covers plan mode. An approved plan is the one place a session
+has a written statement of what it was going to do, so a run that announces
+work the plan never named raises a row against the approvals — once per run,
+because every departure after the first is the same run still off its plan.
+
+### A child ends for a reason
+
+A sub-agent's lane says `failed`, and that word answers nothing. A budget
+spent, a person pressing kill, a round limit reached with no way on and a
+provider that stopped answering are the same word there and four different
+answers to the only question anybody asks of a fan-out afterwards — whether
+three concurrent children, sixteen in total and a 200k token budget each are
+the right numbers.
+
+So a child's attempt ends with a reason from a closed set — `done`, `budget`,
+`killed`, `cancelled`, `cap`, `provider` or `failed` — and it is recorded on
+the child's own row, beside what that attempt spent and the model it spent it
+on. A budget is only answerable next to the spend it bounded. `killed` is
+told apart from `cancelled` deliberately: both reach a child as a cancelled
+context, and one is somebody deciding the child was not worth finishing while
+the other is the child having been going fine when the session left.
+
+Three more facts ride the same row. **The last reading of the child's work**,
+in the summariser's own vocabulary, so a child that ended `done` while every
+reading of it said off-target is visible as such. **How many steers it was
+given** over the whole attempt, which is what says whether steering a child
+helps. And **which attempt the row is**: a retry keeps the child's name and
+its place in the batch, but it is a separate run with its own conversation,
+its own budget and its own spend, so it gets a row of its own — and the
+attempt number is the only thing that joins that row to the one it replaces.
+The new attempt also says on its own record that it began again, because the
+row it replaces was closed before anything could replace it.
 
 ### Whether it worked
 

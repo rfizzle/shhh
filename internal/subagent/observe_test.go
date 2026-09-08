@@ -38,6 +38,7 @@ type testRecorder struct {
 	tokensOut int64
 	priced    bool
 	ended     bool
+	end       observe.ChildEnd
 }
 
 func (r *testRecorder) recorder() Recorder {
@@ -61,10 +62,10 @@ func (r *testRecorder) recorder() Recorder {
 				r.add(recordedEvent{kind: "decision", outcome: decision, reason: reason, pos: at})
 			},
 		},
-		End: func() {
+		End: func(e observe.ChildEnd) {
 			r.mu.Lock()
 			defer r.mu.Unlock()
-			r.ended = true
+			r.ended, r.end = true, e
 		},
 	}
 }
@@ -323,9 +324,14 @@ func TestChildRecordsARetryAndSaysSoOnItsLane(t *testing.T) {
 	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the code"}`)
 	execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
 
-	sigs := rec.of("signal")
-	if len(sigs) != 1 || sigs[0].outcome != observe.SignalRetry || sigs[0].reason != "rate-limit" {
-		t.Fatalf("expected one retry signal naming its class, got %+v", sigs)
+	var sigs []recordedEvent
+	for _, e := range rec.of("signal") {
+		if e.outcome == observe.SignalRetry {
+			sigs = append(sigs, e)
+		}
+	}
+	if len(sigs) != 1 || sigs[0].reason != "rate-limit" {
+		t.Fatalf("expected one retry signal naming its class, got %+v", rec.of("signal"))
 	}
 	if sigs[0].pos.Turn != 1 {
 		t.Errorf("the retry is unplaced: %+v", sigs[0].pos)
@@ -363,7 +369,7 @@ func (r *rowRecorder) open() Recorder {
 			defer r.mu.Unlock()
 			row.in, row.out = in, out
 		},
-	}}
+	}, End: func(observe.ChildEnd) {}}
 }
 
 func (r *rowRecorder) snapshot() []attemptRow {
@@ -734,5 +740,155 @@ func TestChildFilesAWithheldVerdictAtItsLivePosition(t *testing.T) {
 	if withheld.pos.Round <= sig.pos.Round {
 		t.Fatalf("the withheld verdict is filed at round %d, want the round the child had reached (past %d)",
 			withheld.pos.Round, sig.pos.Round)
+	}
+}
+
+// endRecorder collects what each attempt's row was closed with, in the order
+// the attempts ran, so a retry's row and the one it replaces can be read
+// side by side.
+type endRecorder struct {
+	mu    sync.Mutex
+	specs []Spec
+	ends  []observe.ChildEnd
+}
+
+func (r *endRecorder) open(spec Spec) Recorder {
+	r.mu.Lock()
+	r.specs = append(r.specs, spec)
+	r.mu.Unlock()
+	return Recorder{End: func(e observe.ChildEnd) {
+		r.mu.Lock()
+		defer r.mu.Unlock()
+		r.ends = append(r.ends, e)
+	}}
+}
+
+func (r *endRecorder) snapshot() ([]Spec, []observe.ChildEnd) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return append([]Spec(nil), r.specs...), append([]observe.ChildEnd(nil), r.ends...)
+}
+
+func supervisorEnding(t *testing.T, env *scriptedEnv, rec *endRecorder) *Supervisor {
+	t.Helper()
+	sup := New(t.Context(), Options{
+		Root:   t.TempDir(),
+		NewEnv: env.factory(),
+		Record: func(spec Spec, _ string) Recorder { return rec.open(spec) },
+	})
+	t.Cleanup(sup.Close)
+	return sup
+}
+
+// A child that spent its budget says so, and the retry that follows carries
+// the number that joins its row to the one it replaces. "failed" is what the
+// lane says and it answers nothing: a budget spent, a kill and a provider
+// that stopped answering are the same word there and three different answers
+// to whether 200k is the right number.
+func TestChildEndsWithABudgetReasonAndItsRetryIsTheSecondAttempt(t *testing.T) {
+	env := &scriptedEnv{steps: []streamStep{
+		{text: "over budget", usage: &provider.Usage{PromptTokens: 4000, CompletionTokens: 200}},
+	}}
+	rec := &endRecorder{}
+	sup := supervisorEnding(t, env, rec)
+
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey","max_tokens":2000}`)
+	waitState(t, sup, "researcher-1", StateFailed)
+
+	if st, _ := sup.Get("researcher-1"); st.End != observe.ChildBudget {
+		t.Fatalf("the child ended as %q, want %q", st.End, observe.ChildBudget)
+	}
+
+	env.mu.Lock()
+	env.steps = []streamStep{{text: "done", usage: &provider.Usage{PromptTokens: 100, CompletionTokens: 20}}}
+	env.mu.Unlock()
+	retryWhenReady(t, sup, "researcher-1")
+	waitState(t, sup, "researcher-1", StateDone)
+	// The second attempt's row is closed on its own goroutine, after the
+	// state it reports; the specs are opened before the run either way.
+	specs, _ := rec.snapshot()
+	for len(specs) < 2 {
+		time.Sleep(time.Millisecond)
+		specs, _ = rec.snapshot()
+	}
+
+	if len(specs) != 2 || specs[0].Attempt != 1 || specs[1].Attempt != 2 {
+		t.Fatalf("attempts stamped %+v, want a row per attempt numbered 1 then 2", specs)
+	}
+	deadline := time.Now().Add(5 * time.Second)
+	var ends []observe.ChildEnd
+	for time.Now().Before(deadline) {
+		if _, ends = rec.snapshot(); len(ends) == 2 {
+			break
+		}
+		time.Sleep(time.Millisecond)
+	}
+	if len(ends) != 2 {
+		t.Fatalf("expected an end per attempt, got %+v", ends)
+	}
+	if ends[0].Reason != observe.ChildBudget || ends[0].Attempt != 1 {
+		t.Errorf("the first attempt's row = %+v, want the budget it spent on attempt 1", ends[0])
+	}
+	if ends[1].Reason != observe.ChildDone || ends[1].Attempt != 2 {
+		t.Errorf("the retry's row = %+v, want done on attempt 2", ends[1])
+	}
+}
+
+// A kill and a session shutting down both reach a child as a cancelled
+// context, and the record must not report them as the same thing: one is a
+// person deciding the child was not worth finishing.
+func TestAKilledChildEndsAsKilledAndNotAsCancelled(t *testing.T) {
+	env := &scriptedEnv{steps: toolRounds(200), delay: 5 * time.Millisecond}
+	rec := &endRecorder{}
+	sup := supervisorEnding(t, env, rec)
+
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the code"}`)
+	waitToolCalls(t, sup, "researcher-1", 1)
+	if err := sup.Kill("researcher-1"); err != nil {
+		t.Fatalf("killing the child: %v", err)
+	}
+	waitState(t, sup, "researcher-1", StateFailed)
+
+	if st, _ := sup.Get("researcher-1"); st.End != observe.ChildKilled {
+		t.Fatalf("a killed child ended as %q, want %q", st.End, observe.ChildKilled)
+	}
+}
+
+// The reading that rides a child's end is the record's own word for it and
+// not the wording its lane shows: two spellings of one summariser state is
+// two columns nothing can add up, and a column filled from a roster line
+// changes meaning the day somebody rewords the roster.
+func TestAChildsEndCarriesTheReadingInTheRecordsOwnWord(t *testing.T) {
+	reader := newHeldReader("off_target")
+	close(reader.release)
+	env := &scriptedEnv{
+		steps: append(toolRounds(agent.FirstSummaryRound+1), streamStep{text: "done"}),
+		delay: time.Millisecond,
+		summarizer: agent.NewSummarizer(reader,
+			agent.SummaryConfig{Model: "fast", IntervalRounds: 10, MinGap: -1, InterveneCooldownIntervals: 1}),
+	}
+	rec := &endRecorder{}
+	sup := supervisorEnding(t, env, rec)
+
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the exporter"}`)
+	execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
+
+	deadline := time.Now().Add(5 * time.Second)
+	var ends []observe.ChildEnd
+	for time.Now().Before(deadline) {
+		if _, ends = rec.snapshot(); len(ends) == 1 && ends[0].Verdict != "" {
+			break
+		}
+		time.Sleep(time.Millisecond)
+	}
+	if len(ends) != 1 {
+		t.Fatalf("expected one closed row, got %+v", ends)
+	}
+	want := observe.SummaryCode(agent.SummaryOffTarget)
+	if ends[0].Verdict != want {
+		t.Fatalf("the end carries verdict %q, want the record's own %q", ends[0].Verdict, want)
+	}
+	if !storedWord.MatchString(ends[0].Verdict) {
+		t.Fatalf("the stored verdict is not a code: %q", ends[0].Verdict)
 	}
 }

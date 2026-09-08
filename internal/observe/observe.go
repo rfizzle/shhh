@@ -241,6 +241,19 @@ const (
 	// drift rate asks is what the session did on its own, and folding the two
 	// together would put the user's own messages in the numerator.
 	SignalIntervene = "intervened"
+	// SignalOutcome: a turn the machinery interrupted has ended. Reason:
+	// what became of it, from InterveneOutcome — the turn's own closing word
+	// where the interruption was answered, "steered-again" where a second
+	// reading found the same departure, "withdrawn" where the reader took
+	// the interruption back.
+	//
+	// Separate from SignalIntervene because that one counts interruptions
+	// and this one counts turns: a turn steered three times is three rows
+	// there and one row here, and folding them together would weight a
+	// single turn's outcome by how often the machinery spoke during it. One
+	// row per interrupted turn is what makes this a rate — the interrupted
+	// turns are the denominator, and their closing words are the numerator.
+	SignalOutcome = "intervention-outcome"
 	// SignalTree: the session told its turn the working tree moved in a way
 	// its own edits do not explain. Reason: "head" (the commit or branch
 	// moved), "paths" (the changed set did), or "both".
@@ -258,13 +271,28 @@ const (
 	SignalUndo = "undo"
 	// SignalMode: the permission mode changed. Reason: the new mode.
 	SignalMode = "mode"
-	// SignalPlan: a plan card was answered. Reason: "approved", "kept" or
-	// "rejected".
+	// SignalPlan: a plan card was answered, or the run of an approved plan
+	// left it. Reason: "approved", "kept", "rejected" or "off-plan".
+	//
+	// One code for both because the answers are the denominator the
+	// departure is read against: "12 approved, 5 off-plan" is the rate a
+	// reader of plan mode is asking for, and it is only a rate while the two
+	// are counted the same way. The departure is filed once per run, at the
+	// first step the plan never named — a run that wanders for twenty steps
+	// has drifted once as far as this rate is concerned, and counting each
+	// one would let a single bad run outweigh a hundred good ones.
 	SignalPlan = "plan"
 	// SignalRounds: a round-cap pause was answered. Reason: "granted" or
 	// "uncapped".
 	SignalRounds = "rounds"
-	// SignalSubagent: a child finished. Reason: its final state.
+	// SignalSubagent: a child's attempt ended, or another began in its
+	// place. Reason: one of the words below.
+	//
+	// It is filed on the child's own record rather than on the parent's,
+	// which is where the row that carries the attempt's model, spend and
+	// budget already is. A parent's copy would say the same thing about the
+	// same attempt, and every rate taken over a window would count a
+	// fan-out's children twice.
 	SignalSubagent = "subagent"
 	// SignalRun: the backlog runner moved. Reason: the action taken, or
 	// "replan", "stopped", "kept", "lane-refused".
@@ -320,6 +348,105 @@ const (
 	// path where a setting chooses the string.
 	SearchOther = "other"
 )
+
+// PlanOffPlan is SignalPlan's fourth word: an approved plan's run announced
+// work the plan never named. The three answers beside it are what a person
+// said to the card; this is what the run then did, and it is the only one of
+// the four a person did not choose.
+const PlanOffPlan = "off-plan"
+
+// Ends for SignalSubagent: how a child's attempt stopped, and the one word
+// among them that says an attempt began rather than ended.
+//
+// They are the child's ends and not its lifecycle states. "failed" was the
+// state four of these arrived as — a budget spent, a kill, a round limit and
+// a provider that stopped answering are one word on a lane and four
+// different questions about a fan-out, and the one they are all asked for is
+// whether the budget is set right. A state cannot answer it; these can.
+const (
+	// ChildDone: the child answered and reported.
+	ChildDone = "done"
+	// ChildBudget: the child spent the token budget it was spawned with.
+	ChildBudget = "budget"
+	// ChildKilled: a person ended the child from the agent manager.
+	ChildKilled = "killed"
+	// ChildCancelled: the child's context went with the turn or the session
+	// that owned it — nobody ended this child, something above it ended.
+	ChildCancelled = "cancelled"
+	// ChildCap: the round cap ended the attempt. It is not the ordinary cap,
+	// which is a check-in the child carries on from; it is the one reached
+	// with no way on.
+	ChildCap = "cap"
+	// ChildProvider: the provider stopped answering, classified.
+	ChildProvider = "provider"
+	// ChildFailed: the attempt broke for a reason this build has no word
+	// for — a workspace that could not be taken, a loop that returned an
+	// error nothing above classified.
+	ChildFailed = "failed"
+	// ChildRetry: an attempt began in place of one that ended. It is filed
+	// on the new attempt's own record, because the row that ended is closed
+	// by the time anything replaces it, and it is what makes a retry visible
+	// to a reader who is not joining rows by their attempt number.
+	ChildRetry = "retry"
+)
+
+// ChildEnd is what a child's attempt is closed with, beside the outcome
+// every session row carries: how it ended, the last reading of its work,
+// how many steers it was given and which attempt it was.
+//
+// They ride the row rather than the event because the question they answer
+// is about the attempt as a whole — was 200k enough, did steering help, did
+// the second attempt do better than the first — and that question is asked
+// of the row that holds the attempt's spend and its model. An event would
+// have to be joined back to it to say anything at all.
+// See docs/capabilities/sessions-and-memory.md#a-child-ends-for-a-reason.
+type ChildEnd struct {
+	// Reason is one of the words above, empty on a row that is not a
+	// child's.
+	Reason string
+	// Verdict is the last reading of the child's work, from SummaryCode —
+	// the same word the reading itself was filed under, never the wording a
+	// lane shows a person, so a child's end and the readings that led to it
+	// can be read against each other.
+	Verdict string
+	// Steers is how many times the child was told it had left its task.
+	Steers int
+	// Attempt is which attempt this row is, from 1. A retry's row and the
+	// one it replaces share a parent and differ here, which is the whole of
+	// what joins them.
+	Attempt int
+}
+
+// InterveneSteeredAgain and InterveneWithdrawn are the two words SignalOutcome
+// adds to the turn's own closing set. Everything else it files is the word
+// the turn ended on, so a rate over interrupted turns and a rate over all
+// turns are read in the same vocabulary.
+const (
+	InterveneSteeredAgain = "steered-again"
+	InterveneWithdrawn    = "withdrawn"
+)
+
+// InterveneOutcome is what became of a turn the machinery interrupted, as
+// SignalOutcome's qualifier. turn is the turn's own closing word, steers how
+// many steers it was delivered and withdrawn whether the reader took one
+// back.
+//
+// The order is the order of what it tells a person changing the thresholds.
+// A withdrawal is the reader saying the check was wrong, and it outranks
+// everything after it because a turn that then finished well finished well
+// in spite of the interruption rather than because of it. A second steer is
+// the machinery saying its own first one did not work, which is the reading
+// the drift thresholds are actually tuned against. Only when neither
+// happened does how the turn ended stand for how the interruption went.
+func InterveneOutcome(turn string, steers int, withdrawn bool) string {
+	switch {
+	case withdrawn:
+		return InterveneWithdrawn
+	case steers > 1:
+		return InterveneSteeredAgain
+	}
+	return turn
+}
 
 // Reasons for SignalTodo: how the backlog grew or changed. Drafting from a
 // sentence and reading a session into items are told apart because they are

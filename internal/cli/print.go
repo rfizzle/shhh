@@ -969,6 +969,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		stage:      runStage,
 		effort:     env.effort,
 		rounds:     roundCapFor(opts.rounds(cfg)),
+		checkIn:    checkInFor(cfg.Behavior.CheckInIntervalRounds),
 		sandbox:    sandboxProfile,
 		model:      auxiliaryModel(env.provName, env.modelName),
 		summary:    cfg.HeadlessSummaryEnabled(),

@@ -22,6 +22,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -97,6 +98,23 @@ func (r *planRun) claim(title string) int {
 	r.claims++
 	r.claimed[best] = r.claims
 	return r.doc.Steps[best].Number
+}
+
+// noteOffPlan files the run's first departure from the plan it was given.
+//
+// Once per run, at the first step the plan never named: an approved plan is
+// the one place the session has a written statement of what it was going to
+// do, and whether the work then follows it is the only objective reading of
+// plan mode there is. Every departure after the first is the same run still
+// off its plan — counting each would let one wandering run outweigh a
+// hundred that followed theirs, and the answer wanted here is what share of
+// plans are departed from at all
+// (internal/observe, SignalPlan).
+func (m *Model) noteOffPlan(step int) {
+	if step != offPlanStep || len(m.planRun.offPlan) != 1 {
+		return
+	}
+	m.signal(observe.SignalPlan, observe.PlanOffPlan)
 }
 
 // carryOver detaches the run from the transcript it was recorded in: the

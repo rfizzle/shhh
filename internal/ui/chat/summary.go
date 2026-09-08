@@ -87,6 +87,13 @@ type summaryState struct {
 	// the next reading is told about them in. They are turn-scoped like the
 	// schedule: a steer answered last turn is not evidence about this one.
 	interventions []string
+	// steers is how many of those were steers still standing — the count the
+	// record files this turn's outcome against. It is beside the rows rather
+	// than counted off them because a withdrawn steer leaves the rows (the
+	// next reading must not be told about a message that left the
+	// conversation) and it must leave this too: the second steer of a turn
+	// whose first was taken back is the first one anybody read.
+	steers int
 	// inFlight marks a reading already asked for; a second is never sent.
 	inFlight bool
 	// runID is the run the in-flight reading belongs to, so a verdict that
@@ -113,6 +120,7 @@ func (s *summaryState) startTurn() {
 	s.last = nil
 	s.schedule = agent.SummarySchedule{}
 	s.interventions = nil
+	s.steers = 0
 }
 
 // summarySteered retires what the summary had in hand when a person typed
@@ -152,6 +160,9 @@ func (m *Model) summarySteered() {
 func (s *summaryState) noteIntervention(iv agent.Intervention, round int) {
 	s.schedule.Intervened(round)
 	s.interventions = append(s.interventions, iv.Row(round))
+	if iv.Kind == agent.InterveneSteer {
+		s.steers++
+	}
 }
 
 // dropIntervention unsays one of those rows, for an interruption the reader
@@ -164,13 +175,24 @@ func (s *summaryState) noteIntervention(iv agent.Intervention, round int) {
 // forward is a reading taken sooner, which is what the reader wants after
 // telling the machinery it was wrong: the sooner answer is the one that says
 // whether it still thinks so.
-func (s *summaryState) dropIntervention(row string) {
+func (s *summaryState) dropIntervention(iv agent.Intervention, row string) {
+	if iv.Kind == agent.InterveneSteer && s.steers > 0 {
+		s.steers--
+	}
 	for i, have := range s.interventions {
 		if have == row {
 			s.interventions = append(s.interventions[:i:i], s.interventions[i+1:]...)
 			return
 		}
 	}
+}
+
+// intervened reports whether this turn's machinery interrupted it at all —
+// including an interruption the reader has since taken back, which is the
+// one outcome the thresholds most need to hear about.
+func (m Model) intervened() bool {
+	return len(m.summary.interventions) > 0 || m.summary.steers > 0 ||
+		m.agent.InterventionWithdrawn()
 }
 
 // resetSummary starts the whole mechanism over at a session boundary, where

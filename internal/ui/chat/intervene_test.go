@@ -5,6 +5,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
@@ -430,5 +431,128 @@ func TestWithdrawSteer_TheNoticeIsAReadingModeStop(t *testing.T) {
 	// live draft (inertkeys.go).
 	if line := m.steerOfferLine(m.transcript[idx], true); !strings.Contains(line, "take the steer back") {
 		t.Errorf("the row should draw its offer, got %q", line)
+	}
+}
+
+// signalsOf collects the record's signals for a model under test.
+func signalsOf(m *Model, into *[]string) {
+	m.observer = observe.Observer{Signal: func(_ observe.Pos, code, reason string) {
+		*into = append(*into, code+"/"+reason)
+	}}
+}
+
+// A turn the machinery interrupted files what became of it, once, when it
+// ends. The interventions themselves were already counted; what the record
+// had no way to say is whether interrupting the turn changed anything.
+func TestIntervened_TheTurnsOutcomeIsFiledAgainstItsInterruptions(t *testing.T) {
+	m := steeredModel(t)
+	var got []string
+	signalsOf(&m, &got)
+
+	m.appendTurnClose()
+
+	want := observe.SignalOutcome + "/" + observe.TurnDone
+	if !slices.Contains(got, want) {
+		t.Fatalf("expected %q at the turn's close, got %v", want, got)
+	}
+}
+
+// A second steer is the machinery saying its own first one did not work,
+// which is the reading the drift thresholds are tuned against — so it
+// outranks how the turn then happened to end.
+func TestIntervened_ASecondSteerOutranksTheTurnsOwnEnding(t *testing.T) {
+	m := steeredModel(t)
+	m.summary.steers++
+	var got []string
+	signalsOf(&m, &got)
+
+	m.appendTurnClose()
+
+	want := observe.SignalOutcome + "/" + observe.InterveneSteeredAgain
+	if !slices.Contains(got, want) {
+		t.Fatalf("expected %q at the turn's close, got %v", want, got)
+	}
+}
+
+// A withdrawal is the one direct piece of evidence the thresholds have that
+// the check was wrong about a turn, and it is filed here rather than at the
+// keystroke so a withdrawn turn lands in one population and not two.
+func TestIntervened_AWithdrawnSteerIsTheTurnsOutcome(t *testing.T) {
+	m := steeredModel(t)
+	m.focusIdx = steerNoticeIndex(t, m)
+	updated, _, _ := m.withdrawSteer(keys.Shown(keys.Row.Undo))
+	next := updated.(Model)
+
+	var got []string
+	signalsOf(&next, &got)
+	next.appendTurnClose()
+
+	want := observe.SignalOutcome + "/" + observe.InterveneWithdrawn
+	if !slices.Contains(got, want) {
+		t.Fatalf("expected %q at the turn's close, got %v", want, got)
+	}
+}
+
+// A turn nothing interrupted files nothing: the denominator this rate is
+// over is the interrupted turns, and every quiet turn in it would bury them.
+func TestIntervened_AnUninterruptedTurnFilesNothing(t *testing.T) {
+	m := summaryModel(t, &readingProvider{text: "Reading.", state: "on_target"})
+	m.turnOpen = true
+	var got []string
+	signalsOf(&m, &got)
+
+	m.appendTurnClose()
+
+	for _, s := range got {
+		if strings.HasPrefix(s, observe.SignalOutcome+"/") {
+			t.Fatalf("an uninterrupted turn filed %q", s)
+		}
+	}
+}
+
+// A granted round-limit pause reopens the same turn rather than starting
+// another, and it deliberately keeps the turn's steer count. So an
+// interrupted turn that pauses at its ceiling and then carries on must file
+// one row, not one at the pause and another at the end — two would put a
+// single interrupted turn in the population twice, with the steers counted
+// against it both times.
+func TestIntervened_ARoundLimitPauseDoesNotFileTheOutcomeTwice(t *testing.T) {
+	m := steeredModel(t)
+	// The turn's clock, which is what setTurnState reads to tell a turn that
+	// is ending from a session that never started one.
+	m.turnStarted, m.turnEnded = time.Now(), time.Time{}
+	var got []string
+	signalsOf(&m, &got)
+
+	// The pause: the turn stops at its ceiling and hands the keyboard back.
+	paused, _ := m.pauseAtRoundLimit()
+	m = paused.(Model)
+	if !m.pausedAtRoundLimit() {
+		t.Fatal("the turn should be parked at its round limit")
+	}
+	// The pause is the transition every other path reads as the turn ending,
+	// so it ran the close once already — which is the whole trap here.
+	if m.turnOpen {
+		t.Fatal("the pause should have run the turn's close")
+	}
+	for _, s := range got {
+		if strings.HasPrefix(s, observe.SignalOutcome+"/") {
+			t.Fatalf("the pause filed an outcome for a turn that has not ended: %v", got)
+		}
+	}
+
+	// Granted, the turn carries on and ends in the ordinary way.
+	m.roundPause.spent = true
+	m.turnOpen = true
+	m.appendTurnClose()
+
+	var outcomes []string
+	for _, s := range got {
+		if strings.HasPrefix(s, observe.SignalOutcome+"/") {
+			outcomes = append(outcomes, s)
+		}
+	}
+	if len(outcomes) != 1 {
+		t.Fatalf("one interrupted turn filed %v, want exactly one outcome", outcomes)
 	}
 }

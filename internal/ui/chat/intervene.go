@@ -48,6 +48,23 @@ func (m Model) WithSteering(s agent.Steering) Model {
 	return m
 }
 
+// recordIntervened files what became of a turn the machinery interrupted:
+// one row per interrupted turn, at the turn's close, in the vocabulary
+// internal/observe holds.
+//
+// One row and not one per interruption. The interventions themselves are
+// already counted, and what is missing from the record is the other half of
+// the sentence — a turn steered three times and finished is one turn that
+// took three steers to finish, and a row per steer would report it as three
+// successes.
+func (m *Model) recordIntervened(turn string) {
+	if !m.intervened() {
+		return
+	}
+	m.signal(observe.SignalOutcome,
+		observe.InterveneOutcome(turn, m.summary.steers, m.agent.InterventionWithdrawn()))
+}
+
 // injectInterventions delivers whatever the round boundary owes, and shows it.
 func (m *Model) injectInterventions() {
 	iv, ok := m.agent.NextIntervention(m.summaryTarget)
@@ -200,9 +217,11 @@ func (m Model) focusedSteerNotice() (entry, bool) {
 // row and the pager's half page exactly as they were.
 //
 // The record is not written here. A withdrawal is the cheapest evidence the
-// thresholds have that the check was wrong about a turn, and where that is
-// filed is a question about an intervention's outcome — one place, one row,
-// joined forward to the reading that follows it.
+// thresholds have that the check was wrong about a turn, and it is filed
+// where every other outcome of an interruption is: once, when the turn it
+// interrupted ends (recordIntervened, observe.go). Filing it at the
+// keystroke would put a turn that was steered and then withdrawn in two
+// populations at once.
 func (m Model) withdrawSteer(key string) (tea.Model, tea.Cmd, bool) {
 	if !keys.Is(key, keys.Row.Undo) {
 		return m, nil, false
@@ -220,7 +239,7 @@ func (m Model) withdrawSteer(key string) (tea.Model, tea.Cmd, bool) {
 		return next, cmd, true
 	}
 	e.intervened.withdrawn = true
-	m.summary.dropIntervention(e.intervened.row)
+	m.summary.dropIntervention(e.intervened.iv, e.intervened.row)
 	m.transcript[m.focusIdx].text = withdrawnNotice(e.intervened.iv)
 	m.invalidateRenderCache()
 	m.refreshFocusView()

@@ -263,6 +263,13 @@ func goldenObserve() observeData {
 			{Signal: "summary", Reason: "on-target", Count: 5},
 			{Signal: "context-trimmed", Reason: "4", Count: 1},
 		},
+		// Two steers, one of which the next reading answered on target, and
+		// a check-in the turn ended on before anything read it again.
+		Interventions: []storage.AgentInterventionOutcome{
+			{Kind: "steer", Reading: "on-target", Count: 1, AvgRounds: 3},
+			{Kind: "steer", Reading: "off-target", Count: 1, AvgRounds: 5},
+			{Kind: "check-in", Reading: "none", Count: 1},
+		},
 		// A suite that mostly passes, and one whose runs never got a
 		// verdict at all — blocked is named beside the failures and kept
 		// out of the pass rate.
@@ -330,6 +337,7 @@ func goldenObserveSessionRow() storage.AgentSessionSummary {
 			Mode: "accept-edits", Reasoning: "medium", MaxRounds: 150,
 			SummaryModel: "claude-haiku-4-5", SummaryInterval: 10, SummaryEnabled: true,
 			ClassifierModel: "claude-haiku-4-5", SandboxProfile: "workspace", ConfigHash: "c0ffee0ddba1",
+			CheckInInterval: 40,
 		},
 	}
 }

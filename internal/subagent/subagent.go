@@ -180,6 +180,13 @@ type Status struct {
 	// reading yet — one in its first interval, or one whose session turned
 	// readings off, which is what the roster's own header exists to say.
 	Verdict string
+	// End is how this child's attempt stopped, from the closed set in
+	// internal/observe, and empty while it is still running. It is the
+	// reason rather than the state: "failed" is what a lane says, and a
+	// budget spent, a kill and a provider that stopped answering are three
+	// different answers to the only question anybody asks of a fan-out
+	// afterwards.
+	End string
 	// SteerFrom is where the last message put in front of this child came
 	// from. Empty is a child nobody and nothing has redirected. It is the
 	// last steer's own source rather than the turn's, so it outlives the
@@ -490,6 +497,12 @@ type Spec struct {
 	// under has to be stamped from somewhere, and the CLI is what stamps it.
 	Mode      agent.Mode
 	MaxRounds int
+	// Attempt is which run of this child the row being opened is, from 1. A
+	// retry keeps the child's name and its place in the batch but is a
+	// separate run with its own conversation, budget and spend, so it gets a
+	// row of its own — and this number is the only thing that joins that row
+	// to the one it replaces.
+	Attempt int
 }
 
 // EnvFactory builds a child's Env; ctx is the child's context (cancelling it
@@ -503,7 +516,12 @@ type EnvFactory func(ctx context.Context, spec Spec) (Env, error)
 // the row for it.
 type Recorder struct {
 	observe.Observer
-	End func()
+	// End closes the attempt's row with how it ended. The end is a value
+	// rather than nothing because a child's row is the one place the answer
+	// to "was the budget right" can be assembled: the reason it stopped, the
+	// last reading of its work and the steers it took sit beside the tokens
+	// it spent, on the same row, for the same attempt.
+	End func(observe.ChildEnd)
 }
 
 // Options configures a Supervisor.
@@ -768,10 +786,22 @@ type child struct {
 	// own session row is told. The status adds the carried spend back,
 	// because money already spent does not stop being spent when the child
 	// runs again and a lane shows one child rather than one attempt.
-	priorIn   int64
-	priorOut  int64
+	priorIn  int64
+	priorOut int64
+	// attempt is which run of this child is current, from 1. It is the
+	// child's rather than the attempt's for the reason the carried spend is:
+	// a lane shows one child, and only the record separates its attempts.
 	attempt   int
 	budgetHit bool
+	// killed marks a child a person ended from the manager. Both a kill and
+	// a session shutting down reach the child as a cancelled context, and
+	// the record must not report them as the same thing: one is somebody
+	// deciding a child was not worth finishing, and the other is the child
+	// having been going fine when the process left.
+	killed bool
+	// endReason is how this attempt stopped, from the closed set in
+	// internal/observe, and empty until it does.
+	endReason string
 	checkIns  int
 	// steers is what Status.Steers reports and verdict what Status.Verdict
 	// does. They are the child's own copies under this lock rather than
@@ -780,11 +810,20 @@ type child struct {
 	// loop's own state from there is a race. The lock is owed on the writing
 	// side too, and by more than the run's goroutine: the reading that sets
 	// verdict can land after the run it was reading has returned.
-	steers    int
+	steers int
+	// steersAll is every steer this attempt has been given, which the record
+	// takes; steers above is the current turn's, which the lane shows.
+	steersAll int
 	verdict   string
-	steerFrom SteerSource
-	report    string
-	patchNote string
+	// verdictCode is the same reading in the record's own closed vocabulary,
+	// which verdict above is not: that one is the wording the roster shows a
+	// person, and a column filled from it would hold a second spelling of
+	// every state the rest of the record already has a word for — and would
+	// change spelling the day somebody reworded a lane.
+	verdictCode string
+	steerFrom   SteerSource
+	report      string
+	patchNote   string
 	// prologue is what the next attempt's first turn opens with, ahead of
 	// the task: what the attempt it replaces hit, and the handoff it left.
 	// It is a field rather than an argument to run because a retry can be
@@ -889,6 +928,7 @@ func (c *child) status() Status {
 		Steps:     c.steps,
 		Summary:   summary,
 		CheckIns:  c.checkIns,
+		End:       c.endReason,
 		Steers:    c.steers,
 		Verdict:   c.verdict,
 		SteerFrom: c.steerFrom,
@@ -1104,6 +1144,36 @@ func (c *child) pos() observe.Pos {
 	turn, a := int64(c.turns), c.agent
 	c.mu.Unlock()
 	return observe.Pos{Turn: turn, Round: int64(a.Rounds())}
+}
+
+// endRound is the round an attempt's closing event is filed at: the live one
+// where there is an agent to ask for it, and zero for an attempt cancelled
+// in the queue, which never had one.
+func (c *child) endRound() int {
+	c.mu.Lock()
+	a := c.agent
+	c.mu.Unlock()
+	if a == nil {
+		return 0
+	}
+	return a.Rounds()
+}
+
+// end is what this attempt's row is closed with: how it stopped, the last
+// reading of its work, every steer it was given and which attempt it was.
+//
+// The steers are the attempt's total and not the live count its lane shows.
+// A lane answers "is this child ignoring its reader right now", and goes back
+// to zero at every turn for it; the record answers "did steering this child
+// help", and a count that forgot the first two turns' steers would say no
+// child is ever steered more than once.
+func (c *child) end() observe.ChildEnd {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return observe.ChildEnd{
+		Reason: c.endReason, Verdict: c.verdictCode,
+		Steers: c.steersAll, Attempt: c.attempt,
+	}
 }
 
 // signalAt records one signal about a round the caller names, for the events
@@ -1637,6 +1707,13 @@ func (s *Supervisor) Kill(name string) error {
 		return fmt.Errorf("agent %s has already finished (%s)", name, state)
 	}
 	c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Killed by the user."})
+	// Marked before the cancel rather than read off it afterwards: the child
+	// comes out of its wait on a cancelled context, which is also what a
+	// session shutting down hands it, and the mark is the only thing that
+	// tells the record which of the two ended this attempt.
+	c.mu.Lock()
+	c.killed = true
+	c.mu.Unlock()
 	c.stop()
 	return nil
 }
@@ -1800,6 +1877,12 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	// The cap the attempt being replaced grew to, so a retry does not start
 	// back at a ceiling its predecessor had already talked its way past.
 	maxRounds := c.maxRounds
+	// And the number this attempt is. It is claimed here rather than with
+	// the counter resets below because a reader's record is opened before
+	// them, and a row stamped with the number of the attempt it replaces
+	// would join a retry to itself.
+	c.attempt++
+	attempt := c.attempt
 	c.mu.Unlock()
 
 	cctx, cancel := context.WithCancel(s.ctx)
@@ -1812,8 +1895,13 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	w := workspace{root: s.opts.Root}
 	if !c.profile.Writes {
 		var wErr error
-		if w, wErr = s.openWorkspace(c, cctx, maxRounds); wErr != nil {
+		if w, wErr = s.openWorkspace(c, cctx, maxRounds, attempt); wErr != nil {
 			cancel()
+			// The number goes back with it: nothing ran under it, and a
+			// second press must not leave a gap in the child's attempts.
+			c.mu.Lock()
+			c.attempt--
+			c.mu.Unlock()
 			return fmt.Errorf("cannot set up the retry: %w", wErr)
 		}
 	}
@@ -1837,7 +1925,6 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	c.done = make(chan struct{})
 	c.state, c.detail = StateQueued, "queued · retry"
 	c.started, c.ended = time.Now(), time.Time{}
-	c.attempt++
 	c.maxTokens = budget
 	// The attempt is told what the one before it hit and handed over. A
 	// retry on the identical prompt is an attempt with no reason to come out
@@ -1852,7 +1939,12 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	c.checkIns = 0
 	// A retry is a fresh conversation on the same task: no steer has reached
 	// this attempt, whatever the last one was told.
-	c.steers, c.verdict, c.steerFrom = 0, "", ""
+	c.steers, c.steersAll, c.verdict, c.verdictCode, c.steerFrom = 0, 0, "", "", ""
+	// And the attempt it replaces ended for a reason that is that attempt's,
+	// already on that attempt's own row. A retry that inherited it would
+	// report the child as having ended twice the same way — and a child
+	// killed once would report every attempt after it as killed too.
+	c.endReason, c.killed = "", false
 	c.turns = 0
 	c.toolCalls, c.step = 0, 0
 	// A retry starts from a worktree of its own, so what the attempt it
@@ -2066,10 +2158,11 @@ type workspace struct {
 // stands when the lane starts, not as it stood when the fan-out was planned.
 // See docs/capabilities/subagents.md#a-writer-starts-from-your-tree.
 //
-// ctx and maxRounds are passed rather than read off the child because the
-// attempt they belong to is the caller's: a retry has installed neither by
-// the time it opens the workspace its new attempt will run in.
-func (s *Supervisor) openWorkspace(c *child, ctx context.Context, maxRounds int) (workspace, error) {
+// ctx, maxRounds and attempt are passed rather than read off the child
+// because the attempt they belong to is the caller's: a retry has installed
+// none of the three by the time it opens the workspace its new attempt will
+// run in.
+func (s *Supervisor) openWorkspace(c *child, ctx context.Context, maxRounds, attempt int) (workspace, error) {
 	w := workspace{root: s.opts.Root}
 	var err error
 	if c.profile.Writes {
@@ -2096,7 +2189,8 @@ func (s *Supervisor) openWorkspace(c *child, ctx context.Context, maxRounds int)
 	// after the clamp — not the one asked for; c.mode alone is the request.
 	if s.opts.Record != nil {
 		w.rec = s.opts.Record(Spec{Name: c.name, Role: c.role, Root: w.root, Model: c.model, Paths: c.paths,
-			Worktree: w.wt.dir != "", Mode: s.childMode(c), MaxRounds: roundCap(w.agent)}, w.env.SystemPrompt)
+			Worktree: w.wt.dir != "", Mode: s.childMode(c), MaxRounds: roundCap(w.agent),
+			Attempt: attempt}, w.env.SystemPrompt)
 	}
 	return w, nil
 }
@@ -2188,13 +2282,14 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 		state:     StateQueued,
 		detail:    "queued",
 		started:   time.Now(),
+		attempt:   1,
 	}
 	// A reader's workspace is the parent's own root and costs nothing to
 	// hold, so it is opened here where a failure is still this call's answer
 	// rather than a child that appears and immediately fails. A writer's
 	// waits for its slot (openWorkspace).
 	if !args.profile.Writes {
-		w, wErr := s.openWorkspace(c, cctx, args.maxRounds)
+		w, wErr := s.openWorkspace(c, cctx, args.maxRounds, c.attempt)
 		if wErr != nil {
 			cancel()
 			return "", wErr
@@ -2307,9 +2402,25 @@ func (s *Supervisor) run(c *child) {
 	// the time this runs a retry may already have started: the child would
 	// then report itself queued in the event that says it finished.
 	var ended Status
-	finish := func(state State, detail string) {
+	finish := func(state State, reason, detail string) {
+		c.mu.Lock()
+		// A kill outranks whatever the run made of the cancellation it was
+		// handed. Everything above this reads a cancelled context, and only
+		// the child itself knows which of the two cancellations it was.
+		if c.killed {
+			reason = observe.ChildKilled
+		}
+		c.endReason = reason
+		c.mu.Unlock()
 		c.set(state, detail)
 		ended = c.status()
+		// The attempt says how it ended on its own record, once, here — the
+		// one place every route out of the loop passes through. It goes to
+		// the child's row and not the parent's because that is where the
+		// attempt's model, its budget and what it spent already are, and a
+		// budget is only answerable beside the spend it bounded
+		// (docs/capabilities/sessions-and-memory.md#a-child-ends-for-a-reason).
+		c.signalAt(c.endRound(), observe.SignalSubagent, reason)
 	}
 	defer func() { s.emit(Event{Kind: EventDone, Status: ended}) }()
 	defer close(c.done)
@@ -2319,12 +2430,12 @@ func (s *Supervisor) run(c *child) {
 	// writer's are not opened until it has a slot — a writer cancelled in
 	// the queue never had either, and closes and removes nothing.
 	c.mu.Lock()
-	ctx, cancel, maxRounds, endRec := c.ctx, c.cancel, c.maxRounds, c.rec.End
+	ctx, cancel, maxRounds, attempt, endRec := c.ctx, c.cancel, c.maxRounds, c.attempt, c.rec.End
 	c.mu.Unlock()
 	var worktree, repoTop string
 	defer func() {
 		if endRec != nil {
-			endRec()
+			endRec(c.end())
 		}
 		removeWorktree(repoTop, worktree)
 	}()
@@ -2334,7 +2445,9 @@ func (s *Supervisor) run(c *child) {
 	case s.sem <- struct{}{}:
 		defer func() { <-s.sem }()
 	case <-ctx.Done():
-		finish(StateFailed, "cancelled")
+		// Nothing of this attempt ever ran, so there is nothing for it to
+		// have ended of: whatever cancelled a queued child cancelled it.
+		finish(StateFailed, observe.ChildCancelled, "cancelled")
 		return
 	}
 
@@ -2352,14 +2465,14 @@ func (s *Supervisor) run(c *child) {
 		// it is still a child with no agent behind it yet.
 		c.set(StateQueued, "queued · copying the workspace")
 		s.emitUpdate(c)
-		w, err := s.openWorkspace(c, ctx, maxRounds)
+		w, err := s.openWorkspace(c, ctx, maxRounds, attempt)
 		if err != nil {
 			// This attempt's own cancel, captured above: a failure sets the
 			// state a retry claims the child by, and by the time the child
 			// is marked failed c.cancel may already govern that retry's wait
 			// rather than anything of this attempt's.
 			cancel()
-			finish(StateFailed, "failed · "+firstLine(err.Error()))
+			finish(StateFailed, observe.ChildFailed, "failed · "+firstLine(err.Error()))
 			s.emitUpdate(c)
 			return
 		}
@@ -2371,6 +2484,14 @@ func (s *Supervisor) run(c *child) {
 	}
 
 	c.set(StateRunning, "running")
+	// An attempt that replaces another says so on its own record, at the
+	// start. The row the failed attempt wrote is closed by the time anything
+	// replaces it, so a retry is invisible from there — and a reader who is
+	// not joining rows by their attempt number has nothing else that says
+	// this run is a second go at work that already failed once.
+	if attempt > 1 {
+		c.signalAt(0, observe.SignalSubagent, observe.ChildRetry)
+	}
 	s.emitUpdate(c)
 
 	// pendingEntry maps a call to the transcript row opened for it, so its
@@ -2434,6 +2555,7 @@ func (s *Supervisor) run(c *child) {
 			if iv.Kind == agent.InterveneSteer {
 				c.mu.Lock()
 				c.steers++
+				c.steersAll++
 				c.steerFrom = SteerFromReading
 				c.mu.Unlock()
 			}
@@ -2463,7 +2585,7 @@ func (s *Supervisor) run(c *child) {
 			// child whose last act was a reading has nothing left to draw.
 			if !v.Failed {
 				c.mu.Lock()
-				c.verdict = v.State.String()
+				c.verdict, c.verdictCode = v.State.String(), observe.SummaryCode(v.State)
 				c.mu.Unlock()
 			}
 		},
@@ -2622,12 +2744,12 @@ func (s *Supervisor) run(c *child) {
 				c.report = report
 			}
 			c.mu.Unlock()
-			reason := "cancelled"
+			reason, end := "cancelled", observe.ChildCancelled
 			if budgetHit {
-				reason = budgetReason(c)
+				reason, end = budgetReason(c), observe.ChildBudget
 			}
 			endTurn(observe.TurnCancelled)
-			finish(StateFailed, reason)
+			finish(StateFailed, end, reason)
 			return
 		}
 
@@ -2659,7 +2781,7 @@ func (s *Supervisor) run(c *child) {
 			}
 
 			endTurn(observe.TurnDone)
-			finish(StateDone, "done · "+plural(tools, "tool"))
+			finish(StateDone, observe.ChildDone, "done · "+plural(tools, "tool"))
 			return
 		}
 
@@ -2672,7 +2794,7 @@ func (s *Supervisor) run(c *child) {
 			s.emitUpdate(c)
 			next, ok := s.awaitSteering(c)
 			if !ok {
-				finish(StateFailed, "cancelled")
+				finish(StateFailed, observe.ChildCancelled, "cancelled")
 				return
 			}
 			turn = next
@@ -2723,7 +2845,7 @@ func (s *Supervisor) run(c *child) {
 		endTurn(outcome)
 		c.agent.CancelTurn()
 		s.finalCheckIn(c)
-		finish(StateFailed, s.failReason(c, err))
+		finish(StateFailed, childEndReason(c, err), s.failReason(c, err))
 		return
 	}
 }
@@ -2832,6 +2954,35 @@ func (s *Supervisor) finalCheckIn(c *child) {
 // prompt puts well above the budget without ever reaching it (addUsage).
 func budgetReason(c *child) string {
 	return fmt.Sprintf("failed · token budget (~%s new) exceeded", formatTokens(c.maxTokens))
+}
+
+// childEndReason is the same fork failReason takes, in the record's closed
+// vocabulary. The two are written together and read the same fields on
+// purpose: a lane that says one thing and a row that says another about the
+// same attempt is the failure the closed set exists to prevent, and the only
+// way they stay in step is being one decision.
+//
+// A provider failure is separated from everything else because it is the one
+// end nobody chose: a budget is a number somebody set, a cap is a number
+// somebody set, a kill is somebody pressing a key, and a run that stops
+// because the provider stopped answering says nothing about any of them.
+// Folded together they would all read as the fan-out being tuned wrong.
+func childEndReason(c *child, err error) string {
+	c.mu.Lock()
+	budgetHit := c.budgetHit
+	c.mu.Unlock()
+	switch {
+	case budgetHit:
+		return observe.ChildBudget
+	case errors.Is(err, agent.ErrRoundCap):
+		return observe.ChildCap
+	case c.ctx.Err() != nil:
+		return observe.ChildCancelled
+	}
+	if _, ok := provider.AsFailure(err); ok {
+		return observe.ChildProvider
+	}
+	return observe.ChildFailed
 }
 
 func (s *Supervisor) failReason(c *child, err error) string {

@@ -11,6 +11,7 @@ import (
 
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -415,5 +416,33 @@ func TestPlanStatus_OpensWhileTheTurnRuns(t *testing.T) {
 	out := ansi.Strip(after.renderHistory())
 	if !strings.Contains(out, "Return it from runRound") {
 		t.Fatalf("/plan mid-turn should print the checklist, got:\n%s", out)
+	}
+}
+
+// A run leaving the plan it was given is the only objective reading of plan
+// mode there is, and the record had none of it. It is filed once: every
+// departure after the first is the same run still off its plan, and counting
+// each would let one wandering run outweigh a hundred that followed theirs.
+func TestPlanRun_TheFirstDepartureRaisesOneRow(t *testing.T) {
+	m := runningPlanModel(t, 100)
+	var got []string
+	m.observer = observe.Observer{Signal: func(_ observe.Pos, code, reason string) {
+		got = append(got, code+"/"+reason)
+	}}
+
+	announce(t, &m, "Now let me locate the round accounting", time.Second, false)
+	if len(got) != 0 {
+		t.Fatalf("a step the plan declared raised %v", got)
+	}
+
+	announce(t, &m, "Rebuild the changeset store from scratch", time.Second, false)
+	want := observe.SignalPlan + "/" + observe.PlanOffPlan
+	if len(got) != 1 || got[0] != want {
+		t.Fatalf("the first departure filed %v, want one %q", got, want)
+	}
+
+	announce(t, &m, "Rewrite the evidence store as well", time.Second, false)
+	if len(got) != 1 {
+		t.Fatalf("a second departure filed another row: %v", got)
 	}
 }

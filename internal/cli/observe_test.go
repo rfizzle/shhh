@@ -1391,3 +1391,43 @@ func TestObserveMedian(t *testing.T) {
 		}
 	}
 }
+
+// A child's page says how its attempt ended, beside what it spent. "failed"
+// is what the lane said and it answers nothing; this is the row a person
+// asking whether the budget is right reads.
+func TestObserveSessionReport_AChildsPageSaysHowTheAttemptEnded(t *testing.T) {
+	row := goldenObserveSessionRow()
+	parent := int64(11)
+	row.ParentID = &parent
+	row.Child = &observe.ChildEnd{
+		Reason: observe.ChildBudget, Verdict: "off-target", Steers: 2, Attempt: 2,
+	}
+	body := observeSessionReport(row, nil, storage.AgentFirstWrite{}).Render(80)
+
+	for _, want := range []string{"ended:", "budget", "attempt:", "read as:", "off-target", "steers:"} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("the child's page does not say %q:\n%s", want, body)
+		}
+	}
+
+	// A session that spawned nothing has no such block at all, rather than
+	// one saying it ended for no reason.
+	bare := observeSessionReport(goldenObserveSessionRow(), nil, storage.AgentFirstWrite{}).Render(80)
+	if strings.Contains(bare, "ended:") {
+		t.Fatalf("a session that is not a child carries an end:\n%s", bare)
+	}
+}
+
+// The first attempt says nothing about being one. A number every child's row
+// carried would read as a retry on every row that had it.
+func TestObserveChildPairs_TheFirstAttemptIsNotNumbered(t *testing.T) {
+	pairs := observeChildPairs(&observe.ChildEnd{Reason: observe.ChildDone, Attempt: 1})
+	for _, p := range pairs {
+		if p.Key == "attempt" {
+			t.Fatalf("the first attempt is numbered: %+v", pairs)
+		}
+	}
+	if len(pairs) != 1 || pairs[0].Value != observe.ChildDone {
+		t.Fatalf("a first attempt's pairs = %+v, want just how it ended", pairs)
+	}
+}

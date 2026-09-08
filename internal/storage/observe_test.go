@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -878,12 +879,12 @@ func TestAgentCohorts_SplitEveryKeyTheStoreOffers(t *testing.T) {
 		}
 	}
 	stamp("gpt-a", AgentProvenance{Version: "v1", PromptHash: "aaa", Settings: AgentSettings{
-		Mode: "manual", Reasoning: "low", MaxRounds: 10,
+		Mode: "manual", Reasoning: "low", MaxRounds: 10, CheckInInterval: 25,
 		SummaryModel: "sum-a", SummaryInterval: 5, SummaryEnabled: false,
 		ClassifierModel: "cls-a", SandboxProfile: "workspace",
 		Item: "a-one", Stage: "implement", ConfigHash: "h1"}})
 	stamp("gpt-b", AgentProvenance{Version: "v2", PromptHash: "bbb", Settings: AgentSettings{
-		Mode: "auto", Reasoning: "high", MaxRounds: 40,
+		Mode: "auto", Reasoning: "high", MaxRounds: 40, CheckInInterval: 40,
 		SummaryModel: "sum-b", SummaryInterval: 20, SummaryEnabled: true,
 		ClassifierModel: "cls-b", SandboxProfile: "readonly",
 		Item: "b-two", Stage: "review", ConfigHash: "h2"}})
@@ -1260,5 +1261,108 @@ func TestAgentFirstWrites_ASessionOlderThanTheWindowIsReadWhole(t *testing.T) {
 	}
 	if len(rows) != 1 || !rows[0].Wrote || rows[0].Searches != 2 {
 		t.Fatalf("the session was not read whole: %+v", rows)
+	}
+}
+
+// The join the whole reading exists for: an interruption, and the state the
+// next reading of that session came back with. Without it the record can say
+// how often the machinery interrupts and never whether interrupting worked,
+// which is the only question a person changing the thresholds is asking.
+func TestAgentInterventionOutcomes_PairsAnInterruptionWithTheReadingAfterIt(t *testing.T) {
+	db := openTestDB(t)
+
+	id, err := db.StartAgentSession("chat", "openai", "gpt-test")
+	if err != nil {
+		t.Fatalf("start session: %v", err)
+	}
+	// Two steers, one answered by an on-target reading four rounds later and
+	// one by a reading that still says off-target; and a check-in at the end
+	// of its own turn, which the next turn's first reading must not answer
+	// for — that reading judges different work against a different
+	// instruction, and the rounds between them are not a distance, since the
+	// counter goes back to zero at every turn.
+	for _, e := range []AgentEvent{
+		{Kind: AgentEventSignal, Outcome: "intervened", Reason: "steer", Turn: 1, Round: 10},
+		{Kind: AgentEventSignal, Outcome: "summary", Reason: "on-target", Turn: 1, Round: 14},
+		{Kind: AgentEventSignal, Outcome: "intervened", Reason: "steer", Turn: 2, Round: 8},
+		{Kind: AgentEventSignal, Outcome: "summary", Reason: "off-target", Turn: 2, Round: 12},
+		{Kind: AgentEventSignal, Outcome: "intervened", Reason: "check-in", Turn: 3, Round: 40},
+		{Kind: AgentEventSignal, Outcome: "summary", Reason: "on-target", Turn: 4, Round: 3},
+	} {
+		if err := db.RecordAgentEvent(id, e); err != nil {
+			t.Fatalf("record event: %v", err)
+		}
+	}
+	// Another session's reading must never answer for this one's steer.
+	other, err := db.StartAgentSession("chat", "openai", "gpt-test")
+	if err != nil {
+		t.Fatalf("start second session: %v", err)
+	}
+	if err := db.RecordAgentEvent(other, AgentEvent{
+		Kind: AgentEventSignal, Outcome: "summary", Reason: "on-target", Turn: 1, Round: 3}); err != nil {
+		t.Fatalf("record event: %v", err)
+	}
+
+	got, err := db.AgentInterventionOutcomes(time.Now().Add(-time.Hour))
+	if err != nil {
+		t.Fatalf("intervention outcomes: %v", err)
+	}
+	want := map[string]AgentInterventionOutcome{
+		"steer → on-target":  {Kind: "steer", Reading: "on-target", Count: 1, AvgRounds: 4},
+		"steer → off-target": {Kind: "steer", Reading: "off-target", Count: 1, AvgRounds: 4},
+		"check-in → none":    {Kind: "check-in", Reading: "none", Count: 1},
+	}
+	if len(got) != len(want) {
+		t.Fatalf("expected %d pairings, got %+v", len(want), got)
+	}
+	for _, o := range got {
+		key := o.Kind + " → " + o.Reading
+		if w, ok := want[key]; !ok || o != w {
+			t.Errorf("pairing %q = %+v, want %+v", key, o, w)
+		}
+	}
+}
+
+// A child's row is closed with how its attempt ended, so the questions a
+// fan-out raises afterwards — was the budget right, did the retry do any
+// better — can be asked of the row that holds what the attempt spent.
+func TestEndChildAgentSession_ClosesTheRowWithHowTheAttemptEnded(t *testing.T) {
+	db := openTestDB(t)
+
+	parent, err := db.StartAgentSession("chat", "openai", "gpt-test")
+	if err != nil {
+		t.Fatalf("start session: %v", err)
+	}
+	child, err := db.StartChildAgentSession(parent, "writer", "openai", "gpt-small")
+	if err != nil {
+		t.Fatalf("start child session: %v", err)
+	}
+	end := observe.ChildEnd{Reason: observe.ChildBudget, Verdict: "off-target", Steers: 2, Attempt: 2}
+	if err := db.EndChildAgentSession(child, "completed", end); err != nil {
+		t.Fatalf("end child session: %v", err)
+	}
+
+	got, ok, err := db.AgentSession(child)
+	if err != nil || !ok {
+		t.Fatalf("read child session: %v (found=%v)", err, ok)
+	}
+	if got.Child == nil || *got.Child != end {
+		t.Fatalf("the child's end = %+v, want %+v", got.Child, end)
+	}
+	if got.Outcome != "completed" || got.EndedAt == nil {
+		t.Fatalf("the row was not closed: outcome=%q ended=%v", got.Outcome, got.EndedAt)
+	}
+
+	// A session that is not a child's says so by having no end at all,
+	// rather than by carrying an attempt nobody ran.
+	if err := db.EndAgentSession(parent, "completed"); err != nil {
+		t.Fatalf("end session: %v", err)
+	}
+	p, _, err := db.AgentSession(parent)
+	if err != nil {
+		t.Fatalf("read session: %v", err)
+	}
+	if p.Child != nil {
+		t.Fatalf("a session that spawned nothing carries an end: %+v", p.Child)
 	}
 }

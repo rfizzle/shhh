@@ -106,7 +106,11 @@ func (m Model) handleSubagentEvent(ev subagent.Event) (tea.Model, tea.Cmd) {
 	case subagent.EventDone:
 		// A finished child can no longer act on its asks.
 		m.purgeChildAsks(ev.Status.Name)
-		m.signal(observe.SignalSubagent, ev.Status.State.String())
+		// The child says how it ended on its own record, where its budget
+		// and its spend already are (internal/observe, SignalSubagent). A
+		// second row here would say the same thing about the same attempt,
+		// and every rate over a window would count a fan-out's children
+		// twice.
 		m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf("Agent %s: %s", ev.Status.Name, ev.Status.Detail)})
 		// A reviewer the backlog runner spawned answers its review stage.
 		if next, cmd, ok := m.todoReviewDone(ev.Status); ok {

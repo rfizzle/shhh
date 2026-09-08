@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -139,7 +140,7 @@ func TestRetryWaitsForTheAttemptItReplaces(t *testing.T) {
 		Root:   t.TempDir(),
 		NewEnv: env.factory(),
 		Record: func(Spec, string) Recorder {
-			return Recorder{End: func() { <-release }}
+			return Recorder{End: func(observe.ChildEnd) { <-release }}
 		},
 	})
 	t.Cleanup(sup.Close)
@@ -182,7 +183,7 @@ func TestTheRetryOfferArrivesAfterTheAttemptHasStopped(t *testing.T) {
 		Root:   t.TempDir(),
 		NewEnv: env.factory(),
 		Record: func(Spec, string) Recorder {
-			return Recorder{End: func() { <-release }}
+			return Recorder{End: func(observe.ChildEnd) { <-release }}
 		},
 	})
 	t.Cleanup(sup.Close)
@@ -240,7 +241,7 @@ func TestARetryThatCannotStartLeavesTheOfferStanding(t *testing.T) {
 		Root:   t.TempDir(),
 		NewEnv: env.factory(),
 		Record: func(Spec, string) Recorder {
-			return Recorder{End: func() { <-release }}
+			return Recorder{End: func(observe.ChildEnd) { <-release }}
 		},
 	})
 	t.Cleanup(sup.Close)
@@ -285,7 +286,7 @@ func TestAKillDuringTheWaitStopsTheRetry(t *testing.T) {
 		Root:   t.TempDir(),
 		NewEnv: env.factory(),
 		Record: func(Spec, string) Recorder {
-			return Recorder{End: func() { <-release }}
+			return Recorder{End: func(observe.ChildEnd) { <-release }}
 		},
 	})
 	t.Cleanup(sup.Close)

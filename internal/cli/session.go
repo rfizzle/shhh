@@ -869,6 +869,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		mode:       mode.String(),
 		effort:     env.effort,
 		rounds:     roundCapFor(maxRoundsFor(cfg, session.maxRounds, session.maxRoundsSet)),
+		checkIn:    checkInFor(cfg.Behavior.CheckInIntervalRounds),
 		sandbox:    containment.Profile,
 		model:      auxiliaryModel(env.provName, env.modelName),
 		summary:    !cfg.Summary.Disabled,

@@ -409,6 +409,21 @@ var migrations = []string{
 		job    TEXT NOT NULL PRIMARY KEY,
 		ran_at TEXT NOT NULL
 	);`,
+
+	// The check-in interval a session ran under, beside the summariser's
+	// interval it already carries, so the one number the interruption
+	// machinery is tuned by can be compared against itself; and, for a
+	// child, how its attempt ended, what the last reading made of its work,
+	// how many steers it was given and which attempt the row is. All
+	// nullable for the reason the settings columns are: a row written before
+	// they existed ran under values nobody recorded, and a default would put
+	// every one of them in today's cohort
+	// (docs/capabilities/sessions-and-memory.md#a-child-ends-for-a-reason).
+	`ALTER TABLE agent_sessions ADD COLUMN check_in_interval INTEGER;
+	ALTER TABLE agent_sessions ADD COLUMN end_reason TEXT;
+	ALTER TABLE agent_sessions ADD COLUMN verdict TEXT;
+	ALTER TABLE agent_sessions ADD COLUMN steers INTEGER;
+	ALTER TABLE agent_sessions ADD COLUMN attempt INTEGER;`,
 }
 
 // migrate brings the store up to the current schema, one step per

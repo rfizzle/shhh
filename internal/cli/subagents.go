@@ -632,15 +632,19 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 				effort = env.reasoning()
 			}
 			r.stamp(env.prompts.fingerprintOf(sysPrompt), session.skills.Len(), projectFingerprintRoot(), sessionSettings(cfg, runSettings{
-				mode:       spec.Mode.String(),
-				effort:     agents.effortFor(spec.Role, effort),
-				rounds:     spec.MaxRounds,
+				mode:   spec.Mode.String(),
+				effort: agents.effortFor(spec.Role, effort),
+				rounds: spec.MaxRounds,
+				// A child's own interval, not the configured one: it runs
+				// with nobody in front of it, so its check-in is often the
+				// only question it is ever put.
+				checkIn:    subagent.ChildCheckInInterval,
 				sandbox:    childSandboxProfile(cfg),
 				model:      auxiliaryModel(env.provName, env.modelName),
 				summary:    cfg.SubagentSummaryEnabled(),
 				classifier: true,
 			}))
-			return subagent.Recorder{Observer: r.observer(), End: r.end}
+			return subagent.Recorder{Observer: r.observer(), End: r.endChild}
 		},
 		CommandAllowlist: cfg.Behavior.CommandAllowlist,
 		CommandDenylist:  cfg.Behavior.CommandDenylist,
