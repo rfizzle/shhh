@@ -44,7 +44,7 @@ func mcpDefinitions(cfg config.Config) []mcp.Definition {
 		d := mcp.Definition{
 			Name: name, Scope: mcp.ScopeUser, Source: config.WritePath(),
 			Command: s.Command, Args: s.Args, Env: s.Env,
-			URL: s.URL, Headers: s.Headers,
+			URL: s.URL, Headers: s.Headers, Tools: s.Tools,
 			ReadOnly: s.ReadOnly, Disabled: s.Disabled,
 		}
 		d.Transport = mcp.TransportFor(s.Type, s.Command, s.URL)
@@ -168,8 +168,18 @@ func mcpOutcome(r mcp.Report) string {
 // one line: its tools, and the prompts and resources beside them when it has
 // any. A server with no tools and three prompts reads as empty without
 // this, which is the failure the field exists to prevent.
+//
+// The count is the tools this session registered, and the ones a definition
+// left out are said beside it rather than dropped: a person who wrote a
+// selection is owed the size of what they are not carrying, and a person
+// who mistyped one name sees the whole catalog sitting outside the session
+// (docs/capabilities/mcp.md#a-large-server-is-taken-in-part).
 func mcpOffering(s *mcp.Server) string {
-	parts := []string{countOf(len(s.Tools), "tool", "tools")}
+	registered := len(s.RegisteredTools())
+	parts := []string{countOf(registered, "tool", "tools")}
+	if n := len(s.Tools) - registered; n > 0 {
+		parts = append(parts, fmt.Sprintf("%d not registered", n))
+	}
 	if n := len(s.Prompts); n > 0 {
 		parts = append(parts, countOf(n, "prompt", "prompts"))
 	}
@@ -337,7 +347,11 @@ func mcpListingReport(ts *mcp.Toolset, cat *mcp.Catalog, root string) report.Rep
 		connected++
 		row.Detail = mcpOffering(rep.Server)
 		servers.Rows = append(servers.Rows, row)
-		for _, t := range rep.Server.Tools {
+		// The tools of this session and not of that server: a definition
+		// that named its tools left the rest outside, and a listing that
+		// answers "what can I call" must not print them
+		// (docs/capabilities/mcp.md#a-large-server-is-taken-in-part).
+		for _, t := range rep.Server.RegisteredTools() {
 			tool := report.Row{State: report.Pass, Name: rep.Definition.Name, Subject: t.Name}
 			if t.ReadOnlyHint {
 				tool.Detail = "says read-only"
@@ -497,15 +511,27 @@ func mcpFinding(r mcp.Report, root string, db *storage.DB) doctorFinding {
 // mcpOffered is what one connected server holds, as the lines a fix key
 // reveals: the tools by their remote names, the prompts as the commands
 // they became, and the resources by uri. Three labelled lines rather than
-// one run-on list, because the three are reached three different ways.
+// one run-on list, because the three are reached three different ways —
+// and the tools a definition left out get a fourth, since a reader looking
+// for a name that is not working needs to see it under the label that says
+// why (docs/capabilities/mcp.md#a-large-server-is-taken-in-part).
 func mcpOffered(s *mcp.Server) []string {
 	var lines []string
 	if len(s.Tools) > 0 {
-		names := make([]string, 0, len(s.Tools))
+		var registered, rest []string
 		for _, t := range s.Tools {
-			names = append(names, t.Remote)
+			if s.Definition.Registers(t.Remote) {
+				registered = append(registered, t.Remote)
+				continue
+			}
+			rest = append(rest, t.Remote)
 		}
-		lines = append(lines, "tools: "+strings.Join(names, ", "))
+		if len(registered) > 0 {
+			lines = append(lines, "tools: "+strings.Join(registered, ", "))
+		}
+		if len(rest) > 0 {
+			lines = append(lines, "not registered: "+strings.Join(rest, ", "))
+		}
 	}
 	if len(s.Prompts) > 0 {
 		names := make([]string, 0, len(s.Prompts))
@@ -637,6 +663,13 @@ func mcpShow(r mcp.Report, root string) string {
 	if keys := sortedKeys(d.Headers); len(keys) > 0 {
 		pairs = append(pairs, report.Pair{Key: "headers", Value: strings.Join(keys, ", ")})
 	}
+	// The selection sits above the tool list it selects from, so a name
+	// that matches nothing is one look rather than a count to work back
+	// from (docs/capabilities/mcp.md#a-large-server-is-taken-in-part).
+	if len(d.Tools) > 0 {
+		pairs = append(pairs, report.Pair{Key: "registers",
+			Value: strings.Join(d.Tools, ", ") + " — the rest are listed below and not registered"})
+	}
 	if d.ReadOnly {
 		pairs = append(pairs, report.Pair{Key: "read-only", Value: "yes — its calls run without asking"})
 	}
@@ -664,6 +697,14 @@ func mcpShow(r mcp.Report, root string) string {
 	tools := report.Section{Header: "TOOLS"}
 	for _, t := range s.Tools {
 		row := report.Row{State: report.Pass, Name: t.Name}
+		if !d.Registers(t.Remote) {
+			// Still listed, with its description: this screen is where a
+			// person reads a big catalog to decide what to name in the
+			// selection. The mark is shhh's own word and goes beside the
+			// hints rather than among them, which are the server's
+			// (docs/capabilities/mcp.md#a-large-server-is-taken-in-part).
+			row.State, row.Subject = report.Skip, "not registered"
+		}
 		var hints []string
 		if t.ReadOnlyHint {
 			hints = append(hints, "says read-only")

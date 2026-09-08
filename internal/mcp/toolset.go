@@ -172,7 +172,13 @@ func (ts *Toolset) index() {
 	ts.defs = nil
 	taken := map[string]bool{}
 	for _, s := range ts.sorted() {
-		for _, t := range s.Tools {
+		// A definition that named its tools is filtered here and nowhere
+		// else, so every table built below holds the same set: Gated, the
+		// provider's definitions, a call's dispatch and an approval card's
+		// preview all read what this loop wrote, and a tool left out of the
+		// session cannot be reached by name from any of them
+		// (docs/capabilities/mcp.md#a-large-server-is-taken-in-part).
+		for _, t := range s.RegisteredTools() {
 			if taken[t.Name] {
 				continue
 			}

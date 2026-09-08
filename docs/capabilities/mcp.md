@@ -59,6 +59,19 @@ the session does not start. The rule is the skills catalog's, for the same
 reason: a project file arrived with a clone, and the person opening the
 session may not have written it.
 
+A server's name has to survive being the head of every tool name the model
+sees, so it is lowercase letters, digits and dashes and no longer than a
+prefix can afford to be. A vendor's snippet does not know that: it was
+written for clients whose names are labels, and it is titled
+`Framelink Figma MCP`. In a JSON catalog such a name is normalised —
+lowercased, the rest turned to dashes, cut to length — and the listing says
+both spellings, because the promise is that a pasted snippet works as it is
+and a server quietly answering to a name nobody wrote is worse than one that
+does not start. In the person's own config file the name is a table header
+they wrote and will read the refusal about, so it is refused rather than
+changed: a heading silently meaning something else is a key they cannot find
+again.
+
 ## A value in the file is a value in a backup
 
 A definition names a token by reference — `${NAME}` — and the value comes
@@ -138,6 +151,21 @@ file cannot mark its own server read-only; the word is ignored there and the
 listing says so. This is the skills rule again — nothing in a repository can
 pre-approve anything — applied to the one place a repository could try.
 
+The same rule shapes how a server's own prose reaches the model. The
+protocol lets a server send instructions at the handshake, and they go into
+the request beside the person's own: they are the one thing a tool schema
+cannot carry, and dropping them would leave the model guessing at a server
+that told it how to be used. So they are quoted, under a line saying whose
+words they are — a claim from the far end, not an instruction from the user
+— and they are bounded, per server, by a fixed number of bytes. Unbounded,
+a server that answers the handshake with its README owns the top of every
+request for the rest of the session and pays for it out of the person's
+context. The list of resources under it is bounded the same way, with a
+count of what was left out and the reminder that the resource tool reads
+any uri, listed or not. Both cuts read nothing but that one server's own
+catalog, so the opening a session repeats every round does not move because
+a different server changed.
+
 ## A prompt is a command
 
 A server's prompts are the file-defined commands shhh does not have. Each
@@ -193,6 +221,32 @@ server adds is typable on the next line, and a resource it adds is the
 model's from the next session. That is the same rule trust follows: a
 session works with what it started with, and the next one starts with the
 rest.
+
+## A large server is taken in part
+
+Some servers are catalogues. Ninety tools is not unusual for one that fronts
+a whole product, and every one of them is a name and a JSON schema in the
+prefix of every request for the life of the session — thousands of tokens
+the person pays for on every round, and ninety more things for the model to
+choose between when it wanted three.
+
+So a definition may name the tools to register, by the names the server
+itself uses, and everything it did not name stays off the session. The
+selection is static: it is written where the definition is and does not
+change while the session runs, which is the rule a server's own list of
+tools already obeys — a session that could gain or lose a tool mid-turn is
+one where a round's result belongs to a toolset that no longer exists. Because
+it is applied in one place, everything downstream agrees: the tools the model
+is offered, the ones that need an answer before they run, the one a card
+previews and the one a call dispatches to are the same set, and a tool left
+out cannot be reached by naming it.
+
+What is left out is said rather than hidden. The listing's row counts the
+tools registered and how many were not, and asking about the server alone
+prints the whole catalog with the unregistered ones marked, which is where a
+person reads a large server to decide what to name. A selection that matches
+nothing therefore reads as a server with no tools and ninety outside it,
+which is what a mistyped name looks like.
 
 ## A call is a command unless you said otherwise
 

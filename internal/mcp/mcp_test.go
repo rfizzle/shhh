@@ -3,12 +3,14 @@ package mcp
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	sdk "github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/rfizzle/shhh/internal/logs"
@@ -427,7 +429,7 @@ func TestDiscoverReadsFilesAndShadows(t *testing.T) {
 	for _, d := range c.Servers {
 		names = append(names, d.Name+":"+string(d.Scope))
 	}
-	if got := strings.Join(names, " "); got != "cfg:user docs:user shared:project" {
+	if got := strings.Join(names, " "); got != "bad-name:user cfg:user docs:user shared:project" {
 		t.Errorf("servers = %s", got)
 	}
 	shared, _ := c.Find("shared")
@@ -439,7 +441,7 @@ func TestDiscoverReadsFilesAndShadows(t *testing.T) {
 		t.Errorf("docs = %+v", docs)
 	}
 	joined := strings.Join(c.Diagnostics, "\n")
-	for _, want := range []string{"Bad Name", "read-only is ignored in a project file", "neither a command nor a url", "not a valid catalog", "server shared shadows your own definition"} {
+	for _, want := range []string{`"Bad Name" is loaded as "bad-name"`, "read-only is ignored in a project file", "neither a command nor a url", "not a valid catalog", "server shared shadows your own definition"} {
 		if !strings.Contains(joined, want) {
 			t.Errorf("diagnostics lack %q:\n%s", want, joined)
 		}
@@ -839,5 +841,175 @@ func TestConnect_AFailedServerStillReportsWhatWasWithheld(t *testing.T) {
 	}
 	if !slices.Contains(r.Withheld, "SHHH_FAKE_TOKEN") {
 		t.Errorf("withheld = %v", r.Withheld)
+	}
+}
+
+// A definition that names its tools registers those and leaves the rest of
+// the server outside the session. The filter runs in one place, so a name
+// left out is absent from every table at once: the model is not offered it,
+// no card previews it, and a call naming it anyway is an unknown tool.
+func TestOnlyTheNamedToolsOfAServerAreRegistered(t *testing.T) {
+	def := testDefinition(t)
+	def.ReadOnly = false
+	def.Tools = []string{"echo"}
+	ts := Connect(context.Background(), &Catalog{Servers: []Definition{def}}, Options{})
+	defer ts.Close()
+
+	// One tool of the server's own, plus the one tool resources are read
+	// through: the server publishes a resource whatever it registers.
+	if ts.Len() != 2 || !ts.Has("echo__echo") || ts.Has("echo__fail") || ts.Has("echo__grow") {
+		t.Fatalf("toolset = %v", ts.Definitions())
+	}
+	if got := ts.Gated(); len(got) != 1 || got[0] != "echo__echo" {
+		t.Errorf("gated = %v", got)
+	}
+	if _, _, ok := ts.Lookup("echo__fail"); ok {
+		t.Error("a tool the definition left out is still in the lookup table")
+	}
+	if _, err := ts.Preview("echo__fail", nil); err == nil {
+		t.Error("a card previewed a call the session cannot make")
+	}
+	if _, err := ts.Execute("echo__fail", json.RawMessage(`{"text":"x"}`)); err == nil {
+		t.Error("a tool the definition left out was dispatched")
+	}
+	// The server still holds its whole catalog: `shhh mcp show` is where a
+	// person reads a large server to decide what to name.
+	s := ts.Reports[0].Server
+	if len(s.Tools) != 3 || len(s.RegisteredTools()) != 1 {
+		t.Errorf("server holds %d tools, %d registered", len(s.Tools), len(s.RegisteredTools()))
+	}
+	if block := PromptBlock(ts); !strings.Contains(block, "- echo — 1 tool") {
+		t.Errorf("the block counts tools the session does not have:\n%s", block)
+	}
+}
+
+// The scale the selection exists for: twenty tools listed, two named, and
+// only the two in anything the session reads.
+func TestALargeServerIsRegisteredInPart(t *testing.T) {
+	s := &Server{Definition: Definition{Name: "big", Tools: []string{"t03", "t11"}}}
+	for i := range 20 {
+		remote := fmt.Sprintf("t%02d", i)
+		s.Tools = append(s.Tools, Tool{Name: "big__" + remote, Remote: remote, InputSchema: json.RawMessage(`{}`)})
+	}
+	ts := &Toolset{servers: map[string]*Server{"big": s}}
+	ts.index()
+	if ts.Len() != 2 || !ts.Has("big__t03") || !ts.Has("big__t11") {
+		t.Fatalf("registered %v", ts.Definitions())
+	}
+	if got := len(ts.Gated()); got != 2 {
+		t.Errorf("gated %d of 20", got)
+	}
+	s.Definition.Tools = nil
+	ts.index()
+	if ts.Len() != 20 {
+		t.Errorf("a definition that names nothing registers %d of 20", ts.Len())
+	}
+}
+
+// A server's own words and its resource list are third-party text at the
+// most trusted position in the request, and they sit in the opening every
+// round repeats. Both are bounded per server, and the cut reads nothing but
+// that server's own catalog, so adding a second server does not move the
+// first's lines and the cached opening does not churn.
+func TestPromptBlockBoundsAServersWordsAndItsResources(t *testing.T) {
+	big := &Server{
+		Definition:   Definition{Name: "big"},
+		Instructions: strings.Repeat("a line of the server's own prose\n", 500),
+	}
+	for i := range 10000 {
+		big.Resources = append(big.Resources, Resource{URI: fmt.Sprintf("docs://p%05d", i)})
+	}
+	block := promptBlock([]*Server{big})
+	if len(block) > 4000 {
+		t.Errorf("the block is %d bytes for one server", len(block))
+	}
+	for _, want := range []string{
+		"that server's own words about itself",
+		fmt.Sprintf("…and %d more, ask `%s` by uri", 10000-MaxPromptResources, ResourceToolName),
+		fmt.Sprintf("ran past %d bytes", MaxInstructionsBytes),
+	} {
+		if !strings.Contains(block, want) {
+			t.Errorf("the block lacks %q:\n%s", want, block)
+		}
+	}
+	if got := strings.Count(block, "resource docs://"); got != MaxPromptResources {
+		t.Errorf("%d resources listed, want %d", got, MaxPromptResources)
+	}
+	other := &Server{Definition: Definition{Name: "other"}, Instructions: "short"}
+	if two := promptBlock([]*Server{big, other}); !strings.HasPrefix(two, block) {
+		t.Errorf("a second server re-cut the first's block:\n%s", two)
+	}
+	// A cut landing inside a multi-byte rune would put a replacement
+	// character at the top of every request; the ellipsis is three bytes,
+	// so the cap falls inside one.
+	dense := &Server{Definition: Definition{Name: "dense"}, Instructions: strings.Repeat("…", MaxInstructionsBytes)}
+	if got := promptBlock([]*Server{dense}); !utf8.ValidString(got) {
+		t.Error("the instructions were cut through a rune")
+	}
+}
+
+// A vendor's snippet is written for clients whose names are labels, and the
+// promise is that it works as it is. The JSON catalog renames; nothing is
+// silent about it.
+func TestJSONCatalogNormalisesAServerName(t *testing.T) {
+	for _, c := range []struct{ in, want string }{
+		{"Framelink Figma MCP", "framelink-figma-mcp"},
+		{"github", "github"},
+		{"@vendor/mcp_server", "vendor-mcp-server"},
+		{"  spaced  out  ", "spaced-out"},
+		{"2fa", "fa"},
+		{"A very long vendor name for one server", "a-very-long-vendor-name"},
+		// Nothing survives, so the name is left as written and the refusal
+		// that follows quotes the spelling the file actually holds.
+		{"!!!", "!!!"},
+	} {
+		if got := normaliseName(c.in, map[string]bool{}); got != c.want {
+			t.Errorf("%q became %q, want %q", c.in, got, c.want)
+		}
+	}
+	taken := map[string]bool{}
+	if a, b := normaliseName("Docs", taken), normaliseName("docs", taken); a != "docs" || b != "docs-2" {
+		t.Errorf("two names collided into %q and %q", a, b)
+	}
+}
+
+// The rename is said in both spellings, the definition loads under the new
+// one, and a definition that will not load is reported once: the catalog
+// validates, the reader does not, and two validations reported the same
+// broken server twice in the same words.
+func TestReadJSONRenamesAndTheCatalogValidatesOnce(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, JSONFileName), []byte(`{"mcpServers": {
+		"Framelink Figma MCP": {"command": "npx", "args": ["-y", "figma-mcp"], "tools": ["get_file"]},
+		"broken": {}
+	}}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	c := Discover(t.TempDir(), nil, []string{dir})
+	d, ok := c.Find("framelink-figma-mcp")
+	if !ok || len(d.Tools) != 1 || d.Tools[0] != "get_file" {
+		t.Fatalf("servers = %+v", c.Servers)
+	}
+	joined := strings.Join(c.Diagnostics, "\n")
+	for _, want := range []string{`"Framelink Figma MCP" is loaded as "framelink-figma-mcp"`} {
+		if !strings.Contains(joined, want) {
+			t.Errorf("diagnostics lack %q:\n%s", want, joined)
+		}
+	}
+	if n := strings.Count(joined, "neither a command nor a url"); n != 1 {
+		t.Errorf("the same broken server is reported %d times:\n%s", n, joined)
+	}
+}
+
+// A table header in the person's own config is a key they wrote and will
+// read the refusal about; renaming it would leave them looking for a
+// section that answers to something else.
+func TestAConfigNameIsRefusedRatherThanRenamed(t *testing.T) {
+	c := Discover(t.TempDir(), []Definition{{Name: "Framelink Figma MCP", Transport: TransportStdio, Command: "npx"}}, nil)
+	if c.Len() != 0 {
+		t.Fatalf("servers = %+v", c.Servers)
+	}
+	if joined := strings.Join(c.Diagnostics, "\n"); !strings.Contains(joined, "must start with a letter") {
+		t.Errorf("diagnostics = %s", joined)
 	}
 }

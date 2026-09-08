@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -146,6 +147,7 @@ type jsonServer struct {
 	Env       map[string]string `json:"env"`
 	URL       string            `json:"url"`
 	Headers   map[string]string `json:"headers"`
+	Tools     []string          `json:"tools"`
 	Disabled  bool              `json:"disabled"`
 	ReadOnly  bool              `json:"readOnly"`
 	ReadOnly2 bool              `json:"read_only"`
@@ -153,8 +155,13 @@ type jsonServer struct {
 }
 
 // ReadJSON reads one catalog file. A missing file is nothing; a file that
-// cannot be parsed is one diagnostic; a server that cannot be validated is
-// one diagnostic and the rest of the file still loads.
+// cannot be parsed is one diagnostic; a name a server may not have here is
+// normalised, with a diagnostic naming both spellings.
+//
+// Nothing is validated here: Discover checks each definition once, and a
+// definition that will not load is a diagnostic there. Validating in both
+// places reported the same broken server twice, in the same words, from
+// two files.
 func ReadJSON(path string, scope Scope) ([]Definition, []string) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -176,12 +183,26 @@ func ReadJSON(path string, scope Scope) ([]Definition, []string) {
 		names = append(names, name)
 	}
 	sort.Strings(names)
+	// Uniqueness is this file's, not the catalog's, and it has to be:
+	// a project file shadows a user one by naming the same server, so a
+	// name made unique across files would turn the project's `docs` into
+	// `docs-2` and quietly stop it shadowing anything. Two files that
+	// collide land in Discover, where shadowing is the rule.
+	taken := map[string]bool{}
 	for _, name := range names {
 		s := f.Servers[name]
+		// The names are taken in sorted order, so which of two colliding
+		// spellings keeps the plain name does not depend on how the file
+		// was written or how a map was walked.
+		local := normaliseName(name, taken)
+		if local != name {
+			diags = append(diags, fmt.Sprintf("%s: server %q is loaded as %q; a name prefixes every tool name the model sees, so it is lowercase letters, digits and dashes", path, name, local))
+		}
 		d := Definition{
-			Name: name, Scope: scope, Source: path,
+			Name: local, Scope: scope, Source: path,
 			Command: s.Command, Args: s.Args, Env: s.Env,
 			URL: s.URL, Headers: s.Headers, Disabled: s.Disabled,
+			Tools: s.Tools,
 		}
 		if s.Timeout > 0 {
 			d.Timeout = secondsToDuration(s.Timeout)
@@ -197,13 +218,59 @@ func ReadJSON(path string, scope Scope) ([]Definition, []string) {
 		case readOnly:
 			d.ReadOnly = true
 		}
-		if err := d.Validate(); err != nil {
-			diags = append(diags, fmt.Sprintf("%s: %v", path, err))
-			continue
-		}
 		defs = append(defs, d)
 	}
 	return defs, diags
+}
+
+// normaliseName turns a name a vendor's catalog wrote into one a server may
+// have here: lowercased, every other character a dash, runs of dashes
+// collapsed, leading and trailing dashes and leading digits dropped, cut to
+// MaxNameLength and made unique against taken. `Framelink Figma MCP`
+// becomes `framelink-figma-mcp`, which is the point of it: the promise is
+// that a vendor's snippet works as it is, and a snippet is written for
+// clients whose names do not have to survive being the head of a tool name
+// (docs/capabilities/mcp.md#where-a-server-is-defined).
+//
+// It is the JSON catalog's alone. A `[mcp.servers."Framelink Figma MCP"]`
+// table in the person's own config is refused by name instead: the file is
+// theirs, they will read the refusal, and a header silently answering to
+// something else is a key they cannot find again.
+//
+// A name that normalises to nothing is returned as it was, so the refusal
+// that follows quotes the spelling the file actually holds.
+func normaliseName(name string, taken map[string]bool) string {
+	var b strings.Builder
+	dash := false
+	for _, r := range strings.ToLower(name) {
+		switch {
+		case r >= 'a' && r <= 'z', r >= '0' && r <= '9':
+			b.WriteRune(r)
+			dash = false
+		case !dash && b.Len() > 0:
+			b.WriteByte('-')
+			dash = true
+		}
+	}
+	base := strings.TrimRight(b.String(), "-")
+	base = strings.TrimLeftFunc(base, func(r rune) bool { return r < 'a' || r > 'z' })
+	if len(base) > MaxNameLength {
+		base = strings.TrimRight(base[:MaxNameLength], "-")
+	}
+	if base == "" {
+		return name
+	}
+	out := base
+	for i := 2; taken[out]; i++ {
+		suffix := "-" + strconv.Itoa(i)
+		head := base
+		if len(head) > MaxNameLength-len(suffix) {
+			head = head[:MaxNameLength-len(suffix)]
+		}
+		out = strings.TrimRight(head, "-") + suffix
+	}
+	taken[out] = true
+	return out
 }
 
 // TransportFor resolves the transport from what a definition said and what

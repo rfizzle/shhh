@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -98,6 +99,15 @@ type Definition struct {
 	URL     string
 	Headers map[string]string
 
+	// Tools names the remote tools to register, by the names the server
+	// knows them by; unset registers everything the server lists. A
+	// ninety-tool server otherwise puts ninety schemas in the prefix of
+	// every request for the life of the session and asks the model to
+	// choose among them, which is why naming the few a session needs is
+	// what makes such a server usable at all
+	// (docs/capabilities/mcp.md#a-large-server-is-taken-in-part).
+	Tools []string
+
 	// ReadOnly is the user's statement that nothing this server does needs
 	// an answer: its tools run the way a file read does. It is the user's
 	// word, not the server's — a server's own read-only hints are shown and
@@ -138,6 +148,15 @@ func (d Definition) Validate() error {
 		return fmt.Errorf("server %s: unknown transport %q (stdio, http or sse)", d.Name, d.Transport)
 	}
 	return nil
+}
+
+// Registers reports whether a tool the server listed becomes one of the
+// session's. The selection is matched against the remote name — what the
+// server calls the tool, what its README documents and what `shhh mcp show`
+// prints — rather than against the prefixed name the model calls, because
+// the person writing the list is reading the server's own words.
+func (d Definition) Registers(remote string) bool {
+	return len(d.Tools) == 0 || slices.Contains(d.Tools, remote)
 }
 
 // Target is the one-line description of what the definition reaches: the

@@ -11,7 +11,7 @@ import (
 
 func TestMCPDefinitionsInferTransport(t *testing.T) {
 	cfg := config.Config{MCP: config.MCPConfig{Servers: map[string]config.MCPServer{
-		"cmd":  {Command: "npx", Args: []string{"-y", "x"}, ReadOnly: true},
+		"cmd":  {Command: "npx", Args: []string{"-y", "x"}, ReadOnly: true, Tools: []string{"one"}},
 		"web":  {URL: "https://x/mcp", Headers: map[string]string{"Authorization": "Bearer ${T}"}},
 		"old":  {URL: "https://x/sse", Type: "sse"},
 		"none": {},
@@ -30,7 +30,7 @@ func TestMCPDefinitionsInferTransport(t *testing.T) {
 			t.Errorf("%s: transport %q, want %q", name, got[name], tr)
 		}
 	}
-	if defs[0].Name != "cmd" || !defs[0].ReadOnly {
+	if defs[0].Name != "cmd" || !defs[0].ReadOnly || len(defs[0].Tools) != 1 {
 		t.Errorf("definitions are not sorted by name or lost read_only: %+v", defs[0])
 	}
 }
@@ -222,5 +222,54 @@ func TestMCPOptionsInstallTheMaskAndShowNamesWhatItWithheld(t *testing.T) {
 	rep.Withheld = nil
 	if strings.Contains(mcpShow(rep, ""), "withheld env") {
 		t.Error("a server with nothing withheld carries the line anyway")
+	}
+}
+
+// A definition that names its tools leaves the rest of a catalogue server
+// outside the session, and both surfaces say so: the row counts what is not
+// registered, because a person who mistyped one name would otherwise read a
+// server that simply has fewer tools than they remember; the show screen
+// keeps every tool listed and marks the ones left out, because that screen
+// is where a large server is read to pick names from.
+func TestMCPRowAndShowSayWhatIsNotRegistered(t *testing.T) {
+	def := mcp.Definition{
+		Name: "docs", Scope: mcp.ScopeUser, Transport: mcp.TransportStdio,
+		Command: "docs-mcp", Tools: []string{"search"},
+	}
+	rep := mcp.Report{Definition: def, Status: mcp.StatusConnected, Server: &mcp.Server{
+		Definition: def,
+		Tools: []mcp.Tool{
+			{Name: "docs__search", Remote: "search", Description: "Search the docs."},
+			{Name: "docs__write", Remote: "write", Description: "Write a page."},
+			{Name: "docs__purge", Remote: "purge", Description: "Delete a page."},
+		},
+	}}
+	if got := mcpFinding(rep, "", nil).Outcome; got != "1 tool, 2 not registered" {
+		t.Errorf("the `shhh mcp` row says %q", got)
+	}
+	listing := mcpListing(&mcp.Toolset{Reports: []mcp.Report{rep}}, nil, "")
+	if !strings.Contains(listing, "1 tool, 2 not registered") {
+		t.Errorf("the listing does not count what was left out:\n%s", listing)
+	}
+	if strings.Contains(listing, "docs__write") {
+		t.Errorf("the listing offers a tool the session did not register:\n%s", listing)
+	}
+	shown := mcpShow(rep, "")
+	for _, want := range []string{"registers", "search — the rest are listed below", "not registered", "Delete a page."} {
+		if !strings.Contains(shown, want) {
+			t.Errorf("`shhh mcp show` lacks %q:\n%s", want, shown)
+		}
+	}
+	// The doctor row's own fix key: a reader looking for a name that is not
+	// working finds it under the label saying why.
+	if got := mcpOffered(rep.Server); len(got) != 2 || got[0] != "tools: search" || got[1] != "not registered: write, purge" {
+		t.Errorf("offered = %v", got)
+	}
+	// A definition that named nothing registers everything and says nothing
+	// about it: the count is the whole catalog.
+	rep.Definition.Tools, rep.Server.Definition.Tools = nil, nil
+	if listing := mcpListing(&mcp.Toolset{Reports: []mcp.Report{rep}}, nil, ""); !strings.Contains(listing, "3 tools") ||
+		strings.Contains(listing, "not registered") {
+		t.Errorf("a server with no selection reads as partly registered:\n%s", listing)
 	}
 }

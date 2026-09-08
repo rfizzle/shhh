@@ -525,6 +525,26 @@ func (s *Server) takePending() bool {
 	return true
 }
 
+// RegisteredTools are the tools of this server the session actually has:
+// the ones the definition named, or every one it listed when the definition
+// named none. It is one function rather than a filter at each reader
+// because the toolset's tables, the prompt block's count and the listing's
+// row all have to agree about what this session can call — a count that
+// says twelve beside a table holding ninety is a model told it has tools
+// nobody registered (docs/capabilities/mcp.md#a-large-server-is-taken-in-part).
+func (s *Server) RegisteredTools() []Tool {
+	if len(s.Definition.Tools) == 0 {
+		return s.Tools
+	}
+	out := make([]Tool, 0, len(s.Definition.Tools))
+	for _, t := range s.Tools {
+		if s.Definition.Registers(t.Remote) {
+			out = append(out, t)
+		}
+	}
+	return out
+}
+
 // liveSession is the session under the lock Close nils it under: a request
 // that starts after the session ended is an error, not a nil dereference.
 func (s *Server) liveSession() *sdk.ClientSession {

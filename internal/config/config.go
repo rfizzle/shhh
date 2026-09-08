@@ -238,6 +238,11 @@ type MCPServer struct {
 	Headers map[string]string `toml:"headers,omitempty"`
 	// Type is "stdio", "http" (the default for a url) or "sse".
 	Type string `toml:"type,omitempty"`
+	// Tools names the server's own tools to register, and unset registers
+	// every tool it lists. A server with ninety of them otherwise puts
+	// ninety schemas in the prefix of every request for the whole session
+	// (docs/capabilities/mcp.md#a-large-server-is-taken-in-part).
+	Tools []string `toml:"tools,omitempty"`
 	// ReadOnly is the user's statement that nothing this server does needs
 	// an answer: its tools run the way a file read does, and it is the only
 	// kind of server a conversation takes. The server's own read-only hints
