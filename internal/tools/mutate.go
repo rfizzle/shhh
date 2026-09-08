@@ -163,12 +163,19 @@ func (r *Recorder) PreviewMutation(name string, raw json.RawMessage) (Mutation, 
 	return Mutation{}, fmt.Errorf("unknown mutating tool: %s", name)
 }
 
+// The two descriptions below say a change is gated and leave the rest to the
+// permission mode, because promising that the user sees a diff and answers for
+// it is true in one of the four modes: --yes, accept-edits and auto each apply
+// writes without asking, and a model told otherwise plans around a pause that
+// never comes and reports its own edits as pending.
+// See docs/capabilities/approvals-and-safety.md#the-four-modes.
 var writeFile = Definition{
 	Tool: provider.Tool{
 		Name: WriteFileName,
 		Description: "Create or overwrite a file with the given content. content is written verbatim — never include read_file's line-number prefixes. " +
 			"Overwriting an existing file requires having read it in full first, and fails if it has changed since: prefer edit_file for changing part of a file you have already read. " +
-			"Missing parent directories are created automatically. The user reviews a diff and must approve the change before it is applied; a declined call returns an error result.",
+			"Missing parent directories are created automatically. " +
+			"Whether the change is applied straight away or is shown to the user as a diff for approval first is the session's permission mode's to decide; a declined call returns an error result.",
 		Parameters: json.RawMessage(`{
 			"type": "object",
 			"properties": {
@@ -232,12 +239,12 @@ var editFile = Definition{
 	Tool: provider.Tool{
 		Name: EditFileName,
 		Description: "Replace exact text snippets in an existing file. Give one replacement as old_text/new_text, or several as edits — one entry per place — and never both in the same call. " +
-			"Batch when one file needs changing in several places: that is one round, one diff and one approval instead of one of each per pair. A second file is a second call. " +
+			"Batch when one file needs changing in several places: that is one round, one diff and one decision instead of one of each per pair. A second file is a second call. " +
 			"Every old_text must match the file content exactly (including whitespace) and match exactly once, unless replace_all is set. " +
 			"Strip read_file's `<line number>\t` prefix before quoting a line here — the numbers are a reading aid and are not in the file. " +
 			"Every quote is matched against the file as it stands, not against the result of the edit before it, so the order does not matter and two edits that would touch the same text are refused. Nothing is written unless all of them apply. " +
 			"A file that has changed since you last read it is refused: read it again and rebase the edits on what it says now. " +
-			"The user reviews a diff and must approve the change before it is applied; a declined call returns an error result.",
+			"Whether the change is applied straight away or is shown to the user as a diff for approval first is the session's permission mode's to decide; a declined call returns an error result.",
 		Parameters: json.RawMessage(`{
 			"type": "object",
 			"properties": {

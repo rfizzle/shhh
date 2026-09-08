@@ -854,3 +854,34 @@ func TestEditFile_OverlapNamesTheEditsInTheOrderTheyWereGiven(t *testing.T) {
 		t.Errorf("the refusal should name them in call order: %v", err)
 	}
 }
+
+// Three of the four permission modes apply a write without asking, so neither
+// description may promise the user sees it.
+// See docs/capabilities/approvals-and-safety.md#the-four-modes.
+func TestMutatingDescriptions_LeaveTheApprovalToTheMode(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		desc string
+	}{
+		{WriteFileName, writeFile.Tool.Description},
+		{EditFileName, editFile.Tool.Description},
+	} {
+		lower := strings.ToLower(tc.desc)
+		for _, promise := range []string{
+			"must approve",
+			"reviews a diff",
+			"before it is applied;",
+			"will be shown",
+		} {
+			if strings.Contains(lower, promise) {
+				t.Errorf("%s names an approval as certain: %q", tc.name, promise)
+			}
+		}
+		if !strings.Contains(tc.desc, "the session's permission mode's to decide") {
+			t.Errorf("%s should leave the approval to the permission mode, got %q", tc.name, tc.desc)
+		}
+		if !strings.Contains(tc.desc, "a declined call returns an error result") {
+			t.Errorf("%s should still say what a declined call returns, got %q", tc.name, tc.desc)
+		}
+	}
+}
