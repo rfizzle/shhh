@@ -150,12 +150,13 @@ func agentsFold(hidden []railLine, width int) string {
 // spent, and under that what it is doing or what it found.
 func (a InspectorAgent) railLines(frame, width int) []railLine {
 	// The mark sits in the indent every other row spends on nothing, so a
-	// marked row starts in the same column as an unmarked one. It is a mark
-	// and not a cursor: the manager's ❯ says where the selection is, and this
-	// says where the keyboard is, which are different questions.
-	lead := strings.Repeat(" ", inspectorIndent)
+	// marked row starts in the same column as an unmarked one. The mark is
+	// ❯ and the row is lit under it, the way the keyboard's place is said on
+	// every list: ▸ here read as running, which is what the glyph means three
+	// rows above on a session that is actually working.
+	lead := PointerColumn()
 	if a.Focused {
-		lead = sty.FocusRow.Render("▸") + " "
+		lead = sty.FocusPointer.Render("❯") + " "
 	}
 	// Both of a session's rows point at that session. They are one thing
 	// drawn on two lines — the name and what it is doing — and a pointer that
@@ -167,9 +168,13 @@ func (a InspectorAgent) railLines(frame, width int) []railLine {
 		// keyboard goes back to, which every host spells as no name at all.
 		target.Name = ""
 	}
+	row := railRow(lead+AgentProgress{State: a.State}.glyph()+" "+sty.Body.Render(a.Name),
+		a.rightField(), width, 0)
+	if a.Focused {
+		row = LitRow(row, GridPointerWidth, width)
+	}
 	rows := []railLine{{
-		text: railRow(lead+AgentProgress{State: a.State}.glyph()+" "+sty.Body.Render(a.Name),
-			a.rightField(), width, 0),
+		text: row,
 		// The orchestrator, the session the keyboard is in and a child
 		// waiting on an answer are the rows the map exists to keep on
 		// screen; truncation takes them only when nothing else is left.

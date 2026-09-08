@@ -142,7 +142,7 @@ func (b *BacklogScreen) emptyWords() string {
 // the trade a fold rather than a loss (invariant 4).
 func (b *BacklogScreen) itemRow(row BacklogRow, focused bool, width int) string {
 	glyph, name := b.rowTone(row)
-	pointer := "  "
+	pointer := PointerColumn()
 	if focused {
 		pointer, name = sty.FocusPointer.Render("❯ "), brightStyle()
 	}
@@ -150,10 +150,19 @@ func (b *BacklogScreen) itemRow(row BacklogRow, focused bool, width int) string 
 	if grade := b.grade(row); grade != "" {
 		lead += "  " + sty.Dim.Render(grade)
 	}
-	inner := max(width-2, 1)
+	inner := max(width-GridPointerWidth, 1)
+	// The row the keyboard is on takes the highlight as well as the pointer:
+	// the two are one treatment on every list, and the slug going bright
+	// without the ground under it said half of it (LitRow).
+	lit := func(body string) string {
+		if !focused {
+			return pointer + body
+		}
+		return pointer + LitRow(body, 0, inner)
+	}
 	room := inner - lipgloss.Width(lead)
 	if room < 4 {
-		return pointer + Clip(lead, inner)
+		return lit(Clip(lead, inner))
 	}
 	// The state is the field that clips and the title the field that goes.
 	// The order is the row's whole argument: what an item is called and where
@@ -162,9 +171,9 @@ func (b *BacklogScreen) itemRow(row BacklogRow, focused bool, width int) string 
 	state := Clip("  "+b.stateWords(row), room)
 	rest := room - lipgloss.Width(state)
 	if row.Title == "" || rest < minBacklogTitle+2 {
-		return pointer + lead + sty.Dim.Render(state)
+		return lit(lead + sty.Dim.Render(state))
 	}
-	return pointer + lead + sty.Dim.Render(state+"  "+Clip(row.Title, rest-2))
+	return lit(lead + sty.Dim.Render(state+"  "+Clip(row.Title, rest-2)))
 }
 
 // rowTone is the row's glyph and the weight its slug carries. The four

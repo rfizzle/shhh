@@ -429,19 +429,30 @@ func (d *DoctorScreen) checkRow(i, width int) string {
 	check := d.Checks[i]
 	lead := d.pointer(i) + strings.Repeat(" ", railWidth) +
 		d.glyph(check.State) + verbField(check.Name)
-	return gridLineWith(lead, check.target(), check.paintTarget,
+	row := gridLineWith(lead, check.target(), check.paintTarget,
 		check.outcomeField(), check.Duration, width)
+	if !d.lit(i) {
+		return row
+	}
+	// The row under the pointer is lit, not merely pointed at: the pointer and
+	// the focus background are one treatment, and a screen that drew half of it
+	// would be a second way of saying the same thing (LitRow).
+	return LitRow(row, ptrWidth, width)
 }
 
 // pointer is the focus cursor in the grid's own gutter — the two columns the
 // artboard leaves as an indent. It is drawn only where there is somewhere for
 // it to move: a run with nothing to fix has no pointer and no `[↑↓]`.
 func (d *DoctorScreen) pointer(i int) string {
-	if d.stops() > 0 && i == d.Focus {
+	if d.lit(i) {
 		return sty.FocusPointer.Render("❯") + " "
 	}
-	return strings.Repeat(" ", ptrWidth)
+	return PointerColumn()
 }
+
+// lit reports the row the keyboard is on, which is the row that takes both
+// the pointer and the highlight.
+func (d *DoctorScreen) lit(i int) bool { return d.stops() > 0 && i == d.Focus }
 
 // glyph is the state's glyph in the state's colour. The word beside it in the
 // outcome field carries the same meaning, so the colour is reinforcement

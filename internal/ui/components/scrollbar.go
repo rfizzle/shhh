@@ -31,18 +31,25 @@ package components
 // the same reason it is not a key — the gutter reports where the pane is, and
 // a row's cursor has nothing to say about that.
 
-// ScrollGutterWidth is the column the transcript pane holds back for the
-// gutter. The pane reserves it whether or not there is anything to draw in
-// it: a column that appeared on the first overflow would reflow every line of
-// the transcript at the moment the reader least expects it, and a reflow
-// drops the selection and throws away the render cache. So the
-// transcript wraps one column narrower always, and the gutter stays empty
-// until there is something below.
-const ScrollGutterWidth = 1
+// ScrollGutterWidth is what the transcript pane holds back for the gutter:
+// the thumb's own column, and an empty one after it. The pane reserves both
+// whether or not there is anything to draw in them: a column that appeared on
+// the first overflow would reflow every line of the transcript at the moment
+// the reader least expects it, and a reflow drops the selection and throws
+// away the render cache. So the transcript wraps two columns narrower always,
+// and the gutter stays empty until there is something below.
+//
+// The empty column is the second half of the mark. Against the pane divider
+// `┃│` is two vertical strokes side by side, which is a double border grown
+// back — the thing the gutter has no track for in the first place; `┃ │` is a
+// short heavy mark standing on its own in an empty column, which is what says
+// place rather than edge.
+const ScrollGutterWidth = 2
 
 // The gutter's one glyph, drawn on one token: the heavy vertical the drawing
-// kit assigns the scroll thumb, in the chrome rung. Every other row of the
-// column is a blank cell.
+// kit assigns the scroll thumb, in the chrome rung. Every other cell of the
+// gutter is blank — every row of the second column, and every row of the
+// first that the thumb is not on.
 //
 // It is not the `│` the frame and the pane divider draw, and what separates
 // them is stroke rather than shade — the mark is heavier, and it is short
@@ -92,10 +99,10 @@ func Scrollbar(height, content, viewport, offset int) []string {
 	rows := make([]string, height)
 	for i := range rows {
 		if i >= pos && i < pos+thumb {
-			rows[i] = sty.ScrollThumb.Render(scrollThumb)
+			rows[i] = sty.ScrollThumb.Render(scrollThumb) + scrollBlank
 			continue
 		}
-		rows[i] = scrollBlank
+		rows[i] = scrollBlank + scrollBlank
 	}
 	return rows
 }

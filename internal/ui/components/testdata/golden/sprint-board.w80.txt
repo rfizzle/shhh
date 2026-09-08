@@ -19,7 +19,7 @@ a glance rather than a scroll.
 ▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 1 of 4 done  ·  9 turns · $1.42
 next · prose-renderer
 ────────────────────────────────────────────────────────────────────────────────
-❯ ✓ keys-are-declared-once  HM  done  Every key is declared once
+❯ ✓ keys-are-declared-once  HM  done  Every key is declared once                
   ▸ rail-todo-block  HM  implement  The backlog block on the inspector rail
   · screen-over-items  HL  waits on rail-todo-block +1  A screen over the whole…
   · prose-renderer  MS  ready  One renderer for every piece of prose
@@ -45,7 +45,7 @@ a glance rather than a scroll.
 ▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ 1 of 4 done  ·  9 turns · $1.42
 ⚠ sprint-file blocked — waiting on a decision about where the file lives
 ────────────────────────────────────────────────────────────────────────────────
-❯ ✓ keys-are-declared-once  HM  done  Every key is declared once
+❯ ✓ keys-are-declared-once  HM  done  Every key is declared once                
   ▸ rail-todo-block  HM  implement  The backlog block on the inspector rail
   ! screen-over-items  HL  blocked  A screen over the whole backlog, with the b…
   · prose-renderer  MS  ready  One renderer for every piece of prose
@@ -141,7 +141,7 @@ Reads as a minor release.
 ␛[92m▰▰▰▰▰␛[m␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[92m1 of 4 done␛[m␛[38;5;241m  ·  9 turns · $1.42␛[m
 ␛[38;5;241mnext · ␛[m␛[38;5;252mprose-renderer␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
-␛[94m❯ ␛[m␛[92m✓␛[m ␛[1;97mkeys-are-declared-once␛[m  ␛[38;5;241mHM␛[m␛[38;5;241m  done  Every key is declared once␛[m
+␛[94m❯ ␛[m␛[92m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[92m✓␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mkeys-are-declared-once  HM  done  Every key is declared once                ␛[m␛[m
   ␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;241mHM␛[m␛[38;5;241m  implement  The backlog block on the inspector rail␛[m
   ␛[38;5;241m·␛[m ␛[38;5;241mscreen-over-items␛[m  ␛[38;5;241mHL␛[m␛[38;5;241m  waits on rail-todo-block +1  A screen over the whole…␛[m
   ␛[38;5;241m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;241mMS␛[m␛[38;5;241m  ready  One renderer for every piece of prose␛[m
@@ -167,7 +167,7 @@ Reads as a minor release.
 ␛[92m▰▰▰▰▰␛[m␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[92m1 of 4 done␛[m␛[38;5;241m  ·  9 turns · $1.42␛[m
 ␛[91m⚠ sprint-file blocked — waiting on a decision about where the file lives␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────────────────────────␛[m
-␛[94m❯ ␛[m␛[92m✓␛[m ␛[1;97mkeys-are-declared-once␛[m  ␛[38;5;241mHM␛[m␛[38;5;241m  done  Every key is declared once␛[m
+␛[94m❯ ␛[m␛[92m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[92m✓␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mkeys-are-declared-once  HM  done  Every key is declared once                ␛[m␛[m
   ␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;241mHM␛[m␛[38;5;241m  implement  The backlog block on the inspector rail␛[m
   ␛[91m!␛[m ␛[38;5;252mscreen-over-items␛[m  ␛[38;5;241mHL␛[m␛[38;5;241m  blocked  A screen over the whole backlog, with the b…␛[m
   ␛[38;5;241m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;241mMS␛[m␛[38;5;241m  ready  One renderer for every piece of prose␛[m
@@ -207,7 +207,7 @@ Reads as a minor release.
 ␛[38;5;241mMake every piece of prose on screen come out of one renderer.␛[m
 ␛[38;5;241mReads as a minor release.␛[m
 
-␛[94m❯ ␛[m␛[92m[x]␛[m ␛[1;97mprose-renderer␛[m␛[38;5;241m  One renderer for every piece of prose  ·  the other two b…␛[m
+␛[94m❯ ␛[m␛[92m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[92m[x]␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mprose-renderer  One renderer for every piece of prose  ·  the other two b…␛[m␛[m
   ␛[92m[x]␛[m ␛[1;97mdrop-loses-the-file␛[m␛[38;5;241m  Dropping an item says what it loses  ·  same package…␛[m
   ␛[92m[x]␛[m ␛[1;97mscreen-over-items␛[m␛[38;5;241m  A screen over the whole backlog  ·  the surface the fi…␛[m
 
@@ -225,7 +225,7 @@ Reads as a minor release.
 ␛[38;5;241mReads as a minor release.␛[m
 
   ␛[92m[x]␛[m ␛[1;97mprose-renderer␛[m␛[38;5;241m  One renderer for every piece of prose  ·  the other two b…␛[m
-␛[94m❯ ␛[m␛[38;5;241m[ ]␛[m ␛[38;5;241mdrop-loses-the-file␛[m␛[38;5;241m  Dropping an item says what it loses  ·  same package…␛[m
+␛[94m❯ ␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m[ ]␛[m␛[48;5;62m ␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mdrop-loses-the-file  Dropping an item says what it loses  ·  same package…␛[m␛[m
   ␛[92m[x]␛[m ␛[1;97mscreen-over-items␛[m␛[38;5;241m  A screen over the whole backlog  ·  the surface the fi…␛[m
 
 ␛[38;5;241m3 items left out · 1 waits, 1 too big, 1 unrelated␛[m ␛[94m[o]␛[m
@@ -241,7 +241,7 @@ Reads as a minor release.
 ␛[38;5;241mMake every piece of prose on screen come out of one renderer.␛[m
 ␛[38;5;241mReads as a minor release.␛[m
 
-␛[94m❯ ␛[m␛[92m[x]␛[m ␛[1;97mprose-renderer␛[m␛[38;5;241m  One renderer for every piece of prose  ·  the other two b…␛[m
+␛[94m❯ ␛[m␛[92m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[92m[x]␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mprose-renderer  One renderer for every piece of prose  ·  the other two b…␛[m␛[m
   ␛[92m[x]␛[m ␛[1;97mdrop-loses-the-file␛[m␛[38;5;241m  Dropping an item says what it loses  ·  same package…␛[m
   ␛[92m[x]␛[m ␛[1;97mscreen-over-items␛[m␛[38;5;241m  A screen over the whole backlog  ·  the surface the fi…␛[m
 

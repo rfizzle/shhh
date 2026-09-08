@@ -1,0 +1,55 @@
+# One pointer, drawn one way. The scene walks the three places the mark can
+# appear on one screen — a list's cursor, the transcript's reading cursor, and
+# the draft's own glyph — at a width wide enough for two panes, so the scroll
+# gutter is drawn beside the pane divider as well.
+#
+# Spaces rather than tabs in the fixtures: a tab is re-expanded by the
+# terminal against the pane's own columns, not the row's, and the capture
+# would read as a column that drifted.
+setup printf 'package agent\n\nfunc loop() {\n    for round := 0; round < limit; round++ {\n        step()\n    }\n}\n' > loop.go
+setup printf 'package agent\n\nconst limit = 25\n\nfunc round() int {\n    return limit\n}\n' > round.go
+setup printf 'package agent\n\nimport "errors"\n\nvar ErrRoundLimit = errors.New("round limit reached")\n' > errors.go
+setup printf 'package agent\n\nfunc within(n int) bool {\n    return n < limit\n}\n' > limit.go
+# The start screen is the first frame, and its own list is the first pointer:
+# ❯ outside the highlight on the offer the keyboard is on.
+snap 01-start "Some things worth doing first"
+keys "how is the round limit counted" Enter
+snap 02-turn "The limit is a checkpoint, not a wall"
+keys "read the rest of the package" Enter
+snap 03-second-turn "Every round is counted in one place"
+keys "read the loop once more" Enter
+snap 04-third-turn "The sentinel goes in the loop"
+# Reading mode: the cursor goes in the column the fold marks already stand
+# in, so nothing in the transcript moves sideways when the keyboard arrives.
+keys C-o
+snap 05-reading "back to the prompt"
+keys k
+keys k
+snap 06-cursor "expand"
+# Opening the step gives back the run of reads it folded, which is the row the
+# Reading artboard draws its cursor on.
+keys Enter
+keys j
+keys Enter
+keys j
+snap 07-on-a-read "1 row expanded"
+keys q
+sleep 0.5
+# The palette's list, opened from the draft: the same pointer in the same
+# column, and the filter row's own glyph above it.
+keys C-/
+snap 08-palette "COMMANDS"
+keys Escape
+sleep 0.5
+# The model picker is a card of the same list, so the pointer is the same
+# mark again — this is the Lists artboard's own surface.
+keys "/model" Enter
+snap 09-model "scripted-mini"
+keys Escape
+sleep 0.5
+# And back at the draft, which draws its own glyph rather than the reader's.
+snap 10-draft "enter send"
+keys C-c
+snap 11-quit-armed "press again to quit"
+keys C-c
+snap 12-exit "that is everything the screen was holding"

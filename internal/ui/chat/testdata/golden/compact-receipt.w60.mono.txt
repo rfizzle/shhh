@@ -31,9 +31,9 @@ and the last 1 turn:
     pass except the one on the limit itself.
 
 ❯ Move the round limit into the loop.
-───────────────────────────────────────────────────────
+──────────────────────────────────────────────────────
 
-  Moved it, and the *limit* is read from one place   
+  Moved it, and the *limit* is read from one place  
   now.
 
 
@@ -59,8 +59,8 @@ and the last 1 turn:
     ␛[3;38;5;244mpass except the one on the limit itself.␛[m
 
 ␛[38;5;254m❯␛[m Move the round limit into the loop.
-␛[38;5;244m───────────────────────────────────────────────────────␛[m
+␛[38;5;244m──────────────────────────────────────────────────────␛[m
 
-  Moved it, and the *limit* is read from one place   
+  Moved it, and the *limit* is read from one place  
   now.
 

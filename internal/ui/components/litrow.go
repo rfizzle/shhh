@@ -39,6 +39,19 @@ const ansiReset = ansi.ResetStyle
 // the pointer is the whole of the cursor on such a terminal, which is why the
 // cursor is a glyph and not a colour (invariant 1).
 func LitRow(line string, skip, width int) string {
+	return LitRowKeeping(line, skip, -1, width)
+}
+
+// LitRowKeeping is LitRow told where the row's marks end rather than left to
+// measure it. keep is how many cells after skip hold their own colours inside
+// the highlight; a negative keep measures the glyph run, which is what LitRow
+// passes.
+//
+// A caller says the number when its mark cannot be measured — a checkbox is
+// `[x]`, and the letter in the middle of it ends the glyph run, which would
+// paint the bracket in the box's colour and the tick in the row's. Half a
+// checkbox in each of two colours is one mark drawn as two.
+func LitRowKeeping(line string, skip, keep, width int) string {
 	bg := backgroundSeq(Palette.FocusBg)
 	if bg == "" {
 		return line
@@ -48,7 +61,9 @@ func LitRow(line string, skip, width int) string {
 	// The glyph run before the first word keeps its paint; from the first
 	// word on, the row is bright, and that change is what the highlight is
 	// made of.
-	keep := glyphRunWidth(ansi.Strip(rest))
+	if keep < 0 {
+		keep = glyphRunWidth(ansi.Strip(rest))
+	}
 	glyphs := ansi.Truncate(rest, keep, "")
 	words := ansi.Strip(ansi.TruncateLeft(rest, keep, ""))
 	pad := max(width-skip-keep-lipgloss.Width(words), 0)
@@ -76,6 +91,33 @@ func glyphRunWidth(s string) int {
 func rearm(s, bg string) string {
 	return bg + strings.ReplaceAll(s, ansiReset, ansiReset+bg)
 }
+
+// LitOption paints one not-yet-painted list row as the row the keyboard is
+// on: the ❯ pointer in Info in its own column outside the highlight, then the
+// row itself bright on the focus background, stretched to the list's full
+// width so the highlight ends at the card's inner edge. Every list draws its
+// cursor this way — the selector, the start screen, the palette and mention
+// menus, the pickers — because a background alone is the one treatment a
+// two-grey terminal may not have, and a pointer that moved column between two
+// lists would be a mark the eye has to find again on every screen.
+//
+// It is LitRow's sibling for a row that carries no colours yet. LitRow keeps
+// the paint a rendered transcript row arrives with — its mutation rail, its
+// kind glyph — because that is what says what the row did; a list row says
+// what it is rather than what it did, so all of it goes bright. Handing a
+// plain row to LitRow instead would leave its leading glyphs in the
+// terminal's own default foreground, a colour the palette never issued
+// (docs/interface/principles.md#one-grid).
+func LitOption(row string, width int) string {
+	inner := max(width-GridPointerWidth, 0)
+	return sty.FocusPointer.Render("❯") + " " +
+		sty.FocusRow.Render(padRight(Clip(row, inner), inner))
+}
+
+// PointerColumn is the pointer's own cells on a row that is not the one the
+// keyboard is on: blank, so the column the eye tracks stays in one place
+// whether or not the cursor is in it.
+func PointerColumn() string { return strings.Repeat(" ", GridPointerWidth) }
 
 // backgroundSeq is the escape that turns one palette token on as a
 // background, or "" where the terminal has no colour to turn on. It is the

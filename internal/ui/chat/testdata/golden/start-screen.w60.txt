@@ -21,14 +21,14 @@ context  AGENTS.md — in the system prompt
 gate     default — vet, test · runs without asking
 
 Some things worth doing first:
-❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago
+❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago 
   ⚙ explain what changed in the working tree
     reads only, no writes
   ⚙ run the default quality gate and triage what fails
     one approval, then it reports back
 
-[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…
-[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…
+[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] star…
+[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palet…
 
 · the pointer on the offer that costs an approval
 ▄▀▀▀ █    █    █
@@ -47,8 +47,8 @@ Some things worth doing first:
 ❯ ⚙ run the default quality gate and triage what fails
     one approval, then it reports back
 
-[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…
-[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…
+[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] star…
+[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palet…
 
 · clean tree · nothing saved, no gate, no project context
 ▄▀▀▀ █    █    █
@@ -62,15 +62,15 @@ context  nothing read
 gate     not configured — .shhh/quality.json
 
 Some things worth doing first:
-❯ ⚙ walk me through what this project does
+❯ ⚙ walk me through what this project does            
     reads only, no writes
   ⚙ summarise the last ten commits
     reads only, no writes
   ⚙ run go test ./... and triage the failures
     one approval, then it reports back
 
-[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…
-[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…
+[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] star…
+[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palet…
 
 · outside a repository · the package count is a floor
 ▄▀▀▀ █    █    █
@@ -83,14 +83,14 @@ context  AGENTS.md — in the system prompt
 gate     default — vet, test · runs without asking
 
 Some things worth doing first:
-❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago
+❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago 
   ⚙ walk me through what this project does
     reads only, no writes
   ⚙ run the default quality gate and triage what fails
     one approval, then it reports back
 
-[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…
-[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…
+[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] star…
+[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palet…
 
 · nothing read · the third offer writes the file that would be
 ▄▀▀▀ █    █    █
@@ -104,13 +104,13 @@ context  nothing read
 gate     default — vet, test · runs without asking
 
 Some things worth doing first:
-❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago
+❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago 
   ⚙ explain what changed in the working tree
     reads only, no writes
   ✎ scaffold .shhh/ — one approval
 
-[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…
-[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…
+[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] star…
+[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palet…
 
 · somebody else is in this checkout too
 ▄▀▀▀ █    █    █
@@ -123,14 +123,14 @@ context  AGENTS.md — in the system prompt
 gate     default — vet, test · runs without asking
 
 Some things worth doing first:
-❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago
+❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago 
   ⚙ explain what changed in the working tree
     reads only, no writes
   ⚙ run the default quality gate and triage what fails
     one approval, then it reports back
 
-[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…
-[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…
+[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] star…
+[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palet…
 
 · a checkout nobody has answered for · what it is holding back
 ▄▀▀▀ █    █    █
@@ -141,19 +141,19 @@ Some things worth doing first:
 
 context  AGENTS.md — in the system prompt
 gate     withheld
-         this checkout is not trusted to run its own c…
+         this checkout is not trusted to run its own …
 trust    withheld
-         skills, agent profiles, quality suites · /tru…
+         skills, agent profiles, quality suites · /tr…
 
 Some things worth doing first:
-❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago
+❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago 
   ⚙ explain what changed in the working tree
     reads only, no writes
   ⚙ run go test ./... and triage the failures
     one approval, then it reports back
 
-[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…
-[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…
+[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] star…
+[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palet…
 
 · the checkout brought its own settings and its own wordings
 ▄▀▀▀ █    █    █
@@ -167,17 +167,17 @@ gate      default — vet, test · runs without asking
 settings  .shhh/config.toml
           this checkout's own, over yours
 wordings  .shhh/prompts/
-          this checkout's own, over yours · steer, tod…
+          this checkout's own, over yours · steer, to…
 
 Some things worth doing first:
-❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago
+❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago 
   ⚙ explain what changed in the working tree
     reads only, no writes
   ⚙ run the default quality gate and triage what fails
     one approval, then it reports back
 
-[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…
-[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…
+[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] star…
+[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palet…
 
 · typing dismissed the list · the facts stay
 ▄▀▀▀ █    █    █
@@ -189,7 +189,7 @@ Some things worth doing first:
 context  AGENTS.md — in the system prompt
 gate     default — vet, test · runs without asking
 
-[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…
+[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palet…
 
 ── ansi ────────────────────────────────────────────────────
 · first contact · a dirty checkout with a session to pick up
@@ -203,14 +203,14 @@ gate     default — vet, test · runs without asking
 ␛[38;5;241mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;241m — vet, test · runs without asking␛[m
 
 ␛[38;5;241mSome things worth doing first:␛[m
-␛[1;48;5;62m❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago␛[m
+␛[94m❯␛[m ␛[1;97;48;5;62m▸ pick up (last session) — 7 turns · $0.42 · 4m ago ␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mexplain what changed in the working tree␛[m
     ␛[38;5;241mreads only, no writes␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m
     ␛[38;5;241mone approval, then it reports back␛[m
 
-␛[38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…␛[m
-␛[38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…␛[m
+␛[38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] star…␛[m
+␛[38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palet…␛[m
 
 · the pointer on the offer that costs an approval
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -226,11 +226,11 @@ gate     default — vet, test · runs without asking
   ␛[38;5;214m▸␛[m ␛[38;5;252mpick up (last session)␛[m␛[38;5;241m — 7 turns · $0.42 · 4m ago␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mexplain what changed in the working tree␛[m
     ␛[38;5;241mreads only, no writes␛[m
-␛[1;48;5;62m❯ ⚙ run the default quality gate and triage what fails␛[m
+␛[94m❯␛[m ␛[1;97;48;5;62m⚙ run the default quality gate and triage what fails␛[m
     ␛[38;5;241mone approval, then it reports back␛[m
 
-␛[38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…␛[m
-␛[38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…␛[m
+␛[38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] star…␛[m
+␛[38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palet…␛[m
 
 · clean tree · nothing saved, no gate, no project context
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -244,15 +244,15 @@ gate     default — vet, test · runs without asking
 ␛[38;5;241mgate   ␛[m  ␛[38;5;252mnot configured␛[m␛[38;5;241m — .shhh/quality.json␛[m
 
 ␛[38;5;241mSome things worth doing first:␛[m
-␛[1;48;5;62m❯ ⚙ walk me through what this project does␛[m
+␛[94m❯␛[m ␛[1;97;48;5;62m⚙ walk me through what this project does            ␛[m
     ␛[38;5;241mreads only, no writes␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252msummarise the last ten commits␛[m
     ␛[38;5;241mreads only, no writes␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun go test ./... and triage the failures␛[m
     ␛[38;5;241mone approval, then it reports back␛[m
 
-␛[38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…␛[m
-␛[38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…␛[m
+␛[38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] star…␛[m
+␛[38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palet…␛[m
 
 · outside a repository · the package count is a floor
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -265,14 +265,14 @@ gate     default — vet, test · runs without asking
 ␛[38;5;241mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;241m — vet, test · runs without asking␛[m
 
 ␛[38;5;241mSome things worth doing first:␛[m
-␛[1;48;5;62m❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago␛[m
+␛[94m❯␛[m ␛[1;97;48;5;62m▸ pick up (last session) — 7 turns · $0.42 · 4m ago ␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mwalk me through what this project does␛[m
     ␛[38;5;241mreads only, no writes␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m
     ␛[38;5;241mone approval, then it reports back␛[m
 
-␛[38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…␛[m
-␛[38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…␛[m
+␛[38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] star…␛[m
+␛[38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palet…␛[m
 
 · nothing read · the third offer writes the file that would be
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -286,13 +286,13 @@ gate     default — vet, test · runs without asking
 ␛[38;5;241mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;241m — vet, test · runs without asking␛[m
 
 ␛[38;5;241mSome things worth doing first:␛[m
-␛[1;48;5;62m❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago␛[m
+␛[94m❯␛[m ␛[1;97;48;5;62m▸ pick up (last session) — 7 turns · $0.42 · 4m ago ␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mexplain what changed in the working tree␛[m
     ␛[38;5;241mreads only, no writes␛[m
   ␛[38;5;214m✎␛[m ␛[38;5;252mscaffold .shhh/␛[m␛[38;5;241m — one approval␛[m
 
-␛[38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…␛[m
-␛[38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…␛[m
+␛[38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] star…␛[m
+␛[38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palet…␛[m
 
 · somebody else is in this checkout too
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -305,14 +305,14 @@ gate     default — vet, test · runs without asking
 ␛[38;5;241mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;241m — vet, test · runs without asking␛[m
 
 ␛[38;5;241mSome things worth doing first:␛[m
-␛[1;48;5;62m❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago␛[m
+␛[94m❯␛[m ␛[1;97;48;5;62m▸ pick up (last session) — 7 turns · $0.42 · 4m ago ␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mexplain what changed in the working tree␛[m
     ␛[38;5;241mreads only, no writes␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m
     ␛[38;5;241mone approval, then it reports back␛[m
 
-␛[38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…␛[m
-␛[38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…␛[m
+␛[38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] star…␛[m
+␛[38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palet…␛[m
 
 · a checkout nobody has answered for · what it is holding back
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -323,19 +323,19 @@ gate     default — vet, test · runs without asking
 
 ␛[38;5;241mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
 ␛[38;5;241mgate   ␛[m  ␛[38;5;252mwithheld␛[m
-         ␛[38;5;241mthis checkout is not trusted to run its own c…␛[m
+         ␛[38;5;241mthis checkout is not trusted to run its own …␛[m
 ␛[38;5;241mtrust  ␛[m  ␛[38;5;252mwithheld␛[m
-         ␛[38;5;241mskills, agent profiles, quality suites · /tru…␛[m
+         ␛[38;5;241mskills, agent profiles, quality suites · /tr…␛[m
 
 ␛[38;5;241mSome things worth doing first:␛[m
-␛[1;48;5;62m❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago␛[m
+␛[94m❯␛[m ␛[1;97;48;5;62m▸ pick up (last session) — 7 turns · $0.42 · 4m ago ␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mexplain what changed in the working tree␛[m
     ␛[38;5;241mreads only, no writes␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun go test ./... and triage the failures␛[m
     ␛[38;5;241mone approval, then it reports back␛[m
 
-␛[38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…␛[m
-␛[38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…␛[m
+␛[38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] star…␛[m
+␛[38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palet…␛[m
 
 · the checkout brought its own settings and its own wordings
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -349,17 +349,17 @@ gate     default — vet, test · runs without asking
 ␛[38;5;241msettings␛[m  ␛[38;5;252m.shhh/config.toml␛[m
           ␛[38;5;241mthis checkout's own, over yours␛[m
 ␛[38;5;241mwordings␛[m  ␛[38;5;252m.shhh/prompts/␛[m
-          ␛[38;5;241mthis checkout's own, over yours · steer, tod…␛[m
+          ␛[38;5;241mthis checkout's own, over yours · steer, to…␛[m
 
 ␛[38;5;241mSome things worth doing first:␛[m
-␛[1;48;5;62m❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago␛[m
+␛[94m❯␛[m ␛[1;97;48;5;62m▸ pick up (last session) — 7 turns · $0.42 · 4m ago ␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mexplain what changed in the working tree␛[m
     ␛[38;5;241mreads only, no writes␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m
     ␛[38;5;241mone approval, then it reports back␛[m
 
-␛[38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…␛[m
-␛[38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…␛[m
+␛[38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] star…␛[m
+␛[38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palet…␛[m
 
 · typing dismissed the list · the facts stay
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -371,4 +371,4 @@ gate     default — vet, test · runs without asking
 ␛[38;5;241mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
 ␛[38;5;241mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;241m — vet, test · runs without asking␛[m
 
-␛[38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…␛[m
+␛[38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palet…␛[m

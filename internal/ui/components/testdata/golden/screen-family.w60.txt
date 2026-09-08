@@ -14,7 +14,7 @@
 shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
 ────────────────────────────────────────────────────────────
 
-❯  ✗ model   anthropic · claude-opus-5 · no k…  no key
+❯  ✗ model   anthropic · claude-opus-5 · no k…  no key      
     no session will start until a key is found — every one …
     [f] show the four places shhh looks
   ↓ 9 more · binary · config · store · sandbox · engine · g…
@@ -144,7 +144,7 @@ docs.rs
 ␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m           ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
-␛[94m❯␛[m  ␛[91m✗␛[m ␛[38;5;252mmodel␛[m   ␛[38;5;252manthropic␛[m␛[38;5;241m · claude-opus-5 · no k…␛[m  ␛[91mno key␛[m
+␛[94m❯␛[m ␛[91m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m␛[38;5;241m␛[m␛[91m␛[m␛[48;5;62m␛[94m␛[m␛[48;5;62m ␛[91m✗␛[m␛[48;5;62m ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[91m␛[m␛[48;5;62m␛[97;48;5;62mmodel   anthropic · claude-opus-5 · no k…  no key      ␛[m␛[m
     ␛[38;5;245mno session will start until a key is found — every one …␛[m
     ␛[94m[f]␛[m␛[38;5;241m show the four places shhh looks␛[m
   ␛[38;5;241m↓ 9 more · binary · config · store · sandbox · engine · g…␛[m
@@ -170,7 +170,7 @@ docs.rs
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mSESSION␛[m
-  ␛[1;48;5;62m❯ permission mode    ⏵⏵ auto — edits apply; allowli…  user␛[m
+  ␛[94m❯␛[m ␛[1;97;48;5;62mpermission mode    ⏵⏵ auto — edits apply; allowli…  user␛[m
     ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                            ␛[38;5;252mdefault␛[m
     ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                   ␛[38;5;252mdefault␛[m
   ␛[38;5;241m↓ 11 more␛[m
@@ -183,7 +183,7 @@ docs.rs
 ␛[1;97mshhh history␛[m␛[38;5;241m · 6 entries · 2 run␛[m         ␛[38;5;241m[?] keys · [q] quit␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
-␛[1;48;5;62m❯ $ delete every log file older than a week  exit 0     1.4s␛[m
+␛[94m❯␛[m ␛[1;97;48;5;62m$ delete every log file older than a week  exit 0     1.4s␛[m
   ␛[38;5;252m$ show the ten biggest files in this dire…␛[m  ␛[92mcopied␛[m    ␛[38;5;252m0.9s␛[m
   ␛[38;5;252m✗ rebase onto main and force push␛[m  ␛[91mexit 128␛[m ␛[38;5;241m· tue␛[m     ␛[38;5;252m2.1s␛[m
   ␛[38;5;252m$ find every reference to ErrRoundLimit u…␛[m  ␛[92msaved␛[m     ␛[38;5;252m1.1s␛[m
@@ -238,7 +238,7 @@ docs.rs
 ␛[1;97mshhh snippets␛[m␛[38;5;241m · 3 snippets␛[m               ␛[38;5;241m[?] keys · [q] quit␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
-␛[1;48;5;62m❯ ports      what is listening on this machine        4m ago␛[m
+␛[94m❯␛[m ␛[1;97;48;5;62mports      what is listening on this machine        4m ago␛[m
   ␛[38;5;252mbig-files␛[m  ␛[38;5;241mthe ten biggest files here␛[m            ␛[38;5;252myesterday␛[m
   ␛[38;5;252mprune␛[m      ␛[38;5;241mdrop every merged branch␛[m                    ␛[38;5;252mtue␛[m
 
@@ -250,7 +250,7 @@ docs.rs
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;252mmorning-fix␛[m  ␛[38;5;241mthe retry backoff was doubling twice · 12 tu…␛[m
-␛[1;48;5;62m❯ held         reading the sandbox…  open in another session␛[m
+␛[94m❯␛[m ␛[1;97;48;5;62mheld         reading the sandbox…  open in another session␛[m
   ␛[38;5;252mtuesday␛[m      ␛[38;5;241mnaming the report pages · 31 turns · Sep 3 1…␛[m
 
 ␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m rename it␛[m␛[38;5;241m · ␛[m␛[94m[x]␛[m␛[38;5;241m delete it␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m
@@ -263,7 +263,7 @@ docs.rs
 ␛[1;94msearches␛[m
   ␛[38;5;252m⇢ tokio runtime␛[m                 ␛[38;5;252m3 results␛[m ␛[38;5;241m· orchestrator␛[m
 ␛[1;94mdocs.rs␛[m
-␛[1;48;5;62m❯ ⇢ /tokio/latest/tokio/          200 · orchestrator   60 KB␛[m
+␛[94m❯␛[m ␛[1;97;48;5;62m⇢ /tokio/latest/tokio/          200 · orchestrator   60 KB␛[m
   ␛[38;5;252m⇢ /tokio/latest/tokio/runtime/␛[m  ␛[38;5;252m200 (cached)␛[m         ␛[38;5;252m12 KB␛[m
 
 ␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m read the page that was kept␛[m

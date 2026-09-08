@@ -62,7 +62,7 @@
 ␛[38;5;214m│␛[m ␛[38;5;245m[y] run it once␛[m␛[38;5;241m · ␛[m␛[38;5;245m[Y] and say what next␛[m␛[38;5;241m · ␛[m␛[38;5;245m[n] deny␛[m␛[38;5;241m · ␛[m␛[38;5;245m[N] and say why not␛[m␛[38;5;241m · ␛[m␛[38;5;245m[a] allow "npm test" without asking␛[m             ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;245m[d] full view␛[m                                                                              ␛[38;5;241mthe list below has the keyboard␛[m ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;241m┄ allow without asking␛[m                                                                                                     ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[1;48;5;62m❯ this turn only   npm test …                                                                         until this turn ends␛[m ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;62mthis turn only   npm test …                                                                         until this turn ends␛[m ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m   ␛[38;5;252mthis session␛[m     ␛[38;5;241mnpm test …␛[m                                                                          ␛[38;5;252muntil you revoke it␛[m ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m   ␛[38;5;252mthis exact line␛[m  ␛[38;5;241mnpm test --watch␛[m                                                                    ␛[38;5;252muntil you revoke it␛[m ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;241m[↑↓/jk] choose · [enter] grant it, and run · [esc] back to the card — nothing is granted␛[m                                   ␛[38;5;214m│␛[m
@@ -82,7 +82,7 @@
 ␛[38;5;214m│␛[m ␛[38;5;245m[d] full view␛[m                                                                              ␛[38;5;241mthe list below has the keyboard␛[m ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;241m┄ allow without asking␛[m                                                                                                     ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m   ␛[38;5;252mthis turn only␛[m   ␛[38;5;241mnpm test …␛[m                                                                         ␛[38;5;252muntil this turn ends␛[m ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[1;48;5;62m❯ this session     npm test …                                                                          until you revoke it␛[m ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;62mthis session     npm test …                                                                          until you revoke it␛[m ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m   ␛[38;5;252mthis exact line␛[m  ␛[38;5;241mnpm test --watch␛[m                                                                    ␛[38;5;252muntil you revoke it␛[m ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;241m[↑↓/jk] choose · [enter] grant it, and run · [esc] back to the card — nothing is granted␛[m                                   ␛[38;5;214m│␛[m
 ␛[38;5;214m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

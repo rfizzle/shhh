@@ -16,7 +16,7 @@ shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
 
    ✓ binary  shhh 0.9.4 · darwin/arm64 · ~/.local…  ok
    ✓ config  ~/.config/shhh/config.toml · 6 setti…  ok
-❯  ✗ model   anthropic · claude-opus-5 · no k…  no key
+❯  ✗ model   anthropic · claude-opus-5 · no k…  no key      
     no session will start until a key is found — every one …
     [f] show the four places shhh looks
    ✓ store   ~/.local/share/shhh/shhh.db · opened…  ok
@@ -42,7 +42,7 @@ shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
 
    ✓ binary  shhh 0.9.4 · darwin/arm64 · ~/.local…  ok
    ✓ config  ~/.config/shhh/config.toml · 6 setti…  ok
-❯  ✗ model   anthropic · claude-opus-5 · no k…  no key
+❯  ✗ model   anthropic · claude-opus-5 · no k…  no key      
     no session will start until a key is found — every one …
       env       SHHH_API_KEY, ANTHROPIC_API_KEY — unset
       config    ~/.config/shhh/config.toml — no provider ap…
@@ -98,7 +98,7 @@ shhh doctor · ▸ running           0.3s · [?] keys · [q] quit
 
    ✓ binary  shhh 0.9.4 · darwin/arm64 · ~/.local…  ok
    ✓ config  ~/.config/shhh/config.toml · 6 setti…  ok
-❯  ✗ model   anthropic · claude-opus-5 · no k…  no key
+❯  ✗ model   anthropic · claude-opus-5 · no k…  no key      
     no session will start until a key is found — every one …
     [f] show the four places shhh looks
    ▸ store   the local store                  running…
@@ -116,7 +116,7 @@ shhh doctor · ▸ running           0.3s · [?] keys · [q] quit
 shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
 ────────────────────────────────────────────────────────────
 
-❯  ✗ model   anthropic · claude-opus-5 · no k…  no key
+❯  ✗ model   anthropic · claude-opus-5 · no k…  no key      
     no session will start until a key is found — every one …
     [f] show the four places shhh looks
    ✗ sandbox no containment mechanism · …  uncontained  0.1s
@@ -137,7 +137,7 @@ shhh doctor · 10 checks           1.4s · [?] keys · [q] quit
 
    ✓ binary  shhh 0.9.4 · darwin/arm64 · ~/.local…  ok
    ✓ config  ~/.config/shhh/config.toml · 6 setti…  ok
-❯  ✗ model   anthropic · claude-opus-5 · no k…  no key
+❯  ✗ model   anthropic · claude-opus-5 · no k…  no key      
     no session will start until a key is found — every one …
     [f] show the four places shhh looks
    ✓ store   ~/.local/share/shhh/shhh.db · opened…  ok
@@ -180,7 +180,7 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
 
    ␛[38;5;254m✓␛[m ␛[38;5;254mbinary␛[m  ␛[38;5;254mshhh 0.9.4␛[m␛[38;5;244m · darwin/arm64 · ~/.local…␛[m  ␛[38;5;244mok␛[m
    ␛[38;5;254m✓␛[m ␛[38;5;254mconfig␛[m  ␛[38;5;254m~/.config/shhh/config.toml␛[m␛[38;5;244m · 6 setti…␛[m  ␛[38;5;244mok␛[m
-␛[38;5;254m❯␛[m  ␛[38;5;254m✗␛[m ␛[38;5;254mmodel␛[m   ␛[38;5;254manthropic␛[m␛[38;5;244m · claude-opus-5 · no k…␛[m  ␛[38;5;254mno key␛[m
+␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m ␛[38;5;254m✗␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254;48;5;237mmodel   anthropic · claude-opus-5 · no k…  no key      ␛[m␛[m
     ␛[38;5;244mno session will start until a key is found — every one …␛[m
     ␛[38;5;254m[f]␛[m␛[38;5;244m show the four places shhh looks␛[m
    ␛[38;5;254m✓␛[m ␛[38;5;254mstore␛[m   ␛[38;5;254m~/.local/share/shhh/shhh.db␛[m␛[38;5;244m · opened…␛[m  ␛[38;5;244mok␛[m
@@ -206,7 +206,7 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
 
    ␛[38;5;254m✓␛[m ␛[38;5;254mbinary␛[m  ␛[38;5;254mshhh 0.9.4␛[m␛[38;5;244m · darwin/arm64 · ~/.local…␛[m  ␛[38;5;244mok␛[m
    ␛[38;5;254m✓␛[m ␛[38;5;254mconfig␛[m  ␛[38;5;254m~/.config/shhh/config.toml␛[m␛[38;5;244m · 6 setti…␛[m  ␛[38;5;244mok␛[m
-␛[38;5;254m❯␛[m  ␛[38;5;254m✗␛[m ␛[38;5;254mmodel␛[m   ␛[38;5;254manthropic␛[m␛[38;5;244m · claude-opus-5 · no k…␛[m  ␛[38;5;254mno key␛[m
+␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m ␛[38;5;254m✗␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254;48;5;237mmodel   anthropic · claude-opus-5 · no k…  no key      ␛[m␛[m
     ␛[38;5;244mno session will start until a key is found — every one …␛[m
       ␛[38;5;254menv       SHHH_API_KEY, ANTHROPIC_API_KEY — unset␛[m
       ␛[38;5;254mconfig    ~/.config/shhh/config.toml — no provider ap…␛[m
@@ -240,7 +240,7 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
     ␛[38;5;244mno session will start until a key is found — every one …␛[m
     ␛[38;5;244m[f]␛[m␛[38;5;244m show the four places shhh looks␛[m
    ␛[38;5;254m✓␛[m ␛[38;5;254mstore␛[m   ␛[38;5;254m~/.local/share/shhh/shhh.db␛[m␛[38;5;244m · opened…␛[m  ␛[38;5;244mok␛[m
-␛[38;5;254m❯␛[m  ␛[38;5;254m✗␛[m ␛[38;5;254msandbox␛[m ␛[38;5;254mno containment mechanism␛[m␛[38;5;244m · …␛[m  ␛[38;5;254muncontained␛[m  ␛[38;5;244m0.1s␛[m
+␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m ␛[38;5;254m✗␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237msandbox no containment mechanism · …  uncontained  0.1s␛[m␛[m
     ␛[38;5;244mevery approval will show ⚠ UNCONTAINED, and an approved…␛[m
     ␛[38;5;254m[f]␛[m␛[38;5;244m show the fix for this host␛[m
    ␛[38;5;254m⚠␛[m ␛[38;5;254mengine␛[m  ␛[38;5;254mpodman␛[m␛[38;5;244m · no sandbox image conf…␛[m  ␛[38;5;254mno image␛[m
@@ -262,7 +262,7 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
 
    ␛[38;5;254m✓␛[m ␛[38;5;254mbinary␛[m  ␛[38;5;254mshhh 0.9.4␛[m␛[38;5;244m · darwin/arm64 · ~/.local…␛[m  ␛[38;5;244mok␛[m
    ␛[38;5;254m✓␛[m ␛[38;5;254mconfig␛[m  ␛[38;5;254m~/.config/shhh/config.toml␛[m␛[38;5;244m · 6 setti…␛[m  ␛[38;5;244mok␛[m
-␛[38;5;254m❯␛[m  ␛[38;5;254m✗␛[m ␛[38;5;254mmodel␛[m   ␛[38;5;254manthropic␛[m␛[38;5;244m · claude-opus-5 · no k…␛[m  ␛[38;5;254mno key␛[m
+␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m ␛[38;5;254m✗␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254;48;5;237mmodel   anthropic · claude-opus-5 · no k…  no key      ␛[m␛[m
     ␛[38;5;244mno session will start until a key is found — every one …␛[m
     ␛[38;5;254m[f]␛[m␛[38;5;244m show the four places shhh looks␛[m
    ␛[38;5;254m▸␛[m ␛[38;5;254mstore␛[m   ␛[38;5;254mthe local store␛[m␛[38;5;244m␛[m                  ␛[38;5;254mrunning…␛[m
@@ -280,7 +280,7 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
 ␛[1;38;5;254mshhh doctor␛[m␛[38;5;244m · 10 checks␛[m           ␛[38;5;244m1.4s␛[m␛[38;5;244m · [?] keys · [q] quit␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;254m❯␛[m  ␛[38;5;254m✗␛[m ␛[38;5;254mmodel␛[m   ␛[38;5;254manthropic␛[m␛[38;5;244m · claude-opus-5 · no k…␛[m  ␛[38;5;254mno key␛[m
+␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m ␛[38;5;254m✗␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254;48;5;237mmodel   anthropic · claude-opus-5 · no k…  no key      ␛[m␛[m
     ␛[38;5;244mno session will start until a key is found — every one …␛[m
     ␛[38;5;254m[f]␛[m␛[38;5;244m show the four places shhh looks␛[m
    ␛[38;5;254m✗␛[m ␛[38;5;254msandbox␛[m ␛[38;5;254mno containment mechanism␛[m␛[38;5;244m · …␛[m  ␛[38;5;254muncontained␛[m  ␛[38;5;244m0.1s␛[m
@@ -301,7 +301,7 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
 
    ␛[38;5;254m✓␛[m ␛[38;5;254mbinary␛[m  ␛[38;5;254mshhh 0.9.4␛[m␛[38;5;244m · darwin/arm64 · ~/.local…␛[m  ␛[38;5;244mok␛[m
    ␛[38;5;254m✓␛[m ␛[38;5;254mconfig␛[m  ␛[38;5;254m~/.config/shhh/config.toml␛[m␛[38;5;244m · 6 setti…␛[m  ␛[38;5;244mok␛[m
-␛[38;5;254m❯␛[m  ␛[38;5;254m✗␛[m ␛[38;5;254mmodel␛[m   ␛[38;5;254manthropic␛[m␛[38;5;244m · claude-opus-5 · no k…␛[m  ␛[38;5;254mno key␛[m
+␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m ␛[38;5;254m✗␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254;48;5;237mmodel   anthropic · claude-opus-5 · no k…  no key      ␛[m␛[m
     ␛[38;5;244mno session will start until a key is found — every one …␛[m
     ␛[38;5;254m[f]␛[m␛[38;5;244m show the four places shhh looks␛[m
    ␛[38;5;254m✓␛[m ␛[38;5;254mstore␛[m   ␛[38;5;254m~/.local/share/shhh/shhh.db␛[m␛[38;5;244m · opened…␛[m  ␛[38;5;244mok␛[m

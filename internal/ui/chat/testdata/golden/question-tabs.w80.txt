@@ -64,11 +64,11 @@ Should the migration be reversible?  [y/N]
 
 ── ansi ────────────────────────────────────────────────────
 · three questions · the first tab has the keyboard and none is answered yet
-␛[1;48;5;62m▸ 1␛[m  ␛[38;5;241m· 2␛[m  ␛[38;5;241m· 3␛[m  ␛[38;5;241m· submit␛[m␛[38;5;241m  1 of 3 · 3 unanswered will be sent as skipped␛[m
+␛[1;97;48;5;62m▸ 1␛[m  ␛[38;5;241m· 2␛[m  ␛[38;5;241m· 3␛[m  ␛[38;5;241m· submit␛[m␛[38;5;241m  1 of 3 · 3 unanswered will be sent as skipped␛[m
 ␛[94m╭─ Question ␛[m␛[38;5;241m──────────────────────────────────────────────────────␛[m␛[94m 1 of 3 ─╮␛[m
 ␛[94m│␛[m ␛[38;5;252mWhich store should the cache use?␛[m                                        ␛[94m│␛[m
 ␛[94m│␛[m                                                                          ␛[94m│␛[m
-␛[94m│␛[m ␛[1;48;5;62m❯ 1. SQLite            in the checkout already     recommended · 3 files␛[m ␛[94m│␛[m
+␛[94m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;62m1. SQLite            in the checkout already     recommended · 3 files␛[m ␛[94m│␛[m
 ␛[94m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mPostgres␛[m          ␛[38;5;241mone more service to run␛[m                   ␛[38;5;252m9 files␛[m ␛[94m│␛[m
 ␛[94m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mSomething else …␛[m  ␛[38;5;241manswer in your own words␛[m                          ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;241m┄ note (optional)␛[m                                                        ␛[94m│␛[m
@@ -78,14 +78,14 @@ Should the migration be reversible?  [y/N]
 ␛[94m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 
 · one answered · the mark turns and the tail counts what is still open
-␛[92m✓ 1␛[m  ␛[1;48;5;62m▸ 2␛[m  ␛[38;5;241m· 3␛[m  ␛[38;5;241m· submit␛[m␛[38;5;241m  2 of 3 · 2 unanswered will be sent as skipped␛[m
+␛[92m✓ 1␛[m  ␛[1;97;48;5;62m▸ 2␛[m  ␛[38;5;241m· 3␛[m  ␛[38;5;241m· submit␛[m␛[38;5;241m  2 of 3 · 2 unanswered will be sent as skipped␛[m
 ␛[38;5;252mShould the migration be reversible?␛[m  ␛[38;5;241m[␛[m␛[38;5;241my␛[m␛[38;5;241m/␛[m␛[1;97mN␛[m␛[38;5;241m]␛[m
 ␛[38;5;241m┄ note (optional)␛[m
   ␛[38;5;245m(none)␛[m
 ␛[38;5;241m[y] yes · [N] no — the default · [tab] note · [←→] the next question␛[m
 
 · the free answer · its field is shut so the arrows stay the strip's
-␛[92m✓ 1␛[m  ␛[92m✓ 2␛[m  ␛[1;48;5;62m▸ 3␛[m  ␛[38;5;241m· submit␛[m␛[38;5;241m  3 of 3 · 1 unanswered will be sent as skipped␛[m
+␛[92m✓ 1␛[m  ␛[92m✓ 2␛[m  ␛[1;97;48;5;62m▸ 3␛[m  ␛[38;5;241m· submit␛[m␛[38;5;241m  3 of 3 · 1 unanswered will be sent as skipped␛[m
 ␛[94m╭─ Question ␛[m␛[38;5;241m──────────────────────────────────────────────────────␛[m␛[94m 3 of 3 ─╮␛[m
 ␛[94m│␛[m ␛[38;5;252mWhat should the flag be called?␛[m                                          ␛[94m│␛[m
 ␛[94m│␛[m                                                                          ␛[94m│␛[m
@@ -95,18 +95,18 @@ Should the migration be reversible?  [y/N]
 ␛[94m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the tab that ends the set · what enter sends, and what leaving a tab open costs
-␛[92m✓ 1␛[m  ␛[92m✓ 2␛[m  ␛[38;5;241m· 3␛[m  ␛[1;48;5;62m▸ submit␛[m␛[38;5;241m  submit · 1 unanswered will be sent as skipped␛[m
+␛[92m✓ 1␛[m  ␛[92m✓ 2␛[m  ␛[38;5;241m· 3␛[m  ␛[1;97;48;5;62m▸ submit␛[m␛[38;5;241m  submit · 1 unanswered will be sent as skipped␛[m
 ␛[38;5;241m╭─ the answers ␛[m␛[38;5;241m────────────────────────────────────────────────────────────␛[m␛[38;5;241m╮␛[m
 ␛[38;5;241m│␛[m send 2 answers · 1 unanswered, sent as skipped                           ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m[enter] send · [←→] the next question · [esc] answer in your own words␛[m   ␛[38;5;241m│␛[m
 ␛[38;5;241m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 
 · four questions · the most one call may carry, which is where the strip is tightest
-␛[92m✓ 1␛[m  ␛[38;5;241m· 2␛[m  ␛[1;48;5;62m▸ 3␛[m  ␛[38;5;241m· 4␛[m  ␛[38;5;241m· submit␛[m␛[38;5;241m  3 of 4 · 3 unanswered will be sent as skipped␛[m
+␛[92m✓ 1␛[m  ␛[38;5;241m· 2␛[m  ␛[1;97;48;5;62m▸ 3␛[m  ␛[38;5;241m· 4␛[m  ␛[38;5;241m· submit␛[m␛[38;5;241m  3 of 4 · 3 unanswered will be sent as skipped␛[m
 ␛[94m╭─ Question ␛[m␛[38;5;241m──────────────────────────────────────────────────────␛[m␛[94m 3 of 4 ─╮␛[m
 ␛[94m│␛[m ␛[38;5;252mWhich packages should the flag reach?␛[m                                    ␛[94m│␛[m
 ␛[94m│␛[m                                                                          ␛[94m│␛[m
-␛[94m│␛[m ␛[1;48;5;62m❯ ␛[m␛[38;5;241m[ ]␛[m internal/agent                                                     ␛[94m│␛[m
+␛[94m│␛[m ␛[94m❯␛[m ␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m[ ]␛[m␛[48;5;62m ␛[97;48;5;62minternal/agent                                                    ␛[m␛[m ␛[94m│␛[m
 ␛[94m│␛[m   ␛[38;5;241m[ ]␛[m internal/cli                                                       ␛[94m│␛[m
 ␛[94m│␛[m   ␛[38;5;241m[ ]␛[m Something else …                                                   ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;241m┄ note (optional)␛[m                                                        ␛[94m│␛[m

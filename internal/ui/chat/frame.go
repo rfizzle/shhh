@@ -401,14 +401,25 @@ func (m Model) frameHints() string {
 	return sty.Frame.Hint.Render(strings.Join(hints, " · "))
 }
 
-// promptGutter is the input's leading glyph: ❯ idle, ▸ while the
-// agent works (typed text becomes steering), ? while a question is waiting
-// behind the draft (enter answers it), ! while the draft is in bang form
-// (enter runs a command, through the confirm), and the child's name while
-// attached.
+// promptGutter is the input's leading glyph. The glyph is ▸ and only the
+// tone moves: dim while the draft is idle, spin while the agent works and
+// typed text becomes steering, accent while the draft is in bang form (enter
+// runs a command, through the confirm), and info while something behind the
+// draft is waiting on it. The child's name leads it while attached.
+//
+// It is not ❯. That mark is the reader — the transcript's own prompt rows and
+// the reading cursor — and one glyph that meant both "you said this" and
+// "type here" would be the same mark for two different facts on one screen.
+//
+// A question waiting behind the draft used to take a ? of its own. The top
+// rail says `⏸ 1 question waiting` in words while it waits, so the glyph is
+// the tone and the count is the rail's.
 func (m Model) promptGutter() string {
 	if m.attachedTo != "" {
-		return sty.Frame.GutterIdle.Render(m.attachedTo+" ❯") + " "
+		// The child's name and the glyph are one run in Info, which is the
+		// token a sub-agent wears wherever one is named: what this gutter
+		// says first is whose draft it is.
+		return sty.Frame.GutterIdle.Render(m.attachedTo+" "+draftGutter) + " "
 	}
 	// Bang form outranks the working glyph: enter on this draft is a
 	// command either way — confirmed idle, refused mid-turn — never
@@ -417,20 +428,25 @@ func (m Model) promptGutter() string {
 	// answered as a command before anything asks what a sentence answers
 	// (command.go).
 	if m.bangDraft() {
-		return sty.Frame.GutterBang.Render("!") + " "
+		return sty.Frame.GutterBang.Render(draftGutter) + " "
 	}
-	// A question waiting behind the draft says so here, because an answer
-	// and a steer reach the model differently — an answer is the call's
-	// result, a steer is a message — and a reader must know which of the two
-	// they are writing (question.go).
+	// A question waiting behind the draft takes the offered-key tone, because
+	// an answer and a steer reach the model differently — an answer is the
+	// call's result, a steer is a message — and a reader must know which of
+	// the two they are writing (question.go). What is waiting is said in words
+	// on the top rail; this is the same fact in the draft's own column.
 	if m.questionAside() {
-		return sty.Frame.WaitingChip.Render("?") + " "
+		return sty.Frame.NoticeInfo.Render(draftGutter) + " "
 	}
 	if m.frameWorking() {
-		return sty.Frame.GutterWork.Render("▸") + " "
+		return sty.Frame.GutterWork.Render(draftGutter) + " "
 	}
-	return sty.Frame.GutterIdle.Render("❯") + " "
+	return sty.Frame.Idle.Render(draftGutter) + " "
 }
+
+// draftGutter is the glyph in the draft's own column, on every tone the
+// draft can be in.
+const draftGutter = "▸"
 
 // frameBox is the prompt frame's own rectangles: the box, the
 // two border columns, what they leave between them, and the split a draft

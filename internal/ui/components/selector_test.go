@@ -50,7 +50,9 @@ func TestSelect_DigitJumpAndCancel(t *testing.T) {
 func TestSelect_ViewShowsPointerAndFocusedDesc(t *testing.T) {
 	s := &Select{Title: "Pick", Options: planOptions(), Focus: 2}
 	view := s.View(80)
-	if !strings.Contains(view, "❯ 3. Keep planning") {
+	// The pointer is a column of its own outside the highlight, so the row
+	// carries an escape between the two: what is asserted is the columns.
+	if !strings.Contains(stripANSI(view), "❯ 3. Keep planning") {
 		t.Fatalf("focused row should carry the pointer:\n%s", view)
 	}
 	if !strings.Contains(view, "tell me what to change") {

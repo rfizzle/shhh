@@ -325,7 +325,7 @@ func (m Model) draftPanel() string {
 
 // plainPrompt is the prompt glyph the frameless layout draws in the box's
 // place: below minFrameWidth the surface loses its frame, and the design
-// keeps a bare ❯ rather than leaving the draft as blank rows
+// keeps the bare glyph rather than leaving the draft as blank rows
 // (guidelines/layout-breakpoints). It is empty wherever the box is drawn and
 // wherever a full-screen surface has left a one-line hint in the draft's
 // place, because the columns it costs are owed only where it is drawn.
@@ -341,7 +341,7 @@ func (m Model) plainPrompt() string {
 		return ""
 	}
 	if m.attachedTo != "" {
-		return sty.Frame.GutterIdle.Render("❯") + " "
+		return sty.Frame.Idle.Render(draftGutter) + " "
 	}
 	return m.promptGutter()
 }

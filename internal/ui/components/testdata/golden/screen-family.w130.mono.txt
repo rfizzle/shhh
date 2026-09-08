@@ -14,7 +14,7 @@
 shhh doctor · 10 checks                                                                                 1.4s · [?] keys · [q] quit
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-❯  ✗ model   anthropic · claude-opus-5 · no key in any of the four places                                             no key
+❯  ✗ model   anthropic · claude-opus-5 · no key in any of the four places                                             no key      
     no session will start until a key is found — every one exits on "no provider"
     [f] show the four places shhh looks
   ↓ 9 more · binary · config · store · sandbox · engine · git · tools · memory · update
@@ -144,7 +144,7 @@ docs.rs                                                          │
 ␛[1;38;5;254mshhh doctor␛[m␛[38;5;244m · 10 checks␛[m                                                                                 ␛[38;5;244m1.4s␛[m␛[38;5;244m · [?] keys · [q] quit␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;254m❯␛[m  ␛[38;5;254m✗␛[m ␛[38;5;254mmodel␛[m   ␛[38;5;254manthropic␛[m␛[38;5;244m · claude-opus-5 · no key in any of the four places␛[m                                             ␛[38;5;254mno key␛[m
+␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m ␛[38;5;254m✗␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254;48;5;237mmodel   anthropic · claude-opus-5 · no key in any of the four places                                             no key      ␛[m␛[m
     ␛[38;5;244mno session will start until a key is found — every one exits on "no provider"␛[m
     ␛[38;5;254m[f]␛[m␛[38;5;244m show the four places shhh looks␛[m
   ␛[38;5;244m↓ 9 more · binary · config · store · sandbox · engine · git · tools · memory · update␛[m
@@ -169,7 +169,7 @@ docs.rs                                                          │
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;38;5;254mSESSION␛[m
-  ␛[1;48;5;237m❯ permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                        user␛[m
+  ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mpermission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                        user␛[m
     ␛[38;5;254mround limit␛[m        ␛[38;5;254m25␛[m                                                                                                  ␛[38;5;254mdefault␛[m
     ␛[38;5;254mcontext budget␛[m     ␛[38;5;254m8000 tokens␛[m                                                                                         ␛[38;5;254mdefault␛[m
     ␛[38;5;254msafety warnings␛[m    ␛[38;5;254mon␛[m                                                                                                  ␛[38;5;254mdefault␛[m
@@ -182,7 +182,7 @@ docs.rs                                                          │
 ␛[1;38;5;254mshhh history␛[m␛[38;5;244m · 6 entries · 2 run␛[m                                                                               ␛[38;5;244m[?] keys · [q] quit␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[1;48;5;237m❯ $ delete every log file older than a week  exit 0         1.4s␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254m4m ago␛[m␛[38;5;244m · openai/gpt-5.2␛[m                                     ␛[38;5;244mrun␛[m
+␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m$ delete every log file older than a week  exit 0         1.4s␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254m4m ago␛[m␛[38;5;244m · openai/gpt-5.2␛[m                                     ␛[38;5;244mrun␛[m
   ␛[38;5;254m$ show the ten biggest files in this directory␛[m  ␛[38;5;254mcopied␛[m    ␛[38;5;254m0.9s␛[m␛[38;5;244m │ ␛[m  ␛[38;5;244mdelete every log file older than a week␛[m
   ␛[38;5;254m✗ rebase onto main and force push␛[m  ␛[38;5;254mexit 128␛[m ␛[38;5;244m· tue␛[m         ␛[38;5;254m2.1s␛[m␛[38;5;244m │ ␛[m
   ␛[38;5;254m$ find every reference to ErrRoundLimit under…␛[m  ␛[38;5;254msaved␛[m     ␛[38;5;254m1.1s␛[m␛[38;5;244m │ ␛[m  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mfind . -name '*.log' -mtime +7␛[m        ␛[38;5;254mexit 0␛[m  ␛[38;5;244m1.4s␛[m
@@ -234,7 +234,7 @@ docs.rs                                                          │
 ␛[1;38;5;254mshhh snippets␛[m␛[38;5;244m · 3 snippets␛[m                                                                                     ␛[38;5;244m[?] keys · [q] quit␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[1;48;5;237m❯ ports      what is listening on t…  4m ago␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254mports␛[m                                                                        ␛[38;5;244m4m ago␛[m
+␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mports      what is listening on t…  4m ago␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254mports␛[m                                                                        ␛[38;5;244m4m ago␛[m
   ␛[38;5;254mbig-files␛[m  ␛[38;5;244mthe ten biggest fil…␛[m  ␛[38;5;254myesterday␛[m␛[38;5;244m │ ␛[m  ␛[38;5;244mwhat is listening on this machine␛[m
   ␛[38;5;254mprune␛[m      ␛[38;5;244mdrop every merged branch␛[m    ␛[38;5;254mtue␛[m␛[38;5;244m │ ␛[m
                                             ␛[38;5;244m │ ␛[m  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mlsof -nP -iTCP -sTCP:LISTEN␛[m
@@ -246,7 +246,7 @@ docs.rs                                                          │
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;254mmorning-fix␛[m  ␛[38;5;244mthe retry backoff was doubling twice · 12 turns …␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254mheld␛[m                                        ␛[38;5;244m2026-09-06 08:02:41␛[m
-␛[1;48;5;237m❯ held         reading the sandbox pol…  open in another session␛[m␛[38;5;244m │ ␛[m  ␛[38;5;244mreading the sandbox policy␛[m
+␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mheld         reading the sandbox pol…  open in another session␛[m␛[38;5;244m │ ␛[m  ␛[38;5;244mreading the sandbox policy␛[m
   ␛[38;5;254mtuesday␛[m      ␛[38;5;244mnaming the report pages · 31 turns · Sep 3 17:40␛[m ␛[38;5;244m │ ␛[m
                                                                 ␛[38;5;244m │ ␛[m  ␛[38;5;254m4 turns␛[m
                                                                 ␛[38;5;244m │ ␛[m
@@ -262,7 +262,7 @@ docs.rs                                                          │
 ␛[1;38;5;254msearches␛[m                                                        ␛[38;5;244m │ ␛[m␛[1;38;5;254mhttps://docs.rs/tokio/latest/tokio/␛[m                ␛[38;5;244morchestrator␛[m
   ␛[38;5;254m⇢ tokio runtime␛[m                 ␛[38;5;254m3 results␛[m ␛[38;5;244m· orchestrator␛[m      ␛[38;5;244m │ ␛[m  ␛[38;5;244mtokio — Rust␛[m
 ␛[1;38;5;254mdocs.rs␛[m                                                         ␛[38;5;244m │ ␛[m
-␛[1;48;5;237m❯ ⇢ /tokio/latest/tokio/          200 · orchestrator       60 KB␛[m␛[38;5;244m │ ␛[m  ␛[38;5;244mkind ␛[m␛[38;5;244mfetch␛[m
+␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m⇢ /tokio/latest/tokio/          200 · orchestrator       60 KB␛[m␛[38;5;244m │ ␛[m  ␛[38;5;244mkind ␛[m␛[38;5;244mfetch␛[m
   ␛[38;5;254m⇢ /tokio/latest/tokio/runtime/␛[m  ␛[38;5;254m200 (cached)␛[m ␛[38;5;244m· web-res…␛[m  ␛[38;5;254m12 KB␛[m␛[38;5;244m │ ␛[m  ␛[38;5;244murl ␛[m␛[38;5;244mhttps://docs.rs/tokio/latest/tokio/␛[m
                                                                 ␛[38;5;244m │ ␛[m  ␛[38;5;244masked for ␛[m␛[38;5;244mhttps://docs.rs/tokio␛[m
                                                                 ␛[38;5;244m │ ␛[m  ␛[38;5;244mstatus ␛[m␛[38;5;244m200␛[m

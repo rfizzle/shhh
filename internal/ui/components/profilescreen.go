@@ -827,10 +827,10 @@ func (p *ProfileScreen) startRows(width int) []string {
 	rows := make([]string, 0, len(p.Starts))
 	for i, start := range p.Starts {
 		if i == p.focus {
-			rows = append(rows, Clip(sty.FocusPointer.Render("❯ ")+sty.FocusRow.Render(Clip(start, max(width-2, 1))), width))
+			rows = append(rows, LitOption(start, width))
 			continue
 		}
-		rows = append(rows, Clip("  "+sty.Status.Render(start), width))
+		rows = append(rows, Clip(PointerColumn()+sty.Status.Render(start), width))
 	}
 	return rows
 }

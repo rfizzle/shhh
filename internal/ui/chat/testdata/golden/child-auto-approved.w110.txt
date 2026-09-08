@@ -12,17 +12,17 @@
 ── layout ──────────────────────────────────────────────────
 · an edit the mode allowed and a command the classifier did
 ❯ long survey
-─────────────────────────────────────────────────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-  ▎✎ edit    internal/agent/loop.go                               auto-allowed · auto mode · 1 line
-  ▎$ run     go test ./internal/agent/...                   auto-allowed · classifier 2.1s · 1 line
+  ▎✎ edit    internal/agent/loop.go                              auto-allowed · auto mode · 1 line
+  ▎$ run     go test ./internal/agent/...                  auto-allowed · classifier 2.1s · 1 line
 
 
 ── ansi ────────────────────────────────────────────────────
 · an edit the mode allowed and a command the classifier did
 ␛[94m❯␛[m ␛[97mlong survey␛[m
-␛[38;5;243m─────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[38;5;243m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                               ␛[38;5;241mauto-allowed · auto mode␛[m␛[38;5;241m · ␛[m␛[38;5;245m1 line␛[m
-  ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/...␛[m                   ␛[38;5;241mauto-allowed · classifier 2.1s␛[m␛[38;5;241m · ␛[m␛[38;5;245m1 line␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                              ␛[38;5;241mauto-allowed · auto mode␛[m␛[38;5;241m · ␛[m␛[38;5;245m1 line␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/...␛[m                  ␛[38;5;241mauto-allowed · classifier 2.1s␛[m␛[38;5;241m · ␛[m␛[38;5;245m1 line␛[m
 

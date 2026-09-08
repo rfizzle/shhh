@@ -512,6 +512,13 @@ type Styles struct {
 
 	// The reading cursor: the row it sits on is lit, and the pointer
 	// that names it stays outside the highlight.
+	//
+	// FocusRow names its foreground rather than letting the lit row inherit
+	// one. Left unset it is the terminal's own default, which is a colour the
+	// palette never issued: on half the terminals in use it reads brighter
+	// than the bright token beside it, so the row the keyboard is on was the
+	// one row on screen whose text came from outside the fifteen
+	// (docs/interface/principles.md#one-grid).
 	FocusRow     lipgloss.Style
 	LitText      lipgloss.Style
 	FocusPointer lipgloss.Style
@@ -582,7 +589,7 @@ func newStyles(p ColorTokens) Styles {
 		Err:      lipgloss.NewStyle().Foreground(p.Del.Color()),
 		SpinText: lipgloss.NewStyle().Foreground(p.Spin.Color()),
 
-		FocusRow:     lipgloss.NewStyle().Bold(true).Background(p.FocusBg.Color()),
+		FocusRow:     lipgloss.NewStyle().Bold(true).Foreground(p.Bright.Color()).Background(p.FocusBg.Color()),
 		LitText:      lipgloss.NewStyle().Foreground(p.Bright.Color()).Background(p.FocusBg.Color()),
 		FocusPointer: lipgloss.NewStyle().Foreground(p.Info.Color()),
 

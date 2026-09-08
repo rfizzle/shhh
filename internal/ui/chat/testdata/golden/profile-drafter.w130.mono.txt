@@ -158,7 +158,7 @@
     ␛[38;5;244m⋮ 2 more lines · [shift+↓] read on␛[m
 
 ␛[38;5;244m╭─ Keep test-writer? ────────────────────────────────────────────────────────────────────────────────────────────────────────────╮␛[m
-␛[38;5;244m│␛[m ␛[1;48;5;237m❯ 1. Save to this project  /repo/.shhh/agents␛[m                                                                                  ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m1. Save to this project  /repo/.shhh/agents                                                                                 ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mSave globally␛[m         ␛[38;5;244m/home/x/.config/shhh/agents␛[m                                                                         ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mRefine␛[m                ␛[38;5;244msay what to change in the note␛[m                                                                      ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m4. ␛[m␛[38;5;254mDiscard␛[m                                                                                                                   ␛[38;5;244m│␛[m

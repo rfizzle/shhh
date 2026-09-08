@@ -43,7 +43,7 @@
 ␛[38;5;244m╭─ ctrl+/ ────────────────────────────────────────────────────────────────────────────────── 25 matches ─╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m▸ ␛[m␛[38;5;254m ␛[m                                                                                                    ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[1;38;5;254mCOMMANDS␛[m                                                                                               ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[1;48;5;237m❯ /help                   Show commands, keys, and the approval policy␛[m                                 ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m/help                   Show commands, keys, and the approval policy                                ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254m/clear␛[m                  ␛[38;5;244mStart a new session␛[m                                                          ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254m/paste␛[m                  ␛[38;5;244mAttach the clipboard, or a file, to your next message␛[m                 ␛[38;5;254mctrl+v␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254m/copy␛[m                   ␛[38;5;244mCopy the last response (or just its code blocks)␛[m                             ␛[38;5;244m│␛[m
@@ -61,7 +61,7 @@
 ␛[38;5;244m╭─ ctrl+/ ───────────────────────────────────────────────────────────────────────────── 3 of 25 matches ─╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m▸ ␛[m␛[38;5;254mco ␛[m                                                                                                  ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[1;38;5;254mCOMMANDS␛[m                                                                                               ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[1;48;5;237m❯ /copy       Copy the last response (or just its code blocks)␛[m                                         ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m/copy       Copy the last response (or just its code blocks)                                        ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254m/␛[m␛[1;38;5;254mco␛[m␛[38;5;254mntext␛[m    ␛[38;5;244mThe window as a meter, itemised down to the tool␛[m                                         ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m⊘ /compact␛[m  ␛[38;5;244mContinue from a summary plus the most recent turns␛[m                             ␛[38;5;244midle only␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m[enter] run · [tab] complete · [↑↓] move · [esc] dismiss␛[m                                               ␛[38;5;244m│␛[m

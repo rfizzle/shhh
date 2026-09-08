@@ -12,183 +12,183 @@
 ── layout ──────────────────────────────────────────────────
 · verbosity · normal (a finished step collapses)
 ❯ fix the round limit
-─────────────────────────────────────────────────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-▸ 1  Locate the round accounting ──────────────────────────────────────────────────────── ✓ 4 tools  1.2s
+▸ 1  Locate the round accounting ─────────────────────────────────────────────────────── ✓ 4 tools  1.2s
 
-▾ 2  Thread the sentinel through the loop ─────────────────────────────────────────────── ✗ 2 tools   22s
-  ▎✎ edit    internal/agent/loop.go                                                          1 line  1.1s
-  ▎✗ run     go test ./internal/agent/...                                                    exit 1   21s
+▾ 2  Thread the sentinel through the loop ────────────────────────────────────────────── ✗ 2 tools   22s
+  ▎✎ edit    internal/agent/loop.go                                                         1 line  1.1s
+  ▎✗ run     go test ./internal/agent/...                                                   exit 1   21s
     --- FAIL: TestRoundLimit
 
- ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                                                    round 2/25
-▎✎ 1 file changed +12 −4 · [v] review · [u] undo turn · [ctrl+o] to use them           all tracked in git
+ ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                                                   round 2/25
+▎✎ 1 file changed +12 −4 · [v] review · [u] undo turn · [ctrl+o] to use them          all tracked in git
  ✗ go test ./internal/agent/... failing · exit 1 · 21s
 
 
 · verbosity · normal, step 1 opened (read-only run folds to a group row)
 ❯ fix the round limit
-─────────────────────────────────────────────────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-▾ 1  Locate the round accounting ──────────────────────────────────────────────────────── ✓ 4 tools  1.2s
-   ▸ ⚙       3 reads · 1 search                                                      [enter] expand  1.2s
+▾ 1  Locate the round accounting ─────────────────────────────────────────────────────── ✓ 4 tools  1.2s
+   ▸ ⚙       3 reads · 1 search                                                     [enter] expand  1.2s
 
-▾ 2  Thread the sentinel through the loop ─────────────────────────────────────────────── ✗ 2 tools   22s
-  ▎✎ edit    internal/agent/loop.go                                                          1 line  1.1s
-  ▎✗ run     go test ./internal/agent/...                                                    exit 1   21s
+▾ 2  Thread the sentinel through the loop ────────────────────────────────────────────── ✗ 2 tools   22s
+  ▎✎ edit    internal/agent/loop.go                                                         1 line  1.1s
+  ▎✗ run     go test ./internal/agent/...                                                   exit 1   21s
     --- FAIL: TestRoundLimit
 
- ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                                                    round 2/25
-▎✎ 1 file changed +12 −4 · [v] review · [u] undo turn · [ctrl+o] to use them           all tracked in git
+ ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                                                   round 2/25
+▎✎ 1 file changed +12 −4 · [v] review · [u] undo turn · [ctrl+o] to use them          all tracked in git
  ✗ go test ./internal/agent/... failing · exit 1 · 21s
 
 
 · /step · step 1's detail, one step deep
 ❯ fix the round limit
-─────────────────────────────────────────────────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-▾ 1  Locate the round accounting ─────────────────────────────────────────────── ✓ 4 tools · detail  1.2s
-   ⚙ read    internal/agent/loop.go                                                         3 lines
+▾ 1  Locate the round accounting ────────────────────────────────────────────── ✓ 4 tools · detail  1.2s
+   ⚙ read    internal/agent/loop.go                                                        3 lines
     a
     b
     c
-   ⚙ read    internal/agent/tools.go                                                        2 lines
+   ⚙ read    internal/agent/tools.go                                                       2 lines
     a
     b
-   ⚙ read    internal/agent/context.go                                                       1 line
+   ⚙ read    internal/agent/context.go                                                      1 line
     a
-   ⚙ search  ErrRoundLimit                                                                2 matches
+   ⚙ search  ErrRoundLimit                                                               2 matches
     internal/agent/loop.go:88:         return ErrRoundLimit
     internal/agent/agent.go:12: // ErrRoundLimit ends a turn.
 
-▾ 2  Thread the sentinel through the loop ─────────────────────────────────────────────── ✗ 2 tools   22s
-  ▎✎ edit    internal/agent/loop.go                                                          1 line  1.1s
-  ▎✗ run     go test ./internal/agent/...                                                    exit 1   21s
+▾ 2  Thread the sentinel through the loop ────────────────────────────────────────────── ✗ 2 tools   22s
+  ▎✎ edit    internal/agent/loop.go                                                         1 line  1.1s
+  ▎✗ run     go test ./internal/agent/...                                                   exit 1   21s
     --- FAIL: TestRoundLimit
 
- ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                                                    round 2/25
-▎✎ 1 file changed +12 −4 · [v] review · [u] undo turn · [ctrl+o] to use them           all tracked in git
+ ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                                                   round 2/25
+▎✎ 1 file changed +12 −4 · [v] review · [u] undo turn · [ctrl+o] to use them          all tracked in git
  ✗ go test ./internal/agent/... failing · exit 1 · 21s
 
 
 · verbosity · high (every row, with detail)
 ❯ fix the round limit
-─────────────────────────────────────────────────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-▸ 1  Locate the round accounting ──────────────────────────────────────────────────────── ✓ 4 tools  1.2s
+▸ 1  Locate the round accounting ─────────────────────────────────────────────────────── ✓ 4 tools  1.2s
 
-▾ 2  Thread the sentinel through the loop ─────────────────────────────────────────────── ✗ 2 tools   22s
-  ▎✎ edit    internal/agent/loop.go                                                          1 line  1.1s
+▾ 2  Thread the sentinel through the loop ────────────────────────────────────────────── ✗ 2 tools   22s
+  ▎✎ edit    internal/agent/loop.go                                                         1 line  1.1s
     edited
-  ▎✗ run     go test ./internal/agent/...                                                    exit 1   21s
+  ▎✗ run     go test ./internal/agent/...                                                   exit 1   21s
     --- FAIL: TestRoundLimit
 
- ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                                                    round 2/25
-▎✎ 1 file changed +12 −4 · [v] review · [u] undo turn · [ctrl+o] to use them           all tracked in git
+ ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                                                   round 2/25
+▎✎ 1 file changed +12 −4 · [v] review · [u] undo turn · [ctrl+o] to use them          all tracked in git
  ✗ go test ./internal/agent/... failing · exit 1 · 21s
 
 
 · verbosity · low (step headers only)
 ❯ fix the round limit
-─────────────────────────────────────────────────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────────────────────────────────────────────────────────
 
-▸ 1  Locate the round accounting ──────────────────────────────────────────────────────── ✓ 4 tools  1.2s
+▸ 1  Locate the round accounting ─────────────────────────────────────────────────────── ✓ 4 tools  1.2s
 
-▸ 2  Thread the sentinel through the loop ─────────────────────────────────────────────── ✗ 2 tools   22s
+▸ 2  Thread the sentinel through the loop ────────────────────────────────────────────── ✗ 2 tools   22s
 
- ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                                                    round 2/25
-▎✎ 1 file changed +12 −4 · [v] review · [u] undo turn · [ctrl+o] to use them           all tracked in git
+ ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                                                   round 2/25
+▎✎ 1 file changed +12 −4 · [v] review · [u] undo turn · [ctrl+o] to use them          all tracked in git
  ✗ go test ./internal/agent/... failing · exit 1 · 21s
 
 
 ── ansi ────────────────────────────────────────────────────
 · verbosity · normal (a finished step collapses)
 ␛[94m❯␛[m ␛[97mfix the round limit␛[m
-␛[38;5;243m─────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[38;5;243m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;241m▸␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mLocate the round accounting␛[m ␛[38;5;241m────────────────────────────────────────────────────────␛[m ␛[92m✓␛[m ␛[38;5;241m4 tools␛[m  ␛[38;5;241m1.2s␛[m
+␛[38;5;241m▸␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mLocate the round accounting␛[m ␛[38;5;241m───────────────────────────────────────────────────────␛[m ␛[92m✓␛[m ␛[38;5;241m4 tools␛[m  ␛[38;5;241m1.2s␛[m
 
-␛[38;5;241m▾␛[m ␛[38;5;252m2 ␛[m ␛[38;5;252mThread the sentinel through the loop␛[m ␛[38;5;241m───────────────────────────────────────────────␛[m ␛[91m✗␛[m ␛[38;5;241m2 tools␛[m   ␛[38;5;241m22s␛[m
-  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                                                          ␛[38;5;245m1 line␛[m  ␛[38;5;241m1.1s␛[m
-  ␛[91m▎␛[m␛[91m✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/...␛[m                                                    ␛[91mexit 1␛[m   ␛[38;5;241m21s␛[m
+␛[38;5;241m▾␛[m ␛[38;5;252m2 ␛[m ␛[38;5;252mThread the sentinel through the loop␛[m ␛[38;5;241m──────────────────────────────────────────────␛[m ␛[91m✗␛[m ␛[38;5;241m2 tools␛[m   ␛[38;5;241m22s␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                                                         ␛[38;5;245m1 line␛[m  ␛[38;5;241m1.1s␛[m
+  ␛[91m▎␛[m␛[91m✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/...␛[m                                                   ␛[91mexit 1␛[m   ␛[38;5;241m21s␛[m
     ␛[38;5;245m--- FAIL: TestRoundLimit␛[m
 
- ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m                                                    ␛[38;5;241mround 2/25␛[m
-␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;241m · ␛[m␛[38;5;245m[v]␛[m␛[38;5;241m review␛[m␛[38;5;241m · ␛[m␛[38;5;245m[u]␛[m␛[38;5;241m undo turn␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;252m to use them␛[m           ␛[38;5;241mall tracked in git␛[m
+ ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m                                                   ␛[38;5;241mround 2/25␛[m
+␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;241m · ␛[m␛[38;5;245m[v]␛[m␛[38;5;241m review␛[m␛[38;5;241m · ␛[m␛[38;5;245m[u]␛[m␛[38;5;241m undo turn␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;252m to use them␛[m          ␛[38;5;241mall tracked in git␛[m
  ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;241m · exit 1 · 21s␛[m
 
 
 · verbosity · normal, step 1 opened (read-only run folds to a group row)
 ␛[94m❯␛[m ␛[97mfix the round limit␛[m
-␛[38;5;243m─────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[38;5;243m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;241m▾␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mLocate the round accounting␛[m ␛[38;5;241m────────────────────────────────────────────────────────␛[m ␛[92m✓␛[m ␛[38;5;241m4 tools␛[m  ␛[38;5;241m1.2s␛[m
-   ␛[38;5;241m▸␛[m ␛[38;5;241m⚙␛[m       ␛[38;5;241m3 reads · 1 search␛[m                                                      ␛[38;5;241m[enter] expand␛[m  ␛[38;5;241m1.2s␛[m
+␛[38;5;241m▾␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mLocate the round accounting␛[m ␛[38;5;241m───────────────────────────────────────────────────────␛[m ␛[92m✓␛[m ␛[38;5;241m4 tools␛[m  ␛[38;5;241m1.2s␛[m
+   ␛[38;5;241m▸␛[m ␛[38;5;241m⚙␛[m       ␛[38;5;241m3 reads · 1 search␛[m                                                     ␛[38;5;241m[enter] expand␛[m  ␛[38;5;241m1.2s␛[m
 
-␛[38;5;241m▾␛[m ␛[38;5;252m2 ␛[m ␛[38;5;252mThread the sentinel through the loop␛[m ␛[38;5;241m───────────────────────────────────────────────␛[m ␛[91m✗␛[m ␛[38;5;241m2 tools␛[m   ␛[38;5;241m22s␛[m
-  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                                                          ␛[38;5;245m1 line␛[m  ␛[38;5;241m1.1s␛[m
-  ␛[91m▎␛[m␛[91m✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/...␛[m                                                    ␛[91mexit 1␛[m   ␛[38;5;241m21s␛[m
+␛[38;5;241m▾␛[m ␛[38;5;252m2 ␛[m ␛[38;5;252mThread the sentinel through the loop␛[m ␛[38;5;241m──────────────────────────────────────────────␛[m ␛[91m✗␛[m ␛[38;5;241m2 tools␛[m   ␛[38;5;241m22s␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                                                         ␛[38;5;245m1 line␛[m  ␛[38;5;241m1.1s␛[m
+  ␛[91m▎␛[m␛[91m✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/...␛[m                                                   ␛[91mexit 1␛[m   ␛[38;5;241m21s␛[m
     ␛[38;5;245m--- FAIL: TestRoundLimit␛[m
 
- ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m                                                    ␛[38;5;241mround 2/25␛[m
-␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;241m · ␛[m␛[38;5;245m[v]␛[m␛[38;5;241m review␛[m␛[38;5;241m · ␛[m␛[38;5;245m[u]␛[m␛[38;5;241m undo turn␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;252m to use them␛[m           ␛[38;5;241mall tracked in git␛[m
+ ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m                                                   ␛[38;5;241mround 2/25␛[m
+␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;241m · ␛[m␛[38;5;245m[v]␛[m␛[38;5;241m review␛[m␛[38;5;241m · ␛[m␛[38;5;245m[u]␛[m␛[38;5;241m undo turn␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;252m to use them␛[m          ␛[38;5;241mall tracked in git␛[m
  ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;241m · exit 1 · 21s␛[m
 
 
 · /step · step 1's detail, one step deep
 ␛[94m❯␛[m ␛[97mfix the round limit␛[m
-␛[38;5;243m─────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[38;5;243m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;241m▾␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mLocate the round accounting␛[m ␛[38;5;241m───────────────────────────────────────────────␛[m ␛[92m✓␛[m ␛[38;5;241m4 tools · detail␛[m  ␛[38;5;241m1.2s␛[m
-   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                                                         ␛[38;5;245m3 lines␛[m
+␛[38;5;241m▾␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mLocate the round accounting␛[m ␛[38;5;241m──────────────────────────────────────────────␛[m ␛[92m✓␛[m ␛[38;5;241m4 tools · detail␛[m  ␛[38;5;241m1.2s␛[m
+   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                                                        ␛[38;5;245m3 lines␛[m
     ␛[38;5;245ma␛[m
     ␛[38;5;245mb␛[m
     ␛[38;5;245mc␛[m
-   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/tools.go␛[m                                                        ␛[38;5;245m2 lines␛[m
+   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/tools.go␛[m                                                       ␛[38;5;245m2 lines␛[m
     ␛[38;5;245ma␛[m
     ␛[38;5;245mb␛[m
-   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/context.go␛[m                                                       ␛[38;5;245m1 line␛[m
+   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/context.go␛[m                                                      ␛[38;5;245m1 line␛[m
     ␛[38;5;245ma␛[m
-   ␛[38;5;214m⚙␛[m ␛[38;5;252msearch␛[m  ␛[38;5;252mErrRoundLimit␛[m                                                                ␛[38;5;245m2 matches␛[m
+   ␛[38;5;214m⚙␛[m ␛[38;5;252msearch␛[m  ␛[38;5;252mErrRoundLimit␛[m                                                               ␛[38;5;245m2 matches␛[m
     ␛[38;5;245minternal/agent/loop.go:88:         return ErrRoundLimit␛[m
     ␛[38;5;245minternal/agent/agent.go:12: // ErrRoundLimit ends a turn.␛[m
 
-␛[38;5;241m▾␛[m ␛[38;5;252m2 ␛[m ␛[38;5;252mThread the sentinel through the loop␛[m ␛[38;5;241m───────────────────────────────────────────────␛[m ␛[91m✗␛[m ␛[38;5;241m2 tools␛[m   ␛[38;5;241m22s␛[m
-  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                                                          ␛[38;5;245m1 line␛[m  ␛[38;5;241m1.1s␛[m
-  ␛[91m▎␛[m␛[91m✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/...␛[m                                                    ␛[91mexit 1␛[m   ␛[38;5;241m21s␛[m
+␛[38;5;241m▾␛[m ␛[38;5;252m2 ␛[m ␛[38;5;252mThread the sentinel through the loop␛[m ␛[38;5;241m──────────────────────────────────────────────␛[m ␛[91m✗␛[m ␛[38;5;241m2 tools␛[m   ␛[38;5;241m22s␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                                                         ␛[38;5;245m1 line␛[m  ␛[38;5;241m1.1s␛[m
+  ␛[91m▎␛[m␛[91m✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/...␛[m                                                   ␛[91mexit 1␛[m   ␛[38;5;241m21s␛[m
     ␛[38;5;245m--- FAIL: TestRoundLimit␛[m
 
- ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m                                                    ␛[38;5;241mround 2/25␛[m
-␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;241m · ␛[m␛[38;5;245m[v]␛[m␛[38;5;241m review␛[m␛[38;5;241m · ␛[m␛[38;5;245m[u]␛[m␛[38;5;241m undo turn␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;252m to use them␛[m           ␛[38;5;241mall tracked in git␛[m
+ ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m                                                   ␛[38;5;241mround 2/25␛[m
+␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;241m · ␛[m␛[38;5;245m[v]␛[m␛[38;5;241m review␛[m␛[38;5;241m · ␛[m␛[38;5;245m[u]␛[m␛[38;5;241m undo turn␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;252m to use them␛[m          ␛[38;5;241mall tracked in git␛[m
  ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;241m · exit 1 · 21s␛[m
 
 
 · verbosity · high (every row, with detail)
 ␛[94m❯␛[m ␛[97mfix the round limit␛[m
-␛[38;5;243m─────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[38;5;243m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;241m▸␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mLocate the round accounting␛[m ␛[38;5;241m────────────────────────────────────────────────────────␛[m ␛[92m✓␛[m ␛[38;5;241m4 tools␛[m  ␛[38;5;241m1.2s␛[m
+␛[38;5;241m▸␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mLocate the round accounting␛[m ␛[38;5;241m───────────────────────────────────────────────────────␛[m ␛[92m✓␛[m ␛[38;5;241m4 tools␛[m  ␛[38;5;241m1.2s␛[m
 
-␛[38;5;241m▾␛[m ␛[38;5;252m2 ␛[m ␛[38;5;252mThread the sentinel through the loop␛[m ␛[38;5;241m───────────────────────────────────────────────␛[m ␛[91m✗␛[m ␛[38;5;241m2 tools␛[m   ␛[38;5;241m22s␛[m
-  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                                                          ␛[38;5;245m1 line␛[m  ␛[38;5;241m1.1s␛[m
+␛[38;5;241m▾␛[m ␛[38;5;252m2 ␛[m ␛[38;5;252mThread the sentinel through the loop␛[m ␛[38;5;241m──────────────────────────────────────────────␛[m ␛[91m✗␛[m ␛[38;5;241m2 tools␛[m   ␛[38;5;241m22s␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                                                         ␛[38;5;245m1 line␛[m  ␛[38;5;241m1.1s␛[m
     ␛[38;5;245medited␛[m
-  ␛[91m▎␛[m␛[91m✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/...␛[m                                                    ␛[91mexit 1␛[m   ␛[38;5;241m21s␛[m
+  ␛[91m▎␛[m␛[91m✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/...␛[m                                                   ␛[91mexit 1␛[m   ␛[38;5;241m21s␛[m
     ␛[38;5;245m--- FAIL: TestRoundLimit␛[m
 
- ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m                                                    ␛[38;5;241mround 2/25␛[m
-␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;241m · ␛[m␛[38;5;245m[v]␛[m␛[38;5;241m review␛[m␛[38;5;241m · ␛[m␛[38;5;245m[u]␛[m␛[38;5;241m undo turn␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;252m to use them␛[m           ␛[38;5;241mall tracked in git␛[m
+ ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m                                                   ␛[38;5;241mround 2/25␛[m
+␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;241m · ␛[m␛[38;5;245m[v]␛[m␛[38;5;241m review␛[m␛[38;5;241m · ␛[m␛[38;5;245m[u]␛[m␛[38;5;241m undo turn␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;252m to use them␛[m          ␛[38;5;241mall tracked in git␛[m
  ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;241m · exit 1 · 21s␛[m
 
 
 · verbosity · low (step headers only)
 ␛[94m❯␛[m ␛[97mfix the round limit␛[m
-␛[38;5;243m─────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
+␛[38;5;243m────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;241m▸␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mLocate the round accounting␛[m ␛[38;5;241m────────────────────────────────────────────────────────␛[m ␛[92m✓␛[m ␛[38;5;241m4 tools␛[m  ␛[38;5;241m1.2s␛[m
+␛[38;5;241m▸␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mLocate the round accounting␛[m ␛[38;5;241m───────────────────────────────────────────────────────␛[m ␛[92m✓␛[m ␛[38;5;241m4 tools␛[m  ␛[38;5;241m1.2s␛[m
 
-␛[38;5;241m▸␛[m ␛[38;5;252m2 ␛[m ␛[38;5;252mThread the sentinel through the loop␛[m ␛[38;5;241m───────────────────────────────────────────────␛[m ␛[91m✗␛[m ␛[38;5;241m2 tools␛[m   ␛[38;5;241m22s␛[m
+␛[38;5;241m▸␛[m ␛[38;5;252m2 ␛[m ␛[38;5;252mThread the sentinel through the loop␛[m ␛[38;5;241m──────────────────────────────────────────────␛[m ␛[91m✗␛[m ␛[38;5;241m2 tools␛[m   ␛[38;5;241m22s␛[m
 
- ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m                                                    ␛[38;5;241mround 2/25␛[m
-␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;241m · ␛[m␛[38;5;245m[v]␛[m␛[38;5;241m review␛[m␛[38;5;241m · ␛[m␛[38;5;245m[u]␛[m␛[38;5;241m undo turn␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;252m to use them␛[m           ␛[38;5;241mall tracked in git␛[m
+ ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m                                                   ␛[38;5;241mround 2/25␛[m
+␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;241m · ␛[m␛[38;5;245m[v]␛[m␛[38;5;241m review␛[m␛[38;5;241m · ␛[m␛[38;5;245m[u]␛[m␛[38;5;241m undo turn␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;252m to use them␛[m          ␛[38;5;241mall tracked in git␛[m
  ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;241m · exit 1 · 21s␛[m
 

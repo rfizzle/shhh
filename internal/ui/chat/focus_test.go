@@ -147,3 +147,46 @@ func TestFocusMode_OpensOverAWorkingTurn(t *testing.T) {
 		t.Fatalf("esc should hand the screen back to the running turn, got state %d", m.state)
 	}
 }
+
+// Handing the transcript its cursor moves no text sideways. Every row the
+// grid covers already holds its first two columns back for the fold mark and
+// the cursor, so the cursor goes in the column it finds rather than in one
+// the mode carves out of the pane — a mode that indented the page to say
+// where one row was would move every line to mark one.
+func TestReadingMode_DoesNotShiftTheTranscript(t *testing.T) {
+	m := focusModel(t)
+	before := gridRowsOf(stripANSI(m.renderHistory()))
+
+	updated, _ := m.Update(readingChord())
+	m = updated.(Model)
+	if m.state != stateFocus {
+		t.Fatalf("the reading chord should enter reading mode, got state %d", m.state)
+	}
+	after := gridRowsOf(stripANSI(m.renderHistory()))
+
+	if len(before) == 0 || len(before) != len(after) {
+		t.Fatalf("the transcript lost rows to the cursor: %d then %d", len(before), len(after))
+	}
+	for i, was := range before {
+		now := after[i]
+		// The row under the cursor takes the pointer in that same column; the
+		// rest of it, and every other row, is where it was.
+		if now == was || strings.TrimPrefix(now, "\u276f ") == strings.TrimPrefix(was, "  ") {
+			continue
+		}
+		t.Fatalf("reading mode moved a row:\n  %q\n  %q", was, now)
+	}
+}
+
+// gridRowsOf is the activity rows of a rendered transcript: the lines that
+// carry a verb in the grid's verb column, which are the ones whose columns
+// this is about.
+func gridRowsOf(view string) []string {
+	var rows []string
+	for _, l := range strings.Split(view, "\n") {
+		if strings.Contains(l, "search") || strings.Contains(l, "go test ./...") {
+			rows = append(rows, strings.TrimRight(l, " "))
+		}
+	}
+	return rows
+}

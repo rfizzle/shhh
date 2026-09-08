@@ -303,21 +303,31 @@ func (p *SprintPlan) row(i, width int) string {
 	if r.Dropped {
 		box, name = sty.Dim.Render("[ ]"), sty.Dim
 	}
-	pointer := "  "
-	if i == p.focus {
+	focused := i == p.focus
+	pointer := PointerColumn()
+	if focused {
 		pointer = sty.FocusPointer.Render("❯ ")
 	}
+	inner := max(width-GridPointerWidth, 1)
+	// The row the keyboard is on is lit under the pointer, the way it is on
+	// every other list; the box keeps its own colour inside the highlight, and
+	// it is told where it ends because the tick in it is a letter (LitRow).
+	lit := func(body string) string {
+		if !focused {
+			return pointer + body
+		}
+		return pointer + LitRowKeeping(body, 0, lipgloss.Width(box)+1, inner)
+	}
 	lead := box + " " + name.Render(r.Slug)
-	inner := max(width-2, 1)
 	room := inner - lipgloss.Width(lead)
 	if room < minBacklogTitle {
-		return pointer + Clip(lead, inner)
+		return lit(Clip(lead, inner))
 	}
 	rest := r.Title
 	if r.Note != "" {
 		rest = strings.TrimSpace(r.Title + "  ·  " + r.Note)
 	}
-	return pointer + lead + sty.Dim.Render(Clip("  "+rest, room))
+	return lit(lead + sty.Dim.Render(Clip("  "+rest, room)))
 }
 
 // boardRows is the head above the sprint tab's two panes: what the set is

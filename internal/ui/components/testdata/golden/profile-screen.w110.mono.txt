@@ -43,7 +43,7 @@
 
   or start from one of these
   a test writer who adds table-driven tests for a package and runs them
-❯ a reviewer who reads a diff for security problems and reports by severity
+❯ a reviewer who reads a diff for security problems and reports by severity                                   
   a docs keeper who updates the documentation a change made stale, and nothing else
 
   [enter] draft from this one · [↑↓] the field or a starting point · [esc] nothing is drafted
@@ -189,7 +189,7 @@
 
   ␛[38;5;244mor start from one of these␛[m
   ␛[38;5;244ma test writer who adds table-driven tests for a package and runs them␛[m
-␛[38;5;254m❯ ␛[m␛[1;48;5;237ma reviewer who reads a diff for security problems and reports by severity␛[m
+␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237ma reviewer who reads a diff for security problems and reports by severity                                   ␛[m
   ␛[38;5;244ma docs keeper who updates the documentation a change made stale, and nothing else␛[m
 
   ␛[38;5;244m[enter] draft from this one · [↑↓] the field or a starting point · [esc] nothing is drafted␛[m
@@ -242,7 +242,7 @@
     ␛[38;5;244mand never edit a test to make a failure go away.␛[m
 
 ␛[38;5;244m╭─ Keep test-writer? ────────────────────────────────────────────────────────────────────────────────────────╮␛[m
-␛[38;5;244m│␛[m ␛[1;48;5;237m❯ 1. Save to this project  .shhh/agents␛[m                                                                    ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m1. Save to this project  .shhh/agents                                                                   ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mSave globally␛[m         ␛[38;5;244m~/.config/shhh/agents␛[m                                                           ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mRefine␛[m                ␛[38;5;244msay what to change in the note␛[m                                                  ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m4. ␛[m␛[38;5;254mDiscard␛[m                                                                                               ␛[38;5;244m│␛[m
@@ -260,7 +260,7 @@
   ␛[38;5;254mtest-writer — adds table-driven tests for a package and runs them␛[m
 
 ␛[38;5;244m╭─ Keep test-writer? ────────────────────────────────────────────────────────────────────────────────────────╮␛[m
-␛[38;5;244m│␛[m ␛[1;48;5;237m❯ 1. Save to this project  .shhh/agents␛[m                                                                    ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m1. Save to this project  .shhh/agents                                                                   ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mSave globally␛[m         ␛[38;5;244m~/.config/shhh/agents␛[m                                                           ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mRefine␛[m                ␛[38;5;244msay what to change in the note␛[m                                                  ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m4. ␛[m␛[38;5;254mDiscard␛[m                                                                                               ␛[38;5;244m│␛[m
@@ -292,7 +292,7 @@
     ␛[38;5;244mand never edit a test to make a failure go away.␛[m
 
 ␛[38;5;244m╭─ Keep test-writer? ────────────────────────────────────────────────────────────────────────────────────────╮␛[m
-␛[38;5;244m│␛[m ␛[1;48;5;237m❯ 1. Save to this project  .shhh/agents␛[m                                                                    ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m1. Save to this project  .shhh/agents                                                                   ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mSave globally␛[m         ␛[38;5;244m~/.config/shhh/agents␛[m                                                           ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mRefine␛[m                ␛[38;5;244msay what to change in the note␛[m                                                  ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m4. ␛[m␛[38;5;254mDiscard␛[m                                                                                               ␛[38;5;244m│␛[m

@@ -78,13 +78,14 @@ func TestTranscriptWidth_ReducedByTheRail(t *testing.T) {
 	if got := wide.paneWidth(); got != 90 {
 		t.Fatalf("transcript pane = %d columns, want 90", got)
 	}
-	// The pane holds one column back for the scroll gutter, so
-	// the transcript wraps one column inside it — and so does the viewport,
-	// which is the selection's coordinate space.
-	if got := wide.transcriptWidth(); got != 89 {
-		t.Fatalf("transcript wraps to %d columns, want 89", got)
+	// The pane holds the scroll gutter's columns back — the thumb's own and
+	// the empty one that keeps it off the divider — so the transcript wraps
+	// inside them, and so does the viewport, which is the selection's
+	// coordinate space.
+	if got := wide.transcriptWidth(); got != 88 {
+		t.Fatalf("transcript wraps to %d columns, want 88", got)
 	}
-	if wide.viewport.Width() != 89 {
+	if wide.viewport.Width() != 88 {
 		t.Fatalf("viewport width = %d, want the wrap width", wide.viewport.Width())
 	}
 	narrow := inspectorModel(t, 120, 40)

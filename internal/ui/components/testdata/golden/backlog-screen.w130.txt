@@ -208,7 +208,7 @@ backlog · the cockpit sprint                                                   
 ␛[1;97mbacklog␛[m␛[38;5;241m · the cockpit sprint␛[m                                                                         ␛[38;5;241m6 items␛[m␛[38;5;241m · [?] keys · [q] back␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[94m❯ ␛[m␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;241mHM␛[m␛[38;5;241m  in progress  The backlog b…␛[m␛[38;5;241m │ ␛[m␛[1;97mrail-todo-block␛[m
+␛[94m❯ ␛[m␛[38;5;205m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;205m▸␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mrail-todo-block  HM  in progress  The backlog b…␛[m␛[m␛[38;5;241m │ ␛[m␛[1;97mrail-todo-block␛[m
   ␛[38;5;241m·␛[m ␛[38;5;241mscreen-over-items␛[m  ␛[38;5;241mHL␛[m␛[38;5;241m  waits on rail-todo-block…␛[m␛[38;5;241m │ ␛[m␛[38;5;241mThe backlog block on the inspector rail␛[m
   ␛[38;5;241m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;241mMS␛[m␛[38;5;241m  ready  One renderer for eve…␛[m␛[38;5;241m │ ␛[m␛[38;5;241mstory · high · size M · in progress · written 2026-08-28 · in the cockpit …␛[m
   ␛[91m!␛[m ␛[38;5;252msprint-file␛[m  ␛[38;5;241mMM␛[m␛[38;5;241m  blocked  The sprint is a file …␛[m␛[38;5;241m │ ␛[m␛[38;5;241m1 item waits on this: screen-over-items␛[m
@@ -230,7 +230,7 @@ backlog · the cockpit sprint                                                   
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;241mHM␛[m␛[38;5;241m  in progress  The backlog b…␛[m␛[38;5;241m │ ␛[m␛[1;97mscreen-over-items␛[m
-␛[94m❯ ␛[m␛[38;5;241m·␛[m ␛[1;97mscreen-over-items␛[m  ␛[38;5;241mHL␛[m␛[38;5;241m  waits on rail-todo-block…␛[m␛[38;5;241m │ ␛[m␛[38;5;241mA screen over the whole backlog, with the body beside the list␛[m
+␛[94m❯ ␛[m␛[38;5;241m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m·␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mscreen-over-items  HL  waits on rail-todo-block…␛[m␛[m␛[38;5;241m │ ␛[m␛[38;5;241mA screen over the whole backlog, with the body beside the list␛[m
   ␛[38;5;241m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;241mMS␛[m␛[38;5;241m  ready  One renderer for eve…␛[m␛[38;5;241m │ ␛[m␛[38;5;241mstory · high · size L · open · written 2026-08-30␛[m
   ␛[91m!␛[m ␛[38;5;252msprint-file␛[m  ␛[38;5;241mMM␛[m␛[38;5;241m  blocked  The sprint is a file …␛[m␛[38;5;241m │ ␛[m␛[38;5;241mwaits on rail-todo-block, prose-renderer · [w] goes there␛[m
   ␛[38;5;241m·␛[m ␛[38;5;252mdrop-loses-the-file␛[m  ␛[38;5;241mL-␛[m␛[38;5;241m  ready  Dropping an ite…␛[m␛[38;5;241m │ ␛[m␛[38;5;241m───────────────────────────────────────────────────────────────────────────␛[m
@@ -253,7 +253,7 @@ backlog · the cockpit sprint                                                   
   ␛[38;5;241m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;241mMS␛[m␛[38;5;241m  ready  One renderer for eve…␛[m␛[38;5;241m │ ␛[m
   ␛[91m!␛[m ␛[38;5;252msprint-file␛[m  ␛[38;5;241mMM␛[m␛[38;5;241m  blocked  The sprint is a file …␛[m␛[38;5;241m │ ␛[m␛[91mno title in the header␛[m
   ␛[38;5;241m·␛[m ␛[38;5;252mdrop-loses-the-file␛[m  ␛[38;5;241mL-␛[m␛[38;5;241m  ready  Dropping an ite…␛[m␛[38;5;241m │ ␛[m␛[38;5;241m.shhh/todo/half-written.md is still on disk; [e] opens it␛[m
-␛[94m❯ ␛[m␛[91m⚠␛[m ␛[1;97mhalf-written␛[m␛[38;5;241m  will not load␛[m                     ␛[38;5;241m │ ␛[m
+␛[94m❯ ␛[m␛[91m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[91m⚠␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mhalf-written  will not load                     ␛[m␛[m␛[38;5;241m │ ␛[m
 
 ␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m read the body␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter by text␛[m␛[38;5;241m · ␛[m␛[94m[s/p/k/r]␛[m␛[38;5;241m narrow it␛[m␛[38;5;241m · ␛[m␛[94m[tab]␛[m␛[38;5;241m what shipped␛[m␛[38;5;241m · ␛[m␛[94m[e]␛[m␛[38;5;241m fix the header␛[m
 ␛[94m[n]␛[m␛[38;5;241m a new item␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m back to the prompt␛[m
@@ -264,7 +264,7 @@ backlog · the cockpit sprint                                                   
 
 ␛[94m▸ ␛[m␛[97msprint█␛[m                                           ␛[38;5;241m │ ␛[m␛[1;97msprint-file␛[m
 ␛[38;5;241m────────────────────────────────────────────────────␛[m␛[38;5;241m │ ␛[m␛[38;5;241mThe sprint is a file that names its items␛[m
-␛[94m❯ ␛[m␛[91m!␛[m ␛[1;97msprint-file␛[m  ␛[38;5;241mMM␛[m␛[38;5;241m  blocked  The sprint is a file …␛[m␛[38;5;241m │ ␛[m␛[38;5;241mstory · medium · size M · blocked · written 2026-09-01 · in the cockpit sp…␛[m
+␛[94m❯ ␛[m␛[91m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[91m!␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62msprint-file  MM  blocked  The sprint is a file …␛[m␛[m␛[38;5;241m │ ␛[m␛[38;5;241mstory · medium · size M · blocked · written 2026-09-01 · in the cockpit sp…␛[m
 ␛[38;5;241m────────────────────────────────────────────────────␛[m␛[38;5;241m │ ␛[m␛[38;5;241m───────────────────────────────────────────────────────────────────────────␛[m
 ␛[38;5;241m5 hidden · ␛[m␛[94m[ctrl+u]␛[m␛[38;5;241m clear it␛[m                        ␛[38;5;241m │ ␛[m
                                                     ␛[38;5;241m │ ␛[m␛[38;5;241m## Blocked␛[m
@@ -277,7 +277,7 @@ backlog · the cockpit sprint                                                   
 ␛[1;97mbacklog␛[m␛[38;5;241m · open␛[m␛[38;5;241m · the cockpit sprint␛[m                                                             ␛[38;5;241m4 of 6 items␛[m␛[38;5;241m · [?] keys · [q] back␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[94m❯ ␛[m␛[38;5;241m·␛[m ␛[1;97mscreen-over-items␛[m  ␛[38;5;241mHL␛[m␛[38;5;241m  waits on rail-todo-block…␛[m␛[38;5;241m │ ␛[m␛[1;97mscreen-over-items␛[m
+␛[94m❯ ␛[m␛[38;5;241m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m·␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mscreen-over-items  HL  waits on rail-todo-block…␛[m␛[m␛[38;5;241m │ ␛[m␛[1;97mscreen-over-items␛[m
   ␛[38;5;241m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;241mMS␛[m␛[38;5;241m  ready  One renderer for eve…␛[m␛[38;5;241m │ ␛[m␛[38;5;241mA screen over the whole backlog, with the body beside the list␛[m
   ␛[38;5;241m·␛[m ␛[38;5;252mdrop-loses-the-file␛[m  ␛[38;5;241mL-␛[m␛[38;5;241m  ready  Dropping an ite…␛[m␛[38;5;241m │ ␛[m␛[38;5;241mstory · high · size L · open · written 2026-08-30␛[m
   ␛[91m⚠␛[m ␛[91mhalf-written␛[m␛[38;5;241m  will not load␛[m                     ␛[38;5;241m │ ␛[m␛[38;5;241mwaits on rail-todo-block, prose-renderer · [w] goes there␛[m
@@ -315,7 +315,7 @@ backlog · the cockpit sprint                                                   
 ␛[1;97mbacklog␛[m␛[38;5;241m · done␛[m                                                                                       ␛[38;5;241m2 items␛[m␛[38;5;241m · [?] keys · [q] back␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[94m❯ ␛[m␛[92m✓␛[m ␛[1;97mkeys-are-declared-once␛[m  ␛[38;5;241mHM␛[m␛[38;5;241m  done  Every key is …␛[m␛[38;5;241m │ ␛[m␛[1;97mkeys-are-declared-once␛[m
+␛[94m❯ ␛[m␛[92m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[92m✓␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mkeys-are-declared-once  HM  done  Every key is …␛[m␛[m␛[38;5;241m │ ␛[m␛[1;97mkeys-are-declared-once␛[m
   ␛[92m✓␛[m ␛[38;5;241mwindowed-list␛[m  ␛[38;5;241mMS␛[m␛[38;5;241m  done  One windowed list unde…␛[m␛[38;5;241m │ ␛[m␛[38;5;241mEvery key is declared once␛[m
                                                     ␛[38;5;241m │ ␛[m␛[38;5;241mchore · high · size M · done · written 2026-08-20␛[m
                                                     ␛[38;5;241m │ ␛[m␛[38;5;241m───────────────────────────────────────────────────────────────────────────␛[m
@@ -330,7 +330,7 @@ backlog · the cockpit sprint                                                   
 ␛[1;97mbacklog␛[m␛[38;5;241m · the cockpit sprint␛[m                                                                         ␛[38;5;241m6 items␛[m␛[38;5;241m · [?] keys · [q] back␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[94m❯ ␛[m␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;241mHM␛[m␛[38;5;241m  in progress  The backlog b…␛[m␛[38;5;241m │ ␛[m␛[1;97mrail-todo-block␛[m
+␛[94m❯ ␛[m␛[38;5;205m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;205m▸␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mrail-todo-block  HM  in progress  The backlog b…␛[m␛[m␛[38;5;241m │ ␛[m␛[1;97mrail-todo-block␛[m
   ␛[38;5;241m·␛[m ␛[38;5;241mscreen-over-items␛[m  ␛[38;5;241mHL␛[m␛[38;5;241m  waits on rail-todo-block…␛[m␛[38;5;241m │ ␛[m␛[38;5;241mThe backlog block on the inspector rail␛[m
   ␛[38;5;241m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;241mMS␛[m␛[38;5;241m  ready  One renderer for eve…␛[m␛[38;5;241m │ ␛[m␛[38;5;241mstory · high · size M · in progress · written 2026-08-28 · in the cockpit …␛[m
   ␛[91m!␛[m ␛[38;5;252msprint-file␛[m  ␛[38;5;241mMM␛[m␛[38;5;241m  blocked  The sprint is a file …␛[m␛[38;5;241m │ ␛[m␛[38;5;241m1 item waits on this: screen-over-items␛[m
@@ -349,7 +349,7 @@ backlog · the cockpit sprint                                                   
 ␛[1;97mbacklog␛[m␛[38;5;241m · the cockpit sprint␛[m                                                                         ␛[38;5;241m6 items␛[m␛[38;5;241m · [?] keys · [q] back␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[94m❯ ␛[m␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;241mHM␛[m␛[38;5;241m  in progress  The backlog b…␛[m␛[38;5;241m │ ␛[m␛[1;97mrail-todo-block␛[m
+␛[94m❯ ␛[m␛[38;5;205m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;205m▸␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mrail-todo-block  HM  in progress  The backlog b…␛[m␛[m␛[38;5;241m │ ␛[m␛[1;97mrail-todo-block␛[m
   ␛[38;5;241m·␛[m ␛[38;5;241mscreen-over-items␛[m  ␛[38;5;241mHL␛[m␛[38;5;241m  waits on rail-todo-block…␛[m␛[38;5;241m │ ␛[m␛[38;5;241mThe backlog block on the inspector rail␛[m
   ␛[38;5;241m·␛[m ␛[38;5;252mprose-renderer␛[m  ␛[38;5;241mMS␛[m␛[38;5;241m  ready  One renderer for eve…␛[m␛[38;5;241m │ ␛[m␛[38;5;241mstory · high · size M · in progress · written 2026-08-28 · in the cockpit …␛[m
   ␛[91m!␛[m ␛[38;5;252msprint-file␛[m  ␛[38;5;241mMM␛[m␛[38;5;241m  blocked  The sprint is a file …␛[m␛[38;5;241m │ ␛[m␛[38;5;241m1 item waits on this: screen-over-items␛[m
@@ -371,7 +371,7 @@ backlog · the cockpit sprint                                                   
 ␛[1;97mbacklog␛[m␛[38;5;241m · the cockpit sprint␛[m                                                                ␛[38;5;241m6 items␛[m␛[38;5;241m · [?] hide the keys · [q] back␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[94m❯ ␛[m␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;241mHM␛[m␛[38;5;241m  in progress  The backlog b…␛[m␛[38;5;241m │ ␛[m␛[1;97mrail-todo-block␛[m
+␛[94m❯ ␛[m␛[38;5;205m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;205m▸␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mrail-todo-block  HM  in progress  The backlog b…␛[m␛[m␛[38;5;241m │ ␛[m␛[1;97mrail-todo-block␛[m
 
 ␛[94m[↑↓]␛[m␛[38;5;241m move between items␛[m
 ␛[94m[enter]␛[m␛[38;5;241m read the body in the pane␛[m

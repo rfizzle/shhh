@@ -12,7 +12,7 @@
 ── layout ──────────────────────────────────────────────────
 · draft · five lines
 ╭─ idle ───────────────────────────────────────────────────────────────────╮
-│ ❯ first the failing test                                                 │
+│ ▸ first the failing test                                                 │
 │   then the fix in loop.go                                                │
 │   then the fixture                                                       │
 │   then make ci                                                           │
@@ -22,7 +22,7 @@
 ── ansi ────────────────────────────────────────────────────
 · draft · five lines
 ␛[38;5;214m╭─␛[m ␛[38;5;241midle␛[m ␛[38;5;214m───────────────────────────────────────────────────────────────────╮␛[m
-␛[38;5;214m│␛[m ␛[94;1m❯␛[m ␛[38;5;252mfirst the failing test                                                ␛[m ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;241m▸␛[m ␛[38;5;252mfirst the failing test                                                ␛[m ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m   ␛[38;5;252mthen the fix in loop.go                                               ␛[m ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m   ␛[38;5;252mthen the fixture                                                      ␛[m ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m   ␛[38;5;252mthen make ci                                                          ␛[m ␛[38;5;214m│␛[m

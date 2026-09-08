@@ -69,7 +69,7 @@ Reads as a minor release.
 ␛[38;5;241mMake the cache expire what it should and say what it did.␛[m
 ␛[38;5;241mReads as a minor release.␛[m
 
-␛[94m❯ ␛[m␛[92m[x]␛[m ␛[1;97mcache-ttl␛[m␛[38;5;241m  Give the cache a lifetime  ·  nothing else can be measured unt…␛[m
+␛[94m❯ ␛[m␛[92m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[92m[x]␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mcache-ttl  Give the cache a lifetime  ·  nothing else can be measured unt…␛[m␛[m
   ␛[92m[x]␛[m ␛[1;97mcache-invalidate␛[m␛[38;5;241m  Invalidate on write  ·  the same package, and it is the…␛[m
 
 ␛[38;5;241m2 items left out · 1 unrelated, 1 too big␛[m ␛[94m[o]␛[m
@@ -85,7 +85,7 @@ Reads as a minor release.
 ␛[38;5;241mMake the cache expire what it should and say what it did.␛[m
 ␛[38;5;241mReads as a minor release.␛[m
 
-␛[94m❯ ␛[m␛[92m[x]␛[m ␛[1;97mcache-ttl␛[m␛[38;5;241m  Give the cache a lifetime  ·  nothing else can be measured unt…␛[m
+␛[94m❯ ␛[m␛[92m␛[m␛[1;97m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[92m[x]␛[m␛[48;5;62m ␛[1;97m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mcache-ttl  Give the cache a lifetime  ·  nothing else can be measured unt…␛[m␛[m
   ␛[92m[x]␛[m ␛[1;97mcache-invalidate␛[m␛[38;5;241m  Invalidate on write  ·  the same package, and it is the…␛[m
 
 ␛[38;5;241m2 items left out␛[m ␛[94m[o]␛[m
@@ -104,7 +104,7 @@ Reads as a minor release.
 ␛[38;5;241mReads as a minor release.␛[m
 
   ␛[92m[x]␛[m ␛[1;97mcache-ttl␛[m␛[38;5;241m  Give the cache a lifetime  ·  nothing else can be measured unt…␛[m
-␛[94m❯ ␛[m␛[38;5;241m[ ]␛[m ␛[38;5;241mcache-invalidate␛[m␛[38;5;241m  Invalidate on write  ·  the same package, and it is the…␛[m
+␛[94m❯ ␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m[ ]␛[m␛[48;5;62m ␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mcache-invalidate  Invalidate on write  ·  the same package, and it is the…␛[m␛[m
 
 ␛[38;5;241m2 items left out · 1 unrelated, 1 too big␛[m ␛[94m[o]␛[m
 

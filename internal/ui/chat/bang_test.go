@@ -126,13 +126,15 @@ func TestBang_RefusedWhileWorking(t *testing.T) {
 
 func TestBang_GutterShowsBangForm(t *testing.T) {
 	m := frameModel(t, 100, 40)
+	// The draft draws one glyph on every tone, so a bang line is told from an
+	// idle one by the paint rather than by the cells.
 	m.input.SetValue("!go test ./...")
-	if got := stripANSI(m.promptGutter()); !strings.HasPrefix(got, "!") {
-		t.Fatalf("expected the bang gutter, got %q", got)
+	if got, want := m.promptGutter(), sty.Frame.GutterBang.Render(draftGutter)+" "; got != want {
+		t.Fatalf("expected the bang gutter %q, got %q", want, got)
 	}
 	m.input.SetValue("plain sentence")
-	if got := stripANSI(m.promptGutter()); !strings.HasPrefix(got, "❯") {
-		t.Fatalf("expected the idle gutter, got %q", got)
+	if got, want := m.promptGutter(), sty.Frame.Idle.Render(draftGutter)+" "; got != want {
+		t.Fatalf("expected the idle gutter %q, got %q", want, got)
 	}
 }
 

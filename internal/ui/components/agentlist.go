@@ -247,9 +247,11 @@ func (r AgentRow) render(inner int, focused bool) []string {
 		row = Clip(left, max(inner-2-lipgloss.Width(right)-2, 0)) + "  " + right
 	}
 	if focused {
-		row = sty.FocusRow.Render("❯") + " " + row
+		// The pointer keeps its own colour outside the highlight and the row
+		// is lit behind it, which is the pair every list draws (LitRow).
+		row = sty.FocusPointer.Render("❯") + " " + LitRow(row, 0, max(inner-GridPointerWidth, 0))
 	} else {
-		row = "  " + row
+		row = PointerColumn() + row
 	}
 	rows := []string{row}
 	if r.Note != "" {

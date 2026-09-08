@@ -39,7 +39,7 @@ backlog · the cockpit sprint   6 items · [?] keys · [q] back
 ────────────────────────────────────────────────────────────
 
   ▸ rail-todo-block  HM  in progress  The backlog block on …
-❯ · screen-over-items  HL  waits on rail-todo-block +1
+❯ · screen-over-items  HL  waits on rail-todo-block +1      
   · prose-renderer  MS  ready  One renderer for every piece…
   ! sprint-file  MM  blocked  The sprint is a file that nam…
 ↓ 2 below
@@ -67,7 +67,7 @@ backlog · the cockpit sprint   6 items · [?] keys · [q] back
   · prose-renderer  MS  ready  One renderer for every piece…
   ! sprint-file  MM  blocked  The sprint is a file that nam…
   · drop-loses-the-file  L-  ready  Dropping an item says w…
-❯ ⚠ half-written  will not load
+❯ ⚠ half-written  will not load                             
 ────────────────────────────────────────────────────────────
 half-written
 ────────────────────────────────────────────────────────────
@@ -105,7 +105,7 @@ story · medium · size M · blocked · written 2026-09-01 · in…
 backlog · open            4 of 6 items · [?] keys · [q] back
 ────────────────────────────────────────────────────────────
 
-❯ · screen-over-items  HL  waits on rail-todo-block +1
+❯ · screen-over-items  HL  waits on rail-todo-block +1      
   · prose-renderer  MS  ready  One renderer for every piece…
 ↓ 2 below
 ────────────────────────────────────────────────────────────
@@ -246,7 +246,7 @@ backlog               6 items · [?] hide the keys · [q] back
 ␛[1;38;5;254mbacklog␛[m␛[38;5;244m · the cockpit sprint␛[m   ␛[38;5;244m6 items␛[m␛[38;5;244m · [?] keys · [q] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;254m❯ ␛[m␛[38;5;254m▸␛[m ␛[1;38;5;254mrail-todo-block␛[m  ␛[38;5;244mHM␛[m␛[38;5;244m  in progress  The backlog block on …␛[m
+␛[38;5;254m❯ ␛[m␛[38;5;254m␛[m␛[1;38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m▸␛[m␛[48;5;237m ␛[1;38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mrail-todo-block  HM  in progress  The backlog block on …␛[m␛[m
   ␛[38;5;244m·␛[m ␛[38;5;244mscreen-over-items␛[m  ␛[38;5;244mHL␛[m␛[38;5;244m  waits on rail-todo-block +1␛[m
   ␛[38;5;244m·␛[m ␛[38;5;254mprose-renderer␛[m  ␛[38;5;244mMS␛[m␛[38;5;244m  ready  One renderer for every piece…␛[m
   ␛[38;5;254m!␛[m ␛[38;5;254msprint-file␛[m  ␛[38;5;244mMM␛[m␛[38;5;244m  blocked  The sprint is a file that nam…␛[m
@@ -271,7 +271,7 @@ backlog               6 items · [?] hide the keys · [q] back
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
   ␛[38;5;254m▸␛[m ␛[1;38;5;254mrail-todo-block␛[m  ␛[38;5;244mHM␛[m␛[38;5;244m  in progress  The backlog block on …␛[m
-␛[38;5;254m❯ ␛[m␛[38;5;244m·␛[m ␛[1;38;5;254mscreen-over-items␛[m  ␛[38;5;244mHL␛[m␛[38;5;244m  waits on rail-todo-block +1␛[m
+␛[38;5;254m❯ ␛[m␛[38;5;244m␛[m␛[1;38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m·␛[m␛[48;5;237m ␛[1;38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mscreen-over-items  HL  waits on rail-todo-block +1      ␛[m␛[m
   ␛[38;5;244m·␛[m ␛[38;5;254mprose-renderer␛[m  ␛[38;5;244mMS␛[m␛[38;5;244m  ready  One renderer for every piece…␛[m
   ␛[38;5;254m!␛[m ␛[38;5;254msprint-file␛[m  ␛[38;5;244mMM␛[m␛[38;5;244m  blocked  The sprint is a file that nam…␛[m
 ␛[38;5;244m↓ 2 below␛[m
@@ -299,7 +299,7 @@ backlog               6 items · [?] hide the keys · [q] back
   ␛[38;5;244m·␛[m ␛[38;5;254mprose-renderer␛[m  ␛[38;5;244mMS␛[m␛[38;5;244m  ready  One renderer for every piece…␛[m
   ␛[38;5;254m!␛[m ␛[38;5;254msprint-file␛[m  ␛[38;5;244mMM␛[m␛[38;5;244m  blocked  The sprint is a file that nam…␛[m
   ␛[38;5;244m·␛[m ␛[38;5;254mdrop-loses-the-file␛[m  ␛[38;5;244mL-␛[m␛[38;5;244m  ready  Dropping an item says w…␛[m
-␛[38;5;254m❯ ␛[m␛[38;5;254m⚠␛[m ␛[1;38;5;254mhalf-written␛[m␛[38;5;244m  will not load␛[m
+␛[38;5;254m❯ ␛[m␛[38;5;254m␛[m␛[1;38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m⚠␛[m␛[48;5;237m ␛[1;38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mhalf-written  will not load                             ␛[m␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 ␛[1;38;5;254mhalf-written␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
@@ -318,7 +318,7 @@ backlog               6 items · [?] hide the keys · [q] back
 
 ␛[38;5;254m▸ ␛[m␛[38;5;254msprint█␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
-␛[38;5;254m❯ ␛[m␛[38;5;254m!␛[m ␛[1;38;5;254msprint-file␛[m  ␛[38;5;244mMM␛[m␛[38;5;244m  blocked  The sprint is a file that nam…␛[m
+␛[38;5;254m❯ ␛[m␛[38;5;254m␛[m␛[1;38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m!␛[m␛[48;5;237m ␛[1;38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237msprint-file  MM  blocked  The sprint is a file that nam…␛[m␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 ␛[38;5;244m5 hidden · ␛[m␛[38;5;254m[ctrl+u]␛[m␛[38;5;244m clear it␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
@@ -337,7 +337,7 @@ backlog               6 items · [?] hide the keys · [q] back
 ␛[1;38;5;254mbacklog␛[m␛[38;5;244m · open␛[m            ␛[38;5;244m4 of 6 items␛[m␛[38;5;244m · [?] keys · [q] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;254m❯ ␛[m␛[38;5;244m·␛[m ␛[1;38;5;254mscreen-over-items␛[m  ␛[38;5;244mHL␛[m␛[38;5;244m  waits on rail-todo-block +1␛[m
+␛[38;5;254m❯ ␛[m␛[38;5;244m␛[m␛[1;38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m·␛[m␛[48;5;237m ␛[1;38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mscreen-over-items  HL  waits on rail-todo-block +1      ␛[m␛[m
   ␛[38;5;244m·␛[m ␛[38;5;254mprose-renderer␛[m  ␛[38;5;244mMS␛[m␛[38;5;244m  ready  One renderer for every piece…␛[m
 ␛[38;5;244m↓ 2 below␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
@@ -381,7 +381,7 @@ backlog               6 items · [?] hide the keys · [q] back
 ␛[1;38;5;254mbacklog␛[m␛[38;5;244m · done␛[m                 ␛[38;5;244m2 items␛[m␛[38;5;244m · [?] keys · [q] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;254m❯ ␛[m␛[38;5;254m✓␛[m ␛[1;38;5;254mkeys-are-declared-once␛[m  ␛[38;5;244mHM␛[m␛[38;5;244m  done  Every key is declared…␛[m
+␛[38;5;254m❯ ␛[m␛[38;5;254m␛[m␛[1;38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m✓␛[m␛[48;5;237m ␛[1;38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mkeys-are-declared-once  HM  done  Every key is declared…␛[m␛[m
   ␛[38;5;254m✓␛[m ␛[38;5;244mwindowed-list␛[m  ␛[38;5;244mMS␛[m␛[38;5;244m  done  One windowed list under five c…␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 ␛[1;38;5;254mkeys-are-declared-once␛[m
@@ -400,7 +400,7 @@ backlog               6 items · [?] hide the keys · [q] back
 ␛[1;38;5;254mbacklog␛[m␛[38;5;244m · the cockpit sprint␛[m   ␛[38;5;244m6 items␛[m␛[38;5;244m · [?] keys · [q] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;254m❯ ␛[m␛[38;5;254m▸␛[m ␛[1;38;5;254mrail-todo-block␛[m  ␛[38;5;244mHM␛[m␛[38;5;244m  in progress  The backlog block on …␛[m
+␛[38;5;254m❯ ␛[m␛[38;5;254m␛[m␛[1;38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m▸␛[m␛[48;5;237m ␛[1;38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mrail-todo-block  HM  in progress  The backlog block on …␛[m␛[m
   ␛[38;5;244m·␛[m ␛[38;5;244mscreen-over-items␛[m  ␛[38;5;244mHL␛[m␛[38;5;244m  waits on rail-todo-block +1␛[m
   ␛[38;5;244m·␛[m ␛[38;5;254mprose-renderer␛[m  ␛[38;5;244mMS␛[m␛[38;5;244m  ready  One renderer for every piece…␛[m
   ␛[38;5;254m!␛[m ␛[38;5;254msprint-file␛[m  ␛[38;5;244mMM␛[m␛[38;5;244m  blocked  The sprint is a file that nam…␛[m
@@ -422,7 +422,7 @@ backlog               6 items · [?] hide the keys · [q] back
 ␛[1;38;5;254mbacklog␛[m␛[38;5;244m · the cockpit sprint␛[m   ␛[38;5;244m6 items␛[m␛[38;5;244m · [?] keys · [q] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;254m❯ ␛[m␛[38;5;254m▸␛[m ␛[1;38;5;254mrail-todo-block␛[m  ␛[38;5;244mHM␛[m␛[38;5;244m  in progress  The backlog block on …␛[m
+␛[38;5;254m❯ ␛[m␛[38;5;254m␛[m␛[1;38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m▸␛[m␛[48;5;237m ␛[1;38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mrail-todo-block  HM  in progress  The backlog block on …␛[m␛[m
   ␛[38;5;244m·␛[m ␛[38;5;244mscreen-over-items␛[m  ␛[38;5;244mHL␛[m␛[38;5;244m  waits on rail-todo-block +1␛[m
   ␛[38;5;244m·␛[m ␛[38;5;254mprose-renderer␛[m  ␛[38;5;244mMS␛[m␛[38;5;244m  ready  One renderer for every piece…␛[m
   ␛[38;5;254m!␛[m ␛[38;5;254msprint-file␛[m  ␛[38;5;244mMM␛[m␛[38;5;244m  blocked  The sprint is a file that nam…␛[m
@@ -446,7 +446,7 @@ backlog               6 items · [?] hide the keys · [q] back
 ␛[1;38;5;254mbacklog␛[m               ␛[38;5;244m6 items␛[m␛[38;5;244m · [?] hide the keys · [q] back␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;254m❯ ␛[m␛[38;5;254m▸␛[m ␛[1;38;5;254mrail-todo-block␛[m  ␛[38;5;244mHM␛[m␛[38;5;244m  in progress  The backlog block on …␛[m
+␛[38;5;254m❯ ␛[m␛[38;5;254m␛[m␛[1;38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m▸␛[m␛[48;5;237m ␛[1;38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mrail-todo-block  HM  in progress  The backlog block on …␛[m␛[m
 ␛[38;5;244m… (+1 more rows)␛[m
 
 ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move between items␛[m

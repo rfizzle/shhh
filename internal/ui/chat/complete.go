@@ -703,11 +703,12 @@ func (m Model) completionMenuWidth() int {
 func completionRow(c completionItem, focused bool, nameW, width int) string {
 	plain := plainCommandLabel(c)
 	pad := strings.Repeat(" ", max(nameW-lipgloss.Width(plain), 0))
-	head := "  "
-	if focused {
-		head = "❯ "
-	}
-	lead := head + plain + pad + "  "
+	// The menu is a list like every other, so its pointer is the same mark in
+	// the same column, outside whatever the row is painted with
+	// (components.LitOption).
+	head := components.PointerColumn()
+	body := plain + pad + "  "
+	lead := head + body
 
 	avail := max(width-lipgloss.Width(lead), 0)
 	tail := ""
@@ -725,7 +726,7 @@ func completionRow(c completionItem, focused bool, nameW, width int) string {
 	case focused:
 		// Painted whole: the row is already bold on the focus ground, and the
 		// reason rides inside that rather than beside it.
-		return sty.Complete.Focus.Render(clipRow(lead+desc+gap+tail, width))
+		return components.LitOption(body+desc+gap+tail, width)
 	case c.off != "":
 		// One run across the whole row. Split into three it would say the row
 		// is three things, when what it says is that none of it can be had yet.

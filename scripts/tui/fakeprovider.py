@@ -53,6 +53,11 @@ if not REPLIES:
     sys.exit("fakeprovider: the replies file is empty")
 turn = {"i": 0}
 
+# What the endpoint says it can run, for the scenes that open the model
+# picker. The first is the one every scene is started on; the rest are there
+# so the list is a list — a picker over one row is not the surface.
+MODELS = ["scripted-model", "scripted-mini", "scripted-fast", "scripted-long"]
+
 
 def chunk(delta, finish=None, usage=None):
     body = {"id": "scripted", "object": "chat.completion.chunk", "choices": [
@@ -70,6 +75,18 @@ class Handler(BaseHTTPRequestHandler):
         sys.stderr.flush()
 
     def do_GET(self):
+        # The model list, so a scene can open the picker rather than the usage
+        # text. It is the one GET the CLI makes, and a 404 with no body
+        # reaches the reader as "malformed response" — an error about the
+        # endpoint, on a screen the scene meant to be about the list.
+        if self.path.rstrip("/").endswith("/models"):
+            body = json.dumps({"data": [{"id": m} for m in MODELS]}).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
         self.send_response(404)
         self.end_headers()
 

@@ -11,30 +11,30 @@
 
 ── layout ──────────────────────────────────────────────────
 · the slot left behind, and the command that reopens it
-     session 2026-09-04 11:20:07         saved · shhh code --continue
+     session 2026-09-04 11:20:07        saved · shhh code --continue
 
 
 · with a backlog run kept at its checkpoint
-     session 2026-09-04 11:20:07         saved · shhh code --continue
+     session 2026-09-04 11:20:07        saved · shhh code --continue
 Paused the run on cache-ttl at implement — this session ended. /todo run
 cache-ttl continues it from there.
 
 
 · a conversation that was never written down
-     session                                                  started
+     session                                                 started
 
 
 ── ansi ────────────────────────────────────────────────────
 · the slot left behind, and the command that reopens it
-     ␛[38;5;244msession␛[m ␛[38;5;244m2026-09-04 11:20:07␛[m         ␛[38;5;244msaved · shhh code --continue␛[m
+     ␛[38;5;244msession␛[m ␛[38;5;244m2026-09-04 11:20:07␛[m        ␛[38;5;244msaved · shhh code --continue␛[m
 
 
 · with a backlog run kept at its checkpoint
-     ␛[38;5;244msession␛[m ␛[38;5;244m2026-09-04 11:20:07␛[m         ␛[38;5;244msaved · shhh code --continue␛[m
+     ␛[38;5;244msession␛[m ␛[38;5;244m2026-09-04 11:20:07␛[m        ␛[38;5;244msaved · shhh code --continue␛[m
 ␛[38;5;244mPaused the run on cache-ttl at implement — this session ended. /todo run␛[m
 ␛[38;5;244mcache-ttl continues it from there.␛[m
 
 
 · a conversation that was never written down
-     ␛[38;5;244msession␛[m                                                  ␛[38;5;244mstarted␛[m
+     ␛[38;5;244msession␛[m                                                 ␛[38;5;244mstarted␛[m
 

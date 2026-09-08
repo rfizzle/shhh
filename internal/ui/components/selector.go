@@ -873,21 +873,20 @@ func descGap(value string) string {
 // and the meta field — a whole clause naming why a row is what it is — is the
 // last thing standing beside the label, which is the row and never goes.
 func (s *Select) optionRow(opt SelectOption, n int, focused bool, g optionGrid, inner int) string {
-	head := "  "
-	if focused {
-		head = "❯ "
-	}
+	// The row is laid out inside the pointer's column rather than after it,
+	// so the fields sit where they sit whether the cursor is on the row or
+	// not, and the pointer stays outside whatever the row is painted with.
+	room := max(inner-GridPointerWidth, 0)
 	number := ""
 	if g.num > 0 {
 		number = padLeft(strconv.Itoa(n)+".", g.num) + " "
 	}
-	head += number
 	label := opt.labelText()
-	left := head + padRight(label, g.label)
+	left := number + padRight(label, g.label)
 
 	meta, value, desc := "", "", ""
 	metaWanted := opt.metaText()
-	avail := inner - lipgloss.Width(left)
+	avail := room - lipgloss.Width(left)
 	if metaWanted != "" && avail >= lipgloss.Width(metaWanted)+2 {
 		meta = metaWanted
 		avail -= lipgloss.Width(meta) + 2
@@ -913,9 +912,9 @@ func (s *Select) optionRow(opt SelectOption, n int, focused bool, g optionGrid, 
 			row += gap + desc
 		}
 		if meta != "" {
-			row = padRight(row, inner-lipgloss.Width(meta)) + meta
+			row = padRight(row, room-lipgloss.Width(meta)) + meta
 		}
-		return sty.FocusRow.Render(Clip(row, inner))
+		return LitOption(row, inner)
 	}
 
 	// An unlit row is Body and its number is Dim. It used to be neither:
@@ -945,7 +944,7 @@ func (s *Select) optionRow(opt SelectOption, n int, focused bool, g optionGrid, 
 	// An unnumbered list buys no escapes for the column it does not have: a
 	// style renders a pair of them around an empty string, and a row is
 	// measured by what it paints rather than by how often it changed pen.
-	row := "  "
+	row := PointerColumn()
 	if number != "" {
 		row += num.Render(number)
 	}

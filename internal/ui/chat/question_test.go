@@ -519,17 +519,21 @@ func TestQuestion_WaitingHoldsWithTheCardClosed(t *testing.T) {
 }
 
 // The gutter says which of the two the sentence being typed is, because an
-// answer and a steer reach the model differently.
+// answer and a steer reach the model differently. It says it in the tone: the
+// draft draws one glyph, and what is waiting is said in words on the top rail.
 func TestQuestion_TheGutterSaysTheDraftIsAnswering(t *testing.T) {
 	m := escapedQuestion(t, chooseArgs)
-	if got := stripANSI(m.promptGutter()); strings.TrimSpace(got) != "?" {
-		t.Errorf("the gutter should say the draft is answering, got %q", got)
+	if got, want := m.promptGutter(), sty.Frame.NoticeInfo.Render(draftGutter)+" "; got != want {
+		t.Errorf("the gutter should say the draft is answering with %q, got %q", want, got)
+	}
+	if got := stripANSI(m.promptGutter()); strings.TrimSpace(got) != draftGutter {
+		t.Errorf("the draft keeps its own glyph, got %q", got)
 	}
 	// A bang line is a command before it is anything else, so it keeps its
-	// own glyph.
+	// own tone.
 	m.input.SetValue("!git status")
-	if got := stripANSI(m.promptGutter()); strings.TrimSpace(got) != "!" {
-		t.Errorf("a bang draft keeps its glyph, got %q", got)
+	if got, want := m.promptGutter(), sty.Frame.GutterBang.Render(draftGutter)+" "; got != want {
+		t.Errorf("a bang draft keeps its tone %q, got %q", want, got)
 	}
 }
 

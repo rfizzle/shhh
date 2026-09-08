@@ -45,7 +45,7 @@ enter renames · esc keeps the name
 ␛[38;5;241m╭─ Load a saved chat ␛[m␛[38;5;241m──────────────────────────────────␛[m␛[38;5;241m╮␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m1. ␛[m␛[38;5;252m2026-08-30 09:12:04␛[m    ␛[38;5;241mFlaky retry test · 1 tu…␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mrelease notes␛[m          ␛[38;5;241m4 turns, Aug 31 09:04␛[m    ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[1;48;5;62m❯ 3. ⊘ 2026-08-31 14:02:11       the chat you are in␛[m ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;62m3. ⊘ 2026-08-31 14:02:11       the chat you are in␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m[↑↓] move · [enter] select · [x] delete · [r] rename␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m[/] filter · [esc] cancel␛[m                            ␛[38;5;241m│␛[m
 ␛[38;5;241m╰──────────────────────────────────────────────────────╯␛[m
@@ -53,7 +53,7 @@ enter renames · esc keeps the name
 · [x] armed the confirm
 ␛[38;5;241m╭─ Load a saved chat ␛[m␛[38;5;241m──────────────────────────────────␛[m␛[38;5;241m╮␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m1. ␛[m␛[38;5;252m2026-08-30 09:12:04␛[m    ␛[38;5;241mFlaky retry test · 1 tu…␛[m ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[1;48;5;62m❯ 2. release notes          4 turns, Aug 31 09:04␛[m    ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;62m2. release notes          4 turns, Aug 31 09:04   ␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;245m3. ␛[m␛[38;5;245m⊘ 2026-08-31 14:02:11␛[m       ␛[38;5;245mthe chat you are in␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m[↑↓] move · [enter] select · [x] delete · [r] rename␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m[/] filter · [esc] cancel␛[m                            ␛[38;5;241m│␛[m
@@ -63,7 +63,7 @@ enter renames · esc keeps the name
 · [r] opened the rename row
 ␛[38;5;241m╭─ Load a saved chat ␛[m␛[38;5;241m──────────────────────────────────␛[m␛[38;5;241m╮␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m1. ␛[m␛[38;5;252m2026-08-30 09:12:04␛[m    ␛[38;5;241mFlaky retry test · 1 tu…␛[m ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[1;48;5;62m❯ 2. release notes          4 turns, Aug 31 09:04␛[m    ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;62m2. release notes          4 turns, Aug 31 09:04   ␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;245m3. ␛[m␛[38;5;245m⊘ 2026-08-31 14:02:11␛[m       ␛[38;5;245mthe chat you are in␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m[↑↓] move · [enter] select · [x] delete · [r] rename␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m[/] filter · [esc] cancel␛[m                            ␛[38;5;241m│␛[m

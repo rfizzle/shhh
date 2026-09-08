@@ -18,8 +18,8 @@
      resumed master · 3 changed
     [resume: branch master · 3 changed · HEAD e4f5a6b]
     This is the checkout as it stands now, read when
-    the conversation was reopened. The transcript below
-    is from an earlier sitting.
+    the conversation was reopened. The transcript
+    below is from an earlier sitting.
 
 
 · opened, on one that moved and with a summary from its last compaction
@@ -48,8 +48,8 @@
      ␛[38;5;241mresumed␛[m ␛[38;5;241mmaster · 3 changed␛[m
     ␛[38;5;245m[resume: branch master · 3 changed · HEAD e4f5a6b]␛[m
     ␛[38;5;245mThis is the checkout as it stands now, read when␛[m
-    ␛[38;5;245mthe conversation was reopened. The transcript below␛[m
-    ␛[38;5;245mis from an earlier sitting.␛[m
+    ␛[38;5;245mthe conversation was reopened. The transcript␛[m
+    ␛[38;5;245mbelow is from an earlier sitting.␛[m
 
 
 · opened, on one that moved and with a summary from its last compaction

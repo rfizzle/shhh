@@ -221,7 +221,10 @@ func TestFold_GroupRowSurvivesResize(t *testing.T) {
 		updated, _ := m.Update(tea.WindowSizeMsg{Width: w, Height: 30})
 		m = updated.(Model)
 		view := stripANSI(m.renderHistory())
-		if !strings.Contains(view, "6 reads · 2 searches") {
+		// The count, not the whole label: at the narrowest rung the row
+		// clips its target like every other row, and what has to survive is
+		// that the run is still one row rather than six.
+		if !strings.Contains(view, "6 reads") {
 			t.Fatalf("width %d: the group re-renders from raw entries:\n%s", w, view)
 		}
 		for _, line := range strings.Split(view, "\n") {

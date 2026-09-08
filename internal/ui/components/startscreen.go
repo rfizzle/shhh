@@ -347,9 +347,6 @@ func (s StartScreen) suggestionRows(width int) ([]string, []int) {
 	for i, sg := range s.Suggestions {
 		focused := i == s.Focus
 		head := strings.Repeat(" ", suggestionGutter) + sg.Glyph + " " + sg.Title
-		if focused {
-			head = "❯ " + sg.Glyph + " " + sg.Title
-		}
 		if sg.Detail == "" {
 			rows = append(rows, s.row(focused, head, "", width))
 			owners = append(owners, i)
@@ -367,18 +364,18 @@ func (s StartScreen) suggestionRows(width int) ([]string, []int) {
 	return rows, owners
 }
 
-// row styles one suggestion line. The focused row is highlighted whole, the
-// way a selected option is everywhere else; the rest carry the glyph in
-// accent, the title in body text and the detail dim.
+// row styles one suggestion line. The focused row is highlighted whole with
+// the pointer outside it, the way a selected option is everywhere else; the
+// rest carry the glyph in accent, the title in body text and the detail dim.
 func (s StartScreen) row(focused bool, head, detail string, width int) string {
+	glyph, title, _ := strings.Cut(strings.TrimLeft(head, " "), " ")
 	if focused {
-		line := head
+		line := glyph + " " + title
 		if detail != "" {
 			line += " — " + detail
 		}
-		return sty.FocusRow.Render(Clip(line, width))
+		return LitOption(line, width)
 	}
-	glyph, title, _ := strings.Cut(strings.TrimLeft(head, " "), " ")
 	line := strings.Repeat(" ", suggestionGutter) + sty.Accent.Render(glyph) + " " + sty.Body.Render(title)
 	if detail != "" {
 		line += sty.Dim.Render(" — " + detail)

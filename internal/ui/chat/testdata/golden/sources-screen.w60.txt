@@ -20,7 +20,7 @@ docs.rs
   ⇢ /tokio/latest/tokio/        200 · orchestrat…  60 KB
   ⇢ /tokio/latest/tokio/runtime/  200 (cached)     12 KB
 example.com
-❯ ✗ /gone                       404 · web-researcher
+❯ ✗ /gone                       404 · web-researcher    
 ────────────────────────────────────────────────────────
 https://example.com/gone                  web-researcher
 
@@ -72,7 +72,7 @@ https://docs.rs/tokio/latest/tokio/         orchestrator
   ␛[38;5;252m⇢ /tokio/latest/tokio/␛[m        ␛[38;5;252m200␛[m ␛[38;5;241m· orchestrat…␛[m  ␛[38;5;252m60 KB␛[m
   ␛[38;5;252m⇢ /tokio/latest/tokio/runtime/␛[m  ␛[38;5;252m200 (cached)␛[m     ␛[38;5;252m12 KB␛[m
 ␛[1;94mexample.com␛[m
-␛[1;48;5;62m❯ ✗ /gone                       404 · web-researcher␛[m
+␛[94m❯␛[m ␛[1;97;48;5;62m✗ /gone                       404 · web-researcher    ␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────␛[m
 ␛[1;97mhttps://example.com/gone␛[m                  ␛[38;5;241mweb-researcher␛[m
 
@@ -90,7 +90,7 @@ https://docs.rs/tokio/latest/tokio/         orchestrator
 ␛[1;94msearches␛[m
   ␛[38;5;252m⇢ tokio runtime␛[m               ␛[38;5;252m3 results␛[m ␛[38;5;241m· orchestrator␛[m
 ␛[1;94mdocs.rs␛[m
-␛[1;48;5;62m❯ ⇢ /tokio/latest/tokio/        200 · orchestrat…  60 KB␛[m
+␛[94m❯␛[m ␛[1;97;48;5;62m⇢ /tokio/latest/tokio/        200 · orchestrat…  60 KB␛[m
   ␛[38;5;252m⇢ /tokio/latest/tokio/runtime/␛[m  ␛[38;5;252m200 (cached)␛[m     ␛[38;5;252m12 KB␛[m
 ␛[1;94mexample.com␛[m
   ␛[38;5;252m✗ /gone␛[m                       ␛[91m404␛[m ␛[38;5;241m· web-researcher␛[m

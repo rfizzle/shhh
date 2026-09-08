@@ -29,7 +29,7 @@
 ── ansi ────────────────────────────────────────────────────
 · three decisions · every row checked as it opens
 ␛[38;5;244m╭─ Allow the checked, deny the rest ───────────────────────────────────────╮␛[m
-␛[38;5;244m│␛[m ␛[1;48;5;237m❯ ␛[m␛[38;5;254m[x]␛[m go test ./internal/agent                                  ␛[38;5;254m⚠ medium␛[m ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m[x]␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254;48;5;237mgo test ./internal/agent                                  ⚠ medium␛[m␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254m[x]␛[m go build ./...                                            ␛[38;5;254m⚠ medium␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254m[x]␛[m gofmt -w internal/ui/chat/queue.go                        ␛[38;5;254m⚠ medium␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m[space] toggle · [a] all/none · [enter] apply (3) · [esc] cancel␛[m         ␛[38;5;244m│␛[m
@@ -37,7 +37,7 @@
 
 · two left out · counted, not hidden
 ␛[38;5;244m╭─ Allow the checked, deny the rest ───────────────────────────────────────╮␛[m
-␛[38;5;244m│␛[m ␛[1;48;5;237m❯ ␛[m␛[38;5;254m[x]␛[m go test ./internal/agent                                  ␛[38;5;254m⚠ medium␛[m ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m[x]␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254;48;5;237mgo test ./internal/agent                                  ⚠ medium␛[m␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254m[x]␛[m go build ./...                                            ␛[38;5;254m⚠ medium␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m       ␛[38;5;244m⊘ 2 asked on their own␛[m                        ␛[38;5;244meach is its own card␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m[space] toggle · [a] all/none · [enter] apply (2) · [esc] cancel␛[m         ␛[38;5;244m│␛[m

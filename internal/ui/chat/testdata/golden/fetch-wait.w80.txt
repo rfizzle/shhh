@@ -11,13 +11,13 @@
 
 ── layout ──────────────────────────────────────────────────
 · a child's rows · one host waited out, another still running
-   ▸ web     https://docs.rs/tokio/lates…  waiting 8s · docs.rs asked
-   ▸ web     https://pkg.go.dev/net/http                     running…
+   ▸ web     https://docs.rs/tokio/late…  waiting 8s · docs.rs asked
+   ▸ web     https://pkg.go.dev/net/http                    running…
 
 
 · the last second of the wait
-   ▸ web     https://docs.rs/tokio/lates…  waiting 1s · docs.rs asked
-   ▸ web     https://pkg.go.dev/net/http                     running…
+   ▸ web     https://docs.rs/tokio/late…  waiting 1s · docs.rs asked
+   ▸ web     https://pkg.go.dev/net/http                    running…
 
 
 · the session's own fetch · the live row under the transcript
@@ -25,13 +25,13 @@
 
 ── ansi ────────────────────────────────────────────────────
 · a child's rows · one host waited out, another still running
-   ␛[38;5;205m▸␛[m ␛[97mweb␛[m     ␛[97mhttps://docs.rs/tokio/lates…␛[m  ␛[38;5;205mwaiting 8s␛[m␛[38;5;241m · ␛[m␛[38;5;245mdocs.rs asked␛[m
-   ␛[38;5;205m▸␛[m ␛[97mweb␛[m     ␛[97mhttps://pkg.go.dev/net/http␛[m                     ␛[38;5;205mrunning…␛[m
+   ␛[38;5;205m▸␛[m ␛[97mweb␛[m     ␛[97mhttps://docs.rs/tokio/late…␛[m  ␛[38;5;205mwaiting 8s␛[m␛[38;5;241m · ␛[m␛[38;5;245mdocs.rs asked␛[m
+   ␛[38;5;205m▸␛[m ␛[97mweb␛[m     ␛[97mhttps://pkg.go.dev/net/http␛[m                    ␛[38;5;205mrunning…␛[m
 
 
 · the last second of the wait
-   ␛[38;5;205m▸␛[m ␛[97mweb␛[m     ␛[97mhttps://docs.rs/tokio/lates…␛[m  ␛[38;5;205mwaiting 1s␛[m␛[38;5;241m · ␛[m␛[38;5;245mdocs.rs asked␛[m
-   ␛[38;5;205m▸␛[m ␛[97mweb␛[m     ␛[97mhttps://pkg.go.dev/net/http␛[m                     ␛[38;5;205mrunning…␛[m
+   ␛[38;5;205m▸␛[m ␛[97mweb␛[m     ␛[97mhttps://docs.rs/tokio/late…␛[m  ␛[38;5;205mwaiting 1s␛[m␛[38;5;241m · ␛[m␛[38;5;245mdocs.rs asked␛[m
+   ␛[38;5;205m▸␛[m ␛[97mweb␛[m     ␛[97mhttps://pkg.go.dev/net/http␛[m                    ␛[38;5;205mrunning…␛[m
 
 
 · the session's own fetch · the live row under the transcript

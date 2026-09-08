@@ -551,23 +551,25 @@ type unit struct {
 	text      string
 }
 
-// blockUnits renders one block. In focus mode selectable units render two
-// columns narrower and carry the gutter, with the pointer on the selected
-// one.
+// blockUnits renders one block. In focus mode selectable units carry the
+// gutter, with the pointer on the selected one. A unit already on the grid
+// keeps its width and its columns — the cursor goes in the column it already
+// holds back — and one that is not renders two columns narrower to make room
+// for it (gutterPrefix).
 func (m Model) blockUnits(blk transcriptBlock, es []entry, width int, focus bool, focusIdx int) []unit {
 	var units []unit
-	add := func(idx int, sepBefore, sepAfter entry, text string, selectable bool) {
+	add := func(idx int, sepBefore, sepAfter entry, text string, selectable, grid bool) {
 		if text == "" {
 			return
 		}
 		if focus && selectable {
-			text = gutterPrefix(text, idx == focusIdx, width-components.GridPointerWidth)
+			text = gutterPrefix(text, idx == focusIdx, grid, gutterWidth(width, grid))
 		}
 		units = append(units, unit{idx: idx, sepBefore: sepBefore, sepAfter: sepAfter, text: text})
 	}
 	entryWidth := func(e entry) int {
 		if focus && selectable(e) {
-			return width - components.GridPointerWidth
+			return gutterWidth(width, onGrid(e))
 		}
 		return width
 	}
@@ -578,7 +580,7 @@ func (m Model) blockUnits(blk transcriptBlock, es []entry, width int, focus bool
 		// where every letter is text — they render beside the key that
 		// hands the keyboard to the transcript.
 		keysLive := focus && i == focusIdx && m.state == stateFocus
-		add(i, e, e, m.renderEntryDetail(e, entryWidth(e), keysLive, detail), selectable(e))
+		add(i, e, e, m.renderEntryDetail(e, entryWidth(e), keysLive, detail), selectable(e), onGrid(e))
 	}
 
 	if blk.step == nil {
@@ -588,15 +590,11 @@ func (m Model) blockUnits(blk transcriptBlock, es []entry, width int, focus bool
 		return units
 	}
 	g := blk.step
-	headerWidth := width
-	if focus {
-		headerWidth -= components.GridPointerWidth
-	}
 	header := m.headerFor(blk, es)
 	// A declared step nobody has started is its header and nothing else: no
 	// rows to expand, so nothing for focus mode to select either.
 	add(g.titleIdx, entry{kind: entryAssistant}, entry{kind: entryTool},
-		header.View(headerWidth)+"\n", !g.queued())
+		header.View(width)+"\n", !g.queued(), true)
 	if header.Folded || g.queued() {
 		return units
 	}
@@ -608,10 +606,23 @@ func (m Model) blockUnits(blk transcriptBlock, es []entry, width int, focus bool
 			addEntry(sl.idx, header.Detail)
 			continue
 		}
+		// A folded group row is an activity row: it holds its own pointer
+		// column back like the rows it swallowed.
 		e := es[sl.idx]
-		add(sl.idx, e, es[sl.idx+sl.span-1], m.groupRowFor(es, sl).View(entryWidth(e))+"\n", true)
+		add(sl.idx, e, es[sl.idx+sl.span-1], m.groupRowFor(es, sl).View(width)+"\n", true, true)
 	}
 	return units
+}
+
+// gutterWidth is what a selectable unit renders at once reading mode's cursor
+// is on the list. A unit on the grid renders at the pane's full width: its
+// first two columns are the cursor's already, so nothing has to move to make
+// room. One that is not gives up those two columns to it.
+func gutterWidth(width int, grid bool) int {
+	if grid {
+		return width
+	}
+	return width - components.GridPointerWidth
 }
 
 // transcriptUnits renders every block of a transcript in order.

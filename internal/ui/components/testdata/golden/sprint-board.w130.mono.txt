@@ -85,7 +85,7 @@ Make every piece of prose on screen come out of one renderer.
 Reads as a minor release.
 
   [x] prose-renderer  One renderer for every piece of prose  ·  the other two both draw prose, and neither can until this one exi…
-❯ [ ] drop-loses-the-file  Dropping an item says what it loses  ·  same package, and its notice is prose nothing renders today
+❯ [ ] drop-loses-the-file  Dropping an item says what it loses  ·  same package, and its notice is prose nothing renders today    
   [x] screen-over-items  A screen over the whole backlog  ·  the surface the first two are for; it lands last
 
 3 items left out · 1 waits, 1 too big, 1 unrelated [o]
@@ -122,7 +122,7 @@ Reads as a minor release.
 ␛[38;5;254m▰▰▰▰▰␛[m␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;254m1 of 4 done␛[m␛[38;5;244m  ·  9 turns · $1.42␛[m
 ␛[38;5;244mnext · ␛[m␛[38;5;254mprose-renderer␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
-␛[38;5;254m❯ ␛[m␛[38;5;254m✓␛[m ␛[1;38;5;254mkeys-are-declared-once␛[m  ␛[38;5;244mHM␛[m␛[38;5;244m  done  Every key is …␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254mkeys-are-declared-once␛[m
+␛[38;5;254m❯ ␛[m␛[38;5;254m␛[m␛[1;38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m✓␛[m␛[48;5;237m ␛[1;38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mkeys-are-declared-once  HM  done  Every key is …␛[m␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254mkeys-are-declared-once␛[m
   ␛[38;5;254m▸␛[m ␛[1;38;5;254mrail-todo-block␛[m  ␛[38;5;244mHM␛[m␛[38;5;244m  implement  The backlog blo…␛[m␛[38;5;244m │ ␛[m␛[38;5;244mEvery key is declared once␛[m
   ␛[38;5;244m·␛[m ␛[38;5;244mscreen-over-items␛[m  ␛[38;5;244mHL␛[m␛[38;5;244m  waits on rail-todo-block…␛[m␛[38;5;244m │ ␛[m␛[38;5;244mchore · high · size M · done · written 2026-08-20 · in the cockpit sprint␛[m
   ␛[38;5;244m·␛[m ␛[38;5;254mprose-renderer␛[m  ␛[38;5;244mMS␛[m␛[38;5;244m  ready  One renderer for eve…␛[m␛[38;5;244m │ ␛[m␛[38;5;244m───────────────────────────────────────────────────────────────────────────␛[m
@@ -141,7 +141,7 @@ Reads as a minor release.
 ␛[38;5;254m▰▰▰▰▰␛[m␛[38;5;244m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[m ␛[38;5;254m1 of 4 done␛[m␛[38;5;244m  ·  9 turns · $1.42␛[m
 ␛[38;5;254m⚠ sprint-file blocked — waiting on a decision about where the file lives␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
-␛[38;5;254m❯ ␛[m␛[38;5;254m✓␛[m ␛[1;38;5;254mkeys-are-declared-once␛[m  ␛[38;5;244mHM␛[m␛[38;5;244m  done  Every key is …␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254mkeys-are-declared-once␛[m
+␛[38;5;254m❯ ␛[m␛[38;5;254m␛[m␛[1;38;5;254m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m✓␛[m␛[48;5;237m ␛[1;38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mkeys-are-declared-once  HM  done  Every key is …␛[m␛[m␛[38;5;244m │ ␛[m␛[1;38;5;254mkeys-are-declared-once␛[m
   ␛[38;5;254m▸␛[m ␛[1;38;5;254mrail-todo-block␛[m  ␛[38;5;244mHM␛[m␛[38;5;244m  implement  The backlog blo…␛[m␛[38;5;244m │ ␛[m␛[38;5;244mEvery key is declared once␛[m
   ␛[38;5;254m!␛[m ␛[38;5;254mscreen-over-items␛[m  ␛[38;5;244mHL␛[m␛[38;5;244m  blocked  A screen over t…␛[m␛[38;5;244m │ ␛[m␛[38;5;244mchore · high · size M · done · written 2026-08-20 · in the cockpit sprint␛[m
   ␛[38;5;244m·␛[m ␛[38;5;254mprose-renderer␛[m  ␛[38;5;244mMS␛[m␛[38;5;244m  ready  One renderer for eve…␛[m␛[38;5;244m │ ␛[m␛[38;5;244m───────────────────────────────────────────────────────────────────────────␛[m
@@ -171,7 +171,7 @@ Reads as a minor release.
 ␛[38;5;244mMake every piece of prose on screen come out of one renderer.␛[m
 ␛[38;5;244mReads as a minor release.␛[m
 
-␛[38;5;254m❯ ␛[m␛[38;5;254m[x]␛[m ␛[1;38;5;254mprose-renderer␛[m␛[38;5;244m  One renderer for every piece of prose  ·  the other two both draw prose, and neither can until this one exi…␛[m
+␛[38;5;254m❯ ␛[m␛[38;5;254m␛[m␛[1;38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m[x]␛[m␛[48;5;237m ␛[1;38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mprose-renderer  One renderer for every piece of prose  ·  the other two both draw prose, and neither can until this one exi…␛[m␛[m
   ␛[38;5;254m[x]␛[m ␛[1;38;5;254mdrop-loses-the-file␛[m␛[38;5;244m  Dropping an item says what it loses  ·  same package, and its notice is prose nothing renders today␛[m
   ␛[38;5;254m[x]␛[m ␛[1;38;5;254mscreen-over-items␛[m␛[38;5;244m  A screen over the whole backlog  ·  the surface the first two are for; it lands last␛[m
 
@@ -189,7 +189,7 @@ Reads as a minor release.
 ␛[38;5;244mReads as a minor release.␛[m
 
   ␛[38;5;254m[x]␛[m ␛[1;38;5;254mprose-renderer␛[m␛[38;5;244m  One renderer for every piece of prose  ·  the other two both draw prose, and neither can until this one exi…␛[m
-␛[38;5;254m❯ ␛[m␛[38;5;244m[ ]␛[m ␛[38;5;244mdrop-loses-the-file␛[m␛[38;5;244m  Dropping an item says what it loses  ·  same package, and its notice is prose nothing renders today␛[m
+␛[38;5;254m❯ ␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m[ ]␛[m␛[48;5;237m ␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mdrop-loses-the-file  Dropping an item says what it loses  ·  same package, and its notice is prose nothing renders today    ␛[m␛[m
   ␛[38;5;254m[x]␛[m ␛[1;38;5;254mscreen-over-items␛[m␛[38;5;244m  A screen over the whole backlog  ·  the surface the first two are for; it lands last␛[m
 
 ␛[38;5;244m3 items left out · 1 waits, 1 too big, 1 unrelated␛[m ␛[38;5;254m[o]␛[m
@@ -205,7 +205,7 @@ Reads as a minor release.
 ␛[38;5;244mMake every piece of prose on screen come out of one renderer.␛[m
 ␛[38;5;244mReads as a minor release.␛[m
 
-␛[38;5;254m❯ ␛[m␛[38;5;254m[x]␛[m ␛[1;38;5;254mprose-renderer␛[m␛[38;5;244m  One renderer for every piece of prose  ·  the other two both draw prose, and neither can until this one exi…␛[m
+␛[38;5;254m❯ ␛[m␛[38;5;254m␛[m␛[1;38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m[x]␛[m␛[48;5;237m ␛[1;38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mprose-renderer  One renderer for every piece of prose  ·  the other two both draw prose, and neither can until this one exi…␛[m␛[m
   ␛[38;5;254m[x]␛[m ␛[1;38;5;254mdrop-loses-the-file␛[m␛[38;5;244m  Dropping an item says what it loses  ·  same package, and its notice is prose nothing renders today␛[m
   ␛[38;5;254m[x]␛[m ␛[1;38;5;254mscreen-over-items␛[m␛[38;5;244m  A screen over the whole backlog  ·  the surface the first two are for; it lands last␛[m
 

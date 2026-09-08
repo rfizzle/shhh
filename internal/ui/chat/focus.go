@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -855,27 +856,64 @@ func appendRendered(lines []string, s string) []string {
 	return append(lines, parts[1:]...)
 }
 
-// gutterPrefix indents a rendered block by two columns, placing the focus
-// pointer on the first line of the selected block and lighting that line.
+// onGrid reports whether an entry renders as a row that already holds its
+// first two columns back for the fold mark and the cursor. Everything the
+// grid covers does — a call, a command, a diff, a thought, a round's summary,
+// a run's header, and the step headers and folded group rows around them —
+// and so does the model's prose, which is inset by exactly those two columns
+// (internal/ui/markdown's margin). The blocks that do not are the ones the
+// grid has not reached: a turn's close block, a provider failure, a notice.
+func onGrid(e entry) bool {
+	switch e.kind {
+	case entryTool, entryCommand, entryDiff, entryThink, entrySummary,
+		entryTodoRun, entryAssistant:
+		return true
+	}
+	return false
+}
+
+// gutterPrefix puts the reading cursor in the row's own pointer column and
+// lights the row it is on.
 //
-// The two things reading mode dresses are the rail and this. The row
-// under the cursor takes the focus background across its full width with its
-// words in bright; the rail and the glyph keep their colours inside the
-// highlight, so a row that changed the machine still says so while it is lit
-// . The pointer sits outside the highlight, in its own column, because
-// it points at the row rather than belonging to it.
+// The two things reading mode dresses are the rail and this. The row under
+// the cursor takes the focus background across its full width with its words
+// in bright; the rail and the glyph keep their colours inside the highlight,
+// so a row that changed the machine still says so while it is lit. The
+// pointer sits outside the highlight, in the column the fold marks already
+// stand in, because it points at the row rather than belonging to it — and on
+// the row it is on it is the mark in that column, since what a step is folded
+// to is what the rows under it say and the mode's own bar offers the key
+// either way.
 //
-// width is what the block was rendered at — the pointer column is not part
-// of it, which is what makes the highlight end at the pane's edge.
-func gutterPrefix(block string, selected bool, width int) string {
+// A row on the grid is therefore not moved at all: handing the transcript its
+// cursor shifts no text sideways, where an indent would move the whole page
+// to say where one row was. A block the grid has not reached — prose, a
+// turn's close — has no column to give and takes the indent instead, so the
+// cursor never writes over a row's first word; onGrid is which is which, and
+// the caller renders the block narrower to pay for it.
+//
+// width is what the block was rendered at, so the highlight ends at the
+// pane's edge either way.
+func gutterPrefix(block string, selected, grid bool, width int) string {
+	if grid && !selected {
+		return block
+	}
+	pointer := sty.FocusMarker.Render("❯") + " "
 	lines := strings.Split(block, "\n")
 	for i, l := range lines {
 		if l == "" {
 			continue
 		}
-		if i == 0 && selected {
-			lines[i] = sty.FocusMarker.Render("❯") + " " + components.LitRow(l, 0, width)
-		} else {
+		switch {
+		case i == 0 && selected && grid:
+			// The row's own pointer column takes the cursor; nothing else on
+			// the line moves.
+			inner := max(width-components.GridPointerWidth, 0)
+			lines[i] = pointer + components.LitRow(
+				ansi.TruncateLeft(l, components.GridPointerWidth, ""), 0, inner)
+		case i == 0 && selected:
+			lines[i] = pointer + components.LitRow(l, 0, width)
+		case !grid:
 			lines[i] = "  " + l
 		}
 	}

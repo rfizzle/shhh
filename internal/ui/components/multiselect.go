@@ -275,9 +275,14 @@ func (s *MultiSelect) optionRow(i, inner int) string {
 	}
 	row = Clip(row, max(body, 0))
 	if i == s.Focus {
-		return sty.FocusRow.Render(Clip("❯ ", inner)) + row
+		// The pointer sits outside the highlight and the row is lit inside it,
+		// which is the pair every list draws: a pointer on the focus ground
+		// with an unlit row beside it says the highlight is the mark, and the
+		// mark is the pointer (LitRow).
+		return sty.FocusPointer.Render("❯") + " " +
+			LitRowKeeping(row, 0, lipgloss.Width(box)+1, max(body, 0))
 	}
-	return "  " + row
+	return PointerColumn() + row
 }
 
 // rightRun is the row's right-aligned block: the short field, and after it

@@ -10,10 +10,14 @@ import (
 // plainGutter is the gutter with its colour taken off — the glyph column a
 // reader on a monochrome terminal sees, which is the whole of what it says
 // (invariant 1).
+// plainGutter is the thumb's own column, one cell per row and colour off. The
+// cell after it is the gap that keeps the mark off the divider and is asserted
+// on its own (TestScrollbar_KeepsACellBetweenItselfAndTheDivider), so a case
+// about where the thumb sits reads as one character per row.
 func plainGutter(rows []string) string {
 	var b strings.Builder
 	for _, r := range rows {
-		b.WriteString(ansi.Strip(r))
+		b.WriteString(ansi.Truncate(ansi.Strip(r), 1, ""))
 	}
 	return b.String()
 }
@@ -52,9 +56,21 @@ func TestScrollbar_TheThumbIsTheOnlyThingDrawn(t *testing.T) {
 		t.Errorf("a non-thumb row draws %q, which is not an empty cell", scrollBlank)
 	}
 	for _, row := range Scrollbar(10, 100, 10, 4) {
+		mark := ansi.Truncate(ansi.Strip(row), 1, "")
+		if mark != scrollThumb && strings.TrimSpace(mark) != "" {
+			t.Errorf("a gutter row draws %q, which is neither the thumb nor a blank cell", mark)
+		}
+	}
+}
+
+// The mark stands in an empty column: the cell between it and the pane
+// divider is what tells a position from a border once colour is off, and
+// `┃│` is the double border the gutter has no track for growing back.
+func TestScrollbar_KeepsACellBetweenItselfAndTheDivider(t *testing.T) {
+	for _, row := range Scrollbar(10, 100, 10, 4) {
 		plain := ansi.Strip(row)
-		if plain != scrollThumb && strings.TrimSpace(plain) != "" {
-			t.Errorf("a gutter row draws %q, which is neither the thumb nor a blank cell", plain)
+		if gap := ansi.TruncateLeft(plain, 1, ""); strings.TrimSpace(gap) != "" {
+			t.Errorf("the gutter draws %q after the thumb's column, not an empty cell", gap)
 		}
 	}
 }
@@ -136,9 +152,9 @@ func TestScrollbar_ClampsAnImpossibleOffset(t *testing.T) {
 	}
 }
 
-// The gutter is one column wide everywhere, in both palettes: a row of it is
-// one cell, so the pane's reservation is never wrong.
-func TestScrollbar_IsOneColumnWide(t *testing.T) {
+// The gutter is its reserved width everywhere, in both palettes: a row of it
+// is exactly the cells the pane held back, so the reservation is never wrong.
+func TestScrollbar_IsTheWidthThePaneReserves(t *testing.T) {
 	was := Mono()
 	t.Cleanup(func() { SetMono(was) })
 	for _, mono := range []bool{false, true} {

@@ -249,7 +249,7 @@ shhh config · ~/.config/shhh/config.toml                                       
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;38;5;254mSESSION␛[m
-  ␛[1;48;5;237m❯ permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                    user␛[m
+  ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mpermission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                    user␛[m
     ␛[38;5;254mround limit␛[m        ␛[38;5;254m25␛[m                                                                              ␛[38;5;254mdefault␛[m
     ␛[38;5;254mcontext budget␛[m     ␛[38;5;254m8000 tokens␛[m                                                                     ␛[38;5;254mdefault␛[m
     ␛[38;5;254msafety warnings␛[m    ␛[38;5;254mon␛[m                                                                              ␛[38;5;254mdefault␛[m
@@ -280,8 +280,8 @@ shhh config · ~/.config/shhh/config.toml                                       
 
   ␛[1;38;5;254mMODEL␛[m
     ␛[38;5;254mprovider␛[m           ␛[38;5;254mopenai␛[m                                                                             ␛[38;5;254muser␛[m
-  ␛[1;48;5;237m❯ model              gpt-5.2                                                              user · 6 available␛[m
-    ␛[1;48;5;237m❯ gpt-5.2            current default                                                           $1.25 / $10␛[m
+  ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mmodel              gpt-5.2                                                              user · 6 available␛[m
+    ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mgpt-5.2            current default                                                           $1.25 / $10␛[m
       ␛[38;5;254mgpt-5.2-mini␛[m       ␛[38;5;244m⅕ the price␛[m                                                                ␛[38;5;254m$0.25 / $2␛[m
       ␛[38;5;254mclaude-opus-4.6␛[m    ␛[38;5;244mdeepest reasoning␛[m                                                           ␛[38;5;254m$15 / $75␛[m
       ␛[38;5;254mclaude-sonnet-4.6␛[m  ␛[38;5;244mbetter diffs · 200k ctx␛[m                                                      ␛[38;5;254m$3 / $15␛[m
@@ -304,9 +304,9 @@ shhh config · ~/.config/shhh/config.toml                                       
 
   ␛[1;38;5;254mMODEL␛[m
     ␛[38;5;254mprovider␛[m           ␛[38;5;254mopenai␛[m                                                                             ␛[38;5;254muser␛[m
-  ␛[1;48;5;237m❯ model              gpt-5.2                                                              user · 6 available␛[m
+  ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mmodel              gpt-5.2                                                              user · 6 available␛[m
     ␛[38;5;254m▸ ␛[m␛[38;5;254mclaude█␛[m                                                                                     ␛[38;5;244m2 of 6 match␛[m
-    ␛[1;48;5;237m❯ claude-opus-4.6    deepest reasoning                                                           $15 / $75␛[m
+    ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mclaude-opus-4.6    deepest reasoning                                                           $15 / $75␛[m
       ␛[1;38;5;254mclaude␛[m␛[38;5;254m-sonnet-4.6␛[m  ␛[38;5;244mbetter diffs · 200k ctx␛[m                                                      ␛[38;5;254m$3 / $15␛[m
     ␛[38;5;254mapi key␛[m            ␛[38;5;254m···4f9c␛[m                                                                            ␛[38;5;254muser␛[m
     ␛[38;5;254mbase url␛[m           ␛[38;5;254m(the provider's own)␛[m                                                            ␛[38;5;254mdefault␛[m
@@ -322,7 +322,7 @@ shhh config · ~/.config/shhh/config.toml                                       
 
   ␛[1;38;5;254mSESSION␛[m
     ␛[38;5;254mpermission mode␛[m    ␛[38;5;254m⏵⏵ auto␛[m ␛[38;5;244m— edits apply; allowlisted commands run␛[m                                    ␛[38;5;254muser␛[m
-  ␛[1;48;5;237m❯ round limit        25                                                                              default␛[m
+  ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mround limit        25                                                                              default␛[m
     ␛[38;5;254m▸ ␛[m␛[38;5;254m2540█␛[m
     ␛[38;5;254mcontext budget␛[m     ␛[38;5;254m8000 tokens␛[m                                                                     ␛[38;5;254mdefault␛[m
     ␛[38;5;254msafety warnings␛[m    ␛[38;5;254mon␛[m                                                                              ␛[38;5;254mdefault␛[m
@@ -353,9 +353,9 @@ shhh config · ~/.config/shhh/config.toml                                       
   ␛[1;38;5;254mMODEL␛[m
     ␛[38;5;254mprovider␛[m           ␛[38;5;254mopenai␛[m                                                                             ␛[38;5;254muser␛[m
     ␛[38;5;254mmodel␛[m              ␛[38;5;254mgpt-5.2␛[m                                                              ␛[38;5;254muser · 6 available␛[m
-  ␛[1;48;5;237m❯ api key            ···4f9c                                                                            user␛[m
+  ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mapi key            ···4f9c                                                                            user␛[m
     ␛[38;5;254mPaste a value for api key␛[m␛[38;5;244m · replacing ···4f9c␛[m
-    ␛[38;5;244m▸ ␛[m␛[38;5;254m••••••••••••␛[m␛[1;48;5;237m ␛[m
+    ␛[38;5;244m▸ ␛[m␛[38;5;254m••••••••••••␛[m␛[1;38;5;254;48;5;237m ␛[m
     ␛[38;5;254mbase url␛[m           ␛[38;5;254m(the provider's own)␛[m                                                            ␛[38;5;254mdefault␛[m
     ␛[38;5;254msub-agent model␛[m    ␛[38;5;254minherit␛[m                                                                         ␛[38;5;254mdefault␛[m
 
@@ -376,7 +376,7 @@ shhh config · ~/.config/shhh/config.toml                                       
 
   ␛[1;38;5;254mMODEL␛[m
     ␛[38;5;254mprovider␛[m           ␛[38;5;254mopenai␛[m                                                                             ␛[38;5;254muser␛[m
-  ␛[1;48;5;237m❯ model              claude-sonnet-4.6                                                             unwritten␛[m
+  ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mmodel              claude-sonnet-4.6                                                             unwritten␛[m
     ␛[38;5;254mapi key␛[m            ␛[38;5;254m···4f9c␛[m                                                                            ␛[38;5;254muser␛[m
     ␛[38;5;254mbase url␛[m           ␛[38;5;254m(the provider's own)␛[m                                                            ␛[38;5;254mdefault␛[m
     ␛[38;5;254msub-agent model␛[m    ␛[38;5;254minherit␛[m                                                                         ␛[38;5;254mdefault␛[m
@@ -393,7 +393,7 @@ shhh config · ~/.config/shhh/config.toml                                       
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;38;5;254mSESSION␛[m
-  ␛[1;48;5;237m❯ permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                    user␛[m
+  ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mpermission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                    user␛[m
     ␛[38;5;254mround limit␛[m        ␛[38;5;254m25␛[m                                                                              ␛[38;5;254mdefault␛[m
     ␛[38;5;254mcontext budget␛[m     ␛[38;5;254m8000 tokens␛[m                                                                     ␛[38;5;254mdefault␛[m
     ␛[38;5;254msafety warnings␛[m    ␛[38;5;254mon␛[m                                                                              ␛[38;5;254mdefault␛[m
@@ -417,7 +417,7 @@ shhh config · ~/.config/shhh/config.toml                                       
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;38;5;254mSESSION␛[m
-  ␛[1;48;5;237m❯ permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                    user␛[m
+  ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mpermission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                    user␛[m
     ␛[38;5;254mround limit␛[m        ␛[38;5;254m25␛[m                                                                              ␛[38;5;254mdefault␛[m
     ␛[38;5;254mcontext budget␛[m     ␛[38;5;254m8000 tokens␛[m                                                                     ␛[38;5;254mdefault␛[m
     ␛[38;5;254msafety warnings␛[m    ␛[38;5;254mon␛[m                                                                              ␛[38;5;254mdefault␛[m
@@ -442,7 +442,7 @@ shhh config · ~/.config/shhh/config.toml                                       
 
   ␛[38;5;254m▸ ␛[m␛[38;5;254mmo█␛[m                                                                                          ␛[38;5;244m4 of 14 match␛[m
   ␛[1;38;5;254mSESSION␛[m
-  ␛[1;48;5;237m❯ permission mode  ⏵⏵ auto — edits apply; allowlisted commands run                                      user␛[m
+  ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mpermission mode  ⏵⏵ auto — edits apply; allowlisted commands run                                      user␛[m
 
   ␛[1;38;5;254mMODEL␛[m
     ␛[1;38;5;254mmo␛[m␛[38;5;254mdel␛[m            ␛[38;5;254mgpt-5.2␛[m                                                                ␛[38;5;254muser · 6 available␛[m
@@ -458,7 +458,7 @@ shhh config · ~/.config/shhh/config.toml                                       
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
   ␛[1;38;5;254mSESSION␛[m
-  ␛[1;48;5;237m❯ permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                    user␛[m
+  ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mpermission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                    user␛[m
     ␛[38;5;254mround limit␛[m        ␛[38;5;254m25␛[m                                                                              ␛[38;5;254mdefault␛[m
     ␛[38;5;254mcontext budget␛[m     ␛[38;5;254m8000 tokens␛[m                                                                     ␛[38;5;254mdefault␛[m
     ␛[38;5;254msafety warnings␛[m    ␛[38;5;254mon␛[m                                                                              ␛[38;5;254mdefault␛[m

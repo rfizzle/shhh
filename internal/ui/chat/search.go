@@ -34,7 +34,6 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/x/ansi"
-	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 // transcriptFold is one fold row and the entries it is covering right now:
@@ -92,13 +91,13 @@ func (m Model) foldAt(es []entry, idx int) (transcriptFold, bool) {
 
 // searchRowWidth is the width one entry's row is drawn at, which is the
 // width the fold will draw it at when it opens: two columns narrower for a
-// row the reading cursor can stand on, because the gutter takes them
-// (focus.go). A count taken at another width would split a match across a
-// wrap the reader never sees.
+// row the reading cursor can stand on that is not already on the grid,
+// because the gutter takes them (focus.go). A count taken at another width
+// would split a match across a wrap the reader never sees.
 func (m Model) searchRowWidth(e entry) int {
 	w := m.transcriptWidth()
 	if m.gutterShowing() && selectable(e) {
-		w -= components.GridPointerWidth
+		w = gutterWidth(w, onGrid(e))
 	}
 	return max(w, 1)
 }

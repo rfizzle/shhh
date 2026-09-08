@@ -11,14 +11,14 @@
 
 ── layout ──────────────────────────────────────────────────
 · an edit, a staging and a command, one row each
-  ▎✎ edit    internal/ui/chat/ap…  +0 −1 · 1 hunk
-  ▎$ add     internal/ui/chat/r…  staged 20 files
-  ▎$ run     go test ./internal/ui/…  ok · 1 line   27s
+  ▎✎ edit    internal/ui/chat/a…  +0 −1 · 1 hunk
+  ▎$ add     internal/ui/chat/…  staged 20 files
+  ▎$ run     go test ./internal/ui…  ok · 1 line   27s
 
 
 ── ansi ────────────────────────────────────────────────────
 · an edit, a staging and a command, one row each
-  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254medit␛[m    ␛[38;5;254minternal/ui/chat/ap…␛[m  ␛[38;5;254m+0␛[m ␛[38;5;254m−1␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 hunk␛[m
-  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254madd␛[m     ␛[38;5;254minternal/ui/chat/r…␛[m  ␛[38;5;254mstaged 20 files␛[m
-  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mgo test ./internal/ui/…␛[m  ␛[38;5;254mok␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 line␛[m   ␛[38;5;244m27s␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254medit␛[m    ␛[38;5;254minternal/ui/chat/a…␛[m  ␛[38;5;254m+0␛[m ␛[38;5;254m−1␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 hunk␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254madd␛[m     ␛[38;5;254minternal/ui/chat/…␛[m  ␛[38;5;254mstaged 20 files␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mrun␛[m     ␛[38;5;254mgo test ./internal/ui…␛[m  ␛[38;5;254mok␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 line␛[m   ␛[38;5;244m27s␛[m
 

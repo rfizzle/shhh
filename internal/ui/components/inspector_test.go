@@ -227,7 +227,7 @@ func TestInspectorRail_AgentsMapMarksTheFocusedRow(t *testing.T) {
 	r.Agents[0].Focused = true
 	marked := func(name string) bool {
 		for _, l := range r.Lines(InspectorMaxWidth, 0) {
-			if l := stripANSI(l); strings.Contains(l, name) && strings.HasPrefix(l, "\u25b8 ") {
+			if l := stripANSI(l); strings.Contains(l, name) && strings.HasPrefix(l, "\u276f ") {
 				return true
 			}
 		}

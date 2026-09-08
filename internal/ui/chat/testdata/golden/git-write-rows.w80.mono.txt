@@ -11,54 +11,54 @@
 
 ── layout ──────────────────────────────────────────────────
 · the four verbs
-  ▎$ add     internal/agent/loop.go +1                 staged 2 files
-  ▎$ commit  feat(agent): ca…  committed 3 files as a41f2c9 on master
-  ▎$ branch  topic                               created branch topic
-  ▎$ switch  master                                switched to master
+  ▎$ add     internal/agent/loop.go +1                staged 2 files
+  ▎$ commit  feat(agent): c…  committed 3 files as a41f2c9 on master
+  ▎$ branch  topic                              created branch topic
+  ▎$ switch  master                               switched to master
     reads dropped · the working tree changed under every prior read
 
 
 · refused · a file the session did not change
-  ▎✗ add     README.md                                          error
+  ▎✗ add     README.md                                         error
     error: README.md is not this session's work; commit it yourself
 
 
 · committed on an untrusted checkout · the hooks that did not run
-  ▎$ commit  feat(agent): ca…  committed 3 files as a41f2c9 on master
+  ▎$ commit  feat(agent): c…  committed 3 files as a41f2c9 on master
     hooks skipped · checkout not trusted — /trust to run them
 
 
 · the turn's close · the sha, and what undo does not reach
-  ▎$ commit  feat(agent): ca…  committed 3 files as a41f2c9 on master
+  ▎$ commit  feat(agent): c…  committed 3 files as a41f2c9 on master
 
  ✓ Done · 4 steps · 18 tools · 1m 04s · $0.14
 ▎✎ 3 files changed +30 −4 · [v] review · [ctrl+o] to use them
-▎✓ committed 3 files as a41f2c9 on master      /undo does not reach history
+▎✓ committed 3 files as a41f2c9 on master     /undo does not reach history
 
 
 ── ansi ────────────────────────────────────────────────────
 · the four verbs
-  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254madd␛[m     ␛[38;5;254minternal/agent/loop.go +1␛[m                 ␛[38;5;254mstaged 2 files␛[m
-  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mcommit␛[m  ␛[38;5;254mfeat(agent): ca…␛[m  ␛[38;5;254mcommitted 3 files as a41f2c9 on master␛[m
-  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mbranch␛[m  ␛[38;5;254mtopic␛[m                               ␛[38;5;254mcreated branch topic␛[m
-  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mswitch␛[m  ␛[38;5;254mmaster␛[m                                ␛[38;5;254mswitched to master␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254madd␛[m     ␛[38;5;254minternal/agent/loop.go +1␛[m                ␛[38;5;254mstaged 2 files␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mcommit␛[m  ␛[38;5;254mfeat(agent): c…␛[m  ␛[38;5;254mcommitted 3 files as a41f2c9 on master␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mbranch␛[m  ␛[38;5;254mtopic␛[m                              ␛[38;5;254mcreated branch topic␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mswitch␛[m  ␛[38;5;254mmaster␛[m                               ␛[38;5;254mswitched to master␛[m
     ␛[38;5;244mreads dropped · the working tree changed under every prior read␛[m
 
 
 · refused · a file the session did not change
-  ␛[38;5;254m▎␛[m␛[38;5;254m✗␛[m ␛[38;5;254madd␛[m     ␛[38;5;254mREADME.md␛[m                                          ␛[38;5;254merror␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m✗␛[m ␛[38;5;254madd␛[m     ␛[38;5;254mREADME.md␛[m                                         ␛[38;5;254merror␛[m
     ␛[38;5;244merror: README.md is not this session's work; commit it yourself␛[m
 
 
 · committed on an untrusted checkout · the hooks that did not run
-  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mcommit␛[m  ␛[38;5;254mfeat(agent): ca…␛[m  ␛[38;5;254mcommitted 3 files as a41f2c9 on master␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mcommit␛[m  ␛[38;5;254mfeat(agent): c…␛[m  ␛[38;5;254mcommitted 3 files as a41f2c9 on master␛[m
     ␛[38;5;244mhooks skipped · checkout not trusted — /trust to run them␛[m
 
 
 · the turn's close · the sha, and what undo does not reach
-  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mcommit␛[m  ␛[38;5;254mfeat(agent): ca…␛[m  ␛[38;5;254mcommitted 3 files as a41f2c9 on master␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mcommit␛[m  ␛[38;5;254mfeat(agent): c…␛[m  ␛[38;5;254mcommitted 3 files as a41f2c9 on master␛[m
 
  ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 4 steps · 18 tools · 1m 04s · $0.14␛[m
 ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m3 files changed ␛[m␛[38;5;254m+30␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;244m[v]␛[m␛[38;5;244m review␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;254m to use them␛[m
-␛[38;5;254m▎␛[m␛[38;5;254m✓␛[m ␛[38;5;254mcommitted 3 files as a41f2c9 on master␛[m      ␛[38;5;244m/undo does not reach history␛[m
+␛[38;5;254m▎␛[m␛[38;5;254m✓␛[m ␛[38;5;254mcommitted 3 files as a41f2c9 on master␛[m     ␛[38;5;244m/undo does not reach history␛[m
 

@@ -11,82 +11,82 @@
 
 ── layout ──────────────────────────────────────────────────
 · nothing to scroll · the column is reserved and empty
-❯ read the round accounting                                                
-───────────────────────────────────────────────────────────────────────────
-                                                                           
-   ⚙ read    internal/agent/round01.go                        2 lines      
-   ⚙ read    internal/agent/round02.go                        2 lines      
-                                                                           
-                                                                           
-                                                                           
+❯ read the round accounting                                               
+──────────────────────────────────────────────────────────────────────────
+                                                                          
+   ⚙ read    internal/agent/round01.go                       2 lines      
+   ⚙ read    internal/agent/round02.go                       2 lines      
+                                                                          
+                                                                          
+                                                                          
 
 · the live end · the thumb is on the last row
-   ⚙ read    internal/agent/round18.go                        2 lines       
-   ⚙ read    internal/agent/round19.go                        2 lines       
-   ⚙ read    internal/agent/round20.go                        2 lines       
-   ⚙ read    internal/agent/round21.go                        2 lines       
-   ⚙ read    internal/agent/round22.go                        2 lines       
-   ⚙ read    internal/agent/round23.go                        2 lines       
-   ⚙ read    internal/agent/round24.go                        2 lines      ┃
-                                                                           ┃
+   ⚙ read    internal/agent/round18.go                       2 lines        
+   ⚙ read    internal/agent/round19.go                       2 lines        
+   ⚙ read    internal/agent/round20.go                       2 lines        
+   ⚙ read    internal/agent/round21.go                       2 lines        
+   ⚙ read    internal/agent/round22.go                       2 lines        
+   ⚙ read    internal/agent/round23.go                       2 lines        
+   ⚙ read    internal/agent/round24.go                       2 lines      ┃ 
+                                                                          ┃ 
 
 · scrolled halfway up
-   ⚙ read    internal/agent/round12.go                        2 lines       
-   ⚙ read    internal/agent/round13.go                        2 lines       
-   ⚙ read    internal/agent/round14.go                        2 lines       
-   ⚙ read    internal/agent/round15.go                        2 lines       
-   ⚙ read    internal/agent/round16.go                        2 lines      ┃
-   ⚙ read    internal/agent/round17.go                        2 lines      ┃
-   ⚙ read    internal/agent/round18.go                        2 lines       
-   ⚙ read    internal/agent/round19.go                        2 lines       
+   ⚙ read    internal/agent/round12.go                       2 lines        
+   ⚙ read    internal/agent/round13.go                       2 lines        
+   ⚙ read    internal/agent/round14.go                       2 lines        
+   ⚙ read    internal/agent/round15.go                       2 lines        
+   ⚙ read    internal/agent/round16.go                       2 lines      ┃ 
+   ⚙ read    internal/agent/round17.go                       2 lines      ┃ 
+   ⚙ read    internal/agent/round18.go                       2 lines        
+   ⚙ read    internal/agent/round19.go                       2 lines        
 
 · the top of the transcript · the thumb is on the first row
-❯ read the round accounting                                                ┃
-───────────────────────────────────────────────────────────────────────────┃
+❯ read the round accounting                                               ┃ 
+──────────────────────────────────────────────────────────────────────────┃ 
                                                                             
-   ⚙ read    internal/agent/round01.go                        2 lines       
-   ⚙ read    internal/agent/round02.go                        2 lines       
-   ⚙ read    internal/agent/round03.go                        2 lines       
-   ⚙ read    internal/agent/round04.go                        2 lines       
-   ⚙ read    internal/agent/round05.go                        2 lines       
+   ⚙ read    internal/agent/round01.go                       2 lines        
+   ⚙ read    internal/agent/round02.go                       2 lines        
+   ⚙ read    internal/agent/round03.go                       2 lines        
+   ⚙ read    internal/agent/round04.go                       2 lines        
+   ⚙ read    internal/agent/round05.go                       2 lines        
 
 ── ansi ────────────────────────────────────────────────────
 · nothing to scroll · the column is reserved and empty
-␛[94m❯␛[m ␛[97mread the round accounting␛[m                                                
-␛[38;5;243m───────────────────────────────────────────────────────────────────────────␛[m
-                                                                           
-   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round01.go␛[m                        ␛[38;5;245m2 lines␛[m      
-   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round02.go␛[m                        ␛[38;5;245m2 lines␛[m      
-                                                                           
-                                                                           
-                                                                           
+␛[94m❯␛[m ␛[97mread the round accounting␛[m                                               
+␛[38;5;243m──────────────────────────────────────────────────────────────────────────␛[m
+                                                                          
+   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round01.go␛[m                       ␛[38;5;245m2 lines␛[m      
+   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round02.go␛[m                       ␛[38;5;245m2 lines␛[m      
+                                                                          
+                                                                          
+                                                                          
 
 · the live end · the thumb is on the last row
-   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round18.go␛[m                        ␛[38;5;245m2 lines␛[m       
-   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round19.go␛[m                        ␛[38;5;245m2 lines␛[m       
-   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round20.go␛[m                        ␛[38;5;245m2 lines␛[m       
-   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round21.go␛[m                        ␛[38;5;245m2 lines␛[m       
-   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round22.go␛[m                        ␛[38;5;245m2 lines␛[m       
-   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round23.go␛[m                        ␛[38;5;245m2 lines␛[m       
-   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round24.go␛[m                        ␛[38;5;245m2 lines␛[m      ␛[38;5;241m┃␛[m
-                                                                           ␛[38;5;241m┃␛[m
+   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round18.go␛[m                       ␛[38;5;245m2 lines␛[m        
+   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round19.go␛[m                       ␛[38;5;245m2 lines␛[m        
+   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round20.go␛[m                       ␛[38;5;245m2 lines␛[m        
+   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round21.go␛[m                       ␛[38;5;245m2 lines␛[m        
+   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round22.go␛[m                       ␛[38;5;245m2 lines␛[m        
+   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round23.go␛[m                       ␛[38;5;245m2 lines␛[m        
+   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round24.go␛[m                       ␛[38;5;245m2 lines␛[m      ␛[38;5;241m┃␛[m 
+                                                                          ␛[38;5;241m┃␛[m 
 
 · scrolled halfway up
-   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round12.go␛[m                        ␛[38;5;245m2 lines␛[m       
-   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round13.go␛[m                        ␛[38;5;245m2 lines␛[m       
-   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round14.go␛[m                        ␛[38;5;245m2 lines␛[m       
-   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round15.go␛[m                        ␛[38;5;245m2 lines␛[m       
-   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round16.go␛[m                        ␛[38;5;245m2 lines␛[m      ␛[38;5;241m┃␛[m
-   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round17.go␛[m                        ␛[38;5;245m2 lines␛[m      ␛[38;5;241m┃␛[m
-   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round18.go␛[m                        ␛[38;5;245m2 lines␛[m       
-   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round19.go␛[m                        ␛[38;5;245m2 lines␛[m       
+   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round12.go␛[m                       ␛[38;5;245m2 lines␛[m        
+   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round13.go␛[m                       ␛[38;5;245m2 lines␛[m        
+   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round14.go␛[m                       ␛[38;5;245m2 lines␛[m        
+   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round15.go␛[m                       ␛[38;5;245m2 lines␛[m        
+   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round16.go␛[m                       ␛[38;5;245m2 lines␛[m      ␛[38;5;241m┃␛[m 
+   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round17.go␛[m                       ␛[38;5;245m2 lines␛[m      ␛[38;5;241m┃␛[m 
+   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round18.go␛[m                       ␛[38;5;245m2 lines␛[m        
+   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round19.go␛[m                       ␛[38;5;245m2 lines␛[m        
 
 · the top of the transcript · the thumb is on the first row
-␛[94m❯␛[m ␛[97mread the round accounting␛[m                                                ␛[38;5;241m┃␛[m
-␛[38;5;243m───────────────────────────────────────────────────────────────────────────␛[m␛[38;5;241m┃␛[m
+␛[94m❯␛[m ␛[97mread the round accounting␛[m                                               ␛[38;5;241m┃␛[m 
+␛[38;5;243m──────────────────────────────────────────────────────────────────────────␛[m␛[38;5;241m┃␛[m 
                                                                             
-   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round01.go␛[m                        ␛[38;5;245m2 lines␛[m       
-   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round02.go␛[m                        ␛[38;5;245m2 lines␛[m       
-   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round03.go␛[m                        ␛[38;5;245m2 lines␛[m       
-   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round04.go␛[m                        ␛[38;5;245m2 lines␛[m       
-   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round05.go␛[m                        ␛[38;5;245m2 lines␛[m       
+   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round01.go␛[m                       ␛[38;5;245m2 lines␛[m        
+   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round02.go␛[m                       ␛[38;5;245m2 lines␛[m        
+   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round03.go␛[m                       ␛[38;5;245m2 lines␛[m        
+   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round04.go␛[m                       ␛[38;5;245m2 lines␛[m        
+   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/round05.go␛[m                       ␛[38;5;245m2 lines␛[m        

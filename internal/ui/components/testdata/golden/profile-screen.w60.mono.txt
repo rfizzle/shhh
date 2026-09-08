@@ -197,7 +197,7 @@
 
   ␛[38;5;244mor start from one of these␛[m
   ␛[38;5;244ma test writer who adds table-driven tests for a package a…␛[m
-␛[38;5;254m❯ ␛[m␛[1;48;5;237ma reviewer who reads a diff for security problems and rep…␛[m
+␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237ma reviewer who reads a diff for security problems and rep…␛[m
   ␛[38;5;244ma docs keeper who updates the documentation a change made…␛[m
 
   ␛[38;5;244m[enter] draft from this one␛[m
@@ -254,7 +254,7 @@
     ␛[38;5;244mnever edit a test to make a failure go away.␛[m
 
 ␛[38;5;244m╭─ Keep test-writer? ──────────────────────────────────────╮␛[m
-␛[38;5;244m│␛[m ␛[1;48;5;237m❯ 1. Save to this project  .shhh/agents␛[m                  ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m1. Save to this project  .shhh/agents                 ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mSave globally␛[m         ␛[38;5;244m~/.config/shhh/agents␛[m         ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mRefine␛[m                ␛[38;5;244msay what to change in the no…␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m4. ␛[m␛[38;5;254mDiscard␛[m                                             ␛[38;5;244m│␛[m
@@ -272,7 +272,7 @@
   ␛[38;5;254mtest-writer — adds table-driven tests for a package and r…␛[m
 
 ␛[38;5;244m╭─ Keep test-writer? ──────────────────────────────────────╮␛[m
-␛[38;5;244m│␛[m ␛[1;48;5;237m❯ 1. Save to this project  .shhh/agents␛[m                  ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m1. Save to this project  .shhh/agents                 ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mSave globally␛[m         ␛[38;5;244m~/.config/shhh/agents␛[m         ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mRefine␛[m                ␛[38;5;244msay what to change in the no…␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m4. ␛[m␛[38;5;254mDiscard␛[m                                             ␛[38;5;244m│␛[m
@@ -304,7 +304,7 @@
     ␛[38;5;244m⋮ 3 more lines · [shift+↓] read on␛[m
 
 ␛[38;5;244m╭─ Keep test-writer? ──────────────────────────────────────╮␛[m
-␛[38;5;244m│␛[m ␛[1;48;5;237m❯ 1. Save to this project  .shhh/agents␛[m                  ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m1. Save to this project  .shhh/agents                 ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mSave globally␛[m         ␛[38;5;244m~/.config/shhh/agents␛[m         ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254mRefine␛[m                ␛[38;5;244msay what to change in the no…␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m4. ␛[m␛[38;5;254mDiscard␛[m                                             ␛[38;5;244m│␛[m

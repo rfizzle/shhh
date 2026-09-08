@@ -1,0 +1,21 @@
+# One reply per request. The last line repeats once these run out.
+#
+# Three turns of reads and prose. Reads only: nothing here changes the machine
+# the scene is driven from, and a card in the way would be a card holding the
+# keyboard the reading cursor needs. The sentence before each batch is what
+# titles the step, so the transcript has an outline for the cursor to walk,
+# and three of them is more than the pane holds, which is what puts the scroll
+# gutter's thumb on screen beside the divider.
+Locate the round accounting
++tool:read_file:{"path":"loop.go"}
++tool:read_file:{"path":"round.go"}
+The limit is a checkpoint, not a wall.
+Read the rest of the package
++tool:read_file:{"path":"errors.go"}
++tool:read_file:{"path":"limit.go"}
++tool:read_file:{"path":"loop.go"}
+Every round is counted in one place.
+Read the loop once more
++tool:read_file:{"path":"loop.go"}
++tool:read_file:{"path":"limit.go"}
+The sentinel goes in the loop, not the caller.

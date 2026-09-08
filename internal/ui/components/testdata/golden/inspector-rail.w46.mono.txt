@@ -46,7 +46,7 @@
   ▎✎ internal/ui/chat/model.go           +9 −1
 
   AGENTS               1 needs you · 1 running
-▸ ◇ orchestrator                         $0.12
+❯ ◇ orchestrator                         $0.12
     ⠋ round 3 · streaming…                    
   ◇ writer-1                             $0.02
     ⠋ docs/loop.md · 4 tools                  
@@ -167,7 +167,7 @@
   AGENTS               1 needs you · 2 running
   ⚠ orchestrator                         $0.12
     round 3 · waiting on you                  
-▸ ◇ writer-2                             $0.04
+❯ ◇ writer-2                             $0.04
     ⠹ internal/ui/chat/model.go · 11 tools    
   ◇ runner-4                             $0.02
     ▰▰▰▱▱ step 2 of 3 · go build ./...        
@@ -183,7 +183,7 @@
   AGENTS               1 needs you · 2 running
   ⚠ orchestrator                         $0.12
     round 3 · waiting on you                  
-▸ ◇ writer-2                             $0.04
+❯ ◇ writer-2                             $0.04
     ⠹ internal/ui/chat/model.go · 11 tools    
   ◇ runner-4                             $0.02
     ▰▰▰▱▱ step 2 of 3 · go build ./...        
@@ -230,7 +230,7 @@
   ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254minternal/ui/chat/model.go␛[m           ␛[38;5;254m+9␛[m ␛[38;5;254m−1␛[m
 
   ␛[1;38;5;254mAGENTS␛[m               ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;254m1 running␛[m
-␛[1;48;5;237m▸␛[m ␛[38;5;254m◇␛[m ␛[38;5;254morchestrator␛[m                         ␛[38;5;244m$0.12␛[m
+␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m◇␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237morchestrator                         $0.12␛[m␛[m
     ␛[38;5;254m⠋ round 3 · streaming…␛[m                    
   ␛[38;5;254m◇␛[m ␛[38;5;254mwriter-1␛[m                             ␛[38;5;244m$0.02␛[m
     ␛[38;5;254m⠋ docs/loop.md␛[m␛[38;5;244m · ␛[m␛[38;5;244m4 tools␛[m                  
@@ -351,7 +351,7 @@
   ␛[1;38;5;254mAGENTS␛[m               ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;254m2 running␛[m
   ␛[38;5;254m⚠␛[m ␛[38;5;254morchestrator␛[m                         ␛[38;5;244m$0.12␛[m
     ␛[38;5;244mround 3 · waiting on you␛[m                  
-␛[1;48;5;237m▸␛[m ␛[38;5;254m◇␛[m ␛[38;5;254mwriter-2␛[m                             ␛[38;5;244m$0.04␛[m
+␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m◇␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mwriter-2                             $0.04␛[m␛[m
     ␛[38;5;254m⠹ internal/ui/chat/model.go␛[m␛[38;5;244m · ␛[m␛[38;5;244m11 tools␛[m    
   ␛[38;5;254m◇␛[m ␛[38;5;254mrunner-4␛[m                             ␛[38;5;244m$0.02␛[m
     ␛[38;5;254m▰▰▰␛[m␛[38;5;244m▱▱␛[m ␛[38;5;254mstep 2 of 3␛[m␛[38;5;244m · ␛[m␛[38;5;244mgo build ./...␛[m        
@@ -367,7 +367,7 @@
   ␛[1;38;5;254mAGENTS␛[m               ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;254m2 running␛[m
   ␛[38;5;254m⚠␛[m ␛[38;5;254morchestrator␛[m                         ␛[38;5;244m$0.12␛[m
     ␛[38;5;244mround 3 · waiting on you␛[m                  
-␛[1;48;5;237m▸␛[m ␛[38;5;254m◇␛[m ␛[38;5;254mwriter-2␛[m                             ␛[38;5;244m$0.04␛[m
+␛[38;5;254m❯␛[m ␛[38;5;254m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;254m◇␛[m␛[48;5;237m ␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mwriter-2                             $0.04␛[m␛[m
     ␛[38;5;254m⠹ internal/ui/chat/model.go␛[m␛[38;5;244m · ␛[m␛[38;5;244m11 tools␛[m    
   ␛[38;5;254m◇␛[m ␛[38;5;254mrunner-4␛[m                             ␛[38;5;244m$0.02␛[m
     ␛[38;5;254m▰▰▰␛[m␛[38;5;244m▱▱␛[m ␛[38;5;254mstep 2 of 3␛[m␛[38;5;244m · ␛[m␛[38;5;244mgo build ./...␛[m        

@@ -153,7 +153,7 @@ func TestFrame_PlainBelowMinWidth(t *testing.T) {
 	if strings.Contains(view, "╭") {
 		t.Fatalf("sub-minimum widths must degrade to plain rows:\n%s", view)
 	}
-	if !strings.Contains(view, "❯") {
+	if !strings.Contains(view, draftGutter) {
 		t.Fatalf("the frameless layout still draws the prompt:\n%s", view)
 	}
 	// And the draft starts after the glyph rather than under it: the field
@@ -205,8 +205,8 @@ func TestFrame_RungsAreTerminalColumns(t *testing.T) {
 func TestFrame_GutterAndHintsSwapWhileWorking(t *testing.T) {
 	m := frameModel(t, 130, 40)
 	view := stripANSI(m.View().Content)
-	if !strings.Contains(view, "│ ❯ ") {
-		t.Fatalf("idle frame missing the ❯ gutter:\n%s", view)
+	if !strings.Contains(view, "│ "+draftGutter+" ") {
+		t.Fatalf("idle frame missing the draft's gutter:\n%s", view)
 	}
 
 	m.state = stateStreaming
@@ -325,7 +325,7 @@ func TestFrame_AttachedShowsChildGutterAndVitals(t *testing.T) {
 	if rail := frameTopRail(view); !strings.Contains(rail, "orchestrator ▸ researcher-1") {
 		t.Fatalf("attached top rail missing the breadcrumb:\n%s", view)
 	}
-	if !strings.Contains(view, "│ researcher-1 ❯ ") {
+	if !strings.Contains(view, "│ researcher-1 "+draftGutter+" ") {
 		t.Fatalf("attached gutter should carry the child's name:\n%s", view)
 	}
 	if !strings.Contains(view, "esc detach · alt+a agents") {
