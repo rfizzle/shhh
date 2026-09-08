@@ -15,8 +15,15 @@
 # A snap that names text polls the screen for it and fails the run when it
 # never appears, so a scene is also a test: the exit code says whether every
 # step drew what it said it would. Captures land under $OUT as <name>.txt (the
-# cells), <name>.ansi (with colour), <name>.svg, and <name>.png where qlmanage
-# is available (macOS).
+# cells) and <name>.ansi (the cells with colour).
+#
+# A capture is cells; --vhs adds what they look like. The scene is written
+# out as a vhs tape and played again in a real terminal (ttyd in a headless
+# browser), which leaves a PNG per snap and a GIF of the run beside the
+# captures. That is the picture a person or an agent reads for what text
+# cannot carry — a colour, a weight, a glyph that fell back. It needs vhs,
+# ttyd and ffmpeg (`brew install vhs` brings all three); the tmux pass is the
+# gate and needs none of them.
 #
 # A snap is a still. --record adds the motion: the whole run wrapped in
 # asciinema, written beside the captures as <scene>.cast — text, so it diffs,
@@ -27,6 +34,7 @@
 #
 #   drive.sh <scene-dir>            run the steps and capture
 #   drive.sh --record <scene-dir>   the same, and record the run as a .cast
+#   drive.sh --vhs <scene-dir>      the same, then play it in vhs for pictures
 #   drive.sh --attach <scene-dir>   open the same pane in this terminal instead
 #
 # Environment: SHHH_BIN (the binary; default ./shhh), COLS/ROWS (the pane,
@@ -39,14 +47,16 @@ root=$(cd "$here/../.." && pwd)
 
 attach=0
 record=0
+vhs=0
 while [ $# -gt 0 ]; do
 	case $1 in
 	--attach) attach=1; shift ;;
 	--record) record=1; shift ;;
+	--vhs) vhs=1; shift ;;
 	*) break ;;
 	esac
 done
-scene=${1:?usage: drive.sh [--attach] [--record] <scene-dir>}
+scene=${1:?usage: drive.sh [--attach] [--record] [--vhs] <scene-dir>}
 scene=$(cd "$scene" && pwd) || exit 1
 name=$(basename "$scene")
 
@@ -62,6 +72,11 @@ for need in tmux python3; do
 	command -v $need >/dev/null 2>&1 || { echo "drive.sh: $need is required (brew install $need / apt-get install $need)" >&2; exit 2; }
 done
 [ -x "$SHHH_BIN" ] || { echo "drive.sh: no binary at $SHHH_BIN — run make tui-check, or set SHHH_BIN" >&2; exit 2; }
+if [ "$vhs" = 1 ]; then
+	for need in vhs ttyd ffmpeg; do
+		command -v $need >/dev/null 2>&1 || { echo "drive.sh: --vhs needs $need (brew install vhs brings vhs, ttyd and ffmpeg)" >&2; exit 2; }
+	done
+fi
 # The pane is opened in the scene's own workspace, so a relative path to the
 # binary would be resolved there and found nowhere.
 SHHH_BIN=$(cd "$(dirname "$SHHH_BIN")" && pwd)/$(basename "$SHHH_BIN")
@@ -165,10 +180,6 @@ while IFS= read -r line || [ -n "$line" ]; do
 		sleep 0.3
 		screen > "$OUT/$snapname.txt"
 		tmux -L "$SOCK" capture-pane -p -e -t scene > "$OUT/$snapname.ansi" 2>/dev/null
-		python3 "$here/ansi2svg.py" "$OUT/$snapname.ansi" "$OUT/$snapname.svg"
-		if command -v qlmanage >/dev/null 2>&1; then
-			qlmanage -t -s 2400 -o "$OUT" "$OUT/$snapname.svg" >/dev/null 2>&1 && mv -f "$OUT/$snapname.svg.png" "$OUT/$snapname.png" 2>/dev/null
-		fi
 		step=$((step + 1))
 		echo "  $snapname${want:+  ✓ \"$want\"}"
 		;;
@@ -179,6 +190,100 @@ while IFS= read -r line || [ -n "$line" ]; do
 	esac
 	[ "$failed" = 1 ] && break
 done < "$scene/steps.txt"
+
+# The vhs pass. The tape is the scene translated: a keys line is Type and
+# the named keys, a snap is a screen-scoped Wait and a Screenshot, a sleep is
+# a Sleep. The binary starts from a shell inside vhs's own terminal, so the
+# environment goes in as Env lines and the size is pinned with stty: vhs
+# sizes its window in pixels, and a scene's width is a column count that has
+# to be exact, because the frame changes shape at the breakpoints. Every
+# path in the tape is quoted, because the parser reads a bare leading slash
+# as a regex and a bare leading digit as a number.
+#
+# The second of Sleep after each screenshot is not padding. A card that has
+# just been drawn takes the keyboard a moment after it appears, and a key
+# typed into that moment lands in the draft underneath it; tmux's capture
+# takes long enough on its own that the pass above never noticed.
+# A modified key is a letter in tmux (C-c) and a capital in vhs (Ctrl+C); a
+# modified named key (C-Space, S-Up) is the same word in both.
+tape_keyname() {
+	case ${#1} in
+	1) printf '%s' "$1" | tr '[:lower:]' '[:upper:]' ;;
+	*) printf '%s' "$1" ;;
+	esac
+}
+tape_key() {
+	case $1 in
+	Enter|Escape|Tab|Space|Up|Down|Left|Right|Backspace|Home|End) echo "$1" ;;
+	BTab) echo "Shift+Tab" ;;
+	PgUp|PPage) echo "PageUp" ;;
+	PgDn|NPage) echo "PageDown" ;;
+	C-*) echo "Ctrl+$(tape_keyname "${1#C-}")" ;;
+	M-*) echo "Alt+$(tape_keyname "${1#M-}")" ;;
+	S-*) echo "Shift+$(tape_keyname "${1#S-}")" ;;
+	*) printf 'Type `%s`\n' "$1" ;;
+	esac
+}
+tape_regex() { printf '%s' "$1" | sed 's/[][\\.*+?(){}|^$\/]/\\&/g'; }
+write_tape() {
+	echo "Output \"$OUT/$name.gif\""
+	echo "Set Shell bash"
+	echo "Set FontSize 14"
+	echo "Set Padding 10"
+	echo "Set Width $(( COLS * 9 + 40 ))"
+	echo "Set Height $(( ROWS * 20 + 40 ))"
+	echo "Set TypingSpeed 20ms"
+	for kv in $envs; do
+		echo "Env ${kv%%=*} \"${kv#*=}\""
+	done
+	echo "Hide"
+	echo "Type \"cd $ws && stty cols $COLS rows $ROWS && exec $SHHH_BIN code\""
+	echo "Enter"
+	echo "Sleep 500ms"
+	echo "Show"
+	while IFS= read -r line || [ -n "$line" ]; do
+		case $line in
+		""|\#*|setup\ *) continue ;;
+		keys\ *)
+			eval "set -- ${line#keys }"
+			for k in "$@"; do tape_key "$k"; done
+			;;
+		sleep\ *) echo "Sleep ${line#sleep }s" ;;
+		snap\ *)
+			eval "set -- ${line#snap }"
+			[ -n "${2:-}" ] && echo "Wait+Screen@${WAIT}s /$(tape_regex "$2")/"
+			echo "Sleep 300ms"
+			echo "Screenshot \"$OUT/$1.png\""
+			echo "Sleep 1s"
+			;;
+		esac
+	done < "$scene/steps.txt"
+}
+if [ "$vhs" = 1 ] && [ "$failed" = 0 ]; then
+	tmux -L "$SOCK" kill-server 2>/dev/null
+	# The pass above used the replies up and worked in the workspace; the tape
+	# starts both again from the top.
+	kill "$provider" 2>/dev/null; wait "$provider" 2>/dev/null
+	python3 "$here/fakeprovider.py" "$PORT" "$scene/replies.txt" 2>> "$OUT/provider.log" &
+	provider=$!
+	rm -rf "$ws"; mkdir -p "$ws"
+	(cd "$ws" && git init -q && git -c user.email=tui@shhh -c user.name=tui commit -q --allow-empty -m init)
+	while IFS= read -r line; do
+		case $line in
+		setup\ *) (cd "$ws" && eval "${line#setup }") ;;
+		esac
+	done < "$scene/steps.txt"
+	write_tape > "$OUT/$name.tape"
+	if vhs "$OUT/$name.tape" > "$OUT/vhs.log" 2>&1; then
+		echo "pictures: $OUT/$name.gif, and a png per snap"
+	else
+		# vhs writes its screenshots only when the whole tape played, so a
+		# wait that timed out leaves no picture at all; the log says which.
+		echo "drive.sh: vhs failed — $OUT/vhs.log" >&2
+		grep -m1 'timeout waiting' "$OUT/vhs.log" | cut -c1-160 >&2
+		failed=1
+	fi
+fi
 
 if [ "$failed" = 1 ]; then
 	echo "drive.sh: the model was asked $(grep -c '^POST' "$OUT/provider.log" 2>/dev/null || true) times — $OUT/provider.log" >&2

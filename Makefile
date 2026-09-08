@@ -167,9 +167,16 @@ tui-build:
 tui-run: tui-build ## Open the TUI in this terminal against the scripted model (SCENE=<name> picks the replies)
 	@SHHH_BIN=$(TUI_BIN) scripts/tui/drive.sh --attach scripts/tui/scenes/$(SCENE)
 
-tui-shot: tui-build ## Drive a scene through the built binary and capture every step (SCENE=<name> COLS=<width> ROWS=<height>)
+# The picture wants vhs, which brings a headless browser with it; a machine
+# without it still gets the cells, and the recipe says so rather than failing.
+tui-shot: tui-build ## Drive a scene through the built binary and capture every step; with vhs, picture them too (SCENE=<name> COLS=<width> ROWS=<height>)
 	@echo "${MAGENTA}Driving the $(SCENE) scene...${RESET}"
-	@SHHH_BIN=$(TUI_BIN) scripts/tui/drive.sh scripts/tui/scenes/$(SCENE)
+	@if command -v vhs >/dev/null 2>&1; then \
+		SHHH_BIN=$(TUI_BIN) scripts/tui/drive.sh --vhs scripts/tui/scenes/$(SCENE); \
+	else \
+		echo "${YELLOW}vhs not found — cells only, no pictures (brew install vhs)${RESET}"; \
+		SHHH_BIN=$(TUI_BIN) scripts/tui/drive.sh scripts/tui/scenes/$(SCENE); \
+	fi
 
 tui-check: tui-build ## Drive the smoke scene and fail if a step never draws what it waits for
 	@echo "${MAGENTA}Driving the TUI smoke scene...${RESET}"

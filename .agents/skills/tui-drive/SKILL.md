@@ -26,8 +26,11 @@ make tui-run  SCENE=smoke            # open the same pane in this terminal, by h
 
 `tui-run` needs a terminal to attach to, so it is for a person. An agent
 uses `tui-shot` and reads the captures. Both need `tmux` and `python3`, and
-`tui-shot` makes a picture as well where `qlmanage` exists (macOS); elsewhere
-the `.svg` is the picture.
+`tui-shot` makes a picture as well where `vhs` is installed: the scene is
+written as a tape and played again in a real terminal, which leaves a PNG per
+snap and a GIF of the run. `brew install vhs` brings vhs, ttyd and ffmpeg;
+without them the run is cells only, and says so. By hand that is
+`drive.sh --vhs`.
 
 A snap is a still. To record the run itself — the stream arriving, the card
 landing, the key answering it — add `--record`:
@@ -44,7 +47,9 @@ Captures land under `bin/tui/<scene>/` and are never committed. For each
 |---|---|---|
 | `<name>.txt` | the terminal's cells, no colour | `cat`; diff against a golden's layout block |
 | `<name>.ansi` | the same cells with colour | not for diffing — tmux re-emits colour per cell |
-| `<name>.svg` / `<name>.png` | a picture of the screen | the file viewer; the PNG can be read inline |
+| `<name>.png` | the screen as a real terminal drew it, under `--vhs` | open it, or read it inline with the file reader |
+| `<scene>.gif` | the whole run as a real terminal drew it, under `--vhs` | any viewer |
+| `<scene>.tape` | the scene as vhs played it, under `--vhs` | `vhs <scene>.tape` replays it by hand |
 | `<scene>.cast` | the whole run under `--record`, one per scene rather than per snap | `asciinema play`; `agg` renders it to a `<scene>.gif` beside it |
 
 Read the `.txt` first: it is the layout, and a column that drifted shows

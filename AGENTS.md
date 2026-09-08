@@ -87,7 +87,7 @@ golden fixture, so this cannot drift back.
 | Verify prompt caching against live endpoints | `SHHH_CACHE_IT_URL=… SHHH_CACHE_IT_KEY=… SHHH_CACHE_IT_GATEWAY_URL=… SHHH_CACHE_IT_GATEWAY_KEY=… make cache-check` (costs real requests; each half skips when its own pair is unset) |
 | Update golden files | `go test ./internal/ui/components ./internal/ui/chat -update-golden` or `SHHH_UPDATE_GOLDEN=1 go test ./...` |
 | Open the TUI by hand against a scripted model | `make tui-run` (`SCENE=<name>` picks the replies; needs tmux) |
-| Capture the TUI at each step of a scene | `make tui-shot SCENE=<name> COLS=110 ROWS=40` (captures under `bin/tui/<name>/`) |
+| Capture the TUI at each step of a scene | `make tui-shot SCENE=<name> COLS=110 ROWS=40` (captures under `bin/tui/<name>/`; with vhs installed, a PNG per step and a GIF of the run as well) |
 | Record a scene's whole run, not only its steps | `make tui-build && SHHH_BIN=$PWD/bin/tui/shhh scripts/tui/drive.sh --record scripts/tui/scenes/<name>` (an `asciinema` `.cast` beside the captures; without asciinema it says so and records nothing) |
 | Drive the smoke scene through the built binary | `make tui-check` (part of `make ci`; the gate every surface change passes) |
 
@@ -1226,8 +1226,9 @@ stated size, in a fresh repository under a home of its own, pointed at
 `fakeprovider.py` — an openai-compatible endpoint that answers each request
 with the next line of a scene's `replies.txt` — and walks the scene's
 `steps.txt`: type these keys, then capture the screen once this text is on
-it. Each capture is the cells (`.txt`), the cells with colour (`.ansi`), and a
-picture (`.svg`, plus `.png` where `qlmanage` is, which is macOS). The
+it. Each capture is the cells (`.txt`) and the cells with colour (`.ansi`);
+`--vhs` plays the same scene again in a real terminal through vhs and adds
+the picture, a `.png` per snap and a `.gif` of the run. The
 [`tui-drive`](.agents/skills/tui-drive/SKILL.md) skill is the working guide:
 the scene grammar, the key names, and how to read a capture.
 
