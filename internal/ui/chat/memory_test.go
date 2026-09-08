@@ -12,6 +12,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 type savedMemory struct {
@@ -76,6 +77,13 @@ func TestRemember_AlwaysPromptsEvenInPermissiveModes(t *testing.T) {
 		}
 		if !strings.Contains(view, "prefers table-driven tests") {
 			t.Fatalf("%s: prompt should show the proposed text", mode)
+		}
+		// A proposal is a decision like every other card that stops a turn,
+		// and it has no severity to colour its frame with, so it wears the
+		// tone of a surface waiting for an answer rather than the grey of one
+		// that reports (components.CardTone).
+		if m.memoryAsk.Select.Tone != components.CardDecision {
+			t.Fatalf("%s: the memory card should carry the decision tone", mode)
 		}
 	}
 }

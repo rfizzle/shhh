@@ -12,7 +12,9 @@
 ── layout ──────────────────────────────────────────────────
 · three questions · the first tab has the keyboard and none is answered yet
 ▸ 1  · 2  · 3  · submit  1 of 3 · 3 unanswered will be sent as skipped
-╭─ Which store should the cache use? ──────────────────────────────────────╮
+╭─ Question ────────────────────────────────────────────────────── 1 of 3 ─╮
+│ Which store should the cache use?                                        │
+│                                                                          │
 │ ❯ 1. SQLite            in the checkout already     recommended · 3 files │
 │   2. Postgres          one more service to run                   9 files │
 │   3. Something else …  answer in your own words                          │
@@ -31,7 +33,9 @@ Should the migration be reversible?  [y/N]
 
 · the free answer · its field is shut so the arrows stay the strip's
 ✓ 1  ✓ 2  ▸ 3  · submit  3 of 3 · 1 unanswered will be sent as skipped
-╭─ What should the flag be called? ────────────────────────────────────────╮
+╭─ Question ────────────────────────────────────────────────────── 3 of 3 ─╮
+│ What should the flag be called?                                          │
+│                                                                          │
 │ ┄ note (required)                                                        │
 │   (none)                                                                 │
 │ [enter] confirm · [tab] answer · [←→] the next question · [esc] cancel   │
@@ -46,7 +50,9 @@ Should the migration be reversible?  [y/N]
 
 · four questions · the most one call may carry, which is where the strip is tightest
 ✓ 1  · 2  ▸ 3  · 4  · submit  3 of 4 · 3 unanswered will be sent as skipped
-╭─ Which packages should the flag reach? ──────────────────────────────────╮
+╭─ Question ────────────────────────────────────────────────────── 3 of 4 ─╮
+│ Which packages should the flag reach?                                    │
+│                                                                          │
 │ ❯ [ ] internal/agent                                                     │
 │   [ ] internal/cli                                                       │
 │   [ ] Something else …                                                   │
@@ -59,30 +65,34 @@ Should the migration be reversible?  [y/N]
 ── ansi ────────────────────────────────────────────────────
 · three questions · the first tab has the keyboard and none is answered yet
 ␛[1;48;5;62m▸ 1␛[m  ␛[38;5;241m· 2␛[m  ␛[38;5;241m· 3␛[m  ␛[38;5;241m· submit␛[m␛[38;5;241m  1 of 3 · 3 unanswered will be sent as skipped␛[m
-␛[38;5;241m╭─ Which store should the cache use? ␛[m␛[38;5;241m──────────────────────────────────────␛[m␛[38;5;241m╮␛[m
-␛[38;5;241m│␛[m ␛[1;48;5;62m❯ 1. SQLite            in the checkout already     recommended · 3 files␛[m ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m   2. Postgres          ␛[38;5;241mone more service to run␛[m                   ␛[38;5;252m9 files␛[m ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m   3. Something else …  ␛[38;5;241manswer in your own words␛[m                          ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;241m┄ note (optional)␛[m                                                        ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m   ␛[38;5;245m(none)␛[m                                                                 ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;241m[tab] note/options · [enter] confirm · [d] the full answer␛[m               ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;241m[←→] the next question · [esc] cancel␛[m                                    ␛[38;5;241m│␛[m
-␛[38;5;241m╰──────────────────────────────────────────────────────────────────────────╯␛[m
+␛[94m╭─ Question ␛[m␛[38;5;241m──────────────────────────────────────────────────────␛[m␛[94m 1 of 3 ─╮␛[m
+␛[94m│␛[m ␛[38;5;252mWhich store should the cache use?␛[m                                        ␛[94m│␛[m
+␛[94m│␛[m                                                                          ␛[94m│␛[m
+␛[94m│␛[m ␛[1;48;5;62m❯ 1. SQLite            in the checkout already     recommended · 3 files␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mPostgres␛[m          ␛[38;5;241mone more service to run␛[m                   ␛[38;5;252m9 files␛[m ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mSomething else …␛[m  ␛[38;5;241manswer in your own words␛[m                          ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;241m┄ note (optional)␛[m                                                        ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;245m(none)␛[m                                                                 ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;241m[tab] note/options · [enter] confirm · [d] the full answer␛[m               ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;241m[←→] the next question · [esc] cancel␛[m                                    ␛[94m│␛[m
+␛[94m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 
 · one answered · the mark turns and the tail counts what is still open
 ␛[92m✓ 1␛[m  ␛[1;48;5;62m▸ 2␛[m  ␛[38;5;241m· 3␛[m  ␛[38;5;241m· submit␛[m␛[38;5;241m  2 of 3 · 2 unanswered will be sent as skipped␛[m
-Should the migration be reversible?  ␛[1;94m[y/N]␛[m
+␛[38;5;252mShould the migration be reversible?␛[m  ␛[38;5;241m[␛[m␛[38;5;241my␛[m␛[38;5;241m/␛[m␛[1;97mN␛[m␛[38;5;241m]␛[m
 ␛[38;5;241m┄ note (optional)␛[m
   ␛[38;5;245m(none)␛[m
 ␛[38;5;241m[y] yes · [N] no — the default · [tab] note · [←→] the next question␛[m
 
 · the free answer · its field is shut so the arrows stay the strip's
 ␛[92m✓ 1␛[m  ␛[92m✓ 2␛[m  ␛[1;48;5;62m▸ 3␛[m  ␛[38;5;241m· submit␛[m␛[38;5;241m  3 of 3 · 1 unanswered will be sent as skipped␛[m
-␛[38;5;241m╭─ What should the flag be called? ␛[m␛[38;5;241m────────────────────────────────────────␛[m␛[38;5;241m╮␛[m
-␛[38;5;241m│␛[m ␛[38;5;241m┄ note (required)␛[m                                                        ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m   ␛[38;5;245m(none)␛[m                                                                 ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;241m[enter] confirm · [tab] answer · [←→] the next question · [esc] cancel␛[m   ␛[38;5;241m│␛[m
-␛[38;5;241m╰──────────────────────────────────────────────────────────────────────────╯␛[m
+␛[94m╭─ Question ␛[m␛[38;5;241m──────────────────────────────────────────────────────␛[m␛[94m 3 of 3 ─╮␛[m
+␛[94m│␛[m ␛[38;5;252mWhat should the flag be called?␛[m                                          ␛[94m│␛[m
+␛[94m│␛[m                                                                          ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;241m┄ note (required)␛[m                                                        ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;245m(none)␛[m                                                                 ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;241m[enter] confirm · [tab] answer · [←→] the next question · [esc] cancel␛[m   ␛[94m│␛[m
+␛[94m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the tab that ends the set · what enter sends, and what leaving a tab open costs
 ␛[92m✓ 1␛[m  ␛[92m✓ 2␛[m  ␛[38;5;241m· 3␛[m  ␛[1;48;5;62m▸ submit␛[m␛[38;5;241m  submit · 1 unanswered will be sent as skipped␛[m
@@ -93,12 +103,14 @@ Should the migration be reversible?  ␛[1;94m[y/N]␛[m
 
 · four questions · the most one call may carry, which is where the strip is tightest
 ␛[92m✓ 1␛[m  ␛[38;5;241m· 2␛[m  ␛[1;48;5;62m▸ 3␛[m  ␛[38;5;241m· 4␛[m  ␛[38;5;241m· submit␛[m␛[38;5;241m  3 of 4 · 3 unanswered will be sent as skipped␛[m
-␛[38;5;241m╭─ Which packages should the flag reach? ␛[m␛[38;5;241m──────────────────────────────────␛[m␛[38;5;241m╮␛[m
-␛[38;5;241m│␛[m ␛[1;48;5;62m❯ ␛[m␛[38;5;241m[ ]␛[m internal/agent                                                     ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m   ␛[38;5;241m[ ]␛[m internal/cli                                                       ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m   ␛[38;5;241m[ ]␛[m Something else …                                                   ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;241m┄ note (optional)␛[m                                                        ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m   ␛[38;5;245m(none)␛[m                                                                 ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;241m[tab] note/options · [space] toggle · [a] all/none · [d] the full answer␛[m ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;241m[←→] the next question · [enter] apply (0) · [esc] cancel␛[m                ␛[38;5;241m│␛[m
-␛[38;5;241m╰──────────────────────────────────────────────────────────────────────────╯␛[m
+␛[94m╭─ Question ␛[m␛[38;5;241m──────────────────────────────────────────────────────␛[m␛[94m 3 of 4 ─╮␛[m
+␛[94m│␛[m ␛[38;5;252mWhich packages should the flag reach?␛[m                                    ␛[94m│␛[m
+␛[94m│␛[m                                                                          ␛[94m│␛[m
+␛[94m│␛[m ␛[1;48;5;62m❯ ␛[m␛[38;5;241m[ ]␛[m internal/agent                                                     ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;241m[ ]␛[m internal/cli                                                       ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;241m[ ]␛[m Something else …                                                   ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;241m┄ note (optional)␛[m                                                        ␛[94m│␛[m
+␛[94m│␛[m   ␛[38;5;245m(none)␛[m                                                                 ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;241m[tab] note/options · [space] toggle · [a] all/none · [d] the full answer␛[m ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;241m[←→] the next question · [enter] apply (0) · [esc] cancel␛[m                ␛[94m│␛[m
+␛[94m╰──────────────────────────────────────────────────────────────────────────╯␛[m

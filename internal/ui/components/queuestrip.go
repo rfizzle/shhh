@@ -130,7 +130,7 @@ func (item QueueItem) render(width int, current bool) string {
 		pointer = sty.SpinText.Render("▸") + " "
 	}
 	number := strconv.Itoa(item.Number) + " "
-	right := item.right()
+	right := item.right(current)
 
 	// Indent, pointer, number, one gap column, then the right-hand block.
 	room := width - len(queueIndent) - 2 - len(number) - 2 - lipgloss.Width(right)
@@ -145,12 +145,12 @@ func (item QueueItem) render(width int, current bool) string {
 
 // right is the item's detail and rating and, when [A] would answer it, the
 // key that would. All three are words: a row's membership is never a hue.
-func (item QueueItem) right() string {
+func (item QueueItem) right(current bool) string {
 	var b strings.Builder
 	if item.Detail != "" {
 		b.WriteString(sty.Dimmer.Render(item.Detail))
 	}
-	if chip := severityChip(item.Severity); chip != "" {
+	if chip := severityChip(item.Severity, current); chip != "" {
 		if b.Len() > 0 {
 			b.WriteString("  ")
 		}
@@ -165,23 +165,29 @@ func (item QueueItem) right() string {
 	return b.String()
 }
 
-// severityChip is a rating as a row prints it: the level in words, toned so
-// the two that should slow a reader down stand out and the rest state a fact.
-// The word is the whole of it — a rating carried by the hue alone would be a
+// severityChip is a rating as a row prints it: the level in words, in the
+// same three colours the card's own chip, body row and border take, so a
+// reading does not change hue between the strip and the card under it. The
+// word is the whole of it — a rating carried by the hue alone would be a
 // rating half the readers never see
 // (docs/interface/principles.md#colour-never-carries-meaning-alone).
 //
+// Only the row the card below is showing is painted. The rest of the strip is
+// context: five ratings in three colours above one decision is a wall of
+// warnings, and the reader would learn to look past the one that is theirs to
+// answer. Their words do not change, so nothing is lost but the shout
+// (docs/interface/surfaces.md#the-approval-card).
+//
 // The strip and the pick-several list the queue opens as both print it, from
 // here rather than each from its own arithmetic: a row that rated the same
-// call two ways would be two answers to one question
-// (docs/interface/surfaces.md#the-approval-card).
-func severityChip(s Severity) string {
+// call two ways would be two answers to one question.
+func severityChip(s Severity, current bool) string {
 	word := s.Word()
 	if word == "" {
 		return ""
 	}
-	if s >= SeverityMedium {
-		return sty.Warn.Render(word)
+	if !current {
+		return sty.Dim.Render(word)
 	}
-	return sty.Dim.Render(word)
+	return s.tone().Render(word)
 }

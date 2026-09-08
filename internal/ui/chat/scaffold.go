@@ -80,7 +80,7 @@ func (m Model) scaffoldCard() *components.ApprovalCard {
 		Title:    "Approve scaffold",
 		Headline: "shhh wants to write this project's context file",
 		Summary:  "it is read into the system prompt of every session opened here",
-		Question: "Write these files?",
+		Answer:   "write them",
 		MaxLines: m.planPanelBound(),
 	}
 	for _, path := range m.scaffold.Paths {
@@ -101,9 +101,11 @@ func (m Model) scaffoldCard() *components.ApprovalCard {
 	// Two ways of not writing, and the card says which is which, because
 	// they differ in what outlives this screen: [n] is an answer and settles
 	// the offer, esc is a way out and settles nothing
-	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
-	card.SafeDefault = "[n] no — nothing written; not offered again"
-	card.Return = "[esc] leave — nothing written, and the offer stays"
+	// (docs/interface/principles.md#esc-is-always-the-safe-answer). The
+	// denial says what outlives it, and esc says what it leaves behind, which
+	// is not what it leaves behind on a gated card.
+	card.Decline = "no — nothing written; not offered again"
+	card.Return = "leave — nothing written, and the offer stays"
 	return card
 }
 

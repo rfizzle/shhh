@@ -613,7 +613,13 @@ func (m Model) listAnswerCard(ask *subagent.Ask) *components.ApprovalCard {
 	// have suppressed along with the rest
 	// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 	card.HeldOnArrival = false
-	card.ExtraHints = []components.KeyOffer{{Key: keys.Bracketed("esc"), Label: "deny, back to the agents"}}
+	// Esc is the card's own row rather than an offer beside the run, and the
+	// words are what esc actually does here: there is no draft under the list
+	// to hand the keyboard back to, so leaving is declining, and a card
+	// saying the decision stayed waiting would be describing a different
+	// surface (docs/interface/principles.md#esc-is-always-the-safe-answer).
+	card.ExtraHints = nil
+	card.Return = "deny, back to the agents"
 	return card
 }
 

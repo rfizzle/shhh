@@ -14,13 +14,13 @@
 ──── DECISION ──────────────────────────────────────────────────────────────
 ╭─ Approve command ───────────────────────────────────────────── ⚠ medium ─╮
 │ Assistant wants to run: npm test --watch                                 │
-│ medium · what it writes could not be resolved                            │
+│ ⚠ medium · what it writes could not be resolved                          │
 │                                                                          │
-│ touches   unknown — shhh cannot tell what npm writes                     │
-│ undo      unknown — shhh could not resolve what this writes              │
-│ network   open                                                           │
+│ … 3 more lines · shift+↓                                                 │
 ├──────────────────────────────────────────────────────────────────────────┤
-│ Run this command? [y/Y/n/N/a]            the list below has the keyboard │
+│ [y] run it once · [Y] and say what next · [n] deny · [N] and say why not │
+│ [a] allow "npm test" without asking · [d] full view                      │
+│ the list below has the keyboard                                          │
 │ ┄ allow without asking                                                   │
 │ ❯ this turn only   npm test …                       until this turn ends │
 │   this session     npm test …                        until you revoke it │
@@ -33,13 +33,13 @@
 ──── DECISION ──────────────────────────────────────────────────────────────
 ╭─ Approve command ───────────────────────────────────────────── ⚠ medium ─╮
 │ Assistant wants to run: npm test --watch                                 │
-│ medium · what it writes could not be resolved                            │
+│ ⚠ medium · what it writes could not be resolved                          │
 │                                                                          │
-│ touches   unknown — shhh cannot tell what npm writes                     │
-│ undo      unknown — shhh could not resolve what this writes              │
-│ network   open                                                           │
+│ … 3 more lines · shift+↓                                                 │
 ├──────────────────────────────────────────────────────────────────────────┤
-│ Run this command? [y/Y/n/N/a]            the list below has the keyboard │
+│ [y] run it once · [Y] and say what next · [n] deny · [N] and say why not │
+│ [a] allow "npm test" without asking · [d] full view                      │
+│ the list below has the keyboard                                          │
 │ ┄ allow without asking                                                   │
 │   this turn only   npm test …                       until this turn ends │
 │ ❯ this session     npm test …                        until you revoke it │
@@ -53,17 +53,17 @@
 ␛[38;5;244m────␛[m ␛[1;38;5;254mDECISION␛[m ␛[38;5;244m──────────────────────────────────────────────────────────────␛[m
 ␛[38;5;254m╭─ Approve command ───────────────────────────────────────────── ⚠ medium ─╮␛[m
 ␛[38;5;254m│␛[m ␛[1;38;5;254mAssistant wants to run: npm test --watch␛[m                                 ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254mmedium␛[m␛[38;5;244m · what it writes could not be resolved␛[m                            ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · what it writes could not be resolved␛[m                          ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                                          ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh cannot tell what npm writes␛[m                     ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh could not resolve what this writes␛[m              ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mopen␛[m                                                           ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m… 3 more lines · shift+↓␛[m                                                 ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mRun this command? [y/Y/n/N/a]␛[m            ␛[38;5;244mthe list below has the keyboard␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m[y] run it once␛[m␛[38;5;244m · ␛[m␛[38;5;244m[Y] and say what next␛[m␛[38;5;244m · ␛[m␛[38;5;244m[n] deny␛[m␛[38;5;244m · ␛[m␛[38;5;244m[N] and say why not␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m[a] allow "npm test" without asking␛[m␛[38;5;244m · ␛[m␛[38;5;244m[d] full view␛[m                      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mthe list below has the keyboard␛[m                                          ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m┄ allow without asking␛[m                                                   ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[1;48;5;237m❯ this turn only   npm test …                       until this turn ends␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m   this session     ␛[38;5;244mnpm test …␛[m                        ␛[38;5;254muntil you revoke it␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m   this exact line  ␛[38;5;244mnpm test --watch␛[m                  ␛[38;5;254muntil you revoke it␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m   ␛[38;5;254mthis session␛[m     ␛[38;5;244mnpm test …␛[m                        ␛[38;5;254muntil you revoke it␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m   ␛[38;5;254mthis exact line␛[m  ␛[38;5;244mnpm test --watch␛[m                  ␛[38;5;254muntil you revoke it␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m[↑↓/jk] choose · [enter] grant it, and run␛[m                               ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m[esc] back to the card — nothing is granted␛[m                              ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────╯␛[m
@@ -72,17 +72,17 @@
 ␛[38;5;244m────␛[m ␛[1;38;5;254mDECISION␛[m ␛[38;5;244m──────────────────────────────────────────────────────────────␛[m
 ␛[38;5;254m╭─ Approve command ───────────────────────────────────────────── ⚠ medium ─╮␛[m
 ␛[38;5;254m│␛[m ␛[1;38;5;254mAssistant wants to run: npm test --watch␛[m                                 ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254mmedium␛[m␛[38;5;244m · what it writes could not be resolved␛[m                            ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · what it writes could not be resolved␛[m                          ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                                          ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh cannot tell what npm writes␛[m                     ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh could not resolve what this writes␛[m              ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mopen␛[m                                                           ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m… 3 more lines · shift+↓␛[m                                                 ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mRun this command? [y/Y/n/N/a]␛[m            ␛[38;5;244mthe list below has the keyboard␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m[y] run it once␛[m␛[38;5;244m · ␛[m␛[38;5;244m[Y] and say what next␛[m␛[38;5;244m · ␛[m␛[38;5;244m[n] deny␛[m␛[38;5;244m · ␛[m␛[38;5;244m[N] and say why not␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m[a] allow "npm test" without asking␛[m␛[38;5;244m · ␛[m␛[38;5;244m[d] full view␛[m                      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mthe list below has the keyboard␛[m                                          ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m┄ allow without asking␛[m                                                   ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m   this turn only   ␛[38;5;244mnpm test …␛[m                       ␛[38;5;254muntil this turn ends␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m   ␛[38;5;254mthis turn only␛[m   ␛[38;5;244mnpm test …␛[m                       ␛[38;5;254muntil this turn ends␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[1;48;5;237m❯ this session     npm test …                        until you revoke it␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m   this exact line  ␛[38;5;244mnpm test --watch␛[m                  ␛[38;5;254muntil you revoke it␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m   ␛[38;5;254mthis exact line␛[m  ␛[38;5;244mnpm test --watch␛[m                  ␛[38;5;254muntil you revoke it␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m[↑↓/jk] choose · [enter] grant it, and run␛[m                               ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m[esc] back to the card — nothing is granted␛[m                              ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────╯␛[m

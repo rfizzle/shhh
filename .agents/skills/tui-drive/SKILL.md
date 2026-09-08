@@ -107,7 +107,7 @@ would get four rows and no outline.
 setup mkdir -p .shhh && printf 'notes\n' > .shhh/project.md
 snap 01-start "Some things worth doing first"
 keys "run the tests" Enter
-snap 02-card "Run this command?"
+snap 02-card "[y] run it once"
 keys y
 snap 03-ran "ok ·"
 keys C-c
@@ -124,8 +124,8 @@ snap 04-exit "that is everything the screen was holding"
   `C-c`, `C-o`, `C-/`, `M-a` (alt+a) are keys by name.
 - `snap <name> "<text>"` waits for the text to be on screen, then captures.
   **The text must be the surface's own.** Waiting for the line you just typed
-  passes before the reply lands; wait for a word only the reply carries, a
-  card's own question, the rail's own count.
+  passes before the reply lands; wait for a word only the reply carries, an
+  offer off a card's own key row, the rail's own count.
 - `sleep <seconds>` is for the rare step nothing on screen marks. Prefer a
   snap with text; a sleep is a guess about a machine's speed.
 

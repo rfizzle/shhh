@@ -1,0 +1,17 @@
+# One reply per request. The last line repeats once these run out.
+# Three command cards, one per rung of the severity ladder: a command that
+# resolves and writes nothing is low, one whose writes cannot be resolved is
+# medium, and one the safety table flags is HIGH. Every card is denied, so
+# nothing in the scene's workspace is written and the flagged line never runs.
+#
+# The reads between them are absorbers: the session's own reading of the run
+# asks the model too, on whichever round it falls due on, and the reply it
+# takes is one the turn never makes. Taken, the turn skips a read; left, it
+# makes both and every card below still lands.
+tool:read_file:{"path":"loop.go"}
+tool:execute_command:{"command":"sed -n 1p notes.md"}
+tool:read_file:{"path":"notes.md"}
+tool:execute_command:{"command":"npm run build"}
+tool:read_file:{"path":"loop.go"}
+tool:execute_command:{"command":"rm -rf ./build && npm run build"}
+Every rung of the ladder is above.

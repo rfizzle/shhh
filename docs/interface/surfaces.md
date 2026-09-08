@@ -688,19 +688,39 @@ prompt that says only what the action *is* asks the reader to do the risk
 assessment themselves, at speed, twenty times a session — and they will stop.
 
 Severity leads as a word. The card says it three ways at once — the border,
-the chip on the title rail, and the first row of the body — and the three are
-three statements rather than one printed three times. The chip is the level
-with its glyph; the body row is the level with what makes it that, in the
-terms the level was decided in: *medium · edits one file under internal/agent*,
-*low · writes nothing*, *HIGH* followed by the risk that flagged it. Where a
-variant has nothing to read the reason off, the row states the level and stops,
-because a reason invented to fill it would be the one thing on the card the
-reader could not check.
+the chip on the title rail, and the first row of the body — in one wording, so
+that a reader checking any one of them against another is not first working
+out that they are the same claim. What the body row adds is the reading behind
+the level, in the terms the level was decided in: *⚠ medium · edits one file
+under internal/agent*, *⚠ low · writes nothing*, *⚠ HIGH* followed by the risk
+that flagged it. Where a variant has nothing to read the reason off, the row
+states the level and stops, because a reason invented to fill it would be the
+one thing on the card the reader could not check.
+
+The ladder has three colours and not two. *low* and *medium* wear the accent
+the mutation rail wears; *HIGH* wears the colour of failure, and so does a
+card with nothing containing it, whatever its level says — the missing sandbox
+is what the decision turns on then, and all three statements move with it
+rather than leaving the body row a colour behind the rail. A rating drawn in that colour at every level it has
+teaches the reader that the colour means *a card*, and then the one level
+meant to stop them has nothing left to say it with. A card with no rating at
+all — a plan, a question, the agent manager, a memory proposal — wears the
+tone of a surface waiting for an answer rather than the grey of one that
+reports. The queue strip above the card follows the same ladder on the row the
+card is showing, and draws the rest of the queue in one grey: five ratings in
+three colours over one decision is a wall of warnings, and the words on those
+rows do not change.
 
 Resolution is honest about its limits: where the blast radius cannot be
 determined, the card says so rather than reporting a confident nothing. What
 the containment profile allows is reported from what is actually in force, not
-from what was configured.
+from what was configured, and it is a row of the body under the three the card
+always states — not a label on the title rail. A rail sheds its labels from
+the front as the terminal narrows, and what a sandbox permits is the last
+thing a sixty-column card should be giving up; the rail also paints in the
+card's own tone, which drew a statement about containment in the colour of a
+flagged command. The one containment fact that does reach the rail is the
+absence of a sandbox, because that changes what the decision is.
 
 The card's border carries how much the decision on it weighs, and the run of
 its top edge between the title and the chips carries nothing — so that run is
@@ -784,6 +804,34 @@ stay reachable to be one. A card replacing one just answered gets no window at
 all — that keystroke was an answer, not typing, and a reader working through a
 queue is never made to wait between questions.
 
+The decision run is written the way every other key row in the product is: a
+key in brackets, a lower-case imperative after it, and the answer that costs
+nothing in the colour of the safe answer — *[y] run it once · [e] edit the
+command · [n] deny*, with *[esc] don't — the safe answer* on a line of its
+own. A key that is not offered stays on the card with its reason rather than
+disappearing. The compact `[y/n/a]` prompt this card used to print, with what
+its keys bought in parentheses beside it, was the one place two notations sat
+a row apart — the offers under a frame's rule read one way and the offers
+under a card's read another — and a reader who has learned that a bracket
+means a live key is worse served by two notations than by one.
+
+Every card holding the keyboard carries the esc line, whatever it is about and
+whoever it came from, because the way out of a decision is the one thing a
+reader must be able to find without having pressed anything first
+([invariant 3](principles.md#esc-is-always-the-safe-answer)). It is a line of
+its own rather than the last segment of the run, so whether it is on screen
+does not depend on how many offers the card happens to have. A card whose own
+field or list holds the keyboard states that surface's esc instead, once: two
+surfaces cannot both have the key, and the nearer one wins. A card that does
+not have the keyboard at all states none — esc there belongs to the draft, and
+the line saying so is the handover's.
+
+What the line says is what esc actually does on that card, which is not one
+thing. On a gated card it hands the keyboard back and leaves the request
+where it was, which is a different act from the denial `[n]` is; on a card
+picked off the agent manager there is no draft underneath, so leaving is
+declining and the line says so.
+
 The decision run has two answers, and each has a spelling that says more.
 Beside *allow* and *deny* sit *allow, and say what to do next* and *deny, and
 say why*, each opening the note field under the card; the note travels with
@@ -850,6 +898,11 @@ arrives the way an approval arrives: over an empty draft it takes the
 keyboard, over a sentence it waits inert, and a keyboard still warm gets the
 same grace window. It carries no severity, because nothing on it changes the
 machine, and its row in the transcript carries no rail for the same reason.
+
+The card is titled *Question*, its place in the call rides the title rail as
+*n of m*, and the question itself is the first row of the body. A title is
+clipped into the border it is drawn on; the one thing on this card that must
+never be half-read is the question, so it goes where it can wrap.
 
 Four shapes, and the shape decides the dressing: one answer is the pick-one
 list, several is the pick-several list, a yes-or-no is the inline confirm,
@@ -919,6 +972,13 @@ rather than walked one row at a time.
 An option that cannot be taken here says so on the row, in a glyph and a
 phrase, rather than merely being dimmed.
 
+An unlit row is body text and its number is chrome. Both used to go out
+unpainted, which is not a colour the palette issued: it differs between two
+terminals side by side, and on half of them it reads brighter than the lit
+row's own text ([one grid](principles.md#one-grid)). The run of a row the
+query named is still bold and never tinted, and the bold is added to the tone
+the row is already in.
+
 A card is either a list of answers or a search, and it says which by how it
 arrives. A fixed set of answers — the permission modes, the providers, a
 handful of code blocks — comes up as a list: its rows are numbered, a digit
@@ -950,6 +1010,14 @@ clear. Esc still leaves outright: a filter you have to escape twice is a mode.
 A one-line question for a decision that does not need a card. Anything that
 would destroy work states what it would restore and what it would delete, and
 the default answer is the one that loses nothing.
+
+The pair is written `[y/N]` and only the capital carries emphasis: the
+sentence in front of it is body text, the brackets and the other letter are
+chrome, and the letter that is the default is bold and bright. Drawing the
+whole pair as an offer said *these are keys*, which the brackets already say,
+and left the one fact the pair exists to carry resting on the shape of a
+letter alone. The capital is still a capital on a terminal with no colour at
+all.
 
 ## Takeover surfaces
 

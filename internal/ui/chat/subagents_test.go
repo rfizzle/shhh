@@ -493,7 +493,7 @@ func TestChildAskCommandCardStatesContainmentAndRadius(t *testing.T) {
 
 	view := ansi.Strip(m.View().Content)
 	for _, want := range []string{
-		"⛨ bwrap · workspace",
+		"⛨         bwrap · workspace",
 		"lands in  the agent's worktree",
 		"touches   build",
 		"network   closed",

@@ -44,8 +44,8 @@
 · the note has the keyboard · the placeholder is up
 ␛[38;5;244m╭─ Why did you stop it? ─────────────────────────────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m ␛[1;48;5;237m❯ 1. it read the wrong file␛[m                                                                                ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m   2. it was about to write over my work                                                                    ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m   3. something else                                                                                        ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mit was about to write over my work␛[m                                                                    ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254msomething else␛[m                                                                                        ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m┄ note (optional)␛[m                                                                                          ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254m␛[38;5;244m┃ ␛[m␛[m␛[38;5;254m␛[7;38;5;237mn␛[m␛[m␛[38;5;254m␛[38;5;244mote (optional)␛[m␛[m␛[38;5;254m                                                                                       ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m[tab] note/options · [enter] confirm · [esc] cancel␛[m                                                        ␛[38;5;244m│␛[m
@@ -54,8 +54,8 @@
 · typed into · the caret's row is body text, unlit
 ␛[38;5;244m╭─ Why did you stop it? ─────────────────────────────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m ␛[1;48;5;237m❯ 1. it read the wrong file␛[m                                                                                ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m   2. it was about to write over my work                                                                    ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m   3. something else                                                                                        ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mit was about to write over my work␛[m                                                                    ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254msomething else␛[m                                                                                        ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m┄ note (optional)␛[m                                                                                          ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;254m␛[38;5;244m┃ ␛[m␛[m␛[38;5;254mit was going to rewrite the changelog␛[m␛[38;5;254m␛[7;38;5;237m ␛[m␛[m␛[38;5;254m␛[m␛[38;5;254m                                                                ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m[tab] note/options · [enter] confirm · [esc] cancel␛[m                                                        ␛[38;5;244m│␛[m
@@ -63,9 +63,9 @@
 
 · the list has the keyboard · the note echoes as plain text
 ␛[38;5;244m╭─ Why did you stop it? ─────────────────────────────────────────────────────────────────────────────────────╮␛[m
-␛[38;5;244m│␛[m   1. it read the wrong file                                                                                ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254mit read the wrong file␛[m                                                                                ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[1;48;5;237m❯ 2. it was about to write over my work␛[m                                                                    ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m   3. something else                                                                                        ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;254msomething else␛[m                                                                                        ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m┄ note (optional)␛[m                                                                                          ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244mit was going to rewrite the changelog␛[m                                                                    ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m[tab] note/options · [enter] confirm · [esc] cancel␛[m                                                        ␛[38;5;244m│␛[m

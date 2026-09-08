@@ -276,7 +276,6 @@ func (m *Model) openQuestion(req *approvalRequest) {
 // questionPage builds one question's card in the dressing its shape asks for.
 func (m *Model) questionPage(q ask.Question, sheet *questionSheet) *questionCard {
 	c := &questionCard{q: q, sheet: sheet}
-	title := firstLine(q.Question)
 	// The strip is drawn above the card and comes off the same panel, so a
 	// page on a sheet has one row less of list than a page on its own.
 	body := m.maxConfirmPanelHeight() - 1
@@ -286,22 +285,22 @@ func (m *Model) questionPage(q ask.Question, sheet *questionSheet) *questionCard
 	switch q.Shape {
 	case ask.ShapeChoose:
 		c.rows = questionRows(q.Options)
-		c.sel = components.NewNoteSelect(title, selectRows(c.rows))
+		c.sel = components.NewNoteSelect(questionTitle, selectRows(c.rows))
 		c.sel.Select.MaxLines = body
 		c.sel.Actions = c.offers()
 	case ask.ShapeChooseMany:
 		c.rows = questionRows(q.Options)
-		c.multi = components.NewMultiSelect(title, selectRows(c.rows))
+		c.multi = components.NewMultiSelect(questionTitle, selectRows(c.rows))
 		c.multi.Note = components.NewNoteBox()
 		c.multi.MaxLines = body
 		c.multi.Actions = c.offers()
 	case ask.ShapeConfirm:
-		c.conf = &components.Confirm{Prompt: title}
+		c.conf = &components.Confirm{Prompt: firstLine(q.Question)}
 		c.note = components.NewNoteBox()
 	case ask.ShapeText:
 		// No options above the field: the answer is the note, so the card
 		// opens with the keyboard already in it.
-		c.sel = components.NewNoteSelect(title, nil)
+		c.sel = components.NewNoteSelect(questionTitle, nil)
 		c.sel.Require = true
 		c.sel.Actions = c.offers()
 		c.armNote()
@@ -525,8 +524,12 @@ func (m Model) questionLines() []string {
 	case c.submit:
 		lines = append(lines, c.sheet.submitRows(width)...)
 	case c.sel != nil:
+		c.sel.Select.Title, c.sel.Select.Tone = questionTitle, components.CardDecision
+		c.sel.Select.Chips, c.sel.Select.Lead = []string{c.place()}, m.questionLead(c, width)
 		lines = append(lines, strings.Split(c.sel.View(width), "\n")...)
 	case c.multi != nil:
+		c.multi.Title, c.multi.Tone = questionTitle, components.CardDecision
+		c.multi.Chips, c.multi.Lead = []string{c.place()}, m.questionLead(c, width)
 		lines = append(lines, strings.Split(c.multi.View(width), "\n")...)
 	case c.conf != nil:
 		lines = append(lines, components.Clip(c.conf.View(width), width))
@@ -534,6 +537,37 @@ func (m Model) questionLines() []string {
 		lines = append(lines, questionConfirmKeys(c, width)...)
 	}
 	return lines
+}
+
+// questionTitle is what the card is called. The question itself is a body row
+// under it (questionLead): a title is clipped into the border it is drawn on,
+// and the one thing on this card that must never be half-read is the question
+// (docs/interface/surfaces.md#the-question-card).
+const questionTitle = "Question"
+
+// questionLead is the question as the card's first body rows, wrapped to the
+// card. It is done at render rather than when the card is built because the
+// wrap belongs to the width, and a card built once is drawn at every width
+// the terminal is dragged through.
+func (m Model) questionLead(c *questionCard, width int) []string {
+	text := strings.TrimSpace(c.q.Question)
+	if text == "" {
+		return nil
+	}
+	return strings.Split(strings.TrimRight(
+		m.wordWrap(text, components.Card{}.Inner(width)), "\n"), "\n")
+}
+
+// place is which of the call's questions this card is, as the chip says it. A
+// lone question says `1 of 1` rather than nothing: the chip is where a reader
+// looks to find out whether more is coming, and an empty chip answers that
+// only by omission.
+func (c *questionCard) place() string {
+	at, of := 1, 1
+	if c.sheet != nil {
+		at, of = c.sheet.at+1, len(c.sheet.qs)
+	}
+	return fmt.Sprintf("%d of %d", at, of)
 }
 
 // questionConfirmKeys is the yes-or-no shape's key row. The two list

@@ -14,13 +14,14 @@
 ──── DECISION ────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ╭─ Approve command ─────────────────────────────────────────────────────────────────────────────────────────────── ⚠ medium ─╮
 │ Assistant wants to run: npm test                                                                                           │
-│ medium · what it writes could not be resolved                                                                              │
+│ ⚠ medium · what it writes could not be resolved                                                                            │
 │                                                                                                                            │
 │ touches   unknown — shhh cannot tell what npm writes                                                                       │
 │ undo      unknown — shhh could not resolve what this writes                                                                │
 │ network   open — nothing contains this command, so nothing limits what it reaches                                          │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ Run this command? [y/Y/n/N/a]  (Y/N: a note)  (a: allow "npm test" without asking)  (d: full view) · [e] edit the command  │
+│ [y] run it once · [Y] and say what next · [n] deny · [N] and say why not · [a] allow "npm test" without asking             │
+│ [d] full view · [e] edit the command                                                                                       │
 │ [esc] back to your draft — the decision stays waiting, nothing is denied                                                   │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -29,15 +30,15 @@
 ╭─ Approve command ───────────────────────────────────────────────────────────────────────────────────── ✎ amended ─ ⚠ HIGH ─╮
 │ Assistant wants to run: rm -rf ./build                                                                                     │
 │ was: echo hi                                                                                                               │
-│ HIGH · recursive forced deletion — may destroy files irrecoverably                                                         │
+│ ⚠ HIGH · recursive forced deletion — may destroy files irrecoverably                                                       │
 │                                                                                                                            │
 │ touches   ./build — does not exist yet — the command creates it; removed with everything under it                          │
 │ undo      none — this is not a git work tree and shhh does not record commands                                             │
 │ network   open — nothing contains this command, so nothing limits what it reaches                                          │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ Run this command? [y/Y/n/N]  (Y/N: a note)  (d: full view) · [e] edit the command · [n] deny — the safe answer             │
+│ [y] run it once · [Y] and say what next · [n] deny · [N] and say why not · [d] full view · [e] edit the command            │
 │ [a] always — not offered: a safety-flagged command is never pre-approved                                                   │
-│ [esc] back to your draft — the decision stays waiting, nothing is denied                                                   │
+│ [esc] don't — the safe answer; the decision waits                                                                          │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
@@ -45,14 +46,15 @@
 ␛[38;5;241m────␛[m ␛[1;94mDECISION␛[m ␛[38;5;241m────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 ␛[38;5;214m╭─ Approve command ␛[m␛[38;5;241m───────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;214m ⚠ medium ─╮␛[m
 ␛[38;5;214m│␛[m ␛[1;94mAssistant wants to run: npm test␛[m                                                                                           ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[91mmedium␛[m␛[38;5;241m · what it writes could not be resolved␛[m                                                                              ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;241m · what it writes could not be resolved␛[m                                                                            ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                                                                                            ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;241mtouches   ␛[m␛[91munknown␛[m␛[38;5;245m — shhh cannot tell what npm writes␛[m                                                                       ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;241mundo      ␛[m␛[91munknown␛[m␛[38;5;245m — shhh could not resolve what this writes␛[m                                                                ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;241mnetwork   ␛[m␛[38;5;214mopen␛[m␛[38;5;245m — nothing contains this command, so nothing limits what it reaches␛[m                                          ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mtouches   ␛[m␛[91munknown␛[m␛[38;5;245m — shhh cannot tell what npm writes␛[m                                                                       ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mundo      ␛[m␛[91munknown␛[m␛[38;5;245m — shhh could not resolve what this writes␛[m                                                                ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;243mnetwork   ␛[m␛[38;5;214mopen␛[m␛[38;5;245m — nothing contains this command, so nothing limits what it reaches␛[m                                          ␛[38;5;214m│␛[m
 ␛[38;5;214m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;214m│␛[m ␛[38;5;241mRun this command? [y/Y/n/N/a]  (Y/N: a note)  (a: allow "npm test" without asking)  (d: full view) · [e] edit the command␛[m  ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;241m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m                                                   ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[Y]␛[m ␛[38;5;252mand say what next␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[94m[N]␛[m ␛[38;5;252mand say why not␛[m␛[38;5;241m · ␛[m␛[94m[a]␛[m ␛[38;5;252mallow "npm test" without asking␛[m             ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[94m[d]␛[m ␛[38;5;252mfull view␛[m␛[38;5;241m · ␛[m␛[94m[e]␛[m ␛[38;5;252medit the command␛[m                                                                                       ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[92m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m                                                   ␛[38;5;214m│␛[m
 ␛[38;5;214m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the line the reader wrote, read again
@@ -60,13 +62,13 @@
 ␛[91m╭─ Approve command ␛[m␛[38;5;241m─────────────────────────────────────────────────────────────────────────────────────␛[m␛[91m ✎ amended ─ ⚠ HIGH ─╮␛[m
 ␛[91m│␛[m ␛[1;94mAssistant wants to run: rm -rf ./build␛[m                                                                                     ␛[91m│␛[m
 ␛[91m│␛[m ␛[38;5;241mwas: echo hi␛[m                                                                                                               ␛[91m│␛[m
-␛[91m│␛[m ␛[91mHIGH␛[m␛[38;5;241m · recursive forced deletion — may destroy files irrecoverably␛[m                                                         ␛[91m│␛[m
+␛[91m│␛[m ␛[91m⚠ HIGH␛[m␛[38;5;241m · recursive forced deletion — may destroy files irrecoverably␛[m                                                       ␛[91m│␛[m
 ␛[91m│␛[m                                                                                                                            ␛[91m│␛[m
-␛[91m│␛[m ␛[38;5;241mtouches   ␛[m␛[38;5;252m./build␛[m␛[38;5;245m — does not exist yet — the command creates it; removed with everything under it␛[m                          ␛[91m│␛[m
-␛[91m│␛[m ␛[38;5;241mundo      ␛[m␛[91mnone␛[m␛[38;5;245m — this is not a git work tree and shhh does not record commands␛[m                                             ␛[91m│␛[m
-␛[91m│␛[m ␛[38;5;241mnetwork   ␛[m␛[38;5;214mopen␛[m␛[38;5;245m — nothing contains this command, so nothing limits what it reaches␛[m                                          ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;243mtouches   ␛[m␛[38;5;252m./build␛[m␛[38;5;245m — does not exist yet — the command creates it; removed with everything under it␛[m                          ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;243mundo      ␛[m␛[91mnone␛[m␛[38;5;245m — this is not a git work tree and shhh does not record commands␛[m                                             ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;243mnetwork   ␛[m␛[38;5;214mopen␛[m␛[38;5;245m — nothing contains this command, so nothing limits what it reaches␛[m                                          ␛[91m│␛[m
 ␛[91m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[91m│␛[m ␛[38;5;241mRun this command? [y/Y/n/N]  (Y/N: a note)  (d: full view) · [e] edit the command · [n] deny — the safe answer␛[m             ␛[91m│␛[m
+␛[91m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[Y]␛[m ␛[38;5;252mand say what next␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m␛[38;5;241m · ␛[m␛[94m[N]␛[m ␛[38;5;252mand say why not␛[m␛[38;5;241m · ␛[m␛[94m[d]␛[m ␛[38;5;252mfull view␛[m␛[38;5;241m · ␛[m␛[94m[e]␛[m ␛[38;5;252medit the command␛[m            ␛[91m│␛[m
 ␛[91m│␛[m ␛[38;5;241m[a] always — not offered: a safety-flagged command is never pre-approved␛[m                                                   ␛[91m│␛[m
-␛[91m│␛[m ␛[38;5;241m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m                                                   ␛[91m│␛[m
+␛[91m│␛[m ␛[92m[esc] don't — the safe answer; the decision waits␛[m                                                                          ␛[91m│␛[m
 ␛[91m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

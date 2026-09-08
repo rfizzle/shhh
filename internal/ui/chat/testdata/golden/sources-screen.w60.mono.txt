@@ -67,10 +67,10 @@ https://docs.rs/tokio/latest/tokio/         orchestrator
 ␛[38;5;244m────────────────────────────────────────────────────────␛[m
 
 ␛[1;38;5;254msearches␛[m
-  ⇢ tokio runtime               ␛[38;5;254m3 results␛[m ␛[38;5;244m· orchestrator␛[m
+  ␛[38;5;254m⇢ tokio runtime␛[m               ␛[38;5;254m3 results␛[m ␛[38;5;244m· orchestrator␛[m
 ␛[1;38;5;254mdocs.rs␛[m
-  ⇢ /tokio/latest/tokio/        ␛[38;5;254m200␛[m ␛[38;5;244m· orchestrat…␛[m  ␛[38;5;254m60 KB␛[m
-  ⇢ /tokio/latest/tokio/runtime/  ␛[38;5;254m200 (cached)␛[m     ␛[38;5;254m12 KB␛[m
+  ␛[38;5;254m⇢ /tokio/latest/tokio/␛[m        ␛[38;5;254m200␛[m ␛[38;5;244m· orchestrat…␛[m  ␛[38;5;254m60 KB␛[m
+  ␛[38;5;254m⇢ /tokio/latest/tokio/runtime/␛[m  ␛[38;5;254m200 (cached)␛[m     ␛[38;5;254m12 KB␛[m
 ␛[1;38;5;254mexample.com␛[m
 ␛[1;48;5;237m❯ ✗ /gone                       404 · web-researcher␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────␛[m
@@ -88,12 +88,12 @@ https://docs.rs/tokio/latest/tokio/         orchestrator
 ␛[38;5;244m────────────────────────────────────────────────────────␛[m
 
 ␛[1;38;5;254msearches␛[m
-  ⇢ tokio runtime               ␛[38;5;254m3 results␛[m ␛[38;5;244m· orchestrator␛[m
+  ␛[38;5;254m⇢ tokio runtime␛[m               ␛[38;5;254m3 results␛[m ␛[38;5;244m· orchestrator␛[m
 ␛[1;38;5;254mdocs.rs␛[m
 ␛[1;48;5;237m❯ ⇢ /tokio/latest/tokio/        200 · orchestrat…  60 KB␛[m
-  ⇢ /tokio/latest/tokio/runtime/  ␛[38;5;254m200 (cached)␛[m     ␛[38;5;254m12 KB␛[m
+  ␛[38;5;254m⇢ /tokio/latest/tokio/runtime/␛[m  ␛[38;5;254m200 (cached)␛[m     ␛[38;5;254m12 KB␛[m
 ␛[1;38;5;254mexample.com␛[m
-  ✗ /gone                       ␛[38;5;254m404␛[m ␛[38;5;244m· web-researcher␛[m
+  ␛[38;5;254m✗ /gone␛[m                       ␛[38;5;254m404␛[m ␛[38;5;244m· web-researcher␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────␛[m
 ␛[1;38;5;254mhttps://docs.rs/tokio/latest/tokio/␛[m         ␛[38;5;244morchestrator␛[m
   ␛[38;5;244mtokio — Rust␛[m

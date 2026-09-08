@@ -612,7 +612,4 @@ func (m Model) applyNotYetLive(card *components.ApprovalCard) {
 	// what the handover would still buy.
 	card.HeldOnArrival = m.heldOnArrival
 	card.Grace = m.graceShowing()
-	if m.escLeavesWaiting() {
-		card.Return = "[esc] back to your draft — the decision stays waiting, nothing is denied"
-	}
 }

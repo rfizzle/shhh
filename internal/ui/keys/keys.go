@@ -745,11 +745,9 @@ type DecisionKeys struct {
 	// thing the reflex was reaching for is still what it lands on.
 	//
 	// On the cards that offer no note — a /run the reader typed, a child's
-	// routed ask — the shifted letters now answer nothing at all. That is
-	// the marker being made honest rather than a key being taken away: the
-	// capital N those cards print is the default marker and never was a key
-	// (ApprovalCard.KeyRun), and a pointer landing on it has always resolved
-	// to `n`. What it stops being is a keystroke that worked by coincidence.
+	// routed ask — the shifted letters answer nothing at all, and neither is
+	// drawn there: a card offers exactly the keys it answers, so there is
+	// nothing on those cards for a reflex to land on and be surprised by.
 	AllowNoted Binding
 	DenyNoted  Binding
 

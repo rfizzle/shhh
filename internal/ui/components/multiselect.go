@@ -63,7 +63,17 @@ type MultiSelect struct {
 	// choices has nothing to be rated about, and one that sets none renders
 	// exactly as it did before this field existed.
 	Severities []Severity
-	notice     string
+	// Tone is the frame's colour and Lead the sentence the boxes answer,
+	// pinned above them — both the single-select's, for the reason the note
+	// field is the same field on both cards: a question asked with boxes is
+	// the same question asked with rows.
+	Tone CardTone
+	Lead []string
+	// Chips ride the right end of the title border, the single-select's way:
+	// a card whose title is what it is asking needs somewhere to say which of
+	// several questions this one is.
+	Chips  []string
+	notice string
 	// list is the shared pointer and window (list.go). A multi-select owns
 	// its own Focus, which is why it did not come along when the movement and
 	// the window went to the selector.
@@ -202,9 +212,11 @@ func (s *MultiSelect) View(width int) string {
 	// terminal takes another row, and a joined one could only be cut in the
 	// middle of a clause (docs/interface/principles.md#fold-never-hide).
 	tail = append(tail, hintRows(segs, width)...)
-	rows := append(s.visibleRows(width, bodyBudget(s.MaxLines, len(tail))), tail...)
+	head := leadRows(s.Lead, width)
+	rows := append(head, s.visibleRows(width, bodyBudget(s.MaxLines, len(tail)+len(head)))...)
+	rows = append(rows, tail...)
 	rows = boundRows(rows, s.MaxLines)
-	return Card{Title: s.Title}.Render(rows, width)
+	return Card{Title: s.Title, Chips: s.Chips, Tone: s.Tone}.Render(rows, width)
 }
 
 // visibleRows renders the checkbox list windowed to a body budget, with the
@@ -284,7 +296,10 @@ func (s *MultiSelect) rightRun(i int, opt SelectOption) string {
 		b.WriteString(tone.Render(meta))
 	}
 	if i < len(s.Severities) {
-		if chip := severityChip(s.Severities[i]); chip != "" {
+		// Every row here is a decision the reader is about to answer, so
+		// every row is painted — the strip's dimming is for the rows behind
+		// the one card, and on this list there is no row behind anything.
+		if chip := severityChip(s.Severities[i], true); chip != "" {
 			if b.Len() > 0 {
 				b.WriteString("  ")
 			}

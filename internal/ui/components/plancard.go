@@ -91,7 +91,12 @@ func (c *PlanCard) View(width int) string {
 	// render whole rather than through a window.
 	tail := c.tailRows(width, inner, sel.optionRows(width, true, 0, len(c.Options)))
 	rows := c.bodyRows(inner, c.bodyBudget(len(tail)))
-	return Card{Title: c.Title, Chips: c.chips()}.Render(append(rows, tail...), width)
+	// The frame is Info: the plan card has no severity to colour itself with
+	// — a plan is a proposal and not an act — and a card waiting for an
+	// answer drawn in the chrome grey a viewer wears says nothing about which
+	// of the two it is (CardTone).
+	return Card{Title: c.Title, Chips: c.chips(), Tone: CardDecision}.
+		Render(append(rows, tail...), width)
 }
 
 // chips is the step count on the title rail, which is the one thing about the
@@ -118,10 +123,9 @@ func (c *PlanCard) tailRows(width, inner int, options []string) []string {
 		// A plan that arrived while a sentence was half-typed offers its keys
 		// the same way an approval card does: dimmed, said to be
 		// waiting, with the one key that hands the keyboard over under them.
-		// The run is fitted before it is dimmed, because the words beside it
-		// are what say the keys are waiting and a clipped row loses them.
-		rows = append(rows, notYetLiveRows(
-			FitSegments(c.HintKeys, Card{}.Inner(width)), c.Handover, width)...)
+		// The run is handed over as segments, because a run too wide for the
+		// terminal takes another row rather than giving up an offer.
+		rows = append(rows, notYetLiveRows(c.HintKeys, c.Handover, width)...)
 	case len(c.HintKeys) > 0:
 		rows = append(rows, hintRows(c.HintKeys, width)...)
 	}

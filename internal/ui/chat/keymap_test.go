@@ -526,22 +526,14 @@ func decisionCards(t *testing.T) []decisionCard {
 }
 
 // cardKeys is everything a card is advertising, in one list: the decision run
-// it draws, the qualifier [d] rides beside it, the offers after it, and —
-// where the body does not fit — the chord the counted tail names. It is read
-// off the card rather than declared beside it, so a key added to a card joins
-// this walk by construction.
-//
-// [d] is added by hand because it is the one answer the run leaves out: the
-// card draws it as a qualifier on the key line rather than inside the
-// brackets, so KeyRun, which is what a click resolves against, has never
-// carried it.
+// it draws, the offers the host answers beside it, and — where the body does
+// not fit — the chord the counted tail names. It is read off the card rather
+// than declared beside it, so a key added to a card joins this walk by
+// construction.
 func cardKeys(m Model, card *components.ApprovalCard) []string {
 	var out []string
 	for _, k := range card.KeyRun() {
 		out = append(out, k.Key)
-	}
-	if card.FullDiff {
-		out = append(out, keys.Shown(keys.Decision.Diff))
 	}
 	for _, o := range card.ExtraHints {
 		out = append(out, strings.Trim(o.Key, "[]"))

@@ -11,7 +11,7 @@
 # body text rather than a block that reads as the reading cursor.
 snap 01-start "Some things worth doing first"
 keys "check the lint" Enter
-snap 02-card "Run this command?"
+snap 02-card "[y] run it once"
 keys y
 snap 03-repainted "no-unused-vars"
 keys C-c

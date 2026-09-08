@@ -163,9 +163,9 @@
 
 ␛[38;5;241m╭─ Keep test-writer? ␛[m␛[38;5;241m──────────────────────────────────────────────────────────␛[m␛[38;5;241m╮␛[m
 ␛[38;5;241m│␛[m ␛[1;48;5;62m❯ 1. Save to this project  /repo/.shhh/agents␛[m                                ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m   2. Save globally         ␛[38;5;241m/home/x/.config/shhh/agents␛[m                       ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m   3. Refine                ␛[38;5;241msay what to change in the note␛[m                    ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m   4. Discard                                                                 ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mSave globally␛[m         ␛[38;5;241m/home/x/.config/shhh/agents␛[m                       ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mRefine␛[m                ␛[38;5;241msay what to change in the note␛[m                    ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   ␛[38;5;241m4. ␛[m␛[38;5;252mDiscard␛[m                                                                 ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m┄ note (optional)␛[m                                                            ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;245m(none)␛[m                                                                     ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m[tab] note/options · [enter] confirm · [esc] cancel␛[m                          ␛[38;5;241m│␛[m

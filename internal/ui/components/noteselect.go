@@ -152,10 +152,12 @@ func (s *NoteSelect) View(width int) string {
 	// The query line is pinned above the list exactly as it is on a plain
 	// card, so the budget order is the artboard's — query line, key hints,
 	// note field, and then the options take what is left.
-	head := s.Select.queryRows(width)
+	head := append(leadRows(s.Select.Lead, width), s.Select.queryRows(width)...)
 	rows, shown := s.Select.visibleRows(width, s.Select.bodyBudget(len(head)+len(tail)), true)
 	rows = append(head, rows...)
 	rows = append(rows, tail...)
 	rows = boundRows(rows, s.Select.MaxLines)
-	return Card{Title: s.Select.Title, Chips: s.Select.chips(shown)}.Render(rows, width)
+	return Card{
+		Title: s.Select.Title, Chips: s.Select.chips(shown), Tone: s.Select.Tone,
+	}.Render(rows, width)
 }

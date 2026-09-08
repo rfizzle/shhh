@@ -20,7 +20,7 @@
 ── ansi ────────────────────────────────────────────────────
 ␛[38;5;241m╭─ Alternatives ␛[m␛[38;5;241m───────────────────────────────────────────────────────────────␛[m␛[38;5;241m╮␛[m
 ␛[38;5;241m│␛[m ␛[1;48;5;62m❯ ◆ lsof -nP -iTCP -sTCP:LISTEN | awk '$9 ~ /:[89][0-9]{3}$/'  the command …␛[m ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m     ss -lntp 'sport > :8000'              ␛[38;5;241mlinux only, and faster on a busy …␛[m ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m     netstat -anv -p tcp                   ␛[38;5;241meverywhere, including a machine w…␛[m ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   ␛[38;5;252m  ss -lntp 'sport > :8000'␛[m              ␛[38;5;241mlinux only, and faster on a busy …␛[m ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   ␛[38;5;252m  netstat -anv -p tcp␛[m                   ␛[38;5;241meverywhere, including a machine w…␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m[↑↓] move · [enter] choose · [esc] back␛[m                                      ␛[38;5;241m│␛[m
 ␛[38;5;241m╰──────────────────────────────────────────────────────────────────────────────╯␛[m

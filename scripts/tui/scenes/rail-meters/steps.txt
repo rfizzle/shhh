@@ -15,7 +15,7 @@ snap 01-start "Some things worth doing first"
 keys "how is the round limit counted" Enter
 # The command is the one thing in the turn that asks, and a card holds the
 # pane while it does — the rail is deliberately not on screen here.
-snap 02-card "Run this command?"
+snap 02-card "[y] run it once"
 sleep 1
 keys y
 # Approved, the command runs for several seconds and the rail comes back with

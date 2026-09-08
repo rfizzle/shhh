@@ -1080,8 +1080,7 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 	// rest of its category along with it.
 	card.QueuePos = m.queuePosition()
 	if card.Batch = len(m.pendingBatch) > 0; card.Batch {
-		card.BatchHint = fmt.Sprintf("%s: answer %d like this as a list",
-			keys.Shown(keys.Decision.Batch), len(m.pendingBatch)+1)
+		card.BatchHint = fmt.Sprintf("answer %d like this as a list", len(m.pendingBatch)+1)
 	}
 	// The blast-radius block, resolved when the decision was armed.
 	// It also carries the safety risks, so the card states severity and
@@ -1091,7 +1090,7 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 	if req == nil || req.kind == approvalExec {
 		card.Variant = components.ApprovalCommand
 		card.Title = "Approve command"
-		card.Question = "Run this command?"
+		card.Answer = "run it once"
 		// [d] opens the command card's own full view — the whole command,
 		// the warnings and the blast radius, unclipped — the way it opens an
 		// edit's diff (docs/interface/surfaces.md#the-approval-card).
@@ -1123,7 +1122,7 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 		if req != nil && len(card.Warnings) == 0 {
 			if prefix := agent.GrantPrefix(req.command); prefix != "" {
 				card.AllowAlways = true
-				card.AlwaysHint = "a: allow " + strconv.Quote(prefix) + " without asking"
+				card.AlwaysHint = "allow " + strconv.Quote(prefix) + " without asking"
 				// A command that writes outside the working scope is granting
 				// two things at once, and the key says both: [y]
 				// would add the directory for this session, [a] adds it and
@@ -1146,14 +1145,14 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 		card.Hunks = req.hunks
 		card.Syntax = diffSyntax(req.path)
 		card.FullDiff = len(req.hunks) > 0
-		card.Question = "Apply this change?"
+		card.Answer = "apply the change"
 		// No grant of any length on a flagged card, here as on the command
 		// card above: "only for a minute" is still blanket, and a flagged
 		// action is never blanket-approved
 		// (docs/capabilities/approvals-and-safety.md#a-grant-says-when-it-ends).
 		if len(card.Warnings) == 0 {
 			card.AllowAlways = true
-			card.AlwaysHint = "a: allow edits in " + displayDir(filepath.Dir(req.path)) + " without asking"
+			card.AlwaysHint = "allow edits in " + displayDir(filepath.Dir(req.path)) + " without asking"
 			if m.pendingScope.any() {
 				card.AlwaysHint += " and add it to the working scope"
 			}
@@ -1161,7 +1160,7 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 	default:
 		card.Variant = components.ApprovalGeneric
 		card.Title = "Approve tool"
-		card.Question = "Allow this?"
+		card.Answer = "allow it"
 		if req.summary != req.title {
 			card.Summary = firstLine(req.summary)
 		}
@@ -1171,7 +1170,7 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 		// same site is then not a card at all.
 		if req.host != "" && len(card.Warnings) == 0 {
 			card.AllowAlways = true
-			card.AlwaysHint = "a: allow " + req.host + " without asking"
+			card.AlwaysHint = "allow " + req.host + " without asking"
 		}
 	}
 	return card
@@ -1179,13 +1178,17 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 
 // applyTo puts the resolved block onto the card: the severity, the reading
 // that makes it that and the border which reinforces both, the risks, the
-// fields, the containment chip, and the two lines that explain what the keys
-// do not.
+// fields — the containment row among them — the footnote naming the key that
+// is not offered, and, on a card whose answer is worth naming, the words esc
+// is offered under.
 func (b blastRadius) applyTo(card *components.ApprovalCard) {
 	card.Severity, card.SeverityReason = b.severity, b.reason
 	card.Fields = b.fields
-	card.Chip, card.Uncontained = b.chip, b.uncontained
-	card.SafeDefault, card.Footnote = b.safe, b.footnote
+	card.Uncontained = b.uncontained
+	card.Footnote = b.footnote
+	if b.safe != "" {
+		card.Return = b.safe
+	}
 	card.Reversibility = b.reversibility
 	if len(b.risks) > 0 {
 		card.Warnings = []string{strings.Join(b.risks, "; ")}

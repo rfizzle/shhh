@@ -1,6 +1,9 @@
 package components
 
 import (
+	"strings"
+	"unicode"
+
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -44,11 +47,44 @@ func confirmed(c **Confirm, msg tea.KeyPressMsg) (answered, yes bool) {
 }
 
 func (c *Confirm) View(width int) string {
-	return Clip(c.Prompt+"  "+sty.Headline.Render(confirmKeys()), width)
+	return Clip(sty.Body.Render(c.Prompt)+"  "+confirmKeys(), width)
 }
 
 // confirmKeys is the answer set every confirm in the product draws: the two
 // keys, with the default one capitalised.
+//
+// Only the capital is emphasised. The whole pair used to be drawn bold in
+// Info, which said "these are keys" — something the brackets already say —
+// and left the one fact the pair exists to carry, that the default is the
+// answer which changes nothing, resting on the shape of a letter alone. Bold
+// and bright on that letter and the chrome grey on everything around it puts
+// the emphasis where the meaning is, and it survives a terminal with no
+// colour, where the capital is still capital
+// (docs/interface/surfaces.md#the-inline-confirm).
 func confirmKeys() string {
-	return "[" + keys.Shown(keys.Confirm.Yes) + "/" + keys.Shown(keys.Confirm.No) + "]"
+	return confirmPair(keys.Shown(keys.Confirm.Yes), keys.Shown(keys.Confirm.No))
+}
+
+// confirmPair paints one bracketed answer set: the capital — whichever of the
+// spellings it is — bold and bright, and every other cell chrome. It takes
+// the spellings rather than the bindings because the undo confirm swaps one
+// of them for a key spelled differently on purpose.
+func confirmPair(shown ...string) string {
+	var b strings.Builder
+	b.WriteString(sty.Dim.Render("["))
+	for i, s := range shown {
+		if i > 0 {
+			b.WriteString(sty.Dim.Render("/"))
+		}
+		// The first rune decides, and it has to be a letter that has a
+		// lower case: `esc` and `+` are neither upper nor lower, and a
+		// comparison against ToUpper would call them the default.
+		if r := []rune(s); len(r) > 0 && unicode.IsUpper(r[0]) {
+			b.WriteString(sty.Bright.Bold(true).Render(s))
+			continue
+		}
+		b.WriteString(sty.Dim.Render(s))
+	}
+	b.WriteString(sty.Dim.Render("]"))
+	return b.String()
 }

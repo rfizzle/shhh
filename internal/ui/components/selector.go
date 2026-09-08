@@ -107,6 +107,15 @@ type Select struct {
 	// Chips ride the right end of the title border. A card that sets
 	// none gets the window's own count instead — see chips.
 	Chips []string
+	// Tone is the frame's colour: chrome on a card that is showing a list,
+	// Info on one that is asking a question with it (CardTone).
+	Tone CardTone
+	// Lead is the sentence the options answer, in rows the caller has already
+	// wrapped, pinned above them. It is a body row rather than the card's
+	// title because a title is clipped into the border it is drawn on, and
+	// the one thing on a question card that must never be half-read is the
+	// question (docs/interface/surfaces.md#the-question-card).
+	Lead []string
 	// HintKeys replaces the default key row for a surface whose keys are not
 	// the family's, given as its segments and in reading order. Segments
 	// rather than one string because nothing on a key row is ever truncated
@@ -392,7 +401,7 @@ func (s *Select) View(width int) string {
 	// The query line, the warning and the key hints are pinned: the list
 	// scrolls under them, so what the card spends on them comes off the
 	// list's budget before the window is drawn.
-	head := s.queryRows(width)
+	head := append(leadRows(s.Lead, width), s.queryRows(width)...)
 	tail := append(s.warningRows(width), hintRows(s.hintSegments(width), width)...)
 	budget := s.bodyBudget(len(head) + len(tail))
 	// The reading under the options is what the options are about, so the
@@ -413,7 +422,27 @@ func (s *Select) View(width int) string {
 	rows = append(rows, s.proseRows(width, prose)...)
 	rows = append(rows, tail...)
 	rows = boundRows(rows, s.MaxLines)
-	return Card{Title: s.Title, Chips: s.chips(shown)}.Render(rows, width)
+	return Card{Title: s.Title, Chips: s.chips(shown), Tone: s.Tone}.Render(rows, width)
+}
+
+// leadRows are the sentence a card's options answer and the blank row that
+// keeps it off them. It is pinned, so what it spends comes off the list's
+// budget before the window is drawn — a question that pushed its own answers
+// off the card would be worse than no question at all.
+//
+// It is a function rather than a method because the checkbox list draws the
+// same rows above the same kind of question, and a second copy of five lines
+// is where two cards come to disagree about a blank row.
+func leadRows(lead []string, width int) []string {
+	if len(lead) == 0 {
+		return nil
+	}
+	inner := Card{}.Inner(width)
+	rows := make([]string, 0, len(lead)+1)
+	for _, l := range lead {
+		rows = append(rows, sty.Body.Render(Clip(l, inner)))
+	}
+	return append(rows, "")
 }
 
 // minProseRows is the least the reading under the options is worth keeping:
@@ -826,9 +855,11 @@ func (s *Select) optionRow(opt SelectOption, n int, focused bool, g optionGrid, 
 	if focused {
 		head = "❯ "
 	}
+	number := ""
 	if g.num > 0 {
-		head += padLeft(strconv.Itoa(n)+".", g.num) + " "
+		number = padLeft(strconv.Itoa(n)+".", g.num) + " "
 	}
+	head += number
 	label := opt.labelText()
 	left := head + padRight(label, g.label)
 
@@ -865,12 +896,19 @@ func (s *Select) optionRow(opt SelectOption, n int, focused bool, g optionGrid, 
 		return sty.FocusRow.Render(Clip(row, inner))
 	}
 
-	body := emphasizeMatch(label, s.Query)
+	// An unlit row is Body and its number is Dim. It used to be neither:
+	// both went out unpainted, which is the terminal's own foreground —
+	// a colour the palette never issued, that differs between two terminals
+	// side by side, and that reads brighter than the lit row's own text on
+	// half of them (docs/interface/principles.md#one-grid). Numbering is
+	// chrome the eye counts down and the label is the row, so they take the
+	// two tones that say exactly that.
+	body, num := emphasizeMatch(label, s.Query, sty.Body), sty.Dim
 	if opt.Dim {
 		// A row that cannot be acted on is not a row the query is hunting
 		// for, and the dimming is one run: emphasis inside it would break the
 		// run and say the wrong thing twice.
-		body = sty.Dimmer.Render(label)
+		body, num = sty.Dimmer.Render(label), sty.Dimmer
 		desc, meta = sty.Dimmer.Render(desc), sty.Dimmer.Render(meta)
 		value = sty.Dimmer.Render(value)
 	} else {
@@ -882,7 +920,14 @@ func (s *Select) optionRow(opt SelectOption, n int, focused bool, g optionGrid, 
 			meta = opt.MetaTone.style().Render(meta)
 		}
 	}
-	row := head + padRight(body, g.label)
+	// An unnumbered list buys no escapes for the column it does not have: a
+	// style renders a pair of them around an empty string, and a row is
+	// measured by what it paints rather than by how often it changed pen.
+	row := "  "
+	if number != "" {
+		row += num.Render(number)
+	}
+	row += padRight(body, g.label)
 	if lipgloss.Width(value) > 0 {
 		row += "  " + value
 	}
@@ -903,21 +948,34 @@ func (s *Select) optionRow(opt SelectOption, n int, focused bool, g optionGrid, 
 // caller already accepted lands inside a row. A query that is not a literal
 // run of the label — a subsequence match, a match on a field the row does not
 // show — emphasizes nothing rather than guessing.
-func emphasizeMatch(label, query string) string {
+// It paints through the row's own base style rather than around it: a bold
+// run rendered inside a coloured one ends in a reset, and everything after
+// the match would go out in the terminal's foreground instead of the label's.
+func emphasizeMatch(label, query string, base lipgloss.Style) string {
 	if query == "" {
-		return label
+		return base.Render(label)
 	}
 	lower, lq := strings.ToLower(label), strings.ToLower(query)
 	if len(lower) != len(label) || len(lq) != len(query) {
 		// Lowering moved the bytes, so an offset into it is not an offset
 		// into the label. Rare, and not worth emphasizing the wrong run.
-		return label
+		return base.Render(label)
 	}
 	i := strings.Index(lower, lq)
 	if i < 0 {
-		return label
+		return base.Render(label)
 	}
-	return label[:i] + sty.Match.Render(label[i:i+len(query)]) + label[i+len(query):]
+	// An empty head or tail is left out rather than rendered: a style around
+	// nothing is still a pair of escapes, and a row is measured by what it
+	// paints, not by how many times it changed pen.
+	paint := func(s string) string {
+		if s == "" {
+			return ""
+		}
+		return base.Render(s)
+	}
+	return paint(label[:i]) + base.Bold(true).Render(label[i:i+len(query)]) +
+		paint(label[i+len(query):])
 }
 
 // bodyBudget is how many rows the option list may spend on a card of this

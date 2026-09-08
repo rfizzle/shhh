@@ -13,6 +13,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -430,6 +431,17 @@ func TestAnswerBlockedChildFromTheList(t *testing.T) {
 	}
 	if strings.Contains(view, "[enter] attach") {
 		t.Fatalf("the list must step aside while the card is up:\n%s", view)
+	}
+	// Esc here declines: there is no draft under the list to hand the
+	// keyboard back to, so the card says that once and says nothing about a
+	// decision that stays waiting
+	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
+	plain := ansi.Strip(view)
+	if strings.Count(plain, "[esc]") != 1 || !strings.Contains(plain, "[esc] deny, back to the agents") {
+		t.Fatalf("the card over the list states its own esc, once:\n%s", plain)
+	}
+	if strings.Contains(plain, "the decision stays waiting") {
+		t.Fatalf("esc over the list is a denial, not a way back to a draft:\n%s", plain)
 	}
 
 	updated, _ = m.Update(key('y'))

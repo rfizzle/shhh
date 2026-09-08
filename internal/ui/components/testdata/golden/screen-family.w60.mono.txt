@@ -171,8 +171,8 @@ docs.rs
 
   ␛[1;38;5;254mSESSION␛[m
   ␛[1;48;5;237m❯ permission mode    ⏵⏵ auto — edits apply; allowli…  user␛[m
-    round limit        ␛[38;5;254m25␛[m                            ␛[38;5;254mdefault␛[m
-    context budget     ␛[38;5;254m8000 tokens␛[m                   ␛[38;5;254mdefault␛[m
+    ␛[38;5;254mround limit␛[m        ␛[38;5;254m25␛[m                            ␛[38;5;254mdefault␛[m
+    ␛[38;5;254mcontext budget␛[m     ␛[38;5;254m8000 tokens␛[m                   ␛[38;5;254mdefault␛[m
   ␛[38;5;244m↓ 11 more␛[m
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m
@@ -184,9 +184,9 @@ docs.rs
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
 ␛[1;48;5;237m❯ $ delete every log file older than a week  exit 0     1.4s␛[m
-  $ show the ten biggest files in this dire…  ␛[38;5;254mcopied␛[m    ␛[38;5;254m0.9s␛[m
-  ✗ rebase onto main and force push  ␛[38;5;254mexit 128␛[m ␛[38;5;244m· tue␛[m     ␛[38;5;254m2.1s␛[m
-  $ find every reference to ErrRoundLimit u…  ␛[38;5;254msaved␛[m     ␛[38;5;254m1.1s␛[m
+  ␛[38;5;254m$ show the ten biggest files in this dire…␛[m  ␛[38;5;254mcopied␛[m    ␛[38;5;254m0.9s␛[m
+  ␛[38;5;254m✗ rebase onto main and force push␛[m  ␛[38;5;254mexit 128␛[m ␛[38;5;244m· tue␛[m     ␛[38;5;254m2.1s␛[m
+  ␛[38;5;254m$ find every reference to ErrRoundLimit u…␛[m  ␛[38;5;254msaved␛[m     ␛[38;5;254m1.1s␛[m
 ␛[38;5;244m↓ 2 more␛[m
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m re-run it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy it␛[m
@@ -239,8 +239,8 @@ docs.rs
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
 ␛[1;48;5;237m❯ ports      what is listening on this machine        4m ago␛[m
-  big-files  ␛[38;5;244mthe ten biggest files here␛[m            ␛[38;5;254myesterday␛[m
-  prune      ␛[38;5;244mdrop every merged branch␛[m                    ␛[38;5;254mtue␛[m
+  ␛[38;5;254mbig-files␛[m  ␛[38;5;244mthe ten biggest files here␛[m            ␛[38;5;254myesterday␛[m
+  ␛[38;5;254mprune␛[m      ␛[38;5;244mdrop every merged branch␛[m                    ␛[38;5;254mtue␛[m
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m run it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m rename it␛[m
 ␛[38;5;254m[x]␛[m␛[38;5;244m delete it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
@@ -249,9 +249,9 @@ docs.rs
 ␛[1;38;5;254mshhh chats␛[m␛[38;5;244m · 3 conversations␛[m             ␛[38;5;244m[?] keys · [q] quit␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
-  morning-fix  ␛[38;5;244mthe retry backoff was doubling twice · 12 tu…␛[m
+  ␛[38;5;254mmorning-fix␛[m  ␛[38;5;244mthe retry backoff was doubling twice · 12 tu…␛[m
 ␛[1;48;5;237m❯ held         reading the sandbox…  open in another session␛[m
-  tuesday      ␛[38;5;244mnaming the report pages · 31 turns · Sep 3 1…␛[m
+  ␛[38;5;254mtuesday␛[m      ␛[38;5;244mnaming the report pages · 31 turns · Sep 3 1…␛[m
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m rename it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m delete it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m
 ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
@@ -261,10 +261,10 @@ docs.rs
 ␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
 ␛[1;38;5;254msearches␛[m
-  ⇢ tokio runtime                 ␛[38;5;254m3 results␛[m ␛[38;5;244m· orchestrator␛[m
+  ␛[38;5;254m⇢ tokio runtime␛[m                 ␛[38;5;254m3 results␛[m ␛[38;5;244m· orchestrator␛[m
 ␛[1;38;5;254mdocs.rs␛[m
 ␛[1;48;5;237m❯ ⇢ /tokio/latest/tokio/          200 · orchestrator   60 KB␛[m
-  ⇢ /tokio/latest/tokio/runtime/  ␛[38;5;254m200 (cached)␛[m         ␛[38;5;254m12 KB␛[m
+  ␛[38;5;254m⇢ /tokio/latest/tokio/runtime/␛[m  ␛[38;5;254m200 (cached)␛[m         ␛[38;5;254m12 KB␛[m
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read the page that was kept␛[m
 ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m

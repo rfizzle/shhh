@@ -255,14 +255,13 @@ func TestClick_ApprovalKeyAnswers(t *testing.T) {
 	}
 }
 
-func TestClick_ApprovalDenyIsTheCapitalN(t *testing.T) {
+func TestClick_ApprovalDenyLandsOnItsWords(t *testing.T) {
 	m := clickCardModel(t, "", func(name string, args json.RawMessage) (string, error) {
 		t.Fatalf("nothing may run on a denial, but %s did", name)
 		return "", nil
 	})
-	// The card draws the safe answer as `N` — the approval card's default
-	// marker, not a shifted key — so the cell has to resolve to the keystroke
-	// `n`.
+	// A key owns its bracket and the imperative after it, so a cell anywhere
+	// in `[n] deny` resolves to the keystroke the run drew.
 	x, y := cardKeyCell(t, m, "n")
 	m = clickAnswer(t, m, x, y)
 	if m.state == stateConfirmRun {

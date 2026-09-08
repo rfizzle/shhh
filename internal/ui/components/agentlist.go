@@ -345,7 +345,11 @@ func (l *AgentList) View(width int) string {
 	rows = append(rows, l.visibleRows(width, bodyBudget(l.MaxLines, len(hints)+len(rows)), scrolling)...)
 	rows = append(rows, hints...)
 	rows = boundRows(rows, l.MaxLines)
-	card := Card{Title: "Agents"}
+	// Info, like every other card that is waiting to be answered rather than
+	// read: the manager attaches, answers, cancels and kills, and none of
+	// that is rated, so there is no severity to take the frame's colour from
+	// (CardTone).
+	card := Card{Title: "Agents", Tone: CardDecision}
 	if tally := l.tally(); tally != "" {
 		card.Chips = []string{tally}
 	}

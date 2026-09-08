@@ -20,21 +20,21 @@
 │ undo      yes — delete them; nothing else is touched                                                                       │
 │ network   closed                                                                                                           │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ Write these files? [y/N] · [n] no — nothing written; not offered again                                                     │
+│ [y] write them · [n] no — nothing written; not offered again                                                               │
 │ [esc] leave — nothing written, and the offer stays                                                                         │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
 · nothing written yet
-␛[38;5;241m╭─ Approve scaffold ␛[m␛[38;5;241m─────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;241m╮␛[m
-␛[38;5;241m│␛[m ␛[1;94mshhh wants to write this project's context file␛[m                                                                            ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;241mit is read into the system prompt of every session opened here␛[m                                                             ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m                                                                                                                            ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;241mcreates   ␛[m␛[38;5;252m.shhh/␛[m                                                                                                           ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;241mwrites    ␛[m␛[38;5;252m.shhh/project.md␛[m                                                                                                 ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;241mundo      ␛[m␛[92myes␛[m␛[38;5;245m — delete them; nothing else is touched␛[m                                                                       ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;241mnetwork   ␛[m␛[92mclosed␛[m                                                                                                           ␛[38;5;241m│␛[m
-␛[38;5;241m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;241m│␛[m ␛[38;5;241mWrite these files? [y/N] · [n] no — nothing written; not offered again␛[m                                                     ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;241m[esc] leave — nothing written, and the offer stays␛[m                                                                         ␛[38;5;241m│␛[m
-␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
+␛[94m╭─ Approve scaffold ␛[m␛[38;5;241m─────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[94m╮␛[m
+␛[94m│␛[m ␛[1;94mshhh wants to write this project's context file␛[m                                                                            ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;241mit is read into the system prompt of every session opened here␛[m                                                             ␛[94m│␛[m
+␛[94m│␛[m                                                                                                                            ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;243mcreates   ␛[m␛[38;5;252m.shhh/␛[m                                                                                                           ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;243mwrites    ␛[m␛[38;5;252m.shhh/project.md␛[m                                                                                                 ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;243mundo      ␛[m␛[92myes␛[m␛[38;5;245m — delete them; nothing else is touched␛[m                                                                       ␛[94m│␛[m
+␛[94m│␛[m ␛[38;5;243mnetwork   ␛[m␛[92mclosed␛[m                                                                                                           ␛[94m│␛[m
+␛[94m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
+␛[94m│␛[m ␛[94m[y]␛[m ␛[38;5;252mwrite them␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mno — nothing written; not offered again␛[m                                                               ␛[94m│␛[m
+␛[94m│␛[m ␛[92m[esc] leave — nothing written, and the offer stays␛[m                                                                         ␛[94m│␛[m
+␛[94m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

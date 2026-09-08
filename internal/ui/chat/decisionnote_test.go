@@ -319,38 +319,24 @@ func TestGrace_TheNotedAnswersAreDiscardedToo(t *testing.T) {
 	}
 }
 
-// The card divides the run it printed among the keys it answers, with nothing
-// left over, so a click on a wider run still lands on the key under it.
+// Every key the card printed resolves to itself, on whichever row the run
+// wrapped it onto: the geometry is read out of the render, so a run too wide
+// for the panel is clickable where it actually landed.
 func TestNotedRun_ClicksLandOnTheKeyUnderThem(t *testing.T) {
 	m := notedCardModel(t)
 	card := m.approvalCard()
-	row := ""
-	for _, line := range strings.Split(card.View(m.contentWidth()), "\n") {
-		if strings.Contains(ansi.Strip(line), "["+strings.Join(shownRun(card), "/")+"]") {
-			row = line
-		}
-	}
-	if row == "" {
-		t.Fatalf("the card should print its run:\n%s", card.View(m.contentWidth()))
-	}
 	seen := map[string]bool{}
-	for col := range ansi.StringWidth(ansi.Strip(row)) {
-		if key, ok := card.KeyAt(row, col); ok {
-			seen[key] = true
+	for _, row := range strings.Split(card.View(m.contentWidth()), "\n") {
+		for col := range ansi.StringWidth(ansi.Strip(row)) {
+			if key, ok := card.KeyAt(row, col); ok {
+				seen[key] = true
+			}
 		}
 	}
 	for _, k := range card.KeyRun() {
 		if !seen[k.Key] {
-			t.Errorf("no cell of the printed run resolves to %q", k.Key)
+			t.Errorf("no cell of the printed run resolves to %q:\n%s",
+				k.Key, ansi.Strip(card.View(m.contentWidth())))
 		}
 	}
-}
-
-func shownRun(card *components.ApprovalCard) []string {
-	run := card.KeyRun()
-	out := make([]string, len(run))
-	for i, k := range run {
-		out[i] = k.Shown
-	}
-	return out
 }

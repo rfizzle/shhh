@@ -186,7 +186,7 @@ func TestApprovalFullDiff_RoundTrips(t *testing.T) {
 			Arguments: fmt.Sprintf(`{"path":%q,"content":"package main\n"}`, path)},
 	}})
 	m = handover(t, updated.(Model))
-	if !strings.Contains(m.View().Content, "d: full diff") {
+	if !strings.Contains(ansi.Strip(m.View().Content), "[d] full diff") {
 		t.Fatal("edit approval should hint the full-diff key")
 	}
 

@@ -217,8 +217,13 @@ func TestSelectFilter_TheMatchedRunIsBoldNotTinted(t *testing.T) {
 		s := filtered("mini")
 		s.Focus = 1 // off the first row, so row 1 is an ordinary row
 		view := s.View(70)
+		// Bold over the row's own tone: an unlit label is Body, and a bold
+		// run rendered inside it would end in a reset and take the rest of
+		// the label out with it (emphasizeMatch). The tone is read while the
+		// profile under test is still in force.
+		bold := sty.Body.Bold(true).Render("mini")
 		SetMono(was)
-		if !strings.Contains(view, "\x1b[1mmini") {
+		if !strings.Contains(view, bold) {
 			t.Fatalf("mono=%v: the matched run should be bold:\n%q", monoOn, view)
 		}
 		if strings.Contains(view, "\x1b[48;5;62m1. gpt") {

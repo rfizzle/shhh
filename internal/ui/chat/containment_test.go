@@ -34,7 +34,10 @@ func containedModel(t *testing.T, bare, contained *[]string, status string) Mode
 			Network:   true,
 			Report:    "Command containment:\n  mechanism: bwrap",
 		})
-	updated, _ := m.Update(tea.WindowSizeMsg{Width: 120, Height: 30})
+	// Tall enough that the card's body is not bounded: what these tests read
+	// is the rows the card states, and a panel short enough to fold two of
+	// them would be testing the fold instead.
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 120, Height: 48})
 	m = updated.(Model)
 	m.state = stateStreaming
 	return m
@@ -58,11 +61,12 @@ func TestConfirmPromptShowsContainmentState(t *testing.T) {
 	if m.state != stateConfirmRun {
 		t.Fatalf("expected confirm state, got %d", m.state)
 	}
-	// The containment state rides the card's title rail as a chip, and the
-	// profile's network answer is a field of its own.
+	// The containment in force is a field of the body — under the three the
+	// card always states, where it survives a terminal too narrow to carry a
+	// chip — and the profile's network answer is a field of its own.
 	view := m.View().Content
-	if !strings.Contains(view, "⛨ bwrap · workspace") {
-		t.Fatalf("confirm prompt should carry the containment chip:\n%s", view)
+	if !strings.Contains(view, "⛨") || !strings.Contains(view, "bwrap · workspace") {
+		t.Fatalf("confirm prompt should carry the containment row:\n%s", view)
 	}
 	if !strings.Contains(view, "the workspace profile allows network access") {
 		t.Fatalf("confirm prompt should say what the profile allows:\n%s", view)
@@ -316,10 +320,9 @@ func TestRequiredContainmentRefusesWithoutACard(t *testing.T) {
 	}
 }
 
-// A required session that has its mechanism says so where it is read: the
-// chip on the card, and the same clause in `/status` for a terminal with no
-// room for a card's title rail.
-func TestRequiredContainmentSaysSoOnTheChipAndInStatus(t *testing.T) {
+// A required session that has its mechanism says so where it is read: the ⛨
+// row on the card, and the same clause in `/status`.
+func TestRequiredContainmentSaysSoOnTheCardAndInStatus(t *testing.T) {
 	var bare, contained []string
 	m := containedModel(t, &bare, &contained, "contained: bwrap (workspace profile)")
 	c := m.containment
@@ -328,7 +331,7 @@ func TestRequiredContainmentSaysSoOnTheChipAndInStatus(t *testing.T) {
 	m = runExecApproval(t, m)
 
 	if view := m.View().Content; !strings.Contains(view, "required · bwrap") {
-		t.Fatalf("the chip should say the containment was required:\n%s", view)
+		t.Fatalf("the containment row should say it was required:\n%s", view)
 	}
 	text, _ := m.statusCommand()
 	if !strings.Contains(text, "required · bwrap") {

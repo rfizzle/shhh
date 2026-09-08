@@ -117,7 +117,7 @@ func TestApprovalCard_BatchKey(t *testing.T) {
 		Variant:  ApprovalCommand,
 		Title:    "Approve command",
 		Headline: "Assistant wants to run: go test ./...",
-		Question: "Run this command?",
+		Answer:   "run it once",
 	}
 	// Without a queue behind it, [A] stays the shifted spelling of [a].
 	c.AllowAlways = true
@@ -125,13 +125,10 @@ func TestApprovalCard_BatchKey(t *testing.T) {
 		t.Fatalf("[A] without a batch should take the session grant, got %v %v", done, result)
 	}
 
-	c.Batch, c.BatchHint = true, "A: approve 3 like this"
+	c.Batch, c.BatchHint = true, "answer 3 like this as a list"
 	view := c.View(80)
-	if !strings.Contains(view, "[y/n/a/A]") {
-		t.Fatalf("a batch should put [A] on the key list:\n%s", view)
-	}
-	if !strings.Contains(view, "A: approve 3 like this") {
-		t.Fatalf("the count belongs on the key:\n%s", view)
+	if !strings.Contains(view, "[A] answer 3 like this as a list") {
+		t.Fatalf("a batch should offer [A] under the count it answers:\n%s", view)
 	}
 	if done, result := c.Update(key("A")); !done || result != ApprovalBatch {
 		t.Fatalf("[A] with a batch should answer the batch, got %v %v", done, result)
@@ -143,7 +140,8 @@ func TestApprovalCard_BatchKey(t *testing.T) {
 
 	// A card with a batch but no session grant offers the batch alone.
 	c.AllowAlways = false
-	if view = c.View(80); !strings.Contains(view, "[y/n/A]") {
-		t.Fatalf("a batch without a session grant should offer [y/n/A]:\n%s", view)
+	view = ansi.Strip(c.View(80))
+	if !strings.Contains(view, "[A]") || strings.Contains(view, "[a]") {
+		t.Fatalf("a batch without a session grant should offer [A] and not [a]:\n%s", view)
 	}
 }

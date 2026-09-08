@@ -97,6 +97,9 @@ func (m *Model) openMemoryAsk(req *approvalRequest) {
 		ns.Select.Focus = 1
 	}
 	ns.Select.MaxLines = m.maxConfirmPanelHeight() - 1
+	// The proposal is a decision like every other card that stops a turn, and
+	// it has no severity to colour its frame with (components.CardTone).
+	ns.Select.Tone = components.CardDecision
 	m.memoryAsk = ns
 }
 

@@ -40,7 +40,7 @@ func TestChatPick_DeleteArmsConfirmAndEnterIsNo(t *testing.T) {
 	if !strings.Contains(m.chats.confirm.Prompt, `"alpha"`) {
 		t.Fatalf("the confirm should name the chat, got %q", m.chats.confirm.Prompt)
 	}
-	if lines := strings.Join(m.pickerLines(), "\n"); !strings.Contains(lines, "[y/N]") {
+	if lines := ansi.Strip(strings.Join(m.pickerLines(), "\n")); !strings.Contains(lines, "[y/N]") {
 		t.Fatalf("the confirm should be drawn under the card, got:\n%s", lines)
 	}
 

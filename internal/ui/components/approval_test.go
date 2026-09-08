@@ -40,21 +40,21 @@ func TestApprovalCard_CommandVariant(t *testing.T) {
 		Variant:  ApprovalCommand,
 		Title:    "Approve command",
 		Headline: "Assistant wants to run: go test ./...",
-		Question: "Run this command?",
+		Answer:   "run it once",
 	}
 	view := c.View(80)
 	if !strings.Contains(view, "Approve command") || !strings.Contains(view, "go test ./...") {
 		t.Fatalf("command card should show title and command:\n%s", view)
 	}
-	if !strings.Contains(view, "[y/N]") || strings.Contains(view, "[y/n/a]") {
-		t.Fatalf("without AllowAlways the card must offer [y/N] only:\n%s", view)
+	if !strings.Contains(view, "[y] run it once") || strings.Contains(view, "[a]") {
+		t.Fatalf("without AllowAlways the card offers the two answers alone:\n%s", view)
 	}
 
 	c.AllowAlways = true
-	c.AlwaysHint = "a: always allow commands this session"
-	view = c.View(80)
-	if !strings.Contains(view, "[y/n/a]") || !strings.Contains(view, "always allow commands") {
-		t.Fatalf("AllowAlways should offer [y/n/a] with the hint:\n%s", view)
+	c.AlwaysHint = "allow commands without asking this session"
+	view = ansi.Strip(c.View(110))
+	if !strings.Contains(view, "[a] allow commands without asking this session") {
+		t.Fatalf("AllowAlways should offer [a] under what it grants:\n%s", view)
 	}
 }
 
@@ -64,7 +64,7 @@ func TestApprovalCard_Warnings(t *testing.T) {
 		Title:    "Approve command",
 		Headline: "Assistant wants to run: rm -rf /",
 		Warnings: []string{"deletes files recursively"},
-		Question: "Run this command?",
+		Answer:   "run it once",
 	}
 	view := c.View(80)
 	if !strings.Contains(view, "⚠ deletes files recursively") {
@@ -73,10 +73,10 @@ func TestApprovalCard_Warnings(t *testing.T) {
 }
 
 // Severity is said three ways — the border, the chip on the title rail and
-// the first body row — and the three are three statements. The chip carries
-// the level with its glyph; the body row carries the level with what makes it
-// that, so a reader who cannot see the border colour loses nothing and a
-// reader who can see it is not shown the same two words twice.
+// the first body row — and the three say it in the same words, so a reader
+// comparing them is not first working out that they are one claim. What the
+// row adds is the reading behind the level, which is what the chip has no
+// room for.
 func TestApprovalCard_SeverityIsAWordNotOnlyAColour(t *testing.T) {
 	c := &ApprovalCard{
 		Variant:  ApprovalCommand,
@@ -84,58 +84,93 @@ func TestApprovalCard_SeverityIsAWordNotOnlyAColour(t *testing.T) {
 		Headline: "Assistant wants to run: rm -rf ./dist",
 		Severity: SeverityHigh,
 		Warnings: []string{"deletes files recursively (rm -rf)"},
-		Question: "Run this command?",
+		Answer:   "run it once",
 	}
 	view := ansi.Strip(c.View(90))
-	if strings.Count(view, "⚠ HIGH") != 1 {
-		t.Fatalf("the glyph belongs to the title chip alone:\n%s", view)
+	if strings.Count(view, "⚠ HIGH") != 2 {
+		t.Fatalf("the chip and the body row both state the level:\n%s", view)
 	}
-	if !strings.Contains(view, "HIGH · deletes files recursively (rm -rf)") {
+	if !strings.Contains(view, "⚠ HIGH · deletes files recursively (rm -rf)") {
 		t.Fatalf("the body row should state the level with what makes it that:\n%s", view)
 	}
 	c.Severity, c.Warnings = SeverityMedium, nil
 	c.SeverityReason = "edits one file under internal/agent"
 	view = ansi.Strip(c.View(90))
-	if !strings.Contains(view, "medium · edits one file under internal/agent") {
+	if !strings.Contains(view, "⚠ medium · edits one file under internal/agent") {
 		t.Fatalf("a card with a reason states it beside the level:\n%s", view)
 	}
-	if strings.Count(view, "⚠ medium") != 1 {
-		t.Fatalf("the body row must not repeat the chip:\n%s", view)
-	}
 	c.Severity, c.SeverityReason = SeverityLow, ""
-	if !strings.Contains(ansi.Strip(c.View(90)), "low") {
+	if !strings.Contains(ansi.Strip(c.View(90)), "⚠ low") {
 		t.Fatal("a low-severity card still states its level")
 	}
 }
 
-// The containment state folds into the title rail; an uncontained action
-// promotes ⚠ UNCONTAINED there instead.
-func TestApprovalCard_ContainmentChip(t *testing.T) {
+// The three colours of the ladder: low and medium are the mutation rail's
+// accent, HIGH and an uncontained card are del, and a card with no rating at
+// all takes the tone of a surface waiting for an answer. The chip, the body
+// row and the border are one colour, whichever it is.
+func TestApprovalCard_TheSeverityLadderHasThreeColours(t *testing.T) {
+	for _, tc := range []struct {
+		severity Severity
+		want     string
+	}{
+		{SeverityLow, sty.Accent.Render("⚠ low")},
+		{SeverityMedium, sty.Accent.Render("⚠ medium")},
+		{SeverityHigh, sty.Del.Render("⚠ HIGH")},
+	} {
+		c := &ApprovalCard{
+			Variant: ApprovalCommand, Title: "Approve command",
+			Headline: "Assistant wants to run: go test ./...",
+			Severity: tc.severity, Answer: "run it once",
+		}
+		view := c.View(90)
+		if strings.Count(view, tc.want) != 2 {
+			t.Fatalf("%v should paint its chip and its body row %q:\n%s", tc.severity, tc.want, view)
+		}
+		if !strings.Contains(view, tc.severity.tone().Render("╭─ Approve command ")) {
+			t.Fatalf("%v should paint its border to match:\n%s", tc.severity, view)
+		}
+	}
+	unrated := &ApprovalCard{
+		Variant: ApprovalGeneric, Title: "Approve tool",
+		Headline: "Assistant wants to use: web_fetch", Answer: "allow it",
+	}
+	if !strings.Contains(unrated.View(90), sty.Info.Render("╭─ Approve tool ")) {
+		t.Fatalf("a card with no rating takes the decision tone:\n%s", unrated.View(90))
+	}
+}
+
+// The containment in force is a body row and survives every width; only an
+// uncontained action reaches the title rail, where ⚠ UNCONTAINED is promoted
+// ahead of the severity.
+func TestApprovalCard_ContainmentIsARowAndSurvivesTheNarrowCard(t *testing.T) {
 	c := &ApprovalCard{
 		Variant:  ApprovalCommand,
 		Title:    "Approve command",
 		Headline: "Assistant wants to run: go build ./...",
-		Severity: SeverityLow,
-		Chip:     "⛨ bwrap · workspace",
-		Question: "Run this command?",
+		Severity: SeverityHigh,
+		Fields: []CardField{
+			{Label: "⛨", Value: "workspace-write · network allowed", Tone: ToneChrome},
+		},
+		Answer: "run it once",
 	}
 	top := strings.SplitN(ansi.Strip(c.View(100)), "\n", 2)[0]
-	if !strings.Contains(top, "⛨ bwrap · workspace") || !strings.Contains(top, "⚠ low") {
-		t.Fatalf("the title rail should carry the containment chip and the severity: %q", top)
+	if strings.Contains(top, "⛨") || !strings.Contains(top, "⚠ HIGH") {
+		t.Fatalf("the title rail carries the severity and no containment chip: %q", top)
+	}
+	// Sixty columns is the width the rail sheds a chip at, and the row a
+	// flagged card must not stop stating is the one saying what contains it.
+	for _, width := range []int{100, 60} {
+		if view := ansi.Strip(c.View(width)); !strings.Contains(view, "⛨") ||
+			!strings.Contains(view, "workspace-write") {
+			t.Fatalf("the containment row should survive w%d:\n%s", width, view)
+		}
 	}
 
-	c.Chip, c.Uncontained = "", true
+	c.Uncontained = true
 	top = strings.SplitN(ansi.Strip(c.View(100)), "\n", 2)[0]
 	if !strings.Contains(top, "⚠ UNCONTAINED") {
 		t.Fatalf("an uncontained action promotes ⚠ UNCONTAINED into the title: %q", top)
-	}
-
-	// A terminal too narrow for both sheds the containment chip first; the
-	// severity is what the decision turns on and it survives.
-	c.Chip, c.Uncontained = "⛨ bwrap · workspace", false
-	top = strings.SplitN(ansi.Strip(c.View(46)), "\n", 2)[0]
-	if strings.Contains(top, "bwrap") || !strings.Contains(top, "⚠ low") {
-		t.Fatalf("narrow rail should drop the containment chip and keep the severity: %q", top)
 	}
 }
 
@@ -152,9 +187,9 @@ func TestApprovalCard_BlastRadiusBlockAndRule(t *testing.T) {
 			{Label: "undo", Value: "none", Detail: "rm bypasses the changeset", Tone: ToneRisk},
 			{Label: "network", Value: "open", Detail: "the workspace profile allows it", Tone: ToneOpen},
 		},
-		Question:    "Run this command?",
-		SafeDefault: "[n] deny — the safe answer",
-		Footnote:    "[a] always — not offered: a safety-flagged command is never pre-approved",
+		Answer:   "run it once",
+		Return:   "don't — the safe answer; the decision waits",
+		Footnote: "[a] always — not offered: a safety-flagged command is never pre-approved",
 	}
 	lines := strings.Split(ansi.Strip(c.View(90)), "\n")
 	view := strings.Join(lines, "\n")
@@ -162,7 +197,7 @@ func TestApprovalCard_BlastRadiusBlockAndRule(t *testing.T) {
 		"touches   ./dist — 412 files, 84.0 MB",
 		"undo      none — rm bypasses the changeset",
 		"network   open — the workspace profile allows it",
-		"[n] deny — the safe answer",
+		"[esc] don't — the safe answer",
 		"[a] always — not offered",
 	} {
 		if !strings.Contains(view, want) {
@@ -174,7 +209,7 @@ func TestApprovalCard_BlastRadiusBlockAndRule(t *testing.T) {
 		if strings.HasPrefix(line, "├") {
 			rule = i
 		}
-		if strings.Contains(line, "Run this command?") {
+		if strings.Contains(line, "[y] run it once") {
 			keys = i
 		}
 	}
@@ -191,7 +226,7 @@ func TestApprovalCard_FieldDropsDetailBeforeClipping(t *testing.T) {
 		Title:    "Approve command",
 		Headline: "Assistant wants to run: rm -rf ./dist",
 		Fields:   []CardField{{Label: "touches", Value: "./dist", Detail: strings.Repeat("very long detail ", 8)}},
-		Question: "Run this command?",
+		Answer:   "run it once",
 	}
 	view := ansi.Strip(c.View(44))
 	if !strings.Contains(view, "touches   ./dist") {
@@ -208,7 +243,7 @@ func TestApprovalCard_EditVariantShowsDiffAndStats(t *testing.T) {
 		Title:    "Approve edit",
 		Headline: "Assistant wants to edit main.go",
 		Hunks:    diff.Compute("a\nb\n", "a\nc\nd\n"),
-		Question: "Apply this change?",
+		Answer:   "apply the change",
 	}
 	// The diff body carries line numbers (
 	// docs/interface/surfaces.md#the-approval-card), and the reversibility line
@@ -228,10 +263,10 @@ func TestApprovalCard_FullDiffKey(t *testing.T) {
 		Variant:  ApprovalEdit,
 		Title:    "Approve edit",
 		Hunks:    diff.Compute("a\n", "b\n"),
-		Question: "Apply this change?",
+		Answer:   "apply the change",
 		FullDiff: true,
 	}
-	if !strings.Contains(c.View(80), "d: full diff") {
+	if !strings.Contains(ansi.Strip(c.View(80)), "[d] full diff") {
 		t.Fatal("card should hint the full-diff key when FullDiff is set")
 	}
 	done, result := c.Update(tea.KeyPressMsg{Code: 'd', Text: "d"})
@@ -256,7 +291,7 @@ func TestApprovalCard_EditVariantBoundsHeight(t *testing.T) {
 		Title:    "Approve edit",
 		Headline: "Assistant wants to write big.txt",
 		Hunks:    diff.Compute(old.String(), new.String()),
-		Question: "Apply this change?",
+		Answer:   "apply the change",
 		MaxLines: 12,
 	}
 	view := c.View(80)
@@ -280,14 +315,14 @@ func TestApprovalCard_BodyScrollsBehindCountedTails(t *testing.T) {
 		Title:    "Approve edit",
 		Headline: "Assistant wants to write big.txt",
 		Hunks:    diff.Compute(old.String(), new.String()),
-		Question: "Apply this change?",
+		Answer:   "apply the change",
 		MaxLines: 12,
 	}
 	plain := ansi.Strip(c.View(80))
 	if !strings.Contains(plain, "more lines · "+keys.Shown(keys.Decision.ScrollDown)) {
 		t.Fatalf("the window should count what it cut:\n%s", plain)
 	}
-	if !strings.Contains(plain, "Apply this change?") {
+	if !strings.Contains(plain, "[y] apply the change") {
 		t.Fatalf("the decision block never scrolls off:\n%s", plain)
 	}
 
@@ -299,7 +334,7 @@ func TestApprovalCard_BodyScrollsBehindCountedTails(t *testing.T) {
 	if !strings.Contains(scrolled, "lines above · "+keys.Shown(keys.Decision.ScrollUp)) {
 		t.Fatalf("a scrolled window counts what is above it too:\n%s", scrolled)
 	}
-	if !strings.Contains(scrolled, "Apply this change?") {
+	if !strings.Contains(scrolled, "[y] apply the change") {
 		t.Fatalf("the decision block never scrolls off:\n%s", scrolled)
 	}
 
@@ -323,14 +358,14 @@ func TestApprovalCard_TinyBoundKeepsTheDecisionAndOneBodyRow(t *testing.T) {
 		Title:    "Approve edit",
 		Headline: "Assistant wants to write big.txt",
 		Hunks:    diff.Compute(old.String(), new.String()),
-		Question: "Apply this change?",
+		Answer:   "apply the change",
 		MaxLines: 6,
 	}
 	view := ansi.Strip(edit.View(80))
 	if rows := len(strings.Split(view, "\n")); rows > 7 {
 		t.Fatalf("a MaxLines 6 card must stay near its budget, got %d rows:\n%s", rows, view)
 	}
-	if !strings.Contains(view, "Apply this change?") {
+	if !strings.Contains(view, "[y] apply the change") {
 		t.Fatalf("the decision run never gives way to the body:\n%s", view)
 	}
 	if !strings.Contains(view, "more lines") {
@@ -341,7 +376,7 @@ func TestApprovalCard_TinyBoundKeepsTheDecisionAndOneBodyRow(t *testing.T) {
 		Variant:  ApprovalCommand,
 		Title:    "Approve command",
 		Headline: "Assistant wants to run: rm -rf ./dist",
-		Question: "Run this command?",
+		Answer:   "run it once",
 		Return:   "[esc] back to your draft — the decision stays waiting, nothing is denied",
 		MaxLines: 5,
 	}
@@ -363,7 +398,7 @@ func TestApprovalCard_NotYetLiveTailNamesNoKey(t *testing.T) {
 		Title:      "Approve edit",
 		Headline:   "Assistant wants to write big.txt",
 		Hunks:      diff.Compute(old.String(), new.String()),
-		Question:   "Apply this change?",
+		Answer:     "apply the change",
 		MaxLines:   12,
 		NotYetLive: true,
 		Handover:   "ctrl+space",
@@ -385,7 +420,7 @@ func TestApprovalCard_WideBodyPans(t *testing.T) {
 		Variant:  ApprovalCommand,
 		Title:    "Approve command",
 		Headline: wide,
-		Question: "Run this command?",
+		Answer:   "run it once",
 	}
 	plain := ansi.Strip(c.View(80))
 	if !strings.Contains(plain, "›") {
@@ -412,7 +447,7 @@ func TestApprovalCard_GenericVariant(t *testing.T) {
 		Title:    "Approve tool",
 		Headline: "Assistant wants to use my_tool",
 		Summary:  "do the thing",
-		Question: "Allow this?",
+		Answer:   "allow it",
 	}
 	view := c.View(80)
 	if !strings.Contains(view, "use my_tool") || !strings.Contains(view, "do the thing") {
@@ -421,7 +456,7 @@ func TestApprovalCard_GenericVariant(t *testing.T) {
 }
 
 func TestApprovalCard_Keys(t *testing.T) {
-	c := &ApprovalCard{Question: "Run this command?"}
+	c := &ApprovalCard{Answer: "run it once"}
 	cases := []struct {
 		key    string
 		done   bool
@@ -449,73 +484,97 @@ func TestApprovalCard_Keys(t *testing.T) {
 	}
 }
 
-// --- click targets -------------------------------------------
+// --- the decision run ----------------------------------------
 
-// runRow is the rendered row carrying the card's decision run.
-func runRow(t *testing.T, c *ApprovalCard, width int) string {
+// runRow is the rendered row carrying a given offer.
+func runRow(t *testing.T, c *ApprovalCard, width int, mark string) string {
 	t.Helper()
 	for _, line := range strings.Split(c.View(width), "\n") {
-		if strings.Contains(ansi.Strip(line), c.keys()) {
+		if strings.Contains(ansi.Strip(line), mark) {
 			return line
 		}
 	}
-	t.Fatalf("no rendered row carries %s", c.keys())
+	t.Fatalf("no rendered row carries %q", mark)
 	return ""
 }
 
-// Every cell of the run belongs to a key — the brackets to the keys at the
-// ends, each separator to the key before it — because one cell is not a
-// target and a press between two keys should mean the one it is standing on.
-func TestApprovalCard_EveryCellOfTheRunIsAKey(t *testing.T) {
+// The run is the bracket grammar and nothing else: a key, its imperative,
+// and no compact `[y/n/a]` prompt anywhere on the card.
+func TestApprovalCard_TheRunIsBracketedOffers(t *testing.T) {
 	c := &ApprovalCard{
 		Variant: ApprovalCommand, Title: "Approve command",
 		Headline: "Assistant wants to run: go test ./...",
-		Question: "Run this command?", AllowAlways: true,
-		AlwaysHint: `a: always allow "go test"`,
+		Answer:   "run it once", AllowAlways: true,
+		AlwaysHint: `allow "go test" without asking`,
+		FullDiff:   true, FullLabel: "full view",
 	}
-	row := runRow(t, c, 80)
-	plain := ansi.Strip(row)
-	at := strings.Index(plain, c.keys())
-	start := ansi.StringWidth(plain[:at])
-	// [ y / n / a ] — the opening bracket and each separator go to the key
-	// before them, the closing bracket to the last.
-	want := []string{"y", "y", "y", "n", "n", "a", "a"}
-	for i, key := range want {
-		got, ok := c.KeyAt(row, start+i)
-		if !ok || got != key {
-			t.Fatalf("cell %d of %s should be %q, got %q (found=%v)", i, c.keys(), key, got, ok)
+	view := ansi.Strip(c.View(110))
+	for _, want := range []string{
+		"[y] run it once", "[n] deny", `[a] allow "go test" without asking`,
+		"[d] full view", "[esc] " + waitingWords,
+	} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("the run should offer %q:\n%s", want, view)
 		}
 	}
-	if _, ok := c.KeyAt(row, start+len(want)); ok {
-		t.Fatal("the cell past the run belongs to no key")
-	}
-	if _, ok := c.KeyAt(row, start-1); ok {
-		t.Fatal("the cell before the run belongs to no key")
+	for _, gone := range []string{"[y/n", "[y/N", "(a:", "(d:", "Run this command?"} {
+		if strings.Contains(view, gone) {
+			t.Fatalf("the compact prompt is gone; found %q:\n%s", gone, view)
+		}
 	}
 }
 
-// The safe answer is drawn as a capital N — the card's default marker, not a
-// shifted key — so the cell has to resolve to the keystroke the card answers.
-func TestApprovalCard_TheDefaultMarkerIsNotAKey(t *testing.T) {
+// Every variant carries the esc line, not only the ones a flagged command put
+// one on: the way out of a decision is what a reader must be able to find
+// without having pressed anything.
+func TestApprovalCard_EveryVariantSaysWhatEscDoes(t *testing.T) {
+	for _, variant := range []ApprovalVariant{ApprovalCommand, ApprovalEdit, ApprovalGeneric} {
+		c := &ApprovalCard{
+			Variant: variant, Title: "Approve", Headline: "Assistant wants to act",
+			Answer: "do it",
+		}
+		if view := ansi.Strip(c.View(90)); !strings.Contains(view, "[esc] "+waitingWords) {
+			t.Fatalf("variant %d should state what esc does:\n%s", variant, view)
+		}
+	}
+	// A card with its own words about esc says those instead.
+	c := &ApprovalCard{
+		Variant: ApprovalCommand, Title: "Approve command",
+		Headline: "Assistant wants to run: rm -rf ./dist", Answer: "run it once",
+		Return: "don't — the safe answer",
+	}
+	if view := ansi.Strip(c.View(90)); !strings.Contains(view, "[esc] don't — the safe answer") {
+		t.Fatalf("a card that named its safe answer should say so:\n%s", view)
+	}
+}
+
+// A key owns its bracket and the imperative after it: the words are what a
+// reader aims at, and one cell is not a target.
+func TestApprovalCard_AKeyOwnsItsWords(t *testing.T) {
 	c := &ApprovalCard{
 		Variant: ApprovalCommand, Title: "Approve command",
 		Headline: "Assistant wants to run: go test ./...",
-		Question: "Run this command?",
+		Answer:   "run it once", AllowAlways: true,
+		AlwaysHint: `allow "go test" without asking`,
 	}
-	if c.keys() != "[y/N]" {
-		t.Fatalf("expected the default marker on the safe answer, got %s", c.keys())
-	}
-	row := runRow(t, c, 80)
-	plain := ansi.Strip(row)
-	start := ansi.StringWidth(plain[:strings.Index(plain, c.keys())])
-	// [ y / N ]
-	got, ok := c.KeyAt(row, start+3)
-	if !ok || got != "n" {
-		t.Fatalf("the capital N should answer as n, got %q (found=%v)", got, ok)
-	}
-	done, result := c.Update(key(got))
-	if !done || result != ApprovalDeny {
-		t.Fatalf("the key the cell named should deny, got %v/%v", done, result)
+	for _, tc := range []struct{ offer, key string }{
+		{"[y] run it once", "y"},
+		{"[n] deny", "n"},
+		{`[a] allow "go test" without asking`, "a"},
+	} {
+		row := runRow(t, c, 110, tc.offer)
+		plain := ansi.Strip(row)
+		at := strings.Index(plain, tc.offer)
+		start := ansi.StringWidth(plain[:at])
+		for i := range ansi.StringWidth(tc.offer) {
+			got, ok := c.KeyAt(row, start+i)
+			if !ok || got != tc.key {
+				t.Fatalf("cell %d of %q should be %q, got %q (found=%v)", i, tc.offer, tc.key, got, ok)
+			}
+		}
+		if _, ok := c.KeyAt(row, start-1); ok && start > 0 {
+			t.Fatalf("the cell before %q belongs to no key", tc.offer)
+		}
 	}
 }
 
@@ -525,32 +584,20 @@ func notedCard() *ApprovalCard {
 	return &ApprovalCard{
 		Variant: ApprovalCommand, Title: "Approve command",
 		Headline: "Assistant wants to run: go test ./...",
-		Question: "Run this command?", Noted: true,
+		Answer:   "run it once", Noted: true,
 	}
 }
 
-// The capital is a key on this card, so the default marker is gone from it
-// and every cell of the wider run still resolves to the key under it.
-func TestApprovalCard_TheNotedRunDividesWithNothingLeftOver(t *testing.T) {
+// The shifted pair sits beside the answer it carries, and each of the four
+// resolves to the key the run drew.
+func TestApprovalCard_TheNotedRunPairsEachAnswerWithItsSentence(t *testing.T) {
 	c := notedCard()
-	if c.keys() != "[y/Y/n/N]" {
-		t.Fatalf("a noted card draws both spellings of both answers, got %s", c.keys())
-	}
-	row := runRow(t, c, 80)
-	plain := ansi.Strip(row)
-	start := ansi.StringWidth(plain[:strings.Index(plain, c.keys())])
-	// [ y / Y / n / N ]
-	want := []string{"y", "y", "y", "Y", "Y", "n", "n", "N", "N"}
-	for i, key := range want {
-		got, ok := c.KeyAt(row, start+i)
-		if !ok || got != key {
-			t.Fatalf("cell %d of %s should be %q, got %q (found=%v)", i, c.keys(), key, got, ok)
+	view := ansi.Strip(c.View(110))
+	for _, want := range []string{"[y] run it once", "[Y] ", "[n] deny", "[N] "} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("a noted card draws both spellings of both answers, missing %q:\n%s", want, view)
 		}
 	}
-	if _, ok := c.KeyAt(row, start+len(want)); ok {
-		t.Fatal("the cell past the run belongs to no key")
-	}
-	// And each of them answers as the run says it does.
 	for _, tc := range []struct {
 		key  string
 		want ApprovalDecision
@@ -562,18 +609,15 @@ func TestApprovalCard_TheNotedRunDividesWithNothingLeftOver(t *testing.T) {
 			t.Errorf("%q should answer %v, got %v/%v", tc.key, tc.want, done, got)
 		}
 	}
-	if !strings.Contains(ansi.Strip(row), notedWords()) {
-		t.Errorf("the run should say what the shifted pair buys:\n%s", row)
-	}
 }
 
-// A card with nothing waiting to read a sentence is unchanged, capital-N
-// default marker included: the shifted letters go on meaning what they meant.
-func TestApprovalCard_WithoutTheOfferTheDefaultMarkerStays(t *testing.T) {
+// A card with nothing waiting to read a sentence offers neither shifted key,
+// and answers neither.
+func TestApprovalCard_WithoutTheOfferTheShiftedKeysAreNotDrawn(t *testing.T) {
 	c := notedCard()
 	c.Noted = false
-	if c.keys() != "[y/N]" {
-		t.Fatalf("a card with no note offer keeps its default marker, got %s", c.keys())
+	if view := ansi.Strip(c.View(110)); strings.Contains(view, "[Y]") || strings.Contains(view, "[N]") {
+		t.Fatalf("a card with no note offer draws neither shifted key:\n%s", view)
 	}
 	for _, k := range []string{"Y", "N"} {
 		if done, got := c.Update(key(k)); done && (got == ApprovalApproveNoted || got == ApprovalDenyNoted) {
@@ -588,17 +632,16 @@ func TestApprovalCard_WithoutTheOfferTheDefaultMarkerStays(t *testing.T) {
 func TestApprovalCard_ANotedArrivalClaimsAllFourAnswers(t *testing.T) {
 	c := notedCard()
 	c.HeldOnArrival, c.Handover = true, "ctrl+space"
-	c.AllowAlways, c.AlwaysHint = true, `a: always allow "go test"`
+	c.AllowAlways, c.AlwaysHint = true, `allow "go test" without asking`
 	c.FullDiff = true
-	run := c.KeyRun()
 	var got []string
-	for _, k := range run {
+	for _, k := range c.KeyRun() {
 		got = append(got, k.Key)
 	}
 	if strings.Join(got, "") != "yYnN" {
 		t.Fatalf("an arrival card should draw the four answers alone, got %v", got)
 	}
-	row := runRow(t, c, 80)
+	row := runRow(t, c, 80, "[y] run it once")
 	for _, absent := range []string{"a", "d"} {
 		for col := range ansi.StringWidth(ansi.Strip(row)) {
 			if k, ok := c.KeyAt(row, col); ok && k == absent {
@@ -624,10 +667,10 @@ func TestApprovalCard_TheOpenFieldDrawsTheRunDead(t *testing.T) {
 				t.Fatalf("the open field should carry %q:\n%s", want, view)
 			}
 		}
-		// What the keys would have done is not advertised while none of them
-		// is a key: the qualifiers go with the run.
-		if strings.Contains(view, notedWords()) {
-			t.Fatalf("a dead run should not qualify its keys:\n%s", view)
+		// The card's own way out is the field's while the field has the
+		// keyboard, so the card does not state a second one.
+		if strings.Contains(view, waitingWords) {
+			t.Fatalf("a card whose field holds the keyboard states no esc of its own:\n%s", view)
 		}
 		x, y, ok := c.FieldOrigin(80)
 		if !ok {
@@ -675,7 +718,7 @@ func TestApprovalCard_ARowWithoutTheRunHasNoKeys(t *testing.T) {
 	c := &ApprovalCard{
 		Variant: ApprovalCommand, Title: "Approve command",
 		Headline: "Assistant wants to run: go test ./...",
-		Question: "Run this command?",
+		Answer:   "run it once",
 	}
 	if _, ok := c.KeyAt("Assistant wants to run: go test ./...", 4); ok {
 		t.Fatal("a body row should carry no decision key")
@@ -688,15 +731,15 @@ func TestApprovalCard_HeldOnArrivalOffersOnlyItsTwoKeys(t *testing.T) {
 	c := &ApprovalCard{
 		Variant: ApprovalCommand, Title: "Approve command",
 		Headline:    "Assistant wants to run: go test ./...",
-		Question:    "Run this command?",
-		AllowAlways: true, AlwaysHint: `a: always allow "go test"`,
+		Answer:      "run it once",
+		AllowAlways: true, AlwaysHint: `allow "go test" without asking`,
 		FullDiff: true, HeldOnArrival: true, Handover: "ctrl+space",
 	}
 	run := c.KeyRun()
 	if len(run) != 2 || run[0].Key != "y" || run[1].Key != "n" {
 		t.Fatalf("an arrival card should draw y and n alone, got %+v", run)
 	}
-	row := runRow(t, c, 80)
+	row := runRow(t, c, 80, "[y] run it once")
 	for _, absent := range []string{"a", "d"} {
 		for col := range ansi.StringWidth(ansi.Strip(row)) {
 			if k, ok := c.KeyAt(row, col); ok && k == absent {

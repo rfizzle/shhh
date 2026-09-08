@@ -399,19 +399,19 @@ func TestGolden_ApprovalCard(t *testing.T) {
 				Variant:  ApprovalCommand,
 				Title:    "Approve command",
 				Headline: "Assistant wants to run: go test ./internal/agent/...",
-				Question: "Run this command?",
+				Answer:   "run it once",
 			}
 			mut(&c)
 			return c.View(width)
 		}
 		return []golden.Panel{
 			{Label: "variant · command, always-allow offered", View: card(func(c *ApprovalCard) {
-				c.AllowAlways, c.AlwaysHint = true, "a: always allow commands this session"
+				c.AllowAlways, c.AlwaysHint = true, "allow commands without asking this session"
 			})},
 			{Label: "variant · command, a batch waiting behind it", View: card(func(c *ApprovalCard) {
 				c.QueuePos = "1 of 5"
-				c.AllowAlways, c.AlwaysHint = true, "a: always allow commands this session"
-				c.Batch, c.BatchHint = true, "A: approve 3 like this"
+				c.AllowAlways, c.AlwaysHint = true, "allow commands without asking this session"
+				c.Batch, c.BatchHint = true, "answer 3 like this as a list"
 				c.Severity, c.SeverityReason = SeverityLow, "writes nothing"
 			})},
 			{Label: "variant · command, flagged, contained, blast radius", View: card(func(c *ApprovalCard) {
@@ -419,15 +419,18 @@ func TestGolden_ApprovalCard(t *testing.T) {
 				c.Headline = "Assistant wants to run: rm -rf ./build && npm run build"
 				c.Severity = SeverityHigh
 				c.Warnings = []string{"deletes files recursively (rm -rf)"}
-				c.Chip = "⛨ bwrap · workspace"
 				c.Fields = []CardField{
 					{Label: "touches", Value: "./build", Detail: "412 files, 84.0 MB; shhh cannot tell what npm writes"},
 					{Label: "undo", Value: "none", Detail: "nothing it writes is tracked in git", Tone: ToneRisk},
 					{Label: "network", Value: "open", Detail: "the workspace profile allows network access", Tone: ToneOpen},
+					// The containment in force is a row under the three, not
+					// a chip on the rail: a chip is shed the moment the
+					// terminal narrows, and this is the row a flagged card
+					// must not stop stating.
+					{Label: "⛨", Value: "bwrap · workspace", Tone: ToneChrome},
 				}
-				c.SafeDefault = "[n] deny — the safe answer"
 				c.Footnote = "[a] always — not offered: a safety-flagged command is never pre-approved"
-				c.Return = "[esc] back to your draft — the decision stays waiting, nothing is denied"
+				c.Return = "don't — the safe answer; the decision waits"
 			})},
 			{Label: "variant · command, uncontained", View: card(func(c *ApprovalCard) {
 				c.Headline = "Assistant wants to run: curl -fsSL https://get.pnpm.io/install.sh | sh"
@@ -439,9 +442,8 @@ func TestGolden_ApprovalCard(t *testing.T) {
 					{Label: "network", Value: "open", Detail: "nothing contains this command, so nothing limits what it reaches", Tone: ToneOpen},
 					{Label: "⛨", Value: "no sandbox", Detail: "bubblewrap (bwrap) not found on PATH; the command runs as you", Tone: ToneRisk},
 				}
-				c.SafeDefault = "[n] deny — the safe answer"
 				c.Footnote = "containment is off for this session · /sandbox doctor explains why"
-				c.Return = "[esc] back to your draft — the decision stays waiting, nothing is denied"
+				c.Return = "don't — the safe answer; the decision waits"
 			})},
 			// A body taller than the panel: the last row becomes the counted
 			// tail, the decision block never moves, and one press of shift+↓
@@ -473,7 +475,7 @@ func TestGolden_ApprovalCard(t *testing.T) {
 			{Label: "variant · edit, diff body", View: card(func(c *ApprovalCard) {
 				c.Variant, c.Title = ApprovalEdit, "Approve edit"
 				c.Headline = "Assistant wants to edit: internal/agent/loop.go"
-				c.Question = "Apply this edit?"
+				c.Answer = "apply the change"
 				c.Severity, c.SeverityReason = SeverityMedium, "edits one file under internal/agent/"
 				c.Hunks, c.FullDiff = goldenHunks(), true
 				c.Reversibility = "undo yes — recorded, and git has this file"
@@ -484,10 +486,10 @@ func TestGolden_ApprovalCard(t *testing.T) {
 			{Label: "state · not yet live, beside a draft that has the keyboard", View: card(func(c *ApprovalCard) {
 				c.Variant, c.Title = ApprovalEdit, "Approve edit"
 				c.Headline = "Assistant wants to edit: internal/agent/loop.go"
-				c.Question = "Apply this edit?"
+				c.Answer = "apply the change"
 				c.Severity, c.SeverityReason = SeverityMedium, "edits one file under internal/agent/"
 				c.Hunks, c.FullDiff = goldenHunks(), true
-				c.AllowAlways, c.AlwaysHint = true, "a: always allow edits"
+				c.AllowAlways, c.AlwaysHint = true, "allow edits in internal/agent without asking"
 				c.NotYetLive, c.Handover = true, "ctrl+space"
 			})},
 			// The one card here with no reading behind its level: a tool that
@@ -497,11 +499,11 @@ func TestGolden_ApprovalCard(t *testing.T) {
 				c.Variant, c.Title = ApprovalGeneric, "Approve tool"
 				c.Headline = "Assistant wants to use: web_fetch"
 				c.Summary = "GET https://pkg.go.dev/context#WithCancel"
-				c.Question = "Allow this call?"
+				c.Answer = "allow it"
 				c.Severity = SeverityLow
 				// The key names the host rather than the category: what the
 				// domain row states is exactly what pressing it grants.
-				c.AllowAlways, c.AlwaysHint = true, "a: always allow pkg.go.dev"
+				c.AllowAlways, c.AlwaysHint = true, "allow pkg.go.dev without asking"
 				c.Fields = []CardField{
 					{Label: "domain", Value: "pkg.go.dev", Detail: "the request leaves this machine", Tone: ToneOpen},
 					{Label: "sends", Value: "the URL and a shhh-web/1.0 user-agent", Detail: "no file contents, no credentials"},
@@ -2641,9 +2643,9 @@ func TestGolden_LightTable(t *testing.T) {
 					Variant:     ApprovalCommand,
 					Title:       "Approve command",
 					Headline:    "Assistant wants to run: go test ./internal/agent/...",
-					Question:    "Run this command?",
+					Answer:      "run it once",
 					AllowAlways: true,
-					AlwaysHint:  "a: always allow commands this session",
+					AlwaysHint:  "allow commands without asking this session",
 				}).View(width)},
 			},
 		})

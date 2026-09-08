@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -72,15 +73,25 @@ func gatedModel(t *testing.T, executor ToolExecutor, gated map[string]GatedPrevi
 	return m
 }
 
+// tallPanel gives a card room for its whole body. A card is bounded to two
+// fifths of the terminal, so on thirty rows a short diff folds behind the
+// counted tail — which is the fold working. A test that means to read what
+// the card states asks for the rows rather than asserting about the fold.
+func tallPanel(t *testing.T, m Model) Model {
+	t.Helper()
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 48})
+	return updated.(Model)
+}
+
 func TestGatedTool_DiffApprovalFlow(t *testing.T) {
 	var executed []string
 	executor := func(name string, args json.RawMessage) (string, error) {
 		executed = append(executed, name)
 		return "wrote 2 lines", nil
 	}
-	m := gatedModel(t, executor, map[string]GatedPreviewFunc{
+	m := tallPanel(t, gatedModel(t, executor, map[string]GatedPreviewFunc{
 		"write_file": writeFilePreview("line one\n"),
-	})
+	}))
 
 	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
 		{ID: "call_w", Name: "write_file", Arguments: `{"path":"main.go","content":"line one\nline two\n"}`},
@@ -107,8 +118,10 @@ func TestGatedTool_DiffApprovalFlow(t *testing.T) {
 	}
 	// The card landed on a draft nobody was typing into, so it holds the
 	// keyboard and offers the two answers; [a] waits behind the handover.
-	if !strings.Contains(view, "[y/Y/n/N]") {
-		t.Fatal("a card holding the keyboard by arrival should offer y/Y/n/N")
+	for _, want := range []string{"[y] apply the change", "[Y] ", "[n] deny", "[N] "} {
+		if !strings.Contains(ansi.Strip(view), want) {
+			t.Fatalf("a card holding the keyboard by arrival offers %q:\n%s", want, view)
+		}
 	}
 	if !strings.Contains(view, "[ctrl+space] for [a]/[d]") {
 		t.Fatal("the card should say what the handover still buys")
@@ -116,8 +129,8 @@ func TestGatedTool_DiffApprovalFlow(t *testing.T) {
 
 	// Approve.
 	m = handover(t, m)
-	if !strings.Contains(m.View().Content, "[y/Y/n/N/a]") {
-		t.Fatal("after the handover the card should offer y/Y/n/N/a")
+	if !strings.Contains(ansi.Strip(m.View().Content), "[a] allow edits in") {
+		t.Fatal("after the handover the card offers the session grant too")
 	}
 	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
 	m = updated.(Model)
@@ -327,8 +340,8 @@ func TestGatedTool_GenericPreview(t *testing.T) {
 	if !strings.Contains(view, "do the thing") {
 		t.Fatal("generic approval should show the summary")
 	}
-	if !strings.Contains(view, "[y/Y/n/N]") {
-		t.Fatal("generic approval should offer y/Y/n/N")
+	if !strings.Contains(ansi.Strip(view), "[y] allow it") {
+		t.Fatal("generic approval should offer its answer under the key")
 	}
 }
 
@@ -388,7 +401,7 @@ func TestMutatingTool_WriteApprovedThroughQueue(t *testing.T) {
 }
 
 func TestMutatingTool_EditDeclinedLeavesFileUntouched(t *testing.T) {
-	m := gatedModel(t, nil, nil)
+	m := tallPanel(t, gatedModel(t, nil, nil))
 	path := filepath.Join(t.TempDir(), "code.go")
 	if err := os.WriteFile(path, []byte("alpha\nbeta\n"), 0o644); err != nil {
 		t.Fatal(err)

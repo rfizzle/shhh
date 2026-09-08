@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/structural"
@@ -128,11 +129,13 @@ func TestPolicy_FlaggedCommandAlwaysPrompts(t *testing.T) {
 		t.Fatalf("safety-flagged command must prompt regardless of policy, got state %d", m.state)
 	}
 	view := m.View().Content
-	if strings.Contains(view, "[y/n/a]") {
+	if strings.Contains(ansi.Strip(view), "[a] allow") {
 		t.Fatal("flagged command must not offer the always-allow option")
 	}
-	if !strings.Contains(view, "[y/Y/n/N]") {
-		t.Fatal("flagged command should offer the two answers and their noted pair")
+	for _, want := range []string{"[y] run it once", "[Y] ", "[n] deny", "[N] "} {
+		if !strings.Contains(ansi.Strip(view), want) {
+			t.Fatalf("flagged command should offer %q:\n%s", want, view)
+		}
 	}
 
 	// 'a' is ignored on a flagged command.
@@ -159,8 +162,10 @@ func TestPolicy_AlwaysAllowCommandsViaKey(t *testing.T) {
 	// The second queued command puts a batch behind the card, so [A] joins
 	// the keys.
 	m = handover(t, m)
-	if !strings.Contains(m.View().Content, "[y/Y/n/N/a/A]") {
-		t.Fatal("unflagged command prompt with a queue behind it should offer y/Y/n/N/a/A")
+	for _, want := range []string{"[y] ", "[Y] ", "[n] ", "[N] ", "[a] ", "[A] "} {
+		if !strings.Contains(ansi.Strip(m.View().Content), want) {
+			t.Fatalf("a queue behind the card should offer %q:\n%s", want, m.View().Content)
+		}
 	}
 
 	// 'a' opens the grants the card can make; the session row approves this
@@ -262,8 +267,10 @@ func TestPolicy_GenericGatedToolAlwaysPrompts(t *testing.T) {
 	if m.state != stateConfirmRun {
 		t.Fatalf("generic gated tool must always prompt, got state %d", m.state)
 	}
-	if !strings.Contains(m.View().Content, "[y/Y/n/N]") {
-		t.Fatal("generic approval keeps the two answers and their noted pair")
+	for _, want := range []string{"[y] allow it", "[Y] ", "[n] deny", "[N] "} {
+		if !strings.Contains(ansi.Strip(m.View().Content), want) {
+			t.Fatalf("generic approval keeps %q:\n%s", want, m.View().Content)
+		}
 	}
 }
 

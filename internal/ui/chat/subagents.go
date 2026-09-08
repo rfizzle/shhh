@@ -316,27 +316,27 @@ func (m Model) childAskCard(ask *subagent.Ask) *components.ApprovalCard {
 		card.Variant = components.ApprovalCommand
 		card.Title = prefix + "Approve command"
 		card.Headline = ask.Agent + " wants to " + ask.Title
-		card.Question = "Run this command?"
+		card.Answer = "run it once"
 	case subagent.AskEdit:
 		card.Variant = components.ApprovalEdit
 		card.Title = prefix + "Approve edit"
 		card.Headline = ask.Agent + " wants to " + ask.Title
 		card.Hunks = ask.Hunks
 		card.FullDiff = len(ask.Hunks) > 0
-		card.Question = "Apply this change in the agent's workspace?"
+		card.Answer = "apply it in the agent's workspace"
 	case subagent.AskPatch:
 		card.Variant = components.ApprovalEdit
 		card.Title = prefix + "Apply patch"
 		card.Headline = ask.Agent + " finished and wants to " + ask.Title
 		card.Hunks = ask.Hunks
 		card.FullDiff = len(ask.Hunks) > 0
-		card.Question = "Apply the agent's patch to your workspace?"
+		card.Answer = "apply the patch to your workspace"
 	default:
 		card.Variant = components.ApprovalGeneric
 		card.Title = prefix + "Approve tool"
 		card.Headline = ask.Agent + " wants to " + ask.Title
 		card.Summary = firstLine(ask.Summary)
-		card.Question = "Allow this?"
+		card.Answer = "allow it"
 	}
 	return card
 }

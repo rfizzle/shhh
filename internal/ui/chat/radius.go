@@ -39,12 +39,19 @@ type blastRadius struct {
 	reason string
 	risks  []string
 	fields []components.CardField
-	// chip is the containment state folded into the title rail;
-	// uncontained promotes ⚠ UNCONTAINED there instead.
-	chip        string
+	// uncontained promotes the ⚠ UNCONTAINED chip onto the title rail, which
+	// is the one containment fact that belongs there: it changes what the
+	// decision is, and the rail is the half of the card read first. The
+	// mechanism in force when there is one is a field instead
+	// (containmentField).
 	uncontained bool
-	// safe names the safe answer in words, for the cards where the keys do
-	// not make it obvious.
+	// safe is what esc is offered under on the cards where the safe answer is
+	// worth naming rather than left to the words every card carries. It says
+	// both halves: that not doing this is the safe answer, and that esc does
+	// not answer the decision — a gated card's esc hands the keyboard back and
+	// leaves the request where it was, which is a different act from the
+	// denial `[n]` is, and a flagged card is the last place those two should
+	// blur (docs/interface/principles.md#esc-is-always-the-safe-answer).
 	safe string
 	// footnote says why a key that could be offered is not.
 	footnote string
@@ -124,16 +131,22 @@ func (m Model) commandRadiusIn(in radiusIn, command string, reach scopeReach, co
 		}
 	}
 	if contain.assistant {
-		b.chip, b.uncontained = m.containmentChip(contain.mechanism)
+		var field components.CardField
+		field, b.uncontained = m.containmentField(contain.mechanism)
 		b.fields = append(b.fields, m.networkField(contain.mechanism))
+		if field.Label != "" {
+			// Under the three fields, because it is the one row that reads
+			// the same on every card of a session: what the reader is
+			// deciding about is above it, and the frame it runs in is the
+			// standing answer beneath.
+			b.fields = append(b.fields, field)
+		}
 	}
 	if len(res.Risks) > 0 {
 		b.footnote = "[a] always — not offered: a safety-flagged command is never pre-approved"
 	}
 	if b.severity == components.SeverityHigh || b.uncontained {
-		// [n], not esc: on a gated card esc hands the keyboard back and
-		// leaves the decision waiting rather than answering it.
-		b.safe = "[n] deny — the safe answer"
+		b.safe = "don't — the safe answer; the decision waits"
 	}
 	if b.uncontained {
 		b.fields = append(b.fields, components.CardField{
@@ -214,19 +227,29 @@ func (m Model) networkField(mechanism string) components.CardField {
 	return f
 }
 
-// containmentChip folds the containment state into the title rail. An
-// uncontained session gets the promoted ⚠ UNCONTAINED chip instead, which the
-// card colours the border to match.
-func (m Model) containmentChip(mechanism string) (chip string, uncontained bool) {
+// containmentField states the containment in force as a row of the card's
+// body rather than as a chip on its title rail. An uncontained session gets
+// no field here and the promoted ⚠ UNCONTAINED chip instead, which the card
+// colours the border to match.
+//
+// It is a body row because a chip is dropped from the front of the rail the
+// moment the terminal narrows, and what a sandbox permits is the last thing a
+// sixty-column card should be shedding; and because the rail is painted in
+// the card's own tone, which drew a statement of containment in the red of a
+// flagged command (docs/interface/surfaces.md#the-approval-card). As a field
+// it keeps the chrome grey the other labels wear and survives every width.
+func (m Model) containmentField(mechanism string) (field components.CardField, uncontained bool) {
 	if m.containment.Status == "" {
 		// /run and sessions with no containment wiring say nothing rather
 		// than claiming either state.
-		return "", false
+		return components.CardField{}, false
 	}
 	if mechanism == "" {
-		return "", true
+		return components.CardField{}, true
 	}
-	return "⛨ " + m.containmentWords(mechanism), false
+	return components.CardField{
+		Label: "⛨", Value: m.containmentWords(mechanism), Tone: components.ToneChrome,
+	}, false
 }
 
 // uncontainedDetail explains the missing mechanism, falling back to a plain
@@ -256,7 +279,7 @@ func (m Model) editRadius(req *approvalRequest) blastRadius {
 		b.fields = append(b.fields, f)
 		if m.pendingScope.class != scope.Ordinary {
 			b.severity, b.reason = components.SeverityHigh, "edits a file outside the working scope"
-			b.safe = "[n] deny — the safe answer"
+			b.safe = "don't — the safe answer; the decision waits"
 		}
 	}
 	switch {
@@ -522,7 +545,7 @@ func (m Model) patchRadius(ask *subagent.Ask) blastRadius {
 		// separate worktrees and the second patch is about to land on the
 		// first, which is the one way isolated writers can still collide.
 		b.severity, b.reason = components.SeverityHigh, ""
-		b.safe = "[n] deny — the safe answer"
+		b.safe = "don't — the safe answer; the decision waits"
 	}
 	value, detail := patchTouches(ask.Files)
 	b.fields = append(b.fields, landsInField(ask), components.CardField{

@@ -207,7 +207,10 @@ func TestHistoryScreen_MatchedRunIsBold(t *testing.T) {
 	h.Update(key("/"))
 	typeIntoHistory(h, "log")
 	h.Update(key("down")) // off the focused row, which paints whole
-	if !strings.Contains(h.View(130), sty.Match.Render("log")) {
+	// Bold over the row's own tone rather than bold alone: a bold run
+	// rendered inside a coloured one ends in a reset and takes the rest of
+	// the label out with it (emphasizeMatch).
+	if !strings.Contains(h.View(130), sty.Body.Bold(true).Render("log")) {
 		t.Fatal("the matched run is not emphasized in the row")
 	}
 }

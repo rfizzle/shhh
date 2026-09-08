@@ -191,7 +191,7 @@ func monoFixtures() []monoSurface {
 			Variant:  ApprovalCommand,
 			Title:    "Approve command",
 			Headline: "Assistant wants to run: go test ./...",
-			Question: "Run this command?",
+			Answer:   "run it once",
 		}
 		mut(&c)
 		return c.View(w)
@@ -429,13 +429,13 @@ func monoFixtures() []monoSurface {
 		}},
 		{"approval severity", []monoState{
 			{"no warnings", card(func(c *ApprovalCard) {
-				c.AllowAlways, c.AlwaysHint = true, "a: always allow commands this session"
+				c.AllowAlways, c.AlwaysHint = true, "allow commands without asking this session"
 			})},
 			{"warned", card(func(c *ApprovalCard) {
 				c.Warnings = []string{"deletes files recursively (rm -rf)"}
 			})},
 			{"contained", card(func(c *ApprovalCard) {
-				c.Chip = "⛨ bwrap · workspace"
+				c.Fields = []CardField{{Label: "⛨", Value: "bwrap · workspace", Tone: ToneChrome}}
 			})},
 			{"uncontained", card(func(c *ApprovalCard) {
 				c.Uncontained = true

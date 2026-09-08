@@ -10,7 +10,7 @@ snap 01-start "Some things worth doing first"
 keys "what would you run" Enter
 snap 02-reply "I would run the test suite in watch mode"
 keys "go on then" Enter
-snap 03-card "Run this command?"
+snap 03-card "[y] run it once"
 keys C-Space
 snap 04-live "without asking"
 keys a

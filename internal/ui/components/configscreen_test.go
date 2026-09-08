@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
 )
 
 // The config screen's own rules (
@@ -178,7 +179,7 @@ func TestConfigScreen_WriteConfirms(t *testing.T) {
 	c := configFixture()
 	c.Changed = 1
 	c.Update(key("w"))
-	view := c.View(110)
+	view := ansi.Strip(c.View(110))
 	if !strings.Contains(view, "[y/N]") || !strings.Contains(view, "~/.config/shhh/config.toml") {
 		t.Fatalf("the write-back asks in the inline confirm:\n%s", view)
 	}

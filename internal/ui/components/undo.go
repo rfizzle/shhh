@@ -141,7 +141,7 @@ func (c UndoConfirm) driftRows(width int) []string {
 // the statement moves to a row of its own rather than pushing them off the
 // end.
 func (c UndoConfirm) headRows(width int) []string {
-	keys := sty.Headline.Render(c.defaultKeys())
+	keys := c.defaultKeys()
 	if full := sty.Body.Render(c.Prompt+" "+c.effect()) + "  " + keys; lipgloss.Width(full) <= width {
 		return []string{full}
 	}
@@ -171,7 +171,7 @@ func (c UndoConfirm) View(width int) string {
 // to do it is not offered, so the prompt never shows a key that does nothing.
 func (c UndoConfirm) defaultKeys() string {
 	if c.touches() == 0 {
-		return "[" + keys.Shown(keys.Confirm.Force) + "/" + keys.Shown(keys.Confirm.No) + "]"
+		return confirmPair(keys.Shown(keys.Confirm.Force), keys.Shown(keys.Confirm.No))
 	}
 	return confirmKeys()
 }

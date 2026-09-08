@@ -16,6 +16,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -152,7 +153,7 @@ func TestBatch_MembershipSpansOnlyTheSameCategory(t *testing.T) {
 		t.Fatalf("batch should hold only the other command, got %v", got)
 	}
 	view := strings.Join(m.confirmLines(), "\n")
-	if !strings.Contains(view, "A: answer 2 like this as a list") {
+	if !strings.Contains(ansi.Strip(view), "[A] answer 2 like this as a list") {
 		t.Fatalf("the key should state how many it answers, got:\n%s", view)
 	}
 	if !strings.Contains(view, "[A] lists the 2 marked") {

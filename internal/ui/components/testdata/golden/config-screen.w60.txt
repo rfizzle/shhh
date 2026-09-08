@@ -251,19 +251,19 @@ shhh config                              [?] keys · [q] quit
 
   ␛[1;94mSESSION␛[m
   ␛[1;48;5;62m❯ permission mode    ⏵⏵ auto — edits apply; allowli…  user␛[m
-    round limit        ␛[38;5;252m25␛[m                            ␛[38;5;252mdefault␛[m
-    context budget     ␛[38;5;252m8000 tokens␛[m                   ␛[38;5;252mdefault␛[m
-    safety warnings    ␛[92mon␛[m                            ␛[38;5;252mdefault␛[m
+    ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                            ␛[38;5;252mdefault␛[m
+    ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                   ␛[38;5;252mdefault␛[m
+    ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                            ␛[38;5;252mdefault␛[m
 
   ␛[1;94mMODEL␛[m
-    provider           ␛[38;5;252mopenai␛[m                           ␛[38;5;252muser␛[m
-    model              ␛[38;5;252mgpt-5.2␛[m            ␛[38;5;252muser · 6 available␛[m
-    api key            ␛[38;5;252m···4f9c␛[m                          ␛[38;5;252muser␛[m
-    base url           ␛[38;5;252m(the provider's own)␛[m          ␛[38;5;252mdefault␛[m
-    sub-agent model    ␛[38;5;252minherit␛[m                       ␛[38;5;252mdefault␛[m
+    ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                           ␛[38;5;252muser␛[m
+    ␛[38;5;252mmodel␛[m              ␛[38;5;252mgpt-5.2␛[m            ␛[38;5;252muser · 6 available␛[m
+    ␛[38;5;252mapi key␛[m            ␛[38;5;252m···4f9c␛[m                          ␛[38;5;252muser␛[m
+    ␛[38;5;252mbase url␛[m           ␛[38;5;252m(the provider's own)␛[m          ␛[38;5;252mdefault␛[m
+    ␛[38;5;252msub-agent model␛[m    ␛[38;5;252minherit␛[m                       ␛[38;5;252mdefault␛[m
 
   ␛[1;94mWORKSPACE␛[m
-    sandbox            ␛[38;5;252m⛨ workspac…␛[m  ␛[91munavailable on this host␛[m
+    ␛[38;5;252msandbox␛[m            ␛[38;5;252m⛨ workspac…␛[m  ␛[91munavailable on this host␛[m
   ␛[38;5;241m↓ 4 more␛[m
 
 ␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m       ␛[38;5;241m14 settings␛[m
@@ -274,19 +274,19 @@ shhh config                              [?] keys · [q] quit
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mSESSION␛[m
-    permission mode    ␛[92m⏵⏵ auto␛[m ␛[38;5;241m— edits apply; allowli…␛[m  ␛[38;5;252muser␛[m
-    round limit        ␛[38;5;252m25␛[m                            ␛[38;5;252mdefault␛[m
-    context budget     ␛[38;5;252m8000 tokens␛[m                   ␛[38;5;252mdefault␛[m
-    safety warnings    ␛[92mon␛[m                            ␛[38;5;252mdefault␛[m
+    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;241m— edits apply; allowli…␛[m  ␛[38;5;252muser␛[m
+    ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                            ␛[38;5;252mdefault␛[m
+    ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                   ␛[38;5;252mdefault␛[m
+    ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                            ␛[38;5;252mdefault␛[m
 
   ␛[1;94mMODEL␛[m
-    provider           ␛[38;5;252mopenai␛[m                           ␛[38;5;252muser␛[m
+    ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                           ␛[38;5;252muser␛[m
   ␛[1;48;5;62m❯ model              gpt-5.2            user · 6 available␛[m
     ␛[1;48;5;62m❯ gpt-5.2            current default         $1.25 / $10␛[m
-      gpt-5.2-mini       ␛[38;5;241m⅕ the price␛[m              ␛[38;5;252m$0.25 / $2␛[m
-      claude-opus-4.6    ␛[38;5;241mdeepest reasoning␛[m         ␛[38;5;252m$15 / $75␛[m
-      claude-sonnet-4.6  ␛[38;5;241mbetter diffs · 200k ctx␛[m    ␛[38;5;252m$3 / $15␛[m
-      gemini-3-flash     ␛[38;5;241m1M ctx␛[m                ␛[38;5;252m$0.30 / $2.50␛[m
+      ␛[38;5;252mgpt-5.2-mini␛[m       ␛[38;5;241m⅕ the price␛[m              ␛[38;5;252m$0.25 / $2␛[m
+      ␛[38;5;252mclaude-opus-4.6␛[m    ␛[38;5;241mdeepest reasoning␛[m         ␛[38;5;252m$15 / $75␛[m
+      ␛[38;5;252mclaude-sonnet-4.6␛[m  ␛[38;5;241mbetter diffs · 200k ctx␛[m    ␛[38;5;252m$3 / $15␛[m
+      ␛[38;5;252mgemini-3-flash␛[m     ␛[38;5;241m1M ctx␛[m                ␛[38;5;252m$0.30 / $2.50␛[m
       ␛[38;5;245m⊘ deepseek-r2␛[m      ␛[38;5;245mlocal via ollama␛[m    ␛[38;5;245mnot usable here␛[m
   ␛[38;5;241m↓ 8 more␛[m
 
@@ -298,20 +298,20 @@ shhh config                              [?] keys · [q] quit
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mSESSION␛[m
-    permission mode    ␛[92m⏵⏵ auto␛[m ␛[38;5;241m— edits apply; allowli…␛[m  ␛[38;5;252muser␛[m
-    round limit        ␛[38;5;252m25␛[m                            ␛[38;5;252mdefault␛[m
-    context budget     ␛[38;5;252m8000 tokens␛[m                   ␛[38;5;252mdefault␛[m
-    safety warnings    ␛[92mon␛[m                            ␛[38;5;252mdefault␛[m
+    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;241m— edits apply; allowli…␛[m  ␛[38;5;252muser␛[m
+    ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                            ␛[38;5;252mdefault␛[m
+    ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                   ␛[38;5;252mdefault␛[m
+    ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                            ␛[38;5;252mdefault␛[m
 
   ␛[1;94mMODEL␛[m
-    provider           ␛[38;5;252mopenai␛[m                           ␛[38;5;252muser␛[m
+    ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                           ␛[38;5;252muser␛[m
   ␛[1;48;5;62m❯ model              gpt-5.2            user · 6 available␛[m
     ␛[94m▸ ␛[m␛[97mclaude█␛[m                                   ␛[38;5;241m2 of 6 match␛[m
     ␛[1;48;5;62m❯ claude-opus-4.6    deepest reasoning         $15 / $75␛[m
-      ␛[1mclaude␛[m-sonnet-4.6  ␛[38;5;241mbetter diffs · 200k ctx␛[m    ␛[38;5;252m$3 / $15␛[m
-    api key            ␛[38;5;252m···4f9c␛[m                          ␛[38;5;252muser␛[m
-    base url           ␛[38;5;252m(the provider's own)␛[m          ␛[38;5;252mdefault␛[m
-    sub-agent model    ␛[38;5;252minherit␛[m                       ␛[38;5;252mdefault␛[m
+      ␛[1;38;5;252mclaude␛[m␛[38;5;252m-sonnet-4.6␛[m  ␛[38;5;241mbetter diffs · 200k ctx␛[m    ␛[38;5;252m$3 / $15␛[m
+    ␛[38;5;252mapi key␛[m            ␛[38;5;252m···4f9c␛[m                          ␛[38;5;252muser␛[m
+    ␛[38;5;252mbase url␛[m           ␛[38;5;252m(the provider's own)␛[m          ␛[38;5;252mdefault␛[m
+    ␛[38;5;252msub-agent model␛[m    ␛[38;5;252minherit␛[m                       ␛[38;5;252mdefault␛[m
   ␛[38;5;241m↓ 5 more␛[m
 
 ␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+u]␛[m␛[38;5;241m clear the filter␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m take it␛[m
@@ -322,21 +322,21 @@ shhh config                              [?] keys · [q] quit
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mSESSION␛[m
-    permission mode    ␛[92m⏵⏵ auto␛[m ␛[38;5;241m— edits apply; allowli…␛[m  ␛[38;5;252muser␛[m
+    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;241m— edits apply; allowli…␛[m  ␛[38;5;252muser␛[m
   ␛[1;48;5;62m❯ round limit        25                            default␛[m
     ␛[94m▸ ␛[m␛[97m2540█␛[m
-    context budget     ␛[38;5;252m8000 tokens␛[m                   ␛[38;5;252mdefault␛[m
-    safety warnings    ␛[92mon␛[m                            ␛[38;5;252mdefault␛[m
+    ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                   ␛[38;5;252mdefault␛[m
+    ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                            ␛[38;5;252mdefault␛[m
 
   ␛[1;94mMODEL␛[m
-    provider           ␛[38;5;252mopenai␛[m                           ␛[38;5;252muser␛[m
-    model              ␛[38;5;252mgpt-5.2␛[m            ␛[38;5;252muser · 6 available␛[m
-    api key            ␛[38;5;252m···4f9c␛[m                          ␛[38;5;252muser␛[m
-    base url           ␛[38;5;252m(the provider's own)␛[m          ␛[38;5;252mdefault␛[m
-    sub-agent model    ␛[38;5;252minherit␛[m                       ␛[38;5;252mdefault␛[m
+    ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                           ␛[38;5;252muser␛[m
+    ␛[38;5;252mmodel␛[m              ␛[38;5;252mgpt-5.2␛[m            ␛[38;5;252muser · 6 available␛[m
+    ␛[38;5;252mapi key␛[m            ␛[38;5;252m···4f9c␛[m                          ␛[38;5;252muser␛[m
+    ␛[38;5;252mbase url␛[m           ␛[38;5;252m(the provider's own)␛[m          ␛[38;5;252mdefault␛[m
+    ␛[38;5;252msub-agent model␛[m    ␛[38;5;252minherit␛[m                       ␛[38;5;252mdefault␛[m
 
   ␛[1;94mWORKSPACE␛[m
-    sandbox            ␛[38;5;252m⛨ workspac…␛[m  ␛[91munavailable on this host␛[m
+    ␛[38;5;252msandbox␛[m            ␛[38;5;252m⛨ workspac…␛[m  ␛[91munavailable on this host␛[m
   ␛[38;5;241m↓ 4 more␛[m
 
 ␛[94m[enter]␛[m␛[38;5;241m set it␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+u]␛[m␛[38;5;241m clear the field␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m keep 25␛[m
@@ -346,19 +346,19 @@ shhh config                              [?] keys · [q] quit
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mSESSION␛[m
-    permission mode    ␛[92m⏵⏵ auto␛[m ␛[38;5;241m— edits apply; allowli…␛[m  ␛[38;5;252muser␛[m
-    round limit        ␛[38;5;252m25␛[m                            ␛[38;5;252mdefault␛[m
-    context budget     ␛[38;5;252m8000 tokens␛[m                   ␛[38;5;252mdefault␛[m
-    safety warnings    ␛[92mon␛[m                            ␛[38;5;252mdefault␛[m
+    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;241m— edits apply; allowli…␛[m  ␛[38;5;252muser␛[m
+    ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                            ␛[38;5;252mdefault␛[m
+    ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                   ␛[38;5;252mdefault␛[m
+    ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                            ␛[38;5;252mdefault␛[m
 
   ␛[1;94mMODEL␛[m
-    provider           ␛[38;5;252mopenai␛[m                           ␛[38;5;252muser␛[m
-    model              ␛[38;5;252mgpt-5.2␛[m            ␛[38;5;252muser · 6 available␛[m
+    ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                           ␛[38;5;252muser␛[m
+    ␛[38;5;252mmodel␛[m              ␛[38;5;252mgpt-5.2␛[m            ␛[38;5;252muser · 6 available␛[m
   ␛[1;48;5;62m❯ api key            ···4f9c                          user␛[m
     ␛[38;5;252mPaste a value for api key␛[m␛[38;5;241m · replacing ···4f9c␛[m
     ␛[38;5;241m▸ ␛[m␛[38;5;214m••••••••••••␛[m␛[1;48;5;62m ␛[m
-    base url           ␛[38;5;252m(the provider's own)␛[m          ␛[38;5;252mdefault␛[m
-    sub-agent model    ␛[38;5;252minherit␛[m                       ␛[38;5;252mdefault␛[m
+    ␛[38;5;252mbase url␛[m           ␛[38;5;252m(the provider's own)␛[m          ␛[38;5;252mdefault␛[m
+    ␛[38;5;252msub-agent model␛[m    ␛[38;5;252minherit␛[m                       ␛[38;5;252mdefault␛[m
 
   ␛[1;94mWORKSPACE␛[m
   ␛[38;5;241m↓ 5 more␛[m
@@ -370,17 +370,17 @@ shhh config                              [?] keys · [q] quit
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
   ␛[1;94mSESSION␛[m
-    permission mode    ␛[92m⏵⏵ auto␛[m ␛[38;5;241m— edits apply; allowli…␛[m  ␛[38;5;252muser␛[m
-    round limit        ␛[38;5;252m40␛[m                          ␛[38;5;214munwritten␛[m
-    context budget     ␛[38;5;252m8000 tokens␛[m                   ␛[38;5;252mdefault␛[m
-    safety warnings    ␛[92mon␛[m                            ␛[38;5;252mdefault␛[m
+    ␛[38;5;252mpermission mode␛[m    ␛[92m⏵⏵ auto␛[m ␛[38;5;241m— edits apply; allowli…␛[m  ␛[38;5;252muser␛[m
+    ␛[38;5;252mround limit␛[m        ␛[38;5;252m40␛[m                          ␛[38;5;214munwritten␛[m
+    ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                   ␛[38;5;252mdefault␛[m
+    ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                            ␛[38;5;252mdefault␛[m
 
   ␛[1;94mMODEL␛[m
-    provider           ␛[38;5;252mopenai␛[m                           ␛[38;5;252muser␛[m
+    ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                           ␛[38;5;252muser␛[m
   ␛[1;48;5;62m❯ model              claude-sonnet-4.6           unwritten␛[m
-    api key            ␛[38;5;252m···4f9c␛[m                          ␛[38;5;252muser␛[m
-    base url           ␛[38;5;252m(the provider's own)␛[m          ␛[38;5;252mdefault␛[m
-    sub-agent model    ␛[38;5;252minherit␛[m                       ␛[38;5;252mdefault␛[m
+    ␛[38;5;252mapi key␛[m            ␛[38;5;252m···4f9c␛[m                          ␛[38;5;252muser␛[m
+    ␛[38;5;252mbase url␛[m           ␛[38;5;252m(the provider's own)␛[m          ␛[38;5;252mdefault␛[m
+    ␛[38;5;252msub-agent model␛[m    ␛[38;5;252minherit␛[m                       ␛[38;5;252mdefault␛[m
 
   ␛[1;94mWORKSPACE␛[m
   ␛[38;5;241m↓ 5 more␛[m
@@ -395,23 +395,23 @@ shhh config                              [?] keys · [q] quit
 
   ␛[1;94mSESSION␛[m
   ␛[1;48;5;62m❯ permission mode    ⏵⏵ auto — edits apply; allowli…  user␛[m
-    round limit        ␛[38;5;252m25␛[m                            ␛[38;5;252mdefault␛[m
-    context budget     ␛[38;5;252m8000 tokens␛[m                   ␛[38;5;252mdefault␛[m
-    safety warnings    ␛[92mon␛[m                            ␛[38;5;252mdefault␛[m
+    ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                            ␛[38;5;252mdefault␛[m
+    ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                   ␛[38;5;252mdefault␛[m
+    ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                            ␛[38;5;252mdefault␛[m
 
   ␛[1;94mMODEL␛[m
-    provider           ␛[38;5;252mopenai␛[m                           ␛[38;5;252muser␛[m
-    model              ␛[38;5;252mgpt-5.2␛[m            ␛[38;5;252muser · 6 available␛[m
-    api key            ␛[38;5;252m···4f9c␛[m                          ␛[38;5;252muser␛[m
-    base url           ␛[38;5;252m(the provider's own)␛[m          ␛[38;5;252mdefault␛[m
-    sub-agent model    ␛[38;5;252minherit␛[m                       ␛[38;5;252mdefault␛[m
+    ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                           ␛[38;5;252muser␛[m
+    ␛[38;5;252mmodel␛[m              ␛[38;5;252mgpt-5.2␛[m            ␛[38;5;252muser · 6 available␛[m
+    ␛[38;5;252mapi key␛[m            ␛[38;5;252m···4f9c␛[m                          ␛[38;5;252muser␛[m
+    ␛[38;5;252mbase url␛[m           ␛[38;5;252m(the provider's own)␛[m          ␛[38;5;252mdefault␛[m
+    ␛[38;5;252msub-agent model␛[m    ␛[38;5;252minherit␛[m                       ␛[38;5;252mdefault␛[m
 
   ␛[1;94mWORKSPACE␛[m
-    sandbox            ␛[38;5;252m⛨ workspac…␛[m  ␛[91munavailable on this host␛[m
-    network            ␛[38;5;214mprivate hosts reachable␛[m ␛[38;5;241m— intr…␛[m  ␛[38;5;252muser␛[m
+    ␛[38;5;252msandbox␛[m            ␛[38;5;252m⛨ workspac…␛[m  ␛[91munavailable on this host␛[m
+    ␛[38;5;252mnetwork␛[m            ␛[38;5;214mprivate hosts reachable␛[m ␛[38;5;241m— intr…␛[m  ␛[38;5;252muser␛[m
   ␛[38;5;241m↓ 3 more␛[m
 
-␛[38;5;252mWrite 2 changes to ~/.config/shhh/config.toml?␛[m  ␛[1;94m[y/N]␛[m
+␛[38;5;252m␛[38;5;252mWrite 2 changes to ~/.config/shhh/config.toml?␛[m␛[m  ␛[38;5;241m[␛[m␛[38;5;241my␛[m␛[38;5;241m/␛[m␛[1;97mN␛[m␛[38;5;241m]␛[m
 
 · the way out · the same question over the same count
 ␛[1;97mshhh config␛[m␛[38;5;214m · 2 changes unwritten␛[m        ␛[38;5;241m[?] keys · [q] quit␛[m
@@ -419,23 +419,23 @@ shhh config                              [?] keys · [q] quit
 
   ␛[1;94mSESSION␛[m
   ␛[1;48;5;62m❯ permission mode    ⏵⏵ auto — edits apply; allowli…  user␛[m
-    round limit        ␛[38;5;252m25␛[m                            ␛[38;5;252mdefault␛[m
-    context budget     ␛[38;5;252m8000 tokens␛[m                   ␛[38;5;252mdefault␛[m
-    safety warnings    ␛[92mon␛[m                            ␛[38;5;252mdefault␛[m
+    ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                            ␛[38;5;252mdefault␛[m
+    ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                   ␛[38;5;252mdefault␛[m
+    ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                            ␛[38;5;252mdefault␛[m
 
   ␛[1;94mMODEL␛[m
-    provider           ␛[38;5;252mopenai␛[m                           ␛[38;5;252muser␛[m
-    model              ␛[38;5;252mgpt-5.2␛[m            ␛[38;5;252muser · 6 available␛[m
-    api key            ␛[38;5;252m···4f9c␛[m                          ␛[38;5;252muser␛[m
-    base url           ␛[38;5;252m(the provider's own)␛[m          ␛[38;5;252mdefault␛[m
-    sub-agent model    ␛[38;5;252minherit␛[m                       ␛[38;5;252mdefault␛[m
+    ␛[38;5;252mprovider␛[m           ␛[38;5;252mopenai␛[m                           ␛[38;5;252muser␛[m
+    ␛[38;5;252mmodel␛[m              ␛[38;5;252mgpt-5.2␛[m            ␛[38;5;252muser · 6 available␛[m
+    ␛[38;5;252mapi key␛[m            ␛[38;5;252m···4f9c␛[m                          ␛[38;5;252muser␛[m
+    ␛[38;5;252mbase url␛[m           ␛[38;5;252m(the provider's own)␛[m          ␛[38;5;252mdefault␛[m
+    ␛[38;5;252msub-agent model␛[m    ␛[38;5;252minherit␛[m                       ␛[38;5;252mdefault␛[m
 
   ␛[1;94mWORKSPACE␛[m
-    sandbox            ␛[38;5;252m⛨ workspac…␛[m  ␛[91munavailable on this host␛[m
-    network            ␛[38;5;214mprivate hosts reachable␛[m ␛[38;5;241m— intr…␛[m  ␛[38;5;252muser␛[m
+    ␛[38;5;252msandbox␛[m            ␛[38;5;252m⛨ workspac…␛[m  ␛[91munavailable on this host␛[m
+    ␛[38;5;252mnetwork␛[m            ␛[38;5;214mprivate hosts reachable␛[m ␛[38;5;241m— intr…␛[m  ␛[38;5;252muser␛[m
   ␛[38;5;241m↓ 3 more␛[m
 
-␛[38;5;252mDiscard 2 changes?␛[m  ␛[1;94m[y/N]␛[m
+␛[38;5;252m␛[38;5;252mDiscard 2 changes?␛[m␛[m  ␛[38;5;241m[␛[m␛[38;5;241my␛[m␛[38;5;241m/␛[m␛[1;97mN␛[m␛[38;5;241m]␛[m
 
 · the settings filtered · the list is the same window
 ␛[1;97mshhh config␛[m                              ␛[38;5;241m[?] keys · [q] quit␛[m
@@ -446,11 +446,11 @@ shhh config                              [?] keys · [q] quit
   ␛[1;48;5;62m❯ permission mode  ⏵⏵ auto — edits apply; allowlist…  user␛[m
 
   ␛[1;94mMODEL␛[m
-    ␛[1mmo␛[mdel            ␛[38;5;252mgpt-5.2␛[m              ␛[38;5;252muser · 6 available␛[m
-    sub-agent ␛[1mmo␛[mdel  ␛[38;5;252minherit␛[m                         ␛[38;5;252mdefault␛[m
+    ␛[1;38;5;252mmo␛[m␛[38;5;252mdel␛[m            ␛[38;5;252mgpt-5.2␛[m              ␛[38;5;252muser · 6 available␛[m
+    ␛[38;5;252msub-agent ␛[m␛[1;38;5;252mmo␛[m␛[38;5;252mdel␛[m  ␛[38;5;252minherit␛[m                         ␛[38;5;252mdefault␛[m
 
   ␛[1;94mWORKSPACE␛[m
-    me␛[1mmo␛[mry           ␛[38;5;252mon␛[m ␛[38;5;241m— 4 entries · .shhh/memory…␛[m  ␛[38;5;252mdefault␛[m
+    ␛[38;5;252mme␛[m␛[1;38;5;252mmo␛[m␛[38;5;252mry␛[m           ␛[38;5;252mon␛[m ␛[38;5;241m— 4 entries · .shhh/memory…␛[m  ␛[38;5;252mdefault␛[m
 
 ␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+u]␛[m␛[38;5;241m clear the filter␛[m
 ␛[94m[esc]␛[m␛[38;5;241m leave␛[m
@@ -461,9 +461,9 @@ shhh config                              [?] keys · [q] quit
 
   ␛[1;94mSESSION␛[m
   ␛[1;48;5;62m❯ permission mode    ⏵⏵ auto — edits apply; allowli…  user␛[m
-    round limit        ␛[38;5;252m25␛[m                            ␛[38;5;252mdefault␛[m
-    context budget     ␛[38;5;252m8000 tokens␛[m                   ␛[38;5;252mdefault␛[m
-    safety warnings    ␛[92mon␛[m                            ␛[38;5;252mdefault␛[m
+    ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                            ␛[38;5;252mdefault␛[m
+    ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                   ␛[38;5;252mdefault␛[m
+    ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                            ␛[38;5;252mdefault␛[m
 
   ␛[1;94mMODEL␛[m
   ␛[38;5;241m↓ 10 more␛[m

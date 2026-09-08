@@ -1,0 +1,32 @@
+# The severity ladder in three colours, and the decision run in one grammar
+# (docs/interface/surfaces.md#the-approval-card). Three command cards land in
+# one turn — low, medium and flagged — so the chip, the body row and the
+# border can be read against each other on each of them, and the three cards
+# against one another for the colour that separates a rating from a warning.
+#
+# Every card is denied. Nothing in this scene writes to the workspace it is
+# driven in, and the flagged line is never run.
+#
+# Spaces rather than tabs in the fixtures: a tab is re-expanded by the
+# terminal against the pane's own columns, not the row's, and the capture
+# would read as a column that drifted.
+setup printf 'package agent\n\nfunc loop() {\n    for round := 0; round < limit; round++ {\n        step()\n    }\n}\n' > loop.go
+setup printf 'the round limit is a checkpoint\n' > notes.md
+snap 01-start "Some things worth doing first"
+keys "walk the severity ladder" Enter
+# A card that lands on an empty draft takes the keyboard with a grace window
+# open, so the answer waits for the window to close rather than racing it.
+snap 02-low "sed -n 1p notes.md"
+sleep 1
+keys n
+snap 03-medium "npm run build"
+sleep 1
+keys n
+snap 04-flagged "⚠ HIGH"
+sleep 1
+keys n
+snap 05-answered "Every rung of the ladder is above"
+keys C-c
+snap 06-quit-armed "press again to quit"
+keys C-c
+snap 07-exit "that is everything the screen was holding"

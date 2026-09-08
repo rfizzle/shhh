@@ -78,42 +78,42 @@ const (
 	SeverityHigh
 )
 
-// Level is the severity as one word. HIGH is shouted because it is the one
-// level where the reader is meant to stop.
-func (s Severity) Level() string {
-	switch s {
-	case SeverityLow:
-		return "low"
-	case SeverityMedium:
-		return "medium"
-	case SeverityHigh:
-		return "HIGH"
-	}
-	return ""
-}
-
-// Word is the severity as the title chip prints it: the glyph and the level.
-// The glyph belongs to the chip, which is where the card leads with the
-// severity; the body row states the same level with the reading behind it, so
-// the three ways the card says it are three statements rather than one
-// sentence printed twice
+// Word is the severity as every surface prints it: the glyph and the level,
+// with HIGH shouted because it is the one level where the reader is meant to
+// stop. The chip on the title rail, the body row and the queue strip all say
+// it in these words, so a reader checking one against another is not first
+// working out that they are the same claim
 // (docs/interface/principles.md#colour-never-carries-meaning-alone).
 func (s Severity) Word() string {
-	if level := s.Level(); level != "" {
-		return "⚠ " + level
+	switch s {
+	case SeverityLow:
+		return "⚠ low"
+	case SeverityMedium:
+		return "⚠ medium"
+	case SeverityHigh:
+		return "⚠ HIGH"
 	}
 	return ""
 }
 
-// border is the frame colour that reinforces the severity word.
-func (s Severity) border() lipgloss.Style {
+// tone is the one colour all three of the card's statements of the level are
+// drawn in: the chip on the title rail, the body row that reads the level,
+// and the border between them. Three colours and not two — `low` and `medium`
+// are the mutation rail's Accent, `HIGH` is Del — because a rating drawn in
+// the colour of failure at every level it has teaches the reader that the
+// colour means "a card", and then the one level that is meant to stop them
+// has nothing left to say it with (docs/interface/surfaces.md#the-approval-card).
+//
+// A card with no rating takes Info, the tone of a surface asking for an
+// answer, rather than the chrome grey a card that reports wears (CardTone).
+func (s Severity) tone() lipgloss.Style {
 	switch s {
 	case SeverityHigh:
 		return sty.Del
-	case SeverityMedium:
+	case SeverityLow, SeverityMedium:
 		return sty.Accent
 	}
-	return sty.Border
+	return sty.Info
 }
 
 // FieldTone colours a blast-radius field's value. The tone never carries the
@@ -131,6 +131,12 @@ const (
 	// ToneRisk marks the answer that should give the reader pause: nothing
 	// can be undone, nothing is containing this.
 	ToneRisk
+	// ToneChrome marks a row that states the frame the act runs in rather
+	// than a fact about the act — the containment line, which reads the same
+	// on every card of a session. It takes the label's own grey, so a row
+	// that is the same on the twentieth card as on the first does not compete
+	// with the three that are not.
+	ToneChrome
 )
 
 func (t FieldTone) style() lipgloss.Style {
@@ -141,6 +147,8 @@ func (t FieldTone) style() lipgloss.Style {
 		return sty.Accent
 	case ToneRisk:
 		return sty.Del
+	case ToneChrome:
+		return sty.Status
 	}
 	return sty.Body
 }
@@ -203,12 +211,13 @@ type ApprovalCard struct {
 	// caller must not set AllowAlways (flagged actions are never
 	// blanket-approved).
 	Warnings []string
-	// Chip is the containment state folded into the title rail, e.g.
-	// "⛨ bwrap · workspace". Uncontained replaces it with
-	// "⚠ UNCONTAINED" and promotes it ahead of the severity chip.
-	Chip        string
+	// Uncontained puts "⚠ UNCONTAINED" on the title rail ahead of the
+	// severity chip. It is the one containment fact that belongs there,
+	// because it changes what the decision is; the mechanism in force when
+	// there is one is a field of the body instead, where it survives a
+	// terminal narrow enough to shed a chip.
 	Uncontained bool
-	// Amended rides the title rail beside those two: the line this card is
+	// Amended rides the title rail beside it: the line this card is
 	// about is the reader's, not the call's. It sheds before the severity
 	// chip and after the containment one, because the body's own `was` row
 	// says the same thing and never drops, while severity is what the
@@ -227,16 +236,27 @@ type ApprovalCard struct {
 	Reversibility string
 	// Summary is the generic variant's one-line description.
 	Summary string
-	// Question is the decision prompt, e.g. "Run this command?".
-	Question string
-	// AllowAlways offers [a] with AlwaysHint describing the session grant.
+	// Answer is the imperative the allow key is offered under: `run once`,
+	// `apply the change`, `fetch it`. It is a verb and not a question,
+	// because it is drawn beside the key that does it — the run reads
+	// `[y] run once`, and a card that asked `Run this command?` above its own
+	// keys was spending a row to put the decision twice
+	// (docs/interface/surfaces.md#the-approval-card). Empty falls back to the
+	// register's own word for the key.
+	Answer string
+	// Decline is the same for the key that refuses, on the cards where the
+	// refusal costs more than the register's word admits — a scaffold offer
+	// declined is not offered again. Empty is the register's `deny`.
+	Decline string
+	// AllowAlways offers [a], and AlwaysHint is the imperative it is offered
+	// under — `allow "go test" without asking`. The scope is in the words
+	// because a key whose reach is not stated is a key pressed on a guess.
 	AllowAlways bool
 	AlwaysHint  string
 	// Batch offers [A]: this action and every queued action the session
 	// would classify the same way, opened as the list that answers them.
-	// BatchHint
-	// states the count on the key, because a key that answers an unstated
-	// number of decisions is not an offer.
+	// BatchHint is its imperative and states the count, because a key that
+	// answers an unstated number of decisions is not an offer.
 	Batch     bool
 	BatchHint string
 	// Noted offers the two answers that carry a sentence — [Y] and [N] —
@@ -245,11 +265,6 @@ type ApprovalCard struct {
 	// It is off wherever there is nothing waiting to read the sentence: a
 	// /run the reader typed has no model to correct, and a child's routed
 	// request answers over a channel that carries a boolean.
-	//
-	// A card offering it gives up the capital-N default marker on the safe
-	// answer, because the capital is a key now and a run that printed a key
-	// meaning something else would be the one thing this card must never do.
-	// Cards without the offer keep the marker exactly as they had it.
 	Noted bool
 	// NoteOpen is the field open under the card, holding the keyboard.
 	// NoteAllow says which of the two answers it will carry, and NoteField
@@ -298,11 +313,6 @@ type ApprovalCard struct {
 	// these together and presses every one of them through the surface's
 	// real route.
 	ExtraHints []KeyOffer
-	// SafeDefault names the safe answer in words, for the cards where it is
-	// not obvious from the keys — e.g. "[n] deny — the safe answer". It names
-	// a key that answers, never esc, which hands the keyboard back instead
-	//; Return is where esc's own meaning is stated.
-	SafeDefault string
 	// Footnote says why a key the reader might expect is absent. A missing
 	// key with a stated reason teaches; a missing key without one reads as a
 	// bug.
@@ -321,10 +331,16 @@ type ApprovalCard struct {
 	// rebuilt every frame.
 	BodyOffset int
 	PanOffset  int
-	// Return names what esc does while the card holds the keyboard: it hands
-	// it back to the draft and leaves the decision waiting rather than
-	// answering it. Stated because it is not obvious — invariant 3
-	// asks for the safe answer in words wherever it is not.
+	// Return names what esc does while the card holds the keyboard, as the
+	// imperative it is offered under and without the bracket: the card draws
+	// `[esc]` itself, in Add, because esc is the answer that costs nothing.
+	//
+	// Every live card carries the row, not only the ones a flagged command
+	// put it on: the way out of a decision is the one thing a reader must be
+	// able to find without having pressed anything
+	// (docs/interface/principles.md#esc-is-always-the-safe-answer). Empty
+	// falls back to what esc does on every gated card — hand the keyboard
+	// back and leave the decision waiting.
 	Return string
 	// NotYetLive says the card is on screen beside a draft that still holds
 	// the keyboard. Its decision keys render as not-yet-live and
@@ -436,11 +452,24 @@ func (c *ApprovalCard) View(width int) string {
 	if c.QueuePos != "" {
 		title += " (" + c.QueuePos + ")"
 	}
-	style := c.Severity.border()
-	if c.Uncontained {
-		style = sty.Del
-	}
+	style := c.tone()
 	return Card{Title: title, Chips: c.chips(), Style: &style}.Render(rows, width)
+}
+
+// tone is the card's own colour, which its three statements of the severity
+// all take: the chip on the title rail, the body row that reads the level,
+// and the border between them.
+//
+// A card nothing is containing is Del whatever its level says, because the
+// missing sandbox is what the decision turns on now — and the three
+// statements have to agree, so the body row moves with the border rather than
+// leaving `⚠ medium` accent under a red rail that reads `⚠ UNCONTAINED ─
+// ⚠ medium` (docs/interface/surfaces.md#the-approval-card).
+func (c *ApprovalCard) tone() lipgloss.Style {
+	if c.Uncontained {
+		return sty.Del
+	}
+	return c.Severity.tone()
 }
 
 // buildRows lays the card out as its two halves: the body — headline,
@@ -580,250 +609,301 @@ func (c *ApprovalCard) ScrollBounds(width int) (maxBody, maxPan int) {
 	return maxBody, maxPan
 }
 
-// hintRowsFor is the block under the rule: the decision keys and everything
-// that qualifies them. A card that does not hold the keyboard renders that
+// hintRowsFor is the block under the rule: the decision run and everything
+// that qualifies it. A card that does not hold the keyboard renders that
 // block as not-yet-live instead — the consequences of a key nobody can
 // press yet are noise, so only the keys and the handover are shown.
+//
+// The run is the bracket grammar every other key row in the product is
+// written in: the key in Info, the imperative after it in Body, the answer
+// that costs nothing in Add, and a key that is not offered left on the card
+// with its reason in Dim (Footnote). The compact `[y/n/a]` prompt this card
+// used to print was the one place two notations sat a row apart — the offers
+// under a frame's rule read one way and the offers under a card's read
+// another — and a reader who has learned that a bracket means a live key is
+// worse served by two notations than by one
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 func (c *ApprovalCard) hintRowsFor(width, inner int) []string {
-	if c.NotYetLive {
-		return notYetLiveRows(c.Question+" "+c.keys(), c.Handover, width)
-	}
-	if c.NoteOpen {
-		return append(typingRows(c.Question+" "+c.keys(), width), c.noteRows(width, inner)...)
-	}
-	if c.AmendOpen {
-		return append(typingRows(c.Question+" "+c.keys(), width), c.amendRows(width, inner)...)
-	}
-	if c.GrantOpen {
-		return append(chosenRows(c.Question+" "+c.keys(), width), c.grantRows(width, inner)...)
-	}
-	if c.HeldOnArrival && c.Grace {
-		rows := graceRows(c.Question+" "+c.keys(), width)
+	// Every state where the keys are drawn and none of them is live draws the
+	// same run in plain words, with the phrase that says why beside it. It is
+	// built where it is used, because the live card never needs it.
+	dead := c.plainRun
+	switch {
+	case c.NotYetLive:
+		return notYetLiveRows(dead(), c.Handover, width)
+	case c.NoteOpen:
+		return append(typingRows(dead(), width), c.noteRows(width, inner)...)
+	case c.AmendOpen:
+		return append(typingRows(dead(), width), c.amendRows(width, inner)...)
+	case c.GrantOpen:
+		return append(chosenRows(dead(), width), c.grantRows(width, inner)...)
+	case c.HeldOnArrival && c.Grace:
+		rows := graceRows(dead(), width)
 		if rest := c.arrivalRest(); len(rest) > 0 {
 			rows = append(rows, sty.Dim.Render(FitSegments(rest, inner)))
 		}
-		if c.Return != "" {
-			rows = append(rows, sty.Dim.Render(Clip(c.Return, inner)))
-		}
-		return rows
+		return append(rows, c.escRow(inner))
 	}
-	hint := c.Question + " " + c.keys()
-	// What [a] and [d] qualify is part of the offer, not decoration: [a] now
-	// names the scope it grants (`always allow "go test"`), which is longer
-	// than the word it replaced and is the half a clip would take. So the
-	// qualifiers ride beside the keys where the terminal carries them and
-	// drop to rows of their own where it does not — the judgement [A] has
-	// made for batches, for the same reason.
-	var quals []string
-	// What the shifted pair buys rides the key row itself wherever the
-	// terminal carries it, and drops in with the others where it does not.
-	// It is the one qualifier a card holding the keyboard by arrival keeps,
-	// because those two are among its answers (KeyRun) and a key in the run
-	// with nothing saying what it does is half an offer.
-	//
-	// Which of the two asks for what is the field's own label, stated the
-	// moment one is open, and the register carries the long form for the key
-	// list — so the qualifier here says only that a sentence is what they
-	// buy. At sixty columns the choice is between that and the row a fuller
-	// one would push off the card, and a key explained one press later beats
-	// a key explained nowhere.
-	if c.Noted {
-		noted := "(" + notedWords() + ")"
-		if joined := hint + "  " + noted; lipgloss.Width(joined) <= inner {
-			hint = joined
-		} else {
-			quals = append(quals, noted)
-		}
-	}
-	if !c.HeldOnArrival {
-		if c.AllowAlways && c.AlwaysHint != "" {
-			quals = append(quals, "("+c.AlwaysHint+")")
-		}
-		if c.FullDiff {
-			quals = append(quals, "("+keys.Shown(keys.Decision.Diff)+": "+c.fullWords()+")")
-		}
-	}
-	qualRow := strings.Join(quals, "  ")
-	if qualRow != "" {
-		if joined := hint + "  " + qualRow; lipgloss.Width(joined) <= inner {
-			hint, qualRow = joined, ""
-		}
-	}
-	segments := []string{hint}
-	// A card that took the keyboard by arriving claims the two answers and
-	// nothing a mistyped word could have meant, so it advertises nothing else
-	// either — the same reason [a] and [d] lose their qualifiers just above.
-	// The offer worth removing is a bare letter, which the card would answer
-	// by putting it in the draft; a chord among them goes on working and
-	// loses only its row. That is the safe direction of the trade — a key
-	// shown and dead is what this rule exists to stop, and a key live and
-	// unshown costs a reader one thing they already knew — and it is worth
-	// more than a per-offer exception in the one block that has to stay
-	// readable at sixty columns
+	segments := c.paintedRun()
+	// A card that took the keyboard by arriving claims the answers it was
+	// walked up to be asked and nothing a mistyped word could have meant, so
+	// it advertises nothing else either. The offer worth removing is a bare
+	// letter, which the card would answer by putting it in the draft; a chord
+	// among them goes on working and loses only its row. That is the safe
+	// direction of the trade — a key shown and dead is what this rule exists
+	// to stop, and a key live and unshown costs a reader one thing they
+	// already knew
 	// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 	if !c.HeldOnArrival {
 		for _, o := range c.ExtraHints {
-			segments = append(segments, o.Key+" "+o.Label)
+			segments = append(segments, offerSegment(o.Key, o.Label))
 		}
 	}
+	rows := runRows(segments, inner)
 	if rest := c.arrivalRest(); len(rest) > 0 {
-		// Fitted into what the answer left of the row rather than wrapped:
-		// the sentence about the draft is an annotation on the keys, not one
+		// Fitted onto a row of its own rather than wrapped across two: the
+		// sentence about the draft is an annotation on the keys and not one
 		// of them, and the panel a card is drawn in may take at most 40% of
 		// the terminal (docs/interface/principles.md#one-interaction-panel),
-		// so a row spent on it is a row the transcript gives up. The handover
-		// in front of it is an offer and stays.
-		room := inner - lipgloss.Width(strings.Join(segments, " · ")) - 3
-		segments = append(segments, dropToFit(rest, room)...)
+		// so a row spent on it is a row the transcript gives up.
+		rows = append(rows, sty.Dim.Render(FitSegments(rest, inner)))
 	}
-	if c.SafeDefault != "" {
-		segments = append(segments, c.SafeDefault)
-	}
-	hints := hintRows(segments, width)
-	if qualRow != "" && len(hints) > 0 {
-		// They travel together on one row rather than one row each: they
-		// qualify the same key line, and a card is bounded to 40% of the
-		// screen — rows spent here are rows the transcript gives up.
-		hints = append([]string{hints[0], sty.Hint.Render(Clip(qualRow, inner))}, hints[1:]...)
-	}
-	// [A] gets a row of its own rather than a place in the joined run: the
-	// count is the whole offer, and on an 80-column terminal a joined run is
-	// exactly where it would be clipped away.
-	if c.Batch && c.BatchHint != "" && !c.HeldOnArrival {
-		hints = append(hints, sty.Hint.Render(Clip(c.BatchHint, inner)))
-	}
+	// A key that is not offered stays on the card with its reason rather than
+	// disappearing: a missing key with a stated reason teaches, and a missing
+	// key without one reads as a bug.
 	if c.Footnote != "" {
-		hints = append(hints, sty.Dim.Render(Clip(c.Footnote, inner)))
+		// Wrapped rather than shortened either way. The load-bearing half of
+		// this row is its tail — `[a] always — not offered: …` clipped to
+		// `[a] always` reads as an offer of exactly the key the row exists to
+		// say is absent — and a reason cut mid-word teaches nothing
+		// (docs/interface/principles.md#fold-never-hide).
+		rows = append(rows, wrapDim(c.Footnote, inner)...)
 	}
-	if c.Return != "" {
-		hints = append(hints, sty.Dim.Render(Clip(c.Return, inner)))
-	}
-	return hints
+	return append(rows, c.escRow(inner))
 }
 
-// CardKey is one key of the decision run: the spelling the card printed, and
-// the keystroke it stands for. The two are the same everywhere but the safe
-// answer, where the capital N is the card's default marker rather than a
-// shifted key — which is exactly why a pointer cannot be told what it landed
-// on by reading the letter off the screen.
+// escRow is the line every live card ends on. It is a row of its own rather
+// than the last segment of the run because it is the one offer a reader may
+// need before they have read anything above it, and a run that wrapped would
+// decide from one card to the next whether it was still on screen
+// (docs/interface/principles.md#esc-is-always-the-safe-answer).
+//
+// The key is spelled from the selector family's cancel rather than from
+// Decision.Deny, which binds the same keystroke under the letter `n`: what
+// this row needs is a spelling, and `esc` is the spelling the register gives
+// that keystroke wherever a surface holds the whole keyboard.
+func (c *ApprovalCard) escRow(inner int) string {
+	esc := keys.Shown(keys.Select.Cancel)
+	return Clip(safeSegment(esc, fitClauses("["+esc+"] ", c.returnWords(), inner)), inner)
+}
+
+// fitClauses is how a row of prose on the key block gives ground: the
+// trailing clause first, then the explanation an em dash introduced, and
+// never a cut mid-word. Nothing on a key row is truncated
+// (docs/interface/principles.md#fold-never-hide), and what has to survive is
+// the imperative — the half that says what the key does — rather than the
+// reading after it.
+func fitClauses(lead, words string, inner int) string {
+	for lipgloss.Width(lead+words) > inner {
+		cut := strings.LastIndex(words, "; ")
+		if cut < 0 {
+			cut = strings.LastIndex(words, ", ")
+		}
+		if cut < 0 {
+			head, _, ok := strings.Cut(words, " — ")
+			if !ok {
+				return words
+			}
+			return head
+		}
+		words = words[:cut]
+	}
+	return words
+}
+
+// returnWords is what esc does: the card's own words where it has some, and
+// otherwise the ones that are true of every gated card.
+func (c *ApprovalCard) returnWords() string {
+	if c.Return != "" {
+		return c.Return
+	}
+	return waitingWords
+}
+
+// waitingWords is what esc does on a card that said nothing else about it:
+// the keyboard goes back to the draft and the decision is still there. It is
+// not a denial, and that difference is the whole reason the row is worth a
+// row (docs/interface/principles.md#esc-is-always-the-safe-answer).
+const waitingWords = "back to your draft — the decision stays waiting, nothing is denied"
+
+// offerSegment is one offer in the card's grammar: the key in Info, the
+// imperative after it in Body. The mark arrives already bracketed, because
+// the register is what spells a key and this only paints it.
+func offerSegment(mark, label string) string {
+	if label == "" {
+		return sty.Info.Render(mark)
+	}
+	return sty.Info.Render(mark) + " " + sty.Body.Render(label)
+}
+
+// safeSegment is the same offer for the answer that costs nothing: one run in
+// Add, the key and its words together, because what makes it the safe answer
+// is the whole clause and not the letter
+// (docs/interface/principles.md#esc-is-always-the-safe-answer).
+func safeSegment(key, label string) string {
+	return sty.Add.Render("[" + key + "] " + label)
+}
+
+// runRows packs the painted run into rows. It is the rule hintRows applies —
+// a row too long for its frame takes another row rather than losing an offer
+// (docs/interface/principles.md#fold-never-hide) — over segments that carry
+// their own colour: painting the joined run would put one style around a run
+// that has three in it, and the separator travels with the row so a wrapped
+// row never opens on one.
+func runRows(segments []string, inner int) []string {
+	var rows []string
+	var line []string
+	sep := sty.Dim.Render(" · ")
+	flush := func() {
+		if len(line) > 0 {
+			rows = append(rows, strings.Join(line, sep))
+			line = nil
+		}
+	}
+	for _, seg := range segments {
+		next := strings.Join(append(append([]string{}, line...), seg), " · ")
+		if len(line) > 0 && lipgloss.Width(next) > inner {
+			flush()
+		}
+		line = append(line, seg)
+	}
+	flush()
+	return rows
+}
+
+// CardKey is one key of the decision run: the spelling the card printed, the
+// keystroke it stands for, and the imperative it is offered under. The
+// spelling and the keystroke are two fields rather than one because a pointer
+// resolving a click must not have to learn which it is holding by looking at
+// the letter.
 type CardKey struct {
 	Shown string
 	Key   string
+	// Label is the imperative the key is offered under, in the surface's own
+	// words where it has better ones than the register.
+	Label string
 }
 
-// KeyRun is the decision keys in the order the card draws them. [a] appears
-// only where a session grant is allowed and [A] only where there is a queue
-// behind the card, so the run is always exactly what the card will answer to.
+// mark is the key as the run prints it.
+func (k CardKey) mark() string { return "[" + k.Shown + "]" }
+
+// KeyRun is the decision keys in the order the card draws them, each with the
+// words it is offered under. [a] appears only where a session grant is
+// allowed, [A] only where there is a queue behind the card and [d] only where
+// there is something to open, so the run is always exactly what the card will
+// answer to.
 //
-// keys() is this list joined, and KeyAt walks it across the row it was drawn
+// paintedRun draws this list and KeyAt walks it across the row it was drawn
 // on, so the run a reader sees, the keys the card answers and the cells a
 // click resolves against cannot become three different lists.
 func (c *ApprovalCard) KeyRun() []CardKey {
-	// The card spells its keys as one run rather than as a row of offers, so it
-	// composes them from the register's spellings: `y`, `n`, `a`, `A`. The
-	// capital N is not a key — it is the default marker the card draws on the
-	// safe answer — which is why it is applied here rather than declared as a
-	// second binding for the same keystroke.
-	yes := CardKey{keys.Shown(keys.Decision.Allow), keys.Shown(keys.Decision.Allow)}
-	no := CardKey{keys.Shown(keys.Decision.Deny), keys.Shown(keys.Decision.Deny)}
-	def := CardKey{strings.ToUpper(no.Shown), no.Key}
+	// The words are the register's unless the card has better ones: `[a]`
+	// names the scope it would grant and `[y]` names the act rather than the
+	// category, and neither of those is a fact the binding knows.
+	offer := func(b keys.Binding, label string) CardKey {
+		if label == "" {
+			label = keys.Words(b)
+		}
+		return CardKey{Shown: keys.Shown(b), Key: keys.Shown(b), Label: label}
+	}
+	run := []CardKey{offer(keys.Decision.Allow, c.Answer)}
+	// The shifted pair sits beside the answer it carries rather than at the
+	// end of the run: they are the same two answers with a sentence, and the
+	// pairing is what the run has to make legible.
+	//
+	// Their words are the labels of the fields they open rather than the
+	// register's longer form, so a reader who pressed on the promise is met
+	// with the words they pressed on — and on an eighty-column card the
+	// register's own pair pushes the run onto a third row, which comes off
+	// the diff the card exists to show.
 	if c.Noted {
-		// The capital is a key of its own here, so the default marker is
-		// retired on this card rather than drawn over a key that means
-		// something else: the answers come in pairs — press the letter, or
-		// press it shifted and say more — and the pairing is what the run
-		// has to make legible. Which answer is the safe one is stated in
-		// words instead, where SafeDefault already states it.
-		noted := func(b keys.Binding) CardKey {
-			return CardKey{keys.Shown(b), keys.Shown(b)}
-		}
-		run := []CardKey{yes, noted(keys.Decision.AllowNoted), no, noted(keys.Decision.DenyNoted)}
-		if c.HeldOnArrival {
-			// A card holding the keyboard by arrival claims its answers and
-			// nothing else, and these are its answers: neither settles
-			// anything on its own, and esc closes the field they open.
-			return run
-		}
-		if c.AllowAlways {
-			always := keys.Shown(keys.Decision.Always)
-			run = append(run, CardKey{always, always})
-		}
-		if c.Batch {
-			batch := keys.Shown(keys.Decision.Batch)
-			run = append(run, CardKey{batch, batch})
-		}
-		return run
+		run = append(run, offer(keys.Decision.AllowNoted, "and say "+noteWhatNext))
+	}
+	run = append(run, offer(keys.Decision.Deny, c.Decline))
+	if c.Noted {
+		run = append(run, offer(keys.Decision.DenyNoted, "and say "+noteWhyNot))
 	}
 	if c.HeldOnArrival {
-		// The card has the keyboard but nobody gave it: it answers the two
-		// keys and offers nothing a mistyped word could have meant.
-		return []CardKey{yes, def}
+		// The card has the keyboard but nobody gave it: it answers what it
+		// was walked up to be asked, and the rest of the run would be keys a
+		// reader who came to type a message never meant to press.
+		return run
 	}
-	run := []CardKey{yes, def}
 	if c.AllowAlways {
-		always := keys.Shown(keys.Decision.Always)
-		run = []CardKey{yes, no, {always, always}}
+		run = append(run, offer(keys.Decision.Always, c.AlwaysHint))
 	}
 	if c.Batch {
-		// The capital N means "this is the default"; beside a capital A it
-		// would only read as a second key, so the batch spelling drops it.
-		if !c.AllowAlways {
-			run = []CardKey{yes, no}
-		}
-		batch := keys.Shown(keys.Decision.Batch)
-		run = append(run, CardKey{batch, batch})
+		run = append(run, offer(keys.Decision.Batch, c.BatchHint))
+	}
+	if c.FullDiff {
+		run = append(run, offer(keys.Decision.Diff, c.fullWords()))
 	}
 	return run
 }
 
-// keys is the decision prompt's key list as the card prints it.
-func (c *ApprovalCard) keys() string {
+// paintedRun is the run as the card draws it.
+func (c *ApprovalCard) paintedRun() []string {
 	run := c.KeyRun()
-	shown := make([]string, len(run))
+	segs := make([]string, len(run))
 	for i, k := range run {
-		shown[i] = k.Shown
+		segs[i] = offerSegment(k.mark(), k.Label)
 	}
-	return "[" + strings.Join(shown, "/") + "]"
+	return segs
+}
+
+// plainRun is the same run unpainted, for the rows that draw the whole of it
+// in one grey because none of its keys is live.
+func (c *ApprovalCard) plainRun() []string {
+	run := c.KeyRun()
+	segs := make([]string, len(run))
+	for i, k := range run {
+		segs[i] = k.mark() + " " + k.Label
+	}
+	return segs
 }
 
 // KeyAt reports which decision key covers display column col of a rendered
-// row, and whether the row carries the run at all.
+// row, and whether the row carries one at all.
 //
 // The geometry is read back out of the render rather than laid out a second
 // time beside it. Crush builds a parallel compositor of hit layers and
 // rebuilds it on every frame to keep the two honest (`common/button.go`);
-// finding the run in the row it was drawn on means a key that is on the
-// screen is clickable and a key a narrow terminal clipped away is not, by
+// finding each key in the row it was actually drawn on means a key that is on
+// the screen is clickable, a key a narrow terminal wrapped onto the next row
+// is clickable there, and a key the card did not offer is not — by
 // construction rather than by upkeep.
 //
-// The run is divided among its keys with nothing left over — the brackets
-// belong to the keys at the ends and each separator to the key before it —
-// because one cell is not a target, and a press that lands between two keys
-// should mean the one it is standing on rather than nothing at all.
+// A key owns its bracket and the imperative after it: the words are what a
+// reader aims at, and one cell is not a target. The separator between two
+// offers belongs to neither of them — a press that landed on it meant one of
+// the two and the row cannot say which, so it means nothing.
+//
+// The run is the card's own answers and nothing else. The offers a host
+// answers beside them — the amend key, the dry run, the way into an agent —
+// are drawn by the same painter and resolve here to nothing, because what
+// this reports is which of the card's keys a click is on and the card does
+// not answer those.
 func (c *ApprovalCard) KeyAt(row string, col int) (string, bool) {
-	run := c.KeyRun()
-	if len(run) == 0 {
-		return "", false
-	}
 	plain := ansi.Strip(row)
-	i := strings.Index(plain, c.keys())
-	if i < 0 {
-		return "", false
-	}
-	// One cell past the opening bracket, measured in display cells: the row
-	// carries a border, a pad and whatever the question said, and none of
-	// that is one byte per column.
-	at := ansi.StringWidth(plain[:i]) + 1
-	for i, k := range run {
-		w := ansi.StringWidth(k.Shown)
-		lo, hi := at, at+w+1
-		if i == 0 {
-			lo--
+	for _, k := range c.KeyRun() {
+		i := strings.Index(plain, k.mark())
+		if i < 0 {
+			continue
 		}
-		if col >= lo && col < hi {
+		lo := ansi.StringWidth(plain[:i])
+		if hi := lo + ansi.StringWidth(k.mark()+" "+k.Label); col >= lo && col < hi {
 			return k.Key, true
 		}
-		at += w + 1
 	}
 	return "", false
 }
@@ -892,20 +972,6 @@ const (
 // under the ┄ label that names it. Two columns, the note selector's, because
 // it is the same field under the same label.
 const noteIndent = 2
-
-// notedWords is the qualifier the shifted pair rides under: the two keys in
-// the order the run prints them, and what pressing one buys, in the grammar
-// the card's other qualifiers already use — the key, then the thing it opens.
-// One segment rather than two, because they are one offer — the same answers,
-// with a sentence — and two would spend two of a card's rows saying it twice.
-//
-// It is as short as it is on purpose: on an eighty-column terminal a longer
-// one pushes the handover onto a row of its own, and the row it takes comes
-// off the diff the card exists to show.
-func notedWords() string {
-	return keys.Shown(keys.Decision.AllowNoted) + "/" + keys.Shown(keys.Decision.DenyNoted) +
-		": a note"
-}
 
 // noteLabel is what the open field asks for, which is the half of the pair
 // the key that opened it stands for.
@@ -1061,11 +1127,12 @@ func (c *ApprovalCard) FieldOrigin(width int) (x, y int, ok bool) {
 // severityRows are the severity as the body states it — the level and what
 // makes it that — and the risks under it.
 //
-// The level is said in the level's own terms and not in the chip's: the chip
-// on the title rail already reads `⚠ medium`, and a first body row reading
-// `⚠ medium` under it spent a row of a bounded card saying the same three
-// characters again. What the reader cannot get anywhere else is why this call
-// is that level, so that is what the row carries
+// The row leads with the same `⚠ HIGH` the chip does rather than a shortened
+// spelling of it. The three statements of the level are meant to be checkable
+// against each other at a glance, and a reader comparing a chip that says one
+// word against a row that says another has to work out first that they are
+// the same claim. What the row adds is the reading behind the level, which is
+// the part the chip has no room for
 // (docs/interface/surfaces.md#the-approval-card).
 //
 // A flagged command needs no separate clause: its risks are the reason it is
@@ -1073,23 +1140,19 @@ func (c *ApprovalCard) FieldOrigin(width int) (x, y int, ok bool) {
 // A rated card with neither still states its level, because the word is what
 // the border colour means.
 func (c *ApprovalCard) severityRows() []string {
-	level := c.Severity.Level()
-	if level == "" {
+	word := c.Severity.Word()
+	if word == "" {
 		var rows []string
 		for _, w := range c.Warnings {
 			rows = append(rows, sty.Warn.Render("⚠ "+w))
 		}
 		return rows
 	}
-	style := sty.Warn
-	if c.Severity == SeverityLow {
-		style = sty.Dim
-	}
 	reason, rest := c.SeverityReason, c.Warnings
 	if reason == "" && len(rest) > 0 {
 		reason, rest = rest[0], rest[1:]
 	}
-	lead := style.Render(level)
+	lead := c.tone().Render(word)
 	if reason != "" {
 		lead += sty.Dim.Render(" · " + reason)
 	}
@@ -1100,16 +1163,18 @@ func (c *ApprovalCard) severityRows() []string {
 	return rows
 }
 
-// chips are the labels riding the top border, in drop order: the containment
-// state goes first so it is the one shed on a narrow terminal, and the
+// chips are the labels riding the top border, in drop order: the missing
+// sandbox goes first so it is the one shed on a narrow terminal, and the
 // severity chip — the thing the decision turns on — is last and survives.
+//
+// The containment in force is not among them. A chip is dropped from the
+// front the moment the terminal narrows, and what a sandbox permits is the
+// last thing a sixty-column card should be giving up, so it is a field of the
+// body (docs/interface/surfaces.md#the-approval-card).
 func (c *ApprovalCard) chips() []string {
 	var chips []string
-	switch {
-	case c.Uncontained:
+	if c.Uncontained {
 		chips = append(chips, "⚠ UNCONTAINED")
-	case c.Chip != "":
-		chips = append(chips, c.Chip)
 	}
 	if c.Amended {
 		chips = append(chips, "✎ amended")
@@ -1123,10 +1188,15 @@ func (c *ApprovalCard) chips() []string {
 // render lays one blast-radius field into its label column. The detail is
 // dropped rather than clipped when the terminal cannot carry it, so what is
 // left is a whole statement instead of half of one.
+//
+// The label column is Status and not Dim. Dim is what a key nobody can press
+// and a row nobody can act on are drawn in, and a field name is neither: it
+// is the furniture the value beside it is read against, which is the job
+// Status exists for (docs/interface/principles.md#colour-never-carries-meaning-alone).
 func (f CardField) render(inner int) string {
 	label := padRight(f.Label, fieldLabelWidth-1) + " "
 	value := f.Tone.style().Render(f.Value)
-	head := sty.Dim.Render(label) + value
+	head := sty.Status.Render(label) + value
 	if f.Detail == "" {
 		return head
 	}

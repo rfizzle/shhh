@@ -170,9 +170,9 @@ docs.rs                                                          │
 
   ␛[1;94mSESSION␛[m
   ␛[1;48;5;62m❯ permission mode    ⏵⏵ auto — edits apply; allowlisted commands run                                                        user␛[m
-    round limit        ␛[38;5;252m25␛[m                                                                                                  ␛[38;5;252mdefault␛[m
-    context budget     ␛[38;5;252m8000 tokens␛[m                                                                                         ␛[38;5;252mdefault␛[m
-    safety warnings    ␛[92mon␛[m                                                                                                  ␛[38;5;252mdefault␛[m
+    ␛[38;5;252mround limit␛[m        ␛[38;5;252m25␛[m                                                                                                  ␛[38;5;252mdefault␛[m
+    ␛[38;5;252mcontext budget␛[m     ␛[38;5;252m8000 tokens␛[m                                                                                         ␛[38;5;252mdefault␛[m
+    ␛[38;5;252msafety warnings␛[m    ␛[92mon␛[m                                                                                                  ␛[38;5;252mdefault␛[m
 
   ␛[38;5;241m↓ 10 more␛[m
 
@@ -183,11 +183,11 @@ docs.rs                                                          │
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[1;48;5;62m❯ $ delete every log file older than a week  exit 0         1.4s␛[m␛[38;5;241m │ ␛[m␛[1;97m4m ago␛[m␛[38;5;241m · openai/gpt-5.2␛[m                                     ␛[38;5;241mrun␛[m
-  $ show the ten biggest files in this directory  ␛[92mcopied␛[m    ␛[38;5;252m0.9s␛[m␛[38;5;241m │ ␛[m  ␛[38;5;241mdelete every log file older than a week␛[m
-  ✗ rebase onto main and force push  ␛[91mexit 128␛[m ␛[38;5;241m· tue␛[m         ␛[38;5;252m2.1s␛[m␛[38;5;241m │ ␛[m
-  $ find every reference to ErrRoundLimit under…  ␛[92msaved␛[m     ␛[38;5;252m1.1s␛[m␛[38;5;241m │ ␛[m  ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mfind . -name '*.log' -mtime +7␛[m        ␛[92mexit 0␛[m  ␛[38;5;241m1.4s␛[m
-  ⊘ wipe the whole build directory  ␛[38;5;252mdismissed␛[m ␛[38;5;241m· mon␛[m             ␛[38;5;241m │ ␛[m    ␛[38;5;245m-delete␛[m
-  · count the log lines by level    ␛[38;5;252mnot run␛[m ␛[38;5;241m· Aug 14␛[m            ␛[38;5;241m │ ␛[m  ␛[38;5;245m↑ 412 · ↓ 38 tokens␛[m
+  ␛[38;5;252m$ show the ten biggest files in this directory␛[m  ␛[92mcopied␛[m    ␛[38;5;252m0.9s␛[m␛[38;5;241m │ ␛[m  ␛[38;5;241mdelete every log file older than a week␛[m
+  ␛[38;5;252m✗ rebase onto main and force push␛[m  ␛[91mexit 128␛[m ␛[38;5;241m· tue␛[m         ␛[38;5;252m2.1s␛[m␛[38;5;241m │ ␛[m
+  ␛[38;5;252m$ find every reference to ErrRoundLimit under…␛[m  ␛[92msaved␛[m     ␛[38;5;252m1.1s␛[m␛[38;5;241m │ ␛[m  ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mfind . -name '*.log' -mtime +7␛[m        ␛[92mexit 0␛[m  ␛[38;5;241m1.4s␛[m
+  ␛[38;5;252m⊘ wipe the whole build directory␛[m  ␛[38;5;252mdismissed␛[m ␛[38;5;241m· mon␛[m             ␛[38;5;241m │ ␛[m    ␛[38;5;245m-delete␛[m
+  ␛[38;5;252m· count the log lines by level␛[m    ␛[38;5;252mnot run␛[m ␛[38;5;241m· Aug 14␛[m            ␛[38;5;241m │ ␛[m  ␛[38;5;245m↑ 412 · ↓ 38 tokens␛[m
 
 ␛[94m[enter]␛[m␛[38;5;241m re-run it␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m␛[38;5;241m copy it␛[m␛[38;5;241m · ␛[m␛[94m[x]␛[m␛[38;5;241m delete it␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m back to the shell␛[m             ␛[38;5;241mnothing is re-run until [enter]␛[m
 
@@ -235,8 +235,8 @@ docs.rs                                                          │
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[1;48;5;62m❯ ports      what is listening on t…  4m ago␛[m␛[38;5;241m │ ␛[m␛[1;97mports␛[m                                                                        ␛[38;5;241m4m ago␛[m
-  big-files  ␛[38;5;241mthe ten biggest fil…␛[m  ␛[38;5;252myesterday␛[m␛[38;5;241m │ ␛[m  ␛[38;5;241mwhat is listening on this machine␛[m
-  prune      ␛[38;5;241mdrop every merged branch␛[m    ␛[38;5;252mtue␛[m␛[38;5;241m │ ␛[m
+  ␛[38;5;252mbig-files␛[m  ␛[38;5;241mthe ten biggest fil…␛[m  ␛[38;5;252myesterday␛[m␛[38;5;241m │ ␛[m  ␛[38;5;241mwhat is listening on this machine␛[m
+  ␛[38;5;252mprune␛[m      ␛[38;5;241mdrop every merged branch␛[m    ␛[38;5;252mtue␛[m␛[38;5;241m │ ␛[m
                                             ␛[38;5;241m │ ␛[m  ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mlsof -nP -iTCP -sTCP:LISTEN␛[m
 
 ␛[94m[enter]␛[m␛[38;5;241m run it␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m␛[38;5;241m copy it␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m rename it␛[m␛[38;5;241m · ␛[m␛[94m[x]␛[m␛[38;5;241m delete it␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m back to the shell␛[m   ␛[38;5;241mnothing is run until [enter]␛[m
@@ -245,9 +245,9 @@ docs.rs                                                          │
 ␛[1;97mshhh chats␛[m␛[38;5;241m · 3 conversations␛[m                                                                                   ␛[38;5;241m[?] keys · [q] quit␛[m
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-  morning-fix  ␛[38;5;241mthe retry backoff was doubling twice · 12 turns …␛[m␛[38;5;241m │ ␛[m␛[1;97mheld␛[m                                        ␛[38;5;241m2026-09-06 08:02:41␛[m
+  ␛[38;5;252mmorning-fix␛[m  ␛[38;5;241mthe retry backoff was doubling twice · 12 turns …␛[m␛[38;5;241m │ ␛[m␛[1;97mheld␛[m                                        ␛[38;5;241m2026-09-06 08:02:41␛[m
 ␛[1;48;5;62m❯ held         reading the sandbox pol…  open in another session␛[m␛[38;5;241m │ ␛[m  ␛[38;5;241mreading the sandbox policy␛[m
-  tuesday      ␛[38;5;241mnaming the report pages · 31 turns · Sep 3 17:40␛[m ␛[38;5;241m │ ␛[m
+  ␛[38;5;252mtuesday␛[m      ␛[38;5;241mnaming the report pages · 31 turns · Sep 3 17:40␛[m ␛[38;5;241m │ ␛[m
                                                                 ␛[38;5;241m │ ␛[m  ␛[38;5;252m4 turns␛[m
                                                                 ␛[38;5;241m │ ␛[m
                                                                 ␛[38;5;241m │ ␛[m  ␛[38;5;241m"held" is open in another session — its conversation is still␛[m
@@ -260,10 +260,10 @@ docs.rs                                                          │
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[1;94msearches␛[m                                                        ␛[38;5;241m │ ␛[m␛[1;97mhttps://docs.rs/tokio/latest/tokio/␛[m                ␛[38;5;241morchestrator␛[m
-  ⇢ tokio runtime                 ␛[38;5;252m3 results␛[m ␛[38;5;241m· orchestrator␛[m      ␛[38;5;241m │ ␛[m  ␛[38;5;241mtokio — Rust␛[m
+  ␛[38;5;252m⇢ tokio runtime␛[m                 ␛[38;5;252m3 results␛[m ␛[38;5;241m· orchestrator␛[m      ␛[38;5;241m │ ␛[m  ␛[38;5;241mtokio — Rust␛[m
 ␛[1;94mdocs.rs␛[m                                                         ␛[38;5;241m │ ␛[m
 ␛[1;48;5;62m❯ ⇢ /tokio/latest/tokio/          200 · orchestrator       60 KB␛[m␛[38;5;241m │ ␛[m  ␛[38;5;245mkind ␛[m␛[38;5;241mfetch␛[m
-  ⇢ /tokio/latest/tokio/runtime/  ␛[38;5;252m200 (cached)␛[m ␛[38;5;241m· web-res…␛[m  ␛[38;5;252m12 KB␛[m␛[38;5;241m │ ␛[m  ␛[38;5;245murl ␛[m␛[38;5;241mhttps://docs.rs/tokio/latest/tokio/␛[m
+  ␛[38;5;252m⇢ /tokio/latest/tokio/runtime/␛[m  ␛[38;5;252m200 (cached)␛[m ␛[38;5;241m· web-res…␛[m  ␛[38;5;252m12 KB␛[m␛[38;5;241m │ ␛[m  ␛[38;5;245murl ␛[m␛[38;5;241mhttps://docs.rs/tokio/latest/tokio/␛[m
                                                                 ␛[38;5;241m │ ␛[m  ␛[38;5;245masked for ␛[m␛[38;5;241mhttps://docs.rs/tokio␛[m
                                                                 ␛[38;5;241m │ ␛[m  ␛[38;5;245mstatus ␛[m␛[38;5;241m200␛[m
 

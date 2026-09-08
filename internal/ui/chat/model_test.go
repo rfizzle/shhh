@@ -1455,8 +1455,8 @@ func TestRun_SingleBlock_ConfirmAndExecute(t *testing.T) {
 		t.Fatalf("expected pending 'echo hi', got %q", m.pendingRun)
 	}
 	view := m.View().Content
-	if !strings.Contains(view, "echo hi") || !strings.Contains(view, "[y/N]") {
-		t.Fatal("confirm prompt should show the command and y/N")
+	if !strings.Contains(view, "echo hi") || !strings.Contains(ansi.Strip(view), "[y] run it once") {
+		t.Fatal("confirm prompt should show the command and the key that runs it")
 	}
 
 	m = handover(t, m)

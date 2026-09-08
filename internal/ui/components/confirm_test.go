@@ -6,6 +6,8 @@ package components
 import (
 	"strings"
 	"testing"
+
+	"github.com/charmbracelet/x/ansi"
 )
 
 func TestConfirm_Keys(t *testing.T) {
@@ -21,8 +23,14 @@ func TestConfirm_Keys(t *testing.T) {
 	if done, _ := c.Update(key("z")); done {
 		t.Fatal("other keys should wait")
 	}
-	if view := c.View(80); !strings.Contains(view, "Discard 14 unsaved turns?") || !strings.Contains(view, "[y/N]") {
+	view := ansi.Strip(c.View(80))
+	if !strings.Contains(view, "Discard 14 unsaved turns?") || !strings.Contains(view, "[y/N]") {
 		t.Fatalf("confirm should render prompt and [y/N]: %q", view)
+	}
+	// Only the capital is emphasised: it is the default, and the default is
+	// the answer that changes nothing.
+	if !strings.Contains(c.View(80), sty.Bright.Bold(true).Render("N")) {
+		t.Fatalf("the default letter carries the emphasis: %q", c.View(80))
 	}
 }
 

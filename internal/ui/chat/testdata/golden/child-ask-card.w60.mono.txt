@@ -13,38 +13,39 @@
 · a child's command · resolved in the agent's own checkout
 ╭─ writer-1 ▸ Approve command ──────────────── ⚠ HIGH ─╮
 │ writer-1 wants to run rm -rf build                   │
-│ HIGH · recursive forced deletion — may destroy file› │
+│ ⚠ HIGH · recursive forced deletion — may destroy fi› │
 │                                                      │
 │ lands in  the agent's worktree                       │
 │ touches   build                                      │
 │ undo      none                                       │
 │ network   closed — the workspace profile removes it  │
+│ ⛨         bwrap · workspace                          │
 ├──────────────────────────────────────────────────────┤
-│ Run this command? [y/N] · [g] attach to writer-1     │
-│ [alt+a] agents · [n] deny — the safe answer          │
-│ [esc] back to your draft — the decision stays waiti… │
+│ [y] run it once · [n] deny · [g] attach to writer-1  │
+│ [alt+a] agents                                       │
+│ [esc] don't — the safe answer; the decision waits    │
 ╰──────────────────────────────────────────────────────╯
 
 · the same card, held by arriving · two answers, and nothing else offered
 ╭─ writer-1 ▸ Approve command ──────────────── ⚠ HIGH ─╮
 │ writer-1 wants to run rm -rf build                   │
-│ HIGH · recursive forced deletion — may destroy file› │
+│ ⚠ HIGH · recursive forced deletion — may destroy fi› │
 │                                                      │
 │ lands in  the agent's worktree                       │
 │ touches   build                                      │
 │ undo      none                                       │
 │ network   closed — the workspace profile removes it  │
+│ ⛨         bwrap · workspace                          │
 ├──────────────────────────────────────────────────────┤
-│ Run this command? [y/N]                              │
+│ [y] run it once · [n] deny                           │
 │ any other key goes to your draft                     │
-│ [n] deny — the safe answer                           │
-│ [esc] back to your draft — the decision stays waiti… │
+│ [esc] don't — the safe answer; the decision waits    │
 ╰──────────────────────────────────────────────────────╯
 
 · a writer's patch · your files, and the diff behind a counted tail
 ╭─ writer-1 ▸ Apply patch ────────────────── ⚠ medium ─╮
 │ writer-1 finished and wants to apply patch (+40 −40› │
-│ medium · writes 2 files under internal/agent/        │
+│ ⚠ medium · writes 2 files under internal/agent/      │
 │                                                      │
 │ lands in  your workspace                             │
 │ touches   internal/agent/loop.go and 1 more          │
@@ -53,48 +54,49 @@
 │ +  1  line 0 changed                                 │
 │ … 119 more lines · shift+↓                           │
 ├──────────────────────────────────────────────────────┤
-│ Apply the agent's patch to your workspace? [y/N]     │
-│ (d: full diff)                                       │
-│ [g] attach to writer-1 · [alt+a] agents              │
-│ [esc] back to your draft — the decision stays waiti… │
+│ [y] apply the patch to your workspace · [n] deny     │
+│ [d] full diff · [g] attach to writer-1               │
+│ [alt+a] agents                                       │
+│ [esc] back to your draft                             │
 ╰──────────────────────────────────────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
 · a child's command · resolved in the agent's own checkout
 ␛[38;5;254m╭─ writer-1 ▸ Approve command ──────────────── ⚠ HIGH ─╮␛[m
 ␛[38;5;254m│␛[m ␛[1;38;5;254mwriter-1 wants to run rm -rf build␛[m                   ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254mHIGH␛[m␛[38;5;244m · recursive forced deletion — may destroy file␛[m␛[38;5;244m›␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m⚠ HIGH␛[m␛[38;5;244m · recursive forced deletion — may destroy fi␛[m␛[38;5;244m›␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mlands in  ␛[m␛[38;5;254mthe agent's worktree␛[m                       ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254mbuild␛[m                                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254mnone␛[m                                       ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m␛[38;5;244m — the workspace profile removes it␛[m  ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m⛨         ␛[m␛[38;5;244mbwrap · workspace␛[m                          ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mRun this command? [y/N] · [g] attach to writer-1␛[m     ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[alt+a] agents · [n] deny — the safe answer␛[m          ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[esc] back to your draft — the decision stays waiti…␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m ␛[38;5;254mattach to writer-1␛[m  ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[alt+a]␛[m ␛[38;5;254magents␛[m                                       ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc] don't — the safe answer; the decision waits␛[m    ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────╯␛[m
 
 · the same card, held by arriving · two answers, and nothing else offered
 ␛[38;5;254m╭─ writer-1 ▸ Approve command ──────────────── ⚠ HIGH ─╮␛[m
 ␛[38;5;254m│␛[m ␛[1;38;5;254mwriter-1 wants to run rm -rf build␛[m                   ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254mHIGH␛[m␛[38;5;244m · recursive forced deletion — may destroy file␛[m␛[38;5;244m›␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m⚠ HIGH␛[m␛[38;5;244m · recursive forced deletion — may destroy fi␛[m␛[38;5;244m›␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mlands in  ␛[m␛[38;5;254mthe agent's worktree␛[m                       ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254mbuild␛[m                                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254mnone␛[m                                       ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m␛[38;5;244m — the workspace profile removes it␛[m  ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m⛨         ␛[m␛[38;5;244mbwrap · workspace␛[m                          ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mRun this command? [y/N]␛[m                              ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m                           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244many other key goes to your draft␛[m                     ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[n] deny — the safe answer␛[m                           ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[esc] back to your draft — the decision stays waiti…␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc] don't — the safe answer; the decision waits␛[m    ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────╯␛[m
 
 · a writer's patch · your files, and the diff behind a counted tail
 ␛[38;5;254m╭─ writer-1 ▸ Apply patch ────────────────── ⚠ medium ─╮␛[m
 ␛[38;5;254m│␛[m ␛[1;38;5;254mwriter-1 finished and wants to apply patch (+40 −40␛[m␛[38;5;244m›␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;254mmedium␛[m␛[38;5;244m · writes 2 files under internal/agent/␛[m        ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · writes 2 files under internal/agent/␛[m      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mlands in  ␛[m␛[38;5;254myour workspace␛[m                             ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254minternal/agent/loop.go and 1 more␛[m          ␛[38;5;254m│␛[m
@@ -103,8 +105,8 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m+  1  line 0␛[m␛[38;5;254;48;5;237m changed␛[m␛[38;5;254m␛[m                                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m… 119 more lines · shift+↓␛[m                           ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[38;5;244mApply the agent's patch to your workspace? [y/N]␛[m     ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m(d: full diff)␛[m                                       ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[g] attach to writer-1 · [alt+a] agents␛[m              ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[esc] back to your draft — the decision stays waiti…␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mapply the patch to your workspace␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m     ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[d]␛[m ␛[38;5;254mfull diff␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m ␛[38;5;254mattach to writer-1␛[m               ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[alt+a]␛[m ␛[38;5;254magents␛[m                                       ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc] back to your draft␛[m                             ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────╯␛[m

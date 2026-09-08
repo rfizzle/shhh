@@ -70,7 +70,7 @@ func TestBlastRadius_CommandCardStatesTouchesUndoAndNetwork(t *testing.T) {
 		"touches   notes.md — 6 B",
 		"undo      ",
 		"network   open",
-		"⛨ bwrap · workspace",
+		"⛨         bwrap · workspace",
 	} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("command card should contain %q:\n%s", want, view)
@@ -119,16 +119,16 @@ func TestBlastRadius_FlaggedCommandSaysWhyAlwaysIsMissing(t *testing.T) {
 	if !strings.Contains(view, "⚠ HIGH") {
 		t.Fatalf("a flagged command leads with its severity:\n%s", view)
 	}
-	if strings.Contains(view, "[y/n/a]") {
+	if strings.Contains(view, "[a] allow") {
 		t.Fatalf("a flagged command must not offer [a]:\n%s", view)
 	}
 	if !strings.Contains(view, "[a] always — not offered") {
 		t.Fatalf("the card should say why [a] is absent:\n%s", view)
 	}
-	// [n], not esc: esc on a gated card hands the keyboard back and leaves
-	// the decision waiting.
-	if !strings.Contains(view, "[n] deny — the safe answer") {
-		t.Fatalf("a high-severity card states the safe default in words:\n%s", view)
+	// Esc is the safe answer, and on a flagged card the row says so in words
+	// rather than leaving it to the key's own colour.
+	if !strings.Contains(view, "[esc] don't — the safe answer") {
+		t.Fatalf("a high-severity card states the safe answer in words:\n%s", view)
 	}
 }
 
@@ -283,7 +283,7 @@ func confirmForStart(t *testing.T, m Model, name, command string) string {
 // runner is. The two are wired from one policy, so they normally agree — and
 // where they do not, the card that a person answers has to be about the
 // process that is going to run.
-func TestBlastRadius_ProcessStartChipReadsTheSupervisor(t *testing.T) {
+func TestBlastRadius_ProcessStartRowReadsTheSupervisor(t *testing.T) {
 	dir := t.TempDir()
 	base := radiusModel(t, dir, Containment{
 		Status:    "contained: bwrap (workspace profile)",
@@ -299,14 +299,14 @@ func TestBlastRadius_ProcessStartChipReadsTheSupervisor(t *testing.T) {
 	}
 
 	view := confirmForStart(t, withSupervisor("bwrap"), "web", "npm run dev")
-	for _, want := range []string{"start process web", "⛨ bwrap · workspace", "the workspace profile allows network access"} {
+	for _, want := range []string{"start process web", "⛨         bwrap · workspace", "the workspace profile allows network access"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("a contained start's card should contain %q:\n%s", want, view)
 		}
 	}
 
 	// Nothing wraps a start: the card says so even though the runner beside
-	// it is contained, because a chip reading "bwrap" over a bare process is
+	// it is contained, because a row reading "bwrap" over a bare process is
 	// the defect this seam exists to close.
 	view = confirmForStart(t, withSupervisor(""), "web", "npm run dev")
 	if strings.Contains(view, "⛨ bwrap") {

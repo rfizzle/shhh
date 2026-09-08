@@ -5,7 +5,7 @@ snap 01-start "Some things worth doing first"
 keys "say hi" Enter
 snap 02-reply "Hello from the scripted provider"
 keys "run something" Enter
-snap 03-approval "Run this command?"
+snap 03-approval "[y] run it once"
 keys y
 snap 04-ran "Done: the command printed a greeting"
 keys C-c

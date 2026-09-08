@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
 )
 
 func TestBangCommand_Forms(t *testing.T) {
@@ -46,8 +47,8 @@ func TestBang_TakesTheRunConfirmPath(t *testing.T) {
 		t.Fatalf("expected pending 'ls' not local, got %q local=%v", m.pendingRun, m.pendingRunLocal)
 	}
 	view := m.View().Content
-	if !strings.Contains(view, "ls") || !strings.Contains(view, "[y/N]") {
-		t.Fatal("confirm card should show the command and y/N")
+	if !strings.Contains(view, "ls") || !strings.Contains(ansi.Strip(view), "[y] run it once") {
+		t.Fatal("confirm card should show the command and the key that runs it")
 	}
 }
 

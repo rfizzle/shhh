@@ -525,11 +525,13 @@ type Styles struct {
 	Hunk    lipgloss.Style
 	Context lipgloss.Style
 
-	// The filter row: what has been typed reads bright against the
-	// card, and the run of an option the query named is bold — the one
-	// emphasis that costs no colour and survives mono.
+	// The filter row: what has been typed reads bright against the card. The
+	// run of an option the query named is bold — the one emphasis that costs
+	// no colour and survives mono — and it is not a style of its own: bold is
+	// added to whatever tone the row is already in, because a bold run
+	// rendered inside a coloured one ends in a reset and takes the rest of
+	// the label out with it (emphasizeMatch).
 	QueryText lipgloss.Style
-	Match     lipgloss.Style
 
 	// The scroll gutter's thumb: chrome like every other faint mark on the
 	// frame, and the only thing drawn in that column. It is a shape, not a
@@ -592,7 +594,6 @@ func newStyles(p ColorTokens) Styles {
 		Context: lipgloss.NewStyle().Foreground(p.Dimmer.Color()),
 
 		QueryText: lipgloss.NewStyle().Foreground(p.Bright.Color()),
-		Match:     lipgloss.NewStyle().Bold(true),
 
 		// One token, the same Dim the frame's own rules are drawn in: the
 		// gutter is chrome, and it has nothing in its column to be told apart

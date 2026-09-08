@@ -40,6 +40,34 @@ func Clip(s string, width int) string {
 // sees them.
 const cardRule = "\x00rule"
 
+// CardTone is a card's border colour named by the job the card is doing
+// rather than by a value. A card that is showing something wears the chrome
+// grey every rule in the product is drawn in; a card that is asking for an
+// answer wears Info, which is the tone the keys under its rule are written
+// in, so the frame and the offer inside it read as one object
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+//
+// It is a role rather than a stored style because the palette is rebuilt
+// whenever the theme is swapped, and a card built once and rendered every
+// frame afterwards would go on drawing itself in the theme it was born in.
+type CardTone int
+
+const (
+	// CardChrome is the plain grey frame: a card that reports.
+	CardChrome CardTone = iota
+	// CardDecision is the frame of a card waiting for an answer that has no
+	// severity of its own to colour itself with — the plan card, the question
+	// card, the agent manager, the memory proposal.
+	CardDecision
+)
+
+func (t CardTone) style() lipgloss.Style {
+	if t == CardDecision {
+		return sty.Info
+	}
+	return sty.Border
+}
+
 // Card is a card's frame beyond its rows: the title, the chips that ride the
 // top border right-aligned, and the border colour. A zero value is the plain
 // gray frame every other card has always had.
@@ -55,8 +83,12 @@ type Card struct {
 	// They drop from the front as the terminal narrows, so the last chip —
 	// the one that leads the decision — is the one that survives.
 	Chips []string
-	// Style colours the border; nil is the default gray.
+	// Style colours the border with a value the caller resolved for itself —
+	// the approval card's severity, which is a reading and not a role. It
+	// wins over Tone wherever it is set.
 	Style *lipgloss.Style
+	// Tone colours the border by the job the card is doing.
+	Tone CardTone
 }
 
 // Inner is the width a card's rows are laid out in at the given total width:
@@ -69,7 +101,7 @@ func (c Card) Inner(width int) int { return max(width-cardFrameWidth, 1) }
 // its right end (docs/interface/surfaces.md#the-approval-card). Rows are
 // clipped and padded to the inner width.
 func (c Card) Render(rows []string, width int) string {
-	border := sty.Border
+	border := c.Tone.style()
 	if c.Style != nil {
 		border = *c.Style
 	}
@@ -179,21 +211,42 @@ const notYetLiveWords = "not live yet"
 // live is a different thing from
 // one that cannot be pressed at all (the palette's ⊘), so the two never render
 // alike: this one is waiting for the keyboard, that one is refused.
-func notYetLiveRows(keys, handover string, width int) []string {
-	inner := Card{}.Inner(width)
-	keys = Clip(keys, inner)
-	rows := make([]string, 0, 3)
-	// The words sit on the key row itself where the terminal carries them,
-	// so the state is read in the same glance as the keys it describes.
-	if pad := inner - lipgloss.Width(keys) - lipgloss.Width(notYetLiveWords); pad >= 2 {
-		rows = append(rows, sty.Dimmer.Render(keys)+strings.Repeat(" ", pad)+sty.Dim.Render(notYetLiveWords))
-	} else {
-		rows = append(rows, sty.Dimmer.Render(keys), sty.Dim.Render(Clip(notYetLiveWords, inner)))
-	}
+func notYetLiveRows(run []string, handover string, width int) []string {
+	rows := deadRows(run, notYetLiveWords, width)
 	if handover != "" {
-		rows = append(rows, handoverRow(handover, inner))
+		rows = append(rows, handoverRow(handover, Card{}.Inner(width)))
 	}
 	return rows
+}
+
+// deadRows is the shape those four states share: the run drawn in one grey
+// because none of its keys is live, and the phrase that says why sitting on
+// the same row wherever the terminal carries it, so the state is read in the
+// same glance as the keys it describes (invariant 1 — the dimming never
+// carries the meaning alone).
+//
+// The run wraps rather than being shortened. It is a key row, and nothing on
+// a key row is dropped or cut
+// (docs/interface/principles.md#fold-never-hide): a reader told that a key is
+// waiting has to be able to see which keys, and a run that quietly lost its
+// last offer at sixty columns would be a card that offers two different sets
+// at two widths.
+func deadRows(run []string, words string, width int) []string {
+	inner := Card{}.Inner(width)
+	dim := make([]string, len(run))
+	for i, seg := range run {
+		dim[i] = sty.Dimmer.Render(seg)
+	}
+	rows := runRows(dim, inner)
+	if len(rows) == 0 {
+		return []string{sty.Dim.Render(Clip(words, inner))}
+	}
+	last := len(rows) - 1
+	if pad := inner - lipgloss.Width(rows[last]) - lipgloss.Width(words); pad >= 2 {
+		rows[last] += strings.Repeat(" ", pad) + sty.Dim.Render(words)
+		return rows
+	}
+	return append(rows, sty.Dim.Render(Clip(words, inner)))
 }
 
 // graceWords is what the key row says while an arrival's grace window holds
@@ -206,14 +259,7 @@ const graceWords = "keys live in a moment"
 // the not-yet-live row's shape — dim keys, the state in words in the same
 // glance (invariant 1: the dimming never carries the meaning alone) — with
 // no handover row, because the card already holds the keyboard.
-func graceRows(keys string, width int) []string {
-	inner := Card{}.Inner(width)
-	keys = Clip(keys, inner)
-	if pad := inner - lipgloss.Width(keys) - lipgloss.Width(graceWords); pad >= 2 {
-		return []string{sty.Dimmer.Render(keys) + strings.Repeat(" ", pad) + sty.Dim.Render(graceWords)}
-	}
-	return []string{sty.Dimmer.Render(keys), sty.Dim.Render(Clip(graceWords, inner))}
-}
+func graceRows(run []string, width int) []string { return deadRows(run, graceWords, width) }
 
 // typingWords is the state of a decision surface whose own field has the
 // keyboard: the keys are on the card and none of them is a key, because every
@@ -232,14 +278,7 @@ const typingWords = "these letters go into the field"
 // typingRows renders that key row: the not-yet-live row's shape, with no
 // handover under it, because nothing is being handed anywhere — the field is
 // already where the keyboard is.
-func typingRows(keys string, width int) []string {
-	inner := Card{}.Inner(width)
-	keys = Clip(keys, inner)
-	if pad := inner - lipgloss.Width(keys) - lipgloss.Width(typingWords); pad >= 2 {
-		return []string{sty.Dimmer.Render(keys) + strings.Repeat(" ", pad) + sty.Dim.Render(typingWords)}
-	}
-	return []string{sty.Dimmer.Render(keys), sty.Dim.Render(Clip(typingWords, inner))}
-}
+func typingRows(run []string, width int) []string { return deadRows(run, typingWords, width) }
 
 // chosenWords is the state of a decision surface holding a list under itself
 // rather than a field: the card's keys are drawn and none of them is a key,
@@ -255,14 +294,7 @@ const chosenWords = "the list below has the keyboard"
 // chosenRows renders that key row. It is typingRows with the other phrase,
 // for the reason those two share a shape: what changed is which surface holds
 // the keyboard, not how a card says its keys are dead.
-func chosenRows(keys string, width int) []string {
-	inner := Card{}.Inner(width)
-	keys = Clip(keys, inner)
-	if pad := inner - lipgloss.Width(keys) - lipgloss.Width(chosenWords); pad >= 2 {
-		return []string{sty.Dimmer.Render(keys) + strings.Repeat(" ", pad) + sty.Dim.Render(chosenWords)}
-	}
-	return []string{sty.Dimmer.Render(keys), sty.Dim.Render(Clip(chosenWords, inner))}
-}
+func chosenRows(run []string, width int) []string { return deadRows(run, chosenWords, width) }
 
 // handoverRow is the one live key on a not-yet-live surface. Its wording is
 // the card's rather than the caller's, because the mid-sentence rule fixes
