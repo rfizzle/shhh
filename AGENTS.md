@@ -1195,6 +1195,29 @@ A `TestMain` in each golden-using package calls `golden.Run(m)` which **deletes 
 
 ### Driving the binary
 
+Three layers ask three different questions of a surface, and none of them
+answers another's:
+
+- **The golden is the render.** `internal/ui/golden` draws the surface
+  in-process at four widths in two palettes and asks what it looks like. It
+  builds the model directly, so it can say nothing about how a reader gets
+  there.
+- **The program test is the route.** `internal/ui/chat/program_test.go` runs
+  a real `tea.Program` over the session model under `teatest`, sends the keys
+  a reader sends, lets a scripted `provider.Provider` answer on the runtime's
+  own goroutines, and reads the frame the program ends on. It asks whether
+  the key reaches the surface and whether the stream arrives through the
+  whole program — as a `go test` verdict, on every platform, including the
+  one with no tmux. It has no terminal, so it can say nothing about what a
+  terminal does with the frame.
+- **The driven scene is the terminal and the stream.** It is the only one
+  that sees the alternate screen, the colour profile, the cursor placement
+  and the exit banner, because it is the only one with a terminal.
+
+The gate below is unchanged by the middle layer: a surface is still accepted
+with a golden and a driven capture. What the program test buys is that a
+broken route fails in `make ci` before either is looked at.
+
 A golden proves a surface renders. It cannot prove that the key reaches the
 surface, that the panel it draws into is the one the register placed it in,
 or that a provider's stream arrives through the real program. `scripts/tui/`
@@ -1237,7 +1260,7 @@ capture is reproduced from it.
 
 - Tests live alongside their source (`foo_test.go` beside `foo.go`)
 - Table-driven tests are the norm
-- No external test dependencies (no testify); tests use stdlib `testing`
+- No external test dependencies (no testify); tests use stdlib `testing`. The one exception is `teatest`, which is a harness rather than an assertion library: it starts a real `tea.Program` over a model, which nothing in the standard library can do. Assertions in those tests are still plain `if`/`t.Fatalf`
 - SQLite storage tests use `OpenPath` with a temp file or `:memory:`
 - The LSP package has integration tests that spawn real language servers
 - `internal/cli` builds the binary once in its `TestMain` (into a `bin` directory under the temp home, since the temp home itself is the config directory) and drives `shhh code -p` against a fake provider over `httptest`; the fake must speak the openai-compatible dialect the built binary is configured for. The suite stays cacheable, so `make ci` must not pass `-count=1`
