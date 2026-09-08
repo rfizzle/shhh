@@ -552,11 +552,24 @@ record to what was actually said, and putting the two side by side stays a
 deliberate act at the export command rather than something that happens to
 every collector on the network.
 
+**A fan-out arrives as one trace.** A sub-agent's span hangs under the span of
+the session that spawned it, and says what kind of session that was, so a run
+that split into six children opens on a dashboard as one piece of work rather
+than as seven sessions that happen to overlap. What the child's span does not
+carry is which row it is in this machine's database: the parent link in the
+table is a number that means nothing anywhere else, and the trace is how the
+relationship crosses the network.
+
 **A collector that will not answer costs a session nothing.** The connection
 is made when a session ends, not when it starts, so an endpoint that is down
 is invisible until then; the attempt is bounded and never retried; and a
-failure switches export off for the rest of the process and writes one line
-to the diagnostic log. A session that ends because you started a new
+failure switches export off for a few minutes and writes one line to the
+diagnostic log. Off for a few minutes and not for good: a collector is
+restarted, a gateway is redeployed, a laptop closes its lid on a train, and a
+session that runs for hours would otherwise spend all of them sending nothing
+to something that came back a minute later. The next session to end after the
+pause is the probe — nothing polls a collector to find out whether it is
+back. A session that ends because you started a new
 conversation does not wait for the send at all — that boundary is crossed
 while you are sitting in front of it, and a collector that is merely slow is
 not allowed to be felt there. The record is a by-product of doing the work, so it

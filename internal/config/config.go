@@ -27,6 +27,7 @@ type Config struct {
 	Reports    ReportsConfig    `toml:"reports"`
 	Observe    ObserveConfig    `toml:"observe"`
 	Otel       OtelConfig       `toml:"otel"`
+	Logs       LogsConfig       `toml:"logs"`
 	Agents     AgentsConfig     `toml:"agents"`
 	Summary    SummaryConfig    `toml:"summary"`
 	Secrets    SecretsConfig    `toml:"secrets"`
@@ -727,6 +728,21 @@ type OtelConfig struct {
 	// default: a machine that has not been told where to send the record
 	// keeps it.
 	Endpoint string `toml:"endpoint"`
+}
+
+// LogsConfig is the diagnostic log — the file a session appends what went
+// wrong to. It has one key, and it is how much is written down: where the
+// file goes is not a setting, because state lives in one place on every
+// platform, and what is written is decided by the seam that writes it.
+// See docs/capabilities/configuration.md#a-failure-is-written-down.
+type LogsConfig struct {
+	// Level is the lowest severity kept, by name. Empty is the built-in
+	// answer, and the built-in answer keeps the lines this file exists for:
+	// a mechanism that failed quietly, and a call something refused. Raising
+	// it is the answer for a machine where the log is being shipped
+	// somewhere that charges by the line, and it is a raise a person makes
+	// knowing that what goes missing is the half nothing else records.
+	Level string `toml:"level"`
 }
 
 const DefaultRetentionDays = 90

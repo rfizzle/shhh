@@ -88,6 +88,17 @@ func aWholeSession(s *SessionSpan) {
 	s.End(SessionCompleted)
 }
 
+// aWholeExport is one of everything the exporter can send: a session, and the
+// child a fan-out hangs under it. Two spans, because what a child adds to the
+// export is the trace it shares with its parent, and a single session can
+// never say anything about that.
+func aWholeExport(exp *Exporter) {
+	parent := exp.Session("code", "openai", "gpt-test")
+	child := exp.Child(parent, "researcher", "openai", "gpt-test-small")
+	aWholeSession(child)
+	aWholeSession(parent)
+}
+
 func attrs(kvs []*commonpb.KeyValue) map[string]string {
 	out := make(map[string]string, len(kvs))
 	for _, kv := range kvs {
@@ -200,7 +211,7 @@ func TestExporter_TheAttributeSetIsClosed(t *testing.T) {
 	if err != nil {
 		t.Fatalf("build the exporter: %v", err)
 	}
-	aWholeSession(exp.Session("code", "openai", "gpt-test"))
+	aWholeExport(exp)
 
 	seen := map[string]bool{}
 	for _, span := range c.received() {
@@ -324,7 +335,10 @@ func TestExporter_ADeadEndpointCostsOneLogRecord(t *testing.T) {
 // set an endpoint does, so it is the path that must not panic.
 func TestExporter_NoEndpointIsANoOp(t *testing.T) {
 	var none *Exporter
-	aWholeSession(none.Session("code", "openai", "gpt-test"))
+	aWholeExport(none)
+	if err := none.Shutdown(context.Background()); err != nil {
+		t.Errorf("shutting down nothing: %v", err)
+	}
 }
 
 // The scheme is never guessed: it decides whether the record crosses the
@@ -339,5 +353,118 @@ func TestParseEndpoint(t *testing.T) {
 		if got, err := ParseEndpoint(bad); err == nil {
 			t.Errorf("ParseEndpoint(%q) should be refused, got %q", bad, got)
 		}
+	}
+}
+
+// A fan-out arrives as one trace: the children hang under the session that
+// spawned them, so a dashboard that opens the parent has the whole piece of
+// work. Without this a run with six children is seven unrelated sessions that
+// happen to overlap, which is less than the same run says in `shhh observe`,
+// where the row carries the parent link.
+func TestExporter_AFanOutIsOneTrace(t *testing.T) {
+	c := newCollector(t)
+	exp, err := NewExporter(context.Background(), c.URL, "0.0.0-test")
+	if err != nil {
+		t.Fatalf("build the exporter: %v", err)
+	}
+	parent := exp.Session("code", "openai", "gpt-test")
+	child := exp.Child(parent, "researcher", "openai", "gpt-test-small")
+	child.End(SessionCompleted)
+	parent.End(SessionCompleted)
+
+	spans := c.received()
+	if len(spans) != 2 {
+		t.Fatalf("a parent and a child are two spans, got %d", len(spans))
+	}
+	var got, under *tracepb.Span
+	for _, span := range spans {
+		if attrs(span.GetAttributes())[AttrKind] == `string_value:"researcher"` {
+			got = span
+		} else {
+			under = span
+		}
+	}
+	if got == nil || under == nil {
+		t.Fatalf("the two spans are not the parent and the child: %v", spans)
+	}
+	if !slices.Equal(got.GetTraceId(), under.GetTraceId()) {
+		t.Errorf("the child is in trace %x and its parent in %x", got.GetTraceId(), under.GetTraceId())
+	}
+	if !slices.Equal(got.GetParentSpanId(), under.GetSpanId()) {
+		t.Errorf("the child's parent is %x, want the parent span %x", got.GetParentSpanId(), under.GetSpanId())
+	}
+	// And it says whose child it is without anyone having to walk the trace
+	// to find out.
+	if on := attrs(got.GetAttributes())[AttrParent]; !strings.Contains(on, "code") {
+		t.Errorf("the child's %s is %q, want the parent's kind", AttrParent, on)
+	}
+	if _, ok := attrs(under.GetAttributes())[AttrParent]; ok {
+		t.Errorf("a session nothing spawned carries %s", AttrParent)
+	}
+	if err := exp.Shutdown(context.Background()); err != nil {
+		t.Errorf("shut the exporter down: %v", err)
+	}
+}
+
+// A child whose parent was never recording is still exported, as a session of
+// its own. The alternative is a span with a parent id pointing at nothing,
+// which is a broken trace rather than a root one.
+func TestExporter_AChildOfNothingIsARootSpan(t *testing.T) {
+	c := newCollector(t)
+	exp, err := NewExporter(context.Background(), c.URL, "0.0.0-test")
+	if err != nil {
+		t.Fatalf("build the exporter: %v", err)
+	}
+	exp.Child(nil, "researcher", "openai", "gpt-test-small").End(SessionCompleted)
+
+	spans := c.received()
+	if len(spans) != 1 {
+		t.Fatalf("one child, one span, got %d", len(spans))
+	}
+	if id := spans[0].GetParentSpanId(); len(id) != 0 {
+		t.Errorf("the span hangs under %x, and there was nothing to hang it under", id)
+	}
+}
+
+// A failure is a pause and not a latch. A collector is restarted and a laptop
+// closes its lid; a process that had switched export off for good would send
+// nothing for the rest of a session that lasts hours, with one line in a log
+// nobody is reading to say why the dashboard has a hole in it.
+func TestExporter_AFailureIsAPauseAndNotALatch(t *testing.T) {
+	dead := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	url := dead.URL
+	dead.Close()
+
+	path := filepath.Join(t.TempDir(), "shhh.log")
+	logs.To(path)
+	t.Cleanup(func() { logs.To("") })
+
+	exp, err := NewExporter(context.Background(), url, "0.0.0-test")
+	if err != nil {
+		t.Fatalf("build the exporter: %v", err)
+	}
+	aWholeSession(exp.Session("code", "openai", "gpt-test"))
+	if exp.exporting() {
+		t.Fatal("a refused connection should have switched export off")
+	}
+	// The pause runs out, which is the whole of what re-arms it: nothing
+	// probes the collector, and the next session that ends is the probe.
+	exp.sink.pausedUntil.Store(time.Now().Add(-time.Second).UnixNano())
+	if !exp.exporting() {
+		t.Fatal("the pause ran out and export is still off")
+	}
+	aWholeSession(exp.Session("chat", "openai", "gpt-test"))
+	if exp.exporting() {
+		t.Fatal("the second failure should have paused export again")
+	}
+
+	written, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read the log: %v", err)
+	}
+	// One line per outage: the second session failed after the first pause
+	// had run out, so it is a second outage and says so.
+	if n := strings.Count(string(written), "session record not exported"); n != 2 {
+		t.Errorf("two outages wrote %d records, want 2:\n%s", n, written)
 	}
 }

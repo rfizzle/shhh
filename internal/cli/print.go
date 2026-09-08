@@ -1059,7 +1059,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	verdict := &lastVerdict{}
 	resolve := headlessApprover(cmd.Context(), opts, allowlist, cfg.Behavior.CommandDenylist, run, containRefusal, red, verdict.wrap(obs.decision),
 		session.web, procSup, chainMutation(lspMutationHook(session.lsp), hookPostMutation(hooks)), sc, session.mcpTools, session.structural,
-		unattended{sup: sup, judge: judge})
+		unattended{sup: sup, judge: judge, at: obs.pos})
 	// A supervisor blocks on its event channel, so a run that spawned a
 	// child and read nothing would stop the child at its first routed
 	// request and itself behind it. What this run's own calls wrote is where
@@ -1586,6 +1586,17 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist [
 			record(decision, reason)
 		}
 	}
+	// refuse is where every one of this approver's refusals goes. The record
+	// takes the content-free event, and the diagnostic log takes the line a
+	// person reads at 3 a.m. when the run did nothing and stderr went to
+	// wherever the scheduler sends it. One place for both, because a refusal
+	// that reached one of them and not the other is a run whose record and
+	// whose log disagree about what happened to it.
+	refuse := func(tc provider.ToolCall, command, rule string) {
+		note(observe.DecisionDeny, rule)
+		at := un.pos()
+		agent.LogRefusal(tc.Name, command, rule, at.Turn, at.Round)
+	}
 	// answer is what a gated call gets once every standing refusal — the
 	// containment requirement, the deny list, the safety table — has had its
 	// say: the flags, then the classifier where --mode auto asked for one,
@@ -1615,7 +1626,7 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist [
 		if decision == agent.Allow {
 			return code, true
 		}
-		note(observe.DecisionDeny, code)
+		refuse(tc, action.Command, code)
 		if un.judge == nil {
 			return "error: " + what + " not approved: headless mode denies " + without, false
 		}
@@ -1687,7 +1698,7 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist [
 				return "error: " + err.Error()
 			}
 			if agent.DenylistMatches(denylist, command) {
-				note(observe.DecisionDeny, observe.ReasonDenylist)
+				refuse(tc, command, observe.ReasonDenylist)
 				return agent.DenylistResult
 			}
 			if warnings := safety.Check(command); len(warnings) > 0 {
@@ -1695,7 +1706,7 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist [
 				for _, w := range warnings {
 					risks = append(risks, w.Risk)
 				}
-				note(observe.DecisionDeny, observe.ReasonSafety)
+				refuse(tc, command, observe.ReasonSafety)
 				return "error: process start denied (" + strings.Join(risks, "; ") + "); safety-flagged commands require interactive approval"
 			}
 			byFlag, flagReason := headlessCommandFlags(opts, allowlist, command)
@@ -1707,7 +1718,7 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist [
 			// A process start is a command, and the working scope
 			// applies to it as much as to a foreground one.
 			if deny, ok := headlessScopeCheck(sc, opts.yes, radius.WritePaths(command)); !ok {
-				note(observe.DecisionDeny, observe.ReasonOutOfScope)
+				refuse(tc, command, observe.ReasonOutOfScope)
 				return deny
 			}
 			note(observe.DecisionAllow, reason)
@@ -1730,7 +1741,7 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist [
 			// Before --yes and before the allowlist: a deny list that a flag
 			// could out-rank would be a preference and not a rule.
 			if agent.DenylistMatches(denylist, args.Command) {
-				note(observe.DecisionDeny, observe.ReasonDenylist)
+				refuse(tc, args.Command, observe.ReasonDenylist)
 				return agent.DenylistResult
 			}
 			if warnings := safety.Check(args.Command); len(warnings) > 0 {
@@ -1738,7 +1749,7 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist [
 				for _, w := range warnings {
 					risks = append(risks, w.Risk)
 				}
-				note(observe.DecisionDeny, observe.ReasonSafety)
+				refuse(tc, args.Command, observe.ReasonSafety)
 				return "error: command denied (" + strings.Join(risks, "; ") + "); safety-flagged commands require interactive approval"
 			}
 			byFlag, flagReason := headlessCommandFlags(opts, allowlist, args.Command)
@@ -1751,7 +1762,7 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist [
 			// spent: an allowlisted command shape is not a licence to
 			// write outside the directories this run was given.
 			if deny, ok := headlessScopeCheck(sc, opts.yes, radius.WritePaths(args.Command)); !ok {
-				note(observe.DecisionDeny, observe.ReasonOutOfScope)
+				refuse(tc, args.Command, observe.ReasonOutOfScope)
 				return deny
 			}
 			note(observe.DecisionAllow, reason)
@@ -1765,7 +1776,7 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist [
 		if structTools != nil && tc.Name == structural.GitWriteToolName {
 			line := structural.WriteLine(json.RawMessage(tc.Arguments))
 			if agent.DenylistMatches(denylist, line) {
-				note(observe.DecisionDeny, observe.ReasonDenylist)
+				refuse(tc, line, observe.ReasonDenylist)
 				return agent.DenylistResult
 			}
 			// The line the call stands for travels with it, so the judge
@@ -1792,7 +1803,11 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist [
 			}
 			if mutErr == nil {
 				if deny, ok := headlessScopeCheck(sc, opts.yes, []string{mut.Path}); !ok {
-					note(observe.DecisionDeny, observe.ReasonOutOfScope)
+					// No command on the line, and the path is not put on
+					// one: a refusal for what a call reaches is a refusal
+					// about a path, and this file is shared and outlives
+					// every session that writes to it.
+					refuse(tc, "", observe.ReasonOutOfScope)
 					return deny
 				}
 			}

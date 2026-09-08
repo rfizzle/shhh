@@ -424,6 +424,27 @@ otherwise be painted over a running session. It does not hold the
 conversation: that is in the state directory too, and a log that repeated it
 would be a second transcript with none of a transcript's structure.
 
+Two things that are not failures are written here for the same reason: they
+have no surface that lasts. A **refused call** — a deny list entry, the safety
+table, a directory outside the working scope, a run with nobody to ask —
+becomes an error the model reads and carries on from, so a scheduled run that
+did nothing has no explanation anywhere by the morning unless it is here; the
+line says what was asked for, the first word of the command, the rule that
+answered and where the run had got to. And a **window recovery** — old tool
+results elided, or the conversation replaced by a summary of itself — is
+written with the share of the window either side of it, because a count on its
+own cannot tell a run that trimmed once and bought real headroom from one
+shaving itself back to just under its own trigger every round, which is the
+shape that turns a long unattended run into a bill. Neither is written for a
+session somebody is watching: there the refusal is a card that was answered
+and the recovery is a line in the transcript, and this file is for what has no
+surface of its own.
+
+`logs.level` decides how much is kept. The default keeps everything above, and
+the reason to raise it is a machine shipping the file somewhere that charges
+by the line — a raise made knowing that what goes missing is the half nothing
+else records.
+
 The mechanisms that fail quietly write here too, and they are the reason to
 open the file at all. A permission classifier that used up its attempts and
 fell back to asking; a session reading that timed out, leaving the block on
@@ -706,6 +727,12 @@ own file could hold.
 | Key | Takes | Default | What it decides |
 |---|---|---|---|
 | `endpoint` | text | (off — the record stays on this machine) | Where an OTLP collector listens, as a URL with its scheme; each session is sent to it as one span when the session ends. |
+
+**`[logs]`**
+
+| Key | Takes | Default | What it decides |
+|---|---|---|---|
+| `level` | word: `debug`, `info`, `warn`, `error` | `info` | How much reaches the diagnostic log: `info` is every mechanism that failed quietly, every call a policy refused and every context trim; `warn` narrows it to what a person has to act on. |
 
 **`[agents]`**
 

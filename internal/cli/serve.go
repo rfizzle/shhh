@@ -475,7 +475,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	allowed := headlessApprover(cmd.Context(), printOpts{yes: true}, cfg.Behavior.CommandAllowlist,
 		cfg.Behavior.CommandDenylist, run, containment.Refusal, red, answeredByClient(record),
 		session.web, procSup, chainMutation(lspMutationHook(session.lsp), hookPostMutation(hooks)), sc, session.mcpTools, session.structural,
-		unattended{sup: sup})
+		unattended{sup: sup, at: l.obs.pos})
 	// And the approver of a server told there is nobody to ask: the same
 	// standing refusals in front, the classifier where the client would have
 	// been, and a refusal wherever it cannot approve.
@@ -484,7 +484,8 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		judged = headlessApprover(cmd.Context(), printOpts{}, cfg.Behavior.CommandAllowlist,
 			cfg.Behavior.CommandDenylist, run, containment.Refusal, red, record,
 			session.web, procSup, chainMutation(lspMutationHook(session.lsp), hookPostMutation(hooks)), sc, session.mcpTools, session.structural,
-			unattended{sup: sup, judge: &autoJudge{ctx: cmd.Context(), classifier: classifier, recent: a.Messages, cwd: hookCwd}})
+			unattended{sup: sup, at: l.obs.pos,
+				judge: &autoJudge{ctx: cmd.Context(), classifier: classifier, recent: a.Messages, cwd: hookCwd}})
 	}
 	// A supervisor blocks on its event channel, so a session that spawned a
 	// child and read nothing would stop the child at its first routed

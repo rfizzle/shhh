@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -279,6 +280,43 @@ func (c *Compactor) keepBudget() int64 { return c.Window * CompactKeepPercent / 
 // bring it back. It reports what it did, and the zero notice is the ordinary
 // case.
 func (c *Compactor) Recover(a *Agent, ask CompactAsk) CompactNotice {
+	n := c.recover(a, ask)
+	logRecovery(n)
+	return n
+}
+
+// logRecovery writes down what the step did, in the shares of the window it
+// did it at. The two figures are the point: a count on its own cannot tell a
+// run that trimmed once and bought real headroom from one that shaved itself
+// back to just under its trigger and will do it again next round, and the
+// second is the shape that turns a long run into a bill.
+//
+// It is written here rather than at the surfaces because here is where the
+// step happens, and it is written at all because every caller of this one is
+// a run with nobody in front of it: the session's own recovery is a line in
+// the transcript and a block on the rail, in front of the person it happened
+// to, and the log is for what has no surface of its own.
+// See docs/capabilities/configuration.md#a-failure-is-written-down.
+func logRecovery(n CompactNotice) {
+	switch {
+	case n.Compacted:
+		logs.Logger().Info("conversation compacted",
+			"before_pct", n.BeforePct, "after_pct", n.AfterPct, "kept_turns", n.Kept)
+	case n.Err != nil:
+		// The one half of this that is a failure: the window is over the
+		// line, the conversation could not be replaced, and the run goes on
+		// towards a request the provider will refuse for its size.
+		logs.Logger().Warn("conversation not compacted",
+			"before_pct", n.BeforePct, "error", n.Err)
+	case n.Elided > 0:
+		logs.Logger().Info("context trimmed",
+			"elided", n.Elided, "before_pct", n.BeforePct, "after_pct", n.AfterPct)
+	}
+}
+
+// recover is the step itself. Recover wraps it so the reading is taken once,
+// off the notice, rather than at each of the returns below.
+func (c *Compactor) recover(a *Agent, ask CompactAsk) CompactNotice {
 	if c == nil || a == nil || c.Window <= 0 {
 		return CompactNotice{}
 	}

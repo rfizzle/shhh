@@ -125,4 +125,20 @@ func (j *autoJudge) decide(tc provider.ToolCall, action agent.Action) (agent.Dec
 type unattended struct {
 	sup   *subagent.Supervisor
 	judge *autoJudge
+	// at is where the run has got to, for the line a refusal leaves in the
+	// diagnostic log. It is a function and not a position because the
+	// approver is built once and asked on every round, and it is here rather
+	// than a parameter of its own because this is already what the approver
+	// knows about the run it is answering for rather than about the call.
+	at func() observe.Pos
+}
+
+// pos is where the run is now, and the zero position for a surface that was
+// given no way to say — a test, and any caller for which the answer would be
+// a guess.
+func (u unattended) pos() observe.Pos {
+	if u.at == nil {
+		return observe.Pos{}
+	}
+	return u.at()
 }

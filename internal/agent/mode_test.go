@@ -1,8 +1,12 @@
 package agent
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/rfizzle/shhh/internal/logs"
 )
 
 func TestParseMode(t *testing.T) {
@@ -531,5 +535,42 @@ func TestDeniedHostResultStopsTheRetryWithoutNamingTheList(t *testing.T) {
 	}
 	if !strings.Contains(DeniedHostResult, "another path on the same host") {
 		t.Error("the refusal does not say that another URL on the host will not work either")
+	}
+}
+
+// A refusal is written down, and an allow is not. The policy's denials are
+// the verdict with no lasting surface anywhere else: the model is handed an
+// error and goes on, and the person finds out that nothing happened.
+func TestDecide_ARefusalIsWrittenDownWithItsRule(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "shhh.log")
+	logs.To(path)
+	t.Cleanup(func() { logs.To("") })
+
+	p := ModePolicy{Mode: ModeAuto, CommandDenylist: []string{"rm -rf"}}
+	if d, _ := p.Decide(Action{Kind: ActionCommand, Command: "rm -rf /tmp/x"}); d != Deny {
+		t.Fatalf("the deny list must refuse the command")
+	}
+	if d, _ := p.Decide(Action{Kind: ActionEdit, Path: "/repo/main.go"}); d != Allow {
+		t.Fatalf("auto mode applies an edit")
+	}
+
+	written, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read the log: %v", err)
+	}
+	line := string(written)
+	for _, want := range []string{"call refused", "what=command", "command=rm", DenyReasonDenylist} {
+		if !strings.Contains(line, want) {
+			t.Errorf("the log does not say %q:\n%s", want, line)
+		}
+	}
+	// The first word of the command and nothing else: the log is shared
+	// between sessions and outlives all of them, and the edit that was
+	// allowed left no line at all.
+	if strings.Contains(line, "/tmp/x") || strings.Contains(line, "main.go") {
+		t.Errorf("the log carries what the calls were pointed at:\n%s", line)
+	}
+	if n := strings.Count(line, "call refused"); n != 1 {
+		t.Errorf("one refusal wrote %d lines, want 1:\n%s", n, line)
 	}
 }

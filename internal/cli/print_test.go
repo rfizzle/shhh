@@ -20,6 +20,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
+	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -1738,5 +1739,39 @@ func TestOnlyRegistered_NamesWhatThisRunOffered(t *testing.T) {
 	}
 	if !strings.Contains(got, "glob, read_file, search") {
 		t.Fatalf("the offered set should be named, sorted, got %q", got)
+	}
+}
+
+// A refused call is written down. It is the one verdict a run leaves no other
+// trace of — the model reads the refusal and carries on, stderr goes wherever
+// the scheduler sends it — so without this line a scheduled run that did
+// nothing has no explanation anywhere by the morning.
+func TestHeadlessApprover_ARefusalIsWrittenDownWithItsRule(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "shhh.log")
+	logs.To(path)
+	t.Cleanup(func() { logs.To("") })
+
+	at := func() observe.Pos { return observe.Pos{Turn: 1, Round: 4} }
+	resolve := headlessApprover(context.Background(), printOpts{yes: true}, nil, []string{"rm -rf"},
+		fakeRun(&[]string{}), "", nil, nil, nil, nil, nil, nil, nil, nil, unattended{at: at})
+	if result := resolve(execCall("rm -rf /tmp/x")); result != agent.DenylistResult {
+		t.Fatalf("the deny list must refuse the command, got %q", result)
+	}
+
+	written, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read the log: %v", err)
+	}
+	line := string(written)
+	for _, want := range []string{"call refused", "execute_command", "rule=" + observe.ReasonDenylist, "turn=1", "round=4"} {
+		if !strings.Contains(line, want) {
+			t.Errorf("the log does not say %q:\n%s", want, line)
+		}
+	}
+	// The command's first word and nothing after it: the file is shared
+	// between sessions and outlives all of them, and what a run was pointed
+	// at is not a diagnostic.
+	if !strings.Contains(line, "command=rm") || strings.Contains(line, "/tmp/x") {
+		t.Errorf("the log carries more than the program name:\n%s", line)
 	}
 }

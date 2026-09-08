@@ -319,7 +319,7 @@ func recordEverySurface(t *testing.T, db *storage.DB) map[string]int64 {
 	ids["print"] = head.sessionID()
 
 	// A sub-agent: its own provenance, linked to the session that spawned it.
-	child := startChildObserveRecorder(db, "researcher", "anthropic", "cheap-model", nil, ids["code"])
+	child := startChildObserveRecorder(db, "researcher", "anthropic", "cheap-model", nil, sess)
 	child.stamp("the researcher prompt", 3, "/repo", storage.AgentSettings{})
 	declined, declinedClass := observe.ToolOutcome("error: the user declined this tool call")
 	child.decisionAt(observe.Pos{Turn: 1, Round: 1}, observe.DecisionAsk, observe.ReasonPolicy)

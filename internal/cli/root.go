@@ -12,6 +12,7 @@ import (
 	"github.com/mattn/go-isatty"
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
+	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/profile"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -35,6 +36,19 @@ var version = "dev"
 // spawned, which is the one place the process is not the thing being asked
 // to stop.
 func Execute(ctx context.Context) error {
+	// The collector is told the process is going. Nothing is queued — a
+	// session's span is sent on the goroutine that ended it — so this closes
+	// the connection rather than flushing anything, and it is done because
+	// an exporter that is never shut down leaves the far end holding a
+	// stream it can only time out (observe.go).
+	//
+	// It is a defer on the return and not a rule about every exit: a handful
+	// of commands leave through os.Exit to carry a child process's status
+	// out, and they pass this by. What that costs is the polite close and
+	// nothing else — every span those runs produced had already arrived or
+	// failed — so the alternative, a shutdown call at each of those exits,
+	// would be a thing to keep in step for no record anybody loses.
+	defer closeObserveExport()
 	return execute(ctx, NewRootCmd())
 }
 
@@ -156,6 +170,17 @@ func NewRootCmd() *cobra.Command {
 			// table answers to is refused on the same terms a key no setting
 			// reads is, and for the same reason.
 			if err := components.SetTheme(cfg.Appearance.Theme); err != nil && cmd.Annotations[ownsConfigError] == "" {
+				return err
+			}
+
+			// How much of what a session writes down is kept, refused on the
+			// same terms and for the same reason: a level nobody honoured
+			// would be a person tailing a file for lines that were dropped
+			// on their way to it, with nothing on any surface to say so.
+			// It is set after the file is open rather than before, so the
+			// failures of getting this far were written at the level the
+			// product declares and not at one a file could hide them under.
+			if err := logs.SetLevel(cfg.Logs.Level); err != nil && cmd.Annotations[ownsConfigError] == "" {
 				return err
 			}
 

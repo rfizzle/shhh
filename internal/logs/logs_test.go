@@ -330,9 +330,52 @@ func (b *syncBuffer) String() string {
 }
 
 // must fails the test on an error from setting it up.
+// contents is the log as it stands, for a test that asserts on what reached
+// the file rather than on what was asked for.
+func contents(t *testing.T, path string) string {
+	t.Helper()
+	body, err := os.ReadFile(path)
+	must(t, err)
+	return string(body)
+}
+
 func must(t *testing.T, err error) {
 	t.Helper()
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+// The level decides what is kept, and it is honoured by a logger a caller is
+// already holding: the file is opened before the config that names the level
+// has been read, so a session that could only apply it at startup would apply
+// it to nothing.
+func TestSetLevelKeepsWhatItSaysAndRefusesAWordItDoesNotKnow(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "shhh.log")
+	To(path)
+	t.Cleanup(func() { To(""); must(t, SetLevel("")) })
+
+	log := Logger()
+	must(t, SetLevel("warn"))
+	log.Info("a trim happened")
+	log.Warn("a request was refused")
+
+	body := contents(t, path)
+	if strings.Contains(body, "a trim happened") {
+		t.Errorf("warn kept an info record:\n%s", body)
+	}
+	if !strings.Contains(body, "a request was refused") {
+		t.Errorf("warn dropped a warning:\n%s", body)
+	}
+
+	// And back down again, on the same logger.
+	must(t, SetLevel("debug"))
+	log.Debug("the classifier was asked")
+	if !strings.Contains(contents(t, path), "the classifier was asked") {
+		t.Error("debug did not reach the file")
+	}
+
+	if err := SetLevel("chatty"); err == nil {
+		t.Error("a level nothing answers to must be refused rather than defaulted")
 	}
 }

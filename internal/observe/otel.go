@@ -59,6 +59,14 @@ const (
 	AttrTokensIn  = "shhh.tokens.in"
 	AttrTokensOut = "shhh.tokens.out"
 	AttrCost      = "shhh.cost.usd"
+	// On the span of a session another one started: what kind of session
+	// that parent was. The trace already carries the parenthood — a child's
+	// span hangs under its parent's — and this is the half a dashboard
+	// groups by without walking a trace to find out whose child a row is.
+	// The parent's kind and not its identity: an id would be a row number
+	// on one machine's database, which means nothing on the other side of
+	// the network.
+	AttrParent = "shhh.session.parent"
 	// On an event: the row's own four columns and its position.
 	AttrTool       = "shhh.tool"
 	AttrEventCode  = "shhh.outcome"
@@ -74,7 +82,7 @@ const (
 // is the point: the set is closed on purpose, and the way to widen it is to
 // argue for the new key rather than to reach for attribute.String.
 var exportAttrs = []string{
-	AttrKind, AttrProvider, AttrModel, AttrOutcome,
+	AttrKind, AttrProvider, AttrModel, AttrOutcome, AttrParent,
 	AttrTurns, AttrTokensIn, AttrTokensOut, AttrCost,
 	AttrTool, AttrEventCode, AttrReason, AttrDurationMs, AttrTurn, AttrRound,
 }
@@ -100,6 +108,19 @@ const exportTimeout = 2 * time.Second
 // short.
 const exportEventLimit = 8192
 
+// exportPause is how long one export failure switches export off for.
+//
+// It is a pause and not a latch. A collector is restarted, a gateway is
+// redeployed, a laptop closes its lid on a train: every one of those is a
+// failure that mends itself, and a process that switched export off for good
+// would go on for the rest of its life — a coding session lasts hours —
+// sending nothing to a collector that came back a minute later, with one
+// line in a log nobody is reading to say why the dashboard has a hole in it.
+// The number is long enough that a collector that is properly down costs a
+// handful of attempts an hour rather than one per session boundary, and
+// short enough that the hole is a gap and not the rest of the day.
+const exportPause = 5 * time.Minute
+
 // Exporter is the process's connection to a collector: it opens a span per
 // session and sends each one when it closes.
 //
@@ -107,13 +128,15 @@ const exportEventLimit = 8192
 // method below tolerates one, so a caller wires this the way it wires the
 // recorder itself — unconditionally, with no branch of its own.
 //
-// There is deliberately nothing to shut down. A span is sent on the
-// goroutine that ends it rather than queued, so at any moment every span
-// that exists has either arrived or failed, and a process that stops holds
-// nothing anyone would want flushed.
+// Nothing is queued: a span is sent on the goroutine that ends it, so at any
+// moment every span that exists has either arrived or failed. Shutdown is
+// still called on the way out of the process, because what is left after the
+// last span is a connection, and a client that walks away from one leaves the
+// far end waiting out a stream it can only time out.
 type Exporter struct {
-	tracer trace.Tracer
-	sink   *spanSink
+	tracer   trace.Tracer
+	provider *sdktrace.TracerProvider
+	sink     *spanSink
 }
 
 // ParseEndpoint reads the configured endpoint into the URL the exporter
@@ -173,12 +196,19 @@ func NewExporter(ctx context.Context, endpoint, version string) (*Exporter, erro
 		// silently sampled away by a variable exported for something else.
 		sdktrace.WithSampler(sdktrace.AlwaysSample()),
 		sdktrace.WithRawSpanLimits(sdktrace.SpanLimits{
-			AttributeValueLengthLimit:   -1,
-			AttributeCountLimit:         -1,
-			EventCountLimit:             exportEventLimit,
-			LinkCountLimit:              0,
+			AttributeValueLengthLimit: -1,
+			AttributeCountLimit:       -1,
+			EventCountLimit:           exportEventLimit,
+			// A link limit of zero is not "the default" and not "nothing
+			// links to anything here": it is the SDK dropping every link a
+			// span is given, silently, which is how a relationship added to
+			// this file one afternoon would arrive at the collector as a
+			// span with nothing attached to it. Unlimited, like the
+			// attributes, because links are added by this package and a
+			// session has a handful at most.
+			LinkCountLimit:              -1,
 			AttributePerEventCountLimit: -1,
-			AttributePerLinkCountLimit:  0,
+			AttributePerLinkCountLimit:  -1,
 		}),
 		// The resource is written out rather than detected. resource.Default
 		// and the host and process detectors beside it put the machine's
@@ -188,33 +218,63 @@ func NewExporter(ctx context.Context, endpoint, version string) (*Exporter, erro
 		sdktrace.WithResource(resource.NewWithAttributes(semconv.SchemaURL,
 			semconv.ServiceName(ServiceName), semconv.ServiceVersion(version))),
 	)
-	return &Exporter{tracer: provider.Tracer(ServiceName), sink: sink}, nil
+	return &Exporter{tracer: provider.Tracer(ServiceName), provider: provider, sink: sink}, nil
+}
+
+// Shutdown flushes what is held and closes the connection. Nothing is held —
+// every span was sent as it ended — so this is the close, and the flush is
+// asked for anyway because it is the provider's own way of being told the
+// process is over: a build that queued spans one day would otherwise lose
+// the last of them with nothing failing.
+//
+// A nil Exporter and a second call are both no-ops, which is what lets the
+// caller be a plain defer on the way out.
+func (e *Exporter) Shutdown(ctx context.Context) error {
+	if e == nil {
+		return nil
+	}
+	if err := e.provider.ForceFlush(ctx); err != nil {
+		return err
+	}
+	return e.provider.Shutdown(ctx)
 }
 
 // spanSink is the processor a finished span goes through. It is written here
 // rather than taken from the SDK because the SDK's own simple processor
 // hands an export failure to a global error handler, and the answer this
-// wants is local: switch export off for the rest of the process and write
-// one line, so a collector that has gone away costs one log record and not
-// one per session boundary for the rest of the day.
+// wants is local: pause export and write one line, so a collector that has
+// gone away costs one log record per outage and not one per session boundary
+// for the rest of the day.
 type spanSink struct {
 	exp *otlptrace.Exporter
-	off atomic.Bool
+	// pausedUntil is when export resumes, in Unix nanoseconds, or zero while
+	// nothing has failed. A moment rather than a flag because a collector
+	// that has gone away usually comes back (exportPause).
+	pausedUntil atomic.Int64
+}
+
+// paused reports whether the sink is sitting out a failure at now.
+func (s *spanSink) paused(now time.Time) bool {
+	return now.UnixNano() < s.pausedUntil.Load()
 }
 
 func (s *spanSink) OnStart(context.Context, sdktrace.ReadWriteSpan) {}
 
 func (s *spanSink) OnEnd(span sdktrace.ReadOnlySpan) {
-	if s.off.Load() {
+	now := time.Now()
+	if s.paused(now) {
 		return
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), exportTimeout)
 	defer cancel()
 	if err := s.exp.ExportSpans(ctx, []sdktrace.ReadOnlySpan{span}); err != nil {
 		// Swapped before the line is written, so two sessions closing at
-		// once still leave one record rather than two.
-		if !s.off.Swap(true) {
-			logs.Logger().Warn("session record not exported", "error", err)
+		// once still leave one record rather than two — and so a collector
+		// that stays down writes one line per outage rather than one per
+		// attempt: a swap that found a pause already running found a line
+		// already written for it.
+		if was := s.pausedUntil.Swap(now.Add(exportPause).UnixNano()); was <= now.UnixNano() {
+			logs.Logger().Warn("session record not exported", "error", err, "retry_in", exportPause.String())
 		}
 	}
 }
@@ -226,9 +286,9 @@ func (s *spanSink) Shutdown(ctx context.Context) error { return s.exp.Shutdown(c
 // either arrived or failed.
 func (s *spanSink) ForceFlush(context.Context) error { return nil }
 
-// exporting reports whether anything would still be sent, which is what a
-// test asserts on and what says a failure has switched this off.
-func (e *Exporter) exporting() bool { return e != nil && !e.sink.off.Load() }
+// exporting reports whether anything would be sent now, which is what a test
+// asserts on and what says a failure has switched this off for the moment.
+func (e *Exporter) exporting() bool { return e != nil && !e.sink.paused(time.Now()) }
 
 // Session opens the span one session's record hangs off. The span is not
 // sent until End, because it is the session — a span that closed at the
@@ -238,14 +298,48 @@ func (e *Exporter) Session(kind, provider, model string) *SessionSpan {
 	if e == nil {
 		return nil
 	}
-	_, span := e.tracer.Start(context.Background(), SpanSession,
+	return e.open(context.Background(), kind, provider, model)
+}
+
+// Child opens the span a sub-agent's record hangs off, inside its parent's
+// trace: the same span every other session gets, started under the parent's
+// span context so the two arrive at the collector as one trace rather than as
+// unrelated sessions that happen to overlap.
+//
+// That is the whole of the argument for it. A fan-out is the composition the
+// export is least able to describe otherwise — six children, each a span of
+// its own, and nothing on the wire to say they were one piece of work — so a
+// team reading the export would see less than the same team reading `shhh
+// observe`, which has the parent link in the row.
+// See docs/capabilities/sessions-and-memory.md#the-record-can-leave-this-machine.
+func (e *Exporter) Child(parent *SessionSpan, kind, provider, model string) *SessionSpan {
+	if e == nil {
+		return nil
+	}
+	if parent == nil {
+		// A child whose parent was not recording is still a session, and it
+		// is a root one: there is no span for it to hang under, and hanging
+		// it under nothing would be the same span with a broken parent id.
+		return e.Session(kind, provider, model)
+	}
+	parentKind := parent.kind
+	child := e.open(trace.ContextWithSpan(context.Background(), parent.span), kind, provider, model)
+	child.span.SetAttributes(attribute.String(AttrParent, parentKind))
+	return child
+}
+
+// open is the one place a session span is started, so a child and a root
+// carry the same three attributes and cannot come to differ in what a session
+// says about itself.
+func (e *Exporter) open(ctx context.Context, kind, provider, model string) *SessionSpan {
+	_, span := e.tracer.Start(ctx, SpanSession,
 		trace.WithSpanKind(trace.SpanKindInternal))
 	span.SetAttributes(
 		attribute.String(AttrKind, kind),
 		attribute.String(AttrProvider, provider),
 		attribute.String(AttrModel, model),
 	)
-	return &SessionSpan{span: span}
+	return &SessionSpan{span: span, kind: kind}
 }
 
 // SessionSpan is one session's span, with a method per callback the Observer
@@ -258,6 +352,10 @@ func (e *Exporter) Session(kind, provider, model string) *SessionSpan {
 // method is a no-op on one.
 type SessionSpan struct {
 	span trace.Span
+	// kind is what this session was, kept so a child opened under it can say
+	// whose child it is without the caller being asked for the parent's kind
+	// a second time and being free to answer differently.
+	kind string
 }
 
 // ToolCall exports one executed tool call.

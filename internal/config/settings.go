@@ -426,6 +426,12 @@ var settings = []Setting{
 	},
 
 	{
+		Key: "logs.level", Kind: KindEnum, Default: "info",
+		Values: []string{"debug", "info", "warn", "error"},
+		Desc:   "How much reaches the diagnostic log: `info` is every mechanism that failed quietly, every call a policy refused and every context trim; `warn` narrows it to what a person has to act on.",
+	},
+
+	{
 		Key: "agents.model", Kind: KindString, Default: "inherit",
 		Desc: "The model every sub-agent runs, unless its role says otherwise; `inherit` is the session's own.",
 	}, {

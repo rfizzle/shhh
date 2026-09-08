@@ -8,6 +8,8 @@ package agent
 import (
 	"fmt"
 	"strings"
+
+	"github.com/rfizzle/shhh/internal/logs"
 )
 
 // Mode is the session's permission mode.
@@ -154,6 +156,20 @@ const (
 	// ActionOther is any other gated tool call (registered gated tools).
 	ActionOther
 )
+
+// String is the kind in the word a refusal is written down under, and the
+// word a person greps the log for.
+func (k ActionKind) String() string {
+	switch k {
+	case ActionEdit:
+		return "edit"
+	case ActionCommand:
+		return "command"
+	case ActionFetch:
+		return "fetch"
+	}
+	return "action"
+}
 
 // Action is one approval-gated tool call as the mode policy sees it.
 type Action struct {
@@ -430,7 +446,69 @@ func PlanInspectionAllowed(command string) bool {
 
 // Decide returns the verdict for one gated action and, for Allow, the reason
 // shown in the transcript ("session policy", "allowlist", "auto mode", …).
+//
+// A refusal is written to the diagnostic log on its way out, because a
+// refusal is the one verdict with no surface of its own that lasts: an allow
+// ran and its result is in the transcript, an ask drew a card somebody
+// answered, and a deny is a tool result the model reads and the person never
+// sees — which is how a run that did nothing comes to have no explanation
+// anywhere by the morning.
+// See docs/capabilities/configuration.md#a-failure-is-written-down.
 func (p ModePolicy) Decide(a Action) (Decision, string) {
+	decision, reason := p.decide(a)
+	if decision == Deny {
+		LogRefusal(a.Kind.String(), a.Command, reason, 0, 0)
+	}
+	return decision, reason
+}
+
+// LogRefusal writes the one line a refused call leaves behind: what was
+// asked for, the first word of the command it stands for, the rule that
+// answered, and where the run had got to. It is exported because the
+// unattended surfaces refuse a call before this policy is consulted — a deny
+// list, the safety table, a run with nobody to ask — and a second wording for
+// the same fact is a second thing for a person grepping at 3 a.m. to know
+// about.
+//
+// What is written is what the caller knows: an unattended run names the tool
+// the model called, and the policy — which is asked about an action and not
+// about a call — names the tier the action sat at. Both go in one field
+// rather than two, because the reader is grepping for the refusal and a
+// second field that is empty on half the lines is a column of blanks.
+//
+// The line is as content-free as the record is, and for the same reason: the
+// file is shared between sessions and outlives all of them. The first word
+// of a command is the program, which is the half that says which refusal
+// this was; the rest of the line, the path an edit named and the URL a fetch
+// wanted are not written down.
+func LogRefusal(what, command, rule string, turn, round int64) {
+	args := []any{"what", what, "rule", rule}
+	// A call with no command line behind it — an edit, a fetch, a tool with
+	// a closed verb set — leaves the field off rather than carrying an empty
+	// one: a key with nothing under it reads as a command that was blank.
+	if word := firstWord(command); word != "" {
+		args = append(args, "command", word)
+	}
+	// A zero position is a surface that has none to give rather than the
+	// first round of the first turn: the session's policy is asked about a
+	// call without being told where the conversation had got to, and a line
+	// claiming turn 1 would be worse than a line that says nothing.
+	if turn > 0 || round > 0 {
+		args = append(args, "turn", turn, "round", round)
+	}
+	logs.Logger().Info("call refused", args...)
+}
+
+// firstWord is the program a command line names, and nothing else. An empty
+// command stays empty rather than becoming a quoted nothing.
+func firstWord(command string) string {
+	return strings.TrimSpace(strings.SplitN(strings.TrimSpace(command), " ", 2)[0])
+}
+
+// decide is the policy itself. Decide wraps it so that every way of reaching
+// a refusal writes one line and only one — a log call at each of the returns
+// below is a log call the next return added to this function forgets.
+func (p ModePolicy) decide(a Action) (Decision, string) {
 	// The deny list is read before anything else, including the mode: it is
 	// the one answer no mode changes, and it is read first so that the
 	// reason the row carries names the list rather than whichever rule

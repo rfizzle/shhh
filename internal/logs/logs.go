@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"log/slog"
@@ -44,9 +45,48 @@ const FollowInterval = 200 * time.Millisecond
 // still write to the right place afterwards.
 var dest = &sink{}
 
+// level is the lowest severity a record has to carry to be written. It is a
+// LevelVar rather than a level because the file is opened before the config
+// that names it has been read — a session that could not log until its
+// settings loaded would drop the failures of loading them — and because the
+// handler reads it per record, so the raise applies to the log a session is
+// already writing.
+var level = new(slog.LevelVar)
+
 // logger is the process's log. It is a fixed value so that a caller holding
-// it races with nothing; the switching happens under dest.
-var logger = slog.New(slog.NewTextHandler(dest, &slog.HandlerOptions{Level: slog.LevelInfo}))
+// it races with nothing; the switching happens under dest and under level.
+var logger = slog.New(slog.NewTextHandler(dest, &slog.HandlerOptions{Level: level}))
+
+// Levels is what a level may be called, most talkative first. It is here
+// rather than in the settings table because the words are this package's:
+// the table carries them as strings for a reader and a picker, and the parse
+// that turns one into a level stays with the log
+// (docs/capabilities/configuration.md#a-failure-is-written-down).
+func Levels() []string { return []string{"debug", "info", "warn", "error"} }
+
+// SetLevel raises or lowers what the log keeps, and refuses a word it does
+// not know rather than falling back to the default: a level somebody wrote
+// down and believes is in force is not something the log can tell them about
+// afterwards, because the line that would say so is the kind of line the
+// setting decides about.
+//
+// An empty name is the default rather than a refusal — it is what a file
+// with no key in it says, which is every file until someone writes one.
+func SetLevel(name string) error {
+	switch strings.ToLower(strings.TrimSpace(name)) {
+	case "", "info":
+		level.Set(slog.LevelInfo)
+	case "debug":
+		level.Set(slog.LevelDebug)
+	case "warn", "warning":
+		level.Set(slog.LevelWarn)
+	case "error":
+		level.Set(slog.LevelError)
+	default:
+		return fmt.Errorf("unknown log level %q (valid: %s)", name, strings.Join(Levels(), ", "))
+	}
+	return nil
+}
 
 // Logger is what a seam writes through. Until To has named a file it
 // discards, which is the right answer for a test and for a command that

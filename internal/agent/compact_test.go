@@ -3,10 +3,13 @@ package agent
 import (
 	"context"
 	"errors"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -397,5 +400,54 @@ func TestRecoverRewritesTheSystemPromptWhenAskedTo(t *testing.T) {
 	msgs := a.Messages()
 	if len(msgs) == 0 || msgs[0].Role != provider.RoleSystem || msgs[0].Content != "sys, read again" {
 		t.Fatalf("system prompt was not rewritten after the compaction: %+v", msgs[0])
+	}
+}
+
+// What the step did is written down, in the shares of the window it did it
+// at. The two figures are what tell a run that trimmed once and bought real
+// headroom from one shaving itself back to just under its trigger every
+// round, and the second is the shape that turns a long unattended run into a
+// bill nobody can account for afterwards.
+func TestRecoverWritesDownWhatItDidAndAtWhatShareOfTheWindow(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "shhh.log")
+	logs.To(path)
+	t.Cleanup(func() { logs.To("") })
+
+	// A crossing a trim settles, then one that has to be compacted.
+	a := New([]provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "look"},
+		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "c1", Name: "search"}}},
+		{Role: provider.RoleTool, ToolCallID: "c1", Content: strings.Repeat("word ", 3000)},
+		prose(provider.RoleUser, 200),
+	}, nil)
+	c := &Compactor{Model: "test-model", Window: testWindow}
+	if n := c.Recover(a, nil); n.Elided != 1 {
+		t.Fatalf("expected the trim to settle the crossing, got %+v", n)
+	}
+	a.SetMessages(filledWithProse())
+	if n := c.Recover(a, func([]provider.Message, string) (string, error) {
+		return "what happened", nil
+	}); !n.Compacted {
+		t.Fatalf("expected a compaction, got %+v", n)
+	}
+
+	written, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read the log: %v", err)
+	}
+	body := string(written)
+	for _, want := range []string{"context trimmed", "elided=1", "conversation compacted", "before_pct=", "after_pct="} {
+		if !strings.Contains(body, want) {
+			t.Errorf("the log does not say %q:\n%s", want, body)
+		}
+	}
+	// And a round boundary under the line — which is almost every one of
+	// them — writes nothing at all.
+	before := len(written)
+	a.SetMessages([]provider.Message{{Role: provider.RoleUser, Content: "short"}})
+	c.Recover(a, nil)
+	if after, _ := os.ReadFile(path); len(after) != before {
+		t.Errorf("a boundary with nothing to do wrote a line:\n%s", after[before:])
 	}
 }

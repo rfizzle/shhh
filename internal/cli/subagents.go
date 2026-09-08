@@ -614,7 +614,7 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			if model == "" {
 				model = env.modelName
 			}
-			r := startChildObserveRecorder(db, string(spec.Role), env.prov.Name(), model, prices, recorder.sessionID())
+			r := startChildObserveRecorder(db, string(spec.Role), env.prov.Name(), model, prices, recorder)
 			// The child's own provenance, not the parent's: it ran under its
 			// own prompt, and a row that borrowed the parent's hash would put
 			// the two on the same side of an edit that only touched one.

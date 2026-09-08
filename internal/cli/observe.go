@@ -83,6 +83,26 @@ func setObserveExport(endpoint string) {
 	observeExport = exp
 }
 
+// observeShutdownTimeout bounds the close. It is the export timeout, because
+// the two are the same round trip to the same collector, and it is bounded at
+// all because this runs as the process is leaving: a collector that will not
+// answer must not be able to hold the shell prompt.
+const observeShutdownTimeout = 2 * time.Second
+
+// closeObserveExport is the process's last word to the collector. Nothing is
+// queued — a span is sent as its session ends — so what this closes is the
+// connection, and it is deferred on the command tree's return (root.go).
+func closeObserveExport() {
+	if observeExport == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), observeShutdownTimeout)
+	defer cancel()
+	if err := observeExport.Shutdown(ctx); err != nil {
+		logs.Logger().Warn("session record export not closed cleanly", "error", err)
+	}
+}
+
 // startObserveRecorder opens a session row; any failure disables recording
 // for the session rather than blocking it.
 func startObserveRecorder(db *storage.DB, kind, provider, model string, prices *pricing.Table) *observeRecorder {
@@ -106,16 +126,20 @@ func startObserveRecorder(db *storage.DB, kind, provider, model string, prices *
 
 // startChildObserveRecorder opens a sub-agent's session row linked to its
 // parent session; failures disable recording for that child only.
-func startChildObserveRecorder(db *storage.DB, kind, provider, model string, prices *pricing.Table, parentID int64) *observeRecorder {
+//
+// It takes the parent's recorder rather than its row id because the link is
+// made twice — once in the table, once in the trace — and a caller handed the
+// two separately could link the row to one session and the span to another.
+func startChildObserveRecorder(db *storage.DB, kind, provider, model string, prices *pricing.Table, parent *observeRecorder) *observeRecorder {
 	if db == nil {
 		return nil
 	}
-	id, err := db.StartChildAgentSession(parentID, kind, provider, model)
+	id, err := db.StartChildAgentSession(parent.sessionID(), kind, provider, model)
 	if err != nil {
 		return nil
 	}
 	return &observeRecorder{db: db, id: id, prices: prices, model: model, kind: kind, provider: provider,
-		span: observeExport.Session(kind, provider, model)}
+		span: observeExport.Child(parent.sessionSpan(), kind, provider, model)}
 }
 
 // sessionID is the recorder's session row id (0 when recording is disabled),
@@ -125,6 +149,18 @@ func (r *observeRecorder) sessionID() int64 {
 		return 0
 	}
 	return r.id
+}
+
+// sessionSpan is the recorder's exported span, or nil where nothing is being
+// exported — which is the ordinary case, and the reason this exists rather
+// than the field being read directly: the caller that wants it is opening a
+// child, and a parent that never recorded at all is one of the ways it gets
+// none.
+func (r *observeRecorder) sessionSpan() *observe.SessionSpan {
+	if r == nil {
+		return nil
+	}
+	return r.span
 }
 
 // stamp records what the session ran under: the build, a fingerprint of the
