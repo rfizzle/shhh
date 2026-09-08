@@ -1306,12 +1306,29 @@ func (m Model) copyText(text string) (clipboard.Result, tea.Cmd) {
 	if m.copyFn == nil {
 		return clipboard.Result{}, nil
 	}
-	return m.copyFn(text), nil
+	res := m.copyFn(text)
+	if !res.NoTool {
+		return res, nil
+	}
+	// Neither door answered: this terminal is not on the list of terminals
+	// that say they take a clipboard write, and this machine has no program
+	// to copy with. The sequence goes out anyway rather than nowhere — the
+	// list is of terminals whose documentation says so, not of terminals
+	// that do, and the reader who is over ssh from one shhh has never heard
+	// of is the reader OSC 52 was added for. It is last because it cannot
+	// be confirmed: a working tool is never stepped over for it, and the
+	// note says the terminal may have ignored it.
+	if cmd := m.caps.CopyAnyway(text); cmd != nil {
+		return clipboard.Result{OK: true, Tool: clipboard.Terminal, Warning: clipboard.Unconfirmed}, cmd
+	}
+	return res, nil
 }
 
-// copyFailure is what to tell the reader about a copy that did not go, and
-// "" for one that did: one fact about the machine deserves one wording,
-// wherever each of the three copies renders it.
+// copyFailure is what to tell the reader about a copy that did not go — or
+// about one whose landing cannot be known, which is the last-resort write to
+// a terminal that never said it takes one — and "" for a copy that plainly
+// went: one fact about the machine deserves one wording, wherever each of
+// the three copies renders it.
 func copyFailure(res clipboard.Result) string {
 	switch {
 	case res.Warning != "":

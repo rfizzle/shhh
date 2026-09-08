@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
 )
@@ -448,5 +449,61 @@ func TestContextAccounting_UnreportedSessionIsUncorrected(t *testing.T) {
 	}
 	if rail := m.inspectorContext(); rail == nil || rail.Corrected {
 		t.Fatalf("the rail has nothing to correct, got %+v", rail)
+	}
+}
+
+// An image occupies the window, and the two arithmetics that read the same
+// conversation have to say so by the same amount.
+//
+// The breakdown counted a message's content and its tool-call arguments;
+// agent.EstimateMessageTokens — which is what compaction measures the turns
+// it keeps with — counts its reasoning and its attachments too. So a pasted
+// screenshot was about 1,500 tokens on one side of compactRecovers'
+// subtraction and zero on the other, and the card under-reported what
+// compaction would free by the whole difference.
+func TestContextEstimate_CountsAnImageTheWayCompactionDoes(t *testing.T) {
+	m := vitalsModel(t)
+	before := m.contextEstimate().total()
+
+	shot := provider.Message{Role: provider.RoleUser, Content: "what is this?",
+		Attachments: []provider.Attachment{{Kind: provider.AttachmentImage, Data: []byte("\x89PNG")}}}
+	m.agent.Append(shot)
+
+	b := m.contextEstimate()
+	if grew, want := b.total()-before, agent.EstimateMessageTokens([]provider.Message{shot}); grew != want {
+		t.Errorf("the screenshot moved the occupancy by %d, and compaction reads it as %d", grew, want)
+	}
+	// And the whole conversation agrees with the one function, which is the
+	// property the categories are a split of rather than a second count.
+	if got, want := b.total(), agent.EstimateMessageTokens(m.agent.Messages())+m.toolDefTokens; got != want {
+		t.Errorf("the breakdown totals %d over a conversation estimated at %d", got, want)
+	}
+}
+
+// The consequence at the surface: what compaction frees is the total less
+// what it keeps, and those two figures came from different arithmetics. An
+// image in a turn recent enough to be kept verbatim frees nothing and costs
+// nothing — but it was ~1,500 tokens to the kept side of the subtraction and
+// zero to the total, so the card's promise fell by that much for a paste
+// that changed nothing about what compaction would do.
+func TestCompactRecovers_AnImageInTheKeptTailChangesNothing(t *testing.T) {
+	m := vitalsModel(t)
+	for range 40 {
+		m.agent.Append(provider.Message{Role: provider.RoleUser, Content: strings.Repeat("u", 40000)})
+		m.agent.Append(provider.Message{Role: provider.RoleAssistant, Content: strings.Repeat("a", 40000)})
+	}
+	before := m.compactRecovers(m.contextAccounting())
+	if before <= 0 {
+		t.Fatal("a conversation this long has something for compaction to free")
+	}
+
+	m.agent.Append(provider.Message{Role: provider.RoleUser, Content: "look at this",
+		Attachments: []provider.Attachment{{Kind: provider.AttachmentImage, Data: []byte("\x89PNG")}}})
+	kept := m.compactKeep()
+	if len(kept) == 0 || kept[len(kept)-1].Content != "look at this" {
+		t.Fatal("the screenshot should be in the tail compaction keeps")
+	}
+	if got := m.compactRecovers(m.contextAccounting()); got < before {
+		t.Errorf("compaction now frees %d where it freed %d, though the image it is charged for is one it keeps", got, before)
 	}
 }

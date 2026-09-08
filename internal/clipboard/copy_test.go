@@ -2,7 +2,9 @@ package clipboard
 
 import (
 	"encoding/base64"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
@@ -58,6 +60,40 @@ func TestCopy_NoTool(t *testing.T) {
 	}
 	if !strings.Contains(result.Warning, "no clipboard tool") {
 		t.Errorf("expected 'no clipboard tool' warning, got: %q", result.Warning)
+	}
+	// And it says which kind of failure it is. A program that is missing and
+	// a program that ran and failed read the same to a caller looking only
+	// at OK, and only the first is worth handing to the terminal instead
+	// (osc52.go).
+	if !result.NoTool {
+		t.Error("a missing program should say so, so the caller can try the terminal")
+	}
+}
+
+// A tool that ran and failed is not a machine with no tool on it: something
+// answered for the clipboard and could not do it, which is a fact for the
+// reader rather than a hole for the terminal to fill.
+func TestCopy_AFailedToolIsNotAMissingOne(t *testing.T) {
+	original := runCmd
+	t.Cleanup(func() { runCmd = original })
+	runCmd = func(string, ...string) *exec.Cmd { return exec.Command("false") }
+	// A tool has to be found before one can fail, and this machine may have
+	// none: an empty PATH holding one executable of the right name is the
+	// only part of detectTool a test can decide.
+	if runtime.GOOS != "darwin" && runtime.GOOS != "windows" {
+		dir := t.TempDir()
+		if err := os.WriteFile(filepath.Join(dir, "wl-copy"), nil, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		t.Setenv("PATH", dir)
+	}
+
+	res := Copy("test")
+	if res.NoTool {
+		t.Errorf("a tool that failed reported itself missing: %+v", res)
+	}
+	if res.OK || res.Warning == "" {
+		t.Errorf("a tool that failed is still a failure: %+v", res)
 	}
 }
 

@@ -11,6 +11,13 @@ type Result struct {
 	OK      bool
 	Tool    string
 	Warning string
+	// NoTool says the warning is a program that is not installed rather
+	// than one that ran and failed. It is the one failure the caller can
+	// still do something about: with nothing on this machine to copy with,
+	// a terminal that never said it takes a clipboard write is worth
+	// asking anyway, because an unanswered write beats a copy that goes
+	// nowhere (osc52.go).
+	NoTool bool
 }
 
 var runCmd = func(name string, args ...string) *exec.Cmd {
@@ -20,14 +27,19 @@ var runCmd = func(name string, args ...string) *exec.Cmd {
 // Copy puts text on the clipboard of the machine shhh is running on, through
 // whichever external tool this platform has.
 //
-// It is the fallback rather than the first attempt. A terminal that takes a
-// clipboard write is handed the text directly (osc52.go), because a tool on
-// this machine copies to this machine — which over ssh is not the machine
-// the reader is sitting at.
+// It is the middle of three attempts rather than the first. The order a
+// copy is offered in is: a terminal that named itself as one that takes a
+// clipboard write gets the text directly (osc52.go), because a tool on this
+// machine copies to this machine — which over ssh is not the machine the
+// reader is sitting at; failing that, this, because a tool that is installed
+// is a copy somebody can be told went; and failing both, the sequence goes
+// to the terminal anyway under Unconfirmed. The last of those never runs
+// ahead of a working tool: it cannot be confirmed, and a copy that is known
+// to have landed is worth more than one that probably did.
 func Copy(text string) Result {
 	tool := detectTool()
 	if tool == "" {
-		return Result{Warning: "no clipboard tool found — install xclip, xsel, or wl-copy"}
+		return Result{NoTool: true, Warning: "no clipboard tool found — install xclip, xsel, or wl-copy"}
 	}
 
 	cmd := runCmd(tool)

@@ -406,16 +406,23 @@ func (m Model) contextEstimateRange(from, to int) contextBreakdown {
 	}
 	for i := from; i < to; i++ {
 		msg := msgs[i]
+		// What one message occupies is agent.EstimateMessageTokens' answer,
+		// not a second arithmetic standing beside it; this loop only decides
+		// which category it lands in. Counting content and tool-call
+		// arguments here left out a message's reasoning and its attachments,
+		// so a pasted screenshot was ~1,500 tokens to the trim and to the
+		// turns compaction keeps, and zero to the occupancy this breakdown
+		// feeds — and compactRecovers, which subtracts the second from the
+		// first, under-reported what compaction would free by the whole
+		// difference, or reported nothing to free at all.
+		n := agent.EstimateMessageTokens(msgs[i : i+1])
 		switch {
 		case i == 0 && msg.Role == provider.RoleSystem:
-			b.System += agent.EstimateTokens(msg.Content)
+			b.System += n
 		case msg.Role == provider.RoleTool:
-			b.ToolResults += agent.EstimateTokens(msg.Content)
+			b.ToolResults += n
 		default:
-			b.Messages += agent.EstimateTokens(msg.Content)
-			for _, tc := range msg.ToolCalls {
-				b.Messages += agent.EstimateTokens(tc.Arguments)
-			}
+			b.Messages += n
 		}
 	}
 	// The project context rides inside the system prompt; split it back out.

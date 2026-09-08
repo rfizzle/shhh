@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -11,11 +12,43 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/changeset"
+	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/rfizzle/shhh/internal/ui/caps"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
+
+// modelFields is how many fields Model is allowed to have.
+//
+// The number is not a claim that this is the right size. It is the current
+// size, written down, because Model is one value type copied on every
+// message Bubble Tea delivers and it has grown by accretion: every mode
+// added since has put its state here, since here is where the update loop
+// can reach it. Nobody was counting, so nothing ever cost anything.
+//
+// Raising it is allowed and will happen. Raising it without noticing is what
+// this stops — a mode with more than a field or two of its own has an
+// alternative the surfaces here already use, a struct of its own held by one
+// pointer that is nil while the mode is not up (pressure, review, the
+// overlays). This is the same guard overlay_test.go puts on the placement
+// table: a table nobody reads is a table that drifts.
+const modelFields = 248
+
+func TestModelHasAStatedBound(t *testing.T) {
+	got := reflect.TypeOf(Model{}).NumField()
+	if got == modelFields {
+		return
+	}
+	verb := "grown to"
+	if got < modelFields {
+		verb = "fallen to"
+	}
+	t.Errorf("Model has %s %d fields and the stated bound is %d.\n"+
+		"State on the Model is reachable from every mode and copied on every message: if this belongs here, raise modelFields on purpose and say in the commit what was added; if it is one mode's, give the mode a struct of its own held by a pointer that is nil while it is down.",
+		verb, got, modelFields)
+}
 
 func mockStream(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 	ch := make(chan provider.StreamEvent, 1)
@@ -2419,5 +2452,90 @@ func TestExitBanner_NothingSaidHasNoTurns(t *testing.T) {
 	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream)
 	if b := m.ExitBanner("shhh chat --continue"); b.Turns != 0 || b.View(80) != "" {
 		t.Fatalf("an empty session should render no banner, got %q", b.View(80))
+	}
+}
+
+// The order a copy is offered in (copyText), from the end nobody had before:
+// a terminal that never said it takes a clipboard write, on a machine with
+// no program to copy with. That is the reader over ssh on a terminal shhh
+// has not heard of — the case OSC 52 was added for — and the mechanism used
+// to refuse it, because the terminal was not on the list.
+func TestCopyText_TheTerminalIsTheLastResort(t *testing.T) {
+	m := readyModel(t)
+	m.caps = caps.Terminal{Asked: true}
+	m.copyFn = func(string) clipboard.Result {
+		return clipboard.Result{NoTool: true, Warning: "no clipboard tool found"}
+	}
+	res, cmd := m.copyText("over ssh")
+
+	if !res.OK || res.Tool != clipboard.Terminal {
+		t.Errorf("the copy went out as %+v, want the terminal's", res)
+	}
+	// It is the one copy that is OK and warns at the same time: the write
+	// draws no reply, so the reader is told it may not have landed rather
+	// than promised a paste that might not be there.
+	if res.Warning != clipboard.Unconfirmed {
+		t.Errorf("note = %q, want the unconfirmed one", res.Warning)
+	}
+	want, ok := clipboard.OSC52("over ssh")
+	if !ok {
+		t.Fatal("a short text fits one clipboard write")
+	}
+	if got := notifyRaw(t, cmd); got != want {
+		t.Errorf("wrote %q, want %q", got, want)
+	}
+}
+
+// And never ahead of a tool that works: an unconfirmable copy is worth less
+// than one that is known to have landed, so the last resort is only reached
+// where the tools have nothing to offer.
+func TestCopyText_NeverStepsOverAWorkingTool(t *testing.T) {
+	m := readyModel(t)
+	m.caps = caps.Terminal{Asked: true}
+	m.copyFn = func(string) clipboard.Result {
+		return clipboard.Result{OK: true, Tool: "xclip"}
+	}
+	res, cmd := m.copyText("to this machine")
+	if res.Tool != "xclip" || res.Warning != "" {
+		t.Errorf("the tool's copy came back as %+v", res)
+	}
+	if cmd != nil {
+		t.Error("nothing goes to the terminal when a tool took the copy")
+	}
+}
+
+// A tool that is installed and fails is not the no-tool case. Something on
+// this machine answered for the clipboard and could not do it, which is a
+// fact the reader has to act on rather than a hole for the terminal to fill.
+func TestCopyText_AFailedToolIsStillTheToolsAnswer(t *testing.T) {
+	m := readyModel(t)
+	m.caps = caps.Terminal{Asked: true}
+	m.copyFn = func(string) clipboard.Result {
+		return clipboard.Result{Warning: "xclip failed: exit status 1"}
+	}
+	res, cmd := m.copyText("anything")
+	if res.OK || !strings.Contains(res.Warning, "xclip failed") {
+		t.Errorf("the failure came back as %+v", res)
+	}
+	if cmd != nil {
+		t.Error("a tool that ran and failed is not answered by writing to the terminal")
+	}
+}
+
+// TERM=dumb is not silence. It is a terminal saying in advance that a
+// sequence sent to it is text on its screen, so the last resort would paste
+// the copy into the transcript instead of onto a clipboard.
+func TestCopyText_ADumbTerminalIsNotAskedAnyway(t *testing.T) {
+	m := readyModel(t)
+	m.caps = caps.Terminal{Asked: true, Dumb: true}
+	m.copyFn = func(string) clipboard.Result {
+		return clipboard.Result{NoTool: true, Warning: "no clipboard tool found"}
+	}
+	res, cmd := m.copyText("anything")
+	if cmd != nil {
+		t.Error("a dumb terminal must not be written to")
+	}
+	if res.Warning == clipboard.Unconfirmed {
+		t.Error("nothing was attempted, so nothing is unconfirmed")
 	}
 }

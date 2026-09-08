@@ -28,6 +28,17 @@ import (
 // to name.
 const Terminal = "the terminal"
 
+// Unconfirmed is what Result.Warning says about a copy handed to a terminal
+// that never said it takes one — the last resort, spent only where this
+// machine has no clipboard tool either.
+//
+// It is a warning on a Result that is also OK, which no other copy is: the
+// sequence went out and the write draws no reply, so whether it landed is
+// the one thing that cannot be known. Saying nothing would promise a copy
+// that may not exist, and saying it failed would send the reader to install
+// a program when the paste is very likely already there.
+const Unconfirmed = "No clipboard tool here, so the copy went to the terminal — which may have ignored it."
+
 // osc52Max is the most base64 one clipboard write may carry.
 //
 // The sequence carries no length and draws no reply, so a terminal that will

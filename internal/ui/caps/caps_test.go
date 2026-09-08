@@ -386,3 +386,45 @@ func TestCopy_DeclinesWhatItCannotCarry(t *testing.T) {
 		t.Error("nothing to copy is not a copy")
 	}
 }
+
+// The last resort: a terminal that never named itself is still written to
+// where nothing else can take the copy. The list of terminals that say they
+// take a clipboard write is smaller than the set that does — anything not
+// asked, anything silent, anything newer than the list — and the reader over
+// ssh from one of those is the reader this mechanism exists for.
+func TestCopyAnyway_WritesToATerminalThatNeverSaidSo(t *testing.T) {
+	term := Terminal{Asked: true}
+	if cmd := term.Copy("unasked"); cmd != nil {
+		t.Fatal("the ordinary door is still closed to a terminal that did not say yes")
+	}
+	seq := raw(t, term.CopyAnyway("unasked"))
+	if want := ansi.SetClipboard(ansi.SystemClipboard, "unasked"); seq != want {
+		t.Errorf("wrote %q, want %q", seq, want)
+	}
+}
+
+// It is the same write, so it passes through tmux the same way: a sequence
+// tmux swallows fills tmux's own paste buffer and never reaches the terminal
+// the reader is sitting at.
+func TestCopyAnyway_PassesThroughTmux(t *testing.T) {
+	withProfile(t, colorprofile.ANSI256)
+	var term Terminal
+	term.Query([]string{"TERM=xterm-256color", "TMUX=/tmp/tmux-1000/default,123,0"})
+	seq := raw(t, term.CopyAnyway("through tmux"))
+	if !strings.HasPrefix(seq, "\x1bPtmux;") {
+		t.Errorf("the last-resort write did not pass through tmux: %q", seq)
+	}
+}
+
+// A dumb terminal has said in advance that a sequence is text on its screen,
+// and a payload past one write is declined here for the reason it is
+// everywhere: the write draws no reply, so a truncated one is a half copy
+// nobody is told about.
+func TestCopyAnyway_StillDeclinesWhatCannotBeSent(t *testing.T) {
+	if cmd := (Terminal{Asked: true, Dumb: true}).CopyAnyway("anything"); cmd != nil {
+		t.Error("a dumb terminal would print the sequence rather than copy")
+	}
+	if cmd := (Terminal{Asked: true}).CopyAnyway(""); cmd != nil {
+		t.Error("nothing to copy is not a copy")
+	}
+}

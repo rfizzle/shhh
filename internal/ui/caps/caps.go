@@ -257,7 +257,8 @@ func (t Terminal) Graphics() bool { return t.Kitty || t.Sixel }
 // terminal that does (Clipboard), or text longer than a single clipboard
 // write holds. A caller can ask unconditionally and let the answer decide,
 // which is the shape every other capability here is spent in; nil is where
-// the external tools take the copy back (internal/clipboard).
+// the external tools take the copy back (internal/clipboard), and where they
+// have nothing either the caller comes back through CopyAnyway.
 //
 // Inside tmux the sequence has to be told it is passing through, exactly as
 // the graphics query is: tmux otherwise sets its own paste buffer and the
@@ -267,6 +268,38 @@ func (t Terminal) Copy(text string) tea.Cmd {
 	if !t.Clipboard {
 		return nil
 	}
+	return t.clipboardWrite(text)
+}
+
+// CopyAnyway is Copy for a terminal that never named itself as one that
+// takes a clipboard write. It is the last resort and not an alternative: a
+// caller spends it only where the tools on this machine have nothing to
+// offer either (internal/clipboard), because the write draws no reply and a
+// copy nobody can confirm must not be preferred to one that can.
+//
+// The list this steps around is of terminals whose documentation says they
+// take the write, which is a smaller set than the terminals that do —
+// anything not asked, anything that stayed silent, and anything newer than
+// the list is absent from it. That is exactly the reader over ssh from a
+// terminal shhh has never heard of, which is the case OSC 52 was added for;
+// refusing them a copy to protect a list is the mechanism declining the
+// session it exists for.
+//
+// A dumb terminal is still refused. TERM=dumb is not silence — it is a
+// terminal saying in advance that a sequence sent to it is text on its
+// screen, so this one would be pasted into the transcript rather than onto
+// a clipboard.
+func (t Terminal) CopyAnyway(text string) tea.Cmd {
+	if t.Dumb {
+		return nil
+	}
+	return t.clipboardWrite(text)
+}
+
+// clipboardWrite composes the write both doors send. Whether this terminal
+// should be written to at all is theirs to decide; what goes out is the same
+// sequence either way.
+func (t Terminal) clipboardWrite(text string) tea.Cmd {
 	seq, ok := clipboard.OSC52(text)
 	if !ok {
 		return nil
