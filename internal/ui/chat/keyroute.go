@@ -44,6 +44,10 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 	// handlers below read the captured value and re-arm as their answer.
 	armed := m.armed
 	m.disarm()
+	// And every key clears the fold's account of the press before it
+	// (readinghint.go). It says what one press did, so it lasts exactly as
+	// long as that press is the last thing the reader did.
+	m.foldNotice = ""
 	// Mouse reporting is the one setting with a chord of its own (
 	// reading mode), and the only key answered before the surfaces are: what it
 	// costs — the terminal's own click-drag selection — is discovered at
@@ -437,6 +441,48 @@ func (m Model) updateKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
 		if m.attachedTo != "" && strings.TrimSpace(m.input.Value()) == "" {
 			m.detachOne()
 			return m, nil, true
+		}
+		// Then every row the reader opened, folded back to its resting
+		// state. The reflex the product teaches is "esc puts the screen
+		// back", and an opened row is the same kind of thing as a
+		// selection or a menu, with more of them
+		// (docs/interface/principles.md#esc-is-always-the-safe-answer,
+		// docs/interface/surfaces.md#the-input-frame). It comes after the
+		// four above because each of those is the thing most recently put
+		// on the screen and costs nothing to drop, and before everything
+		// below because those are what esc means once nothing is open.
+		//
+		// With text in the box it never runs: a reader who pressed esc to
+		// abandon a sentence has not also asked for the pane to change. It
+		// does run under a streaming turn, because it is the one act on
+		// this surface that abandons nothing — rows the turn lands after
+		// it arrive at their resting state, which is what they would have
+		// done anyway.
+		if strings.TrimSpace(m.input.Value()) == "" {
+			if m.readerOpenedARow() {
+				// Where the pane is anchored is read before the fold moves
+				// it, and put back after (render.go).
+				follow := m.viewport.AtBottom()
+				anchor := topEntry(m.entryLineStarts(), m.viewport.YOffset())
+				n := m.foldOpenedRows()
+				m.refreshTranscript()
+				m.anchorTo(anchor, follow)
+				m.foldNotice = foldedNotice(n)
+				// A fold answers nothing and abandons nothing, so it is
+				// not the press that spends a two-press window
+				// (cancel.go) — the judgement the inert press below makes,
+				// for the same reason.
+				m.armed = armed
+				return m, nil, true
+			}
+			// Nothing of the reader's was open, so the press is not
+			// claimed: a fold that did nothing must not be the press that
+			// changes what the next press means, and the chain goes on to
+			// mean what it has always meant. The rail still says why,
+			// where every open row on screen is the setting's.
+			if m.settingHoldsRowsOpen() {
+				m.foldNotice = verbosityHoldsNotice
+			}
 		}
 		// Empty draft while the turn streams: nothing at all. Esc is
 		// the key that leaves whatever is open, and the reflex that

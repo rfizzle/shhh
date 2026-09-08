@@ -541,9 +541,20 @@ func (m Model) noticeLine() string {
 			parts = append(parts, sty.Frame.NoticeInfo.Render(note))
 		}
 	}
+	// What the last esc folded, or why it folded nothing (readinghint.go).
+	// It leads everything but the open two-press window because it is the
+	// only thing here that accounts for the pane having just moved under the
+	// reader, and it is gone by the next press: a rail that clipped it would
+	// leave the movement unexplained for the one frame it could have been
+	// explained in. It rides the rail rather than the transcript for the
+	// reason the copy caption does — appending a row would scroll the reader
+	// away from what they just put back.
+	if m.foldNotice != "" {
+		parts = append(parts, sty.Frame.NoticeInfo.Render(m.foldNotice))
+	}
 	if m.keysNotice != "" {
 		// The rebind notice (keysnotice.go): shown for one session after a
-		// release that moved keys, ahead of the transient notices because it
+		// release that moved keys, ahead of the counts below because it
 		// explains what a reflex just failed to do.
 		parts = append(parts, sty.Frame.NoticeInfo.Render(m.keysNotice))
 	}

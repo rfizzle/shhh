@@ -244,49 +244,115 @@ func (m Model) expandedRowCount() int {
 	return n
 }
 
-// focusedRowOpen reports whether the row under the cursor is showing more
-// than its own line — an expanded body, an unfolded step, or a group whose
-// rows are back.
-func (m Model) focusedRowOpen() bool {
+// openKind is one way a transcript row can be showing more than its own line.
+// It is a closed vocabulary rather than a condition spelled out at each call
+// site (docs/interface/principles.md#closed-vocabularies), because two
+// gestures act on it and they must not learn different lists: reading mode's
+// [-] closes whichever one the cursor is standing on, and esc on an empty
+// draft puts every one the reader opened back at once.
+//
+// The two gestures ask different questions of the same list. [-] asks what is
+// open under the cursor, whatever opened it, because the reader is pointing
+// at that row and asking for it closed; esc asks what the *reader* opened, so
+// a body the verbosity is holding open is not its to fold
+// (docs/interface/surfaces.md#the-input-frame).
+type openKind int
+
+const (
+	// openNone is a row showing nothing but itself.
+	openNone openKind = iota
+	// openStep is a step showing its rows rather than its header alone.
+	openStep
+	// openDetail is those rows showing their detail bodies — what /step
+	// opens. It is a kind of its own rather than a degree of openStep because
+	// the two are answered separately: closing a step's header leaves its
+	// detail answer standing, and closing the detail leaves the step open
+	// (steps.go, detail.go).
+	openDetail
+	// openGroup is a folded run of read-only calls given back row by row.
+	openGroup
+	// openDiff is a diff showing its hunks inside the transcript.
+	openDiff
+	// openThink is a reasoning row showing part or all of its block.
+	openThink
+	// openBody is any other row showing what its call returned.
+	openBody
+)
+
+// focusedOpenKind is what the row under the cursor has open, or openNone.
+// Anything showing counts, the verbosity's doing included: [-] is the reader
+// naming one row.
+func (m Model) focusedOpenKind() openKind {
 	es := *m.entries()
 	if m.focusIdx < 0 || m.focusIdx >= len(es) {
-		return false
+		return openNone
 	}
 	if blk, ok := m.stepBlockAt(es, m.focusIdx); ok {
 		h := m.headerFor(blk, es)
-		return !h.Folded || h.Detail
+		switch {
+		case !h.Folded:
+			return openStep
+		case h.Detail:
+			// A header folded over an open detail: the rows are not on
+			// screen, but the answer that would show their bodies is still
+			// on record, and [-] answers both with the one toggle below.
+			return openDetail
+		}
+		return openNone
 	}
 	if m.groupAnchor(es, m.focusIdx) {
-		return !m.groupFolded(es[m.focusIdx], m.stepDetailAt(es, m.focusIdx))
+		if m.groupFolded(es[m.focusIdx], m.stepDetailAt(es, m.focusIdx)) {
+			return openNone
+		}
+		return openGroup
 	}
 	if d := es[m.focusIdx].diff; d != nil {
-		return d.Mode != components.DiffCollapsed
+		if d.Mode == components.DiffCollapsed {
+			return openNone
+		}
+		return openDiff
 	}
 	if es[m.focusIdx].kind == entryThink {
 		// The reader's own depth, like every other row here: a row the
 		// verbosity opened is not a row [-] has anything to close.
-		d := es[m.focusIdx].thinkDepth
-		return d == thinkTail || d == thinkFull
+		if d := es[m.focusIdx].thinkDepth; d == thinkTail || d == thinkFull {
+			return openThink
+		}
+		return openNone
 	}
-	return es[m.focusIdx].expanded
+	if es[m.focusIdx].expanded {
+		return openBody
+	}
+	return openNone
 }
+
+// focusedRowOpen reports whether the row under the cursor is showing more
+// than its own line — an expanded body, an unfolded step, or a group whose
+// rows are back.
+func (m Model) focusedRowOpen() bool { return m.focusedOpenKind() != openNone }
 
 // collapseFocused closes whatever the row under the cursor has open, and
 // reports whether there was anything to close. Where there is not, [-] is a
 // character like any other and belongs in the draft.
+//
+// It writes the closed answer where the whole-pane fold writes the resting
+// one, and that is the difference between the two gestures: the reader
+// pointed at this row and said no, and a no a setting can talk out of is not
+// an answer (steps.go, detail.go).
 func (m *Model) collapseFocused() bool {
-	if !m.focusedRowOpen() {
+	kind := m.focusedOpenKind()
+	if kind == openNone {
 		return false
 	}
 	es := *m.entries()
-	switch {
-	case func() bool { _, ok := m.stepBlockAt(es, m.focusIdx); return ok }():
+	switch kind {
+	case openStep, openDetail:
 		m.toggleStepFold(m.focusIdx)
-	case m.groupAnchor(es, m.focusIdx):
+	case openGroup:
 		m.toggleGroupFold(m.focusIdx)
-	case es[m.focusIdx].diff != nil:
+	case openDiff:
 		es[m.focusIdx].diff.Mode = components.DiffCollapsed
-	case es[m.focusIdx].kind == entryThink:
+	case openThink:
 		es[m.focusIdx].thinkDepth = thinkClosed
 	default:
 		es[m.focusIdx].expanded = false
@@ -298,6 +364,164 @@ func (m *Model) collapseFocused() bool {
 	m.invalidateRenderCache()
 	return true
 }
+
+// readerOpened is what the reader's own gestures have on record for one row:
+// the openKinds it is showing because somebody asked for them, never the ones
+// a setting is holding open. It reads the entry's own overrides and nothing
+// else, which is what makes that distinction possible — the three fold
+// overrides and the think depth each have a value meaning "no answer of
+// mine", and no setting can write one (steps.go, detail.go, think.go).
+func readerOpened(e entry) []openKind {
+	var kinds []openKind
+	// The two step overrides are read and put back one at a time, even
+	// though /step writes both at once: a reader who then folds the header
+	// has said foldClosed on one of them and nothing on the other, and a
+	// fold that treated them as one answer would overwrite that no.
+	// Which also means a detail answer standing behind a folded header is
+	// still put back — nothing on screen reports it, and an answer nothing
+	// reports is one that springs the bodies open the next time the header
+	// opens.
+	if e.stepFold == foldOpen {
+		kinds = append(kinds, openStep)
+	}
+	if e.detailFold == foldOpen {
+		kinds = append(kinds, openDetail)
+	}
+	if e.groupFold == foldOpen {
+		kinds = append(kinds, openGroup)
+	}
+	// DiffExpanded, and not "anything but collapsed": the full-screen view is
+	// a surface of its own, and esc there steps back to the expanded form
+	// long before it can reach the draft (components/diff.go).
+	if e.diff != nil && e.diff.Mode == components.DiffExpanded {
+		kinds = append(kinds, openDiff)
+	}
+	if e.thinkDepth == thinkTail || e.thinkDepth == thinkFull {
+		kinds = append(kinds, openThink)
+	}
+	if e.expanded {
+		kinds = append(kinds, openBody)
+	}
+	return kinds
+}
+
+// restOpen puts one of those answers back to the value that means "no answer
+// of mine on record" — foldAuto for the three overrides, thinkAuto for the
+// think row — so a row is folded to what the setting says and never past it.
+// Writing foldClosed instead would make `/ui verbosity high` quietly stop
+// meaning what it says, and a reader who ran it afterwards and saw nothing
+// open would have been lied to.
+func restOpen(e *entry, k openKind) {
+	switch k {
+	case openStep:
+		e.stepFold = foldAuto
+	case openDetail:
+		e.detailFold = foldAuto
+	case openGroup:
+		e.groupFold = foldAuto
+	case openDiff:
+		e.diff.Mode = components.DiffCollapsed
+	case openThink:
+		e.thinkDepth = thinkAuto
+	case openBody:
+		e.expanded = false
+	}
+}
+
+// readerOpenedARow reports whether there is anything for the fold to do. It
+// is asked before the pane is measured, because measuring is a walk over the
+// whole transcript (render.go) and esc on an empty draft is the most reflexive
+// key on this surface: the press that folds nothing must cost nothing.
+func (m Model) readerOpenedARow() bool {
+	for _, e := range *m.entries() {
+		if len(readerOpened(e)) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+// foldOpenedRows puts every row the reader opened back to its resting state
+// and reports how many rows it folded. Rows rather than answers: /step leaves
+// two overrides on one entry, and the reader opened one thing.
+func (m *Model) foldOpenedRows() int {
+	es := *m.entries()
+	n := 0
+	for i := range es {
+		kinds := readerOpened(es[i])
+		if len(kinds) == 0 {
+			continue
+		}
+		for _, k := range kinds {
+			restOpen(&es[i], k)
+		}
+		n++
+	}
+	if n > 0 {
+		// The same reason one collapse has above: rows inside a frozen block
+		// render differently now, and a cache nobody dropped gives them back.
+		m.invalidateRenderCache()
+	}
+	return n
+}
+
+// settingHoldsRowsOpen reports whether the verbosity is what is putting
+// bodies on the screen. It is asked only where the fold found nothing of the
+// reader's, because that is the one moment the answer is worth a rail: the
+// pane is full of open rows, esc folded none of them, and the reader is owed
+// the reason rather than a key that looks broken (invariant 4).
+//
+// It walks the blocks rather than the entries, the way the render does
+// (steps.go, blockUnits): a row inside a step the reader folded shut is not
+// on the screen at all, and crediting the setting for it would put the notice
+// on a pane where nothing is open.
+func (m Model) settingHoldsRowsOpen() bool {
+	if m.verbosity != verbosityHigh {
+		return false
+	}
+	es := *m.entries()
+	for _, blk := range m.blocksOf(es) {
+		if blk.step == nil {
+			if m.settingShowsBody(es[blk.start]) {
+				return true
+			}
+			continue
+		}
+		if h := m.headerFor(blk, es); h.Folded || blk.step.queued() {
+			continue
+		}
+		for _, sl := range m.stepSlots(es, blk.step) {
+			// A folded run is one counted row and no bodies.
+			if sl.group {
+				continue
+			}
+			if m.settingShowsBody(es[sl.idx]) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// settingShowsBody reports whether this row is showing a body only because
+// the verbosity says so — the caller has already established that it does.
+func (m Model) settingShowsBody(e entry) bool {
+	if e.kind == entryThink {
+		return e.thinkDepth == thinkAuto && strings.TrimSpace(e.text) != ""
+	}
+	return !e.expanded && strings.TrimSpace(e.toolResult) != ""
+}
+
+// foldedNotice is what the fold says it did, counted the way the rest of the
+// pane's folds count. A fold that silently rearranged the screen would be a
+// jump the reader has to explain to themselves
+// (docs/interface/principles.md#fold-never-hide).
+func foldedNotice(n int) string { return "folded " + plural(n, "row") }
+
+// verbosityHoldsNotice is what the rail says when esc found nothing of the
+// reader's to fold and every open row is the setting's. It names the door
+// rather than reporting the refusal (invariant 4).
+const verbosityHoldsNotice = "/ui verbosity opened these rows"
 
 // readingRowOffers are the keys the row under the cursor offers, read off the
 // row itself so the bar and the row cannot drift apart.

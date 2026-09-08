@@ -1,0 +1,8 @@
+# One reply per request. The last line repeats once these run out.
+# Two reads and then a sentence: one turn with two rows the reader can open,
+# ending with prose so the draft is idle when esc is pressed. Reads only —
+# nothing here changes the machine the scene is driven from, and a card in
+# the way would be a card holding the keyboard the fold needs.
+tool:read_file:{"path":"loop.go"}
+tool:read_file:{"path":"round.go"}
+The limit is a checkpoint, not a wall.

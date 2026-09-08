@@ -374,6 +374,18 @@ to remember — and a question mark prints the key list as a transcript row.
 Both keys stay ordinary the moment there is any text in the box: the input
 owns every ordinary key while a sentence is being typed.
 
+One press of Esc on an empty draft folds every row the reader opened back to
+its resting form, and the notice rail counts what it folded. Reading a turn
+opens things — a tool's output, a step's detail, a diff — and putting six of
+them back one at a time is six presses of a key that already means "leave what
+is open"; so the pane a turn was read through is the pane the next message is
+written over, for the press the reflex already produces. It folds to what the
+settings say and never past them: a row `/ui verbosity high` opened is not the
+reader's to fold here, and Esc says so rather than rewriting the setting. The
+press is claimed only when it folded something, so a pane already at rest
+leaves the double-Esc gesture above exactly as it was — with a row open that
+gesture costs a third press, which is the price of putting the reflex first.
+
 When a release moves keys, the first launch after the upgrade says so: one
 row on the notice rail names the new homes, once, and never again. A rebind
 paid for silently is a session of surfaces nobody asked for; a notice

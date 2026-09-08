@@ -2636,3 +2636,33 @@ func TestGolden_QuestionTabs(t *testing.T) {
 		}
 	})
 }
+
+// TestGolden_FoldedRows captures the notice rail after esc folded the rows
+// the reader had opened, and after a press that found only the verbosity's
+// (readinghint.go). The two are pinned side by side because they are the
+// same key on the same empty draft answering two different panes, and the
+// rail is the only thing that says which of the two just happened.
+func TestGolden_FoldedRows(t *testing.T) {
+	captureGolden(t, "folded-rows", "the notice rail after a fold", goldenWidths, func(width int) []golden.Panel {
+		build := func(open bool) string {
+			m := frameModel(t, width, 40)
+			m.transcript = goldenTranscript()
+			if open {
+				m.transcript[1].stepFold = foldOpen
+				m.transcript[2].expanded = true
+				m.transcript[7].expanded = true
+				m.transcript[8].expanded = true
+			} else {
+				m.verbosity = verbosityHigh
+			}
+			m.invalidateRenderCache()
+			m.refreshTranscript()
+			next, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+			return promptSurface(next.(Model))
+		}
+		return []golden.Panel{
+			{Label: "esc · four rows folded back to their resting form", View: build(true)},
+			{Label: "esc · nothing of yours was open, so the setting is named", View: build(false)},
+		}
+	})
+}

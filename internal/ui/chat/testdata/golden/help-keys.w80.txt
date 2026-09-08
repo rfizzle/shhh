@@ -151,11 +151,16 @@ Keys:
                  the input-source switcher and takes it first                   
   ?              On an empty draft, print this key list; with any text in the   
                  box it is a letter like any other                              
-  esc            Go back: clear the input, dismiss the completion menu, drop    
-                 a selection, detach one level, leave a waiting decision        
-                 waiting. It never stops a running turn — on an empty draft     
-                 under one it does nothing, so ctrl+c is what you want there.   
-                 On an empty idle draft, esc esc opens the /rewind picker       
+  esc            Go back, in this order: drop a selection, drop the pointer,    
+                 dismiss the completion menu, detach one level — then, with     
+                 any text in the box, clear the input, and on an empty draft    
+                 fold every row you opened back to its resting form, counted    
+                 on the notice rail. What /ui verbosity opened is the           
+                 setting's and stays open. A waiting decision is left waiting.  
+                 It never stops a running turn — on an empty draft under one    
+                 with nothing left to fold it does nothing, so ctrl+c is what   
+                 you want there. On an empty idle draft, esc esc opens the      
+                 /rewind picker                                                 
   ctrl+c         Cancel the running turn — press twice, and what the turn       
                  already did is kept. Also clears the input, and quits from     
                  an empty idle draft (twice again)                              
@@ -324,11 +329,16 @@ Keys:
 ␛[3;38;5;241m                 the input-source switcher and takes it first␛[m                   
 ␛[3;38;5;241m  ?              On an empty draft, print this key list; with any text in the␛[m   
 ␛[3;38;5;241m                 box it is a letter like any other␛[m                              
-␛[3;38;5;241m  esc            Go back: clear the input, dismiss the completion menu, drop␛[m    
-␛[3;38;5;241m                 a selection, detach one level, leave a waiting decision␛[m        
-␛[3;38;5;241m                 waiting. It never stops a running turn — on an empty draft␛[m     
-␛[3;38;5;241m                 under one it does nothing, so ctrl+c is what you want there.␛[m   
-␛[3;38;5;241m                 On an empty idle draft, esc esc opens the /rewind picker␛[m       
+␛[3;38;5;241m  esc            Go back, in this order: drop a selection, drop the pointer,␛[m    
+␛[3;38;5;241m                 dismiss the completion menu, detach one level — then, with␛[m     
+␛[3;38;5;241m                 any text in the box, clear the input, and on an empty draft␛[m    
+␛[3;38;5;241m                 fold every row you opened back to its resting form, counted␛[m    
+␛[3;38;5;241m                 on the notice rail. What /ui verbosity opened is the␛[m           
+␛[3;38;5;241m                 setting's and stays open. A waiting decision is left waiting.␛[m  
+␛[3;38;5;241m                 It never stops a running turn — on an empty draft under one␛[m    
+␛[3;38;5;241m                 with nothing left to fold it does nothing, so ctrl+c is what␛[m   
+␛[3;38;5;241m                 you want there. On an empty idle draft, esc esc opens the␛[m      
+␛[3;38;5;241m                 /rewind picker␛[m                                                 
 ␛[3;38;5;241m  ctrl+c         Cancel the running turn — press twice, and what the turn␛[m       
 ␛[3;38;5;241m                 already did is kept. Also clears the input, and quits from␛[m     
 ␛[3;38;5;241m                 an empty idle draft (twice again)␛[m                              

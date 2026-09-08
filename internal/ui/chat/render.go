@@ -84,6 +84,74 @@ func (m *Model) invalidateRenderCache() {
 	m.gutter.reset()
 }
 
+// entryLineStarts is each transcript entry's first rendered line in the pane
+// as it is drawn right now, by the same walk the pane's own render makes
+// (lines.go: the open line every unit continues, and separatorBefore's
+// rhythm between them). Under the gutter it is the reading cursor's own map
+// instead, because that render wraps selectable rows two columns narrower
+// and a line taken from the other one would name a different row.
+//
+// It exists so a change that reflows the transcript can be told where a row
+// went. A pane repainted around a row the reader is looking at has to put
+// that row back where it was, and a line number taken from a render that is
+// no longer on screen would put it somewhere else.
+func (m *Model) entryLineStarts() map[int]int {
+	if m.gutterShowing() {
+		return m.unitLineStarts()
+	}
+	starts := map[int]int{}
+	units := m.transcriptUnits(*m.entries(), m.transcriptWidth(), false, noFocusRow)
+	// One open line to begin with, the way both renders begin.
+	n := 1
+	var prev entry
+	havePrev := false
+	for i := range units {
+		u := &units[i]
+		if havePrev {
+			n += strings.Count(separatorBefore(prev, u.sepBefore), "\n")
+		}
+		starts[u.idx] = n - 1
+		n += strings.Count(u.text, "\n")
+		prev, havePrev = u.sepAfter, true
+	}
+	return starts
+}
+
+// topEntry is the entry the top of the pane is showing: the last one that
+// starts at or above the scroll offset. It is what a reflow is re-anchored
+// to, and -1 where the pane is showing nothing that has an entry behind it.
+func topEntry(starts map[int]int, offset int) int {
+	top, best := -1, -1
+	for idx, line := range starts {
+		if line <= offset && (line > best || (line == best && idx > top)) {
+			top, best = idx, line
+		}
+	}
+	return top
+}
+
+// anchorTo puts the pane back on the entry it was showing at its top, after
+// something reflowed the transcript underneath it. A reader following the
+// live end is left following it, because that is the row they were looking
+// at; a reader scrolled up to a row keeps that row. An entry that the reflow
+// folded away is answered by the nearest one before it, which is the row that
+// swallowed it.
+func (m *Model) anchorTo(idx int, follow bool) {
+	if follow || idx < 0 {
+		m.viewport.GotoBottom()
+		m.atBottom = m.viewport.AtBottom()
+		return
+	}
+	starts := m.entryLineStarts()
+	for i := idx; i >= 0; i-- {
+		if line, ok := starts[i]; ok {
+			m.viewport.SetYOffset(line)
+			break
+		}
+	}
+	m.atBottom = m.viewport.AtBottom()
+}
+
 // renderEntry renders one entry's own lines, always ending in exactly one
 // newline and never in a trailing blank line. Spacing between entries is not
 // an entry's business — separatorBefore owns it, so every caller that

@@ -519,11 +519,16 @@ box it is a letter like any other`,
 	},
 	{
 		binds: []keys.Binding{keys.Draft.Clear},
-		text: `Go back: clear the input, dismiss the completion menu, drop
-a selection, detach one level, leave a waiting decision
-waiting. It never stops a running turn — on an empty draft
-under one it does nothing, so ctrl+c is what you want there.
-On an empty idle draft, esc esc opens the /rewind picker`,
+		text: `Go back, in this order: drop a selection, drop the pointer,
+dismiss the completion menu, detach one level — then, with
+any text in the box, clear the input, and on an empty draft
+fold every row you opened back to its resting form, counted
+on the notice rail. What /ui verbosity opened is the
+setting's and stays open. A waiting decision is left waiting.
+It never stops a running turn — on an empty draft under one
+with nothing left to fold it does nothing, so ctrl+c is what
+you want there. On an empty idle draft, esc esc opens the
+/rewind picker`,
 	},
 	{
 		binds: []keys.Binding{keys.Draft.Cancel},

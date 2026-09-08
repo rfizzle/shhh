@@ -166,6 +166,33 @@ func TestRewind_EscWithADraftClearsItFirst(t *testing.T) {
 	}
 }
 
+// With a row open the gesture costs a third press: the first folds the pane,
+// and the two that are the gesture follow it. That is accepted rather than
+// avoided — folding on the press that arms the window would be one key doing
+// two things — and it costs nothing, because the fold said what it did and
+// the picker still opens (readinghint.go).
+func TestRewind_AnOpenRowCostsTheGestureAThirdPress(t *testing.T) {
+	m := escFoldModel(t)
+	m.checkpoints = []checkpoint{{index: 1, preview: "make it fast"}}
+
+	m, _ = pressKey(t, m, escK)
+	if m.foldNotice == "" {
+		t.Fatal("the first press should have folded the open rows")
+	}
+	if m.armed.open(armRewind) {
+		t.Fatal("the press that folded also armed the gesture; one key, two things")
+	}
+
+	m, _ = pressKey(t, m, escK)
+	if m.state == statePick {
+		t.Fatal("the press after the fold opened the picker rather than arming it")
+	}
+	m, _ = pressKey(t, m, escK)
+	if m.state != statePick {
+		t.Fatal("the third press did not open the rewind picker")
+	}
+}
+
 func TestRewind_AttachedEscDetachesAndNeverOpensThePicker(t *testing.T) {
 	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
 	t.Cleanup(sup.Close)

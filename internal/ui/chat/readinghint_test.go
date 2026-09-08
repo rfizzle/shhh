@@ -7,13 +7,16 @@ package chat
 // pane wears any of it at a time.
 
 import (
+	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/colorprofile"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -377,5 +380,269 @@ func TestReadingMoveAnswersEveryDeclaredKey(t *testing.T) {
 		if after := next.(Model); after.focusIdx == before {
 			t.Errorf("%q is on keys.Reading.Move but moves nothing", k)
 		}
+	}
+}
+
+// The whole-pane fold: esc on an empty draft puts back every row the reader
+// opened (readinghint.go, keyroute.go). The one-row collapse above and this
+// read the same closed list of open kinds, so the cases here are about which
+// answers are the reader's and what the press costs the rest of the chain.
+
+// escFoldModel is a pane with one of every way a row can be open, each on a
+// row of its own: a step unfolded, a read-only run given back, a body
+// expanded, a second step's detail opened by /step, a diff expanded in place,
+// and a reasoning row opened whole.
+func escFoldModel(t *testing.T) Model {
+	t.Helper()
+	// A pane shorter than what the open rows render to, so folding them
+	// really does move the transcript under the reader.
+	updated, _ := activityModel(t).Update(tea.WindowSizeMsg{Width: 80, Height: 20})
+	m := updated.(Model)
+	m.transcript = []entry{
+		{kind: entryUser, text: "fix the round limit"},
+		{kind: entryAssistant, text: "Locate the round accounting"},
+		readEntry("internal/agent/loop.go", 400*time.Millisecond),
+		readEntry("internal/agent/round.go", 200*time.Millisecond),
+		readEntry("internal/agent/tool.go", 300*time.Millisecond),
+		searchEntry("ErrRoundLimit", 800*time.Millisecond),
+		{kind: entryAssistant, text: "Thread the sentinel through the loop"},
+		{kind: entryTool, toolName: "edit_file", toolArgs: `{"path":"internal/agent/loop.go"}`,
+			toolResult: "edited", duration: 1100 * time.Millisecond},
+		{kind: entryCommand, text: "go test ./internal/agent/...",
+			toolResult: "--- FAIL: TestRoundLimit", exitCode: 1, duration: 21400 * time.Millisecond},
+		{kind: entryDiff, diff: &components.DiffView{Path: "internal/agent/loop.go", Verb: "edit",
+			Hunks: diff.Compute("old line\n", "new line\n"), Mode: components.DiffExpanded}},
+		{kind: entryThink, text: "the cap is a checkpoint, not a wall", thinkDepth: thinkFull},
+	}
+	m.transcript[1].stepFold = foldOpen
+	m.transcript[2].groupFold = foldOpen
+	m.transcript[3].expanded = true
+	m.transcript[6].detailFold = foldOpen
+	// A tail of plain rows, so the folded pane is still taller than the
+	// window and the anchor is a real scroll position rather than the end.
+	for i := 0; i < 14; i++ {
+		m.transcript = append(m.transcript, entry{kind: entryCommand,
+			text: fmt.Sprintf("go test ./internal/agent/round%d", i), toolResult: "ok"})
+	}
+	m.invalidateRenderCache()
+	m.refreshTranscript()
+	return m
+}
+
+// openRowCount is how many rows carry an answer of the reader's, counted the
+// way the fold counts them.
+func openRowCount(m Model) int {
+	n := 0
+	for _, e := range *m.entries() {
+		if len(readerOpened(e)) > 0 {
+			n++
+		}
+	}
+	return n
+}
+
+func TestEscFold_FoldsEveryRowTheReaderOpened(t *testing.T) {
+	m := escFoldModel(t)
+	if got := openRowCount(m); got != 6 {
+		t.Fatalf("the fixture has %d open rows, wanted one of each of the six", got)
+	}
+
+	m, _ = pressKey(t, m, escK)
+
+	if got := openRowCount(m); got != 0 {
+		t.Errorf("one esc left %d rows open", got)
+	}
+	if m.foldNotice != "folded 6 rows" {
+		t.Errorf("the rail says %q, wanted the fold counted", m.foldNotice)
+	}
+	// Resting and not closed: a fold that wrote foldClosed would outrank the
+	// setting instead of deferring to it.
+	es := *m.entries()
+	if es[1].stepFold != foldAuto || es[6].detailFold != foldAuto || es[6].stepFold != foldAuto {
+		t.Error("a step was folded past its resting state")
+	}
+	if es[2].groupFold != foldAuto {
+		t.Error("a group was folded past its resting state")
+	}
+	if es[10].thinkDepth != thinkAuto {
+		t.Error("a think row was folded past its resting state")
+	}
+	if es[9].diff.Mode != components.DiffCollapsed || es[3].expanded {
+		t.Error("a diff or a body is still open")
+	}
+}
+
+func TestEscFold_SaysNothingWithThePaneAlreadyAtRest(t *testing.T) {
+	m := activityModel(t)
+	m.transcript = goldenTranscript()
+	m.invalidateRenderCache()
+
+	m, _ = pressKey(t, m, escK)
+
+	if m.foldNotice != "" {
+		t.Errorf("a press that folded nothing said %q", m.foldNotice)
+	}
+}
+
+func TestEscFold_LeavesWhatTheVerbosityOpenedAndNamesIt(t *testing.T) {
+	m := activityModel(t)
+	m.transcript = goldenTranscript()
+	m.verbosity = verbosityHigh
+	m.checkpoints = []checkpoint{{index: 1, preview: "make it fast"}}
+	m.invalidateRenderCache()
+	if !m.settingHoldsRowsOpen() {
+		t.Fatal("the fixture has no rows the verbosity is holding open")
+	}
+
+	m, _ = pressKey(t, m, escK)
+
+	if got := openRowCount(m); got != 0 {
+		t.Errorf("the verbosity's rows landed on the transcript as answers of the reader's: %d", got)
+	}
+	if !m.settingHoldsRowsOpen() {
+		t.Error("esc folded rows the verbosity had opened")
+	}
+	if m.foldNotice != verbosityHoldsNotice {
+		t.Errorf("the rail says %q, wanted it to name the setting", m.foldNotice)
+	}
+	// Not claimed: the chain went on and armed the rewind gesture, which is
+	// what this press has always meant on an empty idle draft.
+	if !m.armed.open(armRewind) {
+		t.Error("a press that folded nothing claimed the press")
+	}
+}
+
+func TestEscFold_ADraftWithTextIsClearedAndNoRowMoves(t *testing.T) {
+	m := typeChars(t, escFoldModel(t), "half a thought")
+
+	m, _ = pressKey(t, m, escK)
+
+	if m.input.Value() != "" {
+		t.Fatal("esc with a draft must clear it")
+	}
+	if got := openRowCount(m); got != 6 {
+		t.Errorf("clearing the draft folded rows: %d of 6 left open", got)
+	}
+	if m.foldNotice != "" {
+		t.Errorf("clearing the draft said %q about folding", m.foldNotice)
+	}
+}
+
+func TestEscFold_RunsUnderAStreamingTurnAndSpendsNoArmedWindow(t *testing.T) {
+	m := escFoldModel(t)
+	m.state = stateStreaming
+	m.armPress(armCancel, "ctrl+c")
+	was := m.armed
+
+	m, _ = pressKey(t, m, escK)
+
+	if got := openRowCount(m); got != 0 {
+		t.Errorf("the fold did not run under a streaming turn: %d rows left open", got)
+	}
+	if m.armed != was {
+		t.Error("the fold spent the two-press window; it abandons nothing and answers nothing")
+	}
+}
+
+func TestEscFold_KeepsTheRowUnderTheTopOfThePane(t *testing.T) {
+	m := escFoldModel(t)
+	// The first of the plain rows after the opened ones, and the only row on
+	// the pane that says round0.
+	const anchor, anchorText = 11, "round0"
+	at, ok := m.entryLineStarts()[anchor]
+	if !ok {
+		t.Fatal("the anchor row is not on the rendered pane")
+	}
+	m.viewport.SetYOffset(at)
+	m.atBottom = m.viewport.AtBottom()
+	if m.atBottom {
+		t.Fatal("the fixture is not scrolled up, so the anchor would be kept trivially")
+	}
+
+	m, _ = pressKey(t, m, escK)
+
+	// Read against the lines the pane is actually showing rather than against
+	// the walk the anchor was taken with: the two agreeing with each other
+	// would say nothing about where the row went.
+	lines := m.renderHistoryLines()
+	top := m.viewport.YOffset()
+	if top >= len(lines) {
+		t.Fatalf("the pane is at line %d of %d", top, len(lines))
+	}
+	if got := ansi.Strip(lines[top]); !strings.Contains(got, anchorText) {
+		t.Errorf("the top of the pane is %q, wanted the row that was under it", got)
+	}
+}
+
+func TestEscFold_AReaderFollowingTheStreamStaysAtTheEnd(t *testing.T) {
+	m := escFoldModel(t)
+	m.viewport.GotoBottom()
+	m.atBottom = true
+
+	m, _ = pressKey(t, m, escK)
+
+	if !m.viewport.AtBottom() {
+		t.Error("the fold left a reader who was following the stream off the live end")
+	}
+}
+
+func TestEscFold_TheNoticeLastsOnePress(t *testing.T) {
+	m := escFoldModel(t)
+
+	m, _ = pressKey(t, m, escK)
+	if m.foldNotice == "" {
+		t.Fatal("the fold said nothing")
+	}
+	m = typeChars(t, m, "a")
+	if m.foldNotice != "" {
+		t.Errorf("the account of the last press outlived it: %q", m.foldNotice)
+	}
+}
+
+// The two step overrides diverge as soon as the reader answers them
+// separately, and the fold has to put each back on its own: /step opens both,
+// and [-] on the header then closes one of them and leaves the other standing
+// (steps.go, detail.go).
+func TestEscFold_PutsTheTwoStepAnswersBackOneAtATime(t *testing.T) {
+	m := escFoldModel(t)
+	es := *m.entries()
+	// /step on the second step, then the header folded by hand: an explicit
+	// no on the fold, an open answer on the detail.
+	es[6].stepFold, es[6].detailFold = foldClosed, foldOpen
+
+	m, _ = pressKey(t, m, escK)
+
+	after := *m.entries()
+	if after[6].stepFold != foldClosed {
+		t.Error("the fold overwrote a step the reader had closed; esc puts back what was opened")
+	}
+	if after[6].detailFold != foldAuto {
+		t.Error("the detail answer was left on record with nothing on screen reporting it")
+	}
+}
+
+// A step the reader folded shut shows none of its rows, so the verbosity is
+// holding nothing open inside it and the rail must not say it is.
+func TestEscFold_AClosedStepHidesTheSettingsRowsToo(t *testing.T) {
+	m := activityModel(t)
+	m.transcript = goldenTranscript()
+	m.verbosity = verbosityHigh
+	m.invalidateRenderCache()
+	if !m.settingHoldsRowsOpen() {
+		t.Fatal("the fixture starts with rows the verbosity is holding open")
+	}
+
+	// Both steps folded by hand: the pane is headers and nothing else.
+	for i := range m.transcript {
+		if m.transcript[i].kind == entryAssistant {
+			m.transcript[i].stepFold = foldClosed
+		}
+	}
+	m.invalidateRenderCache()
+
+	m, _ = pressKey(t, m, escK)
+
+	if m.foldNotice != "" {
+		t.Errorf("a pane whose rows are all folded shut said %q", m.foldNotice)
 	}
 }

@@ -727,6 +727,12 @@ type Model struct {
 	selScrollDir int
 	selScrollSeq int
 	selNotice    string
+	// foldNotice is the notice rail's line after esc folded the rows the
+	// reader had opened, or after it found only the verbosity's open
+	// (readinghint.go). It lasts exactly one press: the next key clears it on
+	// the way in, the way an armed two-press window is consumed, because it
+	// is an account of the press just made and not a state of the session.
+	foldNotice string
 	// press is the cell the primary button last went down in (
 	// click.go). A click is a press and a release in the same cell, which is
 	// what lets one button carry both the selection drag and the targets.
