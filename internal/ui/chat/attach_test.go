@@ -673,6 +673,48 @@ func TestAttachedChildNoticeCarriesItsExpansion(t *testing.T) {
 	}
 }
 
+// A child's auto-approval is drawn where the session's own is: on the act's
+// row, in the outcome field, and nowhere else. The fan-out view was the last
+// place in the interface that stated an act twice — a notice naming the call
+// and then the row naming it again — and this is what says it no longer does.
+func TestAttachedChildStatesAnAutoApprovedActOnce(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	spawnBlockedChild(t, sup)
+	if err := sup.Note("researcher-1", subagent.TranscriptEntry{
+		Kind: subagent.EntryTool, Tool: "exec_command",
+		Args: `{"command":"go test ./..."}`, Result: "ok",
+		AllowedBy: classifierRule, AllowElapsed: 2100 * time.Millisecond,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	m.attach("researcher-1")
+	cv := m.syncChildView("researcher-1")
+	idx := -1
+	for i, e := range cv.entries {
+		if e.kind == entryTool {
+			idx = i
+		}
+	}
+	if idx == -1 {
+		t.Fatalf("mirrored transcript missing the act: %+v", cv.entries)
+	}
+	// The same two fields the session's own call carries, so the same helper
+	// draws the same account.
+	if got := m.activityRowFor(cv.entries[idx]).Allowed; got != allowedLabel(classifierRule, 2100*time.Millisecond) {
+		t.Fatalf("the mirrored row lost the account: %q", got)
+	}
+	got := stripANSI(m.renderAttachedHistory())
+	if !strings.Contains(got, "auto-allowed · classifier 2.1s") {
+		t.Fatalf("the attached view does not state what allowed the act:\n%s", got)
+	}
+	if n := strings.Count(got, "go test ./..."); n != 1 {
+		t.Fatalf("the act is stated %d times, want once:\n%s", n, got)
+	}
+}
+
 // TestAttachedChildStreamsThroughItsOwnCache: the attached view redraws the
 // message a child is writing on every frame, and parsing that message whole
 // each time is quadratic in its length — the cost the parent's transcript

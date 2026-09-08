@@ -240,6 +240,17 @@ type TranscriptEntry struct {
 	// expansion — the long form of a notice whose row is the short one.
 	Result  string
 	Pending bool // EntryTool: still executing or awaiting approval
+	// AllowedBy names what let a gated call run without the parent being
+	// asked — the mode machine's own word for the rule it matched, or the
+	// classifier — and rides on the act's own row. A feed states an act
+	// once, so the account of an auto-approval is a field of the call it
+	// approved rather than a notice above it repeating the call's verb and
+	// its target. Empty on a call the parent answered at the card, and on
+	// every call that was never gated.
+	AllowedBy string
+	// AllowElapsed is what that judgement took, where it took anything,
+	// which is the classifier and nothing else.
+	AllowElapsed time.Duration
 }
 
 // Env is everything a child needs to run, assembled by the CLI so this
@@ -849,10 +860,19 @@ type child struct {
 	// assistant text, queued steering messages, and the current turn's
 	// interrupt channel.
 	transcript []TranscriptEntry
-	streaming  string
-	steering   []queuedSteer
-	intCh      chan struct{}
-	intClosed  bool
+	// callRow is the transcript row each live tool call has open, keyed by
+	// the call's own id — the same id the conversation routes its result by.
+	// A round's reads run concurrently, so several rows are open at once and
+	// nothing else tells them apart: a result settles the row its own call
+	// opened, and a decision taken while a call runs — the account of an
+	// auto-approval — lands on that call's row rather than on a notice above
+	// it. A call whose row is missing settles nothing rather than the first
+	// row it finds.
+	callRow   map[string]int
+	streaming string
+	steering  []queuedSteer
+	intCh     chan struct{}
+	intClosed bool
 	// heldOn is the hold this child is parked on, and nil when it is not
 	// parked. It is separate from state and detail rather than a state of its
 	// own, because a held child is still running in every sense the lifecycle
@@ -994,9 +1014,9 @@ func (c *child) flushStreaming() {
 }
 
 // beginToolEntry appends a pending tool entry, flushing any streamed text
-// first (the round's assistant text precedes its calls), and returns its
-// index for settleToolEntry.
-func (c *child) beginToolEntry(tool, args string) int {
+// first (the round's assistant text precedes its calls), and opens the row
+// under the call's own id so settleToolEntry and noteAllowed find it again.
+func (c *child) beginToolEntry(id, tool, args string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.streaming != "" {
@@ -1005,17 +1025,38 @@ func (c *child) beginToolEntry(tool, args string) int {
 		c.step++
 	}
 	c.transcript = append(c.transcript, TranscriptEntry{Kind: EntryTool, Tool: tool, Args: args, Pending: true})
-	return len(c.transcript) - 1
+	if c.callRow == nil {
+		c.callRow = map[string]int{}
+	}
+	c.callRow[id] = len(c.transcript) - 1
 }
 
-// settleToolEntry records a pending tool entry's result in place.
-func (c *child) settleToolEntry(idx int, result string) {
+// settleToolEntry records a call's result on the row it opened and closes
+// that row, so a call that is over can no longer be written to.
+func (c *child) settleToolEntry(id, result string) {
 	c.mu.Lock()
-	if idx >= 0 && idx < len(c.transcript) {
-		c.transcript[idx].Result = result
-		c.transcript[idx].Pending = false
+	defer c.mu.Unlock()
+	idx, ok := c.callRow[id]
+	if !ok {
+		return
 	}
-	c.mu.Unlock()
+	delete(c.callRow, id)
+	c.transcript[idx].Result = result
+	c.transcript[idx].Pending = false
+}
+
+// noteAllowed records on a call's own row what let it run without the parent
+// being asked, and what that judgement cost. It is the child's half of the
+// rule a session's feed follows: an act is stated once, so the account of an
+// auto-approval is a field of the act rather than a row above it repeating
+// the same verb and the same target.
+// See docs/interface/surfaces.md#the-activity-row.
+func (c *child) noteAllowed(id, rule string, elapsed time.Duration) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if idx, ok := c.callRow[id]; ok {
+		c.transcript[idx].AllowedBy, c.transcript[idx].AllowElapsed = rule, elapsed
+	}
 }
 
 // noteWrite records a file this child's own call wrote. A call that came back
@@ -2538,13 +2579,13 @@ func (s *Supervisor) run(c *child) {
 	}
 	s.emitUpdate(c)
 
-	// pendingEntry maps a call to the transcript row opened for it, so its
-	// result settles that row and not another. A round's reads run
-	// concurrently, so several rows are open at once and the call's own id —
-	// the same one the conversation routes its result by — is what tells them
-	// apart. A result whose row is missing settles nothing rather than the
-	// first row it finds.
-	pendingEntry := map[string]int{}
+	// The rows this attempt's calls have open start empty: whatever the
+	// attempt before it left open belongs to a conversation nothing will
+	// answer, and a row still claiming a call's id would take the next
+	// attempt's result for that call.
+	c.mu.Lock()
+	c.callRow = map[string]int{}
+	c.mu.Unlock()
 	signal := func(code, reason string) {
 		if c.rec.Signal != nil {
 			c.rec.Signal(c.pos(), code, reason)
@@ -2689,7 +2730,7 @@ func (s *Supervisor) run(c *child) {
 			s.emitUpdate(c)
 		},
 		OnToolCall: func(tc provider.ToolCall) {
-			pendingEntry[tc.ID] = c.beginToolEntry(tc.Name, tc.Arguments)
+			c.beginToolEntry(tc.ID, tc.Name, tc.Arguments)
 			c.mu.Lock()
 			c.toolCalls++
 			n := c.toolCalls
@@ -2698,12 +2739,7 @@ func (s *Supervisor) run(c *child) {
 			s.emitUpdate(c)
 		},
 		OnToolResult: func(r agent.ToolResult) {
-			idx, ok := pendingEntry[r.Call.ID]
-			if !ok {
-				idx = -1
-			}
-			delete(pendingEntry, r.Call.ID)
-			c.settleToolEntry(idx, r.Result)
+			c.settleToolEntry(r.Call.ID, r.Result)
 			c.noteWrite(r.Call, r.Result)
 			if c.rec.ToolCall != nil {
 				outcome, class := observe.ToolOutcome(r.Result)
@@ -3105,28 +3141,33 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 		}
 		return agent.PlanModeResult
 	}
-	// Whether the classifier is what decided, because from here the reason
-	// is its own label — which carries a duration and so can never be the
-	// code. The policy's reason can; the classifier's is named for it.
+	// Whether the classifier is what decided, because from here the rule has
+	// a name of its own and a duration behind it — which the policy's reason
+	// never has, and which the record's code can never carry.
 	classified := false
+	var cost time.Duration
 	if decision == agent.Ask {
 		var denial string
-		decision, reason, denial = s.classify(c, policy.Mode, tc, action)
+		decision, cost, denial = s.classify(c, policy.Mode, tc, action)
 		classified = true
 		if decision == agent.Deny {
 			record(observe.DecisionDeny, observe.ReasonClassifier)
-			c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Refused (" + reason + "): " + title + " — " + denial})
+			c.appendEntry(TranscriptEntry{Kind: EntrySystem,
+				Text: "Refused (" + classifierAccount(cost) + "): " + title + " — " + denial})
 			return "error: auto mode denied this tool call: " + denial
 		}
 	}
 	switch decision {
 	case agent.Allow:
-		code := observe.ReasonCode(reason)
+		code, rule := observe.ReasonCode(reason), reason
 		if classified {
-			code = observe.ReasonClassifier
+			code, rule = observe.ReasonClassifier, classifierRule
 		}
 		record(observe.DecisionAllow, code)
-		c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Auto-approved (" + reason + "): " + title})
+		// The account rides the act, in the field the call's own row keeps
+		// for it. A refusal keeps its row because there is no act under it
+		// to carry the reason; an approval has one.
+		c.noteAllowed(tc.ID, rule, cost)
 	case agent.Ask:
 		// Two events, as a session records: what put the call in front of a
 		// person, and what they said. The first is what a prompt-rate is
@@ -3180,11 +3221,12 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 // the parent gets. Anything other than auto mode, a missing classifier, or a
 // safety-flagged action leaves the decision at Ask — the classifier can only
 // ever remove a prompt it is allowed to remove, never add permission.
-// It returns the decision, the short label for the child's transcript, and —
-// for a denial — the reason the model is told.
-func (s *Supervisor) classify(c *child, mode agent.Mode, tc provider.ToolCall, action agent.Action) (decision agent.Decision, label, denial string) {
+// It returns the decision, what the judgement took — the one rule whose cost
+// the child's transcript states — and, for a denial, the reason the model is
+// told.
+func (s *Supervisor) classify(c *child, mode agent.Mode, tc provider.ToolCall, action agent.Action) (decision agent.Decision, cost time.Duration, denial string) {
 	if mode != agent.ModeAuto || s.opts.Classifier == nil || action.SafetyFlagged {
-		return agent.Ask, "", ""
+		return agent.Ask, 0, ""
 	}
 	v := s.opts.Classifier.Judge(c.ctx, agent.ClassifierRequest{
 		Tool:      tc.Name,
@@ -3206,17 +3248,29 @@ func (s *Supervisor) classify(c *child, mode agent.Mode, tc provider.ToolCall, a
 		c.rec.Usage(c.pos().Turn, in, out, 0, false)
 	}
 	verdict, reason := agent.ResolveAuto(action, v)
-	elapsed := fmt.Sprintf("classifier, %.1fs", v.Elapsed.Seconds())
 	switch {
 	case verdict == agent.Allow:
-		return agent.Allow, elapsed, ""
+		return agent.Allow, v.Elapsed, ""
 	case verdict == agent.Deny:
-		return agent.Deny, elapsed, reason
+		return agent.Deny, v.Elapsed, reason
 	case v.Failed:
 		// Fails closed: the user decides, and sees why they were asked.
 		c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Classifier unavailable (" + v.Reason + "); asking the user instead."})
 	}
-	return agent.Ask, "", ""
+	return agent.Ask, 0, ""
+}
+
+// classifierRule is what a child's transcript names as the rule when the
+// auto-mode judge is what allowed a call. It is the word the session's own
+// row uses for the same decision, so a parent mirroring a child reads the
+// same account it reads in its own feed.
+const classifierRule = "classifier"
+
+// classifierAccount is the same rule written for a row that has no field to
+// put the cost in: a refusal is its own notice, and the seconds the
+// judgement took go in the notice's own parenthesis.
+func classifierAccount(cost time.Duration) string {
+	return fmt.Sprintf("%s, %.1fs", classifierRule, cost.Seconds())
 }
 
 // askTitle is the one-line description of a gated call for the child's own

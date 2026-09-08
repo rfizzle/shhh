@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -136,18 +137,18 @@ func TestStatusStepsAndElapsed(t *testing.T) {
 
 	// Two announcements, each followed by a call: two steps entered.
 	c.streaming = "look at the loop"
-	c.beginToolEntry("read_file", `{"path":"loop.go"}`)
+	c.beginToolEntry("t1", "read_file", `{"path":"loop.go"}`)
 	c.streaming = "now the tests"
-	c.beginToolEntry("read_file", `{"path":"loop_test.go"}`)
+	c.beginToolEntry("t2", "read_file", `{"path":"loop_test.go"}`)
 	if st := c.status(); st.Step != 2 {
 		t.Fatalf("step = %d, want 2", st.Step)
 	}
 
 	// A child that announces more than the spawn declared reports the
 	// denominator it was given, never a ratio over one.
-	for range 5 {
+	for i := range 5 {
 		c.streaming = "another"
-		c.beginToolEntry("read_file", `{"path":"x.go"}`)
+		c.beginToolEntry(fmt.Sprintf("t%d", i+3), "read_file", `{"path":"x.go"}`)
 	}
 	if st := c.status(); st.Step != 3 {
 		t.Fatalf("step = %d, want it clamped to the declared 3", st.Step)

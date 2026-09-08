@@ -1241,15 +1241,68 @@ func TestChildAutoModeUsesClassifier(t *testing.T) {
 	if judge.calls.Load() == 0 {
 		t.Fatal("the child should consult the classifier in auto mode")
 	}
-	var noted bool
-	for _, e := range sup.Transcript("researcher-1") {
-		if e.Kind == EntrySystem && strings.Contains(e.Text, "Auto-approved (classifier") {
-			noted = true
+	// The account is on the act, and the judge's seconds with it: the
+	// classifier is the one rule whose judgement costs anything.
+	row := toolRow(t, sup.Transcript("researcher-1"), tools.ExecCommandName)
+	if row.AllowedBy != classifierRule {
+		t.Fatalf("the command's row should name the classifier, got %q", row.AllowedBy)
+	}
+	if row.AllowElapsed <= 0 {
+		t.Fatal("the classifier's judgement should carry what it took")
+	}
+}
+
+// TestChildAutoApprovalStatesTheActOnce: a call the child's mode allowed
+// takes one row in the child's transcript — the act's, carrying the rule that
+// allowed it — rather than a notice naming the same call above it.
+func TestChildAutoApprovalStatesTheActOnce(t *testing.T) {
+	env := &scriptedEnv{
+		steps: []streamStep{
+			{calls: []provider.ToolCall{{ID: "e1", Name: tools.EditFileName,
+				Arguments: `{"path":"loop.go","old_text":"alpha","new_text":"omega"}`}}},
+			{text: "task complete"},
+		},
+		gated: map[string]bool{tools.EditFileName: true},
+	}
+	sup := newTestSupervisor(t, env)
+	sup.SetParentMode(agent.ModeAuto)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"change the loop"}`)
+
+	if report := execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`); !strings.Contains(report, "task complete") {
+		t.Fatalf("unexpected report: %s", report)
+	}
+	entries := sup.Transcript("researcher-1")
+	row := toolRow(t, entries, tools.EditFileName)
+	if row.AllowedBy != "auto mode" {
+		t.Fatalf("the edit's row should name the mode that allowed it, got %q", row.AllowedBy)
+	}
+	// The mode decided without paying anybody to think about it, so there is
+	// no cost to state beside the rule.
+	if row.AllowElapsed != 0 {
+		t.Fatalf("a mode's own decision costs nothing, got %v", row.AllowElapsed)
+	}
+	for _, e := range entries {
+		if e.Kind == EntrySystem {
+			t.Fatalf("the approval should be the act's own field, not a row: %q", e.Text)
 		}
 	}
-	if !noted {
-		t.Fatal("the child transcript should record the classifier approval")
+}
+
+// toolRow is the one transcript row a call left behind. It fails the test
+// when a call has none or more than one, which is the two-row shape these
+// tests are about.
+func toolRow(t *testing.T, entries []TranscriptEntry, tool string) TranscriptEntry {
+	t.Helper()
+	var found []TranscriptEntry
+	for _, e := range entries {
+		if e.Kind == EntryTool && e.Tool == tool {
+			found = append(found, e)
+		}
 	}
+	if len(found) != 1 {
+		t.Fatalf("%s has %d rows, want exactly one: %+v", tool, len(found), entries)
+	}
+	return found[0]
 }
 
 // TestChildClassifierDenyRefusesWithoutAsking: a denial comes back as a tool

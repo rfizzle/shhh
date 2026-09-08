@@ -90,7 +90,12 @@ func convertChildEntry(te subagent.TranscriptEntry) entry {
 		if te.Pending {
 			result = pendingToolResult
 		}
-		return entry{kind: entryTool, toolName: te.Tool, toolArgs: te.Args, toolResult: result}
+		// The account of an auto-approval comes across on the act, in the
+		// same two fields a session's own call carries it in, so the row the
+		// shared renderers draw for a child says what the row for the
+		// session's identical call says.
+		return entry{kind: entryTool, toolName: te.Tool, toolArgs: te.Args, toolResult: result,
+			allowedBy: te.AllowedBy, allowElapsed: te.AllowElapsed}
 	default:
 		return entry{kind: entrySystem, text: te.Text, toolResult: te.Result}
 	}

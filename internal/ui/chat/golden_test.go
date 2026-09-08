@@ -1419,6 +1419,50 @@ func TestGolden_AutoApproved(t *testing.T) {
 	})
 }
 
+// TestGolden_ChildAutoApproved pins the same rule one level down: a parent
+// attached to a child draws the child's auto-approved calls the way it draws
+// its own, one row each with the account in the outcome field. The fan-out
+// view was the last surface that stated an act twice — a notice naming the
+// call, then the row naming it again — and both of the shapes that notice
+// covered are here: an edit the child's mode allowed outright, and a command
+// the classifier was paid to think about.
+//
+// One width, because the give-way when the account runs out of room is the
+// row's own and is pinned at three widths by TestGolden_AutoApproved. What
+// this sheet is about is that the account crosses the mirror at all.
+func TestGolden_ChildAutoApproved(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")
+	// The child opens its own transcript with the task it was spawned on,
+	// and it does that as its first round starts rather than as it is
+	// spawned — so the rows below go on the end of a transcript that is
+	// already there, and the sheet is the same page every run.
+	waitFor(t, func() bool { return len(sup.Transcript("researcher-1")) > 0 })
+	note := func(e subagent.TranscriptEntry) {
+		t.Helper()
+		if err := sup.Note("researcher-1", e); err != nil {
+			t.Fatal(err)
+		}
+	}
+	note(subagent.TranscriptEntry{Kind: subagent.EntryTool, Tool: tools.EditFileName,
+		Args:   `{"path":"internal/agent/loop.go","old_text":"maxRounds","new_text":"roundCap"}`,
+		Result: "edited internal/agent/loop.go", AllowedBy: "auto mode"})
+	note(subagent.TranscriptEntry{Kind: subagent.EntryTool, Tool: tools.ExecCommandName,
+		Args:      `{"command":"go test ./internal/agent/..."}`,
+		Result:    "ok  \tgithub.com/rfizzle/shhh/internal/agent\t4.209s",
+		AllowedBy: classifierRule, AllowElapsed: 2100 * time.Millisecond})
+
+	captureGolden(t, "child-auto-approved", "a child's acts, mirrored by the parent",
+		[]int{110}, func(width int) []golden.Panel {
+			m := frameModel(t, width, 40)
+			m = m.WithSubagents(sup)
+			m.attach("researcher-1")
+			m.invalidateRenderCache()
+			return []golden.Panel{{Label: "an edit the mode allowed and a command the classifier did", View: m.renderAttachedHistory()}}
+		})
+}
+
 // TestGolden_GitWriteRows pins the rows a turn's git writes leave behind: the
 // four verbs on the accent rail under the command glyph, the receipt in the
 // outcome column where the field never clips, and the close of a turn that
