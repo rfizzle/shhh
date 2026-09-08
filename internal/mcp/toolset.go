@@ -3,6 +3,7 @@ package mcp
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -89,6 +90,12 @@ type Options struct {
 	EnvMask func(name string) bool
 	// Timeout overrides every definition's startup timeout when set.
 	Timeout time.Duration
+	// CallTimeout is the session's own bound on one request to a server,
+	// filled in where a definition did not name its own. It fills in rather
+	// than overriding, unlike Timeout: a call timeout written against one
+	// server is a person saying that server is slow, and a session-wide
+	// number is what the rest of them get.
+	CallTimeout time.Duration
 }
 
 // Toolset is the session's connected servers and what they offer,
@@ -111,6 +118,17 @@ type Toolset struct {
 	// boundary rather than something that happens under a round's own calls
 	// (docs/capabilities/mcp.md#a-server-may-change-what-it-offers).
 	inflight int
+	// calls are the cancels of the requests in flight, keyed by a counter
+	// so a call that has returned takes its own entry out and never a
+	// later call's. It is what AbandonCalls reaches: a request is made off
+	// the session's context, since a tool executor is handed a name and
+	// arguments and no context at all, so the interrupt has nothing else to
+	// pull (docs/capabilities/mcp.md#a-call-that-hangs-can-be-given-up).
+	calls    map[int]context.CancelFunc
+	nextCall int
+	// deaths are the servers that stopped answering, taken at a refresh and
+	// drained by the surface that says so.
+	deaths []Death
 }
 
 type toolRef struct {
@@ -246,12 +264,65 @@ func (ts *Toolset) Refresh() bool {
 		if s.takePending() {
 			moved = true
 		}
+		// A server that stopped answering moves the toolset as surely as a
+		// re-listing does: the rail draws it as a failure from here on, and
+		// the session owes the reader a line saying its tools have gone. Its
+		// tools stay registered — the model was told about them, and a name
+		// that vanished would fall off the executor chain and come back as
+		// "unknown tool" instead of the sentence that says what happened
+		// (docs/capabilities/mcp.md#a-server-that-dies-is-noticed).
+		if d, died := s.takeDeath(); died {
+			ts.deaths = append(ts.deaths, d)
+			moved = true
+		}
 	}
 	if !moved {
 		return false
 	}
 	ts.index()
 	return true
+}
+
+// Deaths drains the servers that stopped answering since the last call,
+// which Refresh took at the boundary before this one. Draining is what
+// makes the note appear once: a death is news at the boundary after it
+// happened and wallpaper at every boundary after that.
+func (ts *Toolset) Deaths() []Death {
+	if ts == nil {
+		return nil
+	}
+	ts.mu.Lock()
+	defer ts.mu.Unlock()
+	out := ts.deaths
+	ts.deaths = nil
+	return out
+}
+
+// AbandonCalls cancels every request in flight. It is the turn's cancel
+// reaching the one part of a server call the turn's own context cannot: a
+// tool executor is handed a name and arguments, so a call runs on a context
+// this package made, and without this a person who pressed the interrupt
+// waits out the whole call timeout on a server that will never answer
+// (docs/capabilities/mcp.md#a-call-that-hangs-can-be-given-up).
+//
+// It does not mark anything dead. A call the session gave up on says
+// nothing about whether the server is still there, and the next one finds
+// out the ordinary way.
+func (ts *Toolset) AbandonCalls() {
+	if ts == nil {
+		return
+	}
+	ts.mu.Lock()
+	cancels := make([]context.CancelFunc, 0, len(ts.calls))
+	for _, cancel := range ts.calls {
+		cancels = append(cancels, cancel)
+	}
+	ts.mu.Unlock()
+	// Outside the lock: each cancel wakes the call's own goroutine, which
+	// takes this lock on its way out through end.
+	for _, cancel := range cancels {
+		cancel()
+	}
 }
 
 // admit decides whether a definition is tried at all, and with what
@@ -323,6 +394,13 @@ func connectOne(ctx context.Context, def Definition, opts Options) Report {
 			r.Error = fmt.Sprintf("server %s: the session ended before it answered", def.Name)
 		}
 		return r
+	}
+	// The session's bound fills in for a definition that named none, here
+	// rather than at each dispatch: the definition on the server is what
+	// every later call reads, and a resolution done twice is two places to
+	// disagree about how long a server is allowed.
+	if def.CallTimeout == 0 {
+		def.CallTimeout = opts.CallTimeout
 	}
 	// The unexpanded definition is what the report shows: the listing must
 	// never print a token that an environment reference stood in for.
@@ -557,18 +635,19 @@ func (ts *Toolset) Execute(name string, args json.RawMessage) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("unknown tool: %s", name)
 	}
-	defer ts.end()
-	ctx, cancel := context.WithTimeout(context.Background(), DefaultCallTimeout)
-	defer cancel()
+	ctx, timeout, end := ts.dispatch(ref.server.Definition)
+	defer end()
 	out, err := ref.server.Call(ctx, ref.tool, args)
 	if err != nil {
-		return "", err
+		return "", givenUp(ref.server.Definition, ref.tool.Remote, timeout, err)
 	}
 	return bound(out), nil
 }
 
 // begin takes the reference behind a name and marks a call in flight, so a
-// refresh cannot move the catalog out from under it.
+// refresh cannot move the catalog out from under it. Every path that
+// returns true must reach the end dispatch hands back, or the toolset never
+// takes another re-listing for the rest of the session.
 func (ts *Toolset) begin(name string) (toolRef, bool) {
 	ts.mu.Lock()
 	defer ts.mu.Unlock()
@@ -579,10 +658,46 @@ func (ts *Toolset) begin(name string) (toolRef, bool) {
 	return ref, ok
 }
 
-func (ts *Toolset) end() {
+// dispatch opens the context one request runs on, bounded by what the
+// definition allows a call, and puts its cancel where AbandonCalls can
+// reach it. end undoes all three — off the register, the inflight count
+// down, the context released — and runs on the abandoned path as much as on
+// the ordinary one, which is what keeps a cancelled call from leaving the
+// toolset permanently mid-round.
+func (ts *Toolset) dispatch(def Definition) (context.Context, time.Duration, func()) {
+	timeout := def.ToolCallTimeout()
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	ts.mu.Lock()
-	ts.inflight--
+	if ts.calls == nil {
+		ts.calls = map[int]context.CancelFunc{}
+	}
+	id := ts.nextCall
+	ts.nextCall++
+	ts.calls[id] = cancel
 	ts.mu.Unlock()
+	return ctx, timeout, func() {
+		ts.mu.Lock()
+		delete(ts.calls, id)
+		ts.inflight--
+		ts.mu.Unlock()
+		cancel()
+	}
+}
+
+// givenUp names an ending the session itself decided on. The SDK reports
+// both as the context package's own words, which say nothing about which
+// server, which tool or how long — a model told "context canceled" has no
+// way to tell a two-minute timeout from a person pressing the interrupt,
+// and neither has the person reading the transcript afterwards.
+func givenUp(def Definition, tool string, timeout time.Duration, err error) error {
+	switch {
+	case errors.Is(err, context.DeadlineExceeded):
+		return fmt.Errorf("server %s: %s did not answer within %s; the call was given up. "+
+			"Raise mcp.call_timeout_seconds if this tool is meant to take that long", def.Name, tool, timeout)
+	case errors.Is(err, context.Canceled):
+		return fmt.Errorf("server %s: %s was cancelled", def.Name, tool)
+	}
+	return err
 }
 
 // readResource answers the resource tool. readOnlyServers is the child
@@ -603,12 +718,11 @@ func (ts *Toolset) readResource(args json.RawMessage, readOnlyServers bool) (str
 	if err != nil {
 		return "", err
 	}
-	defer ts.end()
-	ctx, cancel := context.WithTimeout(context.Background(), DefaultCallTimeout)
-	defer cancel()
+	ctx, timeout, end := ts.dispatch(server.Definition)
+	defer end()
 	out, err := server.Read(ctx, uri)
 	if err != nil {
-		return "", err
+		return "", givenUp(server.Definition, ResourceToolName, timeout, err)
 	}
 	return bound(out), nil
 }

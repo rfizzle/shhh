@@ -51,6 +51,9 @@ func mcpDefinitions(cfg config.Config) []mcp.Definition {
 		if s.TimeoutSeconds > 0 {
 			d.Timeout = time.Duration(s.TimeoutSeconds) * time.Second
 		}
+		if s.CallTimeoutSeconds > 0 {
+			d.CallTimeout = time.Duration(s.CallTimeoutSeconds) * time.Second
+		}
 		defs = append(defs, d)
 	}
 	return defs
@@ -100,6 +103,9 @@ func mcpOptions(cfg config.Config, readOnlyOnly bool) mcp.Options {
 	}
 	if cfg.MCP.StartupTimeoutSeconds > 0 {
 		opts.Timeout = time.Duration(cfg.MCP.StartupTimeoutSeconds) * time.Second
+	}
+	if cfg.MCP.CallTimeoutSeconds > 0 {
+		opts.CallTimeout = time.Duration(cfg.MCP.CallTimeoutSeconds) * time.Second
 	}
 	return opts
 }
@@ -203,6 +209,14 @@ func mcpToolSources(ts *mcp.Toolset) []components.InspectorToolSource {
 		switch r.Status {
 		case mcp.StatusConnected:
 			src.State = components.ToolSourceUp
+			// A server that answered the handshake and then died is drawn
+			// as the failure it now is. The report is left alone: it is what
+			// the connect found, read without a lock by every listing, and
+			// the server itself is the one thing that knows it has gone
+			// (docs/capabilities/mcp.md#a-server-that-dies-is-noticed).
+			if why := r.Server.Dead(); why != "" {
+				src.State, src.Note = components.ToolSourceFailed, mcpDeadNote
+			}
 		case mcp.StatusFailed:
 			src.State, src.Note = components.ToolSourceFailed, firstLine(r.Error)
 		case mcp.StatusDisabled:
@@ -215,6 +229,42 @@ func mcpToolSources(ts *mcp.Toolset) []components.InspectorToolSource {
 		out = append(out, src)
 	}
 	return out
+}
+
+// mcpDeadNote is the rail's word for a server that stopped answering. It is
+// the state rather than the reason because the reason is a transport's, and
+// what the reader of a four-row block needs is that the tools have gone.
+const mcpDeadNote = "stopped answering"
+
+// mcpDeathNotes are the lines a session owes the reader about servers that
+// died since the last round boundary, in the shape mcpStartupNotes uses for
+// one that never started: what became of it, then what it costs. Draining
+// is the toolset's, so a note appears at the boundary after the death and
+// not at every boundary after that.
+func mcpDeathNotes(deaths []mcp.Death) []string {
+	if len(deaths) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(deaths))
+	for _, d := range deaths {
+		out = append(out, "mcp: "+d.Name+": "+mcpDeadNote+" ("+firstLine(d.Reason)+") — its tools are not in this session any more")
+	}
+	return out
+}
+
+// mcpTurnBoundary is what a driver with no rail does with its servers at a
+// turn boundary: take whatever they have re-listed, and say what died since
+// the last one on the stream a headless run's other diagnostics go to. It is
+// the pair of halves the TUI does at a submitted line, in the one place both
+// drivers can call — without the second half a run whose server went is left
+// to infer that from a tool result, which is the one place it is not said.
+func mcpTurnBoundary(ts *mcp.Toolset) {
+	if !ts.Refresh() {
+		return
+	}
+	for _, note := range mcpDeathNotes(ts.Deaths()) {
+		_ = report.Fprintln(os.Stderr, report.Row{State: report.Warn, Subject: note})
+	}
 }
 
 // firstLine bounds a note to the row it will be drawn in: a server's error can
@@ -344,8 +394,19 @@ func mcpListingReport(ts *mcp.Toolset, cat *mcp.Catalog, root string) report.Rep
 			servers.Rows = append(servers.Rows, row)
 			continue
 		}
-		connected++
 		row.Detail = mcpOffering(rep.Server)
+		// A server that answered the handshake and then went is a connect
+		// in the report and a failure to the reader, who is looking at this
+		// screen to find out what they can still call. Its tools stay in
+		// the sections below because the model still has their names; what
+		// they answer with now is the row above them.
+		if why := rep.Server.Dead(); why != "" {
+			row.State, row.Outcome = report.Fail, mcpDeadNote
+			row.Consequence = "its tools are not in this session any more"
+			row.Fix = []string{firstLine(why), "start a new session to reach it again"}
+		} else {
+			connected++
+		}
 		servers.Rows = append(servers.Rows, row)
 		// The tools of this session and not of that server: a definition
 		// that named its tools left the rest outside, and a listing that

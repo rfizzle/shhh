@@ -28,6 +28,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/hook"
+	"github.com/rfizzle/shhh/internal/mcp"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/prompt"
@@ -228,6 +229,10 @@ type serveLoop struct {
 	stopOnce sync.Once
 	// closers end what the assembly opened, in the order they were given.
 	closers []func()
+	// mcp is the session's servers, held for the one thing a served loop
+	// asks of them between turns: taking whatever they have re-listed at
+	// the boundary a turn starts on. Nil where the session opened none.
+	mcp *mcp.Toolset
 
 	mu sync.Mutex
 	// steering is what a client has said to a running turn and the loop has
@@ -324,6 +329,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	session.sibling = readSibling(db)
 	if session.mcp {
 		l.closers = append(l.closers, session.attachMCP(cmd.Context(), db, false))
+		l.mcp = session.mcpTools
 	}
 	registerSkills(&session)
 	// The durable memories this project has accumulated, recalled the way a
@@ -740,6 +746,12 @@ func (l *serveLoop) Fork(s rpc.Seams) (rpc.Loop, error) {
 // carried out here, under the number the client was given when it started
 // this turn.
 func (l *serveLoop) Run(turn int64, prompt string) (string, error) {
+	// A turn starting is this loop's round boundary, the one the TUI reads
+	// a submitted line at: whatever the servers have re-listed since the
+	// last turn is applied here, where nothing is in flight to move under,
+	// and a server the turn before lost is said
+	// (docs/capabilities/mcp.md#a-server-may-change-what-it-offers).
+	mcpTurnBoundary(l.mcp)
 	l.mu.Lock()
 	l.turn = turn
 	l.steering = nil

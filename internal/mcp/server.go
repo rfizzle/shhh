@@ -51,7 +51,7 @@ const DefaultStartupTimeout = 20 * time.Second
 
 // DefaultCallTimeout bounds one tool call. Remote tools that take longer
 // than this are rare and a session waiting on one has no way to tell it
-// from a hang.
+// from a hang. Definition.CallTimeout overrides it per server.
 const DefaultCallTimeout = 2 * time.Minute
 
 // MaxNameLength caps a server name. Names prefix every tool name the model
@@ -117,6 +117,14 @@ type Definition struct {
 	Disabled bool
 	// Timeout bounds connect and tool listing; zero is DefaultStartupTimeout.
 	Timeout time.Duration
+	// CallTimeout bounds one tool call or resource read — the two the
+	// model makes, with nobody watching the clock; zero is
+	// DefaultCallTimeout. It is a second number rather than the same one
+	// because the two bound different things: a connect is a handshake
+	// that either happens at once or is a server that will not start, and
+	// a call is work the server does
+	// (docs/capabilities/mcp.md#a-call-that-hangs-can-be-given-up).
+	CallTimeout time.Duration
 }
 
 // Validate reports the first thing wrong with a definition, or nil.
@@ -254,4 +262,14 @@ func (d Definition) StartupTimeout() time.Duration {
 		return d.Timeout
 	}
 	return DefaultStartupTimeout
+}
+
+// ToolCallTimeout is CallTimeout or the default: the pair of
+// StartupTimeout, where the field is what the person wrote and the method
+// is what a request actually runs under.
+func (d Definition) ToolCallTimeout() time.Duration {
+	if d.CallTimeout > 0 {
+		return d.CallTimeout
+	}
+	return DefaultCallTimeout
 }

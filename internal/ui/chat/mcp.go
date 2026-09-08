@@ -39,10 +39,24 @@ type MCP struct {
 	// Render asks a server to fill one of its prompts in. It reaches the
 	// server, so it is never called on the UI goroutine.
 	Render func(ctx context.Context, name string, args map[string]string) (string, error)
-	// Refresh applies whatever the servers have re-listed, and reports
-	// whether anything moved. The session calls it where a boundary is: a
-	// catalog that moved mid-round would change what a result answers.
+	// Refresh applies whatever the servers have re-listed and takes note of
+	// any server that stopped answering, and reports whether anything
+	// moved. The session calls it where a boundary is: a catalog that moved
+	// mid-round would change what a result answers.
 	Refresh func() bool
+	// Restate is read only when Refresh says something moved: the servers
+	// as the rail names them now, and the lines the session owes the reader
+	// about one that died. Both halves come from one read of the reports,
+	// so a row drawn as failed and a note saying so cannot disagree
+	// (docs/capabilities/mcp.md#a-server-that-dies-is-noticed).
+	Restate func() ([]components.InspectorToolSource, []string)
+	// Abandon gives up every server call in flight. It is the turn's cancel
+	// reaching the one request a cancelled turn cannot otherwise stop: a
+	// tool executor is handed a name and arguments and no context, so a
+	// call to a hung server runs on the toolset's own clock until Abandon
+	// or the call timeout ends it
+	// (docs/capabilities/mcp.md#a-call-that-hangs-can-be-given-up).
+	Abandon func()
 	// Sources is one entry per server the session was told to reach, as the
 	// connect left it, in the rail's own vocabulary — a second enum in
 	// between would only be this one restated, and a mapping to get it wrong
@@ -320,8 +334,27 @@ func (m Model) applyMCPPrompt(msg mcpPromptMsg) (tea.Model, tea.Cmd) {
 // The call site is a submitted line rather than a chosen boundary, and the
 // toolset is what makes it safe: it applies nothing while a round's calls
 // are out, which matters because a line submitted mid-turn is steering.
-func (m Model) refreshMCP() {
-	if m.mcp.Refresh != nil {
-		m.mcp.Refresh()
+//
+// It is also where a server that stopped answering reaches the screen. The
+// death happened inside a round, where the rail cannot be redrawn from and
+// a transcript line would land between a call and its result; here it is a
+// row that greys and a line saying what the session lost
+// (docs/capabilities/mcp.md#a-server-that-dies-is-noticed).
+func (m *Model) refreshMCP() {
+	if m.mcp.Refresh == nil || !m.mcp.Refresh() || m.mcp.Restate == nil {
+		return
+	}
+	sources, notes := m.mcp.Restate()
+	m.mcp.Sources = sources
+	for _, note := range notes {
+		m.appendEntry(entry{kind: entrySystem, text: note})
+	}
+}
+
+// abandonMCPCalls gives up every server call in flight, which is what the
+// turn's cancel means for a request the turn's own context never reached.
+func (m Model) abandonMCPCalls() {
+	if m.mcp.Abandon != nil {
+		m.mcp.Abandon()
 	}
 }

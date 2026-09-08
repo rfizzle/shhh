@@ -32,9 +32,27 @@ const serverEnv = "SHHH_MCP_TEST_SERVER"
 // stays the size those tests say it is.
 const envDumpEnv = "SHHH_MCP_TEST_ENVDUMP"
 
+// sleepEnv names a mode that starts, speaks nothing and exits: a process
+// that is up while the dial waits for a handshake that will never come,
+// which is what the connect's timeout arm is there for.
+const sleepEnv = "SHHH_MCP_TEST_SLEEP"
+
+// slowServer is the value of serverEnv that adds the tool which never
+// answers. It is a mode rather than a fourth tool on the ordinary server
+// because every other test counts this server's catalog.
+const slowServer = "slow"
+
 func TestMain(m *testing.M) {
 	if path := os.Getenv(envDumpEnv); path != "" {
 		_ = os.WriteFile(path, []byte(strings.Join(os.Environ(), "\n")), 0o600)
+		return
+	}
+	if d := os.Getenv(sleepEnv); d != "" {
+		wait, err := time.ParseDuration(d)
+		if err != nil {
+			os.Exit(1)
+		}
+		time.Sleep(wait)
 		return
 	}
 	if os.Getenv(serverEnv) != "" {
@@ -116,6 +134,15 @@ func runTestServer() {
 			{URI: req.Params.URI, MIMEType: "application/octet-stream", Blob: make([]byte, 2048)},
 		}}, nil
 	})
+	if os.Getenv(serverEnv) == slowServer {
+		sdk.AddTool(server, &sdk.Tool{
+			Name:        "hang",
+			Description: "Never answers.",
+		}, func(ctx context.Context, _ *sdk.CallToolRequest, _ echoIn) (*sdk.CallToolResult, any, error) {
+			<-ctx.Done()
+			return nil, nil, ctx.Err()
+		})
+	}
 	if err := server.Run(context.Background(), &sdk.StdioTransport{}); err != nil {
 		os.Exit(1)
 	}
@@ -131,6 +158,14 @@ func testDefinition(t *testing.T) Definition {
 		Name: "echo", Scope: ScopeUser, Transport: TransportStdio,
 		Command: exe, Env: map[string]string{serverEnv: "1"}, ReadOnly: true,
 	}
+}
+
+// slowDefinition is the same server with the tool that never answers.
+func slowDefinition(t *testing.T) Definition {
+	t.Helper()
+	d := testDefinition(t)
+	d.Env[serverEnv] = slowServer
+	return d
 }
 
 func TestDialListsAndCallsTools(t *testing.T) {
@@ -674,7 +709,9 @@ func TestListChangedIsTakenAtTheBoundaryAndNotMidRound(t *testing.T) {
 	}
 
 	// The round is over: this is the boundary, and the swap happens here.
-	ts.end()
+	ts.mu.Lock()
+	ts.inflight--
+	ts.mu.Unlock()
 	if !ts.Refresh() {
 		t.Fatal("the re-listing was never taken")
 	}
@@ -1012,4 +1049,298 @@ func TestAConfigNameIsRefusedRatherThanRenamed(t *testing.T) {
 	if joined := strings.Join(c.Diagnostics, "\n"); !strings.Contains(joined, "must start with a letter") {
 		t.Errorf("diagnostics = %s", joined)
 	}
+}
+
+// A server killed after a successful connect is noticed at the first call
+// that meets it, and every call after that is answered without a round trip
+// into a pipe with nothing at the far end. The tools stay registered: the
+// model was told about them, and a name that vanished would come back as
+// "unknown tool" instead of the sentence saying what happened.
+func TestAServerKilledAfterConnectIsNoticedOnceAndAnswersFast(t *testing.T) {
+	ts := Connect(context.Background(), &Catalog{Servers: []Definition{testDefinition(t)}}, Options{})
+	defer ts.Close()
+	s := ts.Reports[0].Server
+	if s == nil || s.cmd == nil || s.cmd.Process == nil {
+		t.Fatal("the server did not start")
+	}
+	if err := s.cmd.Process.Kill(); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := ts.Execute("echo__echo", json.RawMessage(`{"text":"hi"}`))
+	if err == nil || !strings.Contains(err.Error(), "no longer running") {
+		t.Fatalf("the call that met the dead server = %v", err)
+	}
+	if s.Dead() == "" {
+		t.Fatal("the server was not marked dead")
+	}
+	// The second call is the one the model makes after reading the first
+	// result, and it must cost nothing: no session, no timeout, no wait.
+	started := time.Now()
+	_, again := ts.Execute("echo__echo", json.RawMessage(`{"text":"hi"}`))
+	if again == nil || !strings.Contains(again.Error(), "no longer running") {
+		t.Fatalf("the next call = %v", again)
+	}
+	if took := time.Since(started); took > time.Second {
+		t.Fatalf("the next call took %s; it should not have reached the transport", took)
+	}
+	if !ts.Has("echo__echo") {
+		t.Error("a dead server's tools left the session; the model was told about them")
+	}
+
+	if !ts.Refresh() {
+		t.Fatal("the death did not move the toolset at the boundary")
+	}
+	deaths := ts.Deaths()
+	if len(deaths) != 1 || deaths[0].Name != "echo" || deaths[0].Reason == "" {
+		t.Fatalf("deaths = %+v", deaths)
+	}
+	// Once. A note at every boundary for the rest of the session is
+	// wallpaper, and a rail that keeps reporting news nobody can act on.
+	if ts.Refresh() {
+		t.Error("the same death moved the toolset a second time")
+	}
+	if got := ts.Deaths(); len(got) != 0 {
+		t.Errorf("deaths were not drained: %+v", got)
+	}
+}
+
+// A call to a server that answers nothing ends at the definition's own
+// bound rather than sitting there for the default two minutes.
+func TestAHungCallEndsAtTheConfiguredTimeout(t *testing.T) {
+	def := slowDefinition(t)
+	def.CallTimeout = 200 * time.Millisecond
+	ts := Connect(context.Background(), &Catalog{Servers: []Definition{def}}, Options{})
+	defer ts.Close()
+	if len(ts.Reports) != 1 || ts.Reports[0].Status != StatusConnected {
+		t.Fatalf("connect = %+v", ts.Reports[0])
+	}
+
+	started := time.Now()
+	_, err := ts.Execute("echo__hang", json.RawMessage(`{"text":"x"}`))
+	took := time.Since(started)
+	if err == nil || !strings.Contains(err.Error(), "did not answer within 200ms") {
+		t.Fatalf("a hung call = %v", err)
+	}
+	if took > 5*time.Second {
+		t.Fatalf("the bound was not honoured: the call took %s", took)
+	}
+	// A call the session gave up on says nothing about whether the server
+	// is still there, so the next one is tried the ordinary way.
+	if s := ts.Reports[0].Server; s.Dead() != "" {
+		t.Errorf("a timed-out call marked the server dead: %s", s.Dead())
+	}
+}
+
+// The interrupt reaches a call in flight. Without it a person who pressed
+// it waits out the whole call timeout on a server that will never answer,
+// which is the one wait in this surface nothing else can shorten.
+func TestAbandonCallsReachesACallInFlight(t *testing.T) {
+	def := slowDefinition(t)
+	def.CallTimeout = time.Minute
+	ts := Connect(context.Background(), &Catalog{Servers: []Definition{def}}, Options{})
+	defer ts.Close()
+
+	done := make(chan error, 1)
+	go func() {
+		_, err := ts.Execute("echo__hang", json.RawMessage(`{"text":"x"}`))
+		done <- err
+	}()
+	// Wait for the call to be on the register rather than for a duration:
+	// a sleep long enough to be reliable is a slow test, and one short
+	// enough to be fast is a flake.
+	deadline := time.Now().Add(10 * time.Second)
+	for {
+		ts.mu.Lock()
+		out := len(ts.calls)
+		ts.mu.Unlock()
+		if out == 1 {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("the call never reached the register AbandonCalls reads")
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	ts.AbandonCalls()
+
+	select {
+	case err := <-done:
+		if err == nil || !strings.Contains(err.Error(), "was cancelled") {
+			t.Fatalf("the abandoned call = %v", err)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("the abandoned call never returned")
+	}
+	// The count has to come back down, or the toolset never takes another
+	// re-listing for the rest of the session.
+	ts.mu.Lock()
+	inflight, registered := ts.inflight, len(ts.calls)
+	ts.mu.Unlock()
+	if inflight != 0 || registered != 0 {
+		t.Fatalf("after the cancel: inflight=%d registered=%d", inflight, registered)
+	}
+	// Read the server directly and not through Refresh: a death makes
+	// Refresh report movement, so a test that guards on its answer can
+	// never fail for the regression it is named after.
+	if why := ts.Reports[0].Server.Dead(); why != "" {
+		t.Errorf("an abandoned call marked the server dead: %s", why)
+	}
+}
+
+// The bounds and refusals that had no test. Each is a line the model reads
+// when something did not fit or could not be resolved, and each is cheap to
+// get wrong in a way nothing else notices.
+
+func TestBoundCapsWhatOneCallFeedsTheModel(t *testing.T) {
+	cases := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{"short", "hello", "hello"},
+		{"exactly the cap", strings.Repeat("x", MaxResultBytes), strings.Repeat("x", MaxResultBytes)},
+		{"one byte over", strings.Repeat("x", MaxResultBytes+1),
+			strings.Repeat("x", MaxResultBytes) + "\n… (truncated: the result was longer than 65536 bytes)"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := bound(c.in); got != c.want {
+				t.Errorf("bound(%d bytes) = %d bytes, ending %q", len(c.in), len(got), lastRunes(got, 60))
+			}
+		})
+	}
+}
+
+func lastRunes(s string, n int) string {
+	r := []rune(s)
+	if len(r) <= n {
+		return s
+	}
+	return string(r[len(r)-n:])
+}
+
+// The connect's timeout arm: a process that starts, says nothing and is
+// still there when the wait runs out. The session goes on without it.
+func TestConnectGivesUpOnAServerThatNeverAnswers(t *testing.T) {
+	def := testDefinition(t)
+	def.Env = map[string]string{sleepEnv: "3s"}
+	def.Timeout = 150 * time.Millisecond
+	started := time.Now()
+	ts := Connect(context.Background(), &Catalog{Servers: []Definition{def}}, Options{})
+	defer ts.Close()
+	took := time.Since(started)
+	r := ts.Reports[0]
+	if r.Status != StatusFailed || !strings.Contains(r.Error, "no answer within 150ms") {
+		t.Fatalf("report = %s / %q", r.Status, r.Error)
+	}
+	if took > 3*time.Second {
+		t.Fatalf("the connect waited %s for a server it had given up on", took)
+	}
+	if ts.Len() != 0 {
+		t.Errorf("a server that never answered registered %d tools", ts.Len())
+	}
+}
+
+// A uri nobody listed resolves by scheme when exactly one server publishes
+// under it, and is refused when more than one does: the wrong server is a
+// request sent somewhere the reader did not intend.
+func TestResolveResourceRefusesAnAmbiguousScheme(t *testing.T) {
+	a := &Server{Definition: Definition{Name: "alpha", ReadOnly: true}}
+	b := &Server{Definition: Definition{Name: "beta"}}
+	ts := &Toolset{
+		servers:   map[string]*Server{"alpha": a, "beta": b},
+		resources: map[string]*Server{"docs://a": a, "docs://b": b, "wiki://w": b},
+	}
+	cases := []struct {
+		name       string
+		uri        string
+		readOnly   bool
+		wantServer *Server
+		wantErr    string
+	}{
+		{name: "a uri one of them listed", uri: "docs://a", wantServer: a},
+		{name: "a scheme only one publishes", uri: "wiki://elsewhere", wantServer: b},
+		{name: "a scheme two publish", uri: "docs://elsewhere", wantErr: "could be on any of alpha, beta"},
+		{name: "a scheme nobody publishes", uri: "tickets://7", wantErr: "no connected server publishes"},
+		{name: "the ambiguity resolves when only one server is admitted",
+			uri: "docs://elsewhere", readOnly: true, wantServer: a},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got, err := ts.resolveResource(c.uri, c.readOnly)
+			if c.wantErr != "" {
+				if err == nil || !strings.Contains(err.Error(), c.wantErr) {
+					t.Fatalf("err = %v, want %q", err, c.wantErr)
+				}
+				if ts.inflight != 0 {
+					t.Fatalf("a refused resolve left %d calls in flight", ts.inflight)
+				}
+				return
+			}
+			if err != nil || got != c.wantServer {
+				t.Fatalf("resolve = %v, %v", got, err)
+			}
+			ts.mu.Lock()
+			ts.inflight--
+			ts.mu.Unlock()
+		})
+	}
+}
+
+// Every kind of block the model cannot read comes back as one line saying
+// what was left out and how big it was, whether it arrived in a tool result
+// or a resource read: a base64 blob in the context costs more than the
+// notice and says less.
+func TestBinaryBlocksBecomeANotice(t *testing.T) {
+	t.Run("a tool result", func(t *testing.T) {
+		cases := []struct {
+			name string
+			in   []sdk.Content
+			want string
+		}{
+			{"audio", []sdk.Content{&sdk.AudioContent{MIMEType: "audio/wav", Data: make([]byte, 3072)}},
+				"[audio omitted: audio/wav, 3.0 kB]"},
+			{"audio beside text", []sdk.Content{
+				&sdk.TextContent{Text: "here it is"},
+				&sdk.AudioContent{MIMEType: "audio/mpeg", Data: make([]byte, 1<<21)},
+			}, "here it is\n[audio omitted: audio/mpeg, 2.0 MB]"},
+			{"an embedded blob", []sdk.Content{
+				&sdk.EmbeddedResource{Resource: &sdk.ResourceContents{
+					URI: "file:///a.bin", MIMEType: "application/octet-stream", Blob: make([]byte, 512),
+				}},
+			}, "[resource omitted: file:///a.bin, application/octet-stream, 512 B]"},
+		}
+		for _, c := range cases {
+			t.Run(c.name, func(t *testing.T) {
+				if got := Flatten(&sdk.CallToolResult{Content: c.in}); got != c.want {
+					t.Errorf("Flatten = %q, want %q", got, c.want)
+				}
+			})
+		}
+	})
+
+	t.Run("a resource read", func(t *testing.T) {
+		cases := []struct {
+			name string
+			in   []*sdk.ResourceContents
+			want string
+		}{
+			{"a blob", []*sdk.ResourceContents{
+				{URI: "docs://cover", MIMEType: "image/png", Blob: make([]byte, 4096)},
+			}, "[resource omitted: docs://cover, image/png, 4.0 kB]"},
+			{"text beside a blob", []*sdk.ResourceContents{
+				{URI: "docs://guide", MIMEType: "text/markdown", Text: "the guide"},
+				{URI: "docs://cover", MIMEType: "image/png", Blob: make([]byte, 1024)},
+			}, "the guide\n[resource omitted: docs://cover, image/png, 1.0 kB]"},
+			{"nothing at all", []*sdk.ResourceContents{nil, {URI: "docs://empty"}}, ""},
+		}
+		for _, c := range cases {
+			t.Run(c.name, func(t *testing.T) {
+				if got := FlattenResource(&sdk.ReadResourceResult{Contents: c.in}); got != c.want {
+					t.Errorf("FlattenResource = %q, want %q", got, c.want)
+				}
+			})
+		}
+	})
 }

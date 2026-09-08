@@ -325,3 +325,75 @@ func TestResourceToolAutoRunsAndDrawsAsARead(t *testing.T) {
 		t.Fatalf("a server call's row kind = %v", got)
 	}
 }
+
+// A server that stopped answering reaches the screen at the boundary after
+// it happened, not inside the round where nothing can be redrawn: the rail's
+// row is restated and the transcript carries a line saying what was lost.
+func TestRefreshMCP_ARestateGreysTheRailAndSaysWhatWasLost(t *testing.T) {
+	moved := true
+	restated := 0
+	m := frameModel(t, 130, 40).
+		WithToolDefinitions([]ToolTokens{{Name: "read_file"}, {Name: "docs__search"}}).
+		WithMCP(MCP{
+			Has:     func(name string) bool { return name == "docs__search" },
+			Sources: []components.InspectorToolSource{{Name: "docs", State: components.ToolSourceUp, Note: "1 tool"}},
+			Refresh: func() bool { return moved },
+			Restate: func() ([]components.InspectorToolSource, []string) {
+				restated++
+				return []components.InspectorToolSource{
+					{Name: "docs", State: components.ToolSourceFailed, Note: "stopped answering"},
+				}, []string{"mcp: docs: stopped answering — its tools are not in this session any more"}
+			},
+		})
+
+	m.refreshMCP()
+	if restated != 1 {
+		t.Fatalf("the surface read the servers %d times", restated)
+	}
+	if got := m.mcp.Sources; len(got) != 1 || got[0].State != components.ToolSourceFailed {
+		t.Fatalf("the rail's row = %+v", got)
+	}
+	if n := len(m.transcript); n != 1 || m.transcript[0].kind != entrySystem ||
+		!strings.Contains(m.transcript[0].text, "stopped answering") {
+		t.Fatalf("transcript = %+v", m.transcript)
+	}
+	// The rail draws it as the failure it now is.
+	tools := m.inspectorTools()
+	if tools == nil || tools.Up != 1 || len(tools.Sources) != 2 ||
+		tools.Sources[1].State != components.ToolSourceFailed {
+		t.Fatalf("tools block = %+v", tools)
+	}
+
+	// A boundary where nothing moved costs nothing and says nothing.
+	moved = false
+	m.refreshMCP()
+	if restated != 1 || len(m.transcript) != 1 {
+		t.Fatalf("a quiet boundary restated %d times, transcript %d", restated, len(m.transcript))
+	}
+}
+
+// The turn's cancel and the quit both reach a server call in flight: a tool
+// executor is handed no context, so nothing else can stop one.
+func TestAbandonMCPCalls_RunsOnTheCancelAndTheQuit(t *testing.T) {
+	for _, c := range []struct {
+		name string
+		act  func(*Model)
+	}{
+		{"the turn's cancel", func(m *Model) { m.cancelStreaming() }},
+		{"the quit", func(m *Model) { m.quitNow() }},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			abandoned := 0
+			m := frameModel(t, 130, 40).WithMCP(MCP{Abandon: func() { abandoned++ }})
+			c.act(&m)
+			if abandoned != 1 {
+				t.Fatalf("%s abandoned %d times", c.name, abandoned)
+			}
+		})
+	}
+	// A session with no servers takes the same path without a nil check at
+	// each call site.
+	m := frameModel(t, 130, 40)
+	m.cancelStreaming()
+	m.quitNow()
+}

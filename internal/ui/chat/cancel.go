@@ -128,6 +128,7 @@ func (m *Model) quitNow() tea.Cmd {
 	if m.abandonFetchWaits != nil {
 		m.abandonFetchWaits()
 	}
+	m.abandonMCPCalls()
 	if m.cancel != nil {
 		m.cancel()
 	}

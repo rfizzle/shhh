@@ -492,6 +492,9 @@ var settings = []Setting{
 		Key: "mcp.startup_timeout_seconds", Kind: KindInt, Default: "20",
 		Desc: "How long each MCP server has to connect and list its tools; one that has not answered is reported and left out.",
 	}, {
+		Key: "mcp.call_timeout_seconds", Kind: KindInt, Default: "120",
+		Desc: "How long one MCP tool call or resource read has to answer before the session gives it up; a server may override it with its own call_timeout_seconds.",
+	}, {
 		Key: "mcp.env_mask", Kind: KindBool, Default: "on",
 		Desc: "Keep variables whose names end in _KEY, _SECRET or _TOKEN out of the environment a stdio MCP server is started with, unless its own env declares one.",
 	},

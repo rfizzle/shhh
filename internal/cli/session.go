@@ -1201,6 +1201,10 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			Prompts:  mcpTools.Prompts,
 			Render:   mcpTools.Render,
 			Refresh:  mcpTools.Refresh,
+			Restate: func() ([]components.InspectorToolSource, []string) {
+				return mcpToolSources(mcpTools), mcpDeathNotes(mcpTools.Deaths())
+			},
+			Abandon: mcpTools.AbandonCalls,
 		})
 	}
 	if len(gatedPreviews) > 0 {

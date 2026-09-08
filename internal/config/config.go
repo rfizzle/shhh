@@ -212,6 +212,14 @@ type MCPConfig struct {
 	// (default 20). A server that has not answered by then is reported and
 	// left out; the session starts without it.
 	StartupTimeoutSeconds int `toml:"startup_timeout_seconds"`
+	// CallTimeoutSeconds bounds one tool call or resource read on any
+	// server that did not name its own (default 120). It is separate from
+	// the startup bound because a connect either happens at once or is a
+	// server that will not start, while a call is work: a session with a
+	// slow tool raises this one and leaves the other alone. A prompt is
+	// not one of these — a person is sitting on the command they typed,
+	// and it has a much shorter bound of its own.
+	CallTimeoutSeconds int `toml:"call_timeout_seconds"`
 	// EnvMask keeps the variables that hold a credential by convention out
 	// of the environment a stdio server is started with. Unset means on:
 	// a server is a program someone else wrote, and the one it names by
@@ -254,6 +262,11 @@ type MCPServer struct {
 	Disabled bool `toml:"disabled,omitempty"`
 	// TimeoutSeconds overrides the startup timeout for this server.
 	TimeoutSeconds int `toml:"timeout_seconds,omitempty"`
+	// CallTimeoutSeconds bounds one request to this server, overriding
+	// mcp.call_timeout_seconds. A number written here is the person saying
+	// this server is the slow one, so it wins over the session's default
+	// rather than the other way round.
+	CallTimeoutSeconds int `toml:"call_timeout_seconds,omitempty"`
 }
 
 // SecretsConfig names the values the model may use but never see. Only

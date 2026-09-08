@@ -1225,8 +1225,19 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// existed.
 	// See docs/capabilities/headless.md#what-a-signal-does-to-a-run.
 	stopSignals := interruptOnSignal(h.Interrupt)
+	// The turn boundary, which is where the TUI takes a server's re-listing
+	// too: a list-changed notification that arrived while the session was
+	// still assembling is applied before the first round rather than parked
+	// for a session that has no later boundary
+	// (docs/capabilities/mcp.md#a-server-may-change-what-it-offers).
+	mcpTurnBoundary(session.mcpTools)
 	final, err := h.Run(initialPrompt)
 	stopSignals()
+	// And again on the other side of it, because an unattended run is one
+	// turn: a server that went mid-run has no later boundary to be said at,
+	// and stderr is where this run's other diagnostics are
+	// (docs/capabilities/mcp.md#a-server-that-dies-is-noticed).
+	mcpTurnBoundary(session.mcpTools)
 	// Past here the record and the stream belong to the shutdown below, and
 	// a reading still out is on its own.
 	lateMu.Lock()

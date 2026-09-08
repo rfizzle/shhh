@@ -3,6 +3,7 @@ package cli
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/mcp"
@@ -271,5 +272,72 @@ func TestMCPRowAndShowSayWhatIsNotRegistered(t *testing.T) {
 	if listing := mcpListing(&mcp.Toolset{Reports: []mcp.Report{rep}}, nil, ""); !strings.Contains(listing, "3 tools") ||
 		strings.Contains(listing, "not registered") {
 		t.Errorf("a server with no selection reads as partly registered:\n%s", listing)
+	}
+}
+
+// A server that stopped answering mid-session is a line in the same shape a
+// server that never started gets: what became of it, then what it costs.
+func TestMCPDeathNotesSayWhatTheSessionLost(t *testing.T) {
+	got := mcpDeathNotes([]mcp.Death{
+		{Name: "gh", Reason: "server gh: call list_prs: connection closed\n  at line 2"},
+		{Name: "docs", Reason: "server docs: read docs://a: EOF"},
+	})
+	want := []string{
+		"mcp: gh: stopped answering (server gh: call list_prs: connection closed) — its tools are not in this session any more",
+		"mcp: docs: stopped answering (server docs: read docs://a: EOF) — its tools are not in this session any more",
+	}
+	if len(got) != len(want) {
+		t.Fatalf("notes = %#v", got)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("note %d =\n%s\nwant\n%s", i, got[i], want[i])
+		}
+	}
+	if notes := mcpDeathNotes(nil); notes != nil {
+		t.Errorf("a session that lost nothing says nothing: %#v", notes)
+	}
+}
+
+// The per-server call bound reaches the definition, and the session's own
+// fills in for the servers that did not name one.
+func TestMCPCallTimeoutReachesTheDefinitionAndTheOptions(t *testing.T) {
+	cfg := config.Config{MCP: config.MCPConfig{
+		CallTimeoutSeconds: 45,
+		Servers: map[string]config.MCPServer{
+			"slow":  {Command: "npx", CallTimeoutSeconds: 600},
+			"plain": {Command: "npx"},
+		},
+	}}
+	got := map[string]time.Duration{}
+	for _, d := range mcpDefinitions(cfg) {
+		got[d.Name] = d.CallTimeout
+	}
+	if got["slow"] != 10*time.Minute {
+		t.Errorf("a server's own bound = %s", got["slow"])
+	}
+	if got["plain"] != 0 {
+		t.Errorf("a server that named none carries %s rather than the session's answer", got["plain"])
+	}
+	if opts := mcpOptions(cfg, false); opts.CallTimeout != 45*time.Second {
+		t.Errorf("the session's bound = %s", opts.CallTimeout)
+	}
+	if opts := mcpOptions(config.Config{}, false); opts.CallTimeout != 0 {
+		t.Errorf("an unset key must leave the package's own default standing: %s", opts.CallTimeout)
+	}
+}
+
+// A boundary where nothing moved says nothing at all: the drivers cross one
+// on every turn, and a line per turn about servers that are all fine is
+// noise on the stream a run's real diagnostics are read from.
+func TestMCPTurnBoundaryIsSilentWhenNothingMoved(t *testing.T) {
+	done := captureStderr(t)
+	// A nil toolset is a session that opened no servers, and an empty one a
+	// session whose servers are all still there. Both are crossed on every
+	// turn of every headless run.
+	mcpTurnBoundary(nil)
+	mcpTurnBoundary(&mcp.Toolset{})
+	if said := done(); said != "" {
+		t.Fatalf("a quiet boundary wrote %q", said)
 	}
 }

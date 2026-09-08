@@ -295,6 +295,62 @@ on the person. Asking about one server alone prints what it said about
 itself and everything it offers: its tools, its prompts as the commands they
 became, and its resources by uri.
 
+## A server that dies is noticed
+
+A server that answered the handshake can still go: the process crashes, the
+package the person is developing is rebuilt underneath it, the machine at the
+far end of a remote transport goes away. What happens next used to be the
+worst version of it — the model calls a tool of that server, waits, gets a
+transport error it cannot read anything into, and calls it again, which costs
+a round each time and, for a server nobody marked read-only, an approval card
+in front of a person who has no idea why they are being asked.
+
+So the first request that meets a dead transport marks the server, and every
+request after it is answered on the spot without touching the pipe. What the
+model reads is not the transport's words but what to do about them: the
+server is no longer running, its tools are unavailable for the rest of this
+session, do what you can without them and say what could not be done.
+
+The distinction that decides this is the protocol's own and never a reading
+of a message. A live server that dislikes a request answers with an error,
+and a tool that fails is a result that says so — both mean the server is
+there. What marks a server is a transport that will not carry another
+request.
+
+Nothing reconnects. A server that died mid-session took its state with it,
+and a session that quietly started a second process would be answering with a
+different server than the one the person configured; the next session starts
+it again. The tools stay registered for the same kind of reason a catalog
+never shrinks mid-session: the model was told about them, and a name that
+simply vanished would come back as an unknown tool instead of the sentence
+that says what happened.
+
+The session says so once, at the next round boundary: the server's row in the
+rail greys out with the tools it took with it, the listing's row carries the
+reason, and a line joins the transcript beside the ones a server that never
+started at all would have printed. Once, and not at every boundary after
+that — a notice nobody can act on is wallpaper.
+
+## A call that hangs can be given up
+
+A call to a server is the one request in a session that nothing else can
+stop. The model asks for a tool by name and arguments; there is no context
+travelling with it to cancel, so a server that accepts a call and then never
+answers holds the turn for as long as the bound allows, with the interrupt
+doing nothing.
+
+Two things end it. Every call runs under a timeout — the session's
+`call_timeout_seconds`, or a number written against the one server that is
+genuinely slow — and what comes back names the server, the tool and the bound
+it passed, because "the context was cancelled" tells a model nothing it can
+act on and tells the person reading the transcript less. And the turn's own
+cancel reaches every call in flight: pressing the interrupt gives them up
+where it gives up a paced fetch's wait, rather than leaving the session to
+sit out a timeout for an answer nobody is waiting for any more.
+
+Neither marks the server. A call this session gave up on says nothing about
+whether the server is still there, so the next one is tried the ordinary way.
+
 ## Related
 
 - [`skills.md`](skills.md) — the same leniency about files, the same rule

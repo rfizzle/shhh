@@ -255,6 +255,10 @@ func (m *Model) cancelStreaming() {
 	if m.abandonFetchWaits != nil {
 		m.abandonFetchWaits()
 	}
+	// And a server call, for the same reason and one step further out: the
+	// executor was handed no context, so without this the cancel leaves a
+	// request to a hung server running until its own timeout (mcp.go).
+	m.abandonMCPCalls()
 	for _, tc := range m.agent.CancelTurn() {
 		m.appendEntry(entry{kind: entryTool, toolName: tc.Name, toolArgs: tc.Arguments, toolResult: cancelledToolResult})
 	}

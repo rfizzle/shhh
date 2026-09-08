@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -154,6 +155,13 @@ type Server struct {
 	// announces three changes in a second costs one round trip rather than
 	// three.
 	listing bool
+	// dead is why the transport stopped answering, set once and never
+	// cleared: a server that died stays dead for the session
+	// (docs/capabilities/mcp.md#a-server-that-dies-is-noticed). deadTaken
+	// says the death has been handed to a round boundary, so the notice is
+	// raised once rather than at every boundary for the rest of the run.
+	dead      string
+	deadTaken bool
 }
 
 // Dial starts or reaches the server the definition names, runs the
@@ -553,6 +561,99 @@ func (s *Server) liveSession() *sdk.ClientSession {
 	return s.session
 }
 
+// Death is one server that stopped answering while the session was using
+// it, and why. It is a value rather than a sentence because the sentence
+// belongs to the surface that prints it, beside the ones it prints for a
+// server that never started.
+type Death struct {
+	Name   string
+	Reason string
+}
+
+// transportFailure reports whether an error from a request means the
+// connection is gone rather than that the server answered badly. The
+// distinction is the SDK's own and not a reading of any message: a live
+// server refuses a bad request with a JSON-RPC error, and a tool that fails
+// is a result with IsError set, neither of which is one of these. What is
+// left is a transport that will not carry another request — the SDK's
+// ErrConnectionClosed, and the read error a connection retires the calls
+// still out with when its reader stops, which for an `npx` server whose
+// process exited is io.EOF.
+//
+// The session's own deadline and its cancel are neither: they arrive as
+// context errors, and a call this session gave up on says nothing about
+// whether the server is still there.
+func transportFailure(err error) bool {
+	return err != nil && (errors.Is(err, sdk.ErrConnectionClosed) ||
+		errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF))
+}
+
+// markDead records that the transport is gone and ends the session, so
+// every later request gets the cheap answer here instead of a round trip
+// into a pipe with nothing at the far end. Reconnecting is deliberately not
+// attempted: a server that died mid-session took its state with it, and a
+// session that silently started a second process would be answering with a
+// different server than the one the person configured
+// (docs/capabilities/mcp.md#a-server-that-dies-is-noticed).
+func (s *Server) markDead(reason string) {
+	s.mu.Lock()
+	if s.dead == "" {
+		s.dead = reason
+	}
+	session := s.session
+	s.session = nil
+	s.mu.Unlock()
+	if session != nil {
+		_ = session.Close()
+	}
+	// The orderly close above reaches a process that is still there — a
+	// server whose pipe broke but whose process did not — and nothing else
+	// ever will, because the toolset's own Close skips a server with no
+	// session.
+	s.kill()
+}
+
+// Dead is why this server stopped answering, or "" while it is alive.
+func (s *Server) Dead() string {
+	if s == nil {
+		return ""
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.dead
+}
+
+// takeDeath hands the death to a round boundary, once. It is the same
+// shape as takePending and for the same reason: the notice belongs to the
+// boundary after it happened, not to every boundary after that.
+func (s *Server) takeDeath() (Death, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.dead == "" || s.deadTaken {
+		return Death{}, false
+	}
+	s.deadTaken = true
+	return Death{Name: s.Definition.Name, Reason: s.dead}, true
+}
+
+// closedErr is what a request on a server with no session gets. A server
+// that died says so and says what to do about it: the model is about to
+// call the same tool again, and each attempt is a round and, for a server
+// nobody marked read-only, an approval card in front of a person. A
+// session that is simply closing is the ordinary end of a run and needs no
+// instructions.
+func (s *Server) closedErr() error {
+	s.mu.Lock()
+	dead := s.dead
+	s.mu.Unlock()
+	if dead == "" {
+		return fmt.Errorf("server %s: closed", s.Definition.Name)
+	}
+	return fmt.Errorf("server %s is no longer running; its tools are unavailable for the rest of this session. "+
+		"Do not call them again: do what you can without them, and say in your answer what could not be done.\n%s",
+		s.Definition.Name, dead)
+}
+
 func (s *Server) toolFrom(t *sdk.Tool, taken map[string]bool) Tool {
 	schema, err := json.Marshal(t.InputSchema)
 	if err != nil || len(schema) == 0 || string(schema) == "null" {
@@ -670,11 +771,11 @@ func (s *Server) Call(ctx context.Context, tool Tool, args json.RawMessage) (str
 	}
 	session := s.liveSession()
 	if session == nil {
-		return "", fmt.Errorf("server %s: closed", s.Definition.Name)
+		return "", s.closedErr()
 	}
 	res, err := session.CallTool(ctx, &sdk.CallToolParams{Name: tool.Remote, Arguments: arguments})
 	if err != nil {
-		return "", s.wrapErr("call "+tool.Remote, err)
+		return "", s.noticeIfDead("call "+tool.Remote, err)
 	}
 	text := Flatten(res)
 	if res.IsError {
@@ -694,11 +795,11 @@ func (s *Server) Call(ctx context.Context, tool Tool, args json.RawMessage) (str
 func (s *Server) Render(ctx context.Context, p Prompt, args map[string]string) (string, error) {
 	session := s.liveSession()
 	if session == nil {
-		return "", fmt.Errorf("server %s: closed", s.Definition.Name)
+		return "", s.closedErr()
 	}
 	res, err := session.GetPrompt(ctx, &sdk.GetPromptParams{Name: p.Remote, Arguments: args})
 	if err != nil {
-		return "", s.wrapErr("get prompt "+p.Remote, err)
+		return "", s.noticeIfDead("get prompt "+p.Remote, err)
 	}
 	return FlattenPrompt(res), nil
 }
@@ -710,11 +811,11 @@ func (s *Server) Render(ctx context.Context, p Prompt, args map[string]string) (
 func (s *Server) Read(ctx context.Context, uri string) (string, error) {
 	session := s.liveSession()
 	if session == nil {
-		return "", fmt.Errorf("server %s: closed", s.Definition.Name)
+		return "", s.closedErr()
 	}
 	res, err := session.ReadResource(ctx, &sdk.ReadResourceParams{URI: uri})
 	if err != nil {
-		return "", s.wrapErr("read "+uri, err)
+		return "", s.noticeIfDead("read "+uri, err)
 	}
 	return FlattenResource(res), nil
 }
@@ -847,17 +948,45 @@ func byteCount(n int) string {
 	return fmt.Sprintf("%d B", n)
 }
 
+// noticeIfDead is what every request that failed goes through: a transport
+// that has gone marks the server dead here, once, whichever request found
+// out — the tool call, the resource read or the prompt render — and every
+// one of them then answers with the same sentence. Anything else is the
+// server's own refusal and is reported as the step that failed.
+func (s *Server) noticeIfDead(step string, err error) error {
+	if !transportFailure(err) {
+		return s.wrapErr(step, err)
+	}
+	s.markDead(s.stepErr(step, err).Error())
+	return s.closedErr()
+}
+
 // wrapErr names the server and the step, and appends what a stdio server
 // wrote to stderr — for a server that would not start, that is usually the
 // whole answer.
 func (s *Server) wrapErr(step string, err error) error {
-	msg := fmt.Sprintf("server %s: %s: %v", s.Definition.Name, step, err)
+	return fmt.Errorf("server %s: %w", s.Definition.Name, s.stepErr(step, err))
+}
+
+// stepErr is the same failure without the server's name in front of it: the
+// step, the cause, and the stderr tail. It is what a death is remembered as,
+// because every surface that prints one names the server itself — the rail's
+// row, the listing's row, the session's note and the sentence the model
+// reads all lead with it, and a reason that led with it too would say
+// "server gh: server gh: call …".
+//
+// The cause is wrapped rather than printed. What the caller matches on is
+// what it decided itself — its own deadline, its own cancel — and a wrap
+// that flattened the chain would leave it reading the sentence back out of a
+// string to tell a timeout from a person pressing the interrupt.
+func (s *Server) stepErr(step string, err error) error {
+	tail := ""
 	if s.stderr != nil {
-		if tail := s.stderr.String(); tail != "" {
-			msg += "\n" + tail
+		if t := s.stderr.String(); t != "" {
+			tail = "\n" + t
 		}
 	}
-	return fmt.Errorf("%s", msg)
+	return fmt.Errorf("%s: %w%s", step, err, tail)
 }
 
 // kill ends a stdio server's process if it was started. Close is the
