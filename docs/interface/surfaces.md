@@ -111,6 +111,16 @@ Highlighting is the session's own and the diff colouring layers over it, so a
 diff in a card and a diff in the transcript are the same object at different
 sizes.
 
+The layering has a direction. On a changed line the verdict carries the
+ground: the marker, the ordinary text and the glue between the words all read
+as added or removed, and what the register keeps is the tones that name
+something — a keyword, a value, the identifiers a reader scans a diff for. A
+context line states no verdict, so it takes the register whole. The line
+number is chrome on every kind of line, so a number is never read as a second
+statement about the line it counts. None of that is the terminal's to settle:
+the same edit at any width, in either the unified or the paired layout, states
+the same verdict in the same colour.
+
 The same view backs the edit approval card — what you are approving is what
 you will see afterwards.
 

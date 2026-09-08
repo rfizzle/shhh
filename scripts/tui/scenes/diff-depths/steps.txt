@@ -1,0 +1,54 @@
+# One applied edit opened to each of its three depths
+# (docs/interface/surfaces.md#the-diff-view). The row, the change in place
+# under it, and the whole screen: the picture is looked at for the one thing
+# the cells cannot carry, which is that the added and removed lines read as
+# added and removed at every one of the three, with the file's own syntax
+# inside them and the line numbers standing out of them as chrome.
+#
+# 130 columns, because that is where the full-screen depth is the paired
+# layout rather than the unified one — the width that used to decide whether
+# a reader got any syntax at all.
+#
+# Spaces rather than tabs in the fixture: a tab is re-expanded by the
+# terminal against the pane's own columns, not the row's, and the capture
+# would read as a column that drifted.
+setup printf 'package agent\n\nconst limit = 25\n\nfunc round(a *Agent) error {\n    if a.round >= limit {\n        return ErrRoundLimit\n    }\n    a.round++\n    return nil\n}\n' > loop.go
+setup printf 'The cap is read from one place.\n' > notes.md
+snap 01-start "Some things worth doing first"
+keys "raise the round cap" Enter
+# The edit is gated, so the card is what the turn stops on, and the card is
+# already the first of the three depths: the same body the row opens to.
+# The answer waits out the card's grace window and hands the keyboard over
+# before pressing, because a letter that arrives while the draft still holds
+# the keyboard goes into the draft.
+snap 02-card "RoundsExhausted"
+sleep 1
+keys C-Space
+sleep 0.3
+keys y
+# The first depth: the edit closed to one row on the grid, its counts beside
+# the path.
+snap 03-row "The cap is where the file says it is"
+keys C-o
+snap 04-reading "row 5 of 5"
+# The cursor lands on the row most recently put on the pane, so it walks up
+# the pane to the edit — three rows, in the mode's own movement key.
+keys k k k
+snap 05-on-the-edit "row 2 of 5"
+# The second depth: the change in place under the row it was opened from,
+# indented, bounded to the lines the transcript can spare.
+keys Enter
+snap 06-in-place "@@ -4,7 +4,7 @@"
+# The third: the whole screen, and at this width the paired layout.
+keys Enter
+snap 07-full-screen "[j/k] scroll"
+# Esc steps back a depth rather than destroying anything, twice over.
+keys Escape
+sleep 0.3
+snap 08-back-in-place "@@ -4,7 +4,7 @@"
+keys Escape
+sleep 0.3
+keys C-c
+snap 09-quit-armed "press again to quit"
+keys C-c
+snap 10-exit "that is everything the screen was holding"

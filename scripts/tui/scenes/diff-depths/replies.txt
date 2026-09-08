@@ -1,0 +1,15 @@
+# One reply per request. The last line repeats once these run out.
+# One turn that reads a file and edits it, so the transcript is left holding
+# an applied edit the reader can open to each of its three depths. The edit
+# replaces a return with a longer one on purpose: the added line carries a
+# keyword, a name and two values, which is the register the verdict has to
+# layer over (docs/interface/surfaces.md#the-diff-view).
+tool:read_file:{"path":"loop.go"}
+tool:edit_file:{"path":"loop.go","old_text":"        return ErrRoundLimit","new_text":"        return &RoundsExhausted{Round: a.round, Max: limit}"}
+# The session asks the model on its own account over a turn this long — once
+# to title the conversation, once to take its own reading of the run — and
+# each takes the next reply written here. A spare read costs one more row and
+# leaves every row below in the same order; a prose line here would end the
+# turn before the edit landed.
+tool:read_file:{"path":"notes.md"}
+The cap is where the file says it is.

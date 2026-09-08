@@ -6,6 +6,9 @@ import (
 	"testing"
 
 	"github.com/alecthomas/chroma/v2"
+	"github.com/charmbracelet/colorprofile"
+	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -203,4 +206,82 @@ func TestSyntaxRegister_ResolvesThroughTheTypeHierarchy(t *testing.T) {
 			t.Errorf("%v should be left to the diff kind's colour", unclaimed)
 		}
 	}
+}
+
+// The width decides the layout and nothing else. A reader who opens the same
+// edit in a 130-column terminal and in a 110-column one gets the same verdict
+// in the same colour on every line, even though one of them is the paired
+// layout and the other the unified one
+// (docs/interface/surfaces.md#the-diff-view).
+func TestDiffColouring_TheTerminalsWidthDecidesTheLayoutAndNotTheColour(t *testing.T) {
+	was := components.Profile()
+	components.SetProfile(colorprofile.ANSI256)
+	t.Cleanup(func() { components.SetProfile(was) })
+
+	hunks := []diff.Hunk{{
+		OldStart: 12, OldCount: 3, NewStart: 12, NewCount: 3,
+		Lines: []diff.Line{
+			{Kind: diff.Context, Text: "func retryAfter(h http.Header) time.Duration {", OldNo: 12, NewNo: 12},
+			{Kind: diff.Del, Text: "\treturn 30 * time.Second", OldNo: 13},
+			{Kind: diff.Add, Text: "\treturn parseSeconds(h.Get(\"Retry-After\"))", NewNo: 13},
+		},
+	}}
+	view := func(width int) string {
+		d := &components.DiffView{
+			Path: "internal/provider/retry.go", Verb: "edit", Hunks: hunks,
+			Mode: components.DiffFull, Height: 12,
+			Syntax: diffSyntax("internal/provider/retry.go"),
+		}
+		return d.View(width)
+	}
+	paired, unified := view(130), view(110)
+	if !strings.Contains(ansi.Strip(paired), " │ ") || strings.Contains(ansi.Strip(unified), " │ ") {
+		t.Fatal("130 columns is the paired layout and 110 the unified one")
+	}
+	// One probe per rung of the register plus the ground of each kind of
+	// line, so the claim is about the whole body and not one word of it.
+	for _, word := range []string{
+		"func", "retryAfter", "http", "return", "30", "parseSeconds", "Retry-After",
+	} {
+		got, want := toneIn(t, paired, word), toneIn(t, unified, word)
+		if got == "" {
+			t.Fatalf("%q is painted by nothing at all", word)
+		}
+		if got != want {
+			t.Fatalf("%q reads %q at 130 columns and %q at 110", word, got, want)
+		}
+	}
+}
+
+// toneIn is the escape the first run carrying want was opened with.
+func toneIn(t *testing.T, rendered, want string) string {
+	t.Helper()
+	open := ""
+	var text strings.Builder
+	for i := 0; i < len(rendered); {
+		if rendered[i] != '\x1b' {
+			text.WriteByte(rendered[i])
+			i++
+			continue
+		}
+		if strings.Contains(text.String(), want) {
+			return open
+		}
+		text.Reset()
+		j := i
+		for j < len(rendered) && rendered[j] != 'm' {
+			j++
+		}
+		if seq := rendered[i:min(j+1, len(rendered))]; seq == "\x1b[m" || seq == "\x1b[0m" {
+			open = ""
+		} else {
+			open = seq
+		}
+		i = j + 1
+	}
+	if strings.Contains(text.String(), want) {
+		return open
+	}
+	t.Fatalf("no run carries %q", want)
+	return ""
 }

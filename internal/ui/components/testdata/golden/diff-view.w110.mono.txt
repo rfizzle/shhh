@@ -47,24 +47,24 @@ diff · [j/k] scroll · [n/p] hunk · [s] side-by-side · [esc] back
 · mode · expanded (bounded body)
   ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254medit␛[m    ␛[38;5;254minternal/agent/loop.go␛[m                                                       ␛[38;5;254m+2␛[m ␛[38;5;254m−1␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 hunk␛[m
     ␛[38;5;254m@@ -138,6 +138,7 @@␛[m
-    ␛[38;5;244m  138      for round := 0; ; round++ {␛[m
-    ␛[38;5;244m  139          if round >= a.maxRounds {␛[m
-    ␛[38;5;254m- 140              return results, nil␛[m
-    ␛[38;5;254m+ 140              return results, ErrRoundLimit␛[m
-    ␛[38;5;254m+ 141          }␛[m
-    ␛[38;5;244m  142          }␛[m
-    ␛[38;5;244m  143      }␛[m
+    ␛[38;5;244m  138  ␛[m␛[38;5;244m    for round := 0; ; round++ {␛[m
+    ␛[38;5;244m  139  ␛[m␛[38;5;244m        if round >= a.maxRounds {␛[m
+    ␛[38;5;254m-␛[m␛[38;5;244m 140  ␛[m␛[38;5;254m            return results, nil␛[m
+    ␛[38;5;254m+␛[m␛[38;5;244m 140  ␛[m␛[38;5;254m            return results, ErrRoundLimit␛[m
+    ␛[38;5;254m+␛[m␛[38;5;244m 141  ␛[m␛[38;5;254m        }␛[m
+    ␛[38;5;244m  142  ␛[m␛[38;5;244m        }␛[m
+    ␛[38;5;244m  143  ␛[m␛[38;5;244m    }␛[m
 
 · mode · full screen
  internal/agent/loop.go                                                                         ␛[38;5;254m+2␛[m ␛[38;5;254m−1␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 hunk␛[m
 ␛[38;5;254m@@ -138,6 +138,7 @@␛[m
-␛[38;5;244m  138      for round := 0; ; round++ {␛[m
-␛[38;5;244m  139          if round >= a.maxRounds {␛[m
-␛[38;5;254m- 140              return results, nil␛[m
-␛[38;5;254m+ 140              return results, ErrRoundLimit␛[m
-␛[38;5;254m+ 141          }␛[m
-␛[38;5;244m  142          }␛[m
-␛[38;5;244m  143      }␛[m
+␛[38;5;244m  138  ␛[m␛[38;5;244m    for round := 0; ; round++ {␛[m
+␛[38;5;244m  139  ␛[m␛[38;5;244m        if round >= a.maxRounds {␛[m
+␛[38;5;254m-␛[m␛[38;5;244m 140  ␛[m␛[38;5;254m            return results, nil␛[m
+␛[38;5;254m+␛[m␛[38;5;244m 140  ␛[m␛[38;5;254m            return results, ErrRoundLimit␛[m
+␛[38;5;254m+␛[m␛[38;5;244m 141  ␛[m␛[38;5;254m        }␛[m
+␛[38;5;244m  142  ␛[m␛[38;5;244m        }␛[m
+␛[38;5;244m  143  ␛[m␛[38;5;244m    }␛[m
 
 
 

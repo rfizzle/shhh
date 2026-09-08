@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 
+	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/colorprofile"
 	"github.com/rfizzle/shhh/internal/diff"
 )
 
@@ -312,5 +314,192 @@ func TestDiffView_TheAccountGivesWayToThePath(t *testing.T) {
 	// what the closed one said.
 	if !strings.Contains(stripANSI(d.ExpandedLines(120)[0]), "auto-allowed · auto mode") {
 		t.Fatalf("the expanded head keeps the account:\n%s", d.ExpandedLines(120)[0])
+	}
+}
+
+// paintedRuns splits a rendered row into the styled runs it is made of: the
+// escape each run was opened with, and the text under it. It is how these
+// tests read a colour assignment — the columns are stripANSI's business.
+func paintedRuns(s string) [][2]string {
+	var runs [][2]string
+	open := ""
+	var text strings.Builder
+	flush := func() {
+		if text.Len() > 0 {
+			runs = append(runs, [2]string{open, text.String()})
+			text.Reset()
+		}
+	}
+	for i := 0; i < len(s); {
+		if s[i] != '\x1b' {
+			text.WriteByte(s[i])
+			i++
+			continue
+		}
+		j := i
+		for j < len(s) && s[j] != 'm' {
+			j++
+		}
+		flush()
+		if seq := s[i:min(j+1, len(s))]; seq == "\x1b[m" || seq == "\x1b[0m" {
+			open = ""
+		} else {
+			open = seq
+		}
+		i = j + 1
+	}
+	flush()
+	return runs
+}
+
+// toneOf is the escape the first run carrying want was opened with.
+func toneOf(t *testing.T, rendered, want string) string {
+	t.Helper()
+	for _, run := range paintedRuns(rendered) {
+		if strings.Contains(run[1], want) {
+			return run[0]
+		}
+	}
+	t.Fatalf("no run carries %q:\n%s", want, strings.ReplaceAll(rendered, "\x1b", "^["))
+	return ""
+}
+
+// styleTone is the escape a style opens with, to compare a rendering against.
+func toneFor(style lipgloss.Style) string { return paintedRuns(style.Render("x"))[0][0] }
+
+// tokenTone is the same for a bare palette token, which is how a syntax
+// segment names its colour.
+func tokenTone(tok Token) string {
+	return toneFor(lipgloss.NewStyle().Foreground(tok.Color()))
+}
+
+// The gutter is chrome and the marker is the verdict: the line number carries
+// Dim whatever happened to the line, so it is never read as a second
+// statement about it, and the marker beside it keeps the line's own colour.
+func TestUnifiedLines_TheNumberIsChromeAndTheMarkerIsTheVerdict(t *testing.T) {
+	withColorProfile(t, colorprofile.ANSI256)
+	lines := UnifiedLines(diff.Compute("return nil\n", "return err\n"), 80,
+		UnifiedOpts{LineNumbers: true})
+	del, add := lines[1], lines[2]
+
+	if got, want := toneOf(t, del, "-"), toneFor(sty.Del); got != want {
+		t.Fatalf("the deletion's marker carries Del, got %q", got)
+	}
+	if got, want := toneOf(t, add, "+"), toneFor(sty.Add); got != want {
+		t.Fatalf("the addition's marker carries Add, got %q", got)
+	}
+	for _, line := range []string{del, add} {
+		if got, want := toneOf(t, line, "1"), toneFor(sty.Dim); got != want {
+			t.Fatalf("the line number carries Dim, got %q in:\n%s", got, stripANSI(line))
+		}
+	}
+	if toneOf(t, del, "1") == toneOf(t, del, "return nil") {
+		t.Fatal("the number and the line it numbers must not read as one colour")
+	}
+}
+
+// registerSyntax is the syntax register in miniature — one word per rung — so
+// a test can say which of them a verdict takes over and which stand inside it.
+func registerSyntax(line string) []Segment {
+	tones := map[string]Token{
+		"//":   Palette.Dim,    // a comment recedes
+		"(":    Palette.Dimmer, // and so does the glue
+		"func": Palette.Info,   // structure
+		"9":    Palette.Accent, // a value
+		"8":    Palette.Accent,
+		"Run":  Palette.Bright, // a name the reader scans for
+	}
+	var segs []Segment
+	for _, field := range strings.SplitAfter(line, " ") {
+		seg := Segment{Text: field, Color: Palette.Body}
+		if tone, ok := tones[strings.TrimSuffix(field, " ")]; ok {
+			seg.Color = tone
+		}
+		segs = append(segs, seg)
+	}
+	return segs
+}
+
+// The verdict layers over the register rather than under it
+// (docs/interface/surfaces.md#the-diff-view). On a changed line the register's
+// receding rungs give way, so the line still reads as added or removed at a
+// glance; the tones that name something stand inside it.
+func TestUnifiedLines_TheVerdictCarriesAChangedLineUnderTheRegister(t *testing.T) {
+	withColorProfile(t, colorprofile.ANSI256)
+	hunks := diff.Compute("// func Run ( 9 ) name\n", "// func Run ( 8 ) name\n")
+	lines := UnifiedLines(hunks, 80, UnifiedOpts{Syntax: registerSyntax})
+	removed := lines[1]
+
+	for _, word := range []string{"//", "(", "name"} {
+		if got, want := toneOf(t, removed, word), toneFor(sty.Del); got != want {
+			t.Fatalf("the ground under %q is the verdict, got %q", word, got)
+		}
+	}
+	for _, stands := range []struct {
+		word string
+		tone Token
+	}{
+		{"func", Palette.Info},
+		{"Run", Palette.Bright},
+		{"9", Palette.Accent},
+	} {
+		if got, want := toneOf(t, removed, stands.word), tokenTone(stands.tone); got != want {
+			t.Fatalf("%q keeps the register's own tone, got %q", stands.word, got)
+		}
+	}
+}
+
+// A context line states no verdict, so it takes the register whole.
+func TestUnifiedLines_AContextLineTakesTheRegisterWhole(t *testing.T) {
+	withColorProfile(t, colorprofile.ANSI256)
+	hunks := diff.Compute("// func Run ( 9 ) name\nx\n", "// func Run ( 9 ) name\ny\n")
+	lines := UnifiedLines(hunks, 80, UnifiedOpts{Syntax: registerSyntax})
+	context := lines[1]
+	for _, kept := range []struct {
+		word string
+		tone Token
+	}{
+		{"//", Palette.Dim},
+		{"(", Palette.Dimmer},
+		{"name", Palette.Body},
+	} {
+		if got, want := toneOf(t, context, kept.word), tokenTone(kept.tone); got != want {
+			t.Fatalf("a context line keeps %q at its own rung, got %q", kept.word, got)
+		}
+	}
+}
+
+// Which layout a reader gets is the terminal's width talking; which register
+// the code is read in is the file's. Side by side carries the same syntax the
+// unified body does, and lays the verdict over it the same way.
+func TestDiffView_SideBySideKeepsTheSyntaxTheUnifiedBodyHas(t *testing.T) {
+	withColorProfile(t, colorprofile.ANSI256)
+	hunks := diff.Compute("// func Run ( 9 ) name\n", "// func Run ( 8 ) name\n")
+	d := &DiffView{Path: "loop.go", Hunks: hunks, Syntax: registerSyntax,
+		Mode: DiffFull, Height: 12}
+
+	unified := d.View(sideBySideMinWidth - 20)
+	paired := d.View(sideBySideMinWidth + 20)
+	if strings.Contains(stripANSI(unified), " │ ") || !strings.Contains(stripANSI(paired), " │ ") {
+		t.Fatal("the narrow view is the unified one and the wide view the paired one")
+	}
+	for _, word := range []string{"//", "func", "Run", "9", "name"} {
+		if got, want := toneOf(t, paired, word), toneOf(t, unified, word); got != want {
+			t.Fatalf("%q reads %q side by side and %q unified", word, got, want)
+		}
+	}
+	if got, want := toneOf(t, paired, "func"), tokenTone(Palette.Info); got != want {
+		t.Fatalf("the paired cell carries the register, got %q", got)
+	}
+
+	// A pane cell has no marker column, so a line number that fills the
+	// gutter is chrome all the way across it rather than reading as a digit
+	// of the verdict's own colour.
+	wide := &DiffView{Path: "loop.go", Mode: DiffFull, Height: 12, Hunks: []diff.Hunk{{
+		OldStart: 1200, OldCount: 1, NewStart: 1200, NewCount: 1,
+		Lines: []diff.Line{{Kind: diff.Del, Text: "name", OldNo: 1204}},
+	}}}
+	if got, want := toneOf(t, wide.View(sideBySideMinWidth+20), "1204"), toneFor(sty.Dim); got != want {
+		t.Fatalf("a four-digit number is chrome, got %q", got)
 	}
 }

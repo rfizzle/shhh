@@ -274,45 +274,73 @@ func (d *DiffView) ExpandedLines(width int) []string {
 	return lines
 }
 
+// kindStyles are the two styles a line of the given kind is drawn in: its own
+// colour, and that colour over the intraline emphasis ground.
+func kindStyles(kind diff.Kind) (style, emph lipgloss.Style) {
+	switch kind {
+	case diff.Add:
+		return sty.Add, sty.AddEmph
+	case diff.Del:
+		return sty.Del, sty.DelEmph
+	}
+	return sty.Context, sty.Context
+}
+
+// emphSpan is the intraline span to tint on this line, or nil. Tab expansion
+// shifts offsets, so only lines without tabs keep exact spans.
+func emphSpan(l diff.Line) *diff.Span {
+	if len(l.Emph) == 0 || strings.ContainsRune(l.Text, '\t') {
+		return nil
+	}
+	return &l.Emph[0]
+}
+
 // renderUnifiedLine renders one diff line: marker, optional line number, text
 // with tab expansion, syntax highlighting when available, and optional
 // intraline emphasis.
 func renderUnifiedLine(l diff.Line, width, numWidth int, opts UnifiedOpts) string {
 	marker := " "
-	style, emphStyle := sty.Context, sty.Context
 	switch l.Kind {
 	case diff.Add:
-		marker, style, emphStyle = "+", sty.Add, sty.AddEmph
+		marker = "+"
 	case diff.Del:
-		marker, style, emphStyle = "-", sty.Del, sty.DelEmph
+		marker = "-"
 	}
 
-	prefix := marker
+	number := ""
 	if numWidth > 0 {
 		no := l.NewNo
 		if l.Kind == diff.Del {
 			no = l.OldNo
 		}
-		prefix = fmt.Sprintf("%s %*d  ", marker, numWidth, no)
+		number = fmt.Sprintf(" %*d  ", numWidth, no)
 	}
 
-	text := strings.ReplaceAll(l.Text, "\t", "    ")
-	avail := width - lipgloss.Width(prefix)
-
-	// Tab expansion shifts offsets; only lines without tabs keep exact spans.
 	var span *diff.Span
-	if opts.Emphasis && len(l.Emph) > 0 && !strings.ContainsRune(l.Text, '\t') {
-		span = &l.Emph[0]
+	if opts.Emphasis {
+		span = emphSpan(l)
 	}
+	style, _ := kindStyles(l.Kind)
+	head, avail := paintGutter(marker, number, style, width)
+	return head + renderLineBody(l.Text, avail, l.Kind, span, opts.Syntax)
+}
 
-	if opts.Syntax != nil {
-		if out, ok := renderSyntaxLine(prefix, text, avail, l.Kind, span, opts.Syntax); ok {
-			return out
-		}
+// renderLineBody renders one line's text in the columns the gutter left it:
+// the register with the verdict layered over it where a highlighter is
+// available (renderSyntaxBody), and the verdict alone otherwise. It is the
+// body of a unified row and of one side-by-side cell alike, so the two
+// layouts state the same verdict in the same colour and only the columns
+// differ (docs/interface/surfaces.md#the-diff-view).
+func renderLineBody(raw string, avail int, kind diff.Kind, span *diff.Span, syntax Syntax) string {
+	text := strings.ReplaceAll(raw, "\t", "    ")
+	if body, ok := renderSyntaxBody(text, avail, kind, span, syntax); ok {
+		return body
 	}
-
+	style, emphStyle := kindStyles(kind)
+	var b strings.Builder
 	if span == nil {
-		return style.Render(Clip(prefix+text, width))
+		writeRun(&b, style, Clip(text, avail))
+		return b.String()
 	}
 
 	// Clip on the raw runes first, then apply the emphasis span within the
@@ -323,28 +351,94 @@ func renderUnifiedLine(l diff.Line, width, numWidth int, opts UnifiedOpts) strin
 		r = r[:avail-1]
 		clipped = true
 	}
-	s, e := min(span.Start, len(r)), min(span.End, len(r))
-	var b strings.Builder
-	b.WriteString(style.Render(prefix + string(r[:s])))
-	if e > s {
-		b.WriteString(emphStyle.Render(string(r[s:e])))
-	}
-	b.WriteString(style.Render(string(r[e:])))
+	s := min(span.Start, len(r))
+	e := max(min(span.End, len(r)), s)
+	writeRun(&b, style, string(r[:s]))
+	writeRun(&b, emphStyle, string(r[s:e]))
+	writeRun(&b, style, string(r[e:]))
 	if clipped {
 		b.WriteString(style.Render("…"))
 	}
 	return b.String()
 }
 
-// renderSyntaxLine renders the diff coloring layered over syntax highlighting
-// (docs/interface/surfaces.md#the-diff-view): the marker keeps the kind's
-// color, the line number is gray, the text keeps its syntax foregrounds, and
-// the emphasis span gets a background tint so syntax colors survive. ok=false
-// falls back to plain rendering when the segments don't reconstruct the line.
-func renderSyntaxLine(prefix, text string, avail int, kind diff.Kind, span *diff.Span, syntax Syntax) (string, bool) {
-	// Syntax colours come from a chroma theme, not from Palette, so mono mode
-	// cannot strip them — it declines them instead and the line renders with
-	// the plain +/- diff styling.
+// writeRun appends one styled run, and nothing at all for an empty one — a
+// style renders its escapes around no text otherwise, which costs the reader
+// of a capture more than it costs the terminal.
+func writeRun(b *strings.Builder, style lipgloss.Style, text string) {
+	if text == "" {
+		return
+	}
+	b.WriteString(style.Render(text))
+}
+
+// paintGutter draws a diff row's left edge and reports the columns left for
+// the code. The marker carries the line's verdict, because that is the glyph
+// the reading rests on
+// (docs/interface/principles.md#colour-never-carries-meaning-alone); the line
+// number beside it is chrome and carries Dim, so a number is never mistaken
+// for a second statement about the line
+// (docs/interface/surfaces.md#the-diff-view). A blank marker has no verdict
+// to carry, and a pane cell has no marker at all — both draw the gutter as
+// one run of chrome.
+func paintGutter(marker, number string, style lipgloss.Style, width int) (string, int) {
+	mark := Clip(marker, width)
+	num := Clip(number, width-lipgloss.Width(mark))
+	avail := width - lipgloss.Width(mark) - lipgloss.Width(num)
+	var b strings.Builder
+	if strings.TrimSpace(mark) == "" {
+		writeRun(&b, sty.Dim, mark+num)
+		return b.String(), avail
+	}
+	writeRun(&b, style, mark)
+	writeRun(&b, sty.Dim, num)
+	return b.String(), avail
+}
+
+// registerTone is how the syntax register and the diff's verdict layer
+// (docs/interface/surfaces.md#the-diff-view). It answers, for one segment's
+// tone on one kind of line, whether the register paints it or the line's own
+// colour does.
+//
+// A changed line has to read as added or removed at a glance, and the
+// register's receding rungs are exactly the tones that would take that
+// reading away from it: ordinary text, the glue between the words and a
+// comment are most of the characters on the line, and painting them grey
+// leaves a green marker in front of a grey line. So on a changed line those
+// three yield to the verdict, and the tones that name something — a keyword,
+// a value, the identifiers a reader scans a diff for — stand inside it. A
+// context line states no verdict, so it takes the register whole and an
+// unclaimed span recedes to the context grey with the rest of the line.
+func registerTone(t Token, kind diff.Kind) (Token, bool) {
+	if t == (Token{}) {
+		return Token{}, false
+	}
+	if kind == diff.Context {
+		return t, true
+	}
+	switch t {
+	case Palette.Body, Palette.Dimmer, Palette.Dim:
+		return Token{}, false
+	}
+	return t, true
+}
+
+// renderSyntaxBody renders one line's text with the diff colouring layered
+// over syntax highlighting (docs/interface/surfaces.md#the-diff-view): the
+// line's verdict carries the ground, the register's naming tones stand inside
+// it (registerTone), and the emphasis span gets a background tint so both
+// survive. The gutter is not its business — paintGutter draws that — so this
+// is the same body whether the row is a unified line or one side of a pair,
+// which is what keeps the two depths and the two layouts agreeing.
+//
+// ok=false falls back to plain rendering when the segments don't reconstruct
+// the line.
+func renderSyntaxBody(text string, avail int, kind diff.Kind, span *diff.Span, syntax Syntax) (string, bool) {
+	if syntax == nil {
+		return "", false
+	}
+	// Syntax colours are declined in mono rather than stripped: the +/- diff
+	// styling is already carrying the distinction that matters there.
 	if Mono() {
 		return "", false
 	}
@@ -370,12 +464,6 @@ func renderSyntaxLine(prefix, text string, avail int, kind diff.Kind, span *diff
 	}
 
 	var b strings.Builder
-	// The marker is ASCII, so byte slicing is safe.
-	b.WriteString(kindStyle.Render(prefix[:1]))
-	if len(prefix) > 1 {
-		b.WriteString(sty.Dim.Render(prefix[1:]))
-	}
-
 	limit := len([]rune(text))
 	clipped := false
 	if avail > 0 && limit > avail {
@@ -393,11 +481,8 @@ func renderSyntaxLine(prefix, text string, avail int, kind diff.Kind, span *diff
 			sr = sr[:limit-pos]
 		}
 		st := kindStyle
-		if kind == diff.Context {
-			st = lipgloss.NewStyle()
-		}
-		if seg.Color != (Token{}) {
-			st = lipgloss.NewStyle().Foreground(seg.Color.Color())
+		if tone, ok := registerTone(seg.Color, kind); ok {
+			st = lipgloss.NewStyle().Foreground(tone.Color())
 		}
 		s, e := 0, 0
 		if span != nil {
@@ -405,11 +490,14 @@ func renderSyntaxLine(prefix, text string, avail int, kind diff.Kind, span *diff
 			e = min(max(span.End-pos, 0), len(sr))
 		}
 		if e > s {
-			b.WriteString(st.Render(string(sr[:s])))
-			b.WriteString(st.Background(emphBg.Color()).Render(string(sr[s:e])))
-			b.WriteString(st.Render(string(sr[e:])))
-		} else if len(sr) > 0 {
-			b.WriteString(st.Render(string(sr)))
+			// The three runs are written only when they have something in
+			// them: an empty one still renders its escapes, and a golden
+			// fixture is read for its colour assignments.
+			writeRun(&b, st, string(sr[:s]))
+			writeRun(&b, st.Background(emphBg.Color()), string(sr[s:e]))
+			writeRun(&b, st, string(sr[e:]))
+		} else {
+			writeRun(&b, st, string(sr))
 		}
 		pos += len([]rune(seg.Text))
 	}
@@ -487,7 +575,7 @@ func (d *DiffView) fullBody(width int) []string {
 		case len(sec.hunks) == 0:
 			rows = append(rows, sty.Hint.Render("(no textual changes)"))
 		case sbs:
-			rows = append(rows, sideBySideHunks(sec.hunks, width)...)
+			rows = append(rows, sideBySideHunks(sec.hunks, width, sec.syntax)...)
 		default:
 			rows = append(rows, UnifiedLines(sec.hunks, width, UnifiedOpts{LineNumbers: true, Emphasis: true, Syntax: sec.syntax})...)
 		}
@@ -624,37 +712,42 @@ func pairHunkRows(h diff.Hunk) []pairedRow {
 
 // sideBySideHunks renders hunks as two panes separated by a divider;
 // truncated cells end with ….
-func sideBySideHunks(hunks []diff.Hunk, width int) []string {
+//
+// It takes the same highlighter the unified body does, because which of the
+// two layouts a reader is looking at is the terminal's width talking and the
+// register is the file's (docs/interface/surfaces.md#the-diff-view). A diff
+// that lost its syntax on the way past the side-by-side threshold would be
+// two different objects wearing one name.
+func sideBySideHunks(hunks []diff.Hunk, width int, syntax Syntax) []string {
 	pane := max((width-3)/2, 8)
 	divider := sty.Dim.Render(" │ ")
 	var out []string
 	for _, h := range hunks {
 		out = append(out, sty.Hunk.Render(Clip(h.Header(), width)))
 		for _, row := range pairHunkRows(h) {
-			out = append(out, padRight(sideCell(row.old, pane, true), pane)+divider+sideCell(row.new, pane, false))
+			out = append(out, padRight(sideCell(row.old, pane, true, syntax), pane)+divider+sideCell(row.new, pane, false, syntax))
 		}
 	}
 	return out
 }
 
-// sideCell renders one pane cell: line number plus text, styled by kind.
-func sideCell(l *diff.Line, width int, oldSide bool) string {
+// sideCell renders one pane cell: the line number in the gutter and the text
+// beside it, drawn by the same body the unified row uses — the cell's side
+// says added or removed, the number is chrome, and the register names what it
+// can inside the verdict.
+func sideCell(l *diff.Line, width int, oldSide bool, syntax Syntax) string {
 	if l == nil {
 		return ""
 	}
-	style := sty.Context
 	no := l.NewNo
 	if oldSide {
 		no = l.OldNo
 	}
-	switch l.Kind {
-	case diff.Add:
-		style = sty.Add
-	case diff.Del:
-		style = sty.Del
-	}
-	text := fmt.Sprintf("%4d  %s", no, strings.ReplaceAll(l.Text, "\t", "    "))
-	return style.Render(Clip(text, width))
+	style, _ := kindStyles(l.Kind)
+	// A pane has no marker column — which side a cell is on is what says
+	// added or removed — so the gutter is the number alone.
+	head, avail := paintGutter("", fmt.Sprintf("%4d  ", no), style, width)
+	return head + renderLineBody(l.Text, avail, l.Kind, emphSpan(*l), syntax)
 }
 
 // Scroll moves the full-screen body by delta rows, clamped to its bounds. It

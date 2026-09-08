@@ -664,7 +664,7 @@ func (v *ReviewView) hunkRows(f ReviewFile, width int) (rows []string, focus int
 	for i, h := range f.Hunks {
 		var lines []string
 		if sbs {
-			lines = sideBySideHunks([]diff.Hunk{h}, width)
+			lines = sideBySideHunks([]diff.Hunk{h}, width, f.Syntax)
 		} else {
 			lines = UnifiedLines([]diff.Hunk{h}, width,
 				UnifiedOpts{LineNumbers: true, Emphasis: true, Syntax: f.Syntax})

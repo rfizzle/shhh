@@ -1273,7 +1273,7 @@ func scrollFixture(n int) []entry {
 // claim: mono declines the register outright rather than collapsing it, so
 // the same body comes back in the plain +/- styling.
 func TestGolden_SyntaxRegister(t *testing.T) {
-	captureGolden(t, "syntax-register", "the diff body's syntax register", []int{80, 130}, func(width int) []golden.Panel {
+	captureGolden(t, "syntax-register", "the diff body's syntax register", goldenWidths, func(width int) []golden.Panel {
 		hunks := []diff.Hunk{{
 			OldStart: 12, OldCount: 5, NewStart: 12, NewCount: 6,
 			Lines: []diff.Line{
@@ -2217,7 +2217,7 @@ func TestGolden_MultiEditCard(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	captureGolden(t, "multi-edit-card", "three edits in one file, one decision", []int{80}, func(width int) []golden.Panel {
+	captureGolden(t, "multi-edit-card", "three edits in one file, one decision", goldenWidths, func(width int) []golden.Panel {
 		msgs := []provider.Message{
 			{Role: provider.RoleSystem, Content: "sys"},
 			{Role: provider.RoleUser, Content: "raise the round cap and check in on the way past"},
