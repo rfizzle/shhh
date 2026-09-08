@@ -2332,7 +2332,7 @@ func TestGolden_OnCloseGate(t *testing.T) {
 					Note: "all tracked in git",
 				},
 				// Read off the row above, the way the live close reads it.
-				Checks: turnChecksRow(m.transcript),
+				Checks: turnChecksRow(m.transcript, false),
 			}})
 			m.invalidateRenderCache()
 			return m.renderHistory()

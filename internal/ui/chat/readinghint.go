@@ -529,8 +529,18 @@ func (m Model) readingRowOffers() []components.KeyOffer {
 	if e, ok := m.focusedRoundPause(); ok {
 		return roundPauseOffers(e.pause)
 	}
-	if e, ok := m.focusedClose(); ok && e.close.Changes != nil {
-		return e.close.Changes.Keys
+	if e, ok := m.focusedClose(); ok {
+		// A close is one row to the cursor and several rows on the screen,
+		// so the bar carries what all of them offer: the changeset's keys
+		// and the checks row's, in the order they are drawn.
+		var offers []components.KeyOffer
+		if e.close.Changes != nil {
+			offers = append(offers, e.close.Changes.Keys...)
+		}
+		if e.close.Checks != nil {
+			offers = append(offers, e.close.Checks.Keys...)
+		}
+		return offers
 	}
 	if e, ok := m.focusedDrop(); ok {
 		return m.dropKeys(e.resume)

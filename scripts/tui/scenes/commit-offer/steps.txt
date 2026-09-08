@@ -1,0 +1,59 @@
+# The turn's close offers the commit, and the commit is a card
+# (docs/interface/surfaces.md#the-turns-close). The workspace is a repository
+# with one commit in it, one tracked file the turn edits, and one the reader
+# changed by hand and never staged — which is what the card's `leaves` row is
+# read for: the commit carries the turn's own work and nothing of theirs.
+#
+# The identity is repository-local because the pane runs under a home of its
+# own, so there is no global one for the commit to find.
+setup printf 'package agent\n\nconst limit = 25\n' > loop.go
+setup printf '# project\n' > README.md
+setup git add loop.go README.md
+setup git config user.email tui@shhh
+setup git config user.name tui
+setup git commit -q -m 'seed the repository'
+setup printf '# project\n\nnotes of my own\n' > README.md
+snap 01-start "Some things worth doing first"
+keys "cap rounds at the limit instead of erroring" Enter
+# The edit is gated, so the card is what the turn stops on. The answer waits
+# out the card's grace window and then hands the keyboard over before
+# pressing: a letter that arrives while the draft still holds the keyboard
+# goes into the draft.
+snap 02-edit-card "const limit = 50"
+sleep 1
+keys C-Space
+sleep 0.3
+keys y
+# The row the scene is for: review, keep, take back, with the keys grey
+# because the draft still has the keyboard and the chord that changes that
+# named beside them.
+snap 03-close "commit"
+keys C-o
+snap 04-reading "back to the prompt"
+# Reading mode opens on the last row of the turn, which is the reading the
+# session took of its own run; the close is one row above it.
+keys k
+sleep 0.3
+keys g
+snap 05-card "Commit this turn"
+# The message as a draft under its own rail, with the subject-line budget as
+# the frame's title. Esc comes back to the card with the edits kept.
+sleep 1
+keys e
+snap 06-message "COMMIT MESSAGE"
+sleep 0.5
+keys Escape
+sleep 0.5
+snap 07-back "pick hunks"
+keys Enter
+# The receipt is the row the close already draws for a commit, and the row
+# above it has lost the two offers a committed changeset no longer has.
+snap 08-receipt "committed 1 file as"
+# The card handed the screen back to the row that offered it, so the first
+# cancel is reading mode's way out and the pair after it is the session's.
+keys C-c
+sleep 0.3
+keys C-c
+snap 09-quit-armed "press again to quit"
+keys C-c
+snap 10-exit "that is everything the screen was holding"

@@ -274,6 +274,14 @@ func (m Model) inspectorChanges() *components.InspectorChanges {
 		})
 	}
 	c.Alerts = m.inspectorAlerts()
+	// What the session has banked, and what it deliberately left floating
+	// beside it. Both are read once, when the commit was made, rather than
+	// off the tree here: this runs on every frame, and a rail that shelled
+	// out to git to draw itself would be paying for a fact that only changes
+	// when a commit does (commit.go).
+	if st := m.commit; st != nil && st.banked != nil {
+		c.Committed, c.Foreign = st.banked, st.leaves
+	}
 	if len(c.Files) == 0 && len(c.Alerts) == 0 {
 		return nil
 	}

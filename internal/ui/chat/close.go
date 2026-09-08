@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"strings"
 
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/quality"
@@ -99,7 +100,7 @@ func (m Model) turnCloseData() *components.TurnClose {
 		Changes: m.turnChangesRow(commit != nil),
 		Commit:  commit,
 		Notes:   m.turnNotesClause(),
-		Checks:  turnChecksRow(es),
+		Checks:  turnChecksRow(es, m.gate.Manage != nil),
 	}
 	// The count is the steps this turn actually ran, so an approved plan's
 	// declared-but-not-started steps are not counted as work done.
@@ -153,7 +154,13 @@ func (m Model) turnChangesRow(committed bool) *components.TurnChanges {
 		{Key: keys.Bracket(keys.Row.Review), Label: keys.Words(keys.Row.Review)},
 	}
 	if !committed {
-		offers = append(offers, components.TurnKey{Key: keys.Bracket(keys.Row.Undo), Label: keys.Words(keys.Row.Undo)})
+		// Review, keep, or take back — the three things a changeset can
+		// become, on one line and in that order. The commit offer stands for
+		// as long as the changeset is uncommitted and goes when it is not:
+		// banking work twice is not one of the three.
+		offers = append(offers,
+			components.TurnKey{Key: keys.Bracket(keys.Row.Commit), Label: keys.Words(keys.Row.Commit)},
+			components.TurnKey{Key: keys.Bracket(keys.Row.Undo), Label: keys.Words(keys.Row.Undo)})
 	}
 	return &components.TurnChanges{
 		Files:   t.Files(),
@@ -235,8 +242,15 @@ func isTestCommand(command string) bool {
 // turnChecksRow is the verdict row: what the turn ran to check its own work.
 // Several runs collapse into one tally rather than one row each — the row
 // answers "does it still build", not "what did you run".
-func turnChecksRow(es []entry) *components.TurnChecks {
+//
+// gated says the session has a quality gate to run again, which is what puts
+// `[t]` on the row. A verdict a command left never carries the offer, however
+// the session is configured: re-running it would be shhh choosing to execute
+// a line nobody is looking at any more, and a key that did that on a row is
+// not an offer, it is a hazard.
+func turnChecksRow(es []entry, gated bool) *components.TurnChecks {
 	var checks []components.TurnChecks
+	suites := 0
 	for _, e := range es {
 		switch {
 		case e.kind == entryTool && e.toolName == quality.ToolName:
@@ -251,6 +265,7 @@ func turnChecksRow(es []entry) *components.TurnChecks {
 			if s.Stale {
 				counts += " · stale"
 			}
+			suites++
 			checks = append(checks, components.TurnChecks{
 				Failed: !s.OK(),
 				Label:  "quality gate " + s.Suite,
@@ -273,10 +288,17 @@ func turnChecksRow(es []entry) *components.TurnChecks {
 			})
 		}
 	}
+	var rerun []components.TurnKey
+	if gated && suites > 0 {
+		rerun = []components.TurnKey{
+			{Key: keys.Bracket(keys.Row.Rerun), Label: keys.Words(keys.Row.Rerun)},
+		}
+	}
 	switch len(checks) {
 	case 0:
 		return nil
 	case 1:
+		checks[0].Keys = rerun
 		return &checks[0]
 	}
 	passed := 0
@@ -289,7 +311,45 @@ func turnChecksRow(es []entry) *components.TurnChecks {
 		Failed: passed < len(checks),
 		Label:  "checks",
 		Counts: fmt.Sprintf("%d of %d passing", passed, len(checks)),
+		Keys:   rerun,
 	}
+}
+
+// rerunChecksKey answers the checks row's rerun offer: the suite the row is a
+// verdict about runs again over the tree as it now stands. It is the same run
+// `/gate run` makes — one way to start a suite, whoever asked — and it starts
+// in the background, because the reader pressed a key on a row and not a
+// command that owes them an answer.
+func (m Model) rerunChecksKey(pressed string) (tea.Model, tea.Cmd, bool) {
+	if !keys.Is(pressed, keys.Row.Rerun) || m.gate.Manage == nil {
+		return m, nil, false
+	}
+	e, ok := m.focusedClose()
+	if !ok || e.close == nil || e.close.Checks == nil || len(e.close.Checks.Keys) == 0 {
+		return m, nil, false
+	}
+	suite := suiteOfTurn(m.entriesForTurn(e.turn))
+	if suite == "" {
+		return m, nil, false
+	}
+	next, cmd := m.systemNotice(m.gate.Manage([]string{"run", suite}))
+	return next, cmd, true
+}
+
+// suiteOfTurn is the suite the verdict on a turn's close row came from, read
+// back out of the turn's own gate row. The entries are read rather than the
+// suite being stored on the row, because the row is a rendering and the run
+// that produced it is the fact.
+func suiteOfTurn(es []entry) string {
+	for i := len(es) - 1; i >= 0; i-- {
+		if es[i].kind != entryTool || es[i].toolName != quality.ToolName {
+			continue
+		}
+		if s, ok := quality.Summarize(es[i].toolResult); ok {
+			return s.Suite
+		}
+	}
+	return ""
 }
 
 // plural is the chat-side counterpart of the components helper, for the

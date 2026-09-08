@@ -47,14 +47,37 @@ type InspectorAlert struct {
 	Turn int64
 }
 
+// InspectorCommit is what this session has banked: the sha it landed on, how
+// many files went with it, and where that leaves the branch. It is one row
+// and it is pinned, because the question it answers — is any of this safe
+// yet — is the reason a reader looks at this block at all.
+type InspectorCommit struct {
+	SHA   string
+	Files int
+	// Ahead is the branch's distance from its upstream in words, e.g.
+	// `2 ahead of origin/main`. Empty where the branch tracks nothing: a
+	// distance from nowhere is not a fact
+	// (docs/interface/principles.md#a-stat-that-cannot-be-reported-is-left-out).
+	Ahead string
+}
+
 // InspectorChanges is the CHANGES block: what this session has written to the
-// workspace, and what about it is still broken.
+// workspace, what of it has been banked, and what about it is still broken.
 type InspectorChanges struct {
 	Files          []InspectorFile
 	Added, Removed int
 	// Alerts are the failing commands still standing, oldest first. They are
 	// drawn above the file rows and are the last thing truncation takes.
 	Alerts []InspectorAlert
+	// Committed is the session's own commit, where it has made one.
+	Committed *InspectorCommit
+	// Foreign are the paths in the tree that this session did not write and
+	// has never staged — the reader's own uncommitted work, sitting beside
+	// the agent's. They are named rather than counted because the promise a
+	// commit card makes about them is a promise about particular files, and
+	// a reader checking it wants to see the file
+	// (docs/capabilities/approvals-and-safety.md#the-writing-half-of-git-is-a-tool-too).
+	Foreign []string
 }
 
 // changesBlock is the session's own diff: every path it has
@@ -91,6 +114,17 @@ func (r InspectorRail) changesBlock(width int) (railBlock, bool) {
 			b.pin(railRow(sty.Dim.Render(a.Note), "", width, inspectorIndent+2))
 		}
 	}
+	// What has been banked, above the paths that have not. It is pinned for
+	// the reason the alerts are: it is the one row in the block that says
+	// some of this work is now somewhere a session ending cannot lose it.
+	if cm := c.Committed; cm != nil {
+		stated := sty.Body.Render("committed "+cm.SHA) +
+			sty.Dim.Render(" · "+plural(cm.Files, "file"))
+		if cm.Ahead != "" {
+			stated += sty.Dim.Render(" · " + cm.Ahead)
+		}
+		b.pin(railRow(" "+sty.Add.Render("✓")+" "+stated, "", width, inspectorIndent))
+	}
 	for _, f := range c.Files {
 		// The changed-file row carries the mutation rail and the edit glyph,
 		// so the close of a turn looks like the rows that produced it.
@@ -119,6 +153,14 @@ func (r InspectorRail) changesBlock(width int) (railBlock, bool) {
 			// which carries a clipped path and a stats field besides.
 			target: RailTarget{Kind: RailTargetFile, Name: f.Path},
 		})
+	}
+	// And what the session did not write, under what it did. The glyph
+	// column is a bare `·`: none of the acts it names happened to these
+	// files here, and an empty column would read as a row of the list above
+	// that lost its mark.
+	for _, path := range c.Foreign {
+		b.add(railRow(" "+sty.Dim.Render("·")+" "+sty.Dimmer.Render(path),
+			sty.Dim.Render("yours"), width, inspectorIndent))
 	}
 	b.fold = func(hidden []railLine) string { return changesFold(hidden, width) }
 	return b, true

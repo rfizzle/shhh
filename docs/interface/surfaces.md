@@ -170,6 +170,39 @@ covers part of a file is answered with what it will really do, which is to
 revert that file whole. Where the hunks genuinely are separable, as in a patch
 a sub-agent is offering, the same surface stages per hunk.
 
+The changed-files row offers review, keep and take back, in that order: the
+three things a changeset can become. Keeping it is a commit, and the offer
+stands for as long as the changeset is uncommitted. Banking the turn is a key
+on the row rather than a sentence typed in another window, because the moment
+a person knows whether the work is worth keeping is the moment they have just
+read what it changed.
+
+The key opens a card, for the reason every act that cannot be taken back gets
+one. It states the message that will be written, what will be staged, what
+will deliberately not be, the branch this lands on, whether the checkout's own
+hooks run, and that nothing is pushed. Those are the facts a reader is
+entitled to check before pressing enter and cannot check afterwards. A file
+the turn wrote and the reader has edited since is on the card as a statement
+of its own: it is neither theirs nor the turn's any more, so it is left out of
+the commit rather than folded into either answer. The
+message is proposed rather than asked for: it is the turn's own question under
+the lead this repository's recent subjects use, and a key opens it as a draft
+under its own rail, where the frame's title is the subject-line budget
+counting down. A hook that refuses cancels the whole thing — the reason
+stays on the card, the index goes back the way it was found, and the changeset
+is still there to be offered again.
+
+The receipt is the row the turn's close already draws for a commit. Once a
+changeset is committed the row keeps review and loses the other two: the
+commit key has been spent, and undo restores files from the session's own
+records without reaching history, so offering it beside a commit would read as
+an offer to take the commit back.
+
+The checks row carries one offer of its own — run the suite again — and only
+where there is a suite. A command the turn happened to run is a line nobody is
+looking at any more, and a key that re-ran one would be shhh choosing to
+execute it.
+
 ### The backlog run's row
 
 A run of the backlog works one item through five stages over as many turns as

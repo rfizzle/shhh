@@ -85,6 +85,11 @@ type TurnChecks struct {
 	Label string
 	// Counts is the pass/fail tally, e.g. "4/4 checks · 12.8s".
 	Counts string
+	// Keys are the offers the row makes, in order. There is one — run the
+	// suite again — and it is present only where there is a suite to run: a
+	// verdict a command left is a verdict about a line nobody is looking at
+	// any more, and re-running that is not a key's to offer.
+	Keys []TurnKey
 }
 
 // TurnClose is the block a finished turn appends. Steps, Tools, Elapsed and
@@ -284,6 +289,14 @@ func (c TurnClose) View(width int) string {
 		text := sty.Body.Render(ck.Label + verdict)
 		if ck.Counts != "" {
 			text += sty.Dim.Render(" · " + ck.Counts)
+		}
+		// The offer is answered by reading mode on the row, exactly as the
+		// changed-files row's are, so it renders under the same rule about
+		// which keys are live (invariant 5). The handover is not repeated
+		// here: it is one key for the whole block and the row above already
+		// names it, and a chord printed twice in four lines reads as two.
+		if run := keyRun(ck.Keys, c.KeysWaiting, ""); run != "" {
+			text += sty.Dim.Render(" · ") + run
 		}
 		lines = append(lines, closeLine(closeLead("", glyph), text, "", width))
 	}

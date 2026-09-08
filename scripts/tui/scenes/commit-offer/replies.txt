@@ -1,0 +1,16 @@
+# One reply per request. The last line repeats once these run out.
+# One turn that edits a file the repository already tracks, so the changeset
+# it closes with is one tracked file and the reader's own edit to README.md
+# is not in it. The read is what gives the model its picture of the file; the
+# edit lands against that picture and is what the turn's close then offers to
+# commit.
+tool:read_file:{"path":"loop.go"}
+tool:edit_file:{"path":"loop.go","old_text":"const limit = 25","new_text":"const limit = 50"}
+# The session asks the model on its own account over a turn this long — once
+# to title the conversation, once to take its own reading of the run — and
+# each takes the next reply written here. So there is a spare read after the
+# edit: taken, the turn skips it; left, it draws one more read row and every
+# row below still lands in the same order. A prose line here would end the
+# turn instead of being spent.
+tool:read_file:{"path":"loop.go"}
+The rounds are capped at the limit now.

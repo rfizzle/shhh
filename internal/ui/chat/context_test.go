@@ -851,7 +851,7 @@ func TestElidedCheck_TheTurnKeepsItsVerdict(t *testing.T) {
 	}, mockStream)
 	m.appendEntry(entry{kind: entryTool, turn: 1, toolName: quality.ToolName, toolResult: gate})
 	m.appendEntry(entry{kind: entryTurnClose, turn: 1, close: &components.TurnClose{
-		Checks: turnChecksRow(m.transcript),
+		Checks: turnChecksRow(m.transcript, false),
 	}})
 	m.contextTokens = 30000
 

@@ -132,6 +132,13 @@
   ▎✎ scripts/build.sh         mode 0644 → 0755
   ▎✎ scripts/release.sh    mode 0600 → 0700 2t
 
+· banked · what was committed, and what is still yours
+  CHANGES                     session · +30 −4
+   ✓ committed a41f2c9 · 3 files · 2 ahead of…
+  ▎✎ internal/agent/loop.go             +21 −4
+  ▎✎ internal/agent/round.go             +9 −0
+   · README.md                           yours
+
 · a reading that has left the instruction
   SUMMARY                       as of round 31
   Rewriting the README's install section.     
@@ -315,6 +322,13 @@
   ␛[1;94mCHANGES␛[m                              ␛[38;5;241msession␛[m
   ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252mscripts/build.sh␛[m         ␛[38;5;241mmode 0644 → 0755␛[m
   ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252mscripts/release.sh␛[m    ␛[38;5;241mmode 0600 → 0700␛[m ␛[38;5;241m2t␛[m
+
+· banked · what was committed, and what is still yours
+  ␛[1;94mCHANGES␛[m                     ␛[38;5;241msession · ␛[m␛[92m+30␛[m ␛[91m−4␛[m
+   ␛[92m✓␛[m ␛[38;5;252mcommitted a41f2c9␛[m␛[38;5;241m · 3 files␛[m␛[38;5;241m · 2 ahead of…␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252minternal/agent/loop.go␛[m             ␛[92m+21␛[m ␛[91m−4␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252minternal/agent/round.go␛[m             ␛[92m+9␛[m ␛[91m−0␛[m
+   ␛[38;5;241m·␛[m ␛[38;5;245mREADME.md␛[m                           ␛[38;5;241myours␛[m
 
 · a reading that has left the instruction
   ␛[1;94mSUMMARY␛[m                       ␛[38;5;241mas of round 31␛[m

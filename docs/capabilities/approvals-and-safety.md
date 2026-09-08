@@ -519,6 +519,28 @@ A commit is outside undo, and the turn's close says so where you can see it:
 alone. The honest way back from a commit is `git revert`, which is a sentence
 you type rather than a key shhh can offer.
 
+**Your own commit is the same commit.** The turn's close offers one, and what
+it stages is the same set by the same rule: the paths that turn's own records
+hold, named one by one. The card names the files it is leaving behind before
+you answer rather than afterwards — the promise is checkable at the moment it
+matters, which is the only moment it is worth anything.
+
+**A path is not enough of a promise.** `git add` stages what is on the disk,
+not what a record says should be there, so a file the turn wrote and you have
+edited since would carry your bytes into the commit under a card claiming it
+carried the turn's. Those files are read before the card is drawn, compared
+against what the turn left in them, and left out with a row of their own that
+names them — and read again at the moment the index is touched, because the
+card can sit on your screen for as long as you like. A tree that moved in
+between makes no commit at all: less than the card said is not what you
+answered.
+
+Hooks run under the same trust answer, and a hook that refuses cancels the
+whole thing: nothing is committed, the index goes back to what it was, and the
+changeset is still there to offer again. Nothing is pushed. There is no push
+verb on the tool, none on the card, and the remote stays yours to decide
+about.
+
 ## A checkout declares what it runs
 
 A clone arrives with more than code. It can name skills for the model to

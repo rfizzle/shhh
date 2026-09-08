@@ -349,6 +349,17 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// the scroll to wherever it was standing.
 		m.halfPageFocus(pressed)
 		return m, nil
+	case keys.Is(pressed, keys.Row.Commit, keys.Row.Rerun):
+		// A turn's close offering to bank what it changed, and to run the
+		// checks over it again (commit.go, close.go). Handled here rather
+		// than globally, so the input keeps both letters for typing.
+		if next, cmd, claimed := m.commitKey(pressed); claimed {
+			return next, cmd
+		}
+		if next, cmd, claimed := m.rerunChecksKey(pressed); claimed {
+			return next, cmd
+		}
+		return m.returnToInput(msg)
 	case keys.Is(pressed, keys.Row.Reopen):
 		// A blocked run's own offer: the item goes back to open from the row
 		// that says why it stopped. Handled here rather than globally, so

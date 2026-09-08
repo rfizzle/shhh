@@ -676,6 +676,9 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 	case todoCommitMsg:
 		return answered(m.finishTodoCommit(msg))
 
+	case commitDoneMsg:
+		return answered(m.finishCommit(msg))
+
 	case attachedFileMsg:
 		return answered(m.handleAttachedFile(msg))
 

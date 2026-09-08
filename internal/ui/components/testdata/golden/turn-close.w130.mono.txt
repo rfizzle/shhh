@@ -12,12 +12,12 @@
 ── layout ──────────────────────────────────────────────────
 · done · changed · checked
  ✓ Done · 4 steps · 18 tools · 1m 04s · $0.14                                                                           round 7/25
-▎✎ 3 files changed +30 −4 · [v] review · [u] undo turn                                                          all tracked in git
+▎✎ 3 files changed +30 −4 · [v] review · [g] commit · [u] undo turn                                             all tracked in git
  ✓ go test ./internal/agent/... passing · 41 packages · 12.8s
 
 · done · checks failing
  ✓ Done · 4 steps · 18 tools · 1m 04s · $0.14                                                                           round 7/25
-▎✎ 3 files changed +30 −4 · [v] review · [u] undo turn                                                          all tracked in git
+▎✎ 3 files changed +30 −4 · [v] review · [g] commit · [u] undo turn                                             all tracked in git
  ✗ go test ./internal/agent/... failing · 41 packages · 12.8s
 
 · done · nothing changed
@@ -25,7 +25,7 @@
 
 · cancelled · reports what it changed before stopping
  ⊘ Cancelled · 2 steps · 5 tools · 8.1s · $0.14                                                                         round 7/25
-▎✎ 3 files changed +30 −4 · [v] review · [u] undo turn                                                          all tracked in git
+▎✎ 3 files changed +30 −4 · [v] review · [g] commit · [u] undo turn                                             all tracked in git
 
 · failed · the stream broke
  ✗ Failed · 1 step · 2 tools · 3.4s · ~1.2k tok                                                                         round 7/25
@@ -35,12 +35,12 @@
 
 · keys waiting · the draft has the keyboard, ctrl+o takes it
  ✓ Done · 4 steps · 18 tools · 1m 04s · $0.14                                                                           round 7/25
-▎✎ 3 files changed +30 −4 · [v] review · [u] undo turn · [ctrl+o] to use them                                   all tracked in git
+▎✎ 3 files changed +30 −4 · [v] review · [g] commit · [u] undo turn · [ctrl+o] to use them                      all tracked in git
  ✓ go test ./internal/agent/... passing · 41 packages · 12.8s
 
 · keys waiting · reading mode is up, the cursor is elsewhere
  ✓ Done · 4 steps · 18 tools · 1m 04s · $0.14                                                                           round 7/25
-▎✎ 3 files changed +30 −4 · [v] review · [u] undo turn                                                          all tracked in git
+▎✎ 3 files changed +30 −4 · [v] review · [g] commit · [u] undo turn                                             all tracked in git
  ✓ go test ./internal/agent/... passing · 41 packages · 12.8s
 
 · committed · the receipt, and what undo does not reach
@@ -49,15 +49,20 @@
 ▎✓ committed 3 files as a41f2c9 on master                                                             /undo does not reach history
  ✓ go test ./internal/agent/... passing · 41 packages · 12.8s
 
+· checks · the suite can be run again
+ ✓ Done · 4 steps · 18 tools · 1m 04s · $0.14                                                                           round 7/25
+▎✎ 3 files changed +30 −4 · [v] review · [g] commit · [u] undo turn                                             all tracked in git
+ ✓ quality gate default passing · 4/4 checks · 12.8s · [t] run the checks again
+
 ── ansi ────────────────────────────────────────────────────
 · done · changed · checked
  ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 4 steps · 18 tools · 1m 04s · $0.14␛[m                                                                           ␛[38;5;244mround 7/25␛[m
-␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m3 files changed ␛[m␛[38;5;254m+30␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;254m[v]␛[m␛[38;5;244m review␛[m␛[38;5;244m · ␛[m␛[38;5;254m[u]␛[m␛[38;5;244m undo turn␛[m                                                          ␛[38;5;244mall tracked in git␛[m
+␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m3 files changed ␛[m␛[38;5;254m+30␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;254m[v]␛[m␛[38;5;244m review␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m␛[38;5;244m commit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[u]␛[m␛[38;5;244m undo turn␛[m                                             ␛[38;5;244mall tracked in git␛[m
  ␛[38;5;254m✓␛[m ␛[38;5;254mgo test ./internal/agent/... passing␛[m␛[38;5;244m · 41 packages · 12.8s␛[m
 
 · done · checks failing
  ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 4 steps · 18 tools · 1m 04s · $0.14␛[m                                                                           ␛[38;5;244mround 7/25␛[m
-␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m3 files changed ␛[m␛[38;5;254m+30␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;254m[v]␛[m␛[38;5;244m review␛[m␛[38;5;244m · ␛[m␛[38;5;254m[u]␛[m␛[38;5;244m undo turn␛[m                                                          ␛[38;5;244mall tracked in git␛[m
+␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m3 files changed ␛[m␛[38;5;254m+30␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;254m[v]␛[m␛[38;5;244m review␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m␛[38;5;244m commit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[u]␛[m␛[38;5;244m undo turn␛[m                                             ␛[38;5;244mall tracked in git␛[m
  ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[m␛[38;5;244m · 41 packages · 12.8s␛[m
 
 · done · nothing changed
@@ -65,7 +70,7 @@
 
 · cancelled · reports what it changed before stopping
  ␛[38;5;244m⊘␛[m ␛[38;5;254mCancelled␛[m␛[38;5;244m · 2 steps · 5 tools · 8.1s · $0.14␛[m                                                                         ␛[38;5;244mround 7/25␛[m
-␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m3 files changed ␛[m␛[38;5;254m+30␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;254m[v]␛[m␛[38;5;244m review␛[m␛[38;5;244m · ␛[m␛[38;5;254m[u]␛[m␛[38;5;244m undo turn␛[m                                                          ␛[38;5;244mall tracked in git␛[m
+␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m3 files changed ␛[m␛[38;5;254m+30␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;254m[v]␛[m␛[38;5;244m review␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m␛[38;5;244m commit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[u]␛[m␛[38;5;244m undo turn␛[m                                             ␛[38;5;244mall tracked in git␛[m
 
 · failed · the stream broke
  ␛[38;5;254m✗␛[m ␛[38;5;254mFailed␛[m␛[38;5;244m · 1 step · 2 tools · 3.4s · ~1.2k tok␛[m                                                                         ␛[38;5;244mround 7/25␛[m
@@ -75,12 +80,12 @@
 
 · keys waiting · the draft has the keyboard, ctrl+o takes it
  ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 4 steps · 18 tools · 1m 04s · $0.14␛[m                                                                           ␛[38;5;244mround 7/25␛[m
-␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m3 files changed ␛[m␛[38;5;254m+30␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;244m[v]␛[m␛[38;5;244m review␛[m␛[38;5;244m · ␛[m␛[38;5;244m[u]␛[m␛[38;5;244m undo turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;254m to use them␛[m                                   ␛[38;5;244mall tracked in git␛[m
+␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m3 files changed ␛[m␛[38;5;254m+30␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;244m[v]␛[m␛[38;5;244m review␛[m␛[38;5;244m · ␛[m␛[38;5;244m[g]␛[m␛[38;5;244m commit␛[m␛[38;5;244m · ␛[m␛[38;5;244m[u]␛[m␛[38;5;244m undo turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;254m to use them␛[m                      ␛[38;5;244mall tracked in git␛[m
  ␛[38;5;254m✓␛[m ␛[38;5;254mgo test ./internal/agent/... passing␛[m␛[38;5;244m · 41 packages · 12.8s␛[m
 
 · keys waiting · reading mode is up, the cursor is elsewhere
  ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 4 steps · 18 tools · 1m 04s · $0.14␛[m                                                                           ␛[38;5;244mround 7/25␛[m
-␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m3 files changed ␛[m␛[38;5;254m+30␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;244m[v]␛[m␛[38;5;244m review␛[m␛[38;5;244m · ␛[m␛[38;5;244m[u]␛[m␛[38;5;244m undo turn␛[m                                                          ␛[38;5;244mall tracked in git␛[m
+␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m3 files changed ␛[m␛[38;5;254m+30␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;244m[v]␛[m␛[38;5;244m review␛[m␛[38;5;244m · ␛[m␛[38;5;244m[g]␛[m␛[38;5;244m commit␛[m␛[38;5;244m · ␛[m␛[38;5;244m[u]␛[m␛[38;5;244m undo turn␛[m                                             ␛[38;5;244mall tracked in git␛[m
  ␛[38;5;254m✓␛[m ␛[38;5;254mgo test ./internal/agent/... passing␛[m␛[38;5;244m · 41 packages · 12.8s␛[m
 
 · committed · the receipt, and what undo does not reach
@@ -88,3 +93,8 @@
 ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m3 files changed ␛[m␛[38;5;254m+30␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;254m[v]␛[m␛[38;5;244m review␛[m                                                                          ␛[38;5;244mall tracked in git␛[m
 ␛[38;5;254m▎␛[m␛[38;5;254m✓␛[m ␛[38;5;254mcommitted 3 files as a41f2c9 on master␛[m                                                             ␛[38;5;244m/undo does not reach history␛[m
  ␛[38;5;254m✓␛[m ␛[38;5;254mgo test ./internal/agent/... passing␛[m␛[38;5;244m · 41 packages · 12.8s␛[m
+
+· checks · the suite can be run again
+ ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 4 steps · 18 tools · 1m 04s · $0.14␛[m                                                                           ␛[38;5;244mround 7/25␛[m
+␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m3 files changed ␛[m␛[38;5;254m+30␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;254m[v]␛[m␛[38;5;244m review␛[m␛[38;5;244m · ␛[m␛[38;5;254m[g]␛[m␛[38;5;244m commit␛[m␛[38;5;244m · ␛[m␛[38;5;254m[u]␛[m␛[38;5;244m undo turn␛[m                                             ␛[38;5;244mall tracked in git␛[m
+ ␛[38;5;254m✓␛[m ␛[38;5;254mquality gate default passing␛[m␛[38;5;244m · 4/4 checks · 12.8s␛[m␛[38;5;244m · ␛[m␛[38;5;254m[t]␛[m␛[38;5;244m run the checks again␛[m

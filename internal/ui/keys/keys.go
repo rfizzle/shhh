@@ -676,6 +676,24 @@ type RowKeys struct {
 	// `/todo open` — and because every other letter on a transcript row is
 	// already spent.
 	Reopen Binding
+
+	// Commit is the offer a turn's changed-files row makes while its
+	// changeset is uncommitted: banking the turn is one key rather than a
+	// sentence somebody composes.
+	//
+	// It is `[g]` for git rather than the letter the word starts with,
+	// because `[c]` is "continue from here" on a dropped stream's row and a
+	// key is declared once — the same reason reading mode's copy is `[y]`.
+	// The word beside it carries the act, which is what a letter never has
+	// to (docs/interface/principles.md#colour-never-carries-meaning-alone).
+	Commit Binding
+
+	// Rerun is `[t]` on the row a turn's checks left: the suite runs again
+	// over the tree as it now stands. It is offered only where there is a
+	// suite to run again — a command the turn happened to run is not one,
+	// because re-running that would be shhh choosing to execute a line
+	// nobody is looking at.
+	Rerun Binding
 }
 
 var Row = RowKeys{
@@ -691,6 +709,45 @@ var Row = RowKeys{
 	Uncap:  bind("!", "let it run", "!"),
 
 	Reopen: bind("o", "reopen the item", "o"),
+
+	Commit: bind("g", "commit", "g"),
+	Rerun:  bind("t", "run the checks again", "t"),
+}
+
+// CommitKeys are the commit card's — the card a turn's changed-files row
+// opens, which stages exactly what that turn changed and nothing else
+// (docs/capabilities/approvals-and-safety.md#the-writing-half-of-git-is-a-tool-too).
+//
+// It is a takeover rather than a card beside the draft, because the row that
+// opened it was answered from reading mode: the keyboard was already out of
+// the draft when the card arrived, so there is nothing to hand over and every
+// letter here is live.
+type CommitKeys struct {
+	Take Binding
+	// Edit opens the proposed message as a draft. It is the letter the word
+	// starts with, free here for the reason every bare letter on a takeover
+	// is: nothing else is listening while the card is up.
+	Edit Binding
+	// Hunks opens the staging surface that /diff and a review open, rather
+	// than a second one: what may be committed is one question with one
+	// answer, however it was reached.
+	Hunks  Binding
+	Cancel Binding
+}
+
+// All is the card's keys in the order it offers them.
+func (k CommitKeys) All() []Binding {
+	return []Binding{k.Take, k.Edit, k.Hunks, k.Cancel}
+}
+
+var Commit = CommitKeys{
+	Take:  bind("enter", "commit", "enter"),
+	Edit:  bind("e", "edit the message", "e"),
+	Hunks: bind("s", "pick hunks", "s"),
+	// The words say what is left standing rather than "cancel": a changeset
+	// nobody committed is still there, and so is the offer
+	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
+	Cancel: bind("esc", "don't", "esc"),
 }
 
 // DecisionKeys are the approval card's, the `/run` confirm's, the plan

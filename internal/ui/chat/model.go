@@ -180,6 +180,16 @@ const (
 	// blocked on the call, not parked under a screen — so it arrives the way
 	// an approval arrives and is answered the same way.
 	stateQuestion
+	// stateCommitCard: the card a turn's changed-files row opens — the
+	// message that will be written, what will be staged, what will
+	// deliberately not be, and the fact that nothing is pushed (commit.go).
+	// It is a takeover because the key that opened it was pressed in
+	// reading mode, so the keyboard had already left the draft.
+	stateCommitCard
+	// stateCommitMessage: that card's proposed message opened as a draft.
+	// Every letter is text while it is up, which is why it is a state of its
+	// own rather than a flag on the card.
+	stateCommitMessage
 )
 
 const inputHeight = 3
@@ -1001,6 +1011,12 @@ type Model struct {
 	// undoSubject is what the armed plan is taking back, in words: a turn,
 	// or the run of turns a rewind puts back (undo.go).
 	undoSubject undoSubject
+	// commit is the commit surface's own state: the card and its message
+	// while they are up, and — once a commit has landed — the sha and the
+	// reader's own uncommitted paths, which the rail's CHANGES block goes on
+	// showing after the card is gone (commit.go). Nil while nothing has been
+	// offered and nothing has been banked.
+	commit *commitState
 	// The two-press windows and the question asked before a turn that is
 	// not over is ended (cancel.go): armed is the open window between a
 	// first press and its second, quitAsk the confirm while the question is

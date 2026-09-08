@@ -230,7 +230,7 @@ func TestTurnClose_ARunFinishingIsNotATurnEnding(t *testing.T) {
 
 func TestTurnChecksRow_ReadsTheQualityGateVerdict(t *testing.T) {
 	pass := "Quality gate \"default\": PASS — 4/4 checks passed (12.8s)\nTree: clean"
-	c := turnChecksRow([]entry{{kind: entryTool, toolName: quality.ToolName, toolResult: pass}})
+	c := turnChecksRow([]entry{{kind: entryTool, toolName: quality.ToolName, toolResult: pass}}, false)
 	if c == nil || c.Failed {
 		t.Fatalf("a clean gate run is a passing verdict, got %+v", c)
 	}
@@ -239,7 +239,7 @@ func TestTurnChecksRow_ReadsTheQualityGateVerdict(t *testing.T) {
 	}
 
 	stale := pass + "\nSTALE: the tree has changed since this run"
-	c = turnChecksRow([]entry{{kind: entryTool, toolName: quality.ToolName, toolResult: stale}})
+	c = turnChecksRow([]entry{{kind: entryTool, toolName: quality.ToolName, toolResult: stale}}, false)
 	if c == nil || !c.Failed || !strings.Contains(c.Counts, "stale") {
 		t.Fatalf("a stale pass is not a pass, got %+v", c)
 	}
@@ -247,7 +247,7 @@ func TestTurnChecksRow_ReadsTheQualityGateVerdict(t *testing.T) {
 
 func TestTurnChecksRow_ReadsATestCommandsExitCode(t *testing.T) {
 	c := turnChecksRow([]entry{{kind: entryCommand, text: "go test ./internal/agent/...",
-		exitCode: 1, duration: 12800 * time.Millisecond}})
+		exitCode: 1, duration: 12800 * time.Millisecond}}, false)
 	if c == nil || !c.Failed {
 		t.Fatalf("a test command that exited non-zero is a failing verdict, got %+v", c)
 	}
@@ -255,7 +255,7 @@ func TestTurnChecksRow_ReadsATestCommandsExitCode(t *testing.T) {
 		t.Fatalf("the row should carry the exit code, got %+v", c)
 	}
 
-	if got := turnChecksRow([]entry{{kind: entryCommand, text: "ls -la"}}); got != nil {
+	if got := turnChecksRow([]entry{{kind: entryCommand, text: "ls -la"}}, false); got != nil {
 		t.Fatalf("an ordinary command is not a verdict about the code, got %+v", got)
 	}
 }
@@ -266,7 +266,7 @@ func TestTurnChecksRow_SeveralRunsCollapseToOneTally(t *testing.T) {
 		{kind: entryCommand, text: "go test ./internal/ui/...", exitCode: 1},
 		{kind: entryTool, toolName: quality.ToolName,
 			toolResult: "Quality gate \"default\": PASS — 2/2 checks passed (1s)"},
-	})
+	}, false)
 	if c == nil || !c.Failed {
 		t.Fatalf("one failure among three makes the verdict failing, got %+v", c)
 	}

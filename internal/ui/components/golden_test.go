@@ -275,7 +275,10 @@ func TestGolden_TurnClose(t *testing.T) {
 				Steps: 4, Tools: 18, Elapsed: "1m 04s", Spend: "$0.14", Note: "round 7/25",
 				Changes: &TurnChanges{
 					Files: 3, Added: 30, Removed: 4,
-					Keys: []TurnKey{{Key: "[v]", Label: "review"}, {Key: "[u]", Label: "undo turn"}},
+					// Review, keep, or take back — the three things a
+					// changeset can become, on one line and in that order.
+					Keys: []TurnKey{{Key: "[v]", Label: "review"},
+						{Key: "[g]", Label: "commit"}, {Key: "[u]", Label: "undo turn"}},
 					Note: "all tracked in git",
 				},
 				Checks: &TurnChecks{Label: "go test ./internal/agent/...", Counts: "41 packages · 12.8s"},
@@ -312,11 +315,93 @@ func TestGolden_TurnClose(t *testing.T) {
 			// A turn that committed: the receipt is a row of its own, the
 			// undo sentence rides beside it, and the changed-files row loses
 			// [u] because the honest key for taking a commit back is `git
-			// revert`, which is a sentence you type.
+			// revert`, which is a sentence you type — and [g], which has
+			// been spent.
 			{Label: "committed · the receipt, and what undo does not reach", View: closed(func(c *TurnClose) {
 				c.Commit = &TurnCommit{Receipt: "committed 3 files as a41f2c9 on master"}
 				c.Changes.Keys = []TurnKey{{Key: "[v]", Label: "review"}}
 			})},
+			// The checks row's own offer, which is present only where there
+			// is a suite to run again.
+			{Label: "checks · the suite can be run again", View: closed(func(c *TurnClose) {
+				c.Checks = &TurnChecks{
+					Label: "quality gate default", Counts: "4/4 checks · 12.8s",
+					Keys: []TurnKey{{Key: "[t]", Label: "run the checks again"}},
+				}
+			})},
+		}
+	})
+}
+
+// TestGolden_CommitCard captures the card the changed-files row opens and the
+// message editor behind its edit key: the proposal, what will be staged, what
+// is deliberately left behind, and the two rows a reader checks before
+// pressing enter — the branch this lands on and the push that never happens.
+func TestGolden_CommitCard(t *testing.T) {
+	captureBoundedGolden(t, "commit-card", "commit card", goldenWidths, func(width int) []golden.Panel {
+		card := func(mut func(*CommitCard)) string {
+			c := CommitCard{
+				Message: "agent: cap rounds at the limit instead of erroring",
+				Files:   3, Added: 30, Removed: 4,
+				StagesNote: "exactly what this turn changed",
+				Fields: []CardField{
+					{Label: "leaves", Value: "your 1 uncommitted edit", Tone: ToneOpen,
+						Detail: "README.md changed by you, never staged"},
+					{Label: "branch", Value: "loop-refactor",
+						Detail: "will be 2 ahead of origin/main"},
+					{Label: "hooks", Value: "pre-commit runs",
+						Detail: "a hook failure cancels the commit and changes nothing"},
+					{Label: "push", Value: "no", Tone: ToneSafe,
+						Detail: "shhh never pushes; the remote is yours"},
+				},
+			}
+			mut(&c)
+			return c.View(width)
+		}
+		return []golden.Panel{
+			{Label: "the offer · five fields and four keys", View: card(func(*CommitCard) {})},
+			// Nothing of the reader's is in the way, which is the answer the
+			// leaves row exists to be able to give.
+			{Label: "a clean tree · nothing is being left behind", View: card(func(c *CommitCard) {
+				c.Fields[0] = CardField{Label: "leaves", Value: "nothing", Tone: ToneSafe,
+					Detail: "your tree holds no other uncommitted work"}
+			})},
+			// A checkout nobody trusts does not get to run programs as you,
+			// and the card says so before the commit rather than after it.
+			{Label: "hooks skipped · the checkout is not trusted", View: card(func(c *CommitCard) {
+				c.Fields[2] = CardField{Label: "hooks", Value: "skipped", Tone: ToneChrome,
+					Detail: "this checkout is not trusted to run its own programs — /trust runs them"}
+			})},
+			// A pre-commit hook that exits non-zero cancels the whole thing,
+			// which is what the hooks row promised it would do.
+			{Label: "a hook refused · the changeset is where it was", View: card(func(c *CommitCard) {
+				c.Failure = "git commit: pre-commit hook failed: gofmt -l found 2 files"
+			})},
+			// A file the turn wrote and the reader has edited since is
+			// neither theirs nor the turn's any more, so it gets a row of
+			// its own rather than being folded into either: `git add` stages
+			// what is on disk, and this is the file it would be wrong about.
+			{Label: "drifted · a file the turn wrote and you changed", View: card(func(c *CommitCard) {
+				c.Files, c.Added, c.Removed = 2, 21, 4
+				c.Fields = append(c.Fields[:1], append([]CardField{{
+					Label: "drifted", Value: "1 file left out", Tone: ToneOpen,
+					Detail: "internal/agent/round.go changed since the turn wrote it",
+				}}, c.Fields[1:]...)...)
+			})},
+			// Asked for and not back. The keys stay on the card and none of
+			// them is live, with the state in words beside them — the same
+			// grammar every other dead key row in the catalog uses.
+			{Label: "asked · the keys are drawn and none is live", View: card(func(c *CommitCard) {
+				c.Running = true
+			})},
+			{Label: "the message as a draft · the budget is the title", View: CommitMessage{
+				Subject: "agent: cap rounds at the limit instead of erroring",
+				Rows:    []string{"agent: cap rounds at the limit instead of erroring"},
+			}.View(width)},
+			{Label: "a subject past the budget · it counts on", View: CommitMessage{
+				Subject: "agent: cap the number of tool rounds at the configured limit instead of returning an error",
+				Rows:    []string{"agent: cap the number of tool rounds at the configured limit instead of returning an error"},
+			}.View(width)},
 		}
 	})
 }
@@ -1078,6 +1163,23 @@ func TestGolden_InspectorRail(t *testing.T) {
 				},
 			},
 		}
+		// After a commit: the block says what was banked and what is still
+		// floating beside it, which are the two halves of "is any of this
+		// safe yet". The reader's own file is named rather than counted,
+		// because the promise a commit card made about it was a promise
+		// about that file.
+		banked := InspectorRail{
+			Changes: &InspectorChanges{
+				Files: []InspectorFile{
+					{Path: "internal/agent/loop.go", Added: 21, Removed: 4, ThisTurn: true},
+					{Path: "internal/agent/round.go", Added: 9, Removed: 0, ThisTurn: true},
+				},
+				Added:     30,
+				Removed:   4,
+				Committed: &InspectorCommit{SHA: "a41f2c9", Files: 3, Ahead: "2 ahead of origin/main"},
+				Foreign:   []string{"README.md"},
+			},
+		}
 		// A reading that has gone off the instruction, and one the session has
 		// outrun. The drifting one is what auto-steering will
 		// act on; here it is a row and nothing more.
@@ -1158,6 +1260,7 @@ func TestGolden_InspectorRail(t *testing.T) {
 			{Label: "eight files, four turns deep", View: session.View(width, 0)},
 			{Label: "the rail is shorter than the list (height 14)", View: session.View(width, 14)},
 			{Label: "a change of permissions has no lines to count", View: permissions.View(width, 0)},
+			{Label: "banked · what was committed, and what is still yours", View: banked.View(width, 0)},
 			{Label: "a reading that has left the instruction", View: drifting.View(width, 0)},
 			{Label: "a reading the session has outrun", View: stale.View(width, 0)},
 			{Label: "where the tools came from, and which answered", View: sources.View(width, 0)},

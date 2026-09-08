@@ -272,6 +272,25 @@ func buildOverlays() map[state]*mode {
 			lines:    panelRows((Model).quitConfirmLines),
 			keys:     (Model).updateQuitConfirm,
 		},
+		// The commit card and the message behind its edit key. Both borrow
+		// the bottom panel, and the card gets the plan card's headroom for
+		// the reason every decision surface does: a decision whose keys were
+		// cut off by the panel bound is not one.
+		stateCommitCard: {
+			place:   placePanel,
+			borrows: true,
+			lines:   panelRows((Model).commitCardLines),
+			bound:   (Model).planPanelBound,
+			keys:    (Model).updateCommitCard,
+		},
+		stateCommitMessage: {
+			place:   placePanel,
+			borrows: true,
+			lines:   panelRows((Model).commitMessageLines),
+			bound:   (Model).planPanelBound,
+			cursor:  (Model).commitCursor,
+			keys:    (Model).updateCommitMessage,
+		},
 		stateKeyEntry: {
 			place:   placePanel,
 			borrows: true,

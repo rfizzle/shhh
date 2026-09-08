@@ -164,9 +164,33 @@ func Surfaces() []Surface {
 			Position: Beside,
 			Reached:  Shown(Draft.Reading) + ", then the cursor on the row",
 			Bindings: []Binding{
-				Row.Review, Row.Undo, Row.Retry, Row.Continue,
+				Row.Review, Row.Commit, Row.Undo, Row.Retry, Row.Continue,
 				Row.Key, Row.Provider, Row.Rounds, Row.Uncap, Row.Reopen,
+				Row.Rerun,
 			},
+		},
+		{
+			// The card the changed-files row's commit key opens. It is a
+			// takeover and not a card beside the draft: the key that opened
+			// it was pressed in reading mode, so the keyboard had already
+			// left the draft and there is nothing to hand over.
+			Name:     "the commit card",
+			Section:  "docs/interface/surfaces.md#the-turns-close, docs/capabilities/approvals-and-safety.md#the-writing-half-of-git-is-a-tool-too",
+			Position: Takeover,
+			Reached:  Bracket(Row.Commit) + " on a turn's changed-files row",
+			Bindings: Commit.All(),
+		},
+		{
+			// The proposed message as a draft, which is a row of its own for
+			// the reason the approval card's note field is: a surface being
+			// typed into keeps every letter as text, so none of the card's
+			// own letters is live under it and the two keys that are not
+			// letters are the whole of what it answers.
+			Name:     "the commit card's message field",
+			Section:  "docs/interface/surfaces.md#the-turns-close",
+			Position: Takeover,
+			Reached:  Bracket(Commit.Edit) + " on the commit card",
+			Bindings: []Binding{Select.Take, Select.Cancel},
 		},
 		{
 			Name:     "the approval card and the /run confirm",
