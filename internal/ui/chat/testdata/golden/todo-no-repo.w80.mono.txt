@@ -11,7 +11,9 @@
 
 ── layout ──────────────────────────────────────────────────
 · the refusal, before any stage has spent a turn
-~/scratch/notes is not in a git repository and a run ends in a commit — /todo run cache-ttl --no-commit runs it without one, or todo.commit = false makes that the default.
+~/scratch/notes is not in a git repository and a run ends in a commit —
+/todo run cache-ttl --no-commit runs it without one, or todo.commit = false
+makes that the default.
 
 
 · a run asked for without a commit, archived
@@ -27,7 +29,9 @@ Not committed, in the working tree:
 
 ── ansi ────────────────────────────────────────────────────
 · the refusal, before any stage has spent a turn
-␛[38;5;244m~/scratch/notes is not in a git repository and a run ends in a commit — /todo run cache-ttl --no-commit runs it without one, or todo.commit = false makes that the default.␛[m
+␛[38;5;244m~/scratch/notes is not in a git repository and a run ends in a commit —␛[m
+␛[38;5;244m/todo run cache-ttl --no-commit runs it without one, or todo.commit = false␛[m
+␛[38;5;244mmakes that the default.␛[m
 
 
 · a run asked for without a commit, archived

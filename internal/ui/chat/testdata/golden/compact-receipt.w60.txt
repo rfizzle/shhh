@@ -21,7 +21,8 @@ Conversation compacted; continuing from this summary:
 
 
 · with the turns the compaction kept verbatim
-Conversation compacted; continuing from this summary and the last 1 turn:
+Conversation compacted; continuing from this summary
+and the last 1 turn:
 
     Rounds are counted in the round loop; the limit
     lived in three places and disagreed. The first
@@ -48,7 +49,8 @@ Assistant
 
 
 · with the turns the compaction kept verbatim
-␛[38;5;241mConversation compacted; continuing from this summary and the last 1 turn:␛[m
+␛[38;5;241mConversation compacted; continuing from this summary␛[m
+␛[38;5;241mand the last 1 turn:␛[m
 
     ␛[3;38;5;245mRounds are counted in the round loop; the limit␛[m
     ␛[3;38;5;245mlived in three places and disagreed. The first␛[m

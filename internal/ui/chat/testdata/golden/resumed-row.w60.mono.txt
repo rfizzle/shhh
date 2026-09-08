@@ -11,11 +11,11 @@
 
 ── layout ──────────────────────────────────────────────────
 · folded, which is how it opens
-resumed · master · 3 changed
+     resumed master · 3 changed
 
 
 · opened, on a checkout that has not moved
-resumed · master · 3 changed
+     resumed master · 3 changed
     [resume: branch master · 3 changed · HEAD e4f5a6b]
     This is the checkout as it stands now, read when
     the conversation was reopened. The transcript below
@@ -23,7 +23,7 @@ resumed · master · 3 changed
 
 
 · opened, on one that moved and with a summary from its last compaction
-resumed · master · 3 changed
+     resumed master · 3 changed
     [resume: branch master · 3 changed · HEAD e4f5a6b]
     HEAD has moved since this conversation was saved:
     a1b2c3d → e4f5a6b. The transcript below describes
@@ -41,11 +41,11 @@ resumed · master · 3 changed
 
 ── ansi ────────────────────────────────────────────────────
 · folded, which is how it opens
-␛[38;5;244mresumed · master · 3 changed␛[m
+     ␛[38;5;244mresumed␛[m ␛[38;5;244mmaster · 3 changed␛[m
 
 
 · opened, on a checkout that has not moved
-␛[38;5;244mresumed · master · 3 changed␛[m
+     ␛[38;5;244mresumed␛[m ␛[38;5;244mmaster · 3 changed␛[m
     ␛[38;5;244m[resume: branch master · 3 changed · HEAD e4f5a6b]␛[m
     ␛[38;5;244mThis is the checkout as it stands now, read when␛[m
     ␛[38;5;244mthe conversation was reopened. The transcript below␛[m
@@ -53,7 +53,7 @@ resumed · master · 3 changed
 
 
 · opened, on one that moved and with a summary from its last compaction
-␛[38;5;244mresumed · master · 3 changed␛[m
+     ␛[38;5;244mresumed␛[m ␛[38;5;244mmaster · 3 changed␛[m
     ␛[38;5;244m[resume: branch master · 3 changed · HEAD e4f5a6b]␛[m
     ␛[38;5;244mHEAD has moved since this conversation was saved:␛[m
     ␛[38;5;244ma1b2c3d → e4f5a6b. The transcript below describes␛[m

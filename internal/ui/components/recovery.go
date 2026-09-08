@@ -69,8 +69,9 @@ type RecoveryRow struct {
 	// Qualifier continues the target field in dim, joined by ` · `: the class
 	// and status, the tier that was hit, the tokens that were kept.
 	Qualifier string
-	// Outcome is the right-aligned field, and never clips — it is the reason
-	// to read the row.
+	// Outcome is the right-aligned field: the reason to read the row, so the
+	// target clips before it does and only the pane bounds it
+	// (docs/interface/principles.md#one-grid).
 	Outcome string
 	// Duration is the 6-column field; blank under 0.5s, NoDuration when the
 	// call never ran.

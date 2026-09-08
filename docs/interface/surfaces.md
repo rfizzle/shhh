@@ -22,6 +22,19 @@ Because it is one shape, a reader learns it once. A provider failure using the
 same row as a file read is the point rather than an accident: a failure is
 part of the turn, not an interruption of it.
 
+A call that never happened is one too. Something the queue refused before it
+could reach a decision — arguments that would not parse, a file that moved
+since it was read — is the call's own row saying it was skipped and why,
+rather than a sentence beside the acts: the reader is scanning a column for
+what became of each call, and the one call that produced nothing is the one
+they are most likely to be looking for.
+
+The session's own bookkeeping is on the same grid, a field short. A
+conversation reopened and a new one started are lines the session wrote about
+itself rather than acts it took, so they take the verb column, the growing
+field and the outcome, and leave the glyph column blank. What has no verb to
+open with is prose, and prose wraps to the pane instead.
+
 An act nobody was asked about states so on its own row and not on a notice
 above it. Two rows for one act doubles the height of a session that was
 mostly auto-approved, and the notice was worse than redundant: it spelled the

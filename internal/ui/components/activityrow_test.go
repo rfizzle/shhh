@@ -527,6 +527,84 @@ func TestActivityRow_AReadingsVerdictIsNotASuccess(t *testing.T) {
 	}
 }
 
+// The outcome gives way to nothing but the pane. A row whose lead, outcome
+// and duration are already wider than the terminal has nothing left to spend
+// on the target, so the outcome's own tail clips — the word that says what
+// happened survives, and the line stays inside the pane rather than being
+// broken by the terminal wherever it ran out
+// (docs/interface/principles.md#one-grid).
+func TestActivityRow_NoRowIsWiderThanItsPane(t *testing.T) {
+	r := ActivityRow{
+		Kind: ActivityReport, Verb: "report",
+		Outcome:  "→ http://127.0.0.1:52104/r/rp-8f3a11c04b2d9e61",
+		Duration: "0.8s",
+	}
+	for _, width := range []int{20, 40, 60, 80} {
+		line := stripANSI(r.View(width))
+		if w := lipgloss.Width(line); w > width {
+			t.Fatalf("width %d: the row runs to %d cells: %q", width, w, line)
+		}
+	}
+	narrow := stripANSI(r.View(60))
+	if !strings.Contains(narrow, "→ http") || !strings.HasSuffix(strings.TrimSpace(narrow), "0.8s") {
+		t.Fatalf("the head of the field and the duration both stand: %q", narrow)
+	}
+	if !strings.Contains(narrow, "…") {
+		t.Fatalf("a field that gave something up says so: %q", narrow)
+	}
+	// A pane narrower than the grid's own fixed fields is still a render and
+	// not a panic.
+	for _, width := range []int{1, 6, 13, 19} {
+		if line := stripANSI(r.View(width)); lipgloss.Width(line) > width {
+			t.Fatalf("width %d: %q", width, line)
+		}
+	}
+}
+
+// The session's own lines sit on the grid a field short: the verb where every
+// verb is, the subject in the growing field, the outcome right-aligned, and
+// nothing in the glyph column, because the glyph says which kind of act a row
+// was and this is not one.
+func TestActivityNotice_IsARowOnTheGrid(t *testing.T) {
+	withColorProfile(t, colorprofile.ANSI256)
+	n := ActivityNotice{Verb: "resumed", Subject: "master · 3 changed"}
+	_, rail, verb, rest := fieldsOf(t, n.View(80))
+	if strings.TrimSpace(rail) != "" {
+		t.Fatalf("a notice changed nothing, so it carries no mutation rail: %q", n.View(80))
+	}
+	if strings.TrimSpace(verb) != "resumed" {
+		t.Fatalf("the verb belongs in the verb column, got %q", verb)
+	}
+	if !strings.HasPrefix(rest, "master · 3 changed") {
+		t.Fatalf("the subject should start in the target column, got %q", rest)
+	}
+	line := []rune(stripANSI(n.View(80)))
+	if glyph := strings.TrimSpace(string(line[ptrWidth+railWidth : ptrWidth+railWidth+glyphWidth])); glyph != "" {
+		t.Fatalf("the glyph column stays empty, got %q", glyph)
+	}
+	// Dim throughout: the session's bookkeeping is the quietest thing on the
+	// grid (docs/interface/principles.md#weight-tracks-risk).
+	full := ActivityNotice{Verb: "session", Subject: "2026-09-04 11:20:07", Outcome: "saved · shhh code --continue"}
+	for _, want := range []string{sty.Dim.Render("session"), sty.Dim.Render("2026-09-04 11:20:07"),
+		sty.Dim.Render("saved · shhh code --continue")} {
+		if !strings.Contains(full.View(80), want) {
+			t.Fatalf("every field of a notice is dim, want %q in:\n%q", want, full.View(80))
+		}
+	}
+	for _, width := range []int{40, 60, 80, 110} {
+		if w := lipgloss.Width(stripANSI(full.View(width))); w > width {
+			t.Fatalf("width %d: the notice runs to %d cells", width, w)
+		}
+	}
+	// Opened, the body it folds indents under it rather than re-gridding.
+	opened := full
+	opened.Detail, opened.Expanded = []string{"the reading the conversation was given"}, true
+	lines := strings.Split(stripANSI(opened.View(80)), "\n")
+	if len(lines) != 2 || !strings.HasPrefix(lines[1], strings.Repeat(" ", GridDetailIndent)) {
+		t.Fatalf("the body indents under the row, got %q", lines)
+	}
+}
+
 // The place a search was put is dim only where the target is carrying it. A
 // pattern that happens to end the way a scope does is still the subject
 // whole: the row is told what its place is and does not go looking for one.

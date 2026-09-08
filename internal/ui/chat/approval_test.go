@@ -295,10 +295,14 @@ func TestGatedTool_StalePreviewNamesTheFile(t *testing.T) {
 		t.Fatal("stream should resume after skipping the stale call")
 	}
 	row := m.transcript[len(m.transcript)-1]
-	if want := "skipped · " + path + " changed since it was read"; row.text != want {
-		t.Errorf("transcript row:\n got %q\nwant %q", row.text, want)
+	if row.kind != entryTool || row.text != path {
+		t.Errorf("the refusal is the call's own row, about the file:\n got %v %q\nwant %v %q",
+			row.kind, row.text, entryTool, path)
 	}
-	if row.text == skippedArgsNotice {
+	if row.skipped != tools.StaleReason {
+		t.Errorf("row reason:\n got %q\nwant %q", row.skipped, tools.StaleReason)
+	}
+	if row.skipped == skippedArgsReason {
 		t.Error("a stale refusal must not read as a malformed call")
 	}
 }

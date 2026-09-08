@@ -60,9 +60,12 @@ const (
 	// outcome and not a count because nothing was found and nothing ran:
 	// what happened is that somebody decided.
 	OutcomeAnswered = "answered"
-	// OutcomeSkipped is a question that was never put to anybody, so nobody
-	// decided: the row names the rule that answered it instead
-	// (docs/capabilities/coding-agent.md#the-model-can-ask).
+	// OutcomeSkipped is an act nobody was put and nobody decided. Two
+	// things reach it: a question the turn's spent budget answered instead
+	// of the reader (docs/capabilities/coding-agent.md#the-model-can-ask),
+	// and a call the queue refused before it could reach a card at all. One
+	// word for both, because the row's next field is what tells them apart —
+	// what answered the question, or why the call was never put.
 	OutcomeSkipped     = "skipped"
 	OutcomeAutoAllowed = "auto-allowed"
 	// OutcomeAmended is a command the reader rewrote at the card before it
@@ -161,8 +164,10 @@ type ActivityRow struct {
 	// (docs/interface/principles.md#one-grid). Empty on every row whose
 	// target is its subject whole.
 	Scope string
-	// Outcome and Counts render as one right-aligned field, joined by ` · `. The
-	// field never clips: it is the reason to read the row.
+	// Outcome and Counts render as one right-aligned field, joined by ` · `. It
+	// is the reason to read the row, so it never gives way to the target; the
+	// pane is the one thing it does give way to
+	// (docs/interface/principles.md#one-grid).
 	Outcome string
 	Counts  string
 	// Allowed is the account of a gated call that ran without the reader
@@ -507,8 +512,9 @@ func durationField(d string) string {
 // gridLine assembles one line on the grid: a lead already padded to
 // leadWidth, then the target, the outcome field and the duration. The target
 // grows into whatever the fixed fields leave and clips with … so the outcome
-// never has to — it is the reason to read the line. Both the activity row and
-// the folded group row are this shape, which is why they line up.
+// does not have to — it is the reason to read the line, and it gives way to
+// nothing but the pane. Both the activity row and the folded group row are
+// this shape, which is why they line up.
 func gridLine(lead, target, outcome, duration string, width int) string {
 	return gridLineWith(lead, target, func(s string) string { return sty.Dim.Render(s) }, outcome, duration, width)
 }
@@ -524,13 +530,35 @@ func gridLineWith(lead, target string, paint func(string) string, outcome, durat
 	if outW > 0 {
 		sep = 2
 	}
-	target = Clip(target, width-leadWidth-durWidth-outW-sep)
-	pad := width - leadWidth - lipgloss.Width(target) - outW - durWidth
-	if pad < sep {
-		pad = sep
+	// The outcome never gives way to the target, and this is the one thing
+	// it does give way to: the pane itself. Where the lead, the outcome and
+	// the duration are already wider than the terminal there is nothing left
+	// to spend, and a field that kept its whole length would run past the
+	// right edge and wrap into the row below — which costs the reader the
+	// column the grid exists to give them
+	// (docs/interface/principles.md#one-grid). So the tail clips with …, and
+	// the head of the field — the outcome word itself — is what survives.
+	if room := width - leadWidth - durWidth - sep; outW > room {
+		outcome = Clip(outcome, room)
+		outW = lipgloss.Width(outcome)
+		if outW == 0 {
+			sep = 0
+		}
 	}
-	line := lead + paint(target) + strings.Repeat(" ", pad) + outcome + durationField(duration)
-	return strings.TrimRight(line, " ")
+	target = Clip(target, width-leadWidth-durWidth-outW-sep)
+	// The gap is at least the separator, and the separator is never less
+	// than nothing — a pane narrower than the fixed fields leaves this
+	// arithmetic negative, and a negative run of spaces is a panic rather
+	// than a short line.
+	pad := max(width-leadWidth-lipgloss.Width(target)-outW-durWidth, sep)
+	line := strings.TrimRight(lead+paint(target)+strings.Repeat(" ", pad)+outcome+durationField(duration), " ")
+	// The last word on the width, over fields that have already given up what
+	// they can. Below about twenty columns the fixed fields alone are wider
+	// than the pane and there is nothing left to take from them, and a row
+	// that overflowed there would be broken by the terminal rather than by
+	// the grid (docs/interface/principles.md#one-grid). Above it this is one
+	// measurement and no change.
+	return Clip(line, width)
 }
 
 // View renders the row (plus tail and detail lines) at the given width.
@@ -630,6 +658,61 @@ func (g ActivityGroup) View(width int) string {
 		sty.Dim.Render("▸") + " " +
 		sty.Dim.Render("⚙") + strings.Repeat(" ", verbWidth-1)
 	return gridLine(lead, g.Label, sty.Hint.Render(GroupExpandKey), g.Duration, width)
+}
+
+// ActivityNotice is a line the session wrote about itself rather than an act
+// it took — a conversation reopened, a new one started. It sits on the grid
+// beside the acts: the verb it opens with in the verb column, what it is
+// about in the growing target, and what came of it right-aligned where every
+// other outcome is (docs/interface/principles.md#one-grid). Before this, the
+// session's own lines were sentences at column 0 that ran past the pane and
+// were broken by the terminal wherever they happened to run out.
+//
+// The glyph column is blank, the way the folded group row's fields are
+// shifted: the glyph says which kind of act a row was, and this is not one.
+// It is dim throughout for the same reason — the session's bookkeeping is
+// chrome about the transcript rather than something that touched the
+// machine, which is the bottom of the weight order
+// (docs/interface/principles.md#weight-tracks-risk).
+//
+// A notice with no verb from a closed vocabulary to open with is prose, and
+// its host wraps it to the pane rather than laying it on the grid.
+type ActivityNotice struct {
+	// Verb is the closed verb vocabulary, padded or clipped to 8 columns.
+	Verb string
+	// Subject is the growing field: what the notice is about.
+	Subject string
+	// Outcome is the right-aligned field: what came of it.
+	Outcome string
+	// Detail is the body a reader opens the notice for, already wrapped by
+	// the host — a notice's body is a sentence, and a sentence clipped is
+	// worse than one that costs two lines.
+	Detail   []string
+	Expanded bool
+}
+
+// View renders the notice at the given width.
+func (n ActivityNotice) View(width int) string {
+	lead := strings.Repeat(" ", ptrWidth+railWidth+glyphWidth) + verbFieldIn(n.Verb, sty.Dim)
+	// Rendered only when there is something to render: an empty field put
+	// through a style is escape bytes with no width, which the line's own
+	// trailing trim then cannot see to remove.
+	outcome := ""
+	if n.Outcome != "" {
+		outcome = sty.Dim.Render(n.Outcome)
+	}
+	lines := []string{gridLineWith(lead, n.Subject, func(s string) string {
+		if s == "" {
+			return ""
+		}
+		return sty.Dim.Render(s)
+	}, outcome, "", width)}
+	if n.Expanded {
+		for _, d := range n.Detail {
+			lines = append(lines, indented(d, detailIndent, width))
+		}
+	}
+	return strings.Join(lines, "\n")
 }
 
 // The step outline draws its headers on this same grid but lives in

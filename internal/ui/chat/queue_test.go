@@ -18,6 +18,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 // keyA presses the batch key.
@@ -623,14 +624,20 @@ func TestSkippedCallEntryTellsStalenessFromBadArguments(t *testing.T) {
 
 	stale := m.skippedCallEntry("write_file", fmt.Errorf("invalid arguments: %w",
 		tools.StaleError{Path: filepath.Join(root, "internal", "agent", "loop.go")}))
-	if want := "skipped · internal/agent/loop.go changed since it was read"; stale.text != want {
-		t.Errorf("stale row:\n got %q\nwant %q", stale.text, want)
+	if stale.text != "internal/agent/loop.go" || stale.skipped != tools.StaleReason {
+		t.Errorf("stale row:\n got subject %q reason %q\nwant %q, %q",
+			stale.text, stale.skipped, "internal/agent/loop.go", tools.StaleReason)
 	}
 	if !strings.Contains(stale.toolResult, "read_file it again") {
 		t.Errorf("the model's sentence should be the row's expansion, got %q", stale.toolResult)
 	}
-	if stale.kind != entrySystem {
-		t.Errorf("a refused call is a system row, got kind %d", stale.kind)
+	if stale.kind != entryTool {
+		t.Errorf("a refused call is the call's own row, got kind %d", stale.kind)
+	}
+	// The row says it in the outcome column, in the grid's own words.
+	if row := m.activityRowFor(stale); row.Outcome != components.OutcomeSkipped ||
+		row.Allowed != tools.StaleReason || row.Duration != components.NoDuration {
+		t.Errorf("the row states the refusal on the grid, got %+v", row)
 	}
 	// The expansion has to be reachable, or the sentence is hidden rather
 	// than folded.
@@ -640,8 +647,9 @@ func TestSkippedCallEntryTellsStalenessFromBadArguments(t *testing.T) {
 
 	given := fmt.Errorf("invalid arguments: %w", errors.New("path is required"))
 	bad := m.skippedCallEntry("write_file", given)
-	if want := "skipped · write_file · invalid arguments"; bad.text != want {
-		t.Errorf("malformed row:\n got %q\nwant %q", bad.text, want)
+	if bad.text != "write_file" || bad.skipped != skippedArgsReason {
+		t.Errorf("malformed row:\n got subject %q reason %q\nwant %q, %q",
+			bad.text, bad.skipped, "write_file", skippedArgsReason)
 	}
 	// The model is handed this sentence and the reader must be handed the
 	// same one, or three of these rows in a session cannot be told apart.
@@ -654,13 +662,18 @@ func TestSkippedCallEntryTellsStalenessFromBadArguments(t *testing.T) {
 	}
 }
 
-// A call that arrives without a tool name has nothing to name, so the row
-// falls back to the notice rather than printing an empty field.
+// A call that arrives without a tool name has nothing to name, so the row's
+// subject is empty and the outcome carries the whole of what is known.
 func TestSkippedCallEntryFallsBackWhenTheToolIsUnnamed(t *testing.T) {
 	m := New(nil, mockStream)
 	e := m.skippedCallEntry("", errors.New("invalid arguments: path is required"))
-	if e.text != skippedArgsNotice {
-		t.Errorf("unnamed row:\n got %q\nwant %q", e.text, skippedArgsNotice)
+	if e.text != "" || e.skipped != skippedArgsReason {
+		t.Errorf("unnamed row:\n got subject %q reason %q\nwant %q, %q",
+			e.text, e.skipped, "", skippedArgsReason)
+	}
+	if row := m.activityRowFor(e); row.Verb != "" || row.Target != "" ||
+		row.Outcome != components.OutcomeSkipped {
+		t.Errorf("nothing but the refusal is known, got %+v", row)
 	}
 	if e.toolResult == "" {
 		t.Error("an unnamed call still folds the sentence the model was given")

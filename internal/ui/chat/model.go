@@ -417,6 +417,21 @@ type entry struct {
 	// question that reached them, where what the row has to say is that
 	// somebody decided (question.go).
 	answerRule string
+	// skipped is why a call never reached a card: the arguments would not
+	// parse, or the file it named had changed since it was read (queue.go).
+	// It is the account beside `skipped` in the row's outcome field, so a
+	// refused call is an act on the grid like every other act rather than a
+	// sentence at the left edge of a transcript made of columns
+	// (docs/interface/principles.md#one-grid). Empty on every call the queue
+	// accepted, which is nearly all of them.
+	skipped string
+	// notice is the grid row a system notice draws itself as, where it is a
+	// row rather than a sentence: what the session did to itself — reopened
+	// a conversation, started a new one — in the transcript's own columns.
+	// The body under it is still outputLines(e), so the fold works the way
+	// it does on every other notice. Nil on a notice that is only prose,
+	// which is most of them.
+	notice *components.ActivityNotice
 	// allowedBy names what let a gated call run without the reader being
 	// asked — the mode or grant that allowed it, "classifier", or the batch —
 	// and renders in the act's own outcome field. The feed states an act

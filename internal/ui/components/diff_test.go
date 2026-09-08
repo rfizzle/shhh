@@ -49,13 +49,20 @@ func TestUnifiedLines_EmptyShowsNoChanges(t *testing.T) {
 	}
 }
 
+// An applied edit is an activity row: the mutation rail in the gutter, the
+// verb in the verb column and the stats in the outcome field, so it lines up
+// with the call that made it instead of standing at column 0 in a shape of
+// its own.
 func TestDiffView_RowView(t *testing.T) {
-	v := &DiffView{Path: "main.go", Verb: "edit", Hunks: sampleHunks(t)}
-	row := v.RowView(80)
-	for _, want := range []string{"✎ edit", "main.go", "+1 −1 · 1 hunk", "[enter] expand"} {
+	v := &DiffView{Path: "main.go", Verb: "edit", Hunks: sampleHunks(t), Duration: "1.1s"}
+	row := stripANSI(v.RowView(80))
+	for _, want := range []string{"▎✎ edit    main.go", "+1 −1 · 1 hunk", "1.1s"} {
 		if !strings.Contains(row, want) {
 			t.Fatalf("collapsed row should contain %q, got %q", want, row)
 		}
+	}
+	if !strings.HasPrefix(row, strings.Repeat(" ", GridPointerWidth)+"▎") {
+		t.Fatalf("the rail sits in the gutter, after the pointer column: %q", row)
 	}
 	if strings.Contains(row, "\n") {
 		t.Fatalf("collapsed row must be a single line, got %q", row)
@@ -296,8 +303,10 @@ func TestDiffView_TheAccountGivesWayToThePath(t *testing.T) {
 	if strings.Contains(narrow, "auto-allowed") {
 		t.Fatalf("a row without room drops the account:\n%s", narrow)
 	}
-	if !strings.Contains(narrow, "internal/ui/chat/approval.go") {
-		t.Fatalf("and keeps the path:\n%s", narrow)
+	// And spends what the account was taking on the path, which then clips
+	// where the grid clips every target rather than where this view would.
+	if !strings.Contains(narrow, "internal/ui/chat/approva") {
+		t.Fatalf("and spends the room on the path:\n%s", narrow)
 	}
 	// The expanded form answers the same way, so opening a row never loses
 	// what the closed one said.

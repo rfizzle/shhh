@@ -177,7 +177,7 @@ func TestPressure_EnterCompactsAndNKeepsTheSessionSaved(t *testing.T) {
 	// Without a store there is nowhere to save to, and the notice says only
 	// what happened: the save clause is an offer, not a claim.
 	last := after.transcript[len(after.transcript)-1]
-	if last.kind != entrySystem || !strings.Contains(last.text, "new session") {
+	if !isSessionBoundary(last) || last.notice.Outcome != sessionStarted {
 		t.Fatalf("[n] should say what it did with the old conversation, got %+v", last)
 	}
 	if after.pressureShown {

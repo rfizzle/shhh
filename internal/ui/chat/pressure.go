@@ -270,11 +270,11 @@ func (m Model) closePressure() (tea.Model, tea.Cmd) {
 // recovery that leaves half the session behind is what a card offering it
 // would be trusted not to do.
 func (m Model) pressureNewSession() (tea.Model, tea.Cmd) {
-	note, save := m.startNewSession()
+	notes, save := m.startNewSession()
 	// The window is empty again, so the next crossing is a new crossing —
 	// for the card and for the compaction a round tail asks for.
 	m.pressureShown, m.autoCompacted = false, false
-	m.appendEntry(entry{kind: entrySystem, text: note})
+	m.appendEntries(notes)
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	return m, save

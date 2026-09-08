@@ -192,15 +192,17 @@ func TestResumeNotice_NoSummaryLeavesNoPlaceholder(t *testing.T) {
 	}
 }
 
+// The row's growing field: the branch and how much is changed. The verb in
+// front of it is the row's own column, not part of the subject.
 func TestResumeRow_NamesTheBranchAndWhatIsChanged(t *testing.T) {
-	if got := resumeRow(repoSurvey()); got != "resumed · master · 3 changed" {
+	if got := resumeSubject(repoSurvey()); got != "master · 3 changed" {
 		t.Fatalf("row = %q", got)
 	}
 	detached := project.Info{Dir: "/w", Repo: true, Detached: true, Head: headNow}
-	if got := resumeRow(detached); got != "resumed · (detached) · 0 changed" {
+	if got := resumeSubject(detached); got != "(detached) · 0 changed" {
 		t.Fatalf("detached row = %q", got)
 	}
-	if got := resumeRow(project.Info{Dir: "/w"}); got != "resumed · no git here" {
+	if got := resumeSubject(project.Info{Dir: "/w"}); got != "no git here" {
 		t.Fatalf("non-repo row = %q", got)
 	}
 }
@@ -336,7 +338,7 @@ func TestResumeConversation_InjectsAheadOfTheTranscriptAndDrawsOneRow(t *testing
 	}
 
 	row := m.transcript[len(m.transcript)-1]
-	if row.kind != entrySystem || !strings.HasPrefix(row.text, resumeVerb+" ·") {
+	if row.kind != entrySystem || row.notice == nil || row.notice.Verb != resumeVerb {
 		t.Fatalf("the last row should be the resumed row, got %+v", row)
 	}
 	if row.toolResult == "" || !strings.HasPrefix(row.toolResult, resumeMessagePrefix) {

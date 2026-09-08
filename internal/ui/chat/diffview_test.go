@@ -6,13 +6,40 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/changeset"
+	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
+
+// An applied edit packs into the feed like every other act. It used to be a
+// block, so the archetypal mutation was set apart by a blank line either side
+// from the rows it belongs among (docs/interface/principles.md#one-grid).
+func TestAppliedEdit_PacksIntoTheFeedLikeAnyOtherRow(t *testing.T) {
+	m := activityModel(t)
+	row := entry{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"loop.go"}`,
+		toolResult: "package agent", duration: 400 * time.Millisecond}
+	edit := entry{kind: entryDiff, diff: &components.DiffView{
+		Path: "loop.go", Verb: "edit", Mode: components.DiffCollapsed, Duration: "1.1s",
+		Hunks: diff.Compute("const limit = 25\n", "const limit = 50\n"),
+	}}
+	m.transcript = []entry{row, edit, row}
+	m.invalidateRenderCache()
+
+	lines := strings.Split(strings.TrimRight(stripANSI(m.renderHistory()), "\n"), "\n")
+	for i, line := range lines {
+		if strings.TrimSpace(line) == "" {
+			t.Fatalf("a run of rows has no gaps in it, blank at %d:\n%s", i, strings.Join(lines, "\n"))
+		}
+	}
+	if len(lines) != 3 || !strings.Contains(lines[1], "▎✎ edit    loop.go") {
+		t.Fatalf("the edit is one row between the two reads:\n%s", strings.Join(lines, "\n"))
+	}
+}
 
 // appliedEditModel drives a write_file call through approval so the applied
 // edit lands in the transcript.
@@ -52,8 +79,10 @@ func TestAppliedEdit_LandsAsCollapsedDiffRow(t *testing.T) {
 	if d.Mode != components.DiffCollapsed {
 		t.Fatalf("applied edit should start collapsed, got mode %d", d.Mode)
 	}
-	row := d.RowView(200)
-	for _, want := range []string{"✎ write", "+1 −0", "[enter] expand"} {
+	// An activity row like the call that made it: the mutation rail, the
+	// glyph, the verb in its column and the stats in the outcome field.
+	row := stripANSI(d.RowView(200))
+	for _, want := range []string{"▎✎ write ", "+1 −0"} {
 		if !strings.Contains(row, want) {
 			t.Fatalf("collapsed row should contain %q:\n%s", want, row)
 		}

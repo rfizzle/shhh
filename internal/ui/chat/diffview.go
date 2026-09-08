@@ -44,7 +44,15 @@ func (m Model) systemNotice(text string) (tea.Model, tea.Cmd) {
 	if text == "" {
 		return m, nil
 	}
-	m.appendEntry(entry{kind: entrySystem, text: text})
+	return m.systemEntries([]entry{{kind: entrySystem, text: text}})
+}
+
+// systemEntries is systemNotice for the rows a single act left behind, where
+// the act has already built them: the session boundary's own row is on the
+// grid rather than written as a sentence, so what it hands back is entries
+// and not text.
+func (m Model) systemEntries(es []entry) (tea.Model, tea.Cmd) {
+	m.appendEntries(es)
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	return m, nil

@@ -144,13 +144,17 @@ func (m Model) advanceSprint(done string) (tea.Model, tea.Cmd) {
 	// The same boundary /new crosses, through the same function: one
 	// definition of what a session ending and another beginning resets
 	// (model.go).
-	note, save := m.startNewSession()
+	notes, save := m.startNewSession()
 	// The new session's first row says which item comes next. Everything
 	// else the boundary carried is gone by design, so a reader who comes
 	// back to a fresh transcript would otherwise have to open the board to
-	// find out what the sprint is about to work.
-	note += sprintNextNote(sp, m.todoStore)
-	model, _ := m.systemNotice(note)
+	// find out what the sprint is about to work. It is its own row, beside
+	// the boundary's: the boundary states what happened to the conversation
+	// and this states what happens next, which are two facts.
+	if next := sprintNextNote(sp, m.todoStore); next != "" {
+		notes = append(notes, entry{kind: entrySystem, text: next})
+	}
+	model, _ := m.systemEntries(notes)
 	next, cmd := model.(Model).sprintNext(sp)
 	return next, tea.Batch(save, cmd)
 }
@@ -161,9 +165,9 @@ func (m Model) advanceSprint(done string) (tea.Model, tea.Cmd) {
 // that follows it cannot name different items.
 func sprintNextNote(sp *run.Sprint, store *todo.Store) string {
 	if next, ok := sp.Peek(store); ok {
-		return "\nNext in the sprint: " + next.Slug + " · " + next.Title
+		return "Next in the sprint: " + next.Slug + " · " + next.Title
 	}
-	return "\nNothing is left that the sprint can start; it ends here."
+	return "Nothing is left that the sprint can start; it ends here."
 }
 
 // endTodoSprint retires the sprint: the mode the session was in before it

@@ -1,0 +1,21 @@
+# One reply per request. The last line repeats once these run out.
+# One turn that applies an edit and then has one refused. The read is what
+# gives the model its picture of the file; the edit lands against that
+# picture and draws the row this scene is for; the command moves the file
+# under it; and the write that follows is refused before it can reach a card,
+# because what it would overwrite is no longer what the model was shown.
+tool:read_file:{"path":"loop.go"}
+tool:edit_file:{"path":"loop.go","old_text":"const limit = 25","new_text":"const limit = 50"}
+# The session asks the model on its own account twice over a turn this long —
+# once to title the conversation, once to take its own reading of the run —
+# and each takes the next reply written here. So there is a spare read on
+# either side of the command: taken, the turn skips it; left, it draws one
+# more read row and every row below still lands in the same order. It reads
+# the other file on purpose. A read of loop.go here would give the model a
+# fresh picture of it, and the refusal below is the model acting on a stale
+# one. A prose line would end the turn instead of being spent.
+tool:read_file:{"path":"notes.md"}
+tool:execute_command:{"command":"printf 'package agent\\n\\nconst limit = 12\\n' > loop.go"}
+tool:read_file:{"path":"notes.md"}
+tool:write_file:{"path":"loop.go","content":"package agent\n\nconst limit = 99\n"}
+The cap is where the file says it is.

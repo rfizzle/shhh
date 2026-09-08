@@ -1122,7 +1122,7 @@ func TestNewSession_LeavesTheOldConversationWholeAndStartsAnother(t *testing.T) 
 	})
 	left := m.sessionName
 
-	note, save := m.startNewSession()
+	notes, save := m.startNewSession()
 	if save == nil {
 		t.Fatal("the conversation being left behind should be written down")
 	}
@@ -1157,9 +1157,13 @@ func TestNewSession_LeavesTheOldConversationWholeAndStartsAnother(t *testing.T) 
 		t.Fatalf("the rail's spend starts over, got %+v", got)
 	}
 	// The row where the exit banner would have been: what was left, and how
-	// to get back to it.
-	if !strings.Contains(note, left) || !strings.Contains(note, "shhh code --continue") {
-		t.Fatalf("the row should name the slot and the command that reopens it, got %q", note)
+	// to get back to it, in the grid's own two fields.
+	if len(notes) != 1 || notes[0].notice == nil {
+		t.Fatalf("the boundary leaves one row behind, got %+v", notes)
+	}
+	row := *notes[0].notice
+	if row.Subject != left || !strings.Contains(row.Outcome, "shhh code --continue") {
+		t.Fatalf("the row should name the slot and the command that reopens it, got %+v", row)
 	}
 	// And the new row in the record is linked to the new slot, so neither
 	// conversation is counted under the other's.
@@ -1245,6 +1249,15 @@ func TestNewSession_OverATurnThatIsNotOverAsksFirst(t *testing.T) {
 
 // And yes crosses it: the turn is cancelled the way the cancel chord cancels
 // one, and the session comes out the other side new.
+// isSessionBoundary reports whether an entry is the row a session boundary
+// opens the new conversation on. It is asked by name because the row is a
+// row on the grid and not a sentence: there is no prose to match a substring
+// against, and every test that used to look for one would otherwise look for
+// it a different way.
+func isSessionBoundary(e entry) bool {
+	return e.kind == entrySystem && e.notice != nil && e.notice.Verb == newSessionVerb
+}
+
 func TestNewSession_ConfirmedMidTurnCancelsAndCrosses(t *testing.T) {
 	m := workingModel(t)
 	m = sendText(t, m, "/new")
@@ -1261,8 +1274,7 @@ func TestNewSession_ConfirmedMidTurnCancelsAndCrosses(t *testing.T) {
 	if len(m.Messages()) != 1 {
 		t.Fatalf("the new conversation is the system prompt and nothing else, got %d", len(m.Messages()))
 	}
-	if last := m.transcript[len(m.transcript)-1]; last.kind != entrySystem ||
-		!strings.Contains(last.text, "new session") {
+	if last := m.transcript[len(m.transcript)-1]; !isSessionBoundary(last) {
 		t.Fatalf("the new session opens on its own row, got %+v", last)
 	}
 }

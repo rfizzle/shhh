@@ -179,8 +179,8 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 		if m.turnInFlight() {
 			return m.openNewSessionConfirm()
 		}
-		note, save := m.startNewSession()
-		next, cmd := m.systemNotice(note)
+		notes, save := m.startNewSession()
+		next, cmd := m.systemEntries(notes)
 		return next, tea.Batch(cmd, save)
 
 	case name == "/exit" || name == "/quit" || name == "/q":

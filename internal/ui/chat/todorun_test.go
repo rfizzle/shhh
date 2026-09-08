@@ -198,7 +198,7 @@ func TestTodoRun_ANewSessionKeepsTheRunsCheckpoint(t *testing.T) {
 	m = answer(t, m, runPlan)
 	m = answer(t, m, "done")
 
-	note, _ := m.startNewSession()
+	notes, _ := m.startNewSession()
 
 	if m.todoRunner.state != nil || m.policy.mode != agent.ModeManual {
 		t.Fatal("the run should be let go of and the mode restored")
@@ -213,8 +213,12 @@ func TestTodoRun_ANewSessionKeepsTheRunsCheckpoint(t *testing.T) {
 	if st.Over() {
 		t.Fatalf("the checkpoint should be continuable, stage %s", st.Stage)
 	}
-	if !strings.Contains(note, "/todo run do-it") {
-		t.Fatalf("the new session's first row should offer to continue it, got %q", note)
+	kept := ""
+	for _, n := range notes {
+		kept += n.text
+	}
+	if !strings.Contains(kept, "/todo run do-it") {
+		t.Fatalf("the new session's first rows should offer to continue it, got %q", kept)
 	}
 }
 

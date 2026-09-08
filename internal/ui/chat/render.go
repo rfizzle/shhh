@@ -26,6 +26,15 @@ func (m *Model) appendEntry(e entry) {
 	m.transcript = append(m.transcript, e)
 }
 
+// appendEntries appends a run of entries a single act left behind — the
+// session boundary's account and the offer beside it — so a caller that owns
+// none of them individually does not have to know how many there were.
+func (m *Model) appendEntries(es []entry) {
+	for _, e := range es {
+		m.appendEntry(e)
+	}
+}
+
 func (m *Model) resetTranscript() {
 	m.transcript = nil
 	// The index a fan-out would have converted points into a transcript that
@@ -271,31 +280,84 @@ func (m Model) renderEntryDetail(e entry, width int, keysLive, stepDetail bool) 
 // that do are the refusals whose short form is the useful one to scan and
 // whose long form is the one to act on
 // (docs/interface/principles.md#fold-never-hide).
+// A notice that carries a row of its own is drawn as that row: what the
+// session did to itself sits in the transcript's columns rather than beside
+// them (docs/interface/principles.md#one-grid).
 func (m Model) systemRow(e entry, width int) string {
-	row := sty.SystemMsg.Render(e.text)
+	if e.notice != nil {
+		row := *e.notice
+		row.Expanded = e.expanded
+		if e.expanded {
+			row.Detail = m.noticeBody(e, width)
+		}
+		return row.View(width)
+	}
+	row := m.wrapped(e.text, width)
 	if !e.expanded {
 		return row
 	}
-	lines := outputLines(e)
-	if len(lines) == 0 {
-		return row
-	}
-	indent := strings.Repeat(" ", components.GridDetailIndent)
-	inner := max(width-components.GridDetailIndent, 1)
-	// Wrapped rather than clipped: this body is a sentence, and half a
-	// sentence is worse than a row that costs two lines.
-	for _, l := range strings.Split(m.wordWrap(strings.Join(lines, "\n"), inner), "\n") {
-		row += "\n" + indent + sty.SystemMsg.Render(l)
+	if body := m.noticeBody(e, width); len(body) > 0 {
+		inner := max(width-components.GridDetailIndent, 1)
+		indent := strings.Repeat(" ", components.GridDetailIndent)
+		for _, l := range body {
+			row += "\n" + indent + sty.SystemMsg.Render(components.Clip(l, inner))
+		}
 	}
 	return row
 }
 
+// noticeBody is what a notice folds: the sentence a reader opened it for,
+// wrapped rather than clipped, because half a sentence is worse than a row
+// that costs two lines.
+func (m Model) noticeBody(e entry, width int) []string {
+	lines := outputLines(e)
+	if len(lines) == 0 {
+		return nil
+	}
+	inner := max(width-components.GridDetailIndent, 1)
+	return strings.Split(m.wordWrap(strings.Join(lines, "\n"), inner), "\n")
+}
+
+// wrapped is a notice's own line, wrapped to the pane. A notice is prose,
+// and prose that ran past the right edge was not a long row: it was a row
+// the terminal broke wherever it happened to run out, over the top of
+// whatever the pane drew in the column beside it. Wrapping is what keeps it
+// inside the grid, however many lines it costs
+// (docs/interface/principles.md#one-grid); a single word wider than the pane
+// — a path, a URL — has nowhere to break and clips instead.
+//
+// A notice that already arrived as several lines is left alone, and is left
+// alone whatever its widest line measures. It laid itself out — the key help,
+// a run's report — with its own columns and indents, so re-flowing it by
+// words would take a table apart and clipping it would cut a row of that
+// table off with no way to reach the rest, which is the one thing a fold may
+// not do (docs/interface/principles.md#fold-never-hide). A block wider than
+// the pane is its author's to fit; what the terminal does to it meanwhile
+// keeps the words on screen, which neither of the alternatives here does.
+func (m Model) wrapped(text string, width int) string {
+	if strings.Contains(text, "\n") {
+		return sty.SystemMsg.Render(text)
+	}
+	var out []string
+	for _, l := range strings.Split(m.wordWrap(text, width), "\n") {
+		out = append(out, sty.SystemMsg.Render(components.Clip(l, width)))
+	}
+	return strings.Join(out, "\n")
+}
+
 // entryIsBlock reports whether an entry reads as a standalone block — a
-// conversational turn, a diff, or a notice long enough to wrap onto its own
-// lines — rather than as a row in the compact activity feed.
+// conversational turn, or a notice long enough to wrap onto its own lines —
+// rather than as a row in the compact activity feed.
+//
+// An applied edit is not one of them. It is an activity row like the call
+// that made it (components/diff.go), and a row with a blank line either side
+// of it is the archetypal mutation set apart from the acts it belongs among
+// — which broke the one thing the feed is for, scanning a step's rows as one
+// run (docs/interface/principles.md#one-grid). Opened, it costs the lines
+// its body costs, the way an opened tool row does.
 func entryIsBlock(e entry) bool {
 	switch e.kind {
-	case entryUser, entryAssistant, entryCompactSummary, entryDiff,
+	case entryUser, entryAssistant, entryCompactSummary,
 		entryTurnClose, entryFanout, entryTodoRun:
 		return true
 	case entrySystem, entryError:

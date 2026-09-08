@@ -62,6 +62,19 @@ func captureGolden(t *testing.T, name, surface string, widths []int, panels func
 	}
 }
 
+// captureBoundedGolden is captureGolden for a surface that promises to fit
+// its pane: every rendered line is measured against the width before it is
+// captured, so a row that ran past the right edge fails the test rather than
+// being written into the file it is checked against.
+func captureBoundedGolden(t *testing.T, name, surface string, widths []int, panels func(width int) []golden.Panel) {
+	t.Helper()
+	captureGolden(t, name, surface, widths, func(width int) []golden.Panel {
+		ps := panels(width)
+		golden.Within(t, surface, width, ps)
+		return ps
+	})
+}
+
 // widthName suffixes a golden with the width it was taken at, so the four
 // captures of a surface sort together in the directory listing.
 func widthName(name string, width int) string {
@@ -91,7 +104,7 @@ func goldenHunks() []diff.Hunk {
 // sheet. Everything but the state is held constant, so the file
 // reads as a table of what each state contributes.
 func TestGolden_ActivityRows(t *testing.T) {
-	captureGolden(t, "activity-rows", "activity row grammar", goldenWidths, func(width int) []golden.Panel {
+	captureBoundedGolden(t, "activity-rows", "activity row grammar", goldenWidths, func(width int) []golden.Panel {
 		row := func(mut func(*ActivityRow)) string {
 			r := ActivityRow{Kind: ActivityTool, Verb: "read", Target: "internal/agent/loop.go"}
 			mut(&r)
@@ -769,7 +782,7 @@ func goldenFanout() []AgentRow {
 // TestGolden_DiffView captures the viewer's three modes: the transcript
 // row, the bounded in-transcript body, and the full-screen view.
 func TestGolden_DiffView(t *testing.T) {
-	captureGolden(t, "diff-view", "diff viewer", goldenWidths, func(width int) []golden.Panel {
+	captureBoundedGolden(t, "diff-view", "diff viewer", goldenWidths, func(width int) []golden.Panel {
 		view := func(mode DiffMode, mut func(*DiffView)) string {
 			d := &DiffView{
 				Path: "internal/agent/loop.go", Verb: "edit",

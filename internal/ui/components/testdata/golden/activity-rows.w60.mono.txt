@@ -26,7 +26,7 @@
    ◇ agent   writer-1 · docs/loop.md                ok 48.0s
 
 · kind · report page
-   ⛁ report    → http://127.0.0.1:52104/r/rp-8f3a11c04b2d9e61  0.8s
+   ⛁ report    → http://127.0.0.1:52104/r/rp-8f3a11c0…  0.8s
 
 · kind · think, folded
    ✻ think                   42 lines · [enter] expand
@@ -104,7 +104,7 @@
    ␛[38;5;254m◇␛[m ␛[38;5;254magent␛[m   ␛[38;5;254mwriter-1 · docs/loop.md␛[m                ␛[38;5;254mok␛[m ␛[38;5;244m48.0s␛[m
 
 · kind · report page
-   ␛[38;5;254m⛁␛[m ␛[38;5;254mreport␛[m  ␛[38;5;254m␛[m  ␛[38;5;254m→ http://127.0.0.1:52104/r/rp-8f3a11c04b2d9e61␛[m  ␛[38;5;244m0.8s␛[m
+   ␛[38;5;254m⛁␛[m ␛[38;5;254mreport␛[m  ␛[38;5;254m␛[m  ␛[38;5;254m→ http://127.0.0.1:52104/r/rp-8f3a11c0…␛[m  ␛[38;5;244m0.8s␛[m
 
 · kind · think, folded
    ␛[38;5;244m✻␛[m ␛[38;5;254mthink␛[m   ␛[38;5;254m␛[m                ␛[38;5;244m42 lines␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter] expand␛[m

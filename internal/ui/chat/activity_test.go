@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/colorprofile"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/digest"
@@ -34,6 +36,44 @@ func activityModel(t *testing.T) Model {
 	m := New(msgs, mockStream)
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	return updated.(Model)
+}
+
+// A notice is prose, and prose that ran past the right edge was not a long
+// row: it was a row the terminal broke wherever it happened to run out, over
+// the top of whatever the pane drew beside it. It wraps instead — and a
+// notice that arrived already laid out over several lines is left alone,
+// because re-flowing it by words takes a table apart to save a column
+// (docs/interface/principles.md#one-grid).
+func TestSystemRow_NoNoticeIsWiderThanThePane(t *testing.T) {
+	m := activityModel(t)
+	const long = "~/scratch/notes is not in a git repository and a run ends in a commit — " +
+		"/todo run cache-ttl --no-commit runs it without one, or todo.commit = false makes that the default."
+	const laid = "Keys:\n  enter          Send message\n  ctrl+n         Queue the draft"
+	m.transcript = []entry{{kind: entrySystem, text: long}, {kind: entrySystem, text: laid}}
+	m.invalidateRenderCache()
+
+	width := m.transcriptWidth()
+	lines := strings.Split(strings.TrimRight(stripANSI(m.renderHistory()), "\n"), "\n")
+	for i, line := range lines {
+		if w := lipgloss.Width(line); w > width {
+			t.Fatalf("line %d is %d columns in a %d-column pane: %q", i, w, width, line)
+		}
+	}
+	if joined := strings.Join(lines, " "); !strings.Contains(joined, "makes that the default.") {
+		t.Fatalf("wrapping drops nothing:\n%s", strings.Join(lines, "\n"))
+	}
+	// The block that laid itself out comes back with its own columns, line
+	// for line, rather than re-flowed by words.
+	trimmed := make([]string, len(lines))
+	for i, l := range lines {
+		trimmed[i] = strings.TrimRight(l, " ")
+	}
+	for _, want := range strings.Split(laid, "\n") {
+		if !slices.Contains(trimmed, want) {
+			t.Fatalf("a notice that laid itself out is left alone, want %q in:\n%s",
+				want, strings.Join(lines, "\n"))
+		}
+	}
 }
 
 func TestActivityRow_CollapsedNeverShowsOutput(t *testing.T) {

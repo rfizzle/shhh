@@ -194,20 +194,29 @@ func (e StaleError) Error() string {
 	return e.Path + " has changed since it was read; read_file it again and rebase this change on what it says now"
 }
 
-// Skipped is the same refusal as a transcript row, with the path written the
-// way the surface asking for it writes paths — workspace-relative, usually,
-// rather than as the model spelled it. It lives beside the model's sentence
-// because the session and a sub-agent both draw this row and they must draw
-// the same one; two packages spelling it separately is how they stop
-// agreeing. Weight is a system row rather than a card: nothing happened, and
-// a refused call is not a decision anyone has to make.
+// Skipped is the same refusal as one sentence, with the path written the way
+// the surface asking for it writes paths — workspace-relative, usually,
+// rather than as the model spelled it. It is what a surface with no grid to
+// lay the refusal on says; a session draws the fields instead, out of the
+// same StaleReason, so the two cannot describe one refusal differently.
+//
+// It lives beside the model's own sentence because both readings of this
+// failure belong together: two packages spelling it separately is how they
+// stop agreeing. Weight is a row rather than a card either way: nothing
+// happened, and a refused call is not a decision anyone has to make.
 // See docs/interface/principles.md#weight-tracks-risk.
 func (e StaleError) Skipped(display string) string {
 	if display == "" {
 		display = e.Path
 	}
-	return "skipped · " + display + " changed since it was read"
+	return "skipped · " + display + " " + StaleReason
 }
+
+// StaleReason is what happened to the file, in the words every surface that
+// reports the refusal uses for it: the tail of the sentence above, and the
+// account beside `skipped` in a transcript row's outcome field. One spelling
+// so a row and a notice cannot describe the same refusal differently.
+const StaleReason = "changed since it was read"
 
 // StaleSinceRead reports the file as stale — as StaleError, so every surface
 // draws the one refusal it already knows — when current is not the content

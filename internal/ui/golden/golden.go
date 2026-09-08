@@ -123,6 +123,29 @@ func Path(name string, mono bool) string {
 	return filepath.Join(Dir, name+".txt")
 }
 
+// Within asserts that no line of a surface's panels is wider than the width
+// it was rendered at. It is the check a golden cannot make for itself: a
+// capture holds whatever was rendered, so a row that ran past the pane is a
+// file nobody notices until a terminal wraps it in front of a reader
+// (docs/interface/principles.md#one-grid).
+//
+// It is not asked of every surface, because not every surface is a row: a
+// card at a width narrower than its own contents is a different question,
+// answered by the card. The surfaces that promise to fit their pane call
+// this beside their capture, and their goldens are then the record of the
+// promise being kept.
+func Within(t *testing.T, surface string, width int, panels []Panel) {
+	t.Helper()
+	for _, p := range panels {
+		for i, line := range strings.Split(ansi.Strip(p.View), "\n") {
+			if w := ansi.StringWidth(line); w > width {
+				t.Errorf("%s: %q line %d is %d columns wide in a %d-column pane:\n%s",
+					surface, p.Label, i+1, w, width, line)
+			}
+		}
+	}
+}
+
 // Assert compares one surface's render against its checked-in golden, or
 // rewrites it when the run is updating. A missing golden is a failure with
 // the flag to run rather than a silently created file: a new surface should

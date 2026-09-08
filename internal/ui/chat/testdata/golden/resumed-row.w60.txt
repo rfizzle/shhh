@@ -11,11 +11,11 @@
 
 ── layout ──────────────────────────────────────────────────
 · folded, which is how it opens
-resumed · master · 3 changed
+     resumed master · 3 changed
 
 
 · opened, on a checkout that has not moved
-resumed · master · 3 changed
+     resumed master · 3 changed
     [resume: branch master · 3 changed · HEAD e4f5a6b]
     This is the checkout as it stands now, read when
     the conversation was reopened. The transcript below
@@ -23,7 +23,7 @@ resumed · master · 3 changed
 
 
 · opened, on one that moved and with a summary from its last compaction
-resumed · master · 3 changed
+     resumed master · 3 changed
     [resume: branch master · 3 changed · HEAD e4f5a6b]
     HEAD has moved since this conversation was saved:
     a1b2c3d → e4f5a6b. The transcript below describes
@@ -41,30 +41,30 @@ resumed · master · 3 changed
 
 ── ansi ────────────────────────────────────────────────────
 · folded, which is how it opens
-␛[38;5;241mresumed · master · 3 changed␛[m
+     ␛[38;5;241mresumed␛[m ␛[38;5;241mmaster · 3 changed␛[m
 
 
 · opened, on a checkout that has not moved
-␛[38;5;241mresumed · master · 3 changed␛[m
-    ␛[38;5;241m[resume: branch master · 3 changed · HEAD e4f5a6b]␛[m
-    ␛[38;5;241mThis is the checkout as it stands now, read when␛[m
-    ␛[38;5;241mthe conversation was reopened. The transcript below␛[m
-    ␛[38;5;241mis from an earlier sitting.␛[m
+     ␛[38;5;241mresumed␛[m ␛[38;5;241mmaster · 3 changed␛[m
+    ␛[38;5;245m[resume: branch master · 3 changed · HEAD e4f5a6b]␛[m
+    ␛[38;5;245mThis is the checkout as it stands now, read when␛[m
+    ␛[38;5;245mthe conversation was reopened. The transcript below␛[m
+    ␛[38;5;245mis from an earlier sitting.␛[m
 
 
 · opened, on one that moved and with a summary from its last compaction
-␛[38;5;241mresumed · master · 3 changed␛[m
-    ␛[38;5;241m[resume: branch master · 3 changed · HEAD e4f5a6b]␛[m
-    ␛[38;5;241mHEAD has moved since this conversation was saved:␛[m
-    ␛[38;5;241ma1b2c3d → e4f5a6b. The transcript below describes␛[m
-    ␛[38;5;241mthe checkout at a1b2c3d, so re-read a file before␛[m
-    ␛[38;5;241mediting it, and do not revert or explain changes␛[m
-    ␛[38;5;241myou did not make.␛[m
-    ␛[38;5;241m␛[m
-    ␛[38;5;241mSummary written when this conversation was last␛[m
-    ␛[38;5;241mcompacted:␛[m
-    ␛[38;5;241m␛[m
-    ␛[38;5;241mThe cache work is half done: the lifetime is read␛[m
-    ␛[38;5;241mfrom config and honoured on get, and the eviction␛[m
-    ␛[38;5;241mpass is written but not yet called from anywhere.␛[m
+     ␛[38;5;241mresumed␛[m ␛[38;5;241mmaster · 3 changed␛[m
+    ␛[38;5;245m[resume: branch master · 3 changed · HEAD e4f5a6b]␛[m
+    ␛[38;5;245mHEAD has moved since this conversation was saved:␛[m
+    ␛[38;5;245ma1b2c3d → e4f5a6b. The transcript below describes␛[m
+    ␛[38;5;245mthe checkout at a1b2c3d, so re-read a file before␛[m
+    ␛[38;5;245mediting it, and do not revert or explain changes␛[m
+    ␛[38;5;245myou did not make.␛[m
+    ␛[38;5;245m␛[m
+    ␛[38;5;245mSummary written when this conversation was last␛[m
+    ␛[38;5;245mcompacted:␛[m
+    ␛[38;5;245m␛[m
+    ␛[38;5;245mThe cache work is half done: the lifetime is read␛[m
+    ␛[38;5;245mfrom config and honoured on get, and the eviction␛[m
+    ␛[38;5;245mpass is written but not yet called from anywhere.␛[m
 

@@ -66,6 +66,19 @@ func captureGolden(t *testing.T, name, surface string, widths []int, panels func
 	})
 }
 
+// captureBoundedGolden is captureGolden for a surface that promises to fit
+// its pane: every rendered line is measured against the width before it is
+// captured, so a row that ran past the right edge fails the test rather than
+// being written into the file it is checked against.
+func captureBoundedGolden(t *testing.T, name, surface string, widths []int, panels func(width int) []golden.Panel) {
+	t.Helper()
+	captureGolden(t, name, surface, widths, func(width int) []golden.Panel {
+		ps := panels(width)
+		golden.Within(t, surface, width, ps)
+		return ps
+	})
+}
+
 // captureCursorGolden is captureGolden for a surface that owns the terminal's
 // cursor: the coordinate goes in the header, where it is the only record of a
 // cursor the render itself shows nothing for. It takes one panel because the
@@ -1630,7 +1643,7 @@ func TestGolden_ScreenAttached(t *testing.T) {
 // row a call the model simply malformed gets, which names its tool and folds
 // its own sentence the same way.
 func TestGolden_StaleEditRow(t *testing.T) {
-	captureGolden(t, "stale-edit-row", "the refused stale edit", []int{80}, func(width int) []golden.Panel {
+	captureBoundedGolden(t, "stale-edit-row", "the refused stale edit", []int{80}, func(width int) []golden.Panel {
 		build := func(open bool) string {
 			m := frameModel(t, width, 40)
 			m = m.WithWorkspace("/work/shhh")
@@ -1668,12 +1681,12 @@ func TestGolden_StaleEditRow(t *testing.T) {
 // call's own duration.
 //
 // Three widths, because the account is what the row gives up when it runs
-// out of room: at 110 every row states it, at 80 only the row that can
-// afford it does, and at 60 none of them do and all three targets are back.
-// That give-way is the point of capturing the narrow widths — the account is
-// worth a row's spare columns and never worth its target.
+// out of room: at 110 every row states it, at 80 the two that can still
+// afford it do, and at 60 none of them do and every row spends what it saved
+// on its target. That give-way is the point of capturing the narrow widths —
+// the account is worth a row's spare columns and never worth its target.
 func TestGolden_AutoApproved(t *testing.T) {
-	captureGolden(t, "auto-approved", "what allowed an act nobody was asked about", []int{60, 80, 110}, func(width int) []golden.Panel {
+	captureBoundedGolden(t, "auto-approved", "what allowed an act nobody was asked about", []int{60, 80, 110}, func(width int) []golden.Panel {
 		paths := make([]string, 20)
 		for i := range paths {
 			paths[i] = fmt.Sprintf("internal/ui/chat/row%02d.go", i+1)
@@ -1967,16 +1980,17 @@ func TestGolden_TodoNoRepository(t *testing.T) {
 // last conversation is in and the command that reopens it — plus, when a
 // backlog run was let go of at its checkpoint, the command that continues it.
 //
-// Two widths, at the breakpoints either side of the row. A notice is emitted
-// as the sentence it is and the pane never re-wraps it, so the captures agree
-// — which is the property being pinned: the one thing the boundary says is a
-// sentence that reads the same in a narrow terminal as in a wide one, and a
-// row that grew a layout would show up here as the pair disagreeing.
+// Two widths, at the breakpoints either side of the row. The boundary itself
+// is a row on the grid — the slot in the growing field, how to get the
+// conversation back in the outcome — so the property being pinned is that
+// both fit their pane: the prose this used to be ran to a hundred and
+// sixteen columns at either width. The offer beside it is prose still, and
+// wraps rather than running past the edge.
 func TestGolden_NewSessionRow(t *testing.T) {
-	captureGolden(t, "new-session-row", "the row a new session opens on", []int{80, 110}, func(width int) []golden.Panel {
-		row := func(text string) string {
+	captureBoundedGolden(t, "new-session-row", "the row a new session opens on", []int{80, 110}, func(width int) []golden.Panel {
+		rows := func(es ...entry) string {
 			m := frameModel(t, width, 40)
-			m.appendEntry(entry{kind: entrySystem, text: text})
+			m.appendEntries(es)
 			return m.renderHistory()
 		}
 		it := todo.Item{
@@ -1988,11 +2002,15 @@ func TestGolden_NewSessionRow(t *testing.T) {
 		st := run.Start(it, "amber-lake", "manual", 1, run.Options{})
 		st.Stage = run.StageImplement
 		const slot, resume = "2026-09-04 11:20:07", "shhh code --continue"
+		boundary := entry{kind: entrySystem, notice: newSessionRow(slot, resume)}
+		kept := entry{kind: entrySystem, text: todoRunKeptNote(it, st, "this session ended")}
 		return []golden.Panel{
 			{Label: "the slot left behind, and the command that reopens it",
-				View: row(newSessionRow(slot, resume, ""))},
+				View: rows(boundary)},
 			{Label: "with a backlog run kept at its checkpoint",
-				View: row(newSessionRow(slot, resume, todoRunKeptNote(it, st, "this session ended")))},
+				View: rows(boundary, kept)},
+			{Label: "a conversation that was never written down",
+				View: rows(entry{kind: entrySystem, notice: newSessionRow("", "")})},
 		}
 	})
 }
@@ -2002,15 +2020,16 @@ func TestGolden_NewSessionRow(t *testing.T) {
 // the conversation was actually given underneath it.
 //
 // Two widths either side of the narrow breakpoint, because the body is the
-// part that has to survive one. The line is a sentence the pane never
-// re-wraps; the body is wrapped rather than clipped, which is what a
-// narrow capture pins — a body that clipped would promise a reading and show
-// half a sentence.
+// part that has to survive one. The line is a row on the grid — `resumed` in
+// the verb column, the branch and how much is changed beside it — and the
+// body is wrapped rather than clipped, which is what a narrow capture pins:
+// a body that clipped would promise a reading and show half a sentence.
 func TestGolden_ResumedRow(t *testing.T) {
-	captureGolden(t, "resumed-row", "the row a resumed conversation opens on", []int{60, 80}, func(width int) []golden.Panel {
+	captureBoundedGolden(t, "resumed-row", "the row a resumed conversation opens on", []int{60, 80}, func(width int) []golden.Panel {
 		row := func(n ResumeNotice, expanded bool) string {
 			m := frameModel(t, width, 40)
-			m.appendEntry(entry{kind: entrySystem, text: n.Notice, toolResult: n.Text, expanded: expanded})
+			m.appendEntry(entry{kind: entrySystem, toolResult: n.Text, expanded: expanded,
+				notice: &components.ActivityNotice{Verb: resumeVerb, Subject: n.Subject}})
 			return m.renderHistory()
 		}
 		const (

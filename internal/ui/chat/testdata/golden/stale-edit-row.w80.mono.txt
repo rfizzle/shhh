@@ -14,18 +14,17 @@
 You
   rebase the round cap on what loop.go says now
 
-skipped · internal/agent/loop.go changed since it was read
-skipped · write_file · invalid arguments
+  ▎⊘ write   internal/agent/loo…  skipped · changed since it was read     —
+  ▎⊘ write   write_file                   skipped · invalid arguments     —
 
 
 · the row opened · the sentence the model was given
 You
   rebase the round cap on what loop.go says now
 
-skipped · internal/agent/loop.go changed since it was read
-    /work/shhh/internal/agent/loop.go has changed since it was read;
-    read_file it again and rebase this change on what it says now
-skipped · write_file · invalid arguments
+  ▎⊘ write   internal/agent/loo…  skipped · changed since it was read     —
+    /work/shhh/internal/agent/loop.go has changed since it was read; read_…
+  ▎⊘ write   write_file                   skipped · invalid arguments     —
     invalid arguments: path is required
 
 
@@ -34,17 +33,16 @@ skipped · write_file · invalid arguments
 ␛[1;38;5;254mYou␛[m
   rebase the round cap on what loop.go says now
 
-␛[38;5;244mskipped · internal/agent/loop.go changed since it was read␛[m
-␛[38;5;244mskipped · write_file · invalid arguments␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;244m⊘␛[m ␛[38;5;244mwrite␛[m   ␛[38;5;244minternal/agent/loo…␛[m  ␛[38;5;244mskipped␛[m␛[38;5;244m · ␛[m␛[38;5;244mchanged since it was read␛[m     ␛[38;5;244m—␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;244m⊘␛[m ␛[38;5;244mwrite␛[m   ␛[38;5;244mwrite_file␛[m                   ␛[38;5;244mskipped␛[m␛[38;5;244m · ␛[m␛[38;5;244minvalid arguments␛[m     ␛[38;5;244m—␛[m
 
 
 · the row opened · the sentence the model was given
 ␛[1;38;5;254mYou␛[m
   rebase the round cap on what loop.go says now
 
-␛[38;5;244mskipped · internal/agent/loop.go changed since it was read␛[m
-    ␛[38;5;244m/work/shhh/internal/agent/loop.go has changed since it was read;␛[m
-    ␛[38;5;244mread_file it again and rebase this change on what it says now␛[m
-␛[38;5;244mskipped · write_file · invalid arguments␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;244m⊘␛[m ␛[38;5;244mwrite␛[m   ␛[38;5;244minternal/agent/loo…␛[m  ␛[38;5;244mskipped␛[m␛[38;5;244m · ␛[m␛[38;5;244mchanged since it was read␛[m     ␛[38;5;244m—␛[m
+    ␛[38;5;244m/work/shhh/internal/agent/loop.go has changed since it was read; read_…␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;244m⊘␛[m ␛[38;5;244mwrite␛[m   ␛[38;5;244mwrite_file␛[m                   ␛[38;5;244mskipped␛[m␛[38;5;244m · ␛[m␛[38;5;244minvalid arguments␛[m     ␛[38;5;244m—␛[m
     ␛[38;5;244minvalid arguments: path is required␛[m
 

@@ -77,7 +77,7 @@ func TestIdleOnlyCommand_RunsOnceIdle(t *testing.T) {
 	m = updated.(Model)
 
 	m = sendText(t, m, "/clear")
-	if len(m.transcript) != 1 || !strings.Contains(m.transcript[0].text, "Started a new session") {
+	if len(m.transcript) != 1 || !isSessionBoundary(m.transcript[0]) {
 		t.Fatalf("/clear should run once the turn ended, got %+v", m.transcript)
 	}
 }

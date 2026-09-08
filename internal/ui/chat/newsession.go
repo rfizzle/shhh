@@ -8,8 +8,6 @@ package chat
 // See docs/capabilities/sessions-and-memory.md#a-new-conversation-is-a-new-session.
 
 import (
-	"fmt"
-
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -25,11 +23,16 @@ import (
 // session wearing an empty transcript.
 // See docs/capabilities/sessions-and-memory.md#a-new-conversation-is-a-new-session.
 //
-// It answers with the row the new session opens on and the save of the one
+// It answers with the rows the new session opens on and the save of the one
 // left behind, which the caller runs: the boundary is a keystroke away from
 // the work of a whole sitting, and a row naming the slot is what makes that
 // recoverable rather than merely reversible.
-func (m *Model) startNewSession() (note string, save tea.Cmd) {
+//
+// Rows, plural, because the account and the offer are two different things.
+// The boundary itself is one row on the grid; a backlog run it let go of at
+// its checkpoint is an offer to act, and offers are not folded into an
+// account of what just happened.
+func (m *Model) startNewSession() (notes []entry, save tea.Cmd) {
 	// The autosave is built first and in quitting's own sequence: it reads
 	// the conversation as it stands and names the slot to the record that is
 	// about to be closed, so the row left behind describes the conversation
@@ -147,29 +150,52 @@ func (m *Model) startNewSession() (note string, save tea.Cmd) {
 		m.observer.Session(m.sessionName)
 	}
 
-	return newSessionRow(left, start.Resume, kept), save
+	notes = []entry{{kind: entrySystem, notice: newSessionRow(left, start.Resume)}}
+	if kept != "" {
+		notes = append(notes, entry{kind: entrySystem, text: kept})
+	}
+	return notes, save
 }
+
+// The two words the boundary's own row ends on. They are its outcome and not
+// an act's, so they are stated here rather than added to the closed outcome
+// vocabulary every activity row draws from
+// (docs/interface/principles.md#closed-vocabularies).
+const (
+	// sessionSaved leads the command that reopens what was left behind.
+	sessionSaved = "saved"
+	// sessionStarted is all a boundary can say where nothing was written
+	// down — there was nothing to save, or nowhere to save it.
+	sessionStarted = "started"
+)
+
+// newSessionVerb is the boundary's verb, in the column every other verb is
+// in.
+const newSessionVerb = "session"
 
 // newSessionRow is the row the new session opens on. It says where the exit
 // banner would have said it: the slot the conversation was left in and the
 // command that reopens it, because nothing is leaving the alt screen here and
-// a conversation nobody can name is one nobody gets back to. An empty slot is
-// a session that was not written down — there was nothing to save, or nowhere
-// to save it — and the row promises nothing rather than naming a slot that
-// holds something else. kept is the backlog run the boundary let go of, on a
-// line of its own: it is an offer to act, not part of the account.
-func newSessionRow(slot, resume, kept string) string {
-	note := "Started a new session."
+// a conversation nobody can name is one nobody gets back to.
+//
+// It is a row on the grid and not a sentence at the left edge
+// (docs/interface/principles.md#one-grid): the slot is what the row is about
+// and goes in the growing field, and how to get the conversation back is
+// what came of the boundary and goes in the outcome. Written as prose it ran
+// to a hundred and sixteen columns, which no terminal the product is drawn
+// for is wide enough to hold.
+//
+// An empty slot is a session that was not written down, and the row promises
+// nothing rather than naming a slot that holds something else.
+func newSessionRow(slot, resume string) *components.ActivityNotice {
+	row := &components.ActivityNotice{Verb: newSessionVerb, Outcome: sessionStarted}
 	switch {
 	case slot != "" && resume != "":
-		note += fmt.Sprintf(" The conversation so far is saved as %q; `%s` reopens it.", slot, resume)
+		row.Subject, row.Outcome = slot, sessionSaved+" · "+resume
 	case slot != "":
-		note += fmt.Sprintf(" The conversation so far is saved as %q.", slot)
+		row.Subject, row.Outcome = slot, sessionSaved
 	}
-	if kept != "" {
-		note += "\n\n" + kept
-	}
-	return note
+	return row
 }
 
 // setSystemPrompt puts the conversation back to one message: the prompt the

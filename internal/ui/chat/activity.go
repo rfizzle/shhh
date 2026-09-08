@@ -447,6 +447,27 @@ func (m Model) activityRowDetail(e entry, stepDetail bool) components.ActivityRo
 			row.Scope = scope
 		}
 		switch {
+		case e.skipped != "":
+			// A call the queue refused before it could reach a card
+			// (queue.go). It is the denied row's shape because that is what
+			// happened — ⊘, everything dim, and a dash where the duration
+			// would be — with `skipped` in the outcome and why in the
+			// account beside it. The subject is the file the call named, or
+			// the tool it named where the arguments were unreadable, which
+			// is all there was to go on.
+			row.State = components.ActivityDenied
+			row.Outcome = components.OutcomeSkipped
+			row.Allowed = e.skipped
+			row.Target, row.Scope = e.text, ""
+			row.Duration = components.NoDuration
+			// The sentence the model was given, whole, under the row rather
+			// than clipped into the outcome field beside the reason
+			// (docs/interface/principles.md#fold-never-hide). It is not
+			// output — the call never ran — so nothing counts it.
+			if result != "" {
+				row.Detail = strings.Split(strings.TrimRight(result, "\n"), "\n")
+			}
+			result = ""
 		case e.deniedBy != "":
 			// A refusal is not a failure: ⊘ and the decider's name say the
 			// call never ran, and the duration field says so too.
@@ -501,7 +522,7 @@ func (m Model) activityRowDetail(e entry, stepDetail bool) components.ActivityRo
 			row.State = components.ActivityFailed
 			row.Outcome = "error"
 		case e.toolName == structural.GitWriteToolName:
-			// The receipt is the outcome, where the field never clips: the
+			// The receipt is the outcome, the field the target clips for: the
 			// sha is the one part of a commit nobody can reconstruct from
 			// the call, and a row that kept it in a one-line body would make
 			// the reader open the row to learn what landed.
@@ -531,7 +552,7 @@ func (m Model) activityRowDetail(e entry, stepDetail bool) components.ActivityRo
 			// for what happened (docs/interface/surfaces.md#the-activity-row).
 			row.Outcome = components.OutcomeBy(components.OutcomeAnswered, string(e.answered))
 		case e.toolName == reports.ToolName:
-			// The link is the outcome — the one field that never clips —
+			// The link is the outcome — the field the target clips for —
 			// and the page is the body, so the row keeps nothing else. The
 			// result's first line is the URL by the tool's own contract.
 			row.Outcome = "→ " + firstLine(result)

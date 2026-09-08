@@ -1,0 +1,44 @@
+# An applied edit and a refused call, both as rows on the grid
+# (docs/interface/surfaces.md#the-activity-row). The edit is the archetypal
+# mutation and used to be the one row in the transcript with no rail on it:
+# the picture is looked at for the rail in the gutter, the ✎ beside it and
+# the verb in the same column as the read above.
+#
+# The refusal below it is the other half. A call the queue would not put to
+# anybody is the call's own row — ⊘ and every word dim, `skipped` in the
+# outcome column with why beside it, and the rail still in the gutter because
+# a refusal is a decision — rather than a sentence hanging off the left edge
+# of a pane made of columns.
+#
+# Spaces rather than tabs in the fixture: a tab is re-expanded by the
+# terminal against the pane's own columns, not the row's, and the capture
+# would read as a column that drifted.
+setup printf 'package agent\n\nconst limit = 25\n\nfunc round() int {\n    return limit\n}\n' > loop.go
+setup printf 'The cap is read from one place.\n' > notes.md
+snap 01-start "Some things worth doing first"
+keys "raise the round cap" Enter
+# The edit is gated, so the card is what the turn stops on. Each answer waits
+# out the card's grace window and then hands the keyboard over before
+# pressing: a letter that arrives while the draft still holds the keyboard
+# goes into the draft, and a card beside a draft with anything in it never
+# takes the keyboard at all.
+snap 02-card "const limit = 50"
+sleep 1
+keys C-Space
+sleep 0.3
+keys y
+# The command that moves the file under the model is the second decision, and
+# it is answered the same way — the handover only ever gives the keyboard to
+# the card, so asking twice costs nothing.
+snap 03-command-card "const limit = 12"
+sleep 1
+keys C-Space
+sleep 0.3
+keys y
+# The row the scene is for, and the refusal under it: the write never reaches
+# a card, so the turn runs to its last sentence on its own.
+snap 04-rows "The cap is where the file says it is"
+keys C-c
+snap 05-quit-armed "press again to quit"
+keys C-c
+snap 06-exit "that is everything the screen was holding"

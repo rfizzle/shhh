@@ -196,11 +196,20 @@ sentences. Five rules follow from fixing them:
   findings cannot be had — output a foreign tool shaped — the field says what
   it does know and calls it that.
 - **Only the target grows, and only the account gives way.** When the row is
-  too narrow, the target clips; the outcome never does, because the outcome
-  is the reason to read the row. The single exception is the account of a
-  call nobody was asked about — what allowed it — which the row drops rather
-  than squeeze the target past what still names the act: the mode that
-  allowed it is on the frame as well, and the target is nowhere else.
+  too narrow, the target clips; the outcome does not, because the outcome is
+  the reason to read the row. The single exception is the account of a call
+  nobody was asked about — what allowed it — which the row drops rather than
+  squeeze the target past what still names the act: the mode that allowed it
+  is on the frame as well, and the target is nowhere else.
+- **No row is wider than its pane.** The order above decides what a row gives
+  up to another field; this decides what it gives up to the terminal. A row
+  whose fixed fields and outcome are already wider than the screen has
+  nothing left to give, so the outcome's tail clips too — the head of the
+  field, the word that says what happened, is what survives. The alternative
+  is not a longer row: it is a row the terminal breaks wherever it runs out,
+  over the top of whatever is drawn in the column beside it, which costs the
+  reader the grid the row was for. A notice, being prose rather than fields,
+  wraps instead.
 - **Duration is a field, not a suffix.** Below the threshold it renders blank
   rather than as a zero, because a column of zeroes is noise. Something that
   never ran renders as a dash, which is not the same claim as zero.

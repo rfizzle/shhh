@@ -25,6 +25,7 @@ import (
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 // resumeVerb opens the row, and is closed like every other
@@ -49,8 +50,13 @@ const (
 // surface that built the second from the first would be paraphrasing it.
 type ResumeNotice struct {
 	Messages []provider.Message
-	Notice   string
-	Text     string
+	// Subject is what the row a reopened conversation opens on is about: the
+	// branch it is looking at and how much is changed. The verb in front of
+	// it is resumeVerb, and the row is laid on the grid rather than written
+	// as a sentence (docs/interface/principles.md#one-grid) — so the two
+	// fields are handed over as two fields.
+	Subject string
+	Text    string
 	// Summary is the stored handoff the messages carry, handed back so the
 	// session that took it can go on saving it. A resumed conversation that
 	// never compacts again would otherwise write an empty one over the slot
@@ -81,7 +87,7 @@ func ResumeContext(db *storage.DB, slot, dir string) ResumeNotice {
 // remembered, separately from the reading of either so it can be tested and
 // captured on facts built by hand.
 func resumeNotice(info project.Info, saved storage.ChatResume) ResumeNotice {
-	n := ResumeNotice{Notice: resumeRow(info)}
+	n := ResumeNotice{Subject: resumeSubject(info)}
 	n.Messages = append(n.Messages, provider.Message{
 		Role: provider.RoleUser, Content: resumeSurveyMessage(info, saved.Head)})
 	// No placeholder for a conversation that never compacted. A line saying
@@ -100,16 +106,17 @@ func resumeNotice(info project.Info, saved storage.ChatResume) ResumeNotice {
 	return n
 }
 
-// resumeRow is the folded row's line: the verb, the branch, and how much is
-// changed. The three facts a person checks before typing the next
-// instruction, in the order they check them — and the same three the message
-// under it opens with, so the row is an account of what was injected rather
-// than a second finding.
-func resumeRow(info project.Info) string {
+// resumeSubject is the growing field of the row a reopened conversation
+// opens on: the branch it is looking at and how much is changed. Those, and
+// the verb in front of them, are the three facts a person checks before
+// typing the next instruction, in the order they check them — and the same
+// three the message under the row opens with, so the row is an account of
+// what was injected rather than a second finding.
+func resumeSubject(info project.Info) string {
 	if !info.Repo {
-		return resumeVerb + " · no git here"
+		return "no git here"
 	}
-	return fmt.Sprintf("%s · %s · %d changed", resumeVerb, resumeBranch(info), info.Dirty)
+	return fmt.Sprintf("%s · %d changed", resumeBranch(info), info.Dirty)
 }
 
 // resumeBranch names the branch the way the tree reading names it: a detached
@@ -308,7 +315,8 @@ func (m *Model) injectResumeContext() {
 	// The line is the account and the body is what was actually said, which
 	// is the shape every folded row in the transcript has: the reader sees
 	// that the tree was read, and can open it to see what the model read.
-	m.appendEntry(entry{kind: entrySystem, text: n.Notice, toolResult: n.Text})
+	m.appendEntry(entry{kind: entrySystem, toolResult: n.Text,
+		notice: &components.ActivityNotice{Verb: resumeVerb, Subject: n.Subject}})
 	m.syncViewport()
 }
 

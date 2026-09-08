@@ -66,6 +66,10 @@ type DiffView struct {
 	// field: an act and the approval of it are one row, not two. Empty on an
 	// edit the reader approved at the card.
 	Allowed string
+	// Duration is how long the edit took, in the grid's own 6-column field.
+	// An applied edit is an act like any other and its row says what the act
+	// cost; empty renders blank, the way a call under the threshold does.
+	Duration string
 	// Files renders a multi-file patch in the full-screen view (the /diff
 	// session diff); when set, Path is just the header label and
 	// Hunks is ignored.
@@ -173,47 +177,40 @@ func (d *DiffView) statsLabel() string {
 	return fmt.Sprintf("+%d −%d · %s", adds, dels, plural(len(d.Hunks), "hunk"))
 }
 
-// rowLabel is the right-hand label of the two in-transcript forms: what let
-// the edit apply without anybody being asked, where something did, and then
-// the stats. The full-screen view leaves it off — it is the change itself,
-// and the row it was opened from carries the account.
+// row is the collapsed form as an ordinary activity row. An applied edit is
+// an act the session took, so it is the same seven fields as the call that
+// made it — pointer, mutation rail, ✎, the verb, the path, what it counted
+// and how long it took (docs/interface/principles.md#one-grid).
 //
-// It is given the room the label has to fit in, and drops the account rather
-// than crowd the path out of the row: the activity row gives the same field
-// up first and for the same reason. Room of zero or less asks for the whole
-// label whatever it costs.
-func (d *DiffView) rowLabel(room int) string {
-	stats := d.statsLabel()
-	if d.Allowed == "" {
-		return stats
-	}
-	full := d.Allowed + " · " + stats
-	if room <= 0 || room >= lipgloss.Width(full) {
-		return full
-	}
-	return stats
-}
-
-// RowView is the collapsed one-row transcript form.
-func (d *DiffView) RowView(width int) string {
+// It used to be a shape of its own: a glyph and a path at column 0, with the
+// stats pushed to the right edge and an expand key after them. That made the
+// archetypal mutation the one row in the transcript with no rail on it, so
+// the gutter a reader scrolls a long session by
+// (docs/interface/principles.md#weight-tracks-risk) skipped exactly the acts
+// they were scrolling to find. The expand key went with the shape: no other
+// row advertises the press, and reading mode's own bar is where the offer
+// belongs (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+//
+// The account gives way to the path here the way it does on every other row,
+// because it is the same field on the same grid rather than this view's own
+// arithmetic saying the same thing a second time.
+func (d *DiffView) row() ActivityRow {
 	verb := d.Verb
 	if verb == "" {
 		verb = "edit"
 	}
-	// The same subject the grid draws: the glyph says which act, the verb
-	// and the path are body text, and the label beside them is the account
-	// (docs/interface/principles.md#one-grid).
-	left := sty.Accent.Render("✎") + " " + sty.Body.Render(verb+" "+d.Path)
-	// What the label may spend before it starts eating the path: the row
-	// less the verb, a path still worth reading, the gap and the expand key.
-	room := width - lipgloss.Width("✎ "+verb+" ") - minTargetWidth - 2 - 3 - lipgloss.Width(GroupExpandKey)
-	right := paintCounts(d.rowLabel(room), sty.Dim) + "   " + sty.Hint.Render(GroupExpandKey)
-	gap := width - lipgloss.Width(left) - lipgloss.Width(right)
-	if gap < 2 {
-		return Clip(left+"  "+right, width)
+	return ActivityRow{
+		Kind:     ActivityEdit,
+		Verb:     verb,
+		Target:   d.Path,
+		Allowed:  d.Allowed,
+		Counts:   d.statsLabel(),
+		Duration: d.Duration,
 	}
-	return left + strings.Repeat(" ", gap) + right
 }
+
+// RowView is the collapsed one-row transcript form.
+func (d *DiffView) RowView(width int) string { return d.row().View(width) }
 
 // UnifiedOpts controls the unified rendering.
 type UnifiedOpts struct {
@@ -255,21 +252,26 @@ func UnifiedLines(hunks []diff.Hunk, width int, opts UnifiedOpts) []string {
 	return rows
 }
 
-// ExpandedLines is the bounded in-transcript unified view.
+// ExpandedLines is the bounded in-transcript unified view: the row it was
+// opened from, unchanged, and the change itself indented under it.
+//
+// The head is the collapsed row rather than a second rendering of the same
+// facts, so opening an edit never moves it on the grid or loses what the
+// closed row said. The body indents because that is what every detail body
+// under a row does — it does not re-grid
+// (docs/interface/principles.md#one-grid).
 func (d *DiffView) ExpandedLines(width int) []string {
-	head := sty.Accent.Render("✎ ") + sty.Body.Render(d.Path)
-	// The same arithmetic the collapsed row does: the head's glyph, a path
-	// still worth reading, and the gap between them and the label.
-	label := d.rowLabel(width - lipgloss.Width("✎ ") - minTargetWidth - 2)
-	if gap := width - lipgloss.Width(head) - lipgloss.Width(label); gap > 1 {
-		head += strings.Repeat(" ", gap) + paintCounts(label, sty.Dim)
-	}
 	body := max(d.MaxLines-1, 1)
 	if d.MaxLines == 0 {
 		body = 0
 	}
-	return append([]string{head},
-		UnifiedLines(d.Hunks, width, UnifiedOpts{LineNumbers: true, Emphasis: true, MaxLines: body, Syntax: d.Syntax})...)
+	inner := max(width-detailIndent, 1)
+	lines := []string{d.RowView(width)}
+	for _, l := range UnifiedLines(d.Hunks, inner, UnifiedOpts{
+		LineNumbers: true, Emphasis: true, MaxLines: body, Syntax: d.Syntax}) {
+		lines = append(lines, strings.Repeat(" ", detailIndent)+l)
+	}
+	return lines
 }
 
 // renderUnifiedLine renders one diff line: marker, optional line number, text
@@ -452,10 +454,13 @@ func (d *DiffView) fileSyntax(path string, explicit Syntax) Syntax {
 // footer hint. Side-by-side when toggled or the terminal is wide enough.
 func (d *DiffView) fullView(width int) string {
 	header := padRight(" "+d.Path, max(0, width-lipgloss.Width(d.statsLabel()))) + paintCounts(d.statsLabel(), sty.Dim)
-	footer := sty.Hint.Render("diff · " + strings.Join([]string{
+	// Clipped to the screen it is drawn on: a key row wider than the
+	// terminal wraps onto the body's last line and takes a line of the diff
+	// with it, which costs the reader more than the last offer costs.
+	footer := sty.Hint.Render(Clip("diff · "+strings.Join([]string{
 		offer(keys.Diff.Scroll), offer(keys.Diff.Hunk),
 		offer(keys.Diff.SideBySide), offer(keys.Diff.Back),
-	}, " · "))
+	}, " · "), width))
 
 	p := Pager{Offset: d.Offset, Height: d.bodyHeight()}
 	visible := p.Window(d.fullBody(width))

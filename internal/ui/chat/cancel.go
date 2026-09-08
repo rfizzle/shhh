@@ -228,8 +228,8 @@ func (m *Model) newSessionNow() tea.Cmd {
 	if m.runCancel != nil {
 		m.runCancel()
 	}
-	note, save := m.startNewSession()
-	m.appendEntry(entry{kind: entrySystem, text: note})
+	notes, save := m.startNewSession()
+	m.appendEntries(notes)
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	return save

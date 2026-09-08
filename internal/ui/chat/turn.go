@@ -553,6 +553,9 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 				MaxLines: maxDiffExpandedLines,
 				Syntax:   diffSyntax(req.path),
 				Allowed:  allowedLabel(req.autoRule, req.autoCost),
+				// An applied edit is an activity row, so it says what the
+				// act cost in the field every other act says it in.
+				Duration: activityDuration(msg.duration),
 			}})
 		} else if req.call.Name == subagent.SpawnToolName && digest.Outcome(msg.result) == digest.OutcomeOK {
 			m.appendSpawnEntry(row)

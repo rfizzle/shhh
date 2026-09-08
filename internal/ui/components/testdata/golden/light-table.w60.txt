@@ -19,15 +19,15 @@
 ❯  ⚙ read    internal/agent/loop.go          218 lines  0.6s
 
 · diff · the two verdicts and the hunk heading
-✎ internal/agent/loop.go                      +2 −1 · 1 hunk
-@@ -138,6 +138,7 @@
-  138      for round := 0; ; round++ {
-  139          if round >= a.maxRounds {
-- 140              return results, nil
-+ 140              return results, ErrRoundLimit
-+ 141          }
-  142          }
-  143      }
+  ▎✎ edit    internal/agent/loop.go     +2 −1 · 1 hunk
+    @@ -138,6 +138,7 @@
+      138      for round := 0; ; round++ {
+      139          if round >= a.maxRounds {
+    - 140              return results, nil
+    + 140              return results, ErrRoundLimit
+    + 141          }
+      142          }
+      143      }
 
 · card · the border, the question and the keys
 ╭─ Approve command ────────────────────────────────────────╮
@@ -47,15 +47,15 @@
 ␛[34m❯␛[m ␛[38;5;130m␛[m␛[38;5;236m␛[m␛[38;5;236m␛[m␛[38;5;242m␛[m␛[38;5;245m␛[m␛[48;5;189m␛[34m␛[m␛[48;5;189m ␛[38;5;130m⚙␛[m␛[48;5;189m ␛[38;5;236m␛[m␛[48;5;189m␛[38;5;236m␛[m␛[48;5;189m␛[38;5;242m␛[m␛[48;5;189m␛[38;5;245m␛[m␛[48;5;189m␛[30;48;5;189mread    internal/agent/loop.go          218 lines  0.6s␛[m␛[m
 
 · diff · the two verdicts and the hunk heading
-␛[38;5;130m✎ ␛[m␛[38;5;236minternal/agent/loop.go␛[m                      ␛[32m+2␛[m ␛[31m−1␛[m␛[38;5;245m · ␛[m␛[38;5;245m1 hunk␛[m
-␛[36m@@ -138,6 +138,7 @@␛[m
-␛[38;5;242m  138      for round := 0; ; round++ {␛[m
-␛[38;5;242m  139          if round >= a.maxRounds {␛[m
-␛[31m- 140              return results, nil␛[m
-␛[32m+ 140              return results, ErrRoundLimit␛[m
-␛[32m+ 141          }␛[m
-␛[38;5;242m  142          }␛[m
-␛[38;5;242m  143      }␛[m
+  ␛[38;5;130m▎␛[m␛[38;5;130m✎␛[m ␛[38;5;236medit␛[m    ␛[38;5;236minternal/agent/loop.go␛[m     ␛[32m+2␛[m ␛[31m−1␛[m␛[38;5;242m · ␛[m␛[38;5;242m1 hunk␛[m
+    ␛[36m@@ -138,6 +138,7 @@␛[m
+    ␛[38;5;242m  138      for round := 0; ; round++ {␛[m
+    ␛[38;5;242m  139          if round >= a.maxRounds {␛[m
+    ␛[31m- 140              return results, nil␛[m
+    ␛[32m+ 140              return results, ErrRoundLimit␛[m
+    ␛[32m+ 141          }␛[m
+    ␛[38;5;242m  142          }␛[m
+    ␛[38;5;242m  143      }␛[m
 
 · card · the border, the question and the keys
 ␛[38;5;245m╭─ Approve command ␛[m␛[38;5;245m────────────────────────────────────────␛[m␛[38;5;245m╮␛[m

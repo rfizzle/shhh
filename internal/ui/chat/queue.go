@@ -116,53 +116,56 @@ func (m Model) previewQueued(tc provider.ToolCall) *approvalRequest {
 	return req
 }
 
-// skippedArgsNotice is the row for a refused call that cannot even be named:
-// a call arriving with no tool name leaves nothing to say but that one of
-// them was skipped.
-const skippedArgsNotice = "Skipped a tool call with invalid arguments."
-
-// skippedArgsRow is the line a malformed call leaves behind. It names the
-// tool because three of these in one session are otherwise indistinguishable
-// — one mistake repeated and three different ones read exactly alike — and
-// the tool is the first thing that tells them apart.
-func skippedArgsRow(name string) string {
-	if name == "" {
-		return skippedArgsNotice
-	}
-	return "skipped · " + name + " · invalid arguments"
-}
+// skippedArgsReason is the account beside `skipped` on a call whose
+// arguments would not parse. The tool the model asked for is the row's
+// subject, because three of these in one session are otherwise
+// indistinguishable — one mistake repeated and three different ones read
+// exactly alike — and the tool is the first thing that tells them apart.
+const skippedArgsReason = "invalid arguments"
 
 // skippedCallEntry is the transcript's account of a call the queue refused
 // before it could reach a card. name is the tool the model asked for.
 //
-// Both refusals fold rather than shorten: one line, with the sentence the
+// It is an act's own row and not a sentence beside the acts: the call was
+// one of the things the turn did, so it takes the seven fields every other
+// act takes — ⊘ in the glyph column, the verb, what the call was about,
+// `skipped` in the outcome with the reason beside it, and a dash where the
+// duration would be, because nothing ran
+// (docs/interface/principles.md#one-grid). Everything but the gutter is dim:
+// a call nobody was asked about and that never happened is the quietest
+// thing on the grid, and the rail stays because a refusal is a decision and
+// the rail is what a reader scrolls back through a session to find
+// (docs/interface/principles.md#weight-tracks-risk).
+//
+// Both refusals fold rather than shorten: one row, with the sentence the
 // model was given underneath it and nothing dropped
 // (docs/interface/principles.md#fold-never-hide). The model is handed that
-// sentence whichever refusal this is, so a reader shown only the notice is
+// sentence whichever refusal this is, so a reader shown only the row is
 // the one party to the failure who cannot tell whether the session is
 // recovering or repeating itself.
 //
 // A file that changed since it was read is not a malformed call, and saying
 // so cost the reader the one fact only they have: which editor, sibling
-// session or background build touched the file. So that refusal gets its own
-// row, naming the file and what happened to it.
+// session or background build touched the file. So that refusal names the
+// file as its subject and what happened to it as its reason.
 func (m Model) skippedCallEntry(name string, err error) entry {
-	// The expansion is the sentence the model was given, verbatim: a reader
-	// deciding whether the model can recover needs to see what it was
-	// actually told, not this row's paraphrase of it.
+	// The subject goes in text, which is where a command row's subject
+	// already lives: the arguments a refused call arrived with are the ones
+	// that could not be read, so the row cannot take its target off them the
+	// way every accepted call's row does. The expansion is the sentence the
+	// model was given, verbatim — a reader deciding whether the model can
+	// recover needs to see what it was actually told, not a paraphrase.
+	e := entry{kind: entryTool, toolName: name, text: name, skipped: skippedArgsReason}
 	var stale tools.StaleError
-	if !errors.As(err, &stale) {
-		var given string
-		if err != nil {
-			given = err.Error()
-		}
-		return entry{kind: entrySystem, text: skippedArgsRow(name), toolResult: given}
+	if errors.As(err, &stale) {
+		e.text, e.skipped = m.rowPath(stale.Path), tools.StaleReason
+		e.toolResult = stale.Error()
+		return e
 	}
-	return entry{
-		kind:       entrySystem,
-		text:       stale.Skipped(m.rowPath(stale.Path)),
-		toolResult: stale.Error(),
+	if err != nil {
+		e.toolResult = err.Error()
 	}
+	return e
 }
 
 // rowPath is a path as a transcript row writes it: relative to the session's
