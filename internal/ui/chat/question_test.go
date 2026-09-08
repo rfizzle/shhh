@@ -68,6 +68,41 @@ func sendKey(t *testing.T, m Model, msg tea.KeyPressMsg) Model {
 	return updated.(Model)
 }
 
+// escapedQuestion is the card arriving on an idle draft and the reader
+// pressing esc: no card, the question outstanding, and the draft holding the
+// keyboard with the next message the answer.
+func escapedQuestion(t *testing.T, args string) Model {
+	t.Helper()
+	updated, _ := questionModel(t, agent.ModeManual).Update(askCall(args))
+	m := updated.(Model)
+	if m.question == nil || !m.decisionGated() {
+		t.Fatal("the card should arrive holding the keyboard on an idle draft")
+	}
+	return sendKey(t, m, tea.KeyPressMsg{Code: tea.KeyEscape})
+}
+
+// submitDraft types a line and sends it the way enter does.
+func submitDraft(t *testing.T, m Model, text string) Model {
+	t.Helper()
+	m.input.SetValue(text)
+	updated, _ := m.submitInput()
+	return updated.(Model)
+}
+
+// countRows is the transcript's user messages and its answered questions,
+// which is what tells an answer from a message that merely looked like one.
+func countRows(m Model) (users, answered int) {
+	for _, e := range m.transcript {
+		switch {
+		case e.kind == entryUser:
+			users++
+		case e.kind == entryTool && e.toolName == ask.ToolName:
+			answered++
+		}
+	}
+	return users, answered
+}
+
 // answeredResult is the tool result the card sent back for the question.
 func answeredResult(t *testing.T, m Model) map[string]any {
 	t.Helper()
@@ -277,19 +312,260 @@ func TestQuestion_ChooseManyCarriesEveryTickedLabel(t *testing.T) {
 	}
 }
 
-// Esc leaves and answers `skipped`: nothing chosen, nothing lost, and the
-// model told to state the assumption and carry on.
-func TestQuestion_EscSkipsAndTellsTheModelToCarryOn(t *testing.T) {
-	m := sendKey(t, openedQuestion(t, agent.ModeManual, chooseArgs), tea.KeyPressMsg{Code: tea.KeyEscape})
-	if m.question != nil || m.pendingApproval != nil {
-		t.Fatal("esc should close the card and answer the call")
+// Esc closes the card and answers nothing: the call is still outstanding, the
+// turn is still blocked on it, and the notice rail is what says so.
+func TestQuestion_EscHandsTheQuestionToTheDraft(t *testing.T) {
+	m := escapedQuestion(t, chooseArgs)
+	if m.question != nil {
+		t.Fatal("esc should close the card")
 	}
+	if m.pendingApproval == nil {
+		t.Fatal("esc must not resolve the call — the question stays outstanding")
+	}
+	if !m.questionAside() {
+		t.Fatal("the question should be waiting behind the draft")
+	}
+	if m.turnState() != stateQuestion {
+		t.Errorf("the turn should stay where it was, got state %d", m.turnState())
+	}
+	if tc, ok := m.agent.NextApproval(); !ok || tc.Name != ask.ToolName {
+		t.Error("the call should still be at the head of the approval queue")
+	}
+	for _, e := range m.transcript {
+		if e.kind == entryTool && e.toolName == ask.ToolName {
+			t.Fatal("esc answered the call; it should have left it outstanding")
+		}
+	}
+	if !m.inputLive() {
+		t.Error("the draft should have the keyboard once the card has gone")
+	}
+	if lines := m.interruptLines(); len(lines) != 0 {
+		t.Errorf("nothing of the card should be left on the screen: %q", lines)
+	}
+	if !strings.Contains(m.noticeLine(), "1 question waiting") {
+		t.Errorf("the rail is the only thing that can say a question is waiting: %q", stripANSI(m.noticeLine()))
+	}
+}
+
+// The rail counts, in the shape the follow-up count already uses.
+func TestQuestion_TheNoticeCountsAndPluralises(t *testing.T) {
+	for n, want := range map[int]string{0: "", 1: "1 question waiting", 2: "2 questions waiting"} {
+		if got := questionNoticeFor(n, false); got != want {
+			t.Errorf("%d: %q, want %q", n, got, want)
+		}
+	}
+	// With no hint rail under it, the count says what the next message does.
+	want := "1 question waiting — " + keys.Shown(keys.Draft.Send) + " answers"
+	if got := questionNoticeFor(1, true); got != want {
+		t.Errorf("%q, want %q", got, want)
+	}
+}
+
+// The next message is the answer, in the reader's own words — and it is not
+// also a user message and not a steer, because one sentence is one thing.
+func TestQuestion_TheNextMessageAnswersItAndIsNotAlsoAMessage(t *testing.T) {
+	m := escapedQuestion(t, chooseArgs)
+	users, tools := countRows(m)
+	m = submitDraft(t, m, "whichever one needs no new service")
+
 	got := answeredResult(t, m)
-	if got["answered"] != string(ask.AnsweredSkipped) {
-		t.Errorf("answered = %v, want skipped", got["answered"])
+	if got["answered"] != string(ask.AnsweredTyped) {
+		t.Errorf("answered = %v, want typed", got["answered"])
 	}
-	if !strings.Contains(got["instruction"].(string), "state the assumption") {
-		t.Errorf("instruction = %v", got["instruction"])
+	if got["note"] != "whichever one needs no new service" {
+		t.Errorf("the answer should be their words verbatim, got %v", got["note"])
+	}
+	if picked, _ := got["picked"].([]any); len(picked) != 0 {
+		t.Errorf("a typed answer picks nothing: %v", picked)
+	}
+	if nowUsers, nowTools := countRows(m); nowUsers != users || nowTools != tools+1 {
+		t.Errorf("the sentence should be one answered call and no user message: %d user rows (was %d), %d answered (was %d)",
+			nowUsers, users, nowTools, tools)
+	}
+	if len(m.steering) != 0 {
+		t.Errorf("an answer is not a steer: %+v", m.steering)
+	}
+	if m.questionAside() || m.pendingApproval != nil {
+		t.Error("the question should be answered and gone")
+	}
+}
+
+// The queue chord still means what it always did, and the rail counts the two
+// separately: a sentence queued while a question waits keeps the promise it
+// was queued under, and goes out after the turn the answer lets finish. It is
+// never the answer, and that is a property of when the queue is dispatched
+// rather than a choice — a turn cannot reach its end with a call outstanding.
+func TestQuestion_AQueuedFollowUpIsStillForAfterTheTurn(t *testing.T) {
+	m := escapedQuestion(t, chooseArgs)
+	m.input.SetValue("then update the README")
+	next, _, claimed := m.queueFollowUp()
+	if !claimed {
+		t.Fatal("the queue chord should still claim a typed draft")
+	}
+	m = next.(Model)
+	if len(m.followUps) != 1 {
+		t.Fatalf("the sentence should be queued, got %+v", m.followUps)
+	}
+	rail := stripANSI(m.noticeLine())
+	if !strings.Contains(rail, "1 question waiting") || !strings.Contains(rail, "1 follow-up") {
+		t.Errorf("the rail should count the two promises separately: %q", rail)
+	}
+	if _, tools := countRows(m); tools != 0 {
+		t.Error("queueing a sentence answers nothing")
+	}
+	// And the queue is only ever dispatched where the turn has ended, which
+	// it cannot do while the call is outstanding.
+	if m.turnState() == stateInput {
+		t.Fatal("a question outstanding is a turn that has not ended")
+	}
+}
+
+// A command is not an answer. The line is dispatched as what it is, the way
+// the queue chord already refuses one, so a question waiting behind the draft
+// does not swallow the two kinds of line that were never messages.
+func TestQuestion_ACommandAndABangAreNotTheAnswer(t *testing.T) {
+	for _, line := range []string{"/model", "!git status", "/secret set TOKEN=hunter2"} {
+		m := escapedQuestion(t, chooseArgs)
+		m = submitDraft(t, m, line)
+		if _, tools := countRows(m); tools != 0 {
+			t.Errorf("%q was delivered as the answer", line)
+		}
+		if !m.questionAside() {
+			t.Errorf("%q should leave the question waiting", line)
+		}
+		// The last of the three is the only line that can carry a secret's
+		// value, and a question waiting behind the draft does not move where
+		// that is decided: it is settled above the dispatch, for every line
+		// the draft sends (secrets.go).
+		for _, past := range m.inputHistory {
+			if strings.Contains(past, "hunter2") {
+				t.Error("the secret value reached the input history")
+			}
+		}
+	}
+}
+
+// The rail while attached is the child's, so it does not offer the
+// orchestrator's question — enter there acts on the child.
+func TestQuestion_TheAttachedRailDoesNotOfferTheQuestion(t *testing.T) {
+	m := escapedQuestion(t, chooseArgs)
+	m.attachedTo = "scout"
+	if got := stripANSI(m.frameHints()); strings.Contains(got, "answers the question") {
+		t.Errorf("the attached rail offered an act enter does not keep there: %q", got)
+	}
+	if got := stripANSI(m.promptGutter()); !strings.Contains(got, "scout") {
+		t.Errorf("the attached gutter is the child's: %q", got)
+	}
+}
+
+// The reader who pressed esc by reflex gets the list back for one key, and
+// the key is the handover — the same act it is on every other decision.
+func TestQuestion_TheHandoverBringsTheCardBackAndAnswersNothing(t *testing.T) {
+	m := escapedQuestion(t, chooseArgs)
+	m = handover(t, m)
+	if m.question == nil {
+		t.Fatal("the handover should draw the card again")
+	}
+	if m.questionAside() {
+		t.Error("the question is on the card again, not behind the draft")
+	}
+	if _, tools := countRows(m); tools != 0 {
+		t.Error("reopening a question answers nothing")
+	}
+	if !strings.Contains(stripANSI(strings.Join(m.questionLines(), "\n")), "Which store should the cache use?") {
+		t.Error("the card should come back as it arrived")
+	}
+	// And the card answers the way it always did.
+	m = sendKey(t, m, tea.KeyPressMsg{Code: tea.KeyEnter})
+	if answeredResult(t, m)["answered"] != string(ask.AnsweredOnCard) {
+		t.Error("the reopened card should still answer on the card")
+	}
+}
+
+// A cancel takes a question that was waiting behind the draft with it, so the
+// next message the reader sends is an ordinary message again rather than the
+// answer to a call that no longer exists.
+func TestQuestion_ACancelMakesTheNextMessageAnOrdinaryMessageAgain(t *testing.T) {
+	m := escapedQuestion(t, chooseArgs)
+	m.cancelStreaming()
+	if m.questionAside() || m.pendingApproval != nil || m.question != nil {
+		t.Fatal("the cancel should have taken the question with the turn")
+	}
+	if got := stripANSI(m.noticeLine()); strings.Contains(got, "question waiting") {
+		t.Errorf("the notice should have cleared: %q", got)
+	}
+	users, _ := countRows(m)
+	m = submitDraft(t, m, "start again with SQLite")
+	if nowUsers, _ := countRows(m); nowUsers != users+1 {
+		t.Error("after a cancel the next message is an ordinary message again")
+	}
+}
+
+// The session is waiting on the reader whether or not the card is drawn: the
+// summons and the frame both read this one fact.
+func TestQuestion_WaitingHoldsWithTheCardClosed(t *testing.T) {
+	on := openedQuestion(t, agent.ModeManual, chooseArgs)
+	if !on.waiting() {
+		t.Error("a question on the card is the session waiting on the reader")
+	}
+	aside := escapedQuestion(t, chooseArgs)
+	if !aside.waiting() {
+		t.Error("a question behind the draft is still the session waiting on the reader")
+	}
+	if aside.waitingCount() != 1 {
+		t.Errorf("the frame should still count it, got %d", aside.waitingCount())
+	}
+}
+
+// The gutter says which of the two the sentence being typed is, because an
+// answer and a steer reach the model differently.
+func TestQuestion_TheGutterSaysTheDraftIsAnswering(t *testing.T) {
+	m := escapedQuestion(t, chooseArgs)
+	if got := stripANSI(m.promptGutter()); strings.TrimSpace(got) != "?" {
+		t.Errorf("the gutter should say the draft is answering, got %q", got)
+	}
+	// A bang line is a command before it is anything else, so it keeps its
+	// own glyph.
+	m.input.SetValue("!git status")
+	if got := stripANSI(m.promptGutter()); strings.TrimSpace(got) != "!" {
+		t.Errorf("a bang draft keeps its glyph, got %q", got)
+	}
+}
+
+// Nothing of the card is left on the screen, the queue strip above it
+// included: a strip describing a decision that is not there would be the one
+// thing the reader could not act on.
+func TestQuestion_EscLeavesNothingOfTheCardOnTheScreen(t *testing.T) {
+	updated, _ := questionModel(t, agent.ModeManual).Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_q", Name: ask.ToolName, Arguments: chooseArgs},
+		{ID: "call_w", Name: "write_file", Arguments: `{"path":"cache.go","content":"package cache"}`},
+	}})
+	m := updated.(Model)
+	if len(m.questionLines()) == 0 {
+		t.Fatal("the fixture should have a card with a queue strip above it")
+	}
+	if !strings.Contains(stripANSI(strings.Join(m.questionLines(), "\n")), "cache.go") {
+		t.Fatal("the fixture should have the second call on the strip")
+	}
+	m = sendKey(t, m, tea.KeyPressMsg{Code: tea.KeyEscape})
+	if lines := m.questionLines(); len(lines) != 0 {
+		t.Errorf("the strip should have gone with the card: %q", lines)
+	}
+	if h := m.interruptHeight(); h != 0 {
+		t.Errorf("the panel should pay nothing for a card that is not there, got %d rows", h)
+	}
+}
+
+// The rail says the two ways back to the question and the one way past it.
+func TestQuestion_TheRailOffersTheCardAgainAndTheQueue(t *testing.T) {
+	m := escapedQuestion(t, chooseArgs)
+	hints := stripANSI(m.frameHints())
+	for _, want := range []string{
+		keys.Shown(keys.Draft.Answer), keys.Shown(keys.Draft.Send), keys.Shown(keys.Draft.Queue),
+	} {
+		if !strings.Contains(hints, want) {
+			t.Errorf("the rail does not offer %q: %q", want, hints)
+		}
 	}
 }
 
@@ -442,8 +718,8 @@ func TestQuestion_EscOutOfTheNoteKeepsThePick(t *testing.T) {
 	if m.question != nil {
 		t.Fatal("esc again should leave the card")
 	}
-	if answeredResult(t, m)["answered"] != string(ask.AnsweredSkipped) {
-		t.Error("leaving the card answers skipped")
+	if !m.questionAside() {
+		t.Error("leaving the card hands the question to the draft")
 	}
 }
 
@@ -456,7 +732,7 @@ func TestQuestion_EscLeavesAFreeAnswerOutright(t *testing.T) {
 	if m.question != nil {
 		t.Fatal("a card with no rows has no pick to keep, so esc leaves it")
 	}
-	if answeredResult(t, m)["answered"] != string(ask.AnsweredSkipped) {
-		t.Error("leaving the card answers skipped")
+	if !m.questionAside() {
+		t.Error("leaving the card hands the question to the draft")
 	}
 }

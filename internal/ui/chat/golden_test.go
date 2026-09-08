@@ -255,6 +255,39 @@ func TestGolden_PromptFrame(t *testing.T) {
 	})
 }
 
+// TestGolden_QuestionWaiting captures the frame with a question handed to the
+// draft (question.go): the notice rail's count beside a steering count, the
+// gutter saying the draft is answering rather than steering, and the bottom
+// rail's two ways back to the card. The two counts are pinned side by side
+// because at 60 columns they compete for the one rail, and because they are
+// three different promises the reader has to be able to tell apart.
+func TestGolden_QuestionWaiting(t *testing.T) {
+	captureGolden(t, "question-waiting", "a question waiting behind the draft", goldenWidths, func(width int) []golden.Panel {
+		build := func(steering int) string {
+			m := frameModel(t, width, 40).WithAsk()
+			m.state = stateStreaming
+			updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{{
+				ID: "call_q", Name: ask.ToolName, Arguments: `{"question":"Which store should the cache use?","shape":"choose","options":[
+					{"label":"SQLite","detail":"in the checkout already","recommended":true},
+					{"label":"Postgres","detail":"one more service to run"}]}`,
+			}}})
+			next := updated.(Model)
+			esc, _ := next.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+			next = esc.(Model)
+			for i := 0; i < steering; i++ {
+				next.steering = append(next.steering, steeringItem{text: "and keep the migration reversible"})
+			}
+			next.input.SetValue("the one that needs no new service")
+			next.syncInputHeight()
+			return promptSurface(next)
+		}
+		return []golden.Panel{
+			{Label: "esc \u00b7 the rail counts the question and the draft answers it", View: build(0)},
+			{Label: "beside a steer \u00b7 three promises, told apart", View: build(1)},
+		}
+	})
+}
+
 // TestGolden_GrownDraft captures the box grown around a multi-line draft
 // (frame.go, syncInputHeight): one row per line up to the cap, with the
 // transcript paying for the rows above it.

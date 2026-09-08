@@ -17,6 +17,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/ask"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/caps"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -122,6 +123,41 @@ func TestNotify_AnApprovalSaysWhatTheCardSays(t *testing.T) {
 		if !strings.Contains(seq, want) {
 			t.Errorf("the notification does not say the card's own words %q:\n%q", want, seq)
 		}
+	}
+}
+
+func TestNotify_AQuestionSaysTheModelsOwnWords(t *testing.T) {
+	prev := notifyModel(t)
+	next := prev
+	next.pendingApproval = &approvalRequest{
+		kind:     approvalQuestion,
+		question: ask.Question{Question: "Which store should the cache use?", Shape: ask.ShapeChoose},
+	}
+	next.openQuestion(next.pendingApproval)
+	next.setTurnState(stateQuestion)
+
+	seq := notifyRaw(t, next.notifyCmd(prev))
+	if !strings.Contains(seq, "Which store should the cache use?") {
+		t.Errorf("the summons should say the question the reader is being called back to:\n%q", seq)
+	}
+
+	// The card on screen is not a second transition: the session was already
+	// waiting, and a summons per repaint would be shhh saying the same thing
+	// again.
+	if cmd := next.notifyCmd(next); cmd != nil {
+		t.Error("a question already waiting notified again")
+	}
+
+	// And the words survive the card closing: a question handed to the draft
+	// is still the thing the session is waiting on (question.go).
+	aside := next
+	aside.question = nil
+	if !aside.questionAside() {
+		t.Fatal("the fixture should leave the question behind the draft")
+	}
+	title, _ := aside.notifyWords()
+	if title != "Which store should the cache use?" {
+		t.Errorf("the summons went quiet when the card closed, got %q", title)
 	}
 }
 

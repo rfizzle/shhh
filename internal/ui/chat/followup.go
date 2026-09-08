@@ -106,6 +106,13 @@ func (m *Model) holdFollowUps() {
 // per turn end, so each answer is read against the message that asked for
 // it — and never after a cancel put the queue on hold, or while a backlog
 // run owns the session's turns.
+//
+// It is always an ordinary message and never the answer to an outstanding
+// question, and that is a property of when it runs rather than a choice made
+// here: a question blocks the turn on its own call, so a turn cannot reach
+// its end with one still waiting (question.go). A sentence queued while a
+// question is waiting keeps the promise it was queued under — it goes out
+// after the turn the answer lets finish.
 func (m Model) dispatchFollowUp() (tea.Model, tea.Cmd, bool) {
 	if m.followUpsHeld || len(m.followUps) == 0 {
 		return m, nil, false

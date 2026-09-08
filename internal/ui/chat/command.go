@@ -79,6 +79,15 @@ func (m Model) submitInput() (tea.Model, tea.Cmd) {
 	if cmd, local, ok := bangCommand(text); ok {
 		return m.runBang(cmd, local)
 	}
+	// A question the reader handed to the draft claims this sentence: they
+	// answered it in their own words rather than changing the subject, so it
+	// goes back as the call's result and joins the conversation as nothing
+	// else (question.go). It is decided above the steering branch because a
+	// message typed while the turn runs would otherwise join m.steering, and
+	// an answer is not a steer.
+	if m.questionAside() {
+		return m.answerTyped(text)
+	}
 	if m.turnInFlight() {
 		// Typed while the agent works: the message joins the conversation
 		// before the next model request. A turn paused on a decision

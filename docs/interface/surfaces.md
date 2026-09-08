@@ -798,6 +798,10 @@ is delivered as the answer, in their words. The gutter says the draft is
 answering rather than steering, because the two reach the model differently —
 an answer is the call's result, a steer is a message — and a reader must know
 which they are writing. The follow-up chord still queues for after the turn.
+The handover brings the card back, because reopening a waiting decision is
+the one act that chord already means everywhere else; a reader who left by
+reflex is not made to answer in prose to get the list again, and reopening
+answers nothing.
 Entering the waiting state raises the same one desktop notification an
 approval does, on the same terms ([below](#when-you-are-not-there)).
 

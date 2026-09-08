@@ -119,8 +119,11 @@ const (
 	AnsweredOnCard Answered = "on the card"
 	// AnsweredTyped is the reader's own words in place of a pick.
 	AnsweredTyped Answered = "typed"
-	// AnsweredSkipped is the reader leaving the question: nothing was
-	// chosen, and the model is told to state the assumption and carry on.
+	// AnsweredSkipped is a question nobody chose an answer to: nothing was
+	// picked, nothing was typed, and the model is told to state the
+	// assumption and carry on. Leaving the card is not this — a question the
+	// reader sets down is still outstanding, and the next message they send
+	// is the answer (docs/interface/surfaces.md#the-question-card).
 	AnsweredSkipped Answered = "skipped"
 	// AnsweredNobody is a question that had somebody to ask and lost them.
 	AnsweredNobody Answered = "nobody to ask"

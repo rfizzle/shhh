@@ -43,11 +43,18 @@ import (
 // screen. It is a control chord for the reason every keyboard transfer is
 // one: no sentence can produce it, so it can be live while the draft is.
 
-// interruptShowing reports whether a decision that arrived unbidden is on
-// screen: the approval card, the /run confirm, the plan card, the model's own
-// question, or a child agent's routed approval. These are the surfaces that
-// appear without being asked for, which is what makes them the ones
+// interruptShowing reports whether a decision that arrived unbidden is
+// waiting: the approval card, the /run confirm, the plan card, the model's
+// own question, or a child agent's routed approval. These are the surfaces
+// that appear without being asked for, which is what makes them the ones
 // invariant 5 is about.
+//
+// Waiting rather than drawn, because of the one decision that can be waiting
+// with nothing on the screen: a question the reader handed to the draft
+// (question.go). It is still what the session is stopped on, it still holds
+// the keyboard question open, and the handover still reaches it — so it is
+// still one of these. What it does not do is take rows, which every renderer
+// here settles by asking the surface for its lines and getting none.
 func (m Model) interruptShowing() bool {
 	switch m.state {
 	case stateConfirmRun, statePlanApprove, stateQuestion:
@@ -56,8 +63,10 @@ func (m Model) interruptShowing() bool {
 	return m.activeChildAsk() != nil
 }
 
-// decisionUngated is the arrival state: the card is up and the draft still
-// holds the keyboard.
+// decisionUngated is the arrival state: a decision is waiting and the draft
+// still holds the keyboard. Usually that is a card on screen with the
+// sentence under it; a question set aside is the same state with nothing
+// drawn (question.go).
 func (m Model) decisionUngated() bool { return m.interruptShowing() && !m.decisionHeld }
 
 // decisionGated is after the handover: the card holds the keyboard and its
@@ -316,6 +325,12 @@ func (m Model) gateDecision() (tea.Model, tea.Cmd) {
 	if !m.interruptShowing() {
 		return m, nil
 	}
+	// A question the reader handed to the draft has no card on the screen to
+	// give the keyboard to, so the handover draws it again. It is the same
+	// act it is on every other decision — give the keyboard to the one that
+	// is waiting — which is why reopening a question costs no keystroke of
+	// its own, and it answers nothing (question.go).
+	m.reopenQuestion()
 	m.decisionHeld, m.heldOnArrival = true, false
 	// The handover is deliberate, so any grace window closes with it: the
 	// reader who asked for the keys gets them live.
@@ -376,11 +391,12 @@ func (m Model) escLeavesWaiting() bool {
 	case statePlanApprove:
 		return false
 	case stateQuestion:
-		// A question keeps its own esc, and the answer it gives is
-		// `skipped`: nothing was chosen, the turn carries on, and the model
-		// is told to state the assumption it would have asked about
-		// (question.go). Leaving a question waiting behind the draft is a
-		// second thing esc could mean here, and it is not this one.
+		// A question keeps its own esc, and what it does with it is more
+		// than handing the keyboard back: the card closes and the question
+		// goes to the draft, where the next message answers it
+		// (question.go). A card left on the screen with the keyboard
+		// somewhere else would be a third state to read, and there is
+		// nothing on it the reader still needs to see.
 		return false
 	}
 	return m.activeChildAsk() != nil

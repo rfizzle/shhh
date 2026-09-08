@@ -246,6 +246,21 @@ func (m Model) frameActivity(width int) string {
 func (m Model) frameHints() string {
 	var hints []string
 	switch {
+	case m.attachedTo == "" && m.questionAside():
+		// Only where the frame is the orchestrator's own: attached, enter
+		// acts on the child and this rail is the child's, so a hint about
+		// the orchestrator's question would be an offer enter does not keep
+		// (attach.go).
+		//
+		// The card is gone and the question is not, so the rail says the
+		// two ways back to it — the sentence being typed, and the chord that
+		// draws the card again — beside the chord that queues for after the
+		// turn, which still means what it always did (question.go).
+		hints = []string{
+			keys.Shown(keys.Draft.Send) + " answers the question",
+			keys.Shown(keys.Draft.Answer) + " the card again",
+			keys.Shown(keys.Draft.Queue) + " queues for after",
+		}
 	case m.decisionUngated():
 		// The three keys that matter while a decision waits. Stopping the run
 		// is the cancel chord, never esc: esc on this surface goes back rather
@@ -339,18 +354,29 @@ func (m Model) frameHints() string {
 }
 
 // promptGutter is the input's leading glyph: ❯ idle, ▸ while the
-// agent works (typed text becomes steering), ! while the draft is in bang
-// form (enter runs a command, through the confirm), and the child's name
-// while attached.
+// agent works (typed text becomes steering), ? while a question is waiting
+// behind the draft (enter answers it), ! while the draft is in bang form
+// (enter runs a command, through the confirm), and the child's name while
+// attached.
 func (m Model) promptGutter() string {
 	if m.attachedTo != "" {
 		return sty.Frame.GutterIdle.Render(m.attachedTo+" ❯") + " "
 	}
 	// Bang form outranks the working glyph: enter on this draft is a
 	// command either way — confirmed idle, refused mid-turn — never
-	// steering, and the gutter must not claim otherwise (bang.go).
+	// steering, and the gutter must not claim otherwise (bang.go). It
+	// outranks the question's glyph for the same reason: a bang line is
+	// answered as a command before anything asks what a sentence answers
+	// (command.go).
 	if m.bangDraft() {
 		return sty.Frame.GutterBang.Render("!") + " "
+	}
+	// A question waiting behind the draft says so here, because an answer
+	// and a steer reach the model differently — an answer is the call's
+	// result, a steer is a message — and a reader must know which of the two
+	// they are writing (question.go).
+	if m.questionAside() {
+		return sty.Frame.WaitingChip.Render("?") + " "
 	}
 	if m.frameWorking() {
 		return sty.Frame.GutterWork.Render("▸") + " "
@@ -452,6 +478,51 @@ func (m *Model) syncInputHeight() {
 	}
 }
 
+// questionNotice is the notice rail's count of the questions waiting behind
+// the draft, and what the reader's next message will do about them. The three
+// queues are counted separately because "answer the question", "change what
+// you are doing" and "when you are done, then" are three different promises,
+// and a reader who has typed one sentence is owed which of them it keeps
+// (docs/interface/surfaces.md#the-question-card).
+func (m Model) questionNotice() string {
+	if !m.questionAside() {
+		return ""
+	}
+	// Below the wide breakpoint the frame has no hint rail, so the count
+	// also says what the next message will do with the sentence in the box.
+	// It is the move the armed window already makes above, for the same
+	// reason: the invariant that the surface says what a key will do cannot
+	// depend on the terminal being wide. Where the hint rail is there it
+	// says so already, and the count stays the count — which is also what
+	// keeps the three promises legible side by side at sixty columns, where
+	// they compete for one rail.
+	return questionNoticeFor(1, m.frameLayout() != frameWide)
+}
+
+// questionNoticeFor is the wording, counted, in the shape followUpNotice
+// uses: what is waiting, and the key fact about it after a dash where there
+// is one to add. The count is a parameter rather than the one the queue can
+// hold today, because the rail is the sentence and the arithmetic is not its
+// business.
+func questionNoticeFor(n int, sayTheKey bool) string {
+	if n <= 0 {
+		return ""
+	}
+	label := fmt.Sprintf("%d question", n)
+	if n > 1 {
+		label += "s"
+	}
+	label += " waiting"
+	if sayTheKey {
+		// Two words rather than a sentence: at sixty columns this rail
+		// also has to hold the steering count beside it, and a promise
+		// that pushed the other two off the row would be the rail
+		// answering one of three questions.
+		label += " — " + keys.Shown(keys.Draft.Send) + " answers"
+	}
+	return label
+}
+
 // noticeLine assembles the notice rail: update notice, queued
 // steering, blocked sub-agents, and the latest auto-mode denial. Empty —
 // rail hidden — when there is nothing to say; orchestrator-scoped, so it
@@ -478,6 +549,13 @@ func (m Model) noticeLine() string {
 	}
 	if m.updateNotice != "" {
 		parts = append(parts, sty.UpdateNotice.Render(m.updateNotice))
+	}
+	// A question the reader handed to the draft leads the three counts,
+	// because it is the one that claims the next message: the draft holds
+	// the keyboard and nothing is on the screen to say a question is
+	// waiting, so this rail is the only thing that can (question.go).
+	if note := m.questionNotice(); note != "" {
+		parts = append(parts, sty.Frame.NoticeInfo.Render(note))
 	}
 	if n := len(m.steering); n > 0 {
 		parts = append(parts, sty.Frame.NoticeInfo.Render(fmt.Sprintf("%d steering queued", n)))

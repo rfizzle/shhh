@@ -113,10 +113,15 @@ func (m Model) notifyWords() (title, body string) {
 		card := m.buildApprovalCard()
 		return card.Title, card.Headline
 	case stateQuestion:
-		// The question in the reader's own words, which are the words on the
-		// card they are being called back to (question.go).
-		if c := m.question; c != nil {
-			return firstLine(c.q.Question), "Waiting for your answer"
+		// The model's own question, which is the card's title and so the
+		// words the reader is being called back to. It is read from
+		// whichever place the question is in — on the card, or set aside
+		// behind the draft — because a question handed to the draft is still
+		// the thing the session is waiting on, and a summons that went quiet
+		// the moment the card closed would be one the reader never gets
+		// (question.go).
+		if q, ok := m.outstandingQuestion(); ok {
+			return firstLine(q.Question), "Waiting for your answer"
 		}
 	case statePlanApprove:
 		card := m.planCard()

@@ -242,12 +242,15 @@ func (m Model) questionPanelLines() []string {
 // questionLines is the card alone: the queue strip above it, then whichever
 // dressing the shape asked for.
 func (m Model) questionLines() []string {
-	width := m.contentWidth()
-	lines := m.pendingQueue.View(width)
 	c := m.question
 	if c == nil {
-		return lines
+		// Set aside: there is no card, and the queue strip above it
+		// describes a decision that is not on the screen either
+		// (asideQuestion).
+		return nil
 	}
+	width := m.contentWidth()
+	lines := m.pendingQueue.View(width)
 	switch {
 	case c.sel != nil:
 		lines = append(lines, strings.Split(c.sel.View(width), "\n")...)
@@ -330,7 +333,7 @@ func (m Model) updateQuestionOne(msg tea.KeyPressMsg, c *questionCard) (tea.Mode
 		return m, nil
 	}
 	if res.Canceled {
-		return m.skipQuestion()
+		return m.asideQuestion()
 	}
 	note := strings.TrimSpace(c.sel.Note.Value())
 	if c.q.Shape == ask.ShapeText {
@@ -366,7 +369,7 @@ func (m Model) updateQuestionMany(msg tea.KeyPressMsg, c *questionCard) (tea.Mod
 		return m, nil
 	}
 	if res.Canceled {
-		return m.skipQuestion()
+		return m.asideQuestion()
 	}
 	note := c.multi.Note.Value()
 	var picked []string
@@ -405,13 +408,13 @@ func (m Model) updateQuestionConfirm(msg tea.KeyPressMsg, c *questionCard) (tea.
 		// The field has the keyboard, so y and n are letters — except the
 		// one key that leaves, which every surface being typed into keeps.
 		if keys.Is(pressed, keys.Select.Cancel) {
-			return m.skipQuestion()
+			return m.asideQuestion()
 		}
 		c.note.Update(msg)
 		return m, nil
 	}
 	if keys.Is(pressed, keys.Select.Cancel) {
-		return m.skipQuestion()
+		return m.asideQuestion()
 	}
 	done, yes := c.conf.Update(msg)
 	if !done {
@@ -433,12 +436,84 @@ func (m Model) updateQuestionConfirm(msg tea.KeyPressMsg, c *questionCard) (tea.
 	})
 }
 
-// skipQuestion is esc: the card closes and the question is answered
-// `skipped`, with the instruction to state the assumption and carry on. Esc
-// leaves and loses nothing — nothing runs and nothing typed goes anywhere
+// asideQuestion is esc: the card closes and answers nothing. The question
+// stays outstanding — the call is still at the head of the queue, the turn is
+// still blocked on it — and the next message the reader sends is delivered as
+// the answer in their own words
+// (docs/interface/surfaces.md#the-question-card). So esc here means what it
+// means everywhere: it leaves, it changes nothing, and it loses nothing
 // (docs/interface/principles.md#esc-is-always-the-safe-answer).
-func (m Model) skipQuestion() (tea.Model, tea.Cmd) {
-	return m.answerQuestion(ask.Answer{Answered: ask.AnsweredSkipped})
+//
+// The card is an offer rather than a toll gate. A reader who would rather
+// explain than pick is not made to pick first, and a reader who pressed esc
+// by reflex does not have to answer in prose to get the list back: the
+// handover chord brings the card back, which is the same act it is on every
+// other decision — give the keyboard to the one that is waiting
+// (reopenQuestion).
+func (m Model) asideQuestion() (tea.Model, tea.Cmd) {
+	m.question = nil
+	// The keyboard goes back to the draft with the decision still waiting,
+	// and nothing is left on the screen to say so — which is why the notice
+	// rail counts it (frame.go).
+	m.releaseDecision()
+	m.syncViewport()
+	m.viewport.SetLines(m.renderHistoryLines())
+	return m, nil
+}
+
+// questionAside reports a question the reader handed to the draft: no card on
+// the screen, the call still outstanding, and the next message the answer.
+//
+// It is derived rather than stored so that it cannot outlive the question it
+// describes. Both halves of it are cleared by every path that ends a
+// question — an answer resolves the request, a cancel drops it — so there is
+// no third fact to keep in step with those two.
+func (m Model) questionAside() bool {
+	req := m.pendingApproval
+	return m.question == nil && req != nil && req.kind == approvalQuestion &&
+		m.turnState() == stateQuestion
+}
+
+// outstandingQuestion is the question waiting for an answer — on the card, or
+// set aside behind the draft — and whether there is one at all. The two are
+// one fact to everything that asks what the session is waiting on: the
+// summons, the notice rail, and the sentence that answers it.
+func (m Model) outstandingQuestion() (ask.Question, bool) {
+	if c := m.question; c != nil {
+		return c.q, true
+	}
+	if m.questionAside() {
+		return m.pendingApproval.question, true
+	}
+	return ask.Question{}, false
+}
+
+// reopenQuestion draws the card again for a question that was set aside. It
+// answers nothing: the card comes back exactly as it arrived, with the
+// question still waiting.
+func (m *Model) reopenQuestion() {
+	if m.questionAside() {
+		m.openQuestion(m.pendingApproval)
+	}
+}
+
+// answerTyped delivers a sentence as the answer to a question that was set
+// aside, in the reader's own words.
+//
+// It is not also a user message, and it is not a steer. A steer joins the
+// conversation as a new instruction the model must reconcile with what it was
+// doing; an answer resolves a call the model is already blocked on. Delivered
+// as a steer it would leave the call outstanding for the rest of the turn,
+// and the model would be told to change course by someone it thinks it is
+// still waiting on. One sentence is one thing, and a reader who answered a
+// question has not additionally changed the subject
+// (docs/capabilities/coding-agent.md#the-model-can-ask).
+//
+// Both doors a sentence can arrive by come here — enter while the turn runs,
+// and the follow-up queue when it is dispatched — so which door it came in by
+// is not a fact about what it answers.
+func (m Model) answerTyped(text string) (tea.Model, tea.Cmd) {
+	return m.answerQuestion(ask.Answer{Answered: ask.AnsweredTyped, Note: text})
 }
 
 // answerQuestion resolves the call through the same seam every other answered

@@ -268,13 +268,11 @@ func (m *Model) cancelStreaming() {
 	// result. A card left behind here is not merely a stale pointer: the
 	// grace window reads it to decide which keys a burst may not answer
 	// (interrupt.go), so the next decision to arrive would be protected by
-	// the wrong card's keys.
+	// the wrong card's keys. A question the reader had handed to the draft
+	// goes with it too — it is the request above and this card together, so
+	// clearing both is what makes the next message an ordinary message again
+	// (question.go).
 	m.question = nil
-	// And the question, which the cancel answered with the turn's synthetic
-	// result. A card left behind here is not merely a stale pointer: the
-	// grace window reads it to decide which keys a burst may not answer
-	// (interrupt.go), so the next decision to arrive would be protected by
-	// the wrong card's keys.
 	// The queue the strip described is gone with the turn, and so is every
 	// batch grant made against it.
 	m.clearQueueStrip()
