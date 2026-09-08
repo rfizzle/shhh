@@ -24,13 +24,13 @@
 
 ── ansi ────────────────────────────────────────────────────
 · three questions about one package
-   ␛[38;5;214m⚙␛[m search  ␛[38;5;241msteeringItem ./internal/ui…␛[m  ␛[38;5;245m1 match␛[m
-   ␛[38;5;214m⚙␛[m search  ␛[38;5;241mqueuedSteer ./internal/u…␛[m  ␛[38;5;245m2 matches␛[m
-   ␛[38;5;214m⚙␛[m search  ␛[38;5;241mauthorOf ./internal/ui/chat␛[m
+   ␛[38;5;214m⚙␛[m ␛[38;5;252msearch␛[m  ␛[38;5;252msteeringItem ./internal/ui…␛[m  ␛[38;5;245m1 match␛[m
+   ␛[38;5;214m⚙␛[m ␛[38;5;252msearch␛[m  ␛[38;5;252mqueuedSteer ./internal/u…␛[m  ␛[38;5;245m2 matches␛[m
+   ␛[38;5;214m⚙␛[m ␛[38;5;252msearch␛[m  ␛[38;5;252mauthorOf␛[m␛[38;5;241m ./internal/ui/chat␛[m
 
 
 · one question three times · the shape a reader is watching for
-   ␛[38;5;214m⚙␛[m search  ␛[38;5;241msteeringItem ./internal/ui…␛[m  ␛[38;5;245m1 match␛[m
-   ␛[38;5;214m⚙␛[m search  ␛[38;5;241msteeringItem ./internal/ui…␛[m  ␛[38;5;245m1 match␛[m
-   ␛[38;5;214m⚙␛[m search  ␛[38;5;241msteeringItem ./internal/ui…␛[m  ␛[38;5;245m1 match␛[m
+   ␛[38;5;214m⚙␛[m ␛[38;5;252msearch␛[m  ␛[38;5;252msteeringItem ./internal/ui…␛[m  ␛[38;5;245m1 match␛[m
+   ␛[38;5;214m⚙␛[m ␛[38;5;252msearch␛[m  ␛[38;5;252msteeringItem ./internal/ui…␛[m  ␛[38;5;245m1 match␛[m
+   ␛[38;5;214m⚙␛[m ␛[38;5;252msearch␛[m  ␛[38;5;252msteeringItem ./internal/ui…␛[m  ␛[38;5;245m1 match␛[m
 

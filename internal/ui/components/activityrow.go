@@ -46,6 +46,14 @@ const (
 	OutcomeQueued   = "queued"
 	OutcomeChecking = "checking"
 	OutcomeDenied   = "denied"
+	// OutcomeBlocked is a rule's no, and the reason it is a second word
+	// rather than OutcomeDenied with a different decider: "you said no" and
+	// "a rule said no" are different facts, and the reader's next act is
+	// different for each — change your mind, or change your configuration
+	// (docs/interface/principles.md#two-denials-are-not-one-denial). The
+	// rule that said it goes in the account field beside this, so a row
+	// narrow enough to drop the account still says which of the two it was.
+	OutcomeBlocked  = "blocked"
 	OutcomeApproved = "approved"
 	// OutcomeAnswered is a question the model asked and the person answered
 	// (docs/capabilities/coding-agent.md#the-model-can-ask). It is an
@@ -145,6 +153,14 @@ type ActivityRow struct {
 	// Target is the path, command, query or agent name — the only field that
 	// grows, and the only one that clips.
 	Target string
+	// Scope is the tail of Target that says where the act was put rather
+	// than what it was about: a search's `./internal` behind its pattern. It
+	// is drawn Dim behind the subject so the column reads as one subject and
+	// its place, and it is a field rather than a second string because the
+	// grid clips Target as one run
+	// (docs/interface/principles.md#one-grid). Empty on every row whose
+	// target is its subject whole.
+	Scope string
 	// Outcome and Counts render as one right-aligned field, joined by ` · `. The
 	// field never clips: it is the reason to read the row.
 	Outcome string
@@ -288,32 +304,164 @@ func (r ActivityRow) glyph() string {
 // verbField pads the verb to its 8 columns; an over-long verb clips, which is
 // the signal that the verb table is stale. Recovery rows share it, which is
 // what puts `model` in the same column as `read`.
-func verbField(verb string) string {
+//
+// The verb is body text, because it is half of what the row is about: the
+// verb says which act and the target says what it was done to, and a column
+// left in the terminal's default foreground was the one field on the grid
+// with no token at all (docs/interface/principles.md#one-grid). The padding
+// stays unpainted — it is spacing, not text.
+func verbField(verb string) string { return verbFieldIn(verb, sty.Body) }
+
+// verbFieldIn is verbField in the tone a row's state asks for: bright while
+// it is happening, dim before it started and after a refusal that means it
+// never will.
+func verbFieldIn(verb string, style lipgloss.Style) string {
 	v := Clip(verb, verbWidth)
-	return v + strings.Repeat(" ", verbWidth-lipgloss.Width(v))
+	pad := strings.Repeat(" ", verbWidth-lipgloss.Width(v))
+	if v == "" {
+		return pad
+	}
+	return style.Render(v) + pad
 }
 
-// outcomeField joins outcome and counts into the one right-aligned field.
+// subjectStyle is the tone the verb and the target share — the row's subject,
+// which is one statement in two fields and so is never painted in two tones.
+// Body is the resting state; the exceptions are the states where the row is
+// making a claim about itself: it is happening now, or it never happened.
+func (r ActivityRow) subjectStyle() lipgloss.Style {
+	switch {
+	case r.State == ActivityRunning:
+		return sty.Bright
+	case r.State == ActivityQueued:
+		return sty.Dim
+	case r.State == ActivityDenied && !r.ByRule:
+		// Your own refusal is a preference, and a preference is the quietest
+		// thing on the grid. A rule's is not: that row keeps body text and
+		// says `blocked` in del beside it.
+		return sty.Dim
+	}
+	return sty.Body
+}
+
+// paintTarget leads the growing field with the subject in the state's tone
+// and dims the place behind it, the way a recovery row dims the class behind
+// a model name. A field clipped past the scope goes wholly to the subject,
+// which is what is left of it.
+func (r ActivityRow) paintTarget(s string) string {
+	style := r.subjectStyle()
+	if r.Scope != "" {
+		if head, ok := strings.CutSuffix(s, " "+r.Scope); ok {
+			return style.Render(head) + sty.Dim.Render(" "+r.Scope)
+		}
+	}
+	return style.Render(s)
+}
+
+// outcomeStyle is the token the outcome word takes: the state's own, so a
+// reader dropping down the outcome column tells finished from running from
+// failed without reading a word. The word is always there as well
+// (invariant 1) — the colour is what makes the column scannable, never what
+// carries the fact.
+func (r ActivityRow) outcomeStyle() lipgloss.Style {
+	switch r.State {
+	case ActivityRunning, ActivityChecking:
+		return sty.SpinText
+	case ActivityFailed:
+		return sty.Del
+	case ActivityQueued:
+		return sty.Dim
+	case ActivityDenied:
+		if r.ByRule {
+			return sty.Del
+		}
+		return sty.Dim
+	}
+	// The two kinds that are not acts have no act to have succeeded. A
+	// reading of the session states a verdict in this column — `⚠ off
+	// target`, `· target unclear` — and add would paint the bad news as
+	// good; thinking states no outcome at all. Both sit at the bottom of the
+	// weight order, which is where their kind glyphs already are
+	// (docs/interface/principles.md#weight-tracks-risk), and the glyph in
+	// front of the verdict is what tells the readings apart on a terminal
+	// with no colour at all.
+	if r.Kind == ActivityThink || r.Kind == ActivitySummary {
+		return sty.Dim
+	}
+	return sty.Add
+}
+
+// outcomeField joins outcome, account, counts and keys into the one
+// right-aligned field. Four tones, one per job: what came of the call in the
+// state's token, what allowed it dim, what it counted dimmer, and the keys it
+// offers in info.
 func (r ActivityRow) outcomeField() string {
 	var parts []string
 	if r.Outcome != "" {
-		style := sty.Dim
-		switch {
-		case r.State == ActivityFailed, r.State == ActivityDenied && r.ByRule:
-			style = sty.Del
-		}
-		parts = append(parts, style.Render(r.Outcome))
+		parts = append(parts, r.outcomeStyle().Render(r.Outcome))
 	}
 	if r.Allowed != "" {
 		parts = append(parts, sty.Dim.Render(r.Allowed))
 	}
 	if r.Counts != "" {
-		parts = append(parts, sty.Dimmer.Render(r.Counts))
+		parts = append(parts, paintCounts(r.Counts, sty.Dimmer))
 	}
 	if r.Keys != "" {
 		parts = append(parts, sty.Info.Render(r.Keys))
 	}
 	return strings.Join(parts, sty.Dim.Render(" · "))
+}
+
+// paintCounts paints a ` · `-joined count label, giving an edit's line counts
+// the two tokens they mean everywhere else: `+12` is add and `−4` is del on a
+// row, on a collapsed diff and at the turn's close, so one reader learns one
+// pair of colours. Everything else in the label keeps the tone the field is
+// otherwise in.
+func paintCounts(label string, rest lipgloss.Style) string {
+	if label == "" {
+		return ""
+	}
+	parts := strings.Split(label, " · ")
+	for i, p := range parts {
+		if painted, ok := paintLineCounts(p); ok {
+			parts[i] = painted
+			continue
+		}
+		parts[i] = rest.Render(p)
+	}
+	return strings.Join(parts, rest.Render(" · "))
+}
+
+// paintLineCounts paints `+12 −4`, or either half alone, and reports whether
+// the segment was one. Anything else is not a line count and is left to the
+// caller: the tokens are for what an edit added and removed, not for every
+// number that happens to carry a sign.
+func paintLineCounts(seg string) (string, bool) {
+	fields := strings.Fields(seg)
+	if len(fields) == 0 || len(fields) > 2 || seg != strings.Join(fields, " ") {
+		return "", false
+	}
+	painted := make([]string, 0, len(fields))
+	for _, f := range fields {
+		switch {
+		case signedCount(f, "+"):
+			painted = append(painted, sty.Add.Render(f))
+		case signedCount(f, "−"):
+			painted = append(painted, sty.Del.Render(f))
+		default:
+			return "", false
+		}
+	}
+	return strings.Join(painted, " "), true
+}
+
+// signedCount reports whether s is the given sign followed by digits and
+// nothing else.
+func signedCount(s, sign string) bool {
+	rest, ok := strings.CutPrefix(s, sign)
+	if !ok || rest == "" {
+		return false
+	}
+	return strings.IndexFunc(rest, func(r rune) bool { return r < '0' || r > '9' }) < 0
 }
 
 // fittedOutcome is the outcome field as much of it as this width can carry.
@@ -338,6 +486,12 @@ func (r ActivityRow) fittedOutcome(width int) string {
 // durationField right-aligns the duration in its 6 columns. The field is
 // reserved even when blank so outcomes line up down the transcript; the
 // trailing blank is trimmed off the rendered line.
+//
+// Dim rather than dimmer, which is what the step outline's own duration has
+// always been: the column is scanned as one column, and one column is one
+// grey. Dimmer is for content — a tool's output, a count of what it found —
+// and how long something took is chrome about the row, not what the row
+// found.
 func durationField(d string) string {
 	d = Clip(d, durWidth)
 	pad := durWidth - lipgloss.Width(d)
@@ -347,7 +501,7 @@ func durationField(d string) string {
 	if d == "" {
 		return strings.Repeat(" ", durWidth)
 	}
-	return strings.Repeat(" ", pad) + sty.Dimmer.Render(d)
+	return strings.Repeat(" ", pad) + sty.Dim.Render(d)
 }
 
 // gridLine assembles one line on the grid: a lead already padded to
@@ -381,8 +535,8 @@ func gridLineWith(lead, target string, paint func(string) string, outcome, durat
 
 // View renders the row (plus tail and detail lines) at the given width.
 func (r ActivityRow) View(width int) string {
-	lead := r.pointer() + r.railCell() + r.glyph() + verbField(r.Verb)
-	first := gridLine(lead, r.Target, r.fittedOutcome(width), r.Duration, width)
+	lead := r.pointer() + r.railCell() + r.glyph() + verbFieldIn(r.Verb, r.subjectStyle())
+	first := gridLineWith(lead, r.Target, r.paintTarget, r.fittedOutcome(width), r.Duration, width)
 	if r.Selected {
 		// The reading cursor lights the row it is on: the background runs the row's
 		// width and its words go bright, while the rail and the glyph keep the

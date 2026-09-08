@@ -13,6 +13,9 @@
 · kind · tool (read-only, no rail)
    ⚙ read    internal/agent/loop.go                                                            218 lines  0.6s
 
+· kind · search, its place behind its pattern
+   ⚙ search  ErrRoundLimit ./internal                                                6 matches · 4 files  0.3s
+
 · kind · command
   ▎$ run     go test ./internal/agent/...                                                         exit 0 12.4s
 
@@ -69,8 +72,11 @@
 · state · denied by you
   ▎⊘ run     rm -rf ./build                                                                 denied · you     —
 
-· state · denied by a rule
-  ▎⊘ run     rm -rf ./build                                        denied · auto · plan mode · /mode why     —
+· state · blocked by a rule
+  ▎⊘ run     rm -rf ./build                                              blocked · plan mode · /mode why     —
+
+· state · blocked by the classifier
+  ▎⊘ run     rm -rf ./build                                        blocked · classifier 2.1s · /mode why     —
 
 · state · auto-allowed
    ⚙ read    internal/agent/loop.go                                 auto-allowed · read-only · 218 lines  0.6s
@@ -83,55 +89,58 @@
 
 ── ansi ────────────────────────────────────────────────────
 · kind · tool (read-only, no rail)
-   ␛[38;5;214m⚙␛[m read    ␛[38;5;241minternal/agent/loop.go␛[m                                                            ␛[38;5;245m218 lines␛[m  ␛[38;5;245m0.6s␛[m
+   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                                                            ␛[38;5;245m218 lines␛[m  ␛[38;5;241m0.6s␛[m
+
+· kind · search, its place behind its pattern
+   ␛[38;5;214m⚙␛[m ␛[38;5;252msearch␛[m  ␛[38;5;252mErrRoundLimit␛[m␛[38;5;241m ./internal␛[m                                                ␛[38;5;245m6 matches␛[m␛[38;5;245m · ␛[m␛[38;5;245m4 files␛[m  ␛[38;5;241m0.3s␛[m
 
 · kind · command
-  ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m run     ␛[38;5;241mgo test ./internal/agent/...␛[m                                                         ␛[38;5;241mexit 0␛[m ␛[38;5;245m12.4s␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/...␛[m                                                         ␛[92mexit 0␛[m ␛[38;5;241m12.4s␛[m
 
 · kind · edit
-  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m edit    ␛[38;5;241minternal/agent/loop.go␛[m                                    ␛[38;5;241mapproved · you␛[m␛[38;5;241m · ␛[m␛[38;5;245m+12 −4 · 2 hunks␛[m  ␛[38;5;245m1.1s␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                                    ␛[92mapproved · you␛[m␛[38;5;241m · ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;245m · ␛[m␛[38;5;245m2 hunks␛[m  ␛[38;5;241m1.1s␛[m
 
 · kind · sub-agent
-   ␛[94m◇␛[m agent   ␛[38;5;241mwriter-1 · docs/loop.md␛[m                                                                  ␛[38;5;241mok␛[m ␛[38;5;245m48.0s␛[m
+   ␛[94m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mwriter-1 · docs/loop.md␛[m                                                                  ␛[92mok␛[m ␛[38;5;241m48.0s␛[m
 
 · kind · report page
-   ␛[38;5;214m⛁␛[m report  ␛[38;5;241msuite timing breakdown␛[m                       ␛[38;5;241m→ http://127.0.0.1:52104/r/rp-8f3a11c04b2d9e61␛[m  ␛[38;5;245m0.8s␛[m
+   ␛[38;5;214m⛁␛[m ␛[38;5;252mreport␛[m  ␛[38;5;252msuite timing breakdown␛[m                       ␛[92m→ http://127.0.0.1:52104/r/rp-8f3a11c04b2d9e61␛[m  ␛[38;5;241m0.8s␛[m
 
 · kind · think, folded
-   ␛[38;5;241m✻␛[m think   ␛[38;5;241m␛[m                                                                  ␛[38;5;245m42 lines␛[m␛[38;5;241m · ␛[m␛[94m[enter] expand␛[m
+   ␛[38;5;241m✻␛[m ␛[38;5;252mthink␛[m   ␛[38;5;252m␛[m                                                                  ␛[38;5;245m42 lines␛[m␛[38;5;241m · ␛[m␛[94m[enter] expand␛[m
 
 · kind · think, opened to its tail
-   ␛[38;5;241m✻␛[m think   ␛[38;5;241m␛[m                                                                                   ␛[38;5;245m42 lines␛[m
+   ␛[38;5;241m✻␛[m ␛[38;5;252mthink␛[m   ␛[38;5;252m␛[m                                                                                   ␛[38;5;245m42 lines␛[m
     ␛[38;5;245mSo the second one is cheaper: it reuses␛[m
     ␛[38;5;245mthe row the transcript already draws.␛[m
 
 · state · queued
-   ␛[38;5;241m·␛[m read    ␛[38;5;241minternal/agent/loop.go␛[m                                                               ␛[38;5;241mqueued␛[m     ␛[38;5;245m—␛[m
+   ␛[38;5;241m·␛[m ␛[38;5;241mread␛[m    ␛[38;5;241minternal/agent/loop.go␛[m                                                               ␛[38;5;241mqueued␛[m     ␛[38;5;241m—␛[m
 
 · state · running with live tail
-  ␛[38;5;214m▎␛[m␛[38;5;205m▸␛[m run     ␛[38;5;241mgo build ./cmd/shhh␛[m                                                                ␛[38;5;241mrunning…␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;205m▸␛[m ␛[97mrun␛[m     ␛[97mgo build ./cmd/shhh␛[m                                                                ␛[38;5;205mrunning…␛[m
   ␛[38;5;245minternal/ui/chat/model.go:1660:1: too many arguments␛[m
 
 · state · classifier checking
-   ␛[38;5;205m✦␛[m read    ␛[38;5;241minternal/agent/loop.go␛[m                                                             ␛[38;5;241mchecking␛[m
+   ␛[38;5;205m✦␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                                                             ␛[38;5;205mchecking␛[m
 
 · state · failed, expanded
-  ␛[91m▎␛[m␛[91m✗␛[m run     ␛[38;5;241mgo test ./internal/agent/...␛[m                                                         ␛[91mexit 1␛[m ␛[38;5;245m21.4s␛[m
+  ␛[91m▎␛[m␛[91m✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/...␛[m                                                         ␛[91mexit 1␛[m ␛[38;5;241m21.4s␛[m
     ␛[38;5;245m--- FAIL: TestRoundLimit (0.00s)␛[m
     ␛[38;5;245m    loop_test.go:88: want ErrRoundLimit, got nil␛[m
 
 · output · a program's own colours, re-painted
-  ␛[91m▎␛[m␛[91m✗␛[m run     ␛[38;5;241mgo test ./internal/agent/...␛[m                                                         ␛[91mexit 1␛[m ␛[38;5;245m21.4s␛[m
+  ␛[91m▎␛[m␛[91m✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/...␛[m                                                         ␛[91mexit 1␛[m ␛[38;5;241m21.4s␛[m
     ␛[38;5;245m--- ␛[m␛[91mFAIL␛[m␛[38;5;245m: ␛[m␛[1;38;5;245mTestRoundLimit␛[m␛[38;5;245m (0.00s)␛[m
     ␛[38;5;245mbuilding 100%␛[m
 
 · output · a colour outside the palette, folded onto it
-  ␛[91m▎␛[m␛[91m✗␛[m run     ␛[38;5;241mnpm run lint␛[m                                                                         ␛[91mexit 1␛[m  ␛[38;5;245m3.9s␛[m
+  ␛[91m▎␛[m␛[91m✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mnpm run lint␛[m                                                                         ␛[91mexit 1␛[m  ␛[38;5;241m3.9s␛[m
     ␛[38;5;214mwarn␛[m␛[38;5;245m  ␛[m␛[94mno-unused-vars␛[m␛[38;5;245m  src/app.ts␛[m
     ␛[38;5;245m 3 problems ␛[m␛[38;5;245m ␛[m␛[38;5;252m1 error, 2 warnings␛[m
 
 · output · bounded, the cap counts what it swallowed
-  ␛[91m▎␛[m␛[91m✗␛[m run     ␛[38;5;241mgo vet ./...␛[m                                                                         ␛[91mexit 1␛[m  ␛[38;5;245m8.0s␛[m
+  ␛[91m▎␛[m␛[91m✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo vet ./...␛[m                                                                         ␛[91mexit 1␛[m  ␛[38;5;241m8.0s␛[m
     ␛[38;5;245minternal/agent/loop.go:88: unreachable code␛[m
     ␛[38;5;245minternal/agent/loop.go:104: result of append not used␛[m
     ␛[38;5;245minternal/agent/title.go:31: self-assignment␛[m
@@ -139,16 +148,19 @@
     ␛[38;5;241m… 2 more lines␛[m
 
 · state · denied by you
-  ␛[38;5;214m▎␛[m␛[38;5;241m⊘␛[m run     ␛[38;5;241mrm -rf ./build␛[m                                                                 ␛[38;5;241mdenied · you␛[m     ␛[38;5;245m—␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;241m⊘␛[m ␛[38;5;241mrun␛[m     ␛[38;5;241mrm -rf ./build␛[m                                                                 ␛[38;5;241mdenied · you␛[m     ␛[38;5;241m—␛[m
 
-· state · denied by a rule
-  ␛[38;5;214m▎␛[m␛[91m⊘␛[m run     ␛[38;5;241mrm -rf ./build␛[m                                        ␛[91mdenied · auto · plan mode␛[m␛[38;5;241m · ␛[m␛[94m/mode why␛[m     ␛[38;5;245m—␛[m
+· state · blocked by a rule
+  ␛[38;5;214m▎␛[m␛[91m⊘␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mrm -rf ./build␛[m                                              ␛[91mblocked␛[m␛[38;5;241m · ␛[m␛[38;5;241mplan mode␛[m␛[38;5;241m · ␛[m␛[94m/mode why␛[m     ␛[38;5;241m—␛[m
+
+· state · blocked by the classifier
+  ␛[38;5;214m▎␛[m␛[91m⊘␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mrm -rf ./build␛[m                                        ␛[91mblocked␛[m␛[38;5;241m · ␛[m␛[38;5;241mclassifier 2.1s␛[m␛[38;5;241m · ␛[m␛[94m/mode why␛[m     ␛[38;5;241m—␛[m
 
 · state · auto-allowed
-   ␛[38;5;214m⚙␛[m read    ␛[38;5;241minternal/agent/loop.go␛[m                                 ␛[38;5;241mauto-allowed · read-only␛[m␛[38;5;241m · ␛[m␛[38;5;245m218 lines␛[m  ␛[38;5;245m0.6s␛[m
+   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252minternal/agent/loop.go␛[m                                 ␛[38;5;241mauto-allowed · read-only␛[m␛[38;5;241m · ␛[m␛[38;5;245m218 lines␛[m  ␛[38;5;241m0.6s␛[m
 
 · focus · selected
-␛[94m❯␛[m ␛[38;5;214m␛[m␛[38;5;241m␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[48;5;62m␛[94m␛[m␛[48;5;62m ␛[38;5;214m⚙␛[m␛[48;5;62m ␛[38;5;241m␛[m␛[48;5;62m␛[38;5;245m␛[m␛[48;5;62m␛[38;5;245m␛[m␛[48;5;62m␛[97;48;5;62mread    internal/agent/loop.go                                                            218 lines  0.6s␛[m␛[m
+␛[94m❯␛[m ␛[38;5;214m␛[m␛[38;5;252m␛[m␛[38;5;252m␛[m␛[38;5;245m␛[m␛[38;5;241m␛[m␛[48;5;62m␛[94m␛[m␛[48;5;62m ␛[38;5;214m⚙␛[m␛[48;5;62m ␛[38;5;252m␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;245m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[97;48;5;62mread    internal/agent/loop.go                                                            218 lines  0.6s␛[m␛[m
 
 · overflow · target clips, outcome does not
-  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m edit    ␛[38;5;241minternal/ui/components/a/very/deeply/nested/path/activityrow.go␛[m          ␛[38;5;245m+128 −64 · 9 hunks␛[m  ␛[38;5;245m3.2s␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/ui/components/a/very/deeply/nested/path/activityrow.go␛[m          ␛[92m+128␛[m ␛[91m−64␛[m␛[38;5;245m · ␛[m␛[38;5;245m9 hunks␛[m  ␛[38;5;241m3.2s␛[m

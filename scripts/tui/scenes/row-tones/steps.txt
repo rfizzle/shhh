@@ -1,0 +1,28 @@
+# The outcome column in four tones, and the subject beside it in body text
+# (docs/interface/surfaces.md#the-activity-row). One turn draws a read, a
+# command that finished, a command that broke and a command the reader
+# refused, so the column can be read down for what happened to each without
+# reading a word — and every word is still there, which is what the picture
+# is looked at for.
+#
+# One card, at the end: every act before it is read-only and is allowed
+# without anybody being asked, so there is never a moment where a key meant
+# for one decision could reach another.
+#
+# Spaces rather than tabs in the fixture: a tab is re-expanded by the
+# terminal against the pane's own columns, not the row's, and the capture
+# would read as a column that drifted.
+setup printf 'package agent\n\nfunc loop() {\n    for round := 0; round < limit; round++ {\n        step()\n    }\n}\n' > loop.go
+setup mkdir -p internal && printf 'package agent\n\nconst limit = 25\n\nfunc round() int {\n    return limit\n}\n' > internal/round.go
+snap 01-start "Some things worth doing first"
+keys "walk the row states" Enter
+# The broken command's own words, which no other row on screen carries.
+snap 02-broken "No such file or directory"
+snap 03-card "mv loop.go loop.go.bak"
+sleep 1
+keys n
+snap 04-refused "Every state the row paints is above"
+keys C-c
+snap 05-quit-armed "press again to quit"
+keys C-c
+snap 06-exit "that is everything the screen was holding"

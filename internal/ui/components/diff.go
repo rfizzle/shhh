@@ -151,7 +151,9 @@ func (d *DiffView) View(width int) string {
 }
 
 // statsLabel is the "+N −M · H hunks" summary present in every form; a
-// multi-file view counts files instead.
+// multi-file view counts files instead. It is plain text because it is
+// measured before it is painted — paintCounts is what gives the two counts
+// the tokens they carry on every other surface.
 func (d *DiffView) statsLabel() string {
 	if len(d.Files) > 0 {
 		var adds, dels int
@@ -198,11 +200,14 @@ func (d *DiffView) RowView(width int) string {
 	if verb == "" {
 		verb = "edit"
 	}
-	left := sty.Accent.Render("✎ "+verb) + " " + d.Path
+	// The same subject the grid draws: the glyph says which act, the verb
+	// and the path are body text, and the label beside them is the account
+	// (docs/interface/principles.md#one-grid).
+	left := sty.Accent.Render("✎") + " " + sty.Body.Render(verb+" "+d.Path)
 	// What the label may spend before it starts eating the path: the row
 	// less the verb, a path still worth reading, the gap and the expand key.
 	room := width - lipgloss.Width("✎ "+verb+" ") - minTargetWidth - 2 - 3 - lipgloss.Width(GroupExpandKey)
-	right := sty.Dim.Render(d.rowLabel(room)) + "   " + sty.Hint.Render(GroupExpandKey)
+	right := paintCounts(d.rowLabel(room), sty.Dim) + "   " + sty.Hint.Render(GroupExpandKey)
 	gap := width - lipgloss.Width(left) - lipgloss.Width(right)
 	if gap < 2 {
 		return Clip(left+"  "+right, width)
@@ -252,12 +257,12 @@ func UnifiedLines(hunks []diff.Hunk, width int, opts UnifiedOpts) []string {
 
 // ExpandedLines is the bounded in-transcript unified view.
 func (d *DiffView) ExpandedLines(width int) []string {
-	head := sty.Accent.Render("✎ ") + d.Path
+	head := sty.Accent.Render("✎ ") + sty.Body.Render(d.Path)
 	// The same arithmetic the collapsed row does: the head's glyph, a path
 	// still worth reading, and the gap between them and the label.
 	label := d.rowLabel(width - lipgloss.Width("✎ ") - minTargetWidth - 2)
 	if gap := width - lipgloss.Width(head) - lipgloss.Width(label); gap > 1 {
-		head += strings.Repeat(" ", gap) + sty.Dim.Render(label)
+		head += strings.Repeat(" ", gap) + paintCounts(label, sty.Dim)
 	}
 	body := max(d.MaxLines-1, 1)
 	if d.MaxLines == 0 {
@@ -446,7 +451,7 @@ func (d *DiffView) fileSyntax(path string, explicit Syntax) Syntax {
 // fullView is the full-screen rendering: header, scrollable body,
 // footer hint. Side-by-side when toggled or the terminal is wide enough.
 func (d *DiffView) fullView(width int) string {
-	header := padRight(" "+d.Path, max(0, width-lipgloss.Width(d.statsLabel()))) + sty.Dim.Render(d.statsLabel())
+	header := padRight(" "+d.Path, max(0, width-lipgloss.Width(d.statsLabel()))) + paintCounts(d.statsLabel(), sty.Dim)
 	footer := sty.Hint.Render("diff · " + strings.Join([]string{
 		offer(keys.Diff.Scroll), offer(keys.Diff.Hunk),
 		offer(keys.Diff.SideBySide), offer(keys.Diff.Back),

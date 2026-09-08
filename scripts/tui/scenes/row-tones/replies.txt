@@ -1,0 +1,18 @@
+# One reply per request. The last line repeats once these run out.
+# Four acts and four outcome tones: a read counted in dimmer, a command that
+# finished in add, one that broke in del, and one nobody let run in dim. The
+# three that are allowed only read; the fourth is the one the reader refuses,
+# which is why it is the only card in the scene and why nothing here writes
+# to the workspace it is driven in.
+tool:read_file:{"path":"loop.go"}
+tool:execute_command:{"command":"cat loop.go"}
+# The session's own reading of the run asks the model too, on whichever of
+# the next two rounds it falls due on, and the reply it takes is one the turn
+# never makes. So the two rounds it can land on are reads: taken, the turn
+# skips that one; left, it makes both and every row below still lands. A
+# prose line here would end the turn instead of being spent.
+tool:search:{"pattern":"limit","path":"internal"}
+tool:read_file:{"path":"internal/round.go"}
+tool:execute_command:{"command":"cat missing.log"}
+tool:execute_command:{"command":"mv loop.go loop.go.bak"}
+Every state the row paints is above.

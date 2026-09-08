@@ -504,6 +504,7 @@ type Styles struct {
 	Dimmer   lipgloss.Style
 	Status   lipgloss.Style
 	Body     lipgloss.Style
+	Bright   lipgloss.Style
 	Accent   lipgloss.Style
 	Info     lipgloss.Style
 	Err      lipgloss.Style
@@ -573,6 +574,7 @@ func newStyles(p ColorTokens) Styles {
 		Dimmer:   lipgloss.NewStyle().Foreground(p.Dimmer.Color()),
 		Status:   lipgloss.NewStyle().Foreground(p.Status.Color()),
 		Body:     lipgloss.NewStyle().Foreground(p.Body.Color()),
+		Bright:   lipgloss.NewStyle().Foreground(p.Bright.Color()),
 		Accent:   lipgloss.NewStyle().Foreground(p.Accent.Color()),
 		Info:     lipgloss.NewStyle().Foreground(p.Info.Color()),
 		Err:      lipgloss.NewStyle().Foreground(p.Del.Color()),

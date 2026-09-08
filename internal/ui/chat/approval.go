@@ -612,7 +612,13 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 		m.pendingRun = ""
 		m.pendingScope = scopeReach{}
 		m.agent.ResolveApproval(m.refusedResult(req.call, denialResult(reason)))
-		m.appendEntry(deniedEntry(req, decidedByAuto, reason, v.Elapsed))
+		// The row names the rule, not the judgement: every other rule denial
+		// states a rule the reader can change, and the classifier's sentence
+		// is neither short enough for the outcome column nor a thing to
+		// change. It is on the notice rail and behind the row's own
+		// `/permissions why`, which is where a reason belongs
+		// (docs/interface/principles.md#closed-vocabularies).
+		m.appendEntry(deniedEntry(req, decidedByAuto, classifierRule, v.Elapsed))
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		return m.advanceApprovalQueue()

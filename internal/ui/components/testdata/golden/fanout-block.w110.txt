@@ -39,28 +39,28 @@
 
 ── ansi ────────────────────────────────────────────────────
 · mid-flight · one child is waiting on you
- ␛[94m◇␛[m fan-out   ␛[38;5;241m4 agents␛[m                                                            ␛[91m1 needs you␛[m␛[38;5;241m · ␛[m␛[38;5;205m2 running␛[m ␛[38;5;245m1m12s␛[m
-   ␛[91m⚠␛[m agent   ␛[38;5;252mscout-3␛[m␛[38;5;241m  other ErrRoundLimit callers␛[m                          ␛[91m⚠ needs you␛[m␛[38;5;241m · ␛[m␛[38;5;245m3 tools · $0.01␛[m   ␛[38;5;245m18s␛[m
+ ␛[94m◇␛[m ␛[38;5;252mfan-out␛[m   ␛[38;5;241m4 agents␛[m                                                            ␛[91m1 needs you␛[m␛[38;5;241m · ␛[m␛[38;5;205m2 running␛[m ␛[38;5;241m1m12s␛[m
+   ␛[91m⚠␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mscout-3␛[m␛[38;5;241m  other ErrRoundLimit callers␛[m                          ␛[91m⚠ needs you␛[m␛[38;5;241m · ␛[m␛[38;5;245m3 tools · $0.01␛[m   ␛[38;5;241m18s␛[m
     ␛[38;5;245mwaiting approval: read ../shhh-plugins/registry.go␛[m
-   ␛[94m◇␛[m agent   ␛[38;5;252mwriter-1␛[m␛[38;5;241m  docs/loop.md␛[m                                          ␛[94m▰▰␛[m␛[38;5;241m▱▱▱␛[m ␛[94m2/5␛[m␛[38;5;241m · ␛[m␛[38;5;245m6 tools · $0.02␛[m   ␛[38;5;245m12s␛[m
+   ␛[94m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mwriter-1␛[m␛[38;5;241m  docs/loop.md␛[m                                          ␛[94m▰▰␛[m␛[38;5;241m▱▱▱␛[m ␛[94m2/5␛[m␛[38;5;241m · ␛[m␛[38;5;245m6 tools · $0.02␛[m   ␛[38;5;241m12s␛[m
     ␛[38;5;245mstarted from 5 uncommitted files in your tree␛[m
-   ␛[92m✓␛[m agent   ␛[38;5;252mtester-2␛[m␛[38;5;241m  internal/agent tests␛[m                                       ␛[92mdone␛[m␛[38;5;241m · ␛[m␛[38;5;245m9 tools · $0.03␛[m   ␛[38;5;245m41s␛[m
+   ␛[92m✓␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mtester-2␛[m␛[38;5;241m  internal/agent tests␛[m                                       ␛[92mdone␛[m␛[38;5;241m · ␛[m␛[38;5;245m9 tools · $0.03␛[m   ␛[38;5;241m41s␛[m
     ␛[38;5;245mall four packages pass␛[m
-   ␛[38;5;241m·␛[m agent   ␛[38;5;252mreader-4␛[m␛[38;5;241m  survey internal/ui␛[m                                                         ␛[38;5;241mqueued␛[m  ␛[38;5;245m1.0s␛[m
+   ␛[38;5;241m·␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mreader-4␛[m␛[38;5;241m  survey internal/ui␛[m                                                         ␛[38;5;241mqueued␛[m  ␛[38;5;241m1.0s␛[m
     ␛[94m[alt+a]␛[m␛[38;5;241m agents␛[m
 
 · settled · every child has stopped
- ␛[94m◇␛[m fan-out   ␛[38;5;241m3 agents␛[m                                                                  ␛[92m2 done␛[m␛[38;5;241m · ␛[m␛[91m1 failed␛[m ␛[38;5;245m2m04s␛[m
-   ␛[92m✓␛[m agent   ␛[38;5;252mwriter-1␛[m␛[38;5;241m  docs/loop.md␛[m                                              ␛[92mdone␛[m␛[38;5;241m · ␛[m␛[38;5;245m11 tools · $0.04␛[m ␛[38;5;245m1m38s␛[m
+ ␛[94m◇␛[m ␛[38;5;252mfan-out␛[m   ␛[38;5;241m3 agents␛[m                                                                  ␛[92m2 done␛[m␛[38;5;241m · ␛[m␛[91m1 failed␛[m ␛[38;5;241m2m04s␛[m
+   ␛[92m✓␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mwriter-1␛[m␛[38;5;241m  docs/loop.md␛[m                                              ␛[92mdone␛[m␛[38;5;241m · ␛[m␛[38;5;245m11 tools · $0.04␛[m ␛[38;5;241m1m38s␛[m
     ␛[38;5;245mdocumented the sentinel and linked the test␛[m
-   ␛[92m✓␛[m agent   ␛[38;5;252mtester-2␛[m␛[38;5;241m  internal/agent tests␛[m                                       ␛[92mdone␛[m␛[38;5;241m · ␛[m␛[38;5;245m9 tools · $0.03␛[m   ␛[38;5;245m41s␛[m
+   ␛[92m✓␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mtester-2␛[m␛[38;5;241m  internal/agent tests␛[m                                       ␛[92mdone␛[m␛[38;5;241m · ␛[m␛[38;5;245m9 tools · $0.03␛[m   ␛[38;5;241m41s␛[m
     ␛[38;5;245mall four packages pass␛[m
-   ␛[91m✗␛[m agent   ␛[38;5;252mpatcher-3␛[m␛[38;5;241m  apply the patch␛[m                                        ␛[91mfailed␛[m␛[38;5;241m · ␛[m␛[38;5;245m12 tools · $0.05␛[m ␛[38;5;245m2m04s␛[m
+   ␛[91m✗␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mpatcher-3␛[m␛[38;5;241m  apply the patch␛[m                                        ␛[91mfailed␛[m␛[38;5;241m · ␛[m␛[38;5;245m12 tools · $0.05␛[m ␛[38;5;241m2m04s␛[m
     ␛[38;5;245mround limit (25) reached␛[m
 
 · no declared step count · every lane spins
- ␛[94m◇␛[m fan-out   ␛[38;5;241m2 agents␛[m                                                                          ␛[38;5;205m2 running␛[m   ␛[38;5;245m22s␛[m
-   ␛[94m◇␛[m agent   ␛[38;5;252mresearcher-1␛[m␛[38;5;241m  survey the round accounting␛[m                       ␛[38;5;205m⠹ working␛[m␛[38;5;241m · ␛[m␛[38;5;245m4 tools · $0.01␛[m   ␛[38;5;245m22s␛[m
+ ␛[94m◇␛[m ␛[38;5;252mfan-out␛[m   ␛[38;5;241m2 agents␛[m                                                                          ␛[38;5;205m2 running␛[m   ␛[38;5;241m22s␛[m
+   ␛[94m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mresearcher-1␛[m␛[38;5;241m  survey the round accounting␛[m                       ␛[38;5;205m⠹ working␛[m␛[38;5;241m · ␛[m␛[38;5;245m4 tools · $0.01␛[m   ␛[38;5;241m22s␛[m
     ␛[38;5;245msteered from parent␛[m
-   ␛[94m◇␛[m agent   ␛[38;5;252mresearcher-2␛[m␛[38;5;241m  survey the fold state␛[m                             ␛[38;5;205m⠹ working␛[m␛[38;5;241m · ␛[m␛[38;5;245m2 tools · $0.01␛[m   ␛[38;5;245m19s␛[m
+   ␛[94m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252mresearcher-2␛[m␛[38;5;241m  survey the fold state␛[m                             ␛[38;5;205m⠹ working␛[m␛[38;5;241m · ␛[m␛[38;5;245m2 tools · $0.01␛[m   ␛[38;5;241m19s␛[m
     ␛[38;5;245m2 steers · from reading · last read off target␛[m

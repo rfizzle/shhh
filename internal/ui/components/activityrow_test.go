@@ -3,6 +3,10 @@ package components
 import (
 	"strings"
 	"testing"
+	"unicode"
+
+	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/colorprofile"
 )
 
 // fieldsOf splits a rendered row into its grid fields
@@ -147,14 +151,21 @@ func TestActivityRow_DeniedNamesTheDecider(t *testing.T) {
 		}
 	}
 
+	// A rule's no is a different word, so the two denials are told apart by
+	// what they say and not only by what they are painted in
+	// (docs/interface/principles.md#two-denials-are-not-one-denial). The
+	// rule that said it is the account beside the word.
 	rule := ActivityRow{Kind: ActivityCommand, Verb: "run", Target: "rm -rf ./dist", State: ActivityDenied,
-		ByRule: true, Outcome: OutcomeBy(OutcomeDenied, "auto") + " · plan mode",
+		ByRule: true, Outcome: OutcomeBlocked, Allowed: "plan mode",
 		Keys: "/mode why", Duration: NoDuration}
 	line = stripANSI(rule.View(80))
-	for _, want := range []string{"⊘", "denied · auto · plan mode", "/mode why"} {
+	for _, want := range []string{"⊘", "blocked · plan mode", "/mode why"} {
 		if !strings.Contains(line, want) {
 			t.Fatalf("a rule's refusal should read %q:\n%s", want, line)
 		}
+	}
+	if strings.Contains(line, OutcomeDenied) {
+		t.Fatalf("a rule's no is not your no:\n%s", line)
 	}
 	if strings.Contains(line, "✗") {
 		t.Fatalf("a refusal is never a failure:\n%s", line)
@@ -280,5 +291,249 @@ func TestActivityRow_TheAccountGivesWayToTheTarget(t *testing.T) {
 	}
 	if got := len([]rune(narrow)); got > 60 {
 		t.Fatalf("the row still fits its width, got %d cells: %q", got, narrow)
+	}
+}
+
+// The outcome column is what the reader drops down to tell finished from
+// running from failed, so the word takes the state's own token — and the word
+// is always there as well, which is what makes the colour reinforcement
+// rather than the message (invariant 1).
+func TestActivityRow_OutcomeTakesTheStatesToken(t *testing.T) {
+	withColorProfile(t, colorprofile.ANSI256)
+	cases := []struct {
+		name string
+		row  ActivityRow
+		want lipgloss.Style
+	}{
+		{"a command that finished", ActivityRow{Kind: ActivityCommand, Verb: "run",
+			Outcome: OutcomeExit(0)}, sty.Add},
+		{"an edit you approved", ActivityRow{Kind: ActivityEdit, Verb: "edit",
+			Outcome: OutcomeBy(OutcomeApproved, "you")}, sty.Add},
+		{"a command in flight", ActivityRow{Kind: ActivityCommand, Verb: "run",
+			State: ActivityRunning, Outcome: OutcomeRunning}, sty.SpinText},
+		{"a call the classifier is judging", ActivityRow{Kind: ActivityCommand, Verb: "run",
+			State: ActivityChecking, Outcome: OutcomeChecking}, sty.SpinText},
+		{"a command that broke", ActivityRow{Kind: ActivityCommand, Verb: "run",
+			State: ActivityFailed, Outcome: OutcomeExit(1)}, sty.Del},
+		{"a rule's no", ActivityRow{Kind: ActivityCommand, Verb: "run", State: ActivityDenied,
+			ByRule: true, Outcome: OutcomeBlocked, Allowed: "plan mode"}, sty.Del},
+		{"your own no", ActivityRow{Kind: ActivityCommand, Verb: "run", State: ActivityDenied,
+			Outcome: OutcomeBy(OutcomeDenied, "you")}, sty.Dim},
+		{"a call that has not started", ActivityRow{Kind: ActivityTool, Verb: "read",
+			State: ActivityQueued, Outcome: OutcomeQueued}, sty.Dim},
+	}
+	for _, tc := range cases {
+		if want, got := tc.want.Render(tc.row.Outcome), tc.row.outcomeField(); !strings.Contains(got, want) {
+			t.Fatalf("%s: outcome field %q should paint the word as %q", tc.name, got, want)
+		}
+	}
+
+	// A read's count is the other half of the field and keeps its own tone:
+	// what a call found is content, and content is dimmer.
+	counted := ActivityRow{Kind: ActivityTool, Verb: "read", Counts: "218 lines"}
+	if want, got := sty.Dimmer.Render("218 lines"), counted.outcomeField(); !strings.Contains(got, want) {
+		t.Fatalf("a count stays dimmer, got %q", got)
+	}
+}
+
+// `+N` and `−M` mean the same two things wherever a row states them, so they
+// carry the diff's own tokens on the row as they do in the diff itself.
+func TestActivityRow_LineCountsCarryTheDiffsTokens(t *testing.T) {
+	withColorProfile(t, colorprofile.ANSI256)
+	r := ActivityRow{Kind: ActivityEdit, Verb: "edit", Target: "internal/agent/loop.go",
+		Counts: "+12 −4 · 2 hunks", Duration: "1.1s"}
+	view := r.View(110)
+	for _, want := range []string{
+		sty.Add.Render("+12"),
+		sty.Del.Render("−4"),
+		sty.Dimmer.Render(" · ") + sty.Dimmer.Render("2 hunks"),
+	} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("an edit's counts should carry %q:\n%q", want, view)
+		}
+	}
+	// Only a line count takes them: a search's own numbers are not additions.
+	found := ActivityRow{Kind: ActivityTool, Verb: "search", Counts: "6 matches · 4 files"}
+	if want, got := sty.Dimmer.Render("6 matches"), found.outcomeField(); !strings.Contains(got, want) {
+		t.Fatalf("a count that is not a line count stays dimmer, got %q", got)
+	}
+}
+
+// The row's subject is the verb and the target together, in one tone: body
+// text at rest, bright while the call is happening, dim before it started and
+// after a refusal that means it never will.
+func TestActivityRow_SubjectTone(t *testing.T) {
+	withColorProfile(t, colorprofile.ANSI256)
+	cases := []struct {
+		name string
+		row  ActivityRow
+		want lipgloss.Style
+	}{
+		{"at rest", ActivityRow{Kind: ActivityTool, Verb: "read", Target: "loop.go"}, sty.Body},
+		{"in flight", ActivityRow{Kind: ActivityCommand, Verb: "run", Target: "go test ./...",
+			State: ActivityRunning, Outcome: OutcomeRunning}, sty.Bright},
+		{"queued", ActivityRow{Kind: ActivityTool, Verb: "read", Target: "loop.go",
+			State: ActivityQueued, Outcome: OutcomeQueued}, sty.Dim},
+		{"refused by you", ActivityRow{Kind: ActivityEdit, Verb: "edit", Target: "go.mod",
+			State: ActivityDenied, Outcome: OutcomeBy(OutcomeDenied, "you")}, sty.Dim},
+		// A rule's no keeps body text: the reader is being told about an act
+		// somebody else stopped, not about a preference of their own.
+		{"blocked by a rule", ActivityRow{Kind: ActivityCommand, Verb: "run", Target: "rm -rf ./dist",
+			State: ActivityDenied, ByRule: true, Outcome: OutcomeBlocked}, sty.Body},
+		{"broken", ActivityRow{Kind: ActivityCommand, Verb: "run", Target: "go vet ./...",
+			State: ActivityFailed, Outcome: OutcomeExit(1)}, sty.Body},
+	}
+	for _, tc := range cases {
+		view := tc.row.View(110)
+		for _, want := range []string{tc.want.Render(tc.row.Verb), tc.want.Render(tc.row.Target)} {
+			if !strings.Contains(view, want) {
+				t.Fatalf("%s: subject should carry %q:\n%q", tc.name, want, view)
+			}
+		}
+	}
+}
+
+// A search's target is its pattern and then where it was put, and only the
+// pattern is the subject: the place goes dim behind it.
+func TestActivityRow_ScopeStaysBehindTheSubject(t *testing.T) {
+	withColorProfile(t, colorprofile.ANSI256)
+	r := ActivityRow{Kind: ActivityTool, Verb: "search", Target: "ErrRoundLimit ./internal",
+		Scope: "./internal", Counts: "6 matches"}
+	view := r.View(110)
+	if want := sty.Body.Render("ErrRoundLimit") + sty.Dim.Render(" ./internal"); !strings.Contains(view, want) {
+		t.Fatalf("the pattern leads in body text and the place is dim behind it:\n%q", view)
+	}
+	// Clipped past the scope, what is left is all subject.
+	narrow := ActivityRow{Kind: ActivityTool, Verb: "search", Target: "ErrRoundLimit ./internal/ui/chat",
+		Scope: "./internal/ui/chat", Counts: "6 matches"}.View(40)
+	if strings.Contains(stripANSI(narrow), "./internal/ui/chat") {
+		t.Fatalf("a 40-column row has no room for the scope: %q", stripANSI(narrow))
+	}
+	if want := sty.Body.Render("ErrRoundL…"); !strings.Contains(narrow, want) {
+		t.Fatalf("and what is left of the field is all subject: %q", narrow)
+	}
+}
+
+// Duration is one column down the transcript, so it is one grey: the step
+// outline's headers have always drawn it dim, and the rows under them now
+// agree.
+func TestActivityRow_DurationIsDim(t *testing.T) {
+	withColorProfile(t, colorprofile.ANSI256)
+	r := ActivityRow{Kind: ActivityTool, Verb: "read", Target: "loop.go", Counts: "218 lines", Duration: "0.6s"}
+	if want := sty.Dim.Render("0.6s"); !strings.Contains(r.View(110), want) {
+		t.Fatalf("the duration field is dim, want %q:\n%q", want, r.View(110))
+	}
+}
+
+// Nothing on a row is left in the terminal's own foreground: every cell that
+// is not padding sits inside a colour the palette issued
+// (docs/interface/principles.md#a-colour-is-three-values-and-a-ground).
+func TestActivityRow_EveryCellCarriesAToken(t *testing.T) {
+	withColorProfile(t, colorprofile.ANSI256)
+	rows := map[string]ActivityRow{
+		"read":    {Kind: ActivityTool, Verb: "read", Target: "internal/agent/loop.go", Counts: "218 lines", Duration: "0.6s"},
+		"search":  {Kind: ActivityTool, Verb: "search", Target: "ErrRoundLimit ./internal", Scope: "./internal", Counts: "6 matches"},
+		"command": {Kind: ActivityCommand, Verb: "run", Target: "go test ./internal/agent/...", Outcome: OutcomeExit(0), Duration: "12.4s"},
+		"edit": {Kind: ActivityEdit, Verb: "edit", Target: "internal/agent/loop.go",
+			Outcome: OutcomeBy(OutcomeApproved, "you"), Counts: "+12 −4 · 2 hunks", Duration: "1.1s"},
+		"agent":    {Kind: ActivitySubagent, Verb: "agent", Target: "writer-1", Outcome: OutcomeOK, Duration: "48.0s"},
+		"think":    {Kind: ActivityThink, Verb: "think", Counts: "42 lines", Keys: GroupExpandKey},
+		"queued":   {Kind: ActivityTool, Verb: "read", Target: "internal/agent/round.go", State: ActivityQueued, Outcome: OutcomeQueued, Duration: NoDuration},
+		"running":  {Kind: ActivityCommand, Verb: "run", Target: "go build ./cmd/shhh", State: ActivityRunning, Outcome: OutcomeRunning, Tail: "internal/ui/chat/model.go:1660:1: too many arguments"},
+		"checking": {Kind: ActivityCommand, Verb: "run", Target: "gofmt -w loop.go", State: ActivityChecking, Outcome: OutcomeChecking, Duration: "0.4s"},
+		"failed": {Kind: ActivityCommand, Verb: "run", Target: "go test ./internal/agent/...", State: ActivityFailed,
+			Outcome: OutcomeExit(1), Duration: "21.4s", Detail: []string{"--- FAIL: TestRoundLimit (0.03s)"}},
+		"denied": {Kind: ActivityEdit, Verb: "edit", Target: "go.mod", State: ActivityDenied,
+			Outcome: OutcomeBy(OutcomeDenied, "you"), Duration: NoDuration},
+		"blocked": {Kind: ActivityCommand, Verb: "run", Target: "rm -rf ./dist", State: ActivityDenied, ByRule: true,
+			Outcome: OutcomeBlocked, Allowed: "classifier 2.1s", Keys: "/permissions why", Duration: NoDuration},
+		"allowed": {Kind: ActivityTool, Verb: "read", Target: "internal/ui/chat/model.go",
+			Allowed: OutcomeBy(OutcomeAutoAllowed, "read-only"), Counts: "412 lines", Duration: "0.2s"},
+		"selected": {Kind: ActivityTool, Verb: "read", Target: "internal/agent/loop.go", Selected: true,
+			Counts: "218 lines", Duration: "0.6s"},
+	}
+	for _, width := range goldenWidths {
+		for name, r := range rows {
+			if bare := unpaintedRuns(r.View(width)); len(bare) > 0 {
+				t.Fatalf("width %d: the %s row leaves %q outside every token:\n%q",
+					width, name, bare, r.View(width))
+			}
+		}
+	}
+}
+
+// unpaintedRuns is every run of visible text in a render that no SGR sequence
+// is covering. Padding is not text: the grid is made of spaces, and a space
+// carries nothing to paint.
+func unpaintedRuns(view string) []string {
+	var runs []string
+	for _, line := range strings.Split(view, "\n") {
+		painted := false
+		var run strings.Builder
+		rs := []rune(line)
+		for i := 0; i < len(rs); {
+			if rs[i] == '\x1b' {
+				j := i + 1
+				for j < len(rs) && !unicode.IsLetter(rs[j]) {
+					j++
+				}
+				if j < len(rs) && rs[j] == 'm' {
+					params := strings.TrimPrefix(string(rs[i+1:j]), "[")
+					painted = params != "" && params != "0"
+				}
+				i = j + 1
+				continue
+			}
+			switch {
+			case painted || rs[i] == ' ':
+				if run.Len() > 0 {
+					runs = append(runs, run.String())
+					run.Reset()
+				}
+			default:
+				run.WriteRune(rs[i])
+			}
+			i++
+		}
+		if run.Len() > 0 {
+			runs = append(runs, run.String())
+		}
+	}
+	return runs
+}
+
+// A reading of the session is not an act, so its outcome column is not a
+// verdict on an act: `⚠ off target` in the token that means done would be the
+// bad news painted as good. The glyph in front of the word is what tells the
+// readings apart, on a terminal with colour and on one without.
+func TestActivityRow_AReadingsVerdictIsNotASuccess(t *testing.T) {
+	withColorProfile(t, colorprofile.ANSI256)
+	for _, tone := range []SummaryTone{SummaryUnclear, SummaryOnTarget, SummarySufficient, SummaryOffTarget} {
+		r := ActivityRow{Kind: ActivitySummary, Verb: "summary", Target: "round 5",
+			Outcome: SummaryGlyph(tone) + " " + SummaryWord(tone), Counts: "1 line"}
+		if want, got := sty.Dim.Render(r.Outcome), r.outcomeField(); !strings.Contains(got, want) {
+			t.Fatalf("a reading's verdict should not take the done token, got %q", got)
+		}
+	}
+	// The same for the row that read, wrote and ran nothing at all.
+	think := ActivityRow{Kind: ActivityThink, Verb: "think", Outcome: OutcomeOK}
+	if want, got := sty.Dim.Render(OutcomeOK), think.outcomeField(); !strings.Contains(got, want) {
+		t.Fatalf("a thought has no outcome to call done, got %q", got)
+	}
+	// And an act that finished still says so in the token that means done.
+	ran := ActivityRow{Kind: ActivityCommand, Verb: "run", Outcome: OutcomeExit(0)}
+	if want, got := sty.Add.Render(OutcomeExit(0)), ran.outcomeField(); !strings.Contains(got, want) {
+		t.Fatalf("a command that finished should take the done token, got %q", got)
+	}
+}
+
+// The place a search was put is dim only where the target is carrying it. A
+// pattern that happens to end the way a scope does is still the subject
+// whole: the row is told what its place is and does not go looking for one.
+func TestActivityRow_APatternIsNotItsOwnScope(t *testing.T) {
+	withColorProfile(t, colorprofile.ANSI256)
+	r := ActivityRow{Kind: ActivityTool, Verb: "search", Target: "func loop() .", Counts: "1 match"}
+	if want := sty.Body.Render("func loop() ."); !strings.Contains(r.View(80), want) {
+		t.Fatalf("a pattern with no place behind it is all subject:\n%q", r.View(80))
 	}
 }

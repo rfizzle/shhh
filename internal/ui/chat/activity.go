@@ -131,6 +131,12 @@ const (
 	classifierRule = "classifier"
 )
 
+// wholeTreeScope is what a search that named no directory was put against.
+// It is a place to a reading grouping calls by where they went and is not
+// one to a row: the target of such a call is its pattern and nothing else,
+// so there is nothing behind the subject to draw.
+const wholeTreeScope = "."
+
 // activityVerbs is the one table mapping tool names onto the closed verb
 // vocabulary of docs/interface/principles.md#closed-vocabularies — read,
 // search, glob, lsp, web, edit, write, patch, run, memory, spawn, fan-out,
@@ -361,10 +367,19 @@ func allowedLabel(rule string, elapsed time.Duration) string {
 	if rule == "" {
 		return ""
 	}
+	return components.OutcomeBy(components.OutcomeAutoAllowed, ruleAccount(rule, elapsed))
+}
+
+// ruleAccount is the rule that answered and what its judgement cost, which is
+// the account either way a rule can answer: it let the call run, or it
+// blocked it. A denial states it in the same field for the same reason — the
+// outcome column says what happened in a word from the closed vocabulary, and
+// which rule said so is the account of that word.
+func ruleAccount(rule string, elapsed time.Duration) string {
 	if cost := activityDuration(elapsed); cost != "" {
-		rule += " " + cost
+		return rule + " " + cost
 	}
-	return components.OutcomeBy(components.OutcomeAutoAllowed, rule)
+	return rule
 }
 
 // activityRowFor builds the compact row for a tool or command entry, as
@@ -416,22 +431,41 @@ func (m Model) activityRowDetail(e entry, stepDetail bool) components.ActivityRo
 		row.Kind = m.activityKind(e.toolName)
 		row.Verb = activityVerbFor(e.toolName, e.toolArgs)
 		row.Target = digest.Arg(e.toolName, e.toolArgs)
+		// A search's target is its pattern and then where it was put, and
+		// only the pattern is the subject: the place goes dim behind it, so
+		// the column reads as one question asked somewhere
+		// (docs/interface/principles.md#one-grid).
+		//
+		// Only where the target is actually carrying it. A call that named
+		// no directory is answered with the whole tree — a scope like any
+		// other to a reading that groups calls by where they were put, but
+		// not a place the target spends a column marking — and a row told to
+		// look for one would find the tail of a pattern that happened to end
+		// the same way and dim half the subject.
+		if scope, ok := digest.SearchScope(e.toolName, e.toolArgs); ok &&
+			scope != wholeTreeScope && strings.HasSuffix(row.Target, " "+scope) {
+			row.Scope = scope
+		}
 		switch {
 		case e.deniedBy != "":
 			// A refusal is not a failure: ⊘ and the decider's name say the
 			// call never ran, and the duration field says so too.
 			row.State = components.ActivityDenied
 			row.ByRule = e.deniedBy != decidedByYou
-			row.Outcome = components.OutcomeBy(components.OutcomeDenied, e.deniedBy)
-			if e.denyRule != "" {
-				row.Outcome += " · " + e.denyRule
-			}
 			if row.ByRule {
+				// A rule's no is its own word, in del, with the rule that
+				// said it — and what that rule cost — in the account field
+				// beside it, the way an allowed call names what allowed it
+				// (docs/interface/principles.md#two-denials-are-not-one-denial).
+				row.Outcome = components.OutcomeBlocked
+				row.Allowed = ruleAccount(e.denyRule, e.duration)
 				row.Keys = "/permissions why"
+			} else {
+				row.Outcome = components.OutcomeBy(components.OutcomeDenied, e.deniedBy)
 			}
-			if row.Duration == "" {
-				row.Duration = components.NoDuration
-			}
+			// Nothing ran, whoever refused it: a judgement's seconds are the
+			// account of the decision and never the duration of the act.
+			row.Duration = components.NoDuration
 			result = ""
 			// What the reader said when they refused goes under the row,
 			// whole, rather than into the outcome field beside their name:
@@ -508,7 +542,9 @@ func (m Model) activityRowDetail(e entry, stepDetail bool) components.ActivityRo
 	// outcome field: the feed states an act once, so the approval of it is
 	// part of the row rather than a notice above the row repeating its verb
 	// and target (docs/interface/surfaces.md#the-activity-row).
-	row.Allowed = allowedLabel(e.allowedBy, e.allowElapsed)
+	if row.Allowed == "" {
+		row.Allowed = allowedLabel(e.allowedBy, e.allowElapsed)
+	}
 	// A line the reader wrote at the card is the same fact about the same
 	// act — how it came to be the act it is — so it is stated in the same
 	// field. The target is the line that ran either way, because the

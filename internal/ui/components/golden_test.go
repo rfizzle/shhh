@@ -101,6 +101,10 @@ func TestGolden_ActivityRows(t *testing.T) {
 			{Label: "kind · tool (read-only, no rail)", View: row(func(r *ActivityRow) {
 				r.Counts, r.Duration = "218 lines", "0.6s"
 			})},
+			{Label: "kind · search, its place behind its pattern", View: row(func(r *ActivityRow) {
+				r.Verb, r.Target, r.Scope = "search", "ErrRoundLimit ./internal", "./internal"
+				r.Counts, r.Duration = "6 matches · 4 files", "0.3s"
+			})},
 			{Label: "kind · command", View: row(func(r *ActivityRow) {
 				r.Kind, r.Verb, r.Target = ActivityCommand, "run", "go test ./internal/agent/..."
 				r.Outcome, r.Duration = OutcomeExit(0), "12.4s"
@@ -194,14 +198,26 @@ func TestGolden_ActivityRows(t *testing.T) {
 				r.Kind, r.Verb, r.Target = ActivityCommand, "run", "rm -rf ./build"
 				r.State, r.Outcome, r.Duration = ActivityDenied, OutcomeBy(OutcomeDenied, "you"), NoDuration
 			})},
-			{Label: "state · denied by a rule", View: row(func(r *ActivityRow) {
+			// Two denials, two words: yours above, a rule's here. The rule
+			// that said it — and what its judgement cost, where a classifier
+			// made it — is the account beside the word.
+			{Label: "state · blocked by a rule", View: row(func(r *ActivityRow) {
 				r.Kind, r.Verb, r.Target = ActivityCommand, "run", "rm -rf ./build"
 				r.State, r.ByRule = ActivityDenied, true
-				r.Outcome, r.Duration = OutcomeBy(OutcomeDenied, "auto · plan mode"), NoDuration
+				r.Outcome, r.Allowed, r.Duration = OutcomeBlocked, "plan mode", NoDuration
 				r.Keys = "/mode why"
 			})},
+			{Label: "state · blocked by the classifier", View: row(func(r *ActivityRow) {
+				r.Kind, r.Verb, r.Target = ActivityCommand, "run", "rm -rf ./build"
+				r.State, r.ByRule = ActivityDenied, true
+				r.Outcome, r.Allowed, r.Duration = OutcomeBlocked, "classifier 2.1s", NoDuration
+				r.Keys = "/mode why"
+			})},
+			// What allowed the call is the account, not the outcome: it is
+			// dim beside what the call found, and it is the one part of the
+			// field a narrow row gives up.
 			{Label: "state · auto-allowed", View: row(func(r *ActivityRow) {
-				r.Outcome, r.Counts, r.Duration = OutcomeBy(OutcomeAutoAllowed, "read-only"), "218 lines", "0.6s"
+				r.Allowed, r.Counts, r.Duration = OutcomeBy(OutcomeAutoAllowed, "read-only"), "218 lines", "0.6s"
 			})},
 			{Label: "focus · selected", View: row(func(r *ActivityRow) {
 				r.Selected, r.Counts, r.Duration = true, "218 lines", "0.6s"

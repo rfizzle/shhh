@@ -10,6 +10,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 // hookRunner is a session's hooks with a fake command behind them: every hook
@@ -86,7 +87,7 @@ func TestHook_PreToolDenyDrawsTheRuleDenialRow(t *testing.T) {
 		t.Fatal("the model was not told why the command did not run")
 	}
 	view := stripANSI(m.renderHistory())
-	for _, want := range []string{"⊘", "denied · auto · hook guard"} {
+	for _, want := range []string{"⊘", components.OutcomeBlocked + " · hook guard"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("the row should name the rule, want %q:\n%s", want, view)
 		}

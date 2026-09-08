@@ -797,3 +797,66 @@ func TestSteerRowNamesTheAgentAndWhatItWasTold(t *testing.T) {
 		t.Fatalf("the row is bounded to the message's first line:\n%s", row)
 	}
 }
+
+// A rule's no is a different word from your own, and the rule that said it —
+// with what the judgement cost where it cost anything — is the account beside
+// it, in the field an allowed call already states its rule in
+// (docs/interface/principles.md#two-denials-are-not-one-denial). Nothing ran
+// either way, so the duration field says so.
+func TestActivityRow_ARulesNoIsBlockedAndNamesTheRule(t *testing.T) {
+	m := activityModel(t)
+	call := entry{kind: entryTool, toolName: "execute_command",
+		toolArgs: `{"command":"rm -rf ./dist"}`, deniedBy: decidedByAuto,
+		denyRule: classifierRule, duration: 2100 * time.Millisecond}
+	row := m.activityRowFor(call)
+	if row.Outcome != components.OutcomeBlocked {
+		t.Fatalf("a rule's no says %q, got %q", components.OutcomeBlocked, row.Outcome)
+	}
+	if !row.ByRule {
+		t.Fatalf("the row should know a rule refused it: %+v", row)
+	}
+	if want := "classifier 2.1s"; row.Allowed != want {
+		t.Fatalf("the judgement's cost is the account, want %q, got %q", want, row.Allowed)
+	}
+	if row.Duration != components.NoDuration {
+		t.Fatalf("nothing ran, so the duration is %q, got %q", components.NoDuration, row.Duration)
+	}
+
+	yours := m.activityRowFor(entry{kind: entryTool, toolName: "execute_command",
+		toolArgs: `{"command":"rm -rf ./dist"}`, deniedBy: decidedByYou})
+	if want := components.OutcomeBy(components.OutcomeDenied, decidedByYou); yours.Outcome != want {
+		t.Fatalf("your own no stays %q, got %q", want, yours.Outcome)
+	}
+	if yours.ByRule {
+		t.Fatalf("your refusal is a preference, not a rule: %+v", yours)
+	}
+}
+
+// A search's target is its pattern and then where it was put, and the row
+// carries the place separately so the column can draw it behind the subject
+// (docs/interface/principles.md#one-grid).
+func TestActivityRow_SearchCarriesItsScopeApart(t *testing.T) {
+	m := activityModel(t)
+	row := m.activityRowFor(entry{kind: entryTool, toolName: "search",
+		toolArgs: `{"pattern":"ErrRoundLimit","path":"internal/agent"}`, toolResult: "a.go:1"})
+	if want := "./internal/agent"; row.Scope != want {
+		t.Fatalf("the row should carry the place apart, want %q, got %q", want, row.Scope)
+	}
+	if !strings.HasSuffix(row.Target, " "+row.Scope) {
+		t.Fatalf("and the target should end in it: %q", row.Target)
+	}
+	// A read's subject is its path, so there is no place behind it.
+	read := m.activityRowFor(entry{kind: entryTool, toolName: "read_file",
+		toolArgs: `{"path":"internal/agent/loop.go"}`, toolResult: "package agent"})
+	if read.Scope != "" {
+		t.Fatalf("a read's target is its subject whole, got scope %q", read.Scope)
+	}
+	// A search that named no directory has the whole tree for a scope, which
+	// the target leaves off — so the row carries none either, and a pattern
+	// that ends the way a scope does is still the subject whole.
+	whole := m.activityRowFor(entry{kind: entryTool, toolName: "search",
+		toolArgs: `{"pattern":"func loop() ."}`, toolResult: "a.go:1"})
+	if whole.Scope != "" {
+		t.Fatalf("a search of the whole tree marks no place, got scope %q", whole.Scope)
+	}
+}

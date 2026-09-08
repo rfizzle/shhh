@@ -38,25 +38,25 @@
 
 ── ansi ────────────────────────────────────────────────────
 · the four verbs
-  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m add     ␛[38;5;244minternal/agent/loop.go +1␛[m                 ␛[38;5;244mstaged 2 files␛[m
-  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m commit  ␛[38;5;244mfeat(agent): ca…␛[m  ␛[38;5;244mcommitted 3 files as a41f2c9 on master␛[m
-  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m branch  ␛[38;5;244mtopic␛[m                               ␛[38;5;244mcreated branch topic␛[m
-  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m switch  ␛[38;5;244mmaster␛[m                                ␛[38;5;244mswitched to master␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254madd␛[m     ␛[38;5;254minternal/agent/loop.go +1␛[m                 ␛[38;5;254mstaged 2 files␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mcommit␛[m  ␛[38;5;254mfeat(agent): ca…␛[m  ␛[38;5;254mcommitted 3 files as a41f2c9 on master␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mbranch␛[m  ␛[38;5;254mtopic␛[m                               ␛[38;5;254mcreated branch topic␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mswitch␛[m  ␛[38;5;254mmaster␛[m                                ␛[38;5;254mswitched to master␛[m
     ␛[38;5;244mreads dropped · the working tree changed under every prior read␛[m
 
 
 · refused · a file the session did not change
-  ␛[38;5;254m▎␛[m␛[38;5;254m✗␛[m add     ␛[38;5;244mREADME.md␛[m                                          ␛[38;5;254merror␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m✗␛[m ␛[38;5;254madd␛[m     ␛[38;5;254mREADME.md␛[m                                          ␛[38;5;254merror␛[m
     ␛[38;5;244merror: README.md is not this session's work; commit it yourself␛[m
 
 
 · committed on an untrusted checkout · the hooks that did not run
-  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m commit  ␛[38;5;244mfeat(agent): ca…␛[m  ␛[38;5;244mcommitted 3 files as a41f2c9 on master␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mcommit␛[m  ␛[38;5;254mfeat(agent): ca…␛[m  ␛[38;5;254mcommitted 3 files as a41f2c9 on master␛[m
     ␛[38;5;244mhooks skipped · checkout not trusted — /trust to run them␛[m
 
 
 · the turn's close · the sha, and what undo does not reach
-  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m commit  ␛[38;5;244mfeat(agent): ca…␛[m  ␛[38;5;244mcommitted 3 files as a41f2c9 on master␛[m
+  ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m ␛[38;5;254mcommit␛[m  ␛[38;5;254mfeat(agent): ca…␛[m  ␛[38;5;254mcommitted 3 files as a41f2c9 on master␛[m
 
  ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 4 steps · 18 tools · 1m 04s · $0.14␛[m
 ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m3 files changed ␛[m␛[38;5;254m+30␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;244m[v]␛[m␛[38;5;244m review␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;254m to use them␛[m

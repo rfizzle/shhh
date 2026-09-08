@@ -14,6 +14,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/structural"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 func TestAllowlistMatches(t *testing.T) {
@@ -452,7 +453,7 @@ func TestMode_PlanRefusesGatedCalls(t *testing.T) {
 		t.Fatalf("transcript should note both refusals, got %d", found)
 	}
 	view := stripANSI(m.renderHistory())
-	for _, want := range []string{"⊘", "denied · auto · plan mode", "/permissions why"} {
+	for _, want := range []string{"⊘", components.OutcomeBlocked + " · plan mode", "/permissions why"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("a rule's refusal names the rule and offers its key, want %q:\n%s", want, view)
 		}
@@ -803,7 +804,7 @@ func TestDenylist_RefusesInEveryModeBeforeACardIsDrawn(t *testing.T) {
 			t.Fatalf("%v mode drew no rule-denial row", mode)
 		}
 		view := stripANSI(m.renderHistory())
-		for _, want := range []string{"⊘", "denied · auto · deny list", "/permissions why"} {
+		for _, want := range []string{"⊘", components.OutcomeBlocked + " · deny list", "/permissions why"} {
 			if !strings.Contains(view, want) {
 				t.Fatalf("%v mode: the row should name the rule and offer its key, want %q:\n%s", mode, want, view)
 			}

@@ -56,11 +56,11 @@ You
 ␛[38;5;241m▸␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mLocate the round accounting␛[m ␛[38;5;241m───────␛[m ␛[92m✓␛[m ␛[38;5;241m1 tool␛[m  ␛[38;5;241m6.2s␛[m
 
 ␛[38;5;241m▾␛[m ␛[38;5;252m3 ␛[m ␛[38;5;252mReturn it from runRound␛[m ␛[38;5;241m───────────␛[m ␛[91m✗␛[m ␛[38;5;241m1 tool␛[m   ␛[38;5;241m38s␛[m
-  ␛[91m▎␛[m␛[91m✗␛[m run     ␛[38;5;241mgo test ./...␛[m                 ␛[91mexit 1␛[m   ␛[38;5;245m38s␛[m
+  ␛[91m▎␛[m␛[91m✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./...␛[m                 ␛[91mexit 1␛[m   ␛[38;5;241m38s␛[m
     ␛[38;5;245mFAIL␛[m
 
 ␛[38;5;205m▾␛[m ␛[97m+ ␛[m ␛[97mRebuild the changeset store␛[m ␛[38;5;241m───────␛[m ␛[38;5;205m▸␛[m ␛[38;5;241m1 tool␛[m  ␛[38;5;205m3.9s␛[m
-   ␛[38;5;214m⚙␛[m read    ␛[38;5;241ma.go␛[m                          ␛[38;5;245m1 line␛[m  ␛[38;5;245m3.9s␛[m
+   ␛[38;5;214m⚙␛[m ␛[38;5;252mread␛[m    ␛[38;5;252ma.go␛[m                          ␛[38;5;245m1 line␛[m  ␛[38;5;241m3.9s␛[m
 
 ␛[38;5;241m·␛[m ␛[38;5;241m2 ␛[m ␛[38;5;241mAdd a RoundsExhausted sentinel␛[m ␛[38;5;241m────␛[m ␛[38;5;241m·␛[m ␛[38;5;241mqueued␛[m     ␛[38;5;241m—␛[m
 
@@ -75,7 +75,7 @@ You
 ␛[38;5;241m▸␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mLocate the round accounting␛[m ␛[38;5;241m───────␛[m ␛[92m✓␛[m ␛[38;5;241m1 tool␛[m  ␛[38;5;241m6.2s␛[m
 
 ␛[38;5;241m▾␛[m ␛[38;5;252m3 ␛[m ␛[38;5;252mReturn it from runRound␛[m ␛[38;5;241m───────────␛[m ␛[91m✗␛[m ␛[38;5;241m1 tool␛[m   ␛[38;5;241m38s␛[m
-  ␛[91m▎␛[m␛[91m✗␛[m run     ␛[38;5;241mgo test ./...␛[m                 ␛[91mexit 1␛[m   ␛[38;5;245m38s␛[m
+  ␛[91m▎␛[m␛[91m✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./...␛[m                 ␛[91mexit 1␛[m   ␛[38;5;241m38s␛[m
     ␛[38;5;245mFAIL␛[m
 
 ␛[38;5;241m▸␛[m ␛[38;5;252m+ ␛[m ␛[38;5;252mRebuild the changeset store␛[m ␛[38;5;241m───────␛[m ␛[92m✓␛[m ␛[38;5;241m1 tool␛[m  ␛[38;5;241m3.9s␛[m

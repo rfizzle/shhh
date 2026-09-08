@@ -39,15 +39,15 @@
 
 ── ansi ────────────────────────────────────────────────────
 · rows · the chrome greys, a failure, a denial and the reading cursor
-   ␛[38;5;130m⚙␛[m read    ␛[38;5;245minternal/agent/loop.go␛[m          ␛[38;5;242m218 lines␛[m  ␛[38;5;242m0.6s␛[m
-  ␛[31m▎␛[m␛[31m✗␛[m run     ␛[38;5;245mgo test ./internal/agent/...␛[m       ␛[31mexit 1␛[m ␛[38;5;242m21.4s␛[m
+   ␛[38;5;130m⚙␛[m ␛[38;5;236mread␛[m    ␛[38;5;236minternal/agent/loop.go␛[m          ␛[38;5;242m218 lines␛[m  ␛[38;5;245m0.6s␛[m
+  ␛[31m▎␛[m␛[31m✗␛[m ␛[38;5;236mrun␛[m     ␛[38;5;236mgo test ./internal/agent/...␛[m       ␛[31mexit 1␛[m ␛[38;5;245m21.4s␛[m
     ␛[38;5;242m--- FAIL: TestRoundLimit (0.00s)␛[m
-  ␛[38;5;130m▎␛[m␛[31m⊘␛[m run     ␛[38;5;245mrm -rf ./build␛[m  ␛[31mdenied · auto · plan mode␛[m     ␛[38;5;242m—␛[m
-  ␛[38;5;130m▎␛[m␛[38;5;125m▸␛[m run     ␛[38;5;245mgo build ./cmd/shhh␛[m              ␛[38;5;245mrunning…␛[m
-␛[34m❯␛[m ␛[38;5;130m␛[m␛[38;5;245m␛[m␛[38;5;242m␛[m␛[38;5;242m␛[m␛[48;5;189m␛[34m␛[m␛[48;5;189m ␛[38;5;130m⚙␛[m␛[48;5;189m ␛[38;5;245m␛[m␛[48;5;189m␛[38;5;242m␛[m␛[48;5;189m␛[38;5;242m␛[m␛[48;5;189m␛[30;48;5;189mread    internal/agent/loop.go          218 lines  0.6s␛[m␛[m
+  ␛[38;5;130m▎␛[m␛[31m⊘␛[m ␛[38;5;236mrun␛[m     ␛[38;5;236mrm -rf ./build␛[m  ␛[31mdenied · auto · plan mode␛[m     ␛[38;5;245m—␛[m
+  ␛[38;5;130m▎␛[m␛[38;5;125m▸␛[m ␛[30mrun␛[m     ␛[30mgo build ./cmd/shhh␛[m              ␛[38;5;125mrunning…␛[m
+␛[34m❯␛[m ␛[38;5;130m␛[m␛[38;5;236m␛[m␛[38;5;236m␛[m␛[38;5;242m␛[m␛[38;5;245m␛[m␛[48;5;189m␛[34m␛[m␛[48;5;189m ␛[38;5;130m⚙␛[m␛[48;5;189m ␛[38;5;236m␛[m␛[48;5;189m␛[38;5;236m␛[m␛[48;5;189m␛[38;5;242m␛[m␛[48;5;189m␛[38;5;245m␛[m␛[48;5;189m␛[30;48;5;189mread    internal/agent/loop.go          218 lines  0.6s␛[m␛[m
 
 · diff · the two verdicts and the hunk heading
-␛[38;5;130m✎ ␛[minternal/agent/loop.go                      ␛[38;5;245m+2 −1 · 1 hunk␛[m
+␛[38;5;130m✎ ␛[m␛[38;5;236minternal/agent/loop.go␛[m                      ␛[32m+2␛[m ␛[31m−1␛[m␛[38;5;245m · ␛[m␛[38;5;245m1 hunk␛[m
 ␛[36m@@ -138,6 +138,7 @@␛[m
 ␛[38;5;242m  138      for round := 0; ; round++ {␛[m
 ␛[38;5;242m  139          if round >= a.maxRounds {␛[m

@@ -144,7 +144,7 @@ docs.rs
 ␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m           ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
-␛[94m❯␛[m  ␛[91m✗␛[m model   ␛[38;5;252manthropic␛[m␛[38;5;241m · claude-opus-5 · no k…␛[m  ␛[91mno key␛[m
+␛[94m❯␛[m  ␛[91m✗␛[m ␛[38;5;252mmodel␛[m   ␛[38;5;252manthropic␛[m␛[38;5;241m · claude-opus-5 · no k…␛[m  ␛[91mno key␛[m
     ␛[38;5;245mno session will start until a key is found — every one …␛[m
     ␛[94m[f]␛[m␛[38;5;241m show the four places shhh looks␛[m
   ␛[38;5;241m↓ 9 more · binary · config · store · sandbox · engine · g…␛[m
@@ -200,7 +200,7 @@ docs.rs
 ␛[38;5;241m╭─ 4m ago ␛[m␛[38;5;241m─────────────────────────────────────────────────␛[m␛[38;5;241m╮␛[m
 ␛[38;5;241m│␛[m ␛[38;5;252mdelete every log file older than a week␛[m                  ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m                                                          ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m   ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m run     ␛[38;5;241mfind . -name '*.log' -mtime␛[m    ␛[38;5;241mexit 0␛[m       ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mfind . -name '*.log' -mtime␛[m    ␛[92mexit 0␛[m       ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m     ␛[38;5;245m+7 -delete␛[m                                           ␛[38;5;241m│␛[m
 ␛[38;5;241m╰──────────────────────────────────────────────────────────╯␛[m
 
