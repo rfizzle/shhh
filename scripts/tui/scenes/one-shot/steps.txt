@@ -1,6 +1,10 @@
-# The one-shot draws the command as a command
-# (docs/interface/surfaces.md#the-one-shot-result). The pane is 100 columns,
-# which is what the artboard is drawn at.
+# The one-shot draws the command as a command, and lays what it draws out
+# against the terminal (docs/interface/surfaces.md#the-one-shot-result). The
+# pane is 100 columns, which is what the artboard is drawn at; run it again at
+# 60 and the same scene says what the surface does with a terminal that has no
+# room for the sentence or the whole key row — the sentence breaks between
+# words, the key row breaks between one offer and the next, and the command
+# breaks at the column.
 #
 # What the cells cannot carry and the picture can: the command is the only
 # bold bright run on the screen and the `$` leading it is the accent every
@@ -19,11 +23,12 @@ snap 01-piped "lsof -nP -iTCP -sTCP:LISTEN"
 # The result surface. The key row is the surface's own and says how many other
 # commands the generation offered, so it is what the wait is on.
 snap 02-result "2 others"
-# The ways it was not taken, the one on screen marked. The mark's own words
-# are what the wait is on: a tradeoff is clipped to its column, so waiting for
-# one waits for a string the row may not be holding whole.
+# The ways it was not taken, the one on screen marked. The wait is on a
+# command only this card carries: a tradeoff is clipped to its column and the
+# column itself goes when the card is narrow, so waiting for one of those
+# waits for a string the row may not be holding whole at every width.
 keys a
-snap 03-alternatives "the command on screen"
+snap 03-alternatives "netstat -anv -p tcp"
 # Back out of the picker, then out of the run: the first escape leaves the
 # alternatives, the second quits. Two escapes written into the pty together
 # arrive as one sequence, so the sleep is the terminal's rather than the

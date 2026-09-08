@@ -1388,6 +1388,27 @@ section is ever drawn as command text: a label still being typed is held back
 until it is clear which it is, so what is on screen mid-stream is the command
 and only the command.
 
+**It is laid out against the terminal it was typed into.** Drawing inline,
+under the prompt rather than over the screen, is not the same as drawing at
+whatever width it likes: the terminal holds one cell per column and keeps
+nothing past the last, so a row that overran was never a row that wrapped —
+it was a row whose tail nobody was shown, and what went missing was the end
+of the sentence and the last keys on the row, `[s] save` and the `[esc]` that
+says how to leave.
+
+So each kind of row breaks the way that kind of row should. A sentence — the
+explanation, a risk, the containment line — breaks between words, and reads
+the same at every width. The key row breaks between one offer and the next
+and never inside one, because half of `[esc] quit` is not an offer anybody
+can take. A command breaks at the column, the way code does everywhere else
+here: it is the one run that cannot be reflowed between words without
+becoming a different command, and a folded command is still every character
+in order where a clipped one is not.
+
+One blank row separates the containment line from the keys. The keys are what
+you do about everything above them rather than the last line of it, and a row
+of offers hard against the sentence above reads as part of the sentence.
+
 ## Outside the TUI
 
 Help, the line a mistyped flag prints, the man page, and what is left in the

@@ -2,6 +2,7 @@ package ui
 
 import (
 	"os"
+	"strings"
 
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/term"
@@ -20,7 +21,6 @@ type Styles struct {
 	CommandGlyph lipgloss.Style
 	Command      lipgloss.Style
 	Error        lipgloss.Style
-	Bar          lipgloss.Style
 	// Label is a field's own name — `edit: `, `feedback: `, `explanation:`.
 	// One style rather than three, because they are the same thing said in
 	// three places: a word the reader reads past on the way to the field,
@@ -63,8 +63,6 @@ func newStyles(p components.ColorTokens) Styles {
 		Command:      lipgloss.NewStyle().Bold(true).Foreground(p.Bright.Color()),
 		Error:        lipgloss.NewStyle().Foreground(p.Del.Color()),
 
-		Bar: lipgloss.NewStyle().MarginTop(1),
-
 		Label:       lipgloss.NewStyle().Foreground(p.Status.Color()).MarginTop(1),
 		ExplainBody: lipgloss.NewStyle().Foreground(p.Body.Color()),
 
@@ -90,6 +88,19 @@ func newStyles(p components.ColorTokens) Styles {
 // See docs/interface/principles.md#colour-never-carries-meaning-alone.
 func commandLine(command string) string {
 	return sty.CommandGlyph.Render("$ ") + sty.Command.Render(command)
+}
+
+// renderLines draws a block one line at a time. A style handed the whole
+// block pads every short line out to the widest one — lipgloss aligns a
+// multi-line render, and left-aligned is still aligned — which on a surface
+// that draws inline is a paragraph with a ragged margin of trailing spaces
+// behind it.
+func renderLines(style lipgloss.Style, s string) string {
+	lines := strings.Split(s, "\n")
+	for i, line := range lines {
+		lines[i] = style.Render(line)
+	}
+	return strings.Join(lines, "\n")
 }
 
 // riskStyle is the ladder the warning is drawn on: Del at HIGH, Accent below

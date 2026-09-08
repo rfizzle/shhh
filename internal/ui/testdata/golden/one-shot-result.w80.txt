@@ -11,12 +11,18 @@
 
 ── layout ──────────────────────────────────────────────────
 $ lsof -nP -iTCP -sTCP:LISTEN | awk '$9 ~ /:[89][0-9]{3}$/'
-  lsof lists listening TCP sockets without resolving names; awk keeps the rows whose address ends in a port from 8000-9999.
-  ⛨ writes unknown · network unknown · no sudo                                                                                        
-[↵] run  [e] edit  [r] revise  [a] 2 others  [x] explain  [c] copy  [s] save  [esc] quit
+  lsof lists listening TCP sockets without resolving names; awk keeps the rows
+  whose address ends in a port from 8000-9999.
+  ⛨ writes unknown · network unknown · no sudo
+
+[↵] run  [e] edit  [r] revise  [a] 2 others  [x] explain  [c] copy  [s] save
+[esc] quit
 
 ── ansi ────────────────────────────────────────────────────
 ␛[38;5;214m$ ␛[m␛[1;97mlsof -nP -iTCP -sTCP:LISTEN | awk '$9 ~ /:[89][0-9]{3}$/'␛[m
-  ␛[38;5;252mlsof lists listening TCP sockets without resolving names; awk keeps the rows whose address ends in a port from 8000-9999.␛[m
-  ␛[38;5;243m⛨ writes unknown · network unknown · no sudo␛[m                                                                                        
-␛[92m[↵]␛[m␛[38;5;241m run␛[m␛[38;5;241m  ␛[m␛[94m[e]␛[m␛[38;5;241m edit␛[m␛[38;5;241m  ␛[m␛[94m[r]␛[m␛[38;5;241m revise␛[m␛[38;5;241m  ␛[m␛[94m[a]␛[m␛[38;5;241m 2 others␛[m␛[38;5;241m  ␛[m␛[94m[x]␛[m␛[38;5;241m explain␛[m␛[38;5;241m  ␛[m␛[94m[c]␛[m␛[38;5;241m copy␛[m␛[38;5;241m  ␛[m␛[94m[s]␛[m␛[38;5;241m save␛[m␛[38;5;241m  ␛[m␛[38;5;241m[esc]␛[m␛[38;5;241m quit␛[m
+  ␛[38;5;252mlsof lists listening TCP sockets without resolving names; awk keeps the rows␛[m
+  ␛[38;5;252mwhose address ends in a port from 8000-9999.␛[m
+  ␛[38;5;243m⛨ writes unknown · network unknown · no sudo␛[m
+
+␛[92m[↵]␛[m␛[38;5;241m run␛[m␛[38;5;241m  ␛[m␛[94m[e]␛[m␛[38;5;241m edit␛[m␛[38;5;241m  ␛[m␛[94m[r]␛[m␛[38;5;241m revise␛[m␛[38;5;241m  ␛[m␛[94m[a]␛[m␛[38;5;241m 2 others␛[m␛[38;5;241m  ␛[m␛[94m[x]␛[m␛[38;5;241m explain␛[m␛[38;5;241m  ␛[m␛[94m[c]␛[m␛[38;5;241m copy␛[m␛[38;5;241m  ␛[m␛[94m[s]␛[m␛[38;5;241m save␛[m
+␛[38;5;241m[esc]␛[m␛[38;5;241m quit␛[m

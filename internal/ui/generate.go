@@ -33,6 +33,8 @@ import (
 
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/dryrun"
 	"github.com/rfizzle/shhh/internal/preflight"
 	"github.com/rfizzle/shhh/internal/proposal"
@@ -109,6 +111,12 @@ type GenerateModel struct {
 	shell            string
 	preflightRetries int
 	explainMode      ExplainMode
+	// width is the terminal's, as the runtime last reported it. The surface
+	// draws inline rather than taking the screen over, but inline is still
+	// inside a terminal: prose that runs past the right edge is prose the
+	// reader scrolls for, and a key row that runs past it is an offer nobody
+	// can see (docs/interface/principles.md#fold-never-hide).
+	width int
 	// shown is the form of the explanation currently on screen, which is not
 	// always the configured one: `[x]` asks for the long form of a run that
 	// defaulted to brief.
@@ -217,8 +225,15 @@ func NewGenerateModel(events <-chan provider.StreamEvent, cancel context.CancelF
 		phase:       phaseStreaming,
 		shell:       shell,
 		explainMode: ExplainBrief,
+		width:       defaultOneShotWidth,
 	}
 }
+
+// defaultOneShotWidth is what the surface lays out against before the
+// terminal has said how wide it is — the width the artboard is drawn at. A
+// program states the real one on its first frame, so this is what a render
+// taken without a program gets rather than a width of zero.
+const defaultOneShotWidth = 100
 
 // WithExplain sets how much explaining this run does.
 func (m GenerateModel) WithExplain(mode ExplainMode) GenerateModel {
@@ -247,8 +262,13 @@ func (m GenerateModel) Init() tea.Cmd {
 func (m GenerateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// A stream that has finished opening is answered wherever the surface
 	// has got to, not only in the phase that asked: the whole point of not
-	// waiting is that the screen was free to move.
+	// waiting is that the screen was free to move. The terminal's size is
+	// answered the same way, for the same reason: it arrives on the first
+	// frame, before any phase, and it changes under every one of them.
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width = msg.Width
+		return m, nil
 	case explainReadyMsg:
 		return m.explainReady(msg)
 	case streamReadyMsg:
@@ -709,8 +729,11 @@ func (m GenerateModel) others() int {
 	return len(m.choices) - 1
 }
 
-// alternativesWidth is what the picker renders at. Like the failure report,
-// the one-shot has no layout of its own to measure.
+// alternativesWidth is the widest the picker is drawn, and the terminal is
+// the other bound: a card is as wide as it wants to be or as wide as there is
+// room for, whichever is less. It is a card rather than a column of the
+// surface, so what it does with the room it gets — where a tradeoff clips —
+// is the card's own rule and not this one's.
 const alternativesWidth = 88
 
 // openAlternatives shows every command this generation offered, the one on
@@ -1088,11 +1111,11 @@ func (m GenerateModel) explanationView() string {
 	case m.shown == ExplainNone:
 		return ""
 	case m.shown == ExplainLong && text != "":
-		return "\n" + sty.Label.Render("explanation:") + "\n" + sty.ExplainBody.Render(text)
+		return "\n" + sty.Label.Render("explanation:") + "\n" + renderLines(sty.ExplainBody, wrapWords(text, m.width))
 	case text == "":
 		return ""
 	}
-	return "\n" + indent(sty.ExplainBody.Render(text))
+	return "\n" + m.prose(sty.ExplainBody, text)
 }
 
 // reachView is the containment line: what the command writes, whether it
@@ -1102,9 +1125,9 @@ func (m GenerateModel) reachView() string {
 	var b strings.Builder
 	warn := riskStyle(m.reach.Level)
 	for _, risk := range m.reach.Risks {
-		b.WriteString("\n" + indent(warn.Render("⚠ "+risk)))
+		b.WriteString("\n" + m.prose(warn, "⚠ "+risk))
 	}
-	b.WriteString("\n" + indent(sty.Reach.Render("⛨ "+m.reach.Reach())))
+	b.WriteString("\n" + m.prose(sty.Reach, "⛨ "+m.reach.Reach()))
 	return b.String()
 }
 
@@ -1163,8 +1186,75 @@ func (m GenerateModel) dryRunView() string {
 	return b.String()
 }
 
+// prose is a block drawn under the command: a sentence, wrapped between words
+// to what the terminal leaves after the indent, and drawn a row at a time.
+// The explanation, the risks and the containment line all go through it, so
+// they break in the same place and read as one column rather than three
+// paragraphs that happen to be stacked.
+func (m GenerateModel) prose(style lipgloss.Style, text string) string {
+	return indent(renderLines(style, wrapWords(text, m.width-indentWidth)))
+}
+
+// indentWidth is the two columns everything under the command is drawn in,
+// and so what a block of prose has to give up from the width before it is
+// wrapped to what is left.
+const indentWidth = 2
+
 func indent(s string) string  { return prefixLines(s, "  ") }
 func indent2(s string) string { return prefixLines(s, "    ") }
+
+// wrapWords breaks a sentence between words so that it reads the same at
+// every width. It is what the explanation gets, and what a command never
+// gets: a command reflowed between words is a different command.
+//
+// Nothing inside a word is a break, which is the one thing ansi.Wordwrap
+// would not promise — it treats a hyphen as a breakpoint, and a sentence
+// about ports from 8000-9999 comes back with `8000-` ending one row and
+// `9999.` opening the next. A word with no room for it at all is left whole
+// here and broken at the column by the frame, which is where something that
+// cannot be wrapped belongs.
+func wrapWords(s string, room int) string {
+	if room < 1 {
+		return s
+	}
+	var out []string
+	for _, para := range strings.Split(s, "\n") {
+		var (
+			b    strings.Builder
+			used int
+		)
+		for _, word := range strings.Fields(para) {
+			w := ansi.StringWidth(word)
+			switch {
+			case used == 0:
+			case used+1+w <= room:
+				b.WriteString(" ")
+				used++
+			default:
+				b.WriteString("\n")
+				used = 0
+			}
+			b.WriteString(word)
+			used += w
+		}
+		out = append(out, b.String())
+	}
+	return strings.Join(out, "\n")
+}
+
+// foldToWidth breaks whatever is left at the column, keeping every character
+// and moving none. It is the backstop under a frame that has already laid
+// itself out: the renderer holds one cell per column and drops what is past
+// the last one, so a run still wider than the terminal is not a line that
+// overflows — it is a tail nobody is shown. The one run that reaches it is
+// the command, which is broken at the column for the reason
+// internal/ui/markdown breaks code there.
+func foldToWidth(s string, width int) string {
+	if width < 1 {
+		return s
+	}
+	return ansi.Hardwrap(s, width, true)
+}
 
 func prefixLines(s, pad string) string {
 	lines := strings.Split(s, "\n")
@@ -1175,10 +1265,11 @@ func prefixLines(s, pad string) string {
 }
 
 // View is the frame. The one-shot generate UI draws inline under the prompt
-// it was typed at and asks the terminal for nothing, so the view carries
-// content and no state.
+// it was typed at rather than taking the screen over, so the view carries
+// content and no state — but inline is still inside a terminal, and the last
+// thing a frame does is fit the one it is in.
 func (m GenerateModel) View() tea.View {
-	return tea.NewView(m.screen())
+	return tea.NewView(foldToWidth(m.screen(), m.width))
 }
 
 // fieldView is a one-shot field's render, in the palette as it stands now.
@@ -1198,12 +1289,17 @@ func (m GenerateModel) screen() string {
 		if m.pick == nil {
 			return m.stream.View()
 		}
-		return m.pick.View(alternativesWidth)
+		return m.pick.View(min(alternativesWidth, m.width))
 	case phaseAction, phaseDryRun:
+		// The blank row above the keys is the artboard's, and it is drawn
+		// here rather than carried as a margin on the bar's own style: a
+		// margin renders as a padded line of its block's width, which
+		// concatenated onto the containment line above it is trailing
+		// whitespace on that line and no gap at all.
 		return m.pastView() + m.commandView() +
 			m.explanationView() + m.reachView() +
 			m.affectedView() + m.dryRunView() +
-			m.actionBar.View()
+			"\n\n" + m.actionBar.View(m.width)
 	case phaseEdit:
 		return sty.Label.Render("edit: ") + fieldView(m.editInput)
 	case phaseSave:

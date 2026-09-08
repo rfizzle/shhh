@@ -178,7 +178,10 @@ func TestResult_AffectedNamesThePathsAndDescribesThem(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	view := press(t, armed(t, "rm -rf "+target, nil), "enter").View().Content
+	// A temp directory's path is most of a terminal on its own, and the
+	// surface now folds what will not fit in one. What is under test here is
+	// that the block names the path, so it is given room for it.
+	view := sized(press(t, armed(t, "rm -rf "+target, nil), "enter"), len(target)+80).View().Content
 	if !strings.Contains(view, target) {
 		t.Errorf("the affected block did not name the path:\n%s", view)
 	}

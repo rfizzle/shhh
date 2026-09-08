@@ -14,8 +14,10 @@
 $ find ~/src -name node_modules -type d -prune -exec rm -rf {} +
   -prune stops find from descending into a directory it just deleted.
   ⚠ recursive forced deletion — may destroy files irrecoverably
-  ⛨ writes unknown · network unknown · no sudo                                                                                                                         
-[↵] show what it would affect  [y] run it  [d] dry run  [e] edit  [r] revise  [x] explain  [c] copy  [s] save  [esc] quit
+  ⛨ writes unknown · network unknown · no sudo
+
+[↵] show what it would affect  [y] run it  [d] dry run  [e] edit  [r] revise  [x] explain  [c] copy  [s] save
+[esc] quit
 
 · what enter buys
 $ find ~/src -name node_modules -type d -prune -exec rm -rf {} +
@@ -23,7 +25,8 @@ $ find ~/src -name node_modules -type d -prune -exec rm -rf {} +
   ⚠ recursive forced deletion — may destroy files irrecoverably
   ⛨ writes unknown · network unknown · no sudo
   would affect
-    shhh cannot tell what find writes                                                                                          
+    shhh cannot tell what find writes
+
 [y] run it  [d] dry run  [e] edit  [r] revise  [x] explain  [c] copy  [s] save  [esc] quit
 
 ── ansi ────────────────────────────────────────────────────
@@ -31,8 +34,10 @@ $ find ~/src -name node_modules -type d -prune -exec rm -rf {} +
 ␛[38;5;214m$ ␛[m␛[1;97mfind ~/src -name node_modules -type d -prune -exec rm -rf {} +␛[m
   ␛[38;5;252m-prune stops find from descending into a directory it just deleted.␛[m
   ␛[91m⚠ recursive forced deletion — may destroy files irrecoverably␛[m
-  ␛[38;5;243m⛨ writes unknown · network unknown · no sudo␛[m                                                                                                                         
-␛[92m[↵]␛[m␛[38;5;241m show what it would affect␛[m␛[38;5;241m  ␛[m␛[91m[y]␛[m␛[38;5;241m run it␛[m␛[38;5;241m  ␛[m␛[94m[d]␛[m␛[38;5;241m dry run␛[m␛[38;5;241m  ␛[m␛[94m[e]␛[m␛[38;5;241m edit␛[m␛[38;5;241m  ␛[m␛[94m[r]␛[m␛[38;5;241m revise␛[m␛[38;5;241m  ␛[m␛[94m[x]␛[m␛[38;5;241m explain␛[m␛[38;5;241m  ␛[m␛[94m[c]␛[m␛[38;5;241m copy␛[m␛[38;5;241m  ␛[m␛[94m[s]␛[m␛[38;5;241m save␛[m␛[38;5;241m  ␛[m␛[38;5;241m[esc]␛[m␛[38;5;241m quit␛[m
+  ␛[38;5;243m⛨ writes unknown · network unknown · no sudo␛[m
+
+␛[92m[↵]␛[m␛[38;5;241m show what it would affect␛[m␛[38;5;241m  ␛[m␛[91m[y]␛[m␛[38;5;241m run it␛[m␛[38;5;241m  ␛[m␛[94m[d]␛[m␛[38;5;241m dry run␛[m␛[38;5;241m  ␛[m␛[94m[e]␛[m␛[38;5;241m edit␛[m␛[38;5;241m  ␛[m␛[94m[r]␛[m␛[38;5;241m revise␛[m␛[38;5;241m  ␛[m␛[94m[x]␛[m␛[38;5;241m explain␛[m␛[38;5;241m  ␛[m␛[94m[c]␛[m␛[38;5;241m copy␛[m␛[38;5;241m  ␛[m␛[94m[s]␛[m␛[38;5;241m save␛[m
+␛[38;5;241m[esc]␛[m␛[38;5;241m quit␛[m
 
 · what enter buys
 ␛[38;5;214m$ ␛[m␛[1;97mfind ~/src -name node_modules -type d -prune -exec rm -rf {} +␛[m
@@ -40,5 +45,6 @@ $ find ~/src -name node_modules -type d -prune -exec rm -rf {} +
   ␛[91m⚠ recursive forced deletion — may destroy files irrecoverably␛[m
   ␛[38;5;243m⛨ writes unknown · network unknown · no sudo␛[m
   ␛[38;5;241mwould affect␛[m
-    ␛[91mshhh cannot tell what find writes␛[m                                                                                          
+    ␛[91mshhh cannot tell what find writes␛[m
+
 ␛[91m[y]␛[m␛[38;5;241m run it␛[m␛[38;5;241m  ␛[m␛[94m[d]␛[m␛[38;5;241m dry run␛[m␛[38;5;241m  ␛[m␛[94m[e]␛[m␛[38;5;241m edit␛[m␛[38;5;241m  ␛[m␛[94m[r]␛[m␛[38;5;241m revise␛[m␛[38;5;241m  ␛[m␛[94m[x]␛[m␛[38;5;241m explain␛[m␛[38;5;241m  ␛[m␛[94m[c]␛[m␛[38;5;241m copy␛[m␛[38;5;241m  ␛[m␛[94m[s]␛[m␛[38;5;241m save␛[m␛[38;5;241m  ␛[m␛[38;5;241m[esc]␛[m␛[38;5;241m quit␛[m

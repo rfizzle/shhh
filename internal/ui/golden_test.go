@@ -12,11 +12,13 @@ package ui
 //
 //	go test ./internal/ui -update-golden
 //
-// The four widths are the layout breakpoints. This surface measures nothing —
-// it draws inline under the prompt it was typed at and asks the terminal for
-// no size at all — so the four captures of a state agree, and that agreement
-// is itself the record: a change that started reflowing the one-shot would
-// break it.
+// The four widths are the layout breakpoints, and this surface now answers to
+// them. It draws inline under the prompt it was typed at, but the renderer
+// behind it holds one cell per column and drops whatever is past the last, so
+// a row that did not fit was a row whose tail nobody was shown. The captures
+// differ across the four widths, and golden.Within is the promise they are
+// the record of: no line of any of them is wider than the width it was drawn
+// at.
 
 import (
 	"context"
@@ -57,11 +59,13 @@ func captureGolden(t *testing.T, name, surface string, view func(width int) []go
 			components.SetMono(mono)
 			t.Cleanup(func() { components.SetMono(was) })
 			for _, width := range goldenWidths {
+				panels := view(width)
+				golden.Within(t, surface, width, panels)
 				golden.Assert(t, name+".w"+strconv.Itoa(width), golden.Case{
 					Surface: surface,
 					Width:   width,
 					Mono:    mono,
-					Panels:  view(width),
+					Panels:  panels,
 				})
 			}
 		})
@@ -87,11 +91,19 @@ const goldenDestructive = "find ~/src -name node_modules -type d -prune -exec rm
 	"-prune stops find from descending into a directory it just deleted.\n"
 
 // goldenArmed streams one generation to completion and hands back the result
-// surface it lands on.
-func goldenArmed(t *testing.T, generation string) GenerateModel {
+// surface it lands on, told how wide the terminal taking the capture is.
+func goldenArmed(t *testing.T, generation string, width int) GenerateModel {
 	t.Helper()
 	m := NewGenerateModel(makeEvents(generation), noopCancel, nil, nil, nil, "")
-	return drainStream(m, 2)
+	return sized(drainStream(m, 2), width)
+}
+
+// sized states the terminal's width the way the runtime states it, so a
+// capture is measured through the route a reader's terminal uses rather than
+// through a setter only the tests hold.
+func sized(m GenerateModel, width int) GenerateModel {
+	out, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: 24})
+	return out.(GenerateModel)
 }
 
 // The command still arriving: the wait with nothing to show yet, and the
@@ -99,10 +111,10 @@ func goldenArmed(t *testing.T, generation string) GenerateModel {
 // where the glyph has to lead the command as much as it does on the result.
 func TestGolden_Generating(t *testing.T) {
 	captureGolden(t, "one-shot-generating", "the one-shot while the command arrives",
-		func(int) []golden.Panel {
-			waiting := NewGenerateModel(make(chan provider.StreamEvent), noopCancel, nil, nil, nil, "")
+		func(width int) []golden.Panel {
+			waiting := sized(NewGenerateModel(make(chan provider.StreamEvent), noopCancel, nil, nil, nil, ""), width)
 			partial := NewGenerateModel(makeEvents("lsof -nP -iTCP"), noopCancel, nil, nil, nil, "")
-			partial = drainStreamPending(partial, 1)
+			partial = sized(drainStreamPending(partial, 1), width)
 			return []golden.Panel{
 				{Label: "waiting on the first token", View: waiting.View().Content},
 				{Label: "part-way through the stream", View: partial.View().Content},
@@ -114,8 +126,8 @@ func TestGolden_Generating(t *testing.T) {
 // line, and the key row whose one Add is the key that runs.
 func TestGolden_Result(t *testing.T) {
 	captureGolden(t, "one-shot-result", "the one-shot result",
-		func(int) []golden.Panel {
-			m := goldenArmed(t, goldenGeneration)
+		func(width int) []golden.Panel {
+			m := goldenArmed(t, goldenGeneration, width)
 			return []golden.Panel{{View: m.View().Content}}
 		})
 }
@@ -125,8 +137,8 @@ func TestGolden_Result(t *testing.T) {
 // top rung of the ladder, which is the one place the one-shot shouts.
 func TestGolden_Destructive(t *testing.T) {
 	captureGolden(t, "one-shot-destructive", "the one-shot result on a destructive command",
-		func(int) []golden.Panel {
-			m := goldenArmed(t, goldenDestructive)
+		func(width int) []golden.Panel {
+			m := goldenArmed(t, goldenDestructive, width)
 			affected, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 			return []golden.Panel{
 				{Label: "the safe default", View: m.View().Content},
@@ -139,16 +151,16 @@ func TestGolden_Destructive(t *testing.T) {
 // that answers the feedback.
 func TestGolden_Revise(t *testing.T) {
 	captureGolden(t, "one-shot-revise", "the one-shot revise ladder",
-		func(int) []golden.Panel {
-			return []golden.Panel{{View: goldenRevised(t).View().Content}}
+		func(width int) []golden.Panel {
+			return []golden.Panel{{View: goldenRevised(t, width).View().Content}}
 		})
 }
 
 // The alternatives the generation offered, the one on screen marked.
 func TestGolden_Alternatives(t *testing.T) {
 	captureGolden(t, "one-shot-alternatives", "the one-shot alternatives picker",
-		func(int) []golden.Panel {
-			m := goldenArmed(t, goldenGeneration)
+		func(width int) []golden.Panel {
+			m := goldenArmed(t, goldenGeneration, width)
 			m, _ = m.openAlternatives()
 			return []golden.Panel{{View: m.View().Content}}
 		})
@@ -156,7 +168,7 @@ func TestGolden_Alternatives(t *testing.T) {
 
 // goldenRevised takes the result surface through one revise, so the render
 // carries the rung above it as well as the answer.
-func goldenRevised(t *testing.T) GenerateModel {
+func goldenRevised(t *testing.T, width int) GenerateModel {
 	t.Helper()
 	revised := "lsof -nP -iTCP -sTCP:LISTEN -u $(id -un) -Fpcn\n" +
 		"--- explanation\n" +
@@ -165,7 +177,7 @@ func goldenRevised(t *testing.T) GenerateModel {
 		return makeEvents(revised), noopCancel, nil
 	}
 	m := NewGenerateModel(makeEvents(goldenGeneration), noopCancel, nil, newStream, nil, "")
-	m = drainStream(m, 2)
+	m = sized(drainStream(m, 2), width)
 	m = step(m, tea.KeyPressMsg{Code: 'r', Text: "r"})
 	for _, r := range "only ones owned by me, and show the pid" {
 		m = step(m, tea.KeyPressMsg{Code: r, Text: string(r)})

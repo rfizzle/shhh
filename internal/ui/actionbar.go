@@ -239,22 +239,59 @@ func (m ActionBarModel) Update(msg tea.Msg) (ActionBarModel, tea.Cmd) {
 	return m, nil
 }
 
-// View draws the row, with the revision counter leading it when there is one
-// to state. The counter is chrome and the keys are offers, so they are the
-// two colours this row has.
-func (m ActionBarModel) View() string {
-	var b strings.Builder
+// View draws the row at the width it has to fit in, with the revision counter
+// leading it when there is one to state. The counter is chrome and the keys
+// are offers, so they are the two colours this row has.
+//
+// A row too wide for the terminal takes another row rather than losing its
+// tail. The renderer holds one cell per column and drops what is past the
+// last one, so a key row that overran did not run off the edge — it was
+// never drawn, and the keys that go missing are the ones at the end: `[s]
+// save` and the `[esc]` that says how to leave
+// (docs/interface/principles.md#fold-never-hide).
+func (m ActionBarModel) View(width int) string {
+	offers := m.keys()
+	segs := make([]string, 0, len(offers))
+	for _, k := range offers {
+		segs = append(segs, keyStyle(k.tone).Render("["+k.shown+"]")+sty.KeyLabel.Render(" "+k.label))
+	}
+	lead := ""
 	if m.revision > 0 {
-		b.WriteString(sty.Dim.Render("revision " + strconv.Itoa(m.revision) + "  "))
+		lead = sty.Dim.Render("revision " + strconv.Itoa(m.revision) + "  ")
 	}
-	for i, k := range m.keys() {
-		if i > 0 {
-			b.WriteString(sty.KeyLabel.Render("  "))
+	return strings.Join(packKeys(lead, segs, width), "\n")
+}
+
+// packKeys lays the offers out greedily, breaking between one key and the
+// next and never inside one: half of `[esc] quit` on a line is not an offer
+// anybody can take, and a key whose label wrapped away from it is a key with
+// no word beside it (docs/interface/principles.md#colour-never-carries-meaning-alone).
+//
+// The lead is the revision counter, which stays on the first row because it
+// says which command the keys under it belong to. The two spaces between one
+// offer and the next are drawn in the label's own colour rather than left
+// bare, so the run from a key to the one after it is one escape sequence.
+func packKeys(lead string, segs []string, width int) []string {
+	var (
+		rows []string
+		row  = lead
+		used = lipgloss.Width(lead)
+	)
+	for i, seg := range segs {
+		w := lipgloss.Width(seg)
+		switch {
+		case i == 0:
+			row += seg
+			used += w
+		case width > 0 && used+2+w > width:
+			rows = append(rows, row)
+			row, used = seg, w
+		default:
+			row += sty.KeyLabel.Render("  ") + seg
+			used += 2 + w
 		}
-		b.WriteString(keyStyle(k.tone).Render("[" + k.shown + "]"))
-		b.WriteString(sty.KeyLabel.Render(" " + k.label))
 	}
-	return sty.Bar.Render(b.String())
+	return append(rows, row)
 }
 
 func keyStyle(t keyTone) lipgloss.Style {
