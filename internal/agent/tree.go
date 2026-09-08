@@ -40,6 +40,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -82,6 +83,14 @@ type TreeCheck struct {
 	// place is named by porcelain either way. Nil is what a surface keeping
 	// no such record has to say.
 	ReadChanged func() []string
+	// Instructions names the project instruction files that were read into
+	// the system prompt, absolute or relative to this process. They are read
+	// once, at the start, and are not re-read: the block in the prompt is the
+	// reading the session opened on. So a notice that names one of these
+	// files says that too — a model told AGENTS.md changed and nothing else
+	// goes on obeying the copy in front of it, which is the rule it is about
+	// to be measured against. Nil is a surface with no such block.
+	Instructions []string
 	// Sibling, when set, reports whether another session is open in this
 	// checkout right now. It is asked at each notice rather than once at the
 	// start: the other session usually opens after this one, and the notice
@@ -145,6 +154,11 @@ type treeState struct {
 	// degraded is set once a status call blew the budget; from then on only
 	// the turn boundary reads.
 	degraded bool
+	// instructions is cfg.Instructions keyed the way the snapshot keys
+	// paths, worked out once: the set is a session's prompt and does not
+	// change while it runs, and keying it per boundary would resolve the
+	// same handful of paths on every round.
+	instructions map[string]bool
 	// reported is the set of stale readings the notices already named. The
 	// path half of this reading reports each change once because it compares
 	// two snapshots, and the content half has to be made to: a file the model
@@ -173,6 +187,12 @@ func (a *Agent) SetTreeCheck(c TreeCheck) {
 		return
 	}
 	t.last = snap
+	t.instructions = map[string]bool{}
+	for _, p := range c.Instructions {
+		if rel, ok := t.relative(p); ok {
+			t.instructions[rel] = true
+		}
+	}
 	a.tree = t
 }
 
@@ -234,7 +254,7 @@ func (a *Agent) NextTreeNotice(turnStart bool) (TreeNotice, bool) {
 	last := t.last
 	t.last, t.commands = now, 0
 
-	n, ok := diffTree(last, now, own, t.readChanged(), commands, t.cfg.Sibling)
+	n, ok := diffTree(last, now, own, t.instructions, t.readChanged(), commands, t.cfg.Sibling)
 	return n, ok
 }
 
@@ -299,10 +319,11 @@ func (t *treeState) relative(p string) (string, bool) {
 
 // diffTree is the comparison itself, separated from the git calls so it can
 // be tested on snapshots built by hand. read is what the record of shown
-// files says has moved, already keyed to the root. sibling may be nil and is
+// files says has moved, already keyed to the root. instructions is the
+// project's instruction files, keyed the same way. sibling may be nil and is
 // asked only once there is something to report — it is a store read, and a
 // boundary where nothing moved has nothing to attribute to anybody.
-func diffTree(last, now TreeSnapshot, own map[string]bool, read []string, commands int, sibling func() bool) (TreeNotice, bool) {
+func diffTree(last, now TreeSnapshot, own, instructions map[string]bool, read []string, commands int, sibling func() bool) (TreeNotice, bool) {
 	var changed []string
 	for p, st := range now.Status {
 		if last.Status[p] != st {
@@ -314,14 +335,15 @@ func diffTree(last, now TreeSnapshot, own map[string]bool, read []string, comman
 			changed = append(changed, p)
 		}
 	}
-	changed = foreign(changed, own)
+	changed = foreign(changed, own, instructions)
 	sort.Strings(changed)
 	// The session's own writes are not subtracted from the read set, because
 	// they are already absent from it: a tool that writes a file records what
 	// it wrote, so the picture the model holds of that file is current. What
 	// is dropped is the tool's own state directory, which is bookkeeping
-	// rather than the tree moving.
-	read = foreign(read, nil)
+	// rather than the tree moving — bar an instruction file the project
+	// keeps there, which is the project's word and not shhh's.
+	read = foreign(read, nil, instructions)
 	sort.Strings(read)
 
 	n := TreeNotice{
@@ -377,6 +399,15 @@ func diffTree(last, now TreeSnapshot, own map[string]bool, read []string, comman
 		b.WriteString(" — another session is open in this checkout")
 	}
 	b.WriteString(".")
+	// The instruction files are the one part of the prompt this notice can
+	// contradict. Nothing re-injects them — a block rewritten mid-conversation
+	// costs the cached prefix of everything before it, and this notice is
+	// already the reading the model acts on — so the older reading is named as
+	// older, which costs a sentence.
+	if named := namedIn(instructions, changed, read); len(named) > 0 {
+		b.WriteString(" The project instructions changed (" + pathList(named) +
+			"): the block in your prompt is the reading this session opened on and is not re-read, so read the file before relying on it.")
+	}
 	n.Message = b.String()
 
 	var row []string
@@ -396,13 +427,35 @@ func diffTree(last, now TreeSnapshot, own map[string]bool, read []string, comman
 	return n, true
 }
 
+// namedIn is the paths of set that this notice names, in the order the notice
+// names them and without repeating one that appears in both lists. An empty
+// set answers nothing, which is what a surface carrying no instruction block
+// has to say.
+func namedIn(set map[string]bool, lists ...[]string) []string {
+	var named []string
+	for _, list := range lists {
+		for _, p := range list {
+			if set[p] && !slices.Contains(named, p) {
+				named = append(named, p)
+			}
+		}
+	}
+	return named
+}
+
 // foreign drops the paths the session accounts for: its own, anything under
 // the tool's state directory, and an untracked directory entry that one of
 // its own files lives under (git collapses a new directory to one line).
-func foreign(paths []string, own map[string]bool) []string {
+//
+// keep is the exception to the state directory, and the reason there is one:
+// the instruction file a project writes for its agents may live in there, and
+// that file is the project's word rather than shhh's bookkeeping. Dropped
+// with the checkpoints, the change the session most needs to hear about is
+// the one it would never be told.
+func foreign(paths []string, own, keep map[string]bool) []string {
 	var out []string
 	for _, p := range paths {
-		if strings.HasPrefix(p, stateDir) || own[p] {
+		if own[p] || (strings.HasPrefix(p, stateDir) && !keep[p]) {
 			continue
 		}
 		if strings.HasSuffix(p, "/") && anyUnder(own, p) {

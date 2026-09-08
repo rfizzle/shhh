@@ -1387,7 +1387,8 @@ func TestGolden_GitWriteRows(t *testing.T) {
 				row(`{"verb":"commit","message":"feat(agent): cap rounds at the limit instead of erroring"}`,
 					"committed 3 files as a41f2c9 on master"),
 				row(`{"verb":"branch","branch":"topic"}`, "created branch topic"),
-				row(`{"verb":"switch","branch":"master"}`, "switched to master"),
+				row(`{"verb":"switch","branch":"master"}`,
+					"switched to master\nreads dropped · the working tree changed under every prior read"),
 			)},
 			{Label: "refused · a file the session did not change", View: build(
 				row(`{"verb":"add","paths":["README.md"]}`,

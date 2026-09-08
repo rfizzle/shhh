@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/tools"
 )
 
 // The write verbs. Four, and no more: staging, committing, making a branch
@@ -256,8 +257,34 @@ func (t *Toolset) executeGitWrite(raw json.RawMessage) (string, error) {
 	}
 	// Only switch is left: commit answered above, and the builder refused
 	// every verb outside the four before anything spawned.
-	return "switched to " + args.Branch, nil
+	//
+	// A switch rewrites every tracked file that differs between the two
+	// branches, and the record of what the model has been shown is a
+	// fingerprint of content — so keeping it would let a full overwrite
+	// through on the strength of a read taken on the branch this call has
+	// just left. The tree reading cannot cover this: porcelain compares the
+	// tree with its new HEAD, so a file the switch replaced is not dirty
+	// afterwards and is never named. The record is emptied rather than
+	// re-checked, and it is emptied whole, reads made by work running beside
+	// this one included: over-forgetting costs a re-read, under-forgetting
+	// costs somebody's work.
+	// See docs/capabilities/approvals-and-safety.md#a-file-is-changed-from-what-was-read.
+	tools.ForgetAll()
+	return "switched to " + args.Branch + "\n" + switchReadsNote, nil
 }
+
+// switchReadsNote is the second line of a switch's result, and it is a second
+// line for the reason the skipped hooks are one: the first line is the
+// receipt a transcript row states in one field, and at eighty columns a field
+// carrying both would run off the end of the row.
+//
+// It is said rather than left to be discovered. Nothing else tells the model
+// its readings are gone — the refusal it would otherwise meet arrives one
+// round later, at a write it has already composed, and reads as a file it
+// never opened rather than as the switch it just made. What to do about it is
+// left to that refusal, which names the file and the move: this line has the
+// room a note under the row has, which is the fact and not the instruction.
+const switchReadsNote = "reads dropped · the working tree changed under every prior read"
 
 // hooksRun reports whether the checkout's own programs may run on a commit.
 // A session that never said anything about writes is not one that trusted
@@ -423,6 +450,14 @@ func plural(n int, noun string) string {
 // CommitVerb is the write verb whose result is a receipt, named because a
 // surface that draws the turn's close has to tell a commit from a staging.
 const CommitVerb = gitCommit
+
+// BranchVerb and SwitchVerb are named for the card that asks about them: the
+// two verbs whose way back is a line somebody types, which is a thing to say
+// before the act rather than after it.
+const (
+	BranchVerb = gitBranch
+	SwitchVerb = gitSwitch
+)
 
 // AddArgv and CommitArgv are the two writes a caller outside a session's
 // toolset makes: the commit the unattended backlog runner ends a run with.

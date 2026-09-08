@@ -293,6 +293,17 @@ argument after the delimiter. **`run.Commit` builds its argv here too**
 (`structural.AddArgv`, `structural.CommitArgv`), so the unattended runner and
 the tool cannot spell a commit two ways.
 
+**A switch empties the record of what the model has been shown**
+(`tools.ForgetAll`) and says so on the second line of its result
+(`switchReadsNote`), which is why this package imports `internal/tools`: every
+reading the record held was taken on the branch the call just left, and
+porcelain never names a file the switch put back to its committed state, so
+the tree reading cannot catch it. It empties the whole record, sub-agents'
+readings included — the per-owner record does not exist, and over-forgetting
+costs a re-read where under-forgetting costs somebody's work. The card for
+`switch` and `branch` states the way back the same way a commit's does, in
+`gitWriteGatedPreview`.
+
 The transcript row is `activityVerbFor` (the verb is a field of the call, so
 the row reads it out of the arguments) plus `digest.Arg`'s `git_write` case
 for the target, and the receipt is the row's outcome. The turn's close gains
@@ -344,6 +355,18 @@ either door because both doors restore the same thing: `resumeChat`
 (`internal/cli/session.go`) for a session reopened from the command line,
 `loadChatByName` (`internal/ui/chat/model.go`) for a saved conversation loaded
 over the one on screen.
+`TreeCheck.Instructions` is the project's own instruction files, and a notice
+naming one of them carries a sentence saying the block in the system prompt is
+the older reading — nothing is re-injected. What will bite you: **only the
+session fills that field.** `WithTreeCheck` (`internal/ui/chat/tree.go`) fills
+it from `project.Instructions`, the same walk `chatSession.systemPrompt` made,
+so the notice describes the block the model is actually holding; `treeCheck`
+and `headlessTree` (`internal/cli/session.go`, `internal/cli/print.go`) leave
+it nil, so an unattended run's notice says nothing about its own instruction
+block. It is one line each to change that. The set is also `foreign`'s one
+exception to dropping the state directory: `.shhh/project.md` is a project's
+instruction file and not shhh's bookkeeping, so a change to it is reported
+where a changed checkpoint is not.
 `treeState.reported` is what keeps a stale reading from being named at every
 round until the model goes back to it. Why it exists and what it does not see:
 [`docs/capabilities/coding-agent.md#the-tree-can-move-under-a-session`](docs/capabilities/coding-agent.md#the-tree-can-move-under-a-session).

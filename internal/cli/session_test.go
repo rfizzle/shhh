@@ -406,6 +406,22 @@ func TestGitWriteGatedPreview_StatesTheBoundariesOfTheAct(t *testing.T) {
 		t.Fatalf("a trusted checkout runs its hooks: %+v", trusted.Fields)
 	}
 
+	// The other two verbs that move something: a branch created and a branch
+	// stood on both have a way back, and it is a line the person types.
+	for _, tc := range []struct{ call, undo string }{
+		{`{"verb":"branch","branch":"topic"}`, "git branch -d"},
+		{`{"verb":"switch","branch":"topic"}`, "git switch -"},
+	} {
+		card, err := gitWriteGatedPreview(st, json.RawMessage(tc.call))
+		if err != nil {
+			t.Fatal(err)
+		}
+		undo := labels(card)["undo"]
+		if undo.Value != tc.undo || undo.Detail == "" {
+			t.Fatalf("%s should say what the way back is: %+v", tc.call, card.Fields)
+		}
+	}
+
 	if _, err := gitWriteGatedPreview(st, json.RawMessage(`{"verb":"push"}`)); err == nil {
 		t.Fatal("a verb outside the set must not produce a card")
 	}

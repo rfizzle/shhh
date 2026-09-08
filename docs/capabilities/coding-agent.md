@@ -894,10 +894,13 @@ precedence within a directory, the order, the cap, the trust they carry and
 what a session does with an `@path` line are all one question, answered in
 [`configuration.md#project-context-is-opt-in-and-lives-with-the-project`](configuration.md#project-context-is-opt-in-and-lives-with-the-project).
 
-The reading happens once, at session start, with the rest of the prompt. It
-is a set of files on disk that nobody is editing mid-turn, and re-reading
-them each round would spend a syscall and a cache invalidation on an answer
-that has not changed.
+The reading happens once, at session start, with the rest of the prompt:
+re-reading them each round would spend a syscall and a cache invalidation on
+an answer that is nearly always the same one. Nearly always is not always —
+the agent itself edits these files, and a pull brings a different one — so the
+block is not re-read and it is not left to stand unchallenged either. Where
+the reading of the tree names an instruction file, it says in one sentence
+that the block in the prompt is the older reading of it.
 
 ## The tree can move under a session
 
@@ -945,6 +948,21 @@ Each file is named once. A file the session has not gone back to is still
 stale at the next boundary and the one after it, and a clause that repeats
 every round is what teaches the model to skip the block it is in; it is named
 again if it moves again.
+
+One of the paths named can contradict the prompt itself. The project's
+instruction files are read once and the block built from them stands for the
+whole session, so a notice that names one of those files adds a sentence
+saying the block is the older reading. Nothing is put back: a block rewritten
+mid-conversation costs the cached prefix of everything in front of it, and the
+model is already being told, in the one place it is reading.
+
+The session can also move the tree itself, and one verb moves all of it. A
+branch switch rewrites every tracked file that differs between the two
+branches, which is the one change the status call is blind to — it compares
+the tree with its new HEAD, so a file the switch restored is clean afterwards.
+That is answered where it happens rather than here: the record of what the
+model was shown is dropped at the switch, and the switch says so
+([`approvals-and-safety.md#a-file-is-changed-from-what-was-read`](approvals-and-safety.md#a-file-is-changed-from-what-was-read)).
 
 ## It can check itself
 

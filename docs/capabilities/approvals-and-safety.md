@@ -301,6 +301,17 @@ first, because what the conversation being replaced was shown is no evidence
 about the one arriving. Starting a new conversation empties it and stops
 there: a conversation that has said nothing yet has read nothing.
 
+**A branch switch empties it too, and says so.** Switching rewrites every
+tracked file that differs between the two branches, and the reading of the
+tree cannot cover that: git compares the tree with its new HEAD, so a file the
+switch put back to its committed state is not dirty afterwards and is never
+named. So the record is dropped whole at the switch, and the switch's own
+result says the working tree changed under every prior read. It is said rather
+than left to be found: the refusal on its own arrives a round later, at a
+change the model has already composed, and reads as a file nobody opened
+rather than as the switch that made it stale. Dropping more than was strictly
+necessary costs a re-read; keeping one record too many costs somebody's work.
+
 ## A closed verb set is what makes a read a read
 
 Reading a repository's history — who last touched this line, when did this

@@ -8,6 +8,8 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	"github.com/rfizzle/shhh/internal/tools"
 )
 
 // gitWriteArgvFor builds one write's argv with its paths already resolved, so
@@ -378,7 +380,8 @@ func TestExecuteGitWriteEndToEnd(t *testing.T) {
 	if out, err := ts.Execute(GitWriteToolName, json.RawMessage(`{"verb":"branch","branch":"topic"}`)); err != nil || out != "created branch topic" {
 		t.Fatalf("branch: %q %v", out, err)
 	}
-	if out, err := ts.Execute(GitWriteToolName, json.RawMessage(`{"verb":"switch","branch":"topic"}`)); err != nil || out != "switched to topic" {
+	if out, err := ts.Execute(GitWriteToolName, json.RawMessage(`{"verb":"switch","branch":"topic"}`)); err != nil ||
+		out != "switched to topic\n"+switchReadsNote {
 		t.Fatalf("switch: %q %v", out, err)
 	}
 	if out, _ := gitOut(t, root, "branch", "--show-current"); strings.TrimSpace(out) != "topic" {
@@ -510,4 +513,65 @@ func gitOut(t *testing.T, root string, args ...string) (string, int) {
 		code = cmd.ProcessState.ExitCode()
 	}
 	return string(out), code
+}
+
+// A switch replaces the files under the session, and the record of what the
+// model has been shown is about the branch it left. The two halves are one
+// story: the record is emptied, and the result says so where the model can
+// read it — a refusal that arrives a round later, at a write already
+// composed, reads as a file nobody opened rather than as the switch that
+// made it stale.
+func TestExecuteGitWriteSwitchDropsWhatWasRead(t *testing.T) {
+	if _, ok := lookPath("git"); !ok {
+		t.Skip("git is not on PATH")
+	}
+	root := writeRepo(t)
+	// The record is one per process, so a test that fills it puts it back.
+	t.Cleanup(tools.ForgetAll)
+	file := filepath.Join(root, "main.go")
+	ts := writeToolset(t, root, Writes{Files: func() []string { return []string{"main.go"} }, Hooks: true})
+	if _, err := ts.Execute(GitWriteToolName, json.RawMessage(`{"verb":"branch","branch":"topic"}`)); err != nil {
+		t.Fatalf("branch: %v", err)
+	}
+
+	read := json.RawMessage(`{"path":` + quote(t, file) + `}`)
+	overwrite := json.RawMessage(`{"path":` + quote(t, file) + `,"content":"package main // mine\n"}`)
+	if _, err := tools.Execute(tools.ReadFileName, read); err != nil {
+		t.Fatalf("read_file: %v", err)
+	}
+	// The control: with that reading in hand a full overwrite is allowed, so
+	// the refusal below is the switch's doing and not the rule's.
+	if _, err := tools.ExecuteMutating(tools.WriteFileName, overwrite); err != nil {
+		t.Fatalf("a file that was read in full may be replaced: %v", err)
+	}
+	if _, err := tools.Execute(tools.ReadFileName, read); err != nil {
+		t.Fatalf("read_file: %v", err)
+	}
+
+	out, err := ts.Execute(GitWriteToolName, json.RawMessage(`{"verb":"switch","branch":"topic"}`))
+	if err != nil {
+		t.Fatalf("switch: %v", err)
+	}
+	if !strings.Contains(out, "the working tree changed under every prior read") {
+		t.Fatalf("a switch says what it did to the reads: %q", out)
+	}
+	err = mutateErr(tools.ExecuteMutating(tools.WriteFileName, overwrite))
+	if err == nil || !strings.Contains(err.Error(), "has not been read in this session") {
+		t.Fatalf("err = %v, want the refusal for a file this session has not read", err)
+	}
+}
+
+// mutateErr is the error half of a mutating call, for a test that wants only
+// that.
+func mutateErr(_ string, err error) error { return err }
+
+// quote is a path as a JSON string, which on Windows is the difference
+// between a path and an escape sequence.
+func quote(t *testing.T, path string) string {
+	t.Helper()
+	b, err := json.Marshal(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(b)
 }

@@ -22,17 +22,7 @@ func treeRepo(t *testing.T) string {
 		t.Skip("git not on PATH")
 	}
 	ws := t.TempDir()
-	git := func(args ...string) {
-		t.Helper()
-		cmd := exec.Command("git", append([]string{"-C", ws}, args...)...)
-		cmd.Env = append(os.Environ(),
-			"GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_SYSTEM=/dev/null",
-			"GIT_AUTHOR_NAME=test", "GIT_AUTHOR_EMAIL=test@test",
-			"GIT_COMMITTER_NAME=test", "GIT_COMMITTER_EMAIL=test@test")
-		if out, err := cmd.CombinedOutput(); err != nil {
-			t.Fatalf("git %v: %v\n%s", args, err, out)
-		}
-	}
+	git := func(args ...string) { gitIn(t, ws, args...) }
 	git("init", "-q")
 	if err := os.WriteFile(filepath.Join(ws, "a.txt"), []byte("hello\n"), 0o644); err != nil {
 		t.Fatal(err)
@@ -40,6 +30,20 @@ func treeRepo(t *testing.T) string {
 	git("add", ".")
 	git("commit", "-q", "-m", "init")
 	return ws
+}
+
+// gitIn runs one git command in ws, with a developer's own configuration and
+// identity kept out of it.
+func gitIn(t *testing.T, ws string, args ...string) {
+	t.Helper()
+	cmd := exec.Command("git", append([]string{"-C", ws}, args...)...)
+	cmd.Env = append(os.Environ(),
+		"GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_SYSTEM=/dev/null",
+		"GIT_AUTHOR_NAME=test", "GIT_AUTHOR_EMAIL=test@test",
+		"GIT_COMMITTER_NAME=test", "GIT_COMMITTER_EMAIL=test@test")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("git %v: %v\n%s", args, err, out)
+	}
 }
 
 func TestTree_ANoticeReachesTheConversationAndTheTranscript(t *testing.T) {
@@ -87,6 +91,34 @@ func TestTree_TheChangesetIsTheSubtrahend(t *testing.T) {
 	m.injectTreeNotice(false)
 	if got := lastUserMessage(m); strings.Contains(got, "[tree:") {
 		t.Errorf("a path the changeset recorded is the session's own, got:\n%s", got)
+	}
+}
+
+// The instruction files are not the caller's to name: the session finds them
+// the way the prompt found them, so what the notice calls the older reading
+// is the block the model is actually holding.
+func TestTree_TheInstructionFilesAreFoundWithoutBeingNamed(t *testing.T) {
+	ws := treeRepo(t)
+	agents := filepath.Join(ws, "AGENTS.md")
+	if err := os.WriteFile(agents, []byte("the old rule\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// Committed, so the file the notice names moved in content rather than
+	// into the status for the first time.
+	gitIn(t, ws, "add", "AGENTS.md")
+	gitIn(t, ws, "commit", "-q", "-m", "instructions")
+
+	m := gatedModel(t, nil, nil).
+		WithChangeset(changeset.New(changeset.DefaultMaxBytes), nil).
+		WithTreeCheck(&agent.TreeCheck{Dir: ws})
+
+	if err := os.WriteFile(agents, []byte("the new rule\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	m.injectTreeNotice(false)
+
+	if got := lastUserMessage(m); !strings.Contains(got, "The project instructions changed (AGENTS.md)") {
+		t.Errorf("the notice should say the prompt block is the older reading, got:\n%s", got)
 	}
 }
 

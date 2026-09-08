@@ -12,11 +12,12 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/project"
 )
 
 // WithTreeCheck turns the reading on; nil leaves it off. Own is filled from
 // the session's changeset when the caller left it unset, so wire the
-// changeset first.
+// changeset first, and Instructions from the same walk the prompt made.
 func (m Model) WithTreeCheck(c *agent.TreeCheck) Model {
 	if c == nil {
 		return m
@@ -26,8 +27,30 @@ func (m Model) WithTreeCheck(c *agent.TreeCheck) Model {
 		store := m.changes
 		cfg.Own = func() []string { return writtenPaths(store) }
 	}
+	if cfg.Instructions == nil {
+		cfg.Instructions = instructionFiles(cfg.Dir)
+	}
 	m.agent.SetTreeCheck(cfg)
 	return m
+}
+
+// instructionFiles is the project's own instruction files, found the way the
+// prompt found them — the same walk from the session's directory up to the
+// project root — so what the notice calls the older reading is the block the
+// model is holding rather than a second guess at it.
+//
+// The user's own file is left out for the reason the survey leaves it out of
+// what a project said about itself: it is the person's writing rather than
+// the checkout's, and it sits outside the tree this reading can see.
+func instructionFiles(dir string) []string {
+	if dir == "" {
+		dir = "."
+	}
+	var paths []string
+	for _, ins := range project.Instructions(dir, "") {
+		paths = append(paths, ins.Path)
+	}
+	return paths
 }
 
 // writtenPaths is every path the session's changeset has recorded, across

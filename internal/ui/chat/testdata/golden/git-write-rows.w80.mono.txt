@@ -15,6 +15,7 @@
   ▎$ commit  feat(agent): ca…  committed 3 files as a41f2c9 on master
   ▎$ branch  topic                               created branch topic
   ▎$ switch  master                                switched to master
+    reads dropped · the working tree changed under every prior read
 
 
 · refused · a file the session did not change
@@ -41,6 +42,7 @@
   ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m commit  ␛[38;5;244mfeat(agent): ca…␛[m  ␛[38;5;244mcommitted 3 files as a41f2c9 on master␛[m
   ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m branch  ␛[38;5;244mtopic␛[m                               ␛[38;5;244mcreated branch topic␛[m
   ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m switch  ␛[38;5;244mmaster␛[m                                ␛[38;5;244mswitched to master␛[m
+    ␛[38;5;244mreads dropped · the working tree changed under every prior read␛[m
 
 
 · refused · a file the session did not change

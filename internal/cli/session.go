@@ -1729,9 +1729,19 @@ func gitWriteGatedPreview(st *structural.Toolset, args json.RawMessage) (chat.Ga
 		{Label: "stages", Value: "this session's files only", Detail: "work that was already in the tree is never staged"},
 		{Label: "push", Value: "no", Detail: "shhh never pushes; the remote is yours"},
 	}
-	if w.Verb == structural.CommitVerb {
+	switch w.Verb {
+	case structural.CommitVerb:
 		fields = append(fields, hooks,
 			chat.GatedField{Label: "undo", Value: "git revert", Detail: components.CommitUndoNote})
+	case structural.BranchVerb:
+		fields = append(fields, chat.GatedField{Label: "undo", Value: "git branch -d",
+			Detail: "a new branch moves no file and holds no work; deleting it is a line you type"})
+	case structural.SwitchVerb:
+		// The session does not come back with the branch: the files under it
+		// are the other branch's now, and everything it had read is dropped
+		// so nothing is rewritten from a picture taken over here.
+		fields = append(fields, chat.GatedField{Label: "undo", Value: "git switch -",
+			Detail: "the tree becomes the other branch's, and every file this session had read is re-read"})
 	}
 	return chat.GatedPreview{
 		Title:    w.Title,
