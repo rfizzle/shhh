@@ -41,6 +41,13 @@ type toolsetOpts struct {
 	// the page's id instead; the zero value is that safe reading, and only a
 	// surface that stays up says otherwise.
 	resident bool
+	// seen is the record this surface's reads are filed in and its writes
+	// are checked against. Nil is the process-wide record, which is what a
+	// surface that is the only conversation in its process gets; a server
+	// serving several sessions over one checkout gives each its own, so one
+	// session's overwrite cannot be checked against another's content
+	// (docs/capabilities/approvals-and-safety.md#a-file-is-changed-from-what-was-read).
+	seen *tools.Recorder
 	// gitWrites says this surface writes to git, and carries the two things
 	// only a surface can answer: the record of what it changed, which is
 	// what may be staged, and the checkout's trust answer, which is whether
@@ -60,6 +67,10 @@ type toolset struct {
 	gate     *quality.Runner
 	proc     *process.Supervisor
 	reports  *reports.Publisher
+	// seen is the surface's read record, carried from the options because
+	// the executor is built later than the registration and is where a read
+	// files what it showed.
+	seen *tools.Recorder
 
 	// closers end what was opened, in the reverse order it was opened.
 	closers []func()
@@ -74,7 +85,7 @@ type toolset struct {
 // the chain like any other, and cannot until the servers have answered.
 func buildToolset(cmd *cobra.Command, session *chatSession, kind string, opts toolsetOpts) (*toolset, error) {
 	cfg := ConfigFrom(cmd.Context())
-	t := &toolset{}
+	t := &toolset{seen: opts.seen}
 	register := func(defs ...provider.Tool) {
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), defs...)
 	}
@@ -208,7 +219,7 @@ func (t *toolset) close() {
 // known until then. What a surface adds for itself — a sub-agent supervisor,
 // the repeat detector — goes on outside this, at the call site that builds it.
 func (t *toolset) executor(session chatSession) agent.ToolExecutor {
-	exec := agent.ToolExecutor(tools.Execute)
+	exec := agent.ToolExecutor(t.seen.Execute)
 	if session.web != nil {
 		exec = session.web.WrapExecutor(web.Orchestrator, exec)
 	}

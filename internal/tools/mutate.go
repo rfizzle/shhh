@@ -24,8 +24,15 @@ const (
 // Mutating returns the file-modification tool definitions. They are
 // deliberately kept out of ReadOnly(), so Execute — the auto-run path — can
 // never dispatch them; approved calls run through ExecuteMutating instead.
-func Mutating() []Definition {
-	return []Definition{writeFile, editFile}
+func Mutating() []Definition { return shared.Mutating() }
+
+// Mutating with r as the record the two tools check what they are about to
+// overwrite against, and file what they wrote in.
+func (r *Recorder) Mutating() []Definition {
+	write, edit := writeFile, editFile
+	write.Execute = r.executeWriteFile
+	edit.Execute = r.executeEditFile
+	return []Definition{write, edit}
 }
 
 // DefinitionsFull returns the complete agent toolset: read-only tools, the
@@ -86,7 +93,13 @@ func WrittenPath(name, rawArgs string) string {
 // refuses every other tool name so read-only tools cannot be routed here by
 // mistake.
 func ExecuteMutating(name string, args json.RawMessage) (string, error) {
-	for _, d := range Mutating() {
+	return shared.ExecuteMutating(name, args)
+}
+
+// ExecuteMutating against r's record, which is what an owner that does not
+// share the process's record hands its approver.
+func (r *Recorder) ExecuteMutating(name string, args json.RawMessage) (string, error) {
+	for _, d := range r.Mutating() {
 		if d.Tool.Name == name {
 			return d.Execute(args)
 		}
@@ -108,6 +121,13 @@ type Mutation struct {
 // without touching the file. Validation matches execution, so a call that
 // previews cleanly only fails later if the file changes underneath it.
 func PreviewMutation(name string, raw json.RawMessage) (Mutation, error) {
+	return shared.PreviewMutation(name, raw)
+}
+
+// PreviewMutation against r's record. It has to be the record the call will
+// be executed against, or a person is shown a diff for a change the write
+// then refuses.
+func (r *Recorder) PreviewMutation(name string, raw json.RawMessage) (Mutation, error) {
 	switch name {
 	case WriteFileName:
 		args, err := parseWriteFileArgs(raw)
@@ -118,7 +138,7 @@ func PreviewMutation(name string, raw json.RawMessage) (Mutation, error) {
 		if err != nil {
 			return Mutation{}, err
 		}
-		if err := checkSeen(args.Path, []byte(old), existed, true); err != nil {
+		if err := r.checkSeen(args.Path, []byte(old), existed, true); err != nil {
 			return Mutation{}, err
 		}
 		return Mutation{Action: "write", Path: args.Path, OldText: old, NewText: args.Content}, nil
@@ -131,7 +151,7 @@ func PreviewMutation(name string, raw json.RawMessage) (Mutation, error) {
 		if err != nil {
 			return Mutation{}, fmt.Errorf("cannot read file: %w", err)
 		}
-		if err := checkSeen(args.Path, content, true, false); err != nil {
+		if err := r.checkSeen(args.Path, content, true, false); err != nil {
 			return Mutation{}, err
 		}
 		updated, _, err := applyEdits(string(content), args.Path, args.Edits)
@@ -158,7 +178,8 @@ var writeFile = Definition{
 			"required": ["path", "content"]
 		}`),
 	},
-	Execute: executeWriteFile,
+	// Execute is filled in by Mutating, which is where the record the call is
+	// checked against is known.
 }
 
 type writeFileArgs struct {
@@ -177,7 +198,7 @@ func parseWriteFileArgs(raw json.RawMessage) (writeFileArgs, error) {
 	return args, nil
 }
 
-func executeWriteFile(raw json.RawMessage) (string, error) {
+func (r *Recorder) executeWriteFile(raw json.RawMessage) (string, error) {
 	args, err := parseWriteFileArgs(raw)
 	if err != nil {
 		return "", err
@@ -188,7 +209,7 @@ func executeWriteFile(raw json.RawMessage) (string, error) {
 	}
 	// A full overwrite carries no evidence about what it is overwriting, so
 	// it has to have been read, in full, and not changed since (seen.go).
-	if err := checkSeen(args.Path, []byte(old), existed, true); err != nil {
+	if err := r.checkSeen(args.Path, []byte(old), existed, true); err != nil {
 		return "", err
 	}
 	if dir := filepath.Dir(args.Path); dir != "." {
@@ -197,10 +218,10 @@ func executeWriteFile(raw json.RawMessage) (string, error) {
 		}
 	}
 	if err := os.WriteFile(args.Path, []byte(args.Content), newFileMode); err != nil {
-		forget(args.Path)
+		r.forget(args.Path)
 		return "", fmt.Errorf("cannot write file: %w", err)
 	}
-	noteShown(args.Path, []byte(args.Content), true)
+	r.noteShown(args.Path, []byte(args.Content), true)
 	if existed {
 		return fmt.Sprintf("Overwrote %s: wrote %d bytes (%d lines), was %d bytes", args.Path, len(args.Content), countLines(args.Content), len(old)), nil
 	}
@@ -241,7 +262,7 @@ var editFile = Definition{
 			"required": ["path"]
 		}`),
 	},
-	Execute: executeEditFile,
+	// Execute is filled in by Mutating, for the same reason write_file's is.
 }
 
 // fileEdit is one replacement: the text to find, and what to put in its
@@ -297,7 +318,7 @@ func parseEditFileArgs(raw json.RawMessage) (editFileArgs, error) {
 	return args, nil
 }
 
-func executeEditFile(raw json.RawMessage) (string, error) {
+func (r *Recorder) executeEditFile(raw json.RawMessage) (string, error) {
 	args, err := parseEditFileArgs(raw)
 	if err != nil {
 		return "", err
@@ -310,7 +331,7 @@ func executeEditFile(raw json.RawMessage) (string, error) {
 	// that moved since it was read is one this edit was not written against.
 	// One question about the file answers it for every edit in the call,
 	// because every one of them is matched against this content.
-	if err := checkSeen(args.Path, content, true, false); err != nil {
+	if err := r.checkSeen(args.Path, content, true, false); err != nil {
 		return "", err
 	}
 	// Every edit is planned before any of them is written, so a call with one
@@ -322,12 +343,12 @@ func executeEditFile(raw json.RawMessage) (string, error) {
 	if err := os.WriteFile(args.Path, []byte(updated), newFileMode); err != nil {
 		// The file is now of unknown content, so nothing may be claimed about
 		// it until something reads it again.
-		forget(args.Path)
+		r.forget(args.Path)
 		return "", fmt.Errorf("cannot write file: %w", err)
 	}
 	// The model knows exactly what it just wrote, so the next edit is not
 	// asked to read it again.
-	noteShown(args.Path, []byte(updated), true)
+	r.noteShown(args.Path, []byte(updated), true)
 	made := fmt.Sprintf("%d replacement(s)", count)
 	if len(args.Edits) > 1 {
 		made += fmt.Sprintf(" from %d edits", len(args.Edits))

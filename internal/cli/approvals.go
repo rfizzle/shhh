@@ -13,6 +13,7 @@ import (
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
+	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/web"
 )
 
@@ -119,12 +120,16 @@ func (j *autoJudge) decide(tc provider.ToolCall, action agent.Action) (agent.Dec
 }
 
 // unattended is what a run with nobody in front of it answers a gated call
-// with beyond its flags: the supervisor a spawn is handed to, and the judge a
-// call the flags do not answer is put to. Both are nil on a run that was
-// given neither, which is the surface exactly as it was.
+// with beyond its flags: the supervisor a spawn is handed to, the judge a
+// call the flags do not answer is put to, and the record a file modification
+// is checked against. All three are nil on a run that was given none, which
+// is the surface exactly as it was — a nil record being the process-wide one,
+// which is what a run that is the only conversation in its process has.
 type unattended struct {
 	sup   *subagent.Supervisor
 	judge *autoJudge
+	// seen is the read record the run's own askers answer from.
+	seen *tools.Recorder
 	// at is where the run has got to, for the line a refusal leaves in the
 	// diagnostic log. It is a function and not a position because the
 	// approver is built once and asked on every round, and it is here rather

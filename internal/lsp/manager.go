@@ -77,6 +77,13 @@ type heldQuestion struct {
 type Manager struct {
 	root string
 	opts Options
+	// seen is the read record the position guard is asked of, and nil is the
+	// process-wide one. A surface holding several conversations over one
+	// checkout gives its manager the record of the conversation it belongs
+	// to: asked of the process's, the guard would be answering about files
+	// another conversation was shown and about none of this one's.
+	// See docs/capabilities/approvals-and-safety.md#a-file-is-changed-from-what-was-read.
+	seen *tools.Recorder
 
 	mu      sync.Mutex
 	servers map[string]*managedServer // spec name → instance
@@ -120,6 +127,11 @@ func NewManager(root string, specs []ServerSpec, opts Options) *Manager {
 	}
 	return m
 }
+
+// UseReadRecord points the position guard at one conversation's read record,
+// for a surface that holds several conversations at once. It is called during
+// the assembly, before any question reaches a server.
+func (m *Manager) UseReadRecord(r *tools.Recorder) { m.seen = r }
 
 // ServerNames lists the detected (not necessarily started) servers.
 func (m *Manager) ServerNames() []string {
@@ -666,7 +678,7 @@ func (m *Manager) resolvePosition(path string, line int, symbol string) (Positio
 	if err != nil {
 		return Position{}, fmt.Errorf("cannot read file: %w", err)
 	}
-	if err := tools.StaleSinceRead(path, data); err != nil {
+	if err := m.seen.StaleSinceRead(path, data); err != nil {
 		return Position{}, err
 	}
 	lines := strings.Split(string(data), "\n")

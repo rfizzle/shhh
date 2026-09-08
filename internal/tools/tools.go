@@ -33,8 +33,14 @@ const (
 	GlobName          = "glob"
 )
 
-func ReadOnly() []Definition {
-	return []Definition{readFile, listDirectory, search, globFiles}
+func ReadOnly() []Definition { return shared.ReadOnly() }
+
+// ReadOnly with r as the record a read files what it showed in. Only read_file
+// shows the model a file, so it is the only definition the owner reaches.
+func (r *Recorder) ReadOnly() []Definition {
+	read := readFile
+	read.Execute = r.executeReadFile
+	return []Definition{read, listDirectory, search, globFiles}
 }
 
 // SelfBounding reports whether a tool already bounds its own output.
@@ -182,7 +188,13 @@ func DefinitionsWithExec() []provider.Tool {
 // reachable here: mutating tools (Mutating) and execute_command must go
 // through user approval and are deliberately unknown to this path.
 func Execute(name string, args json.RawMessage) (string, error) {
-	for _, d := range ReadOnly() {
+	return shared.Execute(name, args)
+}
+
+// Execute dispatching into r's record, which is what an owner that does not
+// share the process's record hands the executor chain.
+func (r *Recorder) Execute(name string, args json.RawMessage) (string, error) {
+	for _, d := range r.ReadOnly() {
 		if d.Tool.Name == name {
 			return d.Execute(args)
 		}
@@ -276,7 +288,8 @@ var readFile = Definition{
 			"required": ["path"]
 		}`),
 	},
-	Execute: executeReadFile,
+	// Execute is filled in by ReadOnly, which is where the record a read
+	// files what it showed in is known.
 }
 
 type readFileArgs struct {
@@ -285,7 +298,7 @@ type readFileArgs struct {
 	EndLine   int    `json:"end_line"`
 }
 
-func executeReadFile(raw json.RawMessage) (string, error) {
+func (r *Recorder) executeReadFile(raw json.RawMessage) (string, error) {
 	var args readFileArgs
 	if err := json.Unmarshal(raw, &args); err != nil {
 		return "", fmt.Errorf("invalid arguments: %w", err)
@@ -354,7 +367,7 @@ func executeReadFile(raw json.RawMessage) (string, error) {
 	// change from a clobber (seen.go). The fingerprint is of the whole file
 	// even for a windowed read — the question a mutation asks is whether the
 	// file moved, and a window is still a reading of the file it came from.
-	noteShown(args.Path, data, !windowed && !truncated)
+	r.noteShown(args.Path, data, !windowed && !truncated)
 
 	return content, nil
 }

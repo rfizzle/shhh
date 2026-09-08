@@ -114,6 +114,10 @@ func (f *fakeLoop) Close() error {
 type client struct {
 	t   *testing.T
 	enc *json.Encoder
+	// hangUp drops this client's connection, which is what a case that is
+	// about a session with nobody watching it needs and t.Cleanup is too
+	// late for.
+	hangUp func()
 
 	mu        sync.Mutex
 	next      int
@@ -134,11 +138,29 @@ func dial(t *testing.T, srv *Server) *client {
 	go func() { _ = srv.ServeConn(ctx, there, there) }()
 
 	c := &client{t: t, enc: json.NewEncoder(here),
+		hangUp:    func() { cancel(); _ = here.Close(); _ = there.Close() },
 		waiting:   map[int]chan response{},
 		events:    make(chan json.RawMessage, 64),
 		approvals: make(chan ApprovalParams, 8)}
 	go c.read(here)
 	return c
+}
+
+// waitClosed waits for the session behind loop to have been released, which
+// happens on a goroutine of the server's rather than in answer to anything
+// this client asked.
+func waitClosed(t *testing.T, loop *fakeLoop, why string) {
+	t.Helper()
+	for deadline := time.Now().Add(5 * time.Second); time.Now().Before(deadline); {
+		loop.mu.Lock()
+		closed := loop.closed
+		loop.mu.Unlock()
+		if closed {
+			return
+		}
+		time.Sleep(time.Millisecond)
+	}
+	t.Fatal(why)
 }
 
 // read files everything the server sends: an answer to a call this client
@@ -618,5 +640,241 @@ func TestServer_StopsOnASocketWithAClientStillConnected(t *testing.T) {
 		}
 	case <-time.After(10 * time.Second):
 		t.Fatal("the server did not stop while a client was connected")
+	}
+}
+
+// A client ends the session it opened, and what the session was assembled
+// over is released there rather than at the end of the process. An adapter
+// that opens a session per file is the reason: sixteen files open is sixteen
+// sets of language servers, subprocesses and claimed slots, and nothing else
+// gives one back.
+func TestServer_AClientEndsTheSessionItOpened(t *testing.T) {
+	loop := &fakeLoop{}
+	srv := newServerWith(loop)
+	defer srv.Close()
+	c := dial(t, srv)
+
+	var opened SessionResult
+	c.mustCall(MethodSessionStart, StartParams{}, &opened)
+	c.mustCall(MethodSessionEnd, SessionParams{Session: opened.Session}, nil)
+
+	loop.mu.Lock()
+	closed := loop.closed
+	loop.mu.Unlock()
+	if !closed {
+		t.Error("the session ended without releasing what it was assembled over")
+	}
+	// And the name stops answering, so a client cannot go on driving a
+	// session whose toolset has been taken away.
+	if _, rerr := c.call(MethodSessionResume, SessionParams{Session: opened.Session}); rerr == nil || rerr.Code != CodeUnknownSession {
+		t.Errorf("resuming an ended session was answered %v", rerr)
+	}
+}
+
+// Ending a session with a turn in it interrupts the turn and waits for it,
+// for the reason a teardown does: what a turn does as it ends is write its
+// record and save its conversation.
+func TestServer_EndingASessionWaitsForTheTurnItInterrupts(t *testing.T) {
+	loop := &fakeLoop{held: make(chan struct{})}
+	srv := newServerWith(loop)
+	defer srv.Close()
+	c := dial(t, srv)
+
+	var opened SessionResult
+	c.mustCall(MethodSessionStart, StartParams{}, &opened)
+	var turn TurnResult
+	c.mustCall(MethodTurnStart, TurnParams{Session: opened.Session, Prompt: "take your time"}, &turn)
+	// The turn has reached the middle of itself, which is the only place the
+	// end can cross it.
+	c.waitEvent("text")
+
+	c.mustCall(MethodSessionEnd, SessionParams{Session: opened.Session}, nil)
+
+	loop.mu.Lock()
+	defer loop.mu.Unlock()
+	if !loop.interrupted {
+		t.Error("the running turn was never told to stop")
+	}
+	if !loop.closed {
+		t.Error("the session ended without releasing its loop")
+	}
+	if loop.closedMidTurn {
+		t.Error("the loop was released while its turn was still running")
+	}
+}
+
+// A session nobody is left watching is reaped once the grace has run out.
+// A session outliving the connection that opened it is what lets a client
+// drop and come back; a session outliving every client there will ever be is
+// a toolset held open for the life of the process.
+func TestServer_AnUnwatchedSessionIsReapedAfterTheGrace(t *testing.T) {
+	loop := &fakeLoop{}
+	srv := newServerWith(loop)
+	srv.grace = 10 * time.Millisecond
+	defer srv.Close()
+	c := dial(t, srv)
+
+	var opened SessionResult
+	c.mustCall(MethodSessionStart, StartParams{}, &opened)
+	c.hangUp()
+
+	waitClosed(t, loop, "the session nobody was watching was never reaped")
+	if _, rerr := srv.session(opened.Session); rerr == nil {
+		t.Error("the reaped session still answers to its name")
+	}
+}
+
+// And a gap between two clients is not a session nobody is coming back to.
+// The grace is the whole difference between the two, so a client that
+// reconnects inside it finds the session it left.
+func TestServer_AClientBackInsideTheGraceFindsItsSession(t *testing.T) {
+	loop := &fakeLoop{}
+	srv := newServerWith(loop)
+	srv.grace = time.Second
+	defer srv.Close()
+
+	first := dial(t, srv)
+	var opened SessionResult
+	first.mustCall(MethodSessionStart, StartParams{}, &opened)
+	first.mustCall(MethodTurnStart, TurnParams{Session: opened.Session, Prompt: "the first question"}, &TurnResult{})
+	first.waitEvent("close")
+	first.hangUp()
+
+	second := dial(t, srv)
+	var joined SessionResult
+	second.mustCall(MethodSessionResume, SessionParams{Session: opened.Session}, &joined)
+	if joined.Session != opened.Session {
+		t.Fatalf("the second client joined %q instead of %q", joined.Session, opened.Session)
+	}
+	// Past the grace the first client's leaving started: the reap was called
+	// off rather than left to fire behind the client that arrived.
+	time.Sleep(srv.grace + srv.grace/2)
+	loop.mu.Lock()
+	closed := loop.closed
+	loop.mu.Unlock()
+	if closed {
+		t.Error("the session was reaped out from under the client that came back to it")
+	}
+	second.mustCall(MethodTurnStart, TurnParams{Session: opened.Session, Prompt: "the second question"}, &TurnResult{})
+	second.waitEvent("close")
+}
+
+// A turn is work nobody may pull the store and the toolset out from under, so
+// a client that walks away mid-turn leaves a session that is reaped when the
+// turn ends and not while it runs.
+func TestServer_ASessionIsNotReapedWhileItsTurnRuns(t *testing.T) {
+	loop := &fakeLoop{held: make(chan struct{})}
+	srv := newServerWith(loop)
+	srv.grace = 10 * time.Millisecond
+	defer srv.Close()
+	c := dial(t, srv)
+
+	var opened SessionResult
+	c.mustCall(MethodSessionStart, StartParams{}, &opened)
+	c.mustCall(MethodTurnStart, TurnParams{Session: opened.Session, Prompt: "take your time"}, &TurnResult{})
+	c.waitEvent("text")
+	c.hangUp()
+
+	time.Sleep(20 * srv.grace)
+	loop.mu.Lock()
+	closedEarly := loop.closed
+	loop.mu.Unlock()
+	if closedEarly {
+		t.Fatal("the session was reaped with a turn still running in it")
+	}
+	// The turn ends, and the grace starts where it ends.
+	loop.Interrupt()
+	waitClosed(t, loop, "the session was never reaped after its turn ended")
+	loop.mu.Lock()
+	defer loop.mu.Unlock()
+	if loop.closedMidTurn {
+		t.Error("the reap released the loop while its turn was still running")
+	}
+}
+
+// A session can end while it is still being assembled — the server stops, or
+// the grace runs out on the client that asked for it — and the teardown that
+// ran then had no loop to release. The loop that arrives afterwards holds
+// language servers and subprocesses like any other, so it is released where
+// it lands rather than left with nobody holding it.
+func TestServer_ALoopThatArrivesAfterItsSessionEndedIsReleased(t *testing.T) {
+	loop := &fakeLoop{}
+	assembling, finish := make(chan struct{}), make(chan struct{})
+	srv := NewServer(func(_ context.Context, _ StartParams, s Seams) (Loop, error) {
+		loop.seams = s
+		close(assembling)
+		<-finish
+		return loop, nil
+	})
+	c := dial(t, srv)
+
+	// The request is sent from a goroutine because the session is being
+	// opened for as long as this case says so, and nothing is answered until
+	// it is.
+	go func() {
+		id, _ := json.Marshal(1)
+		params, _ := json.Marshal(StartParams{})
+		_ = c.enc.Encode(request{JSONRPC: Version, ID: id, Method: MethodSessionStart, Params: params})
+	}()
+	<-assembling
+
+	srv.Close()
+	close(finish)
+
+	waitClosed(t, loop, "a loop assembled after its session ended was left running")
+}
+
+// The grace's timer fires whatever happened while it ran, so what it finds is
+// asked again — and asked in the same hold of the lock that marks the session
+// ended, or a client attaching between the question and the answer would have
+// its session torn down under it.
+func TestSession_AReapThatFindsAClientBackDoesNothing(t *testing.T) {
+	loop := &fakeLoop{}
+	srv := newServerWith(loop)
+	defer srv.Close()
+	sess, rerr := srv.newSession()
+	if rerr != nil {
+		t.Fatal(rerr)
+	}
+	sess.setLoop(loop)
+	sess.attach(&conn{})
+
+	sess.reapNow(sess.reapGen)
+
+	loop.mu.Lock()
+	defer loop.mu.Unlock()
+	if loop.closed {
+		t.Error("the session was reaped with a client watching it")
+	}
+}
+
+// And a timer from a grace that was called off has nothing to say about the
+// grace running now: a fired timer cannot be stopped, so a session that lost
+// a client, got one back and lost it again has two of them in the air.
+func TestSession_AReapFromAGraceThatWasCalledOffDoesNothing(t *testing.T) {
+	loop := &fakeLoop{}
+	srv := newServerWith(loop)
+	srv.grace = time.Hour
+	defer srv.Close()
+	sess, rerr := srv.newSession()
+	if rerr != nil {
+		t.Fatal(rerr)
+	}
+	sess.setLoop(loop)
+
+	sess.mu.Lock()
+	sess.armReap()
+	first := sess.reapGen
+	sess.mu.Unlock()
+	c := &conn{}
+	sess.attach(c) // the client is back, so that grace is off
+	sess.detach(c) // and gone again, which is a grace of its own
+
+	sess.reapNow(first)
+
+	loop.mu.Lock()
+	defer loop.mu.Unlock()
+	if loop.closed {
+		t.Error("a grace that was called off reaped the session anyway")
 	}
 }

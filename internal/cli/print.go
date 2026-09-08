@@ -1791,7 +1791,7 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist [
 			return red.Process(tc.Name, agent.ExecuteWith(structTools.Execute, tc))
 		}
 		if tools.IsMutating(tc.Name) {
-			mut, mutErr := tools.PreviewMutation(tc.Name, json.RawMessage(tc.Arguments))
+			mut, mutErr := un.seen.PreviewMutation(tc.Name, json.RawMessage(tc.Arguments))
 			edit := agent.Action{Kind: agent.ActionEdit}
 			if mutErr == nil {
 				edit.Path = mut.Path
@@ -1812,7 +1812,7 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist [
 				}
 			}
 			note(observe.DecisionAllow, reason)
-			result := agent.ExecuteWith(tools.ExecuteMutating, tc)
+			result := agent.ExecuteWith(un.seen.ExecuteMutating, tc)
 			if mutationHook != nil {
 				result = mutationHook(tc.Name, json.RawMessage(tc.Arguments), result)
 			}

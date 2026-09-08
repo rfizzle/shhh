@@ -335,7 +335,28 @@ A server has one working directory, which is the checkout it was started in.
 Sessions on it are several conversations over that one tree, and each is
 addressed by a name the server minted; a second client naming one is handed
 the conversation so far and joins the audience for the rest of it. Two clients
-on one session see one transcript, because there is one.
+on one session see one transcript, because there is one. Two *sessions* share
+the tree and nothing of each other's — including what each has been shown of
+that tree, so a file one session read and another rewrote is not evidence
+that the first one's picture of it is current
+([`approvals-and-safety.md`](approvals-and-safety.md#a-file-is-changed-from-what-was-read)).
+
+**A session ends, and a session nobody is watching ends itself.** A client
+that has finished with one says so, and what the session was assembled over —
+its language servers, its subprocesses, the conversation's slot in the store,
+whatever containment was built for it — is given back there rather than when
+the process eventually exits. A turn still running is interrupted and then
+waited for, because what a turn does as it ends is write its record and save
+its conversation, and a client is told the session is over only once it is.
+
+A client that simply disconnects gets the same thing on a delay. A session
+outliving the connection that opened it is the whole point — it is what lets a
+client drop and come back to work that carried on without it — so one with
+nobody left watching is kept for a short grace and torn down after it if
+nobody has come back. A client swapping connections, or an editor restarting
+its adapter, finds the session it left. And a turn running holds the session
+open whatever its clients are doing: the grace starts where the turn ends,
+because a turn is work nobody may pull the store out from under.
 
 ## A client answers one call at a time
 

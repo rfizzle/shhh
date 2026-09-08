@@ -564,6 +564,31 @@ func TestManager_PositionRefusesRatherThanGuesses(t *testing.T) {
 			t.Fatalf("a line number from a read the file has moved under should be refused as stale, got %v", err)
 		}
 	})
+	// And the guard is asked of the record the surface owns, where it has one
+	// of its own: a server holds several conversations over one checkout, and
+	// a reading another of them made says nothing about this one's line
+	// numbers.
+	t.Run("the record the surface owns is the one asked", func(t *testing.T) {
+		fake := &fakeLS{}
+		m, root := testManager(t, fake, Options{})
+		own := tools.NewRecorder()
+		m.UseReadRecord(own)
+		path := writeWorkspaceFile(t, root, "main.go", "package main\nvar count int\n")
+		args, _ := json.Marshal(map[string]any{"path": path})
+		if _, err := own.Execute(tools.ReadFileName, args); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := m.References(path, 2, "count"); err != nil {
+			t.Fatalf("the file is as this surface was shown it: %v", err)
+		}
+		writeWorkspaceFile(t, root, "main.go", "package main\n\n\nvar count int\n")
+
+		_, err := m.References(path, 2, "count")
+		var stale tools.StaleError
+		if !errors.As(err, &stale) {
+			t.Fatalf("the surface's own reading has moved under it, got %v", err)
+		}
+	})
 	// The symbol as the model spelled it decides where a boundary is needed:
 	// text that ends in punctuation is matched as written.
 	t.Run("punctuation needs no boundary", func(t *testing.T) {

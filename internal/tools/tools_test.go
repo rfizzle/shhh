@@ -492,7 +492,7 @@ func TestReadFile_BinaryIsANoticeNamingWhatItIs(t *testing.T) {
 	if !strings.Contains(result, "application/octet-stream") {
 		t.Errorf("the notice should name the detected type, got: %q", result)
 	}
-	if _, ok := lookupSeen(path); ok {
+	if _, ok := shared.lookupSeen(path); ok {
 		t.Error("a file that was never shown must not be recorded as read")
 	}
 }

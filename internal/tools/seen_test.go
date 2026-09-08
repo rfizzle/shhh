@@ -291,7 +291,7 @@ func TestSeenChangedIgnoresATouchThatKeptTheContent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if rec, ok := lookupSeen(path); !ok || !rec.mod.Equal(info.ModTime()) {
+	if rec, ok := shared.lookupSeen(path); !ok || !rec.mod.Equal(info.ModTime()) {
 		t.Fatalf("the record should have taken the new time: %+v", rec)
 	}
 	if got := SeenChanged(); len(got) != 0 {
@@ -390,5 +390,62 @@ func TestNoteRestoredReadsRecordsEveryAnsweredRead(t *testing.T) {
 		if err := edit(path); err != nil {
 			t.Errorf("%s should not be refused: %v", name, err)
 		}
+	}
+}
+
+// Two conversations in one process, over one checkout, which is what a server
+// serving several sessions is. Each holds its own record, so the second one's
+// write does not become evidence that the first one's picture of the file is
+// current — which, on one shared record, is how the first one's overwrite
+// silently discarded the second one's work.
+func TestTwoOwnersDoNotShareOneRecordOfWhatTheyWereShown(t *testing.T) {
+	path := seed(t, t.TempDir(), "shared.go", "the original\n")
+	first, second := NewRecorder(), NewRecorder()
+	for _, r := range []*Recorder{first, second} {
+		args, _ := json.Marshal(readFileArgs{Path: path})
+		if _, err := r.Execute(ReadFileName, args); err != nil {
+			t.Fatalf("read %s: %v", path, err)
+		}
+	}
+
+	if _, err := second.ExecuteMutating(WriteFileName, writeArgs(t, path, "the second session's work\n")); err != nil {
+		t.Fatalf("the second session read the file and may replace it: %v", err)
+	}
+
+	_, err := first.ExecuteMutating(WriteFileName, writeArgs(t, path, "the first session's work\n"))
+	var stale StaleError
+	if !errors.As(err, &stale) {
+		t.Fatalf("the first session is writing over content it was never shown: %v", err)
+	}
+	if data, _ := os.ReadFile(path); string(data) != "the second session's work\n" {
+		t.Errorf("the other session's work must still be there, got %q", data)
+	}
+	// And neither of them wrote anything into the process's own record, which
+	// is what every surface that names no owner is still reading.
+	if _, ok := shared.lookupSeen(path); ok {
+		t.Error("an owner's reading was filed in the process-wide record as well")
+	}
+}
+
+// Forgetting is scoped the same way: one owner's conversation giving way to
+// another says nothing about what a second owner has been shown.
+func TestForgetAllTakesBackOnlyTheOwnersOwnRecord(t *testing.T) {
+	path := seed(t, t.TempDir(), "config.yaml", "port: 8080\n")
+	first, second := NewRecorder(), NewRecorder()
+	for _, r := range []*Recorder{first, second} {
+		args, _ := json.Marshal(readFileArgs{Path: path})
+		if _, err := r.Execute(ReadFileName, args); err != nil {
+			t.Fatalf("read %s: %v", path, err)
+		}
+	}
+
+	first.ForgetAll()
+
+	if _, err := first.PreviewMutation(WriteFileName, writeArgs(t, path, "port: 9090\n")); err == nil ||
+		!strings.Contains(err.Error(), "read_file") {
+		t.Errorf("the owner that forgot has read nothing: %v", err)
+	}
+	if _, err := second.PreviewMutation(WriteFileName, writeArgs(t, path, "port: 9090\n")); err != nil {
+		t.Errorf("the other owner's record is not the one that was dropped: %v", err)
 	}
 }

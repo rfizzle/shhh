@@ -76,8 +76,8 @@ func newServeCmd() *cobra.Command {
 		Use:   "serve",
 		Short: "Serve the coding agent over JSON-RPC for another client to drive",
 		Long: "Speak JSON-RPC over stdio or a unix socket so a client that is not shhh's own terminal " +
-			"can open a session, run a turn, answer its approvals and read the same events " +
-			"`shhh code -p --output jsonl` prints. One JSON object per line, in both directions.",
+			"can open a session, run a turn, answer its approvals, end the session and read the same " +
+			"events `shhh code -p --output jsonl` prints. One JSON object per line, in both directions.",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			opts.maxRoundsSet = cmd.Flags().Changed("max-rounds")
@@ -185,6 +185,19 @@ type serveLoop struct {
 	// built per turn because what a reading is judged against is that turn's
 	// instruction, and a session has one per turn.
 	summarizer *agent.Summarizer
+	// seen is what this session has been shown, which is what its writes are
+	// checked against. It is the session's and not the process's: a server
+	// holds several sessions over one checkout, and a file one of them read
+	// and another then rewrote would otherwise be recorded as freshly shown
+	// to the first — whose full overwrite would match, and silently discard
+	// the other's work. A child this session spawns is not covered by it: a
+	// child dispatches its calls through an executor of its own, which is on
+	// the process-wide record — so a file only a child has read is one this
+	// session has not been shown, and its own full overwrite of that file is
+	// refused until it reads it. A writer child works in a worktree of its
+	// own and its paths are not these anyway.
+	// See docs/capabilities/approvals-and-safety.md#a-file-is-changed-from-what-was-read.
+	seen *tools.Recorder
 	// own is the paths this session's calls have written, where a session on
 	// a screen hands in its changeset. It is the session's rather than the
 	// turn's — a client asks a second question of a workspace its first
@@ -293,7 +306,15 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	// because the git stager may stage nothing else.
 	own := &writtenByCalls{}
 	l.own = own
-	ts, err := buildToolset(cmd, &session, "serve", toolsetOpts{scope: sc, resident: true, gitWrites: headlessWrites(session, own)})
+	l.seen = tools.NewRecorder()
+	if session.lsp != nil {
+		// The language server's own staleness guard asks the same record a
+		// write asks: a line number is a coordinate in the file as it was
+		// read, and read from the process-wide record the guard would be
+		// answering about what another session was shown.
+		session.lsp.UseReadRecord(l.seen)
+	}
+	ts, err := buildToolset(cmd, &session, "serve", toolsetOpts{scope: sc, resident: true, seen: l.seen, gitWrites: headlessWrites(session, own)})
 	if err != nil {
 		return nil, err
 	}
@@ -388,6 +409,15 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	if err != nil {
 		return nil, err
 	}
+	// What the conversation this session begins from says it read, recorded
+	// as read-with-unknown-content. A fork's parent read those files into a
+	// record of its own and a resumed conversation read them in a process
+	// that has since exited, so this session holds none of them: without
+	// this, an edit quoting a snippet from a reading nobody here made would
+	// go through on that quote alone. Refused once and re-read instead, which
+	// is the answer every other door gives a conversation that comes back.
+	// See docs/capabilities/approvals-and-safety.md#a-file-is-changed-from-what-was-read.
+	l.seen.NoteRestoredReads(messages)
 	l.saved = saved
 	l.closers = append(l.closers, func() {
 		if db != nil && saved != nil {
@@ -475,7 +505,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	allowed := headlessApprover(cmd.Context(), printOpts{yes: true}, cfg.Behavior.CommandAllowlist,
 		cfg.Behavior.CommandDenylist, run, containment.Refusal, red, answeredByClient(record),
 		session.web, procSup, chainMutation(lspMutationHook(session.lsp), hookPostMutation(hooks)), sc, session.mcpTools, session.structural,
-		unattended{sup: sup, at: l.obs.pos})
+		unattended{sup: sup, at: l.obs.pos, seen: l.seen})
 	// And the approver of a server told there is nobody to ask: the same
 	// standing refusals in front, the classifier where the client would have
 	// been, and a refusal wherever it cannot approve.
@@ -484,7 +514,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		judged = headlessApprover(cmd.Context(), printOpts{}, cfg.Behavior.CommandAllowlist,
 			cfg.Behavior.CommandDenylist, run, containment.Refusal, red, record,
 			session.web, procSup, chainMutation(lspMutationHook(session.lsp), hookPostMutation(hooks)), sc, session.mcpTools, session.structural,
-			unattended{sup: sup, at: l.obs.pos,
+			unattended{sup: sup, at: l.obs.pos, seen: l.seen,
 				judge: &autoJudge{ctx: cmd.Context(), classifier: classifier, recent: a.Messages, cwd: hookCwd}})
 	}
 	// A supervisor blocks on its event channel, so a session that spawned a
@@ -512,6 +542,11 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	resolveCall = own.wrap(resolveCall)
 	resolveCall = hookApprover(hooks, l.hookPos, hookNoteLine, record, resolveCall)
 	if c := headlessTree(cfg, session.sibling, own); c != nil {
+		// The boundary re-check asks the same question the write asks, so it
+		// has to ask it of the same record: read from the process-wide one it
+		// would name every file some other session had been shown and none of
+		// this session's own.
+		c.ReadChanged = l.seen.SeenChanged
 		a.SetTreeCheck(*c)
 	}
 

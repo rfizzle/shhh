@@ -33,6 +33,10 @@ const (
 	// MethodSessionFork opens a session whose conversation begins as a copy
 	// of another's: the same history, a separate future.
 	MethodSessionFork = "session/fork"
+	// MethodSessionEnd ends a session and releases what it was assembled
+	// over. A turn still running is interrupted and waited for, so the client
+	// is told the session is over only once it is.
+	MethodSessionEnd = "session/end"
 
 	// MethodTurnStart puts one prompt to a session and returns as soon as
 	// the turn is under way. How it ends arrives on the event stream, because

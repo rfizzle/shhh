@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/tools"
 )
 
 // The six questions a language server is asked. All of them are read-only
@@ -29,6 +30,10 @@ type Toolset struct {
 
 // NewToolset wraps a manager for tool registration.
 func NewToolset(mgr *Manager) *Toolset { return &Toolset{Manager: mgr} }
+
+// UseReadRecord hands the manager the read record its position guard is asked
+// of (manager.go).
+func (t *Toolset) UseReadRecord(r *tools.Recorder) { t.Manager.UseReadRecord(r) }
 
 // Definitions returns the provider tool definitions to register.
 func (t *Toolset) Definitions() []provider.Tool {

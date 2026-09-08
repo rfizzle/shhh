@@ -10,6 +10,7 @@ import (
 	"net"
 	"strings"
 	"sync"
+	"time"
 )
 
 // Call is one approval-gated tool call as it is put to a client: what the
@@ -75,6 +76,10 @@ type Opener func(ctx context.Context, p StartParams, s Seams) (Loop, error)
 // it.
 type Server struct {
 	open Opener
+	// grace is how long a session with nobody watching is left alone before
+	// it is reaped, and is the server's rather than a constant so a test can
+	// take it down to something it can wait out.
+	grace time.Duration
 
 	mu       sync.Mutex
 	sessions map[string]*Session
@@ -82,15 +87,33 @@ type Server struct {
 	closed   bool
 }
 
+// reapGrace is the gap between the last client leaving a session and the
+// session being torn down.
+//
+// A session is not the connection that opened it — that is what lets a client
+// drop and come back to work that carried on without it — but a session
+// nobody is watching and nothing is running in holds language servers, MCP
+// subprocesses, a store slot and whatever containment the assembly built, for
+// as long as the process lives. So the two readings are reconciled by a
+// clock: long enough that a client swapping connections, or an editor
+// restarting its adapter, comes back to the session it left; short enough
+// that a client that has genuinely gone does not hold a toolset open for the
+// life of the server.
+const reapGrace = 30 * time.Second
+
 // NewServer answers a server that opens its sessions with open.
 func NewServer(open Opener) *Server {
-	return &Server{open: open, sessions: map[string]*Session{}}
+	return &Server{open: open, grace: reapGrace, sessions: map[string]*Session{}}
 }
 
 // Session is one conversation and everything attached to it: the loop, the
 // clients watching, and the approval requests waiting for one of them.
 type Session struct {
 	id string
+	// srv is the server this session is filed on, so a session that reaps
+	// itself is taken off it rather than left behind under its name.
+	srv   *Server
+	grace time.Duration
 
 	mu      sync.Mutex
 	loop    Loop
@@ -99,22 +122,46 @@ type Session struct {
 	asked   int
 	turn    int64
 	running bool
+	// reap is the timer running down the grace an unwatched session is given
+	// and reapGen which grace it belongs to; ended says this session is over
+	// — set before the teardown rather than after it, so a client attaching
+	// in the moment between is told the session has gone instead of being
+	// handed a loop that is being closed.
+	reap    *time.Timer
+	reapGen int
+	ended   bool
 	// gone is closed when the session is torn down, so an approval waiting
 	// for an answer that is never coming stops waiting. The Once is because
 	// a session can be torn down by the open that failed to fill it and by
 	// the server shutting down, and either may be first.
 	gone     chan struct{}
 	goneOnce sync.Once
+	// done is closed when the teardown has finished, which is what a second
+	// caller of end waits on.
+	done chan struct{}
 	// turns counts the turn goroutine, so a session being torn down can wait
 	// for it rather than closing the loop out from under it.
 	turns sync.WaitGroup
 }
 
-// setLoop fills in the session's agent once the assembly has answered.
-func (s *Session) setLoop(l Loop) {
+// setLoop fills in the session's agent once the assembly has answered, and
+// reports whether the session was still there to take it.
+//
+// A session can end while it is being assembled — the client that asked for
+// it hangs up, the grace runs out, the server stops — and the teardown that
+// ran then had no loop to release. So a loop arriving after that is closed
+// here instead: it holds language servers and subprocesses like any other,
+// and nothing else is ever going to hold it.
+func (s *Session) setLoop(l Loop) bool {
 	s.mu.Lock()
+	if s.ended {
+		s.mu.Unlock()
+		_ = l.Close()
+		return false
+	}
 	s.loop = l
 	s.mu.Unlock()
+	return true
 }
 
 // driver is the session's loop, or the failure a client gets for naming a
@@ -125,6 +172,9 @@ func (s *Session) setLoop(l Loop) {
 func (s *Session) driver() (Loop, *Error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if s.ended {
+		return nil, errorf(CodeUnknownSession, "session %s has ended", s.id)
+	}
 	if s.loop == nil {
 		return nil, errorf(CodeUnknownSession, "session %s is still opening", s.id)
 	}
@@ -135,10 +185,48 @@ func (s *Session) driver() (Loop, *Error) {
 // turn stops at its next checkpoint, and what the loop was assembled over is
 // released.
 func (s *Session) end() {
+	loop, first, ok := s.markEnded(nil)
+	if !ok {
+		return
+	}
+	s.tearDown(loop, first)
+}
+
+// markEnded is the step from running to ended, taken under one hold of the
+// lock together with whatever condition decided it. That is what the
+// condition is a closure for: a reap that read "nobody is watching", released
+// the lock and only then marked the session would be tearing it down under a
+// client that attached in between.
+//
+// ok is false where the condition said no. first says this caller is the one
+// that has to do the releasing, which tearDown holds it to.
+func (s *Session) markEnded(when func() bool) (Loop, bool, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if when != nil && !when() {
+		return nil, false, false
+	}
+	loop, first := s.loop, !s.ended
+	s.ended = true
+	s.stopReap()
+	return loop, first, true
+}
+
+// tearDown releases what the loop was assembled over, once.
+func (s *Session) tearDown(loop Loop, first bool) {
 	// Closing gone first is what stops an approval waiting for a client, so
 	// a turn parked on a decision reaches its next checkpoint at all.
 	s.goneOnce.Do(func() { close(s.gone) })
-	loop, _ := s.driver()
+	// A session can be ended by a client, by the reap and by the server
+	// shutting down, and any two of those can arrive at once. The second
+	// caller waits on the first rather than returning ahead of it: a client
+	// told its session is over while a teardown is still waiting for the turn
+	// would have been told the wrong thing.
+	if !first {
+		<-s.done
+		return
+	}
+	defer close(s.done)
 	if loop == nil {
 		return
 	}
@@ -236,9 +324,12 @@ func (s *Server) newSession() (*Session, *Error) {
 	s.next++
 	sess := &Session{
 		id:      fmt.Sprintf("s%d", s.next),
+		srv:     s,
+		grace:   s.grace,
 		conns:   map[*conn]struct{}{},
 		pending: map[string]chan bool{},
 		gone:    make(chan struct{}),
+		done:    make(chan struct{}),
 	}
 	s.sessions[sess.id] = sess
 	return sess, nil
@@ -261,11 +352,67 @@ func (s *Session) seams() Seams {
 	return Seams{Emit: s.emit, Ask: s.ask}
 }
 
-// attach adds a connection to the ones watching this session.
+// attach adds a connection to the ones watching this session, and calls off
+// the reap if one was running down: a client arriving inside the grace is the
+// gap between two connections the grace exists for.
 func (s *Session) attach(c *conn) {
 	s.mu.Lock()
 	s.conns[c] = struct{}{}
+	s.stopReap()
 	s.mu.Unlock()
+}
+
+// armReap starts the grace where this session has nobody watching it and
+// nothing running in it, and does nothing otherwise. The caller holds the
+// lock.
+func (s *Session) armReap() {
+	// A grace of none is a server that does not reap at all, which is what a
+	// Server built without NewServer gets.
+	if s.reap != nil || s.ended || s.srv == nil || s.grace <= 0 {
+		return
+	}
+	if len(s.conns) > 0 || s.running {
+		return
+	}
+	// The generation is what tells a timer that has already fired from the
+	// one running now. A fired timer cannot be stopped, so a session that
+	// lost a client, got one back and lost it again has two of them in the
+	// air, and only the newest may act — the older one would reap at the
+	// moment of the second leaving rather than a grace after it.
+	s.reapGen++
+	gen := s.reapGen
+	s.reap = time.AfterFunc(s.grace, func() { s.reapNow(gen) })
+}
+
+// stopReap calls off a grace that is running down, including one whose timer
+// has fired and is waiting for this lock. The caller holds the lock.
+func (s *Session) stopReap() {
+	if s.reap != nil {
+		s.reap.Stop()
+		s.reap = nil
+	}
+	s.reapGen++
+}
+
+// reapNow ends a session the grace ran out on, and does nothing where a
+// client came back or a turn started inside it — the timer fires whatever
+// happened while it ran, so the condition it was armed on is asked again
+// here, in the same hold of the lock that marks the session ended.
+func (s *Session) reapNow(gen int) {
+	loop, first, ok := s.markEnded(func() bool {
+		if s.reapGen != gen {
+			return false
+		}
+		s.reap = nil
+		return len(s.conns) == 0 && !s.running
+	})
+	if !ok {
+		return
+	}
+	// The name comes off the server before the teardown, as it does for a
+	// session a client ended.
+	s.srv.forget(s)
+	s.tearDown(loop, first)
 }
 
 // detach removes one, and answers every approval still waiting if it was the
@@ -282,6 +429,9 @@ func (s *Session) detach(c *conn) {
 			delete(s.pending, id)
 		}
 	}
+	// And a session nobody is left watching is one nobody is coming back to,
+	// unless somebody does inside the grace.
+	s.armReap()
 	s.mu.Unlock()
 	for _, ch := range orphaned {
 		ch <- false
@@ -373,6 +523,10 @@ func (s *Session) answer(id, decision string) *Error {
 // return from this call first could do none of those to the turn it started.
 func (s *Session) start(prompt string) (int64, *Error) {
 	s.mu.Lock()
+	if s.ended {
+		s.mu.Unlock()
+		return 0, errorf(CodeUnknownSession, "session %s has ended", s.id)
+	}
 	if s.loop == nil {
 		s.mu.Unlock()
 		return 0, errorf(CodeUnknownSession, "session %s is still opening", s.id)
@@ -384,6 +538,9 @@ func (s *Session) start(prompt string) (int64, *Error) {
 	s.running = true
 	s.turn++
 	turn, loop := s.turn, s.loop
+	// A turn is work nobody may pull the store and the toolset out from
+	// under, so the grace stops running down for as long as one is.
+	s.stopReap()
 	s.turns.Add(1)
 	s.mu.Unlock()
 
@@ -392,6 +549,11 @@ func (s *Session) start(prompt string) (int64, *Error) {
 		defer func() {
 			s.mu.Lock()
 			s.running = false
+			// A client that walked away mid-turn left a session that could
+			// not be reaped at the time: the turn was still running and its
+			// work is exactly what an interrupt would have cost. It can be
+			// now, so the grace starts where the turn ends.
+			s.armReap()
 			s.mu.Unlock()
 		}()
 		// What the turn answered and how it ended both reached the clients
@@ -531,8 +693,13 @@ func (c *conn) write(v any) {
 //
 // Every request is handled here rather than on a goroutine each, so the
 // answers a client gets are in the order it asked. Nothing handled here
-// blocks: a turn runs elsewhere, and an approval is answered by a call that
-// only hands a channel a value.
+// blocks, with one exception: a turn runs elsewhere and an approval is
+// answered by a call that only hands a channel a value, while ending a
+// session waits for the turn it interrupted (sessionEnd). That wait is
+// bounded by the loop's own checkpoints and cannot be held up by an approval
+// nobody is left to answer, but it is this connection's other sessions that
+// are waiting with it — which is the price of an answer that means the
+// session is over rather than that it soon will be.
 func (c *conn) read(ctx context.Context, r io.Reader) error {
 	br := bufio.NewReader(r)
 	for {
@@ -588,6 +755,8 @@ func (c *conn) dispatch(ctx context.Context, req request) (any, *Error) {
 		return c.sessionResume(req.Params)
 	case MethodSessionFork:
 		return c.sessionFork(req.Params)
+	case MethodSessionEnd:
+		return c.sessionEnd(req.Params)
 	case MethodTurnStart:
 		return c.turnStart(req.Params)
 	case MethodTurnSteer:
@@ -635,7 +804,9 @@ func (c *conn) sessionStart(ctx context.Context, raw json.RawMessage) (any, *Err
 		c.srv.drop(sess)
 		return nil, errorf(CodeInternal, "%v", err)
 	}
-	sess.setLoop(loop)
+	if !sess.setLoop(loop) {
+		return nil, errorf(CodeUnknownSession, "session %s ended while it was opening", sess.id)
+	}
 	return SessionResult{Session: sess.id, Transcript: loop.Transcript()}, nil
 }
 
@@ -679,8 +850,33 @@ func (c *conn) sessionFork(raw json.RawMessage) (any, *Error) {
 		c.srv.drop(sess)
 		return nil, errorf(CodeInternal, "%v", err)
 	}
-	sess.setLoop(loop)
+	if !sess.setLoop(loop) {
+		return nil, errorf(CodeUnknownSession, "session %s ended while it was opening", sess.id)
+	}
 	return SessionResult{Session: sess.id, Transcript: loop.Transcript()}, nil
+}
+
+// sessionEnd ends a session on a client's say-so, which is how an adapter
+// that opens one per file gives back the language servers, subprocesses and
+// claimed slots of the one it has finished with.
+//
+// It is the one request here that waits: a turn is interrupted and then
+// waited for, because what a turn does as it ends is write its record and
+// save its conversation, and answering before that has happened would tell a
+// client the session was over while it was still writing. The wait is bounded
+// by the loop's own checkpoints and cannot be held up by an approval, since
+// the teardown stops those waiting before it asks the turn to stop.
+func (c *conn) sessionEnd(raw json.RawMessage) (any, *Error) {
+	p, rerr := decode[SessionParams](raw)
+	if rerr != nil {
+		return nil, rerr
+	}
+	sess, rerr := c.srv.session(p.Session)
+	if rerr != nil {
+		return nil, rerr
+	}
+	c.srv.endSession(sess)
+	return struct{}{}, nil
 }
 
 func (c *conn) turnStart(raw json.RawMessage) (any, *Error) {
@@ -766,8 +962,21 @@ func (c *conn) approvalAnswer(raw json.RawMessage) (any, *Error) {
 // drop forgets a session that never got a loop, so a failed open leaves no
 // name behind for a client to attach to.
 func (s *Server) drop(sess *Session) {
+	s.forget(sess)
+	sess.goneOnce.Do(func() { close(sess.gone) })
+}
+
+// endSession takes a session off the server and tears it down. The order is
+// what stops a client attaching to a session that is going away: the name
+// stops answering first, and what the session was assembled over is released
+// after.
+func (s *Server) endSession(sess *Session) {
+	s.forget(sess)
+	sess.end()
+}
+
+func (s *Server) forget(sess *Session) {
 	s.mu.Lock()
 	delete(s.sessions, sess.id)
 	s.mu.Unlock()
-	sess.goneOnce.Do(func() { close(sess.gone) })
 }

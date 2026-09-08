@@ -55,7 +55,7 @@ func TestReadFile_LineCapTruncation(t *testing.T) {
 	}
 	must(t, os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0o644))
 
-	out, err := executeReadFile(json.RawMessage(fmt.Sprintf(`{"path": %q}`, path)))
+	out, err := shared.executeReadFile(json.RawMessage(fmt.Sprintf(`{"path": %q}`, path)))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -83,7 +83,7 @@ func TestReadFile_ByteCapTruncation(t *testing.T) {
 	}
 	must(t, os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0o644))
 
-	out, err := executeReadFile(json.RawMessage(fmt.Sprintf(`{"path": %q}`, path)))
+	out, err := shared.executeReadFile(json.RawMessage(fmt.Sprintf(`{"path": %q}`, path)))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -108,7 +108,7 @@ func TestReadFile_RangeStillCapped(t *testing.T) {
 	}
 	must(t, os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0o644))
 
-	out, err := executeReadFile(json.RawMessage(fmt.Sprintf(`{"path": %q, "start_line": 100}`, path)))
+	out, err := shared.executeReadFile(json.RawMessage(fmt.Sprintf(`{"path": %q, "start_line": 100}`, path)))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -123,7 +123,7 @@ func TestReadFile_EndBeforeStart(t *testing.T) {
 	path := filepath.Join(tmp, "test.txt")
 	must(t, os.WriteFile(path, []byte("a\nb\nc\n"), 0o644))
 
-	_, err := executeReadFile(json.RawMessage(fmt.Sprintf(`{"path": %q, "start_line": 3, "end_line": 1}`, path)))
+	_, err := shared.executeReadFile(json.RawMessage(fmt.Sprintf(`{"path": %q, "start_line": 3, "end_line": 1}`, path)))
 	if err == nil {
 		t.Fatal("expected error when end_line is before start_line")
 	}

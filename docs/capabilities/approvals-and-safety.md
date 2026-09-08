@@ -288,6 +288,16 @@ hashed. A rewrite landing in the same second at the same length slips past
 that prefilter and is still refused at the change, which hashes
 unconditionally.
 
+**The record belongs to a conversation, not to the machine.** One session at
+a terminal, or one unattended run, is the only conversation in its process and
+has the whole of it. A server holding several sessions over one checkout does
+not: a file one session read and a second session then rewrote would be
+recorded as freshly shown, so the first session's full overwrite would be
+checked against the second session's content, match, and silently discard its
+work — which is the one thing the record exists to refuse. So each served
+session has a record of its own, and what it may overwrite is decided by what
+*it* was shown.
+
 **A conversation that comes back does not come back with its reading.** The
 transcript says which files were read; nothing on the machine says what they
 held, and they have had however long the conversation was closed to move. So
@@ -295,10 +305,11 @@ reopening one records each of those files as read-with-unknown-content: the
 first change to one is refused and costs a round, against an edit applied to a
 picture nobody can vouch for. A file the transcript never read keeps the
 ordinary rule, because a quoted snippet is its own evidence. This is what
-reopening means at either door — a session resumed from the command line and a
-saved conversation loaded over the one on screen. Loading empties the record
-first, because what the conversation being replaced was shown is no evidence
-about the one arriving. Starting a new conversation empties it and stops
+reopening means at every door — a session resumed from the command line, a
+saved conversation loaded over the one on screen, and a served session that
+begins from a conversation somebody else read, a fork's parent included.
+Loading empties the record first, because what the conversation being
+replaced was shown is no evidence about the one arriving. Starting a new conversation empties it and stops
 there: a conversation that has said nothing yet has read nothing.
 
 **A branch switch empties it too, and says so.** Switching rewrites every

@@ -70,14 +70,65 @@ type seenFile struct {
 // file held, so nothing can be said about whether that changed.
 func (f seenFile) unknown() bool { return f.sum == "" }
 
-// The record is process-wide because the files are. A session, its sub-agents
-// and its background work all run here, and a writer in a worktree is keyed
-// on its own path anyway — so one map, and a mutex because a round dispatches
-// its read-only calls concurrently.
-var (
-	seenMu sync.Mutex
-	seen   = map[string]seenFile{}
-)
+// Recorder is one owner's record: the files that owner has been shown, and
+// the answers about staleness that follow from them.
+//
+// It has an owner because a record is evidence about one conversation. The
+// record used to be the process's, on the reading that the files are the
+// process's too — one session, its sub-agents and its background work all
+// reading one tree. A server serving several sessions over that tree breaks
+// it: a file one session read and a second session then rewrote is recorded
+// as freshly shown, so the first session's full overwrite is checked against
+// the second session's content, matches, and silently discards its work —
+// which is the one thing the record exists to refuse.
+//
+// The mutex is because a round dispatches its read-only calls concurrently.
+type Recorder struct {
+	mu   sync.Mutex
+	seen map[string]seenFile
+}
+
+// NewRecorder opens a record of its own, for an owner that does not share one
+// with the rest of the process.
+func NewRecorder() *Recorder { return &Recorder{} }
+
+// shared is the process's own record, which is what every surface that does
+// not name one gets: a session at a terminal and an unattended run are each
+// the only conversation in their process, so there is nothing for them to
+// share it with.
+var shared = &Recorder{}
+
+// records is the record a call is about. A nil *Recorder is the process-wide
+// one, so a caller that has no owner to name passes nothing and a caller that
+// has one passes it, and neither has to say which case it is in.
+func (r *Recorder) records() *Recorder {
+	if r == nil {
+		return shared
+	}
+	return r
+}
+
+// file is what is on record for one key, and record is what puts it there.
+// Every other method here goes through the two of them, so the nil reading
+// and the lock are in one place each; the map is made on the first write
+// rather than at construction, which is what makes the zero Recorder work.
+func (r *Recorder) file(key string) (seenFile, bool) {
+	r = r.records()
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	rec, ok := r.seen[key]
+	return rec, ok
+}
+
+func (r *Recorder) record(key string, rec seenFile) {
+	r = r.records()
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.seen == nil {
+		r.seen = map[string]seenFile{}
+	}
+	r.seen[key] = rec
+}
 
 // seenKey is the path a record is filed under. Symlinks are followed so the
 // same file reached two ways is one record; a path that cannot be resolved is
@@ -107,30 +158,26 @@ func fingerprint(content []byte) string {
 // re-check rules the file out until it moves again. That is the same window
 // as a same-second same-length rewrite, and it ends the same way: checkSeen
 // hashes unconditionally, so no mutation gets through on it.
-func noteShown(path string, content []byte, whole bool) {
+func (r *Recorder) noteShown(path string, content []byte, whole bool) {
 	key := seenKey(path)
 	rec := seenFile{sum: fingerprint(content), size: int64(len(content)), whole: whole}
 	if info, err := os.Stat(key); err == nil {
 		rec.mod = info.ModTime()
 	}
-	seenMu.Lock()
-	defer seenMu.Unlock()
-	seen[key] = rec
+	r.record(key, rec)
 }
 
 // forget drops a file's record, for a path whose content is no longer
 // knowable — the one case being a write that failed partway.
-func forget(path string) {
-	seenMu.Lock()
-	defer seenMu.Unlock()
-	delete(seen, seenKey(path))
+func (r *Recorder) forget(path string) {
+	r = r.records()
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	delete(r.seen, seenKey(path))
 }
 
-func lookupSeen(path string) (seenFile, bool) {
-	seenMu.Lock()
-	defer seenMu.Unlock()
-	rec, ok := seen[seenKey(path)]
-	return rec, ok
+func (r *Recorder) lookupSeen(path string) (seenFile, bool) {
+	return r.file(seenKey(path))
 }
 
 // StaleError is the refusal for a file that changed between the read that
@@ -179,8 +226,11 @@ func (e StaleError) Skipped(display string) string {
 // the worst because being wrong costs somebody's work; refusing every
 // navigation call in a resumed session costs a re-read of every file it had
 // read, to answer a question that is usually still exactly right.
-func StaleSinceRead(path string, current []byte) error {
-	rec, ok := lookupSeen(path)
+func StaleSinceRead(path string, current []byte) error { return shared.StaleSinceRead(path, current) }
+
+// StaleSinceRead asked of one owner's record.
+func (r *Recorder) StaleSinceRead(path string, current []byte) error {
+	rec, ok := r.lookupSeen(path)
 	if !ok || rec.unknown() {
 		return nil
 	}
@@ -211,11 +261,11 @@ func StaleSinceRead(path string, current []byte) error {
 // about what it contained — so that one has to have looked, and to have
 // looked at all of it. Replacing a file from a windowed read is writing over
 // the part that was never seen.
-func checkSeen(path string, current []byte, existed, replacing bool) error {
+func (r *Recorder) checkSeen(path string, current []byte, existed, replacing bool) error {
 	if !existed {
 		return nil
 	}
-	rec, ok := lookupSeen(path)
+	rec, ok := r.lookupSeen(path)
 	if !ok {
 		if !replacing {
 			return nil
@@ -244,10 +294,11 @@ func checkSeen(path string, current []byte, existed, replacing bool) error {
 // at all and keeps the ordinary rule, because a quoted snippet is its own
 // evidence.
 // See docs/capabilities/approvals-and-safety.md#a-file-is-changed-from-what-was-read.
-func NoteUnknown(path string) {
-	seenMu.Lock()
-	defer seenMu.Unlock()
-	seen[seenKey(path)] = seenFile{}
+func NoteUnknown(path string) { shared.NoteUnknown(path) }
+
+// NoteUnknown filed in one owner's record.
+func (r *Recorder) NoteUnknown(path string) {
+	r.record(seenKey(path), seenFile{})
 }
 
 // NoteRestoredReads records every file a conversation taken back out of the
@@ -268,7 +319,10 @@ func NoteUnknown(path string) {
 // directory — a conversation restored somewhere else is describing another
 // checkout, and a record filed there is one nothing will ask about.
 // See docs/capabilities/approvals-and-safety.md#a-file-is-changed-from-what-was-read.
-func NoteRestoredReads(msgs []provider.Message) {
+func NoteRestoredReads(msgs []provider.Message) { shared.NoteRestoredReads(msgs) }
+
+// NoteRestoredReads filed in one owner's record.
+func (r *Recorder) NoteRestoredReads(msgs []provider.Message) {
 	answered := map[string]bool{}
 	for _, m := range msgs {
 		if m.Role == provider.RoleTool && m.ToolCallID != "" {
@@ -286,7 +340,7 @@ func NoteRestoredReads(msgs []provider.Message) {
 			if err := json.Unmarshal([]byte(call.Arguments), &args); err != nil || args.Path == "" {
 				continue
 			}
-			NoteUnknown(args.Path)
+			r.NoteUnknown(args.Path)
 		}
 	}
 }
@@ -310,15 +364,19 @@ func NoteRestoredReads(msgs []provider.Message) {
 // past that and is still refused at the mutation, which hashes
 // unconditionally.
 // See docs/capabilities/approvals-and-safety.md#a-file-is-changed-from-what-was-read.
-func SeenChanged() []string {
-	seenMu.Lock()
-	recs := make(map[string]seenFile, len(seen))
-	for path, rec := range seen {
+func SeenChanged() []string { return shared.SeenChanged() }
+
+// SeenChanged asked of one owner's record.
+func (r *Recorder) SeenChanged() []string {
+	r = r.records()
+	r.mu.Lock()
+	recs := make(map[string]seenFile, len(r.seen))
+	for path, rec := range r.seen {
 		if !rec.unknown() {
 			recs[path] = rec
 		}
 	}
-	seenMu.Unlock()
+	r.mu.Unlock()
 
 	// The stats and hashes happen outside the lock: a round dispatches its
 	// read-only calls concurrently, and holding the record shut while this
@@ -353,28 +411,33 @@ func SeenChanged() []string {
 	}
 	sort.Strings(changed)
 
-	seenMu.Lock()
-	defer seenMu.Unlock()
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	for path, rec := range refreshed {
 		// Only where the record is still the one that was checked: a read
 		// that landed while this was hashing knows more recent facts than
 		// these, and must not be written over by them.
-		if cur, ok := seen[path]; ok && cur.sum == rec.sum && cur.size == rec.size {
-			seen[path] = rec
+		if cur, ok := r.seen[path]; ok && cur.sum == rec.sum && cur.size == rec.size {
+			r.seen[path] = rec
 		}
 	}
 	return changed
 }
 
-// ForgetAll drops every record. The callers are the two ways one conversation
-// gives way to another in a running process — a session ending and another
-// beginning, and a saved conversation loaded over the one on screen. The
-// records say what the model was shown, and the model that comes back has
-// been shown nothing. Keeping them would let a full overwrite through on the
-// strength of a read the new conversation never made — the one thing the
-// record exists to refuse.
-func ForgetAll() {
-	seenMu.Lock()
-	defer seenMu.Unlock()
-	clear(seen)
+// ForgetAll drops every record in the process-wide one. The callers are the
+// two ways one conversation gives way to another in a running process — a
+// session ending and another beginning, and a saved conversation loaded over
+// the one on screen. The records say what the model was shown, and the model
+// that comes back has been shown nothing. Keeping them would let a full
+// overwrite through on the strength of a read the new conversation never made
+// — the one thing the record exists to refuse.
+func ForgetAll() { shared.ForgetAll() }
+
+// ForgetAll of one owner's record, which takes back what that owner was shown
+// and leaves every other owner's record alone.
+func (r *Recorder) ForgetAll() {
+	r = r.records()
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	clear(r.seen)
 }

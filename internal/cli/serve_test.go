@@ -596,3 +596,33 @@ command = "printf '' > %s"
 		t.Errorf("nothing a turn_close hook said reached the client: %v", kindsOf(events))
 	}
 }
+
+// A client ends the session it opened, and everything the assembly held is
+// given back there rather than when the process eventually exits: the stop
+// hook fires, and the name stops answering. An adapter that opens a session
+// per file is the reason there is a verb for it at all.
+func TestServe_AClientEndsTheSessionAndWhatItHeldIsGivenBack(t *testing.T) {
+	f := startFakeProvider(t, reply{text: "done"})
+	s := newPrintSession(t, f)
+	stopped := filepath.Join(s.dir, "the-session-stopped")
+	appendConfig(t, s, fmt.Sprintf(`[hooks.entries.ender]
+event = "stop"
+command = "printf '' > %s"
+`, stopped))
+	c := serveOverStdio(t, s)
+
+	var opened rpc.SessionResult
+	c.mustCall(rpc.MethodSessionStart, rpc.StartParams{}, &opened)
+	var turn rpc.TurnResult
+	c.mustCall(rpc.MethodTurnStart, rpc.TurnParams{Session: opened.Session, Prompt: "do it"}, &turn)
+	c.drainToClose()
+
+	c.mustCall(rpc.MethodSessionEnd, rpc.SessionParams{Session: opened.Session}, nil)
+
+	if _, err := os.Stat(stopped); err != nil {
+		t.Errorf("ending the session fired no stop hook: %v", err)
+	}
+	if res := c.call(rpc.MethodSessionResume, rpc.SessionParams{Session: opened.Session}); res.Err == nil {
+		t.Error("the ended session still answers to its name")
+	}
+}
