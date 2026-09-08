@@ -794,9 +794,9 @@ func TestInspectorWidthFor_IsTheLadder(t *testing.T) {
 	for _, c := range []struct{ content, want int }{
 		{80, InspectorWidth},
 		{InspectorMinContentWidth, InspectorWidth},
-		{144, 49},
-		{160, 53},
-		{200, 63},
+		{144, 50},
+		{160, 54},
+		{200, 64},
 		{260, InspectorMaxWidth},
 		{999, InspectorMaxWidth},
 	} {

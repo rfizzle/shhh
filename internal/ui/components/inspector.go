@@ -1,7 +1,7 @@
 package components
 
-// Inspector rail (docs/interface/surfaces.md#the-inspector-rail). Past
-// 130 content columns the transcript stops being the whole screen: a rail on
+// Inspector rail (docs/interface/surfaces.md#the-inspector-rail). Past a
+// 130-column terminal the transcript stops being the whole screen: a rail on
 // the right answers the three standing questions — what is it doing, what has
 // it changed, what is it costing — so the session stops being interrogated
 // with /stats and /diff for what it already knows. It starts at 46 columns
@@ -44,7 +44,13 @@ const (
 	// InspectorMinContentWidth is the top rung of the width ladder: at
 	// or above it the surface splits into transcript pane + rail, below it the
 	// rail is dropped entirely.
-	InspectorMinContentWidth = 130
+	//
+	// The rung the design states is a 130-column *terminal*
+	// (guidelines/layout-breakpoints), and what the ladder is handed
+	// everywhere is a content width — the terminal less the two columns the
+	// host surface insets on each side. This is the terminal rung in that
+	// datum, so a 130-column terminal splits and a 129-column one does not.
+	InspectorMinContentWidth = 126
 	// inspectorGrowthColumns is how many content columns buy the rail one:
 	// about one in four, so the transcript keeps the larger share of
 	// everything the terminal gains

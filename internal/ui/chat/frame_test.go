@@ -44,23 +44,29 @@ func frameTopRail(view string) string {
 	return ""
 }
 
+// The rungs are stated in terminal columns and read in content columns, and
+// the arithmetic between the two is the thing that drifted: the table is
+// written as terminals so it can be read against the guideline, and each one
+// is converted the once, here, where the conversion is the subject.
 func TestFrameLayoutFor(t *testing.T) {
 	cases := []struct {
-		width int
-		want  frameLayout
+		terminal int
+		want     frameLayout
 	}{
 		{11, framePlain}, {12, frameNarrow}, {69, frameNarrow},
 		{70, frameCompact}, {109, frameCompact}, {110, frameWide},
 	}
 	for _, c := range cases {
-		if got := frameLayoutFor(c.width); got != c.want {
-			t.Fatalf("frameLayoutFor(%d) = %d, want %d", c.width, got, c.want)
+		content := c.terminal - horizontalPadding*2
+		if got := frameLayoutFor(content); got != c.want {
+			t.Fatalf("frameLayoutFor(%d) on a %d-column terminal = %d, want %d",
+				content, c.terminal, got, c.want)
 		}
 	}
 }
 
 func TestFrame_WideTwoRails(t *testing.T) {
-	m := frameModel(t, 130, 40) // content 126 ≥ 110
+	m := frameModel(t, 130, 40) // the wide rung is a 110-column terminal
 	view := stripANSI(m.View().Content)
 
 	for _, want := range []string{"╭─", "├─", "╰─", "⏸ manual", "ctx ", "↑41.2k ↓9.8k", "$0.51", "gpt-4o", "enter send · shift+enter newline · ctrl+g editor · ctrl+v attach · ctrl+/ palette · shift+tab mode", "idle"} {
@@ -81,9 +87,9 @@ func TestFrame_WideTwoRails(t *testing.T) {
 // measurement the hint set is chosen against: another hint would push the
 // row past its own corner and be clipped, and a clipped hint is a key
 // nobody can read. Asserted here so adding a seventh fails a test rather
-// than shipping a truncated rail on a 114-column terminal.
+// than shipping a truncated rail on a 110-column terminal.
 func TestFrame_IdleHintsFitTheRailAtItsThreshold(t *testing.T) {
-	m := frameModel(t, frameWideWidth+4, 40) // the narrowest wide frame
+	m := frameModel(t, frameWideWidth+horizontalPadding*2, 40) // the narrowest wide frame
 	var rail string
 	for _, line := range strings.Split(stripANSI(m.View().Content), "\n") {
 		if strings.HasPrefix(strings.TrimSpace(line), "╰─") {
@@ -102,7 +108,7 @@ func TestFrame_IdleHintsFitTheRailAtItsThreshold(t *testing.T) {
 }
 
 func TestFrame_CompactSingleRail(t *testing.T) {
-	m := frameModel(t, 100, 40) // content 96 → compact
+	m := frameModel(t, 100, 40) // between the 70- and 110-column rungs
 	view := stripANSI(m.View().Content)
 
 	if strings.Contains(view, "├─") {
@@ -122,7 +128,7 @@ func TestFrame_CompactSingleRail(t *testing.T) {
 }
 
 func TestFrame_NarrowMinimalRail(t *testing.T) {
-	m := frameModel(t, 60, 30) // content 56 → narrow
+	m := frameModel(t, 60, 30) // between the 12- and 70-column rungs
 	view := stripANSI(m.View().Content)
 
 	for _, want := range []string{"╭─", "⏸ manual", "$0.51"} {
@@ -137,12 +143,62 @@ func TestFrame_NarrowMinimalRail(t *testing.T) {
 	}
 }
 
+// Below the 12-column rung there is no box, and what stands in its place is
+// the prompt glyph rather than blank rows: a terminal this narrow still has
+// to say where you type (guidelines/layout-breakpoints).
 func TestFrame_PlainBelowMinWidth(t *testing.T) {
-	m := frameModel(t, 14, 30) // content 10 < minFrameWidth
+	m := frameModel(t, 11, 30) // one column under the narrowest framed terminal
 	view := stripANSI(m.View().Content)
 
 	if strings.Contains(view, "╭") {
 		t.Fatalf("sub-minimum widths must degrade to plain rows:\n%s", view)
+	}
+	if !strings.Contains(view, "❯") {
+		t.Fatalf("the frameless layout still draws the prompt:\n%s", view)
+	}
+	// And the draft starts after the glyph rather than under it: the field
+	// is narrowed by the columns the glyph takes and the cursor is moved by
+	// the same, so the two cannot disagree about where the first character
+	// lands.
+	var cur cursorSink
+	m.paint(&cur)
+	if cur.at == nil {
+		t.Fatal("the frameless draft still owns the terminal's cursor")
+	}
+	if want := horizontalPadding + lipgloss.Width(m.plainPrompt()); cur.at.X != want {
+		t.Fatalf("cursor column %d, want %d — the cell after the prompt glyph", cur.at.X, want)
+	}
+}
+
+// The rungs are terminal widths, and each is asserted on both sides of
+// itself: a rung is a pair of answers, and a threshold read against the
+// wrong datum is one that still gives the right answer four columns late.
+func TestFrame_RungsAreTerminalColumns(t *testing.T) {
+	view := func(terminal int) string {
+		return stripANSI(frameModel(t, terminal, 40).View().Content)
+	}
+	// Two panes, by the arrangement rather than by a glyph: the rail's own
+	// divider is the only thing on the screen that says there are two.
+	if !frameModel(t, 130, 40).twoPane() {
+		t.Fatal("a 130-column terminal splits into a transcript and a rail")
+	}
+	if frameModel(t, 129, 40).twoPane() {
+		t.Fatal("a 129-column terminal is one pane")
+	}
+	// The vitals take a rail of their own inside the box, or fold into its
+	// bottom border.
+	if got := view(110); !strings.Contains(got, "├─") {
+		t.Fatalf("a 110-column terminal gives the vitals their own rail:\n%s", got)
+	}
+	if got := view(109); strings.Contains(got, "├─") {
+		t.Fatalf("a 109-column terminal folds the vitals into the border:\n%s", got)
+	}
+	// And the box itself, under which the prompt glyph stands in for it.
+	if got := view(12); !strings.Contains(got, "╭─") {
+		t.Fatalf("a 12-column terminal still frames the draft:\n%s", got)
+	}
+	if got := view(11); strings.Contains(got, "╭─") {
+		t.Fatalf("an 11-column terminal draws no box:\n%s", got)
 	}
 }
 
@@ -573,9 +629,12 @@ func TestDraftCursorIsPlacedInTheBox(t *testing.T) {
 // mode that placed the cursor somewhere the box does not own would be a
 // rectangle the paint had drawn into too. The narrow modes are the ones with
 // no test of their own otherwise — the plain layout below minFrameWidth draws
-// no box at all, and the cursor comes off the bare input under the status bar.
+// no box at all, and the cursor comes off the bare input under the status
+// bar, one prompt glyph in from the content's own edge. It walks the widths
+// the frame is captured at, which is where the rungs and both sides of the
+// narrowest of them are.
 func TestDraftCursorInEveryLayout(t *testing.T) {
-	for _, width := range append([]int{14}, goldenWidths...) {
+	for _, width := range frameWidths {
 		for _, draft := range []string{"", "abc", strings.Repeat("wrap me ", 12)} {
 			m := frameModel(t, width, 40)
 			for _, r := range draft {

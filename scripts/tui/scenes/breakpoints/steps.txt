@@ -1,0 +1,30 @@
+# The four rungs of guidelines/layout-breakpoints, played at the four
+# terminals that name them:
+#
+#   make tui-shot SCENE=breakpoints COLS=130   two panes
+#   make tui-shot SCENE=breakpoints COLS=110   one pane, the vitals on a rail
+#   make tui-shot SCENE=breakpoints COLS=70    the vitals folded into the border
+#   make tui-shot SCENE=breakpoints COLS=12    the narrowest framed draft
+#
+# It is one session at every width on purpose: what changes across the four
+# captures is the arrangement and nothing else, so a rung that moved shows as
+# a capture that stopped matching the guideline rather than as a difference
+# between two scenes.
+#
+# The text every snap waits for is short because it has to be found on a
+# twelve-column screen too: a pane four columns wide breaks a longer word
+# across rows, and a wait that spans two rows is one that never matches.
+# Twelve is as narrow as the scene goes for that reason and not because the
+# surface stops there — under the rung it drops the frame and keeps a bare
+# prompt, which the prompt-frame capture at eight columns is the record of.
+snap 01-idle "shhh"
+keys "count the rungs" Enter
+snap 02-turn "Yes"
+# The exit is the smoke scene's to assert: none of the banner's words fit
+# whole on a twelve-column screen, so this snap takes whatever the session
+# left rather than waiting for a phrase three of the four widths would find
+# and the fourth never could.
+keys C-c
+sleep 0.5
+keys C-c
+snap 03-exit

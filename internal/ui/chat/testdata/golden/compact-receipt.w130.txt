@@ -13,15 +13,19 @@
 · the receipt and the summary quoted under it
 Conversation compacted; continuing from this summary:
 
-    Rounds are counted in the round loop; the limit lived in three places and disagreed. The first three turns established
-    the loop as the owner, the fourth moved the constant, and the fifth's tests pass except the one on the limit itself.
+    Rounds are counted in the round loop; the limit lived in three places and
+    disagreed. The first three turns established the loop as the owner, the
+    fourth moved the constant, and the fifth's tests pass except the one on
+    the limit itself.
 
 
 · with the turns the compaction kept verbatim
 Conversation compacted; continuing from this summary and the last 1 turn:
 
-    Rounds are counted in the round loop; the limit lived in three places and disagreed. The first three turns established
-    the loop as the owner, the fourth moved the constant, and the fifth's tests pass except the one on the limit itself.
+    Rounds are counted in the round loop; the limit lived in three places and
+    disagreed. The first three turns established the loop as the owner, the
+    fourth moved the constant, and the fifth's tests pass except the one on
+    the limit itself.
 
 You
   Move the round limit into the loop.
@@ -34,15 +38,19 @@ Assistant
 · the receipt and the summary quoted under it
 ␛[38;5;241mConversation compacted; continuing from this summary:␛[m
 
-    ␛[3;38;5;245mRounds are counted in the round loop; the limit lived in three places and disagreed. The first three turns established␛[m
-    ␛[3;38;5;245mthe loop as the owner, the fourth moved the constant, and the fifth's tests pass except the one on the limit itself.␛[m
+    ␛[3;38;5;245mRounds are counted in the round loop; the limit lived in three places and␛[m
+    ␛[3;38;5;245mdisagreed. The first three turns established the loop as the owner, the␛[m
+    ␛[3;38;5;245mfourth moved the constant, and the fifth's tests pass except the one on␛[m
+    ␛[3;38;5;245mthe limit itself.␛[m
 
 
 · with the turns the compaction kept verbatim
 ␛[38;5;241mConversation compacted; continuing from this summary and the last 1 turn:␛[m
 
-    ␛[3;38;5;245mRounds are counted in the round loop; the limit lived in three places and disagreed. The first three turns established␛[m
-    ␛[3;38;5;245mthe loop as the owner, the fourth moved the constant, and the fifth's tests pass except the one on the limit itself.␛[m
+    ␛[3;38;5;245mRounds are counted in the round loop; the limit lived in three places and␛[m
+    ␛[3;38;5;245mdisagreed. The first three turns established the loop as the owner, the␛[m
+    ␛[3;38;5;245mfourth moved the constant, and the fifth's tests pass except the one on␛[m
+    ␛[3;38;5;245mthe limit itself.␛[m
 
 ␛[1;94mYou␛[m
   ␛[38;5;252mMove the round limit into the loop.␛[m

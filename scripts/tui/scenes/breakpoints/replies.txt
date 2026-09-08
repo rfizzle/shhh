@@ -1,0 +1,6 @@
+# One reply per request. The last line repeats once these run out.
+# One short sentence and nothing else. This scene is about the frame around
+# the transcript rather than anything in it, and the narrowest terminal it is
+# played at leaves the pane four columns wide, so every word here has to be
+# readable in four.
+Yes. The rungs are the terminal's own columns.

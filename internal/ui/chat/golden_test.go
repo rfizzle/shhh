@@ -23,6 +23,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/colorprofile"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ask"
@@ -227,13 +228,19 @@ func TestGolden_PlanChecklist(t *testing.T) {
 	})
 }
 
+// frameWidths are the widths the prompt frame is captured at: the standing
+// four, plus the rungs they do not land on — 70, the terminal the vitals fold
+// into the bottom border at; 12, the narrowest terminal that still frames the
+// draft; and 8, under the rung, where there is no box and the bare prompt
+// stands in for it (guidelines/layout-breakpoints). 14 is kept because it is
+// inside the band the rung moved across, and is the fixture that says what a
+// terminal there draws now.
+var frameWidths = append([]int{8, 12, 14, 70}, goldenWidths...)
+
 // TestGolden_PromptFrame captures the command-center surface in
-// each of its four layout modes. frameWidths adds a terminal too narrow for
-// the frame at all, which the four breakpoints do not reach: below
-// minFrameWidth content columns the frame degrades to the bare input, and
-// that degradation is worth capturing too.
+// each of its four layout modes, at every rung of
+// guidelines/layout-breakpoints and on both sides of the narrowest.
 func TestGolden_PromptFrame(t *testing.T) {
-	frameWidths := append([]int{14}, goldenWidths...)
 	captureGolden(t, "prompt-frame", "prompt frame", frameWidths, func(width int) []golden.Panel {
 		idle := goldenModel(t, width)
 		working := goldenModel(t, width)
@@ -571,15 +578,25 @@ func promptSurface(m Model) string {
 	if m.frameShowing() {
 		return m.renderPromptFrame()
 	}
-	return m.draftView()
+	// The frameless layout is the draft panel rather than the field alone:
+	// what stands in for the box is the prompt glyph in front of it
+	// (paint.go), and a capture of the field on its own would not show it.
+	return m.draftPanel()
 }
 
 // promptCapture is promptSurface with the cursor the surface placed inside
 // it, in the render's own cells.
 func promptCapture(m Model) (string, *golden.Cursor) {
 	if !m.frameShowing() {
-		// The bare input is its own render, so its cursor needs no offset.
-		return m.draftView(), goldenCursor(m.input.Cursor())
+		// The bare input is its own render, and the only thing in front of
+		// it is the prompt glyph the frameless layout draws.
+		cur := m.input.Cursor()
+		if cur != nil {
+			at := *cur
+			at.X += lipgloss.Width(m.plainPrompt())
+			cur = &at
+		}
+		return m.draftPanel(), goldenCursor(cur)
 	}
 	var cur cursorSink
 	view := m.renderPromptFrameWith(&cur)
@@ -597,7 +614,7 @@ func goldenCursor(cur *tea.Cursor) *golden.Cursor {
 // "all four layout modes" if the widths it uses actually reach all four.
 func TestGolden_PromptFrameWidthsCoverEveryLayout(t *testing.T) {
 	seen := map[frameLayout]int{}
-	for _, width := range append([]int{14}, goldenWidths...) {
+	for _, width := range frameWidths {
 		m := frameModel(t, width, 40)
 		seen[m.frameLayout()] = width
 	}
@@ -1188,9 +1205,10 @@ func TestGolden_ScrollGutter(t *testing.T) {
 // the two columns are closest to the text on either side of them, and in both
 // palettes, because mono is where every rung of chrome collapses onto the one
 // grey and the mark has only its stroke and its length left.
-// That terminal is four columns wider than the breakpoint the split is named
-// for: the surface loses its horizontal padding before the threshold is read,
-// so 130 content columns is the first arrangement with a rail in it.
+// That terminal is the breakpoint itself: the rung is stated in terminal
+// columns and read in content ones, and the constant carries the conversion
+// (components/inspector.go), so a 130-column terminal is the first
+// arrangement with a rail in it.
 func TestGolden_ScrollGutterBesideTheDivider(t *testing.T) {
 	captureGolden(t, "scroll-gutter-rail", "the scroll gutter beside the rail's divider",
 		[]int{components.InspectorMinContentWidth + 2*horizontalPadding}, func(width int) []golden.Panel {
@@ -1477,13 +1495,14 @@ func TestGolden_StatusRow(t *testing.T) {
 	})
 }
 
-// screenWidths adds two terminals wide enough to split to the four
-// breakpoints. 144 columns is 140 content columns, just past the
-// InspectorMinContentWidth rung, so the whole-screen capture carries the
-// two-pane arrangement as well as the single-pane one; 200 is the wide
-// terminal the rail grows on, and the pair is what shows that the growth goes
-// to the rail's blocks rather than to the gap beside them.
-var screenWidths = append(append([]int{}, goldenWidths...), 144, 200)
+// screenWidths adds the rungs the standing widths do not land on and two
+// terminals past the widest of them. 12 is the narrowest terminal the draft
+// is still framed in and 70 is where the vitals fold into the border, so the
+// whole-screen capture carries every rung of guidelines/layout-breakpoints;
+// 144 and 200 are past the split, where the rail grows with the terminal, and
+// the pair is what shows that the growth goes to the rail's blocks rather
+// than to the gap beside them.
+var screenWidths = append(append([]int{12, 70}, goldenWidths...), 144, 200)
 
 // screenHeight is the row count every whole-screen panel is captured at. It
 // is fixed because the capture's subject is the vertical arrangement: the

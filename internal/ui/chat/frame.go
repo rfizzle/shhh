@@ -26,15 +26,32 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
-// Layout thresholds in content columns — the pi cockpit spec's layout modes
-// applied to shhh's bottom panel
+// Layout thresholds in content columns (guidelines/layout-breakpoints).
+//
+// The breakpoints the design states are the terminal's columns — an artboard
+// is drawn at 130ch with the surface's own inset inside it — and everything
+// on this surface is measured in content columns, which is the terminal less
+// horizontalPadding on each side. So each rung is written as the terminal
+// width the guideline names, less that inset: the number a reader can check
+// against the guideline stays on the page, and what it is compared against
+// stays the one datum the rest of the file uses
 // (docs/interface/surfaces.md#the-input-frame).
 const (
-	frameWideWidth    = 110
-	frameCompactWidth = 70
-	// minFrameWidth matches the component cards' minCardWidth: below it the
-	// prompt surface degrades to plain rows (divider + status bar + input).
-	minFrameWidth = 12
+	// frameWideWidth is the 110-column terminal: the vitals get a rail of
+	// their own inside the box and the bottom rail carries the key hints.
+	frameWideWidth = 110 - horizontalPadding*2
+	// frameCompactWidth is the 70-column terminal: the vitals fold into the
+	// box's bottom border and the hints go.
+	frameCompactWidth = 70 - horizontalPadding*2
+	// minFrameWidth is the 12-column terminal, below which there is no frame
+	// at all: the prompt surface degrades to plain rows (divider + status bar
+	// + the bare prompt, paint.go). Twelve is the guideline's own line and
+	// the last width the box is drawn at, cramped as it is there. What the
+	// guideline is protecting is the prompt rather than the box — it is the
+	// glyph, not the border, that says where you type — so the layout under
+	// this rung keeps the glyph, and no terminal of any width shows a draft
+	// with nothing in front of it.
+	minFrameWidth = 12 - horizontalPadding*2
 	// frameRailEnd is a rail's fixed end: the corner and the dash beside it.
 	// It is the one part of a border row that never gives ground, which is
 	// why it is a Len and the labels between the two ends are not.
@@ -417,10 +434,11 @@ func (m Model) frameBoxFor(area uv.Rectangle) frameBox {
 
 // inputInnerWidth is the textarea's usable width inside the frame: what the
 // box leaves after its borders and the prompt gutter. The plain
-// (sub-minFrameWidth) layout keeps the full content width.
+// (sub-minFrameWidth) layout has no borders to pay for, but it still draws
+// the prompt glyph (paint.go), so it pays for that.
 func (m Model) inputInnerWidth() int {
 	if m.frameLayout() == framePlain {
-		return max(m.contentWidth(), 1)
+		return max(m.contentWidth()-lipgloss.Width(m.plainPrompt()), 1)
 	}
 	return max(m.frameBoxFor(uv.Rect(0, 0, max(m.contentWidth(), 0), 1)).draft.Dx(), 1)
 }

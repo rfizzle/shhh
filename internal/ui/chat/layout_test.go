@@ -126,9 +126,12 @@ func TestLayout_RetryWaitIsPaidForByTheRowsItTakes(t *testing.T) {
 // TestLayout_ColumnsMatchTheWidthLadder walks the rung the inspector rail
 // hangs on: below it the pane is the whole content, at or above
 // it the rail and its divider take their columns off the right, and the
-// scroll gutter's column comes off the pane either way.
+// scroll gutter's column comes off the pane either way. The widths straddle
+// the rung — 129 and 130 — because the rung is stated in terminal columns
+// and compared in content ones, and a walk on one side of it says nothing
+// about where the conversion put it.
 func TestLayout_ColumnsMatchTheWidthLadder(t *testing.T) {
-	for _, width := range []int{60, 80, 110, 130, 134, 144} {
+	for _, width := range []int{60, 80, 110, 129, 130, 144} {
 		m := frameModel(t, width, 30)
 		c := m.columns()
 		if want := width - horizontalPadding*2; c.content.Dx() != want {
@@ -219,10 +222,10 @@ func TestLayout_TranscriptOriginIsThePanesCorner(t *testing.T) {
 // stops at because its blocks have nothing left to do with the room.
 func TestLayout_RailWidensWithTheContent(t *testing.T) {
 	for _, c := range []struct{ content, rail int }{
-		{130, 46},
-		{144, 49},
-		{160, 53},
-		{200, 63},
+		{126, 46},
+		{144, 50},
+		{160, 54},
+		{200, 64},
 		{260, 72},
 	} {
 		var m Model
@@ -245,10 +248,10 @@ func TestLayout_RailSettingIsHeldToTheLadder(t *testing.T) {
 	for _, c := range []struct{ set, content, want int }{
 		{40, 200, 46},  // under the floor
 		{60, 200, 60},  // inside the range the ladder allows here
-		{72, 144, 49},  // past what this terminal allows
+		{72, 144, 50},  // past what this terminal allows
 		{100, 400, 72}, // past the ceiling
-		{0, 200, 63},   // auto is the ladder
-		{-5, 200, 63},  // so is a number that is not one
+		{0, 200, 64},   // auto is the ladder
+		{-5, 200, 64},  // so is a number that is not one
 	} {
 		m := Model{railCols: c.set}
 		if got := m.railWidth(c.content); got != c.want {

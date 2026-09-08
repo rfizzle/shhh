@@ -42,6 +42,29 @@ soon as there is a wide variant of it to state them; until then the artboard
 is the narrow end of a range rather than the whole of it, which is a gap and
 not a disagreement.
 
+## The wide frame's vitals are drawn on the rule, not in a row under it
+
+This is a disagreement. The Frame artboard gives the vitals a row of their
+own inside the box, with a `├──┤` rule above it separating them from the
+draft; the binary draws the same segments on that rule, so the rule and the
+vitals are one row rather than two.
+
+What the artboard is saying is where the vitals stand — between the sentence
+being typed and the keys under it, inside the box rather than on its edge —
+and drawing them on the rule says it in the same place. What it costs to say
+it in two rows is a row of transcript at every width from the rung up: the
+bottom panel takes at most 40% of the terminal
+([the grammar](principles.md#the-grammar)), it is the transcript that pays for
+every row the panel keeps, and this row would carry no character the rule does
+not already carry.
+
+The rule is a border and the borders on this surface carry information
+([the input frame](surfaces.md#the-input-frame)) — the top one carries the
+running turn's account and the bottom one the keys — so a third border
+carrying the session's counters is the frame's own grammar rather than an
+exception to it. The narrower rungs fold the same segments onto the bottom
+border for the same reason, which the artboard draws and agrees with.
+
 ## The backlog block opens with a sprint row
 
 The Backlog artboard draws the block as a heading and a list of items. A set

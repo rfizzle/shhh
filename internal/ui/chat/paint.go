@@ -101,7 +101,7 @@ func (m Model) paint(cur *cursorSink) string {
 	//; hidden while the agent list or an attached view covers them.
 	draw(m.renderAgentRows(s.pane.Dx()), s.in(s.agents, s.pane))
 
-	// Past 130 content columns the body shares its rows with the inspector
+	// Past a 130-column terminal the body shares its rows with the inspector
 	// rail; the split is horizontal only, so the row budget the
 	// vertical split handed out is unchanged.
 	if rail := m.inspectorData().Lines(s.inspector.Dx(), s.body.Dy()); len(rail) > 0 {
@@ -248,6 +248,12 @@ func (m Model) drawBottomPanel(scr uv.Screen, area uv.Rectangle, cur *cursorSink
 	// being typed into under them starts that far down.
 	body := area
 	body.Min.Y += dividerHeight + statusBarHeight
+	if m.panel().lines == nil {
+		// Nothing took the panel over, so what is under the status bar is
+		// the draft — and the frameless layout leads it with the prompt
+		// glyph (draftPanel), so the cursor starts that far in as well.
+		body.Min.X += lipgloss.Width(m.plainPrompt())
+	}
 	cur.place(m.takeoverCursor(area.Dx()), body)
 }
 
@@ -302,9 +308,56 @@ func (m Model) draftPanel() string {
 		return o.hint(m)
 	}
 	inputView := m.draftView()
+	// Below minFrameWidth there is no box, and the draft would otherwise be
+	// blank rows under the status bar with nothing to say they are where you
+	// type. The prompt glyph is what the design keeps at every width, so it
+	// leads the first row here the way it leads the box's first row
+	// (guidelines/layout-breakpoints).
+	if gutter := m.plainPrompt(); gutter != "" {
+		inputView = leadWithPrompt(gutter, inputView)
+	}
 	// The slash-command completion menu renders under the input.
 	if m.completionActive() && m.attachedTo == "" && m.agentList == nil && m.activeChildAsk() == nil {
 		inputView += "\n" + strings.Join(m.completionMenuLines(), "\n")
 	}
 	return inputView
+}
+
+// plainPrompt is the prompt glyph the frameless layout draws in the box's
+// place: below minFrameWidth the surface loses its frame, and the design
+// keeps a bare ❯ rather than leaving the draft as blank rows
+// (guidelines/layout-breakpoints). It is empty wherever the box is drawn and
+// wherever a full-screen surface has left a one-line hint in the draft's
+// place, because the columns it costs are owed only where it is drawn.
+//
+// Attached, the frame's gutter names the child; a terminal this narrow has no
+// columns for a breadcrumb, and what the design draws at this width is the
+// glyph.
+func (m Model) plainPrompt() string {
+	if m.frameLayout() != framePlain {
+		return ""
+	}
+	if o := overlayFor(m.state); o != nil && o.hint != nil {
+		return ""
+	}
+	if m.attachedTo != "" {
+		return sty.Frame.GutterIdle.Render("❯") + " "
+	}
+	return m.promptGutter()
+}
+
+// leadWithPrompt puts the glyph in front of the draft's first row and holds
+// the rows under it at the same column, so a wrapped sentence stays one block
+// rather than stepping back to the edge under its own first line.
+func leadWithPrompt(gutter, view string) string {
+	lines := strings.Split(view, "\n")
+	pad := strings.Repeat(" ", lipgloss.Width(gutter))
+	for i := range lines {
+		if i == 0 {
+			lines[i] = gutter + lines[i]
+			continue
+		}
+		lines[i] = pad + lines[i]
+	}
+	return strings.Join(lines, "\n")
 }

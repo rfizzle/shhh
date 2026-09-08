@@ -1,9 +1,9 @@
 package chat
 
 // Two-pane cockpit (docs/interface/surfaces.md#the-inspector-rail). At
-// or above 130 content columns the surface splits: the transcript keeps the
+// or above a 130-column terminal the surface splits: the transcript keeps the
 // left pane, the inspector rail takes the right — 46 columns at the rung and
-// wider with the terminal — and one dim │ column divides them. Below 130 the
+// wider with the terminal — and one dim │ column divides them. Under that the
 // rail is dropped entirely and the single-pane layout is exactly what it was.
 //
 // The split is horizontal only — it is one of the two constraints the

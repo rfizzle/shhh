@@ -51,7 +51,9 @@ func inspectorModel(t *testing.T, width, height int) Model {
 }
 
 func TestTwoPane_WidthThreshold(t *testing.T) {
-	// The ladder's top rung is 130 content columns, both directions.
+	// The ladder's top rung is a 130-column terminal, both directions. The
+	// cases are written in the datum the constant is in, which is that width
+	// less the surface's inset on each side.
 	for _, c := range []struct {
 		width int
 		want  bool
@@ -69,20 +71,20 @@ func TestTwoPane_WidthThreshold(t *testing.T) {
 }
 
 func TestTranscriptWidth_ReducedByTheRail(t *testing.T) {
-	wide := inspectorModel(t, 144, 40) // content 140 → 48-column rail, 91-column pane
+	wide := inspectorModel(t, 144, 40) // content 140 → 49-column rail, 90-column pane
 	if wide.contentWidth() != 140 {
 		t.Fatalf("content width = %d, want 140", wide.contentWidth())
 	}
-	if got := wide.paneWidth(); got != 91 {
-		t.Fatalf("transcript pane = %d columns, want 91", got)
+	if got := wide.paneWidth(); got != 90 {
+		t.Fatalf("transcript pane = %d columns, want 90", got)
 	}
 	// The pane holds one column back for the scroll gutter, so
 	// the transcript wraps one column inside it — and so does the viewport,
 	// which is the selection's coordinate space.
-	if got := wide.transcriptWidth(); got != 90 {
-		t.Fatalf("transcript wraps to %d columns, want 90", got)
+	if got := wide.transcriptWidth(); got != 89 {
+		t.Fatalf("transcript wraps to %d columns, want 89", got)
 	}
-	if wide.viewport.Width() != 90 {
+	if wide.viewport.Width() != 89 {
 		t.Fatalf("viewport width = %d, want the wrap width", wide.viewport.Width())
 	}
 	narrow := inspectorModel(t, 120, 40)
@@ -293,7 +295,7 @@ func TestTurnClockAndSpend(t *testing.T) {
 
 func TestUICommand_ReportsTheLayout(t *testing.T) {
 	m := inspectorModel(t, 144, 40)
-	if got := m.uiCommand([]string{"/ui"}); !strings.Contains(got, "two panes") || !strings.Contains(got, "91-column transcript") {
+	if got := m.uiCommand([]string{"/ui"}); !strings.Contains(got, "two panes") || !strings.Contains(got, "90-column transcript") {
 		t.Fatalf("/ui reports the split layout: %q", got)
 	}
 	narrow := inspectorModel(t, 120, 40)
@@ -306,9 +308,9 @@ func TestUICommand_ReportsTheLayout(t *testing.T) {
 // config key, so what it changes is the next frame's columns and not a field
 // only the readout can see.
 func TestUICommand_RailSetsTheSplit(t *testing.T) {
-	m := inspectorModel(t, 200, 40) // content 196 → a 62-column rail on the ladder
-	if got := m.columns().inspector.Dx(); got != 62 {
-		t.Fatalf("the ladder gives a 200-column terminal a %d-column rail, want 62", got)
+	m := inspectorModel(t, 200, 40) // content 196 → a 63-column rail on the ladder
+	if got := m.columns().inspector.Dx(); got != 63 {
+		t.Fatalf("the ladder gives a 200-column terminal a %d-column rail, want 63", got)
 	}
 	if reply := m.uiCommand([]string{"/ui", "rail", "60"}); !strings.Contains(reply, "set to 60 columns") {
 		t.Fatalf("/ui rail 60 should say what it set: %q", reply)
@@ -324,8 +326,8 @@ func TestUICommand_RailSetsTheSplit(t *testing.T) {
 	if reply := m.uiCommand([]string{"/ui", "rail", "72"}); !strings.Contains(reply, "as wide as this terminal allows") {
 		t.Fatalf("a rail wider than the ladder allows should say so: %q", reply)
 	}
-	if got := m.columns().inspector.Dx(); got != 62 {
-		t.Fatalf("the rail is %d columns after /ui rail 72, want the ladder's 62", got)
+	if got := m.columns().inspector.Dx(); got != 63 {
+		t.Fatalf("the rail is %d columns after /ui rail 72, want the ladder's 63", got)
 	}
 	// And a number under the rail's own floor is widened to it, which is the
 	// other limit and says so in different words.

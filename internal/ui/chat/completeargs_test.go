@@ -372,8 +372,8 @@ func TestArgCompletion_RailOffersWhatThisTerminalAllows(t *testing.T) {
 	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream)
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 200, Height: 40})
 	wide := typeChars(t, updated.(Model), "/ui rail ")
-	if got := strings.Join(completionNames(wide), " "); got != "auto 62 46" {
-		t.Errorf("a 200-column terminal offers its own 62 between them, got %q", got)
+	if got := strings.Join(completionNames(wide), " "); got != "auto 63 46" {
+		t.Errorf("a 200-column terminal offers its own 63 between them, got %q", got)
 	}
 }
 
