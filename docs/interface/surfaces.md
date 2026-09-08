@@ -651,6 +651,21 @@ card too, not only an edit's diff: the whole command, its warnings and its
 blast radius take the screen the diff already knows how to take, and give it
 back with the decision still waiting.
 
+A command that can be asked what it would do rather than told to do it is
+asked here. Where a harmless form of the command in front of the reader can
+be derived — the flag `rsync`, `git clean` or `kubectl` were built to take,
+`terraform plan` in place of an apply, `sed` without its `-i` — the card
+offers a key that runs that form, in the same containment the real command
+would have run in, and puts what it printed on the screen the full view uses.
+It answers nothing: the decision is still waiting behind it, and the run
+leaves a row of its own, because something ran on this machine and the
+transcript is the account of what ran. Its output stays out of the
+conversation — the model asked to run the real command and is still waiting
+for the answer to that. Where no harmless form can be derived there is no
+key and the card says nothing about a dry run, because a key that ran the
+real command while the card called it a dry run is the one mistake this offer
+must never make.
+
 Almost every card arrives unasked, and the rest of this section is about that
 one. The exception is a card the reader summoned — the offer to write
 something the session proposed, taken up by a command or a suggestion — which

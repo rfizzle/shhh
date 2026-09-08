@@ -569,5 +569,6 @@ the keyboard: the draft keeps every character`,
 		text: `Approval prompts: allow / deny / always allow this session.
 A card taller than its panel counts what is cut and scrolls
 on shift+↑/↓ (shift+←/→ pan a wide body); d opens an edit's
-full diff, or a command card's full view`,
+full diff, or a command card's full view; t runs the harmless
+form of a command that has one, and answers nothing`,
 	}}

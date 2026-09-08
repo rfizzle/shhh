@@ -14,6 +14,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/dryrun"
 	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -69,6 +70,11 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if keys.Match(msg, keys.Decision.ScrollUp, keys.Decision.ScrollDown,
 		keys.Decision.PanLeft, keys.Decision.PanRight) {
 		return m.scrollCard(msg, m.approvalCard())
+	}
+	// The dry run, before the card: it is not one of the card's answers and
+	// the card would read it as the start of a sentence.
+	if next, cmd, ok := m.dryRunKey(msg); ok {
+		return next, cmd
 	}
 	done, result := m.approvalCard().Update(msg)
 	if !done {
@@ -264,4 +270,152 @@ func commandContextMessage(command, output string, exitCode int) string {
 		output = "(no output)"
 	}
 	return fmt.Sprintf(commandContextPrefix+"\n```\n%s\n```\nExit code: %d\nOutput:\n```\n%s\n```", command, exitCode, output)
+}
+
+// The dry run at the card.
+//
+// A command that can be asked what it would do rather than told to do it is
+// the one honest answer to a reader hesitating over `rsync --delete`, and the
+// hesitation happens here (docs/interface/surfaces.md#the-approval-card).
+// The offer is made only where internal/dryrun could derive a harmless form:
+// a key that would run the real thing is not an offer, it is a trap.
+
+// dryRunTimeout bounds a derived form that turns out not to be the quick
+// report it was asked to be. It is the floor under the session's own command
+// ceiling rather than a second policy: nothing is watching this run, and a
+// card waiting forever on it would have to be answered blind.
+const dryRunTimeout = 30 * time.Second
+
+// dryRunForm is the harmless form of a command, or "" where the command has
+// none. The empty string is the whole of what the card needs to know: no key
+// is offered, and the card says nothing about a dry run at all.
+func dryRunForm(command string) string {
+	form, ok := dryrun.Derive(command)
+	if !ok {
+		return ""
+	}
+	return form
+}
+
+// dryRunOffer is the key the command card advertises beside its decision run,
+// and nothing at all for a command with no harmless form.
+//
+// While the run is in flight the key stays where it was drawn with the words
+// changed: the answer to the press is already on its way, so a second press
+// has nothing to add, and taking the row away mid-wait would read as the
+// offer having been withdrawn.
+func dryRunOffer(req *approvalRequest) []components.KeyOffer {
+	if req == nil || req.dryCommand == "" {
+		return nil
+	}
+	label := "dry run — see what it would do"
+	if req.dryRunning {
+		label = "dry run — running"
+	}
+	return []components.KeyOffer{{Key: keys.Bracket(keys.Decision.DryRun), Label: label}}
+}
+
+// dryRunKey answers the card's dry-run key: the derived form runs, and the
+// decision stays exactly where it was. handled is false for every key this is
+// not, and for a card that took the keyboard by arriving — that card claims
+// the two answers and nothing else, and this letter is the reader's sentence
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+func (m Model) dryRunKey(msg tea.KeyPressMsg) (tea.Model, tea.Cmd, bool) {
+	if !keys.Match(msg, keys.Decision.DryRun) || m.heldOnArrival {
+		return m, nil, false
+	}
+	req := m.pendingApproval
+	if req == nil || req.kind != approvalExec || req.dryCommand == "" || req.dryRunning {
+		return m, nil, false
+	}
+	// The runner the real command would have used, chosen the way executeRun
+	// chooses it: a form derived from an assistant's command is still the
+	// assistant's command, and running it outside the containment the
+	// decision is being made about would be reporting on a different machine.
+	run := m.runFn
+	if m.containment.Run != nil {
+		run = m.containment.Run
+	}
+	if run == nil {
+		return m, nil, false
+	}
+	req.dryRunning = true
+	limit := m.policy.timeout
+	if limit <= 0 {
+		limit = dryRunTimeout
+	}
+	command, call, runID := req.dryCommand, req.call.ID, m.agent.RunID()
+	return m, func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), limit)
+		defer cancel()
+		start := time.Now()
+		out, code := run(ctx, command)
+		return dryRunDoneMsg{runID: runID, call: call, command: command,
+			output: out, exitCode: code, duration: time.Since(start)}
+	}, true
+}
+
+// dryRunDoneMsg is what the harmless form printed. It carries the call it was
+// asked about so the answer cannot be attached to the next decision in the
+// queue.
+type dryRunDoneMsg struct {
+	runID    int
+	call     string
+	command  string
+	output   string
+	exitCode int
+	duration time.Duration
+}
+
+// finishDryRun files what the dry run printed and puts it on the screen.
+//
+// The row goes in whatever the reader did while it ran — something ran on
+// this machine and the transcript is the account of what ran — and it is
+// marked local, because a dry run is asked by the person and its output never
+// joins the conversation: the model asked to run the real command and is
+// still waiting for the answer to that.
+//
+// The screen only opens if the decision it was asked about is still the one
+// being asked, and the card is still what is on it: a reader who opened the
+// card's full view meanwhile is reading something they asked for, and taking
+// that away would be one answer cancelling another. It opens the way the full
+// view opens and comes back the same way, with the decision still unanswered,
+// which is the whole point of the key: nothing here approves anything.
+func (m Model) finishDryRun(msg dryRunDoneMsg) (tea.Model, tea.Cmd) {
+	if msg.runID != m.agent.RunID() {
+		return m, nil
+	}
+	out := strings.TrimRight(msg.output, "\n")
+	m.appendEntry(entry{kind: entryCommand, text: msg.command, toolResult: out,
+		exitCode: msg.exitCode, localRun: true, duration: msg.duration})
+	req := m.pendingApproval
+	pending := req != nil && req.call.ID == msg.call && m.state == stateConfirmRun
+	if req != nil && req.call.ID == msg.call {
+		req.dryRunning = false
+	}
+	m.viewport.SetLines(m.renderHistoryLines())
+	m.viewport.GotoBottom()
+	if !pending {
+		return m, nil
+	}
+	// The screen came from the press rather than from a row, like the card's
+	// own full view: leaving it leaves, and the row it left behind is where
+	// the output is read from a second time.
+	return m.openOutputFull(dryRunView(msg, out), noOutputEntry, stateConfirmRun)
+}
+
+// dryRunView is the full screen the answer opens on: what the derived form
+// was, what it printed, and — where it printed nothing or stopped badly — the
+// sentence that says so, since a blank screen is not an answer to a question
+// somebody pressed a key to ask.
+func dryRunView(msg dryRunDoneMsg, out string) *components.OutputView {
+	title := "dry run — " + firstLine(msg.command)
+	if msg.exitCode != 0 {
+		title += fmt.Sprintf(" (exit %d)", msg.exitCode)
+	}
+	lines := strings.Split(out, "\n")
+	if strings.TrimSpace(out) == "" {
+		lines = []string{"It reported nothing — the dry run found no work to do."}
+	}
+	return &components.OutputView{Title: title, Lines: lines}
 }

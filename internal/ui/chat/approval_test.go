@@ -15,6 +15,8 @@ import (
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
+	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // writeFilePreview mimics a future write_file tool: diff of oldText against
@@ -611,5 +613,124 @@ func TestMutatingTool_OverlappingEditsNeverReachACard(t *testing.T) {
 	}
 	if data, _ := os.ReadFile(path); string(data) != "func Handle() {}\n" {
 		t.Fatal("a refused call must leave the file untouched")
+	}
+}
+
+// The dry run at the command card
+// (docs/interface/surfaces.md#the-approval-card).
+
+// pendingExec puts one assistant command in front of the reader, leaving the
+// keyboard wherever it already was.
+func pendingExec(t *testing.T, m Model, command string) Model {
+	t.Helper()
+	args, err := json.Marshal(map[string]string{"command": command})
+	if err != nil {
+		t.Fatalf("marshalling the call arguments: %v", err)
+	}
+	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_x", Name: tools.ExecCommandName, Arguments: string(args)},
+	}})
+	return updated.(Model)
+}
+
+// execApproval is that call with the keyboard handed to the card, the way
+// runExecApproval does it for the one command it is written around.
+func execApproval(t *testing.T, m Model, command string) Model {
+	t.Helper()
+	return handover(t, pendingExec(t, m, command))
+}
+
+// offersDryRun reports whether the card is advertising the dry-run key.
+func offersDryRun(card *components.ApprovalCard) bool {
+	return slices.ContainsFunc(card.ExtraHints, func(o components.KeyOffer) bool {
+		return o.Key == keys.Bracket(keys.Decision.DryRun)
+	})
+}
+
+func drainDryRun(t *testing.T, cmd tea.Cmd) dryRunDoneMsg {
+	t.Helper()
+	for _, c := range unwrapBatch(cmd) {
+		if msg, ok := c().(dryRunDoneMsg); ok {
+			return msg
+		}
+	}
+	t.Fatal("expected a dryRunDoneMsg from the dry-run key")
+	return dryRunDoneMsg{}
+}
+
+func TestApprovalCard_DryRunRunsTheDerivedFormAndDecidesNothing(t *testing.T) {
+	var bare, contained []string
+	m := containedModel(t, &bare, &contained, "contained: bwrap")
+	m = execApproval(t, m, "rsync --delete src/ dst/")
+	if card := m.approvalCard(); !offersDryRun(card) {
+		t.Fatalf("a command with a harmless form should offer the key:\n%s", m.View().Content)
+	}
+
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 't', Text: "t"})
+	m = updated.(Model)
+	done := drainDryRun(t, cmd)
+
+	// The derived form ran, through the containment the real command would
+	// have run in, and the real command did not run at all.
+	if want := []string{"rsync --dry-run --delete src/ dst/"}; !slices.Equal(contained, want) {
+		t.Fatalf("the dry run should go through the contained runner, got contained=%v bare=%v", contained, bare)
+	}
+	if len(bare) != 0 {
+		t.Fatalf("the plain runner must not see an assistant command, got %v", bare)
+	}
+	// The decision is exactly where it was: still asked, still unanswered.
+	if m.state != stateConfirmRun || m.pendingApproval == nil {
+		t.Fatalf("the card should still be waiting, got state %d pending %v", m.state, m.pendingApproval)
+	}
+	if !strings.Contains(m.View().Content, "dry run — running") {
+		t.Fatalf("the card should say the dry run is running:\n%s", m.View().Content)
+	}
+
+	updated, _ = m.Update(done)
+	m = updated.(Model)
+	if m.state != stateOutputFull {
+		t.Fatalf("the output should open on the screen, got state %d", m.state)
+	}
+	view := m.View().Content
+	if !strings.Contains(view, "dry run — rsync --dry-run --delete") || !strings.Contains(view, "contained") {
+		t.Fatalf("the screen should carry the derived command and what it printed:\n%s", view)
+	}
+	// And esc comes back to the decision, which nothing has answered: no tool
+	// result reached the conversation and the call is still pending.
+	m = press(t, m, "esc")
+	if m.state != stateConfirmRun || m.pendingApproval == nil {
+		t.Fatalf("esc should come back to the waiting decision, got state %d pending %v", m.state, m.pendingApproval)
+	}
+	for _, msg := range m.Messages() {
+		if msg.Role == provider.RoleTool {
+			t.Fatalf("a dry run must never answer the call: %+v", msg)
+		}
+	}
+	// The run left a row of its own, and the row says its output stayed out
+	// of the conversation.
+	last := m.transcript[len(m.transcript)-1]
+	if last.kind != entryCommand || last.text != "rsync --dry-run --delete src/ dst/" || !last.localRun {
+		t.Fatalf("the dry run should leave a local command row, got %+v", last)
+	}
+}
+
+func TestApprovalCard_DryRunNotOfferedWithoutAHarmlessForm(t *testing.T) {
+	var bare, contained []string
+	m := containedModel(t, &bare, &contained, "contained: bwrap")
+	m = execApproval(t, m, "rm -rf build")
+	if card := m.approvalCard(); offersDryRun(card) {
+		t.Fatalf("rm has no harmless form and the card must not offer one:\n%s", m.View().Content)
+	}
+	// And the key is not secretly live: nothing runs, and the decision stands.
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 't', Text: "t"})
+	m = updated.(Model)
+	if cmd != nil {
+		t.Fatal("the key should start nothing where there is no harmless form")
+	}
+	if len(contained) != 0 || len(bare) != 0 {
+		t.Fatalf("nothing should have run, got contained=%v bare=%v", contained, bare)
+	}
+	if m.state != stateConfirmRun || m.pendingApproval == nil {
+		t.Fatalf("the card should still be waiting, got state %d pending %v", m.state, m.pendingApproval)
 	}
 }

@@ -121,6 +121,14 @@ type approvalRequest struct {
 	// hookContext is what a hook in front of this call wanted the model to
 	// read. It leads the result, where every other notice goes.
 	hookContext string
+	// dryCommand is the harmless form of an exec card's command, for the
+	// commands that have one, and dryRunning whether it is running right now
+	// (run.go). Both ride the request rather than the model because they are
+	// facts about this call: the next decision in the queue is a different
+	// command with a different answer, and one left behind on the model
+	// would be advertised over it.
+	dryCommand string
+	dryRunning bool
 }
 
 // approvedToolDoneMsg carries the executor result of an approved non-exec
@@ -193,6 +201,11 @@ func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, err
 			kind:    approvalExec,
 			command: args.Command,
 			summary: firstLine(args.Command),
+			// The harmless form of the command, where there is one. It is
+			// derived here with everything else the card states about the
+			// call, not at render: the derivation reads the whole command
+			// line, and the card is rebuilt every frame.
+			dryCommand: dryRunForm(args.Command),
 		}, nil
 	}
 
@@ -859,6 +872,7 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 				}
 			}
 		}
+		card.ExtraHints = dryRunOffer(req)
 		return card
 	}
 

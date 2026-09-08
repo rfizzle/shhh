@@ -178,7 +178,8 @@ Keys:
   y/n/a          Approval prompts: allow / deny / always allow this session.    
                  A card taller than its panel counts what is cut and scrolls    
                  on shift+↑/↓ (shift+←/→ pan a wide body); d opens an edit's    
-                 full diff, or a command card's full view                       
+                 full diff, or a command card's full view; t runs the harmless  
+                 form of a command that has one, and answers nothing            
 
 
 ── ansi ────────────────────────────────────────────────────
@@ -350,5 +351,6 @@ Keys:
 ␛[3;38;5;241m  y/n/a          Approval prompts: allow / deny / always allow this session.␛[m    
 ␛[3;38;5;241m                 A card taller than its panel counts what is cut and scrolls␛[m    
 ␛[3;38;5;241m                 on shift+↑/↓ (shift+←/→ pan a wide body); d opens an edit's␛[m    
-␛[3;38;5;241m                 full diff, or a command card's full view␛[m                       
+␛[3;38;5;241m                 full diff, or a command card's full view; t runs the harmless␛[m  
+␛[3;38;5;241m                 form of a command that has one, and answers nothing␛[m            
 

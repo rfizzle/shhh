@@ -61,6 +61,18 @@ func register(t *testing.T) []keyedSurface {
 			hold: handover,
 		},
 		{
+			// The command card's own key, which the edit card above has no
+			// state for: a command that can be asked what it would do.
+			name: "the command card's dry run",
+			keys: []string{"t"},
+			open: func(t *testing.T) Model {
+				var bare, contained []string
+				m := containedModel(t, &bare, &contained, "contained: bwrap")
+				return pendingExec(t, typeChars(t, m, draftLead), "rsync --delete src/ dst/")
+			},
+			hold: handover,
+		},
+		{
 			name: "plan card",
 			// [j] leads because the answering test presses the first key,
 			// and moving the choice is the one plan-card key that neither

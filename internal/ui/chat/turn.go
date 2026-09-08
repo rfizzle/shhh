@@ -442,6 +442,13 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		m.viewport.GotoBottom()
 		return m, m.autosaveCmd(), true
 
+	case dryRunDoneMsg:
+		// What the harmless form of a pending command printed (run.go). It is
+		// not the turn's own work — nothing is waiting on it and no decision
+		// moves — so it is filed and shown, and the turn goes on standing
+		// wherever it stood.
+		return answered(m.finishDryRun(msg))
+
 	case approvedToolDoneMsg:
 		if msg.runID != m.agent.RunID() || m.turnState() != stateRunningCmd || m.pendingApproval == nil {
 			return m, nil, true

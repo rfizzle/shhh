@@ -334,7 +334,8 @@ type entry struct {
 	toolResult string
 	exitCode   int
 	// localRun marks a command row whose output stayed out of the
-	// conversation — a `!!` run — which its outcome says (bang.go).
+	// conversation — a `!!` run (bang.go), or a dry run asked for at a card
+	// (run.go) — which its outcome says.
 	localRun bool
 	// duration is how long the tool call or command ran, shown on its
 	// activity row; zero hides it.

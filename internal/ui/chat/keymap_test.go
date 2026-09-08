@@ -401,6 +401,18 @@ func decisionCards(t *testing.T) []decisionCard {
 			card: sessionCard,
 		},
 		{
+			// The same card for a command that can be asked what it would do
+			// rather than told to do it, which is the one state the dry-run
+			// key is drawn in.
+			name: "the session's command card with a dry run",
+			open: func(t *testing.T) Model {
+				var bare, contained []string
+				m := containedModel(t, &bare, &contained, "contained: bwrap (workspace profile)")
+				return execApproval(t, m, "rsync --delete src/ dst/")
+			},
+			card: sessionCard,
+		},
+		{
 			name: "a child's routed command",
 			open: routed(func(*testing.T) *subagent.Ask {
 				ask := subagent.NewAsk("writer-1", subagent.AskCommand, "run make")

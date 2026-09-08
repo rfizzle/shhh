@@ -175,7 +175,7 @@ func Surfaces() []Surface {
 			Reached:  Shown(Draft.Answer),
 			Bindings: []Binding{
 				Decision.Allow, Decision.Deny, Decision.Always,
-				Decision.Batch, Decision.Diff, Agent.Go,
+				Decision.Batch, Decision.Diff, Decision.DryRun, Agent.Go,
 				Decision.ScrollUp, Decision.ScrollDown,
 				Decision.PanLeft, Decision.PanRight,
 			},

@@ -704,6 +704,19 @@ type DecisionKeys struct {
 	Batch  Binding
 	Diff   Binding
 
+	// DryRun is the command card's offer to find out what the command would
+	// do without doing it, where the command has a form that can be asked
+	// rather than told (internal/dryrun). It answers the hesitation the card
+	// is there for without answering the card
+	// (docs/interface/surfaces.md#the-approval-card).
+	//
+	// It is not [d], which a reader of the one-shot's action bar would
+	// expect: on this surface that keystroke is already the full view, and
+	// one surface answering a keystroke with two bindings is what this
+	// register refuses (register.go). So the key is [t] — try it — and the
+	// card's own words say what it would try.
+	DryRun Binding
+
 	// Refuse is Deny on a card the reader summoned rather than was handed.
 	// Deny folds esc and ctrl+c into the answer, which is right for a card
 	// that arrived on its own: there is nothing to go back to, so leaving
@@ -732,6 +745,7 @@ var Decision = DecisionKeys{
 	Always: bind("a", "always allow this session", "a"),
 	Batch:  bind("A", "answer the marked", "A"),
 	Diff:   bind("d", "full diff", "d", "D"),
+	DryRun: bind("t", "try the harmless form", "t"),
 	Refuse: bind("n", "no, and stop offering", "n", "N"),
 
 	ScrollUp:   bind("shift+↑", "scroll the card up", "shift+up"),
