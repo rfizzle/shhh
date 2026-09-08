@@ -954,6 +954,21 @@ the approval card's scroll is the card's own windowing in
 `components/approval.go`, with its offsets on the chat model because the card
 is rebuilt every frame.
 
+**The card's note field is split the same way, and the seam is three exported
+calls.** The field itself is a `textinput` on the chat model
+(`decisionNote` in `model.go`, opened and routed in `approval.go`, cleared
+wherever the card changes in `setTurnState`); the card owns where it goes —
+`components.NoteWidth` is how wide to draw it, `ApprovalCard.NoteField` is
+where the render lands, and `ApprovalCard.NoteOrigin` is the cell it starts
+at, which `confirmCursor` adds the field's own caret to. Two things bite.
+`components.NewTextInput` paints its own cursor unless the host says
+otherwise, so a field this session places a real cursor for must be given
+`SetVirtualCursor(false)` or the reader sees two. And `ApprovalCard.Noted` is
+what turns the offer on: a card with nothing waiting to read the sentence
+keeps the capital-N default marker and goes on reading `Y`/`N` as it always
+did, which is what leaves the `/run` confirm, the scaffold card and a child's
+routed ask byte-identical.
+
 Reasoning is a row like any other act: `internal/ui/chat/think.go` owns the
 `think` row — where the round's thinking is collected as it streams, its three
 fold depths, and the verbosity that drops it. The text it shows is not the

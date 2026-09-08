@@ -87,6 +87,11 @@ func (m *Model) setTurnState(s state) {
 	// full-screen [d] round trip is surface mechanics and never re-arrives.
 	if s == stateConfirmRun {
 		m.cardScroll, m.cardPan = 0, 0
+		// Nor the last one's half-written note: the sentence was about the
+		// call that has just been answered, and carrying it onto the next
+		// card would attach the reader's words to a decision they were
+		// written about something else (approval.go).
+		m.decisionNote = nil
 	}
 	// A turn going idle stamps its end, so the inspector rail's elapsed time
 	// freezes at what the turn took instead of counting on.

@@ -429,6 +429,17 @@ func (m Model) activityRowDetail(e entry, stepDetail bool) components.ActivityRo
 				row.Duration = components.NoDuration
 			}
 			result = ""
+			// What the reader said when they refused goes under the row,
+			// whole, rather than into the outcome field beside their name:
+			// the outcome is a closed vocabulary and a sentence clipped into
+			// it would be a reason nobody could read
+			// (docs/interface/principles.md#fold-never-hide). It is set here
+			// rather than left to the body below because a denial has no
+			// output to count and none of the readings that follow — the
+			// error prefix, the receipt, the link — describe a sentence.
+			if e.denyNote != "" {
+				row.Detail = strings.Split(e.denyNote, "\n")
+			}
 		case result == pendingToolResult:
 			row.State = components.ActivityRunning
 			row.Outcome = components.OutcomeRunning

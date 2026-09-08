@@ -186,10 +186,11 @@ func buildOverlays() map[state]*mode {
 		// (resolvePanel). Neither borrows the screen: a decision is a stage of
 		// the turn that asked for it.
 		stateConfirmRun: {
-			place: placeFloating,
-			lines: panelRows((Model).confirmPanelLines),
-			bound: (Model).confirmPanelBound,
-			keys:  (Model).updateConfirmRun,
+			place:  placeFloating,
+			lines:  panelRows((Model).confirmPanelLines),
+			bound:  (Model).confirmPanelBound,
+			cursor: (Model).confirmCursor,
+			keys:   (Model).updateConfirmRun,
 		},
 		statePlanApprove: {
 			place: placeFloating,

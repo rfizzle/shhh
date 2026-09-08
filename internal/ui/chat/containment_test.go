@@ -104,8 +104,15 @@ func TestConfirmPromptShowsUnconfinedState(t *testing.T) {
 	if !strings.Contains(view, "more lines · shift+↓") {
 		t.Fatalf("the bounded card should count its scrolled-off rows:\n%s", view)
 	}
-	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyDown, Mod: tea.ModShift})
-	m = updated.(Model)
+	// Walked to the end of what the card can scroll rather than pressed a
+	// fixed number of times: how many rows the block under the rule spends is
+	// the card's business and moves whenever it gains an offer, and what this
+	// asserts is that the chord reaches the row at all.
+	maxBody, _ := m.approvalCard().ScrollBounds(m.contentWidth())
+	for range maxBody {
+		updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyDown, Mod: tea.ModShift})
+		m = updated.(Model)
+	}
 	if view := m.View().Content; !strings.Contains(view, "bubblewrap (bwrap) not found on PATH") {
 		t.Fatalf("shift+↓ should bring the missing-mechanism row into view:\n%s", view)
 	}

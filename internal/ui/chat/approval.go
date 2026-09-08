@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
@@ -617,9 +618,127 @@ func (m *Model) applyScopeGrant() {
 	}
 }
 
+// decisionNote is the note field a decision card's shifted answer opened: the
+// answer it will carry, and the field it is being written in
+// (docs/capabilities/approvals-and-safety.md#a-no-can-say-why-and-a-yes-can-say-what-next).
+//
+// The field is bubbles' own one-line input rather than a component of its
+// own, for the reason every other field in the product is (components/input.go):
+// what is shared is how a field is built and repainted, not what it is.
+type decisionNote struct {
+	// allow is which of the two answers the sentence goes out with.
+	allow bool
+	field textinput.Model
+}
+
+// drawn is the field as the card will draw it: sized to the room the card
+// leaves it and repainted from the palette as it stands now (input.go).
+//
+// Both the render and the cursor go through here rather than one of them
+// reading the stored field: the field's own caret is clamped to its width, so
+// asking an unsized copy where the caret is puts it past the card's right
+// edge the moment the sentence outgrows the row.
+func (n decisionNote) drawn(width int) textinput.Model {
+	field := n.field
+	field.SetWidth(components.NoteWidth(width))
+	components.StyleTextInput(&field)
+	return field
+}
+
+// openDecisionNote opens the field under the card. Nothing is decided by
+// opening it: the answer the key stands for is given when the field is
+// confirmed, and esc closes it with the decision still waiting, because a key
+// that turned a hesitation into an answer would be a key nobody could afford
+// to press (docs/interface/principles.md#esc-is-always-the-safe-answer).
+func (m Model) openDecisionNote(allow bool) (tea.Model, tea.Cmd) {
+	field := components.NewTextInput()
+	field.Prompt = ""
+	// The terminal's own cursor rather than a painted one: this session
+	// places a real cursor wherever it is being typed into (confirmCursor),
+	// and a field painting a second one would draw two.
+	field.SetVirtualCursor(false)
+	cmd := field.Focus()
+	m.decisionNote = &decisionNote{allow: allow, field: field}
+	m.syncViewport()
+	return m, cmd
+}
+
+// updateDecisionNote routes a key while the field holds the keyboard. Two keys
+// are the whole of what it answers and every other key is text — the digits,
+// the card's own letters and its scroll chords included — because a surface
+// being typed into keeps every letter as text, the way the selector's query
+// row and the transcript search already do
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+func (m Model) updateDecisionNote(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	open := *m.decisionNote
+	switch {
+	case keys.Match(msg, keys.Select.Cancel):
+		// Back to the card with the decision exactly where it was. The
+		// sentence goes with the field: a draft nobody sent is not an answer,
+		// and keeping it would put words the reader abandoned on the next
+		// answer they give.
+		m.decisionNote = nil
+		m.syncViewport()
+		return m, nil
+	case keys.Match(msg, keys.Select.Take):
+		note := strings.TrimSpace(open.field.Value())
+		m.decisionNote = nil
+		if open.allow {
+			return m.approvePending(note)
+		}
+		return m.declineApprovalWith(note)
+	}
+	// The field is replaced rather than written through the pointer: the
+	// model is a value every update hands back a copy of, and a shared field
+	// would put this keystroke into the copy the last frame was drawn from.
+	var cmd tea.Cmd
+	open.field, cmd = open.field.Update(msg)
+	m.decisionNote = &open
+	m.syncViewport()
+	return m, cmd
+}
+
+// approvePending is the allow, with the reader's sentence if they wrote one.
+//
+// The sentence goes out through the steering channel a message typed while
+// the turn works already uses (stream.go): it has the gutter mark, it has the
+// notice-rail count, and it is already understood as "change what you are
+// doing", so a second channel spelled differently would be a second answer to
+// the same question. It is not machine-authored — the reader wrote it — so it
+// resets the round count and joins the conversation as their own words, which
+// is what a steer typed into the draft a second later would have done.
+func (m Model) approvePending(note string) (tea.Model, tea.Cmd) {
+	if note != "" {
+		m.steering = append(m.steering, steeringItem{text: note})
+	}
+	if m.pendingApproval != nil {
+		m.recordDecision(observe.DecisionAllow, observe.ReasonUser)
+	}
+	if m.pendingApproval != nil && m.pendingApproval.kind != approvalExec {
+		return m.executeApprovedTool()
+	}
+	return m.executeRun()
+}
+
 // declineApproval records an error tool result for the pending call and moves
 // on to the next queued approval.
-func (m Model) declineApproval() (tea.Model, tea.Cmd) {
+func (m Model) declineApproval() (tea.Model, tea.Cmd) { return m.declineApprovalWith("") }
+
+// declineApprovalWith is the same decline carrying the reader's own sentence,
+// which is the whole of what the model is told
+// (docs/capabilities/approvals-and-safety.md#a-no-can-say-why-and-a-yes-can-say-what-next).
+//
+// The three fixed sentences below say only that the call was refused, which
+// the reader's sentence says better and more usefully: a result carrying both
+// would make the model read past the boilerplate to reach the correction, and
+// the exec and memory variants would each add a second way of saying no. What
+// stays is the tier marker every refusal in the product carries, so a refusal
+// is still a refusal on the wire and not output the call produced.
+//
+// An empty sentence is not a sentence, and takes the fixed one unchanged: a
+// reader who pressed the shifted letter and pressed enter meant the plain
+// answer, and the model must not be able to tell the two paths apart.
+func (m Model) declineApprovalWith(note string) (tea.Model, tea.Cmd) {
 	m.recordDecision(observe.DecisionDeny, observe.ReasonUser)
 	req := m.pendingApproval
 	m.pendingApproval = nil
@@ -632,8 +751,11 @@ func (m Model) declineApproval() (tea.Model, tea.Cmd) {
 	case approvalMemory:
 		content = "error: the user declined to save this memory; do not re-propose it this session"
 	}
+	if note != "" {
+		content = "error: " + note
+	}
 	m.agent.ResolveApproval(m.refusedResult(req.call, content))
-	m.appendEntry(deniedEntry(req, decidedByYou, "", 0))
+	m.appendEntry(deniedEntry(req, decidedByYou, "", 0).withDenyNote(note))
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	return m.advanceApprovalQueue()
@@ -654,6 +776,21 @@ func deniedEntry(req *approvalRequest, decider, rule string, elapsed time.Durati
 		denyRule: rule,
 		duration: elapsed,
 	}
+}
+
+// withDenyNote folds the reader's sentence under the denied row rather than
+// into its outcome field: the outcome column states who refused, in the
+// closed vocabulary every row's outcome comes from, and a sentence clipped
+// into it would be a reason nobody could read
+// (docs/interface/principles.md#fold-never-hide). It is the row's body, so it
+// opens with the row and is carried verbatim.
+//
+// Only a reader's denial can have one. A rule's denial goes through its own
+// path with its own code and has nothing to say beyond which rule it was
+// (docs/capabilities/approvals-and-safety.md#denials-are-two-different-facts).
+func (e entry) withDenyNote(note string) entry {
+	e.denyNote = note
+	return e
 }
 
 // executeApprovedTool runs an approved non-exec tool call through the tool
@@ -834,7 +971,23 @@ func (m Model) approvalCard() *components.ApprovalCard {
 	// Whether the card's keys are live at all is not the card's to decide
 	// (invariant 5): it depends on which surface holds the keyboard.
 	m.applyNotYetLive(card)
+	m.applyDecisionNote(card)
 	return card
+}
+
+// applyDecisionNote puts the open note field on the card. The offer itself is
+// the card's own reading of what is waiting on the answer — there is nothing
+// for a sentence to reach on a /run the reader typed, and a memory proposal
+// answers on its own surface — and the field is the model's, because the card
+// is rebuilt every frame and what is being typed is not.
+func (m Model) applyDecisionNote(card *components.ApprovalCard) {
+	card.Noted = m.pendingApproval != nil && m.memoryAsk == nil
+	n := m.decisionNote
+	if n == nil || !card.Noted {
+		return
+	}
+	card.NoteOpen, card.NoteAllow = true, n.allow
+	card.NoteField = n.drawn(m.contentWidth()).View()
 }
 
 func (m Model) buildApprovalCard() *components.ApprovalCard {
@@ -1011,6 +1164,43 @@ func (m Model) confirmLines() []string {
 		return append(strip, o.Lines(m, width, 0)...)
 	}
 	return append(strip, strings.Split(m.approvalCard().View(width), "\n")...)
+}
+
+// confirmCursor is where the terminal's cursor stands in the confirm panel:
+// inside the card's note field when one is open, and nowhere otherwise —
+// a card that is read rather than written into places none, and the terminal
+// hides its cursor over it (the register's cursor column, overlay.go).
+//
+// The card says where it drew the field and the field says where its caret is
+// inside it; what this adds is the rows confirmPanelLines puts above the
+// card, which is the same two things in the same order dressDecision leads
+// with.
+//
+// The panel's own width is passed in and deliberately not used: the card is
+// rendered at the content width (confirmPanelLines), and a cursor counted at
+// any other width would describe a card nobody drew. The two are the same
+// number today, and this is the one that stays right if they stop being.
+func (m Model) confirmCursor(int) *tea.Cursor {
+	n := m.decisionNote
+	if n == nil {
+		return nil
+	}
+	width := m.contentWidth()
+	x, y, ok := m.approvalCard().NoteOrigin(width)
+	if !ok {
+		return nil
+	}
+	cur := n.drawn(width).Cursor()
+	if cur == nil {
+		return nil
+	}
+	cur.X += x
+	cur.Y += y + len(m.pendingQueue.View(width))
+	if m.decisionGated() {
+		// The rail that names the keyboard's owner leads the panel.
+		cur.Y++
+	}
+	return cur
 }
 
 // confirmPanelLines is the whole bottom panel a gated confirm occupies: the

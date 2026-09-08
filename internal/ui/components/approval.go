@@ -52,6 +52,13 @@ const (
 	// so a key the card has no answer for is the start of a sentence rather
 	// than a mispress.
 	ApprovalRelease
+	// ApprovalApproveNoted and ApprovalDenyNoted are the same two answers
+	// with a sentence to come (Y / N, only when Noted is set). They settle
+	// nothing on their own: the host opens the field, and the answer is given
+	// when the field is confirmed
+	// (docs/capabilities/approvals-and-safety.md#a-no-can-say-why-and-a-yes-can-say-what-next).
+	ApprovalApproveNoted
+	ApprovalDenyNoted
 )
 
 // Severity is how much the pending action could cost, led with as a word
@@ -212,6 +219,26 @@ type ApprovalCard struct {
 	// number of decisions is not an offer.
 	Batch     bool
 	BatchHint string
+	// Noted offers the two answers that carry a sentence — [Y] and [N] —
+	// beside the two that do not
+	// (docs/capabilities/approvals-and-safety.md#a-no-can-say-why-and-a-yes-can-say-what-next).
+	// It is off wherever there is nothing waiting to read the sentence: a
+	// /run the reader typed has no model to correct, and a child's routed
+	// request answers over a channel that carries a boolean.
+	//
+	// A card offering it gives up the capital-N default marker on the safe
+	// answer, because the capital is a key now and a run that printed a key
+	// meaning something else would be the one thing this card must never do.
+	// Cards without the offer keep the marker exactly as they had it.
+	Noted bool
+	// NoteOpen is the field open under the card, holding the keyboard.
+	// NoteAllow says which of the two answers it will carry, and NoteField
+	// is the field as its host rendered it — the card draws the field but
+	// does not own it, because what is typed there survives a frame and the
+	// card does not (the host rebuilds one every frame).
+	NoteOpen  bool
+	NoteAllow bool
+	NoteField string
 	// ExtraHints are the keys beyond the decision run that the host answers
 	// itself — [g] to attach to the agent that asked, the manager's chord.
 	//
@@ -281,6 +308,10 @@ func (c *ApprovalCard) arrivalKey(pressed string) (ApprovalDecision, bool) {
 		return ApprovalApprove, true
 	case keys.Is(pressed, keys.Decision.Deny):
 		return ApprovalDeny, true
+	case c.Noted && keys.Is(pressed, keys.Decision.AllowNoted):
+		return ApprovalApproveNoted, true
+	case c.Noted && keys.Is(pressed, keys.Decision.DenyNoted):
+		return ApprovalDenyNoted, true
 	}
 	return ApprovalWaiting, false
 }
@@ -328,6 +359,18 @@ func (c *ApprovalCard) Update(msg tea.KeyPressMsg) (done bool, result ApprovalDe
 		}
 	case keys.Is(pressed, keys.Decision.Deny):
 		return true, ApprovalDeny
+	// The two answers that carry a sentence. They are read after the plain
+	// pair rather than before it because nothing distinguishes them but the
+	// shift, and a card without the offer must go on reading the shifted
+	// letter as whatever it read it as before.
+	case keys.Is(pressed, keys.Decision.AllowNoted):
+		if c.Noted {
+			return true, ApprovalApproveNoted
+		}
+	case keys.Is(pressed, keys.Decision.DenyNoted):
+		if c.Noted {
+			return true, ApprovalDenyNoted
+		}
 	}
 	return false, ApprovalWaiting
 }
@@ -490,6 +533,9 @@ func (c *ApprovalCard) hintRowsFor(width, inner int) []string {
 	if c.NotYetLive {
 		return notYetLiveRows(c.Question+" "+c.keys(), c.Handover, width)
 	}
+	if c.NoteOpen {
+		return append(typingRows(c.Question+" "+c.keys(), width), c.noteRows(width, inner)...)
+	}
 	if c.HeldOnArrival && c.Grace {
 		rows := graceRows(c.Question+" "+c.keys(), width)
 		if rest := c.arrivalRest(); len(rest) > 0 {
@@ -508,6 +554,26 @@ func (c *ApprovalCard) hintRowsFor(width, inner int) []string {
 	// drop to rows of their own where it does not — the judgement [A] has
 	// made for batches, for the same reason.
 	var quals []string
+	// What the shifted pair buys rides the key row itself wherever the
+	// terminal carries it, and drops in with the others where it does not.
+	// It is the one qualifier a card holding the keyboard by arrival keeps,
+	// because those two are among its answers (KeyRun) and a key in the run
+	// with nothing saying what it does is half an offer.
+	//
+	// Which of the two asks for what is the field's own label, stated the
+	// moment one is open, and the register carries the long form for the key
+	// list — so the qualifier here says only that a sentence is what they
+	// buy. At sixty columns the choice is between that and the row a fuller
+	// one would push off the card, and a key explained one press later beats
+	// a key explained nowhere.
+	if c.Noted {
+		noted := "(" + notedWords() + ")"
+		if joined := hint + "  " + noted; lipgloss.Width(joined) <= inner {
+			hint = joined
+		} else {
+			quals = append(quals, noted)
+		}
+	}
 	if !c.HeldOnArrival {
 		if c.AllowAlways && c.AlwaysHint != "" {
 			quals = append(quals, "("+c.AlwaysHint+")")
@@ -600,6 +666,33 @@ func (c *ApprovalCard) KeyRun() []CardKey {
 	yes := CardKey{keys.Shown(keys.Decision.Allow), keys.Shown(keys.Decision.Allow)}
 	no := CardKey{keys.Shown(keys.Decision.Deny), keys.Shown(keys.Decision.Deny)}
 	def := CardKey{strings.ToUpper(no.Shown), no.Key}
+	if c.Noted {
+		// The capital is a key of its own here, so the default marker is
+		// retired on this card rather than drawn over a key that means
+		// something else: the answers come in pairs — press the letter, or
+		// press it shifted and say more — and the pairing is what the run
+		// has to make legible. Which answer is the safe one is stated in
+		// words instead, where SafeDefault already states it.
+		noted := func(b keys.Binding) CardKey {
+			return CardKey{keys.Shown(b), keys.Shown(b)}
+		}
+		run := []CardKey{yes, noted(keys.Decision.AllowNoted), no, noted(keys.Decision.DenyNoted)}
+		if c.HeldOnArrival {
+			// A card holding the keyboard by arrival claims its answers and
+			// nothing else, and these are its answers: neither settles
+			// anything on its own, and esc closes the field they open.
+			return run
+		}
+		if c.AllowAlways {
+			always := keys.Shown(keys.Decision.Always)
+			run = append(run, CardKey{always, always})
+		}
+		if c.Batch {
+			batch := keys.Shown(keys.Decision.Batch)
+			run = append(run, CardKey{batch, batch})
+		}
+		return run
+	}
 	if c.HeldOnArrival {
 		// The card has the keyboard but nobody gave it: it answers the two
 		// keys and offers nothing a mistyped word could have meant.
@@ -723,6 +816,124 @@ func (c *ApprovalCard) fullWords() string {
 		return c.FullLabel
 	}
 	return keys.Words(keys.Decision.Diff)
+}
+
+// The two words the shifted answers are offered under, and the labels their
+// fields carry. They are the same two words in both places on purpose: what
+// the key promised is what the field asks for, so a reader who pressed on the
+// promise is not met with a differently worded request.
+const (
+	noteWhatNext = "what next"
+	noteWhyNot   = "why not"
+)
+
+// noteIndent is how far the field sits in from the card's own left edge,
+// under the ┄ label that names it. Two columns, the note selector's, because
+// it is the same field under the same label.
+const noteIndent = 2
+
+// notedWords is the qualifier the shifted pair rides under: the two keys in
+// the order the run prints them, and what pressing one buys, in the grammar
+// the card's other qualifiers already use — the key, then the thing it opens.
+// One segment rather than two, because they are one offer — the same answers,
+// with a sentence — and two would spend two of a card's rows saying it twice.
+//
+// It is as short as it is on purpose: on an eighty-column terminal a longer
+// one pushes the handover onto a row of its own, and the row it takes comes
+// off the diff the card exists to show.
+func notedWords() string {
+	return keys.Shown(keys.Decision.AllowNoted) + "/" + keys.Shown(keys.Decision.DenyNoted) +
+		": a note"
+}
+
+// noteLabel is what the open field asks for, which is the half of the pair
+// the key that opened it stands for.
+func (c *ApprovalCard) noteLabel() string {
+	if c.NoteAllow {
+		return noteWhatNext
+	}
+	return noteWhyNot
+}
+
+// NoteWidth is how wide the host should draw its field: the card's inner
+// width, less the indent the ┄ label puts it in by and the one cell the
+// field's own caret stands in past its last character. The card owns the
+// geometry and the host owns the field, so the number crosses rather than
+// being guessed at either end.
+//
+// It has no floor under the room the card actually has. A field wider than
+// the row it is drawn on would be clipped while the caret it reports was
+// not, which puts the terminal's cursor outside the card on a terminal too
+// narrow to draw one — and a cursor standing where nothing is being typed is
+// worse than a field too narrow to read.
+func NoteWidth(width int) int { return max(Card{}.Inner(width)-noteIndent-1, 1) }
+
+// noteRows are the open field under the dimmed decision run: the label, the
+// field as its host rendered it, and the two keys that close it.
+//
+// The shape is the note selector's, down to the ┄ label and the two-column
+// indent under it (noteselect.go), because it is the same field doing the
+// same job and a reader meets both in the same session. What differs is the
+// hint: enter here does not confirm a selection, it sends the answer the key
+// opened the field for, and esc leaves that answer still waiting rather than
+// cancelling it.
+func (c *ApprovalCard) noteRows(width, inner int) []string {
+	rows := []string{sty.Dim.Render(Clip("┄ "+c.noteLabel(), inner))}
+	for _, l := range strings.Split(c.NoteField, "\n") {
+		rows = append(rows, Clip(strings.Repeat(" ", noteIndent)+l, inner))
+	}
+	send := "deny with this"
+	if c.NoteAllow {
+		send = "allow, and send this"
+	}
+	// Wrapped rather than clipped: what esc does here is the half a narrow
+	// terminal would take, and it is the half that has to be readable — a
+	// reader who cannot see that esc settles nothing has no way out of the
+	// field they can be sure of (docs/interface/principles.md#fold-never-hide).
+	return append(rows, hintRows([]string{
+		words(keys.Select.Take, send),
+		words(keys.Select.Cancel, "back to the card — nothing is answered"),
+	}, width)...)
+}
+
+// NoteOrigin is the cell the open note field's own render starts at inside
+// the rendered card. The host owns the field and so owns the caret inside it;
+// what the card knows is where it put the field, and the two are added.
+//
+// It is counted off the same two halves View lays the card out from rather
+// than measured a second time beside it, for the reason KeyAt reads its run
+// out of the rendered row: a position that agreed with the layout only by
+// upkeep is one that drifts a column the first time a row is added.
+func (c *ApprovalCard) NoteOrigin(width int) (x, y int, ok bool) {
+	if !c.NoteOpen {
+		return 0, 0, false
+	}
+	body, hints := c.buildRows(width)
+	rows := append(c.windowBody(body, len(hints), width), hints...)
+	// The field is the row after its ┄ label — the run above it may have
+	// wrapped to two rows, and the body above that is whatever fits.
+	at := -1
+	for i, row := range rows {
+		if strings.HasPrefix(ansi.Strip(row), "┄ ") {
+			at = i + 1
+		}
+	}
+	if at < 0 || at >= len(rows) {
+		return 0, 0, false
+	}
+	if width < minCardWidth {
+		// Below the frame the rows are drawn bare and the rules are dropped
+		// (Card.Render), so the row keeps its own indent and nothing else.
+		for _, row := range rows[:at] {
+			if row == cardRule {
+				at--
+			}
+		}
+		return noteIndent, at, true
+	}
+	// Inside the frame every row is preceded by the border and its padding
+	// column, and the top border is a row of its own.
+	return noteIndent + cardFrameWidth/2, at + 1, true
 }
 
 // severityRows are the severity as the body states it — the level and what

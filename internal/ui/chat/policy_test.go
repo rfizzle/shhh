@@ -130,8 +130,8 @@ func TestPolicy_FlaggedCommandAlwaysPrompts(t *testing.T) {
 	if strings.Contains(view, "[y/n/a]") {
 		t.Fatal("flagged command must not offer the always-allow option")
 	}
-	if !strings.Contains(view, "[y/N]") {
-		t.Fatal("flagged command should offer plain y/N")
+	if !strings.Contains(view, "[y/Y/n/N]") {
+		t.Fatal("flagged command should offer the two answers and their noted pair")
 	}
 
 	// 'a' is ignored on a flagged command.
@@ -158,8 +158,8 @@ func TestPolicy_AlwaysAllowCommandsViaKey(t *testing.T) {
 	// The second queued command puts a batch behind the card, so [A] joins
 	// the keys.
 	m = handover(t, m)
-	if !strings.Contains(m.View().Content, "[y/n/a/A]") {
-		t.Fatal("unflagged command prompt with a queue behind it should offer y/n/a/A")
+	if !strings.Contains(m.View().Content, "[y/Y/n/N/a/A]") {
+		t.Fatal("unflagged command prompt with a queue behind it should offer y/Y/n/N/a/A")
 	}
 
 	// 'a' approves this command and stops the session asking about commands
@@ -262,8 +262,8 @@ func TestPolicy_GenericGatedToolAlwaysPrompts(t *testing.T) {
 	if m.state != stateConfirmRun {
 		t.Fatalf("generic gated tool must always prompt, got state %d", m.state)
 	}
-	if !strings.Contains(m.View().Content, "[y/N]") {
-		t.Fatal("generic approval keeps plain y/N")
+	if !strings.Contains(m.View().Content, "[y/Y/n/N]") {
+		t.Fatal("generic approval keeps the two answers and their noted pair")
 	}
 }
 

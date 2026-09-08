@@ -704,6 +704,35 @@ type DecisionKeys struct {
 	Batch  Binding
 	Diff   Binding
 
+	// AllowNoted and DenyNoted are the same two answers with a sentence
+	// attached: the key opens a one-line field under the card, and what is
+	// written there travels with the answer
+	// (docs/capabilities/approvals-and-safety.md#a-no-can-say-why-and-a-yes-can-say-what-next).
+	//
+	// They are the shifted spellings of the answers they carry, which is a
+	// choice about legibility and not about scarcity: `e`, `x` and every
+	// unshifted letter but `y`, `n`, `a`, `d` and `t` are unclaimed on this
+	// surface. A shifted letter says "the same answer, more of it" without
+	// asking the reader to learn a second alphabet, and the pairing is
+	// visible in the run the card prints.
+	//
+	// The cost is that Allow and Deny give the shifted letters up: a surface
+	// answers one keystroke once (register.go), so `Y` and `N` could not go
+	// on staying second spellings of `y` and `n` here. What a reader who has
+	// been pressing `N` for a year gets is the field, open, with the denial
+	// still waiting behind it — and enter on an empty field is the denial
+	// they meant, byte for byte. One extra keystroke for a reflex, and the
+	// thing the reflex was reaching for is still what it lands on.
+	//
+	// On the cards that offer no note — a /run the reader typed, a child's
+	// routed ask — the shifted letters now answer nothing at all. That is
+	// the marker being made honest rather than a key being taken away: the
+	// capital N those cards print is the default marker and never was a key
+	// (ApprovalCard.KeyRun), and a pointer landing on it has always resolved
+	// to `n`. What it stops being is a keystroke that worked by coincidence.
+	AllowNoted Binding
+	DenyNoted  Binding
+
 	// DryRun is the command card's offer to find out what the command would
 	// do without doing it, where the command has a form that can be asked
 	// rather than told (internal/dryrun). It answers the hesitation the card
@@ -717,7 +746,9 @@ type DecisionKeys struct {
 	// card's own words say what it would try.
 	DryRun Binding
 
-	// Refuse is Deny on a card the reader summoned rather than was handed.
+	// Accept and Refuse are Allow and Deny on a card the reader summoned
+	// rather than was handed.
+	//
 	// Deny folds esc and ctrl+c into the answer, which is right for a card
 	// that arrived on its own: there is nothing to go back to, so leaving
 	// and declining are the same act. On a summoned card they are not — esc
@@ -725,6 +756,13 @@ type DecisionKeys struct {
 	// that outlives the session is exactly the consequence esc may never
 	// carry (docs/interface/principles.md#esc-is-always-the-safe-answer).
 	// So the answer is the letter alone and the way out is Select.Cancel.
+	//
+	// Accept exists for the other half of the same difference. A summoned
+	// card has no sentence to attach to its yes — nothing is waiting on the
+	// answer to read one — so the shifted letter is unspent there and stays
+	// the second spelling of yes it has always been, rather than being taken
+	// away from that surface by a field it does not offer.
+	Accept Binding
 	Refuse Binding
 
 	// The card's own scroll, for a body taller or wider than the panel
@@ -740,13 +778,16 @@ type DecisionKeys struct {
 }
 
 var Decision = DecisionKeys{
-	Allow:  bind("y", "allow", "y", "Y", "enter"),
-	Deny:   bind("n", "deny", "n", "N", "esc", "ctrl+c"),
-	Always: bind("a", "always allow this session", "a"),
-	Batch:  bind("A", "answer the marked", "A"),
-	Diff:   bind("d", "full diff", "d", "D"),
-	DryRun: bind("t", "try the harmless form", "t"),
-	Refuse: bind("n", "no, and stop offering", "n", "N"),
+	Allow:      bind("y", "allow", "y", "enter"),
+	Deny:       bind("n", "deny", "n", "esc", "ctrl+c"),
+	AllowNoted: bind("Y", "allow, and say what to do next", "Y"),
+	DenyNoted:  bind("N", "deny, and say why", "N"),
+	Always:     bind("a", "always allow this session", "a"),
+	Batch:      bind("A", "answer the marked", "A"),
+	Diff:       bind("d", "full diff", "d", "D"),
+	DryRun:     bind("t", "try the harmless form", "t"),
+	Accept:     bind("y", "yes", "y", "Y", "enter"),
+	Refuse:     bind("n", "no, and stop offering", "n", "N"),
 
 	ScrollUp:   bind("shift+↑", "scroll the card up", "shift+up"),
 	ScrollDown: bind("shift+↓", "scroll the card", "shift+down"),

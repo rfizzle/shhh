@@ -107,8 +107,8 @@ func TestGatedTool_DiffApprovalFlow(t *testing.T) {
 	}
 	// The card landed on a draft nobody was typing into, so it holds the
 	// keyboard and offers the two answers; [a] waits behind the handover.
-	if !strings.Contains(view, "[y/N]") {
-		t.Fatal("a card holding the keyboard by arrival should offer y/N")
+	if !strings.Contains(view, "[y/Y/n/N]") {
+		t.Fatal("a card holding the keyboard by arrival should offer y/Y/n/N")
 	}
 	if !strings.Contains(view, "[ctrl+space] for [a]/[d]") {
 		t.Fatal("the card should say what the handover still buys")
@@ -116,8 +116,8 @@ func TestGatedTool_DiffApprovalFlow(t *testing.T) {
 
 	// Approve.
 	m = handover(t, m)
-	if !strings.Contains(m.View().Content, "[y/n/a]") {
-		t.Fatal("after the handover the card should offer y/n/a")
+	if !strings.Contains(m.View().Content, "[y/Y/n/N/a]") {
+		t.Fatal("after the handover the card should offer y/Y/n/N/a")
 	}
 	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
 	m = updated.(Model)
@@ -323,8 +323,8 @@ func TestGatedTool_GenericPreview(t *testing.T) {
 	if !strings.Contains(view, "do the thing") {
 		t.Fatal("generic approval should show the summary")
 	}
-	if !strings.Contains(view, "[y/N]") {
-		t.Fatal("generic approval should offer y/N")
+	if !strings.Contains(view, "[y/Y/n/N]") {
+		t.Fatal("generic approval should offer y/Y/n/N")
 	}
 }
 

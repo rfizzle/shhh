@@ -177,7 +177,10 @@ func (m Model) graceShowing() bool {
 }
 
 // graceDiscards reports whether the window swallows this key: the keys that
-// would answer the decision. Three keys the run prints stay out of it. The
+// would answer the decision, the two that answer it with a sentence included
+// — a shifted letter from the tail of a buffered burst is the reflex this
+// window exists for, and a field opened by one is a mode the reader did not
+// ask for. Three keys the run prints stay out of it. The
 // chords no sentence can produce stay live — ctrl+c still denies, the
 // handover still gates — and esc keeps its way back to the draft, because
 // the safe answer has to stay reachable for esc to be it
@@ -188,7 +191,8 @@ func (m Model) graceDiscards(pressed string) bool {
 	if keys.Is(pressed, keys.Draft.Cancel) || keys.Is(pressed, keys.Draft.Clear) {
 		return false
 	}
-	return keys.Is(pressed, keys.Decision.Allow) || keys.Is(pressed, keys.Decision.Deny)
+	return keys.Is(pressed, keys.Decision.Allow) || keys.Is(pressed, keys.Decision.Deny) ||
+		keys.Is(pressed, keys.Decision.AllowNoted) || keys.Is(pressed, keys.Decision.DenyNoted)
 }
 
 // graceTickMsg repaints the card when the window expires between keys; the
@@ -348,7 +352,12 @@ func (m Model) routeDecision(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 func (m Model) escLeavesWaiting() bool {
 	switch m.state {
 	case stateConfirmRun:
-		return m.memoryAsk == nil
+		// An open note field answers esc itself — it closes the field and
+		// leaves the decision waiting — so esc is not the way back to the
+		// draft while one is up. Two surfaces cannot both have the key, and
+		// the nearer one wins: a reader escaping out of a field they opened
+		// means the field (approval.go).
+		return m.memoryAsk == nil && m.decisionNote == nil
 	case statePlanApprove:
 		return false
 	}

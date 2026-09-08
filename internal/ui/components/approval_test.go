@@ -519,6 +519,155 @@ func TestApprovalCard_TheDefaultMarkerIsNotAKey(t *testing.T) {
 	}
 }
 
+// notedCard is the card as the session's own decisions draw it: the two
+// answers, and the two that carry a sentence.
+func notedCard() *ApprovalCard {
+	return &ApprovalCard{
+		Variant: ApprovalCommand, Title: "Approve command",
+		Headline: "Assistant wants to run: go test ./...",
+		Question: "Run this command?", Noted: true,
+	}
+}
+
+// The capital is a key on this card, so the default marker is gone from it
+// and every cell of the wider run still resolves to the key under it.
+func TestApprovalCard_TheNotedRunDividesWithNothingLeftOver(t *testing.T) {
+	c := notedCard()
+	if c.keys() != "[y/Y/n/N]" {
+		t.Fatalf("a noted card draws both spellings of both answers, got %s", c.keys())
+	}
+	row := runRow(t, c, 80)
+	plain := ansi.Strip(row)
+	start := ansi.StringWidth(plain[:strings.Index(plain, c.keys())])
+	// [ y / Y / n / N ]
+	want := []string{"y", "y", "y", "Y", "Y", "n", "n", "N", "N"}
+	for i, key := range want {
+		got, ok := c.KeyAt(row, start+i)
+		if !ok || got != key {
+			t.Fatalf("cell %d of %s should be %q, got %q (found=%v)", i, c.keys(), key, got, ok)
+		}
+	}
+	if _, ok := c.KeyAt(row, start+len(want)); ok {
+		t.Fatal("the cell past the run belongs to no key")
+	}
+	// And each of them answers as the run says it does.
+	for _, tc := range []struct {
+		key  string
+		want ApprovalDecision
+	}{
+		{"y", ApprovalApprove}, {"Y", ApprovalApproveNoted},
+		{"n", ApprovalDeny}, {"N", ApprovalDenyNoted},
+	} {
+		if done, got := notedCard().Update(key(tc.key)); !done || got != tc.want {
+			t.Errorf("%q should answer %v, got %v/%v", tc.key, tc.want, done, got)
+		}
+	}
+	if !strings.Contains(ansi.Strip(row), notedWords()) {
+		t.Errorf("the run should say what the shifted pair buys:\n%s", row)
+	}
+}
+
+// A card with nothing waiting to read a sentence is unchanged, capital-N
+// default marker included: the shifted letters go on meaning what they meant.
+func TestApprovalCard_WithoutTheOfferTheDefaultMarkerStays(t *testing.T) {
+	c := notedCard()
+	c.Noted = false
+	if c.keys() != "[y/N]" {
+		t.Fatalf("a card with no note offer keeps its default marker, got %s", c.keys())
+	}
+	for _, k := range []string{"Y", "N"} {
+		if done, got := c.Update(key(k)); done && (got == ApprovalApproveNoted || got == ApprovalDenyNoted) {
+			t.Errorf("%q must not open a field on a card that offers none, got %v", k, got)
+		}
+	}
+}
+
+// A noted card that took the keyboard by arrival claims all four answers —
+// none of them settles anything a reader could not take back with esc — and
+// still nothing whose consequence outlives the call.
+func TestApprovalCard_ANotedArrivalClaimsAllFourAnswers(t *testing.T) {
+	c := notedCard()
+	c.HeldOnArrival, c.Handover = true, "ctrl+space"
+	c.AllowAlways, c.AlwaysHint = true, `a: always allow "go test"`
+	c.FullDiff = true
+	run := c.KeyRun()
+	var got []string
+	for _, k := range run {
+		got = append(got, k.Key)
+	}
+	if strings.Join(got, "") != "yYnN" {
+		t.Fatalf("an arrival card should draw the four answers alone, got %v", got)
+	}
+	row := runRow(t, c, 80)
+	for _, absent := range []string{"a", "d"} {
+		for col := range ansi.StringWidth(ansi.Strip(row)) {
+			if k, ok := c.KeyAt(row, col); ok && k == absent {
+				t.Fatalf("an arrival card must offer no cell for %q", absent)
+			}
+		}
+	}
+}
+
+// The open field: the run is drawn dead and says why, the label names what
+// the key that opened it asked for, and the field the host handed over is
+// under it.
+func TestApprovalCard_TheOpenFieldDrawsTheRunDead(t *testing.T) {
+	for _, tc := range []struct {
+		allow bool
+		label string
+	}{{false, noteWhyNot}, {true, noteWhatNext}} {
+		c := notedCard()
+		c.NoteOpen, c.NoteAllow, c.NoteField = true, tc.allow, "not that file"
+		view := ansi.Strip(c.View(80))
+		for _, want := range []string{typingWords, "┄ " + tc.label, "not that file", "[esc]", "[enter]"} {
+			if !strings.Contains(view, want) {
+				t.Fatalf("the open field should carry %q:\n%s", want, view)
+			}
+		}
+		// What the keys would have done is not advertised while none of them
+		// is a key: the qualifiers go with the run.
+		if strings.Contains(view, notedWords()) {
+			t.Fatalf("a dead run should not qualify its keys:\n%s", view)
+		}
+		x, y, ok := c.NoteOrigin(80)
+		if !ok {
+			t.Fatal("an open field has a place on the card")
+		}
+		rows := strings.Split(view, "\n")
+		if y < 0 || y >= len(rows) || !strings.Contains(rows[y], "not that file") {
+			t.Fatalf("NoteOrigin points at row %d, which is %q", y, rows[min(y, len(rows)-1)])
+		}
+		if at := ansi.StringWidth(rows[y][:strings.Index(rows[y], "not that file")]); at != x {
+			t.Fatalf("NoteOrigin says column %d, the field starts at %d in %q", x, at, rows[y])
+		}
+	}
+}
+
+// Below the frame the card is drawn bare — no border, no rules — so the
+// field's place is counted in the rows that are left, or the caret would sit
+// two rows and two columns off the row it belongs to.
+func TestApprovalCard_TheFieldsPlaceSurvivesTheBareCard(t *testing.T) {
+	c := notedCard()
+	c.NoteOpen, c.NoteField = true, "not that file"
+	const narrow = minCardWidth - 1
+	x, y, ok := c.NoteOrigin(narrow)
+	if !ok {
+		t.Fatal("an open field has a place on a bare card too")
+	}
+	// The card is too narrow to show the sentence, so the row is named by
+	// what is left of it: the indent, and the label above it.
+	rows := strings.Split(ansi.Strip(c.View(narrow)), "\n")
+	if y < 1 || y >= len(rows) || !strings.HasPrefix(rows[y], strings.Repeat(" ", noteIndent)+"not") {
+		t.Fatalf("NoteOrigin points at row %d of %q", y, rows)
+	}
+	if !strings.HasPrefix(rows[y-1], "┄ ") {
+		t.Fatalf("the field should sit under its label, but row %d is %q", y-1, rows[y-1])
+	}
+	if x != noteIndent {
+		t.Fatalf("a bare card has no border to step past, so the field starts at %d, not %d", noteIndent, x)
+	}
+}
+
 // A row that does not carry the run carries no target: the geometry is read
 // out of the render, so a key a narrow terminal clipped away is not
 // clickable.

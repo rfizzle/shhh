@@ -390,6 +390,13 @@ type entry struct {
 	deniedBy string
 	// denyRule names the rule behind an auto denial, e.g. "plan mode".
 	denyRule string
+	// denyNote is what the reader said when they refused, folded under the
+	// row (docs/interface/principles.md#fold-never-hide). Only a reader's
+	// denial carries one: a rule has nothing to say beyond which rule it was
+	// (docs/capabilities/approvals-and-safety.md#denials-are-two-different-facts).
+	// It is not toolResult — the call never ran and produced nothing — which
+	// is why the row that never has a body has this one instead.
+	denyNote string
 	// allowedBy names what let a gated call run without the reader being
 	// asked — the mode or grant that allowed it, "classifier", or the batch —
 	// and renders in the act's own outcome field. The feed states an act
@@ -863,6 +870,13 @@ type Model struct {
 	// whenever the card changes (armConfirm).
 	cardScroll int
 	cardPan    int
+	// decisionNote is the one-line field a decision card's shifted answer
+	// opened, and the answer it will carry
+	// (docs/capabilities/approvals-and-safety.md#a-no-can-say-why-and-a-yes-can-say-what-next).
+	// It lives here for the reason the scroll does — the card is rebuilt
+	// every frame and what is typed has to outlive one — and it is cleared
+	// wherever the card changes (setTurnState).
+	decisionNote *decisionNote
 	// readingCopied is the reading rail's note about the last [y]: what was
 	// copied and how far it ran. It stands until the next key in the mode,
 	// which is the moment the reader has moved on from the copy it captions.

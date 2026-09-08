@@ -205,6 +205,26 @@ func graceRows(keys string, width int) []string {
 	return []string{sty.Dimmer.Render(keys), sty.Dim.Render(Clip(graceWords, inner))}
 }
 
+// typingWords is the state of a decision surface whose own note field has the
+// keyboard: the keys are on the card and none of them is a key, because every
+// letter is going into the sentence
+// (docs/interface/surfaces.md#the-approval-card). Said in words for the
+// reason the two above are — the dimming never carries the meaning alone
+// (docs/interface/principles.md#colour-never-carries-meaning-alone).
+const typingWords = "these letters go into your note"
+
+// typingRows renders that key row: the not-yet-live row's shape, with no
+// handover under it, because nothing is being handed anywhere — the field is
+// already where the keyboard is.
+func typingRows(keys string, width int) []string {
+	inner := Card{}.Inner(width)
+	keys = Clip(keys, inner)
+	if pad := inner - lipgloss.Width(keys) - lipgloss.Width(typingWords); pad >= 2 {
+		return []string{sty.Dimmer.Render(keys) + strings.Repeat(" ", pad) + sty.Dim.Render(typingWords)}
+	}
+	return []string{sty.Dimmer.Render(keys), sty.Dim.Render(Clip(typingWords, inner))}
+}
+
 // handoverRow is the one live key on a not-yet-live surface. Its wording is
 // the card's rather than the caller's, because the mid-sentence rule fixes
 // it: the key, what it does, and where the letters go until it is pressed.

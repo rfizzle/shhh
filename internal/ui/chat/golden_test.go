@@ -895,6 +895,35 @@ func TestGolden_Interrupt(t *testing.T) {
 	})
 }
 
+// TestGolden_DecisionNote captures the card with its note field open: the
+// decision run drawn dead because the field has the keyboard, the ┄ label
+// naming what the key that opened it asked for, and the two keys that close
+// it (docs/interface/surfaces.md#the-approval-card).
+//
+// It records the cursor, which is the whole reason it is a capture of the
+// panel rather than of the card: the field is the card's and the caret is the
+// host's, and where the two meet is the one thing neither of them can be
+// asked about on its own.
+func TestGolden_DecisionNote(t *testing.T) {
+	// One width below the card's own frame threshold, where the rows are
+	// drawn bare and the rules are dropped: the field's place is counted
+	// differently there, and that is the arithmetic worth a fixture.
+	captureCursorGolden(t, "decision-note", "the approval card's note field", append([]int{14}, goldenWidths...),
+		func(width int) (golden.Panel, *golden.Cursor) {
+			m := interruptedModel(t, "")
+			m.width, m.height = width, 40
+			m.syncInputWidth()
+			m = handover(t, m)
+			m = typeInto(t, press(t, m, "N"), "not that file")
+			m.syncViewport()
+			return golden.Panel{
+					Label: "the field open, and every letter going into it",
+					View:  strings.Join(m.confirmPanelLines(), "\n"),
+				},
+				goldenCursor(m.confirmCursor(m.contentWidth()))
+		})
+}
+
 // interruptSurface is the bottom panel a decision produces: ungated it is the
 // card, its DRAFT rail and the live frame under them; gated it is the whole
 // panel the card takes over.

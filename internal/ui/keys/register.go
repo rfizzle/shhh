@@ -174,11 +174,27 @@ func Surfaces() []Surface {
 			Position: Beside,
 			Reached:  Shown(Draft.Answer),
 			Bindings: []Binding{
-				Decision.Allow, Decision.Deny, Decision.Always,
+				Decision.Allow, Decision.Deny,
+				Decision.AllowNoted, Decision.DenyNoted,
+				Decision.Always,
 				Decision.Batch, Decision.Diff, Decision.DryRun, Agent.Go,
 				Decision.ScrollUp, Decision.ScrollDown,
 				Decision.PanLeft, Decision.PanRight,
 			},
+		},
+		{
+			// A row of its own for the reason the transcript search has one:
+			// a surface being typed into keeps every letter as text, so none
+			// of the card's answers are live while the field is up and the
+			// two keys that are not letters are the whole of what it
+			// answers. The words are the field's rather than the selector's
+			// — enter sends the sentence with the answer it was opened for,
+			// and esc closes the field with that answer still waiting.
+			Name:     "the approval card's note field",
+			Section:  "docs/interface/surfaces.md#the-approval-card",
+			Position: Takeover,
+			Reached:  Bracket(Decision.AllowNoted) + " or " + Bracket(Decision.DenyNoted) + " on the card",
+			Bindings: []Binding{Select.Take, Select.Cancel},
 		},
 		{
 			// A row of its own, because the card is a list and answers a
@@ -204,7 +220,7 @@ func Surfaces() []Surface {
 			Section:  "docs/interface/surfaces.md#the-approval-card",
 			Position: Takeover,
 			Reached:  "/init, or the start screen's scaffold offer",
-			Bindings: []Binding{Decision.Allow, Decision.Refuse, Select.Cancel},
+			Bindings: []Binding{Decision.Accept, Decision.Refuse, Select.Cancel},
 		},
 		{
 			Name:     "the inline confirm and the undo confirm",

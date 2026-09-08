@@ -63,6 +63,13 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		next, act := o.Update(m, msg)
 		return next, act.run
 	}
+	// The card's own note field, if one is open. It is answered above
+	// everything below it because it holds the keyboard: while it is up the
+	// card's letters, its digits and its chords are all text
+	// (approval.go).
+	if m.decisionNote != nil {
+		return m.updateDecisionNote(msg)
+	}
 	// The card's own scroll, answered before the decision keys so a held
 	// card cannot read a chord as the start of a sentence. The chords reach
 	// here only while the card holds the keyboard; ungated they still
@@ -82,13 +89,14 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	}
 	switch result {
 	case components.ApprovalApprove:
-		if m.pendingApproval != nil {
-			m.recordDecision(observe.DecisionAllow, observe.ReasonUser)
-		}
-		if m.pendingApproval != nil && m.pendingApproval.kind != approvalExec {
-			return m.executeApprovedTool()
-		}
-		return m.executeRun()
+		return m.approvePending("")
+	// The two answers that carry a sentence settle nothing yet: the key opens
+	// the field, and the answer is given when the field is confirmed
+	// (docs/capabilities/approvals-and-safety.md#a-no-can-say-why-and-a-yes-can-say-what-next).
+	case components.ApprovalApproveNoted:
+		return m.openDecisionNote(true)
+	case components.ApprovalDenyNoted:
+		return m.openDecisionNote(false)
 	case components.ApprovalFullDiff:
 		// [d] opens the pending edit full screen; esc returns here
 		// with the approval still pending.

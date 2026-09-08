@@ -442,7 +442,7 @@ func TestArrival_TheKeysASentenceCouldHaveMeantWaitForTheHandover(t *testing.T) 
 	// card, and the card says where it went.
 	m := interruptedModel(t, "")
 	view := ansi.Strip(m.View().Content)
-	if !strings.Contains(view, "[y/N]") {
+	if !strings.Contains(view, "[y/Y/n/N]") {
 		t.Fatalf("an arrival-held card offers its two answers:\n%s", view)
 	}
 	if !strings.Contains(view, "[ctrl+space] for [a]/[d]") {
@@ -463,7 +463,7 @@ func TestArrival_TheKeysASentenceCouldHaveMeantWaitForTheHandover(t *testing.T) 
 
 	// The handover buys it back, and now it means what the card says.
 	m = handover(t, m)
-	if !strings.Contains(ansi.Strip(m.View().Content), "[y/n/a]") {
+	if !strings.Contains(ansi.Strip(m.View().Content), "[y/Y/n/N/a]") {
 		t.Fatal("after the handover the card offers [a] again")
 	}
 }
