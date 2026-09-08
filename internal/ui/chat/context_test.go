@@ -391,7 +391,7 @@ func TestCompact_RestartsFromSummary(t *testing.T) {
 		t.Fatalf("context estimate should reset to %d, got %d", want, m.estimatedContextTokens())
 	}
 	last := m.transcript[len(m.transcript)-1]
-	if last.kind != entryAssistant || last.text != "the summary" {
+	if last.kind != entryCompactSummary || last.text != "the summary" {
 		t.Fatalf("transcript should show the summary, got %+v", last)
 	}
 }

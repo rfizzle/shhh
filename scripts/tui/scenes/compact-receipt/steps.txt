@@ -1,0 +1,32 @@
+# The receipt a compaction leaves, and the one italic run on the screen
+# (docs/interface/surfaces.md#the-transcript). Two turns of work are folded
+# into a summary the model wrote, and the summary is quoted under the receipt
+# line rather than given a turn's own heading — because nobody asked for it,
+# and it is the model's words about the conversation rather than a reply in
+# it.
+#
+# Look at the picture for the part the cells cannot carry: the summary is the
+# only slanted run in the pane. Everything around it — the receipt line, the
+# frame's key rail, the notices above it — is upright, which is the whole of
+# what this scene is here to hold.
+#
+# Spaces rather than tabs in the fixtures: a tab is re-expanded by the
+# terminal against the pane's own columns, not the row's, and the capture
+# would read as a column that drifted.
+setup printf 'package agent\n\nfunc loop() {\n    for round := 0; round < limit; round++ {\n        step()\n    }\n}\n' > loop.go
+setup printf 'package agent\n\nconst limit = 25\n\nfunc round() int {\n    return limit\n}\n' > round.go
+snap 01-start "Some things worth doing first"
+keys "where is the round limit counted" Enter
+snap 02-first "read from a constant in loop.go"
+keys "and who declares it" Enter
+snap 03-second "disagree about who owns it"
+# The compaction itself: the receipt line, and under it the summary the
+# provider answered the compaction's own request with.
+keys "/compact" Enter
+snap 04-receipt "continuing from this summary"
+snap 05-summary "established loop.go as the owner"
+# And the session ends the way every scene ends: the cancel chord, twice.
+keys C-c
+snap 06-quit-armed "press again to quit"
+keys C-c
+snap 07-exit "that is everything the screen was holding"

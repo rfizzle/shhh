@@ -112,7 +112,7 @@ func (r InspectorRail) todoBlock(width int) (railBlock, bool) {
 		b.add(railRow(left, row.note(), width, inspectorIndent))
 	}
 	if t.More > 0 {
-		b.add(indentRow(sty.Dim.Render(fmt.Sprintf("… %d more", t.More)), width))
+		b.add(indentRow(sty.Hint.Render(fmt.Sprintf("… %d more", t.More)), width))
 	}
 	if t.Hint != "" {
 		b.add(indentRow(sty.Hint.Render(t.Hint), width))

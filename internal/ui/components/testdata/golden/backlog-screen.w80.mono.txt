@@ -256,7 +256,7 @@ backlog · the cockpit sprint              6 items · [?] hide the keys · [q] b
 ␛[38;5;244mstory · high · size M · in progress · written 2026-08-28 · in the cockpit sprint␛[m
 ␛[38;5;244m1 item waits on this: screen-over-items␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
-␛[3;38;5;244m… (+7 more rows)␛[m
+␛[38;5;244m… (+7 more rows)␛[m
 
 ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read the body␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter by text␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s/p/k/r]␛[m␛[38;5;244m narrow it␛[m
 ␛[38;5;254m[tab]␛[m␛[38;5;244m what shipped␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m open it in $EDITOR␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m run it␛[m
@@ -280,7 +280,7 @@ backlog · the cockpit sprint              6 items · [?] hide the keys · [q] b
 ␛[38;5;244mstory · high · size L · open · written 2026-08-30␛[m
 ␛[38;5;244mwaits on rail-todo-block, prose-renderer · [w] goes there␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
-␛[3;38;5;244m… (+5 more rows)␛[m
+␛[38;5;244m… (+5 more rows)␛[m
 
 ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read the body␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter by text␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s/p/k/r]␛[m␛[38;5;244m narrow it␛[m
 ␛[38;5;254m[tab]␛[m␛[38;5;244m what shipped␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m open it in $EDITOR␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m run it␛[m
@@ -346,7 +346,7 @@ backlog · the cockpit sprint              6 items · [?] hide the keys · [q] b
 ␛[38;5;244mstory · high · size L · open · written 2026-08-30␛[m
 ␛[38;5;244mwaits on rail-todo-block, prose-renderer · [w] goes there␛[m
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
-␛[3;38;5;244m… (+5 more rows)␛[m
+␛[38;5;244m… (+5 more rows)␛[m
 
 ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read the body␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter by text␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s/p/k/r]␛[m␛[38;5;244m narrow it␛[m
 ␛[38;5;254m[tab]␛[m␛[38;5;244m what shipped␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m open it in $EDITOR␛[m␛[38;5;244m · ␛[m␛[38;5;254m[R]␛[m␛[38;5;244m run it␛[m
@@ -410,7 +410,7 @@ backlog · the cockpit sprint              6 items · [?] hide the keys · [q] b
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;244m**As a** reader, **I want** the queue beside the turn.␛[m
-␛[3;38;5;244m… (+5 more rows)␛[m
+␛[38;5;244m… (+5 more rows)␛[m
 
 ␛[38;5;254mDrop rail-todo-block? The file is deleted, not archived.␛[m  ␛[1;38;5;254m[y/N]␛[m
 
@@ -429,7 +429,7 @@ backlog · the cockpit sprint              6 items · [?] hide the keys · [q] b
 ␛[38;5;244mThe backlog block on the inspector rail␛[m
 ␛[38;5;244mstory · high · size M · in progress · written 2026-08-28 · in the cockpit sprint␛[m
 ␛[38;5;244m1 item waits on this: screen-over-items␛[m
-␛[3;38;5;244m… (+8 more rows)␛[m
+␛[38;5;244m… (+8 more rows)␛[m
 
 ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read the body␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter by text␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s/p/k/r]␛[m␛[38;5;244m narrow it␛[m
 ␛[38;5;254m[tab]␛[m␛[38;5;244m what shipped␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
@@ -443,7 +443,7 @@ backlog · the cockpit sprint              6 items · [?] hide the keys · [q] b
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;254m❯ ␛[m␛[38;5;254m▸␛[m ␛[1;38;5;254mrail-todo-block␛[m  ␛[38;5;244mHM␛[m␛[38;5;244m  in progress  The backlog block on the inspector rail␛[m
-␛[3;38;5;244m… (+1 more rows)␛[m
+␛[38;5;244m… (+1 more rows)␛[m
 
 ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move between items␛[m
 ␛[38;5;254m[enter]␛[m␛[38;5;244m read the body in the pane␛[m

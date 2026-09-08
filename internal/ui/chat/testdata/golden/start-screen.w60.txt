@@ -209,8 +209,8 @@ gate     default — vet, test · runs without asking
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m
     ␛[38;5;241mone approval, then it reports back␛[m
 
-␛[3;38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…␛[m
-␛[3;38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…␛[m
+␛[38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…␛[m
+␛[38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…␛[m
 
 · the pointer on the offer that costs an approval
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -229,8 +229,8 @@ gate     default — vet, test · runs without asking
 ␛[1;48;5;62m❯ ⚙ run the default quality gate and triage what fails␛[m
     ␛[38;5;241mone approval, then it reports back␛[m
 
-␛[3;38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…␛[m
-␛[3;38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…␛[m
+␛[38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…␛[m
+␛[38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…␛[m
 
 · clean tree · nothing saved, no gate, no project context
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -251,8 +251,8 @@ gate     default — vet, test · runs without asking
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun go test ./... and triage the failures␛[m
     ␛[38;5;241mone approval, then it reports back␛[m
 
-␛[3;38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…␛[m
-␛[3;38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…␛[m
+␛[38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…␛[m
+␛[38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…␛[m
 
 · outside a repository · the package count is a floor
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -271,8 +271,8 @@ gate     default — vet, test · runs without asking
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m
     ␛[38;5;241mone approval, then it reports back␛[m
 
-␛[3;38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…␛[m
-␛[3;38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…␛[m
+␛[38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…␛[m
+␛[38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…␛[m
 
 · nothing read · the third offer writes the file that would be
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -291,8 +291,8 @@ gate     default — vet, test · runs without asking
     ␛[38;5;241mreads only, no writes␛[m
   ␛[38;5;214m✎␛[m ␛[38;5;252mscaffold .shhh/␛[m␛[38;5;241m — one approval␛[m
 
-␛[3;38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…␛[m
-␛[3;38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…␛[m
+␛[38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…␛[m
+␛[38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…␛[m
 
 · somebody else is in this checkout too
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -311,8 +311,8 @@ gate     default — vet, test · runs without asking
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m
     ␛[38;5;241mone approval, then it reports back␛[m
 
-␛[3;38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…␛[m
-␛[3;38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…␛[m
+␛[38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…␛[m
+␛[38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…␛[m
 
 · a checkout nobody has answered for · what it is holding back
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -334,8 +334,8 @@ gate     default — vet, test · runs without asking
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun go test ./... and triage the failures␛[m
     ␛[38;5;241mone approval, then it reports back␛[m
 
-␛[3;38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…␛[m
-␛[3;38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…␛[m
+␛[38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…␛[m
+␛[38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…␛[m
 
 · the checkout brought its own settings and its own wordings
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -358,8 +358,8 @@ gate     default — vet, test · runs without asking
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m
     ␛[38;5;241mone approval, then it reports back␛[m
 
-␛[3;38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…␛[m
-␛[3;38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…␛[m
+␛[38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…␛[m
+␛[38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…␛[m
 
 · typing dismissed the list · the facts stay
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -371,4 +371,4 @@ gate     default — vet, test · runs without asking
 ␛[38;5;241mcontext␛[m  ␛[38;5;252mAGENTS.md␛[m␛[38;5;241m — in the system prompt␛[m
 ␛[38;5;241mgate   ␛[m  ␛[38;5;252mdefault␛[m␛[38;5;241m — vet, test · runs without asking␛[m
 
-␛[3;38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…␛[m
+␛[38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…␛[m

@@ -323,6 +323,11 @@ const (
 	// this is where a longer one can be read whole, and where the readings
 	// before it are still on record.
 	entrySummary
+	// entryCompactSummary: the summary a compaction produced, quoted under
+	// the receipt row that announced it (context.go). It is the model's own
+	// words and not a turn — nothing was asked for them — so they are drawn
+	// italic and indented instead of under an Assistant heading.
+	entryCompactSummary
 	// entryTodoRun: the backlog run, one row for the whole of it, updated in
 	// place as the run moves through its stages (todorun.go). It holds a
 	// handle on the run's own state rather than a copy of it, the way the

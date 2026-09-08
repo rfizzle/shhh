@@ -40,5 +40,5 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mApply this change? [y/Y/n/N/a]␛[m                                         ␛[38;5;244mthese letters go into the field␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m┄ why not␛[m                                                                                              ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m␛[m␛[38;5;254mnot that file␛[m ␛[38;5;254m                                                                                      ␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[3;38;5;244m[enter] deny with this · [esc] back to the card — nothing is answered␛[m                                  ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m[enter] deny with this · [esc] back to the card — nothing is answered␛[m                                  ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

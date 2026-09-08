@@ -59,7 +59,7 @@ You
                                                                                                                              
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 ␛[1;38;5;254msearch␛[m␛[38;5;244m: ␛[m␛[38;5;254mloop.go␛[m␛[38;5;244m · 1 of 3␛[m
-␛[3;38;5;244menter keep the search · esc clear it␛[m
+␛[38;5;244menter keep the search · esc clear it␛[m
 
 
 · kept · the pointer reversed, [n/N] on the bar

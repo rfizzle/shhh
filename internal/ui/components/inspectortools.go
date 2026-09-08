@@ -87,7 +87,7 @@ func (r InspectorRail) toolsBlock(width int) (railBlock, bool) {
 		b.add(railRow(glyph+" "+sty.Body.Render(s.Name), right, width, inspectorIndent))
 	}
 	if t.More > 0 {
-		b.add(indentRow(sty.Dim.Render(fmt.Sprintf("… %d more", t.More)), width))
+		b.add(indentRow(sty.Hint.Render(fmt.Sprintf("… %d more", t.More)), width))
 	}
 	if t.MemoryOmitted > 0 {
 		// A source row in everything but name: the memory the prompt carries

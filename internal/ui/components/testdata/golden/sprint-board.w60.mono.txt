@@ -158,7 +158,7 @@ Reads as a minor release.
 ␛[1;38;5;254mkeys-are-declared-once␛[m
 ␛[38;5;244mEvery key is declared once␛[m
 ␛[38;5;244mchore · high · size M · done · written 2026-08-20 · in the …␛[m
-␛[3;38;5;244m… (+3 more rows)␛[m
+␛[38;5;244m… (+3 more rows)␛[m
 
 ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read the body␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter by text␛[m
 ␛[38;5;254m[s/p/k/r]␛[m␛[38;5;244m narrow it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m what shipped␛[m
@@ -184,7 +184,7 @@ Reads as a minor release.
 ␛[1;38;5;254mkeys-are-declared-once␛[m
 ␛[38;5;244mEvery key is declared once␛[m
 ␛[38;5;244mchore · high · size M · done · written 2026-08-20 · in the …␛[m
-␛[3;38;5;244m… (+3 more rows)␛[m
+␛[38;5;244m… (+3 more rows)␛[m
 
 ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m read the body␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter by text␛[m
 ␛[38;5;254m[s/p/k/r]␛[m␛[38;5;244m narrow it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m what shipped␛[m

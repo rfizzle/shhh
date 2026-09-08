@@ -67,7 +67,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254mnone␛[m␛[38;5;244m — this is not a git work tree and shhh does not record commands␛[m                         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m␛[38;5;244m — the workspace profile removes it␛[m                                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[3;38;5;244mRun this command? [y/N] · [g] attach to writer-1 · [alt+a] agents · [n] deny — the safe answer␛[m         ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mRun this command? [y/N] · [g] attach to writer-1 · [alt+a] agents · [n] deny — the safe answer␛[m         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m                               ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
@@ -81,7 +81,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254mnone␛[m␛[38;5;244m — this is not a git work tree and shhh does not record commands␛[m                         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m␛[38;5;244m — the workspace profile removes it␛[m                                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[3;38;5;244mRun this command? [y/N] · any other key goes to your draft · [n] deny — the safe answer␛[m                ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mRun this command? [y/N] · any other key goes to your draft · [n] deny — the safe answer␛[m                ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m                               ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
@@ -98,7 +98,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244m   2  keep 0␛[m                                                                                           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m… 118 more lines · shift+↓␛[m                                                                             ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[3;38;5;244mApply the agent's patch to your workspace? [y/N]  (d: full diff) · [g] attach to writer-1␛[m              ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[3;38;5;244m[alt+a] agents␛[m                                                                                         ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mApply the agent's patch to your workspace? [y/N]  (d: full diff) · [g] attach to writer-1␛[m              ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m[alt+a] agents␛[m                                                                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m                               ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

@@ -70,9 +70,9 @@ Should the migration be reversible?  [y/N]
 ␛[38;5;244m│␛[m   3. Something else …  ␛[38;5;244manswer in your own words␛[m      ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m┄ note (optional)␛[m                                    ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m(none)␛[m                                             ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[3;38;5;244m[tab] note/options · [enter] confirm␛[m                 ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[3;38;5;244m[d] the full answer · [←→] the next question␛[m         ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[3;38;5;244m[esc] cancel␛[m                                         ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;244m[tab] note/options · [enter] confirm␛[m                 ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;244m[d] the full answer · [←→] the next question␛[m         ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;244m[esc] cancel␛[m                                         ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────╯␛[m
 
 · one answered · the mark turns and the tail counts what is still open
@@ -80,24 +80,24 @@ Should the migration be reversible?  [y/N]
 Should the migration be reversible?  ␛[1;38;5;254m[y/N]␛[m
 ␛[38;5;244m┄ note (optional)␛[m
   ␛[38;5;244m(none)␛[m
-␛[3;38;5;244m[y] yes · [N] no — the default · [tab] note␛[m
-␛[3;38;5;244m[←→] the next question␛[m
+␛[38;5;244m[y] yes · [N] no — the default · [tab] note␛[m
+␛[38;5;244m[←→] the next question␛[m
 
 · the free answer · its field is shut so the arrows stay the strip's
 ␛[38;5;254m✓ 1␛[m  ␛[38;5;254m✓ 2␛[m  ␛[1;48;5;237m▸ 3␛[m  ␛[38;5;244m· submit␛[m␛[38;5;244m  3 of 3 · 1 unanswered␛[m
 ␛[38;5;244m╭─ What should the flag be called? ────────────────────╮␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m┄ note (required)␛[m                                    ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m(none)␛[m                                             ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[3;38;5;244m[enter] confirm · [tab] answer␛[m                       ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[3;38;5;244m[←→] the next question · [esc] cancel␛[m                ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;244m[enter] confirm · [tab] answer␛[m                       ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;244m[←→] the next question · [esc] cancel␛[m                ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────╯␛[m
 
 · the tab that ends the set · what enter sends, and what leaving a tab open costs
 ␛[38;5;254m✓ 1␛[m  ␛[38;5;254m✓ 2␛[m  ␛[38;5;244m· 3␛[m  ␛[1;48;5;237m▸ submit␛[m␛[38;5;244m  submit · 1 unanswered␛[m
 ␛[38;5;244m╭─ the answers ────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m send 2 answers · 1 unanswered, sent as skipped       ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[3;38;5;244m[enter] send · [←→] the next question␛[m                ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[3;38;5;244m[esc] answer in your own words␛[m                       ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;244m[enter] send · [←→] the next question␛[m                ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;244m[esc] answer in your own words␛[m                       ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────╯␛[m
 
 · four questions · the most one call may carry, which is where the strip is tightest
@@ -108,7 +108,7 @@ Should the migration be reversible?  ␛[1;38;5;254m[y/N]␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m[ ]␛[m Something else …                               ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m┄ note (optional)␛[m                                    ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m(none)␛[m                                             ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[3;38;5;244m[tab] note/options · [space] toggle · [a] all/none␛[m   ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[3;38;5;244m[d] the full answer · [←→] the next question␛[m         ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[3;38;5;244m[enter] apply (0) · [esc] cancel␛[m                     ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;244m[tab] note/options · [space] toggle · [a] all/none␛[m   ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;244m[d] the full answer · [←→] the next question␛[m         ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;244m[enter] apply (0) · [esc] cancel␛[m                     ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────╯␛[m

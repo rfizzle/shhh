@@ -144,6 +144,17 @@ invariant 1 is met once mono has taken the hue away.
 The gap is closed by drawing a foreign-coloured body. Where that artboard and
 this differ, the artboard wins.
 
+## Markdown emphasis in model prose is drawn italic
+
+*A gap.* No artboard draws a reply containing `*emphasis*`, and the type rule
+it would be read under — italic is reserved for quoted model output — settles
+the question rather than raising it: an emphasis the model wrote is the model's
+own markup, so the transcript renders it italic and every other italic on the
+screen belongs to the summary a compaction quotes.
+
+The gap is closed by drawing a reply that emphasises something. Where that
+artboard and this differ, the artboard wins.
+
 ## The backlog screen's layout was decided in the binary
 
 The Backlog artboard draws `/todo` as a picker: a card in the panel, one slug

@@ -194,6 +194,12 @@ func (m Model) renderEntryDetail(e entry, width int, keysLive, stepDetail bool) 
 		return row
 	case entryAssistant:
 		return sty.Assistant.Render("Assistant") + "\n" + renderMarkdown(e.text, width) + "\n"
+	case entryCompactSummary:
+		block := m.compactSummaryBlock(e, width)
+		if block == "" {
+			return ""
+		}
+		return block + "\n"
 	case entryTool, entryCommand:
 		// Compact one-row activity rendering; focus mode expands it,
 		// and so does the step around it.
@@ -289,7 +295,8 @@ func (m Model) systemRow(e entry, width int) string {
 // lines — rather than as a row in the compact activity feed.
 func entryIsBlock(e entry) bool {
 	switch e.kind {
-	case entryUser, entryAssistant, entryDiff, entryTurnClose, entryFanout, entryTodoRun:
+	case entryUser, entryAssistant, entryCompactSummary, entryDiff,
+		entryTurnClose, entryFanout, entryTodoRun:
 		return true
 	case entrySystem, entryError:
 		return strings.Contains(strings.TrimSpace(e.text), "\n")

@@ -173,7 +173,7 @@
   ␛[38;5;244ma reviewer who reads a diff for security problems and reports by severity␛[m
   ␛[38;5;244ma docs keeper who updates the documentation a change made stale, and nothing else␛[m
 
-  ␛[3;38;5;244m[enter] draft from what you typed · [↑↓] the field or a starting point · [esc] nothing is drafted␛[m
+  ␛[38;5;244m[enter] draft from what you typed · [↑↓] the field or a starting point · [esc] nothing is drafted␛[m
 
 · the pointer moved onto a starting point · enter takes that one instead
 ␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · reviewer tester␛[m                                                     ␛[38;5;244m[esc] leave␛[m
@@ -192,7 +192,7 @@
 ␛[38;5;254m❯ ␛[m␛[1;48;5;237ma reviewer who reads a diff for security problems and reports by severity␛[m
   ␛[38;5;244ma docs keeper who updates the documentation a change made stale, and nothing else␛[m
 
-  ␛[3;38;5;244m[enter] draft from this one · [↑↓] the field or a starting point · [esc] nothing is drafted␛[m
+  ␛[38;5;244m[enter] draft from this one · [↑↓] the field or a starting point · [esc] nothing is drafted␛[m
 
 · the wait · the step it was started from, and the key that stops it
 ␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · reviewer tester␛[m                                             ␛[38;5;244m[esc] stop drafting␛[m
@@ -202,7 +202,7 @@
 
   ␛[38;5;254m⠸ drafting␛[m␛[38;5;244m  4.2s␛[m
 
-  ␛[3;38;5;244m[esc] stop drafting␛[m
+  ␛[38;5;244m[esc] stop drafting␛[m
 
 · one question · the answers already given stay above it
 ␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · reviewer tester␛[m                                               ␛[38;5;244m[esc] back a step␛[m
@@ -219,7 +219,7 @@
   ␛[38;5;244m┄ your answer␛[m
     ␛[38;5;254m␛[38;5;244m┃ ␛[m␛[m␛[38;5;254m␛[7;38;5;237me␛[m␛[m␛[38;5;254m␛[38;5;244mnter alone says you have no preference␛[m␛[m␛[38;5;254m                                                                 ␛[m
 
-  ␛[3;38;5;244m[enter] answer it · [esc] back to the last answer␛[m
+  ␛[38;5;244m[enter] answer it · [esc] back to the last answer␛[m
 
 · the draft · the profile over the decision that writes it
 ␛[1;38;5;254m/agents new␛[m␛[38;5;244m · a coding agent · reviewer tester␛[m                                         ␛[38;5;244m[esc] discard the draft␛[m
@@ -248,7 +248,7 @@
 ␛[38;5;244m│␛[m   4. Discard                                                                                               ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m┄ note (optional)␛[m                                                                                          ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m(none)␛[m                                                                                                   ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[3;38;5;244m[tab] note/options · [enter] confirm · [esc] cancel␛[m                                                        ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;244m[tab] note/options · [enter] confirm · [esc] cancel␛[m                                                        ␛[38;5;244m│␛[m
 ␛[38;5;244m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · a short surface · the card is the one thing that never gives ground
@@ -266,7 +266,7 @@
 ␛[38;5;244m│␛[m   4. Discard                                                                                               ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m┄ note (optional)␛[m                                                                                          ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m(none)␛[m                                                                                                   ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[3;38;5;244m[tab] note/options · [enter] confirm · [esc] cancel␛[m                                                        ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;244m[tab] note/options · [enter] confirm · [esc] cancel␛[m                                                        ␛[38;5;244m│␛[m
 ␛[38;5;244m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the file already exists · the card asks again, saying so
@@ -298,5 +298,5 @@
 ␛[38;5;244m│␛[m   4. Discard                                                                                               ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m┄ note (optional)␛[m                                                                                          ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m(none)␛[m                                                                                                   ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[3;38;5;244m[tab] note/options · [enter] confirm · [esc] cancel␛[m                                                        ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;244m[tab] note/options · [enter] confirm · [esc] cancel␛[m                                                        ␛[38;5;244m│␛[m
 ␛[38;5;244m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

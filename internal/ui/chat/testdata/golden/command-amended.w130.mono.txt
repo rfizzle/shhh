@@ -51,7 +51,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254munknown␛[m␛[38;5;244m — shhh could not resolve what this writes␛[m                                                                ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mopen␛[m␛[38;5;244m — nothing contains this command, so nothing limits what it reaches␛[m                                          ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[3;38;5;244mRun this command? [y/Y/n/N/a]  (Y/N: a note)  (a: allow "npm test" without asking)  (d: full view) · [e] edit the command␛[m  ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mRun this command? [y/Y/n/N/a]  (Y/N: a note)  (a: allow "npm test" without asking)  (d: full view) · [e] edit the command␛[m  ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m                                                   ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
@@ -66,7 +66,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254mnone␛[m␛[38;5;244m — this is not a git work tree and shhh does not record commands␛[m                                             ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mopen␛[m␛[38;5;244m — nothing contains this command, so nothing limits what it reaches␛[m                                          ␛[38;5;254m│␛[m
 ␛[38;5;254m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[3;38;5;244mRun this command? [y/Y/n/N]  (Y/N: a note)  (d: full view) · [e] edit the command · [n] deny — the safe answer␛[m             ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mRun this command? [y/Y/n/N]  (Y/N: a note)  (d: full view) · [e] edit the command · [n] deny — the safe answer␛[m             ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m[a] always — not offered: a safety-flagged command is never pre-approved␛[m                                                   ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m                                                   ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

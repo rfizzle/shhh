@@ -19,7 +19,7 @@
 
 ── ansi ────────────────────────────────────────────────────
 · an edit, a staging and a command, one row each
-␛[38;5;254m✎ edit␛[m internal/ui/chat/approval.go         ␛[38;5;244m+0 −1 · 1 hunk␛[m   ␛[3;38;5;244m[enter] expand␛[m
+␛[38;5;254m✎ edit␛[m internal/ui/chat/approval.go         ␛[38;5;244m+0 −1 · 1 hunk␛[m   ␛[38;5;244m[enter] expand␛[m
 
   ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m add     ␛[38;5;244minternal/ui…␛[m  ␛[38;5;244mstaged 20 files␛[m␛[38;5;244m · ␛[m␛[38;5;244mauto-allowed · auto mode␛[m
   ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m run     ␛[38;5;244mgo test ./internal/ui/...␛[m                    ␛[38;5;244mok␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 line␛[m   ␛[38;5;244m27s␛[m

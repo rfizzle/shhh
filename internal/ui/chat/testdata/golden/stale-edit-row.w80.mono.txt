@@ -34,17 +34,17 @@ skipped · write_file · invalid arguments
 ␛[1;38;5;254mYou␛[m
   rebase the round cap on what loop.go says now
 
-␛[3;38;5;244mskipped · internal/agent/loop.go changed since it was read␛[m
-␛[3;38;5;244mskipped · write_file · invalid arguments␛[m
+␛[38;5;244mskipped · internal/agent/loop.go changed since it was read␛[m
+␛[38;5;244mskipped · write_file · invalid arguments␛[m
 
 
 · the row opened · the sentence the model was given
 ␛[1;38;5;254mYou␛[m
   rebase the round cap on what loop.go says now
 
-␛[3;38;5;244mskipped · internal/agent/loop.go changed since it was read␛[m
-    ␛[3;38;5;244m/work/shhh/internal/agent/loop.go has changed since it was read;␛[m
-    ␛[3;38;5;244mread_file it again and rebase this change on what it says now␛[m
-␛[3;38;5;244mskipped · write_file · invalid arguments␛[m
-    ␛[3;38;5;244minvalid arguments: path is required␛[m
+␛[38;5;244mskipped · internal/agent/loop.go changed since it was read␛[m
+    ␛[38;5;244m/work/shhh/internal/agent/loop.go has changed since it was read;␛[m
+    ␛[38;5;244mread_file it again and rebase this change on what it says now␛[m
+␛[38;5;244mskipped · write_file · invalid arguments␛[m
+    ␛[38;5;244minvalid arguments: path is required␛[m
 

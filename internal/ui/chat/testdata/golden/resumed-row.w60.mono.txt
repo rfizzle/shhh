@@ -41,30 +41,30 @@ resumed · master · 3 changed
 
 ── ansi ────────────────────────────────────────────────────
 · folded, which is how it opens
-␛[3;38;5;244mresumed · master · 3 changed␛[m
+␛[38;5;244mresumed · master · 3 changed␛[m
 
 
 · opened, on a checkout that has not moved
-␛[3;38;5;244mresumed · master · 3 changed␛[m
-    ␛[3;38;5;244m[resume: branch master · 3 changed · HEAD e4f5a6b]␛[m
-    ␛[3;38;5;244mThis is the checkout as it stands now, read when␛[m
-    ␛[3;38;5;244mthe conversation was reopened. The transcript below␛[m
-    ␛[3;38;5;244mis from an earlier sitting.␛[m
+␛[38;5;244mresumed · master · 3 changed␛[m
+    ␛[38;5;244m[resume: branch master · 3 changed · HEAD e4f5a6b]␛[m
+    ␛[38;5;244mThis is the checkout as it stands now, read when␛[m
+    ␛[38;5;244mthe conversation was reopened. The transcript below␛[m
+    ␛[38;5;244mis from an earlier sitting.␛[m
 
 
 · opened, on one that moved and with a summary from its last compaction
-␛[3;38;5;244mresumed · master · 3 changed␛[m
-    ␛[3;38;5;244m[resume: branch master · 3 changed · HEAD e4f5a6b]␛[m
-    ␛[3;38;5;244mHEAD has moved since this conversation was saved:␛[m
-    ␛[3;38;5;244ma1b2c3d → e4f5a6b. The transcript below describes␛[m
-    ␛[3;38;5;244mthe checkout at a1b2c3d, so re-read a file before␛[m
-    ␛[3;38;5;244mediting it, and do not revert or explain changes␛[m
-    ␛[3;38;5;244myou did not make.␛[m
-    ␛[3;38;5;244m␛[m
-    ␛[3;38;5;244mSummary written when this conversation was last␛[m
-    ␛[3;38;5;244mcompacted:␛[m
-    ␛[3;38;5;244m␛[m
-    ␛[3;38;5;244mThe cache work is half done: the lifetime is read␛[m
-    ␛[3;38;5;244mfrom config and honoured on get, and the eviction␛[m
-    ␛[3;38;5;244mpass is written but not yet called from anywhere.␛[m
+␛[38;5;244mresumed · master · 3 changed␛[m
+    ␛[38;5;244m[resume: branch master · 3 changed · HEAD e4f5a6b]␛[m
+    ␛[38;5;244mHEAD has moved since this conversation was saved:␛[m
+    ␛[38;5;244ma1b2c3d → e4f5a6b. The transcript below describes␛[m
+    ␛[38;5;244mthe checkout at a1b2c3d, so re-read a file before␛[m
+    ␛[38;5;244mediting it, and do not revert or explain changes␛[m
+    ␛[38;5;244myou did not make.␛[m
+    ␛[38;5;244m␛[m
+    ␛[38;5;244mSummary written when this conversation was last␛[m
+    ␛[38;5;244mcompacted:␛[m
+    ␛[38;5;244m␛[m
+    ␛[38;5;244mThe cache work is half done: the lifetime is read␛[m
+    ␛[38;5;244mfrom config and honoured on get, and the eviction␛[m
+    ␛[38;5;244mpass is written but not yet called from anywhere.␛[m
 

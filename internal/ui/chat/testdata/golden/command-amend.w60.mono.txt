@@ -43,6 +43,6 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mthese letters go into the field␛[m                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m┄ edit the command␛[m                                   ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m␛[m␛[38;5;254mnpm test -- --runInBand␛[m ␛[38;5;254m                          ␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[3;38;5;244m[enter] run this line␛[m                                ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[3;38;5;244m[esc] back to the card with the original␛[m             ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m[enter] run this line␛[m                                ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m[esc] back to the card with the original␛[m             ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────╯␛[m

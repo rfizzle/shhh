@@ -80,7 +80,7 @@ gate     default — vet, test · runs without asking
   ␛[38;5;254m⚙␛[m ␛[38;5;254mexplain what changed in the working tree␛[m␛[38;5;244m — reads only, no writes␛[m
   ␛[38;5;254m⚙␛[m ␛[38;5;254mrun the default quality gate and triage what fails␛[m␛[38;5;244m — one approval, then it reports back␛[m
 
-␛[3;38;5;244m[↑↓] choose · [enter] start · or just type what you want␛[m
+␛[38;5;244m[↑↓] choose · [enter] start · or just type what you want␛[m
 
 · pointer moved to the offer that costs an approval
 ␛[1;38;5;254m~/src/shhh␛[m␛[38;5;244m · ␛[m␛[38;5;254mgo 1.24␛[m␛[38;5;244m · ␛[m␛[38;5;254mgit main␛[m␛[38;5;244m · ␛[m␛[38;5;254m3 files changed␛[m␛[38;5;244m · ␛[m␛[38;5;254m41 packages␛[m
@@ -93,7 +93,7 @@ gate     default — vet, test · runs without asking
   ␛[38;5;254m⚙␛[m ␛[38;5;254mexplain what changed in the working tree␛[m␛[38;5;244m — reads only, no writes␛[m
 ␛[1;48;5;237m❯ ⚙ run the default quality gate and triage what fails — one approval, then it reports back␛[m
 
-␛[3;38;5;244m[↑↓] choose · [enter] start · or just type what you want␛[m
+␛[38;5;244m[↑↓] choose · [enter] start · or just type what you want␛[m
 
 · nothing to pick up · a clean tree in a project with no gate
 ␛[1;38;5;254m~/src/shhh␛[m␛[38;5;244m · ␛[m␛[38;5;254mgo 1.24␛[m␛[38;5;244m · ␛[m␛[38;5;254mgit main␛[m␛[38;5;244m · ␛[m␛[38;5;254mclean tree␛[m␛[38;5;244m · ␛[m␛[38;5;254m41 packages␛[m
@@ -106,7 +106,7 @@ gate     default — vet, test · runs without asking
   ␛[38;5;254m⚙␛[m ␛[38;5;254msummarise the last ten commits␛[m␛[38;5;244m — reads only, no writes␛[m
   ␛[38;5;254m⚙␛[m ␛[38;5;254mrun go test ./... and triage the failures␛[m␛[38;5;244m — one approval, then it reports back␛[m
 
-␛[3;38;5;244m[↑↓] choose · [enter] start · or just type what you want␛[m
+␛[38;5;244m[↑↓] choose · [enter] start · or just type what you want␛[m
 
 · somebody else is in this checkout too
 ␛[1;38;5;254m~/src/shhh␛[m␛[38;5;244m · ␛[m␛[38;5;254manother session open here since 10:32␛[m␛[38;5;244m · ␛[m␛[38;5;254mgo 1.24␛[m␛[38;5;244m · ␛[m␛[38;5;254mgit main␛[m␛[38;5;244m · ␛[m␛[38;5;254m3 files changed␛[m␛[38;5;244m · ␛[m␛[38;5;254m41 packages␛[m
@@ -119,7 +119,7 @@ gate     default — vet, test · runs without asking
   ␛[38;5;254m⚙␛[m ␛[38;5;254mexplain what changed in the working tree␛[m␛[38;5;244m — reads only, no writes␛[m
   ␛[38;5;254m⚙␛[m ␛[38;5;254mrun the default quality gate and triage what fails␛[m␛[38;5;244m — one approval, then it reports back␛[m
 
-␛[3;38;5;244m[↑↓] choose · [enter] start · or just type what you want␛[m
+␛[38;5;244m[↑↓] choose · [enter] start · or just type what you want␛[m
 
 · typing dismissed the list · the facts stay
 ␛[1;38;5;254m~/src/shhh␛[m␛[38;5;244m · ␛[m␛[38;5;254mgo 1.24␛[m␛[38;5;244m · ␛[m␛[38;5;254mgit main␛[m␛[38;5;244m · ␛[m␛[38;5;254m3 files changed␛[m␛[38;5;244m · ␛[m␛[38;5;254m41 packages␛[m

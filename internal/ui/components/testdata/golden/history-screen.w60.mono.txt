@@ -238,7 +238,7 @@ shhh history · 6 entries · 2 run         [?] keys · [q] quit
 
   ␛[38;5;254m▎␛[m␛[38;5;254m$␛[m run     ␛[38;5;244mrg --hidden --glob '!.git'␛[m          ␛[38;5;244msaved␛[m  ␛[38;5;244m1.1s␛[m
     ␛[38;5;244m--line-number 'ErrRoundLimit'␛[m
-␛[3;38;5;244m… (+3 more rows)␛[m
+␛[38;5;244m… (+3 more rows)␛[m
 
 ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m re-run it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy it␛[m
 ␛[38;5;254m[s]␛[m␛[38;5;244m save it as a snippet␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m delete it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m

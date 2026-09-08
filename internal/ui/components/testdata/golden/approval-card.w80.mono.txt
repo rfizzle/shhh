@@ -137,7 +137,7 @@
 ␛[38;5;244m╭─ Approve command ────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m ␛[1;38;5;254mAssistant wants to run: go test ./internal/agent/...␛[m                         ␛[38;5;244m│␛[m
 ␛[38;5;244m├──────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;244m│␛[m ␛[3;38;5;244mRun this command? [y/n/a]  (a: always allow commands this session)␛[m           ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;244mRun this command? [y/n/a]  (a: always allow commands this session)␛[m           ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · variant · command, a batch waiting behind it
@@ -145,8 +145,8 @@
 ␛[38;5;244m│␛[m ␛[1;38;5;254mAssistant wants to run: go test ./internal/agent/...␛[m                         ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244mlow␛[m␛[38;5;244m · writes nothing␛[m                                                         ␛[38;5;244m│␛[m
 ␛[38;5;244m├──────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;244m│␛[m ␛[3;38;5;244mRun this command? [y/n/a/A]  (a: always allow commands this session)␛[m         ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[3;38;5;244mA: approve 3 like this␛[m                                                       ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;244mRun this command? [y/n/a/A]  (a: always allow commands this session)␛[m         ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;244mA: approve 3 like this␛[m                                                       ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · variant · command, flagged, contained, blast radius
@@ -158,7 +158,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254mnone␛[m␛[38;5;244m — nothing it writes is tracked in git␛[m                         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mopen␛[m␛[38;5;244m — the workspace profile allows network access␛[m                 ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[3;38;5;244mRun this command? [y/N] · [n] deny — the safe answer␛[m                         ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mRun this command? [y/N] · [n] deny — the safe answer␛[m                         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m[a] always — not offered: a safety-flagged command is never pre-approved␛[m     ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m     ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
@@ -173,7 +173,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mopen␛[m                                                               ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m⛨         ␛[m␛[38;5;254mno sandbox␛[m                                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[3;38;5;244mRun this command? [y/N] · [n] deny — the safe answer␛[m                         ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mRun this command? [y/N] · [n] deny — the safe answer␛[m                         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mcontainment is off for this session · /sandbox doctor explains why␛[m           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m     ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
@@ -187,7 +187,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254mnone␛[m␛[38;5;244m — nothing it writes is tracked in git␛[m                         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m… 2 more lines · shift+↓␛[m                                                     ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[3;38;5;244mRun this command? [y/N]␛[m                                                      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mRun this command? [y/N]␛[m                                                      ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 ␛[38;5;254m╭─ Approve command ───────────────────────────────────────────────── ⚠ medium ─╮␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m… 2 lines above · shift+↑␛[m                                                    ␛[38;5;254m│␛[m
@@ -197,14 +197,14 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mopen␛[m␛[38;5;244m — it pushes the artefacts it builds␛[m                           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m⛨         ␛[m␛[38;5;254mbwrap␛[m␛[38;5;244m — workspace profile␛[m                                          ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[3;38;5;244mRun this command? [y/N]␛[m                                                      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mRun this command? [y/N]␛[m                                                      ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · bound · a wide body, panned right
 ␛[38;5;244m╭─ Approve command ────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m ␛[1;38;5;254mar -czf dist/shhh-linux-amd64.tar.gz --exclude .git --exclude node_modules ␛[m␛[38;5;244m›␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m├──────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;244m│␛[m ␛[3;38;5;244mRun this command? [y/N]␛[m                                                      ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;244mRun this command? [y/N]␛[m                                                      ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · variant · edit, diff body
@@ -221,7 +221,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;244m  143      }␛[m                                                                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m+2 −1 · 1 hunk · undo yes — recorded, and git has this file␛[m                  ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[3;38;5;244mApply this edit? [y/N]  (d: full diff)␛[m                                       ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mApply this edit? [y/N]  (d: full diff)␛[m                                       ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · state · not yet live, beside a draft that has the keyboard
@@ -252,5 +252,5 @@
 ␛[38;5;244m│␛[m ␛[38;5;244msends     ␛[m␛[38;5;254mthe URL and a shhh-web/1.0 user-agent␛[m                              ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244mreceives  ␛[m␛[38;5;254mpage text, whole, into the evidence store; the first 16 KB into t␛[m␛[38;5;244m›␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m├──────────────────────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;244m│␛[m ␛[3;38;5;244mAllow this call? [y/n/a]  (a: always allow pkg.go.dev)␛[m                       ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;244mAllow this call? [y/n/a]  (a: always allow pkg.go.dev)␛[m                       ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────────────────────────╯␛[m

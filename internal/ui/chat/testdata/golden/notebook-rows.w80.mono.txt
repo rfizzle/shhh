@@ -39,18 +39,18 @@ internal/ui/chat/testdata/golden, one file per width and one per palette.
 
 
 · /notes · the notebook by the agent that wrote each entry
-␛[3;38;5;244m# assistant␛[m                                                                      
-␛[3;38;5;244m␛[m                                                                                 
-␛[3;38;5;244m## [n1] The freeze is the target␛[m                                                 
-␛[3;38;5;244mFrom here the work is making what exists better, not wider.␛[m                      
-␛[3;38;5;244m␛[m                                                                                 
-␛[3;38;5;244m# reviewer-1␛[m                                                                     
-␛[3;38;5;244m␛[m                                                                                 
-␛[3;38;5;244m## [n2] The deny list is read before the tier␛[m                                    
-␛[3;38;5;244mpolicy.Decide matches on the command, so an entry refuses the verb in every mode.␛[m
-␛[3;38;5;244m␛[m                                                                                 
-␛[3;38;5;244m# researcher-1␛[m                                                                   
-␛[3;38;5;244m␛[m                                                                                 
-␛[3;38;5;244m## [n3] Where the goldens live␛[m                                                   
-␛[3;38;5;244minternal/ui/chat/testdata/golden, one file per width and one per palette.␛[m        
+␛[38;5;244m# assistant␛[m                                                                      
+␛[38;5;244m␛[m                                                                                 
+␛[38;5;244m## [n1] The freeze is the target␛[m                                                 
+␛[38;5;244mFrom here the work is making what exists better, not wider.␛[m                      
+␛[38;5;244m␛[m                                                                                 
+␛[38;5;244m# reviewer-1␛[m                                                                     
+␛[38;5;244m␛[m                                                                                 
+␛[38;5;244m## [n2] The deny list is read before the tier␛[m                                    
+␛[38;5;244mpolicy.Decide matches on the command, so an entry refuses the verb in every mode.␛[m
+␛[38;5;244m␛[m                                                                                 
+␛[38;5;244m# researcher-1␛[m                                                                   
+␛[38;5;244m␛[m                                                                                 
+␛[38;5;244m## [n3] Where the goldens live␛[m                                                   
+␛[38;5;244minternal/ui/chat/testdata/golden, one file per width and one per palette.␛[m        
 

@@ -208,7 +208,7 @@
   ␛[38;5;205m▸␛[m ␛[1;97mReturn it from runRound␛[m                                             
   ␛[38;5;241m·␛[m ␛[38;5;241mOffer more rounds in the chat model␛[m                                 
   ␛[38;5;214m⚠␛[m ␛[38;5;241m1 off plan␛[m                                                          
-  ␛[3;38;5;241m/plan for the whole list␛[m                                              
+  ␛[38;5;241m/plan for the whole list␛[m                                              
 
   ␛[1;94mTODO␛[m                                      ␛[38;5;241mproject · 5 open · 1 blocked␛[m
   ␛[38;5;241msprint␛[m ␛[38;5;252mrail-and-runner␛[m                                          ␛[38;5;241m2 of 6␛[m
@@ -218,7 +218,7 @@
   ␛[38;5;241m·␛[m ␛[38;5;241mM M␛[m ␛[38;5;252mtodo-add-extraction␛[m                                             
   ␛[91m!␛[m ␛[38;5;241mL M␛[m ␛[38;5;252mheadless-todo-run␛[m                                        ␛[38;5;241mblocked␛[m
   ␛[38;5;241m… 2 more␛[m                                                              
-  ␛[3;38;5;241m/todo for the whole backlog␛[m                                           
+  ␛[38;5;241m/todo for the whole backlog␛[m                                           
 
   ␛[1;94mCHANGES␛[m                                               ␛[38;5;241msession · ␛[m␛[92m+27␛[m ␛[91m−4␛[m
    ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/...␛[m                                 ␛[38;5;241mturn 7␛[m
@@ -249,19 +249,19 @@
 
 · every block, height 16 (truncating)
   ␛[1;94mSUMMARY␛[m                                                 ␛[38;5;241mas of round 24␛[m
-  ␛[3;38;5;241m… 3 more␛[m                                                              
+  ␛[38;5;241m… 3 more␛[m                                                              
 
   ␛[1;94mTHIS TURN␛[m                                                             
-  ␛[3;38;5;241m… 2 more␛[m                                                              
+  ␛[38;5;241m… 2 more␛[m                                                              
 
   ␛[1;94mPLAN␛[m                                                       ␛[38;5;241m2 of 4 done␛[m
-  ␛[3;38;5;241m… 6 more␛[m                                                              
+  ␛[38;5;241m… 6 more␛[m                                                              
 
   ␛[1;94mTODO␛[m                                      ␛[38;5;241mproject · 5 open · 1 blocked␛[m
-  ␛[3;38;5;241m… 8 more␛[m                                                              
+  ␛[38;5;241m… 8 more␛[m                                                              
 
   ␛[1;94mCHANGES␛[m                                               ␛[38;5;241msession · ␛[m␛[92m+27␛[m ␛[91m−4␛[m
-  ␛[3;38;5;241m… 4 more␛[m                                                        ␛[92m+27␛[m ␛[91m−4␛[m
+  ␛[38;5;241m… 4 more␛[m                                                        ␛[92m+27␛[m ␛[91m−4␛[m
 
   ␛[1;94mAGENTS␛[m                                         ␛[91m1 needs you␛[m␛[38;5;241m · ␛[m␛[38;5;205m1 running␛[m
 
@@ -306,7 +306,7 @@
   ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252minternal/agent/loop_test.go␛[m                               ␛[92m+18␛[m ␛[91m−0␛[m ␛[38;5;241m2t␛[m
   ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252minternal/ui/chat/model.go␛[m                                     ␛[92m+9␛[m ␛[91m−1␛[m
   ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252minternal/agent/errors.go␛[m                                      ␛[92m+3␛[m ␛[91m−0␛[m
-  ␛[3;38;5;241m… 4 more␛[m                                                        ␛[92m+45␛[m ␛[91m−6␛[m
+  ␛[38;5;241m… 4 more␛[m                                                        ␛[92m+45␛[m ␛[91m−6␛[m
 
 · a change of permissions has no lines to count
   ␛[1;94mCHANGES␛[m                                                        ␛[38;5;241msession␛[m
@@ -357,7 +357,7 @@
     ␛[38;5;245mread 9 files␛[m                                                        
   ␛[92m✓␛[m ␛[38;5;252mreader-7␛[m                                                 ␛[92mdone␛[m  ␛[38;5;241m$0.01␛[m
     ␛[38;5;245mnothing under that path␛[m                                             
-  ␛[3;38;5;241m… 2 more␛[m                                                              
+  ␛[38;5;241m… 2 more␛[m                                                              
 
 · the map with the rail shorter than it (height 12)
   ␛[1;94mAGENTS␛[m                                         ␛[91m1 needs you␛[m␛[38;5;241m · ␛[m␛[38;5;205m2 running␛[m
@@ -371,4 +371,4 @@
     ␛[38;5;245mwaiting approval: apply patch␛[m                                       
   ␛[92m✓␛[m ␛[38;5;252mreader-6␛[m                                                 ␛[92mdone␛[m  ␛[38;5;241m$0.01␛[m
     ␛[38;5;245mread 9 files␛[m                                                        
-  ␛[3;38;5;241m… 3 more␛[m                                                              
+  ␛[38;5;241m… 3 more␛[m                                                              

@@ -46,7 +46,8 @@ func expandable(e entry) bool {
 func selectable(e entry) bool {
 	return expandable(e) || e.kind == entryTurnClose || e.kind == entryFailure ||
 		e.kind == entryStreamDrop || e.kind == entryRoundPause ||
-		e.kind == entryAssistant || e.intervened != nil
+		e.kind == entryAssistant || e.kind == entryCompactSummary ||
+		e.intervened != nil
 }
 
 // selectableRow is selectable plus the one thing that depends on the session

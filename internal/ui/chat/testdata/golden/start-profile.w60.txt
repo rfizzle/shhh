@@ -96,8 +96,8 @@ Some things worth doing first:
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m
     ␛[38;5;241mone approval, then it reports back␛[m
 
-␛[3;38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…␛[m
-␛[3;38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…␛[m
+␛[38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…␛[m
+␛[38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…␛[m
 
 · a profile of the reader's own, by name
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -118,8 +118,8 @@ Some things worth doing first:
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m
     ␛[38;5;241mone approval, then it reports back␛[m
 
-␛[3;38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…␛[m
-␛[3;38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…␛[m
+␛[38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…␛[m
+␛[38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…␛[m
 
 · one of the profiles shhh ships
 ␛[1;97m▄▀▀▀ █    █    █␛[m
@@ -140,5 +140,5 @@ Some things worth doing first:
   ␛[38;5;214m⚙␛[m ␛[38;5;252mrun the default quality gate and triage what fails␛[m
     ␛[38;5;241mone approval, then it reports back␛[m
 
-␛[3;38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…␛[m
-␛[3;38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…␛[m
+␛[38;5;241m[↑↓] or [shift+↑↓] choose · [enter] or [shift+→] start…␛[m
+␛[38;5;241m[pgup] scroll · [ctrl+o] select rows · [ctrl+/] palett…␛[m

@@ -228,7 +228,7 @@ docs.rs                                                          │
   ␛[38;5;241m┄ in your own words␛[m
     ␛[38;5;252m␛[38;5;241m┃ ␛[m␛[m␛[38;5;252m␛[7;38;5;62mw␛[m␛[m␛[38;5;252m␛[38;5;241mhat it is for␛[m␛[m␛[38;5;252m                                                                                                              ␛[m
 
-  ␛[3;38;5;241m[enter] draft from what you typed · [esc] nothing is drafted␛[m
+  ␛[38;5;241m[enter] draft from what you typed · [esc] nothing is drafted␛[m
 
 · snippets · the list, the command it would run, and the promise that it will not
 ␛[1;97mshhh snippets␛[m␛[38;5;241m · 3 snippets␛[m                                                                                     ␛[38;5;241m[?] keys · [q] quit␛[m

@@ -151,8 +151,8 @@
 ␛[38;5;241m│␛[m   3. Step through it — manual approvals                  ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   4. Keep planning — tell me what to change              ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   5. Reject the plan                                     ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[3;38;5;241m[↑↓/jk] move · [enter] select · [1–5] jump · [s] save␛[m    ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[3;38;5;241m[esc] keep planning␛[m                                      ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;241m[↑↓/jk] move · [enter] select · [1–5] jump · [s] save␛[m    ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;241m[esc] keep planning␛[m                                      ␛[38;5;241m│␛[m
 ␛[38;5;241m╰──────────────────────────────────────────────────────────╯␛[m
 
 · focus moved · only the focused option explains itself
@@ -174,8 +174,8 @@
 ␛[38;5;241m│␛[m ␛[38;5;241m    every edit and every command asks you first␛[m          ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   4. Keep planning — tell me what to change              ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   5. Reject the plan                                     ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[3;38;5;241m[↑↓/jk] move · [enter] select · [1–5] jump · [s] save␛[m    ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[3;38;5;241m[esc] keep planning␛[m                                      ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;241m[↑↓/jk] move · [enter] select · [1–5] jump · [s] save␛[m    ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;241m[esc] keep planning␛[m                                      ␛[38;5;241m│␛[m
 ␛[38;5;241m╰──────────────────────────────────────────────────────────╯␛[m
 
 · a radius worth reading twice
@@ -197,8 +197,8 @@
 ␛[38;5;241m│␛[m   3. Step through it — manual approvals                  ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   4. Keep planning — tell me what to change              ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   5. Reject the plan                                     ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[3;38;5;241m[↑↓/jk] move · [enter] select · [1–5] jump · [s] save␛[m    ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[3;38;5;241m[esc] keep planning␛[m                                      ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;241m[↑↓/jk] move · [enter] select · [1–5] jump · [s] save␛[m    ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;241m[esc] keep planning␛[m                                      ␛[38;5;241m│␛[m
 ␛[38;5;241m╰──────────────────────────────────────────────────────────╯␛[m
 
 · bounded · the steps it cannot fit are counted
@@ -207,7 +207,7 @@
 ␛[38;5;241m│␛[m ␛[38;5;245m  internal/agent/loop.go · internal/agent/round.go␛[m       ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m2 ␛[m␛[38;5;252mAdd a RoundsExhausted sentinel␛[m        ␛[38;5;252m✎ creates 1 file␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;245m  internal/agent/errors.go · new type, no signature cha…␛[m ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[3;38;5;241m… 2 more steps␛[m                                           ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;241m… 2 more steps␛[m                                           ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m                                                          ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;252m3 files touched␛[m␛[38;5;241m · ␛[m␛[92mno deletes␛[m␛[38;5;241m · ␛[m␛[92mno network␛[m␛[38;5;241m · ␛[m␛[92mreversible␛[m   ␛[38;5;241m│␛[m
 ␛[38;5;241m├──────────────────────────────────────────────────────────┤␛[m
@@ -217,13 +217,13 @@
 ␛[38;5;241m│␛[m   3. Step through it — manual approvals                  ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   4. Keep planning — tell me what to change              ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   5. Reject the plan                                     ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[3;38;5;241m[↑↓/jk] move · [enter] select · [1–5] jump · [s] save␛[m    ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[3;38;5;241m[esc] keep planning␛[m                                      ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;241m[↑↓/jk] move · [enter] select · [1–5] jump · [s] save␛[m    ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;241m[esc] keep planning␛[m                                      ␛[38;5;241m│␛[m
 ␛[38;5;241m╰──────────────────────────────────────────────────────────╯␛[m
 
 · too short for a single step · says so rather than counting more than none
 ␛[38;5;241m╭─ Plan · make the round limit recoverable ␛[m␛[38;5;241m──────␛[m␛[38;5;241m 4 steps ─╮␛[m
-␛[38;5;241m│␛[m ␛[3;38;5;241m… 4 steps, no room to show them␛[m                          ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;241m… 4 steps, no room to show them␛[m                          ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m                                                          ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;252m3 files touched␛[m␛[38;5;241m · ␛[m␛[92mno deletes␛[m␛[38;5;241m · ␛[m␛[92mno network␛[m␛[38;5;241m · ␛[m␛[92mreversible␛[m   ␛[38;5;241m│␛[m
 ␛[38;5;241m├──────────────────────────────────────────────────────────┤␛[m
@@ -233,8 +233,8 @@
 ␛[38;5;241m│␛[m   3. Step through it — manual approvals                  ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   4. Keep planning — tell me what to change              ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   5. Reject the plan                                     ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[3;38;5;241m[↑↓/jk] move · [enter] select · [1–5] jump · [s] save␛[m    ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[3;38;5;241m[esc] keep planning␛[m                                      ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;241m[↑↓/jk] move · [enter] select · [1–5] jump · [s] save␛[m    ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;241m[esc] keep planning␛[m                                      ␛[38;5;241m│␛[m
 ␛[38;5;241m╰──────────────────────────────────────────────────────────╯␛[m
 
 · no structure · prose with the same options below it
@@ -249,6 +249,6 @@
 ␛[38;5;241m│␛[m   3. Step through it — manual approvals                  ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   4. Keep planning — tell me what to change              ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   5. Reject the plan                                     ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[3;38;5;241m[↑↓/jk] move · [enter] select · [1–5] jump · [s] save␛[m    ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[3;38;5;241m[esc] keep planning␛[m                                      ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;241m[↑↓/jk] move · [enter] select · [1–5] jump · [s] save␛[m    ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;241m[esc] keep planning␛[m                                      ␛[38;5;241m│␛[m
 ␛[38;5;241m╰──────────────────────────────────────────────────────────╯␛[m

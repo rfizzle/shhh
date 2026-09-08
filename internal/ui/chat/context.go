@@ -388,7 +388,12 @@ func (m Model) finishCompact() (tea.Model, tea.Cmd) {
 	// rebuild them from what remains.
 	m.checkpoints = checkpointsFromMessages(m.agent.Messages())
 	m.appendEntry(entry{kind: entrySystem, text: compactedNotice(len(kept) > 0, m.keptTurnCount(kept))})
-	m.appendEntry(entry{kind: entryAssistant, text: summary})
+	// Quoted under that receipt rather than given the Assistant heading a
+	// turn gets. The model wrote this, but it is not a turn in the
+	// conversation: nothing was asked, and the reply the next turn opens with
+	// is a different thing. So it reads as what it is — the model's words,
+	// quoted (compactSummaryBlock).
+	m.appendEntry(entry{kind: entryCompactSummary, text: summary})
 	// The turns the model kept are the turns the screen keeps: a transcript
 	// that lost them would say the conversation starts at the summary, and
 	// the request that follows would say otherwise.
@@ -485,6 +490,34 @@ func compactedNotice(kept bool, turns int) string {
 	}
 	return fmt.Sprintf("Conversation compacted; continuing from this summary and the last %s:",
 		plural(turns, "turn"))
+}
+
+// compactSummaryBlock draws the summary under the receipt row that announced
+// it: wrapped onto the detail indent every other body under a row uses, and
+// rendered in Dimmer italic.
+//
+// The slant is the point, and it is the only one on the screen. A reader
+// scanning back past a compaction needs to know that the paragraph they are
+// reading is the model's account of a conversation rather than the
+// conversation, and every other way of saying so — a heading, a colour, a
+// glyph — is already spent on something else. So italic means quoted model
+// output here and nowhere else in the product's own chrome.
+//
+// Wrapped rather than clipped, for the reason a notice's body is: this is
+// prose, and a summary cut off at the right margin is a summary the reader
+// has to go somewhere else to finish.
+func (m Model) compactSummaryBlock(e entry, width int) string {
+	text := strings.TrimSpace(e.text)
+	if text == "" {
+		return ""
+	}
+	indent := strings.Repeat(" ", components.GridDetailIndent)
+	inner := max(width-components.GridDetailIndent, 1)
+	lines := strings.Split(m.wordWrap(text, inner), "\n")
+	for i, l := range lines {
+		lines[i] = indent + sty.CompactSummary.Render(l)
+	}
+	return strings.Join(lines, "\n")
 }
 
 // compactKeep is the tail a compaction carries through verbatim, under this

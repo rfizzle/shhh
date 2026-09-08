@@ -34,9 +34,17 @@ type Styles struct {
 	Header     lipgloss.Style
 	HeaderHint lipgloss.Style
 	Welcome    lipgloss.Style
-	Tool       lipgloss.Style
-	ToolArgs   lipgloss.Style
-	StatusBar  lipgloss.Style
+	// CompactSummary is the summary a compaction produced, quoted under the
+	// receipt row that announced it (context.go). It is the one italic this
+	// package sets, because the slant means quoted model output and nothing
+	// else: hints, fold markers, notices, viewer bars and the welcome line are
+	// the product's own voice, so they stay upright and say what they are with
+	// their grey. The rule is the design system's *Type* rule
+	// (docs/interface/README.md names where it is normative).
+	CompactSummary lipgloss.Style
+	Tool           lipgloss.Style
+	ToolArgs       lipgloss.Style
+	StatusBar      lipgloss.Style
 	// Divider is the faint rule under the header and above the bottom
 	// panel; the width is the caller's, the colour is the palette's.
 	Divider lipgloss.Style
@@ -130,7 +138,7 @@ func newFrameStyles(p components.ColorTokens) frameStyles {
 		AccentChecking:   lipgloss.NewStyle().Foreground(p.Spin.Color()),
 		Idle:             lipgloss.NewStyle().Foreground(p.Dim.Color()),
 		Working:          lipgloss.NewStyle().Bold(true).Foreground(p.Spin.Color()),
-		Hint:             lipgloss.NewStyle().Foreground(p.Dim.Color()).Italic(true),
+		Hint:             lipgloss.NewStyle().Foreground(p.Dim.Color()),
 		GutterIdle:       lipgloss.NewStyle().Bold(true).Foreground(p.Info.Color()),
 		GutterWork:       lipgloss.NewStyle().Bold(true).Foreground(p.Spin.Color()),
 		// The bang draft's glyph carries the gated accent: what enter does
@@ -156,7 +164,7 @@ func newCompleteStyles(p components.ColorTokens) completeStyles {
 		Focus: lipgloss.NewStyle().Bold(true).Background(p.FocusBg.Color()),
 		Args:  lipgloss.NewStyle().Foreground(p.Dim.Color()),
 		Desc:  lipgloss.NewStyle().Foreground(p.Dim.Color()),
-		Hint:  lipgloss.NewStyle().Foreground(p.Dim.Color()).Italic(true),
+		Hint:  lipgloss.NewStyle().Foreground(p.Dim.Color()),
 	}
 }
 
@@ -173,7 +181,7 @@ func newSearchStyles(p components.ColorTokens) searchStyles {
 		Label: lipgloss.NewStyle().Bold(true).Foreground(p.Info.Color()),
 		Query: lipgloss.NewStyle().Foreground(p.Body.Color()),
 		State: lipgloss.NewStyle().Foreground(p.Dim.Color()),
-		Hint:  lipgloss.NewStyle().Foreground(p.Dim.Color()).Italic(true),
+		Hint:  lipgloss.NewStyle().Foreground(p.Dim.Color()),
 	}
 }
 
@@ -231,15 +239,19 @@ func newStyles(p components.ColorTokens) Styles {
 		User:       lipgloss.NewStyle().Bold(true).Foreground(p.Info.Color()),
 		Assistant:  lipgloss.NewStyle().Bold(true).Foreground(p.Add.Color()),
 		Error:      lipgloss.NewStyle().Foreground(p.Del.Color()),
-		SystemMsg:  lipgloss.NewStyle().Foreground(p.Dim.Color()).Italic(true),
+		SystemMsg:  lipgloss.NewStyle().Foreground(p.Dim.Color()),
 		Header:     lipgloss.NewStyle().Bold(true).Foreground(p.Bright.Color()),
 		HeaderHint: lipgloss.NewStyle().Foreground(p.Dim.Color()),
-		Welcome:    lipgloss.NewStyle().Foreground(p.Dim.Color()).Italic(true),
-		Tool:       lipgloss.NewStyle().Foreground(p.Accent.Color()),
-		ToolArgs:   lipgloss.NewStyle().Foreground(p.Dim.Color()),
-		StatusBar:  lipgloss.NewStyle().Foreground(p.Status.Color()),
-		Divider:    lipgloss.NewStyle().Foreground(p.Dim.Color()),
-		Viewport:   lipgloss.NewStyle(),
+		Welcome:    lipgloss.NewStyle().Foreground(p.Dim.Color()),
+
+		// On its own, because it is the only italic in the file.
+		CompactSummary: lipgloss.NewStyle().Foreground(p.Dimmer.Color()).Italic(true),
+
+		Tool:      lipgloss.NewStyle().Foreground(p.Accent.Color()),
+		ToolArgs:  lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		StatusBar: lipgloss.NewStyle().Foreground(p.Status.Color()),
+		Divider:   lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		Viewport:  lipgloss.NewStyle(),
 
 		ModePermissive: lipgloss.NewStyle().Foreground(p.Add.Color()),
 		ModeGated:      lipgloss.NewStyle().Foreground(p.Accent.Color()),

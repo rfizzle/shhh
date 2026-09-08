@@ -70,8 +70,8 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254mnone␛[m                                       ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m␛[38;5;244m — the workspace profile removes it␛[m  ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[3;38;5;244mRun this command? [y/N] · [g] attach to writer-1␛[m     ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[3;38;5;244m[alt+a] agents · [n] deny — the safe answer␛[m          ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mRun this command? [y/N] · [g] attach to writer-1␛[m     ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m[alt+a] agents · [n] deny — the safe answer␛[m          ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m[esc] back to your draft — the decision stays waiti…␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────╯␛[m
 
@@ -85,9 +85,9 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254mnone␛[m                                       ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mclosed␛[m␛[38;5;244m — the workspace profile removes it␛[m  ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[3;38;5;244mRun this command? [y/N]␛[m                              ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[3;38;5;244many other key goes to your draft␛[m                     ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[3;38;5;244m[n] deny — the safe answer␛[m                           ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mRun this command? [y/N]␛[m                              ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244many other key goes to your draft␛[m                     ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m[n] deny — the safe answer␛[m                           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m[esc] back to your draft — the decision stays waiti…␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────╯␛[m
 
@@ -103,8 +103,8 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m+  1  line 0␛[m␛[38;5;254;48;5;237m changed␛[m␛[38;5;254m␛[m                                 ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m… 119 more lines · shift+↓␛[m                           ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m│␛[m ␛[3;38;5;244mApply the agent's patch to your workspace? [y/N]␛[m     ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[3;38;5;244m(d: full diff)␛[m                                       ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[3;38;5;244m[g] attach to writer-1 · [alt+a] agents␛[m              ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mApply the agent's patch to your workspace? [y/N]␛[m     ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m(d: full diff)␛[m                                       ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m[g] attach to writer-1 · [alt+a] agents␛[m              ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m[esc] back to your draft — the decision stays waiti…␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────╯␛[m

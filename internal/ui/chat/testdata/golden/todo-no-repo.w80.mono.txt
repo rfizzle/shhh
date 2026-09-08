@@ -27,16 +27,16 @@ Not committed, in the working tree:
 
 ── ansi ────────────────────────────────────────────────────
 · the refusal, before any stage has spent a turn
-␛[3;38;5;244m~/scratch/notes is not in a git repository and a run ends in a commit — /todo run cache-ttl --no-commit runs it without one, or todo.commit = false makes that the default.␛[m
+␛[38;5;244m~/scratch/notes is not in a git repository and a run ends in a commit — /todo run cache-ttl --no-commit runs it without one, or todo.commit = false makes that the default.␛[m
 
 
 · a run asked for without a commit, archived
-␛[3;38;5;244m✓ todo run cache-ttl done — not committed; 2 files in the working tree, and the item is archived to .shhh/todo/done/cache-ttl.md.␛[m            
-␛[3;38;5;244m␛[m                                                                                                                                             
-␛[3;38;5;244m## Report␛[m                                                                                                                                    
-␛[3;38;5;244mSummary: the change was verified and reviewed. It was not committed — the run was asked for without one — so the work is in the working tree.␛[m
-␛[3;38;5;244mNot committed, in the working tree:␛[m                                                                                                          
-␛[3;38;5;244m- internal/provider/cache.go␛[m                                                                                                                 
-␛[3;38;5;244m- internal/provider/cache_test.go␛[m                                                                                                            
-␛[3;38;5;244m␛[m                                                                                                                                             
+␛[38;5;244m✓ todo run cache-ttl done — not committed; 2 files in the working tree, and the item is archived to .shhh/todo/done/cache-ttl.md.␛[m            
+␛[38;5;244m␛[m                                                                                                                                             
+␛[38;5;244m## Report␛[m                                                                                                                                    
+␛[38;5;244mSummary: the change was verified and reviewed. It was not committed — the run was asked for without one — so the work is in the working tree.␛[m
+␛[38;5;244mNot committed, in the working tree:␛[m                                                                                                          
+␛[38;5;244m- internal/provider/cache.go␛[m                                                                                                                 
+␛[38;5;244m- internal/provider/cache_test.go␛[m                                                                                                            
+␛[38;5;244m␛[m                                                                                                                                             
 

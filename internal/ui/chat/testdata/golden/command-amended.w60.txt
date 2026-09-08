@@ -55,9 +55,9 @@
 ␛[38;5;214m│␛[m ␛[38;5;241mundo      ␛[m␛[91munknown␛[m                                    ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;241mnetwork   ␛[m␛[38;5;214mopen␛[m                                       ␛[38;5;214m│␛[m
 ␛[38;5;214m├──────────────────────────────────────────────────────┤␛[m
-␛[38;5;214m│␛[m ␛[3;38;5;241mRun this command? [y/Y/n/N/a]  (Y/N: a note)␛[m         ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[3;38;5;241m(a: allow "npm test" without asking)  (d: full view)␛[m ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[3;38;5;241m[e] edit the command␛[m                                 ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;241mRun this command? [y/Y/n/N/a]  (Y/N: a note)␛[m         ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;241m(a: allow "npm test" without asking)  (d: full view)␛[m ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;241m[e] edit the command␛[m                                 ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;241m[esc] back to your draft — the decision stays waiti…␛[m ␛[38;5;214m│␛[m
 ␛[38;5;214m╰──────────────────────────────────────────────────────╯␛[m
 
@@ -72,9 +72,9 @@
 ␛[91m│␛[m ␛[38;5;241mundo      ␛[m␛[91mnone␛[m                                       ␛[91m│␛[m
 ␛[91m│␛[m ␛[38;5;241mnetwork   ␛[m␛[38;5;214mopen␛[m                                       ␛[91m│␛[m
 ␛[91m├──────────────────────────────────────────────────────┤␛[m
-␛[91m│␛[m ␛[3;38;5;241mRun this command? [y/Y/n/N]  (Y/N: a note)␛[m           ␛[91m│␛[m
-␛[91m│␛[m ␛[3;38;5;241m(d: full view)␛[m                                       ␛[91m│␛[m
-␛[91m│␛[m ␛[3;38;5;241m[e] edit the command · [n] deny — the safe answer␛[m    ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;241mRun this command? [y/Y/n/N]  (Y/N: a note)␛[m           ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;241m(d: full view)␛[m                                       ␛[91m│␛[m
+␛[91m│␛[m ␛[38;5;241m[e] edit the command · [n] deny — the safe answer␛[m    ␛[91m│␛[m
 ␛[91m│␛[m ␛[38;5;241m[a] always — not offered: a safety-flagged command …␛[m ␛[91m│␛[m
 ␛[91m│␛[m ␛[38;5;241m[esc] back to your draft — the decision stays waiti…␛[m ␛[91m│␛[m
 ␛[91m╰──────────────────────────────────────────────────────╯␛[m

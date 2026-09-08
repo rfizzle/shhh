@@ -1976,6 +1976,38 @@ func TestGolden_ResumedRow(t *testing.T) {
 	})
 }
 
+// TestGolden_CompactReceipt captures what a compaction leaves on the
+// transcript: the receipt line naming the turns it kept, the summary quoted
+// under it, and the kept turns themselves below.
+//
+// The capture is here for the slant. The summary is the model's own words and
+// is the only italic run the transcript draws — every hint, marker and notice
+// around it is upright — so the fixture is where that stays true: a chrome
+// style that reaches for italic again shows up as a second italic run in a
+// file whose whole point is that there is one.
+func TestGolden_CompactReceipt(t *testing.T) {
+	captureGolden(t, "compact-receipt", "the receipt a compaction leaves", goldenWidths, func(width int) []golden.Panel {
+		const summary = "Rounds are counted in the round loop; the limit lived in three places and " +
+			"disagreed. The first three turns established the loop as the owner, the fourth moved " +
+			"the constant, and the fifth's tests pass except the one on the limit itself."
+		panel := func(kept []provider.Message) string {
+			m := frameModel(t, width, 40)
+			m.appendEntry(entry{kind: entrySystem,
+				text: compactedNotice(len(kept) > 0, m.keptTurnCount(kept))})
+			m.appendEntry(entry{kind: entryCompactSummary, text: summary})
+			m.appendMessageEntries(kept)
+			return m.renderHistory()
+		}
+		return []golden.Panel{
+			{Label: "the receipt and the summary quoted under it", View: panel(nil)},
+			{Label: "with the turns the compaction kept verbatim", View: panel([]provider.Message{
+				{Role: provider.RoleUser, Content: "Move the round limit into the loop."},
+				{Role: provider.RoleAssistant, Content: "Moved it, and the *limit* is read from one place now."},
+			})},
+		}
+	})
+}
+
 // TestGolden_ItemDraft captures the card an item is written on without
 // leaving the session: the header as rows a key steps in place, the slug the
 // title will become on the title rail, the body rendered by the renderer the

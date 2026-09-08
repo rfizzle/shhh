@@ -55,7 +55,7 @@ Some things worth doing first:
 ␛[1;48;5;62m❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mexplain what changed in the working tree␛[m␛[38;5;241m — reads only, no writes␛[m
 
-␛[3;38;5;241m[↑↓] choose · [enter] start · or just type what you want␛[m
+␛[38;5;241m[↑↓] choose · [enter] start · or just type what you want␛[m
 
 · a pane one row short of that
 ␛[38;5;241m──␛[m ␛[1;97mshhh␛[m ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
@@ -69,4 +69,4 @@ Some things worth doing first:
 ␛[1;48;5;62m❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago␛[m
   ␛[38;5;214m⚙␛[m ␛[38;5;252mexplain what changed in the working tree␛[m␛[38;5;241m — reads only, no writes␛[m
 
-␛[3;38;5;241m[↑↓] choose · [enter] start · or just type what you want␛[m
+␛[38;5;241m[↑↓] choose · [enter] start · or just type what you want␛[m

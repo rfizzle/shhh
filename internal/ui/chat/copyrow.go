@@ -97,6 +97,12 @@ func (m Model) rowCopyText(es []entry, idx int) (text, what string) {
 		// The markdown source, not the rendered form: what the model said is
 		// the content, the layout is this terminal's.
 		return e.text, "response"
+	case entryCompactSummary:
+		// The summary itself, without the indent this transcript drew it at.
+		// Named for the compaction rather than called "summary": the session
+		// reading below is a summary too, and a notice saying which one was
+		// taken is the only way to tell them apart afterwards.
+		return e.text, "compaction summary"
 	case entryThink:
 		return e.text, "thinking"
 	case entrySummary:
@@ -144,7 +150,7 @@ func (m Model) focusedCopyable() bool {
 	}
 	e := es[m.focusIdx]
 	switch e.kind {
-	case entryAssistant, entryThink:
+	case entryAssistant, entryCompactSummary, entryThink:
 		return strings.TrimSpace(e.text) != ""
 	case entrySummary:
 		return e.reading != nil && strings.TrimSpace(e.reading.verdict.Text) != ""

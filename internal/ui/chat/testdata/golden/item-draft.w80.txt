@@ -54,7 +54,7 @@
 ␛[38;5;241m│␛[m ␛[38;5;241m↓ 12 more␛[m                                                                ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[91mnothing in the backlog is named nothing-like-this — dropped rather than␛[m  ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[91mwritten as a dependency on nothing␛[m                                       ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[3;38;5;241m↑↓ move · space change · e the editor · enter write it · esc drop it␛[m     ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;241m↑↓ move · space change · e the editor · enter write it · esc drop it␛[m     ␛[38;5;241m│␛[m
 ␛[38;5;241m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the dependency row opened on the backlog
@@ -64,5 +64,5 @@
 ␛[38;5;241m│␛[m   ␛[38;5;241m[ ]␛[m c-blocked                                                    ␛[38;5;252mStuck␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m[ ]␛[m d-ready                                                      ␛[38;5;252mReady␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m[ ]␛[m e-more                                                       ␛[38;5;252mFifth␛[m ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[3;38;5;241m[space] toggle · [a] all/none · [enter] apply (1) · [esc] cancel␛[m         ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[38;5;241m[space] toggle · [a] all/none · [enter] apply (1) · [esc] cancel␛[m         ␛[38;5;241m│␛[m
 ␛[38;5;241m╰──────────────────────────────────────────────────────────────────────────╯␛[m

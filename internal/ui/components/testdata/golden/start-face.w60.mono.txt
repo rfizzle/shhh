@@ -48,7 +48,7 @@ Some things worth doing first:
   ␛[38;5;254m⚙␛[m ␛[38;5;254mexplain what changed in the working tree␛[m
     ␛[38;5;244mreads only, no writes␛[m
 
-␛[3;38;5;244m[↑↓] choose · [enter] start · or just type what you want␛[m
+␛[38;5;244m[↑↓] choose · [enter] start · or just type what you want␛[m
 
 · a pane one row short of that
 ␛[1;38;5;254m~/src/shhh␛[m␛[38;5;244m · ␛[m␛[38;5;254mgo 1.24␛[m␛[38;5;244m · ␛[m␛[38;5;254mgit main␛[m␛[38;5;244m · ␛[m␛[38;5;254m3 files changed␛[m
@@ -61,4 +61,4 @@ Some things worth doing first:
   ␛[38;5;254m⚙␛[m ␛[38;5;254mexplain what changed in the working tree␛[m
     ␛[38;5;244mreads only, no writes␛[m
 
-␛[3;38;5;244m[↑↓] choose · [enter] start · or just type what you want␛[m
+␛[38;5;244m[↑↓] choose · [enter] start · or just type what you want␛[m

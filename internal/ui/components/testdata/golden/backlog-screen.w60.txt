@@ -256,7 +256,7 @@ backlog               6 items · [?] hide the keys · [q] back
 ␛[38;5;241mThe backlog block on the inspector rail␛[m
 ␛[38;5;241mstory · high · size M · in progress · written 2026-08-28 · …␛[m
 ␛[38;5;241m1 item waits on this: screen-over-items␛[m
-␛[3;38;5;241m… (+8 more rows)␛[m
+␛[38;5;241m… (+8 more rows)␛[m
 
 ␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m read the body␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter by text␛[m
 ␛[94m[s/p/k/r]␛[m␛[38;5;241m narrow it␛[m␛[38;5;241m · ␛[m␛[94m[tab]␛[m␛[38;5;241m what shipped␛[m
@@ -280,7 +280,7 @@ backlog               6 items · [?] hide the keys · [q] back
 ␛[38;5;241mA screen over the whole backlog, with the body beside the␛[m
 ␛[38;5;241mlist␛[m
 ␛[38;5;241mstory · high · size L · open · written 2026-08-30␛[m
-␛[3;38;5;241m… (+7 more rows)␛[m
+␛[38;5;241m… (+7 more rows)␛[m
 
 ␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m read the body␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter by text␛[m
 ␛[94m[s/p/k/r]␛[m␛[38;5;241m narrow it␛[m␛[38;5;241m · ␛[m␛[94m[tab]␛[m␛[38;5;241m what shipped␛[m
@@ -328,7 +328,7 @@ backlog               6 items · [?] hide the keys · [q] back
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;241m## Blocked␛[m
-␛[3;38;5;241m… (+2 more rows)␛[m
+␛[38;5;241m… (+2 more rows)␛[m
 
 ␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+u]␛[m␛[38;5;241m clear the filter, then close it␛[m
 ␛[94m[esc]␛[m␛[38;5;241m close it␛[m
@@ -347,7 +347,7 @@ backlog               6 items · [?] hide the keys · [q] back
 ␛[38;5;241mA screen over the whole backlog, with the body beside the␛[m
 ␛[38;5;241mlist␛[m
 ␛[38;5;241mstory · high · size L · open · written 2026-08-30␛[m
-␛[3;38;5;241m… (+7 more rows)␛[m
+␛[38;5;241m… (+7 more rows)␛[m
 
 ␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m read the body␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter by text␛[m
 ␛[94m[s/p/k/r]␛[m␛[38;5;241m narrow it␛[m␛[38;5;241m · ␛[m␛[94m[tab]␛[m␛[38;5;241m what shipped␛[m
@@ -389,7 +389,7 @@ backlog               6 items · [?] hide the keys · [q] back
 ␛[38;5;241mchore · high · size M · done · written 2026-08-20␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
-␛[3;38;5;241m… (+2 more rows)␛[m
+␛[38;5;241m… (+2 more rows)␛[m
 
 ␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m read the body␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter by text␛[m
 ␛[94m[p/k]␛[m␛[38;5;241m narrow it␛[m␛[38;5;241m · ␛[m␛[94m[tab]␛[m␛[38;5;241m the backlog␛[m
@@ -414,7 +414,7 @@ backlog               6 items · [?] hide the keys · [q] back
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;241m**As a** reader, **I want** the queue beside the turn.␛[m
-␛[3;38;5;241m… (+5 more rows)␛[m
+␛[38;5;241m… (+5 more rows)␛[m
 
 ␛[38;5;252mDrop rail-todo-block? The file is deleted, not archived.␛[m  ␛[1;94m[…␛[m
 
@@ -431,7 +431,7 @@ backlog               6 items · [?] hide the keys · [q] back
 ␛[1;97mrail-todo-block␛[m
 ␛[38;5;241mThe backlog block on the inspector rail␛[m
 ␛[38;5;241mstory · high · size M · in progress · written 2026-08-28 · …␛[m
-␛[3;38;5;241m… (+9 more rows)␛[m
+␛[38;5;241m… (+9 more rows)␛[m
 
 ␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m read the body␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter by text␛[m
 ␛[94m[s/p/k/r]␛[m␛[38;5;241m narrow it␛[m␛[38;5;241m · ␛[m␛[94m[tab]␛[m␛[38;5;241m what shipped␛[m
@@ -447,7 +447,7 @@ backlog               6 items · [?] hide the keys · [q] back
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
 ␛[94m❯ ␛[m␛[38;5;205m▸␛[m ␛[1;97mrail-todo-block␛[m  ␛[38;5;241mHM␛[m␛[38;5;241m  in progress  The backlog block on …␛[m
-␛[3;38;5;241m… (+1 more rows)␛[m
+␛[38;5;241m… (+1 more rows)␛[m
 
 ␛[94m[↑↓]␛[m␛[38;5;241m move between items␛[m
 ␛[94m[enter]␛[m␛[38;5;241m read the body in the pane␛[m

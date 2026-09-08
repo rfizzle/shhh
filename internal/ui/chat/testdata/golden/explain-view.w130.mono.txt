@@ -69,7 +69,7 @@ output · [j/k] scroll · [pgup] page up · [pgdn] page down · [enter] close th
 
 
 
-␛[3;38;5;244moutput · [j/k] scroll · [pgup] page up · [pgdn] page down · [enter] close the row · [esc] back␛[m
+␛[38;5;244moutput · [j/k] scroll · [pgup] page up · [pgdn] page down · [enter] close the row · [esc] back␛[m
 
 · a reading that did not happen
  explain — rsync -a --delete src/ dst/                                                                                     ␛[38;5;244m6 lines␛[m
@@ -85,4 +85,4 @@ output · [j/k] scroll · [pgup] page up · [pgdn] page down · [enter] close th
 
 
 
-␛[3;38;5;244moutput · [j/k] scroll · [pgup] page up · [pgdn] page down · [enter] close the row · [esc] back␛[m
+␛[38;5;244moutput · [j/k] scroll · [pgup] page up · [pgdn] page down · [enter] close the row · [esc] back␛[m

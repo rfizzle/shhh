@@ -491,6 +491,12 @@ func (t Token) Color() color.Color {
 type Styles struct {
 	Border   lipgloss.Style
 	Headline lipgloss.Style
+	// Hint is what a surface says about itself — the keys it offers, the fold
+	// markers under a truncated list, the note under a viewer. It is dim and
+	// upright: italic means quoted model output, and chrome is the product's
+	// own voice, so it wears the grey and nothing else. That leaves Hint and
+	// Dim the same tone, and the two names still say different things — a
+	// hint answers "what can I do here", Dim is a rung on the grey scale.
 	Hint     lipgloss.Style
 	Warn     lipgloss.Style
 	Shield   lipgloss.Style
@@ -560,7 +566,7 @@ func newStyles(p ColorTokens) Styles {
 	return Styles{
 		Border:   lipgloss.NewStyle().Foreground(p.Dim.Color()),
 		Headline: lipgloss.NewStyle().Bold(true).Foreground(p.Info.Color()),
-		Hint:     lipgloss.NewStyle().Foreground(p.Dim.Color()).Italic(true),
+		Hint:     lipgloss.NewStyle().Foreground(p.Dim.Color()),
 		Warn:     lipgloss.NewStyle().Foreground(p.Del.Color()),
 		Shield:   lipgloss.NewStyle().Foreground(p.Status.Color()),
 		Dim:      lipgloss.NewStyle().Foreground(p.Dim.Color()),
