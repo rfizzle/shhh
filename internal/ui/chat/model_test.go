@@ -13,7 +13,9 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/clipboard"
+	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/caps"
@@ -2487,6 +2489,56 @@ func TestExitBanner_NoStoreIsUnsaved(t *testing.T) {
 	}
 	if m.autosaveCmd() != nil {
 		t.Fatal("the banner and the autosave must agree about there being nothing to write")
+	}
+}
+
+// The banner reports the bill, not a re-pricing of it. A coding session
+// re-sends its prompt prefix every round, so nearly all of its input is
+// served from the provider's cache at a fraction of the fresh rate; charging
+// that input fresh is how a banner closes a session at several times what it
+// cost. It is the whole sitting's bill too — the children spent it as much as
+// the agent's own turns did.
+func TestExitBanner_PricesCacheReadsAtTheCacheRate(t *testing.T) {
+	table := pricing.NewTable(map[string]pricing.ModelPricing{
+		"gpt-4o": {
+			InputCostPerToken:     0.00001,
+			CacheReadCostPerToken: 0.000001,
+			OutputCostPerToken:    0.00002,
+		},
+	})
+	ledger := meter.New(table)
+	m := New([]provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "one"},
+		{Role: provider.RoleAssistant, Content: "ok"},
+	}, mockStream).WithPricing(table, "gpt-4o").WithLedger(ledger)
+
+	// A round of the shape this defect was reported on: a million tokens of
+	// input, nine tenths of it a cache read, and a child that spent as well.
+	usage := provider.Usage{PromptTokens: 1_000_000, CachedTokens: 900_000, CompletionTokens: 1_000}
+	ledger.Record(meter.Origin{Source: meter.SourceAgent}, "gpt-4o", usage)
+	ledger.Record(meter.Origin{Source: meter.SourceSubagent, Label: "researcher-1"}, "gpt-4o",
+		provider.Usage{PromptTokens: 100_000, CachedTokens: 90_000, CompletionTokens: 500})
+	m.accumulateUsage(&usage)
+
+	b := m.ExitBanner("shhh code --continue")
+	if want := formatCost(ledger.Total().Cost); b.Spend != want {
+		t.Fatalf("the banner should report what the ledger billed: got %q, want %q", b.Spend, want)
+	}
+	// The fresh-rate reading of the same tokens, which is what the banner
+	// used to print. Naming it here is the whole point of the case: the two
+	// figures are the same session, and they are wildly apart.
+	if fresh := m.freshRateLabel(m.TotalTokensIn, m.TotalTokensOut); b.Spend == fresh {
+		t.Fatalf("a cache read billed at the fresh input rate: banner and fresh-rate label both %q", fresh)
+	}
+	if child := ledger.SourceTotal(meter.SourceSubagent).Cost; child <= 0 ||
+		ledger.Total().Cost <= ledger.SourceTotal(meter.SourceAgent).Cost {
+		t.Fatal("the sitting's bill includes what its children spent")
+	}
+	// And the row says which population the figure is, because the count
+	// beside it is the conversation's and this is the sitting's.
+	if view := ansi.Strip(b.View(80)); !strings.Contains(view, b.Spend+" this sitting") {
+		t.Fatalf("the spend row should name the sitting, got %q", view)
 	}
 }
 

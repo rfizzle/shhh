@@ -414,13 +414,28 @@ func (m Model) orchestratorRow() components.AgentRow {
 		State:  state,
 		Name:   "orchestrator",
 		Status: status,
-		Spend:  m.spendLabel(m.TotalTokensIn, m.TotalTokensOut),
+		// The orchestrator's own spend as it was priced request by request,
+		// cache split and all — the row sits beside children whose figures
+		// are estimates, and the one figure this session actually billed is
+		// not one of the estimates.
+		Spend: m.totalsLabel(m.mainSpend()),
 	}
 }
 
-// spendLabel formats an agent's spend: dollars when the pricing table knows
-// the model, a token count otherwise, empty before any usage.
-func (m Model) spendLabel(in, out int64) string {
+// freshRateLabel prices a bare token pair against the session's model at the
+// full input rate: dollars when the pricing table knows the model, a token
+// count otherwise, empty before anything was spent.
+//
+// It is an upper bound, not a bill. Every token the provider served from its
+// prompt cache is charged here as if it had been read fresh, because a pair
+// carries no cache split to charge at the cache rate — and on a coding
+// session, whose prompt prefix is re-sent every round, that is most of the
+// input (docs/capabilities/providers.md#the-prompt-prefix-is-paid-for-once).
+// So it is for the spends nothing priced as it went: a child's token
+// counters, a live turn's interpolated figures. A caller holding a
+// meter.Totals — the ledger's, the vitals' — reports totalsLabel instead, and
+// gets what was actually billed.
+func (m Model) freshRateLabel(in, out int64) string {
 	if in == 0 && out == 0 {
 		return ""
 	}
@@ -838,7 +853,7 @@ func (m Model) childStatsReport(name string) string {
 	fmt.Fprintf(&sb, "  mode:       %s (ceiling: %s)\n", mode, m.subagents.ParentMode())
 	fmt.Fprintf(&sb, "  tool calls: %d\n", st.ToolCalls)
 	spend := fmt.Sprintf("  spend:      ↑%s ↓%s tokens", formatTokenCount(st.TokensIn), formatTokenCount(st.TokensOut))
-	if label := m.spendLabel(st.TokensIn, st.TokensOut); strings.HasPrefix(label, "$") {
+	if label := m.freshRateLabel(st.TokensIn, st.TokensOut); strings.HasPrefix(label, "$") {
 		spend += "  " + label
 	}
 	sb.WriteString(spend)
@@ -886,7 +901,7 @@ func (m Model) renderChildStatusBar(width int) string {
 	if st.State == subagent.StateBlocked {
 		parts[1] = sty.CtxAlert.Render(st.Detail)
 	}
-	if spend := m.spendLabel(st.TokensIn, st.TokensOut); spend != "" {
+	if spend := m.freshRateLabel(st.TokensIn, st.TokensOut); spend != "" {
 		parts = append(parts, sty.StatusBar.Render(spend))
 	}
 	if q := m.subagents.QueuedSteering(name); q > 0 {

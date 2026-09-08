@@ -111,7 +111,7 @@ func (m Model) turnCloseData() *components.TurnClose {
 		if t.Priced {
 			c.Spend = formatCost(t.Cost)
 		} else {
-			c.Spend = m.spendLabel(t.In, t.Out)
+			c.Spend = m.freshRateLabel(t.In, t.Out)
 		}
 	}
 	return &c

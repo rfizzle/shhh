@@ -1325,10 +1325,21 @@ func (m Model) quitCmd() tea.Cmd {
 // the slot named is the one autosaveCmd writes rather than the session's
 // working name: what quitting wrote is what --continue will read back, so a
 // banner offering a resume the autosave did not take cannot be built.
+//
+// The spend is the whole sitting's, as the ledger billed it: every request
+// this process made — the agent's rounds, the classifier, the summary and
+// every child — each priced against the model that answered it, with the
+// part of its input the provider served from cache charged at the cache
+// rate. The main agent's own token counts would be two things wrong at once,
+// leaving the children out and re-pricing a cached read as a fresh one, which
+// on a session whose prompt prefix is re-sent every round is most of the
+// input (stats.go, attach.go). Turns count the whole conversation and the
+// spend counts this sitting, so the two rows are different populations and
+// the banner says which each is (components.ExitBanner).
 func (m Model) ExitBanner(resume string) components.ExitBanner {
 	b := components.ExitBanner{
 		Turns: m.conversationTurns(),
-		Spend: m.spendLabel(m.TotalTokensIn, m.TotalTokensOut),
+		Spend: m.totalsLabel(m.sessionSpend()),
 	}
 	if m.db == nil {
 		b.Unsaved = true

@@ -93,12 +93,36 @@ func (m Model) sessionSpend() meter.Totals {
 	if m.ledger != nil {
 		return m.ledger.Total()
 	}
+	return m.mainSpend()
+}
+
+// mainSpend is the main agent's own spend — its turns and nothing else,
+// which is the figure the rail's MAIN row and the agent map's orchestrator
+// row report beside the children they are being read against.
+//
+// It carries the cost the session priced as each request came back rather
+// than a bare pair of token counts, so a caller renders what was billed
+// instead of re-pricing the whole input at the fresh rate (vitals.go,
+// attach.go).
+func (m Model) mainSpend() meter.Totals {
 	return meter.Totals{
 		In:     m.vitals.totalIn,
 		Out:    m.vitals.totalOut,
 		Cached: m.vitals.totalCached,
 		Cost:   m.vitals.totalCost,
 		Priced: m.vitals.priced,
+	}
+}
+
+// turnSpend is the open turn's own accounting in the same shape: what the
+// turn under way has cost, priced request by request as it went.
+func (m Model) turnSpend() meter.Totals {
+	return meter.Totals{
+		In:     m.vitals.current.In,
+		Out:    m.vitals.current.Out,
+		Cached: m.vitals.current.Cached,
+		Cost:   m.vitals.current.Cost,
+		Priced: m.vitals.current.Priced,
 	}
 }
 

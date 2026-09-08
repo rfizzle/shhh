@@ -205,7 +205,7 @@ func (m Model) childSpendLabel(st subagent.Status) string {
 			return formatCost(in + out)
 		}
 	}
-	return m.spendLabel(st.TokensIn, st.TokensOut)
+	return m.freshRateLabel(st.TokensIn, st.TokensOut)
 }
 
 // liveFanoutBlock is the index of the earliest transcript block holding a

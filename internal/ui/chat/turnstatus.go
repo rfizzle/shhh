@@ -52,7 +52,7 @@ func (m Model) turnStatus() (components.TurnStatus, bool) {
 	// model states tokens here instead of a made-up zero.
 	in, out := m.easedTurnTokens()
 	if in > 0 || out > 0 {
-		up, down, cost := components.FormatLiveCount(in), components.FormatLiveCount(out), m.spendLabel(in, out)
+		up, down, cost := components.FormatLiveCount(in), components.FormatLiveCount(out), m.freshRateLabel(in, out)
 		if m.accountDiffers(up, down, cost) {
 			s.Up, s.Down, s.Cost = up, down, cost
 		}
@@ -74,7 +74,7 @@ func (m Model) turnStatus() (components.TurnStatus, bool) {
 func (m Model) accountDiffers(up, down, cost string) bool {
 	sin, sout := m.liveSessionTokens()
 	return up != m.countLabel(sin) || down != m.countLabel(sout) ||
-		cost != m.spendLabel(sin, sout)
+		cost != m.freshRateLabel(sin, sout)
 }
 
 // turnPhase is which of the four phases the turn is in, the argument to name

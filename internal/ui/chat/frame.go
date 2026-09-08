@@ -603,7 +603,7 @@ func (m Model) childRailSegments() []components.RailSegment {
 		detail, drop = sty.CtxAlert.Render(st.Detail), components.RailVital
 	}
 	segs = append(segs, components.RailSegment{Text: detail, Drop: drop})
-	if spend := m.spendLabel(st.TokensIn, st.TokensOut); spend != "" {
+	if spend := m.freshRateLabel(st.TokensIn, st.TokensOut); spend != "" {
 		segs = append(segs, components.RailSegment{Text: sty.StatusBar.Render(spend), Drop: components.RailVital})
 	}
 	if q := m.subagents.QueuedSteering(name); q > 0 {

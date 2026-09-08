@@ -40,14 +40,15 @@ func TestExitBanner_NothingSaidPrintsNothing(t *testing.T) {
 }
 
 // The three rows and what each carries: the slot and its size, what the
-// sitting cost, and the command that reopens it.
+// sitting cost — said to be the sitting's, because the count above it is the
+// conversation's — and the command that reopens it.
 func TestExitBanner_SaysWhatTheScreenTookWithIt(t *testing.T) {
 	// A redirected stream, which is what a test binary writes to anyway: the
 	// grid on its own, with no parting line under it.
 	withColorProfile(t, colorprofile.NoTTY)
 	got := plainBanner(fullBanner(), 80)
 	want := "session  (last session) · 12 turns\n" +
-		"spent    $0.42\n" +
+		"spent    $0.42 this sitting\n" +
 		"resume   shhh code --continue"
 	if got != want {
 		t.Fatalf("banner =\n%q\nwant\n%q", got, want)
@@ -95,6 +96,26 @@ func TestExitBanner_ResumeCommandIsNeverClipped(t *testing.T) {
 		got := plainBanner(fullBanner(), width)
 		if !strings.Contains(got, "shhh code --continue") {
 			t.Fatalf("width %d: the resume command was clipped: %q", width, got)
+		}
+	}
+}
+
+// The spend row's ladder, which is the session row's: the clause naming the
+// population the figure belongs to goes whole before the figure is eaten
+// into, because a price with its tail clipped is a wrong price.
+func TestExitBanner_SpendRowDropsTheScopeBeforeTheFigure(t *testing.T) {
+	for _, c := range []struct {
+		width int
+		want  string
+	}{
+		{80, "spent    $0.42 this sitting"},
+		{27, "spent    $0.42 this sitting"},
+		{26, "spent    $0.42"},
+		{13, "spent    $0.…"},
+	} {
+		lines := strings.Split(plainBanner(fullBanner(), c.width), "\n")
+		if len(lines) < 2 || lines[1] != c.want {
+			t.Fatalf("width %d: spend row = %q, want %q", c.width, lines, c.want)
 		}
 	}
 }

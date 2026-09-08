@@ -48,6 +48,13 @@ type ExitBanner struct {
 	// model is priced, a token count where it is not, empty where nothing was
 	// spent. Never a made-up $0.00, for the reason the start screen gives about
 	// the resume offer.
+	//
+	// It is the sitting's and Turns is the conversation's, which on a resumed
+	// conversation are two different populations: the row says so in words
+	// rather than leaving a figure beside a count it does not belong to. The
+	// clause is on every banner and not only a resumed one — a figure that
+	// means the same thing both times has to read the same both times, or its
+	// absence is a distinction the reader has to have been told about.
 	Spend string
 	// Resume is the command that reopens the conversation. It is the only
 	// thing on this surface a reader has to be able to retype, so it is the
@@ -83,7 +90,7 @@ func (b ExitBanner) View(width int) string {
 
 	rows := []string{b.row("session", b.sessionLine(body), sty.Body)}
 	if b.Spend != "" {
-		rows = append(rows, b.row("spent", Clip(b.Spend, body), sty.Body))
+		rows = append(rows, b.row("spent", b.spendLine(body), sty.Body))
 	}
 	switch {
 	case b.Unsaved:
@@ -128,6 +135,23 @@ func partingLine(width int) string {
 // the tone the row is read for.
 func (b ExitBanner) row(label, value string, style lipgloss.Style) string {
 	return sty.Dim.Render(padRight(label, exitLabelWidth)) + "  " + style.Render(value)
+}
+
+// spendLine is what the sitting cost and whose spend that is. The scope
+// rides in the value rather than in the label: the labels are the column a
+// reader scans down, and a longer one there would move every value on the
+// surface to say something about one of them.
+//
+// It is the session row's ladder over again — the clause goes whole when the
+// row will not hold it, before the figure is eaten into. A price with its
+// tail clipped is a wrong price, and the clause is the half a reader can
+// afford to lose: the count it distinguishes the figure from is a row above,
+// and on a terminal this narrow it has already lost its own tail.
+func (b ExitBanner) spendLine(width int) string {
+	if line := b.Spend + " this sitting"; lipgloss.Width(line) <= width {
+		return line
+	}
+	return Clip(b.Spend, width)
 }
 
 // sessionLine is the conversation's identity: what it is called, what it

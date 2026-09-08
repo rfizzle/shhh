@@ -429,6 +429,12 @@ func (m Model) inspectorContext() *components.InspectorContext {
 // permission classifier, the session summary and every child, each priced
 // against the model that actually answered it — so the rail's bottom line is
 // the whole bill rather than the part of it the main agent ran up.
+//
+// All four rows are read down the block as shares of one bill, so all four
+// are the priced-as-it-went figure. A row re-priced from its token counts
+// would charge the input the provider served from its cache at the fresh
+// rate, and the block would show a turn costing more than the session it is
+// part of (attach.go).
 func (m Model) inspectorSpend() *components.InspectorSpend {
 	total := m.sessionSpend()
 	children := m.childSpend()
@@ -436,8 +442,8 @@ func (m Model) inspectorSpend() *components.InspectorSpend {
 		return nil
 	}
 	s := components.InspectorSpend{
-		Turn:    m.spendLabel(m.turnTokensIn, m.turnTokensOut),
-		Main:    m.spendLabel(m.TotalTokensIn, m.TotalTokensOut),
+		Turn:    m.totalsLabel(m.turnSpend()),
+		Main:    m.totalsLabel(m.mainSpend()),
 		Session: m.totalsLabel(total),
 		Model:   m.modelName,
 	}
@@ -466,7 +472,10 @@ func (m Model) childSpend() meter.Totals {
 }
 
 // totalsLabel formats a ledger roll-up: the cost it was priced at, or a token
-// count where the pricing table knew none of the models involved.
+// count where the pricing table knew none of the models involved. It is the
+// label for any spend the session priced as it went, because the roll-up
+// carries what each request was actually billed — the cache split included —
+// and nothing here has to price it a second time.
 func (m Model) totalsLabel(t meter.Totals) string {
 	if t.In == 0 && t.Out == 0 {
 		return ""
@@ -474,7 +483,7 @@ func (m Model) totalsLabel(t meter.Totals) string {
 	if t.Priced {
 		return formatCost(t.Cost)
 	}
-	return m.spendLabel(t.In, t.Out)
+	return m.freshRateLabel(t.In, t.Out)
 }
 
 // WithRailWidth fixes the inspector rail's column count for this session.

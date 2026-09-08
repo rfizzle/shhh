@@ -1207,6 +1207,21 @@ nothing behind. What it drew is gone in one frame, and with it the answer to
 which conversation that was, what it cost, and whether any of it was written
 down. The banner is what the terminal keeps.
 
+What it cost is the bill the session kept as it went, not a sum re-priced on
+the way out. A session pays several rates at once — a cheaper model for the
+background, and a fraction of the input rate for the prefix the provider
+served from its cache — and the only place those rates are known is the
+moment each request came back. A figure recomputed from the token counts
+alone charges every cached read as a fresh one, which on a coding session is
+most of the input and several times the true bill; a meter that overstates by
+that much is one a person turns off. It is also the whole sitting's, children
+and background included, because that is what the sitting spent.
+
+The count beside it is the conversation's and the figure is the sitting's, so
+the row names its own scope. On a reopened conversation the two describe
+different populations, and a price sitting silently under a count is read as
+the price of that count.
+
 It ends on one line of voice, and that line is the last row rather than the
 first: a banner that opens on something saying nothing is a banner a reader
 learns to skip, and everything they came for is above it. The line is drawn

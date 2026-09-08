@@ -625,7 +625,7 @@ func (m *Model) summaryStatus() (string, tea.Cmd) {
 		model = m.modelName
 	}
 	fmt.Fprintf(&sb, "%s · every %d rounds · %s so far",
-		model, m.summaryInterval(), m.spendLabel(m.summary.tokensIn, m.summary.tokensOut))
+		model, m.summaryInterval(), m.freshRateLabel(m.summary.tokensIn, m.summary.tokensOut))
 	if m.summarizer.Config().Model == "" {
 		sb.WriteString("\nSet summary.model in config to read these on a faster model than the session's.")
 	}

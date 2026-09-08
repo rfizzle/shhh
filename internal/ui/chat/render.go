@@ -288,7 +288,7 @@ func (m Model) cockpitData(includeQueued bool) components.Cockpit {
 	sessionIn, sessionOut := m.liveSessionTokens()
 	if sessionIn != 0 || sessionOut != 0 {
 		c.Tokens = fmt.Sprintf("↑%s ↓%s", m.countLabel(sessionIn), m.countLabel(sessionOut))
-		if label := m.spendLabel(sessionIn, sessionOut); strings.HasPrefix(label, "$") {
+		if label := m.freshRateLabel(sessionIn, sessionOut); strings.HasPrefix(label, "$") {
 			c.Spend = label
 		}
 		if tokens := m.estimatedContextTokens(); tokens > 0 {
