@@ -351,6 +351,62 @@ func TestStop_TerminatesProcessTree(t *testing.T) {
 	})
 }
 
+func TestStop_EndsAWillingProcessOnTheFirstSignal(t *testing.T) {
+	s := newTestSupervisor(t, nil)
+	execute(t, s, `{"action":"start","name":"willing","command":"sleep 30"}`)
+
+	start := time.Now()
+	execute(t, s, `{"action":"stop","name":"willing"}`)
+	// A process that traps nothing must go on the gentle signal. If the
+	// first signal is a no-op the supervisor waits out the whole grace
+	// before the second one lands, and every stop costs stopGrace.
+	if elapsed := time.Since(start); elapsed >= stopGrace {
+		t.Fatalf("stop of a willing process took %s; the first signal ended nothing", elapsed)
+	}
+}
+
+func TestStop_KillsAProcessThatIgnoresTheGentleSignal(t *testing.T) {
+	s := newTestSupervisor(t, nil)
+	// A daemon-shaped process: it ignores both signals a supervisor can be
+	// expected to send politely, so only SIGKILL ends it.
+	execute(t, s, `{"action":"start","name":"stubborn","command":"trap '' HUP TERM; echo READY; while :; do sleep 0.1; done"}`)
+	waitFor(t, "the stubborn process to install its traps", func() bool {
+		return strings.Contains(execute(t, s, `{"action":"read","name":"stubborn"}`), "READY")
+	})
+	stubborn, err := s.get("stubborn")
+	if err != nil {
+		t.Fatalf("get: %v", err)
+	}
+	pid := stubborn.pid
+
+	// stop blocks until the process is reaped, so a supervisor that never
+	// sends a signal this one cannot ignore would hang the suite rather than
+	// fail it; the goroutine turns that back into a failure.
+	start := time.Now()
+	stopped := make(chan error, 1)
+	go func() {
+		_, err := s.Execute(json.RawMessage(`{"action":"stop","name":"stubborn"}`))
+		stopped <- err
+	}()
+	select {
+	case err := <-stopped:
+		if err != nil {
+			t.Fatalf("stop: %v", err)
+		}
+	case <-time.After(stopGrace + 5*time.Second):
+		t.Fatalf("stop never returned; nothing the supervisor sent ended a process that ignores HUP and TERM")
+	}
+	if elapsed := time.Since(start); elapsed < stopGrace {
+		t.Fatalf("stop returned after %s; a process trapping TERM cannot have gone before the grace ran out", elapsed)
+	}
+	if out := execute(t, s, `{"action":"status","name":"stubborn"}`); !strings.Contains(out, "exited") {
+		t.Fatalf("status after stop should say exited, got %q", out)
+	}
+	waitFor(t, "the stubborn process to be gone", func() bool {
+		return !pidAlive(pid)
+	})
+}
+
 // pidAlive reports whether a pid still exists (signal 0 probe).
 func pidAlive(pid int) bool {
 	p, err := os.FindProcess(pid)
