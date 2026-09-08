@@ -68,6 +68,16 @@ actively misleads is the whole reason the reading exists. The same reading is
 what `/load` gives a conversation opened mid-session, because a conversation
 opened is a conversation opened however it got there.
 
+A move also names what moved. "Re-read a file before editing it" over a whole
+checkout is an instruction nobody can carry out; the paths the commits in
+between changed turn it into "these eleven files moved, and the rest of what
+the transcript describes did not". The list is bounded at both ends — the
+first twenty paths are named and the rest counted, and a move of hundreds
+names none, because a rebase that size is a different checkout rather than a
+list of exceptions to a transcript. Where the paths cannot be read at all —
+no git, or a commit the checkout no longer has after a rewritten branch or a
+pruned fetch — the line that says the tree moved still stands.
+
 The reading is not part of the conversation. It is built from the checkout
 every time, the way the system prompt is, so opening the same conversation
 three times tells it about the tree once rather than three times about three

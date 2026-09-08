@@ -1,6 +1,10 @@
 package chat
 
 import (
+	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -40,6 +44,100 @@ func TestResumeNotice_MovedHeadNamesBothCommits(t *testing.T) {
 	if strings.Count(moved, shortCommit(headWas)) != 2 || !strings.Contains(moved, shortCommit(headNow)) {
 		t.Fatalf("the move belongs on one line, got %q", moved)
 	}
+}
+
+// The move is only actionable if it says what moved: "re-read a file before
+// editing it" over a whole checkout is an instruction nobody can carry out,
+// and eleven named paths is one anybody can.
+func TestResumeNotice_AMovedHeadNamesTheChangedPaths(t *testing.T) {
+	dir, was, now := twoCommitRepo(t, "exporter.go", "parser.go")
+	info := project.Info{Dir: dir, Repo: true, Branch: "master", Head: now}
+	n := resumeNotice(info, storage.ChatResume{Head: was})
+	for _, want := range []string{"exporter.go", "parser.go", "2 files"} {
+		if !strings.Contains(n.Text, want) {
+			t.Errorf("the moved sentence should name %q:\n%s", want, n.Text)
+		}
+	}
+	// The account of the move is still one line, with the path list under it
+	// rather than folded into it.
+	for _, line := range strings.Split(n.Text, "\n") {
+		if strings.Contains(line, "moved") && strings.Contains(line, "exporter.go") {
+			t.Fatalf("the paths belong on their own line, got %q", line)
+		}
+	}
+	// A commit the checkout no longer has is the ordinary failure — a
+	// rewritten branch, a pruned fetch — and it costs the list, never the
+	// sentence that says the tree moved.
+	gone := resumeNotice(info, storage.ChatResume{Head: headWas})
+	if !strings.Contains(gone.Text, "moved") {
+		t.Fatalf("a diff that cannot be taken still reports the move:\n%s", gone.Text)
+	}
+	if strings.Contains(gone.Text, "exporter.go") {
+		t.Fatalf("a diff that cannot be taken names nothing:\n%s", gone.Text)
+	}
+}
+
+// The sentence names what a reader can hold and counts the rest, and says
+// nothing at all where the move is a different checkout rather than a list of
+// exceptions to the transcript.
+func TestMovedPaths_BoundedOnBothSides(t *testing.T) {
+	many := make([]string, resumeMovedNamed+4)
+	for i := range many {
+		many[i] = fmt.Sprintf("pkg/file%02d.go", i)
+	}
+	sentence := movedSentence(many)
+	if !strings.Contains(sentence, "and 4 more") {
+		t.Errorf("the paths past the bound are counted, got %q", sentence)
+	}
+	if strings.Contains(sentence, "file20.go") {
+		t.Errorf("only the first %d are named, got %q", resumeMovedNamed, sentence)
+	}
+	if got := strings.Count(sentence, ".go"); got != resumeMovedNamed {
+		t.Errorf("named %d paths, want %d: %q", got, resumeMovedNamed, sentence)
+	}
+
+	names := make([]string, resumeMovedMax+1)
+	for i := range names {
+		names[i] = fmt.Sprintf("f%03d.txt", i)
+	}
+	dir, was, now := twoCommitRepo(t, names...)
+	if paths := movedPaths(dir, was, now); paths != nil {
+		t.Errorf("a move of %d paths is a different checkout, not a list: %d named", len(names), len(paths))
+	}
+	if paths := movedPaths(t.TempDir(), was, now); paths != nil {
+		t.Errorf("a directory that is no repository answers nothing, got %q", paths)
+	}
+}
+
+// twoCommitRepo is a repository whose second commit changes the named files,
+// and the two commits either side of it.
+func twoCommitRepo(t *testing.T, files ...string) (dir, was, now string) {
+	t.Helper()
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git is not installed")
+	}
+	dir = t.TempDir()
+	run := func(args ...string) string {
+		t.Helper()
+		out, code := git(dir, args...)
+		if code != 0 {
+			t.Fatalf("git %v: %s", args, out)
+		}
+		return out
+	}
+	run("init", "-q")
+	run("config", "user.email", "t@example.com")
+	run("config", "user.name", "t")
+	run("commit", "-q", "--allow-empty", "-m", "seed")
+	was = run("rev-parse", "HEAD")
+	for _, name := range files {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte("package a\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	run("add", "-A")
+	run("commit", "-q", "-m", "work")
+	return dir, was, run("rev-parse", "HEAD")
 }
 
 func TestResumeNotice_UnchangedHeadClaimsNoMove(t *testing.T) {

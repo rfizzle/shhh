@@ -153,11 +153,81 @@ func resumeSurveyMessage(info project.Info, was string) string {
 			"The transcript below describes the checkout at %s, so re-read a file before editing it, "+
 			"and do not revert or explain changes you did not make.",
 			shortCommit(was), shortCommit(info.Head), shortCommit(was))
+		if moved := movedPaths(info.Dir, was, info.Head); len(moved) > 0 {
+			b.WriteString("\n" + movedSentence(moved))
+		}
 		return b.String()
 	}
 	b.WriteString("This is the checkout as it stands now, read when the conversation was reopened. " +
 		"The transcript below is from an earlier sitting.")
 	return b.String()
+}
+
+// The two bounds on the path list. resumeMovedNamed is how many paths the
+// sentence names before it counts the rest, and resumeMovedMax the size above
+// which it names none at all.
+//
+// Twenty is what the sentence is for: "these eleven files moved, everything
+// else in the transcript still holds" is a fact a reader can act on, and it
+// stays one at twenty. Two hundred is where the claim stops being true — a
+// rebase, a merge or a generated tree that size is not a list of exceptions
+// to a transcript, it is a different checkout, and the plain sentence already
+// says the only thing worth saying about it. The list is bounded on both
+// sides rather than only truncated because the cost of the wrong answer runs
+// the other way: a sentence naming twenty paths out of four thousand reads as
+// an inventory of what moved.
+const (
+	resumeMovedNamed = 20
+	resumeMovedMax   = 200
+)
+
+// movedPaths are the paths the commits between was and now changed, and none
+// where there is no usable answer: no git, a commit the checkout no longer
+// has (a rewritten branch, a pruned fetch), or more paths than a sentence can
+// honestly name. Every one of those falls back to the plain moved sentence,
+// which is what the message said before the list existed — a resumed session
+// is never worse off than it was for the reading failing.
+//
+// This is the one fact in the notice that cannot be built by hand: it is read
+// from the checkout, the way the survey around it is.
+func movedPaths(dir, was, now string) []string {
+	out, code := git(dir, "--no-pager", "diff", "--name-only", was+".."+now)
+	if code != 0 {
+		return nil
+	}
+	var paths []string
+	for _, line := range strings.Split(out, "\n") {
+		// git quotes a path with a newline or a control character in it
+		// rather than emitting it raw, so a line is a path and a crafted
+		// filename cannot forge a second sentence in this message.
+		if p := strings.TrimSpace(line); p != "" {
+			paths = append(paths, p)
+		}
+	}
+	if len(paths) > resumeMovedMax {
+		return nil
+	}
+	return paths
+}
+
+// movedSentence names what the move touched, so "re-read a file before
+// editing it" narrows to the files that actually moved and the rest of the
+// transcript's picture of the tree stands.
+//
+// It says the commits changed them rather than that nothing else has changed:
+// a tree can also be dirty, and another session's uncommitted work is in
+// neither this list nor this conversation.
+func movedSentence(paths []string) string {
+	named, rest := paths, 0
+	if len(named) > resumeMovedNamed {
+		named, rest = named[:resumeMovedNamed], len(named)-resumeMovedNamed
+	}
+	list := strings.Join(named, ", ")
+	if rest > 0 {
+		list += fmt.Sprintf(", and %d more", rest)
+	}
+	return fmt.Sprintf("The commits in between changed %s: %s. Nothing else in the tree the transcript describes was touched by them.",
+		plural(len(paths), "file"), list)
 }
 
 // shortCommit is a commit as this message names one. Seven characters, which

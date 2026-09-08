@@ -768,7 +768,14 @@ func (l *serveLoop) Run(turn int64, prompt string) (string, error) {
 	}
 	// The readings this turn takes are judged against this turn's
 	// instruction: a session's second question is not a drift from its first.
-	l.headless.Summary = agent.NewSummaryRun(l.summarizer, agent.NewRecorder(0), prompt).WithChanges(l.own.changed)
+	// The gate they read the standing bad news off is this turn's too, held
+	// in a local rather than read back off the loop: a reading still in
+	// flight when the next turn replaces the gate would otherwise be reading
+	// the field as it is written.
+	gate := l.gate
+	l.headless.Summary = agent.NewSummaryRun(l.summarizer, agent.NewRecorder(0), prompt).
+		WithChanges(l.own.changed).
+		WithAlerts(gate.alerts)
 
 	started := time.Now()
 	final, runErr := l.headless.Run(prompt)

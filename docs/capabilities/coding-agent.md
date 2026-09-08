@@ -613,6 +613,15 @@ that outlives the run records it and a one-shot command that has already
 printed its answer and exited simply does not have it. Nothing is steered by
 it: the turn it describes is over.
 
+**A run that is on target with a red suite is not a run that has drifted.**
+The reading of an unattended turn is given the checks that came back broken —
+on that surface, the gate that runs when the model stops calling tools is what
+knows — because a reader who cannot see them has one verdict for two
+situations and only one of them is worth an interruption: work that has
+drifted needs redirecting, work that is on the plan with a failing check needs
+leaving alone to fix it. What the reading is told is the suite, how it came
+back and which checks are not green, never a byte a check printed.
+
 **Which surfaces take readings is the reader's, because the cost is per
 agent.** A non-interactive run is one agent and takes them by default. A
 fan-out is as many agents as it is wide, and six children are six more

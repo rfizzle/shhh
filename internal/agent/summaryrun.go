@@ -38,6 +38,20 @@ type SummaryRun struct {
 	// so it is outside the lock with the summarizer and the recorder; what
 	// it reaches for holds its own.
 	changes func() (files, added, removed int)
+	// alerts is the standing bad news — the checks that came back broken and
+	// have not come back green since — and plan the approved plan's steps
+	// with their states. Both are nil where the surface has no such thing to
+	// answer with, and both are read on the same terms as changes: set once
+	// before the run starts, called from the reading's goroutine, and
+	// responsible for their own guarding.
+	//
+	// They are the two fields that tell "off target" from "on target and the
+	// tests are red". A reading that cannot see either has one verdict for
+	// both, and only one of them is worth a steer: work that has drifted
+	// needs redirecting, work that is on the plan with a failing check needs
+	// leaving alone to fix it.
+	alerts func() []string
+	plan   func() []string
 
 	mu sync.Mutex
 	// target is the instruction every reading is judged against: the task the
@@ -117,6 +131,42 @@ func (r *SummaryRun) WithChanges(count func() (files, added, removed int)) *Summ
 		return nil
 	}
 	r.changes = count
+	return r
+}
+
+// WithAlerts names where the surface's standing bad news is read from, and
+// returns the runner so a caller wires it in one expression. An unattended
+// turn's source is the gate that runs at its close: a suite that came back
+// failing is what makes "the work is on target and the tests are red" a
+// different reading from "the work has drifted", which are the two the
+// intervention policy must not confuse. A surface with no checks calls
+// nothing and its digest carries no failing-checks field.
+//
+// What the supplier answers with is rows, not a verdict object, for the
+// reason the digest is rows everywhere: a check's own output is what must
+// never reach the thing that steers, so the caller states the check and how
+// it came back and nothing it printed. Safe on a nil runner.
+func (r *SummaryRun) WithAlerts(alerts func() []string) *SummaryRun {
+	if r == nil {
+		return nil
+	}
+	r.alerts = alerts
+	return r
+}
+
+// WithPlan names where an approved plan's steps and their states are read
+// from, so a reading judging "on target" has the declared list in front of it
+// rather than only the work. It is the same field a session fills from its own
+// checklist, and the same wording, so one instruction judges both.
+//
+// A surface that never had a plan approved calls nothing, which is every run
+// with nobody in front of it today: plan mode's refusals need somebody to
+// approve them. Safe on a nil runner.
+func (r *SummaryRun) WithPlan(plan func() []string) *SummaryRun {
+	if r == nil {
+		return nil
+	}
+	r.plan = plan
 	return r
 }
 
@@ -370,6 +420,8 @@ func (r *SummaryRun) read(rounds int) {
 		Activity:      r.recorder.Rows(),
 		Assistant:     r.recorder.LastAssistant(),
 		Changes:       r.changed(),
+		Alerts:        supplied(r.alerts),
+		Plan:          supplied(r.plan),
 		Interventions: interventions,
 		Round:         rounds,
 		Elapsed:       time.Since(r.started),
@@ -450,4 +502,15 @@ func (r *SummaryRun) changed() string {
 		return ""
 	}
 	return SummaryChanges(r.changes())
+}
+
+// supplied is one of the list-valued digest fields, empty where the surface
+// names no source for it. Called off the lock for the reason changed is: what
+// it reads is the caller's state and holding this runner's lock across the
+// caller's own would be an ordering nothing here can see.
+func supplied(f func() []string) []string {
+	if f == nil {
+		return nil
+	}
+	return f()
 }

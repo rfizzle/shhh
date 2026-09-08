@@ -1208,6 +1208,11 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 			written: own.paths, before: quality.TakeFingerprint(qgate.Workspace),
 		}
 		h.OnClose = closing.close
+		// The gate's verdict is the unattended turn's standing bad news, and
+		// the reading that decides whether to steer needs it: a run that is
+		// on target with a red suite is not the run that has drifted, and
+		// only one of the two is worth interrupting.
+		summaryRun.WithAlerts(closing.alerts)
 	}
 	// Where the answer goes as it is written: stdout for a person or a
 	// `$(...)`, the stream for a consumer reading events, and nowhere at all
@@ -1458,7 +1463,12 @@ type headlessCloseGate struct {
 	// asked only the call log would run nothing over a tree that had moved.
 	before quality.Fingerprint
 
-	fed  int
+	fed int
+	// mu guards the verdict and whether the suite ran. The close runs on the
+	// run's own goroutine and the turn's readings are taken on theirs, and a
+	// reading that goes out while the gate is running is exactly the one that
+	// most wants the answer.
+	mu   sync.Mutex
 	last *quality.Result
 	// ran says the suite was started, which is what separates the two
 	// answers a nil result carries: a turn with nothing to check, and one
@@ -1476,7 +1486,9 @@ func (g *headlessCloseGate) close(string) string {
 	if !changeset.AnyCheckable(g.written()) && quality.TakeFingerprint(g.gate.Workspace) == g.before {
 		return ""
 	}
+	g.mu.Lock()
 	g.ran = true
+	g.mu.Unlock()
 	res, err := g.gate.Run(g.ctx, g.suite)
 	if err != nil {
 		// The only error Run reports is a run already in flight, which here
@@ -1484,7 +1496,9 @@ func (g *headlessCloseGate) close(string) string {
 		// verdict is the one the turn is about to be judged on anyway.
 		return ""
 	}
+	g.mu.Lock()
 	g.last = res
+	g.mu.Unlock()
 	text := res.Format(quality.TakeFingerprint(g.gate.Workspace))
 	// The verdict goes to stderr beside the run's other activity rather than
 	// into the answer on stdout, which belongs to whatever is reading it.
@@ -1508,17 +1522,83 @@ func (g *headlessCloseGate) close(string) string {
 // a turn whose checks passed both exit 0, and only one of them says anything
 // about the tree.
 func (g *headlessCloseGate) state() quality.Closing {
-	if g == nil || !g.ran || g.last == nil {
+	if g == nil {
+		return quality.ClosingNotRun
+	}
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	if !g.ran || g.last == nil {
 		return quality.ClosingNotRun
 	}
 	return quality.ClosingOf(g.last.Verdict)
+}
+
+// alerts is the last verdict as the standing bad news a reading is given: the
+// gate's own word for how it came back, and a row per check that is not
+// green. A pass, a cancellation and a turn that ran no suite say nothing —
+// this field is what the digest calls failing checks, and a reader handed an
+// empty one for a green tree would be told the checks are a subject when they
+// are not.
+//
+// It states a check's name and how it came back and never a byte the check
+// printed. The formatted verdict carries the tail of each failing check's
+// output, which is exactly the material an outside party can write into — a
+// test that prints what a fetched fixture said — and this evidence becomes
+// the instruction a drifting run is steered with.
+// See docs/capabilities/coding-agent.md#the-verdict-is-a-steering-signal-so-the-digest-is-a-boundary.
+func (g *headlessCloseGate) alerts() []string {
+	if g == nil {
+		return nil
+	}
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	if g.last == nil {
+		return nil
+	}
+	switch g.last.Verdict {
+	case quality.VerdictFail, quality.VerdictBlocked:
+	default:
+		return nil
+	}
+	// The gate's own sentence for a blocked run — an unknown suite, a check
+	// that never started — is shhh's text and not the check's, and without it
+	// "blocked" is a word with no way to act on it.
+	head := fmt.Sprintf("quality gate %q — %s", g.last.Suite, g.last.Verdict)
+	if g.last.Verdict == quality.VerdictBlocked && g.last.Reason != "" {
+		head += ": " + g.last.Reason
+	}
+	rows := []string{head}
+	for _, c := range g.last.Checks {
+		if c.OK() {
+			continue
+		}
+		rows = append(rows, c.Name+" — "+checkOutcome(c))
+	}
+	return rows
+}
+
+// checkOutcome is how one check came back, in the closed set the transcript's
+// outcome words come from.
+func checkOutcome(c quality.CheckResult) string {
+	switch {
+	case c.Err != "":
+		return "did not run"
+	case c.TimedOut:
+		return "timed out"
+	}
+	return fmt.Sprintf("exit %d", c.ExitCode)
 }
 
 // err is what the last verdict says about the exit code. A pass, a
 // cancellation and a turn that never ran the suite are all nil: cancelled is
 // the run being stopped, which the interrupt already answers for.
 func (g *headlessCloseGate) err() error {
-	if g == nil || g.last == nil {
+	if g == nil {
+		return nil
+	}
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	if g.last == nil {
 		return nil
 	}
 	switch g.last.Verdict {

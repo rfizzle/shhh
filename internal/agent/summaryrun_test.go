@@ -258,6 +258,45 @@ func TestSummaryRun_NoChangesetIsNoChangedFiles(t *testing.T) {
 	}
 }
 
+// The two fields that tell a run which has drifted from one that is on
+// target with a red suite. Both reach the digest under the keys the session's
+// own reading fills, so one instruction judges both surfaces.
+func TestSummaryRun_AlertsAndPlanReachTheDigest(t *testing.T) {
+	p := &slowProvider{}
+	r, _ := testSummaryRun(t, p, "ship the parser")
+	r.WithAlerts(func() []string { return []string{`quality gate "ci" — fail`, "unit — exit 1"} }).
+		WithPlan(func() []string { return []string{"[done] read the exporter", "[running] rewrite the parser"} })
+
+	waitVerdict(t, r, FirstSummaryRound)
+	sent := p.requests()[0]
+	for _, want := range []string{`"failing_checks"`, "unit — exit 1", `"approved_plan"`, "[running] rewrite the parser"} {
+		if !strings.Contains(sent, want) {
+			t.Errorf("the digest should carry %q:\n%s", want, sent)
+		}
+	}
+}
+
+// A surface with no checks and no plan says nothing about either, rather than
+// answering questions nobody asked it with empty fields — a reader handed an
+// empty failing-checks list would be told the checks are a subject when they
+// are not.
+func TestSummaryRun_NoAlertsAndNoPlanAreNoFields(t *testing.T) {
+	p := &slowProvider{}
+	r, _ := testSummaryRun(t, p, "read the exporter")
+	// Wired, and answering with nothing — a run whose gate has not failed,
+	// which is the ordinary case and not the same as a surface that never
+	// wired one.
+	r.WithAlerts(func() []string { return nil }).WithPlan(func() []string { return nil })
+
+	waitVerdict(t, r, FirstSummaryRound)
+	sent := p.requests()[0]
+	for _, key := range []string{`"failing_checks"`, `"approved_plan"`} {
+		if strings.Contains(sent, key) {
+			t.Errorf("an empty %s should be left out of the digest:\n%s", key, sent)
+		}
+	}
+}
+
 // A turn is judged on its own work: the reading a turn before ended on is not
 // offered to the next turn as the summary it should be revising.
 func TestSummaryRun_ANewTurnHasNothingToRevise(t *testing.T) {
