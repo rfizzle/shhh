@@ -2260,7 +2260,7 @@ func TestSteering_EnterQueuesWhileStreaming(t *testing.T) {
 	before := len(m.Messages())
 	m = sendText(t, m, "also update the docs")
 
-	if len(m.steering) != 1 || m.steering[0] != "also update the docs" {
+	if len(m.steering) != 1 || m.steering[0].text != "also update the docs" {
 		t.Fatalf("expected one queued steering message, got %v", m.steering)
 	}
 	if m.input.Value() != "" {
@@ -2297,7 +2297,7 @@ func TestSteering_InjectedBeforeNextStreamRequest(t *testing.T) {
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	m.state = stateStreaming
-	m.steering = []string{"focus on the tests"}
+	m.steering = []steeringItem{{text: "focus on the tests"}}
 
 	var cmd tea.Cmd
 	m, cmd = execToolLoop(t, m, toolCallsMsg{calls: []provider.ToolCall{
@@ -2338,7 +2338,7 @@ func TestSteering_LiftsRoundCap(t *testing.T) {
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	m.state = stateStreaming
-	m.steering = []string{"keep going"}
+	m.steering = []steeringItem{{text: "keep going"}}
 
 	var cmd tea.Cmd
 	m, cmd = execToolLoop(t, m, toolCallsMsg{calls: []provider.ToolCall{

@@ -33,7 +33,7 @@ func (m Model) activateSkill(name, task string) (tea.Model, tea.Cmd) {
 		shown += " " + task
 	}
 	if m.working() || m.decisionUngated() {
-		m.steering = append(m.steering, content)
+		m.steering = append(m.steering, steeringItem{text: content})
 		m.syncViewport()
 		return m.surfaceNotice("Skill " + name + " queued for the next round.")
 	}

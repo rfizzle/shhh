@@ -252,7 +252,7 @@ func TestIntervene_AReadersSteerRetiresTheQueuedVerdict(t *testing.T) {
 	m := verdictModel(t, "off_target")
 	m = applyReading(t, m)
 
-	m.steering = []string{"actually, check the tests too"}
+	m.steering = []steeringItem{{text: "actually, check the tests too"}}
 	if !m.injectSteering() {
 		t.Fatal("the steer should have been injected")
 	}

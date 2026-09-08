@@ -288,7 +288,7 @@ func TestApplyMCPPrompt_QueuesWhileTheAgentWorks(t *testing.T) {
 	m.setTurnState(stateStreaming)
 	next, _ := m.applyMCPPrompt(mcpPromptMsg{shown: "/docs:brief", text: "what changed?"})
 	m = next.(Model)
-	if len(m.steering) != 1 || m.steering[0] != "what changed?" {
+	if len(m.steering) != 1 || m.steering[0].text != "what changed?" {
 		t.Fatalf("steering = %v", m.steering)
 	}
 }

@@ -78,8 +78,9 @@ func (m Model) pullQueued() (tea.Model, tea.Cmd, bool) {
 			m.followUpsHeld = false
 		}
 	case len(m.steering) > 0:
-		pulled = m.steering[len(m.steering)-1]
+		item := m.steering[len(m.steering)-1]
 		m.steering = m.steering[:len(m.steering)-1]
+		pulled = item.text
 	default:
 		return m, nil, false
 	}

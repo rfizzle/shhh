@@ -181,7 +181,7 @@ func TestFrame_NoticeRailAppearsAndCounts(t *testing.T) {
 		t.Fatalf("the notice rail must shrink the viewport (%d -> %d)", base, m.viewport.Height())
 	}
 
-	m.steering = []string{"one", "two"}
+	m.steering = []steeringItem{{text: "one"}, {text: "two"}}
 	if !strings.Contains(stripANSI(m.View().Content), "2 steering queued") {
 		t.Fatal("the notice rail should show the queued steering count")
 	}

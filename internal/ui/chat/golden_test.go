@@ -351,7 +351,7 @@ func TestGolden_DraftGrammar(t *testing.T) {
 		queues := func(held bool) string {
 			m := goldenModel(t, width)
 			m.state = stateStreaming
-			m.steering = []string{"and check the parser"}
+			m.steering = []steeringItem{{text: "and check the parser"}}
 			m.followUps = []string{"then update the docs"}
 			m.followUpsHeld = held
 			return promptSurface(m)
@@ -449,7 +449,7 @@ func TestGolden_StagedRail(t *testing.T) {
 				}
 			})},
 			{Label: "a notice above it · transient first, then what rides", View: frame(func(m *Model) {
-				m.steering = []string{"and check the parser"}
+				m.steering = []steeringItem{{text: "and check the parser"}}
 			})},
 		}
 	})

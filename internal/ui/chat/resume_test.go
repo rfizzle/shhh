@@ -527,7 +527,7 @@ func TestCeilingStop_KeepsTheReplyAndOffersToFinishIt(t *testing.T) {
 // past the offer standing on the row.
 func TestCeilingStop_SteeringComesBackToTheInput(t *testing.T) {
 	m := streamed(resumeModel(t), "The first half of the answer")
-	m.steering = []string{"and check the parser"}
+	m.steering = []steeringItem{{text: "and check the parser"}}
 	updated, _ := m.Update(doneMsg{stop: provider.StopLength})
 	next := updated.(Model)
 

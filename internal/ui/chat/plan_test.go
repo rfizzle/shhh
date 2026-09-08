@@ -99,7 +99,7 @@ func TestPlan_NonPlanModeSkipsPrompt(t *testing.T) {
 
 func TestPlan_SteeringTakesPrecedenceOverPrompt(t *testing.T) {
 	m := planModel(t, mockStream)
-	m.steering = []string{"also cover the CLI"}
+	m.steering = []steeringItem{{text: "also cover the CLI"}}
 	updated, _ := m.Update(doneMsg{})
 	m = updated.(Model)
 	if m.state != stateStreaming {

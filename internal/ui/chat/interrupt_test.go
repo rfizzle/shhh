@@ -195,7 +195,7 @@ func TestInterrupt_TheDraftKeepsItsOwnKeysWhileTheCardWaits(t *testing.T) {
 	if m.state != stateConfirmRun {
 		t.Fatalf("enter is the draft's, not the card's, state is now %d", m.state)
 	}
-	if len(m.steering) != 1 || m.steering[0] != "queue this" {
+	if len(m.steering) != 1 || m.steering[0].text != "queue this" {
 		t.Fatalf("enter should queue the sentence, got %v", m.steering)
 	}
 	if got := m.input.Value(); got != "" {

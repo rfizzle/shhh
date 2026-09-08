@@ -361,7 +361,7 @@ func TestSteering_RecordsCheckpoint(t *testing.T) {
 	m := newRewindModel(t)
 	m = completeExchange(t, m, "first", "one")
 	m.state = stateStreaming
-	m.steering = []string{"actually do this instead"}
+	m.steering = []steeringItem{{text: "actually do this instead"}}
 	if !m.injectSteering() {
 		t.Fatal("steering should inject")
 	}

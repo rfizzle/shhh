@@ -432,6 +432,14 @@ type entry struct {
 	planStep int
 }
 
+// steeringItem is an entry in the steering queue. Messages the session writes
+// for itself (e.g. mid-turn secret announcements) are marked as machine so
+// that injection does not treat them as the person's own words.
+type steeringItem struct {
+	text    string
+	machine bool
+}
+
 type Model struct {
 	// agent owns the loop state (message list, stream requests, tool
 	// dispatch, approval queue, iteration guard); the Model is one front-end
@@ -920,9 +928,9 @@ type Model struct {
 	modelLister     func(context.Context) ([]string, error)
 	modelListCancel context.CancelFunc
 	modelListed     bool
-	// steering holds messages typed while the agent is working; they
-	// are injected as user messages before the next stream request.
-	steering []string
+	// steering holds messages queued while the agent is working; they
+	// are injected before the next stream request.
+	steering []steeringItem
 	// followUps are drafts queued with the queue chord while a turn was live,
 	// sent one per turn end once the session is idle (followup.go). held
 	// stops the automatic send after a cancel: the queue survives, the rail

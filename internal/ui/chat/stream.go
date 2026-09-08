@@ -281,8 +281,10 @@ func (m *Model) cancelStreaming() {
 }
 
 // injectSteering appends queued steering messages to the conversation and
-// transcript as user messages, reporting whether any were queued. Steering is
-// fresh user input, so it resets the tool-round counter.
+// transcript, reporting whether any were queued. Human steering resets the
+// tool-round counter, extends the summary target and records checkpoints;
+// machine-authored steering (announcements the session wrote for itself)
+// joins as machine messages without disturbing those metrics.
 func (m *Model) injectSteering() bool {
 	if len(m.steering) == 0 {
 		return false
@@ -291,25 +293,34 @@ func (m *Model) injectSteering() bool {
 	// all injected into the same round, so which one carries them is only a
 	// question of where the transcript names them.
 	atts := m.takeAttachments()
-	for _, text := range m.steering {
-		m.recordCheckpoint(text)
-		m.agent.Append(provider.Message{Role: provider.RoleUser, Content: text, Attachments: atts})
-		m.appendEntry(entry{kind: entryUser, text: text, attached: attachment.Names(atts)})
+	humanSteers := 0
+	for _, item := range m.steering {
+		if item.machine {
+			m.agent.AppendMachine(item.text)
+			m.appendEntry(entry{kind: entrySystem, text: item.text})
+			continue
+		}
+		humanSteers++
+		m.recordCheckpoint(item.text)
+		m.agent.Append(provider.Message{Role: provider.RoleUser, Content: item.text, Attachments: atts})
+		m.appendEntry(entry{kind: entryUser, text: item.text, attached: attachment.Names(atts)})
 		// What the reader has just asked for is part of what this turn is
 		// serving, so it is part of what the readings judge it against
 		// (agent.ExtendTarget). The anchor is there to stop the run moving
 		// its own yardstick; the person is not the run.
-		m.summaryTarget = agent.ExtendTarget(m.summaryTarget, text)
+		m.summaryTarget = agent.ExtendTarget(m.summaryTarget, item.text)
 		atts = nil
 	}
-	// And what was judged against the shorter instruction is retired, before
-	// the boundary below can deliver it (summary.go).
-	m.summarySteered()
-	m.turnCount += int64(len(m.steering))
-	m.signal(observe.SignalSteer, strconv.Itoa(len(m.steering)))
+	if humanSteers > 0 {
+		// And what was judged against the shorter instruction is retired, before
+		// the boundary below can deliver it (summary.go).
+		m.summarySteered()
+		m.turnCount += int64(humanSteers)
+		m.signal(observe.SignalSteer, strconv.Itoa(humanSteers))
+		m.resetRounds()
+	}
 	m.steering = nil
 	m.denialNotice = ""
-	m.resetRounds()
 	m.syncViewport()
 	return true
 }
@@ -342,15 +353,22 @@ func (m *Model) dispatchSteering() tea.Cmd {
 
 // restoreSteering returns queued-but-uninjected steering messages to the
 // input when a turn ends abnormally (cancel, stream error), so nothing typed
-// is silently lost.
+// is silently lost. Machine-authored announcements are not restored.
 func (m *Model) restoreSteering() {
 	if len(m.steering) == 0 {
 		return
 	}
-	parts := m.steering
+	var parts []string
+	for _, item := range m.steering {
+		if !item.machine {
+			parts = append(parts, item.text)
+		}
+	}
 	if cur := m.input.Value(); strings.TrimSpace(cur) != "" {
 		parts = append(parts, cur)
 	}
-	m.input.SetValue(strings.Join(parts, "\n"))
+	if len(parts) > 0 {
+		m.input.SetValue(strings.Join(parts, "\n"))
+	}
 	m.steering = nil
 }

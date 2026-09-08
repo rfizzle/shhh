@@ -47,7 +47,7 @@ func (m Model) secretCommand(args []string) (tea.Model, tea.Cmd) {
 	note, announce := m.secrets.Manage(args)
 	if announce != "" {
 		if m.working() || m.decisionUngated() {
-			m.steering = append(m.steering, announce)
+			m.steering = append(m.steering, steeringItem{text: announce, machine: true})
 		} else {
 			m.agent.AppendMachine(announce)
 		}

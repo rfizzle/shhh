@@ -412,7 +412,7 @@ func TestStatusBar_CockpitSegments(t *testing.T) {
 	m.accumulateUsage(&provider.Usage{PromptTokens: 41200, CompletionTokens: 9800})
 	m.state = stateStreaming
 	m.agent.BeginToolRound("", nil, func(provider.ToolCall) bool { return false })
-	m.steering = []string{"queued note"}
+	m.steering = []steeringItem{{text: "queued note"}}
 
 	bar := stripANSI(m.renderStatusBar(160))
 	round := fmt.Sprintf("round 1/%d", DefaultMaxToolRounds)

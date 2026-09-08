@@ -86,7 +86,7 @@ func TestSkillCommand_QueuesWhileWorking(t *testing.T) {
 		t.Fatalf("expected a working turn, got state %d", m.state)
 	}
 	m = sendText(t, m, "/skill documentation")
-	if len(m.steering) != 1 || !skill.IsContent(m.steering[0]) {
+	if len(m.steering) != 1 || !skill.IsContent(m.steering[0].text) {
 		t.Fatalf("mid-turn activation should queue the content as steering, got %v", m.steering)
 	}
 }
