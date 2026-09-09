@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/rfizzle/shhh/internal/update"
 )
 
 // A dev build says why there is nothing to compare against, in the doctor's
@@ -45,6 +47,9 @@ func TestVersionTemplate_StaleBuildNamesTheRelease(t *testing.T) {
 	writeUpdateCache(t, "0.9.9")
 	defer restoreVersion(t, version)
 	version = "0.9.4"
+	if cached := update.CheckCached(version); cached == nil || cached.Latest != "0.9.9" {
+		t.Fatalf("the seeded update cache was not read: %+v", cached)
+	}
 	got := versionTemplate()
 	for _, want := range []string{"▸ 0.9.9 available", "github.com/rfizzle/shhh/releases"} {
 		if !strings.Contains(got, want) {

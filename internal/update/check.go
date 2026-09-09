@@ -152,12 +152,18 @@ func fetchLatest() string {
 	return release.TagName
 }
 
+// cachePath follows the XDG cache layout on every platform. os.UserCacheDir
+// selects ~/Library/Caches on macOS and would split the update cache from the
+// model-data cache, besides ignoring a test or session that set XDG_CACHE_HOME.
 func cachePath() string {
-	dir, err := os.UserCacheDir()
-	if err != nil {
-		dir = os.TempDir()
+	if dir := os.Getenv("XDG_CACHE_HOME"); dir != "" {
+		return filepath.Join(dir, "shhh", cacheFile)
 	}
-	return filepath.Join(dir, "shhh", cacheFile)
+	home, err := os.UserHomeDir()
+	if err == nil {
+		return filepath.Join(home, ".cache", "shhh", cacheFile)
+	}
+	return filepath.Join(os.TempDir(), "shhh", cacheFile)
 }
 
 func readCache() *cacheEntry {

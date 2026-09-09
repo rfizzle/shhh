@@ -1,6 +1,7 @@
 package update
 
 import (
+	"path/filepath"
 	"testing"
 	"time"
 )
@@ -57,6 +58,17 @@ func TestFresh_AFailureIsRememberedForItsOwnWindow(t *testing.T) {
 				t.Errorf("fresh(%+v) = %v, want %v", tt.entry, got, tt.fresh)
 			}
 		})
+	}
+}
+
+// The update cache follows the same XDG layout as model data on every
+// platform; macOS's system cache location must not bypass an explicit XDG
+// session directory.
+func TestCachePath_UsesXDGCacheHome(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("XDG_CACHE_HOME", dir)
+	if got, want := cachePath(), filepath.Join(dir, "shhh", cacheFile); got != want {
+		t.Fatalf("cachePath() = %q, want %q", got, want)
 	}
 }
 
