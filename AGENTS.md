@@ -77,6 +77,7 @@ golden fixture, so this cannot drift back.
 | Test single package | `go test ./internal/<pkg>` |
 | Test with race detector | `make race` |
 | Format | `make fmt` (runs gofmt + goimports) |
+| Check formatting without rewriting | `make fmt-check` (part of `make ci`; reads the tracked tree and fails on the first drift) |
 | Lint | `make lint` (go vet + golangci-lint) |
 | Tidy modules | `make tidy` |
 | CI suite | `make ci` |

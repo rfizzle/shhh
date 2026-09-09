@@ -42,7 +42,6 @@ package profile
 
 import (
 	"fmt"
-	"github.com/rfizzle/shhh/internal/provider"
 	"os"
 	"path"
 	"path/filepath"
@@ -50,6 +49,7 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
+	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // API names the wire dialect a profile speaks. Both are backed by providers

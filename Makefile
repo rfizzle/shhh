@@ -11,7 +11,17 @@ GOVET=$(GOCMD) vet
 GOFMT ?= $(shell command -v gofmt 2>/dev/null || echo "$$(go env GOROOT)/bin/gofmt")
 GOIMPORTS=goimports
 GOLANGCI_LINT=golangci-lint
-PROJECT_GOFILES=$(shell find . -type f -name '*.go' -not -path "./vendor/*")
+# `make fmt` rewrites files, so its list is a find rather than the index: a Go
+# file that has been written but not yet added still has to be formatted. It
+# skips dotted directories because a checkout can hold whole working trees
+# underneath one — `git worktree` puts them wherever it is told, and a tool
+# directory is a common place — and rewriting a file in somebody else's tree is
+# precisely the stranger this list must not carry.
+PROJECT_GOFILES=$(shell find . -type f -name '*.go' -not -path "./vendor/*" -not -path "./.*")
+# The gate only reads, and what it reads is what a commit would carry, so it
+# asks git rather than the filesystem. A nested working tree or a scratch file
+# beside the source cannot then fail a build for the person who never wrote it.
+TRACKED_GOFILES=$(shell git ls-files '*.go')
 PROJECT_PACKAGES=$(shell go list ./...)
 
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
@@ -39,7 +49,7 @@ else
 	RESET   := ""
 endif
 
-.PHONY: all build build-all linux darwin windows clean fmt lint tidy test race ci cross docs docs-check eval eval-baseline cache-check tui-build tui-run tui-shot tui-check help
+.PHONY: all build build-all linux darwin windows clean fmt fmt-check lint tidy test race ci cross docs docs-check eval eval-baseline cache-check tui-build tui-run tui-shot tui-check help
 
 all: help
 
@@ -82,6 +92,31 @@ fmt: ## Run gofmt and goimports on all source files
 		$(GOIMPORTS) -e -format-only -w -d $(PROJECT_GOFILES); \
 	else \
 		echo "${YELLOW}goimports not found, skipping (install: go install golang.org/x/tools/cmd/goimports@latest)${RESET}"; \
+	fi
+
+# The same two formatters `make fmt` runs, asked rather than told. A tree that
+# is not clean at rest turns the next person's `make fmt` into a diff of
+# somebody else's file, which they then either carry into their commit or spend
+# a round reverting out of it — so the drift fails here instead, in the build
+# that introduced it. Both checks are hard: unlike `make fmt`, this refuses to
+# run when a formatter is missing, because a gate that skips itself reports the
+# same green as a gate that passed.
+fmt-check: ## Fail if any tracked Go file is not gofmt- and goimports-clean
+	@echo "${MAGENTA}Checking gofmt...${RESET}"
+	@command -v $(GOFMT) >/dev/null 2>&1 || { echo "${RED}gofmt not found at $(GOFMT) — it ships with the Go toolchain${RESET}"; exit 1; }
+	@drift="$$($(GOFMT) -e -s -l $(TRACKED_GOFILES))"; \
+	if [ -n "$$drift" ]; then \
+		echo "${RED}Not gofmt-clean. Run make fmt:${RESET}"; \
+		echo "$$drift"; \
+		exit 1; \
+	fi
+	@echo "${MAGENTA}Checking goimports...${RESET}"
+	@command -v $(GOIMPORTS) >/dev/null 2>&1 || { echo "${RED}goimports not found (install: go install golang.org/x/tools/cmd/goimports@latest)${RESET}"; exit 1; }
+	@drift="$$($(GOIMPORTS) -e -format-only -l $(TRACKED_GOFILES))"; \
+	if [ -n "$$drift" ]; then \
+		echo "${RED}Imports are not grouped as goimports leaves them. Run make fmt:${RESET}"; \
+		echo "$$drift"; \
+		exit 1; \
 	fi
 
 lint: ## Run go vet and golangci-lint
@@ -212,16 +247,9 @@ race: ## Run tests with race detector
 ci: cross ## Run tests and lint for CI
 	@echo "${MAGENTA}Checking documentation citations...${RESET}"
 	@python3 scripts/check-docs.py
+	@$(MAKE) --no-print-directory fmt-check
 	@echo "${MAGENTA}Running tests...${RESET}"
 	@$(GOTEST) -v -failfast $(PROJECT_PACKAGES)
-	@echo "${MAGENTA}Running gofmt check...${RESET}"
-	@command -v $(GOFMT) >/dev/null 2>&1 || { echo "${RED}gofmt not found at $(GOFMT) — it ships with the Go toolchain${RESET}"; exit 1; }
-	@unformatted="$$($(GOFMT) -e -s -l $(PROJECT_GOFILES))"; \
-	if [ -n "$$unformatted" ]; then \
-		echo "${RED}Not gofmt-clean. Run make fmt:${RESET}"; \
-		echo "$$unformatted"; \
-		exit 1; \
-	fi
 	@echo "${MAGENTA}Running golangci-lint...${RESET}"
 	@$(GOLANGCI_LINT) run
 	@$(MAKE) --no-print-directory tui-check

@@ -1,9 +1,10 @@
 package components
 
 import (
-	"github.com/rfizzle/shhh/internal/ui/keys"
 	"strings"
 	"testing"
+
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 func planOptions() []SelectOption {
