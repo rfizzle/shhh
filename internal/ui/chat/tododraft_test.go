@@ -385,7 +385,7 @@ func TestTodo_TheRecordSaysHowTheBacklogGrew(t *testing.T) {
 	}}
 
 	m := extractModel(t, root, &scriptedProvider{args: proposalsFixture}).WithObserver(record)
-	m = pressKeys(t, runExtract(t, m), keyEnter)
+	pressKeys(t, runExtract(t, m), keyEnter)
 	if len(signals) != 1 || signals[0] != observe.SignalTodo+":"+observe.TodoAdd {
 		t.Fatalf("accepting proposals = %v", signals)
 	}
