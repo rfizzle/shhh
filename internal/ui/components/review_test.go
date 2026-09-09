@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/colorprofile"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/diff"
@@ -323,5 +324,48 @@ func TestReview_HunkCursorSpillsBetweenFiles(t *testing.T) {
 	v.Update(key("p"))
 	if v.File != 0 || v.Hunk != len(v.Files[0].Hunks)-1 {
 		t.Fatalf("p should spill back to the previous file's last hunk, got file %d hunk %d", v.File, v.Hunk)
+	}
+}
+
+// Both of the surface's lists draw the one pointer every other list draws:
+// the ❯ in its own column outside the highlight, the whole row lit inside
+// it, and the staging box keeping the tone that says what will happen to the
+// file. What this replaced was a filename in a second colour on an unlit
+// ground — the one list in the product that answered "where is the keyboard"
+// with a word rather than a row.
+func TestReview_BothCursorsAreLitRows(t *testing.T) {
+	withColorProfile(t, colorprofile.ANSI256)
+
+	const width = 44
+	v := reviewFixture()
+	v.Update(key("A")) // everything staged, so both boxes are the add box
+
+	f := v.Files[0]
+	for _, list := range []struct {
+		name string
+		row  string
+	}{
+		{"the file list", v.fileRows(width)[0]},
+		{"the hunk pane", v.hunkHeader(f, 0, f.Hunks[0], width)},
+	} {
+		if got := lipgloss.Width(ansi.Strip(list.row)); got != width {
+			t.Fatalf("%s's lit row is %d columns, want the pane's %d", list.name, got, width)
+		}
+		// `48;5;` is how a 256-colour terminal is told to set a background,
+		// which is the whole of what "lit" is.
+		const background = "48;5;"
+		before, after, found := strings.Cut(list.row, "❯")
+		if !found {
+			t.Fatalf("%s draws no pointer: %q", list.name, list.row)
+		}
+		if strings.Contains(before, background) {
+			t.Fatalf("%s puts the pointer inside the highlight: %q", list.name, list.row)
+		}
+		if !strings.Contains(after, background) {
+			t.Fatalf("%s lights nothing behind the row: %q", list.name, list.row)
+		}
+		if box := sty.Add.Render("[x]"); !strings.Contains(after, box) {
+			t.Fatalf("%s loses the staging box's tone inside the highlight: %q", list.name, list.row)
+		}
 	}
 }

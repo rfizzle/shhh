@@ -1,9 +1,13 @@
 # One applied edit opened to each of its three depths
-# (docs/interface/surfaces.md#the-diff-view). The row, the change in place
-# under it, and the whole screen: the picture is looked at for the one thing
-# the cells cannot carry, which is that the added and removed lines read as
-# added and removed at every one of the three, with the file's own syntax
-# inside them and the line numbers standing out of them as chrome.
+# (docs/interface/surfaces.md#the-diff-view), and then the fourth surface the
+# same edit reaches: review, off the row the turn closed on
+# (docs/interface/surfaces.md#the-turns-close). The row, the change in place
+# under it, the whole screen, and the two lists that stage it: the picture is
+# looked at for the one thing the cells cannot carry, which is that the added
+# and removed lines read as added and removed at every one of the three, with
+# the file's own syntax inside them and the line numbers standing out of them
+# as chrome — and that review's cursor is a lit row like every other list's,
+# rather than a word in a different colour.
 #
 # 130 columns, because that is where the full-screen depth is the paired
 # layout rather than the unified one — the width that used to decide whether
@@ -46,9 +50,22 @@ snap 07-full-screen "[j/k] scroll"
 keys Escape
 sleep 0.3
 snap 08-back-in-place "@@ -4,7 +4,7 @@"
+# The same edit a fourth time, staged rather than read: the cursor walks down
+# to the row the turn closed on, two rows below the edit, and review is that
+# row's own key. Two lists on one surface — the files, and the focused file's
+# hunks — and the row each cursor is on is lit under its pointer.
+keys j j
+sleep 0.3
+keys v
+snap 09-review "leave, change nothing"
+# Esc leaves review with nothing staged and nothing done, which is what the
+# surface says about itself the whole time it is up; the second drops the
+# reading cursor.
+keys Escape
+sleep 0.3
 keys Escape
 sleep 0.3
 keys C-c
-snap 09-quit-armed "again quits"
+snap 10-quit-armed "again quits"
 keys C-c
-snap 10-exit "that is everything the screen was holding"
+snap 11-exit "that is everything the screen was holding"

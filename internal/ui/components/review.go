@@ -480,20 +480,22 @@ func (v *ReviewView) headRows(width int) []string {
 }
 
 // fileRows are the files themselves: the staging box, the mutation glyph,
-// the path with whoever wrote it, and the file's own +N −M.
+// the path with whoever wrote it, and the file's own +N −M. The row the
+// cursor is on is lit the way every list lights one — the ❯ in its own
+// column outside the highlight, the row bright on the focus background —
+// rather than by colouring the filename and leaving the ground under it
+// unchanged (litrow.go).
 func (v *ReviewView) fileRows(width int) []string {
 	if len(v.Files) == 0 {
 		return []string{sty.Hint.Render("(nothing changed)")}
 	}
+	inner := max(width-GridPointerWidth, 1)
 	rows := make([]string, 0, len(v.Files))
 	for i, f := range v.Files {
 		added, removed := f.stats()
-		lead := " "
-		if i == v.File {
-			lead = sty.Info.Render("❯")
-		}
+		lead := ""
 		if !v.ReadOnly {
-			lead += stageBox(f.stagedCount(), len(f.Hunks)) + " "
+			lead = stageBox(f.stagedCount(), len(f.Hunks)) + " "
 		}
 		lead += sty.Accent.Render("✎ ")
 		note := DiffStat(added, removed)
@@ -511,18 +513,32 @@ func (v *ReviewView) fileRows(width int) []string {
 		if f.Agent != "" {
 			tail = " · " + f.Agent
 		}
-		budget := width - lipgloss.Width(note) - 1 - lipgloss.Width(lead)
+		budget := inner - lipgloss.Width(note) - 1 - lipgloss.Width(lead)
 		if budget-lipgloss.Width(tail) < reviewMinStatement {
 			tail = ""
 		}
 		path := clipLeft(f.Path, budget-lipgloss.Width(tail))
-		name := sty.Body.Render(path)
-		if i == v.File {
-			name = brightStyle().Render(path)
-		}
-		rows = append(rows, reviewLine(lead+name+sty.Dim.Render(tail), note, width))
+		row := reviewLine(lead+sty.Body.Render(path)+sty.Dim.Render(tail), note, inner)
+		rows = append(rows, reviewRow(row, lipgloss.Width(lead), i == v.File, inner))
 	}
 	return rows
+}
+
+// reviewRow is how both of this surface's lists draw one row: the pointer's
+// own column first, then the row — lit where the cursor is on it. marks is
+// how much of the row keeps its own colours inside the highlight, and it is
+// counted rather than measured because a staging box is `[x]`, whose middle
+// is a letter: left to find the first word itself the highlight would start
+// between the bracket and the tick and draw one mark in two colours.
+//
+// The marks keep their tones because they say what the row is and what will
+// happen to it; the highlight says only where the keyboard is. They are
+// different facts, so the highlight is not allowed to answer either of them.
+func reviewRow(row string, marks int, lit bool, width int) string {
+	if !lit {
+		return PointerColumn() + row
+	}
+	return sty.FocusPointer.Render("❯") + " " + LitRowKeeping(row, 0, marks, width)
 }
 
 // clipLeft trims s to width from the front, keeping its tail.
@@ -591,8 +607,10 @@ func (v *ReviewView) shieldRows(width int) []string {
 	return rows
 }
 
-// brightStyle is the focused row's text: the one place the list says which
-// row it is on with weight as well as a pointer.
+// brightStyle is the weight a pane's own heading carries — the file the
+// hunks under it belong to, the field a row is found by. The row a cursor is
+// on is not one of them: that is the lit row, and a bright word inside a lit
+// row would say the same thing twice.
 func brightStyle() lipgloss.Style {
 	return lipgloss.NewStyle().Bold(true).Foreground(Palette.Bright.Color())
 }
@@ -687,22 +705,21 @@ func (v *ReviewView) hunkRows(f ReviewFile, width int) (rows []string, focus int
 }
 
 // hunkHeader is the hunk's own header row with the staging box and the
-// cursor in front of it.
+// cursor in front of it. It is the file list's row drawn again in the other
+// pane, so it is lit the same way — one surface with two lists is still one
+// pointer.
 func (v *ReviewView) hunkHeader(f ReviewFile, i int, h diff.Hunk, width int) string {
-	lead := " "
-	if i == v.Hunk {
-		lead = sty.Info.Render("❯")
-	}
+	box := ""
 	if !v.ReadOnly {
 		staged := 0
 		if i < len(f.Staged) && f.Staged[i] {
 			staged = 1
 		}
-		lead += stageBox(staged, 1) + " "
-	} else {
-		lead += " "
+		box = stageBox(staged, 1) + " "
 	}
-	return lead + sty.Hunk.Render(Clip(h.Header(), max(width-lipgloss.Width(lead), 0)))
+	inner := max(width-GridPointerWidth, 1)
+	row := box + sty.Hunk.Render(Clip(h.Header(), max(inner-lipgloss.Width(box), 0)))
+	return reviewRow(row, lipgloss.Width(box), i == v.Hunk, inner)
 }
 
 // footerRows are the keys the surface offers, plus any notice a key left

@@ -12,10 +12,10 @@
 ── layout ──────────────────────────────────────────────────
 · staging · one of three files staged
 REVIEW turn 7                  1 of 3 staged │ internal/agent/loop.go  1 hunk · +2 −1 · ✓ staged
-──────────────────────────────────────────── │ ❯[x] @@ -138,6 +138,7 @@
-❯[x] ✎ internal/agent/loop.go          +2 −1 │  138      for round := 0; ; round++ {    │  138      for round := 0; ; round++ {
- [ ] ✎ internal/ui/chat/model.go       +2 −1 │  139          if round >= a.maxRounds {  │  139          if round >= a.maxRounds {
- [ ] ✎ …nal/agent/errors.go · writer-1 +2 −1 │  140              return results, nil    │  140              return results, ErrRo…
+──────────────────────────────────────────── │ ❯ [x] @@ -138,6 +138,7 @@                                                          
+❯ [x] ✎ internal/agent/loop.go         +2 −1 │  138      for round := 0; ; round++ {    │  138      for round := 0; ; round++ {
+  [ ] ✎ internal/ui/chat/model.go      +2 −1 │  139          if round >= a.maxRounds {  │  139          if round >= a.maxRounds {
+  [ ] ✎ …al/agent/errors.go · writer-1 +2 −1 │  140              return results, nil    │  140              return results, ErrRo…
 ──────────────────────────────────────────── │                                          │  141          }
 ✗ go test ./internal/agent/... · exit 1 fai… │  141          }                          │  142          }
   --- FAIL: TestRoundLimit (0.03s)           │  142      }                              │  143      }
@@ -32,10 +32,10 @@ REVIEW turn 7                  1 of 3 staged │ internal/agent/loop.go  1 hunk 
 
 · staging · everything staged, second file focused
 REVIEW turn 7                  3 of 3 staged │ internal/ui/chat/model.go  1 hunk · +2 −1 · ✓ staged
-──────────────────────────────────────────── │ ❯[x] @@ -138,6 +138,7 @@
- [x] ✎ internal/agent/loop.go          +2 −1 │  138      for round := 0; ; round++ {    │  138      for round := 0; ; round++ {
-❯[x] ✎ internal/ui/chat/model.go       +2 −1 │  139          if round >= a.maxRounds {  │  139          if round >= a.maxRounds {
- [x] ✎ …nal/agent/errors.go · writer-1 +2 −1 │  140              return results, nil    │  140              return results, ErrRo…
+──────────────────────────────────────────── │ ❯ [x] @@ -138,6 +138,7 @@                                                          
+  [x] ✎ internal/agent/loop.go         +2 −1 │  138      for round := 0; ; round++ {    │  138      for round := 0; ; round++ {
+❯ [x] ✎ internal/ui/chat/model.go      +2 −1 │  139          if round >= a.maxRounds {  │  139          if round >= a.maxRounds {
+  [x] ✎ …al/agent/errors.go · writer-1 +2 −1 │  140              return results, nil    │  140              return results, ErrRo…
 ──────────────────────────────────────────── │                                          │  141          }
 ✗ go test ./internal/agent/... · exit 1 fai… │  141          }                          │  142          }
   --- FAIL: TestRoundLimit (0.03s)           │  142      }                              │  143      }
@@ -52,10 +52,10 @@ REVIEW turn 7                  3 of 3 staged │ internal/ui/chat/model.go  1 hu
 
 · staging · a patch whose hunks are separable
 REVIEW turn 7                  1 of 3 staged │ internal/agent/loop.go  1 hunk · +2 −1 · ✓ staged
-──────────────────────────────────────────── │ ❯[x] @@ -138,6 +138,7 @@
-❯[x] ✎ internal/agent/loop.go          +2 −1 │  138      for round := 0; ; round++ {    │  138      for round := 0; ; round++ {
- [ ] ✎ internal/ui/chat/model.go       +2 −1 │  139          if round >= a.maxRounds {  │  139          if round >= a.maxRounds {
- [ ] ✎ …nal/agent/errors.go · writer-1 +2 −1 │  140              return results, nil    │  140              return results, ErrRo…
+──────────────────────────────────────────── │ ❯ [x] @@ -138,6 +138,7 @@                                                          
+❯ [x] ✎ internal/agent/loop.go         +2 −1 │  138      for round := 0; ; round++ {    │  138      for round := 0; ; round++ {
+  [ ] ✎ internal/ui/chat/model.go      +2 −1 │  139          if round >= a.maxRounds {  │  139          if round >= a.maxRounds {
+  [ ] ✎ …al/agent/errors.go · writer-1 +2 −1 │  140              return results, nil    │  140              return results, ErrRo…
 ──────────────────────────────────────────── │                                          │  141          }
 ✗ go test ./internal/agent/... · exit 1 fai… │  141          }                          │  142          }
   --- FAIL: TestRoundLimit (0.03s)           │  142      }                              │  143      }
@@ -72,10 +72,10 @@ REVIEW turn 7                  1 of 3 staged │ internal/agent/loop.go  1 hunk 
 
 · layout · side-by-side forced
 REVIEW turn 7                  1 of 3 staged │ internal/agent/loop.go  1 hunk · +2 −1 · ✓ staged
-──────────────────────────────────────────── │ ❯[x] @@ -138,6 +138,7 @@
-❯[x] ✎ internal/agent/loop.go          +2 −1 │  138      for round := 0; ; round++ {    │  138      for round := 0; ; round++ {
- [ ] ✎ internal/ui/chat/model.go       +2 −1 │  139          if round >= a.maxRounds {  │  139          if round >= a.maxRounds {
- [ ] ✎ …nal/agent/errors.go · writer-1 +2 −1 │  140              return results, nil    │  140              return results, ErrRo…
+──────────────────────────────────────────── │ ❯ [x] @@ -138,6 +138,7 @@                                                          
+❯ [x] ✎ internal/agent/loop.go         +2 −1 │  138      for round := 0; ; round++ {    │  138      for round := 0; ; round++ {
+  [ ] ✎ internal/ui/chat/model.go      +2 −1 │  139          if round >= a.maxRounds {  │  139          if round >= a.maxRounds {
+  [ ] ✎ …al/agent/errors.go · writer-1 +2 −1 │  140              return results, nil    │  140              return results, ErrRo…
 ──────────────────────────────────────────── │                                          │  141          }
 ✗ go test ./internal/agent/... · exit 1 fai… │  141          }                          │  142          }
   --- FAIL: TestRoundLimit (0.03s)           │  142      }                              │  143      }
@@ -92,10 +92,10 @@ REVIEW turn 7                  1 of 3 staged │ internal/agent/loop.go  1 hunk 
 
 · read-only (a cumulative diff has nothing to stage)
 REVIEW turn 7                        3 files │ internal/agent/loop.go  1 hunk · +2 −1
-──────────────────────────────────────────── │ ❯ @@ -138,6 +138,7 @@
-❯✎ internal/agent/loop.go              +2 −1 │  138      for round := 0; ; round++ {    │  138      for round := 0; ; round++ {
- ✎ internal/ui/chat/model.go           +2 −1 │  139          if round >= a.maxRounds {  │  139          if round >= a.maxRounds {
- ✎ internal/agent/errors.go · writer-1 +2 −1 │  140              return results, nil    │  140              return results, ErrRo…
+──────────────────────────────────────────── │ ❯ @@ -138,6 +138,7 @@                                                              
+❯ ✎ internal/agent/loop.go             +2 −1 │  138      for round := 0; ; round++ {    │  138      for round := 0; ; round++ {
+  ✎ internal/ui/chat/model.go          +2 −1 │  139          if round >= a.maxRounds {  │  139          if round >= a.maxRounds {
+  ✎ …ternal/agent/errors.go · writer-1 +2 −1 │  140              return results, nil    │  140              return results, ErrRo…
 ──────────────────────────────────────────── │                                          │  141          }
 ✗ go test ./internal/agent/... · exit 1 fai… │  141          }                          │  142          }
   --- FAIL: TestRoundLimit (0.03s)           │  142      }                              │  143      }
@@ -113,10 +113,10 @@ REVIEW turn 7                        3 files │ internal/agent/loop.go  1 hunk 
 ── ansi ────────────────────────────────────────────────────
 · staging · one of three files staged
 ␛[1;94mREVIEW␛[m␛[38;5;241m turn 7␛[m                  ␛[92m1 of 3 staged␛[m␛[38;5;241m │ ␛[m␛[1;97minternal/agent/loop.go␛[m␛[38;5;241m  1 hunk · ␛[m␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;241m · ␛[m␛[92m✓ staged␛[m
-␛[38;5;241m────────────────────────────────────────────␛[m␛[38;5;241m │ ␛[m␛[94m❯␛[m␛[92m[x]␛[m ␛[96m@@ -138,6 +138,7 @@␛[m
-␛[94m❯␛[m␛[92m[x]␛[m ␛[38;5;214m✎ ␛[m␛[1;97minternal/agent/loop.go␛[m␛[38;5;241m␛[m          ␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;241m │ ␛[m␛[38;5;241m 138  ␛[m␛[38;5;245m    for round := 0; ; round++ {␛[m   ␛[38;5;241m │ ␛[m␛[38;5;241m 138  ␛[m␛[38;5;245m    for round := 0; ; round++ {␛[m
- ␛[38;5;241m[ ]␛[m ␛[38;5;214m✎ ␛[m␛[38;5;252minternal/ui/chat/model.go␛[m␛[38;5;241m␛[m       ␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;241m │ ␛[m␛[38;5;241m 139  ␛[m␛[38;5;245m        if round >= a.maxRounds {␛[m ␛[38;5;241m │ ␛[m␛[38;5;241m 139  ␛[m␛[38;5;245m        if round >= a.maxRounds {␛[m
- ␛[38;5;241m[ ]␛[m ␛[38;5;214m✎ ␛[m␛[38;5;252m…nal/agent/errors.go␛[m␛[38;5;241m · writer-1␛[m ␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;241m │ ␛[m␛[38;5;241m 140  ␛[m␛[91m            return results, nil␛[m   ␛[38;5;241m │ ␛[m␛[38;5;241m 140  ␛[m␛[92m            return results, ErrRo…␛[m
+␛[38;5;241m────────────────────────────────────────────␛[m␛[38;5;241m │ ␛[m␛[94m❯␛[m ␛[92m␛[m␛[96m␛[m␛[48;5;62m␛[92m[x]␛[m␛[48;5;62m ␛[96m␛[m␛[48;5;62m␛[97;48;5;62m@@ -138,6 +138,7 @@                                                          ␛[m␛[m
+␛[94m❯␛[m ␛[92m␛[m␛[38;5;214m␛[m␛[38;5;252m␛[m␛[38;5;241m␛[m␛[92m␛[m␛[91m␛[m␛[48;5;62m␛[92m[x]␛[m␛[48;5;62m ␛[38;5;214m✎ ␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[92m␛[m␛[48;5;62m␛[91m␛[m␛[48;5;62m␛[97;48;5;62minternal/agent/loop.go         +2 −1␛[m␛[m␛[38;5;241m │ ␛[m␛[38;5;241m 138  ␛[m␛[38;5;245m    for round := 0; ; round++ {␛[m   ␛[38;5;241m │ ␛[m␛[38;5;241m 138  ␛[m␛[38;5;245m    for round := 0; ; round++ {␛[m
+  ␛[38;5;241m[ ]␛[m ␛[38;5;214m✎ ␛[m␛[38;5;252minternal/ui/chat/model.go␛[m␛[38;5;241m␛[m      ␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;241m │ ␛[m␛[38;5;241m 139  ␛[m␛[38;5;245m        if round >= a.maxRounds {␛[m ␛[38;5;241m │ ␛[m␛[38;5;241m 139  ␛[m␛[38;5;245m        if round >= a.maxRounds {␛[m
+  ␛[38;5;241m[ ]␛[m ␛[38;5;214m✎ ␛[m␛[38;5;252m…al/agent/errors.go␛[m␛[38;5;241m · writer-1␛[m ␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;241m │ ␛[m␛[38;5;241m 140  ␛[m␛[91m            return results, nil␛[m   ␛[38;5;241m │ ␛[m␛[38;5;241m 140  ␛[m␛[92m            return results, ErrRo…␛[m
 ␛[38;5;241m────────────────────────────────────────────␛[m␛[38;5;241m │ ␛[m                                        ␛[38;5;241m │ ␛[m␛[38;5;241m 141  ␛[m␛[92m        }␛[m
 ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... · exit 1 fai…␛[m␛[38;5;241m │ ␛[m␛[38;5;241m 141  ␛[m␛[38;5;245m        }␛[m                         ␛[38;5;241m │ ␛[m␛[38;5;241m 142  ␛[m␛[38;5;245m        }␛[m
   ␛[38;5;245m--- FAIL: TestRoundLimit (0.03s)␛[m          ␛[38;5;241m │ ␛[m␛[38;5;241m 142  ␛[m␛[38;5;245m    }␛[m                             ␛[38;5;241m │ ␛[m␛[38;5;241m 143  ␛[m␛[38;5;245m    }␛[m
@@ -133,10 +133,10 @@ REVIEW turn 7                        3 files │ internal/agent/loop.go  1 hunk 
 
 · staging · everything staged, second file focused
 ␛[1;94mREVIEW␛[m␛[38;5;241m turn 7␛[m                  ␛[92m3 of 3 staged␛[m␛[38;5;241m │ ␛[m␛[1;97minternal/ui/chat/model.go␛[m␛[38;5;241m  1 hunk · ␛[m␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;241m · ␛[m␛[92m✓ staged␛[m
-␛[38;5;241m────────────────────────────────────────────␛[m␛[38;5;241m │ ␛[m␛[94m❯␛[m␛[92m[x]␛[m ␛[96m@@ -138,6 +138,7 @@␛[m
- ␛[92m[x]␛[m ␛[38;5;214m✎ ␛[m␛[38;5;252minternal/agent/loop.go␛[m␛[38;5;241m␛[m          ␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;241m │ ␛[m␛[38;5;241m 138  ␛[m␛[38;5;245m    for round := 0; ; round++ {␛[m   ␛[38;5;241m │ ␛[m␛[38;5;241m 138  ␛[m␛[38;5;245m    for round := 0; ; round++ {␛[m
-␛[94m❯␛[m␛[92m[x]␛[m ␛[38;5;214m✎ ␛[m␛[1;97minternal/ui/chat/model.go␛[m␛[38;5;241m␛[m       ␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;241m │ ␛[m␛[38;5;241m 139  ␛[m␛[38;5;245m        if round >= a.maxRounds {␛[m ␛[38;5;241m │ ␛[m␛[38;5;241m 139  ␛[m␛[38;5;245m        if round >= a.maxRounds {␛[m
- ␛[92m[x]␛[m ␛[38;5;214m✎ ␛[m␛[38;5;252m…nal/agent/errors.go␛[m␛[38;5;241m · writer-1␛[m ␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;241m │ ␛[m␛[38;5;241m 140  ␛[m␛[91m            return results, nil␛[m   ␛[38;5;241m │ ␛[m␛[38;5;241m 140  ␛[m␛[92m            return results, ErrRo…␛[m
+␛[38;5;241m────────────────────────────────────────────␛[m␛[38;5;241m │ ␛[m␛[94m❯␛[m ␛[92m␛[m␛[96m␛[m␛[48;5;62m␛[92m[x]␛[m␛[48;5;62m ␛[96m␛[m␛[48;5;62m␛[97;48;5;62m@@ -138,6 +138,7 @@                                                          ␛[m␛[m
+  ␛[92m[x]␛[m ␛[38;5;214m✎ ␛[m␛[38;5;252minternal/agent/loop.go␛[m␛[38;5;241m␛[m         ␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;241m │ ␛[m␛[38;5;241m 138  ␛[m␛[38;5;245m    for round := 0; ; round++ {␛[m   ␛[38;5;241m │ ␛[m␛[38;5;241m 138  ␛[m␛[38;5;245m    for round := 0; ; round++ {␛[m
+␛[94m❯␛[m ␛[92m␛[m␛[38;5;214m␛[m␛[38;5;252m␛[m␛[38;5;241m␛[m␛[92m␛[m␛[91m␛[m␛[48;5;62m␛[92m[x]␛[m␛[48;5;62m ␛[38;5;214m✎ ␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[92m␛[m␛[48;5;62m␛[91m␛[m␛[48;5;62m␛[97;48;5;62minternal/ui/chat/model.go      +2 −1␛[m␛[m␛[38;5;241m │ ␛[m␛[38;5;241m 139  ␛[m␛[38;5;245m        if round >= a.maxRounds {␛[m ␛[38;5;241m │ ␛[m␛[38;5;241m 139  ␛[m␛[38;5;245m        if round >= a.maxRounds {␛[m
+  ␛[92m[x]␛[m ␛[38;5;214m✎ ␛[m␛[38;5;252m…al/agent/errors.go␛[m␛[38;5;241m · writer-1␛[m ␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;241m │ ␛[m␛[38;5;241m 140  ␛[m␛[91m            return results, nil␛[m   ␛[38;5;241m │ ␛[m␛[38;5;241m 140  ␛[m␛[92m            return results, ErrRo…␛[m
 ␛[38;5;241m────────────────────────────────────────────␛[m␛[38;5;241m │ ␛[m                                        ␛[38;5;241m │ ␛[m␛[38;5;241m 141  ␛[m␛[92m        }␛[m
 ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... · exit 1 fai…␛[m␛[38;5;241m │ ␛[m␛[38;5;241m 141  ␛[m␛[38;5;245m        }␛[m                         ␛[38;5;241m │ ␛[m␛[38;5;241m 142  ␛[m␛[38;5;245m        }␛[m
   ␛[38;5;245m--- FAIL: TestRoundLimit (0.03s)␛[m          ␛[38;5;241m │ ␛[m␛[38;5;241m 142  ␛[m␛[38;5;245m    }␛[m                             ␛[38;5;241m │ ␛[m␛[38;5;241m 143  ␛[m␛[38;5;245m    }␛[m
@@ -153,10 +153,10 @@ REVIEW turn 7                        3 files │ internal/agent/loop.go  1 hunk 
 
 · staging · a patch whose hunks are separable
 ␛[1;94mREVIEW␛[m␛[38;5;241m turn 7␛[m                  ␛[92m1 of 3 staged␛[m␛[38;5;241m │ ␛[m␛[1;97minternal/agent/loop.go␛[m␛[38;5;241m  1 hunk · ␛[m␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;241m · ␛[m␛[92m✓ staged␛[m
-␛[38;5;241m────────────────────────────────────────────␛[m␛[38;5;241m │ ␛[m␛[94m❯␛[m␛[92m[x]␛[m ␛[96m@@ -138,6 +138,7 @@␛[m
-␛[94m❯␛[m␛[92m[x]␛[m ␛[38;5;214m✎ ␛[m␛[1;97minternal/agent/loop.go␛[m␛[38;5;241m␛[m          ␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;241m │ ␛[m␛[38;5;241m 138  ␛[m␛[38;5;245m    for round := 0; ; round++ {␛[m   ␛[38;5;241m │ ␛[m␛[38;5;241m 138  ␛[m␛[38;5;245m    for round := 0; ; round++ {␛[m
- ␛[38;5;241m[ ]␛[m ␛[38;5;214m✎ ␛[m␛[38;5;252minternal/ui/chat/model.go␛[m␛[38;5;241m␛[m       ␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;241m │ ␛[m␛[38;5;241m 139  ␛[m␛[38;5;245m        if round >= a.maxRounds {␛[m ␛[38;5;241m │ ␛[m␛[38;5;241m 139  ␛[m␛[38;5;245m        if round >= a.maxRounds {␛[m
- ␛[38;5;241m[ ]␛[m ␛[38;5;214m✎ ␛[m␛[38;5;252m…nal/agent/errors.go␛[m␛[38;5;241m · writer-1␛[m ␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;241m │ ␛[m␛[38;5;241m 140  ␛[m␛[91m            return results, nil␛[m   ␛[38;5;241m │ ␛[m␛[38;5;241m 140  ␛[m␛[92m            return results, ErrRo…␛[m
+␛[38;5;241m────────────────────────────────────────────␛[m␛[38;5;241m │ ␛[m␛[94m❯␛[m ␛[92m␛[m␛[96m␛[m␛[48;5;62m␛[92m[x]␛[m␛[48;5;62m ␛[96m␛[m␛[48;5;62m␛[97;48;5;62m@@ -138,6 +138,7 @@                                                          ␛[m␛[m
+␛[94m❯␛[m ␛[92m␛[m␛[38;5;214m␛[m␛[38;5;252m␛[m␛[38;5;241m␛[m␛[92m␛[m␛[91m␛[m␛[48;5;62m␛[92m[x]␛[m␛[48;5;62m ␛[38;5;214m✎ ␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[92m␛[m␛[48;5;62m␛[91m␛[m␛[48;5;62m␛[97;48;5;62minternal/agent/loop.go         +2 −1␛[m␛[m␛[38;5;241m │ ␛[m␛[38;5;241m 138  ␛[m␛[38;5;245m    for round := 0; ; round++ {␛[m   ␛[38;5;241m │ ␛[m␛[38;5;241m 138  ␛[m␛[38;5;245m    for round := 0; ; round++ {␛[m
+  ␛[38;5;241m[ ]␛[m ␛[38;5;214m✎ ␛[m␛[38;5;252minternal/ui/chat/model.go␛[m␛[38;5;241m␛[m      ␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;241m │ ␛[m␛[38;5;241m 139  ␛[m␛[38;5;245m        if round >= a.maxRounds {␛[m ␛[38;5;241m │ ␛[m␛[38;5;241m 139  ␛[m␛[38;5;245m        if round >= a.maxRounds {␛[m
+  ␛[38;5;241m[ ]␛[m ␛[38;5;214m✎ ␛[m␛[38;5;252m…al/agent/errors.go␛[m␛[38;5;241m · writer-1␛[m ␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;241m │ ␛[m␛[38;5;241m 140  ␛[m␛[91m            return results, nil␛[m   ␛[38;5;241m │ ␛[m␛[38;5;241m 140  ␛[m␛[92m            return results, ErrRo…␛[m
 ␛[38;5;241m────────────────────────────────────────────␛[m␛[38;5;241m │ ␛[m                                        ␛[38;5;241m │ ␛[m␛[38;5;241m 141  ␛[m␛[92m        }␛[m
 ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... · exit 1 fai…␛[m␛[38;5;241m │ ␛[m␛[38;5;241m 141  ␛[m␛[38;5;245m        }␛[m                         ␛[38;5;241m │ ␛[m␛[38;5;241m 142  ␛[m␛[38;5;245m        }␛[m
   ␛[38;5;245m--- FAIL: TestRoundLimit (0.03s)␛[m          ␛[38;5;241m │ ␛[m␛[38;5;241m 142  ␛[m␛[38;5;245m    }␛[m                             ␛[38;5;241m │ ␛[m␛[38;5;241m 143  ␛[m␛[38;5;245m    }␛[m
@@ -173,10 +173,10 @@ REVIEW turn 7                        3 files │ internal/agent/loop.go  1 hunk 
 
 · layout · side-by-side forced
 ␛[1;94mREVIEW␛[m␛[38;5;241m turn 7␛[m                  ␛[92m1 of 3 staged␛[m␛[38;5;241m │ ␛[m␛[1;97minternal/agent/loop.go␛[m␛[38;5;241m  1 hunk · ␛[m␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;241m · ␛[m␛[92m✓ staged␛[m
-␛[38;5;241m────────────────────────────────────────────␛[m␛[38;5;241m │ ␛[m␛[94m❯␛[m␛[92m[x]␛[m ␛[96m@@ -138,6 +138,7 @@␛[m
-␛[94m❯␛[m␛[92m[x]␛[m ␛[38;5;214m✎ ␛[m␛[1;97minternal/agent/loop.go␛[m␛[38;5;241m␛[m          ␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;241m │ ␛[m␛[38;5;241m 138  ␛[m␛[38;5;245m    for round := 0; ; round++ {␛[m   ␛[38;5;241m │ ␛[m␛[38;5;241m 138  ␛[m␛[38;5;245m    for round := 0; ; round++ {␛[m
- ␛[38;5;241m[ ]␛[m ␛[38;5;214m✎ ␛[m␛[38;5;252minternal/ui/chat/model.go␛[m␛[38;5;241m␛[m       ␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;241m │ ␛[m␛[38;5;241m 139  ␛[m␛[38;5;245m        if round >= a.maxRounds {␛[m ␛[38;5;241m │ ␛[m␛[38;5;241m 139  ␛[m␛[38;5;245m        if round >= a.maxRounds {␛[m
- ␛[38;5;241m[ ]␛[m ␛[38;5;214m✎ ␛[m␛[38;5;252m…nal/agent/errors.go␛[m␛[38;5;241m · writer-1␛[m ␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;241m │ ␛[m␛[38;5;241m 140  ␛[m␛[91m            return results, nil␛[m   ␛[38;5;241m │ ␛[m␛[38;5;241m 140  ␛[m␛[92m            return results, ErrRo…␛[m
+␛[38;5;241m────────────────────────────────────────────␛[m␛[38;5;241m │ ␛[m␛[94m❯␛[m ␛[92m␛[m␛[96m␛[m␛[48;5;62m␛[92m[x]␛[m␛[48;5;62m ␛[96m␛[m␛[48;5;62m␛[97;48;5;62m@@ -138,6 +138,7 @@                                                          ␛[m␛[m
+␛[94m❯␛[m ␛[92m␛[m␛[38;5;214m␛[m␛[38;5;252m␛[m␛[38;5;241m␛[m␛[92m␛[m␛[91m␛[m␛[48;5;62m␛[92m[x]␛[m␛[48;5;62m ␛[38;5;214m✎ ␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[92m␛[m␛[48;5;62m␛[91m␛[m␛[48;5;62m␛[97;48;5;62minternal/agent/loop.go         +2 −1␛[m␛[m␛[38;5;241m │ ␛[m␛[38;5;241m 138  ␛[m␛[38;5;245m    for round := 0; ; round++ {␛[m   ␛[38;5;241m │ ␛[m␛[38;5;241m 138  ␛[m␛[38;5;245m    for round := 0; ; round++ {␛[m
+  ␛[38;5;241m[ ]␛[m ␛[38;5;214m✎ ␛[m␛[38;5;252minternal/ui/chat/model.go␛[m␛[38;5;241m␛[m      ␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;241m │ ␛[m␛[38;5;241m 139  ␛[m␛[38;5;245m        if round >= a.maxRounds {␛[m ␛[38;5;241m │ ␛[m␛[38;5;241m 139  ␛[m␛[38;5;245m        if round >= a.maxRounds {␛[m
+  ␛[38;5;241m[ ]␛[m ␛[38;5;214m✎ ␛[m␛[38;5;252m…al/agent/errors.go␛[m␛[38;5;241m · writer-1␛[m ␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;241m │ ␛[m␛[38;5;241m 140  ␛[m␛[91m            return results, nil␛[m   ␛[38;5;241m │ ␛[m␛[38;5;241m 140  ␛[m␛[92m            return results, ErrRo…␛[m
 ␛[38;5;241m────────────────────────────────────────────␛[m␛[38;5;241m │ ␛[m                                        ␛[38;5;241m │ ␛[m␛[38;5;241m 141  ␛[m␛[92m        }␛[m
 ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... · exit 1 fai…␛[m␛[38;5;241m │ ␛[m␛[38;5;241m 141  ␛[m␛[38;5;245m        }␛[m                         ␛[38;5;241m │ ␛[m␛[38;5;241m 142  ␛[m␛[38;5;245m        }␛[m
   ␛[38;5;245m--- FAIL: TestRoundLimit (0.03s)␛[m          ␛[38;5;241m │ ␛[m␛[38;5;241m 142  ␛[m␛[38;5;245m    }␛[m                             ␛[38;5;241m │ ␛[m␛[38;5;241m 143  ␛[m␛[38;5;245m    }␛[m
@@ -193,10 +193,10 @@ REVIEW turn 7                        3 files │ internal/agent/loop.go  1 hunk 
 
 · read-only (a cumulative diff has nothing to stage)
 ␛[1;94mREVIEW␛[m␛[38;5;241m turn 7␛[m                        ␛[38;5;241m3 files␛[m␛[38;5;241m │ ␛[m␛[1;97minternal/agent/loop.go␛[m␛[38;5;241m  1 hunk · ␛[m␛[92m+2␛[m ␛[91m−1␛[m
-␛[38;5;241m────────────────────────────────────────────␛[m␛[38;5;241m │ ␛[m␛[94m❯␛[m ␛[96m@@ -138,6 +138,7 @@␛[m
-␛[94m❯␛[m␛[38;5;214m✎ ␛[m␛[1;97minternal/agent/loop.go␛[m␛[38;5;241m␛[m              ␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;241m │ ␛[m␛[38;5;241m 138  ␛[m␛[38;5;245m    for round := 0; ; round++ {␛[m   ␛[38;5;241m │ ␛[m␛[38;5;241m 138  ␛[m␛[38;5;245m    for round := 0; ; round++ {␛[m
- ␛[38;5;214m✎ ␛[m␛[38;5;252minternal/ui/chat/model.go␛[m␛[38;5;241m␛[m           ␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;241m │ ␛[m␛[38;5;241m 139  ␛[m␛[38;5;245m        if round >= a.maxRounds {␛[m ␛[38;5;241m │ ␛[m␛[38;5;241m 139  ␛[m␛[38;5;245m        if round >= a.maxRounds {␛[m
- ␛[38;5;214m✎ ␛[m␛[38;5;252minternal/agent/errors.go␛[m␛[38;5;241m · writer-1␛[m ␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;241m │ ␛[m␛[38;5;241m 140  ␛[m␛[91m            return results, nil␛[m   ␛[38;5;241m │ ␛[m␛[38;5;241m 140  ␛[m␛[92m            return results, ErrRo…␛[m
+␛[38;5;241m────────────────────────────────────────────␛[m␛[38;5;241m │ ␛[m␛[94m❯␛[m ␛[96m␛[m␛[48;5;62m␛[96m␛[m␛[48;5;62m␛[97;48;5;62m@@ -138,6 +138,7 @@                                                              ␛[m␛[m
+␛[94m❯␛[m ␛[38;5;214m␛[m␛[38;5;252m␛[m␛[38;5;241m␛[m␛[92m␛[m␛[91m␛[m␛[48;5;62m␛[38;5;214m✎ ␛[m␛[48;5;62m␛[38;5;252m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[92m␛[m␛[48;5;62m␛[91m␛[m␛[48;5;62m␛[97;48;5;62minternal/agent/loop.go             +2 −1␛[m␛[m␛[38;5;241m │ ␛[m␛[38;5;241m 138  ␛[m␛[38;5;245m    for round := 0; ; round++ {␛[m   ␛[38;5;241m │ ␛[m␛[38;5;241m 138  ␛[m␛[38;5;245m    for round := 0; ; round++ {␛[m
+  ␛[38;5;214m✎ ␛[m␛[38;5;252minternal/ui/chat/model.go␛[m␛[38;5;241m␛[m          ␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;241m │ ␛[m␛[38;5;241m 139  ␛[m␛[38;5;245m        if round >= a.maxRounds {␛[m ␛[38;5;241m │ ␛[m␛[38;5;241m 139  ␛[m␛[38;5;245m        if round >= a.maxRounds {␛[m
+  ␛[38;5;214m✎ ␛[m␛[38;5;252m…ternal/agent/errors.go␛[m␛[38;5;241m · writer-1␛[m ␛[92m+2␛[m ␛[91m−1␛[m␛[38;5;241m │ ␛[m␛[38;5;241m 140  ␛[m␛[91m            return results, nil␛[m   ␛[38;5;241m │ ␛[m␛[38;5;241m 140  ␛[m␛[92m            return results, ErrRo…␛[m
 ␛[38;5;241m────────────────────────────────────────────␛[m␛[38;5;241m │ ␛[m                                        ␛[38;5;241m │ ␛[m␛[38;5;241m 141  ␛[m␛[92m        }␛[m
 ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... · exit 1 fai…␛[m␛[38;5;241m │ ␛[m␛[38;5;241m 141  ␛[m␛[38;5;245m        }␛[m                         ␛[38;5;241m │ ␛[m␛[38;5;241m 142  ␛[m␛[38;5;245m        }␛[m
   ␛[38;5;245m--- FAIL: TestRoundLimit (0.03s)␛[m          ␛[38;5;241m │ ␛[m␛[38;5;241m 142  ␛[m␛[38;5;245m    }␛[m                             ␛[38;5;241m │ ␛[m␛[38;5;241m 143  ␛[m␛[38;5;245m    }␛[m
