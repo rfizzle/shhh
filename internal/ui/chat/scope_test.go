@@ -28,7 +28,21 @@ func scopedModel(t *testing.T, root string, mode agent.Mode) Model {
 }
 
 func TestEditOutsideTheScopeAsksEvenInAcceptEdits(t *testing.T) {
-	root, outside := t.TempDir(), t.TempDir()
+	// The test process's TMPDIR is shhh's session scratch, which production
+	// correctly classifies as sensitive. These fixtures instead need ordinary
+	// directories so their differing scope membership is the only decision.
+	base, err := os.MkdirTemp(".", ".scope-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(base) })
+	root, outside := filepath.Join(base, "root"), filepath.Join(base, "outside")
+	if err := os.MkdirAll(root, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(outside, 0o700); err != nil {
+		t.Fatal(err)
+	}
 	m := scopedModel(t, root, agent.ModeAcceptEdits)
 
 	// Inside the scope, accept-edits answers for the edit itself.
