@@ -28,6 +28,11 @@ paths as data so each keyed surface names what is normative for it.
 """
 import re, sys, pathlib, collections
 
+
+def visible(path):
+    """Report whether path has no hidden component below the repository root."""
+    return not any(part.startswith(".") for part in path.parts)
+
 def anchors(path):
     out=set()
     for line in path.read_text().splitlines():
@@ -39,12 +44,14 @@ def anchors(path):
             out.add(re.sub(r'\s+','-',t.strip()))
     return out
 
-# only real documents count as citations; docs/loop.md etc. are test fixtures
-REAL={str(q) for q in pathlib.Path('docs').rglob('*.md')}
+# Only visible documents count as citations; docs/loop.md etc. are test
+# fixture filenames. Hidden directories are editor or tool state, not the
+# checkout the documentation contract describes.
+REAL={str(q) for q in pathlib.Path('docs').rglob('*.md') if visible(q)}
 CITE=re.compile(r'\b(docs/[A-Za-z0-9_./-]*?\.md)(#[A-Za-z0-9-]+)?')
 bad=[]; n=0; per=collections.Counter(); CITED=set()
 for f in pathlib.Path('.').rglob('*'):
-    if not f.is_file() or '.git' in f.parts: continue
+    if not f.is_file() or not visible(f): continue
     if f.suffix not in ('.go','.md'): continue
     try: txt=f.read_text()
     except Exception: continue
@@ -78,7 +85,7 @@ REF=re.compile(r"§\d+[a-z]?")
 STORY=re.compile(r"\b[SEBT]-\d{3}\b")
 CHDIR=re.compile(r"\b(?:os|t)\.Chdir\(")
 for f in pathlib.Path(".").rglob("*.go"):
-    if ".git" in f.parts: continue
+    if not visible(f): continue
     raw=False
     for ln,l in enumerate(f.read_text().split("\n"),1):
         if raw:
@@ -92,6 +99,7 @@ for f in pathlib.Path(".").rglob("*.go"):
         if f.name.endswith("_test.go") and CHDIR.search(code):
             bad.append(f"{f}:{ln}: a test that chdirs makes its package uncacheable — pass the directory to the code under test as an argument")
 for f in pathlib.Path(".").rglob("testdata/golden/*.txt"):
+    if not visible(f): continue
     for ln,l in enumerate(f.read_text().split("\n"),1):
         if REF.search(l) or STORY.search(l):
             bad.append(f"{f}:{ln}: spec or story reference baked into a golden fixture")
