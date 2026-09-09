@@ -161,12 +161,10 @@ func TestClassifyWarnsThatAGrantInsideAStoreExposesTheWholeStore(t *testing.T) {
 }
 
 func TestClassifySensitiveAndOrdinary(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
 	if class, _ := Classify(t.TempDir()); class != Ordinary {
 		t.Errorf("a fresh directory should be ordinary, got %v", class)
-	}
-	home, err := os.UserHomeDir()
-	if err != nil {
-		t.Skip("no home directory on this host")
 	}
 	if class, reason := Classify(home); class != Sensitive || reason == "" {
 		t.Errorf("Classify(home) = %v, %q; want Sensitive with a reason", class, reason)
