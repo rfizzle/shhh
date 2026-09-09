@@ -41,7 +41,8 @@
 # Environment: SHHH_BIN (the binary; default ./shhh), COLS/ROWS (the pane,
 # default 120x40), OUT (captures; default bin/tui/<scene>), WAIT (seconds a
 # snap waits for its text; default 20), PORT and SOCK (the provider's port and
-# the tmux server's name, for two scenes running at once).
+# the tmux server's name, for two scenes running at once), and TMUX_TMPDIR
+# (the tmux socket directory; defaults under OUT).
 set -u
 here=$(cd "$(dirname "$0")" && pwd)
 root=$(cd "$here/../.." && pwd)
@@ -68,6 +69,8 @@ OUT=${OUT:-$root/bin/tui/$name}
 WAIT=${WAIT:-20}
 PORT=${PORT:-8765}
 SOCK=${SOCK:-shhh-tui}
+TMUX_TMPDIR=${TMUX_TMPDIR:-$OUT/.tmux}
+export TMUX_TMPDIR
 
 for need in tmux python3; do
 	command -v $need >/dev/null 2>&1 || { echo "drive.sh: $need is required (brew install $need / apt-get install $need)" >&2; exit 2; }
@@ -102,7 +105,7 @@ fi
 work=$(mktemp -d "${TMPDIR:-/tmp}/shhh-tui.XXXXXX")
 home=$work/home
 ws=$work/ws
-mkdir -p "$home/config/shhh" "$ws" "$OUT"
+mkdir -p "$home/config/shhh" "$ws" "$OUT" "$TMUX_TMPDIR"
 printf '[behavior]\nprovider_retries = 0\n' > "$home/config/shhh/config.toml"
 (cd "$ws" && git init -q && git -c user.email=tui@shhh -c user.name=tui commit -q --allow-empty -m init)
 
