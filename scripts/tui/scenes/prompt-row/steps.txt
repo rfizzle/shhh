@@ -23,6 +23,6 @@ sleep 1
 keys n
 snap 04-answered "That is the shape of it"
 keys C-c
-snap 05-quit-armed "press again to quit"
+snap 05-quit-armed "again quits"
 keys C-c
 snap 06-exit "that is everything the screen was holding"

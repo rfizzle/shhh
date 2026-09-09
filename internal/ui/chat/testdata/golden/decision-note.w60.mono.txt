@@ -17,7 +17,7 @@
 │ ⚠ medium · edits one file                            │
 │ @@ -1,1 +1,2 @@                                      │
 │   1  line one                                        │
-│ … 2 more lines · shift+↓                             │
+│ … 2 more lines · [shift+↓]                           │
 ├──────────────────────────────────────────────────────┤
 │ [y] apply the change · [Y] and say what next         │
 │ [n] deny · [N] and say why not                       │
@@ -37,7 +37,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · edits one file␛[m                            ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m@@ -1,1 +1,2 @@␛[m                                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m  1  ␛[m␛[38;5;244mline one␛[m                                        ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m… 2 more lines · shift+↓␛[m                             ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m… 2 more lines · [shift+↓]␛[m                           ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m[y] apply the change␛[m␛[38;5;244m · ␛[m␛[38;5;244m[Y] and say what next␛[m         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m[n] deny␛[m␛[38;5;244m · ␛[m␛[38;5;244m[N] and say why not␛[m                       ␛[38;5;254m│␛[m
@@ -45,6 +45,6 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mthese letters go into the field␛[m                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m┄ why not␛[m                                            ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m␛[m␛[38;5;254mnot that file␛[m ␛[38;5;254m                                    ␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[enter] deny with this␛[m                               ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[esc] back to the card — nothing is answered␛[m         ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m deny with this␛[m                               ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m back to the card — nothing is answered␛[m         ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────╯␛[m

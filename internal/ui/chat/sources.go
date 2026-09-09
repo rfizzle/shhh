@@ -132,8 +132,8 @@ func (m Model) sourcesLines() []string {
 // was. The screen holds the keyboard, so the panel states the way out and
 // nothing else, the way the context surface's does.
 func (m Model) renderSourcesHint() string {
-	hint := keys.Bracket(keys.Sources.Back) + " " + keys.Words(keys.Sources.Back)
-	return sty.SystemMsg.Render("sources · "+hint) + strings.Repeat("\n", inputHeight-1)
+	return sty.SystemMsg.Render("sources · ") + seg(keys.Sources.Back).render() +
+		strings.Repeat("\n", inputHeight-1)
 }
 
 // sourceRow is the screen's row with an id, or nil.

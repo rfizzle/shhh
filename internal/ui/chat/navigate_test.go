@@ -289,11 +289,17 @@ func TestReadingMode_ProseRowsTakeTheCursor(t *testing.T) {
 		t.Fatalf("the cursor should land on the last assistant message, got %d", m.focusIdx)
 	}
 	hint := ansi.Strip(m.panelView())
-	if strings.Contains(hint, "["+keys.Shown(keys.Reading.Expand)+"]") {
-		t.Fatalf("a message row expands nothing, so [enter] is not an offer, got %q", hint)
-	}
 	if !strings.Contains(hint, "["+keys.Shown(keys.Reading.Copy)+"]") {
 		t.Fatalf("a message row should offer the copy key, got %q", hint)
+	}
+	// Eighty columns cannot carry the reason beside the copy key, and the
+	// reason is what leaves first. Wide enough, it stands: the key is stated
+	// absent rather than dropped, so a reader learns which rows open.
+	wide := ansi.Strip(joinSegs(m.readingModeKeys()))
+	want := "[" + keys.Shown(keys.Reading.Expand) + "] " +
+		keys.Words(keys.Reading.Expand) + " — nothing on this row expands"
+	if !strings.Contains(wide, want) {
+		t.Fatalf("a message row should say why [enter] is not offered, got %q", wide)
 	}
 	if strings.Contains(hint, "this row ·") {
 		t.Fatalf("a message row offers no row keys, got %q", hint)

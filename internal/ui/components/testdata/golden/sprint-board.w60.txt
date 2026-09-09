@@ -166,7 +166,7 @@ Reads as a minor release.
 ␛[94m[g]␛[m␛[38;5;241m read it against the tree␛[m␛[38;5;241m · ␛[m␛[94m[b]␛[m␛[38;5;241m block it␛[m␛[38;5;241m · ␛[m␛[94m[d]␛[m␛[38;5;241m archive it␛[m
 ␛[94m[x]␛[m␛[38;5;241m drop it, deleting the file␛[m
 ␛[94m[S]␛[m␛[38;5;241m drop it from the cockpit sprint␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m a new item␛[m
-␛[94m[esc]␛[m␛[38;5;241m back to the prompt␛[m
+␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m
 
 · stopped on a block · the block on the board with the item that wrote it
 ␛[1;97mbacklog␛[m␛[38;5;241m · sprint␛[m               ␛[38;5;241m5 items␛[m␛[38;5;241m · [?] keys · [q] back␛[m
@@ -192,7 +192,7 @@ Reads as a minor release.
 ␛[94m[g]␛[m␛[38;5;241m read it against the tree␛[m␛[38;5;241m · ␛[m␛[94m[b]␛[m␛[38;5;241m block it␛[m␛[38;5;241m · ␛[m␛[94m[d]␛[m␛[38;5;241m archive it␛[m
 ␛[94m[x]␛[m␛[38;5;241m drop it, deleting the file␛[m
 ␛[94m[S]␛[m␛[38;5;241m drop it from the cockpit sprint␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m a new item␛[m
-␛[94m[esc]␛[m␛[38;5;241m back to the prompt␛[m
+␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m
 
 · closed · the record, with the page it wrote as the last row
 ␛[1;97mbacklog␛[m␛[38;5;241m · sprint␛[m               ␛[38;5;241m0 items␛[m␛[38;5;241m · [?] keys · [q] back␛[m
@@ -208,7 +208,7 @@ Reads as a minor release.
 
 ␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter by text␛[m␛[38;5;241m · ␛[m␛[94m[s/p/k/r]␛[m␛[38;5;241m narrow it␛[m
 ␛[94m[tab]␛[m␛[38;5;241m what shipped␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m a new item␛[m
-␛[94m[esc]␛[m␛[38;5;241m back to the prompt␛[m
+␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m
 
 · planning · the proposal with the budget in the header
 ␛[1;97mbacklog␛[m␛[38;5;241m · planning␛[m   ␛[38;5;241m3 of 3 items kept␛[m␛[38;5;241m · [?] keys · [q] back␛[m
@@ -228,7 +228,7 @@ Reads as a minor release.
 ␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[space]␛[m␛[38;5;241m drop it, or put it back␛[m
 ␛[94m[o]␛[m␛[38;5;241m what was left out, and why␛[m
 ␛[94m[g]␛[m␛[38;5;241m write what the set is for␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m write the sprint␛[m
-␛[94m[esc]␛[m␛[38;5;241m write nothing␛[m
+␛[92m[esc]␛[m␛[38;5;241m write nothing␛[m
 
 · a row dropped · it keeps its place and loses its tick
 ␛[1;97mbacklog␛[m␛[38;5;241m · planning␛[m   ␛[38;5;241m2 of 3 items kept␛[m␛[38;5;241m · [?] keys · [q] back␛[m
@@ -248,7 +248,7 @@ Reads as a minor release.
 ␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[space]␛[m␛[38;5;241m drop it, or put it back␛[m
 ␛[94m[o]␛[m␛[38;5;241m what was left out, and why␛[m
 ␛[94m[g]␛[m␛[38;5;241m write what the set is for␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m write the sprint␛[m
-␛[94m[esc]␛[m␛[38;5;241m write nothing␛[m
+␛[92m[esc]␛[m␛[38;5;241m write nothing␛[m
 
 · what was left out · folded under the set until the key opens it
 ␛[1;97mbacklog␛[m␛[38;5;241m · planning␛[m   ␛[38;5;241m3 of 3 items kept␛[m␛[38;5;241m · [?] keys · [q] back␛[m
@@ -271,4 +271,4 @@ Reads as a minor release.
 ␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[space]␛[m␛[38;5;241m drop it, or put it back␛[m
 ␛[94m[o]␛[m␛[38;5;241m what was left out, and why␛[m
 ␛[94m[g]␛[m␛[38;5;241m write what the set is for␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m write the sprint␛[m
-␛[94m[esc]␛[m␛[38;5;241m write nothing␛[m
+␛[92m[esc]␛[m␛[38;5;241m write nothing␛[m

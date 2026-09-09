@@ -61,13 +61,15 @@ type PlanCard struct {
 	// one shows its Desc beneath it and no other does.
 	Options []SelectOption
 	Focus   int
-	// HintKeys is the card's key row as its segments, in reading order —
+	// HintKeys is the card's key row as its offers, in reading order —
 	// which is also the order the not-yet-live run gives them up in, since
 	// that run has the words about why it is not live to fit beside it. It
 	// is the selector's field under the selector's rule: a row handed over
 	// pre-joined can only be cut mid-clause, and nothing on a key row is
-	// truncated (docs/interface/principles.md#fold-never-hide).
-	HintKeys []string
+	// truncated (docs/interface/principles.md#fold-never-hide). Offers
+	// rather than sentences because a live row paints the key apart from
+	// the words and a sentence has nowhere to hold that seam.
+	HintKeys []KeyOffer
 	// MaxLines bounds the card's height, frame included; the step list is
 	// what shrinks, and what it drops is counted rather than lost.
 	MaxLines int
@@ -125,7 +127,7 @@ func (c *PlanCard) tailRows(width, inner int, options []string) []string {
 		// waiting, with the one key that hands the keyboard over under them.
 		// The run is handed over as segments, because a run too wide for the
 		// terminal takes another row rather than giving up an offer.
-		rows = append(rows, notYetLiveRows(c.HintKeys, c.Handover, width)...)
+		rows = append(rows, notYetLiveRows(offerRun(c.HintKeys), c.Handover, width)...)
 	case len(c.HintKeys) > 0:
 		rows = append(rows, hintRows(c.HintKeys, width)...)
 	}

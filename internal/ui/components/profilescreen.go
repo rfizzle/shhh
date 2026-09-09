@@ -568,16 +568,16 @@ func (p *ProfileScreen) briefRows(width int) []string {
 // briefHint is the first step's key row. It leads with what enter takes,
 // because which of the two the pointer is on is the one thing about this step
 // that is not obvious from looking at it.
-func (p *ProfileScreen) briefHint() []string {
-	take := words(keys.Profile.Take, "draft from what you typed")
+func (p *ProfileScreen) briefHint() []KeyOffer {
+	take := keyOfferAs(keys.Profile.Take, "draft from what you typed")
 	if p.focus >= 0 {
-		take = words(keys.Profile.Take, "draft from this one")
+		take = keyOfferAs(keys.Profile.Take, "draft from this one")
 	}
-	segments := []string{take}
+	segments := []KeyOffer{take}
 	if len(p.Starts) > 0 {
-		segments = append(segments, words(keys.Profile.Move, "the field or a starting point"))
+		segments = append(segments, keyOfferAs(keys.Profile.Move, "the field or a starting point"))
 	}
-	return append(segments, words(keys.Profile.Back, "nothing is drafted"))
+	return append(segments, keyOfferAs(keys.Profile.Back, "nothing is drafted"))
 }
 
 // questionRows is one question with the answers already given above it. The
@@ -628,17 +628,17 @@ func (p *ProfileScreen) workingRows(width int) []string {
 // (invariant 4), so a row too long for the terminal stacks its segments
 // rather than losing one to a clip — the rule every card's hints keep.
 func (p *ProfileScreen) hintFor(width int) []string {
-	var segments []string
+	var segments []KeyOffer
 	switch p.Step {
 	case ProfileBrief:
 		segments = p.briefHint()
 	case ProfileQuestions:
-		segments = []string{
-			words(keys.Profile.Take, "answer it"),
-			words(keys.Profile.Back, p.backWords()),
+		segments = []KeyOffer{
+			keyOfferAs(keys.Profile.Take, "answer it"),
+			keyOfferAs(keys.Profile.Back, p.backWords()),
 		}
 	case ProfileWorking:
-		segments = []string{words(keys.Profile.Back, "stop drafting")}
+		segments = []KeyOffer{keyOfferAs(keys.Profile.Back, "stop drafting")}
 	default:
 		// The draft step's keys are on the card, which draws its own row.
 		return nil

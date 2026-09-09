@@ -109,8 +109,8 @@
   ␛[38;5;243ma docs keeper who updates the documentation a change made stale, and nothing …␛[m
   ␛[38;5;243ma migrator who applies one mechanical refactor across the tree and verifies t…␛[m
 
-  ␛[38;5;241m[enter] draft from what you typed · [↑↓] the field or a starting point␛[m
-  ␛[38;5;241m[esc] nothing is drafted␛[m
+  ␛[94m[enter]␛[m␛[38;5;241m draft from what you typed␛[m␛[38;5;241m · ␛[m␛[94m[↑↓]␛[m␛[38;5;241m the field or a starting point␛[m
+  ␛[92m[esc]␛[m␛[38;5;241m nothing is drafted␛[m
 
 · the drafter's first question, asked on its own
 ␛[1;97m/agents new␛[m␛[38;5;241m · a coding agent · researcher␛[m                            ␛[38;5;241m[esc] leave␛[m
@@ -124,7 +124,7 @@
   ␛[38;5;241m┄ your answer␛[m
     ␛[38;5;252m␛[38;5;241m┃ ␛[m␛[m␛[38;5;252m␛[7;38;5;62me␛[m␛[m␛[38;5;252m␛[38;5;241mnter alone says you have no preference␛[m␛[m␛[38;5;252m                                   ␛[m
 
-  ␛[38;5;241m[enter] answer it · [esc] nothing is drafted␛[m
+  ␛[94m[enter]␛[m␛[38;5;241m answer it␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m nothing is drafted␛[m
 
 · the second, with the first answer still above it
 ␛[1;97m/agents new␛[m␛[38;5;241m · a coding agent · researcher␛[m                      ␛[38;5;241m[esc] back a step␛[m
@@ -141,7 +141,7 @@
   ␛[38;5;241m┄ your answer␛[m
     ␛[38;5;252m␛[38;5;241m┃ ␛[m␛[m␛[38;5;252m␛[7;38;5;62me␛[m␛[m␛[38;5;252m␛[38;5;241mnter alone says you have no preference␛[m␛[m␛[38;5;252m                                   ␛[m
 
-  ␛[38;5;241m[enter] answer it · [esc] back to the last answer␛[m
+  ␛[94m[enter]␛[m␛[38;5;241m answer it␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the last answer␛[m
 
 · the draft · both places a coding agent's profile can live
 ␛[1;97m/agents new␛[m␛[38;5;241m · a coding agent · researcher␛[m                ␛[38;5;241m[esc] discard the draft␛[m
@@ -168,5 +168,5 @@
 ␛[38;5;241m│␛[m   ␛[38;5;241m4. ␛[m␛[38;5;252mDiscard␛[m                                                                 ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m┄ note (optional)␛[m                                                            ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;245m(none)␛[m                                                                     ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;241m[tab] note/options · [enter] confirm · [esc] cancel␛[m                          ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[94m[tab]␛[m␛[38;5;241m note/options␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m confirm␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m cancel␛[m                          ␛[38;5;241m│␛[m
 ␛[38;5;241m╰──────────────────────────────────────────────────────────────────────────────╯␛[m

@@ -37,7 +37,7 @@
 ╰─ ⏸ gated · ctx 32% ▰▰▱▱▱▱▱▱ · ↑41,200 ↓9,800 · $0.51 · gpt-4o ───────────╯
 
 · the follow-up held after a cancel
-1 steering queued · 1 follow-up held — ctrl+n recalls                       
+1 steering queued · 1 follow-up held — [ctrl+n] recalls                     
 ╭─ ⠋ thinking… ────────────────────────────────────────────────────────────╮
 │ ▸                                                                        │
 │                                                                          │
@@ -72,7 +72,7 @@
 ␛[38;5;254m╰─␛[m ␛[38;5;254m⏸ gated␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · ↑41,200 ↓9,800 · $0.51 · ␛[38;5;254mgpt-4o␛[m ␛[38;5;254m───────────╯␛[m
 
 · the follow-up held after a cancel
-␛[38;5;254m1 steering queued␛[38;5;244m · ␛[38;5;254m1 follow-up held — ctrl+n recalls␛[m                       
+␛[38;5;254m1 steering queued␛[38;5;244m · ␛[38;5;254m1 follow-up held — [ctrl+n] recalls␛[m                     
 ␛[38;5;254m╭─␛[m ␛[38;5;254m⠋ thinking…␛[m ␛[38;5;254m────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254;1m▸␛[m ␛[38;5;254m                                                                      ␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                                          ␛[38;5;254m│␛[m

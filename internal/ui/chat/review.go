@@ -32,6 +32,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // reviewVerdictDetail bounds how much of a failing check's output is pinned
@@ -309,13 +310,15 @@ func (m Model) closeReview() (tea.Model, tea.Cmd) {
 // renderContextHint is the context surface's bottom panel: it holds the
 // keyboard, so the panel states the way out and nothing else.
 func (m Model) renderContextHint() string {
-	return sty.SystemMsg.Render("context · "+contextKeyHint()) + strings.Repeat("\n", inputHeight-1)
+	return sty.SystemMsg.Render("context · ") + contextKeyHint() +
+		strings.Repeat("\n", inputHeight-1)
 }
 
 func (m Model) renderReviewHint() string {
-	label := "review · esc back"
+	label := segAs(keys.Review.Back, "back")
 	if m.reviewReturn == stateFocus {
-		label = "review · esc: back to the transcript"
+		label = segAs(keys.Review.Back, "back to the transcript")
 	}
-	return sty.SystemMsg.Render(label) + strings.Repeat("\n", inputHeight-1)
+	return sty.SystemMsg.Render("review · ") + label.render() +
+		strings.Repeat("\n", inputHeight-1)
 }

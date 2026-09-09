@@ -146,7 +146,7 @@ func (m Model) followUpNotice() string {
 		label += "s"
 	}
 	if m.followUpsHeld {
-		label += " held — " + keys.Shown(keys.Draft.Queue) + " recalls"
+		label += " held — " + keys.Bracket(keys.Draft.Queue) + " recalls"
 	}
 	return label
 }

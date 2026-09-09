@@ -172,11 +172,12 @@ func (m Model) historySearchLines() []string {
 	row := m.searchRowHead() + sty.Search.State.Render(" · "+state)
 	// The bar's words are shorter than the register's: the box clips at its
 	// border rather than shedding, so the row has to fit the narrow layouts
-	// whole. The keys are still the register's.
-	hint := strings.Join([]string{
-		keys.Shown(keys.Search.Older) + " older",
-		keys.Shown(keys.Search.Keep) + " keep",
-		keys.Shown(keys.Search.Cancel) + " " + keys.Words(keys.Search.Cancel),
-	}, " · ")
-	return []string{clipRow(row, width), sty.Search.Hint.Render(clipRow(hint, width))}
+	// whole. The keys are still the register's, in the brackets and the tone
+	// every offered key wears.
+	hint := joinSegs([]hintSeg{
+		segAs(keys.Search.Older, "older"),
+		segAs(keys.Search.Keep, "keep"),
+		seg(keys.Search.Cancel),
+	})
+	return []string{clipRow(row, width), clipRow(hint, width)}
 }

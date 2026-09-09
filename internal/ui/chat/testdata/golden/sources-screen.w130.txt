@@ -58,7 +58,7 @@ example.com                                                     │   asked for 
 ␛[1;94mexample.com␛[m                                                    ␛[38;5;241m │ ␛[m  ␛[38;5;245mwhen ␛[m␛[38;5;241mturn 2␛[m
 ␛[94m❯␛[m ␛[1;97;48;5;62m✗ /gone                         404 · web-researcher         ␛[m␛[38;5;241m │ ␛[m
 
-␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m back to the prompt␛[m                                                ␛[38;5;241mrecorded by the fetch, not by the model␛[m
+␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m                                                ␛[38;5;241mrecorded by the fetch, not by the model␛[m
 
 · a page that was kept · the preview opens it
 ␛[1;97m/sources␛[m␛[38;5;241m · 2 pages · 1 host · 1 search␛[m                                                                     ␛[38;5;241m[?] keys · [q] back␛[m
@@ -79,4 +79,4 @@ example.com                                                     │   asked for 
                                                                ␛[38;5;241m │ ␛[m  ␛[38;5;241mTokio is an asynchronous runtime.␛[m
                                                                ␛[38;5;241m │ ␛[m  ␛[38;5;241mIt provides the building blocks.␛[m
 
-␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m read the page that was kept␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m back to the prompt␛[m          ␛[38;5;241mrecorded by the fetch, not by the model␛[m
+␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m read the page that was kept␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the prompt␛[m          ␛[38;5;241mrecorded by the fetch, not by the model␛[m

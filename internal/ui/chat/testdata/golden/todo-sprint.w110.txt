@@ -75,7 +75,7 @@ Reads as a minor release.
 ␛[38;5;241m2 items left out · 1 unrelated, 1 too big␛[m ␛[94m[o]␛[m
 
 ␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[space]␛[m␛[38;5;241m drop it, or put it back␛[m␛[38;5;241m · ␛[m␛[94m[o]␛[m␛[38;5;241m what was left out, and why␛[m
-␛[94m[g]␛[m␛[38;5;241m write what the set is for␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m write the sprint␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m write nothing␛[m
+␛[94m[g]␛[m␛[38;5;241m write what the set is for␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m write the sprint␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m write nothing␛[m
 
 · what was left out · the word beside each candidate the reading did not take
 ␛[1;97mbacklog␛[m␛[38;5;241m · planning␛[m␛[38;5;241m · everything ready␛[m                                  ␛[38;5;241m2 of 2 items kept␛[m␛[38;5;241m · [?] keys · [q] back␛[m
@@ -93,7 +93,7 @@ Reads as a minor release.
 ␛[38;5;241m  too big    cache-audit  An audit trail for every eviction␛[m
 
 ␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[space]␛[m␛[38;5;241m drop it, or put it back␛[m␛[38;5;241m · ␛[m␛[94m[o]␛[m␛[38;5;241m what was left out, and why␛[m
-␛[94m[g]␛[m␛[38;5;241m write what the set is for␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m write the sprint␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m write nothing␛[m
+␛[94m[g]␛[m␛[38;5;241m write what the set is for␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m write the sprint␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m write nothing␛[m
 
 · a row dropped · it keeps its place and loses its tick
 ␛[1;97mbacklog␛[m␛[38;5;241m · planning␛[m␛[38;5;241m · everything ready␛[m                                  ␛[38;5;241m1 of 2 items kept␛[m␛[38;5;241m · [?] keys · [q] back␛[m
@@ -109,4 +109,4 @@ Reads as a minor release.
 ␛[38;5;241m2 items left out · 1 unrelated, 1 too big␛[m ␛[94m[o]␛[m
 
 ␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[space]␛[m␛[38;5;241m drop it, or put it back␛[m␛[38;5;241m · ␛[m␛[94m[o]␛[m␛[38;5;241m what was left out, and why␛[m
-␛[94m[g]␛[m␛[38;5;241m write what the set is for␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m write the sprint␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m write nothing␛[m
+␛[94m[g]␛[m␛[38;5;241m write what the set is for␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m write the sprint␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m write nothing␛[m

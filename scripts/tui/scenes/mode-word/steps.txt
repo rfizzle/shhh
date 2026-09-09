@@ -35,11 +35,11 @@ keys y
 snap 08-spawned "reader-1"
 sleep 2
 keys "/attach reader-1" Enter
-snap 09-attached "esc detach"
+snap 09-attached "[esc] detach"
 sleep 1
 keys Escape
-snap 10-detached "enter send · shift+enter newline"
+snap 10-detached "[enter] send"
 keys C-c
-snap 11-quit-armed "press again to quit"
+snap 11-quit-armed "again quits"
 keys C-c
 snap 12-exit "that is everything the screen was holding"

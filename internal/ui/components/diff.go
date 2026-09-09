@@ -545,10 +545,10 @@ func (d *DiffView) fullView(width int) string {
 	// Clipped to the screen it is drawn on: a key row wider than the
 	// terminal wraps onto the body's last line and takes a line of the diff
 	// with it, which costs the reader more than the last offer costs.
-	footer := sty.Hint.Render(Clip("diff · "+strings.Join([]string{
-		offer(keys.Diff.Scroll), offer(keys.Diff.Hunk),
-		offer(keys.Diff.SideBySide), offer(keys.Diff.Back),
-	}, " · "), width))
+	footer := Clip(sty.Dim.Render("diff · ")+keyOffers([]KeyOffer{
+		keyOffer(keys.Diff.Scroll), keyOffer(keys.Diff.Hunk),
+		keyOffer(keys.Diff.SideBySide), keyOffer(keys.Diff.Back),
+	}), width)
 
 	p := Pager{Offset: d.Offset, Height: d.bodyHeight()}
 	visible := p.Window(d.fullBody(width))

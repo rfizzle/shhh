@@ -181,7 +181,7 @@ func TestAgentListOpensAttachesAndDetaches(t *testing.T) {
 	if !strings.Contains(view, "orchestrator ▸ researcher-1") {
 		t.Fatalf("attached view missing breadcrumb:\n%s", view)
 	}
-	if !strings.Contains(view, "esc detach") {
+	if !strings.Contains(view, "[esc] detach") {
 		t.Fatalf("attached view missing detach hint:\n%s", view)
 	}
 	if !strings.Contains(view, "long survey") {

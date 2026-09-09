@@ -768,10 +768,10 @@ func (m GenerateModel) openAlternatives() (GenerateModel, tea.Cmd) {
 		// the key row rather than running it, and esc is going back rather
 		// than cancelling anything
 		// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
-		HintKeys: []string{
-			keys.Bracket(keys.Select.Move) + " move",
-			keys.Bracket(keys.Select.Take) + " choose",
-			keys.Bracket(keys.Select.Cancel) + " back",
+		HintKeys: []components.KeyOffer{
+			components.OfferAs(keys.Select.Move, "move"),
+			components.OfferAs(keys.Select.Take, "choose"),
+			components.OfferAs(keys.Select.Cancel, "back"),
 		},
 	}
 	m.phase = phasePick

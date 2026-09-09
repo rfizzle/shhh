@@ -298,7 +298,7 @@ func TestApprovalCard_EditVariantBoundsHeight(t *testing.T) {
 	if got := len(strings.Split(view, "\n")); got != 12 {
 		t.Fatalf("card should occupy exactly its MaxLines budget, got %d rows", got)
 	}
-	if !strings.Contains(view, "more lines · "+keys.Shown(keys.Decision.ScrollDown)) {
+	if !strings.Contains(view, "more lines · "+keys.Bracket(keys.Decision.ScrollDown)) {
 		t.Fatalf("bounded card should count the scrolled-off diff and name the key:\n%s", view)
 	}
 }
@@ -319,7 +319,7 @@ func TestApprovalCard_BodyScrollsBehindCountedTails(t *testing.T) {
 		MaxLines: 12,
 	}
 	plain := ansi.Strip(c.View(80))
-	if !strings.Contains(plain, "more lines · "+keys.Shown(keys.Decision.ScrollDown)) {
+	if !strings.Contains(plain, "more lines · "+keys.Bracket(keys.Decision.ScrollDown)) {
 		t.Fatalf("the window should count what it cut:\n%s", plain)
 	}
 	if !strings.Contains(plain, "[y] apply the change") {
@@ -331,7 +331,7 @@ func TestApprovalCard_BodyScrollsBehindCountedTails(t *testing.T) {
 	if scrolled == plain {
 		t.Fatal("scrolling should move the body")
 	}
-	if !strings.Contains(scrolled, "lines above · "+keys.Shown(keys.Decision.ScrollUp)) {
+	if !strings.Contains(scrolled, "lines above · "+keys.Bracket(keys.Decision.ScrollUp)) {
 		t.Fatalf("a scrolled window counts what is above it too:\n%s", scrolled)
 	}
 	if !strings.Contains(scrolled, "[y] apply the change") {
@@ -341,7 +341,7 @@ func TestApprovalCard_BodyScrollsBehindCountedTails(t *testing.T) {
 	maxBody, _ := c.ScrollBounds(80)
 	c.BodyOffset = maxBody
 	bottom := ansi.Strip(c.View(80))
-	if strings.Contains(bottom, "more lines · "+keys.Shown(keys.Decision.ScrollDown)) {
+	if strings.Contains(bottom, "more lines · "+keys.Bracket(keys.Decision.ScrollDown)) {
 		t.Fatalf("at the end there is nothing below to count:\n%s", bottom)
 	}
 }
@@ -407,7 +407,7 @@ func TestApprovalCard_NotYetLiveTailNamesNoKey(t *testing.T) {
 	if !strings.Contains(view, "more lines") {
 		t.Fatalf("the fold is still counted:\n%s", view)
 	}
-	if strings.Contains(view, "more lines · "+keys.Shown(keys.Decision.ScrollDown)) {
+	if strings.Contains(view, "more lines · "+keys.Bracket(keys.Decision.ScrollDown)) {
 		t.Fatalf("an inert card must not advertise a chord the draft owns:\n%s", view)
 	}
 }

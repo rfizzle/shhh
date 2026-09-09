@@ -20,6 +20,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/ui/golden"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // monoOn turns the mono palette on for one test and restores what was there.
@@ -270,9 +271,10 @@ func monoFixtures() []monoSurface {
 			Chip:  "1 step",
 			Steps: []PlanStep{{Number: 1, Title: "Rework the round accounting",
 				Detail: "internal/agent/loop.go", Kind: "read only", KindTone: ToneSafe}},
-			Summary:  []PlanFact{{Text: "1 file touched"}, {Text: "reversible", Tone: ToneSafe}},
-			Options:  []SelectOption{{Label: "Run the whole plan — accept-edits mode"}},
-			HintKeys: []string{"[enter] select", "[s] save", "[esc] keep planning"},
+			Summary: []PlanFact{{Text: "1 file touched"}, {Text: "reversible", Tone: ToneSafe}},
+			Options: []SelectOption{{Label: "Run the whole plan — accept-edits mode"}},
+			HintKeys: []KeyOffer{{Key: "[enter]", Label: "select"}, {Key: "[s]", Label: "save"},
+				keyOfferAs(keys.Select.Cancel, "keep planning")},
 		}
 		mut(&c)
 		return c.View(w)

@@ -1,6 +1,7 @@
 package components
 
 import (
+	"github.com/rfizzle/shhh/internal/ui/keys"
 	"strings"
 	"testing"
 )
@@ -229,7 +230,8 @@ func TestSelect_QueryChipsAndHint(t *testing.T) {
 	s := &Select{
 		Title: "Palette", Options: grouped(), Unnumbered: true,
 		Filtering: true, Query: "mod", Chips: []string{"12 results"},
-		HintKeys: []string{"[enter] run", "[tab] complete", "[↑↓] move", "[esc] dismiss"},
+		HintKeys: []KeyOffer{{Key: "[enter]", Label: "run"}, {Key: "[tab]", Label: "complete"},
+			{Key: "[↑↓]", Label: "move"}, keyOfferAs(keys.Select.Cancel, "dismiss")},
 	}
 	view := s.View(70)
 	for _, want := range []string{"Palette", "12 results", "▸ mod█", "COMMANDS", "[tab] complete"} {
@@ -245,7 +247,8 @@ func TestSelect_QueryChipsAndHint(t *testing.T) {
 // (docs/interface/principles.md#fold-never-hide). Width 40 is where the
 // palette's row stops fitting on one line.
 func TestSelect_NarrowKeyRowKeepsEverySegmentWhole(t *testing.T) {
-	segments := []string{"[enter] run", "[tab] complete", "[↑↓] move", "[esc] dismiss"}
+	segments := []KeyOffer{{Key: "[enter]", Label: "run"}, {Key: "[tab]", Label: "complete"},
+		{Key: "[↑↓]", Label: "move"}, keyOfferAs(keys.Select.Cancel, "dismiss")}
 	s := &Select{Title: "Palette", Options: grouped(), Unnumbered: true,
 		Filtering: true, HintKeys: segments}
 	rows := s.hintSegments(40)
@@ -256,8 +259,8 @@ func TestSelect_NarrowKeyRowKeepsEverySegmentWhole(t *testing.T) {
 	}
 	view := stripANSI(s.View(40))
 	for _, seg := range segments {
-		if !strings.Contains(view, seg) {
-			t.Errorf("the row lost %q:\n%s", seg, view)
+		if !strings.Contains(view, seg.Key+" "+seg.Label) {
+			t.Errorf("the row lost %q:\n%s", seg.Key, view)
 		}
 	}
 }
@@ -363,9 +366,9 @@ func TestMultiSelect_AllowNoneTakesAnEmptyAnswer(t *testing.T) {
 // the host, and never dropped.
 func TestMultiSelect_HostActionsAreOffered(t *testing.T) {
 	s := NewMultiSelect("proposals", planOptions())
-	s.Actions = []string{"e its header"}
+	s.Actions = []KeyOffer{{Key: "[e]", Label: "its header"}}
 	view := s.View(70)
-	if !strings.Contains(view, "e its header") {
+	if !strings.Contains(view, "[e] its header") {
 		t.Fatalf("the action should be on the key row:\n%s", view)
 	}
 	if !strings.Contains(view, "apply (0)") {

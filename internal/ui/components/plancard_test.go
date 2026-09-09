@@ -6,6 +6,7 @@ import (
 
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // planFixture is the card every test here starts from: four steps, a computed
@@ -38,8 +39,8 @@ func planFixture() *PlanCard {
 			{Label: "Run it unattended — auto mode", Desc: "the classifier judges the rest"},
 			{Label: "Step through it — manual approvals", Desc: "every edit asks you first"},
 		},
-		HintKeys: []string{"[↑↓/jk] move", "[enter] select", "[s] save",
-			"[esc] keep planning"},
+		HintKeys: []KeyOffer{{Key: "[↑↓/jk]", Label: "move"}, {Key: "[enter]", Label: "select"},
+			{Key: "[s]", Label: "save"}, keyOfferAs(keys.Select.Cancel, "keep planning")},
 	}
 }
 

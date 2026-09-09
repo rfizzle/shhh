@@ -40,5 +40,5 @@ these…
 ␛[38;5;244mthese…␛[m
 ␛[38;5;244m┄ why…␛[m
   ␛[38;5;244m␛[m␛[38;5;254mnot…␛[m
-␛[38;5;244m[enter] deny with this␛[m
-␛[38;5;244m[esc] back to the card — nothing is answered␛[m
+␛[38;5;254m[enter]␛[m␛[38;5;244m deny with this␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m back to the card — nothing is answered␛[m

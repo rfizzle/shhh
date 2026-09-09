@@ -132,7 +132,7 @@ shhh rate · 1 of 5                                                             
 ␛[38;5;241m│␛[m   ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mfind . -name '*.log' -mtime +7 -delete␛[m                                           ␛[92mexit 0␛[m       ␛[38;5;241m│␛[m
 ␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
-␛[94m[y]␛[m␛[38;5;241m worked␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m did not␛[m␛[38;5;241m · ␛[m␛[94m[s]␛[m␛[38;5;241m skip␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m stop␛[m
+␛[94m[y]␛[m␛[38;5;241m worked␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m did not␛[m␛[38;5;241m · ␛[m␛[94m[s]␛[m␛[38;5;241m skip␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m stop␛[m
 
 · answered · the next card already, and this one never ran at all
 ␛[1;97mshhh rate␛[m␛[38;5;241m · 2 of 5␛[m                                                                         ␛[38;5;241m[?] keys · [q] quit␛[m
@@ -144,7 +144,7 @@ shhh rate · 1 of 5                                                             
 ␛[38;5;241m│␛[m   ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mdu -ah . | sort -rh | head -10␛[m                                                   ␛[92mcopied␛[m       ␛[38;5;241m│␛[m
 ␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
-␛[94m[y]␛[m␛[38;5;241m worked␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m did not␛[m␛[38;5;241m · ␛[m␛[94m[s]␛[m␛[38;5;241m skip␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m stop␛[m
+␛[94m[y]␛[m␛[38;5;241m worked␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m did not␛[m␛[38;5;241m · ␛[m␛[94m[s]␛[m␛[38;5;241m skip␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m stop␛[m
 
 · a long command · continued under its own row, never clipped away
 ␛[1;97mshhh rate␛[m␛[38;5;241m · 4 of 5␛[m                                                                         ␛[38;5;241m[?] keys · [q] quit␛[m
@@ -157,7 +157,7 @@ shhh rate · 1 of 5                                                             
 ␛[38;5;241m│␛[m     ␛[38;5;245minternal/ui | sort -u␛[m                                                                                  ␛[38;5;241m│␛[m
 ␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
-␛[94m[y]␛[m␛[38;5;241m worked␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m did not␛[m␛[38;5;241m · ␛[m␛[94m[s]␛[m␛[38;5;241m skip␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m stop␛[m
+␛[94m[y]␛[m␛[38;5;241m worked␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m did not␛[m␛[38;5;241m · ␛[m␛[94m[s]␛[m␛[38;5;241m skip␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m stop␛[m
 
 · a session · the same card over an agent run, and no rail on a good one
 ␛[1;97mshhh rate␛[m␛[38;5;241m · 5 of 5␛[m                                                                         ␛[38;5;241m[?] keys · [q] quit␛[m
@@ -169,7 +169,7 @@ shhh rate · 1 of 5                                                             
 ␛[38;5;241m│␛[m    ␛[94m◇␛[m ␛[38;5;252magent␛[m   ␛[38;5;252m2026-09-01T18-02 · chat · claude-opus-5 · 14 turns␛[m                            ␛[92mcompleted␛[m       ␛[38;5;241m│␛[m
 ␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
-␛[94m[y]␛[m␛[38;5;241m worked␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m did not␛[m␛[38;5;241m · ␛[m␛[94m[s]␛[m␛[38;5;241m skip␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m stop␛[m
+␛[94m[y]␛[m␛[38;5;241m worked␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m did not␛[m␛[38;5;241m · ␛[m␛[94m[s]␛[m␛[38;5;241m skip␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m stop␛[m
 
 · a session that was given up on · the rail and the glyph every broken row takes
 ␛[1;97mshhh rate␛[m␛[38;5;241m · 5 of 5␛[m                                                                         ␛[38;5;241m[?] keys · [q] quit␛[m
@@ -181,7 +181,7 @@ shhh rate · 1 of 5                                                             
 ␛[38;5;241m│␛[m   ␛[38;5;214m▎␛[m␛[38;5;241m⊘␛[m ␛[38;5;241magent␛[m   ␛[38;5;241m2026-09-01T18-02 · chat · claude-opus-5 · 14 turns␛[m                            ␛[38;5;241mabandoned␛[m       ␛[38;5;241m│␛[m
 ␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
-␛[94m[y]␛[m␛[38;5;241m worked␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m did not␛[m␛[38;5;241m · ␛[m␛[94m[s]␛[m␛[38;5;241m skip␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m stop␛[m
+␛[94m[y]␛[m␛[38;5;241m worked␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m did not␛[m␛[38;5;241m · ␛[m␛[94m[s]␛[m␛[38;5;241m skip␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m stop␛[m
 
 · a short terminal · the card folds behind a counted tail
 ␛[1;97mshhh rate␛[m␛[38;5;241m · 4 of 5␛[m                                                                         ␛[38;5;241m[?] keys · [q] quit␛[m
@@ -193,7 +193,7 @@ shhh rate · 1 of 5                                                             
 ␛[38;5;241m│␛[m ␛[38;5;241m… (+2 more rows)␛[m                                                                                           ␛[38;5;241m│␛[m
 ␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
-␛[94m[y]␛[m␛[38;5;241m worked␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m did not␛[m␛[38;5;241m · ␛[m␛[94m[s]␛[m␛[38;5;241m skip␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m stop␛[m
+␛[94m[y]␛[m␛[38;5;241m worked␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m did not␛[m␛[38;5;241m · ␛[m␛[94m[s]␛[m␛[38;5;241m skip␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m stop␛[m
 
 · a write that failed · the notice, and the entry left unrated
 ␛[1;97mshhh rate␛[m␛[38;5;241m · 3 of 5␛[m                                                                         ␛[38;5;241m[?] keys · [q] quit␛[m
@@ -205,7 +205,7 @@ shhh rate · 1 of 5                                                             
 ␛[38;5;241m│␛[m   ␛[91m▎␛[m␛[91m✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgit rebase main && git push --force-with-lease␛[m                                 ␛[91mexit 128␛[m       ␛[38;5;241m│␛[m
 ␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
-␛[94m[y]␛[m␛[38;5;241m worked␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m did not␛[m␛[38;5;241m · ␛[m␛[94m[s]␛[m␛[38;5;241m skip␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m stop␛[m
+␛[94m[y]␛[m␛[38;5;241m worked␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m did not␛[m␛[38;5;241m · ␛[m␛[94m[s]␛[m␛[38;5;241m skip␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m stop␛[m
 ␛[38;5;241mrate: database is locked␛[m
 
 · nothing left to answer · the three answers are gone from the row
@@ -214,7 +214,7 @@ shhh rate · 1 of 5                                                             
 
 ␛[38;5;241mevery one of them has been asked about␛[m
 
-␛[94m[esc]␛[m␛[38;5;241m stop␛[m
+␛[92m[esc]␛[m␛[38;5;241m stop␛[m
 
 · [?] · every key the screen has
 ␛[1;97mshhh rate␛[m␛[38;5;241m · 1 of 5␛[m                                                                         ␛[38;5;241m[?] keys · [q] quit␛[m
@@ -229,6 +229,6 @@ shhh rate · 1 of 5                                                             
 ␛[94m[y]␛[m␛[38;5;241m it did what was asked␛[m
 ␛[94m[n]␛[m␛[38;5;241m it did not␛[m
 ␛[94m[s]␛[m␛[38;5;241m no answer; it stays unrated␛[m
-␛[94m[esc]␛[m␛[38;5;241m stop, keeping every answer already given␛[m
+␛[92m[esc]␛[m␛[38;5;241m stop, keeping every answer already given␛[m
 ␛[94m[q]␛[m␛[38;5;241m stop, keeping every answer already given␛[m
 ␛[94m[?]␛[m␛[38;5;241m hide the keys␛[m

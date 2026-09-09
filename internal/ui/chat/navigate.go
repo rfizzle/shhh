@@ -321,15 +321,12 @@ func (m Model) transcriptSearchLines(width int) []string {
 		}
 	}
 	row := m.transcriptSearchHead() + sty.Search.State.Render(" · "+state)
-	hint := strings.Join([]string{
-		keys.Shown(keys.Find.Keep) + " " + keys.Words(keys.Find.Keep),
-		keys.Shown(keys.Find.Clear) + " " + keys.Words(keys.Find.Clear),
-	}, " · ")
+	hint := joinSegs([]hintSeg{seg(keys.Find.Keep), seg(keys.Find.Clear)})
 	lines := []string{clipRow(row, width)}
 	if empty {
 		lines = append(lines, m.noMatchLines(width)...)
 	}
-	return append(lines, sty.Search.Hint.Render(clipRow(hint, width)))
+	return append(lines, clipRow(hint, width))
 }
 
 // noMatchLines are what an empty result says. "No match" on its own is a

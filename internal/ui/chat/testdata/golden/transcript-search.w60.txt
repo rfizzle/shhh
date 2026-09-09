@@ -24,7 +24,7 @@
                                                       
 ────────────────────────────────────────────────────────
 search: loop.go · 1 of 3
-enter keep the search · esc clear it
+[enter] keep the search · [esc] clear it
 
 
 · kept · the pointer's occurrence bold on the lit row, [n/N] on the bar
@@ -60,7 +60,7 @@ enter keep the search · esc clear it
   ▎✎ 1 file changed +12 −4 · [v] review · [u] undo tu…  
 ────────────────────────────────────────────────────────
 search: context.go · 0 of 1
-enter keep the search · esc clear it
+[enter] keep the search · [esc] clear it
 
 
 · [enter] opened the step · the run it holds still says what it is covering
@@ -97,7 +97,7 @@ enter keep the search · esc clear it
                                                       
 ␛[38;5;241m────────────────────────────────────────────────────────␛[m
 ␛[1;94msearch␛[m␛[38;5;241m: ␛[m␛[38;5;252mloop.go␛[m␛[38;5;241m · 1 of 3␛[m
-␛[38;5;241menter keep the search · esc clear it␛[m
+␛[94m[enter]␛[m␛[38;5;241m keep the search␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m clear it␛[m
 
 
 · kept · the pointer's occurrence bold on the lit row, [n/N] on the bar
@@ -133,7 +133,7 @@ enter keep the search · esc clear it
   ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;241m · ␛[m␛[38;5;245m[v]␛[m␛[38;5;241m review␛[m␛[38;5;241m · ␛[m␛[38;5;245m[u]␛[m␛[38;5;241m undo tu…␛[m  
 ␛[38;5;241m────────────────────────────────────────────────────────␛[m
 ␛[1;94msearch␛[m␛[38;5;241m: ␛[m␛[38;5;252mcontext.go␛[m␛[38;5;241m · 0 of 1␛[m
-␛[38;5;241menter keep the search · esc clear it␛[m
+␛[94m[enter]␛[m␛[38;5;241m keep the search␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m clear it␛[m
 
 
 · [enter] opened the step · the run it holds still says what it is covering

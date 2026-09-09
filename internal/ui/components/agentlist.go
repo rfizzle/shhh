@@ -263,22 +263,22 @@ func (r AgentRow) render(inner int, focused bool) []string {
 // hints are the keys the focused row offers. [a] and [r] appear only where
 // the row can act on them, so the run states what this row can do rather than
 // what the list can do in general.
-func (l *AgentList) hints() []string {
+func (l *AgentList) hints() []KeyOffer {
 	focus := l.focused()
 	// The offer row is the one row enter does something else on, so the key
 	// row says which — a hint that read `enter attach` over it would be
 	// naming an action the row does not have.
 	if focus.State == AgentOffer {
-		return []string{words(keys.Agent.Attach, "draft a profile"), offer(keys.Agent.Back)}
+		return []KeyOffer{keyOfferAs(keys.Agent.Attach, "draft a profile"), keyOffer(keys.Agent.Back)}
 	}
-	segments := []string{offer(keys.Agent.Attach)}
+	segments := []KeyOffer{keyOffer(keys.Agent.Attach)}
 	if focus.Answerable {
-		segments = append(segments, offer(keys.Agent.Answer))
+		segments = append(segments, keyOffer(keys.Agent.Answer))
 	}
 	if focus.Retryable {
-		segments = append(segments, offer(keys.Agent.Retry))
+		segments = append(segments, keyOffer(keys.Agent.Retry))
 	}
-	return append(segments, offer(keys.Agent.Cancel), offer(keys.Agent.Kill), offer(keys.Agent.Back))
+	return append(segments, keyOffer(keys.Agent.Cancel), keyOffer(keys.Agent.Kill), keyOffer(keys.Agent.Back))
 }
 
 // tally is the manager's title-rail summary: the same sentence the fan-out

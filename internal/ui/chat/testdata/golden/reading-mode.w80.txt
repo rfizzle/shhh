@@ -27,7 +27,7 @@
    ✗ go test ./internal/agent/... failing · exit 1 · 21s
 
 ────────────────────────────────────────────────────────────────────────────
-[j/k] move · [/] search · [?] keys · [q] back to the prompt       row 5 of 5
+[j/k] move · [/] search · [q] back to the prompt                  row 5 of 5
 ▎this row · [v] review · [u] undo turn · [esc] nothing
 
 
@@ -159,7 +159,7 @@
    ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;241m · exit 1 · 21s␛[m
 
 ␛[38;5;241m────────────────────────────────────────────────────────────────────────────␛[m
-␛[94m[j/k]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m search␛[m␛[38;5;241m · ␛[m␛[94m[?]␛[m␛[38;5;241m keys␛[m␛[38;5;241m · ␛[m␛[94m[q]␛[m␛[38;5;241m back to the prompt␛[m       ␛[38;5;241mrow 5 of 5␛[m
+␛[94m[j/k]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m search␛[m␛[38;5;241m · ␛[m␛[94m[q]␛[m␛[38;5;241m back to the prompt␛[m                  ␛[38;5;241mrow 5 of 5␛[m
 ␛[38;5;214m▎␛[m␛[38;5;241mthis row · ␛[m␛[94m[v]␛[m␛[38;5;241m review␛[m␛[38;5;241m · ␛[m␛[94m[u]␛[m␛[38;5;241m undo turn␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m nothing␛[m
 
 

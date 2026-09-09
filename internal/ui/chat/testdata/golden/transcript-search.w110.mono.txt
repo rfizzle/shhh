@@ -24,7 +24,7 @@
                                                                                                         
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 search: loop.go · 1 of 3
-enter keep the search · esc clear it
+[enter] keep the search · [esc] clear it
 
 
 · kept · the pointer's occurrence bold on the lit row, [n/N] on the bar
@@ -60,7 +60,7 @@ enter keep the search · esc clear it
   ▎✎ 1 file changed +12 −4 · [v] review · [u] undo turn                               all tracked in git  
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 search: context.go · 0 of 1
-enter keep the search · esc clear it
+[enter] keep the search · [esc] clear it
 
 
 · [enter] opened the step · the run it holds still says what it is covering
@@ -97,7 +97,7 @@ enter keep the search · esc clear it
                                                                                                         
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 ␛[1;38;5;254msearch␛[m␛[38;5;244m: ␛[m␛[38;5;254mloop.go␛[m␛[38;5;244m · 1 of 3␛[m
-␛[38;5;244menter keep the search · esc clear it␛[m
+␛[38;5;254m[enter]␛[m␛[38;5;244m keep the search␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m clear it␛[m
 
 
 · kept · the pointer's occurrence bold on the lit row, [n/N] on the bar
@@ -133,7 +133,7 @@ enter keep the search · esc clear it
   ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;244m[v]␛[m␛[38;5;244m review␛[m␛[38;5;244m · ␛[m␛[38;5;244m[u]␛[m␛[38;5;244m undo turn␛[m                               ␛[38;5;244mall tracked in git␛[m  
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 ␛[1;38;5;254msearch␛[m␛[38;5;244m: ␛[m␛[38;5;254mcontext.go␛[m␛[38;5;244m · 0 of 1␛[m
-␛[38;5;244menter keep the search · esc clear it␛[m
+␛[38;5;254m[enter]␛[m␛[38;5;244m keep the search␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m clear it␛[m
 
 
 · [enter] opened the step · the run it holds still says what it is covering

@@ -11,7 +11,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · esc · the rail counts the question and the draft answers it
-1 question waiting — enter answers                                          
+1 question waiting — [enter] answers                                        
 ╭─ ⏸ 1 waiting ────────────────────────────────────────────────────────────╮
 │ ▸ the one that needs no new service                                      │
 │                                                                          │
@@ -19,7 +19,7 @@
 ╰─ ⏸ gated · round 1/150 · ctx 32% ▰▰▱▱▱▱▱▱ · ↑41.2k ↓9.8k · $0.51 ────────╯
 
 · beside a steer · three promises, told apart
-1 question waiting — enter answers · 1 steering queued                      
+1 question waiting — [enter] answers · 1 steering queued                    
 ╭─ ⏸ 1 waiting ────────────────────────────────────────────────────────────╮
 │ ▸ the one that needs no new service                                      │
 │                                                                          │
@@ -28,7 +28,7 @@
 
 ── ansi ────────────────────────────────────────────────────
 · esc · the rail counts the question and the draft answers it
-␛[94m1 question waiting — enter answers␛[m                                          
+␛[94m1 question waiting — [enter] answers␛[m                                        
 ␛[38;5;214m╭─␛[m ␛[38;5;214;1m⏸ 1 waiting␛[m ␛[38;5;214m────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;214m│␛[m ␛[94m▸␛[m ␛[38;5;252mthe one that needs no new service                                     ␛[m ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                                          ␛[38;5;214m│␛[m
@@ -36,7 +36,7 @@
 ␛[38;5;214m╰─␛[m ␛[38;5;214m⏸ gated␛[38;5;243m · round 1/150 · ␛[92mctx 32%␛[m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · ↑41.2k ↓9.8k · $0.51␛[m ␛[38;5;214m────────╯␛[m
 
 · beside a steer · three promises, told apart
-␛[94m1 question waiting — enter answers␛[38;5;241m · ␛[94m1 steering queued␛[m                      
+␛[94m1 question waiting — [enter] answers␛[38;5;241m · ␛[94m1 steering queued␛[m                    
 ␛[38;5;214m╭─␛[m ␛[38;5;214;1m⏸ 1 waiting␛[m ␛[38;5;214m────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;214m│␛[m ␛[94m▸␛[m ␛[38;5;252mthe one that needs no new service                                     ␛[m ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                                          ␛[38;5;214m│␛[m

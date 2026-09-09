@@ -9,6 +9,6 @@ snap 03-approval "[y] run it once"
 keys y
 snap 04-ran "Done: the command printed a greeting"
 keys C-c
-snap 05-quit-armed "press again to quit"
+snap 05-quit-armed "again quits"
 keys C-c
 snap 06-exit "that is everything the screen was holding"

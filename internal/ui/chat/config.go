@@ -120,6 +120,6 @@ func (m Model) configScreenLines(width, height int) []string {
 // panel says which surface has them and nothing else, the way the sources
 // screen's does.
 func (m Model) renderConfigHint() string {
-	hint := keys.Bracket(keys.Screen.Quit) + " back to the prompt"
-	return sty.SystemMsg.Render("config · "+hint) + strings.Repeat("\n", inputHeight-1)
+	hint := segAs(keys.Screen.Quit, "back to the prompt")
+	return sty.SystemMsg.Render("config · ") + hint.render() + strings.Repeat("\n", inputHeight-1)
 }

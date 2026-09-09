@@ -103,9 +103,9 @@ func TestConfirmPromptShowsUnconfinedState(t *testing.T) {
 		}
 	}
 	// At this height the blast-radius block runs one row past the panel; the
-	// card counts what the bound swallowed and shift+↓ brings it into view —
+	// card counts what the bound swallowed and [shift+↓] brings it into view —
 	// nothing is merely clipped (docs/interface/surfaces.md#the-approval-card).
-	if !strings.Contains(view, "more lines · shift+↓") {
+	if !strings.Contains(view, "more lines · [shift+↓]") {
 		t.Fatalf("the bounded card should count its scrolled-off rows:\n%s", view)
 	}
 	// Walked to the end of what the card can scroll rather than pressed a

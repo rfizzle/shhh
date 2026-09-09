@@ -855,6 +855,6 @@ func todoBlockedBy(s *todo.Store, slug string) []string {
 // renderTodoScreenHint fills the input area while the backlog has the
 // screen. The surface's own footer carries the keys; this says what is up.
 func (m Model) renderTodoScreenHint() string {
-	return sty.SystemMsg.Render("backlog · "+keys.Bracket(keys.Backlog.Back)+" "+
-		keys.Words(keys.Backlog.Back)) + strings.Repeat("\n", inputHeight-1)
+	return sty.SystemMsg.Render("backlog · ") + seg(keys.Backlog.Back).render() +
+		strings.Repeat("\n", inputHeight-1)
 }

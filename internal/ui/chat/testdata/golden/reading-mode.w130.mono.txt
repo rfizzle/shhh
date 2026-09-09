@@ -27,7 +27,7 @@
    ✗ go test ./internal/agent/... failing · exit 1 · 21s
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-[j/k] move · [/] search · [?] keys · [q] back to the prompt                                                         row 5 of 5
+[j/k] move · [enter] expand — nothing on this row expands · [/] search · [?] keys · [q] back to the prompt          row 5 of 5
 ▎this row · [v] review · [u] undo turn · [esc] nothing
 
 
@@ -52,7 +52,7 @@
 │                                                                                                                            │
 │                                                                                                                            │
 ├─ ⏸ gated · ctx 32% ▰▰▱▱▱▱▱▱ · ↑41.2k ↓9.8k · $0.51 · gpt-4o ───────────────────────────────────────────────────────────────┤
-╰─ enter send · shift+enter newline · ctrl+g editor · ctrl+v attach · ctrl+/ palette · shift+tab mode ───────────────────────╯
+╰─ [enter] send · [ctrl+g] editor · [ctrl+v] attach · [ctrl+/] palette · [shift+tab] mode · [ctrl+d] ×2 quit ────────────────╯
 
 · the cursor on a row that changed the machine
 ──── READING 3/5 ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -138,7 +138,7 @@
   terminal.
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-[j/k] move · [y] copy the row · [/] search · [?] keys · [q] back to the prompt                                      row 1 of 1
+[j/k] move · [enter] expand — nothing on this row expands · [y] copy the row · [/] search · [q] back to the prompt  row 1 of 1
 
 
 
@@ -160,7 +160,7 @@
    ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[m␛[38;5;244m · exit 1 · 21s␛[m
 
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
-␛[38;5;254m[j/k]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m search␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[q]␛[m␛[38;5;244m back to the prompt␛[m                                                         ␛[38;5;244mrow 5 of 5␛[m
+␛[38;5;254m[j/k]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;244m[enter] expand — nothing on this row expands␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m search␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[q]␛[m␛[38;5;244m back to the prompt␛[m          ␛[38;5;244mrow 5 of 5␛[m
 ␛[38;5;254m▎␛[m␛[38;5;244mthis row · ␛[m␛[38;5;254m[v]␛[m␛[38;5;244m review␛[m␛[38;5;244m · ␛[m␛[38;5;254m[u]␛[m␛[38;5;244m undo turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m nothing␛[m
 
 
@@ -185,7 +185,7 @@
 ␛[38;5;254m│␛[m                                                                                                                            ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                                                                                            ␛[38;5;254m│␛[m
 ␛[38;5;254m├─␛[m ␛[38;5;254m⏸ gated␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · ↑41.2k ↓9.8k · $0.51 · ␛[38;5;254mgpt-4o␛[m ␛[38;5;254m───────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m╰─␛[m ␛[38;5;244menter send · shift+enter newline · ctrl+g editor · ctrl+v attach · ctrl+/ palette · shift+tab mode␛[m ␛[38;5;254m───────────────────────╯␛[m
+␛[38;5;254m╰─␛[m ␛[38;5;254m[enter]␛[38;5;244m send · ␛[38;5;254m[ctrl+g]␛[38;5;244m editor · ␛[38;5;254m[ctrl+v]␛[38;5;244m attach · ␛[38;5;254m[ctrl+/]␛[38;5;244m palette · ␛[38;5;254m[shift+tab]␛[38;5;244m mode · ␛[38;5;254m[ctrl+d]␛[38;5;244m ×2 quit␛[m ␛[38;5;254m────────────────╯␛[m
 
 · the cursor on a row that changed the machine
 ␛[38;5;244m────␛[m ␛[1;38;5;254mREADING 3/5␛[m ␛[38;5;244m─────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
@@ -271,6 +271,6 @@
   terminal.
 
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
-␛[38;5;254m[j/k]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[y]␛[m␛[38;5;244m copy the row␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m search␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[q]␛[m␛[38;5;244m back to the prompt␛[m                                      ␛[38;5;244mrow 1 of 1␛[m
+␛[38;5;254m[j/k]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;244m[enter] expand — nothing on this row expands␛[m␛[38;5;244m · ␛[m␛[38;5;254m[y]␛[m␛[38;5;244m copy the row␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m search␛[m␛[38;5;244m · ␛[m␛[38;5;254m[q]␛[m␛[38;5;244m back to the prompt␛[m  ␛[38;5;244mrow 1 of 1␛[m
 
 

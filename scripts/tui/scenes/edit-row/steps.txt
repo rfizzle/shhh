@@ -39,6 +39,6 @@ keys y
 # a card, so the turn runs to its last sentence on its own.
 snap 04-rows "The cap is where the file says it is"
 keys C-c
-snap 05-quit-armed "press again to quit"
+snap 05-quit-armed "again quits"
 keys C-c
 snap 06-exit "that is everything the screen was holding"

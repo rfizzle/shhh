@@ -505,7 +505,7 @@ func TestGatedTool_LargeDiffTruncatedAndPanelGrows(t *testing.T) {
 	}})
 	m = updated.(Model)
 
-	if !strings.Contains(m.View().Content, "more lines · shift+↓") {
+	if !strings.Contains(m.View().Content, "more lines · [shift+↓]") {
 		t.Fatal("large diff should end in a counted, scrollable tail")
 	}
 	// The card takes the panel once the decision holds the keyboard;

@@ -76,7 +76,7 @@ func TestPreview_ShowDrawsTheStagedImage(t *testing.T) {
 		t.Fatalf("no picture was drawn:\n%s", view)
 	}
 	// The way out is named, the way every other takeover names it.
-	if !strings.Contains(view, "esc back") {
+	if !strings.Contains(view, "[esc] back") {
 		t.Fatalf("the surface never says how to leave:\n%s", view)
 	}
 }

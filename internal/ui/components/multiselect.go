@@ -47,7 +47,7 @@ type MultiSelect struct {
 	// near thing here and the row has to say which: the same `e` opens an
 	// item's file in the editor on the backlog screen and one proposal's
 	// header on this card. They are offers and are never dropped.
-	Actions []string
+	Actions []KeyOffer
 	// Note is the one-line note field under the list, for a card whose
 	// answer can carry the reader's own words beside the boxes. Nil is a
 	// card with no note, which is every card that had one before this field
@@ -165,8 +165,8 @@ func (s *MultiSelect) Update(msg tea.KeyPressMsg) (done bool, result MultiSelect
 		}
 	case keys.Is(pressed, keys.Select.Take):
 		if s.count() == 0 && !s.AllowNone {
-			s.notice = "nothing selected — " + keys.Shown(keys.Select.Toggle) +
-				" toggles, " + keys.Shown(keys.Select.Cancel) + " cancels"
+			s.notice = "nothing selected — " + keys.Bracket(keys.Select.Toggle) +
+				" toggles, " + keys.Bracket(keys.Select.Cancel) + " cancels"
 			return false, MultiSelectResult{}
 		}
 		var idx []int
@@ -194,20 +194,20 @@ func (s *MultiSelect) View(width int) string {
 	if s.Note != nil {
 		tail = append(tail, s.Note.Rows(inner)...)
 	}
-	var segs []string
+	var segs []KeyOffer
 	if s.Note != nil {
 		// The field's own key leads, because it is the one this card has
 		// that the plain checkbox list does not.
-		segs = append(segs, words(keys.Select.Note, "note/options"))
+		segs = append(segs, keyOfferAs(keys.Select.Note, "note/options"))
 	}
 	segs = append(segs,
-		offer(keys.Select.Toggle),
-		words(keys.Select.All, "all/none"),
+		keyOffer(keys.Select.Toggle),
+		keyOfferAs(keys.Select.All, "all/none"),
 	)
 	segs = append(segs, s.Actions...)
 	segs = append(segs,
-		words(keys.Select.Take, fmt.Sprintf("apply (%d)", s.count())),
-		offer(keys.Select.Cancel))
+		keyOfferAs(keys.Select.Take, fmt.Sprintf("apply (%d)", s.count())),
+		keyOffer(keys.Select.Cancel))
 	// Handed over as segments and never pre-joined: a row too wide for the
 	// terminal takes another row, and a joined one could only be cut in the
 	// middle of a clause (docs/interface/principles.md#fold-never-hide).

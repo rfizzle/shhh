@@ -20,7 +20,7 @@
 │    6. claude-opus-4.6    deepest reasoning                                                       $15 / $75 │
 │    7. claude-sonnet-4.6  better diffs · 200k ctx                                                  $3 / $15 │
 │ ↓ 17 more                                                                                                  │
-│ [↑↓/jk] move · [enter] select · 1–24 jump · [/] filter · [esc] cancel                                      │
+│ [↑↓/jk] move · [enter] select · [1–24] jump · [/] filter · [esc] cancel                                    │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · the filter just opened · the row names what the key was for
@@ -46,7 +46,7 @@
 │   12. grok-4.1                                                                                             │
 │ ❯ 13. ⊘ deepseek-r2      no tool use                                                       not usable here │
 │ ↓ 11 more                                                                                                  │
-│ [↑↓/jk] move · [enter] select · 1–24 jump · [/] filter · [esc] cancel                                      │
+│ [↑↓/jk] move · [enter] select · [1–24] jump · [/] filter · [esc] cancel                                    │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · the same option from below · it sits at the head instead
@@ -59,7 +59,7 @@
 │   17. ⊘ llama-3.3-70b    no tool use                                                       not usable here │
 │   18. mistral-large-3                                                                                      │
 │ ↓ 6 more                                                                                                   │
-│ [↑↓/jk] move · [enter] select · 1–24 jump · [/] filter · [esc] cancel                                      │
+│ [↑↓/jk] move · [enter] select · [1–24] jump · [/] filter · [esc] cancel                                    │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · the tail · nothing is hidden below it
@@ -72,7 +72,7 @@
 │   22. jamba-2                                                                                              │
 │   23. yi-2-34b                                                                                             │
 │ ❯ 24. solar-pro-3                                                                                          │
-│ [↑↓/jk] move · [enter] select · 1–24 jump · [/] filter · [esc] cancel                                      │
+│ [↑↓/jk] move · [enter] select · [1–24] jump · [/] filter · [esc] cancel                                    │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · filtered · the run is bold, the row states both counts
@@ -106,7 +106,7 @@
 ␛[38;5;241m│␛[m   ␛[38;5;241m 6. ␛[m␛[38;5;252mclaude-opus-4.6␛[m    ␛[38;5;241mdeepest reasoning␛[m                                                       ␛[38;5;252m$15 / $75␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m 7. ␛[m␛[38;5;252mclaude-sonnet-4.6␛[m  ␛[38;5;241mbetter diffs · 200k ctx␛[m                                                  ␛[38;5;252m$3 / $15␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m↓ 17 more␛[m                                                                                                  ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;241m[↑↓/jk] move · [enter] select · 1–24 jump · [/] filter · [esc] cancel␛[m                                      ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m select␛[m␛[38;5;241m · ␛[m␛[94m[1–24]␛[m␛[38;5;241m jump␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m cancel␛[m                                    ␛[38;5;241m│␛[m
 ␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the filter just opened · the row names what the key was for
@@ -119,7 +119,7 @@
 ␛[38;5;241m│␛[m   ␛[38;5;241m 5. ␛[m␛[38;5;252mo4-mini␛[m                                                                                              ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m 6. ␛[m␛[38;5;252mclaude-opus-4.6␛[m    ␛[38;5;241mdeepest reasoning␛[m                                                       ␛[38;5;252m$15 / $75␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m↓ 18 more␛[m                                                                                                  ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;241m[↑↓] move · [enter] select · [ctrl+u] row keys · [esc] cancel␛[m                                              ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m select␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+u]␛[m␛[38;5;241m row keys␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m cancel␛[m                                              ␛[38;5;241m│␛[m
 ␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · mid-list from above · the option sits at the foot of the window
@@ -132,7 +132,7 @@
 ␛[38;5;241m│␛[m   ␛[38;5;241m12. ␛[m␛[38;5;252mgrok-4.1␛[m                                                                                             ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;62m13. ⊘ deepseek-r2      no tool use                                                       not usable here␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m↓ 11 more␛[m                                                                                                  ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;241m[↑↓/jk] move · [enter] select · 1–24 jump · [/] filter · [esc] cancel␛[m                                      ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m select␛[m␛[38;5;241m · ␛[m␛[94m[1–24]␛[m␛[38;5;241m jump␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m cancel␛[m                                    ␛[38;5;241m│␛[m
 ␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the same option from below · it sits at the head instead
@@ -145,7 +145,7 @@
 ␛[38;5;241m│␛[m   ␛[38;5;245m17. ␛[m␛[38;5;245m⊘ llama-3.3-70b␛[m    ␛[38;5;245mno tool use␛[m                                                       ␛[38;5;245mnot usable here␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m18. ␛[m␛[38;5;252mmistral-large-3␛[m                                                                                      ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m↓ 6 more␛[m                                                                                                   ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;241m[↑↓/jk] move · [enter] select · 1–24 jump · [/] filter · [esc] cancel␛[m                                      ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m select␛[m␛[38;5;241m · ␛[m␛[94m[1–24]␛[m␛[38;5;241m jump␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m cancel␛[m                                    ␛[38;5;241m│␛[m
 ␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the tail · nothing is hidden below it
@@ -158,7 +158,7 @@
 ␛[38;5;241m│␛[m   ␛[38;5;241m22. ␛[m␛[38;5;252mjamba-2␛[m                                                                                              ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m23. ␛[m␛[38;5;252myi-2-34b␛[m                                                                                             ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;62m24. solar-pro-3                                                                                         ␛[m ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;241m[↑↓/jk] move · [enter] select · 1–24 jump · [/] filter · [esc] cancel␛[m                                      ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[94m[↑↓/jk]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m select␛[m␛[38;5;241m · ␛[m␛[94m[1–24]␛[m␛[38;5;241m jump␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m cancel␛[m                                    ␛[38;5;241m│␛[m
 ␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · filtered · the run is bold, the row states both counts
@@ -170,7 +170,7 @@
 ␛[38;5;241m│␛[m   ␛[38;5;241m4. ␛[m␛[38;5;252mge␛[m␛[1;38;5;252mmini␛[m␛[38;5;252m-3-pro␛[m    ␛[38;5;241m1M ctx␛[m                                                                       ␛[38;5;252m$2 / $12␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m5. ␛[m␛[38;5;252mge␛[m␛[1;38;5;252mmini␛[m␛[38;5;252m-3-flash␛[m                                                                          ␛[38;5;252m$0.30 / $2.50␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m6. ␛[m␛[38;5;252mphi-5-␛[m␛[1;38;5;252mmini␛[m                                                                                            ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;241m[↑↓] move · [enter] select · [ctrl+u] clear · [esc] cancel␛[m                                                 ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m select␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+u]␛[m␛[38;5;241m clear␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m cancel␛[m                                                 ␛[38;5;241m│␛[m
 ␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · no match · a row, not an empty pane
@@ -178,5 +178,5 @@
 ␛[38;5;241m│␛[m ␛[94m▸ ␛[m␛[97msonnet-5█␛[m                                                                                  ␛[38;5;241m0 of 24 match␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m  no match for "sonnet-5"␛[m                                                                                  ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m  closest is claude-sonnet-4.6␛[m                                                                             ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;241m[ctrl+u] clear the filter · [esc] cancel␛[m                                                                   ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[94m[ctrl+u]␛[m␛[38;5;241m clear the filter␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m cancel␛[m                                                                   ␛[38;5;241m│␛[m
 ␛[38;5;241m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

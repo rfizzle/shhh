@@ -42,5 +42,5 @@
 ␛[38;5;254m│␛[m ␛[38;5;244m[a] allow "npm test" without asking␛[m␛[38;5;244m · ␛[m␛[38;5;244m[d] full view␛[m                    ␛[38;5;244mthese letters go into the field␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m┄ edit the command␛[m                                                                                     ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m␛[m␛[38;5;254mnpm test -- --runInBand␛[m ␛[38;5;254m                                                                            ␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[enter] run this line · [esc] back to the card with the original␛[m                                       ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m run this line␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the card with the original␛[m                                       ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

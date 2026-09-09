@@ -316,12 +316,12 @@ func (v *ReviewView) stageAll() {
 // does not answer "nothing staged" by naming a hunk key first.
 func (v *ReviewView) stageKeyHint() string {
 	if v.WholeFile {
-		return keys.Shown(keys.Review.StageFile) + " stages a file, " +
-			keys.Shown(keys.Review.StageAll) + " everything"
+		return keys.Bracket(keys.Review.StageFile) + " stages a file, " +
+			keys.Bracket(keys.Review.StageAll) + " everything"
 	}
-	return keys.Shown(keys.Review.StageHunk) + " stages a hunk, " +
-		keys.Shown(keys.Review.StageFile) + " a file, " +
-		keys.Shown(keys.Review.StageAll) + " everything"
+	return keys.Bracket(keys.Review.StageHunk) + " stages a hunk, " +
+		keys.Bracket(keys.Review.StageFile) + " a file, " +
+		keys.Bracket(keys.Review.StageAll) + " everything"
 }
 
 // selection is what enter reports: every file with at least one staged hunk,

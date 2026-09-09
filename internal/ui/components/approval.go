@@ -584,11 +584,11 @@ func (c *ApprovalCard) windowBody(body []string, hintRows int, width int) []stri
 	win := append([]string(nil), p.Window(body)...)
 	if below := p.Below(); below > 0 {
 		win[len(win)-1] = sty.Dim.Render(Clip(c.tailLabel(countedTail(below+1),
-			keys.Shown(keys.Decision.ScrollDown)), inner))
+			keys.Bracket(keys.Decision.ScrollDown)), inner))
 	}
 	if above := p.Above(); above > 0 {
 		label := c.tailLabel(fmt.Sprintf("… %s above", plural(above+1, "line")),
-			keys.Shown(keys.Decision.ScrollUp))
+			keys.Bracket(keys.Decision.ScrollUp))
 		win[0] = sty.Dim.Render(Clip(label, inner))
 	}
 	return win
@@ -1057,9 +1057,9 @@ func (c *ApprovalCard) fieldRows(label, view, refused, take, back string, width,
 	// terminal would take, and it is the half that has to be readable — a
 	// reader who cannot see that esc settles nothing has no way out of the
 	// field they can be sure of (docs/interface/principles.md#fold-never-hide).
-	return append(rows, hintRows([]string{
-		words(keys.Select.Take, take),
-		words(keys.Select.Cancel, back),
+	return append(rows, hintRows([]KeyOffer{
+		keyOfferAs(keys.Select.Take, take),
+		keyOfferAs(keys.Select.Cancel, back),
 	}, width)...)
 }
 
@@ -1113,10 +1113,10 @@ func (c *ApprovalCard) grantRows(width, inner int) []string {
 	// "cancel": the whole offer is that a grant is read before it is made,
 	// and a reader who cannot see that leaving grants nothing has to guess
 	// at what they have just done (docs/interface/principles.md#fold-never-hide).
-	return append(rows, hintRows([]string{
-		words(keys.Select.MoveJK, "choose"),
-		words(keys.Select.Take, "grant it, and run"),
-		words(keys.Select.Cancel, "back to the card — nothing is granted"),
+	return append(rows, hintRows([]KeyOffer{
+		keyOfferAs(keys.Select.MoveJK, "choose"),
+		keyOfferAs(keys.Select.Take, "grant it, and run"),
+		keyOfferAs(keys.Select.Cancel, "back to the card — nothing is granted"),
 	}, width)...)
 }
 

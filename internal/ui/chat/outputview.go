@@ -154,12 +154,12 @@ func (m Model) closeOutputFull() (tea.Model, tea.Cmd) {
 
 // renderOutputFullHint fills the input area while the full screen shows.
 func (m Model) renderOutputFullHint() string {
-	label := keys.Shown(keys.Output.Back) + " " + keys.Words(keys.Output.Back)
+	label := seg(keys.Output.Back)
 	switch m.outputReturn {
 	case stateConfirmRun:
-		label = keys.Shown(keys.Output.Back) + ": back to the approval prompt"
+		label = segAs(keys.Output.Back, "back to the approval prompt")
 	case stateQuestion:
-		label = keys.Shown(keys.Output.Back) + ": back to the question"
+		label = segAs(keys.Output.Back, "back to the question")
 	}
-	return sty.SystemMsg.Render(label) + strings.Repeat("\n", inputHeight-1)
+	return label.render() + strings.Repeat("\n", inputHeight-1)
 }

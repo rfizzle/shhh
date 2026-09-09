@@ -97,12 +97,12 @@ type paletteEntry struct {
 //
 // It is a function and not a package var for the reason planHint is: a keymap
 // file is read after this package is initialised and before anything draws.
-func paletteHint() []string {
-	return []string{
-		keys.Bracket(keys.Select.Palette.Run) + " run",
-		keys.Bracket(keys.Select.Palette.Write) + " complete",
-		keys.BracketPair(keys.Select.Palette.Prev, keys.Select.Palette.Next) + " move",
-		keys.Bracket(keys.Select.Cancel) + " dismiss",
+func paletteHint() []components.KeyOffer {
+	return []components.KeyOffer{
+		components.OfferAs(keys.Select.Palette.Run, "run"),
+		components.OfferAs(keys.Select.Palette.Write, "complete"),
+		{Key: keys.BracketPair(keys.Select.Palette.Prev, keys.Select.Palette.Next), Label: "move"},
+		components.OfferAs(keys.Select.Cancel, "dismiss"),
 	}
 }
 

@@ -140,7 +140,7 @@
   ␛[38;5;254m❯ ␛[m␛[38;5;244m␛[m␛[38;5;254m␛[m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m▸ ␛[m␛[48;5;237m␛[38;5;254m␛[m␛[48;5;237m␛[38;5;244m␛[m␛[48;5;237m␛[38;5;254;48;5;237mtool definitions · 24 tools · 22.3k    [enter] expand ␛[m␛[m
     ␛[38;5;244m▸ ␛[m␛[38;5;254mtool results␛[m␛[38;5;244m · 9 tools · 2.9k␛[m
 
-␛[38;5;244m[enter] expand or fold · [esc] back to the prompt␛[m
+␛[38;5;254m[enter]␛[m␛[38;5;244m expand or fold␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
 
 · the tool definitions opened
 ␛[1;38;5;254m/context␛[m                       ␛[38;5;254m~312.4k␛[m␛[38;5;244m · [?] keys · [q] back␛[m
@@ -177,7 +177,7 @@
       ␛[38;5;244m↓ 21 more · 12.4k together␛[m
     ␛[38;5;244m▸ ␛[m␛[38;5;254mtool results␛[m␛[38;5;244m · 9 tools · 2.9k␛[m
 
-␛[38;5;244m[enter] expand or fold · [esc] back to the prompt␛[m
+␛[38;5;254m[enter]␛[m␛[38;5;244m expand or fold␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m
 
 · 94% · an estimated total, nothing sent yet
 ␛[1;38;5;254m/context␛[m                       ␛[1;38;5;254m~940.0k␛[m␛[38;5;244m · [?] keys · [q] back␛[m
@@ -205,4 +205,4 @@
   ␛[38;5;244m▰ ␛[m␛[38;5;244mtool results      ␛[m␛[38;5;244m   301.9k␛[m␛[38;5;244m  30.2%␛[m
   ␛[38;5;244m▱ ␛[m␛[38;5;244mfree space        ␛[m␛[38;5;244m    60.0k␛[m␛[38;5;244m   6.0%␛[m
 
-␛[38;5;244m[enter] expand or fold · [esc] back to the prompt␛[m
+␛[38;5;254m[enter]␛[m␛[38;5;244m expand or fold␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the prompt␛[m

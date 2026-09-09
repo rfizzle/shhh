@@ -32,6 +32,6 @@ snap 06-done "The menu is what the reader has while the turn runs"
 keys C-c
 sleep 0.3
 keys C-c
-snap 07-quit-armed "press again to quit"
+snap 07-quit-armed "again quits"
 keys C-c
 snap 08-exit "that is everything the screen was holding"

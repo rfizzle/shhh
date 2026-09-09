@@ -17,7 +17,7 @@ folded 4 rows
 │                                                                                                        │
 │                                                                                                        │
 ├─ ⏸ gated · ctx 32% ▰▰▱▱▱▱▱▱ · ↑41.2k ↓9.8k · $0.51 · gpt-4o ───────────────────────────────────────────┤
-╰─ enter send · shift+enter newline · ctrl+g editor · ctrl+v attach · ctrl+/ palette · shift+tab mode ───╯
+╰─ [enter] send · [ctrl+v] attach · [ctrl+/] palette · [shift+tab] mode · [ctrl+d] ×2 quit ──────────────╯
 
 · esc · nothing of yours was open, so the setting is named
 /ui verbosity opened these rows                                                                           
@@ -26,7 +26,7 @@ folded 4 rows
 │                                                                                                        │
 │                                                                                                        │
 ├─ ⏸ gated · ctx 32% ▰▰▱▱▱▱▱▱ · ↑41.2k ↓9.8k · $0.51 · gpt-4o ───────────────────────────────────────────┤
-╰─ enter send · shift+enter newline · ctrl+g editor · ctrl+v attach · ctrl+/ palette · shift+tab mode ───╯
+╰─ [enter] send · [ctrl+v] attach · [ctrl+/] palette · [shift+tab] mode · [ctrl+d] ×2 quit ──────────────╯
 
 ── ansi ────────────────────────────────────────────────────
 · esc · four rows folded back to their resting form
@@ -36,7 +36,7 @@ folded 4 rows
 ␛[38;5;214m│␛[m                                                                                                        ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                                                                        ␛[38;5;214m│␛[m
 ␛[38;5;214m├─␛[m ␛[38;5;214m⏸ gated␛[38;5;243m · ␛[92mctx 32%␛[m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · ↑41.2k ↓9.8k · $0.51 · ␛[38;5;252mgpt-4o␛[m ␛[38;5;214m───────────────────────────────────────────┤␛[m
-␛[38;5;214m╰─␛[m ␛[38;5;241menter send · shift+enter newline · ctrl+g editor · ctrl+v attach · ctrl+/ palette · shift+tab mode␛[m ␛[38;5;214m───╯␛[m
+␛[38;5;214m╰─␛[m ␛[94m[enter]␛[38;5;241m send · ␛[94m[ctrl+v]␛[38;5;241m attach · ␛[94m[ctrl+/]␛[38;5;241m palette · ␛[94m[shift+tab]␛[38;5;241m mode · ␛[94m[ctrl+d]␛[38;5;241m ×2 quit␛[m ␛[38;5;214m──────────────╯␛[m
 
 · esc · nothing of yours was open, so the setting is named
 ␛[94m/ui verbosity opened these rows␛[m                                                                           
@@ -45,4 +45,4 @@ folded 4 rows
 ␛[38;5;214m│␛[m                                                                                                        ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                                                                        ␛[38;5;214m│␛[m
 ␛[38;5;214m├─␛[m ␛[38;5;214m⏸ gated␛[38;5;243m · ␛[92mctx 32%␛[m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · ↑41.2k ↓9.8k · $0.51 · ␛[38;5;252mgpt-4o␛[m ␛[38;5;214m───────────────────────────────────────────┤␛[m
-␛[38;5;214m╰─␛[m ␛[38;5;241menter send · shift+enter newline · ctrl+g editor · ctrl+v attach · ctrl+/ palette · shift+tab mode␛[m ␛[38;5;214m───╯␛[m
+␛[38;5;214m╰─␛[m ␛[94m[enter]␛[38;5;241m send · ␛[94m[ctrl+v]␛[38;5;241m attach · ␛[94m[ctrl+/]␛[38;5;241m palette · ␛[94m[shift+tab]␛[38;5;241m mode · ␛[94m[ctrl+d]␛[38;5;241m ×2 quit␛[m ␛[38;5;214m──────────────╯␛[m

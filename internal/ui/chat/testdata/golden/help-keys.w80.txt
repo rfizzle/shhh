@@ -11,356 +11,356 @@
 
 ── layout ──────────────────────────────────────────────────
 · ? on an empty draft
-Keys:                                                                           
-  enter          Send message        shift+enter  Insert newline                
-                 (ctrl+j does the same, for terminals that cannot report        
-                  shift+enter.                                                  
-                  A draft ending in \ turns enter into a newline too, the       
-                  shell's own continuation — end in \\ to send a literal        
-                  backslash)                                                    
-  ctrl+n         While a turn is live, queue the draft as a follow-up sent      
-                 when the turn completes. Steering (enter) joins the running    
-                 turn; a follow-up waits for it to end. After a cancel the      
-                 queue is held rather than sent — the notice rail says so.      
-                 On an empty draft the same key pulls the newest queued         
-                 message — a follow-up first, else a steering line — back.      
-                 (It was the line editor's next-line; ↓ still is)               
-  @              At the start of a word, open a file menu over what this        
-                 session changed and the checkout's recent files, filtered      
-                 by what you type after it. tab or enter inserts the path,      
-                 esc keeps what you typed; a mentioned image is staged the      
-                 way a pasted one is                                            
-  !              A draft starting with ! runs as a command through the same     
-                 confirm card /run uses; !! runs it and keeps the output out    
-                 of the conversation (its row says local). A ! anywhere else    
-                 is a letter                                                    
-  ctrl+v         Attach the clipboard: a copied screenshot or file is staged    
-                 for your next message, ordinary text still pastes into the     
-                 draft. Dragging an image into the terminal attaches it the     
-                 same way. What is staged shows as chips above the input        
-  Pasting        Text taller than 10 lines or wider than 1000 columns is        
-                 staged as paste-1.txt rather than typed into the draft — both  
-                 through ctrl+v and through your terminal's own paste — so a    
-                 stack trace does not bury the sentence it came with. Those     
-                 two numbers are the defaults for appearance.paste_lines and    
-                 appearance.paste_columns; shhh config shows this machine's,    
-                 and a negative turns one of them off. /paste show              
-                 paste-1.txt reads it back before you send it, and a paste      
-                 over 256 KB is refused rather than staged — it would ride in   
-                 the prompt itself                                              
-  tab            Complete a slash command (typing / opens the menu;             
-                 ↑↓ move, enter runs the highlighted command, esc dismisses)    
-  ctrl+a ctrl+e  The draft is a readline editor: line start and line end,       
-  ctrl+k ctrl+u  kill to end and to start of line; ctrl+w deletes the word      
-                 before the cursor, alt+b and alt+f move by word                
-  ctrl+/         Command palette: one prompt over commands, saved chats and     
-                 the files this session touched — type to filter, enter runs,   
-                 tab writes it into the input, esc dismisses. A terminal that   
-                 cannot send this chord — it is a single byte and Windows       
-                 conhost sends nothing for it — reaches the same list through   
-                 the other door: / on an empty draft, then tab                  
-  ctrl+p         Hold the turn between rounds, and press it again to let the    
-                 turn go on. The hold waits for the round in flight to finish,  
-                 because a stream nobody is reading backs up until the          
-                 provider gives up on it — so the rail says "holding after      
-                 this round" and then "held". Nothing is re-asked and nothing   
-                 is lost: what you type while it is held rides out with the     
-                 round it resumes into, ctrl+z is accepted, and quitting and    
-                 coming back with --continue opens the conversation held. It    
-                 reaches every agent this session started, each at its own      
-                 boundary, and one press lets them all go                       
-  ctrl+r         Search the input history: an incremental reverse search over   
-                 what you typed before. Typing filters, ctrl+r again steps to   
-                 an older match, enter keeps the match in the draft, esc puts   
-                 the draft back exactly as it was                               
-  ctrl+t         Cycle the reasoning level: off → low → medium → high. It       
-                 changes the next model request, not the one in flight, and     
-                 the level is stated on the vitals rail beside the model        
-                 (the alt+t alias needs the Option setting the agent manager's  
-                 row names)                                                     
-  shift+tab      Cycle the permission mode                                      
-                 (while the agent is working, enter queues a steering message   
-                  that joins the conversation before the next model request)    
-  up/down        Recall previous inputs (when the input is empty)               
-  shift+↑        Move the pointer over the pane's rows — reading mode's cursor  
-  shift+↓        seen from the prompt. The draft keeps the keyboard and every   
-                 letter it has, and the pane scrolls only as far as keeps the   
-                 pointed row in view. On the start screen the offers are the    
-                 rows. Esc drops the pointer; ctrl+o opens reading mode on it   
-  shift+→        Open or run the pointed row, and close it: what enter and -    
-  shift+←        do under reading mode's cursor, by the same handler. A row's   
-                 own letters (a turn's v and u, a failure's r) stay reading     
-                 mode's, because at the prompt a letter is text. Enter on an    
-                 empty draft is the same open                                   
-  ctrl+o         Reading mode: select transcript rows (j/k, u/d half a page),   
-                 expand/collapse (enter), y copies the row under the cursor —   
-                 a command as $ cmd over its output, an edit as its unified     
-                 diff, a message as markdown source, a folded group member by   
-                 member — / searches the transcript and n/N walk what it        
-                 found, pgup/pgdn page, ? lists every key the mode has,         
-                 esc or typing returns to the prompt                            
-                 (enter on an edit row cycles collapsed → expanded → full-screen
-                  diff, and on a command or read row the same three depths over 
-                  its output, the whole of it scrollable at the last one;       
-                  opens over a running turn, which keeps streaming underneath;  
-                  a transcript with nothing selectable opens as a plain pager.  
-                  /step opens the in-flight step's detail from the prompt)      
-  alt+a          Agent manager: enter attaches to an agent's session, x cancels 
-                 its turn, X kills it; attached, typing steers the agent,       
-                 shift+tab sets its mode (clamped), esc detaches.               
-                 On a Mac an alt chord arrives only once the terminal's Option  
-                 key sends the escape prefix, which the stock terminals do not  
-                 until told — Terminal.app: Settings › Profiles › Keyboard ›    
-                 Use Option as Meta key; iTerm2: Profiles › Keys › Left Option  
-                 key: Esc+. shhh doctor's keys row reads yours                  
-  ctrl+f         The backlog screen: the project's items on the left and the one
-                 under the pointer on the right, / and s/p/k/r narrow the list, 
-                 enter reads the body, e edits the file, R runs it, b/o/d/x     
-                 block, reopen, archive and drop it, tab shows what shipped,    
-                 ? lists every key it has, esc returns                          
-                 (bare /todo opens the same screen; it opens over a running     
-                  turn, and the keys that would change a file are grey while    
-                  one is going, because the model may be reading them)          
-  alt+] alt+[    Move the keyboard one session along the inspector rail's       
-                 AGENTS map — the orchestrator and every agent it started, in   
-                 the order they were started, wrapping at both ends. The rail   
-                 stays up while you are in an agent's session and marks the     
-                 row you are in; everything you do *to* an agent is still in    
-                 the manager (alt needs the Option setting the agent manager's  
-                 row names)                                                     
-  ctrl+g         Open the draft in your editor: $EDITOR (then $VISUAL, then     
-                 vi) opens a file holding what you have typed, at the line and  
-                 column the cursor was on, and whatever is in the file when     
-                 the editor exits becomes the draft. An empty file leaves the   
-                 draft alone. Not while a turn is running or a decision is      
-                 waiting — the editor takes the terminal with it                
-  ctrl+z         Suspend shhh and go back to the shell; fg brings it back       
-                 with the screen as you left it. Refused while a turn is        
-                 running or a decision is waiting — a stopped shhh is not       
-                 reading the stream it asked for                                
-  ctrl+l         Redraw the screen from what the session already holds, for a   
-                 display something else wrote over. The draft, the history      
-                 and any selection are untouched                                
-  ctrl+space     Hand the keyboard to a decision waiting on screen. An          
-                 approval that lands while you are typing does not take your    
-                 keys with it: its y, n and a are not live until this chord     
-                 gives them the keyboard, and until then every letter goes      
-                 into the draft. Esc leaves the decision waiting; n is how      
-                 you say no. ctrl+y does the same thing, for terminals and      
-                 desktops that never deliver ctrl+space — macOS binds it to     
-                 the input-source switcher and takes it first                   
-  ?              On an empty draft, print this key list; with any text in the   
-                 box it is a letter like any other                              
-  esc            Go back, in this order: drop a selection, drop the pointer,    
-                 dismiss the completion menu, detach one level — then, with     
-                 any text in the box, clear the input, and on an empty draft    
-                 fold every row you opened back to its resting form, counted    
-                 on the notice rail. What /ui verbosity opened is the           
-                 setting's and stays open. A waiting decision is left waiting.  
-                 It never stops a running turn — on an empty draft under one    
-                 with nothing left to fold it does nothing, so ctrl+c is what   
-                 you want there. On an empty idle draft, esc esc opens the      
-                 /rewind picker                                                 
-  ctrl+c         Cancel the running turn — press twice, and what the turn       
-                 already did is kept. Also clears the input, and quits from     
-                 an empty idle draft (twice again)                              
-  ctrl+d         Quit — press twice; with a turn running it asks first,         
-                 saying what is cancelled and what the autosave keeps           
-  pgup/pgdn      Page the transcript, leaving the keyboard in the prompt.       
-                 Scrolling away pauses the follow while a turn streams; the     
-                 notice rail counts what is below and pgdn walks back to it     
-  Wheel          Scroll the transcript (or the full-screen diff / review),      
-                 leaving the draft and the keyboard where they are              
-                 (needs ctrl+x — off by default, so the terminal keeps its      
-                  own click-drag selection)                                     
-  Click-drag     With the mouse on (ctrl+x), select transcript text: the drag   
-                 scrolls the pane when it reaches an edge, so a selection can   
-                 run past the screen; releasing copies it, esc cancels          
-  Click          A press and release in the same cell opens the activity row    
-                 under it, the way enter does in reading mode, or answers the   
-                 key it lands on in an approval card's [y/n/a]. It never takes  
-                 the keyboard: the draft keeps every character                  
-  y/n/a          Approval prompts: allow / deny / always allow this session.    
-                 A card taller than its panel counts what is cut and scrolls    
-                 on shift+↑/↓ (shift+←/→ pan a wide body); d opens an edit's    
-                 full diff, or a command card's full view; t runs the harmless  
-                 form of a command that has one, and answers nothing            
+Keys:                                                                             
+  [enter]          Send message        shift+enter  Insert newline                
+                   (ctrl+j does the same, for terminals that cannot report        
+                    shift+enter.                                                  
+                    A draft ending in \ turns enter into a newline too, the       
+                    shell's own continuation — end in \\ to send a literal        
+                    backslash)                                                    
+  [ctrl+n]         While a turn is live, queue the draft as a follow-up sent      
+                   when the turn completes. Steering (enter) joins the running    
+                   turn; a follow-up waits for it to end. After a cancel the      
+                   queue is held rather than sent — the notice rail says so.      
+                   On an empty draft the same key pulls the newest queued         
+                   message — a follow-up first, else a steering line — back.      
+                   (It was the line editor's next-line; ↓ still is)               
+  [@]              At the start of a word, open a file menu over what this        
+                   session changed and the checkout's recent files, filtered      
+                   by what you type after it. tab or enter inserts the path,      
+                   esc keeps what you typed; a mentioned image is staged the      
+                   way a pasted one is                                            
+  [!]              A draft starting with ! runs as a command through the same     
+                   confirm card /run uses; !! runs it and keeps the output out    
+                   of the conversation (its row says local). A ! anywhere else    
+                   is a letter                                                    
+  [ctrl+v]         Attach the clipboard: a copied screenshot or file is staged    
+                   for your next message, ordinary text still pastes into the     
+                   draft. Dragging an image into the terminal attaches it the     
+                   same way. What is staged shows as chips above the input        
+  Pasting          Text taller than 10 lines or wider than 1000 columns is        
+                   staged as paste-1.txt rather than typed into the draft — both  
+                   through ctrl+v and through your terminal's own paste — so a    
+                   stack trace does not bury the sentence it came with. Those     
+                   two numbers are the defaults for appearance.paste_lines and    
+                   appearance.paste_columns; shhh config shows this machine's,    
+                   and a negative turns one of them off. /paste show              
+                   paste-1.txt reads it back before you send it, and a paste      
+                   over 256 KB is refused rather than staged — it would ride in   
+                   the prompt itself                                              
+  [tab]            Complete a slash command (typing / opens the menu;             
+                   ↑↓ move, enter runs the highlighted command, esc dismisses)    
+  [ctrl+a ctrl+e]  The draft is a readline editor: line start and line end,       
+  [ctrl+k ctrl+u]  kill to end and to start of line; ctrl+w deletes the word      
+                   before the cursor, alt+b and alt+f move by word                
+  [ctrl+/]         Command palette: one prompt over commands, saved chats and     
+                   the files this session touched — type to filter, enter runs,   
+                   tab writes it into the input, esc dismisses. A terminal that   
+                   cannot send this chord — it is a single byte and Windows       
+                   conhost sends nothing for it — reaches the same list through   
+                   the other door: / on an empty draft, then tab                  
+  [ctrl+p]         Hold the turn between rounds, and press it again to let the    
+                   turn go on. The hold waits for the round in flight to finish,  
+                   because a stream nobody is reading backs up until the          
+                   provider gives up on it — so the rail says "holding after      
+                   this round" and then "held". Nothing is re-asked and nothing   
+                   is lost: what you type while it is held rides out with the     
+                   round it resumes into, ctrl+z is accepted, and quitting and    
+                   coming back with --continue opens the conversation held. It    
+                   reaches every agent this session started, each at its own      
+                   boundary, and one press lets them all go                       
+  [ctrl+r]         Search the input history: an incremental reverse search over   
+                   what you typed before. Typing filters, ctrl+r again steps to   
+                   an older match, enter keeps the match in the draft, esc puts   
+                   the draft back exactly as it was                               
+  [ctrl+t]         Cycle the reasoning level: off → low → medium → high. It       
+                   changes the next model request, not the one in flight, and     
+                   the level is stated on the vitals rail beside the model        
+                   (the alt+t alias needs the Option setting the agent manager's  
+                   row names)                                                     
+  [shift+tab]      Cycle the permission mode                                      
+                   (while the agent is working, enter queues a steering message   
+                    that joins the conversation before the next model request)    
+  [up/down]        Recall previous inputs (when the input is empty)               
+  [shift+↑]        Move the pointer over the pane's rows — reading mode's cursor  
+  [shift+↓]        seen from the prompt. The draft keeps the keyboard and every   
+                   letter it has, and the pane scrolls only as far as keeps the   
+                   pointed row in view. On the start screen the offers are the    
+                   rows. Esc drops the pointer; ctrl+o opens reading mode on it   
+  [shift+→]        Open or run the pointed row, and close it: what enter and -    
+  [shift+←]        do under reading mode's cursor, by the same handler. A row's   
+                   own letters (a turn's v and u, a failure's r) stay reading     
+                   mode's, because at the prompt a letter is text. Enter on an    
+                   empty draft is the same open                                   
+  [ctrl+o]         Reading mode: select transcript rows (j/k, u/d half a page),   
+                   expand/collapse (enter), y copies the row under the cursor —   
+                   a command as $ cmd over its output, an edit as its unified     
+                   diff, a message as markdown source, a folded group member by   
+                   member — / searches the transcript and n/N walk what it        
+                   found, pgup/pgdn page, ? lists every key the mode has,         
+                   esc or typing returns to the prompt                            
+                   (enter on an edit row cycles collapsed → expanded → full-screen
+                    diff, and on a command or read row the same three depths over 
+                    its output, the whole of it scrollable at the last one;       
+                    opens over a running turn, which keeps streaming underneath;  
+                    a transcript with nothing selectable opens as a plain pager.  
+                    /step opens the in-flight step's detail from the prompt)      
+  [alt+a]          Agent manager: enter attaches to an agent's session, x cancels 
+                   its turn, X kills it; attached, typing steers the agent,       
+                   shift+tab sets its mode (clamped), esc detaches.               
+                   On a Mac an alt chord arrives only once the terminal's Option  
+                   key sends the escape prefix, which the stock terminals do not  
+                   until told — Terminal.app: Settings › Profiles › Keyboard ›    
+                   Use Option as Meta key; iTerm2: Profiles › Keys › Left Option  
+                   key: Esc+. shhh doctor's keys row reads yours                  
+  [ctrl+f]         The backlog screen: the project's items on the left and the one
+                   under the pointer on the right, / and s/p/k/r narrow the list, 
+                   enter reads the body, e edits the file, R runs it, b/o/d/x     
+                   block, reopen, archive and drop it, tab shows what shipped,    
+                   ? lists every key it has, esc returns                          
+                   (bare /todo opens the same screen; it opens over a running     
+                    turn, and the keys that would change a file are grey while    
+                    one is going, because the model may be reading them)          
+  [alt+]] [alt+[]  Move the keyboard one session along the inspector rail's       
+                   AGENTS map — the orchestrator and every agent it started, in   
+                   the order they were started, wrapping at both ends. The rail   
+                   stays up while you are in an agent's session and marks the     
+                   row you are in; everything you do *to* an agent is still in    
+                   the manager (alt needs the Option setting the agent manager's  
+                   row names)                                                     
+  [ctrl+g]         Open the draft in your editor: $EDITOR (then $VISUAL, then     
+                   vi) opens a file holding what you have typed, at the line and  
+                   column the cursor was on, and whatever is in the file when     
+                   the editor exits becomes the draft. An empty file leaves the   
+                   draft alone. Not while a turn is running or a decision is      
+                   waiting — the editor takes the terminal with it                
+  [ctrl+z]         Suspend shhh and go back to the shell; fg brings it back       
+                   with the screen as you left it. Refused while a turn is        
+                   running or a decision is waiting — a stopped shhh is not       
+                   reading the stream it asked for                                
+  [ctrl+l]         Redraw the screen from what the session already holds, for a   
+                   display something else wrote over. The draft, the history      
+                   and any selection are untouched                                
+  [ctrl+space]     Hand the keyboard to a decision waiting on screen. An          
+                   approval that lands while you are typing does not take your    
+                   keys with it: its y, n and a are not live until this chord     
+                   gives them the keyboard, and until then every letter goes      
+                   into the draft. Esc leaves the decision waiting; n is how      
+                   you say no. ctrl+y does the same thing, for terminals and      
+                   desktops that never deliver ctrl+space — macOS binds it to     
+                   the input-source switcher and takes it first                   
+  [?]              On an empty draft, print this key list; with any text in the   
+                   box it is a letter like any other                              
+  [esc]            Go back, in this order: drop a selection, drop the pointer,    
+                   dismiss the completion menu, detach one level — then, with     
+                   any text in the box, clear the input, and on an empty draft    
+                   fold every row you opened back to its resting form, counted    
+                   on the notice rail. What /ui verbosity opened is the           
+                   setting's and stays open. A waiting decision is left waiting.  
+                   It never stops a running turn — on an empty draft under one    
+                   with nothing left to fold it does nothing, so ctrl+c is what   
+                   you want there. On an empty idle draft, esc esc opens the      
+                   /rewind picker                                                 
+  [ctrl+c]         Cancel the running turn — press twice, and what the turn       
+                   already did is kept. Also clears the input, and quits from     
+                   an empty idle draft (twice again)                              
+  [ctrl+d]         Quit — press twice; with a turn running it asks first,         
+                   saying what is cancelled and what the autosave keeps           
+  [pgup]/[pgdn]    Page the transcript, leaving the keyboard in the prompt.       
+                   Scrolling away pauses the follow while a turn streams; the     
+                   notice rail counts what is below and pgdn walks back to it     
+  Wheel            Scroll the transcript (or the full-screen diff / review),      
+                   leaving the draft and the keyboard where they are              
+                   (needs ctrl+x — off by default, so the terminal keeps its      
+                    own click-drag selection)                                     
+  Click-drag       With the mouse on (ctrl+x), select transcript text: the drag   
+                   scrolls the pane when it reaches an edge, so a selection can   
+                   run past the screen; releasing copies it, esc cancels          
+  Click            A press and release in the same cell opens the activity row    
+                   under it, the way enter does in reading mode, or answers the   
+                   key it lands on in an approval card's [y/n/a]. It never takes  
+                   the keyboard: the draft keeps every character                  
+  [y/n/a]          Approval prompts: allow / deny / always allow this session.    
+                   A card taller than its panel counts what is cut and scrolls    
+                   on shift+↑/↓ (shift+←/→ pan a wide body); d opens an edit's    
+                   full diff, or a command card's full view; t runs the harmless  
+                   form of a command that has one, and answers nothing            
 
 
 ── ansi ────────────────────────────────────────────────────
 · ? on an empty draft
-␛[38;5;241mKeys:␛[m                                                                           
-␛[38;5;241m  enter          Send message        shift+enter  Insert newline␛[m                
-␛[38;5;241m                 (ctrl+j does the same, for terminals that cannot report␛[m        
-␛[38;5;241m                  shift+enter.␛[m                                                  
-␛[38;5;241m                  A draft ending in \ turns enter into a newline too, the␛[m       
-␛[38;5;241m                  shell's own continuation — end in \\ to send a literal␛[m        
-␛[38;5;241m                  backslash)␛[m                                                    
-␛[38;5;241m  ctrl+n         While a turn is live, queue the draft as a follow-up sent␛[m      
-␛[38;5;241m                 when the turn completes. Steering (enter) joins the running␛[m    
-␛[38;5;241m                 turn; a follow-up waits for it to end. After a cancel the␛[m      
-␛[38;5;241m                 queue is held rather than sent — the notice rail says so.␛[m      
-␛[38;5;241m                 On an empty draft the same key pulls the newest queued␛[m         
-␛[38;5;241m                 message — a follow-up first, else a steering line — back.␛[m      
-␛[38;5;241m                 (It was the line editor's next-line; ↓ still is)␛[m               
-␛[38;5;241m  @              At the start of a word, open a file menu over what this␛[m        
-␛[38;5;241m                 session changed and the checkout's recent files, filtered␛[m      
-␛[38;5;241m                 by what you type after it. tab or enter inserts the path,␛[m      
-␛[38;5;241m                 esc keeps what you typed; a mentioned image is staged the␛[m      
-␛[38;5;241m                 way a pasted one is␛[m                                            
-␛[38;5;241m  !              A draft starting with ! runs as a command through the same␛[m     
-␛[38;5;241m                 confirm card /run uses; !! runs it and keeps the output out␛[m    
-␛[38;5;241m                 of the conversation (its row says local). A ! anywhere else␛[m    
-␛[38;5;241m                 is a letter␛[m                                                    
-␛[38;5;241m  ctrl+v         Attach the clipboard: a copied screenshot or file is staged␛[m    
-␛[38;5;241m                 for your next message, ordinary text still pastes into the␛[m     
-␛[38;5;241m                 draft. Dragging an image into the terminal attaches it the␛[m     
-␛[38;5;241m                 same way. What is staged shows as chips above the input␛[m        
-␛[38;5;241m  Pasting        Text taller than 10 lines or wider than 1000 columns is␛[m        
-␛[38;5;241m                 staged as paste-1.txt rather than typed into the draft — both␛[m  
-␛[38;5;241m                 through ctrl+v and through your terminal's own paste — so a␛[m    
-␛[38;5;241m                 stack trace does not bury the sentence it came with. Those␛[m     
-␛[38;5;241m                 two numbers are the defaults for appearance.paste_lines and␛[m    
-␛[38;5;241m                 appearance.paste_columns; shhh config shows this machine's,␛[m    
-␛[38;5;241m                 and a negative turns one of them off. /paste show␛[m              
-␛[38;5;241m                 paste-1.txt reads it back before you send it, and a paste␛[m      
-␛[38;5;241m                 over 256 KB is refused rather than staged — it would ride in␛[m   
-␛[38;5;241m                 the prompt itself␛[m                                              
-␛[38;5;241m  tab            Complete a slash command (typing / opens the menu;␛[m             
-␛[38;5;241m                 ↑↓ move, enter runs the highlighted command, esc dismisses)␛[m    
-␛[38;5;241m  ctrl+a ctrl+e  The draft is a readline editor: line start and line end,␛[m       
-␛[38;5;241m  ctrl+k ctrl+u  kill to end and to start of line; ctrl+w deletes the word␛[m      
-␛[38;5;241m                 before the cursor, alt+b and alt+f move by word␛[m                
-␛[38;5;241m  ctrl+/         Command palette: one prompt over commands, saved chats and␛[m     
-␛[38;5;241m                 the files this session touched — type to filter, enter runs,␛[m   
-␛[38;5;241m                 tab writes it into the input, esc dismisses. A terminal that␛[m   
-␛[38;5;241m                 cannot send this chord — it is a single byte and Windows␛[m       
-␛[38;5;241m                 conhost sends nothing for it — reaches the same list through␛[m   
-␛[38;5;241m                 the other door: / on an empty draft, then tab␛[m                  
-␛[38;5;241m  ctrl+p         Hold the turn between rounds, and press it again to let the␛[m    
-␛[38;5;241m                 turn go on. The hold waits for the round in flight to finish,␛[m  
-␛[38;5;241m                 because a stream nobody is reading backs up until the␛[m          
-␛[38;5;241m                 provider gives up on it — so the rail says "holding after␛[m      
-␛[38;5;241m                 this round" and then "held". Nothing is re-asked and nothing␛[m   
-␛[38;5;241m                 is lost: what you type while it is held rides out with the␛[m     
-␛[38;5;241m                 round it resumes into, ctrl+z is accepted, and quitting and␛[m    
-␛[38;5;241m                 coming back with --continue opens the conversation held. It␛[m    
-␛[38;5;241m                 reaches every agent this session started, each at its own␛[m      
-␛[38;5;241m                 boundary, and one press lets them all go␛[m                       
-␛[38;5;241m  ctrl+r         Search the input history: an incremental reverse search over␛[m   
-␛[38;5;241m                 what you typed before. Typing filters, ctrl+r again steps to␛[m   
-␛[38;5;241m                 an older match, enter keeps the match in the draft, esc puts␛[m   
-␛[38;5;241m                 the draft back exactly as it was␛[m                               
-␛[38;5;241m  ctrl+t         Cycle the reasoning level: off → low → medium → high. It␛[m       
-␛[38;5;241m                 changes the next model request, not the one in flight, and␛[m     
-␛[38;5;241m                 the level is stated on the vitals rail beside the model␛[m        
-␛[38;5;241m                 (the alt+t alias needs the Option setting the agent manager's␛[m  
-␛[38;5;241m                 row names)␛[m                                                     
-␛[38;5;241m  shift+tab      Cycle the permission mode␛[m                                      
-␛[38;5;241m                 (while the agent is working, enter queues a steering message␛[m   
-␛[38;5;241m                  that joins the conversation before the next model request)␛[m    
-␛[38;5;241m  up/down        Recall previous inputs (when the input is empty)␛[m               
-␛[38;5;241m  shift+↑        Move the pointer over the pane's rows — reading mode's cursor␛[m  
-␛[38;5;241m  shift+↓        seen from the prompt. The draft keeps the keyboard and every␛[m   
-␛[38;5;241m                 letter it has, and the pane scrolls only as far as keeps the␛[m   
-␛[38;5;241m                 pointed row in view. On the start screen the offers are the␛[m    
-␛[38;5;241m                 rows. Esc drops the pointer; ctrl+o opens reading mode on it␛[m   
-␛[38;5;241m  shift+→        Open or run the pointed row, and close it: what enter and -␛[m    
-␛[38;5;241m  shift+←        do under reading mode's cursor, by the same handler. A row's␛[m   
-␛[38;5;241m                 own letters (a turn's v and u, a failure's r) stay reading␛[m     
-␛[38;5;241m                 mode's, because at the prompt a letter is text. Enter on an␛[m    
-␛[38;5;241m                 empty draft is the same open␛[m                                   
-␛[38;5;241m  ctrl+o         Reading mode: select transcript rows (j/k, u/d half a page),␛[m   
-␛[38;5;241m                 expand/collapse (enter), y copies the row under the cursor —␛[m   
-␛[38;5;241m                 a command as $ cmd over its output, an edit as its unified␛[m     
-␛[38;5;241m                 diff, a message as markdown source, a folded group member by␛[m   
-␛[38;5;241m                 member — / searches the transcript and n/N walk what it␛[m        
-␛[38;5;241m                 found, pgup/pgdn page, ? lists every key the mode has,␛[m         
-␛[38;5;241m                 esc or typing returns to the prompt␛[m                            
-␛[38;5;241m                 (enter on an edit row cycles collapsed → expanded → full-screen␛[m
-␛[38;5;241m                  diff, and on a command or read row the same three depths over␛[m 
-␛[38;5;241m                  its output, the whole of it scrollable at the last one;␛[m       
-␛[38;5;241m                  opens over a running turn, which keeps streaming underneath;␛[m  
-␛[38;5;241m                  a transcript with nothing selectable opens as a plain pager.␛[m  
-␛[38;5;241m                  /step opens the in-flight step's detail from the prompt)␛[m      
-␛[38;5;241m  alt+a          Agent manager: enter attaches to an agent's session, x cancels␛[m 
-␛[38;5;241m                 its turn, X kills it; attached, typing steers the agent,␛[m       
-␛[38;5;241m                 shift+tab sets its mode (clamped), esc detaches.␛[m               
-␛[38;5;241m                 On a Mac an alt chord arrives only once the terminal's Option␛[m  
-␛[38;5;241m                 key sends the escape prefix, which the stock terminals do not␛[m  
-␛[38;5;241m                 until told — Terminal.app: Settings › Profiles › Keyboard ›␛[m    
-␛[38;5;241m                 Use Option as Meta key; iTerm2: Profiles › Keys › Left Option␛[m  
-␛[38;5;241m                 key: Esc+. shhh doctor's keys row reads yours␛[m                  
-␛[38;5;241m  ctrl+f         The backlog screen: the project's items on the left and the one␛[m
-␛[38;5;241m                 under the pointer on the right, / and s/p/k/r narrow the list,␛[m 
-␛[38;5;241m                 enter reads the body, e edits the file, R runs it, b/o/d/x␛[m     
-␛[38;5;241m                 block, reopen, archive and drop it, tab shows what shipped,␛[m    
-␛[38;5;241m                 ? lists every key it has, esc returns␛[m                          
-␛[38;5;241m                 (bare /todo opens the same screen; it opens over a running␛[m     
-␛[38;5;241m                  turn, and the keys that would change a file are grey while␛[m    
-␛[38;5;241m                  one is going, because the model may be reading them)␛[m          
-␛[38;5;241m  alt+] alt+[    Move the keyboard one session along the inspector rail's␛[m       
-␛[38;5;241m                 AGENTS map — the orchestrator and every agent it started, in␛[m   
-␛[38;5;241m                 the order they were started, wrapping at both ends. The rail␛[m   
-␛[38;5;241m                 stays up while you are in an agent's session and marks the␛[m     
-␛[38;5;241m                 row you are in; everything you do *to* an agent is still in␛[m    
-␛[38;5;241m                 the manager (alt needs the Option setting the agent manager's␛[m  
-␛[38;5;241m                 row names)␛[m                                                     
-␛[38;5;241m  ctrl+g         Open the draft in your editor: $EDITOR (then $VISUAL, then␛[m     
-␛[38;5;241m                 vi) opens a file holding what you have typed, at the line and␛[m  
-␛[38;5;241m                 column the cursor was on, and whatever is in the file when␛[m     
-␛[38;5;241m                 the editor exits becomes the draft. An empty file leaves the␛[m   
-␛[38;5;241m                 draft alone. Not while a turn is running or a decision is␛[m      
-␛[38;5;241m                 waiting — the editor takes the terminal with it␛[m                
-␛[38;5;241m  ctrl+z         Suspend shhh and go back to the shell; fg brings it back␛[m       
-␛[38;5;241m                 with the screen as you left it. Refused while a turn is␛[m        
-␛[38;5;241m                 running or a decision is waiting — a stopped shhh is not␛[m       
-␛[38;5;241m                 reading the stream it asked for␛[m                                
-␛[38;5;241m  ctrl+l         Redraw the screen from what the session already holds, for a␛[m   
-␛[38;5;241m                 display something else wrote over. The draft, the history␛[m      
-␛[38;5;241m                 and any selection are untouched␛[m                                
-␛[38;5;241m  ctrl+space     Hand the keyboard to a decision waiting on screen. An␛[m          
-␛[38;5;241m                 approval that lands while you are typing does not take your␛[m    
-␛[38;5;241m                 keys with it: its y, n and a are not live until this chord␛[m     
-␛[38;5;241m                 gives them the keyboard, and until then every letter goes␛[m      
-␛[38;5;241m                 into the draft. Esc leaves the decision waiting; n is how␛[m      
-␛[38;5;241m                 you say no. ctrl+y does the same thing, for terminals and␛[m      
-␛[38;5;241m                 desktops that never deliver ctrl+space — macOS binds it to␛[m     
-␛[38;5;241m                 the input-source switcher and takes it first␛[m                   
-␛[38;5;241m  ?              On an empty draft, print this key list; with any text in the␛[m   
-␛[38;5;241m                 box it is a letter like any other␛[m                              
-␛[38;5;241m  esc            Go back, in this order: drop a selection, drop the pointer,␛[m    
-␛[38;5;241m                 dismiss the completion menu, detach one level — then, with␛[m     
-␛[38;5;241m                 any text in the box, clear the input, and on an empty draft␛[m    
-␛[38;5;241m                 fold every row you opened back to its resting form, counted␛[m    
-␛[38;5;241m                 on the notice rail. What /ui verbosity opened is the␛[m           
-␛[38;5;241m                 setting's and stays open. A waiting decision is left waiting.␛[m  
-␛[38;5;241m                 It never stops a running turn — on an empty draft under one␛[m    
-␛[38;5;241m                 with nothing left to fold it does nothing, so ctrl+c is what␛[m   
-␛[38;5;241m                 you want there. On an empty idle draft, esc esc opens the␛[m      
-␛[38;5;241m                 /rewind picker␛[m                                                 
-␛[38;5;241m  ctrl+c         Cancel the running turn — press twice, and what the turn␛[m       
-␛[38;5;241m                 already did is kept. Also clears the input, and quits from␛[m     
-␛[38;5;241m                 an empty idle draft (twice again)␛[m                              
-␛[38;5;241m  ctrl+d         Quit — press twice; with a turn running it asks first,␛[m         
-␛[38;5;241m                 saying what is cancelled and what the autosave keeps␛[m           
-␛[38;5;241m  pgup/pgdn      Page the transcript, leaving the keyboard in the prompt.␛[m       
-␛[38;5;241m                 Scrolling away pauses the follow while a turn streams; the␛[m     
-␛[38;5;241m                 notice rail counts what is below and pgdn walks back to it␛[m     
-␛[38;5;241m  Wheel          Scroll the transcript (or the full-screen diff / review),␛[m      
-␛[38;5;241m                 leaving the draft and the keyboard where they are␛[m              
-␛[38;5;241m                 (needs ctrl+x — off by default, so the terminal keeps its␛[m      
-␛[38;5;241m                  own click-drag selection)␛[m                                     
-␛[38;5;241m  Click-drag     With the mouse on (ctrl+x), select transcript text: the drag␛[m   
-␛[38;5;241m                 scrolls the pane when it reaches an edge, so a selection can␛[m   
-␛[38;5;241m                 run past the screen; releasing copies it, esc cancels␛[m          
-␛[38;5;241m  Click          A press and release in the same cell opens the activity row␛[m    
-␛[38;5;241m                 under it, the way enter does in reading mode, or answers the␛[m   
-␛[38;5;241m                 key it lands on in an approval card's [y/n/a]. It never takes␛[m  
-␛[38;5;241m                 the keyboard: the draft keeps every character␛[m                  
-␛[38;5;241m  y/n/a          Approval prompts: allow / deny / always allow this session.␛[m    
-␛[38;5;241m                 A card taller than its panel counts what is cut and scrolls␛[m    
-␛[38;5;241m                 on shift+↑/↓ (shift+←/→ pan a wide body); d opens an edit's␛[m    
-␛[38;5;241m                 full diff, or a command card's full view; t runs the harmless␛[m  
-␛[38;5;241m                 form of a command that has one, and answers nothing␛[m            
+␛[38;5;241mKeys:␛[m                                                                             
+␛[38;5;241m  [enter]          Send message        shift+enter  Insert newline␛[m                
+␛[38;5;241m                   (ctrl+j does the same, for terminals that cannot report␛[m        
+␛[38;5;241m                    shift+enter.␛[m                                                  
+␛[38;5;241m                    A draft ending in \ turns enter into a newline too, the␛[m       
+␛[38;5;241m                    shell's own continuation — end in \\ to send a literal␛[m        
+␛[38;5;241m                    backslash)␛[m                                                    
+␛[38;5;241m  [ctrl+n]         While a turn is live, queue the draft as a follow-up sent␛[m      
+␛[38;5;241m                   when the turn completes. Steering (enter) joins the running␛[m    
+␛[38;5;241m                   turn; a follow-up waits for it to end. After a cancel the␛[m      
+␛[38;5;241m                   queue is held rather than sent — the notice rail says so.␛[m      
+␛[38;5;241m                   On an empty draft the same key pulls the newest queued␛[m         
+␛[38;5;241m                   message — a follow-up first, else a steering line — back.␛[m      
+␛[38;5;241m                   (It was the line editor's next-line; ↓ still is)␛[m               
+␛[38;5;241m  [@]              At the start of a word, open a file menu over what this␛[m        
+␛[38;5;241m                   session changed and the checkout's recent files, filtered␛[m      
+␛[38;5;241m                   by what you type after it. tab or enter inserts the path,␛[m      
+␛[38;5;241m                   esc keeps what you typed; a mentioned image is staged the␛[m      
+␛[38;5;241m                   way a pasted one is␛[m                                            
+␛[38;5;241m  [!]              A draft starting with ! runs as a command through the same␛[m     
+␛[38;5;241m                   confirm card /run uses; !! runs it and keeps the output out␛[m    
+␛[38;5;241m                   of the conversation (its row says local). A ! anywhere else␛[m    
+␛[38;5;241m                   is a letter␛[m                                                    
+␛[38;5;241m  [ctrl+v]         Attach the clipboard: a copied screenshot or file is staged␛[m    
+␛[38;5;241m                   for your next message, ordinary text still pastes into the␛[m     
+␛[38;5;241m                   draft. Dragging an image into the terminal attaches it the␛[m     
+␛[38;5;241m                   same way. What is staged shows as chips above the input␛[m        
+␛[38;5;241m  Pasting          Text taller than 10 lines or wider than 1000 columns is␛[m        
+␛[38;5;241m                   staged as paste-1.txt rather than typed into the draft — both␛[m  
+␛[38;5;241m                   through ctrl+v and through your terminal's own paste — so a␛[m    
+␛[38;5;241m                   stack trace does not bury the sentence it came with. Those␛[m     
+␛[38;5;241m                   two numbers are the defaults for appearance.paste_lines and␛[m    
+␛[38;5;241m                   appearance.paste_columns; shhh config shows this machine's,␛[m    
+␛[38;5;241m                   and a negative turns one of them off. /paste show␛[m              
+␛[38;5;241m                   paste-1.txt reads it back before you send it, and a paste␛[m      
+␛[38;5;241m                   over 256 KB is refused rather than staged — it would ride in␛[m   
+␛[38;5;241m                   the prompt itself␛[m                                              
+␛[38;5;241m  [tab]            Complete a slash command (typing / opens the menu;␛[m             
+␛[38;5;241m                   ↑↓ move, enter runs the highlighted command, esc dismisses)␛[m    
+␛[38;5;241m  [ctrl+a ctrl+e]  The draft is a readline editor: line start and line end,␛[m       
+␛[38;5;241m  [ctrl+k ctrl+u]  kill to end and to start of line; ctrl+w deletes the word␛[m      
+␛[38;5;241m                   before the cursor, alt+b and alt+f move by word␛[m                
+␛[38;5;241m  [ctrl+/]         Command palette: one prompt over commands, saved chats and␛[m     
+␛[38;5;241m                   the files this session touched — type to filter, enter runs,␛[m   
+␛[38;5;241m                   tab writes it into the input, esc dismisses. A terminal that␛[m   
+␛[38;5;241m                   cannot send this chord — it is a single byte and Windows␛[m       
+␛[38;5;241m                   conhost sends nothing for it — reaches the same list through␛[m   
+␛[38;5;241m                   the other door: / on an empty draft, then tab␛[m                  
+␛[38;5;241m  [ctrl+p]         Hold the turn between rounds, and press it again to let the␛[m    
+␛[38;5;241m                   turn go on. The hold waits for the round in flight to finish,␛[m  
+␛[38;5;241m                   because a stream nobody is reading backs up until the␛[m          
+␛[38;5;241m                   provider gives up on it — so the rail says "holding after␛[m      
+␛[38;5;241m                   this round" and then "held". Nothing is re-asked and nothing␛[m   
+␛[38;5;241m                   is lost: what you type while it is held rides out with the␛[m     
+␛[38;5;241m                   round it resumes into, ctrl+z is accepted, and quitting and␛[m    
+␛[38;5;241m                   coming back with --continue opens the conversation held. It␛[m    
+␛[38;5;241m                   reaches every agent this session started, each at its own␛[m      
+␛[38;5;241m                   boundary, and one press lets them all go␛[m                       
+␛[38;5;241m  [ctrl+r]         Search the input history: an incremental reverse search over␛[m   
+␛[38;5;241m                   what you typed before. Typing filters, ctrl+r again steps to␛[m   
+␛[38;5;241m                   an older match, enter keeps the match in the draft, esc puts␛[m   
+␛[38;5;241m                   the draft back exactly as it was␛[m                               
+␛[38;5;241m  [ctrl+t]         Cycle the reasoning level: off → low → medium → high. It␛[m       
+␛[38;5;241m                   changes the next model request, not the one in flight, and␛[m     
+␛[38;5;241m                   the level is stated on the vitals rail beside the model␛[m        
+␛[38;5;241m                   (the alt+t alias needs the Option setting the agent manager's␛[m  
+␛[38;5;241m                   row names)␛[m                                                     
+␛[38;5;241m  [shift+tab]      Cycle the permission mode␛[m                                      
+␛[38;5;241m                   (while the agent is working, enter queues a steering message␛[m   
+␛[38;5;241m                    that joins the conversation before the next model request)␛[m    
+␛[38;5;241m  [up/down]        Recall previous inputs (when the input is empty)␛[m               
+␛[38;5;241m  [shift+↑]        Move the pointer over the pane's rows — reading mode's cursor␛[m  
+␛[38;5;241m  [shift+↓]        seen from the prompt. The draft keeps the keyboard and every␛[m   
+␛[38;5;241m                   letter it has, and the pane scrolls only as far as keeps the␛[m   
+␛[38;5;241m                   pointed row in view. On the start screen the offers are the␛[m    
+␛[38;5;241m                   rows. Esc drops the pointer; ctrl+o opens reading mode on it␛[m   
+␛[38;5;241m  [shift+→]        Open or run the pointed row, and close it: what enter and -␛[m    
+␛[38;5;241m  [shift+←]        do under reading mode's cursor, by the same handler. A row's␛[m   
+␛[38;5;241m                   own letters (a turn's v and u, a failure's r) stay reading␛[m     
+␛[38;5;241m                   mode's, because at the prompt a letter is text. Enter on an␛[m    
+␛[38;5;241m                   empty draft is the same open␛[m                                   
+␛[38;5;241m  [ctrl+o]         Reading mode: select transcript rows (j/k, u/d half a page),␛[m   
+␛[38;5;241m                   expand/collapse (enter), y copies the row under the cursor —␛[m   
+␛[38;5;241m                   a command as $ cmd over its output, an edit as its unified␛[m     
+␛[38;5;241m                   diff, a message as markdown source, a folded group member by␛[m   
+␛[38;5;241m                   member — / searches the transcript and n/N walk what it␛[m        
+␛[38;5;241m                   found, pgup/pgdn page, ? lists every key the mode has,␛[m         
+␛[38;5;241m                   esc or typing returns to the prompt␛[m                            
+␛[38;5;241m                   (enter on an edit row cycles collapsed → expanded → full-screen␛[m
+␛[38;5;241m                    diff, and on a command or read row the same three depths over␛[m 
+␛[38;5;241m                    its output, the whole of it scrollable at the last one;␛[m       
+␛[38;5;241m                    opens over a running turn, which keeps streaming underneath;␛[m  
+␛[38;5;241m                    a transcript with nothing selectable opens as a plain pager.␛[m  
+␛[38;5;241m                    /step opens the in-flight step's detail from the prompt)␛[m      
+␛[38;5;241m  [alt+a]          Agent manager: enter attaches to an agent's session, x cancels␛[m 
+␛[38;5;241m                   its turn, X kills it; attached, typing steers the agent,␛[m       
+␛[38;5;241m                   shift+tab sets its mode (clamped), esc detaches.␛[m               
+␛[38;5;241m                   On a Mac an alt chord arrives only once the terminal's Option␛[m  
+␛[38;5;241m                   key sends the escape prefix, which the stock terminals do not␛[m  
+␛[38;5;241m                   until told — Terminal.app: Settings › Profiles › Keyboard ›␛[m    
+␛[38;5;241m                   Use Option as Meta key; iTerm2: Profiles › Keys › Left Option␛[m  
+␛[38;5;241m                   key: Esc+. shhh doctor's keys row reads yours␛[m                  
+␛[38;5;241m  [ctrl+f]         The backlog screen: the project's items on the left and the one␛[m
+␛[38;5;241m                   under the pointer on the right, / and s/p/k/r narrow the list,␛[m 
+␛[38;5;241m                   enter reads the body, e edits the file, R runs it, b/o/d/x␛[m     
+␛[38;5;241m                   block, reopen, archive and drop it, tab shows what shipped,␛[m    
+␛[38;5;241m                   ? lists every key it has, esc returns␛[m                          
+␛[38;5;241m                   (bare /todo opens the same screen; it opens over a running␛[m     
+␛[38;5;241m                    turn, and the keys that would change a file are grey while␛[m    
+␛[38;5;241m                    one is going, because the model may be reading them)␛[m          
+␛[38;5;241m  [alt+]] [alt+[]  Move the keyboard one session along the inspector rail's␛[m       
+␛[38;5;241m                   AGENTS map — the orchestrator and every agent it started, in␛[m   
+␛[38;5;241m                   the order they were started, wrapping at both ends. The rail␛[m   
+␛[38;5;241m                   stays up while you are in an agent's session and marks the␛[m     
+␛[38;5;241m                   row you are in; everything you do *to* an agent is still in␛[m    
+␛[38;5;241m                   the manager (alt needs the Option setting the agent manager's␛[m  
+␛[38;5;241m                   row names)␛[m                                                     
+␛[38;5;241m  [ctrl+g]         Open the draft in your editor: $EDITOR (then $VISUAL, then␛[m     
+␛[38;5;241m                   vi) opens a file holding what you have typed, at the line and␛[m  
+␛[38;5;241m                   column the cursor was on, and whatever is in the file when␛[m     
+␛[38;5;241m                   the editor exits becomes the draft. An empty file leaves the␛[m   
+␛[38;5;241m                   draft alone. Not while a turn is running or a decision is␛[m      
+␛[38;5;241m                   waiting — the editor takes the terminal with it␛[m                
+␛[38;5;241m  [ctrl+z]         Suspend shhh and go back to the shell; fg brings it back␛[m       
+␛[38;5;241m                   with the screen as you left it. Refused while a turn is␛[m        
+␛[38;5;241m                   running or a decision is waiting — a stopped shhh is not␛[m       
+␛[38;5;241m                   reading the stream it asked for␛[m                                
+␛[38;5;241m  [ctrl+l]         Redraw the screen from what the session already holds, for a␛[m   
+␛[38;5;241m                   display something else wrote over. The draft, the history␛[m      
+␛[38;5;241m                   and any selection are untouched␛[m                                
+␛[38;5;241m  [ctrl+space]     Hand the keyboard to a decision waiting on screen. An␛[m          
+␛[38;5;241m                   approval that lands while you are typing does not take your␛[m    
+␛[38;5;241m                   keys with it: its y, n and a are not live until this chord␛[m     
+␛[38;5;241m                   gives them the keyboard, and until then every letter goes␛[m      
+␛[38;5;241m                   into the draft. Esc leaves the decision waiting; n is how␛[m      
+␛[38;5;241m                   you say no. ctrl+y does the same thing, for terminals and␛[m      
+␛[38;5;241m                   desktops that never deliver ctrl+space — macOS binds it to␛[m     
+␛[38;5;241m                   the input-source switcher and takes it first␛[m                   
+␛[38;5;241m  [?]              On an empty draft, print this key list; with any text in the␛[m   
+␛[38;5;241m                   box it is a letter like any other␛[m                              
+␛[38;5;241m  [esc]            Go back, in this order: drop a selection, drop the pointer,␛[m    
+␛[38;5;241m                   dismiss the completion menu, detach one level — then, with␛[m     
+␛[38;5;241m                   any text in the box, clear the input, and on an empty draft␛[m    
+␛[38;5;241m                   fold every row you opened back to its resting form, counted␛[m    
+␛[38;5;241m                   on the notice rail. What /ui verbosity opened is the␛[m           
+␛[38;5;241m                   setting's and stays open. A waiting decision is left waiting.␛[m  
+␛[38;5;241m                   It never stops a running turn — on an empty draft under one␛[m    
+␛[38;5;241m                   with nothing left to fold it does nothing, so ctrl+c is what␛[m   
+␛[38;5;241m                   you want there. On an empty idle draft, esc esc opens the␛[m      
+␛[38;5;241m                   /rewind picker␛[m                                                 
+␛[38;5;241m  [ctrl+c]         Cancel the running turn — press twice, and what the turn␛[m       
+␛[38;5;241m                   already did is kept. Also clears the input, and quits from␛[m     
+␛[38;5;241m                   an empty idle draft (twice again)␛[m                              
+␛[38;5;241m  [ctrl+d]         Quit — press twice; with a turn running it asks first,␛[m         
+␛[38;5;241m                   saying what is cancelled and what the autosave keeps␛[m           
+␛[38;5;241m  [pgup]/[pgdn]    Page the transcript, leaving the keyboard in the prompt.␛[m       
+␛[38;5;241m                   Scrolling away pauses the follow while a turn streams; the␛[m     
+␛[38;5;241m                   notice rail counts what is below and pgdn walks back to it␛[m     
+␛[38;5;241m  Wheel            Scroll the transcript (or the full-screen diff / review),␛[m      
+␛[38;5;241m                   leaving the draft and the keyboard where they are␛[m              
+␛[38;5;241m                   (needs ctrl+x — off by default, so the terminal keeps its␛[m      
+␛[38;5;241m                    own click-drag selection)␛[m                                     
+␛[38;5;241m  Click-drag       With the mouse on (ctrl+x), select transcript text: the drag␛[m   
+␛[38;5;241m                   scrolls the pane when it reaches an edge, so a selection can␛[m   
+␛[38;5;241m                   run past the screen; releasing copies it, esc cancels␛[m          
+␛[38;5;241m  Click            A press and release in the same cell opens the activity row␛[m    
+␛[38;5;241m                   under it, the way enter does in reading mode, or answers the␛[m   
+␛[38;5;241m                   key it lands on in an approval card's [y/n/a]. It never takes␛[m  
+␛[38;5;241m                   the keyboard: the draft keeps every character␛[m                  
+␛[38;5;241m  [y/n/a]          Approval prompts: allow / deny / always allow this session.␛[m    
+␛[38;5;241m                   A card taller than its panel counts what is cut and scrolls␛[m    
+␛[38;5;241m                   on shift+↑/↓ (shift+←/→ pan a wide body); d opens an edit's␛[m    
+␛[38;5;241m                   full diff, or a command card's full view; t runs the harmless␛[m  
+␛[38;5;241m                   form of a command that has one, and answers nothing␛[m            
 

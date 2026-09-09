@@ -25,7 +25,7 @@
 │   ## Tasks                                                                                                                 │
 │ ↓ 10 more                                                                                                                  │
 │ nothing in the backlog is named nothing-like-this — dropped rather than written as a dependency on nothing                 │
-│ ↑↓ move · space change · e the editor · enter write it · esc drop it                                                       │
+│ [↑↓] move · [space] change · [e] the editor · [enter] write it · [esc] drop it                                             │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 · the dependency row opened on the backlog
@@ -54,7 +54,7 @@
 ␛[38;5;244m│␛[m   ## Tasks                                                                                                                 ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;244m↓ 10 more␛[m                                                                                                                  ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254mnothing in the backlog is named nothing-like-this — dropped rather than written as a dependency on nothing␛[m                 ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;244m↑↓ move · space change · e the editor · enter write it · esc drop it␛[m                                                       ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[space]␛[m␛[38;5;244m change␛[m␛[38;5;244m · ␛[m␛[38;5;254m[e]␛[m␛[38;5;244m the editor␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m write it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m drop it␛[m                                             ␛[38;5;244m│␛[m
 ␛[38;5;244m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · the dependency row opened on the backlog
@@ -64,5 +64,5 @@
 ␛[38;5;244m│␛[m   ␛[38;5;244m[ ]␛[m c-blocked                                                                                                      ␛[38;5;254mStuck␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m[ ]␛[m d-ready                                                                                                        ␛[38;5;254mReady␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m[ ]␛[m e-more                                                                                                         ␛[38;5;254mFifth␛[m ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;244m[space] toggle · [a] all/none · [enter] apply (1) · [esc] cancel␛[m                                                           ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[space]␛[m␛[38;5;244m toggle␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m all/none␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m apply (1)␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m cancel␛[m                                                           ␛[38;5;244m│␛[m
 ␛[38;5;244m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

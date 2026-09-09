@@ -65,7 +65,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mthis turn only   npm test …                                                                         until this turn ends␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254mthis session␛[m     ␛[38;5;244mnpm test …␛[m                                                                          ␛[38;5;254muntil you revoke it␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254mthis exact line␛[m  ␛[38;5;244mnpm test --watch␛[m                                                                    ␛[38;5;254muntil you revoke it␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[↑↓/jk] choose · [enter] grant it, and run · [esc] back to the card — nothing is granted␛[m                                   ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m choose␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m grant it, and run␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the card — nothing is granted␛[m                                   ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · one row down, on the grant that stands
@@ -84,5 +84,5 @@
 ␛[38;5;254m│␛[m   ␛[38;5;254mthis turn only␛[m   ␛[38;5;244mnpm test …␛[m                                                                         ␛[38;5;254muntil this turn ends␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237mthis session     npm test …                                                                          until you revoke it␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254mthis exact line␛[m  ␛[38;5;244mnpm test --watch␛[m                                                                    ␛[38;5;254muntil you revoke it␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[↑↓/jk] choose · [enter] grant it, and run · [esc] back to the card — nothing is granted␛[m                                   ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m choose␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m grant it, and run␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the card — nothing is granted␛[m                                   ␛[38;5;254m│␛[m
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m

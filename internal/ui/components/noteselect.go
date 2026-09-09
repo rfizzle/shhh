@@ -35,7 +35,7 @@ type NoteSelect struct {
 	// key row already worded, for the reason the checkbox list's are: a key
 	// that means one thing where it is declared can mean a near thing here,
 	// and the row has to say which.
-	Actions []string
+	Actions []KeyOffer
 	// noteMissing marks a confirm attempt on a note-required option with an
 	// empty note; the note border hint turns red until the next key.
 	noteMissing bool
@@ -129,19 +129,19 @@ func (s *NoteSelect) View(width int) string {
 	// The note field's own key leads, because it is the one this card has
 	// that the plain selector does not — on a card that has options for it
 	// to move between.
-	var hint []string
+	var hint []KeyOffer
 	if len(s.Select.Options) > 0 {
-		hint = append(hint, words(keys.Select.Note, "note/options"))
+		hint = append(hint, keyOfferAs(keys.Select.Note, "note/options"))
 	}
-	hint = append(hint, words(keys.Select.Take, "confirm"))
+	hint = append(hint, keyOfferAs(keys.Select.Take, "confirm"))
 	hint = append(hint, s.Actions...)
 	switch {
 	case s.Select.Filtering:
-		hint = append(hint, words(keys.Select.ClearQ, "clear"))
+		hint = append(hint, keyOfferAs(keys.Select.ClearQ, "clear"))
 	case s.Select.Filterable:
-		hint = append(hint, offer(keys.Select.Filter))
+		hint = append(hint, keyOffer(keys.Select.Filter))
 	}
-	hint = append(hint, offer(keys.Select.Cancel))
+	hint = append(hint, keyOffer(keys.Select.Cancel))
 	// Handed over as segments and never pre-joined, the way the checkbox
 	// list's are: a row too wide for the terminal takes another row, and a
 	// joined one could only be cut in the middle of a clause — which on this

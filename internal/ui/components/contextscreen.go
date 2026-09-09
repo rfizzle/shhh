@@ -607,16 +607,16 @@ func (c *ContextScreen) itemRow(item ContextItem, width int) string {
 // register in its place once `?` has been pressed.
 func (c *ContextScreen) keyRows(width int) []string {
 	if !c.ShowKeys {
-		return []string{Clip(sty.Dim.Render(contextKeyRow(width)), width)}
+		return []string{Clip(contextKeyRow(width), width)}
 	}
 	rows := make([]string, 0, len(keys.Context.All())+1)
 	for _, b := range keys.Context.All() {
-		rows = append(rows, Clip(sty.Dim.Render("  "+offer(b)), width))
+		rows = append(rows, Clip("  "+keyOffers([]KeyOffer{keyOffer(b)}), width))
 	}
 	// The way out answers to esc as well as to the letter, and the register
 	// is where a key the compact row spells one way is spelled both.
 	return append(rows,
-		Clip(sty.Dim.Render("  "+words(keys.Select.Cancel, backToPrompt)), width))
+		Clip("  "+keyOffers([]KeyOffer{keyOfferAs(keys.Select.Cancel, backToPrompt)}), width))
 }
 
 // contextKeyRow is the surface's keys as one line, in the order the register
@@ -631,16 +631,16 @@ func (c *ContextScreen) keyRows(width int) []string {
 // reader reaches for, which is what every other screen in the family does
 // (docs/interface/surfaces.md#the-supporting-screens).
 func contextKeyRow(width int) string {
-	parts := []string{
-		offer(keys.Context.Move),
-		offer(keys.Context.Expand),
-		words(keys.Select.Cancel, backToPrompt),
+	parts := []KeyOffer{
+		keyOffer(keys.Context.Move),
+		keyOffer(keys.Context.Expand),
+		keyOfferAs(keys.Select.Cancel, backToPrompt),
 	}
 	for len(parts) > 1 {
-		if lipgloss.Width(strings.Join(parts, " · ")) <= width {
+		if lipgloss.Width(keyOffers(parts)) <= width {
 			break
 		}
 		parts = parts[1:]
 	}
-	return strings.Join(parts, " · ")
+	return keyOffers(parts)
 }

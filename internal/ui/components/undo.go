@@ -158,11 +158,9 @@ func (c UndoConfirm) View(width int) string {
 	rows = append(rows, c.noteRows(width)...)
 	rows = append(rows, c.driftRows(width)...)
 	if len(c.Drifted) > 0 {
-		force := fmt.Sprintf("%s %s — take back %s too, discarding what changed",
-			keys.Bracket(keys.Confirm.Force), keys.Words(keys.Confirm.Force),
-			plural(len(c.Drifted), "drifted file"))
-		rows = append(rows, hintRows([]string{force,
-			keys.Bracket(keys.Select.Cancel) + " " + keys.Words(keys.Select.Cancel)}, width)...)
+		force := keyOfferAs(keys.Confirm.Force, fmt.Sprintf("%s — take back %s too, discarding what changed",
+			keys.Words(keys.Confirm.Force), plural(len(c.Drifted), "drifted file")))
+		rows = append(rows, hintRows([]KeyOffer{force, keyOffer(keys.Select.Cancel)}, width)...)
 	}
 	return strings.Join(rows, "\n")
 }

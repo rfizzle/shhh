@@ -10,6 +10,13 @@ package chat
 // when the row under the cursor offers keys of its own — a second line
 // prefixed by that row's ▎, so a key that acts on one row never reads as a
 // key that acts on the session.
+//
+// The segment this file builds is also what every other key row the chat
+// surface draws for itself is built from — the frame's bottom rail, the one
+// line a full-screen viewer leaves where the draft was, the query rows'
+// two keys. One composer means one notation and one set of tones: brackets,
+// the key in Info, the words in Dim, the safe answer in Add
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 
 import (
 	"fmt"
@@ -33,7 +40,16 @@ type hintSeg struct {
 	label  string
 	reason string
 	safe   bool
+	// give is the order a row that cannot hold its whole run sheds offers
+	// in, highest first; zero is an offer the row never gives up. Nothing on
+	// a key row is truncated (docs/interface/principles.md#fold-never-hide),
+	// so a row too narrow for its run drops whole offers rather than cutting
+	// the last one in half against the edge it was drawn past.
+	give int
 }
+
+// givesUp is the segment with its place in that order.
+func (s hintSeg) givesUp(n int) hintSeg { s.give = n; return s }
 
 // render paints one segment: the key in info as every offered key is,
 // its imperative in dim, and the safe answer in add where there is one
@@ -62,22 +78,26 @@ func joinSegs(segs []hintSeg) string {
 // readingModeKeys are the mode's own keys in the artboard's order: move,
 // expand where the row under the cursor opens (with collapse once it is
 // open), copy where the row holds something a clipboard can carry, and the
-// way back to the prompt. With no cursor at all — nothing selectable —
-// [enter] stays on the bar in grey with its reason rather than disappearing;
-// with a cursor on a row that merely does not expand, the row's real offers
-// stand where it would have, the way [-] and the row keys come and go.
+// way back to the prompt.
+//
+// [enter] is on the bar at every position, and where the row under the
+// cursor will not open it is shown absent with the reason beside it —
+// `[enter] expand — nothing on this row expands`, the whole segment grey —
+// rather than dropped. A key that comes and goes as the cursor walks a pane
+// of prose reads as a key that is broken; a key stated absent with its
+// reason teaches which rows open and which do not
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 func (m Model) readingModeKeys() []hintSeg {
 	segs := []hintSeg{seg(keys.Reading.Move)}
-	switch {
-	case m.focusIdx < 0:
-		expand := seg(keys.Reading.Expand)
-		expand.reason = "nothing on this row expands"
-		segs = append(segs, expand)
-	case m.focusedExpands():
+	if m.focusedExpands() {
 		segs = append(segs, seg(keys.Reading.Expand))
 		if m.focusedRowOpen() {
 			segs = append(segs, seg(keys.Reading.Collapse))
 		}
+	} else {
+		expand := seg(keys.Reading.Expand)
+		expand.reason = "nothing on this row expands"
+		segs = append(segs, expand)
 	}
 	// Like [-], [y] is offered only while the row under the cursor can
 	// honour it — an offer nothing accepts is worse than no offer at all.
@@ -118,8 +138,55 @@ func (m Model) focusedExpands() bool {
 // seg is a binding as one segment of the bar: the register's spelling and the
 // register's words, so the bar cannot offer a key the dispatch does not
 // answer.
-func seg(b keys.Binding) hintSeg {
-	return hintSeg{key: keys.Shown(b), label: keys.Words(b)}
+func seg(b keys.Binding) hintSeg { return segAs(b, keys.Words(b)) }
+
+// segAs is the same segment with the surface's own words, which is what a
+// rail reaches for wherever it means something more specific than the
+// register does. The key stays the register's either way.
+//
+// Whether the segment is the safe answer is decided here, off the spelling,
+// rather than by each row: esc is the answer that changes nothing wherever a
+// surface holds the whole keyboard, and a row that had to remember to say so
+// is a row that will one day forget
+// (docs/interface/principles.md#esc-is-always-the-safe-answer). A binding esc
+// answers but the register spells `q` is not it — the reader pressed a
+// letter, and what the letter does is the surface's to say.
+func segAs(b keys.Binding, label string) hintSeg {
+	return hintSeg{key: keys.Shown(b), label: label, safe: keys.Shown(b) == safeSpelling}
+}
+
+// safeSpelling is how the register spells the key that changes nothing.
+const safeSpelling = "esc"
+
+// twoPress is the segment for a key that acts on its second press, with the
+// count stated before the first press rather than after it. A row that says
+// `×2` only once the window is open has taught the reader nothing until they
+// have already pressed the key once without meaning to, and the two keys this
+// applies to are the two that end a turn and a session
+// (docs/interface/surfaces.md#the-input-frame).
+func twoPress(b keys.Binding, label string) hintSeg {
+	return hintSeg{key: keys.Shown(b), label: "×2 " + label}
+}
+
+// fitSegs sheds whole segments until the run fits: the highest give first,
+// and the rightmost where two are equal. A run with nothing left to give
+// keeps what it has and the row's own edge cuts it, which is the state a
+// terminal too narrow for two offers is in whatever this does.
+func fitSegs(segs []hintSeg, room int) []hintSeg {
+	out := segs
+	for len(out) > 1 && lipgloss.Width(joinSegs(out)) > room {
+		drop := -1
+		for i, s := range out {
+			if s.give > 0 && (drop < 0 || s.give >= out[drop].give) {
+				drop = i
+			}
+		}
+		if drop < 0 {
+			break
+		}
+		out = append(out[:drop:drop], out[drop+1:]...)
+	}
+	return out
 }
 
 // shortenBackKey is the first thing the key line gives up as the terminal
@@ -149,6 +216,23 @@ func withoutSeg(segs []hintSeg, key string) []hintSeg {
 	out := make([]hintSeg, 0, len(segs))
 	for _, s := range segs {
 		if s.key == key {
+			continue
+		}
+		out = append(out, s)
+	}
+	return out
+}
+
+// dropAbsentKey goes second, right after the register's own. A key stated
+// absent with its reason is a teaching and not an offer — nothing is lost by
+// dropping it that the reader could have pressed — and it is the widest thing
+// on the bar, since the reason is a clause rather than an imperative. So it
+// stands wherever the terminal can carry it whole and leaves before any key
+// the row can actually honour (docs/interface/principles.md#fold-never-hide).
+func dropAbsentKey(segs []hintSeg) []hintSeg {
+	out := make([]hintSeg, 0, len(segs))
+	for _, s := range segs {
+		if s.reason != "" {
 			continue
 		}
 		out = append(out, s)
@@ -568,7 +652,7 @@ func (m Model) readingRowLines(width int, budget int) []string {
 	}
 	segs := make([]hintSeg, 0, len(offers)+1)
 	for _, o := range offers {
-		segs = append(segs, hintSeg{key: strings.Trim(o.Key, "[]"), label: o.Label})
+		segs = append(segs, hintSeg{key: strings.Trim(o.Key, "[]"), label: o.Label, safe: o.Safe})
 	}
 	segs = append(segs, hintSeg{key: keys.Shown(keys.Select.Cancel), label: "nothing", safe: true})
 
@@ -620,14 +704,16 @@ func stackSegs(segs []hintSeg, rail string, width, budget int) []string {
 // least.
 func (m Model) readingKeyLine(width int) string {
 	full := m.readingModeKeys()
-	// The settled order: [?] goes first, then [q] gives up its words, then
-	// [/], then [y], then [n/N], then [enter] goes whole.
+	// The settled order: [?] goes first, then a key stated absent with its
+	// reason, then [q] gives up its words, then [/], then [y], then [n/N],
+	// then a live [enter] goes whole.
 	noList := dropKeyListKey(full)
-	short := shortenBackKey(noList)
+	noAbsent := dropAbsentKey(noList)
+	short := shortenBackKey(noAbsent)
 	noSearch := dropSearchKey(short)
 	noCopy := dropCopyKey(noSearch)
 	noMatch := dropMatchKey(noCopy)
-	forms := [][]hintSeg{full, noList, short, noSearch, noCopy, noMatch,
+	forms := [][]hintSeg{full, noList, noAbsent, short, noSearch, noCopy, noMatch,
 		dropExpandKey(noMatch)}
 	positions := m.readingPositionFields()
 	for _, form := range forms {
@@ -683,7 +769,7 @@ func (m Model) readingKeyListLines(width, bound int) []string {
 	// no rows: nothing has to say "this row has nothing to offer".
 	rail := sty.Hint.MutationRail.Render("▎")
 	for _, o := range m.readingRowOffers() {
-		s := hintSeg{key: strings.Trim(o.Key, "[]"), label: o.Label}
+		s := hintSeg{key: strings.Trim(o.Key, "[]"), label: o.Label, safe: o.Safe}
 		lines = append(lines, clipRow(rail+s.render(), width))
 	}
 	if len(lines) > bound {

@@ -38,7 +38,7 @@ Delete "release notes"? Files on disk are untouched.  [y/N]
 │ [esc] cancel                                                             │
 ╰──────────────────────────────────────────────────────────────────────────╯
 rename ▸ release notes                                                    
-enter renames · esc keeps the name
+[enter] renames · [esc] keeps the name
 
 ── ansi ────────────────────────────────────────────────────
 · titled, untitled, and the session's own slot
@@ -46,8 +46,8 @@ enter renames · esc keeps the name
 ␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254m2026-08-30 09:12:04␛[m    ␛[38;5;244mFlaky retry test · 1 turns, Aug 31 09:04␛[m     ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m2. ␛[m␛[38;5;254mrelease notes␛[m          ␛[38;5;244m4 turns, Aug 31 09:04␛[m                        ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m3. ⊘ 2026-08-31 14:02:11  1 turns, Aug 31 09:04    the chat you are in␛[m ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;244m[↑↓] move · [enter] select · [x] delete · [r] rename · [/] filter␛[m        ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;244m[esc] cancel␛[m                                                             ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m select␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m delete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m rename␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m        ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m cancel␛[m                                                             ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 
 · [x] armed the confirm
@@ -55,8 +55,8 @@ enter renames · esc keeps the name
 ␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254m2026-08-30 09:12:04␛[m    ␛[38;5;244mFlaky retry test · 1 turns, Aug 31 09:04␛[m     ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m2. release notes          4 turns, Aug 31 09:04                       ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;244m⊘ 2026-08-31 14:02:11␛[m  ␛[38;5;244m1 turns, Aug 31 09:04␛[m    ␛[38;5;244mthe chat you are in␛[m ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;244m[↑↓] move · [enter] select · [x] delete · [r] rename · [/] filter␛[m        ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;244m[esc] cancel␛[m                                                             ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m select␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m delete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m rename␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m        ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m cancel␛[m                                                             ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 ␛[38;5;254mDelete "release notes"? Files on disk are untouched.␛[m  ␛[38;5;244m[␛[m␛[38;5;244my␛[m␛[38;5;244m/␛[m␛[1;38;5;254mN␛[m␛[38;5;244m]␛[m
 
@@ -65,8 +65,8 @@ enter renames · esc keeps the name
 ␛[38;5;244m│␛[m   ␛[38;5;244m1. ␛[m␛[38;5;254m2026-08-30 09:12:04␛[m    ␛[38;5;244mFlaky retry test · 1 turns, Aug 31 09:04␛[m     ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m2. release notes          4 turns, Aug 31 09:04                       ␛[m ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m   ␛[38;5;244m3. ␛[m␛[38;5;244m⊘ 2026-08-31 14:02:11␛[m  ␛[38;5;244m1 turns, Aug 31 09:04␛[m    ␛[38;5;244mthe chat you are in␛[m ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;244m[↑↓] move · [enter] select · [x] delete · [r] rename · [/] filter␛[m        ␛[38;5;244m│␛[m
-␛[38;5;244m│␛[m ␛[38;5;244m[esc] cancel␛[m                                                             ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m select␛[m␛[38;5;244m · ␛[m␛[38;5;254m[x]␛[m␛[38;5;244m delete␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m rename␛[m␛[38;5;244m · ␛[m␛[38;5;254m[/]␛[m␛[38;5;244m filter␛[m        ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m cancel␛[m                                                             ␛[38;5;244m│␛[m
 ␛[38;5;244m╰──────────────────────────────────────────────────────────────────────────╯␛[m
 ␛[38;5;244mrename ▸ ␛[m␛[38;5;254mrelease notes␛[m ␛[38;5;254m                                                   ␛[m
-␛[38;5;244menter renames · esc keeps the name␛[m
+␛[38;5;254m[enter]␛[m␛[38;5;244m renames␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m keeps the name␛[m

@@ -22,20 +22,57 @@ package components
 
 import "github.com/rfizzle/shhh/internal/ui/keys"
 
-// offer is a binding as one segment of a key row.
-func offer(b keys.Binding) string { return keys.Bracket(b) + " " + keys.Words(b) }
-
-// words is the same segment with the surface's own words.
+// words is a binding as one segment of a key row drawn in a single tone,
+// with the surface's own words. A row whose key is live is built from
+// KeyOffer instead, so the key can wear Info and the words beside it Dim; a
+// header states a key rather than offering one, and states it in the one
+// tone the header wears.
 func words(b keys.Binding, label string) string { return keys.Bracket(b) + " " + label }
 
 // keyOffer is a binding as a bracketed offer.
 func keyOffer(b keys.Binding) KeyOffer {
-	return KeyOffer{Key: keys.Bracket(b), Label: keys.Words(b)}
+	return keyOfferAs(b, keys.Words(b))
 }
 
 // keyOfferAs is the same with the surface's own words.
+//
+// Whether the offer is the safe one is decided here, off the spelling, and
+// not by each row: esc is the answer that changes nothing wherever a surface
+// holds the whole keyboard, and a row that had to remember to say so is a row
+// that will one day forget
+// (docs/interface/principles.md#esc-is-always-the-safe-answer). A binding
+// answered by esc but spelled `q` is not it — the reader pressed a letter,
+// and what the letter does is the surface's to say.
 func keyOfferAs(b keys.Binding, label string) KeyOffer {
-	return KeyOffer{Key: keys.Bracket(b), Label: label}
+	return KeyOffer{Key: keys.Bracket(b), Label: label, Safe: keys.Shown(b) == safeSpelling}
+}
+
+// safeSpelling is how the register spells the key that changes nothing.
+const safeSpelling = "esc"
+
+// Offer is a binding as one offer on a key row, for a surface outside this
+// package that lays its own. It is the door the brackets are written behind:
+// a host that spelled a key itself would be the second place a rebind has to
+// reach.
+func Offer(b keys.Binding) KeyOffer { return keyOffer(b) }
+
+// OfferAs is the same with the surface's own words, which is what a host
+// reaches for wherever it means something more specific than the register
+// does.
+func OfferAs(b keys.Binding, label string) KeyOffer { return keyOfferAs(b, label) }
+
+// offerRun is a run of offers as the plain sentences a row drawn in one tone
+// needs. A live row paints the key apart from the words beside it, so it
+// keeps the offers themselves; the runs where no key is live — the card
+// waiting for the draft, the one being typed into — wear a single grey, and
+// a seam nothing paints across is a seam worth flattening
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+func offerRun(offers []KeyOffer) []string {
+	out := make([]string, 0, len(offers))
+	for _, o := range offers {
+		out = append(out, o.Key+" "+o.Label)
+	}
+	return out
 }
 
 // The two phrases a take-over screen states its way out in. Which of them a

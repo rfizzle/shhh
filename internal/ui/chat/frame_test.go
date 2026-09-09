@@ -69,7 +69,7 @@ func TestFrame_WideTwoRails(t *testing.T) {
 	m := frameModel(t, 130, 40) // the wide rung is a 110-column terminal
 	view := stripANSI(m.View().Content)
 
-	for _, want := range []string{"╭─", "├─", "╰─", "⏸ gated", "ctx ", "↑41.2k ↓9.8k", "$0.51", "gpt-4o", "enter send · shift+enter newline · ctrl+g editor · ctrl+v attach · ctrl+/ palette · shift+tab mode", "idle"} {
+	for _, want := range []string{"╭─", "├─", "╰─", "⏸ gated", "ctx ", "↑41.2k ↓9.8k", "$0.51", "gpt-4o", "[enter] send · [ctrl+g] editor · [ctrl+v] attach · [ctrl+/] palette · [shift+tab] mode · [ctrl+d] ×2 quit", "idle"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("wide frame missing %q:\n%s", want, view)
 		}
@@ -83,27 +83,61 @@ func TestFrame_WideTwoRails(t *testing.T) {
 	}
 }
 
-// The idle rail is full at the width it first appears at, which is the
-// measurement the hint set is chosen against: another hint would push the
-// row past its own corner and be clipped, and a clipped hint is a key
-// nobody can read. Asserted here so adding a seventh fails a test rather
-// than shipping a truncated rail on a 110-column terminal.
-func TestFrame_IdleHintsFitTheRailAtItsThreshold(t *testing.T) {
-	m := frameModel(t, frameWideWidth+horizontalPadding*2, 40) // the narrowest wide frame
-	var rail string
-	for _, line := range strings.Split(stripANSI(m.View().Content), "\n") {
-		if strings.HasPrefix(strings.TrimSpace(line), "╰─") {
-			rail = strings.TrimSpace(line)
+// The idle rail sheds whole offers until its run fits, at every width it is
+// drawn at: an offer cut in half against the corner is a key nobody can read,
+// and a run measured once against one terminal is a run that says nothing
+// more on a wider one (docs/interface/principles.md#fold-never-hide).
+//
+// What never goes is the pair that says how a message leaves and under what
+// mode, and the two-press quit beside them — a key whose first press is
+// silent has to be named before it is pressed.
+func TestFrame_IdleHintsFitEveryRailTheyAreDrawnOn(t *testing.T) {
+	for _, terminal := range []int{frameWideWidth + horizontalPadding*2, 130, 160, 200} {
+		m := frameModel(t, terminal, 40)
+		var rail string
+		for _, line := range strings.Split(stripANSI(m.View().Content), "\n") {
+			if strings.HasPrefix(strings.TrimSpace(line), "╰─") {
+				rail = strings.TrimSpace(line)
+			}
+		}
+		if rail == "" {
+			t.Fatalf("no bottom rail at %d columns", terminal)
+		}
+		if !strings.HasSuffix(rail, "─╯") {
+			t.Fatalf("at %d columns the hints crowd out the rail's own end:\n%s", terminal, rail)
+		}
+		if strings.Contains(rail, "…") {
+			t.Fatalf("at %d columns an offer was clipped rather than shed:\n%s", terminal, rail)
+		}
+		for _, want := range []string{
+			keys.Bracket(keys.Draft.Send) + " send",
+			keys.Bracket(keys.Draft.Mode) + " mode",
+			keys.Bracket(keys.Draft.Quit) + " ×2 quit",
+		} {
+			if !strings.Contains(rail, want) {
+				t.Fatalf("at %d columns the rail dropped %q:\n%s", terminal, want, rail)
+			}
 		}
 	}
-	if rail == "" {
-		t.Fatal("no bottom rail at the wide threshold")
-	}
-	if !strings.HasSuffix(rail, "─╯") {
-		t.Fatalf("the hints crowd out the rail's own end:\n%s", rail)
-	}
-	if !strings.Contains(rail, keys.Shown(keys.Draft.Mode)+" mode") {
-		t.Fatalf("the last hint is clipped:\n%s", rail)
+}
+
+// And the widest terminal gets the whole run, so nothing on it is written
+// down and never drawn.
+func TestFrame_TheWidestIdleRailOffersEverythingItHas(t *testing.T) {
+	m := frameModel(t, 200, 40)
+	rail := stripANSI(m.frameHints(200))
+	for _, want := range []string{
+		keys.Bracket(keys.Draft.Send) + " send",
+		keys.Bracket(keys.Draft.Newline) + " newline",
+		keys.Bracket(keys.Draft.Editor) + " editor",
+		keys.Bracket(keys.Draft.Attach) + " attach",
+		keys.Bracket(keys.Draft.Palette) + " palette",
+		keys.Bracket(keys.Draft.Mode) + " mode",
+		keys.Bracket(keys.Draft.Quit) + " ×2 quit",
+	} {
+		if !strings.Contains(rail, want) {
+			t.Fatalf("the widest rail should offer %q, got %q", want, rail)
+		}
 	}
 }
 
@@ -216,10 +250,10 @@ func TestFrame_GutterAndHintsSwapWhileWorking(t *testing.T) {
 	if !strings.Contains(view, "│ ▸ ") || !strings.Contains(view, "thinking…") {
 		t.Fatalf("working frame missing the steering gutter and the turn status:\n%s", view)
 	}
-	if !strings.Contains(view, "ctrl+c cancels the turn · enter queues steering · / commands") {
+	if !strings.Contains(view, "[ctrl+c] ×2 stop the run · [enter] queues steering · [/] commands") {
 		t.Fatalf("working frame missing the interrupt and steering hints:\n%s", view)
 	}
-	if strings.Contains(view, "enter send") {
+	if strings.Contains(view, "[enter] send") {
 		t.Fatalf("working frame should swap out the idle hints:\n%s", view)
 	}
 }
@@ -328,7 +362,7 @@ func TestFrame_AttachedShowsChildGutterAndVitals(t *testing.T) {
 	if !strings.Contains(view, "│ researcher-1 "+draftGutter+" ") {
 		t.Fatalf("attached gutter should carry the child's name:\n%s", view)
 	}
-	if !strings.Contains(view, "esc detach · alt+a agents") {
+	if !strings.Contains(view, "[esc] detach · [alt+a] agents") {
 		t.Fatalf("attached frame missing the detach hints:\n%s", view)
 	}
 }

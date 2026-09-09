@@ -342,10 +342,10 @@ func (c *questionCard) armNote() {
 // behind, and the strip where the call carried more than one question. Both
 // are worded here rather than at the binding, because `d` and the arrows each
 // mean a near thing elsewhere on the family and the row has to say which.
-func (c *questionCard) offers() []string {
-	var out []string
+func (c *questionCard) offers() []components.KeyOffer {
+	var out []components.KeyOffer
 	if len(c.rows) > 0 {
-		out = append(out, keys.Bracket(keys.Select.Long)+" "+keys.Words(keys.Select.Long))
+		out = append(out, components.Offer(keys.Select.Long))
 	}
 	if c.sheet == nil {
 		return out
@@ -355,9 +355,9 @@ func (c *questionCard) offers() []string {
 		// arrives (armNote), and the note-selector offers no note key on a
 		// card with no rows to move between — so the offer and the key are
 		// the card's here (updateQuestion).
-		out = append(out, keys.Bracket(keys.Select.Note)+" answer")
+		out = append(out, components.OfferAs(keys.Select.Note, "answer"))
 	}
-	return append(out, keys.Bracket(keys.Select.Tab)+" "+keys.Words(keys.Select.Tab))
+	return append(out, components.Offer(keys.Select.Tab))
 }
 
 // freeAnswer reports the dressing that is the field and nothing else.
@@ -575,10 +575,10 @@ func (c *questionCard) place() string {
 // to draw one in, so the card states it here — from the register, not from a
 // spelling written down beside it.
 func questionConfirmKeys(c *questionCard, width int) []string {
-	segs := []string{
-		keys.Bracket(keys.Confirm.Yes) + " " + keys.Words(keys.Confirm.Yes),
-		keys.Bracket(keys.Confirm.No) + " " + keys.Words(keys.Confirm.No),
-		keys.Bracket(keys.Select.Note) + " note",
+	segs := []components.KeyOffer{
+		components.Offer(keys.Confirm.Yes),
+		components.Offer(keys.Confirm.No),
+		components.OfferAs(keys.Select.Note, "note"),
 	}
 	segs = append(segs, c.offers()...)
 	// Wrapped between clauses rather than clipped, the way a card's own key
@@ -595,10 +595,10 @@ func (s *questionSheet) submitRows(width int) []string {
 	if left := len(s.qs) - s.answered(); left > 0 {
 		line += " · " + strconv.Itoa(left) + " unanswered, sent as skipped"
 	}
-	segs := []string{
-		keys.Bracket(keys.Select.Take) + " send",
-		keys.Bracket(keys.Select.Tab) + " " + keys.Words(keys.Select.Tab),
-		keys.Bracket(keys.Select.Cancel) + " answer in your own words",
+	segs := []components.KeyOffer{
+		components.OfferAs(keys.Select.Take, "send"),
+		components.Offer(keys.Select.Tab),
+		components.OfferAs(keys.Select.Cancel, "answer in your own words"),
 	}
 	rows := append([]string{components.Clip(line, width)}, components.CardHintRows(segs, width)...)
 	return strings.Split(components.Card{Title: "the answers"}.Render(rows, width), "\n")

@@ -133,7 +133,8 @@ func (m Model) openTodoProposals(proposals []todo.Proposal, what string) (tea.Mo
 		}
 	}
 	card := components.NewMultiSelect(fmt.Sprintf("%s — %s toggles, %s all or none, %s writes the checked ones, %s writes nothing",
-		what, keys.Shown(keys.Select.Toggle), keys.Shown(keys.Select.All), keys.Shown(keys.Select.Take), keys.Shown(keys.Select.Cancel)), opts)
+		what, keys.Bracket(keys.Select.Toggle), keys.Bracket(keys.Select.All),
+		keys.Bracket(keys.Select.Take), keys.Bracket(keys.Select.Cancel)), opts)
 	for i := range card.Checked {
 		card.Checked[i] = true
 	}
@@ -142,7 +143,7 @@ func (m Model) openTodoProposals(proposals []todo.Proposal, what string) (tea.Mo
 	// items it proposes, and this is where a reader who disagrees says so
 	// before anything is written — the alternative being a file written with
 	// the reading's answers and then edited back.
-	card.Actions = []string{keys.Shown(keys.Backlog.Edit) + " its header"}
+	card.Actions = []components.KeyOffer{components.OfferAs(keys.Backlog.Edit, "its header")}
 	m.todoPropose = card
 	m.enterSurface(stateTodoPropose)
 	m.syncViewport()
@@ -509,20 +510,20 @@ func (d *todoDraft) read() {
 // out to the editor; one opened from the proposals card is setting a header
 // on a row that is still a proposal, so enter keeps the header and there is
 // no file for an editor to be given.
-func (d *todoDraft) hint() []string {
-	segs := []string{
-		keys.Shown(keys.Select.Move) + " move",
-		keys.Shown(keys.Select.Toggle) + " change",
+func (d *todoDraft) hint() []components.KeyOffer {
+	segs := []components.KeyOffer{
+		components.OfferAs(keys.Select.Move, "move"),
+		components.OfferAs(keys.Select.Toggle, "change"),
 	}
 	if d.from >= 0 {
 		return append(segs,
-			keys.Shown(keys.Select.Take)+" keep it",
-			keys.Shown(keys.Select.Cancel)+" leave it")
+			components.OfferAs(keys.Select.Take, "keep it"),
+			components.OfferAs(keys.Select.Cancel, "leave it"))
 	}
 	return append(segs,
-		keys.Shown(keys.Backlog.Edit)+" the editor",
-		keys.Shown(keys.Select.Take)+" write it",
-		keys.Shown(keys.Select.Cancel)+" drop it")
+		components.OfferAs(keys.Backlog.Edit, "the editor"),
+		components.OfferAs(keys.Select.Take, "write it"),
+		components.OfferAs(keys.Select.Cancel, "drop it"))
 }
 
 // missing names the dependencies the draft gave that nothing answers. They

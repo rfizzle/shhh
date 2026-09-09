@@ -535,7 +535,7 @@ func TestChildAskCommandCardStatesContainmentAndRadius(t *testing.T) {
 func TestChildAskScrollsItsBoundedBody(t *testing.T) {
 	m := routedModel(t, longPatchAsk(t.TempDir()))
 	before := ansi.Strip(m.View().Content)
-	if !strings.Contains(before, "more lines · shift+↓") {
+	if !strings.Contains(before, "more lines · [shift+↓]") {
 		t.Fatalf("the bounded routed card should count its scrolled-off rows:\n%s", before)
 	}
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyDown, Mod: tea.ModShift})

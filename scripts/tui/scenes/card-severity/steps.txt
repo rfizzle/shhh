@@ -27,6 +27,6 @@ sleep 1
 keys n
 snap 05-answered "Every rung of the ladder is above"
 keys C-c
-snap 06-quit-armed "press again to quit"
+snap 06-quit-armed "again quits"
 keys C-c
 snap 07-exit "that is everything the screen was holding"

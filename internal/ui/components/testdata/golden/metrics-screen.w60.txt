@@ -123,7 +123,7 @@ shhh metrics · all time · 0 requests · 0 models     [q] quit
   ␛[38;5;241mhow the commands ran␛[m                              ␛[38;5;241m203 runs␛[m
   ␛[38;5;241mgpt-5.2          ␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;241m▱▱▱▱▱␛[m ␛[38;5;214m81% exited 0␛[m
 
-␛[94m[esc]␛[m␛[38;5;241m back to the shell␛[m
+␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
 
 · nothing priced · the split is over tokens and says so
 ␛[1;97mshhh metrics␛[m                                        ␛[38;5;241m[q] quit␛[m
@@ -150,7 +150,7 @@ shhh metrics · all time · 0 requests · 0 models     [q] quit
   ␛[38;5;241mhow the commands ran␛[m                              ␛[38;5;241m203 runs␛[m
   ␛[38;5;241mgpt-5.2          ␛[m  ␛[38;5;214m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;241m▱▱▱▱▱␛[m ␛[38;5;214m81% exited 0␛[m
 
-␛[94m[esc]␛[m␛[38;5;241m back to the shell␛[m
+␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
 
 · a short terminal · what fits is drawn, what went is named
 ␛[1;97mshhh metrics␛[m                               ␛[38;5;252m$18.42␛[m␛[38;5;241m · [q] quit␛[m
@@ -163,7 +163,7 @@ shhh metrics · all time · 0 requests · 0 models     [q] quit
   ␛[38;5;252mhouse-model               9    42k     3k       —   1.2s␛[m
   ␛[38;5;241m↓ 3 more · where the money went · how the answers came ba…␛[m
 
-␛[94m[esc]␛[m␛[38;5;241m back to the shell␛[m
+␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
 
 · a shorter one · the table windows last and says what it holds back
 ␛[1;97mshhh metrics␛[m                               ␛[38;5;252m$18.42␛[m␛[38;5;241m · [q] quit␛[m
@@ -174,7 +174,7 @@ shhh metrics · all time · 0 requests · 0 models     [q] quit
   ␛[38;5;241m↓ 3 more models␛[m
   ␛[38;5;241m↓ 3 more · where the money went · how the answers came ba…␛[m
 
-␛[94m[esc]␛[m␛[38;5;241m back to the shell␛[m
+␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m
 
 · nothing recorded · a heading over nothing says so
 ␛[1;97mshhh metrics␛[m␛[38;5;241m · all time · 0 requests · 0 models␛[m     ␛[38;5;241m[q] quit␛[m
@@ -183,4 +183,4 @@ shhh metrics · all time · 0 requests · 0 models     [q] quit
   ␛[1;94mMODEL  REQUESTS  ↑ TOK  ↓ TOK  SPEND  TTFT  P95  TOK · 7d␛[m
   ␛[38;5;241mno models to show␛[m
 
-␛[94m[esc]␛[m␛[38;5;241m back to the shell␛[m
+␛[92m[esc]␛[m␛[38;5;241m back to the shell␛[m

@@ -19,4 +19,4 @@ Paste a key for openai · replacing ···4f9c
 · nothing pasted yet
 ␛[38;5;252mPaste a key for openai␛[m␛[38;5;241m · replacing ···4f9c␛[m
 ␛[38;5;241m▸ ␛[m␛[38;5;214m␛[m␛[1;97;48;5;62m ␛[m
-␛[94m[enter]␛[m␛[38;5;241m use it for this session␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m keep the current key␛[m
+␛[94m[enter]␛[m␛[38;5;241m use it for this session␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m keep the current key␛[m

@@ -95,18 +95,24 @@ func (m *Model) armPressFor(kind armKind, key string, window time.Duration) tea.
 // window just shut stays recognisable as stale.
 func (m *Model) disarm() { m.armed = armedPress{kind: armNone, seq: m.armed.seq} }
 
-// armedNotice is the phrase the rails print while a window is open, or empty.
-// Each kind is stated only in the state its second press would act in, so a
-// window the turn outran (the stream ended between presses) says nothing
-// rather than promising a cancel with nothing to cancel.
-func (m Model) armedNotice() string {
+// armedHint is the offer the rails print while a window is open. Each kind is
+// stated only in the state its second press would act in, so a window the
+// turn outran (the stream ended between presses) says nothing rather than
+// promising a cancel with nothing to cancel.
+//
+// The key is named, and named in the brackets every other offer on the rail
+// wears: the rail this replaces was already saying `[ctrl+c] ×2 stop the run`
+// before the first press, and a window that answered it in a second notation
+// would read as a different key
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+func (m Model) armedHint() (hintSeg, bool) {
 	switch {
 	case m.armed.open(armCancel) && (m.turnState() == stateStreaming || m.turnState() == stateCloseGate || m.heldAtBoundary()):
-		return m.armed.key + " again cancels the turn"
+		return hintSeg{key: m.armed.key, label: "again cancels the turn"}, true
 	case m.armed.open(armQuit) && !m.working():
-		return "press again to quit"
+		return hintSeg{key: m.armed.key, label: "again quits"}, true
 	}
-	return ""
+	return hintSeg{}, false
 }
 
 // cancelTurnNow abandons the streaming turn — the second press's act. What

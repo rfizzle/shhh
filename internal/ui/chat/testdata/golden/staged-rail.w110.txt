@@ -17,7 +17,7 @@
 │                                                                                                        │
 │                                                                                                        │
 ├─ ⏸ gated · ctx 32% ▰▰▱▱▱▱▱▱ · ↑41.2k ↓9.8k · $0.51 · gpt-4o ───────────────────────────────────────────┤
-╰─ enter send · shift+enter newline · ctrl+g editor · ctrl+v attach · ctrl+/ palette · shift+tab mode ───╯
+╰─ [enter] send · [ctrl+v] attach · [ctrl+/] palette · [shift+tab] mode · [ctrl+d] ×2 quit ──────────────╯
 
 · one of each kind · only the text has lines to count
 ▣ shot.png 412 KB · ≡ notes.md 2 KB 84 lines · ▤ spec.pdf 1.1 MB                                          
@@ -26,7 +26,7 @@
 │                                                                                                        │
 │                                                                                                        │
 ├─ ⏸ gated · ctx 32% ▰▰▱▱▱▱▱▱ · ↑41.2k ↓9.8k · $0.51 · gpt-4o ───────────────────────────────────────────┤
-╰─ enter send · shift+enter newline · ctrl+g editor · ctrl+v attach · ctrl+/ palette · shift+tab mode ───╯
+╰─ [enter] send · [ctrl+v] attach · [ctrl+/] palette · [shift+tab] mode · [ctrl+d] ×2 quit ──────────────╯
 
 · a staged paste · the height is what names it
 ≡ paste-1.txt 4 KB 178 lines                                                                              
@@ -35,7 +35,7 @@
 │                                                                                                        │
 │                                                                                                        │
 ├─ ⏸ gated · ctx 32% ▰▰▱▱▱▱▱▱ · ↑41.2k ↓9.8k · $0.51 · gpt-4o ───────────────────────────────────────────┤
-╰─ enter send · shift+enter newline · ctrl+g editor · ctrl+v attach · ctrl+/ palette · shift+tab mode ───╯
+╰─ [enter] send · [ctrl+v] attach · [ctrl+/] palette · [shift+tab] mode · [ctrl+d] ×2 quit ──────────────╯
 
 · a notice above it · transient first, then what rides
 1 steering queued                                                                                         
@@ -45,7 +45,7 @@
 │                                                                                                        │
 │                                                                                                        │
 ├─ ⏸ gated · ctx 32% ▰▰▱▱▱▱▱▱ · ↑41.2k ↓9.8k · $0.51 · gpt-4o ───────────────────────────────────────────┤
-╰─ enter send · shift+enter newline · ctrl+g editor · ctrl+v attach · ctrl+/ palette · shift+tab mode ───╯
+╰─ [enter] send · [ctrl+v] attach · [ctrl+/] palette · [shift+tab] mode · [ctrl+d] ×2 quit ──────────────╯
 
 ── ansi ────────────────────────────────────────────────────
 · one screenshot waiting
@@ -55,7 +55,7 @@
 ␛[38;5;214m│␛[m                                                                                                        ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                                                                        ␛[38;5;214m│␛[m
 ␛[38;5;214m├─␛[m ␛[38;5;214m⏸ gated␛[38;5;243m · ␛[92mctx 32%␛[m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · ↑41.2k ↓9.8k · $0.51 · ␛[38;5;252mgpt-4o␛[m ␛[38;5;214m───────────────────────────────────────────┤␛[m
-␛[38;5;214m╰─␛[m ␛[38;5;241menter send · shift+enter newline · ctrl+g editor · ctrl+v attach · ctrl+/ palette · shift+tab mode␛[m ␛[38;5;214m───╯␛[m
+␛[38;5;214m╰─␛[m ␛[94m[enter]␛[38;5;241m send · ␛[94m[ctrl+v]␛[38;5;241m attach · ␛[94m[ctrl+/]␛[38;5;241m palette · ␛[94m[shift+tab]␛[38;5;241m mode · ␛[94m[ctrl+d]␛[38;5;241m ×2 quit␛[m ␛[38;5;214m──────────────╯␛[m
 
 · one of each kind · only the text has lines to count
 ␛[38;5;252m▣ shot.png␛[38;5;241m 412 KB · ␛[38;5;252m≡ notes.md␛[38;5;241m 2 KB 84 lines · ␛[38;5;252m▤ spec.pdf␛[38;5;241m 1.1 MB␛[m                                          
@@ -64,7 +64,7 @@
 ␛[38;5;214m│␛[m                                                                                                        ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                                                                        ␛[38;5;214m│␛[m
 ␛[38;5;214m├─␛[m ␛[38;5;214m⏸ gated␛[38;5;243m · ␛[92mctx 32%␛[m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · ↑41.2k ↓9.8k · $0.51 · ␛[38;5;252mgpt-4o␛[m ␛[38;5;214m───────────────────────────────────────────┤␛[m
-␛[38;5;214m╰─␛[m ␛[38;5;241menter send · shift+enter newline · ctrl+g editor · ctrl+v attach · ctrl+/ palette · shift+tab mode␛[m ␛[38;5;214m───╯␛[m
+␛[38;5;214m╰─␛[m ␛[94m[enter]␛[38;5;241m send · ␛[94m[ctrl+v]␛[38;5;241m attach · ␛[94m[ctrl+/]␛[38;5;241m palette · ␛[94m[shift+tab]␛[38;5;241m mode · ␛[94m[ctrl+d]␛[38;5;241m ×2 quit␛[m ␛[38;5;214m──────────────╯␛[m
 
 · a staged paste · the height is what names it
 ␛[38;5;252m≡ paste-1.txt␛[38;5;241m 4 KB 178 lines␛[m                                                                              
@@ -73,7 +73,7 @@
 ␛[38;5;214m│␛[m                                                                                                        ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                                                                        ␛[38;5;214m│␛[m
 ␛[38;5;214m├─␛[m ␛[38;5;214m⏸ gated␛[38;5;243m · ␛[92mctx 32%␛[m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · ↑41.2k ↓9.8k · $0.51 · ␛[38;5;252mgpt-4o␛[m ␛[38;5;214m───────────────────────────────────────────┤␛[m
-␛[38;5;214m╰─␛[m ␛[38;5;241menter send · shift+enter newline · ctrl+g editor · ctrl+v attach · ctrl+/ palette · shift+tab mode␛[m ␛[38;5;214m───╯␛[m
+␛[38;5;214m╰─␛[m ␛[94m[enter]␛[38;5;241m send · ␛[94m[ctrl+v]␛[38;5;241m attach · ␛[94m[ctrl+/]␛[38;5;241m palette · ␛[94m[shift+tab]␛[38;5;241m mode · ␛[94m[ctrl+d]␛[38;5;241m ×2 quit␛[m ␛[38;5;214m──────────────╯␛[m
 
 · a notice above it · transient first, then what rides
 ␛[94m1 steering queued␛[m                                                                                         
@@ -83,4 +83,4 @@
 ␛[38;5;214m│␛[m                                                                                                        ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                                                                        ␛[38;5;214m│␛[m
 ␛[38;5;214m├─␛[m ␛[38;5;214m⏸ gated␛[38;5;243m · ␛[92mctx 32%␛[m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · ↑41.2k ↓9.8k · $0.51 · ␛[38;5;252mgpt-4o␛[m ␛[38;5;214m───────────────────────────────────────────┤␛[m
-␛[38;5;214m╰─␛[m ␛[38;5;241menter send · shift+enter newline · ctrl+g editor · ctrl+v attach · ctrl+/ palette · shift+tab mode␛[m ␛[38;5;214m───╯␛[m
+␛[38;5;214m╰─␛[m ␛[94m[enter]␛[38;5;241m send · ␛[94m[ctrl+v]␛[38;5;241m attach · ␛[94m[ctrl+/]␛[38;5;241m palette · ␛[94m[shift+tab]␛[38;5;241m mode · ␛[94m[ctrl+d]␛[38;5;241m ×2 quit␛[m ␛[38;5;214m──────────────╯␛[m

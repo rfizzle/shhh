@@ -282,8 +282,8 @@ func todoGroomTitle(r todo.Reading, changes int) string {
 		head += " · " + strings.Join(parts, ", ")
 	}
 	return fmt.Sprintf("%s — %s toggles, %s all or none, %s writes the checked lines, %s writes nothing",
-		head, keys.Shown(keys.Select.Toggle), keys.Shown(keys.Select.All),
-		keys.Shown(keys.Select.Take), keys.Shown(keys.Select.Cancel))
+		head, keys.Bracket(keys.Select.Toggle), keys.Bracket(keys.Select.All),
+		keys.Bracket(keys.Select.Take), keys.Bracket(keys.Select.Cancel))
 }
 
 // todoGroomRow is one proposed line as the card draws it: the verdict, the

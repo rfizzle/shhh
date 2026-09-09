@@ -27,6 +27,6 @@ snap 04-receipt "continuing from this summary"
 snap 05-summary "established loop.go as the owner"
 # And the session ends the way every scene ends: the cancel chord, twice.
 keys C-c
-snap 06-quit-armed "press again to quit"
+snap 06-quit-armed "again quits"
 keys C-c
 snap 07-exit "that is everything the screen was holding"

@@ -39,7 +39,11 @@ const handoverWord = "read"
 func keyOffers(keys []TurnKey) string {
 	var parts []string
 	for _, k := range keys {
-		parts = append(parts, sty.Info.Render(k.Key)+sty.Dim.Render(" "+k.Label))
+		tone := sty.Info
+		if k.Safe {
+			tone = sty.Add
+		}
+		parts = append(parts, tone.Render(k.Key)+sty.Dim.Render(" "+k.Label))
 	}
 	return strings.Join(parts, sty.Dim.Render(" · "))
 }

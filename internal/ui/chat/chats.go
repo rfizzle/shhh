@@ -210,9 +210,12 @@ func (m Model) chatPickLines() []string {
 	case ops.confirm != nil:
 		return []string{ops.confirm.View(width)}
 	case ops.rename != nil:
-		hint := keys.Shown(keys.Select.Take) + " renames · " + keys.Shown(keys.Select.Cancel) + " keeps the name"
+		hint := joinSegs([]hintSeg{
+			segAs(keys.Select.Take, "renames"),
+			segAs(keys.Select.Cancel, "keeps the name"),
+		})
 		components.StyleTextInput(ops.rename)
-		return []string{ops.rename.View(), sty.Hint.Dim.Render(hint)}
+		return []string{ops.rename.View(), hint}
 	case ops.notice != "":
 		return []string{sty.Hint.Dim.Render(ops.notice)}
 	}

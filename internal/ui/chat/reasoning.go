@@ -37,7 +37,7 @@ import (
 // cycling key is read off the register, so the usage line cannot keep
 // naming a key the dispatch stopped answering.
 var reasoningUsage = "Usage: /reasoning <off|low|medium|high|xhigh|max> · /reasoning default [level] (" +
-	keys.Shown(keys.Draft.Reasoning) + " cycles)"
+	keys.Bracket(keys.Draft.Reasoning) + " cycles)"
 
 // WithReasoning installs the session's reasoning level and the hook that
 // makes a change reach the next request. fn may be nil — the level is then

@@ -25,6 +25,6 @@ snap 05-answered "The note is written"
 keys C-c
 sleep 0.5
 keys C-c
-snap 06-quit-armed "press again to quit"
+snap 06-quit-armed "again quits"
 keys C-c
 snap 07-exit "that is everything the screen was holding"

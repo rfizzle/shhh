@@ -38,8 +38,8 @@ snap 06-answered "The limit is counted in one place"
 # The answer arrives a word at a time and the turn closes after it, so the
 # frame offering to send again is what says the turn is over — a cancel before
 # that is spent on the turn rather than on the session.
-snap 07-idle "enter send · shift+enter newline"
+snap 07-idle "[enter] send"
 keys C-c
-snap 08-quit-armed "press again to quit"
+snap 08-quit-armed "again quits"
 keys C-c
 snap 09-exit "that is everything the screen was holding"

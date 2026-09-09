@@ -6,6 +6,7 @@ import (
 
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 func TestCockpit_Segments(t *testing.T) {
@@ -154,7 +155,8 @@ func TestRenderCard_FrameAndClip(t *testing.T) {
 // card whose hints come off its own list that is two entries the reader does
 // not see.
 func TestHintRows_WrapRatherThanClip(t *testing.T) {
-	segments := []string{"[space] toggle", "[a] all/none", "[enter] apply", "[esc] cancel"}
+	segments := []KeyOffer{{Key: "[space]", Label: "toggle"}, {Key: "[a]", Label: "all/none"},
+		{Key: "[enter]", Label: "apply"}, keyOfferAs(keys.Select.Cancel, "cancel")}
 	if rows := hintRows(segments, 80); len(rows) != 1 {
 		t.Fatalf("a row that fits is one row, got %d", len(rows))
 	}
@@ -162,8 +164,8 @@ func TestHintRows_WrapRatherThanClip(t *testing.T) {
 		rows := hintRows(segments, width)
 		plain := strings.Join(rows, " ")
 		for _, seg := range segments {
-			if !strings.Contains(ansi.Strip(plain), seg) {
-				t.Errorf("at width %d the row lost %q:\n%s", width, seg, plain)
+			if !strings.Contains(ansi.Strip(plain), seg.Key+" "+seg.Label) {
+				t.Errorf("at width %d the row lost %q:\n%s", width, seg.Key, plain)
 			}
 		}
 		for _, row := range rows {

@@ -128,12 +128,13 @@ type Select struct {
 	// question (docs/interface/surfaces.md#the-question-card).
 	Lead []string
 	// HintKeys replaces the default key row for a surface whose keys are not
-	// the family's, given as its segments and in reading order. Segments
-	// rather than one string because nothing on a key row is ever truncated
+	// the family's, given as its offers and in reading order. Offers rather
+	// than one string because nothing on a key row is ever truncated
 	// (docs/interface/principles.md#fold-never-hide): a terminal too narrow
 	// for the joined run takes another row, and a row handed over pre-joined
-	// can only be cut in the middle of a clause.
-	HintKeys []string
+	// can only be cut in the middle of a clause — and because the key and
+	// the words beside it are painted apart, which a sentence cannot be.
+	HintKeys []KeyOffer
 	// AltKey is a second way to take the focused option, and AltLabel is what
 	// it buys. They are for a card whose choice has two readings — /model's
 	// "this session" and "and from now on" — where an option that quietly
@@ -524,68 +525,73 @@ func (s *Select) hasRowKeys() bool {
 	return !s.Unnumbered || s.AltKey != "" || len(s.Actions) > 0
 }
 
-func (s *Select) hintSegments(width int) []string {
+func (s *Select) hintSegments(width int) []KeyOffer {
 	if len(s.HintKeys) > 0 {
 		return s.HintKeys
 	}
 	if s.Filtering {
 		if s.selectable() == 0 {
-			return []string{offer(keys.Select.ClearQ), offer(keys.Select.Cancel)}
+			return []KeyOffer{keyOffer(keys.Select.ClearQ), keyOffer(keys.Select.Cancel)}
 		}
 		// ctrl+u is one key with two readings, and the row names the one it
 		// has: with something typed it clears; with nothing typed it closes
 		// the row, which is what a card whose rows carry their own keys —
 		// /model's [d], the saved chats' [x] and [r] — needs said, because
 		// those keys are text until it does.
-		back := words(keys.Select.ClearQ, "clear")
+		back := keyOfferAs(keys.Select.ClearQ, "clear")
 		if s.Query == "" {
 			if !s.hasRowKeys() {
-				return []string{offer(keys.Select.Move), offer(keys.Select.Take),
-					offer(keys.Select.Cancel)}
+				return []KeyOffer{keyOffer(keys.Select.Move), keyOffer(keys.Select.Take),
+					keyOffer(keys.Select.Cancel)}
 			}
-			back = words(keys.Select.ClearQ, "row keys")
+			back = keyOfferAs(keys.Select.ClearQ, "row keys")
 		}
-		return []string{offer(keys.Select.Move), offer(keys.Select.Take),
-			back, offer(keys.Select.Cancel)}
+		return []KeyOffer{keyOffer(keys.Select.Move), keyOffer(keys.Select.Take),
+			back, keyOffer(keys.Select.Cancel)}
 	}
-	move := offer(keys.Select.MoveJK)
+	move := keyOffer(keys.Select.MoveJK)
 	// A card whose rows are fields offers the key that changes one. It is an
 	// offer and never dropped: on such a card it is the only key that does
 	// anything to what the card is holding.
-	change := ""
+	var change KeyOffer
 	if s.cycles() {
-		change = words(keys.Select.Toggle, "change it")
+		change = keyOfferAs(keys.Select.Toggle, "change it")
 	}
-	jump, filter := fmt.Sprintf("1–%d jump", s.selectable()), ""
+	// The number jump is a key row offer like any other, so it is written
+	// the way every offer is: the range in brackets and the imperative
+	// beside it, rather than a bare `1–9` a reader has to be told is a key
+	// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+	jump := KeyOffer{Key: keys.Bracketed(fmt.Sprintf("1–%d", s.selectable())), Label: "jump"}
+	var filter KeyOffer
 	if s.Unnumbered {
 		// No numbers to offer means no j/k either, on a list typed into.
-		move, jump = offer(keys.Select.Move), ""
+		move, jump = keyOffer(keys.Select.Move), KeyOffer{}
 	}
 	if s.Filterable {
-		filter = offer(keys.Select.Filter)
+		filter = keyOffer(keys.Select.Filter)
 	}
 	// The two readings of the choice, when there are two. Both are offers and
 	// so neither is ever dropped; what enter buys has to be named once the
 	// alt key names something else, or the pair reads as "select, or this
 	// other specific thing" and enter becomes the unlabelled one.
-	take, alt := offer(keys.Select.Take), ""
+	take, alt := keyOffer(keys.Select.Take), KeyOffer{}
 	if s.AltKey != "" {
-		take = words(keys.Select.Take, s.enterLabel())
-		alt = keys.Bracketed(s.AltKey) + " " + s.AltLabel
+		take = keyOfferAs(keys.Select.Take, s.enterLabel())
+		alt = KeyOffer{Key: keys.Bracketed(s.AltKey), Label: s.AltLabel}
 	}
 	inner := Card{}.Inner(width)
-	actions := make([]string, 0, len(s.Actions))
+	actions := make([]KeyOffer, 0, len(s.Actions))
 	for _, b := range s.Actions {
-		actions = append(actions, offer(b))
+		actions = append(actions, keyOffer(b))
 	}
-	rungs := [][]string{
-		rung([]string{move, change, take, alt}, actions, []string{jump, filter, offer(keys.Select.Cancel)}),
-		rung([]string{move, change, take, alt}, actions, []string{filter, offer(keys.Select.Cancel)}),
-		rung([]string{offer(keys.Select.Move), change, take, alt}, actions, []string{filter, offer(keys.Select.Cancel)}),
+	rungs := [][]KeyOffer{
+		rung([]KeyOffer{move, change, take, alt}, actions, []KeyOffer{jump, filter, keyOffer(keys.Select.Cancel)}),
+		rung([]KeyOffer{move, change, take, alt}, actions, []KeyOffer{filter, keyOffer(keys.Select.Cancel)}),
+		rung([]KeyOffer{keyOffer(keys.Select.Move), change, take, alt}, actions, []KeyOffer{filter, keyOffer(keys.Select.Cancel)}),
 	}
 	for _, rung := range rungs {
 		segs := presentSegments(rung)
-		if lipgloss.Width(strings.Join(segs, " · ")) <= inner {
+		if lipgloss.Width(keyOffers(segs)) <= inner {
 			return segs
 		}
 	}
@@ -594,8 +600,8 @@ func (s *Select) hintSegments(width int) []string {
 
 // rung is one key row in order: what moves and takes, then the
 // host's own actions, then the filter and the way out.
-func rung(head, actions, tail []string) []string {
-	out := make([]string, 0, len(head)+len(actions)+len(tail))
+func rung(head, actions, tail []KeyOffer) []KeyOffer {
+	out := make([]KeyOffer, 0, len(head)+len(actions)+len(tail))
 	out = append(out, head...)
 	out = append(out, actions...)
 	return append(out, tail...)
@@ -603,10 +609,10 @@ func rung(head, actions, tail []string) []string {
 
 // presentSegments drops the rungs' empty placeholders, which is what a
 // segment the card has no reason to offer leaves behind.
-func presentSegments(segs []string) []string {
-	out := make([]string, 0, len(segs))
+func presentSegments(segs []KeyOffer) []KeyOffer {
+	out := make([]KeyOffer, 0, len(segs))
 	for _, s := range segs {
-		if s != "" {
+		if s.Key != "" {
 			out = append(out, s)
 		}
 	}

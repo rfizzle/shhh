@@ -305,7 +305,7 @@ func packOffersIn(offers []KeyOffer, width int, live bool) []string {
 	return rows
 }
 
-// hintRows renders a run of hint segments — a selector's `[↑↓] move`, a
+// hintRows renders a run of hint offers — a selector's `[↑↓] move`, a
 // card's `[y] to allow`. They are measured against the frame the caller has
 // already budgeted for and not against the width the caller was handed:
 // packing them against a width four columns wider than the frame is how a
@@ -319,45 +319,35 @@ func packOffersIn(offers []KeyOffer, width int, live bool) []string {
 // segment per row is what this did before, which on a card whose rows come
 // off its own list spent three rows to say what two could.
 //
-// What a caller must not hand this is a segment it would rather drop than
+// The run arrives as offers rather than as sentences, so the row can be
+// painted the way every key row in the product is painted: the key in Info
+// because it is a key this surface will answer, the words beside it in Dim
+// because they are the surface talking about itself
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+// A run handed over pre-joined could only wear one tone, which is what put a
+// card's keys and a screen's footer in two different colours for the same
+// offer.
+//
+// What a caller must not hand this is an offer it would rather drop than
 // wrap. A field that qualifies the keys rather than being one — the approval
 // card's sentence about the draft — is fitted by its own surface first, in
 // the order that surface gives things up.
-func hintRows(segments []string, width int) []string {
-	return HintRows(segments, width-cardFrameWidth)
+func hintRows(offers []KeyOffer, width int) []string {
+	return HintRows(offers, width-cardFrameWidth)
 }
 
 // CardHintRows is HintRows for a row drawn inside a card, which pays for the
 // card's own frame before it has room of its own. It is the door a host
 // outside this package uses to lay a key row the way every card lays one.
-func CardHintRows(segments []string, width int) []string {
-	return hintRows(segments, width)
+func CardHintRows(offers []KeyOffer, width int) []string {
+	return hintRows(offers, width)
 }
 
 // HintRows is the same for a row drawn bare in a panel, where the whole width
 // is the room. A key row that clipped would clip the clause that says how to
 // leave, which is the one clause invariant 5 exists to keep.
-func HintRows(segments []string, room int) []string {
-	if joined := strings.Join(segments, " · "); lipgloss.Width(joined) <= room {
-		return []string{sty.Hint.Render(joined)}
-	}
-	var rows []string
-	line := []string{}
-	flush := func() {
-		if len(line) > 0 {
-			rows = append(rows, sty.Hint.Render(strings.Join(line, " · ")))
-			line = nil
-		}
-	}
-	for _, seg := range segments {
-		next := strings.Join(append(append([]string{}, line...), seg), " · ")
-		if len(line) > 0 && lipgloss.Width(next) > room {
-			flush()
-		}
-		line = append(line, seg)
-	}
-	flush()
-	return rows
+func HintRows(offers []KeyOffer, room int) []string {
+	return packOffers(offers, room)
 }
 
 // dropToFit is the segments that fit in room, given up from the end and never

@@ -356,7 +356,7 @@ func TestQuestion_TheNoticeCountsAndPluralises(t *testing.T) {
 		}
 	}
 	// With no hint rail under it, the count says what the next message does.
-	want := "1 question waiting — " + keys.Shown(keys.Draft.Send) + " answers"
+	want := "1 question waiting — " + keys.Bracket(keys.Draft.Send) + " answers"
 	if got := questionNoticeFor(1, true); got != want {
 		t.Errorf("%q, want %q", got, want)
 	}
@@ -451,7 +451,7 @@ func TestQuestion_ACommandAndABangAreNotTheAnswer(t *testing.T) {
 func TestQuestion_TheAttachedRailDoesNotOfferTheQuestion(t *testing.T) {
 	m := escapedQuestion(t, chooseArgs)
 	m.attachedTo = "scout"
-	if got := stripANSI(m.frameHints()); strings.Contains(got, "answers the question") {
+	if got := stripANSI(m.frameHints(m.contentWidth())); strings.Contains(got, "answers the question") {
 		t.Errorf("the attached rail offered an act enter does not keep there: %q", got)
 	}
 	if got := stripANSI(m.promptGutter()); !strings.Contains(got, "scout") {
@@ -564,9 +564,9 @@ func TestQuestion_EscLeavesNothingOfTheCardOnTheScreen(t *testing.T) {
 // The rail says the two ways back to the question and the one way past it.
 func TestQuestion_TheRailOffersTheCardAgainAndTheQueue(t *testing.T) {
 	m := escapedQuestion(t, chooseArgs)
-	hints := stripANSI(m.frameHints())
+	hints := stripANSI(m.frameHints(m.contentWidth()))
 	for _, want := range []string{
-		keys.Shown(keys.Draft.Answer), keys.Shown(keys.Draft.Send), keys.Shown(keys.Draft.Queue),
+		keys.Bracket(keys.Draft.Answer), keys.Bracket(keys.Draft.Send), keys.Bracket(keys.Draft.Queue),
 	} {
 		if !strings.Contains(hints, want) {
 			t.Errorf("the rail does not offer %q: %q", want, hints)

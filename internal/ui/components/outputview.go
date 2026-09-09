@@ -95,10 +95,10 @@ func (v *OutputView) View(width int) string {
 	stats := plural(len(v.Lines), "line")
 	header := padRight(Clip(" "+v.Title, max(0, width-lipgloss.Width(stats))),
 		max(0, width-lipgloss.Width(stats))) + sty.Dim.Render(stats)
-	footer := sty.Hint.Render("output · " + strings.Join([]string{
-		offer(keys.Output.Scroll), offer(keys.Output.PageUp), offer(keys.Output.PageDown),
-		offer(keys.Output.Collapse), offer(keys.Output.Back),
-	}, " · "))
+	footer := sty.Dim.Render("output · ") + keyOffers([]KeyOffer{
+		keyOffer(keys.Output.Scroll), keyOffer(keys.Output.PageUp), keyOffer(keys.Output.PageDown),
+		keyOffer(keys.Output.Collapse), keyOffer(keys.Output.Back),
+	})
 
 	p := Pager{Offset: v.Offset, Height: v.bodyHeight()}
 	visible := p.Window(v.bodyRows(width))

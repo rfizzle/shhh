@@ -187,7 +187,7 @@ each other, and what a backlog run wrote up, listed by author.
 Dropping is yours alone: drop <n> removes one, clear empties it`,
 	"/memory": `Durable memories: list (default) · add [global] [kind] <text> ·
 edit <id> (opens the entry in your editor) · forget <id>`,
-	"/agents": `Agent manager: attach, steer, cancel, kill sub-agents (also ` + keys.Shown(keys.Draft.Agents) + `)
+	"/agents": `Agent manager: attach, steer, cancel, kill sub-agents (also ` + keys.Bracket(keys.Draft.Agents) + `)
 new [brief]      draft an agent profile from a sentence with
                  the model's help: answer its questions if it
                  has any, then keep, refine or discard the
@@ -249,9 +249,9 @@ func helpKeysText() string {
 }
 
 // helpKeyWidth is the key column. It is wide enough for the longest spelling
-// a row shows as one line (`ctrl+a ctrl+e`) plus the two spaces that separate
-// a column from its prose.
-const helpKeyWidth = 15
+// a row shows as one line (`[ctrl+a ctrl+e]`) plus the two spaces that
+// separate a column from its prose.
+const helpKeyWidth = 17
 
 // helpKeyRow is one row of the key list: which keys it is about, and the
 // paragraph beside them. The paragraph's own line breaks are kept — several
@@ -269,8 +269,15 @@ type helpKeyRow struct {
 	// key is the column when the register does not spell it the way the list
 	// reads it — the recall arrows, whose glyphs beside "Recall previous
 	// inputs" read as decoration rather than as a key — or when the row is
-	// about something the register does not bind at all: a leading character,
-	// a paste, or the mouse.
+	// about something the register does not bind at all: a leading
+	// character, a paste, or the mouse.
+	//
+	// It is written exactly as the list draws it, because those two cases
+	// want opposite things. A leading character is a key: `@` and `!` are
+	// pressed, so they wear the brackets every key wears. A paste, a wheel
+	// and a click are not pressed at all, and bracketing them would offer a
+	// keystroke that does not exist
+	// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 	key string
 	// text is the paragraph.
 	text string
@@ -283,7 +290,7 @@ func (r helpKeyRow) column() []string {
 	}
 	shown := make([]string, 0, len(r.binds))
 	for _, b := range r.binds {
-		shown = append(shown, keys.Shown(b))
+		shown = append(shown, keys.Bracket(b))
 	}
 	switch r.sep {
 	case "":
@@ -319,7 +326,7 @@ message — a follow-up first, else a steering line — back.
 (It was the line editor's next-line; ↓ still is)`,
 	},
 	{
-		key: "@",
+		key: "[@]",
 		text: `At the start of a word, open a file menu over what this
 session changed and the checkout's recent files, filtered
 by what you type after it. tab or enter inserts the path,
@@ -327,7 +334,7 @@ esc keeps what you typed; a mentioned image is staged the
 way a pasted one is`,
 	},
 	{
-		key: "!",
+		key: "[!]",
 		text: `A draft starting with ! runs as a command through the same
 confirm card /run uses; !! runs it and keeps the output out
 of the conversation (its row says local). A ! anywhere else
@@ -359,7 +366,7 @@ the prompt itself`,
 ↑↓ move, enter runs the highlighted command, esc dismisses)`,
 	},
 	{
-		key: "ctrl+a ctrl+e\nctrl+k ctrl+u",
+		key: "[ctrl+a ctrl+e]\n[ctrl+k ctrl+u]",
 		text: `The draft is a readline editor: line start and line end,
 kill to end and to start of line; ctrl+w deletes the word
 before the cursor, alt+b and alt+f move by word`,
@@ -409,7 +416,7 @@ row names)`,
 	},
 	{
 		binds: []keys.Binding{keys.Draft.HistoryPrev, keys.Draft.HistoryNext},
-		key:   "up/down",
+		key:   "[up/down]",
 		text:  `Recall previous inputs (when the input is empty)`,
 	},
 	{
@@ -570,7 +577,7 @@ key it lands on in an approval card's [y/n/a]. It never takes
 the keyboard: the draft keeps every character`,
 	},
 	{
-		key: "y/n/a",
+		key: "[y/n/a]",
 		text: `Approval prompts: allow / deny / always allow this session.
 A card taller than its panel counts what is cut and scrolls
 on shift+↑/↓ (shift+←/→ pan a wide body); d opens an edit's

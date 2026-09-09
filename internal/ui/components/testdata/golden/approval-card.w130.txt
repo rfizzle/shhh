@@ -63,13 +63,13 @@
 │ ⚠ medium · runs a repository script; shhh cannot see inside it                                                                 │
 │                                                                                                                                │
 │ touches   ./dist — the script rewrites the release tree                                                                        │
-│ … 3 more lines · shift+↓                                                                                                       │
+│ … 3 more lines · [shift+↓]                                                                                                     │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny                                                                                                     │
 │ [esc] back to your draft — the decision stays waiting, nothing is denied                                                       │
 ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Approve command ─────────────────────────────────────────────────────────────────────────────────────────────────── ⚠ medium ─╮
-│ … 3 lines above · shift+↑                                                                                                      │
+│ … 3 lines above · [shift+↑]                                                                                                    │
 │ touches   ./dist — the script rewrites the release tree                                                                        │
 │ undo      none — nothing it writes is tracked in git                                                                           │
 │ network   open — it pushes the artefacts it builds                                                                             │
@@ -191,13 +191,13 @@
 ␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;241m · runs a repository script; shhh cannot see inside it␛[m                                                                 ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                                                                                                ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mtouches   ␛[m␛[91m./dist␛[m␛[38;5;245m — the script rewrites the release tree␛[m                                                                        ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;241m… 3 more lines · shift+↓␛[m                                                                                                       ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;241m… 3 more lines · [shift+↓]␛[m                                                                                                     ␛[38;5;214m│␛[m
 ␛[38;5;214m├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m                                                                                                     ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[92m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m                                                       ␛[38;5;214m│␛[m
 ␛[38;5;214m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 ␛[38;5;214m╭─ Approve command ␛[m␛[38;5;241m───────────────────────────────────────────────────────────────────────────────────────────────────␛[m␛[38;5;214m ⚠ medium ─╮␛[m
-␛[38;5;214m│␛[m ␛[38;5;241m… 3 lines above · shift+↑␛[m                                                                                                      ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;241m… 3 lines above · [shift+↑]␛[m                                                                                                    ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mtouches   ␛[m␛[91m./dist␛[m␛[38;5;245m — the script rewrites the release tree␛[m                                                                        ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mundo      ␛[m␛[91mnone␛[m␛[38;5;245m — nothing it writes is tracked in git␛[m                                                                           ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mnetwork   ␛[m␛[38;5;214mopen␛[m␛[38;5;245m — it pushes the artefacts it builds␛[m                                                                             ␛[38;5;214m│␛[m

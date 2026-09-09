@@ -151,8 +151,8 @@ func TestHold_TheCancelChordEndsAHeldTurnRatherThanQuitting(t *testing.T) {
 	m := heldModel(t)
 
 	m, _ = pressKey(t, m, tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
-	if !strings.Contains(m.armedNotice(), "cancels the turn") {
-		t.Fatalf("the first press should arm the cancel, not the quit: %q", m.armedNotice())
+	if note, ok := m.armedHint(); !ok || !strings.Contains(note.label, "cancels the turn") {
+		t.Fatalf("the first press should arm the cancel, not the quit: %+v", note)
 	}
 	m, _ = pressKey(t, m, tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
 	if m.quitting {
@@ -224,11 +224,11 @@ func TestHold_AConversationSavedHeldReopensHeld(t *testing.T) {
 func TestHold_TheRailSaysHowToLetTheTurnGo(t *testing.T) {
 	m := heldModel(t)
 	m.width, m.height = 130, 40
-	hints := stripANSI(m.frameHints())
+	hints := stripANSI(m.frameHints(m.contentWidth()))
 	for _, want := range []string{
-		keys.Shown(keys.Draft.Pause) + " resumes the turn",
-		keys.Shown(keys.Draft.Send) + " queues steering",
-		keys.Shown(keys.Draft.Cancel) + " cancels it",
+		keys.Bracket(keys.Draft.Pause) + " resumes the turn",
+		keys.Bracket(keys.Draft.Send) + " queues steering",
+		keys.Bracket(keys.Draft.Cancel) + " ×2 cancels it",
 	} {
 		if !strings.Contains(hints, want) {
 			t.Errorf("the held rail should offer %q, got %q", want, hints)

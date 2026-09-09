@@ -83,8 +83,9 @@ type Styles struct {
 	Complete completeStyles
 	// The input history search's row — historysearch.go.
 	Search searchStyles
-	// The reading-mode hint line and the mutation rail —
-	// readinghint.go.
+	// Every key row the chat surface draws for itself — reading mode's bar,
+	// the frame's rails, a viewer's one line — and the mutation rail that
+	// shares their file (readinghint.go).
 	Hint hintStyles
 	// The two-pane cockpit — inspector.go.
 	Pane paneStyles
@@ -125,7 +126,6 @@ type frameStyles struct {
 	AccentGated      lipgloss.Style
 	AccentChecking   lipgloss.Style
 	Idle             lipgloss.Style
-	Hint             lipgloss.Style
 	GutterIdle       lipgloss.Style
 	GutterWork       lipgloss.Style
 	GutterBang       lipgloss.Style
@@ -148,7 +148,6 @@ func newFrameStyles(p components.ColorTokens) frameStyles {
 		AccentGated:      lipgloss.NewStyle().Foreground(p.Accent.Color()),
 		AccentChecking:   lipgloss.NewStyle().Foreground(p.Spin.Color()),
 		Idle:             lipgloss.NewStyle().Foreground(p.Dim.Color()),
-		Hint:             lipgloss.NewStyle().Foreground(p.Dim.Color()),
 		GutterIdle:       lipgloss.NewStyle().Bold(true).Foreground(p.Info.Color()),
 		GutterWork:       lipgloss.NewStyle().Bold(true).Foreground(p.Spin.Color()),
 		// The bang draft's glyph carries the gated accent: what enter does
@@ -212,8 +211,11 @@ func newSearchStyles(p components.ColorTokens) searchStyles {
 	}
 }
 
-// hintStyles is the reading-mode hint line's own group, with the
-// mutation rail that shares its file.
+// hintStyles is the key rows' own group, with the mutation rail that shares
+// their file. One group because there is one grammar: a key this surface
+// will answer is Info, the words beside it are Dim, and the safe answer is
+// Add wherever one is offered
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 type hintStyles struct {
 	Key          lipgloss.Style
 	Safe         lipgloss.Style

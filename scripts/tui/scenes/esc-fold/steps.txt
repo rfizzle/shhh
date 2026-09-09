@@ -40,6 +40,6 @@ snap 05-rewind "Rewind to before"
 keys Escape
 sleep 0.3
 keys C-c
-snap 06-quit-armed "press again to quit"
+snap 06-quit-armed "again quits"
 keys C-c
 snap 07-exit "that is everything the screen was holding"

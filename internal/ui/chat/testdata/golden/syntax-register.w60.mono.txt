@@ -63,4 +63,4 @@ diff · [j/k] scroll · [n/p] hunk · [s] side-by-side · [esc]…
 
 
 
-␛[38;5;244mdiff · [j/k] scroll · [n/p] hunk · [s] side-by-side · [esc]…␛[m
+␛[38;5;244mdiff · ␛[m␛[38;5;254m[j/k]␛[m␛[38;5;244m scroll␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n/p]␛[m␛[38;5;244m hunk␛[m␛[38;5;244m · ␛[m␛[38;5;254m[s]␛[m␛[38;5;244m side-by-side␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m…␛[m

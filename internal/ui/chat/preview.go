@@ -169,6 +169,5 @@ func (m *Model) closePreview() overlayAction {
 // renderPreviewHint fills the input area while the preview shows. It names
 // one of the two ways out, the way every other takeover's hint does.
 func (m Model) renderPreviewHint() string {
-	return sty.SystemMsg.Render(keys.Shown(keys.Preview.Back)+" "+keys.Words(keys.Preview.Back)) +
-		strings.Repeat("\n", inputHeight-1)
+	return seg(keys.Preview.Back).render() + strings.Repeat("\n", inputHeight-1)
 }

@@ -24,10 +24,19 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
-// KeyOffer is one bracketed key and the words for what it does. Every key the
-// interface offers is info, so a key in any other colour is not an
-// offer.
-type KeyOffer struct{ Key, Label string }
+// KeyOffer is one bracketed key and the words for what it does. A key row has
+// three states and this carries the two a live row can be in: an offer is
+// info, and the answer that costs nothing is add. A key in any other colour
+// is not an offer — the row is not live, or the key is not
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+type KeyOffer struct {
+	Key, Label string
+	// Safe marks the answer that changes nothing. It is esc, everywhere, and
+	// it is set off the register's spelling rather than at each row
+	// (keyoffers.go), so a surface cannot forget it
+	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
+	Safe bool
+}
 
 // TurnKey is the turn close's name for the same thing; the two were
 // separate structs until recovery rows needed the third.

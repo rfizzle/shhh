@@ -79,8 +79,8 @@ Should the migration be reversible?  [y/N]
 ␛[38;5;254m│␛[m   ␛[38;5;244m4. ␛[m␛[38;5;254mSomething else …␛[m  ␛[38;5;244manswer in your own words␛[m      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m┄ note (optional)␛[m                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m(none)␛[m                                             ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[tab] note/options · [enter] confirm␛[m                 ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[d] the full answer · [esc] cancel␛[m                   ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m note/options␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m confirm␛[m                 ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[d]␛[m␛[38;5;244m the full answer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m cancel␛[m                   ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────╯␛[m
 
 · the note has the keyboard · the list's digits are text until tab hands it back
@@ -93,8 +93,8 @@ Should the migration be reversible?  [y/N]
 ␛[38;5;254m│␛[m   ␛[38;5;244m4. ␛[m␛[38;5;254mSomething else …␛[m  ␛[38;5;244manswer in your own words␛[m      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m┄ note (optional)␛[m                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m␛[38;5;244m┃ ␛[m␛[m␛[38;5;254m␛[7;38;5;237mn␛[m␛[m␛[38;5;254m␛[38;5;244mote (optional)␛[m␛[m␛[38;5;254m                                 ␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[tab] note/options · [enter] confirm␛[m                 ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[d] the full answer · [esc] cancel␛[m                   ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m note/options␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m confirm␛[m                 ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[d]␛[m␛[38;5;244m the full answer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m cancel␛[m                   ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────╯␛[m
 
 · pick several · the boxes, with the same field under them
@@ -107,9 +107,9 @@ Should the migration be reversible?  [y/N]
 ␛[38;5;254m│␛[m   ␛[38;5;244m[ ]␛[m Something else …                               ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m┄ note (optional)␛[m                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;244m(none)␛[m                                             ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[tab] note/options · [space] toggle · [a] all/none␛[m   ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[d] the full answer · [enter] apply (0)␛[m              ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[esc] cancel␛[m                                         ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[tab]␛[m␛[38;5;244m note/options␛[m␛[38;5;244m · ␛[m␛[38;5;254m[space]␛[m␛[38;5;244m toggle␛[m␛[38;5;244m · ␛[m␛[38;5;254m[a]␛[m␛[38;5;244m all/none␛[m   ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[d]␛[m␛[38;5;244m the full answer␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m apply (0)␛[m              ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[esc]␛[m␛[38;5;244m cancel␛[m                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────╯␛[m
 
 · a short answer in your own words · the field and no rows above it
@@ -118,11 +118,11 @@ Should the migration be reversible?  [y/N]
 ␛[38;5;254m│␛[m                                                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m┄ note (required)␛[m                                    ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m␛[38;5;244m┃ ␛[m␛[m␛[38;5;254m␛[7;38;5;237mn␛[m␛[m␛[38;5;254m␛[38;5;244mote (required)␛[m␛[m␛[38;5;254m                                 ␛[m ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m[enter] confirm · [esc] cancel␛[m                       ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m confirm␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m cancel␛[m                       ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────╯␛[m
 
 · yes or no · the inline confirm, whose enter is the answer that changes nothing
 ␛[38;5;254mShould the migration be reversible?␛[m  ␛[38;5;244m[␛[m␛[38;5;244my␛[m␛[38;5;244m/␛[m␛[1;38;5;254mN␛[m␛[38;5;244m]␛[m
 ␛[38;5;244m┄ note (optional)␛[m
   ␛[38;5;244m(none)␛[m
-␛[38;5;244m[y] yes · [N] no — the default · [tab] note␛[m
+␛[38;5;254m[y]␛[m␛[38;5;244m yes␛[m␛[38;5;244m · ␛[m␛[38;5;254m[N]␛[m␛[38;5;244m no — the default␛[m␛[38;5;244m · ␛[m␛[38;5;254m[tab]␛[m␛[38;5;244m note␛[m

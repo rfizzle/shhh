@@ -64,13 +64,13 @@
 │ ⚠ medium · runs a repository script; shhh cannot see inside it               │
 │                                                                              │
 │ touches   ./dist — the script rewrites the release tree                      │
-│ … 3 more lines · shift+↓                                                     │
+│ … 3 more lines · [shift+↓]                                                   │
 ├──────────────────────────────────────────────────────────────────────────────┤
 │ [y] run it once · [n] deny                                                   │
 │ [esc] back to your draft — the decision stays waiting, nothing is denied     │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Approve command ───────────────────────────────────────────────── ⚠ medium ─╮
-│ … 3 lines above · shift+↑                                                    │
+│ … 3 lines above · [shift+↑]                                                  │
 │ touches   ./dist — the script rewrites the release tree                      │
 │ undo      none — nothing it writes is tracked in git                         │
 │ network   open — it pushes the artefacts it builds                           │
@@ -195,13 +195,13 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · runs a repository script; shhh cannot see inside it␛[m               ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                                              ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254m./dist␛[m␛[38;5;244m — the script rewrites the release tree␛[m                      ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m… 3 more lines · shift+↓␛[m                                                     ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m… 3 more lines · [shift+↓]␛[m                                                   ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[y]␛[m ␛[38;5;254mrun it once␛[m␛[38;5;244m · ␛[m␛[38;5;254m[n]␛[m ␛[38;5;254mdeny␛[m                                                   ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m     ␛[38;5;254m│␛[m
 ␛[38;5;254m╰──────────────────────────────────────────────────────────────────────────────╯␛[m
 ␛[38;5;254m╭─ Approve command ───────────────────────────────────────────────── ⚠ medium ─╮␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m… 3 lines above · shift+↑␛[m                                                    ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m… 3 lines above · [shift+↑]␛[m                                                  ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254m./dist␛[m␛[38;5;244m — the script rewrites the release tree␛[m                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254mnone␛[m␛[38;5;244m — nothing it writes is tracked in git␛[m                         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mopen␛[m␛[38;5;244m — it pushes the artefacts it builds␛[m                           ␛[38;5;254m│␛[m

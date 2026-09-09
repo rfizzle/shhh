@@ -49,6 +49,6 @@ snap 08-back-in-place "@@ -4,7 +4,7 @@"
 keys Escape
 sleep 0.3
 keys C-c
-snap 09-quit-armed "press again to quit"
+snap 09-quit-armed "again quits"
 keys C-c
 snap 10-exit "that is everything the screen was holding"

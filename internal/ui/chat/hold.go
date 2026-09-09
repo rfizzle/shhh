@@ -170,7 +170,7 @@ func (m *Model) releaseChildren() {
 func (m Model) holdChip() string {
 	switch {
 	case m.heldAtBoundary():
-		return "⏸ held · " + keys.Shown(keys.Draft.Pause) + " resumes"
+		return "⏸ held · " + keys.Bracket(keys.Draft.Pause) + " resumes"
 	case m.holdAsked && m.working():
 		return "⏸ holding after this round"
 	}
@@ -183,7 +183,7 @@ func (m Model) holdChip() string {
 // counter belongs to this process and starts at nothing.
 func (m Model) heldNotice() string {
 	return fmt.Sprintf("This conversation was held mid-turn after %s — %s lets it go on.",
-		plural(m.hold.rounds, "round"), keys.Shown(keys.Draft.Pause))
+		plural(m.hold.rounds, "round"), keys.Bracket(keys.Draft.Pause))
 }
 
 // holdMarker is what the autosave writes beside the conversation, or nil when

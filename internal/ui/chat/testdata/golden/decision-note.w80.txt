@@ -44,5 +44,5 @@
 ␛[38;5;214m│␛[m ␛[38;5;245m[d] full diff␛[m                            ␛[38;5;241mthese letters go into the field␛[m ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;241m┄ why not␛[m                                                                ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m   ␛[38;5;241m␛[m␛[38;5;252mnot that file␛[m ␛[38;5;252m                                                        ␛[m ␛[38;5;214m│␛[m
-␛[38;5;214m│␛[m ␛[38;5;241m[enter] deny with this · [esc] back to the card — nothing is answered␛[m    ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[94m[enter]␛[m␛[38;5;241m deny with this␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back to the card — nothing is answered␛[m    ␛[38;5;214m│␛[m
 ␛[38;5;214m╰──────────────────────────────────────────────────────────────────────────╯␛[m

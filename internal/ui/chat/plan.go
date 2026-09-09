@@ -73,13 +73,13 @@ var planApproveOptions = []components.SelectOption{
 // another row instead of ending one mid-clause, and they are bracketed
 // because a bracket is what a live key looks like everywhere else in the
 // product (docs/interface/principles.md#fold-never-hide).
-func planHint() []string {
-	return []string{
-		keys.Bracket(keys.Select.MoveJK) + " move",
-		keys.Bracket(keys.Select.Take) + " select",
-		keys.Bracket(keys.Plan.Jump) + " jump",
-		keys.Bracket(keys.Plan.Save) + " save",
-		keys.Bracket(keys.Select.Cancel) + " keep planning",
+func planHint() []components.KeyOffer {
+	return []components.KeyOffer{
+		components.OfferAs(keys.Select.MoveJK, "move"),
+		components.OfferAs(keys.Select.Take, "select"),
+		components.OfferAs(keys.Plan.Jump, "jump"),
+		components.OfferAs(keys.Plan.Save, "save"),
+		components.OfferAs(keys.Select.Cancel, "keep planning"),
 	}
 }
 

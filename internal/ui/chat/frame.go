@@ -290,9 +290,13 @@ func (m Model) frameActivity(width int) string {
 }
 
 // frameHints is the contextual bottom-rail hint set, swapped by state; it
-// absorbs the old static header hint and the textarea placeholder.
-func (m Model) frameHints() string {
-	var hints []string
+// absorbs the old static header hint and the textarea placeholder. room is
+// the columns the rail's label slot has, which is what the run is fitted
+// against: the rail draws its label into a fixed rectangle and cuts whatever
+// runs past it, so a run measured against anything else loses its last offer
+// to the corner.
+func (m Model) frameHints(room int) string {
+	var hints []hintSeg
 	switch {
 	case m.attachedTo == "" && m.questionAside():
 		// Only where the frame is the orchestrator's own: attached, enter
@@ -304,10 +308,10 @@ func (m Model) frameHints() string {
 		// two ways back to it — the sentence being typed, and the chord that
 		// draws the card again — beside the chord that queues for after the
 		// turn, which still means what it always did (question.go).
-		hints = []string{
-			keys.Shown(keys.Draft.Send) + " answers the question",
-			keys.Shown(keys.Draft.Answer) + " the card again",
-			keys.Shown(keys.Draft.Queue) + " queues for after",
+		hints = []hintSeg{
+			segAs(keys.Draft.Send, "answers the question"),
+			segAs(keys.Draft.Answer, "the card again"),
+			segAs(keys.Draft.Queue, "queues for after").givesUp(1),
 		}
 	case m.decisionUngated():
 		// The three keys that matter while a decision waits. Stopping the run
@@ -315,41 +319,41 @@ func (m Model) frameHints() string {
 		// than stopping anything, and ending a turn belongs to a chord no
 		// reflex produces
 		// (docs/interface/principles.md#esc-is-always-the-safe-answer).
-		hints = []string{
-			keys.Shown(keys.Draft.Answer) + " " + keys.Words(keys.Draft.Answer),
-			keys.Shown(keys.Draft.Send) + " queues steering",
-			keys.Shown(keys.Draft.Cancel) + " stop the run",
+		hints = []hintSeg{
+			segAs(keys.Draft.Answer, keys.Words(keys.Draft.Answer)),
+			segAs(keys.Draft.Send, "queues steering"),
+			twoPress(keys.Draft.Cancel, "stop the run"),
 		}
 	case m.attachedTo != "":
 		// The quit chord acts on the whole session even from a child, so
 		// its armed window is said here too.
-		if note := m.armedNotice(); note != "" {
-			hints = []string{note}
+		if note, ok := m.armedHint(); ok {
+			hints = []hintSeg{note}
 			break
 		}
-		hints = []string{
-			keys.Shown(keys.Agent.Detach) + " detach",
-			keys.Shown(keys.Draft.Agents) + " agents",
+		hints = []hintSeg{
+			segAs(keys.Agent.Detach, "detach"),
+			segAs(keys.Draft.Agents, "agents").givesUp(1),
 		}
 	case m.heldAtBoundary():
 		// A held turn is idle in every way the frame can see, so its rail
 		// has to say the three things only it knows: the key that lets the
 		// turn go, that what is typed now rides out with it, and that the
 		// turn can still be given up on (hold.go).
-		if note := m.armedNotice(); note != "" {
-			hints = []string{note}
+		if note, ok := m.armedHint(); ok {
+			hints = []hintSeg{note}
 			break
 		}
-		hints = []string{
-			keys.Shown(keys.Draft.Pause) + " resumes the turn",
-			keys.Shown(keys.Draft.Send) + " queues steering",
-			keys.Shown(keys.Draft.Cancel) + " cancels it",
+		hints = []hintSeg{
+			segAs(keys.Draft.Pause, "resumes the turn"),
+			segAs(keys.Draft.Send, "queues steering").givesUp(1),
+			twoPress(keys.Draft.Cancel, "cancels it"),
 		}
 	case m.working():
 		// An open two-press window replaces the hints: what the next
 		// press does is the one thing the rail must say (cancel.go).
-		if note := m.armedNotice(); note != "" {
-			hints = []string{note}
+		if note, ok := m.armedHint(); ok {
+			hints = []hintSeg{note}
 			break
 		}
 		// Commands run mid-turn now, so the working rail says so;
@@ -359,47 +363,65 @@ func (m Model) frameHints() string {
 		// (docs/interface/principles.md#esc-is-always-the-safe-answer). The
 		// rail is the one place that says so, because esc doing nothing
 		// looks exactly like esc being unread.
-		steer := keys.Shown(keys.Draft.Send) + " queues steering"
-		cancel := keys.Shown(keys.Draft.Cancel) + " cancel"
+		steer := segAs(keys.Draft.Send, "queues steering")
+		stop := twoPress(keys.Draft.Cancel, "stop the run")
+		agents := segAs(keys.Draft.Agents, "agents").givesUp(1)
+		active, _ := m.activeAgents()
 		if m.turnState() == stateStreaming {
-			interrupt := keys.Shown(keys.Draft.Cancel) + " cancels the turn"
-			hints = []string{interrupt, steer, "/ commands"}
-			if active, _ := m.activeAgents(); active > 0 {
-				hints = []string{interrupt, steer, keys.Shown(keys.Draft.Agents) + " agents", "/ commands"}
+			hints = []hintSeg{stop, steer}
+			if active > 0 {
+				hints = append(hints, agents)
 			}
+			hints = append(hints, slashHint().givesUp(2))
 			break
 		}
-		hints = []string{steer, "/ commands", cancel}
-		if active, _ := m.activeAgents(); active > 0 {
-			hints = []string{steer, keys.Shown(keys.Draft.Agents) + " agents", "/ commands", cancel}
+		hints = []hintSeg{steer}
+		if active > 0 {
+			hints = append(hints, agents)
 		}
+		hints = append(hints, slashHint().givesUp(2), stop)
 	default:
 		// The quit window's hint takes the idle rail the same way the
 		// cancel window takes the working one.
-		if note := m.armedNotice(); note != "" {
-			hints = []string{note}
+		if note, ok := m.armedHint(); ok {
+			hints = []hintSeg{note}
 			break
 		}
-		// Six hints, because at the width the rail first appears the row has
-		// 106 columns for them and these six spend 100 — a seventh is seven
-		// columns more than there is (frame_test.go holds that measurement).
-		// So the editor's chord takes the slash's place rather than joining
-		// it: typing `/` opens the command menu on its own, which makes it
-		// the one hint here that announces itself to a reader who never
-		// looked at the rail, and a chord is the only kind of key that
-		// cannot. The slash keeps its place on the working rail, which is
-		// shorter and has the room.
-		hints = []string{
-			keys.Shown(keys.Draft.Send) + " send",
-			keys.Shown(keys.Draft.Newline) + " newline",
-			keys.Shown(keys.Draft.Editor) + " editor",
-			keys.Shown(keys.Draft.Attach) + " attach",
-			keys.Shown(keys.Draft.Palette) + " palette",
-			keys.Shown(keys.Draft.Mode) + " mode",
+		// The whole run is written down and the rail sheds what will not
+		// fit, rather than a set chosen once against one width: bracketing
+		// the keys costs two columns each, and a run picked to spend exactly
+		// the columns a 110-column terminal has is a run that says nothing
+		// more on a terminal twice that wide.
+		//
+		// What goes first is what the draft itself teaches: the newline is
+		// under the reader's hands the moment they type a long sentence, and
+		// the editor and the attach chord are both named in `?` and in
+		// /help. What never goes is the pair that says how a message leaves
+		// and what mode it leaves under, and beside them the two-press quit
+		// — a key a reader must be told about before they press it, since the
+		// first press is silent by design (cancel.go). The palette outlasts
+		// the rest because typing `/` opens the same list, so a reader who
+		// lost the chord still has a door; it is the one offer here that
+		// announces itself.
+		hints = []hintSeg{
+			segAs(keys.Draft.Send, "send"),
+			segAs(keys.Draft.Newline, "newline").givesUp(5),
+			segAs(keys.Draft.Editor, "editor").givesUp(4),
+			segAs(keys.Draft.Attach, "attach").givesUp(3),
+			segAs(keys.Draft.Palette, "palette").givesUp(1),
+			segAs(keys.Draft.Mode, "mode"),
+			twoPress(keys.Draft.Quit, "quit").givesUp(2),
 		}
 	}
-	return sty.Frame.Hint.Render(strings.Join(hints, " · "))
+	return joinSegs(fitSegs(hints, room))
 }
+
+// slashHint is the command menu as an offer. The slash is not a binding —
+// it is the character a command starts with, answered by the draft rather
+// than by a key handler — but a reader learns one notation for "press this",
+// so it is written in the same brackets as every key beside it
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+func slashHint() hintSeg { return hintSeg{key: "/", label: "commands"} }
 
 // promptGutter is the input's leading glyph. The glyph is ▸ and only the
 // tone moves: dim while the draft is idle, spin while the agent works and
@@ -583,7 +605,7 @@ func questionNoticeFor(n int, sayTheKey bool) string {
 		// also has to hold the steering count beside it, and a promise
 		// that pushed the other two off the row would be the rail
 		// answering one of three questions.
-		label += " — " + keys.Shown(keys.Draft.Send) + " answers"
+		label += " — " + keys.Bracket(keys.Draft.Send) + " answers"
 	}
 	return label
 }
@@ -602,8 +624,8 @@ func (m Model) noticeLine() string {
 	// that the surface says what a key will do cannot depend on the
 	// terminal being wide (cancel.go).
 	if m.frameLayout() != frameWide {
-		if note := m.armedNotice(); note != "" {
-			parts = append(parts, sty.Frame.NoticeInfo.Render(note))
+		if note, ok := m.armedHint(); ok {
+			parts = append(parts, note.render())
 		}
 	}
 	// What the last esc folded, or why it folded nothing (readinghint.go).
@@ -927,7 +949,7 @@ func (m Model) topRailLabels(mode frameLayout, width int) (left, right string) {
 	if m.attachedTo != "" && mode != frameWide {
 		// Compact/narrow drop the hints rail; the detach affordance moves to
 		// the top rail, and takes the slot the account would have had.
-		return identityLabel, " " + m.frameHints() + " "
+		return identityLabel, " " + m.frameHints(railLabelWidth(identityLabel, width)) + " "
 	}
 	// The account is measured against the whole rail and the identity takes
 	// what is left of it, so a breadcrumb that does not fit is dropped whole
@@ -1078,7 +1100,7 @@ func (m Model) drawPromptFrame(scr uv.Screen, area uv.Rectangle, cur *cursorSink
 	vitals := " " + m.frameVitals(mode, railLabelWidth("", width)) + " "
 	if mode == frameWide {
 		drawRail(scr, r.vitals, accent, "├", "┤", vitals, "")
-		drawRail(scr, r.bottom, accent, "╰", "╯", " "+m.frameHints()+" ", "")
+		drawRail(scr, r.bottom, accent, "╰", "╯", " "+m.frameHints(railLabelWidth("", width))+" ", "")
 		return
 	}
 	drawRail(scr, r.bottom, accent, "╰", "╯", vitals, "")

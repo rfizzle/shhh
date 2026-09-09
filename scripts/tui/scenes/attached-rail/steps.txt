@@ -26,10 +26,10 @@ keys y
 snap 03-spawned "reader-1"
 sleep 2
 keys "/attach reader-1" Enter
-snap 04-attached "esc detach"
+snap 04-attached "[esc] detach"
 sleep 1
 keys Escape
-snap 05-detached "enter send · shift+enter newline"
+snap 05-detached "[enter] send"
 # The manager, through the one key that opens it: the child that was attached
 # a moment ago is a row on the list, so the capture is also the proof that the
 # chord landed rather than a bare letter falling into the draft.
@@ -38,6 +38,6 @@ snap 06-manager "[enter] attach"
 keys Escape
 sleep 0.5
 keys C-c
-snap 07-quit-armed "press again to quit"
+snap 07-quit-armed "again quits"
 keys C-c
 snap 08-exit "that is everything the screen was holding"

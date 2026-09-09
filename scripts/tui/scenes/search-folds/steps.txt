@@ -54,8 +54,8 @@ snap 08-nothing "no match in this session"
 keys Escape
 sleep 0.3
 keys q
-snap 09-prompt "enter send"
+snap 09-prompt "[enter] send"
 keys C-c
-snap 10-quit-armed "press again to quit"
+snap 10-quit-armed "again quits"
 keys C-c
 snap 11-exit "that is everything the screen was holding"

@@ -1,0 +1,7 @@
+# One reply per request. The last line repeats once these run out.
+# A wait and nothing else: the turn has to still be running while the working
+# rail is read, and a command that only waits changes nothing on the machine
+# the scene is driven from. The prose after it is the reply the round the hold
+# parks in front of would have asked for.
+tool:execute_command:{"command":"sleep 8"}
+The rail says what each key does before the key is pressed.

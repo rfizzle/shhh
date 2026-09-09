@@ -48,8 +48,8 @@ snap 09-model "scripted-mini"
 keys Escape
 sleep 0.5
 # And back at the draft, which draws its own glyph rather than the reader's.
-snap 10-draft "enter send"
+snap 10-draft "[enter] send"
 keys C-c
-snap 11-quit-armed "press again to quit"
+snap 11-quit-armed "again quits"
 keys C-c
 snap 12-exit "that is everything the screen was holding"

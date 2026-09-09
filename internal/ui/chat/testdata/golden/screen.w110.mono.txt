@@ -40,7 +40,7 @@
   │                                                                                                        │  
   │                                                                                                        │  
   ├─ ⏸ gated · ctx 32% ▰▰▱▱▱▱▱▱ · ↑41.2k ↓9.8k · $0.51 · gpt-4o ───────────────────────────────────────────┤  
-  ╰─ enter send · shift+enter newline · ctrl+g editor · ctrl+v attach · ctrl+/ palette · shift+tab mode ───╯  
+  ╰─ [enter] send · [ctrl+v] attach · [ctrl+/] palette · [shift+tab] mode · [ctrl+d] ×2 quit ──────────────╯  
 
 · working · the live tail sits under the pane
    shhh chat                                                                                                  
@@ -72,7 +72,7 @@
   │                                                                                                        │  
   │                                                                                                        │  
   ├─ ⏸ gated · ctx 32% ▰▰▱▱▱▱▱▱ · ↑41,200 ↓9,800 · $0.51 · gpt-4o ─────────────────────────────────────────┤  
-  ╰─ ctrl+c cancels the turn · enter queues steering · / commands ─────────────────────────────────────────╯  
+  ╰─ [ctrl+c] ×2 stop the run · [enter] queues steering · [/] commands ────────────────────────────────────╯  
 
 · working · a reading of the session leads the rail
    shhh chat                                                                                                  
@@ -104,7 +104,7 @@
   │                                                                                                        │  
   │                                                                                                        │  
   ├─ ⏸ gated · ctx 32% ▰▰▱▱▱▱▱▱ · ↑41,200 ↓9,800 · $0.51 · gpt-4o ─────────────────────────────────────────┤  
-  ╰─ ctrl+c cancels the turn · enter queues steering · / commands ─────────────────────────────────────────╯  
+  ╰─ [ctrl+c] ×2 stop the run · [enter] queues steering · [/] commands ────────────────────────────────────╯  
 
 ── ansi ────────────────────────────────────────────────────
 · idle · the draft has the keyboard
@@ -137,7 +137,7 @@
   ␛[38;5;254m│␛[m                                                                                                        ␛[38;5;254m│␛[m  
   ␛[38;5;254m│␛[m                                                                                                        ␛[38;5;254m│␛[m  
   ␛[38;5;254m├─␛[m ␛[38;5;254m⏸ gated␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · ↑41.2k ↓9.8k · $0.51 · ␛[38;5;254mgpt-4o␛[m ␛[38;5;254m───────────────────────────────────────────┤␛[m  
-  ␛[38;5;254m╰─␛[m ␛[38;5;244menter send · shift+enter newline · ctrl+g editor · ctrl+v attach · ctrl+/ palette · shift+tab mode␛[m ␛[38;5;254m───╯␛[m  
+  ␛[38;5;254m╰─␛[m ␛[38;5;254m[enter]␛[38;5;244m send · ␛[38;5;254m[ctrl+v]␛[38;5;244m attach · ␛[38;5;254m[ctrl+/]␛[38;5;244m palette · ␛[38;5;254m[shift+tab]␛[38;5;244m mode · ␛[38;5;254m[ctrl+d]␛[38;5;244m ×2 quit␛[m ␛[38;5;254m──────────────╯␛[m  
 
 · working · the live tail sits under the pane
   ␛[38;5;254;1m shhh chat␛[m                                                                                                  
@@ -169,7 +169,7 @@
   ␛[38;5;254m│␛[m                                                                                                        ␛[38;5;254m│␛[m  
   ␛[38;5;254m│␛[m                                                                                                        ␛[38;5;254m│␛[m  
   ␛[38;5;254m├─␛[m ␛[38;5;254m⏸ gated␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · ↑41,200 ↓9,800 · $0.51 · ␛[38;5;254mgpt-4o␛[m ␛[38;5;254m─────────────────────────────────────────┤␛[m  
-  ␛[38;5;254m╰─␛[m ␛[38;5;244mctrl+c cancels the turn · enter queues steering · / commands␛[m ␛[38;5;254m─────────────────────────────────────────╯␛[m  
+  ␛[38;5;254m╰─␛[m ␛[38;5;254m[ctrl+c]␛[38;5;244m ×2 stop the run · ␛[38;5;254m[enter]␛[38;5;244m queues steering · ␛[38;5;254m[/]␛[38;5;244m commands␛[m ␛[38;5;254m────────────────────────────────────╯␛[m  
 
 · working · a reading of the session leads the rail
   ␛[38;5;254;1m shhh chat␛[m                                                                                                  
@@ -201,4 +201,4 @@
   ␛[38;5;254m│␛[m                                                                                                        ␛[38;5;254m│␛[m  
   ␛[38;5;254m│␛[m                                                                                                        ␛[38;5;254m│␛[m  
   ␛[38;5;254m├─␛[m ␛[38;5;254m⏸ gated␛[38;5;244m · ␛[38;5;254mctx 32%␛[m ␛[38;5;254m▰▰␛[38;5;244m▱▱▱▱▱▱ · ↑41,200 ↓9,800 · $0.51 · ␛[38;5;254mgpt-4o␛[m ␛[38;5;254m─────────────────────────────────────────┤␛[m  
-  ␛[38;5;254m╰─␛[m ␛[38;5;244mctrl+c cancels the turn · enter queues steering · / commands␛[m ␛[38;5;254m─────────────────────────────────────────╯␛[m  
+  ␛[38;5;254m╰─␛[m ␛[38;5;254m[ctrl+c]␛[38;5;244m ×2 stop the run · ␛[38;5;254m[enter]␛[38;5;244m queues steering · ␛[38;5;254m[/]␛[38;5;244m commands␛[m ␛[38;5;254m────────────────────────────────────╯␛[m  

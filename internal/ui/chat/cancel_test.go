@@ -10,6 +10,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/runner"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // streamingCancelModel is a model mid-stream with an empty draft: the state
@@ -49,8 +50,8 @@ func TestCancel_FirstPressArmsSecondCancels(t *testing.T) {
 	if m.state != stateStreaming {
 		t.Fatal("a single ctrl+c must leave the stream live")
 	}
-	if note := m.armedNotice(); note != "ctrl+c again cancels the turn" {
-		t.Fatalf("the rail must say what the second press does, got %q", note)
+	if note, ok := m.armedHint(); !ok || note.render() != armedCancelHint() {
+		t.Fatalf("the rail must say what the second press does, got %+v", note)
 	}
 
 	m, _ = pressKey(t, m, ctrlC)
@@ -70,7 +71,7 @@ func TestCancel_ExpiredWindowArmsAgain(t *testing.T) {
 	if m.state != stateStreaming {
 		t.Fatal("a press after the window expired must arm again, not cancel")
 	}
-	if m.armedNotice() == "" {
+	if _, ok := m.armedHint(); !ok {
 		t.Fatal("the late press should have re-armed the window")
 	}
 }
@@ -86,8 +87,8 @@ func TestCancel_EscOnAnEmptyStreamingDraftIsInert(t *testing.T) {
 	if m.state != stateStreaming {
 		t.Fatal("esc must leave the stream live")
 	}
-	if note := m.armedNotice(); note != "" {
-		t.Fatalf("esc must arm nothing, the rail says %q", note)
+	if note, ok := m.armedHint(); ok {
+		t.Fatalf("esc must arm nothing, the rail says %+v", note)
 	}
 	m, _ = pressKey(t, m, escK)
 	if m.state != stateStreaming {
@@ -95,12 +96,12 @@ func TestCancel_EscOnAnEmptyStreamingDraftIsInert(t *testing.T) {
 	}
 
 	m, _ = pressKey(t, m, ctrlC)
-	if note := m.armedNotice(); note != "ctrl+c again cancels the turn" {
-		t.Fatalf("only the cancel chord arms, and the rail names it: %q", note)
+	if note, ok := m.armedHint(); !ok || note.render() != armedCancelHint() {
+		t.Fatalf("only the cancel chord arms, and the rail names it: %+v", note)
 	}
 	m, _ = pressKey(t, m, escK)
-	if note := m.armedNotice(); note != "ctrl+c again cancels the turn" {
-		t.Fatalf("esc must leave an open window as it found it, got %q", note)
+	if note, ok := m.armedHint(); !ok || note.render() != armedCancelHint() {
+		t.Fatalf("esc must leave an open window as it found it, got %+v", note)
 	}
 	m, _ = pressKey(t, m, ctrlC)
 	if m.state != stateInput {
@@ -119,7 +120,7 @@ func TestCancel_EscWithDraftClearsItFirst(t *testing.T) {
 	if m.state != stateStreaming {
 		t.Fatal("esc spent on the draft must not touch the turn")
 	}
-	if m.armedNotice() != "" {
+	if _, ok := m.armedHint(); ok {
 		t.Fatal("clearing the draft must not arm the cancel")
 	}
 }
@@ -141,14 +142,14 @@ func TestCancel_ExpiryMessageRevertsTheHint(t *testing.T) {
 	m, _ = pressKey(t, m, ctrlC)
 	updated, _ := m.Update(armExpiredMsg{seq: m.armed.seq})
 	m = updated.(Model)
-	if m.armedNotice() != "" {
+	if _, ok := m.armedHint(); ok {
 		t.Fatal("the expiry message must shut the window silently")
 	}
 	// A stale expiry for a window already replaced changes nothing.
 	m, _ = pressKey(t, m, ctrlC)
 	updated, _ = m.Update(armExpiredMsg{seq: m.armed.seq - 1})
 	m = updated.(Model)
-	if m.armedNotice() == "" {
+	if _, ok := m.armedHint(); !ok {
 		t.Fatal("a stale expiry must not shut the new window")
 	}
 }
@@ -227,8 +228,8 @@ func TestQuit_IdleTakesTwoPresses(t *testing.T) {
 	if m.quitting {
 		t.Fatal("a single ctrl+d must not quit")
 	}
-	if note := m.armedNotice(); note != "press again to quit" {
-		t.Fatalf("the rail must offer the second press, got %q", note)
+	if note, ok := m.armedHint(); !ok || note.render() != armedQuitHint() {
+		t.Fatalf("the rail must offer the second press, got %+v", note)
 	}
 
 	m, cmd := pressKey(t, m, ctrlD)
@@ -250,7 +251,7 @@ func TestQuit_ExpiredWindowArmsAgain(t *testing.T) {
 	if m.quitting || cmd == nil {
 		t.Fatal("a press after the window expired must arm again, not quit")
 	}
-	if m.armedNotice() != "press again to quit" {
+	if note, ok := m.armedHint(); !ok || note.render() != armedQuitHint() {
 		t.Fatal("the late press should have re-armed the window")
 	}
 }
@@ -289,4 +290,15 @@ func TestQuit_StopsACommandTheSessionWasRunning(t *testing.T) {
 	case <-time.After(2 * time.Second):
 		t.Fatal("quitting left a running command behind")
 	}
+}
+
+// armedCancelHint and armedQuitHint are the two rows an open window puts on
+// the rail, built the way the rail builds them so a change to the grammar
+// moves the test with the code rather than against it.
+func armedCancelHint() string {
+	return hintSeg{key: keys.Shown(keys.Draft.Cancel), label: "again cancels the turn"}.render()
+}
+
+func armedQuitHint() string {
+	return hintSeg{key: keys.Shown(keys.Draft.Quit), label: "again quits"}.render()
 }

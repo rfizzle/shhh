@@ -54,6 +54,6 @@ snap 08-receipt "committed 1 file as"
 keys C-c
 sleep 0.3
 keys C-c
-snap 09-quit-armed "press again to quit"
+snap 09-quit-armed "again quits"
 keys C-c
 snap 10-exit "that is everything the screen was holding"

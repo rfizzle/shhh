@@ -72,8 +72,8 @@
 ␛[38;5;241m│␛[m   ␛[38;5;241m[ ]␛[m conventional commits, one story per commit         ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m[ ]␛[m the plan directory is scrum, not code              ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m↓ 12 more · 1 checked␛[m                                    ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;241m[space] toggle · [a] all/none · [enter] apply (3)␛[m        ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;241m[esc] cancel␛[m                                             ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[94m[space]␛[m␛[38;5;241m toggle␛[m␛[38;5;241m · ␛[m␛[94m[a]␛[m␛[38;5;241m all/none␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m apply (3)␛[m        ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[92m[esc]␛[m␛[38;5;241m cancel␛[m                                             ␛[38;5;241m│␛[m
 ␛[38;5;241m╰──────────────────────────────────────────────────────────╯␛[m
 
 · the tail · the marker carries the ticks that scrolled away
@@ -85,8 +85,8 @@
 ␛[38;5;241m│␛[m   ␛[92m[x]␛[m approval cards state what is reversible            ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m[ ]␛[m steering is queued, not interrupting               ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[94m❯␛[m ␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m[ ]␛[m␛[48;5;62m ␛[97;48;5;62mesc always changes nothing                        ␛[m␛[m ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;241m[space] toggle · [a] all/none · [enter] apply (3)␛[m        ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[38;5;241m[esc] cancel␛[m                                             ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[94m[space]␛[m␛[38;5;241m toggle␛[m␛[38;5;241m · ␛[m␛[94m[a]␛[m␛[38;5;241m all/none␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m apply (3)␛[m        ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[92m[esc]␛[m␛[38;5;241m cancel␛[m                                             ␛[38;5;241m│␛[m
 ␛[38;5;241m╰──────────────────────────────────────────────────────────╯␛[m
 
 · the manager · the blocked child is pinned above the window
@@ -99,7 +99,7 @@
 ␛[94m│␛[m   ␛[94m◇␛[m writer-5  ␛[38;5;245msurvey inter…␛[m  ␛[94m▰▰▰␛[m␛[38;5;241m▱▱␛[m ␛[94m3/5␛[m␛[38;5;241m · ␛[m␛[38;5;245m6 tools · $0.02␛[m ␛[94m│␛[m
 ␛[94m│␛[m   ␛[94m◇␛[m writer-6  ␛[38;5;245mapply patch␛[m    ␛[94m▰▰▰▰␛[m␛[38;5;241m▱␛[m ␛[94m4/5␛[m␛[38;5;241m · ␛[m␛[38;5;245m6 tools · $0.02␛[m ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;241m↓ 4 more␛[m                                                 ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;241m[enter] attach · [x] cancel · [X] kill · [esc] back␛[m      ␛[94m│␛[m
+␛[94m│␛[m ␛[94m[enter]␛[m␛[38;5;241m attach␛[m␛[38;5;241m · ␛[m␛[94m[x]␛[m␛[38;5;241m cancel␛[m␛[38;5;241m · ␛[m␛[94m[X]␛[m␛[38;5;241m kill␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back␛[m      ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────╯␛[m
 
 · the manager · the pointer at the foot, the blocked child still on the card
@@ -112,5 +112,5 @@
 ␛[94m│␛[m   ␛[94m◇␛[m writer-8  ␛[38;5;245mREADME examp…␛[m  ␛[94m▰␛[m␛[38;5;241m▱▱▱▱␛[m ␛[94m1/5␛[m␛[38;5;241m · ␛[m␛[38;5;245m6 tools · $0.02␛[m ␛[94m│␛[m
 ␛[94m│␛[m   ␛[94m◇␛[m writer-9  ␛[38;5;245mgolden captu…␛[m  ␛[94m▰▰␛[m␛[38;5;241m▱▱▱␛[m ␛[94m2/5␛[m␛[38;5;241m · ␛[m␛[38;5;245m6 tools · $0.02␛[m ␛[94m│␛[m
 ␛[94m│␛[m ␛[94m❯␛[m ␛[94m␛[m␛[38;5;245m␛[m␛[94m␛[m␛[38;5;241m␛[m␛[94m␛[m␛[38;5;241m␛[m␛[38;5;245m␛[m␛[48;5;62m␛[94m◇␛[m␛[48;5;62m ␛[38;5;245m␛[m␛[48;5;62m␛[94m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[94m␛[m␛[48;5;62m␛[38;5;241m␛[m␛[48;5;62m␛[38;5;245m␛[m␛[48;5;62m␛[97;48;5;62mwriter-10  config sche…  ▰▰▰▱▱ 3/5 · 6 tools · $0.02␛[m␛[m ␛[94m│␛[m
-␛[94m│␛[m ␛[38;5;241m[enter] attach · [x] cancel · [X] kill · [esc] back␛[m      ␛[94m│␛[m
+␛[94m│␛[m ␛[94m[enter]␛[m␛[38;5;241m attach␛[m␛[38;5;241m · ␛[m␛[94m[x]␛[m␛[38;5;241m cancel␛[m␛[38;5;241m · ␛[m␛[94m[X]␛[m␛[38;5;241m kill␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m back␛[m      ␛[94m│␛[m
 ␛[94m╰──────────────────────────────────────────────────────────╯␛[m

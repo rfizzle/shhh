@@ -137,7 +137,7 @@ func TestReview_WholeFileStopsPromisingPerHunkStaging(t *testing.T) {
 	// Nothing staged: the way back names the file key first.
 	v.Update(key("enter"))
 	notice := ansi.Strip(v.View(110))
-	if !strings.Contains(notice, "nothing staged — S stages a file") {
+	if !strings.Contains(notice, "nothing staged — [S] stages a file") {
 		t.Fatalf("an empty selection should offer the file key first:\n%s", notice)
 	}
 

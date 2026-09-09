@@ -367,7 +367,7 @@ func (m Model) openPasteDrop() (tea.Model, tea.Cmd) {
 		}
 		card := components.NewMultiSelect(fmt.Sprintf(
 			"Drop staged attachments — %s toggles, %s drops the checked ones, %s drops none",
-			keys.Shown(keys.Select.Toggle), keys.Shown(keys.Select.Take), keys.Shown(keys.Select.Cancel)), opts)
+			keys.Bracket(keys.Select.Toggle), keys.Bracket(keys.Select.Take), keys.Bracket(keys.Select.Cancel)), opts)
 		card.MaxLines = m.maxConfirmPanelHeight()
 		m.pasteDrop = card
 	}
