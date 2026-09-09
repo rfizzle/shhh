@@ -280,10 +280,19 @@ func serveOnUnixSocket(t *testing.T, s printSession) string {
 	if shhhBuildErr != nil {
 		t.Fatalf("the binary these tests drive was not built: %v", shhhBuildErr)
 	}
-	// Under the shortest directory available: a unix socket path is bounded
-	// at about a hundred bytes by the operating system, and a test temporary
-	// directory is most of that on its own.
-	path := filepath.Join(t.TempDir(), "s")
+	// Under a short directory in the package's working tree: a Unix socket path
+	// is bounded at about a hundred bytes by the operating system, and the
+	// session's private TMPDIR can consume the entire budget before the socket's
+	// name is added. It stays hidden and is removed when the test ends.
+	dir, err := os.MkdirTemp(".", ".serve-")
+	if err != nil {
+		t.Fatalf("making socket directory: %v", err)
+	}
+	path, err := filepath.Abs(filepath.Join(dir, "s"))
+	if err != nil {
+		t.Fatalf("resolving socket path: %v", err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(dir) })
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	cmd := exec.CommandContext(ctx, shhhBinary, "serve", "--socket", path)
 	cmd.Dir = s.dir
