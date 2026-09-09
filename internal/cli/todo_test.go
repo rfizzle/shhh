@@ -36,7 +36,7 @@ func TestTodoListing(t *testing.T) {
 		"✗ third   Third · medium  [blocked]",
 		"shhh todo — 3 items",
 		"1 ready · 1 blocked · 1 archived",
-		"bad.md: skipped: no header",
+		"bad.md:\n    skipped: no header",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("listing lacks %q:\n%s", want, out)
