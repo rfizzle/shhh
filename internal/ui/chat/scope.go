@@ -11,12 +11,12 @@ package chat
 // Answering yes puts the directory in the scope for the rest of the session,
 // which is what makes the answer stick: the sandbox's write grants follow the
 // scope, so a contained command can finally write where the user said the
-// work is. Two kinds of directory do not come along. One that only a person
-// may grant — a home directory, a system root, another tool's credential
-// store — is never granted by a mode or the classifier, however permissive
-// the session is. One behind the containment deny mask cannot be granted at
-// all, and the call is refused rather than asked about, because approving it
-// would promise something the sandbox would go on refusing.
+// work is. A sensitive directory — a home directory, a system root, or
+// shhh's own configuration and state — is never granted by a mode or the
+// classifier, however permissive the session is. One behind the containment
+// deny mask, such as a permanent credential store, cannot be granted at all,
+// and the call is refused rather than asked about, because approving it would
+// promise something the sandbox would go on refusing.
 
 import (
 	"fmt"

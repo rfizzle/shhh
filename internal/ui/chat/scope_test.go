@@ -10,6 +10,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/scope"
 )
 
@@ -147,6 +148,32 @@ func TestScopeCommandNamesASensitiveGrant(t *testing.T) {
 	out := m.scopeCommand([]string{"/add-dir", home})
 	if !strings.Contains(out, "sensitive") {
 		t.Fatalf("granting a sensitive directory should say so, got:\n%s", out)
+	}
+}
+
+func TestScopeCommandAddsShhhDirectories(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
+	t.Setenv("XDG_DATA_HOME", filepath.Join(home, ".local", "share"))
+	m := scopedModel(t, t.TempDir(), agent.ModeManual)
+
+	seen := make(map[string]bool)
+	for _, dir := range sandbox.ShhhPaths() {
+		if seen[dir] {
+			continue
+		}
+		seen[dir] = true
+		if err := os.MkdirAll(dir, 0o700); err != nil {
+			t.Fatal(err)
+		}
+		out := m.scopeCommand([]string{"/add-dir", dir})
+		if !strings.Contains(out, "Added") || !strings.Contains(out, "sensitive") {
+			t.Fatalf("/add-dir should explicitly grant shhh directory %q, got:\n%s", dir, out)
+		}
+		if !m.scope.Contains(filepath.Join(dir, "child")) {
+			t.Fatalf("%q should be in the working scope after /add-dir", dir)
+		}
 	}
 }
 

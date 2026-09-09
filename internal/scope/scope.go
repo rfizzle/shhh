@@ -16,16 +16,15 @@
 // again.
 //
 // Two classes of directory never come along for the ride. A path inside the
-// fixed deny mask — a store nothing legitimate writes to — is Refused: it
-// cannot be granted at all, by any key, because the mask it sits behind
-// cannot be disabled. A home directory, a system root, another tool's
-// credential store, or shhh's own state is Sensitive: it can be granted, but
-// only by a person answering for it, never by a permissive mode or classifier.
+// fixed deny mask — a permanent credential store — is Refused: it cannot be
+// granted at all, by any key, because the mask it sits behind cannot be
+// disabled. A home directory, a system root, or shhh's own configuration and
+// state is Sensitive: it can be granted, but only by a person answering for
+// it, never by a permissive mode or classifier.
 //
-// For a credential store the grant is also what makes it readable. Those are
-// masked from contained commands until the scope holds them, so the scope is
-// the one place a person says a kubeconfig or a registry login is part of
-// this work — said once, for reads and writes together.
+// A grant for shhh's own configuration or state is also what makes it readable
+// to contained commands. It gives a person one explicit place to say that a
+// development session may change shhh's settings or records.
 package scope
 
 import (
