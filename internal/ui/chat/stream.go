@@ -213,7 +213,7 @@ func (m *Model) finishStreaming() {
 		// cancelled with it: what the reader stopped is the turn, and
 		// resuming the round they interrupted would be answering a key with
 		// the opposite of what it says.
-		m.compacting, m.compactResume = false, false
+		m.compacting, m.compactResume, m.compactRun = false, false, nil
 		m.streaming = ""
 		m.events = nil
 		m.cancel = nil

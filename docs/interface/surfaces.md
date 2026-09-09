@@ -246,6 +246,37 @@ than an error path. A message we could not name still gets said.
 Two failures earn a card instead, and only two: the ones that stop the session
 dead.
 
+### The compaction receipt
+
+Recovering the window is an act the session took on the conversation, and it
+is accounted for the way every other act is: one row, in the same seven
+fields. The glyph column carries the outcome directly — a compaction is not a
+call, so there is no kind glyph for it to override — the verb is `compact`,
+the growing field says which turns went, and the account beside the outcome
+says where the window stood before and where it stands after, with what the
+summary cost. There is no mutation rail: nothing on the machine was touched.
+
+Under the row, a fold: which turns are behind it, what they were holding, and
+how many lines stand in for them now. It opens read, because a reader who has
+just lost five turns is owed what replaced them without asking for it, and the
+same key closes it again. The summary inside is the model's own words, so it
+is the one italic run the transcript draws, and it is bounded like every other
+body under a row — the foot counts what the cap swallowed and says where the
+turns themselves went.
+
+They went nowhere. The turns a compaction folds keep their rows, and their
+step headers say `out of the window`: the search still reaches them, the folds
+still open, and the only thing that changed is what the model can be asked
+about. A transcript that dropped them would be answering a question nobody
+asked it — the record is of what happened on this machine, and compaction is
+about the model's memory.
+
+A compaction with nothing left to fold says so instead of pretending: what it
+freed, and what is still in the window that no summary can stand in for — a
+plan, a changeset, the turns it is keeping. That row is a break, because the
+act was asked to recover a window and did not, and it carries no fold, because
+there is nothing behind it.
+
 ## Panels
 
 ### Reading mode

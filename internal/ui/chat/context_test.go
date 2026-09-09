@@ -390,9 +390,12 @@ func TestCompact_RestartsFromSummary(t *testing.T) {
 	if want := m.calibration.Apply(estimateMessageTokens(m.Messages())); m.estimatedContextTokens() != want {
 		t.Fatalf("context estimate should reset to %d, got %d", want, m.estimatedContextTokens())
 	}
-	last := m.transcript[len(m.transcript)-1]
-	if last.kind != entryCompactSummary || last.text != "the summary" {
-		t.Fatalf("transcript should show the summary, got %+v", last)
+	receipt, ok := m.compactEntry()
+	if !ok || receipt.text != "the summary" {
+		t.Fatalf("transcript should show the summary, got %+v", m.transcript)
+	}
+	if receipt.compact == nil {
+		t.Fatal("the summary should arrive under a receipt")
 	}
 }
 
@@ -1062,5 +1065,293 @@ func TestRoundTail_AsksForOneSummaryPerCrossing(t *testing.T) {
 	}
 	if len(choices) != 2 || choices[1] != provider.ToolChoiceAuto {
 		t.Fatalf("expected one summary and the round's own request, got %v", choices)
+	}
+}
+
+// compactEntry is the receipt a compaction left on the transcript, for the
+// tests that ask what it says about the act.
+func (m Model) compactEntry() (entry, bool) {
+	for _, e := range m.transcript {
+		if e.kind == entryCompactSummary {
+			return e, true
+		}
+	}
+	return entry{}, false
+}
+
+// receiptModel is a transcript with three turns in it — the first one a step
+// with two reads under it — and a provider that answers a compaction with one
+// summary. Three turns because a compaction keeps the last two, so exactly
+// one turn goes out of the window and the rows it left are what these tests
+// are about.
+func receiptModel(t *testing.T) Model {
+	t.Helper()
+	m := New([]provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "where is the round limit counted"},
+		{Role: provider.RoleAssistant, Content: "Locate the round accounting"},
+		{Role: provider.RoleUser, Content: "and who declares it"},
+		{Role: provider.RoleAssistant, Content: "second answer"},
+		{Role: provider.RoleUser, Content: "move it"},
+		{Role: provider.RoleAssistant, Content: "third answer"},
+	}, summaryStream("The limit lived in two places and disagreed. "+
+		"The loop owns it now and nothing else declares one."))
+	m.transcript = []entry{
+		{kind: entryUser, text: "where is the round limit counted"},
+		{kind: entryAssistant, text: "Locate the round accounting"},
+		{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"loop.go"}`,
+			toolResult: "a\nb", duration: 600 * time.Millisecond},
+		{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"round.go"}`,
+			toolResult: "c", duration: 400 * time.Millisecond},
+		{kind: entryUser, text: "and who declares it"},
+		{kind: entryAssistant, text: "second answer"},
+		{kind: entryUser, text: "move it"},
+		{kind: entryAssistant, text: "third answer"},
+	}
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 110, Height: 40})
+	return updated.(Model)
+}
+
+// The receipt is an act on the grid, not a sentence beside it: the verb where
+// every verb is, what it folded in the growing field, the window either side
+// of it in the account, and a duration.
+func TestCompactReceipt_IsAnActivityRowOnTheGrid(t *testing.T) {
+	m := receiptModel(t)
+	m = driveCompact(t, m)
+	e, ok := m.compactEntry()
+	if !ok || e.compact == nil {
+		t.Fatal("a compaction leaves a receipt")
+	}
+	r := *e.compact
+	if r.floor != "" {
+		t.Fatalf("a compaction that folded a turn is not the floor case: %q", r.floor)
+	}
+	if r.first != 1 || r.last != 1 {
+		t.Fatalf("the first turn went and the last two stayed, got turns %d–%d", r.first, r.last)
+	}
+	row := compactRowFor(r)
+	if row.Kind != components.ActivityCompaction || row.Verb != compactVerb {
+		t.Fatalf("the receipt is a compaction row, got %+v", row)
+	}
+	if row.Target != "folded turn 1" {
+		t.Fatalf("the target says which turns went, got %q", row.Target)
+	}
+	if !strings.HasPrefix(row.Allowed, "ctx ") || !strings.Contains(row.Allowed, "→") {
+		t.Fatalf("the account says where the window was and where it is, got %q", row.Allowed)
+	}
+	if r.tokens <= 0 {
+		t.Fatalf("the receipt should say what the folded turn held, got %d", r.tokens)
+	}
+}
+
+// The line under the receipt counts what it holds and names the key that
+// closes it; the line the transcript carried while the request was out is
+// answered by the row and comes back off.
+func TestCompactReceipt_TheFoldCountsWhatItHoldsAndSaysWhatOpensIt(t *testing.T) {
+	m := driveCompact(t, receiptModel(t))
+	e, ok := m.compactEntry()
+	if !ok {
+		t.Fatal("a compaction leaves a receipt")
+	}
+	if !e.expanded {
+		t.Fatal("the summary opens read, because a reader who just lost a turn is owed it")
+	}
+	open := stripANSI(m.compactFoldLine(*e.compact, 4, true, 110))
+	for _, want := range []string{"▾", "turn 1", "compacted", "a 4-line summary", "fold it back up"} {
+		if !strings.Contains(open, want) {
+			t.Fatalf("the open fold should say %q, got %q", want, open)
+		}
+	}
+	closed := stripANSI(m.compactFoldLine(*e.compact, 4, false, 110))
+	if !strings.Contains(closed, "▸") || !strings.Contains(closed, "read the summary") {
+		t.Fatalf("the closed fold should offer the way in, got %q", closed)
+	}
+	for _, e := range m.transcript {
+		if e.kind == entrySystem && e.text == compactingNotice {
+			t.Fatal("the receipt answers the line that said a compaction was running")
+		}
+	}
+}
+
+// Fold, never hide: the turns the model no longer remembers keep their rows,
+// their step header says which side of the window it is on, and the search
+// still finds them.
+func TestCompact_TheFoldedTurnsStayOnTheTranscriptOutOfTheWindow(t *testing.T) {
+	m := driveCompact(t, receiptModel(t))
+	var out, in int
+	for _, e := range m.transcript {
+		if e.outOfWindow {
+			out++
+			continue
+		}
+		in++
+	}
+	if out == 0 {
+		t.Fatalf("the folded turn's rows should still be here, transcript:\n%+v", m.transcript)
+	}
+	if in == 0 {
+		t.Fatal("the kept turns are in the window")
+	}
+	view := stripANSI(m.renderHistory())
+	if !strings.Contains(view, outOfWindowLabel) {
+		t.Fatalf("the folded turn's step header should say so, got:\n%s", view)
+	}
+	if !strings.Contains(view, "Locate the round accounting") {
+		t.Fatalf("the folded turn's step is still on the transcript, got:\n%s", view)
+	}
+	// The rows are still entries, so the transcript search reaches them.
+	m.setSearchQuery("round.go")
+	if n := m.searchMatchesIn(m.transcript, 0, len(m.transcript)); n == 0 {
+		t.Fatal("a search should still reach a row that went out of the window")
+	}
+}
+
+// [enter] on the receipt folds the summary away and gives it back, the way it
+// folds every other body on the transcript.
+func TestCompactReceipt_EnterFoldsTheSummaryAwayAndGivesItBack(t *testing.T) {
+	m := driveCompact(t, receiptModel(t))
+	idx := -1
+	for i, e := range m.transcript {
+		if e.kind == entryCompactSummary {
+			idx = i
+		}
+	}
+	if idx < 0 {
+		t.Fatal("a compaction leaves a receipt")
+	}
+	if !expandable(m.transcript[idx]) || !onGrid(m.transcript[idx]) {
+		t.Fatal("the receipt is a row the reading cursor can open")
+	}
+	summary := m.transcript[idx].text
+	if !strings.Contains(stripANSI(m.renderHistory()), "The loop owns it now") {
+		t.Fatalf("the summary reads open, got:\n%s", stripANSI(m.renderHistory()))
+	}
+	m.state, m.focusIdx = stateFocus, idx
+	next, _ := m.openCursorRow(stateFocus)
+	m = next.(Model)
+	if m.transcript[idx].expanded {
+		t.Fatal("[enter] on the receipt folds the summary away")
+	}
+	if strings.Contains(stripANSI(m.renderHistory()), "The loop owns it now") {
+		t.Fatalf("a folded summary is not on screen, got:\n%s", stripANSI(m.renderHistory()))
+	}
+	next, _ = m.openCursorRow(stateFocus)
+	m = next.(Model)
+	if !m.transcript[idx].expanded || m.transcript[idx].text != summary {
+		t.Fatal("[enter] again gives the summary back, unchanged")
+	}
+}
+
+// A second compaction over turns a first one already folded recovers nothing,
+// and the row says so in the outcome column's own vocabulary: what it freed,
+// what is still in the window, and no summary under it — there was nothing
+// for a summary to stand in for.
+func TestCompactReceipt_TheFloorSaysWhatIsLeftAndCarriesNoSummary(t *testing.T) {
+	m := New([]provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "a summary of what came before"},
+		{Role: provider.RoleAssistant, Content: "second answer"},
+		{Role: provider.RoleUser, Content: "and now this"},
+		{Role: provider.RoleAssistant, Content: "third answer"},
+	}, summaryStream("a summary nobody needed"))
+	// The conversation the first compaction left: its summary, and the one
+	// turn since. Every turn still in the window is a turn this compaction
+	// keeps, so there is nothing left for it to fold.
+	m.transcript = []entry{
+		{kind: entryUser, text: "the first turn a compaction folded", outOfWindow: true},
+		{kind: entryAssistant, text: "first answer", outOfWindow: true},
+		{kind: entryUser, text: "the second one", outOfWindow: true},
+		{kind: entryAssistant, text: "second answer", outOfWindow: true},
+		{kind: entryUser, text: "and now this"},
+		{kind: entryAssistant, text: "third answer"},
+	}
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 110, Height: 40})
+	m = driveCompact(t, updated.(Model))
+	e, ok := m.compactEntry()
+	if !ok || e.compact == nil {
+		t.Fatal("a compaction leaves a receipt whether or not it folded anything")
+	}
+	if e.compact.floor == "" {
+		t.Fatalf("nothing was foldable, so the row says so, got %+v", e.compact)
+	}
+	if !strings.HasPrefix(e.compact.floor, "freed ") {
+		t.Fatalf("the floor leads with what it freed, got %q", e.compact.floor)
+	}
+	if !strings.Contains(e.compact.floor, "turn 3") {
+		t.Fatalf("the floor names what is still in the window, got %q", e.compact.floor)
+	}
+	row := compactRowFor(*e.compact)
+	if row.State != components.ActivityFailed {
+		t.Fatalf("a compaction that recovered nothing is a break, got state %d", row.State)
+	}
+	block := stripANSI(m.compactBlock(e, 110))
+	if strings.Contains(block, "a summary nobody needed") || strings.Contains(block, "compacted") {
+		t.Fatalf("the floor case is one row with no fold under it, got:\n%s", block)
+	}
+}
+
+// A message the session wrote for itself is user-role on the wire and a
+// notice on the screen, so counting it as a turn would put the fold boundary
+// a real turn too far back — and the turn between the two boundaries is one
+// the summary has replaced and the kept tail does not carry. Every row is on
+// exactly one side of the split, whatever else is in the conversation.
+func TestCompact_AMessageNobodyTypedIsNotATurnTheFoldCountsBack(t *testing.T) {
+	m := New([]provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "first"},
+		{Role: provider.RoleAssistant, Content: "first answer"},
+		{Role: provider.RoleUser, Content: "second"},
+		{Role: provider.RoleAssistant, Content: "second answer"},
+		// The context a local run hands the model: user-role, nobody typed it.
+		{Role: provider.RoleUser, Content: "I ran `go test` myself.", Machine: true},
+		{Role: provider.RoleUser, Content: "third"},
+		{Role: provider.RoleAssistant, Content: "third answer"},
+	}, summaryStream("the summary"))
+	m.transcript = []entry{
+		{kind: entryUser, text: "first"},
+		{kind: entryAssistant, text: "first answer"},
+		{kind: entryUser, text: "second"},
+		{kind: entryAssistant, text: "second answer"},
+		{kind: entrySystem, text: "I ran `go test` myself."},
+		{kind: entryUser, text: "third"},
+		{kind: entryAssistant, text: "third answer"},
+	}
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 110, Height: 40})
+	before := updated.(Model).transcript
+	m = driveCompact(t, updated.(Model))
+
+	// Every row that was on the transcript is still on it, once, on one side
+	// of the window or the other.
+	texts := map[string]int{}
+	for _, e := range m.transcript {
+		if e.kind == entryCompactSummary {
+			continue
+		}
+		texts[e.text]++
+	}
+	for _, e := range before {
+		switch n := texts[e.text]; {
+		case n == 0:
+			t.Fatalf("the compaction lost %q from the transcript:\n%s", e.text, stripANSI(m.renderHistory()))
+		case n > 1:
+			t.Fatalf("the compaction drew %q %d times", e.text, n)
+		}
+	}
+	// And the boundary is where the reader's own turns say it is. The kept
+	// tail here is one turn, not two: the machine message took one of the
+	// two slots the compaction keeps, which is the conversation's own
+	// arithmetic and the transcript now agrees with it rather than counting
+	// a turn of its own.
+	inWindow := map[string]bool{}
+	for _, e := range m.transcript {
+		inWindow[e.text] = !e.outOfWindow
+	}
+	for _, gone := range []string{"first", "second"} {
+		if inWindow[gone] {
+			t.Fatalf("%q was folded away, so its row is out of the window", gone)
+		}
+	}
+	if !inWindow["third"] {
+		t.Fatal("the kept turn's row is in the window")
 	}
 }

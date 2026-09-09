@@ -28,7 +28,12 @@ import (
 func expandable(e entry) bool {
 	return e.kind == entryTool || e.kind == entryCommand || e.kind == entryDiff ||
 		e.kind == entryThink || e.kind == entrySummary || e.kind == entryTodoRun ||
-		(e.kind == entrySystem && len(outputLines(e)) > 0)
+		(e.kind == entrySystem && len(outputLines(e)) > 0) ||
+		// A compaction receipt folds the summary under it, which is a body
+		// like any other — and the one that opens with the fold already open,
+		// because a reader who has just lost five turns is owed what replaced
+		// them without asking (context.go).
+		(e.kind == entryCompactSummary && e.compact != nil && e.compact.floor == "")
 }
 
 // selectable reports whether focus mode can put its cursor on an entry. It is
@@ -879,6 +884,10 @@ func onGrid(e entry) bool {
 	case entryTool, entryCommand, entryDiff, entryThink, entrySummary,
 		entryTodoRun, entryAssistant:
 		return true
+	case entryCompactSummary:
+		// The receipt is a row on the grid; a bare summary out of an older
+		// record is prose and is not (context.go).
+		return e.compact != nil
 	}
 	return false
 }

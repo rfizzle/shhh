@@ -633,3 +633,74 @@ func TestActivityRow_APatternIsNotItsOwnScope(t *testing.T) {
 		t.Fatalf("a pattern with no place behind it is all subject:\n%q", r.View(80))
 	}
 }
+
+// A compaction is not a call, so there is no kind glyph for the outcome to
+// override: the column carries ✓ or ✗ directly, the gutter stays clear
+// because nothing on the machine was touched, and the account beside the
+// outcome paints the window it was and the window it is.
+func TestActivityRow_ACompactionCarriesItsOutcomeInTheGlyphColumn(t *testing.T) {
+	withColorProfile(t, colorprofile.ANSI256)
+	done := ActivityRow{
+		Kind: ActivityCompaction, Verb: "compact", Target: "folded turns 1–5",
+		Allowed: "ctx 88% → 28% · $0.02", Duration: "4.1s",
+	}
+	_, rail, verb, rest := fieldsOf(t, done.View(110))
+	if strings.TrimSpace(rail) != "" {
+		t.Fatalf("a compaction touched nothing on the machine, so no rail: %q", done.View(110))
+	}
+	if strings.TrimSpace(verb) != "compact" {
+		t.Fatalf("the verb belongs in the verb column, got %q", verb)
+	}
+	if !strings.HasPrefix(rest, "folded turns 1–5") {
+		t.Fatalf("the target should start in the target column, got %q", rest)
+	}
+	line := []rune(stripANSI(done.View(110)))
+	if glyph := strings.TrimSpace(string(line[ptrWidth+railWidth : ptrWidth+railWidth+glyphWidth])); glyph != "✓" {
+		t.Fatalf("a compaction that came back says so with ✓, got %q", glyph)
+	}
+	if !strings.Contains(done.View(110), sty.Add.Render("✓")) {
+		t.Fatalf("the ✓ is add, like every other thing that landed:\n%q", done.View(110))
+	}
+	// The two ends of the account carry the two tokens those numbers mean
+	// everywhere else; the label and the cost stay in the field's own tone.
+	for _, want := range []string{sty.Del.Render("88%"), sty.Add.Render("28%"),
+		sty.Dim.Render("ctx"), sty.Dim.Render("$0.02")} {
+		if !strings.Contains(done.View(110), want) {
+			t.Fatalf("want %q in the account:\n%q", want, done.View(110))
+		}
+	}
+	// The floor case is the state's own glyph, which does override.
+	floor := ActivityRow{
+		Kind: ActivityCompaction, State: ActivityFailed, Verb: "compact",
+		Target: "freed 6% · nothing left to fold",
+	}
+	line = []rune(stripANSI(floor.View(110)))
+	if glyph := strings.TrimSpace(string(line[ptrWidth+railWidth : ptrWidth+railWidth+glyphWidth])); glyph != "✗" {
+		t.Fatalf("a compaction that recovered nothing is ✗, got %q", glyph)
+	}
+	// And still no rail: the failed-row exception is about a break on the
+	// machine, and a compaction never touched it.
+	if _, rail, _, _ = fieldsOf(t, floor.View(110)); strings.TrimSpace(rail) != "" {
+		t.Fatalf("a compaction that recovered nothing changed nothing either: %q", floor.View(110))
+	}
+}
+
+// An account that is not a pair of percentages is one run in one tone, and
+// the shape test claims nothing it was not written for.
+func TestPaintOccupancy_ClaimsOnlyAPairOfPercentages(t *testing.T) {
+	withColorProfile(t, colorprofile.ANSI256)
+	for _, seg := range []string{"auto-allowed", "classifier 2.1s", "signal 9", "30s",
+		"ctx 88% → high", "88% → 28% → 12%", "ctx  88%  →  28%"} {
+		if _, ok := paintOccupancy(seg, sty.Dim); ok {
+			t.Fatalf("%q is not an occupancy pair", seg)
+		}
+	}
+	for _, seg := range []string{"88% → 28%", "ctx 88% → 28%", "the window 100% → 0%"} {
+		if _, ok := paintOccupancy(seg, sty.Dim); !ok {
+			t.Fatalf("%q is an occupancy pair", seg)
+		}
+	}
+	if got := paintAccount("auto-allowed · auto mode", sty.Dim); got != sty.Dim.Render("auto-allowed · auto mode") {
+		t.Fatalf("an account with no pair in it is one run, got %q", got)
+	}
+}

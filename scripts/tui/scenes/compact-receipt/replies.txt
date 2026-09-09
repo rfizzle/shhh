@@ -4,8 +4,14 @@
 # is the last reply here, because /compact asks the provider exactly once and
 # the answer is the summary the receipt quotes. It is written the way a model
 # writes one: prose about the conversation rather than about the code.
-tool:read_file:{"path":"loop.go"}
+#
+# The first turn is a step: a title and the calls under it in one reply, which
+# is what gives it a header for the compaction to mark out of the window. Sent
+# as replies of their own the title would be a turn that ended before the
+# calls were asked for.
+Locate the round accounting
++tool:read_file:{"path":"loop.go"}
++tool:read_file:{"path":"round.go"}
 The limit is read from a constant in loop.go and never from the caller.
-tool:read_file:{"path":"round.go"}
 round.go declares the constant, so the two files disagree about who owns it.
 Rounds are counted in the round loop; the limit lived in two places and disagreed. The turns so far established loop.go as the owner and found round.go still declaring a constant of its own. Nothing has been changed yet.

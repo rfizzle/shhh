@@ -362,6 +362,12 @@ type stepHeader struct {
 	// (invariant 4), and while a search is up what it swallowed includes
 	// answers to the question the reader is asking.
 	Matches int
+	// OutOfWindow marks a step a compaction folded into a summary: the rows
+	// are still here and still searchable, and the model no longer remembers
+	// them firsthand (context.go). The header says so in words, because a
+	// step that read as current would have the reader asking the model about
+	// work it can no longer see.
+	OutOfWindow bool
 }
 
 // tones are the header's per-state colors, following the design system's
@@ -369,10 +375,15 @@ type stepHeader struct {
 // runs and the title brightens with it, a queued step is dim throughout, and
 // a finished step is ordinary body text under a faint rule.
 func (h stepHeader) tones() (ptr, title, dur lipgloss.Style) {
-	switch h.State {
-	case stepRunning:
+	switch {
+	case h.OutOfWindow:
+		// Past work, and the title goes with the rest of the line: the eye
+		// running up a transcript should find where the window starts
+		// without reading a word (context.go).
+		return sty.Step.Dim, sty.Step.Dim, sty.Step.Dim
+	case h.State == stepRunning:
 		return sty.Step.Run, sty.Step.LiveTitle, sty.Step.Run
-	case stepQueued:
+	case h.State == stepQueued:
 		return sty.Step.Dim, sty.Step.Dim, sty.Step.Dim
 	}
 	return sty.Step.Dim, sty.Step.Title, sty.Step.Stats
@@ -411,8 +422,21 @@ func (h stepHeader) countLabel() string {
 	if h.Matches > 0 {
 		label += " · " + matchesInside(h.Matches)
 	}
+	if h.OutOfWindow {
+		// Last, because it is the standing fact about the step rather than
+		// something that happened in it, and a reader scanning the column
+		// reads the counts first.
+		label += " · " + outOfWindowLabel
+	}
 	return label
 }
+
+// outOfWindowLabel is what a step a compaction folded away says about itself.
+// The words carry it and nothing else does (invariant 1): the rows are still
+// on the transcript, still searchable and still openable, so the only thing
+// that has changed is what the model can be asked about
+// (docs/interface/principles.md#fold-never-hide).
+const outOfWindowLabel = "out of the window"
 
 // durationText is the header's duration: blank under 0.5s like every other
 // row, — for a step that never ran.
@@ -521,6 +545,9 @@ func (m Model) headerFor(blk transcriptBlock, es []entry) stepHeader {
 		Folded:   m.stepFolded(g, es, state),
 		Detail:   g.titleIdx != stepNoTitle && es[g.titleIdx].detailFold == foldOpen,
 		OffPlan:  g.offPlan,
+		// Read off the rows rather than off the title, so a step whose title
+		// entry a plan supplied still says which side of the window it is on.
+		OutOfWindow: g.end > g.start && es[g.start].outOfWindow,
 	}
 	if h.Folded {
 		h.Matches = m.searchMatchesIn(es, g.start, g.end)

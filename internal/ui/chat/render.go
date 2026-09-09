@@ -213,7 +213,7 @@ func (m Model) renderEntryDetail(e entry, width int, keysLive, stepDetail bool) 
 	case entryAssistant:
 		return renderMarkdown(e.text, width) + "\n"
 	case entryCompactSummary:
-		block := m.compactSummaryBlock(e, width)
+		block := m.compactBlock(e, width)
 		if block == "" {
 			return ""
 		}

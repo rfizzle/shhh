@@ -223,7 +223,10 @@ func TestCompact_KeepsTheMostRecentTurnsVerbatim(t *testing.T) {
 		texts = append(texts, e.text)
 	}
 	joined := strings.Join(texts, "\n")
-	for _, want := range []string{"the last 2 turns", "second", "third answer"} {
+	if r, ok := m.compactEntry(); !ok || r.compact == nil {
+		t.Fatal("the summary should arrive under a receipt row")
+	}
+	for _, want := range []string{"second", "third answer"} {
 		if !strings.Contains(joined, want) {
 			t.Fatalf("the transcript should carry %q, got:\n%s", want, joined)
 		}

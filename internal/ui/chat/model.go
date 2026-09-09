@@ -336,10 +336,13 @@ const (
 	// this is where a longer one can be read whole, and where the readings
 	// before it are still on record.
 	entrySummary
-	// entryCompactSummary: the summary a compaction produced, quoted under
-	// the receipt row that announced it (context.go). It is the model's own
-	// words and not a turn — nothing was asked for them — so they are drawn
-	// italic and indented instead of under an Assistant heading.
+	// entryCompactSummary: the receipt a compaction left, and the summary it
+	// produced, quoted under it (context.go). One entry rather than two,
+	// because it is one act: the row states what the compaction did, the
+	// fold line under it counts what it folded away, and the summary is what
+	// the model wrote in place of it — the model's own words and not a turn,
+	// since nothing was asked for them, so they are drawn italic and
+	// indented instead of under an Assistant heading.
 	entryCompactSummary
 	// entryTodoRun: the backlog run, one row for the whole of it, updated in
 	// place as the run moves through its stages (todorun.go). It holds a
@@ -500,6 +503,23 @@ type entry struct {
 	// where the original went. Nil on every row that still holds its own
 	// output, which is all of them until a trim runs.
 	elided *elidedRow
+	// compact is the account behind an entryCompactSummary block: what the
+	// receipt row says the compaction did, and what its fold counts
+	// (context.go). Nil on nothing else, because nothing else is a receipt.
+	compact *compactReceipt
+	// outOfWindow marks an entry the model no longer remembers firsthand: a
+	// compaction folded the turn it belongs to into a summary and the rows
+	// stayed behind. The transcript is the record of what happened on this
+	// machine and a compaction is about the model's memory, not the reader's,
+	// so the rows keep their place and say which side of the window they are
+	// on (docs/interface/principles.md#fold-never-hide).
+	//
+	// Their bodies stay with them, which is what a compaction costs the
+	// process now that it no longer empties the transcript. The trim is what
+	// reclaims that memory and it always was: it runs on how full the window
+	// is rather than on a compaction having happened, and a row it takes the
+	// body of says so and offers the original (elided).
+	outOfWindow bool
 	// planStep is the number of the approved plan's step this assistant
 	// announcement carries out, offPlanStep when it carries out none of them,
 	// and zero when no plan was running. It is stamped once, when the
@@ -887,6 +907,16 @@ type Model struct {
 	// Empty is a conversation that never compacted, and nothing here ever
 	// writes one that a compaction did not.
 	compactSummary string
+	// compactRun is what a compaction in flight remembers about the
+	// conversation it is about to replace, so the receipt it leaves can
+	// account for the act the way every other row accounts for one: how full
+	// the window was, what the session had spent, and when the request went
+	// out (context.go). It is read once and dropped, because none of it can
+	// be recovered afterwards — the conversation it describes is gone by the
+	// time the summary lands, and a record left standing would be the next
+	// compaction's figures. Nil whenever no compaction is running, which is
+	// nearly always.
+	compactRun *compactStart
 	// observer receives the session's content-free events; turnCount and
 	// toolDefTokens feed it and /stats.
 	observer      observe.Observer

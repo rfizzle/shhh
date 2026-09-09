@@ -166,6 +166,19 @@ const (
 	// working, ≡ is another model reading the session
 	// (docs/interface/surfaces.md#the-session-summary).
 	ActivitySummary
+	// ActivityCompaction is the session folding its own conversation into a
+	// summary. It is the one kind with no glyph of its own: a compaction is
+	// not a call, so there is no tool to name, and the column carries the
+	// outcome instead — ✓ for a window that came back, ✗ for one that did
+	// not. That is not the outcome table overriding a kind glyph, which is
+	// the one thing ✓ may never do (guidelines/glyphs-states): there is no
+	// kind glyph here to override.
+	//
+	// No mutation rail either, in either state. A compaction rewrites what
+	// the model remembers and touches nothing on the machine, which is the
+	// bottom of the weight order
+	// (docs/interface/principles.md#weight-tracks-risk).
+	ActivityCompaction
 )
 
 // ActivityState is the row's state. It overrides the kind glyph — but only
@@ -269,6 +282,14 @@ func (r ActivityRow) Failed() bool { return r.State == ActivityFailed }
 // failed keeps a rail whatever it was, so scrolling back finds the break
 // without hunting for it.
 func (r ActivityRow) mutated() bool {
+	if r.Kind == ActivityCompaction {
+		// The one kind the failed-row exception does not reach. The rail is
+		// about the machine — this row wrote to it, this row broke against it
+		// — and a compaction that could not recover the window has done
+		// neither. What it did is in the glyph column, in del, where the
+		// scan finds it anyway.
+		return false
+	}
 	switch r.State {
 	case ActivityFailed, ActivityDenied:
 		return true
@@ -344,6 +365,11 @@ func (r ActivityRow) glyph() string {
 			g = sty.Accent.Render("⛁")
 		case ActivitySummary:
 			g = sty.Dim.Render("≡")
+		case ActivityCompaction:
+			// The act has no kind, so the column says how it came out. A
+			// compaction that hit the floor is ActivityFailed and takes ✗
+			// from the state switch above.
+			g = sty.Add.Render("✓")
 		default:
 			g = sty.Accent.Render("⚙")
 		}
@@ -450,7 +476,7 @@ func (r ActivityRow) outcomeField() string {
 		parts = append(parts, r.outcomeStyle().Render(r.Outcome))
 	}
 	if r.Allowed != "" {
-		parts = append(parts, sty.Dim.Render(r.Allowed))
+		parts = append(parts, paintAccount(r.Allowed, sty.Dim))
 	}
 	if r.Counts != "" {
 		parts = append(parts, paintCounts(r.Counts, sty.Dimmer))
@@ -508,6 +534,67 @@ func paintLineCounts(seg string) (string, bool) {
 // nothing else.
 func signedCount(s, sign string) bool {
 	rest, ok := strings.CutPrefix(s, sign)
+	if !ok || rest == "" {
+		return false
+	}
+	return strings.IndexFunc(rest, func(r rune) bool { return r < '0' || r > '9' }) < 0
+}
+
+// paintAccount paints a ` · `-joined account label, giving an occupancy pair
+// the two tokens those numbers mean everywhere else. It is paintCounts' twin
+// for the field beside it: everything the shape test does not claim keeps the
+// tone the field is otherwise in.
+func paintAccount(label string, rest lipgloss.Style) string {
+	if label == "" {
+		return ""
+	}
+	parts := strings.Split(label, " · ")
+	claimed := false
+	for i, p := range parts {
+		if painted, ok := paintOccupancy(p, rest); ok {
+			parts[i], claimed = painted, true
+			continue
+		}
+		parts[i] = rest.Render(p)
+	}
+	if !claimed {
+		// One run rather than one per segment. Every account but this one is
+		// a single tone, and splitting it would spend escape bytes to draw
+		// the same line.
+		return rest.Render(label)
+	}
+	return strings.Join(parts, rest.Render(" · "))
+}
+
+// paintOccupancy paints `ctx 88% → 28%` — where the window stood before an
+// act and where it stands after — and reports whether the segment was one. A
+// full window is del and a recovered one is add, which is what those two
+// numbers already mean on the frame's own meter; the label in front of them
+// keeps the field's tone.
+//
+// It is a shape test rather than a word test, for the reason paintLineCounts
+// is: what earns the tokens is a pair of percentages with an arrow between
+// them, not a particular caller's label.
+func paintOccupancy(seg string, rest lipgloss.Style) (string, bool) {
+	fields := strings.Fields(seg)
+	if len(fields) < 3 || seg != strings.Join(fields, " ") || strings.Count(seg, "→") != 1 {
+		return "", false
+	}
+	tail := fields[len(fields)-3:]
+	if tail[1] != "→" || !percentCount(tail[0]) || !percentCount(tail[2]) {
+		return "", false
+	}
+	var head string
+	if len(fields) > 3 {
+		head = rest.Render(strings.Join(fields[:len(fields)-3], " ")) + " "
+	}
+	return head + sty.Del.Render(tail[0]) + rest.Render(" → ") + sty.Add.Render(tail[2]), true
+}
+
+// percentCount reports whether s is digits followed by a per-cent sign and
+// nothing else.
+func percentCount(s string) bool {
+	rest, ok := strings.CutSuffix(s, "%")
 	if !ok || rest == "" {
 		return false
 	}

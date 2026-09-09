@@ -432,3 +432,31 @@ design closed at three
 be back to learning a word per mode on the one segment they check before
 every keystroke. The gap is closed by drawing the two frames, and where they
 then differ the artboard wins.
+
+## A row with no kind of its own carries its outcome in the glyph column
+
+*A gap.* The glyph guideline closes the outcome table with a rule and a list:
+five state glyphs override the kind glyph, `✓` is not one of them, and `✓`
+marks "the things that are not rows" — a step header, a turn close, a fan-out
+lane, a check on the doctor screen. Every row the list was written against is
+an act on the machine, and every one of those has a kind: a read, a command,
+an edit, a call to a server, a child.
+
+The compaction receipt is the first row that has none. It is an act the
+session took on its own conversation — no tool was called, so there is no kind
+of act to name — and the column that would carry the kind is empty. So the
+rule is not in play: `✓` there overrides nothing, which is the whole of what
+the rule forbids, and the list is an enumeration of where `✓` had appeared
+rather than a bound on where it may. The row draws `✓ compact` when the window
+came back and `✗ compact` when it did not, which is what the `Compaction`
+artboard draws.
+
+It carries no mutation rail in either state, including the failed one, where
+every other row keeps its rail so a break can be found by scrolling. The rail
+is a claim about the machine — this row wrote to it, this row broke against it
+— and a compaction that could not recover the window has done neither; what it
+did is in the glyph column, in del, where the scan finds it anyway.
+
+The gap is closed by a guideline that names the case: a row whose glyph column
+has no kind in it states its outcome there. Where that guideline and this
+differ, the guideline wins.

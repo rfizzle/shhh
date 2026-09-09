@@ -701,6 +701,25 @@ own request after it rather than handing the screen back to the input, and it
 is cleared everywhere a compaction can end badly (`endBrokenTurn`,
 `finishStreaming`'s cancel).
 
+What a compaction leaves on the transcript is one entry —
+`entryCompactSummary`, drawn by `compactBlock` in `internal/ui/chat/context.go`
+— and everything the row states is read off the conversation before the act
+replaces it: `Model.compactRun` is filled in `startCompact` with the
+occupancy, the spend and the clock, `droppedTokens` measures what the summary
+is standing in for while those messages are still in the list, and
+`compactSplit` divides the transcript at the first turn the tail keeps,
+numbering the turns off the `entryUser` rows rather than off `Model.turnCount`
+(a loaded conversation has rows the counter never saw). The rows above that
+boundary are marked `entry.outOfWindow` and appended back under the receipt
+instead of being dropped, which is why `finishCompact` no longer rebuilds an
+empty transcript; `stepHeader.OutOfWindow` is what puts `out of the window` on
+their headers. `compactSplit` folds nothing when every row above the boundary
+is already marked — a second compaction over the same turns recovers nothing —
+and that is the floor case `compactFloor` words. `components.ActivityCompaction`
+is the row's kind: no glyph of its own, so `✓` stands in the glyph column
+without overriding one, and `paintOccupancy` is what puts the two ends of
+`ctx 88% → 28%` in del and add.
+
 `Headless.Compact` is where an unattended run installs one, and the step runs
 at the head of each round — ahead of the request, so the first request of a
 turn resumed onto a full conversation is covered too. `Headless.askSummary`

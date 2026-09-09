@@ -1,14 +1,16 @@
-# The receipt a compaction leaves, and the one italic run on the screen
-# (docs/interface/surfaces.md#the-transcript). Two turns of work are folded
-# into a summary the model wrote, and the summary is quoted under the receipt
-# line rather than given a turn's own heading — because nobody asked for it,
-# and it is the model's words about the conversation rather than a reply in
-# it.
+# The receipt a compaction leaves
+# (docs/interface/surfaces.md#the-compaction-receipt): an act on the grid like
+# every other act, a fold under it counting what it holds, and the summary
+# quoted inside the fold rather than given a turn's own heading — because
+# nobody asked for it, and it is the model's words about the conversation
+# rather than a reply in it. The turn it stands in for keeps its rows below,
+# and its step header says which side of the window it is on.
 #
-# Look at the picture for the part the cells cannot carry: the summary is the
-# only slanted run in the pane. Everything around it — the receipt line, the
-# frame's key rail, the notices above it — is upright, which is the whole of
-# what this scene is here to hold.
+# Look at the picture for the two things the cells cannot carry. The summary
+# is the only slanted run in the pane — everything around it, the receipt row
+# and the fold line included, is upright. And the account on the row is the
+# one place two tokens sit side by side: the window it was in del, the window
+# it is in add, the label and the arrow between them dim.
 #
 # Spaces rather than tabs in the fixtures: a tab is re-expanded by the
 # terminal against the pane's own columns, not the row's, and the capture
@@ -20,13 +22,33 @@ keys "where is the round limit counted" Enter
 snap 02-first "read from a constant in loop.go"
 keys "and who declares it" Enter
 snap 03-second "disagree about who owns it"
-# The compaction itself: the receipt line, and under it the summary the
+# The compaction itself: the receipt row, and under it the summary the
 # provider answered the compaction's own request with.
 keys "/compact" Enter
-snap 04-receipt "continuing from this summary"
+snap 04-receipt "folded turn"
 snap 05-summary "established loop.go as the owner"
+# The turn the summary stands in for is still here, and its header says which
+# side of the window it is on.
+snap 06-out-of-window "out of the window"
+# The receipt is a row, so the summary under it is a row's fold. Reading mode
+# takes the keyboard, the cursor walks up to the first row on the transcript —
+# which is the receipt — and [enter] folds the summary away and gives it back.
+# More k than there are rows: the cursor stops at the first one.
+keys C-o
+snap 07-reading "READING"
+keys "kkkkkkkkkkkk"
+sleep 1
+keys Enter
+snap 08-folded "read the summary"
+keys Enter
+snap 09-open "fold it back up"
+# The way out of reading mode. The sleep is the terminal's rather than the
+# product's: esc and a chord written into the pty together arrive as one
+# escape sequence.
+keys Escape
+sleep 0.5
 # And the session ends the way every scene ends: the cancel chord, twice.
 keys C-c
-snap 06-quit-armed "again quits"
+snap 10-quit-armed "again quits"
 keys C-c
-snap 07-exit "that is everything the screen was holding"
+snap 11-exit "that is everything the screen was holding"

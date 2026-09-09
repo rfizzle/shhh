@@ -9,13 +9,16 @@ package chat
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // DefaultContextWindow is the floor: the context size (in tokens) assumed for
@@ -321,6 +324,23 @@ func (m Model) screenIsFree() bool {
 		m.activeChildAsk() == nil && len(m.steering) == 0
 }
 
+// compactingNotice is the line the transcript carries while the summary is
+// being written. It is the one notice that comes back off the transcript: the
+// receipt row answers it, and a session that kept both would be saying a
+// compaction was running above a row saying it finished.
+const compactingNotice = "Compacting conversation…"
+
+// dropCompactingNotice takes that line back off, where it is still the last
+// thing on the transcript. A compaction that failed leaves it: there the line
+// is the account of an attempt, and the error under it says how the attempt
+// went.
+func (m *Model) dropCompactingNotice() {
+	n := len(m.transcript)
+	if n > 0 && m.transcript[n-1].kind == entrySystem && m.transcript[n-1].text == compactingNotice {
+		m.transcript = m.transcript[:n-1]
+	}
+}
+
 // startCompact asks the provider to summarize the conversation; the response
 // is handled by finishCompact instead of joining the conversation.
 func (m Model) startCompact() (tea.Model, tea.Cmd) {
@@ -331,10 +351,18 @@ func (m Model) startCompact() (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	m.compacting = true
+	// What the receipt will measure the act against, read here because none
+	// of it survives the act: the occupancy it is about to change, and the
+	// spend the summary's own request is about to add to.
+	m.compactRun = &compactStart{
+		at:    time.Now(),
+		pct:   m.contextPercent(),
+		spent: m.sessionSpend().Cost,
+	}
 	m.setTurnState(stateStreaming)
 	m.streaming = ""
 	m.atBottom = true
-	m.appendEntry(entry{kind: entrySystem, text: "Compacting conversation…"})
+	m.appendEntry(entry{kind: entrySystem, text: compactingNotice})
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	// The request the shared step builds, under the choice it asks for: what
@@ -347,7 +375,11 @@ func (m Model) startCompact() (tea.Model, tea.Cmd) {
 // the conversation unchanged.
 func (m Model) finishCompact() (tea.Model, tea.Cmd) {
 	summary := strings.TrimSpace(m.streaming)
-	m.compacting = false
+	// Read out here rather than in the builder below, which takes the model
+	// by value: what the receipt is drawn from is spent by drawing it, and a
+	// record left behind would be the next compaction's figures.
+	started := m.compactRun
+	m.compacting, m.compactRun = false, nil
 	m.streaming = ""
 	m.events = nil
 	m.cancel = nil
@@ -370,6 +402,16 @@ func (m Model) finishCompact() (tea.Model, tea.Cmd) {
 	// that is about to be discarded.
 	kept := m.compactKeep()
 	run, carried := m.planRun, m.planChecklist()
+	// What the turns the summary replaces were holding, measured while they
+	// are still in the conversation. The system prompt is not among them: it
+	// survives a compaction, so counting it here would put the one thing the
+	// act cannot recover into the figure for what it did.
+	dropped := m.droppedTokens(kept)
+	// And the rows those turns left on screen, split from the rows the kept
+	// turns left, before the transcript is torn down. The line saying a
+	// compaction was running goes first: the receipt is its answer.
+	m.dropCompactingNotice()
+	folded, remaining, turns := m.compactSplit(kept)
 
 	m.agent.Compact(summary, kept)
 	// A compaction keeps the system prompt and replaces everything under it,
@@ -394,17 +436,35 @@ func (m Model) finishCompact() (tea.Model, tea.Cmd) {
 	// Pre-compaction checkpoints point into the discarded conversation;
 	// rebuild them from what remains.
 	m.checkpoints = checkpointsFromMessages(m.agent.Messages())
-	m.appendEntry(entry{kind: entrySystem, text: compactedNotice(len(kept) > 0, m.keptTurnCount(kept))})
-	// Quoted under that receipt rather than given the Assistant heading a
-	// turn gets. The model wrote this, but it is not a turn in the
-	// conversation: nothing was asked, and the reply the next turn opens with
-	// is a different thing. So it reads as what it is — the model's words,
-	// quoted (compactSummaryBlock).
-	m.appendEntry(entry{kind: entryCompactSummary, text: summary})
+	// The act on the grid, in the columns every other act is stated in: what
+	// it folded, how much window that gave back, what it cost and how long it
+	// took (docs/interface/principles.md#one-grid). Under it the summary the
+	// model wrote in place of the turns — quoted rather than given the
+	// Assistant heading a turn gets, because nobody asked for it and the
+	// reply the next turn opens with is a different thing (compactBlock).
+	m.appendEntry(entry{kind: entryCompactSummary, text: summary, expanded: true,
+		compact: m.compactReceiptFor(started, turns, dropped)})
+	// And the turns themselves, out of the window but not out of the record:
+	// a compaction is about what the model remembers, and a transcript that
+	// dropped the rows would be answering a question nobody asked it
+	// (docs/interface/principles.md#fold-never-hide).
+	m.appendEntries(folded)
 	// The turns the model kept are the turns the screen keeps: a transcript
 	// that lost them would say the conversation starts at the summary, and
 	// the request that follows would say otherwise.
-	m.appendMessageEntries(kept)
+	//
+	// The rows they already have, rather than rows rebuilt from their
+	// messages. A turn redrawn from the conversation is prose and nothing
+	// else — the calls it made, what they cost and what they found are the
+	// transcript's, not the message list's — and putting every row back
+	// exactly once is also what makes the split incapable of losing one,
+	// whatever the boundary. A session handed a conversation it has no
+	// record of gets them rebuilt, which is what every session got before.
+	if len(remaining) > 0 {
+		m.appendEntries(remaining)
+	} else {
+		m.appendMessageEntries(kept)
+	}
 	// The plan outlives the conversation it was being carried out in. Its
 	// checklist is frozen onto the run before the transcript goes, and the
 	// run is rebased on the transcript that replaces it.
@@ -488,20 +548,395 @@ func (m *Model) regenerateWorkspace() {
 	m.agent.SetMessages(updated)
 }
 
-// compactedNotice is the line that opens the rebuilt conversation. It names
-// the kept turns because the transcript below it is otherwise indisting-
-// uishable from a session that started at the summary.
-func compactedNotice(kept bool, turns int) string {
-	if !kept || turns <= 0 {
-		return "Conversation compacted; continuing from this summary:"
-	}
-	return fmt.Sprintf("Conversation compacted; continuing from this summary and the last %s:",
-		plural(turns, "turn"))
+// compactStart is what a compaction in flight remembers about the
+// conversation it is about to replace (Model.compactRun): when the request
+// went out, how full the window was, and what the session had spent. All
+// three are gone by the time the summary lands.
+type compactStart struct {
+	at    time.Time
+	pct   int
+	spent float64
 }
 
-// compactSummaryBlock draws the summary under the receipt row that announced
-// it: wrapped onto the detail indent every other body under a row uses, and
-// rendered in Dimmer italic.
+// compactReceipt is the account behind the receipt block: what a compaction
+// folded out of the window, what that gave back, and what the act cost.
+//
+// It is stored rather than rendered, so the block re-wraps at any width like
+// every other entry — which is also why the summary's own line count is not
+// here: how many lines a paragraph is depends on the pane it is drawn in.
+type compactReceipt struct {
+	// first and last are the turns the compaction folded out of the window.
+	// Both zero on a compaction that folded none, which is the floor case.
+	first, last int64
+	// was and now are the window's occupancy either side of the act.
+	was, now int
+	// tokens is what the folded turns were holding.
+	tokens int64
+	// cost is what the summary cost, already in the session's dollar format.
+	// Empty where the model has no price, because a receipt is not the place
+	// to invent one.
+	cost string
+	// duration is how long the summary took to arrive.
+	duration time.Duration
+	// floor is the row's whole target on a compaction that could fold
+	// nothing: what it freed, and what is left that no summary can stand in
+	// for. Empty on a compaction that folded something, which is nearly all
+	// of them.
+	floor string
+}
+
+// turns is how many turns the receipt folded away.
+func (r compactReceipt) turns() int {
+	if r.first == 0 {
+		return 0
+	}
+	return int(r.last - r.first + 1)
+}
+
+// account is the receipt row's right-aligned field: where the window stood
+// before the act and where it stands after, and what the summary cost.
+func (r compactReceipt) account() string {
+	acct := fmt.Sprintf("ctx %d%% → %d%%", r.was, r.now)
+	if r.cost == "" {
+		return acct
+	}
+	return acct + " · " + r.cost
+}
+
+// contextPercent is how full the window is, as the share every occupancy
+// surface states it in. Zero for a session with no window to measure
+// against, which is the one case where the figure would be invented.
+func (m Model) contextPercent() int {
+	window := m.contextWindow()
+	if window <= 0 {
+		return 0
+	}
+	return int(min(m.estimatedContextTokens()*100/window, 100))
+}
+
+// droppedTokens is what the conversation loses to a compaction: everything
+// under the system prompt, less the tail kept verbatim. It is measured
+// against the messages rather than against the window, because the window
+// also carries the tool definitions and the project context and a compaction
+// touches neither — counting them would put what the act cannot recover into
+// the figure for what it did.
+func (m Model) droppedTokens(kept []provider.Message) int64 {
+	msgs := m.agent.Messages()
+	if len(msgs) > 0 && msgs[0].Role == provider.RoleSystem {
+		msgs = msgs[1:]
+	}
+	return max(estimateMessageTokens(msgs)-estimateMessageTokens(kept), 0)
+}
+
+// compactSplit divides the transcript at the first of the turns the
+// compaction keeps: the rows going out of the window, and the rows staying
+// in it.
+//
+// The boundary is counted in the reader's own units — a turn starts at the
+// row carrying what they typed — because the kept tail arrives as a list of
+// messages and the transcript is the only place those turns have rows. A
+// transcript holding fewer of them than the tail claims folds nothing, which
+// is the honest answer rather than a boundary guessed at.
+//
+// Rows a previous compaction already took out of the window are above the
+// boundary too, and they are not folded again: a session that compacts twice
+// over the same turns has recovered nothing the second time, and that is what
+// the floor case is.
+func (m Model) compactSplit(kept []provider.Message) (folded, remaining []entry, turns compactTurns) {
+	left, end := keptReaderTurns(kept), len(m.transcript)
+	for end > 0 && left > 0 {
+		end--
+		if m.transcript[end].kind == entryUser {
+			left--
+		}
+	}
+	if left > 0 {
+		end = 0
+	}
+	folded = make([]entry, end)
+	copy(folded, m.transcript[:end])
+	// Numbered before the marking, because what says a turn went out of the
+	// window earlier is the mark the loop below is about to write over
+	// everything.
+	was, above := turnsIn(folded)
+	_, all := turnsIn(m.transcript)
+	turns = compactTurns{keptFirst: above + 1, keptLast: all}
+	if above > was {
+		turns.first, turns.last = was+1, above
+	}
+	for i := range folded {
+		folded[i].outOfWindow = true
+	}
+	// Both halves are copies. The transcript they came from is torn down
+	// between this call and the appends that put them back, and a slice still
+	// pointing into it would be reading an array the rebuild is writing over.
+	remaining = append(remaining, m.transcript[end:]...)
+	return folded, remaining, turns
+}
+
+// compactTurns is how a compaction numbers the conversation it acted on: the
+// turns this one took out of the window, and the turns still in it. A
+// compaction whose whole foldable half had already been folded takes none,
+// and first and last stay zero — the floor case.
+type compactTurns struct {
+	first, last         int64
+	keptFirst, keptLast int64
+}
+
+// keptReaderTurns counts the turns in a kept tail that the transcript has a
+// user row for: the messages the reader typed, and only those.
+//
+// It is not CompactKeptTurns, which counts every user-role message. A message
+// the session wrote for itself — a check-in, a steer, the context a `!!` run
+// hands the model — is user-role on the wire and a notice on the screen
+// (newsession.go), so counting it here would walk the boundary one real turn
+// too far back. The rows between the two boundaries belong to a turn the
+// summary has replaced and the kept tail does not carry, which is a turn the
+// split would hold on neither side of itself
+// (docs/interface/principles.md#fold-never-hide).
+func keptReaderTurns(kept []provider.Message) int {
+	n := 0
+	for _, msg := range kept {
+		if msg.Role == provider.RoleUser && !msg.Machine {
+			n++
+		}
+	}
+	return n
+}
+
+// turnsIn counts the turns a run of entries holds — one per row carrying what
+// the reader typed — and how many of those a compaction has already folded.
+//
+// Turns are counted off the rows rather than read off the session's own
+// counter, because the counter belongs to the session and the numbering the
+// receipt states belongs to the transcript in front of the reader: a
+// conversation loaded from a record has rows the counter never saw.
+func turnsIn(es []entry) (folded, total int64) {
+	for _, e := range es {
+		if e.kind != entryUser {
+			continue
+		}
+		total++
+		if e.outOfWindow {
+			folded++
+		}
+	}
+	return folded, total
+}
+
+// turnsPhrase names a range of turns the way the receipt row and the fold
+// line under it both name it, so the two cannot disagree about which turns
+// they are talking about.
+func turnsPhrase(first, last int64) string {
+	if first == last {
+		return fmt.Sprintf("turn %d", first)
+	}
+	return fmt.Sprintf("turns %d–%d", first, last)
+}
+
+// compactReceiptFor is the account the receipt block is drawn from: what the
+// conversation was when the request went out (started), what it is now, the
+// turns that went in between, and what the request cost.
+func (m Model) compactReceiptFor(started *compactStart, turns compactTurns, dropped int64) *compactReceipt {
+	r := &compactReceipt{now: m.contextPercent(), tokens: dropped, first: turns.first, last: turns.last}
+	if started != nil {
+		r.was, r.duration = started.pct, time.Since(started.at)
+		if spent := m.sessionSpend().Cost - started.spent; spent > 0 {
+			r.cost = formatCost(spent)
+		}
+	}
+	if r.first == 0 {
+		r.floor = m.compactFloor(turns, r.was, r.now)
+	}
+	return r
+}
+
+// compactFloor is what the row says when the summary replaced nothing: how
+// much window that freed, and what is still in it that no summary can stand
+// in for. It is stated as a break rather than as a quiet success — the act
+// was asked to recover a window and did not — and it names the reader's own
+// things, because those are what they can act on.
+func (m Model) compactFloor(turns compactTurns, was, now int) string {
+	freed := fmt.Sprintf("freed %d%%", max(was-now, 0))
+	var parts []string
+	if m.planRun != nil {
+		parts = append(parts, "the plan")
+	}
+	if files, _, _ := m.changes.Totals(); files > 0 {
+		parts = append(parts, "the changeset")
+	}
+	if turns.keptLast >= turns.keptFirst {
+		parts = append(parts, turnsPhrase(turns.keptFirst, turns.keptLast))
+	}
+	if len(parts) == 0 {
+		return freed + " · there was nothing left to fold"
+	}
+	return freed + " · what remains is " + joinClauses(parts) +
+		" — none of it foldable"
+}
+
+// compactVerb is the receipt row's verb, out of the same closed vocabulary
+// every other row's verb comes from.
+const compactVerb = "compact"
+
+// compactRowFor is the receipt as an activity row: the act the session took
+// on its own conversation, in the seven fields every other act is stated in
+// (docs/interface/surfaces.md#the-activity-row). It carries no kind glyph,
+// because a compaction is not a call — the column says how it came out
+// instead — and no mutation rail, because nothing on the machine was touched.
+func compactRowFor(r compactReceipt) components.ActivityRow {
+	row := components.ActivityRow{
+		Kind:     components.ActivityCompaction,
+		Verb:     compactVerb,
+		Duration: activityDuration(r.duration),
+	}
+	if r.floor != "" {
+		// The whole of what happened goes in the one field that clips: the
+		// figure first, because that is the part a narrow pane has to keep,
+		// and the explanation behind it.
+		row.State, row.Target = components.ActivityFailed, r.floor
+		return row
+	}
+	row.Target = "folded " + turnsPhrase(r.first, r.last)
+	row.Allowed = r.account()
+	return row
+}
+
+// compactBlock draws the receipt: the act as a row, the fold line that counts
+// what it holds, and — while the fold is open — the summary the model wrote
+// in place of the turns.
+//
+// One block rather than three entries, because it is one act and reading mode
+// puts one cursor on it: [enter] on the row folds the summary away and gives
+// it back, the way [enter] folds every other body on the transcript.
+func (m Model) compactBlock(e entry, width int) string {
+	r := e.compact
+	if r == nil {
+		// A summary with no receipt behind it came out of a record written
+		// before receipts were rows. It keeps the quoted paragraph it always
+		// had rather than a row invented for it.
+		return m.compactSummaryBlock(e, width)
+	}
+	lines := []string{compactRowFor(*r).View(width)}
+	if r.floor != "" {
+		// Nothing was folded, so there is nothing to fold back: the row is
+		// the whole of the receipt.
+		return strings.Join(lines, "\n")
+	}
+	body := m.compactSummaryLines(e.text, width)
+	lines = append(lines, m.compactFoldLine(*r, len(body), e.expanded, width))
+	if !e.expanded {
+		return strings.Join(lines, "\n")
+	}
+	indent := strings.Repeat(" ", components.GridDetailIndent)
+	shown := body
+	if len(shown) > maxToolResultLines {
+		shown = shown[:maxToolResultLines]
+	}
+	for _, l := range shown {
+		lines = append(lines, indent+sty.CompactSummary.Render(l))
+	}
+	if tail := compactSummaryTail(len(body)-len(shown), r.turns()); tail != "" {
+		// Wrapped rather than clipped, for the reason the summary above it is:
+		// it is a sentence, and half a sentence about where the turns went is
+		// worse than a foot that costs two lines.
+		for _, l := range strings.Split(m.wordWrap(tail, max(width-components.GridDetailIndent, 1)), "\n") {
+			lines = append(lines, indent+sty.SystemMsg.Render(l))
+		}
+	}
+	return strings.Join(lines, "\n")
+}
+
+// compactSummaryLines is the summary wrapped to the detail body's width. It
+// is what the fold line counts, so the number on that line is the number of
+// lines opening the fold costs.
+func (m Model) compactSummaryLines(text string, width int) []string {
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return nil
+	}
+	inner := max(width-components.GridDetailIndent, 1)
+	return strings.Split(m.wordWrap(text, inner), "\n")
+}
+
+// compactFoldLine is the line under the receipt: which turns are behind it,
+// what they were holding, what stands in for them now, and the key that
+// closes it again. It sits on the grid a field short, the way the folded run
+// of read-only calls does — the fold mark takes the glyph column and what was
+// swallowed starts in the verb column — so the two fold rows line up
+// (docs/interface/principles.md#fold-never-hide).
+func (m Model) compactFoldLine(r compactReceipt, summaryLines int, open bool, width int) string {
+	mark, label := "▸", "read the summary"
+	if open {
+		mark, label = "▾", "fold it back up"
+	}
+	// Which turns, and that they were compacted: the fold's own identity, and
+	// the one part of the line that is never given up.
+	const sep = " · "
+	held := mark + " " + turnsPhrase(r.first, r.last) + sep + "compacted"
+	// What they were holding and what stands in for it. This is the clause
+	// that goes when the pane is tight — the turn range above already says
+	// what the fold swallowed, and a size cut down to `a 7-line su…` says
+	// less than no size at all (guidelines/layout-breakpoints: the word goes
+	// rather than being cut down).
+	var size string
+	if r.tokens > 0 && summaryLines > 0 {
+		size = sep + formatWindowSize(r.tokens) + " tokens → " + summaryLength(summaryLines)
+	}
+	key := keys.Bracket(keys.Reading.Expand) + " " + label
+	lead := strings.Repeat(" ", components.GridVerbColumn-2)
+	room := width - lipgloss.Width(lead)
+	// Widest first: everything, then without the size, then without the offer
+	// as well. The size is what goes, because the turn range in front of it
+	// is already what the fold swallowed and this is only how big it was; the
+	// offer stays, because a fold row that does not say how to open it is a
+	// row the reader has to guess at.
+	for _, dim := range []string{held + size, held} {
+		if lipgloss.Width(dim)+lipgloss.Width(sep+key) <= room {
+			return lead + sty.SystemMsg.Render(dim+sep) + sty.Hint.Key.Render(key)
+		}
+	}
+	return components.Clip(lead+sty.SystemMsg.Render(held), width)
+}
+
+// summaryLength is what the fold line says stands in for the turns: a
+// paragraph the reader can price in lines before they open it.
+func summaryLength(n int) string {
+	if n == 1 {
+		return "a 1-line summary"
+	}
+	return fmt.Sprintf("a %d-line summary", n)
+}
+
+// compactSummaryTail is the foot under a bounded summary: what the cap
+// swallowed, and where the turns themselves went. A fold states what it holds
+// (docs/interface/principles.md#fold-never-hide), and a reader who cannot see
+// the turns has to be told they are still on the transcript rather than left
+// to assume a compaction threw them away.
+func compactSummaryTail(more, turns int) string {
+	var parts []string
+	switch {
+	case more == 1:
+		parts = append(parts, "1 more line")
+	case more > 1:
+		parts = append(parts, fmt.Sprintf("%d more lines", more))
+	}
+	switch {
+	case turns == 1:
+		parts = append(parts, "the turn itself is below, out of the window but still in the transcript")
+	case turns > 1:
+		parts = append(parts, fmt.Sprintf(
+			"the %d turns themselves are below, out of the window but still in the transcript", turns))
+	}
+	if len(parts) == 0 {
+		return ""
+	}
+	return "· " + strings.Join(parts, " · ") + " ·"
+}
+
+// compactSummaryBlock draws a summary with no receipt behind it — one out of
+// a record written before receipts were rows — wrapped onto the detail indent
+// every other body under a row uses, and rendered in Dimmer italic.
 //
 // The slant is the point, and it is the only one on the screen. A reader
 // scanning back past a compaction needs to know that the paragraph they are
@@ -547,7 +982,7 @@ func (m Model) keptTurnCount(kept []provider.Message) int {
 // provider that did not honour that, and the wording says so rather than
 // describing a model doing something reasonable.
 func (m Model) abortCompact() (tea.Model, tea.Cmd) {
-	m.compacting = false
+	m.compacting, m.compactRun = false, nil
 	m.streaming = ""
 	m.events = nil
 	m.cancel = nil

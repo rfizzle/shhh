@@ -2111,33 +2111,60 @@ func TestGolden_ResumedRow(t *testing.T) {
 }
 
 // TestGolden_CompactReceipt captures what a compaction leaves on the
-// transcript: the receipt line naming the turns it kept, the summary quoted
-// under it, and the kept turns themselves below.
+// transcript: the act as a row on the grid, the fold line counting what it
+// holds, the summary quoted under it, and the turns it folded still sitting
+// there marked out of the window.
 //
-// The capture is here for the slant. The summary is the model's own words and
-// is the only italic run the transcript draws — every hint, marker and notice
-// around it is upright — so the fixture is where that stays true: a chrome
-// style that reaches for italic again shows up as a second italic run in a
-// file whose whole point is that there is one.
+// The capture is here for two things. The slant: the summary is the model's
+// own words and is the only italic run the transcript draws — every hint,
+// marker and row around it is upright — so a chrome style that reaches for
+// italic again shows up as a second italic run in a file whose whole point is
+// that there is one. And the columns: the receipt is an activity row and has
+// to line up with the rows above and below it at every width.
 func TestGolden_CompactReceipt(t *testing.T) {
 	captureGolden(t, "compact-receipt", "the receipt a compaction leaves", goldenWidths, func(width int) []golden.Panel {
 		const summary = "Rounds are counted in the round loop; the limit lived in three places and " +
 			"disagreed. The first three turns established the loop as the owner, the fourth moved " +
-			"the constant, and the fifth's tests pass except the one on the limit itself."
-		panel := func(kept []provider.Message) string {
+			"the constant, and the fifth's tests pass except the one on the limit itself. The " +
+			"constant now lives beside the counter and nothing else declares one. The caller no " +
+			"longer passes a limit of its own, and the two tests that asserted the old constant " +
+			"were rewritten against the sentinel the loop returns."
+		receipt := &compactReceipt{
+			first: 1, last: 2, was: 88, now: 28,
+			tokens: 74000, cost: "$0.02", duration: 4100 * time.Millisecond,
+		}
+		panel := func(r *compactReceipt, open bool, folded, kept []entry) string {
 			m := frameModel(t, width, 40)
-			m.appendEntry(entry{kind: entrySystem,
-				text: compactedNotice(len(kept) > 0, m.keptTurnCount(kept))})
-			m.appendEntry(entry{kind: entryCompactSummary, text: summary})
-			m.appendMessageEntries(kept)
+			m.appendEntry(entry{kind: entryCompactSummary, text: summary, expanded: open, compact: r})
+			m.appendEntries(folded)
+			m.appendEntries(kept)
 			return m.renderHistory()
 		}
+		out := func(es []entry) []entry {
+			for i := range es {
+				es[i].outOfWindow = true
+			}
+			return es
+		}
+		folded := func() []entry {
+			es := goldenTranscript()
+			return out(es[:len(es)-1])
+		}
+		kept := []entry{
+			{kind: entryUser, text: "Move the round limit into the loop."},
+			{kind: entryAssistant, text: "Moved it, and the *limit* is read from one place now."},
+		}
+		floor := &compactReceipt{
+			was: 91, now: 85, duration: 3200 * time.Millisecond,
+			floor: "freed 6% · what remains is the plan, the changeset and turns 6–7 — none of it foldable",
+		}
 		return []golden.Panel{
-			{Label: "the receipt and the summary quoted under it", View: panel(nil)},
-			{Label: "with the turns the compaction kept verbatim", View: panel([]provider.Message{
-				{Role: provider.RoleUser, Content: "Move the round limit into the loop."},
-				{Role: provider.RoleAssistant, Content: "Moved it, and the *limit* is read from one place now."},
-			})},
+			{Label: "the receipt, its fold open, and the turns it folded below",
+				View: panel(receipt, true, folded(), kept)},
+			{Label: "folded back up",
+				View: panel(receipt, false, folded(), kept)},
+			{Label: "the floor: nothing left that a summary could stand in for",
+				View: panel(floor, true, nil, kept)},
 		}
 	})
 }
