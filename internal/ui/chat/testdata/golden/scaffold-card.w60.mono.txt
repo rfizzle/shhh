@@ -27,7 +27,7 @@
 
 ── ansi ────────────────────────────────────────────────────
 · nothing written yet
-␛[38;5;254m╭─ Approve scaffold ───────────────────────────────────╮␛[m
+␛[38;5;254m╭─ ␛[m␛[1;38;5;254mApprove scaffold ␛[m␛[38;5;254m───────────────────────────────────╮␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m✎␛[m ␛[38;5;254mwrite this project's context file␛[m                  ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mit is read into the system prompt of every session …␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                      ␛[38;5;254m│␛[m

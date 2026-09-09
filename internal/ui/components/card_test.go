@@ -98,3 +98,51 @@ func TestCard_CornersAreTheFramesAndTheChipSitsOnTheRail(t *testing.T) {
 		}
 	}
 }
+
+// A card's title names the thing being decided, so it is drawn the way every
+// other heading is — bright and bold — whatever tone the border is carrying.
+// Only the lead-in, the fill's corners and the chips wear the card's own
+// colour. A red card with a red title says the severity twice and leaves the
+// name of the thing with nothing of its own to be read by; bold is also the
+// half of a heading that survives a terminal with no colour at all.
+func TestCard_TheTitleIsAHeadingWhateverTheBorderCarries(t *testing.T) {
+	withColorProfile(t, colorprofile.ANSI256)
+	was := Mono()
+	t.Cleanup(func() { SetMono(was) })
+	SetMono(false)
+
+	red := sty.Err
+	top := func(width int) string {
+		return strings.SplitN(Card{
+			Title: "Approve edit",
+			Chips: []string{"⚠ HIGH"},
+			Style: &red,
+		}.Render([]string{"row"}, width), "\n", 2)[0]
+	}
+
+	wide := top(60)
+	if !strings.Contains(wide, sty.Bright.Bold(true).Render("Approve edit ")) {
+		t.Fatalf("the title should be the heading's bright bold: %q", wide)
+	}
+	if !strings.Contains(wide, red.Render("╭─ ")) {
+		t.Fatalf("the lead-in should carry the card's tone: %q", wide)
+	}
+	if !strings.Contains(wide, red.Render(" ⚠ HIGH ─╮")) {
+		t.Fatalf("the chips should carry the card's tone: %q", wide)
+	}
+	if strings.Contains(wide, red.Render("╭─ Approve edit")) {
+		t.Fatalf("the title should not be painted through the border: %q", wide)
+	}
+
+	// A title with no room for all of it keeps the heading to its last cell:
+	// the … was dropped from the title, so it is the title's mark and not a
+	// piece of the frame that happens to sit where a word ran out.
+	if narrow := top(minCardWidth); !strings.Contains(narrow, sty.Bright.Bold(true).Render("Approve…")) {
+		t.Fatalf("a clipped title should keep its tone through the …: %q", narrow)
+	}
+
+	SetMono(true)
+	if mono := top(60); !strings.Contains(mono, sty.Bright.Bold(true).Render("Approve edit ")) {
+		t.Fatalf("the heading should still be bold under mono: %q", mono)
+	}
+}

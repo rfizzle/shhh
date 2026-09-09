@@ -62,7 +62,7 @@
 
 ── ansi ────────────────────────────────────────────────────
 · a child's command · resolved in the agent's own checkout
-␛[91m╭─ writer-1 ▸ Approve command ␛[m␛[38;5;241m────────────────␛[m␛[91m ⚠ HIGH ─╮␛[m
+␛[91m╭─ ␛[m␛[1;97mwriter-1 ▸ Approve command ␛[m␛[38;5;241m────────────────␛[m␛[91m ⚠ HIGH ─╮␛[m
 ␛[91m│␛[m ␛[38;5;214m$␛[m ␛[97mrun rm -rf build␛[m                                   ␛[91m│␛[m
 ␛[91m│␛[m ␛[91m⚠ HIGH␛[m␛[38;5;241m · recursive forced deletion — may destroy fi␛[m␛[38;5;241m›␛[m ␛[91m│␛[m
 ␛[91m│␛[m                                                      ␛[91m│␛[m
@@ -78,7 +78,7 @@
 ␛[91m╰──────────────────────────────────────────────────────╯␛[m
 
 · the same card, held by arriving · two answers, and nothing else offered
-␛[91m╭─ writer-1 ▸ Approve command ␛[m␛[38;5;241m────────────────␛[m␛[91m ⚠ HIGH ─╮␛[m
+␛[91m╭─ ␛[m␛[1;97mwriter-1 ▸ Approve command ␛[m␛[38;5;241m────────────────␛[m␛[91m ⚠ HIGH ─╮␛[m
 ␛[91m│␛[m ␛[38;5;214m$␛[m ␛[97mrun rm -rf build␛[m                                   ␛[91m│␛[m
 ␛[91m│␛[m ␛[91m⚠ HIGH␛[m␛[38;5;241m · recursive forced deletion — may destroy fi␛[m␛[38;5;241m›␛[m ␛[91m│␛[m
 ␛[91m│␛[m                                                      ␛[91m│␛[m
@@ -94,7 +94,7 @@
 ␛[91m╰──────────────────────────────────────────────────────╯␛[m
 
 · a writer's patch · your files, and the diff behind a counted tail
-␛[38;5;214m╭─ writer-1 ▸ Apply patch ␛[m␛[38;5;241m──────────────────␛[m␛[38;5;214m ⚠ medium ─╮␛[m
+␛[38;5;214m╭─ ␛[m␛[1;97mwriter-1 ▸ Apply patch ␛[m␛[38;5;241m──────────────────␛[m␛[38;5;214m ⚠ medium ─╮␛[m
 ␛[38;5;214m│␛[m ␛[38;5;214m✎␛[m ␛[97mapply patch (+40 −40, 2 file(s))␛[m                   ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;241m · writes 2 files under internal/agent/␛[m      ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                      ␛[38;5;214m│␛[m

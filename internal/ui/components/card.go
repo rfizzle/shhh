@@ -125,47 +125,67 @@ func (c Card) Render(rows []string, width int) string {
 	return b.String()
 }
 
+// cardLeadIn is the run of border between the corner and the title. It is
+// three cells wide whatever the title is, which is what lets the title be
+// clipped without the frame losing its corner.
+const cardLeadIn = "╭─ "
+
 // cardTop draws the top border: the title on the left, the chips on the
 // right, and the texture between them. Chips are dropped from the front until
 // what is left fits beside the title; a title that still does not fit is
 // clipped, which is the one thing that never happens to a chip.
+//
+// The title is clipped rather than the whole left end, so the … is the
+// title's own last cell and lands in the title's own style. Clipping the
+// corner and the lead-in along with it would put the mark that says a word
+// was cut short in the tone of the frame, which cut nothing.
 func cardTop(c Card, border lipgloss.Style, width int) string {
-	left := "╭─ " + c.Title + " "
+	// The space after the title travels with it rather than with the fill:
+	// it is the gap the title needs to sit on the rail at all, so a title
+	// clipped to the last cell has spent it and a title that fits has not.
+	title := c.Title + " "
+	room := max(0, width-1-lipgloss.Width(cardLeadIn))
 	chips := c.Chips
 	for {
 		right := chipRun(chips)
-		if lipgloss.Width(left)+lipgloss.Width(right)+1 <= width-1 {
-			fill := max(0, width-1-lipgloss.Width(left)-lipgloss.Width(right))
-			return paintCardTop(border, left, fill, right+"╮")
+		if lipgloss.Width(title)+lipgloss.Width(right)+1 <= room {
+			return paintCardTop(border, title, room-lipgloss.Width(title)-lipgloss.Width(right), right+"╮")
 		}
 		if len(chips) == 0 {
 			break
 		}
 		chips = chips[1:]
 	}
-	left = Clip(left, width-1)
-	return paintCardTop(border, left, max(0, width-1-lipgloss.Width(left)), "╮")
+	title = Clip(title, room)
+	return paintCardTop(border, title, max(0, room-lipgloss.Width(title)), "╮")
 }
 
-// paintCardTop paints the three parts of the top edge. The fill is drawn in
-// the one chrome tone whatever the frame's own colour is: a card's border
-// carries how much the decision on it weighs, and the run between the title
-// and the chips carries nothing, so the weight stays on the parts that mean
-// something — the corners, the title's lead-in and the chips. That is also
-// what makes this edge and a screen's title rule the same material at the
-// same tone, rather than the same shape in two colours
-// (docs/interface/surfaces.md#the-approval-card).
+// paintCardTop paints the parts of the top edge. The title is a heading and
+// takes the weight every heading takes, bright and bold, whatever tone the
+// frame is in: the border says how much the decision on the card weighs and
+// the title says what the decision is about, so a card drawn in the colour of
+// failure is not one whose subject is also written in it. Bold is the half of
+// that a terminal with no colour keeps, which is why the heading is a weight
+// and not only a grey.
 //
-// Under mono there is no second tone to hold, so the whole row goes through
-// the frame's own style in one call. An edge with no room left for a fill
-// takes that call too: a style renders a pair of escapes around an empty
-// string, and three runs where there is nothing between the title and the
-// corner is two of those for nothing.
-func paintCardTop(border lipgloss.Style, left string, fill int, right string) string {
+// The fill is drawn in the one chrome tone whatever the frame's own colour
+// is: the run between the title and the chips carries nothing, so the weight
+// stays on the parts that mean something — the corners, the title's lead-in
+// and the chips. That is also what makes this edge and a screen's title rule
+// the same material at the same tone, rather than the same shape in two
+// colours (docs/interface/surfaces.md#the-approval-card).
+//
+// Under mono there is no second tone to hold, so the fill goes out with the
+// corner in the frame's own style. An edge with no room left for a fill takes
+// that call too: a style renders a pair of escapes around an empty string,
+// and two runs where there is nothing between the title and the corner is one
+// of those for nothing.
+func paintCardTop(border lipgloss.Style, title string, fill int, right string) string {
+	head := border.Render(cardLeadIn) + sty.Bright.Bold(true).Render(title)
 	if Mono() || fill <= 0 {
-		return border.Render(left + ruleRun(fill) + right)
+		return head + border.Render(ruleRun(fill)+right)
 	}
-	return border.Render(left) + sty.Dim.Render(ruleRun(fill)) + border.Render(right)
+	return head + sty.Dim.Render(ruleRun(fill)) + border.Render(right)
 }
 
 // chipRun renders the chips as they sit in the border: each between a space

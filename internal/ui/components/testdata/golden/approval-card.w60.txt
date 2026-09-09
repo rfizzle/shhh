@@ -147,7 +147,7 @@
 
 ── ansi ────────────────────────────────────────────────────
 · variant · command, always-allow offered
-␛[94m╭─ Approve command ␛[m␛[38;5;241m────────────────────────────────────────␛[m␛[94m╮␛[m
+␛[94m╭─ ␛[m␛[1;97mApprove command ␛[m␛[38;5;241m────────────────────────────────────────␛[m␛[94m╮␛[m
 ␛[94m│␛[m ␛[38;5;214m$␛[m ␛[97mgo test ./internal/agent/...␛[m                           ␛[94m│␛[m
 ␛[94m├──────────────────────────────────────────────────────────┤␛[m
 ␛[94m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m                               ␛[94m│␛[m
@@ -156,7 +156,7 @@
 ␛[94m╰──────────────────────────────────────────────────────────╯␛[m
 
 · variant · command, a batch waiting behind it
-␛[38;5;214m╭─ Approve command (1 of 5) ␛[m␛[38;5;241m───────────────────────␛[m␛[38;5;214m ⚠ low ─╮␛[m
+␛[38;5;214m╭─ ␛[m␛[1;97mApprove command (1 of 5) ␛[m␛[38;5;241m───────────────────────␛[m␛[38;5;214m ⚠ low ─╮␛[m
 ␛[38;5;214m│␛[m ␛[38;5;214m$␛[m ␛[97mgo test ./internal/agent/...␛[m                           ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;214m⚠ low␛[m␛[38;5;241m · writes nothing␛[m                                   ␛[38;5;214m│␛[m
 ␛[38;5;214m├──────────────────────────────────────────────────────────┤␛[m
@@ -167,7 +167,7 @@
 ␛[38;5;214m╰──────────────────────────────────────────────────────────╯␛[m
 
 · variant · command, flagged, contained, blast radius
-␛[91m╭─ Approve command (2 of 5) ␛[m␛[38;5;241m──────────────────────␛[m␛[91m ⚠ HIGH ─╮␛[m
+␛[91m╭─ ␛[m␛[1;97mApprove command (2 of 5) ␛[m␛[38;5;241m──────────────────────␛[m␛[91m ⚠ HIGH ─╮␛[m
 ␛[91m│␛[m ␛[38;5;214m$␛[m ␛[97mrm -rf ./build && npm run build␛[m                        ␛[91m│␛[m
 ␛[91m│␛[m ␛[91m⚠ HIGH␛[m␛[38;5;241m · deletes files recursively (rm -rf)␛[m              ␛[91m│␛[m
 ␛[91m│␛[m                                                          ␛[91m│␛[m
@@ -183,7 +183,7 @@
 ␛[91m╰──────────────────────────────────────────────────────────╯␛[m
 
 · variant · command, uncontained
-␛[91m╭─ Approve command ␛[m␛[38;5;241m─────────────␛[m␛[91m ⚠ UNCONTAINED ─ ⚠ medium ─╮␛[m
+␛[91m╭─ ␛[m␛[1;97mApprove command ␛[m␛[38;5;241m─────────────␛[m␛[91m ⚠ UNCONTAINED ─ ⚠ medium ─╮␛[m
 ␛[91m│␛[m ␛[38;5;214m$␛[m ␛[97mcurl -fsSL https://get.pnpm.io/install.sh | sh␛[m         ␛[91m│␛[m
 ␛[91m│␛[m ␛[91m⚠ medium␛[m␛[38;5;241m · what it writes could not be resolved␛[m          ␛[91m│␛[m
 ␛[91m│␛[m                                                          ␛[91m│␛[m
@@ -199,7 +199,7 @@
 ␛[91m╰──────────────────────────────────────────────────────────╯␛[m
 
 · bound · a long command card, counted then scrolled
-␛[38;5;214m╭─ Approve command ␛[m␛[38;5;241m─────────────────────────────␛[m␛[38;5;214m ⚠ medium ─╮␛[m
+␛[38;5;214m╭─ ␛[m␛[1;97mApprove command ␛[m␛[38;5;241m─────────────────────────────␛[m␛[38;5;214m ⚠ medium ─╮␛[m
 ␛[38;5;214m│␛[m ␛[38;5;214m$␛[m ␛[97m./scripts/release.sh --channel beta␛[m                    ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;241m · runs a repository script; shhh cannot see in␛[m␛[38;5;241m›␛[m ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m                                                          ␛[38;5;214m│␛[m
@@ -209,7 +209,7 @@
 ␛[38;5;214m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m                               ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[92m[esc] back to your draft — the decision stays waiting␛[m    ␛[38;5;214m│␛[m
 ␛[38;5;214m╰──────────────────────────────────────────────────────────╯␛[m
-␛[38;5;214m╭─ Approve command ␛[m␛[38;5;241m─────────────────────────────␛[m␛[38;5;214m ⚠ medium ─╮␛[m
+␛[38;5;214m╭─ ␛[m␛[1;97mApprove command ␛[m␛[38;5;241m─────────────────────────────␛[m␛[38;5;214m ⚠ medium ─╮␛[m
 ␛[38;5;214m│␛[m ␛[38;5;241m… 3 lines above · [shift+↑]␛[m                              ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mtouches   ␛[m␛[91m./dist␛[m␛[38;5;245m — the script rewrites the release tree␛[m  ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;243mundo      ␛[m␛[91mnone␛[m␛[38;5;245m — nothing it writes is tracked in git␛[m     ␛[38;5;214m│␛[m
@@ -221,7 +221,7 @@
 ␛[38;5;214m╰──────────────────────────────────────────────────────────╯␛[m
 
 · bound · a wide body, panned right
-␛[94m╭─ Approve command ␛[m␛[38;5;241m────────────────────────────────────────␛[m␛[94m╮␛[m
+␛[94m╭─ ␛[m␛[1;97mApprove command ␛[m␛[38;5;241m────────────────────────────────────────␛[m␛[94m╮␛[m
 ␛[94m│␛[m ␛[38;5;214m␛[m␛[97mx-amd64.tar.gz --exclude .git --exclude node_modules --␛[m␛[38;5;241m›␛[m ␛[94m│␛[m
 ␛[94m├──────────────────────────────────────────────────────────┤␛[m
 ␛[94m│␛[m ␛[94m[y]␛[m ␛[38;5;252mrun it once␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m ␛[38;5;252mdeny␛[m                               ␛[94m│␛[m
@@ -229,7 +229,7 @@
 ␛[94m╰──────────────────────────────────────────────────────────╯␛[m
 
 · variant · edit, diff body
-␛[38;5;214m╭─ Approve edit ␛[m␛[38;5;241m────────────────────────────────␛[m␛[38;5;214m ⚠ medium ─╮␛[m
+␛[38;5;214m╭─ ␛[m␛[1;97mApprove edit ␛[m␛[38;5;241m────────────────────────────────␛[m␛[38;5;214m ⚠ medium ─╮␛[m
 ␛[38;5;214m│␛[m ␛[38;5;214m✎␛[m ␛[97medit internal/agent/loop.go␛[m                            ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;241m · edits one file under internal/agent/␛[m          ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[96m@@ -138,6 +138,7 @@␛[m                                      ␛[38;5;214m│␛[m
@@ -247,7 +247,7 @@
 ␛[38;5;214m╰──────────────────────────────────────────────────────────╯␛[m
 
 · state · not yet live, beside a draft that has the keyboard
-␛[38;5;214m╭─ Approve edit ␛[m␛[38;5;241m────────────────────────────────␛[m␛[38;5;214m ⚠ medium ─╮␛[m
+␛[38;5;214m╭─ ␛[m␛[1;97mApprove edit ␛[m␛[38;5;241m────────────────────────────────␛[m␛[38;5;214m ⚠ medium ─╮␛[m
 ␛[38;5;214m│␛[m ␛[38;5;214m✎␛[m ␛[97medit internal/agent/loop.go␛[m                            ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;241m · edits one file under internal/agent/␛[m          ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[96m@@ -138,6 +138,7 @@␛[m                                      ␛[38;5;214m│␛[m
@@ -267,7 +267,7 @@
 ␛[38;5;214m╰──────────────────────────────────────────────────────────╯␛[m
 
 · variant · generic
-␛[38;5;214m╭─ Approve tool ␛[m␛[38;5;241m───────────────────────────────────␛[m␛[38;5;214m ⚠ low ─╮␛[m
+␛[38;5;214m╭─ ␛[m␛[1;97mApprove tool ␛[m␛[38;5;241m───────────────────────────────────␛[m␛[38;5;214m ⚠ low ─╮␛[m
 ␛[38;5;214m│␛[m ␛[38;5;214m⚙␛[m ␛[97mGET https://pkg.go.dev/context#WithCancel␛[m              ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;214m⚠ low␛[m                                                    ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;241mthe page arrives as text; nothing on it runs␛[m             ␛[38;5;214m│␛[m

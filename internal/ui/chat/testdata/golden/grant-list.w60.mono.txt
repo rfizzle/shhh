@@ -51,7 +51,7 @@
 ── ansi ────────────────────────────────────────────────────
 · the list open, the shortest grant under the pointer
 ␛[38;5;244m────␛[m ␛[1;38;5;254mDECISION 1/1␛[m ␛[38;5;244m──────────────────────────────────────␛[m
-␛[38;5;254m╭─ Approve command ───────────────────────── ⚠ medium ─╮␛[m
+␛[38;5;254m╭─ ␛[m␛[1;38;5;254mApprove command ␛[m␛[38;5;254m───────────────────────── ⚠ medium ─╮␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m$␛[m ␛[38;5;254mnpm test --watch␛[m                                   ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · what it writes could not be resolved␛[m      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m… 4 more lines · [shift+↓]␛[m                           ␛[38;5;254m│␛[m
@@ -70,7 +70,7 @@
 
 · one row down, on the grant that stands
 ␛[38;5;244m────␛[m ␛[1;38;5;254mDECISION 1/1␛[m ␛[38;5;244m──────────────────────────────────────␛[m
-␛[38;5;254m╭─ Approve command ───────────────────────── ⚠ medium ─╮␛[m
+␛[38;5;254m╭─ ␛[m␛[1;38;5;254mApprove command ␛[m␛[38;5;254m───────────────────────── ⚠ medium ─╮␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m$␛[m ␛[38;5;254mnpm test --watch␛[m                                   ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · what it writes could not be resolved␛[m      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m… 4 more lines · [shift+↓]␛[m                           ␛[38;5;254m│␛[m

@@ -829,6 +829,15 @@ drawn as chrome, in the tone a screen's rule is drawn in, while the corners,
 the title's lead-in and the chips keep the weight. The frame still says what
 it said; the empty part of it stops pretending to.
 
+The title is neither the frame nor the fill. It is the name of the thing being
+decided, so it is drawn the way every heading is — the brightest grey, bold —
+whatever tone the border around it is carrying. A card in the colour of
+failure whose title is also written in that colour says the severity twice and
+leaves the reader nothing to read the name off; and where a title is too long
+for the rail, the mark that says so is the title's own last cell, in the
+title's own weight, because it is the title that was cut short and not the
+border.
+
 A card can outgrow the panel it is allowed, and what does not fit is
 never merely clipped. The body scrolls in place behind counted tails — the
 last visible line says how many more rows there are and names the key that

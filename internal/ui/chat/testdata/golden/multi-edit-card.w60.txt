@@ -38,7 +38,7 @@
 
 ── ansi ────────────────────────────────────────────────────
 · one card · three places in one file
-␛[38;5;214m╭─ Approve edit ␛[m␛[38;5;241m────────────────────────────␛[m␛[38;5;214m ⚠ medium ─╮␛[m
+␛[38;5;214m╭─ ␛[m␛[1;97mApprove edit ␛[m␛[38;5;241m────────────────────────────␛[m␛[38;5;214m ⚠ medium ─╮␛[m
 ␛[38;5;214m│␛[m ␛[38;5;214m✎␛[m ␛[97medit internal/agent/loop.go␛[m                        ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[38;5;214m⚠ medium␛[m␛[38;5;241m · edits one file under internal/agent/␛[m      ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m ␛[96m@@ -1,10 +1,11 @@␛[m                                    ␛[38;5;214m│␛[m

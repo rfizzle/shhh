@@ -64,7 +64,7 @@ Should the migration be reversible?  [y/N]
 ── ansi ────────────────────────────────────────────────────
 · three questions · the first tab has the keyboard and none is answered yet
 ␛[1;38;5;254;48;5;237m▸ 1␛[m  ␛[38;5;244m· 2␛[m  ␛[38;5;244m· 3␛[m  ␛[38;5;244m· submit␛[m␛[38;5;244m  1 of 3 · 3 unanswered will be sent as skipped␛[m
-␛[38;5;254m╭─ Question ──────────────────────────────────────────────────────────────────────────────────── 1 of 3 ─╮␛[m
+␛[38;5;254m╭─ ␛[m␛[1;38;5;254mQuestion ␛[m␛[38;5;254m──────────────────────────────────────────────────────────────────────────────────── 1 of 3 ─╮␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254mWhich store should the cache use?␛[m                                                                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                                                                        ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[1;38;5;254;48;5;237m1. SQLite            in the checkout already                                   recommended · 3 files␛[m ␛[38;5;254m│␛[m
@@ -84,7 +84,7 @@ Should the migration be reversible?  [y/N]
 
 · the free answer · its field is shut so the arrows stay the strip's
 ␛[38;5;254m✓ 1 answered␛[m  ␛[38;5;254m✓ 2 answered␛[m  ␛[1;38;5;254;48;5;237m▸ 3␛[m  ␛[38;5;244m· submit␛[m␛[38;5;244m  3 of 3 · 1 unanswered will be sent as skipped␛[m
-␛[38;5;254m╭─ Question ──────────────────────────────────────────────────────────────────────────────────── 3 of 3 ─╮␛[m
+␛[38;5;254m╭─ ␛[m␛[1;38;5;254mQuestion ␛[m␛[38;5;254m──────────────────────────────────────────────────────────────────────────────────── 3 of 3 ─╮␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254mWhat should the flag be called?␛[m                                                                        ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                                                                        ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m┄ note (required)␛[m                                                                                      ␛[38;5;254m│␛[m
@@ -94,14 +94,14 @@ Should the migration be reversible?  [y/N]
 
 · the tab that ends the set · what enter sends, and what leaving a tab open costs
 ␛[38;5;254m✓ 1 answered␛[m  ␛[38;5;254m✓ 2 answered␛[m  ␛[38;5;244m· 3␛[m  ␛[1;38;5;254;48;5;237m▸ submit␛[m␛[38;5;244m  submit · 1 unanswered will be sent as skipped␛[m
-␛[38;5;244m╭─ the answers ──────────────────────────────────────────────────────────────────────────────────────────╮␛[m
+␛[38;5;244m╭─ ␛[m␛[1;38;5;254mthe answers ␛[m␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;244m│␛[m send 2 answers · 1 unanswered, sent as skipped                                                         ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m ␛[38;5;254m[enter]␛[m␛[38;5;244m send␛[m␛[38;5;244m · ␛[m␛[38;5;254m[←→]␛[m␛[38;5;244m the next question␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m answer in your own words␛[m                                 ␛[38;5;244m│␛[m
 ␛[38;5;244m╰────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · four questions · the most one call may carry, which is where the strip is tightest
 ␛[38;5;254m✓ 1 answered␛[m  ␛[38;5;244m· 2␛[m  ␛[1;38;5;254;48;5;237m▸ 3␛[m  ␛[38;5;244m· 4␛[m  ␛[38;5;244m· submit␛[m␛[38;5;244m  3 of 4 · 3 unanswered will be sent as skipped␛[m
-␛[38;5;254m╭─ Question ──────────────────────────────────────────────────────────────────────────────────── 3 of 4 ─╮␛[m
+␛[38;5;254m╭─ ␛[m␛[1;38;5;254mQuestion ␛[m␛[38;5;254m──────────────────────────────────────────────────────────────────────────────────── 3 of 4 ─╮␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254mWhich packages should the flag reach?␛[m                                                                  ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                                                                        ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m❯␛[m ␛[38;5;244m␛[m␛[48;5;237m␛[38;5;244m[ ]␛[m␛[48;5;237m ␛[38;5;254;48;5;237minternal/agent                                                                                  ␛[m␛[m ␛[38;5;254m│␛[m

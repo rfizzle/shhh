@@ -249,7 +249,7 @@
     ␛[38;5;243moutside the package's own directory, and never edit a test to make a failure␛[m
     ␛[38;5;243mgo away.␛[m
 
-␛[38;5;241m╭─ Keep test-writer? ␛[m␛[38;5;241m──────────────────────────────────────────────────────────␛[m␛[38;5;241m╮␛[m
+␛[38;5;241m╭─ ␛[m␛[1;97mKeep test-writer? ␛[m␛[38;5;241m──────────────────────────────────────────────────────────␛[m␛[38;5;241m╮␛[m
 ␛[38;5;241m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;62m1. Save to this project  .shhh/agents                                     ␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mSave globally␛[m         ␛[38;5;241m~/.config/shhh/agents␛[m                             ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mRefine␛[m                ␛[38;5;241msay what to change in the note␛[m                    ␛[38;5;241m│␛[m
@@ -267,7 +267,7 @@
 
   ␛[38;5;252mtest-writer — adds table-driven tests for a package and runs them␛[m
 
-␛[38;5;241m╭─ Keep test-writer? ␛[m␛[38;5;241m──────────────────────────────────────────────────────────␛[m␛[38;5;241m╮␛[m
+␛[38;5;241m╭─ ␛[m␛[1;97mKeep test-writer? ␛[m␛[38;5;241m──────────────────────────────────────────────────────────␛[m␛[38;5;241m╮␛[m
 ␛[38;5;241m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;62m1. Save to this project  .shhh/agents                                     ␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mSave globally␛[m         ␛[38;5;241m~/.config/shhh/agents␛[m                             ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mRefine␛[m                ␛[38;5;241msay what to change in the note␛[m                    ␛[38;5;241m│␛[m
@@ -299,7 +299,7 @@
     ␛[38;5;243mtable is missing.␛[m
     ␛[38;5;241m⋮ 3 more lines · [shift+↓] read on␛[m
 
-␛[38;5;241m╭─ Keep test-writer? ␛[m␛[38;5;241m──────────────────────────────────────────────────────────␛[m␛[38;5;241m╮␛[m
+␛[38;5;241m╭─ ␛[m␛[1;97mKeep test-writer? ␛[m␛[38;5;241m──────────────────────────────────────────────────────────␛[m␛[38;5;241m╮␛[m
 ␛[38;5;241m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;62m1. Save to this project  .shhh/agents                                     ␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m2. ␛[m␛[38;5;252mSave globally␛[m         ␛[38;5;241m~/.config/shhh/agents␛[m                             ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   ␛[38;5;241m3. ␛[m␛[38;5;252mRefine␛[m                ␛[38;5;241msay what to change in the note␛[m                    ␛[38;5;241m│␛[m

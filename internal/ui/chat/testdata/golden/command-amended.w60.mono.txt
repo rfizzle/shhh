@@ -49,7 +49,7 @@
 ── ansi ────────────────────────────────────────────────────
 · the offer, beside the decision run
 ␛[38;5;244m────␛[m ␛[1;38;5;254mDECISION 1/1␛[m ␛[38;5;244m──────────────────────────────────────␛[m
-␛[38;5;254m╭─ Approve command ───────────────────────── ⚠ medium ─╮␛[m
+␛[38;5;254m╭─ ␛[m␛[1;38;5;254mApprove command ␛[m␛[38;5;254m───────────────────────── ⚠ medium ─╮␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m$␛[m ␛[38;5;254mnpm test␛[m                                           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium␛[m␛[38;5;244m · what it writes could not be resolved␛[m      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m                                                      ␛[38;5;254m│␛[m
@@ -66,7 +66,7 @@
 
 · the line the reader wrote, read again
 ␛[38;5;244m────␛[m ␛[1;38;5;254mDECISION 1/1␛[m ␛[38;5;244m──────────────────────────────────────␛[m
-␛[38;5;254m╭─ Approve command ─────────────── ✎ amended ─ ⚠ HIGH ─╮␛[m
+␛[38;5;254m╭─ ␛[m␛[1;38;5;254mApprove command ␛[m␛[38;5;254m─────────────── ✎ amended ─ ⚠ HIGH ─╮␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m$␛[m ␛[38;5;254mrm -rf ./build␛[m                                     ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mwas: echo hi␛[m                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m⚠ HIGH␛[m␛[38;5;244m · recursive forced deletion — may destroy fi␛[m␛[38;5;244m›␛[m ␛[38;5;254m│␛[m

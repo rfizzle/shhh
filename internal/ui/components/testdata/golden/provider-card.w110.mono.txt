@@ -49,7 +49,7 @@
 
 ── ansi ────────────────────────────────────────────────────
 · a local runtime is answering · the likely fix is named
-␛[38;5;254m╭─ No model provider configured ─────────────────────────────────────────────────────────────────────────────╮␛[m
+␛[38;5;254m╭─ ␛[m␛[1;38;5;254mNo model provider configured ␛[m␛[38;5;254m─────────────────────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mshhh looked in four places:␛[m                                                                                ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m✗␛[m ␛[38;5;254menv       ␛[m␛[38;5;244mSHHH_API_KEY, OPENAI_API_KEY — unset␛[m                                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m✗␛[m ␛[38;5;254mconfig    ␛[m␛[38;5;244m~/.config/shhh/config.toml — no provider api_key␛[m                                             ␛[38;5;254m│␛[m
@@ -62,7 +62,7 @@
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · nothing anywhere · no fix to point at, and no local offer
-␛[38;5;254m╭─ No model provider configured ─────────────────────────────────────────────────────────────────────────────╮␛[m
+␛[38;5;254m╭─ ␛[m␛[1;38;5;254mNo model provider configured ␛[m␛[38;5;254m─────────────────────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mshhh looked in four places:␛[m                                                                                ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m✗␛[m ␛[38;5;254menv       ␛[m␛[38;5;244mSHHH_API_KEY, OPENAI_API_KEY — unset␛[m                                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m✗␛[m ␛[38;5;254mconfig    ␛[m␛[38;5;244m~/.config/shhh/config.toml — no provider api_key␛[m                                             ␛[38;5;254m│␛[m
@@ -73,7 +73,7 @@
 ␛[38;5;254m╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯␛[m
 
 · a gateway profile is ready but its variable is not exported
-␛[38;5;254m╭─ No model provider configured ─────────────────────────────────────────────────────────────────────────────╮␛[m
+␛[38;5;254m╭─ ␛[m␛[1;38;5;254mNo model provider configured ␛[m␛[38;5;254m─────────────────────────────────────────────────────────────────────────────╮␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mshhh looked in four places:␛[m                                                                                ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m✗␛[m ␛[38;5;254menv       ␛[m␛[38;5;244mSHHH_API_KEY, OPENAI_API_KEY — unset␛[m                                                         ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[38;5;254m✗␛[m ␛[38;5;254mconfig    ␛[m␛[38;5;244m~/.config/shhh/config.toml — no provider api_key␛[m                                             ␛[38;5;254m│␛[m

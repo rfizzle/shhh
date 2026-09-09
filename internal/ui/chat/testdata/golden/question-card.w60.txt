@@ -70,7 +70,7 @@ Should the migration be reversible?  [y/N]
 
 ── ansi ────────────────────────────────────────────────────
 · pick one · the recommendation leads and says so, and the ⊘ row says why not
-␛[94m╭─ Question ␛[m␛[38;5;241m──────────────────────────────────␛[m␛[94m 1 of 1 ─╮␛[m
+␛[94m╭─ ␛[m␛[1;97mQuestion ␛[m␛[38;5;241m──────────────────────────────────␛[m␛[94m 1 of 1 ─╮␛[m
 ␛[94m│␛[m ␛[38;5;252mWhich store should the cache use?␛[m                    ␛[94m│␛[m
 ␛[94m│␛[m                                                      ␛[94m│␛[m
 ␛[94m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;62m1. SQLite            in th…  recommended · 3 files␛[m ␛[94m│␛[m
@@ -84,7 +84,7 @@ Should the migration be reversible?  [y/N]
 ␛[94m╰──────────────────────────────────────────────────────╯␛[m
 
 · the note has the keyboard · the list's digits are text until tab hands it back
-␛[94m╭─ Question ␛[m␛[38;5;241m──────────────────────────────────␛[m␛[94m 1 of 1 ─╮␛[m
+␛[94m╭─ ␛[m␛[1;97mQuestion ␛[m␛[38;5;241m──────────────────────────────────␛[m␛[94m 1 of 1 ─╮␛[m
 ␛[94m│␛[m ␛[38;5;252mWhich store should the cache use?␛[m                    ␛[94m│␛[m
 ␛[94m│␛[m                                                      ␛[94m│␛[m
 ␛[94m│␛[m ␛[94m❯␛[m ␛[1;97;48;5;62m1. SQLite            in th…  recommended · 3 files␛[m ␛[94m│␛[m
@@ -98,7 +98,7 @@ Should the migration be reversible?  [y/N]
 ␛[94m╰──────────────────────────────────────────────────────╯␛[m
 
 · pick several · the boxes, with the same field under them
-␛[94m╭─ Question ␛[m␛[38;5;241m──────────────────────────────────␛[m␛[94m 1 of 1 ─╮␛[m
+␛[94m╭─ ␛[m␛[1;97mQuestion ␛[m␛[38;5;241m──────────────────────────────────␛[m␛[94m 1 of 1 ─╮␛[m
 ␛[94m│␛[m ␛[38;5;252mWhich packages should the flag reach?␛[m                ␛[94m│␛[m
 ␛[94m│␛[m                                                      ␛[94m│␛[m
 ␛[94m│␛[m ␛[94m❯␛[m ␛[38;5;241m␛[m␛[48;5;62m␛[38;5;241m[ ]␛[m␛[48;5;62m ␛[97;48;5;62minternal/agent                                ␛[m␛[m ␛[94m│␛[m
@@ -113,7 +113,7 @@ Should the migration be reversible?  [y/N]
 ␛[94m╰──────────────────────────────────────────────────────╯␛[m
 
 · a short answer in your own words · the field and no rows above it
-␛[94m╭─ Question ␛[m␛[38;5;241m──────────────────────────────────␛[m␛[94m 1 of 1 ─╮␛[m
+␛[94m╭─ ␛[m␛[1;97mQuestion ␛[m␛[38;5;241m──────────────────────────────────␛[m␛[94m 1 of 1 ─╮␛[m
 ␛[94m│␛[m ␛[38;5;252mWhat should the flag be called?␛[m                      ␛[94m│␛[m
 ␛[94m│␛[m                                                      ␛[94m│␛[m
 ␛[94m│␛[m ␛[38;5;241m┄ note (required)␛[m                                    ␛[94m│␛[m

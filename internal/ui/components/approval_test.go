@@ -127,7 +127,10 @@ func TestApprovalCard_TheSeverityLadderHasThreeColours(t *testing.T) {
 		if strings.Count(view, tc.want) != 2 {
 			t.Fatalf("%v should paint its chip and its body row %q:\n%s", tc.severity, tc.want, view)
 		}
-		if !strings.Contains(view, tc.severity.tone().Render("╭─ Approve command ")) {
+		// The lead-in rather than the title: a title is a heading and is
+		// bright bold on every card, so the border's own tone is read off
+		// the corner the edge starts at.
+		if !strings.Contains(view, tc.severity.tone().Render("╭─ ")) {
 			t.Fatalf("%v should paint its border to match:\n%s", tc.severity, view)
 		}
 	}
@@ -135,7 +138,7 @@ func TestApprovalCard_TheSeverityLadderHasThreeColours(t *testing.T) {
 		Variant: ApprovalGeneric, Title: "Approve tool",
 		Act: "use web_fetch", Answer: "allow it",
 	}
-	if !strings.Contains(unrated.View(90), sty.Info.Render("╭─ Approve tool ")) {
+	if !strings.Contains(unrated.View(90), sty.Info.Render("╭─ ")) {
 		t.Fatalf("a card with no rating takes the decision tone:\n%s", unrated.View(90))
 	}
 }
