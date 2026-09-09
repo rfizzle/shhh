@@ -358,6 +358,41 @@ func TestEditFile_NamesTheLineThatDiffersOnlyInWhitespace(t *testing.T) {
 	}
 }
 
+// Grok 4.6 misread read_file's line-numbered output and sent old_text with
+// two tabs per line where the file had one. The tool refused, named the actual
+// line, and Grok repeated the same wrong edit. This regression holds the
+// refusal and makes sure the error spells out the depth mismatch so the next
+// model does not have to count tabs.
+func TestEditFile_NamesATabDepthMismatch(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "changeset.go")
+	const before = "package changeset\n\ntype Store struct {\n\trecords Records\n\tslot    string\n}\n"
+	must(t, os.WriteFile(path, []byte(before), 0o644))
+
+	// Two tabs where the file has one: the same on screen if line numbers
+	// prefix the read_file output, but not a match.
+	old := "\t\trecords Records\n\t\tslot    string\n}"
+	new := "\t\trecords Records\n\t\tslot    string\n\t\t// extra\n}"
+	args, _ := json.Marshal(editFileArgs{Path: path, OldText: old, NewText: new})
+	_, err := ExecuteMutating("edit_file", args)
+	if err == nil {
+		t.Fatal("double-tabbed quote against single-tabbed file must not match")
+	}
+	if !strings.Contains(err.Error(), "lines 4-6 differ from it only in whitespace") {
+		t.Errorf("expected a near-miss range, got: %v", err)
+	}
+	if !strings.Contains(err.Error(), "file begins with \"\\t\"") {
+		t.Errorf("expected the error to show the file's single tab, got: %v", err)
+	}
+	if !strings.Contains(err.Error(), "your quote begins with \"\\t\\t\"") {
+		t.Errorf("expected the error to show the quote's double tab, got: %v", err)
+	}
+	after, _ := os.ReadFile(path)
+	if string(after) != before {
+		t.Fatal("a near miss is a refusal, not a fuzzy apply")
+	}
+}
+
 func TestEditFile_NearMissSpansTheLinesItMatched(t *testing.T) {
 	tmp := t.TempDir()
 	path := filepath.Join(tmp, "a.go")

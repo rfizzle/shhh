@@ -404,7 +404,7 @@ func applyEdits(content, path string, edits []fileEdit) (string, int, error) {
 				return "", 0, fmt.Errorf("%sold_text not found in %s; it looks like it still carries read_file's line-number prefixes — strip the leading digits and tab from each line and try again", label, path)
 			}
 			if miss, ok := nearMiss(content, e.OldText); ok {
-				return "", 0, fmt.Errorf("%sold_text not found in %s; %s from it only in whitespace: %s — re-quote it from the file, indentation and all", label, path, miss.where(), snippet(miss.actual))
+				return "", 0, fmt.Errorf("%sold_text not found in %s; %s from it only in whitespace%s: %s — re-quote it from the file, indentation and all", label, path, miss.where(), miss.indentGap(), snippet(miss.actual))
 			}
 			return "", 0, fmt.Errorf("%sold_text not found in %s; it must match the file content exactly, including whitespace", label, path)
 		case len(starts) > 1 && !e.ReplaceAll:
@@ -444,10 +444,13 @@ func applyEdits(content, path string, edits []fileEdit) (string, int, error) {
 }
 
 // whitespaceMiss is the one place a failed quote nearly matched: the 1-based
-// line range it covers, and its first line as the file actually writes it.
+// line range it covers, its first line as the file actually writes it, and
+// the first line as the quote wrote it, so the refusal can spell out the
+// whitespace difference instead of asking the reader to count tabs.
 type whitespaceMiss struct {
 	first, last int
 	actual      string
+	quoted      string
 }
 
 // where names the range and agrees its verb with it, for a sentence that
@@ -457,6 +460,50 @@ func (w whitespaceMiss) where() string {
 		return fmt.Sprintf("line %d differs", w.first)
 	}
 	return fmt.Sprintf("lines %d-%d differ", w.first, w.last)
+}
+
+// indentGap names the leading whitespace mismatch on the first line when it
+// is only a difference of tabs versus spaces or depth. It keeps the refusal
+// actionable without guessing what the model meant.
+func (w whitespaceMiss) indentGap() string {
+	actualIndent := leadingSpace(w.actual)
+	quotedIndent := leadingSpace(w.quoted)
+	if actualIndent == quotedIndent {
+		return ""
+	}
+	return fmt.Sprintf(" (file begins with %s, your quote begins with %s)", reprWhitespace(actualIndent), reprWhitespace(quotedIndent))
+}
+
+// leadingSpace returns the leading tabs and spaces of s.
+func leadingSpace(s string) string {
+	for i, r := range s {
+		if r != '\t' && r != ' ' {
+			return s[:i]
+		}
+	}
+	return s
+}
+
+// reprWhitespace spells leading whitespace so a reader can see tabs and count
+// spaces without parsing escape sequences.
+func reprWhitespace(s string) string {
+	if s == "" {
+		return "no indentation"
+	}
+	var b strings.Builder
+	b.WriteByte('"')
+	for _, r := range s {
+		switch r {
+		case '\t':
+			b.WriteString("\\t")
+		case ' ':
+			b.WriteByte('·')
+		default:
+			b.WriteRune(r)
+		}
+	}
+	b.WriteByte('"')
+	return b.String()
 }
 
 // nearMiss finds the single place in content whose lines differ from want
@@ -519,7 +566,7 @@ func nearMiss(content, want string) (whitespaceMiss, bool) {
 	if found < 0 {
 		return whitespaceMiss{}, false
 	}
-	return whitespaceMiss{first: found + 1, last: found + len(trimmed), actual: lines[found]}, true
+	return whitespaceMiss{first: found + 1, last: found + len(trimmed), actual: lines[found], quoted: wantLines[0]}, true
 }
 
 // editLabel names which edit a message is about, and says nothing at all when
