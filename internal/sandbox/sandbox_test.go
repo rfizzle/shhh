@@ -1,6 +1,7 @@
 package sandbox
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"slices"
@@ -50,6 +51,20 @@ func workspacePolicy(t *testing.T) (Policy, string) {
 	t.Helper()
 	ws := t.TempDir()
 	return Policy{Workspace: ws, Profile: ProfileWorkspace}, ws
+}
+
+func TestDetectSeatbelt_RequiresASuccessfulProbe(t *testing.T) {
+	if _, err := os.Stat(seatbeltPath); err != nil {
+		t.Skipf("sandbox-exec is unavailable: %v", err)
+	}
+	original := seatbeltProbe
+	seatbeltProbe = func() ([]byte, error) { return []byte("sandbox_apply: Operation not permitted"), errors.New("exit status 71") }
+	t.Cleanup(func() { seatbeltProbe = original })
+
+	avail := detectSeatbelt()
+	if avail.OK || !strings.Contains(avail.Detail, "sandbox_apply") {
+		t.Fatalf("a Seatbelt application failure must make containment unavailable: %+v", avail)
+	}
 }
 
 func TestParseProfile(t *testing.T) {
@@ -446,6 +461,27 @@ func TestSeatbeltProfileLetsAMaskedAncestorAnswerAnLstat(t *testing.T) {
 	}
 	if strings.Contains(block, "subpath") {
 		t.Errorf("a subpath here would make every masked file's metadata readable:\n%s", block)
+	}
+}
+
+// A nested contained command inherits the outer session's scratch directory.
+// That directory is already private, and the outer profile grants it without
+// granting the state directory siblings a nested process would otherwise make.
+func TestSessionTmpDir_ReusesAnInheritedPrivateDirectory(t *testing.T) {
+	testHome(t)
+	state, err := storage.Dir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	inherited := mkdir(t, filepath.Join(state, "tmp", "outer-session"))
+	t.Setenv("TMPDIR", inherited)
+
+	got, err := sessionTmpDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != resolvedPath(t, inherited) {
+		t.Fatalf("sessionTmpDir() = %q, want inherited private directory %q", got, inherited)
 	}
 }
 

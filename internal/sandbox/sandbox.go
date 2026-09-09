@@ -408,12 +408,23 @@ func hostTempDirs() []string {
 // deletes one — the wrap is built per command and there is no seam that runs
 // when a session ends — so the sweep is here, where the next session is
 // already reading the directory it is about to write in.
+//
+// A contained shhh process can itself start a contained command. Its inherited
+// TMPDIR is already a private directory below this base, but the outer profile
+// grants it only that directory, not permission to create a sibling for the
+// nested process. Reusing the inherited directory keeps the same isolation;
+// making another one would fail before the nested command starts.
 func sessionTmpDir() (string, error) {
 	state, err := storage.Dir()
 	if err != nil {
 		return "", err
 	}
 	base := filepath.Join(state, "tmp")
+	if inherited, err := resolvePath(os.TempDir()); err == nil {
+		if resolvedBase, err := resolvePath(base); err == nil && within(inherited, resolvedBase) {
+			return inherited, nil
+		}
+	}
 	if err := os.MkdirAll(base, 0o700); err != nil {
 		return "", err
 	}

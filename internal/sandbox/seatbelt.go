@@ -1,11 +1,14 @@
 package sandbox
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
+	"time"
 )
 
 const seatbeltPath = "/usr/bin/sandbox-exec"
@@ -23,9 +26,25 @@ const envPath = "/usr/bin/env"
 // (they error) rather than presenting them as empty.
 const seatbeltNote = "Seatbelt (sandbox-exec) — deprecated by Apple but functional; masked paths fail reads rather than reading empty"
 
+// seatbeltProbe applies the smallest useful profile rather than merely
+// checking that sandbox-exec is installed. Seatbelt refuses nested sandboxes,
+// and reporting its binary as available there would make every contained start
+// fail after the session had promised it was contained.
+var seatbeltProbe = func() ([]byte, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	return exec.CommandContext(ctx, seatbeltPath, "-p", "(version 1) (allow default)", "/usr/bin/true").CombinedOutput()
+}
+
 func detectSeatbelt() Availability {
 	if _, err := os.Stat(seatbeltPath); err != nil {
 		return Availability{Mechanism: "sandbox-exec", Detail: "sandbox-exec not found at " + seatbeltPath}
+	}
+	if out, err := seatbeltProbe(); err != nil {
+		return Availability{
+			Mechanism: "sandbox-exec",
+			Detail:    fmt.Sprintf("sandbox-exec probe failed: %v: %s", err, probeLine(out)),
+		}
 	}
 	return Availability{Mechanism: "sandbox-exec", OK: true, Detail: seatbeltNote}
 }
