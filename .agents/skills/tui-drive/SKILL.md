@@ -119,9 +119,36 @@ snap 04-exit "that is everything the screen was holding"
   starts — the place to put a file, a `.shhh/` directory or a commit the
   surface reads. The workspace is a new repository with one empty commit,
   under a home of its own, so nothing on the machine leaks in.
-- `keys …` is passed to `tmux send-keys`: a quoted string types it, and
-  `Enter`, `Escape`, `Tab`, `BTab` (shift+tab), `Up`, `Down`, `PgUp`,
-  `C-c`, `C-o`, `C-/`, `M-a` (alt+a) are keys by name.
+- `keys …` is passed to `tmux send-keys`: a quoted string types it, and the
+  rest are keys by name. A scene is played by two drivers with two keyboards,
+  so every name it may write is also a line on the vhs tape:
+
+  | The scene writes | What it presses | On the tape |
+  |---|---|---|
+  | `"a line"`, `y`, `q` | the text, a letter at a time | `Type` |
+  | `Enter` `Escape` `Tab` `Space` `Up` `Down` `Left` `Right` `Backspace` `Home` `End` | itself | the same word |
+  | `BTab` | shift+tab | `Shift+Tab` |
+  | `PgUp` `PgDn` | page up, page down | `PageUp` `PageDown` |
+  | `C-c` `C-o` | a control chord | `Ctrl+c` — the letter as the scene wrote it |
+  | `C-Space` | ctrl+space | `Ctrl+Space` |
+  | `S-Tab` `S-Enter` | a shift chord on those two | `Shift+Tab` `Shift+Enter` |
+  | `C-/` `C-_` | ctrl+/ | `Type` of the unit separator |
+  | `S-Up` `S-Down` `S-Left` `S-Right` | a shift chord on an arrow | `Type` of the arrow's own escape sequence |
+  | `M-a` `M-]` | an alt chord | `Escape@1ms` then the key |
+
+  The last three are written as bytes rather than named because vhs has no
+  working name for them. Its parser refuses a control chord on a punctuation
+  key and a shift chord on an arrow outright, and its `Alt+` is a modifier on
+  a browser key event, which the terminal vhs drives reads as a third-level
+  shift rather than as meta — so `Alt+a` arrives as a bare `a` and the chord
+  is gone. The bytes a terminal sends have none of those problems: ctrl+/ is
+  the unit separator, shift+↑ is `CSI 1;2A`, and alt+a is escape followed by
+  `a`. Each is written a millisecond a character, which keeps every byte
+  inside the reader's escape timeout of the one before it, so the run arrives
+  as the one key rather than as an escape and a handful of letters. Write a
+  chord in the case the register spells it — `M-a`, never `M-A` — and the
+  tape keeps that case, because a capital after a modifier is a shift vhs
+  would add to the chord.
 - `snap <name> "<text>"` waits for the text to be on screen, then captures.
   **The text must be the surface's own.** Waiting for the line you just typed
   passes before the reply lands; wait for a word only the reply carries, an
@@ -177,6 +204,11 @@ than leaving it out.
   Set `PORT` and `SOCK` to run them side by side.
 - **The pane is 120×40 unless told.** `ROWS` matters as much as `COLS` for
   anything bound by the forty-per-cent panel rule.
+- **A chord written as bytes has a deadline.** The reader only joins them
+  into one key while its escape timeout is open, so a machine slow enough to
+  miss it delivers an escape and a stray letter instead. That fails the snap
+  rather than passing quietly, which is the way round it should be — but it
+  is what a chord that suddenly stops landing looks like.
 - **The start screen is the first frame.** A scene that types straight away
   is typing over the pick list, which is fine — the draft takes it — but the
   first snap should be the start screen, so a change to it is seen.

@@ -220,14 +220,12 @@ done < "$scene/steps.txt"
 # just been drawn takes the keyboard a moment after it appears, and a key
 # typed into that moment lands in the draft underneath it; tmux's capture
 # takes long enough on its own that the pass above never noticed.
-# A modified key is a letter in tmux (C-c) and a capital in vhs (Ctrl+C); a
-# modified named key (C-Space, S-Up) is the same word in both.
-tape_keyname() {
-	case ${#1} in
-	1) printf '%s' "$1" | tr '[:lower:]' '[:upper:]' ;;
-	*) printf '%s' "$1" ;;
-	esac
-}
+# A modified key is a letter in tmux (C-c) and a word in vhs (Ctrl+c), and the
+# letter goes down as the scene wrote it. Upper-casing it is not a spelling of
+# the same key: vhs reads Alt+A as alt+shift+a, so a scene that pressed M-a
+# would send a chord it never asked for. Where vhs has no working name for a
+# chord at all, it is written as the bytes a terminal sends for it, and the
+# three arms below that do so say why.
 tape_key() {
 	case $1 in
 	Enter|Escape|Tab|Space|Up|Down|Left|Right|Backspace|Home|End) echo "$1" ;;
@@ -241,9 +239,28 @@ tape_key() {
 	BTab) echo "Shift+Tab" ;;
 	PgUp|PPage) echo "PageUp" ;;
 	PgDn|NPage) echo "PageDown" ;;
-	C-*) echo "Ctrl+$(tape_keyname "${1#C-}")" ;;
-	M-*) echo "Alt+$(tape_keyname "${1#M-}")" ;;
-	S-*) echo "Shift+$(tape_keyname "${1#S-}")" ;;
+	# vhs's Shift+ takes a character, Tab or Enter and refuses an arrow, so a
+	# shift chord on one is written as the sequence a terminal sends for it:
+	# CSI 1;2 and the arrow's own final letter. The bytes go down as one Type
+	# at a millisecond a character, which keeps each inside the reader's
+	# escape timeout of the last, so they arrive as the one key rather than as
+	# an escape and a handful of letters.
+	S-Up) printf 'Type@1ms "\033[1;2A"\n' ;;
+	S-Down) printf 'Type@1ms "\033[1;2B"\n' ;;
+	S-Right) printf 'Type@1ms "\033[1;2C"\n' ;;
+	S-Left) printf 'Type@1ms "\033[1;2D"\n' ;;
+	# An alt chord is written out for a neighbouring reason. vhs's Alt+ is a
+	# modifier on a browser key event, and the terminal it drives reads option
+	# as a third-level shift rather than as meta: Alt+a arrives as a bare `a`
+	# and the chord is gone, which is why a scene wanting one used to have to
+	# find another door. The two bytes a terminal sends for alt+a are escape
+	# and `a`, and the reader joins them back into the one chord as long as
+	# the second lands inside its escape timeout — so the chord goes on the
+	# tape as its two keys, with the escape's own delay cut to a millisecond
+	# to stay well inside that window.
+	M-*) echo "Escape@1ms"; tape_key "${1#M-}" ;;
+	C-*) echo "Ctrl+${1#C-}" ;;
+	S-*) echo "Shift+${1#S-}" ;;
 	*) printf 'Type `%s`\n' "$1" ;;
 	esac
 }
