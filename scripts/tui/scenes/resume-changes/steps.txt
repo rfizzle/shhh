@@ -1,0 +1,27 @@
+# A coding session that edits a tracked file, quits, and comes back still
+# owning it: the close offers review and commit, the rail names the file.
+# The workspace is a repository with one tracked file the turn edits.
+setup printf 'package agent\n\nconst limit = 25\n' > loop.go
+setup git add loop.go
+setup git config user.email tui@shhh
+setup git config user.name tui
+setup git commit -q -m 'seed the repository'
+snap 01-start "Some things worth doing first"
+keys "cap rounds at the limit instead of erroring" Enter
+snap 02-edit-card "const limit = 50"
+sleep 1
+keys C-Space
+sleep 0.3
+keys y
+snap 03-close "commit"
+keys C-c
+sleep 0.3
+keys C-c
+# The second sitting is --continue. Wait for the resume row, not the close
+# the first sitting already drew: that row is how a reopened conversation
+# accounts for itself, and it is the proof the second process is on screen.
+snap 04-resumed "resumed master"
+keys C-o
+snap 05-reading "back to the prompt"
+keys v
+snap 06-review "loop.go"

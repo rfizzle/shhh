@@ -147,29 +147,10 @@ func (m Model) roundNote() string {
 // not a key shhh can put on a row. The commit row below says so in words.
 func (m Model) turnChangesRow(committed bool) *components.TurnChanges {
 	t, ok := m.changes.Turn(m.turnCount)
-	if !ok || t.Files() == 0 {
+	if !ok {
 		return nil
 	}
-	offers := []components.TurnKey{
-		{Key: keys.Bracket(keys.Row.Review), Label: keys.Words(keys.Row.Review)},
-	}
-	if !committed {
-		// Review, keep, or take back — the three things a changeset can
-		// become, on one line and in that order. The commit offer stands for
-		// as long as the changeset is uncommitted and goes when it is not:
-		// banking work twice is not one of the three.
-		offers = append(offers,
-			components.TurnKey{Key: keys.Bracket(keys.Row.Commit), Label: keys.Words(keys.Row.Commit)},
-			components.TurnKey{Key: keys.Bracket(keys.Row.Undo), Label: keys.Words(keys.Row.Undo)})
-	}
-	return &components.TurnChanges{
-		Files:   t.Files(),
-		Added:   t.Added,
-		Removed: t.Removed,
-		Mode:    t.ModeChange(),
-		Keys:    offers,
-		Note:    trackingNote(t),
-	}
+	return m.turnChangesFor(t, committed)
 }
 
 // turnCommitRow is the commit this turn made, or nothing. The receipt is the
@@ -192,6 +173,63 @@ func turnCommitRow(es []entry) *components.TurnCommit {
 		return &components.TurnCommit{Receipt: receipt}
 	}
 	return nil
+}
+
+// restoreTurnClose puts the last restored turn's changeset row on the
+// transcript when the rebuilt conversation has none. A close block is
+// never saved with the messages, so a resume that only restored the
+// conversation would have the files on the rail and no row offering
+// review, undo or commit.
+func (m *Model) restoreTurnClose() {
+	if m.changes == nil {
+		return
+	}
+	t, ok := m.changes.Latest()
+	if !ok || t.Files() == 0 {
+		return
+	}
+	for _, e := range m.transcript {
+		if e.kind == entryTurnClose && e.turn == t.N {
+			return
+		}
+	}
+	m.appendEntry(entry{
+		kind: entryTurnClose,
+		turn: t.N,
+		close: &components.TurnClose{
+			State:   components.TurnDone,
+			Changes: m.turnChangesFor(t, false),
+		},
+	})
+}
+
+// turnChangesFor is the changeset row for a turn already in hand, so a
+// resume can draw the last sitting's close without pretending that turn
+// is this sitting's current one.
+func (m Model) turnChangesFor(t changeset.Turn, committed bool) *components.TurnChanges {
+	if t.Files() == 0 {
+		return nil
+	}
+	offers := []components.TurnKey{
+		{Key: keys.Bracket(keys.Row.Review), Label: keys.Words(keys.Row.Review)},
+	}
+	if !committed {
+		// Review, keep, or take back — the three things a changeset can
+		// become, on one line and in that order. The commit offer stands for
+		// as long as the changeset is uncommitted and goes when it is not:
+		// banking work twice is not one of the three.
+		offers = append(offers,
+			components.TurnKey{Key: keys.Bracket(keys.Row.Commit), Label: keys.Words(keys.Row.Commit)},
+			components.TurnKey{Key: keys.Bracket(keys.Row.Undo), Label: keys.Words(keys.Row.Undo)})
+	}
+	return &components.TurnChanges{
+		Files:   t.Files(),
+		Added:   t.Added,
+		Removed: t.Removed,
+		Mode:    t.ModeChange(),
+		Keys:    offers,
+		Note:    trackingNote(t),
+	}
 }
 
 // trackingNote says what git knew about the files when they were edited — the

@@ -1180,6 +1180,19 @@ func TestGolden_InspectorRail(t *testing.T) {
 				Foreign:   []string{"README.md"},
 			},
 		}
+		// A resume that still owns some of its files and has lost others:
+		// the owned rows carry the mutation rail, the drifted path is
+		// named separately rather than offered for undo or commit.
+		resumed := InspectorRail{
+			Changes: &InspectorChanges{
+				Files: []InspectorFile{
+					{Path: "internal/agent/loop.go", Added: 18, Removed: 3, Turns: 2},
+				},
+				Added:   18,
+				Removed: 3,
+				Foreign: []string{"internal/agent/round.go"},
+			},
+		}
 		// A reading that has gone off the instruction, and one the session has
 		// outrun. The drifting one is what auto-steering will
 		// act on; here it is a row and nothing more.
@@ -1261,6 +1274,7 @@ func TestGolden_InspectorRail(t *testing.T) {
 			{Label: "the rail is shorter than the list (height 14)", View: session.View(width, 14)},
 			{Label: "a change of permissions has no lines to count", View: permissions.View(width, 0)},
 			{Label: "banked · what was committed, and what is still yours", View: banked.View(width, 0)},
+			{Label: "resumed · owned files, and a drifted file named separately", View: resumed.View(width, 0)},
 			{Label: "a reading that has left the instruction", View: drifting.View(width, 0)},
 			{Label: "a reading the session has outrun", View: stale.View(width, 0)},
 			{Label: "where the tools came from, and which answered", View: sources.View(width, 0)},

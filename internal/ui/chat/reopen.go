@@ -280,10 +280,15 @@ func storedChatSummary(db *storage.DB, slot string) string {
 func (m *Model) resumeConversation(slot string, msgs []provider.Message) {
 	m.loadConversation(stripResumeContext(msgs))
 	if slot != "" {
+		// The sitting being replaced has its own records in memory. They
+		// belong to that conversation; Restore would otherwise skip and
+		// leave them standing in for the one just loaded.
+		m.changes.Reset()
 		m.adoptSlot(slot)
 		m.loadTitle()
 	}
 	m.injectResumeContext()
+	m.restoreTurnClose()
 }
 
 // injectResumeContext puts the reading in front of the restored transcript

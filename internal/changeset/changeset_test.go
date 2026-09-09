@@ -2,6 +2,8 @@ package changeset
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"slices"
 	"sort"
 	"strings"
@@ -845,5 +847,88 @@ func TestPathsNamesWhatTheSessionChanged(t *testing.T) {
 	}
 	if paths := (*Store)(nil).Paths(); paths != nil {
 		t.Fatalf("a session with no store changed nothing, got %v", paths)
+	}
+}
+
+func TestRestore_KeepsWhatStillMatchesAndNamesWhatDoesNot(t *testing.T) {
+	dir := t.TempDir()
+	kept := filepath.Join(dir, "kept.go")
+	created := filepath.Join(dir, "new.go")
+	changed := filepath.Join(dir, "changed.go")
+	gone := filepath.Join(dir, "gone.go")
+	moded := filepath.Join(dir, "moded.sh")
+	write := func(path, body string, mode os.FileMode) {
+		t.Helper()
+		if err := os.WriteFile(path, []byte(body), mode); err != nil {
+			t.Fatal(err)
+		}
+		if mode != 0 && mode != 0o644 {
+			if err := os.Chmod(path, mode); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	write(kept, "after\n", 0o644)
+	write(created, "fresh\n", 0o644)
+	write(changed, "somebody else\n", 0o644)
+	write(moded, "same\n", 0o755)
+
+	sink := newMemoryRecords()
+	sink.turns["work"] = map[int64][]Record{
+		1: {
+			{Path: kept, Before: "before\n", After: "after\n", BeforeExists: true, AfterExists: true},
+			{Path: created, After: "fresh\n", AfterExists: true},
+			{Path: changed, Before: "before\n", After: "after\n", BeforeExists: true, AfterExists: true},
+			{Path: gone, After: "was here\n", AfterExists: true},
+			{Path: moded, Before: "same\n", After: "same\n", BeforeExists: true, AfterExists: true, BeforeMode: 0o644, AfterMode: 0o644},
+		},
+	}
+	s := New(0)
+	s.Persist(sink)
+	s.SetSlot("work")
+	s.Restore()
+
+	files := s.Paths()
+	if !slices.Equal(files, []string{kept, created}) {
+		t.Fatalf("owned paths = %v, want kept and created", files)
+	}
+	got := s.Drifted()
+	want := []string{changed, gone, moded}
+	sort.Strings(want)
+	if !slices.Equal(got, want) {
+		t.Fatalf("drifted = %v, want %v", got, want)
+	}
+	if _, ok := s.Turn(1); !ok {
+		t.Fatal("the owned turn is in memory, so the rail and undo can see it")
+	}
+}
+
+func TestRestore_LeavesAStoreThatAlreadyHoldsTurns(t *testing.T) {
+	sink := newMemoryRecords()
+	sink.turns["work"] = map[int64][]Record{1: {rec("a.go", "one\n", "two\n")}}
+	s := New(0)
+	s.Persist(sink)
+	s.SetSlot("work")
+	s.Add(2, rec("b.go", "", "new\n"))
+	s.Restore()
+	if _, ok := s.Turn(1); ok {
+		t.Fatal("Restore must not fold another conversation's turns into a sitting that already has some")
+	}
+	if _, ok := s.Turn(2); !ok {
+		t.Fatal("the sitting's own turn stays")
+	}
+}
+
+func TestRestore_AFreshSlotHasNothing(t *testing.T) {
+	s := New(0)
+	s.Restore()
+	if files := s.Paths(); files != nil {
+		t.Fatalf("a store with no slot restored nothing, got %v", files)
+	}
+	s.Persist(newMemoryRecords())
+	s.SetSlot("empty")
+	s.Restore()
+	if files := s.Paths(); files != nil {
+		t.Fatalf("an empty slot restored nothing, got %v", files)
 	}
 }

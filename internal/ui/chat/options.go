@@ -207,6 +207,11 @@ func (m *Model) adoptSlot(name string) {
 // Overshooting only skips a number, which costs nothing.
 func (m *Model) bindSlot() {
 	m.changes.SetSlot(m.sessionName)
+	// The written records become this sitting's live changeset before
+	// anything draws: the rail, review, undo and commit all read memory,
+	// and a resume that left them on disk would treat still-owned files
+	// as somebody else's.
+	m.changes.Restore()
 	if last := max(m.changes.LastTurn(), int64(m.conversationTurns())); last > m.turnCount {
 		m.turnCount = last
 		m.agent.SetTurn(m.turnCount)

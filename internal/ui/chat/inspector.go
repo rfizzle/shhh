@@ -282,7 +282,14 @@ func (m Model) inspectorChanges() *components.InspectorChanges {
 	if st := m.commit; st != nil && st.banked != nil {
 		c.Committed, c.Foreign = st.banked, st.leaves
 	}
-	if len(c.Files) == 0 && len(c.Alerts) == 0 {
+	if len(c.Foreign) == 0 {
+		// A resume that dropped a file because the tree moved under it
+		// still names the path: it is no longer this sitting's to undo
+		// or commit, and leaving it off the rail would look like the
+		// session never touched it.
+		c.Foreign = m.changes.Drifted()
+	}
+	if len(c.Files) == 0 && len(c.Alerts) == 0 && len(c.Foreign) == 0 {
 		return nil
 	}
 	return &c

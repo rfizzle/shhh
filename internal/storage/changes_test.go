@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/changeset"
+	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // changeSlot claims a slot to hang records off, the way a session does on the
@@ -255,5 +256,78 @@ func TestChanges_DroppingAPathTakesItsRow(t *testing.T) {
 	}
 	if err := db.DropChange("nobody", 1, "b.go"); err != nil {
 		t.Fatalf("dropping under an unclaimed slot should not error: %v", err)
+	}
+}
+
+func TestChanges_CopyMovesRecordsToTheNewSlot(t *testing.T) {
+	db := openTestDB(t)
+	from := changeSlot(t, db, "from")
+	to := changeSlot(t, db, "to")
+	rec := changeset.Record{Path: "a.go", After: "x\n", AfterExists: true, At: time.Now()}
+	saveTurn(t, db, from, 3, rec)
+
+	if err := db.CopyChanges(from, to); err != nil {
+		t.Fatalf("copy changes: %v", err)
+	}
+	got, err := db.LoadChanges(to, 1, 0)
+	if err != nil || len(got) != 1 || got[0].Turn != 3 || got[0].Records[0].Path != "a.go" {
+		t.Fatalf("the new slot should hold the records, got %+v (%v)", got, err)
+	}
+	left, err := db.LoadChanges(from, 1, 0)
+	if err != nil || len(left) != 1 || left[0].Records[0].Path != "a.go" {
+		t.Fatalf("the old slot should still hold its records, got %+v (%v)", left, err)
+	}
+}
+
+func TestChanges_CopyFromNothingIsANoOp(t *testing.T) {
+	db := openTestDB(t)
+	from := changeSlot(t, db, "from")
+	to := changeSlot(t, db, "to")
+	if err := db.CopyChanges(from, to); err != nil {
+		t.Fatalf("copying nothing should not error: %v", err)
+	}
+	got, err := db.LoadChanges(to, 1, 0)
+	if err != nil || len(got) != 0 {
+		t.Fatalf("nothing to carry, got %+v (%v)", got, err)
+	}
+}
+
+func TestChanges_AutosaveCarriesRecordsWhenTheSlotMoves(t *testing.T) {
+	first, second := twoStores(t)
+	slot, err := first.ClaimChatSlot("2026-09-02 10:00:00")
+	if err != nil {
+		t.Fatalf("claim: %v", err)
+	}
+	msgs := []provider.Message{{Role: provider.RoleUser, Content: "mine"}}
+	if _, err := first.AutosaveChat(slot, "fresh", msgs, nil); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+	saveTurn(t, first, slot, 1, changeset.Record{Path: "a.go", After: "x\n", AfterExists: true, At: time.Now()})
+
+	if _, err := second.LoadChat(slot); err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	theirs := []provider.Message{
+		{Role: provider.RoleUser, Content: "theirs"},
+		{Role: provider.RoleAssistant, Content: "ok"},
+	}
+	if err := second.SaveChat(slot, theirs); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+
+	moved, err := first.AutosaveChat(slot, "2026-09-02 10:04:00", msgs, nil)
+	if err != nil {
+		t.Fatalf("autosave: %v", err)
+	}
+	if moved == slot {
+		t.Fatal("the conversation should have moved")
+	}
+	got, err := first.LoadChanges(moved, 1, 0)
+	if err != nil || len(got) != 1 || got[0].Records[0].Path != "a.go" {
+		t.Fatalf("the moved slot should hold the records, got %+v (%v)", got, err)
+	}
+	left, err := first.LoadChanges(slot, 1, 0)
+	if err != nil || len(left) != 1 || left[0].Records[0].Path != "a.go" {
+		t.Fatalf("the original slot still holds the records a continue would restore, got %+v (%v)", left, err)
 	}
 }

@@ -218,7 +218,16 @@ func (db *DB) AutosaveChat(slot, fresh string, messages []provider.Message, hold
 	if err != nil {
 		return slot, err
 	}
-	return moved, db.saveChatMarked(moved, messages, hold)
+	if err := db.saveChatMarked(moved, messages, hold); err != nil {
+		return moved, err
+	}
+	// The conversation is in the new slot; the records of what it
+	// changed have to follow or a later resume of this sitting would
+	// open on the files with nobody owning them.
+	if err := db.CopyChanges(slot, moved); err != nil {
+		return moved, err
+	}
+	return moved, nil
 }
 
 // movedChatSlot is where a slot this process lost has been replaced, claiming

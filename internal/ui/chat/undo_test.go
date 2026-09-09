@@ -289,8 +289,8 @@ func TestUndo_AResumedSessionUndoesAPreRestartTurn(t *testing.T) {
 	if next.turnCount != 1 {
 		t.Fatalf("the resumed session should carry on numbering past what the slot holds, got %d", next.turnCount)
 	}
-	if _, ok := next.changes.Turn(1); ok {
-		t.Fatal("a fresh store holds nothing in memory; the record is what answers here")
+	if _, ok := next.changes.Turn(1); !ok {
+		t.Fatal("the restored turn is in memory, so the rail and undo can see it")
 	}
 
 	updated, _ := next.undoTurn(1, nil)

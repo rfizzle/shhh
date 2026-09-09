@@ -1,0 +1,3 @@
+# First sitting edits a tracked file and quits; the second opens that
+# conversation again so the rail and the close still name the file.
+$SHHH_BIN code; $SHHH_BIN code --continue

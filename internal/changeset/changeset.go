@@ -326,6 +326,11 @@ type Store struct {
 	// without persistence — and every test that does not ask for it — gets.
 	records Records
 	slot    string
+	// drifted are paths this slot recorded whose After no longer stands
+	// on disk. Restore fills it; they are named on the rail rather than
+	// kept as owned, because carrying one forward would let a later undo
+	// or commit claim work the session no longer has.
+	drifted []string
 }
 
 // TurnRecords is one turn's records as a store holds them: the number the
@@ -393,6 +398,66 @@ func (s *Store) SetSlot(name string) {
 func (s *Store) Persists() bool {
 	rec, slot := s.sink()
 	return rec != nil && slot != ""
+}
+
+// Restore loads this slot's written-down records into memory, keeping only
+// the paths whose After still stands on disk. A file that is gone or has
+// changed since is left out of the live changeset and named by Drifted,
+// so the rail can say so without making it eligible for undo or commit.
+// See docs/capabilities/sessions-and-memory.md#a-resumed-session-keeps-the-files-it-still-owns.
+//
+// A store that already holds turns is left alone: this sitting's memory is
+// the newer account, and replaying the written record over it would fold
+// another conversation's edits into the one on screen.
+func (s *Store) Restore() {
+	if s == nil {
+		return
+	}
+	rec, slot := s.sink()
+	if rec == nil || slot == "" {
+		return
+	}
+	s.mu.Lock()
+	if len(s.order) > 0 {
+		s.mu.Unlock()
+		return
+	}
+	s.mu.Unlock()
+
+	stored, err := rec.LoadChanges(slot, 1, 0)
+	if err != nil || len(stored) == 0 {
+		return
+	}
+	owned, drifted := partitionOwned(stored)
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if len(s.order) > 0 {
+		return
+	}
+	s.drifted = drifted
+	s.session, s.fresh = nil, false
+	for _, tr := range owned {
+		for _, r := range tr.Records {
+			s.replayLocked(tr.Turn, r)
+		}
+	}
+	// Not evicted: SessionFiles walks memory, and a resume that dropped
+	// owned turns to stay inside the byte bound would hide files the
+	// sitting still owns. The bound is for a live sitting's growth, not
+	// for what coming back is allowed to remember.
+}
+
+// Drifted names the paths Restore left out because the workspace no longer
+// holds what the record saved. Empty when Restore has not run, or when every
+// recorded path still matches.
+func (s *Store) Drifted() []string {
+	if s == nil {
+		return nil
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return append([]string(nil), s.drifted...)
 }
 
 // LastTurn is the highest turn number the slot's written-down records carry,
@@ -561,6 +626,7 @@ func (s *Store) Reset() {
 	s.evicted = nil
 	s.turns = map[int64]*Turn{}
 	s.session, s.fresh = nil, false
+	s.drifted = nil
 }
 
 // Add records one applied edit against a turn and returns the turns this
@@ -655,6 +721,91 @@ func (s *Store) dropLocked(turn int64, path string) {
 		return
 	}
 	_ = s.records.DropChange(s.slot, turn, path)
+}
+
+// replayLocked puts a record already on disk into this process's memory.
+// It does not write: the row is what Restore just read, and writing it
+// again would be a no-op that still takes the lock the sitting is waiting
+// on to draw. The merge Add does within a turn is not needed here either
+// — one path per turn is how the rows are stored.
+func (s *Store) replayLocked(turn int64, r Record) {
+	if !r.Changed() {
+		return
+	}
+	if r.Agent == "" {
+		r.Agent = MainAgent
+	}
+	r.compute()
+	t, ok := s.turns[turn]
+	if !ok {
+		t = &Turn{N: turn, At: r.At}
+		s.turns[turn] = t
+		s.order = append(s.order, turn)
+		sort.Slice(s.order, func(i, j int) bool { return s.order[i] < s.order[j] })
+	}
+	t.Records = append(t.Records, r)
+	s.bytes += r.size()
+	t.recount()
+}
+
+// partitionOwned splits a slot's records into the paths whose After still
+// stands and the paths that have moved since. The latest record of each
+// path is the one that is compared: earlier turns of an owned path are
+// kept so the session fold still has the earliest before side.
+func partitionOwned(stored []TurnRecords) (owned []TurnRecords, drifted []string) {
+	latest := map[string]Record{}
+	for _, tr := range stored {
+		for _, r := range tr.Records {
+			latest[r.Path] = r
+		}
+	}
+	keep := map[string]bool{}
+	for path, r := range latest {
+		if recordMatchesAfter(r) {
+			keep[path] = true
+		} else {
+			drifted = append(drifted, path)
+		}
+	}
+	sort.Strings(drifted)
+	for _, tr := range stored {
+		var recs []Record
+		for _, r := range tr.Records {
+			if keep[r.Path] {
+				recs = append(recs, r)
+			}
+		}
+		if len(recs) > 0 {
+			owned = append(owned, TurnRecords{Turn: tr.Turn, Records: recs})
+		}
+	}
+	return owned, drifted
+}
+
+// recordMatchesAfter reports that the workspace still holds what the
+// record saved: the same bytes, the same existence, and — where the
+// record read them — the same permission bits. A mismatch is the
+// definition of drift.
+func recordMatchesAfter(r Record) bool {
+	data, err := os.ReadFile(r.Path)
+	exists := err == nil
+	if exists != r.AfterExists {
+		return false
+	}
+	if !r.AfterExists {
+		return true
+	}
+	if string(data) != r.After {
+		return false
+	}
+	if r.AfterMode == 0 {
+		return true
+	}
+	fi, err := os.Stat(r.Path)
+	if err != nil {
+		return false
+	}
+	return fi.Mode().Perm() == r.AfterMode.Perm()
 }
 
 func indexOf(records []Record, path string) int {

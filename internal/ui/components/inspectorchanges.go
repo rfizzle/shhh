@@ -86,7 +86,7 @@ type InspectorChanges struct {
 // too, and a rail that printed two bare counts would read as a contradiction.
 func (r InspectorRail) changesBlock(width int) (railBlock, bool) {
 	c := r.Changes
-	if c == nil || (len(c.Files) == 0 && len(c.Alerts) == 0) {
+	if c == nil || (len(c.Files) == 0 && len(c.Alerts) == 0 && len(c.Foreign) == 0) {
 		return railBlock{}, false
 	}
 	meta := ""
@@ -159,8 +159,15 @@ func (r InspectorRail) changesBlock(width int) (railBlock, bool) {
 	// files here, and an empty column would read as a row of the list above
 	// that lost its mark.
 	for _, path := range c.Foreign {
+		// "yours" is the reader's uncommitted work beside a commit; a
+		// resume names a path the session no longer owns as drifted,
+		// which is the other reason a file sits in this list.
+		label := "yours"
+		if c.Committed == nil {
+			label = "drifted"
+		}
 		b.add(railRow(" "+sty.Dim.Render("·")+" "+sty.Dimmer.Render(path),
-			sty.Dim.Render("yours"), width, inspectorIndent))
+			sty.Dim.Render(label), width, inspectorIndent))
 	}
 	b.fold = func(hidden []railLine) string { return changesFold(hidden, width) }
 	return b, true

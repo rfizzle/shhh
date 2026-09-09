@@ -18,6 +18,7 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 // showFile puts a file through read_file, which is what an overwrite of an
@@ -286,5 +287,81 @@ func TestChangeset_ChildPatchIsAttributedToItsAgent(t *testing.T) {
 	}
 	if len(turn.Agents) != 1 || turn.Agents[0].Files != 2 {
 		t.Fatalf("per-agent attribution should credit writer-1 with both files, got %+v", turn.Agents)
+	}
+}
+
+func TestChangeset_ResumeKeepsOwnedFilesAndNamesDrifted(t *testing.T) {
+	db := rewindTestDB(t)
+	dir := t.TempDir()
+	owned := filepath.Join(dir, "owned.go")
+	created := filepath.Join(dir, "created.go")
+	drifted := filepath.Join(dir, "drifted.go")
+	if err := os.WriteFile(owned, []byte("before\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(drifted, []byte("before\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	first := rewindChangeModel(t, db, changeset.New(0), "the work")
+	slot := first.sessionName
+	first = sendText(t, first, "change them")
+	recordEdit(t, first, owned, "before\n", "after\n")
+	recordEdit(t, first, created, "", "fresh\n")
+	recordEdit(t, first, drifted, "before\n", "after\n")
+	first = completeReply(t, first, "done")
+
+	if err := os.WriteFile(drifted, []byte("somebody else\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	next := rewindChangeModel(t, db, changeset.New(0), "second sitting")
+	next.resumeConversation(slot, first.Messages())
+
+	files := next.changes.Paths()
+	if len(files) != 2 || files[0] != owned || files[1] != created {
+		t.Fatalf("owned after resume = %v, want %s and %s", files, owned, created)
+	}
+	if got := next.changes.Drifted(); len(got) != 1 || got[0] != drifted {
+		t.Fatalf("drifted after resume = %v, want %s", got, drifted)
+	}
+	if next.turnCount < 1 {
+		t.Fatalf("the next turn is numbered past the restored one, got %d", next.turnCount)
+	}
+
+	c := next.inspectorChanges()
+	if c == nil {
+		t.Fatal("the rail should show the restored files")
+	}
+	if len(c.Files) != 2 {
+		t.Fatalf("owned files on the rail: %+v", c.Files)
+	}
+	if len(c.Foreign) != 1 || c.Foreign[0] != drifted {
+		t.Fatalf("drifted files named separately: %+v", c.Foreign)
+	}
+
+	var close *components.TurnClose
+	for i := len(next.transcript) - 1; i >= 0; i-- {
+		if next.transcript[i].kind == entryTurnClose {
+			close = next.transcript[i].close
+			break
+		}
+	}
+	if close == nil || close.Changes == nil {
+		t.Fatal("the restored turn still offers review, undo and commit")
+	}
+	updated, _ := next.undoTurn(1, nil)
+	if updated.(Model).state != stateUndoConfirm {
+		t.Fatal("undo of the restored turn is still offered")
+	}
+}
+
+func TestChangeset_ANewSessionStartsWithNoPriorChanges(t *testing.T) {
+	m := rewindChangeModel(t, rewindTestDB(t), changeset.New(0), "fresh")
+	if files := m.changes.Paths(); files != nil {
+		t.Fatalf("a new conversation restored nothing, got %v", files)
+	}
+	if got := m.changes.Drifted(); got != nil {
+		t.Fatalf("a new conversation has no drifted files, got %v", got)
 	}
 }

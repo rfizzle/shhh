@@ -157,6 +157,53 @@ func (db *DB) LoadChanges(slot string, from, to int64) ([]changeset.TurnRecords,
 	return out, rows.Err()
 }
 
+// CopyChanges writes every change record under from into to, replacing
+// whatever to already held. The blobs are shared — they are addressed by
+// digest — so the copy is rows, not bytes. A from that holds none is a
+// no-op rather than an error: there is nothing to carry, and a session
+// that never wrote is still a session.
+//
+// The conversation itself is saved separately; this is only the records
+// of what it changed, so a sitting moved to a fresh slot because the
+// original is held still owns the files it left in the tree. The source
+// is left alone: emptying it would take the records from a session that
+// continued that slot.
+func (db *DB) CopyChanges(from, to string) error {
+	if from == "" || to == "" || from == to {
+		return nil
+	}
+	src, ok, err := db.chatSessionID(from)
+	if err != nil || !ok {
+		return err
+	}
+	dst, ok, err := db.chatSessionID(to)
+	if err != nil || !ok {
+		return err
+	}
+	return retryBusy(func() error { return db.copyChangesTx(src, dst) })
+}
+
+func (db *DB) copyChangesTx(src, dst int64) error {
+	tx, err := db.sql.Begin()
+	if err != nil {
+		return fmt.Errorf("copy changes: %w", err)
+	}
+	defer tx.Rollback()
+	if _, err := tx.Exec(`DELETE FROM changes WHERE session_id = ?`, dst); err != nil {
+		return fmt.Errorf("copy changes: %w", err)
+	}
+	_, err = tx.Exec(
+		`INSERT INTO changes (session_id, turn, seq, path, before_hash, after_hash,
+		     before_exists, after_exists, before_mode, after_mode, agent, origin, track, at)
+		 SELECT ?, turn, seq, path, before_hash, after_hash,
+		        before_exists, after_exists, before_mode, after_mode, agent, origin, track, at
+		   FROM changes WHERE session_id = ?`, dst, src)
+	if err != nil {
+		return fmt.Errorf("copy changes: %w", err)
+	}
+	return tx.Commit()
+}
+
 // LastChangeTurn is the highest turn number a slot holds records for, or zero
 // for a slot that holds none. A resumed conversation numbers its next turn
 // past it, so the number on a close row addresses the same turn in the sitting

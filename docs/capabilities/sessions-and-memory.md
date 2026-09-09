@@ -84,6 +84,25 @@ three times tells it about the tree once rather than three times about three
 commits. One folded row accounts for it — the branch and the count on the
 line, what the conversation was actually told underneath.
 
+### A resumed session keeps the files it still owns
+
+Coming back is not a fresh sitting with a familiar transcript. The files the
+session changed are still in the tree, and the records of those changes are
+still on the slot: a resume that restored only the conversation would look
+right and treat that work as somebody else's — the rail empty, undo and commit
+gone, the next turn numbered from one. That is worse than not resuming at all.
+
+So the records come back into the live changeset before the first frame, and
+the next turn is numbered past them. A file whose content and mode still match
+what the sitting left is still this session's: the rail names it, review opens
+it, undo can put it back, commit can bank it. A file that has been edited,
+deleted or chmod'd since is named as drifted rather than owned — carrying it
+forward would let a later undo or commit claim work the session no longer has.
+
+A sitting moved to a fresh slot because the original is held carries those
+records with it, so a later resume of *this* sitting still owns them. A
+genuinely new conversation starts with none.
+
 Where a conversation was compacted, the summary that compaction wrote is kept
 beside it and comes back with it, after the reading. Nothing is summarized to
 fill that in: `/compact` already asks for the goals, the decisions, the work

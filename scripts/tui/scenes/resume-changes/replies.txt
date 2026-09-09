@@ -1,0 +1,7 @@
+# First sitting: edit a tracked file so the slot holds a change record.
+tool:read_file:{"path":"loop.go"}
+tool:edit_file:{"path":"loop.go","old_text":"const limit = 25","new_text":"const limit = 50"}
+tool:read_file:{"path":"loop.go"}
+The rounds are capped at the limit now.
+# Second sitting: --continue restores the conversation and the owned file.
+The session is back on the file it still owns.

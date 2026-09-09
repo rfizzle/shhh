@@ -2075,6 +2075,43 @@ func TestGolden_NewSessionRow(t *testing.T) {
 	})
 }
 
+// TestGolden_ResumedChanges captures a coding session come back to: the last
+// turn's changeset row still offering review, keep and take back, and the
+// rail naming the file it still owns beside one that drifted since.
+func TestGolden_ResumedChanges(t *testing.T) {
+	captureGolden(t, "resumed-changes", "a resumed coding session's close and change rail", goldenWidths, func(width int) []golden.Panel {
+		closeRow := func() string {
+			m := frameModel(t, width, 40)
+			m.appendEntry(entry{kind: entryTurnClose, turn: 1, close: &components.TurnClose{
+				State: components.TurnDone, Steps: 2, Tools: 6, Elapsed: "24.7s", Spend: "$0.14",
+				Changes: &components.TurnChanges{Files: 1, Added: 1, Removed: 1,
+					Keys: []components.TurnKey{
+						{Key: "[v]", Label: "review"},
+						{Key: "[g]", Label: "commit"},
+						{Key: "[u]", Label: "undo turn"},
+					},
+					Note: "all tracked in git"},
+			}})
+			m.invalidateRenderCache()
+			return m.renderHistory()
+		}
+		rail := components.InspectorRail{
+			Changes: &components.InspectorChanges{
+				Files: []components.InspectorFile{
+					{Path: "internal/agent/loop.go", Added: 1, Removed: 1, Turns: 1},
+				},
+				Added:   1,
+				Removed: 1,
+				Foreign: []string{"internal/agent/round.go"},
+			},
+		}
+		return []golden.Panel{
+			{Label: "the restored close · review, keep, take back", View: closeRow()},
+			{Label: "the rail · owned file, drifted file named separately", View: rail.View(components.InspectorWidth, 0)},
+		}
+	})
+}
+
 // TestGolden_ResumedRow captures the row a conversation comes back on: the
 // branch it is looking at and how much is changed, folded, and the reading
 // the conversation was actually given underneath it.
