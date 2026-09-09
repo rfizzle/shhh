@@ -1,0 +1,3 @@
+# One plain reply keeps the session on the root cockpit rail; no command runs
+# inside the nested test sandbox.
+The cockpit uses the session's billed total, including prompt-cache discounts.

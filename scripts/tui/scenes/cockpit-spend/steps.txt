@@ -1,0 +1,7 @@
+# The root session's cockpit rail, before and after a provider-billed reply.
+# The regression test supplies a cached request; this scene confirms the rail
+# stays in the prompt frame through a real session.
+snap 01-start "Some things worth doing first"
+keys "how is cockpit spend reported" Enter
+snap 02-reply "The cockpit uses the session's billed total"
+snap 03-idle "[enter] send"

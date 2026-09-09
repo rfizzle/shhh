@@ -448,19 +448,23 @@ func (m Model) cockpitData(includeQueued bool) components.Cockpit {
 	if m.agent.Rounds() > 0 {
 		c.Round = m.roundCounter()
 	}
-	// The session's account with the running turn's live estimate in it, so
-	// the rail's counters and its spend move with the round instead of
-	// standing still until it reports. While they are moving they print every
-	// digit; at rest they go back to the shape a total is read in.
+	// The session's account carries the running turn's live token estimate,
+	// so its counters move with the round instead of standing still until it
+	// reports. While they are moving they print every digit; at rest they go
+	// back to the shape a total is read in.
 	sessionIn, sessionOut := m.liveSessionTokens()
 	if sessionIn != 0 || sessionOut != 0 {
 		c.Tokens = fmt.Sprintf("↑%s ↓%s", m.countLabel(sessionIn), m.countLabel(sessionOut))
-		if label := m.freshRateLabel(sessionIn, sessionOut); strings.HasPrefix(label, "$") {
-			c.Spend = label
-		}
 		if tokens := m.estimatedContextTokens(); tokens > 0 {
 			c.CtxPct = int(tokens * 100 / m.contextWindow())
 		}
+	}
+	// Spend is the ledger's billed total, cache split included. Re-pricing the
+	// live token pair at the fresh input rate turns cached prompt reads into an
+	// inflated estimate that contradicts the inspector.
+	// See docs/capabilities/providers.md#the-prompt-prefix-is-paid-for-once.
+	if label := m.totalsLabel(m.sessionSpend()); strings.HasPrefix(label, "$") {
+		c.Spend = label
 	}
 	// Steering messages waiting to be injected.
 	if n := len(m.steering); n > 0 && includeQueued {

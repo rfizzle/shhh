@@ -14,6 +14,7 @@ import (
 	"github.com/charmbracelet/colorprofile"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/digest"
+	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/structural"
@@ -539,6 +540,34 @@ func TestStatusBar_CockpitSegments(t *testing.T) {
 		if !strings.Contains(bar, want) {
 			t.Fatalf("cockpit rail should contain %q, got %q", want, bar)
 		}
+	}
+}
+
+// The cockpit's spend is the ledger's billed total. Its live token counters
+// include an estimate while a turn is still streaming, but pricing those
+// counters again at the fresh input rate charges prompt-cache reads twice.
+func TestStatusBar_CockpitSpendUsesTheBilledSessionTotal(t *testing.T) {
+	table := pricing.NewTable(map[string]pricing.ModelPricing{
+		"gpt-4o": {
+			InputCostPerToken:     0.00001,
+			CacheReadCostPerToken: 0.000001,
+			OutputCostPerToken:    0.00002,
+		},
+	})
+	ledger := meter.New(table)
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
+		WithPricing(table, "gpt-4o").
+		WithLedger(ledger)
+	usage := provider.Usage{PromptTokens: 1_000_000, CachedTokens: 900_000, CompletionTokens: 1_000}
+	ledger.Record(meter.Origin{Source: meter.SourceAgent}, "gpt-4o", usage)
+	m.accumulateUsage(&usage)
+
+	cockpit := m.cockpitData(true)
+	if want := m.totalsLabel(ledger.Total()); cockpit.Spend != want {
+		t.Fatalf("cockpit spend = %q, want billed session total %q", cockpit.Spend, want)
+	}
+	if fresh := m.freshRateLabel(m.TotalTokensIn, m.TotalTokensOut); cockpit.Spend == fresh {
+		t.Fatalf("cockpit spend must not re-price cached input at the fresh rate: %q", fresh)
 	}
 }
 
