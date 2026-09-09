@@ -58,7 +58,9 @@ func TestDetectSeatbelt_RequiresASuccessfulProbe(t *testing.T) {
 		t.Skipf("sandbox-exec is unavailable: %v", err)
 	}
 	original := seatbeltProbe
-	seatbeltProbe = func() ([]byte, error) { return []byte("sandbox_apply: Operation not permitted"), errors.New("exit status 71") }
+	seatbeltProbe = func() ([]byte, error) {
+		return []byte("sandbox_apply: Operation not permitted"), errors.New("exit status 71")
+	}
 	t.Cleanup(func() { seatbeltProbe = original })
 
 	avail := detectSeatbelt()
