@@ -313,6 +313,35 @@ func TestSeatbeltGivesAContainedCommandItsOwnTmpdir(t *testing.T) {
 	refuseTheHostTmpdir(t, avail)
 }
 
+// Apple's /usr/bin/git is an xcrun shim. The resolver cache lives in the
+// host's per-user temporary directory, which containment cannot expose
+// without reopening the shared scratch channel. The direct developer-toolchain
+// binary is resolved before Seatbelt starts and must still run after it does.
+func TestSeatbeltRunsAppleGitWithoutTheXcrunShim(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skipf("Seatbelt is the macOS mechanism and this host is %s", runtime.GOOS)
+	}
+	avail := detectSeatbelt()
+	if !avail.OK {
+		t.Skipf("no Seatbelt containment here: %s", avail.Detail)
+	}
+	testHome(t)
+	policy, ws := workspacePolicy(t)
+	policy.Cwd = ws
+
+	argv, err := WrapArgv(avail, policy, []string{"/usr/bin/git", "--version"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, err := capture(t, argv[0], argv[1:]...)
+	if err != nil || !strings.Contains(out, "git version") {
+		t.Fatalf("the resolved Apple Git must run under Seatbelt: %v:\n%s", err, out)
+	}
+	if strings.Contains(strings.ToLower(out), "xcrun") {
+		t.Fatalf("the contained command must not run the xcrun shim:\n%s", out)
+	}
+}
+
 // The hole in an otherwise closed write boundary, put to the kernel: the
 // host's temporary directory was a writable bind on both mechanisms, so a
 // contained command could read what an uncontained one had left there and
@@ -463,8 +492,8 @@ func TestSeatbeltOpensASQLiteStoreInItsOwnTmpdir(t *testing.T) {
 	}
 	// And the mask the traversal rule reaches through still holds. Letting a
 	// masked directory answer `lstat` is a hole if it also lets the command
-	// see what is in it, and the state directory is where the session's own
-	// database lives — so the kernel is asked, not the profile text.
+	// see what is in it, and the ungranted state directory is where the
+	// session's own database lives — so the kernel is asked, not the profile text.
 	refuseTheMaskedStateDirectory(t, avail, filepath.Dir(filepath.Dir(s.tmpdir)))
 }
 

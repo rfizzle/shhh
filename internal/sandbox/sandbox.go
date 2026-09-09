@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"slices"
@@ -188,7 +189,7 @@ func WrapArgv(avail Availability, p Policy, argv []string) ([]string, error) {
 	case "bwrap":
 		return append(bwrapPrefix(s), argv...), nil
 	case "sandbox-exec":
-		return append(seatbeltPrefix(s), argv...), nil
+		return append(seatbeltPrefix(s), s.argvWithAppleGit(argv)...), nil
 	}
 	return nil, fmt.Errorf("wrap unsupported: unknown mechanism %q", avail.Mechanism)
 }
@@ -206,6 +207,10 @@ type spec struct {
 	// agentSocket is the ssh agent's socket, masked rather than left
 	// reachable; empty when this host has no agent.
 	agentSocket string
+	// appleGit is the developer-toolchain git resolved before Seatbelt
+	// starts. /usr/bin/git is an xcrun shim whose private cache sits outside
+	// the contained process's temporary directory.
+	appleGit string
 	// tmpHidden are the host's shared temporary directories, made private to
 	// the session; empty when no mechanism is named, because nothing is
 	// hiding anything then either.
@@ -227,9 +232,8 @@ type spec struct {
 // a grant it cannot honour is a promise the sandbox would break.
 func DenyPaths() []string { return fixedDenyPaths() }
 
-// fixedDenyPaths is the deny mask that cannot be disabled: credential
-// directories plus shhh's own config and state dirs, so an allowed command
-// still cannot read the user's keys or shhh's database.
+// fixedDenyPaths is the deny mask that cannot be disabled: stores whose
+// contents no session has honest business reading or writing.
 //
 // What is here rather than in CredentialPaths is decided by whether a
 // session could ever have honest business writing to it. Nothing legitimate
@@ -253,6 +257,14 @@ func fixedDenyPaths() []string {
 			filepath.Join(home, ".secrets"),
 		)
 	}
+	return out
+}
+
+// ShhhPaths are shhh's own configuration and state directories. They begin
+// masked, but are grantable as sensitive working-scope directories when the
+// checkout itself is the work under review.
+func ShhhPaths() []string {
+	var out []string
 	for _, p := range config.Paths() {
 		out = append(out, filepath.Dir(p))
 	}
@@ -303,8 +315,20 @@ func CredentialPaths() []string {
 // the work is in, and a masked workspace is a session where every command
 // reads an empty tree.
 func ungrantedCredentialPaths(write []string, workspace string) []string {
+	return ungrantedPaths(CredentialPaths(), write, workspace)
+}
+
+// ungrantedShhhPaths keeps shhh's own configuration and state out of a
+// contained command by default. They use the same grant shape as another
+// tool's credentials because developing shhh is the honest reason to reach
+// them, but scope still marks that decision sensitive.
+func ungrantedShhhPaths(write []string, workspace string) []string {
+	return ungrantedPaths(ShhhPaths(), write, workspace)
+}
+
+func ungrantedPaths(paths, write []string, workspace string) []string {
 	var out []string
-	for _, c := range CredentialPaths() {
+	for _, c := range paths {
 		rp, err := resolvePath(c)
 		if err != nil {
 			continue // nothing exists there, nothing to mask
@@ -573,6 +597,9 @@ func resolvePolicy(p Policy, mechanism string) (spec, error) {
 	for _, w := range p.WriteExtra {
 		addWrite(w)
 	}
+	if mechanism == "sandbox-exec" {
+		s.preferAppleGit()
+	}
 
 	if err := s.privatiseTmp(mechanism); err != nil {
 		return spec{}, err
@@ -584,6 +611,7 @@ func resolvePolicy(p Policy, mechanism string) (spec, error) {
 	// session rather than protect anything.
 	deny := append(fixedDenyPaths(), p.DenyExtra...)
 	deny = append(deny, ungrantedCredentialPaths(s.write, s.workspace)...)
+	deny = append(deny, ungrantedShhhPaths(s.write, s.workspace)...)
 
 	denySeen := map[string]bool{}
 	for _, d := range deny {
@@ -686,6 +714,58 @@ func withTmpdir(env []string, dir string) []string {
 		out = append(out, pair)
 	}
 	return append(out, "TMPDIR="+dir)
+}
+
+// findAppleGit is a variable so the policy test can hold the developer-tool
+// lookup to its contract without depending on an Xcode installation.
+var findAppleGit = func() (string, error) {
+	out, err := exec.Command("/usr/bin/xcrun", "--find", "git").Output()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(out)), nil
+}
+
+// preferAppleGit resolves Apple's git before containment and teaches both a
+// shell command and a direct argv to use it. The /usr/bin shim invokes xcrun,
+// whose cache is deliberately outside the contained process's private temp
+// space; the resolved tool is the same developer selection without reopening
+// the host temporary directory.
+// See docs/capabilities/containment.md#apple-toolchain-shims-stay-compatible.
+func (s *spec) preferAppleGit() {
+	git, err := findAppleGit()
+	if err != nil || !filepath.IsAbs(git) || filepath.Clean(git) == "/usr/bin/git" {
+		return
+	}
+	s.appleGit = filepath.Clean(git)
+	s.env = prependPath(s.env, filepath.Dir(s.appleGit))
+}
+
+func prependPath(env []string, dir string) []string {
+	out := make([]string, 0, len(env)+1)
+	found := false
+	for _, pair := range env {
+		name, value, ok := strings.Cut(pair, "=")
+		if !ok || name != "PATH" {
+			out = append(out, pair)
+			continue
+		}
+		out = append(out, "PATH="+dir+string(filepath.ListSeparator)+value)
+		found = true
+	}
+	if !found {
+		out = append(out, "PATH="+dir)
+	}
+	return out
+}
+
+func (s spec) argvWithAppleGit(argv []string) []string {
+	if s.appleGit == "" || len(argv) == 0 || filepath.Clean(argv[0]) != "/usr/bin/git" {
+		return argv
+	}
+	out := append([]string(nil), argv...)
+	out[0] = s.appleGit
+	return out
 }
 
 // resolvePath makes path absolute and resolves every symlink in it; it errors

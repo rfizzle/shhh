@@ -76,8 +76,8 @@ func seatbeltProfile(s spec) string {
 		b.WriteString(")\n")
 	}
 	if s.tmpdir != "" {
-		// Last, because the session's scratch lives under the state
-		// directory the fixed mask has just denied: SBPL gives the later rule
+		// Last, because the session's scratch lives under the state directory
+		// the ungranted-path mask has just denied: SBPL gives the later rule
 		// precedence, so this is what makes one session's temporary directory
 		// its own and every other session's unreachable.
 		fmt.Fprintf(&b, "(allow file-read* file-write*\n  (subpath %s))\n", sbplQuote(s.tmpdir))

@@ -99,7 +99,7 @@ func scopePromptBlock(sc *scope.Scope) string {
 		b.WriteString(", " + d)
 	}
 	b.WriteString(".\nPaths outside it need the user's approval before anything writes to them, whatever the permission mode says, ")
-	b.WriteString("and credential stores cannot be granted at all. ")
+	b.WriteString("and sensitive directories need an explicit grant. ")
 	b.WriteString("If the work genuinely needs another directory, say which one and why, and ask the user to run /add-dir <path> — do not work around the boundary.")
 	return b.String()
 }

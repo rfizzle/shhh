@@ -16,11 +16,11 @@
 // again.
 //
 // Two classes of directory never come along for the ride. A path inside the
-// fixed deny mask — the stores nothing legitimate writes to, and shhh's own
-// state — is Refused: it cannot be granted at all, by any key, because the
-// mask it sits behind cannot be disabled. A home directory, a system root, or
-// another tool's credential store is Sensitive: it can be granted, but only
-// by a person answering for it, never by a permissive mode or the classifier.
+// fixed deny mask — a store nothing legitimate writes to — is Refused: it
+// cannot be granted at all, by any key, because the mask it sits behind
+// cannot be disabled. A home directory, a system root, another tool's
+// credential store, or shhh's own state is Sensitive: it can be granted, but
+// only by a person answering for it, never by a permissive mode or classifier.
 //
 // For a credential store the grant is also what makes it readable. Those are
 // masked from contained commands until the scope holds them, so the scope is
@@ -273,6 +273,15 @@ func Classify(dir string) (Class, string) {
 		}
 		if within(resolved, d) {
 			return Refused, "contained commands mask " + d + ", and the mask cannot be disabled"
+		}
+	}
+	for _, own := range sandbox.ShhhPaths() {
+		d, err := resolveExact(own)
+		if err != nil {
+			continue
+		}
+		if within(resolved, d) {
+			return Sensitive, "granting shhh's own configuration or state lets contained commands change the session's settings and records"
 		}
 	}
 	for _, s := range sensitivePaths() {

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/storage"
 )
 
@@ -84,6 +85,41 @@ func TestResolveMasksExistingDenyPaths(t *testing.T) {
 	for _, d := range s.denyDirs {
 		if strings.Contains(d, ".aws") {
 			t.Fatalf("nonexistent deny path should be skipped, got %s", d)
+		}
+	}
+}
+
+func TestResolveMasksShhhPathsUntilTheScopeGrantsThem(t *testing.T) {
+	testHome(t)
+	configDir := mkdir(t, filepath.Dir(config.Paths()[0]))
+	state, err := storage.Dir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	state = mkdir(t, state)
+	policy, _ := workspacePolicy(t)
+
+	s, err := resolvePolicy(policy, "bwrap")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{resolvedPath(t, configDir), resolvedPath(t, state)} {
+		if !slices.Contains(s.denyDirs, want) {
+			t.Errorf("an ungranted shhh directory must be masked, denyDirs=%v; want %s", s.denyDirs, want)
+		}
+	}
+
+	policy.WriteExtra = []string{configDir, state}
+	s, err = resolvePolicy(policy, "bwrap")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{resolvedPath(t, configDir), resolvedPath(t, state)} {
+		if slices.Contains(s.denyDirs, path) {
+			t.Errorf("a granted shhh directory must not stay masked, denyDirs=%v; path=%s", s.denyDirs, path)
+		}
+		if !slices.Contains(s.write, path) {
+			t.Errorf("a granted shhh directory must be writable, write=%v; path=%s", s.write, path)
 		}
 	}
 }
@@ -650,6 +686,34 @@ func TestScopeDirectoriesBecomeWriteGrants(t *testing.T) {
 	// spec already holds; the raw scratch path is behind the same symlink.
 	if !slices.Contains(s.write, s.workspace) {
 		t.Fatal("the workspace grant must survive alongside the added directory")
+	}
+}
+
+func TestSeatbeltUsesTheDirectAppleGitResolvedBeforeContainment(t *testing.T) {
+	testHome(t)
+	direct := filepath.Join(t.TempDir(), "Developer", "usr", "bin", "git")
+	old := findAppleGit
+	findAppleGit = func() (string, error) { return direct, nil }
+	t.Cleanup(func() { findAppleGit = old })
+	policy, _ := workspacePolicy(t)
+	policy.Env = []string{"PATH=/usr/local/bin:/usr/bin"}
+
+	s, err := resolvePolicy(policy, "sandbox-exec")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s.appleGit != direct {
+		t.Fatalf("direct Apple git = %q, want %q", s.appleGit, direct)
+	}
+	if !slices.Contains(s.env, "PATH="+filepath.Dir(direct)+string(filepath.ListSeparator)+"/usr/local/bin:/usr/bin") {
+		t.Fatalf("the direct Git directory must lead PATH, env=%v", s.env)
+	}
+	argv, err := WrapArgv(Availability{Mechanism: "sandbox-exec", OK: true}, policy, []string{"/usr/bin/git", "status"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := argv[len(argv)-2:]; !slices.Equal(got, []string{direct, "status"}) {
+		t.Fatalf("the Apple shim must be replaced after containment, got %v", got)
 	}
 }
 

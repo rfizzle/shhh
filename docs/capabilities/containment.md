@@ -25,9 +25,10 @@ list, not several that agree by convention.
 - **Refused.** A path behind the deny mask cannot be granted at all, by any
   key. The mask cannot be disabled, so neither can this.
 - **Sensitive.** A home directory, a system root, another tool's credential
-  store. It can be granted, but only by a person answering for it — never by a
-  permissive mode and never by the classifier. For a credential store the
-  grant is also what makes it readable at all.
+  store, or shhh's own configuration and state. It can be granted, but only by
+  a person answering for it — never by a permissive mode and never by the
+  classifier. For a credential store the grant is also what makes it readable
+  at all.
 
 The second class is the interesting one. It exists because "can be granted"
 and "can be granted without a human" are different questions, and a mode that
@@ -35,8 +36,8 @@ was turned on for convenience must not be able to answer the second one.
 
 ## The deny mask is not configurable
 
-Credential stores and shhh's own state are unreachable, always. There is a
-setting to add to the mask and none to subtract from it.
+Credential stores that no session should ever read or write are unreachable,
+always. There is a setting to add to the mask and none to subtract from it.
 
 A configurable mask is a mask that gets configured away — by a user
 troubleshooting something unrelated, by a script, by a session that argued
@@ -51,9 +52,6 @@ What is behind it, always:
   passwords curl and git read without being asked, the GPG home, the password
   store. Nothing legitimate writes to any of these, so nothing needs a way
   back: the working scope refuses to hold them at all.
-- shhh's own config and state directories, so a contained command cannot read
-  the session's database or edit the settings it runs under.
-
 Another tool's credential store is a different question, because a session
 sometimes has honest business with one: `kubectl get pods` is a command a
 person asks for. So `~/.kube`, `~/.docker`, `~/.azure`, `~/.config/gcloud` and
@@ -72,6 +70,15 @@ The grant is the store and not the file in it. A mask cannot be given a hole —
 a policy whose writable path sits inside a masked one is refused rather than
 weakened — so granting a subdirectory of a store makes the whole store
 readable, and the card says so before the grant rather than after it.
+
+Shhh's own configuration and state begin masked too, but they are a different
+case: developing shhh is a legitimate reason to change them. Grant either with
+`/add-dir` for this session or `--add-dir` for one launch. A trusted checkout
+can keep the same deliberate exception in `.shhh/config.toml` under
+`behavior.scope_dirs`; use the absolute directory, for example
+`/Users/me/.config/shhh` or `/Users/me/.local/share/shhh`. The grant is marked
+sensitive because it lets a contained command change the settings and session
+records it is otherwise protected from.
 
 ## A denial arrives as the command's own error
 
@@ -138,6 +145,21 @@ hands out a filesystem of its own, which is the one behaviour a person can
 notice: two commands that pass a file to each other through `/tmp` are two
 commands that now have to pass it through the workspace. `/sandbox doctor`
 names the directory in force, so the answer is where the question is asked.
+
+## Apple toolchain shims stay compatible
+
+On macOS, `/usr/bin/git` is an Xcode command-line-tool shim. It resolves the
+selected developer tool through `xcrun`, whose lookup cache is not controlled
+by `TMPDIR` and lives in the host's per-user temporary directory. Letting that
+directory back into a contained process would reopen the shared scratch
+channel.
+
+So containment resolves Apple Git before it starts, then runs the resolved
+developer-toolchain binary and puts its directory first on `PATH`. A quality
+gate and its children therefore use the selected Git without needing access to
+the host temporary directory. Other Xcode tools remain subject to their own
+filesystem needs; an exception must be a scoped grant, never a broad allowance
+for the host temporary root.
 
 ## A contained command carries almost no environment
 

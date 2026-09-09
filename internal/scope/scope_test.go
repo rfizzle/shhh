@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/rfizzle/shhh/internal/sandbox"
 )
 
 // newScope is the test constructor: a scope rooted at dir with no problems,
@@ -116,6 +118,24 @@ func TestClassifySplitsTheCredentialStoresByWhetherAGrantIsEverHonest(t *testing
 		}
 		if _, err := newScope(t, t.TempDir()).Add(dir); err != nil {
 			t.Errorf("~/%s must stay grantable by the person whose credentials it is: %v", name, err)
+		}
+	}
+}
+
+func TestClassifyMakesShhhDirectoriesSensitiveButGrantable(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
+	t.Setenv("XDG_DATA_HOME", filepath.Join(home, ".local", "share"))
+	for _, dir := range sandbox.ShhhPaths() {
+		if err := os.MkdirAll(dir, 0o700); err != nil {
+			t.Fatal(err)
+		}
+		if class, reason := Classify(dir); class != Sensitive || !strings.Contains(reason, "shhh's own") {
+			t.Errorf("Classify(%s) = %v, %q; want sensitive shhh directory", dir, class, reason)
+		}
+		if _, err := newScope(t, t.TempDir()).Add(dir); err != nil {
+			t.Errorf("a person must be able to grant %s while developing shhh: %v", dir, err)
 		}
 	}
 }

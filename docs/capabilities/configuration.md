@@ -40,8 +40,11 @@ does not want run here, and may never drop one the person refuses
 everywhere; `web.deny_hosts` is the same rule about the same act one layer
 out, which is why the host list a checkout may *not* set is the allowing
 one. The checkout's scope directories are resolved against the checkout, so
-a relative path means the same directory in every clone. Every other list is
-a complete answer and overrides like a scalar.
+a relative path means the same directory in every clone. They may also name
+an absolute sensitive directory when the checkout deliberately develops it;
+the checkout is trusted before its file is read, and the resulting scope grant
+is shown as sensitive. Every other list is a complete answer and overrides
+like a scalar.
 
 A short set of keys is refused in the checkout's file, whatever the answer
 to trust was. Each is a key whose value in a checkout is a value in every

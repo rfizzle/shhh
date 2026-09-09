@@ -411,10 +411,11 @@ type WebConfig struct {
 	SearchAPIKeyEnv string `toml:"search_api_key_env"`
 }
 
-// SandboxConfig tunes process containment for agent-executed commands
-// . The built-in deny mask (~/.ssh, ~/.aws, ~/.config/gh, shhh's own
-// config and state dirs) is deliberately not configurable — it cannot be
-// disabled, only extended.
+// SandboxConfig tunes process containment for agent-executed commands. The
+// built-in deny mask (~/.ssh, ~/.aws, ~/.config/gh, and similar credential
+// stores) is deliberately not configurable — it cannot be disabled, only
+// extended. Shhh's own directories begin masked but are sensitive scope grants
+// so a person can deliberately develop them.
 type SandboxConfig struct {
 	// Require refuses an assistant command outright on a host where no
 	// mechanism is in force, instead of running it unconfined. It is off by
