@@ -19,8 +19,8 @@ func TestLegacyProjectFile_SeesPastANearerDirectory(t *testing.T) {
 	sub := filepath.Join(root, "child")
 	must(t, os.MkdirAll(filepath.Join(sub, ".shhh"), 0o755))
 	p, ok := legacyProjectFile(sub)
-	if !ok || !strings.Contains(p.Steps[0], filepath.Join(root, ".shhh")) {
-		t.Errorf("ancestor's file not reported: %v %+v", ok, p)
+	if want := shortHome(filepath.Join(root, ".shhh")); !ok || !strings.Contains(p.Steps[0], want) {
+		t.Errorf("ancestor's file not reported as %q: %v %+v", want, ok, p)
 	}
 }
 
