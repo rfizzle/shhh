@@ -2,7 +2,7 @@ package resolve
 
 import "os"
 
-const DefaultProvider = "openai"
+const DefaultProvider = "openai-responses"
 
 // defaultModels is what each built-in provider is asked for when nothing
 // named a model. It is a second copy of provider.Defaults, kept because this
@@ -15,8 +15,8 @@ const DefaultProvider = "openai"
 // gateway entry was a hyphen where OpenRouter writes a dot, in both tables at
 // once. The test beside this one is what holds them together.
 var defaultModels = map[string]string{
-	"openai":            "gpt-4o",
-	"openai-responses":  "gpt-4.1",
+	"openai":            "gpt-5.6-terra",
+	"openai-responses":  "gpt-5.6-terra",
 	"anthropic":         "claude-opus-5",
 	"gemini":            "gemini-2.5-flash",
 	"openrouter":        "anthropic/claude-sonnet-4.6",

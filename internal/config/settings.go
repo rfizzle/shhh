@@ -169,7 +169,7 @@ const RoleWildcard = "*"
 // who has scrolled one has scrolled the other.
 var settings = []Setting{
 	{
-		Key: "provider.default", Kind: KindString, Default: "openai",
+		Key: "provider.default", Kind: KindString, Default: "openai-responses",
 		Env: "SHHH_PROVIDER", Flag: "--provider",
 		Desc: "Which provider a request goes to: a built-in one, or a gateway profile from `shhh providers`.",
 	}, {

@@ -12,6 +12,7 @@ package provider
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -23,11 +24,11 @@ import (
 )
 
 const (
-	defaultResponsesModel   = "gpt-4.1"
+	defaultResponsesModel   = "gpt-5.6-terra"
 	defaultResponsesBaseURL = "https://api.openai.com/v1"
 	// cheapResponsesModel is the same nano rung the chat-completions
 	// provider names; this API serves it too.
-	cheapResponsesModel = "gpt-5.4-nano"
+	cheapResponsesModel = "gpt-5.6-luna"
 	// includeEncryptedReasoning asks for the round's thinking to come back
 	// sealed. It is the only way to get it from a request that stores
 	// nothing, and the whole of what makes reasoning replayable here.
@@ -106,6 +107,11 @@ type responsesRequest struct {
 	ToolChoice   string          `json:"tool_choice,omitempty"`
 	Temperature  *float64        `json:"temperature,omitempty"`
 	MaxOutput    int             `json:"max_output_tokens,omitempty"`
+	// PromptCacheKey keeps otherwise-identical session openings on the same
+	// cache shard. Cache options are only accepted by the newer GPT family,
+	// so both fields stay absent for every other model.
+	PromptCacheKey     string                       `json:"prompt_cache_key,omitempty"`
+	PromptCacheOptions *responsesPromptCacheOptions `json:"prompt_cache_options,omitempty"`
 	// Include names the parts of the answer that are otherwise left out. It
 	// travels with the reasoning object and for the same reason: a model
 	// with no reasoning to seal is a model that rejects being asked for it.
@@ -124,7 +130,12 @@ type responsesRequest struct {
 // it is sent, and a schema that does not close every object and require
 // every key is refused rather than validated loosely.
 type responsesText struct {
-	Format responsesTextFormat `json:"format"`
+	Format    responsesTextFormat `json:"format,omitempty"`
+	Verbosity string              `json:"verbosity,omitempty"`
+}
+
+type responsesPromptCacheOptions struct {
+	TTL string `json:"ttl"`
 }
 
 type responsesTextFormat struct {
@@ -223,6 +234,10 @@ func (o *OpenAIResponses) StreamCompletion(ctx context.Context, messages []Messa
 		Temperature: opts.Temperature,
 		MaxOutput:   opts.MaxTokens,
 	}
+	if responsesExplicitCache(model) {
+		req.PromptCacheKey = responseCacheKey(model, instructions, opts.Tools)
+		req.PromptCacheOptions = &responsesPromptCacheOptions{TTL: "30m"}
+	}
 	// One or the other, never both (provider.go). The tool choice goes with
 	// the tools: it is a sentence about calling one, and there is nothing
 	// to call on a request that asked for an object instead.
@@ -236,6 +251,15 @@ func (o *OpenAIResponses) StreamCompletion(ctx context.Context, messages []Messa
 	} else {
 		req.Tools = toResponsesTools(opts.Tools)
 		req.ToolChoice = opts.ToolChoice
+	}
+	// Auxiliary requests already have a hard response budget. Low verbosity
+	// keeps their visible answer proportionate too, without constraining the
+	// interactive agent's answer.
+	if opts.MaxTokens > 0 && responsesExplicitCache(model) {
+		if req.Text == nil {
+			req.Text = &responsesText{}
+		}
+		req.Text.Verbosity = "low"
 	}
 	if effort != "" {
 		req.Reasoning = &responsesReasoning{Effort: effort}
@@ -277,6 +301,36 @@ func (o *OpenAIResponses) StreamCompletion(ctx context.Context, messages []Messa
 		return nil, o.classify(responsesHTTPError(resp))
 	}
 	return streamResponses(resp.Body, o.classify, watch), nil
+}
+
+// responsesExplicitCache is deliberately narrower than the generic GPT-5
+// family. These request fields are a GPT-5.6 Responses feature and forwarding
+// them to an older model turns an optimization into a rejected request.
+func responsesExplicitCache(model string) bool {
+	model = strings.ToLower(strings.TrimSpace(model))
+	if i := strings.LastIndex(model, "/"); i >= 0 {
+		model = model[i+1:]
+	}
+	return strings.HasPrefix(model, "gpt-5.6")
+}
+
+// responseCacheKey is stable for every request with the same fixed opening,
+// while keeping user turns out of the key. Matching content remains the
+// provider's job; this key only improves routing to the matching cache shard.
+func responseCacheKey(model, instructions string, tools []Tool) string {
+	h := sha256.New()
+	_, _ = h.Write([]byte(model))
+	_, _ = h.Write([]byte{0})
+	_, _ = h.Write([]byte(instructions))
+	for _, tool := range tools {
+		_, _ = h.Write([]byte{0})
+		_, _ = h.Write([]byte(tool.Name))
+		_, _ = h.Write([]byte{0})
+		_, _ = h.Write([]byte(tool.Description))
+		_, _ = h.Write([]byte{0})
+		_, _ = h.Write(tool.Parameters)
+	}
+	return fmt.Sprintf("shhh-%x", h.Sum(nil)[:16])
 }
 
 // toResponseItems flattens shhh's messages into the Responses input list,

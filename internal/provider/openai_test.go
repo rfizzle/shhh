@@ -27,8 +27,8 @@ func TestOpenAI_Name(t *testing.T) {
 
 func TestOpenAI_DefaultModel(t *testing.T) {
 	p := NewOpenAIWithConfig(openai.NewClient("fake"), "")
-	if p.model != "gpt-4o" {
-		t.Errorf("expected default model 'gpt-4o', got %q", p.model)
+	if p.model != "gpt-5.6-terra" {
+		t.Errorf("expected default model 'gpt-5.6-terra', got %q", p.model)
 	}
 }
 

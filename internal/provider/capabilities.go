@@ -100,6 +100,7 @@ var (
 	noReasoningStructured = Capabilities{Known: true, StructuredOutputs: true}
 	namedEffort           = Capabilities{Known: true, Reasoning: true, StructuredOutputs: true}
 	namedEffortX          = Capabilities{Known: true, Reasoning: true, XHigh: true, StructuredOutputs: true}
+	namedEffortXMax       = Capabilities{Known: true, Reasoning: true, XHigh: true, Max: true, StructuredOutputs: true}
 	budgeted              = Capabilities{Known: true, Reasoning: true, StructuredOutputs: true}
 )
 
@@ -121,6 +122,7 @@ var knownFamilies = []family{
 	{"claude-3", noReasoning},
 	{"claude-", anthropicCurrent},
 	{"gpt-5.2", namedEffortX},
+	{"gpt-5.6", namedEffortXMax},
 	{"gpt-5", namedEffort},
 	// The strict schema arrived partway through the GPT-4 line, so the two
 	// generations that have it are named and the bare prefix keeps the

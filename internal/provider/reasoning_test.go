@@ -91,9 +91,9 @@ func TestLevels_AreTheModelsRungs(t *testing.T) {
 	}
 }
 
-func TestEffort_OpenAIEffortSpellsMaxAsXHigh(t *testing.T) {
-	if got := EffortMax.OpenAIEffort(); got != "xhigh" {
-		t.Errorf("max = %q, want xhigh — the API has no max", got)
+func TestEffort_OpenAIEffortPreservesTheFittedRung(t *testing.T) {
+	if got := EffortMax.OpenAIEffort(); got != "max" {
+		t.Errorf("max = %q, want max", got)
 	}
 	if got := EffortXHigh.OpenAIEffort(); got != "xhigh" {
 		t.Errorf("xhigh = %q", got)

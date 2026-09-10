@@ -230,6 +230,9 @@ func TestOpenAIResponses_BuildsTheInputList(t *testing.T) {
 	if got.Store {
 		t.Fatal("shhh sends the whole conversation; the endpoint should not store it")
 	}
+	if got.PromptCacheKey == "" || got.PromptCacheOptions == nil || got.PromptCacheOptions.TTL != "30m" {
+		t.Fatalf("a GPT-5.6 request should opt into the durable cache route, got %+v / %+v", got.PromptCacheKey, got.PromptCacheOptions)
+	}
 	if !got.Stream || got.MaxOutput != 2048 || got.Temperature == nil || *got.Temperature != 0.3 {
 		t.Fatalf("unexpected request options: %+v", got)
 	}
@@ -253,6 +256,55 @@ func TestOpenAIResponses_BuildsTheInputList(t *testing.T) {
 	}
 	if got.Tools[0].Strict {
 		t.Fatal("strict mode would reject shhh's permissive schemas")
+	}
+}
+
+func TestOpenAIResponses_CacheKeyFollowsTheFixedOpening(t *testing.T) {
+	key := func(messages []Message, tools []Tool) string {
+		var got responsesRequest
+		srv := responsesServer(t, []string{
+			`data: {"type":"response.completed","response":{"status":"completed","output":[]}}`,
+		}, &got)
+		ch, err := newTestResponses(srv.URL, "gpt-5.6-terra").StreamCompletion(context.Background(), messages,
+			CompletionOpts{Tools: tools})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, _, _, err := collect(t, ch); err != nil {
+			t.Fatal(err)
+		}
+		return got.PromptCacheKey
+	}
+
+	tools := []Tool{{Name: "read_file", Description: "Read a file", Parameters: json.RawMessage(`{"type":"object"}`)}}
+	first := key([]Message{{Role: RoleSystem, Content: "be terse"}, {Role: RoleUser, Content: "read a.go"}}, tools)
+	second := key([]Message{{Role: RoleSystem, Content: "be terse"}, {Role: RoleUser, Content: "read b.go"}}, tools)
+	changedPrompt := key([]Message{{Role: RoleSystem, Content: "be precise"}, {Role: RoleUser, Content: "read b.go"}}, tools)
+	changedTools := key([]Message{{Role: RoleSystem, Content: "be terse"}, {Role: RoleUser, Content: "read b.go"}}, nil)
+
+	if first == "" || first != second {
+		t.Fatalf("the dynamic user turn must not split a cache route: %q / %q", first, second)
+	}
+	if first == changedPrompt || first == changedTools {
+		t.Fatalf("a changed fixed opening must use a different cache route: %q / %q / %q", first, changedPrompt, changedTools)
+	}
+}
+
+func TestOpenAIResponses_BoundedGPT56CallUsesLowVerbosity(t *testing.T) {
+	var got responsesRequest
+	srv := responsesServer(t, []string{
+		`data: {"type":"response.completed","response":{"status":"completed","output":[]}}`,
+	}, &got)
+	ch, err := newTestResponses(srv.URL, "gpt-5.6-luna").StreamCompletion(context.Background(),
+		[]Message{{Role: RoleUser, Content: "name this session"}}, CompletionOpts{MaxTokens: 512})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, _, err := collect(t, ch); err != nil {
+		t.Fatal(err)
+	}
+	if got.Text == nil || got.Text.Verbosity != "low" {
+		t.Fatalf("a bounded auxiliary call should ask for terse output, got %+v", got.Text)
 	}
 }
 
@@ -360,6 +412,23 @@ func TestOpenAIResponses_SendsReasoningOnlyWhenAsked(t *testing.T) {
 	}
 	if high.Reasoning == nil || high.Reasoning.Effort != "high" {
 		t.Fatalf("expected reasoning effort high, got %+v", high.Reasoning)
+	}
+}
+
+func TestOpenAIResponses_SendsGPT56MaxReasoning(t *testing.T) {
+	events := []string{`data: {"type":"response.completed","response":{"status":"completed","output":[]}}`}
+	var got responsesRequest
+	p := newTestResponses(responsesServer(t, events, &got).URL, "gpt-5.6-terra")
+	ch, err := p.StreamCompletion(context.Background(), []Message{{Role: RoleUser, Content: "solve this"}},
+		CompletionOpts{Effort: EffortMax})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, _, err := collect(t, ch); err != nil {
+		t.Fatal(err)
+	}
+	if got.Reasoning == nil || got.Reasoning.Effort != "max" {
+		t.Fatalf("GPT-5.6 Terra must receive its max effort rung, got %+v", got.Reasoning)
 	}
 }
 

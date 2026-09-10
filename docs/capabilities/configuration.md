@@ -607,7 +607,7 @@ own file could hold.
 
 | Key | Takes | Default | What it decides |
 |---|---|---|---|
-| `default` | text | `openai` | Which provider a request goes to: a built-in one, or a gateway profile from `shhh providers`. `--provider` and `SHHH_PROVIDER` are read ahead of the file. |
+| `default` | text | `openai-responses` | Which provider a request goes to: a built-in one, or a gateway profile from `shhh providers`. `--provider` and `SHHH_PROVIDER` are read ahead of the file. |
 | `model` | text | (the provider's own default) | The model a session runs on. `--model` and `SHHH_MODEL` are read ahead of the file. |
 | `api_key` | text | (from the environment) | The provider key itself, which puts a copy of it in every copy of this file; `api_key_env` is the form to prefer. `--api-key` and `SHHH_API_KEY` are read ahead of the file. It is a credential: the listing says whether it is set, never what it is. |
 | `api_key_env` | variable | (the provider's own variable) | The environment variable the provider key is read from at start, so the file names the key instead of holding it. It is read ahead of `api_key`. |

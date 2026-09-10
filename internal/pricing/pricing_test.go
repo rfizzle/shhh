@@ -149,6 +149,16 @@ func TestSnapshot_CarriesReasoningFlags(t *testing.T) {
 	}
 }
 
+func TestSnapshot_GPT56CarriesItsMaxEffort(t *testing.T) {
+	table := Snapshot()
+	for _, model := range []string{"gpt-5.6", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"} {
+		e, ok := table.Entry(model)
+		if !ok || !e.MaxEffort {
+			t.Errorf("%s must advertise max reasoning effort, got %+v (found=%v)", model, e, ok)
+		}
+	}
+}
+
 func TestLoadWithSnapshot_DownloadOverlaysButKeepsFlags(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "prices.json")

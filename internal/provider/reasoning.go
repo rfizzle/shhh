@@ -160,14 +160,12 @@ func (e Effort) Fit(c Capabilities) Effort {
 }
 
 // OpenAIEffort is the `reasoning_effort` / `reasoning.effort` value, or ""
-// when nothing should be sent. Max is not a word that API knows; the
-// highest it spells is xhigh, so that is what an unfitted max becomes.
+// when nothing should be sent. Fit has already removed a rung the chosen
+// model does not accept, so the provider can send the remaining value intact.
 func (e Effort) OpenAIEffort() string {
 	switch e {
 	case EffortOff:
 		return ""
-	case EffortMax:
-		return EffortXHigh.String()
 	}
 	return e.String()
 }

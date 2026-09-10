@@ -23,8 +23,8 @@ func TestResolve_Defaults(t *testing.T) {
 	if r.Provider != DefaultProvider {
 		t.Errorf("expected provider %q, got %q", DefaultProvider, r.Provider)
 	}
-	if r.Model != "gpt-4o" {
-		t.Errorf("expected model 'gpt-4o', got %q", r.Model)
+	if r.Model != "gpt-5.6-terra" {
+		t.Errorf("expected model 'gpt-5.6-terra', got %q", r.Model)
 	}
 }
 
@@ -141,7 +141,8 @@ func TestResolve_DefaultModelMatchesProvider(t *testing.T) {
 		provider string
 		model    string
 	}{
-		{"openai", "gpt-4o"},
+		{"openai", "gpt-5.6-terra"},
+		{"openai-responses", "gpt-5.6-terra"},
 		{"gemini", "gemini-2.5-flash"},
 		{"openrouter", "anthropic/claude-sonnet-4.6"},
 		{"openai-compatible", "llama3"},
