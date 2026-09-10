@@ -69,6 +69,9 @@ func WithFallbackModel(p provider.Provider, model string) provider.Provider {
 func (g *gated) Name() string { return g.inner.Name() }
 
 func (g *gated) StreamCompletion(ctx context.Context, messages []provider.Message, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+	if err := g.ledger.AllowRequest(); err != nil {
+		return nil, err
+	}
 	events, err := g.inner.StreamCompletion(ctx, messages, opts)
 	if err != nil {
 		return nil, err

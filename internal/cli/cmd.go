@@ -222,6 +222,7 @@ func newCmdCmd() *cobra.Command {
 			// See docs/architecture.md#spend-is-counted-at-the-provider.
 			prices := <-priced
 			ledger := meter.New(prices)
+			ledger.SetBudget(spendBudget(cfg))
 			p = meter.WithFallbackModel(ledger.For(p, meter.SourceOneShot), resolved.Model)
 
 			// The one-shot is one request, so it is one turn — and recording

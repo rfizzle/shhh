@@ -615,6 +615,8 @@ own file could hold.
 | `name` | text | (the provider's own) | What the provider is called on screen, for a gateway that fronts several. |
 | `reasoning` | word: `off`, `low`, `medium`, `high`, `xhigh`, `max` | `medium` | How hard the model thinks before it answers; the level is fitted to each model, so a rung it lacks lowers to the one it has. `--reasoning` and `SHHH_REASONING` are read ahead of the file. |
 | `cache_ttl` | word: `5m`, `1h` | `1h` | How long the opening a session repeats every round stays cached between rounds. |
+| `cost_warning_cents` | number | 0 (off) | Priced session spend, in cents, at which the live spend rail warns once. |
+| `cost_cap_cents` | number | 0 (off) | Priced session spend, in cents, after which later model requests are refused. |
 | `stream_idle_seconds` | number | 120 seconds | How long a turn's stream may go without an event before the request is abandoned and retried; a negative removes the deadline. |
 
 **`[behavior]`**

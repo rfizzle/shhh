@@ -466,6 +466,9 @@ func (m Model) cockpitData(includeQueued bool) components.Cockpit {
 	if label := m.totalsLabel(m.sessionSpend()); strings.HasPrefix(label, "$") {
 		c.Spend = label
 	}
+	if _, warned := m.ledger.Warning(); warned {
+		c.Extra = append(c.Extra, "spend warning")
+	}
 	// Steering messages waiting to be injected.
 	if n := len(m.steering); n > 0 && includeQueued {
 		c.Extra = append(c.Extra, fmt.Sprintf("queued %d", n))

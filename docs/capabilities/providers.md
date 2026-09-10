@@ -537,6 +537,24 @@ up at all: its arguments arrive whole, and the whole is reported as one
 fragment, in its place in the stream, so a reader that follows fragments does
 not have to know which dialect it is following.
 
+## Spend can warn and stop
+
+Every model request passes through the session ledger, including the ones a
+session starts on its own — a classifier, title, summary, and each sub-agent.
+A provider cost warning therefore belongs at that gate rather than in one
+surface: when priced session spend reaches `provider.cost_warning_cents`, the
+interactive spend rail says so once, regardless of which requester crossed
+it. The default is off because an appropriate amount is a person's account
+limit, not a property of a model.
+
+`provider.cost_cap_cents` is the companion hard rail. After priced spend has
+reached it, the gate refuses every later model request. The request that
+crosses the amount can finish — its output cost is unknowable until the
+provider reports it — but no later request, including an auxiliary one, can
+add more spend. A model with no pricing row remains visible as tokens and is
+not falsely treated as zero dollars, so it cannot be dollar-capped until its
+price is known.
+
 ## The prompt prefix is paid for once
 
 A coding turn sends the same opening over and over. The system prompt, the

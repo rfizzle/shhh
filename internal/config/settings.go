@@ -200,6 +200,12 @@ var settings = []Setting{
 		Values: []string{"5m", "1h"},
 		Desc:   "How long the opening a session repeats every round stays cached between rounds.",
 	}, {
+		Key: "provider.cost_warning_cents", Kind: KindInt, Default: "0 (off)", Literal: "0",
+		Desc: "Priced session spend, in cents, at which the live spend rail warns once.",
+	}, {
+		Key: "provider.cost_cap_cents", Kind: KindInt, Default: "0 (off)", Literal: "0",
+		Desc: "Priced session spend, in cents, after which later model requests are refused.",
+	}, {
 		Key: "provider.stream_idle_seconds", Kind: KindInt, Signed: true,
 		Default: "120 seconds", Literal: "120",
 		Desc: "How long a turn's stream may go without an event before the request is abandoned and retried; a negative removes the deadline.",

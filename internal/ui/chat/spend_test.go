@@ -49,6 +49,16 @@ func TestSpend_BackgroundSpendSurvivesTheNextRound(t *testing.T) {
 	}
 }
 
+func TestSpend_CockpitNamesTheConfiguredWarning(t *testing.T) {
+	m, ledger := spendModel(t)
+	ledger.SetBudget(meter.Budget{WarningCents: 1})
+	ledger.Record(meter.Origin{Source: meter.SourceAgent}, "gpt-4o", provider.Usage{PromptTokens: 1_000})
+
+	if extra := strings.Join(m.cockpitData(true).Extra, " "); !strings.Contains(extra, "spend warning") {
+		t.Fatalf("cockpit extras = %q, want spend warning", extra)
+	}
+}
+
 // Background work runs on a cheaper model, and pricing it at the session's
 // rate is how a session overstates what it cost.
 func TestSpend_EachSourceIsPricedAtItsOwnModel(t *testing.T) {

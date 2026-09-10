@@ -14,6 +14,7 @@ package meter
 // See docs/architecture.md#spend-is-counted-at-the-provider.
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/rfizzle/shhh/internal/pricing"
@@ -125,9 +126,67 @@ type Ledger struct {
 	mu      sync.Mutex
 	prices  *pricing.Table
 	entries []Entry
+	budget  Budget
+	warned  bool
 }
 
 func New(prices *pricing.Table) *Ledger { return &Ledger{prices: prices} }
+
+// Budget is expressed in whole cents so configuration never turns a decimal
+// display value into a different hard limit. Zero leaves that rail disabled.
+// A warning is advisory; a cap refuses the request after the recorded spend
+// has reached it.
+type Budget struct {
+	WarningCents int64
+	CapCents     int64
+}
+
+func (b Budget) warning() float64 { return float64(b.WarningCents) / 100 }
+func (b Budget) cap() float64     { return float64(b.CapCents) / 100 }
+
+// SetBudget changes the rails for future requests. It is separate from New
+// because a session learns its resolved configuration after opening its
+// ledger, before it hands the provider to any requester.
+func (l *Ledger) SetBudget(b Budget) {
+	if l == nil {
+		return
+	}
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.budget = b
+	l.warned = false
+}
+
+// Warning reports the first configured warning once priced spend has crossed
+// it. The state is held on the ledger so every surface sees the same warning
+// even when a sub-agent was the request that caused it.
+func (l *Ledger) Warning() (Totals, bool) {
+	if l == nil {
+		return Totals{}, false
+	}
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if !l.warned {
+		return Totals{}, false
+	}
+	return l.totalLocked(), true
+}
+
+// AllowRequest is the hard rail at the one seam all model calls share. A cap
+// cannot reserve an unknown future response, but it does prevent every later
+// request after the priced total has crossed the configured amount.
+func (l *Ledger) AllowRequest() error {
+	if l == nil {
+		return nil
+	}
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	t := l.totalLocked()
+	if l.budget.CapCents > 0 && t.Priced && t.Cost >= l.budget.cap() {
+		return fmt.Errorf("LLM cost cap of $%.2f reached (spent $%.2f)", l.budget.cap(), t.Cost)
+	}
+	return nil
+}
 
 // Record folds one request's usage into the ledger, pricing it against the
 // model that actually answered rather than whichever model the session
@@ -159,6 +218,10 @@ func (l *Ledger) Record(o Origin, model string, u provider.Usage) {
 			e.Cost += inCost + outCost
 			e.Priced = true
 		}
+	}
+	if l.budget.WarningCents > 0 && !l.warned {
+		t := l.totalLocked()
+		l.warned = t.Priced && t.Cost >= l.budget.warning()
 	}
 }
 
@@ -194,6 +257,12 @@ func (l *Ledger) totalWhere(keep func(Entry) bool) Totals {
 	}
 	l.mu.Lock()
 	defer l.mu.Unlock()
+	return l.totalWhereLocked(keep)
+}
+
+func (l *Ledger) totalLocked() Totals { return l.totalWhereLocked(func(Entry) bool { return true }) }
+
+func (l *Ledger) totalWhereLocked(keep func(Entry) bool) Totals {
 	var t Totals
 	for _, e := range l.entries {
 		if keep(e) {
@@ -267,4 +336,5 @@ func (l *Ledger) Reset() {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.entries = nil
+	l.warned = false
 }

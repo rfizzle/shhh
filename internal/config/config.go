@@ -488,6 +488,11 @@ type ProviderConfig struct {
 	// cache; the ones that cache by themselves ignore it
 	// (docs/capabilities/providers.md#the-prompt-prefix-is-paid-for-once).
 	CacheTTL string `toml:"cache_ttl"`
+	// CostWarningCents is the priced session spend that turns the live spend
+	// rail into a warning. CostCapCents stops later model requests at its
+	// threshold; zero leaves either rail off.
+	CostWarningCents int `toml:"cost_warning_cents"`
+	CostCapCents     int `toml:"cost_cap_cents"`
 	// StreamIdleSeconds bounds how long a turn's stream may go without an
 	// event — a token, a thinking delta, an argument fragment — before the
 	// request is abandoned and retried as a network failure. Zero keeps the

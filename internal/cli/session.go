@@ -459,6 +459,7 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 	// command path asks the config too, and a flag that reached one builder
 	// would be a flag the other silently ignored (sandbox.go).
 	cfg := withRequiredContainment(ConfigFrom(cmd.Context()), session.requireSandbox)
+	ledger.SetBudget(spendBudget(cfg))
 
 	// What the checkout was not allowed to put into this session, said once
 	// before it starts. Both the interactive and the headless session come
@@ -655,6 +656,20 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 			return rebuild(name, key)
 		},
 	}, nil
+}
+
+func spendBudget(cfg config.Config) meter.Budget {
+	budget := meter.Budget{
+		WarningCents: int64(cfg.Provider.CostWarningCents),
+		CapCents:     int64(cfg.Provider.CostCapCents),
+	}
+	if budget.WarningCents < 0 {
+		budget.WarningCents = 0
+	}
+	if budget.CapCents < 0 {
+		budget.CapCents = 0
+	}
+	return budget
 }
 
 // askToolDefs is the toolset with the question tool on it where there is

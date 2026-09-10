@@ -123,6 +123,35 @@ func TestGate_UndeclaredSpendIsVisible(t *testing.T) {
 	}
 }
 
+func TestLedger_BudgetWarnsAndCapsFutureRequests(t *testing.T) {
+	prices := pricing.NewTable(map[string]pricing.ModelPricing{"model": {InputCostPerToken: 0.01}})
+	ledger := New(prices)
+	ledger.SetBudget(Budget{WarningCents: 50, CapCents: 100})
+	ledger.Record(Origin{Source: SourceAgent}, "model", provider.Usage{PromptTokens: 60})
+	if total, warned := ledger.Warning(); !warned || total.Cost != 0.6 {
+		t.Fatalf("Warning() = %+v, %v; want priced warning at $0.60", total, warned)
+	}
+	if err := ledger.AllowRequest(); err != nil {
+		t.Fatalf("$0.60 must remain below the $1.00 cap: %v", err)
+	}
+	ledger.Record(Origin{Source: SourceAgent}, "model", provider.Usage{PromptTokens: 40})
+	if err := ledger.AllowRequest(); err == nil {
+		t.Fatal("the next request must be refused at the cap")
+	}
+}
+
+func TestLedger_BudgetDoesNotInventADollarLimitForUnpricedUsage(t *testing.T) {
+	ledger := New(nil)
+	ledger.SetBudget(Budget{WarningCents: 1, CapCents: 1})
+	ledger.Record(Origin{Source: SourceAgent}, "unknown", provider.Usage{PromptTokens: 1_000_000})
+	if _, warned := ledger.Warning(); warned {
+		t.Fatal("unpriced tokens must not claim to cross a dollar warning")
+	}
+	if err := ledger.AllowRequest(); err != nil {
+		t.Fatalf("unpriced usage must not be falsely capped: %v", err)
+	}
+}
+
 // Wrapping must not cost the session a capability it had.
 func TestGate_ForwardsModelListingOnlyWhereItExists(t *testing.T) {
 	l := New(nil)
