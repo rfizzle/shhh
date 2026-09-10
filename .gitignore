@@ -1,6 +1,7 @@
 .plan
 .claude
 .idea
+.cache
 
 # Binary
 /shhh
