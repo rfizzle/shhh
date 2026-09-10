@@ -19,10 +19,12 @@ can run again after an edit and obtain the same answer.
 ## When does a real boundary belong in a test?
 
 Some claims cannot be made from an invented peer: that a built command reaches
-a provider over loopback, that an operating-system service accepts its input,
-or that containment is actually established. Those checks are contracts, not
-ordinary fixtures. They live in separately named targets whose selected runner
-has the required capability.
+a provider over loopback, that telemetry reaches a collector, that a fixture
+site is actually served and fetched, that a report is reachable from its link,
+that an operating-system service accepts its input, or that containment is
+actually established. Those checks are contracts, not ordinary fixtures. They
+live in separately named targets whose selected runner has the required
+capability.
 
 A contract target says what it needs before it begins. If that target was
 selected and its listener or host service is unavailable, it fails with that

@@ -13,6 +13,13 @@ import (
 	"github.com/rfizzle/shhh/internal/web"
 )
 
+func requireLoopbackContract(t *testing.T) {
+	t.Helper()
+	if os.Getenv("SHHH_TEST_CONTRACT") != "1" {
+		t.Skip("research fixture contract; run make test-contract on a listener-capable host")
+	}
+}
+
 // writeSite lays out a research case's site the way an author would, and
 // returns the case directory.
 func writeSite(t *testing.T, name string, files map[string]string) string {
@@ -41,6 +48,7 @@ const onePage = `<!doctype html><html><head><title>Grebe 1.4</title></head><body
 // tool a session fetches with — the header, the final URL and the body the
 // model would see.
 func TestAFixtureSiteAnswersTheFetchItWasOpenedFor(t *testing.T) {
+	requireLoopbackContract(t)
 	dir := writeSite(t, "grebe", map[string]string{"index.html": onePage})
 	site, err := openSite(filepath.Join(dir, SiteDir))
 	if err != nil {
@@ -65,6 +73,7 @@ func TestAFixtureSiteAnswersTheFetchItWasOpenedFor(t *testing.T) {
 // same address is a different origin and stays refused, which is the whole
 // difference between this and setting AllowPrivate for the run.
 func TestAFixtureSiteIsTheOnlyThingTheRunCanReach(t *testing.T) {
+	requireLoopbackContract(t)
 	dir := writeSite(t, "grebe", map[string]string{"index.html": onePage})
 	site, err := openSite(filepath.Join(dir, SiteDir))
 	if err != nil {
@@ -96,6 +105,7 @@ func TestAFixtureSiteIsTheOnlyThingTheRunCanReach(t *testing.T) {
 // tool's provider answers in, and ranks rather than filters — a query nobody
 // anticipated must come back with pages rather than with nothing.
 func TestTheSearchFixtureAnswersEveryQueryWithPages(t *testing.T) {
+	requireLoopbackContract(t)
 	dir := writeSite(t, "grebe", map[string]string{
 		"index.html": onePage,
 		"other.html": `<!doctype html><html><head><title>Heron</title></head><body><p>Heron is unrelated.</p></body></html>`,
@@ -271,6 +281,7 @@ func TestAResearchAttemptWithNoProviderNeverRan(t *testing.T) {
 // to name it: without the placeholder every attempt depends on the search
 // fixture finding the right page first.
 func TestEveryShippedResearchCaseServesItsSiteAndNamesIt(t *testing.T) {
+	requireLoopbackContract(t)
 	cases, err := Load(filepath.Join("..", "..", "evals"))
 	if err != nil {
 		t.Fatal(err)

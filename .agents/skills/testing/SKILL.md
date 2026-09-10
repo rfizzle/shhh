@@ -38,7 +38,8 @@ do not weaken containment just to reuse a host cache.
 ## Contract and integration tests
 
 Use a contract test only when the fact being proved is the real boundary:
-binary-to-provider traffic, loopback behaviour, or an OS service. Gate it on
+binary-to-provider traffic, telemetry export, fixture-site fetching, report
+serving, loopback behaviour, or an OS service. Gate it on
 `SHHH_TEST_CONTRACT=1`, skip when it is not selected, and fail clearly when the
 selected host cannot provide the prerequisite. Run it through `make
 test-contract`; it is intentionally not evidence from a contained session.

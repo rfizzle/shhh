@@ -25,6 +25,7 @@ func testPublisherFor(t *testing.T, life Lifetime, open bool) (*Publisher, *[]st
 }
 
 func TestExecuteTool_PublishesAndAnswersWithTheURL(t *testing.T) {
+	requireLoopbackContract(t)
 	p, opened := testPublisher(t, true)
 	args, _ := json.Marshal(sampleDocument())
 	out, err := p.ExecuteTool(args)
@@ -49,6 +50,7 @@ func TestExecuteTool_PublishesAndAnswersWithTheURL(t *testing.T) {
 }
 
 func TestExecuteTool_HeadlessNeverOpensABrowser(t *testing.T) {
+	requireLoopbackContract(t)
 	p, opened := testPublisher(t, false)
 	args, _ := json.Marshal(sampleDocument())
 	if _, err := p.ExecuteTool(args); err != nil {
@@ -60,6 +62,7 @@ func TestExecuteTool_HeadlessNeverOpensABrowser(t *testing.T) {
 }
 
 func TestExecuteTool_FreehandIsFrozenAtStoreTime(t *testing.T) {
+	requireLoopbackContract(t)
 	p, _ := testPublisher(t, false)
 	raw := `<p>x<!-- note --></p>`
 	args, _ := json.Marshal(Document{Title: "t", Blocks: []Block{{Type: BlockFreehand, HTML: raw}}})
@@ -108,6 +111,7 @@ func TestWrapExecutor_PassesOtherToolsThrough(t *testing.T) {
 		t.Fatalf("passthrough = %q, %v", out, err)
 	}
 	args, _ := json.Marshal(sampleDocument())
+	requireLoopbackContract(t)
 	out, err = exec(ToolName, args)
 	if err != nil || !strings.HasPrefix(out, "http://127.0.0.1:") {
 		t.Fatalf("dispatch = %q, %v", out, err)
@@ -160,6 +164,7 @@ func TestExecuteTool_AOneShotRunAnswersWithTheCommandAndOpensNoPort(t *testing.T
 
 // The same page, published by a surface that will still be there, is a link.
 func TestPublish_LeadsWithWhateverTheSurfaceCanHonour(t *testing.T) {
+	requireLoopbackContract(t)
 	resident, _ := testPublisherFor(t, Resident, false)
 	line, err := resident.Publish(sampleDocument())
 	if err != nil || !strings.HasPrefix(line, "http://127.0.0.1:") {

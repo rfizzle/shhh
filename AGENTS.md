@@ -75,7 +75,7 @@ golden fixture, so this cannot drift back.
 | Build | `make build` |
 | Test all | `go test ./...` |
 | Test single package | `go test ./internal/<pkg>` |
-| Run loopback contracts | `make test-contract` (CLI/provider and telemetry; requires a listener-capable host and is intentionally outside a contained session) |
+| Run loopback contracts | `make test-contract` (CLI/provider, telemetry, fixture-site, and report-serving contracts; requires a listener-capable host and is intentionally outside a contained session) |
 | Run containment integration checks | `make test-integration` (requires a runner with the supported OS mechanism) |
 | Test with race detector | `make race` |
 | Format | `make fmt` (runs gofmt + goimports) |
@@ -106,8 +106,9 @@ containment cannot be established it is blocked before it runs, never quietly
 run on the host.
 
 Tests that prove a real boundary are separate. `make test-contract` selects
-the CLI/provider loopback contracts with `SHHH_TEST_CONTRACT=1`; those tests
-skip when not selected and fail clearly when the selected host cannot bind.
+the CLI/provider, telemetry, fixture-site, and report-serving loopback
+contracts with `SHHH_TEST_CONTRACT=1`; those tests skip when not selected and
+fail clearly when the selected host cannot bind.
 Containment implementation checks have the `integration` build tag and run
 through `make test-integration` on a host that supports them. A skip outside
 that host is not contract evidence.
