@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"net/http"
-	"net/http/httptest"
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
@@ -27,6 +26,7 @@ import (
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/structural"
+	"github.com/rfizzle/shhh/internal/testhttp"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/web"
 )
@@ -285,13 +285,14 @@ func TestHeadlessApprover_WebFetchDeniedByDefault(t *testing.T) {
 }
 
 func TestHeadlessApprover_WebFetchRunsWithYes(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	var fixtures testhttp.Registry
+	srv := fixtures.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprint(w, "fetched body")
 	}))
 	defer srv.Close()
 
-	webTools := web.NewToolset(web.NewFetcher(web.Policy{AllowPrivate: true}), nil)
+	webTools := web.NewToolset(web.NewFetcherWithClient(web.Policy{AllowPrivate: true}, fixtures.Client()), nil)
 	resolve := headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, fakeRun(&[]string{}), "", nil, nil, webTools, nil, nil, nil, nil, nil, unattended{})
 	tc := provider.ToolCall{ID: "c1", Name: web.FetchToolName, Arguments: `{"url":"` + srv.URL + `"}`}
 	result := resolve(tc)

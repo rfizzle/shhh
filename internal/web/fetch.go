@@ -128,6 +128,15 @@ func NewFetcher(policy Policy) *Fetcher {
 	}
 }
 
+// NewFetcherWithClient builds a Fetcher that sends requests through client.
+// It is for callers that supply their own transport, such as an in-memory
+// contract fixture; nil keeps the guarded pinned-dial client.
+func NewFetcherWithClient(policy Policy, client *http.Client) *Fetcher {
+	f := NewFetcher(policy)
+	f.client = client
+	return f
+}
+
 // httpClient lazily builds the pinned-dial client, once for the session and
 // every child in it. Proxies are deliberately disabled: a proxy would carry
 // the connection past the dial-time guard.
