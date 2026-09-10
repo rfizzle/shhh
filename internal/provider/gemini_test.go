@@ -39,6 +39,20 @@ func TestGemini_CustomModel(t *testing.T) {
 	}
 }
 
+func TestGeminiThinkingConfig_UsesTheModelNativeControl(t *testing.T) {
+	three := geminiThinkingConfig(EffortMedium, "gemini-3.7-flash")
+	if three == nil || three.ThinkingLevel != genai.ThinkingLevelMedium || three.ThinkingBudget != nil {
+		t.Fatalf("Gemini 3 must receive a named level, got %+v", three)
+	}
+	two := geminiThinkingConfig(EffortMedium, "gemini-2.5-flash")
+	if two == nil || two.ThinkingLevel != "" || two.ThinkingBudget == nil || *two.ThinkingBudget != 12288 {
+		t.Fatalf("Gemini 2.5 must keep its numeric budget, got %+v", two)
+	}
+	if off := geminiThinkingConfig(EffortOff, "gemini-3.7-flash"); off != nil {
+		t.Fatalf("off must leave Gemini's default untouched, got %+v", off)
+	}
+}
+
 func TestNewGemini_MissingKey(t *testing.T) {
 	t.Setenv("SHHH_API_KEY", "")
 	t.Setenv("GEMINI_API_KEY", "")

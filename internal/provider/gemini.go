@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"sync/atomic"
 
 	"google.golang.org/genai"
@@ -70,15 +71,7 @@ func (g *Gemini) StreamCompletion(ctx context.Context, messages []Message, opts 
 	if opts.MaxTokens > 0 {
 		config.MaxOutputTokens = int32(opts.MaxTokens)
 	}
-	// Gemini's knob is a token budget rather than a named level, and
-	// the ladder is capped at the smaller of the 2.5 maxima so one setting
-	// serves flash and pro. Off sends no thinking config at all: the models
-	// that cannot turn thinking off should keep their own default rather
-	// than be handed a zero they will refuse.
-	if budget := opts.Effort.Fit(CapabilitiesFor(model)).ThinkingBudget(0); budget > 0 {
-		b := int32(budget)
-		config.ThinkingConfig = &genai.ThinkingConfig{ThinkingBudget: &b}
-	}
+	config.ThinkingConfig = geminiThinkingConfig(opts.Effort, model)
 	applyGeminiRequestShape(config, opts, model)
 
 	// The stream runs under its own idle deadline, so a gateway that
@@ -190,6 +183,40 @@ func (g *Gemini) StreamCompletion(ctx context.Context, messages []Message, opts 
 	}()
 
 	return ch, nil
+}
+
+// geminiThinkingConfig writes the control each generation accepts. Gemini 3
+// takes a named level; carrying 2.5's numeric budget into it can end a turn
+// without an answer. Off remains absent because models that always think
+// reject a zero budget and must keep their own default.
+func geminiThinkingConfig(effort Effort, model string) *genai.ThinkingConfig {
+	effort = effort.Fit(CapabilitiesFor(model))
+	if !effort.On() {
+		return nil
+	}
+	if isGemini3(model) {
+		level := genai.ThinkingLevelHigh
+		switch effort {
+		case EffortLow:
+			level = genai.ThinkingLevelLow
+		case EffortMedium:
+			level = genai.ThinkingLevelMedium
+		}
+		return &genai.ThinkingConfig{ThinkingLevel: level}
+	}
+	if budget := effort.ThinkingBudget(0); budget > 0 {
+		b := int32(budget)
+		return &genai.ThinkingConfig{ThinkingBudget: &b}
+	}
+	return nil
+}
+
+func isGemini3(model string) bool {
+	model = strings.ToLower(strings.TrimSpace(model))
+	if i := strings.LastIndex(model, "/"); i >= 0 {
+		model = model[i+1:]
+	}
+	return strings.HasPrefix(model, "gemini-3")
 }
 
 // geminiStop maps this dialect's finish reason onto shhh's closed set. It
