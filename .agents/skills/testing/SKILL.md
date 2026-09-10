@@ -54,6 +54,10 @@ them with `make test-integration`. A missing supported mechanism fails that
 selected runner. A platform where the mechanism cannot exist may skip, but the
 skip is never a green substitute for the selected runner.
 
+Continuous integration runs the contract and integration targets in dedicated
+jobs. Do not add either target to a contained suite or use a prepared CI host
+as a reason to relax the session boundary.
+
 ## Before finishing
 
 1. Run the narrow package test with a private `GOCACHE` when the shell is

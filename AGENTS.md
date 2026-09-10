@@ -113,7 +113,9 @@ contracts with `SHHH_TEST_CONTRACT=1`; those tests skip when not selected and
 fail clearly when the selected host cannot bind.
 Containment implementation checks have the `integration` build tag and run
 through `make test-integration` on a host that supports them. A skip outside
-that host is not contract evidence.
+that host is not contract evidence. CI runs the loopback contract target and
+the Linux and macOS containment targets as separate jobs; none is folded into
+the contained session suite.
 
 What will bite you: a Go `httptest` server opens a real listener. For an
 in-process HTTP fixture, use `internal/testhttp` and pass its client through

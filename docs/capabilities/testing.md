@@ -53,6 +53,9 @@ The separately named contract and integration targets complete the evidence:
 they run on a prepared host and certify capabilities deliberately absent from
 the session boundary. Together the tiers make a result both repeatable where
 the agent works and meaningful where the operating system must participate.
+Continuous integration selects those targets in separate jobs, so preparing a
+listener or an operating-system mechanism cannot change the result of the
+ordinary contained gate.
 
 ## Related
 

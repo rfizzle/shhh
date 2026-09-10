@@ -175,11 +175,11 @@ cache-check: ## Verify prompt caching against live endpoints (costs real request
 
 test-integration: ## Run opt-in sandbox integration checks (requires a supported host mechanism)
 	@echo "${MAGENTA}Running sandbox integration checks...${RESET}"
-	@$(GOTEST) -tags=integration -count=1 -v ./internal/sandbox
+	@$(TEST_HERMETIC_ENV) $(GOTEST) -mod=readonly -tags=integration -count=1 -v ./internal/sandbox
 
 test-contract: ## Run loopback contract tests (requires a listener-capable host)
 	@echo "${MAGENTA}Running loopback contract tests...${RESET}"
-	@SHHH_TEST_CONTRACT=1 $(GOTEST) -tags=contract -count=1 -v ./internal/cli ./internal/eval ./internal/observe ./internal/reports
+	@$(TEST_HERMETIC_ENV) SHHH_TEST_CONTRACT=1 $(GOTEST) -mod=readonly -tags=contract -count=1 -v ./internal/cli ./internal/eval ./internal/observe ./internal/reports
 
 ## Evals:
 # Costs real requests: ten of the fourteen cases put a task or a question to
