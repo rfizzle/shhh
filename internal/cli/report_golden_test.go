@@ -68,6 +68,9 @@ func assertReportGolden(t *testing.T, name, got string) {
 var goldenNow = time.Date(2026, 8, 31, 12, 0, 0, 0, time.UTC)
 
 func TestReportGoldens(t *testing.T) {
+	for _, key := range []string{"SHHH_PROVIDER", "SHHH_MODEL", "SHHH_API_KEY", "SHHH_BASE_URL", "SHHH_REASONING"} {
+		t.Setenv(key, "")
+	}
 	for _, c := range []struct {
 		name string
 		body string
@@ -110,6 +113,9 @@ func TestReportGoldens(t *testing.T) {
 // No line of any fixture is wider than the width it was drawn at: a listing
 // that soft-wraps in the terminal is the thing this whole shape replaced.
 func TestReportGoldens_FitTheirWidth(t *testing.T) {
+	for _, key := range []string{"SHHH_PROVIDER", "SHHH_MODEL", "SHHH_API_KEY", "SHHH_BASE_URL", "SHHH_REASONING"} {
+		t.Setenv(key, "")
+	}
 	for _, c := range []struct {
 		name  string
 		width int

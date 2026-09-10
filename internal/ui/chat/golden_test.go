@@ -47,7 +47,14 @@ import (
 	"github.com/rfizzle/shhh/internal/web"
 )
 
-func TestMain(m *testing.M) { os.Exit(golden.Run(m)) }
+func TestMain(m *testing.M) {
+	// Temporary repositories must not inherit a machine's fsmonitor program:
+	// a host preference would otherwise change the answer the test is checking
+	// rather than exercise shhh's code.
+	_ = os.Setenv("GIT_CONFIG_GLOBAL", os.DevNull)
+	_ = os.Setenv("GIT_CONFIG_SYSTEM", os.DevNull)
+	os.Exit(golden.Run(m))
+}
 
 // goldenWidths are the terminal widths behind the breakpoints of
 // guidelines/layout-breakpoints in the shhh Design System project. They are

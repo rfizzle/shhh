@@ -128,7 +128,7 @@ func TestConfigInit_StdoutFillsInTheValuesTheFileHolds(t *testing.T) {
 	if !strings.Contains(out, "model = \"claude-sonnet-5\"") {
 		t.Fatalf("the value in the file was not filled in:\n%s", out)
 	}
-	if !strings.Contains(out, "#default = \"openai\"") {
+	if !strings.Contains(out, "#default = \"openai-responses\"") {
 		t.Fatalf("a key nothing sets is not commented at its default:\n%s", out)
 	}
 	// Printing is not writing: the file is what it was and nothing else was

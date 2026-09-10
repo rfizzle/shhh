@@ -109,11 +109,17 @@ func OnPaletteChange(fn func()) { paletteHooks = append(paletteHooks, fn) }
 // surface rather than for whichever package happened to be imported.
 func init() {
 	applyPalette()
-	if monoFromEnv(os.Getenv) {
+	if !runningTests() && monoFromEnv(os.Getenv) {
 		monoEnvForced = true
 		SetMono(true)
 	}
 }
+
+// A developer's NO_COLOR is an application preference, not a test fixture.
+// The dedicated parser tests exercise that preference explicitly; letting it
+// settle package state before a test starts would make unrelated rendering
+// assertions depend on the machine that ran them.
+func runningTests() bool { return strings.HasSuffix(os.Args[0], ".test") }
 
 // monoFromEnv reports whether the environment asks for monochrome: NO_COLOR
 // set to anything, or a terminal that cannot render attributes at all.

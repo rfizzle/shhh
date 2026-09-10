@@ -14,7 +14,7 @@
 # `shhh providers`.
 # --provider on the command line, then SHHH_PROVIDER in the environment,
 # outrank this.
-#default = "openai"
+#default = "openai-responses"
 
 # The model a session runs on.
 # The default is the provider's own default.
@@ -52,6 +52,15 @@
 # How long the opening a session repeats every round stays cached between
 # rounds.
 #cache_ttl = "1h"
+
+# Priced session spend, in cents, at which the live spend rail warns once.
+# The default is 0 (off).
+#cost_warning_cents = 0
+
+# Priced session spend, in cents, after which later model requests are
+# refused.
+# The default is 0 (off).
+#cost_cap_cents = 0
 
 # How long a turn's stream may go without an event before the request is
 # abandoned and retried; a negative removes the deadline.

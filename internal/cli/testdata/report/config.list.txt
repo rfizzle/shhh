@@ -1,4 +1,4 @@
-  shhh config list provider — 9 settings · ~/.config/shhh/config.toml · .shhh/c…
+  shhh config list provider — 11 settings · ~/.config/shhh/config.toml · .shhh/…
 
   PROVIDER
 
@@ -10,6 +10,8 @@
   · name                 (the provider's own)  [default]
   ✓ reasoning            high  [SHHH_REASONING]
   · cache_ttl            1h  [default]
+  · cost_warning_cents   0 (off)  [default]
+  · cost_cap_cents       0 (off)  [default]
   · stream_idle_seconds  120 seconds  [default]
 
-  3 set · 6 at their default
+  3 set · 8 at their default
