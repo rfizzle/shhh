@@ -49,7 +49,7 @@ else
 	RESET   := ""
 endif
 
-.PHONY: all build build-all linux darwin windows clean fmt fmt-check lint tidy test race ci cross docs docs-check eval eval-baseline cache-check tui-build tui-run tui-shot tui-check help
+.PHONY: all build build-all linux darwin windows clean fmt fmt-check lint tidy test race test-integration ci cross docs docs-check eval eval-baseline cache-check tui-build tui-run tui-shot tui-check help
 
 all: help
 
@@ -166,7 +166,11 @@ docs-check: ## Verify every docs/ citation resolves and every generated section 
 #	SHHH_CACHE_IT_GATEWAY_URL=… SHHH_CACHE_IT_GATEWAY_KEY=… make cache-check
 cache-check: ## Verify prompt caching against live endpoints (costs real requests)
 	@echo "${MAGENTA}Checking prompt caching against the live endpoints...${RESET}"
-	@$(GOTEST) -count=1 -v -run CacheIntegration ./internal/provider
+	@$(GOTEST) -tags=integration -count=1 -v -run CacheIntegration ./internal/provider
+
+test-integration: ## Run opt-in sandbox integration checks (requires a supported host mechanism)
+	@echo "${MAGENTA}Running sandbox integration checks...${RESET}"
+	@$(GOTEST) -tags=integration -count=1 -v ./internal/sandbox
 
 ## Evals:
 # Costs real requests: ten of the fourteen cases put a task or a question to

@@ -1,9 +1,10 @@
 {
-  "max_parallel": 4,
+  "max_parallel": 1,
   "on_close": "fast",
   "suites": {
     "default": {
       "timeout_seconds": 600,
+      "require_containment": true,
       "checks": [
         { "name": "test", "exe": "go", "args": ["test", "./..."] },
         { "name": "vet", "exe": "go", "args": ["vet", "./..."] },
@@ -13,6 +14,7 @@
     },
     "fast": {
       "timeout_seconds": 120,
+      "require_containment": true,
       "checks": [
         { "name": "vet", "exe": "go", "args": ["vet", "./..."] },
         { "name": "docs", "exe": "python3", "args": ["scripts/check-docs.py"] }

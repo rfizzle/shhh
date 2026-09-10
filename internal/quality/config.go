@@ -49,6 +49,10 @@ type Suite struct {
 	Checks []Check `json:"checks"`
 	// TimeoutSeconds bounds each check (default 600).
 	TimeoutSeconds int `json:"timeout_seconds"`
+	// RequireContainment makes an unavailable containment mechanism a blocked
+	// verdict. A suite that is intended to certify work from an agent session
+	// must not quietly run on the host when the boundary is missing.
+	RequireContainment bool `json:"require_containment"`
 	// AllowWrite grants the suite's checks write access to the workspace
 	// inside containment; the default is a read-only workspace.
 	AllowWrite bool `json:"allow_write"`

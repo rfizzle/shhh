@@ -281,6 +281,26 @@ func TestRun_ContainmentReportedHonestly(t *testing.T) {
 	}
 }
 
+func TestRun_RequiredContainmentFailsClosed(t *testing.T) {
+	ws := t.TempDir()
+	writeConfig(t, ws, `{"suites": {"default": {"require_containment": true, "checks": [{"name": "check", "exe": "sh", "args": ["-c", "touch ran"]}]}}}`)
+
+	res := mustRun(t, &Runner{Workspace: ws}, "default")
+	if res.Verdict != VerdictBlocked || !strings.Contains(res.Reason, "requires containment") {
+		t.Fatalf("verdict = %s, reason = %q", res.Verdict, res.Reason)
+	}
+	if _, err := os.Stat(filepath.Join(ws, "ran")); !os.IsNotExist(err) {
+		t.Fatalf("a required-contained check must not run bare: %v", err)
+	}
+
+	res = mustRun(t, &Runner{Workspace: ws, Mechanism: "fixture", Wrap: func(argv []string, _ bool) ([]string, error) {
+		return argv, nil
+	}}, "default")
+	if res.Verdict != VerdictPass {
+		t.Fatalf("contained verdict = %s: %s", res.Verdict, res.Format(res.Fingerprint))
+	}
+}
+
 func TestRun_EvidenceStoredAndCited(t *testing.T) {
 	ws := t.TempDir()
 	writeConfig(t, ws, shSuite("echo kept-output; exit 1"))

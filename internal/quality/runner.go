@@ -304,6 +304,9 @@ func (r *Runner) execute(ctx context.Context, suiteName string) *Result {
 	}
 	res.Trusted = true
 	res.Contained = r.containDescription(suite.AllowWrite)
+	if suite.RequireContainment && r.Wrap == nil {
+		return blocked("suite requires containment, but no containment mechanism is available")
+	}
 
 	timeout := DefaultCheckTimeout
 	if suite.TimeoutSeconds > 0 {

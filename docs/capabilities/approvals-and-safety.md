@@ -604,6 +604,27 @@ changed content than the fingerprint will read is reported stale on
 principle rather than guessed at. A gate that reports on stale state is worse
 than no gate.
 
+### A gate chooses one execution boundary
+
+A quality suite that runs from a session is a contained check or it is not a
+quality suite at all. Set `require_containment` on every suite a session may
+run automatically or at its close. When this host cannot establish the
+boundary, the result is **blocked** before any check starts; it never falls
+back to the host and never turns an unavailable boundary into a passing
+verdict.
+
+The checks in such a suite must be hermetic: their temporary files, home,
+configuration and toolchain caches are under the session's grants, and they
+do not require a listener, a host service such as a clipboard, a container
+engine, or the outside network. Those requirements belong to a separately
+named integration target on a prepared CI runner. Keeping that target out of
+an on-close suite makes a test result repeatable inside a session while still
+letting CI certify the operating-system boundary itself.
+
+An integration target is explicit about its prerequisites and fails its
+selected runner when they are absent. A skip is useful on another platform;
+it is not evidence that the platform-specific contract held.
+
 The suite can also be told to run on its own, as a turn closes over work it
 changed. That changes nothing about what a check may do — the commands are
 still only the ones in your file, still run read-only and contained where a
