@@ -38,6 +38,7 @@ func encodeProfile(b *strings.Builder, p Profile) {
 	writeString(b, "", "api_key_env", p.APIKeyEnv)
 	writeString(b, "", "models_path", p.ModelsPath)
 	writeBool(b, "", "discovery_disabled", p.DiscoveryDisabled)
+	writeTrue(b, "", "strict_models", p.StrictModels)
 
 	encodeHeaders(b, "  ", "provider.headers", p.Headers)
 	encodeModels(b, "  ", "provider.models", p.Models)
@@ -153,6 +154,12 @@ func writeBool(b *strings.Builder, indent, key string, val *bool) {
 		return
 	}
 	fmt.Fprintf(b, "%s%s = %s\n", indent, key, strconv.FormatBool(*val))
+}
+
+func writeTrue(b *strings.Builder, indent, key string, val bool) {
+	if val {
+		fmt.Fprintf(b, "%s%s = true\n", indent, key)
+	}
 }
 
 func writeInt(b *strings.Builder, indent, key string, val int64) {

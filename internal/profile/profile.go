@@ -96,6 +96,11 @@ type Profile struct {
 	// before discovery runs; metadata missing here falls back to the public
 	// pricing table.
 	Models []Model `toml:"models"`
+	// StrictModels makes Models the exact catalog this profile may send to.
+	// It is useful for a gateway whose public catalog is broader than this
+	// client is meant to use: a typo or an unreviewed alias is refused here
+	// instead of becoming an expensive request at the gateway.
+	StrictModels bool `toml:"strict_models"`
 	// Rewrite holds the quirk rules, applied in file order. They apply to
 	// every endpoint, ahead of that endpoint's own rules.
 	Rewrite []Rule `toml:"rewrite"`
@@ -518,7 +523,7 @@ func LoadFile(path string) ([]Profile, error) {
 func (p Profile) declaresProvider() bool {
 	return p.Name != "" || p.API != "" || p.BaseURL != "" || p.APIKey != "" ||
 		p.APIKeyEnv != "" || p.ModelsPath != "" || p.DiscoveryDisabled != nil ||
-		len(p.Headers) > 0 || len(p.Models) > 0 || len(p.Rewrite) > 0 ||
+		len(p.Headers) > 0 || len(p.Models) > 0 || p.StrictModels || len(p.Rewrite) > 0 ||
 		len(p.Endpoints) > 0
 }
 
@@ -543,6 +548,9 @@ func (p *Profile) Validate() error {
 	}
 	if p.APIKey != "" && p.APIKeyEnv != "" {
 		return fmt.Errorf("set api_key or api_key_env, not both")
+	}
+	if p.StrictModels && len(p.ModelIDs()) == 0 {
+		return fmt.Errorf("strict_models needs at least one declared model")
 	}
 	for i, m := range p.Models {
 		if m.ID == "" {

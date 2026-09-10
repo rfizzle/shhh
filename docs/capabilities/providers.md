@@ -55,6 +55,12 @@ The profile's own fields are the default endpoint — where a model no endpoint
 claims is sent. That is why the profile keeps a base address even when every
 model is routed: it is the answer to a question every session can ask.
 
+A profile can set `strict_models = true` when its declared model list is the
+approved catalog, not merely picker metadata. Then shhh refuses any model id
+outside that list before a request leaves — including a later `/model` switch.
+It is opt-in because a profile using gateway discovery has deliberately left
+the catalog open.
+
 An explicitly declared model id beats a pattern match, always. Naming a model
 and an address in one breath is the user being specific, and nothing overrides
 being specific.

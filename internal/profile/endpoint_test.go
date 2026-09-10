@@ -205,6 +205,36 @@ func TestNew_RoutesTheRequestToTheRightEndpoint(t *testing.T) {
 	}
 }
 
+func TestNew_StrictModelsRejectsAnUndeclaredOpeningModel(t *testing.T) {
+	p := Profile{
+		Name: "gateway", BaseURL: "https://gw.example/v1", APIKey: "k", StrictModels: true,
+		Models: []Model{{ID: "gpt-5.6-terra"}},
+	}
+	_, err := New(p, provider.ResolveOpts{Model: "gpt-5.6-typo", HTTPClient: profileTestHTTP.Client()})
+	if err == nil || !strings.Contains(err.Error(), "not in the declared catalog") {
+		t.Fatalf("New error = %v, want the declared-catalog refusal", err)
+	}
+}
+
+func TestNew_StrictModelsRejectsALaterModelSwitch(t *testing.T) {
+	srv := profileTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		writeChatStream(w)
+	}))
+	defer srv.Close()
+	p := Profile{
+		Name: "gateway", BaseURL: srv.URL, APIKey: "k", StrictModels: true,
+		Models: []Model{{ID: "gpt-5.6-terra"}},
+	}
+	prov, err := New(p, provider.ResolveOpts{Model: "gpt-5.6-terra", HTTPClient: profileTestHTTP.Client()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = prov.StreamCompletion(context.Background(), []provider.Message{{Role: provider.RoleUser, Content: "hi"}}, provider.CompletionOpts{Model: "gpt-5.6-typo"})
+	if err == nil || !strings.Contains(err.Error(), "not in the declared catalog") {
+		t.Fatalf("StreamCompletion error = %v, want the declared-catalog refusal", err)
+	}
+}
+
 func TestNew_RoutedEndpointBuildsItsOwnDialect(t *testing.T) {
 	p := Profile{
 		Name: "gateway", BaseURL: "https://gw.example/v1", APIKey: "k",

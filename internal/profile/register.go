@@ -77,14 +77,25 @@ func defaultModel(p Profile) string {
 // and an override that names one endpoint for everything has already answered
 // the question the map exists to answer.
 func New(p Profile, opts provider.ResolveOpts) (provider.Provider, error) {
+	if err := p.permits(opts.Model); err != nil {
+		return nil, err
+	}
 	if opts.BaseURL != "" {
 		pinned := p.defaultRoute()
 		pinned.BaseURL = opts.BaseURL
-		return newEndpoint(p, pinned, opts)
+		inner, err := newEndpoint(p, pinned, opts)
+		if err != nil {
+			return nil, err
+		}
+		return p.restrict(inner), nil
 	}
 	routes := p.Routes()
 	if len(routes) == 1 {
-		return newEndpoint(p, routes[0], opts)
+		inner, err := newEndpoint(p, routes[0], opts)
+		if err != nil {
+			return nil, err
+		}
+		return p.restrict(inner), nil
 	}
 	r := &router{profile: p, routes: routes, opts: opts, built: map[int]provider.Provider{}}
 	if silent(routes) {
@@ -92,9 +103,51 @@ func New(p Profile, opts provider.ResolveOpts) (provider.Provider, error) {
 		// the router has nothing to enumerate. Keeping ListModels here would
 		// send the picker through a query that can only return the catalog
 		// it already has.
-		return noDiscovery{r}, nil
+		return p.restrict(noDiscovery{r}), nil
 	}
-	return r, nil
+	return p.restrict(r), nil
+}
+
+// permits verifies only an opt-in declared catalog. Profiles that discover a
+// gateway's catalog retain their existing open-ended behavior.
+func (p Profile) permits(model string) error {
+	if !p.StrictModels || model == "" {
+		return nil
+	}
+	for _, id := range p.ModelIDs() {
+		if model == id {
+			return nil
+		}
+	}
+	return fmt.Errorf("provider %q: model %q is not in the declared catalog", p.Name, model)
+}
+
+func (p Profile) restrict(inner provider.Provider) provider.Provider {
+	if !p.StrictModels {
+		return inner
+	}
+	return declaredCatalog{Provider: inner, profile: p}
+}
+
+// declaredCatalog is the check that also covers a /model switch after the
+// provider was resolved. ResolveOpts can reject only the opening model.
+type declaredCatalog struct {
+	provider.Provider
+	profile Profile
+}
+
+func (p declaredCatalog) StreamCompletion(ctx context.Context, messages []provider.Message, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+	if err := p.profile.permits(opts.Model); err != nil {
+		return nil, err
+	}
+	return p.Provider.StreamCompletion(ctx, messages, opts)
+}
+
+// ListModels returns the allowlist without consulting the gateway. A strict
+// catalog is a promise that these are the only choices, so a discovered name
+// must not turn up in the picker after the request gate would refuse it.
+func (p declaredCatalog) ListModels(context.Context) ([]string, error) {
+	return p.profile.ModelIDs(), nil
 }
 
 // silent reports whether no route can contribute a discovered model.
