@@ -75,7 +75,7 @@ golden fixture, so this cannot drift back.
 | Build | `make build` |
 | Test all | `go test ./...` |
 | Test single package | `go test ./internal/<pkg>` |
-| Run the loopback CLI/provider contract | `make test-contract` (requires a listener-capable host; intentionally outside a contained session) |
+| Run loopback contracts | `make test-contract` (CLI/provider and telemetry; requires a listener-capable host and is intentionally outside a contained session) |
 | Run containment integration checks | `make test-integration` (requires a runner with the supported OS mechanism) |
 | Test with race detector | `make race` |
 | Format | `make fmt` (runs gofmt + goimports) |

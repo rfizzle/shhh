@@ -172,9 +172,9 @@ test-integration: ## Run opt-in sandbox integration checks (requires a supported
 	@echo "${MAGENTA}Running sandbox integration checks...${RESET}"
 	@$(GOTEST) -tags=integration -count=1 -v ./internal/sandbox
 
-test-contract: ## Run CLI binary/provider contract tests (requires loopback TCP)
-	@echo "${MAGENTA}Running CLI contract tests...${RESET}"
-	@SHHH_TEST_CONTRACT=1 $(GOTEST) -count=1 -v ./internal/cli
+test-contract: ## Run loopback contract tests (requires a listener-capable host)
+	@echo "${MAGENTA}Running loopback contract tests...${RESET}"
+	@SHHH_TEST_CONTRACT=1 $(GOTEST) -tags=contract -count=1 -v ./internal/cli ./internal/observe
 
 ## Evals:
 # Costs real requests: ten of the fourteen cases put a task or a question to
