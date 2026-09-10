@@ -2,12 +2,15 @@ package provider
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 	"sync/atomic"
+	"time"
 
 	"google.golang.org/genai"
 )
@@ -22,6 +25,7 @@ const cheapGeminiModel = "gemini-3.7-flash"
 type Gemini struct {
 	client *genai.Client
 	model  string
+	cache  *geminiContextCache
 	// idleDeadline ends a turn whose stream stops writing (idle.go).
 	idleDeadline
 	classify func(error) error
@@ -46,6 +50,7 @@ func NewGemini(opts ResolveOpts) (*Gemini, error) {
 	return &Gemini{
 		client:       client,
 		model:        model,
+		cache:        newGeminiContextCache(cacheTTLDuration(cacheTTLOrDefault(opts.CacheTTL)), client.Caches.Create),
 		idleDeadline: idleDeadlineOf(opts.StreamIdleSeconds),
 		classify:     newClassifier("gemini", "SHHH_API_KEY or GEMINI_API_KEY", key),
 	}, nil
@@ -73,6 +78,12 @@ func (g *Gemini) StreamCompletion(ctx context.Context, messages []Message, opts 
 	}
 	config.ThinkingConfig = geminiThinkingConfig(opts.Effort, model)
 	applyGeminiRequestShape(config, opts, model)
+	if g.cache != nil {
+		// Gemini's explicit cache holds the invariant head apart from the
+		// growing conversation. Once it is named on the request, repeating
+		// any of those fields is invalid rather than redundant.
+		g.cache.apply(ctx, model, config)
+	}
 
 	// The stream runs under its own idle deadline, so a gateway that
 	// answered and then stopped writing ends the turn instead of holding it
@@ -183,6 +194,95 @@ func (g *Gemini) StreamCompletion(ctx context.Context, messages []Message, opts 
 	}()
 
 	return ch, nil
+}
+
+// Gemini charges to create and retain explicit cached content. A small
+// instruction is cheaper to send normally, while shhh's system prompt and
+// tool catalogue comfortably clear this floor and are reused on every round.
+const minGeminiCachedTokens = 4096
+
+type geminiCacheCreate func(context.Context, string, *genai.CreateCachedContentConfig) (*genai.CachedContent, error)
+
+type geminiContextCache struct {
+	mu      sync.Mutex
+	ttl     time.Duration
+	create  geminiCacheCreate
+	now     func() time.Time
+	entries map[string]geminiCacheEntry
+}
+
+type geminiCacheEntry struct {
+	name    string
+	expires time.Time
+}
+
+func newGeminiContextCache(ttl time.Duration, create geminiCacheCreate) *geminiContextCache {
+	return &geminiContextCache{
+		ttl:     ttl,
+		create:  create,
+		now:     time.Now,
+		entries: make(map[string]geminiCacheEntry),
+	}
+}
+
+func cacheTTLDuration(ttl CacheTTL) time.Duration {
+	if ttl == CacheTTL5m {
+		return 5 * time.Minute
+	}
+	return time.Hour
+}
+
+// apply replaces the reusable request head with its cached-content name. A
+// cache error deliberately leaves config alone: context caching is a saving,
+// never a reason a generation cannot run.
+func (c *geminiContextCache) apply(ctx context.Context, model string, config *genai.GenerateContentConfig) {
+	head, key, ok := geminiCacheHead(model, config)
+	if !ok || c == nil || c.create == nil {
+		return
+	}
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if entry, ok := c.entries[key]; ok && c.now().Before(entry.expires) {
+		config.CachedContent = entry.name
+		clearGeminiCacheHead(config)
+		return
+	}
+
+	cached, err := c.create(ctx, model, head)
+	if err != nil || cached == nil || cached.Name == "" {
+		return
+	}
+	expires := cached.ExpireTime
+	if expires.IsZero() {
+		expires = c.now().Add(c.ttl)
+	}
+	c.entries[key] = geminiCacheEntry{name: cached.Name, expires: expires}
+	config.CachedContent = cached.Name
+	clearGeminiCacheHead(config)
+}
+
+// geminiCacheHead returns the stable portion a cached-content resource owns.
+// The API needs the system instruction and tool declarations on the resource,
+// not beside its name on every later generation.
+func geminiCacheHead(model string, config *genai.GenerateContentConfig) (*genai.CreateCachedContentConfig, string, bool) {
+	head := &genai.CreateCachedContentConfig{
+		SystemInstruction: config.SystemInstruction,
+		Tools:             config.Tools,
+		ToolConfig:        config.ToolConfig,
+	}
+	raw, err := json.Marshal(head)
+	if err != nil || len(raw)/4 < minGeminiCachedTokens {
+		return nil, "", false
+	}
+	digest := sha256.Sum256(append(append([]byte(model), 0), raw...))
+	return head, fmt.Sprintf("%x", digest), true
+}
+
+func clearGeminiCacheHead(config *genai.GenerateContentConfig) {
+	config.SystemInstruction = nil
+	config.Tools = nil
+	config.ToolConfig = nil
 }
 
 // geminiThinkingConfig writes the control each generation accepts. Gemini 3

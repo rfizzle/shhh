@@ -1,9 +1,12 @@
 package provider
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"testing"
+	"time"
 
 	"google.golang.org/genai"
 )
@@ -16,6 +19,59 @@ func TestGemini_Name(t *testing.T) {
 	}
 	if p.Name() != "gemini" {
 		t.Errorf("expected 'gemini', got %q", p.Name())
+	}
+}
+
+func TestGeminiContextCache_ReusesAStableHead(t *testing.T) {
+	var creates int
+	now := time.Date(2026, 9, 10, 0, 0, 0, 0, time.UTC)
+	cache := newGeminiContextCache(time.Hour, func(_ context.Context, _ string, _ *genai.CreateCachedContentConfig) (*genai.CachedContent, error) {
+		creates++
+		return &genai.CachedContent{Name: "cachedContents/one", ExpireTime: now.Add(time.Hour)}, nil
+	})
+	cache.now = func() time.Time { return now }
+
+	first := geminiCacheConfig()
+	cache.apply(context.Background(), "gemini-2.5-flash", first)
+	second := geminiCacheConfig()
+	cache.apply(context.Background(), "gemini-2.5-flash", second)
+
+	if creates != 1 {
+		t.Fatalf("cache creates = %d, want 1", creates)
+	}
+	for _, config := range []*genai.GenerateContentConfig{first, second} {
+		if config.CachedContent != "cachedContents/one" {
+			t.Errorf("cached content = %q", config.CachedContent)
+		}
+		if config.SystemInstruction != nil || config.Tools != nil || config.ToolConfig != nil {
+			t.Errorf("cached request repeated its head: %+v", config)
+		}
+	}
+}
+
+func TestGeminiContextCache_FallsBackWhenCreationFails(t *testing.T) {
+	cache := newGeminiContextCache(time.Hour, func(context.Context, string, *genai.CreateCachedContentConfig) (*genai.CachedContent, error) {
+		return nil, errors.New("unavailable")
+	})
+	config := geminiCacheConfig()
+	cache.apply(context.Background(), "gemini-2.5-flash", config)
+	if config.CachedContent != "" || config.SystemInstruction == nil || config.Tools == nil {
+		t.Fatalf("failed cache creation changed request: %+v", config)
+	}
+}
+
+func TestGeminiCacheHead_SkipsShortStaticContext(t *testing.T) {
+	config := &genai.GenerateContentConfig{SystemInstruction: &genai.Content{Parts: []*genai.Part{{Text: "brief"}}}}
+	if _, _, ok := geminiCacheHead("gemini-2.5-flash", config); ok {
+		t.Fatal("short static context must not create a paid cache")
+	}
+}
+
+func geminiCacheConfig() *genai.GenerateContentConfig {
+	return &genai.GenerateContentConfig{
+		SystemInstruction: &genai.Content{Parts: []*genai.Part{{Text: string(make([]byte, minGeminiCachedTokens*4))}}},
+		Tools:             []*genai.Tool{{FunctionDeclarations: []*genai.FunctionDeclaration{{Name: "read_file"}}}},
+		ToolConfig:        &genai.ToolConfig{FunctionCallingConfig: &genai.FunctionCallingConfig{Mode: genai.FunctionCallingConfigModeAuto}},
 	}
 }
 

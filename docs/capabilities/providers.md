@@ -101,6 +101,12 @@ survives a `/model` switch to a family that spells it differently.
 The rungs a model has are what the cycle key walks and what `/reasoning`
 offers. A level that fit would only lower is not a level worth landing on.
 
+Gemini 3 is the exception in spelling, not in the choice. It takes its
+levels as `low`, `medium`, or `high`; Gemini 2.5 takes the numeric thinking
+budget. Sending the older field to the newer family can finish a request with
+no answer, so translation selects the control from the model id before the
+request leaves.
+
 Off is not the same as no thinking. It means no field goes out, and a model
 whose own default is to think then thinks at whatever depth it likes. On a
 turn that costs nothing, because a turn's output is not capped. On a bounded
@@ -559,8 +565,13 @@ that has never heard of it.
 The dialects do not agree about this, and which is which is worth stating
 rather than leaving to be discovered. OpenAI's two — chat completions and the
 Responses API — cache the prefix they recognise from the last request without
-being asked, and so does Gemini. They are annotated nowhere and need not be:
-asking would change nothing. Anthropic's Messages API caches only what the
+being asked. Gemini has that implicit cache too, and additionally gets an
+explicit cached-content resource for a substantial fixed head: its system
+instruction and tool declarations live there for the configured lifetime, and
+the growing conversation stays on the generation. A short head is cheaper to
+send normally than to create and retain, so it is deliberately not made into a
+resource. If creation is unavailable, the same full request runs; caching is a
+saving, never a dependency. Anthropic's Messages API caches only what the
 request asked it to, and a request that asked for nothing caches nothing, so
 every request to it is annotated.
 
