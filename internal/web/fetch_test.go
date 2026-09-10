@@ -5,24 +5,40 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"net/http/httptest"
 	"net/netip"
 	"net/url"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
+
+	"github.com/rfizzle/shhh/internal/testhttp"
 	"time"
 )
 
-// testFetcher returns a fetcher whose policy admits the loopback addresses
-// and random ports httptest servers listen on.
+var fixtureHTTP testhttp.Registry
+
+// testServer answers a client through an in-memory transport. The fetcher
+// tests care about HTTP semantics, not whether this host permits a listener.
+func testServer(t *testing.T, h http.Handler) *testhttp.Server {
+	t.Helper()
+	return fixtureHTTP.NewServer(h)
+}
+
+// testFetcher returns a fetcher whose policy admits fixture origins.
 func testFetcher() *Fetcher {
-	return NewFetcher(Policy{AllowPrivate: true})
+	return fixtureFetcher(Policy{AllowPrivate: true})
+}
+
+func fixtureFetcher(policy Policy) *Fetcher {
+	f := NewFetcher(policy)
+	f.client = fixtureHTTP.Client()
+	f.client.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+	return f
 }
 
 func TestFetch_Basic(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := testServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprint(w, "hello world")
 	}))
@@ -51,7 +67,7 @@ func TestFetch_RedirectFollowedAndFinalURLReported(t *testing.T) {
 	mux.HandleFunc("/b", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "done")
 	})
-	srv := httptest.NewServer(mux)
+	srv := testServer(t, mux)
 	defer srv.Close()
 
 	res, err := testFetcher().Fetch(context.Background(), srv.URL+"/a", nil)
@@ -67,7 +83,7 @@ func TestFetch_RedirectFollowedAndFinalURLReported(t *testing.T) {
 }
 
 func TestFetch_RedirectToBlockedAddressRefused(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := testServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "http://169.254.169.254/latest/meta-data/", http.StatusFound)
 	}))
 	defer srv.Close()
@@ -89,7 +105,7 @@ func TestFetch_RedirectCycleDetected(t *testing.T) {
 	mux.HandleFunc("/b", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/a", http.StatusFound)
 	})
-	srv := httptest.NewServer(mux)
+	srv := testServer(t, mux)
 	defer srv.Close()
 
 	_, err := testFetcher().Fetch(context.Background(), srv.URL+"/a", nil)
@@ -99,7 +115,7 @@ func TestFetch_RedirectCycleDetected(t *testing.T) {
 }
 
 func TestFetch_TooManyRedirects(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := testServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var n int
 		if _, err := fmt.Sscanf(r.URL.Path, "/hop/%d", &n); err != nil {
 			n = 0
@@ -116,7 +132,7 @@ func TestFetch_TooManyRedirects(t *testing.T) {
 
 func TestFetch_CredentialHeadersStrippedCrossOrigin(t *testing.T) {
 	var gotAuth, gotCookie, gotAccept atomic.Value
-	other := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	other := testServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotAuth.Store(r.Header.Get("Authorization"))
 		gotCookie.Store(r.Header.Get("Cookie"))
 		gotAccept.Store(r.Header.Get("Accept"))
@@ -124,7 +140,7 @@ func TestFetch_CredentialHeadersStrippedCrossOrigin(t *testing.T) {
 	}))
 	defer other.Close()
 
-	first := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	first := testServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// A different port is a different origin, even on the same host.
 		http.Redirect(w, r, other.URL, http.StatusFound)
 	}))
@@ -159,7 +175,7 @@ func TestFetch_SameOriginRedirectKeepsHeaders(t *testing.T) {
 		gotAuth.Store(r.Header.Get("Authorization"))
 		fmt.Fprint(w, "ok")
 	})
-	srv := httptest.NewServer(mux)
+	srv := testServer(t, mux)
 	defer srv.Close()
 
 	headers := map[string][]string{"Authorization": {"Bearer tok"}}
@@ -172,7 +188,7 @@ func TestFetch_SameOriginRedirectKeepsHeaders(t *testing.T) {
 }
 
 func TestFetch_BodyCeiling(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := testServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, strings.Repeat("x", 100))
 	}))
 	defer srv.Close()
@@ -189,7 +205,7 @@ func TestFetch_BodyCeiling(t *testing.T) {
 }
 
 func TestFetch_Timeout(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := testServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(2 * time.Second)
 	}))
 	defer srv.Close()
@@ -238,7 +254,7 @@ func TestFetch_SplitHorizonAnswerFailsWholeTarget(t *testing.T) {
 }
 
 func TestFetch_ResolvedHostDialsPinnedAddress(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := testServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "pinned")
 	}))
 	defer srv.Close()
@@ -248,6 +264,7 @@ func TestFetch_ResolvedHostDialsPinnedAddress(t *testing.T) {
 	}
 
 	f := testFetcher()
+	srv.Alias("docs.example.com")
 	f.Resolve = func(ctx context.Context, host string) ([]netip.Addr, error) {
 		if host != "docs.example.com" {
 			return nil, fmt.Errorf("unexpected host %q", host)
@@ -265,7 +282,7 @@ func TestFetch_ResolvedHostDialsPinnedAddress(t *testing.T) {
 
 func TestFetch_CacheHitSkipsNetwork(t *testing.T) {
 	var hits atomic.Int32
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := testServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		hits.Add(1)
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprint(w, "cache me")
@@ -351,14 +368,16 @@ func TestFetch_AGrantedHostCannotRedirectToAnUngrantedOne(t *testing.T) {
 		reached = true
 		fmt.Fprint(w, "elsewhere")
 	})
-	srv := httptest.NewServer(mux)
+	srv := testServer(t, mux)
 	defer srv.Close()
 
-	f := NewFetcher(Policy{AllowPrivate: true})
+	f := fixtureFetcher(Policy{AllowPrivate: true})
+	srv.Alias("localhost")
+	loopbackURL := srv.Alias("127.0.0.1")
 	f.Resolve = loopbackResolver
 	f.SetGrantedHosts(func(host string) bool { return host == "127.0.0.1" })
 
-	_, err := f.Fetch(context.Background(), srv.URL+"/a", nil)
+	_, err := f.Fetch(context.Background(), loopbackURL+"/a", nil)
 	if err == nil {
 		t.Fatal("a granted host handed the request to an ungranted one")
 	}
@@ -371,7 +390,7 @@ func TestFetch_AGrantedHostCannotRedirectToAnUngrantedOne(t *testing.T) {
 
 	// Grant the destination too and the hop is not a decision any more.
 	f.SetGrantedHosts(func(host string) bool { return true })
-	if _, err := f.Fetch(context.Background(), srv.URL+"/a", nil); err != nil {
+	if _, err := f.Fetch(context.Background(), loopbackURL+"/a", nil); err != nil {
 		t.Fatalf("a hop between two granted hosts was refused: %v", err)
 	}
 	if !reached {
@@ -388,10 +407,11 @@ func TestFetch_AnUngrantedFetchFollowsItsRedirects(t *testing.T) {
 		http.Redirect(w, r, "http://localhost"+portOf(r.Host)+"/b", http.StatusFound)
 	})
 	mux.HandleFunc("/b", func(w http.ResponseWriter, r *http.Request) { fmt.Fprint(w, "done") })
-	srv := httptest.NewServer(mux)
+	srv := testServer(t, mux)
 	defer srv.Close()
 
-	f := NewFetcher(Policy{AllowPrivate: true})
+	f := fixtureFetcher(Policy{AllowPrivate: true})
+	srv.Alias("localhost")
 	f.Resolve = loopbackResolver
 	f.SetGrantedHosts(func(host string) bool { return host == "docs.python.org" })
 	res, err := f.Fetch(context.Background(), srv.URL+"/a", nil)
@@ -411,13 +431,14 @@ func TestFetch_ADeniedHostIsRefusedOnTheFirstHopAndOnARedirect(t *testing.T) {
 		http.Redirect(w, r, "http://localhost"+portOf(r.Host)+"/b", http.StatusFound)
 	})
 	mux.HandleFunc("/b", func(w http.ResponseWriter, r *http.Request) { fmt.Fprint(w, "denied content") })
-	srv := httptest.NewServer(mux)
+	srv := testServer(t, mux)
 	defer srv.Close()
 
-	f := NewFetcher(Policy{
+	f := fixtureFetcher(Policy{
 		AllowPrivate: true,
 		DenyHost:     func(host string) bool { return host == "localhost" },
 	})
+	srv.Alias("localhost")
 	f.Resolve = loopbackResolver
 	if _, err := f.Fetch(context.Background(), srv.URL+"/a", nil); err == nil ||
 		!strings.Contains(err.Error(), "refused for this session") {
@@ -457,10 +478,12 @@ func TestFetch_AGrantIsNotLaunderedThroughAThirdHost(t *testing.T) {
 		reached = true
 		fmt.Fprint(w, "laundered")
 	})
-	srv := httptest.NewServer(mux)
+	srv := testServer(t, mux)
 	defer srv.Close()
 
-	f := NewFetcher(Policy{AllowPrivate: true})
+	f := fixtureFetcher(Policy{AllowPrivate: true})
+	srv.Alias("granted.test")
+	srv.Alias("elsewhere.test")
 	f.Resolve = loopbackResolver
 	f.SetGrantedHosts(func(host string) bool { return host == "granted.test" })
 
@@ -478,7 +501,7 @@ func TestFetch_AGrantIsNotLaunderedThroughAThirdHost(t *testing.T) {
 func TestFetch_OneHostIsAskedOneRequestAtATime(t *testing.T) {
 	var mu sync.Mutex
 	var live, mostLive int
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := testServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		live++
 		mostLive = max(mostLive, live)
@@ -494,6 +517,7 @@ func TestFetch_OneHostIsAskedOneRequestAtATime(t *testing.T) {
 	f := testFetcher()
 	f.Resolve = loopbackResolver
 	newFakeWaits(f.pacing())
+	docsURL := srv.Alias("docs.test")
 
 	// Two children reading the same host, at the same moment.
 	var wg sync.WaitGroup
@@ -501,7 +525,7 @@ func TestFetch_OneHostIsAskedOneRequestAtATime(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if _, err := f.Fetch(context.Background(), "http://docs.test"+portOf(srv.Listener.Addr().String())+"/a", nil); err != nil {
+			if _, err := f.Fetch(context.Background(), docsURL+"/a", nil); err != nil {
 				t.Errorf("Fetch: %v", err)
 			}
 		}()
@@ -517,15 +541,16 @@ func TestFetch_OneHostIsAskedOneRequestAtATime(t *testing.T) {
 	// A second host runs while the first is held, which is what "per host"
 	// means: the first fetch is still in flight when the second returns.
 	held := make(chan struct{})
-	slow := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	slow := testServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		<-held
 		fmt.Fprint(w, "slow")
 	}))
 	defer slow.Close()
+	slowURL := slow.Alias("slow.test")
 	go func() {
-		_, _ = f.Fetch(context.Background(), "http://slow.test"+portOf(slow.Listener.Addr().String())+"/a", nil)
+		_, _ = f.Fetch(context.Background(), slowURL+"/a", nil)
 	}()
-	if _, err := f.Fetch(context.Background(), "http://docs.test"+portOf(srv.Listener.Addr().String())+"/b", nil); err != nil {
+	if _, err := f.Fetch(context.Background(), docsURL+"/b", nil); err != nil {
 		t.Fatalf("a second host waited for the first: %v", err)
 	}
 	close(held)
@@ -535,7 +560,7 @@ func TestFetch_OneHostIsAskedOneRequestAtATime(t *testing.T) {
 // named is sat out and the request made again.
 func TestFetch_ARefusalIsWaitedOutOnceAndRetried(t *testing.T) {
 	var hits atomic.Int32
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := testServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if hits.Add(1) == 1 {
 			w.Header().Set("Retry-After", "2")
 			w.WriteHeader(http.StatusTooManyRequests)
@@ -566,7 +591,7 @@ func TestFetch_ARefusalIsWaitedOutOnceAndRetried(t *testing.T) {
 // the status is the host saying come back, header or no header.
 func TestFetch_OverloadWithNoHeaderWaitsTheDefault(t *testing.T) {
 	var hits atomic.Int32
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := testServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if hits.Add(1) == 1 {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			return
@@ -593,7 +618,7 @@ func TestFetch_OverloadWithNoHeaderWaitsTheDefault(t *testing.T) {
 // somewhere else: the host, the status, and the wait already spent.
 func TestFetch_RefusedTwiceNamesTheHostTheStatusAndTheWait(t *testing.T) {
 	var hits atomic.Int32
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := testServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		hits.Add(1)
 		w.Header().Set("Retry-After", "3")
 		w.WriteHeader(http.StatusTooManyRequests)
@@ -603,7 +628,7 @@ func TestFetch_RefusedTwiceNamesTheHostTheStatusAndTheWait(t *testing.T) {
 	f := testFetcher()
 	f.Resolve = loopbackResolver
 	newFakeWaits(f.pacing())
-	_, err := f.Fetch(context.Background(), "http://docs.test"+portOf(srv.Listener.Addr().String())+"/a", nil)
+	_, err := f.Fetch(context.Background(), srv.Alias("docs.test")+"/a", nil)
 	if err == nil {
 		t.Fatal("a host that refused twice answered anyway")
 	}
@@ -623,7 +648,7 @@ func TestFetch_RefusedTwiceNamesTheHostTheStatusAndTheWait(t *testing.T) {
 func TestFetch_ServerErrorAndNotFoundAreFinal(t *testing.T) {
 	for _, status := range []int{http.StatusInternalServerError, http.StatusNotFound} {
 		var hits atomic.Int32
-		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		srv := testServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			hits.Add(1)
 			w.WriteHeader(status)
 			fmt.Fprint(w, "no")
@@ -652,7 +677,7 @@ func TestFetch_ServerErrorAndNotFoundAreFinal(t *testing.T) {
 // queued behind the first.
 func TestFetch_TheCacheAnswersBeforeTheLimiter(t *testing.T) {
 	var hits atomic.Int32
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := testServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		hits.Add(1)
 		fmt.Fprint(w, "page")
 	}))
@@ -704,7 +729,7 @@ func TestFetch_TheCacheAnswersBeforeTheLimiter(t *testing.T) {
 func TestFetch_ATimeoutIsNotRetried(t *testing.T) {
 	var hits atomic.Int32
 	blocked := make(chan struct{})
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := testServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		hits.Add(1)
 		<-blocked
 	}))
