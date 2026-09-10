@@ -321,6 +321,27 @@ func TestResolvePrivatisesTheHostTmpdir(t *testing.T) {
 	}
 }
 
+func TestResolvePrivateGoCacheLivesInTheSessionScratch(t *testing.T) {
+	testHome(t)
+	policy, _ := workspacePolicy(t)
+	policy.PrivateGoCache = true
+	policy.Env = []string{"PATH=/usr/bin", "GOCACHE=/host/cache"}
+
+	s, err := resolvePolicy(policy, "bwrap")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "GOCACHE=" + filepath.Join(s.tmpdir, "go-build")
+	if !slices.Contains(s.env, want) {
+		t.Fatalf("GOCACHE must point into the private tmpdir: want %q, env=%v", want, s.env)
+	}
+	for _, pair := range s.env {
+		if pair == "GOCACHE=/host/cache" {
+			t.Fatalf("the inherited build cache must not reach the check: env=%v", s.env)
+		}
+	}
+}
+
 // Bubblewrap mounts the tmpfs before the write binds, which is what makes a
 // grant of something inside /tmp mean exactly what it says: the granted path
 // is bound back over the empty filesystem and nothing else comes with it.

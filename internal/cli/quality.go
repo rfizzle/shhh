@@ -48,6 +48,7 @@ func openQualityGate(cfg config.Config, red *evidence.Reducer, sc *scope.Scope) 
 	r.SetScrub(red.Scrub)
 	if avail := sandbox.Detect(); avail.OK {
 		if policy, err := sandboxPolicy(cfg, sc.Dirs()...); err == nil {
+			policy.PrivateGoCache = true
 			r.Mechanism = avail.Mechanism
 			r.Wrap = func(argv []string, allowWrite bool) ([]string, error) {
 				p := policy

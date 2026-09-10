@@ -64,6 +64,10 @@ type Policy struct {
 	// toolchain-cache paths stay writable so builds and test runners keep
 	// working.
 	ReadOnlyWorkspace bool
+	// PrivateGoCache puts Go's build cache below the command's private
+	// temporary directory. Quality gates use it so a read-only workspace never
+	// needs a writable host build cache merely to compile tests.
+	PrivateGoCache bool
 	// Env is the NAME=value set the contained command's environment is
 	// drawn from before the allowlist narrows it — the session's own, which
 	// carries the values the vault added and this package has no way to
@@ -222,8 +226,9 @@ type spec struct {
 	// to stay readable anyway: a workspace or a working directory that is not
 	// also a write grant. A grant needs no entry here — it is rebound over the
 	// privatised tmpdir on its own.
-	tmpVisible []string
-	network    bool
+	tmpVisible     []string
+	privateGoCache bool
+	network        bool
 }
 
 // DenyPaths is the deny mask that cannot be disabled, for the callers that
@@ -559,7 +564,7 @@ func agentSocketPath() string {
 // and a report that named a private tmpdir there would be describing a
 // containment that is not happening.
 func resolvePolicy(p Policy, mechanism string) (spec, error) {
-	s := spec{shell: shellPath(), env: containedEnv(p.Env, p.SecretNames), agentSocket: agentSocketPath()}
+	s := spec{shell: shellPath(), env: containedEnv(p.Env, p.SecretNames), agentSocket: agentSocketPath(), privateGoCache: p.PrivateGoCache}
 
 	switch p.Profile {
 	case "", ProfileWorkspace:
@@ -710,6 +715,9 @@ func (s *spec) privatiseTmp(mechanism string) error {
 		}
 	}
 	s.env = withTmpdir(s.env, s.tmpdir)
+	if s.privateGoCache {
+		s.env = withGoCache(s.env, filepath.Join(s.tmpdir, "go-build"))
+	}
 	return nil
 }
 
@@ -725,6 +733,20 @@ func withTmpdir(env []string, dir string) []string {
 		out = append(out, pair)
 	}
 	return append(out, "TMPDIR="+dir)
+}
+
+// withGoCache gives one contained check a build cache inside its private
+// scratch directory. The module cache stays where the session granted it:
+// it holds downloaded dependencies, while the build cache is disposable.
+func withGoCache(env []string, dir string) []string {
+	out := make([]string, 0, len(env)+1)
+	for _, pair := range env {
+		if name, _, ok := strings.Cut(pair, "="); ok && name == "GOCACHE" {
+			continue
+		}
+		out = append(out, pair)
+	}
+	return append(out, "GOCACHE="+dir)
 }
 
 // findAppleGit is a variable so the policy test can hold the developer-tool
