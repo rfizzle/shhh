@@ -8,6 +8,7 @@ package subagent
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -21,7 +22,15 @@ import (
 
 // runGit executes one git command in dir, returning combined output.
 func runGit(dir string, args ...string) (string, error) {
-	cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
+	return runGitContext(context.Background(), dir, args...)
+}
+
+// runGitContext lets a stopping writer interrupt worktree creation rather than
+// waiting for git's repository lock. A writer has not started its turn until
+// the copy exists, so a stop that cannot reach this command leaves its slot and
+// the parent waiting behind work it no longer wants.
+func runGitContext(ctx context.Context, dir string, args ...string) (string, error) {
+	cmd := exec.CommandContext(ctx, "git", append([]string{"-C", dir}, args...)...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return string(out), fmt.Errorf("git %s: %s", strings.Join(args, " "), strings.TrimSpace(string(out)))
@@ -45,8 +54,17 @@ type worktreeHandle struct {
 // everything `git diff HEAD` reports, plus the untracked paths the caller
 // says the session created.
 func addWorktree(root string, untracked []string) (worktreeHandle, error) {
+	return addWorktreeContext(context.Background(), root, untracked)
+}
+
+// addWorktreeContext builds a writer workspace under the child's lifecycle
+// context. The ordinary wrapper keeps callers outside the supervisor working.
+func addWorktreeContext(ctx context.Context, root string, untracked []string) (worktreeHandle, error) {
 	var h worktreeHandle
-	top, err := runGit(root, "rev-parse", "--show-toplevel")
+	if err := ctx.Err(); err != nil {
+		return h, err
+	}
+	top, err := runGitContext(ctx, root, "rev-parse", "--show-toplevel")
 	if err != nil {
 		return h, fmt.Errorf("writer agents need a git repository: %w", err)
 	}
@@ -60,7 +78,7 @@ func addWorktree(root string, untracked []string) (worktreeHandle, error) {
 	if err = os.Remove(h.dir); err != nil {
 		return worktreeHandle{}, err
 	}
-	if _, err = runGit(h.repoTop, "worktree", "add", "--detach", h.dir, "HEAD"); err != nil {
+	if _, err = runGitContext(ctx, h.repoTop, "worktree", "add", "--detach", h.dir, "HEAD"); err != nil {
 		// The git error is the one worth reporting; a directory left behind
 		// by a failed add is cleaned up as far as it can be.
 		_ = os.RemoveAll(h.dir)
@@ -87,6 +105,10 @@ func addWorktree(root string, untracked []string) (worktreeHandle, error) {
 	// child quietly from the last commit: a writer that thinks it is looking
 	// at your tree and is not writes a patch against text you no longer have,
 	// and nothing on screen would say which of the two it did.
+	if err := ctx.Err(); err != nil {
+		removeWorktree(h.repoTop, h.dir)
+		return worktreeHandle{}, err
+	}
 	h.seeded, err = seedWorktree(h.repoTop, h.dir, repoRelative(root, h.repoTop, untracked))
 	if err != nil {
 		removeWorktree(h.repoTop, h.dir)

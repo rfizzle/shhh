@@ -2,6 +2,7 @@ package subagent
 
 import (
 	"context"
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -140,6 +141,14 @@ func TestWorktreeLifecycle(t *testing.T) {
 	removeWorktree(repoTop, worktree)
 	if _, err := os.Stat(worktree); !os.IsNotExist(err) {
 		t.Fatal("worktree not removed")
+	}
+}
+
+func TestAddWorktreeContext_StopsBeforeCreatingAWriterWorkspace(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if _, err := addWorktreeContext(ctx, t.TempDir(), nil); !errors.Is(err, context.Canceled) {
+		t.Fatalf("cancelled worktree setup error = %v, want context cancellation", err)
 	}
 }
 
