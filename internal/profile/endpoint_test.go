@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -152,12 +151,12 @@ func TestNew_RoutesTheRequestToTheRightEndpoint(t *testing.T) {
 	// speak the chat dialect so the assertion is about routing alone.
 	var hitDefault, hitRouted map[string]any
 	var routedTier string
-	def := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	def := profileTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewDecoder(r.Body).Decode(&hitDefault)
 		writeChatStream(w)
 	}))
 	defer def.Close()
-	routed := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	routed := profileTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		routedTier = r.Header.Get("X-Tier")
 		_ = json.NewDecoder(r.Body).Decode(&hitRouted)
 		writeChatStream(w)
@@ -173,7 +172,7 @@ func TestNew_RoutesTheRequestToTheRightEndpoint(t *testing.T) {
 			Rewrite: []Rule{{Op: OpSet, Path: "max_tokens", Value: int64(64), Direction: DirectionRequest}},
 		}},
 	}
-	prov, err := New(p, provider.ResolveOpts{Model: "claude-opus-5"})
+	prov, err := New(p, provider.ResolveOpts{Model: "claude-opus-5", HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -214,7 +213,7 @@ func TestNew_RoutedEndpointBuildsItsOwnDialect(t *testing.T) {
 			BaseURL: "https://gw.example/anthropic",
 		}},
 	}
-	prov, err := New(p, provider.ResolveOpts{})
+	prov, err := New(p, provider.ResolveOpts{HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -248,7 +247,7 @@ func TestNew_ExplicitBaseURLCollapsesRouting(t *testing.T) {
 		Name: "gateway", BaseURL: "https://gw.example/v1", APIKey: "k",
 		Endpoints: []Endpoint{{Match: []string{"*"}, API: APIAnthropicMessage, BaseURL: "https://gw.example/anthropic"}},
 	}
-	prov, err := New(p, provider.ResolveOpts{BaseURL: "https://override.example/v1", Model: "claude-opus-5"})
+	prov, err := New(p, provider.ResolveOpts{BaseURL: "https://override.example/v1", Model: "claude-opus-5", HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -267,7 +266,7 @@ func TestNew_RoutedProfileDoesNotBuildEndpointsItNeverUses(t *testing.T) {
 		Name: "gateway", BaseURL: "https://gw.example/v1", APIKey: "k",
 		Endpoints: []Endpoint{{Match: []string{"claude-*"}, APIKeyEnv: "NEVER_SET_KEY"}},
 	}
-	prov, err := New(p, provider.ResolveOpts{})
+	prov, err := New(p, provider.ResolveOpts{HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatalf("building the profile should not touch the unused endpoint: %v", err)
 	}
@@ -281,7 +280,7 @@ func TestNew_RoutedProfileDoesNotBuildEndpointsItNeverUses(t *testing.T) {
 }
 
 func TestRouterListModels_UnionsDeclaredAndDiscovered(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := profileTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"data":[{"id":"gpt-5.2"},{"id":"discovered-only"}]}`))
 	}))
@@ -295,7 +294,7 @@ func TestRouterListModels_UnionsDeclaredAndDiscovered(t *testing.T) {
 			Models: []Model{{ID: "claude-opus-5"}},
 		}},
 	}
-	prov, err := New(p, provider.ResolveOpts{})
+	prov, err := New(p, provider.ResolveOpts{HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -385,7 +384,7 @@ func drain(t *testing.T, prov provider.Provider, model string) {
 
 func TestDiscoveryDisabled_HidesTheCatalogQuery(t *testing.T) {
 	asked := false
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := profileTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		asked = true
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"data":[{"id":"something-the-gateway-lists"}]}`))
@@ -398,7 +397,7 @@ func TestDiscoveryDisabled_HidesTheCatalogQuery(t *testing.T) {
 		DiscoveryDisabled: &off,
 		Models:            []Model{{ID: "gpt-5.2"}},
 	}
-	prov, err := New(p, provider.ResolveOpts{})
+	prov, err := New(p, provider.ResolveOpts{HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -439,11 +438,11 @@ func TestDiscoveryDisabled_IsInheritedAndOverridable(t *testing.T) {
 }
 
 func TestDiscoveryDisabled_RouterAsksOnlyTheEndpointsThatAllowIt(t *testing.T) {
-	quiet := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	quiet := profileTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Error("the endpoint with discovery off should never be asked")
 	}))
 	defer quiet.Close()
-	loud := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	loud := profileTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"data":[{"id":"discovered"}]}`))
 	}))
@@ -458,7 +457,7 @@ func TestDiscoveryDisabled_RouterAsksOnlyTheEndpointsThatAllowIt(t *testing.T) {
 			DiscoveryDisabled: &off, Models: []Model{{ID: "quiet-1"}},
 		}},
 	}
-	prov, err := New(p, provider.ResolveOpts{})
+	prov, err := New(p, provider.ResolveOpts{HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -485,7 +484,7 @@ func TestDiscoveryDisabled_SilentRouterOffersNoQuery(t *testing.T) {
 			BaseURL: "https://gw.example/anthropic",
 		}},
 	}
-	prov, err := New(p, provider.ResolveOpts{})
+	prov, err := New(p, provider.ResolveOpts{HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

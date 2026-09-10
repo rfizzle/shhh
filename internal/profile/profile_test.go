@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -205,7 +204,7 @@ func TestRegister_MakesTheProfileResolvable(t *testing.T) {
 	p := loaded[0]
 	Register([]Profile{p})
 
-	prov, err := provider.Resolve("gateway", provider.ResolveOpts{Model: "kimi-k2.6"})
+	prov, err := provider.Resolve("gateway", provider.ResolveOpts{Model: "kimi-k2.6", HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatalf("the profile should resolve as a provider: %v", err)
 	}
@@ -226,7 +225,7 @@ func TestRegister_MakesTheProfileResolvable(t *testing.T) {
 func TestNew_ReportsAMissingKey(t *testing.T) {
 	t.Setenv("GATEWAY_API_KEY", "")
 	p := Profile{Name: "gateway", API: APIOpenAIChat, BaseURL: "https://gw.example/v1", APIKeyEnv: "GATEWAY_API_KEY"}
-	_, err := New(p, provider.ResolveOpts{})
+	_, err := New(p, provider.ResolveOpts{HTTPClient: profileTestHTTP.Client()})
 	if err == nil || !strings.Contains(err.Error(), "GATEWAY_API_KEY") {
 		t.Fatalf("the error should name the variable to export, got %v", err)
 	}
@@ -234,7 +233,7 @@ func TestNew_ReportsAMissingKey(t *testing.T) {
 
 func TestNew_AnthropicDialect(t *testing.T) {
 	p := Profile{Name: "gateway-claude", API: APIAnthropicMessage, BaseURL: "https://gw.example/anthropic", APIKey: "k"}
-	prov, err := New(p, provider.ResolveOpts{Model: "claude-opus-5"})
+	prov, err := New(p, provider.ResolveOpts{Model: "claude-opus-5", HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -246,7 +245,7 @@ func TestNew_AnthropicDialect(t *testing.T) {
 func TestListModels_UsesTheProfilesCatalogPath(t *testing.T) {
 	var path string
 	var auth string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := profileTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path = r.URL.Path
 		auth = r.Header.Get("Authorization")
 		w.Header().Set("Content-Type", "application/json")
@@ -255,7 +254,7 @@ func TestListModels_UsesTheProfilesCatalogPath(t *testing.T) {
 	defer srv.Close()
 
 	p := Profile{Name: "gw", API: APIOpenAIChat, BaseURL: srv.URL + "/v1", APIKey: "secret", ModelsPath: "/v1/models/simple"}
-	prov, err := New(p, provider.ResolveOpts{Model: "kimi-k2.6"})
+	prov, err := New(p, provider.ResolveOpts{Model: "kimi-k2.6", HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -280,7 +279,7 @@ func TestListModels_UsesTheProfilesCatalogPath(t *testing.T) {
 
 func TestListModels_FallsBackToTheStandardEndpoint(t *testing.T) {
 	var path string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := profileTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path = r.URL.Path
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"data":[{"id":"llama3"}]}`))
@@ -288,7 +287,7 @@ func TestListModels_FallsBackToTheStandardEndpoint(t *testing.T) {
 	defer srv.Close()
 
 	p := Profile{Name: "gw", API: APIOpenAIChat, BaseURL: srv.URL + "/v1", APIKey: "k"}
-	prov, _ := New(p, provider.ResolveOpts{Model: "llama3"})
+	prov, _ := New(p, provider.ResolveOpts{Model: "llama3", HTTPClient: profileTestHTTP.Client()})
 	names, err := prov.(provider.ModelLister).ListModels(context.Background())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -461,7 +460,7 @@ func TestDirs_SitBesideEachConfigFile(t *testing.T) {
 
 func TestNew_ResponsesDialect(t *testing.T) {
 	var got map[string]any
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := profileTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/v1/responses" {
 			t.Errorf("expected the responses endpoint, got %q", r.URL.Path)
 		}
@@ -486,7 +485,7 @@ func TestNew_ResponsesDialect(t *testing.T) {
 			{When: Match{Model: "gpt-5*"}, Direction: DirectionRequest, Op: OpDelete, Path: "temperature"},
 		},
 	}
-	prov, err := New(p, provider.ResolveOpts{Model: "gpt-5.6-terra"})
+	prov, err := New(p, provider.ResolveOpts{Model: "gpt-5.6-terra", HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -572,7 +571,7 @@ func TestNew_ClassifiesGatewayFailures(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			srv := profileTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tc.status)
 				_, _ = w.Write([]byte(tc.body))
@@ -584,7 +583,7 @@ func TestNew_ClassifiesGatewayFailures(t *testing.T) {
 				API:     tc.api,
 				BaseURL: srv.URL + "/v1",
 				APIKey:  "sk-gateway-4f9c",
-			}, provider.ResolveOpts{Model: "some-model"})
+			}, provider.ResolveOpts{Model: "some-model", HTTPClient: profileTestHTTP.Client()})
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -692,7 +691,7 @@ func TestReasoning_Validate(t *testing.T) {
 // chat route's wire too, in the shape that dialect carries them.
 func TestNew_ChatRouteCarriesTheCacheBreakpoints(t *testing.T) {
 	var body map[string]any
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := profileTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		w.Header().Set("Content-Type", "text/event-stream")
 		fmt.Fprint(w, "data: [DONE]\n\n")
@@ -700,7 +699,7 @@ func TestNew_ChatRouteCarriesTheCacheBreakpoints(t *testing.T) {
 	defer srv.Close()
 
 	p := Profile{Name: "gateway", API: APIOpenAIChat, BaseURL: srv.URL + "/v1", APIKey: "k"}
-	prov, err := New(p, provider.ResolveOpts{Model: "anthropic/claude-sonnet-4-6"})
+	prov, err := New(p, provider.ResolveOpts{Model: "anthropic/claude-sonnet-4-6", HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -729,7 +728,7 @@ func TestNew_ChatRouteCarriesTheCacheBreakpoints(t *testing.T) {
 // everyone's requests.
 func TestNew_ChatRouteMarksNothingForAnotherVendor(t *testing.T) {
 	var body map[string]any
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := profileTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		w.Header().Set("Content-Type", "text/event-stream")
 		fmt.Fprint(w, "data: [DONE]\n\n")
@@ -737,7 +736,7 @@ func TestNew_ChatRouteMarksNothingForAnotherVendor(t *testing.T) {
 	defer srv.Close()
 
 	p := Profile{Name: "gateway", API: APIOpenAIChat, BaseURL: srv.URL + "/v1", APIKey: "k"}
-	prov, err := New(p, provider.ResolveOpts{Model: "openai/gpt-5.2"})
+	prov, err := New(p, provider.ResolveOpts{Model: "openai/gpt-5.2", HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -761,7 +760,7 @@ func TestNew_ChatRouteMarksNothingForAnotherVendor(t *testing.T) {
 // expire at different times because of which one it was pointed at.
 func TestNew_AnthropicRouteHonoursTheConfiguredCacheLifetime(t *testing.T) {
 	var body map[string]any
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := profileTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		w.Header().Set("Content-Type", "text/event-stream")
 		fmt.Fprint(w, "event: message_start\ndata: {\"type\":\"message_start\",\"message\":{\"id\":\"m\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[],\"model\":\"claude-opus-5\",\"usage\":{\"input_tokens\":1,\"output_tokens\":1}}}\n\n")
@@ -770,7 +769,7 @@ func TestNew_AnthropicRouteHonoursTheConfiguredCacheLifetime(t *testing.T) {
 	defer srv.Close()
 
 	p := Profile{Name: "gateway-claude", API: APIAnthropicMessage, BaseURL: srv.URL, APIKey: "k"}
-	prov, err := New(p, provider.ResolveOpts{Model: "claude-opus-5", CacheTTL: "5m"})
+	prov, err := New(p, provider.ResolveOpts{Model: "claude-opus-5", CacheTTL: "5m", HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -2,6 +2,7 @@ package provider
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 )
 
@@ -10,6 +11,9 @@ type ResolveOpts struct {
 	Model   string
 	BaseURL string
 	Name    string
+	// HTTPClient replaces the network transport for a caller that owns an
+	// endpoint boundary, such as an embedded gateway or an in-memory fixture.
+	HTTPClient *http.Client
 
 	ConfigAPIKey  string
 	ConfigBaseURL string

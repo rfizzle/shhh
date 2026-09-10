@@ -242,9 +242,12 @@ func newEndpoint(p Profile, e Endpoint, opts provider.ResolveOpts) (provider.Pro
 	// the same reason it is spelled there: an endpoint arrives with the field
 	// already filled in, and a route built by hand should not silently lose
 	// its breakpoints if that ever stops being true.
-	var base http.RoundTripper
+	base := http.RoundTripper(http.DefaultTransport)
+	if opts.HTTPClient != nil && opts.HTTPClient.Transport != nil {
+		base = opts.HTTPClient.Transport
+	}
 	if e.API == "" || e.API == APIOpenAIChat {
-		base = provider.NewCacheMarkTransport(nil, opts.CacheTTL)
+		base = provider.NewCacheMarkTransport(base, opts.CacheTTL)
 	}
 	httpClient := &http.Client{Transport: NewTransport(e, base)}
 

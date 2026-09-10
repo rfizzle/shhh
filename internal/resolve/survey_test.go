@@ -7,7 +7,6 @@ package resolve
 import (
 	"context"
 	"net/http"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -142,7 +141,7 @@ func TestSurvey_ConfigSaysWhichFileItRead(t *testing.T) {
 
 func TestSurvey_FindsALocalRuntime(t *testing.T) {
 	clearKeyEnv(t)
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := surveyTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !strings.HasSuffix(r.URL.Path, "/models") {
 			t.Errorf("the probe should read the catalog, got %q", r.URL.Path)
 		}
@@ -153,7 +152,7 @@ func TestSurvey_FindsALocalRuntime(t *testing.T) {
 	s := SurveyPlaces(context.Background(), SurveyOpts{
 		ConfigPaths:  []string{filepath.Join(t.TempDir(), "c.toml")},
 		LocalBaseURL: srv.URL + "/v1",
-		HTTPClient:   srv.Client(),
+		HTTPClient:   surveyTestHTTP.Client(),
 	})
 	local := placeOf(t, s, PlaceLocal)
 	if !local.Found {
@@ -172,7 +171,7 @@ func TestSurvey_FindsALocalRuntime(t *testing.T) {
 
 func TestSurvey_LocalProbeIgnoresSomethingElseOnThePort(t *testing.T) {
 	clearKeyEnv(t)
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := surveyTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte("<html>a web server, not a model runtime</html>"))
 	}))
 	defer srv.Close()
@@ -180,7 +179,7 @@ func TestSurvey_LocalProbeIgnoresSomethingElseOnThePort(t *testing.T) {
 	local := placeOf(t, SurveyPlaces(context.Background(), SurveyOpts{
 		ConfigPaths:  []string{filepath.Join(t.TempDir(), "c.toml")},
 		LocalBaseURL: srv.URL + "/v1",
-		HTTPClient:   srv.Client(),
+		HTTPClient:   surveyTestHTTP.Client(),
 	}), PlaceLocal)
 	if local.Found {
 		t.Errorf("a body that is not a catalog is not a model runtime, got %+v", local)

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -32,7 +31,7 @@ func gatewayProfile(baseURL string) Profile {
 func TestTransport_RewritesTheRequestBody(t *testing.T) {
 	var got map[string]any
 	var header string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := profileTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		header = r.Header.Get("X-Title")
 		if err := json.NewDecoder(r.Body).Decode(&got); err != nil {
 			t.Errorf("decode: %v", err)
@@ -42,7 +41,7 @@ func TestTransport_RewritesTheRequestBody(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := &http.Client{Transport: NewTransport(gatewayProfile(srv.URL).Routes()[0], nil)}
+	client := &http.Client{Transport: NewTransport(gatewayProfile(srv.URL).Routes()[0], &profileTestHTTP)}
 	body := `{"model":"gemini-3.1-pro","messages":[{"role":"tool","tool_call_id":"call_1__thought__YWJj"}]}`
 	req, err := http.NewRequest(http.MethodPost, srv.URL+"/chat/completions", strings.NewReader(body))
 	if err != nil {
@@ -67,14 +66,14 @@ func TestTransport_RewritesTheRequestBody(t *testing.T) {
 
 func TestTransport_LeavesUnmatchedModelsAlone(t *testing.T) {
 	var got map[string]any
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := profileTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewDecoder(r.Body).Decode(&got)
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{}`))
 	}))
 	defer srv.Close()
 
-	client := &http.Client{Transport: NewTransport(gatewayProfile(srv.URL).Routes()[0], nil)}
+	client := &http.Client{Transport: NewTransport(gatewayProfile(srv.URL).Routes()[0], &profileTestHTTP)}
 	body := `{"model":"gpt-4o","messages":[{"role":"tool","tool_call_id":"call_1__thought__YWJj"}]}`
 	req, _ := http.NewRequest(http.MethodPost, srv.URL+"/chat/completions", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
@@ -92,7 +91,7 @@ func TestTransport_LeavesUnmatchedModelsAlone(t *testing.T) {
 
 func TestTransport_IgnoresNonJSONBodies(t *testing.T) {
 	var raw string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := profileTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		b, _ := io.ReadAll(r.Body)
 		raw = string(b)
 		w.WriteHeader(http.StatusOK)
@@ -101,7 +100,7 @@ func TestTransport_IgnoresNonJSONBodies(t *testing.T) {
 
 	p := gatewayProfile(srv.URL)
 	p.Rewrite = append(p.Rewrite, Rule{Direction: DirectionRequest, Op: OpDelete, Path: "anything"})
-	client := &http.Client{Transport: NewTransport(p.Routes()[0], nil)}
+	client := &http.Client{Transport: NewTransport(p.Routes()[0], &profileTestHTTP)}
 	req, _ := http.NewRequest(http.MethodPost, srv.URL+"/upload", strings.NewReader("not json at all"))
 	req.Header.Set("Content-Type", "text/plain")
 	resp, err := client.Do(req)
@@ -116,7 +115,7 @@ func TestTransport_IgnoresNonJSONBodies(t *testing.T) {
 }
 
 func TestTransport_RewritesStreamedEvents(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := profileTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		flusher := w.(http.Flusher)
 		fmt.Fprint(w, ": keep-alive comment\n")
@@ -131,7 +130,7 @@ func TestTransport_RewritesStreamedEvents(t *testing.T) {
 	// it on the way in rather than teaching every caller about the gateway.
 	p.Rewrite = append(p.Rewrite, Rule{Direction: DirectionResponse, Op: OpSet, Path: "finish_reason", Value: "stop"})
 
-	client := &http.Client{Transport: NewTransport(p.Routes()[0], nil)}
+	client := &http.Client{Transport: NewTransport(p.Routes()[0], &profileTestHTTP)}
 	resp, err := client.Get(srv.URL + "/chat/completions")
 	if err != nil {
 		t.Fatal(err)
@@ -160,7 +159,7 @@ func TestTransport_RewritesStreamedEvents(t *testing.T) {
 }
 
 func TestTransport_RewritesAJSONResponse(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := profileTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"model":"gemini-3.1-pro","usage":null}`))
 	}))
@@ -168,7 +167,7 @@ func TestTransport_RewritesAJSONResponse(t *testing.T) {
 
 	p := gatewayProfile(srv.URL)
 	p.Rewrite = append(p.Rewrite, Rule{Direction: DirectionResponse, Op: OpSetDefault, Path: "usage", Value: map[string]any{"prompt_tokens": 0}})
-	client := &http.Client{Transport: NewTransport(p.Routes()[0], nil)}
+	client := &http.Client{Transport: NewTransport(p.Routes()[0], &profileTestHTTP)}
 	resp, err := client.Get(srv.URL + "/v1/models")
 	if err != nil {
 		t.Fatal(err)
@@ -196,7 +195,7 @@ func TestTransport_UnchangedWithoutHeadersOrRules(t *testing.T) {
 // un-rewritten body.
 func TestNew_StreamsThroughTheRewrites(t *testing.T) {
 	var seen map[string]any
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := profileTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := json.NewDecoder(r.Body).Decode(&seen); err != nil {
 			t.Errorf("decode: %v", err)
 		}
@@ -214,7 +213,7 @@ func TestNew_StreamsThroughTheRewrites(t *testing.T) {
 	defer srv.Close()
 
 	p := gatewayProfile(srv.URL)
-	prov, err := New(p, provider.ResolveOpts{Model: "gemini-3.1-pro", APIKey: "k"})
+	prov, err := New(p, provider.ResolveOpts{Model: "gemini-3.1-pro", APIKey: "k", HTTPClient: profileTestHTTP.Client()})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
