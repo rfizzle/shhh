@@ -284,8 +284,8 @@ func Classify(dir string) (Class, string) {
 		}
 	}
 	for _, s := range sensitivePaths() {
-		if resolved == s {
-			return Sensitive, "granting " + s + " puts everything under it in scope"
+		if exact, err := resolveExact(s); err == nil && resolved == exact {
+			return Sensitive, "granting " + exact + " puts everything under it in scope"
 		}
 	}
 	for _, s := range credentialPaths() {

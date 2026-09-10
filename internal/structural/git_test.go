@@ -580,12 +580,23 @@ func TestExecuteGitDoesNotRunTheRepositorysHookProgram(t *testing.T) {
 	// above is about the defence rather than about git's mood.
 	bare := exec.Command("git", "-C", root, "--no-pager", "--no-optional-locks",
 		"status", "--porcelain=v1", "--branch", "--")
+	bare.Env = withoutGitConfig(os.Environ())
 	if err := bare.Run(); err != nil {
 		t.Fatalf("the control run should still succeed: %v", err)
 	}
 	if _, err := os.Stat(ran); os.IsNotExist(err) {
 		t.Fatal("the control run should have run the hook; the fixture proves nothing as it stands")
 	}
+}
+
+func withoutGitConfig(env []string) []string {
+	kept := env[:0]
+	for _, pair := range env {
+		if !strings.HasPrefix(pair, "GIT_CONFIG_") {
+			kept = append(kept, pair)
+		}
+	}
+	return kept
 }
 
 // newGitRepo builds a one-commit repository and returns its resolved root.

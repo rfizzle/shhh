@@ -39,8 +39,12 @@ An automatic or on-close gate chooses the hermetic suite and requires
 containment. If the host cannot establish the requested boundary, the gate is
 blocked before it runs a command. It never falls back to the host merely to
 produce a verdict. Its Go compilation products live in the session's private
-scratch space, so the gate neither depends on permission to update a shared
-cache nor leaves state for a later session to inherit.
+scratch space, does not update the module cache, and clears provider,
+terminal-palette, and executable Git-hook state inherited from the launching
+shell. Git runners independently reject repository configuration that names
+an executable. The gate therefore neither depends on permission to update a
+shared cache nor takes a different branch because a developer happened to
+export a local setting.
 
 The separately named contract and integration targets complete the evidence:
 they run on a prepared host and certify capabilities deliberately absent from

@@ -73,7 +73,7 @@ golden fixture, so this cannot drift back.
 | Task | Command |
 |------|---------|
 | Build | `make build` |
-| Test all | `go test ./...` |
+| Test all | `make test-hermetic` (or `make test`; clears provider, palette, and Git-hook environment) |
 | Test single package | `go test ./internal/<pkg>` |
 | Run loopback contracts | `make test-contract` (CLI/provider, telemetry, fixture-site, and report-serving contracts; requires a listener-capable host and is intentionally outside a contained session) |
 | Run containment integration checks | `make test-integration` (requires a runner with the supported OS mechanism) |

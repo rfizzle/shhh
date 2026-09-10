@@ -231,7 +231,7 @@ func git(root string, args ...string) (string, int) {
 // format looks for it.
 func gitLines(root string, args ...string) (string, int) {
 	cmd := exec.Command("git", append([]string{"-C", root}, args...)...)
-	cmd.Env = runner.Environ()
+	cmd.Env = gitEnv()
 	out, err := cmd.CombinedOutput()
 	code := 0
 	if err != nil {
@@ -244,4 +244,23 @@ func gitLines(root string, args ...string) (string, int) {
 		}
 	}
 	return string(out), code
+}
+
+func gitEnv() []string {
+	env := runner.Environ()
+	if env == nil {
+		env = os.Environ()
+	}
+	kept := env[:0]
+	for _, pair := range env {
+		if strings.HasPrefix(pair, "GIT_CONFIG_") {
+			continue
+		}
+		kept = append(kept, pair)
+	}
+	return append(kept,
+		"GIT_CONFIG_COUNT=1",
+		"GIT_CONFIG_KEY_0=core.fsmonitor",
+		"GIT_CONFIG_VALUE_0=",
+	)
 }

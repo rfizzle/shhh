@@ -31,9 +31,12 @@ at the seam instead of a host service.
   on a listener, clipboard, container engine, host daemon, outside network, or
   a writable shared build cache.
 
-The quality runner gives Go checks a private build cache. When driving Go
-directly in a restricted shell, point `GOCACHE` at a fresh writable directory;
-do not weaken containment just to reuse a host cache.
+The quality runner gives Go checks a private build cache and invokes `make
+test-hermetic`, which clears provider, palette, and executable Git-hook
+environment state. When driving Go directly in a restricted shell, point
+`GOCACHE` at a fresh writable
+directory and pass `-mod=readonly`; do not weaken containment just to reuse a
+host cache or permit a module-cache write.
 
 ## Contract and integration tests
 

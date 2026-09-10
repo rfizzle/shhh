@@ -133,9 +133,19 @@ func resolvePath(p string) string {
 	if real, err := filepath.EvalSymlinks(abs); err == nil {
 		return real
 	}
-	dir, base := filepath.Split(abs)
-	if real, err := filepath.EvalSymlinks(filepath.Clean(dir)); err == nil {
-		return filepath.Join(real, base)
+	var missing []string
+	for dir := abs; ; dir = filepath.Dir(dir) {
+		if real, err := filepath.EvalSymlinks(dir); err == nil {
+			for i := len(missing) - 1; i >= 0; i-- {
+				real = filepath.Join(real, missing[i])
+			}
+			return real
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			break
+		}
+		missing = append(missing, filepath.Base(dir))
 	}
 	return abs
 }

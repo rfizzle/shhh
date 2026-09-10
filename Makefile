@@ -4,6 +4,11 @@ GOCMD=go
 GOMOD=$(GOCMD) mod
 GOTEST=$(GOCMD) test
 GOVET=$(GOCMD) vet
+# Tests must not inherit a provider route, credentials, terminal palette, or
+# executable Git fsmonitor hook from the shell that launched them. The quality
+# runner supplies the private GOCACHE; this target supplies the stable process
+# environment shared by local and session checks.
+TEST_HERMETIC_ENV=env -u SHHH_API_KEY -u SHHH_BASE_URL -u NO_COLOR GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.fsmonitor GIT_CONFIG_VALUE_0=
 # gofmt ships with the toolchain but is not always on PATH — a Go installed
 # through a version manager leaves it in GOROOT and nowhere else. Falling back
 # to GOROOT is what keeps `make fmt` and the gofmt gate from quietly doing
@@ -49,7 +54,7 @@ else
 	RESET   := ""
 endif
 
-.PHONY: all build build-all linux darwin windows clean fmt fmt-check lint tidy test race test-contract test-integration ci cross docs docs-check eval eval-baseline cache-check tui-build tui-run tui-shot tui-check help
+.PHONY: all build build-all linux darwin windows clean fmt fmt-check lint tidy test test-hermetic race test-contract test-integration ci cross docs docs-check eval eval-baseline cache-check tui-build tui-run tui-shot tui-check help
 
 all: help
 
@@ -241,11 +246,14 @@ cross: ## Check every released platform still compiles
 ## Test:
 test: ## Run tests
 	@echo "${MAGENTA}Running tests...${RESET}"
-	@$(GOTEST) -v $(PROJECT_PACKAGES)
+	@$(MAKE) --no-print-directory test-hermetic
+
+test-hermetic: ## Run the contained test tier with a stable environment
+	@$(TEST_HERMETIC_ENV) $(GOTEST) -mod=readonly $(PROJECT_PACKAGES)
 
 race: ## Run tests with race detector
 	@echo "${MAGENTA}Running tests with race detector...${RESET}"
-	@$(GOTEST) -v -race $(PROJECT_PACKAGES)
+	@$(TEST_HERMETIC_ENV) $(GOTEST) -mod=readonly -v -race $(PROJECT_PACKAGES)
 
 # The test run stays cacheable on purpose: -v and -failfast are both flags
 # `go test` will still match a cached result against, and nothing here adds
@@ -257,7 +265,7 @@ ci: cross ## Run tests and lint for CI
 	@python3 scripts/check-docs.py
 	@$(MAKE) --no-print-directory fmt-check
 	@echo "${MAGENTA}Running tests...${RESET}"
-	@$(GOTEST) -v -failfast $(PROJECT_PACKAGES)
+	@$(TEST_HERMETIC_ENV) $(GOTEST) -mod=readonly -v -failfast $(PROJECT_PACKAGES)
 	@echo "${MAGENTA}Running golangci-lint...${RESET}"
 	@$(GOLANGCI_LINT) run
 	@$(MAKE) --no-print-directory tui-check
