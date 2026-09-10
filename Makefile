@@ -8,7 +8,7 @@ GOVET=$(GOCMD) vet
 # executable Git fsmonitor hook from the shell that launched them. The quality
 # runner supplies the private GOCACHE; this target supplies the stable process
 # environment shared by local and session checks.
-TEST_HERMETIC_ENV=env -u SHHH_API_KEY -u SHHH_BASE_URL -u NO_COLOR GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.fsmonitor GIT_CONFIG_VALUE_0= XDG_CACHE_HOME=$${TMPDIR}/shhh-cache GOLANGCI_LINT_CACHE=$${TMPDIR}/shhh-golangci-lint
+TEST_HERMETIC_ENV=env -u SHHH_API_KEY -u SHHH_BASE_URL -u NO_COLOR GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.fsmonitor GIT_CONFIG_VALUE_0= TMPDIR=$${TMPDIR:-/tmp} XDG_CACHE_HOME=$${TMPDIR:-/tmp}/shhh-cache GOLANGCI_LINT_CACHE=$${TMPDIR:-/tmp}/shhh-golangci-lint
 # gofmt ships with the toolchain but is not always on PATH — a Go installed
 # through a version manager leaves it in GOROOT and nowhere else. Falling back
 # to GOROOT is what keeps `make fmt` and the gofmt gate from quietly doing
