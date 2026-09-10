@@ -13,6 +13,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -135,6 +136,9 @@ type fakeProvider struct {
 
 func startFakeProvider(t *testing.T, script ...reply) *fakeProvider {
 	t.Helper()
+	if os.Getenv("SHHH_TEST_CONTRACT") != "1" {
+		t.Skip("CLI provider contract test; run make test-contract on a listener-capable host")
+	}
 	if len(script) == 0 {
 		t.Fatal("a fake provider with no script answers nothing")
 	}
@@ -147,7 +151,7 @@ func startFakeProvider(t *testing.T, script ...reply) *fakeProvider {
 	if len(f.plain) == 0 {
 		t.Fatal("a script of matched answers alone says nothing about the requests none of them is for")
 	}
-	f.srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	f.srv = httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		step := f.next(r)
 		if step.status != 0 {
 			w.Header().Set("Content-Type", "application/json")
@@ -162,6 +166,12 @@ func startFakeProvider(t *testing.T, script ...reply) *fakeProvider {
 		}
 		writeReply(w, step)
 	}))
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("CLI provider contract tests require a loopback listener: %v", err)
+	}
+	f.srv.Listener = ln
+	f.srv.Start()
 	t.Cleanup(f.srv.Close)
 	return f
 }

@@ -49,7 +49,7 @@ else
 	RESET   := ""
 endif
 
-.PHONY: all build build-all linux darwin windows clean fmt fmt-check lint tidy test race test-integration ci cross docs docs-check eval eval-baseline cache-check tui-build tui-run tui-shot tui-check help
+.PHONY: all build build-all linux darwin windows clean fmt fmt-check lint tidy test race test-contract test-integration ci cross docs docs-check eval eval-baseline cache-check tui-build tui-run tui-shot tui-check help
 
 all: help
 
@@ -171,6 +171,10 @@ cache-check: ## Verify prompt caching against live endpoints (costs real request
 test-integration: ## Run opt-in sandbox integration checks (requires a supported host mechanism)
 	@echo "${MAGENTA}Running sandbox integration checks...${RESET}"
 	@$(GOTEST) -tags=integration -count=1 -v ./internal/sandbox
+
+test-contract: ## Run CLI binary/provider contract tests (requires loopback TCP)
+	@echo "${MAGENTA}Running CLI contract tests...${RESET}"
+	@SHHH_TEST_CONTRACT=1 $(GOTEST) -count=1 -v ./internal/cli
 
 ## Evals:
 # Costs real requests: ten of the fourteen cases put a task or a question to

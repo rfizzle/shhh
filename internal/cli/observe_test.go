@@ -1230,6 +1230,9 @@ func observeCohortOf(value string, sessions int, turns []storage.AgentTurnOutcom
 // configured at all, and the session comes out the way its last turn did —
 // which is the whole of what "the record is a by-product" has to mean.
 func TestObserveRecorder_ADeadCollectorLeavesTheRunAlone(t *testing.T) {
+	if os.Getenv("SHHH_TEST_CONTRACT") != "1" {
+		t.Skip("collector contract test; run make test-contract on a listener-capable host")
+	}
 	dead := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	endpoint := dead.URL
 	dead.Close()
@@ -1300,6 +1303,9 @@ func TestSetObserveExport_AnUnusableEndpointIsNotAFailedStart(t *testing.T) {
 // would otherwise hold the screen. The span still goes: this asserts the
 // hand-off delivers rather than dropping the row on the floor.
 func TestObserveRecorder_ARestartStillSendsTheSpanItClosed(t *testing.T) {
+	if os.Getenv("SHHH_TEST_CONTRACT") != "1" {
+		t.Skip("collector contract test; run make test-contract on a listener-capable host")
+	}
 	arrived := make(chan struct{}, 4)
 	collector := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = io.Copy(io.Discard, r.Body)
