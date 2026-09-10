@@ -4,17 +4,17 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
+	"github.com/rfizzle/shhh/internal/testhttp"
 	openai "github.com/sashabaranov/go-openai"
 )
 
 // openAISSEServer writes the given chunks as this dialect's event stream, one
 // `data:` line each, and closes with the sentinel the client reads as the end.
-func openAISSEServer(t *testing.T, chunks []string) *httptest.Server {
+func openAISSEServer(t *testing.T, chunks []string) *testhttp.Server {
 	t.Helper()
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		flusher, _ := w.(http.Flusher)
 		for _, chunk := range chunks {

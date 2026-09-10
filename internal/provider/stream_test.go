@@ -4,11 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
+	"github.com/rfizzle/shhh/internal/testhttp"
 	openai "github.com/sashabaranov/go-openai"
 	"google.golang.org/genai"
 )
@@ -61,10 +60,7 @@ func TestStream_AnthropicReportsArgumentFragmentsInOrder(t *testing.T) {
 	})
 	defer srv.Close()
 
-	p, err := NewAnthropic(ResolveOpts{APIKey: "sk-test", BaseURL: srv.URL})
-	if err != nil {
-		t.Fatal(err)
-	}
+	p := newTestAnthropic(ResolveOpts{APIKey: "sk-test", BaseURL: srv.URL})
 	ch, err := p.StreamCompletion(context.Background(), []Message{{Role: RoleUser, Content: "write main.go"}}, CompletionOpts{})
 	if err != nil {
 		t.Fatal(err)
@@ -85,7 +81,7 @@ func TestStream_AnthropicReportsArgumentFragmentsInOrder(t *testing.T) {
 
 func TestStream_OpenAIReportsArgumentFragmentsInOrder(t *testing.T) {
 	idx0 := 0
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		flusher, _ := w.(http.Flusher)
 		chunks := []openai.ChatCompletionStreamResponse{
@@ -181,7 +177,7 @@ func TestStream_OpenAIResponsesDropsFragmentsItCannotAddress(t *testing.T) {
 // entire — reported all the same, and before the terminal event, so a reader
 // following fragments does not have to know which dialect it is following.
 func TestStream_GeminiReportsTheWholeCallAsOneFragment(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		flusher, _ := w.(http.Flusher)
 		fmt.Fprint(w, `data: {"candidates":[{"content":{"parts":[{"functionCall":{"id":"call_abc","name":"write_file","args":{"path":"main.go"}}}]}}]}`+"\n\n")
@@ -193,6 +189,7 @@ func TestStream_GeminiReportsTheWholeCallAsOneFragment(t *testing.T) {
 		APIKey:      "test-key",
 		Backend:     genai.BackendGeminiAPI,
 		HTTPOptions: genai.HTTPOptions{BaseURL: srv.URL},
+		HTTPClient:  providerTestHTTP.Client(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -220,7 +217,7 @@ func TestStream_GeminiReportsTheWholeCallAsOneFragment(t *testing.T) {
 // it were reported on the way.
 func TestStream_ABrokenStreamKeepsOnlyTheCallsThatAreWhole(t *testing.T) {
 	idx0, idx1 := 0, 1
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		flusher, _ := w.(http.Flusher)
 		chunks := []openai.ChatCompletionStreamResponse{
@@ -236,15 +233,9 @@ func TestStream_ABrokenStreamKeepsOnlyTheCallsThatAreWhole(t *testing.T) {
 			fmt.Fprintf(w, "data: %s\n\n", data)
 			flusher.Flush()
 		}
-		// The connection dies here, which is the failure the recovery is
-		// for: a clean end would be a finished turn.
-		conn, _, err := w.(http.Hijacker).Hijack()
-		if err != nil {
-			t.Errorf("hijack: %v", err)
-			return
-		}
-		_ = conn.(*net.TCPConn).SetLinger(0)
-		_ = conn.Close()
+		// The wire ends after the fragments, which is the recovery case: a
+		// clean end would make the half-written call look complete.
+		testhttp.Abort(w)
 	}))
 	defer srv.Close()
 
@@ -273,7 +264,7 @@ func TestStream_ABrokenStreamKeepsOnlyTheCallsThatAreWhole(t *testing.T) {
 // the reply is checked for are the ones every dialect owes — the words the
 // model wrote survive, and the ending is named.
 func TestStream_GeminiCeilingNamesTheEndingAndKeepsWhatArrivedWhole(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		flusher, _ := w.(http.Flusher)
 		fmt.Fprint(w, `data: {"candidates":[{"content":{"parts":[{"text":"I will write it"}]}}]}`+"\n\n")
@@ -287,6 +278,7 @@ func TestStream_GeminiCeilingNamesTheEndingAndKeepsWhatArrivedWhole(t *testing.T
 		APIKey:      "test-key",
 		Backend:     genai.BackendGeminiAPI,
 		HTTPOptions: genai.HTTPOptions{BaseURL: srv.URL},
+		HTTPClient:  providerTestHTTP.Client(),
 	})
 	if err != nil {
 		t.Fatal(err)

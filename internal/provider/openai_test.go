@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	openai "github.com/sashabaranov/go-openai"
@@ -15,6 +14,7 @@ import (
 func newTestOpenAI(baseURL string, model string) *OpenAI {
 	cfg := openai.DefaultConfig("test-key")
 	cfg.BaseURL = baseURL
+	cfg.HTTPClient = providerTestHTTP.Client()
 	return NewOpenAIWithConfig(openai.NewClientWithConfig(cfg), model)
 }
 
@@ -43,7 +43,7 @@ func TestNewOpenAI_MissingKey(t *testing.T) {
 
 func TestOpenAI_StreamCompletion(t *testing.T) {
 	tokens := []string{"hello", " world"}
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		flusher, _ := w.(http.Flusher)
 		for _, tok := range tokens {
@@ -83,7 +83,7 @@ func TestOpenAI_StreamCompletion(t *testing.T) {
 
 func TestOpenAI_StreamCompletion_OptsOverrideModel(t *testing.T) {
 	var receivedModel string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req openai.ChatCompletionRequest
 		_ = json.NewDecoder(r.Body).Decode(&req)
 		receivedModel = req.Model
@@ -107,7 +107,7 @@ func TestOpenAI_StreamCompletion_OptsOverrideModel(t *testing.T) {
 }
 
 func TestOpenAI_StreamCompletion_Unauthorized(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
 		_ = json.NewEncoder(w).Encode(map[string]any{
@@ -132,7 +132,7 @@ func TestOpenAI_StreamCompletion_Unauthorized(t *testing.T) {
 }
 
 func TestOpenAI_StreamCompletion_RateLimited(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusTooManyRequests)
 		_ = json.NewEncoder(w).Encode(map[string]any{
@@ -157,7 +157,7 @@ func TestOpenAI_StreamCompletion_RateLimited(t *testing.T) {
 }
 
 func TestOpenAI_StreamCompletion_ContextCanceled(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		<-r.Context().Done()
 	}))
@@ -271,7 +271,7 @@ func TestToOpenAIMessages_MultipleToolCalls(t *testing.T) {
 
 func TestOpenAI_StreamCompletion_ToolCalls(t *testing.T) {
 	idx0 := 0
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req openai.ChatCompletionRequest
 		_ = json.NewDecoder(r.Body).Decode(&req)
 
@@ -372,7 +372,7 @@ func TestOpenAI_StreamCompletion_ToolCalls(t *testing.T) {
 func TestOpenAI_StreamCompletion_MultipleToolCalls(t *testing.T) {
 	idx0 := 0
 	idx1 := 1
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		flusher, _ := w.(http.Flusher)
 
@@ -446,7 +446,7 @@ func TestOpenAI_StreamCompletion_MultipleToolCalls(t *testing.T) {
 func TestOpenAI_StreamCompletion_ToolsPassedInRequest(t *testing.T) {
 	var receivedTools int
 	var receivedToolChoice any
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&req)
 		if tools, ok := req["tools"].([]any); ok {
@@ -504,7 +504,7 @@ func TestOpenAI_Registration(t *testing.T) {
 func captureChatRequest(t *testing.T, run func(baseURL string) (<-chan StreamEvent, error)) map[string]any {
 	t.Helper()
 	var body map[string]any
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		w.Header().Set("Content-Type", "text/event-stream")
 		fmt.Fprint(w, "data: [DONE]\n\n")
@@ -560,7 +560,7 @@ func TestToOpenAIMessages_ToolResultStaysAString(t *testing.T) {
 // caller, which offers both and knows nothing about either model.
 func TestOpenAI_SchemaReplacesTheToolsWhereTheModelTakesOne(t *testing.T) {
 	var body map[string]any
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body = nil
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		w.Header().Set("Content-Type", "text/event-stream")
@@ -638,7 +638,7 @@ func TestOpenAIStop_MapsEveryReasonTheDialectNames(t *testing.T) {
 
 func TestOpenAI_CeilingKeepsTheTextAndDropsTheUnfinishedCall(t *testing.T) {
 	idx0, idx1 := 0, 1
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		flusher, _ := w.(http.Flusher)
 		send := func(c openai.ChatCompletionStreamResponse) {

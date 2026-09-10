@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	openai "github.com/sashabaranov/go-openai"
@@ -15,6 +14,7 @@ import (
 func newTestCompat(baseURL, model string) *OpenAICompat {
 	cfg := openai.DefaultConfig("test-key")
 	cfg.BaseURL = baseURL
+	cfg.HTTPClient = providerTestHTTP.Client()
 	return NewOpenAICompatWith(openai.NewClientWithConfig(cfg), model, baseURL)
 }
 
@@ -89,7 +89,7 @@ func TestNewOpenAICompat_NoKeyRequired(t *testing.T) {
 
 func TestOpenAICompat_StreamCompletion(t *testing.T) {
 	tokens := []string{"foo", " bar"}
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		flusher, _ := w.(http.Flusher)
 		for _, tok := range tokens {
@@ -129,7 +129,7 @@ func TestOpenAICompat_StreamCompletion(t *testing.T) {
 
 func TestOpenAICompat_StreamCompletion_ModelOverride(t *testing.T) {
 	var receivedModel string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req openai.ChatCompletionRequest
 		_ = json.NewDecoder(r.Body).Decode(&req)
 		receivedModel = req.Model
@@ -153,7 +153,7 @@ func TestOpenAICompat_StreamCompletion_ModelOverride(t *testing.T) {
 }
 
 func TestOpenAICompat_StreamCompletion_ServerError(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
 		_ = json.NewEncoder(w).Encode(map[string]any{
@@ -179,7 +179,7 @@ func TestOpenAICompat_StreamCompletion_ServerError(t *testing.T) {
 
 func TestOpenAICompat_BaseURLPassedToServer(t *testing.T) {
 	var gotPath string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
 		w.Header().Set("Content-Type", "text/event-stream")
 		fmt.Fprint(w, "data: [DONE]\n\n")

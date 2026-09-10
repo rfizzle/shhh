@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/http/httptest"
 	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/anthropics/anthropic-sdk-go"
+	"github.com/rfizzle/shhh/internal/testhttp"
 )
 
 func TestNewAnthropic_RequiresKey(t *testing.T) {
@@ -23,10 +23,7 @@ func TestNewAnthropic_RequiresKey(t *testing.T) {
 }
 
 func TestNewAnthropic_DefaultModel(t *testing.T) {
-	p, err := NewAnthropic(ResolveOpts{APIKey: "sk-test"})
-	if err != nil {
-		t.Fatal(err)
-	}
+	p := newTestAnthropic(ResolveOpts{APIKey: "sk-test"})
 	if p.model != "claude-opus-5" {
 		t.Errorf("expected default model 'claude-opus-5', got %q", p.model)
 	}
@@ -162,7 +159,7 @@ func TestToAnthropicTools_NestedDefsSurviveTheRoundTrip(t *testing.T) {
 // does: an unset choice sends no field, which is the dialect's own auto.
 func TestAnthropic_ToolChoiceOnTheRequest(t *testing.T) {
 	var body map[string]any
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		raw, _ := io.ReadAll(r.Body)
 		body = nil
 		_ = json.Unmarshal(raw, &body)
@@ -172,10 +169,7 @@ func TestAnthropic_ToolChoiceOnTheRequest(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	p, err := NewAnthropic(ResolveOpts{APIKey: "sk-test", BaseURL: srv.URL})
-	if err != nil {
-		t.Fatal(err)
-	}
+	p := newTestAnthropic(ResolveOpts{APIKey: "sk-test", BaseURL: srv.URL})
 	msgs := []Message{{Role: RoleUser, Content: "hi"}}
 	tools := []Tool{{Name: "read_file", Parameters: json.RawMessage(`{"type":"object","properties":{}}`)}}
 
@@ -209,9 +203,9 @@ func sseEvent(w http.ResponseWriter, event, data string) {
 	fmt.Fprintf(w, "event: %s\ndata: %s\n\n", event, data)
 }
 
-func anthropicSSEServer(t *testing.T, write func(w http.ResponseWriter)) *httptest.Server {
+func anthropicSSEServer(t *testing.T, write func(w http.ResponseWriter)) *testhttp.Server {
 	t.Helper()
-	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/v1/messages" {
 			t.Errorf("unexpected path %s", r.URL.Path)
 		}
@@ -246,10 +240,7 @@ func TestAnthropic_StreamText(t *testing.T) {
 	})
 	defer srv.Close()
 
-	p, err := NewAnthropic(ResolveOpts{APIKey: "sk-test", BaseURL: srv.URL})
-	if err != nil {
-		t.Fatal(err)
-	}
+	p := newTestAnthropic(ResolveOpts{APIKey: "sk-test", BaseURL: srv.URL})
 	events, err := p.StreamCompletion(context.Background(), []Message{
 		{Role: RoleSystem, Content: "sys"},
 		{Role: RoleUser, Content: "list files"},
@@ -285,10 +276,7 @@ func TestAnthropic_StreamToolUse(t *testing.T) {
 	})
 	defer srv.Close()
 
-	p, err := NewAnthropic(ResolveOpts{APIKey: "sk-test", BaseURL: srv.URL})
-	if err != nil {
-		t.Fatal(err)
-	}
+	p := newTestAnthropic(ResolveOpts{APIKey: "sk-test", BaseURL: srv.URL})
 	events, err := p.StreamCompletion(context.Background(), []Message{
 		{Role: RoleUser, Content: "read main.go"},
 	}, CompletionOpts{Tools: []Tool{{Name: "read_file", Parameters: json.RawMessage(`{"type":"object","properties":{}}`)}}})
@@ -323,10 +311,7 @@ func TestAnthropic_RefusalStopReason(t *testing.T) {
 	})
 	defer srv.Close()
 
-	p, err := NewAnthropic(ResolveOpts{APIKey: "sk-test", BaseURL: srv.URL})
-	if err != nil {
-		t.Fatal(err)
-	}
+	p := newTestAnthropic(ResolveOpts{APIKey: "sk-test", BaseURL: srv.URL})
 	events, err := p.StreamCompletion(context.Background(), []Message{
 		{Role: RoleUser, Content: "do a bad thing"},
 	}, CompletionOpts{})
@@ -350,10 +335,7 @@ func TestAnthropic_RefusalNamesItsCategory(t *testing.T) {
 	})
 	defer srv.Close()
 
-	p, err := NewAnthropic(ResolveOpts{APIKey: "sk-test", BaseURL: srv.URL})
-	if err != nil {
-		t.Fatal(err)
-	}
+	p := newTestAnthropic(ResolveOpts{APIKey: "sk-test", BaseURL: srv.URL})
 	events, err := p.StreamCompletion(context.Background(), []Message{
 		{Role: RoleUser, Content: "write me an exploit"},
 	}, CompletionOpts{})
@@ -376,7 +358,7 @@ func TestAnthropic_RefusalNamesItsCategory(t *testing.T) {
 // budget respects the output ceiling when one was.
 func TestAnthropic_ThinkingBudgetOnlyWhenAsked(t *testing.T) {
 	var body map[string]any
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		raw, _ := io.ReadAll(r.Body)
 		body = nil
 		_ = json.Unmarshal(raw, &body)
@@ -386,10 +368,7 @@ func TestAnthropic_ThinkingBudgetOnlyWhenAsked(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	p, err := NewAnthropic(ResolveOpts{APIKey: "sk-test", BaseURL: srv.URL})
-	if err != nil {
-		t.Fatal(err)
-	}
+	p := newTestAnthropic(ResolveOpts{APIKey: "sk-test", BaseURL: srv.URL})
 	msgs := []Message{{Role: RoleUser, Content: "hi"}}
 
 	events, err := p.StreamCompletion(context.Background(), msgs, CompletionOpts{})
@@ -492,10 +471,7 @@ func TestAnthropic_ThinkingBlocksSurviveIntoTheNextRequest(t *testing.T) {
 	})
 	defer srv.Close()
 
-	p, err := NewAnthropic(ResolveOpts{APIKey: "sk-test", BaseURL: srv.URL})
-	if err != nil {
-		t.Fatal(err)
-	}
+	p := newTestAnthropic(ResolveOpts{APIKey: "sk-test", BaseURL: srv.URL})
 	events, err := p.StreamCompletion(context.Background(),
 		[]Message{{Role: RoleUser, Content: "read a"}}, CompletionOpts{Effort: EffortMedium})
 	if err != nil {
@@ -571,10 +547,7 @@ func TestAnthropic_UsageFoldsTheCachedPartsIntoThePromptCount(t *testing.T) {
 	})
 	defer srv.Close()
 
-	p, err := NewAnthropic(ResolveOpts{APIKey: "sk-test", BaseURL: srv.URL})
-	if err != nil {
-		t.Fatal(err)
-	}
+	p := newTestAnthropic(ResolveOpts{APIKey: "sk-test", BaseURL: srv.URL})
 	events, err := p.StreamCompletion(context.Background(), []Message{
 		{Role: RoleSystem, Content: "sys"},
 		{Role: RoleUser, Content: "hi"},
@@ -610,7 +583,7 @@ func TestAnthropic_UsageFoldsTheCachedPartsIntoThePromptCount(t *testing.T) {
 // the default standing rather than failing the session.
 func TestAnthropic_CacheLifetimeOnTheRequest(t *testing.T) {
 	var body map[string]any
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		raw, _ := io.ReadAll(r.Body)
 		body = nil
 		_ = json.Unmarshal(raw, &body)
@@ -625,10 +598,7 @@ func TestAnthropic_CacheLifetimeOnTheRequest(t *testing.T) {
 		{configured: "5m", want: string(CacheTTL5m)},
 		{configured: "a fortnight", want: string(DefaultCacheTTL)},
 	} {
-		p, err := NewAnthropic(ResolveOpts{APIKey: "sk-test", BaseURL: srv.URL, CacheTTL: tc.configured})
-		if err != nil {
-			t.Fatal(err)
-		}
+		p := newTestAnthropic(ResolveOpts{APIKey: "sk-test", BaseURL: srv.URL, CacheTTL: tc.configured})
 		events, err := p.StreamCompletion(context.Background(), []Message{
 			{Role: RoleSystem, Content: "be helpful"},
 			{Role: RoleUser, Content: "hi"},
@@ -696,7 +666,7 @@ func TestToAnthropicMessages_ToolResultWithoutAnImageIsTextAlone(t *testing.T) {
 // already carries the thinking effort, so the two have to survive each other.
 func TestAnthropic_SchemaRidesTheOutputConfigBesideTheEffort(t *testing.T) {
 	var body map[string]any
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		raw, _ := io.ReadAll(r.Body)
 		body = nil
 		_ = json.Unmarshal(raw, &body)
@@ -706,10 +676,7 @@ func TestAnthropic_SchemaRidesTheOutputConfigBesideTheEffort(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	p, err := NewAnthropic(ResolveOpts{APIKey: "sk-test", BaseURL: srv.URL})
-	if err != nil {
-		t.Fatal(err)
-	}
+	p := newTestAnthropic(ResolveOpts{APIKey: "sk-test", BaseURL: srv.URL})
 	msgs := []Message{{Role: RoleUser, Content: "hi"}}
 	opts := CompletionOpts{
 		Effort:         EffortLow,
@@ -802,10 +769,7 @@ func TestAnthropic_CeilingKeepsTheTextAndDropsTheUnfinishedCall(t *testing.T) {
 	})
 	defer srv.Close()
 
-	p, err := NewAnthropic(ResolveOpts{APIKey: "sk-test", BaseURL: srv.URL})
-	if err != nil {
-		t.Fatal(err)
-	}
+	p := newTestAnthropic(ResolveOpts{APIKey: "sk-test", BaseURL: srv.URL})
 	events, err := p.StreamCompletion(context.Background(), []Message{{Role: RoleUser, Content: "rewrite it"}}, CompletionOpts{})
 	if err != nil {
 		t.Fatal(err)

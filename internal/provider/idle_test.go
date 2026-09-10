@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/testhttp"
 	openai "github.com/sashabaranov/go-openai"
 	"google.golang.org/genai"
 )
@@ -29,9 +29,9 @@ const (
 // all — the endpoint that accepts a request and holds it, which is the whole
 // reason there is a deadline. The handler returns when the client goes away,
 // so the server closes rather than hanging the test binary.
-func quietServer(t *testing.T) *httptest.Server {
+func quietServer(t *testing.T) *testhttp.Server {
 	t.Helper()
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.WriteHeader(http.StatusOK)
 		if f, ok := w.(http.Flusher); ok {
@@ -84,10 +84,7 @@ func assertIdleFailure(t *testing.T, err error) {
 
 func TestIdle_AnthropicStreamThatGoesQuietFails(t *testing.T) {
 	srv := quietServer(t)
-	p, err := NewAnthropic(ResolveOpts{APIKey: "sk-test", BaseURL: srv.URL})
-	if err != nil {
-		t.Fatal(err)
-	}
+	p := newTestAnthropic(ResolveOpts{APIKey: "sk-test", BaseURL: srv.URL})
 	p.idleDeadline = idleDeadline{after: testIdle}
 
 	ch, err := p.StreamCompletion(context.Background(), []Message{{Role: RoleUser, Content: "hello"}}, CompletionOpts{})
@@ -107,6 +104,7 @@ func TestIdle_OpenAICompatStreamThatGoesQuietFails(t *testing.T) {
 	srv := quietServer(t)
 	cfg := openai.DefaultConfig("test-key")
 	cfg.BaseURL = srv.URL + "/v1"
+	cfg.HTTPClient = providerTestHTTP.Client()
 	p := NewOpenAICompatWith(openai.NewClientWithConfig(cfg), "llama3", cfg.BaseURL)
 	p.idleDeadline = idleDeadline{after: testIdle}
 
@@ -129,6 +127,7 @@ func TestIdle_GeminiStreamThatGoesQuietFails(t *testing.T) {
 		APIKey:      "test-key",
 		Backend:     genai.BackendGeminiAPI,
 		HTTPOptions: genai.HTTPOptions{BaseURL: srv.URL},
+		HTTPClient:  providerTestHTTP.Client(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -171,10 +170,7 @@ func TestIdle_ASlowLiveThinkingStreamIsNotAFailure(t *testing.T) {
 	})
 	defer srv.Close()
 
-	p, err := NewAnthropic(ResolveOpts{APIKey: "sk-test", BaseURL: srv.URL})
-	if err != nil {
-		t.Fatal(err)
-	}
+	p := newTestAnthropic(ResolveOpts{APIKey: "sk-test", BaseURL: srv.URL})
 	p.idleDeadline = idleDeadline{after: testIdle}
 
 	ch, err := p.StreamCompletion(context.Background(), []Message{{Role: RoleUser, Content: "think"}}, CompletionOpts{})

@@ -3,16 +3,16 @@ package provider
 import (
 	"context"
 	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/rfizzle/shhh/internal/pricing"
+	"github.com/rfizzle/shhh/internal/testhttp"
 )
 
-func modelsServer(t *testing.T, body string) *httptest.Server {
+func modelsServer(t *testing.T, body string) *testhttp.Server {
 	t.Helper()
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !strings.HasSuffix(r.URL.Path, "/models") {
 			t.Errorf("expected the models endpoint, got %q", r.URL.Path)
 		}
@@ -38,7 +38,7 @@ func TestOpenAICompat_ListModels(t *testing.T) {
 }
 
 func TestOpenAICompat_ListModelsError(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		_, _ = w.Write([]byte(`{"error":{"message":"bad key"}}`))
 	}))
@@ -145,10 +145,8 @@ func TestOpenAICompat_ModelWindows(t *testing.T) {
 		{"id":"lmstudio-model","max_context_length":32768},
 		{"id":"llama3"}]}`)
 
-	p, err := NewOpenAICompat(ResolveOpts{BaseURL: srv.URL + "/v1"})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	p := newTestCompat(srv.URL+"/v1", "llama3")
+	p.httpc = providerTestHTTP.Client()
 	windows, err := p.ModelWindows(context.Background())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -179,15 +177,13 @@ func TestOpenAICompat_ModelWindowsWithoutATransport(t *testing.T) {
 }
 
 func TestOpenAICompat_ModelWindowsError(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	}))
 	defer srv.Close()
 
-	p, err := NewOpenAICompat(ResolveOpts{BaseURL: srv.URL + "/v1"})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	p := newTestCompat(srv.URL+"/v1", "llama3")
+	p.httpc = providerTestHTTP.Client()
 	if _, err := p.ModelWindows(context.Background()); err == nil {
 		t.Fatal("expected an error from an endpoint with no catalog")
 	}

@@ -7,16 +7,17 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/rfizzle/shhh/internal/testhttp"
 )
 
 // responsesServer stands in for the /v1/responses endpoint, capturing the
 // request and replaying a scripted event stream.
-func responsesServer(t *testing.T, events []string, capture *responsesRequest) *httptest.Server {
+func responsesServer(t *testing.T, events []string, capture *responsesRequest) *testhttp.Server {
 	t.Helper()
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/v1/responses" {
 			t.Errorf("expected the responses endpoint, got %q", r.URL.Path)
 		}
@@ -38,7 +39,7 @@ func responsesServer(t *testing.T, events []string, capture *responsesRequest) *
 }
 
 func newTestResponses(baseURL, model string) *OpenAIResponses {
-	return NewOpenAIResponsesWith(nil, "test-key", baseURL+"/v1", model, "")
+	return NewOpenAIResponsesWith(providerTestHTTP.Client(), "test-key", baseURL+"/v1", model, "")
 }
 
 func collect(t *testing.T, ch <-chan StreamEvent) (string, []ToolCall, *Usage, error) {
@@ -179,7 +180,7 @@ func TestOpenAIResponses_SurfacesAFailureEvent(t *testing.T) {
 }
 
 func TestOpenAIResponses_ClassifiesHTTPErrors(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		_, _ = w.Write([]byte(`{"error":{"message":"Incorrect API key provided","type":"invalid_request_error"}}`))
 	}))
@@ -257,7 +258,7 @@ func TestOpenAIResponses_BuildsTheInputList(t *testing.T) {
 
 func TestOpenAIResponses_OmitsUnsetOptions(t *testing.T) {
 	var got map[string]any
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewDecoder(r.Body).Decode(&got)
 		w.Header().Set("Content-Type", "text/event-stream")
 		fmt.Fprint(w, "data: {\"type\":\"response.completed\",\"response\":{\"status\":\"completed\"}}\n\n")
@@ -279,7 +280,7 @@ func TestOpenAIResponses_OmitsUnsetOptions(t *testing.T) {
 }
 
 func TestOpenAIResponses_ListModels(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !strings.HasSuffix(r.URL.Path, "/models") {
 			t.Errorf("expected the models endpoint, got %q", r.URL.Path)
 		}
@@ -300,6 +301,7 @@ func TestOpenAIResponses_ListModels(t *testing.T) {
 func TestNewOpenAIResponses_RequiresAKey(t *testing.T) {
 	t.Setenv("SHHH_API_KEY", "")
 	t.Setenv("OPENAI_API_KEY", "")
+	t.Setenv("SHHH_BASE_URL", "")
 	if _, err := NewOpenAIResponses(ResolveOpts{}); err == nil {
 		t.Fatal("expected a missing-key error")
 	}
@@ -572,7 +574,7 @@ func TestOpenAIResponses_SendsNoReasoningToAModelWithout(t *testing.T) {
 // was sent before.
 func TestOpenAIResponses_SendsNothingExtraWithoutReasoning(t *testing.T) {
 	var got map[string]any
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewDecoder(r.Body).Decode(&got)
 		w.Header().Set("Content-Type", "text/event-stream")
 		fmt.Fprint(w, "data: {\"type\":\"response.completed\",\"response\":{\"status\":\"completed\"}}\n\n")

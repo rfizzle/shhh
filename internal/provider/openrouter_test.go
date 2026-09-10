@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
@@ -15,10 +14,14 @@ import (
 )
 
 func newTestOpenRouter(baseURL string, model string) *OpenRouter {
+	return newTestOpenRouterWithCache(baseURL, model, "")
+}
+
+func newTestOpenRouterWithCache(baseURL, model, cacheTTL string) *OpenRouter {
 	cfg := openai.DefaultConfig("test-key")
 	cfg.BaseURL = baseURL
 	cfg.HTTPClient = &http.Client{
-		Transport: &openRouterTransport{base: NewCacheMarkTransport(nil, "")},
+		Transport: &openRouterTransport{base: NewCacheMarkTransport(&providerTestHTTP, cacheTTL)},
 	}
 	return NewOpenRouterWith(openai.NewClientWithConfig(cfg), model)
 }
@@ -81,7 +84,7 @@ func TestOpenRouter_CustomModel(t *testing.T) {
 
 func TestOpenRouter_SendsRequiredHeaders(t *testing.T) {
 	var gotReferer, gotTitle string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotReferer = r.Header.Get("HTTP-Referer")
 		gotTitle = r.Header.Get("X-Title")
 		w.Header().Set("Content-Type", "text/event-stream")
@@ -109,7 +112,7 @@ func TestOpenRouter_SendsRequiredHeaders(t *testing.T) {
 
 func TestOpenRouter_StreamCompletion(t *testing.T) {
 	tokens := []string{"hello", " world"}
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
 		flusher, _ := w.(http.Flusher)
 		for _, tok := range tokens {
@@ -149,7 +152,7 @@ func TestOpenRouter_StreamCompletion(t *testing.T) {
 
 func TestOpenRouter_StreamCompletion_OptsOverrideModel(t *testing.T) {
 	var receivedModel string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req openai.ChatCompletionRequest
 		_ = json.NewDecoder(r.Body).Decode(&req)
 		receivedModel = req.Model
@@ -173,7 +176,7 @@ func TestOpenRouter_StreamCompletion_OptsOverrideModel(t *testing.T) {
 }
 
 func TestOpenRouter_StreamCompletion_Unauthorized(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
 		_ = json.NewEncoder(w).Encode(map[string]any{
@@ -198,7 +201,7 @@ func TestOpenRouter_StreamCompletion_Unauthorized(t *testing.T) {
 }
 
 func TestOpenRouter_StreamCompletion_RateLimited(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusTooManyRequests)
 		_ = json.NewEncoder(w).Encode(map[string]any{
@@ -321,16 +324,7 @@ func TestOpenRouter_StreamCompletion_MarksNothingForAnotherVendor(t *testing.T) 
 func TestOpenRouter_StreamCompletion_HonoursTheConfiguredCacheLifetime(t *testing.T) {
 	t.Setenv("SHHH_BASE_URL", "")
 	body := captureChatRequest(t, func(baseURL string) (<-chan StreamEvent, error) {
-		p, err := NewOpenRouter(ResolveOpts{
-			APIKey:   "test-key",
-			BaseURL:  baseURL,
-			Model:    "anthropic/claude-sonnet-4-6",
-			CacheTTL: "5m",
-		})
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		return p.StreamCompletion(
+		return newTestOpenRouterWithCache(baseURL, "anthropic/claude-sonnet-4-6", "5m").StreamCompletion(
 			context.Background(),
 			[]Message{
 				{Role: RoleSystem, Content: "be helpful"},

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"net/http/httptest"
 	"regexp"
 	"strings"
 	"testing"
@@ -424,7 +423,7 @@ func TestCacheMarkTransportMarksTheEncodedBody(t *testing.T) {
 		{configured: "5m", want: string(CacheTTL5m)},
 	} {
 		var got []byte
-		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			got, _ = io.ReadAll(r.Body)
 		}))
 
@@ -437,7 +436,7 @@ func TestCacheMarkTransportMarksTheEncodedBody(t *testing.T) {
 			t.Fatal(err)
 		}
 		req.Header.Set("Content-Type", "application/json")
-		resp, err := (&http.Client{Transport: NewCacheMarkTransport(nil, tc.configured)}).Do(req)
+		resp, err := (&http.Client{Transport: NewCacheMarkTransport(&providerTestHTTP, tc.configured)}).Do(req)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -456,12 +455,12 @@ func TestCacheMarkTransportMarksTheEncodedBody(t *testing.T) {
 // than mark anything.
 func TestCacheMarkTransportLeavesABodylessRequestAlone(t *testing.T) {
 	var method string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		method = r.Method
 	}))
 	defer srv.Close()
 
-	resp, err := (&http.Client{Transport: NewCacheMarkTransport(nil, "")}).Get(srv.URL + "/v1/models")
+	resp, err := (&http.Client{Transport: NewCacheMarkTransport(&providerTestHTTP, "")}).Get(srv.URL + "/v1/models")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -475,7 +474,7 @@ func TestCacheMarkTransportLeavesABodylessRequestAlone(t *testing.T) {
 // as it arrived, which is what makes the transport safe to wrap anything in.
 func TestCacheMarkTransportLeavesAnotherVendorAlone(t *testing.T) {
 	var got []byte
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		got, _ = io.ReadAll(r.Body)
 	}))
 	defer srv.Close()
@@ -488,7 +487,7 @@ func TestCacheMarkTransportLeavesAnotherVendorAlone(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp, err := (&http.Client{Transport: NewCacheMarkTransport(nil, "")}).Do(req)
+	resp, err := (&http.Client{Transport: NewCacheMarkTransport(&providerTestHTTP, "")}).Do(req)
 	if err != nil {
 		t.Fatal(err)
 	}

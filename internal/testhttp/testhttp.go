@@ -5,6 +5,7 @@ package testhttp
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"sync"
@@ -75,27 +76,25 @@ func (r *Registry) RoundTrip(req *http.Request) (*http.Response, error) {
 	if h == nil {
 		return nil, fmt.Errorf("testhttp: no handler for %s", req.URL.Host)
 	}
-	finished := make(chan *httptestResponseRecorder, 1)
+	rec := newResponseRecorder()
 	go func() {
-		rec := &httptestResponseRecorder{header: make(http.Header)}
 		h.ServeHTTP(rec, req)
-		finished <- rec
+		rec.finish()
 	}()
-	var rec *httptestResponseRecorder
 	select {
-	case rec = <-finished:
+	case <-rec.ready:
 	case <-req.Context().Done():
 		return nil, req.Context().Err()
 	}
+	rec.mu.Lock()
 	status := rec.status
-	if status == 0 {
-		status = http.StatusOK
-	}
+	header := rec.header.Clone()
+	rec.mu.Unlock()
 	return &http.Response{
 		StatusCode: status,
 		Status:     fmt.Sprintf("%d %s", status, http.StatusText(status)),
-		Header:     rec.header.Clone(),
-		Body:       ioNopCloser{Reader: bytes.NewReader(rec.body.Bytes())},
+		Header:     header,
+		Body:       rec.pr,
 		Request:    req,
 	}, nil
 }
@@ -109,22 +108,65 @@ func (s *Server) URLFor(path string) string {
 }
 
 type httptestResponseRecorder struct {
+	mu     sync.Mutex
 	header http.Header
-	body   bytes.Buffer
 	status int
+	ready  chan struct{}
+	once   sync.Once
+	pr     *io.PipeReader
+	pw     *io.PipeWriter
+	abort  error
+}
+
+func newResponseRecorder() *httptestResponseRecorder {
+	pr, pw := io.Pipe()
+	return &httptestResponseRecorder{
+		header: make(http.Header),
+		ready:  make(chan struct{}),
+		pr:     pr,
+		pw:     pw,
+	}
 }
 
 func (r *httptestResponseRecorder) Header() http.Header { return r.header }
 func (r *httptestResponseRecorder) WriteHeader(status int) {
+	r.mu.Lock()
 	if r.status == 0 {
 		r.status = status
 	}
+	r.mu.Unlock()
+	r.signal()
 }
 func (r *httptestResponseRecorder) Write(p []byte) (int, error) {
-	if r.status == 0 {
-		r.status = http.StatusOK
+	r.WriteHeader(http.StatusOK)
+	return r.pw.Write(p)
+}
+
+// Flush satisfies handlers that mark an event-stream chunk as available. The
+// in-memory transport returns its buffered response after the handler ends,
+// which preserves the stream's wire format without a network connection.
+func (r *httptestResponseRecorder) Flush() { r.WriteHeader(http.StatusOK) }
+
+func (r *httptestResponseRecorder) signal() { r.once.Do(func() { close(r.ready) }) }
+
+func (r *httptestResponseRecorder) finish() {
+	r.WriteHeader(http.StatusOK)
+	r.mu.Lock()
+	err := r.abort
+	r.mu.Unlock()
+	_ = r.pw.CloseWithError(err)
+}
+
+// Abort ends a fixture response with an unexpected EOF after the handler's
+// bytes. It lets a streaming parser test a broken wire without opening one.
+func Abort(w http.ResponseWriter) {
+	r, ok := w.(*httptestResponseRecorder)
+	if !ok {
+		return
 	}
-	return r.body.Write(p)
+	r.mu.Lock()
+	r.abort = io.ErrUnexpectedEOF
+	r.mu.Unlock()
 }
 
 type ioNopCloser struct{ *bytes.Reader }
