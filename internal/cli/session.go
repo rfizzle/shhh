@@ -1012,6 +1012,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithToolExecutor(executor).
 		WithRepeats(repeats).
 		WithDB(db).
+		WithPersistenceError(err).
 		WithPricing(prices, env.modelName).
 		WithLedger(ledger).
 		WithSecrets(chat.Secrets{Manage: secretsManager(session.vault), Scrub: session.vault.ScrubMessage}).

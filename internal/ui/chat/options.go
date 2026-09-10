@@ -166,6 +166,16 @@ func (m Model) WithDB(db *storage.DB) Model {
 	return m
 }
 
+// WithPersistenceError preserves the reason the host could not open the
+// store. The exit banner needs it because the alternate screen clears the
+// startup warning before the session ends.
+func (m Model) WithPersistenceError(err error) Model {
+	if err != nil {
+		m.persistenceError = err.Error()
+	}
+	return m
+}
+
 // claimSlot asks the store for a slot under name and answers with the one it
 // gave. A store that cannot say leaves the session on the name it had: the
 // timestamp is still what the person sees, and the save it protects is one

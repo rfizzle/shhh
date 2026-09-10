@@ -66,6 +66,10 @@ type ExitBanner struct {
 	// reader must not discover by typing a resume command is the one that
 	// silently reopens something older.
 	Unsaved bool
+	// PersistenceError is why the host could not open the store. It is kept
+	// beside Unsaved because the alternate screen clears the startup warning
+	// before the reader can act on it.
+	PersistenceError string
 }
 
 // exitLabelWidth is the banner's label column. `session` is the longest of
@@ -95,8 +99,17 @@ func (b ExitBanner) View(width int) string {
 	switch {
 	case b.Unsaved:
 		// One thing gone wrong and no way out of it, which is the honest
-		// shape here: there is no command that brings this back.
-		rows = append(rows, b.row("resume", Clip("not saved · chat persistence was unavailable", body), sty.Dim))
+		// shape here: there is no command that brings this back. The startup
+		// warning vanished with the alternate screen, so leave the cause and
+		// the diagnostic door on the terminal too.
+		line := "not saved · chat persistence was unavailable"
+		if b.PersistenceError != "" {
+			line = "not saved · run `shhh doctor`"
+		}
+		rows = append(rows, b.row("resume", Clip(line, body), sty.Dim))
+		if b.PersistenceError != "" {
+			rows = append(rows, b.row("reason", Clip(b.PersistenceError, body), sty.Dim))
+		}
 	case b.Resume != "":
 		rows = append(rows, b.row("resume", b.Resume, brightStyle()))
 	}

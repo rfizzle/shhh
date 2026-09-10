@@ -36,7 +36,7 @@ import (
 // pointer that is nil while the mode is not up (pressure, review, the
 // overlays). This is the same guard overlay_test.go puts on the placement
 // table: a table nobody reads is a table that drifts.
-const modelFields = 265
+const modelFields = 266
 
 func TestModelHasAStatedBound(t *testing.T) {
 	got := reflect.TypeOf(Model{}).NumField()
@@ -2496,7 +2496,7 @@ func TestExitBanner_NoStoreIsUnsaved(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "one"},
 	}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream).WithPersistenceError(errors.New("migrate: database is locked"))
 
 	b := m.ExitBanner("shhh chat --continue")
 	if !b.Unsaved {
@@ -2504,6 +2504,9 @@ func TestExitBanner_NoStoreIsUnsaved(t *testing.T) {
 	}
 	if b.Session != "" || b.Resume != "" {
 		t.Fatalf("an unsaved session names no slot and no command, got %q / %q", b.Session, b.Resume)
+	}
+	if b.PersistenceError != "migrate: database is locked" {
+		t.Fatalf("the banner should retain the startup error, got %q", b.PersistenceError)
 	}
 	if m.autosaveCmd() != nil {
 		t.Fatal("the banner and the autosave must agree about there being nothing to write")

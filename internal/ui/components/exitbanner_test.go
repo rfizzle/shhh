@@ -89,6 +89,20 @@ func TestExitBanner_UnsavedNamesNoSlotAndOffersNoCommand(t *testing.T) {
 	}
 }
 
+// The startup warning is hidden by the alternate screen, so an open failure
+// remains beside the next step after the screen is gone.
+func TestExitBanner_PersistenceErrorSurvivesTheAlternateScreen(t *testing.T) {
+	b := fullBanner()
+	b.Unsaved = true
+	b.PersistenceError = "migrate: database is locked"
+	got := plainBanner(b, 80)
+	for _, want := range []string{"not saved · run `shhh doctor`", "reason   migrate: database is locked"} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("banner should retain %q, got %q", want, got)
+		}
+	}
+}
+
 // The resume command is the one field a reader has to retype, so it is never
 // clipped: a command with its tail eaten is not a shorter command.
 func TestExitBanner_ResumeCommandIsNeverClipped(t *testing.T) {

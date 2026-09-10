@@ -540,11 +540,12 @@ type Model struct {
 	// agent owns the loop state (message list, stream requests, tool
 	// dispatch, approval queue, iteration guard); the Model is one front-end
 	// driving it.
-	agent    *agent.Agent
-	db       *storage.DB
-	copyFn   func(string) clipboard.Result
-	runFn    func(context.Context, string) (string, int)
-	switchFn func(string)
+	agent            *agent.Agent
+	db               *storage.DB
+	persistenceError string
+	copyFn           func(string) clipboard.Result
+	runFn            func(context.Context, string) (string, int)
+	switchFn         func(string)
 	// newSession is the half of a session boundary that lives outside this
 	// model: the record closed and reopened, and the system prompt built
 	// again. Nil in a host that has neither, which is every front-end but
@@ -1514,6 +1515,7 @@ func (m Model) ExitBanner(resume string) components.ExitBanner {
 	}
 	if m.db == nil {
 		b.Unsaved = true
+		b.PersistenceError = m.persistenceError
 		return b
 	}
 	b.Session, b.Title, b.Resume = m.sessionName, m.titles.title, resume
