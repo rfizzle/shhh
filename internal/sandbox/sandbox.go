@@ -492,6 +492,7 @@ var envAllowlist = []string{
 	"PATH", "HOME", "LANG", "TERM",
 	"TMPDIR", "XDG_CACHE_HOME",
 	"GOPATH", "GOCACHE", "GOMODCACHE",
+	"GOLANGCI_LINT_CACHE",
 }
 
 // containedEnv applies the allowlist to env, keeping the pairs in the order

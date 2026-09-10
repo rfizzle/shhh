@@ -76,17 +76,6 @@ const (
 	AttrRound      = "shhh.round"
 )
 
-// exportAttrs is every key the exporter can write, in one place so the set
-// is a thing a test can hold rather than a claim a comment makes. A key that
-// is added to the code and not to this list fails the test beside it, which
-// is the point: the set is closed on purpose, and the way to widen it is to
-// argue for the new key rather than to reach for attribute.String.
-var exportAttrs = []string{
-	AttrKind, AttrProvider, AttrModel, AttrOutcome, AttrParent,
-	AttrTurns, AttrTokensIn, AttrTokensOut, AttrCost,
-	AttrTool, AttrEventCode, AttrReason, AttrDurationMs, AttrTurn, AttrRound,
-}
-
 // exportTimeout bounds the one round trip a session's span costs, and it is
 // the whole of what a slow collector can take from a session: the span is
 // sent when the row closes, and a caller that closes a row somewhere a wait
@@ -285,10 +274,6 @@ func (s *spanSink) Shutdown(ctx context.Context) error { return s.exp.Shutdown(c
 // ended it, so by the time anyone could ask, every span that exists has
 // either arrived or failed.
 func (s *spanSink) ForceFlush(context.Context) error { return nil }
-
-// exporting reports whether anything would be sent now, which is what a test
-// asserts on and what says a failure has switched this off for the moment.
-func (e *Exporter) exporting() bool { return e != nil && !e.sink.paused(time.Now()) }
 
 // Session opens the span one session's record hangs off. The span is not
 // sent until End, because it is the session — a span that closed at the

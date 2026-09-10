@@ -8,7 +8,7 @@ GOVET=$(GOCMD) vet
 # executable Git fsmonitor hook from the shell that launched them. The quality
 # runner supplies the private GOCACHE; this target supplies the stable process
 # environment shared by local and session checks.
-TEST_HERMETIC_ENV=env -u SHHH_API_KEY -u SHHH_BASE_URL -u NO_COLOR GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.fsmonitor GIT_CONFIG_VALUE_0=
+TEST_HERMETIC_ENV=env -u SHHH_API_KEY -u SHHH_BASE_URL -u NO_COLOR GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.fsmonitor GIT_CONFIG_VALUE_0= XDG_CACHE_HOME=$${TMPDIR}/shhh-cache GOLANGCI_LINT_CACHE=$${TMPDIR}/shhh-golangci-lint
 # gofmt ships with the toolchain but is not always on PATH — a Go installed
 # through a version manager leaves it in GOROOT and nowhere else. Falling back
 # to GOROOT is what keeps `make fmt` and the gofmt gate from quietly doing
@@ -54,7 +54,7 @@ else
 	RESET   := ""
 endif
 
-.PHONY: all build build-all linux darwin windows clean fmt fmt-check lint tidy test test-hermetic race test-contract test-integration ci cross docs docs-check eval eval-baseline cache-check tui-build tui-run tui-shot tui-check help
+.PHONY: all build build-all linux darwin windows clean fmt fmt-check fmt-check-hermetic lint lint-hermetic vet-hermetic docs-check-hermetic tidy test test-hermetic race test-contract test-integration ci cross docs docs-check eval eval-baseline cache-check tui-build tui-run tui-shot tui-check help
 
 all: help
 
@@ -250,6 +250,18 @@ test: ## Run tests
 
 test-hermetic: ## Run the contained test tier with a stable environment
 	@$(TEST_HERMETIC_ENV) $(GOTEST) -mod=readonly $(PROJECT_PACKAGES)
+
+vet-hermetic: ## Run go vet with the contained test environment
+	@$(TEST_HERMETIC_ENV) $(GOVET) -mod=readonly $(PROJECT_PACKAGES)
+
+lint-hermetic: ## Run golangci-lint with the contained test environment
+	@$(TEST_HERMETIC_ENV) $(GOLANGCI_LINT) run --modules-download-mode=readonly
+
+fmt-check-hermetic: ## Check formatting with the contained test environment
+	@$(TEST_HERMETIC_ENV) $(MAKE) --no-print-directory fmt-check
+
+docs-check-hermetic: ## Check documentation with the contained test environment
+	@$(TEST_HERMETIC_ENV) $(MAKE) --no-print-directory docs-check
 
 race: ## Run tests with race detector
 	@echo "${MAGENTA}Running tests with race detector...${RESET}"

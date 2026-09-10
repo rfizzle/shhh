@@ -38,6 +38,16 @@ type collector struct {
 	resources []*commonpb.KeyValue
 }
 
+// exportAttrs is every key the exporter can write. A key missing here makes
+// the contract test fail, keeping the exported vocabulary closed.
+var exportAttrs = []string{
+	AttrKind, AttrProvider, AttrModel, AttrOutcome, AttrParent,
+	AttrTurns, AttrTokensIn, AttrTokensOut, AttrCost,
+	AttrTool, AttrEventCode, AttrReason, AttrDurationMs, AttrTurn, AttrRound,
+}
+
+func (e *Exporter) exporting() bool { return e != nil && !e.sink.paused(time.Now()) }
+
 func newCollector(t *testing.T) *collector {
 	t.Helper()
 	c := &collector{}

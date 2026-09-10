@@ -33,7 +33,9 @@ at the seam instead of a host service.
 
 The quality runner gives Go checks a private build cache and invokes `make
 test-hermetic`, which clears provider, palette, and executable Git-hook
-environment state. When driving Go directly in a restricted shell, point
+environment state. Its other Go-derived checks use the matching hermetic Make
+targets, so vet, lint, formatting, and documentation generation inherit the
+same environment and private tool-cache location. When driving Go directly in a restricted shell, point
 `GOCACHE` at a fresh writable
 directory and pass `-mod=readonly`; do not weaken containment just to reuse a
 host cache or permit a module-cache write.

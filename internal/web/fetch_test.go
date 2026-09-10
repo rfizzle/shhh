@@ -12,8 +12,9 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/rfizzle/shhh/internal/testhttp"
 	"time"
+
+	"github.com/rfizzle/shhh/internal/testhttp"
 )
 
 var fixtureHTTP testhttp.Registry

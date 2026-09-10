@@ -1,23 +1,25 @@
 {
   "max_parallel": 1,
-  "on_close": "fast",
+  "on_close": "default",
   "suites": {
     "default": {
       "timeout_seconds": 600,
       "require_containment": true,
       "checks": [
         { "name": "test", "exe": "make", "args": ["test-hermetic"] },
-        { "name": "vet", "exe": "go", "args": ["vet", "./..."] },
-        { "name": "lint", "exe": "golangci-lint", "args": ["run"] },
-        { "name": "docs", "exe": "python3", "args": ["scripts/check-docs.py"] }
+        { "name": "vet", "exe": "make", "args": ["vet-hermetic"] },
+        { "name": "lint", "exe": "make", "args": ["lint-hermetic"] },
+        { "name": "format", "exe": "make", "args": ["fmt-check-hermetic"] },
+        { "name": "docs", "exe": "make", "args": ["docs-check-hermetic"] }
       ]
     },
     "fast": {
       "timeout_seconds": 120,
       "require_containment": true,
       "checks": [
-        { "name": "vet", "exe": "go", "args": ["vet", "./..."] },
-        { "name": "docs", "exe": "python3", "args": ["scripts/check-docs.py"] }
+        { "name": "vet", "exe": "make", "args": ["vet-hermetic"] },
+        { "name": "format", "exe": "make", "args": ["fmt-check-hermetic"] },
+        { "name": "docs", "exe": "make", "args": ["docs-check-hermetic"] }
       ]
     }
   }

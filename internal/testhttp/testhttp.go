@@ -3,7 +3,6 @@
 package testhttp
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"net/http"
@@ -168,7 +167,3 @@ func Abort(w http.ResponseWriter) {
 	r.abort = io.ErrUnexpectedEOF
 	r.mu.Unlock()
 }
-
-type ioNopCloser struct{ *bytes.Reader }
-
-func (ioNopCloser) Close() error { return nil }

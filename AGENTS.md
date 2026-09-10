@@ -103,7 +103,9 @@ uses an in-memory HTTP fixture, and has no requirement for a TCP listener,
 clipboard, container engine, host daemon, public network, or shared Go build
 cache. A session quality suite therefore declares `require_containment`; when
 containment cannot be established it is blocked before it runs, never quietly
-run on the host.
+run on the host. This checkout closes changed work with the complete `default`
+suite — hermetic tests, vet, lint, formatting, and documentation checks. The
+shorter `fast` suite is available for an early signal, not a closing verdict.
 
 Tests that prove a real boundary are separate. `make test-contract` selects
 the CLI/provider, telemetry, fixture-site, and report-serving loopback

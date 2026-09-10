@@ -342,6 +342,13 @@ func TestResolvePrivateGoCacheLivesInTheSessionScratch(t *testing.T) {
 	}
 }
 
+func TestContainedEnvKeepsTheDeclaredLinterCache(t *testing.T) {
+	env := containedEnv([]string{"GOLANGCI_LINT_CACHE=/scratch/lint"}, nil)
+	if !slices.Contains(env, "GOLANGCI_LINT_CACHE=/scratch/lint") {
+		t.Fatalf("contained environment = %v, want the linter cache", env)
+	}
+}
+
 // Bubblewrap mounts the tmpfs before the write binds, which is what makes a
 // grant of something inside /tmp mean exactly what it says: the granted path
 // is bound back over the empty filesystem and nothing else comes with it.
