@@ -83,10 +83,11 @@ func TestOpenRouter_CustomModel(t *testing.T) {
 }
 
 func TestOpenRouter_SendsRequiredHeaders(t *testing.T) {
-	var gotReferer, gotTitle string
+	var gotReferer, gotTitle, gotSession string
 	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotReferer = r.Header.Get("HTTP-Referer")
 		gotTitle = r.Header.Get("X-Title")
+		gotSession = r.Header.Get("X-Session-Id")
 		w.Header().Set("Content-Type", "text/event-stream")
 		fmt.Fprint(w, "data: [DONE]\n\n")
 	}))
@@ -107,6 +108,33 @@ func TestOpenRouter_SendsRequiredHeaders(t *testing.T) {
 	}
 	if gotTitle != "shhh" {
 		t.Errorf("expected X-Title header, got %q", gotTitle)
+	}
+	if gotSession == "" || !strings.HasPrefix(gotSession, "shhh-") {
+		t.Errorf("expected opaque X-Session-Id header, got %q", gotSession)
+	}
+}
+
+func TestOpenRouter_SessionIDStaysWithTheConversation(t *testing.T) {
+	var got []string
+	srv := providerTestHTTP.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		got = append(got, r.Header.Get("X-Session-Id"))
+		w.Header().Set("Content-Type", "text/event-stream")
+		fmt.Fprint(w, "data: [DONE]\n\n")
+	}))
+	defer srv.Close()
+
+	p := newTestOpenRouter(srv.URL+"/v1", "test-model")
+	opening := []Message{{Role: RoleSystem, Content: "be helpful"}, {Role: RoleUser, Content: "first"}}
+	for _, messages := range [][]Message{opening, append(opening, Message{Role: RoleAssistant, Content: "done"}, Message{Role: RoleUser, Content: "next"})} {
+		ch, err := p.StreamCompletion(context.Background(), messages, CompletionOpts{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		for range ch {
+		}
+	}
+	if len(got) != 2 || got[0] == "" || got[0] != got[1] {
+		t.Fatalf("session ids = %q, want one stable id", got)
 	}
 }
 

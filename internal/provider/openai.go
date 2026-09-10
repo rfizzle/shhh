@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 
 	openai "github.com/sashabaranov/go-openai"
@@ -36,6 +37,7 @@ func NewOpenAI(opts ResolveOpts) (*OpenAI, error) {
 
 	cfg := openai.DefaultConfig(key)
 	cfg.BaseURL = baseURL
+	cfg.HTTPClient = &http.Client{Transport: NewOpenAIPromptCacheTransport(http.DefaultTransport)}
 
 	return &OpenAI{
 		client:       openai.NewClientWithConfig(cfg),
@@ -87,6 +89,12 @@ func (o *OpenAI) StreamCompletion(ctx context.Context, messages []Message, opts 
 		// auxiliary call ever sets a ceiling here — a turn sends none — so
 		// the old field failed exactly where nobody was watching.
 		req.MaxCompletionTokens = opts.MaxTokens
+	}
+	// A bounded auxiliary call needs a bounded visible answer as well as its
+	// completion ceiling. GPT-5.6 accepts this control on chat completions;
+	// older models are left on the SDK's ordinary request shape.
+	if opts.MaxTokens > 0 && responsesExplicitCache(req.Model) {
+		req.Verbosity = "low"
 	}
 	// Reasoning effort, fitted to the model: a rung it lacks becomes the
 	// highest it has, and a model with no reasoning gets no field, because

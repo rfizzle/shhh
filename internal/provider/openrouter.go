@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"net/http"
 	"os"
@@ -72,9 +73,37 @@ type openRouterTransport struct {
 }
 
 func (t *openRouterTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	req = req.Clone(req.Context())
 	req.Header.Set("HTTP-Referer", "https://github.com/rfizzle/shhh")
 	req.Header.Set("X-Title", "shhh")
+	if sessionID, ok := req.Context().Value(openRouterSessionContextKey{}).(string); ok && sessionID != "" {
+		req.Header.Set("X-Session-Id", sessionID)
+	}
 	return t.base.RoundTrip(req)
+}
+
+type openRouterSessionContextKey struct{}
+
+// openRouterSessionID gives a conversation one opaque, stable routing key.
+// It hashes only the opening that remains present as rounds are appended, so
+// concurrent tool calls do not move an otherwise cacheable session to a new
+// upstream provider. The content itself never reaches the gateway as a header.
+func openRouterSessionID(messages []Message) string {
+	h := sha256.New()
+	_, _ = h.Write([]byte("shhh-openrouter-session\x00"))
+	for _, message := range messages {
+		switch message.Role {
+		case RoleSystem:
+			_, _ = h.Write([]byte("system\x00"))
+			_, _ = h.Write([]byte(message.Content))
+			_, _ = h.Write([]byte{0})
+		case RoleUser:
+			_, _ = h.Write([]byte("user\x00"))
+			_, _ = h.Write([]byte(message.Content))
+			return fmt.Sprintf("shhh-%x", h.Sum(nil)[:16])
+		}
+	}
+	return fmt.Sprintf("shhh-%x", h.Sum(nil)[:16])
 }
 
 func NewOpenRouterWith(client *openai.Client, model string) *OpenRouter {
@@ -136,6 +165,7 @@ func (o *OpenRouter) StreamCompletion(ctx context.Context, messages []Message, o
 
 	// The stream and the request that opens it both run under the idle
 	// deadline (idle.go).
+	ctx = context.WithValue(ctx, openRouterSessionContextKey{}, openRouterSessionID(messages))
 	ctx, watch := o.guard(ctx)
 	stream, err := o.client.CreateChatCompletionStream(ctx, req)
 	if err != nil {

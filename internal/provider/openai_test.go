@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"reflect"
 	"testing"
 
 	openai "github.com/sashabaranov/go-openai"
@@ -14,7 +15,7 @@ import (
 func newTestOpenAI(baseURL string, model string) *OpenAI {
 	cfg := openai.DefaultConfig("test-key")
 	cfg.BaseURL = baseURL
-	cfg.HTTPClient = providerTestHTTP.Client()
+	cfg.HTTPClient = &http.Client{Transport: NewOpenAIPromptCacheTransport(providerTestHTTP.Client().Transport)}
 	return NewOpenAIWithConfig(openai.NewClientWithConfig(cfg), model)
 }
 
@@ -538,6 +539,25 @@ func TestOpenAI_StreamCompletion_CeilingIsCompletionTokens(t *testing.T) {
 		if got, ok := body["max_tokens"]; ok {
 			t.Errorf("%s: request carries the deprecated max_tokens = %v", model, got)
 		}
+	}
+}
+
+func TestOpenAI_StreamCompletion_GPT56UsesPromptCacheAndLowVerbosity(t *testing.T) {
+	body := captureChatRequest(t, func(baseURL string) (<-chan StreamEvent, error) {
+		return newTestOpenAI(baseURL, "gpt-5.6-terra").StreamCompletion(
+			context.Background(),
+			[]Message{{Role: RoleSystem, Content: "be helpful"}, {Role: RoleUser, Content: "hi"}},
+			CompletionOpts{MaxTokens: 256},
+		)
+	})
+	if got, ok := body["prompt_cache_key"].(string); !ok || got == "" {
+		t.Errorf("prompt_cache_key = %v, want an opaque key", body["prompt_cache_key"])
+	}
+	if got := body["prompt_cache_options"]; !reflect.DeepEqual(got, map[string]any{"ttl": "30m"}) {
+		t.Errorf("prompt_cache_options = %#v", got)
+	}
+	if got := body["verbosity"]; got != "low" {
+		t.Errorf("verbosity = %v, want low", got)
 	}
 }
 

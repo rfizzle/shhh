@@ -565,7 +565,9 @@ that has never heard of it.
 The dialects do not agree about this, and which is which is worth stating
 rather than leaving to be discovered. OpenAI's two — chat completions and the
 Responses API — cache the prefix they recognise from the last request without
-being asked. Gemini has that implicit cache too, and additionally gets an
+being asked. On GPT-5.6, both also carry a stable cache-routing key and its
+30-minute lifetime, because that family accepts the explicit control and an
+otherwise matching long prefix should not lose its warm shard. Gemini has that implicit cache too, and additionally gets an
 explicit cached-content resource for a substantial fixed head: its system
 instruction and tool declarations live there for the configured lifetime, and
 the growing conversation stays on the generation. A short head is cheaper to
@@ -590,6 +592,12 @@ configured gateway profile is the documented way to reach Anthropic models
 through somebody else's endpoint, so a profile whose route speaks the OpenAI
 dialect is annotated exactly as the built-in gateway is — the rule belongs to
 the wire, and every path that writes to that wire shares it.
+
+OpenRouter gets one more wire-level fact: every round in a conversation names
+the same opaque session identifier. Its router can then keep the conversation
+on an upstream provider that has its prefix warm. The identifier is a hash of
+the fixed opening, never the opening itself, and grows neither with tool
+results nor later user turns.
 
 A marked prefix does not live forever, and every mark in one request is given
 the same life. The two lifetimes on offer are five minutes and an hour, each
