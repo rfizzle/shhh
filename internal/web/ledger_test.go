@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 )
@@ -38,7 +37,7 @@ func (f *fakeLedgerBackend) LoadSources(session string) ([]Source, error) {
 }
 
 func TestLedger_AParentAndAChildEachSignTheirOwnReads(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := testServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		fmt.Fprint(w, `<html><head><title>Doc</title></head><body><main><p>Body text.</p></main></body></html>`)
 	}))
@@ -84,12 +83,12 @@ func TestLedger_AParentAndAChildEachSignTheirOwnReads(t *testing.T) {
 }
 
 func TestLedger_ASearchIsARowWithItsQueryAndNoURL(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := testServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, braveFixture)
 	}))
 	defer srv.Close()
 
-	ts := NewToolset(NewFetcher(Policy{}), &Searcher{APIKey: "k", Endpoint: srv.URL})
+	ts := NewToolset(NewFetcher(Policy{}), &Searcher{APIKey: "k", Endpoint: srv.URL, HTTPClient: fixtureHTTP.Client()})
 	ledger := NewLedger(nil)
 	ts.UseLedger(ledger)
 	if _, err := ts.Execute(Orchestrator, SearchToolName, json.RawMessage(`{"query":"golang"}`)); err != nil {
@@ -114,7 +113,7 @@ func TestLedger_ASearchIsARowWithItsQueryAndNoURL(t *testing.T) {
 
 func TestLedger_AFetchThatKeptItsPageNamesTheEntry(t *testing.T) {
 	long := strings.Repeat("word ", (MaxInlineBytes/5)+100)
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := testServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprint(w, long)
 	}))
@@ -301,7 +300,7 @@ func TestLedger_AFetchThatWasRefusedIsStillARow(t *testing.T) {
 func TestLedger_APageThatWasAScriptShellIsARowWithNoEntry(t *testing.T) {
 	shell := `<html><head><title>Docs</title></head><body><div id="app"></div>` +
 		strings.Repeat("<span class=\"pad\"></span>", 400) + `</body></html>`
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := testServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
 		fmt.Fprint(w, shell)
 	}))

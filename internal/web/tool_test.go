@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -78,7 +77,7 @@ func TestToolset_FetchSummary(t *testing.T) {
 }
 
 func TestToolset_ExecuteFetchHTML(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := testServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		fmt.Fprint(w, `<html><head><title>Doc</title></head><body><main><h1>Hello</h1><p>Body text.</p></main></body></html>`)
 	}))
@@ -97,12 +96,12 @@ func TestToolset_ExecuteFetchHTML(t *testing.T) {
 }
 
 func TestToolset_ExecuteSearch(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := testServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, braveFixture)
 	}))
 	defer srv.Close()
 
-	ts := NewToolset(NewFetcher(Policy{}), &Searcher{APIKey: "k", Endpoint: srv.URL})
+	ts := NewToolset(NewFetcher(Policy{}), &Searcher{APIKey: "k", Endpoint: srv.URL, HTTPClient: fixtureHTTP.Client()})
 	out, err := ts.Execute(Orchestrator, SearchToolName, json.RawMessage(`{"query":"golang"}`))
 	if err != nil {
 		t.Fatalf("Execute: %v", err)
@@ -119,7 +118,7 @@ func TestToolset_ExecuteSearch(t *testing.T) {
 }
 
 func TestToolset_WrapExecutor(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := testServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprint(w, "plain")
 	}))
@@ -500,7 +499,7 @@ func TestInlineBound_TheStoreDecidesTheDefault(t *testing.T) {
 func TestExecuteFetch_ACachedPageStillPages(t *testing.T) {
 	body := longPage()
 	requests := 0
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := testServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requests++
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		_, _ = w.Write(body)
@@ -563,7 +562,7 @@ func TestFormatFetchResult_PDFPastTheCeiling(t *testing.T) {
 // quietly dropped it.
 func TestToolset_SearchParameters(t *testing.T) {
 	srv, sent := stubSearch(t, braveFixture)
-	ts := NewToolset(NewFetcher(Policy{}), &Searcher{APIKey: "k", Endpoint: srv.URL})
+	ts := NewToolset(NewFetcher(Policy{}), &Searcher{APIKey: "k", Endpoint: srv.URL, HTTPClient: fixtureHTTP.Client()})
 
 	if _, err := ts.Execute(Orchestrator, SearchToolName,
 		json.RawMessage(`{"query":"generics","freshness":"week","site":"go.dev","offset":1}`)); err != nil {
@@ -592,7 +591,7 @@ func TestToolset_SearchParameters(t *testing.T) {
 func TestToolset_SearchIsRecordedByBackendAlone(t *testing.T) {
 	srv, _ := stubSearch(t, braveFixture)
 	var seen []string
-	ts := NewToolset(NewFetcher(Policy{}), &Searcher{APIKey: "k", Endpoint: srv.URL})
+	ts := NewToolset(NewFetcher(Policy{}), &Searcher{APIKey: "k", Endpoint: srv.URL, HTTPClient: fixtureHTTP.Client()})
 	ts.UseObserver(func(provider string) { seen = append(seen, provider) })
 
 	if _, err := ts.Execute(Orchestrator, SearchToolName,
