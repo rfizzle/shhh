@@ -606,6 +606,10 @@ than no gate.
 
 ### A gate chooses one execution boundary
 
+The fuller account of what each testing tier proves is in
+[`testing.md`](testing.md). This section is the permission boundary that
+chooses the hermetic one.
+
 A quality suite that runs from a session is a contained check or it is not a
 quality suite at all. Set `require_containment` on every suite a session may
 run automatically or at its close. When this host cannot establish the

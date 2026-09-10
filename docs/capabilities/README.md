@@ -21,6 +21,7 @@ backlog profile — read only once you have said the checkout is trusted.
 | [`todo.md`](todo.md) | The project's backlog: items as files, what is ready, what is archived |
 | [`secrets.md`](secrets.md) | Values commands can use and the model never sees |
 | [`approvals-and-safety.md`](approvals-and-safety.md) | Deciding whether something runs, with the facts in hand |
+| [`testing.md`](testing.md) | What a passing quality check proves, and where each test tier runs |
 | [`containment.md`](containment.md) | What an approved command can actually reach |
 | [`providers.md`](providers.md) | The LLM backends, gateways, and how failures are classified |
 | [`sessions-and-memory.md`](sessions-and-memory.md) | History, resumable sessions, durable memory, metrics |

@@ -75,6 +75,8 @@ golden fixture, so this cannot drift back.
 | Build | `make build` |
 | Test all | `go test ./...` |
 | Test single package | `go test ./internal/<pkg>` |
+| Run the loopback CLI/provider contract | `make test-contract` (requires a listener-capable host; intentionally outside a contained session) |
+| Run containment integration checks | `make test-integration` (requires a runner with the supported OS mechanism) |
 | Test with race detector | `make race` |
 | Format | `make fmt` (runs gofmt + goimports) |
 | Check formatting without rewriting | `make fmt-check` (part of `make ci`; reads the tracked tree and fails on the first drift) |
@@ -93,6 +95,32 @@ golden fixture, so this cannot drift back.
 | Drive the smoke scene through the built binary | `make tui-check` (part of `make ci`; the gate every surface change passes) |
 
 Build produces a `shhh` binary with version injected via `-ldflags`.
+
+## Testing topology
+
+The default test tier is hermetic: it owns temporary files and configuration,
+uses an in-memory HTTP fixture, and has no requirement for a TCP listener,
+clipboard, container engine, host daemon, public network, or shared Go build
+cache. A session quality suite therefore declares `require_containment`; when
+containment cannot be established it is blocked before it runs, never quietly
+run on the host.
+
+Tests that prove a real boundary are separate. `make test-contract` selects
+the CLI/provider loopback contracts with `SHHH_TEST_CONTRACT=1`; those tests
+skip when not selected and fail clearly when the selected host cannot bind.
+Containment implementation checks have the `integration` build tag and run
+through `make test-integration` on a host that supports them. A skip outside
+that host is not contract evidence.
+
+What will bite you: a Go `httptest` server opens a real listener. For an
+in-process HTTP fixture, use `internal/testhttp` and pass its client through
+the package's existing transport seam. For a host executable such as the
+clipboard, replace the command at its test seam and restore it with cleanup.
+The quality runner gives Go checks a private build cache; for a direct test in
+a restricted shell, use a fresh writable `GOCACHE` rather than weakening the
+sandbox. The reusable procedure is in `.agents/skills/testing/SKILL.md`; the
+product behaviour and rationale are in
+[`docs/capabilities/testing.md`](docs/capabilities/testing.md).
 
 ## Version control
 
