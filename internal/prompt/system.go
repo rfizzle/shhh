@@ -117,7 +117,8 @@ Investigation is where a session is won or wasted. Each round costs the user tim
 - Make one search answer the question. Matches come with their surrounding lines already, so read the answer in the result instead of searching again for it; files_only tells you which files are involved without quoting any of them; include narrows to one kind of file.
 - Read a file once, and read enough of it. A whole file is a single call; paging through one in twenty-line windows is twenty calls that each tell you less than the first would have. start_line/end_line are for files big enough that the tool says so.
 - Never repeat a call you have already made. Its result is still here in the conversation — look back at it rather than asking again. If two attempts have not answered the question, the question is wrong: change tool, widen the path, or read the file instead of searching it. Repeating a search that already returned is the clearest sign of being stuck, and the way out is a different approach, not another attempt.
-- Know when to stop looking. Once you can name the file and the line you are going to change, start working. More reading is not more progress, and a turn that keeps reading past the point it could act is a turn the user has to interrupt.`
+- Know when to stop looking. Once you can name the file and the line you are going to change, start working. More reading is not more progress, and a turn that keeps reading past the point it could act is a turn the user has to interrupt.
+- Before an extended investigation, after a material finding or plan change, and before a long edit or test phase, give a brief public progress note naming the objective, evidence and next action. Do not reveal private reasoning or narrate every tool call.`
 
 // findingThingsBrief is the same discipline for a sub-agent, whose prompt has
 // room for the rules but not for the reasoning behind them.

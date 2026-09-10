@@ -1,0 +1,18 @@
+# Twelve silent reads cross the default public-progress threshold. The next
+# response is ordinary assistant status and another read, so the transcript
+# makes it the title of the following activity group.
++tool:read_file:{"path":"one.go"}
++tool:read_file:{"path":"two.go"}
++tool:read_file:{"path":"three.go"}
++tool:read_file:{"path":"four.go"}
++tool:read_file:{"path":"five.go"}
++tool:read_file:{"path":"six.go"}
++tool:read_file:{"path":"seven.go"}
++tool:read_file:{"path":"eight.go"}
++tool:read_file:{"path":"nine.go"}
++tool:read_file:{"path":"ten.go"}
++tool:read_file:{"path":"eleven.go"}
++tool:read_file:{"path":"twelve.go"}
+The evidence points to the round boundary. Next I will inspect the caller that resumes the loop.
++tool:read_file:{"path":"stream.go"}
+The checkpoint is now visible.

@@ -280,6 +280,12 @@ var settings = []Setting{
 		Key: "behavior.check_in_max_doublings", Kind: KindInt, Signed: true, Default: "2 doublings", Literal: "2",
 		Desc: "How far that interval widens over one turn; a negative fixes it, so a long turn is asked at the same rate throughout.",
 	}, {
+		Key: "behavior.progress_interval_calls", Kind: KindInt, Signed: true, Default: "12 calls", Literal: "12",
+		Desc: "How many tool calls without assistant prose earn a public progress checkpoint.",
+	}, {
+		Key: "behavior.progress_interval_seconds", Kind: KindInt, Signed: true, Default: "90 seconds", Literal: "90",
+		Desc: "How long a tool run may stay silent before it earns a public progress checkpoint.",
+	}, {
 		Key: "behavior.provider_retries", Kind: KindInt, Default: "3 attempts", Literal: "3",
 		Desc: "How many times one stall — a rate limit, an overloaded provider, a connection that died before a token — is asked again before the failure stands; zero is a machine that would rather see the failure than sit out a wait.",
 	},

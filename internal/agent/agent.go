@@ -119,6 +119,14 @@ type Agent struct {
 	// duplicate question on either clock.
 	lastSpend int64
 
+	// progress tracks tool activity since the last assistant prose for the
+	// public-status checkpoint (progress.go). Its clocks are independent of
+	// interventions: visibility must never postpone a check-in or reset rounds.
+	progress        progressState
+	progressCalls   int
+	progressElapsed time.Duration
+	now             func() time.Time
+
 	// executing is true while auto-run tool calls run in the background;
 	// pending holds every call of the current round still owed a result, and
 	// queue the subset awaiting user approval.
@@ -276,6 +284,7 @@ func (a *Agent) StartTurnWith(text string, atts []provider.Attachment) {
 	a.lastIntervention = 0
 	a.checkIns = 0
 	a.markSpend()
+	a.resetProgress()
 	a.StartInterveneTurn()
 	a.Append(provider.Message{Role: provider.RoleUser, Content: text, Attachments: atts})
 }
@@ -350,6 +359,7 @@ func (a *Agent) BeginToolRound(text string, calls []provider.ToolCall, gate Appr
 	})
 	a.reasoning = nil
 	a.noteTreeCalls(calls)
+	a.progress.calls += len(calls)
 	for _, tc := range calls {
 		if gate != nil && gate(tc) {
 			gated = append(gated, tc)

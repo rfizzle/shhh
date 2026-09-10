@@ -645,6 +645,8 @@ own file could hold.
 | `memory_max_tokens` | number | `1200` | The token budget for the injected memory block. |
 | `check_in_interval_rounds` | number | 40 rounds | How many tool rounds pass before a turn is asked to take stock. |
 | `check_in_max_doublings` | number | 2 doublings | How far that interval widens over one turn; a negative fixes it, so a long turn is asked at the same rate throughout. |
+| `progress_interval_calls` | number | 12 calls | How many tool calls without assistant prose earn a public progress checkpoint. |
+| `progress_interval_seconds` | number | 90 seconds | How long a tool run may stay silent before it earns a public progress checkpoint. |
 | `provider_retries` | number | 3 attempts | How many times one stall — a rate limit, an overloaded provider, a connection that died before a token — is asked again before the failure stands; zero is a machine that would rather see the failure than sit out a wait. |
 
 **`[sandbox]`**

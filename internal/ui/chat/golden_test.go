@@ -213,6 +213,23 @@ func TestGolden_StepOutline(t *testing.T) {
 // order the run reached them, one group the plan never named marked off it,
 // and the declared-but-not-started steps trailing as queued headers. It is
 // the one shape of the outline that does not come from the prose.
+// TestGolden_ProgressUpdate captures the ordinary assistant status that heads
+// the following folded activity group after a silent investigation.
+func TestGolden_ProgressUpdate(t *testing.T) {
+	captureGolden(t, "progress-update", "a public progress update before a folded activity group", goldenWidths, func(width int) []golden.Panel {
+		m := frameModel(t, width, 40)
+		m.transcript = []entry{
+			{kind: entryUser, text: "trace the checkpoint"},
+			{kind: entryAssistant, text: "The round boundary is the seam; next I will trace its callers."},
+			{kind: entryTool, toolName: "search", toolArgs: `{"pattern":"resumeToolLoop"}`, toolResult: "4 hits", duration: 400 * time.Millisecond},
+			{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"internal/ui/chat/stream.go"}`, toolResult: "lines", duration: 300 * time.Millisecond},
+			{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"internal/agent/headless.go"}`, toolResult: "lines", duration: 300 * time.Millisecond},
+		}
+		m.invalidateRenderCache()
+		return []golden.Panel{{Label: "ordinary public status before a folded activity group", View: m.renderHistory()}}
+	})
+}
+
 func TestGolden_PlanChecklist(t *testing.T) {
 	captureGolden(t, "plan-checklist", "plan checklist outline", goldenWidths, func(width int) []golden.Panel {
 		build := func(st state) string {

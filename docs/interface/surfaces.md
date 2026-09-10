@@ -147,7 +147,9 @@ hide the fact that it happened.
 
 Where nothing was declared, the prose that preceded a batch of calls becomes
 the title. Where there is no structure to find, the transcript is a flat list
-and no empty grouping chrome is drawn.
+and no empty grouping chrome is drawn. A public progress update is ordinary
+assistant prose, so it titles the following group while the rail continues to
+state only the immediate phase.
 
 ### The turn's close
 

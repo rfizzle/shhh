@@ -325,6 +325,14 @@ func (h headlessObserver) text(s string) {
 	h.stream.text(h.pos(), s)
 }
 
+// progress writes public status only to JSONL. Text output is deliberately the
+// final answer alone, while the content-free record observes the checkpoint.
+func (h headlessObserver) progress(s string) {
+	at := h.pos()
+	h.rec.signal(at, observe.SignalProgress, observe.ProgressCheckpoint)
+	h.stream.progress(at, s)
+}
+
 // call is one call the model asked for, before it ran or was resolved. The
 // record keeps a call and its result as one row, written when the result
 // lands; the stream carries them as two, because between them is the wait
@@ -983,6 +991,8 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 
 	a := agent.New(messages, env.stream)
 	a.SetSteering(steering(cfg, env.prompts))
+	a.SetProgressIntervals(cfg.Behavior.ProgressIntervalCalls,
+		time.Duration(cfg.Behavior.ProgressIntervalSeconds)*time.Second)
 	a.SetScrub(session.vault.ScrubMessage)
 	if session.skills.Len() > 0 {
 		a.KeepResults(skill.IsContent)
@@ -1151,6 +1161,9 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		Agent:   a,
 		Compact: headlessCompactor(cmd.Context(), cfg, env, ledger, prices, session.toolDefs),
 		Summary: summaryRun,
+		OnProgress: func(text string) {
+			obs.progress(text)
+		},
 		OnIntervene: func(iv agent.Intervention) {
 			fmt.Fprintf(os.Stderr, "» %s\n", iv.Notice)
 			obs.intervene(iv)
@@ -2307,6 +2320,13 @@ func (s *jsonlStream) text(at observe.Pos, text string) {
 		return
 	}
 	s.write(jsonEvent{Kind: observe.EventText, Turn: at.Turn, Round: at.Round, Text: text})
+}
+
+func (s *jsonlStream) progress(at observe.Pos, text string) {
+	if s == nil || text == "" {
+		return
+	}
+	s.write(jsonEvent{Kind: observe.EventProgress, Turn: at.Turn, Round: at.Round, Text: text})
 }
 
 func (s *jsonlStream) call(at observe.Pos, tc provider.ToolCall) {

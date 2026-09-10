@@ -552,6 +552,28 @@ what a turn that is quietly already done needs.
 The person is not the check-in mechanism. They were doing that job by hand,
 and only when they happened to be looking.
 
+## Public progress during a long turn
+
+A check-in asks the model to reconsider its work. Public progress does not: it
+makes an extended silent investigation legible to the person following it. The
+coding prompt therefore asks for a short status before an extended
+investigation, after a material finding or plan change, and before a long edit
+or test phase. It names only the objective, evidence and next action; it never
+asks for private reasoning or a narration of every call.
+
+The session has a second backstop for models that make only tool calls. After
+twelve calls or ninety seconds without assistant prose, it inserts a bounded
+machine instruction at the next safe round boundary. The instruction cannot
+arrive while a tool batch is owed results, while a command runs, or behind a
+surface that owns the screen. It requests ordinary assistant prose, so that
+prose titles the activity group that follows it without creating a second
+transcript form or changing the tool-call protocol.
+
+The public text is not stored in the content-free observation record and is
+never confused with provider reasoning. A headless text run keeps stdout for
+its final answer; JSONL emits the status as a distinct `progress` event, while
+the record carries only that the checkpoint occurred.
+
 ## Two failures, two interruptions
 
 A turn can fail by going somewhere it was not asked to go, and it can fail by

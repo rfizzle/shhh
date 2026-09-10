@@ -587,6 +587,13 @@ type BehaviorConfig struct {
 	// zero keeps the built-in bound, and any negative fixes the interval so
 	// a long turn is asked at the same rate throughout.
 	CheckInMaxDoublings int `toml:"check_in_max_doublings"`
+	// ProgressIntervalCalls is how many tool calls without assistant prose earn
+	// a public progress checkpoint. Zero or less keeps the built-in interval.
+	ProgressIntervalCalls int `toml:"progress_interval_calls"`
+	// ProgressIntervalSeconds is the wall-clock counterpart of
+	// ProgressIntervalCalls, for one long-running command. Zero or less keeps
+	// the built-in interval.
+	ProgressIntervalSeconds int `toml:"progress_interval_seconds"`
 	// ProviderRetries bounds how many times one stall — a rate limit, an
 	// overloaded provider, a connection that died before a token — is asked
 	// again before the failure stands. Unset keeps the built-in bound; zero

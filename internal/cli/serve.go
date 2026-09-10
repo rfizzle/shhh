@@ -458,6 +458,8 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 
 	a := agent.New(messages, env.stream)
 	a.SetSteering(steering(cfg, env.prompts))
+	a.SetProgressIntervals(cfg.Behavior.ProgressIntervalCalls,
+		time.Duration(cfg.Behavior.ProgressIntervalSeconds)*time.Second)
 	a.SetScrub(session.vault.ScrubMessage)
 	if session.skills.Len() > 0 {
 		a.KeepResults(skill.IsContent)
@@ -668,6 +670,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		Resolve:      resolveCall,
 		Steer:        l.drainSteering,
 		OnText:       l.obs.text,
+		OnProgress:   l.obs.progress,
 		OnToolCall:   l.obs.call,
 		OnIntervene:  l.obs.intervene,
 		OnWithheld:   l.obs.withheld,

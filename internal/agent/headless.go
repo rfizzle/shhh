@@ -45,7 +45,10 @@ type Headless struct {
 	Gate    ApprovalGate
 	Resolve func(tc provider.ToolCall) string
 
-	OnText     func(text string)          // streamed assistant tokens
+	OnText func(text string) // streamed assistant tokens
+	// OnProgress receives public status that a checkpoint asked for. It stays
+	// apart from OnText so text-only output remains the run's final answer.
+	OnProgress func(text string)
 	OnToolCall func(tc provider.ToolCall) // before a call runs or is resolved
 	// OnToolResult is told each result as it is recorded. It carries the
 	// whole ToolResult rather than the text alone because a round's auto
@@ -265,7 +268,10 @@ func (h *Headless) Run(prompt string) (string, error) {
 		// before its first round, so the check belongs ahead of the request
 		// rather than behind the round.
 		h.recoverContext()
-		text, calls, stop, err := h.streamOnce()
+		// A checkpoint's status is buffered until the response says whether it
+		// is leading another tool round or is the turn's final answer.
+		progressPending := h.Agent.ProgressPending()
+		text, calls, stop, err := h.streamOnce(progressPending)
 		if err != nil {
 			// A request the window could not hold is answered before the
 			// backoff is asked anything, because it is not a stall: waiting
@@ -320,7 +326,14 @@ func (h *Headless) Run(prompt string) (string, error) {
 		// nothing about the answer the turn goes on to return, and the run
 		// must not still be saying it when that answer arrives.
 		h.truncated = false
+		progress := h.Agent.NoteProgressProse(text)
 		if len(calls) == 0 {
+			if progressPending && text != "" && h.OnText != nil {
+				// A checkpoint request that ended the turn is still the model's
+				// answer, not progress that text-mode callers should lose.
+				h.OnText(text)
+			}
+
 			if text != "" {
 				h.Agent.Append(provider.Message{Role: provider.RoleAssistant, Content: text})
 			}
@@ -398,6 +411,9 @@ func (h *Headless) Run(prompt string) (string, error) {
 		// hand goes with it, because what the model writes once it has its
 		// results is an answer and not the end of the sentence it stopped.
 		continued, carried = false, ""
+		if progress && h.OnProgress != nil {
+			h.OnProgress(text)
+		}
 		if stop == provider.StopLength {
 			// The round asked for tools and ran out of budget while it was
 			// still writing them. What survived is whole and runs as usual;
@@ -514,6 +530,9 @@ func (h *Headless) Run(prompt string) (string, error) {
 					h.OnWithheld(reason)
 				}
 			}
+		}
+		if prompt, ok := h.Agent.TakeProgressCheckpoint(); ok {
+			h.Agent.AppendMachine(prompt)
 		}
 		if iv, ok := h.Agent.NextIntervention(h.summaryTarget()); ok {
 			h.Agent.AppendMachine(iv.Message)
@@ -704,7 +723,7 @@ func (h *Headless) deliverTree(turnStart bool) {
 // consumes it, returning the assistant text, any tool calls that ended the
 // stream, and why the model stopped writing. Like the TUI's terminalMsg, a
 // tool-call event ends the stream.
-func (h *Headless) streamOnce() (string, []provider.ToolCall, provider.StopReason, error) {
+func (h *Headless) streamOnce(bufferText bool) (string, []provider.ToolCall, provider.StopReason, error) {
 	events, cancel, err := h.Agent.Stream(h.Agent.RequestMessages())
 	if err != nil {
 		return "", nil, provider.StopEnd, err
@@ -739,7 +758,7 @@ func (h *Headless) streamOnce() (string, []provider.ToolCall, provider.StopReaso
 		}
 		if ev.Token != "" {
 			text.WriteString(ev.Token)
-			if h.OnText != nil {
+			if !bufferText && h.OnText != nil {
 				h.OnText(ev.Token)
 			}
 		}

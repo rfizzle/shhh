@@ -1455,7 +1455,7 @@ func replayJSONL(t *testing.T, lines string) []jsonMessage {
 			t.Fatalf("stream line is not JSON: %v (%q)", err, line)
 		}
 		switch ev.Kind {
-		case observe.EventText:
+		case observe.EventText, observe.EventProgress:
 			text.WriteString(ev.Text)
 		case observe.EventToolCall:
 			calls = append(calls, jsonToolCall{ID: ev.ID, Name: ev.Tool, Arguments: ev.Arguments})
@@ -1540,6 +1540,20 @@ func TestJSONLStreamReplaysToTheTranscript(t *testing.T) {
 // A run that asked for no stream writes none, and every call on the way there
 // is a clean no-op rather than a nil dereference on the surface with nobody
 // watching it happen.
+func TestJSONLStream_ProgressIsDistinctFromAnswerText(t *testing.T) {
+	var lines strings.Builder
+	events := newJSONLStream(&lines)
+	events.progress(observe.Pos{Turn: 1, Round: 12}, "objective, evidence, next action")
+
+	var got jsonEvent
+	if err := json.Unmarshal([]byte(strings.TrimSpace(lines.String())), &got); err != nil {
+		t.Fatal(err)
+	}
+	if got.Kind != observe.EventProgress || got.Text != "objective, evidence, next action" {
+		t.Fatalf("progress event = %+v", got)
+	}
+}
+
 func TestJSONLStreamIsAQuietNoOpWhenNobodyAskedForOne(t *testing.T) {
 	obs := headlessObserver{rounds: func() int { return 1 }}
 	obs.text("hello")

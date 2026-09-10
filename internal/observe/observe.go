@@ -276,6 +276,10 @@ const (
 	// its own edits do not explain. Reason: "head" (the commit or branch
 	// moved), "paths" (the changed set did), or "both".
 	SignalTree = "tree-moved"
+	// SignalProgress: the model supplied the public status a long tool run
+	// owed. Reason: "checkpoint". The record deliberately holds no status
+	// prose: it is content-free, and provider reasoning is a different row.
+	SignalProgress = "progress"
 	// SignalRetry: a request the provider never answered was waited out and
 	// asked again. Reason: "rate-limit", "overloaded", "network", or "other"
 	// for a wait this build has no word for — which is what separates a
@@ -511,6 +515,10 @@ func PlanReason(items int) string {
 const (
 	// EventText: a piece of the answer, as it was written.
 	EventText = "text"
+	// EventProgress: public status the model wrote before more tool calls.
+	// It is distinct from EventText so JSONL consumers can present it without
+	// confusing it with the run's final answer or private reasoning.
+	EventProgress = "progress"
 	// EventToolCall: a call the model asked for, before it ran or was
 	// resolved.
 	EventToolCall = "tool-call"
@@ -530,6 +538,11 @@ const (
 	// last line of every stream and the only one that is always written.
 	EventClose = "close"
 )
+
+// ProgressCheckpoint is SignalProgress's only reason. It is a closed word
+// because the content-free record may say that a checkpoint happened without
+// carrying the model's public prose.
+const ProgressCheckpoint = "checkpoint"
 
 // Compaction reasons for SignalCompact: who asked for it. A trim
 // is not one of them — eliding old tool results is SignalTrim, and it is a

@@ -1261,9 +1261,11 @@ the item names — the narrowest it must fit at, when it names none — and read
 by whoever ticks the criterion: the `.txt` against what the artboard says,
 the picture by eye. A capture that was taken and not read is a screenshot in
 a folder. `make tui-check` runs the `smoke` scene and is part of `make ci`,
-so the harness itself cannot rot; a story's own scene is the story's to
-write, under `scripts/tui/scenes/<slug>/`, and it stays in the tree so the
-next change to that surface can run it again.
+so the harness itself cannot rot. A story's own `make tui-shot` run is an
+optional manual quality check: it is deliberately not added to
+`.shhh/quality.json`, because the scene and terminal requirements are local
+to the surface it exercises. Its scene lives under
+`scripts/tui/scenes/<slug>/` so the next change can run it again.
 
 What will bite you: **a capture is the terminal's cells, not the View's
 bytes.** tmux re-emits colour per cell, so an `.ansi` file will never match a

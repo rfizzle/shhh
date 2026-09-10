@@ -1,0 +1,10 @@
+# A scripted silent investigation crosses the default checkpoint threshold.
+# The ordinary public status is the title of the following folded group.
+setup for f in one two three four five six seven eight nine ten eleven twelve stream; do printf 'package fixture\n' > "${f}.go"; done
+snap 01-start "Some things worth doing first"
+keys "trace the checkpoint" Enter
+snap 02-progress "The evidence points to the round boundary"
+keys C-c
+snap 03-quit-armed "again quits"
+keys C-c
+snap 04-exit "that is everything the screen was holding"

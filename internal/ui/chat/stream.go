@@ -55,6 +55,7 @@ func (m Model) resumeToolLoop() (tea.Model, tea.Cmd) {
 	// turn has not been told about is answered against the wrong one.
 	m.injectTreeNotice(false)
 	m.injectInterventions()
+	m.injectProgressCheckpoint()
 	// The round tail is where a turn recovers its window: the boundary in
 	// front of a request rather than behind a round, which is the only one
 	// that can keep a request from being the one that does not fit. Where
