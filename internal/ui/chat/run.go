@@ -189,8 +189,8 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func execToolResult(output string, exitCode int) string {
-	return tools.FormatExecResult(output, exitCode)
+func execToolResult(result tools.ExecResult) string {
+	return tools.FormatExecResult(result)
 }
 
 func (m Model) executeRun() (tea.Model, tea.Cmd) {
@@ -243,19 +243,27 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 	}
 	return m, func() tea.Msg {
 		start := time.Now()
-		var out string
-		var code int
+		var result tools.ExecResult
 		// The tail-capable runner feeds the live row when wired.
 		if tailFn != nil {
-			out, code = tailFn(ctx, command, tail.Set)
+			out, code := tailFn(ctx, command, tail.Set)
+			result = tools.InferExecResult(out, code)
 		} else {
-			out, code = runFn(ctx, command)
+			out, code := runFn(ctx, command)
+			result = tools.InferExecResult(out, code)
+		}
+		end := commandEnding(ctx.Err(), result.ExitCode, limit)
+		switch end.outcome {
+		case components.OutcomeTimedOut:
+			result.Outcome = tools.ExecTimedOut
+		case components.OutcomeStopped:
+			result.Outcome = tools.ExecStopped
 		}
 		if assistant {
 			if hookLead != "" {
-				out = hookLead + "\n" + out
+				result.Output = hookLead + "\n" + result.Output
 			}
-			out = hooks.PostTool(context.Background(), hookAt, hookCall, out, execOutcome(code)).Lead(out)
+			result.Output = hooks.PostTool(context.Background(), hookAt, hookCall, result.Output, execOutcome(result)).Lead(result.Output)
 		}
 		// What the ceiling did to a command that reached it — stopped it, or
 		// handed it to the process supervisor because it was still
@@ -266,8 +274,8 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 		// context it ran on is still to hand: the code alone cannot tell the
 		// reader's cancel from the ceiling from a signal off the machine
 		// (activity.go).
-		return cmdDoneMsg{runID: runID, command: command, output: out, exitCode: code,
-			duration: time.Since(start), local: local, end: commandEnding(ctx.Err(), code, limit)}
+		return cmdDoneMsg{runID: runID, command: command, output: result.Output, exitCode: result.ExitCode,
+			result: result, duration: time.Since(start), local: local, end: end}
 	}
 }
 

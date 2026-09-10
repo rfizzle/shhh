@@ -411,7 +411,9 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	run = scrubRunner(session.vault, run)
 	// Nobody is at a keyboard to cancel a command that will not finish, which
 	// is the same reason an unattended run bounds one.
-	run = boundedRunner(run, cfg.CommandTimeout())
+	rawRun := run
+	run = boundedRunner(rawRun, cfg.CommandTimeout())
+	execResult := boundedExecResultRunner(rawRun, cfg.CommandTimeout())
 
 	hookCwd, _ := os.Getwd()
 	hooked := hookSet(cfg)
@@ -541,7 +543,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	// `--yes` run. An answer is a decision, and a decision cannot outrank a
 	// standing refusal, which is why the answer chooses an approver rather
 	// than replacing one.
-	allowed := headlessApprover(cmd.Context(), printOpts{yes: true}, cfg.Behavior.CommandAllowlist,
+	allowed := headlessApprover(cmd.Context(), printOpts{yes: true, execResult: execResult}, cfg.Behavior.CommandAllowlist,
 		cfg.Behavior.CommandDenylist, run, containment.Refusal, red, answeredByClient(record),
 		session.web, procSup, chainMutation(lspMutationHook(session.lsp), hookPostMutation(hooks)), sc, session.mcpTools, session.structural,
 		unattended{sup: sup, at: l.obs.pos, seen: l.seen})
@@ -550,7 +552,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 	// been, and a refusal wherever it cannot approve.
 	var judged func(provider.ToolCall) string
 	if opts.autoMode {
-		judged = headlessApprover(cmd.Context(), printOpts{}, cfg.Behavior.CommandAllowlist,
+		judged = headlessApprover(cmd.Context(), printOpts{execResult: execResult}, cfg.Behavior.CommandAllowlist,
 			cfg.Behavior.CommandDenylist, run, containment.Refusal, red, record,
 			session.web, procSup, chainMutation(lspMutationHook(session.lsp), hookPostMutation(hooks)), sc, session.mcpTools, session.structural,
 			unattended{sup: sup, at: l.obs.pos, seen: l.seen,

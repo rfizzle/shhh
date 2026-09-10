@@ -438,8 +438,8 @@ func TestChildCommandOutputIsReduced(t *testing.T) {
 	if !strings.HasSuffix(strings.TrimRight(result, "\n"), "\nFAIL") {
 		t.Fatalf("the run's verdict is not in what the child read:\n%s", result)
 	}
-	if !strings.Contains(result, "exit code: 1") {
-		t.Fatalf("result lost the exit code:\n%s", result)
+	if !strings.Contains(result, "error: command exited with status 1") {
+		t.Fatalf("result lost the failed status:\n%s", result)
 	}
 
 	// The notice names an id, and the id pages the whole output back through

@@ -46,6 +46,39 @@ func TestTruncateOutput_UTF8Boundary(t *testing.T) {
 	}
 }
 
+func TestFormatExecResult_ClassifiesEveryCommandEnding(t *testing.T) {
+	cases := []struct {
+		name   string
+		result ExecResult
+		prefix string
+		wants  []string
+	}{
+		{"success", ExecResult{Output: "done", Outcome: ExecSucceeded}, "exit code: 0", []string{"output:", "done"}},
+		{"non-zero exit", ExecResult{Output: "stderr", ExitCode: 1, Outcome: ExecExited}, "error:", []string{"status 1", "stderr"}},
+		{"signal", ExecResult{ExitCode: -9, Outcome: ExecSignaled}, "error:", []string{"signal 9", "(no output)"}},
+		{"timeout", ExecResult{Output: "partial", ExitCode: -2, Outcome: ExecTimedOut}, "error:", []string{"timed out", "partial"}},
+		{"stopped", ExecResult{ExitCode: -2, Outcome: ExecStopped}, "error:", []string{"stopped", "(no output)"}},
+		{"spawn failure", ExecResult{Output: "executable not found", ExitCode: -1, Outcome: ExecDidNotStart}, "error:", []string{"did not start", "executable not found"}},
+		{"handoff", ExecResult{Output: `process "watch"`, Outcome: ExecHandedOff}, "exit code: 0", []string{"process", "watch"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := FormatExecResult(tc.result)
+			if !strings.HasPrefix(got, tc.prefix) {
+				t.Fatalf("FormatExecResult() = %q, want prefix %q", got, tc.prefix)
+			}
+			for _, want := range tc.wants {
+				if !strings.Contains(got, want) {
+					t.Errorf("FormatExecResult() = %q, want %q", got, want)
+				}
+			}
+			if tc.result.Failed() != strings.HasPrefix(got, "error:") {
+				t.Errorf("failed/result prefix disagree: %+v => %q", tc.result, got)
+			}
+		})
+	}
+}
+
 func TestReadFile_LineCapTruncation(t *testing.T) {
 	tmp := t.TempDir()
 	path := filepath.Join(tmp, "big.txt")

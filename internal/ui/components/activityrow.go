@@ -98,6 +98,10 @@ const (
 	// The limit is the account beside it: the reader's next act is to raise
 	// it or to narrow the work, and neither is possible without the number.
 	OutcomeTimedOut = "timed out"
+	// OutcomeDidNotStart says the command never reached a process. It is
+	// distinct from a signal death: retrying may be appropriate once the
+	// unavailable runner or containment mechanism is restored.
+	OutcomeDidNotStart = "did not start"
 )
 
 // OutcomeExit is the terminal outcome of a shell command that exited on its

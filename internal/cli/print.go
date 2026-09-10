@@ -206,6 +206,9 @@ type printOpts struct {
 	// left alone (config, then the default) and --max-rounds 0 (uncapped).
 	maxRounds    int
 	maxRoundsSet bool
+	// execResult preserves command-ending facts for the headless formatter.
+	// Test and compatibility callers continue to supply the legacy tuple runner.
+	execResult func(context.Context, string) tools.ExecResult
 }
 
 // parseUnattendedMode reads --mode for a surface with nobody in front of it.
@@ -897,7 +900,9 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// The ceiling matters most here. A session has a reader who can cancel a
 	// command that is never going to finish; a headless run has nobody, and
 	// the executor it is holding is held until something outside kills it.
-	run = boundedRunner(run, cfg.CommandTimeout())
+	rawRun := run
+	run = boundedRunner(rawRun, cfg.CommandTimeout())
+	opts.execResult = boundedExecResultRunner(rawRun, cfg.CommandTimeout())
 
 	// The person's own commands at this run's seams (hooks.go), assembled
 	// after the containment because what contains this run's commands is what
@@ -1941,8 +1946,15 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist, denylist [
 				return deny
 			}
 			note(observe.DecisionAllow, reason)
-			out, code := run(ctx, args.Command)
-			return tools.FormatExecResult(red.Process(tools.ExecCommandName, out), code)
+			var result tools.ExecResult
+			if opts.execResult != nil {
+				result = opts.execResult(ctx, args.Command)
+			} else {
+				out, code := run(ctx, args.Command)
+				result = tools.InferExecResult(out, code)
+			}
+			result.Output = red.Process(tools.ExecCommandName, result.Output)
+			return tools.FormatExecResult(result)
 		}
 		// A git write sits at the write tier, so it is answered where a file
 		// modification is answered — after the deny list, which reads the

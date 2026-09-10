@@ -433,7 +433,11 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 		m.runningCommand = ""
 		m.runTail = nil
 		m.runStart = time.Time{}
-		out := strings.TrimRight(msg.output, "\n")
+		result := msg.result
+		if result.Outcome == "" {
+			result = tools.InferExecResult(msg.output, msg.exitCode)
+		}
+		out := strings.TrimRight(result.Output, "\n")
 		// Assistant command output goes through the reduction pipeline
 		// before both the transcript entry and the tool result, so
 		// the user sees exactly what the model got. /run — the user's own
@@ -446,10 +450,8 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 			// was (amend.go).
 			amendedFrom = m.pendingApproval.amendedFrom
 			out = m.reduceResult(tools.ExecCommandName, out)
-			outcome, class := observe.OutcomeOK, ""
-			if msg.exitCode != 0 {
-				outcome, class = observe.OutcomeError, observe.ClassExitStatus
-			}
+			result.Output = out
+			outcome, class := observe.ToolOutcome(execToolResult(result))
 			m.recordToolEvent(tools.ExecCommandName, msg.duration, outcome, class)
 			// What allowed the command rides the command's own row: nothing
 			// said so above it (approval.go). A `/run` the reader typed has
@@ -457,7 +459,7 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 			allowedBy, allowElapsed = m.pendingApproval.autoRule, m.pendingApproval.autoCost
 		}
 		m.appendEntry(entry{kind: entryCommand, text: msg.command, toolResult: out,
-			exitCode: msg.exitCode, localRun: msg.local, duration: msg.duration,
+			exitCode: msg.exitCode, commandResult: result, localRun: msg.local, duration: msg.duration,
 			allowedBy: allowedBy, allowElapsed: allowElapsed, amendedFrom: amendedFrom,
 			end: msg.end})
 		if m.pendingApproval != nil {
@@ -484,9 +486,9 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 			if amendedFrom != "" {
 				ranArgs = execArguments(msg.command)
 			}
-			result := m.repeats.Notice(tools.ExecCommandName,
-				json.RawMessage(ranArgs), execToolResult(out, msg.exitCode))
-			if agent.IsRepeatNotice(result) {
+			toolResult := m.repeats.Notice(tools.ExecCommandName,
+				json.RawMessage(ranArgs), execToolResult(result))
+			if agent.IsRepeatNotice(toolResult) {
 				m.signal(observe.SignalRepeat, tools.ExecCommandName)
 			}
 			// What ran, where it was not what was asked for, leads the whole
@@ -499,9 +501,9 @@ func (m Model) updateTurn(msg tea.Msg) (tea.Model, tea.Cmd, bool) {
 			// before the notice is looked for, so a lead of this session's
 			// own is never mistaken for one of the detector's.
 			if amendedFrom != "" {
-				result = amendedNotice(amendedFrom, msg.command) + "\n" + result
+				toolResult = amendedNotice(amendedFrom, msg.command) + "\n" + toolResult
 			}
-			m.agent.ResolveApproval(result)
+			m.agent.ResolveApproval(toolResult)
 			m.viewport.SetLines(m.renderHistoryLines())
 			m.viewport.GotoBottom()
 			return answered(m.advanceApprovalQueue())

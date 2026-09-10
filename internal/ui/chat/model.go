@@ -263,6 +263,7 @@ type cmdDoneMsg struct {
 	command  string
 	output   string
 	exitCode int
+	result   tools.ExecResult
 	duration time.Duration
 	// local: a `!!` run — the output lands in the transcript and never in
 	// the conversation (bang.go).
@@ -364,6 +365,9 @@ type entry struct {
 	// reader's cancel, the ceiling, a signal from outside (activity.go).
 	// Empty on every command that exited on its own.
 	end commandEnd
+	// commandResult keeps the pre-start failure distinct from a negative status
+	// while toolResult remains the raw detail the activity row displays.
+	commandResult tools.ExecResult
 	// localRun marks a command row whose output stayed out of the
 	// conversation — a `!!` run (bang.go), or a dry run asked for at a card
 	// (run.go) — which its outcome says.

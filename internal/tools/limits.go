@@ -122,18 +122,84 @@ func TruncateOutput(s string, max int) (string, bool) {
 	return cutUTF8(s, max), true
 }
 
-// FormatExecResult formats a command's captured output and exit code as the
-// tool result for an approved execute_command call, applying the shared
-// output cap. Both the chat TUI and headless print mode record this format.
-func FormatExecResult(output string, exitCode int) string {
-	output = strings.TrimRight(output, "\n")
+// ExecOutcome is how an execute_command invocation ended. It is carried to
+// the formatter rather than inferred from its output: output is evidence from
+// the command, not a protocol the tool result parser should have to recognise.
+type ExecOutcome string
+
+const (
+	ExecSucceeded   ExecOutcome = "succeeded"
+	ExecExited      ExecOutcome = "exited"
+	ExecSignaled    ExecOutcome = "signaled"
+	ExecTimedOut    ExecOutcome = "timed out"
+	ExecStopped     ExecOutcome = "stopped"
+	ExecDidNotStart ExecOutcome = "did not start"
+	ExecHandedOff   ExecOutcome = "handed off"
+)
+
+// ExecResult is one command's output and the fact of how it ended. ExitCode is
+// retained for the activity row and callers that need an ordinary process
+// status; Outcome is the answer every tool-result consumer needs.
+type ExecResult struct {
+	Output   string
+	ExitCode int
+	Outcome  ExecOutcome
+}
+
+// Failed reports whether the command did not complete successfully. A handoff
+// is working elsewhere under the process supervisor, so it is deliberately not
+// an error result.
+func (r ExecResult) Failed() bool {
+	return r.Outcome != ExecSucceeded && r.Outcome != ExecHandedOff
+}
+
+// InferExecResult converts the legacy output/status runner seam. New runners
+// supply a more precise Outcome; this fallback keeps existing execution seams
+// compatible while never treating a non-zero status as success.
+func InferExecResult(output string, exitCode int) ExecResult {
+	result := ExecResult{Output: output, ExitCode: exitCode}
+	switch {
+	case exitCode == 0:
+		result.Outcome = ExecSucceeded
+	case exitCode > 0:
+		result.Outcome = ExecExited
+	case exitCode < -1:
+		result.Outcome = ExecSignaled
+	default:
+		result.Outcome = ExecDidNotStart
+	}
+	return result
+}
+
+// FormatExecResult formats a command's captured result for an approved
+// execute_command call, applying the shared output cap. All failures lead with
+// the error convention the digest, hooks, repeat detector and observers read.
+func FormatExecResult(result ExecResult) string {
+	output := strings.TrimRight(result.Output, "\n")
 	if cut, truncated := TruncateOutput(output, MaxExecOutputBytes); truncated {
 		output = cut + "\n… (output truncated)"
 	}
 	if strings.TrimSpace(output) == "" {
 		output = "(no output)"
 	}
-	return fmt.Sprintf("exit code: %d\noutput:\n%s", exitCode, output)
+	status := fmt.Sprintf("exit code: %d", result.ExitCode)
+	if result.Failed() {
+		switch result.Outcome {
+		case ExecExited:
+			status = fmt.Sprintf("error: command exited with status %d", result.ExitCode)
+		case ExecSignaled:
+			status = fmt.Sprintf("error: command was killed by signal %d", -result.ExitCode)
+		case ExecTimedOut:
+			status = "error: command timed out"
+		case ExecStopped:
+			status = "error: command was stopped before it finished"
+		case ExecDidNotStart:
+			status = "error: command did not start"
+		default:
+			status = "error: command did not complete"
+		}
+	}
+	return status + "\noutput:\n" + output
 }
 
 // cutUTF8 truncates s to at most max bytes, dropping any trailing partial

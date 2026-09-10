@@ -977,6 +977,19 @@ func TestCommandRow_ANegativeExitCodeIsNeverPrintedAsAnExitStatus(t *testing.T) 
 // Which of the three ended it comes off the context the command ran on,
 // because the signal cannot say who asked for it: the ceiling and the
 // reader's chord end a command the same way.
+func TestCommandRow_DidNotStartIsNotRenderedAsKilled(t *testing.T) {
+	m := activityModel(t)
+	view := stripANSI(m.renderEntry(entry{kind: entryCommand, text: "go test ./...",
+		toolResult: "fork/exec sandbox-exec: no such file", exitCode: -1,
+		commandResult: tools.ExecResult{ExitCode: -1, Outcome: tools.ExecDidNotStart}}, 110))
+	if !strings.Contains(view, components.OutcomeDidNotStart) {
+		t.Fatalf("pre-start failure must name its outcome:\n%s", view)
+	}
+	if strings.Contains(view, "killed") || strings.Contains(view, "exit -") {
+		t.Fatalf("pre-start failure must not be rendered as a signal status:\n%s", view)
+	}
+}
+
 func TestCommandEnding_NamesWhatEndedTheCommand(t *testing.T) {
 	cases := []struct {
 		name    string

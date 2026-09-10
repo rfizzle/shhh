@@ -201,9 +201,9 @@ func (w *captureWriter) handOff(dst io.Writer) string {
 // killed the command before there was anything to decide. The caller's
 // cancellation still travels, through the watch below, and stops the command
 // the way it always did.
-func capture(ctx context.Context, dir, command string, argv []string, onLine func(string)) (string, error) {
+func capture(ctx context.Context, dir, command string, argv []string, onLine func(string)) tools.ExecResult {
 	if len(argv) == 0 {
-		return "", errors.New("empty command")
+		return tools.ExecResult{Output: "empty command", ExitCode: -1, Outcome: tools.ExecDidNotStart}
 	}
 	inner, cancel := context.WithCancel(context.WithoutCancel(ctx))
 	g := prepare(exec.CommandContext(inner, argv[0], argv[1:]...), dir)
@@ -213,7 +213,7 @@ func capture(ctx context.Context, dir, command string, argv []string, onLine fun
 	started := time.Now()
 	if err := g.start(); err != nil {
 		cancel()
-		return "", err
+		return completedExecResult("", err)
 	}
 	done := make(chan error, 1)
 	// The wait goes through the group so that the moment this command's pid
@@ -226,7 +226,11 @@ func capture(ctx context.Context, dir, command string, argv []string, onLine fun
 		select {
 		case err := <-done:
 			cancel()
-			return w.output(), err
+			result := completedExecResult(w.output(), err)
+			if ctx.Err() != nil && !errors.Is(ctx.Err(), context.DeadlineExceeded) {
+				result.Outcome = tools.ExecStopped
+			}
+			return result
 		case <-watch:
 			// Done fires once; a nil channel parks this arm for the wait that
 			// follows rather than spinning on a context that stays done.
@@ -245,17 +249,31 @@ func capture(ctx context.Context, dir, command string, argv []string, onLine fun
 			select {
 			case err := <-done:
 				cancel()
-				return w.output(), err
+				return completedExecResult(w.output(), err)
 			default:
 			}
 			limit := ceilingOf(ctx, started)
 			if name, out, ok := handOver(w, g, command, started, done, cancel); ok {
-				return appendNotice(out, backgroundedNotice(name, limit)), nil
+				return tools.ExecResult{Output: appendNotice(out, backgroundedNotice(name, limit)), Outcome: tools.ExecHandedOff}
 			}
 			cancel()
-			return stoppedOutput(w.output(), limit), <-done
+			result := completedExecResult(stoppedOutput(w.output(), limit), <-done)
+			result.Outcome = tools.ExecTimedOut
+			return result
 		}
 	}
+}
+
+// completedExecResult turns the operating system's result into the closed
+// command-ending vocabulary before output reaches any tool-result consumer.
+func completedExecResult(output string, err error) tools.ExecResult {
+	result := tools.InferExecResult(output, resultCode(err))
+	var exitErr *exec.ExitError
+	if err != nil && !errors.As(err, &exitErr) {
+		result.Output = strings.TrimSpace(output + "\n" + err.Error())
+		result.Outcome = tools.ExecDidNotStart
+	}
+	return result
 }
 
 // handOver offers a command that is still printing to the session's adopter.

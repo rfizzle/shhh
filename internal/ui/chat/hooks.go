@@ -15,6 +15,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/hook"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/tools"
 )
 
 // WithHooks installs the session's hook runner and puts the tool seams on the
@@ -105,12 +106,11 @@ func (m Model) hooksStatus() string {
 }
 
 // execOutcome is how a command came out, in the same two words a tool result
-// is read into: a command has an exit code where a tool has a result, and the
-// seam behind it must not be the one place a third word for "it failed"
-// appears.
-func execOutcome(code int) string {
-	if code == 0 {
-		return hook.OutcomeOK
+// is read into. Its typed result keeps a handoff distinct from a command that
+// merely returned status zero.
+func execOutcome(result tools.ExecResult) string {
+	if result.Failed() {
+		return hook.OutcomeError
 	}
-	return hook.OutcomeError
+	return hook.OutcomeOK
 }

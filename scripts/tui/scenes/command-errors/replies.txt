@@ -1,0 +1,7 @@
+# One reply per request. Each command outcome is a separate user turn.
+tool:execute_command:{"command":"printf 'lint: broken rule\n' >&2; exit 1"}
+The failed command is recorded.
+tool:execute_command:{"command":"sleep 5"}
+The timed-out command is recorded.
+tool:execute_command:{"command":"for i in 1 2 3 4 5; do echo waiting; sleep 1; done"}
+The stopped command is recorded.

@@ -70,6 +70,19 @@ func TestHeadlessApprover_YesRunsCommand(t *testing.T) {
 	}
 }
 
+func TestHeadlessApprover_FailedCommandIsAnErrorResult(t *testing.T) {
+	run := func(context.Context, string) (string, int) { return "stderr: broken", 1 }
+	resolve := headlessApprover(context.Background(), printOpts{yes: true}, nil, nil, run, "", nil, nil, nil, nil, nil, nil, nil, nil, unattended{})
+
+	result := resolve(execCall("go test ./..."))
+	if !strings.HasPrefix(result, "error:") || !strings.Contains(result, "status 1") || !strings.Contains(result, "stderr: broken") {
+		t.Fatalf("failed command must be an error result retaining output, got %q", result)
+	}
+	if outcome, _ := observe.ToolOutcome(result); outcome != observe.OutcomeError {
+		t.Fatalf("observation outcome = %q, want error", outcome)
+	}
+}
+
 func TestHeadlessApprover_AllowlistRunsMatchingCommand(t *testing.T) {
 	var ran []string
 	resolve := headlessApprover(context.Background(), printOpts{}, []string{"go test"}, nil, fakeRun(&ran), "", nil, nil, nil, nil, nil, nil, nil, nil, unattended{})

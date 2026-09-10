@@ -15,6 +15,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/diff"
+	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -865,6 +866,23 @@ func TestApproval_ARepeatedCommandSaysSo(t *testing.T) {
 // And the reader's own command is not the agent's: telling somebody standing
 // at the keyboard that they have run this before is telling them what they
 // just did.
+func TestApproval_FailedCommandIsAnErrorResultForEveryConsumer(t *testing.T) {
+	m := gatedModel(t, nil, nil).
+		WithRunner(func(context.Context, string) (string, int) { return "compiler: undefined symbol", 1 }).
+		WithRepeats(agent.NewRepeatDetector())
+
+	_, result := runOnce(t, m, "go test ./internal/chat")
+	if !strings.HasPrefix(result, "error:") {
+		t.Fatalf("failed command must be an error result, got %q", result)
+	}
+	if !strings.Contains(result, "compiler: undefined symbol") {
+		t.Fatalf("failed command must retain stderr, got %q", result)
+	}
+	if got := digest.Outcome(result); got != digest.OutcomeError {
+		t.Fatalf("digest outcome = %q, want error", got)
+	}
+}
+
 func TestApproval_ALocalRunIsNeverARepeat(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream).

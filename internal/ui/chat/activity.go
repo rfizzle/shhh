@@ -458,7 +458,14 @@ func (m Model) activityRowDetail(e entry, stepDetail bool) components.ActivityRo
 		row.Kind = components.ActivityCommand
 		row.Verb = "run"
 		row.Target = firstLine(e.text)
+		result := e.commandResult
+		if result.Outcome == "" {
+			result = tools.InferExecResult(e.toolResult, e.exitCode)
+		}
 		switch {
+		case result.Outcome == tools.ExecDidNotStart:
+			row.State = components.ActivityFailed
+			row.Outcome = components.OutcomeDidNotStart
 		case e.end.outcome == components.OutcomeStopped:
 			// The reader stopped it themselves, so the row is as quiet as
 			// their refusal is: ⊘ and dim, not ✗ and del. Nothing broke —

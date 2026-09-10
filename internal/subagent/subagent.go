@@ -432,14 +432,13 @@ func (e Env) autoExecutor(s Seam) agent.ToolExecutor {
 
 // execResult is a command's output as the child's tool result: reduced, then
 // formatted. Every route from a child's command to tools.FormatExecResult
-// runs through here, because the formatter on its own keeps the first
-// MaxExecOutputBytes and drops the rest — and what a command has to say about
-// itself is at the end.
+// runs through here, so every child command enters the same error-result
+// convention as its parent after reduction.
 func (e Env) execResult(output string, exitCode int) string {
 	if e.Reduce != nil {
 		output = e.Reduce(tools.ExecCommandName, output)
 	}
-	return tools.FormatExecResult(output, exitCode)
+	return tools.FormatExecResult(tools.InferExecResult(output, exitCode))
 }
 
 // childCompactor is a child's window-recovery step, or nothing where the

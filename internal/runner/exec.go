@@ -12,6 +12,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/history"
 	"github.com/rfizzle/shhh/internal/shell"
+	"github.com/rfizzle/shhh/internal/tools"
 )
 
 // sessionEnv is what every captured command's environment carries beyond
@@ -141,19 +142,31 @@ func Run(command string) (exitCode int) {
 
 // RunCapture executes command through the execution shell with stdout and
 // stderr captured instead of inherited, for callers that display the output
-// themselves (e.g. the chat TUI). Cancelling the context kills the command;
-// a non-exit failure reports a negative code (resultCode below).
+// themselves (e.g. the chat TUI). It is the compatibility form of
+// RunCaptureResult for callers that need only output and status.
 func RunCapture(ctx context.Context, command string) (output string, exitCode int) {
-	out, err := capture(ctx, "", command, shellArgv(command), nil)
-	return noteSpawnFailure(out, err), resultCode(err)
+	result := RunCaptureResult(ctx, command)
+	return legacyResult(result)
+}
+
+// RunCaptureResult is RunCapture with the command-ending fact preserved for
+// execute_command's result formatter.
+func RunCaptureResult(ctx context.Context, command string) tools.ExecResult {
+	return capture(ctx, "", command, shellArgv(command), nil)
 }
 
 // RunCaptureTail is RunCapture reporting each completed output line to onLine
 // as it appears, so callers can show a live tail. onLine runs on the
 // command's output goroutine and must be safe to call concurrently.
 func RunCaptureTail(ctx context.Context, command string, onLine func(string)) (string, int) {
-	out, err := capture(ctx, "", command, shellArgv(command), onLine)
-	return noteSpawnFailure(out, err), resultCode(err)
+	result := RunCaptureTailResult(ctx, command, onLine)
+	return legacyResult(result)
+}
+
+// RunCaptureTailResult is RunCaptureTail with the command-ending fact
+// preserved for execute_command's result formatter.
+func RunCaptureTailResult(ctx context.Context, command string, onLine func(string)) tools.ExecResult {
+	return capture(ctx, "", command, shellArgv(command), onLine)
 }
 
 // RunCaptureArgvTail is RunCaptureArgv with the same live-line reporting, for
@@ -161,8 +174,14 @@ func RunCaptureTail(ctx context.Context, command string, onLine func(string)) (s
 // was built from: it is what a surface listing this command shows, and a
 // mechanism's own flags are not that.
 func RunCaptureArgvTail(ctx context.Context, command string, argv []string, onLine func(string)) (string, int) {
-	out, err := capture(ctx, "", command, argv, onLine)
-	return noteSpawnFailure(out, err), resultCode(err)
+	result := RunCaptureArgvTailResult(ctx, command, argv, onLine)
+	return legacyResult(result)
+}
+
+// RunCaptureArgvTailResult is RunCaptureArgvTail with the command-ending fact
+// preserved for execute_command's result formatter.
+func RunCaptureArgvTailResult(ctx context.Context, command string, argv []string, onLine func(string)) tools.ExecResult {
+	return capture(ctx, "", command, argv, onLine)
 }
 
 // RunCaptureArgv executes an explicit argv (no shell) with output captured,
@@ -173,8 +192,13 @@ func RunCaptureArgvTail(ctx context.Context, command string, argv []string, onLi
 // RunCaptureIn is RunCapture with an explicit working directory, for
 // sub-agent commands that must run inside their own workspace.
 func RunCaptureIn(ctx context.Context, dir, command string) (output string, exitCode int) {
-	out, err := capture(ctx, dir, command, shellArgv(command), nil)
-	return noteSpawnFailure(out, err), resultCode(err)
+	result := RunCaptureInResult(ctx, dir, command)
+	return legacyResult(result)
+}
+
+// RunCaptureInResult is RunCaptureIn with the command-ending fact preserved.
+func RunCaptureInResult(ctx context.Context, dir, command string) tools.ExecResult {
+	return capture(ctx, dir, command, shellArgv(command), nil)
 }
 
 // RunCaptureArgv executes an explicit argv (no shell) with output captured,
@@ -190,8 +214,14 @@ func RunCaptureArgv(ctx context.Context, command string, argv []string) (output 
 // (empty keeps the process cwd), for sandbox-wrapped sub-agent commands whose
 // mechanism does not chdir itself.
 func RunCaptureArgvIn(ctx context.Context, dir, command string, argv []string) (output string, exitCode int) {
-	out, err := capture(ctx, dir, command, argv, nil)
-	return noteSpawnFailure(out, err), resultCode(err)
+	result := RunCaptureArgvInResult(ctx, dir, command, argv)
+	return legacyResult(result)
+}
+
+// RunCaptureArgvInResult is RunCaptureArgvIn with the command-ending fact
+// preserved for execute_command's result formatter.
+func RunCaptureArgvInResult(ctx context.Context, dir, command string, argv []string) tools.ExecResult {
+	return capture(ctx, dir, command, argv, nil)
 }
 
 // shellArgv is a command line as the execution shell's argv (shell.Execution).
@@ -232,14 +262,15 @@ func resultCode(err error) int {
 	return -1
 }
 
-// noteSpawnFailure puts a failure that is not the command's own exit into the
-// output, where the callers that read only text can see it. A command that
-// exited — including one a signal ended — says everything it has to say in
-// its output and its code.
-func noteSpawnFailure(out string, err error) string {
-	var exitErr *exec.ExitError
-	if err == nil || errors.As(err, &exitErr) {
-		return out
+// legacyResult preserves the older tuple API. A caller that does not have the
+// typed command result still sees a spawn failure in its output, as before.
+func legacyResult(result tools.ExecResult) (string, int) {
+	output := result.Output
+	if result.Outcome == tools.ExecDidNotStart {
+		output = strings.TrimSpace(output)
+		if !strings.HasPrefix(output, "error:") {
+			output = "error: " + output
+		}
 	}
-	return strings.TrimSpace(out + "\nerror: " + err.Error())
+	return output, result.ExitCode
 }

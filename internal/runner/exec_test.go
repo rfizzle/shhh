@@ -8,6 +8,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/rfizzle/shhh/internal/tools"
 )
 
 func TestRun_SuccessfulCommand(t *testing.T) {
@@ -98,6 +100,40 @@ func TestRunCapture_ASignalledCommandCarriesItsSignal(t *testing.T) {
 	_, code := RunCapture(context.Background(), "kill -9 $$")
 	if code != -9 {
 		t.Errorf("a command signal 9 ended should report -9, got %d", code)
+	}
+}
+
+func TestRunCaptureResult_PreservesCommandEnding(t *testing.T) {
+	needShell(t)
+	cases := []struct {
+		name     string
+		result   func() tools.ExecResult
+		outcome  tools.ExecOutcome
+		code     int
+		negative bool
+		contains string
+	}{
+		{"non-zero exit", func() tools.ExecResult { return RunCaptureResult(context.Background(), "echo stderr 1>&2; exit 1") }, tools.ExecExited, 1, false, "stderr"},
+		{"signal", func() tools.ExecResult { return RunCaptureResult(context.Background(), "kill -9 $$") }, tools.ExecSignaled, -9, false, ""},
+		{"spawn failure", func() tools.ExecResult {
+			return RunCaptureArgvInResult(context.Background(), "", "true", []string{"/nonexistent/shhh-runner", "true"})
+		}, tools.ExecDidNotStart, -1, false, "no such file"},
+		{"timeout", func() tools.ExecResult {
+			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+			defer cancel()
+			return RunCaptureResult(ctx, "sleep 5")
+		}, tools.ExecTimedOut, 0, true, "did not finish"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := tc.result()
+			if got.Outcome != tc.outcome || (!tc.negative && got.ExitCode != tc.code) || (tc.negative && got.ExitCode >= 0) {
+				t.Fatalf("RunCaptureResult() = %+v, want outcome %q and code %d (negative=%t)", got, tc.outcome, tc.code, tc.negative)
+			}
+			if tc.contains != "" && !strings.Contains(got.Output, tc.contains) {
+				t.Errorf("result output %q does not contain %q", got.Output, tc.contains)
+			}
+		})
 	}
 }
 

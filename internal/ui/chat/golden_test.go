@@ -1806,6 +1806,28 @@ func TestGolden_AutoApproved(t *testing.T) {
 	})
 }
 
+// TestGolden_CommandErrors captures the command-result states. Failed command
+// rows open their retained evidence, and no negative process status is painted
+// as a normal exit status.
+func TestGolden_CommandErrors(t *testing.T) {
+	captureBoundedGolden(t, "command-errors", "command result outcomes", goldenWidths, func(width int) []golden.Panel {
+		m := frameModel(t, width, 40)
+		m.transcript = []entry{
+			{kind: entryCommand, text: "go test ./...", toolResult: "ok", duration: 1200 * time.Millisecond},
+			{kind: entryCommand, text: "go test ./...", toolResult: "stderr: test failed", exitCode: 1, duration: 2 * time.Second},
+			{kind: entryCommand, text: "build", toolResult: "compiler stopped", exitCode: -9, duration: 3 * time.Second,
+				end: commandEnd{outcome: components.OutcomeKilled, account: components.SignalAccount(9)}},
+			{kind: entryCommand, text: "go test ./...", toolResult: "partial output", exitCode: -2, duration: 1 * time.Second,
+				end: commandEnd{outcome: components.OutcomeTimedOut, account: "1s"}},
+			{kind: entryCommand, text: "missing containment binary", toolResult: "fork/exec bwrap: no such file", exitCode: -1,
+				commandResult: tools.ExecResult{ExitCode: -1, Outcome: tools.ExecDidNotStart}},
+			{kind: entryCommand, text: "watch", toolResult: `process "watch"`, duration: 1 * time.Second},
+		}
+		m.invalidateRenderCache()
+		return []golden.Panel{{Label: "success, exit status, signal, timeout, spawn failure and handoff", View: m.renderHistory()}}
+	})
+}
+
 // TestGolden_ChildAutoApproved pins the same rule one level down: a parent
 // attached to a child draws the child's auto-approved calls the way it draws
 // its own, one row each with the account in the outcome field. The fan-out

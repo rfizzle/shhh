@@ -1,0 +1,25 @@
+# A non-zero exit, the command ceiling, and a reader cancellation each leave a
+# distinct command row. Read the cells against the activity-row failure states;
+# inspect the picture for the failure and stopped tones.
+snap 01-start "Some things worth doing first"
+keys "run the checks" Enter
+snap 02-failure-card "[y] run it once"
+keys y
+snap 03-failed "lint: broken rule"
+snap 04-failure-answer "The failed command is recorded"
+keys "wait for the checks" Enter
+snap 05-timeout-card "sleep 5"
+keys y
+snap 06-timed-out "timed out"
+snap 07-timeout-answer "The timed-out command is recorded"
+keys "watch the command" Enter
+snap 08-stop-card "waiting"
+keys y
+snap 09-running "running…"
+keys C-c
+snap 10-stopped "stopped"
+snap 11-answered "The stopped command is recorded"
+keys C-c
+snap 12-quit-armed "again quits"
+keys C-c
+snap 13-exit "that is everything the screen was holding"

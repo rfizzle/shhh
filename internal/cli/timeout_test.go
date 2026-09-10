@@ -2,8 +2,11 @@ package cli
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/rfizzle/shhh/internal/tools"
 )
 
 func TestBoundedRunnerLeavesAFinishingCommandAlone(t *testing.T) {
@@ -40,6 +43,22 @@ func TestBoundedRunnerPutsTheLimitOnTheContext(t *testing.T) {
 
 // Removing the ceiling leaves the command genuinely unbounded rather than
 // bounded by something very large.
+func TestBoundedExecResultRunner_ClassifiesTimeout(t *testing.T) {
+	run := boundedExecResultRunner(func(ctx context.Context, _ string) (string, int) {
+		<-ctx.Done()
+		return "partial output", -9
+	}, 10*time.Millisecond)
+
+	result := run(context.Background(), "sleep 30")
+	if result.Outcome != tools.ExecTimedOut {
+		t.Fatalf("outcome = %q, want timeout", result.Outcome)
+	}
+	formatted := tools.FormatExecResult(result)
+	if !strings.HasPrefix(formatted, "error:") || !strings.Contains(formatted, "partial output") {
+		t.Fatalf("timeout must be an error result that retains output: %q", formatted)
+	}
+}
+
 func TestBoundedRunnerImposesNoDeadlineWithoutALimit(t *testing.T) {
 	var deadlineSet bool
 	run := boundedRunner(func(ctx context.Context, _ string) (string, int) {

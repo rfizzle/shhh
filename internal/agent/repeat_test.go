@@ -130,7 +130,7 @@ func TestRepeatDetector_WrapResolverAnnotatesTheRepeat(t *testing.T) {
 	// comment is written about.
 	d := NewRepeatDetector()
 	resolve := d.WrapResolver(func(provider.ToolCall) string {
-		return "exit code: 1\noutput:\nFAIL\tinternal/calc"
+		return "error: command exited with status 1\noutput:\nFAIL\tinternal/calc"
 	})
 	call := provider.ToolCall{Name: "execute_command", Arguments: `{"command":"go test ./internal/calc"}`}
 
@@ -138,14 +138,17 @@ func TestRepeatDetector_WrapResolverAnnotatesTheRepeat(t *testing.T) {
 		t.Errorf("the first run is not a repeat: %q", first)
 	}
 	second := resolve(call)
-	if !strings.HasPrefix(second, "[repeat:") {
-		t.Errorf("the notice should lead the result, got %q", second)
+	if !strings.HasPrefix(second, "error: [repeat:") {
+		t.Errorf("a repeated failed command must keep the error result head, got %q", second)
 	}
 	if !strings.Contains(second, "execute_command") || !strings.Contains(second, "2 times") {
 		t.Errorf("the notice should name the tool and the count, got %q", second)
 	}
 	if !strings.HasSuffix(second, "FAIL\tinternal/calc") {
 		t.Errorf("the output itself must survive the notice, got %q", second)
+	}
+	if got := digest.Outcome(second); got != digest.OutcomeError {
+		t.Errorf("the digest must classify the repeated command as failed, got %q", got)
 	}
 }
 
