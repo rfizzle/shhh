@@ -48,6 +48,48 @@ func TestMigrate_Idempotent(t *testing.T) {
 	db2.Close()
 }
 
+func TestMigrate_ChatSessionReferenceAlreadyAdded(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "test.db")
+	db, err := OpenPath(path)
+	if err != nil {
+		t.Fatalf("open complete store: %v", err)
+	}
+	if _, err := db.sql.Exec(`INSERT INTO chat_sessions (name) VALUES ('saved')`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.sql.Exec(`INSERT INTO agent_sessions (provider, model, chat_session) VALUES ('test', 'test', 'saved')`); err != nil {
+		t.Fatal(err)
+	}
+	// Reproduce the released partial upgrade: the schema change reached disk,
+	// but its schema_version row did not.
+	if _, err := db.sql.Exec(`DELETE FROM schema_version WHERE version >= ?`, chatSessionIDMigration); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	db, err = OpenPath(path)
+	if err != nil {
+		t.Fatalf("reopen partial upgrade: %v", err)
+	}
+	defer db.Close()
+	var linked int64
+	if err := db.sql.QueryRow(`SELECT chat_session_id FROM agent_sessions`).Scan(&linked); err != nil {
+		t.Fatal(err)
+	}
+	if linked != 1 {
+		t.Fatalf("chat_session_id = %d, want 1", linked)
+	}
+	var recorded int
+	if err := db.sql.QueryRow(`SELECT COUNT(*) FROM schema_version WHERE version = ?`, chatSessionIDMigration).Scan(&recorded); err != nil {
+		t.Fatal(err)
+	}
+	if recorded != 1 {
+		t.Fatalf("migration %d recorded %d times, want 1", chatSessionIDMigration, recorded)
+	}
+}
+
 func TestSaveAndLoadChat(t *testing.T) {
 	db := openTestDB(t)
 

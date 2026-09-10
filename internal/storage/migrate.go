@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"time"
@@ -483,10 +484,7 @@ var migrations = []string{
 	// foreign_keys on), and one linked session anywhere in a batch fails the
 	// whole of PruneOldChats' single DELETE — a prune that quietly does
 	// nothing, which is the failure a window cannot survive.
-	`ALTER TABLE agent_sessions ADD COLUMN chat_session_id INTEGER REFERENCES chat_sessions(id) ON DELETE SET NULL;
-	UPDATE agent_sessions SET chat_session_id =
-		(SELECT c.id FROM chat_sessions c WHERE c.name = agent_sessions.chat_session)
-	 WHERE chat_session != '';`,
+	migrationChatSessionID,
 
 	// Failure handoffs contain durable but non-exportable child context. They
 	// live outside agent_sessions so aggregate observability remains content-free.
@@ -498,6 +496,21 @@ var migrations = []string{
 	);
 	CREATE INDEX IF NOT EXISTS idx_child_handoffs_session ON child_handoffs(child_session_id);`,
 }
+
+const (
+	// chatSessionIDMigration is one-indexed because schema_version records
+	// migration numbers, not slice offsets.
+	chatSessionIDMigration = 32
+
+	migrationChatSessionID = `ALTER TABLE agent_sessions ADD COLUMN chat_session_id INTEGER REFERENCES chat_sessions(id) ON DELETE SET NULL;
+	UPDATE agent_sessions SET chat_session_id =
+		(SELECT c.id FROM chat_sessions c WHERE c.name = agent_sessions.chat_session)
+	 WHERE chat_session != '';`
+
+	migrationChatSessionIDBackfill = `UPDATE agent_sessions SET chat_session_id =
+		(SELECT c.id FROM chat_sessions c WHERE c.name = agent_sessions.chat_session)
+	 WHERE chat_session != '';`
+)
 
 // migrate brings the store up to the current schema, one step per
 // transaction. Every step is applied under BEGIN IMMEDIATE with the version
@@ -550,7 +563,12 @@ func (db *DB) migrate() error {
 			_, _ = conn.ExecContext(ctx, `ROLLBACK`)
 			return nil
 		}
-		if _, err := conn.ExecContext(ctx, migrations[current]); err != nil {
+		statement, err := migrationStatement(ctx, conn, current)
+		if err != nil {
+			_, _ = conn.ExecContext(ctx, `ROLLBACK`)
+			return fmt.Errorf("prepare migration %d: %w", current+1, err)
+		}
+		if _, err := conn.ExecContext(ctx, statement); err != nil {
 			_, _ = conn.ExecContext(ctx, `ROLLBACK`)
 			return fmt.Errorf("migration %d: %w", current+1, err)
 		}
@@ -562,6 +580,26 @@ func (db *DB) migrate() error {
 			return fmt.Errorf("commit migration %d: %w", current+1, err)
 		}
 	}
+}
+
+// migrationStatement repairs the one released partial application of
+// migration 32: it added the column but did not record the migration. Trying
+// the ALTER again leaves that store unable to open, so run its safe backfill
+// and record the step instead.
+func migrationStatement(ctx context.Context, conn *sql.Conn, current int) (string, error) {
+	if current+1 != chatSessionIDMigration {
+		return migrations[current], nil
+	}
+	var present bool
+	if err := conn.QueryRowContext(ctx, `SELECT EXISTS (
+		SELECT 1 FROM pragma_table_info('agent_sessions') WHERE name = 'chat_session_id'
+	)`).Scan(&present); err != nil {
+		return "", fmt.Errorf("check chat session reference: %w", err)
+	}
+	if present {
+		return migrationChatSessionIDBackfill, nil
+	}
+	return migrations[current], nil
 }
 
 // openRetries bounds how many times a fresh opener tries the migration again
