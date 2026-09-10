@@ -422,6 +422,10 @@ const (
 // of the row that holds the attempt's spend and its model. An event would
 // have to be joined back to it to say anything at all.
 // See docs/capabilities/sessions-and-memory.md#a-child-ends-for-a-reason.
+type ChildTokens struct {
+	Inherited, Setup, Tools, Analysis, Handoff int64
+}
+
 type ChildEnd struct {
 	// Reason is one of the words above, empty on a row that is not a
 	// child's.
@@ -437,6 +441,11 @@ type ChildEnd struct {
 	// one it replaces share a parent and differ here, which is the whole of
 	// what joins them.
 	Attempt int
+	// Budget is the effective fresh-token cap. AdmissionFloor is the fixed
+	// prompt and task cost plus the working reserve required to start.
+	Budget, AdmissionFloor int64
+	// Tokens attributes fresh token use by the phase that consumed it.
+	Tokens ChildTokens
 }
 
 // InterveneSteeredAgain and InterveneWithdrawn are the two words SignalOutcome

@@ -1452,10 +1452,12 @@ func TestObserveSessionReport_AChildsPageSaysHowTheAttemptEnded(t *testing.T) {
 	row.ParentID = &parent
 	row.Child = &observe.ChildEnd{
 		Reason: observe.ChildBudget, Verdict: "off-target", Steers: 2, Attempt: 2,
+		Budget: 300000, AdmissionFloor: 200100,
+		Tokens: observe.ChildTokens{Inherited: 50, Setup: 50, Tools: 10, Analysis: 199980, Handoff: 10},
 	}
 	body := observeSessionReport(row, nil, storage.AgentFirstWrite{}, nil, false).Render(80)
 
-	for _, want := range []string{"ended:", "budget", "attempt:", "read as:", "off-target", "steers:"} {
+	for _, want := range []string{"ended:", "budget", "attempt:", "read as:", "off-target", "steers:", "tokens:", "inherited 50"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("the child's page does not say %q:\n%s", want, body)
 		}

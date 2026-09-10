@@ -38,7 +38,7 @@ read-only researcher named after the file.
 | `prompt` | The agent's instructions. Appended to a base prompt built from the permissions (environment, tools, working style, final-report contract). |
 | `prompt_file` | Path to a file whose contents are the prompt; relative paths resolve against the profile's directory. Not with `prompt`. |
 | `prompt_mode` | `"append"` (default) or `"replace"`. Replace sends your prompt alone — you then own the environment and tool description too. |
-| `max_tokens` | Default token budget when the spawn names none, counted in new tokens — what the provider did not serve from its cache, plus the completion. Clamped to the same floor and ceiling a spawn's own value is. |
+| `max_tokens` | Default token budget when the spawn names none, counted in new tokens — what the provider did not serve from its cache, plus the completion. A profile default is at least 300000; an explicit spawn may be as low as 200000 only when prompt admission still leaves its 200000-token working reserve. |
 | `max_rounds` | Default check-in interval in tool rounds when the spawn names none. Zero, the default, never pauses. |
 
 ## What a profile cannot do
@@ -50,6 +50,9 @@ read-only researcher named after the file.
 - Add tools shhh does not have. The web tools appear only when the session
   registered them; a profile granting `web` without a configured search key
   gets what is there.
+- Bypass admission. A profile’s `max_tokens` is a 300000-token-or-higher
+  default, and the inherited prompt plus task must leave the 200000-token
+  working reserve before the child starts.
 - Name an MCP server's tool. A child is handed the tools of every server the
   session connected and you marked read-only, whatever its tier, and no
   other server's — see [`../capabilities/mcp.md`](../capabilities/mcp.md#what-a-conversation-may-reach).

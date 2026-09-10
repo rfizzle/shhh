@@ -425,6 +425,14 @@ var migrations = []string{
 	ALTER TABLE agent_sessions ADD COLUMN steers INTEGER;
 	ALTER TABLE agent_sessions ADD COLUMN attempt INTEGER;`,
 
+	`ALTER TABLE agent_sessions ADD COLUMN child_budget INTEGER;
+	ALTER TABLE agent_sessions ADD COLUMN child_admission_floor INTEGER;
+	ALTER TABLE agent_sessions ADD COLUMN child_tokens_inherited INTEGER;
+	ALTER TABLE agent_sessions ADD COLUMN child_tokens_setup INTEGER;
+	ALTER TABLE agent_sessions ADD COLUMN child_tokens_tools INTEGER;
+	ALTER TABLE agent_sessions ADD COLUMN child_tokens_analysis INTEGER;
+	ALTER TABLE agent_sessions ADD COLUMN child_tokens_handoff INTEGER;`,
+
 	// Where in the session a message was written. The record already places
 	// every event at a turn and a round; the conversation placed nothing at
 	// all, so "what did round 47 actually search for" was answered by

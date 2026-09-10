@@ -296,6 +296,15 @@ func TestBuildAlternatives_KeepsTheExtraLast(t *testing.T) {
 	}
 }
 
+func TestBuildReviewerIsBoundedToDeclaredEvidence(t *testing.T) {
+	reviewer := BuildReviewer(shell.Info{OS: "linux", Cwd: "/w"})
+	for _, want := range []string{"task hands you the diff", "Do not re-read repository instructions", "inspection pass is bounded", "direct tests", "report rather than broadening"} {
+		if !strings.Contains(reviewer, want) {
+			t.Fatalf("reviewer prompt lacks %q:\n%s", want, reviewer)
+		}
+	}
+}
+
 func TestBuildProfileFollowsPermissions(t *testing.T) {
 	info := shell.Info{Shell: "bash", OS: "linux", Cwd: "/w"}
 	reader := BuildProfile(info, ProfileSpec{Name: "reviewer", Description: "judges diffs", Tools: []string{"read_file", "search"}}, "Be terse.")

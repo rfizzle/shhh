@@ -58,7 +58,8 @@ func BuiltinProfiles() Profiles {
 			Description: "reviews a change for correctness and clarity; reads only, changes nothing",
 			Mode:        agent.ModePlan,
 			HasMode:     true,
-			MaxTokens:   80000,
+			MaxTokens:   DefaultMaxTokens,
+			MaxRounds:   20,
 		},
 	}
 }

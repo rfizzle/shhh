@@ -203,6 +203,9 @@ func (d AgentDefinition) Validate() error {
 	if d.MaxTokens < 0 {
 		return fmt.Errorf("max_tokens: must not be negative")
 	}
+	if d.MaxTokens > 0 && d.MaxTokens < 300_000 {
+		return fmt.Errorf("max_tokens: must be at least 300000")
+	}
 	if d.MaxRounds < 0 {
 		return fmt.Errorf("max_rounds: must not be negative")
 	}

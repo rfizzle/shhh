@@ -439,12 +439,12 @@ func retryWhenReady(t *testing.T, sup *Supervisor, name string) {
 // reach.
 func TestARetriedChildsRowsSumToWhatItSpent(t *testing.T) {
 	env := &scriptedEnv{steps: []streamStep{
-		{text: "over budget", usage: &provider.Usage{PromptTokens: 4000, CompletionTokens: 200}},
+		{text: "over budget", usage: &provider.Usage{PromptTokens: 300100, CompletionTokens: 200}},
 	}}
 	rows := &rowRecorder{}
 	sup := supervisorRecordingRows(t, env, rows, nil)
 
-	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey","max_tokens":2000}`)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey","max_tokens":300000}`)
 	waitState(t, sup, "researcher-1", StateFailed)
 
 	env.mu.Lock()
@@ -457,8 +457,8 @@ func TestARetriedChildsRowsSumToWhatItSpent(t *testing.T) {
 	if len(got) != 2 {
 		t.Fatalf("expected a row per attempt, got %+v", got)
 	}
-	if got[0].in != 4000 || got[0].out != 200 {
-		t.Errorf("the first attempt's row = %+v, want the 4000/200 it spent", got[0])
+	if got[0].in != 300100 || got[0].out != 200 {
+		t.Errorf("the first attempt's row = %+v, want the 300100/200 it spent", got[0])
 	}
 	if got[1].in != 100 || got[1].out != 20 {
 		t.Errorf("the retry's row = %+v, want the 100/20 that attempt spent", got[1])
@@ -667,7 +667,7 @@ func waitSignal(t *testing.T, rec *testRecorder, code string) recordedEvent {
 func TestChildFilesALateReadingAtTheRoundItRead(t *testing.T) {
 	reader := newHeldReader("on_target")
 	env := &scriptedEnv{
-		steps: append(toolRounds(3), streamStep{text: "spent it", usage: &provider.Usage{PromptTokens: 4000}}),
+		steps: append(toolRounds(3), streamStep{text: "spent it", usage: &provider.Usage{PromptTokens: 300100}}),
 		delay: 2 * time.Millisecond,
 		summarizer: agent.NewSummarizer(reader,
 			agent.SummaryConfig{Model: "fast", IntervalRounds: 10, MinGap: -1, InterveneCooldownIntervals: 1}),
@@ -678,7 +678,7 @@ func TestChildFilesALateReadingAtTheRoundItRead(t *testing.T) {
 	// The budget is what ends the first attempt: its turn finishes normally,
 	// which is what takes the closing reading, and the overrun is only
 	// visible once the answer is in hand.
-	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the exporter","max_tokens":2000}`)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the exporter","max_tokens":300000}`)
 	reader.waitAsked(t)
 	waitState(t, sup, "researcher-1", StateFailed)
 
@@ -790,12 +790,12 @@ func supervisorEnding(t *testing.T, env *scriptedEnv, rec *endRecorder) *Supervi
 // to whether 200k is the right number.
 func TestChildEndsWithABudgetReasonAndItsRetryIsTheSecondAttempt(t *testing.T) {
 	env := &scriptedEnv{steps: []streamStep{
-		{text: "over budget", usage: &provider.Usage{PromptTokens: 4000, CompletionTokens: 200}},
+		{text: "over budget", usage: &provider.Usage{PromptTokens: 300100, CompletionTokens: 200}},
 	}}
 	rec := &endRecorder{}
 	sup := supervisorEnding(t, env, rec)
 
-	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey","max_tokens":2000}`)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey","max_tokens":300000}`)
 	waitState(t, sup, "researcher-1", StateFailed)
 
 	if st, _ := sup.Get("researcher-1"); st.End != observe.ChildBudget {
@@ -964,7 +964,7 @@ func TestAChildsRecordedCostBillsCacheReadsAtTheCacheRate(t *testing.T) {
 // attempt's row the carried figure bills the first attempt on both rows.
 func TestARetrysRecordedCostIsItsOwnAttempts(t *testing.T) {
 	env := &scriptedEnv{steps: []streamStep{
-		{text: "over budget", usage: &provider.Usage{PromptTokens: 400_000, CachedTokens: 300_000}},
+		{text: "over budget", usage: &provider.Usage{PromptTokens: 600_001, CachedTokens: 300_000}},
 	}}
 	prices := pricing.NewTable(map[string]pricing.ModelPricing{
 		"cached-1": {
@@ -982,9 +982,9 @@ func TestARetrysRecordedCostIsItsOwnAttempts(t *testing.T) {
 	})
 	t.Cleanup(sup.Close)
 
-	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey","model":"cached-1","max_tokens":1000}`)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey","model":"cached-1","max_tokens":300000}`)
 	waitState(t, sup, "researcher-1", StateFailed)
-	const first = 0.15 + 0.045 // 100k fresh, 300k cached
+	const first = 0.4500015 + 0.045 // 300001 fresh, 300k cached
 
 	env.mu.Lock()
 	env.steps = []streamStep{{text: "done", usage: &provider.Usage{PromptTokens: 100_000, CachedTokens: 99_500}}}

@@ -143,6 +143,12 @@ A child that would have asked states the assumption it made instead, in its
 report, where the session — and the person — can read it and disagree
 ([`coding-agent.md`](coding-agent.md#nobody-to-ask)).
 
+A reviewer is bounded by the evidence it is given, not merely by its prompt:
+the caller supplies the declared paths or diff before it starts, and its
+inspection pass is limited by its round cap. It reads that evidence and its
+direct tests before reporting; it does not survey unrelated files or reread
+repository-wide instructions first.
+
 ## What comes back says what happened to it
 
 A child's report is the child's own words, and around them is everything the
@@ -192,6 +198,16 @@ what it cost. A cached prompt is a fraction of the price and nothing the child
 has newly read, and counting it charged a child again for its own standing
 context on every round, which ended runs that had barely started. What a child
 costs is counted too, in the session's spend ledger and against its cap.
+
+A normal child defaults to 300,000 tokens. A call may name no less than
+200,000, but this is not a promise that every 200,000-token call starts: before
+a slot, worktree or record row exists, the inherited prompt and tool definitions
+plus the declared task are estimated and added to a 200,000-token working
+reserve. The requested budget must meet that admission floor. Profiles define
+role defaults, so their defaults cannot be below 300,000. The roster and the
+record retain the effective budget, admission floor, and the tokens attributed
+to inherited context, setup, tool results, analysis, and final handoff; this
+separates an insufficient budget from work that was too broad or unproductive.
 
 The standing context a child is given is the parent's, cut to a smaller budget
 than the session's. A session reads its instruction files once and holds them

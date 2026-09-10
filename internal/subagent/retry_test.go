@@ -78,15 +78,15 @@ func TestRetryOnlyAppliesToAFailedAgent(t *testing.T) {
 // measured against its own budget; the money is still counted.
 func TestRetryCarriesSpendAndResetsTheBudget(t *testing.T) {
 	env := &scriptedEnv{steps: []streamStep{
-		{text: "over budget", usage: &provider.Usage{PromptTokens: 4000, CompletionTokens: 0}},
+		{text: "over budget", usage: &provider.Usage{PromptTokens: 300100, CompletionTokens: 0}},
 	}}
 	sup := newTestSupervisor(t, env)
-	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey","max_tokens":2000}`)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey","max_tokens":300000}`)
 	waitState(t, sup, "researcher-1", StateFailed)
 
 	spent, _ := sup.Get("researcher-1")
-	if spent.Spend.In != 4000 {
-		t.Fatalf("first attempt spend = %d, want 4000", spent.Spend.In)
+	if spent.Spend.In != 300100 {
+		t.Fatalf("first attempt spend = %d, want 300100", spent.Spend.In)
 	}
 
 	env.mu.Lock()
@@ -98,8 +98,8 @@ func TestRetryCarriesSpendAndResetsTheBudget(t *testing.T) {
 	waitState(t, sup, "researcher-1", StateDone)
 
 	st, _ := sup.Get("researcher-1")
-	if st.Spend.In != 4100 {
-		t.Fatalf("spend after the retry = %d, want 4100 (the earlier attempt is still counted)", st.Spend.In)
+	if st.Spend.In != 300200 {
+		t.Fatalf("spend after the retry = %d, want 300200 (the earlier attempt is still counted)", st.Spend.In)
 	}
 	if st.ToolCalls != 0 || st.Step != 0 {
 		t.Fatalf("the retry must start its own progress, got %d tools / step %d", st.ToolCalls, st.Step)
@@ -349,10 +349,10 @@ func (s *scriptedEnv) openingTurn() string {
 func TestARetryIsToldHowTheLastAttemptEndedAndWhatItLeft(t *testing.T) {
 	env := &scriptedEnv{steps: []streamStep{
 		{text: "the exporter is half converted; the CSV writer is untouched",
-			usage: &provider.Usage{PromptTokens: 4000}},
+			usage: &provider.Usage{PromptTokens: 300100}},
 	}}
 	sup := newTestSupervisor(t, env)
-	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"convert the exporter","max_tokens":2000}`)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"convert the exporter","max_tokens":300000}`)
 	waitState(t, sup, "researcher-1", StateFailed)
 
 	env.mu.Lock()
@@ -395,10 +395,10 @@ func TestARetryIsToldHowTheLastAttemptEndedAndWhatItLeft(t *testing.T) {
 // spawn that set it.
 func TestABudgetExhaustedRetryIsGivenMoreThanKilledIt(t *testing.T) {
 	env := &scriptedEnv{steps: []streamStep{
-		{text: "out of room", usage: &provider.Usage{PromptTokens: 4000}},
+		{text: "out of room", usage: &provider.Usage{PromptTokens: 300100}},
 	}}
 	sup := newTestSupervisor(t, env)
-	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"convert the exporter","max_tokens":2000}`)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"convert the exporter","max_tokens":300000}`)
 	waitState(t, sup, "researcher-1", StateFailed)
 
 	env.mu.Lock()
@@ -409,15 +409,15 @@ func TestABudgetExhaustedRetryIsGivenMoreThanKilledIt(t *testing.T) {
 	}
 	waitState(t, sup, "researcher-1", StateDone)
 
-	if !transcriptHas(sup.Transcript("researcher-1"), EntrySystem, "~4k new tokens, up from ~2k") {
+	if !transcriptHas(sup.Transcript("researcher-1"), EntrySystem, "~600k new tokens, up from ~300k") {
 		t.Fatalf("the retry row must say the budget grew and by how much: %+v", sup.Transcript("researcher-1"))
 	}
 	c := sup.byName["researcher-1"]
 	c.mu.Lock()
 	budget := c.maxTokens
 	c.mu.Unlock()
-	if budget != 4000 {
-		t.Fatalf("the second attempt's budget = %d, want 4000", budget)
+	if budget != 600000 {
+		t.Fatalf("the second attempt's budget = %d, want 600000", budget)
 	}
 
 	// A child that failed for any other reason was not short of attention.

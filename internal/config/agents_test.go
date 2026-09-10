@@ -29,7 +29,7 @@ permissions = ["read", "web"]
 tools = ["read_file", "search", "web_search"]
 mode = "plan"
 prompt = "Be terse."
-max_tokens = 50000
+max_tokens = 300000
 max_rounds = 20
 `)
 	defs, err := LoadAgentsFrom(dir)
@@ -133,6 +133,7 @@ func TestLoadAgentsRejectsBadFiles(t *testing.T) {
 		{"missing prompt file", "a.toml", `prompt_file = "nope.md"`, "prompt_file"},
 		{"bad toml", "a.toml", `= =`, "a.toml"},
 		{"negative budget", "a.toml", `max_tokens = -1`, "max_tokens"},
+		{"undersized default budget", "a.toml", `max_tokens = 200000`, "at least 300000"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

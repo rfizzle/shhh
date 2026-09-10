@@ -81,7 +81,7 @@ func Definitions(profiles Profiles) []provider.Tool {
 					"model": {"type": "string", "description": "Optional model for this agent (defaults to the profile's model, then the configured agent model, then the session model). Use a smaller, cheaper model for wide mechanical work and the session model for reasoning-heavy work."},
 					"steps": {"type": "integer", "description": "Optional number of steps this task breaks into (max 20). Pass it when you can name the steps up front: the agent's lane then shows progress against it instead of a spinner. Leave it out rather than guessing — an invented denominator is worse than none."},
 					"max_rounds": {"type": "integer", "description": "Optional: make the agent pause every N tool rounds to take stock — what it has done, what is left, what it is doing next — before carrying on with a larger budget. Omitted (the default) it runs to completion without pausing, which is what you want for most tasks. Pass it for long open-ended work where an agent quietly drifting off the task would otherwise go unnoticed. It is a pacing choice, not a limit: it never stops the agent, and the token budget is what bounds it."},
-					"max_tokens": {"type": "integer", "description": "Optional token budget (default 200000). It counts new tokens — the part of each prompt the provider did not serve from its cache, plus the completion — so re-reading a cached prompt does not spend it."}
+					"max_tokens": {"type": "integer", "description": "Optional token budget (default 300000; minimum 200000 before prompt admission). It counts new tokens — the part of each prompt the provider did not serve from its cache, plus the completion. The inherited prompt and declared task must still leave a 200000-token working reserve."}
 				},
 				"required": ["role", "task"]
 			}`),
@@ -206,8 +206,7 @@ const maxClaimedPaths = 32
 var validName = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9-]{0,23}$`)
 
 // parseSpawnArgs validates spawn_agent arguments against the session's
-// profiles and clamps the budgets to their ceilings — the model can lower
-// them, never remove them. A budget the call leaves out falls back to the
+// profiles and bounds the budgets. A budget the call leaves out falls back to the
 // profile's, then to the package default. nil profiles means the built-ins.
 func parseSpawnArgs(profiles Profiles, raw json.RawMessage) (spawnArgs, error) {
 	var args spawnArgs
@@ -269,8 +268,8 @@ func parseSpawnArgs(profiles Profiles, raw json.RawMessage) (spawnArgs, error) {
 	switch {
 	case args.maxTokens <= 0:
 		args.maxTokens = DefaultMaxTokens
-	case args.maxTokens < minChildMaxTokens:
-		args.maxTokens = minChildMaxTokens
+	case args.maxTokens < MinChildMaxTokens:
+		return args, fmt.Errorf("max_tokens %d is below the minimum %d", args.maxTokens, MinChildMaxTokens)
 	case args.maxTokens > MaxTokensCeiling:
 		args.maxTokens = MaxTokensCeiling
 	}

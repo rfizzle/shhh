@@ -1590,6 +1590,10 @@ func observeChildPairs(e *observe.ChildEnd) []report.Pair {
 		return nil
 	}
 	pairs := []report.Pair{{Key: "ended", Value: e.Reason}}
+	if e.Budget > 0 {
+		pairs = append(pairs, report.Pair{Key: "budget", Value: fmt.Sprintf("%d (floor %d)", e.Budget, e.AdmissionFloor)})
+		pairs = append(pairs, report.Pair{Key: "tokens", Value: fmt.Sprintf("inherited %d · setup %d · tools %d · analysis %d · handoff %d", e.Tokens.Inherited, e.Tokens.Setup, e.Tokens.Tools, e.Tokens.Analysis, e.Tokens.Handoff)})
+	}
 	if e.Attempt > 1 {
 		pairs = append(pairs, report.Pair{Key: "attempt", Value: strconv.Itoa(e.Attempt)})
 	}

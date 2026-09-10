@@ -103,9 +103,13 @@ const (
 	// child has actually taken in, which is the thing worth bounding in
 	// something with nobody watching it. Money is the ledger's business and
 	// the session spend cap's, and both count a child's requests already.
-	DefaultMaxTokens  = 200_000
+	// DefaultMaxTokens is large enough for a delegated task to investigate,
+	// act, and verify rather than ending after the inherited context.
+	DefaultMaxTokens = 300_000
+	// MinChildMaxTokens is the smallest explicit budget a bounded child may
+	// receive. Admission reserves this much after its fixed prompt and task.
+	MinChildMaxTokens = 200_000
 	MaxTokensCeiling  = 1_000_000
-	minChildMaxTokens = 1_000
 )
 
 // State is a child's lifecycle state.
@@ -147,6 +151,12 @@ type Status struct {
 	State     State
 	Detail    string
 	ToolCalls int
+	// Budget is the effective fresh-token budget and AdmissionFloor is the
+	// minimum that this task's inherited prompt and setup required.
+	Budget, AdmissionFloor int64
+	// Tokens separates the child budget's fixed setup, tool evidence, inferred
+	// analysis, and final handoff. Fresh is the provider-reported total.
+	Tokens observe.ChildTokens
 	// Spend is what the child has been billed across every attempt, priced
 	// request by request as each answer came back. It is a roll-up rather
 	// than a token pair because a pair cannot be priced: the input has to be
@@ -530,6 +540,10 @@ type Spec struct {
 	// under has to be stamped from somewhere, and the CLI is what stamps it.
 	Mode      agent.Mode
 	MaxRounds int
+	// MaxTokens and AdmissionFloor are the effective budget and the minimum
+	// admitted for this declared task. They are carried to the record with the
+	// same attempt that spent them.
+	MaxTokens, AdmissionFloor int64
 	// Attempt is which run of this child the row being opened is, from 1. A
 	// retry keeps the child's name and its place in the batch but is a
 	// separate run with its own conversation, budget and spend, so it gets a
@@ -778,6 +792,10 @@ type child struct {
 	// attempt before it grew to at a moment when nothing is running.
 	maxRounds int
 	maxTokens int64
+	// inheritedTokens and setupTokens are the fixed cost admission reserved
+	// before this child claimed a slot. Tool result and handoff sizes are
+	// collected as the attempt runs; analysis is the fresh-token remainder.
+	inheritedTokens, setupTokens, toolResultTokens, admissionFloor int64
 
 	ctx      context.Context
 	cancel   context.CancelFunc
@@ -966,29 +984,39 @@ func (c *child) status() Status {
 	if c.heldOn != nil {
 		detail = "held · waiting for release"
 	}
+	tokens := observe.ChildTokens{
+		Inherited: c.inheritedTokens,
+		Setup:     c.setupTokens,
+		Tools:     c.toolResultTokens,
+		Handoff:   agent.EstimateTokens(c.report),
+	}
+	tokens.Analysis = max(c.fresh-tokens.Inherited-tokens.Setup-tokens.Tools-tokens.Handoff, 0)
 	return Status{
-		Name:      c.name,
-		Role:      c.role,
-		Task:      c.task,
-		Model:     c.model,
-		Paths:     c.paths,
-		State:     c.state,
-		Detail:    detail,
-		ToolCalls: c.toolCalls,
-		Spend:     c.priorSpend.Plus(c.spend.Total()),
-		Batch:     c.batch,
-		Started:   c.started,
-		Elapsed:   end.Sub(c.started),
-		Step:      min(c.step, c.steps),
-		Steps:     c.steps,
-		Summary:   summary,
-		CheckIns:  c.checkIns,
-		End:       c.endReason,
-		Steers:    c.steers,
-		Verdict:   c.verdict,
-		SteerFrom: c.steerFrom,
-		Seeded:    c.seeded,
-		Held:      c.heldOn != nil,
+		Name:           c.name,
+		Role:           c.role,
+		Task:           c.task,
+		Model:          c.model,
+		Paths:          c.paths,
+		State:          c.state,
+		Detail:         detail,
+		ToolCalls:      c.toolCalls,
+		Budget:         c.maxTokens,
+		AdmissionFloor: c.admissionFloor,
+		Tokens:         tokens,
+		Spend:          c.priorSpend.Plus(c.spend.Total()),
+		Batch:          c.batch,
+		Started:        c.started,
+		Elapsed:        end.Sub(c.started),
+		Step:           min(c.step, c.steps),
+		Steps:          c.steps,
+		Summary:        summary,
+		CheckIns:       c.checkIns,
+		End:            c.endReason,
+		Steers:         c.steers,
+		Verdict:        c.verdict,
+		SteerFrom:      c.steerFrom,
+		Seeded:         c.seeded,
+		Held:           c.heldOn != nil,
 	}
 }
 
@@ -1064,6 +1092,7 @@ func (c *child) settleToolEntry(id, result string) {
 	delete(c.callRow, id)
 	c.transcript[idx].Result = result
 	c.transcript[idx].Pending = false
+	c.toolResultTokens += agent.EstimateTokens(result)
 }
 
 // noteAllowed records on a call's own row what let it run without the parent
@@ -1270,9 +1299,17 @@ func (c *child) endRound() int {
 func (c *child) end() observe.ChildEnd {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	tokens := observe.ChildTokens{
+		Inherited: c.inheritedTokens,
+		Setup:     c.setupTokens,
+		Tools:     c.toolResultTokens,
+		Handoff:   agent.EstimateTokens(c.report),
+	}
+	tokens.Analysis = max(c.fresh-tokens.Inherited-tokens.Setup-tokens.Tools-tokens.Handoff, 0)
 	return observe.ChildEnd{
 		Reason: c.endReason, Verdict: c.verdictCode,
 		Steers: c.steersAll, Attempt: c.attempt,
+		Budget: c.maxTokens, AdmissionFloor: c.admissionFloor, Tokens: tokens,
 	}
 }
 
@@ -2001,6 +2038,17 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	c.mu.Unlock()
 
 	cctx, cancel := context.WithCancel(s.ctx)
+	preflight, preflightErr := s.opts.NewEnv(cctx, Spec{Name: c.name, Role: c.role, Root: s.opts.Root,
+		Model: c.model, Paths: c.paths, Worktree: c.profile.Writes, MaxTokens: budget, Attempt: attempt})
+	if preflightErr != nil {
+		cancel()
+		return fmt.Errorf("cannot set up the retry: the agent's environment could not be built: %w", preflightErr)
+	}
+	inherited, setup, floor := admissionFloor(preflight, retryPrologue(detail, handoff)+c.task)
+	if budget < floor {
+		cancel()
+		return fmt.Errorf("cannot set up the retry: max_tokens %d cannot admit this task; at least %d is required", budget, floor)
+	}
 	// A reader's workspace is opened here, where a failure is still this
 	// caller's to report. A writer's waits for the slot the new attempt has
 	// to take anyway — and waits for a second reason of its own: the parent's
@@ -2052,6 +2100,8 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	c.priorSpend = c.priorSpend.Plus(c.spend.Total())
 	c.spend = meter.New(c.prices)
 	c.fresh, c.budgetHit = 0, false
+	c.inheritedTokens, c.setupTokens, c.toolResultTokens = inherited, setup, 0
+	c.admissionFloor = floor
 	c.checkIns = 0
 	// A retry is a fresh conversation on the same task: no steer has reached
 	// this attempt, whatever the last one was told.
@@ -2288,7 +2338,7 @@ func (s *Supervisor) openWorkspace(c *child, ctx context.Context, maxRounds, att
 		w.root = w.wt.root
 	}
 	w.env, err = s.opts.NewEnv(ctx, Spec{Name: c.name, Role: c.role, Root: w.root, Model: c.model, Paths: c.paths,
-		Worktree: w.wt.dir != ""})
+		Worktree: w.wt.dir != "", MaxTokens: c.maxTokens, AdmissionFloor: c.admissionFloor})
 	if err != nil {
 		removeWorktree(w.wt.repoTop, w.wt.dir)
 		return workspace{}, fmt.Errorf("the agent's environment could not be built: %w", err)
@@ -2312,7 +2362,7 @@ func (s *Supervisor) openWorkspace(c *child, ctx context.Context, maxRounds, att
 	if s.opts.Record != nil {
 		w.rec = s.opts.Record(Spec{Name: c.name, Role: c.role, Root: w.root, Model: c.model, Paths: c.paths,
 			Worktree: w.wt.dir != "", Mode: s.childMode(c), MaxRounds: roundCap(w.agent),
-			Attempt: attempt}, w.env.SystemPrompt)
+			MaxTokens: c.maxTokens, AdmissionFloor: c.admissionFloor, Attempt: attempt}, w.env.SystemPrompt)
 	}
 	return w, nil
 }
@@ -2325,6 +2375,15 @@ func (s *Supervisor) openWorkspace(c *child, ctx context.Context, maxRounds, att
 func (c *child) install(w workspace) {
 	c.root, c.worktree, c.repoTop, c.seeded = w.root, w.wt.dir, w.wt.repoTop, w.wt.seeded
 	c.agent, c.env, c.headless, c.rec = w.agent, w.env, nil, w.rec
+}
+
+// admissionFloor is the budget required before a child can do useful work:
+// its inherited prompt and declared task, plus the working reserve. Tool
+// definitions are prompt cost even though they are not conversation messages.
+func admissionFloor(env Env, task string) (inherited, setup, floor int64) {
+	inherited = agent.EstimateTokens(env.SystemPrompt) + env.ToolTokens
+	setup = agent.EstimateTokens(task)
+	return inherited, setup, inherited + setup + MinChildMaxTokens
 }
 
 // spawn validates the arguments, gives the child everything that does not
@@ -2383,30 +2442,46 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 	// to work yet: a writer queued behind a full set of slots is one a kill
 	// has to reach, and the cancel is what reaches it.
 	cctx, cancel := context.WithCancel(s.ctx)
+	// Construct the role environment before admitting the child, but never its
+	// worktree or record. A doomed budget must not consume either resource.
+	preflight, preflightErr := s.opts.NewEnv(cctx, Spec{Name: name, Role: args.role, Root: s.opts.Root,
+		Model: model, Paths: args.paths, Worktree: args.profile.Writes, MaxTokens: args.maxTokens})
+	if preflightErr != nil {
+		cancel()
+		return "", fmt.Errorf("the agent's environment could not be built: %w", preflightErr)
+	}
+	inherited, setup, floor := admissionFloor(preflight, args.Task)
+	if args.maxTokens < floor {
+		cancel()
+		return "", fmt.Errorf("max_tokens %d cannot admit this task: at least %d is required for the inherited prompt and declared task plus the %d-token working reserve", args.maxTokens, floor, MinChildMaxTokens)
+	}
 
 	c := &child{
-		name:      name,
-		role:      args.role,
-		profile:   args.profile,
-		task:      args.Task,
-		model:     model,
-		paths:     args.paths,
-		batch:     batch,
-		steps:     args.steps,
-		root:      s.opts.Root,
-		mode:      mode,
-		maxRounds: args.maxRounds,
-		maxTokens: args.maxTokens,
-		ctx:       cctx,
-		cancel:    cancel,
-		done:      make(chan struct{}),
-		steerWake: make(chan struct{}, 1),
-		state:     StateQueued,
-		detail:    "queued",
-		started:   time.Now(),
-		attempt:   1,
-		prices:    s.opts.Prices,
-		spend:     meter.New(s.opts.Prices),
+		name:            name,
+		role:            args.role,
+		profile:         args.profile,
+		task:            args.Task,
+		model:           model,
+		paths:           args.paths,
+		batch:           batch,
+		steps:           args.steps,
+		root:            s.opts.Root,
+		mode:            mode,
+		maxRounds:       args.maxRounds,
+		maxTokens:       args.maxTokens,
+		inheritedTokens: inherited,
+		setupTokens:     setup,
+		admissionFloor:  floor,
+		ctx:             cctx,
+		cancel:          cancel,
+		done:            make(chan struct{}),
+		steerWake:       make(chan struct{}, 1),
+		state:           StateQueued,
+		detail:          "queued",
+		started:         time.Now(),
+		attempt:         1,
+		prices:          s.opts.Prices,
+		spend:           meter.New(s.opts.Prices),
 	}
 	// A reader's workspace is the parent's own root and costs nothing to
 	// hold, so it is opened here where a failure is still this call's answer
@@ -3782,7 +3857,7 @@ func (s *Supervisor) statusOverview() string {
 		sb.WriteString(readingsNote + "\n\n")
 	}
 	for _, st := range statuses {
-		label := string(st.Role)
+		label := fmt.Sprintf("%s, %s budget (floor %s)", st.Role, formatTokens(st.Budget), formatTokens(st.AdmissionFloor))
 		if st.Model != "" {
 			label += ", " + st.Model
 		}
@@ -3827,7 +3902,11 @@ func (c *child) reportText() string {
 	if st.CheckIns > 0 {
 		head += " · " + plural(st.CheckIns, "check-in")
 	}
-	fmt.Fprintf(&sb, "%s · ~%s tokens\n\n", head, formatTokens(st.Spend.In+st.Spend.Out))
+	fmt.Fprintf(&sb, "%s · budget %s (floor %s) · ~%s billed tokens\n", head,
+		formatTokens(st.Budget), formatTokens(st.AdmissionFloor), formatTokens(st.Spend.In+st.Spend.Out))
+	fmt.Fprintf(&sb, "tokens: inherited %s · setup %s · tools %s · analysis %s · handoff %s\n\n",
+		formatTokens(st.Tokens.Inherited), formatTokens(st.Tokens.Setup), formatTokens(st.Tokens.Tools),
+		formatTokens(st.Tokens.Analysis), formatTokens(st.Tokens.Handoff))
 	switch {
 	case st.State == StateFailed && report == "":
 		sb.WriteString("The agent did not finish; no final report was produced.")

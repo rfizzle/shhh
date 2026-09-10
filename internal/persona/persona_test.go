@@ -46,7 +46,7 @@ func TestWriteRoundTrips(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "agents")
 	d := Draft{
 		Name: "skeptic", Description: `checks "claims" against sources`, Model: "claude-haiku-4-5-20251001",
-		Reasoning: "low", Permissions: []string{"web"}, MaxTokens: 50000, Why: "cheap model: wide reads",
+		Reasoning: "low", Permissions: []string{"web"}, MaxTokens: 300000, Why: "cheap model: wide reads",
 		Prompt: "You are the skeptic.\nFind the primary source. Say \"\"\"sure\"\"\" only when it is.",
 	}
 	path, err := Write(dir, d, KindChat, false)
@@ -57,7 +57,7 @@ func TestWriteRoundTrips(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if def.Name != "skeptic" || def.Description != d.Description || def.Model != d.Model || def.Reasoning != "low" || def.MaxTokens != 50000 {
+	if def.Name != "skeptic" || def.Description != d.Description || def.Model != d.Model || def.Reasoning != "low" || def.MaxTokens != 300000 {
 		t.Fatalf("loaded = %+v", def)
 	}
 	if !def.Has(config.PermissionWeb) || def.Writes() {

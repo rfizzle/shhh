@@ -11,7 +11,7 @@ import (
 
 func customProfiles() Profiles {
 	p := BuiltinProfiles()
-	p["critic"] = Profile{Name: "critic", Description: "reads a diff and judges it", Mode: agent.ModePlan, HasMode: true, MaxTokens: 50000, MaxRounds: 7}
+	p["critic"] = Profile{Name: "critic", Description: "reads a diff and judges it", Mode: agent.ModePlan, HasMode: true, MaxTokens: 300000, MaxRounds: 7}
 	p["fixer"] = Profile{Name: "fixer", Writes: true}
 	return p
 }
@@ -30,8 +30,8 @@ func TestProfilesParseAndNames(t *testing.T) {
 	if _, err := BuiltinProfiles().Parse("critic"); err == nil {
 		t.Fatal("a custom role is unknown to the built-in set")
 	}
-	if prof, err := BuiltinProfiles().Parse("reviewer"); err != nil || !prof.HasMode || prof.Mode != agent.ModePlan || prof.Writes {
-		t.Fatalf("the reviewer is built in, read-only, in plan mode: %+v %v", prof, err)
+	if prof, err := BuiltinProfiles().Parse("reviewer"); err != nil || !prof.HasMode || prof.Mode != agent.ModePlan || prof.Writes || prof.MaxTokens < DefaultMaxTokens || prof.MaxRounds <= 0 {
+		t.Fatalf("the reviewer is built in, bounded, read-only, in plan mode: %+v %v", prof, err)
 	}
 }
 
@@ -67,15 +67,18 @@ func TestParseSpawnArgsUsesProfileDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if args.maxTokens != 50000 || args.maxRounds != 7 {
+	if args.maxTokens != 300000 || args.maxRounds != 7 {
 		t.Fatalf("a spawn naming no budget takes the profile's: %d tokens, %d rounds", args.maxTokens, args.maxRounds)
 	}
-	args, err = parseSpawnArgs(p, json.RawMessage(`{"role":"critic","task":"x","max_tokens":60000,"max_rounds":3}`))
+	args, err = parseSpawnArgs(p, json.RawMessage(`{"role":"critic","task":"x","max_tokens":200000,"max_rounds":3}`))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if args.maxTokens != 60000 || args.maxRounds != 3 {
+	if args.maxTokens != 200000 || args.maxRounds != 3 {
 		t.Fatalf("the spawn's own budget outranks the profile's: %d tokens, %d rounds", args.maxTokens, args.maxRounds)
+	}
+	if _, err := parseSpawnArgs(p, json.RawMessage(`{"role":"critic","task":"x","max_tokens":60000}`)); err == nil {
+		t.Fatal("a spawn below the working reserve must be refused")
 	}
 	if _, err := parseSpawnArgs(p, json.RawMessage(`{"role":"critic","task":"x","paths":["a/**"]}`)); err == nil {
 		t.Fatal("a profile that changes nothing cannot claim paths")

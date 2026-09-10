@@ -555,12 +555,12 @@ func TestTokenBudgetCancelsChild(t *testing.T) {
 		steps: []streamStep{
 			{
 				calls: []provider.ToolCall{{ID: "r1", Name: "read_file", Arguments: `{"path":"x"}`}},
-				usage: &provider.Usage{PromptTokens: 5000, CompletionTokens: 100},
+				usage: &provider.Usage{PromptTokens: 300100, CompletionTokens: 100},
 			},
 		},
 	}
 	sup := newTestSupervisor(t, env)
-	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"read a lot","max_tokens":1000}`)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"read a lot","max_tokens":300000}`)
 
 	// Nothing is scripted past the overrun, so the handoff fails too.
 	// A handoff that cannot be produced must leave the real reason standing
@@ -582,13 +582,13 @@ func TestTokenBudgetHandsOffBeforeItStops(t *testing.T) {
 		steps: []streamStep{
 			{
 				calls: []provider.ToolCall{{ID: "r1", Name: "read_file", Arguments: `{"path":"x"}`}},
-				usage: &provider.Usage{PromptTokens: 5000, CompletionTokens: 100},
+				usage: &provider.Usage{PromptTokens: 300100, CompletionTokens: 100},
 			},
 			{text: "got as far as the parser; the lexer is untouched"},
 		},
 	}
 	sup := newTestSupervisor(t, env)
-	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"read a lot","max_tokens":1000}`)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"read a lot","max_tokens":300000}`)
 
 	report := execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
 	if !strings.Contains(report, "token budget") {
@@ -610,12 +610,12 @@ func TestTokenBudgetOnTheFinalResponseKeepsTheReport(t *testing.T) {
 		steps: []streamStep{
 			{
 				text:  "the parser is the bottleneck; here is what to change",
-				usage: &provider.Usage{PromptTokens: 5000, CompletionTokens: 100},
+				usage: &provider.Usage{PromptTokens: 300100, CompletionTokens: 100},
 			},
 		},
 	}
 	sup := newTestSupervisor(t, env)
-	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"find the bottleneck","max_tokens":1000}`)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"find the bottleneck","max_tokens":300000}`)
 
 	report := execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
 	if !strings.Contains(report, "token budget") {
@@ -640,16 +640,16 @@ func TestTokenBudgetCountsFreshTokensNotCachedOnes(t *testing.T) {
 		steps: []streamStep{
 			{
 				text:  "the parser is the bottleneck",
-				usage: &provider.Usage{PromptTokens: 5000, CachedTokens: 4900, CompletionTokens: 50},
+				usage: &provider.Usage{PromptTokens: 300100, CachedTokens: 300000, CompletionTokens: 50},
 			},
 		},
 	}
 	sup := newTestSupervisor(t, env)
-	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"find the bottleneck","max_tokens":1000}`)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"find the bottleneck","max_tokens":300000}`)
 
 	report := execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
 	if strings.Contains(report, "token budget") {
-		t.Fatalf("150 fresh tokens against a budget of 1000 must not stop a child: %s", report)
+		t.Fatalf("150 fresh tokens against a budget of 300000 must not stop a child: %s", report)
 	}
 	if !strings.Contains(report, "the parser is the bottleneck") {
 		t.Fatalf("the finished report must reach the parent: %s", report)
@@ -658,7 +658,7 @@ func TestTokenBudgetCountsFreshTokensNotCachedOnes(t *testing.T) {
 	if !ok {
 		t.Fatal("the child is missing from the roster")
 	}
-	if st.Spend.In != 5000 || st.Spend.Out != 50 {
+	if st.Spend.In != 300100 || st.Spend.Out != 50 {
 		t.Fatalf("the spend must stay the billed figure, got ↑%d ↓%d", st.Spend.In, st.Spend.Out)
 	}
 }
@@ -870,6 +870,29 @@ func TestSpawnSummary(t *testing.T) {
 	}
 }
 
+func TestSpawnAdmissionRefusesBeforeCreatingAChild(t *testing.T) {
+	opened := 0
+	sup := New(t.Context(), Options{
+		Root: t.TempDir(),
+		NewEnv: func(context.Context, Spec) (Env, error) {
+			opened++
+			return Env{SystemPrompt: strings.Repeat("p", 8_000)}, nil
+		},
+		Record: func(Spec, string) Recorder { t.Fatal("a refused spawn opened a record"); return Recorder{} },
+	})
+	t.Cleanup(sup.Close)
+	_, err := sup.Spawn(json.RawMessage(`{"role":"writer","task":"x","max_tokens":200000}`))
+	if err == nil || !strings.Contains(err.Error(), "cannot admit") || !strings.Contains(err.Error(), "202000") {
+		t.Fatalf("undersized spawn error = %v, want its growing admission floor", err)
+	}
+	if opened != 1 {
+		t.Fatalf("admission should build one preflight environment, got %d", opened)
+	}
+	if children := sup.Snapshot(); len(children) != 0 {
+		t.Fatalf("a refused spawn claimed a child slot: %+v", children)
+	}
+}
+
 func TestParseSpawnArgsClampsBudgets(t *testing.T) {
 	args, err := parseSpawnArgs(nil, json.RawMessage(`{"role":"researcher","task":"x","max_rounds":999,"max_tokens":99999999}`))
 	if err != nil {
@@ -889,6 +912,9 @@ func TestParseSpawnArgsClampsBudgets(t *testing.T) {
 	}
 	if args.maxRounds != DefaultMaxRounds || args.maxTokens != DefaultMaxTokens {
 		t.Fatalf("defaults not applied: %d %d", args.maxRounds, args.maxTokens)
+	}
+	if _, err := parseSpawnArgs(nil, json.RawMessage(`{"role":"researcher","task":"x","max_tokens":60000}`)); err == nil {
+		t.Fatal("a 60000-token request must be refused rather than promoted")
 	}
 }
 
@@ -1381,8 +1407,8 @@ func TestChildModelResolution(t *testing.T) {
 
 	mu.Lock()
 	defer mu.Unlock()
-	if len(seen) != 2 || seen[0] != "role-default" || seen[1] != "tiny-model" {
-		t.Fatalf("models handed to the env factory = %v, want [role-default tiny-model]", seen)
+	if len(seen) != 4 || seen[0] != "role-default" || seen[1] != "role-default" || seen[2] != "tiny-model" || seen[3] != "tiny-model" {
+		t.Fatalf("models handed to the env factory = %v, want [role-default role-default tiny-model tiny-model]", seen)
 	}
 	if st, ok := sup.Get("researcher-2"); !ok || st.Model != "tiny-model" {
 		t.Fatalf("roster should record the child's model, got %+v", st)
@@ -2314,9 +2340,9 @@ func spendingRounds(n int, perRound int) []streamStep {
 // that coming: this one spends its whole budget inside four rounds, twenty-one
 // short of the interval it would have been asked at.
 func TestChildIsAskedOnItsBudgetLongBeforeItsRounds(t *testing.T) {
-	env := &scriptedEnv{steps: spendingRounds(8, 30_000)}
+	env := &scriptedEnv{steps: spendingRounds(12, 30_000)}
 	sup := newTestSupervisor(t, env)
-	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the exporter","max_tokens":100000}`)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the exporter","max_tokens":300000}`)
 	waitState(t, sup, "researcher-1", StateFailed)
 
 	if !env.asked("routine check-in") {
@@ -2331,9 +2357,9 @@ func TestChildIsAskedOnItsBudgetLongBeforeItsRounds(t *testing.T) {
 // spending, because spending is not progress and nothing else it is ever
 // asked can tell the two apart.
 func TestABudgetCheckInAsksAReadingChildWhatItHasWritten(t *testing.T) {
-	env := &scriptedEnv{steps: spendingRounds(8, 30_000)}
+	env := &scriptedEnv{steps: spendingRounds(12, 30_000)}
 	sup := newTestSupervisor(t, env)
-	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the exporter","max_tokens":100000}`)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the exporter","max_tokens":300000}`)
 	waitState(t, sup, "researcher-1", StateFailed)
 
 	if !env.asked("not written to any file") {
@@ -2348,9 +2374,9 @@ func TestABudgetCheckInAsksAReadingChildWhatItHasWritten(t *testing.T) {
 // on reading, and one that ran out mid-edit did not. The parent reads one
 // line about a failed child, and retrying is a different decision for each.
 func TestABudgetFailureSaysWhatTheChildHadWritten(t *testing.T) {
-	env := &scriptedEnv{steps: spendingRounds(8, 30_000)}
+	env := &scriptedEnv{steps: spendingRounds(12, 30_000)}
 	sup := newTestSupervisor(t, env)
-	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the exporter","max_tokens":100000}`)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the exporter","max_tokens":300000}`)
 	waitState(t, sup, "researcher-1", StateFailed)
 
 	st := statusOf(t, sup, "researcher-1")

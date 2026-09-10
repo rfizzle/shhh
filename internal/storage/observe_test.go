@@ -1340,7 +1340,9 @@ func TestEndChildAgentSession_ClosesTheRowWithHowTheAttemptEnded(t *testing.T) {
 	if err != nil {
 		t.Fatalf("start child session: %v", err)
 	}
-	end := observe.ChildEnd{Reason: observe.ChildBudget, Verdict: "off-target", Steers: 2, Attempt: 2}
+	end := observe.ChildEnd{Reason: observe.ChildBudget, Verdict: "off-target", Steers: 2, Attempt: 2,
+		Budget: 300000, AdmissionFloor: 200010,
+		Tokens: observe.ChildTokens{Inherited: 4, Setup: 6, Tools: 20, Analysis: 299960, Handoff: 10}}
 	if err := db.EndChildAgentSession(child, "completed", end); err != nil {
 		t.Fatalf("end child session: %v", err)
 	}

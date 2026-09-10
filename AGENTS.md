@@ -1138,6 +1138,8 @@ What will bite you: **the close row reads its verdict off the transcript, not of
 
 `shhh code` can spawn child agents via `spawn_agent`. Children are `researcher` (read-only tools + web), `writer` (full toolset against an isolated git worktree) or `reviewer` (read-only, plan mode, handed a diff; `prompt.BuildReviewer`), or any custom profile the user wrote to `~/.config/shhh/agents/<name>.toml`. Hard limits: max 3 concurrent, 16 total per session — a limit on attention, not on resources ([`docs/capabilities/subagents.md`](docs/capabilities/subagents.md)). Children that can write or execute produce patches that the parent approves.
 
+**A child is admitted before it claims a slot, worktree or record row.** `DefaultMaxTokens` is 300,000 and an explicit spawn may not name fewer than 200,000; `admissionFloor` adds the inherited prompt and tool definitions, the declared task, and the 200,000-token working reserve, refusing a budget that cannot leave that reserve. Profile budgets are role defaults and must be at least 300,000. `Status` and `observe.ChildEnd` keep the effective budget, floor, and token attribution for inherited context, setup, tool results, analysis and handoff — do not reconstruct those from billed totals, whose cached input is deliberately not budget consumption.
+
 **`Supervisor.Steer` is the only door into a child's conversation, and every
 caller names itself.** The person typing at the lane, the `agent_steer` tool
 the orchestrator calls and the interruption the child's own reading earns are
