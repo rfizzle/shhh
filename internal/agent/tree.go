@@ -180,7 +180,11 @@ func (a *Agent) SetTreeCheck(c TreeCheck) {
 	if c.Budget <= 0 {
 		c.Budget = DefaultTreeBudget
 	}
-	t := &treeState{cfg: c, top: strings.TrimSpace(top)}
+	top = strings.TrimSpace(top)
+	if resolved, err := filepath.EvalSymlinks(top); err == nil {
+		top = resolved
+	}
+	t := &treeState{cfg: c, top: top}
 	snap, err := TakeTreeSnapshot(t.top)
 	if err != nil {
 		a.tree = nil
@@ -309,6 +313,12 @@ func (t *treeState) relative(p string) (string, bool) {
 	abs, err := filepath.Abs(p)
 	if err != nil {
 		return "", false
+	}
+	// Git resolves the checkout's physical path. The macOS temporary root is
+	// reachable through /var and /private/var, so compare an existing path's
+	// physical spelling or a session's own write looks outside its checkout.
+	if resolved, err := filepath.EvalSymlinks(abs); err == nil {
+		abs = resolved
 	}
 	rel, err := filepath.Rel(t.top, abs)
 	if err != nil || rel == ".." || strings.HasPrefix(rel, "../") {
