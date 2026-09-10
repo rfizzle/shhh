@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 )
@@ -29,7 +28,7 @@ const searxngPageTwo = `{
 
 func TestSearXNG_ResultsHaveTheSameThreeFields(t *testing.T) {
 	srv, sent := stubSearch(t, searxngFixture)
-	s := &Searcher{Provider: ProviderSearXNG, Endpoint: srv.URL + "/search"}
+	s := &Searcher{Provider: ProviderSearXNG, Endpoint: srv.URL + "/search", HTTPClient: fixtureHTTP.Client()}
 	results, err := s.Search(context.Background(), SearchQuery{Query: "generics", Count: 5})
 	if err != nil {
 		t.Fatalf("Search: %v", err)
@@ -61,7 +60,7 @@ func TestSearXNG_NeedsNoKeyButNeedsAnInstance(t *testing.T) {
 
 func TestSearXNG_MapsTheParameters(t *testing.T) {
 	srv, sent := stubSearch(t, searxngFixture)
-	s := &Searcher{Provider: ProviderSearXNG, Endpoint: srv.URL + "/search"}
+	s := &Searcher{Provider: ProviderSearXNG, Endpoint: srv.URL + "/search", HTTPClient: fixtureHTTP.Client()}
 	if _, err := s.Search(context.Background(), SearchQuery{
 		Query: "generics", Count: 5, Freshness: FreshnessMonth, Site: "go.dev", Offset: 3,
 	}); err != nil {
@@ -82,7 +81,7 @@ func TestSearXNG_MapsTheParameters(t *testing.T) {
 
 // The offset is the next page of the same query and not the same page again.
 func TestSearXNG_OffsetPagesOn(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := testServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if r.URL.Query().Get("pageno") == "2" {
 			fmt.Fprint(w, searxngPageTwo)
@@ -92,7 +91,7 @@ func TestSearXNG_OffsetPagesOn(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	s := &Searcher{Provider: ProviderSearXNG, Endpoint: srv.URL + "/search"}
+	s := &Searcher{Provider: ProviderSearXNG, Endpoint: srv.URL + "/search", HTTPClient: fixtureHTTP.Client()}
 	first, err := s.Search(context.Background(), SearchQuery{Query: "generics", Count: 5})
 	if err != nil {
 		t.Fatal(err)
@@ -120,7 +119,7 @@ func TestSearXNG_AnHTMLAnswerIsAConfigurationFault(t *testing.T) {
 		{"the format is refused outright", "text/plain", "Forbidden", http.StatusForbidden},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			srv := testServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if tc.contentType != "" {
 					w.Header().Set("Content-Type", tc.contentType)
 				}
@@ -129,7 +128,7 @@ func TestSearXNG_AnHTMLAnswerIsAConfigurationFault(t *testing.T) {
 			}))
 			defer srv.Close()
 
-			err := CheckSearXNG(context.Background(), srv.URL+"/search")
+			err := checkSearXNG(context.Background(), srv.URL+"/search", fixtureHTTP.Client())
 			if !errors.Is(err, ErrSearXNGFormat) {
 				t.Fatalf("err = %v, want the format fault", err)
 			}
@@ -142,7 +141,7 @@ func TestSearXNG_AnHTMLAnswerIsAConfigurationFault(t *testing.T) {
 
 func TestCheckSearXNG_PassesAnInstanceThatAnswersJSON(t *testing.T) {
 	srv, _ := stubSearch(t, searxngFixture)
-	if err := CheckSearXNG(context.Background(), srv.URL+"/search"); err != nil {
+	if err := checkSearXNG(context.Background(), srv.URL+"/search", fixtureHTTP.Client()); err != nil {
 		t.Fatalf("a working instance failed its check: %v", err)
 	}
 }

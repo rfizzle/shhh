@@ -122,7 +122,14 @@ func isHTML(contentType string, body []byte) bool {
 // reaches it rather than reading a setting off it: whether json is among its
 // formats is not something this side can know without asking.
 func CheckSearXNG(ctx context.Context, endpoint string) error {
-	s := &Searcher{Provider: ProviderSearXNG, Endpoint: endpoint}
+	return checkSearXNG(ctx, endpoint, nil)
+}
+
+// checkSearXNG keeps the public diagnostic independent of its transport. The
+// production call has no client override; tests use an in-memory transport so
+// checking an instance's response shape does not require a listener.
+func checkSearXNG(ctx context.Context, endpoint string, client *http.Client) error {
+	s := &Searcher{Provider: ProviderSearXNG, Endpoint: endpoint, HTTPClient: client}
 	_, err := s.Search(ctx, SearchQuery{Query: "shhh", Count: 1})
 	return err
 }

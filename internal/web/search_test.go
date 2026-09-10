@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
+
+	"github.com/rfizzle/shhh/internal/testhttp"
 )
 
 const braveFixture = `{
@@ -22,7 +23,7 @@ const braveFixture = `{
 
 func TestSearcher_Search(t *testing.T) {
 	var gotToken, gotQuery, gotCount string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := testServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotToken = r.Header.Get("X-Subscription-Token")
 		gotQuery = r.URL.Query().Get("q")
 		gotCount = r.URL.Query().Get("count")
@@ -31,7 +32,7 @@ func TestSearcher_Search(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	s := &Searcher{APIKey: "test-key", Endpoint: srv.URL}
+	s := &Searcher{APIKey: "test-key", Endpoint: srv.URL, HTTPClient: fixtureHTTP.Client()}
 	results, err := s.Search(context.Background(), SearchQuery{Query: "golang", Count: 3})
 	if err != nil {
 		t.Fatalf("Search: %v", err)
@@ -51,7 +52,7 @@ func TestSearcher_Search(t *testing.T) {
 }
 
 func TestSearcher_CountClampedAndBounded(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := testServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if got := r.URL.Query().Get("count"); got != "10" {
 			t.Errorf("count = %q, want clamped to 10", got)
 		}
@@ -59,7 +60,7 @@ func TestSearcher_CountClampedAndBounded(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	s := &Searcher{APIKey: "k", Endpoint: srv.URL}
+	s := &Searcher{APIKey: "k", Endpoint: srv.URL, HTTPClient: fixtureHTTP.Client()}
 	if _, err := s.Search(context.Background(), SearchQuery{Query: "q", Count: 99}); err != nil {
 		t.Fatal(err)
 	}
@@ -76,12 +77,12 @@ func TestSearcher_MissingKey(t *testing.T) {
 }
 
 func TestSearcher_ProviderError(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := testServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "nope", http.StatusUnauthorized)
 	}))
 	defer srv.Close()
 
-	s := &Searcher{APIKey: "bad", Endpoint: srv.URL}
+	s := &Searcher{APIKey: "bad", Endpoint: srv.URL, HTTPClient: fixtureHTTP.Client()}
 	_, err := s.Search(context.Background(), SearchQuery{Query: "q", Count: 5})
 	if err == nil || !strings.Contains(err.Error(), "status 401") {
 		t.Fatalf("err = %v, want status 401", err)
@@ -89,12 +90,12 @@ func TestSearcher_ProviderError(t *testing.T) {
 }
 
 func TestSearcher_InvalidJSON(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := testServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "not json")
 	}))
 	defer srv.Close()
 
-	s := &Searcher{APIKey: "k", Endpoint: srv.URL}
+	s := &Searcher{APIKey: "k", Endpoint: srv.URL, HTTPClient: fixtureHTTP.Client()}
 	if _, err := s.Search(context.Background(), SearchQuery{Query: "q", Count: 5}); err == nil {
 		t.Fatal("expected parse error")
 	}
@@ -103,10 +104,10 @@ func TestSearcher_InvalidJSON(t *testing.T) {
 // stubSearch answers every request from the fixture and hands back what the
 // query string carried, which is the whole of what a mapping test checks:
 // the parameter reached the wire under the backend's own spelling.
-func stubSearch(t *testing.T, body string) (*httptest.Server, func() url.Values) {
+func stubSearch(t *testing.T, body string) (*testhttp.Server, func() url.Values) {
 	t.Helper()
 	var sent url.Values
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := testServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sent = r.URL.Query()
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprint(w, body)
@@ -120,7 +121,7 @@ func stubSearch(t *testing.T, body string) (*httptest.Server, func() url.Values)
 // and offset is a page index.
 func TestSearcher_BraveMapsTheParameters(t *testing.T) {
 	srv, sent := stubSearch(t, braveFixture)
-	s := &Searcher{APIKey: "k", Endpoint: srv.URL}
+	s := &Searcher{APIKey: "k", Endpoint: srv.URL, HTTPClient: fixtureHTTP.Client()}
 	if _, err := s.Search(context.Background(), SearchQuery{
 		Query: "generics", Count: 5, Freshness: FreshnessWeek, Site: "go.dev", Offset: 2,
 	}); err != nil {
@@ -187,13 +188,13 @@ func TestSearcher_RefusesByName(t *testing.T) {
 // rather than made without the parameter.
 func TestSearcher_ARefusedQueryIsNotSent(t *testing.T) {
 	var asked bool
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := testServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		asked = true
 		fmt.Fprint(w, braveFixture)
 	}))
 	defer srv.Close()
 
-	s := &Searcher{APIKey: "k", Endpoint: srv.URL}
+	s := &Searcher{APIKey: "k", Endpoint: srv.URL, HTTPClient: fixtureHTTP.Client()}
 	if _, err := s.Search(context.Background(), SearchQuery{Query: "q", Freshness: "hour"}); err == nil {
 		t.Fatal("expected a refusal")
 	}
