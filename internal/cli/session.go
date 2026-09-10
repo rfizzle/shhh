@@ -754,9 +754,9 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), subagent.Definitions(agents.profiles)...)
 	}
 
-	db, err := openStore()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "warning: chat persistence unavailable: %v\n", err)
+	db, storeErr := openStore()
+	if storeErr != nil {
+		fmt.Fprintf(os.Stderr, "warning: chat persistence unavailable: %v\n", storeErr)
 	}
 	if db != nil {
 		defer db.Close()
@@ -1012,7 +1012,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithToolExecutor(executor).
 		WithRepeats(repeats).
 		WithDB(db).
-		WithPersistenceError(err).
+		WithPersistenceError(storeErr).
 		WithPricing(prices, env.modelName).
 		WithLedger(ledger).
 		WithSecrets(chat.Secrets{Manage: secretsManager(session.vault), Scrub: session.vault.ScrubMessage}).
