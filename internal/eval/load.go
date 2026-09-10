@@ -48,6 +48,9 @@ type caseFile struct {
 	Prompt string `toml:"prompt"`
 	// Check is the argv whose exit status is the case's verdict.
 	Check []string `toml:"check"`
+	// AnalysisOnly says the requested deliverable is an explanation; a dirty
+	// workspace after the run is recorded as an unintended mutation.
+	AnalysisOnly bool `toml:"analysis_only"`
 	// Facts is what a research case's write-up must contain, each one an
 	// expression rather than a phrase (research.go).
 	Facts []string `toml:"facts"`
@@ -120,7 +123,7 @@ func LoadCase(dir string) (Case, error) {
 		if info, err := os.Stat(ws); err != nil || !info.IsDir() {
 			return Case{}, fmt.Errorf("%s: no %s/ directory — a case needs a workspace to work in", dir, WorkspaceDir)
 		}
-		c.Workspace, c.Prompt, c.Check = ws, strings.TrimSpace(f.Prompt), f.Check
+		c.Workspace, c.Prompt, c.Check, c.AnalysisOnly = ws, strings.TrimSpace(f.Prompt), f.Check, f.AnalysisOnly
 	case KindResearch:
 		if strings.TrimSpace(f.Prompt) == "" {
 			return Case{}, fmt.Errorf("%s: prompt is required — it is the question", path)

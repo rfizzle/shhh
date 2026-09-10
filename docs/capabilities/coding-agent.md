@@ -4,6 +4,25 @@ The mode with the most delegated to it: an agent that reads the repository,
 edits it, runs things, checks its own work, and can hand parts of the job to
 children.
 
+## Coding requests are carried through
+
+A request to implement, fix, or diagnose is a request to finish the work in the
+current turn. The agent investigates what the workspace says, makes the
+necessary change, and verifies it; a research report, suggested patch, or plan
+is not a substitute for the requested result.
+
+An explanation, review, planning, brainstorming, or analysis-only request is a
+different deliverable. The agent answers or investigates it without changing
+the workspace unless the person separately asks for implementation. Having a
+write-capable tool does not turn a request for an explanation into a change.
+
+A failed call is evidence about the route just tried. The agent reads the
+stated cause and changes the path, arguments, command, or approach rather than
+repeating the call unchanged. It reports a blocker only when the workspace and
+available tools cannot resolve it. For a bug or failing-test request, it
+inspects or reproduces the failure early where practical, then runs the
+narrowest relevant check after the change before the required quality gate.
+
 ## A turn ends with what changed
 
 The question after an agent stops is never "what did it say". Every turn

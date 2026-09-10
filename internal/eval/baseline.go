@@ -96,6 +96,19 @@ type CaseBaseline struct {
 	// Research is a research case's three rates, and nil for every other
 	// kind.
 	Research *ResearchBaseline `json:"research,omitempty"`
+	// Behaviour is a workspace case's action metrics, and nil for every other
+	// kind. It is retained even when every value is zero: zero direct mutation
+	// calls is the result an analysis-only control is meant to expose.
+	Behaviour *BehaviourBaseline `json:"behaviour,omitempty"`
+}
+
+// BehaviourBaseline is the action evidence from a workspace attempt, reduced
+// to medians so it can be compared with a later prompt run.
+type BehaviourBaseline struct {
+	MutationsAttempted       float64 `json:"median_mutations_attempted"`
+	CallsBeforeFirstMutation float64 `json:"median_calls_before_first_mutation"`
+	ValidationAttempts       float64 `json:"median_validation_attempts"`
+	UnintendedMutations      float64 `json:"median_unintended_mutations"`
 }
 
 // TableBaseline is a table case's outcomes, counted apart the way the report
@@ -154,6 +167,14 @@ func (s Summary) Baseline() Baseline {
 			c.Kind = KindWorkspace
 		}
 		c.Cost, c.Priced = res.Cost()
+		if res.Case.Kind == KindWorkspace || res.Case.Kind == "" {
+			c.Behaviour = &BehaviourBaseline{
+				MutationsAttempted:       res.Median(func(a Attempt) float64 { return float64(a.Behaviour.MutationsAttempted) }),
+				CallsBeforeFirstMutation: res.Median(func(a Attempt) float64 { return float64(a.Behaviour.CallsBeforeFirstMutation) }),
+				ValidationAttempts:       res.Median(func(a Attempt) float64 { return float64(a.Behaviour.ValidationAttempts) }),
+				UnintendedMutations:      res.Median(func(a Attempt) float64 { return float64(a.Behaviour.UnintendedMutations) }),
+			}
+		}
 		if score, ok := res.Research(); ok {
 			c.Research = &ResearchBaseline{
 				Cited:     score.Cited,

@@ -126,6 +126,14 @@ const findingThingsBrief = `- Batch independent searches and reads into one roun
 - Never repeat a call you already made; its result is above. If two attempts have not answered the question, change approach rather than asking again.
 - Know when to stop looking: once you can name what you are going to change or report, start. More reading is not more progress.`
 
+// executionDefault distinguishes requests to change the workspace from the
+// read-only work a coding session also takes on. The contract is documented in
+// docs/capabilities/coding-agent.md#coding-requests-are-carried-through.
+const executionDefault = `Implementation, bug-fix, and diagnosis requests are requests to complete work in the current turn. Use the available tools to investigate, make the change, and verify it; do not stop at a research report, suggested patch, or plan.
+Explanation, review, planning, brainstorming, and analysis-only requests are exceptions: answer or investigate without making a change unless the user separately asks to implement it. Do not edit merely because the tools are available.
+- A failed tool call is evidence: read the stated cause, then change the path, arguments, command, or approach. Never retry an unchanged call. Report a blocker only when the workspace and available tools cannot resolve it.
+- For a failing-test or bug task, inspect or reproduce the failure early where practical. After a change, run the narrowest relevant check before the required quality gate.`
+
 // BuildAgent is the system prompt for `shhh code`: unlike BuildConversation, it tells
 // the model to act on the workspace with its tools and keep going until the
 // task is complete, instead of pasting suggestions into the chat.
@@ -169,6 +177,9 @@ Make changes with write_file and edit_file rather than pasting code blocks into 
 
 %s
 
+# Execution default
+%s
+
 # Working style
 - Work autonomously toward completing the task. Keep going — reading, editing, verifying — until it is done or you are genuinely blocked on input only the user can provide; then report clearly.
 - Read a file before editing it, and match the style and conventions you find there.
@@ -187,7 +198,7 @@ Make changes with write_file and edit_file rather than pasting code blocks into 
 - Be concise. Report what you changed and how you verified it, not a narration of every step.
 - Use markdown formatting (headers, lists, code blocks) — the terminal renders it.
 - If a task is ambiguous, make the most reasonable assumption, state it, and proceed rather than stopping to ask.`,
-		info.Shell, os, info.Cwd, today(), findingThings, shellSyntaxRules(info.Shell), sudoRules(info.OS, info.IsRoot), osRules(info.OS))
+		info.Shell, os, info.Cwd, today(), findingThings, executionDefault, shellSyntaxRules(info.Shell), sudoRules(info.OS, info.IsRoot), osRules(info.OS))
 	if len(extra) > 0 && extra[0] != "" {
 		base += "\n\n" + extra[0]
 	}
@@ -312,6 +323,9 @@ Date: %s
 Read-only tools (read_file, list_directory, search, glob) run automatically. execute_command, write_file, and edit_file may require the human's approval per call.
 Make changes with write_file and edit_file rather than pasting code into your messages. Relative paths resolve inside your isolated workspace; keep every change inside it.
 
+# Execution default
+%s
+
 # Working style
 - Work autonomously until the task is done or you are genuinely blocked; do not ask questions — nobody will answer mid-run.
 %s
@@ -326,7 +340,7 @@ Make changes with write_file and edit_file rather than pasting code into your me
 
 # Final report
 Your last message IS the deliverable. Report what you changed (files and why), how you verified it, and anything the reviewer should look at closely. Do not end on a question or a promise of further work.`,
-		info.Shell, os, info.Cwd, today(), findingThingsBrief, shellSyntaxRules(info.Shell), sudoRules(info.OS, info.IsRoot), osRules(info.OS))
+		info.Shell, os, info.Cwd, today(), executionDefault, findingThingsBrief, shellSyntaxRules(info.Shell), sudoRules(info.OS, info.IsRoot), osRules(info.OS))
 	if len(extra) > 0 && extra[0] != "" {
 		base += "\n\n" + extra[0]
 	}
@@ -571,6 +585,11 @@ func BuildProfile(info shell.Info, spec ProfileSpec, extra ...string) string {
 		b.WriteString("You cannot edit files directly — do not propose to; commands are your only way to change anything, and every change is collected as a patch.")
 	default:
 		b.WriteString("You cannot edit files or run commands — do not propose to; gather facts instead.")
+	}
+
+	if spec.Write {
+		b.WriteString("\n\n# Execution default\n")
+		b.WriteString(executionDefault)
 	}
 
 	b.WriteString("\n\n# Working style\n")

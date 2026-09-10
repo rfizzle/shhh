@@ -45,6 +45,17 @@ func TestLoadCaseNamesItselfAfterItsDirectory(t *testing.T) {
 	}
 }
 
+func TestLoadCaseMarksAnAnalysisOnlyWorkspace(t *testing.T) {
+	dir := writeCase(t, t.TempDir(), "analysis", goodCase+"\nanalysis_only = true\n")
+	c, err := LoadCase(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !c.AnalysisOnly {
+		t.Fatal("analysis_only was not loaded")
+	}
+}
+
 func TestLoadCaseRefusesACaseWithNothingToDecideIt(t *testing.T) {
 	dir := writeCase(t, t.TempDir(), "no-check", "prompt = \"do a thing\"\n")
 	_, err := LoadCase(dir)

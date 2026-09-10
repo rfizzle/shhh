@@ -66,6 +66,10 @@ type Case struct {
 	// Check is the argv run in the workspace after the agent stops. Exit zero
 	// is the pass, and nothing else about it is interpreted.
 	Check []string
+	// AnalysisOnly marks a workspace case whose requested deliverable is an
+	// explanation. Its final dirty paths are unintended mutations; the call
+	// metrics still record attempted direct mutations for every case.
+	AnalysisOnly bool
 	// Requires names the commands the case cannot run without, and Skip,
 	// when set, is which of them this machine has not got — a case needing a
 	// toolchain that is absent says so rather than failing as though the
@@ -104,6 +108,9 @@ type Attempt struct {
 	Cost      float64
 	Priced    bool
 	Elapsed   time.Duration
+	// Behaviour is a workspace attempt's operational evidence. It is separate
+	// from Passed: the check still decides whether the task was done.
+	Behaviour Behaviour
 	// Score is a table attempt's row-by-row outcome, and nil for a workspace
 	// attempt. Passed above is its hard verdict: every row answered, and
 	// every answer one its row accepts.
@@ -111,6 +118,15 @@ type Attempt struct {
 	// Research is a research attempt's three rates, and nil for every other
 	// kind. Passed above is its hard verdict: all three whole.
 	Research *ResearchScore
+}
+
+// Behaviour is the part of a workspace attempt that says how the agent acted,
+// rather than whether its case check accepted the final workspace.
+type Behaviour struct {
+	MutationsAttempted       int
+	CallsBeforeFirstMutation int
+	ValidationAttempts       int
+	UnintendedMutations      int
 }
 
 // Result is every attempt at one case.
@@ -155,6 +171,19 @@ func (r Result) Research() (ResearchScore, bool) {
 		merged.Add(*a.Research)
 	}
 	return merged, found
+}
+
+// Behaviour is the median action evidence across a workspace case's attempts.
+func (r Result) Behaviour() (Behaviour, bool) {
+	if r.Case.Kind != KindWorkspace && r.Case.Kind != "" {
+		return Behaviour{}, false
+	}
+	return Behaviour{
+		MutationsAttempted:       int(r.Median(func(a Attempt) float64 { return float64(a.Behaviour.MutationsAttempted) })),
+		CallsBeforeFirstMutation: int(r.Median(func(a Attempt) float64 { return float64(a.Behaviour.CallsBeforeFirstMutation) })),
+		ValidationAttempts:       int(r.Median(func(a Attempt) float64 { return float64(a.Behaviour.ValidationAttempts) })),
+		UnintendedMutations:      int(r.Median(func(a Attempt) float64 { return float64(a.Behaviour.UnintendedMutations) })),
+	}, len(r.Attempts) > 0
 }
 
 // Passes is how many attempts the check accepted.

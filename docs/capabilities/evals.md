@@ -29,6 +29,14 @@ it took: the rounds, the tokens, the wall clock and the cost, as medians
 across the attempts rather than means — one attempt that spent three times the
 rounds is exactly the sample a mean should not be allowed to follow.
 
+A workspace run also records its direct mutation calls, calls before its first
+mutation, validation calls, and—when the case asks for analysis only—the dirty
+paths it left behind. These are operational evidence rather than another
+verdict: the case's check still decides completion. Together, the implementation
+and failing-test cases show whether a coding request reaches a change and
+validation, while the analysis-only case shows whether the same tools were left
+unused.
+
 ## Flaky is its own verdict
 
 A case is run more than once, because the thing being measured is not

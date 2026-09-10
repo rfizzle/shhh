@@ -1,0 +1,7 @@
+name = "analysis-only-diagnosis"
+prompt = "Explain why route.Match accepts a trailing slash and identify the code that makes it happen. This is analysis only: do not edit files, run formatting, or make any other workspace change."
+
+requires = ["git"]
+
+analysis_only = true
+check = ["git", "diff", "--exit-code"]

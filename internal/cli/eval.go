@@ -422,6 +422,9 @@ func evalRow(res eval.Result) report.Row {
 
 	row.Subject = evalDetail(res)
 	row.Body = evalBody(res)
+	if behaviour, ok := res.Behaviour(); ok {
+		row.Body = append(row.Body, behaviourDetail(behaviour))
+	}
 	if score, ok := res.Score(); ok {
 		if c := tableConsequence(score); c != "" {
 			row.Consequence = c
@@ -592,6 +595,14 @@ func evalDetail(res eval.Result) string {
 		parts = append(parts, metricsSpend(cost, priced))
 	}
 	return strings.Join(parts, " · ")
+}
+
+// behaviourDetail is the operational evidence a workspace case records. The
+// case's check still decides its verdict; these figures show whether a prompt
+// change altered the route the agent took to get there.
+func behaviourDetail(b eval.Behaviour) string {
+	return fmt.Sprintf("%d mutations · %d calls before mutation · %d validations · %d unintended mutations",
+		b.MutationsAttempted, b.CallsBeforeFirstMutation, b.ValidationAttempts, b.UnintendedMutations)
 }
 
 // evalBody is why a case did not pass, which is the only thing a failing row
@@ -785,6 +796,9 @@ func compareDetail(d eval.Delta) string {
 		parts = append(parts, researchShift(before.Facts, after.Facts, "facts")...)
 		parts = append(parts, researchShift(before.Quoted, after.Quoted, "quotes found")...)
 	}
+	if before, after := d.Before.Behaviour, d.After.Behaviour; before != nil && after != nil {
+		parts = append(parts, behaviourShifts(*before, *after)...)
+	}
 	if before, after := eval.FormatRounds(d.Before.Rounds), eval.FormatRounds(d.After.Rounds); before != after {
 		parts = append(parts, before+" → "+after+" rounds")
 	}
@@ -792,6 +806,26 @@ func compareDetail(d eval.Delta) string {
 		parts = append(parts, before+" → "+after)
 	}
 	return strings.Join(parts, " · ")
+}
+
+// behaviourShifts preserves the four action metrics in a comparison without
+// spending width on a number that stayed the same.
+func behaviourShifts(before, after eval.BehaviourBaseline) []string {
+	var parts []string
+	for _, metric := range []struct {
+		before, after float64
+		label         string
+	}{
+		{before.MutationsAttempted, after.MutationsAttempted, "mutations"},
+		{before.CallsBeforeFirstMutation, after.CallsBeforeFirstMutation, "calls before mutation"},
+		{before.ValidationAttempts, after.ValidationAttempts, "validations"},
+		{before.UnintendedMutations, after.UnintendedMutations, "unintended mutations"},
+	} {
+		if metric.before != metric.after {
+			parts = append(parts, eval.FormatRounds(metric.before)+" → "+eval.FormatRounds(metric.after)+" "+metric.label)
+		}
+	}
+	return parts
 }
 
 // spendPair is what the case cost either side, or two empty strings where

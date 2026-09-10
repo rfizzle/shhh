@@ -90,7 +90,8 @@ type transcript struct {
 	Messages []struct {
 		Role      string `json:"role"`
 		ToolCalls []struct {
-			Name string `json:"name"`
+			Name      string `json:"name"`
+			Arguments string `json:"arguments"`
 		} `json:"tool_calls"`
 	} `json:"messages"`
 }
@@ -105,6 +106,54 @@ func (t transcript) rounds() (rounds, calls int) {
 		}
 	}
 	return rounds, calls
+}
+
+// behaviour reports the calls that changed or checked a workspace. It reads
+// the transcript only as operational evidence; the case's check remains the
+// sole verdict on whether the requested work was done.
+func (t transcript) behaviour() (b Behaviour) {
+	seenMutation := false
+	for _, m := range t.Messages {
+		if m.Role != "assistant" {
+			continue
+		}
+		for _, call := range m.ToolCalls {
+			switch call.Name {
+			case "write_file", "edit_file", "git_write":
+				b.MutationsAttempted++
+				seenMutation = true
+			case "quality_gate":
+				b.ValidationAttempts++
+			case "execute_command":
+				if validationCommand(call.Arguments) {
+					b.ValidationAttempts++
+				}
+			}
+			if !seenMutation {
+				b.CallsBeforeFirstMutation++
+			}
+		}
+	}
+	return b
+}
+
+// validationCommand recognises the commands a coding session normally uses to
+// validate a change. It deliberately does not treat every command as evidence
+// of verification: a status or a reproduction command belongs to investigation.
+func validationCommand(arguments string) bool {
+	var args struct {
+		Command string `json:"command"`
+	}
+	if json.Unmarshal([]byte(arguments), &args) != nil {
+		return false
+	}
+	for _, word := range strings.Fields(strings.ToLower(args.Command)) {
+		switch word {
+		case "test", "tests", "check", "lint", "vet", "build", "compile", "verify":
+			return true
+		}
+	}
+	return false
 }
 
 // Run measures every case, in order, and returns the summary.
@@ -197,6 +246,7 @@ func attempt(ctx context.Context, bin string, c Case, opts Options) Attempt {
 	var t transcript
 	if decodeErr := json.NewDecoder(strings.NewReader(out.String())).Decode(&t); decodeErr == nil {
 		a.Rounds, a.Calls = t.rounds()
+		a.Behaviour = t.behaviour()
 		a.TokensIn, a.TokensOut = t.Usage.PromptTokens, t.Usage.CompletionTokens
 		if opts.Price != nil {
 			a.Cost, a.Priced = opts.Price(opts.Model, a.TokensIn, a.TokensOut)
@@ -214,6 +264,9 @@ func attempt(ctx context.Context, bin string, c Case, opts Options) Attempt {
 		return a
 	}
 
+	if c.AnalysisOnly {
+		a.Behaviour.UnintendedMutations = dirtyPaths(dir)
+	}
 	a.Passed, a.CheckOutput = check(ctx, dir, c.Check)
 	a.Elapsed = time.Since(start)
 	return a
@@ -276,6 +329,16 @@ func tableAttempt(ctx context.Context, c Case, opts Options) Attempt {
 	}
 	a.Elapsed = time.Since(start)
 	return a
+}
+
+// dirtyPaths reports the paths the session left changed in its fresh fixture.
+func dirtyPaths(dir string) int {
+	cmd := exec.Command("git", "-C", dir, "status", "--porcelain=v1", "-z")
+	out, err := cmd.Output()
+	if err != nil {
+		return 0
+	}
+	return len(strings.FieldsFunc(string(out), func(r rune) bool { return r == 0 }))
 }
 
 // check runs the case's verdict command in the workspace the session left.

@@ -307,6 +307,7 @@ times does not.
 | `py-fix-failing-test` | workspace | The same loop in Python, over the mutable default argument. The symptom is in a second call, not the first. Needs `python3`. |
 | `implement-to-spec` | workspace | Build to a specification held in tests, across two packages, and wire it up. |
 | `trace-the-cause` | workspace | The failing test is two packages away from the bug. Rewards search over reading. |
+| `analysis-only-diagnosis` | workspace | Explain a path-normalisation behaviour without touching its workspace; records any attempted or final mutation. |
 | `classifier-decisions` | classifier | One row per rule the permission classifier states, plus four attempts to talk it out of them. |
 | `summary-state` | summary | Whether the status reading tells on-target work from work that has drifted, and from work that already has what it needs. |
 | `research-version` | research | Two versions documented and a manifest pinning one: the right answer is the behaviour of the version in use. |

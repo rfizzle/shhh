@@ -93,6 +93,29 @@ func TestBaselineRoundTripsThroughAFile(t *testing.T) {
 	if got.Cases[1].Table == nil || got.Cases[1].Table.FalseAllow != 2 {
 		t.Errorf("table = %+v", got.Cases[1].Table)
 	}
+	if got.Cases[0].Behaviour == nil {
+		t.Fatal("a workspace baseline dropped its action metrics")
+	}
+	if got.Cases[0].Behaviour.CallsBeforeFirstMutation != 0 {
+		t.Errorf("default behaviour = %+v", got.Cases[0].Behaviour)
+	}
+}
+
+func TestBaselineKeepsWorkspaceBehaviourMetrics(t *testing.T) {
+	res := Result{Case: Case{Name: "analysis-only", Kind: KindWorkspace, AnalysisOnly: true}, Attempts: []Attempt{{
+		Passed: true,
+		Behaviour: Behaviour{
+			MutationsAttempted:       0,
+			CallsBeforeFirstMutation: 3,
+			ValidationAttempts:       1,
+			UnintendedMutations:      0,
+		},
+	}}}
+	got := Summary{Results: []Result{res}}.Baseline().Cases[0].Behaviour
+	want := &BehaviourBaseline{CallsBeforeFirstMutation: 3, ValidationAttempts: 1}
+	if got == nil || *got != *want {
+		t.Errorf("behaviour = %+v, want %+v", got, want)
+	}
 }
 
 // A file from a different shhh decodes into zeroes, which would read as a run

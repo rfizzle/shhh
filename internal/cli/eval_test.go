@@ -103,6 +103,22 @@ func TestEvalReportDoesNotSpendTheRowOnThePrompt(t *testing.T) {
 	}
 }
 
+func TestEvalReportShowsWorkspaceBehaviourMetrics(t *testing.T) {
+	res := eval.Result{Case: eval.Case{Name: "analysis-only", Kind: eval.KindWorkspace}, Attempts: []eval.Attempt{{
+		Passed: true,
+		Behaviour: eval.Behaviour{
+			CallsBeforeFirstMutation: 2,
+			ValidationAttempts:       1,
+		},
+	}}}
+	out := evalReport(eval.Summary{Results: []eval.Result{res}}, "").Render(160)
+	for _, want := range []string{"0 mutations", "2 calls before mutation", "1 validations", "0 unintended mutations"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("report lost %q:\n%s", want, out)
+		}
+	}
+}
+
 // A skipped case has no numbers, so its reason is what the row is for.
 func TestEvalReportSkippedRowSaysWhy(t *testing.T) {
 	sum := eval.Summary{Results: []eval.Result{{
@@ -504,6 +520,23 @@ func TestEvalKeepsTheBaselineEvenWhenTheComparisonRefuses(t *testing.T) {
 // The row must not read "2 → 2 rounds" beside a regression: the median moved
 // by the half an even attempt count lands on, and that is the whole evidence
 // for the direction the row is printing.
+func TestCompareReportShowsWorkspaceBehaviourThatMoved(t *testing.T) {
+	before := eval.CaseBaseline{Name: "implement", Verdict: "passed", Behaviour: &eval.BehaviourBaseline{
+		MutationsAttempted: 1, CallsBeforeFirstMutation: 4, ValidationAttempts: 1,
+	}}
+	after := eval.CaseBaseline{Name: "implement", Verdict: "passed", Behaviour: &eval.BehaviourBaseline{
+		MutationsAttempted: 1, CallsBeforeFirstMutation: 2, ValidationAttempts: 2,
+	}}
+	row := compareReport(compareOf(t,
+		eval.Baseline{Version: eval.BaselineVersion, Cases: []eval.CaseBaseline{before}},
+		eval.Baseline{Version: eval.BaselineVersion, Cases: []eval.CaseBaseline{after}}), time.Now()).Sections[0].Rows[0]
+	for _, want := range []string{"4 → 2 calls before mutation", "1 → 2 validations"} {
+		if !strings.Contains(row.Detail, want) {
+			t.Errorf("detail lost %q: %q", want, row.Detail)
+		}
+	}
+}
+
 func TestCompareRowShowsTheHalfARoundMedianMovedBy(t *testing.T) {
 	before := baselineOf("a-model", eval.Result{
 		Case:     eval.Case{Name: "wobbly"},

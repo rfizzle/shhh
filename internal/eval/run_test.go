@@ -154,6 +154,7 @@ func TestRoundsAndCallsAreReadFromTheTranscript(t *testing.T) {
 		`{"role":"user","content":"go"},` +
 		`{"role":"assistant","tool_calls":[{"name":"read_file"},{"name":"search"}]},` +
 		`{"role":"tool","content":"x"},` +
+		`{"role":"assistant","tool_calls":[{"name":"execute_command","arguments":"{\\"command\\":\\"go test ./...\\"}"}]},` +
 		`{"role":"assistant","tool_calls":[{"name":"edit_file"}]},` +
 		`{"role":"assistant","content":"done"}]}'`
 	bin := fakeShhh(t, transcript)
@@ -164,14 +165,55 @@ func TestRoundsAndCallsAreReadFromTheTranscript(t *testing.T) {
 		t.Fatal(err)
 	}
 	a := sum.Results[0].Attempts[0]
-	if a.Rounds != 2 {
-		t.Errorf("rounds = %d, want 2 — a message with calls is one round however many it asked for", a.Rounds)
+	if a.Rounds != 3 {
+		t.Errorf("rounds = %d, want 3 — a message with calls is one round however many it asked for", a.Rounds)
 	}
-	if a.Calls != 3 {
-		t.Errorf("calls = %d, want 3", a.Calls)
+	if a.Calls != 4 {
+		t.Errorf("calls = %d, want 4", a.Calls)
 	}
 	if a.TokensIn != 100 || a.TokensOut != 20 {
 		t.Errorf("usage = %d/%d, want 100/20", a.TokensIn, a.TokensOut)
+	}
+	if got, want := a.Behaviour, (Behaviour{MutationsAttempted: 1, CallsBeforeFirstMutation: 3, ValidationAttempts: 1}); got != want {
+		t.Errorf("behaviour = %+v, want %+v", got, want)
+	}
+}
+
+// An analysis-only control does not treat its prose as a verdict. Its check is
+// that the session left its fresh workspace clean, and the metric names any
+// mutation that would otherwise be invisible beside a successful explanation.
+func TestAnalysisOnlyAttemptRecordsDirtyPathsAsUnintendedMutations(t *testing.T) {
+	requireGit(t)
+	const transcript = `printf '{"success":true,"usage":{},"messages":[{"role":"assistant","tool_calls":[{"name":"read_file"}]},{"role":"assistant","tool_calls":[{"name":"write_file"}]},{"role":"assistant","tool_calls":[{"name":"quality_gate"}]}]}'`
+	bin := fakeShhh(t, "echo changed > a.txt\n"+transcript)
+	cases := suite(t, []string{"git", "diff", "--exit-code"}, map[string]string{"a.txt": "original"})
+	cases[0].AnalysisOnly = true
+
+	sum, err := Run(context.Background(), cases, Options{Binary: bin})
+	if err != nil {
+		t.Fatal(err)
+	}
+	a := sum.Results[0].Attempts[0]
+	if a.Passed {
+		t.Fatal("a changed analysis-only workspace passed its clean-tree check")
+	}
+	want := Behaviour{MutationsAttempted: 1, CallsBeforeFirstMutation: 1, ValidationAttempts: 1, UnintendedMutations: 1}
+	if a.Behaviour != want {
+		t.Errorf("behaviour = %+v, want %+v", a.Behaviour, want)
+	}
+}
+
+func TestValidationCommandDistinguishesChecksFromInvestigation(t *testing.T) {
+	for command, want := range map[string]bool{
+		`{"command":"go test ./..."}`:       true,
+		`{"command":"make lint"}`:           true,
+		`{"command":"git status --short"}`:  false,
+		`{"command":"go testdata/list.go"}`: false,
+		`{"command":"not valid JSON"}`:      false,
+	} {
+		if got := validationCommand(command); got != want {
+			t.Errorf("validationCommand(%s) = %v, want %v", command, got, want)
+		}
 	}
 }
 

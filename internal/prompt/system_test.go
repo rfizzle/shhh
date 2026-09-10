@@ -141,6 +141,10 @@ func TestBuildAgent_AgentInstructions(t *testing.T) {
 		"quality_gate tool is available, run it before declaring a task complete",
 		"brief public progress note",
 		"Do not reveal private reasoning",
+		"Implementation, bug-fix, and diagnosis requests",
+		"Explanation, review, planning, brainstorming, and analysis-only requests are exceptions",
+		"A failed tool call is evidence",
+		"inspect or reproduce the failure early",
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("expected agent prompt to contain %q, got:\n%s", want, got)
@@ -237,6 +241,8 @@ func TestBuildWriter_Instructions(t *testing.T) {
 		"last message IS the deliverable",
 		"Cwd: /tmp/worktree/proj",
 		"EXTRA CONTEXT",
+		"Implementation, bug-fix, and diagnosis requests",
+		"A failed tool call is evidence",
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("expected writer prompt to contain %q, got:\n%s", want, got)
@@ -321,10 +327,38 @@ func TestBuildProfileFollowsPermissions(t *testing.T) {
 
 	fixer := BuildProfile(info, ProfileSpec{Name: "fixer", Write: true, Execute: true, Isolated: true,
 		Tools: []string{"read_file", "list_directory", "search", "glob", "write_file", "edit_file", "execute_command"}})
-	for _, want := range []string{"ISOLATED COPY", "Shell: bash", "execute_command, write_file, edit_file", "# Shell commands", "what you changed (files and why)", "Read a file before editing it"} {
+	for _, want := range []string{"ISOLATED COPY", "Shell: bash", "execute_command, write_file, edit_file", "# Shell commands", "what you changed (files and why)", "Read a file before editing it", "Implementation, bug-fix, and diagnosis requests", "A failed tool call is evidence"} {
 		if !strings.Contains(fixer, want) {
 			t.Fatalf("writing profile prompt lacks %q:\n%s", want, fixer)
 		}
+	}
+}
+
+// Coding prompts default to the work the user asked for, while a request that
+// names a read-only deliverable must not acquire a mutation merely because a
+// profile can make one.
+func TestExecutionDefaultReachesOnlyWritingPrompts(t *testing.T) {
+	info := shell.Info{Shell: "bash", OS: "linux", Cwd: "/w"}
+	for name, got := range map[string]string{
+		"agent":   BuildAgent(info),
+		"writer":  BuildWriter(info),
+		"profile": BuildProfile(info, ProfileSpec{Name: "fixer", Write: true, Tools: []string{"read_file", "write_file", "edit_file"}}),
+	} {
+		for _, want := range []string{
+			"complete work in the current turn",
+			"research report, suggested patch, or plan",
+			"Explanation, review, planning, brainstorming, and analysis-only requests are exceptions",
+			"Never retry an unchanged call",
+			"narrowest relevant check before the required quality gate",
+		} {
+			if !strings.Contains(got, want) {
+				t.Errorf("%s prompt lacks %q:\n%s", name, want, got)
+			}
+		}
+	}
+	reader := BuildProfile(info, ProfileSpec{Name: "reviewer", Tools: []string{"read_file"}})
+	if strings.Contains(reader, "# Execution default") {
+		t.Errorf("a read-only profile was given an execution default:\n%s", reader)
 	}
 }
 
