@@ -47,6 +47,8 @@ func commitRepo(t *testing.T) (Model, string, string) {
 		return p
 	}
 	run("init", "-q")
+	run("config", "user.email", "t@t")
+	run("config", "user.name", "t")
 	write("loop.go", "package agent\n")
 	write("README.md", "# project\n")
 	run("add", "loop.go", "README.md")
