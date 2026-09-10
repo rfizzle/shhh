@@ -5,6 +5,7 @@
     "default": {
       "timeout_seconds": 600,
       "require_containment": true,
+      "allow_write": true,
       "checks": [
         { "name": "test", "exe": "make", "args": ["test-hermetic"] },
         { "name": "vet", "exe": "make", "args": ["vet-hermetic"] },
