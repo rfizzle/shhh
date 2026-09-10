@@ -200,6 +200,11 @@ type Status struct {
 	// reading yet — one in its first interval, or one whose session turned
 	// readings off, which is what the roster's own header exists to say.
 	Verdict string
+	// Handoff is the durable record a replacement can resume from. It is empty
+	// for completed children and when durable storage is unavailable.
+	Handoff string
+	// RecommendedBudget is the useful budget for a replacement of this attempt.
+	RecommendedBudget int64
 	// End is how this child's attempt stopped, from the closed set in
 	// internal/observe, and empty while it is still running. It is the
 	// reason rather than the state: "failed" is what a lane says, and a
@@ -563,6 +568,9 @@ type EnvFactory func(ctx context.Context, spec Spec) (Env, error)
 // the row for it.
 type Recorder struct {
 	observe.Observer
+	// Handoff persists the opaque, sanitized record a distinct replacement may
+	// resume. It is called before End while a writer worktree still exists.
+	Handoff func(content []byte) (string, error)
 	// End closes the attempt's row with how it ended. The end is a value
 	// rather than nothing because a child's row is the one place the answer
 	// to "was the budget right" can be assembled: the reason it stopped, the
@@ -633,6 +641,12 @@ type Options struct {
 	// MaxConcurrent bounds simultaneously running children; <= 0 uses
 	// DefaultMaxConcurrent.
 	MaxConcurrent int
+	// LoadHandoff resolves an opaque handoff handle for an explicit replacement
+	// spawn. It is nil where the session has no durable store.
+	LoadHandoff func(handle string) ([]byte, error)
+	// EvidenceExists validates retained evidence before it is offered to a
+	// replacement; invalid or expired handles are omitted from its context.
+	EvidenceExists func(handle string) bool
 	// Untracked reports the files the parent session created that git does
 	// not know about, so a writer's worktree can start from them alongside
 	// everything `git diff HEAD` already reports. It is asked at each spawn,
@@ -889,6 +903,12 @@ type child struct {
 	steerFrom   SteerSource
 	report      string
 	patchNote   string
+	progress    []string
+	handoff     Handoff
+	handoffID   string
+	// retainWorktree keeps a failed writer's patch available until a
+	// replacement supersedes it or the supervisor closes.
+	retainWorktree bool
 	// prologue is what the next attempt's first turn opens with, ahead of
 	// the task: what the attempt it replaces hit, and the handoff it left.
 	// It is a field rather than an argument to run because a retry can be
@@ -988,35 +1008,37 @@ func (c *child) status() Status {
 		Inherited: c.inheritedTokens,
 		Setup:     c.setupTokens,
 		Tools:     c.toolResultTokens,
-		Handoff:   agent.EstimateTokens(c.report),
+		Handoff:   estimateReportTokens(c.report),
 	}
 	tokens.Analysis = max(c.fresh-tokens.Inherited-tokens.Setup-tokens.Tools-tokens.Handoff, 0)
 	return Status{
-		Name:           c.name,
-		Role:           c.role,
-		Task:           c.task,
-		Model:          c.model,
-		Paths:          c.paths,
-		State:          c.state,
-		Detail:         detail,
-		ToolCalls:      c.toolCalls,
-		Budget:         c.maxTokens,
-		AdmissionFloor: c.admissionFloor,
-		Tokens:         tokens,
-		Spend:          c.priorSpend.Plus(c.spend.Total()),
-		Batch:          c.batch,
-		Started:        c.started,
-		Elapsed:        end.Sub(c.started),
-		Step:           min(c.step, c.steps),
-		Steps:          c.steps,
-		Summary:        summary,
-		CheckIns:       c.checkIns,
-		End:            c.endReason,
-		Steers:         c.steers,
-		Verdict:        c.verdict,
-		SteerFrom:      c.steerFrom,
-		Seeded:         c.seeded,
-		Held:           c.heldOn != nil,
+		Name:              c.name,
+		Role:              c.role,
+		Task:              c.task,
+		Model:             c.model,
+		Paths:             c.paths,
+		State:             c.state,
+		Detail:            detail,
+		ToolCalls:         c.toolCalls,
+		Budget:            c.maxTokens,
+		AdmissionFloor:    c.admissionFloor,
+		Tokens:            tokens,
+		Spend:             c.priorSpend.Plus(c.spend.Total()),
+		Batch:             c.batch,
+		Started:           c.started,
+		Elapsed:           end.Sub(c.started),
+		Step:              min(c.step, c.steps),
+		Steps:             c.steps,
+		Summary:           summary,
+		CheckIns:          c.checkIns,
+		End:               c.endReason,
+		Handoff:           c.handoffID,
+		RecommendedBudget: c.handoff.RecommendedBudget,
+		Steers:            c.steers,
+		Verdict:           c.verdict,
+		SteerFrom:         c.steerFrom,
+		Seeded:            c.seeded,
+		Held:              c.heldOn != nil,
 	}
 }
 
@@ -1303,7 +1325,7 @@ func (c *child) end() observe.ChildEnd {
 		Inherited: c.inheritedTokens,
 		Setup:     c.setupTokens,
 		Tools:     c.toolResultTokens,
-		Handoff:   agent.EstimateTokens(c.report),
+		Handoff:   estimateReportTokens(c.report),
 	}
 	tokens.Analysis = max(c.fresh-tokens.Inherited-tokens.Setup-tokens.Tools-tokens.Handoff, 0)
 	return observe.ChildEnd{
@@ -2116,7 +2138,8 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	// A retry starts from a worktree of its own, so what the attempt it
 	// replaces wrote is not in the tree this one is reading.
 	c.wrote = nil
-	c.report, c.patchNote, c.streaming = "", "", ""
+	c.report, c.patchNote, c.streaming, c.progress = "", "", "", nil
+	c.handoff, c.handoffID, c.retainWorktree = Handoff{}, "", false
 	c.mu.Unlock()
 
 	s.wg.Add(1)
@@ -2332,7 +2355,7 @@ func (s *Supervisor) openWorkspace(c *child, ctx context.Context, maxRounds, att
 	w := workspace{root: s.opts.Root}
 	var err error
 	if c.profile.Writes {
-		if w.wt, err = addWorktree(s.opts.Root, s.parentUntracked()); err != nil {
+		if w.wt, err = addWorktreeContext(ctx, s.opts.Root, s.parentUntracked()); err != nil {
 			return workspace{}, fmt.Errorf("cannot create an isolated worktree for a writer agent: %w", err)
 		}
 		w.root = w.wt.root
@@ -2397,6 +2420,27 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 	}
 	if s.ctx.Err() != nil {
 		return "", errors.New("the agent supervisor is shut down")
+	}
+	resume := Handoff{}
+	if args.resumeHandoff != "" {
+		if s.opts.LoadHandoff == nil {
+			return "", errors.New("failure handoffs are unavailable for this session")
+		}
+		data, loadErr := s.opts.LoadHandoff(args.resumeHandoff)
+		if loadErr != nil {
+			return "", fmt.Errorf("cannot resume handoff %q: %w", args.resumeHandoff, loadErr)
+		}
+		if resume, loadErr = UnmarshalHandoff(data); loadErr != nil {
+			return "", fmt.Errorf("cannot resume handoff %q: %w", args.resumeHandoff, loadErr)
+		}
+		profile, profileErr := s.Profiles().Parse(string(resume.Role))
+		if profileErr != nil {
+			return "", fmt.Errorf("cannot resume handoff %q: %w", args.resumeHandoff, profileErr)
+		}
+		args.role, args.profile, args.Task, args.paths = resume.Role, profile, resume.Task, append([]string(nil), resume.Paths...)
+		if resume.RecommendedBudget > args.maxTokens {
+			args.maxTokens = resume.RecommendedBudget
+		}
 	}
 
 	s.mu.Lock()
@@ -2483,6 +2527,10 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 		prices:          s.opts.Prices,
 		spend:           meter.New(s.opts.Prices),
 	}
+	if args.resumeHandoff != "" {
+		c.prologue = resumePrologue(resume, s.opts.EvidenceExists)
+		s.supersedeHandoff(args.resumeHandoff)
+	}
 	// A reader's workspace is the parent's own root and costs nothing to
 	// hold, so it is opened here where a failure is still this call's answer
 	// rather than a child that appears and immediately fails. A writer's
@@ -2518,8 +2566,12 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 	if model != "" {
 		modelNote = ", " + model
 	}
-	return fmt.Sprintf("Spawned %s (%s%s, %s, ~%s token budget).%s It works in the background: call agent_report with name=%q in a later step to wait for and collect its final report, or agent_report with no arguments for a status overview.",
-		name, args.role, modelNote, roundBudgetLabel(args.maxRounds), formatTokens(args.maxTokens), note, name), nil
+	resumed := ""
+	if args.resumeHandoff != "" {
+		resumed = fmt.Sprintf(" It resumes the verified handoff %s without replaying the failed child's transcript.", args.resumeHandoff)
+	}
+	return fmt.Sprintf("Spawned %s (%s%s, %s, ~%s token budget).%s%s It works in the background: call agent_report with name=%q in a later step to wait for and collect its final report, or agent_report with no arguments for a status overview.",
+		name, args.role, modelNote, roundBudgetLabel(args.maxRounds), formatTokens(args.maxTokens), note, resumed, name), nil
 }
 
 // claimConflict reports whether a writer's declared paths overlap those of a
@@ -2611,6 +2663,15 @@ func (s *Supervisor) run(c *child) {
 		}
 		c.endReason = reason
 		c.mu.Unlock()
+		if state == StateFailed {
+			s.persistHandoff(c, reason, detail, c.endRound())
+			c.mu.Lock()
+			handoffID := c.handoffID
+			c.mu.Unlock()
+			if handoffID != "" {
+				detail += " · handoff " + handoffID
+			}
+		}
 		c.set(state, detail)
 		ended = c.status()
 		// The attempt says how it ended on its own record, once, here — the
@@ -2636,7 +2697,9 @@ func (s *Supervisor) run(c *child) {
 		if endRec != nil {
 			endRec(c.end())
 		}
-		removeWorktree(repoTop, worktree)
+		if !c.keepsWorktree(worktree) {
+			removeWorktree(repoTop, worktree)
+		}
 	}()
 
 	// Bounded concurrency: take a slot or notice cancellation while queued.
@@ -2840,6 +2903,14 @@ func (s *Supervisor) run(c *child) {
 		OnText: func(text string) {
 			c.mu.Lock()
 			c.streaming += text
+			c.mu.Unlock()
+			s.emitUpdate(c)
+		},
+		OnProgress: func(text string) {
+			c.mu.Lock()
+			if text = handoffText(text); text != "" && len(c.progress) < maxHandoffProgress {
+				c.progress = append(c.progress, text)
+			}
 			c.mu.Unlock()
 			s.emitUpdate(c)
 		},
@@ -3887,6 +3958,9 @@ func (c *child) reportText() string {
 	c.mu.Lock()
 	report := c.report
 	patchNote := c.patchNote
+	handoffID := c.handoffID
+	recommended := c.handoff.RecommendedBudget
+	hasPatch := strings.TrimSpace(c.handoff.Patch) != ""
 	c.mu.Unlock()
 
 	// The status line counts the tools itself wherever it has a count to
@@ -3909,11 +3983,22 @@ func (c *child) reportText() string {
 		formatTokens(st.Tokens.Analysis), formatTokens(st.Tokens.Handoff))
 	switch {
 	case st.State == StateFailed && report == "":
-		sb.WriteString("The agent did not finish; no final report was produced.")
+		sb.WriteString("The agent did not finish; no final report was produced. Its durable handoff retains the completed activity.")
 	case report == "":
 		sb.WriteString("(the agent produced no final report)")
 	default:
 		sb.WriteString(report)
+	}
+	if st.State == StateFailed {
+		if hasPatch {
+			sb.WriteString("\n\nThe failed writer's isolated patch is retained for review or replacement.")
+		}
+		if handoffID != "" {
+			fmt.Fprintf(&sb, "\n\nFailure handoff: %s", handoffID)
+		}
+		if recommended > 0 {
+			fmt.Fprintf(&sb, "\nRecommended replacement budget: ~%s new tokens", formatTokens(recommended))
+		}
 	}
 	if patchNote != "" {
 		sb.WriteString("\n\n[" + patchNote + "]")

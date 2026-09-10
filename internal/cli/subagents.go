@@ -654,7 +654,16 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 				summary:    cfg.SubagentSummaryEnabled(),
 				classifier: true,
 			}))
-			return subagent.Recorder{Observer: r.observer(), End: r.endChild}
+			return subagent.Recorder{
+				Observer: r.observer(),
+				End:      r.endChild,
+				Handoff: func(content []byte) (string, error) {
+					if r == nil || db == nil {
+						return "", nil
+					}
+					return db.SaveChildHandoff(r.sessionID(), content)
+				},
+			}
 		},
 		CommandAllowlist: cfg.Behavior.CommandAllowlist,
 		CommandDenylist:  cfg.Behavior.CommandDenylist,
@@ -676,6 +685,19 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 		// somewhere the parent never put in scope.
 		ScopeDirs: sc.All,
 		Untracked: untracked,
+		LoadHandoff: func(handle string) ([]byte, error) {
+			if db == nil {
+				return nil, fmt.Errorf("failure handoffs are unavailable without session storage")
+			}
+			return db.LoadChildHandoff(handle)
+		},
+		EvidenceExists: func(handle string) bool {
+			if red == nil || red.Store() == nil {
+				return false
+			}
+			_, err := red.Store().Info(handle)
+			return err == nil
+		},
 	})
 }
 

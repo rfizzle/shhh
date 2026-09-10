@@ -422,6 +422,35 @@ with three steps in it needs somewhere to say which step it is on. The
 questions are asked one at a time and the way back through them is the same
 key that leaves: a mistyped answer costs an answer, not the drafting.
 
+## A failed child leaves a handoff
+
+A child that ends after it has begun — because it spent its token budget, its
+provider failed, its context was cancelled, a cap could not continue, or its
+own runtime failed — leaves a durable handoff before it releases its slot or,
+for a writer, its isolated copy. A completed child keeps its ordinary final
+report. A failed child’s report names the failure handoff and the replacement
+budget the parent should use; the parent transcript and the session record
+carry the same closed failure category.
+
+The handoff preserves the original task and declared paths, effective budget,
+phase spend, end category and detail, completed round, paths read and written,
+completed tool outcomes, public progress notes, and opaque evidence handles.
+It is not a transcript: private provider reasoning, partial instructions from
+tools, and raw tool output do not cross to another child. A replacement calls
+`spawn_agent` with `resume_handoff`; its supplied task and scope are replaced
+by the immutable originals, and it receives only a bounded context built from
+that record. It starts with the unresolved action rather than surveying the
+repository again. An unavailable, malformed, or expired handoff is refused,
+because silently starting without its evidence would look like a resume while
+paying for the same work twice.
+
+A failed writer with a patch keeps its isolated copy until its patch is
+accepted, rejected, or its handoff is superseded by a replacement. The patch
+itself remains outside the replacement instruction; a valid opaque evidence
+handle is all the replacement can receive. A reader has no copy or patch to
+preserve. In every case the failed child has released its concurrent slot
+before the failure is reported, so retained work never blocks the fan-out.
+
 ## A failed child can be run again
 
 Retry re-runs a child on its original task rather than asking the parent to

@@ -1186,6 +1186,8 @@ child the steer *is* the next turn's instruction. A second path that queued
 into `child.steering` without going through `Steer` would deliver the message
 and leave both of them lying.
 
+**A failed child leaves a durable handoff before it releases anything.** `persistHandoff` (`internal/subagent/handoff.go`) copies only the immutable task and scope, closed failure category, phase spend, completed activity, public progress and opaque evidence IDs into `child_handoffs`; it never replays a child’s transcript or private provider reasoning. `spawn_agent` can name that opaque handle as `resume_handoff`, but the stored task and paths replace the call’s own values, and `resumePrologue` validates every evidence ID before the replacement sees it. A failed writer’s worktree stays only while its handoff has a patch, then is removed when a replacement supersedes the handoff or when the supervisor closes; the concurrent slot is released before the failure event either way. Do not put handoff text in `agent_sessions`: that table is content-free by contract and may be exported.
+
 **A retry is a second attempt, not the same attempt run twice.** `restart`
 (`internal/subagent/subagent.go`) reads two things off the attempt it replaces
 before it clears them — the detail it ended on, and `c.report`, which for a

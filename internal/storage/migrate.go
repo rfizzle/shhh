@@ -487,6 +487,16 @@ var migrations = []string{
 	UPDATE agent_sessions SET chat_session_id =
 		(SELECT c.id FROM chat_sessions c WHERE c.name = agent_sessions.chat_session)
 	 WHERE chat_session != '';`,
+
+	// Failure handoffs contain durable but non-exportable child context. They
+	// live outside agent_sessions so aggregate observability remains content-free.
+	`CREATE TABLE IF NOT EXISTS child_handoffs (
+		handle TEXT PRIMARY KEY,
+		child_session_id INTEGER NOT NULL REFERENCES agent_sessions(id) ON DELETE CASCADE,
+		content BLOB NOT NULL,
+		created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+	);
+	CREATE INDEX IF NOT EXISTS idx_child_handoffs_session ON child_handoffs(child_session_id);`,
 }
 
 // migrate brings the store up to the current schema, one step per
