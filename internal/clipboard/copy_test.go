@@ -14,6 +14,12 @@ func TestCopy_Success(t *testing.T) {
 	if runtime.GOOS != "darwin" {
 		t.Skip("pbcopy only available on macOS")
 	}
+	original := runCmd
+	t.Cleanup(func() { runCmd = original })
+	// A clipboard service belongs to the logged-in desktop, not to this
+	// package's contract. The command seam proves the success path without
+	// needing a host pasteboard from a contained test process.
+	runCmd = func(string, ...string) *exec.Cmd { return exec.Command("cat") }
 
 	result := Copy("hello clipboard")
 	if !result.OK {
