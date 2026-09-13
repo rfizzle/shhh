@@ -1,6 +1,7 @@
 package persona
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -92,6 +93,62 @@ func TestParseDraftAndQuestions(t *testing.T) {
 	}
 }
 
+// A reviewer runs the project's own checks and changes nothing, so the tier
+// it needs is the one every profile has: the gate is a read
+// (docs/capabilities/subagents.md#a-profile-that-changes-nothing-can-still-run-the-checks).
+// The draft that says so must survive normalising, rendering and the loader,
+// and the same draft with a tier that puts the agent in a copy of the
+// checkout must be refused before a file exists.
+func TestReviewerDraftRunsTheGateOnRead(t *testing.T) {
+	const answer = `{"profile":{"name":"security-reviewer","description":"reads a diff for security problems and reports by severity",
+		"permissions":["read"],"tools":["read_file","search","quality_gate","quality_gate"],
+		"prompt":"Read the declared diff first. Verify with the default suite.","why":"the gate needs no execute"}}`
+	o, ok := parse(answer, KindCode)
+	if !ok || o.Failed || o.Draft == nil {
+		t.Fatalf("reviewer draft = %+v ok=%v", o, ok)
+	}
+	d := *o.Draft
+	if len(d.Permissions) != 0 || d.Writes() || d.Tier() != "read" {
+		t.Fatalf("reviewer is not read-only: permissions=%v tier=%q", d.Permissions, d.Tier())
+	}
+	if strings.Join(d.Tools, ",") != "read_file,search,quality_gate" {
+		t.Fatalf("tools = %v", d.Tools)
+	}
+	if body := Render(d, KindCode); !strings.Contains(body, "permissions = [] # read only") ||
+		!strings.Contains(body, `tools = ["read_file", "search", "quality_gate"]`) {
+		t.Fatalf("rendered = %q", body)
+	}
+	dir := filepath.Join(t.TempDir(), "agents")
+	path, err := Write(dir, d, KindCode, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	def, err := config.LoadAgentFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if def.Writes() || !def.Allows(config.QualityGateTool) || !def.Has(config.PermissionRead) {
+		t.Fatalf("loaded profile has no gate on read: %+v", def)
+	}
+
+	// The same allowlist beside a tier that works in a copy of the checkout
+	// is the loader's refusal, heard while the draft is still a card.
+	const executing = `{"profile":{"name":"security-reviewer","description":"reads a diff",
+		"permissions":["execute"],"tools":["quality_gate"],"prompt":"Read the diff."}}`
+	bad, ok := parse(executing, KindCode)
+	if !ok || !bad.Failed || !strings.Contains(bad.Err, "changes nothing") {
+		t.Fatalf("gate beside execute not refused: %+v ok=%v", bad, ok)
+	}
+	writing := d
+	writing.Permissions = []string{"write"}
+	if _, err := Write(dir, writing, KindCode, true); err == nil {
+		t.Fatal("gate beside write was written")
+	}
+	if entries, err := os.ReadDir(dir); err != nil || len(entries) != 1 {
+		t.Fatalf("entries = %v err = %v", entries, err)
+	}
+}
+
 func TestPromptsLeanBySession(t *testing.T) {
 	chat, code := systemPrompt(KindChat), systemPrompt(KindCode)
 	if !strings.Contains(chat, "never grant write") || !strings.Contains(chat, "notebook") {
@@ -99,6 +156,11 @@ func TestPromptsLeanBySession(t *testing.T) {
 	}
 	if !strings.Contains(code, "patch") || !strings.Contains(code, "verifies") {
 		t.Fatal("code prompt does not read as an engineering role")
+	}
+	// The gate is a read: a role that only runs the project's checks
+	// is not told to grant execute for them.
+	if !strings.Contains(code, config.QualityGateTool) || strings.Contains(code, `"execute" if it runs anything`) {
+		t.Fatal("code prompt still buys a test run with execute")
 	}
 	u := userPrompt(Request{Kind: KindChat, Brief: "a skeptic", Existing: []string{"researcher"}, Current: &Draft{Name: "skeptic"}, Feedback: "gentler"})
 	for _, want := range []string{"researcher", "a skeptic", "CURRENT DRAFT", "gentler"} {

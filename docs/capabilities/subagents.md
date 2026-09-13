@@ -615,6 +615,16 @@ out able to write. In a coding session, a profile is an engineer with one
 job: what it changes, how it verifies, what its patch may contain. A single
 drafter hedging between the two would draft a persona that hedges too.
 
+How a coding role verifies decides what it is granted, so the drafter is told
+the rule above: running the project's own suite is `quality_gate`, which the
+`read` tier already grants, and `execute` is for a role that must run
+arbitrary commands. A reviewer-shaped role that checks the work and changes
+nothing is therefore drafted with no tiers at all, naming the gate among its
+tools where it narrows them. Naming the gate beside `write` or `execute` is
+refused on the same grounds as the loader's, while the draft is still a card
+that can be revised — before a file exists, rather than at the next session's
+start.
+
 Where the file lives follows from what it is. A coding agent's profile can
 belong to the work: the project's own `.shhh/agents/`, which travels with
 the repository, is read only by coding sessions, and shadows a global

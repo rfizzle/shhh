@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -87,7 +88,21 @@ func (d *Drafter) Enabled() bool {
 // DraftToolName is the tool the drafter answers through.
 const DraftToolName = "draft_profile"
 
-var draftSchema = json.RawMessage(`{
+// draftSchema is the tool's arguments. The tool allowlist's vocabulary is
+// the loader's own (config.KnownAgentTools) rather than a list written out
+// here, so a tool added to a tier cannot go missing from what a draft may
+// name.
+var draftSchema = json.RawMessage(fmt.Sprintf(draftSchemaTemplate, jsonList(config.KnownAgentTools())))
+
+func jsonList(items []string) string {
+	b, err := json.Marshal(items)
+	if err != nil {
+		return "[]"
+	}
+	return string(b)
+}
+
+const draftSchemaTemplate = `{
 	"type": "object",
 	"properties": {
 		"profile": {
@@ -99,6 +114,7 @@ var draftSchema = json.RawMessage(`{
 				"model": {"type": "string", "description": "A model from the list, or omit to inherit the session's"},
 				"reasoning": {"type": "string", "enum": ["off", "low", "medium", "high", "inherit"]},
 				"permissions": {"type": "array", "items": {"type": "string", "enum": ["web", "write", "execute"]}, "description": "Tiers beyond read"},
+				"tools": {"type": "array", "items": {"type": "string", "enum": %s}, "description": "Optional: narrow the toolset to these names, within the tiers you granted. Omit unless narrowing is the point of the role"},
 				"prompt": {"type": "string", "description": "The standing instructions, second person, 80-300 words"},
 				"max_tokens": {"type": "integer", "description": "Token budget for one task; omit for the default"},
 				"why": {"type": "string", "description": "One sentence on the choices that were not obvious"}
@@ -112,7 +128,7 @@ var draftSchema = json.RawMessage(`{
 			"description": "Only when the brief is too thin to draft from: up to three short questions whose answers would change the draft. Never ask what you could reasonably assume."
 		}
 	}
-}`)
+}`
 
 // Draft runs one drafting turn.
 func (d *Drafter) Draft(ctx context.Context, req Request) Outcome {
@@ -239,7 +255,7 @@ This profile is for shhh chat: a conversation where nothing acts on the machine.
 	}
 	return common + `
 
-This profile is for shhh code: a coding agent that edits, runs and verifies work in a repository. The agent is an engineer with one job. Grant "write" if it changes files, "execute" if it runs anything, "web" only if its job needs the outside world; a writing or executing agent works in its own copy of the repository and hands back a patch a human reviews, so say in the prompt what its patch should and should not contain. Tell it how it verifies: which checks it runs, what "done" means, what it does when a check fails. Make it disciplined about scope — one job, the files that job touches, nothing opportunistic. Its report is read by an orchestrator deciding whether to take the patch: what changed, how it was verified, what to look at closely.`
+This profile is for shhh code: a coding agent that edits, runs and verifies work in a repository. The agent is an engineer with one job. Grant "write" if it changes files, "execute" only if it must run arbitrary commands, "web" only if its job needs the outside world; a writing or executing agent works in its own copy of the repository and hands back a patch a human reviews, so say in the prompt what its patch should and should not contain. Running the project's own suite is not a reason to grant "execute": that is the "quality_gate" tool, which the read tier already grants, so a reviewer-shaped role that verifies through the project's checks and changes nothing gets no tiers at all — and if you narrow "tools", name "quality_gate" among them. A profile granting "write" or "execute" may not have the gate, because it works in a copy of the checkout the gate would not see; never name it beside them. Tell it how it verifies: which checks it runs, what "done" means, what it does when a check fails. Make it disciplined about scope — one job, the files that job touches, nothing opportunistic. Its report is read by an orchestrator deciding whether to take the patch: what changed, how it was verified, what to look at closely.`
 }
 
 // userPrompt is the turn's evidence: the brief, then whatever the

@@ -290,6 +290,12 @@ func (m *Model) openPersonaCard() {
 			false: "it reads and reports",
 		}[d.Writes()],
 	}}
+	if len(d.Tools) > 0 {
+		// A narrowed profile gets fewer tools than its tier grants, and the
+		// card is where the file is agreed to: a person confirming "read"
+		// should see that it is three tools rather than all of them.
+		facts = append(facts, components.ProfileFact{Label: "tools", Value: strings.Join(d.Tools, " ")})
+	}
 	model := d.Model
 	if model == "" {
 		model = "inherited from this session"

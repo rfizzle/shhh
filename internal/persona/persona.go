@@ -37,9 +37,14 @@ type Draft struct {
 	Model       string   `json:"model,omitempty"`
 	Reasoning   string   `json:"reasoning,omitempty"`
 	Permissions []string `json:"permissions"`
-	Prompt      string   `json:"prompt"`
-	MaxTokens   int64    `json:"max_tokens,omitempty"`
-	Why         string   `json:"why,omitempty"`
+	// Tools narrows the toolset within the tiers granted, empty meaning
+	// every tool they allow. It is how a role that only verifies through
+	// the project's own checks says so: quality_gate sits under read
+	// (docs/capabilities/subagents.md#a-profile-that-changes-nothing-can-still-run-the-checks).
+	Tools     []string `json:"tools,omitempty"`
+	Prompt    string   `json:"prompt"`
+	MaxTokens int64    `json:"max_tokens,omitempty"`
+	Why       string   `json:"why,omitempty"`
 }
 
 // Definition is the draft as the loader would read it.
@@ -50,6 +55,7 @@ func (d Draft) Definition() config.AgentDefinition {
 		Model:       d.Model,
 		Reasoning:   d.Reasoning,
 		Permissions: d.Permissions,
+		Tools:       d.Tools,
 		Prompt:      d.Prompt,
 		MaxTokens:   d.MaxTokens,
 	}
@@ -75,9 +81,13 @@ var validName = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,23}$`)
 
 // Normalise tidies a draft into what the loader accepts: a lowercase
 // dashed name, deduplicated permissions in tier order, the read tier
-// implied rather than listed, and — for a chat persona — nothing that
-// writes, whatever the model proposed. It returns an error only for what
-// tidying cannot fix.
+// implied rather than listed, a deduplicated tool allowlist, and — for a
+// chat persona — nothing that writes, whatever the model proposed. It
+// returns an error only for what tidying cannot fix: a tool the tiers do
+// not grant, or the quality gate named beside write or execute, are
+// refusals of the loader's that a draft hears here instead — while it is
+// still a card the person can revise rather than a file that will not
+// load (docs/capabilities/subagents.md#a-profile-is-drafted-in-conversation).
 func (d *Draft) Normalise(kind Kind) error {
 	d.Name = slug(d.Name)
 	if !validName.MatchString(d.Name) {
@@ -114,6 +124,17 @@ func (d *Draft) Normalise(kind Kind) error {
 		perms = ro
 	}
 	d.Permissions = perms
+	var tools []string
+	listed := map[string]bool{}
+	for _, t := range d.Tools {
+		t = strings.ToLower(strings.TrimSpace(t))
+		if t == "" || listed[t] {
+			continue
+		}
+		listed[t] = true
+		tools = append(tools, t)
+	}
+	d.Tools = tools
 	d.Model = strings.TrimSpace(d.Model)
 	if strings.EqualFold(d.Model, "inherit") {
 		d.Model = ""
@@ -235,6 +256,13 @@ func Render(d Draft, kind Kind) string {
 		fmt.Fprintf(&b, "permissions = [%s]\n", strings.Join(quoted, ", "))
 	} else {
 		b.WriteString("permissions = [] # read only\n")
+	}
+	if len(d.Tools) > 0 {
+		quoted := make([]string, len(d.Tools))
+		for i, t := range d.Tools {
+			quoted[i] = tomlString(t)
+		}
+		fmt.Fprintf(&b, "tools = [%s]\n", strings.Join(quoted, ", "))
 	}
 	if d.MaxTokens > 0 {
 		fmt.Fprintf(&b, "max_tokens = %d\n", d.MaxTokens)

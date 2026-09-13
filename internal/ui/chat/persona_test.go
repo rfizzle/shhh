@@ -151,6 +151,22 @@ func TestPersona_TypedBriefIsWhatEnterTakes(t *testing.T) {
 	}
 }
 
+// A profile that narrows its toolset is still agreed to on the card, so the
+// card names the tools: "read" that is three tools is not the offer "read"
+// that is all of them, and the person saving it should see which one it is.
+func TestPersona_CardNamesANarrowedToolset(t *testing.T) {
+	draft := &persona.Draft{Name: "reviewer", Description: "reads diffs",
+		Tools: []string{"read_file", "search", "quality_gate"}, Prompt: "Review the diff."}
+	m, _, _ := personaModel(t, persona.KindCode, persona.Outcome{Draft: draft})
+	m = submitLine(t, m, "/agents new a reviewer")
+	card := personaView(m)
+	for _, want := range []string{"tools", "read_file search quality_gate"} {
+		if !strings.Contains(card, want) {
+			t.Errorf("card lacks %q:\n%s", want, card)
+		}
+	}
+}
+
 func TestPersona_QuestionsAreAskedOneAtATime(t *testing.T) {
 	first := &persona.Draft{Name: "test-writer", Description: "adds tests", Permissions: []string{"write", "execute"}, Prompt: "Write tests."}
 	revised := &persona.Draft{Name: "test-writer", Description: "adds table tests", Permissions: []string{"write", "execute"}, Prompt: "Write table-driven tests."}
