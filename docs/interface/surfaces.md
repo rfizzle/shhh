@@ -669,6 +669,28 @@ sentence being typed, and the notices do not. Each chip says what the thing
 is, what it is called and how big it is, and for text how far it runs, because
 a size answers *will this fit* and never *which of these is the stack trace*.
 
+Above all of that, while children are working, one compact row apiece: the
+child's name joined to what it was asked to do with the separator every other
+row joins two facts with ([one grid](principles.md#one-grid)), then what it is
+doing now and what it has spent. Six of them, and then a count of the rest.
+They go while a child's request is on the card, because the card's title rail
+names the child asking and its lane in the transcript already says why it
+stopped — a row between the two states a third time the very thing the reader
+is about to answer, in the rows they have to look past to reach the answer.
+With no card up they stand: below the [inspector rail](#the-inspector-rail)'s
+threshold they are the only drawing of the fan-out beside the lanes
+themselves.
+
+A child's ending is said in those same two places and in no third one. A
+child drawn as a lane settles into the words on its lane — the outcome in the
+state field, the first line of what it wrote under that — so nothing is added
+below the block to say it again. A child that ran alone has no lane, only the
+row its spawn left, and there the line saying it finished is the only account
+of it. What counts children rather than drawing them stays either way: the
+vitals rail's tally of how many there are and how many are stuck, and the
+frame's own mark for a decision waiting, because a count is not a second
+drawing.
+
 A paste past a certain size stops being a sentence and becomes one of those
 chips. A log or a stack trace typed into a three-row box buries the sentence
 it was meant to go with, and scrolling a draft to find the question you were

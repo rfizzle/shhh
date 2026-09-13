@@ -2002,6 +2002,24 @@ const screenHeight = 30
 // the reading rail, the transcript pane, whatever the turn is doing under it
 // and the bottom panel together fill the terminal exactly once.
 func TestGolden_Screen(t *testing.T) {
+	// A round that fanned out to three children, each of them parked on an
+	// approval, and the request one of them is parked on. Both are live: the
+	// block reads its lanes off the supervisor on every frame, so the only
+	// way to draw one is to have children behind it.
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: gatedEnv()})
+	t.Cleanup(sup.Close)
+	batch := sup.BeginBatch()
+	for _, task := range []string{"Say where the round counter is read.",
+		"Say where the round limit is set.", "Say where the loop exits."} {
+		spawnInto(t, sup, `{"role":"researcher","task":"`+task+`"}`)
+	}
+	waitFor(t, func() bool { _, blocked := sup.ActiveCounts(); return blocked == 3 })
+	// The request the card is built from is the one the second lane says it
+	// is waiting on, because the point of the pair below is that the two
+	// drawings are of one child.
+	ask := subagent.NewAsk("researcher-2", subagent.AskCommand, "run echo hi")
+	ask.Command = "echo hi"
+
 	captureGolden(t, "screen", "the whole surface", screenWidths, func(width int) []golden.Panel {
 		build := func(mut func(*Model)) string {
 			m := frameModel(t, width, screenHeight)
@@ -2012,6 +2030,21 @@ func TestGolden_Screen(t *testing.T) {
 			m.viewport.SetLines(m.renderHistoryLines())
 			m.viewport.GotoBottom()
 			return m.View().Content
+		}
+		// The round's block goes in ahead of the row the turn closed with,
+		// where the round that spawned the children put it.
+		fanout := func(carded bool) string {
+			return build(func(m *Model) {
+				*m = m.WithSubagents(sup)
+				last := len(m.transcript) - 1
+				m.transcript = append(m.transcript[:last],
+					entry{kind: entryFanout, fanout: &fanoutBatch{batch: batch}}, m.transcript[last])
+				if !carded {
+					return
+				}
+				updated, _ := m.Update(subagentEventMsg{ev: subagent.Event{Kind: subagent.EventAsk, Ask: ask}})
+				*m = updated.(Model)
+			})
 		}
 		return []golden.Panel{
 			{Label: "idle · the draft has the keyboard", View: build(func(m *Model) {})},
@@ -2035,6 +2068,16 @@ func TestGolden_Screen(t *testing.T) {
 				m.turnCount = 1
 				m.transcript[len(m.transcript)-1].turn = 1
 			})},
+			// The compact rows above the input and the block they belong to.
+			// With nothing being answered they are the fan-out's only
+			// drawing beside the lanes, which is what a terminal below the
+			// rail's threshold has; with the child's own request on the card
+			// they are the third drawing of one child — the title rail names
+			// it, the lane says what it is waiting on — and the rows the
+			// reader would have to look past to reach the answer, so they go
+			// (docs/interface/surfaces.md#the-input-frame).
+			{Label: "a fan-out · one row a child above the input", View: fanout(false)},
+			{Label: "…and that child's request on the card · the rows go", View: fanout(true)},
 			{Label: "working · a reading of the session leads the rail", View: build(func(m *Model) {
 				m.state = stateStreaming
 				m.streaming = ""
@@ -2049,6 +2092,20 @@ func TestGolden_Screen(t *testing.T) {
 			})},
 		}
 	})
+
+	// A lane states how long its child has been alive, and that is the one
+	// figure on this sheet a clock writes rather than the fixture. A child
+	// under half a second old states none — the duration field has a floor
+	// there (activity.go) — and the capture runs in a fraction of that, so
+	// the sheet is reproducible. This says so out loud: a machine slow
+	// enough to cross the floor would otherwise write a duration into the
+	// fixture and the next run would take it out again.
+	for _, st := range sup.Snapshot() {
+		if st.Elapsed >= 500*time.Millisecond {
+			t.Fatalf("%s was %s old when the capture finished: the lane's duration field "+
+				"has a 500ms floor and this sheet is only reproducible inside it", st.Name, st.Elapsed)
+		}
+	}
 }
 
 // TestGolden_ScreenAttached captures the arrangement this surface had no

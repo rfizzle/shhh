@@ -119,7 +119,18 @@ func (m Model) handleSubagentEvent(ev subagent.Event) (tea.Model, tea.Cmd) {
 		// second row here would say the same thing about the same attempt,
 		// and every rate over a window would count a fan-out's children
 		// twice.
-		m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf("Agent %s: %s", ev.Status.Name, ev.Status.Detail)})
+		//
+		// On screen the ending is said once as well. A child with a lane
+		// settles into the same words in place — the outcome in the lane's
+		// state field and the first line of its report under it — so a
+		// notice two rows below the block would be the second drawing of an
+		// ending the reader is already looking at. A child that ran alone
+		// has no lane, only the row its spawn left, and there this is the
+		// one thing that says it finished
+		// (docs/interface/surfaces.md#the-input-frame).
+		if !m.childHasLane(ev.Status) {
+			m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf("Agent %s: %s", ev.Status.Name, ev.Status.Detail)})
+		}
 		// A reviewer the backlog runner spawned answers its review stage.
 		if next, cmd, ok := m.todoReviewDone(ev.Status); ok {
 			nm := next.(Model)
@@ -140,6 +151,20 @@ func (m Model) handleSubagentEvent(ev subagent.Event) (tea.Model, tea.Cmd) {
 		m.viewport.GotoBottom()
 	}
 	return m, listenSubagents(m.subagents.Events())
+}
+
+// childHasLane reports whether the transcript already draws this child as a
+// lane, which is true of every child of a round that spawned two or more of
+// them: their rows were replaced by that round's fan-out block, and the block
+// reads its lanes off the supervisor, so a child's own ending arrives on its
+// lane without anything being appended for it (fanout.go).
+func (m Model) childHasLane(st subagent.Status) bool {
+	for _, e := range m.transcript {
+		if e.kind == entryFanout && e.fanout != nil && e.fanout.batch == st.Batch {
+			return true
+		}
+	}
+	return false
 }
 
 // recordChildPatch files a child's applied patch in the session changeset
@@ -682,8 +707,14 @@ func (m Model) activeAgentStatuses() []subagent.Status {
 
 // agentRowsHeight is how many lines the progress rows currently occupy; the
 // rows hide while the agent list or an attached view covers them.
+//
+// They hide under a routed card too. The card's title rail names the child
+// asking and its lane in the transcript says why it stopped, so a row
+// between the two says a third time what the reader is about to answer —
+// and it says it in the rows they have to look past to reach the card
+// (docs/interface/surfaces.md#the-input-frame).
 func (m Model) agentRowsHeight() int {
-	if m.attachedTo != "" || m.agentList != nil {
+	if m.attachedTo != "" || m.agentList != nil || m.activeChildAsk() != nil {
 		return 0
 	}
 	n := len(m.activeAgentStatuses())
@@ -716,7 +747,14 @@ func (m Model) renderAgentRows(width int) string {
 			glyph = sty.Error.Render("⚠")
 			detail = sty.Error.Render(st.Detail)
 		}
-		left := glyph + " " + st.Name + "  " + sty.ToolArgs.Render(clipText(firstLine(st.Task), max(width/3, 8)))
+		// The separator every other row that joins two facts joins them
+		// with, and not a gap: two spaces read as a column that is not
+		// there, because the names are not one width and so the tasks under
+		// them never line up (docs/interface/principles.md#one-grid).
+		left := glyph + " " + st.Name
+		if task := firstLine(st.Task); task != "" {
+			left += sty.ToolArgs.Render(" · " + clipText(task, max(width/3, 8)))
+		}
 		right := detail
 		if spend := st.Spend.In + st.Spend.Out; spend > 0 {
 			right += "  " + sty.StatusBar.Render("~"+formatTokenCount(spend)+" tok")

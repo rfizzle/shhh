@@ -200,6 +200,88 @@ func TestAgentRowsAndBadge(t *testing.T) {
 	}
 }
 
+// A child asking is drawn twice already: the card that routes its request
+// names it on its title rail, and its lane in the transcript says what it is
+// waiting on. The compact row between the two is a third drawing of one
+// child, and it is in the rows the reader has to look past to reach the
+// answer they came to give — so it goes while the card is up and comes back
+// when the queue is empty. What counts children rather than drawing them
+// stays either way (docs/interface/surfaces.md#the-input-frame).
+func TestAgentRowsGoUnderARoutedCard(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	spawnBlockedChild(t, sup)
+
+	if got := m.agentRowsHeight(); got != 1 {
+		t.Fatalf("agentRowsHeight = %d with nothing on the card, want 1", got)
+	}
+	// And the row joins the child's name to its task with the separator
+	// every other row in the product joins two facts with.
+	if row := ansi.Strip(m.renderAgentRows(100)); !strings.Contains(row, "researcher-1 · long survey") {
+		t.Fatalf("the row does not join name and task with the separator: %q", row)
+	}
+
+	ask := subagent.NewAsk("researcher-1", subagent.AskCommand, "run echo hi")
+	ask.Command = "echo hi"
+	updated, _ := m.Update(subagentEventMsg{ev: subagent.Event{Kind: subagent.EventAsk, Ask: ask}})
+	m = updated.(Model)
+	if got := m.agentRowsHeight(); got != 0 {
+		t.Fatalf("agentRowsHeight = %d under a routed card, want 0", got)
+	}
+	if bar := ansi.Strip(m.renderStatusBar(120)); !strings.Contains(bar, "1 agent") {
+		t.Fatalf("the vitals chip stopped counting the session's agents: %q", bar)
+	}
+	if got := m.waitingCount(); got != 1 {
+		t.Fatalf("waitingCount = %d under a routed card, want the queue's one", got)
+	}
+
+	m = handover(t, m)
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
+	m = updated.(Model)
+	if got := m.agentRowsHeight(); got != 1 {
+		t.Fatalf("agentRowsHeight = %d once the card is answered, want 1", got)
+	}
+}
+
+// A child of a round that fanned out settles into the words on its own lane,
+// so nothing is appended under the block to say the same thing again. A child
+// that ran alone has no lane — only the row its spawn left — and there the
+// notice is the whole account of how it ended.
+func TestDoneNoticeIsTheLanelessChildsAlone(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	finish := func(m Model, name string) Model {
+		t.Helper()
+		st, ok := sup.Get(name)
+		if !ok {
+			t.Fatalf("%s never reached the supervisor", name)
+		}
+		st.Detail = "done · 3 tools"
+		updated, _ := m.Update(subagentEventMsg{ev: subagent.Event{Kind: subagent.EventDone, Status: st}})
+		return updated.(Model)
+	}
+
+	m.beginSpawnBatch()
+	for _, task := range []string{"survey the loop", "survey the tests"} {
+		spawnInto(t, sup, `{"role":"researcher","task":"`+task+`"}`)
+		m.appendSpawnEntry(spawnRowEntry(task))
+	}
+	m = finish(m, "researcher-1")
+	if transcriptContains(m, "Agent researcher-1") {
+		t.Fatal("a child with a lane had its ending said twice")
+	}
+
+	m.beginSpawnBatch()
+	spawnInto(t, sup, `{"role":"researcher","task":"survey the folds"}`)
+	m.appendSpawnEntry(spawnRowEntry("survey the folds"))
+	m = finish(m, "researcher-3")
+	if !transcriptContains(m, "Agent researcher-3: done · 3 tools") {
+		t.Fatal("a child with no lane lost the only account of how it ended")
+	}
+}
+
 // A child's patch reaches the changeset by a different road than the
 // session's own edits, and until it carried the mode it was the road that
 // lost the execute bit: undoing a turn that accepted a child's deletion gave
