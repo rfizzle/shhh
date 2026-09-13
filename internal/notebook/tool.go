@@ -3,6 +3,7 @@ package notebook
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -29,6 +30,28 @@ const (
 // says "not a delegate" — which is what the turn's close counts against
 // when it reports what came back from a fan-out.
 const Orchestrator = "assistant"
+
+// authorSep joins the agents of a lineage in a descendant's signature.
+const authorSep = "/"
+
+// Signature is what a delegate signs with: its own name for a child of the
+// session, and its lineage from the root child down for a descendant
+// (`writer-1/reviewer-1a`), so a note read weeks later says which run wrote
+// it and under whose task.
+// See docs/capabilities/subagents.md#what-nesting-does-to-the-rest-of-it.
+func Signature(lineage []string) string {
+	return strings.Join(lineage, authorSep)
+}
+
+// RootAuthor is the agent a signature hangs off: the root child of a
+// descendant's lineage, and the whole of it for everyone else. It is how the
+// person's listing files a grandchild's notes under the child that spawned
+// it rather than beside it — one group per task the session handed out,
+// which is the unit somebody reading their own session asks about.
+func RootAuthor(author string) string {
+	root, _, _ := strings.Cut(author, authorSep)
+	return root
+}
 
 // Definitions are the tool definitions every agent in a session gets — the
 // orchestrator and every delegate, in a conversation and in a coding

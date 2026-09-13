@@ -58,6 +58,42 @@ func TestNotes_TheScreenGroupsByTheAgentThatWroteEachNote(t *testing.T) {
 	}
 }
 
+// A descendant signs with its lineage, and the screen files the note under
+// the root of that signature: the notes of one task the session handed out
+// are one group however deep the agent that wrote each of them was. The
+// preview still names the agent in full, because the group says whose task
+// it was and not who did the work.
+func TestNotes_AGrandchildsNotesSitUnderTheChildThatSpawnedIt(t *testing.T) {
+	m := frameModel(t, 110, 30).WithNotebook(notebook.New(nil))
+	m.notebook.SetTurn(4)
+	_, _, _ = m.notebook.Write("researcher-1", "Where the goldens live", "testdata/golden")
+	_, _, _ = m.notebook.Write("researcher-1/reviewer-1a", "And the widths", "80, 110, 130")
+	m = sendText(t, m, "/notes")
+	if m.notes == nil {
+		t.Fatalf("/notes left the session in state %v", m.state)
+	}
+	row := m.notes.Rows[1]
+	if row.Group != "researcher-1" || row.Signer != "researcher-1/reviewer-1a" {
+		t.Fatalf("the grandchild's note is filed under %q and signed %q", row.Group, row.Signer)
+	}
+
+	view := strings.Join(m.notesLines(), "\n")
+	headers := 0
+	for _, line := range strings.Split(ansi.Strip(view), "\n") {
+		if strings.HasPrefix(line, "researcher-1") {
+			headers++
+		}
+	}
+	if headers != 1 {
+		t.Fatalf("the lineage heads the list %d times:\n%s", headers, view)
+	}
+	// The pointer opens on the last note written, which is the grandchild's,
+	// so the preview is the one reading out who wrote it.
+	if !strings.Contains(ansi.Strip(view), "researcher-1/reviewer-1a") {
+		t.Errorf("nothing on the screen says which agent wrote it:\n%s", view)
+	}
+}
+
 // An empty notebook is a sentence rather than an empty screen: there is
 // nothing to point at.
 func TestNotes_AnEmptyNotebookPrintsTheNotice(t *testing.T) {

@@ -6,9 +6,9 @@ package components
 // It is re-cut from the parts the sources screen is cut from — the selector
 // window with its headers grouping the rows, the preview pane beside it, the
 // shared chrome around both, and the inline confirm the saved-chat browser
-// puts in front of a delete. The list is grouped by the agent that wrote each
-// note, because a fan-out's notes arrive interleaved and the question
-// somebody asks their own session is who found what.
+// puts in front of a delete. The list is grouped by the agent each note hangs
+// off, because a fan-out's notes arrive interleaved and the question somebody
+// asks their own session is who found what.
 //
 // No row carries a mark. Writing a note changed nothing about the machine and
 // reading one is not an act the glyph column names, which is the same reason
@@ -51,8 +51,15 @@ type NotesRow struct {
 	// ID is the host's own handle on the row, carried back on a result and
 	// never drawn on its own.
 	ID string
-	// Group is the header the row is filed under: the agent that wrote it.
+	// Group is the header the row is filed under: the agent the note hangs
+	// off, which for one written by a descendant is the child the session
+	// spawned rather than the agent that wrote it.
 	Group string
+	// Signer is who wrote it, in full — the group again for a direct child,
+	// and the lineage under it (`writer-1/reviewer-1a`) for a descendant. The
+	// preview says it, because a note filed under the task it was written for
+	// still has to name the agent that wrote it.
+	Signer string
 	// Label is the note's title, which is the row.
 	Label string
 	// Number is the note's number as the notebook prints it — `n3` — so a
@@ -236,7 +243,7 @@ func (s *NotesScreen) previewRows(width int) []string {
 		return []string{sty.Dim.Render(Clip("no note selected", width))}
 	}
 	rows := []string{paneTitle(brightStyle().Render(oneLine(row.Label)),
-		sty.Dim.Render(row.Group), width)}
+		sty.Dim.Render(row.Signer), width)}
 	if field := notesStamp(*row); field != "" {
 		rows = append(rows, "  "+sty.Dimmer.Render(Clip(field, max(width-2, 1))))
 	}
@@ -362,12 +369,12 @@ func (s *NotesScreen) sync() {
 	s.list.Focus = s.optIndex(s.Focus)
 }
 
-// grouped is the display order: the authors in the order they first wrote,
-// and each author's notes oldest first under them. It is the order the
-// notebook's own listing has always used, and it is the order a signature
-// carrying a child's lineage will group by when notes are signed with one —
-// the grouping follows the signature rather than being a second reading of
-// who wrote what.
+// grouped is the display order: the groups in the order they first wrote,
+// and each group's notes oldest first under it. It is the order the
+// notebook's own listing has always used, and it groups by the row's own
+// Group rather than by its signature — the host reads a descendant's
+// lineage down to the agent the note hangs off, so the grouping is never a
+// second reading of who wrote what.
 func (s *NotesScreen) grouped() []int {
 	var groups []string
 	byGroup := map[string][]int{}

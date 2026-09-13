@@ -248,11 +248,15 @@ func (m Model) notesScreenData() components.NotesScreen {
 	}
 }
 
-// notesRow is one note as the screen draws it.
+// notesRow is one note as the screen draws it. What it is filed under is the
+// root of its signature rather than the whole of it, so a grandchild's notes
+// sit under the child that spawned them and a task the session handed out
+// reads as one group however deep the agent that did the work was; the
+// signature itself is what the note is signed with, which the preview says.
 func notesRow(n notebook.Note) components.NotesRow {
 	row := components.NotesRow{
-		ID: noteID(n.ID), Group: n.Author, Label: n.Title,
-		Number: noteID(n.ID), Body: strings.Split(n.Body, "\n"),
+		ID: noteID(n.ID), Group: notebook.RootAuthor(n.Author), Signer: n.Author,
+		Label: n.Title, Number: noteID(n.ID), Body: strings.Split(n.Body, "\n"),
 	}
 	if n.Turn > 0 {
 		row.Turn = fmt.Sprintf("turn %d", n.Turn)

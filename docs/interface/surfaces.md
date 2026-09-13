@@ -1984,16 +1984,17 @@ agent found and the next should not have to find again
 ([what they share](../capabilities/subagents.md#what-they-share)). The list is
 grouped under the agent that signed each note, because a fan-out's notes
 arrive interleaved and the question somebody asks their own session is who
-found what; where a note carries the lineage of the child that wrote it, that
-signature is what the grouping follows rather than a second reading of who
-wrote what. `[enter]` opens the note whole. `[d]` drops the one under the
-pointer behind the same inline confirm the saved-chat browser puts in front
-of a delete, and `/notes clear` asks over the whole notebook, on this screen,
-so what it would take is in front of the reader while they answer. Dropping
-is the only thing on this screen that changes what the session holds, and it
-is the person's alone: no agent has a tool that reaches it. An empty notebook
-prints one line into the transcript instead of opening — there is nothing to
-point at.
+found what; where a note carries the lineage of the child that wrote it, the
+group is the root of that signature — the child the session spawned — so a
+task handed out is one group however deep the agent that did the work was,
+and the preview names the agent in full. `[enter]` opens the note whole.
+`[d]` drops the one under the pointer behind the same inline confirm the
+saved-chat browser puts in front of a delete, and `/notes clear` asks over
+the whole notebook, on this screen, so what it would take is in front of the
+reader while they answer. Dropping is the only thing on this screen that
+changes what the session holds, and it is the person's alone: no agent has a
+tool that reaches it. An empty notebook prints one line into the transcript
+instead of opening — there is nothing to point at.
 
 **What is new is said at the turn's close and not on the rail.** The close
 already carries the clause naming what the turn's delegates wrote, so the

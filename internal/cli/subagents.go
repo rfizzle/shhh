@@ -177,9 +177,9 @@ func (a *agentProfiles) modelFor(cfg config.Config, role subagent.Role, depth in
 }
 
 // withNotebook wires a child into the session's shared notebook: the two
-// tools, an executor that signs what it writes with the child's own name,
-// and the titles already in the notebook, so the child starts by reading
-// rather than re-finding.
+// tools, an executor that signs what it writes with the signature the child
+// answers to, and the titles already in the notebook, so the child starts by
+// reading rather than re-finding.
 //
 // It is one call outside every role branch, because every child gets this
 // and no child gets a variant of it. A writer works in an isolated copy of
@@ -187,14 +187,41 @@ func (a *agentProfiles) modelFor(cfg config.Config, role subagent.Role, depth in
 // belongs to the session, not to a tree — and no child gets a way to remove
 // anything from it, because there is no such tool to hand out.
 // See docs/capabilities/subagents.md#what-they-share.
-func withNotebook(nb *notebook.Store, name string, defs []provider.Tool, base agent.ToolExecutor, sysPrompt string) (
+func withNotebook(nb *notebook.Store, signature string, defs []provider.Tool, base agent.ToolExecutor, sysPrompt string) (
 	[]provider.Tool, agent.ToolExecutor, string) {
 	if nb == nil {
 		return defs, base, sysPrompt
 	}
 	defs = append(defs, notebook.Definitions()...)
-	base = nb.WrapExecutor(name, base)
+	base = nb.WrapExecutor(signature, base)
 	return defs, base, prompt.CombineExtra(sysPrompt, notebook.PromptBlock(nb.List()))
+}
+
+// notebookSignature is what a child signs a note with: its own name where
+// the session spawned it, and its lineage from the root child down where an
+// agent did. A grandchild's bare name says which agent wrote a note and
+// nothing about whose task it was written under, and the task is the half a
+// reader coming back to the notebook is missing.
+// See docs/capabilities/subagents.md#what-nesting-does-to-the-rest-of-it.
+//
+// The walk up is bounded by the deepest agent the session allows, for the
+// reason the rail's walk is bounded by the number of agents: parent links
+// that ever came to point in a circle would hang the spawn rather than sign
+// one note oddly.
+func notebookSignature(sup *subagent.Supervisor, spec subagent.Spec) string {
+	lineage := []string{spec.Name}
+	if sup == nil {
+		return notebook.Signature(lineage)
+	}
+	for at := spec.Parent; at != "" && len(lineage) < sup.MaxDepth(); {
+		lineage = append([]string{at}, lineage...)
+		parent, ok := sup.Parent(at)
+		if !ok {
+			break
+		}
+		at = parent
+	}
+	return notebook.Signature(lineage)
 }
 
 // withDelegation puts the orchestration tools on a child that has a level
@@ -250,7 +277,7 @@ func withDelegation(sup *subagent.Supervisor, agents *agentProfiles, def config.
 // is never handed a link to is spent tokens. What a child found reaches a
 // page through the parent's own report call, the same way it reaches the
 // transcript.
-func withSessionTools(session chatSession, red *evidence.Reducer, name, croot string,
+func withSessionTools(session chatSession, red *evidence.Reducer, signature, croot string,
 	defs []provider.Tool, base agent.ToolExecutor, sysPrompt string) (
 	[]provider.Tool, agent.ToolExecutor, string, func(string) bool) {
 	defs, base = withNavigation(session.lsp, childStructural(session.structural, croot), defs, base)
@@ -269,7 +296,7 @@ func withSessionTools(session chatSession, red *evidence.Reducer, name, croot st
 		sysPrompt = prompt.CombineExtra(sysPrompt, skill.PromptBlock(session.skills))
 		keepResult = skill.IsContent
 	}
-	defs, base, sysPrompt = withNotebook(session.notebook, name, defs, base, sysPrompt)
+	defs, base, sysPrompt = withNotebook(session.notebook, signature, defs, base, sysPrompt)
 	// The servers the person marked read-only are reads, and a child gets
 	// them the way it gets the skills catalog. Every other server's tools
 	// need a card, and a child has no card of its own
@@ -534,7 +561,8 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 		// disappear and the call would come back an unknown tool — the trap
 		// the quality gate's own ordering already answers.
 		defs, base = withDelegation(sup, agents, agents.definitions[string(role)], spec, defs, base, gated)
-		defs, base, sysPrompt, keepResult := withSessionTools(session, red, spec.Name, croot, defs, base, sysPrompt)
+		defs, base, sysPrompt, keepResult := withSessionTools(
+			session, red, notebookSignature(sup, spec), croot, defs, base, sysPrompt)
 
 		// Approved non-exec gated calls: file mutations dispatch through their
 		// own path (never the auto-run executor), everything else falls back to

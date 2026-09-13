@@ -340,12 +340,6 @@ Delegation is one mechanism and it reaches every surface a child already
 reaches. The rules below settle each of those, so that a person watching a run
 three levels deep is reading one session and not three.
 
-Two of them are settled and not yet drawn: **the manager's kill-all wording
-and the notebook's lineage signature** are the rule as decided, and those
-surfaces still do what they did before nesting existed — a note is signed with
-the bare name. They are written here because the decision is the part that was
-hard to make; each is marked below.
-
 - **Who may steer a grandchild.** An agent steers what it spawned and nothing
   else — the party that wrote the task is the one who knows what it was for —
   so the root does not reach across a level it did not spawn; the person
@@ -383,8 +377,9 @@ hard to make; each is marked below.
   tree, because a corner under nothing says less than no corner at all.
 - **What the notebook says about depth.** A grandchild signs its notes with
   its lineage (`writer-1/reviewer-1a`), so a note read weeks later says which
-  run wrote it and under whose task. *Not written yet: a note is signed with
-  the agent's bare name.*
+  run wrote it and under whose task. `/notes` files it under the root of that
+  signature, so the notes of a task the session handed out are one group
+  however deep the agent that wrote each of them was.
 - **What the breadcrumb does at depth three on a narrow rail.** The frame
   keeps the nearest two segments and elides the root (`… ▸ writer-1 ▸
   reviewer-1a`): the far segment is the one the map beside it already draws.

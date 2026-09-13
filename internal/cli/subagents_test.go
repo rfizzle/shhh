@@ -444,6 +444,80 @@ func TestChildWritesIntoTheParentsNotebook(t *testing.T) {
 	}
 }
 
+// A descendant signs with its lineage from the root child down, so a note
+// read weeks later says which agent wrote it and under whose task; a child
+// of the session signs with its bare name, which is the whole of its
+// lineage. The spec each signature is built from is the one the runtime
+// hands the environment factory, and the parent links are the supervisor's
+// own, so this is the name the notebook really sees.
+func TestAGrandchildSignsItsNotesWithItsLineage(t *testing.T) {
+	var mu sync.Mutex
+	specs := map[string]subagent.Spec{}
+	scripted := (&scriptedChildren{steps: []childStep{
+		{text: "the exporter is fine"}, {text: "and so is the reading of it"}}}).factory()
+	sup := subagent.New(t.Context(), subagent.Options{
+		Root:     t.TempDir(),
+		MaxDepth: 3,
+		NewEnv: func(ctx context.Context, spec subagent.Spec) (subagent.Env, error) {
+			mu.Lock()
+			specs[spec.Name] = spec
+			mu.Unlock()
+			return scripted(ctx, spec)
+		},
+	})
+	t.Cleanup(sup.Close)
+
+	spawn := func(caller, args string) {
+		t.Helper()
+		exec := sup.WrapExecutor(caller, func(name string, _ json.RawMessage) (string, error) {
+			return "", fmt.Errorf("unexpected passthrough: %s", name)
+		})
+		if _, err := exec(subagent.SpawnToolName, json.RawMessage(args)); err != nil {
+			t.Fatalf("%q spawning %s: %v", caller, args, err)
+		}
+	}
+	spawn("", `{"role":"researcher","task":"survey the exporter","name":"researcher-1"}`)
+	spawn("researcher-1", `{"role":"reviewer","task":"read what it found","name":"reviewer-1a"}`)
+	spec := func(name string) subagent.Spec {
+		t.Helper()
+		var got subagent.Spec
+		waitFor(t, "the runtime to build "+name+"'s environment", func() bool {
+			mu.Lock()
+			defer mu.Unlock()
+			var ok bool
+			got, ok = specs[name]
+			return ok
+		})
+		return got
+	}
+	researcher, reviewer := spec("researcher-1"), spec("reviewer-1a")
+
+	nb := notebook.New(nil)
+	next := func(string, json.RawMessage) (string, error) { return "", errors.New("passed on") }
+	for _, s := range []subagent.Spec{researcher, reviewer} {
+		_, exec, _ := withNotebook(nb, notebookSignature(sup, s), tools.Definitions(), next, "# Environment")
+		args := json.RawMessage(`{"title":"` + s.Name + ` found it","body":"in internal/cli"}`)
+		if _, err := exec(notebook.WriteToolName, args); err != nil {
+			t.Fatalf("%s could not write: %v", s.Name, err)
+		}
+	}
+
+	notes := nb.List()
+	if len(notes) != 2 {
+		t.Fatalf("the notebook holds %d notes", len(notes))
+	}
+	for i, want := range []string{"researcher-1", "researcher-1/reviewer-1a"} {
+		if notes[i].Author != want {
+			t.Errorf("note %d is signed %q, want %q", i, notes[i].Author, want)
+		}
+	}
+	// And the grandchild's note is filed under the child the session spawned,
+	// which is what puts it beside the work it was delegated out of.
+	if got := notebook.RootAuthor(notes[1].Author); got != "researcher-1" {
+		t.Errorf("the grandchild's note groups under %q, want researcher-1", got)
+	}
+}
+
 // A session with no notebook is left exactly as it was: the block is what
 // tells a child the tools exist, so it must never be added without them.
 func TestChildWithoutANotebookIsUnchanged(t *testing.T) {
