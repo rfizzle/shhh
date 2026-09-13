@@ -2,11 +2,14 @@
 # already answered (docs/interface/surfaces.md#the-inspector-rail). Read the
 # cells for the block and its keying: at 06 the three runs of the formatter
 # are one alert saying `3 runs`, the tests are a second one, and neither is a
-# row in CHANGES — which is the changeset its heading promises again. At 07
-# the suite has passed over the tree those failures were about and the whole
-# block is gone, with the changed files standing where it was. Inspect the
-# picture for the hierarchy: the alert rows are del, the heading's standing
-# count is del with them, and the close row's verdict at 08 is add.
+# row in CHANGES — which is the changeset its heading promises again. At 08
+# the tests have broken in a second turn and the block still says `2 standing`
+# : that row carries the runs of both turns and `since turn 1`, rather than
+# being a third thing wrong with one workspace. At 09 the suite has passed
+# over the tree those failures were about and the whole block is gone, with
+# the changed files standing where it was. Inspect the picture for the
+# hierarchy: the alert rows are del, the heading's standing count is del with
+# them, and the close row's verdict at 10 is add.
 setup mkdir -p .shhh checks
 setup printf 'fmt:\n\t@echo "$(DIR) needs formatting"; exit 2\ntest:\n\t@echo "--- FAIL: TestLoopRounds"; echo "    loop_test.go:214: want 3 rounds, got 4"; exit 1\n' > Makefile
 setup printf '#!/bin/sh\necho "ok  github.com/tui/agent  0.4s"\n' > checks/unit.sh; chmod +x checks/unit.sh
@@ -23,11 +26,15 @@ keys y
 snap 05-card "make test"
 keys y
 snap 06-alerts-standing "3 runs"
+keys "run the failing package on its own" Enter
+snap 07-card "make test PKG=./internal/agent"
+keys y
+snap 08-alerts-spanning "since turn 1"
 keys "fix the bound and verify with the suite" Enter
-snap 07-recovered "quality gate default passing"
+snap 09-recovered "quality gate default passing"
 keys "anything still outstanding?" Enter
-snap 08-completed "Nothing is outstanding"
+snap 10-completed "Nothing is outstanding"
 keys C-c
-snap 09-quit-armed "again quits"
+snap 11-quit-armed "again quits"
 keys C-c
-snap 10-exit "that is everything the screen was holding"
+snap 12-exit "that is everything the screen was holding"

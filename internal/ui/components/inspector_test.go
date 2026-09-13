@@ -524,6 +524,23 @@ func TestInspectorAlerts_ARowStatesItsRuns(t *testing.T) {
 	}
 }
 
+// A row for a command that has gone on failing says the turn it broke in
+// rather than the turn of its last run, because the age of a failure is what
+// the turn field is read for and the latest run would hide it.
+func TestInspectorAlerts_ARowSpanningTurnsSaysWhenItBroke(t *testing.T) {
+	r := InspectorRail{Alerts: InspectorAlerts{
+		{Label: "make test", Note: OutcomeExit(2), Runs: 5, Turns: 3, Turn: 3},
+		{Label: "go build", Note: OutcomeExit(2), Runs: 1, Turns: 1, Turn: 6},
+	}}
+	view := stripANSI(r.View(InspectorWidth, 0))
+	if !strings.Contains(view, "exit 2 · 5 runs") || !strings.Contains(view, "since turn 3") {
+		t.Fatalf("the row states the turn it broke in and the runs since:\n%s", view)
+	}
+	if !strings.Contains(view, "turn 6") || strings.Contains(view, "since turn 6") {
+		t.Fatalf("a failure of one turn names that turn plainly:\n%s", view)
+	}
+}
+
 // The name is what a reader acts on and the account beside it is telemetry,
 // so a rail too narrow for both spends its columns on the name.
 func TestInspectorAlerts_TheNameSurvivesTheNarrowRail(t *testing.T) {

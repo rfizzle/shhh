@@ -612,9 +612,9 @@ func TestInspectorAlerts_PersistUntilTheWorkspaceIsClean(t *testing.T) {
 	}
 }
 
-// Three runs of one command in one turn are one alert. The row is keyed by
-// the command's name and the turn, carries the run count, and reports the
-// last run's outcome — the last run is what the workspace is currently like.
+// Three runs of one command in one turn are one alert. The row is the
+// command's name, carries the run count, and reports the last run's outcome —
+// the last run is what the workspace is currently like.
 func TestInspectorAlerts_RunsOfOneCommandAreOneRow(t *testing.T) {
 	m := inspectorModel(t, 144, 40)
 	m.turnCount = 2
@@ -630,13 +630,52 @@ func TestInspectorAlerts_RunsOfOneCommandAreOneRow(t *testing.T) {
 	if a := live[1]; a.Label != "gofmt" || a.Runs != 3 || a.Turn != 2 || a.Note != "exit 2" {
 		t.Fatalf("the alert is the command, the turn and its runs: %+v", a)
 	}
-	// The same command breaking again in a later turn is news again rather
-	// than a run count going up.
+	// The same command breaking again in a later turn is the alert going on
+	// rather than a second one: the runs behind it go up, the turn it broke
+	// in stays where it was, and the earlier turn's row is superseded.
 	m.turnCount = 3
 	m.appendEntry(entry{kind: entryCommand, text: "gofmt -l .", exitCode: 2})
-	live = m.inspectorAlerts().Live()
-	if len(live) != 3 || live[2].Turn != 3 || live[2].Runs != 1 {
-		t.Fatalf("a failure in a new turn is a new alert: %+v", live)
+	alerts := m.inspectorAlerts()
+	live = alerts.Live()
+	if len(live) != 2 {
+		t.Fatalf("a later failure is the standing alert, not a second one: %+v", live)
+	}
+	if a := live[1]; a.Label != "gofmt" || a.Runs != 4 || a.Turn != 2 || a.Turns != 2 {
+		t.Fatalf("the alert spans the turns the command broke in: %+v", a)
+	}
+	if len(alerts) != 3 || !alerts[1].Superseded {
+		t.Fatalf("the earlier turn's row is kept and marked: %+v", alerts)
+	}
+}
+
+// A command still broken in the fourth turn running is one standing alert and
+// not four: the row says the turn it first broke in and every run behind it,
+// and the heading's count is the rows under it
+// (docs/interface/surfaces.md#the-inspector-rail).
+func TestInspectorAlerts_ACommandBrokenInFourTurnsIsOneAlert(t *testing.T) {
+	m := inspectorModel(t, 144, 40)
+	for turn := int64(2); turn <= 4; turn++ {
+		m.turnCount = turn
+		m.appendEntry(entry{kind: entryUser, text: "try it again"})
+		m.appendEntry(entry{kind: entryCommand, text: "go test ./...", exitCode: 1})
+	}
+	alerts := m.inspectorAlerts()
+	live := alerts.Live()
+	if len(live) != 1 {
+		t.Fatalf("four turns of one broken suite are one standing alert: %+v", alerts)
+	}
+	if a := live[0]; a.Label != "go test" || a.Runs != 4 || a.Turn != 1 || a.Turns != 4 {
+		t.Fatalf("the alert carries the turn it broke in and the runs since: %+v", a)
+	}
+	if len(alerts) != 4 {
+		t.Fatalf("the three superseded rows are kept and counted: %+v", alerts)
+	}
+	view := stripANSI(m.View().Content)
+	if !strings.Contains(view, "1 standing") || !strings.Contains(view, "since turn 1") {
+		t.Fatalf("the heading counts what is under it:\n%s", view)
+	}
+	if strings.Count(view, "✗ go test") != 1 {
+		t.Fatalf("one broken command is one row:\n%s", view)
 	}
 }
 

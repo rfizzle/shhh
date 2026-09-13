@@ -1212,8 +1212,8 @@ func TestGolden_InspectorRail(t *testing.T) {
 		// Four turns deep, with the rail shorter than the list it has to show
 		//: repeat edits collapse to one row carrying their turn
 		// count, the rows this turn wrote survive the fold, the fold carries
-		// the counts it took, and an alert from turn 7 is still standing in
-		// turn 9 because the workspace is still broken.
+		// the counts it took, and a suite that has failed in every turn since
+		// turn 7 is one row saying since when and how many runs it has taken.
 		session := InspectorRail{
 			Turn: &InspectorTurn{Step: 1, Steps: 3, Running: true, Elapsed: 8 * time.Second},
 			Changes: &InspectorChanges{
@@ -1230,10 +1230,10 @@ func TestGolden_InspectorRail(t *testing.T) {
 				Added: 96, Removed: 11,
 			},
 			Alerts: InspectorAlerts{
-				{Label: "gofmt", Note: OutcomeExit(2), Runs: 3, Turn: 6, Superseded: true},
-				{Label: "go vet", Note: OutcomeExit(1), Turn: 6, Superseded: true},
-				{Label: "go test", Note: OutcomeExit(1), Runs: 2, Turn: 7},
-				{Label: "go build", Note: OutcomeExit(2), Turn: 9},
+				{Label: "gofmt", Note: OutcomeExit(2), Runs: 3, Turn: 6, Turns: 1, Superseded: true},
+				{Label: "go vet", Note: OutcomeExit(1), Turn: 6, Turns: 1, Superseded: true},
+				{Label: "go test", Note: OutcomeExit(1), Runs: 5, Turn: 7, Turns: 3},
+				{Label: "go build", Note: OutcomeExit(2), Turn: 9, Turns: 1},
 			},
 		}
 		// A writer's patch made two scripts executable and moved not a byte.

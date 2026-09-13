@@ -1,14 +1,18 @@
 # One turn breaks four things — the same formatter over three directories, and
-# then the tests — and the turn after it runs the repository's own suite over
-# what came out of the fix. The rail is the subject: four failing runs are two
-# alerts, and the suite's pass takes both off it.
+# then the tests — the turn after it watches the tests break again, and the
+# third runs the repository's own suite over what came out of the fix. The rail
+# is the subject: five failing runs are two alerts however many turns they are
+# spread over, and the suite's pass takes both off it.
 Formatting the tree, then running the tests
 +tool:execute_command:{"command":"make fmt DIR=internal/agent"}
 +tool:execute_command:{"command":"make fmt DIR=internal/ui"}
 +tool:execute_command:{"command":"make fmt DIR=internal/cli"}
 +tool:execute_command:{"command":"make test"}
 Three directories are unformatted and the loop counts one round too many.
+Running the failing package on its own to see the count
++tool:execute_command:{"command":"make test PKG=./internal/agent"}
+Same bound, same round: the loop is still one over.
 Fixed at the bound, and the formatting with it. Verifying against the suite
 +tool:quality_gate:{"action":"run","suite":"default"}
 The bound is fixed, the tree is formatted and the suite is green.
-Nothing is outstanding: four runs came back broken on the way here and the\nsuite has answered every one of them.
+Nothing is outstanding: five runs came back broken on the way here and the\nsuite has answered every one of them.

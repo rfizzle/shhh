@@ -2886,9 +2886,9 @@ func TestGolden_ResolvedVerification(t *testing.T) {
 // its own tests, the suite answering all of them, and the turn closed on that
 // answer. What the sheet is for is the hierarchy the four share — the turn,
 // then what is still broken, then the changeset — and the two things only a
-// sequence shows: that three failing commands are three rows and not the ten
-// runs behind them, and that the block goes when the last of them is
-// answered, leaving the changed files the rows it was using.
+// sequence shows: that two broken commands are two rows and not the six runs
+// across three turns behind them, and that the block goes when the last of
+// them is answered, leaving the changed files the rows it was using.
 //
 // It is the whole screen at every width because the rail is dropped below the
 // split: the narrow captures are where the same session has to say what it
@@ -2902,10 +2902,11 @@ func TestGolden_InspectorAlerts(t *testing.T) {
 					Path: "internal/agent/loop.go", BeforeExists: true, AfterExists: true,
 					Before: "count++\n", After: "if n < cap {\n\tcount++\n}\n",
 				})
-				m.turnCount = 3
-				// Two turns of history: a formatter run over three directories,
-				// which is one thing wrong with the workspace and not three, and
-				// a suite that came back broken in the turn after it.
+				m.turnCount = 4
+				// Three turns of history: a formatter run over three
+				// directories, which is one thing wrong with the workspace and
+				// not three, and a suite that has come back broken in both the
+				// turns after it, which is one thing wrong and not two.
 				m.transcript = []entry{
 					{kind: entryUser, text: "stop the loop double-counting rounds", turn: 1},
 					{kind: entryCommand, text: "gofmt -w internal/agent", exitCode: 2, turn: 1},
@@ -2915,8 +2916,12 @@ func TestGolden_InspectorAlerts(t *testing.T) {
 					{kind: entryCommand, text: "go test ./internal/agent/...", exitCode: 1,
 						duration: 4200 * time.Millisecond, turn: 2,
 						toolResult: "--- FAIL: TestLoopRounds\n    loop_test.go:214: want 3 rounds, got 4"},
-					{kind: entryUser, text: "try the bound", turn: 3},
-					{kind: entryDiff, turn: 3, diff: &components.DiffView{
+					{kind: entryUser, text: "the count is off by one somewhere", turn: 3},
+					{kind: entryCommand, text: "go test ./internal/agent/...", exitCode: 1,
+						duration: 4100 * time.Millisecond, turn: 3,
+						toolResult: "--- FAIL: TestLoopRounds\n    loop_test.go:214: want 3 rounds, got 4"},
+					{kind: entryUser, text: "try the bound", turn: 4},
+					{kind: entryDiff, turn: 4, diff: &components.DiffView{
 						Path: "internal/agent/loop.go", Verb: "edit",
 						Hunks: []diff.Hunk{{OldStart: 1, OldCount: 1, NewStart: 1, NewCount: 3,
 							Lines: []diff.Line{
@@ -2930,17 +2935,18 @@ func TestGolden_InspectorAlerts(t *testing.T) {
 					m.streaming = ""
 				}
 				if stage != "active" {
-					// The turn runs the tests again and watches them fail.
+					// The turn runs the tests again and watches them fail — a
+					// third turn of the same failure, and still one alert.
 					m.transcript = append(m.transcript, entry{kind: entryCommand,
 						text: "go test ./internal/agent/...", exitCode: 1,
-						duration: 3800 * time.Millisecond, turn: 3,
+						duration: 3800 * time.Millisecond, turn: 4,
 						toolResult: "--- FAIL: TestLoopRounds\n    loop_test.go:214: want 3 rounds, got 4"})
 				}
 				if stage == "recovered" || stage == "completed" {
 					m.appendCloseGateRow("default", gateResult("PASS", 5, 5))
 				}
 				if stage == "completed" {
-					m.transcript = append(m.transcript, entry{kind: entryTurnClose, turn: 3,
+					m.transcript = append(m.transcript, entry{kind: entryTurnClose, turn: 4,
 						close: &components.TurnClose{
 							State: components.TurnDone, Steps: 2, Tools: 5,
 							Elapsed: "1m 12s", Spend: "$0.18", Note: "round 5/25",
@@ -2960,7 +2966,7 @@ func TestGolden_InspectorAlerts(t *testing.T) {
 			return []golden.Panel{
 				{Label: "active · three runs of one formatter are one alert",
 					View: build("active")},
-				{Label: "failed · the same command breaking again is a second alert",
+				{Label: "failed · a third turn of the same failure is the same alert",
 					View: build("failed")},
 				{Label: "recovered · the suite answers every failure before it",
 					View: build("recovered")},

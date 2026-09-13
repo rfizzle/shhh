@@ -325,7 +325,7 @@ func (m Model) inspectorChanges() *components.InspectorChanges {
 
 // inspectorAlerts is the workspace's standing bad news: every command this
 // session ran that came back broken, in the order they broke, each with the
-// turn that ran it and how many runs of it that turn made
+// turn it broke in and how many runs it has taken since
 // (docs/interface/surfaces.md#the-inspector-rail).
 //
 // An alert follows the workspace rather than the turn — it is answered by the
@@ -374,11 +374,18 @@ type alertMemo struct {
 
 // scanAlerts is the walk itself.
 //
-// An alert is one command in one turn rather than one command line: an agent
-// that runs a formatter over three directories has one thing wrong with its
-// workspace and not three, and the rail drew three rows for it. The runs are
-// collapsed onto the last one, because the last run is what the workspace is
-// currently like.
+// An alert is one command rather than one command line: an agent that runs a
+// formatter over three directories has one thing wrong with its workspace and
+// not three, and the rail drew three rows for it. The runs are collapsed onto
+// the last one, because the last run is what the workspace is currently like.
+//
+// Nor is it one command in one turn. A suite still failing in the fourth turn
+// running is the same one piece of news it was in the first, so the standing
+// alert follows the command across those turns: the earlier turn's row is
+// superseded by the later failure, and the one still standing says the turn
+// the command first broke in and what every turn since has thrown at it. That
+// is what makes the heading's count the number of rows under it rather than
+// the number of attempts behind them.
 func (m Model) scanAlerts() components.InspectorAlerts {
 	type group struct {
 		// at is where the group's last run sits in the transcript, which is
@@ -387,6 +394,16 @@ func (m Model) scanAlerts() components.InspectorAlerts {
 		runs   int
 		note   string
 		broken bool
+	}
+	// standing is the alert still standing for a command: where it started,
+	// how much is behind it, and which of its turns is the one that states
+	// all that — the last turn it broke in, so the row sits where the most
+	// recent failure is and the block draws it as the recent news it is.
+	type standing struct {
+		first int64
+		runs  int
+		turns int
+		last  alertKey
 	}
 	verified := lastVerification(m.transcript)
 	groups := map[alertKey]*group{}
@@ -430,19 +447,43 @@ func (m Model) scanAlerts() components.InspectorAlerts {
 		}
 		g.broken = true
 	}
+	// A group is answered where the workspace has since been said to be right
+	// about that command, by either answer the session has.
+	answered := func(k alertKey, at int) bool {
+		return verified.settled(at) || cleared[k.name] > at
+	}
+	still := map[string]*standing{}
+	for _, k := range order {
+		g := groups[k]
+		if !g.broken || answered(k, g.at) {
+			continue
+		}
+		st, ok := still[k.name]
+		if !ok {
+			st = &standing{first: k.turn}
+			still[k.name] = st
+		}
+		st.runs, st.turns, st.last = st.runs+g.runs, st.turns+1, k
+	}
 	var alerts components.InspectorAlerts
 	for _, k := range order {
 		g := groups[k]
 		if !g.broken {
 			continue
 		}
-		alerts = append(alerts, components.InspectorAlert{
-			Label:      k.name,
-			Note:       g.note,
-			Runs:       g.runs,
-			Turn:       k.turn,
-			Superseded: verified.settled(g.at) || cleared[k.name] > g.at,
-		})
+		// Every group but the one the standing alert is stated at is
+		// superseded: an answered one by what answered it, an earlier live
+		// one by the failure that came after it.
+		alert := components.InspectorAlert{
+			Label: k.name, Note: g.note, Runs: g.runs, Turn: k.turn,
+			Turns: 1, Superseded: true,
+		}
+		if st := still[k.name]; st != nil && st.last == k {
+			alert = components.InspectorAlert{
+				Label: k.name, Note: g.note, Runs: st.runs, Turn: st.first, Turns: st.turns,
+			}
+		}
+		alerts = append(alerts, alert)
 	}
 	return alerts
 }
@@ -456,10 +497,11 @@ func commandOutcome(e entry) string {
 	return components.OutcomeExit(e.exitCode)
 }
 
-// alertKey is what one alert stands for: a command, in the turn that ran it.
-// The turn is half the key because a failure has a turn here the way every
-// other row on this surface does — the same command breaking again two turns
-// later is news again, not a run count going up.
+// alertKey is what the walk groups a command's runs by: the command, in the
+// turn that ran it. The turn is half the key because a run count is a turn's
+// own — three runs of a formatter in one turn are one attempt at one thing —
+// while the alert those groups roll up into spans every turn the command has
+// gone on breaking in.
 type alertKey struct {
 	name string
 	turn int64

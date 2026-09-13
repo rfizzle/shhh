@@ -23,8 +23,8 @@ import (
 const inspectorLiveAlerts = 2
 
 // InspectorAlert is one thing the workspace is still wrong about: a command
-// this session ran that came back broken, what it said, and the turn that ran
-// it. Alerts outlive their turn and stop being news when the command comes
+// this session ran that came back broken, what it said, and the turn it broke
+// in. Alerts outlive their turn and stop being news when the command comes
 // back clean or the repository's own suite passes over the tree it failed on
 // — a red row that clears itself because a new turn started is the exact
 // failure this rail exists to prevent.
@@ -37,21 +37,29 @@ type InspectorAlert struct {
 	// Note is the last run's outcome, because the last run is what the
 	// workspace is currently like.
 	Note string
-	// Runs is how many runs of this command in this turn the row stands for.
-	// One states nothing: a count of one is a row saying it is a row.
+	// Runs is how many runs of this command the row stands for, across every
+	// turn it has been broken in. One states nothing: a count of one is a row
+	// saying it is a row.
 	Runs int
-	// Turn is the turn that ran it; zero prints no turn field.
+	// Turn is the turn it broke in — the first of them where it has gone on
+	// breaking since; zero prints no turn field.
 	Turn int64
-	// Superseded marks an alert something has since answered. It is kept and
-	// counted rather than dropped — the session did break this, and getting
-	// to green is work the block can still account for — but it is never
-	// drawn as a row, so an answered failure cannot push a changed file off
-	// the rail.
+	// Turns is how many turns it has broken in. More than one is what turns
+	// the field into the turn it started in (`since turn 3`), because a row
+	// naming only its latest run would date a failure four turns old to a
+	// moment ago (docs/interface/surfaces.md#the-inspector-rail).
+	Turns int
+	// Superseded marks a row the block no longer makes its statement with:
+	// one something has since answered, or one a later failure of the same
+	// command stands in for. It is kept and counted rather than dropped — the
+	// session did break this, and getting to green is work the block can
+	// still account for — but it is never drawn as a row, so an answered
+	// failure cannot push a changed file off the rail.
 	Superseded bool
 }
 
 // InspectorAlerts is the ALERTS block: every command this session has broken,
-// in the order they broke, the answered ones marked rather than dropped.
+// in the order they broke, the superseded ones marked rather than dropped.
 type InspectorAlerts []InspectorAlert
 
 // Live are the alerts still standing — the block's own news, and what any
@@ -113,7 +121,7 @@ func (r InspectorRail) alertsBlock(width int) (railBlock, bool) {
 }
 
 // alertRow is one alert on one row: the command's name, what its last run
-// came to and how many runs are behind that, and the turn it ran in.
+// came to and how many runs are behind that, and the turn it broke in.
 //
 // The account is dropped whole rather than clipped where the three will not
 // fit. The name is what the reader acts on and the account beside it is
@@ -123,7 +131,7 @@ func (r InspectorRail) alertsBlock(width int) (railBlock, bool) {
 func alertRow(a InspectorAlert, width int) string {
 	turn := ""
 	if a.Turn > 0 {
-		turn = sty.Dim.Render(fmt.Sprintf("turn %d", a.Turn))
+		turn = sty.Dim.Render(alertTurn(a))
 	}
 	left := " " + sty.Err.Render("✗") + " " + sty.Body.Render(a.Label)
 	if note := alertNote(a); note != "" {
@@ -133,6 +141,18 @@ func alertRow(a InspectorAlert, width int) string {
 		}
 	}
 	return railRow(left, turn, width, inspectorIndent)
+}
+
+// alertTurn is the row's turn field: the turn it broke in, said as the turn it
+// has been broken since where it has gone on breaking in later turns. The
+// count of those turns is not a field of its own — what the reader does about
+// a failure is the same whether it has stood for two turns or five, and the
+// run count beside it already says how much has been thrown at it.
+func alertTurn(a InspectorAlert) string {
+	if a.Turns > 1 {
+		return fmt.Sprintf("since turn %d", a.Turn)
+	}
+	return fmt.Sprintf("turn %d", a.Turn)
 }
 
 // alertNote is the account beside the name: what the last run came to, and

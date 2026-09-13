@@ -13,62 +13,62 @@
 · active · three runs of one formatter are one alert
    shhh chat                                                
   ────────────────────────────────────────────────────────  
-  ❯ stop the loop double-counting rounds                    
   ──────────────────────────────────────────────────────    
-                                                            
-    ▎✗ run     gofmt -w internal/agent      exit 2          
-    ▎✗ run     gofmt -w internal/ui         exit 2          
-    ▎✗ run     gofmt -w internal/cli        exit 2          
-                                                            
-  ❯ and get the tests passing                               
-  ──────────────────────────────────────────────────────    
-                                                            
-    ▎✗ run     go test ./internal/agent/.…  exit 1  4.2s    
-      --- FAIL: TestLoopRounds                              
-          loop_test.go:214: want 3 rounds, got 4            
-                                                            
-  ❯ try the bound                                           
-  ──────────────────────────────────────────────────────    
-                                                            
-    ▎✎ edit    internal/agent/loo…  +2 −0 · 1 hunk          
-                                                            
-                                                            
-                                                            
-                                                            
-                                                            
-                                                            
-                                                            
+                                                        ┃   
+    ▎✗ run     gofmt -w internal/agent      exit 2      ┃   
+    ▎✗ run     gofmt -w internal/ui         exit 2      ┃   
+    ▎✗ run     gofmt -w internal/cli        exit 2      ┃   
+                                                        ┃   
+  ❯ and get the tests passing                           ┃   
+  ──────────────────────────────────────────────────────┃   
+                                                        ┃   
+    ▎✗ run     go test ./internal/agent/.…  exit 1  4.2s┃   
+      --- FAIL: TestLoopRounds                          ┃   
+          loop_test.go:214: want 3 rounds, got 4        ┃   
+                                                        ┃   
+  ❯ the count is off by one somewhere                   ┃   
+  ──────────────────────────────────────────────────────┃   
+                                                        ┃   
+    ▎✗ run     go test ./internal/agent/.…  exit 1  4.1s┃   
+      --- FAIL: TestLoopRounds                          ┃   
+          loop_test.go:214: want 3 rounds, got 4        ┃   
+                                                        ┃   
+  ❯ try the bound                                       ┃   
+  ──────────────────────────────────────────────────────┃   
+                                                        ┃   
+    ▎✎ edit    internal/agent/loo…  +2 −0 · 1 hunk      ┃   
+                                                        ┃   
   ╭─ ⠋ thinking… ────────────────────────────────────────╮  
   │ ▸                                                    │  
   ╰─ ⏸ gated · ctx 32% ▰▰▱▱▱▱▱▱ · $0.51 ─────────────────╯  
 
-· failed · the same command breaking again is a second alert
+· failed · a third turn of the same failure is the same alert
    shhh chat                                                
   ────────────────────────────────────────────────────────  
-  ❯ stop the loop double-counting rounds                    
-  ──────────────────────────────────────────────────────    
-                                                            
-    ▎✗ run     gofmt -w internal/agent      exit 2          
-    ▎✗ run     gofmt -w internal/ui         exit 2          
     ▎✗ run     gofmt -w internal/cli        exit 2          
                                                             
   ❯ and get the tests passing                               
   ──────────────────────────────────────────────────────    
                                                             
-    ▎✗ run     go test ./internal/agent/.…  exit 1  4.2s    
-      --- FAIL: TestLoopRounds                              
-          loop_test.go:214: want 3 rounds, got 4            
-                                                            
-  ❯ try the bound                                           
-  ──────────────────────────────────────────────────────    
-                                                            
-    ▎✎ edit    internal/agent/loo…  +2 −0 · 1 hunk          
-    ▎✗ run     go test ./internal/agent/.…  exit 1  3.8s    
-      --- FAIL: TestLoopRounds                              
-          loop_test.go:214: want 3 rounds, got 4            
-                                                            
-                                                            
-                                                            
+    ▎✗ run     go test ./internal/agent/.…  exit 1  4.2s┃   
+      --- FAIL: TestLoopRounds                          ┃   
+          loop_test.go:214: want 3 rounds, got 4        ┃   
+                                                        ┃   
+  ❯ the count is off by one somewhere                   ┃   
+  ──────────────────────────────────────────────────────┃   
+                                                        ┃   
+    ▎✗ run     go test ./internal/agent/.…  exit 1  4.1s┃   
+      --- FAIL: TestLoopRounds                          ┃   
+          loop_test.go:214: want 3 rounds, got 4        ┃   
+                                                        ┃   
+  ❯ try the bound                                       ┃   
+  ──────────────────────────────────────────────────────┃   
+                                                        ┃   
+    ▎✎ edit    internal/agent/loo…  +2 −0 · 1 hunk      ┃   
+    ▎✗ run     go test ./internal/agent/.…  exit 1  3.8s┃   
+      --- FAIL: TestLoopRounds                          ┃   
+          loop_test.go:214: want 3 rounds, got 4        ┃   
+                                                        ┃   
   session · +3 −1                                           
   ╭─ idle ───────────────────────────────────────────────╮  
   │ ▸                                                    │  
@@ -77,30 +77,30 @@
 · recovered · the suite answers every failure before it
    shhh chat                                                
   ────────────────────────────────────────────────────────  
-  ❯ stop the loop double-counting rounds                    
-  ──────────────────────────────────────────────────────    
-                                                            
-    ▎✗ run     gofmt -w internal/agent      exit 2          
-    ▎✗ run     gofmt -w internal/ui         exit 2          
-    ▎✗ run     gofmt -w internal/cli        exit 2          
                                                             
   ❯ and get the tests passing                               
   ──────────────────────────────────────────────────────    
                                                             
     ▎✗ run     go test ./internal/agent/.…  exit 1  4.2s    
-      --- FAIL: TestLoopRounds                              
-          loop_test.go:214: want 3 rounds, got 4            
-                                                            
-  ❯ try the bound                                           
-  ──────────────────────────────────────────────────────    
-                                                            
-    ▎✎ edit    internal/agent/loo…  +2 −0 · 1 hunk          
-    ▎✗ run     go test ./internal/agent/.…  exit 1  3.8s    
-      --- FAIL: TestLoopRounds                              
-          loop_test.go:214: want 3 rounds, got 4            
-    ▎$ run     quality gate · default · …  2 lines          
-                                                            
-                                                            
+      --- FAIL: TestLoopRounds                          ┃   
+          loop_test.go:214: want 3 rounds, got 4        ┃   
+                                                        ┃   
+  ❯ the count is off by one somewhere                   ┃   
+  ──────────────────────────────────────────────────────┃   
+                                                        ┃   
+    ▎✗ run     go test ./internal/agent/.…  exit 1  4.1s┃   
+      --- FAIL: TestLoopRounds                          ┃   
+          loop_test.go:214: want 3 rounds, got 4        ┃   
+                                                        ┃   
+  ❯ try the bound                                       ┃   
+  ──────────────────────────────────────────────────────┃   
+                                                        ┃   
+    ▎✎ edit    internal/agent/loo…  +2 −0 · 1 hunk      ┃   
+    ▎✗ run     go test ./internal/agent/.…  exit 1  3.8s┃   
+      --- FAIL: TestLoopRounds                          ┃   
+          loop_test.go:214: want 3 rounds, got 4        ┃   
+    ▎$ run     quality gate · default · …  2 lines      ┃   
+                                                        ┃   
   session · +3 −1                                           
   ╭─ idle ───────────────────────────────────────────────╮  
   │ ▸                                                    │  
@@ -109,14 +109,14 @@
 · completed · the turn closes and the rail has no bad news
    shhh chat                                                
   ────────────────────────────────────────────────────────  
-    ▎✗ run     gofmt -w internal/agent      exit 2          
-    ▎✗ run     gofmt -w internal/ui         exit 2          
-    ▎✗ run     gofmt -w internal/cli        exit 2          
-                                                        ┃   
-  ❯ and get the tests passing                           ┃   
-  ──────────────────────────────────────────────────────┃   
-                                                        ┃   
-    ▎✗ run     go test ./internal/agent/.…  exit 1  4.2s┃   
+    ▎✗ run     go test ./internal/agent/.…  exit 1  4.2s    
+      --- FAIL: TestLoopRounds                              
+          loop_test.go:214: want 3 rounds, got 4            
+                                                            
+  ❯ the count is off by one somewhere                       
+  ──────────────────────────────────────────────────────    
+                                                            
+    ▎✗ run     go test ./internal/agent/.…  exit 1  4.1s    
       --- FAIL: TestLoopRounds                          ┃   
           loop_test.go:214: want 3 rounds, got 4        ┃   
                                                         ┃   
@@ -142,62 +142,62 @@
 · active · three runs of one formatter are one alert
   ␛[97;1m shhh chat␛[m                                                
   ␛[38;5;241m────────────────────────────────────────────────────────␛[m  
-  ␛[94m❯␛[m ␛[97mstop the loop double-counting rounds␛[m                    
   ␛[38;5;243m──────────────────────────────────────────────────────␛[m    
-                                                            
-    ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgofmt -w internal/agent␛[m      ␛[91mexit 2␛[m          
-    ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgofmt -w internal/ui␛[m         ␛[91mexit 2␛[m          
-    ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgofmt -w internal/cli␛[m        ␛[91mexit 2␛[m          
-                                                            
-  ␛[94m❯␛[m ␛[97mand get the tests passing␛[m                               
-  ␛[38;5;243m──────────────────────────────────────────────────────␛[m    
-                                                            
-    ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/.…␛[m  ␛[91mexit 1␛[m  ␛[38;5;241m4.2s␛[m    
-      ␛[38;5;245m--- FAIL: TestLoopRounds␛[m                              
-      ␛[38;5;245m    loop_test.go:214: want 3 rounds, got 4␛[m            
-                                                            
-  ␛[94m❯␛[m ␛[97mtry the bound␛[m                                           
-  ␛[38;5;243m──────────────────────────────────────────────────────␛[m    
-                                                            
-    ␛[38;5;214m▎✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agent/loo…␛[m  ␛[92m+2␛[m ␛[91m−0␛[38;5;245m · 1 hunk␛[m          
-                                                            
-                                                            
-                                                            
-                                                            
-                                                            
-                                                            
-                                                            
+                                                        ␛[38;5;241m┃␛[m   
+    ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgofmt -w internal/agent␛[m      ␛[91mexit 2␛[m      ␛[38;5;241m┃␛[m   
+    ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgofmt -w internal/ui␛[m         ␛[91mexit 2␛[m      ␛[38;5;241m┃␛[m   
+    ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgofmt -w internal/cli␛[m        ␛[91mexit 2␛[m      ␛[38;5;241m┃␛[m   
+                                                        ␛[38;5;241m┃␛[m   
+  ␛[94m❯␛[m ␛[97mand get the tests passing␛[m                           ␛[38;5;241m┃␛[m   
+  ␛[38;5;243m──────────────────────────────────────────────────────␛[38;5;241m┃␛[m   
+                                                        ␛[38;5;241m┃␛[m   
+    ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/.…␛[m  ␛[91mexit 1␛[m  ␛[38;5;241m4.2s┃␛[m   
+      ␛[38;5;245m--- FAIL: TestLoopRounds␛[m                          ␛[38;5;241m┃␛[m   
+      ␛[38;5;245m    loop_test.go:214: want 3 rounds, got 4␛[m        ␛[38;5;241m┃␛[m   
+                                                        ␛[38;5;241m┃␛[m   
+  ␛[94m❯␛[m ␛[97mthe count is off by one somewhere␛[m                   ␛[38;5;241m┃␛[m   
+  ␛[38;5;243m──────────────────────────────────────────────────────␛[38;5;241m┃␛[m   
+                                                        ␛[38;5;241m┃␛[m   
+    ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/.…␛[m  ␛[91mexit 1␛[m  ␛[38;5;241m4.1s┃␛[m   
+      ␛[38;5;245m--- FAIL: TestLoopRounds␛[m                          ␛[38;5;241m┃␛[m   
+      ␛[38;5;245m    loop_test.go:214: want 3 rounds, got 4␛[m        ␛[38;5;241m┃␛[m   
+                                                        ␛[38;5;241m┃␛[m   
+  ␛[94m❯␛[m ␛[97mtry the bound␛[m                                       ␛[38;5;241m┃␛[m   
+  ␛[38;5;243m──────────────────────────────────────────────────────␛[38;5;241m┃␛[m   
+                                                        ␛[38;5;241m┃␛[m   
+    ␛[38;5;214m▎✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agent/loo…␛[m  ␛[92m+2␛[m ␛[91m−0␛[38;5;245m · 1 hunk␛[m      ␛[38;5;241m┃␛[m   
+                                                        ␛[38;5;241m┃␛[m   
   ␛[38;5;214m╭─␛[m ␛[38;5;205m⠋ thinking…␛[m ␛[38;5;214m────────────────────────────────────────╮␛[m  
   ␛[38;5;214m│␛[m ␛[38;5;205;1m▸␛[m ␛[38;5;252m                                                  ␛[m ␛[38;5;214m│␛[m  
   ␛[38;5;214m╰─␛[m ␛[38;5;214m⏸ gated␛[38;5;243m · ␛[92mctx 32%␛[m ␛[92m▰▰␛[38;5;241m▱▱▱▱▱▱␛[38;5;243m · $0.51␛[m ␛[38;5;214m─────────────────╯␛[m  
 
-· failed · the same command breaking again is a second alert
+· failed · a third turn of the same failure is the same alert
   ␛[97;1m shhh chat␛[m                                                
   ␛[38;5;241m────────────────────────────────────────────────────────␛[m  
-  ␛[94m❯␛[m ␛[97mstop the loop double-counting rounds␛[m                    
-  ␛[38;5;243m──────────────────────────────────────────────────────␛[m    
-                                                            
-    ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgofmt -w internal/agent␛[m      ␛[91mexit 2␛[m          
-    ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgofmt -w internal/ui␛[m         ␛[91mexit 2␛[m          
     ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgofmt -w internal/cli␛[m        ␛[91mexit 2␛[m          
                                                             
   ␛[94m❯␛[m ␛[97mand get the tests passing␛[m                               
   ␛[38;5;243m──────────────────────────────────────────────────────␛[m    
                                                             
-    ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/.…␛[m  ␛[91mexit 1␛[m  ␛[38;5;241m4.2s␛[m    
-      ␛[38;5;245m--- FAIL: TestLoopRounds␛[m                              
-      ␛[38;5;245m    loop_test.go:214: want 3 rounds, got 4␛[m            
-                                                            
-  ␛[94m❯␛[m ␛[97mtry the bound␛[m                                           
-  ␛[38;5;243m──────────────────────────────────────────────────────␛[m    
-                                                            
-    ␛[38;5;214m▎✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agent/loo…␛[m  ␛[92m+2␛[m ␛[91m−0␛[38;5;245m · 1 hunk␛[m          
-    ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/.…␛[m  ␛[91mexit 1␛[m  ␛[38;5;241m3.8s␛[m    
-      ␛[38;5;245m--- FAIL: TestLoopRounds␛[m                              
-      ␛[38;5;245m    loop_test.go:214: want 3 rounds, got 4␛[m            
-                                                            
-                                                            
-                                                            
+    ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/.…␛[m  ␛[91mexit 1␛[m  ␛[38;5;241m4.2s┃␛[m   
+      ␛[38;5;245m--- FAIL: TestLoopRounds␛[m                          ␛[38;5;241m┃␛[m   
+      ␛[38;5;245m    loop_test.go:214: want 3 rounds, got 4␛[m        ␛[38;5;241m┃␛[m   
+                                                        ␛[38;5;241m┃␛[m   
+  ␛[94m❯␛[m ␛[97mthe count is off by one somewhere␛[m                   ␛[38;5;241m┃␛[m   
+  ␛[38;5;243m──────────────────────────────────────────────────────␛[38;5;241m┃␛[m   
+                                                        ␛[38;5;241m┃␛[m   
+    ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/.…␛[m  ␛[91mexit 1␛[m  ␛[38;5;241m4.1s┃␛[m   
+      ␛[38;5;245m--- FAIL: TestLoopRounds␛[m                          ␛[38;5;241m┃␛[m   
+      ␛[38;5;245m    loop_test.go:214: want 3 rounds, got 4␛[m        ␛[38;5;241m┃␛[m   
+                                                        ␛[38;5;241m┃␛[m   
+  ␛[94m❯␛[m ␛[97mtry the bound␛[m                                       ␛[38;5;241m┃␛[m   
+  ␛[38;5;243m──────────────────────────────────────────────────────␛[38;5;241m┃␛[m   
+                                                        ␛[38;5;241m┃␛[m   
+    ␛[38;5;214m▎✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agent/loo…␛[m  ␛[92m+2␛[m ␛[91m−0␛[38;5;245m · 1 hunk␛[m      ␛[38;5;241m┃␛[m   
+    ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/.…␛[m  ␛[91mexit 1␛[m  ␛[38;5;241m3.8s┃␛[m   
+      ␛[38;5;245m--- FAIL: TestLoopRounds␛[m                          ␛[38;5;241m┃␛[m   
+      ␛[38;5;245m    loop_test.go:214: want 3 rounds, got 4␛[m        ␛[38;5;241m┃␛[m   
+                                                        ␛[38;5;241m┃␛[m   
   ␛[38;5;243msession · ␛[92m+3␛[m ␛[91m−1␛[m                                           
   ␛[38;5;214m╭─␛[m ␛[38;5;241midle␛[m ␛[38;5;214m───────────────────────────────────────────────╮␛[m  
   ␛[38;5;214m│␛[m ␛[38;5;241m▸␛[m ␛[38;5;252m                                                  ␛[m ␛[38;5;214m│␛[m  
@@ -206,30 +206,30 @@
 · recovered · the suite answers every failure before it
   ␛[97;1m shhh chat␛[m                                                
   ␛[38;5;241m────────────────────────────────────────────────────────␛[m  
-  ␛[94m❯␛[m ␛[97mstop the loop double-counting rounds␛[m                    
-  ␛[38;5;243m──────────────────────────────────────────────────────␛[m    
-                                                            
-    ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgofmt -w internal/agent␛[m      ␛[91mexit 2␛[m          
-    ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgofmt -w internal/ui␛[m         ␛[91mexit 2␛[m          
-    ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgofmt -w internal/cli␛[m        ␛[91mexit 2␛[m          
                                                             
   ␛[94m❯␛[m ␛[97mand get the tests passing␛[m                               
   ␛[38;5;243m──────────────────────────────────────────────────────␛[m    
                                                             
     ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/.…␛[m  ␛[91mexit 1␛[m  ␛[38;5;241m4.2s␛[m    
-      ␛[38;5;245m--- FAIL: TestLoopRounds␛[m                              
-      ␛[38;5;245m    loop_test.go:214: want 3 rounds, got 4␛[m            
-                                                            
-  ␛[94m❯␛[m ␛[97mtry the bound␛[m                                           
-  ␛[38;5;243m──────────────────────────────────────────────────────␛[m    
-                                                            
-    ␛[38;5;214m▎✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agent/loo…␛[m  ␛[92m+2␛[m ␛[91m−0␛[38;5;245m · 1 hunk␛[m          
-    ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/.…␛[m  ␛[91mexit 1␛[m  ␛[38;5;241m3.8s␛[m    
-      ␛[38;5;245m--- FAIL: TestLoopRounds␛[m                              
-      ␛[38;5;245m    loop_test.go:214: want 3 rounds, got 4␛[m            
-    ␛[38;5;214m▎$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mquality gate · default · …␛[m  ␛[38;5;245m2 lines␛[m          
-                                                            
-                                                            
+      ␛[38;5;245m--- FAIL: TestLoopRounds␛[m                          ␛[38;5;241m┃␛[m   
+      ␛[38;5;245m    loop_test.go:214: want 3 rounds, got 4␛[m        ␛[38;5;241m┃␛[m   
+                                                        ␛[38;5;241m┃␛[m   
+  ␛[94m❯␛[m ␛[97mthe count is off by one somewhere␛[m                   ␛[38;5;241m┃␛[m   
+  ␛[38;5;243m──────────────────────────────────────────────────────␛[38;5;241m┃␛[m   
+                                                        ␛[38;5;241m┃␛[m   
+    ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/.…␛[m  ␛[91mexit 1␛[m  ␛[38;5;241m4.1s┃␛[m   
+      ␛[38;5;245m--- FAIL: TestLoopRounds␛[m                          ␛[38;5;241m┃␛[m   
+      ␛[38;5;245m    loop_test.go:214: want 3 rounds, got 4␛[m        ␛[38;5;241m┃␛[m   
+                                                        ␛[38;5;241m┃␛[m   
+  ␛[94m❯␛[m ␛[97mtry the bound␛[m                                       ␛[38;5;241m┃␛[m   
+  ␛[38;5;243m──────────────────────────────────────────────────────␛[38;5;241m┃␛[m   
+                                                        ␛[38;5;241m┃␛[m   
+    ␛[38;5;214m▎✎␛[m ␛[38;5;252medit␛[m    ␛[38;5;252minternal/agent/loo…␛[m  ␛[92m+2␛[m ␛[91m−0␛[38;5;245m · 1 hunk␛[m      ␛[38;5;241m┃␛[m   
+    ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/.…␛[m  ␛[91mexit 1␛[m  ␛[38;5;241m3.8s┃␛[m   
+      ␛[38;5;245m--- FAIL: TestLoopRounds␛[m                          ␛[38;5;241m┃␛[m   
+      ␛[38;5;245m    loop_test.go:214: want 3 rounds, got 4␛[m        ␛[38;5;241m┃␛[m   
+    ␛[38;5;214m▎$␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mquality gate · default · …␛[m  ␛[38;5;245m2 lines␛[m      ␛[38;5;241m┃␛[m   
+                                                        ␛[38;5;241m┃␛[m   
   ␛[38;5;243msession · ␛[92m+3␛[m ␛[91m−1␛[m                                           
   ␛[38;5;214m╭─␛[m ␛[38;5;241midle␛[m ␛[38;5;214m───────────────────────────────────────────────╮␛[m  
   ␛[38;5;214m│␛[m ␛[38;5;241m▸␛[m ␛[38;5;252m                                                  ␛[m ␛[38;5;214m│␛[m  
@@ -238,14 +238,14 @@
 · completed · the turn closes and the rail has no bad news
   ␛[97;1m shhh chat␛[m                                                
   ␛[38;5;241m────────────────────────────────────────────────────────␛[m  
-    ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgofmt -w internal/agent␛[m      ␛[91mexit 2␛[m          
-    ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgofmt -w internal/ui␛[m         ␛[91mexit 2␛[m          
-    ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgofmt -w internal/cli␛[m        ␛[91mexit 2␛[m          
-                                                        ␛[38;5;241m┃␛[m   
-  ␛[94m❯␛[m ␛[97mand get the tests passing␛[m                           ␛[38;5;241m┃␛[m   
-  ␛[38;5;243m──────────────────────────────────────────────────────␛[38;5;241m┃␛[m   
-                                                        ␛[38;5;241m┃␛[m   
-    ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/.…␛[m  ␛[91mexit 1␛[m  ␛[38;5;241m4.2s┃␛[m   
+    ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/.…␛[m  ␛[91mexit 1␛[m  ␛[38;5;241m4.2s␛[m    
+      ␛[38;5;245m--- FAIL: TestLoopRounds␛[m                              
+      ␛[38;5;245m    loop_test.go:214: want 3 rounds, got 4␛[m            
+                                                            
+  ␛[94m❯␛[m ␛[97mthe count is off by one somewhere␛[m                       
+  ␛[38;5;243m──────────────────────────────────────────────────────␛[m    
+                                                            
+    ␛[91m▎✗␛[m ␛[38;5;252mrun␛[m     ␛[38;5;252mgo test ./internal/agent/.…␛[m  ␛[91mexit 1␛[m  ␛[38;5;241m4.1s␛[m    
       ␛[38;5;245m--- FAIL: TestLoopRounds␛[m                          ␛[38;5;241m┃␛[m   
       ␛[38;5;245m    loop_test.go:214: want 3 rounds, got 4␛[m        ␛[38;5;241m┃␛[m   
                                                         ␛[38;5;241m┃␛[m   
