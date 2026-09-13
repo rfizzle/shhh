@@ -304,7 +304,7 @@ func TestBuildAlternatives_KeepsTheExtraLast(t *testing.T) {
 
 func TestBuildReviewerIsBoundedToDeclaredEvidence(t *testing.T) {
 	reviewer := BuildReviewer(shell.Info{OS: "linux", Cwd: "/w"})
-	for _, want := range []string{"task hands you the diff", "Do not re-read repository instructions", "inspection pass is bounded", "direct tests", "report rather than broadening"} {
+	for _, want := range []string{"arrives ahead of your task", "Do not re-read repository instructions", "inspection pass is bounded by a round cap", "direct tests", "report rather than broadening", "say what you did not reach"} {
 		if !strings.Contains(reviewer, want) {
 			t.Fatalf("reviewer prompt lacks %q:\n%s", want, reviewer)
 		}

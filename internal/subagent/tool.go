@@ -77,7 +77,7 @@ func Definitions(profiles Profiles) []provider.Tool {
 					"role": {"type": "string", "enum": ` + string(names) + `, "description": "Which agent profile to run"},
 					"task": {"type": "string", "description": "Complete, self-contained task prompt for the agent"},
 					"name": {"type": "string", "description": "Optional short name (letters, digits, dashes); auto-generated like researcher-1 when omitted"},
-					"paths": {"type": "array", "items": {"type": "string"}, "description": "For agents that change files: the paths or globs this agent may change (e.g. [\"internal/ui/**\", \"README.md\"]). Two concurrent writing agents may not claim overlapping paths — declare them whenever you fan out more than one, so their patches cannot collide.", "maxItems": 32},
+					"paths": {"type": "array", "items": {"type": "string"}, "description": "The paths or globs this agent's work is scoped to (e.g. [\"internal/ui/**\", \"README.md\"]). For an agent that changes files, they are what it may change: two concurrent writing agents may not claim overlapping paths, so declare them whenever you fan out more than one. For a reviewing agent, they are the evidence: it is handed those paths and their diff before its task and reports once it has examined them, so declaring them is what keeps a review from surveying the repository to find the change.", "maxItems": 32},
 					"model": {"type": "string", "description": "Optional model for this agent (defaults to the profile's model, then the configured agent model, then the session model). Use a smaller, cheaper model for wide mechanical work and the session model for reasoning-heavy work."},
 					"steps": {"type": "integer", "description": "Optional number of steps this task breaks into (max 20). Pass it when you can name the steps up front: the agent's lane then shows progress against it instead of a spinner. Leave it out rather than guessing — an invented denominator is worse than none."},
 					"max_rounds": {"type": "integer", "description": "Optional: make the agent pause every N tool rounds to take stock — what it has done, what is left, what it is doing next — before carrying on with a larger budget. Omitted (the default) it runs to completion without pausing, which is what you want for most tasks. Pass it for long open-ended work where an agent quietly drifting off the task would otherwise go unnoticed. It is a pacing choice, not a limit: it never stops the agent, and the token budget is what bounds it."},
@@ -246,8 +246,13 @@ func parseSpawnArgs(profiles Profiles, raw json.RawMessage) (spawnArgs, error) {
 	if len(args.paths) > maxClaimedPaths {
 		return args, fmt.Errorf("too many paths (%d; max %d) — claim directories, not individual files", len(args.paths), maxClaimedPaths)
 	}
-	if !profile.Writes && len(args.paths) > 0 {
-		return args, fmt.Errorf("paths apply to agents that can change files; a %s changes nothing", args.role)
+	// Paths mean one of two things and never both: the files a writer claims
+	// against every other writer, or the evidence a review is handed and
+	// bounded to. A role that neither writes nor reviews has no use for
+	// them, and silently dropping them would leave the caller believing it
+	// had scoped something.
+	if !profile.Writes && !profile.Reviews && len(args.paths) > 0 {
+		return args, fmt.Errorf("paths apply to agents that change files or review them; a %s does neither", args.role)
 	}
 	// A step count outside the useful range is dropped rather than clamped:
 	// the lane's rule is that a denominator nobody supplied is not invented,
@@ -323,7 +328,9 @@ type Spawn struct {
 	// is the session's answer, not the supervisor's.
 	Role Role
 	// Scope is the paths a writer claimed, or the phrase for a child that
-	// changes nothing.
+	// changes nothing. A review's paths never appear here as a scope: the
+	// card answers "what can this change", and paths that are evidence
+	// answer a different question — one the reader would take for the first.
 	Scope string
 	// Writer marks a child that produces a patch; a researcher never does.
 	Writer bool
@@ -343,6 +350,8 @@ func SpawnPlan(profiles Profiles, raw json.RawMessage) (Spawn, error) {
 		Budget: fmt.Sprintf("%s, ~%s new tokens", roundBudgetLabel(args.maxRounds), formatTokens(args.maxTokens)),
 	}
 	switch {
+	case args.profile.Reviews && len(args.paths) > 0:
+		p.Scope = "nothing — it is handed " + strings.Join(args.paths, ", ") + " and reports"
 	case len(args.paths) > 0:
 		p.Scope = strings.Join(args.paths, ", ")
 	case p.Writer:

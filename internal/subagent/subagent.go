@@ -881,6 +881,12 @@ type child struct {
 	// internal/observe, and empty until it does.
 	endReason string
 	checkIns  int
+	// reporting marks a review whose inspection pass is over and which has
+	// been told to write its report. It exists so the round cap can be a
+	// stop for a review and a check-in for everything else without the
+	// stop becoming a loop: the second time a review reaches its cap it has
+	// spent the report allowance too, and it ends there with what it has.
+	reporting bool
 	// steers is what Status.Steers reports and verdict what Status.Verdict
 	// does. They are the child's own copies under this lock rather than
 	// readings of the agent: a status is taken from whichever goroutine asked
@@ -915,6 +921,10 @@ type child struct {
 	// read it, and it is taken once, so a second turn on the same attempt is
 	// the ordinary conversation.
 	prologue string
+	// evidence is a review's declared paths and their diff, held because a
+	// retry is a fresh conversation: an attempt that opens on the task alone
+	// is the unbounded review the second attempt least needs to be.
+	evidence string
 	// Live session surface: transcript entries, the in-flight
 	// assistant text, queued steering messages, and the current turn's
 	// interrupt channel.
@@ -1008,6 +1018,7 @@ func (c *child) status() Status {
 		Setup:     c.setupTokens,
 		Tools:     c.toolResultTokens,
 		Handoff:   estimateReportTokens(c.report),
+		Fresh:     c.fresh,
 	}
 	tokens.Analysis = max(c.fresh-tokens.Inherited-tokens.Setup-tokens.Tools-tokens.Handoff, 0)
 	return Status{
@@ -1054,6 +1065,20 @@ func (c *child) attemptSpend() meter.Totals {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.spend.Total()
+}
+
+// reviewPassOver reports that this child is a review whose inspection pass
+// has just ended and which has not yet been told to report. It is false for
+// every other child — whose cap is a check-in — and false for a review that
+// has already had the directive, so a review that spends its report
+// allowance stops rather than being told to report a second time.
+func (c *child) reviewPassOver() bool {
+	if !c.profile.Reviews {
+		return false
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return !c.reporting
 }
 
 // takePrologue returns what this attempt's first turn opens with and clears
@@ -1325,6 +1350,7 @@ func (c *child) end() observe.ChildEnd {
 		Setup:     c.setupTokens,
 		Tools:     c.toolResultTokens,
 		Handoff:   estimateReportTokens(c.report),
+		Fresh:     c.fresh,
 	}
 	tokens.Analysis = max(c.fresh-tokens.Inherited-tokens.Setup-tokens.Tools-tokens.Handoff, 0)
 	return observe.ChildEnd{
@@ -2045,6 +2071,7 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	// one thing the failed attempt produced.
 	c.mu.Lock()
 	handoff := c.report
+	evidence := c.evidence
 	had := c.maxTokens
 	budget, grew := retryBudget(c.maxTokens, c.budgetHit)
 	// The cap the attempt being replaced grew to, so a retry does not start
@@ -2065,7 +2092,7 @@ func (s *Supervisor) restart(c *child, detail string) error {
 		cancel()
 		return fmt.Errorf("cannot set up the retry: the agent's environment could not be built: %w", preflightErr)
 	}
-	inherited, setup, floor := admissionFloor(preflight, retryPrologue(detail, handoff)+c.task)
+	inherited, setup, floor := admissionFloor(preflight, evidence+retryPrologue(detail, handoff)+c.task)
 	if budget < floor {
 		cancel()
 		return fmt.Errorf("cannot set up the retry: max_tokens %d cannot admit this task; at least %d is required", budget, floor)
@@ -2115,7 +2142,7 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	// differently: the child that died re-reading a large file dies
 	// re-reading it, and the budget the session spent on the second attempt
 	// bought the first one over again.
-	c.prologue = retryPrologue(detail, handoff)
+	c.prologue = evidence + retryPrologue(detail, handoff)
 	// Each attempt is measured against the budget it was spawned with; what
 	// the earlier attempts spent is carried, not forgotten.
 	c.priorSpend = c.priorSpend.Plus(c.spend.Total())
@@ -2124,6 +2151,7 @@ func (s *Supervisor) restart(c *child, detail string) error {
 	c.inheritedTokens, c.setupTokens, c.toolResultTokens = inherited, setup, 0
 	c.admissionFloor = floor
 	c.checkIns = 0
+	c.reporting = false
 	// A retry is a fresh conversation on the same task: no steer has reached
 	// this attempt, whatever the last one was told.
 	c.steers, c.steersAll, c.verdict, c.verdictCode, c.steerFrom = 0, 0, "", "", ""
@@ -2493,7 +2521,15 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 		cancel()
 		return "", fmt.Errorf("the agent's environment could not be built: %w", preflightErr)
 	}
-	inherited, setup, floor := admissionFloor(preflight, args.Task)
+	// A review's evidence is part of what it is admitted for: it arrives in
+	// the child's first turn, so a budget that could not carry it is a
+	// budget that cannot start this review, and finding that out after the
+	// slot is open is the thing admission exists to prevent.
+	evidence := ""
+	if args.profile.Reviews {
+		evidence = declaredEvidence(s.opts.Root, args.paths)
+	}
+	inherited, setup, floor := admissionFloor(preflight, evidence+args.Task)
 	if args.maxTokens < floor {
 		cancel()
 		return "", fmt.Errorf("max_tokens %d cannot admit this task: at least %d is required for the inherited prompt and declared task plus the %d-token working reserve", args.maxTokens, floor, MinChildMaxTokens)
@@ -2508,6 +2544,7 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 		paths:           args.paths,
 		batch:           batch,
 		steps:           args.steps,
+		evidence:        evidence,
 		root:            s.opts.Root,
 		mode:            mode,
 		maxRounds:       args.maxRounds,
@@ -2526,8 +2563,13 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 		prices:          s.opts.Prices,
 		spend:           meter.New(s.opts.Prices),
 	}
+	// The evidence goes ahead of everything else the first turn opens with,
+	// including how a resumed attempt ended: a review that reads the change
+	// before it reads the story of the last try is the ordering the whole
+	// contract is about.
+	c.prologue = evidence
 	if args.resumeHandoff != "" {
-		c.prologue = resumePrologue(resume, s.opts.EvidenceExists)
+		c.prologue += resumePrologue(resume, s.opts.EvidenceExists)
 		s.supersedeHandoff(args.resumeHandoff)
 	}
 	// A reader's workspace is the parent's own root and costs nothing to
@@ -2559,6 +2601,17 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 			note += " It claims " + strings.Join(args.paths, ", ") + "; another writer cannot claim overlapping paths while it runs."
 		} else {
 			note += " It declared no paths, so nothing stops a second writer from touching the same files — pass paths when you fan out writers."
+		}
+	}
+	// The evidence a review opened on, so the caller knows whether it is
+	// judging the change or looking for it. Declaring nothing is worth
+	// saying for the reason an undeclared writer's scope is: the review is
+	// about to spend its pass finding what it was meant to be reading.
+	if args.profile.Reviews {
+		if evidence != "" {
+			note = " It opens on the declared change under " + strings.Join(args.paths, ", ") + " and reports once it has examined it."
+		} else {
+			note = " It declared no paths, so it starts from your task text alone — pass paths and it opens on their diff instead of surveying for the change."
 		}
 	}
 	modelNote := ""
@@ -3068,7 +3121,38 @@ func (s *Supervisor) run(c *child) {
 			continue
 		}
 
-		if errors.Is(err, agent.ErrRoundCap) && c.ctx.Err() == nil {
+		if errors.Is(err, agent.ErrRoundCap) && c.ctx.Err() == nil && c.reviewPassOver() {
+			// A review's cap is the end of its inspection, not a pause in
+			// it. Every other child is asked what it will do next and given
+			// more room to do it; a review has read its declared evidence
+			// and is told to report on that, with only the rounds a report
+			// needs. The conversation is well-formed at a cap — the last
+			// round's results are recorded — so the directive is simply its
+			// next turn.
+			used := c.agent.Rounds()
+			endTurn(observe.TurnCapPaused)
+			// The allowance is the report turn's whole cap, not an increment
+			// on the pass that just ended: a turn starts its round counter at
+			// zero, so adding the rounds already spent would hand the report
+			// a second pass the size of the first — twenty-three rounds of
+			// unrestricted tool calls for a reviewer that had twenty.
+			//
+			// The child's own cap is left where the spawn set it. It is what
+			// a retry starts from, and a retry is owed the inspection pass
+			// again, not the three rounds this attempt had left to write with.
+			c.agent.SetMaxRounds(reviewReportRounds)
+			c.mu.Lock()
+			c.reporting = true
+			c.mu.Unlock()
+			c.appendEntry(TranscriptEntry{Kind: EntrySystem,
+				Text: fmt.Sprintf("Inspection pass over — %d rounds used. Reporting on the declared evidence.", used)})
+			turn = reviewReportDirective
+			c.set(StateRunning, "reporting")
+			s.emitUpdate(c)
+			continue
+		}
+
+		if errors.Is(err, agent.ErrRoundCap) && c.ctx.Err() == nil && !c.profile.Reviews {
 			// The round limit is a check-in, not a stop. The cap is
 			// tested between rounds, after the last round's results were
 			// recorded, so the conversation is already well-formed: the child

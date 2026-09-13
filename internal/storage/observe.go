@@ -301,9 +301,11 @@ func (db *DB) EndChildAgentSession(id int64, outcome string, e observe.ChildEnd)
 	        end_reason = ?, verdict = ?, steers = ?, attempt = ?,
 	        child_budget = ?, child_admission_floor = ?,
 	        child_tokens_inherited = ?, child_tokens_setup = ?,
-	        child_tokens_tools = ?, child_tokens_analysis = ?, child_tokens_handoff = ?`
+	        child_tokens_tools = ?, child_tokens_analysis = ?, child_tokens_handoff = ?,
+	        child_tokens_fresh = ?`
 	args := []any{e.Reason, e.Verdict, e.Steers, e.Attempt, e.Budget, e.AdmissionFloor,
-		e.Tokens.Inherited, e.Tokens.Setup, e.Tokens.Tools, e.Tokens.Analysis, e.Tokens.Handoff}
+		e.Tokens.Inherited, e.Tokens.Setup, e.Tokens.Tools, e.Tokens.Analysis, e.Tokens.Handoff,
+		e.Tokens.Fresh}
 	if outcome != "" {
 		set += `, outcome = ?`
 		args = append(args, outcome)
@@ -1364,7 +1366,7 @@ const agentSessionColumns = `id, started_at, ended_at, kind, provider, model, tu
 		        classifier_model, sandbox_profile, item, stage, config_hash, outcome, rating,
 		        check_in_interval, end_reason, verdict, steers, attempt,
 		        child_budget, child_admission_floor, child_tokens_inherited, child_tokens_setup,
-		        child_tokens_tools, child_tokens_analysis, child_tokens_handoff`
+		        child_tokens_tools, child_tokens_analysis, child_tokens_handoff, child_tokens_fresh`
 
 func scanAgentSession(rows interface{ Scan(...any) error }) (AgentSessionSummary, error) {
 	var (
@@ -1388,6 +1390,7 @@ func scanAgentSession(rows interface{ Scan(...any) error }) (AgentSessionSummary
 		checkInInterval, steers, attempt           sql.NullInt64
 		budget, admissionFloor                     sql.NullInt64
 		inherited, setup, tools, analysis, handoff sql.NullInt64
+		fresh                                      sql.NullInt64
 		endReason, verdict                         sql.NullString
 	)
 	if err := rows.Scan(&s.ID, &startedAt, &endedAt, &s.Kind, &s.Provider, &s.Model,
@@ -1396,7 +1399,8 @@ func scanAgentSession(rows interface{ Scan(...any) error }) (AgentSessionSummary
 		&mode, &reasoning, &maxRounds, &summaryModel, &summaryInterval, &summaryEnabled,
 		&classifierModel, &sandboxProfile, &item, &stage, &configHash, &outcome, &rating,
 		&checkInInterval, &endReason, &verdict, &steers, &attempt,
-		&budget, &admissionFloor, &inherited, &setup, &tools, &analysis, &handoff); err != nil {
+		&budget, &admissionFloor, &inherited, &setup, &tools, &analysis, &handoff,
+		&fresh); err != nil {
 		return s, err
 	}
 	s.Outcome = outcome.String
@@ -1419,7 +1423,8 @@ func scanAgentSession(rows interface{ Scan(...any) error }) (AgentSessionSummary
 			Steers: int(steers.Int64), Attempt: int(attempt.Int64),
 			Budget: budget.Int64, AdmissionFloor: admissionFloor.Int64,
 			Tokens: observe.ChildTokens{Inherited: inherited.Int64, Setup: setup.Int64,
-				Tools: tools.Int64, Analysis: analysis.Int64, Handoff: handoff.Int64},
+				Tools: tools.Int64, Analysis: analysis.Int64, Handoff: handoff.Int64,
+				Fresh: fresh.Int64},
 		}
 	}
 	s.StartedAt, _ = time.Parse(observeTimeFormat, startedAt)

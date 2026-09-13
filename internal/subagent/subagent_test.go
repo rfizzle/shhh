@@ -661,6 +661,19 @@ func TestTokenBudgetCountsFreshTokensNotCachedOnes(t *testing.T) {
 	if st.Spend.In != 300100 || st.Spend.Out != 50 {
 		t.Fatalf("the spend must stay the billed figure, got ↑%d ↓%d", st.Spend.In, st.Spend.Out)
 	}
+	// And the roster reads the budget clock, not the bill: 150 fresh tokens
+	// against 300000, beside the floor the child was admitted at and the
+	// phases the 150 went to. A caller with only the bill cannot tell an
+	// insufficient budget from an over-broad task.
+	if st.Tokens.Fresh != 150 {
+		t.Fatalf("the budget clock reads fresh tokens, got %d", st.Tokens.Fresh)
+	}
+	if st.Budget != 300000 || st.AdmissionFloor <= MinChildMaxTokens {
+		t.Fatalf("the roster states the budget and its floor, got %d and %d", st.Budget, st.AdmissionFloor)
+	}
+	if st.Tokens.Inherited <= 0 || st.Tokens.Setup <= 0 {
+		t.Fatalf("the fixed cost must be attributed to its phases, got %+v", st.Tokens)
+	}
 }
 
 // TestRoundLimitChecksInAndCarriesOn is the heart of it: the round limit

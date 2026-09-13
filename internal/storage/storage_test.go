@@ -48,6 +48,38 @@ func TestMigrate_Idempotent(t *testing.T) {
 	db2.Close()
 }
 
+// A replayed step must not lock the store shut. The repair above rewinds the
+// recorded version and not the schema, so every step after it runs a second
+// time against a database that already has its effect — and a plain ADD
+// COLUMN would fail with "duplicate column name", which is a store nobody can
+// open rather than a migration nobody needed.
+func TestMigrate_ReplaysAnAddedColumnWithoutFailing(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "test.db")
+	db, err := OpenPath(path)
+	if err != nil {
+		t.Fatalf("open complete store: %v", err)
+	}
+	if _, err := db.sql.Exec(`DELETE FROM schema_version WHERE version = ?`, len(migrations)); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	db, err = OpenPath(path)
+	if err != nil {
+		t.Fatalf("reopen after a replayed step: %v", err)
+	}
+	defer db.Close()
+	var recorded int
+	if err := db.sql.QueryRow(`SELECT COUNT(*) FROM schema_version WHERE version = ?`, len(migrations)).Scan(&recorded); err != nil {
+		t.Fatal(err)
+	}
+	if recorded != 1 {
+		t.Fatalf("the replayed step was recorded %d times, want 1", recorded)
+	}
+}
+
 func TestMigrate_ChatSessionReferenceAlreadyAdded(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "test.db")
 	db, err := OpenPath(path)

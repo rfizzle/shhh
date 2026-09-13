@@ -424,6 +424,14 @@ const (
 // See docs/capabilities/sessions-and-memory.md#a-child-ends-for-a-reason.
 type ChildTokens struct {
 	Inherited, Setup, Tools, Analysis, Handoff int64
+	// Fresh is the provider-reported total the budget was measured against.
+	// It is kept beside the split rather than summed from it because the
+	// split does not have to add up: the phases are estimated, Analysis is
+	// whatever is left over, and a leftover cannot go negative — so a child
+	// whose estimates overshot its real intake reports phases summing past a
+	// total it never reached. Reading the budget off the sum turned that
+	// into a child that looks to have overspent a budget it came in under.
+	Fresh int64
 }
 
 type ChildEnd struct {

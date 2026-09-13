@@ -60,6 +60,14 @@ type AgentDefinition struct {
 	PromptFile string `toml:"prompt_file"`
 	// PromptMode is "append" (the default) or "replace".
 	PromptMode string `toml:"prompt_mode"`
+	// Reviews marks a profile whose declared paths are the change it is
+	// judging rather than files it may change. Such an agent is handed those
+	// paths and their diff ahead of its task and is stopped at its round cap
+	// with a report, so it examines the declared evidence instead of
+	// surveying the repository to find it. Only a profile that changes
+	// nothing may set it: a claim and a reading of the same paths are
+	// opposite meanings for one field.
+	Reviews bool `toml:"reviews"`
 	// MaxTokens is the default token budget for a spawn that names none;
 	// zero means the built-in default.
 	MaxTokens int64 `toml:"max_tokens"`
@@ -199,6 +207,9 @@ func (d AgentDefinition) Validate() error {
 	}
 	if strings.EqualFold(strings.TrimSpace(d.PromptMode), PromptReplace) && strings.TrimSpace(d.Prompt) == "" {
 		return fmt.Errorf("prompt_mode = \"replace\" needs a prompt to replace the base with")
+	}
+	if d.Reviews && d.Writes() {
+		return fmt.Errorf("reviews: a profile that may write or execute claims its paths; it cannot also be handed them as evidence")
 	}
 	if d.MaxTokens < 0 {
 		return fmt.Errorf("max_tokens: must not be negative")

@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"regexp"
+	"strings"
 	"time"
 
 	sqlite "modernc.org/sqlite"
@@ -495,6 +497,14 @@ var migrations = []string{
 		created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 	);
 	CREATE INDEX IF NOT EXISTS idx_child_handoffs_session ON child_handoffs(child_session_id);`,
+
+	// The fresh-token total the phase columns beside it were split out of.
+	// The split is estimates and a remainder, so it does not have to add up,
+	// and a report that summed the columns to get the total said a child had
+	// overspent a budget it came in under. Nullable like the rest: a row
+	// written before this column ran under a total nobody recorded, and a
+	// zero would read as a child that took nothing in.
+	`ALTER TABLE agent_sessions ADD COLUMN child_tokens_fresh INTEGER;`,
 }
 
 const (
@@ -588,7 +598,7 @@ func (db *DB) migrate() error {
 // and record the step instead.
 func migrationStatement(ctx context.Context, conn *sql.Conn, current int) (string, error) {
 	if current+1 != chatSessionIDMigration {
-		return migrations[current], nil
+		return skipAddedColumn(ctx, conn, migrations[current])
 	}
 	var present bool
 	if err := conn.QueryRowContext(ctx, `SELECT EXISTS (
@@ -600,6 +610,35 @@ func migrationStatement(ctx context.Context, conn *sql.Conn, current int) (strin
 		return migrationChatSessionIDBackfill, nil
 	}
 	return migrations[current], nil
+}
+
+// addColumnStep matches a migration that is one `ALTER TABLE t ADD COLUMN c`
+// and nothing else, capturing the table and the column.
+var addColumnStep = regexp.MustCompile(
+	`(?is)\AALTER\s+TABLE\s+([A-Za-z_][A-Za-z0-9_]*)\s+ADD\s+COLUMN\s+([A-Za-z_][A-Za-z0-9_]*)\b[^;]*;?\s*\z`)
+
+// skipAddedColumn turns a single ADD COLUMN step into a no-op when the column
+// is already there. Every step from the repaired one onwards can be replayed
+// against a store that already has its effect — the repair rewinds the
+// recorded version, not the schema — and SQLite has no `ADD COLUMN IF NOT
+// EXISTS`, so a bare ALTER fails with "duplicate column name" and the store
+// cannot be opened at all. Only the single-statement form is recognised: a
+// step that does several things is not made half-idempotent behind the
+// author's back.
+func skipAddedColumn(ctx context.Context, conn *sql.Conn, statement string) (string, error) {
+	m := addColumnStep.FindStringSubmatch(strings.TrimSpace(statement))
+	if m == nil {
+		return statement, nil
+	}
+	var present bool
+	if err := conn.QueryRowContext(ctx,
+		`SELECT EXISTS (SELECT 1 FROM pragma_table_info(?) WHERE name = ?)`, m[1], m[2]).Scan(&present); err != nil {
+		return "", fmt.Errorf("check column %s.%s: %w", m[1], m[2], err)
+	}
+	if present {
+		return `SELECT 1`, nil
+	}
+	return statement, nil
 }
 
 // openRetries bounds how many times a fresh opener tries the migration again

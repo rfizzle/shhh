@@ -101,6 +101,7 @@ func profileFromDefinition(def config.AgentDefinition) (subagent.Profile, error)
 		Name:        subagent.Role(def.Name),
 		Description: def.Description,
 		Writes:      def.Writes(),
+		Reviews:     def.Reviews,
 		MaxTokens:   def.MaxTokens,
 		MaxRounds:   def.MaxRounds,
 	}

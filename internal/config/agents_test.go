@@ -134,6 +134,7 @@ func TestLoadAgentsRejectsBadFiles(t *testing.T) {
 		{"bad toml", "a.toml", `= =`, "a.toml"},
 		{"negative budget", "a.toml", `max_tokens = -1`, "max_tokens"},
 		{"undersized default budget", "a.toml", `max_tokens = 200000`, "at least 300000"},
+		{"reviewing writer", "a.toml", "reviews = true\npermissions = [\"write\"]", "cannot also be handed them"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

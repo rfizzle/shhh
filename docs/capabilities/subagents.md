@@ -143,11 +143,32 @@ A child that would have asked states the assumption it made instead, in its
 report, where the session — and the person — can read it and disagree
 ([`coding-agent.md`](coding-agent.md#nobody-to-ask)).
 
-A reviewer is bounded by the evidence it is given, not merely by its prompt:
-the caller supplies the declared paths or diff before it starts, and its
-inspection pass is limited by its round cap. It reads that evidence and its
-direct tests before reporting; it does not survey unrelated files or reread
-repository-wide instructions first.
+## A review is bounded by what it is given
+
+A review that has to find the change before it can read it spends its budget
+on the search. Asking it not to did not hold: told to read the declared files
+first, it read the repository's instructions and surveyed the tree around the
+change, and reached its budget with the diff still unread.
+
+So the bound is in what a review receives and where it is stopped, not in what
+it is asked. Declare a review's paths and it opens on them: the paths and the
+workspace change under them arrive ahead of its task, so the first thing it
+reads is the change. Those paths reserve nothing — two reviews of the same
+change are the ordinary case, and only a writer's paths are a claim against
+other agents. A review with no declared paths opens on its task alone, which is
+the caller carrying the diff in the task text itself.
+
+The evidence is part of what the review is admitted for. It is measured with
+the inherited prompt and the task, so a budget that could not carry the change
+is refused at the spawn rather than discovered halfway through reading it. An
+oversized diff is truncated and says so, which is a reviewer that knows it saw
+part of the change.
+
+The inspection pass ends at the review's round cap. Every other child treats
+that cap as a check-in — it takes stock and carries on with more room — and a
+review does not: it is told to report on the evidence it examined, with only
+the rounds a report needs, and to name what it did not reach. A review that
+spends those too stops with what it has rather than opening a wider pass.
 
 ## What comes back says what happened to it
 
@@ -202,7 +223,8 @@ costs is counted too, in the session's spend ledger and against its cap.
 A normal child defaults to 300,000 tokens. A call may name no less than
 200,000, but this is not a promise that every 200,000-token call starts: before
 a slot, worktree or record row exists, the inherited prompt and tool definitions
-plus the declared task are estimated and added to a 200,000-token working
+plus the declared task — and, for a review, the evidence it opens on — are
+estimated and added to a 200,000-token working
 reserve. The requested budget must meet that admission floor. Profiles define
 role defaults, so their defaults cannot be below 300,000. The roster and the
 record retain the effective budget, admission floor, and the tokens attributed

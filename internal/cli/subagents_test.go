@@ -54,6 +54,23 @@ func TestAgentProfilesReaders(t *testing.T) {
 	}
 }
 
+// A drafted reviewer is the one people actually write, so the bounded-review
+// contract has to survive the trip from a profile file to the supervisor.
+func TestProfileFromDefinitionCarriesTheReviewContract(t *testing.T) {
+	p, err := profileFromDefinition(config.AgentDefinition{
+		Name: "critic", Reviews: true, MaxTokens: 300_000, MaxRounds: 20,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !p.Reviews || p.Writes {
+		t.Fatalf("a drafted reviewer must be handed its paths, not claim them: %+v", p)
+	}
+	if p, err := profileFromDefinition(config.AgentDefinition{Name: "scribe"}); err != nil || p.Reviews {
+		t.Fatalf("an ordinary profile reviews nothing: %+v %v", p, err)
+	}
+}
+
 // A writer starts from the parent's tree, and the half of that tree git
 // cannot describe is the files the session made itself. The session's own
 // record is what names them: a checkout is full of untracked files nobody in

@@ -32,6 +32,13 @@ type Profile struct {
 	// parent's mode.
 	Mode    agent.Mode
 	HasMode bool
+	// Reviews marks a child whose declared paths are evidence rather than a
+	// write claim: it is handed those paths and their diff before its task,
+	// nothing is reserved against other agents on its behalf, and its round
+	// cap ends the inspection in a report instead of widening it. Only a
+	// profile that changes nothing can carry it — a claim and a reading of
+	// the same paths are opposite meanings for one field.
+	Reviews bool
 	// MaxTokens and MaxRounds are the defaults for a spawn that names
 	// neither; zero means the package defaults.
 	MaxTokens int64
@@ -55,11 +62,16 @@ func BuiltinProfiles() Profiles {
 		},
 		RoleReviewer: {
 			Name:        RoleReviewer,
-			Description: "reviews a change for correctness and clarity; reads only, changes nothing",
+			Description: "reviews a change for correctness and clarity; reads only, changes nothing; declare its paths and it opens on their diff",
 			Mode:        agent.ModePlan,
 			HasMode:     true,
+			Reviews:     true,
 			MaxTokens:   DefaultMaxTokens,
-			MaxRounds:   20,
+			// Twenty rounds is the inspection pass: the declared diff arrives
+			// with the task, so the rounds are spent on the files it touches
+			// and their tests rather than on finding the change. It is a stop
+			// and not a check-in — reviewReportDirective is what follows it.
+			MaxRounds: 20,
 		},
 	}
 }
