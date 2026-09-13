@@ -427,24 +427,78 @@ func TestSet_LSPConfig(t *testing.T) {
 
 func TestAgentModelResolution(t *testing.T) {
 	cfg := Config{}
-	if got := cfg.AgentModel("writer", "session-model"); got != "session-model" {
+	if got := cfg.AgentModel("writer", 0, "session-model"); got != "session-model" {
 		t.Errorf("unset config should inherit the session model, got %q", got)
 	}
 	cfg.Agents.Model = "agents-default"
-	if got := cfg.AgentModel("writer", "session-model"); got != "agents-default" {
+	if got := cfg.AgentModel("writer", 0, "session-model"); got != "agents-default" {
 		t.Errorf("agents.model should apply, got %q", got)
 	}
 	cfg.Agents.Profiles = map[string]AgentProfile{"researcher": {Model: "cheap-model"}}
-	if got := cfg.AgentModel("researcher", "session-model"); got != "cheap-model" {
+	if got := cfg.AgentModel("researcher", 0, "session-model"); got != "cheap-model" {
 		t.Errorf("the role profile should win, got %q", got)
 	}
-	if got := cfg.AgentModel("writer", "session-model"); got != "agents-default" {
+	if got := cfg.AgentModel("writer", 0, "session-model"); got != "agents-default" {
 		t.Errorf("a role without a profile falls back to agents.model, got %q", got)
 	}
 	// "inherit" at any level falls through to the session model.
 	cfg.Agents.Profiles["writer"] = AgentProfile{Model: "inherit"}
-	if got := cfg.AgentModel("writer", "session-model"); got != "session-model" {
+	if got := cfg.AgentModel("writer", 0, "session-model"); got != "session-model" {
 		t.Errorf("inherit should fall through to the session model, got %q", got)
+	}
+}
+
+// A depth's default sits under the role's and over the agents-wide one, so a
+// session can send delegation downwards and get cheaper without taking a
+// model away from a role somebody chose one for.
+func TestAgentModelResolvesADepthsOwnDefault(t *testing.T) {
+	cfg := Config{}
+	cfg.Agents.Model = "agents-default"
+	cfg.Agents.Depths = map[string]AgentDepth{"2": {Model: "children-here"}, "3": {Model: "grandchildren-here"}}
+
+	if got := cfg.AgentModel("writer", 2, "session-model"); got != "children-here" {
+		t.Errorf("depth 2 runs on %q, want its own entry", got)
+	}
+	if got := cfg.AgentModel("writer", 3, "session-model"); got != "grandchildren-here" {
+		t.Errorf("depth 3 runs on %q, want its own entry", got)
+	}
+	// A depth nobody wrote an entry for inherits, which is what keeps a
+	// config that has never heard of depth behaving as it did.
+	if got := cfg.AgentModel("writer", 4, "session-model"); got != "agents-default" {
+		t.Errorf("an unconfigured depth runs on %q, want the agents-wide default", got)
+	}
+	// The role is above the depth: a role somebody chose a model for takes it
+	// wherever in the tree it runs.
+	cfg.Agents.Profiles = map[string]AgentProfile{"reviewer": {Model: "the-reviewers-own"}}
+	for _, depth := range []int{2, 3} {
+		if got := cfg.AgentModel("reviewer", depth, "session-model"); got != "the-reviewers-own" {
+			t.Errorf("the reviewer at depth %d runs on %q, want its own model", depth, got)
+		}
+	}
+	// And a caller with no depth in hand skips the layer rather than
+	// matching the zero key.
+	cfg.Agents.Depths["0"] = AgentDepth{Model: "never-this"}
+	if got := cfg.AgentModel("writer", 0, "session-model"); got != "agents-default" {
+		t.Errorf("depth zero asks about no level and read %q", got)
+	}
+}
+
+// The limit itself, and the two values that mean "nobody set one".
+func TestAgentMaxDepth(t *testing.T) {
+	cfg := Config{}
+	if got := cfg.AgentMaxDepth(); got != DefaultMaxDepth {
+		t.Errorf("an unset max_depth is %d, want %d", got, DefaultMaxDepth)
+	}
+	cfg.Agents.MaxDepth = 2
+	if got := cfg.AgentMaxDepth(); got != 2 {
+		t.Errorf("max_depth = 2 read back as %d", got)
+	}
+	// A depth below one would refuse the session its own children, which
+	// nothing can mean, so it reads as unset rather than as a session that
+	// cannot delegate at all.
+	cfg.Agents.MaxDepth = 0
+	if got := cfg.AgentMaxDepth(); got != DefaultMaxDepth {
+		t.Errorf("max_depth = 0 is %d, want the default", got)
 	}
 }
 
@@ -454,6 +508,8 @@ func TestSetAgentAndReadOnlyKeys(t *testing.T) {
 		{"agents.model", "haiku"},
 		{"agents.profiles.researcher.model", "tiny"},
 		{"agents.max_concurrent", "5"},
+		{"agents.max_depth", "2"},
+		{"agents.depth.3.model", "cheap"},
 		{"behavior.read_only_commands", "make lint, bazel query"},
 		{"behavior.read_only_auto", "false"},
 	} {
@@ -466,6 +522,9 @@ func TestSetAgentAndReadOnlyKeys(t *testing.T) {
 	}
 	if cfg.Agents.MaxConcurrent != 5 {
 		t.Errorf("max_concurrent = %d, want 5", cfg.Agents.MaxConcurrent)
+	}
+	if cfg.Agents.MaxDepth != 2 || cfg.Agents.Depths["3"].Model != "cheap" {
+		t.Errorf("the depth keys were not set: %+v", cfg.Agents)
 	}
 	if len(cfg.Behavior.ReadOnlyCommands) != 2 {
 		t.Errorf("read_only_commands = %v", cfg.Behavior.ReadOnlyCommands)
@@ -959,7 +1018,7 @@ func TestSet_AnyRoleModelRoundTrips(t *testing.T) {
 		if err := Set(&cfg, "agents.profiles."+role+".model", "claude-haiku-4-5"); err != nil {
 			t.Fatal(err)
 		}
-		if got := cfg.AgentModel(role, "session-model"); got != "claude-haiku-4-5" {
+		if got := cfg.AgentModel(role, 0, "session-model"); got != "claude-haiku-4-5" {
 			t.Fatalf("%s model = %q", role, got)
 		}
 	}

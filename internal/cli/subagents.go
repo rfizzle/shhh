@@ -152,9 +152,16 @@ func (a *agentProfiles) effortFor(role subagent.Role, session provider.Effort) p
 	return effort
 }
 
-// modelFor is the model a child runs on: the spawn's own request, then the
-// profile file's, then the [agents] config layer, then the session model.
-func (a *agentProfiles) modelFor(cfg config.Config, role subagent.Role, requested, sessionModel string) string {
+// modelFor is the model an agent at a depth runs on: the spawn's own
+// request, then the profile file's, then the [agents] config layer — the
+// role's own entry, then the depth's, then the agents-wide default — and
+// last the session model.
+//
+// The profile file is above every config layer for the reason it is above
+// the role's own config entry: a file that names a model is a role somebody
+// wrote a model into, and it takes that model wherever in the tree it runs.
+// See docs/capabilities/subagents.md#the-model-a-depth-runs-on.
+func (a *agentProfiles) modelFor(cfg config.Config, role subagent.Role, depth int, requested, sessionModel string) string {
 	if requested != "" {
 		return requested
 	}
@@ -165,7 +172,7 @@ func (a *agentProfiles) modelFor(cfg config.Config, role subagent.Role, requeste
 			}
 		}
 	}
-	return cfg.AgentModel(string(role), sessionModel)
+	return cfg.AgentModel(string(role), depth, sessionModel)
 }
 
 // withNotebook wires a child into the session's shared notebook: the two
@@ -187,6 +194,42 @@ func withNotebook(nb *notebook.Store, name string, defs []provider.Tool, base ag
 	defs = append(defs, notebook.Definitions()...)
 	base = nb.WrapExecutor(name, base)
 	return defs, base, prompt.CombineExtra(sysPrompt, notebook.PromptBlock(nb.List()))
+}
+
+// withDelegation puts the orchestration tools on a child that has a level
+// below it, so a task with parts can be split one level down the way it is
+// at the top. The wrap takes the child's own name: that is what is written
+// as the parent of anything it spawns, and what bounds the other three tools
+// to the agents this one started.
+// See docs/capabilities/subagents.md#a-child-may-delegate-to-a-configured-depth.
+//
+// A child at the deepest level is handed none of them rather than a spawn
+// that always refuses. The refusal exists and is what a race or a caller in
+// code meets, but a tool a child can only ever be told no by is a round and
+// a schema it pays for and can never use — the same reason the web tools
+// appear only where the session has them.
+//
+// The four are one grant, named by either of the two the profile format
+// lists. An agent that could start a child but not collect it would spend a
+// slot on a report it can never read, and one that could collect but not
+// spawn has nothing to collect; splitting them buys a profile author no
+// choice worth having.
+func withDelegation(sup *subagent.Supervisor, agents *agentProfiles, def config.AgentDefinition,
+	spec subagent.Spec, defs []provider.Tool, base agent.ToolExecutor, gated map[string]bool) (
+	[]provider.Tool, agent.ToolExecutor) {
+	if sup == nil || spec.Depth >= sup.MaxDepth() {
+		return defs, base
+	}
+	if !def.Allows(subagent.SpawnToolName) && !def.Allows(subagent.ReportToolName) {
+		return defs, base
+	}
+	defs = append(defs, subagent.Definitions(agents.profiles)...)
+	// Starting an agent is a decision wherever it is taken, so a child's
+	// spawn is carded like its commands and its edits and reaches the person
+	// the same way. The other three start nothing and are auto-run, as they
+	// are for the session (docs/capabilities/subagents.md#spawning-is-a-decision).
+	gated[subagent.SpawnToolName] = true
+	return defs, sup.WrapExecutor(spec.Name, base)
 }
 
 // withSessionTools puts on a child everything the session shares with every
@@ -419,6 +462,12 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 	if agents == nil {
 		agents = &agentProfiles{profiles: subagent.BuiltinProfiles()}
 	}
+	// The supervisor a child delegates through is the session's own, and
+	// newEnv is what puts it on a child's chain — but newEnv is built here
+	// and the supervisor is built from it, so the two are tied together
+	// afterwards. Nothing reads it before the first spawn, which cannot
+	// happen until New has returned.
+	var sup *subagent.Supervisor
 	// The project's instruction files, read once for the session and handed
 	// to every child that follows. They are read from disk and rendered
 	// against a budget that walks the whole set; doing that inside newEnv
@@ -474,6 +523,13 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 				gated[web.FetchToolName] = true
 			}
 		}
+		// And what this child may delegate, if anything. It goes on after
+		// both role branches because the web branch replaces the executor
+		// rather than wrapping it and the gate branch wraps what the web
+		// branch left, so a delegation wrap installed before either would
+		// disappear and the call would come back an unknown tool — the trap
+		// the quality gate's own ordering already answers.
+		defs, base = withDelegation(sup, agents, agents.definitions[string(role)], spec, defs, base, gated)
 		defs, base, sysPrompt, keepResult := withSessionTools(session, red, spec.Name, croot, defs, base, sysPrompt)
 
 		// Approved non-exec gated calls: file mutations dispatch through their
@@ -615,7 +671,7 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 		}, nil
 	}
 
-	return subagent.New(ctx, subagent.Options{
+	sup = subagent.New(ctx, subagent.Options{
 		Root:   root,
 		NewEnv: newEnv,
 		// The same table the session ledger bills against, so a child's own
@@ -681,11 +737,12 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 		// Children get the same auto-mode classifier the parent uses, so an
 		// auto-mode session does not turn into one prompt per child command.
 		Classifier: classifier,
-		ModelFor: func(role subagent.Role, requested string) string {
-			return agents.modelFor(cfg, role, requested, env.modelName)
+		ModelFor: func(role subagent.Role, depth int, requested string) string {
+			return agents.modelFor(cfg, role, depth, requested, env.modelName)
 		},
 		Profiles:      agents.profiles,
 		MaxConcurrent: cfg.Agents.MaxConcurrent,
+		MaxDepth:      cfg.AgentMaxDepth(),
 		// Children answer to the parent's working scope on top of
 		// their own worktree, which is where their file edits are already
 		// pinned (RootArgs). This is what stops a child *command* writing
@@ -706,6 +763,7 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			return err == nil
 		},
 	})
+	return sup
 }
 
 // sessionUntracked lists the files the session itself created that git does

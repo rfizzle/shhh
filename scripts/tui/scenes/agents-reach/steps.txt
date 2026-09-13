@@ -5,10 +5,11 @@
 # What the capture is for: the map is somewhere to go from. The trailer under
 # the block names the manager, the chord and the pointer; a child waiting on
 # an answer is drawn directly under the orchestrator whatever order it was
-# spawned in; and a child that failed says so on its own line. Both doors the
-# trailer names are driven here — the chord that walks the map, and the key
-# that opens the manager — so the row is proof of the keys rather than a
-# sentence about them.
+# spawned in; a child a child spawned is drawn a column in behind the corner;
+# and a child that failed says so on its own line. Both doors the trailer
+# names are driven here — the chord that walks the map, and the key that opens
+# the manager — so the row is proof of the keys rather than a sentence about
+# them.
 setup printf 'package agent\n\nfunc loop() {\n    for round := 0; round < limit; round++ {\n        step()\n    }\n}\n' > loop.go
 snap 01-start "Some things worth doing first"
 keys "survey the round accounting" Enter
@@ -20,51 +21,71 @@ keys y
 sleep 1
 keys y
 sleep 3
+# One of the writers hands a part of its own task down, and the card for that
+# is the person's the way the session's three were: starting an agent is a
+# decision wherever in the tree it is taken
+# (docs/capabilities/subagents.md#a-child-may-delegate-to-a-configured-depth).
+# Every other agent is still reading here, so this card is the one at the
+# front of the queue rather than one of four racing for it.
+snap 03-delegates "spawn_agent"
+keys y
+sleep 3
+# And the level the session did not ask for, on the map: the grandchild under
+# the agent that spawned it, a column in behind the corner.
+snap 04-nested "reader-3a"
 # Everything then asks to run a command at once: the session's own request is
 # a card of its own, and the children's are routed here to be answered. The
 # queue counter is what says how many are standing behind this one.
-snap 03-routed "DECISION"
+snap 05-routed "DECISION"
 # The session's own is declined, which leaves the routed ones — and a routed
 # request nobody has answered is what makes a child blocked.
 keys n
 sleep 3
-snap 04-blocked "waiting approval"
+snap 06-blocked "waiting approval"
 # The manager is the door the trailer names for acting rather than reading:
 # one child is killed here, which is the failure the map then carries.
 keys M-a
-snap 05-manager "[enter] attach"
+snap 07-manager "[enter] attach"
 keys j
 keys X
-snap 06-kill-asks "Its turn stops"
+snap 08-kill-asks "Its turn stops"
 keys y
 sleep 1
-snap 07-killed "[enter] attach"
+snap 09-killed "[enter] attach"
 # Attaching to a session that is not the one asking is what puts the rail back
-# with the map whole: the block floated to the top, the failure under it, and
-# the trailer naming the way out.
+# with the map whole: the block floated to the top, the failure under it, the
+# grandchild indented under its own parent, and the trailer naming the way
+# out. The session attached to here is the grandchild itself, three rows down
+# the manager's list, so the frame's breadcrumb is the lineage as well.
+keys j
 keys j
 keys j
 keys Enter
 sleep 1
-snap 08-map "alt+a manager"
+snap 10-map "alt+a manager"
 # The chord itself, twice: it walks spawn order rather than the order the map
-# is drawn in, so from the last child it wraps to the orchestrator and then
-# reaches the first — which is the failed one, not the blocked one the map
-# draws at the top. The breadcrumb on the frame is where the keyboard says
-# where it ended up.
+# is drawn in, and from the grandchild — the last thing spawned, and the
+# deepest — it walks up past its own parent and wraps to the session itself.
+# Where it ended up is the map's own pointer, which is what the trailer
+# promised the key would move.
 keys M-]
+sleep 1
 keys M-]
-snap 09-chord "orchestrator ▸ writer-1"
+sleep 1
+snap 11-chord "❯ ⊘ orchestrator"
 keys Escape
 sleep 1
 # The one routed request still standing, answered from the session it was
 # routed to: the card holds nothing until it is taken, so the chord that takes
 # it comes first.
-snap 10-still-waiting "answer it"
+snap 12-still-waiting "answer it"
 keys C-Space
 keys n
 sleep 2
+snap 13-next-card "DECISION"
+keys n
+sleep 2
 keys C-c
-snap 11-quit-armed "again quits"
+snap 14-quit-armed "again quits"
 keys C-c
-snap 12-exit "that is everything the screen was holding"
+snap 15-exit "that is everything the screen was holding"

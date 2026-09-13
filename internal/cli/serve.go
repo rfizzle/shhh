@@ -535,7 +535,7 @@ func openServeLoop(cmd *cobra.Command, opts serveOpts, db *storage.DB, p rpc.Sta
 		func(name string, args json.RawMessage) bool {
 			return gate(provider.ToolCall{Name: name, Arguments: string(args)})
 		},
-		hook.Executor(repeats.WrapExecutor(sup.WrapExecutor(ts.executor(session)))))))
+		hook.Executor(repeats.WrapExecutor(sup.WrapExecutor("", ts.executor(session)))))))
 
 	// The unattended run's approver, opted in, is what a call the client
 	// allowed is run through — so the deny list, the containment refusal, the

@@ -214,7 +214,7 @@ func TestConfigSet_ReviewerModelRoundTrips(t *testing.T) {
 	runRoot(t, "config", "set", "agents.profiles.reviewer.model", "claude-haiku-4-5")
 	cfg, err := config.LoadFrom(path)
 	must(t, err)
-	if got := cfg.AgentModel("reviewer", "session-model"); got != "claude-haiku-4-5" {
+	if got := cfg.AgentModel("reviewer", 0, "session-model"); got != "claude-haiku-4-5" {
 		t.Fatalf("reviewer model = %q", got)
 	}
 }

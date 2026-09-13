@@ -26,7 +26,7 @@ func key(r rune) tea.KeyPressMsg { return tea.KeyPressMsg{Code: r, Text: string(
 // is cancelled, so it stays observable as "running".
 func spawnBlockedChild(t *testing.T, sup *subagent.Supervisor) {
 	t.Helper()
-	exec := sup.WrapExecutor(nil)
+	exec := sup.WrapExecutor("", nil)
 	if _, err := exec(subagent.SpawnToolName, json.RawMessage(`{"role":"researcher","task":"long survey"}`)); err != nil {
 		t.Fatal(err)
 	}
@@ -41,7 +41,7 @@ func spawnBlockedChild(t *testing.T, sup *subagent.Supervisor) {
 // sessions without racing the supervisor.
 func spawnChild(t *testing.T, sup *subagent.Supervisor, role subagent.Role, name string) {
 	t.Helper()
-	exec := sup.WrapExecutor(nil)
+	exec := sup.WrapExecutor("", nil)
 	args := json.RawMessage(fmt.Sprintf(`{"role":%q,"task":"long survey"}`, role))
 	if _, err := exec(subagent.SpawnToolName, args); err != nil {
 		t.Fatal(err)

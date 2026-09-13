@@ -114,7 +114,7 @@ func askSpawn(ctx context.Context, row Row) Answer {
 		}
 	}()
 
-	exec := sup.WrapExecutor(func(name string, _ json.RawMessage) (string, error) {
+	exec := sup.WrapExecutor("", func(name string, _ json.RawMessage) (string, error) {
 		return "", fmt.Errorf("%s is not a tool a spawn case registers", name)
 	})
 	spawned, err := exec(subagent.SpawnToolName, scriptedArgs(map[string]any{

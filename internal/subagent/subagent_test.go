@@ -278,7 +278,7 @@ func newTestSupervisor(t *testing.T, env *scriptedEnv) *Supervisor {
 
 func execTool(t *testing.T, sup *Supervisor, name, args string) string {
 	t.Helper()
-	exec := sup.WrapExecutor(func(string, json.RawMessage) (string, error) {
+	exec := sup.WrapExecutor("", func(string, json.RawMessage) (string, error) {
 		return "", errors.New("unexpected passthrough")
 	})
 	out, err := exec(name, json.RawMessage(args))
@@ -329,7 +329,7 @@ func TestSpawnAndReport(t *testing.T) {
 
 func TestReportUnknownAgent(t *testing.T) {
 	sup := newTestSupervisor(t, &scriptedEnv{})
-	exec := sup.WrapExecutor(nil)
+	exec := sup.WrapExecutor("", nil)
 	if _, err := exec(ReportToolName, json.RawMessage(`{"name":"ghost"}`)); err == nil {
 		t.Fatal("expected an error for an unknown agent")
 	}
@@ -337,7 +337,7 @@ func TestReportUnknownAgent(t *testing.T) {
 
 func TestSpawnValidation(t *testing.T) {
 	sup := newTestSupervisor(t, &scriptedEnv{})
-	exec := sup.WrapExecutor(nil)
+	exec := sup.WrapExecutor("", nil)
 	if _, err := exec(SpawnToolName, json.RawMessage(`{"role":"admin","task":"x"}`)); err == nil {
 		t.Fatal("expected an error for an unknown role")
 	}
@@ -1263,7 +1263,7 @@ func TestSteerDuringFinalStreamStartsNextTurn(t *testing.T) {
 
 // spawnRaw calls spawn_agent and returns its error instead of failing.
 func spawnRaw(sup *Supervisor, args string) (string, error) {
-	exec := sup.WrapExecutor(func(string, json.RawMessage) (string, error) {
+	exec := sup.WrapExecutor("", func(string, json.RawMessage) (string, error) {
 		return "", errors.New("unexpected passthrough")
 	})
 	return exec(SpawnToolName, json.RawMessage(args))
@@ -1463,7 +1463,7 @@ func TestChildModelResolution(t *testing.T) {
 			mu.Unlock()
 			return base(ctx, spec)
 		},
-		ModelFor: func(role Role, requested string) string {
+		ModelFor: func(role Role, _ int, requested string) string {
 			if requested != "" {
 				return requested
 			}
@@ -2083,7 +2083,7 @@ func TestSteerToolRefusesAFinishedChildByName(t *testing.T) {
 	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the exporter"}`)
 	waitFor(t, func() bool { return statusOf(t, sup, "researcher-1").State == StateDone })
 
-	exec := sup.WrapExecutor(func(string, json.RawMessage) (string, error) {
+	exec := sup.WrapExecutor("", func(string, json.RawMessage) (string, error) {
 		return "", errors.New("unexpected passthrough")
 	})
 	_, err := exec(SteerToolName, json.RawMessage(`{"name":"researcher-1","message":"read the exporter"}`))

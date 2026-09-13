@@ -17,6 +17,7 @@ package config
 
 import (
 	"fmt"
+	"reflect"
 	"sort"
 	"strings"
 )
@@ -121,21 +122,23 @@ func scaffoldOutranks(s Setting) string {
 // scaffoldLines is the key itself: the commented default, and above it an
 // uncommented line for every value cfg already holds.
 //
-// A per-role key is the one key with a segment the person chooses, so it is
-// written once per role the config names and once more as the shape a new
-// role takes, with the role quoted — a placeholder in a bare key would be a
+// A wildcard key has a segment the person chooses, so it is written once per
+// segment the config already names and once more as the shape a new one
+// takes, with the segment quoted — a placeholder in a bare key would be a
 // line that does not parse the moment somebody uncomments it.
 func scaffoldLines(cfg Config, s Setting) []string {
 	name := strings.TrimPrefix(s.Key, s.Group()+".")
 	if strings.Contains(s.Key, RoleWildcard) {
+		shown := strings.TrimPrefix(s.shown(), s.Group()+".")
+		placeholder := "<" + s.Wild + ">"
 		var out []string
-		for _, role := range scaffoldRoles(cfg, s.Key) {
-			key := strings.Replace(s.Key, RoleWildcard, role, 1)
-			if line, ok := scaffoldSet(cfg, key, quoteSegment(strings.TrimPrefix(key, s.Group()+"."), role)); ok {
+		for _, seg := range scaffoldSegments(cfg, s.Key) {
+			key := strings.Replace(s.Key, RoleWildcard, seg, 1)
+			if line, ok := scaffoldSet(cfg, key, quoteSegment(strings.TrimPrefix(key, s.Group()+"."), seg)); ok {
 				out = append(out, line)
 			}
 		}
-		return append(out, "#"+quoteSegment(strings.Replace(name, RoleWildcard, roleShown, 1), roleShown)+" = "+scaffoldLiteral(s))
+		return append(out, "#"+quoteSegment(shown, placeholder)+" = "+scaffoldLiteral(s))
 	}
 	if line, ok := scaffoldSet(cfg, s.Key, name); ok {
 		return []string{line}
@@ -162,23 +165,32 @@ func scaffoldSet(cfg Config, key, name string) (string, bool) {
 	return name + " = " + lit, true
 }
 
-// scaffoldRoles is the roles this config names a model for, in a settled
+// scaffoldSegments is the segments this config already names a value under —
+// the roles of a per-role key, the levels of a per-depth one — in a settled
 // order so two runs of the command write the same file.
-func scaffoldRoles(cfg Config, key string) []string {
+//
+// The segments are read off the config's own table rather than from a list
+// of known names, so a key added here needs nothing added there: the walk
+// stops at the map the wildcard indexes and asks it what it holds.
+func scaffoldSegments(cfg Config, key string) []string {
+	path := strings.Split(key, ".")
+	at := 0
+	for ; at < len(path) && path[at] != RoleWildcard; at++ {
+	}
+	table, ok := fieldAt(reflect.ValueOf(cfg), path[:at])
+	if !ok || table.Kind() != reflect.Map {
+		return nil
+	}
 	var out []string
-	for role := range cfg.Agents.Profiles {
-		if _, set := Value(cfg, strings.Replace(key, RoleWildcard, role, 1)); set {
-			out = append(out, role)
+	for _, k := range table.MapKeys() {
+		seg, _ := k.Interface().(string)
+		if _, set := Value(cfg, strings.Replace(key, RoleWildcard, seg, 1)); set {
+			out = append(out, seg)
 		}
 	}
 	sort.Strings(out)
 	return out
 }
-
-// roleShown is how the per-role key's chosen segment is written on the line
-// nobody has filled in: the word the person replaces, rather than the `*`
-// the table matches keys against.
-const roleShown = "<role>"
 
 // quoteSegment quotes the chosen segment of a per-role key. `<role>` is not
 // a bare key and neither is a role somebody named with a dot in it, so the

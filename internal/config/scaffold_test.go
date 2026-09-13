@@ -140,6 +140,26 @@ func TestScaffold_APerRoleModelIsWrittenPerRoleAndAsItsShape(t *testing.T) {
 	}
 }
 
+// The second key with a chosen segment. What the segment is called is the
+// entry's own, so the depth key leaves `<depth>` rather than `<role>` and the
+// levels this config names are written out under their own numbers.
+func TestScaffold_APerDepthModelNamesItsOwnSegment(t *testing.T) {
+	cfg := Config{}
+	if err := Set(&cfg, "agents.depth.3.model", "haiku"); err != nil {
+		t.Fatal(err)
+	}
+	text := Scaffold(cfg, false)
+	if !strings.Contains(text, "depth.\"3\".model = \"haiku\"") {
+		t.Error("the scaffold did not write the depth this config names")
+	}
+	if !strings.Contains(text, "#depth.\"<depth>\".model") {
+		t.Error("the scaffold did not leave the shape a new depth takes")
+	}
+	if strings.Contains(text, "depth.\"<role>\"") {
+		t.Error("the depth key was written with the role key's placeholder")
+	}
+}
+
 func TestScaffold_EveryKeyCarriesTheSentenceThatSaysWhatItDecides(t *testing.T) {
 	prose := commentProse(Scaffold(Config{}, false))
 	for _, s := range settings {

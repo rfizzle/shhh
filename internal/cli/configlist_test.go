@@ -2,6 +2,7 @@ package cli
 
 import (
 	"encoding/json"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -268,4 +269,59 @@ func mustLookup(t *testing.T, key string) config.Setting {
 		t.Fatalf("%s is not a setting", key)
 	}
 	return s
+}
+
+// The two keys with a chosen segment are filled in from two different
+// places, and a screen that filled the depth key from the role list would
+// offer `agents.depth.researcher.model` — a key nothing reads.
+func TestConfigEntries_TheDepthKeyIsFilledInWithDepths(t *testing.T) {
+	var cfg config.Config
+	cfg.Agents.MaxDepth = 4
+	if err := config.Set(&cfg, "agents.profiles.archaeologist.model", "haiku"); err != nil {
+		t.Fatal(err)
+	}
+	var depths, roles []string
+	for _, s := range configEntries(cfg) {
+		switch {
+		case strings.HasPrefix(s.Key, "agents.depth."):
+			depths = append(depths, s.Key)
+		case strings.HasPrefix(s.Key, "agents.profiles."):
+			roles = append(roles, s.Key)
+		}
+	}
+	want := []string{"agents.depth.2.model", "agents.depth.3.model", "agents.depth.4.model"}
+	if !slices.Equal(depths, want) {
+		t.Errorf("the depth rows are %v, want %v", depths, want)
+	}
+	// Depth 1 is the session itself, which the agents table does not set.
+	if slices.Contains(depths, "agents.depth.1.model") {
+		t.Error("the screen offers a model for the session's own depth")
+	}
+	// And the role key still takes roles, the file's own among them.
+	if !slices.Contains(roles, "agents.profiles.archaeologist.model") ||
+		!slices.Contains(roles, "agents.profiles.reviewer.model") {
+		t.Errorf("the role rows are %v", roles)
+	}
+}
+
+// The depth rows are ordered by the number and not by the text, or `10`
+// would come between the session and its children.
+func TestConfigEntries_TheDepthRowsAreInNumericOrder(t *testing.T) {
+	var cfg config.Config
+	cfg.Agents.MaxDepth = 11
+	var depths []string
+	for _, s := range configEntries(cfg) {
+		if strings.HasPrefix(s.Key, "agents.depth.") {
+			depths = append(depths, s.Key)
+		}
+	}
+	want := []string{
+		"agents.depth.2.model", "agents.depth.3.model", "agents.depth.4.model",
+		"agents.depth.5.model", "agents.depth.6.model", "agents.depth.7.model",
+		"agents.depth.8.model", "agents.depth.9.model", "agents.depth.10.model",
+		"agents.depth.11.model",
+	}
+	if !slices.Equal(depths, want) {
+		t.Errorf("the depth rows are %v, want %v", depths, want)
+	}
 }

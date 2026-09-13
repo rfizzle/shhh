@@ -473,7 +473,7 @@ func TestTheParentCanRetryAFailedChildWithoutSpendingASlot(t *testing.T) {
 func TestTheRetryToolRefusesWhatTheSupervisorRefuses(t *testing.T) {
 	sup := New(context.Background(), Options{Root: t.TempDir(), NewEnv: blockedForeverEnv()})
 	t.Cleanup(sup.Close)
-	exec := sup.WrapExecutor(nil)
+	exec := sup.WrapExecutor("", nil)
 
 	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"long survey"}`)
 	waitState(t, sup, "researcher-1", StateRunning)

@@ -175,7 +175,7 @@ func TestAgentRowsAndBadge(t *testing.T) {
 	t.Cleanup(sup.Close)
 	m := newSubagentModel(t, sup)
 
-	exec := sup.WrapExecutor(nil)
+	exec := sup.WrapExecutor("", nil)
 	if _, err := exec(subagent.SpawnToolName, json.RawMessage(`{"role":"researcher","task":"long survey"}`)); err != nil {
 		t.Fatal(err)
 	}

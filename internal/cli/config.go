@@ -670,35 +670,86 @@ func builtinRoles() []string {
 	}
 }
 
-// configEntries is the settings table with the per-role keys resolved. Every
-// other key is one entry; `agents.profiles.<role>.model` is one per role,
-// because the table declares the shape and the roles are the person's.
+// configEntries is the settings table with the wildcard keys resolved. Every
+// other key is one entry; a key with a chosen segment is one entry per
+// segment there could be a row for, because the table declares the shape and
+// what fills it is the person's.
 func configEntries(cfgs ...config.Config) []config.Setting {
-	roles := builtinRoles()
-	var extra []string
-	for _, c := range cfgs {
-		for role := range c.Agents.Profiles {
-			if !slices.Contains(roles, role) && !slices.Contains(extra, role) {
-				extra = append(extra, role)
-			}
-		}
-	}
-	sort.Strings(extra)
-	roles = append(roles, extra...)
-
-	out := make([]config.Setting, 0, len(config.Settings())+len(roles))
+	out := make([]config.Setting, 0, len(config.Settings()))
 	for _, s := range config.Settings() {
 		if !strings.Contains(s.Key, config.RoleWildcard) {
 			out = append(out, s)
 			continue
 		}
-		for _, role := range roles {
+		for _, seg := range configSegments(s, cfgs...) {
 			entry := s
-			entry.Key = strings.Replace(s.Key, config.RoleWildcard, role, 1)
+			entry.Key = strings.Replace(s.Key, config.RoleWildcard, seg, 1)
 			out = append(out, entry)
 		}
 	}
 	return out
+}
+
+// configSegments is what a wildcard key's chosen segment can be on this
+// screen. What the segment is called is the entry's own, so the two keys
+// that have one are answered from two different places: a role from the
+// three built-in ones plus whatever the files name, and a level of
+// delegation from the ones the depth limit allows to exist. Both list the
+// rows a person could set even where nothing sets them, for the reason the
+// roles always did — a screen that offers one and not its siblings reads as
+// the others not being settable.
+func configSegments(s config.Setting, cfgs ...config.Config) []string {
+	switch s.Wild {
+	case config.WildDepth:
+		// The levels an agent can sit at: everything below the session, up
+		// to whatever the limit allows, plus any the file already names —
+		// a depth somebody set a model for keeps its row even after they
+		// lower the limit past it, or the value would be invisible.
+		depths := depthsTo(nil, config.DefaultMaxDepth)
+		for _, c := range cfgs {
+			depths = depthsTo(depths, c.AgentMaxDepth())
+			for depth := range c.Agents.Depths {
+				if !slices.Contains(depths, depth) {
+					depths = append(depths, depth)
+				}
+			}
+		}
+		// By the number and not by the text: sorted as strings, `10` would
+		// come between the session and its children.
+		sort.Slice(depths, func(i, j int) bool {
+			a, aErr := strconv.Atoi(depths[i])
+			b, bErr := strconv.Atoi(depths[j])
+			if aErr != nil || bErr != nil {
+				return depths[i] < depths[j]
+			}
+			return a < b
+		})
+		return depths
+	default:
+		roles := builtinRoles()
+		var extra []string
+		for _, c := range cfgs {
+			for role := range c.Agents.Profiles {
+				if !slices.Contains(roles, role) && !slices.Contains(extra, role) {
+					extra = append(extra, role)
+				}
+			}
+		}
+		sort.Strings(extra)
+		return append(roles, extra...)
+	}
+}
+
+// depthsTo adds every level between the session and max to depths, as the
+// file spells them. The session's own level is not one of them: `[agents]`
+// configures agents, and the session is not one.
+func depthsTo(depths []string, max int) []string {
+	for at := subagent.SessionDepth + 1; at <= max; at++ {
+		if d := strconv.Itoa(at); !slices.Contains(depths, d) {
+			depths = append(depths, d)
+		}
+	}
+	return depths
 }
 
 // configLabel is what a row is called. The curated names below say what the

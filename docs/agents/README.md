@@ -30,10 +30,11 @@ read-only researcher named after the file.
 |-------|---------|
 | `name` | The role name. Defaults to the file's stem; a value that differs from it is an error. Lowercase letters, digits, dashes, up to 24 characters. |
 | `description` | One line on what the agent is for. The orchestrating model reads this when choosing a role, so write it for the model. |
-| `model` | Model to run on. Empty or `"inherit"` defers to `[agents]` in `config.toml`, then the session model. A `spawn_agent` call naming a model outranks all of them. |
+| `model` | Model to run on. Empty or `"inherit"` defers to `[agents]` in `config.toml` — the level of delegation's own `[agents.depth.<n>] model` first, then `[agents] model` — and last to the session model. A `spawn_agent` call naming a model outranks all of them, and a profile that names one takes it at every depth: the role is above the depth, so a role somebody chose a model for keeps it wherever in the tree it runs. |
 | `reasoning` | `"off"`, `"low"`, `"medium"`, `"high"`, or `"inherit"` (default) for the session's live level. |
 | `permissions` | Tiers granted: `"read"` (always on: the file tools, and `quality_gate` where the checkout declares suites — running the project's own checks is a read of its health, not a command), `"write"` (`write_file`, `edit_file`), `"execute"` (`execute_command`), `"web"` (`web_fetch`, `web_search` — only when the session has them). Write or execute puts the agent in an isolated worktree; its changes come back as a patch. |
-| `tools` | Allowlist of tool names within the granted tiers. Empty means every tool the tiers allow. Naming a tool whose tier is not granted is an error. Valid names: `read_file`, `list_directory`, `search`, `glob`, `quality_gate`, `write_file`, `edit_file`, `execute_command`, `web_fetch`, `web_search`. |
+| `tools` | Allowlist of tool names within the granted tiers. Empty means every tool the tiers allow. Naming a tool whose tier is not granted is an error. Valid names: `read_file`, `list_directory`, `search`, `glob`, `quality_gate`, `spawn_agent`, `agent_report`, `write_file`, `edit_file`, `execute_command`, `web_fetch`, `web_search`. |
+| `max_depth` | Not a profile field — it is `[agents] max_depth` in `config.toml`, and it is how deep delegation goes, counting the session itself as 1. The default is 3: this session, its children, and theirs. An agent at the deepest level is handed no delegation tools, and a spawn that would open a level past it is refused naming the depth and the key. |
 | `mode` | Permission mode the agent starts in: `"manual"`, `"accept-edits"`, `"auto"`, `"plan"`. Empty inherits the parent's. Always clamped to the parent's mode — a profile can be stricter, never looser. |
 | `prompt` | The agent's instructions. Appended to a base prompt built from the permissions (environment, tools, working style, final-report contract), or from `reviews` where that is set. |
 | `prompt_file` | Path to a file whose contents are the prompt; relative paths resolve against the profile's directory. Not with `prompt`. |
@@ -45,7 +46,10 @@ read-only researcher named after the file.
 ## What a profile cannot do
 
 - Grant a child more than its parent. Modes are clamped, the working scope is
-  inherited, and the sandbox deny mask still applies.
+  inherited, and the sandbox deny mask still applies. The same holds one level
+  further down: an agent that changes nothing may delegate an agent that
+  changes nothing, and a descendant starts in its spawner's mode — see
+  [`../capabilities/subagents.md`](../capabilities/subagents.md#a-child-may-delegate-to-a-configured-depth).
 - Skip approval. Gated tools — commands, file edits, `web_fetch`, the spawn
   itself — ask the way they always do, subject to the mode.
 - Add tools shhh does not have. The web tools appear only when the session

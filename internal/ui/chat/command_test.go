@@ -206,7 +206,7 @@ func TestAttachCommand_SteersAChildMidTurn(t *testing.T) {
 	m := newSubagentModel(t, sup)
 	m = sendText(t, m, "do the task")
 
-	exec := sup.WrapExecutor(nil)
+	exec := sup.WrapExecutor("", nil)
 	if _, err := exec(subagent.SpawnToolName, json.RawMessage(`{"role":"researcher","task":"long survey"}`)); err != nil {
 		t.Fatal(err)
 	}
@@ -259,7 +259,7 @@ func TestAttachCommand_HopsBetweenAgentsWhileAttached(t *testing.T) {
 	m := newSubagentModel(t, sup)
 	m = sendText(t, m, "do the task")
 
-	exec := sup.WrapExecutor(nil)
+	exec := sup.WrapExecutor("", nil)
 	for _, task := range []string{"survey one", "survey two"} {
 		if _, err := exec(subagent.SpawnToolName, json.RawMessage(`{"role":"researcher","task":"`+task+`"}`)); err != nil {
 			t.Fatal(err)

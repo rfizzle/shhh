@@ -8,6 +8,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -621,23 +622,71 @@ type AgentsConfig struct {
 	Model string `toml:"model"`
 	// Profiles override per role ("researcher", "writer"), keyed by role name.
 	Profiles map[string]AgentProfile `toml:"profiles"`
-	// MaxConcurrent bounds simultaneously running children (default 3).
+	// MaxConcurrent bounds simultaneously running children at one level of
+	// delegation (default 3), so a session's running total is this many per
+	// depth rather than this many altogether
+	// (docs/capabilities/subagents.md#a-wait-only-ever-points-down-the-tree).
 	MaxConcurrent int `toml:"max_concurrent"`
+	// MaxDepth is the deepest level of delegation that may exist, counting
+	// the session itself as 1: 3 is the orchestrator, its children and
+	// theirs. Zero is unset and means DefaultMaxDepth.
+	// See docs/capabilities/subagents.md#a-child-may-delegate-to-a-configured-depth.
+	MaxDepth int `toml:"max_depth"`
+	// Depths override per level of delegation, keyed by the depth as the
+	// file writes it: "2" is a child of the session, "3" a child of that.
+	// It is a map keyed by a string rather than a slice indexed by the
+	// number because the file writes `[agents.depth.2]` — a named table,
+	// the same shape Profiles has and read by the same key walk.
+	Depths map[string]AgentDepth `toml:"depth"`
 }
+
+// DefaultMaxDepth is the depth that stands when agents.max_depth is unset:
+// the session, a child, and a child of that. The third level is where a
+// delegated review or research pass lives; the fourth is where a run stops
+// being something a person can follow.
+// See docs/capabilities/subagents.md#a-child-may-delegate-to-a-configured-depth.
+const DefaultMaxDepth = 3
 
 // AgentProfile is one role's overrides.
 type AgentProfile struct {
 	Model string `toml:"model"`
 }
 
+// AgentDepth is one level of delegation's overrides.
+type AgentDepth struct {
+	Model string `toml:"model"`
+}
+
 // InheritModel is the model name that defers to the session model.
 const InheritModel = "inherit"
 
-// AgentModel resolves the model for a sub-agent role: the role profile wins,
-// then the agents-wide default, then the session model. "inherit" at any
-// level falls through to the session model.
-func (c Config) AgentModel(role, sessionModel string) string {
-	for _, candidate := range []string{c.Agents.Profiles[role].Model, c.Agents.Model} {
+// AgentMaxDepth is the deepest level of delegation this config allows,
+// counting the session as 1. Below 1 is a config that would refuse the
+// session its own children, which nothing can mean, so it reads as unset.
+func (c Config) AgentMaxDepth() int {
+	if c.Agents.MaxDepth < 1 {
+		return DefaultMaxDepth
+	}
+	return c.Agents.MaxDepth
+}
+
+// AgentModel resolves the model for a sub-agent role at a depth: the role
+// profile wins, then that depth's own default, then the agents-wide default,
+// then the session model. "inherit" at any level falls through to the session
+// model.
+//
+// The role is above the depth because a profile with a model is a role
+// somebody chose a model for, and it takes that model wherever it runs; a
+// depth default is what stands for everything nobody chose one for. Depth
+// zero asks about no particular level and skips that layer, which is what a
+// caller with no depth in hand wants.
+// See docs/capabilities/subagents.md#the-model-a-depth-runs-on.
+func (c Config) AgentModel(role string, depth int, sessionModel string) string {
+	atDepth := ""
+	if depth > 0 {
+		atDepth = c.Agents.Depths[strconv.Itoa(depth)].Model
+	}
+	for _, candidate := range []string{c.Agents.Profiles[role].Model, atDepth, c.Agents.Model} {
 		candidate = strings.TrimSpace(candidate)
 		switch {
 		case candidate == "":

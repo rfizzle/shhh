@@ -1075,3 +1075,141 @@ func TestAChildsFetchDoesNotMeetTheMutationSeam(t *testing.T) {
 		t.Fatalf("the result was rewritten by a seam that should not have fired: %q", got)
 	}
 }
+
+// A child is handed the orchestration tools only where it has a level below
+// it, so what it can reach for is what the depth limit will actually let it
+// do rather than a schema it pays for and is always refused.
+func TestDelegationToolsReachAChildWithALevelBelowIt(t *testing.T) {
+	sup := subagent.New(t.Context(), subagent.Options{
+		Root:     t.TempDir(),
+		MaxDepth: 3,
+		NewEnv: func(context.Context, subagent.Spec) (subagent.Env, error) {
+			return subagent.Env{}, nil
+		},
+	})
+	t.Cleanup(sup.Close)
+	agents := &agentProfiles{profiles: subagent.BuiltinProfiles()}
+
+	for _, tc := range []struct {
+		name    string
+		depth   int
+		def     config.AgentDefinition
+		offered bool
+	}{
+		{"a child of the session", 2, config.AgentDefinition{Name: "critic"}, true},
+		{"the deepest level", 3, config.AgentDefinition{Name: "critic"}, false},
+		{"a profile that named the spawn", 2,
+			config.AgentDefinition{Name: "critic", Tools: []string{"read_file", config.SpawnAgentTool}}, true},
+		{"a profile that named the collection", 2,
+			config.AgentDefinition{Name: "critic", Tools: []string{"read_file", config.ReportAgentTool}}, true},
+		{"a profile whose allowlist leaves them out", 2,
+			config.AgentDefinition{Name: "critic", Tools: []string{"read_file", "search"}}, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			gated := map[string]bool{}
+			spec := subagent.Spec{Name: "critic-1", Depth: tc.depth}
+			defs, exec := withDelegation(sup, agents, tc.def, spec, nil, nil, gated)
+			names := toolsetNames(defs)
+			if got := containsString(names, subagent.SpawnToolName); got != tc.offered {
+				t.Fatalf("%s was offered the spawn = %v, want %v (%v)", tc.name, got, tc.offered, names)
+			}
+			if !tc.offered {
+				if exec != nil {
+					t.Error("an agent with nothing to delegate to had its executor wrapped")
+				}
+				if gated[subagent.SpawnToolName] {
+					t.Error("an agent with no spawn had it gated")
+				}
+				return
+			}
+			// The four travel together: an agent that can start a child can
+			// collect, redirect and re-run it.
+			for _, want := range []string{subagent.SpawnToolName, subagent.ReportToolName,
+				subagent.SteerToolName, subagent.RetryToolName} {
+				if !containsString(names, want) {
+					t.Errorf("%s is missing from a delegating agent's toolset: %v", want, names)
+				}
+			}
+			// Starting an agent is a decision wherever it is taken; the other
+			// three start nothing and are auto-run.
+			if !gated[subagent.SpawnToolName] {
+				t.Error("a child's spawn is not gated, so it would start an agent nobody approved")
+			}
+			for _, auto := range []string{subagent.ReportToolName, subagent.SteerToolName, subagent.RetryToolName} {
+				if gated[auto] {
+					t.Errorf("%s was gated; it starts nothing and has no card to put to anyone", auto)
+				}
+			}
+			// And the wrap is the supervisor's, under this child's own name:
+			// a call through it reaches the roster rather than falling through
+			// to a dispatcher that has never heard of the tool.
+			out, err := exec(subagent.ReportToolName, json.RawMessage(`{}`))
+			if err != nil {
+				t.Fatalf("the delegation wrap did not reach the supervisor: %v", err)
+			}
+			if !strings.Contains(out, "spawned no agents") {
+				t.Errorf("the roster a fresh child reads is %q", out)
+			}
+		})
+	}
+}
+
+// The profile format names the two tools in `config`, which cannot import
+// `subagent` — it is a leaf and the tool names belong to the package that
+// registers them. So the two spellings are held equal here, in the package
+// that has both: a profile allowlist naming a tool the child never gets
+// would be a file that validates and does nothing.
+func TestTheProfileFormatSpellsTheDelegationToolsTheWayTheyAreRegistered(t *testing.T) {
+	if config.SpawnAgentTool != subagent.SpawnToolName {
+		t.Errorf("a profile names %q and the supervisor registers %q", config.SpawnAgentTool, subagent.SpawnToolName)
+	}
+	if config.ReportAgentTool != subagent.ReportToolName {
+		t.Errorf("a profile names %q and the supervisor registers %q", config.ReportAgentTool, subagent.ReportToolName)
+	}
+}
+
+// A supervisor is never nil in a session, but a surface that builds none
+// hands a child no way to delegate rather than a panic.
+func TestDelegationToolsAreAbsentWithoutASupervisor(t *testing.T) {
+	defs, exec := withDelegation(nil, &agentProfiles{}, config.AgentDefinition{Name: "critic"},
+		subagent.Spec{Name: "critic-1", Depth: 2}, nil, nil, map[string]bool{})
+	if len(defs) != 0 || exec != nil {
+		t.Fatalf("a session with no supervisor offered %v", toolsetNames(defs))
+	}
+}
+
+// The model an agent runs on, layer by layer, through the function the
+// supervisor actually asks.
+func TestModelForLayersTheCallTheRoleTheDepthAndTheSession(t *testing.T) {
+	cfg := config.Config{}
+	cfg.Agents.Model = "agents-default"
+	cfg.Agents.Depths = map[string]config.AgentDepth{"3": {Model: "grandchildren-here"}}
+	agents := &agentProfiles{definitions: map[string]config.AgentDefinition{
+		"critic": {Name: "critic", Model: "the-critics-own"},
+	}}
+
+	for _, tc := range []struct {
+		name      string
+		role      string
+		depth     int
+		requested string
+		want      string
+	}{
+		{"the call outranks everything", "critic", 3, "asked-for", "asked-for"},
+		{"a profile file's model at any depth", "critic", 3, "", "the-critics-own"},
+		{"the depth's own default", "writer", 3, "", "grandchildren-here"},
+		{"a depth with no entry falls to the agents default", "writer", 2, "", "agents-default"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			got := agents.modelFor(cfg, subagent.Role(tc.role), tc.depth, tc.requested, "session-model")
+			if got != tc.want {
+				t.Errorf("modelFor(%s, depth %d) = %q, want %q", tc.role, tc.depth, got, tc.want)
+			}
+		})
+	}
+	// And with nothing configured anywhere, the session's own.
+	bare := &agentProfiles{}
+	if got := bare.modelFor(config.Config{}, subagent.RoleWriter, 2, "", "session-model"); got != "session-model" {
+		t.Errorf("an unconfigured child runs on %q, want the session model", got)
+	}
+}

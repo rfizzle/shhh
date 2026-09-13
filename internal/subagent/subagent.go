@@ -51,10 +51,27 @@ const (
 // Hard budgets and bounds. Concurrency and per-child budgets are deliberately
 // bounded: a runaway parent cannot fan out or spend without limit.
 const (
-	// DefaultMaxConcurrent children run at once; further spawns queue.
+	// DefaultMaxConcurrent children run at once at one level of delegation;
+	// further spawns queue. It is per depth rather than per session because
+	// a descendant that queued behind its own ancestor would wait for an
+	// agent that is waiting for it
+	// (docs/capabilities/subagents.md#a-wait-only-ever-points-down-the-tree).
 	DefaultMaxConcurrent = 3
-	// MaxChildren caps how many children one session may spawn in total.
+	// MaxChildren caps how many children one session may spawn in total,
+	// wherever in the tree they were spawned.
 	MaxChildren = 16
+	// DefaultMaxDepth is how deep delegation goes when nothing configures
+	// it, counting the session as depth 1: the orchestrator, its children,
+	// and theirs. SessionDepth is the session's own.
+	// See docs/capabilities/subagents.md#a-child-may-delegate-to-a-configured-depth.
+	DefaultMaxDepth = 3
+	// SessionDepth is the depth of the session itself, which every child's
+	// depth is counted up from: a child of the session is at 2.
+	SessionDepth = 1
+	// MaxDepthKey is the config key that sets the limit, named in the
+	// refusal so a reader is told what to change rather than that they
+	// cannot do this.
+	MaxDepthKey = "agents.max_depth"
 	// DefaultMaxRounds leaves a child's tool rounds unbounded. The
 	// limit used to be a hard stop, and a child that reached one failed with
 	// its work half done and nothing to hand over — the one outcome worse
@@ -533,10 +550,20 @@ type Spec struct {
 	// fan-out bills several children at once, and what a child spends is
 	// only attributable if the thing building its environment knows which
 	// child it is building for.
-	Name  string
-	Role  Role
-	Root  string
-	Model string
+	Name string
+	Role Role
+	Root string
+	// Parent is the agent that spawned this one, and "" for a child of the
+	// session itself. Depth is how far down that puts it, counting the
+	// session as SessionDepth: a child of the session is at 2, its own
+	// child at 3. Both are in the spec because what the runtime gives a
+	// child turns on them — the delegation tools are on a child that has a
+	// level below it and off one that does not, and a depth can carry its
+	// own default model.
+	// See docs/capabilities/subagents.md#a-child-may-delegate-to-a-configured-depth.
+	Parent string
+	Depth  int
+	Model  string
 	// Paths is the writer's declared write scope, so its prompt can say what
 	// it may touch while other agents work elsewhere; nil means unscoped.
 	Paths []string
@@ -641,16 +668,20 @@ type Options struct {
 	// user instead, which is what made auto-mode children prompt for every
 	// command they ran.
 	Classifier *agent.Classifier
-	// ModelFor resolves a child's model from its role and the model the
-	// spawn call asked for (empty when it asked for none). Nil means every
-	// child runs on the session model.
-	ModelFor func(role Role, requested string) string
+	// ModelFor resolves a child's model from its role, the depth it will run
+	// at and the model the spawn call asked for (empty when it asked for
+	// none). Nil means every child runs on the session model.
+	ModelFor func(role Role, depth int, requested string) string
 	// Profiles is the set of roles a spawn may name; nil means the two
 	// built-in ones.
 	Profiles Profiles
-	// MaxConcurrent bounds simultaneously running children; <= 0 uses
-	// DefaultMaxConcurrent.
+	// MaxConcurrent bounds simultaneously running children at one depth;
+	// <= 0 uses DefaultMaxConcurrent.
 	MaxConcurrent int
+	// MaxDepth is the deepest an agent may sit, counting the session as
+	// SessionDepth; <= 0 uses DefaultMaxDepth. A spawn that would open a
+	// level past it is refused before anything is claimed for it.
+	MaxDepth int
 	// LoadHandoff resolves an opaque handoff handle for an explicit replacement
 	// spawn. It is nil where the session has no durable store.
 	LoadHandoff func(handle string) ([]byte, error)
@@ -796,8 +827,14 @@ func (a *Ask) Answered() (approved, ok bool) {
 // child is one sub-agent: an internal/agent instance plus its runtime and
 // live status.
 type child struct {
-	name     string
-	parent   string // spawning agent's name; "" means the orchestrator
+	name   string
+	parent string // spawning agent's name; "" means the orchestrator
+	// depth is how far under the session this child sits, counting the
+	// session as SessionDepth. It is stored rather than walked up the
+	// parent links on each reading because it decides which set of
+	// concurrency slots the child draws from, which is read on a path where
+	// the supervisor's lock is not held.
+	depth    int
 	role     Role
 	task     string
 	profile  Profile  // what the role means: worktree, patch, mode, budgets
@@ -1481,7 +1518,15 @@ type Supervisor struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 	events chan Event
-	sem    chan struct{}
+
+	// sems is one set of concurrency slots per depth, made on first use and
+	// keyed by the depth that draws from it. Slots are held per depth so
+	// that a descendant queues behind other agents at its own level and
+	// never behind its own ancestor — which is half of what keeps a tree of
+	// agents from waiting on itself forever
+	// (docs/capabilities/subagents.md#a-wait-only-ever-points-down-the-tree).
+	semsMu sync.Mutex
+	sems   map[int]chan struct{}
 
 	mu       sync.Mutex
 	children []*child
@@ -1517,6 +1562,9 @@ func New(ctx context.Context, opts Options) *Supervisor {
 	if opts.MaxConcurrent <= 0 {
 		opts.MaxConcurrent = DefaultMaxConcurrent
 	}
+	if opts.MaxDepth <= 0 {
+		opts.MaxDepth = DefaultMaxDepth
+	}
 	if opts.Profiles == nil {
 		opts.Profiles = BuiltinProfiles()
 	}
@@ -1526,7 +1574,7 @@ func New(ctx context.Context, opts Options) *Supervisor {
 		ctx:          sctx,
 		cancel:       cancel,
 		events:       make(chan Event, 64),
-		sem:          make(chan struct{}, opts.MaxConcurrent),
+		sems:         map[int]chan struct{}{},
 		byName:       map[string]*child{},
 		counters:     map[Role]int{},
 		parentMode:   agent.ModeManual,
@@ -2098,6 +2146,7 @@ func (s *Supervisor) restart(c *child, detail string) error {
 
 	cctx, cancel := context.WithCancel(s.ctx)
 	preflight, preflightErr := s.opts.NewEnv(cctx, Spec{Name: c.name, Role: c.role, Root: s.opts.Root,
+		Parent: c.parent, Depth: c.depth,
 		Model: c.model, Paths: c.paths, Worktree: c.profile.Writes, MaxTokens: budget, Attempt: attempt})
 	if preflightErr != nil {
 		cancel()
@@ -2305,29 +2354,116 @@ func (s *Supervisor) Close() {
 	})
 }
 
-// WrapExecutor intercepts the orchestration tools on the parent session's
-// executor chain; every other call passes through.
-func (s *Supervisor) WrapExecutor(next agent.ToolExecutor) agent.ToolExecutor {
+// WrapExecutor intercepts the orchestration tools on one agent's executor
+// chain; every other call passes through. caller is the agent doing the
+// calling — "" for the session itself, and a child's own name where the
+// chain being wrapped is a child's, the way the web toolset and the notebook
+// take the name of whoever is calling them.
+//
+// The caller is what makes delegation a tree rather than a flat roster: it
+// is written as the spawned child's parent, and it bounds what the other
+// three tools can reach to what this agent spawned. An agent that could
+// report on, steer or retry its siblings could also come to wait on one that
+// is waiting on it, and neither of them would ever finish
+// (docs/capabilities/subagents.md#a-wait-only-ever-points-down-the-tree).
+func (s *Supervisor) WrapExecutor(caller string, next agent.ToolExecutor) agent.ToolExecutor {
 	return func(name string, args json.RawMessage) (string, error) {
 		switch name {
 		case SpawnToolName:
-			return s.spawn(args)
+			return s.spawnFrom(caller, args)
 		case ReportToolName:
-			return s.report(args)
+			return s.report(caller, args)
 		case SteerToolName:
-			return s.steer(args)
+			return s.steer(caller, args)
 		case RetryToolName:
-			return s.retry(args)
+			return s.retry(caller, args)
 		}
 		return next(name, args)
 	}
+}
+
+// descends reports whether name is strictly below caller in the spawn tree,
+// which is what the orchestration tools other than the spawn are bounded to.
+// Strictly, so an agent cannot report on, steer or retry itself. The session
+// — caller "" — is above everything and reaches all of it.
+//
+// The walk is bounded by the number of children there are, for the reason
+// every walk of these links is: a cycle in them would hang the tool round
+// rather than refuse one call.
+func (s *Supervisor) descends(caller, name string) bool {
+	if caller == "" {
+		return true
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for at, hops := name, 0; at != "" && hops <= len(s.children); hops++ {
+		c, ok := s.byName[at]
+		if !ok {
+			return false
+		}
+		if c.parent == caller {
+			return true
+		}
+		at = c.parent
+	}
+	return false
+}
+
+// reachable resolves a name one of the orchestration tools was given, or
+// says that this caller has no such agent. A sibling is reported as unknown
+// rather than as refused: what an agent may act on is what it spawned, and
+// naming the rest of the roster in a refusal would describe a session the
+// child is not part of.
+func (s *Supervisor) reachable(caller, name string) error {
+	if s.descends(caller, name) {
+		return nil
+	}
+	if caller == "" {
+		return fmt.Errorf("no agent named %q", name)
+	}
+	return fmt.Errorf("no agent named %q among the ones you spawned; agent_report with no arguments lists them", name)
 }
 
 // Spawn starts a child from the spawn tool's own arguments, for a caller
 // that is not the model — the backlog runner's review stage. It is the
 // same path the tool takes, limits and all; nothing about being called
 // from code exempts a child from the attention budget.
-func (s *Supervisor) Spawn(raw json.RawMessage) (string, error) { return s.spawn(raw) }
+func (s *Supervisor) Spawn(raw json.RawMessage) (string, error) { return s.spawnFrom("", raw) }
+
+// MaxDepth is the deepest an agent may sit, counting the session as
+// SessionDepth. A surface builds a child's toolset from it: an agent with no
+// level left below it is handed no delegation tools.
+func (s *Supervisor) MaxDepth() int { return s.opts.MaxDepth }
+
+// depthOf is how far under the session an agent sits, for the agent that is
+// about to spawn: the session itself is SessionDepth and a child is its
+// parent's depth plus one.
+func (s *Supervisor) depthOf(name string) int {
+	if name == "" {
+		return SessionDepth
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if c, ok := s.byName[name]; ok {
+		return c.depth
+	}
+	return SessionDepth
+}
+
+// slots is the set of concurrency slots one depth draws from, made on first
+// use. Each depth has its own so that a descendant never queues behind its
+// own ancestor.
+// See docs/capabilities/subagents.md#a-wait-only-ever-points-down-the-tree.
+func (s *Supervisor) slots(depth int) chan struct{} {
+	s.semsMu.Lock()
+	defer s.semsMu.Unlock()
+	sem, ok := s.sems[depth]
+	if !ok {
+		sem = make(chan struct{}, s.opts.MaxConcurrent)
+		s.sems[depth] = sem
+	}
+	return sem
+}
 
 // FinalReport is a child's own final message as it wrote it, with the
 // state it ended in — for a caller that grades the report rather than
@@ -2399,6 +2535,7 @@ func (s *Supervisor) openWorkspace(c *child, ctx context.Context, maxRounds, att
 		w.root = w.wt.root
 	}
 	w.env, err = s.opts.NewEnv(ctx, Spec{Name: c.name, Role: c.role, Root: w.root, Model: c.model, Paths: c.paths,
+		Parent: c.parent, Depth: c.depth,
 		Worktree: w.wt.dir != "", MaxTokens: c.maxTokens, AdmissionFloor: c.admissionFloor})
 	if err != nil {
 		removeWorktree(w.wt.repoTop, w.wt.dir)
@@ -2422,6 +2559,7 @@ func (s *Supervisor) openWorkspace(c *child, ctx context.Context, maxRounds, att
 	// after the clamp — not the one asked for; c.mode alone is the request.
 	if s.opts.Record != nil {
 		w.rec = s.opts.Record(Spec{Name: c.name, Role: c.role, Root: w.root, Model: c.model, Paths: c.paths,
+			Parent: c.parent, Depth: c.depth,
 			Worktree: w.wt.dir != "", Mode: s.childMode(c), MaxRounds: roundCap(w.agent),
 			MaxTokens: c.maxTokens, AdmissionFloor: c.admissionFloor, Attempt: attempt}, w.env.SystemPrompt)
 	}
@@ -2448,17 +2586,42 @@ func admissionFloor(env Env, opening string) (inherited, setup, floor int64) {
 	return inherited, setup, inherited + setup + MinChildMaxTokens
 }
 
-// spawn validates the arguments, gives the child everything that does not
+// spawnFrom validates the arguments, gives the child everything that does not
 // depend on where it will work, and starts it in the background. A reader's
 // workspace is opened here; a writer's is opened when its slot comes free
 // (openWorkspace).
-func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
+//
+// caller is the agent asking — "" for the session — and it decides three
+// things before any of the rest runs: how deep the new child would sit, what
+// it may be given (never more than its spawner has), and what is written as
+// its parent.
+func (s *Supervisor) spawnFrom(caller string, raw json.RawMessage) (string, error) {
 	args, err := parseSpawnArgs(s.Profiles(), raw)
 	if err != nil {
 		return "", err
 	}
 	if s.ctx.Err() != nil {
 		return "", errors.New("the agent supervisor is shut down")
+	}
+	// Depth is checked with the role and before everything else that could
+	// claim something, for the reason the token admission is: a refusal that
+	// has already taken a slot, cut a worktree or opened a record row is a
+	// refusal that cost the session what it was refusing to spend.
+	depth := s.depthOf(caller) + 1
+	if depth > s.opts.MaxDepth {
+		return "", fmt.Errorf("delegation stops at depth %d and this agent would be depth %d; raise %s to let an agent this deep spawn, or report back and let the level above you spawn it",
+			s.opts.MaxDepth, depth, MaxDepthKey)
+	}
+	// A descendant is never given more than the agent that spawned it. The
+	// mode clamp below is the same rule for a different grant, and both run
+	// before the child exists rather than at its first call, so a role the
+	// spawner may not delegate is a refused spawn and not a child that will
+	// be refused every tool it reaches for.
+	// See docs/capabilities/subagents.md#a-child-may-delegate-to-a-configured-depth.
+	if caller != "" && args.profile.Writes {
+		if up, err := s.lookup(caller); err == nil && !up.profile.Writes {
+			return "", fmt.Errorf("%s changes nothing, so it cannot delegate %s, which writes; an agent may only delegate what it could do itself", caller, args.role)
+		}
 	}
 	resume := Handoff{}
 	if args.resumeHandoff != "" {
@@ -2499,6 +2662,19 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 	mode := s.parentMode
 	batch := s.batch
 	s.mu.Unlock()
+	// A descendant's ceiling is the agent that spawned it, not the session:
+	// the session's mode is already the ceiling on that agent, so taking the
+	// spawner's carries the clamp down the tree and a child in plan mode
+	// cannot delegate its way out of plan mode.
+	//
+	// Read through AgentMode rather than off the child, because a mode is the
+	// child's own field under the child's own lock — and taken here it would
+	// be a second lock held under the supervisor's.
+	if caller != "" {
+		if up, ok := s.AgentMode(caller); ok {
+			mode = up
+		}
+	}
 	// A profile may start its children stricter than the parent (a
 	// reviewer in plan mode under an auto session); childMode clamps it to
 	// the parent either way, so it can never start looser.
@@ -2518,7 +2694,7 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 
 	model := args.Model
 	if s.opts.ModelFor != nil {
-		model = s.opts.ModelFor(args.role, args.Model)
+		model = s.opts.ModelFor(args.role, depth, args.Model)
 	}
 
 	// The context is the child's from here, whether or not it has anywhere
@@ -2528,6 +2704,7 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 	// Construct the role environment before admitting the child, but never its
 	// worktree or record. A doomed budget must not consume either resource.
 	preflight, preflightErr := s.opts.NewEnv(cctx, Spec{Name: name, Role: args.role, Root: s.opts.Root,
+		Parent: caller, Depth: depth,
 		Model: model, Paths: args.paths, Worktree: args.profile.Writes, MaxTokens: args.maxTokens})
 	if preflightErr != nil {
 		cancel()
@@ -2565,6 +2742,8 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 
 	c := &child{
 		name:            name,
+		parent:          caller,
+		depth:           depth,
 		role:            args.role,
 		profile:         args.profile,
 		task:            args.Task,
@@ -2780,10 +2959,16 @@ func (s *Supervisor) run(c *child) {
 		}
 	}()
 
-	// Bounded concurrency: take a slot or notice cancellation while queued.
+	// Bounded concurrency: take a slot at this child's own depth, or notice
+	// cancellation while queued. The slots are per depth so that what this
+	// child waits behind is other agents at its level and never one of its
+	// own ancestors — an ancestor blocked in agent_report waiting for this
+	// child would otherwise be holding the slot this child is waiting for.
+	// See docs/capabilities/subagents.md#a-wait-only-ever-points-down-the-tree.
+	sem := s.slots(c.depth)
 	select {
-	case s.sem <- struct{}{}:
-		defer func() { <-s.sem }()
+	case sem <- struct{}{}:
+		defer func() { <-sem }()
 	case <-ctx.Done():
 		// Nothing of this attempt ever ran, so there is nothing for it to
 		// have ended of: whatever cancelled a queued child cancelled it.
@@ -3281,7 +3466,7 @@ func (s *Supervisor) finalCheckIn(c *child) {
 	ctx, cancel := context.WithTimeout(context.Background(), finalCheckInTimeout)
 	defer cancel()
 	env, err := s.opts.NewEnv(ctx, Spec{Name: c.name, Role: c.role, Root: root, Model: model, Paths: paths,
-		Worktree: worktree})
+		Parent: c.parent, Depth: c.depth, Worktree: worktree})
 	if err != nil {
 		return
 	}
@@ -3825,8 +4010,9 @@ func savedPatchNote(name, patch string) string {
 }
 
 // report implements agent_report: a status overview with no name, or a
-// blocking wait for one child's final report.
-func (s *Supervisor) report(raw json.RawMessage) (string, error) {
+// blocking wait for one child's final report. Both are bounded to what the
+// caller spawned, so the wait always points down the spawn tree.
+func (s *Supervisor) report(caller string, raw json.RawMessage) (string, error) {
 	var args struct {
 		Name string `json:"name"`
 		Wait *bool  `json:"wait"`
@@ -3837,7 +4023,7 @@ func (s *Supervisor) report(raw json.RawMessage) (string, error) {
 		}
 	}
 	if args.Name == "" {
-		return s.statusOverview(), nil
+		return s.statusOverview(caller), nil
 	}
 
 	s.mu.Lock()
@@ -3846,10 +4032,30 @@ func (s *Supervisor) report(raw json.RawMessage) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("no agent named %q; spawn it first, or call agent_report with no arguments for the roster", args.Name)
 	}
+	if err := s.reachable(caller, args.Name); err != nil {
+		return "", err
+	}
 
 	if args.Wait == nil || *args.Wait {
+		// A waiting agent has to come out of the wait when it is itself
+		// ended, and not only when the agent it is waiting for finishes. The
+		// session's own wait had one way out because nothing kills the
+		// session; an agent's has the two an agent can be stopped by — the
+		// kill and the cancelled turn — which are the same two `await` gives
+		// a child blocked on a person. Without them a killed agent stays
+		// inside this call holding its slot, its worktree and its goroutine
+		// until its descendant happens to finish, which for a descendant
+		// waiting on an approval nobody will answer is never.
+		var ended, interrupted <-chan struct{}
+		if up, err := s.lookup(caller); caller != "" && err == nil {
+			ended, interrupted = up.ctx.Done(), up.interruptCh()
+		}
 		select {
 		case <-c.done:
+		case <-ended:
+			return "", errors.New("cancelled")
+		case <-interrupted:
+			return "", errors.New("cancelled")
 		case <-s.ctx.Done():
 			return "", errors.New("cancelled")
 		}
@@ -3865,9 +4071,12 @@ func (s *Supervisor) report(raw json.RawMessage) (string, error) {
 // the workspace that nobody has judged, and the parent's only evidence is a
 // roster line.
 // See docs/capabilities/subagents.md#three-can-steer-a-child-and-none-of-them-can-end-it.
-func (s *Supervisor) steer(raw json.RawMessage) (string, error) {
+func (s *Supervisor) steer(caller string, raw json.RawMessage) (string, error) {
 	args, err := parseSteerArgs(raw)
 	if err != nil {
+		return "", err
+	}
+	if err := s.reachable(caller, args.Name); err != nil {
 		return "", err
 	}
 	// The state is read before the message is delivered, not after: an idle
@@ -3895,7 +4104,7 @@ func (s *Supervisor) steer(raw json.RawMessage) (string, error) {
 // failed agent can be run again — so a parent that calls this on a running
 // child is told what state it is in rather than quietly given nothing.
 // See docs/capabilities/subagents.md#a-failed-child-can-be-run-again.
-func (s *Supervisor) retry(raw json.RawMessage) (string, error) {
+func (s *Supervisor) retry(caller string, raw json.RawMessage) (string, error) {
 	args, err := parseRetryArgs(raw)
 	if err != nil {
 		return "", err
@@ -3903,6 +4112,9 @@ func (s *Supervisor) retry(raw json.RawMessage) (string, error) {
 	c, err := s.lookup(args.Name)
 	if err != nil {
 		return "", fmt.Errorf("no agent named %q; call agent_report with no arguments for the roster", args.Name)
+	}
+	if err := s.reachable(caller, args.Name); err != nil {
+		return "", err
 	}
 	// Read before the attempt is claimed, not after: a retry with nothing to
 	// wait for restarts inside the call below, and by the time that returns
@@ -4026,13 +4238,30 @@ func slotsLine(used int) string {
 	return line + " (a finished agent keeps its slot: the limit is on how many this session may start, not on how many run at once)."
 }
 
-func (s *Supervisor) statusOverview() string {
-	statuses := s.Snapshot()
+// statusOverview is the roster the caller may act on: for the session, every
+// agent it has; for an agent, the ones below it in the spawn tree. The slots
+// line stays the session's whole count either way — what is left to spawn is
+// a session-wide number, and a child told only about its own would plan a
+// fan-out against room the session has not got.
+func (s *Supervisor) statusOverview(caller string) string {
+	all := s.Snapshot()
+	statuses := all
+	if caller != "" {
+		statuses = nil
+		for _, st := range all {
+			if s.descends(caller, st.Name) {
+				statuses = append(statuses, st)
+			}
+		}
+	}
 	if len(statuses) == 0 {
+		if caller != "" {
+			return "You have spawned no agents."
+		}
 		return "No agents have been spawned this session."
 	}
 	var sb strings.Builder
-	sb.WriteString(slotsLine(len(statuses)) + "\n\n")
+	sb.WriteString(slotsLine(len(all)) + "\n\n")
 	if s.readingsOff() {
 		sb.WriteString(readingsNote + "\n\n")
 	}

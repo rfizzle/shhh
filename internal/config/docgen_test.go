@@ -37,7 +37,7 @@ func TestReference_HoldsEveryKey(t *testing.T) {
 	ref := Reference()
 	for _, s := range settings {
 		group := s.Group()
-		key := strings.ReplaceAll(strings.TrimPrefix(s.Key, group+"."), RoleWildcard, "<role>")
+		key := strings.TrimPrefix(s.shown(), group+".")
 		if !strings.Contains(ref, "`"+key+"`") {
 			t.Errorf("%s is not in the reference", s.Key)
 		}

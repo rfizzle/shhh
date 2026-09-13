@@ -79,10 +79,18 @@ func (k Kind) String() string {
 // sets it, and the sentence that says why anyone would touch it.
 type Setting struct {
 	// Key is the key as the file spells it and as `config set` takes it,
-	// dotted from the table down. `agents.profiles.*.model` is the one key
-	// with a wildcard: the segment is a role name the person chooses.
+	// dotted from the table down. A `*` segment is one the person chooses:
+	// `agents.profiles.*.model` takes a role name and `agents.depth.*.model`
+	// a level of delegation.
 	Key  string
 	Kind Kind
+	// Wild is what the chosen segment of a wildcard key is called, in the
+	// one word a reader replaces it with — `role`, `depth`. Every surface
+	// that shows a key nobody has filled in shows `<`this`>` in the
+	// wildcard's place, and a key with no wildcard leaves it empty. It is a
+	// field rather than a word derived from the key because `profiles` and
+	// `depth` are what the tables are called, not what their segments hold.
+	Wild string
 	// Values are the words a KindEnum takes, and the words a KindList's
 	// entries take where those are a closed set too. A key with values is a
 	// key some other package owns the vocabulary of, so a surface that
@@ -159,10 +167,30 @@ func EnvVarSet(name string) bool {
 	return strings.TrimSpace(os.Getenv(strings.TrimSpace(name))) != ""
 }
 
-// RoleWildcard is the segment a per-role key leaves to the person: any role
-// name may take it, so the table declares the shape once instead of naming
-// the built-in roles and going stale when a fourth one lands.
+// RoleWildcard is the segment a key leaves to the person: any role name or
+// any depth may take it, so the table declares the shape once instead of
+// naming the built-in roles and going stale when a fourth one lands. What
+// the segment is called is the entry's own Wild.
 const RoleWildcard = "*"
+
+// The words a wildcard key's chosen segment goes by, for the surfaces that
+// have to decide what could fill one. They are constants rather than
+// literals because a screen matching on the spelling and a table declaring
+// it are two places one typo would silently uncouple.
+const (
+	WildRole  = "role"
+	WildDepth = "depth"
+)
+
+// shown is how a wildcard key is written where nobody has filled the segment
+// in: the word the reader replaces, rather than the `*` the table matches
+// keys against. A key with no wildcard is itself.
+func (s Setting) shown() string {
+	if s.Wild == "" {
+		return s.Key
+	}
+	return strings.ReplaceAll(s.Key, RoleWildcard, "<"+s.Wild+">")
+}
 
 // settings is every key, in the order the file's own tables run. The order is
 // the reference section's order and the config screen's order, so a reader
@@ -447,11 +475,19 @@ var settings = []Setting{
 		Key: "agents.model", Kind: KindString, Default: "inherit",
 		Desc: "The model every sub-agent runs, unless its role says otherwise; `inherit` is the session's own.",
 	}, {
-		Key: "agents.profiles." + RoleWildcard + ".model", Kind: KindString, Default: "(the sub-agent model)",
-		Desc: "The model one role runs — the role is the key's own segment, so any role a spawn names can have one.",
+		Key: "agents.profiles." + RoleWildcard + ".model", Kind: KindString, Wild: WildRole,
+		Default: "(the sub-agent model)",
+		Desc:    "The model one role runs — the role is the key's own segment, so any role a spawn names can have one.",
+	}, {
+		Key: "agents.depth." + RoleWildcard + ".model", Kind: KindString, Wild: WildDepth,
+		Default: "(the sub-agent model)",
+		Desc:    "The model one level of delegation runs — `2` is a child of this session, `3` a child of that. A role that names its own model outranks it.",
 	}, {
 		Key: "agents.max_concurrent", Kind: KindInt, Default: "3",
-		Desc: "How many children may run at once; further spawns queue.",
+		Desc: "How many children may run at once at one level of delegation; further spawns queue.",
+	}, {
+		Key: "agents.max_depth", Kind: KindInt, Default: "3",
+		Desc: "How deep delegation may go, counting this session as 1: `3` is this session, its children and theirs.",
 	},
 
 	{
@@ -638,7 +674,7 @@ func RenamedKey(key string) string {
 func Nearest(key string) string {
 	best, bestDist := "", keyDistance(key)+1
 	for _, s := range settings {
-		name := strings.ReplaceAll(s.Key, RoleWildcard, "<role>")
+		name := s.shown()
 		if d := editDistance(key, name); d < bestDist || (d == bestDist && name < best) {
 			best, bestDist = name, d
 		}

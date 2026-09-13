@@ -747,7 +747,9 @@ own file could hold.
 |---|---|---|---|
 | `model` | text | `inherit` | The model every sub-agent runs, unless its role says otherwise; `inherit` is the session's own. |
 | `profiles.<role>.model` | text | (the sub-agent model) | The model one role runs — the role is the key's own segment, so any role a spawn names can have one. |
-| `max_concurrent` | number | `3` | How many children may run at once; further spawns queue. |
+| `depth.<depth>.model` | text | (the sub-agent model) | The model one level of delegation runs — `2` is a child of this session, `3` a child of that. A role that names its own model outranks it. |
+| `max_concurrent` | number | `3` | How many children may run at once at one level of delegation; further spawns queue. |
+| `max_depth` | number | `3` | How deep delegation may go, counting this session as 1: `3` is this session, its children and theirs. |
 
 **`[summary]`**
 

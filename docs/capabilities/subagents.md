@@ -245,6 +245,158 @@ life, and every child in a fan-out pays again. Where the files do not fit, a
 child gets what any reader over the budget gets: the head of each file and its
 end, with a note saying how much of the middle is missing.
 
+## A child may delegate, to a configured depth
+
+A child can spawn a child. A task with parts is the same shape one level down
+as it is at the top: the researcher that surveyed four packages wants a
+reviewer for what it found, and a writer part-way through a change wants a
+second reader on the part it is least sure of. Without this, everything a
+child needs done comes back up to the orchestrator and goes out again as a
+sibling, which is the parent doing the child's dispatching for it and losing
+the context that made the request specific.
+
+Depth counts the session and its agents from one. The session you are typing
+at is depth 1, the children it spawns are depth 2, and the children of those
+are depth 3. `max_depth` in the `[agents]` table of `config.toml` is the
+deepest that may exist, and it is 3 by default — orchestrator, child,
+sub-child. A spawn that would open a level past it is refused, naming the
+depth it would have been and the key that stopped it, and it is refused where
+every other admission refusal happens: before a slot, a worktree or a record
+row exists.
+
+Three is the default because the third level is where the useful nesting is —
+a review, or a research pass, asked for by the agent that knows what it wants
+looked at — and the fourth is where a fan-out stops being something a person
+can hold in their head. It is a limit on attention like the others, so it is
+a number you can raise rather than a wall.
+
+A descendant is never given more than the agent that spawned it. Its mode is
+clamped to its spawner's the way a child's is clamped to the session's, so a
+child in plan mode cannot delegate its way out of plan mode. Its role cannot
+change more than its spawner may: an agent that changes nothing may delegate
+an agent that changes nothing, and a writer may delegate either. A writer's
+writing descendant claims its declared paths against every live writer, its
+own ancestor included, so the two cannot hand back patches that fight over
+the same file. Total spawns and the token budget are the session's, counted
+once wherever in the tree they were spent.
+
+### The model a depth runs on
+
+A depth can carry a default model. `[agents.depth.2] model` is what children
+run on and `[agents.depth.3] model` what their children run on, which is how
+a session says "delegate downwards and get cheaper": the reasoning-heavy pass
+at the top, mechanical work below it.
+
+Five layers answer the question, and the first that has an answer wins:
+
+1. the `model` the `spawn_agent` call named,
+2. the role's own — the profile file's `model`, or `[agents.profiles.<role>]`,
+3. the depth's — `[agents.depth.<n>] model`,
+4. `[agents] model`,
+5. the session's model.
+
+The role is above the depth on purpose. A profile with a `model` is a role
+somebody chose a model for, and it takes that model wherever it runs; a depth
+default is what stands for everything nobody chose one for. A depth with no
+entry inherits exactly the way a child does today, which is what keeps a
+config that has never heard of depth behaving as it did.
+
+### What nesting does to the rest of it
+
+Delegation is one mechanism and it reaches every surface a child already
+reaches. The rules below settle each of those, so that a person watching a run
+three levels deep is reading one session and not three.
+
+Four of them are settled and not yet drawn: **the kill's cascade to the
+subtree, the manager's kill-all wording, the nested lane in the fan-out block,
+and the notebook's lineage signature** are the rule as decided, and the
+surfaces still do what they did before nesting existed — a kill ends the agent
+named and leaves what it spawned running, the block lists every agent flat,
+and a note is signed with the bare name. They are written here because the
+decision is the part that was hard to make; each is marked below.
+
+- **Who may steer a grandchild.** An agent steers what it spawned and nothing
+  else — the party that wrote the task is the one who knows what it was for —
+  so the root does not reach across a level it did not spawn; the person
+  steers any agent at any depth by attaching to its lane, as they always have.
+- **What killing a parent does.** A kill takes the subtree, and the confirm
+  counts it (`Kill writer-1 and 2 agents under it?`): a reviewer under a
+  writer whose worktree has just been discarded has nothing left to judge, so
+  it ends with its parent under the `cancelled` category rather than being
+  left to finish a reading of a tree that is gone. *Not drawn yet: a kill
+  ends the agent named and its descendants go on running.*
+- **What kill-all means.** Every live agent at every depth — which is what it
+  already does, since it walks the flat list of every agent the session has —
+  and the manager's key row says so (`[K] kill all · every level`). *The
+  wording is not drawn yet.*
+- **Whose card a grandchild's request is.** The person's, like every other
+  child's, with the lineage in the title (`writer-1 ▸ reviewer-1a ▸ Approve
+  command`); a blocked grandchild floats to directly under its own parent's
+  row rather than to the top of a flat list, and the waiting tally counts it
+  like any other.
+- **Whose slots and whose budget.** The sixteen-per-session spawn cap is the
+  session's wherever in the tree a spawn happened, because the attention it
+  bounds is one person's; concurrency slots are the depth's, for the reason
+  above; and a descendant's fresh tokens count against its own budget and the
+  session's spend cap and never against its parent's budget, since a parent
+  paying for its delegates would make delegating cost more than doing the work.
+- **What the person sees of a level they did not ask for.** The root's fan-out
+  block grows a nested lane indented under its parent's, the way the rail's
+  map already indents a grandchild, and the parent's own lane says how many
+  are under it (`2 agents under it`). *Not drawn yet: the block and the
+  manager list every agent flat, and only the rail's map indents.*
+- **What the notebook says about depth.** A grandchild signs its notes with
+  its lineage (`writer-1/reviewer-1a`), so a note read weeks later says which
+  run wrote it and under whose task. *Not written yet: a note is signed with
+  the agent's bare name.*
+- **What the breadcrumb does at depth three on a narrow rail.** The frame
+  keeps the nearest two segments and elides the root (`… ▸ writer-1 ▸
+  reviewer-1a`): the far segment is the one the map beside it already draws.
+
+## A wait only ever points down the tree
+
+`agent_report` waits for a child with no timeout, and waiting costs nothing —
+no round, no token, no slot beyond the one the waiter already holds. That is
+the right shape for a parent collecting a fan-out, and it is also how a tree
+of agents deadlocks: three children each holding one of three concurrent
+slots, each waiting on a child of its own that cannot start until a slot is
+free, wait for each other forever.
+
+The rule that prevents it is that a wait can only ever point downwards, and
+nothing a waiter is waiting for can be blocked by the waiter. Two things make
+it true:
+
+- **An agent's orchestration tools reach its own descendants and nothing
+  else.** A child can report on, steer and retry what it spawned; it cannot
+  see its siblings, its parent, or its parent's other children. So every wait
+  runs from an agent to something below it in the spawn tree, and a tree has
+  no cycles — two agents can never come to wait on each other.
+- **Concurrency slots are held per depth.** Each level of the tree has its own
+  set of `max_concurrent` slots, so a descendant queues behind other agents at
+  its own depth and never behind its own ancestor. The deepest agents running
+  are waiting for nothing, so they finish; the level above them then finishes;
+  and the wait unwinds from the bottom.
+
+**So `max_concurrent` is a per-level number and the ceiling is higher than
+it.** Running agents are bounded per depth rather than in total, which at the
+defaults is three at depth 2 and three more at depth 3 — **six agents running
+at once, not three**, and the same six however the delegation is arranged.
+That is worth saying plainly, because `max_concurrent = 3` reads like a
+promise about the whole session and is not one. What bounds the whole session
+is the sixteen total spawns and the spend cap; what `max_concurrent` bounds is
+how many things are moving at one level of the same job.
+
+The alternatives were considered and are worse. Making a child's
+`agent_report` non-blocking turns a free wait into a poll, and a child paying
+rounds and tokens to ask "are you done yet" spends its budget on the question
+rather than the work. Lending — a descendant running on the slot its ancestor
+holds — reaches exactly the same six, since an ancestor that spawns and does
+not wait keeps working while its borrower runs beside it, and it buys that for
+a hazard the per-depth pools do not have: the lender can finish and release a
+slot the borrower is still standing on, so the bookkeeping that would stop a
+fourth agent taking it is bookkeeping whose failure mode is the hang the whole
+rule exists to prevent.
+
 ## They are visible while they run
 
 Each child appears in the parent's transcript as a status row, and the agent

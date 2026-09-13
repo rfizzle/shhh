@@ -20,7 +20,7 @@ import (
 // so a test can look at the batch rather than at a race.
 func spawnInto(t *testing.T, sup *subagent.Supervisor, args string) {
 	t.Helper()
-	exec := sup.WrapExecutor(nil)
+	exec := sup.WrapExecutor("", nil)
 	if _, err := exec(subagent.SpawnToolName, json.RawMessage(args)); err != nil {
 		t.Fatal(err)
 	}

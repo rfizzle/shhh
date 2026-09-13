@@ -39,8 +39,8 @@ func Reference() string {
 			b.WriteString("|---|---|---|---|\n")
 		}
 		// The wildcard is `*` in the table because that is what a key match
-		// is against; in a document it is the role a person writes.
-		key := strings.ReplaceAll(strings.TrimPrefix(s.Key, group+"."), RoleWildcard, "<role>")
+		// is against; in a document it is the word a person writes there.
+		key := strings.TrimPrefix(s.shown(), group+".")
 		fmt.Fprintf(&b, "| `%s` | %s | %s | %s |\n",
 			key, cell(takes(s)), cell(quoteDefault(s.Default)), cell(decides(s)))
 	}

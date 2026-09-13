@@ -1,29 +1,68 @@
-# One reply per request. The last line repeats once these run out, and the
-# session and every child it spawns draw from this one queue.
+# One reply queue per agent, opened by a [name] header: the session, each of
+# the three writers it fans out, and the child one of those writers delegates
+# to. Each queue is that agent's own rounds in its own order, so what reaches
+# the screen is the scene's sequence and not the race between four agents all
+# asking the same endpoint at once.
 #
-# That shared queue is why the rounds below are uniform. Four agents are in
-# flight after the spawn — the session and its three children — and which of
-# them reaches the endpoint first is a race nothing here can settle, so every
-# reply of a round says the same thing and the race stops mattering.
+# The one thing the queues have to arrange between them is which card is at
+# the front when a snap is taken, and reads are far too fast to arrange it
+# with. So the three agents that must not interrupt hold their connection open
+# instead (`wait:`), and writer-3's delegation is its very first round: it is
+# the only gated call in flight for the next several seconds, so it is the
+# card the scene answers.
 #
 # The sentence and the three spawns are one reply, so the transcript titles
 # the step with the sentence rather than closing a turn before the calls were
 # asked for.
+[session]
 Fanning three writers over the round accounting.
 +tool:spawn_agent:{"role":"writer","task":"Say where the round counter is read.","name":"writer-1"}
 +tool:spawn_agent:{"role":"writer","task":"Say where the round limit is set.","name":"writer-2"}
 +tool:spawn_agent:{"role":"writer","task":"Say where the loop exits.","name":"writer-3"}
-# The first round: everybody reads, which nothing gates, so the map fills with
-# children that are working.
 tool:read_file:{"path":"loop.go"}
 tool:read_file:{"path":"loop.go"}
-tool:read_file:{"path":"loop.go"}
-tool:read_file:{"path":"loop.go"}
-# The second round: everybody wants to run something. A child's command is
-# routed to this session for an answer, which is what puts a child in the map
-# as blocked — the state the block floats to the top.
-tool:execute_command:{"command":"go test ./internal/agent/..."}
-tool:execute_command:{"command":"go test ./internal/agent/..."}
-tool:execute_command:{"command":"go test ./internal/agent/..."}
-tool:execute_command:{"command":"go test ./internal/agent/..."}
+# The session's own request to run something — a card of its own rather than a
+# routed one, and the one the scene declines. It is held back until the
+# delegation below has been answered, and let go first of the four so the
+# queue behind it is the three routed ones.
+wait:12
++tool:execute_command:{"command":"go test ./internal/agent/..."}
 The counter is read at the top of the loop, and nowhere else.
+
+[writer-1]
+tool:read_file:{"path":"loop.go"}
+tool:read_file:{"path":"loop.go"}
+wait:15
++tool:execute_command:{"command":"go test ./internal/agent/..."}
+The counter is read at the top of the loop.
+
+[writer-2]
+tool:read_file:{"path":"loop.go"}
+tool:read_file:{"path":"loop.go"}
+wait:15
++tool:execute_command:{"command":"go test ./internal/agent/..."}
+The limit is set where the session builds the agent.
+
+# The delegation this scene is for: a child hands the part it is least sure of
+# to a child of its own, on its first round. Starting an agent is a decision
+# wherever it is taken, so this reaches the person as a card the way the
+# session's three did — and the agent it starts is drawn a column in behind
+# the corner, under the agent that asked for it rather than under the session
+# (docs/capabilities/subagents.md#a-child-may-delegate-to-a-configured-depth).
+[writer-3]
+tool:spawn_agent:{"role":"researcher","task":"Say which package the loop's exit condition lives in.","name":"reader-3a"}
+tool:read_file:{"path":"loop.go"}
+wait:15
++tool:execute_command:{"command":"go test ./internal/agent/..."}
+The loop exits on the counter reaching the limit.
+
+# The grandchild reads and goes on reading, slowly: the last reply of a queue
+# repeats once the queue runs out, so a reply that ends on a call is an agent
+# still on the map at every snap after it starts — and one that ends on a bare
+# call is an agent asking this endpoint as fast as the loop can go, for as
+# long as the scene runs. The wait in front of it is what makes it a working
+# agent rather than a spin.
+[reader-3a]
+tool:read_file:{"path":"loop.go"}
+wait:30
++tool:read_file:{"path":"loop.go"}

@@ -101,6 +101,20 @@ const (
 // is checked by name.
 const QualityGateTool = "quality_gate"
 
+// SpawnAgentTool and ReportAgentTool are the two names a profile writes to
+// say whether the agent may delegate. They are one grant and not two: the
+// four orchestration tools travel together, because an agent that could
+// start a child but not collect it would spend a slot on a report it can
+// never read. They are named here for the reason the gate is — the rule
+// around them is not a tier — and the rest of the set is not listable,
+// because a profile that named the redirect and not the spawn would be
+// asking to steer agents it cannot start.
+// See docs/capabilities/subagents.md#a-child-may-delegate-to-a-configured-depth.
+const (
+	SpawnAgentTool  = "spawn_agent"
+	ReportAgentTool = "agent_report"
+)
+
 // knownAgentTools is every tool name a profile may list under tools. A
 // profile is validated against this at load time, so a typo is reported by
 // path and field rather than turning into a child with fewer tools than its
@@ -125,6 +139,15 @@ var knownAgentTools = map[string]string{
 	// narrowly drawn role has no business spending.
 	// See docs/capabilities/subagents.md#a-profile-that-changes-nothing-can-still-run-the-checks.
 	QualityGateTool: PermissionRead,
+	// Delegating is a read for the same kind of reason: starting an agent
+	// changes nothing itself, and what the agent it starts may do is decided
+	// by that agent's own profile and clamped to this one — a read-only
+	// profile may delegate a read-only child and nothing more. So a profile
+	// granting nothing but read may still hand part of its task down, and
+	// what stops it going further is the depth limit rather than a tier.
+	// See docs/capabilities/subagents.md#a-child-may-delegate-to-a-configured-depth.
+	SpawnAgentTool:  PermissionRead,
+	ReportAgentTool: PermissionRead,
 }
 
 // KnownAgentTools lists the tool names a profile may name, sorted.

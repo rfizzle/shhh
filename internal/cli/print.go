@@ -1049,7 +1049,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		sup.SetParentMode(agent.ModeAuto)
 		sup.SetParentGrants(agent.Grants{AllEdits: opts.yes, AllCommands: opts.yes, Commands: opts.allow})
 		defer sup.Close()
-		exec = sup.WrapExecutor(exec)
+		exec = sup.WrapExecutor("", exec)
 	}
 
 	// Repeat detection goes on outside the shared chain, so it sees every
