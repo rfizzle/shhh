@@ -77,6 +77,7 @@ func New(initialMessages []provider.Message, stream StreamFunc) Model {
 		changes:     changeset.New(changeset.DefaultMaxBytes),
 		sessionName: newSessionName(),
 		searchMemo:  &searchMemo{},
+		alertMemo:   &alertMemo{},
 	}
 }
 

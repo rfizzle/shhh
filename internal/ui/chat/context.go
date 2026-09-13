@@ -264,6 +264,13 @@ func (m *Model) elideTranscript(was []string) {
 		}
 		e.toolResult = queue[0]
 	}
+	// Rows were rewritten where they lie and there are exactly as many of
+	// them as there were, so nothing counting them can tell. What reads off
+	// a body the trim has just taken has to be told (model.go): the rail's
+	// alert scan reads the gate's verdict out of these rows, and a scan kept
+	// from before the trim would go on reporting a failure the gate answered
+	// (inspector.go).
+	m.transcriptRev++
 	m.invalidateRenderCache()
 }
 

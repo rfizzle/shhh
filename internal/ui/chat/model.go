@@ -660,6 +660,19 @@ type Model struct {
 	streamDirty bool
 
 	transcript []entry
+	// transcriptRev counts the times a row has been rewritten where it lies
+	// — the trim replacing a result with its placeholder (context.go),
+	// opening a row (focus.go). It exists because a length cannot see any of
+	// them: the trim leaves exactly as many rows as it found, and a reading
+	// memoised on `len(transcript)` would go on answering with what the
+	// session looked like before the trim — which for the rail's alerts
+	// means a failure the close row has already answered coming back red
+	// (inspector.go).
+	//
+	// Anything that rewrites an entry in place belongs here. A row landing
+	// does not: the count says that, and says it without a bump nobody
+	// remembered to write.
+	transcriptRev int64
 	// Incremental render cache: the rendered lines of entries
 	// [0, cached.count), always a whole number of step blocks, with
 	// the live tail rebuilt after them each frame (lines.go).
@@ -682,6 +695,13 @@ type Model struct {
 	// beside the answer is what makes that safe, since a copy that no longer
 	// describes the session cannot match its own key.
 	searchMemo *searchMemo
+	// alertMemo is the rail's last alert scan (inspector.go). It is the same
+	// bargain as the census above and a pointer for the same reason: the
+	// scan walks every command in the session and the rail asks for it twice
+	// a frame, so a two-hour transcript would pay for its own length on
+	// every tick of the spinner. The reading beside the answer is what makes
+	// the shared box safe.
+	alertMemo *alertMemo
 	// streamMD is the arriving message's own cache, keyed on nothing the
 	// caches above are: it holds a render of the part of that one message that
 	// can no longer change, so a chunk re-renders the tail rather than the

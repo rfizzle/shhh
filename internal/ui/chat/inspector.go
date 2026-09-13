@@ -149,10 +149,10 @@ type railBlock struct {
 	rail components.InspectorRail
 }
 
-// railKey is what the rail was drawn against: the spinner's frame, how much
-// transcript there is, and which turn the session is on. Between them they
-// move on every tick the rail has anything new to say, which is what makes
-// them the reading to compare rather than the whole of it.
+// railKey is what the rail was drawn against: the spinner's frame, what the
+// transcript reads, and which turn the session is on. Between them they move
+// on every tick the rail has anything new to say, which is what makes them
+// the reading to compare rather than the whole of it.
 //
 // It is a key and not an assumption because everything else the rail reads —
 // the changeset, a child's token count, the bill — moves on its own clock. A
@@ -161,16 +161,38 @@ type railBlock struct {
 // had, and comparing the key is what stops that from being something the next
 // reader has to know.
 type railKey struct {
-	frame   int
-	entries int
-	turn    int64
+	frame      int
+	transcript transcriptReading
+	turn       int64
 }
 
 // railKey reads the three the rail is keyed on off the session. It is here
 // rather than beside the fields because what the rail depends on is the
 // rail's own business.
 func (m Model) railKey() railKey {
-	return railKey{frame: m.spinFrame, entries: len(m.transcript), turn: m.turnCount}
+	return railKey{frame: m.spinFrame, transcript: m.transcriptReading(), turn: m.turnCount}
+}
+
+// transcriptReading is what a reading taken off the transcript was taken
+// against: how many rows there were, and how many of them have since been
+// rewritten where they lie (model.go).
+//
+// It is the pair and not either half. The count is what moves when a row
+// lands, which is most of what happens to a transcript and is free to read.
+// The revision is the half the count cannot see: the context trim replaces
+// a result with its placeholder and leaves the length exactly as it found it
+// (context.go), so a reading keyed on the count alone answers a trimmed
+// session with what it said before the trim — and for the alert scan below
+// that means re-reporting a failure the quality gate has already answered
+// and the turn's close row has already called green (resolved.go).
+type transcriptReading struct {
+	entries int
+	rev     int64
+}
+
+// transcriptReading reads that pair off the session.
+func (m Model) transcriptReading() transcriptReading {
+	return transcriptReading{entries: len(m.transcript), rev: m.transcriptRev}
 }
 
 // resolveInspector assembles the rail from what the session already tracks. A
@@ -322,12 +344,42 @@ func (m Model) inspectorChanges() *components.InspectorChanges {
 // on screen as a current failure — which is the block's own rule and not
 // this reading's (inspectoralerts.go).
 //
+// The scan walks every command the session has run, so it costs the whole
+// transcript every time it is asked — and the rail asks twice a frame, on a
+// spinner tick that moves whether or not anything happened. So the answer is
+// kept with the reading it was taken against and handed back until the
+// transcript reads differently, which is the whole of what an alert is a
+// function of: a command lands, or the trim rewrites what a landed one says
+// (transcriptReading).
+func (m Model) inspectorAlerts() components.InspectorAlerts {
+	if m.alertMemo == nil {
+		return m.scanAlerts()
+	}
+	reading := m.transcriptReading()
+	// The zero box is the reading of a session with nothing in it, whose
+	// answer is no alerts — which is the answer, so the first read of an
+	// empty transcript is a hit that happens to be right rather than a miss.
+	if m.alertMemo.reading != reading {
+		*m.alertMemo = alertMemo{reading: reading, alerts: m.scanAlerts()}
+	}
+	return m.alertMemo.alerts
+}
+
+// alertMemo is the last scan and the reading it was a scan of. A reading that
+// still matches is a scan that is still true (model.go).
+type alertMemo struct {
+	reading transcriptReading
+	alerts  components.InspectorAlerts
+}
+
+// scanAlerts is the walk itself.
+//
 // An alert is one command in one turn rather than one command line: an agent
 // that runs a formatter over three directories has one thing wrong with its
 // workspace and not three, and the rail drew three rows for it. The runs are
 // collapsed onto the last one, because the last run is what the workspace is
 // currently like.
-func (m Model) inspectorAlerts() components.InspectorAlerts {
+func (m Model) scanAlerts() components.InspectorAlerts {
 	type group struct {
 		// at is where the group's last run sits in the transcript, which is
 		// the position a later verification is asked about.

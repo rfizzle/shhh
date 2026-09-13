@@ -8,6 +8,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/pricing"
@@ -745,7 +746,7 @@ func TestFrameMemo_TilesFreshWithNoFrame(t *testing.T) {
 	}
 }
 
-// The rail is keyed on the spinner's frame, the transcript's length and the
+// The rail is keyed on the spinner's frame, what the transcript reads and the
 // turn count, so a frame that asks twice builds it once and a reading that
 // moved builds it again.
 func TestRailMemo_IsKeyedRatherThanRebuilt(t *testing.T) {
@@ -768,5 +769,88 @@ func TestRailMemo_IsKeyedRatherThanRebuilt(t *testing.T) {
 	}
 	if m.framed.rail.rail.Frame != first.Frame+1 {
 		t.Fatalf("the rebuilt rail should carry the new frame, got %d", m.framed.rail.rail.Frame)
+	}
+}
+
+// alertMemoModel is a session with one failing command on the transcript and
+// one big tool result behind it that a trim can take. The failing command is
+// the rail's standing alert; the big result is what gives the trim something
+// to elide, so the trim rewrites a row where it lies without the transcript
+// getting any shorter — which is the case a length-keyed memo gets wrong.
+func alertMemoModel(t *testing.T) Model {
+	t.Helper()
+	big := strings.Repeat("line\n", 8000) // ~10k estimated tokens
+	m := New([]provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "q1"},
+		{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "c1", Name: "read_file"}}},
+		{Role: provider.RoleTool, Content: big, ToolCallID: "c1"},
+		{Role: provider.RoleUser, Content: "q2"},
+	}, mockStream)
+	m.turnCount = 1
+	m.appendEntry(entry{kind: entryCommand, text: "go test ./internal/agent/...", exitCode: 1})
+	m.appendEntry(entry{kind: entryTool, toolName: "read_file", toolResult: big})
+	m.contextTokens = 30000
+	if live := m.inspectorAlerts().Live(); len(live) != 1 {
+		t.Fatalf("the failing command is the session's standing alert, got %+v", live)
+	}
+	return m
+}
+
+// clearBehindTheMemo rewrites the row the alert was read off — the command's
+// exit code — with no row landing and no revision recorded, which is a thing
+// only a test can do. It is how the two tests below tell a scan that ran from
+// an answer handed back out of the box.
+func clearBehindTheMemo(m *Model) {
+	m.transcript[0].exitCode = 0
+}
+
+// The context trim replaces bodies in place and leaves exactly as many rows
+// as it found, so the transcript's length says nothing happened. The rail's
+// alert scan is memoised on the revision as well as the count, so the trim
+// makes the next reader scan again — a memo keyed on the length alone would
+// answer with the session as it was before the trim, which is how a failure
+// the quality gate has already answered comes back red.
+func TestAlertMemo_ATrimMakesTheRailReadAgain(t *testing.T) {
+	m := alertMemoModel(t)
+	was := m.transcriptReading()
+	clearBehindTheMemo(&m)
+
+	if n := m.trimContext(); n != 1 {
+		t.Fatalf("want 1 elided result, got %d", n)
+	}
+	now := m.transcriptReading()
+	if now.entries != was.entries {
+		t.Fatalf("the trim left %d rows, was %d — the length is the reading that cannot see it",
+			now.entries, was.entries)
+	}
+	if now.rev == was.rev {
+		t.Fatal("the trim rewrote a row where it lies and recorded no revision")
+	}
+	if _, elided := agent.Elided(m.transcript[1].toolResult); !elided {
+		t.Fatal("the trim should have taken the big result out of the row")
+	}
+	if live := m.inspectorAlerts().Live(); len(live) != 0 {
+		t.Fatalf("the rail read the transcript as it was before the trim, got %+v", live)
+	}
+}
+
+// Two frames with nothing between them but a spinner tick read the scan once.
+// The rail itself is resolved again on every tick — it draws the spinner —
+// and the scan walks every command in the session, so a two-hour transcript
+// would pay for its own length on every frame if the tick reached it.
+func TestAlertMemo_TwoFramesWithNoMutationScanOnce(t *testing.T) {
+	m := alertMemoModel(t)
+	clearBehindTheMemo(&m)
+
+	m.spinFrame++
+	if live := m.inspectorAlerts().Live(); len(live) != 1 {
+		t.Fatalf("the second frame walked the transcript again, got %+v", live)
+	}
+	// A recorded revision is the other half of the same rule: it is what the
+	// rewrite above would have carried had anything but a test made it.
+	m.transcriptRev++
+	if live := m.inspectorAlerts().Live(); len(live) != 0 {
+		t.Fatalf("a recorded revision makes the next reader scan, got %+v", live)
 	}
 }
